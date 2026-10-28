@@ -1,0 +1,67 @@
+feature: 사용자 팝업 레이어 컴포넌트 (판정·배치·캐러셀·닫기·보지 않기·접근성·GDPR 공존)
+
+description: |
+  PopupLayer 가 공개 API 배열을 받아 경로·기기·보지 않기·이번 페이지에서 닫음으로 거른 뒤 한 레이어 안 캐러셀로 보인다.
+  「보지 않기」는 그때 보이던 팝업 전부의 id 를 만료와 함께 쿠키 하나(g7_popup_dismissed)에 기록하고(D3),
+  「닫기」는 새로고침 전까지 같은 팝업을 다시 띄우지 않는다(모듈 메모리). 모바일 하단 시트는 GDPR 배너 높이만큼 올라간다.
+  접근성: dialog·aria-modal·포커스 가둠·ESC·←→·포커스 복귀·자동 넘김 멈춤(마우스·포커스·일시정지·reduced-motion)·aria-live 전환.
+  본문 HTML 은 DOMPurify 로 한 번 더 거르고, 덮는 링크 안에 포커스 요소가 없다.
+
+axes:
+  surface:
+    - renders_nothing_when_no_visible_popup
+    - filters_by_route_on_path_change
+    - filters_by_device_on_viewport_change
+    - filters_dismissed_ids_until_expiry
+    - shows_expired_dismissed_ids_again
+    - keeps_server_order
+    - single_popup_hides_carousel_controls
+    - prev_next_wrap_around
+    - dot_buttons_select_and_mark_current
+    - counter_shows_position
+    - autoplay_advances_at_interval
+    - autoplay_pauses_on_hover_and_focus
+    - pause_button_toggles_autoplay
+    - reduced_motion_disables_autoplay
+    - aria_live_off_while_autoplaying
+    - dialog_role_and_label
+    - focus_moves_into_layer_on_open
+    - tab_focus_trapped
+    - escape_closes
+    - arrow_keys_navigate
+    - focus_returns_on_close
+    - close_hides_until_reload_across_paths
+    - close_on_backdrop_when_enabled
+    - backdrop_click_ignored_when_disabled
+    - dismiss_today_expires_local_midnight
+    - dismiss_days_expires_after_n_days
+    - dismiss_records_all_visible_ids
+    - new_popup_shows_after_dismiss
+    - dismiss_cookie_prunes_expired_and_caps_entries
+    - dismiss_cookie_corrupt_treated_empty
+    - close_only_mode_hides_dismiss_button
+    - pc_center_layout_uses_size
+    - pc_coords_layout_clamped_to_viewport
+    - mobile_center_layout
+    - mobile_sheet_layout
+    - sheet_lifts_above_gdpr_banner
+    - sheet_rests_at_bottom_without_gdpr_banner
+    - z_index_below_gdpr_banner
+    - image_uses_picture_with_mobile_source
+    - image_falls_back_to_pc_on_mobile
+    - link_popup_uses_covering_link_without_nested_focusables
+    - link_new_window_rel_noopener
+    - html_body_purified_on_render
+    - html_body_scroll_region_only_when_overflowing
+    - preview_renders_same_markup_with_links_inert
+
+effects:
+  - accessible_modal_carousel
+  - dismiss_cookie_written
+  - gdpr_banner_not_covered
+  - preview_sample_slides
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupLayer.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupPreview.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/lib/dismissCookie.test.ts

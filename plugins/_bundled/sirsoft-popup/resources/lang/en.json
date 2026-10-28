@@ -1,0 +1,320 @@
+{
+    "editor": {
+        "data_source": {
+            "popups": "Popup list",
+            "summary": "Popups shown now",
+            "display_settings": "Display settings",
+            "popup": "Popup detail",
+            "settings": "Popup settings",
+            "upload_limit": "Upload limit",
+            "sirsoftPopup_public": "Popups on user screens"
+        },
+        "state": {
+            "with_data": "With popups",
+            "empty_data": "No popups",
+            "delete_confirm": "Delete confirmation",
+            "bulk_delete_confirm": "Bulk delete confirmation",
+            "copy_confirm": "Copy confirmation",
+            "reorder_open": "Reorder dialog"
+        }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only.",
+    "layer": {
+        "region": "Notice popup",
+        "slide": "popup",
+        "counter": "{{n}} / {{total}}",
+        "previous": "Previous popup",
+        "next": "Next popup",
+        "go_to": "Show popup {{n}}",
+        "pause": "Pause auto-advance",
+        "play": "Resume auto-advance",
+        "dismiss_today": "Don't show today",
+        "dismiss_days": "Don't show for {{days}} days",
+        "close": "Close",
+        "scroll_region": "Popup content"
+    },
+    "admin": {
+        "title": "Popups",
+        "description": "When several popups match, they rotate inside one layer in list order.",
+        "breadcrumb": "Plugins › Popups",
+        "actions": {
+            "create": "Add popup",
+            "settings": "Display settings"
+        },
+        "status": {
+            "all": "All",
+            "active": "Showing",
+            "scheduled": "Scheduled",
+            "ended": "Ended",
+            "inactive": "Inactive",
+            "incomplete": "Incomplete"
+        },
+        "device": {
+            "all": "All",
+            "pc": "PC",
+            "mobile": "Mobile",
+            "only_pc": "PC only",
+            "only_mobile": "Mobile only",
+            "shown_on_pc": "Shown on PC",
+            "shown_on_mobile": "Shown on mobile"
+        },
+        "audience": {
+            "all": "Everyone",
+            "guest": "Guests only",
+            "member": "Members only"
+        },
+        "content_type": {
+            "image": "Image",
+            "html": "Written content",
+            "html_short": "Written"
+        },
+        "page_scope": {
+            "all": "All pages",
+            "routes": "Specific paths"
+        },
+        "period": {
+            "always": "Always",
+            "range": "Date range"
+        },
+        "summary": {
+            "title": "{{count}} showing now",
+            "order_hint": "Shown in the carousel in this order",
+            "empty": "No popups are showing right now.",
+            "pc": "PC {{position}} · {{width}}×{{height}}",
+            "mobile": "Mobile {{style}}",
+            "close": "Close {{dismiss}} · {{dim}}",
+            "dim_on": "dimmed background",
+            "dim_off": "no dimming",
+            "change_settings": "Change in settings ›"
+        },
+        "list": {
+            "status_filter": "Status",
+            "device_filter": "Device",
+            "search": "Search",
+            "search_placeholder": "Admin title",
+            "search_button": "Search",
+            "selected": "{{count}} selected",
+            "bulk_show": "Show",
+            "bulk_hide": "Hide",
+            "bulk_copy": "Copy",
+            "bulk_delete": "Delete",
+            "total": "{{count}} total",
+            "empty": "No popups yet.",
+            "more_routes": "+{{count}} more",
+            "sort": {
+                "sort_order": "Carousel order",
+                "status": "By status",
+                "created_desc": "Newest first",
+                "created_asc": "Oldest first"
+            },
+            "column": {
+                "preview": "Preview",
+                "title": "Title",
+                "pages": "Pages",
+                "device": "Device",
+                "period": "Period",
+                "status": "Status",
+                "order": "Order",
+                "created_at": "Created"
+            },
+            "action": {
+                "edit": "Edit",
+                "copy": "Copy",
+                "delete": "Delete"
+            }
+        },
+        "delete": {
+            "title": "Delete popup",
+            "message": "Delete the popup \"{{title}}\"?",
+            "bulk_title": "Delete selected popups",
+            "bulk_message": "Delete {{count}} selected popups?",
+            "warning": "Deleting also removes image files and cannot be undone. To take a popup down temporarily, hide it instead."
+        },
+        "copy": {
+            "title": "Copy popups",
+            "message": "Copy {{count}} selected popups. Copies are added inactive at the end.",
+            "confirm": "Copy"
+        },
+        "reorder": {
+            "button": "Reorder",
+            "title": "Reorder popups",
+            "description": "Popups higher in the list are shown first. Drag or use the ↑↓ buttons, then save.",
+            "drag_handle": "Drag \"{{name}}\"",
+            "move_up": "Move \"{{name}}\" up",
+            "move_down": "Move \"{{name}}\" down"
+        },
+        "preview": {
+            "title": "Preview",
+            "region": "Popup preview",
+            "device_label": "Preview device",
+            "pc": "PC",
+            "mobile": "Mobile",
+            "locale": "Language",
+            "mobile_falls_back": "No mobile image, so the PC image is shown.",
+            "based_on": "Based on settings: {{summary}}",
+            "settings_link": "Change the display in settings ›"
+        },
+        "conflict": {
+            "message": "Another administrator saved this popup first. Your input is kept. Compare it with the latest version and save again.",
+            "open_latest": "Open the latest version in a new tab"
+        },
+        "form": {
+            "create_title": "Add popup",
+            "edit_title": "Edit popup",
+            "validation_error": "Please check your input.",
+            "section": {
+                "basic": "Basics",
+                "content": "Content",
+                "condition": "Display conditions",
+                "period": "Display period"
+            },
+            "title": "Admin title",
+            "title_placeholder": "e.g. Autumn thanks event",
+            "title_hint": "Shown only in the admin list.",
+            "is_active": "Enabled",
+            "content_type": "Content type",
+            "locale_hint": "Languages left empty show the site default language content.",
+            "optional": "(optional)",
+            "image": {
+                "pc": "PC image",
+                "pc_hint": "Recommended: the PC size in settings ({{width}}×{{height}}) · up to {{mb}}MB · JPG, PNG, WEBP, GIF",
+                "mobile": "Mobile image",
+                "mobile_hint": "If not added, the PC image is used on mobile. Up to {{mb}}MB.",
+                "size_mismatch": "The uploaded image is {{width}}×{{height}}. If it differs from the recommended size ({{recommended}}), it is fitted without cropping and may leave margins."
+            },
+            "image_alt": "Image alt text",
+            "image_alt_hint": "Read aloud to visitors who cannot see the screen. If empty, the admin title is used.",
+            "link_url": "Link URL",
+            "link_url_optional": "(optional · opened when the image is clicked)",
+            "link_url_hint": "Enter a site path starting with / or an http(s) address.",
+            "link_new_window": "Open in a new window",
+            "body_html": "Content",
+            "body_placeholder": "Enter the content visitors will see.",
+            "editor_hint": "If an editor plugin (e.g. CKEditor5) is installed it is used; otherwise the basic input is used. Disallowed tags and attributes are removed on save.",
+            "saved_sanitized": "Saved. Some disallowed formatting was removed.",
+            "page_scope": "Pages",
+            "routes_label": "Specified paths",
+            "route_add_label": "Add path",
+            "route_add": "Add",
+            "route_remove": "Remove {{route}}",
+            "route_hint": "Enter a path starting with '/'. /shop also covers sub-paths like /shop/products/1 but not /shopping. '/' shows only on the home page.",
+            "route_errors": {
+                "must_start_with_slash": "Must start with '/'.",
+                "invalid": "//, ?, #, *, spaces and .. are not allowed.",
+                "duplicate": "This path is already added.",
+                "too_many": "Up to 20 paths can be specified."
+            },
+            "audience": "Audience",
+            "device": "Device",
+            "starts_at": "Start",
+            "ends_at": "End",
+            "period_hint": "Shown automatically at the start and taken down automatically at the end.",
+            "period": {
+                "clock_loading": "Checking the server time.",
+                "timezone": "Site time zone {{timezone}}",
+                "incomplete": "Enter both start and end to see the status after saving.",
+                "hint": "If saved now, it will show as \"{{status}}\"."
+            },
+            "upload_pending": "Uploading images. You can save when it finishes.",
+            "cancel": "Cancel",
+            "save": "Save",
+            "saving": "Saving",
+            "conflict_merge": {
+                "title": "Compare the latest version with my changes",
+                "hint": "Items changed by another administrator default to the latest value and items you changed default to yours. Choose items both of you changed, apply, then review and save again.",
+                "no_differences": "Your input matches the latest version. Apply to save again based on the latest version.",
+                "load": "Load and compare the latest version",
+                "reload": "Reload the latest version",
+                "retry": "Try again",
+                "load_failed": "Could not load the latest version. Your input is kept. Please try again.",
+                "apply": "Apply selected values",
+                "choose_all": "Choose every item both of you changed before applying.",
+                "mine": "Mine",
+                "latest": "Latest",
+                "stale_image": "This image was already replaced or removed by another administrator and cannot be reused.",
+                "yes": "On",
+                "no": "Off",
+                "empty": "None",
+                "new_window": "new window",
+                "change": {
+                    "theirs": "Changed by another administrator",
+                    "mine": "Changed by me",
+                    "both": "Both changed — choose one"
+                },
+                "fields": {
+                    "title": "Admin title",
+                    "is_active": "Enabled",
+                    "content_type": "Content type",
+                    "period": "Display period",
+                    "pages": "Pages",
+                    "audience": "Audience",
+                    "device": "Device",
+                    "image_alt": "Image alt text",
+                    "body_html": "Content",
+                    "link": "Link",
+                    "pc_image": "PC image",
+                    "mobile_image": "Mobile image"
+                }
+            }
+        }
+    },
+    "settings": {
+        "title": "Popup plugin settings",
+        "description": "The display set here applies to every popup.",
+        "back_to_list": "Back to popups",
+        "pc": {
+            "title": "On PC",
+            "position": "Position",
+            "left": "From left (px)",
+            "top": "From top (px)",
+            "width": "Width (px)",
+            "height": "Height (px)",
+            "size_hint": "Content area size · also shown as the recommended image size"
+        },
+        "pc_position": {
+            "center": "Screen center",
+            "coords": "Top-left coordinates"
+        },
+        "mobile": {
+            "title": "On mobile"
+        },
+        "mobile_style": {
+            "center": "Screen center",
+            "center_desc": "A small window in the middle",
+            "sheet": "Bottom sheet",
+            "sheet_desc": "Slides up from the bottom"
+        },
+        "behavior": {
+            "title": "Background · carousel",
+            "dim_background": "Dim the background behind popups",
+            "close_on_backdrop": "Close when the background is clicked",
+            "autoplay": "Auto-advance when there are several",
+            "interval": "Interval",
+            "seconds": "{{n}} seconds"
+        },
+        "dismiss": {
+            "title": "Close options",
+            "today": "\"Don't show today\" + Close",
+            "days": "\"Don't show for N days\" + Close",
+            "close": "Close only",
+            "days_label": "Days to hide",
+            "days_unit": "days",
+            "hint": "\"Don't show\" hides the popups shown at that moment for the period; popups added later appear right away. This record is a strictly necessary cookie and is listed in the GDPR cookie list."
+        },
+        "operation": {
+            "title": "Upload · cache"
+        },
+        "fields": {
+            "max_upload_mb": {
+                "label": "Maximum image size (MB)",
+                "hint": "Maximum size of one popup image (1–10).",
+                "server_limit": "Files larger than the server PHP upload_max_filesize or post_max_size are rejected even if this value is higher. Current server limit: {{mb}}MB",
+                "over_server_limit": "The setting is larger than the server limit ({{mb}}MB). Only files up to the server limit can be uploaded."
+            },
+            "public_cache_minutes": {
+                "label": "Popup cache time on user screens (minutes)",
+                "hint": "Set 0 to disable caching. Saving, deleting or reordering popups is reflected immediately, and the cache also expires at scheduled start and end times."
+            }
+        }
+    }
+}

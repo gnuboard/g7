@@ -1,0 +1,37 @@
+feature: 노출 페이지 라우트 판정 (서버 정규화 = 브라우저 판정, 경로 경계)
+
+description: |
+  PO 결정 D2 — /shop 은 /shop·/shop/… 에 뜨고 /shopping 에는 뜨지 않으며, / 는 홈에서만 뜬다.
+  서버 Support\RoutePath(입력 정규화·형식·matches)와 브라우저 popupVisibility.matchesRoute 가 같은 표본 표에서
+  같은 결과를 내는지 양쪽에서 잠근다. 쿼리·해시 제거는 브라우저가 경로를 받을 때만 하므로 서버 층에서는 제외.
+
+axes:
+  case:
+    - exact_path
+    - child_path
+    - deep_child_path
+    - prefix_without_boundary_excluded
+    - root_matches_home_only
+    - root_excludes_child
+    - route_trailing_slash_normalized
+    - path_trailing_slash_normalized
+    - case_sensitive
+    - query_ignored
+    - hash_ignored
+    - scope_all_matches_everything
+  layer: [php, ts]
+
+exclusions:
+  - case: query_ignored
+    layer: php
+    reason: 서버 판정 함수는 이미 쿼리가 빠진 경로만 받는다
+  - case: hash_ignored
+    layer: php
+    reason: 서버 판정 함수는 이미 해시가 빠진 경로만 받는다
+
+effects:
+  - php_and_ts_agree
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Support/RoutePathTest.php
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/lib/popupVisibility.test.ts

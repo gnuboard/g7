@@ -1,0 +1,578 @@
+<!-- 팝업 관리 목록 — 상태·기기·검색·정렬·쪽은 전부 URL 쿼리라 새로고침·뒤로 가기에도 같은 조건이 다시 열린다.
+  위쪽에 지금 노출 중인 팝업(캐러셀 순서)과 현재 표시 방식 요약, 아래쪽에 표·일괄 작업(노출·비노출·복사·삭제)·순서 변경 창이 있다.
+  노출 상태 필터·정렬은 서버가 기간 조건으로 처리한다(화면에서 거르지 않는다). 선택 묶음은 필터·쪽이 바뀌면 비운다. -->
+<layout name="popup_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-popup.admin.title" description="$t:sirsoft-popup.admin.description"/>
+  <!-- 팝업 목록 — 쿼리가 바뀌면 다시 받는다 -->
+  <data-source id="popups" label_key="$t:sirsoft-popup.editor.data_source.popups" type="api" endpoint="/api/plugins/sirsoft-popup/admin/popups" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" loading_strategy="progressive">
+    <params status="{{query.status}}" device="{{query.device}}" search="{{query.search}}" sort_by="{{query.sort_by || 'sort_order'}}" sort_order="{{query.sort_order || 'asc'}}" page="{{query.page || 1}}" per_page="{{query.per_page || 20}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <!-- 다시 받기 실패는 보던 목록을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 지금 노출 중인 팝업 — 캐러셀 순서 -->
+  <data-source id="summary" label_key="$t:sirsoft-popup.editor.data_source.summary" type="api" endpoint="/api/plugins/sirsoft-popup/admin/popups/summary" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true"/>
+  <!-- 표시 방식·설정 화면 이동 가능 여부 -->
+  <data-source id="display_settings" label_key="$t:sirsoft-popup.editor.data_source.display_settings" type="api" endpoint="/api/plugins/sirsoft-popup/admin/display-settings" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true"/>
+  <computed name="settings">{{display_settings?.data?.settings ?? null}}</computed>
+  <init-local>
+    <field name="filter">
+      <field name="search" value=""/>
+      <field name="status" value=""/>
+      <field name="device" value=""/>
+    </field>
+  </init-local>
+  <init-global>
+    <field name="bulkSelectedIds" :value="[]"/>
+    <field name="targetPopup" :value="null"/>
+    <field name="isDeleting" :value="false"/>
+    <field name="isBulkWorking" :value="false"/>
+    <field name="reorderItems" :value="null"/>
+    <field name="reorderOriginal" :value="null"/>
+    <field name="reorderLoading" :value="false"/>
+    <field name="reorderSaving" :value="false"/>
+    <field name="reorderError" :value="null"/>
+  </init-global>
+  <permissions>
+    <permission>sirsoft-popup.popups.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>popups</wait-for>
+  </transition-overlay>
+  <!-- 필터 적용 — 빈 값은 주소에 남기지 않고, 조건이 바뀌었으니 1쪽·선택 묶음을 비운다 -->
+  <action name="searchPopups">
+    <sequence>
+      <set-state target="global" :bulkSelectedIds="[]"/>
+      <navigate path="/admin/plugins/sirsoft-popup/popups" :mergeQuery="true" :replace="true" transition_overlay_target="popup_datagrid__body">
+        <query :page="1" status="{{_local.filter.status || undefined}}" device="{{_local.filter.device || undefined}}" search="{{_local.filter.search || undefined}}"/>
+      </navigate>
+    </sequence>
+  </action>
+  <!-- 목록·요약 다시 받기 — 저장·일괄·순서 변경 뒤 -->
+  <action name="reloadPopups">
+    <sequence>
+      <refetch-data-source dataSourceId="popups"/>
+      <refetch-data-source dataSourceId="summary"/>
+    </sequence>
+  </action>
+  <init>
+    <set-state target="global" :bulkSelectedIds="[]">
+      <field name="_local">
+        <field name="filter">
+          <field name="search" value="{{query.search || ''}}"/>
+          <field name="status" value="{{query.status || ''}}"/>
+          <field name="device" value="{{query.device || ''}}"/>
+        </field>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="popup_list_content" class="admin-page-content">
+      <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-6">
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-popup.admin.breadcrumb</p>
+          <h1 class="page-title">$t:sirsoft-popup.admin.title</h1>
+          <p class="text-label-subtle mt-1">$t:sirsoft-popup.admin.description</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <!-- 설정 화면은 코어 플러그인 설정 권한(core.plugins.update)이 있어야 열린다 -->
+          <a data-ref="settings_link" data-if="{{display_settings?.data?.can_update_settings === true}}" href="/admin/plugins/sirsoft-popup/settings" class="button btn btn-secondary flex-center gap-1.5">
+            <on type="click">
+              <navigate/>
+            </on>
+            <icon name="gear" size="sm"/>
+            <span>$t:sirsoft-popup.admin.actions.settings</span>
+          </a>
+          <a data-ref="create_button" data-if="{{popups?.data?.abilities?.can_create === true}}" href="/admin/plugins/sirsoft-popup/popups/create" :mergeQuery="true" class="button btn btn-primary flex-center gap-1.5">
+            <on type="click">
+              <!-- 보던 목록 조건을 이고 간다 — 등록 화면이 저장·취소 뒤 같은 목록으로 돌아온다 -->
+              <navigate :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="plus" size="sm"/>
+            <span>$t:sirsoft-popup.admin.actions.create</span>
+          </a>
+        </div>
+      </div>
+      <!-- 지금 노출 중 — 캐러셀 순서대로. 경로·대상·기기는 방문자마다 달라 기기 표시만 단다(PO 결정 #812 R10) -->
+      <section data-ref="summary_card" aria-labelledby="popup_summary_heading" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6 flex flex-col lg:flex-row lg:items-center gap-4">
+        <div class="lg:w-1/5 shrink-0">
+          <h2 id="popup_summary_heading" class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-popup.admin.summary.title|count={{(summary?.data?.data ?? []).length}}</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-popup.admin.summary.order_hint</p>
+        </div>
+        <p data-if="{{summary !== undefined &amp;&amp; (summary?.data?.data ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400 flex-1">$t:sirsoft-popup.admin.summary.empty</p>
+        <ol data-ref="summary_items" data-if="{{(summary?.data?.data ?? []).length &gt; 0}}" class="flex flex-wrap items-start gap-3 flex-1">
+          <li data-each="item, idx in summary?.data?.data ?? []" class="flex flex-col items-center gap-1 w-20">
+            <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" alt="" class="w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700" loading="lazy"/>
+            <span data-if="{{!item.thumbnail}}" class="w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1">$t:sirsoft-popup.admin.content_type.html</span>
+            <span class="text-xs text-gray-700 dark:text-gray-300 tabular-nums">{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}</span>
+            <span class="sr-only">{{item.title}}</span>
+          </li>
+        </ol>
+        <div data-ref="summary_settings" data-if="{{!!_computed.settings}}" class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">
+          <span>$t:sirsoft-popup.admin.summary.pc|position={{$t('sirsoft-popup.settings.pc_position.' + _computed.settings.pc_position)}}|width={{_computed.settings.pc_width}}|height={{_computed.settings.pc_height}}</span>
+          <span>$t:sirsoft-popup.admin.summary.mobile|style={{$t('sirsoft-popup.settings.mobile_style.' + _computed.settings.mobile_style)}}</span>
+          <span>$t:sirsoft-popup.admin.summary.close|dismiss={{_computed.settings.dismiss_mode === 'close' ? $t('sirsoft-popup.settings.dismiss.close') : (_computed.settings.dismiss_mode === 'days' ? $t('sirsoft-popup.layer.dismiss_days', { days: _computed.settings.dismiss_days }) : $t('sirsoft-popup.layer.dismiss_today'))}}|dim={{_computed.settings.dim_background ? $t('sirsoft-popup.admin.summary.dim_on') : $t('sirsoft-popup.admin.summary.dim_off')}}</span>
+          <a data-if="{{display_settings?.data?.can_update_settings === true}}" href="/admin/plugins/sirsoft-popup/settings" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+            <on type="click">
+              <navigate/>
+            </on>
+            $t:sirsoft-popup.admin.summary.change_settings
+          </a>
+        </div>
+      </section>
+      <!-- 필터 줄 — 상태·기기·제목 검색·순서 변경 -->
+      <div data-ref="filter_bar" class="flex flex-wrap items-end gap-3 mb-4">
+        <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="popup_filter_status">
+          <span>$t:sirsoft-popup.admin.list.status_filter</span>
+          <select id="popup_filter_status" class="w-36 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{_local.filter.status}}">
+            <options>
+              <option value="">$t:sirsoft-popup.admin.status.all</option>
+              <option value="active">$t:sirsoft-popup.admin.status.active</option>
+              <option value="scheduled">$t:sirsoft-popup.admin.status.scheduled</option>
+              <option value="ended">$t:sirsoft-popup.admin.status.ended</option>
+              <option value="inactive">$t:sirsoft-popup.admin.status.inactive</option>
+            </options>
+            <on type="change">
+              <sequence>
+                <set-state target="local" filter.status="{{$event.target.value}}"/>
+                <action-ref name="searchPopups"/>
+              </sequence>
+            </on>
+          </select>
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="popup_filter_device">
+          <span>$t:sirsoft-popup.admin.list.device_filter</span>
+          <select id="popup_filter_device" class="w-36 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{_local.filter.device}}">
+            <options>
+              <option value="">$t:sirsoft-popup.admin.device.all</option>
+              <option value="pc">$t:sirsoft-popup.admin.device.shown_on_pc</option>
+              <option value="mobile">$t:sirsoft-popup.admin.device.shown_on_mobile</option>
+            </options>
+            <on type="change">
+              <sequence>
+                <set-state target="local" filter.device="{{$event.target.value}}"/>
+                <action-ref name="searchPopups"/>
+              </sequence>
+            </on>
+          </select>
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-[12rem]" htmlFor="popup_filter_search">
+          <span>$t:sirsoft-popup.admin.list.search</span>
+          <input type="search" id="popup_filter_search" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{_local.filter.search}}" placeholder="$t:sirsoft-popup.admin.list.search_placeholder">
+            <on type="change">
+              <set-state target="local" filter.search="{{$event.target.value}}"/>
+            </on>
+            <on type="keydown" key="Enter">
+              <action-ref name="searchPopups"/>
+            </on>
+          </input>
+        </label>
+        <button type="button" data-ref="search_button" class="btn btn-secondary">
+          <on type="click">
+            <action-ref name="searchPopups"/>
+          </on>
+          $t:sirsoft-popup.admin.list.search_button
+        </button>
+        <div class="flex-1"/>
+        <button type="button" data-ref="reorder_button" data-if="{{popups?.data?.abilities?.can_update === true &amp;&amp; (popups?.data?.statistics?.total ?? 0) &gt; 1}}" class="btn btn-secondary flex-center gap-2" disabled="{{_global.reorderLoading}}">
+          <on type="click">
+            <!-- 순서 변경 창 열기 — 팝업 전체를 받아 작업본·원본으로 담는다 -->
+            <sequence>
+              <set-state target="global" :reorderLoading="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/order" method="GET">
+                <success>
+                  <set-state target="global" :reorderLoading="false" :reorderError="null" reorderItems="{{(response?.data?.data ?? []).map(p =&gt; ({id: p.id, title: p.title, status: p.status, thumbnail: p.thumbnail?.url ?? null}))}}" reorderOriginal="{{(response?.data?.data ?? []).map(p =&gt; p.id)}}"/>
+                  <open-modal target="popup_reorder_modal"/>
+                </success>
+                <fail>
+                  <set-state target="global" :reorderLoading="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.reorderLoading}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{!_global.reorderLoading}}" name="fa-solid fa-arrow-down-short-wide" class="text-base"/>
+          <span>$t:sirsoft-popup.admin.reorder.button</span>
+        </button>
+      </div>
+      <!-- 일괄 작업 줄 — 선택이 있을 때만 -->
+      <div data-ref="bulk_action_bar" data-if="{{(_global.bulkSelectedIds ?? []).length &gt; 0}}" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
+        <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-popup.admin.list.selected|count={{(_global.bulkSelectedIds ?? []).length}}</span>
+        <div class="flex-1"/>
+        <button type="button" data-ref="bulk_show_button" data-if="{{popups?.data?.abilities?.can_update === true}}" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :isBulkWorking="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isBulkWorking="false" :bulkSelectedIds="[]"/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <action-ref name="reloadPopups"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isBulkWorking="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body ids="{{_global.bulkSelectedIds}}" :is_active="true"/>
+              </api-call>
+            </sequence>
+          </on>
+          $t:sirsoft-popup.admin.list.bulk_show
+        </button>
+        <button type="button" data-ref="bulk_hide_button" data-if="{{popups?.data?.abilities?.can_update === true}}" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :isBulkWorking="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isBulkWorking="false" :bulkSelectedIds="[]"/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <action-ref name="reloadPopups"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isBulkWorking="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body ids="{{_global.bulkSelectedIds}}" :is_active="false"/>
+              </api-call>
+            </sequence>
+          </on>
+          $t:sirsoft-popup.admin.list.bulk_hide
+        </button>
+        <button type="button" data-ref="bulk_copy_button" data-if="{{popups?.data?.abilities?.can_update === true}}" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <open-modal target="popup_bulk_copy_modal"/>
+          </on>
+          $t:sirsoft-popup.admin.list.bulk_copy
+        </button>
+        <button type="button" data-ref="bulk_delete_button" data-if="{{popups?.data?.abilities?.can_delete === true}}" class="px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <open-modal target="popup_bulk_delete_modal"/>
+          </on>
+          $t:sirsoft-popup.admin.list.bulk_delete
+        </button>
+      </div>
+      <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-3">
+        <span class="text-label">$t:sirsoft-popup.admin.list.total|count={{popups?.data?.pagination?.total ?? 0}}</span>
+        <select name="sortBy" aria-label="$t:common.sort_order" class="w-40 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{(query.sort_by || 'sort_order') + ':' + (query.sort_order || 'asc')}}">
+          <options>
+            <option value="sort_order:asc">$t:sirsoft-popup.admin.list.sort.sort_order</option>
+            <option value="status:asc">$t:sirsoft-popup.admin.list.sort.status</option>
+            <option value="created_at:desc">$t:sirsoft-popup.admin.list.sort.created_desc</option>
+            <option value="created_at:asc">$t:sirsoft-popup.admin.list.sort.created_asc</option>
+          </options>
+          <on type="change">
+            <!-- 정렬은 서버가 한다 — 주소만 바꾼다 -->
+            <sequence>
+              <set-state target="global" :bulkSelectedIds="[]"/>
+              <navigate path="/admin/plugins/sirsoft-popup/popups" :mergeQuery="true" :replace="true" transition_overlay_target="popup_datagrid__body">
+                <query sort_by="{{$event.target.value.split(':')[0]}}" sort_order="{{$event.target.value.split(':')[1]}}" :page="1"/>
+              </navigate>
+            </sequence>
+          </on>
+        </select>
+      </div>
+      <!-- 팝업 표 — 쪽 넘김은 서버, 쪽 번호는 링크(pageHref). 받는 중에는 빈 문구를 숨긴다 -->
+      <data-grid data-type="composite" data-ref="popup_datagrid" pageHref="/admin/plugins/sirsoft-popup/popups?page={page}" :pageHrefMergeQuery="true" rowLabelField="title" data="{{popups?.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.bulkSelectedIds ?? []}}" selectedCountText="" emptyMessage="{{popups === undefined ? '' : $t('sirsoft-popup.admin.list.empty')}}" :serverSidePagination="true" serverCurrentPage="{{popups?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{popups?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{popups?.data?.pagination?.has_more_pages ?? false}}">
+        <blur-until-loaded sources="popups"/>
+        <column field="thumbnail" header="$t:sirsoft-popup.admin.list.column.preview" width="80px">
+          <cell>
+            <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail?.url}}" alt="" class="w-12 h-14 object-cover rounded border border-gray-200 dark:border-gray-700" loading="lazy"/>
+            <span data-if="{{!row.thumbnail}}" class="w-12 h-14 flex-center rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[10px] text-gray-500 dark:text-gray-400 text-center">$t:sirsoft-popup.admin.content_type.html_short</span>
+          </cell>
+        </column>
+        <column field="title" header="$t:sirsoft-popup.admin.list.column.title">
+          <cell>
+            <div class="flex flex-col gap-1 min-w-0">
+              <a href="/admin/plugins/sirsoft-popup/popups/{{row.id}}/edit" class="font-medium text-gray-900 dark:text-white hover:underline truncate">
+                <on type="click">
+                  <navigate/>
+                </on>
+                {{row.title}}
+              </a>
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{$t('sirsoft-popup.admin.content_type.' + row.content_type)}}{{(row.filled_locales ?? []).length &gt; 0 ? ' · ' + (row.filled_locales ?? []).map(l =&gt; _global.appConfig?.localeNames?.[l] ?? l.toUpperCase()).join(' · ') : ''}}</span>
+            </div>
+          </cell>
+        </column>
+        <column field="routes" header="$t:sirsoft-popup.admin.list.column.pages" width="190px">
+          <cell>
+            <span data-if="{{row.page_scope !== 'routes'}}" class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-popup.admin.page_scope.all</span>
+            <div data-if="{{row.page_scope === 'routes'}}" class="flex flex-wrap gap-1">
+              <code data-each="route in (row.routes ?? []).slice(0, 3)" class="px-1.5 py-0.5 text-xs rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200">{{route}}</code>
+              <span data-if="{{(row.routes ?? []).length &gt; 3}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-popup.admin.list.more_routes|count={{(row.routes ?? []).length - 3}}</span>
+            </div>
+          </cell>
+        </column>
+        <column field="device" header="$t:sirsoft-popup.admin.list.column.device" width="80px">
+          <cell>
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{$t('sirsoft-popup.admin.device.' + row.device)}}</span>
+          </cell>
+        </column>
+        <column field="period" header="$t:sirsoft-popup.admin.list.column.period" width="210px">
+          <cell>
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{row.display_period === 'range' ? (row.starts_at_display + ' ~ ' + row.ends_at_display) : $t('sirsoft-popup.admin.period.always')}}</span>
+          </cell>
+        </column>
+        <column field="status" header="$t:sirsoft-popup.admin.list.column.status" width="100px">
+          <cell>
+            <status-badge data-type="composite" status="{{row.status === 'active' ? 'success' : (row.status === 'scheduled' ? 'info' : (row.status === 'ended' ? 'default' : 'danger'))}}" label="{{$t('sirsoft-popup.admin.status.' + row.status)}}" :showIcon="false"/>
+          </cell>
+        </column>
+        <column field="sort_order" header="$t:sirsoft-popup.admin.list.column.order" width="60px">
+          <cell>
+            <span class="tabular-nums text-sm text-gray-600 dark:text-gray-400">{{row.sort_order + 1}}</span>
+          </cell>
+        </column>
+        <column field="created_at_display" header="$t:sirsoft-popup.admin.list.column.created_at" width="160px"/>
+        <prop name="rowActions">
+          <item id="edit" href="/admin/plugins/sirsoft-popup/popups/{{row.id}}/edit" :mergeQuery="true" label="$t:sirsoft-popup.admin.list.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
+          <item id="copy" label="$t:sirsoft-popup.admin.list.action.copy" iconName="fa-regular fa-copy" disabledField="abilities.can_update"/>
+          <item id="divider" :divider="true"/>
+          <item id="delete" label="$t:sirsoft-popup.admin.list.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>
+        </prop>
+        <on type="change" event="onSelectionChange">
+          <set-state target="global" bulkSelectedIds="{{$args[0]}}"/>
+        </on>
+        <on type="change" event="onPageChange">
+          <sequence>
+            <set-state target="global" :bulkSelectedIds="[]"/>
+            <navigate path="/admin/plugins/sirsoft-popup/popups" :replace="true" :mergeQuery="true" transition_overlay_target="popup_datagrid__body">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </sequence>
+        </on>
+        <on type="action" event="onRowAction">
+          <switch>
+            <case when="edit">
+              <navigate path="/admin/plugins/sirsoft-popup/popups/{{$args[1].id}}/edit" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </case>
+            <case when="copy">
+              <set-state target="global" bulkSelectedIds="{{[$args[1].id]}}"/>
+              <open-modal target="popup_bulk_copy_modal"/>
+            </case>
+            <case when="delete">
+              <set-state target="global" targetPopup="{{$args[1]}}"/>
+              <open-modal target="popup_delete_modal"/>
+            </case>
+          </switch>
+        </on>
+      </data-grid>
+    </div>
+  </slot>
+  <modal>
+    <!-- 한 건 영구 삭제 확인 — 이미지 파일까지 지워져 되돌릴 수 없다. 잠시 내리려면 비노출을 쓰도록 안내한다 -->
+    <modal data-type="composite" data-ref="popup_delete_modal" title="$t:sirsoft-popup.admin.delete.title" size="medium">
+      <div class="flex flex-col gap-3">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-popup.admin.delete.message|title={{_global.targetPopup?.title ?? ''}}</p>
+        <div class="alert-warning">
+          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+          <p class="text-xs text-yellow-800 dark:text-yellow-200">$t:sirsoft-popup.admin.delete.warning</p>
+        </div>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :isDeleting="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/{{_global.targetPopup?.id}}" method="DELETE">
+                <success>
+                  <set-state target="global" :isDeleting="false" :targetPopup="null" :bulkSelectedIds="[]"/>
+                  <close-modal/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <action-ref name="reloadPopups"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isDeleting="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 선택한 여러 건 영구 삭제 확인 -->
+    <modal data-type="composite" data-ref="popup_bulk_delete_modal" title="$t:sirsoft-popup.admin.delete.bulk_title" size="medium">
+      <div class="flex flex-col gap-3">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-popup.admin.delete.bulk_message|count={{(_global.bulkSelectedIds ?? []).length}}</p>
+        <div class="alert-warning">
+          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+          <p class="text-xs text-yellow-800 dark:text-yellow-200">$t:sirsoft-popup.admin.delete.warning</p>
+        </div>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :isBulkWorking="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/bulk" method="DELETE">
+                <success>
+                  <set-state target="global" :isBulkWorking="false" :bulkSelectedIds="[]"/>
+                  <close-modal/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <action-ref name="reloadPopups"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isBulkWorking="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body ids="{{_global.bulkSelectedIds}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="spinner-sm"/>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 복사 확인 — 복사본은 비활성으로 맨 뒤에 붙는다(같은 팝업이 사용자 화면에 두 번 뜨지 않게, PO 결정 #812 R2) -->
+    <modal data-type="composite" data-ref="popup_bulk_copy_modal" title="$t:sirsoft-popup.admin.copy.title" size="medium">
+      <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-popup.admin.copy.message|count={{(_global.bulkSelectedIds ?? []).length}}</p>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button type="button" data-ref="bulk_copy_confirm" class="btn btn-primary flex-center gap-2" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :isBulkWorking="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/bulk-copy" method="POST">
+                <success>
+                  <set-state target="global" :isBulkWorking="false" :bulkSelectedIds="[]"/>
+                  <close-modal/>
+                  <toast type="{{(response?.data?.failed_ids ?? []).length &gt; 0 ? 'warning' : 'success'}}" message="{{response.message}}"/>
+                  <action-ref name="reloadPopups"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isBulkWorking="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body ids="{{_global.bulkSelectedIds}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="spinner-sm"/>
+          <span>$t:sirsoft-popup.admin.copy.confirm</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 순서 변경 창 — 팝업 전체를 끌거나 ↑↓ 로 바꾼 뒤 저장(= 사용자 화면 캐러셀 순서). 바뀐 것이 없으면 저장을 잠근다 -->
+    <modal data-type="composite" data-ref="popup_reorder_modal" title="$t:sirsoft-popup.admin.reorder.title" size="md">
+      <on type="click" event="onClose">
+        <sequence>
+          <close-modal target="popup_reorder_modal"/>
+          <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
+        </sequence>
+      </on>
+      <div data-ref="reorder_modal_content" class="flex flex-col gap-3">
+        <p class="text-label">$t:sirsoft-popup.admin.reorder.description</p>
+        <div data-ref="reorder_list_frame" class="max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          <div data-ref="reorder_list" class="divide-y divide-gray-200 dark:divide-gray-700">
+            <sortable source="{{(_global.reorderItems ?? []).map((r, i) =&gt; ({...r, _idx: i}))}}" item-var="row" item-key="id" index-var="rIdx" strategy="verticalList" handle="[data-drag-handle]"/>
+            <item-template>
+              <div data-testid="popup-reorder-row-{{row.id}}" class="flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800">
+                <div :data-drag-handle="true" aria-hidden="true" title="{{$t('sirsoft-popup.admin.reorder.drag_handle', { name: row.title })}}" class="hidden md:flex cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                  <icon name="fa-solid fa-grip-vertical" class="text-sm"/>
+                </div>
+                <span class="w-6 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400">{{row._idx + 1}}</span>
+                <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail}}" alt="" class="w-8 h-10 object-cover rounded"/>
+                <span class="truncate flex-1 font-medium text-gray-900 dark:text-gray-100">{{row.title}}</span>
+                <status-badge data-type="composite" status="{{row.status === 'active' ? 'success' : (row.status === 'scheduled' ? 'info' : (row.status === 'ended' ? 'default' : 'danger'))}}" label="{{$t('sirsoft-popup.admin.status.' + row.status)}}" :showIcon="false"/>
+                <button data-testid="popup-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_up', { name: row.title })}}" class="flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
+                  <on type="click">
+                    <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx - 1 ? a[row._idx] : (i === row._idx ? a[row._idx - 1] : r))}}" :reorderError="null"/>
+                  </on>
+                  <icon name="fa-solid fa-chevron-up" class="text-xs"/>
+                </button>
+                <button data-testid="popup-reorder-down-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_down', { name: row.title })}}" class="flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
+                  <on type="click">
+                    <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx ? a[row._idx + 1] : (i === row._idx + 1 ? a[row._idx] : r))}}" :reorderError="null"/>
+                  </on>
+                  <icon name="fa-solid fa-chevron-down" class="text-xs"/>
+                </button>
+              </div>
+            </item-template>
+            <on event="onSortEnd">
+              <set-state target="global" reorderItems="{{$sortedItems.map(r =&gt; ({id: r.id, title: r.title, status: r.status, thumbnail: r.thumbnail}))}}" :reorderError="null"/>
+            </on>
+          </div>
+        </div>
+        <div data-ref="reorder_error_box" data-if="{{!!_global.reorderError}}" role="alert" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">{{_global.reorderError}}</div>
+        <div class="modal-footer-buttons">
+          <button type="button" class="btn btn-secondary" disabled="{{_global.reorderSaving}}">
+            <on type="click">
+              <sequence>
+                <close-modal target="popup_reorder_modal"/>
+                <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
+              </sequence>
+            </on>
+            <span>$t:common.cancel</span>
+          </button>
+          <button data-testid="popup-reorder-save" type="button" :lockRepeatClick="true" class="btn btn-primary flex-center gap-2" disabled="{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i =&gt; i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}">
+            <on type="click">
+              <!-- 저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다 -->
+              <sequence>
+                <set-state target="global" :reorderSaving="true" :reorderError="null"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/order" method="PUT">
+                  <success>
+                    <set-state target="global" :reorderSaving="false" :reorderItems="null" :reorderOriginal="null"/>
+                    <close-modal target="popup_reorder_modal"/>
+                    <toast type="success" message="{{response.message}}"/>
+                    <action-ref name="reloadPopups"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :reorderSaving="false" reorderError="{{error.message}}"/>
+                  </fail>
+                  <body ids="{{(_global.reorderItems ?? []).map(i =&gt; i.id)}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_global.reorderSaving}}" name="spinner" class="spinner-sm"/>
+            <span>$t:common.save</span>
+          </button>
+        </div>
+      </div>
+    </modal>
+  </modal>
+</layout>

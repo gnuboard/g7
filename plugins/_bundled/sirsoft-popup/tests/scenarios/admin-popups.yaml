@@ -1,0 +1,77 @@
+feature: 팝업 관리 API (목록·등록·수정·삭제·일괄·복사·순서·이미지·표시 방식)
+
+description: |
+  관리자 목록 필터(상태·기기·검색)와 통계, 상태 필터·정렬은 SQL 에서(쪽 수가 SQL 결과와 일치),
+  등록·수정 검증(관리용 제목·내용 유형별 필수·기본 언어 본문·비활성 언어 키·기간·라우트·링크·PC 이미지),
+  수정 충돌(revision 불일치 409), 이미지는 저장 때만 붙고 옛 파일은 지워짐, 유형을 직접 작성형으로 바꾸면 이미지 정리,
+  영구 삭제는 PC·모바일 파일 모두, 일괄 노출/비노출·복사(비활성·맨 뒤·이미지 파일 복제)·삭제, 순서는 전체 집합.
+  모든 변경은 before/after 훅·활동 로그(항목별)·공개 캐시 무효화로 이어진다(각 리스너 매니페스트가 따로 잠금).
+  기간 입력은 사이트 시간대 → UTC 저장, 표시는 사이트 시간대.
+
+axes:
+  surface:
+    - list_filter_status
+    - list_status_filter_paginates_in_sql
+    - list_sort_by_status_total_order
+    - list_filter_device
+    - list_search_admin_title
+    - list_statistics_by_status
+    - list_collection_abilities
+    - summary_returns_active_in_sort_order
+    - order_list_returns_all
+    - store_appends_to_end
+    - store_links_temp_images
+    - store_requires_title
+    - store_image_type_requires_pc_image
+    - store_html_type_requires_default_locale_body
+    - store_rejects_inactive_locale_key
+    - store_html_type_excludes_image_fields
+    - store_period_range_requires_dates
+    - store_period_end_after_start
+    - store_routes_required_when_scope_routes
+    - store_routes_normalized_and_deduplicated
+    - store_routes_reject_invalid_format
+    - store_routes_max_count
+    - store_audience_and_device_enum
+    - link_url_accepts_internal_path
+    - link_url_accepts_http_absolute
+    - link_url_rejects_script_scheme
+    - link_url_rejects_protocol_relative
+    - link_url_rejects_backslash_variant
+    - body_html_sanitized_on_store
+    - body_html_sanitized_flag_in_response
+    - period_site_timezone_stored_utc
+    - admin_period_display_in_site_timezone
+    - update_detects_changes_for_log
+    - update_revision_mismatch_returns_409
+    - update_replaces_image_and_deletes_old_file
+    - update_switch_to_html_removes_images
+    - show_returns_raw_translations_images_revision
+    - destroy_removes_pc_and_mobile_files
+    - destroy_without_mobile_image_succeeds
+    - bulk_status_updates_each
+    - bulk_copy_creates_inactive_copies_at_end
+    - bulk_copy_duplicates_image_files
+    - bulk_copy_title_suffix_truncated_to_limit
+    - bulk_copy_file_failure_rolls_back_that_item
+    - bulk_delete_removes_each_with_files
+    - bulk_ids_validation
+    - reorder_requires_complete_set
+    - reorder_assigns_sequential_order
+    - image_upload_accepts_four_formats
+    - image_upload_rejects_oversize
+    - image_upload_php_limit_message
+    - image_delete_only_temp
+    - display_settings_returns_settings_and_upload_limits
+    - hooks_fire_before_and_after
+
+effects:
+  - db_state_matches_request
+  - hooks_dispatched
+  - files_created_or_removed
+  - response_shape_with_abilities
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Feature/Admin/PopupControllerTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Feature/Admin/PopupImageControllerTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Requests/PopupRequestTest.php

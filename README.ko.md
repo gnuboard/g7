@@ -462,6 +462,7 @@ cp .env.example .env
 | **sirsoft-koreaexim** | 수출입은행 환율 자동 갱신·갱신 이력 |
 | **sirsoft-ckeditor5** | CKEditor 5 에디터 |
 | **sirsoft-gdpr** | 개인정보 보호(GDPR) |
+| **sirsoft-popup** | 공지·프로모션 팝업 레이어 |
 | **sirsoft-message_bizppurio** | 비즈뿌리오 메시지 발송 (문자·카카오 알림톡) |
 | **sirsoft-hero_section** | 히어로섹션(메인 배너) 관리·사용자 화면 슬라이더 |
 
@@ -492,6 +493,7 @@ cp .env.example .env
 | **g7-plugin-sirsoft-pay_kginicis-ja** | KG이니시스 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | 나이스페이먼츠 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP 결제 플러그인 일본어 |
+| **g7-plugin-sirsoft-popup-ja** | 팝업 플러그인 일본어 |
 | **g7-plugin-sirsoft-social_login-ja** | 소셜 로그인 플러그인 일본어 |
 | **g7-plugin-sirsoft-sso-ja** | SSO 연동 플러그인 일본어 |
 | **g7-plugin-sirsoft-tosspayments-ja** | 토스페이먼츠 플러그인 일본어 |

@@ -1,0 +1,320 @@
+{
+    "editor": {
+        "data_source": {
+            "popups": "팝업 목록",
+            "summary": "지금 노출 중 팝업",
+            "display_settings": "표시 방식",
+            "popup": "팝업 상세",
+            "settings": "팝업 설정",
+            "upload_limit": "업로드 한도",
+            "sirsoftPopup_public": "사용자 화면 팝업"
+        },
+        "state": {
+            "with_data": "팝업 있음",
+            "empty_data": "팝업 없음",
+            "delete_confirm": "삭제 확인",
+            "bulk_delete_confirm": "일괄 삭제 확인",
+            "copy_confirm": "복사 확인",
+            "reorder_open": "순서 변경 창"
+        }
+    },
+    "plugin_read_only": "이 플러그인 설정을 수정할 권한이 없어 읽기 전용으로 표시됩니다.",
+    "layer": {
+        "region": "공지 팝업",
+        "slide": "팝업",
+        "counter": "{{n}} / {{total}}",
+        "previous": "이전 팝업",
+        "next": "다음 팝업",
+        "go_to": "{{n}}번째 팝업 보기",
+        "pause": "자동 넘김 일시정지",
+        "play": "자동 넘김 재생",
+        "dismiss_today": "오늘 하루 보지 않기",
+        "dismiss_days": "{{days}}일간 보지 않기",
+        "close": "닫기",
+        "scroll_region": "팝업 본문"
+    },
+    "admin": {
+        "title": "팝업 관리",
+        "description": "조건에 맞는 팝업이 여러 개면 하나의 레이어 안에서 목록 순서대로 넘겨 보여집니다.",
+        "breadcrumb": "플러그인 › 팝업 관리",
+        "actions": {
+            "create": "팝업 등록",
+            "settings": "표시 방식 설정"
+        },
+        "status": {
+            "all": "전체",
+            "active": "노출중",
+            "scheduled": "예약",
+            "ended": "종료",
+            "inactive": "비활성",
+            "incomplete": "입력 중"
+        },
+        "device": {
+            "all": "전체",
+            "pc": "PC",
+            "mobile": "모바일",
+            "only_pc": "PC만",
+            "only_mobile": "모바일만",
+            "shown_on_pc": "PC에 보이는 팝업",
+            "shown_on_mobile": "모바일에 보이는 팝업"
+        },
+        "audience": {
+            "all": "전체",
+            "guest": "비회원만",
+            "member": "회원만"
+        },
+        "content_type": {
+            "image": "이미지형",
+            "html": "직접 작성형",
+            "html_short": "직접 작성"
+        },
+        "page_scope": {
+            "all": "전체 페이지",
+            "routes": "라우트 지정"
+        },
+        "period": {
+            "always": "상시",
+            "range": "기간 지정"
+        },
+        "summary": {
+            "title": "지금 노출 중 {{count}}개",
+            "order_hint": "이 순서대로 캐러셀에 표시",
+            "empty": "지금 노출 중인 팝업이 없습니다.",
+            "pc": "PC {{position}} · {{width}}×{{height}}",
+            "mobile": "모바일 {{style}}",
+            "close": "닫기 {{dismiss}} · {{dim}}",
+            "dim_on": "배경 어둡게",
+            "dim_off": "배경 그대로",
+            "change_settings": "환경설정에서 변경 ›"
+        },
+        "list": {
+            "status_filter": "상태",
+            "device_filter": "기기",
+            "search": "검색",
+            "search_placeholder": "관리용 제목",
+            "search_button": "검색",
+            "selected": "{{count}}개 선택됨",
+            "bulk_show": "노출",
+            "bulk_hide": "비노출",
+            "bulk_copy": "복사",
+            "bulk_delete": "삭제",
+            "total": "전체 {{count}}개",
+            "empty": "등록된 팝업이 없습니다.",
+            "more_routes": "외 {{count}}",
+            "sort": {
+                "sort_order": "캐러셀 순서",
+                "status": "상태순",
+                "created_desc": "최근 등록순",
+                "created_asc": "오래된 등록순"
+            },
+            "column": {
+                "preview": "미리보기",
+                "title": "제목",
+                "pages": "노출 페이지",
+                "device": "기기",
+                "period": "노출 기간",
+                "status": "상태",
+                "order": "순서",
+                "created_at": "등록일"
+            },
+            "action": {
+                "edit": "수정",
+                "copy": "복사",
+                "delete": "삭제"
+            }
+        },
+        "delete": {
+            "title": "팝업 삭제",
+            "message": "「{{title}}」 팝업을 삭제할까요?",
+            "bulk_title": "선택한 팝업 삭제",
+            "bulk_message": "선택한 팝업 {{count}}개를 삭제할까요?",
+            "warning": "삭제하면 이미지 파일까지 지워져 되돌릴 수 없습니다. 잠시 내리려면 비노출을 쓰세요."
+        },
+        "copy": {
+            "title": "팝업 복사",
+            "message": "선택한 {{count}}개를 복사합니다. 복사본은 비활성으로 맨 뒤에 추가됩니다.",
+            "confirm": "복사"
+        },
+        "reorder": {
+            "button": "순서 변경",
+            "title": "팝업 순서 변경",
+            "description": "위에 있을수록 먼저 보입니다. 끌거나 ↑↓ 단추로 바꾼 뒤 저장하세요.",
+            "drag_handle": "「{{name}}」 끌어서 옮기기",
+            "move_up": "「{{name}}」 위로",
+            "move_down": "「{{name}}」 아래로"
+        },
+        "preview": {
+            "title": "미리보기",
+            "region": "팝업 미리보기",
+            "device_label": "미리보기 기기",
+            "pc": "PC",
+            "mobile": "모바일",
+            "locale": "언어",
+            "mobile_falls_back": "모바일 이미지가 없어 PC 이미지로 표시합니다.",
+            "based_on": "환경설정 기준: {{summary}}",
+            "settings_link": "표시 방식은 환경설정에서 바꿉니다 ›"
+        },
+        "conflict": {
+            "message": "다른 관리자가 먼저 수정했습니다. 입력한 내용은 그대로 있습니다. 최신본과 비교한 뒤 다시 저장하세요.",
+            "open_latest": "최신본을 새 탭에서 보기"
+        },
+        "form": {
+            "create_title": "팝업 등록",
+            "edit_title": "팝업 수정",
+            "validation_error": "입력 내용을 확인해 주세요.",
+            "section": {
+                "basic": "기본 정보",
+                "content": "내용",
+                "condition": "노출 조건",
+                "period": "노출 기간"
+            },
+            "title": "관리용 제목",
+            "title_placeholder": "예: 가을 감사 이벤트",
+            "title_hint": "관리자 목록에만 보이는 이름입니다.",
+            "is_active": "사용",
+            "content_type": "내용 유형",
+            "locale_hint": "다른 언어를 비워 두면 사이트 기본 언어 내용으로 표시됩니다.",
+            "optional": "(선택)",
+            "image": {
+                "pc": "PC 이미지",
+                "pc_hint": "권장: 환경설정의 PC 크기 ({{width}}×{{height}}) · 최대 {{mb}}MB · JPG·PNG·WEBP·GIF",
+                "mobile": "모바일 이미지",
+                "mobile_hint": "등록하지 않으면 모바일에서도 PC 이미지를 사용합니다. 최대 {{mb}}MB.",
+                "size_mismatch": "올린 이미지는 {{width}}×{{height}} 입니다. 권장 크기({{recommended}})와 다르면 잘리지 않고 여백이 생길 수 있습니다."
+            },
+            "image_alt": "이미지 대체 텍스트(alt)",
+            "image_alt_hint": "화면을 볼 수 없는 방문자에게 읽어 주는 설명입니다. 비우면 관리용 제목을 씁니다.",
+            "link_url": "링크 URL",
+            "link_url_optional": "(선택 · 이미지를 누르면 이동)",
+            "link_url_hint": "사이트 안 경로(/로 시작) 또는 http(s) 주소를 입력합니다.",
+            "link_new_window": "새 창에서 열기",
+            "body_html": "본문",
+            "body_placeholder": "방문자에게 보일 내용을 입력하세요.",
+            "editor_hint": "에디터 플러그인(예: CKEditor5)이 설치되어 있으면 그 에디터를, 없으면 기본 입력창을 씁니다. 저장할 때 허용되지 않는 태그·속성은 지워집니다.",
+            "saved_sanitized": "저장했습니다. 허용되지 않는 일부 서식이 제거되었습니다.",
+            "page_scope": "노출 페이지",
+            "routes_label": "지정한 경로",
+            "route_add_label": "라우트 추가",
+            "route_add": "추가",
+            "route_remove": "{{route}} 삭제",
+            "route_hint": "'/' 로 시작하는 경로를 입력합니다. /shop 을 넣으면 /shop/products/1 같은 하위 경로도 포함하고 /shopping 은 포함하지 않습니다. '/' 는 홈에서만 보입니다.",
+            "route_errors": {
+                "must_start_with_slash": "'/' 로 시작해야 합니다.",
+                "invalid": "//·?·#·*·공백·.. 은 쓸 수 없습니다.",
+                "duplicate": "이미 추가한 경로입니다.",
+                "too_many": "경로는 20개까지 지정할 수 있습니다."
+            },
+            "audience": "노출 대상",
+            "device": "노출 기기",
+            "starts_at": "시작",
+            "ends_at": "종료",
+            "period_hint": "시작 일시에 자동으로 노출되고 종료 일시에 자동으로 내려갑니다.",
+            "period": {
+                "clock_loading": "서버 시각을 확인하는 중입니다.",
+                "timezone": "사이트 시간대 {{timezone}}",
+                "incomplete": "시작·종료를 모두 입력하면 저장 후 상태를 알려 드립니다.",
+                "hint": "지금 저장하면 「{{status}}」(으)로 표시됩니다."
+            },
+            "upload_pending": "이미지를 올리는 중입니다. 끝나면 저장할 수 있습니다.",
+            "cancel": "취소",
+            "save": "저장",
+            "saving": "저장 중",
+            "conflict_merge": {
+                "title": "최신본과 내 변경 비교",
+                "hint": "다른 운영자가 바꾼 항목은 최신 값을, 내가 바꾼 항목은 내 값을 미리 골라 두었습니다. 둘 다 바꾼 항목은 직접 고른 뒤 적용하고, 내용을 확인해 다시 저장하세요.",
+                "no_differences": "내 입력과 최신본이 같습니다. 적용하면 최신본 기준으로 다시 저장할 수 있습니다.",
+                "load": "최신본 불러와 비교",
+                "reload": "최신본 다시 불러오기",
+                "retry": "다시 시도",
+                "load_failed": "최신본을 불러오지 못했습니다. 입력한 내용은 그대로 있습니다. 다시 시도해 주세요.",
+                "apply": "선택한 값으로 적용",
+                "choose_all": "둘 다 바꾼 항목을 모두 골라야 적용할 수 있습니다.",
+                "mine": "내 변경",
+                "latest": "최신본",
+                "stale_image": "다른 운영자가 이미 바꾸거나 뺀 이미지라 다시 쓸 수 없습니다.",
+                "yes": "사용",
+                "no": "사용 안 함",
+                "empty": "없음",
+                "new_window": "새 창",
+                "change": {
+                    "theirs": "다른 운영자가 바꿈",
+                    "mine": "내가 바꿈",
+                    "both": "둘 다 바꿈 — 선택 필요"
+                },
+                "fields": {
+                    "title": "관리용 제목",
+                    "is_active": "사용 여부",
+                    "content_type": "내용 유형",
+                    "period": "노출 기간",
+                    "pages": "노출 페이지",
+                    "audience": "노출 대상",
+                    "device": "노출 기기",
+                    "image_alt": "이미지 대체 텍스트",
+                    "body_html": "본문",
+                    "link": "링크",
+                    "pc_image": "PC 이미지",
+                    "mobile_image": "모바일 이미지"
+                }
+            }
+        }
+    },
+    "settings": {
+        "title": "팝업 플러그인 환경설정",
+        "description": "여기서 정한 표시 방식은 모든 팝업에 똑같이 적용됩니다.",
+        "back_to_list": "팝업 관리로",
+        "pc": {
+            "title": "PC 표시",
+            "position": "위치",
+            "left": "왼쪽에서 (px)",
+            "top": "위에서 (px)",
+            "width": "너비 (px)",
+            "height": "높이 (px)",
+            "size_hint": "내용 영역 크기 · 이미지 권장 크기로도 안내됩니다"
+        },
+        "pc_position": {
+            "center": "화면 중앙",
+            "coords": "좌상단 기준 좌표"
+        },
+        "mobile": {
+            "title": "모바일 표시"
+        },
+        "mobile_style": {
+            "center": "화면 중앙",
+            "center_desc": "작은 창으로 가운데에 띄웁니다",
+            "sheet": "하단 시트형",
+            "sheet_desc": "화면 아래에서 올라옵니다"
+        },
+        "behavior": {
+            "title": "배경 · 캐러셀",
+            "dim_background": "팝업 뒤 배경 어둡게",
+            "close_on_backdrop": "배경을 누르면 닫기",
+            "autoplay": "여러 개일 때 자동 넘김",
+            "interval": "넘김 간격",
+            "seconds": "{{n}}초"
+        },
+        "dismiss": {
+            "title": "닫기 옵션",
+            "today": "'오늘 하루 보지 않기' + 닫기",
+            "days": "'N일간 보지 않기' + 닫기",
+            "close": "닫기만",
+            "days_label": "보지 않을 일수",
+            "days_unit": "일",
+            "hint": "'보지 않기'를 누르면 그때 보이던 팝업들이 그 기간 동안 숨겨지고, 그 뒤 새로 등록한 팝업은 바로 보입니다. 이 기록은 필수 기능 쿠키로 분류되어 GDPR 쿠키 목록에 표시됩니다."
+        },
+        "operation": {
+            "title": "업로드 · 캐시"
+        },
+        "fields": {
+            "max_upload_mb": {
+                "label": "이미지 최대 용량(MB)",
+                "hint": "팝업 이미지 한 장의 최대 용량입니다(1~10).",
+                "server_limit": "서버 PHP 의 upload_max_filesize·post_max_size 보다 크게 잡아도 그 값을 넘는 파일은 올라가지 않습니다. 현재 서버 한도: {{mb}}MB",
+                "over_server_limit": "설정값이 서버 한도({{mb}}MB)보다 큽니다. 실제로는 서버 한도까지만 올라갑니다."
+            },
+            "public_cache_minutes": {
+                "label": "사용자 화면 팝업 캐시 시간(분)",
+                "hint": "0 이면 캐시를 쓰지 않습니다. 팝업을 저장·삭제하거나 순서를 바꾸면 바로 반영되고, 예약 시작·종료 시각에도 캐시가 먼저 만료됩니다."
+            }
+        }
+    }
+}

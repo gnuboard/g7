@@ -1,0 +1,43 @@
+feature: 팝업 리스너 (활동 로그·로그 이름 해석·공개 캐시 무효화·GDPR 필수 쿠키 등록)
+
+description: |
+  활동 로그는 항목별(Per-Item)로 남기고 표시 이름은 스냅샷 → DB → ID 순으로 해석한다.
+  공개 캐시는 모든 변경 after 훅·설정 저장·비활성화 때 전체를 비운다.
+  GDPR 계약 훅 sirsoft-gdpr.necessary_storage.filter_provided_keys 의 cookie 스코프에 g7_popup_dismissed 하나를 더한다(D3·D6).
+
+axes:
+  surface:
+    - log_create
+    - log_update_with_changes
+    - log_delete_with_snapshot
+    - log_bulk_status_per_item
+    - log_bulk_copy_per_item
+    - log_bulk_delete_per_item
+    - log_reorder_single
+    - log_image_update
+    - resolver_registered_on_core_filter
+    - resolver_uses_snapshot_name
+    - resolver_falls_back_to_db_then_id
+    - resolver_ignores_other_extension_keys
+    - cache_cleared_on_save
+    - cache_cleared_on_delete
+    - cache_cleared_on_bulk_change
+    - cache_cleared_on_copy
+    - cache_cleared_on_reorder
+    - cache_cleared_on_image_change
+    - cache_cleared_on_plugin_setting_change
+    - cache_cleared_on_plugin_deactivate
+    - gdpr_cookie_added_to_cookie_scope
+    - gdpr_existing_keys_preserved
+    - gdpr_cookie_name_passes_gdpr_pattern
+
+effects:
+  - activity_log_recorded
+  - public_cache_cleared
+  - necessary_cookie_provided
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Listeners/PopupActivityLogListenerTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Listeners/ActivityLogDescriptionResolverTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Listeners/PopupCacheListenerTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Listeners/ProvideNecessaryStorageKeysListenerTest.php

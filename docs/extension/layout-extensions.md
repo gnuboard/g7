@@ -527,7 +527,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `identity_provider_ui:provider` | 본인인증 요구 창(`_user_base` 모달) | 본인인증 플러그인 2종(KG이니시스·NHN KCP) | 본인인증 창에 제공자 인증 단추가 없다 |
 | `home_hero` (7.2.0+) | 사이트 홈 본문 맨 위(본문 상자 밖 전폭 슬롯 `page_top`). 본문 상자 클래스를 속성 `contentClass`·`contentClassDesktop` 으로 넘긴다 | 히어로섹션 | 사이트 홈 상단 배너 슬라이더가 보이지 않는다 |
 | `shop_hero` (7.2.0+) | 쇼핑몰 메인 본문 맨 위(본문 상자 밖 전폭 슬롯 `page_top`). 속성은 `home_hero` 와 같다 | 히어로섹션 | 쇼핑몰 메인 상단 배너 슬라이더가 보이지 않는다 |
-| `user_global_overlay` | `_user_base` 끝 | GDPR | 쿠키 동의 배너가 뜨지 않는다 |
+| `user_global_overlay` | `_user_base` 끝 | GDPR · 팝업 | 쿠키 동의 배너·공지 팝업 레이어가 뜨지 않는다 |
 | `user_global_footer` | `_user_base` 푸터 바로 뒤 | (번들 사용처 없음 — 확장 공용 자리) | 푸터 아래 정보 영역을 붙일 곳이 없다 |
 | `board_post_row_badges` (7.1.1+) | 글이 보이는 모든 목록의 제목 바로 뒤 — 게시판 목록 세 유형(basic 은 PC·모바일 두 자리), 홈 최근 글·게시판 요약, 인기글, 통합 검색(전체·글 탭), 회원 글·회원 프로필, 마이페이지 내 글·스크랩(PC·모바일) | (번들 사용처 없음 — 확장 공용 자리) | 글마다 표시(언어·상태 배지 등)를 붙일 곳이 없다 |
 | `board_post_header_badges` (7.1.1+) | 글 상세 제목 바로 뒤(게시판 유형 세 갈래 모두) | (번들 사용처 없음) | 상세 제목 옆 표시를 붙일 곳이 없다 |

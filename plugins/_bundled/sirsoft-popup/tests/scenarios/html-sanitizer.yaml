@@ -1,0 +1,26 @@
+feature: 직접 작성형 본문 HTML 정화 (저장 때 HTMLPurifier)
+
+description: |
+  코어에 저장 시 정화기가 없어 플러그인이 HTMLPurifier 로 정화한다(이커머스 선례). 저장본 = 정화본이고,
+  출력 때 DOMPurify 가 한 번 더 거른다(popup-layer 매니페스트). 위험 요소는 지우고 허용 서식은 남는다.
+
+axes:
+  surface:
+    - removes_script_tag
+    - removes_event_handler_attributes
+    - removes_javascript_href
+    - removes_iframe_and_object
+    - removes_svg_script
+    - strips_disallowed_style_properties
+    - keeps_allowed_style_properties
+    - keeps_headings_lists_tables
+    - forces_noopener_on_blank_target
+    - keeps_ckeditor_classes_only
+    - keeps_internal_and_https_images
+    - reports_changed_flag
+
+effects:
+  - stored_html_is_safe
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Services/PopupHtmlSanitizerTest.php

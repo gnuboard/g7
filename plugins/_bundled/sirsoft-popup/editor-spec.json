@@ -1,0 +1,549 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$comment": "레이아웃 편집기 스펙 — 팝업 관리자 화면(목록·등록/수정·설정)과 사용자 주입 조각(user_global_overlay)의 data_source 샘플과 창 상태 표본. 응답 모양은 PopupResource(목록 행·상세)·PopupImageResource·DisplaySettingsController·PublicPopupService 기준. 이미지는 외부 요청 없이 그리도록 data URI.",
+    "pluginId": "sirsoft-popup",
+    "version": "1.0.0",
+    "description": "팝업 관리 화면 레이아웃 편집기 샘플 데이터와 창 상태.",
+    "sampleData": {
+        "byDataSourceId": {
+            "popups": {
+                "data": {
+                    "data": [
+                        {
+                            "id": 1,
+                            "title": "가을 감사 이벤트",
+                            "is_active": true,
+                            "status": "active",
+                            "sort_order": 0,
+                            "content_type": "image",
+                            "display_period": "range",
+                            "starts_at_display": "2026-10-15 00:00:00",
+                            "ends_at_display": "2026-10-31 23:59:00",
+                            "page_scope": "all",
+                            "routes": [],
+                            "audience": "all",
+                            "device": "all",
+                            "filled_locales": [
+                                "ko",
+                                "en"
+                            ],
+                            "created_at_display": "2026-10-12 10:00:00",
+                            "thumbnail": {
+                                "id": 1,
+                                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                                "device": "pc",
+                                "url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iNTIwIj48cmVjdCB3aWR0aD0iNDgwIiBoZWlnaHQ9IjUyMCIgZmlsbD0iIzdjMmQxMiIvPjwvc3ZnPg==",
+                                "download_url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iNTIwIj48cmVjdCB3aWR0aD0iNDgwIiBoZWlnaHQ9IjUyMCIgZmlsbD0iIzdjMmQxMiIvPjwvc3ZnPg==",
+                                "original_filename": "autumn.png",
+                                "mime_type": "image/png",
+                                "size": 2048,
+                                "size_formatted": "2 KB",
+                                "width": 480,
+                                "height": 520,
+                                "order": 0,
+                                "is_image": true
+                            },
+                            "abilities": {
+                                "can_update": true,
+                                "can_delete": true
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "title": "10월 정기 시스템 점검 안내",
+                            "is_active": true,
+                            "status": "active",
+                            "sort_order": 1,
+                            "content_type": "html",
+                            "display_period": "always",
+                            "starts_at_display": null,
+                            "ends_at_display": null,
+                            "page_scope": "routes",
+                            "routes": [
+                                "/shop",
+                                "/page"
+                            ],
+                            "audience": "all",
+                            "device": "mobile",
+                            "filled_locales": [
+                                "ko"
+                            ],
+                            "created_at_display": "2026-10-18 09:00:00",
+                            "thumbnail": null,
+                            "abilities": {
+                                "can_update": true,
+                                "can_delete": true
+                            }
+                        }
+                    ],
+                    "pagination": {
+                        "total": 2,
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "from": 1,
+                        "to": 2,
+                        "has_more_pages": false
+                    },
+                    "statistics": {
+                        "total": 2,
+                        "statuses": {
+                            "active": 2,
+                            "scheduled": 0,
+                            "ended": 0,
+                            "inactive": 0
+                        }
+                    },
+                    "abilities": {
+                        "can_create": true,
+                        "can_update": true,
+                        "can_delete": true
+                    }
+                }
+            },
+            "summary": {
+                "data": {
+                    "data": [
+                        {
+                            "id": 1,
+                            "title": "가을 감사 이벤트",
+                            "is_active": true,
+                            "status": "active",
+                            "sort_order": 0,
+                            "content_type": "image",
+                            "display_period": "range",
+                            "starts_at_display": "2026-10-15 00:00:00",
+                            "ends_at_display": "2026-10-31 23:59:00",
+                            "page_scope": "all",
+                            "routes": [],
+                            "audience": "all",
+                            "device": "all",
+                            "filled_locales": [
+                                "ko",
+                                "en"
+                            ],
+                            "created_at_display": "2026-10-12 10:00:00",
+                            "thumbnail": {
+                                "id": 1,
+                                "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                                "device": "pc",
+                                "url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iNTIwIj48cmVjdCB3aWR0aD0iNDgwIiBoZWlnaHQ9IjUyMCIgZmlsbD0iIzdjMmQxMiIvPjwvc3ZnPg==",
+                                "download_url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iNTIwIj48cmVjdCB3aWR0aD0iNDgwIiBoZWlnaHQ9IjUyMCIgZmlsbD0iIzdjMmQxMiIvPjwvc3ZnPg==",
+                                "original_filename": "autumn.png",
+                                "mime_type": "image/png",
+                                "size": 2048,
+                                "size_formatted": "2 KB",
+                                "width": 480,
+                                "height": 520,
+                                "order": 0,
+                                "is_image": true
+                            },
+                            "abilities": {
+                                "can_update": true,
+                                "can_delete": true
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "title": "10월 정기 시스템 점검 안내",
+                            "is_active": true,
+                            "status": "active",
+                            "sort_order": 1,
+                            "content_type": "html",
+                            "display_period": "always",
+                            "starts_at_display": null,
+                            "ends_at_display": null,
+                            "page_scope": "routes",
+                            "routes": [
+                                "/shop",
+                                "/page"
+                            ],
+                            "audience": "all",
+                            "device": "mobile",
+                            "filled_locales": [
+                                "ko"
+                            ],
+                            "created_at_display": "2026-10-18 09:00:00",
+                            "thumbnail": null,
+                            "abilities": {
+                                "can_update": true,
+                                "can_delete": true
+                            }
+                        }
+                    ]
+                }
+            },
+            "display_settings": {
+                "data": {
+                    "settings": {
+                        "pc_position": "center",
+                        "pc_left": 80,
+                        "pc_top": 120,
+                        "pc_width": 480,
+                        "pc_height": 520,
+                        "mobile_style": "sheet",
+                        "dim_background": true,
+                        "close_on_backdrop": false,
+                        "autoplay": true,
+                        "autoplay_interval": 6,
+                        "dismiss_mode": "today",
+                        "dismiss_days": 7
+                    },
+                    "upload": {
+                        "max_mb": 5,
+                        "server_limit_mb": 8,
+                        "effective_mb": 5
+                    },
+                    "can_update_settings": true,
+                    "editor": {
+                        "timezone": "Asia/Seoul",
+                        "server_now": "2026-10-27T12:00:00+09:00",
+                        "default_locale": "ko",
+                        "locales": [
+                            "ko",
+                            "en"
+                        ]
+                    }
+                }
+            },
+            "upload_limit": {
+                "data": {
+                    "settings": {
+                        "pc_position": "center",
+                        "pc_left": 80,
+                        "pc_top": 120,
+                        "pc_width": 480,
+                        "pc_height": 520,
+                        "mobile_style": "sheet",
+                        "dim_background": true,
+                        "close_on_backdrop": false,
+                        "autoplay": true,
+                        "autoplay_interval": 6,
+                        "dismiss_mode": "today",
+                        "dismiss_days": 7
+                    },
+                    "upload": {
+                        "max_mb": 5,
+                        "server_limit_mb": 8,
+                        "effective_mb": 5
+                    },
+                    "can_update_settings": true,
+                    "editor": {
+                        "timezone": "Asia/Seoul",
+                        "server_now": "2026-10-27T12:00:00+09:00",
+                        "default_locale": "ko",
+                        "locales": [
+                            "ko",
+                            "en"
+                        ]
+                    }
+                }
+            },
+            "popup": {
+                "data": {
+                    "id": 1,
+                    "title": "가을 감사 이벤트",
+                    "is_active": true,
+                    "status": "active",
+                    "sort_order": 0,
+                    "content_type": "image",
+                    "display_period": "range",
+                    "starts_at_display": "2026-10-15 00:00:00",
+                    "ends_at_display": "2026-10-31 23:59:00",
+                    "page_scope": "all",
+                    "routes": [],
+                    "audience": "all",
+                    "device": "all",
+                    "filled_locales": [
+                        "ko",
+                        "en"
+                    ],
+                    "created_at_display": "2026-10-12 10:00:00",
+                    "thumbnail": {
+                        "id": 1,
+                        "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "device": "pc",
+                        "url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iNTIwIj48cmVjdCB3aWR0aD0iNDgwIiBoZWlnaHQ9IjUyMCIgZmlsbD0iIzdjMmQxMiIvPjwvc3ZnPg==",
+                        "download_url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iNTIwIj48cmVjdCB3aWR0aD0iNDgwIiBoZWlnaHQ9IjUyMCIgZmlsbD0iIzdjMmQxMiIvPjwvc3ZnPg==",
+                        "original_filename": "autumn.png",
+                        "mime_type": "image/png",
+                        "size": 2048,
+                        "size_formatted": "2 KB",
+                        "width": 480,
+                        "height": 520,
+                        "order": 0,
+                        "is_image": true
+                    },
+                    "abilities": {
+                        "can_update": true,
+                        "can_delete": true
+                    },
+                    "revision": 0,
+                    "image_alt": {
+                        "ko": "가을 감사 이벤트 안내",
+                        "en": "Autumn thanks event"
+                    },
+                    "body_html": {},
+                    "link_url": "/event/autumn",
+                    "link_new_window": false,
+                    "starts_at_local": "2026-10-15T00:00",
+                    "ends_at_local": "2026-10-31T23:59",
+                    "images": {
+                        "pc": {
+                            "id": 1,
+                            "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                            "device": "pc",
+                            "url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iNTIwIj48cmVjdCB3aWR0aD0iNDgwIiBoZWlnaHQ9IjUyMCIgZmlsbD0iIzdjMmQxMiIvPjwvc3ZnPg==",
+                            "download_url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iNTIwIj48cmVjdCB3aWR0aD0iNDgwIiBoZWlnaHQ9IjUyMCIgZmlsbD0iIzdjMmQxMiIvPjwvc3ZnPg==",
+                            "original_filename": "autumn.png",
+                            "mime_type": "image/png",
+                            "size": 2048,
+                            "size_formatted": "2 KB",
+                            "width": 480,
+                            "height": 520,
+                            "order": 0,
+                            "is_image": true
+                        },
+                        "mobile": null
+                    }
+                }
+            },
+            "settings": {
+                "data": {
+                    "pc_position": "center",
+                    "pc_left": 80,
+                    "pc_top": 120,
+                    "pc_width": 480,
+                    "pc_height": 520,
+                    "mobile_style": "sheet",
+                    "dim_background": true,
+                    "close_on_backdrop": false,
+                    "autoplay": true,
+                    "autoplay_interval": 6,
+                    "dismiss_mode": "today",
+                    "dismiss_days": 7,
+                    "max_upload_mb": 5,
+                    "public_cache_minutes": 10,
+                    "abilities": {
+                        "can_update": true
+                    }
+                }
+            },
+            "sirsoftPopup_public": {
+                "data": {
+                    "settings": {
+                        "pc_position": "center",
+                        "pc_left": 80,
+                        "pc_top": 120,
+                        "pc_width": 480,
+                        "pc_height": 520,
+                        "mobile_style": "sheet",
+                        "dim_background": true,
+                        "close_on_backdrop": false,
+                        "autoplay": true,
+                        "autoplay_interval": 6,
+                        "dismiss_mode": "today",
+                        "dismiss_days": 7
+                    },
+                    "popups": [
+                        {
+                            "id": 1,
+                            "content_type": "image",
+                            "page_scope": "all",
+                            "routes": [],
+                            "device": "all",
+                            "image": {
+                                "pc": {
+                                    "url": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iNTIwIj48cmVjdCB3aWR0aD0iNDgwIiBoZWlnaHQ9IjUyMCIgZmlsbD0iIzdjMmQxMiIvPjwvc3ZnPg==",
+                                    "width": 480,
+                                    "height": 520
+                                },
+                                "mobile": null
+                            },
+                            "image_alt": "가을 감사 이벤트 안내",
+                            "link_url": "/event/autumn",
+                            "link_new_window": false,
+                            "body_html": ""
+                        },
+                        {
+                            "id": 2,
+                            "content_type": "html",
+                            "page_scope": "all",
+                            "routes": [],
+                            "device": "all",
+                            "image": null,
+                            "image_alt": "",
+                            "link_url": null,
+                            "link_new_window": false,
+                            "body_html": "<h2>10월 정기 시스템 점검 안내</h2><p>점검 시간에는 로그인·주문·결제가 잠시 중단됩니다.</p>"
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "states": {
+        "groups": [
+            {
+                "comment": "목록 — 팝업이 없을 때.",
+                "scope": {
+                    "kind": "route",
+                    "match": "*/admin/plugins/sirsoft-popup/popups"
+                },
+                "items": [
+                    {
+                        "id": "with_data",
+                        "label": "$t:sirsoft-popup.editor.state.with_data",
+                        "default": true
+                    },
+                    {
+                        "id": "empty_data",
+                        "label": "$t:sirsoft-popup.editor.state.empty_data",
+                        "sampleDataOverrides": {
+                            "byDataSourceId": {
+                                "popups": {
+                                    "data": {
+                                        "data": [],
+                                        "pagination": {
+                                            "total": 0,
+                                            "current_page": 1,
+                                            "last_page": 1,
+                                            "per_page": 20,
+                                            "has_more_pages": false
+                                        },
+                                        "statistics": {
+                                            "total": 0,
+                                            "statuses": {
+                                                "active": 0,
+                                                "scheduled": 0,
+                                                "ended": 0,
+                                                "inactive": 0
+                                            }
+                                        },
+                                        "abilities": {
+                                            "can_create": true,
+                                            "can_update": true,
+                                            "can_delete": true
+                                        }
+                                    }
+                                },
+                                "summary": {
+                                    "data": {
+                                        "data": []
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "comment": "한 건 삭제 확인 창 — 대상 팝업은 행 메뉴 [삭제] 클릭이 _global.targetPopup 에 담는다.",
+                "scope": {
+                    "kind": "modal",
+                    "match": "popup_delete_modal"
+                },
+                "items": [
+                    {
+                        "id": "delete_confirm",
+                        "label": "$t:sirsoft-popup.editor.state.delete_confirm",
+                        "default": true,
+                        "initialState": {
+                            "global": {
+                                "targetPopup": {
+                                    "id": 1,
+                                    "title": "가을 감사 이벤트"
+                                },
+                                "isDeleting": false
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "comment": "일괄 삭제 확인 창 — 선택 묶음은 표 선택칸이 _global.bulkSelectedIds 에 담는다.",
+                "scope": {
+                    "kind": "modal",
+                    "match": "popup_bulk_delete_modal"
+                },
+                "items": [
+                    {
+                        "id": "bulk_delete_confirm",
+                        "label": "$t:sirsoft-popup.editor.state.bulk_delete_confirm",
+                        "default": true,
+                        "initialState": {
+                            "global": {
+                                "bulkSelectedIds": [
+                                    1,
+                                    2
+                                ],
+                                "isBulkWorking": false
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "comment": "복사 확인 창 — 선택 묶음(또는 행 메뉴 [복사] 한 건)을 _global.bulkSelectedIds 에 담는다.",
+                "scope": {
+                    "kind": "modal",
+                    "match": "popup_bulk_copy_modal"
+                },
+                "items": [
+                    {
+                        "id": "copy_confirm",
+                        "label": "$t:sirsoft-popup.editor.state.copy_confirm",
+                        "default": true,
+                        "initialState": {
+                            "global": {
+                                "bulkSelectedIds": [
+                                    1,
+                                    2
+                                ],
+                                "isBulkWorking": false
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "comment": "순서 변경 창 — [순서 변경] 이 팝업 전체를 _global.reorderItems·reorderOriginal 에 담는다.",
+                "scope": {
+                    "kind": "modal",
+                    "match": "popup_reorder_modal"
+                },
+                "items": [
+                    {
+                        "id": "reorder_open",
+                        "label": "$t:sirsoft-popup.editor.state.reorder_open",
+                        "default": true,
+                        "initialState": {
+                            "global": {
+                                "reorderItems": [
+                                    {
+                                        "id": 1,
+                                        "title": "가을 감사 이벤트",
+                                        "status": "active",
+                                        "thumbnail": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0ODAiIGhlaWdodD0iNTIwIj48cmVjdCB3aWR0aD0iNDgwIiBoZWlnaHQ9IjUyMCIgZmlsbD0iIzdjMmQxMiIvPjwvc3ZnPg=="
+                                    },
+                                    {
+                                        "id": 2,
+                                        "title": "10월 정기 시스템 점검 안내",
+                                        "status": "active",
+                                        "thumbnail": null
+                                    }
+                                ],
+                                "reorderOriginal": [
+                                    1,
+                                    2
+                                ],
+                                "reorderSaving": false,
+                                "reorderError": null
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

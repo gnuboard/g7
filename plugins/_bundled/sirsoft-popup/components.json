@@ -1,0 +1,144 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "identifier": "sirsoft-popup",
+    "version": "1.0.0",
+    "components": {
+        "basic": [],
+        "composite": [
+            {
+                "name": "PopupConflictResolver",
+                "type": "composite",
+                "path": "plugins/_bundled/sirsoft-popup/resources/js/components/composite/PopupConflictResolver.tsx",
+                "props": {
+                    "base": {
+                        "type": "Detail | null",
+                        "required": false,
+                        "description": "편집을 시작한 기준 — 처음 불러온 상세(재적용 뒤에는 그때의 최신본)"
+                    },
+                    "mine": {
+                        "type": "Detail | null",
+                        "required": false,
+                        "description": "지금 폼의 입력값"
+                    },
+                    "latest": {
+                        "type": "Detail | null",
+                        "required": false,
+                        "description": "충돌 뒤 다시 받은 최신 상세(revision 포함)"
+                    },
+                    "locales": {
+                        "type": "array",
+                        "required": false,
+                        "description": "사이트 활성 언어 — 다국어 값 표시 순서"
+                    },
+                    "onApply": {
+                        "type": "function",
+                        "required": false,
+                        "description": "고른 값으로 만든 폼(최신 revision)과, 다음 비교의 기준이 될 최신본을 넘긴다."
+                    }
+                }
+            },
+            {
+                "name": "PopupLayer",
+                "type": "composite",
+                "path": "plugins/_bundled/sirsoft-popup/resources/js/components/composite/PopupLayer.tsx",
+                "props": {
+                    "popups": {
+                        "type": "PublicPopup[] | null",
+                        "required": false,
+                        "description": "공개 API 팝업 (서버 순서 = 관리자 순서)"
+                    },
+                    "settings": {
+                        "type": "Partial<PopupDisplaySettings> | null",
+                        "required": false,
+                        "description": "표시 방식"
+                    },
+                    "path": {
+                        "type": "string",
+                        "required": false,
+                        "description": "현재 경로 (`route.path`) — 바뀔 때마다 다시 판정한다"
+                    },
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "추가 클래스"
+                    },
+                    "preview": {
+                        "type": "'pc' | 'mobile'",
+                        "required": false,
+                        "description": "관리자 미리보기 — 기기를 고정하고 거르지 않으며(쿠키·닫음·경로 무시), 포커스를 가두지 않고 링크·닫기를 막는다. 미리보기 틀(`PopupPreview`) 안에서만 쓴다."
+                    }
+                }
+            },
+            {
+                "name": "PopupPeriodHint",
+                "type": "composite",
+                "path": "plugins/_bundled/sirsoft-popup/resources/js/components/composite/PopupPeriodHint.tsx",
+                "props": {
+                    "period": {
+                        "type": "string",
+                        "required": false,
+                        "description": "상시/기간 지정"
+                    },
+                    "active": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "사용 여부"
+                    },
+                    "start": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사이트 시간대로 입력한 시작"
+                    },
+                    "end": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사이트 시간대로 입력한 종료"
+                    },
+                    "timezone": {
+                        "type": "string",
+                        "required": false,
+                        "description": "서버가 알려준 사이트 시간대"
+                    },
+                    "serverNow": {
+                        "type": "string",
+                        "required": false,
+                        "description": "서버가 알려준 현재 시각"
+                    }
+                }
+            },
+            {
+                "name": "PopupPreview",
+                "type": "composite",
+                "path": "plugins/_bundled/sirsoft-popup/resources/js/components/composite/PopupPreview.tsx",
+                "props": {
+                    "device": {
+                        "type": "'pc' | 'mobile'",
+                        "required": false,
+                        "description": "기기"
+                    },
+                    "settings": {
+                        "type": "Partial<PopupDisplaySettings> | null",
+                        "required": false,
+                        "description": "표시 방식 (display-settings 응답의 settings)"
+                    },
+                    "form": {
+                        "type": "PopupPreviewForm | null",
+                        "required": false,
+                        "description": "등록·수정 폼 값 — 없으면 표본 팝업 3장(환경설정 화면)"
+                    },
+                    "locale": {
+                        "type": "string",
+                        "required": false,
+                        "description": "보여 줄 언어 (언어 탭)"
+                    },
+                    "defaultLocale": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사이트 기본 언어 — 탭 언어 값이 비면 이 언어로"
+                    }
+                }
+            }
+        ],
+        "layout": []
+    }
+}

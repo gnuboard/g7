@@ -1,0 +1,320 @@
+{
+  "editor": {
+    "data_source": {
+      "popups": "ポップアップ一覧",
+      "summary": "現在表示中のポップアップ",
+      "display_settings": "表示方法",
+      "popup": "ポップアップ詳細",
+      "settings": "ポップアップ設定",
+      "upload_limit": "アップロード上限",
+      "sirsoftPopup_public": "ユーザー画面ポップアップ"
+    },
+    "state": {
+      "with_data": "ポップアップあり",
+      "empty_data": "ポップアップなし",
+      "delete_confirm": "削除確認",
+      "bulk_delete_confirm": "一括削除確認",
+      "copy_confirm": "コピー確認",
+      "reorder_open": "順序変更ウィンドウ"
+    }
+  },
+  "plugin_read_only": "このプラグイン設定を編集する権限がないため、読み取り専用として表示されます。",
+  "layer": {
+    "region": "お知らせポップアップ",
+    "slide": "ポップアップ",
+    "counter": "{{n}} / {{total}}",
+    "previous": "前のポップアップ",
+    "next": "次のポップアップ",
+    "go_to": "{{n}}番目のポップアップを表示",
+    "pause": "自動送信一時停止",
+    "play": "自動送信再生",
+    "dismiss_today": "今日は表示しない",
+    "dismiss_days": "{{days}}日間表示しない",
+    "close": "閉じる",
+    "scroll_region": "ポップアップ本文"
+  },
+  "admin": {
+    "title": "ポップアップ管理",
+    "description": "条件に合うポップアップが複数ある場合、1つのレイヤー内でリスト順序に従って順番に表示されます。",
+    "breadcrumb": "プラグイン › ポップアップ管理",
+    "actions": {
+      "create": "ポップアップ登録",
+      "settings": "表示方法設定"
+    },
+    "status": {
+      "all": "すべて",
+      "active": "表示中",
+      "scheduled": "予約中",
+      "ended": "終了",
+      "inactive": "無効化",
+      "incomplete": "入力中"
+    },
+    "device": {
+      "all": "すべて",
+      "pc": "PC",
+      "mobile": "モバイル",
+      "only_pc": "PCのみ",
+      "only_mobile": "モバイルのみ",
+      "shown_on_pc": "PCに表示されるポップアップ",
+      "shown_on_mobile": "モバイルに表示されるポップアップ"
+    },
+    "audience": {
+      "all": "すべて",
+      "guest": "非会員のみ",
+      "member": "会員のみ"
+    },
+    "content_type": {
+      "image": "画像型",
+      "html": "直接作成型",
+      "html_short": "直接作成"
+    },
+    "page_scope": {
+      "all": "全ページ",
+      "routes": "ルート指定"
+    },
+    "period": {
+      "always": "常時",
+      "range": "期間指定"
+    },
+    "summary": {
+      "title": "現在表示中{{count}}個",
+      "order_hint": "この順序でカルーセルに表示",
+      "empty": "現在表示中のポップアップはありません。",
+      "pc": "PC {{position}} · {{width}}×{{height}}",
+      "mobile": "モバイル{{style}}",
+      "close": "閉じる{{dismiss}}·{{dim}}",
+      "dim_on": "背景を暗くする",
+      "dim_off": "背景のまま",
+      "change_settings": "環境設定で変更›"
+    },
+    "list": {
+      "status_filter": "ステータス",
+      "device_filter": "デバイス",
+      "search": "検索",
+      "search_placeholder": "管理用タイトル",
+      "search_button": "検索",
+      "selected": "{{count}}個選択されました",
+      "bulk_show": "表示",
+      "bulk_hide": "非表示",
+      "bulk_copy": "コピー",
+      "bulk_delete": "削除",
+      "total": "全{{count}}個",
+      "empty": "登録されたポップアップはありません。",
+      "more_routes": "他{{count}}",
+      "sort": {
+        "sort_order": "カルーセル順序",
+        "status": "ステータス順",
+        "created_desc": "最近登録順",
+        "created_asc": "古い登録順"
+      },
+      "column": {
+        "preview": "プレビュー",
+        "title": "タイトル",
+        "pages": "表示ページ",
+        "device": "デバイス",
+        "period": "表示期間",
+        "status": "ステータス",
+        "order": "順序",
+        "created_at": "登録日"
+      },
+      "action": {
+        "edit": "編集",
+        "copy": "複製",
+        "delete": "削除"
+      }
+    },
+    "delete": {
+      "title": "ポップアップ削除",
+      "message": "「{{title}}」ポップアップを削除しますか？",
+      "bulk_title": "選択したポップアップを削除",
+      "bulk_message": "選択したポップアップ{{count}}個を削除しますか？",
+      "warning": "削除するとイメージファイルまで削除され、元に戻すことができません。一時的に非表示にするには非表示を使用してください。"
+    },
+    "copy": {
+      "title": "ポップアップ複製",
+      "message": "選択した{{count}}個を複製します。複製本は無効化され、最後に追加されます。",
+      "confirm": "複製"
+    },
+    "reorder": {
+      "button": "順序変更",
+      "title": "ポップアップ順序変更",
+      "description": "上にあるほど先に表示されます。ドラッグまたは↑↓ボタンで変更した後、保存してください。",
+      "drag_handle": "「{{name}}」をドラッグして移動",
+      "move_up": "「{{name}}」上へ",
+      "move_down": "「{{name}}」下へ"
+    },
+    "preview": {
+      "title": "プレビュー",
+      "region": "ポップアッププレビュー",
+      "device_label": "プレビューデバイス",
+      "pc": "PC",
+      "mobile": "モバイル",
+      "locale": "言語",
+      "mobile_falls_back": "モバイルイメージがないためPCイメージで表示されます。",
+      "based_on": "環境設定基準: {{summary}}",
+      "settings_link": "表示方式は環境設定で変更します ›"
+    },
+    "conflict": {
+      "message": "別の管理者が先に編集しました。入力した内容はそのままです。最新版と比較した後、もう一度保存してください。",
+      "open_latest": "最新版を新しいタブで表示"
+    },
+    "form": {
+      "create_title": "ポップアップ登録",
+      "edit_title": "ポップアップ編集",
+      "validation_error": "入力内容を確認してください。",
+      "section": {
+        "basic": "基本情報",
+        "content": "コンテンツ",
+        "condition": "表示条件",
+        "period": "表示期間"
+      },
+      "title": "管理用タイトル",
+      "title_placeholder": "例：秋の感謝イベント",
+      "title_hint": "管理者一覧にのみ表示される名前です。",
+      "is_active": "使用",
+      "content_type": "コンテンツタイプ",
+      "locale_hint": "他の言語を空にしておくと、サイトのデフォルト言語コンテンツが表示されます。",
+      "optional": "(選択)",
+      "image": {
+        "pc": "PCイメージ",
+        "pc_hint": "推奨: 環境設定のPCサイズ({{width}}×{{height}}) · 最大{{mb}}MB · JPG·PNG·WEBP·GIF",
+        "mobile": "モバイルイメージ",
+        "mobile_hint": "登録しないとモバイルでもPCイメージを使用します。最大{{mb}}MB。",
+        "size_mismatch": "アップロードされたイメージは{{width}}×{{height}}です。推奨サイズ({{recommended}})と異なる場合、トリミングされず余白が生じる可能性があります。"
+      },
+      "image_alt": "イメージ代替テキスト(alt)",
+      "image_alt_hint": "画面を見ることができない訪問者に読み上げられる説明です。空にすると管理用タイトルが使用されます。",
+      "link_url": "リンクURL",
+      "link_url_optional": "(選択 · イメージをクリックすると移動)",
+      "link_url_hint": "サイト内のパス(/で始まる)またはhttp(s)アドレスを入力します。",
+      "link_new_window": "新しいウィンドウで開く",
+      "body_html": "本文",
+      "body_placeholder": "訪問者に表示されるコンテンツを入力してください。",
+      "editor_hint": "エディタープラグイン(例：CKEditor5)がインストールされている場合はそのエディターを使用し、ない場合は基本入力欄を使用します。保存時に許可されないタグ・属性は削除されます。",
+      "saved_sanitized": "保存しました。許可されない一部のフォーマットが削除されました。",
+      "page_scope": "表示ページ",
+      "routes_label": "指定されたパス",
+      "route_add_label": "ルート追加",
+      "route_add": "追加",
+      "route_remove": "{{route}}削除",
+      "route_hint": "'/'で始まるパスを入力します。/shopを入力すると/shop/products/1のようなサブパスも含まれ、/shoppingは含まれません。'/'はホームでのみ表示されます。",
+      "route_errors": {
+        "must_start_with_slash": "'/'で始まる必要があります。",
+        "invalid": "//·?·#·*·空白··..は使用できません。",
+        "duplicate": "既に追加されたパスです。",
+        "too_many": "パスは最大20個まで指定できます。"
+      },
+      "audience": "表示対象",
+      "device": "表示デバイス",
+      "starts_at": "開始",
+      "ends_at": "終了",
+      "period_hint": "開始日時に自動的に表示され、終了日時に自動的に非表示になります。",
+      "period": {
+        "clock_loading": "サーバー時刻を確認中です。",
+        "timezone": "サイトタイムゾーン{{timezone}}",
+        "incomplete": "開始·終了をすべて入力すると、保存後にステータスをお知らせします。",
+        "hint": "今すぐ保存すると「{{status}}」と表示されます。"
+      },
+      "upload_pending": "画像をアップロード中です。完了したら保存できます。",
+      "cancel": "キャンセル",
+      "save": "保存",
+      "saving": "保存中",
+      "conflict_merge": {
+        "title": "最新版と私の変更を比較",
+        "hint": "他の管理者が変更した項目は最新値を、私が変更した項目は私の値をあらかじめ選択しました。両方が変更した項目は直接選んでから適用し、内容を確認して再度保存してください。",
+        "no_differences": "私の入力と最新版が同じです。適用すると最新版を基準に再度保存できます。",
+        "load": "最新版を読み込んで比較",
+        "reload": "最新版を再度読み込む",
+        "retry": "再度試してください",
+        "load_failed": "最新版を読み込めませんでした。入力した内容はそのままです。再度試してください。",
+        "apply": "選択した値で適用",
+        "choose_all": "両方が変更した項目をすべて選択する必要があります。",
+        "mine": "私の変更",
+        "latest": "最新版",
+        "stale_image": "他の管理者がすでに変更または削除した画像なので、再度使用できません。",
+        "yes": "使用",
+        "no": "使用しない",
+        "empty": "なし",
+        "new_window": "新しいウィンドウ",
+        "change": {
+          "theirs": "他の管理者が変更",
+          "mine": "私が変更",
+          "both": "両方が変更 — 選択が必要"
+        },
+        "fields": {
+          "title": "管理用タイトル",
+          "is_active": "使用の有無",
+          "content_type": "コンテンツタイプ",
+          "period": "表示期間",
+          "pages": "表示ページ",
+          "audience": "表示対象",
+          "device": "表示デバイス",
+          "image_alt": "画像代替テキスト",
+          "body_html": "本文",
+          "link": "リンク",
+          "pc_image": "PC 画像",
+          "mobile_image": "モバイル画像"
+        }
+      }
+    }
+  },
+  "settings": {
+    "title": "ポップアップ プラグイン設定",
+    "description": "ここで設定した表示方法はすべてのポップアップに同様に適用されます。",
+    "back_to_list": "ポップアップ管理へ",
+    "pc": {
+      "title": "PC 表示",
+      "position": "位置",
+      "left": "左から (px)",
+      "top": "上から (px)",
+      "width": "幅 (px)",
+      "height": "高さ (px)",
+      "size_hint": "コンテンツ領域サイズ · 推奨画像サイズとしても案内されます"
+    },
+    "pc_position": {
+      "center": "画面中央",
+      "coords": "左上基準の座標"
+    },
+    "mobile": {
+      "title": "モバイル表示"
+    },
+    "mobile_style": {
+      "center": "画面中央",
+      "center_desc": "小さいウィンドウを中央に表示します",
+      "sheet": "下部シート型",
+      "sheet_desc": "画面下から上がります"
+    },
+    "behavior": {
+      "title": "背景 · カルーセル",
+      "dim_background": "ポップアップの背後の背景を暗くする",
+      "close_on_backdrop": "背景をタップして閉じる",
+      "autoplay": "複数ある場合は自動スライド",
+      "interval": "スライド間隔",
+      "seconds": "{{n}}秒"
+    },
+    "dismiss": {
+      "title": "閉じるオプション",
+      "today": "「本日は表示しない」+ 閉じる",
+      "days": "「N日間表示しない」+ 閉じる",
+      "close": "閉じるのみ",
+      "days_label": "表示しない日数",
+      "days_unit": "日",
+      "hint": "「表示しない」をタップすると、その時表示されていたポップアップがその期間非表示になり、その後新規登録したポップアップはすぐに表示されます。この記録は必須機能 Cookie として分類され、GDPR Cookie リストに表示されます。"
+    },
+    "operation": {
+      "title": "アップロード · キャッシュ"
+    },
+    "fields": {
+      "max_upload_mb": {
+        "label": "画像最大容量(MB)",
+        "hint": "ポップアップ画像 1 枚の最大容量です(1~10)。",
+        "server_limit": "サーバー PHP の upload_max_filesize·post_max_size より大きく設定しても、その値を超えるファイルはアップロードされません。現在のサーバー上限: {{mb}}MB",
+        "over_server_limit": "設定値がサーバー上限({{mb}}MB)より大きいです。実際にはサーバー上限までのみアップロードされます。"
+      },
+      "public_cache_minutes": {
+        "label": "ユーザー画面ポップアップ キャッシュ時間(分)",
+        "hint": "0 の場合キャッシュを使用しません。ポップアップを保存・削除したり順序を変更すると即座に反映され、予約開始・終了時刻にもキャッシュが先に有効期限切れになります。"
+      }
+    }
+  }
+}

@@ -1,0 +1,1907 @@
+{
+    "comment": "팝업 등록·수정 — 한 레이아웃이 등록(`route.id` 없음)과 수정(`route.id`)을 겸한다. 이미지는 둘 다 화면에 들어올 때 만든 임시 키\n  (`_global.tempKey`)로 먼저 올리고 「저장」 때만 팝업에 붙는다(#810 과 같은 방식) — 저장하지 않고 나가면 사이트 화면은 그대로다.\n  내용 유형에 따라 이미지형(PC·모바일 이미지·alt·링크)과 직접 작성형(언어별 본문, 에디터 플러그인이 있으면 그 에디터)이 갈린다.\n  오른쪽 미리보기는 사용자 레이어와 같은 컴포넌트를 지금 표시 방식대로 축소해 그린다. 다른 관리자가 먼저 저장했으면(409) 입력을 보존한 채\n  같은 화면에서 최신본과 비교·재적용한다.",
+    "version": "1.0.0",
+    "layout_name": "popup_form",
+    "extends": "_admin_base",
+    "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
+        "title": "{{route.id ? '$t:sirsoft-popup.admin.form.edit_title' : '$t:sirsoft-popup.admin.form.create_title'}}"
+    },
+    "data_sources": [
+        {
+            "id": "popup",
+            "label_key": "$t:sirsoft-popup.editor.data_source.popup",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-popup/admin/popups/{{route.id}}",
+            "method": "GET",
+            "if": "{{!!route.id}}",
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "blocking",
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "errorCondition": {
+                "if": "{{response?.data?.abilities?.can_update === false}}",
+                "errorCode": 403
+            },
+            "comment": "수정 진입일 때만 원본을 받아 폼에 한 번 심는다(initLocal). 성공 콜백에서 폼을 다시 쓰지 않는다 — 재조회가 손댄 값을 덮지 않게"
+        },
+        {
+            "id": "display_settings",
+            "label_key": "$t:sirsoft-popup.editor.data_source.display_settings",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-popup/admin/display-settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": null
+            },
+            "comment": "표시 방식·업로드 한도·편집 보조값(시간대·언어) — 팝업 조회 권한으로 열린다. 못 받으면 기본값으로 안내한다"
+        }
+    ],
+    "initLocal": {
+        "form": {
+            "title": "",
+            "is_active": true,
+            "content_type": "image",
+            "display_period": "always",
+            "starts_at_local": "",
+            "ends_at_local": "",
+            "page_scope": "all",
+            "routes": [],
+            "audience": "all",
+            "device": "all",
+            "image_alt": [],
+            "body_html": [],
+            "link_url": "",
+            "link_new_window": false,
+            "images": {
+                "pc": null,
+                "mobile": null
+            }
+        },
+        "routeInput": "",
+        "pcUploadBlocked": false,
+        "mobileUploadBlocked": false,
+        "previewLocale": "",
+        "previewDevice": "pc",
+        "conflict": false,
+        "conflictLatest": null,
+        "conflictBase": null,
+        "conflictLoading": false,
+        "conflictLoadError": false,
+        "isSaving": false,
+        "errors": null
+    },
+    "computed": {
+        "uploadMb": "{{display_settings?.data?.upload?.effective_mb ?? 5}}",
+        "pcWidth": "{{display_settings?.data?.settings?.pc_width ?? 480}}",
+        "pcHeight": "{{display_settings?.data?.settings?.pc_height ?? 520}}",
+        "isImage": "{{(_local.form?.content_type ?? 'image') === 'image'}}",
+        "pcSizeMismatch": "{{!!_local.form?.images?.pc?.width && (_local.form.images.pc.width !== (display_settings?.data?.settings?.pc_width ?? 480) || _local.form.images.pc.height !== (display_settings?.data?.settings?.pc_height ?? 520))}}",
+        "routeDraft": "{{(_local.routeInput ?? '').trim()}}",
+        "routeInputError": "{{_computed.routeDraft === '' ? '' : (!_computed.routeDraft.startsWith('/') ? 'must_start_with_slash' : ((_computed.routeDraft.includes('//') || _computed.routeDraft.includes('?') || _computed.routeDraft.includes('#') || _computed.routeDraft.includes('*') || _computed.routeDraft.includes(' ') || _computed.routeDraft.includes('..')) ? 'invalid' : ((_local.form?.routes ?? []).includes(_computed.routeDraft.length > 1 && _computed.routeDraft.endsWith('/') ? _computed.routeDraft.slice(0, -1) : _computed.routeDraft) ? 'duplicate' : ((_local.form?.routes ?? []).length >= 20 ? 'too_many' : ''))))}}"
+    },
+    "permissions": [
+        "sirsoft-popup.popups.update"
+    ],
+    "init_actions": [
+        {
+            "comment": "들어올 때마다 「고친 것 있음」 과 직전 오류를 지운다 — 같은 레이아웃의 다른 팝업으로 넘어와도 앞 화면 표시가 남지 않게",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "hasChanges": false,
+                "errors": null,
+                "isSaving": false,
+                "pcUploadBlocked": false,
+                "mobileUploadBlocked": false,
+                "conflict": false,
+                "conflictLatest": null,
+                "conflictBase": null,
+                "conflictLoading": false,
+                "conflictLoadError": false,
+                "previewLocale": "",
+                "routeInput": ""
+            }
+        },
+        {
+            "comment": "등록 진입: 수정 화면에서 SPA 로 넘어오면 `_local` 이 남으므로 폼을 기본값으로 되돌린다",
+            "handler": "setState",
+            "if": "{{!route.id}}",
+            "params": {
+                "target": "local",
+                "form": null
+            }
+        },
+        {
+            "handler": "setState",
+            "if": "{{!route.id}}",
+            "params": {
+                "target": "local",
+                "form": {
+                    "title": "",
+                    "is_active": true,
+                    "content_type": "image",
+                    "display_period": "always",
+                    "starts_at_local": "",
+                    "ends_at_local": "",
+                    "page_scope": "all",
+                    "routes": [],
+                    "audience": "all",
+                    "device": "all",
+                    "image_alt": [],
+                    "body_html": [],
+                    "link_url": "",
+                    "link_new_window": false,
+                    "images": {
+                        "pc": null,
+                        "mobile": null
+                    }
+                }
+            }
+        },
+        {
+            "comment": "등록·수정 화면마다 새 임시 키 — 이미지가 이 키로 먼저 올라가고 저장 때 팝업에 붙는다",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "tempKey": "{{$uuid()}}"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "popup_form_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "page-header"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                        },
+                                        "text": "$t:sirsoft-popup.admin.breadcrumb"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "{{_local.form?.id ? '$t:sirsoft-popup.admin.form.edit_title' : '$t:sirsoft-popup.admin.form.create_title'}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "validation_error_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.errors}}",
+                        "props": {
+                            "id": "popup_form_errors",
+                            "role": "alert",
+                            "className": "alert-danger"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "triangle-exclamation",
+                                    "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5",
+                                    "size": "md"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                        },
+                                        "text": "$t:sirsoft-popup.admin.form.validation_error"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Ul",
+                                        "if": "{{typeof _local.errors === 'object'}}",
+                                        "iteration": {
+                                            "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                            "item_var": "message"
+                                        },
+                                        "props": {
+                                            "className": "mt-2 list-disc list-inside space-y-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Li",
+                                                "props": {
+                                                    "className": "text-sm text-red-700 dark:text-red-300"
+                                                },
+                                                "text": "{{message}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "popup_form_columns",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "grid grid-cols-1 lg:grid-cols-3 gap-6"
+                        },
+                        "children": [
+                            {
+                                "comment": "미리보기 — 휴대폰 폭에서는 맨 위(시안 모바일 보드), 넓은 화면에서는 오른쪽",
+                                "id": "preview_card",
+                                "type": "basic",
+                                "name": "Section",
+                                "props": {
+                                    "id": "popup_form_preview",
+                                    "aria-labelledby": "popup_form_preview_heading",
+                                    "className": "admin-card self-start order-first lg:order-last"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-between flex-wrap gap-2 mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "id": "popup_form_preview_heading",
+                                                    "className": "card-title"
+                                                },
+                                                "text": "$t:sirsoft-popup.admin.preview.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "role": "group",
+                                                    "aria-label": "$t:sirsoft-popup.admin.preview.device_label",
+                                                    "className": "flex gap-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "preview_device_pc",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "previewDevice": "pc"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "aria-pressed": "{{_local.previewDevice === 'pc'}}",
+                                                            "className": "px-3 py-1 text-xs rounded border {{_local.previewDevice === 'pc' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                                        },
+                                                        "text": "$t:sirsoft-popup.admin.preview.pc"
+                                                    },
+                                                    {
+                                                        "id": "preview_device_mobile",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "type": "click",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "previewDevice": "mobile"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "aria-pressed": "{{_local.previewDevice === 'mobile'}}",
+                                                            "className": "px-3 py-1 text-xs rounded border {{_local.previewDevice === 'mobile' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                                        },
+                                                        "text": "$t:sirsoft-popup.admin.preview.mobile"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "if": "{{(display_settings?.data?.editor?.locales ?? []).length > 1}}",
+                                        "props": {
+                                            "className": "flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 mb-2",
+                                            "htmlFor": "popup_preview_locale"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-popup.admin.preview.locale"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "previewLocale": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "id": "popup_preview_locale",
+                                                    "className": "px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs",
+                                                    "value": "{{_local.previewLocale || display_settings?.data?.editor?.default_locale || 'ko'}}",
+                                                    "options": "{{(display_settings?.data?.editor?.locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "form_preview",
+                                        "type": "composite",
+                                        "name": "sirsoft-popup.PopupPreview",
+                                        "props": {
+                                            "form": "{{_local.form}}",
+                                            "settings": "{{display_settings?.data?.settings ?? null}}",
+                                            "device": "{{_local.previewDevice}}",
+                                            "locale": "{{_local.previewLocale || display_settings?.data?.editor?.default_locale || 'ko'}}",
+                                            "defaultLocale": "{{display_settings?.data?.editor?.default_locale ?? 'ko'}}"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_local.previewDevice === 'mobile' && _computed.isImage && !!_local.form?.images?.pc && !_local.form?.images?.mobile}}",
+                                        "props": {
+                                            "className": "form-hint mt-2"
+                                        },
+                                        "text": "$t:sirsoft-popup.admin.preview.mobile_falls_back"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{!!display_settings?.data?.settings}}",
+                                        "props": {
+                                            "className": "form-hint mt-2"
+                                        },
+                                        "text": "$t:sirsoft-popup.admin.preview.based_on|summary={{_local.previewDevice === 'mobile' ? $t('sirsoft-popup.settings.mobile_style.' + display_settings.data.settings.mobile_style) : $t('sirsoft-popup.settings.pc_position.' + display_settings.data.settings.pc_position) + ' · ' + display_settings.data.settings.pc_width + '×' + display_settings.data.settings.pc_height}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "A",
+                                        "if": "{{display_settings?.data?.can_update_settings === true}}",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate"
+                                            }
+                                        ],
+                                        "props": {
+                                            "href": "/admin/plugins/sirsoft-popup/settings",
+                                            "className": "text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                                        },
+                                        "text": "$t:sirsoft-popup.admin.preview.settings_link"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "form_sections",
+                                "type": "basic",
+                                "name": "Div",
+                                "dataKey": "form",
+                                "trackChanges": true,
+                                "debounce": 0,
+                                "props": {
+                                    "className": "lg:col-span-2 flex flex-col gap-6"
+                                },
+                                "children": [
+                                    {
+                                        "comment": "기본 정보 — 관리용 제목은 관리자 목록에만 보인다(다국어 아님)",
+                                        "id": "basic_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "card-title"
+                                                },
+                                                "text": "$t:sirsoft-popup.admin.form.section.basic"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_title",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label",
+                                                                    "htmlFor": "popup_title"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-popup.admin.form.title"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-required"
+                                                                        },
+                                                                        "text": "*"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "id": "popup_title",
+                                                                    "name": "title",
+                                                                    "maxLength": 100,
+                                                                    "className": "input w-full",
+                                                                    "placeholder": "$t:sirsoft-popup.admin.form.title_placeholder"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.title}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.title?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!_local.errors?.title}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.admin.form.title_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_is_active",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "Toggle",
+                                                                "props": {
+                                                                    "label": "$t:sirsoft-popup.admin.form.is_active",
+                                                                    "name": "is_active"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "내용 — 유형과 언어 탭. 비운 언어는 사용자 화면에서 사이트 기본 언어 내용으로 보인다",
+                                        "id": "content_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-between flex-wrap gap-3 mb-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "H2",
+                                                        "props": {
+                                                            "className": "card-title mb-0"
+                                                        },
+                                                        "text": "$t:sirsoft-popup.admin.form.section.content"
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "RadioGroup",
+                                                        "props": {
+                                                            "name": "content_type",
+                                                            "inline": true,
+                                                            "label": "$t:sirsoft-popup.admin.form.content_type",
+                                                            "options": [
+                                                                {
+                                                                    "label": "$t:sirsoft-popup.admin.content_type.image",
+                                                                    "value": "image"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-popup.admin.content_type.html",
+                                                                    "value": "html"
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "form-hint mb-4"
+                                                },
+                                                "text": "$t:sirsoft-popup.admin.form.locale_hint"
+                                            },
+                                            {
+                                                "id": "image_fields",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{_computed.isImage}}",
+                                                "props": {
+                                                    "className": "row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_pc_image",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-popup.admin.form.image.pc"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-required"
+                                                                        },
+                                                                        "text": "*"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "form-hint mb-2"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.admin.form.image.pc_hint|width={{_computed.pcWidth}}|height={{_computed.pcHeight}}|mb={{_computed.uploadMb}}"
+                                                            },
+                                                            {
+                                                                "comment": "업로드는 임시 묶음에만 들어가고, 빼기는 화면에서만 뺀다 — 팝업 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다",
+                                                                "id": "pc_image_uploader",
+                                                                "type": "composite",
+                                                                "name": "FileUploader",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onFilesChange",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "pcUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "if": "{{!_local.hasChanges}}",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "hasChanges": false
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onUploadComplete",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.images.pc": "{{$args[0]?.[0] ?? null}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onUploadError",
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{$args[0]}}",
+                                                                            "icon": "triangle-exclamation"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onRemove",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.images.pc": null
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "maxFiles": 1,
+                                                                    "disabled": "{{_local.isSaving}}",
+                                                                    "maxSize": "{{_computed.uploadMb}}",
+                                                                    "accept": ".jpg,.jpeg,.png,.webp,.gif",
+                                                                    "autoUpload": true,
+                                                                    "size": "sm",
+                                                                    "initialFiles": "{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}",
+                                                                    "uploadParams": "{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}",
+                                                                    "apiEndpoints": {
+                                                                        "upload": "/api/plugins/sirsoft-popup/admin/popup-images",
+                                                                        "delete": ""
+                                                                    }
+                                                                }
+                                                            },
+                                                            {
+                                                                "id": "pc_size_warning",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_computed.pcSizeMismatch}}",
+                                                                "props": {
+                                                                    "className": "mt-2 text-sm text-amber-700 dark:text-amber-300"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.admin.form.image.size_mismatch|width={{_local.form?.images?.pc?.width}}|height={{_local.form?.images?.pc?.height}}|recommended={{_computed.pcWidth + '×' + _computed.pcHeight}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.temp_key || _local.errors?.pc_image_id || _local.errors?.pc_image}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.temp_key?.[0] ?? _local.errors?.pc_image_id?.[0] ?? _local.errors?.pc_image?.[0] ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_mobile_image",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-popup.admin.form.image.mobile"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                        },
+                                                                        "text": "$t:sirsoft-popup.admin.form.optional"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "form-hint mb-2"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.admin.form.image.mobile_hint|mb={{_computed.uploadMb}}"
+                                                            },
+                                                            {
+                                                                "id": "mobile_image_uploader",
+                                                                "type": "composite",
+                                                                "name": "FileUploader",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onFilesChange",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "mobileUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "if": "{{!_local.hasChanges}}",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "hasChanges": false
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onUploadComplete",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.images.mobile": "{{$args[0]?.[0] ?? null}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onUploadError",
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{$args[0]}}",
+                                                                            "icon": "triangle-exclamation"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onRemove",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.images.mobile": null
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "maxFiles": 1,
+                                                                    "disabled": "{{_local.isSaving}}",
+                                                                    "maxSize": "{{_computed.uploadMb}}",
+                                                                    "accept": ".jpg,.jpeg,.png,.webp,.gif",
+                                                                    "autoUpload": true,
+                                                                    "size": "sm",
+                                                                    "initialFiles": "{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}",
+                                                                    "uploadParams": "{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}",
+                                                                    "apiEndpoints": {
+                                                                        "upload": "/api/plugins/sirsoft-popup/admin/popup-images",
+                                                                        "delete": ""
+                                                                    }
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.mobile_image_id}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.mobile_image_id?.[0] ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_image_alt",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.admin.form.image_alt"
+                                                            },
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "MultilingualInput",
+                                                                "props": {
+                                                                    "name": "image_alt",
+                                                                    "layout": "tabs",
+                                                                    "maxLength": 200,
+                                                                    "error": "{{_local.errors?.image_alt?.[0] ?? ''}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.admin.form.image_alt_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_link_url",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label",
+                                                                    "htmlFor": "popup_link_url"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-popup.admin.form.link_url"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                        },
+                                                                        "text": "$t:sirsoft-popup.admin.form.link_url_optional"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "id": "popup_link_url",
+                                                                    "name": "link_url",
+                                                                    "maxLength": 2048,
+                                                                    "placeholder": "/event/autumn",
+                                                                    "className": "input w-full min-w-[200px]"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.link_url}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.link_url?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!_local.errors?.link_url}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.admin.form.link_url_hint"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "mt-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "composite",
+                                                                        "name": "Toggle",
+                                                                        "props": {
+                                                                            "label": "$t:sirsoft-popup.admin.form.link_new_window",
+                                                                            "name": "link_new_window"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "html_fields",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!_computed.isImage}}",
+                                                "props": {
+                                                    "className": "row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_body_html",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-popup.admin.form.body_html"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-required"
+                                                                        },
+                                                                        "text": "*"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "comment": "에디터 플러그인(예: CKEditor5)이 켜져 있으면 그 에디터가 이 자리를 대신하고, 없으면 기본 입력창이다(페이지 관리 폼과 같은 확장점).\n                  편집기는 처음 그려질 때 값을 받으므로 수정 화면은 원본이 온 뒤에 그린다",
+                                                                "id": "body_editor",
+                                                                "type": "extension_point",
+                                                                "name": "html_editor",
+                                                                "if": "{{route?.id ? _local.form?.body_html !== undefined : true}}",
+                                                                "props": {
+                                                                    "multilingual": true,
+                                                                    "value": "{{_local.form?.body_html}}",
+                                                                    "isHtml": true,
+                                                                    "showHtmlModeToggle": false,
+                                                                    "rows": 12,
+                                                                    "placeholder": "$t:sirsoft-popup.admin.form.body_placeholder",
+                                                                    "name": "body_html"
+                                                                },
+                                                                "default": [
+                                                                    {
+                                                                        "type": "composite",
+                                                                        "name": "HtmlEditor",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "본문 — 편집기 교체 여부와 무관하게 폼 상태 한 곳으로만 모은다",
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.body_html": "{{$event.target.value}}"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "name": "body_html",
+                                                                            "multilingual": true,
+                                                                            "value": "{{_local.form?.body_html}}",
+                                                                            "isHtml": true,
+                                                                            "showHtmlModeToggle": false,
+                                                                            "rows": 12,
+                                                                            "placeholder": "$t:sirsoft-popup.admin.form.body_placeholder"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.body_html || _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? 'ko')]}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.body_html?.[0] ?? _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? 'ko')]?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.admin.form.editor_hint"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "노출 조건 — 노출 페이지(전체·라우트 지정)·대상·기기",
+                                        "id": "condition_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "card-title"
+                                                },
+                                                "text": "$t:sirsoft-popup.admin.form.section.condition"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "comment": "노출 페이지 — 라우트 지정은 경로 경계 하위 포함(/shop 은 /shop·/shop/… , /shopping 은 아님), / 는 홈만.\n                경로 입력 안내(routeInputError)는 서버 검증과 같은 규칙을 미리 알린다: / 로 시작, //·?·#·*·공백 없음, 중복 없음, 20개까지",
+                                                        "id": "field_page_scope",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "role": "group",
+                                                            "aria-label": "$t:sirsoft-popup.admin.form.page_scope"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "form-label block",
+                                                                    "aria-hidden": "true"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.admin.form.page_scope"
+                                                            },
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "RadioGroup",
+                                                                "props": {
+                                                                    "name": "page_scope",
+                                                                    "inline": true,
+                                                                    "options": [
+                                                                        {
+                                                                            "label": "$t:sirsoft-popup.admin.page_scope.all",
+                                                                            "value": "all"
+                                                                        },
+                                                                        {
+                                                                            "label": "$t:sirsoft-popup.admin.page_scope.routes",
+                                                                            "value": "routes"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "id": "routes_editor",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{_local.form?.page_scope === 'routes'}}",
+                                                                "props": {
+                                                                    "className": "mt-3 flex flex-col gap-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "id": "route_chips",
+                                                                        "type": "basic",
+                                                                        "name": "Ul",
+                                                                        "props": {
+                                                                            "aria-label": "$t:sirsoft-popup.admin.form.routes_label",
+                                                                            "className": "flex flex-wrap gap-2"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Li",
+                                                                                "iteration": {
+                                                                                    "source": "_local.form?.routes ?? []",
+                                                                                    "item_var": "route",
+                                                                                    "index_var": "rIdx"
+                                                                                },
+                                                                                "props": {
+                                                                                    "className": "flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                                                                                },
+                                                                                "children": [
+                                                                                    {
+                                                                                        "type": "basic",
+                                                                                        "name": "Code",
+                                                                                        "props": {
+                                                                                            "className": "text-xs text-gray-800 dark:text-gray-100"
+                                                                                        },
+                                                                                        "text": "{{route}}"
+                                                                                    },
+                                                                                    {
+                                                                                        "type": "basic",
+                                                                                        "name": "Button",
+                                                                                        "actions": [
+                                                                                            {
+                                                                                                "type": "click",
+                                                                                                "handler": "setState",
+                                                                                                "params": {
+                                                                                                    "target": "local",
+                                                                                                    "form.routes": "{{(_local.form?.routes ?? []).filter((r, i) => i !== rIdx)}}",
+                                                                                                    "hasChanges": true
+                                                                                                }
+                                                                                            }
+                                                                                        ],
+                                                                                        "props": {
+                                                                                            "type": "button",
+                                                                                            "aria-label": "{{$t('sirsoft-popup.admin.form.route_remove', { route: route })}}",
+                                                                                            "className": "flex-center w-8 h-8 rounded-full text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100"
+                                                                                        },
+                                                                                        "children": [
+                                                                                            {
+                                                                                                "type": "basic",
+                                                                                                "name": "Icon",
+                                                                                                "props": {
+                                                                                                    "name": "xmark",
+                                                                                                    "className": "text-xs"
+                                                                                                }
+                                                                                            }
+                                                                                        ]
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex flex-wrap items-end gap-2"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Label",
+                                                                                "props": {
+                                                                                    "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-[12rem]",
+                                                                                    "htmlFor": "popup_route_input"
+                                                                                },
+                                                                                "children": [
+                                                                                    {
+                                                                                        "type": "basic",
+                                                                                        "name": "Span",
+                                                                                        "text": "$t:sirsoft-popup.admin.form.route_add_label"
+                                                                                    },
+                                                                                    {
+                                                                                        "id": "route_input",
+                                                                                        "type": "basic",
+                                                                                        "name": "Input",
+                                                                                        "actions": [
+                                                                                            {
+                                                                                                "type": "change",
+                                                                                                "handler": "setState",
+                                                                                                "params": {
+                                                                                                    "target": "local",
+                                                                                                    "routeInput": "{{$event.target.value}}"
+                                                                                                }
+                                                                                            },
+                                                                                            {
+                                                                                                "type": "keydown",
+                                                                                                "key": "Enter",
+                                                                                                "handler": "setState",
+                                                                                                "if": "{{_computed.routeDraft !== '' && _computed.routeInputError === ''}}",
+                                                                                                "params": {
+                                                                                                    "target": "local",
+                                                                                                    "form.routes": "{{[...(_local.form?.routes ?? []), _computed.routeDraft.length > 1 && _computed.routeDraft.endsWith('/') ? _computed.routeDraft.slice(0, -1) : _computed.routeDraft]}}",
+                                                                                                    "routeInput": "",
+                                                                                                    "hasChanges": true
+                                                                                                }
+                                                                                            }
+                                                                                        ],
+                                                                                        "props": {
+                                                                                            "type": "text",
+                                                                                            "id": "popup_route_input",
+                                                                                            "className": "input",
+                                                                                            "placeholder": "/board",
+                                                                                            "value": "{{_local.routeInput}}",
+                                                                                            "aria-invalid": "{{_computed.routeInputError !== ''}}",
+                                                                                            "aria-describedby": "popup_route_hint"
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "id": "route_add_button",
+                                                                                "type": "basic",
+                                                                                "name": "Button",
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "type": "click",
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "form.routes": "{{[...(_local.form?.routes ?? []), _computed.routeDraft.length > 1 && _computed.routeDraft.endsWith('/') ? _computed.routeDraft.slice(0, -1) : _computed.routeDraft]}}",
+                                                                                            "routeInput": "",
+                                                                                            "hasChanges": true
+                                                                                        }
+                                                                                    }
+                                                                                ],
+                                                                                "props": {
+                                                                                    "type": "button",
+                                                                                    "className": "btn btn-secondary",
+                                                                                    "disabled": "{{_computed.routeDraft === '' || _computed.routeInputError !== ''}}"
+                                                                                },
+                                                                                "text": "$t:sirsoft-popup.admin.form.route_add"
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "P",
+                                                                        "if": "{{_computed.routeInputError !== ''}}",
+                                                                        "props": {
+                                                                            "role": "status",
+                                                                            "className": "form-error"
+                                                                        },
+                                                                        "text": "{{$t('sirsoft-popup.admin.form.route_errors.' + _computed.routeInputError)}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "P",
+                                                                        "if": "{{_local.errors?.routes || Object.keys(_local.errors ?? {}).some(k => k.startsWith('routes.'))}}",
+                                                                        "props": {
+                                                                            "className": "form-error"
+                                                                        },
+                                                                        "text": "{{_local.errors?.routes?.[0] ?? Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('routes.'))?.[1]?.[0] ?? ''}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "P",
+                                                                        "props": {
+                                                                            "id": "popup_route_hint",
+                                                                            "className": "form-hint"
+                                                                        },
+                                                                        "text": "$t:sirsoft-popup.admin.form.route_hint"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "grid grid-cols-1 md:grid-cols-2 gap-4"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "id": "field_audience",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "role": "group",
+                                                                    "aria-label": "$t:sirsoft-popup.admin.form.audience"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "form-label block",
+                                                                            "aria-hidden": "true"
+                                                                        },
+                                                                        "text": "$t:sirsoft-popup.admin.form.audience"
+                                                                    },
+                                                                    {
+                                                                        "type": "composite",
+                                                                        "name": "RadioGroup",
+                                                                        "props": {
+                                                                            "name": "audience",
+                                                                            "inline": true,
+                                                                            "options": [
+                                                                                {
+                                                                                    "label": "$t:sirsoft-popup.admin.audience.all",
+                                                                                    "value": "all"
+                                                                                },
+                                                                                {
+                                                                                    "label": "$t:sirsoft-popup.admin.audience.guest",
+                                                                                    "value": "guest"
+                                                                                },
+                                                                                {
+                                                                                    "label": "$t:sirsoft-popup.admin.audience.member",
+                                                                                    "value": "member"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "id": "field_device",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "role": "group",
+                                                                    "aria-label": "$t:sirsoft-popup.admin.form.device"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "form-label block",
+                                                                            "aria-hidden": "true"
+                                                                        },
+                                                                        "text": "$t:sirsoft-popup.admin.form.device"
+                                                                    },
+                                                                    {
+                                                                        "type": "composite",
+                                                                        "name": "RadioGroup",
+                                                                        "props": {
+                                                                            "name": "device",
+                                                                            "inline": true,
+                                                                            "options": [
+                                                                                {
+                                                                                    "label": "$t:sirsoft-popup.admin.device.all",
+                                                                                    "value": "all"
+                                                                                },
+                                                                                {
+                                                                                    "label": "$t:sirsoft-popup.admin.device.pc",
+                                                                                    "value": "pc"
+                                                                                },
+                                                                                {
+                                                                                    "label": "$t:sirsoft-popup.admin.device.mobile",
+                                                                                    "value": "mobile"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "노출 기간 — 상시 또는 기간 지정. 상태는 저장하지 않고 볼 때마다 서버가 기간으로 계산한다",
+                                        "id": "period_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "card-title"
+                                                },
+                                                "text": "$t:sirsoft-popup.admin.form.section.period"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "RadioGroup",
+                                                        "props": {
+                                                            "name": "display_period",
+                                                            "inline": true,
+                                                            "options": [
+                                                                {
+                                                                    "label": "$t:sirsoft-popup.admin.period.always",
+                                                                    "value": "always"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-popup.admin.period.range",
+                                                                    "value": "range"
+                                                                }
+                                                            ]
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "period_range",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{_local.form?.display_period === 'range'}}",
+                                                        "props": {
+                                                            "className": "flex flex-wrap items-center gap-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "responsive": {
+                                                                    "portable": {
+                                                                        "props": {
+                                                                            "className": "input w-full"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "props": {
+                                                                    "type": "datetime-local",
+                                                                    "name": "starts_at_local",
+                                                                    "aria-label": "$t:sirsoft-popup.admin.form.starts_at",
+                                                                    "className": "input w-52"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "text-label-subtle"
+                                                                },
+                                                                "text": "~"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "responsive": {
+                                                                    "portable": {
+                                                                        "props": {
+                                                                            "className": "input w-full"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "props": {
+                                                                    "type": "datetime-local",
+                                                                    "name": "ends_at_local",
+                                                                    "aria-label": "$t:sirsoft-popup.admin.form.ends_at",
+                                                                    "className": "input w-52"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.errors?.starts_at}}",
+                                                        "props": {
+                                                            "className": "form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.starts_at?.[0] ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.errors?.ends_at}}",
+                                                        "props": {
+                                                            "className": "form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.ends_at?.[0] ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-popup.admin.form.period_hint"
+                                                    },
+                                                    {
+                                                        "id": "period_hint",
+                                                        "type": "composite",
+                                                        "name": "sirsoft-popup.PopupPeriodHint",
+                                                        "props": {
+                                                            "period": "{{_local.form?.display_period}}",
+                                                            "active": "{{_local.form?.is_active !== false}}",
+                                                            "start": "{{_local.form?.starts_at_local}}",
+                                                            "end": "{{_local.form?.ends_at_local}}",
+                                                            "timezone": "{{display_settings?.data?.editor?.timezone}}",
+                                                            "serverNow": "{{display_settings?.data?.editor?.server_now}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_local.pcUploadBlocked || _local.mobileUploadBlocked}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "form-hint"
+                                        },
+                                        "text": "$t:sirsoft-popup.admin.form.upload_pending"
+                                    },
+                                    {
+                                        "comment": "동시 수정 충돌(409) — 입력은 그대로 두고, 같은 창에서 최신본을 따로 받아 항목별로 비교한다(#810 과 같은 방식).\n            적용하면 최신본 위에 고른 내 값만 얹은 폼(최신 revision)으로 바뀐다",
+                                        "id": "conflict_panel",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_local.conflict}}",
+                                        "props": {
+                                            "role": "alert",
+                                            "className": "alert-danger"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-col gap-2 w-full min-w-0"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "text": "$t:sirsoft-popup.admin.conflict.message"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex flex-wrap items-center gap-3"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "id": "conflict_load_button",
+                                                                "type": "basic",
+                                                                "name": "Button",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "click",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "conflictLoading": true,
+                                                                                    "conflictLoadError": false
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "apiCall",
+                                                                                "target": "/api/plugins/sirsoft-popup/admin/popups/{{route.id}}",
+                                                                                "auth_required": true,
+                                                                                "params": {
+                                                                                    "method": "GET"
+                                                                                },
+                                                                                "onSuccess": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "conflictLoading": false,
+                                                                                        "conflictLatest": "{{response.data ?? null}}"
+                                                                                    }
+                                                                                },
+                                                                                "onError": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "conflictLoading": false,
+                                                                                        "conflictLoadError": true
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "btn btn-secondary flex-center gap-1.5",
+                                                                    "disabled": "{{_local.conflictLoading}}"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Icon",
+                                                                        "if": "{{_local.conflictLoading}}",
+                                                                        "props": {
+                                                                            "name": "spinner",
+                                                                            "className": "spinner-sm"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "{{_local.conflictLoadError ? '$t:sirsoft-popup.admin.form.conflict_merge.retry' : (_local.conflictLatest ? '$t:sirsoft-popup.admin.form.conflict_merge.reload' : '$t:sirsoft-popup.admin.form.conflict_merge.load')}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "A",
+                                                                "props": {
+                                                                    "href": "/admin/plugins/sirsoft-popup/popups/{{route.id}}/edit",
+                                                                    "target": "_blank",
+                                                                    "rel": "noopener noreferrer",
+                                                                    "className": "underline"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.admin.conflict.open_latest"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "conflict_load_error",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.conflictLoadError}}",
+                                                        "props": {
+                                                            "role": "status",
+                                                            "className": "form-error"
+                                                        },
+                                                        "text": "$t:sirsoft-popup.admin.form.conflict_merge.load_failed"
+                                                    },
+                                                    {
+                                                        "id": "conflict_resolver",
+                                                        "type": "composite",
+                                                        "name": "sirsoft-popup.PopupConflictResolver",
+                                                        "if": "{{!!_local.conflictLatest}}",
+                                                        "actions": [
+                                                            {
+                                                                "type": "change",
+                                                                "event": "onApply",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form": "{{$args[0]}}",
+                                                                    "conflictBase": "{{_local.conflictLatest}}",
+                                                                    "conflictLatest": null,
+                                                                    "conflict": false,
+                                                                    "errors": null,
+                                                                    "hasChanges": true
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "base": "{{_local.conflictBase ?? popup?.data ?? null}}",
+                                                            "mine": "{{_local.form}}",
+                                                            "latest": "{{_local.conflictLatest}}",
+                                                            "locales": "{{display_settings?.data?.editor?.locales ?? []}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "footer_buttons",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "sticky-footer-buttons-between"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "footer_cancel_button",
+                                                "type": "basic",
+                                                "name": "A",
+                                                "actions": [
+                                                    {
+                                                        "comment": "목록으로 — 보던 조건(상태·기기·검색·쪽)을 이고 간다",
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "mergeQuery": true,
+                                                            "query": {}
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "href": "/admin/plugins/sirsoft-popup/popups",
+                                                    "mergeQuery": true,
+                                                    "className": "button flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-popup.admin.form.cancel"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "footer_save_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다.\n                  직접 작성형은 이미지·alt·링크를 보내도 서버가 빼고, 이미지형으로 저장하면 본문을 비운다",
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": true,
+                                                                    "errors": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "apiCall",
+                                                                "target": "{{route.id ? '/api/plugins/sirsoft-popup/admin/popups/' + route.id : '/api/plugins/sirsoft-popup/admin/popups'}}",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "{{route.id ? 'PUT' : 'POST'}}",
+                                                                    "body": "{{({ title: _local.form?.title ?? '', is_active: _local.form?.is_active !== false, content_type: _local.form?.content_type ?? 'image', display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, page_scope: _local.form?.page_scope ?? 'all', routes: _local.form?.routes ?? [], audience: _local.form?.audience ?? 'all', device: _local.form?.device ?? 'all', image_alt: _local.form?.image_alt ?? [], link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, body_html: _local.form?.body_html ?? [], revision: route.id ? _local.form?.revision : undefined, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null })}}"
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "isSaving": false,
+                                                                            "hasChanges": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "{{response?.data?.sanitized ? 'warning' : 'success'}}",
+                                                                            "message": "{{response?.data?.sanitized ? $t('sirsoft-popup.admin.form.saved_sanitized') : response.message}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "navigate",
+                                                                        "params": {
+                                                                            "bypassLeaveGuard": true,
+                                                                            "path": "/admin/plugins/sirsoft-popup/popups",
+                                                                            "mergeQuery": true,
+                                                                            "query": {}
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "comment": "422 는 칸별 사유와 요약, 409 는 입력을 보존한 충돌 안내를 보인다. 모든 실패는 알림을 띄운다",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "isSaving": false,
+                                                                            "errors": "{{error.errors ?? null}}",
+                                                                            "conflict": "{{error.status === 409}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "scrollIntoView",
+                                                                        "if": "{{!!error.errors}}",
+                                                                        "params": {
+                                                                            "selector": "#popup_form_errors",
+                                                                            "behavior": "smooth",
+                                                                            "block": "start",
+                                                                            "waitForElement": true,
+                                                                            "timeout": 1000
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "disabled": "{{_local.isSaving || (_computed.isImage && (_local.pcUploadBlocked || _local.mobileUploadBlocked || !_local.form?.images?.pc))}}",
+                                                    "className": "btn btn-primary flex-center gap-1.5"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "if": "{{_local.isSaving}}",
+                                                        "props": {
+                                                            "name": "spinner",
+                                                            "className": "spinner-sm"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!_local.isSaving}}",
+                                                        "text": "$t:sirsoft-popup.admin.form.save"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.isSaving}}",
+                                                        "text": "$t:sirsoft-popup.admin.form.saving"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

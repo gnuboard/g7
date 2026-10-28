@@ -1,0 +1,36 @@
+{
+    "identifier": "sirsoft-popup",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "팝업",
+        "en": "Popup"
+    },
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": {
+        "ko": "공지·프로모션·점검 안내처럼 방문자가 꼭 봐야 하는 내용을 사용자 화면 위 팝업 레이어로 띄우고, 여러 건이면 한 레이어 안에서 넘겨 보여 줍니다.",
+        "en": "Shows must-see notices, promotions and maintenance messages as a popup layer over user screens, rotating multiple popups inside one layer."
+    },
+    "g7_version": ">=7.2.0",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": null,
+    "github_changelog_url": null,
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "css": {
+            "entry": "resources/css/popup.css",
+            "output": "dist/css/plugin.css"
+        },
+        "handlers": false
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

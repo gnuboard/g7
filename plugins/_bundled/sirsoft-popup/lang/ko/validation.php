@@ -1,0 +1,55 @@
+<?php
+
+return [
+    'link_url' => [
+        'unsafe' => '링크는 사이트 안 경로(/로 시작) 또는 http(s) 주소만 쓸 수 있습니다. //로 시작하는 주소와 javascript: 같은 주소는 쓸 수 없습니다.',
+    ],
+    'routes' => [
+        'invalid' => '「:route」는 쓸 수 없는 경로입니다. /로 시작하고 ?·#·*·공백·//·.. 이 없는 경로를 입력하세요.',
+    ],
+    'order' => [
+        'incomplete' => '순서를 바꿀 때는 팝업을 모두 보내야 합니다. 목록을 다시 불러온 뒤 시도하세요.',
+    ],
+    'pc_image' => [
+        'required' => '이미지형 팝업에는 PC 이미지가 필요합니다.',
+    ],
+    'image_selection' => [
+        'invalid' => '고른 이미지를 찾을 수 없습니다. 이미지를 다시 올린 뒤 저장하세요.',
+    ],
+    'file' => [
+        'server_limit' => '서버 업로드 한도(:mbMB)를 넘었습니다. 더 작은 파일을 올리거나 서버 관리자에게 PHP 업로드 한도를 올려 달라고 하세요.',
+        'max' => '이미지는 :mbMB 이하여야 합니다.',
+        'mimes' => 'JPG·PNG·WEBP·GIF 이미지만 올릴 수 있습니다.',
+        'dimensions' => '이미지 가로·세로는 4000픽셀 이하여야 합니다.',
+    ],
+    'attributes' => [
+        'revision' => '수정 세대',
+        'pc_image' => 'PC 이미지',
+        'mobile_image' => '모바일 이미지',
+        'status' => '상태',
+        'device' => '기기',
+        'search' => '검색어',
+        'sort_by' => '정렬 기준',
+        'sort_order' => '정렬 방향',
+        'page' => '쪽',
+        'per_page' => '쪽당 개수',
+        'title' => '관리용 제목',
+        'is_active' => '사용 여부',
+        'content_type' => '내용 유형',
+        'display_period' => '노출 기간 방식',
+        'starts_at' => '노출 시작',
+        'ends_at' => '노출 종료',
+        'page_scope' => '노출 페이지',
+        'routes' => '노출 경로',
+        'route_item' => '노출 경로',
+        'audience' => '노출 대상',
+        'image_alt' => '이미지 대체 텍스트',
+        'link_url' => '링크 URL',
+        'link_new_window' => '새 창에서 열기',
+        'body_html' => '본문',
+        'temp_key' => '임시 업로드 키',
+        'file' => '이미지 파일',
+        'ids' => '선택한 팝업',
+        'ids_item' => '선택한 팝업',
+    ],
+];
