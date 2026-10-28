@@ -17,6 +17,7 @@
 | [settings.md](settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 |
 | [frontend.md](frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 |
 | [editor-spec.md](editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 |
+| [api/](api/README.md) | API 레퍼런스 |
 | [../AGENTS.md](../AGENTS.md) | 에이전트·확장개발자 진입점 |
 | [../README.md](../README.md) | 사람(도입검토자·운영자) 진입점 |
 <!-- @generated:doc-toc END -->
