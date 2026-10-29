@@ -9,6 +9,7 @@ use App\Services\Extension\CascadeInstallAuthorizer;
 use App\Services\Extension\CascadeInstallOrchestrator;
 use App\Services\ModuleService;
 use App\Services\PluginService;
+use App\Support\ExtensionDependencyOrder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -133,6 +134,10 @@ trait OrchestratesCascadeInstall
      * 상태별 처리는 {@see installSelectedDependencies()} 와 같고(미설치 → 설치+활성화, 비활성 → 활성화, 활성 → 건너뜀),
      * 실패는 예외를 던지지 않고 식별자별 사유로 돌려준다 — 연동은 「없어도 동작」이므로 본체 설치를 막지 않는다.
      *
+     * 연동 대상 자신의 필수 의존(#153 D5)은 관리자 연쇄 설치와 같은 계획으로 먼저 설치·활성화한다 — 연동끼리 같은 의존은
+     * 한 번만, 연동끼리의 순서도 서로의 의존 순서로 맞춘다. 계획을 세울 수 없거나 필요한 확장을 설치할 권한이 없거나 그 설치가
+     * 실패하면 그 연동만 사유와 함께 건너뛴다(설치 창이 같은 판정으로 선택을 막는다 — 요청을 직접 만든 경우의 방어).
+     *
      * @param  array<int, array{type: string, identifier: string}>  $integrations  사용자가 고른 연동 확장 목록 (종류·식별자)
      * @return array<string, string> 실패한 항목 `"{type}:{identifier}" => 사유`
      */
@@ -146,16 +151,63 @@ trait OrchestratesCascadeInstall
         $moduleService = app(ModuleService::class);
         /** @var PluginService $pluginService */
         $pluginService = app(PluginService::class);
+        /** @var CascadeInstallOrchestrator $orchestrator */
+        $orchestrator = app(CascadeInstallOrchestrator::class);
+        /** @var CascadeInstallAuthorizer $authorizer */
+        $authorizer = app(CascadeInstallAuthorizer::class);
         $failures = [];
 
+        // 연동마다 필수 의존 계획을 세우고, 연동끼리는 서로의 의존 순서로 정렬한다
+        $nodes = [];
+        $plans = [];
         foreach ($integrations as $item) {
-            $type = $item['type'] ?? '';
-            $identifier = $item['identifier'] ?? '';
+            $type = (string) ($item['type'] ?? '');
+            $identifier = (string) ($item['identifier'] ?? '');
             if ($identifier === '' || ! in_array($type, ['module', 'plugin'], true)) {
                 continue;
             }
+            $key = "{$type}:{$identifier}";
+            $plans[$key] = $orchestrator->resolveDependencyPlan($type, $identifier);
+            $nodes[] = ['key' => $key, 'type' => $type, 'identifier' => $identifier];
+        }
+        $ordered = ExtensionDependencyOrder::order(
+            $nodes,
+            fn (string $key): array => array_map(fn (array $step): string => "{$step['type']}:{$step['identifier']}", $plans[$key]['steps'] ?? [])
+        )['ordered'];
+
+        $doneSteps = [];
+        $failedSteps = [];
+        foreach ($ordered as $node) {
+            ['key' => $key, 'type' => $type, 'identifier' => $identifier] = $node;
 
             try {
+                if (($plans[$key]['errors'] ?? []) !== []) {
+                    throw new RuntimeException((string) $plans[$key]['errors'][0]);
+                }
+
+                foreach ($plans[$key]['steps'] as $step) {
+                    $stepKey = "{$step['type']}:{$step['identifier']}";
+                    if (isset($failedSteps[$stepKey])) {
+                        throw new RuntimeException($failedSteps[$stepKey]);
+                    }
+                    if (isset($doneSteps[$stepKey])) {
+                        continue;
+                    }
+                    if (! $authorizer->canSelectDependency($step['type'], $step['action'] === 'activate')) {
+                        $failedSteps[$stepKey] = __('extensions.integrations.requires_no_permission', ['identifier' => $step['identifier']]);
+
+                        throw new RuntimeException($failedSteps[$stepKey]);
+                    }
+                    try {
+                        $orchestrator->installDependencies([$step]);
+                    } catch (\Throwable $e) {
+                        $failedSteps[$stepKey] = $e->getMessage();
+
+                        throw $e;
+                    }
+                    $doneSteps[$stepKey] = true;
+                }
+
                 $info = $type === 'module' ? $moduleService->getModuleInfo($identifier) : $pluginService->getPluginInfo($identifier);
                 if ($info === null) {
                     throw new RuntimeException(__('extensions.errors.not_found', ['identifier' => $identifier]));
@@ -178,7 +230,7 @@ trait OrchestratesCascadeInstall
                     ? $moduleService->activateModule($identifier)
                     : $pluginService->activatePlugin($identifier);
 
-                // 연동 대상 자신의 필수 의존이 모자라면 활성화가 경고로 끝난다 — 강제로 켜지 않고 사유만 남긴다
+                // 계획 밖 사정으로 필수 의존이 모자라면 활성화가 경고로 끝난다 — 강제로 켜지 않고 사유만 남긴다
                 if (is_array($result) && ($result['success'] ?? false) !== true) {
                     throw new RuntimeException((string) ($result['message'] ?? $result['reason'] ?? __('extensions.errors.internal_error')));
                 }
@@ -193,7 +245,7 @@ trait OrchestratesCascadeInstall
                     'identifier' => $identifier,
                     'error' => $reason,
                 ]);
-                $failures[$type.':'.$identifier] = $reason;
+                $failures[$key] = $reason;
             }
 
             unset($installFailure);

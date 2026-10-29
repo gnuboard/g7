@@ -9,7 +9,8 @@ description: |
 
   `surface` 가 축인 이유는 같은 선언을 **세 경로가 서로 다른 방식으로** 다루기 때문이다 —
   카드 데이터를 만드는 스캔(Laravel 없이 순수 PHP, 정규식 버전식 판정), 저장 API 의 설치 순서
-  위상 정렬(D7 — 웹·터미널 설치가 함께 쓰는 확장 선택 해석기 `installer_topological_order()`),
+  위상 정렬(D7 — 웹·터미널 설치가 함께 쓰는 확장 선택 해석기 `installer_install_order()`, #153 부터 종류를 넘는 의존까지 —
+  종류 횡단 축은 extension-cross-type-order.yaml),
   브라우저 Step 4 의 선택 상태(installer.js).
 
   `owner_type` 이 축인 이유는 연동을 선언한 쪽이 템플릿이면 단일 선택(템플릿 교체 시 이전 템플릿의
@@ -42,6 +43,7 @@ effects:
   - install_order_cycle_keeps_scan_order_and_reports
   - resolver_on_bundled_manifests_adds_ecommerce_for_payment_plugin
   - save_extensions_sorts_before_storing
+  - install_order_cross_type_cycle_reported_with_path   # #153 — 종류를 넘는 순환도 저장을 막는다(종류 횡단 축은 extension-cross-type-order.yaml)
   # Step 4 — 선택 상태 (P9·D8)
   - step4_integration_autoselect_on_user_pick
   - step4_template_targets_are_notice_only

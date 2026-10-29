@@ -14,7 +14,7 @@ use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
-use App\Support\ExtensionDependencies;
+use App\Support\ExtensionDependencyOrder;
 use App\Support\UpdateChildEnv;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -108,17 +108,15 @@ class ExecuteBundledUpdatesCommand extends Command
         // 부모(core:update)가 운영자 선택을 매니페스트에 실어 보낸다 — 자식이 임의로 정하지 않는다
         $rebuildSearchIndex = (bool) $this->option('rebuild-search-index') || (bool) ($manifest['rebuild_search_index'] ?? false);
 
-        // 종류 순서(모듈 → 플러그인 → 템플릿 → 언어팩)는 아래 반복문 순서가 지킨다. 같은 종류 안에서도 의존하는 쪽이
-        // 뒤에 오도록 번들 manifest 의 같은 종류 의존 선언으로 정렬한다 — 부모(이전 버전 core:update)가 만든 목록의 순서를
-        // 믿지 않는다.
-        $modules = self::orderByDependencies(
-            $manifest['modules'] ?? [],
-            fn (string $id) => self::bundledSameTypeDependencies('modules', $id, 'module.json')
-        );
-        $plugins = self::orderByDependencies(
-            $manifest['plugins'] ?? [],
-            fn (string $id) => self::bundledSameTypeDependencies('plugins', $id, 'plugin.json')
-        );
+        // 모듈·플러그인은 한 목록으로 서로의 의존 순서를 따른다(기본 순서 모듈 → 플러그인, 의존만 앞당김 — 모듈이 플러그인에
+        // 의존하면 플러그인이 먼저). 의존은 새 배포본(_bundled) manifest 의 선언을 읽는다 — 부모(이전 버전 core:update)가
+        // 만든 목록의 순서를 믿지 않는다. 템플릿 → 언어팩 단계는 그 뒤에 그대로 돈다.
+        $modules = $manifest['modules'] ?? [];
+        $plugins = $manifest['plugins'] ?? [];
+        $extensionOrder = ExtensionDependencyOrder::orderModulesAndPlugins($modules, $plugins, [self::class, 'bundledDependencyKeys']);
+        foreach ($extensionOrder['cycles'] as $cycle) {
+            $this->warn(__('extensions.commands.bundled_update.dependency_cycle', ['cycle' => implode(' → ', $cycle)]));
+        }
         $templates = $manifest['templates'] ?? [];
         $langPacks = $manifest['lang_packs'] ?? [];
 
@@ -132,41 +130,25 @@ class ExecuteBundledUpdatesCommand extends Command
 
         $this->info(__('extensions.commands.bundled_update.child_running'));
 
-        foreach ($modules as $entry) {
+        foreach ($extensionOrder['ordered'] as $node) {
+            $entry = $node['entry'];
             $id = (string) ($entry['identifier'] ?? '');
             $strategy = (string) ($entry['strategy'] ?? 'overwrite');
-            if ($id === '') {
-                continue;
-            }
-            $this->line(__('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy]));
+            $type = $node['type'];
+            $this->line($type === 'module'
+                ? __('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy])
+                : __('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $result = $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $result = $type === 'module'
+                    ? $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled')
+                    : $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
                 $this->lineLayoutSyncSummary($result);
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
-                Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => 'module', 'id' => $id, 'error' => $e->getMessage()]);
-            }
-        }
-
-        foreach ($plugins as $entry) {
-            $id = (string) ($entry['identifier'] ?? '');
-            $strategy = (string) ($entry['strategy'] ?? 'overwrite');
-            if ($id === '') {
-                continue;
-            }
-            $this->line(__('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
-            try {
-                $result = $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
-                $this->lineLayoutSyncSummary($result);
-                $this->renderDependencyWarnings($result, '  ');
-                $success++;
-            } catch (\Throwable $e) {
-                $failed++;
-                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
-                Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => 'plugin', 'id' => $id, 'error' => $e->getMessage()]);
+                Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => $type, 'id' => $id, 'error' => $e->getMessage()]);
             }
         }
 
@@ -344,65 +326,49 @@ class ExecuteBundledUpdatesCommand extends Command
     }
 
     /**
-     * 같은 종류 항목을 의존 대상이 먼저 오도록 정렬합니다(안정 정렬 — 의존이 없으면 원래 순서).
+     * 항목을 의존 대상이 먼저 오도록 정렬합니다(안정 정렬 — 의존이 없으면 원래 순서). {@see ExtensionDependencyOrder} 에 위임.
      *
-     * 목록에 없는 의존은 무시하고, 순환 의존은 원래 순서로 둔다. 어떤 경우에도 항목을 잃거나 내용을 바꾸지 않는다.
+     * 목록에 없는 의존은 무시하고, 순환 구간은 원래 순서로 둔다. 어떤 경우에도 항목을 잃거나 내용을 바꾸지 않는다.
      *
      * @param  array<int, array<string, mixed>>  $entries  매니페스트 항목 (`identifier`·`strategy`)
-     * @param  callable(string): array<int, string>  $dependenciesOf  식별자 → 같은 종류 의존 식별자 목록
+     * @param  callable(string): array<int, string>  $dependenciesOf  식별자 → 의존 식별자 목록
      * @return array<int, array<string, mixed>> 정렬된 항목
      */
     public static function orderByDependencies(array $entries, callable $dependenciesOf): array
     {
-        $byId = [];
-        foreach ($entries as $index => $entry) {
+        $nodes = [];
+        foreach (array_values($entries) as $index => $entry) {
             $id = (string) ($entry['identifier'] ?? '');
-            $byId[$id !== '' ? $id : "#{$index}"] = $entry;
+            $nodes[] = ['key' => $id !== '' ? $id : "#{$index}", 'entry' => $entry];
         }
 
-        $sorted = [];
-        $state = []; // 1 = 방문 중, 2 = 완료
-
-        $visit = function (string $id) use (&$visit, &$sorted, &$state, $byId, $dependenciesOf): void {
-            if (($state[$id] ?? 0) !== 0) {
-                return; // 완료됐거나 순환 — 순환은 끊고 원래 순서에 맡긴다
-            }
-            $state[$id] = 1;
-            foreach ($dependenciesOf($id) as $dependency) {
-                if (isset($byId[$dependency])) {
-                    $visit($dependency);
-                }
-            }
-            $state[$id] = 2;
-            $sorted[] = $byId[$id];
-        };
-
-        foreach (array_keys($byId) as $id) {
-            $visit((string) $id);
-        }
-
-        return $sorted;
+        return array_column(ExtensionDependencyOrder::order($nodes, $dependenciesOf)['ordered'], 'entry');
     }
 
     /**
-     * 번들 manifest 가 선언한 같은 종류 의존 식별자를 읽습니다(모듈 → 모듈, 플러그인 → 플러그인).
+     * 번들(`{type}/_bundled/{id}`) manifest 가 선언한 모듈·플러그인 의존을 노드 키(`module:…`·`plugin:…`)로 읽습니다.
      *
-     * @param  string  $type  `modules`·`plugins`
-     * @param  string  $identifier  확장 식별자
-     * @param  string  $manifestFile  manifest 파일 이름
-     * @return array<int, string> 의존 식별자 목록 (읽지 못하면 빈 배열)
+     * 일괄 업데이트는 새 배포본의 선언을 따라야 한다(활성본은 아직 옛 판). 같은 프로세스 경로(BundledExtensionUpdatePrompt)도 쓴다.
+     *
+     * @param  string  $key  노드 키 (`module:…`·`plugin:…`)
+     * @return array<int, string> 의존 키 목록 (읽지 못하면 빈 배열)
      */
-    private static function bundledSameTypeDependencies(string $type, string $identifier, string $manifestFile): array
+    public static function bundledDependencyKeys(string $key): array
     {
-        $path = base_path("{$type}/_bundled/{$identifier}/{$manifestFile}");
+        [$kind, $identifier] = array_pad(explode(':', $key, 2), 2, '');
+        $path = match ($kind) {
+            'module' => base_path("modules/_bundled/{$identifier}/module.json"),
+            'plugin' => base_path("plugins/_bundled/{$identifier}/plugin.json"),
+            default => null,
+        };
 
-        if (! File::isFile($path)) {
+        if ($path === null || $identifier === '' || ! File::isFile($path)) {
             return [];
         }
 
         $manifest = json_decode((string) File::get($path), true);
 
         // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 읽으면 식별자 자리에 0·1 이 들어간다(#822 D6)
-        return is_array($manifest) ? ExtensionDependencies::identifiers($manifest['dependencies'] ?? [], $type) : [];
+        return is_array($manifest) ? ExtensionDependencyOrder::dependencyKeys($manifest['dependencies'] ?? []) : [];
     }
 }

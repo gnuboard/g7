@@ -530,6 +530,10 @@ class CoreServiceProvider extends ServiceProvider
             $this->detectRecoveredExtensions('templates');
         }
 
+        // 종류별 처리에서 의존 확장 때문에 막혔던 비호환 확장을 같은 부팅에서 다시 끈다(#153 — 예: 이커머스와 결제 플러그인이
+        // 함께 비호환이면 이커머스는 플러그인을 끈 뒤에야 끌 수 있다). 부팅 순서는 그대로 둔다.
+        $this->retryBlockedIncompatibleExtensions();
+
         // 동적 훅 리스너 일괄 실행 (registerDynamicHooks 메서드를 가진 리스너)
         $this->registerDeferredDynamicHooks();
 
@@ -652,6 +656,20 @@ class CoreServiceProvider extends ServiceProvider
         }
 
         $this->incompatibleExtensionDeactivator()->deactivateIncompatibleExtensions($manager, $type);
+    }
+
+    /**
+     * 의존 확장 때문에 막혔던 비호환 확장을 같은 부팅에서 다시 끕니다 — 업데이트 진행 중에는 건너뛴다(판정과 같은 정책).
+     *
+     * @return void 반환값 없음
+     */
+    protected function retryBlockedIncompatibleExtensions(): void
+    {
+        if (self::isCoreUpdateInProgress()) {
+            return;
+        }
+
+        $this->incompatibleExtensionDeactivator()->retryBlocked();
     }
 
     /**

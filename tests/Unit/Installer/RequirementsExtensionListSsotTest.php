@@ -171,7 +171,7 @@ class RequirementsExtensionListSsotTest extends TestCase
         $root = dirname(__DIR__, 3);
         foreach ([
             'public/install/api/save-extensions.php' => "\$state['selected_extensions'] = \$resolution['selection'];",
-            'public/install/includes/cli/install-flow.php' => "return ['selection' => \$resolution['selection'], 'names' => \$names];",
+            'public/install/includes/cli/install-flow.php' => "return ['selection' => \$resolution['selection'], 'names' => \$names, 'pulled_by' => \$resolution['pulled_by']];",
         ] as $path => $storeLine) {
             $source = (string) file_get_contents($root.'/'.$path);
             $resolvePos = strpos($source, 'installer_resolve_extension_selection(');

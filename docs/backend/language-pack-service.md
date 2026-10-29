@@ -31,6 +31,7 @@ class LanguagePackService
     public function find(int $id): ?LanguagePack;
     public function getUninstalledBundledPacks(array $filters = []): Collection;   // lang-packs/_bundled/ 미설치 번들 가상 행
     public function getDriftedInstalledPacks(array $filters = []): Collection;     // 설치 행 존재 + 설치본 파일 부재 (복구 대상)
+    public function bundledInstallBlockedReason(string $bundledIdentifier): ?string; // 번들 팩의 설치 차단 사유를 지금 다시 판정
 
     // 설치 (4가지 소스)
     public function installFromBundled(string $identifier, bool $autoActivate = false, ?int $installedBy = null, bool $force = false): LanguagePack;
@@ -103,6 +104,7 @@ php artisan language-pack:provision --no-activate   # 설치만, 자동 활성�
 - 대상 로케일 = `--locale` 지정값, 미지정 시 `config('app.supported_locales')` ∖ base locale(ko/en).
 - 대상 후보는 두 갈래입니다 — `getUninstalledBundledPacks()` (신규 프로비저닝) + `getDriftedInstalledPacks()` (수동 복구). 각각 `installFromBundled($id, autoActivate: true)` 를 호출하며, 정상 설치된 팩은 두 집합 어디에도 속하지 않으므로 **재실행 시 신규 설치 0 건으로 수렴(멱등)**.
 - 드리프트 팩은 슬롯이 점유돼 있어 미설치 목록에 잡히지 않습니다. 이 커맨드가 복구까지 겸하지 않으면 드리프트는 화면에서 보이기만 하고 CLI 로는 고칠 수 없습니다. 재설치는 `finalizeInstall` 의 update 경로를 타므로 동일 버전 재설치도 다운그레이드로 차단되지 않습니다.
+- 코어 범위 팩을 먼저 처리합니다(그 안과 나머지는 원래 순서). 확장 팩은 같은 로케일의 코어 팩이 활성이어야 설치되므로, 이번 실행에서 앞선 팩이 설치됐으면 미리 계산된 `core_locale_missing` 을 그 팩 차례에 `bundledInstallBlockedReason()` 으로 다시 판정합니다 — 새 로케일도 한 번 실행으로 코어 팩과 확장 팩이 함께 설치됩니다.
 - 설치 차단 사유(`install_blocked_reason`: 코어 로케일 미활성·대상 확장 미설치·버전 미달)가 있는 팩은 skip + 경고(best-effort). 대상 확장이 설치돼 있으나 꺼진 팩은 꺼진 채 설치되고 「대상 켜짐 대기」로 남아 그 확장을 켤 때 켜집니다. 신규 도메인 로직 없이 기존 Service 메서드만 조합합니다.
 
 ## 드리프트 표면화 (files_missing / bundled_source_available)

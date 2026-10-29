@@ -1596,7 +1596,7 @@ class TemplateManager implements TemplateManagerInterface
                 ])
                 : __('templates.errors.dependency_not_met', [
                     'dependency' => $item['identifier'],
-                    'type' => $item['type'],
+                    'type' => __('extensions.dependency_types.'.$item['type']),
                 ]);
         }
 

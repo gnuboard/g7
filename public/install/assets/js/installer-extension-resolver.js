@@ -12,7 +12,7 @@
 (function (root) {
     'use strict';
 
-    // 설치 순서이기도 하다 — 관리자 템플릿 → 모듈 → 플러그인 → 사용자 템플릿 → 언어팩
+    // 종류 기본 순서 — 관리자 템플릿 → 모듈 → 플러그인 → 사용자 템플릿 → 언어팩. 의존이 있으면 앞당긴다(installOrder)
     const CATEGORIES = ['admin_templates', 'modules', 'plugins', 'user_templates', 'language_packs'];
 
     /**
@@ -77,45 +77,100 @@
     }
 
     /**
-     * 같은 카테고리 안 의존을 반영한 설치 순서 — 스캔 순서 기준 안정 위상 정렬. 순환이면 오류 기록 후 스캔 순서.
+     * 의존 항목이 가리키는 카테고리 — 선언된 종류(modules/plugins)를 먼저, 옛 평면 배열(종류 없음)만 식별자 역인덱스로.
      *
-     * @param {string} category 카테고리
-     * @param {string[]} ids 선택 식별자
-     * @param {Map<string, Object>} items 카테고리 스캔 항목 (스캔 순서)
-     * @param {Array} errors 오류 목록 (추가됨)
-     * @returns {string[]} 설치 순서
+     * @param {Object} dep dependencies_detailed 항목
+     * @param {Map<string, string>} idToCategory 식별자 → 처음 나온 카테고리
+     * @returns {string|null} 카테고리
      */
-    function topologicalOrder(category, ids, items, errors) {
-        const scanOrder = new Map();
-        Array.from(items.keys()).forEach((id, idx) => scanOrder.set(id, idx));
-        const sortedIds = ids.slice().sort((a, b) => (scanOrder.has(a) ? scanOrder.get(a) : Infinity) - (scanOrder.has(b) ? scanOrder.get(b) : Infinity));
+    function dependencyCategory(dep, idToCategory) {
+        const type = String((dep && dep.type) || '');
+        if (type === 'modules' || type === 'plugins') return type;
+        return idToCategory.get(String((dep && dep.identifier) || '')) || null;
+    }
 
-        const set = new Set(sortedIds);
-        const sorted = [];
+    /**
+     * 설치 순서 — 관리자 템플릿·모듈·플러그인·사용자 템플릿을 한 그래프로 놓고 종류를 넘는 의존까지 반영한 안정 위상 정렬.
+     * 기본 순서(종류 → 스캔)대로 깊이 우선으로 돌며 선택 안의 의존을 먼저 놓는다. 순환이면 `종류:식별자` 경로로 오류를 남기고 기본 순서.
+     * 언어팩은 코어 범위 먼저, 나머지는 스캔 순서로 맨 뒤. pulled_by = 종류 경계를 넘어 앞당겨진 노드 → 요구한 선택 노드 목록.
+     *
+     * @param {Object} selected 카테고리별 선택 식별자
+     * @param {Object} items 카테고리별 Map(식별자 → 항목, 스캔 순서)
+     * @param {Map<string, string>} idToCategory 식별자 → 처음 나온 카테고리
+     * @param {Array} errors 오류 목록 (추가됨)
+     * @returns {{order: string[], pulled_by: Object}} `카테고리:식별자` 설치 순서와 앞당김 기록
+     */
+    function installOrder(selected, items, idToCategory, errors) {
+        const graphCategories = ['admin_templates', 'modules', 'plugins', 'user_templates'];
+        const rank = new Map(graphCategories.map((cat, idx) => [cat, idx]));
+        const scanIndex = (cat) => {
+            const m = new Map();
+            Array.from(items[cat].keys()).forEach((id, idx) => m.set(id, idx));
+            return m;
+        };
+        const byScan = (m) => (a, b) => (m.has(a) ? m.get(a) : Infinity) - (m.has(b) ? m.get(b) : Infinity);
+
+        const base = [];
+        graphCategories.forEach((cat) => {
+            selected[cat].slice().sort(byScan(scanIndex(cat))).forEach((id) => base.push(cat + ':' + id));
+        });
+        const set = new Set(base);
+
+        const dependencyKeys = (key) => {
+            const sep = key.indexOf(':');
+            const item = items[key.slice(0, sep)].get(key.slice(sep + 1));
+            const keys = [];
+            ((item && item.dependencies_detailed) || []).forEach((dep) => {
+                const depCat = dependencyCategory(dep, idToCategory);
+                const depKey = depCat + ':' + String((dep && dep.identifier) || '');
+                // 자기 자신 의존은 순환이 아니라 잘못 적은 선언이다 — 건너뛴다. 선택 밖 의존은 설치 여부 검사가 따로 본다.
+                if (depCat !== null && depKey !== key && set.has(depKey)) keys.push(depKey);
+            });
+            return keys;
+        };
+
+        let order = [];
         const state = new Map();
-
-        const visit = (id, path) => {
-            if (state.get(id) === 2) return true;
-            if (state.get(id) === 1) {
-                errors.push({ key: 'error_extension_dependency_cycle', params: { group: category, cycle: path.concat([id]).join(' → ') } });
+        const visit = (key, path) => {
+            if (state.get(key) === 2) return true;
+            if (state.get(key) === 1) {
+                errors.push({ key: 'error_extension_dependency_cycle', params: { group: 'extensions', cycle: path.concat([key]).join(' → ') } });
                 return false;
             }
-            state.set(id, 1);
-            const deps = (items.get(id) && items.get(id).dependencies_detailed) || [];
-            for (const dep of deps) {
-                const depId = String((dep && dep.identifier) || '');
-                // 자기 자신 의존은 순환이 아니라 잘못 적은 선언이다 — 건너뛴다
-                if (depId !== '' && depId !== id && set.has(depId) && !visit(depId, path.concat([id]))) return false;
+            state.set(key, 1);
+            for (const depKey of dependencyKeys(key)) {
+                if (!visit(depKey, path.concat([key]))) return false;
             }
-            state.set(id, 2);
-            sorted.push(id);
+            state.set(key, 2);
+            order.push(key);
             return true;
         };
 
-        for (const id of sortedIds) {
-            if (!visit(id, [])) return sortedIds;
+        const pulledBy = {};
+        let sorted = true;
+        for (const key of base) {
+            if (!visit(key, [])) { sorted = false; break; }
         }
-        return sorted;
+        if (sorted) {
+            base.forEach((key) => {
+                const ownerRank = rank.get(key.slice(0, key.indexOf(':')));
+                dependencyKeys(key).forEach((depKey) => {
+                    if (ownerRank < rank.get(depKey.slice(0, depKey.indexOf(':')))) {
+                        (pulledBy[depKey] = pulledBy[depKey] || []).push(key);
+                    }
+                });
+            });
+        } else {
+            order = base.slice();
+        }
+
+        const packScan = scanIndex('language_packs');
+        const isCore = (id) => (String((items.language_packs.get(id) || {}).scope || 'core') === 'core' ? 0 : 1);
+        selected.language_packs.slice()
+            .sort((a, b) => (isCore(a) - isCore(b)) || byScan(packScan)(a, b))
+            .forEach((id) => order.push('language_packs:' + id));
+
+        return { order: order, pulled_by: pulledBy };
     }
 
     /**
@@ -123,7 +178,7 @@
      *
      * @param {Object} scan 카테고리별 스캔 항목 (scan-extensions.php data)
      * @param {Object} requested 카테고리별 요청 식별자
-     * @returns {{selection: Object, auto_added: Array, excluded_language_packs: string[], errors: Array, install_order: string[]}}
+     * @returns {{selection: Object, auto_added: Array, excluded_language_packs: string[], errors: Array, install_order: string[], pulled_by: Object}}
      */
     function resolveExtensionSelection(scan, requested) {
         const errors = [];
@@ -164,8 +219,7 @@
                     ((owner && owner.dependencies_detailed) || []).forEach((dep) => {
                         const depId = String((dep && dep.identifier) || '');
                         if (depId === '') return;
-                        const depType = String((dep && dep.type) || '');
-                        const targetCat = (depType === 'modules' || depType === 'plugins') ? depType : (idToCategory.get(depId) || null);
+                        const targetCat = dependencyCategory(dep, idToCategory);
 
                         if (targetCat === null || !items[targetCat].has(depId)) {
                             unavailable.set(ownerId + '>' + depId, { owner: displayName(owner), dependency: depId });
@@ -194,7 +248,8 @@
                 ((owner && owner.dependencies_detailed) || []).forEach((dep) => {
                     const depId = String((dep && dep.identifier) || '');
                     const constraint = String((dep && dep.version) || '*');
-                    const depCat = idToCategory.get(depId);
+                    // 선언된 종류를 먼저 본다 — 같은 식별자가 모듈·플러그인 양쪽에 있어도 섞지 않는다
+                    const depCat = dependencyCategory(dep, idToCategory);
                     if (!depCat || !selected[depCat].includes(depId)) return;
                     const available = String(items[depCat].get(depId).version || '0.0.0');
                     if (!satisfiesVersionConstraint(available, constraint)) {
@@ -227,13 +282,15 @@
             return matched;
         });
 
-        const installOrder = [];
-        CATEGORIES.forEach((cat) => {
-            selected[cat] = topologicalOrder(cat, selected[cat], items[cat], errors);
-            selected[cat].forEach((id) => installOrder.push(cat + ':' + id));
+        // 설치 순서 — 종류를 넘는 의존까지 한 그래프로 정렬(기본 순서는 종류 → 스캔, 의존만 앞당김)
+        const ordered = installOrder(selected, items, idToCategory, errors);
+        CATEGORIES.forEach((cat) => { selected[cat] = []; });
+        ordered.order.forEach((key) => {
+            const sep = key.indexOf(':');
+            selected[key.slice(0, sep)].push(key.slice(sep + 1));
         });
 
-        return { selection: selected, auto_added: autoAdded, excluded_language_packs: excluded, errors: errors, install_order: installOrder };
+        return { selection: selected, auto_added: autoAdded, excluded_language_packs: excluded, errors: errors, install_order: ordered.order, pulled_by: ordered.pulled_by };
     }
 
     const api = { CATEGORIES, satisfiesVersionConstraint, resolveExtensionSelection };

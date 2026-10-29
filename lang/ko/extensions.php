@@ -13,6 +13,13 @@ return [
         'language_pack' => '언어팩',
     ],
 
+    // 의존 확장 종류 이름 — 의존 미충족 문구의 :type (#153)
+    'dependency_types' => [
+        'module' => '모듈',
+        'plugin' => '플러그인',
+        'template' => '템플릿',
+    ],
+
     // 멈춘 업데이트 정리 안내 (7.1.1)
     'stuck_update_recovered' => '멈춘 업데이트를 정리했습니다(되돌린 상태: :status): :name — 업데이트가 도중에 끝나 「업데이트 중」에 남아 있던 상태를 되돌렸습니다.',
     'stuck_update_activate_hint' => '정리한 확장은 비활성 상태입니다. 다시 켜려면: :command',
@@ -92,6 +99,7 @@ return [
         'notice_version_mismatch' => ':name :required 버전 필요(지금 :installed)',
         'notice_summary' => '함께 쓰면 연동되는 확장 중 연동이 꺼진 것이 있습니다 — :list. 설치·활성화·업데이트하면 연동됩니다.',
         'cascade_failed' => ':name 을(를) 함께 설치·활성화하지 못해 건너뛰었습니다: :message',
+        'requires_no_permission' => '이 연동에 필요한 :identifier 을(를) 설치하거나 활성화할 권한이 없습니다',
         'states' => [
             'not_installed' => '미설치',
             'inactive' => '비활성',
@@ -204,6 +212,7 @@ return [
             ],
             'confirm_proceed' => '일괄 업데이트를 진행하시겠습니까?',
             'skipped' => '일괄 업데이트를 건너뜁니다.',
+            'dependency_cycle' => '의존 관계가 순환합니다 — 이 구간은 원래 순서로 업데이트합니다: :cycle',
             'strategy_question' => '전역 레이아웃 전략을 선택하세요',
             'strategy_options' => [
                 'overwrite' => '모든 레이아웃을 번들로 덮어쓰기',

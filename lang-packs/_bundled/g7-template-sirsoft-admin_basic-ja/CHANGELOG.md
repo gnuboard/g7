@@ -12,6 +12,7 @@
 - 관리자 기본 템플릿 1.1.4 의 강제 활성화 창 「버전 미달」 표시(모듈·플러그인 2건)의 일본어 번역을 추가했습니다.
 - 관리자 기본 템플릿 1.1.4 의 PHP 확장 표시 일본어 번역을 추가했습니다 — 모듈·플러그인 목록 배지(「PHP 拡張が必要」·「推奨 PHP 拡張」)와 상세 창 「必要な PHP 拡張」 절(`extensions.php_extensions.*`), 환경설정 > 정보 탭의 「拡張(モジュール・プラグイン)が要求するモジュール」 목록(`admin.settings.info.requested_modules`·`requested_by_line`·`level_require`·`level_suggest`)입니다.
 - 관리자 기본 템플릿 1.1.4 의 템플릿 강제 활성화 창 503 경고(사용자·관리자 템플릿), 목록 카드 미충족 의존 사유, 503 안내 화면의 항목별 사유 문구의 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.4 설치 창의 연동 확장 「함께 설치」 줄(`admin.extension_integrations.requires_label`·`requires_hint`·`requires_hint_unselected`·`requires_no_permission`) 일본어 번역을 추가했습니다.
 
 ### Changed
 

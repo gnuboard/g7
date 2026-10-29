@@ -1339,6 +1339,34 @@ hr {
   line-height: var(--line-height-normal);
 }
 
+/* 의존 때문에 앞당겨 설치하는 항목의 「{이름}에 필요」 배지 (#153) — 색은 테마 변수라 다크 테마에서도 따라 바뀐다 */
+.task-required-by {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background-color: var(--bg-gray);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 1px var(--spacing-sm);
+}
+
+/* 모바일 폭에서는 이름 아래 줄로 내린다 */
+@media (max-width: 480px) {
+  .task-item:has(.task-required-by) {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .task-required-by {
+    margin-left: calc(18px + var(--spacing-md));
+  }
+
+  .task-item:has(.task-required-by) .task-name {
+    flex-basis: calc(100% - 18px - var(--spacing-md));
+  }
+}
+
 .task-pending {
   color: var(--text-muted);
   background-color: var(--bg-color);

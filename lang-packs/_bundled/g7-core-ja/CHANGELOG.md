@@ -16,10 +16,12 @@
 - 코어 7.1.4 에서 추가된 터미널 운영 명령(비밀번호 재설정·설정 값 조회·지정·확장 의존 연쇄 설치·`core:install`)의 출력과 오류 문구, 의존 확장 버전 미달 안내, 시스템(CLI) 비밀번호 재설정 활동 로그, `.env` 고정 설정의 단건 저장 거부 문구의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 문구가 키 그대로 보입니다.
 - `php artisan list`·`--help` 에 보이는 코어 artisan 명령 설명 129개와, 확장을 함께 설치한 뒤 본 확장 설치가 실패했을 때 남겨 둔 의존 확장 안내의 일본어 번역을 추가했습니다.
 - 코어 7.1.4 의 PHP 확장 요구 안내의 일본어 번역을 추가했습니다 — 확장 설치·활성화가 필요한 PHP 확장이 없어 막힐 때의 안내(`extensions.errors.php_extension_missing`)와 업데이트 경고(`extensions.warnings.php_extension_missing`), 코어 업데이트 사전점검 안내(`settings.core_update.console.php_extension_core_missing`·`php_extension_extension_warning`), 설정 백업·복원의 zip 안내(`settings.errors.zip_extension_required`), 사이트맵 gzip 저장 검증(`validation.settings.sitemap_gzip_requires_zlib`), 압축 해제의 zlib·phar 안내(`common.errors.archive_php_extension_missing`)입니다.
+- 코어 7.1.4 의 의존 확장 종류 이름(`extensions.dependency_types` — モジュール・プラグイン・テンプレート), 번들 일괄 업데이트의 종류를 넘는 순환 경고(`extensions.commands.bundled_update.dependency_cycle`), 설치 창의 연동 확장 필수 의존 권한 안내(`extensions.integrations.requires_no_permission`) 일본어 번역을 추가했습니다.
 
 ### Changed
 
 - 압축을 풀 수 없을 때의 안내(`settings.core_update.no_extract_method_available`) 번역을 코어 7.1.4 문구에 맞춰 「--source 로 수동 업데이트할 수 있다」에서 「서버에 zip 확장을 설치한 뒤 다시 시도」로 바꿨습니다.
+- 의존 확장 미충족 문구(`modules.dependency_not_active`·`plugins.dependency_not_active`)가 의존 대상의 실제 종류를 부르도록 바꿨습니다 — 「依存する:type ":dependency" がインストールされていないか無効です。」(종전에는 플러그인도 「モジュール」로 표기).
 
 ## [1.1.2] - 2026-10-23
 

@@ -26,6 +26,7 @@ axes:
 effects:
   - detail_shows_required_version_and_mismatch_badge               # 상세 창: 요구 버전(무제약 * 감춤)·설치 버전·「버전 미달」(is_met === false 일 때만)
   - install_modal_lists_integrations_with_default_selection        # 설치 창: 기본 체크 = default_selected, can_select=false·활성은 잠금, 옛 코어는 절 없음
+  - install_modal_shows_integration_required_dependencies          # 설치 창: 연동 대상의 필수 의존 「함께 설치」 줄(체크=먼저 설치·해제=흐림), 권한 없음·계획 오류 사유 배지 (#153 D5)
   - install_request_carries_selected_integrations                  # 요청 본문 integrations = 고른 module·plugin [{type, identifier}], 해제하면 빠짐
   - install_selection_resets_when_modal_opens                      # 설치 창을 열 때 직전 선택(의존·언어팩·연동)을 비운다
   - deactivate_with_integrated_by_opens_notice_modal               # 연동 중인 확장이 있으면 스위치가 안내 창을 열고, 없으면 곧바로 부른다

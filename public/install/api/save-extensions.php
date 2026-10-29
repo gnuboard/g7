@@ -166,6 +166,8 @@ try {
 
     // selected_extensions 업데이트 — 해석 결과(의존 확장 포함·설치 순서 정렬)를 저장한다.
     $state['selected_extensions'] = $resolution['selection'];
+    // 종류 경계를 넘어 앞당겨 설치할 항목 → 요구한 확장 (Step 5 작업 목록의 「…에 필요」 표시)
+    $state['install_pulled_by'] = $resolution['pulled_by'];
     $adminTemplates = $resolution['selection']['admin_templates'];
     $userTemplates = $resolution['selection']['user_templates'];
     $modules = $resolution['selection']['modules'];
@@ -206,6 +208,7 @@ try {
             'selected_extensions' => $state['selected_extensions'],
             'auto_added' => $resolution['auto_added'],
             'install_order' => $resolution['install_order'],
+            'pulled_by' => $resolution['pulled_by'],
             'next_step' => 5,
         ],
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);

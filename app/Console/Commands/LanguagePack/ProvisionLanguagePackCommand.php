@@ -4,6 +4,7 @@ namespace App\Console\Commands\LanguagePack;
 
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
+use App\Enums\LanguagePackScope;
 use App\Extension\Support\LifecycleWarnings;
 use App\Models\LanguagePack;
 use App\Services\LanguagePack\LanguagePackBaseLocales;
@@ -25,6 +26,10 @@ use Throwable;
  * 드리프트는 화면에서 보이기만 하고 CLI 로는 고칠 수 없습니다.
  *
  * 멱등성: 정상 설치된 팩은 두 집합 어디에도 속하지 않으므로 재실행 시 신규 설치 0 건으로 수렴합니다.
+ *
+ * 순서(#153): 확장 언어팩은 같은 로케일의 코어 언어팩이 활성이어야 설치된다(`core_locale_missing`). 코어 범위 팩을 먼저 처리하고,
+ * 이번 실행에서 앞선 팩이 설치됐으면 미리 계산된 `core_locale_missing` 을 그 팩 차례에 다시 판정한다 — 종전에는 루프 전에 한 번만
+ * 계산해 신규 로케일 첫 실행이 코어 팩만 설치하고 확장 팩을 전부 건너뛰어 두 번 실행해야 끝났다.
  */
 class ProvisionLanguagePackCommand extends Command
 {
@@ -74,6 +79,10 @@ class ProvisionLanguagePackCommand extends Command
             ->concat($this->service->getDriftedInstalledPacks()->filter($inScope))
             ->values();
 
+        // 코어 범위 팩 먼저(그 안과 나머지는 원래 순서) — 확장 팩의 코어 locale 의존을 같은 실행에서 채운다
+        [$corePacks, $extensionPacks] = $candidates->partition(fn (LanguagePack $pack) => $pack->scope === LanguagePackScope::Core->value);
+        $candidates = $corePacks->concat($extensionPacks)->values();
+
         if ($candidates->isEmpty()) {
             $this->info(__('language_packs.commands.provision.nothing_to_do', [
                 'locales' => implode(', ', $targetLocales),
@@ -90,6 +99,12 @@ class ProvisionLanguagePackCommand extends Command
         foreach ($candidates as $pack) {
             $identifier = (string) ($pack->getAttribute('bundled_identifier') ?? $pack->identifier);
             $blockedReason = $pack->getAttribute('install_blocked_reason');
+
+            // 루프 전 계산값의 코어 locale 미설치는 이번 실행에서 앞선 코어 팩이 설치됐으면 이미 풀렸을 수 있다 — 지금 다시 판정한다.
+            // (대상 확장 미설치·버전 미달은 이 명령이 바꾸지 않으므로 다시 보지 않는다)
+            if ($blockedReason === 'core_locale_missing' && ($installed + $repaired) > 0) {
+                $blockedReason = $this->service->bundledInstallBlockedReason($identifier);
+            }
 
             // 대상 확장 미설치·버전 미달 등으로 설치가 불가한 팩은 best-effort 로 건너뛴다.
             // 대상이 설치돼 있으나 꺼진 팩은 차단 사유가 아니다 — 꺼진 채 설치되고 그 확장을 켤 때 함께 켜진다.

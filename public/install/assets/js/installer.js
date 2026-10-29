@@ -3995,8 +3995,8 @@
                         data.message || lang('installation_error_occurred')
                     );
                     const errorDetail = data.error || null;
-                    const failedTaskId = data.task || null;
-                    showError(errorMessage, errorDetail, failedTaskId);
+                    const failedTaskId = data.task ? (data.target ? `${data.task}:${data.target}` : data.task) : null;
+                    showError(errorMessage, errorDetail, failedTaskId, data.message_key || null);
                 },
                 onConnectionTimeout: () => {
                     // SSE 모드에서 연결 timeout 시 — 사전 체크 통과 후의 예외 케이스라
@@ -4219,6 +4219,41 @@
     }
 
     /**
+     * 의존 때문에 앞당겨 설치하는 항목의 「{이름}에 필요」 표시 문구 (#153).
+     *
+     * 확장 저장 시 해석기가 기록한 `install_pulled_by`(종류 경계를 넘어 앞당겨진 `카테고리:식별자` → 요구한 확장)를
+     * 설치 작업(*_install) 행에만 붙인다. 그룹 id 가 카테고리와 같다(admin_templates·modules·plugins·user_templates).
+     *
+     * @param {string} groupId 작업 그룹 id
+     * @param {Object} task 작업 객체 ({id, target})
+     * @returns {string|null} 표시 문구 (해당 없으면 null)
+     */
+    function getTaskRequiredByLabel(groupId, task) {
+        if (!task.target || !/_install$/.test(task.id)) return null;
+        const owners = (window.INSTALLER_PULLED_BY || {})[groupId + ':' + task.target];
+        if (!Array.isArray(owners) || owners.length === 0) return null;
+        const names = owners.map((key) => {
+            const id = String(key).slice(String(key).indexOf(':') + 1);
+            return getStoredExtensionName(id) || id;
+        });
+        return lang('task_required_by').replace(':names', names.join(', '));
+    }
+
+    /**
+     * 작업 키(`id` 또는 `id:target`)를 작업 객체로 나눈다 — state 의 failed_task 는 target 을 붙여 저장한다.
+     *
+     * @param {string|null} taskKey 작업 키
+     * @returns {{id: string, target: (string|null)}|null} 작업 객체
+     */
+    function splitTaskKey(taskKey) {
+        if (!taskKey) return null;
+        const sep = String(taskKey).indexOf(':');
+        return sep === -1
+            ? { id: String(taskKey), target: null }
+            : { id: String(taskKey).slice(0, sep), target: String(taskKey).slice(sep + 1) };
+    }
+
+    /**
      * 작업 목록 렌더링 (그룹화된 아코디언 UI)
      */
     function renderTaskList() {
@@ -4263,10 +4298,12 @@
             const tasksHtml = tasks.map(task => {
                 const taskDomId = getTaskDomId(task);
                 const taskName = getTaskDisplayName(task);
+                const requiredBy = getTaskRequiredByLabel(group.id, task);
                 return `
                     <div id="${taskDomId}" class="task-item task-pending" data-task-id="${task.id}" data-target="${task.target || ''}">
                         <span class="task-icon"><svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
                         <span class="task-name">${escapeHtml(taskName)}</span>
+                        ${requiredBy ? `<span class="task-required-by">${escapeHtml(requiredBy)}</span>` : ''}
                     </div>
                 `;
             }).join('');
@@ -4431,9 +4468,10 @@
      *
      * @param {string} errorMessage 메인 오류 메시지
      * @param {string|null} errorDetail 상세 오류 메시지 (선택)
-     * @param {string|null} failedTaskId 실패한 작업 ID (선택)
+     * @param {string|null} failedTaskId 실패한 작업 ID (선택, `id` 또는 `id:target`)
+     * @param {string|null} messageKey 실패 문구 키 (선택) — 사전 검증 실패면 「Step 4 로 돌아가기」를 앞세운다
      */
-    function showError(errorMessage, errorDetail = null, failedTaskId = null) {
+    function showError(errorMessage, errorDetail = null, failedTaskId = null, messageKey = null) {
         installationCompleted = true; // 완료 플래그 설정 (beforeunload 경고 비활성화)
 
         // 대기 UI 숨기고 진행 카드 표시 (실패 경로 — 작업 목록/로그 노출)
@@ -4477,18 +4515,18 @@
             // 현재 진행 중인 작업(task-active)에서 추출
             const activeTasks = document.querySelectorAll('.task-item.task-active');
             activeTasks.forEach(taskEl => {
-                if (!failedTaskId) {
-                    // task element의 ID에서 task ID 추출 (예: 'task-composer_install' -> 'composer_install')
-                    const taskId = taskEl.id.replace('task-', '');
-                    if (taskId) {
-                        failedTaskId = taskId;
-                    }
+                if (!failedTaskId && taskEl.dataset.taskId) {
+                    // data 속성에서 작업 키 복원 (예: 'module_install:sirsoft-page')
+                    failedTaskId = taskEl.dataset.target
+                        ? `${taskEl.dataset.taskId}:${taskEl.dataset.target}`
+                        : taskEl.dataset.taskId;
                 }
             });
         }
 
-        // Task ID를 번역된 이름으로 변환
-        const failedTaskName = failedTaskId ? getTaskName(failedTaskId) : null;
+        // Task ID를 번역된 이름으로 변환 — state 복원 경로는 `module_install:sirsoft-page` 처럼 target 을 붙여 온다
+        const failedTask = splitTaskKey(failedTaskId);
+        const failedTaskName = failedTask ? getTaskDisplayName(failedTask) : null;
 
         // 현재 진행 중인 작업(task-active)을 모두 실패로 표시
         const activeTasks = document.querySelectorAll('.task-item.task-active');
@@ -4502,6 +4540,18 @@
         const failureSection = document.getElementById('failure-section');
         const failureMessage = document.getElementById('failure-message');
         const failureTitle = failureSection?.querySelector('.result-title');
+
+        // 의존성 사전 검증 실패(순환·누락)는 재시도로 풀리지 않는다 — 「Step 4 로 돌아가기」를 주 버튼으로, 재시도는 보조로
+        const isPrecheckFailure = messageKey === 'dependency_precheck_failed';
+        const backToExtensionsBtn = document.getElementById('back-to-extensions-btn');
+        const retryBtn = document.getElementById('retry-installation-btn');
+        if (backToExtensionsBtn) {
+            backToExtensionsBtn.classList.toggle('hidden', !isPrecheckFailure);
+        }
+        if (retryBtn) {
+            retryBtn.classList.toggle('btn-primary', !isPrecheckFailure);
+            retryBtn.classList.toggle('btn-secondary', isPrecheckFailure);
+        }
 
         if (failureSection) {
             // 타이틀에 실패 단계 추가
@@ -4521,22 +4571,23 @@
                     </div>
                 `;
 
-                // 상세 오류 (있을 경우만 - 아코디언 형식)
+                // 상세 오류 (있을 경우만 - 아코디언 형식). 사전 검증 실패는 사유가 곧 해결 방법이라 펼쳐 둔다.
                 if (errorDetail) {
                     const accordionId = 'error-detail-' + Date.now();
+                    const expanded = isPrecheckFailure;
                     messageHtml += `
                         <div class="failure-error-detail">
                             <button
                                 class="error-detail-toggle"
                                 type="button"
-                                aria-expanded="false"
+                                aria-expanded="${expanded ? 'true' : 'false'}"
                                 aria-controls="${accordionId}"
                                 onclick="toggleErrorDetail(this, '${accordionId}')"
                             >
                                 <span class="error-detail-toggle-icon">▶</span>
                                 <strong>${lang('view_error_details')}</strong>
                             </button>
-                            <div id="${accordionId}" class="error-detail-content">
+                            <div id="${accordionId}" class="error-detail-content${expanded ? ' show' : ''}">
                                 <pre class="error-stack">${escapeHtml(errorDetail)}</pre>
                             </div>
                         </div>
@@ -4719,7 +4770,8 @@
 
                 // ✅ showError() 호출 전에 먼저 task를 failed로 마크
                 if (failedTaskId) {
-                    setTaskStatus(failedTaskId, 'failed');
+                    const failedTask = splitTaskKey(failedTaskId);
+                    setTaskStatus(failedTask.id, 'failed', failedTask.target);
                 }
 
                 // 롤백 실패 정보 복원 (state.json에서 새로고침 후에도 표시)
@@ -4731,7 +4783,7 @@
                 }
 
                 // ✅ failedTaskId를 명시적으로 전달 (함수 내부에서 번역됨)
-                showError(errorMessage, errorDetail, failedTaskId);
+                showError(errorMessage, errorDetail, failedTaskId, state.error_message_key || null);
 
                 return;
             }

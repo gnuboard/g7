@@ -3,7 +3,7 @@
 return [
     // 기존 메시지
     'not_found' => '":module" 모듈을 찾을 수 없습니다.',
-    'dependency_not_active' => '의존하는 ":dependency" 모듈이 설치되지 않았거나 비활성 상태입니다.',
+    'dependency_not_active' => '의존하는 :type ":dependency"이(가) 설치되지 않았거나 비활성 상태입니다.',
     'dependency_version_unmet' => '의존하는 ":dependency" 의 설치 버전(:installed)이 요구 버전(:required)을 충족하지 않습니다. 의존 확장을 먼저 업데이트하세요.',
 
     'status' => [

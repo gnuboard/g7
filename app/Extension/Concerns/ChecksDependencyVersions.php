@@ -67,10 +67,13 @@ trait ChecksDependencyVersions
         $messages = [];
         $unmet = $this->collectUnmetDependencies($dependencies);
 
-        foreach ([...$unmet['modules'], ...$unmet['plugins']] as $item) {
-            $messages[] = $item['status'] === 'version_mismatch'
-                ? __($langPrefix.'.dependency_version_unmet', ['dependency' => $item['identifier'], 'required' => $item['required_version'], 'installed' => $item['installed_version']])
-                : __($langPrefix.'.dependency_not_active', ['dependency' => $item['identifier']]);
+        // 미설치·비활성 문구는 의존 대상의 실제 종류를 현지화해 싣는다 — 종전에는 플러그인도 「모듈」이라 불렀다(#153)
+        foreach (['modules' => 'module', 'plugins' => 'plugin'] as $bucket => $type) {
+            foreach ($unmet[$bucket] as $item) {
+                $messages[] = $item['status'] === 'version_mismatch'
+                    ? __($langPrefix.'.dependency_version_unmet', ['dependency' => $item['identifier'], 'required' => $item['required_version'], 'installed' => $item['installed_version']])
+                    : __($langPrefix.'.dependency_not_active', ['dependency' => $item['identifier'], 'type' => __('extensions.dependency_types.'.$type)]);
+            }
         }
 
         return $messages;

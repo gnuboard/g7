@@ -11,6 +11,11 @@ return [
         'plugin' => 'プラグイン',
         'language_pack' => '言語パック',
     ],
+    'dependency_types' => [
+        'module' => 'モジュール',
+        'plugin' => 'プラグイン',
+        'template' => 'テンプレート',
+    ],
     'stuck_update_recovered' => '止まっていた更新を整理しました(戻した状態: :status): :name — 更新が途中で終了し「更新中」のまま残っていた状態を戻しました。',
     'stuck_update_activate_hint' => '整理した拡張機能は無効状態です。再度有効にするには: :command',
     'stuck_update_unfinished_hint' => 'この更新(:from → :to)は完了していません — ファイルは新しいバージョンに替わっている可能性があるため、記録バージョンを :from に戻しました。更新をもう一度実行すると、終わっていない段階だけを続けて完了します: :command',
@@ -85,6 +90,7 @@ return [
         'notice_version_mismatch' => ':name :required が必要(現在 :installed)',
         'notice_summary' => '一緒に使うと連携する拡張のうち、連携していないものがあります — :list。インストール・有効化・アップデートすると連携します。',
         'cascade_failed' => ':name を一緒にインストール・有効化できなかったためスキップしました: :message',
+        'requires_no_permission' => 'この連携に必要な :identifier をインストールまたは有効化する権限がありません',
         'states' => [
             'not_installed' => '未インストール',
             'inactive' => '無効',
@@ -176,6 +182,7 @@ return [
             ],
             'confirm_proceed' => '一括アップデートを進めてもよろしいですか?',
             'skipped' => '一括アップデートをスキップします。',
+            'dependency_cycle' => '依存関係が循環しています — この区間は元の順序で更新します: :cycle',
             'strategy_question' => '全体のレイアウト戦略を選択してください',
             'strategy_options' => [
                 'overwrite' => 'すべてのレイアウトをバンドルで上書き',

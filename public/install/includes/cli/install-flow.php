@@ -148,6 +148,7 @@ if (! function_exists('g7_cli_run_install')) {
         $generation = (int) ($state['generation'] ?? 0);
         $state['selected_extensions'] = $selection['selection'];
         $state['extension_names'] = $selection['names'];
+        $state['install_pulled_by'] = $selection['pulled_by'];
         $state['step_status']['4'] = 'completed';
         $state['current_step'] = 5;
         if (! saveInstallationStateCas($state, $generation)) {
@@ -440,7 +441,7 @@ if (! function_exists('g7_cli_select_extensions')) {
      * @param  array<string, mixed>  $input  병합 입력
      * @param  string  $uiLang  설치 UI 언어
      * @param  bool  $interactive  대화형 여부
-     * @return array{selection: array<string, array<int, string>>, names: array<string, mixed>}|int 결과 또는 종료 코드
+     * @return array{selection: array<string, array<int, string>>, names: array<string, mixed>, pulled_by: array<string, array<int, string>>}|int 결과 또는 종료 코드
      */
     function g7_cli_select_extensions(G7CliOutput $out, array $input, string $uiLang, bool $interactive): array|int
     {
@@ -488,10 +489,15 @@ if (! function_exists('g7_cli_select_extensions')) {
         foreach ($phpExclusion['skipped'] as $skippedIdentifier => $missingPhpExtensions) {
             $out->info(lang('log_extension_skipped_php_extension_missing', ['identifier' => $skippedIdentifier, 'extensions' => implode(', ', $missingPhpExtensions)]));
         }
-        $out->info(lang('cli_ext_install_order').': '.implode(', ', $resolution['install_order']));
-        $out->raw('extensions', ['install_order' => $resolution['install_order'], 'auto_added' => $resolution['auto_added'], 'php_extension_skipped' => $phpExclusion['skipped']]);
+        // 종류 경계를 넘어 앞당긴 항목에는 요구한 확장을 붙인다 — 예: plugins:sirsoft-ckeditor5 (← modules:sirsoft-page)
+        $orderLabels = array_map(
+            static fn (string $entry): string => isset($resolution['pulled_by'][$entry]) ? $entry.' (← '.implode(', ', $resolution['pulled_by'][$entry]).')' : $entry,
+            $resolution['install_order']
+        );
+        $out->info(lang('cli_ext_install_order').': '.implode(', ', $orderLabels));
+        $out->raw('extensions', ['install_order' => $resolution['install_order'], 'pulled_by' => $resolution['pulled_by'], 'auto_added' => $resolution['auto_added'], 'php_extension_skipped' => $phpExclusion['skipped']]);
 
-        return ['selection' => $resolution['selection'], 'names' => $names];
+        return ['selection' => $resolution['selection'], 'names' => $names, 'pulled_by' => $resolution['pulled_by']];
     }
 }
 

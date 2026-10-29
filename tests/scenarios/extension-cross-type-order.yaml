@@ -1,0 +1,102 @@
+feature: 여러 확장을 한 번에 처리할 때 종류를 넘는 의존 순서를 지킨다
+
+description: |
+  모듈이 플러그인에 의존하거나 관리자 템플릿이 모듈에 의존할 수 있다(매니페스트 `dependencies.{modules,plugins}`).
+  여러 확장을 한 번에 처리하는 경로가 종류별 고정 순서(관리자 템플릿 → 모듈 → 플러그인 → 사용자 템플릿)로 돌면
+  의존 대상보다 의존하는 쪽이 먼저 처리돼 설치가 멈추거나(설치 마법사), 거짓 경고·업데이트 실패가 나거나(번들 일괄 업데이트),
+  끄기가 막히거나(자동 비활성화), 두 번 실행해야 끝난다(언어팩 provision). 공개 g7#153.
+
+  ## 왜 축이 이렇게 갈리는가
+
+  `surface` 는 같은 정렬 규칙(종류 기본 순서 → 그 안의 기존 순서, 의존만 앞당김 — 순환은 오류·원래 순서)을
+  **서로 다른 구현이 따로 들고 있는** 경로다. 설치 마법사는 Laravel 부팅 전이라 PHP 함수 + JS 사본(공용 픽스처),
+  코어 경로는 `App\Support\ExtensionDependencyOrder` 를 쓴다. 자동 비활성화는 같은 결과를 뒤집어(의존하는 쪽부터) 쓰고,
+  provision 은 언어팩 한 방향(코어 locale 팩 → 확장 팩)만 있다. 연동 함께 설치는 연동 대상의 필수 의존을 연쇄 설치 계획으로 푼다.
+
+  `edge` 는 의존 그래프의 모양이다 — 모듈 → 플러그인(이슈 형태), 관리자 템플릿 → 모듈, 3단 사슬(플러그인 → 모듈 → 플러그인),
+  종류를 넘는 순환, 그리고 언어팩의 코어 locale 팩 → 확장 팩(core_locale_pack). 모양마다 앞당겨지는 노드·실패 지점이 다르다.
+
+axes:
+  surface: [installer, bundled_update, auto_deactivate, provision, integration_install]
+  edge: [module_to_plugin, admin_template_to_module, chain, cycle, core_locale_pack]
+
+exclusions:
+  - { surface: bundled_update, edge: admin_template_to_module, reason: "템플릿 업데이트는 모듈·플러그인 다음 단계에서 따로 돈다 — 템플릿 → 모듈 의존은 그 순서로 이미 맞다" }
+  - { surface: auto_deactivate, edge: admin_template_to_module, reason: "부팅 자동 비활성화의 끄기 순서는 모듈·플러그인 사이에서만 막힌다(템플릿 의존자는 종전과 같이 다음 부팅 재시도)" }
+  - { surface: auto_deactivate, edge: cycle, reason: "끄기는 의존자가 남아 있으면 막히는 판정이라 순환이면 진척 없이 다음 부팅 재시도 — 종전 동작과 같다" }
+  - { surface: provision, edge: module_to_plugin, reason: "provision 은 언어팩만 다룬다 — 확장 사이 의존이 아니라 코어 locale 팩 → 확장 팩(core_locale_pack) 한 방향뿐이다" }
+  - { surface: provision, edge: admin_template_to_module, reason: "언어팩 의존은 코어 locale 팩 → 확장 팩 한 방향뿐이다" }
+  - { surface: provision, edge: chain, reason: "언어팩 의존은 코어 locale 팩 → 확장 팩 한 단계뿐이다" }
+  - { surface: provision, edge: cycle, reason: "언어팩 사이에는 순환이 생길 수 없다(확장 팩끼리 의존 없음)" }
+  - { surface: bundled_update, edge: core_locale_pack, reason: "일괄 업데이트의 언어팩 단계는 확장 갱신 뒤 새 프로세스로 돈다 — 이미 설치된 팩의 갱신이라 코어 locale 의존이 새로 생기지 않는다" }
+  - { surface: auto_deactivate, edge: core_locale_pack, reason: "자동 비활성화는 모듈·플러그인·템플릿 대상이다(언어팩은 호스트와 함께 꺼짐 규칙이 따로 있다)" }
+  - { surface: integration_install, edge: core_locale_pack, reason: "연동 함께 설치의 언어팩은 본체 뒤에 기존 연쇄 설치 언어팩 경로로 설치된다(변경 없음)" }
+  - { surface: integration_install, edge: admin_template_to_module, reason: "연동 대상은 모듈·플러그인이고, 템플릿 대상 연동은 안내만 한다" }
+
+effects:
+  # 설치 마법사 — 공유 해석기(PHP·JS 같은 픽스처)
+  - resolver_php_matches_shared_fixture
+  - resolver_js_matches_shared_fixture
+  - install_order_cross_type_cycle_reported_with_path
+  - pulled_by_follows_php_extension_exclusion
+  - save_extensions_sorts_before_storing
+  # 설치 마법사 — 작업 목록 조립(웹·터미널 runInstallationTasks)
+  - installer_task_list_follows_cross_type_order
+  - installer_task_list_keeps_resume_keys
+  - installer_task_list_falls_back_to_category_order
+  - installer_task_runner_uses_install_order
+  - installer_precheck_failure_skips_rollback_notice
+  - installer_step4_restores_selection_after_back
+  # 설치 마법사 — Step 5 화면(D7·D9)
+  - installer_step5_required_by_badge_on_pulled_install_row
+  - installer_step5_required_by_badge_absent_without_pull
+  - installer_step5_required_by_lists_every_owner_name
+  - installer_step5_precheck_failure_shows_back_to_step4
+  - installer_step5_other_failure_keeps_retry_primary
+  - installer_step5_failure_title_has_no_raw_task_key
+  # 코어 공용 정렬 — App\Support\ExtensionDependencyOrder
+  - dependency_order_is_stable_without_dependencies
+  - dependency_order_crosses_extension_types
+  - dependency_order_keeps_same_identifier_types_apart
+  - dependency_order_reports_cycle_and_keeps_original_order
+  - dependency_order_ignores_self_dependency
+  - dependency_order_reverse_puts_dependents_first
+  - dependency_order_reads_manifest_dependency_keys
+  # 번들 일괄 업데이트(A 프로세스 분리 · B 같은 프로세스)
+  - bundled_update_orders_modules_and_plugins_across_types
+  - bundled_update_in_process_uses_same_cross_type_order
+  - bundled_update_warns_cross_type_cycle
+  # 코어 비호환 자동 비활성화(C) — 막힌 후보를 같은 부팅에서 재시도
+  - auto_deactivate_turns_off_module_after_dependent_plugin_in_one_boot
+  - auto_deactivate_resolves_cross_type_chain_in_one_boot
+  - boot_retries_blocked_incompatible_extensions_after_templates
+  # 언어팩 — 코어 범위 팩 먼저(설치 마법사 F · provision E)
+  - installer_language_packs_core_scope_first
+  - provision_rechecks_core_locale_block_from_bundled_manifest
+  # 선택 연동 함께 설치(G, D5) — 연동 대상의 필수 의존을 먼저
+  - integration_required_dependency_installed_before_integration
+  - integration_required_dependency_chain_installed_once_in_order
+  - integration_skipped_with_reason_when_required_dependency_unavailable
+  - integration_required_dependency_respects_permission
+  - install_preview_integrations_expose_requires_and_block_reason
+  # 오류 문구(D4) — 의존 대상의 실제 종류를 현지화
+  - unmet_dependency_message_names_actual_extension_type
+
+test_files:
+  - tests/Unit/Installer/ExtensionSelectionResolverTest.php
+  - tests/Unit/Installer/InstallerTaskListOrderTest.php
+  - resources/js/tests/installer/installer-extension-resolver.test.ts
+  # Step 5 브라우저 로직은 installer.js 함수 단위 추출 + 가짜 DOM 으로 node 에서 잰다
+  # (실행: node --test tests/installer/installer-step5-required-by.test.cjs).
+  - tests/installer/installer-step5-required-by.test.cjs
+  - tests/Unit/Support/ExtensionDependencyOrderTest.php
+  - tests/Feature/Console/BundledUpdateCrossTypeOrderTest.php
+  - tests/Feature/Extension/IncompatibleExtensionCrossTypeRetryTest.php
+  - tests/Feature/LanguagePack/LanguagePackBlockedReasonRecheckTest.php
+  - tests/Unit/Http/Controllers/Concerns/IntegrationRequiredDependenciesTest.php
+  - tests/Unit/Extension/DependencyMessageTypeTest.php
+
+manual_verification: |
+  사본 설치본(g7_cli)의 번들 매니페스트를 임시로 고쳐(모듈 sirsoft-page → 플러그인 sirsoft-ckeditor5 의존) /install/ 에서
+  Step 4 「페이지」만 체크 → Step 5 에서 「CKEditor 5」 설치 행에 「페이지에 필요」 배지가 붙고 페이지보다 먼저 완료되는지,
+  플러그인 쪽에도 모듈 의존을 넣어 순환을 만들면 데이터베이스 작업 전에 사전 검증이 멈추고 「Step 4 로 돌아가기」가 주 버튼인지 잰다.

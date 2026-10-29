@@ -422,6 +422,70 @@
                                 "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
                             },
                             "text": "$t:admin.extension_integrations.cannot_select"
+                        },
+                        {
+                            "comment": "고를 수 없는 사유 — 연동 대상의 필수 의존을 설치할 권한이 없거나, 그 의존 계획을 세울 수 없음(없음·버전 미달·순환)",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{item.blocked_by_permission === true}}",
+                            "props": {
+                                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                            },
+                            "text": "$t:admin.extension_integrations.requires_no_permission"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{item.blocked_reason}}",
+                            "props": {
+                                "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
+                            },
+                            "text": "{{item.blocked_reason}}"
+                        },
+                        {
+                            "comment": "연동 대상 자신의 필수 의존(#153 D5) — 이 연동을 고르면 먼저 함께 설치된다. 체크 해제·선택 불가면 흐리게",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{(item.requires ?? []).length > 0}}",
+                            "props": {
+                                "className": "w-full flex-start gap-1 ml-6 mt-1 px-2 py-1 text-xs rounded border {{item.can_select === true && ((_global.installSelectedIntegrations ?? []).includes(item.type + ':' + item.identifier) || ((_global.installSelectedIntegrations === undefined || _global.installSelectedIntegrations === null) && item.default_selected)) ? 'text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' : 'text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-dashed border-gray-300 dark:border-gray-600'}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "arrow-right",
+                                        "className": "text-xs mt-0.5",
+                                        "aria-hidden": "true"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-semibold"
+                                    },
+                                    "text": "$t:admin.extension_integrations.requires_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{(item.requires ?? []).map(r => (r.name || r.identifier) + ' (' + r.identifier + ')').join(', ')}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{item.can_select === true && ((_global.installSelectedIntegrations ?? []).includes(item.type + ':' + item.identifier) || ((_global.installSelectedIntegrations === undefined || _global.installSelectedIntegrations === null) && item.default_selected))}}",
+                                    "text": "$t:admin.extension_integrations.requires_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{item.can_select === true && !((_global.installSelectedIntegrations ?? []).includes(item.type + ':' + item.identifier) || ((_global.installSelectedIntegrations === undefined || _global.installSelectedIntegrations === null) && item.default_selected))}}",
+                                    "text": "$t:admin.extension_integrations.requires_hint_unselected"
+                                }
+                            ]
                         }
                     ]
                 }
