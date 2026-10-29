@@ -570,6 +570,21 @@ test.describe('관리자 화면', () => {
     expect(await previewBodyHeight()).toBeGreaterThan(20);
   });
 
+  // @scenario flow=admin_list_paginates, viewport=desktop
+  // @effects test_data_cleaned_up
+  test('팝업 목록은 한 페이지를 넘으면 페이지 이동 줄이 보이고 2페이지로 간다', async ({ page, request, managerToken, created }) => {
+    // 사이트의 다른 팝업 수와 무관하게 사양이 만든 2건만으로 2페이지가 되도록 한 페이지 1건으로 연다
+    created.push(await createHtmlPopup(request, managerToken), await createHtmlPopup(request, managerToken));
+
+    await authenticatePage(page, managerToken);
+    await page.goto(`${ADMIN_LIST}?per_page=1&sort_by=created_at&sort_order=desc&page=1`);
+    const pager = page.getByRole('navigation', { name: '페이지네이션' });
+    await expect(pager).toBeVisible();
+    await pager.getByRole('link', { name: '페이지 2', exact: true }).click();
+    await expect(page).toHaveURL(/[?&]page=2(&|$)/);
+    await expect(page).toHaveURL(/per_page=1/);
+  });
+
   // @scenario flow=read_only_admin_cannot_edit, viewport=desktop
   // @effects user_screen_reflects_admin_change, test_data_cleaned_up
   test('조회 권한만 있는 관리자는 등록·일괄 작업·순서 변경 단추가 없다', async ({ page, request, managerToken, readerToken, created }) => {

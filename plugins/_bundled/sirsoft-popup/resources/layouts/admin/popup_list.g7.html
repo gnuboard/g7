@@ -289,7 +289,7 @@
         </select>
       </div>
       <!-- 팝업 표 — 쪽 넘김은 서버, 쪽 번호는 링크(pageHref). 받는 중에는 빈 문구를 숨긴다 -->
-      <data-grid data-type="composite" data-ref="popup_datagrid" pageHref="/admin/plugins/sirsoft-popup/popups?page={page}" :pageHrefMergeQuery="true" rowLabelField="title" data="{{popups?.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.bulkSelectedIds ?? []}}" selectedCountText="" emptyMessage="{{popups === undefined ? '' : $t('sirsoft-popup.admin.list.empty')}}" :serverSidePagination="true" serverCurrentPage="{{popups?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{popups?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{popups?.data?.pagination?.has_more_pages ?? false}}">
+      <data-grid data-type="composite" data-ref="popup_datagrid" pageHref="/admin/plugins/sirsoft-popup/popups?page={page}" :pageHrefMergeQuery="true" rowLabelField="title" data="{{popups?.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.bulkSelectedIds ?? []}}" selectedCountText="" emptyMessage="{{popups === undefined ? '' : $t('sirsoft-popup.admin.list.empty')}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{popups?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{popups?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{popups?.data?.pagination?.has_more_pages ?? false}}">
         <blur-until-loaded sources="popups"/>
         <column field="thumbnail" header="$t:sirsoft-popup.admin.list.column.preview" width="80px">
           <cell>

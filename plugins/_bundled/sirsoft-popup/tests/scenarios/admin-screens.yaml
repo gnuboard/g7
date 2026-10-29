@@ -11,6 +11,7 @@ axes:
     - list_summary_card_order_and_device_tags
     - list_summary_card_settings_lines
     - list_empty_message_hidden_while_loading
+    - list_pagination_shown
     - list_row_label_and_control_names
     - list_title_links_to_edit
     - list_filters_write_url_query

@@ -1199,6 +1199,7 @@
                             "selectedIds": "{{_global.bulkSelectedIds ?? []}}",
                             "selectedCountText": "",
                             "emptyMessage": "{{popups === undefined ? '' : $t('sirsoft-popup.admin.list.empty')}}",
+                            "pagination": true,
                             "serverSidePagination": true,
                             "serverCurrentPage": "{{popups?.data?.pagination?.current_page ?? 1}}",
                             "serverTotalPages": "{{popups?.data?.pagination?.last_page ?? null}}",

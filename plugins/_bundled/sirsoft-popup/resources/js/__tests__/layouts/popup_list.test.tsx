@@ -57,6 +57,15 @@ describe('팝업 관리 목록 화면', () => {
     expect(json(findById(list, 'summary_card'))).toContain('summary !== undefined');
   });
 
+  // @scenario surface=list_pagination_shown
+  it('표는 페이지 이동 줄을 켠다 — DataGrid 의 pagination 기본값이 false 라 빠지면 20건 넘는 목록의 2페이지로 갈 수 없다', () => {
+    const grid = findById(list, 'popup_datagrid')!;
+    expect(grid.props.pagination).toBe(true);
+    expect(grid.props.serverSidePagination).toBe(true);
+    expect(grid.props.serverTotalPages).toBe('{{popups?.data?.pagination?.last_page ?? null}}');
+    expect(grid.props.pageHref).toBe('/admin/plugins/sirsoft-popup/popups?page={page}');
+  });
+
   // @scenario surface=list_row_label_and_control_names
   // @effects accessible_names_present
   it('행 이름은 관리용 제목이고, 정렬 선택·필터에 이름이 있다', () => {

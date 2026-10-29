@@ -19,7 +19,7 @@
 <!-- @generated:layouts END -->
 
 <!-- @intent START -->
-관리자 화면 세 개(목록·등록/수정·환경설정)와 사용자 주입 조각 하나. 미리보기는 사용자 레이어와 같은 컴포넌트(`PopupPreview` → `PopupLayer` 미리보기 모드)를 쓴다 — 관리자가 보는 모양과 방문자가 보는 모양이 갈리지 않게.
+관리자 화면 세 개(목록·등록/수정·환경설정)와 사용자 주입 조각 하나. 미리보기는 사용자 레이어와 같은 컴포넌트(`PopupPreview` → `PopupLayer` 미리보기 모드)를 쓴다 — 관리자가 보는 모양과 방문자가 보는 모양이 갈리지 않게. 목록 표(`popup_datagrid`, 템플릿 `DataGrid`)는 서버 페이지(`pagination.last_page`·`has_more_pages`)로 넘기므로 `serverSidePagination` 과 함께 `pagination: true` 를 준다 — `DataGrid` 의 `pagination` 기본값이 false 라 빠지면 페이지 이동 줄이 그려지지 않는다.
 <!-- @intent END -->
 
 ## 액션 핸들러

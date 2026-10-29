@@ -31,9 +31,13 @@ axes:
     - drag_to_next_slide
     - move_window
     - pager_overlay_controls
+    - admin_list_paginates
   viewport: [desktop, mobile]
 
 exclusions:
+  - flow: admin_list_paginates
+    viewport: mobile
+    reason: 페이지 이동 줄은 표·카드 보기 모두 같은 DataGrid 페이저 한 곳에서 그린다 — 켜짐 여부는 폭과 무관
   - flow: carousel_order_follows_reorder
     viewport: mobile
     reason: 순서 저장은 관리자 데스크톱에서 한 번 확인하면 충분 — 사용자 반영은 다른 흐름이 모바일로 본다
