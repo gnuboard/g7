@@ -359,6 +359,17 @@ describe('PopupLayer', () => {
     expect(document.activeElement).toBe(container.querySelector('[role="dialog"]'));
   });
 
+  // @scenario surface=dialog_focus_has_no_ring
+  it('열릴 때 포커스를 받는 창 자체에는 고리를 그리지 않는다 — 브라우저가 첫 진입의 스크립트 포커스를 focus-visible 로 보아 창 둘레가 파랗게 보였다', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+
+    // 창은 조작 요소가 아니라 포커스를 담는 그릇이다 — 고리는 안의 단추(닫기·점·화살표 등)에만 둔다
+    expect(css).not.toMatch(/\.g7pp-dialog:focus(-visible)?\s*\{/);
+    expect(css).toMatch(/\.g7pp-footer button:focus-visible\s*\{[^}]*outline:\s*3px/);
+  });
+
   // @scenario surface=tab_focus_trapped
   // @effects accessible_modal_carousel
   it('Tab·Shift+Tab 이 레이어 안에서 돈다', () => {

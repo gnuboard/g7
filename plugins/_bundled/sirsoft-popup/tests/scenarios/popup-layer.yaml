@@ -40,6 +40,7 @@ axes:
     - aria_live_off_while_autoplaying
     - dialog_role_and_label
     - focus_moves_into_layer_on_open
+    - dialog_focus_has_no_ring
     - tab_focus_trapped
     - escape_closes
     - arrow_keys_navigate

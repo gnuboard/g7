@@ -67,9 +67,8 @@
   user-select: none;
 }
 
-.g7pp-dialog:focus-visible {
-  box-shadow: 0 0 0 3px var(--g7pp-accent), 0 20px 48px rgba(17, 24, 39, 0.35);
-}
+/* 열릴 때 포커스를 받는 창(tabIndex -1)에는 고리를 그리지 않는다(위 outline: none) — 첫 진입의 스크립트 포커스를
+   브라우저가 focus-visible 로 보아 창 둘레가 파랗게 보였다. 창은 조작 요소가 아니고, 고리는 안의 단추에만 둔다 */
 
 /* PC 중앙 — 너비·높이는 표시 방식 설정(인라인 style) */
 .g7pp-dialog--pc-center {
