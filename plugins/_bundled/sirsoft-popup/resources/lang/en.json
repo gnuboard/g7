@@ -178,10 +178,10 @@
             "optional": "(optional)",
             "image": {
                 "pc": "PC image",
-                "pc_hint": "Recommended: the PC size in settings ({{width}}×{{height}}) · up to {{mb}}MB · JPG, PNG, WEBP, GIF",
+                "pc_hint": "Recommended: the same ratio as the PC size in settings, {{width}}:{{height}} (e.g. {{width}}×{{height}}, or {{width2}}×{{height2}} for sharper images) · a different ratio leaves margins · up to {{mb}}MB · JPG, PNG, WEBP, GIF",
                 "mobile": "Mobile image",
-                "mobile_hint": "If not added, the PC image is used on mobile. Up to {{mb}}MB.",
-                "size_mismatch": "The uploaded image is {{width}}×{{height}}. If it differs from the recommended size ({{recommended}}), it is fitted without cropping and may leave margins."
+                "mobile_hint": "Recommended: a ratio of about {{ratio}} (e.g. {{example}}) · the mobile window size varies by device, so small margins may appear · if not added, the PC image is used on mobile · up to {{mb}}MB",
+                "size_mismatch": "The uploaded image is {{width}}×{{height}}. Its ratio differs from the recommended {{recommended}}, so it is fitted without cropping and the rest shows as margins."
             },
             "image_alt": "Image alt text",
             "image_alt_hint": "Read aloud to visitors who cannot see the screen. If empty, the admin title is used.",
@@ -271,7 +271,7 @@
             "top": "From top (px)",
             "width": "Width (px)",
             "height": "Height (px)",
-            "size_hint": "Content area size · also shown as the recommended image size"
+            "size_hint": "Content area size · the width:height is also shown as the recommended image ratio"
         },
         "pc_position": {
             "center": "Screen center",

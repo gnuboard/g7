@@ -178,10 +178,10 @@
       "optional": "(選択)",
       "image": {
         "pc": "PCイメージ",
-        "pc_hint": "推奨: 環境設定のPCサイズ({{width}}×{{height}}) · 最大{{mb}}MB · JPG·PNG·WEBP·GIF",
         "mobile": "モバイルイメージ",
-        "mobile_hint": "登録しないとモバイルでもPCイメージを使用します。最大{{mb}}MB。",
-        "size_mismatch": "アップロードされたイメージは{{width}}×{{height}}です。推奨サイズ({{recommended}})と異なる場合、トリミングされず余白が生じる可能性があります。"
+        "pc_hint": "推奨: 環境設定のPC サイズと同じ比率 {{width}}:{{height}}(例: {{width}}×{{height}}、より鮮明には {{width2}}×{{height2}}) · 比率が異なる場合、余った部分が余白として表示されます · 最大 {{mb}}MB · JPG·PNG·WEBP·GIF",
+        "mobile_hint": "推奨: 比率約 {{ratio}}(例: {{example}}) · モバイル ウィンドウ サイズはデバイスごとに異なるため、若干の余白が生じる場合があります · 登録しない場合、モバイルでも PC 画像を使用します · 最大 {{mb}}MB",
+        "size_mismatch": "アップロードされた画像は {{width}}×{{height}} です。推奨比率({{recommended}})と異なるため、トリミングされず、余った部分が余白として表示されます。"
       },
       "image_alt": "イメージ代替テキスト(alt)",
       "image_alt_hint": "画面を見ることができない訪問者に読み上げられる説明です。空にすると管理用タイトルが使用されます。",
@@ -270,7 +270,7 @@
       "top": "上から (px)",
       "width": "幅 (px)",
       "height": "高さ (px)",
-      "size_hint": "コンテンツ領域サイズ · 推奨画像サイズとしても案内されます"
+      "size_hint": "コンテンツエリアサイズ · 幅:高さが画像推奨比率でも案内されます"
     },
     "pc_position": {
       "center": "画面中央",

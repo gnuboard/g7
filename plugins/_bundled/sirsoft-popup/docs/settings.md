@@ -38,7 +38,7 @@
 <!-- @generated:permissions END -->
 
 <!-- @intent START -->
-권한은 조회 / 등록·수정 / 삭제 3개, 소유 범위(owner_key)가 없다 — 팝업은 사이트 공용 자원이다. 표시 방식 저장은 코어 플러그인 설정 권한(`core.plugins.update`)이고, 팝업 담당자는 조회 권한으로 `display-settings` API 를 읽어 미리보기·권장 크기 안내에 쓴다.
+권한은 조회 / 등록·수정 / 삭제 3개, 소유 범위(owner_key)가 없다 — 팝업은 사이트 공용 자원이다. 표시 방식 저장은 코어 플러그인 설정 권한(`core.plugins.update`)이고, 팝업 담당자는 조회 권한으로 `display-settings` API 를 읽어 미리보기·권장 비율 안내(PC 는 너비:높이, 모바일은 `mobile_style` 에 따라 하단 시트 약 1:1·화면 중앙 약 4:5)에 쓴다.
 <!-- @intent END -->
 
 ## 메뉴

@@ -72,7 +72,9 @@
   <computed name="pcWidth">{{display_settings?.data?.settings?.pc_width ?? 480}}</computed>
   <computed name="pcHeight">{{display_settings?.data?.settings?.pc_height ?? 520}}</computed>
   <computed name="isImage">{{(_local.form?.content_type ?? 'image') === 'image'}}</computed>
-  <computed name="pcSizeMismatch">{{!!_local.form?.images?.pc?.width &amp;&amp; (_local.form.images.pc.width !== (display_settings?.data?.settings?.pc_width ?? 480) || _local.form.images.pc.height !== (display_settings?.data?.settings?.pc_height ?? 520))}}</computed>
+  <computed name="pcSizeMismatch">{{!!_local.form?.images?.pc?.width &amp;&amp; !!_local.form?.images?.pc?.height &amp;&amp; Math.abs(_local.form.images.pc.width * (display_settings?.data?.settings?.pc_height ?? 520) - _local.form.images.pc.height * (display_settings?.data?.settings?.pc_width ?? 480)) &gt; 0.02 * _local.form.images.pc.height * (display_settings?.data?.settings?.pc_width ?? 480)}}</computed>
+  <computed name="mobileRatio">{{(display_settings?.data?.settings?.mobile_style ?? 'sheet') === 'center' ? '4:5' : '1:1'}}</computed>
+  <computed name="mobileExample">{{(display_settings?.data?.settings?.mobile_style ?? 'sheet') === 'center' ? '800×1000' : '800×800'}}</computed>
   <computed name="routeDraft">{{(_local.routeInput ?? '').trim()}}</computed>
   <computed name="routeInputError">{{_computed.routeDraft === '' ? '' : (!_computed.routeDraft.startsWith('/') ? 'must_start_with_slash' : ((_computed.routeDraft.includes('//') || _computed.routeDraft.includes('?') || _computed.routeDraft.includes('#') || _computed.routeDraft.includes('*') || _computed.routeDraft.includes(' ') || _computed.routeDraft.includes('..')) ? 'invalid' : ((_local.form?.routes ?? []).includes(_computed.routeDraft.length &gt; 1 &amp;&amp; _computed.routeDraft.endsWith('/') ? _computed.routeDraft.slice(0, -1) : _computed.routeDraft) ? 'duplicate' : ((_local.form?.routes ?? []).length &gt;= 20 ? 'too_many' : ''))))}}</computed>
   <permissions>
@@ -200,7 +202,7 @@
                   <span>$t:sirsoft-popup.admin.form.image.pc</span>
                   <span class="text-required">*</span>
                 </label>
-                <p class="form-hint mb-2">$t:sirsoft-popup.admin.form.image.pc_hint|width={{_computed.pcWidth}}|height={{_computed.pcHeight}}|mb={{_computed.uploadMb}}</p>
+                <p class="form-hint mb-2">$t:sirsoft-popup.admin.form.image.pc_hint|width={{_computed.pcWidth}}|height={{_computed.pcHeight}}|width2={{_computed.pcWidth * 2}}|height2={{_computed.pcHeight * 2}}|mb={{_computed.uploadMb}}</p>
                 <!-- 업로드는 임시 묶음에만 들어가고, 빼기는 화면에서만 뺀다 — 팝업 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다 -->
                 <file-uploader data-type="composite" data-ref="pc_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp,.gif" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}" uploadParams="{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}">
                   <prop name="apiEndpoints">
@@ -221,7 +223,8 @@
                     <set-state target="local" :form.images.pc="null" :hasChanges="true"/>
                   </on>
                 </file-uploader>
-                <p data-if="{{_computed.pcSizeMismatch}}" data-ref="pc_size_warning" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-popup.admin.form.image.size_mismatch|width={{_local.form?.images?.pc?.width}}|height={{_local.form?.images?.pc?.height}}|recommended={{_computed.pcWidth + '×' + _computed.pcHeight}}</p>
+                <!-- 이미지는 잘리지 않게 담기므로 여백은 크기가 아니라 비율이 다를 때 생긴다 — 2배 크기(960×1040)는 경고하지 않고, 비율 차 2% 안은 같다고 본다 -->
+                <p data-if="{{_computed.pcSizeMismatch}}" data-ref="pc_size_warning" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-popup.admin.form.image.size_mismatch|width={{_local.form?.images?.pc?.width}}|height={{_local.form?.images?.pc?.height}}|recommended={{_computed.pcWidth + ':' + _computed.pcHeight}}</p>
                 <p data-if="{{_local.errors?.temp_key || _local.errors?.pc_image_id || _local.errors?.pc_image}}" class="form-error">{{_local.errors?.temp_key?.[0] ?? _local.errors?.pc_image_id?.[0] ?? _local.errors?.pc_image?.[0] ?? ''}}</p>
               </div>
               <div data-ref="field_mobile_image">
@@ -229,7 +232,8 @@
                   <span>$t:sirsoft-popup.admin.form.image.mobile</span>
                   <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-popup.admin.form.optional</span>
                 </label>
-                <p class="form-hint mb-2">$t:sirsoft-popup.admin.form.image.mobile_hint|mb={{_computed.uploadMb}}</p>
+                <!-- 모바일 창 크기는 기기마다 달라 대략의 비율로 안내한다 — 하단 시트는 화면 너비 × 380px 안팎(거의 1:1), 화면 중앙은 좌우 24px 여백 × 420px 안팎(거의 4:5) -->
+                <p data-ref="mobile_image_hint" class="form-hint mb-2">$t:sirsoft-popup.admin.form.image.mobile_hint|ratio={{_computed.mobileRatio}}|example={{_computed.mobileExample}}|mb={{_computed.uploadMb}}</p>
                 <file-uploader data-type="composite" data-ref="mobile_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp,.gif" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}" uploadParams="{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}">
                   <prop name="apiEndpoints">
                     <field name="upload" value="/api/plugins/sirsoft-popup/admin/popup-images"/>

@@ -561,6 +561,13 @@ test.describe('관리자 화면', () => {
     expect(await previewBodyHeight()).toBeGreaterThan(20);
     expect((await img.boundingBox())?.height ?? 0).toBeGreaterThan(20);
 
+    // 이미지 칸은 크기가 아니라 비율을 안내하고(2배 크기 예시 포함), 1×1 사진은 비율이 달라 여백 경고가 뜬다
+    const display = (await (await request.get(`${API}/admin/display-settings`, { headers: auth(managerToken) })).json()).data.settings;
+    const { pc_width: w, pc_height: h } = display;
+    await expect(page.getByText(`같은 비율 ${w}:${h}(예: ${w}×${h}, 더 선명하게는 ${w * 2}×${h * 2})`)).toBeVisible();
+    await expect(page.getByText(`권장: 비율 약 ${display.mobile_style === 'center' ? '4:5' : '1:1'}`)).toBeVisible();
+    await expect(page.getByText(`올린 이미지는 1×1 입니다. 권장 비율(${w}:${h})과 달라`)).toBeVisible();
+
     await page.locator('#preview_device_mobile').click();
     await expect(page.locator('[data-preview-device="mobile"]')).toBeVisible();
     expect(await previewBodyHeight()).toBeGreaterThan(20);

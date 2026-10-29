@@ -1,7 +1,7 @@
 /**
  * @file popup_form.test.tsx
  * @description 팝업 등록·수정 화면 계약 — 한 번만 초기화·임시 키, 유형 전환, 언어 탭, 경로 칩, 에디터 확장점, 업로드 주소,
- * 권장 크기 안내, 기간 입력, 칸별 오류, 409 충돌 복구, 표시 방식대로 미리보기. (매니페스트 admin-screens.yaml)
+ * 권장 비율 안내, 기간 입력, 칸별 오류, 409 충돌 복구, 표시 방식대로 미리보기. (매니페스트 admin-screens.yaml)
  *
  * @vitest-environment node
  */
@@ -13,6 +13,11 @@ import { actionsOf, collect, findById, pick, translationKeys } from './helpers';
 
 const json = (node: unknown) => JSON.stringify(node);
 const doc = form as any;
+// computed 식을 주어진 상태로 계산한다 — 문자열 포함 검사로는 비율 판정을 확인할 수 없다
+const evalComputed = (name: string, scope: Record<string, unknown>) => {
+  const expr = (doc.computed[name] as string).replace(/^\{\{|\}\}$/g, '');
+  return new Function(...Object.keys(scope), `return (${expr});`)(...Object.values(scope));
+};
 
 describe('팝업 등록·수정 화면', () => {
   // @scenario surface=form_create_initializes_once_with_temp_key
@@ -91,11 +96,38 @@ describe('팝업 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_recommended_size_warning
-  it('PC 이미지가 환경설정 크기와 다르면 막지 않고 노란 안내를 보인다', () => {
-    expect(doc.computed.pcSizeMismatch).toContain('pc_width ?? 480');
+  it('PC 이미지 비율이 환경설정 너비:높이와 다를 때만 막지 않고 노란 안내를 보인다(2배 크기는 경고 없음)', () => {
+    const mismatch = (pc: unknown, settings: unknown) =>
+      evalComputed('pcSizeMismatch', { _local: { form: { images: { pc } } }, display_settings: settings });
+    const s480 = { data: { settings: { pc_width: 480, pc_height: 520 } } };
+    expect(mismatch({ width: 480, height: 520 }, s480)).toBe(false);
+    expect(mismatch({ width: 960, height: 1040 }, s480)).toBe(false);
+    expect(mismatch({ width: 482, height: 520 }, s480)).toBe(false);
+    expect(mismatch({ width: 1024, height: 1536 }, s480)).toBe(true);
+    expect(mismatch({ width: 1040, height: 960 }, s480)).toBe(true);
+    // 설정을 못 읽었으면 기본 480×520 으로, 크기를 모르는 이미지는 경고하지 않는다
+    expect(mismatch({ width: 960, height: 1040 }, null)).toBe(false);
+    expect(mismatch({ id: 1 }, s480)).toBe(false);
     const warning = findById(form, 'pc_size_warning')!;
     expect(warning.if).toBe('{{_computed.pcSizeMismatch}}');
     expect(json(warning)).toContain('size_mismatch');
+    expect(json(warning)).toContain("_computed.pcWidth + ':' + _computed.pcHeight");
+    expect(json(findById(form, 'field_pc_image'))).toContain('width2={{_computed.pcWidth * 2}}');
+
+    // 모바일 이미지 칸은 모바일 표시 방식에 맞춘 대략의 권장 비율을 안내한다(하단 시트 1:1, 화면 중앙 4:5)
+    const at = (mobile_style?: string) => {
+      const scope = { display_settings: mobile_style ? { data: { settings: { mobile_style } } } : null };
+      return [evalComputed('mobileRatio', scope), evalComputed('mobileExample', scope)];
+    };
+    expect(at('sheet')).toEqual(['1:1', '800×800']);
+    expect(at('center')).toEqual(['4:5', '800×1000']);
+    expect(at()).toEqual(['1:1', '800×800']);
+    const hint = json(findById(form, 'mobile_image_hint'));
+    expect(hint).toContain('mobile_hint|ratio={{_computed.mobileRatio}}|example={{_computed.mobileExample}}');
+    for (const lang of [ko, en] as any[]) {
+      expect(lang.admin.form.image.mobile_hint).toContain('{{ratio}}');
+      expect(lang.admin.form.image.pc_hint).toContain('{{width2}}×{{height2}}');
+    }
   });
 
   // @scenario surface=form_period_inputs_only_for_range

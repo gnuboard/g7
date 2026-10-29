@@ -178,10 +178,10 @@
             "optional": "(선택)",
             "image": {
                 "pc": "PC 이미지",
-                "pc_hint": "권장: 환경설정의 PC 크기 ({{width}}×{{height}}) · 최대 {{mb}}MB · JPG·PNG·WEBP·GIF",
+                "pc_hint": "권장: 환경설정의 PC 크기와 같은 비율 {{width}}:{{height}}(예: {{width}}×{{height}}, 더 선명하게는 {{width2}}×{{height2}}) · 비율이 다르면 남는 곳이 여백으로 보입니다 · 최대 {{mb}}MB · JPG·PNG·WEBP·GIF",
                 "mobile": "모바일 이미지",
-                "mobile_hint": "등록하지 않으면 모바일에서도 PC 이미지를 사용합니다. 최대 {{mb}}MB.",
-                "size_mismatch": "올린 이미지는 {{width}}×{{height}} 입니다. 권장 크기({{recommended}})와 다르면 잘리지 않고 여백이 생길 수 있습니다."
+                "mobile_hint": "권장: 비율 약 {{ratio}}(예: {{example}}) · 모바일 창 크기는 기기마다 달라 여백이 조금 생길 수 있습니다 · 등록하지 않으면 모바일에서도 PC 이미지를 사용합니다 · 최대 {{mb}}MB",
+                "size_mismatch": "올린 이미지는 {{width}}×{{height}} 입니다. 권장 비율({{recommended}})과 달라 잘리지 않고 남는 곳이 여백으로 보입니다."
             },
             "image_alt": "이미지 대체 텍스트(alt)",
             "image_alt_hint": "화면을 볼 수 없는 방문자에게 읽어 주는 설명입니다. 비우면 관리용 제목을 씁니다.",
@@ -271,7 +271,7 @@
             "top": "위에서 (px)",
             "width": "너비 (px)",
             "height": "높이 (px)",
-            "size_hint": "내용 영역 크기 · 이미지 권장 크기로도 안내됩니다"
+            "size_hint": "내용 영역 크기 · 너비:높이가 이미지 권장 비율로도 안내됩니다"
         },
         "pc_position": {
             "center": "화면 중앙",
