@@ -119,15 +119,15 @@
           <li data-each="item, idx in summary?.data?.data ?? []" class="w-20">
             <!-- 누르면 그 팝업의 수정 화면 — 보던 목록 조건(상태·기기·검색·쪽)을 이고 가 저장·취소 뒤 같은 목록으로 돌아온다.
               수정 권한이 없으면(조회 전용) 수정 화면이 403 이라 링크를 걸지 않는다 -->
-            <a data-if="{{item.abilities?.can_update !== false}}" href="/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit" title="{{item.title}}" aria-label="$t:sirsoft-popup.admin.summary.edit_item|n={{idx + 1}}|title={{item.title}}" class="group flex flex-col items-center gap-1 rounded p-0.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-400">
+            <a data-if="{{item.abilities?.can_update !== false}}" href="/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit" title="{{item.title}}" aria-label="$t:sirsoft-popup.admin.summary.edit_item|n={{idx + 1}}|title={{item.title}}" class="g7pp-summary-link flex flex-col items-center gap-1 rounded p-0.5 hover:bg-gray-50 dark:hover:bg-gray-700/50">
               <on type="click">
                 <navigate path="/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit" :mergeQuery="true">
                   <query/>
                 </navigate>
               </on>
-              <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" alt="" class="w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700 group-hover:border-blue-500 dark:group-hover:border-blue-400" loading="lazy"/>
-              <span data-if="{{!item.thumbnail}}" class="w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1 group-hover:border-blue-500 dark:group-hover:border-blue-400">$t:sirsoft-popup.admin.content_type.html</span>
-              <span class="text-xs text-gray-700 dark:text-gray-300 tabular-nums group-hover:underline">{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}</span>
+              <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" alt="" class="g7pp-summary-link__thumb w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700" loading="lazy"/>
+              <span data-if="{{!item.thumbnail}}" class="w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1 g7pp-summary-link__thumb">$t:sirsoft-popup.admin.content_type.html</span>
+              <span class="text-xs text-gray-700 dark:text-gray-300 tabular-nums g7pp-summary-link__label">{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}</span>
             </a>
             <div data-if="{{item.abilities?.can_update === false}}" title="{{item.title}}" class="flex flex-col items-center gap-1 p-0.5">
               <img data-if="{{!!item.thumbnail}}" src="{{item.thumbnail?.url}}" alt="" class="w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700" loading="lazy"/>

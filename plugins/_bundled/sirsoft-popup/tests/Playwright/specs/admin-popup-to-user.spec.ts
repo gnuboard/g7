@@ -598,6 +598,15 @@ test.describe('관리자 화면', () => {
     const link = page.locator('[aria-labelledby="popup_summary_heading"]').getByRole('link', { name: new RegExp(`「${title}」 수정`) });
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute('title', title);
+    // 링크임을 보이는 hover·키보드 초점 표시가 실제로 그려진다(플러그인 CSS — 관리자 템플릿 빌드에는 그 유틸이 없다)
+    await link.hover();
+    await expect(link.locator('.g7pp-summary-link__thumb')).toHaveCSS('border-top-color', 'rgb(59, 130, 246)');
+    await expect(link.locator('.g7pp-summary-link__label')).toHaveCSS('text-decoration-line', 'underline');
+    await link.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expect(link).toHaveCSS('outline-style', 'solid');
+    await expect(link).toHaveCSS('outline-color', 'rgb(37, 99, 235)');
     await link.click();
 
     await expect(page).toHaveURL(new RegExp(`/popups/${id}/edit\\?(.*&)?status=active`));

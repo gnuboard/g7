@@ -392,7 +392,7 @@
                                                     "href": "/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit",
                                                     "title": "{{item.title}}",
                                                     "aria-label": "$t:sirsoft-popup.admin.summary.edit_item|n={{idx + 1}}|title={{item.title}}",
-                                                    "className": "group flex flex-col items-center gap-1 rounded p-0.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-400"
+                                                    "className": "g7pp-summary-link flex flex-col items-center gap-1 rounded p-0.5 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                                 },
                                                 "children": [
                                                     {
@@ -402,7 +402,7 @@
                                                         "props": {
                                                             "src": "{{item.thumbnail?.url}}",
                                                             "alt": "",
-                                                            "className": "w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700 group-hover:border-blue-500 dark:group-hover:border-blue-400",
+                                                            "className": "g7pp-summary-link__thumb w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700",
                                                             "loading": "lazy"
                                                         }
                                                     },
@@ -411,7 +411,7 @@
                                                         "name": "Span",
                                                         "if": "{{!item.thumbnail}}",
                                                         "props": {
-                                                            "className": "w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1 group-hover:border-blue-500 dark:group-hover:border-blue-400"
+                                                            "className": "w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1 g7pp-summary-link__thumb"
                                                         },
                                                         "text": "$t:sirsoft-popup.admin.content_type.html"
                                                     },
@@ -419,7 +419,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-xs text-gray-700 dark:text-gray-300 tabular-nums group-hover:underline"
+                                                            "className": "text-xs text-gray-700 dark:text-gray-300 tabular-nums g7pp-summary-link__label"
                                                         },
                                                         "text": "{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}"
                                                     }
