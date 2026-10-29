@@ -232,7 +232,15 @@
                 "ratio_changed": "The image ratio changed ({{from}} → {{to}}). Text boxes stay at the same % positions and may cover a different part of the picture, so check their positions again.",
                 "ratio_ack": "Got it",
                 "phone_size": "About {{px}}px on a small phone (image about {{width}}px wide)",
-                "phone_small": "— may be hard to read on phones."
+                "phone_small": "— may be hard to read on phones.",
+                "backdrop_label": "Preview background",
+                "backdrop": {
+                    "checker": "Transparency",
+                    "light": "Light mode",
+                    "dark": "Dark mode"
+                },
+                "contrast": "Text to background contrast about {{ratio}}:1",
+                "contrast_low": "— below {{min}}:1 and may be hard to read. Change the text color or the background color or strength."
             },
             "link_url": "Link URL",
             "link_url_optional": "(optional · opened when the image is clicked)",

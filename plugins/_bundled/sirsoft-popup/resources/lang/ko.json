@@ -232,7 +232,15 @@
                 "ratio_changed": "이미지 비율이 바뀌었습니다({{from}} → {{to}}). 글 상자는 같은 % 자리에 남아 그림의 다른 곳을 가릴 수 있으니 위치를 다시 확인하세요.",
                 "ratio_ack": "확인했어요",
                 "phone_size": "작은 휴대폰(이미지 폭 약 {{width}}px)에서 약 {{px}}px",
-                "phone_small": "— 휴대폰에서 읽기 어려울 수 있습니다."
+                "phone_small": "— 휴대폰에서 읽기 어려울 수 있습니다.",
+                "backdrop_label": "미리 볼 바탕",
+                "backdrop": {
+                    "checker": "투명 표시",
+                    "light": "라이트 모드",
+                    "dark": "다크 모드"
+                },
+                "contrast": "글자와 바탕 대비 약 {{ratio}}:1",
+                "contrast_low": "— {{min}}:1 미만이라 읽기 어려울 수 있습니다. 글자색이나 바탕 색·진하기를 바꾸세요."
             },
             "link_url": "링크 URL",
             "link_url_optional": "(선택 · 이미지를 누르면 이동)",

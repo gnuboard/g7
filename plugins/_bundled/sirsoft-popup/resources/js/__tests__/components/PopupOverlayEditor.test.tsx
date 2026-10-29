@@ -9,7 +9,9 @@ import React, { useState } from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
 import { PopupOverlayEditor, type PopupOverlayEditorProps } from '../../components/composite/PopupOverlayEditor';
-import { MAX_BOXES, type OverlayBox, type Overlays } from '../../lib/overlays';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { MAX_BOXES, MIN_CONTRAST, boxContrast, type OverlayBox, type Overlays } from '../../lib/overlays';
 import { installCore } from './core';
 
 /** jsdom 에 없는 PointerEvent 대역 */
@@ -388,5 +390,49 @@ describe('PopupOverlayEditor', () => {
     const separate = render(<Harness images={{ pc: PC, mobile: MOBILE }} initial={{ pc: [box()], mobile: [box({ id: 'mobile01' })] }} defaultLocale="ko" />);
     fireEvent.focus(boxEl(separate.container, 'a1b2c3d4'));
     expect(separate.container.querySelector('[data-overlay-phone-size]')).toBeNull();
+  });
+
+  // @scenario surface=editor_warns_low_text_bg_contrast
+  it('바탕 깔기 상자는 글자·바탕 대비를 보이고(반투명이면 흰/검 이미지 위 나쁜 쪽), 4.5:1 미만이면 알린다', () => {
+    // 흰 글자 + 검은 바탕 100% 에 가까우면 높다
+    expect(boxContrast({ color: '#FFFFFF', bg: { color: '#000000', opacity: 90 } })).toBeGreaterThan(MIN_CONTRAST);
+    // 진하기 40% 면 흰 이미지가 비칠 때 흰 글자가 묻힌다
+    expect(boxContrast({ color: '#FFFFFF', bg: { color: '#000000', opacity: 40 } })).toBeLessThan(MIN_CONTRAST);
+    expect(boxContrast({ color: '#FFFFFF', bg: null })).toBeNull();
+
+    const onChange = vi.fn();
+    const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box({ bg: { color: '#000000', opacity: 40 } })], mobile: null }} defaultLocale="ko" onChange={onChange} />);
+    fireEvent.focus(boxEl(container, 'a1b2c3d4'));
+    const hint = () => container.querySelector('[data-overlay-contrast]') as HTMLElement | null;
+    expect(hint()?.getAttribute('data-low')).toBe('true');
+    expect(hint()?.textContent).toContain('읽기 어려울 수 있습니다');
+
+    fireEvent.change(container.querySelector('[data-overlay-field="bg_opacity"]')!, { target: { value: '90' } });
+    expect(hint()?.getAttribute('data-low')).toBeNull();
+    expect(Number(hint()?.getAttribute('data-overlay-contrast'))).toBeGreaterThanOrEqual(MIN_CONTRAST);
+
+    // 바탕을 끄면 계산할 수 없어 표시하지 않는다
+    fireEvent.click(container.querySelector('[data-overlay-field="bg"]')!);
+    expect(hint()).toBeNull();
+  });
+
+  // @scenario surface=editor_canvas_backdrop_switch
+  it('미리 볼 바탕을 투명 표시·라이트·다크로 바꿔 투명 이미지 뒤에 비칠 팝업 바탕색을 본다', () => {
+    const { container } = render(<Harness images={{ pc: PC }} initial={{ pc: [box()], mobile: null }} defaultLocale="ko" />);
+    const canvas = () => container.querySelector('[data-overlay-canvas]') as HTMLElement;
+    expect(canvas().className).toBe('g7pp-ov-editor__canvas');
+    expect(container.querySelector('[data-overlay-backdrop="checker"]')?.getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.click(container.querySelector('[data-overlay-backdrop="dark"]')!);
+    expect(canvas().className).toContain('g7pp-ov-editor__canvas--dark');
+    fireEvent.click(container.querySelector('[data-overlay-backdrop="light"]')!);
+    expect(canvas().className).toContain('g7pp-ov-editor__canvas--light');
+
+    // 바탕색은 사용자 레이어의 팝업 바탕(--g7pp-bg)과 같은 값이다
+    const css = readFileSync(resolve(__dirname, '../../../css/popup.css'), 'utf8');
+    const light = css.match(/--g7pp-bg: (#[0-9a-f]{6});/i)?.[1];
+    const dark = css.match(/\.dark \.g7pp-root \{\s*--g7pp-bg: (#[0-9a-f]{6});/i)?.[1];
+    expect(css).toMatch(new RegExp(`canvas--light \\{\\s*background: ${light};`, 'i'));
+    expect(css).toMatch(new RegExp(`canvas--dark \\{\\s*background: ${dark};`, 'i'));
   });
 });

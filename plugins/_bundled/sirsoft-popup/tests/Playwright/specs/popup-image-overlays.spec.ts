@@ -85,6 +85,10 @@ async function flow_admin_places_boxes_shows_on_user(ctx: Ctx, viewport: 'deskto
     await editor.locator('#g7pp-ov-text').fill('E2E 글 상자\n둘째 줄');
     // 이 배치는 휴대폰에도 보이므로(모바일 이미지 없음) 작은 휴대폰 기준 예상 글자 크기를 보인다
     await expect(editor.locator('[data-overlay-phone-size]')).toContainText('px');
+    // 투명 이미지 뒤에 비칠 팝업 바탕색(다크 모드)으로 바꿔 볼 수 있다
+    await editor.getByRole('button', { name: '다크 모드' }).click();
+    expect(await editor.locator('[data-overlay-canvas]').evaluate((el: HTMLElement) => getComputedStyle(el).backgroundColor)).toBe('rgb(31, 41, 55)');
+    await editor.getByRole('button', { name: '투명 표시' }).click();
     const frame = (await editor.locator('.g7pp-media__frame').boundingBox())!;
     const start = (await added.boundingBox())!;
     await page.mouse.move(start.x + 6, start.y + 6);

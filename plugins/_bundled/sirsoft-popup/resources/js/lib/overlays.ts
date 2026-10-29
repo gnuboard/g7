@@ -158,3 +158,51 @@ export function boxesFor<B>(overlays: Overlays<B> | null | undefined, usesMobile
 
   return (usesMobileImage ? (overlays.mobile ?? overlays.pc) : overlays.pc) ?? [];
 }
+
+/** 글자와 바탕의 최소 대비 — WCAG 일반 글자 기준 */
+export const MIN_CONTRAST = 4.5;
+
+/**
+ * `#RRGGBB` 를 [r, g, b] 로 바꿉니다.
+ *
+ * @param hex 색
+ * @returns 0~255 세 값
+ */
+function channels(hex: string): [number, number, number] {
+  const n = parseInt(hex.replace('#', ''), 16) || 0;
+
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/**
+ * 상대 휘도(WCAG)를 계산합니다.
+ *
+ * @param rgb 0~255 세 값
+ * @returns 0~1
+ */
+function luminance([r, g, b]: number[]): number {
+  const f = (v: number) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+
+/**
+ * 「바탕 깔기」 상자의 글자·바탕 대비를 계산합니다 — 바탕이 반투명하면 그 아래 이미지가 비치므로,
+ * 이미지가 흰색일 때와 검은색일 때 중 나쁜 쪽(가장 낮은 대비)을 돌려준다. 바탕이 없으면 null(이미지 색을 알 수 없다).
+ *
+ * @param box 서식
+ * @returns 대비(1~21, 소수 1자리) 또는 null
+ */
+export function boxContrast(box: Pick<OverlayFormat, 'color' | 'bg'>): number | null {
+  if (!box.bg) return null;
+  const text = luminance(channels(box.color));
+  const bg = channels(box.bg.color);
+  const alpha = box.bg.opacity / 100;
+  const ratios = [255, 0].map((under) => {
+    const mixed = luminance(bg.map((c) => c * alpha + under * (1 - alpha)));
+    return (Math.max(text, mixed) + 0.05) / (Math.min(text, mixed) + 0.05);
+  });
+
+  return Math.floor(Math.min(...ratios) * 10) / 10;
+}
+

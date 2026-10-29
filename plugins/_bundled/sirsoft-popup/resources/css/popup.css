@@ -603,6 +603,15 @@
   background: repeating-conic-gradient(#374151 0% 25%, #1f2937 0% 50%) 0 0 / 16px 16px;
 }
 
+/* 미리 볼 바탕 — 투명 이미지는 사용자 화면에서 팝업 바탕색(--g7pp-bg: 라이트 #ffffff · 다크 #1f2937)이 비친다 */
+.g7pp-ov-editor__canvas.g7pp-ov-editor__canvas--light {
+  background: #ffffff;
+}
+
+.g7pp-ov-editor__canvas.g7pp-ov-editor__canvas--dark {
+  background: #1f2937;
+}
+
 .g7pp-ov-editor__canvas .g7pp-overlay {
   pointer-events: auto;
   cursor: move;

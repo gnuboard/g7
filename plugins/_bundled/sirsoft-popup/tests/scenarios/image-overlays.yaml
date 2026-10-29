@@ -71,6 +71,8 @@ axes:
     - editor_warns_image_ratio_change
     - editor_marks_error_boxes
     - editor_shows_phone_text_size
+    - editor_warns_low_text_bg_contrast
+    - editor_canvas_backdrop_switch
     - conflict_overlays_compared_as_one_item
     # 레이아웃 — 등록·수정 폼
     - form_places_overlay_editor_in_image_fields

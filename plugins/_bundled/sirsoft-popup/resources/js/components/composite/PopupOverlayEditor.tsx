@@ -2,8 +2,8 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { basic, translate } from '../../support/editor';
 import { ImageFrame } from '../../lib/ImageFrame';
 import {
-  MAX_BOXES, MAX_OPACITY, MAX_SIZE, MAX_TEXT, MIN_SIZE, MIN_WIDTH,
-  clampPct, newBox, overlayStyle, type OverlayAlign, type OverlayBox, type Overlays,
+  MAX_BOXES, MAX_OPACITY, MAX_SIZE, MAX_TEXT, MIN_CONTRAST, MIN_SIZE, MIN_WIDTH,
+  boxContrast, clampPct, newBox, overlayStyle, type OverlayAlign, type OverlayBox, type Overlays,
 } from '../../lib/overlays';
 
 /** 폼의 이미지 한 장 (업로드 응답 모양) */
@@ -14,6 +14,9 @@ interface FormImage {
 }
 
 type Device = 'pc' | 'mobile';
+
+/** 캔버스에서 이미지 뒤(투명 부분·여백)에 깔 바탕 — 사용자 화면은 사이트 모드에 따라 팝업 바탕색(흰색·진회색)이 비친다 */
+type CanvasBackdrop = 'checker' | 'light' | 'dark';
 
 /** 편집기 props */
 export interface PopupOverlayEditorProps {
@@ -110,6 +113,7 @@ export const PopupOverlayEditor: React.FC<PopupOverlayEditorProps> = ({ value, i
   // 기기별로 상자를 맞춘 이미지 비율 — 이미지를 다른 비율로 바꾸면 알린다
   const ratioBase = useRef<Partial<Record<Device, number>>>({});
   const [ratioChange, setRatioChange] = useState<{ device: Device; from: number; to: number } | null>(null);
+  const [backdrop, setBackdrop] = useState<CanvasBackdrop>('checker');
 
   const device: Device = deviceChoice === 'mobile' && mobileImage ? 'mobile' : 'pc';
   const pc = value?.pc ?? [];
@@ -304,6 +308,11 @@ export const PopupOverlayEditor: React.FC<PopupOverlayEditorProps> = ({ value, i
           <Button type="button" className="btn btn-secondary btn-sm" data-overlay-action="copy-pc" disabled={disabled} onClick={() => emit({ pc, mobile: pc.map((box) => ({ ...box, text: { ...box.text }, bg: box.bg ? { ...box.bg } : null })) })}>{t('copy_pc')}</Button>
         </>}
     </Div>}
+    <Div role="group" aria-label={t('backdrop_label')} className="flex flex-wrap items-center gap-1">
+      <Span className="text-xs text-gray-600 dark:text-gray-300 mr-1">{t('backdrop_label')}</Span>
+      {(['checker', 'light', 'dark'] as CanvasBackdrop[]).map((b) => <Button key={b} type="button" className={tab(backdrop === b)} aria-pressed={backdrop === b} data-overlay-backdrop={b}
+        onClick={() => setBackdrop(b)}>{t('backdrop.' + b)}</Button>)}
+    </Div>
     <P className="form-hint" id="g7pp-ov-canvas-hint">{t('canvas_hint')}</P>
     {ratioChange && ratioChange.device === device && <Div role="status" data-overlay-warning="ratio" className="flex flex-wrap items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
       <Span>{t('ratio_changed', { from: ratioText(ratioChange.from), to: ratioText(ratioChange.to) })}</Span>
@@ -313,7 +322,7 @@ export const PopupOverlayEditor: React.FC<PopupOverlayEditorProps> = ({ value, i
       {boxes.map((box, i) => (overflow[box.id]?.length ? <P key={box.id}>{t('overflow', { n: i + 1, languages: overflow[box.id].map(nameOf).join(', ') })}</P> : null))}
     </Div>}
     {/* 캔버스 — 사용자 레이어와 같은 프레임. 상자만 누르고 끌 수 있다(레이어에서는 누름을 받지 않음) */}
-    <div ref={canvasRef} className="g7pp-ov-editor__canvas" role="group" aria-label={t('canvas_label')} aria-describedby="g7pp-ov-canvas-hint" data-overlay-canvas="" onPointerDown={() => setSelectedId(null)}>
+    <div ref={canvasRef} className={`g7pp-ov-editor__canvas${backdrop === 'checker' ? '' : ` g7pp-ov-editor__canvas--${backdrop}`}`} role="group" aria-label={t('canvas_label')} aria-describedby="g7pp-ov-canvas-hint" data-overlay-canvas="" onPointerDown={() => setSelectedId(null)}>
       {image && <ImageFrame image={{ url: image.url!, width: image.width ?? null, height: image.height ?? null }} alt="" eager onRatio={onRatio}>
         {boxes.flatMap((box) => languages.filter((code) => box.text?.[code]?.trim()).map((code) => <div
           key={`${box.id}-${code}`}
@@ -419,6 +428,14 @@ export const PopupOverlayEditor: React.FC<PopupOverlayEditorProps> = ({ value, i
               <Span className="tabular-nums text-xs">{selected.bg.opacity}%</Span>
             </Label>
           </>}
+          {selected.bg && (() => {
+            // 바탕이 반투명하면 이미지가 흰색·검은색일 때 중 나쁜 쪽으로 잰다
+            const ratio = boxContrast(selected)!;
+            const low = ratio < MIN_CONTRAST;
+            return <P className={`text-xs w-full ${low ? 'text-amber-700 dark:text-amber-300' : 'text-gray-500 dark:text-gray-400'}`} data-overlay-contrast={ratio} data-low={low || undefined}>
+              {t('contrast', { ratio })}{low ? ` ${t('contrast_low', { min: MIN_CONTRAST })}` : ''}
+            </P>;
+          })()}
         </Div>
         <Div className="flex flex-wrap gap-2">
           <Button type="button" className="btn btn-secondary btn-sm" data-overlay-action="forward" disabled={boxes[boxes.length - 1]?.id === selected.id} onClick={() => reorder(selected.id, 1)}>{t('forward')}</Button>
