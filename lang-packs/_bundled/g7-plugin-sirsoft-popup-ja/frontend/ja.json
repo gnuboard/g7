@@ -85,7 +85,8 @@
       "close": "閉じる{{dismiss}}·{{dim}}",
       "dim_on": "背景を暗くする",
       "dim_off": "背景のまま",
-      "change_settings": "環境設定で変更›"
+      "change_settings": "環境設定で変更›",
+      "edit_item": "{{n}}番「{{title}}」編集"
     },
     "list": {
       "status_filter": "ステータス",

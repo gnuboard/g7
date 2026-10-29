@@ -32,9 +32,13 @@ axes:
     - move_window
     - pager_overlay_controls
     - admin_list_paginates
+    - admin_summary_item_opens_edit
   viewport: [desktop, mobile]
 
 exclusions:
+  - flow: admin_summary_item_opens_edit
+    viewport: mobile
+    reason: 요약 항목 링크는 폭과 무관한 한 노드 — 관리자 데스크톱에서 한 번 확인한다
   - flow: admin_list_paginates
     viewport: mobile
     reason: 페이지 이동 줄은 표·카드 보기 모두 같은 DataGrid 페이저 한 곳에서 그린다 — 켜짐 여부는 폭과 무관

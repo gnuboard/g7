@@ -586,6 +586,24 @@ test.describe('관리자 화면', () => {
     expect(await previewBodyHeight()).toBeGreaterThan(20);
   });
 
+  // @scenario flow=admin_summary_item_opens_edit, viewport=desktop
+  // @effects test_data_cleaned_up
+  test('「지금 노출 중」 항목을 누르면 그 팝업 수정 화면으로 가고 보던 목록 조건이 이어진다', async ({ page, request, managerToken, created }) => {
+    const id = await createHtmlPopup(request, managerToken);
+    created.push(id);
+    const title = (await (await request.get(`${API}/admin/popups/${id}`, { headers: auth(managerToken) })).json()).data.title;
+
+    await authenticatePage(page, managerToken);
+    await page.goto(`${ADMIN_LIST}?status=active`);
+    const link = page.locator('[aria-labelledby="popup_summary_heading"]').getByRole('link', { name: new RegExp(`「${title}」 수정`) });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute('title', title);
+    await link.click();
+
+    await expect(page).toHaveURL(new RegExp(`/popups/${id}/edit\\?(.*&)?status=active`));
+    await expect(page.locator('#popup_title')).toHaveValue(title);
+  });
+
   // @scenario flow=admin_list_paginates, viewport=desktop
   // @effects test_data_cleaned_up
   test('팝업 목록은 한 페이지를 넘으면 페이지 이동 줄이 보이고 2페이지로 간다', async ({ page, request, managerToken, created }) => {
@@ -603,7 +621,7 @@ test.describe('관리자 화면', () => {
 
   // @scenario flow=read_only_admin_cannot_edit, viewport=desktop
   // @effects user_screen_reflects_admin_change, test_data_cleaned_up
-  test('조회 권한만 있는 관리자는 등록·일괄 작업·순서 변경 단추가 없다', async ({ page, request, managerToken, readerToken, created }) => {
+  test('조회 권한만 있는 관리자는 등록·일괄 작업·순서 변경 단추와 노출 중 항목의 수정 링크가 없다', async ({ page, request, managerToken, readerToken, created }) => {
     created.push(await createHtmlPopup(request, managerToken), await createHtmlPopup(request, managerToken));
 
     await authenticatePage(page, readerToken);
@@ -611,6 +629,10 @@ test.describe('관리자 화면', () => {
     await expect(page.getByRole('heading', { name: '팝업 관리' })).toBeVisible();
     await expect(page.getByRole('link', { name: '팝업 등록' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '순서 변경' })).toHaveCount(0);
+    // 「지금 노출 중」 항목은 보이되 수정 화면 링크는 없다(수정 화면이 403)
+    const summary = page.locator('[aria-labelledby="popup_summary_heading"]');
+    await expect(summary.locator('li').first()).toBeVisible();
+    await expect(summary.getByRole('link', { name: / 수정$/ })).toHaveCount(0);
     const blocked = await request.post(`${API}/admin/popups/bulk-copy`, { headers: auth(readerToken), data: { ids: [created[0]] } });
     expect(blocked.status()).toBe(403);
   });

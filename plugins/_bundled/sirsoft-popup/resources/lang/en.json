@@ -79,6 +79,7 @@
         "summary": {
             "title": "{{count}} showing now",
             "order_hint": "Shown in the carousel in this order",
+            "edit_item": "Edit #{{n}} \"{{title}}\"",
             "empty": "No popups are showing right now.",
             "pc": "PC {{position}} · {{width}}×{{height}}",
             "mobile": "Mobile {{style}}",

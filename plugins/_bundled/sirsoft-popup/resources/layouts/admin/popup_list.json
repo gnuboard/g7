@@ -369,44 +369,108 @@
                                             "index_var": "idx"
                                         },
                                         "props": {
-                                            "className": "flex flex-col items-center gap-1 w-20"
+                                            "className": "w-20"
                                         },
                                         "children": [
                                             {
+                                                "comment": "누르면 그 팝업의 수정 화면 — 보던 목록 조건(상태·기기·검색·쪽)을 이고 가 저장·취소 뒤 같은 목록으로 돌아온다.\n              수정 권한이 없으면(조회 전용) 수정 화면이 403 이라 링크를 걸지 않는다",
                                                 "type": "basic",
-                                                "name": "Img",
-                                                "if": "{{!!item.thumbnail}}",
+                                                "name": "A",
+                                                "if": "{{item.abilities?.can_update !== false}}",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit",
+                                                            "mergeQuery": true,
+                                                            "query": {}
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
-                                                    "src": "{{item.thumbnail?.url}}",
-                                                    "alt": "",
-                                                    "className": "w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700",
-                                                    "loading": "lazy"
-                                                }
+                                                    "href": "/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit",
+                                                    "title": "{{item.title}}",
+                                                    "aria-label": "$t:sirsoft-popup.admin.summary.edit_item|n={{idx + 1}}|title={{item.title}}",
+                                                    "className": "group flex flex-col items-center gap-1 rounded p-0.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-400"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Img",
+                                                        "if": "{{!!item.thumbnail}}",
+                                                        "props": {
+                                                            "src": "{{item.thumbnail?.url}}",
+                                                            "alt": "",
+                                                            "className": "w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700 group-hover:border-blue-500 dark:group-hover:border-blue-400",
+                                                            "loading": "lazy"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!item.thumbnail}}",
+                                                        "props": {
+                                                            "className": "w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1 group-hover:border-blue-500 dark:group-hover:border-blue-400"
+                                                        },
+                                                        "text": "$t:sirsoft-popup.admin.content_type.html"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-xs text-gray-700 dark:text-gray-300 tabular-nums group-hover:underline"
+                                                        },
+                                                        "text": "{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}"
+                                                    }
+                                                ]
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Span",
-                                                "if": "{{!item.thumbnail}}",
+                                                "name": "Div",
+                                                "if": "{{item.abilities?.can_update === false}}",
                                                 "props": {
-                                                    "className": "w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1"
+                                                    "title": "{{item.title}}",
+                                                    "className": "flex flex-col items-center gap-1 p-0.5"
                                                 },
-                                                "text": "$t:sirsoft-popup.admin.content_type.html"
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "props": {
-                                                    "className": "text-xs text-gray-700 dark:text-gray-300 tabular-nums"
-                                                },
-                                                "text": "{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}"
-                                            },
-                                            {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "props": {
-                                                    "className": "sr-only"
-                                                },
-                                                "text": "{{item.title}}"
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Img",
+                                                        "if": "{{!!item.thumbnail}}",
+                                                        "props": {
+                                                            "src": "{{item.thumbnail?.url}}",
+                                                            "alt": "",
+                                                            "className": "w-16 h-20 object-cover rounded border border-gray-200 dark:border-gray-700",
+                                                            "loading": "lazy"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!item.thumbnail}}",
+                                                        "props": {
+                                                            "className": "w-16 h-20 flex-center rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[11px] text-gray-500 dark:text-gray-300 text-center px-1"
+                                                        },
+                                                        "text": "$t:sirsoft-popup.admin.content_type.html"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-xs text-gray-700 dark:text-gray-300 tabular-nums"
+                                                        },
+                                                        "text": "{{idx + 1}}{{item.device === 'all' ? '' : ' · ' + $t('sirsoft-popup.admin.device.only_' + item.device)}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "sr-only"
+                                                        },
+                                                        "text": "{{item.title}}"
+                                                    }
+                                                ]
                                             }
                                         ]
                                     }

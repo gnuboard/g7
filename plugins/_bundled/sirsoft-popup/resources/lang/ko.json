@@ -79,6 +79,7 @@
         "summary": {
             "title": "지금 노출 중 {{count}}개",
             "order_hint": "이 순서대로 캐러셀에 표시",
+            "edit_item": "{{n}}번 「{{title}}」 수정",
             "empty": "지금 노출 중인 팝업이 없습니다.",
             "pc": "PC {{position}} · {{width}}×{{height}}",
             "mobile": "모바일 {{style}}",

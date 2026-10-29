@@ -41,6 +41,29 @@ describe('팝업 관리 목록 화면', () => {
     expect(json(findById(list, 'summary_card'))).toContain('admin.summary.title|count=');
   });
 
+  // @scenario surface=list_summary_item_opens_edit
+  it('「지금 노출 중」 항목을 누르면 그 팝업 수정 화면으로 가고(보던 목록 조건 유지), 조회 전용이면 링크가 없다', () => {
+    // 반복 안이라 고정 id 를 두지 않는다 — 요약 목록 안의 수정 링크로 찾는다
+    const links = collect(findById(list, 'summary_items')!, (n) => n.props?.href === '/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit');
+    expect(links).toHaveLength(1);
+    const link = links[0];
+    expect(link.name).toBe('A');
+    expect(link.props.href).toBe('/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit');
+    expect(link.if).toBe('{{item.abilities?.can_update !== false}}');
+    expect(link.props['aria-label']).toBe('$t:sirsoft-popup.admin.summary.edit_item|n={{idx + 1}}|title={{item.title}}');
+    expect(link.props.title).toBe('{{item.title}}');
+    const nav = actionsOf(link, 'navigate')[0];
+    expect(nav.params.path).toBe('/admin/plugins/sirsoft-popup/popups/{{item.id}}/edit');
+    expect(nav.params.mergeQuery).toBe(true);
+    // 수정 권한이 없으면 같은 썸네일·번호를 링크 없이 보인다
+    const items = findById(list, 'summary_items')!;
+    const plain = collect(items, (n) => n.if === '{{item.abilities?.can_update === false}}');
+    expect(plain).toHaveLength(1);
+    expect(json(plain[0])).not.toContain('navigate');
+    expect(pick(ko, 'admin.summary.edit_item')).toContain('{{title}}');
+    expect(pick(en, 'admin.summary.edit_item')).toContain('{{title}}');
+  });
+
   // @scenario surface=list_summary_card_settings_lines
   it('요약 카드 오른쪽에 PC·모바일·닫기 표시 방식 세 줄과 설정 링크가 있다', () => {
     const lines = json(findById(list, 'summary_settings'));
