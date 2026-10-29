@@ -5,6 +5,7 @@ namespace Tests\Unit\Extension;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Extension\Concerns\ChecksDependencyVersions;
+use App\Extension\TemplateManager;
 use Illuminate\Support\Facades\App;
 use Mockery;
 use Tests\TestCase;
@@ -81,16 +82,27 @@ class DependencyMessageTypeTest extends TestCase
      */
     public function test_template_dependency_message_uses_localized_type(): void
     {
-        $source = (string) file_get_contents(app_path('Extension/TemplateManager.php'));
+        $this->checker();
+        $template = [
+            'identifier' => 'sirsoft-admin_basic',
+            'dependencies' => ['modules' => ['sirsoft-board' => '*'], 'plugins' => ['sirsoft-ckeditor5' => '>=1.0.0']],
+        ];
+        // 판정은 의존 판정식(DependencyEnricher)만 쓰므로 생성자 의존 없이 checkDependencies 를 직접 부른다
+        $manager = (new \ReflectionClass(TemplateManager::class))->newInstanceWithoutConstructor();
+        $check = new \ReflectionMethod(TemplateManager::class, 'checkDependencies');
 
-        $this->assertStringContainsString("'type' => __('extensions.dependency_types.module'),", $source);
-        $this->assertStringContainsString("'type' => __('extensions.dependency_types.plugin'),", $source);
-        $this->assertStringNotContainsString("'type' => 'module',\n                    ]);", $source);
-
-        App::setLocale('ko');
-        $this->assertSame(
-            '필수 의존성 sirsoft-board (모듈)이 충족되지 않았습니다.',
-            __('templates.errors.dependency_not_met', ['dependency' => 'sirsoft-board', 'type' => __('extensions.dependency_types.module')])
-        );
+        foreach ([
+            'ko' => "필수 의존성 sirsoft-board (모듈)이 충족되지 않았습니다.\n필수 의존성 sirsoft-ckeditor5 (플러그인)이 충족되지 않았습니다.",
+            'en' => "Required dependency sirsoft-board (module) not met.\nRequired dependency sirsoft-ckeditor5 (plugin) not met.",
+        ] as $locale => $expected) {
+            App::setLocale($locale);
+            $message = null;
+            try {
+                $check->invoke($manager, $template);
+            } catch (\Exception $e) {
+                $message = $e->getMessage();
+            }
+            $this->assertSame($expected, $message, $locale);
+        }
     }
 }
