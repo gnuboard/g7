@@ -5,6 +5,8 @@ import { DEFAULT_SETTINGS, type PopupDisplaySettings, type PublicPopup } from '.
 import { MOBILE_MAX_WIDTH, rememberClosed, visiblePopups } from '../../lib/popupVisibility';
 import { readDismissed, rememberDismissed } from '../../lib/dismissCookie';
 import { translate as t } from '../../support/editor';
+import { boxesFor } from '../../lib/overlays';
+import { ImageFrame } from '../../lib/ImageFrame';
 
 /** GDPR 쿠키 배너 요소 id — GDPR 조각의 `data-ref` 가 DOM id 가 된다(공개 계약 아님, 결정 R8). */
 export const GDPR_BANNER_ID = 'gdpr_cookie_banner';
@@ -1204,6 +1206,7 @@ export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, isMobi
   const mobile = popup.image?.mobile ?? null;
   // 레이어 판정(엔진 폭·미리보기 기기)과 같은 기준으로 고른다 — `<picture media>` 는 창 폭으로 판정해 어긋난다
   const shown = isMobile ? (mobile ?? pc) : pc;
+  const boxes = boxesFor(popup.overlays, isMobile && !!mobile);
   const alt = popup.image_alt ?? '';
   const link = popup.link_url ?? '';
   const newWindow = !!popup.link_new_window;
@@ -1227,18 +1230,8 @@ export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, isMobi
 
   return (
     <div className="g7pp-media">
-      {shown && (
-        <img
-          src={shown.url}
-          alt={link ? '' : alt}
-          width={shown.width ?? undefined}
-          height={shown.height ?? undefined}
-          loading={eager ? 'eager' : 'lazy'}
-          fetchPriority={eager ? 'high' : 'auto'}
-          className="g7pp-media__img"
-          draggable={false}
-        />
-      )}
+      {/* 글 상자는 이미지 표시 사각형(프레임) 기준 % 로 겹치고, 누름·끌기를 받지 않아 덮는 링크·장 넘김이 그대로 동작한다 */}
+      {shown && <ImageFrame image={shown} alt={link ? '' : alt} eager={eager} boxes={boxes} />}
       {link && (
         <a
           className="g7pp-cover-link"

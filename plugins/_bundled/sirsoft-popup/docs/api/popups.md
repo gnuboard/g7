@@ -20,6 +20,7 @@
 - 기간 입력(`starts_at`·`ends_at`)은 사이트 시간대의 `YYYY-MM-DDTHH:mm`(datetime-local) 로 받아 UTC 로 저장하고, 응답의 `*_display`·`*_local` 은 다시 사이트 시간대로 돌려 줍니다.
 - 다국어 값(`image_alt`·`body_html`)은 `{언어 코드: 값}` 객체이며 사이트 지원 언어만 받습니다. 비운 언어는 사용자 화면에서 사이트 기본 언어 값으로 대체됩니다. 수정 때는 언어팩을 꺼서 지원 목록에서 빠진 언어라도 이미 저장된 번역이면 받고(보내지 않아도 지우지 않음), 저장돼 있지 않던 지원 밖 언어만 422 입니다.
 - 직접 작성형 본문은 정화한 뒤에도 내용이 남아야 합니다 — 허용하지 않는 요소(`iframe`·`script`·`form` 등)만 있는 언어가 있으면 422(`body_html`)입니다.
+- 이미지 위 글 상자(`overlays`)는 `{"pc": [상자…], "mobile": [상자…] | null}` 입니다. 상자 한 개는 `id`(영숫자 8자, 기기 안에서 유일)·`x`·`y`(왼쪽 위, 이미지 폭·높이 대비 % 0~100)·`w`(폭 %, 5~100, `x + w ≤ 100`)·`text`(`{언어: 일반 글}`, 언어별 200자, 사이트 기본 언어 필수, 태그는 저장 때 제거)·`size`(글자 크기, 이미지 폭 대비 % 2~20, 0.5 단위)·`color`(`#RRGGBB`)·`bold`·`align`(`left`·`center`·`right`)·`bg`(null 또는 `{color, opacity}` — opacity 는 진하기 % 0~90)·`shadow` 입니다. 기기마다 10개까지, `mobile` 이 null 이면 휴대폰도 PC 배치를 씁니다. 이미지형만 저장하고(직접 작성형이면 null), 모바일 이미지가 없으면 `mobile` 을 null 로 저장합니다. 상자가 하나도 없으면 null 입니다. 수정 때 지원 밖 언어의 저장된 상자 글은 같은 `id` 상자에 보존합니다.
 - 응답 예시의 ID·날짜·해시는 설명용 예시 값입니다(`{hash}` 는 64자 영숫자 이미지 해시 자리).
 
 ---
@@ -198,6 +199,7 @@ HTTP/1.1 200
 | image_alt | body | array | 아니오 | — | 이미지 대체 텍스트 `{언어: 텍스트}`(언어별 최대 200자, 사이트 지원 언어만). 이미지형만 사용. 비우면 사용자 화면은 관리용 제목을 대체 이름으로 씁니다 |
 | link_url | body | string | 아니오 | max 2048 | 이미지를 눌렀을 때 이동할 주소(이미지형만). 사이트 내부 경로(`/…`) 또는 `http(s)://` 절대 주소만 허용하고 `//`·`/\` 시작, `javascript:` 등 다른 스킴, 공백·제어문자는 거부합니다. 빈 문자열은 null(링크 없음) |
 | link_new_window | body | boolean | 아니오 | — | 링크를 새 창에서 열지(이미지형만, 기본 false) |
+| overlays | body | object | 아니오 | 기기별 max 10 | 이미지 위 글 상자 `{pc, mobile}`(이미지형만). 상자 모양·한도는 위 공통 사항 |
 | body_html | body | array | 예 | — | 직접 작성형 본문 `{언어: HTML}`(`content_type=html` 일 때만 필수). 사이트 기본 언어 값은 필수, 언어별 최대 65535자. 저장 전에 HTML 정화기로 허용 태그만 남깁니다 |
 | temp_key | body | string | 예 | max 64 | 등록 화면의 이미지 임시 묶음 키(`content_type=image` 일 때만 필수). 그 묶음에 PC 이미지가 올라와 있어야 합니다 |
 | pc_image_id | body | integer | 예 | — | 붙일 PC 이미지 ID(이미지형, 선택). 같은 `temp_key` 묶음의 PC 이미지여야 합니다. 보내지 않으면 묶음의 가장 최근 PC 이미지를 붙입니다 |
@@ -1030,6 +1032,7 @@ _단건 응답: `data` 객체의 필드._
 | body_html | array | `[]` | 직접 작성형 본문 (다국어 JSON, 저장 때 정화한 HTML, 값이 없으면 빈 객체) |
 | link_url | null | `null` | 이미지 클릭 시 이동 주소(사이트 경로 또는 http(s) 주소). 없으면 null |
 | link_new_window | boolean | `false` | 새 창에서 열기 |
+| overlays | object\|null | `null` | 이미지 위 글 상자 `{pc, mobile}` — 글은 언어별 원본 그대로(편집기가 받는다). 없으면 null |
 | starts_at_local | null | `null` | 수정 화면 입력용 노출 시작 일시(사이트 시간대 `YYYY-MM-DDTHH:mm`, datetime-local 값). 상시 노출이면 null |
 | ends_at_local | null | `null` | 수정 화면 입력용 노출 종료 일시(사이트 시간대 `YYYY-MM-DDTHH:mm`). 상시 노출이면 null |
 | images | object | `{"pc":{"id":1,"hash":"{hash}","device":"pc","url":"/api/plu…` | 기기별 이미지 `{pc, mobile}` — 각 값은 업로드 응답과 같은 모양의 객체 또는 null. 수정 저장 때 `pc_image_id`·`mobile_image_id` 로 보낼 ID 의 출처 |
@@ -1139,6 +1142,7 @@ HTTP/1.1 200
 | image_alt | body | array | 아니오 | — | 이미지 대체 텍스트 `{언어: 텍스트}`(언어별 최대 200자, 이미지형만) |
 | link_url | body | string | 아니오 | max 2048 | 이미지 클릭 시 이동 주소(이미지형만). 사이트 내부 경로 또는 http(s) 절대 주소만 — 규칙은 등록과 같습니다 |
 | link_new_window | body | boolean | 아니오 | — | 링크를 새 창에서 열지(이미지형만, 기본 false) |
+| overlays | body | object | 아니오 | 기기별 max 10 | 이미지 위 글 상자 `{pc, mobile}`(이미지형만). 보낸 목록으로 통째로 바뀌고, 빈 목록이면 null — 규칙은 등록과 같습니다 |
 | body_html | body | array | 예 | — | 직접 작성형 본문 `{언어: HTML}`(`content_type=html` 일 때만 필수, 기본 언어 필수, 언어별 최대 65535자, 저장 전 HTML 정화) |
 | revision | body | integer | 예 | min 0 | 수정 화면이 받은 세대 번호(상세 응답의 `revision`). 지금 값과 다르면 검증보다 먼저 409 를 돌려줍니다. 키를 보내지 않으면 충돌 검사를 하지 않으므로 화면은 항상 보냅니다 |
 | temp_key | body | string | 아니오 | max 64 | 수정 화면의 이미지 임시 묶음 키(이미지형). 새로 올린 이미지를 `pc_image_id`·`mobile_image_id` 로 고를 때 그 이미지가 이 묶음 것인지 확인하는 데 씁니다 |
@@ -1401,7 +1405,7 @@ HTTP/1.1 200
 - **서버가 거르는 것**: 사용 여부·기간(조회 시각에 노출 중인 것만)과 노출 대상(전체 + 요청자에 맞는 회원/비회원). **브라우저가 거르는 것**: 노출 페이지(`page_scope`·`routes`), 노출 기기(`device`), 방문자의 「보지 않기」 기록(쿠키 `g7_popup_dismissed`). 페이지 이동마다 다시 묻지 않고 응답을 회원 여부·언어 단위로 캐시하기 위한 분담입니다.
 - 응답은 회원 여부·언어별로 플러그인 설정 `public_cache_minutes`(기본 10분, 0 이면 캐시 안 함) 동안 캐시되며, 다음 예약 시작·종료 시각이 더 가까우면 그때 만료됩니다. 캐시에서 꺼낸 뒤에도 지금 시각으로 상태를 다시 판정하고, 관리자가 팝업을 저장·삭제·순서 변경하거나 플러그인 설정을 저장하면 즉시 비워집니다.
 - 검색엔진 봇 요청에는 `popups` 를 빈 배열로 돌려주고 캐시·훅을 거치지 않습니다.
-- 운영 정보(관리용 제목·사용 여부·기간·작성자)는 싣지 않습니다. 다국어 값은 요청 언어 → 사이트 기본 언어 순으로 골라 문자열로 내려갑니다.
+- 운영 정보(관리용 제목·사용 여부·기간·작성자)는 싣지 않습니다. 다국어 값(대체 텍스트·본문·글 상자 글)은 요청 언어 → 사이트 기본 언어 순으로 골라 문자열로 내려갑니다.
 - 발행 훅: `sirsoft-popup.popup.before_public_list` → `sirsoft-popup.popup.filter_public_list_result`(노출 목록 가공) → `sirsoft-popup.popup.after_public_list`. 캐시 밖에서 요청마다 발행하므로 한 요청자의 가공이 다른 방문자에게 섞이지 않습니다.
 
 **`popups[]` 항목**
@@ -1417,6 +1421,7 @@ HTTP/1.1 200
 | image_alt | string | `예시 이미지 설명` | 요청 언어의 대체 텍스트. 비었으면 관리용 제목으로 대체(링크 이름이 비지 않게). 직접 작성형은 빈 문자열 |
 | link_url | string\|null | `/shop` | 이미지 클릭 시 이동 주소(이미지형만, 없으면 null) |
 | link_new_window | boolean | `false` | 새 창에서 열기(이미지형만) |
+| overlays | object\|null | `{"pc":[{"id":"a1b2c3d4","x":8,"y":62,"w":84,"text":"가을 할인",…}],"mobile":null}` | 이미지 위 글 상자(이미지형만). 상자의 `text` 는 요청 언어 → 사이트 기본 언어로 고른 문자열 하나이고 글이 빈 상자는 뺍니다. `mobile` 은 모바일 이미지가 있고 따로 배치했을 때만 배열(아니면 null — 휴대폰도 PC 배치). 상자가 없으면 null |
 | body_html | string | `<p>…</p>` | 요청 언어의 정화된 본문 HTML(직접 작성형만, 이미지형은 빈 문자열) |
 
 ## 공개 목록의 예약 갱신

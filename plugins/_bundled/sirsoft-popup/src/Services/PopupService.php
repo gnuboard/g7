@@ -136,7 +136,7 @@ class PopupService
                 $this->imageService->applySelection($popup, $this->imageService->resolveTempSelection($tempKey, $selected));
             }
 
-            return $this->popups->findOrFail($popup->id);
+            return $this->dropMobileOverlaysWithoutImage($this->popups->findOrFail($popup->id));
         });
 
         HookManager::doAction('sirsoft-popup.popup.after_create', $popup);
@@ -181,7 +181,9 @@ class PopupService
             $snapshot = $popup->toArray();
             $images = $this->imageService->applySelection($popup, $selection);
 
-            return [$this->popups->update($popup, $data + ['updated_by' => $actorId]), $images, $snapshot];
+            $updated = $this->dropMobileOverlaysWithoutImage($this->popups->update($popup, $data + ['updated_by' => $actorId]));
+
+            return [$updated, $images, $snapshot];
         });
 
         $this->deleteReleasedImages($images['released']);
@@ -285,6 +287,7 @@ class PopupService
                         'image_alt' => $source->image_alt,
                         'link_url' => $source->link_url,
                         'link_new_window' => $source->link_new_window,
+                        'overlays' => $source->overlays,
                         'body_html' => $source->body_html,
                         'created_by' => $actorId,
                         'updated_by' => $actorId,
@@ -385,8 +388,30 @@ class PopupService
         $data['image_alt'] = null;
         $data['link_url'] = null;
         $data['link_new_window'] = false;
+        $data['overlays'] = null;
 
         return $data;
+    }
+
+    /**
+     * 모바일 이미지가 없는 팝업의 모바일 글 상자 배치를 비웁니다 — 모바일 화면은 PC 이미지와 PC 배치를 쓴다.
+     *
+     * 이미지 선택은 저장 때 정해지므로(임시 묶음의 최근 이미지·떼어 냄) 검증 단계가 아니라 이미지를 붙인 뒤에 판정한다.
+     * 세대 번호를 한 번 더 올리지 않도록 행만 고친다.
+     *
+     * @param  Popup  $popup  이미지를 붙인 팝업 (pcImage·mobileImage 로드)
+     * @return Popup 정리한 팝업
+     */
+    private function dropMobileOverlaysWithoutImage(Popup $popup): Popup
+    {
+        $overlays = $popup->overlays;
+        if (! is_array($overlays) || ($overlays['mobile'] ?? null) === null || $popup->mobileImage !== null) {
+            return $popup;
+        }
+
+        $overlays['mobile'] = null;
+
+        return $this->popups->replaceOverlays($popup, ($overlays['pc'] ?? []) === [] ? null : $overlays);
     }
 
     /**

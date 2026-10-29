@@ -80,6 +80,53 @@
                 }
             },
             {
+                "name": "PopupOverlayEditor",
+                "type": "composite",
+                "path": "plugins/_bundled/sirsoft-popup/resources/js/components/composite/PopupOverlayEditor.tsx",
+                "props": {
+                    "value": {
+                        "type": "Overlays<OverlayBox> | null",
+                        "required": false,
+                        "description": "지금 폼의 글 상자 (`_local.form.overlays`)"
+                    },
+                    "images": {
+                        "type": "object",
+                        "required": false,
+                        "description": "폼의 PC·모바일 이미지 (`_local.form.images`)"
+                    },
+                    "locales": {
+                        "type": "array",
+                        "required": false,
+                        "description": "사이트 활성 언어 — 글 언어 탭"
+                    },
+                    "defaultLocale": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사이트 기본 언어 — 빈 언어는 이 언어 글로 보인다"
+                    },
+                    "localeNames": {
+                        "type": "object",
+                        "required": false,
+                        "description": "언어 코드 → 이름 (`_global.appConfig.localeNames`)"
+                    },
+                    "disabled": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "저장 중이면 고칠 수 없다"
+                    },
+                    "errors": {
+                        "type": "object",
+                        "required": false,
+                        "description": "저장 실패 검증 오류 (`_local.errors`) — `overlays.{기기}.{순번}…` 키의 상자를 표시한다"
+                    },
+                    "onChange": {
+                        "type": "function",
+                        "required": false,
+                        "description": "바뀐 글 상자 전체를 넘긴다(상자가 하나도 없으면 null)."
+                    }
+                }
+            },
+            {
                 "name": "PopupPeriodHint",
                 "type": "composite",
                 "path": "plugins/_bundled/sirsoft-popup/resources/js/components/composite/PopupPeriodHint.tsx",

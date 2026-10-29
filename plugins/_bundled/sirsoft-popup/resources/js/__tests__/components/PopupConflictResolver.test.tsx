@@ -104,4 +104,28 @@ describe('PopupConflictResolver', () => {
     expect((pcRow.querySelector('input[value="latest"]') as HTMLInputElement).checked).toBe(true);
     expect(pcRow.querySelector('.g7pp-conflict__stale')).not.toBeNull();
   });
+
+  // @scenario surface=conflict_overlays_compared_as_one_item
+  it('이미지 위 글 상자는 기기별 배치 전체를 한 항목으로 비교·선택한다(빈 언어 칸·키 순서는 같은 값)', () => {
+    const onApply = vi.fn();
+    const boxOf = (y: number, text: Record<string, string>) => ({ id: 'a1b2c3d4', x: 10, y, w: 50, text, size: 6, color: '#FFFFFF', bold: true, align: 'center', bg: null, shadow: true });
+    const start = { ...base, overlays: { pc: [boxOf(20, { ko: '할인', en: 'Sale' })], mobile: null } };
+    const sameMeaning = { ...start, overlays: { pc: [boxOf(20, { en: 'Sale', ko: '할인', ja: '' })], mobile: null } };
+    const mine = { ...base, overlays: { pc: [boxOf(30, { ko: '할인' })], mobile: null } };
+    const latest = { ...base, revision: 2, overlays: { pc: [boxOf(20, { ko: '할인 연장' })], mobile: [] } };
+
+    const { container, rerender } = render(<PopupConflictResolver base={start} mine={sameMeaning} latest={start} locales={['ko', 'en']} />);
+    expect(row(container, 'overlays')).toBeNull();
+
+    rerender(<PopupConflictResolver base={start} mine={mine} latest={latest} locales={['ko', 'en']} onApply={onApply} />);
+    const overlaysRow = row(container, 'overlays') as HTMLElement;
+    expect(overlaysRow.getAttribute('data-change')).toBe('both');
+    expect(overlaysRow.textContent).toContain('PC 1개 · 모바일 PC 배치 · 할인');
+    expect(container.querySelectorAll('[data-conflict-field^="overlays"]')).toHaveLength(1);
+
+    fireEvent.click(overlaysRow.querySelector('input[value="mine"]') as HTMLInputElement);
+    fireEvent.click(container.querySelector('.g7pp-conflict__apply') as HTMLButtonElement);
+    expect(onApply.mock.calls[0][0].overlays).toEqual(mine.overlays);
+    expect(onApply.mock.calls[0][0].revision).toBe(2);
+  });
 });

@@ -64,7 +64,8 @@
 - **사용자 화면**: 주입 조각 `resources/extensions/popup_layer` 의 data-source → `Public\PopupController::index`(봇이면 빈 목록) → `PublicPopupService::forRequest`(대상·언어 캐시, 꺼낼 때 기간 재판정) → `PopupRepository::exposureCandidates` → 브라우저 `PopupLayer` 가 `route.path`·폭·쿠키로 거른 뒤 캐러셀로 그린다.
 - **복사**: `PopupController::bulkCopy` → `PopupIdsRequest` → `PopupService::bulkCopy`(건마다 트랜잭션: 비활성·맨 뒤·제목 접미 + `PopupImageService::duplicate` 로 파일 복제, 실패한 건만 되돌림) → after_bulk_copy.
 - **이미지 업로드**: `PopupImageController::store` → `PopupImageUploadRequest` → `PopupImageService::upload`(파일 쓰기 → 임시 묶음 행). 저장소 false·예외 또는 저장 후 조회·행 생성이 실패하면 새 파일 정리를 시도하고 실패분은 `PendingImageFiles` 로컬 대장에 남겨 기존 정리 명령으로 재시도한다. 실패는 `PopupImageUploadException` → 500 `messages.image.upload_failed`. 복제(`duplicate`)도 저장·행 생성 실패를 같은 대장으로 추적하며, 호출자 트랜잭션이 되돌려진 파일도 다시 정리한다.
-- **수정의 다국어 값**: `UpdatePopupRequest` 는 언어팩을 꺼서 지원 목록에서 빠진 언어의 **저장된** 번역을 검증에서 빼 두었다가 저장된 값으로 되돌려 넣는다(보내도 막지 않고 빼도 지우지 않음). 등록과 새 지원 밖 언어는 `strictLocales` 로 422. 본문은 `SanitizedBodyNotEmpty` 가 저장 때와 같은 정화기로 미리 걸러, 정화 뒤 표시할 텍스트·이미지가 없는 언어가 있으면(빈 문단·NBSP 포함) 422.
+- **이미지 위 글 상자**: 등록·수정 화면의 `PopupOverlayEditor` 가 `_local.form.overlays` 를 고치고 저장 본문에 실린다 → `PopupFieldRules`(기기별 상자 규칙, 글 태그 제거, `Support\Overlays::normalize` 로 자리수 고정) → `PopupService`(직접 작성형이면 null, 이미지를 붙인 뒤 모바일 이미지가 없으면 `mobile` 을 비움 — `replaceOverlays` 는 세대 번호를 올리지 않는다) → `PublicPopupPresenter`(글을 요청 언어로 고른 문자열로, 빈 상자 빼기, 모바일 배치는 모바일 이미지가 있을 때만) → `PopupContent` 의 `ImageFrame`(이미지 표시 사각형 기준 %).
+- **수정의 다국어 값**: `UpdatePopupRequest` 는 언어팩을 꺼서 지원 목록에서 빠진 언어의 **저장된** 번역을 검증에서 빼 두었다가 저장된 값으로 되돌려 넣는다(보내도 막지 않고 빼도 지우지 않음). 글 상자 글은 같은 `id` 상자에만 되돌린다. 등록과 새 지원 밖 언어는 `strictLocales` 로 422. 본문은 `SanitizedBodyNotEmpty` 가 저장 때와 같은 정화기로 미리 걸러, 정화 뒤 표시할 텍스트·이미지가 없는 언어가 있으면(빈 문단·NBSP 포함) 422.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -119,13 +120,14 @@
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
 | 레이어 폭 판정에 `window.matchMedia`·`<picture media>` | `G7Core.useResponsive()` 폭(없을 때만 `window.innerWidth`), 이미지는 레이어가 판정한 기기로 `src` 를 고른다 | 경계 폭 1px 어긋남과 편집기·관리자 미리보기(창이 넓다)에서 기기가 갈린다 |
-| `PopupLayer`·`PopupPreview` 를 템플릿 basic 컴포넌트(`Div`·`Button`)로 옮김 | 이 두 컴포넌트만 HTML 태그 + `g7pp-` 소유 CSS(**예외**). 관리 화면 조각(`PopupConflictResolver`·`PopupPeriodHint`)은 basic 컴포넌트 | 레이어는 어떤 사용자 템플릿에 붙어도 같은 모양·같은 접근성 구조(dialog·포커스 가둠)여야 하고, 템플릿마다 basic 컴포넌트의 클래스·마크업이 다르다 |
+| `PopupLayer`·`PopupPreview` 를 템플릿 basic 컴포넌트(`Div`·`Button`)로 옮김 | 이 두 컴포넌트와 이미지 프레임(`lib/ImageFrame`), 편집기 캔버스(`PopupOverlayEditor` 의 `.g7pp-ov-editor__canvas` 안)만 HTML 태그 + `g7pp-` 소유 CSS(**예외**). 관리 화면 조각(`PopupConflictResolver`·`PopupPeriodHint`·편집기 옆 패널)은 basic 컴포넌트 | 레이어는 어떤 사용자 템플릿에 붙어도 같은 모양·같은 접근성 구조(dialog·포커스 가둠)여야 하고, 템플릿마다 basic 컴포넌트의 클래스·마크업이 다르다 |
 | 미리보기 틀 안 높이를 `100%`·`vh` 로 잼 | 틀이 넘긴 `--g7pp-frame-h` 로 잰다(`.g7pp-root--preview` 규칙) | 대화상자 높이가 정해져 있지 않아 `100%` 는 풀리지 않고 본문이 0px 로 접힌다. `vh` 는 관리자 창 기준이다 |
 | 레이어 문구에 한국어 대체 문구를 박음 | `support/editor.ts` 의 `translate()`(전체 키) — 번역이 없으면 키가 보인다 | 번역 누락이 한국어로 가려지면 다른 언어 방문자에게만 드러난다 |
 | 넘김 컨트롤(점·「n / N」·일시정지)을 본문과 하단 바 사이 별도 띠로 두거나, 점 줄을 줄바꿈시킴 | 본문 안 아래 가운데에 겹친 캡슐(`.g7pp-pager`, 덮는 링크보다 위 층) — 한 줄에 들어갈 개수(`dotLimit`: PC 8·휴대폰 5·좁은 창은 그 폭만큼)를 넘으면 점 대신 숫자. 캡슐·화살표 위 누름은 본문 끌기에서 뺀다(`onPointerDown`) | 띠는 그만큼 창을 길게 만들어 헤더·쿠키 배너 사이 자리를 먹고, 줄바꿈된 점은 캡슐을 본문 밖으로 밀어낸다. 겹친 컨트롤 위에서 끌기·링크가 시작되면 점을 누르려다 장이 넘어가거나 링크로 간다 |
 | 장 전환에 모든 장을 한 줄로 놓은 트랙을 되감거나, 외부 슬라이더 라이브러리(Swiper 등)를 싣음 | 현재 장 + 들어올 옆 장 하나만 ±100% 자리에 두고 `transform` 으로 옮긴다(`PopupLayer` 의 `moveTo`·끌기 처리) | 끝 → 처음이 N장을 거꾸로 되감는 움직임이 된다. 같은 페이지의 다른 확장(히어로 섹션 등)이 자기 번들에 슬라이더 라이브러리를 이미 실어 두 번 받게 된다 |
 | 끌기 영역에서 올라온 `lostpointercapture` 로 끌기를 끝냄 | 영역 자신이 포인터를 잃었을 때(`event.target === event.currentTarget`)만 끝낸다 | 터치는 브라우저가 누른 자식에 포인터를 잡아 두므로, 영역이 넘겨받는 순간 자식의 `lostpointercapture` 가 올라와 휴대폰에서만 끌기가 끊긴다 |
 | 창 옮기기(하단 바)에서 누를 때 바가 포인터를 잡거나, 움직임·놓음을 바의 핸들러로만 받음 | 누른 뒤 움직임·놓음은 `window` 에서 받고, 8px 문턱을 넘긴 뒤에 바가 포인터를 잡는다. 끌었으면 그 동작의 click 하나를 바의 캡처 단계에서 막는다 | 누를 때 잡으면 click 대상이 바로 바뀌어 「닫기」·「보지 않기」가 눌리지 않는다. 마우스는 누른 요소가 포인터를 잡지 않으므로 빠르게 끌면 첫 움직임이 바(52px) 밖에서 와 창이 따라오지 않는다 |
+| 글 상자를 칸(`.g7pp-media`)이나 창 기준 % 로 놓거나 글자 크기를 `px`·`vw` 로 줌, 또는 상자가 누름을 받게 함 | 이미지 프레임(`.g7pp-media__frame`, 이미지 비율의 `contain` 사각형) 기준 % 와 프레임 폭 단위(`cqw`). 상자는 `pointer-events: none`. 레이어·미리보기·편집기가 같은 `ImageFrame`·`overlayStyle` 을 쓴다 | 칸 기준이면 이미지 비율과 칸 비율이 다를 때 여백만큼 글이 이미지에서 어긋나고, 창 기준 크기는 미리보기 축소·휴대폰에서 이미지보다 커진다. 상자가 누름을 받으면 덮는 링크·장 끌기가 상자 위에서 끊긴다 |
 | 창 자리(헤더·배너 사이) 재조정을 `resize` 이벤트에서만 함 | 엔진 폭(`G7Core.useResponsive()`)이 바뀐 렌더에서도 다시 맞춘다 | 엔진은 폭 변화를 150ms 늦춰 알리고 템플릿은 그때 폭에 맞는 헤더를 다시 그린다 — `resize` 순간에 재면 좁은 화면 → 넓은 화면에서 헤더를 0 으로 재어 창 위쪽이 헤더 밑에 깔린다 |
 <!-- @intent END -->
 
@@ -134,10 +136,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 17개 | `plugins/_bundled/sirsoft-popup/tests` |
-| Vitest | 11개 | `vitest.config.ts` |
-| Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 12개 | `tests/scenarios` |
+| PHPUnit | 19개 | `plugins/_bundled/sirsoft-popup/tests` |
+| Vitest | 13개 | `vitest.config.ts` |
+| Playwright | 4개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

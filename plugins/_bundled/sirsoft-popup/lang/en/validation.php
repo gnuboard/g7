@@ -16,6 +16,9 @@ return [
     'pc_image' => [
         'required' => 'Image popups need a PC image.',
     ],
+    'overlays' => [
+        'box_past_right_edge' => ':attribute extends past the right edge of the image. Move the box left or make it narrower.',
+    ],
     'image_selection' => [
         'invalid' => 'The selected image could not be found. Upload it again and save.',
     ],
@@ -54,5 +57,25 @@ return [
         'file' => 'image file',
         'ids' => 'selected popups',
         'ids_item' => 'selected popup',
+        'overlays' => 'text boxes on the image',
+        'overlay_box' => [
+            'pc' => 'PC text box :position',
+            'mobile' => 'mobile text box :position',
+        ],
+        'overlay_field' => [
+            'id' => 'identifier',
+            'x' => 'horizontal position',
+            'y' => 'vertical position',
+            'w' => 'width',
+            'text' => 'text',
+            'size' => 'text size',
+            'color' => 'text color',
+            'bold' => 'bold',
+            'align' => 'alignment',
+            'bg' => 'background',
+            'bg.color' => 'background color',
+            'bg.opacity' => 'background strength',
+            'shadow' => 'text shadow',
+        ],
     ],
 ];

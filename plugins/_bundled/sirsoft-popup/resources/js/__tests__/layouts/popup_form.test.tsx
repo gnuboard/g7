@@ -185,6 +185,55 @@ describe('팝업 등록·수정 화면', () => {
     expect(alt.props.placeholder).toContain('_local.form?.image_alt?.[display_settings?.data?.editor?.default_locale ?? $locale]');
   });
 
+  // @scenario surface=form_places_overlay_editor_in_image_fields
+  it('이미지 위 글 편집기는 이미지형 칸 안(모바일 이미지 다음·대체 텍스트 앞)에서 폼 값·이미지·언어를 받는다', () => {
+    const fields = findById(form, 'image_fields')!;
+    const order = (fields.children ?? []).map((c: any) => c.id);
+    expect(order.indexOf('field_overlays')).toBe(order.indexOf('field_mobile_image') + 1);
+    expect(order.indexOf('field_overlays')).toBeLessThan(order.indexOf('field_image_alt'));
+
+    const editor = findById(form, 'overlay_editor')!;
+    expect(editor.name).toBe('sirsoft-popup.PopupOverlayEditor');
+    expect(editor.props.value).toBe('{{_local.form?.overlays ?? null}}');
+    expect(editor.props.images).toBe('{{_local.form?.images ?? null}}');
+    expect(editor.props.locales).toContain('display_settings?.data?.editor?.locales');
+    expect(editor.props.defaultLocale).toContain('display_settings?.data?.editor?.default_locale');
+    expect(editor.props.disabled).toBe('{{_local.isSaving}}');
+    // 값을 직접 넘기는 경로라 hasChanges 를 직접 올린다(떠날 때 확인)
+    const write = actionsOf(editor, 'setState')[0];
+    expect(write.params['form.overlays']).toBe('{{$args[0]}}');
+    expect(write.params.hasChanges).toBe(true);
+  });
+
+  // @scenario surface=form_saves_overlays_in_body
+  it('저장 본문에 overlays 를 싣는다(없으면 null)', () => {
+    const save = actionsOf(findById(form, 'footer_save_button'), 'apiCall')[0];
+    expect(save.params.body).toContain('overlays: _local.form?.overlays ?? null');
+  });
+
+  // @scenario surface=form_resets_overlays_on_create
+  it('처음 값과 등록 진입 초기화 모두 overlays 를 null 로 둔다(수정 화면에서 넘어와도 남지 않게)', () => {
+    expect(doc.initLocal.form.overlays).toBeNull();
+    const reset = actionsOf(doc, 'setState').find((a) => a.if === '{{!route.id}}' && a.params?.form?.content_type === 'image');
+    expect(reset?.params.form.overlays).toBeNull();
+  });
+
+  // @scenario surface=form_shows_overlay_errors
+  it('overlays.* 검증 오류는 편집기 아래에 첫 사유를 보인다', () => {
+    const error = findById(form, 'overlay_error')!;
+    expect(error.if).toBe('{{!!_computed.overlayError}}');
+    const scope = { _local: { errors: { title: ['제목'], 'overlays.pc.0.text': ['글 상자 글 칸의 한국어 값은 필수입니다.'] } } };
+    expect(evalComputed('overlayError', scope)).toBe('글 상자 글 칸의 한국어 값은 필수입니다.');
+    expect(evalComputed('overlayError', { _local: { errors: null } })).toBe('');
+  });
+
+  // @scenario surface=form_passes_errors_to_overlay_editor
+  it('저장 오류를 편집기에 넘겨 문제 상자를 표시하게 하고, 구형 브라우저 안내를 함께 보인다', () => {
+    const editor = findById(form, 'overlay_editor')!;
+    expect(editor.props.errors).toBe('{{_local.errors ?? null}}');
+    expect(json(findById(form, 'field_overlays'))).toContain('admin.form.overlay.alt_hint');
+  });
+
   /** @effects translation_keys_present */
   it('폼이 쓰는 번역 키는 ko·en 모두에 있다', () => {
     const dynamic = ['admin.form.route_errors', 'settings.mobile_style', 'settings.pc_position'];

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { PopupLayer } from './PopupLayer';
 import { DEFAULT_SETTINGS, type PopupDisplaySettings, type PublicPopup } from '../../lib/types';
+import type { OverlayBox, Overlays, PublicOverlayBox } from '../../lib/overlays';
 
 /** 관리자 폼의 이미지 한 장 (업로드 응답 모양) */
 interface FormImage {
@@ -17,6 +18,7 @@ export interface PopupPreviewForm {
   link_url?: string | null;
   link_new_window?: boolean;
   images?: { pc?: FormImage | null; mobile?: FormImage | null } | null;
+  overlays?: Overlays<OverlayBox> | null;
 }
 
 /** 미리보기 props */
@@ -57,6 +59,22 @@ function pick(value: Record<string, string> | null | undefined, locale: string, 
   }
 
   return '';
+}
+
+/**
+ * 폼의 글 상자를 공개 응답 모양으로 바꿉니다 — 글은 탭 언어 → 기본 언어로 고르고, 글이 빈 상자는 뺍니다(서버와 같은 규칙).
+ *
+ * @param boxes 폼 상자 목록
+ * @param locale 탭 언어
+ * @param defaultLocale 기본 언어
+ * @returns 공개 상자 목록
+ */
+function presentBoxes(boxes: OverlayBox[] | null | undefined, locale: string, defaultLocale: string): PublicOverlayBox[] {
+  return (boxes ?? []).flatMap((box) => {
+    const text = pick(box.text, locale, defaultLocale);
+
+    return text ? [{ ...box, text }] : [];
+  });
 }
 
 /** 표본 팝업 — 환경설정 화면 미리보기용 */
@@ -122,6 +140,11 @@ export const PopupPreview: React.FC<PopupPreviewProps> = ({ device = 'pc', setti
       link_url: isHtml ? null : (form.link_url || null),
       link_new_window: !isHtml && !!form.link_new_window,
       body_html: isHtml ? pick(form.body_html, locale, defaultLocale) : '',
+      overlays: isHtml || !form.overlays ? null : {
+        pc: presentBoxes(form.overlays.pc, locale, defaultLocale),
+        // 모바일 이미지가 없으면 휴대폰도 PC 배치(서버가 모바일 배치를 싣지 않는다)
+        mobile: mobile && form.overlays.mobile ? presentBoxes(form.overlays.mobile, locale, defaultLocale) : null,
+      },
     }];
   }, [form, locale, defaultLocale]);
 

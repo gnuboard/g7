@@ -169,6 +169,18 @@ class PopupFactory extends Factory
     }
 
     /**
+     * 이미지 위 글 상자를 둡니다 — 상자 값은 저장 모양 그대로(`Support\Overlays` 참고).
+     *
+     * @param  array<int, array<string, mixed>>  $pc  PC 상자 목록
+     * @param  array<int, array<string, mixed>>|null  $mobile  모바일 상자 목록 (null 이면 PC 배치를 쓴다)
+     * @return static 글 상자 팩토리
+     */
+    public function withOverlays(array $pc, ?array $mobile = null): static
+    {
+        return $this->state(fn () => ['overlays' => ['pc' => $pc, 'mobile' => $mobile]]);
+    }
+
+    /**
      * PC 이미지(원하면 모바일도) 행을 붙입니다 — 파일은 만들지 않는다.
      *
      * @param  bool  $mobile  모바일 이미지도 붙일지

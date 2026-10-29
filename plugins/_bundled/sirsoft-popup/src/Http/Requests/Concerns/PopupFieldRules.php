@@ -9,17 +9,21 @@ use Illuminate\Validation\Rule;
 use Plugins\Sirsoft\Popup\Enums\Audience;
 use Plugins\Sirsoft\Popup\Enums\ContentType;
 use Plugins\Sirsoft\Popup\Enums\DisplayPeriod;
+use Plugins\Sirsoft\Popup\Enums\ImageDevice;
+use Plugins\Sirsoft\Popup\Enums\OverlayAlign;
 use Plugins\Sirsoft\Popup\Enums\PageScope;
 use Plugins\Sirsoft\Popup\Enums\PopupDevice;
+use Plugins\Sirsoft\Popup\Rules\OverlayBoxFits;
 use Plugins\Sirsoft\Popup\Rules\PopupRoute;
 use Plugins\Sirsoft\Popup\Rules\SafeLinkUrl;
 use Plugins\Sirsoft\Popup\Rules\SanitizedBodyNotEmpty;
+use Plugins\Sirsoft\Popup\Support\Overlays;
 use Plugins\Sirsoft\Popup\Support\RoutePath;
 
 /**
  * 팝업 등록·수정 공통 규칙 — 두 요청이 같은 규칙을 쓰도록 한 곳에 둔다(Store/Update 대칭).
  *
- * 내용 유형에 따라 쓰는 필드가 갈린다: 이미지형은 alt·링크·이미지, 직접 작성형은 언어별 본문(기본 언어 필수, 정화 뒤에도 남아야 함).
+ * 내용 유형에 따라 쓰는 필드가 갈린다: 이미지형은 alt·링크·이미지·이미지 위 글 상자, 직접 작성형은 언어별 본문(기본 언어 필수, 정화 뒤에도 남아야 함).
  * 쓰지 않는 유형의 필드는 검증에서 빼고(`exclude_unless`) 서비스가 비운다.
  * 기간은 사이트 시간대 `datetime-local` 로 받아 검증 뒤 UTC 로 바꾼다(#810·이커머스 쿠폰과 같은 규약).
  */
@@ -48,7 +52,38 @@ trait PopupFieldRules
             'link_url' => ['exclude_unless:content_type,image', 'nullable', 'string', 'max:2048', new SafeLinkUrl],
             'link_new_window' => ['exclude_unless:content_type,image', 'sometimes', 'boolean'],
             'body_html' => ['exclude_unless:content_type,html', 'required', 'array', new LocaleRequiredTranslatable(maxLength: 65535, strictLocales: true), new SanitizedBodyNotEmpty],
-        ];
+            'overlays' => ['exclude_unless:content_type,image', 'nullable', 'array:'.implode(',', ImageDevice::values())],
+        ] + $this->overlayRules();
+    }
+
+    /**
+     * 이미지 위 글 상자 규칙을 기기별로 반환합니다 — id 중복은 기기 안에서만 본다(모바일 배치는 PC 배치를 복사해 시작한다).
+     *
+     * @return array<string, mixed> 검증 규칙
+     */
+    private function overlayRules(): array
+    {
+        $rules = [];
+        foreach (ImageDevice::values() as $device) {
+            $box = "overlays.{$device}.*";
+            $rules["overlays.{$device}"] = ['exclude_unless:content_type,image', 'nullable', 'array', 'max:'.Overlays::MAX_BOXES];
+            $rules[$box] = ['exclude_unless:content_type,image', 'array', new OverlayBoxFits];
+            $rules["{$box}.id"] = ['exclude_unless:content_type,image', 'required', 'string', 'regex:/^[A-Za-z0-9]{8}$/', 'distinct'];
+            $rules["{$box}.x"] = ['exclude_unless:content_type,image', 'required', 'numeric', 'between:0,100'];
+            $rules["{$box}.y"] = ['exclude_unless:content_type,image', 'required', 'numeric', 'between:0,100'];
+            $rules["{$box}.w"] = ['exclude_unless:content_type,image', 'required', 'numeric', 'between:'.Overlays::MIN_WIDTH.',100'];
+            $rules["{$box}.text"] = ['exclude_unless:content_type,image', 'required', 'array', new LocaleRequiredTranslatable(maxLength: Overlays::MAX_TEXT, strictLocales: true)];
+            $rules["{$box}.size"] = ['exclude_unless:content_type,image', 'required', 'numeric', 'between:'.Overlays::MIN_SIZE.','.Overlays::MAX_SIZE, 'multiple_of:0.5'];
+            $rules["{$box}.color"] = ['exclude_unless:content_type,image', 'required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'];
+            $rules["{$box}.bold"] = ['exclude_unless:content_type,image', 'sometimes', 'boolean'];
+            $rules["{$box}.align"] = ['exclude_unless:content_type,image', 'required', Rule::enum(OverlayAlign::class)];
+            $rules["{$box}.bg"] = ['exclude_unless:content_type,image', 'nullable', 'array:color,opacity'];
+            $rules["{$box}.bg.color"] = ['exclude_unless:content_type,image', "required_with:{$box}.bg", 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'];
+            $rules["{$box}.bg.opacity"] = ['exclude_unless:content_type,image', "required_with:{$box}.bg", 'integer', 'between:0,'.Overlays::MAX_OPACITY];
+            $rules["{$box}.shadow"] = ['exclude_unless:content_type,image', 'sometimes', 'boolean'];
+        }
+
+        return $rules;
     }
 
     /**
@@ -101,7 +136,50 @@ trait PopupFieldRules
             $merged['title'] = trim($this->input('title'));
         }
 
+        if (is_array($this->input('overlays'))) {
+            $merged['overlays'] = $this->cleanOverlayTexts($this->input('overlays'));
+        }
+
         $this->merge($merged);
+    }
+
+    /**
+     * 글 상자 글을 일반 글로 정리합니다 — 태그를 빼고(HTML 로 그리지 않는다) 줄바꿈을 LF 로 맞추고 앞뒤 공백·빈 언어를 지웁니다.
+     *
+     * @param  array<string, mixed>  $overlays  입력 `overlays`
+     * @return array<string, mixed> 정리한 값
+     */
+    private function cleanOverlayTexts(array $overlays): array
+    {
+        foreach ($overlays as $device => $boxes) {
+            if (! is_array($boxes)) {
+                continue;
+            }
+            foreach ($boxes as $i => $box) {
+                if (! is_array($box) || ! is_array($box['text'] ?? null)) {
+                    continue;
+                }
+                $clean = [];
+                foreach ($box['text'] as $locale => $text) {
+                    // 빈 칸은 미들웨어가 null 로 바꿔 보낸다 — 빈 언어와 같이 뺀다
+                    if ($text === null) {
+                        continue;
+                    }
+                    if (! is_string($text)) {
+                        $clean[$locale] = $text;
+
+                        continue;
+                    }
+                    $text = trim(str_replace(["\r\n", "\r"], "\n", strip_tags($text)));
+                    if ($text !== '') {
+                        $clean[$locale] = $text;
+                    }
+                }
+                $overlays[$device][$i]['text'] = $clean;
+            }
+        }
+
+        return $overlays;
     }
 
     /**
@@ -126,6 +204,7 @@ trait PopupFieldRules
 
         if (($data['content_type'] ?? null) === ContentType::Image->value) {
             $data['link_new_window'] = (bool) ($data['link_new_window'] ?? false);
+            $data['overlays'] = Overlays::normalize($data['overlays'] ?? null);
         }
 
         return $data;
@@ -147,6 +226,16 @@ trait PopupFieldRules
         }
         $names['routes.*'] = __('sirsoft-popup::validation.attributes.route_item');
         $names['pc_image'] = __('sirsoft-popup::validation.attributes.pc_image');
+        $names['overlays'] = __('sirsoft-popup::validation.attributes.overlays');
+        foreach (ImageDevice::values() as $device) {
+            // 「PC 글 상자 2」처럼 기기와 순번을 붙여 어느 상자 문제인지 알린다 — :position 은 검증기가 1부터 센 순번으로 바꾼다
+            $box = __('sirsoft-popup::validation.attributes.overlay_box.'.$device);
+            $names["overlays.{$device}"] = __('sirsoft-popup::validation.attributes.overlays');
+            $names["overlays.{$device}.*"] = $box;
+            foreach (['x', 'y', 'w', 'text', 'size', 'color', 'bold', 'align', 'bg', 'bg.color', 'bg.opacity', 'shadow', 'id'] as $key) {
+                $names["overlays.{$device}.*.{$key}"] = $box.' '.__('sirsoft-popup::validation.attributes.overlay_field.'.$key);
+            }
+        }
 
         return $names;
     }

@@ -164,6 +164,20 @@ class PopupRepository implements PopupRepositoryInterface
      * {@inheritDoc}
      *
      * @param  Popup  $popup  대상 팝업
+     * @param  array<string, mixed>|null  $overlays  글 상자 값
+     * @return Popup 고친 팝업
+     */
+    public function replaceOverlays(Popup $popup, ?array $overlays): Popup
+    {
+        $popup->forceFill(['overlays' => $overlays])->save();
+
+        return $popup->fresh(['pcImage', 'mobileImage']);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  Popup  $popup  대상 팝업
      * @return bool 삭제 여부
      */
     public function delete(Popup $popup): bool

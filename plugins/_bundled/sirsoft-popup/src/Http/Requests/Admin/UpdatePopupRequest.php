@@ -21,6 +21,7 @@ use Plugins\Sirsoft\Popup\Rules\SelectablePopupImage;
  *
  * 언어팩을 꺼서 지원 목록에서 빠진 언어의 번역은 저장된 값 그대로 보존한다 — 화면이 그 키를 다시 보내도 막지 않고
  * 빼고 보내도 지우지 않는다(언어팩을 다시 켜면 그대로 보인다). 저장돼 있지 않던 지원 밖 언어는 등록처럼 막는다.
+ * 이미지 위 글 상자의 글도 같다 — 상자 id 가 저장본과 같은 상자에만 되돌린다(지운 상자의 글은 살리지 않는다).
  */
 class UpdatePopupRequest extends FormRequest
 {
@@ -32,6 +33,13 @@ class UpdatePopupRequest extends FormRequest
      * @var array<string, array<string, string>>
      */
     private array $keptTranslations = [];
+
+    /**
+     * 같은 방식으로 보존할 글 상자 글 (기기 => 상자 id => 언어 => 글)
+     *
+     * @var array<string, array<string, array<string, string>>>
+     */
+    private array $keptOverlayTexts = [];
 
     /**
      * 권한은 라우트 permission 미들웨어가 판정합니다.
@@ -123,6 +131,14 @@ class UpdatePopupRequest extends FormRequest
                 $data[$field] = (is_array($data[$field]) ? $data[$field] : []) + $kept;
             }
         }
+        foreach ($this->keptOverlayTexts as $device => $byId) {
+            foreach ($data['overlays'][$device] ?? [] as $i => $box) {
+                $kept = $byId[$box['id'] ?? ''] ?? null;
+                if ($kept !== null) {
+                    $data['overlays'][$device][$i]['text'] = (is_array($box['text'] ?? null) ? $box['text'] : []) + $kept;
+                }
+            }
+        }
 
         return $this->convertPopupInput($data);
     }
@@ -154,7 +170,49 @@ class UpdatePopupRequest extends FormRequest
             }
         }
 
+        $overlays = $this->holdInactiveLocaleOverlayTexts($popup->overlays, $this->input('overlays'), $active);
+        if ($overlays !== null) {
+            $merged['overlays'] = $overlays;
+        }
+
         $this->merge($merged);
+    }
+
+    /**
+     * 저장된 글 상자 중 입력에 같은 id 로 다시 온 상자의 지원 밖 언어 글을 입력에서 빼 두고 보존 목록에 담습니다.
+     *
+     * @param  mixed  $stored  저장된 `overlays`
+     * @param  mixed  $input  입력 `overlays`
+     * @param  array<int, string>  $active  지원 언어
+     * @return array<string, mixed>|null 지원 밖 언어를 뺀 입력 (바꿀 것이 없으면 null)
+     */
+    private function holdInactiveLocaleOverlayTexts(mixed $stored, mixed $input, array $active): ?array
+    {
+        if (! is_array($stored) || ! is_array($input)) {
+            return null;
+        }
+
+        $changed = false;
+        foreach (ImageDevice::values() as $device) {
+            foreach (is_array($stored[$device] ?? null) ? $stored[$device] : [] as $box) {
+                $kept = is_array($box['text'] ?? null) ? array_diff_key($box['text'], array_flip($active)) : [];
+                if ($kept !== [] && isset($box['id'])) {
+                    $this->keptOverlayTexts[$device][(string) $box['id']] = $kept;
+                }
+            }
+            if (! isset($this->keptOverlayTexts[$device]) || ! is_array($input[$device] ?? null)) {
+                continue;
+            }
+            foreach ($input[$device] as $i => $box) {
+                $kept = is_array($box) ? ($this->keptOverlayTexts[$device][(string) ($box['id'] ?? '')] ?? null) : null;
+                if ($kept !== null && is_array($box['text'] ?? null)) {
+                    $input[$device][$i]['text'] = array_diff_key($box['text'], $kept);
+                    $changed = true;
+                }
+            }
+        }
+
+        return $changed ? $input : null;
     }
 
     /**

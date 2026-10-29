@@ -9,21 +9,21 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-popup.popup.after_bulk_copy` | action | 일괄 복사 직후. 인자: (array $copies — 원본 ID => 새 ID, array $failedIds) | `src/Services/PopupService.php:312` |
-| `sirsoft-popup.popup.after_bulk_delete` | action | 일괄 삭제 직후. 인자: (array $ids, array $snapshots) | `src/Services/PopupService.php:342` |
-| `sirsoft-popup.popup.after_bulk_status` | action | 일괄 노출·비노출 직후. 인자: (array $ids, bool $isActive, array $snapshots) | `src/Services/PopupService.php:244` |
+| `sirsoft-popup.popup.after_bulk_copy` | action | 일괄 복사 직후. 인자: (array $copies — 원본 ID => 새 ID, array $failedIds) | `src/Services/PopupService.php:315` |
+| `sirsoft-popup.popup.after_bulk_delete` | action | 일괄 삭제 직후. 인자: (array $ids, array $snapshots) | `src/Services/PopupService.php:345` |
+| `sirsoft-popup.popup.after_bulk_status` | action | 일괄 노출·비노출 직후. 인자: (array $ids, bool $isActive, array $snapshots) | `src/Services/PopupService.php:246` |
 | `sirsoft-popup.popup.after_create` | action | 팝업 등록 직후. 인자: (Popup $popup) | `src/Services/PopupService.php:142` |
-| `sirsoft-popup.popup.after_delete` | action | 팝업 영구 삭제 직후. 인자: (int $popupId, array $snapshot) | `src/Services/PopupService.php:221` |
+| `sirsoft-popup.popup.after_delete` | action | 팝업 영구 삭제 직후. 인자: (int $popupId, array $snapshot) | `src/Services/PopupService.php:223` |
 | `sirsoft-popup.popup.after_public_list` | action | 사용자 화면 노출 후보 조회 직후. 인자: (array $popups, array $context — user·locale) | `src/Services/PublicPopupService.php:85` |
-| `sirsoft-popup.popup.after_reorder` | action | 순서 변경 직후. 인자: (array $ids) | `src/Services/PopupService.php:359` |
-| `sirsoft-popup.popup.after_update` | action | 팝업 수정 직후. 인자: (Popup $popup, array $snapshot) | `src/Services/PopupService.php:192` |
-| `sirsoft-popup.popup.before_bulk_copy` | action | 일괄 복사 직전. 인자: (array $ids) | `src/Services/PopupService.php:261` |
-| `sirsoft-popup.popup.before_bulk_delete` | action | 일괄 삭제 직전. 인자: (array $ids) | `src/Services/PopupService.php:325` |
-| `sirsoft-popup.popup.before_bulk_status` | action | 일괄 노출·비노출 직전. 인자: (array $ids, bool $isActive) | `src/Services/PopupService.php:234` |
+| `sirsoft-popup.popup.after_reorder` | action | 순서 변경 직후. 인자: (array $ids) | `src/Services/PopupService.php:362` |
+| `sirsoft-popup.popup.after_update` | action | 팝업 수정 직후. 인자: (Popup $popup, array $snapshot) | `src/Services/PopupService.php:194` |
+| `sirsoft-popup.popup.before_bulk_copy` | action | 일괄 복사 직전. 인자: (array $ids) | `src/Services/PopupService.php:263` |
+| `sirsoft-popup.popup.before_bulk_delete` | action | 일괄 삭제 직전. 인자: (array $ids) | `src/Services/PopupService.php:328` |
+| `sirsoft-popup.popup.before_bulk_status` | action | 일괄 노출·비노출 직전. 인자: (array $ids, bool $isActive) | `src/Services/PopupService.php:236` |
 | `sirsoft-popup.popup.before_create` | action | 팝업 등록 직전. 인자: (array $data) | `src/Services/PopupService.php:120` |
-| `sirsoft-popup.popup.before_delete` | action | 팝업 영구 삭제 직전. 인자: (Popup $popup) | `src/Services/PopupService.php:207` |
+| `sirsoft-popup.popup.before_delete` | action | 팝업 영구 삭제 직전. 인자: (Popup $popup) | `src/Services/PopupService.php:209` |
 | `sirsoft-popup.popup.before_public_list` | action | 사용자 화면 노출 후보 조회 직전(봇 제외). 인자: (array $context — user·locale) | `src/Services/PublicPopupService.php:70` |
-| `sirsoft-popup.popup.before_reorder` | action | 순서 변경 직전. 인자: (array $ids) | `src/Services/PopupService.php:355` |
+| `sirsoft-popup.popup.before_reorder` | action | 순서 변경 직전. 인자: (array $ids) | `src/Services/PopupService.php:358` |
 | `sirsoft-popup.popup.before_update` | action | 팝업 수정 직전. 인자: (Popup $popup, array $data) | `src/Services/PopupService.php:166` |
 | `sirsoft-popup.popup.filter_create_data` | filter | 등록 값 가공. 인자: (array $data) | `src/Services/PopupService.php:121` |
 | `sirsoft-popup.popup.filter_list_params` | filter | 관리자 목록 조건 가공. 인자: (array $filters) | `src/Services/PopupService.php:52` |
@@ -31,8 +31,8 @@
 | `sirsoft-popup.popup.filter_sanitize_config` | filter | 직접 작성형 본문 정화 허용 목록 가공. 인자: (array $config — HTMLPurifier 설정 키 => 값) | `src/Services/PopupHtmlSanitizer.php:118` |
 | `sirsoft-popup.popup.filter_update_data` | filter | 수정 값 가공. 인자: (array $data, Popup $popup) | `src/Services/PopupService.php:167` |
 | `sirsoft-popup.popup.store_validation_rules` | filter | 등록 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/StorePopupRequest.php:57` |
-| `sirsoft-popup.popup.update_validation_rules` | filter | 수정 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/UpdatePopupRequest.php:81` |
-| `sirsoft-popup.popup_image.after_change` | action | 팝업 수정 저장으로 기기별 이미지가 바뀐 직후. 인자: (Popup $popup, string $device, string $change — replaced·removed) | `src/Services/PopupService.php:189` |
+| `sirsoft-popup.popup.update_validation_rules` | filter | 수정 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/UpdatePopupRequest.php:89` |
+| `sirsoft-popup.popup_image.after_change` | action | 팝업 수정 저장으로 기기별 이미지가 바뀐 직후. 인자: (Popup $popup, string $device, string $change — replaced·removed) | `src/Services/PopupService.php:191` |
 | `sirsoft-popup.popup_image.after_delete` | action | 팝업 이미지 삭제 직후. 인자: (array $snapshot) | `src/Services/PopupImageService.php:148` |
 | `sirsoft-popup.popup_image.after_upload` | action | 팝업 이미지 임시 업로드 직후(팝업에는 저장 때 붙는다). 인자: (PopupImage $image) | `src/Services/PopupImageService.php:128` |
 | `sirsoft-popup.popup_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/PopupImageService.php:72` |

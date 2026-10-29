@@ -81,6 +81,15 @@ interface PopupRepositoryInterface
     public function update(Popup $popup, array $data): Popup;
 
     /**
+     * 이미지 위 글 상자만 바꿉니다 — 같은 저장 안의 뒷정리라 세대 번호는 올리지 않습니다.
+     *
+     * @param  Popup  $popup  대상 팝업
+     * @param  array<string, mixed>|null  $overlays  글 상자 값
+     * @return Popup 고친 팝업 (pcImage·mobileImage 로드)
+     */
+    public function replaceOverlays(Popup $popup, ?array $overlays): Popup;
+
+    /**
      * 팝업 행을 지웁니다.
      *
      * @param  Popup  $popup  대상 팝업

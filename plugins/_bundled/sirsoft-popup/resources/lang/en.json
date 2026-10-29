@@ -185,6 +185,54 @@
             },
             "image_alt": "Image alt text",
             "image_alt_hint": "Read aloud to visitors who cannot see the screen. If empty, the admin title is used.",
+            "overlay": {
+                "title": "Text on image",
+                "hint": "Place text boxes on the image. Position and text size scale with the image, and the text can differ by language. Clicking a box still follows the image link.",
+                "need_pc_image": "Upload a PC image first to place text boxes on it.",
+                "device_label": "Device to arrange",
+                "device": {
+                    "pc": "PC",
+                    "mobile": "Mobile"
+                },
+                "add": "Add text box",
+                "limit": "You can place up to {{max}} text boxes per device.",
+                "new_text": "New text",
+                "canvas_label": "Text box layout",
+                "canvas_hint": "Drag a box to move it and use the right handle to change its width. Move the selected box 1% with the arrow keys, 5% with Shift+arrow, and remove it with Delete.",
+                "box_label": "Text box {{n}}: {{text}}",
+                "empty_box": "(empty)",
+                "uses_pc": "The mobile image uses the PC layout as is. To arrange it separately, start by copying the PC layout.",
+                "copy_pc": "Copy PC layout to arrange separately",
+                "use_pc": "Use PC layout as is",
+                "no_selection": "Select a text box to change its text and format here.",
+                "locale_label": "Text language",
+                "text": "Text",
+                "text_hint": "Line breaks are kept. Empty languages show the default language text.",
+                "fallback": "Showing default language",
+                "size": "Text size",
+                "color": "Text color",
+                "bold": "Bold",
+                "align_label": "Alignment",
+                "align": {
+                    "left": "Left",
+                    "center": "Center",
+                    "right": "Right"
+                },
+                "bg": "Background",
+                "bg_color": "Background color",
+                "bg_opacity": "Background strength",
+                "shadow": "Text shadow",
+                "forward": "Bring forward",
+                "backward": "Send backward",
+                "delete": "Delete",
+                "error": "Check the text on image: {{message}}",
+                "alt_hint": "Older browsers (such as iOS 15 and earlier) show only the image without text boxes, so also put essential wording in the image alternative text.",
+                "overflow": "The text of text box {{n}} ({{languages}}) runs past the bottom of the image and is cut off on the site. Move the box up or make the text smaller.",
+                "ratio_changed": "The image ratio changed ({{from}} → {{to}}). Text boxes stay at the same % positions and may cover a different part of the picture, so check their positions again.",
+                "ratio_ack": "Got it",
+                "phone_size": "About {{px}}px on a small phone (image about {{width}}px wide)",
+                "phone_small": "— may be hard to read on phones."
+            },
             "link_url": "Link URL",
             "link_url_optional": "(optional · opened when the image is clicked)",
             "link_url_hint": "Enter a site path starting with / or an http(s) address.",
@@ -254,8 +302,11 @@
                     "body_html": "Content",
                     "link": "Link",
                     "pc_image": "PC image",
-                    "mobile_image": "Mobile image"
-                }
+                    "mobile_image": "Mobile image",
+                    "overlays": "Text on image"
+                },
+                "overlays_summary": "PC {{pc}} · mobile {{mobile}}",
+                "overlays_mobile_pc": "PC layout"
             }
         }
     },

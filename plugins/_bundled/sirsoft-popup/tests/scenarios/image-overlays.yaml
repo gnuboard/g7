@@ -1,0 +1,94 @@
+feature: 팝업 이미지 위 글 상자(오버레이) — 저장·공개 응답·사용자 레이어·관리자 편집기
+
+description: |
+  이미지형 팝업에 기기별(PC·모바일) 글 상자를 최대 10개 둔다. 위치·폭·글자 크기는 이미지 기준 %, 서식은 언어 공통이고 글만 언어별이다.
+  서버는 FormRequest 로 범위·형식·언어를 검증하고(태그 제거), 직접 작성형이면 비우고, 모바일 이미지가 없으면 모바일 배치를 비운다.
+  공개 응답은 상자 글을 요청 언어 → 기본 언어로 골라 문자열 하나로 싣고 글이 빈 상자는 뺀다.
+  사용자 레이어는 이미지 표시 사각형과 같은 프레임 안에 상자를 % 로 겹치고, 상자는 누름·끌기를 받지 않는다(이미지 링크·장 넘김 그대로).
+  관리자 편집기는 사용자 레이어와 같은 렌더러로 그린 캔버스에서 끌기·폭 조절·키보드 이동·서식 패널·순서·기기 탭을 다룬다.
+
+axes:
+  surface:
+    # 백엔드 — 등록·수정 검증과 저장
+    - store_saves_pc_overlays
+    - store_accepts_ten_boxes
+    - store_rejects_eleven_boxes
+    - store_rejects_box_past_right_edge
+    - store_rejects_out_of_range_numbers
+    - store_rejects_size_off_half_step
+    - store_rejects_bad_color
+    - store_rejects_bad_align
+    - store_rejects_bad_or_duplicate_id
+    - store_requires_default_locale_text
+    - store_rejects_inactive_locale_text
+    - store_rejects_text_over_200
+    - store_strips_html_from_text
+    - store_html_type_clears_overlays
+    - store_without_mobile_image_clears_mobile_overlays
+    - update_replaces_overlays
+    - update_keeps_inactive_locale_overlay_text
+    - show_returns_overlays
+    - bulk_copy_copies_overlays
+    - migration_adds_nullable_overlays_column
+    - error_names_box_position
+    # 백엔드 — 공개 응답
+    - public_picks_request_locale_text
+    - public_falls_back_to_default_locale_text
+    - public_drops_box_without_text
+    - public_mobile_overlays_only_with_mobile_image
+    - public_html_type_has_no_overlays
+    - public_null_when_no_overlays
+    # 프론트엔드 — 사용자 레이어·미리보기
+    - layer_frame_ratio_from_image_size
+    - layer_frame_ratio_from_natural_size
+    - layer_boxes_positioned_in_percent
+    - layer_box_style_from_format
+    - layer_boxes_not_interactive
+    - layer_mobile_boxes_with_mobile_image
+    - layer_mobile_without_mobile_image_uses_pc_boxes
+    - layer_no_boxes_without_overlays
+    - layer_clips_boxes_to_image
+    - layer_hides_boxes_without_container_queries
+    - preview_picks_tab_locale_text
+    # 프론트엔드 — 관리자 편집기
+    - editor_needs_pc_image
+    - editor_add_box_centered
+    - editor_add_locked_at_ten
+    - editor_text_per_locale
+    - editor_drag_moves_and_clamps
+    - editor_resize_width_clamps
+    - editor_keyboard_moves_1_and_5
+    - editor_delete_key_removes
+    - editor_format_panel_updates
+    - editor_order_forward_back
+    - editor_mobile_tab_only_with_mobile_image
+    - editor_copy_pc_then_edit_separately
+    - editor_use_pc_layout_resets_mobile
+    - editor_marks_fallback_locale
+    - editor_disabled_while_saving
+    - editor_warns_overflow_any_locale
+    - editor_keyboard_keeps_box_inside
+    - editor_warns_image_ratio_change
+    - editor_marks_error_boxes
+    - editor_shows_phone_text_size
+    - conflict_overlays_compared_as_one_item
+    # 레이아웃 — 등록·수정 폼
+    - form_places_overlay_editor_in_image_fields
+    - form_saves_overlays_in_body
+    - form_resets_overlays_on_create
+    - form_shows_overlay_errors
+    - form_passes_errors_to_overlay_editor
+
+effects:
+  - overlays_saved_as_json
+  - public_response_has_localized_boxes
+  - boxes_follow_image_scale
+  - image_link_and_swipe_unchanged
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Feature/Admin/PopupOverlayTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Feature/Public/PublicPopupOverlayTest.php
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupOverlays.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupOverlayEditor.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupConflictResolver.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/popup_form.test.tsx

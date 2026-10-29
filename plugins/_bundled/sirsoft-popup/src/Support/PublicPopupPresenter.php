@@ -9,7 +9,8 @@ use Plugins\Sirsoft\Popup\Models\PopupImage;
 
 /**
  * 공개 응답 한 건의 모양을 만든다 — 요청 언어로 alt·본문을 고르고(요청 언어 → 사이트 기본 언어),
- * 운영 정보(관리용 제목·사용 여부·기간·작성자)는 싣지 않는다.
+ * 운영 정보(관리용 제목·사용 여부·기간·작성자)는 싣지 않는다. 이미지 위 글 상자도 글을 같은 순서로 골라 문자열 하나로 싣고,
+ * 모바일 배치는 모바일 이미지가 있을 때만 싣는다(없으면 휴대폰도 PC 이미지와 PC 배치).
  *
  * `_period` 는 캐시에서 꺼낼 때 다시 판정하려고 서비스 안에서만 쓰는 값이며 응답 직전에 뺀다.
  */
@@ -41,6 +42,7 @@ class PublicPopupPresenter
             'image_alt' => $isImage ? ($alt !== '' ? $alt : (string) $popup->title) : '',
             'link_url' => $isImage ? $popup->link_url : null,
             'link_new_window' => $isImage && (bool) $popup->link_new_window,
+            'overlays' => $isImage ? self::overlays($popup, $locale) : null,
             'body_html' => $isImage ? '' : self::pick($popup->body_html, $locale),
             '_period' => [
                 'is_active' => (bool) $popup->is_active,
@@ -65,6 +67,28 @@ class PublicPopupPresenter
         }
 
         return (string) (LocalizedValue::pick($value, $locale) ?? '');
+    }
+
+    /**
+     * 이미지 위 글 상자를 공개 모양으로 만듭니다 — 글은 요청 언어로 고른 문자열, 글이 빈 상자는 뺍니다.
+     *
+     * @param  Popup  $popup  이미지형 팝업 (mobileImage 로드)
+     * @param  string  $locale  요청 언어
+     * @return array{pc: array<int, array<string, mixed>>, mobile: array<int, array<string, mixed>>|null}|null 공개 글 상자 (없으면 null)
+     */
+    private static function overlays(Popup $popup, string $locale): ?array
+    {
+        $overlays = $popup->overlays;
+        if (! is_array($overlays)) {
+            return null;
+        }
+
+        $pc = Overlays::present($overlays['pc'] ?? [], $locale);
+        $mobile = $popup->mobileImage !== null && is_array($overlays['mobile'] ?? null)
+            ? Overlays::present($overlays['mobile'], $locale)
+            : null;
+
+        return $pc === [] && ($mobile === null || $mobile === []) ? null : ['pc' => $pc, 'mobile' => $mobile];
     }
 
     /**

@@ -38,7 +38,7 @@ class Popup extends Model
     protected $fillable = [
         'title', 'is_active', 'sort_order', 'content_type', 'display_period', 'starts_at', 'ends_at',
         'page_scope', 'routes', 'audience', 'device', 'image_alt', 'link_url', 'link_new_window',
-        'body_html', 'created_by', 'updated_by',
+        'overlays', 'body_html', 'created_by', 'updated_by',
     ];
 
     /**
@@ -75,6 +75,7 @@ class Popup extends Model
             'image_alt' => 'array',
             'body_html' => 'array',
             'link_new_window' => 'boolean',
+            'overlays' => 'array',
             'lock_version' => 'integer',
         ];
     }

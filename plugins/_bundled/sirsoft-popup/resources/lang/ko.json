@@ -185,6 +185,54 @@
             },
             "image_alt": "이미지 대체 텍스트(alt)",
             "image_alt_hint": "화면을 볼 수 없는 방문자에게 읽어 주는 설명입니다. 비우면 관리용 제목을 씁니다.",
+            "overlay": {
+                "title": "이미지 위 글",
+                "hint": "이미지 위에 글 상자를 놓습니다. 위치와 글자 크기는 이미지 크기를 따라 함께 바뀌고, 글은 언어별로 쓸 수 있습니다. 상자를 눌러도 이미지 링크로 이동합니다.",
+                "need_pc_image": "PC 이미지를 먼저 올리면 그 위에 글 상자를 놓을 수 있습니다.",
+                "device_label": "배치할 기기",
+                "device": {
+                    "pc": "PC",
+                    "mobile": "모바일"
+                },
+                "add": "글 상자 추가",
+                "limit": "글 상자는 기기마다 {{max}}개까지 둘 수 있습니다.",
+                "new_text": "새 글",
+                "canvas_label": "글 상자 배치",
+                "canvas_hint": "상자를 끌어 옮기고 오른쪽 손잡이로 폭을 바꿉니다. 고른 상자는 화살표 키로 1%, Shift+화살표로 5% 옮기고 Delete 로 지웁니다.",
+                "box_label": "글 상자 {{n}}: {{text}}",
+                "empty_box": "(빈 글)",
+                "uses_pc": "모바일 이미지에도 PC 배치를 그대로 씁니다. 따로 놓으려면 PC 배치를 복사해서 시작하세요.",
+                "copy_pc": "PC 배치 복사해서 따로 놓기",
+                "use_pc": "PC 배치 그대로 쓰기",
+                "no_selection": "글 상자를 고르면 여기서 글과 서식을 바꿀 수 있습니다.",
+                "locale_label": "글 언어",
+                "text": "글",
+                "text_hint": "줄바꿈은 그대로 보입니다. 비운 언어는 기본 언어 글로 보입니다.",
+                "fallback": "기본 언어로 표시",
+                "size": "글자 크기",
+                "color": "글자 색",
+                "bold": "굵게",
+                "align_label": "정렬",
+                "align": {
+                    "left": "왼쪽",
+                    "center": "가운데",
+                    "right": "오른쪽"
+                },
+                "bg": "바탕 깔기",
+                "bg_color": "바탕 색",
+                "bg_opacity": "바탕 진하기",
+                "shadow": "글자 그림자",
+                "forward": "앞으로",
+                "backward": "뒤로",
+                "delete": "삭제",
+                "error": "이미지 위 글을 확인하세요: {{message}}",
+                "alt_hint": "오래된 브라우저(iOS 15 이하 등)에서는 글 상자 없이 이미지만 보이니, 꼭 전해야 할 문구는 이미지 대체 텍스트에도 적어 두세요.",
+                "overflow": "글 상자 {{n}}의 글({{languages}})이 이미지 아래로 넘쳐 사용자 화면에서 잘립니다. 상자를 올리거나 글자를 줄이세요.",
+                "ratio_changed": "이미지 비율이 바뀌었습니다({{from}} → {{to}}). 글 상자는 같은 % 자리에 남아 그림의 다른 곳을 가릴 수 있으니 위치를 다시 확인하세요.",
+                "ratio_ack": "확인했어요",
+                "phone_size": "작은 휴대폰(이미지 폭 약 {{width}}px)에서 약 {{px}}px",
+                "phone_small": "— 휴대폰에서 읽기 어려울 수 있습니다."
+            },
             "link_url": "링크 URL",
             "link_url_optional": "(선택 · 이미지를 누르면 이동)",
             "link_url_hint": "사이트 안 경로(/로 시작) 또는 http(s) 주소를 입력합니다.",
@@ -254,8 +302,11 @@
                     "body_html": "본문",
                     "link": "링크",
                     "pc_image": "PC 이미지",
-                    "mobile_image": "모바일 이미지"
-                }
+                    "mobile_image": "모바일 이미지",
+                    "overlays": "이미지 위 글"
+                },
+                "overlays_summary": "PC {{pc}}개 · 모바일 {{mobile}}",
+                "overlays_mobile_pc": "PC 배치"
             }
         }
     },

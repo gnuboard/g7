@@ -34,6 +34,7 @@ class PopupResource extends BaseApiResource
             'body_html' => $this->body_html ?? (object) [],
             'link_url' => $this->link_url,
             'link_new_window' => (bool) $this->link_new_window,
+            'overlays' => $this->overlays,
             'starts_at_local' => TimezoneHelper::toSiteDateTimeLocalString($this->starts_at),
             'ends_at_local' => TimezoneHelper::toSiteDateTimeLocalString($this->ends_at),
             'images' => [

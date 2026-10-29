@@ -21,7 +21,7 @@ export interface PopupConflictResolverProps {
 interface Group {
   field: string;
   keys: string[];
-  kind: 'text' | 'enum' | 'bool' | 'period' | 'pages' | 'ml' | 'html' | 'link' | 'image';
+  kind: 'text' | 'enum' | 'bool' | 'period' | 'pages' | 'ml' | 'html' | 'link' | 'image' | 'overlays';
   device?: 'pc' | 'mobile';
 }
 
@@ -37,6 +37,8 @@ const GROUPS: Group[] = [
   { field: 'image_alt', keys: ['image_alt'], kind: 'ml' },
   { field: 'body_html', keys: ['body_html'], kind: 'html' },
   { field: 'link', keys: ['link_url', 'link_new_window'], kind: 'link' },
+  // 글 상자는 위치·서식·글이 서로 맞물려 상자 하나만 골라 섞으면 겹치거나 비어 보인다 — 기기별 배치 전체를 한 항목으로
+  { field: 'overlays', keys: ['overlays'], kind: 'overlays' },
   { field: 'pc_image', keys: [], kind: 'image', device: 'pc' },
   { field: 'mobile_image', keys: [], kind: 'image', device: 'mobile' },
 ];
@@ -69,6 +71,17 @@ function normalize(group: Group, value: Detail | null | undefined): unknown {
       return { url: v.link_url || null, newWindow: v.link_new_window === true };
     case 'image':
       return v.images?.[group.device!]?.id ?? null;
+    case 'overlays': {
+      // 빈 배치는 없음과 같다. 언어 칸의 빈 값·키 순서는 저장 의미가 같다
+      const o = v.overlays;
+      const boxes = (list: any[] | null | undefined) => (Array.isArray(list) ? list : []).map((box) => ({
+        ...box,
+        text: Object.fromEntries(Object.entries(box?.text ?? {}).filter(([, text]) => typeof text === 'string' && text.trim() !== '').sort(([a], [b]) => a.localeCompare(b))),
+      }));
+      const pc = boxes(o?.pc);
+      const mobile = Array.isArray(o?.mobile) ? boxes(o.mobile) : null;
+      return pc.length === 0 && (mobile === null || mobile.length === 0) ? null : { pc, mobile };
+    }
     default:
       return v[group.keys[0]] ?? null;
   }
@@ -104,6 +117,13 @@ function display(group: Group, value: Detail | null | undefined, locales: string
     case 'image': {
       const img = value?.images?.[group.device!];
       return img ? `${img.original_filename ?? `#${img.id}`}${img.width ? ` (${img.width}×${img.height})` : ''}` : t('empty');
+    }
+    case 'overlays': {
+      if (n === null) return t('empty');
+      // 상자 수와 첫 상자 글 몇 자 — 어느 쪽 배치인지 알아볼 만큼
+      const first = n.pc[0]?.text ? String(Object.values(n.pc[0].text)[0] ?? '').replace(/\s+/g, ' ').slice(0, 30) : '';
+      const summary = t('overlays_summary', { pc: n.pc.length, mobile: n.mobile === null ? t('overlays_mobile_pc') : n.mobile.length });
+      return first ? `${summary} · ${first}` : summary;
     }
     default:
       return n === null ? t('empty') : translate(`sirsoft-popup.admin.${group.field}.${n}`);

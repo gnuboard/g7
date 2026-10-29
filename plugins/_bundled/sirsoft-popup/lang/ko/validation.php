@@ -16,6 +16,9 @@ return [
     'pc_image' => [
         'required' => '이미지형 팝업에는 PC 이미지가 필요합니다.',
     ],
+    'overlays' => [
+        'box_past_right_edge' => ':attribute가 이미지 오른쪽 밖으로 나갔습니다. 상자를 왼쪽으로 옮기거나 폭을 줄이세요.',
+    ],
     'image_selection' => [
         'invalid' => '고른 이미지를 찾을 수 없습니다. 이미지를 다시 올린 뒤 저장하세요.',
     ],
@@ -54,5 +57,25 @@ return [
         'file' => '이미지 파일',
         'ids' => '선택한 팝업',
         'ids_item' => '선택한 팝업',
+        'overlays' => '이미지 위 글 상자',
+        'overlay_box' => [
+            'pc' => 'PC 글 상자 :position',
+            'mobile' => '모바일 글 상자 :position',
+        ],
+        'overlay_field' => [
+            'id' => '식별자',
+            'x' => '가로 위치',
+            'y' => '세로 위치',
+            'w' => '폭',
+            'text' => '글',
+            'size' => '글자 크기',
+            'color' => '글자 색',
+            'bold' => '굵게',
+            'align' => '정렬',
+            'bg' => '바탕',
+            'bg.color' => '바탕 색',
+            'bg.opacity' => '바탕 진하기',
+            'shadow' => '글자 그림자',
+        ],
     ],
 ];

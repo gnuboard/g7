@@ -1,3 +1,5 @@
+import type { Overlays, PublicOverlayBox } from './overlays';
+
 /**
  * 공개 API(`GET /api/plugins/sirsoft-popup/popups`) 응답 모양.
  *
@@ -44,6 +46,9 @@ export interface PublicPopup {
 
   /** 새 창에서 열기 */
   link_new_window?: boolean;
+
+  /** 이미지 위 글 상자 (글은 서버가 요청 언어로 고른 값, 모바일 배치는 모바일 이미지가 있을 때만) */
+  overlays?: Overlays<PublicOverlayBox> | null;
 
   /** 직접 작성형 본문 (서버가 저장 때 정화한 HTML) */
   body_html?: string;
