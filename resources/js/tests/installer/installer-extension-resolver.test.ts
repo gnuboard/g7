@@ -28,6 +28,7 @@ describe('installer-extension-resolver (JS ≡ PHP 공용 픽스처)', () => {
             expect(result.excluded_language_packs).toEqual(testCase.expected.excluded_language_packs);
             expect(result.errors.map((e: { key: string }) => e.key)).toEqual(testCase.expected.error_keys);
             expect(result.install_order).toEqual(testCase.expected.install_order);
+            expect(result.pulled_by).toEqual(testCase.expected.pulled_by);
         });
     }
 

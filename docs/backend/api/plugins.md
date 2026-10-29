@@ -2025,8 +2025,12 @@ _단건 응답: `data` 객체의 필드._
 | integrations[].is_installed | boolean | `false` | 설치 여부 |
 | integrations[].is_active | boolean | `false` | 활성 여부 |
 | integrations[].is_met | boolean | `false` | 설치됨 && 버전 제약 충족 |
-| integrations[].can_select | boolean | `true` | 함께 설치·활성화할 수 있는지 — 권한(의존 확장과 같은 판정)이 있고 대상이 템플릿이 아닐 때 true |
+| integrations[].can_select | boolean | `true` | 함께 설치·활성화할 수 있는지 — 권한(의존 확장과 같은 판정)이 있고 대상이 템플릿이 아니며, 연동 대상의 필수 의존(`requires`)을 모두 세울 수 있고 설치할 권한이 있을 때 true |
 | integrations[].default_selected | boolean | `true` | 기본 체크 여부 = `status !== 'active' && can_select` |
+| integrations[].requires | array | `[{"type":"module","identifier":"sirsoft-page","name":"페이지","action":"install_activate"}]` | 이 연동을 고르면 먼저 함께 설치·활성화되는 연동 대상 자신의 필수 의존(의존의 의존까지, 먼저 올 순서). 이미 활성인 의존은 빠진다. 연동 대상이 활성이면 빈 배열 |
+| integrations[].requires[].action | string | `install_activate` | `install_activate`(미설치) \| `activate`(설치됨·비활성) |
+| integrations[].blocked_reason | string\|null | `null` | 필수 의존 계획을 세울 수 없는 사유(없음·버전 미달·순환) — 있으면 `can_select=false` |
+| integrations[].blocked_by_permission | boolean | `false` | 필수 의존 중 현재 사용자가 설치·활성화할 권한이 없는 것이 있으면 true — 이때도 `can_select=false` |
 | language_packs | array | `[]` | 함께 설치 가능한 미설치 번들 언어팩 목록 (아래 필드) |
 | language_packs[].bundled_identifier | string | `g7-plugin-daum_postcode-ja` | 번들 언어팩 식별자 |
 | language_packs[].locale | string | `ja` | 로케일 코드 |

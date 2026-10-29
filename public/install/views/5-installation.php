@@ -139,7 +139,10 @@ echo renderInstallResultSection('aborted', 'warning', 'installation_aborted', 'i
 
     <!-- 실패 섹션 -->
     <?php
-$failureButtons = '<button onclick="retryInstallation()" class="btn btn-primary">'.htmlspecialchars(lang('retry_installation')).'</button>
+// 「Step 4 로 돌아가기」는 의존성 사전 검증 실패(순환·누락)일 때만 installer.js showError() 가 드러낸다 —
+// 재시도로 풀리지 않는 실패라 주 버튼으로 앞세우고 재시도는 보조로 바꾼다(#153). 이동은 기존 초기화 경로(항상 Step 4).
+$failureButtons = '<button id="back-to-extensions-btn" onclick="goToSettingsWithConfirm()" class="btn btn-primary hidden">'.htmlspecialchars(lang('back_to_extension_selection')).'</button>
+                <button id="retry-installation-btn" onclick="retryInstallation()" class="btn btn-primary">'.htmlspecialchars(lang('retry_installation')).'</button>
                 <button onclick="goToSettingsWithConfirm()" class="btn btn-secondary">'.htmlspecialchars(lang('back_to_settings')).'</button>';
 echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $failureButtons);
 ?>
@@ -234,6 +237,8 @@ $languagePacks = $selectedExtensions['language_packs'] ?? [];
 window.INSTALLER_CONFIG = <?= installer_json_encode($config) ?>;
 window.INSTALLER_SELECTED_EXTENSIONS = <?= installer_json_encode($selectedExtensions) ?>;
 window.INSTALLER_EXTENSION_NAMES = <?= installer_json_encode($state['extension_names'] ?? []) ?>;
+// 의존 때문에 종류 경계를 넘어 앞당겨 설치하는 항목 → 요구한 확장 (작업 행의 「…에 필요」 표시, #153)
+window.INSTALLER_PULLED_BY = <?= installer_json_encode((object) ($state['install_pulled_by'] ?? [])) ?>;
 
 // 작업 그룹 정의
 window.INSTALLER_TASK_GROUPS = [

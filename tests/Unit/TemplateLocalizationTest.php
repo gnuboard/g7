@@ -9,6 +9,12 @@ class TemplateLocalizationTest extends TestCase
 {
     /**
      * 한국어 다국어 키 존재 여부 테스트
+     *
+     * @scenario locale=ko, check=keys
+     *
+     * @effects template_lang_keys_exist_in_base_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_korean_translation_keys_exist(): void
     {
@@ -35,6 +41,12 @@ class TemplateLocalizationTest extends TestCase
 
     /**
      * 영어 다국어 키 존재 여부 테스트
+     *
+     * @scenario locale=en, check=keys
+     *
+     * @effects template_lang_keys_exist_in_base_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_english_translation_keys_exist(): void
     {
@@ -61,6 +73,12 @@ class TemplateLocalizationTest extends TestCase
 
     /**
      * 한국어 메시지 내용 검증
+     *
+     * @scenario locale=ko, check=content
+     *
+     * @effects template_lang_representative_content
+     *
+     * @return void 반환값 없음
      */
     public function test_korean_translation_content(): void
     {
@@ -75,6 +93,12 @@ class TemplateLocalizationTest extends TestCase
 
     /**
      * 영어 메시지 내용 검증
+     *
+     * @scenario locale=en, check=content
+     *
+     * @effects template_lang_representative_content
+     *
+     * @return void 반환값 없음
      */
     public function test_english_translation_content(): void
     {
@@ -88,7 +112,13 @@ class TemplateLocalizationTest extends TestCase
     }
 
     /**
-     * 매개변수 치환 테스트
+     * 매개변수 치환 테스트 — 템플릿 의존 미충족 문구의 종류는 현지화한 이름(「모듈」)으로 치환된다.
+     *
+     * @scenario locale=ko, check=params
+     *
+     * @effects template_lang_params_replaced_with_localized_type
+     *
+     * @return void 반환값 없음
      */
     public function test_translation_parameter_replacement(): void
     {
@@ -97,12 +127,15 @@ class TemplateLocalizationTest extends TestCase
         $message = __('templates.errors.not_found', ['template' => 'sirsoft-admin']);
         $this->assertStringContainsString('sirsoft-admin', $message);
 
+        // 종류는 현지화한 이름으로 넘긴다 — TemplateManager::checkDependencies() 와 같다(#153, 한국어 문장에 `module` 원문이 섞이던 결함)
         $dependencyMessage = __('templates.errors.dependency_not_met', [
             'dependency' => 'sirsoft-ecommerce',
-            'type' => 'module',
+            'type' => __('extensions.dependency_types.module'),
         ]);
         $this->assertStringContainsString('sirsoft-ecommerce', $dependencyMessage);
-        $this->assertStringContainsString('module', $dependencyMessage);
+        $this->assertStringContainsString(__('extensions.dependency_types.module'), $dependencyMessage);
+        $this->assertSame('모듈', __('extensions.dependency_types.module', [], 'ko'));
+        $this->assertSame('플러그인', __('extensions.dependency_types.plugin', [], 'ko'));
 
         $versionMessage = __('templates.errors.version_mismatch', [
             'dependency' => 'sirsoft-blog',
@@ -116,6 +149,12 @@ class TemplateLocalizationTest extends TestCase
 
     /**
      * 모든 TemplateManager에서 사용되는 키가 다국어 파일에 존재하는지 검증
+     *
+     * @scenario locale=en, check=keys
+     *
+     * @effects template_manager_used_keys_exist
+     *
+     * @return void 반환값 없음
      */
     public function test_all_template_manager_keys_exist(): void
     {
@@ -142,6 +181,12 @@ class TemplateLocalizationTest extends TestCase
 
     /**
      * 상태 및 타입 레이블 테스트
+     *
+     * @scenario locale=ko, check=labels
+     *
+     * @effects template_status_and_type_labels
+     *
+     * @return void 반환값 없음
      */
     public function test_status_and_type_labels(): void
     {
@@ -156,7 +201,19 @@ class TemplateLocalizationTest extends TestCase
         // 타입 레이블
         $this->assertEquals('관리자용', __('templates.types.admin'));
         $this->assertEquals('사용자용', __('templates.types.user'));
+    }
 
+    /**
+     * 상태 및 타입 레이블 테스트 (영어)
+     *
+     * @scenario locale=en, check=labels
+     *
+     * @effects template_status_and_type_labels
+     *
+     * @return void 반환값 없음
+     */
+    public function test_status_and_type_labels_in_english(): void
+    {
         App::setLocale('en');
 
         // 상태 레이블 (영어)

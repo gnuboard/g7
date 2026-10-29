@@ -40,6 +40,8 @@ effects:
   - cli_list_surfaces_uninstalled_and_drift
   - admin_list_shows_drift_badge_and_reinstall
   - third_party_pack_without_bundle_source_not_offered_for_reinstall
+  # #153 — 코어 범위 팩 먼저, 확장 팩의 core_locale_missing 은 그 팩 차례에 다시 판정(한 번 실행으로 완료)
+  - core_scope_pack_first_then_extension_packs_rechecked_in_one_run
 
 test_files:
   - tests/Feature/LanguagePack/ProvisionLanguagePackCommandTest.php

@@ -2,7 +2,7 @@
 
 return [
     'not_found' => 'モジュール ":module" が見つかりません。',
-    'dependency_not_active' => '依存モジュール ":dependency" がインストールされていないか、無効化されています。',
+    'dependency_not_active' => '依存する:type ":dependency" がインストールされていないか無効です。',
     'status' => [
         'active' => '有効化',
         'inactive' => '無効化',

@@ -854,6 +854,9 @@ if (! function_exists('dependencyPrecheckSSE')) {
                 'message' => $errorMessage,
                 'message_key' => 'dependency_precheck_failed',
                 'detail' => implode("\n", $missing),
+                // 사전 검증은 아무것도 바꾸지 않는다(DB 작업 전) — 되돌릴 것이 없으므로 롤백을 시도해
+                // 「롤백 실패 — DB 수동 정리」 안내가 붙지 않게 한다(#153 D7, 순환 실측에서 확인).
+                'rollback_done' => true,
             ];
         }
 
@@ -1867,13 +1870,13 @@ if (! function_exists('runInstallationTasks')) {
             $completedTasks = $state['completed_tasks'] ?? [];
             $selectedExtensions = getSelectedExtensions();
 
-            // 같은 종류 안의 의존 순서를 맞춘다(위상 정렬) — 해석에 실패하면 원래 순서를 두고
-            // dependency_precheck 가 사유와 함께 설치를 멈춘다.
+            // 종류를 넘는 의존까지 반영한 설치 순서(해석기 install_order)로 확장 작업을 만든다 — 해석에 실패하면
+            // 종전 종류 순서로 두고 dependency_precheck 가 사유와 함께 설치를 멈춘다.
             require_once __DIR__.'/extension-selection.php';
             $ordered = installer_resolve_extension_selection(installer_scan_extensions(), $selectedExtensions);
-            if (empty($ordered['errors']) && empty($ordered['auto_added'])) {
-                $selectedExtensions = $ordered['selection'];
-            }
+            $installOrder = empty($ordered['errors']) && empty($ordered['auto_added'])
+                ? $ordered['install_order']
+                : installer_category_install_order($selectedExtensions);
 
             $tasks = [];
 
@@ -1893,41 +1896,10 @@ if (! function_exists('runInstallationTasks')) {
             $tasks[] = ['id' => 'db_migrate', 'function' => 'runDatabaseMigrationSSE'];
             $tasks[] = ['id' => 'db_seed', 'function' => 'runDatabaseSeedingSSE'];
 
-            // 3. 관리자 템플릿
-            foreach ($selectedExtensions['admin_templates'] ?? [] as $templateId) {
-                $tasks[] = ['id' => 'template_install', 'target' => $templateId, 'function' => 'installAdminTemplateSSE', 'args' => [$templateId]];
-                $tasks[] = ['id' => 'template_activate', 'target' => $templateId, 'function' => 'activateAdminTemplateSSE', 'args' => [$templateId]];
-            }
-
-            // 4. 모듈
-            foreach ($selectedExtensions['modules'] ?? [] as $moduleId) {
-                $tasks[] = ['id' => 'module_install', 'target' => $moduleId, 'function' => 'installModuleSSE', 'args' => [$moduleId]];
-                $tasks[] = ['id' => 'module_activate', 'target' => $moduleId, 'function' => 'activateModuleSSE', 'args' => [$moduleId]];
-            }
-
-            // 5. 플러그인
-            foreach ($selectedExtensions['plugins'] ?? [] as $pluginId) {
-                $tasks[] = ['id' => 'plugin_install', 'target' => $pluginId, 'function' => 'installPluginSSE', 'args' => [$pluginId]];
-                $tasks[] = ['id' => 'plugin_activate', 'target' => $pluginId, 'function' => 'activatePluginSSE', 'args' => [$pluginId]];
-            }
-
-            // 6. 사용자 템플릿
-            foreach ($selectedExtensions['user_templates'] ?? [] as $templateId) {
-                $tasks[] = ['id' => 'user_template_install', 'target' => $templateId, 'function' => 'installUserTemplateSSE', 'args' => [$templateId]];
-                $tasks[] = ['id' => 'user_template_activate', 'target' => $templateId, 'function' => 'activateUserTemplateSSE', 'args' => [$templateId]];
-            }
-
-            // 7. 번들 언어팩 (best-effort — 1건 실패는 전체 중단하지 않음)
-            //    코어/모듈/플러그인/템플릿 install·activate 가 모두 끝난 뒤 실행해야
-            //    target_identifier 매칭 + DB 마이그레이션·시드가 완료된 상태에서 활성화 가능.
-            foreach ($selectedExtensions['language_packs'] ?? [] as $packId) {
-                $tasks[] = [
-                    'id' => 'language_pack_install',
-                    'target' => $packId,
-                    'function' => 'installLanguagePackSSE',
-                    'args' => [$packId],
-                    'best_effort' => true,
-                ];
+            // 5. 확장 — 관리자 템플릿·모듈·플러그인·사용자 템플릿은 의존 순서, 번들 언어팩(best-effort)은 그 뒤.
+            //    언어팩은 확장 install·activate 와 DB 마이그레이션·시드가 끝난 뒤여야 target_identifier 매칭 + 활성화가 된다.
+            foreach (installer_extension_install_tasks($installOrder) as $extensionTask) {
+                $tasks[] = $extensionTask;
             }
 
             // 8. 마무리

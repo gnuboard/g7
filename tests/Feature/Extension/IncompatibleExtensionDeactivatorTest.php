@@ -322,4 +322,64 @@ class IncompatibleExtensionDeactivatorTest extends TestCase
         $this->assertTrue($this->cache->has(CoreVersionChecker::getCacheKey('modules')));
         Artisan::shouldNotHaveReceived('call', ['config:clear']);
     }
+
+    /**
+     * 의존 확장 때문에 막힌 후보는 뒤 단계에서 의존 확장이 꺼지면 같은 부팅의 재시도로 꺼지고, 같은 알림 묶음·판정 캐시에 들어간다.
+     * 끝내 막힌 후보는 종전과 같이 판정 캐시를 남기지 않는다 (#153).
+     *
+     * @scenario case=retry_after_dependents
+     *
+     * @effects blocked_candidate_is_retried_in_same_boot_with_single_alert, still_blocked_candidate_keeps_version_cache_unsaved
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function test_blocked_candidate_is_retried_after_dependent_is_deactivated(): void
+    {
+        Log::spy();
+        $pluginOff = false;
+
+        $modules = Mockery::mock(ModuleManager::class);
+        $modules->shouldReceive('getActiveModules')->andReturn([
+            'vendor-shop' => $this->extension('>=99.0.0'),
+            'vendor-pinned' => $this->extension('>=99.0.0'),
+        ]);
+        $modules->shouldReceive('deactivateModule')->andReturnUsing(function (string $id) use (&$pluginOff): array {
+            // vendor-shop 은 결제 플러그인이 꺼진 뒤에만, vendor-pinned 는 템플릿 의존자 때문에 끝내 꺼지지 않는다
+            return $id === 'vendor-shop' && $pluginOff
+                ? ['success' => true, 'layouts_deleted' => 0]
+                : ['success' => false, 'warning' => true, 'dependent_templates' => [], 'dependent_modules' => [], 'dependent_plugins' => [['identifier' => 'vendor-pay']]];
+        });
+        $plugins = Mockery::mock(PluginManager::class);
+        $plugins->shouldReceive('getActivePlugins')->andReturn(['vendor-pay' => $this->extension('>=99.0.0')]);
+        $plugins->shouldReceive('deactivatePlugin')->once()->andReturnUsing(function () use (&$pluginOff): array {
+            $pluginOff = true;
+
+            return ['success' => true, 'layouts_deleted' => 0];
+        });
+
+        $deactivator = app(IncompatibleExtensionDeactivator::class);
+        $first = $deactivator->deactivateIncompatibleExtensions($modules, 'modules');
+        $deactivator->deactivateIncompatibleExtensions($plugins, 'plugins');
+        $retry = $deactivator->retryBlocked();
+
+        $this->assertSame(['vendor-shop', 'vendor-pinned'], array_column($first['blocked'], 'identifier'));
+        $this->assertSame([['identifier' => 'vendor-shop', 'required' => '>=99.0.0']], $retry['deactivated']);
+        $this->assertSame(['vendor-pinned'], array_column($retry['blocked'], 'identifier'));
+
+        $alerts = $this->cache->get('ext.compatibility_alerts');
+        $this->assertSame(['vendor-shop'], array_column($alerts['modules']['deactivated'] ?? [], 'identifier'));
+        $this->assertSame(['vendor-pay'], array_column($alerts['plugins']['deactivated'] ?? [], 'identifier'));
+        // 끝내 막힌 vendor-pinned 가 남아 모듈 판정 캐시는 저장하지 않는다 — 다음 부팅이 다시 시도
+        $this->assertFalse($this->cache->has(CoreVersionChecker::getCacheKey('modules')));
+        $this->assertTrue($this->cache->has(CoreVersionChecker::getCacheKey('plugins')));
+        Log::shouldHaveReceived('warning')->withArgs(fn ($message, $context = []) => $message === __('extensions.warnings.auto_deactivated', ['type' => 'modules', 'identifier' => 'vendor-shop'])
+            && ($context['retried_after_dependents'] ?? false) === true)->once();
+
+        // 막힌 것이 없으면 재시도는 아무것도 하지 않는다
+        $this->assertSame(
+            ['deactivated' => [], 'blocked' => [], 'skipped_stale' => false],
+            (new IncompatibleExtensionDeactivator($this->cache, app(TemplateRepositoryInterface::class)))->retryBlocked()
+        );
+    }
 }

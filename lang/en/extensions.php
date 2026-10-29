@@ -13,6 +13,13 @@ return [
         'language_pack' => 'language pack',
     ],
 
+    // 의존 확장 종류 이름 — 의존 미충족 문구의 :type (#153)
+    'dependency_types' => [
+        'module' => 'module',
+        'plugin' => 'plugin',
+        'template' => 'template',
+    ],
+
     // 멈춘 업데이트 정리 안내 (7.1.1)
     'stuck_update_recovered' => 'Cleaned up a stuck update (restored state: :status): :name — the update ended midway and left it in "updating".',
     'stuck_update_activate_hint' => 'The cleaned-up extension is now inactive. To turn it back on: :command',
@@ -92,6 +99,7 @@ return [
         'notice_version_mismatch' => ':name requires :required (installed :installed)',
         'notice_summary' => 'Some optional integrations are not working — :list. Install, turn on or update them to enable the integration.',
         'cascade_failed' => 'Skipped :name because it could not be installed or turned on together: :message',
+        'requires_no_permission' => 'You do not have permission to install or turn on :identifier, which this integration requires',
         'states' => [
             'not_installed' => 'Not installed',
             'inactive' => 'Inactive',
@@ -204,6 +212,7 @@ return [
             ],
             'confirm_proceed' => 'Do you want to proceed with the bulk update?',
             'skipped' => 'Skipping the bulk update.',
+            'dependency_cycle' => 'Dependencies form a cycle — these are updated in their original order: :cycle',
             'strategy_question' => 'Select the global layout strategy',
             'strategy_options' => [
                 'overwrite' => 'Overwrite all layouts with the bundle',

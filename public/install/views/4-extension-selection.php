@@ -220,6 +220,10 @@
 </div>
 
 <script>
+// 「Step 4 로 돌아가기」·「설정으로 돌아가기」로 돌아오면 이전 선택을 다시 체크한다 — 상태 초기화는 selected_extensions 를
+// 보존하고 installer.js restoreSelectionState() 가 이 값을 읽는다(종전에는 Step 5 에서만 넘겨 복원이 동작하지 않았다, #153 D7).
+window.INSTALLER_SELECTED_EXTENSIONS = <?= installer_json_encode((object) ($state['selected_extensions'] ?? [])) ?>;
+
 // Step 4 번역 키 전달
 window.EXTENSION_LABELS = {
     version: <?= installer_json_encode(lang('version')) ?>,

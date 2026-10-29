@@ -624,7 +624,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │   └── admin_module_list.g7.html
 │       └── partials/admin_module_list/
 │           ├── _modal_detail.g7.html
-│           ├── _modal_install.g7.html
+│           ├── _modal_install.g7.html (설치 확인 — 의존 확장·「함께 쓰면 연동되는 확장(선택)」·언어팩 체크 목록. 연동 항목 아래 「함께 설치」 줄은 그 연동이 필수로 요구하는 확장(미리보기 `integrations[].requires`), 고를 수 없으면 사유 배지)
 │           ├── _modal_manual_install.g7.html
 │           ├── _modal_uninstall.g7.html
 │           ├── _modal_update.g7.html
@@ -909,7 +909,7 @@ slots.content:
       └── ExtensionBadge (모듈 식별)
 modals:
   ├── _modal_detail.g7.html (상세 정보)
-  ├── _modal_install.g7.html (설치 확인)
+  ├── _modal_install.g7.html (설치 확인 — 의존·연동·언어팩 함께 설치, 연동의 필수 의존 「함께 설치」 줄)
   ├── _modal_uninstall.g7.html (삭제 확인)
   ├── _modal_update.g7.html (업데이트)
   └── _modal_force_activate.g7.html 등

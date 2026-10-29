@@ -117,6 +117,17 @@ if (! function_exists('installer_exclude_selection_missing_php')) {
             }
         ));
 
+        // 앞당김 표시(「…에 필요」)도 남은 설치 순서 안의 항목끼리만 둔다
+        $kept = array_flip($resolution['install_order']);
+        $pulledBy = [];
+        foreach ($resolution['pulled_by'] ?? [] as $key => $owners) {
+            $owners = array_values(array_filter($owners, static fn (string $owner): bool => isset($kept[$owner])));
+            if (isset($kept[$key]) && $owners !== []) {
+                $pulledBy[$key] = $owners;
+            }
+        }
+        $resolution['pulled_by'] = $pulledBy;
+
         return ['resolution' => $resolution, 'skipped' => $skipped];
     }
 }

@@ -1523,6 +1523,26 @@ class LanguagePackService
     }
 
     /**
+     * 번들 언어팩의 설치 차단 사유를 지금 다시 판정합니다 — 같은 실행에서 앞선 팩(코어 locale 팩)이 설치되면 사유가 사라질 수 있다.
+     *
+     * `language-pack:provision` 이 미리 계산된 `install_blocked_reason` 대신 그 팩 차례에 부른다(#153).
+     *
+     * @param  string  $bundledIdentifier  번들 식별자 (`lang-packs/_bundled/{식별자}`)
+     * @return string|null 차단 사유 키 또는 null (manifest 를 읽지 못하면 null — 설치 단계가 사유와 함께 실패한다)
+     */
+    public function bundledInstallBlockedReason(string $bundledIdentifier): ?string
+    {
+        $manifestPath = base_path('lang-packs/_bundled/'.$bundledIdentifier.'/language-pack.json');
+        if (! File::isFile($manifestPath)) {
+            return null;
+        }
+
+        $manifest = json_decode(File::get($manifestPath), true);
+
+        return is_array($manifest) ? $this->resolveInstallBlockedReason($manifest) : null;
+    }
+
+    /**
      * 설치는 되지만 알려 둘 사정을 단일 키워드로 반환합니다 (UI 안내용, 설치를 막지 않음).
      *
      * 현재는 대상 확장이 설치돼 있으나 꺼진 경우 `target_inactive` — 설치는 꺼진 채 되고, 그 확장을 켠 뒤에 켤 수 있습니다.

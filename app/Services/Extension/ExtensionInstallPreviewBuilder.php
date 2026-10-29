@@ -31,6 +31,7 @@ class ExtensionInstallPreviewBuilder
      * @param  TemplateService  $templateService  템플릿 서비스
      * @param  LanguagePackService  $languagePackService  언어팩 서비스
      * @param  CascadeInstallAuthorizer  $authorizer  동반 설치 항목별 권한 판정
+     * @param  CascadeInstallOrchestrator|null  $orchestrator  연동 대상의 필수 의존 계획 (없으면 컨테이너에서 꺼낸다)
      */
     public function __construct(
         private readonly ModuleService $moduleService,
@@ -38,6 +39,7 @@ class ExtensionInstallPreviewBuilder
         private readonly TemplateService $templateService,
         private readonly LanguagePackService $languagePackService,
         private readonly CascadeInstallAuthorizer $authorizer,
+        private readonly ?CascadeInstallOrchestrator $orchestrator = null,
     ) {}
 
     /**
@@ -113,6 +115,16 @@ class ExtensionInstallPreviewBuilder
             $status = ! $isInstalled ? 'not_installed' : ($isActive ? 'active' : 'inactive');
             $canSelect = $type !== 'template' && $this->authorizer->canSelectDependency($type, $isInstalled);
 
+            // 연동 대상 자신의 필수 의존(#153 D5) — 고르면 함께 먼저 설치·활성화된다. 계획을 세울 수 없거나(없음·버전 미달·순환)
+            // 필요한 확장을 설치할 권한이 없으면 이 연동은 고를 수 없다.
+            ['requires' => $requires, 'blocked_reason' => $blockedReason, 'blocked_by_permission' => $blockedByPermission]
+                = $canSelect && $status !== 'active'
+                    ? $this->integrationRequirements($type, (string) ($item['identifier'] ?? ''))
+                    : ['requires' => [], 'blocked_reason' => null, 'blocked_by_permission' => false];
+            if ($blockedReason !== null || $blockedByPermission) {
+                $canSelect = false;
+            }
+
             $result[] = [
                 'type' => $type,
                 'identifier' => (string) ($item['identifier'] ?? ''),
@@ -125,10 +137,55 @@ class ExtensionInstallPreviewBuilder
                 'is_met' => (bool) ($item['is_met'] ?? false),
                 'can_select' => $canSelect,
                 'default_selected' => $status !== 'active' && $canSelect,
+                'requires' => $requires,
+                'blocked_reason' => $blockedReason,
+                'blocked_by_permission' => $blockedByPermission,
             ];
         }
 
         return $result;
+    }
+
+    /**
+     * 연동 대상을 함께 설치할 때 먼저 설치·활성화해야 하는 필수 의존 — 관리자 연쇄 설치와 같은 계획(의존의 의존까지, 먼저 올 순서).
+     *
+     * @param  string  $type  연동 대상 종류 (module|plugin)
+     * @param  string  $identifier  연동 대상 식별자
+     * @return array{requires: array<int, array{type: string, identifier: string, name: string, action: string}>, blocked_reason: string|null, blocked_by_permission: bool} 필요한 확장·막힌 사유
+     */
+    private function integrationRequirements(string $type, string $identifier): array
+    {
+        // 연동 대상 자신의 정보를 읽지 못하면 계획을 세우지 않는다 — 대상 없음은 연동 대상의 「필수 의존」 사유가 아니고,
+        // 설치 단계가 종전과 같이 그 사유를 알린다.
+        $target = $type === 'module' ? $this->moduleService->getModuleInfo($identifier) : $this->pluginService->getPluginInfo($identifier);
+        if ($target === null) {
+            return ['requires' => [], 'blocked_reason' => null, 'blocked_by_permission' => false];
+        }
+
+        $plan = ($this->orchestrator ?? app(CascadeInstallOrchestrator::class))->resolveDependencyPlan($type, $identifier);
+
+        $requires = [];
+        $blockedByPermission = false;
+        foreach ($plan['steps'] as $step) {
+            $info = $step['type'] === 'module'
+                ? $this->moduleService->getModuleInfo($step['identifier'])
+                : $this->pluginService->getPluginInfo($step['identifier']);
+            $requires[] = [
+                'type' => $step['type'],
+                'identifier' => $step['identifier'],
+                'name' => (string) ($info['name'] ?? $step['identifier']),
+                'action' => $step['action'],
+            ];
+            if (! $this->authorizer->canSelectDependency($step['type'], $step['action'] === 'activate')) {
+                $blockedByPermission = true;
+            }
+        }
+
+        return [
+            'requires' => $requires,
+            'blocked_reason' => $plan['errors'][0] ?? null,
+            'blocked_by_permission' => $blockedByPermission,
+        ];
     }
 
     /**

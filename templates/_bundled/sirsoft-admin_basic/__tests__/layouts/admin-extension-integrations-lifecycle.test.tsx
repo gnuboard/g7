@@ -222,6 +222,42 @@ describe('설치 창 — 함께 쓰면 연동되는 확장(선택)', () => {
   });
 
   /**
+   * 연동 대상 자신의 필수 의존(#153 D5) — 「함께 설치: 이름 (식별자)」 줄과 체크 상태별 안내, 고를 수 없는 사유 배지.
+   *
+   * @scenario extension_type=template,core_version=with_integration_fields
+   * @effects install_modal_shows_integration_required_dependencies
+   */
+  it.each(EXTS)('%s: 연동 대상의 필수 의존을 「함께 설치」 줄로 보이고, 체크 해제면 흐리게·사유가 있으면 배지', async (ext) => {
+    const section = byId(load(`partials/admin_${ext}_list/_modal_install.json`), 'cascade_integrations_section');
+    const requires = [{ type: 'module', identifier: 'sirsoft-page', name: '페이지', action: 'install_activate' }];
+    const preview = {
+      integrations: [
+        { type: 'plugin', identifier: 'sirsoft-daum_postcode', name: '우편번호', status: 'not_installed', required_version: '*', installed_version: null, is_installed: false, is_active: false, is_met: false, can_select: true, default_selected: true, requires, blocked_reason: null, blocked_by_permission: false },
+        { type: 'plugin', identifier: 'acme-unchecked', name: '해제됨', status: 'not_installed', required_version: '*', installed_version: null, is_installed: false, is_active: false, is_met: false, can_select: true, default_selected: true, requires, blocked_reason: null, blocked_by_permission: false },
+        { type: 'plugin', identifier: 'acme-noperm', name: '권한없음', status: 'not_installed', required_version: '*', installed_version: null, is_installed: false, is_active: false, is_met: false, can_select: false, default_selected: false, requires, blocked_reason: null, blocked_by_permission: true },
+        { type: 'plugin', identifier: 'acme-cycle', name: '순환', status: 'not_installed', required_version: '*', installed_version: null, is_installed: false, is_active: false, is_met: false, can_select: false, default_selected: false, requires: [], blocked_reason: '의존 관계가 순환합니다: plugin:acme-cycle → module:x → plugin:acme-cycle', blocked_by_permission: false },
+      ],
+    };
+    // 「해제됨」만 사용자가 체크를 풀었다
+    testUtils = renderSection(section, { installPreview: preview, installSelectedIntegrations: ['plugin:sirsoft-daum_postcode'] });
+    await testUtils.render();
+
+    expect(screen.getAllByText(T.requires_label)).toHaveLength(3);
+    expect(screen.getAllByText('페이지 (sirsoft-page)')).toHaveLength(3);
+    // 체크된 행은 「먼저 설치」, 해제된 행은 「체크하면 함께 설치」, 고를 수 없는 행은 안내 문구 없이 사유 배지
+    expect(screen.getAllByText(T.requires_hint)).toHaveLength(1);
+    expect(screen.getAllByText(T.requires_hint_unselected)).toHaveLength(1);
+    expect(screen.getAllByText(T.requires_no_permission)).toHaveLength(1);
+    expect(screen.getByText('의존 관계가 순환합니다: plugin:acme-cycle → module:x → plugin:acme-cycle')).toBeTruthy();
+    // 체크 해제·선택 불가 행의 「함께 설치」 줄은 점선·회색(흐림), 체크 행은 파란 강조
+    const lineOf = (label: string) => screen.getAllByText(T.requires_label).map((el) => el.parentElement as HTMLElement)
+      .find((line) => line.closest('label')?.textContent?.includes(label)) as HTMLElement;
+    expect(lineOf('우편번호').className).toContain('bg-blue-50');
+    expect(lineOf('해제됨').className).toContain('border-dashed');
+    expect(lineOf('권한없음').className).toContain('border-dashed');
+  });
+
+  /**
    * @scenario extension_type=plugin,core_version=legacy_core
    * @effects install_modal_lists_integrations_with_default_selection
    */

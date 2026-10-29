@@ -127,6 +127,7 @@ return [
     'installation_complete' => '설치 완료',
     'installation_failed' => '설치 실패',
     'retry_installation' => '재시도',
+    'back_to_extension_selection' => 'Step 4 로 돌아가기',
     'do_not_close_page' => '설치가 완료될 때까지 페이지를 닫지 마세요.',
     'installation_log' => '설치 로그',
     'hide_log' => '로그 숨기기',
@@ -276,6 +277,7 @@ return [
     'task_env_update' => '환경 설정 파일 업데이트',
     'task_key_generate' => '보안 키 생성',
     'task_dependency_precheck' => '확장 의존성 사전 검증',
+    'task_required_by' => ':names에 필요',
     'task_db_cleanup' => '기존 DB 테이블 정리',
     'task_db_migrate' => '데이터베이스 테이블 생성',
     'task_db_seed' => '기본 데이터 생성',
@@ -627,7 +629,7 @@ ini_set(\'zlib.output_compression\', \'off\');
     'dependency_warning_description' => '다음 확장이 필요합니다. "필요한 항목 자동 선택" 버튼을 눌러 한 번에 해결할 수 있습니다.',
     'dependency_auto_select' => '필요한 항목 자동 선택',
     'dependency_missing_tooltip' => '의존성을 먼저 해결해주세요',
-    'dependency_precheck_failed' => '의존성 사전 검증 실패 — Step 4로 돌아가 누락된 모듈/플러그인을 선택해주세요',
+    'dependency_precheck_failed' => '의존성 사전 검증 실패 — 아래 사유를 해결한 뒤 Step 4 에서 다시 선택해 주세요',
 
     // Step 3 기존 DB 감지
     'db_existing_g7_badge' => '기존 그누보드7 설치 감지',

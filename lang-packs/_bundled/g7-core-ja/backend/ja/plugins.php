@@ -50,7 +50,7 @@ return [
     'pending_not_found' => 'インストール待機リストにプラグイン ":plugin" が見つかりません。',
     'already_exists' => 'プラグイン ":plugin" は既に存在します。',
     'move_failed' => 'プラグイン ":plugin" の移動に失敗しました: :error',
-    'dependency_not_active' => '依存 ":dependency" はインストールされていないか、無効化されています。',
+    'dependency_not_active' => '依存する:type ":dependency" がインストールされていないか無効です。',
     'installation_failed' => 'プラグインのインストールに失敗しました: :error',
     'activation_failed' => 'プラグインの有効化に失敗しました: :error',
     'deactivation_failed' => 'プラグインの無効化に失敗しました: :error',

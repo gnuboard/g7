@@ -68,6 +68,45 @@ class ExtensionSelectionResolverTest extends TestCase
         $this->assertSame($expected['excluded_language_packs'], $result['excluded_language_packs']);
         $this->assertSame($expected['error_keys'], array_column($result['errors'], 'key'));
         $this->assertSame($expected['install_order'], $result['install_order']);
+        $this->assertSame($expected['pulled_by'], $result['pulled_by']);
+    }
+
+    /**
+     * 언어팩은 그래프 밖에서 코어 범위 팩을 먼저 둔다 — 확장 팩은 같은 로케일 코어 팩이 활성이어야 설치된다(스캔은 디렉터리 이름순).
+     *
+     * @scenario surface=installer, edge=core_locale_pack
+     *
+     * @effects installer_language_packs_core_scope_first
+     *
+     * @return void 반환값 없음
+     */
+    public function test_language_packs_put_core_scope_first(): void
+    {
+        $result = installer_resolve_extension_selection(self::fixture()['scan'], [
+            'admin_templates' => ['sirsoft-admin_basic'], 'modules' => ['sirsoft-board'], 'language_packs' => ['acme-board-ja', 'g7-core-ja'],
+        ]);
+
+        $this->assertSame(['language_packs:g7-core-ja', 'language_packs:acme-board-ja'], array_slice($result['install_order'], -2));
+        $this->assertSame(['g7-core-ja', 'acme-board-ja'], $result['selection']['language_packs']);
+    }
+
+    /**
+     * 종류를 넘는 순환(모듈 → 플러그인 → 모듈)은 `종류:식별자` 전체 경로로 오류를 남긴다 — 사전 검증이 이 문장으로 설치를 멈춘다.
+     *
+     * @scenario surface=installer, edge=cycle
+     *
+     * @effects install_order_cross_type_cycle_reported_with_path
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cross_type_cycle_reports_full_path(): void
+    {
+        $result = installer_resolve_extension_selection(self::fixture()['scan'], ['admin_templates' => ['sirsoft-admin_basic'], 'modules' => ['x-cyc_m']]);
+
+        $cycles = array_values(array_filter($result['errors'], fn (array $e): bool => $e['key'] === 'error_extension_dependency_cycle'));
+        $this->assertCount(1, $cycles);
+        $this->assertSame(['group' => 'extensions', 'cycle' => 'modules:x-cyc_m → plugins:x-cyc_p → modules:x-cyc_m'], $cycles[0]['params']);
+        $this->assertSame([], $result['pulled_by']);
     }
 
     /**
@@ -123,7 +162,7 @@ class ExtensionSelectionResolverTest extends TestCase
     }
 
     /**
-     * 같은 유형 설치 순서 — 뒤에 고른 의존 대상이 먼저 오고, 연쇄 의존도 풀린다.
+     * 같은 종류 설치 순서 — 뒤에 고른 의존 대상이 먼저 오고, 연쇄 의존도 풀린다.
      *
      * 설치 작업은 배열 순서를 그대로 따르므로 의존 대상이 뒤에 있으면 의존 검사에서 실패한다(#822 D7).
      *
@@ -135,12 +174,12 @@ class ExtensionSelectionResolverTest extends TestCase
      */
     public function test_install_order_puts_dependencies_first(): void
     {
-        $items = self::orderItems(['vendor-shop' => ['vendor-board'], 'vendor-board' => []]);
         $errors = [];
-        $this->assertSame(['vendor-board', 'vendor-shop'], installer_topological_order('modules', ['vendor-shop', 'vendor-board'], $items, $errors));
-
-        $chain = self::orderItems(['vendor-a' => ['vendor-b'], 'vendor-b' => ['vendor-c'], 'vendor-c' => []]);
-        $this->assertSame(['vendor-c', 'vendor-b', 'vendor-a'], installer_topological_order('modules', ['vendor-a', 'vendor-b', 'vendor-c'], $chain, $errors));
+        $this->assertSame(['vendor-board', 'vendor-shop'], self::orderOf('modules', ['vendor-shop', 'vendor-board'], ['vendor-shop' => ['vendor-board'], 'vendor-board' => []], $errors));
+        $this->assertSame(
+            ['vendor-c', 'vendor-b', 'vendor-a'],
+            self::orderOf('modules', ['vendor-a', 'vendor-b', 'vendor-c'], ['vendor-a' => ['vendor-b'], 'vendor-b' => ['vendor-c'], 'vendor-c' => []], $errors)
+        );
         $this->assertSame([], $errors);
     }
 
@@ -155,23 +194,22 @@ class ExtensionSelectionResolverTest extends TestCase
      */
     public function test_install_order_is_stable_and_ignores_unselected_targets(): void
     {
-        $items = self::orderItems([
-            'vendor-c' => [], 'vendor-a' => [], 'vendor-shop' => ['vendor-board'], 'vendor-b' => [], 'vendor-board' => [],
-        ]);
         $errors = [];
         $this->assertSame(
             ['vendor-c', 'vendor-a', 'vendor-board', 'vendor-shop', 'vendor-b'],
-            installer_topological_order('plugins', ['vendor-shop', 'vendor-b', 'vendor-board', 'vendor-c', 'vendor-a'], $items, $errors)
+            self::orderOf('plugins', ['vendor-shop', 'vendor-b', 'vendor-board', 'vendor-c', 'vendor-a'], [
+                'vendor-c' => [], 'vendor-a' => [], 'vendor-shop' => ['vendor-board'], 'vendor-b' => [], 'vendor-board' => [],
+            ], $errors)
         );
 
-        $self = self::orderItems(['vendor-a' => ['vendor-missing', 'vendor-a'], 'vendor-b' => []]);
-        $this->assertSame(['vendor-a', 'vendor-b'], installer_topological_order('plugins', ['vendor-a', 'vendor-b'], $self, $errors));
-        $this->assertSame([], installer_topological_order('plugins', [], $self, $errors));
+        $self = ['vendor-a' => ['vendor-missing', 'vendor-a'], 'vendor-b' => []];
+        $this->assertSame(['vendor-a', 'vendor-b'], self::orderOf('plugins', ['vendor-a', 'vendor-b'], $self, $errors));
+        $this->assertSame([], self::orderOf('plugins', [], $self, $errors));
         $this->assertSame([], $errors);
     }
 
     /**
-     * 순환 의존이면 스캔 순서를 그대로 돌려주고 순환 경로를 오류로 남긴다 — 저장 API 는 이 오류로 저장을 막는다.
+     * 순환 의존이면 기본(스캔) 순서를 그대로 돌려주고 `종류:식별자` 순환 경로를 오류로 남긴다 — 저장 API 는 이 오류로 저장을 막는다.
      *
      * @scenario surface=save_extensions, owner_type=module
      *
@@ -181,11 +219,13 @@ class ExtensionSelectionResolverTest extends TestCase
      */
     public function test_install_order_cycle_keeps_scan_order_and_reports(): void
     {
-        $items = self::orderItems(['vendor-x' => [], 'vendor-a' => ['vendor-b'], 'vendor-b' => ['vendor-a']]);
         $errors = [];
 
-        $this->assertSame(['vendor-x', 'vendor-a', 'vendor-b'], installer_topological_order('modules', ['vendor-b', 'vendor-x', 'vendor-a'], $items, $errors));
-        $this->assertSame([['key' => 'error_extension_dependency_cycle', 'params' => ['group' => 'modules', 'cycle' => 'vendor-a → vendor-b → vendor-a']]], $errors);
+        $this->assertSame(
+            ['vendor-x', 'vendor-a', 'vendor-b'],
+            self::orderOf('modules', ['vendor-b', 'vendor-x', 'vendor-a'], ['vendor-x' => [], 'vendor-a' => ['vendor-b'], 'vendor-b' => ['vendor-a']], $errors)
+        );
+        $this->assertSame([['key' => 'error_extension_dependency_cycle', 'params' => ['group' => 'extensions', 'cycle' => 'modules:vendor-a → modules:vendor-b → modules:vendor-a']]], $errors);
     }
 
     /**
@@ -210,25 +250,60 @@ class ExtensionSelectionResolverTest extends TestCase
             strpos($source, '$resolution = installer_resolve_extension_selection('),
             '해석(정렬)은 state 저장보다 먼저 일어나야 합니다.'
         );
+        // Step 5 「…에 필요」 표시용 앞당김 기록도 같은 해석 결과에서 저장한다(#153 D9) — 웹·터미널 같은 키
+        $this->assertStringContainsString("\$state['install_pulled_by'] = \$resolution['pulled_by'];", $source);
+        $cli = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/cli/install-flow.php');
+        $this->assertStringContainsString("\$state['install_pulled_by'] = \$selection['pulled_by'];", $cli);
+        $view = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/views/5-installation.php');
+        $this->assertStringContainsString("window.INSTALLER_PULLED_BY = <?= installer_json_encode((object) (\$state['install_pulled_by'] ?? [])) ?>;", $view);
     }
 
     /**
-     * 설치 순서 판정용 스캔 항목 — 식별자 → 같은 유형 의존 식별자 목록을 dependencies_detailed 로 펼친다.
+     * 필수 PHP 확장이 없어 빠진 확장은 「…에 필요」 기록에서도 빠진다 — 설치하지 않는 항목을 앞당긴 것으로 표시하지 않는다.
      *
-     * @param  array<string, array<int, string>>  $map  식별자 → 의존 식별자 (키 순서가 스캔 순서)
-     * @return array<string, array<string, mixed>> 식별자 → 스캔 항목
+     * @scenario surface=installer, edge=module_to_plugin
+     *
+     * @effects pulled_by_follows_php_extension_exclusion
+     *
+     * @return void 반환값 없음
      */
-    private static function orderItems(array $map): array
+    public function test_pulled_by_drops_entries_excluded_for_missing_php_extension(): void
+    {
+        require_once dirname(__DIR__, 3).'/public/install/includes/php-extension-requirements.php';
+
+        $resolution = installer_resolve_extension_selection(self::fixture()['scan'], ['admin_templates' => ['sirsoft-admin_basic'], 'modules' => ['x-learning']]);
+        $this->assertSame(['plugins:sirsoft-ckeditor5' => ['modules:x-learning']], $resolution['pulled_by']);
+
+        // 모듈 x-learning 만 빠졌다고 가정 — 앞당김 근거가 사라지므로 기록도 비어야 한다
+        $resolution['selection']['modules'] = [];
+        $resolution['install_order'] = array_values(array_diff($resolution['install_order'], ['modules:x-learning']));
+        $filtered = installer_exclude_selection_missing_php($resolution, sys_get_temp_dir().'/g7-no-bundled-'.uniqid(), fn (): bool => true)['resolution'];
+
+        $this->assertSame([], $filtered['pulled_by']);
+    }
+
+    /**
+     * 한 종류만 고른 설치 순서 — 식별자 → 같은 종류 의존 식별자 목록을 스캔 항목으로 펼쳐 `installer_install_order()` 에 넣는다.
+     *
+     * @param  string  $category  카테고리 (modules·plugins)
+     * @param  array<int, string>  $ids  선택 식별자
+     * @param  array<string, array<int, string>>  $map  식별자 → 의존 식별자 (키 순서가 스캔 순서)
+     * @param  array<int, array{key: string, params: array<string, string>}>  &$errors  오류 목록 (참조)
+     * @return array<int, string> 식별자 설치 순서
+     */
+    private static function orderOf(string $category, array $ids, array $map, array &$errors): array
     {
         $items = [];
         foreach ($map as $id => $deps) {
             $items[$id] = [
                 'identifier' => $id,
-                'dependencies_detailed' => array_map(fn (string $dep): array => ['type' => 'modules', 'identifier' => $dep, 'version' => '*'], $deps),
+                'dependencies_detailed' => array_map(fn (string $dep): array => ['type' => $category, 'identifier' => $dep, 'version' => '*'], $deps),
             ];
         }
 
-        return $items;
+        $order = installer_install_order([$category => $ids], [$category => $items], [], $errors)['order'];
+
+        return array_map(fn (string $key): string => explode(':', $key, 2)[1], $order);
     }
 
     /**
