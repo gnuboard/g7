@@ -89,7 +89,8 @@ export async function createHtmlPopup(request: APIRequestContext, token: string,
  * @returns 팝업 ID
  */
 export async function createImagePopup(request: APIRequestContext, token: string, overrides: Record<string, unknown> = {}): Promise<number> {
-  const tempKey = `e2e-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  // 서버는 화면처럼 UUID 묶음 키만 받는다
+  const tempKey = crypto.randomUUID();
   const upload = await request.post(`${API}/admin/popup-images`, {
     headers: auth(token),
     multipart: { file: { name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 }, device: 'pc', temp_key: tempKey },

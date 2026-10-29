@@ -9,6 +9,7 @@ description: |
   기간 입력은 사이트 시간대 → UTC 저장, 표시는 사이트 시간대.
   수정은 언어팩을 꺼 지원 목록에서 빠진 언어의 저장된 번역을 막지도 지우지도 않는다(새 지원 밖 언어만 422). 정화 뒤 비는 본문은 422.
   이미지 파일 쓰기 실패·행 저장 실패(업로드·복사)는 행도 파일도 남기지 않는다.
+  임시 이미지 삭제는 자기가 올린 것만(다른 관리자 것은 403), 임시 묶음 키는 UUID 만(내부 묶음 `released:{id}` 거부).
 
 axes:
   surface:
@@ -68,6 +69,8 @@ axes:
     - image_upload_rejects_oversize
     - image_upload_php_limit_message
     - image_delete_only_temp
+    - image_delete_only_own_temp
+    - temp_key_must_be_uuid
     - image_upload_write_failure_leaves_no_row
     - image_upload_db_failure_removes_file
     - display_settings_returns_settings_and_upload_limits

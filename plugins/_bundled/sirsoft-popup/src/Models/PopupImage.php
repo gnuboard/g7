@@ -45,6 +45,7 @@ class PopupImage extends Model
             'size' => 'integer',
             'width' => 'integer',
             'height' => 'integer',
+            'created_by' => 'integer',
         ];
     }
 

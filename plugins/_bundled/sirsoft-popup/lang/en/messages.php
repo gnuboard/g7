@@ -18,8 +18,10 @@ return [
     'image' => [
         'uploaded' => 'Image uploaded.',
         'deleted' => 'Image deleted.',
+        'upload_failed' => 'Could not save the image. Upload it again shortly. If this continues, check the server storage space.',
         'delete_failed' => 'Could not delete the image file. Try again shortly.',
         'attached_not_deletable' => 'Images attached to a popup cannot be deleted here. Replace it on the popup edit screen and save.',
+        'not_owned' => 'Temporary images uploaded by another administrator cannot be deleted. Unsaved images are removed by the cleanup schedule.',
         'not_found' => 'Image not found.',
     ],
     'settings' => [

@@ -62,7 +62,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.abilities` + `data
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `1` | 팝업 ID |
-| title | string | `예시 팝업` | 관리용 제목(관리자 화면 전용, 다국어 아님, 최대 100자). 사용자 화면에는 이미지 alt 가 비었을 때 링크 이름 대체로만 쓰입니다 |
+| title | string | `예시 팝업` | 관리용 제목(관리자 화면 전용, 다국어 아님, 최대 100자). 사용자 화면·공개 API 에는 나가지 않습니다 |
 | is_active | boolean | `true` | 사용 여부 — 관리자가 켜고 끄는 노출 스위치(기간과 별개) |
 | status | string | `active` | 조회 시각 기준 판정 상태: `active` 노출 중 · `scheduled` 예약(시작 전) · `ended` 종료 · `inactive` 비활성. 우선순위는 비활성 > 예약 > 종료 > 노출 중이며 저장하지 않고 매번 계산합니다 |
 | sort_order | integer | `0` | 순서값(0부터, 작을수록 앞). 사용자 화면 캐러셀 순서입니다 |
@@ -196,12 +196,12 @@ HTTP/1.1 200
 | routes | body | array | 예 | min 1, max 20 | 노출 경로 목록(`page_scope=routes` 일 때만 필수). 각 경로는 `/` 로 시작, 200자 이하, `//`·`..` 구간·`?`·`#`·`*`·공백 불가. 끝 `/` 하나는 떼고 중복은 합칩니다. 경로가 같거나 그 하위 경로(`/shop` → `/shop/1`)면 노출되며, `/` 는 첫 화면만 뜻합니다 |
 | audience | body | string | 예 | `all`, `guest`, `member` | 노출 대상 — 전체 / 비회원만 / 회원만 |
 | device | body | string | 예 | `all`, `pc`, `mobile` | 노출 기기 — PC + 모바일 / PC 만 / 모바일만 |
-| image_alt | body | array | 아니오 | — | 이미지 대체 텍스트 `{언어: 텍스트}`(언어별 최대 200자, 사이트 지원 언어만). 이미지형만 사용. 비우면 사용자 화면은 관리용 제목을 대체 이름으로 씁니다 |
+| image_alt | body | array | 아니오 | — | 이미지 대체 텍스트 `{언어: 텍스트}`(언어별 최대 200자, 사이트 지원 언어만). 이미지형만 사용. 비우면 관리용 제목으로 채우지 않고, 링크 팝업은 일반 문구(「팝업 링크 열기」)를 링크 이름으로 씁니다 |
 | link_url | body | string | 아니오 | max 2048 | 이미지를 눌렀을 때 이동할 주소(이미지형만). 사이트 내부 경로(`/…`) 또는 `http(s)://` 절대 주소만 허용하고 `//`·`/\` 시작, `javascript:` 등 다른 스킴, 공백·제어문자는 거부합니다. 빈 문자열은 null(링크 없음) |
 | link_new_window | body | boolean | 아니오 | — | 링크를 새 창에서 열지(이미지형만, 기본 false) |
 | overlays | body | object | 아니오 | 기기별 max 10 | 이미지 위 글 상자 `{pc, mobile}`(이미지형만). 상자 모양·한도는 위 공통 사항 |
 | body_html | body | array | 예 | — | 직접 작성형 본문 `{언어: HTML}`(`content_type=html` 일 때만 필수). 사이트 기본 언어 값은 필수, 언어별 최대 65535자. 저장 전에 HTML 정화기로 허용 태그만 남깁니다 |
-| temp_key | body | string | 예 | max 64 | 등록 화면의 이미지 임시 묶음 키(`content_type=image` 일 때만 필수). 그 묶음에 PC 이미지가 올라와 있어야 합니다 |
+| temp_key | body | string | 예 | UUID | 등록 화면의 이미지 임시 묶음 키(`content_type=image` 일 때만 필수, UUID 형식만). 그 묶음에 PC 이미지가 올라와 있어야 합니다 |
 | pc_image_id | body | integer | 예 | — | 붙일 PC 이미지 ID(이미지형, 선택). 같은 `temp_key` 묶음의 PC 이미지여야 합니다. 보내지 않으면 묶음의 가장 최근 PC 이미지를 붙입니다 |
 | mobile_image_id | body | integer | 아니오 | — | 붙일 모바일 이미지 ID(이미지형, 선택). 같은 묶음의 모바일 이미지여야 하고, null 이면 모바일 이미지를 붙이지 않습니다. 키를 보내지 않으면 묶음의 가장 최근 모바일 이미지를 붙입니다 |
 
@@ -1145,7 +1145,7 @@ HTTP/1.1 200
 | overlays | body | object | 아니오 | 기기별 max 10 | 이미지 위 글 상자 `{pc, mobile}`(이미지형만). 보낸 목록으로 통째로 바뀌고, 빈 목록이면 null — 규칙은 등록과 같습니다 |
 | body_html | body | array | 예 | — | 직접 작성형 본문 `{언어: HTML}`(`content_type=html` 일 때만 필수, 기본 언어 필수, 언어별 최대 65535자, 저장 전 HTML 정화) |
 | revision | body | integer | 예 | min 0 | 수정 화면이 받은 세대 번호(상세 응답의 `revision`). 지금 값과 다르면 검증보다 먼저 409 를 돌려줍니다. 키를 보내지 않으면 충돌 검사를 하지 않으므로 화면은 항상 보냅니다 |
-| temp_key | body | string | 아니오 | max 64 | 수정 화면의 이미지 임시 묶음 키(이미지형). 새로 올린 이미지를 `pc_image_id`·`mobile_image_id` 로 고를 때 그 이미지가 이 묶음 것인지 확인하는 데 씁니다 |
+| temp_key | body | string | 아니오 | UUID | 수정 화면의 이미지 임시 묶음 키(이미지형, UUID 형식만). 새로 올린 이미지를 `pc_image_id`·`mobile_image_id` 로 고를 때 그 이미지가 이 묶음 것인지 확인하는 데 씁니다 |
 | pc_image_id | body | integer | 예 | — | 남길 PC 이미지 ID(이미지형, 선택). 이 팝업에 지금 붙은 PC 이미지이거나 같은 `temp_key` 묶음의 PC 이미지여야 하며 null 은 받지 않습니다. 보내지 않으면 PC 이미지를 그대로 둡니다(그때 팝업에 PC 이미지가 없으면 422) |
 | mobile_image_id | body | integer | 아니오 | — | 남길 모바일 이미지 ID(이미지형, 선택). null 이면 모바일 이미지를 뗍니다. 보내지 않으면 그대로 둡니다 |
 
@@ -1418,7 +1418,7 @@ HTTP/1.1 200
 | routes | array | `["/shop"]` | 노출 경로 목록. 현재 경로가 같거나 그 하위 경로면 노출, `/` 는 첫 화면만 |
 | device | string | `all` | 노출 기기: `all` · `pc` · `mobile`(템플릿 반응형 기준 폭으로 브라우저가 판정) |
 | image | object\|null | `{"pc":{"url":"…","width":480,"height":520},"mobile":null}` | 이미지형의 기기별 이미지 `{url, width, height}`(없으면 null). 모바일 이미지가 없으면 화면은 PC 이미지를 씁니다. 직접 작성형은 null |
-| image_alt | string | `예시 이미지 설명` | 요청 언어의 대체 텍스트. 비었으면 관리용 제목으로 대체(링크 이름이 비지 않게). 직접 작성형은 빈 문자열 |
+| image_alt | string | `예시 이미지 설명` | 요청 언어의 대체 텍스트(없으면 사이트 기본 언어). 둘 다 비었으면 빈 문자열이며 관리용 제목으로 채우지 않습니다. 직접 작성형은 빈 문자열 |
 | link_url | string\|null | `/shop` | 이미지 클릭 시 이동 주소(이미지형만, 없으면 null) |
 | link_new_window | boolean | `false` | 새 창에서 열기(이미지형만) |
 | overlays | object\|null | `{"pc":[{"id":"a1b2c3d4","x":8,"y":62,"w":84,"text":"가을 할인",…}],"mobile":null}` | 이미지 위 글 상자(이미지형만). 상자의 `text` 는 요청 언어 → 사이트 기본 언어로 고른 문자열 하나이고 글이 빈 상자는 뺍니다. `mobile` 은 모바일 이미지가 있고 따로 배치했을 때만 배열(아니면 null — 휴대폰도 PC 배치). 상자가 없으면 null |

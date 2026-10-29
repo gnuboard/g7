@@ -69,6 +69,7 @@ axes:
     - preview_body_height_from_frame
     - controls_at_least_44px
     - link_popup_uses_covering_link_without_nested_focusables
+    - link_without_alt_uses_generic_name
     - link_new_window_rel_noopener
     - html_body_purified_on_render
     - html_body_scroll_region_only_when_overflowing

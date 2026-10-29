@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Popup\Http\Controllers\Admin;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
 use Plugins\Sirsoft\Popup\Exceptions\PopupImageAttachedException;
+use Plugins\Sirsoft\Popup\Exceptions\PopupImageNotOwnedException;
 use Plugins\Sirsoft\Popup\Exceptions\PopupImageUploadException;
 use Plugins\Sirsoft\Popup\Http\Requests\Admin\PopupImageUploadRequest;
 use Plugins\Sirsoft\Popup\Http\Resources\PopupImageResource;
@@ -12,7 +13,7 @@ use Plugins\Sirsoft\Popup\Models\PopupImage;
 use Plugins\Sirsoft\Popup\Services\PopupImageService;
 
 /**
- * 관리자 팝업 이미지 컨트롤러 — 임시 묶음 업로드(같은 기기 교체)·임시 이미지 삭제.
+ * 관리자 팝업 이미지 컨트롤러 — 임시 묶음 업로드(같은 기기 교체)·자기가 올린 임시 이미지 삭제.
  *
  * 팝업에 붙은 이미지는 여기서 바꾸거나 지우지 않는다 — 팝업 등록·수정 저장(`PopupService`)만 바꾼다.
  */
@@ -48,7 +49,7 @@ class PopupImageController extends AdminBaseController
     }
 
     /**
-     * 아직 팝업에 붙지 않은 임시 이미지를 지웁니다.
+     * 아직 팝업에 붙지 않은, 자기가 올린 임시 이미지를 지웁니다.
      *
      * @param  PopupImage  $image  대상 이미지 (라우트 모델 바인딩)
      * @return JsonResponse 결과 응답
@@ -56,9 +57,11 @@ class PopupImageController extends AdminBaseController
     public function destroy(PopupImage $image): JsonResponse
     {
         try {
-            $deleted = $this->images->deleteTempImage($image);
+            $deleted = $this->images->deleteTempImage($image, $this->getCurrentAdmin()?->id);
         } catch (PopupImageAttachedException $e) {
             return $this->error($e->getMessageKey(), 422);
+        } catch (PopupImageNotOwnedException $e) {
+            return $this->error($e->getMessageKey(), 403);
         }
 
         if (! $deleted) {

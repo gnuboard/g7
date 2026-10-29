@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Popup\Tests\Unit\Services;
 
 use App\Contracts\Extension\StorageInterface;
+use Illuminate\Support\Str;
 use Plugins\Sirsoft\Popup\Exceptions\PopupImageUploadException;
 use Plugins\Sirsoft\Popup\Models\Popup;
 use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupImageRepositoryInterface;
@@ -69,7 +70,7 @@ class PendingImageFilesTest extends PluginTestCase
         $storage->shouldNotReceive('put');
         $service = new PopupImageService(app(PopupImageRepositoryInterface::class), $storage);
         $this->app->instance(PopupImageService::class, $service);
-        $this->uploadImage($this->fullAdmin(), 'pc', 'journal-failure')->assertStatus(500)
+        $this->uploadImage($this->fullAdmin(), 'pc', (string) Str::uuid())->assertStatus(500)
             ->assertJsonPath('message', __('sirsoft-popup::messages.image.upload_failed'));
     }
 

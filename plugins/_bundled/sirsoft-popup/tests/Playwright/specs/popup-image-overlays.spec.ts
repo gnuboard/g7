@@ -23,7 +23,7 @@ const box = (extra: Record<string, unknown> = {}) => ({
  * @returns 팝업 id
  */
 async function createOverlayPopup({ request, managerToken }: Ctx, overrides: Record<string, unknown>, mobile = false): Promise<number> {
-  const tempKey = `e2e-ov-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const tempKey = crypto.randomUUID();
   for (const device of mobile ? ['pc', 'mobile'] : ['pc']) {
     const upload = await request.post(`${API}/admin/popup-images`, {
       headers: auth(managerToken),
@@ -210,8 +210,6 @@ test.describe('이미지 위 글 상자 → 사용자 화면', () => {
   // @scenario flow=admin_places_boxes_shows_on_user, viewport=desktop
   // @effects boxes_follow_image_scale, test_data_cleaned_up
   test('관리자 편집기에서 놓은 상자가 사용자 화면 이미지 위 같은 비율 자리에 보인다 (desktop)', async ({ page, request, managerToken, created }) => {
-    // 관리자 편집·저장 뒤 사용자 화면에서 사이트의 다른 팝업을 넘겨 가야 해 기본 30초로는 모자란다
-    test.setTimeout(90_000);
     await page.setViewportSize(VIEWPORTS.desktop);
     await flow_admin_places_boxes_shows_on_user({ page, request, managerToken, created }, 'desktop');
   });

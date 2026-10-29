@@ -848,6 +848,15 @@ describe('PopupLayer', () => {
     expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
 
+  // @scenario surface=link_without_alt_uses_generic_name
+  // @effects accessible_modal_carousel
+  it('alt 가 빈 링크 팝업은 덮는 링크 이름을 일반 문구로 채운다(관리용 제목은 응답에 없다)', () => {
+    const { container } = show([imagePopup(1, { link_url: '/event/autumn', image_alt: '' })]);
+    const link = container.querySelector('.g7pp-cover-link') as HTMLAnchorElement;
+
+    expect(link.getAttribute('aria-label')).toBe('팝업 링크 열기');
+  });
+
   // @scenario surface=link_new_window_rel_noopener
   it('새 창 링크는 target=_blank + rel=noopener noreferrer, SPA 이동을 가로채지 않는다', () => {
     const dispatch = vi.fn();

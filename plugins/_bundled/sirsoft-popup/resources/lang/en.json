@@ -31,6 +31,7 @@
         "dismiss_today": "Don't show today",
         "dismiss_days": "Don't show for {{days}} days",
         "close": "Close",
+        "link": "Open popup link",
         "scroll_region": "Popup content"
     },
     "admin": {
@@ -185,7 +186,7 @@
                 "size_mismatch": "The uploaded image is {{width}}×{{height}}. Its ratio differs from the recommended {{recommended}}, so it is fitted without cropping and the rest shows as margins."
             },
             "image_alt": "Image alt text",
-            "image_alt_hint": "Read aloud to visitors who cannot see the screen. If empty, the admin title is used.",
+            "image_alt_hint": "Read aloud to visitors who cannot see the screen. If empty, the image content is not conveyed, so enter the key text shown in the image.",
             "overlay": {
                 "title": "Text on image",
                 "hint": "Place text boxes on the image. Position and text size scale with the image, and the text can differ by language. Clicking a box still follows the image link.",

@@ -2,7 +2,7 @@ feature: 팝업 공개 API (노출 후보·표시 방식·이미지·캐시·봇
 
 description: |
   사용자 레이어가 부르는 공개 API(optional.sanctum). 노출중 + 노출 대상(손님/회원)이 맞는 팝업만 순서대로,
-  경로·기기·보지 않기는 브라우저가 거른다. 요청 언어 → 사이트 기본 언어로 alt·본문을 고르고 alt 는 관리용 제목까지 대체한다.
+  경로·기기·보지 않기는 브라우저가 거른다. 요청 언어 → 사이트 기본 언어로 alt·본문을 고르고, alt 가 비어도 관리용 제목으로 채우지 않는다.
   표시 방식 설정을 함께 싣고, 운영 정보(관리용 제목·사용 여부·기간·작성자)는 싣지 않는다.
   봇(BotDetector)이면 빈 배열이고 캐시를 읽지도 쓰지도 않는다.
   캐시 키는 대상(guest·member)·언어, 만료 = min(설정 시간, 다음 상태 전환), 꺼낼 때 기간 재판정.
@@ -24,7 +24,7 @@ axes:
     - includes_routes_scope_and_device
     - alt_in_requested_locale
     - alt_falls_back_to_default_locale
-    - alt_falls_back_to_admin_title
+    - alt_never_falls_back_to_admin_title
     - body_in_requested_locale
     - body_falls_back_to_default_locale
     - mobile_image_null_when_missing

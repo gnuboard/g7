@@ -1,12 +1,12 @@
 /**
  * @file popup-conditions-and-lifecycle.spec.ts
- * @description GDPR 쿠키 배너와 동시 표시(가리지 않음), 언어 전환, 다크 모드 대비, 검색엔진 봇에는 출력 안 함, 플러그인 비활성화 즉시 숨김.
+ * @description GDPR 쿠키 배너와 동시 표시(가리지 않음), 언어 전환, alt 없는 링크 이름(관리용 제목 비노출), 다크 모드 대비, 검색엔진 봇에는 출력 안 함, 플러그인 비활성화 즉시 숨김.
  * (매니페스트 e2e-flows.yaml)
  */
 import { execSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { test, expect, createHtmlPopup, createImagePopup, gotoUser, layer, VIEWPORTS, API } from '../fixtures/popup-auth';
+import { test, expect, createHtmlPopup, createImagePopup, gotoUser, layer, uniqueTitle, VIEWPORTS, API } from '../fixtures/popup-auth';
 
 const CORE_ROOT = process.env.G7_ROOT || resolve(dirname(fileURLToPath(import.meta.url)), '../../../../../../');
 const BOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
@@ -60,6 +60,22 @@ async function flowLocale({ page, request, managerToken, created }: Ctx): Promis
   await page.evaluate(() => (window as any).G7Core.dispatch({ handler: 'setLocale', target: 'ko' }));
 }
 
+/** alt 를 비운 링크 팝업 — 덮는 링크 이름은 일반 문구이고, 관리용 제목은 손님 화면·공개 응답 어디에도 없다 */
+async function flowNoAlt({ page, request, managerToken, created }: Ctx): Promise<void> {
+  const title = uniqueTitle('내부 메모 alt 없음');
+  const image = await createImagePopup(request, managerToken, { title, image_alt: null, link_url: '/page/about' });
+  created.push(image);
+
+  await gotoUser(page, '/');
+  const link = page.locator(`.g7pp-slide[data-popup-id="${image}"] a.g7pp-cover-link`);
+  await expect(link).toHaveAttribute('aria-label', '팝업 링크 열기');
+  expect(await page.locator('[data-popup-layer]').innerHTML()).not.toContain(title);
+  // 응답 JSON 은 한글을 \uXXXX 로 낼 수 있어 풀어서 비교한다
+  const payload = await page.evaluate(async (url) => JSON.stringify(await (await fetch(url, { headers: { Accept: 'application/json' } })).json()), `${API}/popups`);
+  expect(payload).toContain(`"id":${image}`);
+  expect(payload).not.toContain(title);
+}
+
 /** 다크 모드에서 레이어 바탕·글자 대비가 4.5:1 이상 */
 async function flowDark({ page, request, managerToken, created }: Ctx): Promise<void> {
   created.push(await createHtmlPopup(request, managerToken, { body_html: { ko: '<p>다크 모드 본문</p>' } }));
@@ -101,6 +117,14 @@ test.describe('팝업 조건과 생애주기', () => {
   test('언어를 바꾸면 alt·본문이 그 언어로 (desktop)', async ({ page, request, managerToken, created }) => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await flowLocale({ page, request, managerToken, created });
+  });
+
+  // @scenario flow=link_without_alt_hides_admin_title, viewport=desktop
+  // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+  test('alt 를 비운 링크 팝업은 일반 링크 이름이고 관리용 제목이 나가지 않는다 (desktop)', async ({ page, request, managerToken, created }) => {
+    test.setTimeout(90_000);
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await flowNoAlt({ page, request, managerToken, created });
   });
 
   // @scenario flow=locale_switch_changes_alt_and_body, viewport=mobile

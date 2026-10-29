@@ -23,6 +23,7 @@ axes:
     - gdpr_banner_visible_with_popup
     - html_popup_with_editor_content
     - locale_switch_changes_alt_and_body
+    - link_without_alt_hides_admin_title
     - dark_mode_contrast
     - bot_user_agent_gets_no_layer
     - plugin_deactivate_hides_layer
@@ -36,6 +37,9 @@ axes:
   viewport: [desktop, mobile]
 
 exclusions:
+  - flow: link_without_alt_hides_admin_title
+    viewport: mobile
+    reason: 공개 응답과 덮는 링크 이름은 화면 폭과 무관 — 데스크톱에서 한 번 확인한다
   - flow: admin_summary_item_opens_edit
     viewport: mobile
     reason: 요약 항목 링크는 폭과 무관한 한 노드 — 관리자 데스크톱에서 한 번 확인한다

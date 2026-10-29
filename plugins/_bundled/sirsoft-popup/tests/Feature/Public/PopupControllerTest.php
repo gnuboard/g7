@@ -291,19 +291,22 @@ class PopupControllerTest extends PluginTestCase
     }
 
     /**
-     * alt 가 전혀 없으면 관리용 제목으로 대신한다(링크 팝업의 이름이 비지 않게).
+     * alt 가 전혀 없어도 관리용 제목으로 채우지 않는다(관리자 목록 전용 이름 — 손님 응답 어디에도 없어야 한다).
      *
-     * @scenario surface=alt_falls_back_to_admin_title
+     * @scenario surface=alt_never_falls_back_to_admin_title
      *
      * @effects public_payload_localized
      *
      * @return void 반환값 없음
      */
-    public function test_alt_falls_back_to_admin_title(): void
+    public function test_alt_never_falls_back_to_admin_title(): void
     {
-        Popup::factory()->withImages()->create(['image_alt' => null, 'title' => '가을 감사 이벤트']);
+        Popup::factory()->withImages()->create(['image_alt' => null, 'title' => '내부 메모 가을 감사 이벤트', 'link_url' => '/event/autumn']);
 
-        $this->assertSame('가을 감사 이벤트', $this->popups()->json('data.popups.0.image_alt'));
+        $response = $this->popups();
+
+        $this->assertSame('', $response->json('data.popups.0.image_alt'));
+        $this->assertStringNotContainsString('내부 메모', $response->getContent());
     }
 
     /**

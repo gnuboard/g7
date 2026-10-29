@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Plugins\Sirsoft\Popup\Enums\ImageDevice;
 use Plugins\Sirsoft\Popup\Exceptions\PopupImageAttachedException;
 use Plugins\Sirsoft\Popup\Exceptions\PopupImageCopyException;
+use Plugins\Sirsoft\Popup\Exceptions\PopupImageNotOwnedException;
 use Plugins\Sirsoft\Popup\Exceptions\PopupImageUploadException;
 use Plugins\Sirsoft\Popup\Models\Popup;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
@@ -152,17 +153,22 @@ class PopupImageService
     }
 
     /**
-     * 아직 팝업에 붙지 않은 임시 이미지를 지웁니다(관리 화면의 임시 이미지 삭제).
+     * 아직 팝업에 붙지 않은 임시 이미지를 지웁니다 — 자기가 올린 것만(관리 화면의 임시 이미지 삭제).
      *
      * @param  PopupImage  $image  대상 이미지
+     * @param  int|null  $actorId  요청한 회원 ID
      * @return bool 파일·행 모두 지웠으면 true
      *
      * @throws PopupImageAttachedException 팝업에 붙은 이미지일 때 — 붙은 이미지는 팝업 저장만 바꾼다
+     * @throws PopupImageNotOwnedException 다른 관리자가 올린 이미지일 때 — 그 관리자의 저장 전 화면을 깨지 않게
      */
-    public function deleteTempImage(PopupImage $image): bool
+    public function deleteTempImage(PopupImage $image, ?int $actorId): bool
     {
         if ($image->popup_id !== null) {
             throw new PopupImageAttachedException($image->id);
+        }
+        if ($actorId === null || $image->created_by !== $actorId) {
+            throw new PopupImageNotOwnedException($image->id);
         }
 
         return $this->deleteImage($image);

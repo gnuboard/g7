@@ -71,6 +71,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
+  // 사용자 화면 흐름은 사이트에 이미 떠 있는 다른 팝업(개발 사이트 30여 장)을 넘겨 사양 팝업까지 가야 해 기본 30초로는 모자란다
+  timeout: 90_000,
+  // 관리자 화면은 이동 뒤 첫 화면까지 2~5초 남짓 걸린다(2026-10-29 실측 1.8~5.3초) — 기본 5초 대기로는 느린 회차에 빈 화면에서 실패한다
+  expect: { timeout: 15_000 },
   reporter: [
     ['html', { outputFolder: resolve(CORE_ROOT, 'playwright-report', ARTIFACT_SLUG), open: 'never' }],
     ['list'],

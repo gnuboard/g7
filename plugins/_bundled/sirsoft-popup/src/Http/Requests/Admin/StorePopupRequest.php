@@ -49,7 +49,8 @@ class StorePopupRequest extends FormRequest
         $tempKey = is_string($this->input('temp_key')) ? $this->input('temp_key') : null;
 
         $rules = $this->popupRules() + [
-            'temp_key' => ['exclude_unless:content_type,image', 'required', 'string', 'max:64', new PcImagePresent],
+            // 화면이 만든 UUID 만 받는다 — 떼어 낸 이미지의 내부 묶음(`released:{팝업 ID}`)을 고르지 못하게
+            'temp_key' => ['exclude_unless:content_type,image', 'bail', 'required', 'string', 'uuid', new PcImagePresent],
             'pc_image_id' => ['exclude_unless:content_type,image', 'sometimes', 'required', 'integer', new SelectablePopupImage(ImageDevice::Pc, null, $tempKey)],
             'mobile_image_id' => ['exclude_unless:content_type,image', 'sometimes', 'nullable', 'integer', new SelectablePopupImage(ImageDevice::Mobile, null, $tempKey)],
         ];

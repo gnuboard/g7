@@ -26,7 +26,6 @@ class PublicPopupPresenter
     public static function present(Popup $popup, string $locale): array
     {
         $isImage = $popup->content_type === ContentType::Image->value;
-        $alt = $isImage ? self::pick($popup->image_alt, $locale) : '';
 
         return [
             'id' => $popup->id,
@@ -38,8 +37,8 @@ class PublicPopupPresenter
                 'pc' => self::image($popup->pcImage),
                 'mobile' => self::image($popup->mobileImage),
             ] : null,
-            // alt → 관리용 제목 순으로 대체 — 링크 팝업의 이름이 비지 않게
-            'image_alt' => $isImage ? ($alt !== '' ? $alt : (string) $popup->title) : '',
+            // 비어도 관리용 제목으로 채우지 않는다 — 관리자 목록 전용 이름이다. 빈 링크 이름은 레이어가 일반 문구로 채운다
+            'image_alt' => $isImage ? self::pick($popup->image_alt, $locale) : '',
             'link_url' => $isImage ? $popup->link_url : null,
             'link_new_window' => $isImage && (bool) $popup->link_new_window,
             'overlays' => $isImage ? self::overlays($popup, $locale) : null,

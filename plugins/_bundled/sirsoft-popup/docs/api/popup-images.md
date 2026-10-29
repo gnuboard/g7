@@ -10,7 +10,7 @@
 1. 이 문서는 팝업 등록·수정 화면의 이미지 업로드·임시 이미지 삭제 엔드포인트 레퍼런스입니다
 2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 응답 필드 표 + 응답 예시(envelope)
 3. 업로드는 언제나 임시 묶음(temp_key)에 들어가고, 팝업에는 등록·수정 「저장」 때만 붙습니다
-4. 팝업에 붙은 이미지는 이 API 로 지우지 못합니다(422) — 팝업 수정 저장으로만 바뀝니다
+4. 팝업에 붙은 이미지는 이 API 로 지우지 못합니다(422) — 팝업 수정 저장으로만 바뀝니다. 다른 관리자가 올린 임시 이미지도 지우지 못합니다(403)
 5. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 ```
 
@@ -29,7 +29,7 @@
 | --- | --- | --- | --- | --- | --- |
 | file | body | file | 예 | max 2048 | 올릴 이미지 파일. 형식 JPG·PNG·WEBP·GIF(확장자와 MIME 모두 검사), 가로·세로 4000px 이하. 최대 용량은 플러그인 설정(`max_upload_mb`, 1~10MB)과 서버 PHP 한도 중 작은 값이며 허용값 칸의 `max 2048`(KB)은 문서 생성 환경의 값입니다 — 실제 한도는 `GET /admin/display-settings` 의 `upload.effective_mb` |
 | device | body | string | 예 | `pc`, `mobile` | 이미지를 쓸 기기. 같은 임시 묶음에 같은 기기 이미지가 이미 있으면 새 이미지로 교체하고 앞 이미지는 지웁니다 |
-| temp_key | body | string | 예 | max 64 | 등록·수정 화면이 열릴 때 만든 임시 묶음 키(관리자 화면은 UUID 를 씀). 같은 화면의 업로드를 한 묶음으로 모으고, 저장 요청(`POST`/`PUT /admin/popups`)에 같은 값을 보내 붙일 이미지를 찾습니다 |
+| temp_key | body | string | 예 | UUID | 등록·수정 화면이 열릴 때 만든 임시 묶음 키(UUID 형식만 받음 — 팝업에서 떼어 낸 이미지를 모아 두는 내부 묶음 키와 섞이지 않게). 같은 화면의 업로드를 한 묶음으로 모으고, 저장 요청(`POST`/`PUT /admin/popups`)에 같은 값을 보내 붙일 이미지를 찾습니다 |
 
 **요청 예시**
 
@@ -192,12 +192,22 @@ HTTP/1.1 200
 }
 ```
 
+다른 관리자가 올린 임시 이미지를 지우려 한 경우 (HTTP 403):
+
+```json
+{
+    "success": false,
+    "message": "다른 관리자가 올린 임시 이미지는 지울 수 없습니다. 저장하지 않은 이미지는 정리 스케줄이 지웁니다."
+}
+```
+
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 관리자가 아니거나(`admin`) 요구 권한(`sirsoft-popup.popups.update`)이 없는 경우 |
+| 403 | Forbidden | 다른 관리자가 올린 임시 이미지인 경우(`sirsoft-popup::messages.image.not_owned`) — 같은 권한이어도 막습니다 |
 | 404 | Not Found | 해당 ID 의 이미지가 없는 경우(라우트 모델 바인딩) |
 | 422 | Unprocessable Entity | 이미 팝업에 붙은 이미지인 경우(`sirsoft-popup::messages.image.attached_not_deletable`) |
 | 500 | Internal Server Error | 스토리지에서 파일을 지우지 못한 경우(`sirsoft-popup::messages.image.delete_failed`). 행은 남아 정리 명령이 다시 시도합니다 |
@@ -206,8 +216,9 @@ HTTP/1.1 200
 
 **설명**
 
-등록·수정 화면에서 방금 올린 임시 이미지를 업로더의 삭제 단추로 지울 때 부릅니다. 권한은 `auth:sanctum` + 관리자(`admin`) + 팝업 등록·수정 권한(`sirsoft-popup.popups.update`)입니다.
+방금 올린 임시 이미지를 저장 전에 지울 때 부릅니다(관리자 화면은 업로더에서 이미지를 빼도 화면에서만 빼고 이 API 를 부르지 않습니다 — 남은 임시 이미지는 정리 스케줄이 지웁니다). 권한은 `auth:sanctum` + 관리자(`admin`) + 팝업 등록·수정 권한(`sirsoft-popup.popups.update`)입니다.
 
+- **자기가 올린 임시 이미지만** 지웁니다. 다른 관리자가 올린 것은 같은 권한이어도 403 입니다 — 그 관리자가 아직 저장하지 않은 등록·수정 화면의 이미지이기 때문입니다.
 - **아직 팝업에 붙지 않은 임시 이미지만** 지웁니다. 팝업에 붙은 이미지는 이 API 로 바꾸거나 지울 수 없고(422), 팝업 수정 「저장」(`PUT /admin/popups/{popup}` 의 `pc_image_id`·`mobile_image_id`)만 바꿉니다. 저장 전에는 사용자 화면이 바뀌지 않게 하려는 것입니다.
 - 파일을 먼저 지우고 성공해야 행을 지웁니다. 파일이 이미 없으면 지운 것으로 봅니다. 파일 삭제가 실패하면 행을 남기고 500 으로 응답하며, 남은 임시 이미지는 정리 명령이 다시 지웁니다.
 - 삭제 성공 시 `sirsoft-popup.popup_image.after_delete` 액션 훅이 발행됩니다.

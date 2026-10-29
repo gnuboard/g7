@@ -47,7 +47,8 @@ class PopupImageUploadRequest extends FormRequest
         return [
             'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'mimetypes:image/jpeg,image/png,image/webp,image/gif', 'max:'.$maxKb, 'dimensions:max_width=4000,max_height=4000'],
             'device' => ['required', Rule::enum(ImageDevice::class)],
-            'temp_key' => ['required', 'string', 'max:64'],
+            // 화면이 만든 UUID 만 받는다 — 떼어 낸 이미지의 내부 묶음(`released:{팝업 ID}`)에 끼어들지 못하게
+            'temp_key' => ['required', 'string', 'uuid'],
         ];
     }
 

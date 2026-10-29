@@ -251,7 +251,7 @@ class PopupPermissionTest extends PluginTestCase
     {
         $user = $this->actor($actorType);
 
-        foreach ($this->requests($level) as $label => $request) {
+        foreach ($this->requests($level, $user) as $label => $request) {
             [$method, $uri, $data] = $request();
             $call = $user ? $this->actingAs($user) : $this;
             $response = $method === 'POSTFILE'
@@ -288,9 +288,10 @@ class PopupPermissionTest extends PluginTestCase
      * 묶음별 요청 목록을 만듭니다 — 호출할 때마다 새 데이터를 만들어 앞 요청의 결과(삭제 등)에 영향받지 않게 합니다.
      *
      * @param  string  $level  권한 묶음
+     * @param  User|null  $user  행위자 — 임시 이미지 삭제는 자기가 올린 이미지만 되므로 그 행위자가 올린 것으로 만든다
      * @return array<string, callable> 이름 => [메서드, 주소, 본문] 을 돌려주는 함수
      */
-    private function requests(string $level): array
+    private function requests(string $level, ?User $user): array
     {
         $popup = fn () => Popup::factory()->withImages(mobile: true)->create();
 
@@ -318,7 +319,7 @@ class PopupPermissionTest extends PluginTestCase
                 },
                 'update' => fn () => ['PUT', $this->api('/admin/popups/'.$popup()->id), $this->popupPayload()],
                 'image-store' => fn () => ['POSTFILE', $this->api('/admin/popup-images'), ['file' => UploadedFile::fake()->image('a.jpg', 100, 50), 'device' => 'pc', 'temp_key' => (string) Str::uuid()]],
-                'image-destroy' => fn () => ['DELETE', $this->api('/admin/popup-images/'.PopupImage::factory()->mobile()->temp((string) Str::uuid())->create()->id), []],
+                'image-destroy' => fn () => ['DELETE', $this->api('/admin/popup-images/'.PopupImage::factory()->mobile()->temp((string) Str::uuid())->create(['created_by' => $user?->id])->id), []],
             ],
             'delete' => [
                 'bulk' => fn () => ['DELETE', $this->api('/admin/popups/bulk'), ['ids' => [$popup()->id]]],

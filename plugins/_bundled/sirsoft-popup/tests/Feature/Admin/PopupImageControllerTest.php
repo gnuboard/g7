@@ -129,6 +129,54 @@ class PopupImageControllerTest extends PluginTestCase
     }
 
     /**
+     * 다른 관리자가 올린 임시 이미지는 같은 권한이어도 지우지 못한다(403, 행·파일 그대로) — 그 관리자의 저장 전 화면을 깨지 않게.
+     *
+     * @scenario surface=image_delete_only_own_temp
+     *
+     * @effects files_created_or_removed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_delete_rejects_other_admins_temp_image(): void
+    {
+        $tempId = $this->uploadImage($this->admin, 'pc', (string) Str::uuid())->assertCreated()->json('data.id');
+        $temp = PopupImage::query()->find($tempId);
+
+        $this->actingAs($this->fullAdmin())->deleteJson($this->api('/admin/popup-images/'.$tempId))
+            ->assertForbidden()
+            ->assertJsonPath('message', __('sirsoft-popup::messages.image.not_owned'));
+
+        $this->assertNotNull(PopupImage::query()->find($tempId));
+        $this->imageStorage()->assertExists('sirsoft-popup/images/'.$temp->path);
+    }
+
+    /**
+     * 임시 묶음 키는 UUID 만 받는다 — 팝업에서 떼어 낸 이미지의 내부 묶음(`released:{팝업 ID}`)으로 올리거나 그 이미지를 골라 붙이지 못한다.
+     *
+     * @scenario surface=temp_key_must_be_uuid
+     *
+     * @return void 반환값 없음
+     */
+    public function test_temp_key_must_be_uuid(): void
+    {
+        $popup = Popup::factory()->create();
+        $releasedKey = 'released:'.$popup->id;
+        $released = PopupImage::factory()->pc()->temp($releasedKey)->create();
+
+        $this->uploadImage($this->admin, 'pc', $releasedKey)->assertStatus(422)->assertJsonValidationErrors(['temp_key']);
+        $this->assertSame(1, PopupImage::query()->where('temp_key', $releasedKey)->count());
+
+        $before = Popup::query()->count();
+        $this->actingAs($this->admin)->postJson($this->api('/admin/popups'), $this->popupPayload(['temp_key' => $releasedKey]))
+            ->assertStatus(422)->assertJsonValidationErrors(['temp_key']);
+        $this->assertSame($before, Popup::query()->count());
+
+        $this->actingAs($this->admin)->putJson($this->api('/admin/popups/'.$popup->id), $this->popupPayload(['temp_key' => $releasedKey, 'pc_image_id' => $released->id]))
+            ->assertStatus(422)->assertJsonValidationErrors(['temp_key']);
+        $this->assertNull($released->fresh()->popup_id);
+    }
+
+    /**
      * 파일을 쓰지 못하면 행을 만들지 않고 500 과 안내를 돌려준다 — 파일 없는 이미지가 팝업에 붙지 않게.
      *
      * @scenario surface=image_upload_write_failure_leaves_no_row

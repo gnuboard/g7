@@ -1236,7 +1236,7 @@ export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, isMobi
         <a
           className="g7pp-cover-link"
           href={link}
-          aria-label={alt}
+          aria-label={alt || t('sirsoft-popup.layer.link')}
           target={newWindow ? '_blank' : undefined}
           rel={newWindow ? 'noopener noreferrer' : undefined}
           tabIndex={inert ? -1 : undefined}
