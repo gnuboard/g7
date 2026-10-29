@@ -95,14 +95,19 @@ const mockBodyWidth = (width: number) => vi.spyOn(HTMLElement.prototype, 'getBou
  * @param dx 가로 이동(px, 왼쪽이 음수)
  * @param options dy 세로 이동, type 포인터 종류, release 놓기까지, wait 놓기 전 기다림(ms, 가짜 시계)
  */
-const dragOn = (target: Element, dx: number, options: { dy?: number; type?: 'mouse' | 'touch'; release?: boolean; wait?: number } = {}) => {
-  const { dy = 0, type = 'mouse', release = true, wait = 0 } = options;
+const dragOn = (target: Element, dx: number, options: { dy?: number; type?: 'mouse' | 'touch'; release?: boolean; wait?: number; stepWait?: number } = {}) => {
+  const { dy = 0, type = 'mouse', release = true, wait = 0, stepWait = 0 } = options;
   const base = { pointerId: 7, pointerType: type, button: 0, bubbles: true };
+  const pass = (ms: number) => {
+    if (ms > 0) {
+      act(() => { vi.advanceTimersByTime(ms); });
+    }
+  };
   fireEvent.pointerDown(target, { ...base, clientX: 300, clientY: 200 });
-  if (wait > 0) {
-    act(() => { vi.advanceTimersByTime(wait); });
-  }
+  // wait: 누르고 가만히 있는 시간, stepWait: 움직임 사이 시간(천천히 끌기)
+  pass(wait);
   fireEvent.pointerMove(target, { ...base, clientX: 300 + dx / 2, clientY: 200 + dy / 2 });
+  pass(stepWait);
   fireEvent.pointerMove(target, { ...base, clientX: 300 + dx, clientY: 200 + dy });
   if (release) {
     fireEvent.pointerUp(target, { ...base, clientX: 300 + dx, clientY: 200 + dy });
@@ -946,7 +951,7 @@ describe('PopupLayer', () => {
       const { container } = show([htmlPopup(1), htmlPopup(2)]);
       const body = container.querySelector('.g7pp-body') as HTMLElement;
 
-      dragOn(body, -60, { wait: 600 });
+      dragOn(body, -60, { stepWait: 300 });
 
       expect(currentId(container)).toBe(1);
       expect(slideX(container, 1)).toBe('translateX(0%)');
@@ -956,13 +961,38 @@ describe('PopupLayer', () => {
     });
 
     // @scenario surface=drag_flick_moves_even_if_short
-    it('짧아도 빠르게 휙 넘기면 넘긴다(폭의 4% 이상)', () => {
+    it('짧아도 빠르게 휙 넘기면 넘긴다(폭의 4% 이상) — 속도는 놓기 직전 움직임으로 잰다', () => {
       vi.useFakeTimers();
-      const { container } = show([htmlPopup(1), htmlPopup(2)]);
+      const { container } = show([htmlPopup(1), htmlPopup(2), htmlPopup(3)]);
+      const body = container.querySelector('.g7pp-body') as HTMLElement;
+      const base = { pointerId: 7, pointerType: 'touch', button: 0, bubbles: true };
+      const pass = (ms: number) => act(() => { vi.advanceTimersByTime(ms); });
 
-      dragOn(container.querySelector('.g7pp-body') as HTMLElement, -40, { wait: 0 });
-
+      dragOn(body, -40);
       expect(currentId(container)).toBe(2);
+
+      // 잠깐 누르고 있다가 휙 밀어도 넘긴다(누른 순간부터의 평균 속도로 재면 느린 끌기로 잡혔다)
+      act(() => { vi.advanceTimersByTime(SLIDE_MS + 80); });
+      dragOn(body, -70, { wait: 400, type: 'touch' });
+      expect(currentId(container)).toBe(3);
+
+      // 밀다가 멈춘 뒤 놓으면 휙 넘김이 아니다(폭의 20% 미만이면 제자리)
+      act(() => { vi.advanceTimersByTime(SLIDE_MS + 80); });
+      fireEvent.pointerDown(body, { ...base, clientX: 300, clientY: 200 });
+      fireEvent.pointerMove(body, { ...base, clientX: 280, clientY: 200 });
+      fireEvent.pointerMove(body, { ...base, clientX: 240, clientY: 200 });
+      pass(300);
+      fireEvent.pointerUp(body, { ...base, clientX: 240, clientY: 200 });
+      expect(currentId(container)).toBe(3);
+
+      // 왼쪽으로 끌었다가 놓기 직전 오른쪽으로 되돌리면 넘기지 않는다
+      act(() => { vi.advanceTimersByTime(SLIDE_MS + 80); });
+      fireEvent.pointerDown(body, { ...base, clientX: 300, clientY: 200 });
+      fireEvent.pointerMove(body, { ...base, clientX: 260, clientY: 200 });
+      pass(300);
+      fireEvent.pointerMove(body, { ...base, clientX: 280, clientY: 200 });
+      fireEvent.pointerUp(body, { ...base, clientX: 280, clientY: 200 });
+      expect(currentId(container)).toBe(3);
     });
 
     // @scenario surface=drag_vertical_intent_ignored
@@ -979,6 +1009,8 @@ describe('PopupLayer', () => {
       const path = await import('node:path');
       const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
       expect(css.match(/\.g7pp-body\s*\{[^}]*\}/)?.[0] ?? '').toMatch(/touch-action:\s*pan-y/);
+      // 직접 작성형 본문은 스크롤 영역이라 브라우저가 위 값을 거기서 끊어 읽는다 — 본문과 그 안에도 다시 둔다
+      expect(css.match(/\.g7pp-body--paged \.g7pp-html,\s*\.g7pp-body--paged \.g7pp-html \*\s*\{[^}]*\}/)?.[0] ?? '').toMatch(/touch-action:\s*pan-y/);
     });
 
     // @scenario surface=drag_wraps_as_single_step

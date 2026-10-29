@@ -203,6 +203,14 @@
   padding-bottom: calc(var(--g7pp-pager-h) + var(--g7pp-pager-gap) * 2);
 }
 
+/* 본문은 스크롤 영역이라 브라우저가 .g7pp-body 의 touch-action 을 여기서 끊어 읽는다 — 다시 세로만 맡기지 않으면
+   가로 터치를 브라우저가 가져가(pointercancel) 직접 작성형 장에서 손가락으로 넘겨지지 않는다. 본문 안의 표·그림 등
+   스크롤 영역도 같은 이유로 가로 끌기는 장 넘김이 받는다 */
+.g7pp-body--paged .g7pp-html,
+.g7pp-body--paged .g7pp-html * {
+  touch-action: pan-y pinch-zoom;
+}
+
 .g7pp-html:focus-visible {
   outline: 3px solid var(--g7pp-accent);
   outline-offset: -3px;

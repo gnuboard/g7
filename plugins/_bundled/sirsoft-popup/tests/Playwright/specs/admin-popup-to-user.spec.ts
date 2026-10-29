@@ -190,18 +190,27 @@ async function flow_drag_to_next_slide({ page, request, managerToken, created }:
   expect(opened).toHaveLength(0);
   expect(page.url()).toBe(startUrl);
 
+  // 직접 작성형 본문 글자 위에서 오른쪽으로 끌어 되돌린다 — 끄는 동안 글자가 선택되지 않는다.
+  // 본문은 내부 스크롤 영역이라 그 안에서도 가로 터치를 레이어가 받아야 한다(브라우저가 가로채면 pointercancel 로 끝난다)
+  const text = page.locator(`.g7pp-slide[data-popup-id="${next}"] .g7pp-html p`);
+  const textBox = (await text.boundingBox())!;
+  const textY = textBox.y + textBox.height / 2;
   if (viewport === 'desktop') {
-    // 본문 글자 위에서 오른쪽으로 끌어 되돌린다 — 끄는 동안 글자가 선택되지 않는다
-    const text = page.locator(`.g7pp-slide[data-popup-id="${next}"] .g7pp-html p`);
-    const textBox = (await text.boundingBox())!;
-    await page.mouse.move(textBox.x + 8, textBox.y + textBox.height / 2);
+    await page.mouse.move(textBox.x + 8, textY);
     await page.mouse.down();
-    await page.mouse.move(textBox.x + 8 + box.width * 0.5, textBox.y + textBox.height / 2, { steps: 12 });
+    await page.mouse.move(textBox.x + 8 + box.width * 0.5, textY, { steps: 12 });
     expect(await page.evaluate(() => window.getSelection()?.toString() ?? '')).toBe('');
     await page.mouse.up();
-    await expect.poll(() => currentSlideId(page)).toBe(linked);
-    expect(opened).toHaveLength(0);
+  } else {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: textBox.x + 8, y: textY }] });
+    for (let i = 1; i <= 10; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: textBox.x + 8 + (box.width * 0.5 * i) / 10, y: textY }] });
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   }
+  await expect.poll(() => currentSlideId(page)).toBe(linked);
+  expect(opened).toHaveLength(0);
 }
 
 /**

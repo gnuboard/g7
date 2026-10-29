@@ -30,9 +30,13 @@ const DRAG_START_PX = 8;
 /** 놓았을 때 옆 장으로 넘기는 거리 — 표시 폭 대비 비율 */
 const DRAG_COMMIT_RATIO = 0.2;
 
-/** 빠른 휙 넘김 — 이 속도(px/ms) 이상이고 표시 폭의 이 비율 이상 움직였으면 짧아도 넘긴다 */
+/**
+ * 빠른 휙 넘김 — 놓기 직전 FLICK_WINDOW_MS 동안 끈 방향으로 이 속도(px/ms) 이상이고 표시 폭의 이 비율 이상 움직였으면
+ * 짧아도 넘긴다. 누른 순간부터의 평균으로 재면 잠깐 누르고 있다가 휙 민 손가락이 느린 끌기로 잡혀 넘어가지 않았다
+ */
 const FLICK_SPEED = 0.5;
 const FLICK_MIN_RATIO = 0.04;
+const FLICK_WINDOW_MS = 100;
 
 /**
  * 넘김 컨트롤 캡슐(본문 아래 가운데에 겹침)에 점을 그리는 최대 장 수 — 넘으면 같은 캡슐에 「지금 / 전체」 숫자만 둔다.
@@ -133,14 +137,33 @@ interface DragState {
   x: number;
   y: number;
 
-  /** 누른 시각 (ms) */
-  at: number;
+  /** 최근 가로 위치 자취 — 맨 앞은 FLICK_WINDOW_MS 직전 지점이다(놓기 직전 속도를 잰다) */
+  trail: Array<{ x: number; at: number }>;
 
   /** 누를 때 잰 슬라이드 영역의 실제 표시 폭 — 축소된 미리보기 틀 안에서도 비율이 맞는다 */
   width: number;
 
   /** 가로 끌기로 판정됨 */
   dragging: boolean;
+}
+
+/**
+ * 자취에 지금 위치를 더하고 FLICK_WINDOW_MS 보다 오래된 지점을 걷는다 — 창 직전 지점 하나는 남겨 속도의 기준으로 쓴다.
+ * 포인터 이벤트는 움직일 때만 오므로 그 지점 뒤로는 그 자리에 머물렀다고 보고, 창(최근 FLICK_WINDOW_MS) 안의 이동만 잰다.
+ *
+ * @param trail 끌기 자취 (바뀐다)
+ * @param x 지금 가로 위치
+ * @param at 지금 시각 (ms)
+ * @returns 놓기 직전 가로 속도 (px/ms, 왼쪽이 음수)
+ */
+function trackVelocity(trail: DragState['trail'], x: number, at: number): number {
+  trail.push({ x, at });
+  while (trail.length > 2 && at - trail[1].at >= FLICK_WINDOW_MS) {
+    trail.shift();
+  }
+  const from = trail[0];
+
+  return (x - from.x) / Math.max(1, at - Math.max(from.at, at - FLICK_WINDOW_MS));
 }
 
 /**
@@ -745,9 +768,9 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
 
     const dx = event.clientX - drag.x;
     const ratio = clamp(dx / drag.width, -1, 1);
-    const speed = Math.abs(dx) / Math.max(1, Date.now() - drag.at);
-    const commit = !cancelled && ratio !== 0
-      && (Math.abs(ratio) >= DRAG_COMMIT_RATIO || (Math.abs(ratio) >= FLICK_MIN_RATIO && speed >= FLICK_SPEED));
+    const velocity = trackVelocity(drag.trail, event.clientX, Date.now());
+    const flick = Math.abs(ratio) >= FLICK_MIN_RATIO && Math.abs(velocity) >= FLICK_SPEED && Math.sign(velocity) === Math.sign(ratio);
+    const commit = !cancelled && ratio !== 0 && (Math.abs(ratio) >= DRAG_COMMIT_RATIO || flick);
     if (commit) {
       const dir = ratio < 0 ? 1 : -1;
       // 들어올 장은 지금 옆 장 자리(현재 위치 + dir × 100)에서 이어서 들어온다
@@ -771,7 +794,7 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     if (width <= 0) {
       return;
     }
-    dragRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, at: Date.now(), width, dragging: false };
+    dragRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, trail: [{ x: event.clientX, at: Date.now() }], width, dragging: false };
     setPressing(true);
   };
 
@@ -782,6 +805,7 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     }
     const dx = event.clientX - drag.x;
     const dy = event.clientY - drag.y;
+    trackVelocity(drag.trail, event.clientX, Date.now());
     if (!drag.dragging) {
       if (Math.abs(dx) < DRAG_START_PX && Math.abs(dy) < DRAG_START_PX) {
         return;
