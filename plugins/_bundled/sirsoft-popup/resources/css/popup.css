@@ -3,6 +3,8 @@
  * 템플릿 CSS 에 기대지 않는다: 확장 컴포넌트의 유틸리티 클래스는 템플릿 빌드에 들어 있다는 보장이 없다.
  * 층: 레이어·배경은 z-index 40 — GDPR 쿠키 배너(z-50)·템플릿 모달(z-50)·토스트 아래, 사용자 템플릿 모바일 머리(z-30) 위(결정 R8).
  * 다크 모드: 템플릿이 <html class="dark"> 를 붙이면 바탕·띠·단추만 바꾼다(이미지·작성 본문 색은 그대로).
+ * 넘김 컨트롤(점·「n / N」·일시정지)은 별도 띠가 아니라 본문 아래 가운데에 겹친 반투명 어두운 캡슐이다 — 이미지 위·흰 본문 위
+ * 어디서나 흰 점이 보이도록 바탕을 어둡게 깔고, 높이를 차지하지 않는다.
  */
 .g7pp-root {
   --g7pp-bg: #ffffff;
@@ -12,8 +14,10 @@
   --g7pp-footer-bg: #111827;
   --g7pp-footer-fg: #f9fafb;
   --g7pp-accent: #2563eb;
-  --g7pp-dot: #d1d5db;
   --g7pp-body-h: 520px;
+  /* 넘김 컨트롤 캡슐의 보이는 높이와 본문 아래 끝에서 띄운 거리 */
+  --g7pp-pager-h: 28px;
+  --g7pp-pager-gap: 12px;
   position: fixed;
   inset: 0;
   z-index: 40;
@@ -28,7 +32,6 @@
   --g7pp-footer-bg: #030712;
   --g7pp-footer-fg: #f9fafb;
   --g7pp-accent: #60a5fa;
-  --g7pp-dot: #6b7280;
 }
 
 .g7pp-backdrop {
@@ -58,7 +61,7 @@
   translate: var(--g7pp-move-x, 0px) var(--g7pp-move-y, 0px);
 }
 
-/* 창을 잡고 있는 동안 글자 선택이 생기지 않게 */
+/* 창을 끌어 옮기는 동안 글자 선택이 생기지 않게 */
 .g7pp-dialog--held {
   -webkit-user-select: none;
   user-select: none;
@@ -99,64 +102,11 @@
   --g7pp-body-h: min(60vh, 380px);
 }
 
-/* 창 옮기기 손잡이 띠 — 가운데·좌표 창의 맨 위. 끌거나 화살표 키로 창을 옮긴다 */
-.g7pp-grip {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 28px;
-  padding: 0;
-  border: 0;
-  border-bottom: 1px solid var(--g7pp-line);
-  background: var(--g7pp-bg);
-  cursor: grab;
-  /* 손가락으로 잡아도 화면 스크롤·당겨서 새로고침이 일어나지 않게 */
-  touch-action: none;
-}
-
-.g7pp-dialog--held .g7pp-grip {
-  cursor: grabbing;
-}
-
-.g7pp-grip:focus-visible {
-  outline: 3px solid var(--g7pp-accent);
-  outline-offset: -3px;
-}
-
-/* 점 여덟 개(4 × 2) 무늬 */
-.g7pp-grip__dots {
-  width: 30px;
-  height: 10px;
-  background-image: radial-gradient(circle, var(--g7pp-dot) 1.5px, transparent 2px);
-  background-size: 7.5px 5px;
-  pointer-events: none;
-}
-
-/* 하단 시트 손잡이 — 막대를 아래로 끌어 내리면 닫힌다(잡는 영역은 띠 전체 폭) */
-.g7pp-handle {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  height: 28px;
-  cursor: grab;
-  touch-action: none;
-}
-
-.g7pp-handle::before {
-  content: '';
-  width: 40px;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--g7pp-dot);
-}
-
 .g7pp-body {
   position: relative;
   /* --g7pp-fit-h: 헤더·GDPR 배너 사이에 창이 들어가도록 레이어가 줄인 상한 */
-  height: min(var(--g7pp-body-h), calc(100vh - 188px), var(--g7pp-fit-h, 100vh));
+  /* 고정 몫 116px = 하단 바 52px + 위아래 여백 64px (넘김 컨트롤은 본문 위에 겹쳐 높이를 차지하지 않는다) */
+  height: min(var(--g7pp-body-h), calc(100vh - 116px), var(--g7pp-fit-h, 100vh));
   /* 가로 끌기는 레이어가 받고 세로 스크롤·확대는 브라우저에 맡긴다 */
   touch-action: pan-y pinch-zoom;
 }
@@ -190,9 +140,9 @@
     transition: transform 0.3s ease-out;
   }
 
-  /* 내리다 놓은 시트가 제자리로 미끄러져 돌아온다(잡고 있는 동안은 손을 바로 따라간다) */
-  .g7pp-dialog--m-sheet:not(.g7pp-dialog--held) {
-    transition: translate 0.2s ease-out;
+  /* 지금 장 점이 알약으로 늘고 줄어드는 전환 */
+  .g7pp-dot span {
+    transition: width 0.25s ease-out, background-color 0.25s ease-out;
   }
 }
 
@@ -249,6 +199,11 @@
   font-size: 14px;
 }
 
+/* 넘김 컨트롤 캡슐이 겹치면 그 높이만큼 아래 여백을 더 둬 마지막 줄이 가려지지 않게 한다(휴대폰 여백 규칙보다 뒤에 둔다) */
+.g7pp-body--paged .g7pp-html {
+  padding-bottom: calc(var(--g7pp-pager-h) + var(--g7pp-pager-gap) * 2);
+}
+
 .g7pp-html:focus-visible {
   outline: 3px solid var(--g7pp-accent);
   outline-offset: -3px;
@@ -264,7 +219,7 @@
 .g7pp-html table { border-collapse: collapse; width: 100%; }
 .g7pp-html th, .g7pp-html td { border: 1px solid var(--g7pp-line); padding: 4px 8px; }
 
-/* PC 이전·다음 — 내용 위 좌우 가운데 */
+/* 이전·다음 — PC·휴대폰 모두 본문 위 좌우 가운데에 겹친 원형 단추(캡슐과 같은 반투명 어두운 바탕) */
 .g7pp-arrow {
   position: absolute;
   top: 50%;
@@ -274,7 +229,9 @@
   margin-top: -22px;
   border: 0;
   border-radius: 999px;
-  background: rgba(17, 24, 39, 0.5);
+  background: rgba(17, 24, 39, 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   color: #ffffff;
   font-size: 24px;
   line-height: 1;
@@ -284,64 +241,130 @@
 .g7pp-arrow--prev { left: 10px; }
 .g7pp-arrow--next { right: 10px; }
 
+/* 어두운 본문 위에서도 원이 보이게 캡슐과 같은 가는 테두리를 준다 */
+.dark .g7pp-arrow {
+  background: rgba(3, 7, 18, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+/* 휴대폰은 본문이 좁아 가장자리에 더 붙인다 */
+.g7pp-dialog--m-center .g7pp-arrow--prev,
+.g7pp-dialog--m-sheet .g7pp-arrow--prev { left: 6px; }
+.g7pp-dialog--m-center .g7pp-arrow--next,
+.g7pp-dialog--m-sheet .g7pp-arrow--next { right: 6px; }
+
 .g7pp-arrow:focus-visible,
-.g7pp-dot:focus-visible,
-.g7pp-nav__arrow:focus-visible,
-.g7pp-nav__pause:focus-visible,
 .g7pp-footer button:focus-visible {
   outline: 3px solid var(--g7pp-accent);
   outline-offset: -3px;
 }
 
-/* 위치 표시 줄 — 점(현재 장은 넓은 막대)·「n / N」·일시정지 */
-.g7pp-nav {
+/* 넘김 컨트롤 캡슐 — 본문 아래쪽 가운데에 겹친다. 덮는 링크(z-index 1)보다 위라 누르면 링크로 가지 않고, 본문 끌기도
+   시작하지 않는다(PopupLayer). 줄을 바꾸지 않는다 — 한 줄에 들어갈 개수를 넘으면 레이어가 점 대신 숫자를 그린다.
+   안의 단추는 캡슐(28px)보다 높은 44px 이라 위아래로 비어져 나온 투명한 부분까지 누를 수 있다 */
+.g7pp-pager {
+  position: absolute;
+  left: 50%;
+  bottom: var(--g7pp-pager-gap);
+  z-index: 2;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-height: 44px;
-  border-top: 1px solid var(--g7pp-line);
+  height: var(--g7pp-pager-h);
+  max-width: calc(100% - 24px);
+  padding: 0 4px;
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(17, 24, 39, 0.25);
+  color: #ffffff;
+}
+
+/* 어두운 본문 위에서도 캡슐 가장자리가 보이게 */
+.dark .g7pp-pager {
+  background: rgba(3, 7, 18, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
 .g7pp-dot {
-  /* 단추는 44px 이상(명세 접근성) — 팝업이 많아 넘치면 점 줄이 줄바꿈된다 */
+  /* 누르는 영역은 44px 이상(명세 접근성) — 보이는 점은 그 안의 작은 원 */
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
   min-width: 44px;
   height: 44px;
-  padding: 0 3px;
+  padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
 }
 
+/* 나머지 장은 작은 원, 지금 장은 길쭉한 알약(모양으로도 구분된다) */
 .g7pp-dot span {
   display: block;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
-  background: var(--g7pp-dot);
+  background: rgba(255, 255, 255, 0.55);
 }
 
 .g7pp-dot--current span {
-  width: 22px;
-  background: var(--g7pp-accent);
+  width: 20px;
+  background: #ffffff;
+}
+
+.g7pp-dot:hover span {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.g7pp-dot--current:hover span {
+  background: #ffffff;
 }
 
 .g7pp-counter {
-  margin: 0 6px;
+  padding: 0 10px;
   font-size: 13px;
-  color: var(--g7pp-muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+  color: #ffffff;
 }
 
-.g7pp-nav__arrow,
-.g7pp-nav__pause {
+/* 일시정지·재생 — 캡슐 오른쪽 끝, 앞의 점·숫자와 가는 세로선으로 나눈다 */
+.g7pp-pager__pause {
+  position: relative;
+  flex: 0 0 auto;
   width: 44px;
   height: 44px;
+  padding: 0;
   border: 0;
   background: transparent;
-  color: var(--g7pp-fg);
-  font-size: 18px;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 1;
   cursor: pointer;
+}
+
+.g7pp-pager__pause::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 14px;
+  margin-top: -7px;
+  border-left: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* 캡슐 안 단추의 포커스 표시 — 어두운 캡슐 위 흰 고리(단추 44px 안쪽으로 줄여 캡슐 높이에 맞춘다) */
+.g7pp-pager button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -10px;
+  border-radius: 999px;
 }
 
 /* 하단 띠 — 「보지 않기」(왼쪽)·「닫기」(오른쪽) */
@@ -374,6 +397,18 @@
 
 .g7pp-footer--single .g7pp-footer__close {
   border-left: 0 !important;
+}
+
+/* 창 옮기기 — PC 창·모바일 가운데 창은 하단 바를 끌어 옮긴다(단추 위에서 눌러도). 단추는 누를 수 있다는 커서를 그대로 두고,
+   끄는 동안은 바 전체가 잡은 커서다. 손가락으로 끌어도 화면 스크롤·당겨서 새로고침이 일어나지 않게(단추에도 적용된다) */
+.g7pp-footer--movable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.g7pp-dialog--held .g7pp-footer,
+.g7pp-dialog--held .g7pp-footer button {
+  cursor: grabbing;
 }
 
 /* 모바일 띠는 두 칸 반반, 밝은 바탕(시안) */
@@ -450,7 +485,7 @@
 /* 미리보기의 화면 높이는 틀이 넘겨 준 --g7pp-frame-h 로 잰다 — 대화상자 높이가 정해져 있지 않아 100% 는 풀리지 않고,
    본문이 0px 로 접혀 이미지·본문이 보이지 않는다. vh 는 관리자 창 기준이라 쓰지 않는다 */
 .g7pp-root--preview .g7pp-body {
-  height: min(var(--g7pp-body-h), calc(var(--g7pp-frame-h, 800px) - 188px));
+  height: min(var(--g7pp-body-h), calc(var(--g7pp-frame-h, 800px) - 116px));
 }
 
 .g7pp-root--preview .g7pp-dialog--m-center {

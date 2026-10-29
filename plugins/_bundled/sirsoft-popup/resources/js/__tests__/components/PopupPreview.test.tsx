@@ -93,6 +93,32 @@ describe('PopupPreview', () => {
     expect(body).not.toMatch(/100%/);
   });
 
+  // @scenario surface=preview_pager_overlays_body
+  it('미리보기도 넘김 컨트롤을 본문 안 아래 가운데 캡슐로 그린다 — 별도 띠가 없고, 본문 높이 몫에도 띠가 빠져 있다', async () => {
+    installCore();
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
+
+    for (const device of ['pc', 'mobile'] as const) {
+      const { container } = render(<PopupPreview device={device} settings={{ autoplay: true, mobile_style: 'sheet' }} />);
+      const body = container.querySelector('.g7pp-body') as HTMLElement;
+      const pager = body.querySelector(':scope > .g7pp-pager') as HTMLElement;
+
+      expect(container.querySelector('.g7pp-nav')).toBeNull();
+      expect(pager.querySelectorAll('.g7pp-dot')).toHaveLength(3);
+      // 미리보기는 넘기지 않으므로 일시정지 단추가 없다
+      expect(pager.querySelector('.g7pp-pager__pause')).toBeNull();
+      // 휴대폰 틀도 이전·다음은 본문 양옆
+      expect(body.querySelectorAll(':scope > .g7pp-arrow')).toHaveLength(2);
+      expect(body.className).toContain('g7pp-body--paged');
+      cleanup();
+    }
+
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+    expect(css.match(/\.g7pp-root--preview \.g7pp-body\s*\{[^}]*\}/)?.[0] ?? '').toContain('calc(var(--g7pp-frame-h, 800px) - 116px)');
+  });
+
   /** @effects preview_sample_slides */
   it('폼이 없으면(환경설정 화면) 표본 3장을 그린다', () => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;

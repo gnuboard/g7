@@ -1,7 +1,8 @@
 /**
  * @file admin-popup-to-user.spec.ts
  * @description 관리자가 등록·수정·순서를 바꾼 팝업이 사용자 화면에 조건대로 뜨는지 — 이미지형·직접 작성형, 노출 페이지 경계,
- * 회원만, 모바일만, 순서 변경, 오늘 하루 보지 않기 뒤 새 팝업, 닫기 뒤 SPA 이동, 끌어서 넘기기(마우스·터치), 창 옮기기·시트 끌어 닫기, 조회 전용 관리자.
+ * 회원만, 모바일만, 순서 변경, 오늘 하루 보지 않기 뒤 새 팝업, 닫기 뒤 SPA 이동, 끌어서 넘기기(마우스·터치), 하단 바로 창 옮기기(시트는 끌어도 그대로),
+ * 본문 위에 겹친 넘김 컨트롤 캡슐(눌러 넘김, 링크 장에서 눌러도 이동 없음), 조회 전용 관리자.
  * (매니페스트 e2e-flows.yaml)
  */
 import { test, expect, auth, authenticatePage, createHtmlPopup, createImagePopup, gotoUser, layer, layerIds, navigateSpa, uniqueTitle, ADMIN_LIST, API, VIEWPORTS } from '../fixtures/popup-auth';
@@ -204,9 +205,10 @@ async function flow_drag_to_next_slide({ page, request, managerToken, created }:
 }
 
 /**
- * 창을 옮긴다 — 데스크톱은 위쪽 손잡이 띠를 마우스로 끌어 옮기고(장은 그대로, 헤더 아래), 다른 페이지로 가면 원래 자리.
- * 모바일 하단 시트는 손잡이 막대를 손가락(실제 터치 입력)으로 끌어 내려 닫는다 — 쿠키는 남지 않아 새로고침하면 다시 뜬다.
- * 모바일 표시 방식이 가운데 창이면 손잡이 띠를 손가락으로 끌어 옮긴다.
+ * 창을 옮긴다 — 데스크톱은 하단 바의 「닫기」 위에서 마우스로 눌러 끌어 옮기고(그 동작으로 닫히지 않음, 장은 그대로, 헤더 아래·배너 위),
+ * 다른 페이지로 가면 원래 자리, 끌지 않고 누른 「닫기」는 닫는다. 위쪽 손잡이 띠는 없다.
+ * 모바일 하단 시트는 손잡이 막대가 없고 하단 바를 손가락(실제 터치 입력)으로 끌어 내려도 움직이거나 닫히지 않으며, 「닫기」를 누르면 닫힌다.
+ * 모바일 표시 방식이 가운데 창이면 하단 바를 손가락으로 끌어 옮긴다.
  */
 async function flow_move_window({ page, request, managerToken, created }: Ctx, viewport: Viewport): Promise<void> {
   const id = await createHtmlPopup(request, managerToken, { body_html: { ko: '<p>창을 옮겨 보는 팝업 본문입니다.</p>' } });
@@ -215,17 +217,19 @@ async function flow_move_window({ page, request, managerToken, created }: Ctx, v
   await gotoUser(page, '/');
   await expect(page.locator(`.g7pp-slide[data-popup-id="${id}"]`)).toHaveCount(1);
   const dialog = page.locator('[data-popup-layer=""] .g7pp-dialog');
-  const sheet = (await page.locator('[data-popup-layer=""] .g7pp-handle').count()) > 0;
-  const grabber = page.locator(`[data-popup-layer=""] ${sheet ? '.g7pp-handle' : '.g7pp-grip'}`);
-  // 잡는 곳이 헤더 등 다른 요소에 덮이지 않았다
-  expect(await grabber.evaluate((el) => {
+  const sheet = (await dialog.getAttribute('class'))?.includes('g7pp-dialog--m-sheet') ?? false;
+  const closeButton = layer(page).getByRole('button', { name: '닫기' });
+  // 위쪽 손잡이 띠·시트 손잡이 막대는 없다
+  await expect(page.locator('[data-popup-layer=""] .g7pp-grip, [data-popup-layer=""] .g7pp-handle')).toHaveCount(0);
+  // 잡는 곳(하단 바의 「닫기」)이 헤더·배너 등 다른 요소에 덮이지 않았다
+  expect(await closeButton.evaluate((el) => {
     const rect = el.getBoundingClientRect();
     const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
 
     return el === hit || el.contains(hit);
   })).toBe(true);
   const start = (await dialog.boundingBox())!;
-  const grab = (await grabber.boundingBox())!;
+  const grab = (await closeButton.boundingBox())!;
   const x = grab.x + grab.width / 2;
   const y = grab.y + grab.height / 2;
   const before = await currentSlideId(page);
@@ -235,28 +239,37 @@ async function flow_move_window({ page, request, managerToken, created }: Ctx, v
     await page.mouse.down();
     await page.mouse.move(x - 200, y, { steps: 10 });
     await page.mouse.up();
+    // 「닫기」 위에서 시작한 끌기라도 닫히지 않고 옮겨진다
+    await expect(layer(page)).toBeVisible();
     const moved = (await dialog.boundingBox())!;
     expect(Math.round(moved.x - start.x)).toBe(-200);
     // 위아래 끝까지 끌어도 헤더 밑·GDPR 배너 밑으로 들어가지 않는다(배너가 있으면 그 사이에 맞게 본문이 줄어 있다)
     const headerBottom = await page.evaluate(() => document.querySelector('header')?.getBoundingClientRect().bottom ?? 0);
     const bannerTop = await page.evaluate(() => document.getElementById('gdpr_cookie_banner')?.getBoundingClientRect().top ?? window.innerHeight);
+    const footer = page.locator('[data-popup-layer=""] .g7pp-footer');
     for (const toY of [0, 800]) {
-      const grab2 = (await grabber.boundingBox())!;
+      const grab2 = (await footer.boundingBox())!;
       await page.mouse.move(grab2.x + grab2.width / 2, grab2.y + grab2.height / 2);
       await page.mouse.down();
       await page.mouse.move(grab2.x + grab2.width / 2, toY, { steps: 10 });
       await page.mouse.up();
+      await expect(layer(page)).toBeVisible();
       const box = (await dialog.boundingBox())!;
       expect(box.y).toBeGreaterThanOrEqual(headerBottom);
       expect(box.y + box.height).toBeLessThanOrEqual(bannerTop);
     }
-    await expect(layer(page).getByRole('button', { name: '닫기' })).toBeVisible();
+    await expect(closeButton).toBeVisible();
     expect(await currentSlideId(page)).toBe(before);
     expect(await page.evaluate(() => window.getSelection()?.toString() ?? '')).toBe('');
+    expect(await page.evaluate(() => document.cookie)).not.toContain('g7_popup_dismissed');
 
     // 다른 페이지로 가면 원래 자리
     await navigateSpa(page, '/page/about');
     await expect.poll(async () => Math.round((await dialog.boundingBox())!.x)).toBe(Math.round(start.x));
+
+    // 끌지 않고 누른 「닫기」는 닫는다
+    await closeButton.click();
+    await expect(layer(page)).toHaveCount(0);
 
     return;
   }
@@ -271,13 +284,93 @@ async function flow_move_window({ page, request, managerToken, created }: Ctx, v
 
   if (!sheet) {
     await expect.poll(async () => Math.round((await dialog.boundingBox())!.y - start.y)).toBe(-80);
+    await expect(layer(page)).toBeVisible();
 
     return;
   }
+  // 시트는 끌어 내려도 그대로 — 움직이지도 닫히지도 않는다
+  await page.waitForTimeout(500);
+  await expect(layer(page)).toBeVisible();
+  expect(Math.round((await dialog.boundingBox())!.y)).toBe(Math.round(start.y));
+  expect(await dialog.evaluate((el) => (el as HTMLElement).style.getPropertyValue('--g7pp-move-y'))).toBe('');
+  // 「닫기」를 누르면 닫힌다(쿠키 없음 — 새로고침하면 다시 뜬다)
+  await closeButton.tap();
   await expect(layer(page)).toHaveCount(0);
   expect(await page.evaluate(() => document.cookie)).not.toContain('g7_popup_dismissed');
   await gotoUser(page, '/');
   await expect(page.locator(`.g7pp-slide[data-popup-id="${id}"]`)).toHaveCount(1);
+}
+
+/**
+ * 넘김 컨트롤은 본문 안 아래쪽 가운데에 겹친 캡슐이다 — 별도 띠가 없고, 장이 적으면 점·많으면 「n / N」이 그 안에 보인다.
+ * 이미지 링크 장에서 캡슐을 눌러도 링크로 가지 않고, 점(점 줄이면) 또는 본문 양옆 [다음 팝업]을 눌러 넘긴다(모바일은 탭).
+ * 사이트에 다른 팝업이 먼저 떠 있을 수 있어 점/숫자 중 어느 쪽인지는 그때 장 수로 정한다.
+ */
+async function flow_pager_overlay_controls({ page, request, managerToken, created }: Ctx, viewport: Viewport): Promise<void> {
+  const linked = await createImagePopup(request, managerToken, { link_url: '/page/about' });
+  const next = await createHtmlPopup(request, managerToken, { body_html: { ko: '<p>넘김 컨트롤 캡슐 아래 여백을 보는 본문입니다.</p>' } });
+  created.push(linked, next);
+
+  await gotoUser(page, '/');
+  await expect(page.locator(`.g7pp-slide[data-popup-id="${next}"]`)).toHaveCount(1);
+  await goToSlide(page, linked);
+  const startUrl = page.url();
+  const body = page.locator('[data-popup-layer=""] .g7pp-body');
+  const pager = body.locator('.g7pp-pager');
+  await expect(pager).toBeVisible();
+  // 본문과 하단 바 사이 띠·아래 줄 화살표는 없다
+  await expect(page.locator('[data-popup-layer=""] .g7pp-nav, [data-popup-layer=""] .g7pp-nav__arrow')).toHaveCount(0);
+
+  // 캡슐은 본문 안 아래쪽 가운데
+  const bodyBox = (await body.boundingBox())!;
+  const pagerBox = (await pager.boundingBox())!;
+  expect(pagerBox.x).toBeGreaterThanOrEqual(bodyBox.x);
+  expect(pagerBox.x + pagerBox.width).toBeLessThanOrEqual(bodyBox.x + bodyBox.width);
+  expect(Math.abs(pagerBox.x + pagerBox.width / 2 - (bodyBox.x + bodyBox.width / 2))).toBeLessThanOrEqual(1);
+  const gap = bodyBox.y + bodyBox.height - (pagerBox.y + pagerBox.height);
+  expect(gap).toBeGreaterThanOrEqual(0);
+  expect(gap).toBeLessThanOrEqual(24);
+  // 캡슐 한가운데를 누르면 덮는 링크가 아니라 캡슐(안의 점·숫자)이 맞는다
+  expect(await pager.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+
+    return !!hit && el.contains(hit);
+  })).toBe(true);
+  // 이전·다음은 PC·휴대폰 모두 본문 안 양옆
+  for (const name of ['이전 팝업', '다음 팝업']) {
+    const arrow = (await body.getByRole('button', { name }).boundingBox())!;
+    expect(arrow.x).toBeGreaterThanOrEqual(bodyBox.x);
+    expect(arrow.x + arrow.width).toBeLessThanOrEqual(bodyBox.x + bodyBox.width);
+  }
+
+  const ids = await layerIds(page);
+  const dotCount = await pager.locator('.g7pp-dot').count();
+  const dotMode = dotCount > 0;
+  if (dotMode) {
+    expect(dotCount).toBe(ids.length);
+  } else {
+    await expect(pager.locator('.g7pp-counter')).toHaveText(`${ids.indexOf(linked) + 1} / ${ids.length}`);
+  }
+  const press = async (target: any) => (viewport === 'mobile' ? target.tap() : target.click());
+
+  // 링크 장 위의 캡슐을 눌러도 링크로 가지 않는다 — 점 줄이면 지금 장 점, 숫자 줄이면 숫자
+  await press(dotMode ? pager.locator('.g7pp-dot[aria-current="true"]') : pager.locator('.g7pp-counter'));
+  await page.waitForTimeout(500);
+  expect(page.url()).toBe(startUrl);
+  await expect(layer(page)).toBeVisible();
+  expect(await currentSlideId(page)).toBe(linked);
+
+  // 눌러 넘긴다 — 점 줄이면 다음 장 점, 숫자 줄이면 본문 양옆 [다음 팝업]
+  await press(dotMode ? pager.getByRole('button', { name: `${ids.indexOf(next) + 1}번째 팝업 보기` }) : body.getByRole('button', { name: '다음 팝업' }));
+  await expect.poll(() => currentSlideId(page)).toBe(next);
+  expect(page.url()).toBe(startUrl);
+  if (!dotMode) {
+    await expect(pager.locator('.g7pp-counter')).toHaveText(`${ids.indexOf(next) + 1} / ${ids.length}`);
+  }
+  // 직접 작성형 본문은 캡슐 높이와 띄운 거리만큼 아래 여백이 있다
+  const padding = await page.locator(`.g7pp-slide[data-popup-id="${next}"] .g7pp-html`).evaluate((el) => parseFloat(getComputedStyle(el).paddingBottom));
+  expect(padding).toBeGreaterThanOrEqual(pagerBox.height + gap);
 }
 
 test.describe('팝업 → 사용자 화면', () => {
@@ -388,10 +481,17 @@ test.describe('팝업 → 사용자 화면', () => {
 
   // @scenario flow=move_window, viewport=desktop
   // @effects user_screen_reflects_admin_change, test_data_cleaned_up
-  test('위쪽 손잡이 띠를 마우스로 끌어 창을 옮기고, 다른 페이지로 가면 원래 자리 (desktop)', async ({ page, request, managerToken, created }) => {
-    // 높이 800 노트북 화면 — 가운데 정렬한 창의 위쪽이 사이트 헤더 자리에 걸리는 크기(헤더 아래로 비켜 떠야 잡힌다)
+  test('하단 바를 마우스로 끌어 창을 옮기고(「닫기」 위에서 끌어도 닫히지 않음), 다른 페이지로 가면 원래 자리 (desktop)', async ({ page, request, managerToken, created }) => {
+    // 높이 800 노트북 화면 — 가운데 정렬한 창의 위쪽이 사이트 헤더 자리에 걸리고 아래쪽이 쿠키 배너에 닿는 크기(그 사이로 비켜 뜬다)
     await page.setViewportSize({ width: 1280, height: 800 });
     await flow_move_window({ page, request, managerToken, created } as Ctx, 'desktop');
+  });
+
+  // @scenario flow=pager_overlay_controls, viewport=desktop
+  // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+  test('넘김 컨트롤은 본문 아래 가운데 캡슐 — 눌러 넘기고, 링크 장에서 캡슐을 눌러도 이동하지 않는다 (desktop)', async ({ page, request, managerToken, created }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await flow_pager_overlay_controls({ page, request, managerToken, created } as Ctx, 'desktop');
   });
 });
 
@@ -407,8 +507,14 @@ test.describe('팝업 → 사용자 화면 (터치)', () => {
 
   // @scenario flow=move_window, viewport=mobile
   // @effects user_screen_reflects_admin_change, test_data_cleaned_up
-  test('하단 시트 손잡이를 손가락으로 끌어 내려 닫는다(가운데 창이면 옮긴다) (mobile)', async ({ page, request, managerToken, created }) => {
+  test('하단 시트는 손잡이가 없고 하단 바를 끌어도 그대로, 「닫기」로 닫힌다(가운데 창이면 하단 바로 옮긴다) (mobile)', async ({ page, request, managerToken, created }) => {
     await flow_move_window({ page, request, managerToken, created } as Ctx, 'mobile');
+  });
+
+  // @scenario flow=pager_overlay_controls, viewport=mobile
+  // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+  test('넘김 컨트롤은 본문 아래 가운데 캡슐 — 탭해 넘기고, 링크 장에서 캡슐을 탭해도 이동하지 않는다 (mobile)', async ({ page, request, managerToken, created }) => {
+    await flow_pager_overlay_controls({ page, request, managerToken, created } as Ctx, 'mobile');
   });
 });
 

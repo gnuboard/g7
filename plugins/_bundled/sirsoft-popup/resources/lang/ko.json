@@ -31,8 +31,7 @@
         "dismiss_today": "오늘 하루 보지 않기",
         "dismiss_days": "{{days}}일간 보지 않기",
         "close": "닫기",
-        "scroll_region": "팝업 본문",
-        "move": "팝업 창 옮기기 — 화살표 키로 옮기고 Home 키로 제자리"
+        "scroll_region": "팝업 본문"
     },
     "admin": {
         "title": "팝업 관리",
