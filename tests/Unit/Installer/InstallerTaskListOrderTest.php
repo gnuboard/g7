@@ -196,6 +196,6 @@ class InstallerTaskListOrderTest extends TestCase
         $reset = (string) file_get_contents($root.'/public/install/api/state-management.php');
         $body = substr($reset, (int) strpos($reset, 'private function resetState(): void'));
         $body = substr($body, 0, (int) strpos($body, 'saveInstallationStateCas('));
-        $this->assertStringNotContainsString("selected_extensions", $body, '초기화가 고른 확장을 지우면 돌아가서 다시 고를 것이 없다');
+        $this->assertStringNotContainsString('selected_extensions', $body, '초기화가 고른 확장을 지우면 돌아가서 다시 고를 것이 없다');
     }
 }

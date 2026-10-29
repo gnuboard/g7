@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
 use Illuminate\Support\Facades\App;
+use Tests\TestCase;
 
 class TemplateLocalizationTest extends TestCase
 {

@@ -6,6 +6,7 @@ use App\Console\Commands\Core\CoreUpdateCommand;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
+use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Mockery;
@@ -130,7 +131,7 @@ class BundledUpdateCrossTypeOrderTest extends TestCase
         $command = $this->app->make(CoreUpdateCommand::class);
         $command->setLaravel($this->app);
         $output = new BufferedOutput;
-        $command->setOutput(new \Illuminate\Console\OutputStyle(new ArrayInput([]), $output));
+        $command->setOutput(new OutputStyle(new ArrayInput([]), $output));
 
         $method = new \ReflectionMethod($command, 'executeBulkUpdateInProcess');
         $result = $method->invoke(
