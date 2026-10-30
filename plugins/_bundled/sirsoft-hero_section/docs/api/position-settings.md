@@ -122,7 +122,7 @@ HTTP/1.1 200
 
 위치 목록(`key` = 확장점 이름 `home_hero`·`shop_hero`, `label_key`)과 위치별 슬라이더 설정(저장 행이 없으면 기본값 autoplay=true·5초·slide), 업로드 한도 `upload{max_mb, server_limit_mb, effective_mb}` — 플러그인 설정 API 권한이 없는 배너 담당자도 화면 안내에 쓸 수 있게 여기서 준다.
 
-`editor.preview_frame` 은 편집 미리보기의 구좌 틀이다 — `{template, stylesheets[], positions{home_hero|shop_hero: {layout, chain[{className, responsive{키: className}}]} | null}}`. 활성 사용자 템플릿에서 그 확장점을 가진 레이아웃(상속 병합본)을 찾아 루트부터 확장점까지의 상자 클래스(바인딩 `{{…}}` 토큰은 뺀 정적 클래스)와 반응형 덮어쓰기를 담고(덮어쓰기가 없으면 빈 배열 `[]`), `stylesheets` 는 그 템플릿의 `components.css` 주소(확장 캐시 버전 포함)다. 편집기 견본(`editor-spec.json`)은 버전이 바뀌는 주소 대신 빈 `stylesheets` 를 둔다. 확장점이 없는 위치는 null, 활성 사용자 템플릿이 없으면 `template: null`·`stylesheets: []` 이고 `positions` 의 각 위치가 null 이다. 결과는 템플릿 식별자·확장 캐시 버전별로 1시간 캐시한다.
+`editor.preview_frame` 은 편집 미리보기의 구좌 틀이다 — `{template, stylesheets[], positions{home_hero|shop_hero: {layout, path, chain[{className, responsive{키: className}}]} | null}}`. 활성 사용자 템플릿에서 그 확장점을 가진 레이아웃(상속 병합본)을 찾아 루트부터 확장점까지의 상자 클래스(바인딩 `{{…}}` 토큰은 뺀 정적 클래스)와 반응형 덮어쓰기를 담고(덮어쓰기가 없으면 빈 배열 `[]`), `stylesheets` 는 그 템플릿의 `components.css` 주소(확장 캐시 버전 포함)다. 편집기 견본(`editor-spec.json`)은 버전이 바뀌는 주소 대신 빈 `stylesheets` 를 둔다. 확장점이 없는 위치는 null, 활성 사용자 템플릿이 없으면 `template: null`·`stylesheets: []` 이고 `positions` 의 각 위치가 null 이다. 결과는 템플릿 식별자·확장 캐시 버전별로 1시간 캐시한다. `path` 는 그 레이아웃을 쓰는 활성 사용자 템플릿 라우트의 사이트 주소(모듈 주소 접두어를 푼 값)로, 목록의 「사이트에서 보기」가 쓴다 — 매개변수(`:slug`)·와일드카드가 든 주소이거나 라우트가 없으면 null 이고, 라우트 목록을 읽지 못하면 주소만 null 로 두고 오류 로그를 남긴다. 주소는 캐시 밖에서 매번 붙인다.
 
 ```json
 "preview_frame": {
@@ -131,11 +131,12 @@ HTTP/1.1 200
     "positions": {
         "home_hero": {
             "layout": "home",
+            "path": "/",
             "chain": [
                 { "className": "min-h-fit px-4", "responsive": { "desktop": "min-h-fit max-w-7xl mx-auto px-8" } }
             ]
         },
-        "shop_hero": { "layout": "shop/index", "chain": [ … ] }
+        "shop_hero": { "layout": "shop/index", "path": "/shop/products", "chain": [ … ] }
     }
 }
 ```

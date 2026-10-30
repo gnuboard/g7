@@ -69,7 +69,9 @@
             "device_label": "미리 볼 기기",
             "pc": "PC",
             "mobile": "모바일",
-            "empty": "노출 중인 배너가 없습니다."
+            "empty": "노출 중인 배너가 없습니다.",
+            "open_site": "사이트에서 보기",
+            "empty_with_counts": "지금 노출 중인 배너가 없습니다. (예약 {{scheduled}}건 · 비노출 {{inactive}}건 · 종료 {{ended}}건)"
         },
         "slider": {
             "title": "슬라이더 설정",
@@ -115,6 +117,18 @@
             "action": {
                 "edit": "수정",
                 "delete": "삭제"
+            },
+            "empty_filtered": "조건에 맞는 배너가 없습니다. 상태나 검색어를 바꿔 보세요.",
+            "slot_missing": "지금 쓰는 사이트 템플릿에서 이 배너 자리를 찾지 못했습니다. 배너를 등록해도 사이트에는 보이지 않을 수 있습니다.",
+            "empty_position": {
+                "title": "{{position}}에 등록된 배너가 없습니다.",
+                "sizes": "권장 이미지 크기: PC 1920×640, 모바일 750×1000(모바일 이미지가 없으면 PC 이미지를 세로로 잘라 씁니다).",
+                "create": "첫 배너 등록"
+            },
+            "badge": {
+                "locale_missing": "{{lang}} 제목 없음",
+                "mobile_fallback": "모바일: PC 이미지 사용",
+                "button_without_link": "버튼 안 보임: 주소 없음"
             }
         },
         "reorder": {
@@ -136,7 +150,7 @@
         "form": {
             "create_title": "배너 등록",
             "edit_title": "배너 수정",
-            "description": "배너 문구·이미지·링크·노출 기간을 정합니다. 오른쪽 미리보기는 저장 전 입력값입니다.",
+            "description": "배너 문구·이미지·링크·노출 기간을 정합니다. 미리보기는 저장 전 입력값입니다.",
             "validation_error": "입력값을 확인해 주세요.",
             "section": {
                 "basic": "기본 정보",
@@ -194,8 +208,6 @@
             "preview": {
                 "title": "미리보기",
                 "empty": "PC 이미지를 올리면 미리보기가 보입니다.",
-                "has_button": "버튼을 누르면 링크로 이동합니다.",
-                "whole_link": "버튼 없음 — 배너 전체가 링크입니다.",
                 "language": "미리보기 언어",
                 "frame": "{{device}} 배너 미리보기",
                 "expand": "크게 보기",
@@ -266,6 +278,16 @@
                     "pc_image": "PC 이미지",
                     "mobile_image": "모바일 이미지"
                 }
+            },
+            "button_needs_link": "이동할 주소를 입력해야 버튼이 사이트에 보입니다. 주소 없이 저장하면 버튼 문구는 보이지 않습니다.",
+            "link_behavior": {
+                "button": "사이트에서는 버튼을 누르면 이 주소로 이동합니다.",
+                "whole": "버튼 문구가 없어 사이트에서는 배너 전체를 누르면 이 주소로 이동합니다.",
+                "none": "이동할 주소가 없어 사이트에서 배너를 눌러도 이동하지 않습니다."
+            },
+            "save_blocked": {
+                "pc_image": "PC 이미지를 올려야 저장할 수 있습니다.",
+                "go_pc_image": "PC 이미지 칸으로 가기"
             }
         }
     }

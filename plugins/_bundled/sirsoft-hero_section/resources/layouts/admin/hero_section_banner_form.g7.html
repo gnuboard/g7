@@ -144,7 +144,7 @@
                   <span class="text-required">*</span>
                 </label>
                 <radio-group data-type="composite" name="position" :inline="true">
-                  <responsive on="mobile" :inline="false"/>
+                  <responsive on="portable" :inline="false"/>
                   <prop name="options">
                     <item label="$t:sirsoft-hero_section.admin.position.home_hero" value="home_hero"/>
                     <item label="$t:sirsoft-hero_section.admin.position.shop_hero" value="shop_hero"/>
@@ -159,69 +159,11 @@
               </div>
             </div>
           </section>
-          <!-- 문구 — 사이트에 켜 둔 언어마다 탭이 생긴다. 제목은 사이트 기본 언어만 필수이고, 비운 언어는 사용자 화면에서 기본 언어 문구로 보인다 -->
-          <section data-ref="text_card" class="admin-card">
-            <h2 class="card-title">$t:sirsoft-hero_section.admin.form.section.text</h2>
-            <p class="form-hint mb-4">$t:sirsoft-hero_section.admin.form.locale_hint</p>
-            <div class="row-stack">
-              <div data-ref="field_title">
-                <label class="form-label">
-                  <span>$t:sirsoft-hero_section.admin.form.title</span>
-                  <span class="text-required">*</span>
-                </label>
-                <multilingual-input data-type="composite" name="title" layout="tabs" :maxLength="100" :required="true" placeholder="$t:sirsoft-hero_section.admin.form.title_placeholder" error="{{_local.errors?.title?.[0] ?? ''}}"/>
-                <div data-ref="title_style" class="flex flex-wrap items-center gap-4 mt-2">
-                  <toggle data-type="composite" label="$t:sirsoft-hero_section.admin.form.visible" name="title_visible"/>
-                  <div class="flex items-center gap-2">
-                    <input type="color" name="title_color" aria-label="$t:sirsoft-hero_section.admin.form.title_color" class="w-10 h-9 p-1 rounded cursor-pointer"/>
-                    <input type="text" name="title_color" aria-label="$t:sirsoft-hero_section.admin.form.title_color_code" :maxLength="7" placeholder="#FFFFFF" class="input w-28"/>
-                  </div>
-                  <radio-group data-type="composite" name="title_align" :inline="true" size="sm" label="$t:sirsoft-hero_section.admin.form.align_label">
-                    <prop name="options">
-                      <item label="$t:sirsoft-hero_section.admin.form.align.left" value="left"/>
-                      <item label="$t:sirsoft-hero_section.admin.form.align.center" value="center"/>
-                      <item label="$t:sirsoft-hero_section.admin.form.align.right" value="right"/>
-                    </prop>
-                  </radio-group>
-                </div>
-                <p data-if="{{_local.errors?.title_color}}" class="form-error">{{_local.errors?.title_color?.[0] ?? ''}}</p>
-              </div>
-              <div data-ref="field_description">
-                <label class="form-label">$t:sirsoft-hero_section.admin.form.description_label</label>
-                <multilingual-input data-type="composite" name="description" layout="tabs" inputType="textarea" :rows="2" :maxLength="300" placeholder="$t:sirsoft-hero_section.admin.form.description_placeholder" error="{{_local.errors?.description?.[0] ?? ''}}"/>
-                <div data-ref="description_style" class="flex flex-wrap items-center gap-4 mt-2">
-                  <toggle data-type="composite" label="$t:sirsoft-hero_section.admin.form.visible" name="description_visible"/>
-                  <div class="flex items-center gap-2">
-                    <input type="color" name="description_color" aria-label="$t:sirsoft-hero_section.admin.form.description_color" class="w-10 h-9 p-1 rounded cursor-pointer"/>
-                    <input type="text" name="description_color" aria-label="$t:sirsoft-hero_section.admin.form.description_color_code" :maxLength="7" placeholder="#E5E7EB" class="input w-28"/>
-                  </div>
-                  <radio-group data-type="composite" name="description_align" :inline="true" size="sm" label="$t:sirsoft-hero_section.admin.form.align_label">
-                    <prop name="options">
-                      <item label="$t:sirsoft-hero_section.admin.form.align.left" value="left"/>
-                      <item label="$t:sirsoft-hero_section.admin.form.align.center" value="center"/>
-                      <item label="$t:sirsoft-hero_section.admin.form.align.right" value="right"/>
-                    </prop>
-                  </radio-group>
-                </div>
-                <p data-if="{{_local.errors?.description_color}}" class="form-error">{{_local.errors?.description_color?.[0] ?? ''}}</p>
-              </div>
-              <div data-ref="field_button_text">
-                <label class="form-label">$t:sirsoft-hero_section.admin.form.button_text</label>
-                <multilingual-input data-type="composite" name="button_text" layout="tabs" :maxLength="30" placeholder="$t:sirsoft-hero_section.admin.form.button_text_placeholder" error="{{_local.errors?.button_text?.[0] ?? ''}}"/>
-                <p class="form-hint">$t:sirsoft-hero_section.admin.form.button_text_hint</p>
-              </div>
-              <div data-ref="field_image_alt">
-                <label class="form-label">$t:sirsoft-hero_section.admin.form.image_alt</label>
-                <multilingual-input data-type="composite" name="image_alt" layout="tabs" :maxLength="200" error="{{_local.errors?.image_alt?.[0] ?? ''}}"/>
-                <p class="form-hint">$t:sirsoft-hero_section.admin.form.image_alt_hint</p>
-              </div>
-            </div>
-          </section>
           <!-- 이미지 — 등록 화면은 임시 키로, 수정 화면은 그 배너로 바로 올라간다(갈래는 폼에 심긴 배너 id 로 판정 — 렌더 값에 주소 매개변수를 직접 쓰지 않는다). 같은 기기 이미지를 다시 올리면 서버가 앞 이미지를 바꾼다 -->
           <section data-ref="image_card" class="admin-card">
             <h2 class="card-title">$t:sirsoft-hero_section.admin.form.section.image</h2>
             <div class="row-stack">
-              <div data-ref="field_pc_image">
+              <div id="hero_field_pc_image" data-ref="field_pc_image">
                 <label class="form-label">
                   <span>$t:sirsoft-hero_section.admin.form.image.pc</span>
                   <span class="text-required">*</span>
@@ -299,6 +241,66 @@
               </prop>
             </radio-group>
           </section>
+          <!-- 문구 — 사이트에 켜 둔 언어마다 탭이 생긴다. 제목은 사이트 기본 언어만 필수이고, 비운 언어는 사용자 화면에서 기본 언어 문구로 보인다 -->
+          <section data-ref="text_card" class="admin-card">
+            <h2 class="card-title">$t:sirsoft-hero_section.admin.form.section.text</h2>
+            <p class="form-hint mb-4">$t:sirsoft-hero_section.admin.form.locale_hint</p>
+            <div class="row-stack">
+              <div data-ref="field_title">
+                <label class="form-label">
+                  <span>$t:sirsoft-hero_section.admin.form.title</span>
+                  <span class="text-required">*</span>
+                </label>
+                <multilingual-input data-type="composite" name="title" layout="tabs" :maxLength="100" :required="true" placeholder="$t:sirsoft-hero_section.admin.form.title_placeholder" error="{{_local.errors?.title?.[0] ?? ''}}"/>
+                <div data-ref="title_style" class="flex flex-wrap items-center gap-4 mt-2">
+                  <toggle data-type="composite" label="$t:sirsoft-hero_section.admin.form.visible" name="title_visible"/>
+                  <div class="flex items-center gap-2">
+                    <input type="color" name="title_color" aria-label="$t:sirsoft-hero_section.admin.form.title_color" class="w-10 h-9 p-1 rounded cursor-pointer"/>
+                    <input type="text" name="title_color" aria-label="$t:sirsoft-hero_section.admin.form.title_color_code" :maxLength="7" placeholder="#FFFFFF" class="input w-28"/>
+                  </div>
+                  <radio-group data-type="composite" name="title_align" :inline="true" size="sm" label="$t:sirsoft-hero_section.admin.form.align_label">
+                    <prop name="options">
+                      <item label="$t:sirsoft-hero_section.admin.form.align.left" value="left"/>
+                      <item label="$t:sirsoft-hero_section.admin.form.align.center" value="center"/>
+                      <item label="$t:sirsoft-hero_section.admin.form.align.right" value="right"/>
+                    </prop>
+                  </radio-group>
+                </div>
+                <p data-if="{{_local.errors?.title_color}}" class="form-error">{{_local.errors?.title_color?.[0] ?? ''}}</p>
+              </div>
+              <div data-ref="field_description">
+                <label class="form-label">$t:sirsoft-hero_section.admin.form.description_label</label>
+                <multilingual-input data-type="composite" name="description" layout="tabs" inputType="textarea" :rows="2" :maxLength="300" placeholder="$t:sirsoft-hero_section.admin.form.description_placeholder" error="{{_local.errors?.description?.[0] ?? ''}}"/>
+                <div data-ref="description_style" class="flex flex-wrap items-center gap-4 mt-2">
+                  <toggle data-type="composite" label="$t:sirsoft-hero_section.admin.form.visible" name="description_visible"/>
+                  <div class="flex items-center gap-2">
+                    <input type="color" name="description_color" aria-label="$t:sirsoft-hero_section.admin.form.description_color" class="w-10 h-9 p-1 rounded cursor-pointer"/>
+                    <input type="text" name="description_color" aria-label="$t:sirsoft-hero_section.admin.form.description_color_code" :maxLength="7" placeholder="#E5E7EB" class="input w-28"/>
+                  </div>
+                  <radio-group data-type="composite" name="description_align" :inline="true" size="sm" label="$t:sirsoft-hero_section.admin.form.align_label">
+                    <prop name="options">
+                      <item label="$t:sirsoft-hero_section.admin.form.align.left" value="left"/>
+                      <item label="$t:sirsoft-hero_section.admin.form.align.center" value="center"/>
+                      <item label="$t:sirsoft-hero_section.admin.form.align.right" value="right"/>
+                    </prop>
+                  </radio-group>
+                </div>
+                <p data-if="{{_local.errors?.description_color}}" class="form-error">{{_local.errors?.description_color?.[0] ?? ''}}</p>
+              </div>
+              <div data-ref="field_button_text">
+                <label class="form-label">$t:sirsoft-hero_section.admin.form.button_text</label>
+                <multilingual-input data-type="composite" name="button_text" layout="tabs" :maxLength="30" placeholder="$t:sirsoft-hero_section.admin.form.button_text_placeholder" error="{{_local.errors?.button_text?.[0] ?? ''}}"/>
+                <p class="form-hint">$t:sirsoft-hero_section.admin.form.button_text_hint</p>
+                <!-- 사용자 슬라이더는 버튼 문구와 이동 주소가 모두 있어야 버튼을 그린다 — 문구만 넣고 저장하면 버튼이 사이트에 나오지 않는다(저장은 막지 않는다) -->
+                <p data-ref="button_link_warning" data-if="{{!(_local.form?.link_url ?? '').trim() &amp;&amp; Object.values(_local.form?.button_text ?? {}).some(v =&gt; typeof v === 'string' &amp;&amp; v.trim() !== '')}}" role="status" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-hero_section.admin.form.button_needs_link</p>
+              </div>
+              <div data-ref="field_image_alt">
+                <label class="form-label">$t:sirsoft-hero_section.admin.form.image_alt</label>
+                <multilingual-input data-type="composite" name="image_alt" layout="tabs" :maxLength="200" error="{{_local.errors?.image_alt?.[0] ?? ''}}"/>
+                <p class="form-hint">$t:sirsoft-hero_section.admin.form.image_alt_hint</p>
+              </div>
+            </div>
+          </section>
           <!-- 링크 — 사이트 안 경로(/…) 또는 http(s) 주소만 받는다. 검증은 서버가 하고 화면은 사유를 칸 아래에 보인다 -->
           <section data-ref="link_card" class="admin-card">
             <h2 class="card-title">$t:sirsoft-hero_section.admin.form.section.link</h2>
@@ -310,6 +312,10 @@
                 <p data-if="{{!_local.errors?.link_url}}" class="form-hint">$t:sirsoft-hero_section.admin.form.link_url_hint</p>
               </div>
               <toggle data-type="composite" label="$t:sirsoft-hero_section.admin.form.link_new_window" name="link_new_window"/>
+              <!-- 누르면 어떻게 되는지 — 사용자 슬라이더와 같은 조건(버튼 = 문구 + 주소, 주소만 있으면 배너 전체, 주소가 없으면 이동 안 함) -->
+              <p data-ref="link_behavior_button" data-if="{{(_local.form?.link_url ?? '').trim() !== '' &amp;&amp; Object.values(_local.form?.button_text ?? {}).some(v =&gt; typeof v === 'string' &amp;&amp; v.trim() !== '')}}" class="form-hint">$t:sirsoft-hero_section.admin.form.link_behavior.button</p>
+              <p data-ref="link_behavior_whole" data-if="{{(_local.form?.link_url ?? '').trim() !== '' &amp;&amp; !Object.values(_local.form?.button_text ?? {}).some(v =&gt; typeof v === 'string' &amp;&amp; v.trim() !== '')}}" class="form-hint">$t:sirsoft-hero_section.admin.form.link_behavior.whole</p>
+              <p data-ref="link_behavior_none" data-if="{{(_local.form?.link_url ?? '').trim() === ''}}" class="form-hint">$t:sirsoft-hero_section.admin.form.link_behavior.none</p>
             </div>
           </section>
           <!-- 노출 기간 — 상시 또는 기간 지정. 상태는 저장하지 않고 볼 때마다 서버가 기간으로 계산한다 -->
@@ -336,7 +342,6 @@
               <sirsoft-hero_section.hero-period-hint data-type="composite" data-ref="period_hint" period="{{_local.form?.display_period}}" active="{{_local.form?.is_active !== false}}" start="{{_local.form?.starts_at_local}}" end="{{_local.form?.ends_at_local}}" timezone="{{position_settings?.data?.editor?.timezone}}" serverNow="{{position_settings?.data?.editor?.server_now}}"/>
             </div>
           </section>
-          <p data-if="{{_local.pcUploadBlocked || _local.mobileUploadBlocked}}" role="status" class="form-hint">$t:sirsoft-hero_section.admin.form.upload_pending</p>
           <!-- 동시 수정 충돌(409) — 입력은 그대로 두고, 같은 창에서 최신본을 따로 받아(폼은 건드리지 않는다) 항목별로 비교한다.
             적용하면 최신본 위에 고른 내 값만 얹은 폼(최신 revision)으로 바뀌고, 다시 충돌하면 그 최신본을 기준으로 또 비교한다 -->
           <div data-ref="conflict_panel" data-if="{{_local.conflict}}" role="alert" class="alert-danger">
@@ -371,7 +376,7 @@
             </div>
           </div>
           <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
-            <a href="/admin/plugins/sirsoft-hero_section/banners?position={{_computed.listPosition}}" :mergeQuery="true" data-ref="footer_cancel_button" class="button flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
+            <a href="/admin/plugins/sirsoft-hero_section/banners?position={{_computed.listPosition}}" :mergeQuery="true" data-ref="footer_cancel_button" class="button flex-center shrink-0 whitespace-nowrap gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
               <on type="click">
                 <!-- 목록으로 — 보던 조건(상태·검색·쪽)을 이고 가되 위치는 폼에서 고른 탭으로. 위치를 바꿨으면 앞 위치의 쪽 번호는 버린다 -->
                 <navigate :mergeQuery="true">
@@ -380,7 +385,21 @@
               </on>
               <span>$t:sirsoft-hero_section.admin.form.cancel</span>
             </a>
-            <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || _local.pcUploadBlocked || _local.mobileUploadBlocked || !_local.form?.images?.pc}}" class="btn btn-primary flex-center gap-1.5">
+            <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 min-w-0">
+            <!-- 저장이 잠긴 이유 — 저장 중이 아닐 때 잠긴 경우와 늘 짝이다(올리는 중이 먼저). 저장 단추의 설명으로 읽힌다 -->
+            <div id="hero_save_reason" data-ref="save_reason" role="status" class="text-sm text-gray-600 dark:text-gray-300 text-right">
+              <span data-ref="save_reason_uploading" data-if="{{!_local.isSaving &amp;&amp; (_local.pcUploadBlocked || _local.mobileUploadBlocked)}}">$t:sirsoft-hero_section.admin.form.upload_pending</span>
+              <span data-ref="save_reason_pc_image" data-if="{{!_local.isSaving &amp;&amp; !_local.pcUploadBlocked &amp;&amp; !_local.mobileUploadBlocked &amp;&amp; !_local.form?.images?.pc}}" class="inline-flex flex-wrap items-center gap-x-2">
+                <span>$t:sirsoft-hero_section.admin.form.save_blocked.pc_image</span>
+                <button type="button" data-ref="save_reason_pc_image_jump" class="underline text-blue-700 dark:text-blue-300">
+                  <on type="click">
+                    <scroll-into-view selector="#hero_field_pc_image" behavior="smooth" block="center"/>
+                  </on>
+                  $t:sirsoft-hero_section.admin.form.save_blocked.go_pc_image
+                </button>
+              </span>
+            </div>
+            <button data-ref="footer_save_button" type="button" aria-describedby="hero_save_reason" disabled="{{_local.isSaving || _local.pcUploadBlocked || _local.mobileUploadBlocked || !_local.form?.images?.pc}}" class="btn btn-primary flex-center gap-1.5">
               <on type="click">
                 <!-- 저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간 입력값은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다 -->
                 <sequence>
@@ -406,11 +425,12 @@
               <span data-if="{{!_local.isSaving}}">$t:sirsoft-hero_section.admin.form.save</span>
               <span data-if="{{_local.isSaving}}">$t:sirsoft-hero_section.admin.form.saving</span>
             </button>
+            </div>
           </div>
         </div>
-        <!-- 미리보기 — 저장 전 입력값을 사용자 슬라이더 그대로 그린다. 좁은 화면에서는 입력 아래로 내려간다.
+        <!-- 미리보기 — 저장 전 입력값을 사용자 슬라이더 그대로 그린다. 좁은 화면에서는 입력 위로 올라가고(팝업 관리와 같은 배치) 넓은 화면에서는 오른쪽 열에 고정된다.
           관리자 템플릿에는 Aside 기본 컴포넌트가 없어(있으면 화면에서 조용히 빠진다) Section 으로 둔다 -->
-        <section id="hero_form_preview" data-ref="preview_card" aria-labelledby="hero_form_preview_heading" class="admin-card self-start hs-editor-preview">
+        <section id="hero_form_preview" data-ref="preview_card" aria-labelledby="hero_form_preview_heading" class="admin-card self-start order-first lg:order-last hs-editor-preview">
           <div class="flex-between flex-wrap gap-2 mb-3">
             <h2 id="hero_form_preview_heading" class="card-title">$t:sirsoft-hero_section.admin.form.preview.title</h2>
             <div role="group" aria-label="$t:sirsoft-hero_section.admin.preview.device_label" class="flex gap-1">

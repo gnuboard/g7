@@ -31,9 +31,74 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=list_empty_message_hidden_while_loading
-  it('표는 목록을 받는 중에는 빈 문구를 비워 두고, 받은 뒤 0건일 때만 「등록된 배너가 없습니다」를 보인다', () => {
+  // @scenario surface=list_empty_states_distinguished
+  it('표 빈 문구는 받는 중엔 비우고, 조건으로 걸러 0건이면 「조건에 맞는 배너 없음」, 위치에 배너가 아예 없으면 첫 등록 안내 카드에 맡긴다', () => {
     const grid = findById(list, 'hero_banner_datagrid')!;
-    expect(grid.props.emptyMessage).toBe("{{banners === undefined ? '' : $t('sirsoft-hero_section.admin.list.empty')}}");
+    const message = (banners: any, query: any) =>
+      Function('banners', 'query', '_computed', '$t', `return (${grid.props.emptyMessage.slice(2, -2)})`)(banners, query, { currentPosition: query.position || 'home_hero' }, (key: string) => key);
+    const stats = (n: number) => ({ data: { statistics: { positions: { home_hero: n, shop_hero: 0 } } } });
+    expect(message(undefined, {})).toBe('');
+    expect(message(stats(3), { status: 'scheduled' })).toBe('sirsoft-hero_section.admin.list.empty_filtered');
+    expect(message(stats(3), { search: '가을' })).toBe('sirsoft-hero_section.admin.list.empty_filtered');
+    expect(message(stats(0), {})).toBe('');
+    // 위치에 배너가 없을 때만 첫 등록 카드 — 권장 크기와 등록 링크(등록 권한이 있을 때)
+    const card = findById(list, 'empty_position_card')!;
+    const cardShown = (banners: any) => Function('banners', '_computed', `return (${card.if.slice(2, -2)})`)(banners, { currentPosition: 'home_hero' });
+    expect(cardShown(undefined)).toBe(false);
+    expect(cardShown(stats(0))).toBe(true);
+    expect(cardShown(stats(2))).toBe(false);
+    expect(json(card)).toContain('admin.list.empty_position.sizes');
+    const create = findById(card, 'empty_create_link')!;
+    expect(create.name).toBe('A');
+    expect(create.if).toBe('{{banners?.data?.abilities?.can_create === true}}');
+    expect(create.props.href).toBe('/admin/plugins/sirsoft-hero_section/banners/create?position={{_computed.currentPosition}}');
+  });
+
+  // @scenario surface=list_row_readiness_flags
+  it('제목 칸에 제작 상태를 보인다 — 모바일 이미지 없음(PC 이미지 사용), 버튼 문구만 있고 주소 없음, 제목이 빈 사이트 언어', () => {
+    const grid = findById(list, 'hero_banner_datagrid')!;
+    // 표 행마다 반복되는 배지는 id 가 없어야 한다(행마다 같은 HTML id 가 생긴다) — 문구 키로 찾는다
+    const badge = (key: string) => collect(grid, (n) => typeof n.text === 'string' && n.text.includes(`admin.list.badge.${key}`))[0];
+    const mobile = badge('mobile_fallback');
+    expect(mobile.if).toBe('{{row.has_mobile_image === false}}');
+    expect(mobile.text).toBe('$t:sirsoft-hero_section.admin.list.badge.mobile_fallback');
+    const button = badge('button_without_link');
+    expect(button.if).toBe('{{row.button_without_link === true}}');
+    expect(button.text).toBe('$t:sirsoft-hero_section.admin.list.badge.button_without_link');
+    // 빈 언어는 사이트 활성 언어 중 제목이 없는 것 — 화면에서 언어를 고정하지 않는다
+    const missing = badge('locale_missing');
+    for (const node of [mobile, button, missing]) expect(node.id).toBeUndefined();
+    // 표 칸은 행 문맥 없이 먼저 번역되므로 반복 변수를 넘기는 번역은 지연 번역이어야 한다(아니면 언어 이름이 비어 보인다)
+    expect(missing.text).toBe('$t:defer:sirsoft-hero_section.admin.list.badge.locale_missing|lang={{locale.toUpperCase()}}');
+    expect((ko as any).admin.list.badge.locale_missing).toContain('{{lang}}');
+    expect((en as any).admin.list.badge.locale_missing).toContain('{{lang}}');
+    const source = missing.iteration.source;
+    const evaluate = (row: any, locales: string[]) => Function('row', 'position_settings', `return (${source})`)(row, { data: { editor: { locales } } });
+    expect(evaluate({ title_locales: ['ko'] }, ['ko', 'en', 'ja'])).toEqual(['en', 'ja']);
+    expect(evaluate({ title_locales: ['ko', 'en'] }, ['ko', 'en'])).toEqual([]);
+    expect(evaluate({}, [])).toEqual([]);
+  });
+
+  // @scenario surface=list_site_link_and_missing_slot
+  it('미리보기 옆 「사이트에서 보기」는 그 위치 자리가 있는 사이트 주소를 새 창으로 열고, 자리가 없으면 안내만 보인다', () => {
+    const link = findById(list, 'site_link')!;
+    expect(link.name).toBe('A');
+    expect(link.props.target).toBe('_blank');
+    expect(link.props.rel).toBe('noopener noreferrer');
+    expect(link.if).toBe('{{!!_computed.sitePath}}');
+    expect(link.props.href).toBe('{{_computed.sitePath}}');
+    const computed = (list as any).computed.sitePath.slice(2, -2);
+    const path = (positions: any, position?: string) =>
+      Function('position_settings', 'query', `return (${computed})`)({ data: { editor: { preview_frame: { positions } } } }, { position });
+    expect(path({ home_hero: { path: '/' }, shop_hero: { path: '/shop/products' } })).toBe('/');
+    expect(path({ home_hero: { path: '/' }, shop_hero: { path: '/shop/products' } }, 'shop_hero')).toBe('/shop/products');
+    expect(path({ home_hero: null })).toBe('');
+    const notice = findById(list, 'slot_missing_notice')!;
+    const noticeShown = (settings: any) => Function('position_settings', '_computed', `return (${notice.if.slice(2, -2)})`)(settings, { currentPosition: 'home_hero' });
+    expect(noticeShown(undefined)).toBe(false);
+    expect(noticeShown({ data: { editor: { preview_frame: { positions: { home_hero: null } } } } })).toBe(true);
+    expect(noticeShown({ data: { editor: { preview_frame: { positions: { home_hero: { layout: 'home', path: '/' } } } } } })).toBe(false);
+    expect(notice.props.role).toBe('status');
   });
 
   // @scenario surface=list_row_label_and_control_names
@@ -135,12 +200,22 @@ describe('히어로섹션 목록 화면', () => {
   });
 
   // @scenario surface=list_preview_empty_message
-  it('미리보기는 받는 중에는 빈 문구를 비우고, 노출 중인 배너가 0건이면 안내를 보인다', () => {
+  // @scenario surface=list_empty_states_distinguished
+  it('미리보기는 받는 중에는 빈 문구를 비우고, 노출 중인 배너가 0건이면 안내를 보인다 — 배너는 있는데 지금 노출이 없으면 예약·비노출·종료 건수를 함께', () => {
     const preview = findById(list, 'hero_preview')!;
     expect(preview.name).toBe('sirsoft-hero_section.HeroBannerPreview');
-    expect(preview.props.emptyText).toBe("{{preview === undefined ? '' : $t('sirsoft-hero_section.admin.preview.empty')}}");
+    const text = (previewData: any, banners: any) =>
+      Function('preview', 'banners', '_computed', '$t', `return (${preview.props.emptyText.slice(2, -2)})`)(previewData, banners, { currentPosition: 'home_hero' }, (key: string, params?: any) => (params ? `${key}:${JSON.stringify(params)}` : key));
+    const banners = (total: number, statuses: Record<string, number>) => ({ data: { statistics: { positions: { home_hero: total }, statuses } } });
+    expect(text(undefined, banners(0, {}))).toBe('');
+    expect(text({ data: { data: [] } }, banners(0, {}))).toBe('sirsoft-hero_section.admin.preview.empty');
+    expect(text({ data: { data: [] } }, banners(3, { scheduled: 2, inactive: 1, ended: 0 }))).toBe(
+      'sirsoft-hero_section.admin.preview.empty_with_counts:{"scheduled":2,"inactive":1,"ended":0}',
+    );
     expect((ko as any).admin.preview.empty).toBeTruthy();
     expect((en as any).admin.preview.empty).toBeTruthy();
+    expect((ko as any).admin.preview.empty_with_counts).toContain('{{scheduled}}');
+    expect((en as any).admin.preview.empty_with_counts).toContain('{{scheduled}}');
   });
 
   // @scenario surface=list_preview_empty_message

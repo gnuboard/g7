@@ -56,6 +56,8 @@ _목록 응답: `data` 객체 안에 행 배열(`data`)·`abilities`·`statistic
 | data[].title_locales | array | `["ko","en"]` | 제목이 입력된 언어 목록 |
 | data[].created_at_display | string | `2026-10-26 10:20:17` | 등록일(사이트 시간대) |
 | data[].thumbnail | object\|null | `{"id":717,"hash":"FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWIoj…` | PC 이미지(업로드 응답과 같은 모양, 없으면 null) |
+| data[].has_mobile_image | boolean | `false` | 모바일 이미지가 있는지 — 없으면 사이트가 PC 이미지를 세로 비율로 잘라 쓴다 |
+| data[].button_without_link | boolean | `false` | 버튼 문구가 어느 언어에든 있는데 이동 주소가 없는지 — 그러면 사이트에 버튼이 보이지 않는다 |
 | data[].abilities | object | `{"can_update":true,"can_delete":true}` | 이 배너에 대한 `can_update`·`can_delete` |
 | data[].thumbnail.device | string | `pc` | 기기(썸네일은 늘 `pc`) |
 | data[].thumbnail.url | string | `/api/plugins/sirsoft-hero_section/ima…` | 공개 이미지 주소(인증 불필요) |
@@ -504,6 +506,8 @@ _목록 응답: [순서 변경] 창이 쓰는 위치 전체 목록._
 | data[].sort_order | integer | `0` | 위치 안 순서(0부터) |
 | data[].title_localized | string | `Autumn arrivals` | 요청 언어로 고른 제목(없으면 기본 언어) |
 | data[].thumbnail | object\|null | `{"id":717,"hash":"FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWIoj…` | PC 이미지(업로드 응답과 같은 모양, 없으면 null) |
+| data[].has_mobile_image | boolean | `false` | 모바일 이미지가 있는지 — 없으면 사이트가 PC 이미지를 세로 비율로 잘라 쓴다 |
+| data[].button_without_link | boolean | `false` | 버튼 문구가 어느 언어에든 있는데 이동 주소가 없는지 — 그러면 사이트에 버튼이 보이지 않는다 |
 
 **응답 예시**
 

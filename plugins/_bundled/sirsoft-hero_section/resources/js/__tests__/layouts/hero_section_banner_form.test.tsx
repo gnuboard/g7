@@ -232,6 +232,76 @@ describe('배너 등록·수정 화면', () => {
     expect(preview.props.position).toBe("{{_local.form?.position ?? 'home_hero'}}");
   });
 
+  // @scenario surface=form_section_order_image_first
+  it('입력 순서는 기본 정보 → 이미지 → 이미지 표시 → 문구 → 링크 → 기간이다 — 사진을 먼저 올려 미리보기를 보며 문구를 쓴다', () => {
+    const sections = asArray<any>(findById(form, 'form_sections')!.children).map((n) => n.id).filter((id) => String(id).endsWith('_card'));
+    expect(sections).toEqual(['basic_card', 'image_card', 'presentation_card', 'text_card', 'link_card', 'period_card']);
+  });
+
+  // @scenario surface=form_preview_first_on_mobile
+  it('좁은 화면에서는 미리보기가 입력 위에 오고, 넓은 화면에서는 오른쪽 열에 고정된다', () => {
+    const preview = findById(form, 'preview_card')!;
+    const classes = String(preview.props.className).split(/\s+/);
+    expect(classes).toEqual(expect.arrayContaining(['order-first', 'lg:order-last', 'hs-editor-preview']));
+  });
+
+  // @scenario surface=form_save_blocked_reason
+  // @effects accessible_names_present
+  it('저장 단추가 잠기면 그 옆에 이유를 보인다 — 저장 중이 아닐 때 잠긴 경우와 이유가 늘 짝이다', () => {
+    const disabledExpr = findById(form, 'footer_save_button')!.props.disabled.slice(2, -2);
+    const isDisabled = (state: any) => Function('_local', `return (${disabledExpr})`)(state);
+    const reasonIds = ['save_reason_uploading', 'save_reason_pc_image'];
+    const shown = (state: any) => reasonIds.filter((id) => Function('_local', `return (${findById(form, id)!.if.slice(2, -2)})`)(state));
+    const states = [
+      { form: { images: { pc: null } } },
+      { form: { images: { pc: { id: 1 } } }, pcUploadBlocked: true },
+      { form: { images: { pc: null } }, mobileUploadBlocked: true },
+      { form: { images: { pc: { id: 1 } } } },
+      { form: { images: { pc: { id: 1 } } }, isSaving: true },
+    ];
+    for (const state of states) {
+      const reasons = shown(state);
+      // 저장 중에는 단추 글자가 「저장 중」이라 이유를 따로 보이지 않는다
+      expect(reasons.length > 0, JSON.stringify(state)).toBe(isDisabled(state) && !state.isSaving);
+      expect(reasons.length).toBeLessThanOrEqual(1);
+    }
+    expect(shown(states[0])).toEqual(['save_reason_pc_image']);
+    expect(shown(states[2])).toEqual(['save_reason_uploading']);
+    // 이유는 저장 단추의 설명으로 읽히고, PC 이미지 칸으로 가는 단추가 함께 있다
+    const save = findById(form, 'footer_save_button')!;
+    expect(save.props['aria-describedby']).toBe('hero_save_reason');
+    const reasonBox = findById(form, 'save_reason')!;
+    expect(reasonBox.props.id).toBe('hero_save_reason');
+    expect(reasonBox.props.role).toBe('status');
+    const jump = actionsOf(findById(form, 'save_reason_pc_image'), 'scrollIntoView')[0];
+    expect(jump.params.selector).toBe('#hero_field_pc_image');
+    expect(findById(form, 'field_pc_image')!.props.id).toBe('hero_field_pc_image');
+    // 이유 문구는 한 곳에만 — 예전의 폼 아래 「올리는 중」 안내는 없다
+    expect(collect(form, (n) => json(n.text ?? '').includes('admin.form.upload_pending'))).toHaveLength(1);
+  });
+
+  // @scenario surface=form_button_needs_link_warning
+  it('버튼 문구가 어느 언어든 있는데 이동 주소가 비면 「주소를 넣어야 버튼이 보입니다」를 보인다', () => {
+    const expr = findById(form, 'button_link_warning')!.if.slice(2, -2);
+    const warn = (formState: any) => Function('_local', `return (${expr})`)({ form: formState });
+    expect(warn({ button_text: { ko: '보러 가기' }, link_url: '' })).toBe(true);
+    expect(warn({ button_text: { en: 'Shop' }, link_url: '   ' })).toBe(true);
+    expect(warn({ button_text: { ko: '보러 가기' }, link_url: '/shop' })).toBe(false);
+    expect(warn({ button_text: [], link_url: '' })).toBe(false);
+    expect(warn({ button_text: { ko: '  ' } })).toBe(false);
+    expect(warn({})).toBe(false);
+  });
+
+  // @scenario surface=form_link_behavior_summary
+  it('링크 칸 아래에 배너를 누르면 어떻게 되는지 한 줄로 요약한다(버튼만 / 배너 전체 / 이동 안 함)', () => {
+    const ids = ['link_behavior_button', 'link_behavior_whole', 'link_behavior_none'];
+    const shown = (formState: any) => ids.filter((id) => Function('_local', `return (${findById(form, id)!.if.slice(2, -2)})`)({ form: formState }));
+    expect(shown({ button_text: { ko: '보기' }, link_url: '/shop' })).toEqual(['link_behavior_button']);
+    expect(shown({ button_text: { ko: '' }, link_url: '/shop' })).toEqual(['link_behavior_whole']);
+    expect(shown({ button_text: { ko: '보기' }, link_url: '' })).toEqual(['link_behavior_none']);
+    expect(shown({})).toEqual(['link_behavior_none']);
+  });
+
   // @scenario surface=form_multilingual_tabs_active_locales
   // @effects accessible_names_present
   it('폼이 쓰는 문구가 한국어·영어 모두 있다', () => {

@@ -91,6 +91,33 @@ class BannerControllerTest extends PluginTestCase
     }
 
     /**
+     * 목록 행은 제작 상태를 함께 낸다 — 모바일 이미지가 없어 PC 이미지에서 잘라 쓰는지, 버튼 문구는 있는데 이동 주소가 없어
+     * 사이트에 버튼이 보이지 않는지. 버튼 문구는 어느 언어든 하나라도 있으면 문구가 있는 것으로 본다.
+     *
+     * @scenario surface=list_row_readiness_flags
+     *
+     * @return void 반환값 없음
+     */
+    public function test_list_rows_flag_mobile_fallback_and_button_without_link(): void
+    {
+        $complete = $this->createBannerViaApi($this->admin, [], mobile: true)->assertCreated()->json('data.id');
+        $pcOnly = $this->createBannerViaApi($this->admin)->assertCreated()->json('data.id');
+        $noLink = $this->createBannerViaApi($this->admin, ['link_url' => null, 'button_text' => ['en' => 'Shop']])->assertCreated()->json('data.id');
+        $wholeLink = $this->createBannerViaApi($this->admin, ['button_text' => []])->assertCreated()->json('data.id');
+        $plain = $this->createBannerViaApi($this->admin, ['link_url' => '', 'button_text' => ['ko' => '']])->assertCreated()->json('data.id');
+
+        $rows = collect($this->actingAs($this->admin)->getJson($this->api('/admin/banners?position=home_hero'))
+            ->assertOk()->json('data.data'))->keyBy('id');
+
+        $this->assertTrue($rows[$complete]['has_mobile_image']);
+        $this->assertFalse($rows[$pcOnly]['has_mobile_image']);
+        $this->assertFalse($rows[$complete]['button_without_link']);
+        $this->assertTrue($rows[$noLink]['button_without_link']);
+        $this->assertFalse($rows[$wholeLink]['button_without_link']);
+        $this->assertFalse($rows[$plain]['button_without_link']);
+    }
+
+    /**
      * 상태 필터는 SQL 조건으로 그 상태만 돌려준다.
      *
      * @scenario surface=list_filter_status

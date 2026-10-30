@@ -46,7 +46,7 @@ class PreviewFrameResolver
     /**
      * 활성 사용자 템플릿 기준 위치별 구좌 사슬과 템플릿 CSS 를 반환합니다.
      *
-     * @return array{template: string|null, stylesheets: array<int, string>, positions: array<string, array{layout: string, chain: array<int, array{className: string, responsive: array<string, string>}>}|null>} 구좌 틀
+     * @return array{template: string|null, stylesheets: array<int, string>, positions: array<string, array{layout: string, path: string|null, chain: array<int, array{className: string, responsive: array<string, string>}>}|null>} 구좌 틀 (`path` 는 그 자리가 있는 사이트 주소)
      */
     public function resolve(): array
     {
@@ -58,7 +58,7 @@ class PreviewFrameResolver
 
         $version = self::getExtensionCacheVersion();
 
-        return $this->cache->remember("preview_frame.{$identifier}.v{$version}", function () use ($identifier, $version) {
+        $frame = $this->cache->remember("preview_frame.{$identifier}.v{$version}", function () use ($identifier, $version) {
             $template = $this->templates->findByIdentifier($identifier);
             $positions = [];
             foreach (HeroPosition::cases() as $position) {
@@ -71,6 +71,41 @@ class PreviewFrameResolver
                 'positions' => $positions,
             ];
         }, self::TTL);
+
+        // 사이트 주소는 캐시 밖에서 붙인다 — 이커머스 주소 접두어 같은 모듈 설정이 바뀌어도 레이아웃 캐시 주기를 기다리지 않게
+        $paths = $this->routePaths($identifier);
+        foreach ($frame['positions'] as $point => $entry) {
+            if (is_array($entry)) {
+                $frame['positions'][$point]['path'] = $paths[$entry['layout']] ?? null;
+            }
+        }
+
+        return $frame;
+    }
+
+    /**
+     * 레이아웃 이름 → 한 주소로 정해지는 사이트 경로를 반환합니다.
+     *
+     * 매개변수(`:slug`)·와일드카드가 든 주소는 어느 페이지인지 정할 수 없어 뺀다. 라우트 목록을 읽지 못하면 주소만 비우고 틀은
+     * 그대로 낸다 — 운영자가 「사이트에서 보기」가 사라진 원인을 찾을 수 있게 오류 로그를 남긴다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return array<string, string> 레이아웃 이름 → 경로
+     */
+    private function routePaths(string $identifier): array
+    {
+        try {
+            $map = $this->templates->getLayoutRoutePathMap($identifier);
+        } catch (Throwable $e) {
+            Log::error('히어로섹션 미리보기 사이트 주소 읽기 실패 — 주소 없이 냄', [
+                'template' => $identifier,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+
+        return array_filter($map, fn ($path) => is_string($path) && str_starts_with($path, '/') && ! preg_match('/[:*{]/', $path));
     }
 
     /**

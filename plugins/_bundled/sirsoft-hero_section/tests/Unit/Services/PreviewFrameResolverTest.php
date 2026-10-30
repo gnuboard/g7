@@ -12,6 +12,7 @@ use Mockery;
 use Plugins\Sirsoft\HeroSection\Services\PreviewFrameResolver;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 use RuntimeException;
+use Throwable;
 
 /**
  * 관리자 미리보기의 구좌 사슬 — 활성 사용자 템플릿의 실제 레이아웃에서 확장점을 감싼 상자들의 클래스와 반응형 덮어쓰기를 꺼낸다.
@@ -95,6 +96,47 @@ class PreviewFrameResolverTest extends PluginTestCase
     }
 
     /**
+     * 위치마다 그 자리가 있는 레이아웃의 사이트 주소를 함께 낸다 — 목록의 「사이트에서 보기」가 쓴다. 매개변수(`:slug`)·와일드카드가
+     * 든 주소나 라우트가 없는 레이아웃은 한 주소로 정할 수 없으므로 null 이다.
+     *
+     * @scenario surface=preview_frame_site_path
+     *
+     * @return void 반환값 없음
+     */
+    public function test_position_carries_site_path_of_its_layout(): void
+    {
+        $merged = ['home' => $this->layout('home_hero'), 'shop/index' => $this->layout('shop_hero')];
+
+        $frame = $this->resolver(['home_hero' => ['home'], 'shop_hero' => ['shop/index']], $merged, ['home' => '/', 'shop/index' => '/store/products'])->resolve();
+        $this->assertSame('/', $frame['positions']['home_hero']['path']);
+        $this->assertSame('/store/products', $frame['positions']['shop_hero']['path']);
+
+        $frame = $this->resolver(['home_hero' => ['home'], 'shop_hero' => ['shop/index']], $merged, ['shop/index' => '/category/:slug'])->resolve();
+        $this->assertNull($frame['positions']['home_hero']['path']);
+        $this->assertNull($frame['positions']['shop_hero']['path']);
+    }
+
+    /**
+     * 라우트 목록을 읽지 못해도 미리보기 틀은 그대로 내고 주소만 비운다 — 원인은 오류 로그로 남긴다.
+     *
+     * @scenario surface=preview_frame_site_path
+     *
+     * @return void 반환값 없음
+     */
+    public function test_route_map_failure_keeps_frame_and_logs_error(): void
+    {
+        Log::spy();
+        $resolver = $this->resolver(['home_hero' => ['home'], 'shop_hero' => []], ['home' => $this->layout('home_hero')], new RuntimeException('routes.json broken'));
+
+        $frame = $resolver->resolve();
+
+        $this->assertSame('home', $frame['positions']['home_hero']['layout']);
+        $this->assertNull($frame['positions']['home_hero']['path']);
+        Log::shouldHaveReceived('error')->once()->withArgs(fn (string $message, array $context) => $context['template'] === 'demo-user'
+            && $context['error'] === 'routes.json broken');
+    }
+
+    /**
      * 확장점을 가진 레이아웃이 깨져 병합에 실패하면 그 레이아웃만 건너뛰되, 원인을 찾을 수 있게 오류 로그를 남긴다.
      *
      * 출하 기본 로그 수준이 error 라 warning 은 기본 설치에서 기록되지 않는다. 틀 결과가 캐시되므로 같은 레이아웃은 캐시 주기마다 한 번만 남는다.
@@ -109,6 +151,7 @@ class PreviewFrameResolverTest extends PluginTestCase
         $templates = Mockery::mock(TemplateService::class);
         $templates->shouldReceive('getActiveTemplateIdentifier')->with('user')->andReturn('demo-user');
         $templates->shouldReceive('findByIdentifier')->with('demo-user')->andReturn((object) ['id' => 7, 'identifier' => 'demo-user']);
+        $templates->shouldReceive('getLayoutRoutePathMap')->with('demo-user')->andReturn([]);
         $layouts = Mockery::mock(LayoutRepositoryInterface::class);
         $layouts->shouldReceive('findLayoutNamesWithExtensionPoint')->with(7, 'home_hero')->andReturn(['broken', 'home']);
         $layouts->shouldReceive('findLayoutNamesWithExtensionPoint')->with(7, 'shop_hero')->andReturn([]);
@@ -173,13 +216,16 @@ class PreviewFrameResolverTest extends PluginTestCase
      *
      * @param  array<string, array<int, string>>  $layoutsByPoint  확장점 → 그 확장점을 가진 레이아웃 이름
      * @param  array<string, array<string, mixed>>  $merged  레이아웃 이름 → 병합 레이아웃
+     * @param  array<string, string>|Throwable  $routePaths  레이아웃 이름 → 라우트 주소 (예외면 읽기 실패)
      * @return PreviewFrameResolver 해석기
      */
-    private function resolver(array $layoutsByPoint, array $merged): PreviewFrameResolver
+    private function resolver(array $layoutsByPoint, array $merged, array|Throwable $routePaths = []): PreviewFrameResolver
     {
         $templates = Mockery::mock(TemplateService::class);
         $templates->shouldReceive('getActiveTemplateIdentifier')->with('user')->andReturn('demo-user');
         $templates->shouldReceive('findByIdentifier')->with('demo-user')->andReturn((object) ['id' => 7, 'identifier' => 'demo-user']);
+        $routeMap = $templates->shouldReceive('getLayoutRoutePathMap')->with('demo-user');
+        $routePaths instanceof Throwable ? $routeMap->andThrow($routePaths) : $routeMap->andReturn($routePaths);
 
         $layouts = Mockery::mock(LayoutRepositoryInterface::class);
         foreach ($layoutsByPoint as $point => $names) {

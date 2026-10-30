@@ -69,7 +69,9 @@
             "device_label": "Preview device",
             "pc": "PC",
             "mobile": "Mobile",
-            "empty": "No banners are showing."
+            "empty": "No banners are showing.",
+            "open_site": "View on site",
+            "empty_with_counts": "No banners are showing right now. ({{scheduled}} scheduled · {{inactive}} hidden · {{ended}} ended)"
         },
         "slider": {
             "title": "Slider settings",
@@ -115,6 +117,18 @@
             "action": {
                 "edit": "Edit",
                 "delete": "Delete"
+            },
+            "empty_filtered": "No banners match these conditions. Try another status or search term.",
+            "slot_missing": "The current site template has no slot for this banner position. Banners you add may not appear on the site.",
+            "empty_position": {
+                "title": "No banners in {{position}} yet.",
+                "sizes": "Recommended image size: PC 1920×640, mobile 750×1000 (without a mobile image, the PC image is cropped to portrait).",
+                "create": "Add the first banner"
+            },
+            "badge": {
+                "locale_missing": "No {{lang}} title",
+                "mobile_fallback": "Mobile: uses PC image",
+                "button_without_link": "Button hidden: no URL"
             }
         },
         "reorder": {
@@ -136,7 +150,7 @@
         "form": {
             "create_title": "Add banner",
             "edit_title": "Edit banner",
-            "description": "Set the banner text, images, link and display period. The preview on the right shows your unsaved input.",
+            "description": "Set the banner text, images, link and display period. The preview shows your unsaved input.",
             "validation_error": "Please check your input.",
             "section": {
                 "basic": "Basic info",
@@ -194,8 +208,6 @@
             "preview": {
                 "title": "Preview",
                 "empty": "Upload a PC image to see the preview.",
-                "has_button": "Pressing the button opens the link.",
-                "whole_link": "No button — the whole banner is a link.",
                 "language": "Preview language",
                 "frame": "{{device}} banner preview",
                 "expand": "Enlarge preview",
@@ -266,6 +278,16 @@
                     "pc_image": "PC image",
                     "mobile_image": "Mobile image"
                 }
+            },
+            "button_needs_link": "Enter a link URL for the button to appear on the site. Without a URL, the button text is not shown.",
+            "link_behavior": {
+                "button": "On the site, pressing the button opens this URL.",
+                "whole": "There is no button text, so pressing anywhere on the banner opens this URL.",
+                "none": "There is no link URL, so pressing the banner on the site does nothing."
+            },
+            "save_blocked": {
+                "pc_image": "Upload a PC image to save.",
+                "go_pc_image": "Go to the PC image field"
             }
         }
     }

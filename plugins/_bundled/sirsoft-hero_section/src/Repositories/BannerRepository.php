@@ -28,8 +28,14 @@ class BannerRepository implements BannerRepositoryInterface
      * @var array<int, string>
      */
     private const LIST_COLUMNS = [
-        'id', 'position', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at', 'title', 'created_at', 'updated_at',
+        'id', 'position', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at', 'title', 'button_text', 'link_url',
+        'created_at', 'updated_at',
     ];
+
+    /**
+     * 목록 행의 제작 상태 — 모바일 이미지 유무만 알면 되므로 이미지를 읽지 않고 존재 여부(`has_mobile_image`)만 붙인다.
+     */
+    private const MOBILE_IMAGE_EXISTS = 'mobileImage as has_mobile_image';
 
     /**
      * 목록·순서 창 썸네일로 읽는 PC 이미지 컬럼 — 응답이 업로드 응답과 같은 첨부 모양(기기·원본 파일명·형식·크기)이라 그 값까지 읽는다.
@@ -47,6 +53,7 @@ class BannerRepository implements BannerRepositoryInterface
     {
         $query = Banner::query()
             ->select(self::LIST_COLUMNS)
+            ->withExists(self::MOBILE_IMAGE_EXISTS)
             ->with(self::THUMBNAIL_RELATION)
             ->where('position', $filters['position'] ?? HeroPosition::HomeHero->value);
 
@@ -200,6 +207,7 @@ class BannerRepository implements BannerRepositoryInterface
         // audit:allow query-unbounded-get reason: 순서 변경은 그 위치의 배너 전체가 있어야 한다(일부만 보내면 순서가 꼬인다) — 위치당 배너는 운영상 수십 건
         return Banner::query()
             ->select(self::LIST_COLUMNS)
+            ->withExists(self::MOBILE_IMAGE_EXISTS)
             ->with(self::THUMBNAIL_RELATION)
             ->where('position', $position)
             ->orderBy('sort_order')

@@ -55,14 +55,22 @@ class BannerResource extends BaseApiResource
     /**
      * 목록 행 응답을 반환합니다.
      *
+     * 제작 상태 두 가지를 함께 싣는다 — 모바일 이미지가 없으면 사이트가 PC 이미지에서 잘라 쓰고(`has_mobile_image`), 버튼 문구가
+     * 어느 언어에든 있는데 이동 주소가 없으면 사이트에 버튼이 보이지 않는다(`button_without_link`, 사용자 슬라이더의 버튼 조건과 같다).
+     *
      * @param  Request  $request  요청
      * @return array<string, mixed> 목록 배너
      */
     public function toListArray(Request $request): array
     {
+        $buttonText = is_array($this->button_text) ? $this->button_text : [];
+
         return [
             ...$this->baseFields(),
             'thumbnail' => $this->image($request, $this->resource->relationLoaded('pcImage') ? $this->pcImage : null),
+            'has_mobile_image' => (bool) $this->resource->getAttribute('has_mobile_image'),
+            'button_without_link' => ($this->link_url === null || $this->link_url === '')
+                && array_filter($buttonText, fn ($v) => is_string($v) && trim($v) !== '') !== [],
             ...$this->resourceMeta($request),
         ];
     }
