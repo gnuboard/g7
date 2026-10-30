@@ -14,6 +14,7 @@
 - 관리자 기본 템플릿 1.1.4 의 템플릿 강제 활성화 창 503 경고(사용자·관리자 템플릿), 목록 카드 미충족 의존 사유, 503 안내 화면의 항목별 사유 문구의 일본어 번역을 추가했습니다.
 - 관리자 기본 템플릿 1.1.4 설치 창의 연동 확장 「함께 설치」 줄(`admin.extension_integrations.requires_label`·`requires_hint`·`requires_hint_unselected`·`requires_no_permission`) 일본어 번역을 추가했습니다.
 - 관리자 기본 템플릿 1.1.4 의 확장 작업 결과 창 「자세히 보기」 단계 이름(`admin.extensions.lifecycle_warnings.steps.*`, 25개) 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 `dependents` 같은 단계 키가 그대로 보입니다.
+- 관리자 기본 템플릿 1.1.4 대시보드 확장 상태 칸의 「외 N개 더 있음」 문구(`admin.dashboard.extension_status.more_count`) 일본어 번역을 추가했습니다.
 
 ### Changed
 

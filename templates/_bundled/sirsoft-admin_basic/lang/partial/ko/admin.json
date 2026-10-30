@@ -117,7 +117,8 @@
     },
     "refreshed": "대시보드가 새로고침되었습니다.",
     "extension_status": {
-      "more": "더보기"
+      "more": "더보기",
+      "more_count": "외 {{count}}개 더 있음"
     },
     "module_status": {
       "title": "모듈 상태",

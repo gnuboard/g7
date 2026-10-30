@@ -112,7 +112,8 @@
     },
     "refreshed": "ダッシュボードが更新されました。",
     "extension_status": {
-      "more": "もっと見る"
+      "more": "もっと見る",
+      "more_count": "他 {{count}} 件"
     },
     "module_status": {
       "title": "モジュール状態",

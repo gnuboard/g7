@@ -117,7 +117,8 @@
     },
     "refreshed": "Dashboard refreshed.",
     "extension_status": {
-      "more": "More"
+      "more": "More",
+      "more_count": "and {{count}} more"
     },
     "module_status": {
       "title": "Module Status",
