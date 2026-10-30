@@ -17,6 +17,8 @@
 - `php artisan list`·`--help` 에 보이는 코어 artisan 명령 설명 129개와, 확장을 함께 설치한 뒤 본 확장 설치가 실패했을 때 남겨 둔 의존 확장 안내의 일본어 번역을 추가했습니다.
 - 코어 7.1.4 의 PHP 확장 요구 안내의 일본어 번역을 추가했습니다 — 확장 설치·활성화가 필요한 PHP 확장이 없어 막힐 때의 안내(`extensions.errors.php_extension_missing`)와 업데이트 경고(`extensions.warnings.php_extension_missing`), 코어 업데이트 사전점검 안내(`settings.core_update.console.php_extension_core_missing`·`php_extension_extension_warning`), 설정 백업·복원의 zip 안내(`settings.errors.zip_extension_required`), 사이트맵 gzip 저장 검증(`validation.settings.sitemap_gzip_requires_zlib`), 압축 해제의 zlib·phar 안내(`common.errors.archive_php_extension_missing`)입니다.
 - 코어 7.1.4 의 의존 확장 종류 이름(`extensions.dependency_types` — モジュール・プラグイン・テンプレート), 번들 일괄 업데이트의 종류를 넘는 순환 경고(`extensions.commands.bundled_update.dependency_cycle`), 설치 창의 연동 확장 필수 의존 권한 안내(`extensions.integrations.requires_no_permission`) 일본어 번역을 추가했습니다.
+- 코어 7.1.4 의 환경설정 > 고급 > GeoIP [갱신] 결과 문구(`settings.geoip.*` — 갱신 완료·라이선스 키 없음·라이선스 키 오류·연결 실패·갱신 실패)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 안내가 키 그대로 보입니다.
+- 코어 7.1.4 의 `module:install`·`plugin:install`·`template:install` `--with-language-packs=all` 이 같은 언어의 코어 언어팩이 꺼져 있어 설치할 수 없는 언어팩을 건너뛸 때 출력하는 안내(`extensions.commands.cascade.language_pack_skipped`)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

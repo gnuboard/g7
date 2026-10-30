@@ -287,6 +287,8 @@ class InstallerIncludeOrderTest extends TestCase
                     'installer_reclaim_is_locked',
                     'installer_reclaim_record_failure',
                     'installer_reclaim_reset_throttle',
+                    'installerHasActiveWorker',
+                    'installerResetNeedsDbNotice',
                 ],
             ],
             'finalize-env.php' => [
@@ -337,6 +339,10 @@ class InstallerIncludeOrderTest extends TestCase
                     'writeInstallerRuntime',
                     'executeSeedTruncate',
                     'installer_plan_verify',
+                    'installerHandleWorkerShutdown',
+                    'installerResetTaskTimeLimit',
+                    'installerReleaseInterruptedLocks',
+                    'releaseWorkerLock',
                 ],
             ],
             'save-extensions.php' => [

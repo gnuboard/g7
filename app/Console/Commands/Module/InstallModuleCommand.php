@@ -142,13 +142,13 @@ class InstallModuleCommand extends Command
 
                 Log::info(__('modules.commands.install.success', ['module' => $identifier]));
 
-                // 동반 번들 언어팩 (--with-language-packs) — best-effort
-                $this->runCascadeLanguagePacks();
+                // 동반 번들 언어팩 (--with-language-packs) — 하나가 실패해도 나머지는 계속 설치하고, 실패가 있으면 종료 코드로 알린다(본 확장 설치는 유지)
+                $languagePacksInstalled = $this->runCascadeLanguagePacks();
 
                 // 검색 인덱스 재생성은 운영자가 선택했을 때만 수행한다 (인덱스 잠금·재색인 비용)
                 $this->handleSearchIndexRebuild();
 
-                return Command::SUCCESS;
+                return $languagePacksInstalled ? Command::SUCCESS : Command::FAILURE;
             }
 
             $this->reportKeptCascadeDependencies();

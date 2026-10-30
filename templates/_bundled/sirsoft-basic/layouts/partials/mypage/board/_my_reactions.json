@@ -51,30 +51,9 @@
                     "props": {
                         "aria-label": "$t:mypage.board_activities.reactions.table.board",
                         "value": "{{_global.myReactionsBoard ?? ''}}",
-                        "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": ""
-                            },
-                            "text": "$t:mypage.board_activities.filter.all_boards"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "iteration": {
-                                "source": "{{boards?.data ?? []}}",
-                                "item_var": "board"
-                            },
-                            "props": {
-                                "value": "{{board.slug}}"
-                            },
-                            "text": "{{board.name}}"
-                        }
-                    ]
+                        "className": "w-full min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                        "options": "{{[{ value: '', label: '$t:mypage.board_activities.filter.all_boards' }].concat((boards?.data ?? []).map(board => ({ value: String(board?.slug ?? ''), label: board?.name })))}}"
+                    }
                 },
                 {
                     "comment": "반응 유형 필터 — 선택지는 목록 응답이 실어 준 메타에서 온다(별도 API 없음)",
@@ -113,30 +92,9 @@
                         "data-testid": "my-reactions-type-filter",
                         "aria-label": "$t:mypage.board_activities.reactions.table.type",
                         "value": "{{_global.myReactionsTypeId ?? ''}}",
-                        "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": ""
-                            },
-                            "text": "$t:mypage.board_activities.reactions.filter.all_types"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "iteration": {
-                                "source": "{{myReactions?.data?.reaction_types ?? []}}",
-                                "item_var": "rt"
-                            },
-                            "props": {
-                                "value": "{{rt.id}}"
-                            },
-                            "text": "{{rt.name}}"
-                        }
-                    ]
+                        "className": "w-full min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                        "options": "{{[{ value: '', label: '$t:mypage.board_activities.reactions.filter.all_types' }].concat((myReactions?.data?.reaction_types ?? []).map(rt => ({ value: String(rt?.id ?? ''), label: rt?.name })))}}"
+                    }
                 },
                 {
                     "comment": "대상 필터 — 글에 남긴 것과 댓글에 남긴 것을 갈라 본다",
@@ -175,7 +133,7 @@
                         "data-testid": "my-reactions-target-filter",
                         "aria-label": "$t:mypage.board_activities.reactions.table.target",
                         "value": "{{_global.myReactionsTargetType ?? ''}}",
-                        "className": "min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                        "className": "w-full min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                         "options": [
                             {
                                 "value": "",
@@ -228,26 +186,18 @@
                     "props": {
                         "aria-label": "$t:common.sort_order",
                         "value": "{{_global.myReactionsSort ?? 'latest'}}",
-                        "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "latest"
+                        "className": "w-full min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                        "options": [
+                            {
+                                "value": "latest",
+                                "label": "$t:mypage.board_activities.sort.latest"
                             },
-                            "text": "$t:mypage.board_activities.sort.latest"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "oldest"
-                            },
-                            "text": "$t:mypage.board_activities.sort.oldest"
-                        }
-                    ]
+                            {
+                                "value": "oldest",
+                                "label": "$t:mypage.board_activities.sort.oldest"
+                            }
+                        ]
+                    }
                 },
                 {
                     "comment": "검색 영역",

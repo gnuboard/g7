@@ -79,7 +79,10 @@ class SettingsSetCommand extends Command
         if (is_array($value)) {
             $this->line('   '.__('settings.console.cli.array_replaced'));
         }
-        $this->line('   '.__('settings.console.cli.cache_rebuilt'));
+        // 설정 캐시 파일은 코어 저장만 다시 만든다 — 플러그인·모듈 저장은 설정 미러를 갱신하고 설정 버전을 올린다(화면 저장과 같다).
+        if ($plugin === null && $module === null) {
+            $this->line('   '.__('settings.console.cli.cache_rebuilt'));
+        }
 
         return self::SUCCESS;
     }

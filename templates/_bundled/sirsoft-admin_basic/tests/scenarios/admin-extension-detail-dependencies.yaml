@@ -1,0 +1,30 @@
+# 시나리오 매니페스트 — 모듈·플러그인·템플릿 정보 창의 의존성 절(코어 요구 버전·의존 확장 행의 충족 상태 배지)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_extension_detail_dependencies
+
+description: >-
+  모듈·플러그인·템플릿 정보 창의 의존성 절은 코어 요구 버전 배지와 의존 확장 행(요구 버전·설치 버전·상태 배지)을 그린다.
+  상태 배지는 충족·미설치·비활성·버전 미달 네 가지이며, 버전 미달 문구는 같은 창의 연동 확장 줄·강제 활성화 창과 같은
+  「버전 미달」이다. 의존이 없으면 「없음」 안내를 보인다. 세 창은 같은 마크업 구조라 상태별 갈래는 모듈 창에서 전부 잡고
+  플러그인·템플릿 창은 절 존재와 대표 상태로 확인한다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-detail-dependencies.test.tsx
+
+axes:
+  surface:
+    - module_detail
+    - plugin_detail
+    - template_detail
+
+exclusions: []
+
+effects:
+  - detail_dependencies_section_present
+  - detail_core_requirement_badge
+  - detail_dependency_met_badge
+  - detail_dependency_not_installed_badge
+  - detail_dependency_inactive_badge
+  - detail_dependency_version_below_badge
+  - detail_dependencies_empty_message

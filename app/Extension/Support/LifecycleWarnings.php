@@ -42,7 +42,7 @@ class LifecycleWarnings
     }
 
     /**
-     * @var array<int, array{step: string, target: string, message: string, level: string}>
+     * @var array<int, array{step: string, target: string, target_name?: string, message: string, level: string}>
      */
     private array $items = [];
 
@@ -63,13 +63,20 @@ class LifecycleWarnings
      * @param  string  $target  실패한 대상 (파일명·확장 식별자·시더 클래스 등)
      * @param  string  $message  실패 사유 (DB 예외 원문이면 접속 정보·SQL 꼬리를 떼고 담는다 — 원문은 호출부 로그에 있다)
      * @param  string  $level  항목 수준 ({@see self::LEVEL_WARNING} 기본, 실패가 아닌 안내는 {@see self::LEVEL_NOTICE})
+     * @param  string|null  $targetName  대상의 사람이 읽는 이름 — 관리자 결과 창의 대상 칸이 식별자 대신 보인다.
+     *                                   비었거나 식별자와 같으면 싣지 않는다(항목 모양 하위 호환, `target` 은 늘 식별자·경로)
      * @return void 반환값 없음
      */
-    public function add(string $step, string $target, string $message, string $level = self::LEVEL_WARNING): void
+    public function add(string $step, string $target, string $message, string $level = self::LEVEL_WARNING, ?string $targetName = null): void
     {
+        $item = ['step' => $step, 'target' => $target];
+
+        if ($targetName !== null && $targetName !== '' && $targetName !== $target) {
+            $item['target_name'] = $targetName;
+        }
+
         $this->items[] = [
-            'step' => $step,
-            'target' => $target,
+            ...$item,
             'message' => self::scrubMessage($message),
             'level' => $level === self::LEVEL_NOTICE ? self::LEVEL_NOTICE : self::LEVEL_WARNING,
         ];
@@ -81,11 +88,12 @@ class LifecycleWarnings
      * @param  string  $step  단계 (예: extract)
      * @param  string  $target  대상 (파일명 등)
      * @param  string  $message  안내 문구
+     * @param  string|null  $targetName  대상의 사람이 읽는 이름 ({@see self::add()})
      * @return void 반환값 없음
      */
-    public function notice(string $step, string $target, string $message): void
+    public function notice(string $step, string $target, string $message, ?string $targetName = null): void
     {
-        $this->add($step, $target, $message, self::LEVEL_NOTICE);
+        $this->add($step, $target, $message, self::LEVEL_NOTICE, $targetName);
     }
 
     /**
@@ -124,7 +132,7 @@ class LifecycleWarnings
     /**
      * 모은 경고 전체를 반환합니다.
      *
-     * @return array<int, array{step: string, target: string, message: string, level: string}>
+     * @return array<int, array{step: string, target: string, target_name?: string, message: string, level: string}>
      */
     public function all(): array
     {
@@ -165,7 +173,7 @@ class LifecycleWarnings
      * mark() 이후 추가된 경고만 반환합니다.
      *
      * @param  int  $mark  mark() 가 돌려준 값
-     * @return array<int, array{step: string, target: string, message: string, level: string}>
+     * @return array<int, array{step: string, target: string, target_name?: string, message: string, level: string}>
      */
     public function since(int $mark): array
     {

@@ -178,6 +178,7 @@ return [
             'dependency_step' => 'Dependency :identifier is :action — handling it together (required by :required_by)',
             'dependencies_done' => 'Dependencies done — :installed installed, :activated activated',
             'language_pack_failed' => 'Language pack :identifier failed to install: :reason',
+            'language_pack_skipped' => 'Skipped language pack :identifier: :reason',
             'language_pack_awaiting' => 'Language pack :identifier will turn on when its target extension is activated.',
             'language_packs_done' => ':count language packs installed',
             'language_pack_not_candidate' => 'Not a language pack that can be installed with it: :list',

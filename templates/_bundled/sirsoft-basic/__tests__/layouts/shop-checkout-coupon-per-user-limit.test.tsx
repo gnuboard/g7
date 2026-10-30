@@ -28,26 +28,35 @@ function collectNodes(node: any, predicate: (n: any) => boolean, acc: any[] = []
 const serialized = JSON.stringify(checkoutItemsJson);
 
 describe('상품 쿠폰 per_user_limit 중복 비활성화/안내 (_checkout_items)', () => {
-  it('두 상품쿠폰 드롭다운(Option)의 disabled 표현식이 item.disabled_coupon_ids 를 사용해야 한다', () => {
-    // pcoupon / pcoupon2 Option 노드 (iteration 기반)
-    const optionNodes = collectNodes(
+  /**
+   * @scenario surface=checkout_items
+   * @effects coupon_per_user_limit_duplicate_disabled
+   */
+  it('두 상품쿠폰 드롭다운의 항목 disabled 표현식이 item.disabled_coupon_ids 를 사용해야 한다', () => {
+    // 상품 쿠폰 1·2 — 목록형 드롭다운이라 항목은 options 식 안의 { value, label, disabled } 다
+    const selectNodes = collectNodes(
       checkoutItemsJson,
-      (n) =>
-        n.name === 'Option' &&
-        typeof n.props?.value === 'string' &&
-        (n.props.value.includes('pcoupon.id') || n.props.value.includes('pcoupon2.id'))
+      (n) => n.name === 'Select' && ['item_coupon_1', 'item_coupon_2'].includes(n.props?.name)
     );
-    expect(optionNodes.length).toBe(2);
-    optionNodes.forEach((opt) => {
-      expect(opt.props.disabled, 'disabled 표현식이 없음').toBeTypeOf('string');
-      expect(opt.props.disabled).toContain('disabled_coupon_ids');
+    expect(selectNodes.length).toBe(2);
+    selectNodes.forEach((sel) => {
+      expect(sel.props.options, 'options 표현식이 없음').toBeTypeOf('string');
+      expect(sel.props.options).toMatch(/disabled: [^}]*disabled_coupon_ids/);
     });
   });
 
+  /**
+   * @scenario surface=checkout_items
+   * @effects coupon_already_used_label_shown
+   */
   it('비활성화된 쿠폰 라벨에 coupon_already_used 안내를 표시해야 한다', () => {
     expect(serialized).toContain('$t:shop.checkout.coupon_already_used');
   });
 
+  /**
+   * @scenario surface=checkout_items
+   * @effects coupon_validation_errors_toast
+   */
   it('쿠폰 선택 PUT onSuccess 에 validation_errors 조건부 안내 토스트가 있어야 한다', () => {
     const conditionNodes = collectNodes(
       checkoutItemsJson,
@@ -66,6 +75,10 @@ describe('상품 쿠폰 per_user_limit 중복 비활성화/안내 (_checkout_ite
     });
   });
 
+  /**
+   * @scenario surface=checkout_items
+   * @effects coupon_limit_i18n_keys_defined
+   */
   it('신규 i18n 키가 ko/en 양쪽에 정의되어야 한다', () => {
     for (const pack of [shopKo, shopEn] as any[]) {
       expect(pack.checkout.coupon_already_used).toBeTruthy();

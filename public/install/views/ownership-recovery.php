@@ -16,7 +16,9 @@ if (($lockedState['owner_kind'] ?? null) === 'cli') {
 <div class="installer-container" id="cli-owned-notice">
     <h1 class="installer-title"><?= htmlspecialchars(lang('cli_owned_notice_title')) ?></h1>
     <p class="installer-description"><?= htmlspecialchars(lang($cliRunning ? 'cli_owned_notice_running' : 'cli_owned_notice_stopped')) ?></p>
+    <?php if (! $cliRunning) { // 이어서 설치 명령은 멈춘 경우에만 — 실행 중에는 「다른 터미널 설치가 실행 중」 으로 거부된다?>
     <div class="code-box"><pre>php g7-install --resume</pre></div>
+    <?php } ?>
 </div>
 <?php
     return;

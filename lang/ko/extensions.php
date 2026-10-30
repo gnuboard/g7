@@ -178,6 +178,7 @@ return [
             'dependency_step' => '의존 확장 :identifier — :action 상태라 함께 처리합니다 (필요: :required_by)',
             'dependencies_done' => '의존 확장 처리 완료 — 설치 :installed건, 활성화 :activated건',
             'language_pack_failed' => '언어팩 :identifier 설치 실패: :reason',
+            'language_pack_skipped' => '언어팩 :identifier 은(는) 건너뜁니다: :reason',
             'language_pack_awaiting' => '언어팩 :identifier 은(는) 대상 확장을 활성화할 때 함께 켜집니다.',
             'language_packs_done' => '언어팩 :count건 설치',
             'language_pack_not_candidate' => '함께 설치할 수 있는 언어팩이 아닙니다: :list',

@@ -190,6 +190,57 @@ describe('확장 작업 경고 결과 창 — 렌더', () => {
     expect(screen.getByText('sirsoft-board:BoardSeeder')).toBeTruthy();
     expect(screen.getByText('seeder')).toBeTruthy();
   });
+
+  /**
+   * 단계 이름은 번역이 있으면 사람이 읽는 이름으로, 번역이 없는 단계(새로 생긴 단계·옛 언어팩)는 원문 그대로 보인다.
+   *
+   * @scenario case=step_label_translated_with_raw_fallback
+   * @effects lifecycle_warnings_step_shown_as_label
+   */
+  it('단계 키는 번역 이름으로 보이고, 번역이 없으면 원문을 보인다', async () => {
+    const withSteps = {
+      ...translations,
+      admin: { extensions: { lifecycle_warnings: { ...translations.admin.extensions.lifecycle_warnings, steps: { dependents: '의존하는 확장' } } } },
+    };
+    testUtils = createLayoutTest(buildLayout([
+      { step: 'dependents', target: 'gnuboard7-hello_plugin', message: '플러그인 "Hello 플러그인" 이(가) 요구하는 조건을 이제 충족하지 못합니다.', level: 'notice' },
+      { step: 'mystery_step', target: 'acme-x', message: '알 수 없는 단계', level: 'notice' },
+    ]), { translations: withSteps, locale: 'ko', componentRegistry: ComponentRegistry.getInstance() });
+    await testUtils.render();
+
+    fireEvent.click(screen.getByText('자세히 보기'));
+    await waitFor(() => expect(testUtils.getState()._global.lifecycleWarningsOpen).toBe(true));
+    await testUtils.rerender();
+
+    expect(screen.getByText('의존하는 확장')).toBeTruthy();
+    expect(screen.queryByText('dependents')).toBeNull();
+    expect(screen.getByText('mystery_step')).toBeTruthy();
+    expect(screen.queryByText(/admin\.extensions\.lifecycle_warnings\.steps/)).toBeNull();
+  });
+
+  /**
+   * 「의존하는 확장」 안내는 서버가 대상 이름(target_name)을 함께 실어 대상 칸에 식별자 대신 확장 이름을 보인다.
+   * 이름이 없는 다른 단계는 식별자·경로를 고정폭 글꼴 그대로 보인다.
+   *
+   * @scenario case=dependents_target_shows_name
+   * @effects lifecycle_warnings_dependents_target_shows_name
+   */
+  it('대상 이름이 오면 대상 칸에 식별자 대신 이름을 보이고, 없으면 식별자를 보인다', async () => {
+    testUtils = createLayoutTest(buildLayout([
+      { step: 'dependents', target: 'gnuboard7-hello_plugin', target_name: 'Hello 플러그인', message: '플러그인 "Hello 플러그인" 이(가) 요구하는 조건을 이제 충족하지 못합니다.', level: 'notice' },
+      { step: 'layout_register', target: 'admin_index.g7.html', message: '레이아웃 JSON 형식 오류', level: 'warning' },
+    ]), { translations, locale: 'ko', componentRegistry: ComponentRegistry.getInstance() });
+    await testUtils.render();
+
+    fireEvent.click(screen.getByText('자세히 보기'));
+    await waitFor(() => expect(testUtils.getState()._global.lifecycleWarningsOpen).toBe(true));
+    await testUtils.rerender();
+
+    const name = screen.getByText('Hello 플러그인');
+    expect(name.className).not.toContain('font-mono');
+    expect(screen.queryByText('gnuboard7-hello_plugin')).toBeNull();
+    expect(screen.getByText('admin_index.g7.html').className).toContain('font-mono');
+  });
 });
 
 describe('확장 작업 경고 결과 창 — 여는 쪽', () => {

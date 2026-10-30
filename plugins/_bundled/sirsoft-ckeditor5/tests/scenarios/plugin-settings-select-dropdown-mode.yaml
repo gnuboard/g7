@@ -1,0 +1,16 @@
+feature: CKEditor 5 환경설정 「툴바」 칸 — 브라우저 기본 선택상자 대신 관리자 템플릿의 목록형 드롭다운
+
+description: |
+  관리자 템플릿 Select 는 props.options 가 있으면 단추(aria-haspopup=listbox) + 목록 상자로, 없으면 브라우저 기본
+  <select> 로 그린다. 툴바 칸은 <select> 바로 아래 <option> 을 적어 기본 선택상자였다(같은 화면 「공개 파일 저장소」 는 목록형).
+  <options> 래퍼로 바꿔 목록형으로 그리고, 폼 자동 바인딩(name="toolbar")·읽기 전용 잠금이 그대로인지 본다.
+
+axes:
+  screen: [ckeditor5_toolbar]
+
+effects:
+  - select_renders_listbox_dropdown
+  - select_choice_reaches_change_action
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/pluginSettingsSelectDropdownMode.test.tsx

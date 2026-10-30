@@ -5,6 +5,7 @@ namespace Tests\Feature\Console\Cascade;
 use App\Extension\Vendor\VendorMode;
 use App\Services\Extension\CascadeInstallOrchestrator;
 use App\Services\Extension\ExtensionInstallPreviewBuilder;
+use Illuminate\Console\Command;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
@@ -184,5 +185,146 @@ abstract class InstallCommandCascadeTestCase extends TestCase
         $this->assertSame([], $resolved(''));
         $this->assertSame(['g7-x-ja', 'g7-x-zh'], $resolved('all'), 'all = 설치 창 후보 전부');
         $this->assertSame(['g7-x-zh'], $resolved(' g7-x-zh ,'), '쉼표 목록은 공백·빈 항목을 뺀 그 식별자');
+    }
+
+    /**
+     * 옵션 값 해석용 명령 인스턴스 — 입력·출력을 붙이고 출력 버퍼를 돌려준다.
+     *
+     * @param  string|null  $languagePacks  --with-language-packs 값 (null 이면 옵션 없음)
+     * @return array{0: Command, 1: BufferedOutput} 명령과 출력 버퍼
+     */
+    private function preparedCommand(?string $languagePacks): array
+    {
+        $command = Artisan::all()[$this->command()];
+        $input = ['identifier' => 'cascade-target'];
+        if ($languagePacks !== null) {
+            $input['--with-language-packs'] = $languagePacks;
+        }
+        $buffer = new BufferedOutput;
+        $command->setInput($arguments = new ArrayInput($input, $command->getDefinition()));
+        $command->setOutput(new OutputStyle($arguments, $buffer));
+
+        return [$command, $buffer];
+    }
+
+    /**
+     * all 은 설치할 수 없는 후보(코어 언어팩이 꺼진 로케일 — available=false)를 시도하지 않고 사유와 함께 건너뛴다.
+     * 직접 지정한 식별자는 후보이기만 하면 그대로 시도한다(실패는 종료 코드로 알린다).
+     *
+     * @effects install_command_all_language_packs_skips_unavailable
+     *
+     * @return void 반환값 없음
+     */
+    public function test_all_skips_language_packs_that_cannot_be_installed(): void
+    {
+        $preview = Mockery::mock(ExtensionInstallPreviewBuilder::class);
+        $preview->shouldReceive('build')->andReturn(['language_packs' => [
+            ['bundled_identifier' => 'g7-x-ja', 'locale' => 'ja', 'available' => false, 'blocked_reason' => 'core_locale_missing'],
+            ['bundled_identifier' => 'g7-x-zh', 'locale' => 'zh', 'available' => true, 'blocked_reason' => null],
+        ]]);
+        $this->app->instance(ExtensionInstallPreviewBuilder::class, $preview);
+
+        $resolve = new \ReflectionMethod(Artisan::all()[$this->command()], 'resolveCascadeLanguagePacks');
+
+        [$command, $buffer] = $this->preparedCommand('all');
+        $this->assertSame(['g7-x-zh'], $resolve->invoke($command, $this->type(), 'cascade-target'), 'all = 설치할 수 있는 후보만');
+        $this->assertStringContainsString(
+            __('extensions.commands.cascade.language_pack_skipped', [
+                'identifier' => 'g7-x-ja',
+                'reason' => __('language_packs.errors.core_locale_missing', ['locale' => 'ja']),
+            ]),
+            $buffer->fetch(),
+            '건너뛴 언어팩과 사유를 알린다'
+        );
+
+        [$command] = $this->preparedCommand('g7-x-ja');
+        $this->assertSame(['g7-x-ja'], $resolve->invoke($command, $this->type(), 'cascade-target'), '직접 지정은 그대로 시도');
+    }
+
+    /**
+     * all 은 이미 설치된 대상 확장의 버전이 언어팩 요구보다 낮은 후보(target_version_too_old)도 건너뛰고,
+     * 사유는 사유 코드가 아니라 범위·대상·요구 버전을 채운 문장으로 알린다.
+     *
+     * @effects install_command_all_language_packs_skips_unavailable
+     *
+     * @return void 반환값 없음
+     */
+    public function test_all_skips_language_pack_whose_target_version_is_too_old(): void
+    {
+        $preview = Mockery::mock(ExtensionInstallPreviewBuilder::class);
+        $preview->shouldReceive('build')->andReturn(['language_packs' => [
+            [
+                'bundled_identifier' => 'g7-module-acme-dep-ja', 'locale' => 'ja', 'scope' => 'module',
+                'target_identifier' => 'acme-dep', 'required_target_version' => '>=2.0.0',
+                'available' => false, 'blocked_reason' => 'target_version_too_old',
+            ],
+            ['bundled_identifier' => 'g7-x-zh', 'locale' => 'zh', 'available' => true, 'blocked_reason' => null],
+        ]]);
+        $this->app->instance(ExtensionInstallPreviewBuilder::class, $preview);
+
+        $resolve = new \ReflectionMethod(Artisan::all()[$this->command()], 'resolveCascadeLanguagePacks');
+
+        [$command, $buffer] = $this->preparedCommand('all');
+        $this->assertSame(['g7-x-zh'], $resolve->invoke($command, $this->type(), 'cascade-target'), 'all = 설치할 수 있는 후보만');
+
+        $output = $buffer->fetch();
+        $this->assertStringContainsString(
+            __('extensions.commands.cascade.language_pack_skipped', [
+                'identifier' => 'g7-module-acme-dep-ja',
+                'reason' => __('language_packs.errors.target_version_too_old', [
+                    'scope' => 'module', 'target' => 'acme-dep', 'constraint' => '>=2.0.0',
+                ]),
+            ]),
+            $output,
+            '건너뛴 언어팩과 사유 문장(범위·대상·요구 버전)을 알린다'
+        );
+        $this->assertStringNotContainsString(':scope', $output, '사유 문장의 자리표시자가 채워져야 한다');
+        $this->assertStringNotContainsString(':constraint', $output, '사유 문장의 자리표시자가 채워져야 한다');
+    }
+
+    /**
+     * 언어팩 설치가 하나라도 실패하면 단계 결과가 실패다 — 명령은 이것으로 실패 종료 코드를 낸다(본 확장 설치는 유지).
+     *
+     * @effects install_command_language_pack_failure_fails_exit_code
+     *
+     * @return void 반환값 없음
+     */
+    public function test_language_pack_failure_is_reported_as_failure(): void
+    {
+        $orchestrator = Mockery::mock(CascadeInstallOrchestrator::class);
+        $orchestrator->shouldReceive('installLanguagePacks')->once()
+            ->with(['g7-x-ja', 'g7-x-zh'], null, Mockery::any())
+            ->andReturn([['identifier' => 'g7-x-ja', 'reason' => '코어 언어팩(ja)이 먼저 활성화되어야 합니다.']]);
+        $this->app->instance(CascadeInstallOrchestrator::class, $orchestrator);
+
+        [$command, $buffer] = $this->preparedCommand('g7-x-ja,g7-x-zh');
+        (new \ReflectionProperty($command, 'cascadeLanguagePackCandidates'))->setValue($command, ['g7-x-ja', 'g7-x-zh']);
+        $run = new \ReflectionMethod($command, 'runCascadeLanguagePacks');
+
+        $this->assertFalse($run->invoke($command), '언어팩 설치 실패는 실패로 알린다');
+        $this->assertStringContainsString('코어 언어팩(ja)이 먼저 활성화되어야 합니다.', $buffer->fetch());
+
+        $orchestrator->shouldReceive('installLanguagePacks')->once()->andReturn([]);
+        $this->assertTrue($run->invoke($command), '모두 설치되면 성공');
+
+        (new \ReflectionProperty($command, 'cascadeLanguagePackCandidates'))->setValue($command, []);
+        $this->assertTrue($run->invoke($command), '고른 언어팩이 없으면 성공');
+    }
+
+    /**
+     * 명령은 언어팩 단계 결과를 종료 코드에 싣는다 — 성공 경로가 단계 결과를 버리고 늘 SUCCESS 를 돌려주지 않는다.
+     *
+     * 본 확장 설치 성공까지 실제로 가려면 번들 확장을 설치해야 해서, 성공 경로의 반환 식을 소스로 고정한다.
+     *
+     * @effects install_command_language_pack_failure_fails_exit_code
+     *
+     * @return void 반환값 없음
+     */
+    public function test_command_returns_language_pack_step_result_as_exit_code(): void
+    {
+        $source = (string) file_get_contents((new \ReflectionClass(Artisan::all()[$this->command()]))->getFileName());
+
+        $this->assertSame(1, preg_match('/\$languagePacksInstalled\s*=\s*\$this->runCascadeLanguagePacks\(\);/', $source), '언어팩 단계 결과를 받아야 한다');
+        $this->assertSame(1, preg_match('/return\s+\$languagePacksInstalled\s*\?\s*Command::SUCCESS\s*:\s*Command::FAILURE;/', $source), '언어팩 단계 결과를 종료 코드로 돌려줘야 한다');
     }
 }

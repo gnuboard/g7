@@ -14,7 +14,7 @@
     <!-- 필터 영역 -->
     <div class="flex flex-col sm:flex-row gap-3 mb-4">
       <!-- 게시판 필터 -->
-      <select aria-label="$t:mypage.board_activities.reactions.table.board" value="{{_global.myReactionsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:mypage.board_activities.reactions.table.board" value="{{_global.myReactionsBoard ?? ''}}" class="w-full min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" options="{{[{ value: '', label: '$t:mypage.board_activities.filter.all_boards' }].concat((boards?.data ?? []).map(board => ({ value: String(board?.slug ?? ''), label: board?.name })))}}">
         <on type="change">
           <sequence>
             <set-state target="global" myReactionsBoard="{{$event.target.value}}" :myReactionsPage="1"/>
@@ -22,11 +22,9 @@
             <refetch-data-source dataSourceId="myReactions"/>
           </sequence>
         </on>
-        <option value="">$t:mypage.board_activities.filter.all_boards</option>
-        <option data-each="board in {{boards?.data ?? []}}" value="{{board.slug}}">{{board.name}}</option>
       </select>
       <!-- 반응 유형 필터 — 선택지는 목록 응답이 실어 준 메타에서 온다(별도 API 없음) -->
-      <select data-testid="my-reactions-type-filter" aria-label="$t:mypage.board_activities.reactions.table.type" value="{{_global.myReactionsTypeId ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select data-testid="my-reactions-type-filter" aria-label="$t:mypage.board_activities.reactions.table.type" value="{{_global.myReactionsTypeId ?? ''}}" class="w-full min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" options="{{[{ value: '', label: '$t:mypage.board_activities.reactions.filter.all_types' }].concat((myReactions?.data?.reaction_types ?? []).map(rt => ({ value: String(rt?.id ?? ''), label: rt?.name })))}}">
         <on type="change">
           <sequence>
             <set-state target="global" myReactionsTypeId="{{$event.target.value}}" :myReactionsPage="1"/>
@@ -34,11 +32,9 @@
             <refetch-data-source dataSourceId="myReactions"/>
           </sequence>
         </on>
-        <option value="">$t:mypage.board_activities.reactions.filter.all_types</option>
-        <option data-each="rt in {{myReactions?.data?.reaction_types ?? []}}" value="{{rt.id}}">{{rt.name}}</option>
       </select>
       <!-- 대상 필터 — 글에 남긴 것과 댓글에 남긴 것을 갈라 본다 -->
-      <select data-testid="my-reactions-target-filter" aria-label="$t:mypage.board_activities.reactions.table.target" value="{{_global.myReactionsTargetType ?? ''}}" class="min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select data-testid="my-reactions-target-filter" aria-label="$t:mypage.board_activities.reactions.table.target" value="{{_global.myReactionsTargetType ?? ''}}" class="w-full min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <options>
           <option value="">$t:mypage.board_activities.reactions.filter.all_targets</option>
           <option value="post">$t:mypage.board_activities.target.post</option>
@@ -53,7 +49,11 @@
         </on>
       </select>
       <!-- 정렬 필터 -->
-      <select aria-label="$t:common.sort_order" value="{{_global.myReactionsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:common.sort_order" value="{{_global.myReactionsSort ?? 'latest'}}" class="w-full min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <options>
+          <option value="latest">$t:mypage.board_activities.sort.latest</option>
+          <option value="oldest">$t:mypage.board_activities.sort.oldest</option>
+        </options>
         <on type="change">
           <sequence>
             <set-state target="global" myReactionsSort="{{$event.target.value}}" :myReactionsPage="1"/>
@@ -61,8 +61,6 @@
             <refetch-data-source dataSourceId="myReactions"/>
           </sequence>
         </on>
-        <option value="latest">$t:mypage.board_activities.sort.latest</option>
-        <option value="oldest">$t:mypage.board_activities.sort.oldest</option>
       </select>
       <!-- 검색 영역 -->
       <div class="flex-1 flex gap-2">

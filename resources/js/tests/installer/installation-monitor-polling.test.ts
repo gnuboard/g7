@@ -75,3 +75,37 @@ describe('[case:backend-59] PollingMonitor 완료 판정', () => {
         expect(onComplete).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('PollingMonitor 워커 비정상 종료 판정', () => {
+    /**
+     * 폴링 워커가 실행 시간 제한 등으로 죽으면 서버 shutdown 처리기가 상태를 failed(error_worker_terminated)로 남긴다.
+     * 화면은 그 상태를 받아 실패 안내(재시도 버튼)로 바뀌어야 하며 「진행 중」에 머무르지 않는다.
+     *
+     * @scenario situation=polling_worker_terminated
+     *
+     * @effects polling_monitor_reports_worker_termination_as_failure
+     */
+    it('running 뒤 상태가 failed(error_worker_terminated)로 바뀌면 끊긴 작업과 함께 onError 를 한 번 부르고 멈춘다', () => {
+        const onError = vi.fn();
+        const monitor = new PollingMonitor({ onError }, { stateUrl: '/state', intervalMs: 1000, stuckThresholdMs: 90000 });
+
+        monitor._diffAndEmit({ status: 'running', current_task: 'language_pack_install:g7-plugin-sirsoft-verification_kginicis-ja', completed_tasks: [], last_updated: 't1' });
+        monitor._diffAndEmit({
+            status: 'failed',
+            current_task: 'language_pack_install:g7-plugin-sirsoft-verification_kginicis-ja',
+            failed_task: 'language_pack_install:g7-plugin-sirsoft-verification_kginicis-ja',
+            error_message_key: 'error_worker_terminated',
+            error_detail: 'Maximum execution time of 600 seconds exceeded',
+            completed_tasks: [],
+            last_updated: 't2',
+        });
+
+        expect(onError).toHaveBeenCalledTimes(1);
+        expect(onError.mock.calls[0][0]).toMatchObject({
+            message_key: 'error_worker_terminated',
+            error: 'Maximum execution time of 600 seconds exceeded',
+            task: 'language_pack_install:g7-plugin-sirsoft-verification_kginicis-ja',
+        });
+        expect(monitor.terminated).toBe(true);
+    });
+});

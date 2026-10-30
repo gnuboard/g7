@@ -52,10 +52,7 @@
       </div>
       <div data-ref="category_section" data-if="{{form_meta?.data?.board?.categories &amp;&amp; form_meta.data.board.categories.length > 0}}" class="pb-6">
         <label class="form-label">$t:sirsoft-board.admin.posts.form.category</label>
-        <select name="category" value="{{_local.form?.category ?? ''}}" disabled="{{_computed.isReadOnly || !!_local.form?.parent_id}}" class="text-primary block w-full board-category-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed">
-          <option value="">$t:sirsoft-board.admin.posts.form.select_category</option>
-          <option data-each="category in form_meta?.data?.board?.categories ?? []" value="{{category}}">{{category}}</option>
-        </select>
+        <select name="category" aria-label="$t:sirsoft-board.admin.posts.form.category" value="{{_local.form?.category ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-board.admin.posts.form.select_category') }].concat((form_meta?.data?.board?.categories ?? []).map(category => ({ value: category, label: category })))}}" disabled="{{_computed.isReadOnly || !!_local.form?.parent_id}}" class="text-primary block w-full board-category-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"/>
       </div>
       <div class="row-stack">
         <div data-ref="title_section" class="">

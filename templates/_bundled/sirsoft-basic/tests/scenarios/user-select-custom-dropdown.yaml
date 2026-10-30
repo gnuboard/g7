@@ -1,0 +1,26 @@
+feature: sirsoft-basic 사용자 화면 드롭다운 — 기본 선택상자 대신 목록형 드롭다운
+
+description: |
+  게시글 신고 사유 · 마이페이지 게시판 활동(내 글·댓글·반응·신고)의 게시판/정렬/반응 종류 필터 · 클레임 신청 사유 ·
+  주문 목록 상태 · 통합검색 게시판 · 주문서 주문/배송/품목 쿠폰 · 배송 메모 18자리(품목 쿠폰 2칸 포함)가 `<select>` 직속 `<option>` 으로
+  적혀 운영체제 기본 목록으로 펼쳐졌다. 같은 화면의 다른 드롭다운(검색 대상·대상 필터 등)은 단추 + 목록 상자다.
+  정적 목록은 `<options>` 래퍼, 반복·조건으로 만드는 목록은 options 식으로 옮겨 목록형 드롭다운으로 그린다.
+  고른 값은 종전 기본 선택상자처럼 문자열이고(숫자 id 도 String), change 동작(조회·이동·주문서 재계산)은 그대로다.
+  빈 값 항목(전체·선택 안 함·안내 문구)은 목록 맨 앞에 남고, 품목 쿠폰의 고를 수 없는 항목은 disabled 로 남는다.
+
+axes:
+  surface: [mypage_board_filters, board_report_modal, claim_apply, mypage_orders, search_filters, checkout]
+
+effects:
+  - user_select_uses_custom_dropdown            # options 없는 Select 0 · 렌더 시 기본 선택상자 없음 · button[aria-haspopup=listbox]
+  - user_select_keeps_string_value_and_handler  # 고른 값이 문자열로 상태에 담기고 같은 동작(PUT·navigate·setState)이 이어진다
+  - user_select_keeps_empty_and_disabled_items  # 빈 값 항목이 맨 앞 · 이미 쓴 쿠폰은 disabled + 「이미 사용」
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/user-select-custom-dropdown.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-cancel-refund.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-exchange.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-return.spec.ts
+
+validation:
+  browser_check: 재실측 — 375px·1280px 에서 각 자리의 드롭다운을 눌러 단추 아래(공간이 모자라면 위)로 단추 폭만큼 목록이 열리고 화면 밖으로 넘치지 않는지, 고른 값으로 목록·주문서 금액이 바뀌는지

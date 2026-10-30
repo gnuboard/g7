@@ -28,6 +28,8 @@ effects:
   - cascade_installs_then_activates_missing_dependency
   - cascade_skips_active_dependency
   - install_preview_includes_transitive_dependencies
+  - install_preview_preselects_inactive_dependencies   # 설치됐지만 꺼진 의존(직접·2단계)도 기본 체크 — 해제된 채 설치하면 반드시 실패했다
+  - cascade_failure_names_localized_extension_type     # 함께 설치 실패 문구의 종류를 현지화(「동반 설치할 플러그인 (…)」)
   # 5.1 설치 명령 옵션
   - install_command_without_option_explains_unmet_dependency
   - install_command_with_dependencies_runs_plan_and_surfaces_failure
@@ -38,6 +40,8 @@ effects:
   - core_command_descriptions_follow_locale
   - install_command_rejects_non_candidate_language_pack
   - install_command_language_pack_option_values
+  - install_command_all_language_packs_skips_unavailable   # all 은 설치할 수 없는 후보(코어 언어팩 꺼짐·대상 확장 버전 미달)를 시도하지 않고 사유 문장과 함께 건너뛴다
+  - install_command_language_pack_failure_fails_exit_code  # 고른 언어팩 설치가 실패하면 종료 코드 1(본 확장 설치는 유지)
   # 5.1 버전 검사 (D18)
   - module_install_rejects_dependency_version_below_constraint
   - plugin_install_rejects_dependency_version_below_constraint
@@ -86,6 +90,10 @@ effects:
   - module_settings_cli_rejects_admin_screen_only_key
   - module_settings_cli_ecommerce_saves_through_form_request
   - module_settings_cli_rejects_unsupported_module
+  - module_settings_cli_get_does_not_mask_permission_named_secret
+  - module_settings_cli_dotted_permission_key_round_trips
+  - module_settings_cli_does_not_claim_config_cache_rebuild
+  - plugin_settings_cli_does_not_claim_config_cache_rebuild
   - form_request_runner_skips_authorize
   - form_request_runner_applies_prepare_for_validation
   - form_request_runner_applies_with_validator_and_route_parameters

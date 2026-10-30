@@ -13,11 +13,13 @@
 - 관리자 기본 템플릿 1.1.4 의 PHP 확장 표시 일본어 번역을 추가했습니다 — 모듈·플러그인 목록 배지(「PHP 拡張が必要」·「推奨 PHP 拡張」)와 상세 창 「必要な PHP 拡張」 절(`extensions.php_extensions.*`), 환경설정 > 정보 탭의 「拡張(モジュール・プラグイン)が要求するモジュール」 목록(`admin.settings.info.requested_modules`·`requested_by_line`·`level_require`·`level_suggest`)입니다.
 - 관리자 기본 템플릿 1.1.4 의 템플릿 강제 활성화 창 503 경고(사용자·관리자 템플릿), 목록 카드 미충족 의존 사유, 503 안내 화면의 항목별 사유 문구의 일본어 번역을 추가했습니다.
 - 관리자 기본 템플릿 1.1.4 설치 창의 연동 확장 「함께 설치」 줄(`admin.extension_integrations.requires_label`·`requires_hint`·`requires_hint_unselected`·`requires_no_permission`) 일본어 번역을 추가했습니다.
+- 관리자 기본 템플릿 1.1.4 의 확장 작업 결과 창 「자세히 보기」 단계 이름(`admin.extensions.lifecycle_warnings.steps.*`, 25개) 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 `dependents` 같은 단계 키가 그대로 보입니다.
 
 ### Changed
 
 - 환경설정 > 정보 > [코어 업데이트 안내] 창의 수동 업데이트 제목·설명(`admin.settings.info.manual_update_title`·`manual_update_desc`) 번역을 템플릿 1.1.4 문구에 맞춰 「zip 확장 미설치 환경」에서 「GitHub 에서 받기 어려운 환경 — 이 방법도 zip 확장 필요」로 바꿨습니다.
 - 503 안내 화면의 제목·안내 일본어 문구를 「필요한 확장 기능의 조건이 맞지 않습니다」·「설치·활성화하거나 업데이트해 주세요」 뜻으로 바꿨습니다(종전 「활성화되지 않았습니다」).
+- 모듈·플러그인·템플릿 상세·설치 창의 의존 확장 버전 배지(`dependency_unmet_version`) 번역을 템플릿 1.1.4 문구에 맞춰 「バージョン不一致」에서 「バージョン不足」로 바꿨습니다.
 
 ## [1.1.2] - 2026-10-23
 

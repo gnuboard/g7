@@ -1,0 +1,16 @@
+feature: NHN KCP 에스크로 배송 등록 「택배사」 칸 — 브라우저 기본 선택상자 대신 관리자 템플릿의 목록형 드롭다운
+
+description: |
+  주문 상세 결제 조회 조각의 에스크로 배송 등록 「택배사」 칸이 <select> 바로 아래 <option> 을 적어 브라우저 기본 선택상자였고,
+  값도 묶지 않아 브라우저가 고른 항목을 스스로 들고 있었다. <options> 래퍼로 목록형 드롭다운으로 그리고, 목록형은 값을
+  스스로 들지 않으므로 담아 둔 값(_local._ked_deli_corp)을 단추에 보이게 묶었다. 주문 수정 권한이 없으면 잠긴다.
+
+axes:
+  screen: [escrow_courier]
+
+effects:
+  - select_renders_listbox_dropdown
+  - select_choice_reaches_change_action
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/escrowCourierSelectDropdownMode.test.tsx

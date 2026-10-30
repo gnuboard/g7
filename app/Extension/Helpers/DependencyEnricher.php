@@ -59,7 +59,7 @@ class DependencyEnricher
 
             $result[] = [
                 'identifier' => $dependency['identifier'],
-                'name' => self::resolveName($record, $dependency['identifier']),
+                'name' => self::resolveName($record, $dependency['identifier'], $dependency['type']),
                 'type' => $dependency['type'],
                 'required_version' => $dependency['constraint'],
                 'installed_version' => $record?->version,
@@ -230,7 +230,7 @@ class DependencyEnricher
 
                 $result[] = [
                     'identifier' => $identifier,
-                    'name' => self::resolveName($record, $identifier),
+                    'name' => self::resolveName($record, $identifier, $singular),
                     'type' => $singular,
                     'is_installed' => $record !== null,
                     'is_active' => $record !== null && ($record->status ?? null) === ExtensionStatus::Active->value,
@@ -304,32 +304,101 @@ class DependencyEnricher
     }
 
     /**
-     * 확장 모델에서 현재 로케일의 이름을 추출합니다.
+     * 확장의 현재 로케일 표시 이름 — 설치 기록 이름 → 확장 폴더 manifest 이름 → 식별자 순으로 고릅니다.
      *
-     * @param  object|null  $record  확장 모델 (Module/Plugin)
-     * @param  string  $fallback  모델이 없을 때 반환할 식별자
+     * 설치 기록이 없는(미설치) 의존·연동 대상도 화면이 식별자 대신 이름을 보이도록 manifest 를 읽는다. 설치 창의
+     * 「함께 쓰면 연동되는 확장」·「함께 설치」 줄, 설치 결과 연동 안내, 사이트 503 화면의 미설치 의존 이름이 이 값을 쓴다.
+     *
+     * @param  object|null  $record  확장 모델 (Module/Plugin/Template, 미설치면 null)
+     * @param  string  $fallback  이름을 찾지 못했을 때 쓸 식별자 (manifest 를 찾을 식별자이기도 하다)
+     * @param  string|null  $type  확장 종류 (module|plugin|template) — 주면 기록 이름이 없을 때 manifest 이름을 읽는다
      * @return string 이름
      */
-    protected static function resolveName(?object $record, string $fallback): string
+    protected static function resolveName(?object $record, string $fallback, ?string $type = null): string
+    {
+        return self::recordName($record)
+            ?? ($type !== null ? self::manifestName($type, $fallback) : null)
+            ?? $fallback;
+    }
+
+    /**
+     * 확장 모델에 저장된 이름에서 현재 로케일 값을 고릅니다.
+     *
+     * 빈 문자열·빈 다국어 값은 없는 것으로 본다 — 화면은 이 값을 그대로 보여 주므로 빈 칸이 된다(#736).
+     *
+     * @param  object|null  $record  확장 모델
+     * @return string|null 이름 (없으면 null)
+     */
+    private static function recordName(?object $record): ?string
     {
         if (! $record) {
-            return $fallback;
+            return null;
         }
 
         $name = $record->name ?? null;
 
-        if (is_array($name)) {
-            return LocalizedValue::pick($name, App::getLocale()) ?? $fallback;
-        }
-
         if (is_string($name) && str_starts_with($name, '{')) {
             $decoded = json_decode($name, true);
-            if (is_array($decoded)) {
-                return LocalizedValue::pick($decoded, App::getLocale()) ?? $fallback;
+            $name = is_array($decoded) ? $decoded : $name;
+        }
+
+        return self::pickName($name);
+    }
+
+    /**
+     * 확장 폴더의 manifest 에서 현재 로케일 이름을 읽습니다 — 활성 → 대기(`_pending`) → 번들(`_bundled`) 순.
+     *
+     * 확장 관리자가 미설치 확장의 목록 정보를 만들 때와 같은 폴더 순서다. 읽지 못하면 null.
+     *
+     * @param  string  $type  확장 종류 (module|plugin|template)
+     * @param  string  $identifier  확장 식별자
+     * @return string|null 이름 (없으면 null)
+     */
+    private static function manifestName(string $type, string $identifier): ?string
+    {
+        [$directory, $manifestFile] = match ($type) {
+            'module' => ['modules', 'module.json'],
+            'plugin' => ['plugins', 'plugin.json'],
+            'template' => ['templates', 'template.json'],
+            default => [null, null],
+        };
+
+        // 식별자는 폴더 이름으로 쓰인다 — 경로 구분자·상위 경로가 섞인 값은 읽지 않는다
+        if ($directory === null || $identifier === '' || strpbrk($identifier, '/\\') !== false || str_contains($identifier, '..')) {
+            return null;
+        }
+
+        // audit:allow install-path-reads-bundled-or-template-id reason: 활성본을 먼저 읽고, 아직 설치되지 않아 활성본이 없는 확장의 표시 이름만 대기·동봉 원본에서 읽는다
+        foreach (['', '_pending'.DIRECTORY_SEPARATOR, '_bundled'.DIRECTORY_SEPARATOR] as $subDirectory) {
+            $path = base_path($directory.DIRECTORY_SEPARATOR.$subDirectory.$identifier.DIRECTORY_SEPARATOR.$manifestFile);
+            if (! is_file($path)) {
+                continue;
+            }
+
+            $manifest = json_decode((string) @file_get_contents($path), true);
+            $name = is_array($manifest) ? self::pickName($manifest['name'] ?? null) : null;
+            if ($name !== null) {
+                return $name;
             }
         }
 
-        // 빈 문자열 이름도 식별자로 대체한다 — 화면은 이 값을 그대로 보여 주므로 빈 칸이 된다(#736).
-        return is_string($name) && $name !== '' ? $name : $fallback;
+        return null;
+    }
+
+    /**
+     * 이름 값(문자열·다국어 배열)에서 현재 로케일 글자를 고릅니다. 빈 값이면 null.
+     *
+     * @param  mixed  $name  이름 값
+     * @return string|null 이름
+     */
+    private static function pickName(mixed $name): ?string
+    {
+        if (is_array($name)) {
+            $picked = LocalizedValue::pick($name, App::getLocale());
+
+            return $picked !== null && trim($picked) !== '' ? $picked : null;
+        }
+
+        return is_string($name) && trim($name) !== '' ? $name : null;
     }
 }

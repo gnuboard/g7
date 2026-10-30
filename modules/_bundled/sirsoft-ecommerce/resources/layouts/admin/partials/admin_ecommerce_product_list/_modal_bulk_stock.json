@@ -45,34 +45,24 @@
                                 }
                             ],
                             "props": {
-                                "className": "select w-full"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "increase"
+                                "className": "w-full",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method",
+                                "value": "{{_local.bulkStockMethod || 'increase'}}",
+                                "options": [
+                                    {
+                                        "value": "increase",
+                                        "label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_increase"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_increase"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "decrease"
+                                    {
+                                        "value": "decrease",
+                                        "label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_decrease"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_decrease"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "set"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_set"
-                                }
-                            ]
+                                    {
+                                        "value": "set",
+                                        "label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_stock.method_set"
+                                    }
+                                ]
+                            }
                         }
                     ]
                 },

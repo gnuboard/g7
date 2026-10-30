@@ -117,10 +117,10 @@ class InstallTemplateCommand extends Command
 
                 Log::info(__('templates.commands.install.success', ['template' => $identifier]));
 
-                // 동반 번들 언어팩 (--with-language-packs) — best-effort
-                $this->runCascadeLanguagePacks();
+                // 동반 번들 언어팩 (--with-language-packs) — 하나가 실패해도 나머지는 계속 설치하고, 실패가 있으면 종료 코드로 알린다(본 확장 설치는 유지)
+                $languagePacksInstalled = $this->runCascadeLanguagePacks();
 
-                return Command::SUCCESS;
+                return $languagePacksInstalled ? Command::SUCCESS : Command::FAILURE;
             }
 
             $this->reportKeptCascadeDependencies();

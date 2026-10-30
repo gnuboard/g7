@@ -140,8 +140,9 @@ echo renderInstallResultSection('aborted', 'warning', 'installation_aborted', 'i
     <!-- 실패 섹션 -->
     <?php
 // 「Step 4 로 돌아가기」는 의존성 사전 검증 실패(순환·누락)일 때만 installer.js showError() 가 드러낸다 —
-// 재시도로 풀리지 않는 실패라 주 버튼으로 앞세우고 재시도는 보조로 바꾼다(#153). 이동은 기존 초기화 경로(항상 Step 4).
-$failureButtons = '<button id="back-to-extensions-btn" onclick="goToSettingsWithConfirm()" class="btn btn-primary hidden">'.htmlspecialchars(lang('back_to_extension_selection')).'</button>
+// 재시도로 풀리지 않는 실패라 주 버튼으로 앞세우고 재시도는 보조로 바꾼다(#153). 이동은 기존 초기화 경로(항상 Step 4)이고,
+// DB 를 건드리기 전 실패라 확인 창에 DB 수동 정리 안내를 넣지 않는다(goBackToExtensionSelection).
+$failureButtons = '<button id="back-to-extensions-btn" onclick="goBackToExtensionSelection()" class="btn btn-primary hidden">'.htmlspecialchars(lang('back_to_extension_selection')).'</button>
                 <button id="retry-installation-btn" onclick="retryInstallation()" class="btn btn-primary">'.htmlspecialchars(lang('retry_installation')).'</button>
                 <button onclick="goToSettingsWithConfirm()" class="btn btn-secondary">'.htmlspecialchars(lang('back_to_settings')).'</button>';
 echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $failureButtons);

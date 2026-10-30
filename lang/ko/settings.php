@@ -462,4 +462,12 @@ return [
             'location' => '설정 파일 위치: :path',
         ],
     ],
+    // 환경설정 > 고급 > GeoIP [갱신] 결과
+    'geoip' => [
+        'update_success' => 'GeoIP 데이터베이스를 갱신했습니다.',
+        'license_key_missing' => 'MaxMind 라이선스 키가 설정되지 않았습니다.',
+        'license_key_invalid' => 'MaxMind 라이선스 키가 올바르지 않습니다.',
+        'connection_failed' => 'MaxMind 서버에 연결하지 못했습니다.',
+        'update_failed' => 'GeoIP 데이터베이스를 갱신하지 못했습니다.',
+    ],
 ];

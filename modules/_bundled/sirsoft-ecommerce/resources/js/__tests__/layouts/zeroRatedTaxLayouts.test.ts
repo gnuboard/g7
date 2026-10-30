@@ -68,7 +68,9 @@ describe('관리자 영세율·옵션별 과세 종류 레이아웃 (#612)', () 
         expect(selects).toHaveLength(2);
 
         selects.forEach((select) => {
-            const values = findAll(select, (n) => n.name === 'Option').map((o) => o.props?.value);
+            // 선택지는 목록형 드롭다운의 props.options 다 — `<option>` 자식(브라우저 기본 선택상자)이 아니다
+            expect(findAll(select, (n) => n.name === 'Option')).toHaveLength(0);
+            const values = (select.props?.options ?? []).map((o: Node) => o.value);
             expect(values).toEqual(['', 'taxable', 'tax_free', 'zero_rated']);
             expect(select.props?.value).toBe("{{opt.tax_status ?? ''}}");
             expect(String(select.props?.['aria-label'] ?? select.props?.ariaLabel)).toContain('options.columns.tax_status');
@@ -78,6 +80,41 @@ describe('관리자 영세율·옵션별 과세 종류 레이아웃 (#612)', () 
         const headers = findAll(productOptions, (n) => n.name === 'Th').map((th) => textOf(th));
         const sellingIdx = headers.findIndex((h) => h.includes('options.columns.selling_price'));
         expect(headers[sellingIdx + 1]).toContain('options.columns.tax_status');
+    });
+
+    // @scenario surface=admin_product_form
+    // @effects admin_option_table_scrolls_horizontally
+    it('과세 종류 열로 넓어진 옵션 표는 가로로 스크롤되어 오른쪽 열(마일리지·사용·삭제)까지 닿는다', () => {
+        // 표를 감싼 상자가 넘치는 열을 잘라 내면(overflow-x-clip) 1440px 관리자 화면에서 마일리지 단위·사용·삭제 칸을
+        // 누를 수 없다. 목록형 드롭다운은 문서 끝에 그려지므로 가로 스크롤 상자에 가려지지 않는다.
+        const tables = findAll(productOptions, (n) => n.name === 'Table');
+        expect(tables.length).toBeGreaterThan(0);
+        const wrappers = findAll(productOptions, (n) => n.name === 'Div'
+            && Array.isArray(n.children) && n.children.some((c: Node) => c?.name === 'Table'));
+        expect(wrappers).toHaveLength(1);
+        const className = String(wrappers[0].props?.className ?? '');
+        expect(className).toContain('overflow-x-auto');
+        expect(className).not.toContain('overflow-x-clip');
+    });
+
+    // @scenario surface=admin_product_form
+    // @effects admin_option_name_editable_on_both_layouts
+    it('옵션명 다국어 입력은 표에서 언어 단추 아래 줄에 놓이고, 좁은 화면 카드에서도 고칠 수 있다', () => {
+        const nameInputs = findAll(productOptions, (n) => n.name === 'MultilingualInput'
+            && textOf(n.actions ?? []).includes('"field":"option_name"'));
+        // 넓은 화면 표 1 + 좁은 화면 카드 1
+        expect(nameInputs).toHaveLength(2);
+        nameInputs.forEach((input) => {
+            expect(input.props?.layout).toBe('compact');
+            expect(input.props?.stacked).toBe(true);
+            expect(input.props?.value).toBe('{{opt.option_name ?? {}}}');
+        });
+
+        // 카드 머리의 이름은 입력이 고치는 option_name 을 먼저 읽는다 — 서버가 준 option_name_localized 를 먼저 읽으면
+        // 카드에서 이름을 고쳐도 저장 전까지 머리에 옛 이름이 남는다
+        const cardTitles = findAll(productOptions, (n) => typeof n.text === 'string' && n.text.includes('option_name_localized'));
+        expect(cardTitles).toHaveLength(1);
+        expect(cardTitles[0].text).toBe('{{$localized(opt.option_name) || opt.option_name_localized}}');
     });
 
     // @scenario surface=admin_product_list

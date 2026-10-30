@@ -113,12 +113,18 @@ test.describe('상품 옵션별 과세 종류 (#612)', () => {
       productId = created.body.data.id;
 
       await page.goto(editUrl(productId as number));
-      const exportSelect = page.getByRole('combobox', { name: '수출용 과세 종류' });
-      const domesticSelect = page.getByRole('combobox', { name: '내수용 과세 종류' });
+      // 과세 종류 칸은 관리자 템플릿의 목록형 드롭다운이다 — 브라우저 기본 선택상자(combobox)가 아니라 단추(aria-haspopup=listbox)
+      // 이고, 단추 이름은 「{행} {열} {고른 값}」(예: 「수출용 과세 종류 기본값 따름 (과세)」)으로 읽힌다. 고르기는 단추 → 항목.
+      const exportSelect = page.getByRole('button', { name: /^수출용 과세 종류 / });
+      const domesticSelect = page.getByRole('button', { name: /^내수용 과세 종류 / });
       await expect(exportSelect).toBeVisible({ timeout: 20_000 });
-      await expect(exportSelect).toHaveValue('');
+      await expect(exportSelect).toHaveAttribute('aria-haspopup', 'listbox');
+      await expect(exportSelect).toContainText('기본값 따름');
 
-      await exportSelect.selectOption('zero_rated');
+      await exportSelect.click();
+      await page.getByRole('option', { name: '영세', exact: true }).click();
+      await expect(exportSelect).toContainText('영세');
+      await expect(exportSelect).not.toContainText('기본값 따름');
 
       const saved = page.waitForResponse(
         (res) => res.url().includes(`${PRODUCT_API}/`) && res.request().method() === 'PUT',
@@ -129,8 +135,9 @@ test.describe('상품 옵션별 과세 종류 (#612)', () => {
 
       await page.reload();
       await expect(exportSelect).toBeVisible({ timeout: 20_000 });
-      await expect(exportSelect).toHaveValue('zero_rated');
-      await expect(domesticSelect).toHaveValue('');
+      await expect(exportSelect).toContainText('영세');
+      await expect(exportSelect).not.toContainText('기본값 따름');
+      await expect(domesticSelect).toContainText('기본값 따름');
 
       const detail = await api(page, 'GET', `${PRODUCT_API}/${productId}`);
       const statuses = (detail.body?.data?.options ?? []).map((o: any) => o.tax_status);

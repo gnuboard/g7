@@ -182,7 +182,8 @@ final class DependencyVersionWarnings
     /**
      * 깨지는 의존자를 생명주기 안내(notice)로 남깁니다 — 관리자 결과 창과 CLI 가 보여 주고 종료 코드는 바꾸지 않습니다.
      *
-     * `install --force`·멈춘 업데이트 정리·강제 비활성화 뒤에 부른다.
+     * `install --force`·멈춘 업데이트 정리·강제 비활성화 뒤에 부른다. 항목의 `target` 은 의존자 식별자, `target_name` 은
+     * 결과 창 대상 칸에 보일 의존자 이름(현재 로케일)이다.
      *
      * @param  string  $type  상태가 바뀐 확장 종류 (`module`·`plugin`)
      * @param  string  $identifier  상태가 바뀐 확장 식별자
@@ -194,7 +195,7 @@ final class DependencyVersionWarnings
         $dependents = self::forDependents($type, $identifier, $versionOnly);
 
         foreach ($dependents as $dependent) {
-            LifecycleWarnings::current()->notice('dependents', $dependent['dependent_identifier'], $dependent['message']);
+            LifecycleWarnings::current()->notice('dependents', $dependent['dependent_identifier'], $dependent['message'], $dependent['dependent_name']);
         }
 
         if ($dependents !== []) {

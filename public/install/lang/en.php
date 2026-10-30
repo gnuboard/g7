@@ -575,6 +575,8 @@ return [
     'installation_in_progress_alert' => 'Installation is in progress. Do you want to go back to the settings page?',
     'confirm_go_to_settings' => 'Do you want to go back to the settings page?',
     'confirm_go_to_settings_simple' => "Do you want to go back to the settings page?\n\nInstallation state will be reset and all tasks will start from the beginning.\n\n⚠️ Database tables will NOT be deleted automatically.\nPlease clean up manually using phpMyAdmin if needed.",
+    'confirm_go_to_settings_before_db' => "Do you want to go back to the settings page?\n\nInstallation state will be reset and all tasks will start from the beginning.",
+    'confirm_back_to_extension_selection' => "Go back to extension selection (Step 4)?\n\nInstallation state will be reset. Your extension selection is kept.",
     'confirm_go_to_settings_title' => 'Go to Settings Page',
     'confirm_go_to_settings_desc' => 'Installation state will be reset and all tasks will start from the beginning.\n\n⚠️ Database tables will NOT be deleted automatically. Please clean up manually using phpMyAdmin if needed.',
     'confirm_go_to_settings_btn' => 'Go',
@@ -711,6 +713,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'vendor_mode_change_later_html' => 'You can change this later via <code>php artisan core:update --vendor-mode=...</code>.',
 
     // Installation stuck detection
+    'error_worker_terminated' => 'The installation worker process stopped unexpectedly (for example, a server execution time limit). Completed steps are kept, so click [Retry] to continue from where it stopped. If this repeats, check storage/logs/installation.log and the PHP error log.',
     'error_installation_stuck' => 'Installation has stopped responding. The server worker may be stuck running a command. Please refresh and retry. If the problem persists, check storage/logs/installation.log.',
     // Server returned a response with no body (gnuboard/g7#62)
     'error_empty_server_response' => 'The server returned an empty response. The response may have failed to build because of the server configuration or characters used in the account name or path. Please check storage/logs/installation.log.',

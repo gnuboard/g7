@@ -35,30 +35,9 @@
                 "name": "boardFilter",
                 "aria-label": "$t:nav.boards",
                 "className": "w-40 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer",
-                "value": "{{query?.board_slug ?? ''}}"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Option",
-                    "props": {
-                        "value": ""
-                    },
-                    "text": "$t:search.filter.all_boards"
-                },
-                {
-                    "type": "basic",
-                    "name": "Option",
-                    "iteration": {
-                        "source": "{{searchResults?.data?.posts?.available_boards ?? []}}",
-                        "item_var": "board"
-                    },
-                    "props": {
-                        "value": "{{board?.slug}}"
-                    },
-                    "text": "{{board?.name}}"
-                }
-            ]
+                "value": "{{query?.board_slug ?? ''}}",
+                "options": "{{[{ value: '', label: '$t:search.filter.all_boards' }].concat((searchResults?.data?.posts?.available_boards ?? []).map(board => ({ value: String(board?.slug ?? ''), label: board?.name })))}}"
+            }
         },
         {
             "type": "basic",

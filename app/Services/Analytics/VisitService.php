@@ -49,6 +49,20 @@ class VisitService
     public const MERGE_WINDOW_SECONDS = 60;
 
     /**
+     * 방문 적재 트랜잭션의 최대 시도 횟수
+     *
+     * 같은 방문자의 요청 두 개(서버 폴백과 비콘, 탭 두 개, 연속 화면 이동)가 거의 동시에
+     * 오면 둘 다 열린 방문을 잠그며 읽은 뒤 방문 행을 고치거나 새로 넣는다. 이 순서에서
+     * InnoDB 는 교착을 감지해 한쪽을 롤백한다 — 잠금 설계상 피할 수 없는 정상 동작이다.
+     * 롤백된 쪽을 처음부터 다시 하면 앞선 쪽이 남긴 방문을 찾아 붙으므로 방문이 갈리지
+     * 않는다. 다시 하지 않으면 그 페이지뷰가 통째로 버려진다.
+     *
+     * 재시도는 바깥 트랜잭션이 없을 때만 일어난다(프레임워크 규칙) — 바깥 트랜잭션이 있으면
+     * 교착이 그 전체를 이미 되돌렸으므로 다시 하면 안 된다.
+     */
+    private const STORE_ATTEMPTS = 3;
+
+    /**
      * 전환 금액의 상한
      *
      * `analytics_conversions.revenue` 가 `decimal(15,2)` 라 정수부는 13자리까지다.
@@ -168,7 +182,11 @@ class VisitService
             $identity = $this->recognizer->resolve($request, $config, $anonymous);
             $result['new_cookie'] = $identity['new_cookie'];
 
-            $stored = DB::transaction(fn (): array => $this->store($request, $config, $identity, $anonymous, $prepared));
+            // 동시 요청끼리의 교착(1213)·잠금 대기 초과로 롤백되면 처음부터 다시 한다(STORE_ATTEMPTS).
+            $stored = DB::transaction(
+                fn (): array => $this->store($request, $config, $identity, $anonymous, $prepared),
+                self::STORE_ATTEMPTS,
+            );
 
             $result['visit_id'] = $stored['visit_id'];
             $result['action_id'] = $stored['action_id'];

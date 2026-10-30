@@ -33,6 +33,7 @@ effects:
   - notice_modal_deactivates_and_hands_409_to_force_modal          # 안내 창: 같은 비활성 호출, 409 는 강제 비활성 창, 성공은 경고 창 연결
   - uninstall_and_template_deactivate_show_integrated_by           # 삭제 창 3종·템플릿 끄기 창의 연동 안내 블록
   - lifecycle_success_shows_integration_notice_toast               # 설치·활성화 성공 갈래 전수가 integration_notices 안내 토스트를 띄운다
+  - install_toast_shows_integration_failure_reason                 # 설치 창 2종 × 3종: 함께 설치하다 실패한 연동은 「이름 (상태: 사유)」, 사유 없으면 종전 표시
   - integration_keys_exist_in_all_locales                          # 쓰인 extension_integrations 키가 ko·en·ja 에 모두 있다
 
 validation:

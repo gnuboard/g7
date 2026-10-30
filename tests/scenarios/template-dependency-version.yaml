@@ -75,6 +75,7 @@ effects:
   - dependents_reported_when_target_drops
   - dependents_collection_never_throws
   - dependents_notice_not_failure
+  - dependents_notice_carries_display_name   # 의존자 안내는 결과 창 대상 칸용 이름(target_name)을 싣고 target 은 식별자 유지 (7.1.4)
   - stuck_recovery_reverting_version_notices_dependents
   - update_message_separates_dependents
   - dependents_notice_wired_into_lifecycle

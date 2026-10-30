@@ -242,4 +242,36 @@ class CascadeInstallOrchestratorTest extends TestCase
             '남긴 것이 없으면 안내도 없다'
         );
     }
+
+    /**
+     * 함께 설치하다 실패한 문구는 의존 대상의 종류를 현지화해 부른다 — 원문 `module`·`plugin` 을 그대로 싣지 않는다.
+     *
+     * 의존 미충족 문구의 종류 현지화(extensions.dependency_types)와 같은 방식이다.
+     *
+     * @effects cascade_failure_names_localized_extension_type
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cascade_failure_message_uses_localized_type(): void
+    {
+        app()->setLocale('ko');
+        $this->modules['shop'] = $this->uninstalled('1.0.0');
+        $this->plugins['pay'] = $this->uninstalled('1.0.0');
+        $this->moduleService->shouldReceive('installModule')->with('shop', VendorMode::Auto)->andThrow(new RuntimeException('내려받기 실패'));
+        $this->pluginService->shouldReceive('installPlugin')->with('pay', VendorMode::Auto)->andThrow(new RuntimeException('내려받기 실패'));
+
+        foreach (['module' => 'shop', 'plugin' => 'pay'] as $type => $identifier) {
+            try {
+                $this->orchestrator()->installDependencies([['type' => $type, 'identifier' => $identifier]]);
+                $this->fail('실패가 통과했다');
+            } catch (RuntimeException $e) {
+                $this->assertSame(__('extensions.errors.cascade_dependency_failed', [
+                    'type' => __('extensions.dependency_types.'.$type),
+                    'identifier' => $identifier,
+                    'message' => '내려받기 실패',
+                ]), $e->getMessage());
+                $this->assertStringNotContainsString(' '.$type.' (', $e->getMessage(), '종류 원문이 문구에 남지 않는다');
+            }
+        }
+    }
 }
