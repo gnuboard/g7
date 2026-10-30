@@ -405,6 +405,137 @@ describe('진단·통계 화면', () => {
     expect(pressed({ days: '7' })).toEqual([true, false, false]);
     expect(pressed({ days: '90' })).toEqual([false, false, true]);
   });
+
+  /**
+   * 조건(`if`)이 참인 노드만 따라 내려가며 화면에 그려질 노드를 모읍니다 (반복 노드는 목록이 비면 그리지 않으므로 뺀다).
+   *
+   * @param node 노드
+   * @param scope 변수
+   * @returns 그려질 노드 목록
+   */
+  function shown(node: any, scope: Record<string, unknown>): any[] {
+    if (!node || typeof node !== 'object') return [];
+    if (Array.isArray(node)) return node.flatMap((n) => shown(n, scope));
+    if (node.slots) return Object.values(node.slots).flatMap((n) => shown(n, scope));
+    if (node.iteration) return [];
+    if (typeof node.if === 'string' && !evaluate(node.if, scope)) return [];
+    return [node, ...shown(node.children ?? [], scope)];
+  }
+
+  /**
+   * 그려질 노드 가운데 문구나 색이 데이터소스 응답 값(`{id}?.data`)에 기대는 노드의 id(없으면 문구)를 돌려줍니다.
+   *
+   * @param layout 구운 레이아웃
+   * @param id 데이터소스 id
+   * @param scope 변수
+   * @returns 노드 표지 목록
+   */
+  function drawnFromData(layout: any, id: string, scope: Record<string, unknown>): string[] {
+    const needle = `${id}?.data`;
+    return shown(layout, scope)
+      .filter((n) => String(n.text ?? '').includes(needle) || String(n.props?.className ?? '').includes(needle))
+      .map((n) => n.id ?? n.text);
+  }
+
+  const t = (key: string): string => key;
+
+  /**
+   * 응답 전(받기 전 `undefined`)에는 메일 칸이 「보내지 않는 수단」 빨간 경고를, 회원 칸이 「연결 회원 0명」을 먼저 그리면
+   * 운영자가 메일이 안 나가는 사이트·연결 회원이 없는 사이트로 오해한다 — 값 자리는 응답이 올 때까지 비우고 불러오는 중을 알린다.
+   *
+   * @scenario surface=diagnostics
+   * @effects diagnostics_values_wait_for_response
+   */
+  it('진단 요약 카드는 응답 전·실패 때 값을 그리지 않고 불러오는 중·오류를 알린다', () => {
+    const nodes = flatten(diag);
+    const before = { diagnostics: undefined, query: {}, $t: t };
+    expect(drawnFromData(diag, 'diagnostics', before)).toEqual([]);
+    expect(shown(diag, before).map((n) => n.id)).toContain('diagnostics_loading');
+    expect(shown(diag, before).map((n) => n.id)).not.toContain('diagnostics_load_failed');
+
+    const failed = { diagnostics: null, query: {}, $t: t };
+    expect(drawnFromData(diag, 'diagnostics', failed)).toEqual([]);
+    expect(shown(diag, failed).map((n) => n.id)).toContain('diagnostics_load_failed');
+    expect(shown(diag, failed).map((n) => n.id)).not.toContain('diagnostics_loading');
+
+    // 응답이 오면 값이 그려지고, 실제로 보내지 않는 수단일 때는 경고가 그대로 보인다.
+    const data = {
+      queue: { connection: 'database', pending: 0, failed_jobs: 0 },
+      mail: { mailer: 'log', delivering: false, recent_code_failures: 2 },
+      mock: { enabled: false },
+      members: { linked_users: 5, passwordless_users: 3 },
+      webhooks: { days: 7, received: 1, ignored: 0, failed: 0 },
+      providers: [],
+    };
+    const after = { diagnostics: { data }, query: {}, $t: t };
+    const ids = shown(diag, after).map((n) => n.id);
+    for (const id of ['queue_pending_value', 'queue_failed_value', 'mail_status_value', 'mail_failures_value', 'mock_badge_off', 'members_linked_value', 'members_passwordless_value', 'webhook_summary_value']) {
+      expect(ids, id).toContain(id);
+    }
+    expect(ids).not.toContain('diagnostics_loading');
+    expect(ids).not.toContain('diagnostics_load_failed');
+    expect(evaluate(byId(nodes, 'mail_status_value').text, after)).toBe('sirsoft-social_login.admin.diagnostics.mail.not_delivering');
+  });
+
+  /**
+   * 시도·웹훅 기록 표는 응답 전에 「기록이 없습니다」를 보이지 않는다 — 실패 기록이 있는데도 없다고 읽힌다.
+   *
+   * @scenario surface=diagnostics
+   * @effects diagnostics_values_wait_for_response
+   */
+  it('진단 기록 표의 빈 목록 문구는 응답이 온 뒤에만 보인다', () => {
+    const nodes = flatten(diag);
+    for (const [grid, source, key] of [
+      ['attempts_datagrid', 'attempts', 'sirsoft-social_login.admin.diagnostics.attempts.empty'],
+      ['webhooks_datagrid', 'webhookEvents', 'sirsoft-social_login.admin.diagnostics.webhooks.empty'],
+    ]) {
+      const message = String(byId(nodes, grid).props.emptyMessage);
+      expect(evaluate(message, { [source]: undefined, $t: t }), grid).toBe('');
+      expect(evaluate(message, { [source]: { data: { data: [] } }, $t: t }), grid).toBe(key);
+    }
+  });
+
+  /**
+   * 통계도 응답 전에 「가입 0 · 로그인 0 · 실패 0」, 「데이터가 없습니다」를 먼저 그리지 않는다.
+   *
+   * @scenario surface=stats, days=30
+   * @effects stats_values_wait_for_response
+   */
+  it('통계 합계·기준 시각·빈 목록 문구는 응답이 온 뒤에만 보이고 그 전에는 불러오는 중을 알린다', () => {
+    const nodes = flatten(stats);
+    const before = { stats: undefined, query: {}, String, $t: t };
+    expect(drawnFromData(stats, 'stats', before)).toEqual([]);
+    expect(shown(stats, before).map((n) => n.id)).toContain('stats_loading');
+    expect(evaluate(String(byId(nodes, 'stats_datagrid').props.emptyMessage), before)).toBe('');
+
+    const failed = { stats: null, query: {}, String, $t: t };
+    expect(drawnFromData(stats, 'stats', failed)).toEqual([]);
+    expect(shown(stats, failed).map((n) => n.id)).toContain('stats_load_failed');
+    expect(evaluate(String(byId(nodes, 'stats_datagrid').props.emptyMessage), failed)).toBe('');
+
+    const after = { stats: { data: { since: '2026-10-01', rows: [], totals: { signups: 0, logins: 0, failures: 0 } } }, query: {}, String, $t: t };
+    const ids = shown(stats, after).map((n) => n.id);
+    expect(ids).toEqual(expect.arrayContaining(['stats_since', 'stats_totals']));
+    expect(ids).not.toContain('stats_loading');
+    expect(evaluate(String(byId(nodes, 'stats_datagrid').props.emptyMessage), after)).toBe('sirsoft-social_login.admin.stats.empty');
+  });
+});
+
+describe('설정 화면 응답 전', () => {
+  /**
+   * 제공자 목록 응답 전에 「추가한 제공자 0 / 최대 0」을 그리면 더 추가할 수 없는 사이트로 읽힌다.
+   *
+   * @scenario surface=add_custom
+   * @effects settings_limit_waits_for_providers
+   */
+  it('추가 한도 문구는 제공자 목록 응답이 온 뒤에만 보인다', () => {
+    const add = read(SETTINGS[3]);
+    const limit = byId(flatten(add), 'custom_limit_text');
+    expect(typeof limit.if).toBe('string');
+    expect(evaluate(limit.if, { providers: undefined })).toBeFalsy();
+    expect(evaluate(limit.if, { providers: null })).toBeFalsy();
+    expect(evaluate(limit.if, { providers: { data: { limits: { custom_count: 1, custom_limit: 5 } } } })).toBeTruthy();
+  });
 });
 
 describe('관리자 회원 표면 확장', () => {
@@ -534,7 +665,7 @@ describe('렌더 가능성', () => {
     const sources = files.flatMap((f) => read(f).data_sources ?? []);
     expect(sources.length).toBeGreaterThan(0);
     expect(sources.filter((s: any) => 'data-if' in s).map((s: any) => s.id)).toEqual([]);
-    expect(read(DETAIL_TAB).data_sources[0].if).toBe('{{!!route?.id}}');
+    expect(read(DETAIL_TAB).data_sources[0].if).toBe('{{route?.id?.length === 36}}');
   });
 
   /**

@@ -348,3 +348,91 @@ if (! function_exists('hydrateDbSecretsFromRuntime')) {
         return $config;
     }
 }
+
+if (! function_exists('installerConfigCachePath')) {
+    /**
+     * Laravel 설정 캐시 파일 경로 (bootstrap/cache/config.php).
+     *
+     * @return string 설정 캐시 파일 절대 경로
+     */
+    function installerConfigCachePath(): string
+    {
+        return BASE_PATH.'/bootstrap/cache/config.php';
+    }
+}
+
+if (! function_exists('installerClearConfigCache')) {
+    /**
+     * 설정 캐시 파일을 지운다 (php artisan config:clear 와 같은 효과).
+     *
+     * 캐시가 없으면 다음 요청은 .env·config/*.php 로 부팅한다.
+     *
+     * @return bool 캐시 파일이 없는 상태가 됐으면 true
+     */
+    function installerClearConfigCache(): bool
+    {
+        $path = installerConfigCachePath();
+        clearstatcache(true, $path);
+
+        if (! is_file($path)) {
+            return true;
+        }
+
+        @unlink($path);
+        clearstatcache(true, $path);
+
+        return ! is_file($path);
+    }
+}
+
+if (! function_exists('installerRebuildConfigCache')) {
+    /**
+     * 설정 캐시를 새 artisan 프로세스로 다시 만든다 (.env 최종 병합 직후용).
+     *
+     * 설치 워커가 만든 설정 캐시는 병합 전 .env 와 runtime.php 주입 값으로 만들어진다. 병합과 runtime.php
+     * 삭제가 끝난 뒤 새 프로세스로 다시 만들어야 캐시가 병합된 .env 값을 담는다. 다시 만들지 못하면
+     * 캐시를 지운다 — 병합 전 값으로 만든 캐시를 남기지 않는다(다음 요청은 병합된 .env 로 부팅).
+     *
+     * @param  string  $phpBinary  artisan 을 띄울 PHP 실행 경로 (installer_php_binary_from_state() 결과)
+     * @return array{rebuilt: bool, exit_code: int|null, output: string} 다시 만들었는지, 종료 코드, 명령 출력
+     */
+    function installerRebuildConfigCache(string $phpBinary): array
+    {
+        if (! function_exists('exec') || ! is_file(BASE_PATH.'/artisan')) {
+            installerClearConfigCache();
+
+            return ['rebuilt' => false, 'exit_code' => null, 'output' => 'exec() unavailable or artisan missing'];
+        }
+
+        // 자식 출력은 파이프가 아닌 파일로 받는다 (설치 워커의 artisan 호출과 같은 이유 — 파이프 교착 회피).
+        $outputDir = BASE_PATH.'/storage/logs';
+        if (! is_dir($outputDir) || ! is_writable($outputDir)) {
+            $outputDir = sys_get_temp_dir();
+        }
+        $outputFile = $outputDir.DIRECTORY_SEPARATOR.'installer-finalize-config-cache-'.uniqid('', true).'.log';
+
+        $command = escapeshellarg($phpBinary).' -d memory_limit=512M artisan config:cache > '
+            .escapeshellarg($outputFile).' 2>&1';
+
+        $previousDir = getcwd();
+        @chdir(BASE_PATH);
+        $exitCode = 1;
+        $ignored = [];
+        exec($command, $ignored, $exitCode);
+        if ($previousDir !== false) {
+            @chdir($previousDir);
+        }
+
+        $output = is_file($outputFile) ? trim((string) @file_get_contents($outputFile)) : '';
+        @unlink($outputFile);
+
+        clearstatcache(true, installerConfigCachePath());
+        $rebuilt = $exitCode === 0 && is_file(installerConfigCachePath());
+
+        if (! $rebuilt) {
+            installerClearConfigCache();
+        }
+
+        return ['rebuilt' => $rebuilt, 'exit_code' => $exitCode, 'output' => $output];
+    }
+}

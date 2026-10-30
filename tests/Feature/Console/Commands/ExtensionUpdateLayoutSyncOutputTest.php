@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\File;
 use Mockery;
 use Mockery\MockInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\Console\NoSpawnExecuteBundledUpdatesCommand;
 use Tests\TestCase;
 
 /**
@@ -231,6 +232,8 @@ class ExtensionUpdateLayoutSyncOutputTest extends TestCase
      */
     public function test_bundled_update_child_prints_one_summary_line_per_extension(): void
     {
+        // 항목마다 새 프로세스를 띄우면 아래 페이크가 보이지 않는다 — 같은 프로세스 처리로 확장마다의 출력을 본다
+        $this->app[Kernel::class]->registerCommand($this->app->make(NoSpawnExecuteBundledUpdatesCommand::class));
         $this->app->instance(ExtensionManager::class, Mockery::mock(ExtensionManager::class, fn (MockInterface $m) => $m->shouldReceive('updateComposerAutoload')->once()));
         $this->app->instance(CoreUpdateService::class, Mockery::mock(CoreUpdateService::class, fn (MockInterface $m) => $m->shouldReceive('sweepEmptyStagingDirectories')->once()));
         $this->app->instance(ModuleManager::class, Mockery::mock(ModuleManager::class, fn (MockInterface $m) => $m->shouldIgnoreMissing()->shouldReceive('updateModule')->once()

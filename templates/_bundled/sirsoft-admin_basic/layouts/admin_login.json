@@ -102,12 +102,14 @@
             }
         },
         {
-            "comment": "로그인 수단 판정(7.2.0)은 폼 저장소 밖(_global)에 둔다 — 전역이라 화면에 들어올 때마다 지난 판정을 비운다",
+            "comment": "로그인 수단 판정(7.2.0)은 폼 저장소 밖(_global)에 둔다 — 전역이라 화면에 들어올 때마다 지난 판정을 비운다.\n         지난 관리자의 알림·큐 작업 조회 권한 판정(`adminNotificationsReadable`·`adminQueueJobsReadable`, `_admin_base`)도 비운다 — 다른 관리자가 로그인하면 다시 판정한다",
             "handler": "setState",
             "params": {
                 "target": "global",
                 "adminLoginDiscovery": null,
-                "adminLoginDiscoveryFor": null
+                "adminLoginDiscoveryFor": null,
+                "adminNotificationsReadable": null,
+                "adminQueueJobsReadable": null
             }
         },
         {

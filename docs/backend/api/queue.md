@@ -361,7 +361,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination` + `dat
 | display_name | string | `App\Jobs\RunScheduledTaskJob` | 작업 표시 이름 |
 | job_class | string | `App\Jobs\RunScheduledTaskJob` | 작업 클래스 |
 | schedule_id | integer\|null | `7` | 예약 작업 실행 Job 이면 그 스케줄 ID |
-| attempts | integer | `3` | 실패 시점의 시도 횟수 |
+| attempts | integer\|null | `3` | 실패 시점의 시도 횟수. payload 에 시도 수를 싣지 않는 드라이버(database)는 같은 UUID 의 마지막 처리 기록 값이고, 처리 기록도 없으면 `null`(미상) |
 | max_tries | integer\|null | `3` | 최대 시도 횟수 |
 | exception_summary | string | `Illuminate\Queue\TimeoutExceededException: …` | 예외의 첫 줄 (최대 300자). 전문은 상세 조회로 봅니다 |
 | failed_at | string\|null | `2026-10-16 03:10:05` | 실패 시각 |

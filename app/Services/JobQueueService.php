@@ -141,7 +141,10 @@ class JobQueueService
      */
     public function paginateFailed(array $filters): BoundedPage
     {
-        return $this->jobQueueRepository->paginateFailed($filters, (int) ($filters['per_page'] ?? 20));
+        $page = $this->jobQueueRepository->paginateFailed($filters, (int) ($filters['per_page'] ?? 20));
+        $this->attachLoggedAttempts($page->getCollection()->all());
+
+        return $page;
     }
 
     /**
@@ -152,7 +155,41 @@ class JobQueueService
      */
     public function findFailed(string $uuid): ?FailedJob
     {
-        return $this->jobQueueRepository->findFailedByUuid($uuid);
+        $failed = $this->jobQueueRepository->findFailedByUuid($uuid);
+        if ($failed !== null) {
+            $this->attachLoggedAttempts([$failed]);
+        }
+
+        return $failed;
+    }
+
+    /**
+     * 실패 작업마다 같은 UUID 의 마지막 처리 기록 시도 횟수를 `logged_attempts` 로 붙입니다.
+     *
+     * database 드라이버는 시도 수를 payload 에 쓰지 않아 실패 기록만으로는 알 수 없다 — 처리 기록이 그 값을 갖는다.
+     * 처리 기록이 꺼져 있었거나 정리됐으면 null 로 남고, 화면은 「-」로 보인다. 처리 기록을 읽지 못해도 목록은 그대로 준다.
+     *
+     * @param  array<int, FailedJob>  $failedJobs  실패 작업 목록
+     * @return void 반환값 없음
+     */
+    private function attachLoggedAttempts(array $failedJobs): void
+    {
+        if ($failedJobs === []) {
+            return;
+        }
+
+        try {
+            $attempts = $this->queueJobLogRepository->latestAttemptsByUuid(
+                array_map(fn (FailedJob $job) => (string) $job->uuid, $failedJobs),
+            );
+        } catch (Throwable $e) {
+            Log::warning('실패 작업의 처리 기록 시도 횟수를 읽지 못했습니다', ['error' => $e->getMessage()]);
+            $attempts = [];
+        }
+
+        foreach ($failedJobs as $job) {
+            $job->setAttribute('logged_attempts', $attempts[(string) $job->uuid] ?? null);
+        }
     }
 
     /**

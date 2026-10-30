@@ -17,6 +17,7 @@ axes:
   clipboard: [available, unavailable]
   response: [https, http_external, error]
   role: [settings_view_only]
+  route_id: [uuid, non_uuid, missing_uuid]
 effects:
   - provider_notes_translated_and_complete
   - kakao_notes_current_console_path_and_reconsent_limit
@@ -34,6 +35,9 @@ effects:
   - add_form_cleared_on_close
   - impact_confirm_closed_when_editor_changes
   - diagnostics_sources_and_filters
+  - diagnostics_values_wait_for_response
+  - stats_values_wait_for_response
+  - settings_limit_waits_for_providers
   - stats_period_in_query
   - stats_period_pressed_state
   - detail_tab_and_content_linked
@@ -54,6 +58,10 @@ effects:
   - test_login_closes_on_failure
   - editor_save_disabled_until_changed
   - editor_policy_fields_present
+  - detail_source_skipped_for_non_uuid_route
+  - detail_not_found_without_toast
+  - detail_forbidden_notice_kept
 test_files:
   - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/layouts/admin.test.ts
   - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/adminTools.test.ts
+  - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/layouts/admin-user-detail-route-id.test.ts

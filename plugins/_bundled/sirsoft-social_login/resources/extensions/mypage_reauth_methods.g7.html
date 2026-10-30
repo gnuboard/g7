@@ -1,11 +1,14 @@
 <!-- 정보 수정 본인 확인 — 메일을 받을 수 없는 비밀번호 없는 회원(대체 이메일로 가입)에게 「{제공자}로 다시 확인」을 보인다.
      템플릿의 기본 안내(관리자 문의)를 이 조각으로 바꾼다. 다시 로그인하고 돌아오면 정보 수정 화면의 진입 단계(mypage_profile_edit_reauth)가
-     확인을 마무리한다. 연결된 계정이 없으면 관리자 문의 안내를 그대로 보인다. -->
+     확인을 마무리한다. 이 조각은 소셜 계정이 없는 회원(회사 계정으로만 가입한 회원 등)·코어가 다른 수단을 먼저 고르는 회원(회사 계정과
+     소셜을 둘 다 연결 — 「본인 확인 계속하기」가 회사 계정으로 간다)에게도 그려지므로, 소셜 재확인으로 가는 회원(`reauth_via_social`)일 때만
+     소셜 안내·제공자 버튼을 보이고 아니면 템플릿 기본 안내와 같은 문구를 보인다. -->
 <extension extension-point="mypage_reauth_methods" mode="replace" priority="100">
   <div data-ref="social_reauth_methods" class="sl:space-y-3">
-    <p class="sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:text-sm sl:text-blue-700 sl:dark:text-blue-300" role="status">$t:sirsoft-social_login.reauth.notice</p>
-    <sirsoft-social_login.provider-buttons data-type="composite" data-ref="social_reauth_buttons" providers="{{socialReauthAccounts?.data?.accounts ?? []}}" intent="reauth"/>
-    <p data-if="{{!!socialReauthAccounts?.data &amp;&amp; (socialReauthAccounts?.data?.accounts ?? []).length === 0}}" class="sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300">$t:sirsoft-social_login.reauth.unavailable</p>
+    <p data-if="{{socialReauthAccounts?.data?.reauth_via_social === true}}" class="sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:text-sm sl:text-blue-700 sl:dark:text-blue-300" role="status">$t:sirsoft-social_login.reauth.notice</p>
+    <sirsoft-social_login.provider-buttons data-if="{{socialReauthAccounts?.data?.reauth_via_social === true}}" data-type="composite" data-ref="social_reauth_buttons" providers="{{socialReauthAccounts?.data?.accounts ?? []}}" intent="reauth"/>
+    <!-- 소셜 재확인 대상이 아닌 회원 — 바꾼 템플릿 기본 안내(「본인 확인 계속하기」로도 안 되면 관리자 문의)를 그대로 보인다 -->
+    <p data-if="{{!!socialReauthAccounts?.data &amp;&amp; socialReauthAccounts?.data?.reauth_via_social !== true}}" data-ref="social_reauth_not_eligible" class="sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300" role="status">$t:mypage.profile.reauth_unavailable</p>
   </div>
   <!-- 내 연결 목록 — 다시 로그인할 제공자 -->
   <data-source id="socialReauthAccounts" label_key="$t:sirsoft-social_login.editor.data_source.accounts" type="api" endpoint="/api/plugins/sirsoft-social_login/me/accounts" method="GET" :auto_fetch="true" :auth_required="true"/>

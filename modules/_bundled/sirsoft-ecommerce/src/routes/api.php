@@ -1,5 +1,8 @@
 <?php
 
+use App\Helpers\ResponseHelper;
+use App\Http\Middleware\SetLocale;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminCartController;
@@ -1999,7 +2002,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // 내보내기 API — 주문·상품·마일리지 목록의 내보내기 요청과 「내보내기 관리」(#787)
     // 데이터 범위는 그 유형의 조회 권한(주문=orders.read …)이 정하고, exports.* 는 작업(파일)에 대한 권한이다.
-    Route::prefix('exports')->group(function () {
+    // 작업 번호(`{export}`)를 찾지 못하면(없거나 이미 지움) 다른 관리 API 와 같은 꼴의 404 를 돌려준다 — 프레임워크 기본 문구는
+    // 영어에 내부 모델 경로가 들어 있어 화면 안내로 쓸 수 없다. 라우트 모델 바인딩은 권한 범위 판정(resource_route_key)이 쓰므로 유지한다.
+    // 바인딩은 요청 언어를 정하는 SetLocale 보다 먼저 돌아 실패하므로, 이 응답도 같은 언어 결정(회원 언어 → Accept-Language → 사이트 기본)을
+    // 거친 뒤 만든다 — 그러지 않으면 언어 설정과 무관하게 사이트 기본 언어 문구가 나간다.
+    Route::prefix('exports')->missing(fn (Request $request) => app(SetLocale::class)->handle(
+        $request,
+        fn () => ResponseHelper::notFound('messages.export.not_found', [], 'sirsoft-ecommerce'),
+    ))->group(function () {
         Route::get('/catalog', [ExportController::class, 'catalog'])
             ->middleware('permission:admin,sirsoft-ecommerce.exports.create')
             ->name('admin.exports.catalog');

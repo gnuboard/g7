@@ -2,8 +2,10 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Services;
 
+use App\Helpers\TimezoneHelper;
 use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
 use Plugins\Sirsoft\SocialLogin\Enums\WebhookStatus;
 use Plugins\Sirsoft\SocialLogin\Jobs\ProcessWebhookEventJob;
@@ -66,10 +68,10 @@ class DiagnosticsService
             'enabled' => (bool) $row->enabled,
             'configured' => $row->client_id !== null && $row->getRawOriginal('client_secret') !== null,
             'credentials_unreadable' => $this->admin->credentialsUnreadable($row),
-            'last_success_at' => $row->last_success_at?->toIso8601String(),
-            'last_error_at' => $row->last_error_at?->toIso8601String(),
+            'last_success_at' => TimezoneHelper::toUserDateTimeString($row->last_success_at),
+            'last_error_at' => TimezoneHelper::toUserDateTimeString($row->last_error_at),
             'last_error_code' => $row->last_error_code,
-            'last_webhook_at' => $lastWebhook[$row->key] ?? null,
+            'last_webhook_at' => TimezoneHelper::toUserDateTimeString($lastWebhook[$row->key] ?? null),
         ])->values()->all();
 
         $webhookCounts = $this->webhooks->statusCountsSince($since);
@@ -89,7 +91,7 @@ class DiagnosticsService
             ],
             'mock' => [
                 'enabled' => $this->mock->enabled(),
-                'expires_at' => ($until = $this->mock->until()) !== null ? date(DATE_ATOM, $until) : null,
+                'expires_at' => ($until = $this->mock->until()) !== null ? TimezoneHelper::toUserDateTimeString(Carbon::createFromTimestamp($until)) : null,
             ],
             'members' => $this->accounts->linkedUserCounts(),
             'webhooks' => [
@@ -122,7 +124,7 @@ class DiagnosticsService
                 'error_code' => $row->error_code,
                 'error_message' => $row->error_message,
                 'ip' => $row->ip,
-                'created_at' => $row->created_at?->toIso8601String(),
+                'created_at' => TimezoneHelper::toUserDateTimeString($row->created_at),
             ])->values()->all(),
             'pagination' => $this->pagination($page),
         ];
@@ -148,8 +150,8 @@ class DiagnosticsService
                 'status' => $row->status,
                 'attempts' => $row->attempts,
                 'error' => $row->error,
-                'received_at' => $row->received_at?->toIso8601String(),
-                'processed_at' => $row->processed_at?->toIso8601String(),
+                'received_at' => TimezoneHelper::toUserDateTimeString($row->received_at),
+                'processed_at' => TimezoneHelper::toUserDateTimeString($row->processed_at),
             ])->values()->all(),
             'pagination' => $this->pagination($page),
         ];

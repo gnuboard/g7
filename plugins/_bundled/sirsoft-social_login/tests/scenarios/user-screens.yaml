@@ -4,7 +4,8 @@ coverage_strategy: pairwise
 description: |
   사용자 화면 프론트. 제공자 버튼 컴포넌트(로그인·가입은 시작 주소 링크, 연결·재확인은 플러그인 핸들러, 계열별 색·공식 심볼·문구)와 연결 목록 줄의 제공자 심볼,
   로그인 회원 왕복 시작 핸들러(코어 API 클라이언트로 시작하고 같은 출처·https 주소로만 이동), 확장 조각 8개(로그인 버튼·안내, 가입 버튼·모달,
-  마이페이지 카드, 대체 이메일 회원 재확인 3종)의 주입 자리·조건·요청·응답 분기와 문구 키(ko·en)를 잰다.
+  마이페이지 카드, 대체 이메일 회원 재확인 3종)의 주입 자리·조건·요청·응답 분기와 문구 키(ko·en)를 잰다. 재확인 자리 2종은 템플릿 기본 안내를
+  통째로 바꾸므로 소셜 재확인 대상이 아닌 회원(회사 계정 회원 등)에게는 소셜 안내 대신 템플릿 기본 안내를 그린다(실제 렌더).
 axes:
   intent: [login, register, link, reauth]
   brand: [all]
@@ -23,7 +24,9 @@ axes:
   query: [social_error, social_notice, social_pending]
   step: [complete, existing, expired]
   has_password: ['false']
-  member: [placeholder]
+  member: [placeholder, company_account_only, social_placeholder, company_and_social, undeliverable_no_method]
+  reauth_via_social: ['false']
+  reauth_provider: [external, none]
   iteration: [data_each]
   client: [class_instance]
   modal: [reopen]
@@ -77,8 +80,13 @@ effects:
   - modal_action_buttons_reach_touch_size_on_phone
   - signup_modal_inputs_have_labels
   - mypage_link_buttons_touch_size
+  - non_social_member_sees_template_default_notice
+  - no_social_wording_for_non_social_member
+  - social_member_sees_social_notice_and_buttons
+  - both_linked_member_sees_actual_method_notice   # 코어가 다른 수단(회사 계정)을 고르면 소셜 안내·버튼 대신 실제 수단에 맞는 기본 안내
 test_files:
   - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/ProviderButtons.test.tsx
   - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/ProviderMark.test.tsx
   - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/handlers.test.ts
   - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/layouts/extensions.test.ts
+  - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/layouts/reauth-slots-render.test.tsx

@@ -11,7 +11,7 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "if": "{{!!route?.id}}",
+            "if": "{{route?.id?.length === 36}}",
             "errorHandling": {
                 "403": {
                     "handler": "setState",
@@ -19,9 +19,12 @@
                         "target": "local",
                         "socialAccountsForbidden": true
                     }
+                },
+                "404": {
+                    "handler": "suppress"
                 }
             },
-            "comment": "회원의 소셜 연결 — 회원 상세에 들어올 때 받고, 강제 해제 뒤 다시 받는다. 권한이 없으면 403 → 안내만"
+            "comment": "회원의 소셜 연결 — 회원 상세에 들어올 때 받고, 강제 해제 뒤 다시 받는다. 권한이 없으면 403 → 안내만.\n       주소의 회원 식별자가 uuid 길이(36자, 라우트 제약과 같은 길이)일 때만 받는다 — `/admin/users/1` 같은 주소는 화면의 회원 조회가\n       404 화면으로 바꾸므로 이 목록을 부를 까닭이 없다. 없는 회원(404)도 화면이 이미 404 화면이라 조용히 넘긴다(시스템 기본 처리는\n       응답 문구를 오류 토스트로 띄워 404 화면 위에 겹친다)."
         }
     ],
     "injections": [

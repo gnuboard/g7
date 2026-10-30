@@ -1,6 +1,6 @@
 # 소셜 로그인 API 레퍼런스
 
-> **소유**: plugin `sirsoft-social_login` · **생성**: 손 작성(1.0.0). 실측 값은 플러그인 시험(`CallbackFlowTest`, `SignupFlowTest`, `LinkExistingTest`, `AccountLinkServiceTest`, `SocialReauthenticationTest`, `PublicProvidersTest`, `ProviderControllerTest`, `ProviderTestServiceTest`, `DiagnosticsControllerTest`, `StatsControllerTest`, `UserAccountsControllerTest`, 웹훅 시험 4종)과 같다.
+> **소유**: plugin `sirsoft-social_login` · **생성**: 손 작성(1.0.0). 실측 값은 플러그인 시험(`CallbackFlowTest`, `SignupFlowTest`, `LinkExistingTest`, `AccountLinkServiceTest`, `SocialReauthenticationTest`, `PublicProvidersTest`, `ProviderControllerTest`, `ProviderTestServiceTest`, `DiagnosticsControllerTest`, `StatsControllerTest`, `UserAccountsControllerTest`, `DateDisplayTest`, 웹훅 시험 4종)과 같다.
 
 ---
 
@@ -27,6 +27,8 @@
 { "success": true,  "message": "...", "data": { } }
 { "success": false, "message": "...", "errors": { "code": "expired" } }
 ```
+
+**시각 표기**: 화면에 보이는 시각 칸(`linked_at`, `last_login_at`, `last_success_at`, `last_error_at`, `last_webhook_at`, `created_at`, `received_at`, `processed_at`, 모의 제공자 `expires_at`)은 코어 리소스와 같이 보는 사람 시간대의 `YYYY-MM-DD HH:mm:ss` 문자열입니다(회원 시간대, 없으면 사이트 기본 시간대). 통계 `since` 는 집계 시작 경계(사이트 시간대 자정)라 같은 모양의 사이트 시간대 문자열입니다. 남은 시간을 계산하는 인증번호·가입 대기 `expires_at` 은 시간대가 붙은 ISO 8601 값 그대로입니다.
 
 | 상태 | 조건 |
 | --- | --- |
@@ -225,7 +227,7 @@
 }
 ```
 
-`style` 은 커스텀(일반 OIDC) 제공자의 버튼 색 `{ "bg", "fg", "border" }`(16진 색만, 없으면 `null`)입니다 — 내장 제공자의 모양은 `brand` 가 정합니다. `reauth_via_social` 은 비밀번호도 없고 메일도 받을 수 없는 회원(대체 이메일)이 연결된 제공자가 하나 이상 있어 그 제공자로 본인 재확인을 해야 할 때 `true` 입니다.
+`style` 은 커스텀(일반 OIDC) 제공자의 버튼 색 `{ "bg", "fg", "border" }`(16진 색만, 없으면 `null`)입니다 — 내장 제공자의 모양은 `brand` 가 정합니다. `reauth_via_social` 은 비밀번호도 없고 메일도 받을 수 없는 회원(대체 이메일)이 연결된 제공자가 하나 이상 있어 그 제공자로 본인 재확인을 해야 할 때 `true` 입니다. 코어가 그 회원의 민감 작업 재확인에 다른 수단을 먼저 고르면(회사 계정과 소셜을 둘 다 연결한 회원은 회사 계정 다시 로그인) `false` 입니다 — 화면의 소셜 안내가 실제 수단과 어긋나지 않게 코어 재확인 시작과 같은 판정을 씁니다. 제공자 버튼으로 직접 시작하는 재확인(`POST /me/reauth/{provider}/start`)은 그대로 받습니다.
 
 ### POST /api/plugins/sirsoft-social_login/me/accounts/{provider}/link-start
 
@@ -262,6 +264,13 @@
 - **본문**: `code`(40자 영숫자)
 
 **응답 200** — `data: { "verification_token": "…" }`. 실패는 404 `reauth_claim_invalid`.
+
+### GET /plugins/sirsoft-social_login/reauth/{ticket} (웹)
+
+화면의 「본인 확인 계속하기」(코어 `POST /api/identity/challenges`, 수단 비움)가 소셜 재확인 수단으로 정해지면 응답 `redirect_url` 이 이 주소다. 1회용 티켓(40자 영숫자, 10분)을 열면 회원이 연결한 제공자 가운데 연결 순서 첫째(켜진 것)의 재확인 인가 화면으로 302 이동하고, 이후 왕복은 위 `me/reauth/{provider}/start` 와 같다(같은 콜백 대조, 같은 수령 코드).
+
+- **라우트명**: `web.plugins.sirsoft-social_login.reauth.continue`
+- **응답 302** — 제공자 인가 화면. 없거나 이미 쓴 티켓이면 `/mypage/profile/edit?social_error=reauth_failed`.
 
 ---
 
@@ -444,7 +453,7 @@ discovery 문서를 캐시 없이 읽어 주소 칸 값을 돌려줍니다. 저�
 - **라우트명**: `api.plugins.sirsoft-social_login.admin.stats.index` (`settings.view`)
 - **쿼리**: `days`(7|30|90, 기본 30)
 
-**응답 200** — `data: { "days": 30, "since": "…", "rows": [ { "provider_key", "label", "signups", "logins", "links", "failures", "linked_accounts", "social_only_users" } ], "totals": { … } }`. 시도 수는 기간 안의 것이고 관리자 연결 테스트는 세지 않는다. `logins` 는 로그인 인계와 로그인, `failures` 는 실패와 거부를 합친 값. `linked_accounts` `social_only_users` 는 지금 시점의 수.
+**응답 200** — `data: { "days": 30, "since": "2026-09-28 00:00:00", "rows": [ { "provider_key", "label", "signups", "logins", "links", "failures", "linked_accounts", "social_only_users" } ], "totals": { … } }`. 기간은 오늘(사이트 시간대)에서 `days` 일 전 사이트 시간대 자정부터이고 `since` 가 그 경계다. 시도 수는 기간 안의 것이고 관리자 연결 테스트는 세지 않는다. `logins` 는 로그인 인계와 로그인, `failures` 는 실패와 거부를 합친 값. `linked_accounts` `social_only_users` 는 지금 시점의 수.
 
 ### GET /api/plugins/sirsoft-social_login/admin/linked-providers
 

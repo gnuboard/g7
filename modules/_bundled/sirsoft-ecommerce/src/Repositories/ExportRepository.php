@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\ResolvesSortSpec;
+use App\Search\KeywordSearch;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -118,24 +119,36 @@ class ExportRepository implements ExportRepositoryInterface
     /**
      * 관리 목록 필터를 적용합니다.
      *
+     * 요청자 검색은 요청 때 남긴 이름(`requester_name_snapshot`)과 지금 회원 정보(이름·이메일)를 함께 본다 — 목록은
+     * 지금 이름·이메일을 보이고, 탈퇴해 연결이 끊긴 요청자는 남긴 이름만 남는다. 검색어의 `%`·`_` 는 글자 그대로 찾는다.
+     * 요청자 한정(`requester_uuid`)은 이름 포함 검색과 달리 그 회원 한 사람의 작업만 남긴다.
+     *
      * @param  Builder  $query  작업 쿼리
      * @param  array<string, mixed>  $filters  검증된 필터
      * @param  User|null  $viewer  보는 사람 (「내 요청만」 판정)
-     * @return void
+     * @return void 반환값 없음
      */
     private function applyAdminFilters(Builder $query, array $filters, ?User $viewer): void
     {
         $keyword = trim((string) ($filters['search_keyword'] ?? ''));
         if ($keyword !== '') {
             $field = $filters['search_field'] ?? 'all';
-            $query->where(function (Builder $q) use ($field, $keyword) {
+            $contains = '%'.KeywordSearch::escapeLikeWildcards($keyword).'%';
+            $query->where(function (Builder $q) use ($field, $contains) {
                 if ($field === 'all' || $field === 'file_name') {
-                    $q->orWhere('file_name', 'like', "%{$keyword}%");
+                    $q->orWhere('file_name', 'like', $contains);
                 }
                 if ($field === 'all' || $field === 'requester') {
-                    $q->orWhere('requester_name_snapshot', 'like', "%{$keyword}%");
+                    $q->orWhere('requester_name_snapshot', 'like', $contains)
+                        ->orWhereHas('requester', fn (Builder $user) => $user
+                            ->where('name', 'like', $contains)
+                            ->orWhere('email', 'like', $contains));
                 }
             });
+        }
+
+        if (! empty($filters['requester_uuid'])) {
+            $query->whereHas('requester', fn (Builder $user) => $user->where('uuid', $filters['requester_uuid']));
         }
 
         if (! empty($filters['statuses'])) {

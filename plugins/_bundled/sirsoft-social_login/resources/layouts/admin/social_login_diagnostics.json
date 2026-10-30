@@ -207,6 +207,29 @@
                         ]
                     },
                     {
+                        "comment": "요약 응답 전에는 값 자리를 비우고 불러오는 중을, 받기에 실패하면 오류를 알린다 — 아직 오지 않은 값을 「메일 안 나감」, 「연결 회원 0명」으로 그리지 않는다",
+                        "id": "diagnostics_loading",
+                        "type": "basic",
+                        "name": "P",
+                        "if": "{{diagnostics === undefined}}",
+                        "props": {
+                            "role": "status",
+                            "className": "sl:text-sm sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3"
+                        },
+                        "text": "$t:common.loading"
+                    },
+                    {
+                        "id": "diagnostics_load_failed",
+                        "type": "basic",
+                        "name": "P",
+                        "if": "{{diagnostics === null}}",
+                        "props": {
+                            "role": "alert",
+                            "className": "sl:text-sm sl:text-red-700 sl:dark:text-red-300 sl:mb-3"
+                        },
+                        "text": "$t:common.error_occurred"
+                    },
+                    {
                         "id": "summary_cards",
                         "type": "basic",
                         "name": "Div",
@@ -231,39 +254,47 @@
                                         "text": "$t:sirsoft-social_login.admin.diagnostics.queue.title"
                                     },
                                     {
+                                        "id": "queue_values",
                                         "type": "basic",
-                                        "name": "P",
-                                        "props": {
-                                            "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
-                                        },
-                                        "text": "{{$t('sirsoft-social_login.admin.diagnostics.queue.connection') + ': ' + (diagnostics?.data?.queue?.connection ?? '-')}}"
-                                    },
-                                    {
-                                        "id": "queue_pending_value",
-                                        "type": "basic",
-                                        "name": "P",
-                                        "props": {
-                                            "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
-                                        },
-                                        "text": "{{$t('sirsoft-social_login.admin.diagnostics.queue.pending') + ': ' + (diagnostics?.data?.queue?.pending ?? '-')}}"
-                                    },
-                                    {
-                                        "id": "queue_failed_value",
-                                        "type": "basic",
-                                        "name": "P",
-                                        "props": {
-                                            "className": "{{(diagnostics?.data?.queue?.failed_jobs ?? 0) > 0 ? 'sl:text-sm sl:text-red-700 sl:dark:text-red-300' : 'sl:text-sm sl:text-gray-800 sl:dark:text-gray-200'}}"
-                                        },
-                                        "text": "{{$t('sirsoft-social_login.admin.diagnostics.queue.failed_jobs') + ': ' + (diagnostics?.data?.queue?.failed_jobs ?? '-')}}"
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "P",
-                                        "if": "{{diagnostics?.data?.queue?.connection === 'sync'}}",
-                                        "props": {
-                                            "className": "sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1"
-                                        },
-                                        "text": "$t:sirsoft-social_login.admin.diagnostics.queue.sync_hint"
+                                        "name": "Div",
+                                        "if": "{{!!diagnostics?.data}}",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                },
+                                                "text": "{{$t('sirsoft-social_login.admin.diagnostics.queue.connection') + ': ' + (diagnostics?.data?.queue?.connection ?? '-')}}"
+                                            },
+                                            {
+                                                "id": "queue_pending_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
+                                                },
+                                                "text": "{{$t('sirsoft-social_login.admin.diagnostics.queue.pending') + ': ' + (diagnostics?.data?.queue?.pending ?? '-')}}"
+                                            },
+                                            {
+                                                "id": "queue_failed_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "{{(diagnostics?.data?.queue?.failed_jobs ?? 0) > 0 ? 'sl:text-sm sl:text-red-700 sl:dark:text-red-300' : 'sl:text-sm sl:text-gray-800 sl:dark:text-gray-200'}}"
+                                                },
+                                                "text": "{{$t('sirsoft-social_login.admin.diagnostics.queue.failed_jobs') + ': ' + (diagnostics?.data?.queue?.failed_jobs ?? '-')}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{diagnostics?.data?.queue?.connection === 'sync'}}",
+                                                "props": {
+                                                    "className": "sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.queue.sync_hint"
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -284,30 +315,38 @@
                                         "text": "$t:sirsoft-social_login.admin.diagnostics.mail.title"
                                     },
                                     {
+                                        "id": "mail_values",
                                         "type": "basic",
-                                        "name": "P",
-                                        "props": {
-                                            "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
-                                        },
-                                        "text": "{{$t('sirsoft-social_login.admin.diagnostics.mail.mailer') + ': ' + (diagnostics?.data?.mail?.mailer ?? '-')}}"
-                                    },
-                                    {
-                                        "id": "mail_status_value",
-                                        "type": "basic",
-                                        "name": "P",
-                                        "props": {
-                                            "className": "{{diagnostics?.data?.mail?.delivering ? 'sl:text-sm sl:text-green-700 sl:dark:text-green-300' : 'sl:text-sm sl:text-red-700 sl:dark:text-red-300'}}"
-                                        },
-                                        "text": "{{diagnostics?.data?.mail?.delivering ? $t('sirsoft-social_login.admin.diagnostics.mail.delivering') : $t('sirsoft-social_login.admin.diagnostics.mail.not_delivering')}}"
-                                    },
-                                    {
-                                        "id": "mail_failures_value",
-                                        "type": "basic",
-                                        "name": "P",
-                                        "props": {
-                                            "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
-                                        },
-                                        "text": "$t:sirsoft-social_login.admin.diagnostics.mail.recent_failures|count={{diagnostics?.data?.mail?.recent_code_failures ?? 0}}"
+                                        "name": "Div",
+                                        "if": "{{!!diagnostics?.data}}",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                },
+                                                "text": "{{$t('sirsoft-social_login.admin.diagnostics.mail.mailer') + ': ' + (diagnostics?.data?.mail?.mailer ?? '-')}}"
+                                            },
+                                            {
+                                                "id": "mail_status_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "{{diagnostics?.data?.mail?.delivering ? 'sl:text-sm sl:text-green-700 sl:dark:text-green-300' : 'sl:text-sm sl:text-red-700 sl:dark:text-red-300'}}"
+                                                },
+                                                "text": "{{diagnostics?.data?.mail?.delivering ? $t('sirsoft-social_login.admin.diagnostics.mail.delivering') : $t('sirsoft-social_login.admin.diagnostics.mail.not_delivering')}}"
+                                            },
+                                            {
+                                                "id": "mail_failures_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.mail.recent_failures|count={{diagnostics?.data?.mail?.recent_code_failures ?? 0}}"
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -374,40 +413,48 @@
                                         "text": "$t:sirsoft-social_login.admin.diagnostics.members.title"
                                     },
                                     {
-                                        "id": "members_linked_value",
+                                        "id": "members_values",
                                         "type": "basic",
-                                        "name": "P",
-                                        "props": {
-                                            "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
-                                        },
-                                        "text": "$t:sirsoft-social_login.admin.diagnostics.members.linked|count={{diagnostics?.data?.members?.linked_users ?? 0}}"
-                                    },
-                                    {
-                                        "id": "members_passwordless_value",
-                                        "type": "basic",
-                                        "name": "P",
-                                        "props": {
-                                            "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
-                                        },
-                                        "text": "$t:sirsoft-social_login.admin.diagnostics.members.passwordless|count={{diagnostics?.data?.members?.passwordless_users ?? 0}}"
-                                    },
-                                    {
-                                        "id": "webhook_summary_value",
-                                        "type": "basic",
-                                        "name": "P",
-                                        "props": {
-                                            "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mt-2"
-                                        },
-                                        "text": "$t:sirsoft-social_login.admin.diagnostics.webhooks.summary|days={{diagnostics?.data?.webhooks?.days ?? 7}}|received={{diagnostics?.data?.webhooks?.received ?? 0}}|ignored={{diagnostics?.data?.webhooks?.ignored ?? 0}}|failed={{diagnostics?.data?.webhooks?.failed ?? 0}}"
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "P",
-                                        "if": "{{(diagnostics?.data?.webhooks?.ignored ?? 0) > 0 && !diagnostics?.data?.webhooks?.trusted_proxy_configured}}",
-                                        "props": {
-                                            "className": "sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1"
-                                        },
-                                        "text": "$t:sirsoft-social_login.admin.diagnostics.webhooks.proxy_hint"
+                                        "name": "Div",
+                                        "if": "{{!!diagnostics?.data}}",
+                                        "children": [
+                                            {
+                                                "id": "members_linked_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.members.linked|count={{diagnostics?.data?.members?.linked_users ?? 0}}"
+                                            },
+                                            {
+                                                "id": "members_passwordless_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.members.passwordless|count={{diagnostics?.data?.members?.passwordless_users ?? 0}}"
+                                            },
+                                            {
+                                                "id": "webhook_summary_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mt-2"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.webhooks.summary|days={{diagnostics?.data?.webhooks?.days ?? 7}}|received={{diagnostics?.data?.webhooks?.received ?? 0}}|ignored={{diagnostics?.data?.webhooks?.ignored ?? 0}}|failed={{diagnostics?.data?.webhooks?.failed ?? 0}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{(diagnostics?.data?.webhooks?.ignored ?? 0) > 0 && !diagnostics?.data?.webhooks?.trusted_proxy_configured}}",
+                                                "props": {
+                                                    "className": "sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.webhooks.proxy_hint"
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -766,7 +813,7 @@
                                     "pageSize": "20",
                                     "idField": "id",
                                     "selectable": false,
-                                    "emptyMessage": "$t:sirsoft-social_login.admin.diagnostics.attempts.empty",
+                                    "emptyMessage": "{{attempts === undefined ? '' : $t('sirsoft-social_login.admin.diagnostics.attempts.empty')}}",
                                     "columns": [
                                         {
                                             "field": "created_at",
@@ -1040,7 +1087,7 @@
                                     "pageSize": "20",
                                     "idField": "id",
                                     "selectable": false,
-                                    "emptyMessage": "$t:sirsoft-social_login.admin.diagnostics.webhooks.empty",
+                                    "emptyMessage": "{{webhookEvents === undefined ? '' : $t('sirsoft-social_login.admin.diagnostics.webhooks.empty')}}",
                                     "columns": [
                                         {
                                             "field": "received_at",

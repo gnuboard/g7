@@ -1160,6 +1160,24 @@ public static function getSubscribedHooks(): array
 
 리스너 코드는 변경 불필요 — 평소처럼 `Auth::user()`, `request()->ip()` 호출하면 됩니다.
 
+컨텍스트에 `user_id` 가 없으면(비회원·시스템 작업) 복원은 인증 사용자를 비웁니다. 상주 워커(`queue:work`)는 컨테이너를 작업 사이에 재사용하므로, 확장이 자기 큐 작업에서 컨텍스트를 복원할 때는 작업이 끝나면 되돌려야 합니다 — 남기면 같은 워커가 이어서 처리한 다른 사람의 작업이 그 사용자로 기록되거나 그 사용자의 권한으로 돕니다.
+
+```php
+// 복원한 채 콜백을 실행하고, 끝나면(예외여도) 작업 전 상태로 되돌린다
+HookContextCapture::within($export->context, fn () => $this->run($export));
+
+// 또는 짝으로
+$snapshot = HookContextCapture::snapshot();
+try {
+    HookContextCapture::restore($context);
+    // ...
+} finally {
+    HookContextCapture::revert($snapshot);
+}
+```
+
+`revert()` 는 코어 항목(요청·인증 사용자·로케일·진입점·이벤트 ID)만 되돌립니다. 확장이 `hook.context.restore` 에서 따로 바꾼 상태나 직접 바인딩한 값(예: 보는 사람 시간대 `user_timezone`)은 그 확장이 되돌립니다. 워커는 작업을 집을 때마다 사용자 없음·콘솔 요청·기본 로케일로 한 번 더 돌립니다(`sync` 연결 제외).
+
 #### 확장 컨텍스트 추가 (플러그인)
 
 플러그인이 `tenant_id`, `trace_id` 등 추가 컨텍스트를 캡처/복원하려면 코어 수정 없이 훅으로 확장 가능:

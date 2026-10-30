@@ -66,7 +66,12 @@ class StoreExportRequest extends FormRequest
     }
 
     /**
-     * 요청한 필드 중 개인정보 필드가 있는지 (권한 판정은 하지 않고 모든 필드 기준)
+     * 요청한 필드 중 개인정보 필드가 있는지
+     *
+     * 「데이터 선택」은 보낸 필드 키를 그대로 본다 — 권한 없는 사람이 개인정보 필드를 직접 보내면 여기서 걸려 사유·권한으로 막힌다.
+     * 「현재 화면 컬럼」은 화면 컬럼 하나가 개인정보 필드와 아닌 필드를 함께 펼치므로, 창(카탈로그)이 보인 것과 같게 요청자가 고를 수
+     * 있는 필드로 좁힌 뒤 본다. 권한 없는 사람의 기본값은 개인정보 필드가 빠진 파일이 되어 사유가 필요 없고(파일 열도 같은 규칙으로
+     * 좁힌다 — {@see ExportService::selectedFieldKeys()}), 권한 있는 사람은 종전대로 개인정보 필드가 남아 사유를 요구한다.
      *
      * @return bool 개인정보 필드 포함 여부
      */
@@ -83,11 +88,16 @@ class StoreExportRequest extends FormRequest
         }
 
         $fields = $type->fields($unit);
-        $keys = $this->input('column_mode') === 'custom'
-            ? (array) $this->input('fields', [])
-            : collect((array) $this->input('screen_columns', []))
-                ->flatMap(fn ($screenKey) => $type->screenColumns()[$screenKey]['fields'] ?? [])
+        if ($this->input('column_mode') === 'custom') {
+            $keys = (array) $this->input('fields', []);
+        } else {
+            $user = $this->user();
+            $available = $user !== null ? app(ExportService::class)->availableFields($type, $unit, $user) : $fields;
+            $keys = collect((array) $this->input('screen_columns', []))
+                ->flatMap(fn ($screenKey) => is_string($screenKey) ? ($type->screenColumns()[$screenKey]['fields'] ?? []) : [])
+                ->filter(fn ($key) => is_string($key) && isset($available[$key]))
                 ->all();
+        }
 
         foreach ($keys as $key) {
             if (is_string($key) && ($fields[$key] ?? null)?->personal === true) {
@@ -139,7 +149,7 @@ class StoreExportRequest extends FormRequest
      * 규칙으로 표현하기 어려운 교차 검증을 더합니다.
      *
      * @param  ValidatorContract  $validator  검증기
-     * @return void
+     * @return void 반환값 없음
      */
     public function withValidator(ValidatorContract $validator): void
     {
@@ -168,7 +178,7 @@ class StoreExportRequest extends FormRequest
      *
      * @param  ValidatorContract  $validator  검증기
      * @param  ExportTypeInterface  $type  유형
-     * @return void
+     * @return void 반환값 없음
      */
     protected function validateFilters(ValidatorContract $validator, ExportTypeInterface $type): void
     {
@@ -208,7 +218,7 @@ class StoreExportRequest extends FormRequest
      *
      * @param  ValidatorContract  $validator  검증기
      * @param  ExportTypeInterface  $type  유형
-     * @return void
+     * @return void 반환값 없음
      */
     protected function validateFields(ValidatorContract $validator, ExportTypeInterface $type): void
     {
@@ -234,7 +244,7 @@ class StoreExportRequest extends FormRequest
      *
      * @param  ValidatorContract  $validator  검증기
      * @param  ExportTypeInterface  $type  유형
-     * @return void
+     * @return void 반환값 없음
      */
     protected function validatePeriod(ValidatorContract $validator, ExportTypeInterface $type): void
     {
@@ -280,7 +290,7 @@ class StoreExportRequest extends FormRequest
      *
      * @param  ValidatorContract  $validator  검증기
      * @param  ExportTypeInterface  $type  유형
-     * @return void
+     * @return void 반환값 없음
      */
     protected function validateReason(ValidatorContract $validator, ExportTypeInterface $type): void
     {
@@ -293,7 +303,7 @@ class StoreExportRequest extends FormRequest
      * 중복 방지 키 헤더를 확인합니다.
      *
      * @param  ValidatorContract  $validator  검증기
-     * @return void
+     * @return void 반환값 없음
      */
     protected function validateIdempotencyKey(ValidatorContract $validator): void
     {
@@ -308,7 +318,7 @@ class StoreExportRequest extends FormRequest
      *
      * @param  ValidatorContract  $validator  검증기
      * @param  ExportTypeInterface  $type  유형
-     * @return void
+     * @return void 반환값 없음
      */
     protected function validateActiveLimit(ValidatorContract $validator, ExportTypeInterface $type): void
     {

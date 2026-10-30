@@ -11,6 +11,8 @@ use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
+use App\Support\ConfigCacheHelper;
+use App\Support\RouteCacheHelper;
 use App\Support\UpdateChildEnv;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -434,6 +436,8 @@ trait BundledExtensionUpdatePrompt
                 // 부모가 성공으로 끝내 자동화 스크립트가 실패를 알 수 없다(#144). 정상 종료인데 결과가 없으면 종전대로 0/0.
                 if ($exitCode !== 0) {
                     Log::warning('번들 spawn 자식이 결과 페이로드 없이 비정상 종료 — 실패 1건으로 처리', ['exit_code' => $exitCode]);
+                    // 어느 항목까지 갱신됐는지 알 수 없다 — 화면에 실패 항목이 없으므로 무엇을 확인할지 알린다
+                    $this->warn(__('extensions.commands.bundled_update.child_aborted', ['code' => $exitCode]));
 
                     return ['success' => 0, 'failed' => 1];
                 }
@@ -476,8 +480,40 @@ trait BundledExtensionUpdatePrompt
         array $strategies,
         bool $rebuildSearchIndex = false,
     ): array {
+        // proc_open 이 없는 서버: 확장마다 config·라우트 캐시를 다시 굽는 일회용 앱 부팅이 이 프로세스에 쌓이지 않도록
+        // 재굽기를 끝에 한 번으로 모은다(그 사이 캐시를 읽는 새 프로세스는 뜰 수 없다). proc_open 은 있는데 자식을
+        // 못 띄운 경우는 종전대로 항목마다 굽는다 — 그 사이 뜨는 composer 등이 옛 캐시로 부팅하지 않게.
+        if (! function_exists('proc_open')) {
+            return ConfigCacheHelper::deferRebuilds(fn () => RouteCacheHelper::deferRebuilds(fn () => $this->runBulkUpdateItemsInProcess(
+                $moduleManager, $pluginManager, $templateManager, $updates, $strategies, $rebuildSearchIndex,
+            )));
+        }
+
+        return $this->runBulkUpdateItemsInProcess($moduleManager, $pluginManager, $templateManager, $updates, $strategies, $rebuildSearchIndex);
+    }
+
+    /**
+     * {@see executeBulkUpdateInProcess()} 의 항목 반복 — 실패 항목은 이름과 다시 실행할 명령을 끝에 출력한다.
+     *
+     * @param  ModuleManager  $moduleManager  모듈 업데이트에 사용할 매니저
+     * @param  PluginManager  $pluginManager  플러그인 업데이트에 사용할 매니저
+     * @param  TemplateManager  $templateManager  템플릿 업데이트에 사용할 매니저
+     * @param  array  $updates  collectBundledUpdates() 반환값
+     * @param  array  $strategies  확장별 레이아웃 전략 (key: "{type}:{identifier}")
+     * @param  bool  $rebuildSearchIndex  업데이트 후 검색 인덱스 재생성 여부
+     * @return array{success: int, failed: int, skipped: int, has_updates: bool}
+     */
+    private function runBulkUpdateItemsInProcess(
+        ModuleManager $moduleManager,
+        PluginManager $pluginManager,
+        TemplateManager $templateManager,
+        array $updates,
+        array $strategies,
+        bool $rebuildSearchIndex,
+    ): array {
         $success = 0;
         $failed = 0;
+        $failedItems = [];
 
         foreach ($updates['modules'] as $m) {
             $id = $m['identifier'];
@@ -490,6 +526,7 @@ trait BundledExtensionUpdatePrompt
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
+                $failedItems[] = ['type' => 'module', 'identifier' => $id, 'strategy' => $strategy, 'reason' => $e->getMessage()];
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패', ['type' => 'module', 'id' => $id, 'error' => $e->getMessage()]);
             }
@@ -506,6 +543,7 @@ trait BundledExtensionUpdatePrompt
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
+                $failedItems[] = ['type' => 'plugin', 'identifier' => $id, 'strategy' => $strategy, 'reason' => $e->getMessage()];
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패', ['type' => 'plugin', 'id' => $id, 'error' => $e->getMessage()]);
             }
@@ -522,6 +560,7 @@ trait BundledExtensionUpdatePrompt
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
+                $failedItems[] = ['type' => 'template', 'identifier' => $id, 'strategy' => $strategy, 'reason' => $e->getMessage()];
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패', ['type' => 'template', 'id' => $id, 'error' => $e->getMessage()]);
             }
@@ -540,6 +579,7 @@ trait BundledExtensionUpdatePrompt
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
+                $failedItems[] = ['type' => 'lang_pack', 'identifier' => $id, 'strategy' => null, 'reason' => $e->getMessage()];
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패', ['type' => 'lang_pack', 'id' => $id, 'error' => $e->getMessage()]);
             }
@@ -547,6 +587,7 @@ trait BundledExtensionUpdatePrompt
 
         $this->newLine();
         $this->info(__('extensions.commands.bundled_update.completed', ['success' => $success, 'failed' => $failed]));
+        ExecuteBundledUpdatesCommand::renderFailedItems($this, $failedItems);
 
         $this->runSearchIndexRebuildIfRequested($rebuildSearchIndex);
 

@@ -209,7 +209,7 @@ HTTP/1.1 200
 
 **7.2.0 쿼리 키 변경** 목록 쿼리 키가 위 표로 바뀌었습니다. 옛 `search`·`module`·`without_overlapping` 필터는 없어졌습니다(중복 방지는 `overlap`, 소유 확장은 `extension_type`+`extension_identifier`). 옛 다중 검색 `filters[]` 와 옛 날짜 키 `created_from`/`created_to` 는 호출 호환을 위해 계속 받습니다(새 키와 함께 오면 `created_start_date`/`created_end_date` 가 우선).
 
-**권한 값(7.1.0)** 응답 `data.abilities` 에 컬렉션 권한이 실린다 — `can_create`(= `core.schedules.create`)·`can_update`·`can_delete`·`can_run`. 「예약 작업 등록」·일괄 상태 변경·행 선택이 이 값으로 잠긴다. 행 단위 `abilities` 는 같은 키이되, 코어·확장 소유 행은 삭제할 수 없으므로 `can_delete` 가 false 다(7.2.0).
+**권한 값(7.1.0)** 응답 `data.abilities` 에 컬렉션 권한이 실린다 — `can_create`(= `core.schedules.create`)·`can_update`·`can_delete`·`can_run`. 「예약 작업 등록」·일괄 상태 변경·행 선택이 이 값으로 잠긴다. 행 단위 `abilities` 는 같은 키이되, 코어·확장 소유 행은 삭제할 수 없으므로 `can_delete` 가 false 다(7.2.0). `can_delete` 가 false 인 까닭은 행의 `delete_blocked_reason` 으로 구분한다 — `owned`(코어·확장 소유 행, 삭제 권한이 있어도 풀리지 않는다)·`permission`(`core.schedules.delete` 권한 없음)·`null`(삭제 가능). 상세 응답도 같은 값을 싣는다.
 
 ### POST /api/admin/schedules
 <!-- @generated:start:api.admin.schedules.store -->

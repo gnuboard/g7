@@ -2476,6 +2476,7 @@ return [
         'types' => 'Job type',
         'personal' => 'Personal data',
         'mine' => 'My requests only',
+        'requester_uuid' => 'Requester',
         'sort_by' => 'Sort by',
         'sort_order' => 'Sort order',
         'per_page' => 'Per page',

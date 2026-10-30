@@ -24,7 +24,7 @@
         </div>
         <div>
           <span class="text-label-subtle">$t:admin.schedules.queue.columns.attempts</span>
-          <p class="text-body">{{_global.queueJobDetail?.attempts ?? 0}}{{_global.queueJobDetail?.max_tries ? ' / ' + _global.queueJobDetail.max_tries : ''}}</p>
+          <p class="text-body">{{_global.queueJobDetail?.attempts ?? '-'}}{{_global.queueJobDetail?.max_tries ? ' / ' + _global.queueJobDetail.max_tries : ''}}</p>
         </div>
         <div data-if="{{_global.queueJobDetailKind === 'failed'}}">
           <span class="text-label-subtle">$t:admin.schedules.queue.columns.failed_at</span>

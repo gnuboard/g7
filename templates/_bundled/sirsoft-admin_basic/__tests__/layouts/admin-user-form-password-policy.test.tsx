@@ -36,7 +36,8 @@ describe('관리자 회원 폼 — 비밀번호 정책 (#736)', () => {
   it('현재 비밀번호 칸은 본인 계정 + 새 비밀번호 입력일 때만 보이고 저장에 실린다', () => {
     const field = find('field_current_password');
     // 비밀번호가 없는 회원(외부 인증 전용)은 확인할 현재 비밀번호가 없어 이 칸 대신 이메일 인증번호 확인을 쓴다(#40).
-    expect(field?.if).toBe(`{{${SELF} && !!_local.form?.password && user?.data?.has_password !== false}}`);
+    // 비밀번호를 만들 수 없는 회원(`password_status.can_set=false`)에게는 내지 않는다 — admin-user-form-password-unsettable 이 잰다
+    expect(field?.if).toBe(`{{${SELF} && !!_local.form?.password && user?.data?.has_password !== false && user?.data?.password_status?.can_set !== false}}`);
     const input = flatten(field).find((n) => n.name === 'Input');
     expect(input?.props?.name).toBe('current_password');
     expect(input?.props?.type).toBe('password');
@@ -48,7 +49,7 @@ describe('관리자 회원 폼 — 비밀번호 정책 (#736)', () => {
    */
   it('다른 회원(등록 포함)의 비밀번호를 정하면 다음 로그인 때 바꿔야 한다고 안내한다', () => {
     const notice = find('password_admin_assigned_notice');
-    expect(notice?.if).toBe(`{{!!_local.form?.password && !(${SELF})}}`);
+    expect(notice?.if).toBe(`{{!!_local.form?.password && !(${SELF}) && !(!!route?.id && user?.data?.password_status?.can_set === false)}}`);
     expect(JSON.stringify(notice)).toContain('password_policy.admin_assigned_notice');
     expect(JSON.stringify(notice)).toContain('password_policy.create_notice');
   });

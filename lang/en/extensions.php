@@ -164,6 +164,15 @@ return [
             'manifest_required' => 'The --manifest option is required and must point to an existing file.',
             'manifest_parse_failed' => 'Failed to parse manifest JSON: :path',
             'lang_pack_phase_in_process' => 'Could not run the language pack phase in a separate process; continuing in this process — if extension data translations are empty afterwards, run php artisan language-pack:update <pack> --force.',
+            'item_process_aborted' => 'The process handling this item ended without a result (exit code :code). If it ran out of memory, the PHP error log shows "Allowed memory size".',
+            'failed_items_header' => ':count item(s) were not updated — update each one again with the command below:',
+            'failed_item_labels' => [
+                'module' => '[Module] :identifier',
+                'plugin' => '[Plugin] :identifier',
+                'template' => '[Template] :identifier',
+                'lang_pack' => '[Language pack] :identifier',
+            ],
+            'child_aborted' => 'The bundled bulk update process ended without a result (exit code :code). It is unknown how far the update got — press "Check for updates" on the module, plugin, template and language pack lists in the admin and update the remaining items again.',
         ],
         // `extension:composer-install`, `extension:update-autoload` and vendor bundle command output
         'composer_install' => [
@@ -194,6 +203,15 @@ return [
             'check_skipped_no_composer' => ':label: SKIPPED (no composer.json)',
             'check_skipped_no_dependencies' => ':label: SKIPPED (no external composer dependencies)',
             'stale' => ':label: STALE — rebuild required',
+            'title_build' => 'Vendor Bundle Build',
+            'title_check' => 'Vendor Bundle Status Check',
+            'title_verify' => 'Vendor Bundle Integrity Verification',
+            'built' => ':label: :size, :count packages',
+            'skipped_up_to_date' => ':label: skipped (up-to-date, :size, :count packages)',
+            'up_to_date' => ':label: up-to-date',
+            'verify_ok' => ':label: OK (:size, :count packages)',
+            'verify_failed_target' => ':label: FAILED',
+            'summary' => 'Summary: :built built, :skipped skipped, total :size',
         ],
         // `ext-static:*` and `ext-bundles:cleanup` command output
         'ext_static_status' => [

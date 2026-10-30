@@ -149,6 +149,15 @@ return [
             'manifest_required' => '--manifest オプションは必須で、存在するファイルを指定する必要があります。',
             'manifest_parse_failed' => 'マニフェスト JSON の解析に失敗しました: :path',
             'lang_pack_phase_in_process' => '言語パックの段階を別プロセスに分離できなかったため、このプロセスで続行します — 拡張データの翻訳が空の場合は、完了後に php artisan language-pack:update <パック> --force を実行してください。',
+            'item_process_aborted' => 'この項目を処理していたプロセスが結果を返さずに終了しました (終了コード :code)。メモリ不足の場合は PHP エラーログに "Allowed memory size" が記録されます。',
+            'failed_items_header' => '更新できなかった項目 :count 件 — 下のコマンドで 1 件ずつ再度更新してください:',
+            'failed_item_labels' => [
+                'module' => '[モジュール] :identifier',
+                'plugin' => '[プラグイン] :identifier',
+                'template' => '[テンプレート] :identifier',
+                'lang_pack' => '[言語パック] :identifier',
+            ],
+            'child_aborted' => 'バンドル一括更新プロセスが結果を返さずに終了しました (終了コード :code)。どこまで更新されたか分かりません — 管理画面のモジュール・プラグイン・テンプレート・言語パック一覧で「アップデート確認」を押し、残りの項目を再度更新してください。',
         ],
         // `extension:composer-install`・`extension:update-autoload`・vendor バンドルコマンドの出力
         'composer_install' => [
@@ -179,6 +188,15 @@ return [
             'check_skipped_no_composer' => ':label: SKIPPED (composer.json なし)',
             'check_skipped_no_dependencies' => ':label: SKIPPED (外部 composer 依存関係なし)',
             'stale' => ':label: STALE — 再ビルドが必要',
+            'title_build' => 'Vendor バンドルのビルド',
+            'title_check' => 'Vendor バンドルの状態確認',
+            'title_verify' => 'Vendor バンドルの整合性検証',
+            'built' => ':label: :size, パッケージ :count個',
+            'skipped_up_to_date' => ':label: スキップ (最新の状態, :size, パッケージ :count個)',
+            'up_to_date' => ':label: 最新の状態',
+            'verify_ok' => ':label: 正常 (:size, パッケージ :count個)',
+            'verify_failed_target' => ':label: 検証失敗',
+            'summary' => '概要: ビルド :built個、スキップ :skipped個、合計 :size',
         ],
         // `ext-static:*`・`ext-bundles:cleanup` コマンド出力
         'ext_static_status' => [

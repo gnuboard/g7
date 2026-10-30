@@ -82,7 +82,7 @@ module.php / plugin.php getSchedules() ─ Manager ──┼─▶ schedules 행
 | `notify_on_failure` | bool | 예약 실행이 실패하면 관리자 알림 |
 | `enabled_condition` | JSON 목록? | 실행 조건(AND). 운영자 입력 불가 |
 | `run_in_maintenance` | bool | 점검 모드에서도 실행 |
-| `timeout` | 초? | 실행 제한 시간 |
+| `timeout` | 초? | 실행 제한 시간. 비면 유형별 기본 — 바로 실행 artisan 은 제한 없음, 큐로 보내는 artisan 은 600초, shell 60초, url 30초. job 유형은 이 값을 쓰지 않고 Job 클래스 설정을 따른다 |
 | `is_active` | bool | 활성 여부 |
 | `extension_type` · `extension_identifier` | `core`·`module`·`plugin` / 식별자 | 소유자. 둘 다 NULL 이면 운영자 직접 등록 |
 | `user_overrides` | JSON | 운영자가 바꾼 필드 목록 ([user-overrides.md](user-overrides.md)) |
@@ -102,7 +102,7 @@ module.php / plugin.php getSchedules() ─ Manager ──┼─▶ schedules 행
 
 **소유 행(코어·확장)에서 바꿀 수 없는 필드** — `command` · `type` · `name` · `enabled_condition` · `timezone`. 저장값과 같으면 통과하고, 다르면 422 입니다. 소유 행은 삭제할 수 없고(`can_delete=false`), 끄려면 활성 토글을 씁니다. 소유 행을 복제하면 직접 등록 행이 됩니다.
 
-**운영자가 바꿀 수 있고 보존되는 필드** — `expression` · `frequency` · `timeout` · `is_active` · `without_overlapping` · `on_one_server` · `dispatch_mode` · `queue_connection` · `queue_name` · `history_mode` · `notify_on_failure` · `run_in_maintenance`, 그리고 다국어 `label` · `description`(로케일 단위). 이 값을 화면에서 바꾸면 `user_overrides` 에 기록되어 이후 재동기화가 덮지 않습니다.
+**운영자가 바꿀 수 있고 보존되는 필드** — `expression` · `frequency` · `timeout` · `is_active` · `without_overlapping` · `on_one_server` · `dispatch_mode` · `queue_connection` · `queue_name` · `history_mode` · `notify_on_failure` · `run_in_maintenance`, 그리고 다국어 `label` · `description`(로케일 단위). 이 값을 화면에서 바꾸면 `user_overrides` 에 기록되어 이후 재동기화가 덮지 않습니다. 기록은 소유 행(코어·확장)에서 저장값과 실제로 달라진 칸만 남습니다 — 직접 등록 행은 값 전부가 운영자 것이고 재동기화 대상이 아니라 기록하지 않으며, 응답 `overridden_fields` 도 소유 행에서만 채웁니다(예전 판이 직접 등록 행에 남긴 기록은 싣지 않는다). 관리자 편집 창은 손대지 않은 칸을 저장값 그대로 보냅니다(비어 있는 제한 시간은 빈 칸으로 보이고 비운 채 저장하면 null, 주기를 바꾸지 않으면 저장된 cron 식, 바로 실행이면 저장된 큐 연결·큐).
 
 **직접 등록 규칙** — 유형은 `artisan` · `shell` · `url` · `job` 중 하나이고 표시 명칭(`label`)이 필수입니다. `enabled_condition` · `command_class` · `extension_type` · `extension_identifier` 는 보낼 수 없습니다(`prohibited`). 명령은 저장 시점과 실행 직전에 모두 [허용목록](#10-보안-실행-허용목록)으로 검사합니다.
 
@@ -145,13 +145,13 @@ job 유형을 바로 실행으로 두면 `Bus::dispatchSync()` 로 그 자리에
 
 | 항목 | 값 |
 | --- | --- |
-| payload | 스케줄 ID·실행 계기·실행자만 (모델을 싣지 않는다) |
+| payload | 스케줄 ID·실행 계기·실행자, 수동 실행이면 누른 요청의 문맥(`HookContextCapture::capture()` — 사용자·IP·브라우저 정보·로케일·경로·진입점). 모델을 싣지 않는다 |
 | `tries` | 1 — 같은 실행이 이력을 두 번 남기지 않게. 재시도는 큐 탭에서 운영자가 명시적으로 |
 | `timeout` | 행 `timeout`(없으면 600초)을 큐 연결의 `retry_after` 아래로 줄인 값 |
 | 연결·큐 | 행의 `queue_connection`/`queue_name` 을 「큐 워커」 등록 목록으로 해석. 미등록이면 기본값 + 경고, 둘 다 비면 긴 작업 배치(`*-long`)가 있으면 그쪽 |
 | 표시 이름 | `schedule:{id} {name}` (큐 탭·처리 기록) |
 
-워커가 꺼낼 때 상태를 다시 봅니다 — 행이 지워졌거나 소유 확장이 비활성이면 건너뛰고, 예약 실행은 행이 비활성이거나 실행 조건이 맞지 않으면 건너뜁니다. 워커가 timeout·강제 종료로 죽으면 `failed()` 가 실행 중 이력을 실패로 마감하고, 잠금을 풀고, `core.schedule.run_failed` 를 발화합니다.
+워커는 실린 문맥을 실행하는 동안만 복원하고 끝나면 되돌립니다 — 바로 실행과 같이 실행 로그의 행위자·IP·브라우저 정보가 누른 관리자의 것으로 남고, 같은 워커가 앞서 처리한 다른 작업의 사용자를 물려받지 않습니다. 예약 실행은 사용자 없이 돕니다. 워커가 꺼낼 때 상태를 다시 봅니다 — 행이 지워졌거나 소유 확장이 비활성이면 건너뛰고, 예약 실행은 행이 비활성이거나 실행 조건이 맞지 않으면 건너뜁니다. 워커가 timeout·강제 종료로 죽으면 `failed()` 가 실행 중 이력을 실패로 마감하고, 잠금을 풀고, `core.schedule.run_failed` 를 발화합니다.
 
 ### 4.4 실행기 (ScheduleExecutor)
 

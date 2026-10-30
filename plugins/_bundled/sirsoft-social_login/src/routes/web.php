@@ -23,6 +23,12 @@ Route::get('/oauth/{provider}/start', [OAuthController::class, 'start'])
     ->middleware('throttle:30,1,sirsoft-social_login.oauth-start')
     ->name('oauth.start');
 
+// 「본인 확인 계속하기」 시작 주소 — 1회용 티켓을 열면 회원이 연결한 제공자의 재확인 인가 화면으로 보낸다
+Route::get('/reauth/{ticket}', [OAuthController::class, 'reauthContinue'])
+    ->where('ticket', '[A-Za-z0-9]{40}')
+    ->middleware('throttle:30,1,sirsoft-social_login.oauth-start')
+    ->name('reauth.continue');
+
 // 관리자 연결 테스트 결과 — 일회용(한 번 보면 지워짐), no-store.
 Route::get('/test-result/{code}', [OAuthController::class, 'testResult'])
     ->where('code', '[A-Za-z0-9]{40}')

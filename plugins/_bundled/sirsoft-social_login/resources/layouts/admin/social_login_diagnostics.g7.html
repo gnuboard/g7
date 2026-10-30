@@ -67,19 +67,26 @@
           </button>
         </div>
       </div>
+      <!-- 요약 응답 전에는 값 자리를 비우고 불러오는 중을, 받기에 실패하면 오류를 알린다 — 아직 오지 않은 값을 「메일 안 나감」, 「연결 회원 0명」으로 그리지 않는다 -->
+      <p data-ref="diagnostics_loading" data-if="{{diagnostics === undefined}}" role="status" class="sl:text-sm sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3">$t:common.loading</p>
+      <p data-ref="diagnostics_load_failed" data-if="{{diagnostics === null}}" role="alert" class="sl:text-sm sl:text-red-700 sl:dark:text-red-300 sl:mb-3">$t:common.error_occurred</p>
       <div data-ref="summary_cards" class="sl:grid sl:grid-cols-1 sl:md:grid-cols-2 sl:xl:grid-cols-4 sl:gap-4 sl:mb-6">
         <div data-ref="queue_card" class="sl-admin-card">
           <h2 class="sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2">$t:sirsoft-social_login.admin.diagnostics.queue.title</h2>
-          <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">{{$t('sirsoft-social_login.admin.diagnostics.queue.connection') + ': ' + (diagnostics?.data?.queue?.connection ?? '-')}}</p>
-          <p data-ref="queue_pending_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">{{$t('sirsoft-social_login.admin.diagnostics.queue.pending') + ': ' + (diagnostics?.data?.queue?.pending ?? '-')}}</p>
-          <p data-ref="queue_failed_value" class="{{(diagnostics?.data?.queue?.failed_jobs ?? 0) > 0 ? 'sl:text-sm sl:text-red-700 sl:dark:text-red-300' : 'sl:text-sm sl:text-gray-800 sl:dark:text-gray-200'}}">{{$t('sirsoft-social_login.admin.diagnostics.queue.failed_jobs') + ': ' + (diagnostics?.data?.queue?.failed_jobs ?? '-')}}</p>
-          <p data-if="{{diagnostics?.data?.queue?.connection === 'sync'}}" class="sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1">$t:sirsoft-social_login.admin.diagnostics.queue.sync_hint</p>
+          <div data-ref="queue_values" data-if="{{!!diagnostics?.data}}">
+            <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">{{$t('sirsoft-social_login.admin.diagnostics.queue.connection') + ': ' + (diagnostics?.data?.queue?.connection ?? '-')}}</p>
+            <p data-ref="queue_pending_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">{{$t('sirsoft-social_login.admin.diagnostics.queue.pending') + ': ' + (diagnostics?.data?.queue?.pending ?? '-')}}</p>
+            <p data-ref="queue_failed_value" class="{{(diagnostics?.data?.queue?.failed_jobs ?? 0) > 0 ? 'sl:text-sm sl:text-red-700 sl:dark:text-red-300' : 'sl:text-sm sl:text-gray-800 sl:dark:text-gray-200'}}">{{$t('sirsoft-social_login.admin.diagnostics.queue.failed_jobs') + ': ' + (diagnostics?.data?.queue?.failed_jobs ?? '-')}}</p>
+            <p data-if="{{diagnostics?.data?.queue?.connection === 'sync'}}" class="sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1">$t:sirsoft-social_login.admin.diagnostics.queue.sync_hint</p>
+          </div>
         </div>
         <div data-ref="mail_card" class="sl-admin-card">
           <h2 class="sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2">$t:sirsoft-social_login.admin.diagnostics.mail.title</h2>
-          <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">{{$t('sirsoft-social_login.admin.diagnostics.mail.mailer') + ': ' + (diagnostics?.data?.mail?.mailer ?? '-')}}</p>
-          <p data-ref="mail_status_value" class="{{diagnostics?.data?.mail?.delivering ? 'sl:text-sm sl:text-green-700 sl:dark:text-green-300' : 'sl:text-sm sl:text-red-700 sl:dark:text-red-300'}}">{{diagnostics?.data?.mail?.delivering ? $t('sirsoft-social_login.admin.diagnostics.mail.delivering') : $t('sirsoft-social_login.admin.diagnostics.mail.not_delivering')}}</p>
-          <p data-ref="mail_failures_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.mail.recent_failures|count={{diagnostics?.data?.mail?.recent_code_failures ?? 0}}</p>
+          <div data-ref="mail_values" data-if="{{!!diagnostics?.data}}">
+            <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">{{$t('sirsoft-social_login.admin.diagnostics.mail.mailer') + ': ' + (diagnostics?.data?.mail?.mailer ?? '-')}}</p>
+            <p data-ref="mail_status_value" class="{{diagnostics?.data?.mail?.delivering ? 'sl:text-sm sl:text-green-700 sl:dark:text-green-300' : 'sl:text-sm sl:text-red-700 sl:dark:text-red-300'}}">{{diagnostics?.data?.mail?.delivering ? $t('sirsoft-social_login.admin.diagnostics.mail.delivering') : $t('sirsoft-social_login.admin.diagnostics.mail.not_delivering')}}</p>
+            <p data-ref="mail_failures_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.mail.recent_failures|count={{diagnostics?.data?.mail?.recent_code_failures ?? 0}}</p>
+          </div>
         </div>
         <div data-ref="mock_card" class="sl-admin-card">
           <h2 class="sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2">$t:sirsoft-social_login.admin.diagnostics.mock.title</h2>
@@ -89,10 +96,12 @@
         </div>
         <div data-ref="members_card" class="sl-admin-card">
           <h2 class="sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2">$t:sirsoft-social_login.admin.diagnostics.members.title</h2>
-          <p data-ref="members_linked_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.members.linked|count={{diagnostics?.data?.members?.linked_users ?? 0}}</p>
-          <p data-ref="members_passwordless_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.members.passwordless|count={{diagnostics?.data?.members?.passwordless_users ?? 0}}</p>
-          <p data-ref="webhook_summary_value" class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mt-2">$t:sirsoft-social_login.admin.diagnostics.webhooks.summary|days={{diagnostics?.data?.webhooks?.days ?? 7}}|received={{diagnostics?.data?.webhooks?.received ?? 0}}|ignored={{diagnostics?.data?.webhooks?.ignored ?? 0}}|failed={{diagnostics?.data?.webhooks?.failed ?? 0}}</p>
-          <p data-if="{{(diagnostics?.data?.webhooks?.ignored ?? 0) > 0 &amp;&amp; !diagnostics?.data?.webhooks?.trusted_proxy_configured}}" class="sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1">$t:sirsoft-social_login.admin.diagnostics.webhooks.proxy_hint</p>
+          <div data-ref="members_values" data-if="{{!!diagnostics?.data}}">
+            <p data-ref="members_linked_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.members.linked|count={{diagnostics?.data?.members?.linked_users ?? 0}}</p>
+            <p data-ref="members_passwordless_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.members.passwordless|count={{diagnostics?.data?.members?.passwordless_users ?? 0}}</p>
+            <p data-ref="webhook_summary_value" class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mt-2">$t:sirsoft-social_login.admin.diagnostics.webhooks.summary|days={{diagnostics?.data?.webhooks?.days ?? 7}}|received={{diagnostics?.data?.webhooks?.received ?? 0}}|ignored={{diagnostics?.data?.webhooks?.ignored ?? 0}}|failed={{diagnostics?.data?.webhooks?.failed ?? 0}}</p>
+            <p data-if="{{(diagnostics?.data?.webhooks?.ignored ?? 0) > 0 &amp;&amp; !diagnostics?.data?.webhooks?.trusted_proxy_configured}}" class="sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1">$t:sirsoft-social_login.admin.diagnostics.webhooks.proxy_hint</p>
+          </div>
         </div>
       </div>
       <div data-ref="providers_status_card" class="sl-admin-card sl:mb-6">
@@ -153,7 +162,7 @@
             </select>
           </div>
         </div>
-        <data-grid data-type="composite" data-ref="attempts_datagrid" data="{{attempts?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{attempts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{attempts?.data?.pagination?.last_page ?? null}}" pageSize="20" idField="id" :selectable="false" emptyMessage="$t:sirsoft-social_login.admin.diagnostics.attempts.empty">
+        <data-grid data-type="composite" data-ref="attempts_datagrid" data="{{attempts?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{attempts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{attempts?.data?.pagination?.last_page ?? null}}" pageSize="20" idField="id" :selectable="false" emptyMessage="{{attempts === undefined ? '' : $t('sirsoft-social_login.admin.diagnostics.attempts.empty')}}">
           <on type="change" event="onPageChange">
             <!-- 시도 기록 쪽 이동 — 다른 필터는 그대로 두고 쪽 번호만 바꾼다 -->
             <navigate path="/admin/plugins/sirsoft-social_login/diagnostics" :mergeQuery="true">
@@ -218,7 +227,7 @@
             </select>
           </div>
         </div>
-        <data-grid data-type="composite" data-ref="webhooks_datagrid" data="{{webhookEvents?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{webhookEvents?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{webhookEvents?.data?.pagination?.last_page ?? null}}" pageSize="20" idField="id" :selectable="false" emptyMessage="$t:sirsoft-social_login.admin.diagnostics.webhooks.empty">
+        <data-grid data-type="composite" data-ref="webhooks_datagrid" data="{{webhookEvents?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{webhookEvents?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{webhookEvents?.data?.pagination?.last_page ?? null}}" pageSize="20" idField="id" :selectable="false" emptyMessage="{{webhookEvents === undefined ? '' : $t('sirsoft-social_login.admin.diagnostics.webhooks.empty')}}">
           <on type="change" event="onPageChange">
             <!-- 웹훅 기록 쪽 이동 — 다른 필터는 그대로 두고 쪽 번호만 바꾼다 -->
             <navigate path="/admin/plugins/sirsoft-social_login/diagnostics" :mergeQuery="true">

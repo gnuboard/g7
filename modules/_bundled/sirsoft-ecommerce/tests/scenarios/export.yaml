@@ -93,6 +93,7 @@ effects:
   - csv_starts_with_bom_and_uses_crlf
   - csv_formula_cells_neutralized
   - csv_numeric_cells_untouched
+  - generation_leaves_worker_context_clean
   # 관리
   - download_records_history
   - download_streams_via_one_time_link
@@ -110,6 +111,13 @@ effects:
   - reservation_retry_does_not_fail_running_job
   - activity_log_labels_resolved
   - notification_click_opens_export_management
+  - export_list_search_matches_requester_email
+  - export_list_search_escapes_like_wildcards
+  - requester_filter_matches_requester_exactly
+  - summary_period_reflects_applied_period
+  - missing_export_returns_module_not_found
+  - export_screen_columns_follow_personal_permission
+  - manager_role_can_view_site_notifications
   # 선언 — 메뉴·예약 작업, 모델 선언(D19)
   - menu_and_schedule_declared
   - export_declarations_cover_all_columns
@@ -159,6 +167,11 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportScaleTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportSecurityTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportListAbilityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportListSearchTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportSummaryPeriodTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportNotFoundTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportPersonalFieldNarrowingTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportManagerNotificationPermissionTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Exports/CsvExportWriterTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Exports/ExportDeclarationCoverageTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Listeners/ExportActivityLogDescriptionResolverTest.php
@@ -166,5 +179,6 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/ExportSourceQueryParityTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/downloadExportFile.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/exportRequestSourcesIdentical.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminExportRequesterFilter.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-export-request-and-manage.spec.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-export-modal-usability.spec.ts

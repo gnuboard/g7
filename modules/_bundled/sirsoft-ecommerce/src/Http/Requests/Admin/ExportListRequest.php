@@ -27,7 +27,7 @@ class ExportListRequest extends FormRequest
     /**
      * 쿼리스트링 불리언(`mine=true`)을 정규화합니다. 해석할 수 없는 값은 건드리지 않는다(422 로 알린다).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
@@ -51,6 +51,7 @@ class ExportListRequest extends FormRequest
         $rules = [
             'search_field' => ['nullable', Rule::in(['all', 'file_name', 'requester'])],
             'search_keyword' => ['nullable', 'string', 'max:200'],
+            'requester_uuid' => ['nullable', 'string', 'uuid'],
             'statuses' => ['nullable', 'array'],
             'statuses.*' => ['string', Rule::in(ExportStatusEnum::values())],
             'types' => ['nullable', 'array'],
@@ -99,6 +100,7 @@ class ExportListRequest extends FormRequest
         return [
             'search_field' => __('sirsoft-ecommerce::validation.export_attributes.search_field'),
             'search_keyword' => __('sirsoft-ecommerce::validation.export_attributes.search_keyword'),
+            'requester_uuid' => __('sirsoft-ecommerce::validation.export_attributes.requester_uuid'),
             'statuses' => __('sirsoft-ecommerce::validation.export_attributes.statuses'),
             'statuses.*' => __('sirsoft-ecommerce::validation.export_attributes.statuses'),
             'types' => __('sirsoft-ecommerce::validation.export_attributes.types'),

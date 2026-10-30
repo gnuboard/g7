@@ -226,16 +226,11 @@ class UserService
 
             // 비밀번호를 정하는 요청은 비밀번호 인증 정책을 묻는다(7.2.0) — 회사 계정 로그인이 강제된 회원에게 비밀번호를 만들어
             // 주면 강제를 우회하는 길이 된다. 본인이면 `set_password`, 관리자가 남의 비밀번호를 정하면 `admin_set_password`.
+            // 회원 응답(`can_set_password`·`password_status.can_set`)이 화면에 미리 알리는 판정과 같은 것을 쓴다.
             if (! empty($data['password'])) {
                 $actor = Auth::user();
-                $byOther = $actor instanceof User && (int) $actor->getKey() !== (int) $user->getKey();
 
-                app(PasswordAuthPolicyService::class)->assertAllowed([
-                    'identifier' => (string) $user->email,
-                    'user' => $user,
-                    'guard' => $byOther ? 'admin' : 'user',
-                    'purpose' => $byOther ? 'admin_set_password' : 'set_password',
-                ]);
+                app(PasswordAuthPolicyService::class)->assertCanSetPassword($user, $actor instanceof User ? $actor : null);
             }
 
             // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
@@ -501,7 +496,7 @@ class UserService
      *
      * @param  User  $user  탈퇴 처리된 사용자 모델
      * @param  Attachment|null  $avatarAttachment  탈퇴 전 캡처한 아바타 첨부
-     * @return void
+     * @return void 반환값 없음
      */
     private function runWithdrawAfterEffects(User $user, $avatarAttachment): void
     {
@@ -967,7 +962,7 @@ class UserService
      * 최고관리자는 차단 대상이 될 수 없음을 확인합니다 (등급 가드 포함).
      *
      * @param  User  $user  대상 회원
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws CannotModifySuperAdminException 대상이 최고관리자이거나 행위자가 대상보다 낮은 등급일 때
      */

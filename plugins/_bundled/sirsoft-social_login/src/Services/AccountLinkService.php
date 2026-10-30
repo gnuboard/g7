@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\SocialLogin\Services;
 
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Support\SiteUrl;
 use Illuminate\Support\Facades\Log;
@@ -190,8 +191,8 @@ class AccountLinkService
             'label' => $this->settings->label($account->provider_key),
             'brand' => $this->settings->brand($account->provider_key),
             'email' => $account->email !== null ? OAuthFlowService::maskEmail($account->email) : null, // audit:allow resource-member-email-ungated 본인 화면용 마스킹 값(앞 2자 + 도메인)
-            'linked_at' => $account->linked_at?->toIso8601String(),
-            'last_login_at' => $account->last_login_at?->toIso8601String(),
+            'linked_at' => TimezoneHelper::toUserDateTimeString($account->linked_at),
+            'last_login_at' => TimezoneHelper::toUserDateTimeString($account->last_login_at),
         ])->values()->all();
 
         $available = [];
@@ -249,8 +250,8 @@ class AccountLinkService
             'provider_user_id_prefix' => mb_substr((string) $account->provider_user_id, 0, 6),
             'email' => $account->email, // audit:allow resource-member-email-ungated 회원 연결 열람 권한(accounts.view) 라우트만 부른다
             'email_verified' => $account->email_verified,
-            'linked_at' => $account->linked_at?->toIso8601String(),
-            'last_login_at' => $account->last_login_at?->toIso8601String(),
+            'linked_at' => TimezoneHelper::toUserDateTimeString($account->linked_at),
+            'last_login_at' => TimezoneHelper::toUserDateTimeString($account->last_login_at),
         ])->values()->all();
 
         return [

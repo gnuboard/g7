@@ -302,7 +302,13 @@
                 <p class="text-xs text-gray-500 dark:text-gray-400">$t:admin.users.form.fields.create_without_password_hint</p>
               </div>
             </div>
-            <div class="grid-2col-responsive" data-ref="field_password_group" data-if="{{!!route?.id || !_local.form?.create_without_password}}">
+            <!-- 비밀번호를 만들 수 없는 회원(7.2.0) — 비밀번호 인증 정책(회사 계정 로그인 강제, IdP 가 이 사이트 비밀번호를 허용하지 않음 등)이 막으면
+                 회원 상세의 `password_status.can_set=false` 와 저장 때와 같은 문구가 온다. 칸·규칙·본인 확인 자리 대신 그 문구를 보인다
+                 (저장하면 본인 확인 왕복 뒤 403 으로 거절되므로 미리 알린다). 판정이 없는 응답(이전 서버)은 지금처럼 칸을 보인다. -->
+            <div data-ref="password_unsettable_notice" data-if="{{!!route?.id &amp;&amp; user?.data?.password_status?.can_set === false}}" class="alert-warning" role="status">
+              <p class="text-warning-soft">{{user?.data?.password_status?.set_blocked_message ?? ''}}</p>
+            </div>
+            <div class="grid-2col-responsive" data-ref="field_password_group" data-if="{{!!route?.id ? user?.data?.password_status?.can_set !== false : !_local.form?.create_without_password}}">
               <div data-ref="field_password">
                 <label class="form-label">
                   <span>$t:admin.users.form.fields.password</span>
@@ -321,7 +327,7 @@
             </div>
             <!-- 켜진 비밀번호 규칙을 한 줄로 안내한다(보안 환경설정 값 — 서버가 같은 규칙으로 검사한다). 재사용 금지는 본인 계정일 때만
                  검사하므로(다른 회원에게 정해 주는 비밀번호는 검사하지 않는다) 본인일 때만 붙인다. -->
-            <p data-ref="password_rules_hint" data-if="{{!!route?.id || !_local.form?.create_without_password}}" class="flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2">
+            <p data-ref="password_rules_hint" data-if="{{!!route?.id ? user?.data?.password_status?.can_set !== false : !_local.form?.create_without_password}}" class="flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2">
               <span>$t:auth.password_rules.min_length|count={{_global.settings?.security?.password_min_length ?? 8}}</span>
               <span data-if="{{!!_global.settings?.security?.require_password_special_char}}">$t:auth.password_rules.special</span>
               <span data-if="{{!!_global.settings?.security?.password_require_char_types}}">$t:auth.password_rules.char_types</span>
@@ -332,12 +338,12 @@
             </p>
             <!-- 다른 회원의 비밀번호를 정해 주면 그 회원은 다음 로그인 때 본인이 바꿔야 한다(D11 — 서버가 플래그를 세운다).
                  등록은 늘 그렇다. 저장 전에 미리 알려 운영자가 의도를 확인하게 한다. -->
-            <div data-ref="password_admin_assigned_notice" data-if="{{!!_local.form?.password &amp;&amp; !(!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid)}}" class="alert-info">
+            <div data-ref="password_admin_assigned_notice" data-if="{{!!_local.form?.password &amp;&amp; !(!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid) &amp;&amp; !(!!route?.id &amp;&amp; user?.data?.password_status?.can_set === false)}}" class="alert-info">
               <p class="text-info-soft">{{route?.id ? '$t:admin.users.form.password_policy.admin_assigned_notice' : '$t:admin.users.form.password_policy.create_notice'}}</p>
             </div>
             <!-- 본인 계정의 비밀번호를 바꿀 때만 현재 비밀번호를 묻는다(D19). 서버는 화면과 별개로 행위자 = 대상을 판정해
                  같은 확인과 재사용 검사를 한다 — 이 칸은 그 요구를 미리 보여 주는 자리다. -->
-            <div data-ref="field_current_password" data-if="{{!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_local.form?.password &amp;&amp; user?.data?.has_password !== false}}">
+            <div data-ref="field_current_password" data-if="{{!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_local.form?.password &amp;&amp; user?.data?.has_password !== false &amp;&amp; user?.data?.password_status?.can_set !== false}}">
               <label class="form-label">
                 <span>$t:admin.users.form.password_policy.current_password</span>
                 <span class="text-red-600 dark:text-red-400 ml-1">*</span>
@@ -348,7 +354,7 @@
             </div>
             <!-- 비밀번호가 없는 관리자(외부 인증 전용)가 자기 비밀번호를 처음 정할 때 — 현재 비밀번호 대신 이메일 인증번호로 본인을 확인한다.
                  확인해 받은 토큰을 폼 값(`verification_token`)에 넣어 저장 요청에 함께 보낸다. 서버가 본인 것인지·한 번만 쓰는지 확인한다. -->
-            <div data-ref="password_reauth_verification" data-if="{{!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_local.form?.password &amp;&amp; user?.data?.has_password === false}}" class="space-y-2">
+            <div data-ref="password_reauth_verification" data-if="{{!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_local.form?.password &amp;&amp; user?.data?.has_password === false &amp;&amp; user?.data?.password_status?.can_set !== false}}" class="space-y-2">
               <!-- 메일을 받을 수 없는 관리자(대체 이메일)에게는 「이메일로 받은 인증번호」 대신 일반 안내 — 서버가 회사 계정 다시 로그인 등을 고른다 -->
               <p data-if="{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) !== false}}" class="text-xs text-gray-500 dark:text-gray-400">$t:admin.users.form.password_policy.reauth_notice</p>
               <p data-if="{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) === false}}" class="text-xs text-gray-500 dark:text-gray-400">$t:admin.users.form.password_policy.reauth_notice_other</p>
@@ -375,7 +381,7 @@
                           <set-state target="local" :isRequestingReauthCode="false"/>
                           <toast type="error" message="{{error.message}}"/>
                         </fail>
-                        <body purpose="sensitive_action" return_path="{{'/admin/users/' + route.id + '/edit'}}"/>
+                        <body purpose="sensitive_action" return_path="{{'/admin/users/' + route.id + '/edit'}}" scope="admin"/>
                       </api-call>
                     </sequence>
                   </on>
@@ -683,7 +689,8 @@
                       <on-code code="403">
                         <sequence>
                           <set-state target="global" :isSaving="false"/>
-                          <toast type="error" message="$t:auth.permission_denied"/>
+                          <!-- 서버 문구(비밀번호 인증 정책 거절 등)를 보인다 — 없을 때만 공통 「권한이 없습니다」 -->
+                          <toast type="error" message="{{error.message ?? '$t:auth.permission_denied'}}"/>
                         </sequence>
                       </on-code>
                       <on-code code="500">
@@ -746,7 +753,8 @@
                   <on-code code="403">
                     <sequence>
                       <set-state target="global" :isSaving="false"/>
-                      <toast type="error" message="$t:auth.permission_denied"/>
+                      <!-- 서버 문구(비밀번호 인증 정책 거절 등)를 보인다 — 없을 때만 공통 「권한이 없습니다」 -->
+                      <toast type="error" message="{{error.message ?? '$t:auth.permission_denied'}}"/>
                     </sequence>
                   </on-code>
                   <on-code code="500">

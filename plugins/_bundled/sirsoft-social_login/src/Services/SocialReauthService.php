@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\SocialLogin\Services;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\IdentityVerificationPurpose;
+use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\User;
 use App\Services\IdentityVerificationService;
 use App\Support\SiteUrl;
@@ -42,6 +43,15 @@ class SocialReauthService
     /** 수령 코드 보관 시간(초) */
     private const CLAIM_TTL = 300;
 
+    /** 재확인 요청 맥락의 출처 식별자 — 플러그인 화면의 제공자 버튼이 시작한 요청 */
+    public const ORIGIN_IDENTIFIER = 'sirsoft-social_login.reauth';
+
+    /** 「본인 확인 계속하기」 시작 주소 보관 시간(초) — 본인인증 요청 유효 시간과 같다 */
+    private const CONTINUE_TTL = 600;
+
+    /** 「본인 확인 계속하기」 시작 주소 경로(같은 출처, 뒤에 1회용 티켓) */
+    public const CONTINUE_PATH = '/plugins/sirsoft-social_login/reauth/';
+
     /**
      * @param  SocialAccountRepositoryInterface  $accounts  연결 저장소
      * @param  ProviderSettings  $settings  제공자 정책
@@ -75,6 +85,27 @@ class SocialReauthService
     }
 
     /**
+     * 이 회원의 민감 작업 재확인이 실제로 소셜 재확인으로 가는지 판정합니다 — 화면의 소셜 안내·제공자 버튼 조건(`reauth_via_social`).
+     *
+     * 대상(`isEligible`)이어도 코어가 다른 수단을 먼저 고르면(회사 계정과 소셜을 둘 다 연결한 회원은 회사 계정 다시 로그인) 「본인 확인
+     * 계속하기」·428 재확인이 그 수단으로 가므로, 소셜 안내를 보이면 실제 수단과 어긋난다. 코어 재확인 시작과 같은 해석으로 판정한다.
+     * 제공자 버튼으로 직접 시작하는 왕복(`start`)은 대상이면 그대로 받는다.
+     *
+     * @param  User  $user  회원
+     * @return bool 소셜 재확인으로 가면 true
+     */
+    public function isChosenReauth(User $user): bool
+    {
+        if (! $this->isEligible($user)) {
+            return false;
+        }
+
+        return app(IdentityVerificationManager::class)
+            ->resolveUsableForUser(IdentityVerificationPurpose::SensitiveAction->value, $user)
+            ?->getId() === self::PROVIDER_ID;
+    }
+
+    /**
      * 재확인 왕복을 시작합니다.
      *
      * @param  User  $user  로그인 회원
@@ -100,7 +131,7 @@ class SocialReauthService
 
         $challenge = $this->identity->start(IdentityVerificationPurpose::SensitiveAction->value, $user, [
             'origin_type' => 'custom',
-            'origin_identifier' => 'sirsoft-social_login.reauth',
+            'origin_identifier' => self::ORIGIN_IDENTIFIER,
             'ip_address' => request()->ip(),
             'user_agent' => (string) request()->userAgent(),
         ], self::PROVIDER_ID);
@@ -119,6 +150,76 @@ class SocialReauthService
 
             throw new SocialFlowException($e->errorCode, 422);
         }
+    }
+
+    /**
+     * 코어 재확인 요청(화면의 「본인 확인 계속하기」 — 수단을 비운 요청)에 실을 같은 출처 시작 주소를 만듭니다.
+     *
+     * 코어가 이 회원의 민감 작업 재확인 수단으로 소셜 재확인을 고르면, 화면은 응답의 `redirect_url`(같은 출처 경로만 따른다)로
+     * 이동한다. 그 주소는 1회용 티켓이고, 열면 회원이 연결한 제공자 중 연결 순서 첫째(마이페이지·재확인 버튼 목록과 같은 순서)이면서
+     * 켜진 제공자의 인가 화면으로 보낸다. 왕복은 제공자 버튼이 시작한 것과 같다(같은 본인인증 요청, 같은 콜백 대조·수령 코드).
+     * 시작할 수 있는 제공자가 없거나 제공자가 시작을 거절하면 null — 화면은 「이동할 수 없습니다」 안내를 보이고 제공자 버튼은 그대로다.
+     *
+     * @param  User  $user  재확인 대상 회원 (대상 판정은 호출자가 마쳤다)
+     * @param  string  $challengeId  코어 본인인증 요청 ID
+     * @param  string|null  $returnPath  확인 뒤 돌아갈 같은 출처 경로
+     * @return string|null 시작 주소 (같은 출처 경로), 없으면 null
+     */
+    public function prepareContinue(User $user, string $challengeId, ?string $returnPath): ?string
+    {
+        $providerKey = null;
+        foreach ($this->accounts->findForUser((int) $user->getKey()) as $account) {
+            if ($this->settings->isEnabled((string) $account->provider_key)) {
+                $providerKey = (string) $account->provider_key;
+                break;
+            }
+        }
+
+        if ($providerKey === null) {
+            return null;
+        }
+
+        $redirect = StateStore::safeRedirect($returnPath);
+
+        try {
+            $authorizeUrl = $this->flow->start($providerKey, AttemptIntent::Reauth, $redirect, (int) $user->getKey(), $challengeId);
+        } catch (ProviderException) {
+            return null;
+        }
+
+        $ticket = Str::random(40);
+        $this->cache->put($this->continueKey($ticket), ['url' => $authorizeUrl, 'redirect' => $redirect], self::CONTINUE_TTL);
+
+        return self::CONTINUE_PATH.$ticket;
+    }
+
+    /**
+     * 「본인 확인 계속하기」 시작 주소의 티켓을 꺼냅니다 (한 번만).
+     *
+     * @param  string  $ticket  1회용 티켓
+     * @return string|null 제공자 인가 주소, 없거나 이미 썼으면 null
+     */
+    public function pullContinue(string $ticket): ?string
+    {
+        if (preg_match('/^[A-Za-z0-9]{40}$/', $ticket) !== 1) {
+            return null;
+        }
+
+        $key = $this->continueKey($ticket);
+        $payload = $this->cache->get($key);
+        $this->cache->forget($key);
+
+        return is_array($payload) && is_string($payload['url'] ?? null) && $payload['url'] !== '' ? $payload['url'] : null;
+    }
+
+    /**
+     * 시작 주소 티켓이 없거나 이미 쓴 경우 돌아갈 주소를 만듭니다.
+     *
+     * @return string 절대 주소 (`social_error=reauth_failed`)
+     */
+    public static function continueFailedUrl(): string
+    {
+        return self::returnUrl('/mypage/profile/edit', ['social_error' => 'reauth_failed']);
     }
 
     /**
@@ -254,6 +355,17 @@ class SocialReauthService
     private function proofKey(string $challengeId): string
     {
         return 'reauth_proof:'.hash('sha256', $challengeId);
+    }
+
+    /**
+     * 「본인 확인 계속하기」 시작 티켓 캐시 키 (원문 대신 해시).
+     *
+     * @param  string  $ticket  티켓
+     * @return string 캐시 키
+     */
+    private function continueKey(string $ticket): string
+    {
+        return 'reauth_continue:'.hash('sha256', $ticket);
     }
 
     /**

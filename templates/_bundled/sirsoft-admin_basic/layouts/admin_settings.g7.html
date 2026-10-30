@@ -11,8 +11,16 @@
   언어팩 탭은 조각·창을 **언어팩 관리 화면 것을 그대로 빌려 쓴다** — 아래 창 목록 앞쪽 일곱이 그것이다. -->
 <layout name="admin_settings" version="1.0.0" extends="_admin_base">
   <meta leave_guard="{{_local.hasChanges === true}}" title="$t:admin.settings.page_title" description="$t:admin.settings.page_description"/>
-  <!-- 언어팩 목록 — 언어팩 탭에서만 받는다(빌려 온 조각이 이 id 를 그대로 읽는다). -->
+  <!-- 언어팩 목록 — 언어팩 탭에서만 받는다(빌려 온 조각이 이 id 를 그대로 읽는다).
+       이 화면의 레이아웃 권한은 설정 조회뿐이라 언어팩 조회(core.language_packs.read)가 없는 관리자도 들어온다 — 그 403 은 조용히 넘기고
+       (fallback 이 빈 목록을 싣는다), 탭 항목·본문은 계산값 `canReadLanguagePacks` 로 가려 「설치된 언어팩이 없습니다」 대신 권한 안내를 보인다.
+       아래 미배치 번들 안내·본인인증 제공자·정책 소스도 같은 방식이다(각 조각이 자기 계산값을 본다). -->
   <data-source id="language_packs" label_key="$t:editor.data_source.language_packs" type="api" endpoint="/api/admin/language-packs" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
     <params page="{{query.page}}" per_page="{{query.per_page ?? 10}}" scope="{{_local.filterScope || query.scope}}" target_identifier="{{_local.filterTarget || query.target_identifier}}" locale="{{query.locale}}" status="{{query.status}}" search="{{query.search}}" exclude_protected="{{query.exclude_protected ?? '1'}}"/>
     <fallback>
       <field name="data">
@@ -31,6 +39,11 @@
   <!-- 코어 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 번들 안내(#146). 모듈·플러그인·템플릿 화면과
        **같은 API** 를 부르고 여기서는 응답의 `language_packs` 만 읽는다. 숨김 샘플·설치·디스크·닫은 관리자는 서버가 거른다. -->
   <data-source id="unplaced_bundled_notice" label_key="$t:editor.data_source.unplaced_bundled_notice" type="api" endpoint="/api/admin/extensions/unplaced-bundled" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
     <fallback>
       <field name="data">
         <field name="items">
@@ -119,7 +132,8 @@
   <!-- 코어 예약 작업 목록 — 설정 탭의 「스케줄로 도는 작업」 안내(사이트맵·처리 기록 정리·활동 로그 파기·비밀번호 만료·GeoIP·
        개인정보 파기·고아 첨부 정리)가 그 작업의 **다음 실행 일시**를 보이려고 받는다(고정 시각을 적어 두면 운영자가
        주기를 바꿨을 때 문구가 틀린다). 코어 행은 서른 개 남짓이라 한 번에 받고 각 안내가 식별자로 고른다.
-       스케줄 조회 권한(core.schedules.read)이 없으면 서버가 403 을 주고 조용히 넘긴다 — 안내는 시각 없이 링크만 남는다
+       스케줄 조회 권한(core.schedules.read)이 없으면 서버가 403 을 주고 조용히 넘긴다 — 안내는 시각 없이 문구만 남고,
+       「스케줄 관리에서 변경」 링크는 계산값 `canReadSchedules` 가 거짓이면 숨긴다(눌러도 403 화면이다).
        (데이터소스 조건 문맥에는 사용자 권한이 없어 요청 전에 거를 수 없다). -->
   <data-source id="coreSchedules" label_key="$t:editor.data_source.coreSchedules" type="api" endpoint="/api/admin/schedules" method="GET" if="{{['seo', 'drivers', 'security', 'advanced', 'privacy', 'upload'].includes(query.tab || _global.activeSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
     <params extension_type="core" :per_page="100"/>
@@ -274,6 +288,11 @@
   </data-source>
   <!-- 본인인증 제공자 목록 — 아래 넷과 함께 인증 탭에서만 받는다. -->
   <data-source id="identityProviders" label_key="$t:editor.data_source.identityProviders" type="api" endpoint="/api/admin/identity/providers" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
@@ -300,6 +319,11 @@
        아래 `policies` 와 **같은 주소를 다른 조건으로** 부르는 것이라, 둘을 합치면 한쪽 필터가
        다른 쪽 목록을 흔든다. 100건까지 한 번에 받아 페이지를 두지 않는다. -->
   <data-source id="adminIdentityPolicies" label_key="$t:editor.data_source.adminIdentityPolicies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{['identity', 'notification_definitions'].includes(query.tab || _global.activeSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
     <params source_type="admin" :per_page="100"/>
     <fallback>
       <field name="data">
@@ -309,6 +333,11 @@
   </data-source>
   <!-- 인증 정책 전체 목록(정책 하위 탭) — 위와 달리 화면에서 건 필터·페이지를 쿼리에서 읽는다. -->
   <data-source id="policies" label_key="$t:editor.data_source.policies" type="api" endpoint="/api/admin/identity/policies" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
     <params scope="{{query.scope}}" purpose="{{query.purpose}}" source_type="{{query.source_type}}" enabled="{{query.enabled}}" search="{{query.search}}" page="{{query.page || 1}}" per_page="{{query.per_page || 10}}"/>
     <fallback>
       <field name="data">
@@ -354,6 +383,10 @@
     <field name="policyIsNew" :value="true"/>
     <field name="policyIsSaving" :value="false"/>
   </init-local>
+  <computed name="canReadLanguagePacks">{{current_user?.data ? (current_user.data.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.read') : null}}</computed>
+  <computed name="canReadIdentityProviders">{{current_user?.data ? (current_user.data.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.admin.identity.providers.read') : null}}</computed>
+  <computed name="canReadIdentityPolicies">{{current_user?.data ? (current_user.data.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.admin.identity.policies.read') : null}}</computed>
+  <computed name="canReadSchedules">{{current_user?.data ? (current_user.data.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.schedules.read') : null}}</computed>
   <computed name="isReadOnly">{{_global.settingsAbilities?.can_update !== true}}</computed>
   <computed name="envLocked">{{_local.form?._meta?.env_locked ?? null}}</computed>
   <computed name="queueConnectionList">{{(function() { const d = _local.form?.drivers ?? {}; const list = Array.isArray(d.queue_connections) ? d.queue_connections.filter(c =&gt; typeof c === 'string') : []; if (list.length &gt; 0) return list; return d.queue_driver &amp;&amp; d.queue_driver !== 'sync' ? [d.queue_driver] : []; })()}}</computed>
@@ -452,7 +485,7 @@
             <item id="drivers" href="/admin/settings?tab=drivers" label="$t:admin.settings.tabs.drivers"/>
             <item id="advanced" href="/admin/settings?tab=advanced" label="$t:admin.settings.tabs.advanced"/>
             <item id="notification_definitions" href="/admin/settings?tab=notification_definitions" label="$t:admin.settings.tabs.notification_definitions"/>
-            <item id="language_packs" href="/admin/settings?tab=language_packs" label="$t:admin.settings.tabs.language_packs"/>
+            <item id="language_packs" href="/admin/settings?tab=language_packs" label="$t:admin.settings.tabs.language_packs" if="{{_computed.canReadLanguagePacks !== false}}"/>
             <item id="identity" href="/admin/settings?tab=identity" label="$t:admin.settings.tabs.identity"/>
             <item id="privacy" href="/admin/settings?tab=privacy" label="$t:admin.settings.tabs.privacy"/>
             <item id="info" href="/admin/settings?tab=info" label="$t:admin.settings.tabs.info"/>

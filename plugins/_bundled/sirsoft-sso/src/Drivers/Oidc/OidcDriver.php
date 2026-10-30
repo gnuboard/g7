@@ -14,6 +14,7 @@ use Plugins\Sirsoft\Sso\DTO\LogoutResult;
 use Plugins\Sirsoft\Sso\Exceptions\SsoException;
 use Plugins\Sirsoft\Sso\Models\IdentityProvider;
 use Plugins\Sirsoft\Sso\Models\SsoSession;
+use Plugins\Sirsoft\Sso\Services\AttributeSyncService;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -293,6 +294,13 @@ class OidcDriver implements ProtocolDriverInterface
             }
         }
 
+        // 속성 규칙에 적은 클레임은 기본 목록 밖이어도 담는다 — 클레임 이름은 대소문자를 그대로 가린다.
+        foreach (AttributeSyncService::requestedSources($idp) as $key) {
+            if (! isset($attributes[$key]) && ($value = self::claimValue($claims[$key] ?? null)) !== null) {
+                $attributes[$key] = $value;
+            }
+        }
+
         return new ExternalIdentity(
             subject: (string) $subject,
             subjectFormat: $subjectClaim,
@@ -304,6 +312,41 @@ class OidcDriver implements ProtocolDriverInterface
             mfa: $this->mfa($idp, $claims),
             sessionRef: is_string($claims['sid'] ?? null) ? mb_substr($claims['sid'], 0, 255) : null,
         );
+    }
+
+    /**
+     * 속성 규칙이 읽을 클레임 값 — 문자열, 숫자, 참거짓은 문자열로, 그런 값의 목록은 문자열 목록으로. 객체 클레임은 받지 않는다.
+     *
+     * @param  mixed  $value  클레임 값
+     * @return string|array<int, string>|null 값, 담지 않으면 null
+     */
+    private static function claimValue(mixed $value): string|array|null
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_string($value) || is_int($value) || is_float($value)) {
+            $value = trim((string) $value);
+
+            return $value !== '' ? mb_substr($value, 0, 1000) : null;
+        }
+
+        if (is_array($value) && array_is_list($value)) {
+            $list = [];
+            foreach (array_slice($value, 0, 50) as $item) {
+                if (is_string($item) || is_int($item) || is_float($item)) {
+                    $item = trim((string) $item);
+                    if ($item !== '') {
+                        $list[] = mb_substr($item, 0, 1000);
+                    }
+                }
+            }
+
+            return $list !== [] ? $list : null;
+        }
+
+        return null;
     }
 
     /**

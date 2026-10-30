@@ -1567,6 +1567,14 @@
       "expression_help": "e.g. * * * * * (every minute), 0 0 * * * (daily at midnight)",
       "timeout": "Time limit",
       "timeout_help": "The run stops when it exceeds this time. (1 – 86400 seconds)",
+      "timeout_placeholder": "Default",
+      "timeout_default": {
+        "artisan_sync": "Leave blank to run without a time limit.",
+        "artisan_queue": "Leave blank for 600 seconds. If that exceeds the queue connection's retry wait, it is shortened below it.",
+        "shell": "Leave blank for 60 seconds.",
+        "url": "Leave blank for 30 seconds.",
+        "job": "Job tasks ignore this value and follow the time limit set in the job class."
+      },
       "seconds_suffix": "sec",
       "minutes_suffix": "min",
       "without_overlapping": "Overlap prevention",
@@ -1733,7 +1741,8 @@
       },
       "notice": {
         "unmeasurable": "The current queue driver ({{driver}}) cannot count pending jobs. The pending list is only available with the database driver.",
-        "no_worker": "The default queue driver is {{driver}}, so there is no worker to process retried jobs. Retries will be rejected."
+        "no_worker": "The default queue driver is {{driver}}, so there is no worker to process retried jobs. Retries will be rejected.",
+        "no_permission": "You do not have permission to view queue monitoring. The \"View Queue Jobs\" permission is required."
       },
       "filter": {
         "queue": "Queue",
@@ -1823,7 +1832,9 @@
       "errors": {
         "retry_failed": "Could not retry the job.",
         "delete_failed": "Could not delete the job.",
-        "detail_failed": "Could not load the job details."
+        "detail_failed": "Could not load the job details.",
+        "list_load_failed": "Could not load the list. Please refresh in a moment.",
+        "status_load_failed": "Could not load the queue status. Please refresh in a moment."
       }
     }
   },
@@ -2921,6 +2932,11 @@
       "next_run": "Next run",
       "inactive": "This schedule is inactive, so it does not run now.",
       "change": "Change in Schedule Management"
+    },
+    "permission_required": {
+      "language_packs": "You do not have permission to view language packs. The \"View Language Packs\" permission is required.",
+      "identity_providers": "You do not have permission to view identity verification providers. The \"View IDV Providers\" permission is required.",
+      "identity_policies": "You do not have permission to view identity verification policies. The \"View IDV Policies\" permission is required."
     }
   },
   "templates": {

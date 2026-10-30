@@ -20,8 +20,11 @@ class JobPayloadParser
     /**
      * payload 문자열에서 표시용 메타데이터를 꺼냅니다.
      *
+     * `attempts` 는 payload 에 시도 수가 실려 있을 때만 값이 있다(redis 처럼 payload 안에서 세는 드라이버). database 드라이버는
+     * 시도 수를 `jobs.attempts` 열에 두고 payload 에 쓰지 않으므로 null(미상)이다 — 0 으로 채우면 「한 번도 시도하지 않음」으로 읽힌다.
+     *
      * @param  string|null  $payload  payload JSON 문자열
-     * @return array{display_name: string, job_class: string, uuid: string|null, attempts: int, max_tries: int|null, schedule_id: int|null} 메타데이터 (해석 불가면 기본값)
+     * @return array{display_name: string, job_class: string, uuid: string|null, attempts: int|null, max_tries: int|null, schedule_id: int|null} 메타데이터 (해석 불가면 기본값)
      */
     public static function parse(?string $payload): array
     {
@@ -36,7 +39,7 @@ class JobPayloadParser
      * 워커 이벤트(`$job->payload()`)는 디코드된 배열을 주므로 다시 인코딩하지 않고 이 경로를 쓴다.
      *
      * @param  array<string, mixed>  $decoded  디코드된 payload
-     * @return array{display_name: string, job_class: string, uuid: string|null, attempts: int, max_tries: int|null, schedule_id: int|null} 메타데이터
+     * @return array{display_name: string, job_class: string, uuid: string|null, attempts: int|null, max_tries: int|null, schedule_id: int|null} 메타데이터
      */
     public static function fromDecoded(array $decoded): array
     {
@@ -52,7 +55,7 @@ class JobPayloadParser
             'display_name' => $displayName,
             'job_class' => $jobClass,
             'uuid' => is_string($decoded['uuid'] ?? null) ? $decoded['uuid'] : null,
-            'attempts' => (int) ($decoded['attempts'] ?? 0),
+            'attempts' => isset($decoded['attempts']) && is_numeric($decoded['attempts']) ? (int) $decoded['attempts'] : null,
             'max_tries' => isset($decoded['maxTries']) && is_numeric($decoded['maxTries']) ? (int) $decoded['maxTries'] : null,
             'schedule_id' => self::scheduleId($jobClass, $decoded['data']['command'] ?? null),
         ];
@@ -80,7 +83,7 @@ class JobPayloadParser
     /**
      * 해석할 수 없는 payload 의 기본 메타데이터를 반환합니다.
      *
-     * @return array{display_name: string, job_class: string, uuid: null, attempts: int, max_tries: null, schedule_id: null} 기본값
+     * @return array{display_name: string, job_class: string, uuid: null, attempts: null, max_tries: null, schedule_id: null} 기본값
      */
     private static function empty(): array
     {
@@ -88,7 +91,7 @@ class JobPayloadParser
             'display_name' => self::UNKNOWN,
             'job_class' => self::UNKNOWN,
             'uuid' => null,
-            'attempts' => 0,
+            'attempts' => null,
             'max_tries' => null,
             'schedule_id' => null,
         ];

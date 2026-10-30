@@ -49,11 +49,24 @@ class FailedJobResource extends BaseApiResource
             'display_name' => $parsed['display_name'],
             'job_class' => $parsed['job_class'],
             'schedule_id' => $parsed['schedule_id'],
-            'attempts' => $parsed['attempts'],
+            // payload 에 시도 수를 싣는 드라이버(redis)는 그 값, 아니면(database) 같은 UUID 의 마지막 처리 기록, 둘 다 없으면 미상(null)
+            'attempts' => $parsed['attempts'] ?? $this->loggedAttempts(),
             'max_tries' => $parsed['max_tries'],
             'exception_summary' => Str::limit(trim(strtok($exception, "\n") ?: ''), self::SUMMARY_LENGTH),
             'failed_at' => $this->formatDateTimeStringForUser($this->resource->failed_at),
         ];
+    }
+
+    /**
+     * 서비스가 붙인 처리 기록 시도 횟수를 읽습니다.
+     *
+     * @return int|null 시도 횟수 (처리 기록이 없으면 null)
+     */
+    private function loggedAttempts(): ?int
+    {
+        $value = $this->getValue('logged_attempts');
+
+        return is_numeric($value) ? (int) $value : null;
     }
 
     /**

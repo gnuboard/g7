@@ -143,6 +143,9 @@ _단건 응답: `data` 객체의 필드._
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
 | email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
+| can_set_password | boolean | `true` | 이 회원이 비밀번호를 만들거나 바꿀 수 있는지 — 비밀번호 인증 정책(필터 `core.auth.password_auth_decision` 의 `set_password`, 예: 회사 계정 로그인 강제)이 막으면 false. 저장(`PUT /api/me/password`)의 403 `auth.password_auth_disabled` 와 같은 판정 (7.2.0) |
+| password_set_blocked_message | string\|null | `null` | `can_set_password` 가 false 일 때 보일 안내 문구 — 저장 403 의 문구와 같다. 만들 수 있으면 null (7.2.0) |
+| reauth_provider | string\|null | `null` | 비밀번호가 없고 메일을 받을 수 없는 회원의 민감 작업 재확인에 코어가 실제로 고를 본인인증 수단 ID(예: 회사 계정 다시 로그인). 비밀번호가 있거나 메일을 받는 회원, 쓸 수 있는 수단이 없는 회원은 null (7.2.0) |
 | password_changed_at | string\|null | `2026-07-01 10:20:00` | 비밀번호 마지막 변경 일시 (사용자 시간대, 기능 도입 전 회원은 null — #736) |
 | password_expires_at | string\|null | `2026-09-29 10:20:00` | 비밀번호 만료 예정 일시 — 만료가 적용되지 않으면 null |
 | password_expiry_days_left | integer\|null | `3` | 만료까지 남은 날수 (지났으면 0, 적용되지 않으면 null) |

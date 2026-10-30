@@ -189,7 +189,21 @@ public function register(array $providers): array
 `UserScopedIdentityProviderInterface` 이고 `canChallengeUser($user)` 가 거짓일 때 **같은 목적을 지원하고 그 회원에게 쓸 수 있는 다음
 제공자**(등록 순서)로 넘어간다. 코어 메일 제공자는 받을 수 없는 대체 이메일(`.invalid`) 회원에게 거짓을 답한다 — 그래서 화면은
 challenge 요청에 `provider_id` 를 고정하지 않는다. 판정은 조회만 해야 한다(로그를 남기거나 challenge 를 만들지 않는다).
+
+넘어갈 다음 제공자는 `UserScopedIdentityProviderInterface` 를 구현하고 그 회원에게 참을 답하는 제공자뿐이다. 이 계약을 구현하지 않은
+제공자(휴대폰 본인확인처럼 누구의 신원이든 확인해 주는 제공자)는 등록 순서가 앞서도 폴백으로 고르지 않는다 — 그 회원에게 맞는 수단인지
+알 수 없고, 고르면 그 회원과 무관한 사람의 본인확인으로 재확인이 통과할 수 있기 때문이다. 그런 제공자는 운영자가 목적별 제공자·정책·기본
+제공자로 지정했을 때만 쓰인다. 회원의 연결 계정이나 등록한 인증 수단으로 확인하는 제공자라면 이 계약을 구현해 폴백 후보가 된다.
+
 외부 화면을 거치는 수단은 `getRenderHint()` 가 `external_redirect` 를 돌려주고 challenge 응답의 `redirect_url` 로 보낸다.
+
+화면 안내가 「이 회원의 재확인이 어느 수단으로 가는가」를 실제 시작과 같은 판정으로 알아야 하면
+`IdentityVerificationManager::resolveUsableForUser($purpose, $user)` 를 쓴다 — 위와 같은 순서로 고르되, 고른 수단이 그 회원에게 쓸 수
+없으면 null 이다. 코어 마이페이지 응답의 `reauth_provider`(비밀번호가 없고 메일을 받을 수 없는 회원만)가 이 값이며, 확장도 자기 안내
+조건(예: 「연결한 소셜 계정으로 다시 로그인」)을 이 판정과 맞춘다 — 다른 수단이 앞서는 회원에게 자기 안내를 보이면 실제 수단과 어긋난다.
+
+외부 화면을 거치는 수단은 확인 뒤 요청 맥락의 `return_path`(같은 출처 경로만, 코어가 정규화)로 돌려보낸다. 정보 수정 화면과 템플릿의
+본인인증 launcher(428 경로)는 지금 화면 경로를 싣는다.
 
 ## 6. provider 추가 후 검증 매트릭스 (MANDATORY)
 

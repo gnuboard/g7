@@ -17,6 +17,9 @@ use App\Models\User;
  * 으로 분리하고, 미구현 프로바이더에는 코어가 기존 규칙(`filled($user->email)`)을
  * 그대로 적용합니다 — 기존 동작·테스트 계약 불변.
  *
+ * 목적별 수단의 회원별 폴백(7.2.0, `IdentityVerificationManager::resolveForPurpose()`)은 이 계약을 구현하고
+ * 그 회원에게 참을 답하는 수단만 후보로 봅니다. 미구현 수단은 운영자가 목적·정책·기본 수단으로 지정했을 때만 쓰입니다.
+ *
  * @since 7.1.0
  */
 interface UserScopedIdentityProviderInterface

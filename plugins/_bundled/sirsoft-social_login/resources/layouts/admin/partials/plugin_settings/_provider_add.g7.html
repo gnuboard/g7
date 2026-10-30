@@ -5,7 +5,7 @@
     <div class="sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:px-4 sl:sm:px-6 sl:py-4">
       <div>
         <h2 class="sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.admin.providers.add_title</h2>
-        <p data-ref="custom_limit_text" class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.providers.add_limit|count={{providers?.data?.limits?.custom_count ?? 0}}|limit={{providers?.data?.limits?.custom_limit ?? 0}}</p>
+        <p data-ref="custom_limit_text" data-if="{{!!providers?.data}}" class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.providers.add_limit|count={{providers?.data?.limits?.custom_count ?? 0}}|limit={{providers?.data?.limits?.custom_limit ?? 0}}</p>
       </div>
       <button data-ref="toggle_add_button" type="button" class="sl-btn sl-btn-secondary sl:text-sm" disabled="{{!_computed.canEditProviders || (providers?.data?.limits?.custom_count ?? 0) >= (providers?.data?.limits?.custom_limit ?? 0)}}">
         <on type="click">

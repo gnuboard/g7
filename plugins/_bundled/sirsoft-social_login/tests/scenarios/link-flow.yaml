@@ -5,7 +5,8 @@ description: |
   마이페이지 연결 관리와 그 주변 표면. [연결] 왕복은 로그인 회원으로 시작해 콜백이 연결을 만들고, 다른 회원에 연결된 계정·이미 연결된
   제공자는 거절한다. 해제는 제공자 권한 회수를 시도하고(실패해도 해제), 비밀번호도 없고 연결이 하나뿐이면 막는다(설정으로 허용).
   대체 이메일 회원(비밀번호 없음, 메일 수신 불가)은 연결된 제공자로 다시 로그인해 정보 수정 진입·비밀번호 첫 설정을 통과한다(R16 —
-  코어 본인인증 수단으로 붙고 확인 토큰은 주소에 싣지 않는다). 회원 삭제·탈퇴는 연결을 지우고, 회원 응답에 연결된 제공자 목록을 더하며,
+  코어 본인인증 수단으로 붙고 확인 토큰은 주소에 싣지 않는다). 정보 수정 화면의 「본인 확인 계속하기」(수단을 비운 코어 요청)도
+  응답의 1회용 같은 출처 시작 주소로 연결한 제공자(연결 순서 첫째) 다시 로그인으로 간다. 회원 삭제·탈퇴는 연결을 지우고, 회원 응답에 연결된 제공자 목록을 더하며,
   공개 제공자 목록은 켜진 제공자만 자격증명 없이 준다.
 axes:
   intent: [link]
@@ -14,7 +15,10 @@ axes:
   links: ['1', '2']
   revoke: [ok, failed]
   allow_last: ['off', 'on']
-  member: [placeholder_passwordless, real_email, password_set]
+  member: [placeholder_passwordless, real_email, password_set, placeholder_unlinked, "placeholder_passwordless|placeholder_unlinked", "placeholder_social_only|placeholder_company_and_social", company_and_social]
+  registry: [unscoped_provider_first, company_reauth_before_social]
+  entry: [core_challenge_continue, password_first_set_428]
+  screen: ["mypage_profile_edit|mypage_change_password"]
   provider: [same_link, other_user, unlinked, mock_naver, other_provider, provider_denied]
   identity_policy: [password_change]
   claim: [other_user]
@@ -74,10 +78,22 @@ effects:
   - reauth_provider_failure_returns_to_screen
   - flow_literal_codes_have_messages
   - unknown_flow_code_uses_provider_error_message
+  - core_fallback_picks_social_over_unscoped
+  - continue_challenge_carries_start_path
+  - continue_start_path_redirects_to_first_linked_provider
+  - continue_roundtrip_passes_profile_gate
+  - continue_start_path_single_use
+  - e2e_reauth_continue_goes_to_linked_provider
+  - e2e_reauth_continue_roundtrip_opens_profile_form
+  - accounts_reauth_via_social_matches_core_choice   # 소셜 안내 대상 표시는 코어가 실제로 고르는 재확인 수단과 같은 판정(회사 계정이 앞이면 거짓)
+  - e2e_password_reauth_returns_to_change_password  # 비밀번호 첫 저장의 428 재확인이 지금 화면 경로를 싣고 비밀번호 변경 화면으로 돌아온다
+  - e2e_password_saved_after_social_return          # 돌아와 다시 저장하면 유예 시간 안이라 통과
+  - e2e_both_linked_member_sees_no_social_wording   # 회사 계정과 소셜 둘 다 연결한 회원 화면에 소셜 안내·버튼 없음, 「본인 확인 계속하기」 는 회사 계정
 test_files:
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Link/AccountLinkServiceTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Link/SocialReauthenticationTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Listeners/UserLifecycleTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Api/PublicProvidersTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Playwright/specs/user/social-link-unlink.spec.ts
+  - plugins/_bundled/sirsoft-social_login/tests/Playwright/specs/user/social-reauth-continue.spec.ts
   - plugins/_bundled/sirsoft-social_login/tests/Unit/Exceptions/SocialFlowExceptionTest.php

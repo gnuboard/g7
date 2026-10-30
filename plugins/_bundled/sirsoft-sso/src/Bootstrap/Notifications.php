@@ -94,6 +94,7 @@ final class Notifications
                     ['key' => 'app_name', 'description' => '사이트명'],
                     ['key' => 'name', 'description' => '회원 이름'],
                     ['key' => 'idp_label', 'description' => '회사 계정 이름'],
+                    ['key' => 'login_guide', 'description' => '로그인 방법 안내 문장 (회사 계정 방식에 맞춰 버튼 또는 로그인 폼 입력을 안내)'],
                     ['key' => 'login_url', 'description' => '로그인 화면 주소'],
                 ],
                 'templates' => [[
@@ -101,8 +102,8 @@ final class Notifications
                     'recipients' => $member,
                     'subject' => ['ko' => '[{app_name}] 이 계정은 회사 계정으로 로그인합니다', 'en' => '[{app_name}] This account signs in with a company account'],
                     'body' => [
-                        'ko' => '<p>{name}님, 비밀번호 찾기를 요청하셨지만 이 계정은 {idp_label}(으)로만 로그인합니다. 비밀번호는 회사에서 관리합니다.</p><p>로그인 화면에서 「{idp_label}(으)로 로그인」을 눌러 주세요.</p><p><a href="{login_url}">로그인 화면 열기</a></p><p>직접 요청하지 않았다면 이 메일은 무시해도 됩니다.</p>',
-                        'en' => '<p>{name}, you requested a password reset, but this account signs in only with {idp_label}. Your password is managed by your company.</p><p>On the sign-in screen, choose "Sign in with {idp_label}".</p><p><a href="{login_url}">Open the sign-in screen</a></p><p>If you did not request this, you can ignore this email.</p>',
+                        'ko' => '<p>{name}님, 비밀번호 찾기를 요청하셨지만 이 계정은 {idp_label}(으)로만 로그인합니다. 비밀번호는 회사에서 관리합니다.</p><p>{login_guide}</p><p><a href="{login_url}">로그인 화면 열기</a></p><p>직접 요청하지 않았다면 이 메일은 무시해도 됩니다.</p>',
+                        'en' => '<p>{name}, you requested a password reset, but this account signs in only with {idp_label}. Your password is managed by your company.</p><p>{login_guide}</p><p><a href="{login_url}">Open the sign-in screen</a></p><p>If you did not request this, you can ignore this email.</p>',
                     ],
                 ]],
             ],

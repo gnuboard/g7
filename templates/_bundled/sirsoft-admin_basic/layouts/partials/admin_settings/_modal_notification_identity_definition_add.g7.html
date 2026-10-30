@@ -7,7 +7,8 @@
      덩어리라, 성공 시 그 객체를 통째로 비우면 다음에 열 때 새 창이 된다.
   ⑵ 다국어 입력은 언어 탭이 고른 로케일 한 칸만 보여 주고, 값은 `{ko: …, en: …}` 객체에 쌓는다.
      그래서 입력마다 **기존 객체를 복사해 그 로케일 키만 갈아 끼운다**(통째로 덮으면 다른 언어가 날아간다).
-  ⑶ 정책은 운영자가 추가한 본인인증 정책 중 **아직 문구가 없는 것**만 고른다(판정은 서버가 실어 주는 `policy_key` —
+  ⑶ 정책은 운영자가 추가한 본인인증 정책 중 **아직 문구가 없는 것**만 고른다(정책 조회 권한이 없으면 목록을 받지 못하므로
+     「운영자 정책이 없습니다」 대신 권한 안내를 보인다)(판정은 서버가 실어 주는 `policy_key` —
      100자를 넘는 키는 type 이 해시로 줄어 화면이 type 문자열로는 맞출 수 없다). 정의의 소유·type·채널·변수는
      서버가 정한다 — 보내지 않는다. -->
 <partial description="본인인증 정책별 문구(알림 정의) 추가 모달 — 언어 탭 + 고정 footer + 검증 에러 영역" editor_label="$t:admin.modal_label.admin_settings.modal_notification_identity_definition_add">
@@ -33,7 +34,8 @@
               <set-state target="global" identity_notification_add_modal.form.policy_key="{{$event.target.value}}"/>
             </on>
           </select>
-          <p data-if="{{adminIdentityPolicies !== undefined &amp;&amp; (adminIdentityPolicies?.data?.data ?? []).length === 0}}" class="text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">$t:admin.settings.notification_definitions.identity_add.policy_empty</p>
+          <p data-ref="identity_add_policy_permission_denied" data-if="{{!!current_user?.data &amp;&amp; !(current_user.data.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.admin.identity.policies.read')}}" class="text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">$t:admin.settings.permission_required.identity_policies</p>
+          <p data-if="{{!(!!current_user?.data &amp;&amp; !(current_user.data.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.admin.identity.policies.read')) &amp;&amp; adminIdentityPolicies !== undefined &amp;&amp; (adminIdentityPolicies?.data?.data ?? []).length === 0}}" class="text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">$t:admin.settings.notification_definitions.identity_add.policy_empty</p>
           <p data-if="{{(adminIdentityPolicies?.data?.data ?? []).length &gt; 0 &amp;&amp; (adminIdentityPolicies?.data?.data ?? []).filter(p =&gt; !(identityPolicyDefinitions?.data?.data ?? []).some(d =&gt; d.policy_key === p.key)).length === 0}}" class="text-warning-soft px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">$t:admin.settings.notification_definitions.identity_add.policy_all_defined</p>
         </div>
         <div data-ref="identity_notification_add_variables" class="rounded-md bg-gray-100 dark:bg-gray-700 p-3">

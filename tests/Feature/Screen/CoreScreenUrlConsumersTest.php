@@ -8,11 +8,13 @@ use App\Http\Controllers\Api\Identity\IdentityVerificationController;
 use App\Listeners\CoreNotificationDataListener;
 use App\Listeners\CorePrivacyNotificationDataListener;
 use App\Listeners\SeoNotificationDataListener;
+use App\Models\IdentityPolicy;
 use App\Models\User;
 use App\Seo\SitemapGenerator;
 use App\Services\AuthService;
 use App\Services\IdentityMessageDispatcher;
 use App\Support\ScreenUrl;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery;
 use Tests\TestCase;
@@ -87,6 +89,14 @@ class CoreScreenUrlConsumersTest extends TestCase
         $this->assertSame('https://site.example.test/admin/login', $listener->extractData([], 'password_expired', [$admin, []])['data']['action_url']);
         $this->assertSame('https://site.example.test/admin/users/u-792/edit', $listener->extractData([], 'password_expiry_notice', [$admin, []])['data']['action_url']);
 
+        // 관리자 대상 메일의 사이트 링크({site_url})는 사이트 주소다 — 비밀번호 변경 완료 메일도 만료 메일과 같은 판정을 따른다
+        $this->assertSame('https://front.example.test', $listener->extractData([], 'password_changed', [$member])['data']['site_url']);
+        $adminChanged = $listener->extractData([], 'password_changed', [$admin])['data'];
+        $this->assertSame('https://site.example.test/admin/login', $adminChanged['action_url']);
+        $this->assertSame('https://site.example.test', $adminChanged['site_url']);
+        $this->assertSame('https://site.example.test', $listener->extractData([], 'password_expired', [$admin, []])['data']['site_url']);
+        $this->assertSame('https://site.example.test', $listener->extractData([], 'password_expiry_notice', [$admin, []])['data']['site_url']);
+
         $seo = app(SeoNotificationDataListener::class);
         $seoData = $this->firstActionUrl($seo, $member);
         if ($seoData !== null) {
@@ -107,8 +117,10 @@ class CoreScreenUrlConsumersTest extends TestCase
     {
         $user = User::factory()->create(['email' => 'reset792_'.uniqid().'@example.com']);
         $captured = [];
-        HookManager::addAction('core.auth.after_reset_password_request', function ($u, array $extra) use (&$captured) {
+        $extras = [];
+        HookManager::addAction('core.auth.after_reset_password_request', function ($u, array $extra) use (&$captured, &$extras) {
             $captured[] = $extra['reset_url'] ?? null;
+            $extras[] = $extra;
         });
 
         $service = app(AuthService::class);
@@ -118,6 +130,15 @@ class CoreScreenUrlConsumersTest extends TestCase
         $this->assertStringStartsWith('https://front.example.test/reset-password?token=', (string) $captured[0]);
         $this->assertStringContainsString('email='.rawurlencode($user->email), (string) $captured[0]);
         $this->assertStringStartsWith('https://site.example.test/admin/reset-password?token=', (string) $captured[1]);
+
+        // 메일 아래쪽 사이트 링크({site_url})도 재설정 화면과 같은 쪽 — 회원 재설정은 사용자 화면 URL, 관리자 재설정은 사이트 주소
+        $listener = app(CoreNotificationDataListener::class);
+        $memberMail = $listener->extractData([], 'reset_password', [$user, $extras[0]])['data'];
+        $adminMail = $listener->extractData([], 'reset_password', [$user, $extras[1]])['data'];
+        $this->assertSame($captured[0], $memberMail['action_url']);
+        $this->assertSame('https://front.example.test', $memberMail['site_url']);
+        $this->assertSame($captured[1], $adminMail['action_url']);
+        $this->assertSame('https://site.example.test', $adminMail['site_url']);
     }
 
     /**
@@ -140,7 +161,7 @@ class CoreScreenUrlConsumersTest extends TestCase
     }
 
     /**
-     * 메일 본인인증 메일의 {site_url} 은 회원이 여는 화면 주소(「사용자 화면 URL」)입니다 (#792).
+     * 메일 본인인증 메일의 {site_url} 은 회원이 여는 화면 주소(「사용자 화면 URL」)입니다 (#792). 관리자에게만 적용되는 정책의 메일은 사이트 주소입니다.
      *
      * @scenario case=mail_identity
      *
@@ -150,19 +171,44 @@ class CoreScreenUrlConsumersTest extends TestCase
      */
     public function test_mail_identity_site_url(): void
     {
-        $captured = null;
+        $captured = [];
         $dispatcher = Mockery::mock(IdentityMessageDispatcher::class);
-        $dispatcher->shouldReceive('dispatch')->once()->andReturnUsing(function (string $providerId, string $purpose, ?string $policyKey, string $renderHint, string $channel, string $target, array $data) use (&$captured) {
-            $captured = $data;
+        $dispatcher->shouldReceive('dispatch')->times(4)->andReturnUsing(function (string $providerId, string $purpose, ?string $policyKey, string $renderHint, string $channel, string $target, array $data) use (&$captured) {
+            $captured[$policyKey ?? 'none'] = $data;
 
             return true;
         });
         $this->app->instance(IdentityMessageDispatcher::class, $dispatcher);
 
-        $provider = app(MailIdentityProvider::class);
-        (new \ReflectionMethod($provider, 'dispatchMessage'))->invoke($provider, 'm@example.test', 'signup', 'text_code', 'ch-1', null, '123456', null, 10, now()->addMinutes(10));
+        // 관리자에게만 적용되는 정책(관리자 화면의 민감 작업) · 회원·관리자 공통 정책 · 회원 전용 정책
+        $suffix = uniqid();
+        foreach (['admin', 'both', 'self'] as $appliesTo) {
+            IdentityPolicy::create([
+                'key' => "test.mail_site_url.{$appliesTo}.{$suffix}",
+                'scope' => 'route',
+                'target' => "api.test.mail_site_url.{$appliesTo}",
+                'purpose' => 'sensitive_action',
+                'grace_minutes' => 0,
+                'enabled' => true,
+                'priority' => 100,
+                'source_type' => 'admin',
+                'source_identifier' => 'admin',
+                'applies_to' => $appliesTo,
+                'fail_mode' => 'block',
+            ]);
+        }
 
-        $this->assertSame('https://front.example.test', $captured['site_url'] ?? null);
+        $provider = app(MailIdentityProvider::class);
+        $dispatch = new \ReflectionMethod($provider, 'dispatchMessage');
+        $dispatch->invoke($provider, 'm@example.test', 'signup', 'text_code', 'ch-1', null, '123456', null, 10, now()->addMinutes(10));
+        foreach (['admin', 'both', 'self'] as $appliesTo) {
+            $dispatch->invoke($provider, 'm@example.test', 'sensitive_action', 'text_code', 'ch-'.$appliesTo, "test.mail_site_url.{$appliesTo}.{$suffix}", '123456', null, 10, now()->addMinutes(10));
+        }
+
+        $this->assertSame('https://front.example.test', $captured['none']['site_url'] ?? null, '정책 없는 메일은 사용자 화면 URL');
+        $this->assertSame('https://site.example.test', $captured["test.mail_site_url.admin.{$suffix}"]['site_url'] ?? null, '관리자 전용 정책의 메일은 사이트 주소');
+        $this->assertSame('https://front.example.test', $captured["test.mail_site_url.both.{$suffix}"]['site_url'] ?? null, '회원·관리자 공통 정책은 종전대로 사용자 화면 URL');
+        $this->assertSame('https://front.example.test', $captured["test.mail_site_url.self.{$suffix}"]['site_url'] ?? null, '회원 전용 정책은 사용자 화면 URL');
     }
 
     /**
@@ -170,7 +216,7 @@ class CoreScreenUrlConsumersTest extends TestCase
      *
      * @scenario case=identity_return
      *
-     * @effects identity_return_allows_user_screen_origin, third_party_return_still_rejected
+     * @effects identity_return_allows_user_screen_origin, third_party_return_still_rejected, identity_return_admin_path_uses_site_url
      *
      * @return void 반환값 없음
      */
@@ -188,6 +234,60 @@ class CoreScreenUrlConsumersTest extends TestCase
         $this->assertFalse($safe->invoke($controller, 'https://user@front.example.test/'));
 
         $this->assertSame('https://front.example.test/register?x=1', $absolute->invoke($controller, '/register?x=1'));
+
+        // 관리자 화면 경로는 「사용자 화면 URL」 쪽에 없다 — 사이트 주소로 절대화한다(`/administrator` 같은 다른 경로는 해당 없음)
+        $this->assertSame('https://site.example.test/admin/users?x=1', $absolute->invoke($controller, '/admin/users?x=1'));
+        $this->assertSame('https://site.example.test/admin', $absolute->invoke($controller, '/admin'));
+        $this->assertSame('https://front.example.test/administrator', $absolute->invoke($controller, '/administrator'));
+    }
+
+    /**
+     * 관리자 화면에서 시작한 메일 본인인증(`scope=admin`)은 확인 링크와 사이트 링크가 사이트 주소 기준이고,
+     * 회원 화면에서 시작했으면(범위 없음) 「사용자 화면 URL」 기준입니다. 정책 키 없이 관리자 화면에서 시작하는 인증번호 확인
+     * (앱 키 재생성 창, 관리자 본인 정보 수정)도 같은 기준이고, 회원 마이페이지 정보 수정은 「사용자 화면 URL」 그대로입니다.
+     * 범위 값은 `admin`·`user` 만 받습니다.
+     *
+     * @scenario case=mail_identity_scope
+     *
+     * @effects mail_identity_admin_scope_uses_site_url
+     *
+     * @return void 반환값 없음
+     */
+    public function test_mail_identity_screen_scope(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $captured = [];
+        $dispatcher = Mockery::mock(IdentityMessageDispatcher::class);
+        $dispatcher->shouldReceive('dispatch')->times(5)->andReturnUsing(function (string $providerId, string $purpose, ?string $policyKey, string $renderHint, string $channel, string $target, array $data) use (&$captured) {
+            $captured[] = $data;
+
+            return true;
+        });
+        $this->app->instance(IdentityMessageDispatcher::class, $dispatcher);
+
+        $email = 'scope792_'.uniqid().'@example.test';
+        $this->postJson('/api/identity/challenges', ['purpose' => 'password_reset', 'target' => ['email' => $email], 'scope' => 'admin'])->assertCreated();
+        $this->postJson('/api/identity/challenges', ['purpose' => 'password_reset', 'target' => ['email' => $email]])->assertCreated();
+
+        $this->assertStringStartsWith('https://site.example.test/identity/verify?challenge=', (string) ($captured[0]['action_url'] ?? ''), '관리자 화면에서 시작한 확인 링크는 사이트 자체의 확인 화면');
+        $this->assertSame('https://site.example.test', $captured[0]['site_url'] ?? null);
+        $this->assertStringStartsWith('https://front.example.test/identity/verify?challenge=', (string) ($captured[1]['action_url'] ?? ''), '회원 화면에서 시작했으면 사용자 화면 URL');
+        $this->assertSame('https://front.example.test', $captured[1]['site_url'] ?? null);
+
+        // 정책 키 없이 관리자 화면에서 시작하는 인증번호 확인(앱 키 재생성 창, 관리자 본인 정보 수정)이 보내는 본문 —
+        // 화면이 싣는 범위로 가른다. 서버는 `return_path` 로 관리자 여부를 짐작하지 않는다(범위 없는 `/admin` 경로는 회원 기준).
+        $this->postJson('/api/identity/challenges', ['purpose' => 'sensitive_action', 'target' => ['email' => $email], 'return_path' => '/admin/settings?tab=security&reauth=app_key', 'scope' => 'admin'])->assertCreated();
+        $this->postJson('/api/identity/challenges', ['purpose' => 'sensitive_action', 'target' => ['email' => $email], 'return_path' => '/admin/users/1/edit', 'scope' => 'admin'])->assertCreated();
+        // 대조: 회원 마이페이지 정보 수정(비밀번호 없는 회원)의 본문은 범위가 없어 「사용자 화면 URL」 그대로
+        $this->postJson('/api/identity/challenges', ['purpose' => 'sensitive_action', 'target' => ['email' => $email], 'return_path' => '/mypage/profile/edit'])->assertCreated();
+
+        $this->assertSame('https://site.example.test', $captured[2]['site_url'] ?? null, '앱 키 재생성 창의 인증번호 메일은 사이트 주소');
+        $this->assertSame('https://site.example.test', $captured[3]['site_url'] ?? null, '관리자 본인 정보 수정의 인증번호 메일은 사이트 주소');
+        $this->assertSame('https://front.example.test', $captured[4]['site_url'] ?? null, '회원 마이페이지 정보 수정의 인증번호 메일은 사용자 화면 URL');
+
+        // 정해진 값 밖의 범위는 받지 않는다(메일을 보내지 않음)
+        $this->postJson('/api/identity/challenges', ['purpose' => 'password_reset', 'target' => ['email' => $email], 'scope' => 'other'])->assertStatus(422);
     }
 
     /**

@@ -137,7 +137,7 @@ class BuildVendorBundleCommandTest extends TestCase
 
             // 내용을 메모리로 읽지 않고 파일 대 파일로 복사한다 (바이너리 안전 + 상수 메모리).
             $copy = $this->snapshotDir.DIRECTORY_SEPARATOR.$index.'_'.basename($path);
-            copy($path, $copy);
+            $this->copyWithRetry($path, $copy);
             $this->realBundleSnapshots[$path] = $copy;
         }
     }
@@ -151,7 +151,7 @@ class BuildVendorBundleCommandTest extends TestCase
     {
         foreach ($this->realBundleSnapshots as $path => $copy) {
             File::ensureDirectoryExists(dirname($path));
-            copy($copy, $path);
+            $this->copyWithRetry($copy, $path);
         }
 
         // 스냅샷에 없던 파일 (테스트 중 새로 생성된 가짜 파일) 정리
@@ -167,6 +167,30 @@ class BuildVendorBundleCommandTest extends TestCase
 
         $this->realBundleSnapshots = [];
         $this->snapshotDir = null;
+    }
+
+    /**
+     * 파일을 복사하되, 다른 프로세스가 잠깐 잡고 있어 실패하면 잠시 쉬었다 다시 시도한다.
+     *
+     * Windows 에서는 방금 쓴 큰 zip 을 실시간 검사 등이 잠깐 열어 두어 copy() 가 「Permission denied」로
+     * 실패할 수 있다. 복구가 중간에 끊기면 실제 번들이 가짜 파일로 남으므로 몇 차례 다시 시도한다.
+     *
+     * @param  string  $from  원본 경로
+     * @param  string  $to  대상 경로
+     * @return void 반환값 없음
+     *
+     * @throws \RuntimeException 모든 시도가 실패하면
+     */
+    private function copyWithRetry(string $from, string $to): void
+    {
+        for ($attempt = 1; $attempt <= 20; $attempt++) {
+            if (@copy($from, $to)) {
+                return;
+            }
+            usleep(250_000);
+        }
+
+        throw new \RuntimeException("파일 복사 실패(20회 재시도): {$from} → {$to}");
     }
 
     /**

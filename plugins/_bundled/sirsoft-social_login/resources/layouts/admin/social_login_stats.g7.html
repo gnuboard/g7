@@ -52,8 +52,11 @@
           <a data-ref="diagnostics_link" href="/admin/plugins/sirsoft-social_login/diagnostics" class="sl-btn sl-btn-secondary sl:text-sm sl:ml-2">$t:sirsoft-social_login.admin.diagnostics.title</a>
         </div>
       </div>
-      <p data-ref="stats_since" class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3">$t:sirsoft-social_login.admin.stats.since|since={{stats?.data?.since ?? '-'}}</p>
-      <data-grid data-type="composite" data-ref="stats_datagrid" data="{{stats?.data?.rows ?? []}}" :pagination="false" idField="provider_key" :selectable="false" emptyMessage="$t:sirsoft-social_login.admin.stats.empty">
+      <!-- 응답 전에는 불러오는 중을, 받기에 실패하면 오류를 알리고 기준 시각과 합계는 응답이 온 뒤에만 그린다 — 아직 오지 않은 값을 0 으로 보이지 않는다 -->
+      <p data-ref="stats_loading" data-if="{{stats === undefined}}" role="status" class="sl:text-sm sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3">$t:common.loading</p>
+      <p data-ref="stats_load_failed" data-if="{{stats === null}}" role="alert" class="sl:text-sm sl:text-red-700 sl:dark:text-red-300 sl:mb-3">$t:common.error_occurred</p>
+      <p data-ref="stats_since" data-if="{{!!stats?.data}}" class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3">$t:sirsoft-social_login.admin.stats.since|since={{stats?.data?.since ?? '-'}}</p>
+      <data-grid data-type="composite" data-ref="stats_datagrid" data="{{stats?.data?.rows ?? []}}" :pagination="false" idField="provider_key" :selectable="false" emptyMessage="{{!stats ? '' : $t('sirsoft-social_login.admin.stats.empty')}}">
         <column field="label" header="$t:sirsoft-social_login.admin.stats.col.provider" :sortable="false">
           <cell>
             <span class="sl-text-body sl:whitespace-nowrap">{{row.label}}</span>
@@ -90,7 +93,7 @@
           </cell>
         </column>
       </data-grid>
-      <p data-ref="stats_totals" class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:mt-3">$t:sirsoft-social_login.admin.stats.totals|signups={{stats?.data?.totals?.signups ?? 0}}|logins={{stats?.data?.totals?.logins ?? 0}}|failures={{stats?.data?.totals?.failures ?? 0}}</p>
+      <p data-ref="stats_totals" data-if="{{!!stats?.data}}" class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:mt-3">$t:sirsoft-social_login.admin.stats.totals|signups={{stats?.data?.totals?.signups ?? 0}}|logins={{stats?.data?.totals?.logins ?? 0}}|failures={{stats?.data?.totals?.failures ?? 0}}</p>
     </div>
   </slot>
 </layout>

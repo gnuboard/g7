@@ -7,6 +7,7 @@ use App\Enums\ScheduleDispatchMode;
 use App\Enums\ScheduleTriggerType;
 use App\Enums\ScheduleType;
 use App\Exceptions\ScheduleExecutionException;
+use App\Extension\HookContextCapture;
 use App\Jobs\RunScheduledTaskJob;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
@@ -90,7 +91,14 @@ class ScheduleDispatcher
      */
     private function buildJob(Schedule $schedule, ScheduleTriggerType $trigger, ?int $userId): RunScheduledTaskJob
     {
-        $job = new RunScheduledTaskJob((int) $schedule->id, $trigger, $userId);
+        // 수동 실행은 누른 관리자의 요청 문맥을 싣는다 — 워커가 실행하는 동안 복원해 활동 로그의 행위자·IP·
+        // 브라우저 정보가 바로 실행과 같게 남는다. 예약 실행은 사람이 누르지 않았으므로 싣지 않는다.
+        $job = new RunScheduledTaskJob(
+            (int) $schedule->id,
+            $trigger,
+            $userId,
+            $trigger === ScheduleTriggerType::Manual ? HookContextCapture::capture() : null,
+        );
 
         $requestedConnection = $schedule->queue_connection ?: null;
         $requestedQueue = $schedule->queue_name ?: null;

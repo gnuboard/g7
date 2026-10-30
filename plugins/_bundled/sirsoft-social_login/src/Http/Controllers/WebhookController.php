@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Http\Controllers;
 
+use App\Helpers\TimezoneHelper;
 use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -127,8 +128,8 @@ class WebhookController extends Controller
 
         $body = '<p class="'.($done ? 'ok' : 'bad').'">'.e($statusText).'</p>'.HtmlPage::definitionList([
             __('sirsoft-social_login::messages.data_deletion.code') => $code,
-            __('sirsoft-social_login::messages.data_deletion.received_at') => $event->received_at?->toDateTimeString() ?? '',
-            __('sirsoft-social_login::messages.data_deletion.processed_at') => $event->processed_at?->toDateTimeString() ?? '-',
+            __('sirsoft-social_login::messages.data_deletion.received_at') => TimezoneHelper::toUserDateTimeString($event->received_at) ?? '',
+            __('sirsoft-social_login::messages.data_deletion.processed_at') => TimezoneHelper::toUserDateTimeString($event->processed_at) ?? '-',
         ]).'<p>'.e(__('sirsoft-social_login::messages.data_deletion.note')).'</p>';
 
         return HtmlPage::render($title, $body);

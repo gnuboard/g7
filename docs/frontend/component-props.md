@@ -885,6 +885,7 @@ interface DataGridCellChild {
 | Props | 타입 | 필수 | 기본값 | 설명 |
 |-------|------|------|--------|------|
 | `disabledField` | `string` | ❌ | - | 행 데이터 내 비활성화 판단 경로 (dot notation). falsy 값이면 비활성화 |
+| `disabledReason` | `string` | ❌ | - | 잠긴 항목 아래(와 `title`)에 보일 안내. 고정 문구(`$t:키`) 또는 행 표현식 — 엔진은 원문을 넘기고(`skipBindingKeys`) DataGrid 가 행마다 푼다. 막힌 까닭이 행마다 다르면(권한 없음·소유 잠김 등) 서버가 사유 값을 싣고 식으로 고른다 |
 
 ```json
 {
@@ -914,6 +915,16 @@ disabledField 동작
 - 경로가 존재하지 않으면 undefined → 비활성화
 
 ✅ abilities 패턴: API Resource에서 abilities 객체 반환 → disabledField로 참조
+```
+
+막힌 까닭이 둘 이상이면 고정 안내 하나로 묶지 않는다 — 삭제 권한이 없는 운영자에게 「직접 등록한 작업만 삭제할 수 있습니다.」처럼 사실과 다른 안내가 나온다. 리소스가 사유 값(예: 스케줄 행의 `delete_blocked_reason`: `owned`·`permission`·`null`)을 싣고 안내를 행 표현식으로 고른다.
+
+```json
+{
+  "id": "delete",
+  "disabledField": "abilities.can_delete",
+  "disabledReason": "{{row.delete_blocked_reason === 'owned' ? $t('admin.schedules.action.delete_disabled_reason') : $t('auth.permission_denied')}}"
+}
 ```
 
 ### 잔여 Props (위 절에서 다루지 않은 것 — 이 표로 §DataGrid 가 전수가 된다)

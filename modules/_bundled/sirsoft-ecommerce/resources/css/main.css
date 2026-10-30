@@ -86,7 +86,9 @@
     width: 1.333333em;
     line-height: 1em;
 }
-.ecommerce-flag::before { content: " "; }
+/* 줄 상자를 만드는 글자는 접히지 않는 공백(U+00A0)이다 — 일반 공백은 줄 안에서 접혀 상자 높이가 0 이 되어
+   국기가 보이지 않는다. 눈에 보이지 않는 글자라 편집 중 일반 공백으로 바뀌지 않게 이스케이프로 적는다. */
+.ecommerce-flag::before { content: "\00a0"; }
 .ecommerce-flag.ecommerce-flag--square { width: 1em; }
 .ecommerce-flag-xx { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/xx.svg"); }
 .ecommerce-flag-xx.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/xx.svg"); }

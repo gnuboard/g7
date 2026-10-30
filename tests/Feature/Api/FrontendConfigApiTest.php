@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Enums\ExtensionOwnerType;
 use App\Exceptions\TemplateNotFoundException;
+use App\Extension\HookManager;
 use App\Http\View\Composers\TemplateComposer;
 use App\Http\View\Composers\UserTemplateComposer;
 use App\Models\Permission;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Services\TemplateService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Testing\TestResponse;
 use Illuminate\View\View;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -39,7 +41,8 @@ class FrontendConfigApiTest extends TestCase
     public function test_user_api_equals_shell_values(): void
     {
         $shell = $this->composeShell(UserTemplateComposer::class);
-        $api = $this->getJson('/api/frontend-config')->assertOk()->json('data');
+        $response = $this->getJson('/api/frontend-config')->assertOk();
+        $api = $response->json('data');
 
         $this->assertSame('user', $api['scope']);
         $this->assertEquals($this->normalize($shell['frontendSettings']), $this->normalize($api['settings']));
@@ -49,6 +52,7 @@ class FrontendConfigApiTest extends TestCase
         $this->assertEquals($shell['consentInitial'], $api['consent_initial']);
         $this->assertEquals($shell['customRoutes'], $api['custom_routes']);
         $this->assertEquals($shell['websocketConfig'], $api['websocket']);
+        $this->assertSameShapeAsShell($shell, $response);
     }
 
     /**
@@ -63,12 +67,14 @@ class FrontendConfigApiTest extends TestCase
     public function test_admin_api_equals_shell_values(): void
     {
         $shell = $this->composeShell(TemplateComposer::class);
-        $api = $this->actingAs($this->admin())->getJson('/api/admin/frontend-config')->assertOk()->json('data');
+        $response = $this->actingAs($this->admin())->getJson('/api/admin/frontend-config')->assertOk();
+        $api = $response->json('data');
 
         $this->assertSame('admin', $api['scope']);
         $this->assertEquals($this->normalize($shell['frontendSettings']), $this->normalize($api['settings']));
         $this->assertEquals($this->normalize($shell['moduleSettings']), $this->normalize($api['modules']));
         $this->assertArrayNotHasKey('consent_initial', $api);
+        $this->assertSameShapeAsShell($shell, $response);
     }
 
     /**
@@ -76,6 +82,10 @@ class FrontendConfigApiTest extends TestCase
      *
      * 설정 조립을 공용 서비스로 옮긴 뒤에도 같은 값이 같은 자리에 같은 모양으로 나가는지 — 7.1 셸 템플릿(픽스처)을
      * 같은 뷰 데이터로 그린 결과와 비교한다. 셸을 일부러 바꾸면 픽스처도 그 변경과 함께 고친다.
+     *
+     * 픽스처는 「설정을 공용 서비스로 옮기기 전의 조립 방식(`locale`·`websocket` 을 셸이 직접 계산)」만 7.1 그대로 두고,
+     * 그 밖의 의도된 셸 변경(확장 CSS 층 선언, 다크 방식·확장 CSS 덮기·확장 접두 값)은 셸과 같은 줄로 따라간다.
+     * 셸과 픽스처의 차이는 늘 그 두 값의 조립과 `customRoutes` 두 줄뿐이어야 한다.
      *
      * @scenario case=shell_bytes
      *
@@ -165,6 +175,42 @@ class FrontendConfigApiTest extends TestCase
     }
 
     /**
+     * 로그인 화면 계산값을 만드는 확장 필터가 예외를 던져도 사용자·관리자 API 가 200 으로 대체값을 냅니다.
+     *
+     * 가입 실효값 필터(`core.auth.self_registration_open`)가 던지면 원 설정값(`security.registration_enabled`)으로,
+     * 자동 이동 경로 필터(`core.auth.login_auto_redirect`)가 던지면 이메일 로그인·자동 이동 없음으로 둔다.
+     *
+     * @scenario case=filter_throws
+     *
+     * @effects filter_exception_falls_back
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extension_filter_exception_falls_back(): void
+    {
+        try {
+            HookManager::addFilter('core.auth.self_registration_open', function (): bool {
+                throw new \RuntimeException('extension filter failure');
+            });
+
+            $expected = (bool) g7_core_settings('security.registration_enabled', true);
+            $this->getJson('/api/frontend-config')->assertOk()->assertJsonPath('data.app_config.auth.registration_open', $expected);
+            $this->actingAs($this->admin())->getJson('/api/admin/frontend-config')->assertOk()->assertJsonPath('data.app_config.auth.registration_open', $expected);
+
+            HookManager::addFilter('core.auth.login_auto_redirect', function (): ?string {
+                throw new \RuntimeException('extension filter failure');
+            });
+
+            $this->getJson('/api/frontend-config')->assertOk()
+                ->assertJsonPath('data.app_config.auth.login_identifier.user', 'email')
+                ->assertJsonPath('data.app_config.auth.auto_redirect.user', null);
+        } finally {
+            HookManager::clearFilter('core.auth.self_registration_open');
+            HookManager::clearFilter('core.auth.login_auto_redirect');
+        }
+    }
+
+    /**
      * 관리자 API — 비인증 401, 일반 회원 403, 관리자 200.
      *
      * @scenario case=admin_auth
@@ -199,6 +245,34 @@ class FrontendConfigApiTest extends TestCase
         app($composer)->compose($view);
 
         return $captured;
+    }
+
+    /**
+     * 응답의 맵 필드가 셸(`window.G7Config`)이 심는 값과 JSON 모양까지 같은지 단언합니다.
+     *
+     * 값 비교({@see normalize()})는 연관 배열로 풀어 `{}` 와 `[]` 를 구분하지 못한다. 셸 뷰가 하는 그대로
+     * 최상위를 `(object)` 로 감싸 인코딩한 값과, 응답 본문을 객체로 푼 값을 비교해 빈 맵의 모양 차이까지 잡는다.
+     * 보이는 필드가 없는 코어 카테고리(`identity`)는 빈 맵 `{}` 로 나가야 한다.
+     *
+     * @param  array<string, mixed>  $shell  셸 뷰 데이터
+     * @param  TestResponse  $response  공개 설정 API 응답
+     * @return void 반환값 없음
+     */
+    private function assertSameShapeAsShell(array $shell, TestResponse $response): void
+    {
+        $data = json_decode((string) $response->getContent())->data;
+
+        foreach (['frontendSettings' => 'settings', 'moduleSettings' => 'modules', 'pluginSettings' => 'plugins', 'appConfig' => 'app_config'] as $shellKey => $apiKey) {
+            $this->assertEquals(
+                json_decode((string) json_encode((object) $shell[$shellKey])),
+                $data->{$apiKey},
+                "{$apiKey} 의 JSON 모양이 셸({$shellKey})과 다르다"
+            );
+        }
+
+        $settingsJson = (string) json_encode($data->settings);
+        $this->assertStringContainsString('"identity":{}', $settingsJson, '보이는 필드가 없는 카테고리는 빈 맵이어야 한다');
+        $this->assertStringNotContainsString('"identity":[]', $settingsJson);
     }
 
     /**

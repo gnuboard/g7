@@ -11,8 +11,8 @@ use Plugins\Sirsoft\Sso\Bootstrap\Notifications;
 use Plugins\Sirsoft\Sso\Bootstrap\Schedules;
 use Plugins\Sirsoft\Sso\Bootstrap\SettingsSchema;
 use Plugins\Sirsoft\Sso\Bootstrap\Tables;
-use Plugins\Sirsoft\Sso\Mock\MockGateMiddleware;
 use Plugins\Sirsoft\Sso\Http\Middleware\ScimBearerAuth;
+use Plugins\Sirsoft\Sso\Mock\MockGateMiddleware;
 
 /**
  * SSO 연동 플러그인.
@@ -388,6 +388,7 @@ class Plugin extends AbstractPlugin
      *
      * 설정 화면은 코어「플러그인 관리 → 설정」 자동 경로(`/admin/plugins/sirsoft-sso/settings`)가 연다 — 메뉴로 세우지 않는다.
      * 메뉴는 설정이 아닌 운영 화면 둘(회원 연결, 이력)만 둔다.
+     * 하위 메뉴의 `permission` 은 그 화면 목록 API 가 요구하는 권한이다 — 코어가 이 키로 SSO 운영자 역할에 메뉴를 붙인다.
      *
      * @return array<int, array<string, mixed>> 메뉴 정의 배열
      */
@@ -406,6 +407,7 @@ class Plugin extends AbstractPlugin
                         'url' => '/admin/plugins/sirsoft-sso/accounts',
                         'icon' => 'fas fa-link',
                         'order' => 1,
+                        'permission' => 'sirsoft-sso.accounts.view',
                     ],
                     [
                         'name' => ['ko' => '이력', 'en' => 'Logs'],
@@ -413,6 +415,7 @@ class Plugin extends AbstractPlugin
                         'url' => '/admin/plugins/sirsoft-sso/logs',
                         'icon' => 'fas fa-list',
                         'order' => 2,
+                        'permission' => 'sirsoft-sso.logs.view',
                     ],
                 ],
             ],

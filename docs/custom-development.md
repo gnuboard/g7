@@ -200,7 +200,7 @@ composer require twig/twig -d custom
 | `auth.login` | `/login` | user |
 | `auth.reset_password` | `/reset-password` | user |
 | `mypage.change_password` | `/mypage/change-password` | user |
-| `identity.verify` | `/identity/verify?challenge={challenge}&token={token}` | user |
+| `identity.verify` | `/identity/verify?challenge={challenge}&token={token}` | user (관리자 화면에서 시작한 인증은 admin — 사이트 주소의 확인 화면) |
 | `board.index` | `/boards` | user |
 | `board.list` | `/board/{slug}` | user |
 | `board.post` | `/board/{slug}/{id}` | user |

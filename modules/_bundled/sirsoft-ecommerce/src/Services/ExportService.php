@@ -521,7 +521,7 @@ class ExportService
      * 파일을 만듭니다(큐 작업 본체).
      *
      * @param  int  $exportId  작업 ID
-     * @return void
+     * @return void 반환값 없음
      */
     public function generate(int $exportId): void
     {
@@ -537,6 +537,10 @@ class ExportService
 
         $tempPath = null;
         $writer = null;
+        // 상주 워커는 컨테이너를 작업 사이에 재사용한다 — 복원한 요청자·요청·로케일·시간대를 끝나면 되돌려
+        // 다음 작업(다른 관리자의 즉시 실행 등)이 이 요청자를 행위자로 물려받지 않게 한다
+        $previousContext = HookContextCapture::snapshot();
+        $previousTimezone = app()->bound('user_timezone') ? app('user_timezone') : null;
 
         try {
             // 요청 시점 컨텍스트(요청자·로케일·경로) 복원 — 라벨 언어·활동 로그 행위자·보는 사람 시간대
@@ -680,6 +684,13 @@ class ExportService
             if ($tempPath !== null && is_file($tempPath)) {
                 @unlink($tempPath);
             }
+
+            HookContextCapture::revert($previousContext);
+            if ($previousTimezone !== null) {
+                app()->instance('user_timezone', $previousTimezone);
+            } else {
+                app()->forgetInstance('user_timezone');
+            }
         }
     }
 
@@ -688,7 +699,7 @@ class ExportService
      *
      * @param  int  $exportId  작업 ID
      * @param  string  $code  실패 사유 키
-     * @return void
+     * @return void 반환값 없음
      */
     public function markFailed(int $exportId, string $code): void
     {
@@ -712,7 +723,7 @@ class ExportService
      * @param  ExportTypeInterface  $type  유형
      * @param  Export  $export  작업
      * @param  User  $requester  요청자
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws ExportException 권한을 잃었을 때 (permission_revoked)
      */
@@ -1016,7 +1027,7 @@ class ExportService
      *
      * @param  Export  $export  작업
      * @param  User  $user  삭제하는 사람
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws ExportException 진행중인 작업 (409)
      */

@@ -2,14 +2,22 @@
 
 namespace Plugins\Sirsoft\Sso\Tests\Feature\Identity;
 
+use App\Contracts\Extension\UserScopedIdentityProviderInterface;
+use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
+use App\Extension\HookManager;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\IdentityVerificationService;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Plugins\Sirsoft\Sso\Identity\SsoReauthIdentityProvider;
+use Plugins\Sirsoft\Sso\Listeners\RegisterSsoReauthProviderListener;
 use Plugins\Sirsoft\Sso\Services\StateStore;
 use Plugins\Sirsoft\Sso\Tests\PluginTestCase;
+use Tests\Support\Identity\TestIdentityProvider;
 
 /**
  * 「회사 계정으로 재확인」 본인인증 수단(W17) — 활성 연결 회원만 대상, IdP 왕복 증명이 있어야 확인이 통과한다.
@@ -107,6 +115,111 @@ class ReauthProviderTest extends PluginTestCase
             ]);
             $this->assertFalse(app(IdentityVerificationService::class)->verify($challenge->id, [])->success, '이미 확인한 요청은 다시 확인되지 않는다');
         }
+    }
+
+    /**
+     * 메일을 받을 수 없는 연결 회원이 수단을 비운 재확인 요청을 내면, 회원별 판정이 없는 수단(휴대폰 본인확인처럼 누구의 신원이든
+     * 확인해 주는 수단)이 앞에 등록돼 있어도 코어가 「회사 계정으로 재확인」을 고르는지 확인한다. 연결이 없는 회원과 메일을 받는
+     * 회원은 종전대로 메일 수단이다.
+     *
+     * @scenario member=undeliverable_linked|undeliverable_unlinked|deliverable_linked, registry=unscoped_provider_first, entry=resolve|api
+     *
+     * @effects core_fallback_picks_reauth_over_unscoped, api_challenge_redirects_to_idp, unlinked_or_deliverable_keeps_mail
+     *
+     * @return void 반환값 없음
+     */
+    public function test_undeliverable_member_is_sent_to_idp_ahead_of_unscoped_provider(): void
+    {
+        $idp = $this->mockOidcIdp();
+        $manager = app(IdentityVerificationManager::class);
+        $manager->register(app(TestIdentityProvider::class));
+
+        $this->seed(RolePermissionSeeder::class);
+        $member = User::factory()->create(['email' => Str::lower(Str::random(12)).'@sso.invalid', 'password' => null]);
+        $member->roles()->syncWithoutDetaching([Role::query()->where('identifier', 'user')->value('id') => ['assigned_at' => now(), 'assigned_by' => null]]);
+        $this->link($member, $idp, 'rp-6');
+        $this->assertSame(SsoReauthIdentityProvider::PROVIDER_ID, $manager->resolveForPurpose('sensitive_action', null, $member)->getId());
+
+        $response = $this->withBrowserBind()->actingAs($member)->postJson('/api/identity/challenges', [
+            'purpose' => 'sensitive_action',
+            'return_path' => '/mypage/profile/edit',
+        ]);
+        $response->assertCreated()
+            ->assertJsonPath('data.provider_id', SsoReauthIdentityProvider::PROVIDER_ID)
+            ->assertJsonPath('data.render_hint', 'external_redirect');
+        $this->assertStringStartsWith('/plugins/sirsoft-sso/login/'.$idp->key.'?ticket=', (string) $response->json('data.redirect_url'));
+
+        $unlinked = User::factory()->create(['email' => Str::lower(Str::random(12)).'@sso.invalid', 'password' => null]);
+        $this->assertSame('g7:core.mail', $manager->resolveForPurpose('sensitive_action', null, $unlinked)->getId());
+
+        $deliverable = User::factory()->create();
+        $this->link($deliverable, $idp, 'rp-7');
+        $this->assertSame('g7:core.mail', $manager->resolveForPurpose('sensitive_action', null, $deliverable)->getId());
+    }
+
+    /**
+     * 회사 계정과 소셜 계정이 둘 다 연결된(메일을 받을 수 없는) 회원은 「본인 확인 계속하기」가 회사 계정 다시 로그인으로 가는지
+     * 확인한다. 실제 사이트처럼 플러그인 적재 순서(소셜 로그인 → sso)대로 레지스트리 필터를 걸고 — 소셜 재확인 수단은 우선순위 30 —
+     * 이 플러그인 리스너가 선언한 우선순위로 sso 수단을 건다.
+     *
+     * @scenario member=undeliverable_linked_with_social, registry=plugin_load_order
+     *
+     * @effects reauth_registered_ahead_of_social_reauth
+     *
+     * @return void 반환값 없음
+     */
+    public function test_company_account_reauth_is_chosen_ahead_of_social_reauth(): void
+    {
+        $idp = $this->mockOidcIdp();
+        $member = User::factory()->create(['email' => Str::lower(Str::random(12)).'@sso.invalid', 'password' => null]);
+        $this->link($member, $idp, 'rp-8');
+
+        $social = new class(app(IdentityVerificationLogRepositoryInterface::class)) extends TestIdentityProvider implements UserScopedIdentityProviderInterface
+        {
+            /**
+             * 소셜 재확인 수단 식별자를 돌려줍니다.
+             *
+             * @return string 식별자
+             */
+            public function getId(): string
+            {
+                return 'sirsoft-social_login';
+            }
+
+            /**
+             * 민감 작업 재확인만 지원합니다.
+             *
+             * @param  string  $purpose  목적
+             * @return bool 지원하면 true
+             */
+            public function supportsPurpose(string $purpose): bool
+            {
+                return $purpose === 'sensitive_action';
+            }
+
+            /**
+             * 소셜 계정도 연결된 회원이라 쓸 수 있습니다.
+             *
+             * @param  User  $user  회원
+             * @return bool 항상 true
+             */
+            public function canChallengeUser(User $user): bool
+            {
+                return true;
+            }
+        };
+
+        $hook = 'core.identity.registered_providers';
+        HookManager::clearFilter($hook);
+        HookManager::addFilter($hook, function (array $providers) use ($social): array {
+            $providers[$social->getId()] = $social;
+
+            return $providers;
+        }, 30);
+        $config = RegisterSsoReauthProviderListener::getSubscribedHooks()[$hook];
+        HookManager::addFilter($hook, fn (array $providers): array => app(RegisterSsoReauthProviderListener::class)->register($providers), $config['priority']);
+
+        $this->assertSame(SsoReauthIdentityProvider::PROVIDER_ID, app(IdentityVerificationManager::class)->resolveForPurpose('sensitive_action', null, $member)->getId());
     }
 
     /**

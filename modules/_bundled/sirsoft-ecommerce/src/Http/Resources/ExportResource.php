@@ -68,7 +68,7 @@ class ExportResource extends BaseApiResource
             ], (array) ($export->warnings ?? [])),
             'error_code' => $export->error_code,
             'error_message' => $export->error_code ? __('sirsoft-ecommerce::exceptions.export.'.$export->error_code) : null,
-            'summary' => $this->summary($options, $type?->rowUnits() ?? []),
+            'summary' => $this->summary($options, (array) ($export->filters ?? []), $type?->rowUnits() ?? []),
             'requested_at' => $this->formatDateTimeStringForUser($export->requested_at),
             'cutoff_at' => $this->formatDateTimeStringForUser($export->cutoff_at),
             'started_at' => $this->formatDateTimeStringForUser($export->started_at),
@@ -81,16 +81,23 @@ class ExportResource extends BaseApiResource
     /**
      * 요청 조건 요약 (펼침 줄·다운로드 이력 모달)
      *
+     * 기간 줄은 파일에 실제로 걸린 기간을 말한다 — 「선택한 항목」은 기간을 보지 않고, 「목록의 조회 기간」을 골랐어도
+     * 목록에 기간이 없었으면(상품 목록 기본 상태 등) 저장된 조건에 기간이 없으므로 「적용 안 함」이다.
+     *
      * @param  array<string, mixed>  $options  작업 옵션
+     * @param  array<string, mixed>  $filters  실제로 적용한 조건 (요청 때 저장한 값)
      * @param  array<string, string>  $rowUnits  행 단위 → 라벨 키
      * @return array<string, mixed> 요약
      */
-    private function summary(array $options, array $rowUnits): array
+    private function summary(array $options, array $filters, array $rowUnits): array
     {
         $period = (array) ($options['period'] ?? []);
-        $periodText = ($period['mode'] ?? 'current') === 'custom' && ! empty($period['start_date'])
-            ? ($period['start_date'].' ~ '.($period['end_date'] ?? ''))
-            : __('sirsoft-ecommerce::export.summary.period_current');
+        $periodText = match (true) {
+            ($options['scope'] ?? 'filter') === 'selected' => __('sirsoft-ecommerce::export.summary.period_none'),
+            ($period['mode'] ?? 'current') === 'custom' && ! empty($period['start_date']) => $period['start_date'].' ~ '.($period['end_date'] ?? ''),
+            empty($filters['start_date']) && empty($filters['end_date']) => __('sirsoft-ecommerce::export.summary.period_none'),
+            default => __('sirsoft-ecommerce::export.summary.period_current'),
+        };
 
         $unit = (string) ($options['row_unit'] ?? '');
 

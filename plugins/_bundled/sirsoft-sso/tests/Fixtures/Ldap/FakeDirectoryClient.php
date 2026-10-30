@@ -10,7 +10,8 @@ use Plugins\Sirsoft\Sso\Services\Ldap\DirectoryClientInterface;
  *
  * 검색 필터를 실제로 해석한다(`&`, `|`, `!`, 같음, 존재 `=*`, 값의 `\xx` 이스케이프) — 그래서 이스케이프되지 않은 입력(`*)(uid=*`)이
  * 필터 구조를 바꾸면 결과가 달라지고, 이스케이프된 입력은 글자 그대로 비교된다. 바인드는 등록한 DN 과 비밀번호가 맞을 때만 성공하고,
- * 빈 비밀번호 바인드는 실제 서버처럼 「익명 바인드 성공」으로 돌려준다(드라이버가 그 전에 막아야 한다). 모든 호출을 기록한다.
+ * 빈 비밀번호 바인드는 실제 서버처럼 「익명 바인드 성공」으로 돌려준다(드라이버가 그 전에 막아야 한다). 검색은 실제 서버처럼 요청한
+ * 속성만 돌려준다(이름은 대소문자 무관, 빈 목록이면 전부). 모든 호출을 기록한다.
  *
  * @since 1.0.0
  */
@@ -56,6 +57,16 @@ class FakeDirectoryClient implements DirectoryClientInterface
     public function count(string $action): int
     {
         return count(array_filter($this->calls, static fn ($call) => $call[0] === $action));
+    }
+
+    /**
+     * 기록된 검색의 요청 속성 목록.
+     *
+     * @return array<int, array<int, string>> 검색마다 요청한 속성
+     */
+    public function requestedAttributes(): array
+    {
+        return array_values(array_map(static fn ($call) => $call[1]['attributes'], array_filter($this->calls, static fn ($call) => $call[0] === 'search')));
     }
 
     /**
@@ -124,7 +135,7 @@ class FakeDirectoryClient implements DirectoryClientInterface
      */
     public function search(string $baseDn, string $filter, array $attributes, int $sizeLimit = 0): array
     {
-        $this->calls[] = ['search', ['base' => $baseDn, 'filter' => $filter]];
+        $this->calls[] = ['search', ['base' => $baseDn, 'filter' => $filter, 'attributes' => array_values($attributes)]];
         if (! $this->connected || $this->failOn === 'search') {
             throw new SsoException('ldap_unavailable', 'fake search failure');
         }
@@ -136,7 +147,7 @@ class FakeDirectoryClient implements DirectoryClientInterface
                 continue;
             }
             if ($tree !== null && $this->matches($tree, $entry['attributes'])) {
-                $found[] = ['dn' => $dn, 'attributes' => $entry['attributes']];
+                $found[] = ['dn' => $dn, 'attributes' => $this->only($entry['attributes'], $attributes)];
                 if ($sizeLimit > 0 && count($found) >= $sizeLimit) {
                     break;
                 }
@@ -144,6 +155,24 @@ class FakeDirectoryClient implements DirectoryClientInterface
         }
 
         return $found;
+    }
+
+    /**
+     * 요청한 속성만 남깁니다 — 실제 서버처럼 요청하지 않은 속성은 돌려주지 않는다.
+     *
+     * @param  array<string, array<int, string>>  $values  항목의 속성 (이름은 소문자)
+     * @param  array<int, string>  $requested  요청 속성 (빈 목록이면 전부)
+     * @return array<string, array<int, string>> 돌려줄 속성
+     */
+    private function only(array $values, array $requested): array
+    {
+        if ($requested === []) {
+            return $values;
+        }
+
+        $wanted = array_map('mb_strtolower', $requested);
+
+        return array_filter($values, static fn ($name) => in_array($name, $wanted, true), ARRAY_FILTER_USE_KEY);
     }
 
     /**

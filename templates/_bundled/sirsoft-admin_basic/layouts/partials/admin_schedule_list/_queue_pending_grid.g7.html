@@ -4,7 +4,9 @@
   대상이 아니라(워커가 곧 집는다) 고르는 칸과 행 메뉴가 없다. 대기 목록은 database 드라이버만 셀 수 있다 —
   다른 드라이버면 표 대신 안내 상자 하나를 띄운다(`meta.measurable=false` — 큐 탭에서 이 안내가 나오는 유일한 자리다).
   표 머리 줄은 스케줄 목록과 같다 — 왼쪽 「총 N개」(상한에 걸리면 「총 N개 이상」), 오른쪽 정렬·쪽당 개수.
-  날짜는 날짜 파이프로, 빈 값은 회색 「-」로 보인다. 시도 횟수는 「시도 / 최대」(최대를 모르면 시도만)로 세 하위 탭이 같다. -->
+  날짜는 날짜 파이프로, 빈 값은 회색 「-」로 보인다. 시도 횟수는 「시도 / 최대」(최대를 모르면 시도만)로 세 하위 탭이 같다.
+  목록을 받지 못했으면(`_dataSourceErrors`) 「총 0개」를 숨기고 빈 문구 자리에 「권한 없음」(403)·「불러오지 못함」을 보인다 — 받지 못한 목록을
+  「대기 중인 작업이 없습니다」로 말하지 않는다(세 하위 탭 공통). -->
 <partial name="queue_pending_grid">
   <div data-ref="queue_pending_section">
     <div data-ref="queue_pending_unmeasurable" data-if="{{queue_pending?.data?.meta?.measurable === false}}" role="status" class="alert-info">
@@ -13,8 +15,8 @@
     </div>
     <div data-if="{{queue_pending?.data?.meta?.measurable !== false}}">
       <div data-ref="queue_pending_list_info" class="flex-between flex-wrap gap-3 mb-4">
-        <span data-if="{{queue_pending?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.schedules.total_count|count={{queue_pending?.data?.pagination?.total ?? 0}}</span>
-        <span data-if="{{queue_pending?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.schedules.total_at_least|count={{queue_pending?.data?.pagination?.total ?? 0}}</span>
+        <span data-if="{{!_dataSourceErrors?.queue_pending &amp;&amp; queue_pending?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.schedules.total_count|count={{queue_pending?.data?.pagination?.total ?? 0}}</span>
+        <span data-if="{{!_dataSourceErrors?.queue_pending &amp;&amp; queue_pending?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.schedules.total_at_least|count={{queue_pending?.data?.pagination?.total ?? 0}}</span>
         <div class="flex-center gap-3">
           <select name="queue_pending_sort" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}" aria-label="$t:admin.schedules.sort.label">
             <options>
@@ -48,7 +50,7 @@
           </select>
         </div>
       </div>
-      <data-grid data-type="composite" data-ref="queue_pending_grid" data="{{queue_pending?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/schedules/queue?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{queue_pending?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{queue_pending?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{queue_pending?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="{{queue_pending === undefined ? '' : $t('admin.schedules.queue.empty.pending')}}">
+      <data-grid data-type="composite" data-ref="queue_pending_grid" data="{{queue_pending?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/schedules/queue?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{queue_pending?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{queue_pending?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{queue_pending?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="{{queue_pending === undefined ? '' : (_dataSourceErrors?.queue_pending ? (_dataSourceErrors.queue_pending.status === 403 ? $t('admin.schedules.queue.notice.no_permission') : $t('admin.schedules.queue.errors.list_load_failed')) : $t('admin.schedules.queue.empty.pending'))}}">
         <blur-until-loaded sources="queue_pending"/>
         <column field="display_name" header="$t:admin.schedules.queue.columns.job" :sortable="false" :required="true">
           <cell>

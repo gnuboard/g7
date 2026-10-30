@@ -23,14 +23,15 @@
           </prop>
           <on event="onItemClick">
             <!-- 요청자 메뉴 — 회원 상세는 **새 창** 링크로 열고(이 목록의 검색 조건을 잃지 않게 — 항목의 href·target), 요청자로 거르기는 같은 창에서 검색 조건만 갈아끼운다.
-                 거르기는 필터 칸의 「요청자」 검색과 같은 조건이라 진입 `<init>` 이 필터 칸에도 그대로 되돌려 담는다. -->
+                 필터 칸에는 「요청자」 검색과 이름을 담아 무엇으로 걸렀는지 보이고, 실제 거르기는 회원 고유ID(`requester_uuid`)로 한다 —
+                 이름 포함 검색만으로는 「홍길동」을 고르면 「홍길동2」의 작업도 섞인다. -->
             <switch>
               <case when="search_member">
                 <!-- 같은 화면 안에서 주소만 바뀌면 진입 `<init>` 이 다시 돌지 않으므로 필터 칸도 함께 채운다 -->
                 <sequence>
                   <set-state target="_local" filter.searchField="requester" filter.search="{{row.requester?.name ?? ''}}"/>
                   <navigate path="/admin/ecommerce/exports" :mergeQuery="true" :replace="true" transition_overlay_target="export_datagrid__body">
-                    <query search_field="requester" search_keyword="{{row.requester?.name}}" :page="1"/>
+                    <query search_field="requester" search_keyword="{{row.requester?.name}}" requester_uuid="{{row.requester?.uuid}}" :page="1"/>
                   </navigate>
                 </sequence>
               </case>

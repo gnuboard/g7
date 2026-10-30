@@ -413,7 +413,8 @@ class AuthController extends AuthBaseController
         try {
             $result = $this->authService->validateResetToken(
                 $validated['token'],
-                $validated['email']
+                $validated['email'],
+                $validated['redirect_prefix'] ?? null
             );
         } catch (PasswordAuthDisallowedException $e) {
             return $this->passwordAuthDisabledResponse($e, 422);
@@ -466,7 +467,8 @@ class AuthController extends AuthBaseController
             $this->authService->resetPassword(
                 $validated['token'],
                 $validated['email'],
-                $validated['password']
+                $validated['password'],
+                $validated['redirect_prefix'] ?? null
             );
 
             return $this->success('auth.password_reset_success');

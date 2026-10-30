@@ -1,0 +1,27 @@
+feature: 템플릿 업데이트는 레이아웃 갱신을 마친 뒤에 새 판을 DB 에 기록한다
+
+description: |
+  템플릿 업데이트가 새 판(version)을 먼저 저장하고 상태를 되돌린 뒤 레이아웃을 갱신하면, 레이아웃 갱신 도중 프로세스가
+  죽을 때(메모리 고갈·시간 초과·강제 종료) catch 가 돌지 않아 판은 새 판인데 템플릿 레이아웃은 옛 내용으로 남는다.
+  상태도 이미 active 로 돌아가 멈춘 업데이트 정리 대상이 아니고, 「업데이트 확인」은 같은 판이라 「업데이트 없음」으로
+  판정해 다시 시도할 길이 없었다(실측: 관리자 템플릿 1.2.0 기록 5초 뒤 레이아웃 갱신 중 메모리 고갈, 레이아웃 16개 옛 판).
+
+  프로세스가 죽는 순간은 시험에서 만들 수 없으므로 레이아웃 갱신에 들어선 시점의 DB 행을 잡아 「여기서 죽으면 남는 상태」로
+  본다. 그 상태의 판이 옛 판이고 다음 「업데이트 확인」이 업데이트 있음으로 봐야 한다. 꺼 둔 템플릿은 레이아웃을 켤 때
+  갱신하므로 업데이트가 끝나면 새 판을 그대로 기록한다.
+
+  업데이트가 실패했을 때 버전 칸을 되돌리는 경로는 tests/scenarios/extension-update-failure-rollback.yaml 이 다룬다.
+
+axes:
+  source: [template]
+  path: [update_process_killed_during_layout_refresh, update_inactive_template]
+  unit: [version_columns]
+
+effects:
+  - template_update_records_version_after_layout_refresh
+
+test_files:
+  - tests/Feature/Extension/TemplateUpdateRecordsVersionAfterLayoutRefreshTest.php
+
+notes:
+  - 모듈·플러그인 업데이트는 레이아웃 갱신 단계가 없어 이 매니페스트 범위 밖이다.

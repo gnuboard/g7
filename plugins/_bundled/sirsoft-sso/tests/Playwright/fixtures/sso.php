@@ -1,10 +1,12 @@
 <?php
 
+use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Plugins\Sirsoft\Sso\Models\IdentityProvider;
 use Plugins\Sirsoft\Sso\Models\SsoAccount;
 use Plugins\Sirsoft\Sso\Models\SsoLoginAttempt;
@@ -20,6 +22,7 @@ use Plugins\Sirsoft\Sso\Services\Policy\PolicyService;
 //                                         개발 사이트의 다른 회원 로그인을 건드리지 않는다). 비상 계정은 이메일 목록 `emergency_emails` 로 받는다
 //   idp-get <key>                         IdP 의 시험이 바꾸는 칸 (JSON 한 줄)
 //   idp-put <key> <json>                  IdP 칸 덮어쓰기
+//   reset-token <email>                   비밀번호 재설정 토큰을 새로 만들고 평문을 출력 (메일 없이 재설정 링크를 연다)
 //   purge                                 e2e798. 회원 전부 삭제
 if (PHP_SAPI !== 'cli' || getenv('G7_PLAYWRIGHT_BYPASS') !== '1') {
     throw new RuntimeException('Explicit CLI test opt-in required');
@@ -77,6 +80,7 @@ switch ($action) {
         $user = User::query()->where('email', $guard($args[1] ?? null))->first();
         echo json_encode($user === null ? ['exists' => false] : [
             'exists' => true,
+            'uuid' => $user->uuid,
             'has_password' => $user->password !== null,
             'links' => SsoAccount::query()->where('user_id', $user->id)->get()->map(fn (SsoAccount $a) => ['idp' => $a->idp?->key, 'linked_via' => $a->linked_via])->all(),
             'consents' => $user->consents()->count(),
@@ -104,9 +108,20 @@ switch ($action) {
         $idp->forceFill(array_intersect_key(json_decode((string) ($args[2] ?? ''), true, flags: JSON_THROW_ON_ERROR), array_flip($idpFields)))->save();
         echo "saved\n";
         break;
+    case 'reset-token':
+        $user = User::query()->where('email', $guard($args[1] ?? null))->firstOrFail();
+        $token = Str::random(64);
+        app(PasswordResetTokenRepositoryInterface::class)->updateOrCreateByEmail($user->email, ['token' => Hash::make($token), 'created_at' => now()]);
+        echo $token."\n";
+        break;
     case 'purge':
         $count = 0;
         foreach (User::query()->where('email', 'like', $prefix.'%')->get() as $user) {
+            // 재설정 토큰 행은 이메일로만 묶여 회원 삭제로 지워지지 않는다
+            $resetToken = app(PasswordResetTokenRepositoryInterface::class)->findByEmail($user->email);
+            if ($resetToken !== null) {
+                app(PasswordResetTokenRepositoryInterface::class)->delete($resetToken);
+            }
             // 시도 기록·연결은 회원 삭제로 지워지지 않을 수 있다 — 측정 흔적을 같이 지운다.
             SsoLoginAttempt::query()->where('user_id', $user->id)->delete();
             SsoAccount::query()->where('user_id', $user->id)->delete();

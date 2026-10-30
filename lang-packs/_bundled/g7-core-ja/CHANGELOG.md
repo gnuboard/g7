@@ -8,6 +8,8 @@
 
 ### Added
 
+- 본인 확인 시작 요청의 「시작한 화면 범위」 항목 이름 일본어 번역을 추가했습니다(`validation.attributes.scope`).
+- 번들 일괄 업데이트에서 처리하지 못한 항목 목록과 다시 실행 안내(`extensions.commands.bundled_update.item_process_aborted`·`failed_items_header`·`failed_item_labels.*`·`child_aborted`)의 일본어 번역을 추가했습니다.
 - 코어 업데이트가 개발자 custom 패키지 충돌이나 배포본의 예약 자리 파일 때문에 시작 전에 멈출 때의 안내(`settings.core_update.reserved_paths_in_release`·`custom_preflight_blocked`·`custom_conflict_*`)와 `custom:check`·`custom:example`·`custom:vendor-*` 명령 출력, 내부 API 도구 오류(`settings.custom_reserved.*`)의 일본어 번역을 추가했습니다.
 - 환경설정 「사용자 화면 URL」 검증 문구(`validation.settings.user_screen_url_*`·속성 이름)의 일본어 번역을 추가했습니다.
 - 알림 발송 로그 조회 조건(검색 대상·상태·확장 유형 등)의 검증 오류 문구에 쓰는 항목 이름의 일본어 번역을 추가했습니다.
@@ -20,6 +22,7 @@
 - 소셜 로그인 같은 외부 인증과 비밀번호 없는 회원 문구의 일본어 번역을 추가했습니다 — 로그인 인계 실패 안내(`auth.login_handoff_invalid`·`validation.auth.login_handoff.code_required`), 비밀번호 미설정·본인 재확인 안내(`user.password_not_set`·`user.reauthentication_invalid`·`user.validation.current_password_not_set`), 메일을 받을 수 없는 주소로 알림을 건너뛴 기록(`notification.recipient_email_undeliverable`), 항목 이름(`validation.attributes.verification_token`·`login_handoff_code`), 레이아웃 편집기 「로그인 인계 코드로 로그인」 액션 이름(`layout_editor.action_recipe.login_handoff.*`), 외부 인증이 로그인 수단 이름을 빠뜨렸을 때의 오류(`exceptions.login_method_required`), 최고관리자만 할 수 있는 작업을 다른 관리자가 요청했을 때의 안내(`auth.super_admin_required`).
 - 코어 7.2.0 의 외부 인증 확장점 문구 일본어 번역을 추가했습니다 — 로그인 수단 확인·비밀번호 로그인 차단·다음 단계 필요·2단계 인증 수단 없음·로그인 유지 시간 종료 안내(`auth.login_discovery_success`·`password_auth_disabled*`·`external_step_required`·`two_factor_means_required`·`session_cap_reached`), 회원가입 닫힘(`auth.registration_disabled`)과 「일반 회원가입 받기」·「돌아갈 화면 경로」 항목 이름(`validation.attributes.registration_enabled`·`return_path`), 로그인 인계 실측 명령 출력(`auth.handoff_issue_command.*`), 회사 계정이 관리하는 항목·모든 기기 로그아웃·최고관리자 차단 거절·비밀번호 없이 만들기 검증(`user.field_locked`·`sessions_revoked`·`block_super_admin_refused`·`validation.password_prohibited_without_password`), 활동 로그(회원 차단·해제, 모든 기기 로그아웃, 본인인증 정책을 건너뛴 가입), 외부 자격 증명 검증자의 다음 단계 경로 오류(`exceptions.external_step_redirect_not_same_origin`).
 - 템플릿 `template.json` 의 확장 CSS 계약 검증 문구(`templates.color_scheme_*` — 다크 방식 선언, `templates.extension_css_override*` — 확장 CSS 덮기 선언 6종)의 일본어 번역을 추가했습니다.
+- vendor 묶음 명령(`custom:vendor-bundle`, `custom:vendor-verify`, `core:`, `module:`, `plugin:` 의 `vendor-bundle`, `vendor-verify`, `vendor-bundle:build-all`, `vendor-bundle:verify-all`)의 머리말, 결과 줄, 요약 콘솔 출력(`extensions.commands.vendor_bundle_action.title_*`, `built`, `skipped_up_to_date`, `up_to_date`, `verify_ok`, `verify_failed_target`, `summary`)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

@@ -1259,6 +1259,8 @@ _단건 응답: `data` 객체의 필드._
 | password_expiry_policy | string | `inherit` | 비밀번호 만료 개별 설정 (`inherit` 따름 · `apply` 적용 · `exempt` 제외 — #736) |
 | password_status | object | `{"applies":true, …}` | 비밀번호 상태 — 상세 응답에만 실린다(목록은 회원마다 역할 판정이 들어 제외) |
 | password_status.has_password | boolean | `true` | 비밀번호가 있는지 — false 면 만료 정책 대상이 아니고 나머지 만료 값은 비어 있다 |
+| password_status.can_set | boolean | `true` | 이 화면을 보는 관리자가 이 회원의 비밀번호를 정할 수 있는지 — 비밀번호 인증 정책(남의 회원은 `admin_set_password`, 자기 계정은 `set_password`)이 막으면 false. 저장 403 `auth.password_auth_disabled` 와 같은 판정 (7.2.0) |
+| password_status.set_blocked_message | string\|null | `null` | `can_set` 이 false 일 때 보일 안내 문구 — 저장 403 의 문구와 같다 (7.2.0) |
 | password_status.changed_at | string\|null | `2026-07-01 10:20:00` | 마지막 변경 일시 (사용자 시간대) |
 | password_status.expires_at | string\|null | `2026-09-29 10:20:00` | 만료 예정 일시 (적용되지 않으면 null) |
 | password_status.expired | boolean | `false` | 만료됐는지 |

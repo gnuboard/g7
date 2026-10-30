@@ -10,7 +10,7 @@ description: |
   - 상태 카드는 하트비트(3분 이내 정상)와 큐 요약을 보인다.
 
 axes:
-  case: [filter_axes, keyword_search, owner_filter, row_fields, owners_api, create_label, overlap_bounds, prohibited_fields, owned_lock, duplicate_custom, run_branches, status_heartbeat, owned_delete, screen_filter_submit, screen_tabs, screen_render, form_modal, service_crud, form_modal_save, command_normalize, bulk_delete_message, terminology, next_run_display]
+  case: [filter_axes, keyword_search, owner_filter, row_fields, owners_api, create_label, overlap_bounds, prohibited_fields, owned_lock, duplicate_custom, run_branches, status_heartbeat, owned_delete, screen_filter_submit, screen_tabs, screen_render, form_modal, service_crud, form_modal_save, command_normalize, bulk_delete_message, terminology, next_run_display, form_untouched, delete_blocked_reason]
 
 effects:
   # 저장된 다음 실행이 지났으면 목록·상세가 주기로 다시 계산한 시각을 보인다(비활성 행은 저장값)
@@ -61,14 +61,24 @@ effects:
   - schedule_bulk_delete_success_message
   # 검증 문구·칸 이름·유형 표기가 화면 용어(식별자·작업명·명령·제한 시간·중복 실행 방지·Artisan/Shell)와 같다
   - schedule_validation_terms_match_ui
+  # 편집 창은 손대지 않은 칸을 저장값 그대로 보내고(빈 제한 시간은 빈 칸·null, 같은 주기는 저장된 cron 식, 바로 실행은 저장된 큐 연결·큐),
+  # 서버는 실제로 바뀐 칸만 운영자 수정으로 남긴다. 비운 제한 시간 칸 아래에는 유형·실행 방식별 실제 기본을 안내한다
+  - schedule_form_edit_keeps_untouched_fields
+  # 「운영자 수정」은 코어·확장 작업에만 남고 응답에 실린다 — 직접 등록 작업은 기록하지 않고 예전 기록도 싣지 않으며, 편집 창 배지도 소유 작업에만 붙는다
+  - schedule_overrides_only_for_owned_rows
+  # 행의 삭제 불가 사유를 권한 없음(permission)·소유 잠김(owned)으로 갈라 싣고, 행 메뉴 「삭제」 아래 안내가 그 사유를 따른다
+  - schedule_delete_blocked_reason_splits_permission_and_owner
 
 test_files:
   - tests/Feature/Api/Admin/ScheduleControllerRegistryTest.php
+  - tests/Feature/Api/Admin/ScheduleDeleteBlockedReasonTest.php
   - tests/Feature/Api/Admin/ScheduleControllerRunStatusTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_schedule_list-registry-screen.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_schedule_list-live-defects.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_schedule_list-ui-consistency.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_schedule_list-delete-blocked-reason.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-schedule-form-modal-submit.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-schedule-form-modal-untouched-fields.test.tsx
   - tests/Unit/Services/ScheduleServiceTest.php
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/schedule-form-modal-save.spec.ts
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/schedule-list-filter.spec.ts

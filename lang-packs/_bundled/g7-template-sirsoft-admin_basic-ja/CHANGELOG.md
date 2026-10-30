@@ -8,6 +8,7 @@
 
 ### Added
 
+- 큐 모니터링·환경설정 권한 안내 일본어 번역을 추가했습니다 — 「큐 작업 조회」 권한이 없을 때의 안내(`admin.schedules.queue.notice.no_permission`), 목록·상태를 불러오지 못했을 때의 안내(`admin.schedules.queue.errors.list_load_failed`·`status_load_failed`), 언어팩·본인인증 구획을 볼 권한이 없을 때의 안내(`admin.settings.permission_required.*`).
 - 환경설정 → 일반 탭 「사용자 화면 URL」 칸의 이름·도움말과, 코어 업데이트 확인 창의 custom 사전 검사 중단 영역(충돌 표·예약 파일·해결 순서) 문구의 일본어 번역을 추가했습니다.
 - 모듈·플러그인 제거 창의 「함께 지워지는 공유 데이터」에 예약 작업(スケジュール) 항목 이름의 일본어 번역을 추가했습니다.
 - 환경설정 > 알림 정의의 새 알림 유형 「예약 작업 실패」(予約タスク失敗) 이름의 일본어 번역을 추가했습니다.
@@ -22,6 +23,7 @@
 - 외부 수단으로 본인을 확인하는 관리자의 안내 일본어 번역을 추가했습니다 — 본인 확인 화면으로 이동하지 못했을 때(`admin.settings.modals.reauth_external_failed`·`admin.users.form.password_policy.reauth_external_failed`), 확인을 마치고 앱 키 재생성 창으로 돌아왔을 때(`admin.settings.modals.reauth_verified`).
 - 이메일로 인증번호를 받을 수 없는 비밀번호 없는 관리자가 회사 계정 등 다른 수단으로 본인 확인을 시작하는 버튼과 안내의 일본어 번역을 추가했습니다(앱 키 재생성 창 `admin.settings.modals.reauth_start`·`reauth_notice_other`·`reauth_code_sent_generic`, 자기 정보 수정 `admin.users.form.password_policy.` 같은 세 키).
 - 관리자 로그인 화면의 회사 계정 이메일 판정 안내와 비상 계정 로그인(`?local=1`) 안내 일본어 번역을 추가했습니다(`auth.login.external.discovered_notice`·`auth.login.external.discovered_notice_company`·`auth.login.external.local_notice`).
+- 예약 작업 편집 창의 제한 시간 자리 표시 「デフォルト」와, 비워 둘 때 작업 유형과 실행 방식별 실제 기본값 안내 5종(`admin.schedules.form.timeout_placeholder`, `admin.schedules.form.timeout_default.*`)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

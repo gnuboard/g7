@@ -3,13 +3,19 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Export;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Extension\HookContextCapture;
+use App\Extension\HookManager;
 use App\Extension\Storage\ModuleStorageDriver;
 use App\Models\User;
 use App\Services\Queue\QueueWorkerRegistry;
+use Illuminate\Http\Request;
 use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Queue\TimeoutExceededException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Enums\ExportStatusEnum;
@@ -367,5 +373,54 @@ class ExportRobustnessTest extends ExportTestCase
 
         $this->assertSame(ExportStatusEnum::FAILED, Export::findOrFail($id)->status);
         $this->assertSame([], Storage::disk('modules')->allFiles('sirsoft-ecommerce/exports'), '기록 없는 파일이 남았습니다.');
+    }
+
+    /**
+     * 파일 생성은 요청자 문맥으로 돌고, 끝나면 워커를 작업 전 상태로 되돌린다 — 다음 작업이 요청자를 물려받지 않는다.
+     *
+     * 상주 워커는 컨테이너를 작업 사이에 재사용한다. 복원한 요청자·요청·시간대가 남으면 같은 워커가 이어서 처리한
+     * 다른 관리자의 작업(예: 큐로 보낸 예약 작업 즉시 실행)의 활동 로그가 이 요청자로 기록됐다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario type=orders
+     *
+     * @effects generation_leaves_worker_context_clean
+     */
+    public function test_generation_leaves_worker_context_clean(): void
+    {
+        Bus::fake([GenerateExportJob::class]);
+        $user = $this->createAdminUser([
+            'sirsoft-ecommerce.orders.read',
+            'sirsoft-ecommerce.exports.create',
+        ]);
+        $id = (int) $this->actingAs($user)->postJson($this->exportsUrl(), [
+            'type' => 'orders', 'format' => 'csv', 'column_mode' => 'custom', 'fields' => ['order.order_number'], 'row_unit' => 'order',
+            'scope' => 'all', 'period' => ['mode' => 'custom', 'date_type' => 'ordered_at', 'start_date' => now()->subDay()->toDateString(), 'end_date' => now()->toDateString()],
+            'locale_mode' => 'locale', 'include_totals' => false,
+        ], ['Idempotency-Key' => 'worker-context-1'])->assertStatus(202)->json('data.id');
+
+        // 워커 프로세스 상태 — 사용자·보는 사람 시간대 없음, 콘솔 요청
+        Auth::guard()->forgetUser();
+        $this->app->forgetInstance('user_timezone');
+        $workerRequest = Request::create('/');
+        $this->app->instance('request', $workerRequest);
+        Facade::clearResolvedInstance('request');
+        $locale = App::getLocale();
+
+        $actorDuringRun = null;
+        HookManager::addAction('sirsoft-ecommerce.export.after_start', function () use (&$actorDuringRun) {
+            $actorDuringRun = Auth::id();
+        });
+
+        app(ExportService::class)->generate($id);
+
+        $this->assertSame(ExportStatusEnum::COMPLETED, Export::findOrFail($id)->status);
+        $this->assertSame($user->id, $actorDuringRun, '파일 생성이 요청자 문맥으로 돌지 않았다');
+        $this->assertFalse(Auth::hasUser(), '파일 생성이 끝난 뒤 요청자가 워커에 남았다');
+        $this->assertSame($workerRequest, $this->app->make('request'), '파일 생성이 끝난 뒤 요청 바인딩이 되돌아오지 않았다');
+        $this->assertFalse($this->app->bound('user_timezone'), '파일 생성이 끝난 뒤 요청자 시간대가 워커에 남았다');
+        $this->assertFalse($this->app->bound(HookContextCapture::ORIGIN_BINDING), '파일 생성이 끝난 뒤 진입점 복원값이 남았다');
+        $this->assertSame($locale, App::getLocale(), '파일 생성이 끝난 뒤 로케일이 되돌아오지 않았다');
     }
 }

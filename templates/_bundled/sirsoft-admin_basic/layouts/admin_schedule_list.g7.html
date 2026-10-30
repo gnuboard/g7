@@ -13,7 +13,13 @@
   전환 덮개는 목록과 함께 늦게 받는 progressive 데이터소스(소유 선택지·상태 카드·큐 현황·큐 하위 탭 목록)까지 기다린다 — 하나라도
   빠지면 덮개가 걷힌 뒤 그 칸이 늦게 바뀐다. 덮개 대상은 두 탭 본문을 함께 감싼 칸 하나다(탭마다 따로 두면 큐 탭에서
   대상이 사라져 화면 전체가 덮였다).
-  헤더의 「보안 정책」은 서버가 정한 실행 허용·거부 목록을 **읽기 전용**으로 보인다 — 바꾸는 것은 서버 관리자(설정 파일·.env)의 몫이다. -->
+  헤더의 「보안 정책」은 서버가 정한 실행 허용·거부 목록을 **읽기 전용**으로 보인다 — 바꾸는 것은 서버 관리자(설정 파일·.env)의 몫이다.
+
+  레이아웃 권한은 스케줄 조회(core.schedules.read) 하나라 큐 작업 조회(core.queue_jobs.read)가 없는 관리자도 이 화면에 들어온다.
+  그 여부는 베이스(`_admin_base`)가 로그인 관리자(current_user)를 받을 때 전역 `adminQueueJobsReadable` 에 올린 판정을 본다(받기 전은
+  판정 전 = 값 없음). 거짓이면 큐 탭 항목을 숨기고, 큐 주소로 직접 들어오면 본문 대신 권한 안내를 보이며, `queue_*` 데이터소스를
+  부르지 않는다(데이터소스 조건 문맥에는 사용자가 없어 전역 판정을 쓴다). 판정 전에는 숨기지 않고 종전대로 받는다 — 새 탭의 첫 화면에서
+  권한 있는 관리자에게 탭이 깜박이지 않게 하고, 그때 권한 없는 관리자에게 나간 요청의 403 은 조용히 넘긴다. -->
 <layout name="admin_schedule_list" version="1.0.0" extends="_admin_base">
   <meta title="$t:admin.schedules.page_title" description="$t:admin.schedules.page_description"/>
   <!-- 예약 작업 목록(스케줄 탭). 조건을 전부 `query.*` 에서 읽는다 — 키 목록은 서버 ScheduleListRequest 와 1:1 이다. -->
@@ -56,28 +62,46 @@
       </field>
     </fallback>
   </data-source>
-  <!-- 큐 등록 현황(연결·큐 목록) — 폼 창의 「큐로 보내기」 선택지와 큐 탭(현황 카드·필터 선택지)이 함께 쓴다. 큐 조회 권한이 없으면
-       선택지만 비고(기본 연결로 보낸다) 화면은 그대로 쓴다. 큐 탭 현황 카드가 이 값으로 그려지므로 progressive 로 받고 전환 덮개가 기다린다. -->
-  <data-source id="queue_status" label_key="$t:editor.data_source.queue_status" type="api" endpoint="/api/admin/schedules/queue/status" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
-    <fallback>
-      <field name="data">
-        <field name="entries" :value="[]"/>
-        <field name="connections" :value="[]"/>
-      </field>
-    </fallback>
+  <!-- 큐 등록 현황(연결·큐 목록) — 폼 창의 「큐로 보내기」 선택지와 큐 탭(현황 카드·필터 선택지)이 함께 쓴다. 큐 탭 현황 카드가 이 값으로
+       그려지므로 progressive 로 받고 전환 덮개가 기다린다.
+       큐 작업 조회 권한(core.queue_jobs.read)이 없다고 판정됐으면(`_global.adminQueueJobsReadable === false`, 베이스가 current_user 로 정한다)
+       부르지 않는다. 판정 전(새 탭의 첫 화면)에 나간 요청의 403 은 조용히 넘긴다. 폼 창 선택지는 값이 없으면 비고(기본 연결로 보낸다) 창은 그대로 쓴다.
+       fallback 을 두지 않는다 — 두면 받기 실패가 성공으로 처리되어 큐 탭 현황 카드가 「측정 불가 / 0개 / 0/0」 같은 틀린 값을 그렸다.
+       실패는 `_dataSourceErrors.queue_status` 로 남고 큐 탭은 카드 대신 실패 안내를 보인다. -->
+  <data-source id="queue_status" label_key="$t:editor.data_source.queue_status" type="api" endpoint="/api/admin/schedules/queue/status" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{_global.adminQueueJobsReadable !== false}}">
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 큐 탭 — 대기 중인 Job. 하위 탭이 「대기」일 때만 부른다. 정렬 기준은 하위 탭마다 받는 값이 달라(서버 허용 목록)
-       기본값도 하위 탭마다 따로 둔다 — 하위 탭을 바꾸면 정렬은 넘기지 않는다. -->
-  <data-source id="queue_pending" label_key="$t:editor.data_source.queue_pending" type="api" endpoint="/api/admin/schedules/queue/pending" method="GET" :auto_fetch="true" :auth_required="true" if="{{query.view === 'pending'}}">
+       기본값도 하위 탭마다 따로 둔다 — 하위 탭을 바꾸면 정렬은 넘기지 않는다. 권한 판정·403 처리는 위 큐 등록 현황과 같다(세 하위 탭 공통). -->
+  <data-source id="queue_pending" label_key="$t:editor.data_source.queue_pending" type="api" endpoint="/api/admin/schedules/queue/pending" method="GET" :auto_fetch="true" :auth_required="true" if="{{query.view === 'pending' &amp;&amp; _global.adminQueueJobsReadable !== false}}">
     <params page="{{query.page ?? 1}}" per_page="{{query.per_page ?? 20}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" queue="{{query.queue}}" connection="{{query.connection}}" sort_by="{{query.sort_by ?? 'created_at'}}" sort_order="{{query.sort_order ?? 'desc'}}"/>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 큐 탭 — 실패한 Job. -->
-  <data-source id="queue_failed" label_key="$t:editor.data_source.queue_failed" type="api" endpoint="/api/admin/schedules/queue/failed" method="GET" :auto_fetch="true" :auth_required="true" if="{{query.view === 'failed'}}">
+  <data-source id="queue_failed" label_key="$t:editor.data_source.queue_failed" type="api" endpoint="/api/admin/schedules/queue/failed" method="GET" :auto_fetch="true" :auth_required="true" if="{{query.view === 'failed' &amp;&amp; _global.adminQueueJobsReadable !== false}}">
     <params page="{{query.page ?? 1}}" per_page="{{query.per_page ?? 20}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" queue="{{query.queue}}" connection="{{query.connection}}" failed_start_date="{{query.failed_start_date}}" failed_end_date="{{query.failed_end_date}}" sort_by="{{query.sort_by ?? 'failed_at'}}" sort_order="{{query.sort_order ?? 'desc'}}"/>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 큐 탭 — 처리 기록(성공·실패). -->
-  <data-source id="queue_logs" label_key="$t:editor.data_source.queue_logs" type="api" endpoint="/api/admin/schedules/queue/logs" method="GET" :auto_fetch="true" :auth_required="true" if="{{query.view === 'logs'}}">
+  <data-source id="queue_logs" label_key="$t:editor.data_source.queue_logs" type="api" endpoint="/api/admin/schedules/queue/logs" method="GET" :auto_fetch="true" :auth_required="true" if="{{query.view === 'logs' &amp;&amp; _global.adminQueueJobsReadable !== false}}">
     <params page="{{query.page ?? 1}}" per_page="{{query.per_page ?? 20}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" status="{{query.status}}" queue="{{query.queue}}" connection="{{query.connection}}" created_start_date="{{query.created_start_date}}" created_end_date="{{query.created_end_date}}" sort_by="{{query.sort_by ?? 'finished_at'}}" sort_order="{{query.sort_order ?? 'desc'}}"/>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <init-local>
     <field name="visibleFilters">
@@ -303,18 +327,19 @@
                  navigate 해 아무 일도 일어나지 않았다). 큐 탭이면 보고 있는 하위 탭의 목록만 다시 받는다. -->
             <sequence>
               <refetch-data-source dataSourceId="schedule_status"/>
-              <refetch-data-source dataSourceId="queue_status"/>
+              <!-- 큐 쪽은 큐 조회 권한이 있다고(또는 아직 판정 전이라고) 볼 때만 다시 받는다 — 권한이 없으면 소스 자체가 골라지지 않았다. -->
+              <refetch-data-source if="{{_global.adminQueueJobsReadable !== false}}" dataSourceId="queue_status"/>
               <conditions>
                 <when if="{{route.path !== '/admin/schedules/queue'}}">
                   <refetch-data-source dataSourceId="schedules"/>
                 </when>
-                <when if="{{(query.view || 'pending') === 'pending'}}">
+                <when if="{{_global.adminQueueJobsReadable !== false &amp;&amp; (query.view || 'pending') === 'pending'}}">
                   <refetch-data-source dataSourceId="queue_pending"/>
                 </when>
-                <when if="{{query.view === 'failed'}}">
+                <when if="{{_global.adminQueueJobsReadable !== false &amp;&amp; query.view === 'failed'}}">
                   <refetch-data-source dataSourceId="queue_failed"/>
                 </when>
-                <when if="{{query.view === 'logs'}}">
+                <when if="{{_global.adminQueueJobsReadable !== false &amp;&amp; query.view === 'logs'}}">
                   <refetch-data-source dataSourceId="queue_logs"/>
                 </when>
               </conditions>
@@ -378,7 +403,7 @@
         <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeScheduleTab || (route.path === '/admin/schedules/queue' ? 'queue' : 'schedules')}}" variant="default">
           <prop name="tabs">
             <item id="schedules" href="/admin/schedules" label="$t:admin.schedules.tabs.schedules"/>
-            <item id="queue" href="/admin/schedules/queue" label="$t:admin.schedules.tabs.queue"/>
+            <item id="queue" href="/admin/schedules/queue" label="$t:admin.schedules.tabs.queue" if="{{_global.adminQueueJobsReadable !== false}}"/>
           </prop>
           <on type="change" event="onTabChange">
             <!-- 탭 전환 — 탭이 **URL 경로**라 이동이다. 떠나는 탭의 조건(query)을 전역에 담아 두고, 가는 탭은 지난번에
@@ -407,9 +432,16 @@
         <div data-ref="schedules_tab_content" data-if="{{route.path !== '/admin/schedules/queue'}}">
           <include src="partials/admin_schedule_list/_tab_schedules.g7.html"/>
         </div>
-        <!-- 큐 탭 본문 — 큐 상태 카드·하위 탭·필터·표는 큐 화면 조각이 그린다. -->
+        <!-- 큐 탭 본문 — 큐 상태 카드·하위 탭·필터·표는 큐 화면 조각이 그린다. 큐 작업 조회 권한이 없다고 판정됐으면(탭은 숨었지만
+             주소로 직접 들어온 경우) 본문 대신 권한 안내를 보인다 — 받지 못한 값을 「0건」으로 그리지 않는다. -->
         <div data-ref="queue_tab_content" data-if="{{route.path === '/admin/schedules/queue'}}">
-          <include src="partials/admin_schedule_list/_tab_queue.g7.html"/>
+          <div data-ref="queue_permission_denied" data-if="{{_global.adminQueueJobsReadable === false}}" role="status" class="alert-warning">
+            <icon name="lock" class="text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+            <p class="text-warning-soft">$t:admin.schedules.queue.notice.no_permission</p>
+          </div>
+          <div data-ref="queue_tab_body" data-if="{{_global.adminQueueJobsReadable !== false}}">
+            <include src="partials/admin_schedule_list/_tab_queue.g7.html"/>
+          </div>
         </div>
       </div>
     </div>

@@ -285,6 +285,7 @@ class InstallerIncludeOrderTest extends TestCase
                     'installer_reclaim_is_locked',
                     'installer_reclaim_record_failure',
                     'installer_reclaim_reset_throttle',
+                    'installerHasActiveWorker',
                 ],
             ],
             'finalize-env.php' => [
@@ -292,6 +293,7 @@ class InstallerIncludeOrderTest extends TestCase
                 [
                     'public/install/includes/config.php',
                     'public/install/includes/functions.php',
+                    'public/install/includes/binary-path-policy.php',
                     'public/install/includes/installer-runtime.php',
                     'public/install/includes/installer-state.php',
                     'public/install/includes/session.php',
@@ -311,6 +313,12 @@ class InstallerIncludeOrderTest extends TestCase
                     'installer_require_owner',
                     'installer_require_csrf',
                     'installer_reclaim_reset_throttle',
+                    'installerHasActiveWorker',
+                    'installerWaitForWorkerRelease',
+                    'installerConfigCachePath',
+                    'installerClearConfigCache',
+                    'installerRebuildConfigCache',
+                    'installer_php_binary_from_state',
                 ],
             ],
             'install-worker.php (SSE 워커 → task-runner)' => [
@@ -330,6 +338,12 @@ class InstallerIncludeOrderTest extends TestCase
                     'writeInstallerRuntime',
                     'executeSeedTruncate',
                     'installer_plan_verify',
+                    'installerHandleWorkerShutdown',
+                    'installerResetTaskTimeLimit',
+                    'installerReleaseInterruptedLocks',
+                    'releaseWorkerLock',
+                    'getPhpBinary',
+                    'installer_php_binary_from_state',
                 ],
             ],
             'save-extensions.php' => [

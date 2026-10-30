@@ -33,7 +33,9 @@ trait RunsVendorBundleAction
             return self::FAILURE;
         }
 
-        $this->line($check ? 'Vendor Bundle Status Check' : 'Vendor Bundle Build');
+        $this->line(__($check
+            ? 'extensions.commands.vendor_bundle_action.title_check'
+            : 'extensions.commands.vendor_bundle_action.title_build'));
         $this->line(str_repeat('─', 66));
         $this->newLine();
 
@@ -85,7 +87,7 @@ trait RunsVendorBundleAction
             return self::FAILURE;
         }
 
-        $this->line('Vendor Bundle Integrity Verification');
+        $this->line(__('extensions.commands.vendor_bundle_action.title_verify'));
         $this->line(str_repeat('─', 66));
         $this->newLine();
 
@@ -112,15 +114,14 @@ trait RunsVendorBundleAction
             if ($result->valid) {
                 $packageCount = $result->meta['package_count'] ?? 0;
                 $zipSize = @filesize($zipPath) ?: 0;
-                $this->line(sprintf(
-                    '✓ %s: OK (%.1f MB, %d packages)',
-                    $label,
-                    $zipSize / 1024 / 1024,
-                    $packageCount,
-                ));
+                $this->line('✓ '.__('extensions.commands.vendor_bundle_action.verify_ok', [
+                    'label' => $label,
+                    'size' => VendorBundleResult::formatSize($zipSize),
+                    'count' => (int) $packageCount,
+                ]));
             } else {
                 $failures++;
-                $this->error(sprintf('✗ %s: FAILED', $label));
+                $this->error('✗ '.__('extensions.commands.vendor_bundle_action.verify_failed_target', ['label' => $label]));
                 foreach ($result->errorMessages() as $message) {
                     $this->line('  - '.$message);
                 }
@@ -187,6 +188,13 @@ trait RunsVendorBundleAction
             $this->line('  ○ '.__('extensions.commands.vendor_bundle_action.skipped_no_dependencies', ['label' => $label]));
         } elseif ($result->skipped && $result->reason === 'extension-not-installed') {
             $this->line('  ○ '.__('extensions.commands.vendor_bundle_action.skipped_not_installed', ['label' => $label]));
+        } elseif ($result->skipped && $result->reason === 'up-to-date') {
+            // 사유 코드(up-to-date)를 그대로 찍지 않고 사이트 언어 문구로 낸다
+            $this->line('  ○ '.__('extensions.commands.vendor_bundle_action.skipped_up_to_date', [
+                'label' => $label,
+                'size' => $result->zipSizeHuman(),
+                'count' => (int) $result->packageCount,
+            ]));
         } elseif ($result->skipped) {
             $this->line('  ○ '.__('extensions.commands.vendor_bundle_action.skipped_reason', [
                 'label' => $label,
@@ -195,12 +203,11 @@ trait RunsVendorBundleAction
                 'count' => (int) $result->packageCount,
             ]));
         } else {
-            $this->line(sprintf(
-                '  ✓ %s: %s, %d packages',
-                $label,
-                $result->zipSizeHuman(),
-                $result->packageCount,
-            ));
+            $this->line('  ✓ '.__('extensions.commands.vendor_bundle_action.built', [
+                'label' => $label,
+                'size' => $result->zipSizeHuman(),
+                'count' => (int) $result->packageCount,
+            ]));
         }
 
         return $result;
@@ -246,7 +253,7 @@ trait RunsVendorBundleAction
         if ($stale) {
             $this->error('✗ '.__('extensions.commands.vendor_bundle_action.stale', ['label' => $label]));
         } else {
-            $this->line("✓ $label: up-to-date");
+            $this->line('✓ '.__('extensions.commands.vendor_bundle_action.up_to_date', ['label' => $label]));
         }
 
         return $stale;
@@ -369,10 +376,10 @@ trait RunsVendorBundleAction
     }
 
     /**
-     * 빌드·건너뜀 건수와 전체 번들 크기 요약을 출력합니다.
+     * 빌드·건너뜀 건수와 전체 번들 크기 요약을 출력합니다 (크기는 B·KB·MB 자동 단위).
      *
      * @param  array<int, VendorBundleResult>  $results
-     * @return void
+     * @return void 반환값 없음
      */
     private function printBuildSummary(array $results): void
     {
@@ -389,11 +396,10 @@ trait RunsVendorBundleAction
             $totalSize += $result->zipSize;
         }
 
-        $this->line(sprintf(
-            'Summary: %d built, %d skipped, total %.1f MB',
-            $built,
-            $skipped,
-            $totalSize / 1024 / 1024,
-        ));
+        $this->line(__('extensions.commands.vendor_bundle_action.summary', [
+            'built' => $built,
+            'skipped' => $skipped,
+            'size' => VendorBundleResult::formatSize($totalSize),
+        ]));
     }
 }

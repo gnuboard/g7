@@ -37,6 +37,12 @@ src/handlers/*.ts (이 템플릿 전용 핸들러 17개 — 범용 핸들러는 
 이 트리는 코어 화면에만 적용되는 것이 아닙니다 — 모듈/플러그인의 관리자 레이아웃도 같은
 `_admin_base` → 컴포넌트 경로를 그대로 타므로, 이 템플릿을 고치면 그 확장들의 화면도 같은
 방향으로 바뀝니다(§AGENTS.md "수정 시 동반 의무" 참고).
+
+로그인 화면(`admin_login`)과 비밀번호 재설정 화면(`admin_reset_password`)은 `_admin_base` 를 상속하지 않고 Toast 를 따로
+둡니다. 그래서 로그인 화면에서 띄운 알림(비밀번호 변경 완료·휴면 해제 등)은 관리자 화면으로 넘어가며 다른 Toast 인스턴스가 이어
+그립니다. `Toast` 는 항목의 만든 시각(`createdAt`, 엔진 toast 핸들러가 넣음)부터 표시 시간을 세므로, 이어 그리는 Toast 는 남은
+시간만 보이고 이미 지난 항목은 그리지 않고 `_global.toasts` 에서 지웁니다. 떠나는 Toast 는 타이머를 거둡니다. 회귀 테스트:
+`src/components/composite/__tests__/Toast.lifetime.test.tsx`.
 <!-- @intent END -->
 
 ## 디렉토리

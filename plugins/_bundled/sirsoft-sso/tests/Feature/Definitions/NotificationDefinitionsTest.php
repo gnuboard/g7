@@ -167,6 +167,66 @@ class NotificationDefinitionsTest extends PluginTestCase
     }
 
     /**
+     * 비밀번호 찾기 안내 메일이 회원이 실제로 할 수 있는 로그인 방법을 적는지 확인한다.
+     *
+     * LDAP/AD 는 로그인 화면에 버튼이 없고 같은 폼에 사내 아이디(또는 회사 이메일)와 회사 비밀번호를 넣는다 — 「○○(으)로 로그인」을
+     * 누르라는 안내는 OIDC, SAML 에만 맞다. 안내할 IdP 가 없으면 관리자 문의로 안내한다.
+     *
+     * @scenario type=sso_password_reset_redirect, guide_idp=ldap_username|ldap_email|oidc|none, recipient=ko|en
+     *
+     * @effects reset_guide_matches_login_method
+     *
+     * @return void 반환값 없음
+     */
+    public function test_reset_guidance_follows_login_method(): void
+    {
+        $this->loadPluginLang();
+        config(['app.site_locale' => 'ko']);
+
+        $member = $this->makeMember(['name' => '김직원']);
+        $oidc = $this->makeIdp('corp');
+        $ldapConfig = ['host' => 'ldap.dir798.test', 'port' => 389, 'base_dn' => 'dc=dir798,dc=test'];
+        $ldapUsername = $this->makeIdp('dir', [
+            'protocol' => 'ldap', 'label' => ['ko' => '사내 디렉터리', 'en' => 'Corporate directory'],
+            'config' => $ldapConfig + ['accept_username' => true], 'secrets' => [], 'owned_domains' => [],
+        ]);
+        $ldapEmail = $this->makeIdp('dir-mail', [
+            'protocol' => 'ldap', 'label' => ['ko' => '사내 메일 디렉터리', 'en' => 'Mail directory'],
+            'config' => $ldapConfig, 'secrets' => [], 'owned_domains' => ['dir798.test'],
+        ]);
+        $base = ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []];
+        $definitions = array_column((new Plugin)->getNotificationDefinitions(), null, 'type');
+        $this->app->instance(NotificationTemplateService::class, $this->templatesFrom($definitions));
+        $mail = fn (?IdentityProvider $idp, string $language) => $this->render(
+            'sso_password_reset_redirect',
+            HookManager::applyFilters('sirsoft-sso.notification.extract_data', $base, 'sso_password_reset_redirect', [$member, $idp])['data'],
+            $language,
+            false,
+        );
+
+        // LDAP(사내 아이디) — 버튼 안내 없이 폼에 사내 아이디와 회사 비밀번호
+        $ko = $mail($ldapUsername, 'ko');
+        $this->assertStringContainsString('사내 아이디', $ko);
+        $this->assertStringNotContainsString('로그인」을 눌러', $ko);
+        $en = $mail($ldapUsername, 'en');
+        $this->assertStringContainsString('company username', $en);
+        $this->assertStringNotContainsString('Sign in with Corporate directory', $en);
+
+        // LDAP(소유 도메인만) — 회사 이메일과 회사 비밀번호
+        $this->assertStringContainsString('회사 이메일', $mail($ldapEmail, 'ko'));
+        $this->assertStringContainsString('company email', $mail($ldapEmail, 'en'));
+
+        // OIDC — 종전처럼 버튼 안내
+        $this->assertStringContainsString('「본사 계정(으)로 로그인」을 눌러', $mail($oidc, 'ko'));
+        $this->assertStringContainsString('Sign in with HQ account', $mail($oidc, 'en'));
+
+        // 안내할 IdP 없음 — 없는 버튼 대신 관리자 문의
+        $none = $mail(null, 'ko');
+        $this->assertStringContainsString('관리자에게 문의', $none);
+        $this->assertStringNotContainsString('로그인」을 눌러', $none);
+    }
+
+    /**
      * 정의의 메일, 사이트 알림 틀을 돌려주는 템플릿 서비스를 만듭니다 (DB 틀 대신).
      *
      * @param  array<string, array<string, mixed>>  $definitions  유형 => 정의

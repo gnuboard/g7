@@ -149,7 +149,12 @@ private function logActivity(string $action, array $context): void
 | `locale` | 다국어 메시지가 원래 요청 로케일로 발송 |
 | `origin` | 진입점(`cli`/`http`). 워커 자신도 콘솔 프로세스라 이 값이 없으면 어드민 화면에서 한 작업까지 CLI 로 오판한다. `HookContextCapture::origin()` 이 복원값을 우선한다 |
 
-데몬 워커는 컨테이너를 작업 간에 재사용하므로 `DispatchHookListenerJob` 은 작업이 끝나면 복원한 진입점(`origin`)과 인증 사용자를 **작업 전 상태로 되돌린다** — 되돌리지 않으면 회원 작업 다음에 처리된 시스템 작업이 그 회원을 행위자로 물려받는다.
+데몬 워커는 컨테이너를 작업 간에 재사용하므로 복원한 문맥(인증 사용자·요청·로케일·진입점)은 작업이 끝나면 **작업 전 상태로 되돌린다** — 되돌리지 않으면 앞 작업의 사용자가 다음 작업(다른 관리자의 작업, 시스템 작업)의 행위자로 기록된다.
+
+- `DispatchHookListenerJob`·`RunScheduledTaskJob`·이커머스 내보내기 파일 생성은 `HookContextCapture::snapshot()`/`revert()`(또는 `within()`)로 복원 범위를 작업 안으로 한정한다.
+- 워커는 작업을 집을 때마다(`JobProcessing`, `sync` 연결 제외) `HookContextCapture::resetForQueueJob()` 으로 사용자 없음·콘솔 요청·기본 로케일로 돌린다 — 되돌리기를 빠뜨린 작업이 있어도 다음 작업이 물려받지 않는다.
+- 컨텍스트에 `user_id` 가 없으면 `restore()` 는 인증 사용자를 비운다(비회원·시스템 작업은 사용자 없이 기록).
+- 큐로 보낸 예약 작업의 「즉시 실행」은 누른 관리자의 요청 문맥을 잡에 싣고, 실행 로그(`schedule.run`)의 행위자는 실행 이력의 실행자(`triggered_by`)로 명시한다.
 
 리스너 코드는 변경 불필요 — `Log::channel('activity')->info()` 호출만으로 동작합니다.
 

@@ -194,7 +194,7 @@ class MarketingConsentService
      * 특정 채널 키에 동의(is_consented=true)한 사용자 수를 반환합니다.
      *
      * @param  string  $channelKey  채널 키
-     * @return int
+     * @return int 동의한 사용자 수
      */
     public function countConsentedByKey(string $channelKey): int
     {
@@ -279,14 +279,15 @@ class MarketingConsentService
      * @param  string  $consentKey  동의 항목 키
      * @param  bool  $value  동의 여부
      * @param  string  $source  변경 경로 (register/profile/admin)
-     * @return void
+     * @return void 반환값 없음
      */
     public function updateConsent(int $userId, string $consentKey, bool $value, string $source): void
     {
         $existing = $this->repository->findByUserAndKey($userId, $consentKey);
 
-        // 이미 같은 상태면 중복 처리 방지 (이력 중복 기록 방지)
-        if ($existing && (bool) $existing->is_consented === $value) {
+        // 상태가 바뀌지 않으면 아무것도 쓰지 않는다(이력 중복 방지). 기록이 없는 항목은 「동의 안 함」이다 —
+        // 동의 칸을 끈 채 저장해 기록 없이 false 가 오면 철회할 동의가 없으므로 행·이력·훅을 모두 건너뛴다.
+        if ((bool) ($existing?->is_consented ?? false) === $value) {
             return;
         }
 
@@ -345,7 +346,7 @@ class MarketingConsentService
      * @param  int  $userId  사용자 ID
      * @param  array<string, bool>  $data  동의 데이터 [key => bool]
      * @param  string  $source  변경 경로
-     * @return void
+     * @return void 반환값 없음
      */
     public function updateConsents(int $userId, array $data, string $source): void
     {
@@ -382,7 +383,7 @@ class MarketingConsentService
      * DB CASCADE에 의존하지 않고 명시적으로 삭제합니다.
      *
      * @param  int  $userId  사용자 ID
-     * @return void
+     * @return void 반환값 없음
      */
     public function deleteByUserId(int $userId): void
     {
@@ -397,7 +398,7 @@ class MarketingConsentService
      * @param  string  $channelKey  동의 항목 키
      * @param  string  $action  변경 유형 (granted/revoked)
      * @param  string  $source  변경 경로
-     * @return void
+     * @return void 반환값 없음
      */
     private function recordHistory(int $userId, string $channelKey, string $action, string $source): void
     {

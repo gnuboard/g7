@@ -2,20 +2,23 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Http\Controllers;
 
+use App\Helpers\TimezoneHelper;
 use App\Support\SiteUrl;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Carbon;
 use Plugins\Sirsoft\SocialLogin\Enums\AttemptIntent;
 use Plugins\Sirsoft\SocialLogin\Exceptions\ProviderException;
 use Plugins\Sirsoft\SocialLogin\Http\Requests\OAuthCallbackRequest;
 use Plugins\Sirsoft\SocialLogin\Http\Requests\OAuthStartRequest;
 use Plugins\Sirsoft\SocialLogin\Services\OAuthFlowService;
+use Plugins\Sirsoft\SocialLogin\Services\SocialReauthService;
 use Plugins\Sirsoft\SocialLogin\Services\StateStore;
 use Plugins\Sirsoft\SocialLogin\Support\HtmlPage;
 
 /**
- * OAuth 웹 엔드포인트 — 로그인 시작, 제공자 콜백, 관리자 연결 테스트 결과 화면.
+ * OAuth 웹 엔드포인트 — 로그인 시작, 「본인 확인 계속하기」 재확인 시작, 제공자 콜백, 관리자 연결 테스트 결과 화면.
  *
  * 브라우저가 직접 오가는 주소라 JSON 이 아니라 이동(302)과 단독 HTML 로 답한다.
  *
@@ -51,6 +54,23 @@ class OAuthController extends Controller
         } catch (ProviderException $e) {
             return redirect()->to(OAuthFlowService::loginErrorUrl($e->errorCode, $redirect));
         }
+    }
+
+    /**
+     * 「본인 확인 계속하기」 시작 주소를 엽니다 — 1회용 티켓이면 연결한 제공자의 재확인 인가 화면으로 보냅니다.
+     *
+     * 티켓은 코어 재확인 요청 응답의 이동 주소로만 나간다(`SocialReauthService::prepareContinue()`). 없거나 이미 쓴 티켓이면
+     * 정보 수정 화면으로 돌려보내 실패 사유를 보인다.
+     *
+     * @param  SocialReauthService  $reauth  소셜 재확인 서비스
+     * @param  string  $ticket  1회용 티켓
+     * @return RedirectResponse 제공자 인가 화면 또는 정보 수정 화면(오류)
+     */
+    public function reauthContinue(SocialReauthService $reauth, string $ticket): RedirectResponse
+    {
+        $url = $reauth->pullContinue($ticket);
+
+        return $url !== null ? redirect()->away($url) : redirect()->to(SocialReauthService::continueFailedUrl());
     }
 
     /**
@@ -111,7 +131,7 @@ class OAuthController extends Controller
                 __('sirsoft-social_login::messages.test_result.raw_keys') => implode(', ', $result['raw_keys'] ?? []),
             ];
         }
-        $rows[__('sirsoft-social_login::messages.test_result.tested_at')] = $result['tested_at'];
+        $rows[__('sirsoft-social_login::messages.test_result.tested_at')] = isset($result['tested_at']) ? (TimezoneHelper::toUserDateTimeString(Carbon::parse($result['tested_at'])) ?? '') : '';
 
         $body = $statusHtml.HtmlPage::definitionList($rows)
             .'<p class="note">'.e(__('sirsoft-social_login::messages.test_result.note')).'</p>';

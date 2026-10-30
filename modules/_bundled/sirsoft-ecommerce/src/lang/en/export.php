@@ -304,6 +304,7 @@ return [
     ],
     'summary' => [
         'period_current' => 'Current list period',
+        'period_none' => 'Not applied',
         'scope' => [
             'filter' => 'Current search conditions',
             'selected' => 'Selected items',

@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\SocialLogin\Models;
 
 use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
+use Plugins\Sirsoft\SocialLogin\Concerns\SavesOverUnreadableEncryptedValues;
 use Plugins\Sirsoft\SocialLogin\Enums\ProviderType;
 
 /**
@@ -40,6 +41,8 @@ use Plugins\Sirsoft\SocialLogin\Enums\ProviderType;
  */
 class SocialLoginProvider extends Model
 {
+    use SavesOverUnreadableEncryptedValues;
+
     /** @var string 테이블명 */
     protected $table = 'social_login_providers';
 

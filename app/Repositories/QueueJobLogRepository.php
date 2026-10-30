@@ -98,6 +98,29 @@ class QueueJobLogRepository implements QueueJobLogRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function latestAttemptsByUuid(array $uuids): array
+    {
+        $uuids = array_values(array_unique(array_filter($uuids, fn ($uuid) => is_string($uuid) && $uuid !== '')));
+        if ($uuids === []) {
+            return [];
+        }
+
+        // 재시도로 같은 UUID 의 기록이 여러 줄이면 마지막 줄(가장 큰 id)이 지금 실패 기록의 회차다
+        $latestIds = QueueJobLog::query()
+            ->selectRaw('MAX(id) as id')
+            ->whereIn('uuid', $uuids)
+            ->groupBy('uuid');
+
+        return QueueJobLog::query()
+            ->whereIn('id', $latestIds)
+            ->pluck('attempts', 'uuid')
+            ->map(fn ($attempts) => (int) $attempts)
+            ->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function insertMany(array $rows): int
     {
         if ($rows === []) {

@@ -1155,7 +1155,9 @@ class CoreActivityLogListener implements HookListenerInterface
             return;
         }
 
+        // 행위자는 실행 이력의 실행자다 — 큐로 보낸 실행은 워커에서 기록되므로 그 시점의 인증 사용자에 기대지 않는다
         $this->logActivity('schedule.run', [
+            'user_id' => $history->getAttribute('triggered_by'),
             'loggable' => $schedule,
             'description_key' => 'activity_log.description.schedule_run',
             'description_params' => ['schedule_id' => $schedule->id],

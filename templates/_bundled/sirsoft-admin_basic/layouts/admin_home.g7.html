@@ -1,0 +1,30 @@
+<!-- 관리자 첫 화면(`/admin`). 로그인이 끝나는 네 갈래(자격증명·2단계 인증·비밀번호 변경·로그인 인계)는 복귀 주소가 없으면
+  여기로 온다. 이 화면은 자기 본문이 없다 — 볼 수 있는 화면으로 곧바로 넘긴다. 대시보드 권한(`core.dashboard.read`)이 있으면
+  종전대로 대시보드로, 없으면(확장이 준 역할만 가진 관리자 — SSO 운영자·이커머스 관리자 등) 사이드바 메뉴의 첫 화면으로 보낸다.
+  예전처럼 라우트 redirect 로 대시보드에 고정하면 권한이 없는 관리자는 대시보드 레이아웃 403 의 메뉴 없는 전체 오류 화면에 갇혔다.
+  `_admin_base` 를 상속하고 레이아웃 권한을 두지 않는다 — 열 화면이 하나도 없어도 메뉴·머리가 있는 화면에서 안내한다.
+  판정 근거는 베이스가 받는 두 소스다: 로그인 관리자(`current_user` 의 권한 목록)와 사이드바 메뉴(`admin_menu`, 서버가 역할로 거른
+  목록). 갈 곳(`homePath`)은 대시보드 권한이 있으면 대시보드, 없으면 메뉴를 위에서부터(상위 다음 그 하위) 훑어 처음 만나는 관리자
+  화면 주소다. 주소 없는 상위 메뉴(묶음)는 건너뛰고, 권한이 없으므로 대시보드 메뉴와 첫 화면 자신(`/admin`)도 건너뛴다(제자리 왕복 방지).
+  메뉴를 다 받기 전에는 이동도 안내도 하지 않는다. 이동 노드(조건 노드 안쪽)는 조건이 참이 되는 순간 그려지고, 그 마운트가 곧 이동이다. -->
+<layout name="admin_home" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.base_layout_title" description="$t:admin.base_layout_description"/>
+  <computed name="homePath">{{!current_user?.data ? null : ((current_user.data.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.dashboard.read') ? '/admin/dashboard' : ((admin_menu?.data ?? []).flatMap(m =&gt; [m].concat(m?.children ?? [])).map(m =&gt; m?.url).find(u =&gt; typeof u === 'string' &amp;&amp; u.startsWith('/admin/') &amp;&amp; !['/admin/dashboard', '/admin/dashboard/'].includes(u.split('?')[0])) ?? null))}}</computed>
+  <slot name="content">
+    <div data-ref="admin_home_content" class="admin-page-content-responsive-fluid">
+      <div data-ref="admin_home_redirect" data-if="{{!!_computed.homePath}}">
+        <!-- 마운트 동작은 조건 노드 자신이 아니라 그 안쪽 노드에 둔다 — 엔진은 조건이 거짓이어도 노드의 렌더러를 먼저 만들고 그때
+             `mount` 를 한 번 실행한다(데이터를 받기 전, 갈 곳이 빈 값이라 이동을 건너뛴다). 안쪽 노드는 조건이 참이 된 뒤에야 만들어진다. -->
+        <div data-ref="admin_home_redirect_trigger">
+          <on event="mount">
+            <navigate path="{{_computed.homePath}}"/>
+          </on>
+        </div>
+      </div>
+      <!-- 메뉴를 다 받았는데 열 화면이 없다 — 사이드바의 「접근 가능한 메뉴가 없습니다」 와 같은 말을 본문에도 둔다 -->
+      <div data-ref="admin_home_no_screen" data-if="{{!!current_user?.data &amp;&amp; admin_menu?.success === true &amp;&amp; !_computed.homePath}}" class="py-16">
+        <empty-state data-type="composite" data-ref="admin_home_no_screen_state" iconName="lock" title="$t:admin.sidebar.no_accessible_menus"/>
+      </div>
+    </div>
+  </slot>
+</layout>

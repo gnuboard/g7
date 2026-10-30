@@ -21,6 +21,7 @@
                 "per_page": "{{query.per_page || 20}}",
                 "search_field": "{{query.search_field}}",
                 "search_keyword": "{{query.search_keyword}}",
+                "requester_uuid": "{{query.requester_uuid}}",
                 "statuses": "{{query['statuses[]']}}",
                 "types": "{{query['types[]']}}",
                 "personal": "{{query.personal}}",
@@ -103,7 +104,7 @@
     },
     "named_actions": {
         "searchExports": {
-            "comment": "필터 적용 — 입력칸이 여럿이라 필터 조각·엔터·초기화가 이 액션 하나를 공유한다. 빈 값은 undefined 로 떨어뜨려\n       주소에 남기지 않고, 조건이 바뀌었으니 쪽수는 1로 되돌린다",
+            "comment": "필터 적용 — 입력칸이 여럿이라 필터 조각·엔터·초기화가 이 액션 하나를 공유한다. 빈 값은 undefined 로 떨어뜨려\n       주소에 남기지 않고, 조건이 바뀌었으니 쪽수는 1로 되돌린다. 요청자 메뉴가 건 요청자 한정(`requester_uuid`)은 필터 칸의\n       「요청자」 검색어가 그때 그대로일 때만 이어 간다 — 검색어를 바꾸면 그 이름이 아닌 사람으로 몰래 걸러지지 않게 푼다",
             "handler": "navigate",
             "params": {
                 "path": "/admin/ecommerce/exports",
@@ -114,6 +115,7 @@
                     "page": 1,
                     "search_field": "{{_local.filter.search ? (_local.filter.searchField || 'all') : undefined}}",
                     "search_keyword": "{{_local.filter.search || undefined}}",
+                    "requester_uuid": "{{query.requester_uuid && _local.filter.searchField === 'requester' && _local.filter.search === query.search_keyword ? query.requester_uuid : undefined}}",
                     "statuses[]": "{{_local.filter.statuses?.length > 0 ? _local.filter.statuses : undefined}}",
                     "types[]": "{{_local.filter.types?.length > 0 ? _local.filter.types : undefined}}",
                     "personal": "{{_local.filter.personal || undefined}}",

@@ -3697,6 +3697,8 @@
                 currentMonitor = new MonitorNS.SseMonitor(callbacks, {
                     workerUrl: workerUrl,
                     connectionTimeoutMs: 5000,
+                    // 연결 수립 뒤 스트림이 끊기면 이 주소로 결말(실패·중단·완료·멈춤)을 판정한다
+                    stateUrl: stateUrl,
                 });
             }
 

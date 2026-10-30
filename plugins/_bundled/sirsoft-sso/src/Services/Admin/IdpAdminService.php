@@ -216,11 +216,17 @@ class IdpAdminService
         }
 
         $attributes = $this->attributesFrom($data, $idp);
+        $currentSecrets = $idp->readableSecrets();
         if (array_key_exists('secrets', $data)) {
-            $attributes['secrets'] = $this->mergeSecrets(is_array($idp->secrets) ? $idp->secrets : [], (array) $data['secrets']);
+            $secrets = $this->mergeSecrets($currentSecrets, (array) $data['secrets']);
+            // 앱 키가 바뀌어 저장된 비밀값을 풀 수 없을 때 새로 입력한 값이 없으면 옛 암호문을 그대로 둔다 — 옛 앱 키를 되돌리면 다시
+            // 읽힌다. 새 값을 입력하면 그 값으로 덮어 쓴다(풀 수 없는 옛 값은 합칠 수 없다).
+            if ($secrets !== [] || ! $idp->secretsUnreadable()) {
+                $attributes['secrets'] = $secrets;
+            }
         }
 
-        $merged = array_merge($idp->only(self::FIELDS), ['secrets' => $idp->secrets], $attributes);
+        $merged = array_merge($idp->only(self::FIELDS), ['secrets' => $currentSecrets], $attributes);
         $this->assertActivatable($driver, $merged);
         $this->assertRoleRules($idp, $attributes, $actor);
         if (array_key_exists('owned_domains', $attributes)) {
@@ -327,7 +333,8 @@ class IdpAdminService
 
         $keys = $driver->generateSpKeys($idp);
 
-        $secrets = is_array($idp->secrets) ? $idp->secrets : [];
+        // 앱 키가 바뀌어 옛 키를 풀 수 없으면 이전 키 없이 새 키만 둔다.
+        $secrets = $idp->readableSecrets();
         if (! empty($secrets['sp_certificate'])) {
             $secrets['sp_previous_certificate'] = $secrets['sp_certificate'];
             $secrets['sp_previous_private_key'] = $secrets['sp_private_key'] ?? null;
@@ -578,7 +585,7 @@ class IdpAdminService
     {
         $masked = [];
 
-        foreach ((is_array($idp->secrets) ? $idp->secrets : []) as $key => $value) {
+        foreach ($idp->readableSecrets() as $key => $value) {
             if (is_string($key) && ! str_starts_with($key, 'sp_previous_')) {
                 $masked[$key] = $value !== null && $value !== '' ? SensitiveSettingMask::MASK : null;
             }

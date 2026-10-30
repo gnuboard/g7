@@ -1501,6 +1501,7 @@ return [
         'registration_enabled' => '일반 회원가입 받기',
         // 본인 확인 요청 — 외부 수단이 확인을 마친 뒤 돌아갈 화면 (7.2.0)
         'return_path' => '돌아갈 화면 경로',
+        'scope' => '시작한 화면 범위',
         'auth_token_lifetime' => '인증 토큰 유지시간',
         'max_login_attempts' => '최대 로그인 시도 횟수',
         'login_lockout_time' => '로그인 차단 시간',

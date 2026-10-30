@@ -1,0 +1,31 @@
+# 시나리오 매니페스트 — 알림 조회 권한이 없는 관리자에게 머리 알림 요청을 되풀이하지 않는다
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_base_notification_permission
+
+description: >-
+  `_admin_base` 의 알림 목록(/api/admin/notifications)·안 읽은 수(/unread-count) 데이터소스가 화면마다(같은 화면의 검색·쪽 넘김 포함)
+  무조건 받기를 해서, 알림 조회 권한(core.notifications.read)이 없는 관리자는 두 요청이 403 으로 되풀이 실패했고 종 아이콘도 떠 있었다.
+  이제 로그인 관리자(current_user)를 받으면 권한 목록으로 판정해 전역 adminNotificationsReadable 에 올린다. 판정이 거짓이면 두 소스를
+  화면에 두지 않고(데이터소스 if), 실시간 알림 수신도 다시 받지 않으며, 종 아이콘(데스크톱·모바일)을 그리지 않는다. 판정 전(새로 연
+  탭의 첫 화면)은 미정이라 종전대로 받는다 — 그래서 새로 연 탭·새로고침·주소 직접 진입·로그인 직후의 첫 화면 한 번은 403 두 건이 남는다.
+  그 403 은 두 소스가 조용히 넘긴다(종전에는 시스템 기본 처리로 빨간 「해당 권한이 없습니다.」 토스트가 두 번 떴다). 403 이 아닌 오류는
+  종전 처리 그대로다. 로그인 화면은 지난 판정을 비운다.
+  auto_fetch:false 로 미루지 않는다(받지 않은 소스가 undefined 로 남아 소스를 지정하지 않은 blur_until_loaded 화면이 흐린 채 멈춘다).
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-base-notification-permission.test.ts
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-home-landing.spec.ts
+
+axes:
+  readable: [unknown, true, false, reset_null]   # 전역 adminNotificationsReadable — 판정 전 / 있음 / 없음 / 로그인 화면이 비움
+
+effects:
+  - notifications_not_requested_without_permission   # 거짓 판정 뒤 화면: 두 소스 없음, 실시간 수신 다시 받기 없음, 판정 쓰기 false
+  - notifications_requested_with_permission          # 미정·참·로그인 화면이 비운 null: 종전대로 받음, 판정 쓰기 true, 로그인 화면 초기화
+  - bell_hidden_without_permission                   # 거짓 판정이면 종 아이콘 두 벌 모두 그리지 않음, 미정이면 그림
+  - first_screen_forbidden_silent                    # 판정 전 첫 화면의 두 알림 403 은 suppress(토스트 0), 401·404·500 은 종전 처리
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: SSO 운영자로 로그인 → 종 아이콘 없음, 회원 연결 ↔ 이력 이동 동안 /api/admin/notifications 요청 0건. 같은 계정으로 관리자 화면을 새로고침·주소 직접 진입 → 하단 「해당 권한이 없습니다.」 알림 0건

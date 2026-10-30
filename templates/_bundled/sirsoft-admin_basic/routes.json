@@ -3,7 +3,7 @@
   "routes": [
     {
       "path": "*/admin",
-      "redirect": "/admin/dashboard",
+      "layout": "admin_home",
       "auth_required": true,
       "meta": {
         "title": "$t:admin.base_layout_title"

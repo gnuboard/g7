@@ -186,7 +186,9 @@ class ScheduleResource extends BaseApiResource
             'owner' => $this->resolveOwner(),
             'is_owned' => $isOwned,
             'locked_fields' => $isOwned ? UpdateScheduleRequest::OWNED_LOCKED_FIELDS : [],
-            'overridden_fields' => array_values((array) ($this->getValue('user_overrides') ?? [])),
+            // 「운영자 수정됨」은 선언값을 재동기화가 덮지 않는다는 표시라 소유 행에만 있다 — 직접 등록 행은 값 전부가 운영자 것이다
+            // (예전 판이 직접 등록 행에 남긴 기록은 보이지 않게 거른다)
+            'overridden_fields' => $isOwned ? array_values((array) ($this->getValue('user_overrides') ?? [])) : [],
             'enabled_condition' => $this->getValue('enabled_condition') ?? [],
             'unmet_conditions' => $schedule instanceof Schedule
                 ? array_values(app(ScheduleConditionEvaluator::class)->unmetConditions($schedule))
@@ -250,9 +252,11 @@ class ScheduleResource extends BaseApiResource
     }
 
     /**
-     * is_owner + abilities 메타를 반환합니다.
+     * is_owner + abilities 메타와 삭제 불가 사유를 반환합니다.
      *
      * 소유 행은 확장이 선언한 것이라 삭제할 수 없다(동기화가 다시 만든다) — `can_delete` 를 끈다.
+     * `can_delete` 하나로는 막힌 까닭(권한 없음·소유 잠김)을 가를 수 없어 화면 안내가 틀리므로
+     * `delete_blocked_reason` 에 따로 싣는다 — `owned`(권한이 있어도 풀리지 않으므로 먼저) · `permission` · null(삭제 가능).
      *
      * @param  Request  $request  HTTP 요청 객체
      * @return array<string, mixed> 메타 데이터
@@ -261,9 +265,22 @@ class ScheduleResource extends BaseApiResource
     {
         $meta = $this->resourceMeta($request);
 
-        if (isset($meta['abilities']['can_delete']) && ($this->scheduleModel()?->isOwned() ?? false)) {
+        if (! isset($meta['abilities']['can_delete'])) {
+            return $meta;
+        }
+
+        $isOwned = $this->scheduleModel()?->isOwned() ?? false;
+        $canDeleteByPermission = (bool) $meta['abilities']['can_delete'];
+
+        if ($isOwned) {
             $meta['abilities']['can_delete'] = false;
         }
+
+        $meta['delete_blocked_reason'] = match (true) {
+            $isOwned => 'owned',
+            ! $canDeleteByPermission => 'permission',
+            default => null,
+        };
 
         return $meta;
     }

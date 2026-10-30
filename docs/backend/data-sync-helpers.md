@@ -78,7 +78,16 @@ public function cleanupStaleMenus(
 ): int;
 
 public function collectSlugsRecursive(array $menus): array;
+
+public function grantMenusToDeclaredRoles(
+    array $menuDataArray,
+    ExtensionOwnerType $extensionType,
+    string $extensionIdentifier,
+    array $roleIdentifiers,
+): int;
 ```
+
+`grantMenusToDeclaredRoles()` 는 확장이 선언한 역할에 그 역할 권한으로 열 수 있는 확장 메뉴(정의의 `permission` 키 기준)를 붙인다. `ModuleManager::createModuleMenus()`·`PluginManager::createPluginMenus()` 가 메뉴 동기화 뒤에 부른다. 규칙은 [menus.md](../extension/menus.md#확장이-선언한-역할의-메뉴).
 
 ### 사용 패턴 (코어 `CoreUpdateService::syncCoreMenus` 말미)
 

@@ -264,7 +264,7 @@
       <item id="history" label="$t:admin.schedules.action.history" iconName="clock"/>
       <item id="duplicate" label="$t:admin.schedules.action.duplicate" iconName="copy" disabledField="abilities.can_create"/>
       <item id="divider" :divider="true"/>
-      <item id="delete" label="$t:admin.schedules.action.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete" disabledReason="$t:admin.schedules.action.delete_disabled_reason"/>
+      <item id="delete" label="$t:admin.schedules.action.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete" disabledReason="{{row.delete_blocked_reason === 'owned' ? $t('admin.schedules.action.delete_disabled_reason') : $t('auth.permission_denied')}}"/>
     </prop>
     <on type="change" event="onPageChange">
       <!-- 쪽 이동만 이력에 쌓지 않는다 — 조건을 바꾼 것은 남기고 쪽 넘긴 것은 남기지 않아, 뒤로 가기가 조건 단위로 움직인다. -->

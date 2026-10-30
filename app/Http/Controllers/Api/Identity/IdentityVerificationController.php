@@ -88,6 +88,8 @@ class IdentityVerificationController extends PublicBaseController
                 'origin_policy_key' => $originPolicy?->key,
                 // 외부 화면을 거치는 수단이 확인 뒤 돌려보낼 경로 — 같은 출처 경로만(그 밖은 null)
                 'return_path' => SameOriginPath::normalize($validated['return_path'] ?? null),
+                // 인증을 시작한 화면의 범위 — 메일 확인 링크·사이트 링크가 그 화면 쪽 주소를 따른다
+                'screen_scope' => ($validated['scope'] ?? null) === ScreenUrl::SCOPE_ADMIN ? ScreenUrl::SCOPE_ADMIN : ScreenUrl::SCOPE_USER,
             ],
             providerId: $providerId,
         );
@@ -267,7 +269,7 @@ class IdentityVerificationController extends PublicBaseController
      *
      * @param  IdentityCallbackRequest  $request  검증된 요청
      * @param  string  $providerId  콜백을 보낸 provider 식별자
-     * @return JsonResponse|RedirectResponse
+     * @return JsonResponse|RedirectResponse 실패·return 없음은 JSON, return 이 있으면 그 화면으로 리다이렉트
      *
      * @since engine-v1.46.0
      */
@@ -349,8 +351,15 @@ class IdentityVerificationController extends PublicBaseController
      */
     private function absoluteReturnUrl(string $url): string
     {
-        // 상대 경로는 사용자 화면 베이스(「사용자 화면 URL」, 비면 사이트 주소)로 절대화한다(#792)
-        return str_starts_with($url, '/') ? ScreenUrl::toAbsolute($url) : $url;
+        if (! str_starts_with($url, '/')) {
+            return $url;
+        }
+
+        // 관리자 화면 경로(`/admin`, `/admin/…`)는 사이트 주소로 — 관리자 화면은 「사용자 화면 URL」 쪽에 없다.
+        // 그 밖의 상대 경로는 사용자 화면 베이스(「사용자 화면 URL」, 비면 사이트 주소)로 절대화한다(#792).
+        $scope = preg_match('#^/admin(?:[/?\#]|$)#', $url) === 1 ? ScreenUrl::SCOPE_ADMIN : ScreenUrl::SCOPE_USER;
+
+        return ScreenUrl::toAbsolute($url, $scope);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Services;
 
+use App\Helpers\TimezoneHelper;
 use Plugins\Sirsoft\SocialLogin\Enums\AttemptOutcome;
 use Plugins\Sirsoft\SocialLogin\Repositories\Contracts\AttemptRepositoryInterface;
 use Plugins\Sirsoft\SocialLogin\Repositories\Contracts\ProviderRepositoryInterface;
@@ -36,12 +37,17 @@ class StatsService
     /**
      * 기간 통계를 돌려줍니다.
      *
+     * 기간은 사이트 시간대 오늘에서 `$days` 일 전 자정부터다. 시도 시각은 UTC 로 저장돼 있으므로 질의 경계만
+     * 사이트 자정을 UTC 로 옮긴 값을 쓴다(앱 시간대 자정으로 자르면 서울 사이트에서 첫날 아침 9시간이 빠지고,
+     * 서울 자정 직후에는 전날 하루가 섞인다). `since` 도 그 경계를 사이트 시간대 문자열로 보인다.
+     *
      * @param  int  $days  기간(일) — 7·30·90
      * @return array<string, mixed> days·since·rows·totals
      */
     public function forPeriod(int $days): array
     {
-        $since = now()->subDays($days)->startOfDay();
+        $startDate = now()->setTimezone(TimezoneHelper::getSiteTimezone())->subDays($days)->toDateString();
+        $since = TimezoneHelper::fromSiteDateStartOfDay($startDate);
         $outcomes = $this->attempts->outcomeCountsByProvider($since);
         $linked = $this->accounts->countsByProvider();
         $socialOnly = $this->accounts->socialOnlyCountsByProvider();
@@ -75,7 +81,7 @@ class StatsService
 
         return [
             'days' => $days,
-            'since' => $since->toIso8601String(),
+            'since' => TimezoneHelper::toSiteDateTimeString($since),
             'rows' => $rows,
             'totals' => $totals,
         ];

@@ -483,6 +483,13 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 > `($selected ? '<선택 배경>' : '<기본 배경>')` 로 선택 색을 함께 고른다(게시판 관리자 글 목록, #816).
 > 카드 보기는 선택 강조 색이 없어 `$selected` 가 늘 거짓이다.
 >
+> **행 메뉴 잠김 안내는 행마다 고른다 — `rowActions[].disabledReason`**
+>
+> `disabledReason` 은 `disabledField` 로 잠긴 항목 아래(와 `title`)에 보이는 안내다. 고정 문구(`$t:키`)도 되고
+> 행 표현식도 된다 — 엔진은 원문을 넘기고(components.json `skipBindingKeys`) 표가 행마다 `row` 로 푼다(`href` 와 같다).
+> 같은 「삭제」라도 막힌 까닭(권한 없음·코어/확장 소유)이 행마다 다르면 고정 문구 하나로 묶지 말고, 리소스가 사유 값을
+> 싣게 해 식으로 고른다(스케줄 목록: `{{row.delete_blocked_reason === 'owned' ? $t('…') : $t('auth.permission_denied')}}`).
+>
 > **`ExtensionCardGrid` 스위치 재동기 — `resyncKey`**
 >
 > 카드 스위치는 누르는 즉시 바뀐 모양(대기 값)을 보여 주고, 서버 값(`toggle.checked`)이 바뀌면 그 값을 따른다.

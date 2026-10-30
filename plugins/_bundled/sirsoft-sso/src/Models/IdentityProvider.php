@@ -3,9 +3,12 @@
 namespace Plugins\Sirsoft\Sso\Models;
 
 use App\Support\LocalizedValue;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+use Plugins\Sirsoft\Sso\Concerns\SavesOverUnreadableEncryptedValues;
 use Plugins\Sirsoft\Sso\Contracts\ProtocolDriverInterface;
 use Plugins\Sirsoft\Sso\Exceptions\SsoException;
 use Plugins\Sirsoft\Sso\Services\ProtocolRegistry;
@@ -54,6 +57,8 @@ use Plugins\Sirsoft\Sso\Services\ProtocolRegistry;
  */
 class IdentityProvider extends Model
 {
+    use SavesOverUnreadableEncryptedValues;
+
     /** 처음 온 사람 — 자동 생성 */
     public const PROVISIONING_JIT = 'jit';
 
@@ -204,6 +209,42 @@ class IdentityProvider extends Model
         $value = $secrets[$key] ?? null;
 
         return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * 관리자 화면이 다룰 비밀값을 읽습니다 — 앱 키가 바뀌어 풀 수 없으면 빈 배열로 둡니다.
+     *
+     * 예외를 그대로 올리면 편집 화면과 저장이 500 이 되어, 비밀값을 다시 입력해 복구할 길이 막힌다.
+     *
+     * @return array<string, mixed> 비밀값 (풀 수 없으면 빈 배열)
+     */
+    public function readableSecrets(): array
+    {
+        try {
+            $secrets = $this->secrets;
+        } catch (DecryptException) {
+            Log::warning('[sirsoft-sso] IdP 비밀값을 풀 수 없습니다 — 앱 키가 바뀌었으면 비밀값을 다시 입력하세요.', ['idp' => $this->key]);
+
+            return [];
+        }
+
+        return is_array($secrets) ? $secrets : [];
+    }
+
+    /**
+     * 저장된 비밀값을 지금 앱 키로 풀 수 없는지 확인합니다.
+     *
+     * @return bool 풀 수 없으면 true
+     */
+    public function secretsUnreadable(): bool
+    {
+        try {
+            $this->secrets;
+        } catch (DecryptException) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

@@ -15,7 +15,6 @@ use App\Http\View\Composers\Traits\CollectsTemplateExternals;
 use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
 use App\Services\FrontendConfigService;
 use App\Services\TemplateService;
-use App\Support\EmptyMapChildren;
 use App\Support\StateContracts;
 use App\Support\TrustedScriptHosts;
 use Illuminate\View\View;
@@ -96,8 +95,8 @@ class TemplateComposer
 
         $view->with('activeAdminTemplate', $activeTemplate);
         $view->with('extensionCacheVersion', $extensionCacheVersion);
-        // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 보이는 필드가 없는 카테고리(`identity`)도 `[]` 가 아니라 `{}` 로 심는다(7.1.1 출시 전)
-        $view->with('frontendSettings', EmptyMapChildren::asObjects($frontendSettings));
+        // 카테고리 값은 화면이 이름표로 읽는 맵이다 — 빈 카테고리(`identity`)를 `{}` 로 바꾸는 일은 공개 설정 API 와 같은 조립 함수가 한다
+        $view->with('frontendSettings', $frontendSettings);
         $view->with('pluginSettings', $pluginSettings);
         $view->with('moduleSettings', $moduleSettings);
         $view->with('moduleAssets', $moduleAssets);

@@ -49,7 +49,7 @@
       "socialAccounts": {
         "data": {
           "accounts": [
-            { "provider_key": "kakao", "label": "Kakao", "brand": "kakao", "email": "us**@example.test", "linked_at": "2026-10-20T09:30:00+09:00", "last_login_at": "2026-10-20T09:30:00+09:00" }
+            { "provider_key": "kakao", "label": "Kakao", "brand": "kakao", "email": "us**@example.test", "linked_at": "2026-10-20 09:30:00", "last_login_at": "2026-10-20 09:30:00" }
           ],
           "available": [
             { "provider_key": "naver", "label": "Naver", "brand": "naver", "style": null },
@@ -63,7 +63,7 @@
       "socialReauthAccounts": {
         "data": {
           "accounts": [
-            { "provider_key": "kakao", "label": "Kakao", "brand": "kakao", "email": null, "linked_at": "2026-10-20T09:30:00+09:00", "last_login_at": null }
+            { "provider_key": "kakao", "label": "Kakao", "brand": "kakao", "email": null, "linked_at": "2026-10-20 09:30:00", "last_login_at": null }
           ],
           "available": [],
           "has_password": false,

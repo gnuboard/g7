@@ -10,7 +10,8 @@ axes:
   locales: ["ko|en|ja"]
   hooks: [notification_and_log]
   definitions: [all]
-  type: ["sso_password_reset_redirect|sso_super_admin_deprovisioned|sso_admin_withdraw_skipped|sso_idp_failures", "all_with_idp|password_reset_without_idp|deprovisioned_source"]
+  type: ["sso_password_reset_redirect|sso_super_admin_deprovisioned|sso_admin_withdraw_skipped|sso_idp_failures", "all_with_idp|password_reset_without_idp|deprovisioned_source", sso_password_reset_redirect]
+  guide_idp: ["ldap_username|ldap_email|oidc|none"]
   request_locale: [en]
   recipient: ["ko|en"]
   declarations: [permissions]
@@ -38,6 +39,7 @@ effects:
   - idp_label_follows_recipient
   - fallback_follows_recipient
   - source_follows_recipient
+  - reset_guide_matches_login_method
   - six_admin_permissions
   - route_permission_map
 test_files:

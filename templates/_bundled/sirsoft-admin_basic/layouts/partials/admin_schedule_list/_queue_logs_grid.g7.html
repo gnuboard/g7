@@ -7,8 +7,8 @@
 <partial name="queue_logs_grid">
   <div data-ref="queue_logs_section">
     <div data-ref="queue_logs_list_info" class="flex-between flex-wrap gap-3 mb-4">
-      <span data-if="{{queue_logs?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.schedules.total_count|count={{queue_logs?.data?.pagination?.total ?? 0}}</span>
-      <span data-if="{{queue_logs?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.schedules.total_at_least|count={{queue_logs?.data?.pagination?.total ?? 0}}</span>
+      <span data-if="{{!_dataSourceErrors?.queue_logs &amp;&amp; queue_logs?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.schedules.total_count|count={{queue_logs?.data?.pagination?.total ?? 0}}</span>
+      <span data-if="{{!_dataSourceErrors?.queue_logs &amp;&amp; queue_logs?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.schedules.total_at_least|count={{queue_logs?.data?.pagination?.total ?? 0}}</span>
       <div class="flex-center gap-3">
         <select name="queue_logs_sort" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'finished_at_desc'}}" aria-label="$t:admin.schedules.sort.label">
           <options>
@@ -42,7 +42,7 @@
         </select>
       </div>
     </div>
-    <data-grid data-type="composite" data-ref="queue_logs_grid" data="{{queue_logs?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/schedules/queue?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{queue_logs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{queue_logs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{queue_logs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="{{queue_logs === undefined ? '' : $t('admin.schedules.queue.empty.logs')}}">
+    <data-grid data-type="composite" data-ref="queue_logs_grid" data="{{queue_logs?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/schedules/queue?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{queue_logs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{queue_logs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{queue_logs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="{{queue_logs === undefined ? '' : (_dataSourceErrors?.queue_logs ? (_dataSourceErrors.queue_logs.status === 403 ? $t('admin.schedules.queue.notice.no_permission') : $t('admin.schedules.queue.errors.list_load_failed')) : $t('admin.schedules.queue.empty.logs'))}}">
       <blur-until-loaded sources="queue_logs"/>
       <column field="display_name" header="$t:admin.schedules.queue.columns.job" :sortable="false" :required="true">
         <cell>

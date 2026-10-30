@@ -4,10 +4,16 @@
   이 구획의 이동은 하나같이 `tab="identity"` 를 함께 실어 나른다 — 설정 화면 안의 한 구획이라
   탭을 잃으면 다른 탭으로 튄다. 그리고 이동마다 **스크롤을 이 구획 머리로 되돌린다**(위쪽 고정 탭
   높이만큼 비켜서) — 안 그러면 페이지를 넘겨도 화면이 표 중간에 머문다.
-  확장이 선언한 정책은 삭제 버튼이 나오지 않는다(운영자 정책만 지울 수 있다). -->
+  확장이 선언한 정책은 삭제 버튼이 나오지 않는다(운영자 정책만 지울 수 있다).
+  정책 조회 권한이 없는 관리자(설정 조회만)에게는 이 구획 대신 권한 안내를 보인다 — 받지 못한 목록(403, 빈 fallback)을
+  「등록된 정책이 없습니다」로 그리지 않는다. -->
 <partial description="환경설정 > 인증 탭 내 S1d 정책 관리 서브섹션 (DataGrid + 편집 모달 포함 X — 모달은 별도 partial)">
   <div data-ref="tab_content_identity_policies" data-if="{{(_global.activeSettingsTab || query.tab) === 'identity'}}">
-    <div data-ref="page_root" class="admin-card">
+    <div data-ref="identity_policies_permission_denied" data-if="{{_computed.canReadIdentityPolicies === false}}" class="admin-card">
+      <h3 class="section-title">$t:admin.identity.policies.page_title</h3>
+      <p role="status" class="text-warning-soft mt-2">$t:admin.settings.permission_required.identity_policies</p>
+    </div>
+    <div data-ref="page_root" data-if="{{_computed.canReadIdentityPolicies !== false}}" class="admin-card">
       <div class="card-description">$t:admin.identity.policies.purposes_section_description</div>
       <div data-ref="page_header" class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6">
         <div>

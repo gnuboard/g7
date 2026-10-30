@@ -122,7 +122,7 @@
                 {
                     "type": "basic",
                     "name": "Span",
-                    "if": "{{queue_failed?.data?.pagination?.total_is_exact !== false}}",
+                    "if": "{{!_dataSourceErrors?.queue_failed && queue_failed?.data?.pagination?.total_is_exact !== false}}",
                     "props": {
                         "className": "text-label"
                     },
@@ -131,7 +131,7 @@
                 {
                     "type": "basic",
                     "name": "Span",
-                    "if": "{{queue_failed?.data?.pagination?.total_is_exact === false}}",
+                    "if": "{{!_dataSourceErrors?.queue_failed && queue_failed?.data?.pagination?.total_is_exact === false}}",
                     "props": {
                         "className": "text-label"
                     },
@@ -429,7 +429,7 @@
                 "showColumnSelector": false,
                 "responsiveBreakpoint": 768,
                 "actionsColumnHeader": "$t:common.actions",
-                "emptyMessage": "{{queue_failed === undefined ? '' : $t('admin.schedules.queue.empty.failed')}}",
+                "emptyMessage": "{{queue_failed === undefined ? '' : (_dataSourceErrors?.queue_failed ? (_dataSourceErrors.queue_failed.status === 403 ? $t('admin.schedules.queue.notice.no_permission') : $t('admin.schedules.queue.errors.list_load_failed')) : $t('admin.schedules.queue.empty.failed'))}}",
                 "rowActions": [
                     {
                         "id": "detail",
@@ -559,7 +559,7 @@
                                 "props": {
                                     "className": "text-sm text-gray-900 dark:text-white whitespace-nowrap"
                                 },
-                                "text": "{{row.attempts ?? 0}}{{row.max_tries ? ' / ' + row.max_tries : ''}}"
+                                "text": "{{row.attempts ?? '-'}}{{row.max_tries ? ' / ' + row.max_tries : ''}}"
                             }
                         ]
                     },

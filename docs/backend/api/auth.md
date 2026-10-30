@@ -1007,6 +1007,8 @@ HTTP/1.1 200
 
 로그인 화면이 이메일 칸을 벗어날 때 그 식별자의 로그인 수단을 묻는다(7.2.0). 판정은 필터 `core.auth.login_discovery` 를 구독한 외부 인증 확장이 하고, 없으면 항상 `password` 다. 회원 유무와 상관없이 같은 모양으로 답해(확장은 도메인 같은 식별자 모양으로만 판정) 계정 열거에 쓰이지 않는다. 같은 출처가 아닌 주소는 `password` 로 낮춘다. 관리자 로그인 화면은 `POST /api/auth/admin/login/discover`.
 
+로그인과 같은 요청 제한(`throttle:auth-login`)이 걸리지만 서버 세션은 열지 않는다(`start.api.session` 없음, 응답에 세션 쿠키가 없다). 이 요청은 로그인 제출과 거의 동시에 나갈 수 있어, 세션 쿠키를 내리면 로그인 전 세션을 실은 이 응답이 로그인 응답보다 늦게 도착했을 때 로그인이 심은 세션 쿠키를 덮고 개발자 화면이 비회원으로 보인다([서버 세션과 토큰의 짝](../authentication.md#서버-세션과-토큰의-짝-720)).
+
 ### POST /api/auth/login/handoff
 <!-- @generated:start:api.auth.login.handoff -->
 - **라우트명**: `api.auth.login.handoff`
@@ -1600,6 +1602,7 @@ HTTP/1.1 201
 | token | body | string | 예 | — | 인증/검증 토큰 |
 | email | body | email | 예 | — | 이메일 주소 |
 | password | body | string | 예 | 보안 설정의 작성 규칙 | 새 비밀번호 — 작성 규칙(길이·특수문자·조합·추측 방지)을 따르고, 재사용 금지가 켜져 있으면 최근 N개를 거부한다. 재사용 판정은 **토큰이 유효할 때만** 한다(추측 오라클 차단 — #736). 성공하면 모든 기기가 로그아웃된다 |
+| redirect_prefix | body | string | 아니오 | `admin` | 재설정 화면 구분값 — `admin` 전달 시 관리자 재설정 화면으로 보고 비밀번호 인증 정책을 관리자 경로로 판정한다(거절 응답의 `redirect_url` 이 관리자 로그인), 미지정 시 사용자 화면 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.reset_password_validation_rules`).
 
@@ -1797,6 +1800,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | token | body | string | 예 | — | 인증/검증 토큰 |
 | email | body | email | 예 | — | 이메일 주소 |
+| redirect_prefix | body | string | 아니오 | `admin` | 재설정 화면 구분값 — `admin` 전달 시 관리자 재설정 화면으로 보고 비밀번호 인증 정책을 관리자 경로로 판정한다(거절 응답의 `redirect_url` 이 관리자 로그인), 미지정 시 사용자 화면 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.validate_reset_token_messages`).
 
@@ -1849,6 +1853,8 @@ HTTP/1.1 200
 **설명**
 
 비밀번호 재설정 토큰의 유효성만 사전 확인한다(공개, 비밀번호 미변경). 재설정 화면(`admin_reset_password.g7.html`/`auth/reset_password.g7.html`) 진입 시 토큰/이메일이 유효한지 먼저 검사해, 만료·위조 링크면 즉시 오류 화면을 보이고 유효하면 새 비밀번호 입력 폼을 노출하는 용도다. 실제 반영은 `/api/auth/reset-password` 가 담당한다.
+
+유효한 링크인데 그 회원이 비밀번호 인증을 쓸 수 없으면(외부 인증 확장의 회사 계정 로그인 강제 등) `422` 와 `errors.code = auth.password_auth_disabled`, 다른 로그인 수단 이름 `errors.method_label`·시작 주소 `errors.redirect_url` 을 준다(7.2.0). 관리자 재설정 화면은 `redirect_prefix=admin` 을 실어 그 주소가 관리자 로그인으로 오게 한다 — `/api/auth/reset-password` 도 같다.
 
 
 ### POST /api/user/auth/logout

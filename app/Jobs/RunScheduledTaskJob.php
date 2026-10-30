@@ -7,6 +7,7 @@ namespace App\Jobs;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Enums\ScheduleTriggerType;
 use App\Exceptions\ScheduleExecutionException;
+use App\Extension\HookContextCapture;
 use App\Services\Schedule\ScheduleConditionEvaluator;
 use App\Services\Schedule\ScheduleExecutor;
 use Illuminate\Bus\Queueable;
@@ -20,7 +21,10 @@ use Throwable;
  * 「큐로 보내기」 스케줄 실행 잡
  *
  * 디스패처가 연결·큐(QueueWorkerRegistry 해석)와 timeout(retry_after 아래로 클램프)을 정해 넣는다.
- * payload 에는 스케줄 ID 만 싣는다 — 처리 기록(queue_job_logs)은 `scheduleId` 로 스케줄을 잇는다.
+ * payload 에는 스케줄 ID 를 싣는다 — 처리 기록(queue_job_logs)은 `scheduleId` 로 스케줄을 잇는다.
+ * 수동 실행이면 누른 관리자의 요청 문맥(HookContextCapture::capture())도 함께 싣고, 워커는 실행하는 동안만
+ * 그 문맥을 복원한다 — 바로 실행과 같이 실행 중 남는 활동 로그의 행위자·IP·브라우저 정보가 누른 관리자의
+ * 것이 되고, 끝나면 문맥을 되돌려 다음 잡에 넘기지 않는다.
  *
  * tries=1 — 같은 실행이 두 번 이력을 남기지 않게 재시도는 큐 화면에서 운영자가 명시적으로 한다.
  * 워커가 timeout·kill 로 죽으면 failed() 가 실행기의 running 이력을 실패로 마감한다.
@@ -36,15 +40,29 @@ class RunScheduledTaskJob implements ShouldQueue
     public ?int $timeout = null;
 
     /**
+     * 수동 실행을 누른 요청의 문맥 (HookContextCapture::capture() 결과, 예약 실행은 null)
+     *
+     * 생성자 승격 속성이 아니라 기본값이 있는 일반 속성이다 — unserialize 는 생성자를 돌리지 않으므로
+     * 이 속성이 없던 payload 도 null 로 읽힌다.
+     *
+     * @var array<string, mixed>|null
+     */
+    public ?array $context = null;
+
+    /**
      * @param  int  $scheduleId  스케줄 ID
      * @param  ScheduleTriggerType  $trigger  실행 계기
      * @param  int|null  $userId  수동 실행자 ID
+     * @param  array<string, mixed>|null  $context  수동 실행 요청 문맥 (HookContextCapture::capture() 결과)
      */
     public function __construct(
         public readonly int $scheduleId,
         public readonly ScheduleTriggerType $trigger,
         public readonly ?int $userId = null,
-    ) {}
+        ?array $context = null,
+    ) {
+        $this->context = $context;
+    }
 
     /**
      * 큐 화면·처리 기록에 보이는 이름을 반환합니다.
@@ -68,12 +86,34 @@ class RunScheduledTaskJob implements ShouldQueue
      * 투입과 실행 사이에 바뀐 상태를 다시 본다 — 행 삭제·소유 확장 비활성은 건너뛰고,
      * 예약 실행은 비활성 행·조건 미충족도 건너뛴다(수동 실행은 조건과 무관하게 실행).
      *
+     * 실행은 실린 문맥 안에서 한다 — 문맥이 없으면(예약 실행) 사용자 없이 돌고, 어느 쪽이든 끝나면 잡 전
+     * 상태로 되돌린다. 상주 워커가 앞 잡의 사용자·요청을 이 실행에 물려주지 않게 하기 위해서다.
+     *
      * @param  ScheduleRepositoryInterface  $scheduleRepository  스케줄 저장소
      * @param  ScheduleExecutor  $executor  실행기
      * @param  ScheduleConditionEvaluator  $conditions  실행 조건 해석기
      * @return void 반환값 없음
      */
     public function handle(
+        ScheduleRepositoryInterface $scheduleRepository,
+        ScheduleExecutor $executor,
+        ScheduleConditionEvaluator $conditions,
+    ): void {
+        HookContextCapture::within(
+            $this->context ?? [],
+            fn () => $this->run($scheduleRepository, $executor, $conditions),
+        );
+    }
+
+    /**
+     * 복원된 문맥 안에서 스케줄을 실행합니다.
+     *
+     * @param  ScheduleRepositoryInterface  $scheduleRepository  스케줄 저장소
+     * @param  ScheduleExecutor  $executor  실행기
+     * @param  ScheduleConditionEvaluator  $conditions  실행 조건 해석기
+     * @return void 반환값 없음
+     */
+    private function run(
         ScheduleRepositoryInterface $scheduleRepository,
         ScheduleExecutor $executor,
         ScheduleConditionEvaluator $conditions,

@@ -122,7 +122,8 @@ describe('sirsoft-admin_basic 관리자 재확인 수단 선택 (A7t)', () => {
   ])('%s — challenge 요청 본문에 provider_id 가 없고(서버가 수단을 고른다) 돌아올 화면 return_path 를 싣는다', (_surface, get, layout, returnPath) => {
     const request = get();
     expect(request?.params?.method).toBe('POST');
-    expect(Object.keys(request?.params?.body ?? {}).sort()).toEqual(['purpose', 'return_path']);
+    expect(Object.keys(request?.params?.body ?? {}).sort()).toEqual(['purpose', 'return_path', 'scope']);
+    expect(request?.params?.body?.scope).toBe('admin');
     expect(request?.params?.body?.purpose).toBe('sensitive_action');
     const raw = String(request?.params?.body?.return_path ?? '');
     expect(raw.startsWith('{{') ? evaluate(raw, { route: { id: 'me-uuid' } }) : raw).toBe(returnPath);

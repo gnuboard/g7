@@ -122,6 +122,29 @@ interface ChallengeResponseData {
   claim_secret?: string;
 }
 
+/** 외부 재확인에서 돌아올 때 붙는 일회용 결과 쿼리 — 돌아갈 경로에 다시 싣지 않는다(지난 왕복의 값이 따라가지 않게). */
+const RETURN_RESULT_QUERY_KEYS = ['verification_token', 'social_reauth', 'social_error'];
+
+/**
+ * 외부 수단이 확인을 마치고 돌려보낼 지금 화면 경로를 만듭니다.
+ *
+ * 같은 출처 경로+쿼리만 쓴다(절대 주소·해시 없음). 지난 왕복의 결과 쿼리는 뺀다.
+ *
+ * @returns 경로 (`/` 로 시작), 만들 수 없으면 null
+ */
+function currentReturnPath(): string | null {
+  const pathname = typeof window !== 'undefined' ? window.location?.pathname : undefined;
+  if (typeof pathname !== 'string' || !pathname.startsWith('/') || pathname.startsWith('//')) {
+    return null;
+  }
+  const params = new URLSearchParams(window.location?.search ?? '');
+  for (const key of RETURN_RESULT_QUERY_KEYS) {
+    params.delete(key);
+  }
+  const query = params.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
 /**
  * `POST /api/identity/challenges` 로 challenge 를 시작합니다.
  *
@@ -137,6 +160,10 @@ async function startChallenge(
   // 428 이 알려 준 정책 — 서버가 그 정책별 문구를 고른다(켜져 있고 목적이 같을 때만).
   if (payload.policy_key) body.policy_key = payload.policy_key;
   if (target) body.target = target;
+  // 외부 화면을 거치는 수단(회사 계정 다시 로그인·소셜 다시 로그인 등)이 확인을 마치고 돌려보낼 곳 — 지금 화면.
+  // 싣지 않으면 서버 기본값(마이페이지·첫 화면)으로 돌아가 하던 일을 이어 갈 수 없다. 서버는 같은 출처 경로만 받는다.
+  const returnPath = currentReturnPath();
+  if (returnPath) body.return_path = returnPath;
 
   // challenge 시작 주소는 428 응답 본문(`challenge_start_url`)에서 온다. 코어 `G7Core.api` 로 보내면
   // Bearer·XSRF 는 동일 출처 대상에만 실리고(교차 출처 서버가 428 을 흉내 내 자기 주소를 넣어도 토큰이

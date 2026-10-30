@@ -1,5 +1,5 @@
 {
-    "comment": "예약 작업(스케줄)·큐 관리. 탭 둘이 **URL 경로**다 — 스케줄 탭은 `/admin/schedules`, 큐 탭은\n  `/admin/schedules/queue`(하위 탭은 `query.view` = pending|failed|logs). 데이터소스는 탭마다 `if` 로 갈라\n  지금 탭의 것만 부른다 — 판별은 **`query.view` 로만** 한다. 데이터소스 조건 문맥은 `{route: 라우트 파라미터, query,\n  _global}` 이라 `route.path` 가 없다(렌더 문맥에만 붙는다 — 그래서 화면 `data-if` 는 경로로 가른다). 큐 탭으로 가는\n  길은 모두 `view` 를 싣고, `view` 없이 큐 주소를 열면 진입 시 `view=pending` 으로 보정한다.\n\n  스케줄 탭의 필터는 쿠폰·회원 목록과 같은 구조다(기본/상세 + 검색편집) — 입력값은 `_local.filter` 에\n  쌓였다가 검색 버튼·Enter 에서만 URL 로 나간다(`searchSchedules`). 초기화는 `resetSchedules`.\n  등록·수정은 별도 화면이 아니라 **한 폼 창**이다 — 대상과 편집 여부를 전역에 담아 그 창이 겸한다.\n\n  탭을 오갈 때 각 탭의 조건(필터·페이지)은 따로 기억한다 — 떠나는 탭의 query 를 전역에 담아 두고,\n  돌아갈 때 그 값을 다시 싣는다.\n  전환 덮개는 목록과 함께 늦게 받는 progressive 데이터소스(소유 선택지·상태 카드·큐 현황·큐 하위 탭 목록)까지 기다린다 — 하나라도\n  빠지면 덮개가 걷힌 뒤 그 칸이 늦게 바뀐다. 덮개 대상은 두 탭 본문을 함께 감싼 칸 하나다(탭마다 따로 두면 큐 탭에서\n  대상이 사라져 화면 전체가 덮였다).\n  헤더의 「보안 정책」은 서버가 정한 실행 허용·거부 목록을 **읽기 전용**으로 보인다 — 바꾸는 것은 서버 관리자(설정 파일·.env)의 몫이다.",
+    "comment": "예약 작업(스케줄)·큐 관리. 탭 둘이 **URL 경로**다 — 스케줄 탭은 `/admin/schedules`, 큐 탭은\n  `/admin/schedules/queue`(하위 탭은 `query.view` = pending|failed|logs). 데이터소스는 탭마다 `if` 로 갈라\n  지금 탭의 것만 부른다 — 판별은 **`query.view` 로만** 한다. 데이터소스 조건 문맥은 `{route: 라우트 파라미터, query,\n  _global}` 이라 `route.path` 가 없다(렌더 문맥에만 붙는다 — 그래서 화면 `data-if` 는 경로로 가른다). 큐 탭으로 가는\n  길은 모두 `view` 를 싣고, `view` 없이 큐 주소를 열면 진입 시 `view=pending` 으로 보정한다.\n\n  스케줄 탭의 필터는 쿠폰·회원 목록과 같은 구조다(기본/상세 + 검색편집) — 입력값은 `_local.filter` 에\n  쌓였다가 검색 버튼·Enter 에서만 URL 로 나간다(`searchSchedules`). 초기화는 `resetSchedules`.\n  등록·수정은 별도 화면이 아니라 **한 폼 창**이다 — 대상과 편집 여부를 전역에 담아 그 창이 겸한다.\n\n  탭을 오갈 때 각 탭의 조건(필터·페이지)은 따로 기억한다 — 떠나는 탭의 query 를 전역에 담아 두고,\n  돌아갈 때 그 값을 다시 싣는다.\n  전환 덮개는 목록과 함께 늦게 받는 progressive 데이터소스(소유 선택지·상태 카드·큐 현황·큐 하위 탭 목록)까지 기다린다 — 하나라도\n  빠지면 덮개가 걷힌 뒤 그 칸이 늦게 바뀐다. 덮개 대상은 두 탭 본문을 함께 감싼 칸 하나다(탭마다 따로 두면 큐 탭에서\n  대상이 사라져 화면 전체가 덮였다).\n  헤더의 「보안 정책」은 서버가 정한 실행 허용·거부 목록을 **읽기 전용**으로 보인다 — 바꾸는 것은 서버 관리자(설정 파일·.env)의 몫이다.\n\n  레이아웃 권한은 스케줄 조회(core.schedules.read) 하나라 큐 작업 조회(core.queue_jobs.read)가 없는 관리자도 이 화면에 들어온다.\n  그 여부는 베이스(`_admin_base`)가 로그인 관리자(current_user)를 받을 때 전역 `adminQueueJobsReadable` 에 올린 판정을 본다(받기 전은\n  판정 전 = 값 없음). 거짓이면 큐 탭 항목을 숨기고, 큐 주소로 직접 들어오면 본문 대신 권한 안내를 보이며, `queue_*` 데이터소스를\n  부르지 않는다(데이터소스 조건 문맥에는 사용자가 없어 전역 판정을 쓴다). 판정 전에는 숨기지 않고 종전대로 받는다 — 새 탭의 첫 화면에서\n  권한 있는 관리자에게 탭이 깜박이지 않게 하고, 그때 권한 없는 관리자에게 나간 요청의 403 은 조용히 넘긴다.",
     "version": "1.0.0",
     "layout_name": "admin_schedule_list",
     "extends": "_admin_base",
@@ -103,13 +103,13 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
-            "fallback": {
-                "data": {
-                    "entries": [],
-                    "connections": []
+            "if": "{{_global.adminQueueJobsReadable !== false}}",
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
                 }
             },
-            "comment": "큐 등록 현황(연결·큐 목록) — 폼 창의 「큐로 보내기」 선택지와 큐 탭(현황 카드·필터 선택지)이 함께 쓴다. 큐 조회 권한이 없으면\n       선택지만 비고(기본 연결로 보낸다) 화면은 그대로 쓴다. 큐 탭 현황 카드가 이 값으로 그려지므로 progressive 로 받고 전환 덮개가 기다린다."
+            "comment": "큐 등록 현황(연결·큐 목록) — 폼 창의 「큐로 보내기」 선택지와 큐 탭(현황 카드·필터 선택지)이 함께 쓴다. 큐 탭 현황 카드가 이 값으로\n       그려지므로 progressive 로 받고 전환 덮개가 기다린다.\n       큐 작업 조회 권한(core.queue_jobs.read)이 없다고 판정됐으면(`_global.adminQueueJobsReadable === false`, 베이스가 current_user 로 정한다)\n       부르지 않는다. 판정 전(새 탭의 첫 화면)에 나간 요청의 403 은 조용히 넘긴다. 폼 창 선택지는 값이 없으면 비고(기본 연결로 보낸다) 창은 그대로 쓴다.\n       fallback 을 두지 않는다 — 두면 받기 실패가 성공으로 처리되어 큐 탭 현황 카드가 「측정 불가 / 0개 / 0/0」 같은 틀린 값을 그렸다.\n       실패는 `_dataSourceErrors.queue_status` 로 남고 큐 탭은 카드 대신 실패 안내를 보인다."
         },
         {
             "id": "queue_pending",
@@ -119,7 +119,7 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "if": "{{query.view === 'pending'}}",
+            "if": "{{query.view === 'pending' && _global.adminQueueJobsReadable !== false}}",
             "params": {
                 "page": "{{query.page ?? 1}}",
                 "per_page": "{{query.per_page ?? 20}}",
@@ -130,7 +130,12 @@
                 "sort_by": "{{query.sort_by ?? 'created_at'}}",
                 "sort_order": "{{query.sort_order ?? 'desc'}}"
             },
-            "comment": "큐 탭 — 대기 중인 Job. 하위 탭이 「대기」일 때만 부른다. 정렬 기준은 하위 탭마다 받는 값이 달라(서버 허용 목록)\n       기본값도 하위 탭마다 따로 둔다 — 하위 탭을 바꾸면 정렬은 넘기지 않는다."
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "큐 탭 — 대기 중인 Job. 하위 탭이 「대기」일 때만 부른다. 정렬 기준은 하위 탭마다 받는 값이 달라(서버 허용 목록)\n       기본값도 하위 탭마다 따로 둔다 — 하위 탭을 바꾸면 정렬은 넘기지 않는다. 권한 판정·403 처리는 위 큐 등록 현황과 같다(세 하위 탭 공통)."
         },
         {
             "id": "queue_failed",
@@ -140,7 +145,7 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "if": "{{query.view === 'failed'}}",
+            "if": "{{query.view === 'failed' && _global.adminQueueJobsReadable !== false}}",
             "params": {
                 "page": "{{query.page ?? 1}}",
                 "per_page": "{{query.per_page ?? 20}}",
@@ -153,6 +158,11 @@
                 "sort_by": "{{query.sort_by ?? 'failed_at'}}",
                 "sort_order": "{{query.sort_order ?? 'desc'}}"
             },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
             "comment": "큐 탭 — 실패한 Job."
         },
         {
@@ -163,7 +173,7 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "if": "{{query.view === 'logs'}}",
+            "if": "{{query.view === 'logs' && _global.adminQueueJobsReadable !== false}}",
             "params": {
                 "page": "{{query.page ?? 1}}",
                 "per_page": "{{query.per_page ?? 20}}",
@@ -176,6 +186,11 @@
                 "created_end_date": "{{query.created_end_date}}",
                 "sort_by": "{{query.sort_by ?? 'finished_at'}}",
                 "sort_order": "{{query.sort_order ?? 'desc'}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
             },
             "comment": "큐 탭 — 처리 기록(성공·실패)."
         }
@@ -586,7 +601,9 @@
                                                 }
                                             },
                                             {
+                                                "comment": "큐 쪽은 큐 조회 권한이 있다고(또는 아직 판정 전이라고) 볼 때만 다시 받는다 — 권한이 없으면 소스 자체가 골라지지 않았다.",
                                                 "handler": "refetchDataSource",
+                                                "if": "{{_global.adminQueueJobsReadable !== false}}",
                                                 "params": {
                                                     "dataSourceId": "queue_status"
                                                 }
@@ -604,7 +621,7 @@
                                                         }
                                                     },
                                                     {
-                                                        "if": "{{(query.view || 'pending') === 'pending'}}",
+                                                        "if": "{{_global.adminQueueJobsReadable !== false && (query.view || 'pending') === 'pending'}}",
                                                         "then": {
                                                             "handler": "refetchDataSource",
                                                             "params": {
@@ -613,7 +630,7 @@
                                                         }
                                                     },
                                                     {
-                                                        "if": "{{query.view === 'failed'}}",
+                                                        "if": "{{_global.adminQueueJobsReadable !== false && query.view === 'failed'}}",
                                                         "then": {
                                                             "handler": "refetchDataSource",
                                                             "params": {
@@ -622,7 +639,7 @@
                                                         }
                                                     },
                                                     {
-                                                        "if": "{{query.view === 'logs'}}",
+                                                        "if": "{{_global.adminQueueJobsReadable !== false && query.view === 'logs'}}",
                                                         "then": {
                                                             "handler": "refetchDataSource",
                                                             "params": {
@@ -861,7 +878,8 @@
                                         {
                                             "id": "queue",
                                             "href": "/admin/schedules/queue",
-                                            "label": "$t:admin.schedules.tabs.queue"
+                                            "label": "$t:admin.schedules.tabs.queue",
+                                            "if": "{{_global.adminQueueJobsReadable !== false}}"
                                         }
                                     ]
                                 }
@@ -889,14 +907,50 @@
                                 ]
                             },
                             {
-                                "comment": "큐 탭 본문 — 큐 상태 카드·하위 탭·필터·표는 큐 화면 조각이 그린다.",
+                                "comment": "큐 탭 본문 — 큐 상태 카드·하위 탭·필터·표는 큐 화면 조각이 그린다. 큐 작업 조회 권한이 없다고 판정됐으면(탭은 숨었지만\n             주소로 직접 들어온 경우) 본문 대신 권한 안내를 보인다 — 받지 못한 값을 「0건」으로 그리지 않는다.",
                                 "id": "queue_tab_content",
                                 "type": "basic",
                                 "name": "Div",
                                 "if": "{{route.path === '/admin/schedules/queue'}}",
                                 "children": [
                                     {
-                                        "partial": "partials/admin_schedule_list/_tab_queue.json"
+                                        "id": "queue_permission_denied",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_global.adminQueueJobsReadable === false}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "alert-warning"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "lock",
+                                                    "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-warning-soft"
+                                                },
+                                                "text": "$t:admin.schedules.queue.notice.no_permission"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "queue_tab_body",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_global.adminQueueJobsReadable !== false}}",
+                                        "children": [
+                                            {
+                                                "partial": "partials/admin_schedule_list/_tab_queue.json"
+                                            }
+                                        ]
                                     }
                                 ]
                             }

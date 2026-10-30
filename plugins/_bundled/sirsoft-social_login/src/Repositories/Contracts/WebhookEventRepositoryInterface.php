@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\SocialLogin\Repositories\Contracts;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Plugins\Sirsoft\SocialLogin\Models\SocialLoginWebhookEvent;
 
 /**
@@ -65,7 +66,7 @@ interface WebhookEventRepositoryInterface
     /**
      * 제공자별 마지막 수신 시각을 반환합니다.
      *
-     * @return array<string, string|null> 제공자 키 => 시각
+     * @return array<string, Carbon|null> 제공자 키 => 시각
      */
     public function lastReceivedByProvider(): array;
 

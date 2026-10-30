@@ -19,7 +19,7 @@
                 {
                     "type": "basic",
                     "name": "Span",
-                    "if": "{{queue_logs?.data?.pagination?.total_is_exact !== false}}",
+                    "if": "{{!_dataSourceErrors?.queue_logs && queue_logs?.data?.pagination?.total_is_exact !== false}}",
                     "props": {
                         "className": "text-label"
                     },
@@ -28,7 +28,7 @@
                 {
                     "type": "basic",
                     "name": "Span",
-                    "if": "{{queue_logs?.data?.pagination?.total_is_exact === false}}",
+                    "if": "{{!_dataSourceErrors?.queue_logs && queue_logs?.data?.pagination?.total_is_exact === false}}",
                     "props": {
                         "className": "text-label"
                     },
@@ -184,7 +184,7 @@
                 "selectable": false,
                 "showColumnSelector": false,
                 "responsiveBreakpoint": 768,
-                "emptyMessage": "{{queue_logs === undefined ? '' : $t('admin.schedules.queue.empty.logs')}}",
+                "emptyMessage": "{{queue_logs === undefined ? '' : (_dataSourceErrors?.queue_logs ? (_dataSourceErrors.queue_logs.status === 403 ? $t('admin.schedules.queue.notice.no_permission') : $t('admin.schedules.queue.errors.list_load_failed')) : $t('admin.schedules.queue.empty.logs'))}}",
                 "columns": [
                     {
                         "field": "display_name",

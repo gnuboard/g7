@@ -165,6 +165,7 @@
         "change_password_subtitle": "새로운 비밀번호를 입력해주세요",
         "change_password_first_time_notice": "비밀번호를 처음 설정합니다. 현재 비밀번호 없이 새 비밀번호만 입력하세요.",
         "change_password_reauth_unavailable": "이 계정은 가입한 이메일로 본인 확인 메일을 받을 수 없어 비밀번호를 정할 수 없습니다. 관리자에게 문의해 주세요.",
+        "change_password_reauth_other": "이 계정은 가입한 이메일로 본인 확인 메일을 받을 수 없습니다. 새 비밀번호를 저장하면 이 계정에 쓸 수 있는 다른 방법(회사 계정 다시 로그인 등)으로 본인을 확인합니다.",
         "change_password_section": "새 비밀번호 입력",
         "change_password_button": "비밀번호 변경",
         "change_password_submit": "비밀번호 변경",

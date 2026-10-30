@@ -2645,6 +2645,13 @@ class ModuleManager implements ModuleManagerInterface
             );
         }
 
+        // 모듈이 선언한 역할에 그 역할 권한으로 열 수 있는 메뉴를 붙인다 — 역할·권한 연결 뒤에 돌아야 한다.
+        $helper->grantMenusToDeclaredRoles(
+            $menus,
+            ExtensionOwnerType::Module,
+            $module->getIdentifier(),
+            method_exists($module, 'getRoles') ? array_column($module->getRoles(), 'identifier') : [],
+        );
     }
 
     /**

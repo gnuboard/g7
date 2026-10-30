@@ -172,6 +172,47 @@ class ExtensionCssOverrideResolverTest extends TestCase
     }
 
     /**
+     * 형식 오류 문구의 항목 번호는 사람이 세는 순번(1부터)이다 — 두 번째 항목이 틀리면 「2 번째」로 알린다.
+     *
+     * @scenario case=css_override_c08
+     *
+     * @effects template_css_override_resolved_by_compatibility
+     *
+     * @return void 반환값 없음
+     */
+    public function test_invalid_entry_message_counts_items_from_one(): void
+    {
+        $resolver = new ExtensionCssOverrideResolver;
+        $manifest = $this->manifest([
+            ['target' => 'gnuboard7-hello_module', 'targetVersion' => '^0.3', 'path' => 'dist/css/overrides/hello.css'],
+            ['target' => 'gnuboard7-hello_module', 'targetVersion' => '^0.3', 'path' => '../evil.css'],
+        ]);
+        $previous = app()->getLocale();
+
+        try {
+            app()->setLocale('ko');
+            $this->assertSame(
+                ['extension_css_overrides 의 2 번째 항목에 target 과 dist/ 아래 path 가 필요합니다.'],
+                $resolver->validationErrors($manifest),
+            );
+
+            app()->setLocale('en');
+            $this->assertSame(
+                ['Item 2 of extension_css_overrides needs a target and a path under dist/.'],
+                $resolver->validationErrors($manifest),
+            );
+
+            app()->setLocale('ko');
+            $this->assertSame(
+                ['extension_css_overrides 의 1 번째 항목에 target 과 dist/ 아래 path 가 필요합니다.'],
+                $resolver->validationErrors($this->manifest([['path' => 'dist/css/z.css']])),
+            );
+        } finally {
+            app()->setLocale($previous);
+        }
+    }
+
+    /**
      * 선언은 있는데 빌드 산출물이 없으면 제외한다(요청 실패를 남기지 않는다).
      *
      * @scenario case=css_override_c06

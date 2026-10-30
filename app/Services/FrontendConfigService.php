@@ -7,6 +7,7 @@ use App\Extension\Consent\ConsentManager;
 use App\Extension\Consent\ConsentSnapshot;
 use App\Services\Auth\LoginEntryService;
 use App\Support\Custom\CustomRoutes;
+use App\Support\EmptyMapChildren;
 
 /**
  * 프론트엔드 공개 설정 조립 — G7 셸(`window.G7Config`)과 공개 설정 API 가 **같은 함수**로 만든다 (#792 D8).
@@ -39,6 +40,9 @@ class FrontendConfigService
 
     /**
      * 셸·API 공통 설정 묶음을 만듭니다.
+     *
+     * `settings` 의 카테고리 값은 화면이 이름표로 읽는 맵이라, 보이는 필드가 없는 카테고리(`identity`)도 `[]` 가 아니라
+     * `{}` 로 나가도록 빈 카테고리를 빈 객체로 바꿔 돌려준다 — 셸과 API 가 이 한 곳의 값을 그대로 싣는다.
      *
      * @param  string  $scope  범위 (`user`|`admin`)
      * @return array{settings: array<string, mixed>, plugins: array<string, mixed>, modules: array<string, mixed>, appConfig: array<string, mixed>, consentInitial: array<string, mixed>|null} 설정 묶음
@@ -94,7 +98,7 @@ class FrontendConfigService
         $appConfig['auth'] = $this->loginEntryConfig();
 
         return [
-            'settings' => $settings,
+            'settings' => EmptyMapChildren::asObjects($settings),
             'plugins' => $plugins,
             'modules' => $modules,
             'appConfig' => $appConfig,
@@ -129,7 +133,7 @@ class FrontendConfigService
 
         try {
             $registrationOpen = app(AuthService::class)->isSelfRegistrationOpen();
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             // 확장 필터 오류는 원 설정값으로 — 서버의 가입 차단 판정도 같은 필터를 거치므로 여기서 묶음 전체를 깨지 않는다
             $registrationOpen = (bool) g7_core_settings('security.registration_enabled', true);
         }

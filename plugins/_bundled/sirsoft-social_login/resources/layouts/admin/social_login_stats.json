@@ -192,9 +192,33 @@
                         ]
                     },
                     {
+                        "comment": "응답 전에는 불러오는 중을, 받기에 실패하면 오류를 알리고 기준 시각과 합계는 응답이 온 뒤에만 그린다 — 아직 오지 않은 값을 0 으로 보이지 않는다",
+                        "id": "stats_loading",
+                        "type": "basic",
+                        "name": "P",
+                        "if": "{{stats === undefined}}",
+                        "props": {
+                            "role": "status",
+                            "className": "sl:text-sm sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3"
+                        },
+                        "text": "$t:common.loading"
+                    },
+                    {
+                        "id": "stats_load_failed",
+                        "type": "basic",
+                        "name": "P",
+                        "if": "{{stats === null}}",
+                        "props": {
+                            "role": "alert",
+                            "className": "sl:text-sm sl:text-red-700 sl:dark:text-red-300 sl:mb-3"
+                        },
+                        "text": "$t:common.error_occurred"
+                    },
+                    {
                         "id": "stats_since",
                         "type": "basic",
                         "name": "P",
+                        "if": "{{!!stats?.data}}",
                         "props": {
                             "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3"
                         },
@@ -209,7 +233,7 @@
                             "pagination": false,
                             "idField": "provider_key",
                             "selectable": false,
-                            "emptyMessage": "$t:sirsoft-social_login.admin.stats.empty",
+                            "emptyMessage": "{{!stats ? '' : $t('sirsoft-social_login.admin.stats.empty')}}",
                             "columns": [
                                 {
                                     "field": "label",
@@ -329,6 +353,7 @@
                         "id": "stats_totals",
                         "type": "basic",
                         "name": "P",
+                        "if": "{{!!stats?.data}}",
                         "props": {
                             "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:mt-3"
                         },

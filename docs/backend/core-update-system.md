@@ -388,6 +388,13 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
 
 > **spawn 위임의 배경 (beta.4 이후)**: 부모(`core:update`) 프로세스는 코어 업그레이드 *직전* 버전의 메모리 상태를 보유한다. 부모가 직접 `ModuleManager::updateModule()` 등을 호출하면 신버전 코어가 도입한 sync 메서드(예: `syncModuleIdentityPolicies` `@since beta.4`)가 메모리에 부재해 호출 자체가 누락된다. `executeBulkUpdate` 는 사용자 선택만 매니페스트로 직렬화한 뒤 `proc_open` 으로 `core:execute-bundled-updates` 를 spawn — 자식은 fresh PHP 프로세스라 디스크의 신버전 코어 코드를 메모리에 로드한 상태에서 update 메서드 호출. proc_open 미지원 환경에서는 in-process fallback 으로 안전 전환. 자식 stdout 은 부모 콘솔로 forwarding 하며, 종료 직전 `[BUNDLED-RESULT]` 표식 라인으로 결과 카운트를 회신한다.
 
+> **항목마다 새 프로세스 (7.2.0 이후)**: 확장 하나를 갱신할 때마다 config·라우트 캐시 재굽기(`config:cache`·`route:cache`)가 일회용 애플리케이션을 부팅하는데, 그 앱은 같은 프로세스 안에서 회수되지 않는다. 자식 하나가 확장 19개를 차례로 갱신하면 그 몫이 쌓여 `memory_limit` 512 MB 에서도 마지막 템플릿 도중 죽고, 뒤의 템플릿·언어팩이 옛 판으로 남았다. 그래서 `core:execute-bundled-updates` 는 항목이 둘 이상이면 순서·집계만 맡고 항목(모듈·플러그인·템플릿·언어팩) 하나마다 `core:execute-bundled-updates --item-process` 를 새 프로세스로 띄운다. 한 프로세스의 메모리는 단독 `module:update` 한 번과 같고 확장 수에 비례하지 않는다.
+>
+> - **집계**: `success`·`failed` 는 항목 단위 수다. 결과 줄 없이 끝난 항목 프로세스(메모리 고갈 등)는 그 항목 1건만 실패로 세고 다음 항목으로 간다.
+> - **실패 항목 안내**: 끝에 「업데이트하지 못한 항목」 목록과 항목별 다시 실행 명령(`php artisan module:update {id} --source=bundled --force --layout-strategy={전략}`, 언어팩은 `php artisan language-pack:update {id} --source=bundled`)을 출력한다. 결과 줄에는 실패가 있을 때만 `failed_items`(종류·식별자·전략·사유)를 덧붙인다 — 이전 판 `core:update` 는 `success`·`failed` 만 읽으므로 7.1.x 에서 올라오는 업데이트도 정확한 수를 받는다.
+> - **proc_open 이 없는 서버**: 같은 프로세스에서 차례로 돌되 config·라우트 캐시 재굽기를 `ConfigCacheHelper::deferRebuilds()`·`RouteCacheHelper::deferRebuilds()` 로 끝에 한 번만 한다(그 사이 캐시를 읽는 새 프로세스는 뜰 수 없다). 부모의 in-process fallback 도 같다.
+> - **부모가 결과를 못 받은 경우**: 자식 전체가 결과 줄 없이 끝나면 부모는 실패 1건으로 세고, 어느 항목까지 갱신됐는지 알 수 없다는 경고와 종료 코드를 출력한다.
+
 > **선언형 산출물 일괄 sync — `syncDeclarativeArtifacts`**: `ModuleManager::syncDeclarativeArtifacts(ModuleInterface)` / `PluginManager::syncDeclarativeArtifacts(PluginInterface)` 는 모듈/플러그인의 모든 declarative 데이터(역할·권한·메뉴·cleanup·IDV 정책·알림 정의 — 본인인증 알림 포함) 를 한 묶음으로 동기화하는 public 진입점이다. `installModule` / `updateModule` 트랜잭션이 내부적으로 호출하며, 코어 업그레이드 사후 보정(`Upgrade_7_0_0_beta_4` 등) 도 활성 모듈/플러그인을 순회하며 이 메서드를 호출해 일회성 회복을 수행한다. 각 sync 메서드는 helper 의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출 무해 (멱등).
 
 ---

@@ -253,7 +253,8 @@
                                                     "purpose": "{{_global.identityChallenge?.purpose ?? 'sensitive_action'}}",
                                                     "provider_id": "{{_global.identityChallenge?.provider_id ?? null}}",
                                                     "policy_key": "{{_global.identityChallenge?.policy_key ?? null}}",
-                                                    "target": "{{_global.identityChallenge?.target ?? null}}"
+                                                    "target": "{{_global.identityChallenge?.target ?? null}}",
+                                                    "scope": "admin"
                                                 }
                                             },
                                             "onSuccess": [

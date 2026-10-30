@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Plugins\Sirsoft\Sso\Concerns\SavesOverUnreadableEncryptedValues;
 
 /**
  * 회원과 IdP 신원의 연결 1행. 연결 키는 (IdP, subject) 다.
@@ -36,6 +37,8 @@ use Illuminate\Support\Carbon;
  */
 class SsoAccount extends Model
 {
+    use SavesOverUnreadableEncryptedValues;
+
     /** @var array<int, string> 연결 방식 */
     public const VIA = ['jit', 'domain', 'verify', 'admin', 'csv', 'scim'];
 

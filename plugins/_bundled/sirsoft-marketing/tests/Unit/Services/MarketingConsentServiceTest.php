@@ -277,9 +277,11 @@ class MarketingConsentServiceTest extends PluginTestCase
         $this->assertNotNull($emailRecord);
         $this->assertTrue($emailRecord->is_consented);
 
-        $thirdRecord = $consents->get('third_party_consent');
-        $this->assertNotNull($thirdRecord);
-        $this->assertFalse($thirdRecord->is_consented);
+        // 동의한 적 없는 항목에 false 가 오면 기록하지 않는다 — 철회할 동의가 없다(동의 안 함 = 기록 없음)
+        $this->assertNull($consents->get('third_party_consent'));
+        $this->assertFalse(
+            MarketingConsentHistory::where('user_id', $user->id)->where('channel_key', 'third_party_consent')->exists()
+        );
     }
 
     /**

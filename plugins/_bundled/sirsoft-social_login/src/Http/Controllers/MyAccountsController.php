@@ -47,7 +47,8 @@ class MyAccountsController extends AuthBaseController
     {
         $user = $this->getCurrentUser();
         $data = $this->links->summaryFor($user);
-        $data['reauth_via_social'] = $this->reauth->isEligible($user);
+        // 소셜 안내·제공자 버튼 조건 — 코어가 이 회원의 재확인에 실제로 소셜을 고를 때만 참(다른 수단이 먼저면 거짓)
+        $data['reauth_via_social'] = $this->reauth->isChosenReauth($user);
 
         return ResponseHelper::pluginSuccess('sirsoft-social_login', 'messages.accounts.listed', $data);
     }

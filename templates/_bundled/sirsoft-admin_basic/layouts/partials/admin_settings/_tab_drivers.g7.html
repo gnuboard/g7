@@ -587,8 +587,8 @@
                 </p>
                 <p data-ref="queue_records_schedule_notice_inactive" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'queue-prune-records')?.is_active === false}}" class="text-label-subtle">$t:admin.settings.schedule_link.inactive</p>
                 <div class="flex-center flex-wrap gap-3">
-                  <a data-ref="queue_records_link" href="/admin/schedules/queue?view=logs" class="text-link">$t:admin.settings.drivers.queue.records.view_link</a>
-                  <a data-ref="queue_records_schedule_notice_link" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=queue-prune-records" class="text-link">$t:admin.settings.schedule_link.change</a>
+                  <a data-ref="queue_records_link" data-if="{{_global.adminQueueJobsReadable !== false}}" href="/admin/schedules/queue?view=logs" class="text-link">$t:admin.settings.drivers.queue.records.view_link</a>
+                  <a data-ref="queue_records_schedule_notice_link" data-if="{{_computed.canReadSchedules !== false}}" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=queue-prune-records" class="text-link">$t:admin.settings.schedule_link.change</a>
                 </div>
               </div>
             </div>

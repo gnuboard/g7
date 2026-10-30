@@ -3397,6 +3397,7 @@
                                                                     "id": "queue_records_link",
                                                                     "type": "basic",
                                                                     "name": "A",
+                                                                    "if": "{{_global.adminQueueJobsReadable !== false}}",
                                                                     "props": {
                                                                         "href": "/admin/schedules/queue?view=logs",
                                                                         "className": "text-link"
@@ -3407,6 +3408,7 @@
                                                                     "id": "queue_records_schedule_notice_link",
                                                                     "type": "basic",
                                                                     "name": "A",
+                                                                    "if": "{{_computed.canReadSchedules !== false}}",
                                                                     "props": {
                                                                         "href": "/admin/schedules?extension_type=core&search_field=identifier&search_keyword=queue-prune-records",
                                                                         "className": "text-link"

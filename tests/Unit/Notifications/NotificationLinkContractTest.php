@@ -43,6 +43,8 @@ class NotificationLinkContractTest extends TestCase
      * 정의가 줄어드는 정상 변경에는 걸리지 않고 붕괴에만 걸리게 한다.
      *
      * @effects notification_declaration_population_is_not_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_the_declared_definition_population_is_not_empty(): void
     {
@@ -62,7 +64,11 @@ class NotificationLinkContractTest extends TestCase
     }
 
     /**
+     * 알림 본문·링크가 쓰는 `{변수}` 는 전부 그 정의의 variables 에 선언돼 있다(수신자 이름 예약 자리 제외).
+     *
      * @effects every_notification_placeholder_is_declared_as_a_variable
+     *
+     * @return void 반환값 없음
      */
     public function test_every_placeholder_used_in_a_template_is_declared_as_a_variable(): void
     {
@@ -177,13 +183,15 @@ class NotificationLinkContractTest extends TestCase
                 }
 
                 // 고정 경로(`/mypage` 등)는 그대로 둔다 — 수신자와 무관하게 한 곳으로 가는 알림이다.
-                // 변수를 쓴다면 링크 하나로 해석돼야 하므로 정확히 한 개이고 `_url` 로 끝나야 한다.
+                // 변수를 쓴다면 링크 하나로 해석돼야 하므로 정확히 한 개이고 `_url`(전체 주소) 또는
+                // `_path`(사이트 안 경로 — 관리자 알림센터처럼 같은 탭 이동을 경로로만 받는 화면용)로 끝나야 한다.
                 $placeholders = $this->extractPlaceholders($clickUrl);
                 if ($placeholders === []) {
                     continue;
                 }
 
-                if (count($placeholders) !== 1 || ! str_ends_with($placeholders[0], '_url')) {
+                $isLinkVariable = str_ends_with($placeholders[0], '_url') || str_ends_with($placeholders[0], '_path');
+                if (count($placeholders) !== 1 || ! $isLinkVariable) {
                     $malformed[] = "{$label} = {$clickUrl}";
                 }
             }
@@ -199,7 +207,7 @@ class NotificationLinkContractTest extends TestCase
         $this->assertSame(
             [],
             $malformed,
-            "click_url 의 변수는 링크 하나로 해석돼야 합니다(정확히 한 개 · `_url` 접미):\n - "
+            "click_url 의 변수는 링크 하나로 해석돼야 합니다(정확히 한 개 · `_url` 또는 `_path` 접미):\n - "
             .implode("\n - ", $malformed)
         );
     }

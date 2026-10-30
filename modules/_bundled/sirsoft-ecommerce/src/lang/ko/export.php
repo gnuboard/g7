@@ -309,6 +309,7 @@ return [
     ],
     'summary' => [
         'period_current' => '목록의 현재 기간',
+        'period_none' => '적용 안 함',
         'scope' => [
             'filter' => '현재 검색 조건',
             'selected' => '선택한 항목',

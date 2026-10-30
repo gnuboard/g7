@@ -17,20 +17,46 @@
   <meta title="$t:admin.base_layout_title" description="$t:admin.base_layout_description" :is_base="true"/>
   <!-- 사이드바 메뉴 — 현재 사용자의 역할이 접근 가능한 메뉴만 서버가 걸러 준다(프론트에서 다시 거르지 않는다). -->
   <data-source id="admin_menu" label_key="$t:editor.data_source.admin_menu" type="api" endpoint="/api/admin/menus/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
-  <!-- 로그인한 관리자 본인. 헤더 아바타·이름뿐 아니라 아래 웹소켓 채널명이 이 응답의 uuid 를 쓴다. -->
-  <data-source id="current_user" label_key="$t:editor.data_source.current_user" type="api" endpoint="/api/admin/auth/user" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive"/>
+  <!-- 로그인한 관리자 본인. 헤더 아바타·이름뿐 아니라 아래 웹소켓 채널명이 이 응답의 uuid 를 쓴다.
+       받으면 알림 조회 권한(`core.notifications.read`) 보유 여부를 전역 `adminNotificationsReadable` 에 올린다 — 알림 두 소스·
+       종 아이콘·실시간 수신이 이 판정을 본다. 권한이 없는 관리자(확장 역할만 가진 SSO 운영자 등)에게 화면마다 알림 403 두 건을
+       내지 않기 위해서다. 판정 전(새로 연 탭·새로고침·주소 직접 진입의 첫 화면)은 미정이라 종전대로 받고, 권한이 없으면 나는 403 은
+       두 소스가 조용히 넘긴다(아래).
+       같은 응답으로 큐 작업 조회 권한(`core.queue_jobs.read`) 보유 여부도 전역 `adminQueueJobsReadable` 에 올린다 — 스케줄 관리 화면의
+       큐 탭 항목·큐 데이터소스가 이 판정을 본다(그 화면의 레이아웃 권한은 스케줄 조회뿐이라 큐 권한이 없는 관리자도 들어온다).
+       베이스에서 정하는 까닭은 데이터소스 조건이 화면 진입 때 골라지기 때문이다 — 다른 관리자 화면을 거쳐 들어오면 큐 요청을 아예 보내지 않는다. -->
+  <data-source id="current_user" label_key="$t:editor.data_source.current_user" type="api" endpoint="/api/admin/auth/user" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <success>
+      <set-state target="global" adminNotificationsReadable="{{(response?.data?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.notifications.read')}}" adminQueueJobsReadable="{{(response?.data?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.queue_jobs.read')}}"/>
+    </success>
+  </data-source>
   <!-- 알림 목록. `read` 파라미터가 전역 토글을 그대로 읽으므로, 토글을 바꾼 뒤 이 소스를 다시 부르면
-       조건이 함께 따라간다(액션 쪽에서 파라미터를 다시 조립하지 않는 이유). 기본은 안 읽은 것만. -->
-  <data-source id="notifications" label_key="$t:editor.data_source.notifications" type="api" endpoint="/api/admin/notifications" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+       조건이 함께 따라간다(액션 쪽에서 파라미터를 다시 조립하지 않는 이유). 기본은 안 읽은 것만.
+       알림 조회 권한이 없다고 판정됐으면 소스 자체를 두지 않는다(`if`) — `auto_fetch:false` 로 미루면 값이 끝내 받기 전(undefined)으로
+       남아 소스를 지정하지 않은 `blur_until_loaded` 화면이 흐린 채 멈춘다.
+       판정 전 첫 화면에 나간 요청이 403 이면 조용히 넘긴다 — 판정은 로그인 관리자 응답이 와야 서므로 그 전에는 요청을 막을 수 없고,
+       그대로 두면 권한 없는 관리자가 관리자 화면을 새로 열 때마다 시스템 기본 처리(빨간 「해당 권한이 없습니다.」 토스트)가 떴다.
+       403 이 아닌 오류(401 로그인 만료·500 등)는 종전 처리 그대로다. -->
+  <data-source id="notifications" label_key="$t:editor.data_source.notifications" type="api" endpoint="/api/admin/notifications" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{_global.adminNotificationsReadable !== false}}">
     <params :per_page="15" read="{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"/>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 안 읽은 알림 수. 응답의 `unread_count` 를 전역 `adminNotificationCount` 로 올려 두므로
-       배지는 이 소스를 직접 보지 않고 전역값을 본다 — 목록을 안 연 화면에서도 숫자가 산다. -->
-  <data-source id="notification_unread_count" label_key="$t:editor.data_source.notification_unread_count" type="api" endpoint="/api/admin/notifications/unread-count" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+       배지는 이 소스를 직접 보지 않고 전역값을 본다 — 목록을 안 연 화면에서도 숫자가 산다. 권한 판정·403 처리는 위 알림 목록과 같다. -->
+  <data-source id="notification_unread_count" label_key="$t:editor.data_source.notification_unread_count" type="api" endpoint="/api/admin/notifications/unread-count" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{_global.adminNotificationsReadable !== false}}">
     <init-global>
       <field name="key" value="adminNotificationCount"/>
       <field name="path" value="unread_count"/>
     </init-global>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 설치된 모듈 목록을 전역 `installedModules` 로 올린다. 확장 유무로 UI 를 가르는 화면들이
        이 전역을 보므로, 베이스에서 한 번만 받아 둔다(화면마다 같은 API 를 다시 두드리지 않게). -->
@@ -49,11 +75,11 @@
   </data-source>
   <!-- 실시간 알림 수신(개인 채널). 새 알림이 오면 배지와 목록을 함께 다시 부른다 —
        배지만 갱신하면 드롭다운을 열었을 때 숫자와 내용이 어긋난다. 채널은 본인 uuid 로 좁힌
-       private 이라 `current_user` 응답이 온 뒤에 성립한다. -->
+       private 이라 `current_user` 응답이 온 뒤에 성립한다. 알림 조회 권한이 없다고 판정된 관리자는 다시 받지 않는다(403). -->
   <data-source id="notification_ws" label_key="$t:editor.data_source.notification_ws" type="websocket" channel="core.user.notifications.{{current_user.data.uuid}}" event="notification.received" channel_type="private" target_source="notification_unread_count">
     <on-receive>
-      <refetch-data-source dataSourceId="notification_unread_count"/>
-      <refetch-data-source dataSourceId="notifications"/>
+      <refetch-data-source if="{{_global.adminNotificationsReadable !== false}}" dataSourceId="notification_unread_count"/>
+      <refetch-data-source if="{{_global.adminNotificationsReadable !== false}}" dataSourceId="notifications"/>
       <toast type="info" message="{{$args[0].subject ?? '$t:admin.new_notification_received'}}" :duration="5000"/>
     </on-receive>
   </data-source>
@@ -165,7 +191,7 @@
           <language-selector data-type="composite" data-ref="language_selector_desktop" availableLocales="{{_global.appConfig.supportedLocales ?? $locales}}" languageText="$t:admin.language" :showCode="true"/>
           <!-- 통화 선택 — 이커머스 모듈이 'header_currency' 슬롯에 주입(layout_extensions). 헤더는 슬롯 이름만 알고 통화/모듈을 모름. 모듈 비활성 시 빈 슬롯 → 미렌더(인프라 자동 게이트). -->
           <slot-container data-type="composite" data-ref="header_currency_slot_desktop" slotId="header_currency" class="flex items-center"/>
-          <notification-center data-type="composite" data-ref="notification_center_desktop" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
+          <notification-center data-type="composite" data-ref="notification_center_desktop" data-if="{{_global.adminNotificationsReadable !== false}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
             <on event="onClose">
               <!-- 드롭다운을 닫는 순간, 열려 있는 동안 화면에 보인 알림들을 한 번에 읽음 처리한다
                    (컴포넌트가 그 id 목록을 넘겨준다). 더보기로 쌓인 페이지 상태는 여기서 초기화한다 —
@@ -314,7 +340,7 @@
         </div>
         <div data-ref="mobile_header_right" class="mobile_header_right">
           <theme-toggle data-type="composite" data-ref="theme_toggle_mobile" autoText="$t:admin.theme.auto" lightText="$t:admin.theme.light" darkText="$t:admin.theme.dark"/>
-          <notification-center data-type="composite" data-ref="notification_center_mobile" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+          <notification-center data-type="composite" data-ref="notification_center_mobile" data-if="{{_global.adminNotificationsReadable !== false}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}">
             <on event="onClose">
               <!-- 드롭다운을 닫는 순간, 열려 있는 동안 화면에 보인 알림들을 한 번에 읽음 처리한다
                    (컴포넌트가 그 id 목록을 넘겨준다). 더보기로 쌓인 페이지 상태는 여기서 초기화한다 —

@@ -1,0 +1,23 @@
+feature: 1.1.2 업그레이드 — 동의한 적 없는 항목에 남은 철회 기록 정리
+
+description: |
+  1.1.1 까지는 동의한 적 없는 회원이 동의 칸을 끈 채 저장하면 항목마다 상태 행(동의 안 함, 철회 시각)과 철회 이력이
+  생겼다. 1.1.2 업그레이드 스텝이 「동의(granted) 이력이 없고 상태 행이 is_consented=0, consent_count=0,
+  consented_at 없음」인 (회원, 항목) 쌍만 골라 그 쌍의 이력과 상태 행을 지우고 지운 건수를 업그레이드 로그에 남긴다.
+
+axis_notes:
+  stored: |
+    phantom_and_real 은 가짜 철회 쌍, 실제 동의→철회 쌍, 지금 동의 중인 쌍, 판별이 애매한 쌍(횟수 0 인데 동의 이력 있음,
+    철회 이력만 있는데 횟수가 남음)을 섞어 둔 상태다. already_clean 은 한 번 정리한 뒤 다시 돌리는 상태다.
+
+axes:
+  stored: [phantom_and_real, already_clean]
+
+effects:
+  - phantom_pairs_purged     # 동의한 적 없는 쌍의 이력과 상태 행이 사라진다
+  - real_pairs_preserved     # 실제 동의·철회 쌍과 판별이 애매한 쌍은 그대로 남는다
+  - purge_counts_logged      # 쌍, 이력, 상태 행 삭제 건수(또는 대상 없음)를 업그레이드 로그에 남긴다
+  - purge_idempotent         # 다시 돌려도 더 지우지 않는다
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/tests/Feature/Upgrades/PurgePhantomConsentRevocationsTest.php

@@ -84,4 +84,19 @@ describe('본인인증 시작 요청 — 대상·정책 보존', () => {
       expect(success, path).not.toContain('identityChallenge.claim_secret');
     }
   });
+
+  /**
+   * @effects challenge_requests_send_admin_scope
+   */
+  it('관리자 화면의 challenge 시작 호출은 모두 범위(scope=admin)를 싣는다', () => {
+    // @scenario surface=challenge_admin_scope_layout
+    const starts = files.flatMap(({ path, json }) =>
+      collect(json, (o) => o.handler === 'apiCall' && o.target === '/api/identity/challenges' && String(o.params?.method ?? o.method ?? 'POST').toUpperCase() === 'POST').map((c) => ({ path, c })),
+    );
+
+    expect(starts.length).toBeGreaterThanOrEqual(4);
+    for (const { path, c } of starts) {
+      expect(c.params?.body?.scope, path).toBe('admin');
+    }
+  });
 });
