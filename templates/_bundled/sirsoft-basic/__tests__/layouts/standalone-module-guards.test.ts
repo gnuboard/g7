@@ -249,11 +249,33 @@ describe('홈 — 게시판·쇼핑 섹션', () => {
 
     // @scenario surface=home
     // @effects shared_module_link_guarded
-    it('통계 카드 줄·게시판 요약 줄은 게시판 가드, 2행(최근 글·인기 게시판·쇼핑 홍보)은 둘 중 하나라도 켜져 있을 때', () => {
+    it('통계 카드 줄·게시판 요약 줄·2행(최근 글·인기 게시판·쇼핑 홍보)은 게시판 가드, 1행 쇼핑 홍보 칸은 게시판 꺼짐 + 쇼핑몰 켜짐', () => {
         const tree = home.slots.content;
         expect(byId(tree, 'home_stat_cards').if).toBe(guard(BOARD));
         expect(byId(tree, 'home_board_summaries').if).toBe(guard(BOARD));
-        expect(byId(tree, 'home_feature_row').if).toBe(`{{(${BOARD}) || (${SHOP})}}`);
+        expect(byId(tree, 'home_feature_row').if).toBe(guard(BOARD));
+        const topPromo = byId(tree, 'home_top_shop_promo');
+        expect(topPromo.if).toBe(`{{!(${BOARD}) && (${SHOP})}}`);
+        expect(topPromo.children).toEqual([{ partial: 'partials/home/_shop_promo.json' }]);
+    });
+
+    // @scenario surface=home
+    // @effects shared_module_link_guarded
+    it.each([
+        // [활성 모듈, 1행 그리드, 환영 카드 칸, 1행 쇼핑 홍보 칸 표시]
+        [['sirsoft-board', 'sirsoft-ecommerce'], 'grid grid-cols-3 grid-rows-2 gap-4 mb-4', 'row-span-2', false],
+        [['sirsoft-board'], 'grid grid-cols-3 grid-rows-2 gap-4 mb-4', 'row-span-2', false],
+        [['sirsoft-ecommerce'], 'grid grid-cols-3 gap-4 mb-4', 'col-span-2', true],
+        [[], 'grid grid-cols-1 gap-4 mb-4', '', false],
+    ])('활성 모듈 %j 이면 1행은 %s, 환영 카드는 「%s」, 쇼핑 홍보 칸 표시 %s', (modules, rowClass, welcomeClass, promoShown) => {
+        const tree = home.slots.content;
+        const evaluate = (binding: string) =>
+            new Function('_global', `return (${binding.replace(/^\{\{|\}\}$/g, '')});`)({ activeModules: modules });
+        const row = byId(tree, 'home_top_row');
+        expect(evaluate(row.props.className)).toBe(rowClass);
+        expect(evaluate(row.children[0].props.className)).toBe(welcomeClass);
+        expect(row.children[0].responsive.portable.props.className).toBe('row-span-2');
+        expect(evaluate(byId(tree, 'home_top_shop_promo').if)).toBe(promoShown);
     });
 
     // @scenario surface=home
