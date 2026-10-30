@@ -175,8 +175,9 @@ class CascadeInstallOrchestrator
                     ? $this->moduleService->activateModule($identifier)
                     : $this->pluginService->activatePlugin($identifier);
             } catch (\Throwable $e) {
+                // 종류는 현지화한 이름으로 싣는다 — 의존 미충족 문구(ChecksDependencyVersions)와 같은 extensions.dependency_types
                 throw new RuntimeException(self::appendKeptNotice(__('extensions.errors.cascade_dependency_failed', [
-                    'type' => $type,
+                    'type' => __('extensions.dependency_types.'.$type),
                     'identifier' => $identifier,
                     'message' => $e->getMessage(),
                 ]), $result), 0, $e);

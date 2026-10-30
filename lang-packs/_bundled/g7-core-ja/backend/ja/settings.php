@@ -403,4 +403,12 @@ return [
             'no_settings' => '表示する設定がありません。',
         ],
     ],
+    // 환경설정 > 고급 > GeoIP [갱신] 결과
+    'geoip' => [
+        'update_success' => 'GeoIP データベースを更新しました。',
+        'license_key_missing' => 'MaxMind ライセンスキーが設定されていません。',
+        'license_key_invalid' => 'MaxMind ライセンスキーが正しくありません。',
+        'connection_failed' => 'MaxMind サーバーに接続できませんでした。',
+        'update_failed' => 'GeoIP データベースを更新できませんでした。',
+    ],
 ];

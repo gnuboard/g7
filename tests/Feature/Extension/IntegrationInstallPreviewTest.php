@@ -7,6 +7,7 @@ use App\Contracts\Extension\ModuleManagerInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
 use App\Enums\LanguagePackScope;
+use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\TemplateManager;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
 use App\Http\Requests\Template\InstallTemplateRequest;
@@ -182,6 +183,42 @@ class IntegrationInstallPreviewTest extends TestCase
         $this->assertCount(1, $notices);
         $this->assertSame('not_installed', $notices[0]['state']);
         $this->assertStringContainsString('내려받기 실패', $notices[0]['message']);
+    }
+
+    /**
+     * 함께 설치하다 실패한 연동 안내는 사유를 따로 싣는다 — 설치 창 토스트가 문장 전체가 아니라 이름·상태 뒤에 사유를 붙여 보인다.
+     *
+     * 실패하지 않은 안내는 사유가 null 이다. 사유가 마침표로 끝나도 완료 문구 뒤에 붙는 요약 한 줄에 마침표가 겹치지 않는다
+     * (「…다시 시도하세요.. 설치·활성화·업데이트하면…」 회귀).
+     *
+     * @scenario case=cascade_failure_notice
+     *
+     * @effects integration_failure_reason_exposed_for_screen
+     *
+     * @return void 반환값 없음
+     */
+    public function test_failed_integration_notice_carries_reason_without_double_period(): void
+    {
+        app()->setLocale('ko');
+        $this->mock(ModuleManagerInterface::class, function ($mock): void {
+            $mock->shouldReceive('getModule')->with('acme-main')->andReturnUsing(function () {
+                $instance = Mockery::mock(ModuleInterface::class);
+                $instance->shouldReceive('getIntegrationConstraints')->andReturn(['modules' => ['acme-shop' => '*', 'acme-other' => '*'], 'plugins' => [], 'templates' => []]);
+
+                return $instance;
+            });
+        });
+
+        $reason = 'Acme 확장을 쓰려면 서버에 PHP 확장 acme 이(가) 필요합니다. 설치 후 다시 시도하세요.';
+        $notices = collect($this->harness()->buildIntegrationNotices('module', 'acme-main', ['module:acme-shop' => $reason]))->keyBy('identifier');
+
+        $this->assertSame($reason, $notices['acme-shop']['failure_reason']);
+        $this->assertArrayHasKey('failure_reason', $notices['acme-other']);
+        $this->assertNull($notices['acme-other']['failure_reason'], '실패하지 않은 안내는 사유가 없다');
+
+        $summary = IntegrationNotices::appendToMessage('설치했습니다.', $notices->values()->all());
+        $this->assertStringContainsString('다시 시도하세요', $summary);
+        $this->assertStringNotContainsString('..', $summary);
     }
 
     /**

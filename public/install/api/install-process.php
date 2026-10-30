@@ -215,8 +215,8 @@ try {
             @fastcgi_finish_request();
         }
 
-        // 워커 타임아웃 설정 (SSE 모드와 동일)
-        @set_time_limit(600);
+        // 워커 타임아웃 설정 (SSE 모드와 동일) — 작업 루프가 작업마다 같은 값으로 다시 건다.
+        @set_time_limit((int) INSTALLER_TASK_TIME_LIMIT);
         @ini_set('display_errors', '0');
         error_reporting(E_ALL);
 
@@ -234,11 +234,13 @@ try {
         $workerId = $lockResult['worker_id'];
         addLog('Worker lock acquired: '.$workerId.' (reason: '.$lockResult['reason'].')');
 
-        register_shutdown_function('releaseWorkerLock', $workerId);
-
         // 폴링 모드 — NullEmitter 등록 후 task runner 실행
         require_once __DIR__.'/../includes/progress-emitter.php';
         require_once __DIR__.'/../includes/task-runner.php';
+
+        // 워커 종료 처리 — lock 해제 + fatal(실행 시간 초과 등)이면 설치를 failed 로 기록한다
+        // (폴링 화면이 상태를 읽어 실패 안내와 재시도를 보인다). 처리기는 task-runner.php 에 있다.
+        register_shutdown_function('installerHandleWorkerShutdown', $workerId, 'polling');
 
         setProgressEmitter(new NullEmitter($workerId));
         runInstallationTasks();

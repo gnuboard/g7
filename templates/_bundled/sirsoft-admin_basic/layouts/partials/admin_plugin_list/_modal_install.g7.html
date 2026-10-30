@@ -105,9 +105,9 @@
         <span class="text-primary text-sm font-semibold">$t:admin.plugins.modals.cascade_language_packs_title</span>
       </div>
       <p class="text-tertiary mb-2">$t:admin.plugins.modals.cascade_language_packs_hint</p>
-      <p data-if="{{_global.installPreview.language_packs.some(x => x.can_select !== true)}}" class="text-danger-soft mb-2">$t:admin.plugins.modals.cascade_no_permission_hint</p>
+      <p data-if="{{_global.installPreview.language_packs.some(x => x.available !== false &amp;&amp; x.can_select !== true)}}" class="text-danger-soft mb-2">$t:admin.plugins.modals.cascade_no_permission_hint</p>
       <label data-each="lp in _global.installPreview.language_packs" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1 cursor-pointer">
-        <input type="checkbox" aria-label="{{lp.locale_native_name}} ({{lp.locale}})" checked="{{lp.can_select === true &amp;&amp; (((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) &amp;&amp; lp.default_selected)) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)))}}" disabled="{{lp.can_select !== true || (lp.depends_on_extension &amp;&amp; !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}" class="w-4 h-4">
+        <input type="checkbox" aria-label="{{lp.locale_native_name}} ({{lp.locale}})" checked="{{lp.can_select === true &amp;&amp; lp.available !== false &amp;&amp; (((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) &amp;&amp; lp.default_selected)) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)))}}" disabled="{{lp.can_select !== true || lp.available === false || (lp.depends_on_extension &amp;&amp; !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}" class="w-4 h-4">
           <on type="change">
             <!-- 언어팩 하나를 더하거나 뺀다. 켜 두더라도 기대는 확장이 선택에서 빠지면 위 규칙 ⑵ 로 다시 꺼지므로, 이 자리의 선택은 「그 확장이 함께 깔릴 때」라는 조건부다. -->
             <set-state target="global" installSelectedLPs="{{ $event.target.checked ? [ ...((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier), lp.bundled_identifier ] : ((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier) }}"/>
@@ -116,7 +116,11 @@
         <span class="text-primary text-sm">{{lp.locale_native_name}} ({{lp.locale}})</span>
         <span class="text-tertiary font-mono">v{{lp.version}}</span>
         <span data-if="{{(lp.depends_on_extension ?? lp.target_identifier) &amp;&amp; (lp.depends_on_extension ?? lp.target_identifier) !== _global.installPreview?.target?.identifier}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.plugins.modals.cascade_lp_depends_on|target={{lp.depends_on_extension ?? lp.target_identifier}}</span>
-        <span data-if="{{lp.can_select !== true}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.plugins.modals.cascade_no_permission</span>
+        <span data-if="{{lp.available !== false &amp;&amp; lp.can_select !== true}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.plugins.modals.cascade_no_permission</span>
+        <!-- 지금 설치할 수 없는 언어팩(미리보기 available=false)은 잠그고 사유를 보인다 — 같은 언어의 코어 언어팩이 꺼져 있거나,
+             이미 설치된 대상 확장의 버전이 언어팩 요구보다 낮으면 이 설치로는 풀리지 않는다. -->
+        <span data-if="{{lp.blocked_reason === 'core_locale_missing'}}" class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded">$t:admin.language_packs.modals.install_bundled_core_required|locale={{lp.locale}}</span>
+        <span data-if="{{lp.blocked_reason === 'target_version_too_old'}}" class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded">$t:admin.language_packs.modals.install_blocked_target_version_too_old|scope={{lp.scope}}|target={{lp.target_identifier}}</span>
       </label>
     </div>
     <!-- 고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만
@@ -181,8 +185,8 @@
               <success>
                 <set-state target="global" :isPluginInstalling="false" :installSelectedDeps="null" :installSelectedLPs="null" :installSelectedIntegrations="null"/>
                 <toast type="success" message="$t:admin.plugins.install_success"/>
-                <!-- 함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 막지 않는 안내라 창을 열지 않는다. -->
-                <toast if="{{(response?.data?.integration_notices ?? []).length !== 0}}" type="info" message="$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + ')').join(', ')}}"/>
+                <!-- 함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 함께 설치하다 실패한 항목은 상태 뒤에 사유(failure_reason)를 붙인다. 막지 않는 안내라 창을 열지 않는다. -->
+                <toast if="{{(response?.data?.integration_notices ?? []).length !== 0}}" type="info" message="$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + (n.failure_reason ? ': ' + n.failure_reason : '') + ')').join(', ')}}"/>
                 <!-- 함께 고른 언어팩 중 설치하지 못한 것이 있으면 식별자와 첫 사유를 알린다(응답 language_pack_failures). -->
                 <toast if="{{(response.data?.language_pack_failures ?? []).length !== 0}}" type="warning" message="$t:extensions.alerts.language_pack_install_failed|names={{(response.data?.language_pack_failures ?? []).map(f =&gt; f.identifier).join(', ')}}|reason={{response.data?.language_pack_failures?.[0]?.reason ?? ''}}"/>
                 <!-- 이 확장이 아직 꺼져 있어 꺼진 채 설치된 언어팩은 실패가 아니다 — 확장을 켜면 함께 켜진다고 알린다(응답 language_packs_awaiting_host). -->

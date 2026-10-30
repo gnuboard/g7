@@ -6,16 +6,17 @@ description: |
   tabs 레이아웃에서 언어 삭제 버튼이 선택 버튼 안에 들어가 버튼 안에 버튼이 생기던 문제를 막는다
   (#703 브라우저 실측). 기존 계약(타입·기본값·레이아웃 prop)과 입력 버퍼 보존도 함께 잠근다.
 
-  축 aspect 는 검증 관점이다 — 컴포넌트 계약, 입력 버퍼, 기본 언어 키 누락, tabs 버튼 구조.
+  축 aspect 는 검증 관점이다 — 컴포넌트 계약, 입력 버퍼, 기본 언어 키 누락, tabs 버튼 구조, 좁은 칸의 compact 세로 배치(stacked).
 
 axes:
-  aspect: [component_contract, local_input_buffer, default_locale_missing, tabs_button_structure]
+  aspect: [component_contract, local_input_buffer, default_locale_missing, tabs_button_structure, compact_stacked]
 
 effects:
   - component_contract_exposed
   - local_input_preserved_until_parent_syncs
   - default_locale_field_always_first
   - tab_remove_button_not_nested
+  - compact_locale_buttons_above_input
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/MultilingualInput.test.tsx

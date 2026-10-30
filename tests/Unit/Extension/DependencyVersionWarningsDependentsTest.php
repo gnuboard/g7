@@ -255,6 +255,31 @@ class DependencyVersionWarningsDependentsTest extends TestCase
     }
 
     /**
+     * 의존자 안내는 대상 칸에 보일 이름(target_name)을 함께 싣고, 식별자(target)는 그대로 둔다.
+     *
+     * 관리자 결과 창의 대상 칸은 이 단계만 식별자 대신 확장 이름을 보인다 — 다른 단계는 이름 필드가 없어 식별자·경로 그대로다.
+     *
+     * @scenario surface=dependents_notice
+     *
+     * @effects dependents_notice_carries_display_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_notice_dependents_carries_dependent_name_for_target_column(): void
+    {
+        Module::where('identifier', self::TARGET)->update(['status' => ExtensionStatus::Inactive->value]);
+
+        $dependents = DependencyVersionWarnings::noticeDependents('module', self::TARGET);
+
+        $items = LifecycleWarnings::current()->all();
+        $this->assertCount(1, $items);
+        $this->assertSame(self::TEMPLATE, $items[0]['target'], '식별자는 하위 호환으로 target 에 그대로 둔다');
+        $this->assertArrayHasKey('target_name', $items[0], '의존자 안내는 대상 칸에 보일 이름을 싣는다');
+        $this->assertSame($dependents[0]['dependent_name'], $items[0]['target_name']);
+        $this->assertContains($items[0]['target_name'], ['의존 템플릿', 'Dependent Template'], '설치 기록의 현재 로케일 이름');
+    }
+
+    /**
      * 멈춘 업데이트 정리가 판을 되돌리면 의존자를 안내하고, 판 전환이 끝났던 정리(꺼짐만)는 안내하지 않는다.
      *
      * @scenario surface=dependents_stuck_recovery

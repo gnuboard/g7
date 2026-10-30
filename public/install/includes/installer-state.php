@@ -120,6 +120,15 @@ function installerReadStateFile(): ?array
  */
 function installerWithStateLock(callable $callback): bool
 {
+    // 재진입 — 이 프로세스가 이미 락을 쥐고 있으면 다시 잡지 않는다.
+    // 락 안의 쓰기가 fatal(실행 시간 초과 등)로 끊기면 finally 가 돌지 않아 락이 쥐어진 채
+    // shutdown 함수로 넘어간다. 거기서 상태를 저장하려고 새 핸들로 LOCK_EX 를 요청하면
+    // 같은 프로세스가 쥔 락을 기다리며 영원히 멈추고(Windows·Linux 공통), 그 뒤 다른 요청의
+    // 상태 쓰기(재연결 워커·재시도·중단)도 모두 같은 락에서 멈춘다.
+    if (isset($GLOBALS['g7_installer_held_locks']['state'])) {
+        return $callback();
+    }
+
     $handle = @fopen(STATE_PATH.'.lock', 'c');
     if ($handle === false) {
         return $callback();
@@ -127,12 +136,65 @@ function installerWithStateLock(callable $callback): bool
 
     try {
         flock($handle, LOCK_EX);
+        installerTrackHeldLock('state', $handle);
 
         return $callback();
     } finally {
+        installerUntrackHeldLock('state');
         flock($handle, LOCK_UN);
         fclose($handle);
     }
+}
+
+/**
+ * 이 프로세스가 쥐고 있는 파일 락을 기록한다.
+ *
+ * 락 구간이 fatal 로 끊기면 finally 가 실행되지 않으므로, shutdown 단계에서 이 기록을 보고
+ * 재진입하거나(installerWithStateLock) 직접 풀 수 있게 한다(installerReleaseInterruptedLocks).
+ *
+ * @param  string  $name  락 이름 (state | log)
+ * @param  resource  $handle  flock 을 쥔 파일 핸들
+ * @return void 반환값 없음
+ */
+function installerTrackHeldLock(string $name, $handle): void
+{
+    $GLOBALS['g7_installer_held_locks'][$name] = $handle;
+}
+
+/**
+ * 락 기록을 지운다 (정상 해제 직전 호출).
+ *
+ * @param  string  $name  락 이름
+ * @return void 반환값 없음
+ */
+function installerUntrackHeldLock(string $name): void
+{
+    unset($GLOBALS['g7_installer_held_locks'][$name]);
+}
+
+/**
+ * 끊긴 락 구간이 남긴 파일 락을 모두 푼다.
+ *
+ * shutdown 단계 전용 — 그 시점에 쥐어져 있는 락은 정상 흐름이 아니라 fatal 로 중간에
+ * 끊긴 구간이 남긴 것이다. 풀지 않으면 이어지는 로그·상태 쓰기가 자기 락을 기다린다.
+ *
+ * @return int 푼 락 수
+ */
+function installerReleaseInterruptedLocks(): int
+{
+    $held = $GLOBALS['g7_installer_held_locks'] ?? [];
+    $GLOBALS['g7_installer_held_locks'] = [];
+
+    $released = 0;
+    foreach ($held as $handle) {
+        if (is_resource($handle)) {
+            @flock($handle, LOCK_UN);
+            @fclose($handle);
+            $released++;
+        }
+    }
+
+    return $released;
 }
 
 /**
@@ -562,6 +624,78 @@ function releaseWorkerLock(string $workerId): void
 }
 
 /**
+ * 워커 lock 을 쥔 워커가 있는지 — 상태 조회 응답의 worker_active.
+ *
+ * 워커는 끝날 때(shutdown) lock 을 푼다. running 인데 lock 이 비어 있으면 앞 워커가 끝났고
+ * 이어 받을 워커가 없다는 뜻이라, SSE 화면은 새 워커로 다시 연결한다. lock 이 남아 있으면
+ * 앞 워커가 아직 작업(외부 명령 실행 등)을 돌리고 있을 수 있어 같은 작업이 겹치지 않게 기다린다.
+ * heartbeat 신선도는 보지 않는다 — 외부 명령을 기다리는 동안에는 heartbeat 가 갱신되지 않는다.
+ *
+ * @param  array<string, mixed>  $state  인스톨러 state
+ * @return bool lock 보유 워커가 있으면 true
+ */
+function installerHasActiveWorker(array $state): bool
+{
+    return isset($state['active_worker_id']) && $state['active_worker_id'] !== '';
+}
+
+/**
+ * 데이터베이스를 건드리기 전에 도는 설치 작업 목록.
+ *
+ * 작업 순서는 고정이다(runInstallationTasks) — 이 다섯 작업 뒤의 db_cleanup 부터 DB 를 바꾼다.
+ *
+ * @return list<string> 작업 ID 목록
+ */
+function installerPreDatabaseTaskIds(): array
+{
+    return ['composer_check', 'composer_install', 'env_update', 'key_generate', 'dependency_precheck'];
+}
+
+/**
+ * 상태 초기화(reset) 때 「DB 는 자동으로 초기화되지 않는다」 안내가 필요한지.
+ *
+ * 이번 설치 시도에서 DB 작업(db_cleanup 이후)이 끝났거나, DB 작업에서 멈췄거나(실패·중단),
+ * 그 작업을 알 수 없으면 true. 의존성 사전 검증 실패처럼 DB 를 건드리기 전에 멈춘 설치는 false.
+ *
+ * @param  array<string, mixed>  $state  초기화 직전 인스톨러 state
+ * @return bool 안내가 필요하면 true
+ */
+function installerResetNeedsDbNotice(array $state): bool
+{
+    $preDatabase = installerPreDatabaseTaskIds();
+    $isPreDatabase = static function ($taskKey) use ($preDatabase): bool {
+        if (! is_string($taskKey) || $taskKey === '') {
+            return false;
+        }
+        $taskId = explode(':', $taskKey, 2)[0];
+
+        return in_array($taskId, $preDatabase, true);
+    };
+
+    foreach ((array) ($state['completed_tasks'] ?? []) as $task) {
+        if (! $isPreDatabase($task)) {
+            return true;
+        }
+    }
+
+    $stoppedAt = $state['failed_task'] ?? null;
+    if (! is_string($stoppedAt) || $stoppedAt === '') {
+        $stoppedAt = $state['current_task'] ?? null;
+    }
+    if (is_string($stoppedAt) && $stoppedAt !== '' && ! $isPreDatabase($stoppedAt)) {
+        return true;
+    }
+
+    // 실패·중단인데 멈춘 작업을 모르고 DB 전 작업이 모두 끝나 있었다면, 다음 작업(db_cleanup)부터는 DB 를 바꾼다
+    $status = $state['installation_status'] ?? null;
+    if (in_array($status, ['failed', 'aborted', 'running'], true) && (! is_string($stoppedAt) || $stoppedAt === '')) {
+        return array_diff($preDatabase, (array) ($state['completed_tasks'] ?? [])) === [];
+    }
+
+    return false;
+}
+
+/**
  * db_cleanup 으로 무효화되는 task 인지 판정한다.
  *
  * db_cleanup 은 db_prefix 로 시작하는 테이블을 전부 DROP 한다. 따라서 "효과가 DB 행으로만
@@ -735,8 +869,10 @@ function addLogBatch(array $messages): bool
         return false;
     }
     flock($handle, LOCK_EX);
+    installerTrackHeldLock('log', $handle);
     $result = fwrite($handle, $entries);
     fflush($handle);
+    installerUntrackHeldLock('log');
     flock($handle, LOCK_UN);
     fclose($handle);
 
@@ -837,8 +973,9 @@ function _addLogInternal(string $message): bool
         return false;
     }
 
-    // 배타적 잠금
+    // 배타적 잠금 (fatal 로 끊기면 shutdown 단계에서 풀 수 있게 기록)
     flock($handle, LOCK_EX);
+    installerTrackHeldLock('log', $handle);
 
     // 쓰기
     $result = fwrite($handle, $logEntry);
@@ -847,6 +984,7 @@ function _addLogInternal(string $message): bool
     fflush($handle);
 
     // 잠금 해제 및 닫기
+    installerUntrackHeldLock('log');
     flock($handle, LOCK_UN);
     fclose($handle);
 

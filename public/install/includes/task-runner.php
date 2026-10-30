@@ -1853,6 +1853,150 @@ if (! function_exists('setInstallationCompleteSSE')) {
 // 메인 실행 로직
 // ============================================================================
 
+if (! function_exists('installerResetTaskTimeLimit')) {
+    /**
+     * 설치 작업 하나를 시작하기 전에 PHP 실행 시간 카운터를 다시 건다.
+     *
+     * set_time_limit() 은 호출 시점부터 다시 센다. 워커 진입 시 한 번만 걸면 전체 설치 시간이
+     * 제한이 되어, 확장을 많이 고른 설치가 중간 작업에서 "Maximum execution time" 으로 죽는다
+     * (Windows 의 PHP 는 명령 대기·파일 복사 시간까지 경과 시간으로 잰다).
+     *
+     * 제한이 없는 실행(터미널 설치는 진입 때 set_time_limit(0))은 그대로 둔다 — 같은 작업 루프를 쓰는
+     * 터미널 설치에 작업당 제한을 새로 걸면 종전에 끝까지 돌던 긴 작업이 끊긴다.
+     *
+     * @return bool 제한을 다시 걸었거나 제한 없음을 유지했으면 true (disable_functions 등으로 막히면 false)
+     */
+    function installerResetTaskTimeLimit(): bool
+    {
+        if ((int) ini_get('max_execution_time') === 0) {
+            return true;
+        }
+
+        return @set_time_limit((int) INSTALLER_TASK_TIME_LIMIT);
+    }
+}
+
+if (! function_exists('installerMarkWorkerTerminated')) {
+    /**
+     * 비정상 종료된 워커의 설치를 실패로 기록한다.
+     *
+     * 이미 끝난 작업(completed_tasks)은 그대로 두어 재시도가 끊긴 작업부터 이어지게 한다.
+     * 진행 중이던 작업은 되돌리지 않는다 — shutdown 단계에서 artisan 롤백을 돌리면 또 끊길 수 있고,
+     * 재시도가 같은 작업을 처음부터 다시 실행한다.
+     *
+     * @param  string  $workerId  이 워커의 ID — 다른 워커가 이어받았으면 기록하지 않는다
+     * @param  string  $errorMessage  PHP 오류 메시지 (예: Maximum execution time of 600 seconds exceeded)
+     * @return array{task: string|null, target: string|null, message_key: string, error: string}|null 기록했으면 실패 정보, 아니면 null
+     */
+    function installerMarkWorkerTerminated(string $workerId, string $errorMessage): ?array
+    {
+        $state = getInstallationState();
+
+        if (($state['installation_status'] ?? null) !== 'running') {
+            return null;
+        }
+        if (($state['active_worker_id'] ?? null) !== $workerId) {
+            return null;
+        }
+
+        // 작업 루프가 남긴 실행 중 작업(대상 포함)을 우선 쓰고, 없으면 state 의 current_task.
+        $running = $GLOBALS['g7_installer_running_task'] ?? null;
+        if (is_array($running) && ! empty($running['id'])) {
+            $task = (string) $running['id'];
+            $target = isset($running['target']) && $running['target'] !== '' ? (string) $running['target'] : null;
+        } else {
+            $current = $state['current_task'] ?? null;
+            $task = is_string($current) && $current !== '' ? $current : null;
+            $target = null;
+            if ($task !== null && str_contains($task, ':')) {
+                [$task, $target] = explode(':', $task, 2);
+            }
+        }
+        $failedKey = $task === null ? null : ($target !== null ? "{$task}:{$target}" : $task);
+
+        $state['installation_status'] = 'failed';
+        $state['failed_task'] = $failedKey;
+        $state['failed_task_target'] = $target;
+        $state['error_message_key'] = 'error_worker_terminated';
+        $state['error_detail'] = $errorMessage;
+        $state['rollback_failure'] = null;
+        $state['manual_commands'] = [];
+
+        saveInstallationState($state);
+
+        addLog('=== Install Worker terminated: '.$errorMessage.' (task: '.($failedKey ?? '-').') ===');
+
+        return [
+            'task' => $task,
+            'target' => $target,
+            'message_key' => 'error_worker_terminated',
+            'error' => $errorMessage,
+        ];
+    }
+}
+
+if (! function_exists('installerHandleWorkerShutdown')) {
+    /**
+     * 설치 워커 shutdown 처리 — 두 진입점(install-worker.php, install-process.php 폴링)이 등록한다.
+     *
+     * 1. fatal 로 끊긴 락 구간이 남긴 파일 락을 푼다 (풀지 않으면 아래 상태 쓰기가 자기 락을 기다린다).
+     * 2. fatal(실행 시간 초과 등)이면 설치를 failed 로 기록하고, SSE 모드면 error 이벤트를 보낸다 —
+     *    화면이 「진행 중」에 멈추지 않고 실패 안내와 재시도(이어서 설치)를 보인다.
+     * 3. fatal 없이 연결이 끊겨 끝났으면(SSE 워커는 ignore_user_abort(false) 라, 끊긴 연결을 다음 출력에서
+     *    감지한 PHP 가 스크립트를 오류 없이 끝낸다) 상태는 running 으로 두고 그 사실만 설치 로그에 남긴다 —
+     *    화면이 lock 이 빈 running 상태를 보고 새 워커로 다시 연결해 남은 작업을 이어 받는다.
+     * 4. 워커 lock 을 해제한다.
+     *
+     * @param  string  $workerId  이 워커의 ID
+     * @param  string  $mode  sse | polling
+     * @param  int|null  $connectionStatus  연결 상태(CONNECTION_* 비트). null 이면 connection_status()
+     * @return void 반환값 없음
+     */
+    function installerHandleWorkerShutdown(string $workerId, string $mode, ?int $connectionStatus = null): void
+    {
+        // shutdown 처리에 쓸 시간을 따로 확보한다 (fatal 직후에는 남은 시간이 없다).
+        @set_time_limit(30);
+
+        installerReleaseInterruptedLocks();
+
+        $error = error_get_last();
+        $fatalTypes = [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_PARSE];
+
+        if (is_array($error) && in_array($error['type'] ?? 0, $fatalTypes, true)) {
+            $failure = installerMarkWorkerTerminated($workerId, (string) ($error['message'] ?? ''));
+
+            if ($failure !== null && $mode === 'sse') {
+                // SseEmitter::emit() 은 heartbeat 갱신·연결 확인 뒤 exit 할 수 있어 직접 쓴다.
+                echo "event: error\n";
+                echo 'data: '.installer_json_encode([
+                    'message' => lang('error_worker_terminated'),
+                    'message_key' => $failure['message_key'],
+                    'error' => $failure['error'],
+                    'task' => $failure['task'],
+                    'target' => $failure['target'],
+                    'manual_commands' => [],
+                ])."\n\n";
+                if (ob_get_level()) {
+                    @ob_flush();
+                }
+                @flush();
+            }
+        } elseif ($mode === 'sse' && ((($connectionStatus ?? connection_status()) & CONNECTION_ABORTED) !== 0)) {
+            $running = $GLOBALS['g7_installer_running_task'] ?? null;
+            $taskKey = '-';
+            if (is_array($running) && ! empty($running['id'])) {
+                $taskKey = (string) $running['id'];
+                if (isset($running['target']) && $running['target'] !== '') {
+                    $taskKey .= ':'.$running['target'];
+                }
+            }
+            addLog('=== SSE Worker ended: connection closed (task: '.$taskKey.') — the installer page reconnects to continue ===');
+        }
+
+        releaseWorkerLock($workerId);
+    }
+}
+
 if (! function_exists('runInstallationTasks')) {
     /**
      * 설치 작업 전체 실행.
@@ -1952,6 +2096,12 @@ if (! function_exists('runInstallationTasks')) {
 
                     continue;
                 }
+
+                // 작업마다 실행 시간 카운터를 다시 건다 — 전체 설치가 아니라 작업 하나가
+                // INSTALLER_TASK_TIME_LIMIT 를 넘을 때만 끊긴다.
+                installerResetTaskTimeLimit();
+                // 워커가 fatal 로 끊기면 shutdown 처리기가 어느 작업(대상 포함)에서 끊겼는지 기록한다.
+                $GLOBALS['g7_installer_running_task'] = ['id' => $taskId, 'target' => $target];
 
                 $result = empty($args) ? $functionName() : $functionName(...$args);
 

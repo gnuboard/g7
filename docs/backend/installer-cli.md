@@ -70,7 +70,7 @@
 | `user:reset-password` | `PasswordResetService::resetByOperator()`(메일 재설정과 공용). 웹 재설정 직전 가드 훅 `core.auth.before_reset_password` 는 발화하지 않는다(브라우저 본인인증을 마칠 수 없다). 확장 안내는 filter `core.auth.console_password_reset_notices` |
 | `settings:get`·`settings:set` | `SettingsConsoleService` — 코어는 탭 경로(`SaveSettingsRequest` → `saveSettings`) 또는 단건 경로(`UpdateSettingRequest` → `setSetting`), 플러그인은 `UpdatePluginSettingsRequest` → `PluginSettingsService::save`, 모듈은 선택 메서드 `settingsSaveRequestClass()` 가 돌려주는 FormRequest → 모듈 `saveSettings` + `core.module_settings.after_save` |
 | `module:install`·`plugin:install`·`template:install --with-dependencies` | `CascadeInstallOrchestrator`(관리자 설치 창과 공용) |
-| 같은 세 명령 `--with-language-packs[=all\|none\|id,...]` | 후보는 `ExtensionInstallPreviewBuilder` 의 `language_packs`(설치 창과 같은 목록)를 **본 확장 설치 전에** 계산해 둔다(설치 뒤에는 미리보기가 후보를 다시 내지 못한다). 설치는 본 확장 설치 뒤 `CascadeInstallOrchestrator::installLanguagePacks()` — 자동 활성화, best-effort(실패는 경고). 후보에 없는 식별자는 설치 전에 오류. 옵션 처리는 trait `App\Console\Commands\Concerns\RunsCascadeInstall` |
+| 같은 세 명령 `--with-language-packs[=all\|none\|id,...]` | 후보는 `ExtensionInstallPreviewBuilder` 의 `language_packs`(설치 창과 같은 목록)를 **본 확장 설치 전에** 계산해 둔다(설치 뒤에는 미리보기가 후보를 다시 내지 못한다). 설치는 본 확장 설치 뒤 `CascadeInstallOrchestrator::installLanguagePacks()` — 자동 활성화. 하나가 실패해도 나머지는 계속 설치하고(본 확장 설치는 유지) 실패가 있으면 종료 코드 1. `all` 은 `available=false` 후보(코어 언어팩이 꺼진 언어, 이미 설치된 대상 확장 버전이 언어팩 요구보다 낮음)를 사유 문장과 함께 건너뛴다. 후보에 없는 식별자는 설치 전에 오류. 옵션 처리는 trait `App\Console\Commands\Concerns\RunsCascadeInstall` |
 
 관리자 화면 FormRequest 를 터미널에서 재사용할 때는 `App\Support\FormRequestRunner` 로 실행한다 — `prepareForValidation`·`withValidator` 는 그대로, `authorize()` 는 부르지 않는다(셸 접근이 곧 권한).
 

@@ -255,7 +255,10 @@ trait OrchestratesCascadeInstall
     }
 
     /**
-     * 본체 설치 뒤 연동 안내를 만듭니다 — 함께 설치하다 실패한 항목은 그 사유를 문구로 싣습니다.
+     * 본체 설치 뒤 연동 안내를 만듭니다 — 함께 설치하다 실패한 항목은 그 사유를 문구와 `failure_reason` 에 싣습니다.
+     *
+     * 설치 창 토스트는 항목마다 「이름 (상태)」 로 그리므로, 사유가 현지화 문장(`message`) 안에만 있으면 화면에 나오지 않는다.
+     * 사유는 `failure_reason` 으로 따로 싣고(실패하지 않은 항목은 null), 화면이 상태 뒤에 붙인다.
      *
      * @param  string  $type  본체 확장 유형 (module|plugin|template)
      * @param  string  $identifier  본체 확장 식별자
@@ -268,11 +271,14 @@ trait OrchestratesCascadeInstall
 
         foreach ($notices as $index => $notice) {
             $reason = $failures[$notice['type'].':'.$notice['identifier']] ?? null;
+            $notices[$index]['failure_reason'] = $reason;
             if ($reason !== null) {
                 $notices[$index]['message'] = __('extensions.integrations.cascade_failed', [
                     'name' => $notice['name'],
                     'identifier' => $notice['identifier'],
-                    'message' => $reason,
+                    // 사유는 대개 마침표로 끝나는 완결 문장이다 — 안내 문구는 다른 항목처럼 마침표 없이 끝내야, 요약 한 줄
+                    // (「… — :list. …」)에 이을 때 마침표가 겹치지 않는다
+                    'message' => preg_replace('/[\s.。]+$/u', '', $reason) ?? $reason,
                 ]);
             }
         }

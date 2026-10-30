@@ -14,9 +14,21 @@ require_once __DIR__.'/includes/session.php';
 require_once __DIR__.'/includes/installer-state.php';
 require_once __DIR__.'/includes/request-handler.php';
 require_once __DIR__.'/api/_guard.php';
-installer_guard_or_410();
+// 설치가 끝났으면 410. 단, 완료 표식 뒤 마무리 구간(.env 확정 전)에 설치 소유 세션이 새로고침한 GET 만
+// 통과한다 — 그때는 Step 5 화면만 렌더해 마무리 작업 대기 → .env 확정(finalize-env)으로 잇는다.
+$finalizeWindow = installer_guard_index_or_410();
 
 $currentLang = getCurrentLanguage();
+
+if ($finalizeWindow) {
+    // 완료 뒤 재진입 경로와 같이 세션에 남은 설치 설정(비밀번호 포함)을 정리한다 — finalize 는 세션을 쓰지 않는다.
+    unset(
+        $_SESSION['install_config'],
+        $_SESSION['db_write_tested'],
+        $_SESSION['db_read_tested']
+    );
+    $_SESSION['installer_current_step'] = 5;
+}
 
 // 세션 기반 단계 관리 (URL 파라미터 무시)
 if (! isset($_SESSION['installer_current_step'])) {
@@ -95,7 +107,8 @@ if (! $ownershipLocked && $currentStep === 3) {
     $formData = array_merge($defaults, $savedConfig);
 }
 
-if (! $ownershipLocked) {
+// 마무리 구간은 Step 5 화면만 렌더한다 — 흐름 검증(완료 시 홈 이동)·POST 처리를 거치지 않는다.
+if (! $ownershipLocked && ! $finalizeWindow) {
     // 설치 흐름 검증
     validateInstallationFlow($currentStep, $state);
 

@@ -19,7 +19,7 @@ type LayoutNode = {
     id?: string;
     name?: string;
     text?: string;
-    props?: { className?: string; value?: string };
+    props?: { className?: string; value?: string; name?: string; options?: unknown };
     children?: LayoutNode[];
 };
 
@@ -63,7 +63,12 @@ function lookup(dict: unknown, text: string): string | undefined {
 const nodes = flatten(pluginSettingsLayout);
 
 describe('우편번호 환경설정 — 표시 방식 선택지', () => {
-    const options = nodes.filter((n) => n.name === 'Option');
+    // 표시 방식 칸은 목록형 드롭다운이라 선택지가 props.options 에 있다 — `<option>` 자식(브라우저 기본 선택상자)이 아니다
+    const displayModeSelect = nodes.find((n) => n.name === 'Select' && n.props?.name === 'display_mode');
+    const options = ((displayModeSelect?.props?.options ?? []) as Array<{ value: string; label: string }>).map((o) => ({
+        props: { value: o.value },
+        text: o.label,
+    }));
 
     // @scenario target=display_mode_options
     // @effects postcode_display_mode_options_use_translation_keys

@@ -4,6 +4,7 @@ namespace Tests\Feature\Console\Settings;
 
 use App\Extension\ModuleManager;
 use App\Services\ModuleSettingsService;
+use App\Services\SettingsConsoleService;
 use App\Support\ExtensionStoragePath;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
@@ -169,6 +170,75 @@ class ModuleSettingsCliTest extends TestCase
             ->assertExitCode(1);
 
         $this->assertSame($before, app(ModuleSettingsService::class)->resolveModuleService('sirsoft-ecommerce')->getSetting('review_settings.max_images'));
+    }
+
+    /**
+     * 게시판 기본 권한 「비밀글 읽기」(`posts.read-secret`)는 역할 목록일 뿐이다 — 이름 끝의 secret 때문에
+     * 민감 값으로 가리면 안 된다. 진짜 비밀 이름(`client_secret`·`api_token`·`smtppassword`)은 계속 가린다.
+     *
+     * @effects module_settings_cli_get_does_not_mask_permission_named_secret
+     *
+     * @return void 반환값 없음
+     */
+    public function test_board_permission_named_secret_is_not_masked(): void
+    {
+        $this->artisan('settings:get', ['key' => 'basic_defaults.default_board_permissions', '--module' => 'sirsoft-board', '--json' => true])
+            ->expectsOutputToContain('"basic_defaults.default_board_permissions.posts.read-secret": [')
+            ->doesntExpectOutputToContain(SettingsConsoleService::MASK)
+            ->assertExitCode(0);
+
+        $service = app(SettingsConsoleService::class);
+        $this->assertFalse($service->isSensitive('basic_defaults.default_board_permissions.posts.read-secret', module: 'sirsoft-board'));
+        $this->assertFalse($service->isSensitive('basic_defaults.default_board_permissions.admin.posts.read-secret', module: 'sirsoft-board'));
+        $this->assertFalse($service->isSensitive('basic_defaults.secret_mode', module: 'sirsoft-board'));
+        $this->assertTrue($service->isSensitive('integration.client_secret', module: 'sirsoft-board'));
+        $this->assertTrue($service->isSensitive('integration.api_token', module: 'sirsoft-board'));
+        $this->assertTrue($service->isSensitive('integration.smtppassword', module: 'sirsoft-board'));
+        $this->assertTrue($service->isSensitive('integration.secret', module: 'sirsoft-board'));
+    }
+
+    /**
+     * 표에 보인 권한 키(이름 안에 점이 든 `posts.read`)를 그대로 다시 조회·지정할 수 있다 — 지정은 그 권한 하나만 바꾼다.
+     *
+     * @effects module_settings_cli_dotted_permission_key_round_trips
+     *
+     * @return void 반환값 없음
+     */
+    public function test_board_permission_key_containing_dot_can_be_read_and_set(): void
+    {
+        $this->artisan('settings:get', ['key' => 'basic_defaults.default_board_permissions.posts.read', '--module' => 'sirsoft-board', '--json' => true])
+            ->expectsOutputToContain('"basic_defaults.default_board_permissions.posts.read": [')
+            ->assertExitCode(0);
+
+        $service = app(ModuleSettingsService::class)->resolveModuleService('sirsoft-board');
+        $before = (array) $service->getSetting('basic_defaults.default_board_permissions');
+
+        $this->artisan('settings:set', [
+            'key' => 'basic_defaults.default_board_permissions.posts.read-secret',
+            'value' => '["admin","user"]',
+            '--json-value' => true,
+            '--module' => 'sirsoft-board',
+        ])->assertExitCode(0);
+
+        $after = (array) app(ModuleSettingsService::class)->resolveModuleService('sirsoft-board')->getSetting('basic_defaults.default_board_permissions');
+        $this->assertSame(['admin', 'user'], $after['posts.read-secret'] ?? null);
+        $this->assertArrayNotHasKey('posts', $after, '점이 든 권한 이름을 중첩 배열로 쪼개 저장하면 안 된다');
+        unset($before['posts.read-secret'], $after['posts.read-secret']);
+        $this->assertSame($before, $after, '다른 권한은 그대로');
+    }
+
+    /**
+     * 모듈 설정 저장은 설정 캐시 파일을 다시 만들지 않는다 — 「설정 캐시를 다시 만들었습니다」를 내지 않는다.
+     *
+     * @effects module_settings_cli_does_not_claim_config_cache_rebuild
+     *
+     * @return void 반환값 없음
+     */
+    public function test_module_set_does_not_claim_config_cache_rebuild(): void
+    {
+        $this->artisan('settings:set', ['key' => 'basic_defaults.per_page', 'value' => '25', '--module' => 'sirsoft-board'])
+            ->doesntExpectOutputToContain(__('settings.console.cli.cache_rebuilt'))
+            ->assertExitCode(0);
     }
 
     /**

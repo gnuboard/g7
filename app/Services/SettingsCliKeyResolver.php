@@ -28,8 +28,13 @@ class SettingsCliKeyResolver
     /** 스키마가 `merge_into` 를 선언하지 않아도 고급 탭이 저장해 온 범주 (`SettingsService::buildAdvancedCategoryFieldMap` 과 같은 기본 목록) */
     private const LEGACY_ADVANCED_CATEGORIES = ['cache', 'debug'];
 
-    /** 스키마 표시가 없어도 민감 값으로 다루는 항목 이름 (비밀번호·비밀 키·토큰) */
-    private const SENSITIVE_NAME_PATTERN = '/(password|secret|token|license_key|access_key|secret_key)$/';
+    /**
+     * 스키마 표시가 없어도 민감 값으로 다루는 항목 이름 (비밀번호·비밀 키·토큰).
+     *
+     * 하이픈으로 이어 붙인 동작 이름(권한 식별자 `posts.read-secret` = 비밀글 읽기)은 값의 성격이 아니라
+     * 대상을 가리키는 이름이라 제외한다 — 설정 항목 이름은 `client_secret`·`smtp_password` 처럼 밑줄로 잇는다.
+     */
+    private const SENSITIVE_NAME_PATTERN = '/(?<!-)(password|secret|token|license_key|access_key|secret_key)$/';
 
     /**
      * @param  ConfigRepositoryInterface  $configRepository  설정 저장소 (기본값·화면 스키마)
@@ -43,7 +48,7 @@ class SettingsCliKeyResolver
      *
      * @param  string  $key  저장소 키 (예: `mail.host`, `identity.purpose_providers.login`)
      * @return array{category: string, field: string, rest: string|null, tab: string|null, frontend_field: string, known: bool}|null
-     *                                                                                                                              해석 결과 (범주·항목이 없으면 null)
+     *                                                                                                                               해석 결과 (범주·항목이 없으면 null)
      */
     public function resolve(string $key): ?array
     {
@@ -100,7 +105,18 @@ class SettingsCliKeyResolver
     {
         return ! empty($this->schemaFields($category)[$field]['sensitive'])
             || EnvPriority::isSensitive($category.'.'.$field)
-            || preg_match(self::SENSITIVE_NAME_PATTERN, $field) === 1;
+            || self::isSensitiveName($field);
+    }
+
+    /**
+     * 이름만으로 민감 값인지 (스키마 표시가 없는 항목·하위 키용 — 터미널 조회·지정이 같은 규칙을 쓴다).
+     *
+     * @param  string  $name  항목 이름 (점 표기 키의 마지막 조각)
+     * @return bool 민감 값이면 true
+     */
+    public static function isSensitiveName(string $name): bool
+    {
+        return preg_match(self::SENSITIVE_NAME_PATTERN, $name) === 1;
     }
 
     /**

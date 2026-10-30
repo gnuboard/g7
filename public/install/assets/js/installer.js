@@ -2911,25 +2911,39 @@
         updateBulkToggleStates();
     };
 
+    /**
+     * 「Step 4 로 돌아가기」 등으로 다시 들어왔을 때 저장된 선택을 되살린다.
+     *
+     * Step 4 화면은 첫 방문에도 상태 파일 기본값(유형별 빈 배열)을 넘기므로, 하나라도 고른 항목이
+     * 있을 때만 복원으로 취급한다 — 빈 값으로 카드 렌더의 기본 선택(첫 관리자 템플릿)을 덮지 않는다.
+     * 지금 목록에 없는 식별자는 버리고, 관리자 템플릿이 비면 첫 항목으로 채운 뒤 카드 표시를 선택 상태에 맞춘다.
+     */
     function restoreSelectionState() {
-        if (window.INSTALLER_SELECTED_EXTENSIONS) {
-            var saved = window.INSTALLER_SELECTED_EXTENSIONS;
-            ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach(function(type) {
-                if (saved[type] && Array.isArray(saved[type])) {
-                    selectedExtensions[type] = saved[type].slice();
-                }
-            });
-            Object.keys(selectedExtensions).forEach(function(type) {
-                selectedExtensions[type].forEach(function(identifier) {
-                    var card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
-                    if (card && !card.classList.contains('required')) {
-                        card.classList.add('selected');
-                    }
+        var types = ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'];
+        var saved = window.INSTALLER_SELECTED_EXTENSIONS;
+        var hasSaved = !!saved && types.some(function(type) {
+            return Array.isArray(saved[type]) && saved[type].length > 0;
+        });
+
+        if (hasSaved) {
+            types.forEach(function(type) {
+                if (!Array.isArray(saved[type])) return;
+                var available = extensionsData
+                    ? (extensionsData[type] || []).map(function(item) { return item.identifier; })
+                    : null;
+                selectedExtensions[type] = saved[type].filter(function(identifier, idx, list) {
+                    return list.indexOf(identifier) === idx && (!available || available.indexOf(identifier) !== -1);
                 });
+            });
+            // 템플릿은 단일 선택이다
+            ['admin_templates', 'user_templates'].forEach(function(type) {
+                if (selectedExtensions[type].length > 1) {
+                    selectedExtensions[type] = selectedExtensions[type].slice(0, 1);
+                }
             });
         }
         if (extensionsData) {
-            ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach(function(type) {
+            types.forEach(function(type) {
                 var items = extensionsData[type] || [];
                 items.forEach(function(item) {
                     if (item.is_required && selectedExtensions[type].indexOf(item.identifier) === -1) {
@@ -2937,7 +2951,26 @@
                     }
                 });
             });
+            // 관리자 템플릿은 필수 — 비면 카드 렌더와 같은 기본(첫 항목)으로 채운다
+            var adminItems = extensionsData.admin_templates || [];
+            if (selectedExtensions.admin_templates.length === 0 && adminItems.length > 0) {
+                selectedExtensions.admin_templates = [adminItems[0].identifier];
+            }
         }
+        // 카드의 선택 표시(클래스·아이콘)를 선택 상태와 일치시킨다
+        types.forEach(function(type) {
+            var isSingleSelect = (type === 'admin_templates' || type === 'user_templates');
+            document.querySelectorAll('.extension-card[data-type="' + type + '"]').forEach(function(card) {
+                var isSelected = selectedExtensions[type].indexOf(card.dataset.identifier) !== -1;
+                card.classList.toggle('selected', isSelected);
+                var selectEl = card.querySelector('.extension-card-select');
+                if (selectEl) {
+                    selectEl.innerHTML = isSingleSelect
+                        ? (isSelected ? '<i class="fas fa-check-circle"></i>' : '<i class="far fa-circle"></i>')
+                        : (isSelected ? '<i class="fas fa-check-square"></i>' : '<i class="far fa-square"></i>');
+                }
+            });
+        });
         // 복원 후 언어팩 cascade 상태 동기화 (확장 선택 복원 결과 반영)
         applyLanguagePackCascadeState();
     }
@@ -3590,6 +3623,9 @@
     let eventSource = null; // deprecated (남아있는 외부 참조 호환용)
     let currentMonitor = null; // SSE/폴링 모니터 인스턴스
     let lastRollbackFailure = null;
+    // 마지막 실패가 데이터베이스 작업 전 단계(환경 설정·의존성 사전 검증)에서 멈췄는지 — showError() 가 정한다.
+    // 되돌아가기 확인 창이 이 값으로 DB 수동 정리 안내를 넣을지 정한다.
+    let lastFailureBeforeDatabase = false;
 
     /**
      * 저장된 확장 이름 가져오기 (state.json에서 로드된 데이터 사용)
@@ -4024,9 +4060,13 @@
                 currentMonitor = new MonitorNS.SseMonitor(callbacks, {
                     workerUrl: workerUrl,
                     connectionTimeoutMs: 5000,
+                    // 연결 수립 뒤 스트림이 끊기면 이 주소로 다음 할 일(이어 받기·실패·중단·완료·멈춤)을 정한다
+                    stateUrl: stateUrl,
                 });
             }
 
+            // 새 설치 진행 — 이전 실패 판정은 더 쓰지 않는다
+            lastFailureBeforeDatabase = false;
             currentMonitor.start();
         } catch (error) {
             showError(`${lang('installation_start_error')}: ${error.message}`);
@@ -4543,6 +4583,10 @@
 
         // 의존성 사전 검증 실패(순환·누락)는 재시도로 풀리지 않는다 — 「Step 4 로 돌아가기」를 주 버튼으로, 재시도는 보조로
         const isPrecheckFailure = messageKey === 'dependency_precheck_failed';
+        // DB 작업(db_cleanup 부터) 전 단계에서 멈춘 실패 — 되돌아가기 확인 창에서 DB 수동 정리 안내를 뺀다.
+        // 목록은 서버 installerPreDatabaseTaskIds() 와 같다(작업 순서 고정).
+        const preDatabaseTasks = ['composer_check', 'composer_install', 'env_update', 'key_generate', 'dependency_precheck'];
+        lastFailureBeforeDatabase = isPrecheckFailure || (!!failedTask && preDatabaseTasks.includes(failedTask.id));
         const backToExtensionsBtn = document.getElementById('back-to-extensions-btn');
         const retryBtn = document.getElementById('retry-installation-btn');
         if (backToExtensionsBtn) {
@@ -5003,9 +5047,30 @@
 
     /**
      * 설정 페이지로 이동 (확인 후)
+     *
+     * DB 작업 전 단계에서 멈춘 실패(의존성 사전 검증 등)면 확인 창에 DB 수동 정리 안내를 넣지 않는다.
      */
     async function goToSettingsWithConfirm() {
-        const confirmed = confirm(lang('confirm_go_to_settings_simple'));
+        const confirmKey = lastFailureBeforeDatabase ? 'confirm_go_to_settings_before_db' : 'confirm_go_to_settings_simple';
+        await resetStateAndGoToExtensionSelection(confirmKey);
+    }
+
+    /**
+     * 확장 선택 단계(Step 4)로 돌아가기 (확인 후) — 의존성 사전 검증 실패 화면의 주 버튼.
+     *
+     * 데이터베이스를 건드리기 전에 멈춘 실패라 DB 수동 정리 안내 없이 확인하고, 고른 확장은 그대로 남는다.
+     */
+    async function goBackToExtensionSelection() {
+        await resetStateAndGoToExtensionSelection('confirm_back_to_extension_selection');
+    }
+
+    /**
+     * 확인 창을 띄운 뒤 설치 상태를 초기화하고 설치 마법사로 돌아간다(서버가 Step 4 로 보낸다).
+     *
+     * @param {string} confirmKey 확인 창 문구 키
+     */
+    async function resetStateAndGoToExtensionSelection(confirmKey) {
+        const confirmed = confirm(lang(confirmKey));
 
         if (confirmed) {
             try {
@@ -5610,6 +5675,7 @@
         window.abortInstallation = abortInstallation;
         window.resumeInstallationFromAborted = resumeInstallationFromAborted;
         window.goToSettingsWithConfirm = goToSettingsWithConfirm;
+        window.goBackToExtensionSelection = goBackToExtensionSelection;
 
         // Step 5: 파일 체크
         window.recheckFiles = recheckFiles;

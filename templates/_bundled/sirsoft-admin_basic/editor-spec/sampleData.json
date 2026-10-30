@@ -2386,10 +2386,12 @@
             "type": "user"
           }
         ],
-        "current_page": 1,
-        "last_page": 1,
-        "per_page": 5,
-        "total": 3
+        "pagination": {
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 6,
+          "total": 3
+        }
       }
     },
     "extension_versions": {

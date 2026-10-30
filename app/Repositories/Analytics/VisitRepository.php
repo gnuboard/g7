@@ -23,6 +23,12 @@ class VisitRepository implements VisitRepositoryInterface
      * 방문 수가 부풀어 오릅니다. 행을 잠근 채 읽으면 뒤따라온 요청이 앞 요청의
      * 결과를 보고 같은 방문에 붙습니다. 호출자는 트랜잭션 안에서 불러야 합니다.
      *
+     * 범위 조건 잠금이라 InnoDB 는 행 사이 간격까지 잠급니다. 방문이 아직 없을 때 두 요청이
+     * 같은 간격을 잠근 채 서로의 INSERT 를 기다리는 것도, 방문이 있을 때 뒤 요청의 간격
+     * 잠금이 앞 요청의 `last_action_at` 갱신을 막는 것도 이 간격 잠금 때문이며, 둘 다 교착으로
+     * 한쪽이 롤백됩니다. 간격 잠금이 바로 중복 방문을 막는 장치이므로 없애지 않고, 호출자가
+     * 트랜잭션을 다시 시도합니다(`VisitService::STORE_ATTEMPTS`).
+     *
      * @param  string  $visitorKey  방문자 키
      * @param  Carbon  $since  이 시각 이후에 활동이 있어야 같은 방문으로 본다
      * @return AnalyticsVisit|null 이어지는 방문 (없으면 null)

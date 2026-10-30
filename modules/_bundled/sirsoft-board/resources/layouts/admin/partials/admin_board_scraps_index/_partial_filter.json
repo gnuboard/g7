@@ -184,31 +184,11 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:sirsoft-board.admin.scraps.filters.board_label",
                                 "className": "select-composite w-64",
-                                "value": "{{_global.scrapBoardFilter !== undefined ? _global.scrapBoardFilter : (query.board_id || '')}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": ""
-                                    },
-                                    "text": "$t:sirsoft-board.admin.scraps.filters.board_all"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "iteration": {
-                                        "source": "{{scraps?.data?.boards ?? []}}",
-                                        "item_var": "b"
-                                    },
-                                    "props": {
-                                        "value": "{{b.id}}"
-                                    },
-                                    "text": "{{b.name}}"
-                                }
-                            ]
+                                "value": "{{_global.scrapBoardFilter !== undefined ? _global.scrapBoardFilter : (query.board_id || '')}}",
+                                "options": "{{[{ value: '', label: $t('sirsoft-board.admin.scraps.filters.board_all') }].concat((scraps?.data?.boards ?? []).map(b => ({ value: String(b.id), label: b.name })))}}"
+                            }
                         }
                     ]
                 },

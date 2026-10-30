@@ -79,6 +79,16 @@
       <responsive on="portable" class="flex justify-end mb-3"/>
       <select aria-label="$t:mypage.orders.status_filter_label" value="{{_local.ordersStatus || ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <responsive on="portable" value="{{_local.ordersStatus || ''}}" class="min-w-[100px] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"/>
+        <options>
+          <option value="">$t:mypage.orders.filter.all</option>
+          <option value="pending_payment">$t:mypage.orders.filter.pending</option>
+          <option value="payment_complete">$t:mypage.orders.filter.paid</option>
+          <option value="preparing">$t:mypage.orders.filter.preparing</option>
+          <option value="shipping">$t:mypage.orders.filter.shipped</option>
+          <option value="delivered">$t:mypage.orders.filter.delivered</option>
+          <option value="confirmed">$t:mypage.orders.filter.confirmed</option>
+          <option value="cancelled">$t:mypage.orders.filter.cancelled</option>
+        </options>
         <on type="change">
           <!-- 주문 상태 필터. 셀렉트가 읽는 폼 값과 목록이 읽는 주소를 함께 맞춘다 -->
           <sequence>
@@ -90,14 +100,6 @@
             </navigate>
           </sequence>
         </on>
-        <option value="">$t:mypage.orders.filter.all</option>
-        <option value="pending_payment">$t:mypage.orders.filter.pending</option>
-        <option value="payment_complete">$t:mypage.orders.filter.paid</option>
-        <option value="preparing">$t:mypage.orders.filter.preparing</option>
-        <option value="shipping">$t:mypage.orders.filter.shipped</option>
-        <option value="delivered">$t:mypage.orders.filter.delivered</option>
-        <option value="confirmed">$t:mypage.orders.filter.confirmed</option>
-        <option value="cancelled">$t:mypage.orders.filter.cancelled</option>
       </select>
     </div>
     <!-- 주문 목록 컨테이너 -->

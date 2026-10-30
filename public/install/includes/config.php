@@ -63,6 +63,15 @@ if (! defined('MIN_DISK_SPACE_MB')) {
     define('MIN_DISK_SPACE_MB', 500);
 }
 
+// 설치 작업(task) 하나에 허용하는 PHP 실행 시간(초).
+// 설치 워커는 모든 작업을 한 요청 안에서 차례로 실행한다. 제한을 요청 전체에 한 번만 걸면
+// 확장을 많이 고른 설치가 작업 수에 비례해 길어져 중간에 끊긴다 — 특히 Windows 의 PHP 는
+// max_execution_time 을 실제 경과 시간(명령 대기·파일 복사 포함)으로 잰다.
+// 그래서 작업을 시작할 때마다 set_time_limit() 으로 카운터를 다시 건다(작업 하나가 이 값을 넘을 때만 끊긴다).
+if (! defined('INSTALLER_TASK_TIME_LIMIT')) {
+    define('INSTALLER_TASK_TIME_LIMIT', 600);
+}
+
 // DB 테이블 접두사 최대 길이.
 // MySQL identifier 한도(64자) 안에서 자동 생성 인덱스명이 안전하도록 제한한다.
 // 가장 긴 자동 생성 인덱스명(접두사 제외)이 58자이므로 58 + 6 = 64 로 정확히 한도에 맞는다.

@@ -44,30 +44,9 @@
                     "props": {
                         "aria-label": "$t:mypage.board_activities.reactions.table.board",
                         "value": "{{_global.myCommentsBoard ?? ''}}",
-                        "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": ""
-                            },
-                            "text": "$t:mypage.board_activities.filter.all_boards"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "iteration": {
-                                "source": "{{boards?.data ?? []}}",
-                                "item_var": "board"
-                            },
-                            "props": {
-                                "value": "{{board.slug}}"
-                            },
-                            "text": "{{board.name}}"
-                        }
-                    ]
+                        "className": "w-full min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                        "options": "{{[{ value: '', label: '$t:mypage.board_activities.filter.all_boards' }].concat((boards?.data ?? []).map(board => ({ value: String(board?.slug ?? ''), label: board?.name })))}}"
+                    }
                 },
                 {
                     "comment": "정렬 필터",
@@ -98,26 +77,18 @@
                     "props": {
                         "aria-label": "$t:common.sort_order",
                         "value": "{{_global.myCommentsSort ?? 'latest'}}",
-                        "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "latest"
+                        "className": "w-full min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                        "options": [
+                            {
+                                "value": "latest",
+                                "label": "$t:mypage.board_activities.sort.latest"
                             },
-                            "text": "$t:mypage.board_activities.sort.latest"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "oldest"
-                            },
-                            "text": "$t:mypage.board_activities.sort.oldest"
-                        }
-                    ]
+                            {
+                                "value": "oldest",
+                                "label": "$t:mypage.board_activities.sort.oldest"
+                            }
+                        ]
+                    }
                 },
                 {
                     "comment": "검색 영역",

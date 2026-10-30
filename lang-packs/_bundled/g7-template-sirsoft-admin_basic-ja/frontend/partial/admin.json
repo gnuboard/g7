@@ -112,7 +112,8 @@
     },
     "refreshed": "ダッシュボードが更新されました。",
     "extension_status": {
-      "more": "もっと見る"
+      "more": "もっと見る",
+      "more_count": "他 {{count}} 件"
     },
     "module_status": {
       "title": "モジュール状態",
@@ -813,7 +814,7 @@
       "dependency_installed_version": "インストール: {{version}}",
       "dependency_not_installed": "未インストール",
       "dependency_met": "満たされています",
-      "dependency_unmet_version": "バージョン不一致",
+      "dependency_unmet_version": "バージョン不足",
       "dependency_inactive": "無効化",
       "permissions": "権限",
       "permissions_count": "{{count}}個の権限が登録されます。",
@@ -1042,7 +1043,7 @@
       "dependency_installed_version": "インストール：{{version}}",
       "dependency_not_installed": "未インストール",
       "dependency_met": "満たしている",
-      "dependency_unmet_version": "バージョン不一致",
+      "dependency_unmet_version": "バージョン不足",
       "dependency_inactive": "無効化",
       "permissions": "権限",
       "permissions_description": "このプラグインで登録される権限の一覧です。",
@@ -2789,7 +2790,7 @@
       "dependency_required_version": "要件：{{version}}",
       "dependency_installed_version": "インストール：{{version}}",
       "dependency_not_installed": "未インストール",
-      "dependency_unmet_version": "バージョン不一致",
+      "dependency_unmet_version": "バージョン不足",
       "dependency_inactive": "無効",
       "required_modules": "必須モジュール",
       "required_plugins": "必須プラグイン",
@@ -4386,7 +4387,34 @@
       "toggle": "詳細を表示",
       "notice_title": "確認すべきお知らせがあります",
       "notice_summary": "完了しました — 確認すべきお知らせ {{count}} 件",
-      "notice_description": "すべて反映されました。以下のお知らせを確認してください。"
+      "notice_description": "すべて反映されました。以下のお知らせを確認してください。",
+      "steps": {
+        "dependents": "依存する拡張機能",
+        "extract": "展開",
+        "php_extension_missing": "PHP拡張",
+        "autoload": "オートロード",
+        "cleanup": "後片付け",
+        "composer_install": "Composerパッケージのインストール",
+        "core_resync": "コアの再同期",
+        "hook_cache": "フックキャッシュ",
+        "language_pack": "言語パック",
+        "language_pack_check_updates": "言語パックの更新確認",
+        "language_pack_provision": "言語パックの準備",
+        "language_pack_seed": "言語パックの初期データ",
+        "layout_register": "レイアウト登録",
+        "layout_refresh": "レイアウト更新",
+        "layout_override_register": "レイアウト上書き登録",
+        "layout_extension_register": "レイアウト拡張の登録",
+        "layout_extension_override_register": "レイアウト拡張の上書き登録",
+        "layout_extension_reregister": "レイアウト拡張の再登録",
+        "layout_extension_restore": "レイアウト拡張の復元",
+        "layout_extension_unregister": "レイアウト拡張の解除",
+        "menu_role": "メニュー権限",
+        "necessary_storage": "必須ブラウザ保存項目",
+        "operation_lock": "作業ロック",
+        "reseed": "初期データの再投入",
+        "seeder": "初期データ作成"
+      }
     }
   }
 }

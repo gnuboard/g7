@@ -334,6 +334,7 @@ return [
             'dependency_step' => '依存する拡張 :identifier — :action 状態のため一緒に処理します (必要: :required_by)',
             'dependencies_done' => '依存する拡張の処理完了 — インストール :installed件、有効化 :activated件',
             'language_pack_failed' => '言語パック :identifier のインストールに失敗: :reason',
+            'language_pack_skipped' => '言語パック :identifier をスキップします: :reason',
             'language_pack_awaiting' => '言語パック :identifier は対象の拡張を有効化するときに一緒に有効になります。',
             'language_packs_done' => '言語パック :count件をインストール',
             'language_pack_not_candidate' => '一緒にインストールできる言語パックではありません: :list',

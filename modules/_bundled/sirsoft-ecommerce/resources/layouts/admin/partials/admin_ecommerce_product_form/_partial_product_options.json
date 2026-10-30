@@ -394,10 +394,11 @@
                             },
                             "children": [
                                 {
+                                    "comment": "열이 많아 1440px 관리자 화면보다 넓다 — 잘라 내면 오른쪽 마일리지·사용·삭제 칸을 누를 수 없으므로 가로로 스크롤한다(목록형 드롭다운은 문서 끝에 그려져 가려지지 않는다)",
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "overflow-x-clip"
+                                        "className": "overflow-x-auto"
                                     },
                                     "children": [
                                         {
@@ -588,7 +589,7 @@
                                                                             "name": "MultilingualInput",
                                                                             "actions": [
                                                                                 {
-                                                                                    "comment": "옵션명 — 조합해 만든 이름을 손으로 다듬을 수 있다 (넓은 화면 표)",
+                                                                                    "comment": "옵션명 — 조합해 만든 이름을 손으로 다듬을 수 있다. 언어 단추 아래 줄에 입력칸을 두어 칸 너비를 다 쓴다 (넓은 화면 표)",
                                                                                     "type": "change",
                                                                                     "handler": "sirsoft-ecommerce.updateFormOptionField",
                                                                                     "params": {
@@ -604,6 +605,7 @@
                                                                                 "ariaLabel": "$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.option')}}",
                                                                                 "value": "{{opt.option_name ?? {}}}",
                                                                                 "layout": "compact",
+                                                                                "stacked": true,
                                                                                 "inputType": "text",
                                                                                 "size": "sm",
                                                                                 "disabled": "{{_computed.isReadOnly}}",
@@ -770,45 +772,29 @@
                                                                                         }
                                                                                     ],
                                                                                     "props": {
-                                                                                        "className": "{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'select input-error w-full' : 'select w-full' }}",
+                                                                                        "className": "{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-red-500 dark:border-red-500 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:outline-none' : 'w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none' }}",
                                                                                         "value": "{{opt.tax_status ?? ''}}",
                                                                                         "aria-label": "$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}",
-                                                                                        "disabled": "{{_computed.isReadOnly}}"
-                                                                                    },
-                                                                                    "children": [
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Option",
-                                                                                            "props": {
-                                                                                                "value": ""
+                                                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                                                        "options": [
+                                                                                            {
+                                                                                                "value": "",
+                                                                                                "label": "$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}"
                                                                                             },
-                                                                                            "text": "$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}"
-                                                                                        },
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Option",
-                                                                                            "props": {
-                                                                                                "value": "taxable"
+                                                                                            {
+                                                                                                "value": "taxable",
+                                                                                                "label": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
                                                                                             },
-                                                                                            "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
-                                                                                        },
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Option",
-                                                                                            "props": {
-                                                                                                "value": "tax_free"
+                                                                                            {
+                                                                                                "value": "tax_free",
+                                                                                                "label": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
                                                                                             },
-                                                                                            "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
-                                                                                        },
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Option",
-                                                                                            "props": {
-                                                                                                "value": "zero_rated"
-                                                                                            },
-                                                                                            "text": "$t:sirsoft-ecommerce.admin.product.tax.zero_rated"
-                                                                                        }
-                                                                                    ]
+                                                                                            {
+                                                                                                "value": "zero_rated",
+                                                                                                "label": "$t:sirsoft-ecommerce.admin.product.tax.zero_rated"
+                                                                                            }
+                                                                                        ]
+                                                                                    }
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
@@ -1068,29 +1054,21 @@
                                                                                         }
                                                                                     ],
                                                                                     "props": {
-                                                                                        "className": "select w-16",
+                                                                                        "className": "w-16 px-2 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none",
                                                                                         "value": "{{opt.mileage_type ?? 'percent'}}",
                                                                                         "aria-label": "$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.mileage_type_label')}}",
-                                                                                        "disabled": "{{_computed.isReadOnly}}"
-                                                                                    },
-                                                                                    "children": [
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Option",
-                                                                                            "props": {
-                                                                                                "value": "percent"
+                                                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                                                        "options": [
+                                                                                            {
+                                                                                                "value": "percent",
+                                                                                                "label": "$t:sirsoft-ecommerce.admin.product.options.mileage_type.percent"
                                                                                             },
-                                                                                            "text": "$t:sirsoft-ecommerce.admin.product.options.mileage_type.percent"
-                                                                                        },
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Option",
-                                                                                            "props": {
-                                                                                                "value": "fixed"
-                                                                                            },
-                                                                                            "text": "$t:sirsoft-ecommerce.admin.product.options.mileage_type.fixed"
-                                                                                        }
-                                                                                    ]
+                                                                                            {
+                                                                                                "value": "fixed",
+                                                                                                "label": "$t:sirsoft-ecommerce.admin.product.options.mileage_type.fixed"
+                                                                                            }
+                                                                                        ]
+                                                                                    }
                                                                                 }
                                                                             ]
                                                                         }
@@ -1288,7 +1266,7 @@
                                                             "props": {
                                                                 "className": "text-primary font-medium"
                                                             },
-                                                            "text": "{{opt.option_name_localized ?? $localized(opt.option_name)}}"
+                                                            "text": "{{$localized(opt.option_name) || opt.option_name_localized}}"
                                                         },
                                                         {
                                                             "type": "composite",
@@ -1354,6 +1332,50 @@
                                                 "className": "grid grid-cols-2 gap-3"
                                             },
                                             "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "form-group col-span-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Label",
+                                                            "props": {
+                                                                "className": "form-label text-xs"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.product.options.columns.option"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "MultilingualInput",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "옵션명 — 조합해 만든 이름을 손으로 다듬을 수 있다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
+                                                                    "type": "change",
+                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                    "params": {
+                                                                        "index": "{{optIdx}}",
+                                                                        "field": "option_name",
+                                                                        "value": "{{$event.target.value}}"
+                                                                    },
+                                                                    "debounce": 300
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "name": "form_option_name_mobile_{{optIdx}}",
+                                                                "ariaLabel": "$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.option')}}",
+                                                                "value": "{{opt.option_name ?? {}}}",
+                                                                "layout": "compact",
+                                                                "stacked": true,
+                                                                "inputType": "text",
+                                                                "disabled": "{{_computed.isReadOnly}}",
+                                                                "autoBinding": false
+                                                            }
+                                                        }
+                                                    ]
+                                                },
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
@@ -1478,45 +1500,29 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "className": "{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'select input-error w-full' : 'select w-full' }}",
+                                                                "className": "{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-red-500 dark:border-red-500 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:outline-none' : 'w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none' }}",
                                                                 "value": "{{opt.tax_status ?? ''}}",
                                                                 "aria-label": "$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}",
-                                                                "disabled": "{{_computed.isReadOnly}}"
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Option",
-                                                                    "props": {
-                                                                        "value": ""
+                                                                "disabled": "{{_computed.isReadOnly}}",
+                                                                "options": [
+                                                                    {
+                                                                        "value": "",
+                                                                        "label": "$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}"
                                                                     },
-                                                                    "text": "$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}"
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Option",
-                                                                    "props": {
-                                                                        "value": "taxable"
+                                                                    {
+                                                                        "value": "taxable",
+                                                                        "label": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
                                                                     },
-                                                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Option",
-                                                                    "props": {
-                                                                        "value": "tax_free"
+                                                                    {
+                                                                        "value": "tax_free",
+                                                                        "label": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
                                                                     },
-                                                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Option",
-                                                                    "props": {
-                                                                        "value": "zero_rated"
-                                                                    },
-                                                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.zero_rated"
-                                                                }
-                                                            ]
+                                                                    {
+                                                                        "value": "zero_rated",
+                                                                        "label": "$t:sirsoft-ecommerce.admin.product.tax.zero_rated"
+                                                                    }
+                                                                ]
+                                                            }
                                                         },
                                                         {
                                                             "type": "basic",
@@ -1813,29 +1819,21 @@
                                                                         }
                                                                     ],
                                                                     "props": {
-                                                                        "className": "select w-20",
+                                                                        "className": "w-20 px-2 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none",
                                                                         "value": "{{opt.mileage_type ?? 'percent'}}",
                                                                         "aria-label": "$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.mileage_type_label')}}",
-                                                                        "disabled": "{{_computed.isReadOnly}}"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Option",
-                                                                            "props": {
-                                                                                "value": "percent"
+                                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                                        "options": [
+                                                                            {
+                                                                                "value": "percent",
+                                                                                "label": "%"
                                                                             },
-                                                                            "text": "%"
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Option",
-                                                                            "props": {
-                                                                                "value": "fixed"
-                                                                            },
-                                                                            "text": "$t:sirsoft-ecommerce.admin.product.options.mileage_type.fixed"
-                                                                        }
-                                                                    ]
+                                                                            {
+                                                                                "value": "fixed",
+                                                                                "label": "$t:sirsoft-ecommerce.admin.product.options.mileage_type.fixed"
+                                                                            }
+                                                                        ]
+                                                                    }
                                                                 }
                                                             ]
                                                         }

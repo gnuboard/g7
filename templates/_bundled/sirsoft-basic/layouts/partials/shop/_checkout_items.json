@@ -548,31 +548,9 @@
                                                         "name": "item_coupon_1",
                                                         "aria-label": "$t:common.row_cell|row={{item.product.name ?? ''}}|column={{$t('shop.checkout.product_coupon_1')}}",
                                                         "value": "{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0] ?? ''}}",
-                                                        "className": "w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Option",
-                                                            "props": {
-                                                                "value": ""
-                                                            },
-                                                            "text": "{{(item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_1' : '$t:shop.checkout.coupon_no_available'}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Option",
-                                                            "iteration": {
-                                                                "source": "{{item.available_coupons ?? []}}",
-                                                                "item_var": "pcoupon"
-                                                            },
-                                                            "props": {
-                                                                "value": "{{pcoupon.id}}",
-                                                                "disabled": "{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] == pcoupon.id || (item.disabled_coupon_ids ?? []).includes(pcoupon.id)}}"
-                                                            },
-                                                            "text": "{{(item.disabled_coupon_ids ?? []).includes(pcoupon.id) ? '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + (pcoupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? pcoupon.benefit_formatted) + ')'}}"
-                                                        }
-                                                    ]
+                                                        "className": "w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500",
+                                                        "options": "{{[{ value: '', label: (item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_1' : '$t:shop.checkout.coupon_no_available' }].concat((item.available_coupons ?? []).map(pc => ({ value: String(pc.id), label: (item.disabled_coupon_ids ?? []).includes(pc.id) ? '[' + pc.target_type_short_label + '] ' + pc.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pc.target_type_short_label + '] ' + pc.localized_name + ' (' + (pc.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? pc.benefit_formatted) + ')', disabled: _local.checkout?.item_coupons?.[item.product_option_id]?.[1] == pc.id || (item.disabled_coupon_ids ?? []).includes(pc.id) })))}}"
+                                                    }
                                                 },
                                                 {
                                                     "comment": "상품 쿠폰 2 (첫 번째 쿠폰 선택 시에만 표시)",
@@ -645,31 +623,9 @@
                                                         "name": "item_coupon_2",
                                                         "aria-label": "$t:common.row_cell|row={{item.product.name ?? ''}}|column={{$t('shop.checkout.product_coupon_2')}}",
                                                         "value": "{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] ?? ''}}",
-                                                        "className": "w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Option",
-                                                            "props": {
-                                                                "value": ""
-                                                            },
-                                                            "text": "{{(item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_2' : '$t:shop.checkout.coupon_no_available'}}"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Option",
-                                                            "iteration": {
-                                                                "source": "{{item.available_coupons ?? []}}",
-                                                                "item_var": "pcoupon2"
-                                                            },
-                                                            "props": {
-                                                                "value": "{{pcoupon2.id}}",
-                                                                "disabled": "{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0] == pcoupon2.id || (item.disabled_coupon_ids ?? []).includes(pcoupon2.id)}}"
-                                                            },
-                                                            "text": "{{(item.disabled_coupon_ids ?? []).includes(pcoupon2.id) ? '[' + pcoupon2.target_type_short_label + '] ' + pcoupon2.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pcoupon2.target_type_short_label + '] ' + pcoupon2.localized_name + ' (' + (pcoupon2.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? pcoupon2.benefit_formatted) + ')'}}"
-                                                        }
-                                                    ]
+                                                        "className": "w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500",
+                                                        "options": "{{[{ value: '', label: (item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_2' : '$t:shop.checkout.coupon_no_available' }].concat((item.available_coupons ?? []).map(pc => ({ value: String(pc.id), label: (item.disabled_coupon_ids ?? []).includes(pc.id) ? '[' + pc.target_type_short_label + '] ' + pc.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pc.target_type_short_label + '] ' + pc.localized_name + ' (' + (pc.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? pc.benefit_formatted) + ')', disabled: _local.checkout?.item_coupons?.[item.product_option_id]?.[0] == pc.id || (item.disabled_coupon_ids ?? []).includes(pc.id) })))}}"
+                                                    }
                                                 }
                                             ]
                                         }

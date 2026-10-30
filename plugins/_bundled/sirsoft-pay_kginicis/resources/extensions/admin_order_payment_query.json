@@ -2293,131 +2293,73 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_label",
                                                 "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100",
-                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
-                                            },
-                                            "children": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": ""
+                                                "value": "{{_local._ed_ex_code ?? ''}}",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}",
+                                                "options": [
+                                                    {
+                                                        "value": "",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_placeholder"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_placeholder"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "hanjin"
+                                                    {
+                                                        "value": "hanjin",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.hanjin"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.hanjin"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "cjgls"
+                                                    {
+                                                        "value": "cjgls",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.cj"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.cj"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "loge"
+                                                    {
+                                                        "value": "loge",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.lotte_parcel"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.lotte_parcel"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "epost"
+                                                    {
+                                                        "value": "epost",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.epost"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.epost"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "lotte"
+                                                    {
+                                                        "value": "lotte",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.lotte_global"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.lotte_global"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "kdexp"
+                                                    {
+                                                        "value": "kdexp",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.kyungdong"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.kyungdong"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "cvs"
+                                                    {
+                                                        "value": "cvs",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.cvs"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.cvs"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "ilyang"
+                                                    {
+                                                        "value": "ilyang",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.ilyang"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.ilyang"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "chunil"
+                                                    {
+                                                        "value": "chunil",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.chunil"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.chunil"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "cvsnet"
+                                                    {
+                                                        "value": "cvsnet",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.cvsnet"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.cvsnet"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "daesin"
+                                                    {
+                                                        "value": "daesin",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.daesin"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.daesin"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "kunyoung"
+                                                    {
+                                                        "value": "kunyoung",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.kunyoung"
                                                     },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_couriers.kunyoung"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "gsilogis"
+                                                    {
+                                                        "value": "gsilogis",
+                                                        "label": "GSI Express"
                                                     },
-                                                    "text": "GSI Express"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": "etc"
-                                                    },
-                                                    "text": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_etc"
-                                                }
-                                            ]
+                                                    {
+                                                        "value": "etc",
+                                                        "label": "$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_etc"
+                                                    }
+                                                ]
+                                            }
                                         }
                                     ]
                                 },

@@ -6,6 +6,7 @@ use App\Enums\LanguagePackScope;
 use App\Extension\Vendor\VendorMode;
 use App\Services\Extension\CascadeInstallOrchestrator;
 use App\Services\Extension\ExtensionInstallPreviewBuilder;
+use Illuminate\Support\Facades\Lang;
 
 /**
  * 확장 설치 명령의 연쇄 설치 옵션 — `--with-dependencies`·`--with-language-packs[=all|none|id,...]`.
@@ -108,14 +109,17 @@ trait RunsCascadeInstall
     }
 
     /**
-     * 본 확장 설치 뒤 — `--with-language-packs` 에 따라 번들 언어팩을 설치(자동 활성화, best-effort)한다.
+     * 본 확장 설치 뒤 — `--with-language-packs` 에 따라 번들 언어팩을 설치(자동 활성화)한다.
      *
-     * @return void 반환값 없음
+     * 한 언어팩이 실패해도 나머지는 계속 설치하고(본 확장 설치도 되돌리지 않는다), 실패가 하나라도 있으면 false 를 돌려준다 —
+     * 명령은 이것을 종료 코드로 알린다(의존 확장 처리 실패와 같은 관례).
+     *
+     * @return bool 고른 언어팩이 없거나 모두 설치됐으면 true
      */
-    protected function runCascadeLanguagePacks(): void
+    protected function runCascadeLanguagePacks(): bool
     {
         if ($this->cascadeLanguagePackCandidates === []) {
-            return;
+            return true;
         }
 
         $failures = app(CascadeInstallOrchestrator::class)->installLanguagePacks($this->cascadeLanguagePackCandidates, null, $awaiting);
@@ -129,12 +133,15 @@ trait RunsCascadeInstall
         $this->info('✓ '.__('extensions.commands.cascade.language_packs_done', [
             'count' => count($this->cascadeLanguagePackCandidates) - count($failures),
         ]));
+
+        return $failures === [];
     }
 
     /**
      * `--with-language-packs` 값을 설치할 번들 언어팩 목록으로 바꾼다.
      *
-     * none(기본) = 없음 · all = 설치 창의 후보 전부 · 쉼표 목록 = 그 식별자 (후보에 없으면 오류).
+     * none(기본) = 없음 · all = 설치 창의 후보 중 지금 설치할 수 있는 것 전부(설치할 수 없는 후보는 사유와 함께 건너뜀)
+     * · 쉼표 목록 = 그 식별자 (후보에 없으면 오류, 설치할 수 없는 후보면 시도해 실패로 알린다).
      *
      * @param  string  $type  module|plugin|template
      * @param  string  $identifier  본 확장 식별자
@@ -147,13 +154,24 @@ trait RunsCascadeInstall
             return [];
         }
 
-        $candidates = array_column(
-            app(ExtensionInstallPreviewBuilder::class)->build(LanguagePackScope::from($type), $identifier)['language_packs'],
-            'bundled_identifier'
-        );
+        $rows = app(ExtensionInstallPreviewBuilder::class)->build(LanguagePackScope::from($type), $identifier)['language_packs'];
+        $candidates = array_column($rows, 'bundled_identifier');
 
         if ($raw === 'all') {
-            return $candidates;
+            $installable = [];
+            foreach ($rows as $row) {
+                if (($row['available'] ?? true) !== false) {
+                    $installable[] = $row['bundled_identifier'];
+
+                    continue;
+                }
+                $this->line('   '.__('extensions.commands.cascade.language_pack_skipped', [
+                    'identifier' => $row['bundled_identifier'],
+                    'reason' => $this->languagePackBlockedSentence($row),
+                ]));
+            }
+
+            return $installable;
         }
 
         $requested = array_values(array_filter(array_map('trim', explode(',', $raw)), 'strlen'));
@@ -165,5 +183,29 @@ trait RunsCascadeInstall
         }
 
         return $requested;
+    }
+
+    /**
+     * 설치할 수 없는 언어팩 후보의 사유 코드를 사람이 읽는 문장으로 바꾼다 — 언어팩 설치가 거부될 때와 같은 문구를 쓴다.
+     *
+     * `language_packs.errors.<사유>` 에 범위·대상·요구 버전·로케일을 채운다. 번역이 없는 사유는 코드를 그대로 보인다.
+     *
+     * @param  array<string, mixed>  $row  설치 미리보기 언어팩 후보 행
+     * @return string 사유 문장
+     */
+    private function languagePackBlockedSentence(array $row): string
+    {
+        $reason = (string) ($row['blocked_reason'] ?? '');
+        $key = 'language_packs.errors.'.$reason;
+        if ($reason === '' || ! Lang::has($key)) {
+            return $reason;
+        }
+
+        return __($key, [
+            'locale' => (string) ($row['locale'] ?? ''),
+            'scope' => (string) ($row['scope'] ?? ''),
+            'target' => (string) ($row['target_identifier'] ?? ''),
+            'constraint' => (string) ($row['required_target_version'] ?? ''),
+        ]);
     }
 }

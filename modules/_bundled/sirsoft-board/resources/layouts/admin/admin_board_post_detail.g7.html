@@ -129,13 +129,11 @@
         </div>
         <div class="mb-4">
           <label class="form-label">$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_label</label>
-          <select class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
+          <select aria-label="$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_label" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800" value="{{_local.report_reason_type ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-board.admin.posts.detail.report_modal.reason_type_placeholder') }].concat((post?.data?.board?.report_types ?? []).map(type => ({ value: type.value, label: type.label })))}}">
             <on type="change">
               <!-- 고른 사유 종류를 지역 상태에 둔다 — 아래 제출 버튼이 «비었는가」를 이 값으로 판단하므로 폼 자동 바인딩에 맡기지 않고 명시로 잡는다 -->
               <set-state target="local" report_reason_type="{{$event.target.value}}"/>
             </on>
-            <option value="">$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_placeholder</option>
-            <option data-each="type, idx in post?.data?.board?.report_types ?? []" value="{{type.value}}">{{type.label}}</option>
           </select>
         </div>
         <div class="mb-4">

@@ -345,16 +345,18 @@
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_memo</label>
       <select name="shipping_memo" aria-label="$t:shop.checkout.shipping_memo" value="{{_local.shippingMemo ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
+        <options>
+          <option value="">$t:shop.checkout.memo_none</option>
+          <option value="door">$t:shop.checkout.memo_door</option>
+          <option value="security">$t:shop.checkout.memo_security</option>
+          <option value="parcel_box">$t:shop.checkout.memo_parcel_box</option>
+          <option value="call">$t:shop.checkout.memo_call</option>
+          <option value="custom">$t:shop.checkout.memo_custom</option>
+        </options>
         <on type="change">
           <!-- 배송 요청사항을 고른 값으로 담는다. `custom` 을 고르면 아래 직접 입력칸이 열린다 -->
           <set-state target="local" shippingMemo="{{$event.target.value}}"/>
         </on>
-        <option value="">$t:shop.checkout.memo_none</option>
-        <option value="door">$t:shop.checkout.memo_door</option>
-        <option value="security">$t:shop.checkout.memo_security</option>
-        <option value="parcel_box">$t:shop.checkout.memo_parcel_box</option>
-        <option value="call">$t:shop.checkout.memo_call</option>
-        <option value="custom">$t:shop.checkout.memo_custom</option>
       </select>
     </div>
     <!-- 직접 입력 (custom 선택 시) -->

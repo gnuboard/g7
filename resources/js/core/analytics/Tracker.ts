@@ -68,6 +68,23 @@ function clip(value: string, max: number): string {
   return Array.from(value).slice(0, max).join('');
 }
 
+/**
+ * 화면 해상도 표기(가로x세로)를 만듭니다.
+ *
+ * 화면 크기를 알려 주지 않는 환경(앱 내 웹뷰·헤드리스 브라우저·일부 봇)은 가로·세로를 0 으로 준다.
+ * 그 값은 해상도가 아니라 「모름」이므로 보내지 않는다 — 보내면 해상도 통계에 「0x0」 항목이 생긴다.
+ *
+ * @returns 해상도 표기 (크기를 알 수 없으면 undefined)
+ */
+function screenResolution(): string | undefined {
+  const width = Number(window.screen?.width ?? 0);
+  const height = Number(window.screen?.height ?? 0);
+
+  if (!(width > 0) || !(height > 0)) return undefined;
+
+  return `${Math.round(width)}x${Math.round(height)}`;
+}
+
 /** 비콘 페이로드 */
 export interface BeaconPayload {
   /** 액션 종류 */
@@ -487,11 +504,15 @@ export class AnalyticsTracker {
   private decorate(payload: BeaconPayload): BeaconPayload {
     const decorated: BeaconPayload = {
       ...payload,
-      res: `${window.screen?.width ?? 0}x${window.screen?.height ?? 0}`,
       lang: navigator.language,
       locale: this.options.locale,
       wd: isWebDriver(),
     };
+
+    const res = screenResolution();
+    if (res !== undefined) {
+      decorated.res = res;
+    }
 
     const hints = (navigator as Navigator & { userAgentData?: Record<string, unknown> }).userAgentData;
     if (hints) {

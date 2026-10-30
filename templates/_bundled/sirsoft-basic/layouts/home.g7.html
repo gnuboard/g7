@@ -1,6 +1,7 @@
 <!-- 사이트 첫 화면 — 통계·최근글·인기게시판·게시판 소개(게시판 모듈)와 인기 상품·신상품(쇼핑몰 모듈)을 각각 따로 받아 카드로 늘어놓는다.
      두 모듈은 선택 연동이라 꺼진 모듈의 데이터소스는 부르지 않고(if) 그 카드·섹션도 숨긴다 — 둘 다 꺼지면 환영 카드(+방문자 수)만 남는다.
-     활성 목록이 없는 옛 코어에서는 가드가 늘 참이라 지금처럼 모두 그린다. 검색봇에게도 서버가 직접 그려 준다. -->
+     활성 목록이 없는 옛 코어에서는 가드가 늘 참이라 지금처럼 모두 그린다. 검색봇에게도 서버가 직접 그려 준다.
+     e2e:allow 게시판이 꺼진 첫 화면에서 쇼핑 홍보 카드를 환영 카드 옆 칸으로 옮긴 배치(그리드 클래스·표시 가드)만 바꿨다. 대체 검증: Vitest 구조·식 평가(standalone-module-guards 활성 모듈 4조합) + 브라우저 실측. 모듈을 끄고 켜는 전역 배타 상태가 필요해 공용 Playwright E2E 로 두지 않는다. -->
 <layout name="home" version="1.0.0" extends="_user_base">
   <meta>
     <seo :enabled="true" :priority="1" changefreq="daily">
@@ -115,12 +116,18 @@
     <container data-type="layout" class="py-6 px-4">
       <responsive on="tablet" class="py-6 px-6"/>
       <responsive on="desktop" class="py-6 px-8"/>
-      <!-- === 1행: Welcome + 통계 카드 4개 (PC: 3컬럼, 모바일: 1컬럼). 게시판 모듈이 꺼져 있으면 통계 카드가 없으므로 환영 카드가 한 줄을 다 쓴다 === -->
-      <div data-ref="home_top_row" class="{{(_global.activeModules?.includes('sirsoft-board') ?? true) ? 'grid grid-cols-3 grid-rows-2 gap-4 mb-4' : 'grid grid-cols-1 gap-4 mb-4'}}">
+      <!-- === 1행: Welcome + 통계 카드 4개 (PC: 3컬럼, 모바일: 1컬럼). 게시판 모듈이 꺼져 있으면 통계 카드가 없으므로
+           쇼핑몰이 켜져 있으면 환영 카드 두 칸 + 쇼핑 홍보 카드 한 칸으로, 둘 다 꺼져 있으면 환영 카드가 한 줄을 다 쓴다 === -->
+      <div data-ref="home_top_row" class="{{(_global.activeModules?.includes('sirsoft-board') ?? true) ? 'grid grid-cols-3 grid-rows-2 gap-4 mb-4' : ((_global.activeModules?.includes('sirsoft-ecommerce') ?? true) ? 'grid grid-cols-3 gap-4 mb-4' : 'grid grid-cols-1 gap-4 mb-4')}}">
         <responsive on="portable" class="grid grid-cols-1 gap-4 mb-4"/>
-        <!-- === 좌측: 웰컴 카드 (row-span-2) === -->
-        <div class="row-span-2">
+        <!-- === 좌측: 웰컴 카드 (통계 카드 옆에서는 row-span-2, 쇼핑 홍보 카드 옆에서는 col-span-2) === -->
+        <div class="{{(_global.activeModules?.includes('sirsoft-board') ?? true) ? 'row-span-2' : ((_global.activeModules?.includes('sirsoft-ecommerce') ?? true) ? 'col-span-2' : '')}}">
+          <responsive on="portable" class="row-span-2"/>
           <include src="partials/home/_welcome_card.g7.html"/>
+        </div>
+        <!-- === 우측: 쇼핑 홍보 카드 — 게시판이 꺼지면 2행이 통째로 빠지므로 환영 카드 옆 한 칸으로 올린다. flex 로 감싸 카드가 환영 카드 높이까지 늘어난다 === -->
+        <div data-ref="home_top_shop_promo" data-if="{{!(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" class="flex">
+          <include src="partials/home/_shop_promo.g7.html"/>
         </div>
         <!-- === 통계 카드 4개 (PC: 개별 배치, 모바일: 2x2 그리드) — 게시판 모듈 통계라 게시판이 꺼져 있으면 숨긴다 === -->
         <div data-ref="home_stat_cards" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="contents">
@@ -136,8 +143,8 @@
         </div>
       </div>
       <!-- === 2행: 최근 게시글 + 인기 게시판 + 쇼핑몰/가이드 (PC: 3컬럼) — 카드마다 자기 모듈 가드를 조각 뿌리에 단다.
-           게시판이 꺼지면 쇼핑 홍보 카드 하나만 남으므로 한 칸 폭으로 펼치고, 둘 다 꺼지면 줄째 숨긴다 === -->
-      <div data-ref="home_feature_row" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" class="{{(_global.activeModules?.includes('sirsoft-board') ?? true) ? 'grid grid-cols-3 gap-4 mb-4' : 'grid grid-cols-1 gap-4 mb-4'}}">
+           게시판이 꺼지면 쇼핑 홍보 카드만 남는데 그 카드는 1행으로 올라가므로 줄째 숨긴다 === -->
+      <div data-ref="home_feature_row" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="grid grid-cols-3 gap-4 mb-4">
         <responsive on="portable" class="grid grid-cols-1 gap-4 mb-4"/>
         <!-- === 좌측: 최근 게시글 === -->
         <include src="partials/home/_recent_posts.g7.html"/>

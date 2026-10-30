@@ -119,13 +119,14 @@ async function waitForApplyScreen(page: Page): Promise<void> {
 
 /** 교환 사유를 고릅니다 (귀책이 배송비를 정하므로 미리보기의 선행 조건이다) */
 async function pickReason(page: Page): Promise<void> {
-  const reason = page.locator('#claim_apply_reason select').first();
+  // 사유 칸은 목록형 드롭다운(단추 + 목록)이라 `selectOption()` 이 닿지 않는다 — 열고 첫 사유를 누른다.
+  // 목록은 body 에 붙는다(포털). 0번은 「사유를 선택하세요」 빈 값이다.
+  const reason = page.locator('#claim_apply_reason button[aria-haspopup="listbox"]').first();
   await expect(reason).toBeVisible({ timeout: 15_000 });
-  const values = await reason.locator('option').evaluateAll((nodes) =>
-    nodes.map((node) => (node as HTMLOptionElement).value).filter((value) => value !== ''),
-  );
-  expect(values.length, '교환 사유 카탈로그가 비어 미리보기를 유발할 수 없다').toBeGreaterThan(0);
-  await reason.selectOption(values[0]);
+  await reason.click();
+  const reasonChoices = page.getByRole('listbox').getByRole('option');
+  await expect(reasonChoices.nth(1), '교환 사유 카탈로그가 비어 미리보기를 유발할 수 없다').toBeVisible({ timeout: 15_000 });
+  await reasonChoices.nth(1).click();
 }
 
 test.describe('구매자 클레임 신청서 작성 — 교환', () => {

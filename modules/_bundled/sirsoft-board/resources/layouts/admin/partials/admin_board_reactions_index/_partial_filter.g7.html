@@ -49,10 +49,8 @@
     <div data-ref="filter_grid" class="filter-grid">
       <div data-ref="board_filter_row" class="filter-row">
         <span class="filter-label w-24">$t:sirsoft-board.admin.reactions.filters.board_label</span>
-        <select data-ref="board_filter_select" class="select-composite w-64" value="{{_global.reactionBoardFilter !== undefined ? _global.reactionBoardFilter : (query.board_id || '')}}">
+        <select data-ref="board_filter_select" aria-label="$t:sirsoft-board.admin.reactions.filters.board_label" class="select-composite w-64" value="{{_global.reactionBoardFilter !== undefined ? _global.reactionBoardFilter : (query.board_id || '')}}" options="{{[{ value: '', label: $t('sirsoft-board.admin.reactions.filters.board_all') }].concat((reactions?.data?.boards ?? []).map(b => ({ value: String(b.id), label: b.name })))}}">
           <responsive on="portable" class="select-composite w-full"/>
-          <option value="">$t:sirsoft-board.admin.reactions.filters.board_all</option>
-          <option data-each="b in {{reactions?.data?.boards ?? []}}" value="{{b.id}}">{{b.name}}</option>
           <on type="change">
             <!-- 담아만 두고 실제 조회는 검색 버튼이 한 번에 한다 -->
             <set-state target="global" reactionBoardFilter="{{$event.target.value}}"/>
@@ -65,9 +63,7 @@
           <!-- 유형 선택지는 목록 응답이 실어 준 메타에서 온다. 반응 조회 권한만 가진 매니저는
             환경설정을 볼 수 없어 유형 API 를 부를 수 없기 때문이다. 이미 비활성으로 돌린 유형도
             남겨 둔다 — 그 유형으로 쌓인 과거 반응을 찾아야 한다. -->
-          <select data-ref="reaction_type_filter_select" data-testid="admin-reaction-type-filter" aria-label="$t:sirsoft-board.admin.reactions.filters.type_label" class="select-composite w-40 shrink-0" value="{{_global.reactionTypeFilter !== undefined ? _global.reactionTypeFilter : (query.reaction_type_id || '')}}">
-            <option value="">$t:sirsoft-board.admin.reactions.filters.type_all</option>
-            <option data-each="t in {{reactions?.data?.reaction_types ?? []}}" value="{{t.id}}">{{t.is_active === false ? t.name + ' ' + $t('sirsoft-board.admin.reactions.filters.type_inactive_suffix') : t.name}}</option>
+          <select data-ref="reaction_type_filter_select" data-testid="admin-reaction-type-filter" aria-label="$t:sirsoft-board.admin.reactions.filters.type_label" class="select-composite w-40 shrink-0" value="{{_global.reactionTypeFilter !== undefined ? _global.reactionTypeFilter : (query.reaction_type_id || '')}}" options="{{[{ value: '', label: $t('sirsoft-board.admin.reactions.filters.type_all') }].concat((reactions?.data?.reaction_types ?? []).map(t => ({ value: String(t.id), label: t.is_active === false ? t.name + ' ' + $t('sirsoft-board.admin.reactions.filters.type_inactive_suffix') : t.name })))}}">
             <on type="change">
               <set-state target="global" reactionTypeFilter="{{$event.target.value}}"/>
             </on>

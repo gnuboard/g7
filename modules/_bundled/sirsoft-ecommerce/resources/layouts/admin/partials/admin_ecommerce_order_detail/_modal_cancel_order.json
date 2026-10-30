@@ -487,31 +487,10 @@
                             ],
                             "props": {
                                 "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_type_label",
-                                "className": "{{_local.cancelValidationErrors?.reason ? 'select w-full text-sm border-2 border-red-500 dark:border-red-500' : 'select w-full text-sm'}}",
-                                "value": "{{_local.cancelReason ?? ''}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": ""
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "iteration": {
-                                        "source": "refundReasons?.data?.data ?? refundReasons?.data ?? []",
-                                        "item_var": "reason"
-                                    },
-                                    "props": {
-                                        "value": "{{reason.code}}"
-                                    },
-                                    "text": "{{reason.localized_name}}"
-                                }
-                            ]
+                                "className": "{{_local.cancelValidationErrors?.reason ? 'w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-2 border-red-500 dark:border-red-500 rounded-xl text-sm font-medium focus:ring-2 focus:ring-red-500 focus:outline-none' : 'w-full text-sm'}}",
+                                "value": "{{_local.cancelReason ?? ''}}",
+                                "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder') }].concat((refundReasons?.data?.data ?? refundReasons?.data ?? []).map(reason => ({ value: reason.code, label: reason.localized_name })))}}"
+                            }
                         },
                         {
                             "comment": "취소 사유 필드 에러",

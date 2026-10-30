@@ -117,6 +117,20 @@ class PluginSettingsCliTest extends TestCase
     }
 
     /**
+     * 플러그인 설정 저장은 설정 캐시 파일을 다시 만들지 않는다 — 「설정 캐시를 다시 만들었습니다」를 내지 않는다.
+     *
+     * @effects plugin_settings_cli_does_not_claim_config_cache_rebuild
+     *
+     * @return void 반환값 없음
+     */
+    public function test_plugin_set_does_not_claim_config_cache_rebuild(): void
+    {
+        $this->artisan('settings:set', ['key' => 'vbank_valid_hours', 'value' => '36', '--plugin' => self::PLUGIN])
+            ->doesntExpectOutputToContain(__('settings.console.cli.cache_rebuilt'))
+            ->assertExitCode(0);
+    }
+
+    /**
      * 스키마에 없는 키는 거부한다.
      *
      * @effects plugin_settings_cli_rejects_unknown_key

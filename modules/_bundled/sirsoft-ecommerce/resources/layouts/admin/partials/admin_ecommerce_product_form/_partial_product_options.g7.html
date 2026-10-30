@@ -85,7 +85,8 @@
         </div>
         <div data-ref="option_table_desktop" class="toggle-group">
           <responsive on="portable" data-if="{{false}}"/>
-          <div class="overflow-x-clip">
+          <!-- 열이 많아 1440px 관리자 화면보다 넓다 — 잘라 내면 오른쪽 마일리지·사용·삭제 칸을 누를 수 없으므로 가로로 스크롤한다(목록형 드롭다운은 문서 끝에 그려져 가려지지 않는다) -->
+          <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="bg-gray-50 dark:bg-gray-800">
                 <tr>
@@ -115,9 +116,9 @@
                     </input>
                   </td>
                   <td class="px-3 py-2">
-                    <multilingual-input data-type="composite" name="form_option_name_{{optIdx}}" ariaLabel="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.option')}}" value="{{opt.option_name ?? {}}}" layout="compact" inputType="text" size="sm" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
+                    <multilingual-input data-type="composite" name="form_option_name_{{optIdx}}" ariaLabel="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.option')}}" value="{{opt.option_name ?? {}}}" layout="compact" :stacked="true" inputType="text" size="sm" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
                       <on type="change">
-                        <!-- 옵션명 — 조합해 만든 이름을 손으로 다듬을 수 있다 (넓은 화면 표) -->
+                        <!-- 옵션명 — 조합해 만든 이름을 손으로 다듬을 수 있다. 언어 단추 아래 줄에 입력칸을 두어 칸 너비를 다 쓴다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="option_name" value="{{$event.target.value}}"/>
                       </on>
                     </multilingual-input>
@@ -150,15 +151,17 @@
                   </td>
                   <td class="px-3 py-2">
                     <div class="flex flex-col">
-                      <select class="{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'select input-error w-full' : 'select w-full' }}" value="{{opt.tax_status ?? ''}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}" disabled="{{_computed.isReadOnly}}">
+                      <select class="{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-red-500 dark:border-red-500 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:outline-none' : 'w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none' }}" value="{{opt.tax_status ?? ''}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 이 옵션의 과세 종류 — 비워 두면(기본값 따름) 판매정보의 과세 여부를 따른다. 영세는 세율 0%, 결제사에는 면세로 넘긴다 (#612, 넓은 화면 표) -->
                           <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="tax_status" value="{{$event.target.value}}"/>
                         </on>
-                        <option value="">$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}</option>
-                        <option value="taxable">$t:sirsoft-ecommerce.admin.product.tax.taxable</option>
-                        <option value="tax_free">$t:sirsoft-ecommerce.admin.product.tax.tax_free</option>
-                        <option value="zero_rated">$t:sirsoft-ecommerce.admin.product.tax.zero_rated</option>
+                        <options>
+                          <option value="">$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}</option>
+                          <option value="taxable">$t:sirsoft-ecommerce.admin.product.tax.taxable</option>
+                          <option value="tax_free">$t:sirsoft-ecommerce.admin.product.tax.tax_free</option>
+                          <option value="zero_rated">$t:sirsoft-ecommerce.admin.product.tax.zero_rated</option>
+                        </options>
                       </select>
                       <span data-if="{{ _local.errors?.['options.' + optIdx + '.tax_status'] }}" class="form-error-xs mt-0.5">{{ _local.errors?.['options.' + optIdx + '.tax_status']?.[0] }}</span>
                     </div>
@@ -214,13 +217,15 @@
                           <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="mileage_value" value="{{$event.target.value}}"/>
                         </on>
                       </input>
-                      <select class="select w-16" value="{{opt.mileage_type ?? 'percent'}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.mileage_type_label')}}" disabled="{{_computed.isReadOnly}}">
+                      <select class="w-16 px-2 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" value="{{opt.mileage_type ?? 'percent'}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.mileage_type_label')}}" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 적립 방식 — 바꾸면 왼쪽 숫자의 뜻이 바뀐다(3 이 3% 이거나 3원이 된다) (넓은 화면 표) -->
                           <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="mileage_type" value="{{$event.target.value}}"/>
                         </on>
-                        <option value="percent">$t:sirsoft-ecommerce.admin.product.options.mileage_type.percent</option>
-                        <option value="fixed">$t:sirsoft-ecommerce.admin.product.options.mileage_type.fixed</option>
+                        <options>
+                          <option value="percent">$t:sirsoft-ecommerce.admin.product.options.mileage_type.percent</option>
+                          <option value="fixed">$t:sirsoft-ecommerce.admin.product.options.mileage_type.fixed</option>
+                        </options>
                       </select>
                     </div>
                   </td>
@@ -267,7 +272,7 @@
                     <action handler="sirsoft-ecommerce.setDefaultOption" index="{{optIdx}}"/>
                   </on>
                 </input>
-                <span class="text-primary font-medium">{{opt.option_name_localized ?? $localized(opt.option_name)}}</span>
+                <span class="text-primary font-medium">{{$localized(opt.option_name) || opt.option_name_localized}}</span>
                 <toggle data-type="composite" name="option_active_mobile_{{optIdx}}" ariaLabel="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.active')}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 이 옵션만 판매에서 내린다 — 상품 전체를 내리는 것과 다르다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
@@ -284,6 +289,15 @@
               </button>
             </div>
             <div class="grid grid-cols-2 gap-3">
+              <div class="form-group col-span-2">
+                <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.option</label>
+                <multilingual-input data-type="composite" name="form_option_name_mobile_{{optIdx}}" ariaLabel="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.option')}}" value="{{opt.option_name ?? {}}}" layout="compact" :stacked="true" inputType="text" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
+                  <on type="change">
+                    <!-- 옵션명 — 조합해 만든 이름을 손으로 다듬을 수 있다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
+                    <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="option_name" value="{{$event.target.value}}"/>
+                  </on>
+                </multilingual-input>
+              </div>
               <div class="form-group">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.list_price</label>
                 <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.list_price')}}" type="number" class="input" value="{{opt.list_price ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
@@ -305,15 +319,17 @@
               </div>
               <div class="form-group col-span-2">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.tax_status</label>
-                <select class="{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'select input-error w-full' : 'select w-full' }}" value="{{opt.tax_status ?? ''}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}" disabled="{{_computed.isReadOnly}}">
+                <select class="{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-red-500 dark:border-red-500 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:outline-none' : 'w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none' }}" value="{{opt.tax_status ?? ''}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 이 옵션의 과세 종류 — 비워 두면(기본값 따름) 판매정보의 과세 여부를 따른다. 영세는 세율 0%, 결제사에는 면세로 넘긴다 (#612, 좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="tax_status" value="{{$event.target.value}}"/>
                   </on>
-                  <option value="">$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}</option>
-                  <option value="taxable">$t:sirsoft-ecommerce.admin.product.tax.taxable</option>
-                  <option value="tax_free">$t:sirsoft-ecommerce.admin.product.tax.tax_free</option>
-                  <option value="zero_rated">$t:sirsoft-ecommerce.admin.product.tax.zero_rated</option>
+                  <options>
+                    <option value="">$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}</option>
+                    <option value="taxable">$t:sirsoft-ecommerce.admin.product.tax.taxable</option>
+                    <option value="tax_free">$t:sirsoft-ecommerce.admin.product.tax.tax_free</option>
+                    <option value="zero_rated">$t:sirsoft-ecommerce.admin.product.tax.zero_rated</option>
+                  </options>
                 </select>
                 <span data-if="{{ _local.errors?.['options.' + optIdx + '.tax_status'] }}" class="form-error-xs mt-0.5">{{ _local.errors?.['options.' + optIdx + '.tax_status']?.[0] }}</span>
               </div>
@@ -372,13 +388,15 @@
                       <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="mileage_value" value="{{$event.target.value}}"/>
                     </on>
                   </input>
-                  <select class="select w-20" value="{{opt.mileage_type ?? 'percent'}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.mileage_type_label')}}" disabled="{{_computed.isReadOnly}}">
+                  <select class="w-20 px-2 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" value="{{opt.mileage_type ?? 'percent'}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.mileage_type_label')}}" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 적립 방식 — 바꾸면 왼쪽 숫자의 뜻이 바뀐다(3 이 3% 이거나 3원이 된다) (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                       <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="mileage_type" value="{{$event.target.value}}"/>
                     </on>
-                    <option value="percent">%</option>
-                    <option value="fixed">$t:sirsoft-ecommerce.admin.product.options.mileage_type.fixed</option>
+                    <options>
+                      <option value="percent">%</option>
+                      <option value="fixed">$t:sirsoft-ecommerce.admin.product.options.mileage_type.fixed</option>
+                    </options>
                   </select>
                 </div>
               </div>

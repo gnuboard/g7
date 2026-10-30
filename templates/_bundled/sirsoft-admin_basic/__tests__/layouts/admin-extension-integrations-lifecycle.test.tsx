@@ -474,6 +474,37 @@ describe('설치·활성화 결과 — 연동 안내 토스트', () => {
         .toBe(`게시판 (${T.not_installed}), 쇼핑몰 (${T.version_mismatch}), sirsoft-daum_postcode (${T.inactive})`);
     }
   });
+
+  /** 함께 설치를 고를 수 있는 설치 창 — 연동 함께 설치가 실패하면 서버가 항목에 failure_reason 을 싣는다. */
+  const installSites: Array<[string, Json]> = [];
+  for (const ext of EXTS) {
+    for (const file of ['_modal_install', '_modal_manual_install']) {
+      installSites.push([`${ext} ${file}`, load(`partials/admin_${ext}_list/${file}.json`)]);
+    }
+  }
+
+  /**
+   * @scenario extension_type=module,core_version=with_integration_fields
+   * @effects install_toast_shows_integration_failure_reason
+   */
+  it.each(installSites)('%s: 함께 설치하다 실패한 연동은 이름·상태 뒤에 실패 사유를 보이고, 사유가 없으면 종전과 같다', (_label, tree) => {
+    const calls = collect(tree, (n) => n.handler === 'apiCall' && typeof n.target === 'string' && /install[a-z-]*(?=$|['"\s])/.test(n.target) && Array.isArray(n.onSuccess));
+    expect(calls.length).toBeGreaterThan(0);
+    const reason = 'Hello 플러그인 확장을 쓰려면 서버에 PHP 확장 acme 이(가) 필요합니다. 설치 후 다시 시도하세요.';
+    for (const call of calls) {
+      const toast = collect(call.onSuccess, (n) => n.handler === 'toast' && String(n.params?.message ?? '').includes('$t:admin.extension_integrations.notice_toast'))[0];
+      const items = /items=(\{\{[\s\S]*\}\})$/.exec(toast.params.message)![1];
+      const notices = [
+        { type: 'plugin', identifier: 'gnuboard7-hello_plugin', name: 'Hello 플러그인', state: 'not_installed', failure_reason: reason },
+        { type: 'module', identifier: 'sirsoft-board', name: '게시판', state: 'inactive', failure_reason: null },
+      ];
+      expect(evalBinding(items, { response: { data: { integration_notices: notices } } }))
+        .toBe(`Hello 플러그인 (${T.not_installed}: ${reason}), 게시판 (${T.inactive})`);
+      // 옛 코어 — 사유 칸이 없어도 종전 표시
+      expect(evalBinding(items, { response: { data: { integration_notices: [{ identifier: 'acme-x', name: '', state: 'not_installed' }] } } }))
+        .toBe(`acme-x (${T.not_installed})`);
+    }
+  });
 });
 
 describe('다국어 — extension_integrations 키', () => {

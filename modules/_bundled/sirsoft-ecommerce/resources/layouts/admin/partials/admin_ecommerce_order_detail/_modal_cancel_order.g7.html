@@ -110,13 +110,11 @@
       <!-- 취소 사유 드롭다운 -->
       <div>
         <span class="text-body font-medium block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_type_label</span>
-        <select aria-label="$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_type_label" class="{{_local.cancelValidationErrors?.reason ? 'select w-full text-sm border-2 border-red-500 dark:border-red-500' : 'select w-full text-sm'}}" value="{{_local.cancelReason ?? ''}}">
+        <select aria-label="$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_type_label" class="{{_local.cancelValidationErrors?.reason ? 'w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-2 border-red-500 dark:border-red-500 rounded-xl text-sm font-medium focus:ring-2 focus:ring-red-500 focus:outline-none' : 'w-full text-sm'}}" value="{{_local.cancelReason ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder') }].concat((refundReasons?.data?.data ?? refundReasons?.data ?? []).map(reason => ({ value: reason.code, label: reason.localized_name })))}}">
           <on type="change">
             <!-- 취소 사유. 사유를 고치는 순간 이전 검증 오류와 실행 오류를 함께 지운다 — 방금 고친 값에 대한 빨간 표시가 남아 있으면 무엇이 문제인지 읽을 수 없다. 선택지는 환불 사유 설정에서 온다. -->
             <set-state target="local" cancelReason="{{$event.target.value}}" :cancelValidationErrors="null" :cancelError="null"/>
           </on>
-          <option value="">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder</option>
-          <option data-each="reason in refundReasons?.data?.data ?? refundReasons?.data ?? []" value="{{reason.code}}">{{reason.localized_name}}</option>
         </select>
         <!-- 취소 사유 필드 에러 -->
         <span data-if="{{_local.cancelValidationErrors?.reason}}" class="form-error-xs mt-1 block">{{Array.isArray(_local.cancelValidationErrors?.reason) ? _local.cancelValidationErrors.reason[0] : _local.cancelValidationErrors?.reason}}</span>

@@ -28,6 +28,7 @@ effects:
   - install_preview_lists_integrations_preselected
   - selected_integrations_installed_best_effort
   - integration_failure_reported_as_notice
+  - integration_failure_reason_exposed_for_screen   # 실패 사유를 failure_reason 으로 따로 싣고(화면 토스트용), 요약 한 줄에 마침표가 겹치지 않는다
   - install_request_validates_integrations
   - integration_selection_requires_cascade_permission
   - integration_installed_before_main_and_never_blocks

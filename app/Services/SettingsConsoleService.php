@@ -83,11 +83,11 @@ class SettingsConsoleService
     public function currentValue(string $key, ?string $plugin = null, ?string $module = null): mixed
     {
         if ($plugin !== null) {
-            return Arr::get((array) $this->pluginSettings->get($plugin), $key);
+            return $this->lookup((array) $this->pluginSettings->get($plugin), $key);
         }
 
         if ($module !== null) {
-            return Arr::get((array) $this->moduleSettings->get($module), $key);
+            return $this->lookup((array) $this->moduleSettings->get($module), $key);
         }
 
         return $this->settingsService->getSetting($key);
@@ -162,7 +162,8 @@ class SettingsConsoleService
             $computed = [];
         }
 
-        $selected = $key === null ? $all : (Arr::has($all, $key) ? [$key => Arr::get($all, $key)] : null);
+        $path = $key === null ? null : $this->resolvePath($all, $key);
+        $selected = $key === null ? $all : ($path !== null ? [$key => $this->valueAt($all, $path)] : null);
         if ($selected === null) {
             throw new SettingsConsoleException(__('settings.console.cli.unknown_key', ['key' => $key]));
         }
@@ -267,7 +268,7 @@ class SettingsConsoleService
         }
 
         $payload = ComputedSettingKeys::strip((array) $this->pluginSettings->get($identifier), $computed);
-        Arr::set($payload, $key, $value);
+        $this->putAt($payload, $this->resolvePath($payload, $key) ?? explode('.', $key), $value);
 
         $validated = FormRequestRunner::validate(UpdatePluginSettingsRequest::class, $payload, ['identifier' => $identifier], 'PUT', '/api/admin/plugins/'.$identifier.'/settings');
 
@@ -296,24 +297,26 @@ class SettingsConsoleService
         if (count($segments) < 2 || $segments[0] === '' || $segments[1] === '') {
             throw new SettingsConsoleException(__('settings.console.cli.key_format', ['key' => $key]));
         }
-        [$category, $path] = $segments;
+        $category = $segments[0];
 
         // 기본값 파일에 선언된 키만 설정 파일이 소유한다 — 그 밖(DB 로 관리하는 목록 등)은 화면의 전용 저장 경로가 있다.
         $defaults = $this->moduleDefaults($service->getSettingsDefaultsPath());
         if (! is_array($defaults[$category] ?? null)) {
             throw new SettingsConsoleException(__('settings.console.cli.unknown_key', ['key' => $key]));
         }
-        if (! Arr::has($defaults, $key)) {
+        // 항목 이름에 점이 든 키(권한 `posts.read` 등)는 기본값 파일에서 찾은 실제 경로로 지정한다.
+        $resolved = $this->resolvePath($defaults, $key);
+        if ($resolved === null || $resolved[0] !== $category) {
             throw new SettingsConsoleException(__('settings.console.cli.admin_screen_only', ['key' => $key]));
         }
 
         $current = $service->getSettings($category);
-        Arr::set($current, $path, $value);
+        $this->putAt($current, array_slice($resolved, 1), $value);
 
         $request = FormRequestRunner::run($service->settingsSaveRequestClass(), [$category => $current], [], 'PUT', '/');
         $validated = method_exists($request, 'validatedSettings') ? $request->validatedSettings() : $request->validated();
 
-        if (! Arr::has($validated, $key)) {
+        if ($this->resolvePath((array) $validated, $key) === null) {
             throw new SettingsConsoleException(__('settings.console.cli.admin_screen_only', ['key' => $key]));
         }
 
@@ -386,14 +389,109 @@ class SettingsConsoleService
     }
 
     /**
-     * 이름만으로 민감 값인지 (스키마 표시가 없는 모듈·하위 키용).
+     * 이름만으로 민감 값인지 (스키마 표시가 없는 모듈·하위 키용 — 코어 키 해석과 같은 규칙).
      *
      * @param  string  $name  항목 이름
      * @return bool 민감 값이면 true
      */
     private function sensitiveByName(string $name): bool
     {
-        return preg_match('/(password|secret|token|license_key|access_key|secret_key)$/', $name) === 1;
+        return SettingsCliKeyResolver::isSensitiveName($name);
+    }
+
+    /**
+     * 점 표기 키를 실제 배열 경로로 푼다 — 항목 이름 자체에 점이 든 경우(게시판 기본 권한 `posts.read` 등)도
+     * 그 이름 그대로 찾는다. 조각을 짧은 것부터 이어 붙여 보며, 막히면 더 긴 이름으로 되돌아가 다시 본다.
+     *
+     * @param  array<string, mixed>  $data  설정 값
+     * @param  string  $key  점 표기 키
+     * @return list<string>|null 경로 조각 (없는 키면 null)
+     */
+    private function resolvePath(array $data, string $key): ?array
+    {
+        return $this->walkPath($data, explode('.', $key));
+    }
+
+    /**
+     * {@see resolvePath()} 의 재귀 본문.
+     *
+     * @param  mixed  $node  현재 위치의 값
+     * @param  list<string>  $segments  남은 조각
+     * @return list<string>|null 남은 경로 (찾지 못하면 null)
+     */
+    private function walkPath(mixed $node, array $segments): ?array
+    {
+        if ($segments === []) {
+            return [];
+        }
+        if (! is_array($node)) {
+            return null;
+        }
+
+        for ($length = 1, $count = count($segments); $length <= $count; $length++) {
+            $name = implode('.', array_slice($segments, 0, $length));
+            if (! array_key_exists($name, $node)) {
+                continue;
+            }
+
+            $rest = $this->walkPath($node[$name], array_slice($segments, $length));
+            if ($rest !== null) {
+                return [$name, ...$rest];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 경로 조각으로 값을 읽는다.
+     *
+     * @param  array<string, mixed>  $data  설정 값
+     * @param  list<string>  $path  경로 조각
+     * @return mixed 값
+     */
+    private function valueAt(array $data, array $path): mixed
+    {
+        $node = $data;
+        foreach ($path as $name) {
+            $node = is_array($node) ? ($node[$name] ?? null) : null;
+        }
+
+        return $node;
+    }
+
+    /**
+     * 경로 조각 위치에 값을 넣는다 (중간 배열이 없으면 만든다 — 조각 이름의 점은 나누지 않는다).
+     *
+     * @param  array<string, mixed>  $data  설정 값
+     * @param  list<string>  $path  경로 조각
+     * @param  mixed  $value  넣을 값
+     * @return void 반환값 없음
+     */
+    private function putAt(array &$data, array $path, mixed $value): void
+    {
+        $node = &$data;
+        foreach ($path as $name) {
+            if (! isset($node[$name]) || ! is_array($node[$name])) {
+                $node[$name] = [];
+            }
+            $node = &$node[$name];
+        }
+        $node = $value;
+    }
+
+    /**
+     * 키의 값 — 이름에 점이 든 항목도 찾는다 (없으면 null).
+     *
+     * @param  array<string, mixed>  $data  설정 값
+     * @param  string  $key  점 표기 키
+     * @return mixed 값
+     */
+    private function lookup(array $data, string $key): mixed
+    {
+        $path = $this->resolvePath($data, $key);
+
+        return $path === null ? null : $this->valueAt($data, $path);
     }
 
     /**

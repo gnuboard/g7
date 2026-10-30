@@ -1197,14 +1197,15 @@ data_sources: [stats, recent_posts, popular_boards, home_boards (게시판 가�
 meta.seo: { structured_data: WebSite }
 slots.content:
   └── Container
-      ├── Grid home_top_row (게시판이 꺼지면 1열)
+      ├── Grid home_top_row (게시판이 꺼지면 쇼핑몰 켜짐: 환영 2칸 + 쇼핑 홍보 1칸 / 둘 다 꺼짐: 1열)
       │   ├── _welcome_card.g7.html (환영 배너 — 「자세히」는 페이지 가드)
+      │   ├── home_top_shop_promo → _shop_promo.g7.html (게시판 꺼짐 + 쇼핑몰 켜짐일 때만)
       │   └── home_stat_cards (게시판 가드)
       │       ├── _stat_card_users.g7.html
       │       ├── _stat_card_posts.g7.html
       │       ├── _stat_card_comments.g7.html
       │       └── _stat_card_boards.g7.html
-      ├── Grid home_feature_row (게시판 또는 쇼핑몰)
+      ├── Grid home_feature_row (게시판 가드)
       │   ├── _recent_posts.g7.html (최근 게시글 — 게시판 가드)
       │   ├── _popular_boards.g7.html (인기 게시판 — 게시판 가드)
       │   ├── _shop_promo.g7.html (쇼핑 프로모션 — 쇼핑몰 가드)

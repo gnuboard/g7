@@ -71,6 +71,10 @@ effects:
   - polling_monitor_waits_for_final_tasks_after_complete_flag
   - polling_monitor_completes_when_final_tasks_stall
   - polling_monitor_completes_without_tasks_finished_field
+  # 같은 구간의 새로고침 — 설치 화면(index.php)은 소유 세션의 GET 에만 Step 5 를 다시 열고, 그 화면이 마무리 작업 뒤 .env 를 확정
+  - installer_index_reopens_step5_for_owner_in_finalize_window
+  - installer_index_stays_gone_outside_owner_finalize_window
+  - installer_reload_in_finalize_window_finalizes_once_after_final_tasks
 
   # 확장 선택 해석기 — PHP·JS 공용 픽스처 등가
   - resolver_php_matches_shared_fixture
@@ -126,6 +130,9 @@ effects:
   - cli_takeover_discards_web_runtime_and_drop_confirm
   - cli_interrupted_cli_install_requires_resume
   - reclaim_refused_for_cli_owned_installation
+  # 터미널 소유 설치의 웹 잠금 화면 — 이어서 설치 명령은 멈춘 경우에만 안내
+  - cli_owned_notice_hides_resume_while_running
+  - cli_owned_notice_shows_resume_when_stopped
   # root·--web-user
   - cli_web_user_targets_are_writable_dirs_env_runtime
   - cli_web_user_manual_command_shape
@@ -161,6 +168,9 @@ test_files:
   - tests/Unit/Installer/ExtensionSelectionResolverTest.php
   - tests/Unit/Installer/InstallerFinalizeConfigCacheTest.php
   - tests/Unit/Installer/InstallerFinalTasksSignalTest.php
+  - tests/Unit/Installer/InstallerFinalizeWindowGuardTest.php
+  - resources/js/tests/installer/installer-step5-finalize-after-reload.test.ts
+  - tests/Unit/Installer/InstallerCliOwnedNoticeTest.php
   - resources/js/tests/installer/installation-monitor-polling.test.ts
   - tests/Feature/Console/InstallCoreCommandTest.php
   - tests/Unit/Support/ScheduleSecurityDeniesInstallerTest.php

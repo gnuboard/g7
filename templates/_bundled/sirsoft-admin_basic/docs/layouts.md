@@ -624,7 +624,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │   └── admin_module_list.g7.html
 │       └── partials/admin_module_list/
 │           ├── _modal_detail.g7.html
-│           ├── _modal_install.g7.html (설치 확인 — 의존 확장·「함께 쓰면 연동되는 확장(선택)」·언어팩 체크 목록. 연동 항목 아래 「함께 설치」 줄은 그 연동이 필수로 요구하는 확장(미리보기 `integrations[].requires`), 고를 수 없으면 사유 배지)
+│           ├── _modal_install.g7.html (설치 확인 — 의존 확장·「함께 쓰면 연동되는 확장(선택)」·언어팩 체크 목록. 설치 뒤 연동 안내 토스트는 함께 설치하다 실패한 연동의 사유(`failure_reason`)를 「이름 (상태: 사유)」로 보인다. 연동 항목 아래 「함께 설치」 줄은 그 연동이 필수로 요구하는 확장(미리보기 `integrations[].requires`), 고를 수 없으면 사유 배지)
 │           ├── _modal_manual_install.g7.html
 │           ├── _modal_uninstall.g7.html
 │           ├── _modal_update.g7.html
@@ -715,7 +715,7 @@ _admin_base.g7.html (베이스 레이아웃)
 ├── 공통 Partial
 │   ├── partials/_modal_changelog.g7.html
 │   ├── partials/_modal_license.g7.html
-│   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트·레이아웃 갱신이 일부 항목 실패·안내를 남긴 결과 창 — 모듈·플러그인·템플릿·언어팩 목록·대시보드·환경설정이 연다)
+│   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트·레이아웃 갱신이 일부 항목 실패·안내를 남긴 결과 창. 단계 이름은 번역이 있으면 그 이름, 지금 언어에 없으면 대체 언어 이름, 어느 언어에도 없으면 원문 키 — 모듈·플러그인·템플릿·언어팩 목록·대시보드·환경설정이 연다)
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html
 │

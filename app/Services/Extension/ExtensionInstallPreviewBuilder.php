@@ -24,6 +24,18 @@ use RuntimeException;
 class ExtensionInstallPreviewBuilder
 {
     /**
+     * 이 설치로는 풀리지 않는 번들 언어팩 설치 차단 사유 — 후보 행을 고를 수 없게(`available=false`) 표시한다.
+     *
+     * `core_locale_missing`: 같은 로케일 코어 언어팩이 꺼져 있다(코어 언어팩은 이 설치의 후보가 아니다).
+     * `target_version_too_old`: 이미 설치된 대상 확장의 버전이 언어팩 요구보다 낮다(함께 설치는 설치된 확장을 업데이트하지 않는다).
+     * `target_not_installed` 는 본 확장·의존 확장을 함께 설치하면서 풀리므로 넣지 않는다. 설치 차단 사유는 꺼진 대상을
+     * 허용해 판정하므로 `target_inactive` 는 이 후보에 붙지 않는다.
+     *
+     * @var array<int, string>
+     */
+    private const UNRESOLVABLE_LANGUAGE_PACK_BLOCKS = ['core_locale_missing', 'target_version_too_old'];
+
+    /**
      * 프리뷰가 쓰는 확장·언어팩 서비스를 주입받습니다.
      *
      * @param  ModuleService  $moduleService  모듈 서비스
@@ -210,7 +222,7 @@ class ExtensionInstallPreviewBuilder
      *
      * `DependencyEnricher` 가 생산하는 enriched 항목(identifier/name/type/required_version/
      * installed_version/is_active/is_met) 를 받아 `is_installed`, `default_selected`,
-     * `available` 필드를 추가합니다. 현재 사용자가 그 항목을 함께 설치·활성화할 권한이 있는지는
+     * `available` 필드를 추가합니다. 충족되지 않은(미설치·꺼짐) 의존은 기본 선택이고, 현재 사용자가 그 항목을 함께 설치·활성화할 권한이 있는지는
      * `can_select` 로 싣고, 권한이 없으면 기본 선택에서 뺀다 — 설치 창이 체크박스를 잠그고
      * 설치 API 도 같은 판정으로 403 을 낸다.
      *
@@ -242,8 +254,9 @@ class ExtensionInstallPreviewBuilder
                 // 미충족 의존성만 cascade 후보 — 충족 의존성은 추가 설치 불필요, 버전 미달은 함께 처리로 풀 수 없음
                 'available' => ! $isMet && ! $versionBlocked,
                 'blocked_reason' => $versionBlocked ? DependencyEnricher::STATUS_VERSION_MISMATCH : null,
-                // 미충족 + 미설치 항목은 기본 선택 (체크리스트 prefill)
-                'default_selected' => ! $isMet && ! $isInstalled && ! $versionBlocked && $canSelect,
+                // 충족되지 않은 의존(미설치·꺼짐)은 기본 선택 — 설치는 의존이 켜져 있어야 진행되므로, 꺼진 의존을 기본 해제로 두면
+                // 창의 기본값 그대로 설치할 때 반드시 실패한다. 버전 미달은 함께 처리로 풀 수 없어 고를 수 없다
+                'default_selected' => ! $isMet && ! $versionBlocked && $canSelect,
                 // 이 항목을 함께 설치·활성화할 권한 (미설치=install+activate, 설치됨=activate)
                 'can_select' => $canSelect,
             ];
@@ -291,7 +304,8 @@ class ExtensionInstallPreviewBuilder
                 // 버전 미달 의존은 계획 해석(resolveDependencyPlan)이 단계에서 빼고 오류로 보내므로 여기 오지 않는다
                 'available' => true,
                 'blocked_reason' => null,
-                'default_selected' => ! $isInstalled && $canSelect,
+                // 계획에 든 단계는 모두 미설치 또는 꺼짐이다 — 직접 의존과 같이 기본 선택(꺼진 의존을 해제하면 설치가 반드시 실패한다)
+                'default_selected' => $canSelect,
                 'can_select' => $canSelect,
                 // 어느 의존 확장 때문에 필요한지 — 2단계 의존 행 구분용
                 'required_by' => $step['required_by'],
@@ -326,6 +340,9 @@ class ExtensionInstallPreviewBuilder
      * `lang-packs/_bundled/{identifier}/language-pack.json` manifest 를 직접 스캔하여
      * (a) 본 확장용 (b) 의존 확장용 항목을 모두 포함합니다. DB 에 이미 설치된 슬롯은
      * 제외 (LanguagePackService::getUninstalledBundledPacks 의 슬롯 머지 로직 활용).
+     * 이 설치로 풀리지 않는 사유가 있는 언어팩(같은 로케일 코어 언어팩 꺼짐 `core_locale_missing`, 이미 설치된 대상 확장의 버전이
+     * 언어팩 요구보다 낮음 `target_version_too_old`)은 `available=false`·`blocked_reason` 이고 기본 선택이 아니다.
+     * 사유 문장을 채울 수 있게 대상 확장 종류(`scope`)와 요구 대상 버전(`required_target_version`)을 함께 싣는다.
      *
      * @param  LanguagePackScope  $scope  본 확장 스코프
      * @param  string  $identifier  본 확장 식별자
@@ -372,6 +389,13 @@ class ExtensionInstallPreviewBuilder
             // 판정(자기 선언 → 코어 → 대상 확장 → 없음)은 LanguagePackService 한 곳에 둔다.
             $this->languagePackService->annotateIcon($pack);
 
+            // 이 설치로는 풀리지 않는 사유가 있으면 행은 남기되 고를 수 없는 후보로 표시하고 기본 선택에서 뺀다(기본값 그대로
+            // 설치하면 반드시 실패한다). 판정은 LanguagePackService 의 설치 차단 사유를 그대로 쓴다.
+            $blockedReason = in_array($pack->install_blocked_reason, self::UNRESOLVABLE_LANGUAGE_PACK_BLOCKS, true)
+                ? $pack->install_blocked_reason
+                : null;
+            $requiredTargetVersion = $pack->manifest['requires']['target_version'] ?? null;
+
             $result[] = [
                 'bundled_identifier' => $pack->identifier,
                 'locale' => $pack->locale,
@@ -381,8 +405,15 @@ class ExtensionInstallPreviewBuilder
                 'depends_on_extension' => $dependsOn,
                 // 어느 확장의 언어팩인지 — 창이 「종속: …」 배지로 보인다(충족된 의존 확장의 언어팩도 구분되게).
                 'target_identifier' => $packTarget,
-                'available' => true,
-                'default_selected' => $canSelectPack,
+                // 대상 확장 종류와 요구 대상 버전 — 설치할 수 없는 사유 문장(대상 :scope (:target) … :constraint)을 채운다
+                'scope' => $packScope,
+                'required_target_version' => is_scalar($requiredTargetVersion) && (string) $requiredTargetVersion !== ''
+                    ? (string) $requiredTargetVersion
+                    : null,
+                'available' => $blockedReason === null,
+                'blocked_reason' => $blockedReason,
+                'default_selected' => $blockedReason === null && $canSelectPack,
+                // 권한 판정 — 설치할 수 없는 사유는 available·blocked_reason 으로 따로 싣는다(의존 확장 행과 같은 관례)
                 'can_select' => $canSelectPack,
                 'icon_url' => $pack->icon_url,
                 'icon_source' => $pack->icon_source ?? 'none',

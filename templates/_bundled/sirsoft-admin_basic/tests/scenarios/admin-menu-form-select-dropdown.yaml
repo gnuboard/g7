@@ -1,0 +1,23 @@
+feature: 관리자 메뉴 관리 편집 패널 — 「상위 메뉴」·「사용자 정의 메뉴」 칸을 브라우저 기본 선택상자 대신 목록형 드롭다운으로
+
+description: |
+  두 칸은 반복(data-each)으로 만든 <option>·<optgroup> 자식이라 브라우저 기본 선택상자였다. 응답을 펼치는 options="{{…}}"
+  식으로 바꿔 목록형(단추 + 목록 상자)으로 그린다.
+
+  조용히 깨지는 지점:
+    - 사용자 정의 메뉴의 묶음(모듈 이름)은 <optgroup> 이었다 — 목록형에는 묶음이 없어 항목 설명(description)으로 보인다.
+    - change 동작이 $event.target.selectedOptions[0].dataset.url 로 주소를 읽었다 — 목록형 사건에는 그 자리가 없어,
+      고른 키로 응답에서 주소를 찾는다. 주소가 없는 항목·「선택 안 함」 은 적어 둔 주소를 그대로 둔다.
+    - 상위 메뉴 후보에서 수정 중인 자기 자신을 뺀다(종전과 같다).
+  축 screen 은 바꾼 칸이다.
+
+axes:
+  screen: [menu_parent, menu_custom_menu]
+
+effects:
+  - select_renders_listbox_dropdown
+  - menu_parent_options_exclude_self
+  - custom_menu_option_shows_module_and_fills_url
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-menu-form-select-dropdown.test.tsx

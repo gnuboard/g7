@@ -11,6 +11,8 @@ axes:
 effects:
   - admin_product_form_offers_zero_rated
   - admin_option_tax_status_select
+  - admin_option_table_scrolls_horizontally
+  - admin_option_name_editable_on_both_layouts
   - admin_tax_filter_offers_zero_rated
   - admin_order_row_tax_badge_and_lines
   - admin_payment_info_zero_rated_rows
