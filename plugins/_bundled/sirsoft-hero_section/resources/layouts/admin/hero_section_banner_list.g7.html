@@ -32,7 +32,7 @@
   <data-source id="position_settings" label_key="$t:sirsoft-hero_section.editor.data_source.position_settings" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/position-settings" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true"/>
   <computed name="currentPosition">{{query.position || 'home_hero'}}</computed>
   <computed name="sitePath">{{position_settings?.data?.editor?.preview_frame?.positions?.[query.position || 'home_hero']?.path ?? ''}}</computed>
-  <computed name="currentSettings">{{(position_settings?.data?.positions ?? []).find(p =&gt; p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide'} }}</computed>
+  <computed name="currentSettings">{{(position_settings?.data?.positions ?? []).find(p =&gt; p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content'} }}</computed>
   <init-local>
     <field name="filter">
       <field name="search" value=""/>
@@ -152,7 +152,7 @@
               </button>
             </div>
           </div>
-          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="hero_preview" banners="{{(preview?.data?.data ?? []).map(b =&gt; ({...b, title: b.title_localized, description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}" settings="{{_computed.currentSettings}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_computed.currentPosition}}" emptyText="{{preview === undefined ? '' : ((banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) &gt; 0 ? $t('sirsoft-hero_section.admin.preview.empty_with_counts', { scheduled: banners?.data?.statistics?.statuses?.scheduled ?? 0, inactive: banners?.data?.statistics?.statuses?.inactive ?? 0, ended: banners?.data?.statistics?.statuses?.ended ?? 0 }) : $t('sirsoft-hero_section.admin.preview.empty'))}}"/>
+          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="hero_preview" banners="{{(preview?.data?.data ?? []).map(b =&gt; ({...b, title: b.title_localized, description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}" settings="{{_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_computed.currentPosition}}" emptyText="{{preview === undefined ? '' : ((banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) &gt; 0 ? $t('sirsoft-hero_section.admin.preview.empty_with_counts', { scheduled: banners?.data?.statistics?.statuses?.scheduled ?? 0, inactive: banners?.data?.statistics?.statuses?.inactive ?? 0, ended: banners?.data?.statistics?.statuses?.ended ?? 0 }) : $t('sirsoft-hero_section.admin.preview.empty'))}}"/>
         </section>
         <!-- 슬라이더 설정 — 이 위치에만 적용 -->
         <section data-ref="slider_card" aria-labelledby="hero_slider_heading" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex flex-col gap-4">
@@ -187,6 +187,10 @@
               <options>
                 <option value="slide">$t:sirsoft-hero_section.admin.slider.effects.slide</option>
                 <option value="fade">$t:sirsoft-hero_section.admin.slider.effects.fade</option>
+                <option value="cube">$t:sirsoft-hero_section.admin.slider.effects.cube</option>
+                <option value="flip">$t:sirsoft-hero_section.admin.slider.effects.flip</option>
+                <option value="coverflow">$t:sirsoft-hero_section.admin.slider.effects.coverflow</option>
+                <option value="creative">$t:sirsoft-hero_section.admin.slider.effects.creative</option>
                 <option value="none">$t:sirsoft-hero_section.admin.slider.effects.none</option>
               </options>
               <on type="change">
@@ -194,7 +198,21 @@
               </on>
             </select>
           </label>
-          <button type="button" data-ref="slider_save_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="btn btn-primary flex-center gap-1.5" disabled="{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay &amp;&amp; Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) &amp;&amp; _local.sliderForm.effect === _computed.currentSettings.effect)}}">
+          <!-- 표시 폭 — 고르면 저장 전에 위 미리보기가 바로 바뀐다 -->
+          <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_width">
+            <span>$t:sirsoft-hero_section.admin.slider.width</span>
+            <select id="hero_slider_width" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content'}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
+              <options>
+                <option value="content">$t:sirsoft-hero_section.admin.slider.widths.content</option>
+                <option value="full">$t:sirsoft-hero_section.admin.slider.widths.full</option>
+              </options>
+              <on type="change">
+                <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, width: $event.target.value})}}"/>
+              </on>
+            </select>
+            <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-hero_section.admin.slider.width_hint</span>
+          </label>
+          <button type="button" data-ref="slider_save_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="btn btn-primary flex-center gap-1.5" disabled="{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay &amp;&amp; Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) &amp;&amp; _local.sliderForm.effect === _computed.currentSettings.effect &amp;&amp; (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content'))}}">
             <on type="click">
               <!-- 설정 저장 — 진행 깃발은 성공·실패 양쪽에서 푼다. 작업본은 비우지 않는다: 다시 받은 서버 값과 같아지면 저장 버튼이 저절로 잠긴다(비우면 재조회 도착 전 옛 값이 잠깐 보인다). 작업본은 위치를 함께 들고 있어 다른 위치 탭에서는 쓰이지 않는다 -->
               <sequence>
@@ -209,7 +227,7 @@
                     <set-state target="local" :sliderSaving="false"/>
                     <toast type="error" message="{{error.message}}"/>
                   </fail>
-                  <body autoplay="{{_local.sliderForm.autoplay}}" interval_seconds="{{Number(_local.sliderForm.interval_seconds)}}" effect="{{_local.sliderForm.effect}}"/>
+                  <body autoplay="{{_local.sliderForm.autoplay}}" interval_seconds="{{Number(_local.sliderForm.interval_seconds)}}" effect="{{_local.sliderForm.effect}}" width="{{_local.sliderForm.width ?? 'content'}}"/>
                 </api-call>
               </sequence>
             </on>

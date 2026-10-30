@@ -57,7 +57,7 @@ test('키보드 포커스가 남아 있으면 마우스 이탈로 자동 재생�
 });
 
 /**
- * 손가락으로 오른쪽에서 왼쪽으로 쓸어 넘긴다(CDP 터치 — 마우스 끌기는 꺼 두었다).
+ * 손가락으로 오른쪽에서 왼쪽으로 쓸어 넘긴다(CDP 터치 — PC 마우스 끌기는 swiper-ui.spec.ts 가 본다).
  *
  * @param page 페이지
  * @param client CDP 세션
@@ -97,9 +97,13 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       const start = await activeTitle(page);
       const startIndex = order.indexOf(start);
 
+      // 휴대폰은 화살표를 감추므로(문구를 가리지 않게) 다음 장의 점을 누른다 — 마지막 장 다음은 첫 장 점
+      const next = (i: number) => viewport === 'desktop'
+        ? page.locator('section.hs .hs__next').click()
+        : page.locator('section.hs .hs__pagination button').nth((startIndex + i + 1) % count).click();
       const seen: string[] = [];
       for (let i = 0; i < count; i++) {
-        await page.locator('section.hs .hs__next').click();
+        await next(i);
         await expect.poll(() => activeTitle(page)).toBe(order[(startIndex + i + 1) % count]);
         await settle(page);
         seen.push(await activeTitle(page));
@@ -109,7 +113,8 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       expect(new Set(seen).size).toBe(count);
       await expect(page.locator('section.hs .hs__counter')).toHaveText(`${startIndex + 1} / ${count}`);
 
-      await page.locator('section.hs .hs__prev').click();
+      if (viewport === 'desktop') await page.locator('section.hs .hs__prev').click();
+      else await page.locator('section.hs .hs__pagination button').nth((startIndex - 1 + count) % count).click();
       await expect.poll(() => activeTitle(page)).toBe(order[(startIndex - 1 + count) % count]);
       expect(errors.filter((e) => !/favicon|analytics/i.test(e))).toEqual([]);
     });

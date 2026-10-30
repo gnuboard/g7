@@ -59,10 +59,26 @@ class PositionSettingService
     }
 
     /**
+     * 위치별 표시 폭을 반환합니다(행이 없으면 content) — 사용자 화면이 첫 로드 때 받는 플러그인 설정 힌트(`slot_widths`)의 원본.
+     *
+     * @return array<string, string> 위치 키 => content|full
+     */
+    public function slotWidths(): array
+    {
+        $saved = $this->settings->allKeyed();
+        $widths = [];
+        foreach (HeroPosition::cases() as $position) {
+            $widths[$position->value] = isset($saved[$position->value]) ? $saved[$position->value]->toSettings()['width'] : PositionSetting::DEFAULTS['width'];
+        }
+
+        return $widths;
+    }
+
+    /**
      * 한 위치의 설정 값을 반환합니다(행이 없으면 기본값).
      *
      * @param  HeroPosition  $position  위치
-     * @return array{autoplay: bool, interval_seconds: int, effect: string} 설정 값
+     * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string} 설정 값
      */
     public function settingsFor(HeroPosition $position): array
     {
@@ -73,7 +89,7 @@ class PositionSettingService
      * 위치 설정을 저장합니다.
      *
      * @param  HeroPosition  $position  위치
-     * @param  array{autoplay: bool, interval_seconds: int, effect: string}  $data  검증된 설정 값
+     * @param  array{autoplay: bool, interval_seconds: int, effect: string, width?: string}  $data  검증된 설정 값 (width 를 빼면 지금 값 유지)
      * @param  int|null  $actorId  바꾼 회원 ID
      * @return PositionSetting 저장된 설정 행
      */

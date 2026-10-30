@@ -7,7 +7,7 @@ description: |
   문구는 그 위 형제라 문구를 눌러도 링크로 간다.
   첫 슬라이드 이미지는 즉시, 나머지는 지연 로딩하고, width·height·aspect-ratio 로 화면 밀림을 막는다. 자동 재생은 마우스·포커스·일시정지 단추·
   reduced-motion 에서 멈춘다. 관리자 미리보기(HeroBannerPreview)는 같은 렌더 함수를 쓴다.
-  넘김은 Swiper(무한 반복·손가락 넘기기, PC 마우스 끌기 끔)가 맡는다 — 단위 시험은 Swiper 대역으로 옵션·호출·장 번호 동기만 보고,
+  넘김은 Swiper(무한 반복·손가락 넘기기·PC 마우스 끌기, 효과 slide·fade·cube·flip·coverflow·creative·none)가 맡고, 좌우 화살표·점 표시는 Swiper 기본 모양의 이름 붙은 단추다 — 단위 시험은 Swiper 대역으로 옵션·호출·장 번호 동기만 보고,
   실제 넘김·자동 재생·쓸기는 e2e-flows.yaml 의 slider_* 흐름이 실브라우저에서 본다. 자동으로 넘어가는 동안 장 번호는 읽지 않는다.
 
 axes:
@@ -35,6 +35,10 @@ axes:
     - images_have_dimensions_and_aspect_ratio
     - aspect_ratio_falls_back_to_recommended
     - preview_renders_device_frame
+    - swiper_pagination_and_arrows
+    - swiper_extra_effects
+    - loading_skeleton_until_response
+    - loading_skeleton_remembers_slot
 
 effects:
   - accessible_carousel_semantics
@@ -43,3 +47,5 @@ effects:
 test_files:
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSlider.test.tsx
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroBannerPreview.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/swiper-ui.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/loading-skeleton.spec.ts

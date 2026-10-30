@@ -10,6 +10,7 @@ axes:
     - home_extension_targets_home_hero
     - shop_extension_targets_shop_hero
     - hidden_when_no_banners
+    - loading_skeleton_until_response
     - hidden_when_fetch_fails
     - data_source_keys_prefixed
 

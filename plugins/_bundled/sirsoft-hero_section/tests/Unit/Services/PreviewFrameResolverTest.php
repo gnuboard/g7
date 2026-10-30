@@ -60,7 +60,30 @@ class PreviewFrameResolverTest extends PluginTestCase
                 ['className' => 'flex-1', 'responsive' => []],
                 ['className' => 'min-h-fit px-4', 'responsive' => ['desktop' => 'min-h-fit max-w-7xl mx-auto px-8', '768-1023' => 'px-6']],
             ], $frame['positions'][$position]['chain']);
+            // 확장점이 본문 상자를 넘기지 않으면 null — 슬라이더는 자리 폭을 그대로 쓴다
+            $this->assertNull($frame['positions'][$position]['content']);
         }
+    }
+
+    /**
+     * 확장점이 넘긴 본문 상자 클래스(기본·데스크톱)를 구좌 사슬과 같은 모양(`desktop` 반응형 덮어쓰기)으로 낸다 — 바인딩 식은 뺀다.
+     * 표시 폭이 본문 폭이면 미리보기가 이 상자로 슬라이더를 감싸고, 화면 전체면 문구 층에 쓴다.
+     *
+     * @scenario surface=preview_frame_content_box
+     *
+     * @return void 반환값 없음
+     */
+    public function test_carries_content_box_props_of_extension_point(): void
+    {
+        $home = $this->layout('home_hero');
+        $home['components'][0]['children'][1]['children'][0]['children'][0]['props'] = ['contentClass' => 'px-4', 'contentClassDesktop' => "max-w-7xl mx-auto px-8 {{_global.x ? 'a' : 'b'}}"];
+        $shop = $this->layout('shop_hero');
+        $shop['components'][0]['children'][1]['children'][0]['children'][0]['props'] = ['contentClass' => 'px-4'];
+
+        $frame = $this->resolver(['home_hero' => ['home'], 'shop_hero' => ['shop/index']], ['home' => $home, 'shop/index' => $shop])->resolve();
+
+        $this->assertSame(['className' => 'px-4', 'responsive' => ['desktop' => 'max-w-7xl mx-auto px-8']], $frame['positions']['home_hero']['content']);
+        $this->assertSame(['className' => 'px-4', 'responsive' => []], $frame['positions']['shop_hero']['content']);
     }
 
     /**

@@ -5,10 +5,12 @@
     },
     "defaults": {
         "max_upload_mb": 5,
-        "public_cache_minutes": 10
+        "public_cache_minutes": 10,
+        "slot_widths": { "home_hero": "content", "shop_hero": "content" }
     },
     "frontend_schema": {
         "max_upload_mb": { "expose": false },
-        "public_cache_minutes": { "expose": false }
+        "public_cache_minutes": { "expose": false },
+        "slot_widths": { "expose": true }
     }
 }

@@ -38,5 +38,6 @@ return [
         'autoplay' => 'Autoplay',
         'interval_seconds' => 'Interval (seconds)',
         'effect' => 'Effect',
+        'width' => 'Width',
     ],
 ];

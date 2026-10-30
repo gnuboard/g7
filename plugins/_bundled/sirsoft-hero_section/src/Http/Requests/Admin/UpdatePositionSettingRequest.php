@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Http\Requests\Admin;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Plugins\Sirsoft\HeroSection\Enums\SlideEffect;
+use Plugins\Sirsoft\HeroSection\Enums\SlideWidth;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 
 /**
@@ -33,6 +34,8 @@ class UpdatePositionSettingRequest extends FormRequest
             'autoplay' => ['required', 'boolean'],
             'interval_seconds' => ['required', 'integer', Rule::in(PositionSetting::INTERVALS)],
             'effect' => ['required', Rule::enum(SlideEffect::class)],
+            // 생략하면 지금 값을 유지한다(처음 저장이면 기본값 content) — 표시 폭을 모르는 이전 호출도 그대로 통과
+            'width' => ['sometimes', 'required', Rule::enum(SlideWidth::class)],
         ];
     }
 
@@ -47,6 +50,7 @@ class UpdatePositionSettingRequest extends FormRequest
             'autoplay' => __('sirsoft-hero_section::validation.attributes.autoplay'),
             'interval_seconds' => __('sirsoft-hero_section::validation.attributes.interval_seconds'),
             'effect' => __('sirsoft-hero_section::validation.attributes.effect'),
+            'width' => __('sirsoft-hero_section::validation.attributes.width'),
         ];
     }
 }

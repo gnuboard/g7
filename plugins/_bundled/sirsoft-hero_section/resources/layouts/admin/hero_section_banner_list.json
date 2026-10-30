@@ -111,7 +111,7 @@
     "computed": {
         "currentPosition": "{{query.position || 'home_hero'}}",
         "sitePath": "{{position_settings?.data?.editor?.preview_frame?.positions?.[query.position || 'home_hero']?.path ?? ''}}",
-        "currentSettings": "{{(position_settings?.data?.positions ?? []).find(p => p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide'} }}"
+        "currentSettings": "{{(position_settings?.data?.positions ?? []).find(p => p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content'} }}"
     },
     "permissions": [
         "sirsoft-hero_section.banners.read"
@@ -511,7 +511,7 @@
                                         "name": "sirsoft-hero_section.HeroBannerPreview",
                                         "props": {
                                             "banners": "{{(preview?.data?.data ?? []).map(b => ({...b, title: b.title_localized, description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}",
-                                            "settings": "{{_computed.currentSettings}}",
+                                            "settings": "{{_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings}}",
                                             "device": "{{_local.previewDevice}}",
                                             "frame": "{{position_settings?.data?.editor?.preview_frame ?? null}}",
                                             "position": "{{_computed.currentPosition}}",
@@ -679,11 +679,81 @@
                                                             "label": "$t:sirsoft-hero_section.admin.slider.effects.fade"
                                                         },
                                                         {
+                                                            "value": "cube",
+                                                            "label": "$t:sirsoft-hero_section.admin.slider.effects.cube"
+                                                        },
+                                                        {
+                                                            "value": "flip",
+                                                            "label": "$t:sirsoft-hero_section.admin.slider.effects.flip"
+                                                        },
+                                                        {
+                                                            "value": "coverflow",
+                                                            "label": "$t:sirsoft-hero_section.admin.slider.effects.coverflow"
+                                                        },
+                                                        {
+                                                            "value": "creative",
+                                                            "label": "$t:sirsoft-hero_section.admin.slider.effects.creative"
+                                                        },
+                                                        {
                                                             "value": "none",
                                                             "label": "$t:sirsoft-hero_section.admin.slider.effects.none"
                                                         }
                                                     ]
                                                 }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "표시 폭 — 고르면 저장 전에 위 미리보기가 바로 바뀐다",
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300",
+                                            "htmlFor": "hero_slider_width"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-hero_section.admin.slider.width"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "sliderForm": "{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, width: $event.target.value})}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "id": "hero_slider_width",
+                                                    "className": "px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "value": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content'}}",
+                                                    "disabled": "{{banners?.data?.abilities?.can_update !== true}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "content",
+                                                            "label": "$t:sirsoft-hero_section.admin.slider.widths.content"
+                                                        },
+                                                        {
+                                                            "value": "full",
+                                                            "label": "$t:sirsoft-hero_section.admin.slider.widths.full"
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.slider.width_hint"
                                             }
                                         ]
                                     },
@@ -714,7 +784,8 @@
                                                             "body": {
                                                                 "autoplay": "{{_local.sliderForm.autoplay}}",
                                                                 "interval_seconds": "{{Number(_local.sliderForm.interval_seconds)}}",
-                                                                "effect": "{{_local.sliderForm.effect}}"
+                                                                "effect": "{{_local.sliderForm.effect}}",
+                                                                "width": "{{_local.sliderForm.width ?? 'content'}}"
                                                             }
                                                         },
                                                         "onSuccess": [
@@ -762,7 +833,7 @@
                                         "props": {
                                             "type": "button",
                                             "className": "btn btn-primary flex-center gap-1.5",
-                                            "disabled": "{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay && Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) && _local.sliderForm.effect === _computed.currentSettings.effect)}}"
+                                            "disabled": "{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay && Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) && _local.sliderForm.effect === _computed.currentSettings.effect && (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content'))}}"
                                         },
                                         "children": [
                                             {

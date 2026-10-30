@@ -8,7 +8,8 @@
  * 모두 구좌 안(필요하면 문구 영역 안 스크롤)에서 읽을 수 있어야 하고, 스크롤 영역이 넘김 컨트롤 밑으로 지나가면 안 된다.
  * 사양이 만든 배너는 fixture 가 지운다(확인용 배너와 함께 2장이 되어 컨트롤이 보인다).
  */
-import { test, expect, createBanner, gotoUser, VIEWPORTS } from '../fixtures/hero-auth';
+import { test, expect, createBanner, gotoUser, auth, API, VIEWPORTS } from '../fixtures/hero-auth';
+import type { APIRequestContext } from '@playwright/test';
 
 test.setTimeout(150_000);
 
@@ -78,8 +79,33 @@ for (const [name, [title, description, button]] of Object.entries(VARIANTS)) {
   });
 }
 
+type Settings = { autoplay: boolean; interval_seconds: number; effect: string; width?: string };
+
+/** 사이트 홈 위치 설정을 읽는다. */
+async function readHomeSettings(request: APIRequestContext, token: string): Promise<Settings> {
+  const response = await request.get(`${API}/admin/position-settings`, { headers: auth(token) });
+  return ((await response.json()).data.positions as Array<{ key: string; settings: Settings }>).find((p) => p.key === 'home_hero')!.settings;
+}
+
+/** 사이트 홈 위치 설정을 저장한다. */
+async function saveHomeSettings(request: APIRequestContext, token: string, settings: Settings): Promise<void> {
+  const response = await request.put(`${API}/admin/position-settings/home_hero`, { headers: auth(token), data: settings });
+  expect(response.status(), await response.text()).toBe(200);
+}
+
 test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
   test.use({ hasTouch: true, viewport: VIEWPORTS.mobile });
+
+  // 화면 전체 폭은 휴대폰에서 구좌가 넓고 높아져 최대 길이 문구도 넘치지 않는다 — 넘치는 문구 영역을 보려고 본문 폭으로 두고, 끝나면 되돌린다
+  let original: Settings | null = null;
+  test.beforeEach(async ({ request, managerToken }) => {
+    original = await readHomeSettings(request, managerToken);
+    if (original.width !== 'content') await saveHomeSettings(request, managerToken, { ...original, width: 'content' });
+  });
+  test.afterEach(async ({ request, managerToken }) => {
+    if (original && original.width !== 'content') await saveHomeSettings(request, managerToken, original);
+    original = null;
+  });
 
   // @scenario surface=long_text_scroll_keyboard_and_touch
   // @effects long_text_not_lost
@@ -97,10 +123,9 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     // 자동 넘김이 단언 사이에 장을 바꾸지 않게 멈춘다
     if (await hs.locator('.hs__toggle').count()) await hs.locator('.hs__toggle').tap();
     const slideOf = (text: string) => hs.locator('.hs__slide', { has: page.locator('.hs__title', { hasText: text }) });
-    for (let i = 0; i < 5 && !(await slideOf(marker).getAttribute('class'))?.includes('hs__slide--active'); i++) {
-      await hs.locator('.hs__next').tap();
-      await page.waitForTimeout(700);
-    }
+    // 휴대폰은 화살표를 감추므로 그 장의 점을 누른다
+    await hs.locator('.hs__pagination button').nth(Number(await slideOf(marker).getAttribute('data-index'))).tap();
+    await page.waitForTimeout(700);
     await expect(slideOf(marker)).toHaveClass(/hs__slide--active/);
     const scroll = slideOf(marker).locator('.hs__scroll');
     const scrollTop = () => scroll.evaluate((el) => el.scrollTop);
@@ -114,7 +139,7 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     await expect(short).not.toHaveAttribute('role', /.*/);
 
     // 탭으로 들어가 아래 화살표로 스크롤한다(좌우 화살표는 장 넘김이라 그대로 둔다)
-    await hs.locator('.hs__prev').focus();
+    await hs.locator('.hs__pagination button').first().focus();
     await page.keyboard.press('Shift+Tab');
     for (let i = 0; i < 6 && !(await scroll.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press('Shift+Tab');
     expect(await scroll.evaluate((el) => el === document.activeElement)).toBe(true);
@@ -169,10 +194,8 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     await expect(hs.locator('.hs__title', { hasText: marker })).toBeAttached({ timeout: 30_000 });
     if (await hs.locator('.hs__toggle').count()) await hs.locator('.hs__toggle').tap();
     const slide = hs.locator('.hs__slide', { has: page.locator('.hs__title', { hasText: marker }) });
-    for (let i = 0; i < 5 && !(await slide.getAttribute('class'))?.includes('hs__slide--active'); i++) {
-      await hs.locator('.hs__next').tap();
-      await page.waitForTimeout(700);
-    }
+    await hs.locator('.hs__pagination button').nth(Number(await slide.getAttribute('data-index'))).tap();
+    await page.waitForTimeout(700);
     await expect(slide).toHaveClass(/hs__slide--active/);
     const link = slide.locator('a.hs__link');
     const scroll = slide.locator('.hs__scroll');

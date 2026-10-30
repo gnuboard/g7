@@ -47,7 +47,7 @@ type Overflow = 'alone' | 'controls' | false;
  * 슬라이더 폭은 템플릿 본문 상자(여백·최대 폭) 안이어야 줄바꿈이 같다. 그래서 viewport 는 그대로 두고 그 안에 템플릿의
  * 상자 사슬을 템플릿 CSS 로 그린 뒤, 슬라이더 위아래만 보이게 잘라 보인다.
  */
-function Viewport({ banners, settings, device, chain, stylesheets, onOverflow }: { banners: HeroBanner[]; settings?: HeroSliderSettings; device: 'pc' | 'mobile'; chain?: FrameBox[]; stylesheets?: string[]; onOverflow?: (overflow: Overflow) => void }) {
+function Viewport({ banners, settings, device, chain, content, stylesheets, onOverflow }: { banners: HeroBanner[]; settings?: HeroSliderSettings; device: 'pc' | 'mobile'; chain?: FrameBox[]; content?: FrameBox | null; stylesheets?: string[]; onOverflow?: (overflow: Overflow) => void }) {
   const host = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
   const [body, setBody] = useState<HTMLElement | null>(null);
@@ -58,6 +58,8 @@ function Viewport({ banners, settings, device, chain, stylesheets, onOverflow }:
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [box, setBox] = useState<{ top: number; height: number; width: number } | null>(null);
   const framed = !!chain && chain.length > 0;
+  // 확장점이 넘긴 본문 상자 — 사이트처럼 이 기기 폭에 맞는 클래스를 골라 슬라이더에 넘긴다(표시 폭에 따라 바깥 또는 문구 층)
+  const contentClass = framed && content ? frameClass(content, viewport) : '';
   useEffect(() => {
     const element = host.current;
     if (!element) return;
@@ -163,7 +165,7 @@ function Viewport({ banners, settings, device, chain, stylesheets, onOverflow }:
       'data-preview-width': viewport,
     })}
     {body && framed && createPortal(<Div style={{ transform: box ? `translateY(${-box.top}px)` : undefined }}>{nest(0)}</Div>, body)}
-    {body && framed && slot && createPortal(<HeroSlider banners={banners} settings={settings} forceDevice={device} />, slot)}
+    {body && framed && slot && createPortal(<HeroSlider banners={banners} settings={settings} forceDevice={device} contentClass={contentClass} />, slot)}
     {body && !framed && createPortal(<HeroSlider banners={banners} settings={settings} forceDevice={device} />, body)}
   </Div>;
 }
@@ -172,6 +174,7 @@ function Viewport({ banners, settings, device, chain, stylesheets, onOverflow }:
 export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = [], draft, locale = '', defaultLocale = '', onContentLocaleChange, settings, device = 'pc', emptyText = '', className = '', frame = null, position = '' }) => {
   const slotFrame = position ? frame?.positions?.[position] ?? null : null;
   const chain = slotFrame?.chain;
+  const contentBox = slotFrame?.content ?? null;
   const stylesheets = frame?.stylesheets ?? [];
   const [expanded, setExpanded] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -228,7 +231,7 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
   const Button = basic('Button', 'button');
   return <Div className={`hs-preview hs-preview--${device} ${className}`.trim()} data-device={device}>
     {items.length === 0 ? <P className="hs-preview__empty">{emptyText}</P> : <>
-      <Viewport banners={items} settings={settings} device={device} chain={chain} stylesheets={stylesheets} onOverflow={draft ? setOverflow : undefined} />
+      <Viewport banners={items} settings={settings} device={device} chain={chain} content={contentBox} stylesheets={stylesheets} onOverflow={draft ? setOverflow : undefined} />
       {draft && overflow && <P className="form-hint hs-preview__hint" data-hint="text-overflow" role="status">{translate(overflow === 'alone' ? 'admin.form.preview.text_overflow' : 'admin.form.preview.text_overflow_controls', { device: device.toUpperCase() })}</P>}
       {lowContrast.length > 0 && <P className="form-hint hs-preview__hint" data-hint="contrast" role="status">
         {translate('admin.form.preview.contrast_low', { parts: lowContrast.map((c) => translate(`admin.form.preview.contrast_${c.part}`, { ratio: String(c.ratio) })).join(' · ') })}
@@ -243,7 +246,7 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
         ref: dialog, className: 'hs-preview__dialog', 'aria-label': translate('admin.form.preview.expand'),
         onCancel: (event: Event) => { event.preventDefault(); close(); }, onClose: close,
         onKeyDownCapture: (event: React.KeyboardEvent) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); } },
-      }, <><Button type="button" className="hs-preview__expand" onClick={close}>{translate('admin.form.preview.close')}</Button><Viewport banners={items} settings={settings} device={device} chain={chain} stylesheets={stylesheets} /></>)}
+      }, <><Button type="button" className="hs-preview__expand" onClick={close}>{translate('admin.form.preview.close')}</Button><Viewport banners={items} settings={settings} device={device} chain={chain} content={contentBox} stylesheets={stylesheets} /></>)}
     </>}
   </Div>;
 };

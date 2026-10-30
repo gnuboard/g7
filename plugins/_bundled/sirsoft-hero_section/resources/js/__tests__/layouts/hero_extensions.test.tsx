@@ -40,12 +40,17 @@ describe('사용자 화면 주입 조각', () => {
   });
 
   // @scenario surface=hidden_when_no_banners
-  it('배너가 0건이면 슬라이더를 그리지 않는다', () => {
+  // @scenario surface=loading_skeleton_until_response
+  it('슬라이더는 늘 붙고, 응답 전(값 없음)이면 받는 중으로 알려 스켈레톤을 그리게 하며 0건이면 슬라이더가 스스로 숨는다', () => {
     for (const { doc, source } of fragments) {
       const slider = doc.components[0];
       expect(slider.name).toBe('sirsoft-hero_section.HeroSlider');
-      expect(slider.if).toBe(`{{(${source}?.data?.banners ?? []).length > 0}}`);
+      // 0건 숨김은 슬라이더가 맡는다 — 조각에 if 를 두면 받는 동안 자리를 잡지 못한다
+      expect(slider.if).toBeUndefined();
       expect(slider.props.banners).toBe(`{{${source}?.data?.banners ?? []}}`);
+      expect(slider.props.loading).toBe(`{{${source} == null}}`);
+      // 받는 동안의 폭은 첫 로드 때 받은 플러그인 설정 힌트로 고른다
+      expect(slider.props.skeletonWidth).toBe(`{{_global.plugins?.['sirsoft-hero_section']?.slot_widths?.${slider.props.position} ?? ''}}`);
     }
   });
 
@@ -65,11 +70,24 @@ describe('사용자 화면 주입 조각', () => {
     for (const { doc, source } of fragments) {
       expect(doc.data_sources.map((s: any) => s.id)).toEqual([source]);
       expect(source.startsWith('heroSection')).toBe(true);
+      // 조각이 쓰는 전역 키는 플러그인 접두다. 코어가 첫 로드 때 주는 플러그인 설정(`_global.plugins`)만 읽기로 예외다
       const globals = strings(doc).flatMap((t) => [...t.matchAll(/_global\.([A-Za-z_]\w*)/g)].map((m) => m[1]));
-      expect(globals.every((k) => k.startsWith('heroSection'))).toBe(true);
+      expect(globals.filter((k) => k !== 'plugins').every((k) => k.startsWith('heroSection'))).toBe(true);
+      expect(JSON.stringify(doc)).not.toMatch(/"global"[^}]*"plugins"|plugins=/);
       const key = (doc.data_sources[0].label_key as string).replace('$t:sirsoft-hero_section.', '');
       expect(pick(ko, key)).toBeTruthy();
       expect(pick(en, key)).toBeTruthy();
+    }
+  });
+
+  // @scenario surface=extension_passes_content_class
+  it('템플릿이 확장점으로 넘긴 본문 상자 클래스를 슬라이더에 넘기고, 데스크톱은 따로 넘긴 값을 쓴다(없으면 기본 값)', () => {
+    for (const { doc } of fragments) {
+      const slider = doc.components[0];
+      expect(slider.props.contentClass).toBe("{{extensionPointProps?.contentClass ?? ''}}");
+      expect(slider.responsive.desktop.props.contentClass).toBe("{{extensionPointProps?.contentClassDesktop ?? extensionPointProps?.contentClass ?? ''}}");
+      // 표시 폭은 공개 API 설정(settings.width)으로 받는다
+      expect(slider.props.settings).toMatch(/\?\.data\?\.settings}}$/);
     }
   });
 });

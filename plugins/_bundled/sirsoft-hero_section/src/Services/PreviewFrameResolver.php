@@ -20,6 +20,8 @@ use Throwable;
  * 재현하려면 폭을 하드코딩하지 않고 템플릿이 실제로 쓰는 레이아웃을 읽어야 한다 — 확장점을 가진 레이아웃을 찾아 병합본에서
  * 조상 노드의 정적 클래스와 반응형 덮어쓰기(className 만)를 위에서부터 순서대로 낸다. 화면은 이 사슬을 같은 템플릿 CSS 로
  * 기기 viewport 안에 그려 안쪽 구좌를 얻는다. 템플릿·확장점이 없으면 그 위치는 null 이고 미리보기는 기기 폭 전체를 쓴다.
+ * 확장점이 넘기는 본문 상자 클래스(`contentClass`·`contentClassDesktop`)도 `content` 로 함께 낸다 — 표시 폭이 본문 폭이면
+ * 슬라이더 바깥, 화면 전체면 문구 층에 같은 상자를 써서 실제 사이트와 같은 폭·정렬을 미리 본다.
  */
 class PreviewFrameResolver
 {
@@ -46,7 +48,7 @@ class PreviewFrameResolver
     /**
      * 활성 사용자 템플릿 기준 위치별 구좌 사슬과 템플릿 CSS 를 반환합니다.
      *
-     * @return array{template: string|null, stylesheets: array<int, string>, positions: array<string, array{layout: string, path: string|null, chain: array<int, array{className: string, responsive: array<string, string>}>}|null>} 구좌 틀 (`path` 는 그 자리가 있는 사이트 주소)
+     * @return array{template: string|null, stylesheets: array<int, string>, positions: array<string, array{layout: string, path: string|null, chain: array<int, array{className: string, responsive: array<string, string>}>, content: array{className: string, responsive: array<string, string>}|null}|null>} 구좌 틀 (`path` 는 그 자리가 있는 사이트 주소, `content` 는 확장점이 넘긴 본문 상자)
      */
     public function resolve(): array
     {
@@ -58,7 +60,7 @@ class PreviewFrameResolver
 
         $version = self::getExtensionCacheVersion();
 
-        $frame = $this->cache->remember("preview_frame.{$identifier}.v{$version}", function () use ($identifier, $version) {
+        $frame = $this->cache->remember("preview_frame.v2.{$identifier}.v{$version}", function () use ($identifier, $version) {
             $template = $this->templates->findByIdentifier($identifier);
             $positions = [];
             foreach (HeroPosition::cases() as $position) {
@@ -134,9 +136,9 @@ class PreviewFrameResolver
                 continue;
             }
 
-            $chain = $this->ancestors($merged['components'] ?? [], $point, []);
-            if ($chain !== null) {
-                return ['layout' => $name, 'chain' => $chain];
+            $found = $this->ancestors($merged['components'] ?? [], $point, []);
+            if ($found !== null) {
+                return ['layout' => $name, 'chain' => $found['chain'], 'content' => $this->contentBox($found['props'])];
             }
         }
 
@@ -149,7 +151,7 @@ class PreviewFrameResolver
      * @param  mixed  $nodes  자식 노드 목록
      * @param  string  $point  확장점 이름
      * @param  array<int, array{className: string, responsive: array<string, string>}>  $path  지나온 조상
-     * @return array<int, array{className: string, responsive: array<string, string>}>|null 확장점까지의 조상 (없으면 null)
+     * @return array{chain: array<int, array{className: string, responsive: array<string, string>}>, props: array<string, mixed>}|null 확장점까지의 조상과 확장점 속성 (없으면 null)
      */
     private function ancestors(mixed $nodes, string $point, array $path): ?array
     {
@@ -163,7 +165,7 @@ class PreviewFrameResolver
             }
 
             if (($node['type'] ?? null) === 'extension_point' && ($node['name'] ?? null) === $point) {
-                return $path;
+                return ['chain' => $path, 'props' => is_array($node['props'] ?? null) ? $node['props'] : []];
             }
 
             $responsive = [];
@@ -184,6 +186,23 @@ class PreviewFrameResolver
         }
 
         return null;
+    }
+
+    /**
+     * 확장점이 넘긴 본문 상자 클래스를 구좌 사슬 상자와 같은 모양으로 바꿉니다 — 데스크톱 클래스는 `desktop` 반응형 덮어쓰기다.
+     *
+     * @param  array<string, mixed>  $props  확장점 속성
+     * @return array{className: string, responsive: array<string, string>}|null 본문 상자 (템플릿이 넘기지 않았으면 null)
+     */
+    private function contentBox(array $props): ?array
+    {
+        $base = is_string($props['contentClass'] ?? null) ? $this->staticClasses($props['contentClass']) : '';
+        $desktop = is_string($props['contentClassDesktop'] ?? null) ? $this->staticClasses($props['contentClassDesktop']) : '';
+        if ($base === '' && $desktop === '') {
+            return null;
+        }
+
+        return ['className' => $base, 'responsive' => $desktop === '' ? [] : ['desktop' => $desktop]];
     }
 
     /**

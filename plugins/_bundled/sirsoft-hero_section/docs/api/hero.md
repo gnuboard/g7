@@ -42,7 +42,7 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | position | string | `home_hero` | 위치 키 |
-| settings | object | `{"autoplay":true,"interval_seconds":7,"effect":"fade"}` | 그 위치 슬라이더 설정 |
+| settings | object | `{"autoplay":true,"interval_seconds":7,"effect":"fade","width":"content"}` | 그 위치 슬라이더 설정(`width`: `content` 본문 폭·`full` 화면 전체) |
 | banners[] | array | `[{"id":659,"title":"Autumn Arrivals","description":"최대 30…` | 지금 노출 중인 배너(순서대로, 0건이면 빈 배열) |
 | banners[].id | integer | `659` | 배너 식별자 |
 | banners[].title | string | `Autumn Arrivals` | 요청 언어로 고른 제목(요청 언어 → 기본 언어 → en) |
@@ -117,7 +117,7 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 
 **설명**
 
-사용자 템플릿 확장점(`home_hero`·`shop_hero`) 조각이 부르는 공개 API. 쿼리 `position`(필수, `home_hero`·`shop_hero`)의 **지금 노출 중인** 배너를 순서대로, 요청 언어(Accept-Language)로 고른 문구와 함께 돌려준다 — 요청 언어 → 사이트 기본 언어 → en 순 대체, alt 가 비면 제목. 응답 `data` = `{position, settings{autoplay, interval_seconds, effect}, banners[{id, title, description, button_text, image_alt, title_visible·color·align, description_visible·color·align, link_url, link_new_window, images{pc{url,width,height}, mobile|null}}]}`. 운영 정보(사용 여부·기간·작성자)는 싣지 않는다. 위치·언어별로 캐시하되 다음 시작·종료 시각을 넘기지 않고, 꺼낼 때 다시 판정한다. 모르는 위치는 422. 분당 120회 제한.
+사용자 템플릿 확장점(`home_hero`·`shop_hero`) 조각이 부르는 공개 API. 쿼리 `position`(필수, `home_hero`·`shop_hero`)의 **지금 노출 중인** 배너를 순서대로, 요청 언어(Accept-Language)로 고른 문구와 함께 돌려준다 — 요청 언어 → 사이트 기본 언어 → en 순 대체, alt 가 비면 제목. 응답 `data` = `{position, settings{autoplay, interval_seconds, effect, width}, banners[{id, title, description, button_text, image_alt, title_visible·color·align, description_visible·color·align, link_url, link_new_window, images{pc{url,width,height}, mobile|null}}]}`. 운영 정보(사용 여부·기간·작성자)는 싣지 않는다. 위치·언어별로 캐시하되 다음 시작·종료 시각을 넘기지 않고, 꺼낼 때 다시 판정한다. 모르는 위치는 422. 분당 120회 제한.
 
 
 ## 이미지 표시

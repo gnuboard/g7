@@ -31,7 +31,7 @@
 | `sirsoft-hero_section.banner_image.after_upload` | action | 배너 이미지 임시 업로드 직후(배너에는 저장 때 붙는다). 인자: (BannerImage $image) | `src/Services/BannerImageService.php:101` |
 | `sirsoft-hero_section.banner_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/BannerImageService.php:67` |
 | `sirsoft-hero_section.hero.filter_public_banners` | filter | 사용자 화면 노출 배너 목록 가공. 인자: (array $banners, string $position, string $locale) | `src/Services/PublicHeroService.php:64` |
-| `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:87` |
+| `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:103` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -45,7 +45,11 @@
 |---|---|---|---|---|
 | `core.activity_log.filter_description_params` | filter | `ActivityLogDescriptionResolver` | `resolveDescriptionParams` | 10 |
 | `core.plugin_settings.after_reset` | action (미선언) | `HeroCacheListener` | `onPluginSettingsSaved` | - |
+| `core.plugin_settings.after_reset` | action (미선언) | `SlotWidthHintListener` | `onPluginEvent` | 20 |
 | `core.plugin_settings.after_save` | action (미선언) | `HeroCacheListener` | `onPluginSettingsSaved` | - |
+| `core.plugin_settings.filter_save_data` | filter | `SlotWidthHintListener` | `fillHint` | 20 |
+| `core.plugins.after_activate` | action (미선언) | `SlotWidthHintListener` | `onPluginEvent` | 20 |
+| `core.plugins.after_update` | action (미선언) | `SlotWidthHintListener` | `onPluginEvent` | 20 |
 | `core.plugins.before_uninstall` | action (미선언) | `PluginLifecycleListener` | `beforeUninstall` | 10 |
 | `sirsoft-hero_section.banner.after_bulk_delete` | action (미선언) | `BannerActivityLogListener` | `handleBulkDelete` | 20 |
 | `sirsoft-hero_section.banner.after_bulk_delete` | action (미선언) | `HeroCacheListener` | `onBulkDelete` | - |
@@ -62,6 +66,7 @@
 | `sirsoft-hero_section.banner_image.after_change` | action (미선언) | `BannerActivityLogListener` | `handleImageChanged` | 20 |
 | `sirsoft-hero_section.position_setting.after_update` | action (미선언) | `BannerActivityLogListener` | `handlePositionSetting` | 20 |
 | `sirsoft-hero_section.position_setting.after_update` | action (미선언) | `HeroCacheListener` | `onPositionSetting` | - |
+| `sirsoft-hero_section.position_setting.after_update` | action (미선언) | `SlotWidthHintListener` | `onPositionSetting` | 20 |
 <!-- @generated:hooks-subscribed END -->
 
 <!-- @intent START -->
@@ -77,6 +82,7 @@
 | `BannerActivityLogListener` | 8개 | 명시 등록 | ✅ | `src/Listeners/BannerActivityLogListener.php` |
 | `HeroCacheListener` | 9개 | 명시 등록 | ✅ | `src/Listeners/HeroCacheListener.php` |
 | `PluginLifecycleListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PluginLifecycleListener.php` |
+| `SlotWidthHintListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/SlotWidthHintListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
@@ -95,8 +101,10 @@
 <!-- @intent START -->
 사용자 템플릿 확장점 `home_hero`(사이트 홈 상단)·`shop_hero`(쇼핑몰 메인 상단)에 슬라이더 조각을 `append` 로 주입한다. 확장점 이름 = 배너 노출 위치 키다(플러그인 고정 목록). 다른 템플릿도 본문 맨 앞에 같은 이름의 빈 슬롯 `<extension-point name="home_hero"><default/></extension-point>` 만 두면 배너가 붙는다 — 주입이 없으면 아무것도 그리지 않는다.
 
+- **표시 폭(본문 폭·화면 전체)** — 운영자가 위치마다 고른다(위치 설정 `width`, 기본 `content`). 화면 전체를 쓰려면 템플릿이 자리를 본문 상자(여백·최대 폭) **밖**에 두고, 본문 상자 클래스를 확장점 속성으로 넘긴다: `contentClass`(기본 폭) · `contentClassDesktop`(데스크톱 1024px 이상, 없으면 `contentClass`). 예(sirsoft-basic): `<extension-point name="home_hero" contentClass="px-4" contentClassDesktop="max-w-7xl mx-auto px-8"><default/></extension-point>` 를 `_user_base` 의 본문 앞 전폭 슬롯 `page_top` 에 둔다. 조각은 이 값을 `HeroSlider` 의 `contentClass` 로 넘기고(`<responsive on="desktop">` 로 데스크톱 값), 슬라이더는 본문 폭이면 그 상자로 감싸고, 화면 전체면 끝까지 그리되 제목·넘김 단추만 그 상자에 맞춘다(높이 상한 640px). 클래스는 템플릿 자기 CSS 에 있는 값이어야 한다. 자리를 본문 상자 **안**에 두고 속성을 넘기지 않는 템플릿은 두 설정 모두 자리 폭 그대로다(종전 동작).
+
 - 조각은 공개 API `GET /api/plugins/sirsoft-hero_section/hero?position=…` 를 data-source `heroSectionHome`·`heroSectionShop` 으로 받아(인증 없음) 배너가 있을 때만 슬라이더를 그린다. 0건·받기 실패면 숨긴다(fallback null). 언어를 바꾸면 화면이 새로 마운트되며 새 언어로 다시 받는다.
-- 디자인을 바꾸려면 템플릿 오버라이드(템플릿 루트 기준 src/components/overrides/sirsoft-hero_section/HeroSlider.tsx)로 `sirsoft-hero_section.HeroSlider` 를 대체한다. props 계약: `banners`(공개 API 배열 — `id`·`title`·`description`·`button_text`·`image_alt`·`title_visible`·`title_color`·`title_align`·`description_*`·`link_url`·`link_new_window`·`images{pc{url,width,height},mobile|null}`), `settings`(`autoplay`·`interval_seconds`·`effect` slide·fade·none), `position`(위치 키), `className`.
+- 디자인을 바꾸려면 템플릿 오버라이드(템플릿 루트 기준 src/components/overrides/sirsoft-hero_section/HeroSlider.tsx)로 `sirsoft-hero_section.HeroSlider` 를 대체한다. props 계약: `banners`(공개 API 배열 — `id`·`title`·`description`·`button_text`·`image_alt`·`title_visible`·`title_color`·`title_align`·`description_*`·`link_url`·`link_new_window`·`images{pc{url,width,height},mobile|null}`), `settings`(`autoplay`·`interval_seconds`·`effect` slide·fade·cube·flip·coverflow·creative·none·`width` content·full), `position`(위치 키), `contentClass`(템플릿 본문 상자 클래스 — 지금 화면 폭에 맞는 값), `loading`(공개 API 응답 전이면 true — 배너가 없으면 같은 크기의 스켈레톤 `section.hs.hs--skeleton` 을 그린다), `skeletonWidth`(받는 동안의 표시 폭 힌트 `content`·`full`), `className`. 배너가 0건이면 컴포넌트가 스스로 아무것도 그리지 않는다(조각에 `if` 를 두지 않는다 — 두면 받는 동안 자리를 잡지 못한다). 화면 전체 폭에서 문구는 `.hs__text.hs__text--boxed > .hs__box > .hs__scroll`, 일시정지 단추는 `.hs__controls-layer > .hs__controls-box > .hs__controls--boxed` 구조다. 좌우 화살표 `button.swiper-button-prev.hs__prev`·`button.swiper-button-next.hs__next`(1024px 이상만 보임)와 점 표시 `.hs__pagination.swiper-pagination > button.swiper-pagination-bullet`(현재 장 `aria-current`)는 `section.hs` 바로 아래에 둔다.
 - 검색 봇 화면은 확장 composite 를 그리지 않을 수 있다 — 배너는 색인할 본문이 아니라 허용한다.
 <!-- @intent END -->
 

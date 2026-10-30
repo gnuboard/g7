@@ -15,9 +15,15 @@ import path from 'node:path';
 import { contrastRatio, estimateContrast, OVERLAYS } from '../../support/editor';
 
 vi.mock('swiper/react', () => import('../swiperMock'));
-vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' } }));
+vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' }, EffectCube: { name: 'effect-cube' }, EffectFlip: { name: 'effect-flip' }, EffectCoverflow: { name: 'effect-coverflow' }, EffectCreative: { name: 'effect-creative' } }));
 vi.mock('swiper/css', () => ({}));
 vi.mock('swiper/css/effect-fade', () => ({}));
+vi.mock('swiper/css/navigation', () => ({}));
+vi.mock('swiper/css/pagination', () => ({}));
+vi.mock('swiper/css/effect-cube', () => ({}));
+vi.mock('swiper/css/effect-flip', () => ({}));
+vi.mock('swiper/css/effect-coverflow', () => ({}));
+vi.mock('swiper/css/effect-creative', () => ({}));
 
 const sample = vi.hoisted(() => ({ rgb: [255, 255, 255] as [number, number, number] | null }));
 vi.mock('../../support/editor', async (importOriginal) => ({

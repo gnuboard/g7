@@ -199,6 +199,35 @@ describe('히어로섹션 목록 화면', () => {
     expect(button.props.disabled).toContain('_computed.currentSettings.effect');
   });
 
+  // @scenario surface=admin_width_setting
+  // @effects preview_follows_width_before_save, width_saved_and_restored
+  it('표시 폭(본문 폭·화면 전체)을 고르면 작업본에 담겨 미리보기가 저장 전에 따라가고, 저장 본문에 실리며 바뀐 것이 없으면 잠긴다', () => {
+    // id 는 노드 id(data-ref)가 아니라 HTML 속성이다
+    const select = collect(list, (n) => n.props?.id === 'hero_slider_width')[0];
+    expect(select.name).toBe('Select');
+    expect(select.props.options.map((o: { value: string }) => o.value)).toEqual(['content', 'full']);
+    // 전환 효과 선택지는 서버 Enum(SlideEffect)과 같은 7개다
+    const effect = collect(list, (n) => n.props?.id === 'hero_slider_effect')[0];
+    expect(effect.props.options.map((o: { value: string }) => o.value)).toEqual(['slide', 'fade', 'cube', 'flip', 'coverflow', 'creative', 'none']);
+    for (const lang of [ko, en] as any[]) {
+      for (const key of ['cube', 'flip', 'coverflow', 'creative']) expect(lang.admin.slider.effects[key]).toBeTruthy();
+      expect(lang.slider.go_to).toContain('{{n}}');
+    }
+    expect(select.props.value).toContain("width ?? 'content'");
+    expect(json(actionsOf(select, 'setState'))).toContain('width: $event.target.value');
+    // 미리보기는 같은 위치의 작업본을 먼저 본다
+    expect(findById(list, 'hero_preview')!.props.settings).toBe('{{_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings}}');
+    const button = findById(list, 'slider_save_button')!;
+    expect(json(actionsOf(button, 'apiCall')[0])).toContain("\"width\":\"{{_local.sliderForm.width ?? 'content'}}\"");
+    expect(button.props.disabled).toContain("(_computed.currentSettings.width ?? 'content')");
+    for (const lang of [ko, en] as any[]) {
+      expect(lang.admin.slider.width).toBeTruthy();
+      expect(lang.admin.slider.widths.content).toBeTruthy();
+      expect(lang.admin.slider.widths.full).toBeTruthy();
+      expect(lang.admin.slider.width_hint).toBeTruthy();
+    }
+  });
+
   // @scenario surface=list_preview_empty_message
   // @scenario surface=list_empty_states_distinguished
   it('미리보기는 받는 중에는 빈 문구를 비우고, 노출 중인 배너가 0건이면 안내를 보인다 — 배너는 있는데 지금 노출이 없으면 예약·비노출·종료 건수를 함께', () => {

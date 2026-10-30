@@ -45,6 +45,7 @@
         "label": "Main banner",
         "previous": "Previous banner",
         "next": "Next banner",
+        "go_to": "Go to banner {{n}}",
         "pause": "Pause auto-rotation",
         "play": "Resume auto-rotation"
     },
@@ -83,8 +84,18 @@
             "effects": {
                 "slide": "Slide",
                 "fade": "Fade",
+                "cube": "Cube",
+                "flip": "Flip",
+                "coverflow": "Coverflow",
+                "creative": "Slide over",
                 "none": "None"
             },
+            "width": "Width",
+            "widths": {
+                "content": "Fit to content width",
+                "full": "Full screen width"
+            },
+            "width_hint": "Full screen width stretches the image edge to edge and keeps the title and button aligned with the page content. On screens wider than 1920px the height stops at 640px and the image is cropped top and bottom around its focus point.",
             "save": "Save settings"
         },
         "list": {

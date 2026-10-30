@@ -138,12 +138,12 @@ class PositionSettingControllerTest extends PluginTestCase
     public function test_upsert(): void
     {
         $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/shop_hero'), ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade'])
-            ->assertOk()->assertJsonPath('data.settings', ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade']);
+            ->assertOk()->assertJsonPath('data.settings', ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade', 'width' => 'content']);
         $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/shop_hero'), ['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'none'])
             ->assertOk();
 
         $this->assertSame(1, PositionSetting::query()->where('position', 'shop_hero')->count());
-        $this->assertSame(['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'none'], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
+        $this->assertSame(['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'none', 'width' => 'content'], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
         $this->assertSame(0, PositionSetting::query()->where('position', 'home_hero')->count());
     }
 
@@ -164,5 +164,27 @@ class PositionSettingControllerTest extends PluginTestCase
             ->assertStatus(422)->assertJsonValidationErrors(['effect']);
         $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/side_bar'), ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide'])
             ->assertNotFound();
+    }
+
+    /**
+     * 표시 폭은 content·full 만 받는다. 저장하면 공개 응답 설정에 실리고, 표시 폭을 빼고 저장하면 지금 값을 그대로 둔다.
+     *
+     * @scenario surface=position_settings_width
+     *
+     * @return void 반환값 없음
+     */
+    public function test_width_saved_validated_and_kept_when_omitted(): void
+    {
+        $url = $this->api('/admin/position-settings/home_hero');
+
+        $this->actingAs($this->admin)->putJson($url, ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide', 'width' => 'wide'])
+            ->assertStatus(422)->assertJsonValidationErrors(['width']);
+        $this->actingAs($this->admin)->putJson($url, ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide', 'width' => 'full'])
+            ->assertOk()->assertJsonPath('data.settings.width', 'full');
+        $this->actingAs($this->admin)->putJson($url, ['autoplay' => false, 'interval_seconds' => 3, 'effect' => 'fade'])
+            ->assertOk()->assertJsonPath('data.settings.width', 'full');
+
+        $this->assertSame('full', PositionSetting::query()->where('position', 'home_hero')->first()->toSettings()['width']);
+        $this->assertSame('full', $this->getJson($this->api('/hero?position=home_hero'))->assertOk()->json('data.settings.width'));
     }
 }

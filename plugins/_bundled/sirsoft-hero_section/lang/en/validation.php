@@ -53,6 +53,7 @@ return [
         'autoplay' => 'autoplay',
         'interval_seconds' => 'interval',
         'effect' => 'effect',
+        'width' => 'width',
         'ids' => 'selected banners',
         'ids_item' => 'selected banner',
     ],

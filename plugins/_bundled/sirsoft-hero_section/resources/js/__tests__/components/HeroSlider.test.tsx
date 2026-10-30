@@ -14,9 +14,15 @@ import { swiperState } from '../swiperMock';
 
 // 넘김은 Swiper 가 맡는다 — jsdom 에서는 대역으로 연결 계약(옵션·호출·장 번호 동기)만 보고, 실제 넘김은 E2E 가 본다
 vi.mock('swiper/react', () => import('../swiperMock'));
-vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' } }));
+vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' }, EffectCube: { name: 'effect-cube' }, EffectFlip: { name: 'effect-flip' }, EffectCoverflow: { name: 'effect-coverflow' }, EffectCreative: { name: 'effect-creative' } }));
 vi.mock('swiper/css', () => ({}));
 vi.mock('swiper/css/effect-fade', () => ({}));
+vi.mock('swiper/css/navigation', () => ({}));
+vi.mock('swiper/css/pagination', () => ({}));
+vi.mock('swiper/css/effect-cube', () => ({}));
+vi.mock('swiper/css/effect-flip', () => ({}));
+vi.mock('swiper/css/effect-coverflow', () => ({}));
+vi.mock('swiper/css/effect-creative', () => ({}));
 
 /** 배너 하나를 만든다. */
 const banner = (id: number, extra: Partial<HeroBanner> = {}): HeroBanner => ({
@@ -80,11 +86,13 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=loop_and_touch_swipe_enabled
-  it('2장 이상이면 Swiper 무한 반복과 손가락 넘기기를 켜고, PC 마우스 끌기는 끈다', () => {
-    render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false }} />);
+  it('2장 이상이면 Swiper 무한 반복·손가락 넘기기·PC 마우스 끌기(잡기 커서)를 켜고, 사진은 끌려 나오지 않는다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false }} />);
     expect(swiperState.props?.loop).toBe(true);
     expect(swiperState.props?.allowTouchMove).toBe(true);
-    expect(swiperState.props?.simulateTouch).toBe(false);
+    expect(swiperState.props?.simulateTouch).toBe(true);
+    expect(swiperState.props?.grabCursor).toBe(true);
+    expect(container.querySelector('img')?.getAttribute('draggable')).toBe('false');
     expect(swiperState.props?.className).toBe('hs__track');
   });
 
@@ -257,16 +265,24 @@ describe('HeroSlider', () => {
   // @scenario surface=effect_fade_and_none
   it('효과는 Swiper effect·speed 로 옮긴다 — 슬라이드 500ms, 페이드(교차) 600ms, 없음은 slide 를 0ms 로', () => {
     const cases = [
-      ['slide', 'slide', 500],
-      ['fade', 'fade', 600],
-      ['none', 'slide', 0],
+      ['slide', 'slide', 500, null],
+      ['fade', 'fade', 600, 'fadeEffect'],
+      ['cube', 'cube', 800, 'cubeEffect'],
+      ['flip', 'flip', 700, 'flipEffect'],
+      ['coverflow', 'coverflow', 600, 'coverflowEffect'],
+      ['creative', 'creative', 700, 'creativeEffect'],
+      ['none', 'slide', 0, null],
     ] as const;
-    for (const [setting, effect, speed] of cases) {
+    for (const [setting, effect, speed, option] of cases) {
       const { container, unmount } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false, effect: setting }} />);
       expect(container.querySelector('section')?.className).toContain(`hs--${setting}`);
       expect(swiperState.props?.effect).toBe(effect);
       expect(swiperState.props?.speed).toBe(speed);
-      expect(swiperState.props?.fadeEffect).toEqual({ crossFade: true });
+      if (option) expect(swiperState.props?.[option]).toBeTruthy();
+      // 그림자는 끈다(배너 밖으로 번지거나 사진을 덮는다)
+      for (const key of ['cubeEffect', 'flipEffect', 'coverflowEffect']) {
+        if (swiperState.props?.[key]) expect(swiperState.props[key].slideShadows).toBe(false);
+      }
       fireEvent.click(container.querySelector('.hs__next') as HTMLElement);
       expect(activeId(container)).toBe('2');
       unmount();
@@ -423,5 +439,169 @@ describe('HeroSlider', () => {
     style = (container.querySelector('section') as HTMLElement).style;
     expect(style.getPropertyValue('--hs-ratio-pc')).toBe('1920 / 640');
     expect(style.getPropertyValue('--hs-ratio-mobile')).toBe('750 / 1000');
+  });
+
+  // @scenario surface=slider_content_box_wrap
+  it('본문 폭(기본)이면 확장점이 넘긴 본문 상자로 슬라이더를 감싸고, 상자가 없으면 감싸지 않는다', () => {
+    const { container, rerender } = render(<HeroSlider banners={[banner(1), banner(2)]} contentClass="max-w-7xl mx-auto px-8" />);
+    const frame = container.querySelector('[data-hs-width="content"]') as HTMLElement;
+    expect(frame.className).toBe('hs-frame max-w-7xl mx-auto px-8');
+    expect(frame.querySelector(':scope > section.hs.hs--content')).not.toBeNull();
+    // 문구·넘김 단추는 상자로 다시 감싸지 않는다(이미 상자 안)
+    expect(container.querySelector('.hs__box')).toBeNull();
+    expect(container.querySelector('.hs__controls-layer')).toBeNull();
+
+    rerender(<HeroSlider banners={[banner(1)]} />);
+    expect(container.querySelector('[data-hs-width]')).toBeNull();
+    expect(container.firstElementChild?.tagName).toBe('SECTION');
+  });
+
+  // @scenario surface=slider_full_text_box
+  it('화면 전체 폭이면 끝까지 그리고 제목·넘김 단추만 본문 상자에 맞춘다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ width: 'full' }} contentClass="max-w-7xl mx-auto px-8" />);
+    const section = container.firstElementChild as HTMLElement;
+    expect(section.tagName).toBe('SECTION');
+    expect(section.className).toContain('hs--full');
+    expect(container.querySelector('[data-hs-width]')).toBeNull();
+    const boxes = [...container.querySelectorAll('.hs__text.hs__text--boxed > .hs__box')];
+    expect(boxes).toHaveLength(2);
+    expect(boxes[0].className).toBe('hs__box max-w-7xl mx-auto px-8');
+    expect(boxes[0].querySelector(':scope > .hs__scroll .hs__title')?.textContent).toBe('제목 1');
+    const controlsBox = container.querySelector('.hs__controls-layer > .hs__controls-box') as HTMLElement;
+    expect(controlsBox.className).toBe('hs__controls-box max-w-7xl mx-auto px-8');
+    expect(controlsBox.querySelector(':scope > .hs__controls.hs__controls--boxed .hs__toggle')).not.toBeNull();
+    // 좌우 화살표·점 표시는 배너 기준(Swiper 기본 자리)이라 상자로 감싸지 않는다
+    expect(section.querySelector(':scope > .hs__prev')).not.toBeNull();
+    expect(section.querySelector(':scope > .hs__pagination')).not.toBeNull();
+  });
+
+  // @scenario surface=slider_full_text_box
+  it('화면 전체 폭인데 본문 상자를 받지 못하면(자리가 본문 상자 안인 템플릿) 문구를 감싸지 않고 종전 여백을 쓴다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ width: 'full' }} />);
+    expect(container.querySelector('section')?.className).toContain('hs--full');
+    expect(container.querySelector('.hs__box')).toBeNull();
+    expect(container.querySelector('.hs__text--boxed')).toBeNull();
+    expect(container.querySelector('.hs__controls-layer')).toBeNull();
+    expect(container.querySelector('section > .hs__controls')).not.toBeNull();
+  });
+
+  // @scenario surface=swiper_pagination_and_arrows
+  it('2장 이상이면 Swiper 기본 모양의 좌우 화살표와 점 표시를 이름 붙은 단추로 그리고, 점을 누르면 그 장으로 간다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false }} />);
+    const prev = container.querySelector('button.swiper-button-prev.hs__prev') as HTMLButtonElement;
+    const next = container.querySelector('button.swiper-button-next.hs__next') as HTMLButtonElement;
+    expect(prev.getAttribute('aria-label')).toBe('이전 배너');
+    expect(container.querySelectorAll('.hs__pagination button')[1].getAttribute('aria-label')).toBe('2번째 배너로 이동');
+    expect(next.querySelector('svg.swiper-navigation-icon')).not.toBeNull();
+    const bullets = [...container.querySelectorAll<HTMLButtonElement>('.hs__pagination.swiper-pagination-bullets > button.swiper-pagination-bullet')];
+    expect(bullets).toHaveLength(3);
+    expect(bullets.map((b) => b.getAttribute('aria-current'))).toEqual(['true', null, null]);
+    expect(bullets[0].className).toContain('swiper-pagination-bullet-active');
+    fireEvent.click(bullets[2]);
+    expect(swiperState.instance?.slideToLoop).toHaveBeenCalledWith(2);
+    expect(activeId(container)).toBe('3');
+    expect(bullets[2].getAttribute('aria-current')).toBe('true');
+    // 장 번호는 화면 읽기용으로 남는다
+    expect(container.querySelector('.hs__counter')?.textContent).toBe('3 / 3');
+  });
+
+  // @scenario surface=swiper_pagination_and_arrows
+  it('1장이면 화살표·점 표시가 없다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1)]} />);
+    expect(container.querySelector('.hs__prev, .hs__next, .hs__pagination')).toBeNull();
+  });
+
+  // @scenario surface=swiper_extra_effects
+  it('모르는 효과 값은 slide 로 그린다', () => {
+    render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false, effect: 'zoom' as any }} />);
+    expect(swiperState.props?.effect).toBe('slide');
+    expect(swiperState.props?.speed).toBe(500);
+  });
+
+  describe('받는 중 스켈레톤', () => {
+    beforeEach(() => window.localStorage.clear());
+
+    // @scenario surface=loading_skeleton_until_response
+    it('받는 중이고 배너가 아직 없으면 같은 비율의 스켈레톤을 그리고(읽지 않음), 받은 뒤 0건이면 아무것도 그리지 않는다', () => {
+      swiperState.props = null;
+      const { container, rerender } = render(<HeroSlider banners={[]} loading position="home_hero" contentClass="max-w-7xl mx-auto px-8" />);
+      const skeleton = container.querySelector('section.hs.hs--skeleton') as HTMLElement;
+      expect(skeleton.getAttribute('aria-hidden')).toBe('true');
+      expect(skeleton.style.getPropertyValue('--hs-ratio-pc')).toBe('1920 / 640');
+      expect(skeleton.className).toContain('hs--content');
+      // 본문 폭이면 실제 슬라이더처럼 본문 상자 안
+      expect(container.querySelector('[data-hs-width="content"] > section.hs--skeleton')).not.toBeNull();
+      expect(container.querySelectorAll('.hs__skeleton-line')).toHaveLength(3);
+      expect(swiperState.props).toBeNull();
+
+      rerender(<HeroSlider banners={[]} loading={false} position="home_hero" contentClass="max-w-7xl mx-auto px-8" />);
+      expect(container.innerHTML).toBe('');
+    });
+
+    // @scenario surface=loading_skeleton_until_response
+    it('받은 배너가 오면 스켈레톤을 실제 슬라이더로 바꾼다', () => {
+      const { container, rerender } = render(<HeroSlider banners={[]} loading position="home_hero" />);
+      expect(container.querySelector('.hs--skeleton')).not.toBeNull();
+      rerender(<HeroSlider banners={[banner(1)]} loading={false} position="home_hero" />);
+      expect(container.querySelector('.hs--skeleton')).toBeNull();
+      expect(container.querySelector('section.hs [data-banner-id="1"]')).not.toBeNull();
+    });
+
+    // @scenario surface=loading_skeleton_remembers_slot
+    it('직전 방문의 모양을 기억해, 0건이던 위치는 스켈레톤을 그리지 않고 화면 전체였던 위치는 끝까지 그린다', () => {
+      const first = render(<HeroSlider banners={[]} loading={false} settings={{ width: 'content' }} position="shop_hero" />);
+      first.unmount();
+      expect(JSON.parse(window.localStorage.getItem('sirsoft-hero_section:slot:shop_hero')!)).toEqual({ banners: 0, width: 'content' });
+      const again = render(<HeroSlider banners={[]} loading position="shop_hero" />);
+      expect(again.container.innerHTML).toBe('');
+      again.unmount();
+
+      const full = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ width: 'full' }} position="home_hero" contentClass="px-8" />);
+      full.unmount();
+      expect(JSON.parse(window.localStorage.getItem('sirsoft-hero_section:slot:home_hero')!)).toEqual({ banners: 2, width: 'full' });
+      const next = render(<HeroSlider banners={[]} loading position="home_hero" contentClass="px-8" />);
+      const skeleton = next.container.querySelector('section.hs--skeleton') as HTMLElement;
+      expect(skeleton.className).toContain('hs--full');
+      expect(next.container.querySelector('[data-hs-width]')).toBeNull();
+      // 화면 전체면 문구 자리만 본문 상자에 맞춘다
+      expect(skeleton.querySelector('.hs__text--boxed > .hs__box.px-8 .hs__skeleton-lines')).not.toBeNull();
+    });
+
+    // @scenario surface=loading_skeleton_remembers_slot
+    it('받기에 실패하면(설정 없이 끝남) 기억을 남기지 않아, 다음 방문에도 스켈레톤이 자리를 잡는다', () => {
+      window.localStorage.setItem('sirsoft-hero_section:slot:home_hero', JSON.stringify({ banners: 3, width: 'full' }));
+      const failed = render(<HeroSlider banners={[]} loading={false} position="home_hero" />);
+      expect(failed.container.innerHTML).toBe('');
+      failed.unmount();
+      expect(JSON.parse(window.localStorage.getItem('sirsoft-hero_section:slot:home_hero')!)).toEqual({ banners: 3, width: 'full' });
+      const next = render(<HeroSlider banners={[]} loading position="home_hero" />);
+      expect(next.container.querySelector('section.hs--skeleton.hs--full')).not.toBeNull();
+    });
+
+    // @scenario surface=loading_skeleton_remembers_slot
+    it('첫 로드 설정의 표시 폭 힌트가 브라우저 기억보다 먼저다(저장소를 지우는 개인정보 설정에서도 폭이 맞는다)', () => {
+      window.localStorage.setItem('sirsoft-hero_section:slot:home_hero', JSON.stringify({ banners: 2, width: 'content' }));
+      const { container, rerender } = render(<HeroSlider banners={[]} loading position="home_hero" skeletonWidth="full" contentClass="px-8" />);
+      expect(container.querySelector('section.hs--skeleton')?.className).toContain('hs--full');
+      window.localStorage.clear();
+      rerender(<HeroSlider banners={[]} loading position="shop_hero" skeletonWidth="content" contentClass="px-8" />);
+      expect(container.querySelector('[data-hs-width="content"] > section.hs--skeleton')).not.toBeNull();
+    });
+
+    // @scenario surface=loading_skeleton_remembers_slot
+    it('저장소를 쓸 수 없어도(개인정보 동의 전 차단 등) 기본 스켈레톤으로 동작한다', () => {
+      const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+      const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+      const { container } = render(<HeroSlider banners={[]} loading position="home_hero" />);
+      expect(container.querySelector('section.hs--skeleton.hs--content')).not.toBeNull();
+      getItem.mockRestore();
+      setItem.mockRestore();
+    });
+
+    // @scenario surface=loading_skeleton_until_response
+    it('위치를 모르는 미리보기는 기억을 쓰지 않는다', () => {
+      render(<HeroSlider banners={[banner(1)]} />);
+      expect(window.localStorage.length).toBe(0);
+    });
   });
 });

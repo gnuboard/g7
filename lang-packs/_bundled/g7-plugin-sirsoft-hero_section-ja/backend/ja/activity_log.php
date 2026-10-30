@@ -38,5 +38,6 @@ return [
         'autoplay' => '自動再生',
         'interval_seconds' => '転換間隔(秒)',
         'effect' => '転換効果',
+        'width' => '表示幅',
     ],
 ];

@@ -14,6 +14,8 @@
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->
+`slot_widths`(위치 → `content`·`full`)는 환경설정 화면에 없는 **표시 폭 힌트**다. 원본은 위치 설정이고, 플러그인 설정을 저장할 때마다 저장 직전 필터(`core.plugin_settings.filter_save_data`)가 위치 설정 값으로 다시 채운다(표시 폭이 바뀐 위치 설정 저장·설정 초기화·활성화·업데이트 때 다시 저장). 사용자 화면은 첫 로드 때 받는 플러그인 설정(`frontend_schema` 로 이 값만 노출)으로 배너를 받기 전 스켈레톤 폭을 고른다. 그래서 표시 폭이 바뀐 위치 설정 저장에는 코어 활동 로그 「플러그인 설정 변경」도 한 건 남는다.
+
 실제로 받을 수 있는 업로드 크기는 `max_upload_mb` 와 서버 PHP `upload_max_filesize`·`post_max_size` 중 가장 작은 값이다. `public_cache_minutes` 는 사용자 화면 공개 응답 캐시 시간이며, 예약 시작·종료 시각을 넘기지 않도록 그보다 먼저 만료되고 배너가 바뀌면 바로 지워진다. 0 이면 캐시를 쓰지 않는다.
 <!-- @intent END -->
 

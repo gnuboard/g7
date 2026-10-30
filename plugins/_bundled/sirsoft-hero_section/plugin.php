@@ -9,6 +9,7 @@ use Plugins\Sirsoft\HeroSection\Listeners\ActivityLogDescriptionResolver;
 use Plugins\Sirsoft\HeroSection\Listeners\BannerActivityLogListener;
 use Plugins\Sirsoft\HeroSection\Listeners\HeroCacheListener;
 use Plugins\Sirsoft\HeroSection\Listeners\PluginLifecycleListener;
+use Plugins\Sirsoft\HeroSection\Listeners\SlotWidthHintListener;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
 
 /**
@@ -32,6 +33,7 @@ class Plugin extends AbstractPlugin
             BannerActivityLogListener::class,
             HeroCacheListener::class,
             PluginLifecycleListener::class,
+            SlotWidthHintListener::class,
         ];
     }
 

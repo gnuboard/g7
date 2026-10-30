@@ -5,7 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * 위치별 슬라이더 설정 (자동 재생·전환 간격·전환 효과)
+ * 위치별 슬라이더 설정 (자동 재생·전환 간격·전환 효과·표시 폭)
  *
  * 행이 없으면 기본값(`DEFAULTS`)으로 응답하고 첫 저장 때 만든다.
  */
@@ -14,9 +14,9 @@ class PositionSetting extends Model
     /**
      * 행이 없을 때 쓰는 기본값
      *
-     * @var array{autoplay: bool, interval_seconds: int, effect: string}
+     * @var array{autoplay: bool, interval_seconds: int, effect: string, width: string}
      */
-    public const DEFAULTS = ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide'];
+    public const DEFAULTS = ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'slide', 'width' => 'content'];
 
     /**
      * 허용 전환 간격(초)
@@ -37,7 +37,7 @@ class PositionSetting extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = ['position', 'autoplay', 'interval_seconds', 'effect', 'updated_by'];
+    protected $fillable = ['position', 'autoplay', 'interval_seconds', 'effect', 'width', 'updated_by'];
 
     /**
      * 활동 로그 변경 추적 필드
@@ -48,6 +48,7 @@ class PositionSetting extends Model
         'autoplay' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.autoplay', 'type' => 'boolean'],
         'interval_seconds' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.interval_seconds', 'type' => 'number'],
         'effect' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.effect', 'type' => 'text'],
+        'width' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.width', 'type' => 'text'],
     ];
 
     /**
@@ -66,7 +67,7 @@ class PositionSetting extends Model
     /**
      * 슬라이더 설정 값만 배열로 반환합니다.
      *
-     * @return array{autoplay: bool, interval_seconds: int, effect: string} 설정 값
+     * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string} 설정 값
      */
     public function toSettings(): array
     {
@@ -74,6 +75,7 @@ class PositionSetting extends Model
             'autoplay' => (bool) $this->autoplay,
             'interval_seconds' => (int) $this->interval_seconds,
             'effect' => (string) $this->effect,
+            'width' => (string) ($this->width ?? self::DEFAULTS['width']),
         ];
     }
 }

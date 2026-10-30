@@ -53,6 +53,7 @@ return [
         'autoplay' => '자동 재생',
         'interval_seconds' => '전환 간격',
         'effect' => '전환 효과',
+        'width' => '표시 폭',
         'ids' => '선택한 배너',
         'ids_item' => '선택한 배너',
     ],

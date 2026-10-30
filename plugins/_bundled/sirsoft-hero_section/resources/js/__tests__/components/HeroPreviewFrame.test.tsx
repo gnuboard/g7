@@ -14,9 +14,15 @@ import { HeroBannerPreview } from '../../components/composite/HeroBannerPreview'
 import { frameClass, matchResponsiveKey } from '../../support/editor';
 
 vi.mock('swiper/react', () => import('../swiperMock'));
-vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' } }));
+vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' }, EffectCube: { name: 'effect-cube' }, EffectFlip: { name: 'effect-flip' }, EffectCoverflow: { name: 'effect-coverflow' }, EffectCreative: { name: 'effect-creative' } }));
 vi.mock('swiper/css', () => ({}));
 vi.mock('swiper/css/effect-fade', () => ({}));
+vi.mock('swiper/css/navigation', () => ({}));
+vi.mock('swiper/css/pagination', () => ({}));
+vi.mock('swiper/css/effect-cube', () => ({}));
+vi.mock('swiper/css/effect-flip', () => ({}));
+vi.mock('swiper/css/effect-coverflow', () => ({}));
+vi.mock('swiper/css/effect-creative', () => ({}));
 
 const banners = [{
   id: 1,
@@ -120,5 +126,26 @@ describe('미리보기 구좌 틀', () => {
       expect(doc.head.querySelectorAll('link[data-hs-template-css]').length).toBe(0);
       view.unmount();
     }
+  });
+
+  // @scenario surface=preview_frame_content_box
+  // @effects preview_follows_width_before_save
+  it('본문 폭이면 구좌 틀의 본문 상자(기기 폭에 맞는 클래스)로 슬라이더를 감싼다', () => {
+    const withContent = { ...frame, positions: { ...frame.positions, home_hero: { ...frame.positions.home_hero, content: { className: 'px-4', responsive: { desktop: 'max-w-7xl mx-auto px-8' } } } } };
+    const pc = mountFrame(<HeroBannerPreview banners={banners} device="pc" frame={withContent} position="home_hero" />);
+    expect(pc.doc.querySelector('[data-hs-width="content"]')?.className).toBe('hs-frame max-w-7xl mx-auto px-8');
+    cleanup();
+    const mobile = mountFrame(<HeroBannerPreview banners={banners} device="mobile" frame={withContent} position="home_hero" />);
+    expect(mobile.doc.querySelector('[data-hs-width="content"]')?.className).toBe('hs-frame px-4');
+  });
+
+  // @scenario surface=preview_frame_content_box
+  // @effects preview_follows_width_before_save
+  it('화면 전체 폭이면 감싸지 않고 문구 층에 본문 상자를 쓴다', () => {
+    const withContent = { ...frame, positions: { ...frame.positions, home_hero: { ...frame.positions.home_hero, content: { className: 'px-4', responsive: { desktop: 'max-w-7xl mx-auto px-8' } } } } };
+    const { doc } = mountFrame(<HeroBannerPreview banners={banners} device="pc" frame={withContent} position="home_hero" settings={{ width: 'full' }} />);
+    expect(doc.querySelector('[data-hs-width]')).toBeNull();
+    expect(doc.querySelector('section.hs')?.className).toContain('hs--full');
+    expect(doc.querySelector('.hs__box')?.className).toBe('hs__box max-w-7xl mx-auto px-8');
   });
 });

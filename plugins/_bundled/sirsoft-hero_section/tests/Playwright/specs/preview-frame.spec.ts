@@ -12,7 +12,7 @@ import type { Page } from '@playwright/test';
 test.setTimeout(150_000);
 
 /** 구좌·제목·설명의 실측값 */
-type Slot = { width: number; height: number; titleFont: string; titleLines: number; descLines: number };
+type Slot = { width: number; height: number; titleFont: string; titleLines: number; descLines: number; full: boolean };
 
 /** 문서 안 히어로 구좌를 잰다(사이트는 페이지 문서, 미리보기는 iframe 문서). 다른 배너가 함께 있으면 그 제목의 슬라이드만 본다. */
 const measure = (root: Document, text: string): Slot => {
@@ -22,7 +22,7 @@ const measure = (root: Document, text: string): Slot => {
   const desc = (title.parentElement as HTMLElement).querySelector('.hs__description') as HTMLElement;
   const view = root.defaultView!;
   const lines = (el: HTMLElement) => Math.round(el.getBoundingClientRect().height / parseFloat(view.getComputedStyle(el).lineHeight));
-  return { width: rect.width, height: rect.height, titleFont: view.getComputedStyle(title).fontSize, titleLines: lines(title), descLines: lines(desc) };
+  return { width: rect.width, height: rect.height, titleFont: view.getComputedStyle(title).fontSize, titleLines: lines(title), descLines: lines(desc), full: hs.classList.contains('hs--full') };
 };
 
 /** 실제 사이트에서 그 배너가 든 구좌를 잰다. */
@@ -68,8 +68,10 @@ for (const [position, path] of [['home_hero', '/'], ['shop_hero', '/shop/product
       expect(preview.titleFont).toBe(site.titleFont);
       expect(preview.titleLines).toBe(site.titleLines);
       expect(preview.descLines).toBe(site.descLines);
-      // 구좌는 기기 폭보다 좁다(본문 여백) — 종전처럼 viewport 를 구좌로 쓰지 않는다
-      expect(preview.width).toBeLessThan(preview.viewport);
+      // 본문 폭이면 구좌는 기기 폭보다 좁다(본문 여백) — 종전처럼 viewport 를 구좌로 쓰지 않는다. 화면 전체면 기기 폭 그대로다
+      expect(preview.full).toBe(site.full);
+      if (site.full) expect(Math.abs(preview.width - preview.viewport)).toBeLessThan(0.5);
+      else expect(preview.width).toBeLessThan(preview.viewport);
     }
   });
 }

@@ -9,7 +9,7 @@
 |---|---|---|---|---|
 | `Banner` | `hero_section_banners` | 21 | images→BannerImage, pcImage→BannerImage, mobileImage→BannerImage | - |
 | `BannerImage` | `hero_section_banner_images` | 12 | banner→Banner | - |
-| `PositionSetting` | `hero_section_position_settings` | 5 | - | - |
+| `PositionSetting` | `hero_section_position_settings` | 6 | - | - |
 <!-- @generated:models END -->
 
 <!-- @intent START -->
@@ -33,7 +33,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 4개.
+마이그레이션 5개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -41,6 +41,7 @@
 | `2026_10_24_000002_create_hero_section_banner_images_table.php` | `hero_section_banner_images` | - | ✅ |
 | `2026_10_24_000003_create_hero_section_position_settings_table.php` | `hero_section_position_settings` | - | ✅ |
 | `2026_10_27_000004_add_presentation_and_lock_version_to_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
+| `2026_10_30_000005_add_width_to_hero_section_position_settings.php` | - | `hero_section_position_settings` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -56,13 +57,14 @@
 | `BannerStatus` | `string` | 4 | `active`, `scheduled`, `ended`, `inactive` |
 | `DisplayPeriod` | `string` | 2 | `always`, `range` |
 | `HeroPosition` | `string` | 2 | `home_hero`, `shop_hero` |
-| `SlideEffect` | `string` | 3 | `slide`, `fade`, `none` |
+| `SlideEffect` | `string` | 7 | `slide`, `fade`, `cube`, `flip`, `coverflow`, `creative`, `none` |
+| `SlideWidth` | `string` | 2 | `content`, `full` |
 | `TextAlign` | `string` | 3 | `left`, `center`, `right` |
 | `TextOverlay` | `string` | 3 | `none`, `dark`, `light` |
 <!-- @generated:enums END -->
 
 <!-- @intent START -->
-위치(`home_hero`·`shop_hero`), 상태(노출중·예약·종료·비활성), 노출 기간(상시·기간 지정), 정렬(좌·중·우), 전환 효과(슬라이드·페이드·없음), 기기(pc·mobile)를 Enum 으로 둔다. 위치 Enum 이 노출 위치 목록의 SSoT 다.
+위치(`home_hero`·`shop_hero`), 상태(노출중·예약·종료·비활성), 노출 기간(상시·기간 지정), 정렬(좌·중·우), 전환 효과(slide·fade·cube·flip·coverflow·creative·none), 기기(pc·mobile)를 Enum 으로 둔다. 위치 Enum 이 노출 위치 목록의 SSoT 다.
 <!-- @intent END -->
 
 ## Repository

@@ -1938,7 +1938,7 @@
                                             "draft": "{{_local.form}}",
                                             "locale": "{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}",
                                             "defaultLocale": "{{position_settings?.data?.editor?.default_locale}}",
-                                            "settings": "{{({ autoplay: false, interval_seconds: 5, effect: 'none' })}}",
+                                            "settings": "{{({ autoplay: false, interval_seconds: 5, effect: 'none', width: (position_settings?.data?.positions ?? []).find(p => p.key === (_local.form?.position ?? 'home_hero'))?.settings?.width ?? 'content' })}}",
                                             "device": "{{_local.previewDevice}}",
                                             "frame": "{{position_settings?.data?.editor?.preview_frame ?? null}}",
                                             "position": "{{_local.form?.position ?? 'home_hero'}}",

@@ -45,7 +45,8 @@ export interface FrameBox {
 export interface PreviewFrame {
   template?: string | null;
   stylesheets?: string[];
-  positions?: Record<string, { layout: string; chain: FrameBox[] } | null>;
+  /** `content` — 확장점이 넘긴 본문 상자(`contentClass`·`contentClassDesktop`). 템플릿이 넘기지 않았으면 null */
+  positions?: Record<string, { layout: string; chain: FrameBox[]; content?: FrameBox | null } | null>;
 }
 
 /** 코어 ResponsiveManager 프리셋과 같은 값 — 코어가 이 값을 확장에 공개하지 않아 따라 적고, 시험이 코어와 같은지 잠근다. */

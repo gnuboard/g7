@@ -16,6 +16,7 @@ export interface FakeSwiper {
   autoplay: { running: boolean; start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> };
   slideNext: ReturnType<typeof vi.fn>;
   slidePrev: ReturnType<typeof vi.fn>;
+  slideToLoop: ReturnType<typeof vi.fn>;
 }
 
 /** 마지막으로 그린 Swiper 의 옵션과 인스턴스 */
@@ -42,6 +43,7 @@ export const Swiper: React.FC<Record<string, any>> = (props) => {
       },
       slideNext: vi.fn(() => move(instance, 1)),
       slidePrev: vi.fn(() => move(instance, -1)),
+      slideToLoop: vi.fn((target: number) => move(instance, target - instance.realIndex)),
     };
     ref.current = instance;
   }
@@ -65,7 +67,7 @@ export const Swiper: React.FC<Record<string, any>> = (props) => {
  * @param instance 대역 인스턴스
  * @param step 옮길 방향
  */
-function move(instance: FakeSwiper, step: 1 | -1): void {
+function move(instance: FakeSwiper, step: number): void {
   const props = swiperState.props ?? {};
   const count = React.Children.count(props.children);
   const next = instance.realIndex + step;
