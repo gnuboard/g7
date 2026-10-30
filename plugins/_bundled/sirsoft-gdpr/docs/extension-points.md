@@ -223,6 +223,8 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `annual_privacy_notice` | `mail`, `database` |
 <!-- @generated:notifications END -->
 
+**템플릿이 없는 수단(7.2.0)** 설정 화면 알림 카드에서 template 이 없는 발송 수단을 켜고 [발송 수단 저장]하면 코어가 빈 template(꺼짐)을 만든다(코어 `docs/backend/notification-system.md` 「운영자가 켠 발송 수단의 빈 템플릿」). 그 수단 줄에는 「빈 템플릿이 만들어졌습니다…」 안내가 서고, template 켜기가 422 로 거절되면 `card_gdpr_notifications_fields` 를 remount 해 스위치를 되돌린다.
+
 <!-- @intent START -->
 동의 부여/철회는 방문자 본인의 조작 결과이므로 본인에게 알림을 보낼 이유가 없고, 정책 버전
 발행처럼 운영자가 이미 인지하고 수행한 조작도 마찬가지입니다. 관리자에게 알려야 할 이벤트가

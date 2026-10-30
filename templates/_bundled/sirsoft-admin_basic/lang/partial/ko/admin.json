@@ -2550,6 +2550,8 @@
         "btn_confirming": "복원 중..."
       },
       "no_template_for_channel": "이 채널에 대한 템플릿이 없습니다.",
+      "user_template_inactive": "빈 템플릿이 만들어졌습니다. 내용과 받는 사람을 채운 뒤 켜야 이 수단으로 발송됩니다.",
+      "user_template_created": "빈 템플릿을 만들었습니다. [편집]에서 내용과 받는 사람을 채운 뒤 켜세요.",
       "body_preview": "본문 미리보기",
       "save_success": "알림 설정이 저장되었습니다.",
       "save_error": "알림 설정 저장에 실패했습니다.",

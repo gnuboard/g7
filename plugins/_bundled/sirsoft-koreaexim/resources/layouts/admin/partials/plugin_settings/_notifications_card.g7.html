@@ -1,6 +1,6 @@
 <partial description="환율 실패 알림의 발송 수단 복수 지정과 채널별 템플릿 활성화">
 <!-- 실패 알림 카드 — 이 플러그인 소유 알림 정의마다 발송 채널(복수)을 고르고, 켠 채널의 템플릿을 활성화·편집한다. 채널 선택은 저장 버튼으로, 템플릿 활성화는 토글 즉시 서버에 반영한다 -->
-<div class="koreaexim-admin-card koreaexim:mb-4">
+<div data-ref="koreaexim_notifications_card" class="koreaexim-admin-card koreaexim:mb-4">
   <h3 class="koreaexim-card-title">$t:sirsoft-koreaexim.notifications</h3>
   <p data-ref="koreaexim_notifications_forbidden" data-if="{{_local.koreaeximNotificationsForbidden === true}}" class="koreaexim-form-hint">$t:sirsoft-koreaexim.notifications_forbidden</p>
   <div data-each="def, defIdx in {{koreaeximNotificationDefinitions?.data?.data ?? []}}" data-ref="koreaexim_notification_definition_{{defIdx}}">
@@ -19,6 +19,8 @@
           <!-- 켰는데 그 채널 템플릿이 없으면 발송 때 조용히 건너뛴다(코어가 로그에만 남긴다).
                화면이 그 사실을 말해 주지 않으면 "켰는데 안 온다" 로만 보인다. -->
           <span data-if="{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; !(def.templates ?? []).some(t => t.channel === ch.id)}}" class="koreaexim-text-hint koreaexim:block koreaexim:text-amber-700 koreaexim:dark:text-amber-400">$t:sirsoft-koreaexim.channel_template_missing</span>
+          <!-- 저장으로 코어가 만든 빈 템플릿(운영자 생성)이 꺼져 있으면 아직 발송되지 않는다 — 채우고 켜도록 안내 -->
+          <span data-if="{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; (def.templates ?? []).some(t => t.channel === ch.id &amp;&amp; t.is_user_created &amp;&amp; !t.is_active)}}" class="koreaexim-text-hint koreaexim:block koreaexim:text-amber-700 koreaexim:dark:text-amber-400">$t:admin.settings.notification_definitions.user_template_inactive</span>
         </div>
       </div>
       <toggle data-type="composite" label="{{(ch.name ?? ch.id)}}" checked="{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id)}}" disabled="{{_computed.isNotificationReadOnly}}">
@@ -82,7 +84,7 @@
           <!-- 채널 템플릿 켜고 끄기 — 저장 버튼과 무관하게 즉시 서버에 반영하고 정의 목록을 다시 받는다 -->
           <api-call target="/api/admin/notification-templates/{{template.id}}/toggle-active" method="PATCH" :auth_required="true">
             <success><refetch-data-source dataSourceId="koreaeximNotificationDefinitions"/></success>
-            <fail><toast type="error" message="{{error.message}}"/></fail>
+            <fail><toast type="error" message="{{error.message}}"/><remount componentId="koreaexim_notifications_card"/></fail>
           </api-call>
         </on>
       </toggle>

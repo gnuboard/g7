@@ -92,6 +92,8 @@ return [
     ],
     'validation' => [
         'role_value_shape' => 'ロール受信者の値は識別子文字列または文字列配列である必要があります。',
+        'user_template_needs_recipients' => '受信者を先に設定して保存してから有効にできます。[テンプレート編集] で受信者ルールを追加してください。',
+        'user_template_needs_body' => '本文を先に入力して保存してから有効にできます。[テンプレート編集] で内容を入力してください。',
         'attributes' => [
             'recipients' => '受信者ルール',
             'recipient_type' => '受信者の種類',

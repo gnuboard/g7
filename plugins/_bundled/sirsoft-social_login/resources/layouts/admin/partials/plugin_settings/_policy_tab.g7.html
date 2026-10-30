@@ -156,6 +156,15 @@
           <div class="sl:lg:col-span-1">
             <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.signup_surge_threshold_per_hour.label</label>
             <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.signup_surge_threshold_per_hour.hint</p>
+            <a data-ref="notification_link_signup_surge_threshold_per_hour" href="/admin/plugins/sirsoft-social_login/settings?tab=notifications" class="sl:inline-block sl:mt-1 sl:text-xs sl:font-medium sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline">
+              <on type="click">
+                <!-- 받는 사람·문구·채널은 이 기준값이 아니라 알림 탭에서 바꾼다 — 기준 0 은 감시 자체를 멈추고, 알림 탭의 끄기는 감시는 두고 발송만 멈춘다 -->
+                <navigate path="/admin/plugins/sirsoft-social_login/settings">
+                  <query tab="notifications"/>
+                </navigate>
+              </on>
+              <span>$t:sirsoft-social_login.settings.fields.notification_link</span>
+            </a>
           </div>
           <div class="sl:lg:col-span-2">
             <input type="number" name="signup_surge_threshold_per_hour" :min="0" :max="10000" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
@@ -166,6 +175,15 @@
           <div class="sl:lg:col-span-1">
             <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.provider_failure_streak_threshold.label</label>
             <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.provider_failure_streak_threshold.hint</p>
+            <a data-ref="notification_link_provider_failure_streak_threshold" href="/admin/plugins/sirsoft-social_login/settings?tab=notifications" class="sl:inline-block sl:mt-1 sl:text-xs sl:font-medium sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline">
+              <on type="click">
+                <!-- 받는 사람·문구·채널은 이 기준값이 아니라 알림 탭에서 바꾼다 — 기준 0 은 감시 자체를 멈추고, 알림 탭의 끄기는 감시는 두고 발송만 멈춘다 -->
+                <navigate path="/admin/plugins/sirsoft-social_login/settings">
+                  <query tab="notifications"/>
+                </navigate>
+              </on>
+              <span>$t:sirsoft-social_login.settings.fields.notification_link</span>
+            </a>
           </div>
           <div class="sl:lg:col-span-2">
             <input type="number" name="provider_failure_streak_threshold" :min="0" :max="1000" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>

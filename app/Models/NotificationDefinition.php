@@ -18,9 +18,12 @@ class NotificationDefinition extends Model
     /**
      * 사용자 수정 보존 대상 필드.
      *
+     * `channels` 는 운영자가 알림 설정에서 켜고 끈 발송 수단이다 — 추적하지 않으면 확장 업데이트의 재동기화가 선언값으로
+     * 덮어, 운영자가 켠 수단(과 그때 만든 빈 템플릿의 발송)이 업데이트마다 사라진다.
+     *
      * @var array<int, string>
      */
-    protected array $trackableFields = ['name', 'is_active'];
+    protected array $trackableFields = ['name', 'is_active', 'channels'];
 
     /**
      * 다국어 JSON 컬럼 — sub-key dot-path 단위 user_overrides 보존.
@@ -112,6 +115,28 @@ class NotificationDefinition extends Model
             'is_default' => 'boolean',
             'user_overrides' => 'array',
         ];
+    }
+
+    /**
+     * 수정 여부를 가릴 때 쓸 값 — 발송 수단 목록은 순서가 뜻을 갖지 않으므로 정렬해 비교한다.
+     *
+     * 화면은 켠 순서대로 목록을 돌려보내므로, 맞추지 않으면 같은 수단을 다시 저장만 해도 「수정됨」 으로 기록되고
+     * 확장이 새 수단을 선언해도 업데이트가 그 목록을 덮지 못한다.
+     *
+     * @param  string  $field  trackable 컬럼명
+     * @param  mixed  $value  비교할 값
+     * @return mixed 비교용 값
+     */
+    public function comparableTrackableValue(string $field, mixed $value): mixed
+    {
+        if ($field === 'channels' && is_array($value)) {
+            $channels = array_values($value);
+            sort($channels);
+
+            return $channels;
+        }
+
+        return $value;
     }
 
     /**

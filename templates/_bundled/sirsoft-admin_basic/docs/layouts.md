@@ -504,6 +504,8 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 `notificationDefinitions` 에 그대로 넘깁니다(`extension_type="core"` — 코어 선언과 운영자가 추가한 정책별 문구가 함께
 옵니다). 본인인증 카드(`category === 'identity'`)는 일반 알림과 세 가지가 다릅니다.
 
+**템플릿이 없는 수단(7.2.0)** 수단 하위 탭에서 그 수단 template 이 없는 정의는 「이 채널에 대한 템플릿이 없습니다」 옆에 꺼진 「템플릿 만들기」 스위치가 선다. 켜면 그 수단을 정의 `channels` 에 더해 바로 `PUT` 하고 코어가 빈 template(꺼짐, `is_user_created`)을 만든다(코어 `docs/backend/notification-system.md` 「운영자가 켠 발송 수단의 빈 템플릿」). 다시 받은 목록에는 template 스위치와 [편집], 「빈 템플릿이 만들어졌습니다…」 안내(`admin.settings.notification_definitions.user_template_inactive`)가 선다. template 켜기가 422 로 거절되면 `notif_definitions_list` 를 `remount` 해 눌린 스위치를 되돌린다.
+
 | 축 | 본인인증 카드 | 이유 |
 |---|---|---|
 | 수신자 | 수신자 규칙 영역을 감추고 「인증을 요청한 사람에게만」 고정 문구 | 인증 메일의 받는 사람은 요청자 하나뿐이라 규칙을 고르면 의미 없는 값만 쌓입니다 |

@@ -87,6 +87,8 @@
                   </div>
                   <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="ecommerce-text-label-subtle ecommerce:truncate">{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}</p>
                   <p data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:italic">$t:sirsoft-ecommerce.admin.settings.notification_definitions.no_template_for_channel</p>
+                  <!-- 운영자가 발송 수단을 켜서 코어가 만든 빈 템플릿 — 내용과 받는 사람을 채우고 켜야 이 수단으로 발송된다 -->
+                  <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_user_created &amp;&amp; !(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active}}" class="ecommerce:text-sm ecommerce:text-amber-700 ecommerce:dark:text-amber-400">$t:admin.settings.notification_definitions.user_template_inactive</p>
                   <!-- 본인인증 알림은 수신자가 「인증을 요청한 대상」으로 고정이다(수신자 규칙이 없다) — 편집 대신 고정 문구. -->
                   <p data-if="{{def.category === 'identity'}}" class="ecommerce-text-tertiary ecommerce:mt-2">$t:admin.settings.notification_definitions.identity_recipient_fixed</p>
                   <div data-ref="ecommerce_recipients_badge_{{defIdx}}" data-if="{{def.category !== 'identity' &amp;&amp; ((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-1.5 ecommerce:mt-2">
@@ -117,6 +119,25 @@
                         </success>
                         <fail>
                           <toast type="error" message="{{error.message}}"/>
+                          <!-- 서버가 거절하면(예: 운영자가 만든 빈 템플릿을 내용 없이 켬) 스위치는 눌린 모양으로 남는다 — 목록 상자를 다시 마운트해 저장된 값으로 돌린다(엔진은 반복 안 동적 id 로는 다시 마운트하지 못한다) -->
+                          <remount componentId="ecommerce_notif_definitions_list"/>
+                        </fail>
+                      </api-call>
+                    </on>
+                  </toggle>
+                  <!-- 이 수단의 템플릿이 없는 정의 — 켜면 이 수단을 정의의 발송 수단에 더해 바로 저장하고, 코어가 빈 템플릿(꺼짐·운영자 생성)을
+                       만든다. 다시 받은 목록에는 위 스위치와 [편집]·「채우고 켜야 발송」 안내가 선다(이 화면은 스위치마다 즉시 반영한다). -->
+                  <toggle data-type="composite" data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" ariaLabel="$t:common.row_cell|row={{$localized(def.name) || def.type}}|column={{$t('sirsoft-ecommerce.admin.settings.notification_definitions.active')}}" :checked="false" disabled="{{_computed.isNotificationReadOnly}}">
+                    <on type="change">
+                      <api-call :auth_required="true" target="{{'/api/admin/notification-definitions/' + def.id}}" method="PUT">
+                        <body channels="{{[...new Set([...(def.channels ?? []), (query.channel ?? 'mail')])]}}"/>
+                        <success>
+                          <refetch-data-source dataSourceId="ecommerceNotificationDefinitions"/>
+                          <toast type="success" message="$t:admin.settings.notification_definitions.user_template_created"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                          <remount componentId="ecommerce_notif_definitions_list"/>
                         </fail>
                       </api-call>
                     </on>

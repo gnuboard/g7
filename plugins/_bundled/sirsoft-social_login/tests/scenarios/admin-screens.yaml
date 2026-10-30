@@ -8,7 +8,7 @@ description: |
   없으면 선택 복사로 물러서고, 로그인 테스트 창은 클릭 순간 빈 창으로 연 뒤 받은 https 주소로 보낸다.
 axes:
   surface: [settings, expressions, components, provider_card, reorder, editor, warnings, add_custom, diagnostics, stats, user_detail_tab, user_list_filter, user_list_column, data_sources]
-  tab: [providers, policy]
+  tab: [providers, policy, notifications]
   direction: [up, down]
   change: [disable_enabled, credentials, other]
   days: ['7', '30', '90']
@@ -22,6 +22,8 @@ effects:
   - provider_notes_translated_and_complete
   - kakao_notes_current_console_path_and_reconsent_limit
   - settings_sources_and_tabs
+  - notifications_tab_sources_and_modals
+  - remount_targets_static_box_outside_iteration
   - settings_opens_read_only_for_view_permission
   - card_copy_test_impact_actions
   - reorder_swaps_neighbour

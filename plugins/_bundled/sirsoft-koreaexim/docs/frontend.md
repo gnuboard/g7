@@ -30,6 +30,8 @@
 <!-- @intent START -->
 plugin_settings 하나에 상태·설정·알림·최근 이력과 전체 이력 탭을 담습니다. tab/status/trigger/date/page를 URL에서 읽고 필터 변경은 페이지를 1로 되돌립니다. 행 펼침 시 단건 API로 통화 상세를 가져옵니다.
 
+**템플릿이 없는 수단(7.2.0)** 실패 알림 카드에서 template 이 없는 발송 수단을 켜고 [발송 수단 저장]하면 코어가 빈 template(꺼짐)을 만든다(코어 `docs/backend/notification-system.md` 「운영자가 켠 발송 수단의 빈 템플릿」). 그 수단 줄에는 「빈 템플릿이 만들어졌습니다…」 안내가 서고, template 켜기가 422 로 거절되면 카드(`koreaexim_notifications_card`)를 remount 해 스위치를 되돌린다.
+
 알림 템플릿 편집 창(`_modal_notification_template_edit`)은 코어·게시판·이커머스 모달의 사본입니다. 분기 규칙뿐 아니라
 외형도 네 벌을 함께 맞춥니다 — 수신자 카드 목록은 `stack-tight` 로 카드 사이 간격을 두며, 한 벌만 빠지면 그 화면에서만
 카드 테두리가 맞붙습니다.

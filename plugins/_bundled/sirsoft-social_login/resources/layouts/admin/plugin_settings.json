@@ -1,5 +1,5 @@
 {
-    "comment": "소셜 로그인 환경설정 — 제공자 탭(제공자별 자격증명·콜백 주소·연결 테스트)과 정책 탭(사이트 전체 정책). 제공자별 값은 설정 키가 아니라\n     제공자 테이블에 있어 플러그인 API 로 저장하고, 정책은 코어 플러그인 설정 API 로 저장한다.\n     파일명이 계약이다 — `plugin_settings` 라야 코어 「플러그인 관리 → 설정」(/admin/plugins/sirsoft-social_login/settings)이 띄운다.",
+    "comment": "소셜 로그인 환경설정 — 제공자 탭(제공자별 자격증명·콜백 주소·연결 테스트), 정책 탭(사이트 전체 정책), 알림 탭(이 플러그인이 등록한 알림의\n     사용 여부·채널·템플릿). 제공자별 값은 설정 키가 아니라 제공자 테이블에 있어 플러그인 API 로 저장하고, 정책은 코어 플러그인 설정 API 로,\n     알림은 코어 알림 정의·템플릿 API 로 저장한다.\n     파일명이 계약이다 — `plugin_settings` 라야 코어 「플러그인 관리 → 설정」(/admin/plugins/sirsoft-social_login/settings)이 띄운다.",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
@@ -57,6 +57,60 @@
             "auth_required": true,
             "refetchOnMount": true,
             "comment": "제공자 목록 — 내장 4·일반 OIDC·확장 등록(읽기 전용). 비밀값은 마스크로만 온다. 저장·정렬·추가·삭제 뒤 다시 받는다"
+        },
+        {
+            "id": "slNotificationChannels",
+            "if": "{{query.tab === 'notifications'}}",
+            "label_key": "$t:sirsoft-social_login.admin.notifications.title",
+            "type": "api",
+            "endpoint": "/api/admin/notification-channels",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "channels": []
+                }
+            },
+            "comment": "알림 탭 — 코어 「알림 정의」 화면은 extension_type=core 로 코어 정의만 받으므로, 이 플러그인이 들인 정의는 여기서 자기 것만 받아 그린다\n       (형제: gdpr·환율 플러그인). 알림 탭에서만 받는다. 채널 목록은 다른 요청을 막지 않도록 progressive 로 받는다"
+        },
+        {
+            "id": "slNotificationDefinitions",
+            "if": "{{query.tab === 'notifications'}}",
+            "label_key": "$t:sirsoft-social_login.admin.notifications.title",
+            "type": "api",
+            "endpoint": "/api/admin/notification-definitions?extension_type=plugin&extension_identifier=sirsoft-social_login",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "template_channel": "all",
+                "per_page": 50
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "errorHandling": {
+                "comment": "실패의 종류를 남긴다 — fallback 이 빈 목록을 주므로 이것이 없으면 403(알림 설정 권한 없음)도 「등록된 알림이 없습니다」로 보인다.\n         이 핸들러가 실패를 받아 끊으므로 설정 화면 전체 오류로 번지지 않는다",
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "slNotificationDefinitionsError": "forbidden"
+                    }
+                },
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "slNotificationDefinitionsError": "failed"
+                    }
+                }
+            },
+            "comment": "켠 채널 전부의 템플릿을 한 번에 받는다(template_channel=all) — 이 인자가 없으면 응답의 templates 가 비어 편집 버튼이 그려지지 않는다"
         }
     ],
     "initLocal": {
@@ -84,6 +138,7 @@
     },
     "computed": {
         "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}",
+        "isNotificationReadOnly": "{{slNotificationDefinitions?.data?.abilities?.can_update !== true}}",
         "canEditProviders": "{{providers?.data?.abilities?.can_update === true}}",
         "sortableKeys": "{{(providers?.data?.providers ?? []).filter(p => !p.read_only).map(p => p.key)}}"
     },
@@ -211,6 +266,10 @@
                                 {
                                     "id": "policy",
                                     "label": "$t:sirsoft-social_login.admin.tabs.policy"
+                                },
+                                {
+                                    "id": "notifications",
+                                    "label": "$t:sirsoft-social_login.admin.tabs.notifications"
                                 }
                             ]
                         }
@@ -940,9 +999,26 @@
                     },
                     {
                         "partial": "partials/plugin_settings/_policy_tab.json"
+                    },
+                    {
+                        "partial": "partials/plugin_settings/_notifications_tab.json"
                     }
                 ]
             }
         ]
-    }
+    },
+    "modals": [
+        {
+            "comment": "알림 템플릿 편집 창 — 알림 탭의 템플릿 행 「템플릿 편집」에서 연다",
+            "partial": "partials/plugin_settings/_modal_notification_template_edit.json"
+        },
+        {
+            "comment": "템플릿 미리보기 창 — 편집 창 안의 미리보기 버튼이 연다. 편집 창이 만들어 둔 치환 결과를 보여 주기만 한다",
+            "partial": "partials/plugin_settings/_modal_notification_template_preview.json"
+        },
+        {
+            "comment": "알림 정의 기본값 복원 확인 창 — 알림 탭의 「기본값으로 되돌리기」가 대상 ID·이름을 전역에 넣고 연다",
+            "partial": "partials/plugin_settings/_modal_notification_definition_reset.json"
+        }
+    ]
 }

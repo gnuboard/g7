@@ -38,6 +38,8 @@ class NotificationTemplateResource extends BaseApiResource
             'recipients' => $this->enrichRecipients($this->getValue('recipients') ?? []),
             'is_active' => (bool) $this->getValue('is_active'),
             'is_default' => (bool) $this->getValue('is_default'),
+            // 운영자가 발송 수단을 켜서 만든 템플릿 — 화면이 「채우고 켜야 발송된다」 안내를 가르는 근거
+            'is_user_created' => (bool) $this->getValue('is_user_created'),
             'user_overrides' => $this->getValue('user_overrides'),
             'updated_by' => $this->resource->updater?->uuid ?? null,
             ...$this->formatTimestamps(),

@@ -108,7 +108,8 @@
             "provider_failure_streak_threshold": {
                 "label": "제공자 연속 실패 알림 기준",
                 "hint": "한 제공자에서 10분 안에 이 수 이상 실패하면 관리자에게 하루 한 번 알립니다. 사이에 성공이 섞여도 셉니다. 0 이면 알리지 않습니다."
-            }
+            },
+            "notification_link": "받는 사람과 문구는 알림 탭에서 바꿉니다"
         },
         "warnings": {
             "auto_link_verified": "위험: 제공자가 검증했다는 표시만 믿고 같은 이메일의 기존 계정에 바로 연결합니다. 남이 먼저 그 이메일로 가입해 두었거나 제공자 검증이 틀리면 계정을 빼앗길 수 있습니다.",
@@ -219,7 +220,8 @@
     "admin": {
         "tabs": {
             "providers": "제공자",
-            "policy": "정책"
+            "policy": "정책",
+            "notifications": "알림"
         },
         "providers": {
             "read_only": "설정 변경 권한이 없어 볼 수만 있습니다.",
@@ -512,6 +514,49 @@
                 "email": "제공자 이메일",
                 "linked_at": "연결일",
                 "last_login_at": "최근 로그인"
+            }
+        },
+        "notifications": {
+            "title": "알림",
+            "description": "이 플러그인이 보내는 알림마다 사용 여부와 발송 수단을 정하고, 수단별 제목, 본문, 받는 사람을 편집합니다. 이 알림들은 환경설정의 「알림 설정」 탭에는 나오지 않습니다.",
+            "definition_active": "이 알림 사용",
+            "channels": "발송 수단",
+            "channel_template_missing": "이 수단의 템플릿이 없어 발송되지 않습니다",
+            "save_channels": "발송 수단 저장",
+            "templates": "수단별 템플릿",
+            "edit_template": "템플릿 편집",
+            "template_active": "{{name}} / {{channel}} 템플릿 사용",
+            "reset": "기본값으로 되돌리기",
+            "empty_message": "등록된 알림이 없습니다.",
+            "forbidden_message": "알림을 볼 권한이 없습니다. 알림 설정을 바꿔야 하면 알림 관리 권한이 있는 관리자에게 요청하세요.",
+            "load_failed_message": "알림 목록을 불러오지 못했습니다. 잠시 뒤 화면을 새로 고쳐 다시 시도하세요.",
+            "reset_success": "알림 설정이 기본값으로 복원되었습니다.",
+            "reset_failed": "알림 설정 복원에 실패했습니다.",
+            "reset_modal": {
+                "title": "기본값으로 복원",
+                "confirm_message": "이 알림의 모든 채널 템플릿을 기본값으로 복원합니다.",
+                "warning_message": "저장된 제목/본문/수신자 설정이 모두 사라지며 복구할 수 없습니다.",
+                "target_label": "복원 대상:",
+                "btn_confirm": "복원",
+                "btn_confirming": "복원 중..."
+            },
+            "save_success": "알림 설정이 저장되었습니다.",
+            "save_error": "알림 설정 저장에 실패했습니다.",
+            "edit_modal": {
+                "title": "알림 템플릿 편집",
+                "type_label": "유형:",
+                "channel_label": "채널:",
+                "subject": "제목",
+                "body": "본문",
+                "variables_title": "사용 가능한 변수",
+                "btn_preview": "미리보기",
+                "validation_error": "입력 정보를 확인해주세요."
+            },
+            "preview_modal": {
+                "title": "알림 미리보기",
+                "rendered_subject": "렌더링된 제목",
+                "rendered_body": "렌더링된 본문",
+                "btn_close": "닫기"
             }
         }
     }

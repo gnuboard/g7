@@ -2586,6 +2586,8 @@
         "btn_confirming": "Resetting..."
       },
       "no_template_for_channel": "No template for this channel.",
+      "user_template_inactive": "An empty template was created. Fill in the content and recipients, then turn it on to send through this channel.",
+      "user_template_created": "An empty template was created. Fill in the content and recipients in [Edit], then turn it on.",
       "body_preview": "Body Preview",
       "save_success": "Notification settings have been saved.",
       "save_error": "Failed to save notification settings.",

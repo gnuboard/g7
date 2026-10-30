@@ -8,10 +8,12 @@ description: |
   없는 자격증명을 보이고, 통계는 기간 안 시도(관리자 테스트 제외)와 지금의 연결 수를 센다. 회원 상세 탭은 연결 열람(제공자 사용자
   ID 앞 6자)과 강제 해제(마지막 수단 가드 없음)이고, 권한 4종이 라우트마다 갈린다. 브라우저 종단(E2E)은 자격증명 저장 뒤 새로고침의
   마스킹, 일반 OIDC 추가와 연결 테스트(닫힌 포트라 서명 키 목록 실패)와 삭제, 설정 조회 전용 관리자의 읽기 전용 카드를 잰다.
+  설정 화면 알림 탭은 이 플러그인이 등록한 알림 정의 5종을 코어 알림 API 로 받아 정의 사용 여부·발송 수단·템플릿(편집·미리보기·저장)·
+  기본값 되돌리기를 다루고, 알림 권한이 없는 관리자에게는 권한 안내를 보인다. 정책 탭의 두 알림 기준 칸은 알림 탭으로 가는 링크를 단다.
   관리자 화면과 마이페이지 카드, 서버가 그리는 두 페이지의 시각 칸은 코어 리소스처럼 보는 사람 시간대의 `Y-m-d H:i:s` 로 나간다.
   통계 기간은 사이트 시간대 자정부터 세고 기준 시각도 사이트 시간대로 보인다.
 axes:
-  surface: [provider_settings, user_detail_tab, provider_card, diagnostics, stats, mypage_card, html_pages]
+  surface: [provider_settings, user_detail_tab, provider_card, diagnostics, stats, mypage_card, html_pages, notifications_tab, policy_tab]
   actor: [guest, member, viewer, editor, unlinker, accounts_viewer]
   route: [all_admin]
   secret: [unset, set, mask_echo, empty_string]
@@ -45,6 +47,8 @@ axes:
   fetch: [settings_failed]
   timezone: [viewer, site]
   clock: [site_evening, site_after_midnight]
+  viewport: [desktop, mobile]
+  notification_action: [definition_toggle, channel_save, channel_cancel, template_edit, template_preview, reset, policy_link, user_template_toggle]
 effects:
   - ambiguous_rejection_is_inconclusive
   - guest_401
@@ -164,6 +168,17 @@ effects:
   - schedule_timing_preserved
   - legacy_named_rows_adopted_on_format_upgrade
   - existing_row_gains_locales_and_keeps_operator_changes
+  - notifications_tab_lists_own_definitions
+  - definition_toggle_persists
+  - channel_cancel_restores
+  - channel_save_persists
+  - template_edit_saved
+  - template_preview_rendered
+  - definition_reset_restores_defaults
+  - policy_threshold_links_to_notifications_tab
+  - notifications_tab_forbidden_without_permission
+  - user_template_created_on_channel_save
+  - empty_user_template_toggle_rejected_and_reverted
 test_files:
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Admin/ProviderControllerTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Admin/ProviderTestServiceTest.php
@@ -179,4 +194,5 @@ test_files:
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Console/PruneCommandTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Unit/ScheduleDeclarationTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Playwright/specs/admin/social-provider-settings.spec.ts
+  - plugins/_bundled/sirsoft-social_login/tests/Playwright/specs/admin/social-notification-settings.spec.ts
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Admin/AdminPermissionMatrixTest.php

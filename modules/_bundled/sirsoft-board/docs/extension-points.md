@@ -656,6 +656,8 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `report_action` | `mail`, `database` |
 <!-- @generated:notifications END -->
 
+**템플릿이 없는 수단(7.2.0)** 게시판 환경설정 알림 탭의 수단 하위 탭에서 그 수단 template 이 없는 정의에는 「템플릿 만들기」 스위치가 선다. 켜면 수단을 정의에 더해 저장하고 코어가 빈 template(꺼짐)을 만든다(코어 `docs/backend/notification-system.md` 「운영자가 켠 발송 수단의 빈 템플릿」). 안내 문구와 거절 시 되돌림(`board_notif_definitions_list` remount)은 코어 화면과 같다.
+
 <!-- @intent START -->
 7종 중 `new_comment`/`reply_comment`/`post_reply` 는 회원이 끌 수 있습니다
 (`UserNotificationSetting`, `core.user.*` 훅으로 회원 폼에 노출) — 반면 관리자 대상 알림

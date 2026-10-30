@@ -108,7 +108,8 @@
             "provider_failure_streak_threshold": {
                 "label": "Provider Failure Streak Threshold",
                 "hint": "Notify administrators once a day when one provider fails this many times within 10 minutes, even with successes in between. 0 disables the notice."
-            }
+            },
+            "notification_link": "Change recipients and wording on the Notifications tab"
         },
         "warnings": {
             "auto_link_verified": "Risk: links an existing account with the same email at once, trusting only the provider's verified flag. If someone signed up with that email first or the provider's check is wrong, the account can be taken over.",
@@ -219,7 +220,8 @@
     "admin": {
         "tabs": {
             "providers": "Providers",
-            "policy": "Policies"
+            "policy": "Policies",
+            "notifications": "Notifications"
         },
         "providers": {
             "read_only": "You can only view this; you have no permission to change settings.",
@@ -512,6 +514,49 @@
                 "email": "Provider email",
                 "linked_at": "Linked",
                 "last_login_at": "Last sign-in"
+            }
+        },
+        "notifications": {
+            "title": "Notifications",
+            "description": "Turn each notification this plugin sends on or off, choose its delivery channels, and edit the subject, body and recipients per channel. These notifications do not appear on the Notification Settings tab of the site settings.",
+            "definition_active": "Use this notification",
+            "channels": "Delivery channels",
+            "channel_template_missing": "No template for this channel — nothing will be sent",
+            "save_channels": "Save channels",
+            "templates": "Templates by channel",
+            "edit_template": "Edit template",
+            "template_active": "Use the {{channel}} template of {{name}}",
+            "reset": "Restore defaults",
+            "empty_message": "No notifications registered yet.",
+            "forbidden_message": "You do not have permission to view notifications. Ask an administrator who can manage notifications to change them.",
+            "load_failed_message": "Could not load the notifications. Refresh the page and try again later.",
+            "reset_success": "Notification has been reset to default.",
+            "reset_failed": "Failed to reset notification.",
+            "reset_modal": {
+                "title": "Reset to Default",
+                "confirm_message": "All channel templates of this notification will be restored to defaults.",
+                "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
+                "target_label": "Target:",
+                "btn_confirm": "Reset",
+                "btn_confirming": "Resetting..."
+            },
+            "save_success": "Notification settings saved successfully.",
+            "save_error": "Failed to save notification settings.",
+            "edit_modal": {
+                "title": "Edit Notification Template",
+                "type_label": "Type:",
+                "channel_label": "Channel:",
+                "subject": "Subject",
+                "body": "Body",
+                "variables_title": "Available Variables",
+                "btn_preview": "Preview",
+                "validation_error": "Please check the input fields."
+            },
+            "preview_modal": {
+                "title": "Notification Preview",
+                "rendered_subject": "Rendered Subject",
+                "rendered_body": "Rendered Body",
+                "btn_close": "Close"
             }
         }
     }

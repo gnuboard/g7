@@ -20,6 +20,10 @@ const SETTINGS = [
   'resources/layouts/admin/partials/plugin_settings/_provider_impact.json',
   'resources/layouts/admin/partials/plugin_settings/_provider_add.json',
   'resources/layouts/admin/partials/plugin_settings/_policy_tab.json',
+  'resources/layouts/admin/partials/plugin_settings/_notifications_tab.json',
+  'resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.json',
+  'resources/layouts/admin/partials/plugin_settings/_modal_notification_template_preview.json',
+  'resources/layouts/admin/partials/plugin_settings/_modal_notification_definition_reset.json',
 ];
 const DIAGNOSTICS = 'resources/layouts/admin/social_login_diagnostics.json';
 const STATS = 'resources/layouts/admin/social_login_stats.json';
@@ -142,7 +146,7 @@ describe('관리자 설정 화면', () => {
   });
 
   /**
-   * @scenario surface=settings, tab=providers|policy
+   * @scenario surface=settings, tab=providers|policy|notifications
    * @effects settings_sources_and_tabs
    */
   it('정책·제공자 데이터소스를 받고, 탭은 주소의 tab 으로 열리며 바꾸면 tab 만 바꾼다', () => {
@@ -152,7 +156,7 @@ describe('관리자 설정 화면', () => {
 
     const tabs = byId(nodes, 'settings_tabs');
     expect(tabs.props.activeTabId).toBe("{{query.tab || 'providers'}}");
-    expect(tabs.props.tabs.map((t: any) => t.id)).toEqual(['providers', 'policy']);
+    expect(tabs.props.tabs.map((t: any) => t.id)).toEqual(['providers', 'policy', 'notifications']);
     const nav = flatten(tabs.actions).find((a) => a.handler === 'navigate');
     // 탭마다 다른 화면이라 이전 탭 주소 조건을 물려받지 않는다(병합하지 않음).
     expect(nav.params.mergeQuery).toBeUndefined();
@@ -160,6 +164,55 @@ describe('관리자 설정 화면', () => {
 
     expect(byId(nodes, 'providers_tab').if).toContain("(query.tab || 'providers') === 'providers'");
     expect(byId(nodes, 'policy_tab').if).toContain("query.tab === 'policy'");
+    expect(byId(nodes, 'notifications_tab').if).toContain("query.tab === 'notifications'");
+  });
+
+  /**
+   * 알림 탭은 이 플러그인 소유 정의만(코어 「알림 설정」 탭은 코어 정의만 받는다) 켠 채널 템플릿을 모두 실어 받고, 403 과 그 밖 실패를
+   * 빈 목록과 구분한다. 편집·미리보기·되돌리기 창 셋이 등록되고, 쓰기 조작은 정의 응답의 수정 권한으로 잠긴다. 정책 탭의 두 알림 기준 칸은
+   * 알림 탭으로 가는 링크를 단다.
+   *
+   * @scenario surface=settings, tab=notifications
+   * @effects notifications_tab_sources_and_modals
+   */
+  it('알림 탭은 이 플러그인 정의만 받고, 실패 종류를 가르며, 편집 창 셋과 정책 탭 링크를 둔다', () => {
+    const sources = Object.fromEntries((root.data_sources ?? []).map((d: any) => [d.id, d]));
+    const defs = sources.slNotificationDefinitions;
+    expect(defs.endpoint).toBe('/api/admin/notification-definitions?extension_type=plugin&extension_identifier=sirsoft-social_login');
+    expect(defs.params.template_channel).toBe('all');
+    expect(defs.if).toBe("{{query.tab === 'notifications'}}");
+    expect(sources.slNotificationChannels.endpoint).toBe('/api/admin/notification-channels');
+    expect(sources.slNotificationChannels.if).toBe("{{query.tab === 'notifications'}}");
+    const onError = flatten(defs.errorHandling);
+    expect(onError.some((a) => a.params?.slNotificationDefinitionsError === 'forbidden')).toBe(true);
+    expect(onError.some((a) => a.params?.slNotificationDefinitionsError === 'failed')).toBe(true);
+    expect(root.computed.isNotificationReadOnly).toBe('{{slNotificationDefinitions?.data?.abilities?.can_update !== true}}');
+
+    const modalIds = (root.modals ?? []).map((m: any) => read(`resources/layouts/admin/${m.partial}`).id).sort();
+    expect(modalIds).toEqual([
+      'modal_sl_notification_definition_preview',
+      'modal_sl_notification_definition_reset',
+      'modal_sl_notification_template_edit',
+    ]);
+    // 여는 쪽과 닫는 쪽이 같은 창 id 를 가리킨다 — 어긋나면 단추를 눌러도 창이 뜨지 않는다
+    const opened = new Set(nodes.filter((a) => a.handler === 'openModal').map((a) => a.target));
+    expect([...opened].sort()).toEqual(modalIds);
+    const toggles = flatten(byId(nodes, 'sl_definition_active')).filter((a) => a.handler === 'apiCall');
+    expect(toggles.map((a) => a.target)).toEqual(['/api/admin/notification-definitions/{{def.id}}/toggle-active']);
+    expect(byId(nodes, 'sl_definition_active').props.disabled).toBe('{{_computed.isNotificationReadOnly}}');
+    expect(byId(nodes, 'sl_notification_forbidden').if).toBe("{{_local.slNotificationDefinitionsError === 'forbidden'}}");
+
+    // 템플릿 켜기가 거절되면(운영자가 만든 빈 템플릿) 반복 밖 고정 id 상자를 다시 마운트해 눌린 스위치를 저장값으로 돌린다
+    const templateToggle = flatten(nodes).find((a) => a.handler === 'apiCall' && String(a.target).includes('notification-templates/{{template.id}}/toggle-active'));
+    const remount = flatten(templateToggle?.onError ?? templateToggle?.fail ?? templateToggle).find((a: any) => a.handler === 'remount');
+    expect(remount?.params?.componentId).toBe('card_sl_notifications_fields');
+    expect(byId(nodes, 'card_sl_notifications_fields')).toBeTruthy();
+
+    for (const field of ['signup_surge_threshold_per_hour', 'provider_failure_streak_threshold']) {
+      const link = byId(nodes, `notification_link_${field}`);
+      const nav = flatten(link.actions).find((a) => a.handler === 'navigate');
+      expect(nav.params.query).toEqual({ tab: 'notifications' });
+    }
   });
 
   /**
@@ -346,6 +399,26 @@ describe('관리자 설정 화면', () => {
     expect(JSON.stringify(editor)).toContain('$t:sirsoft-social_login.admin.providers.hints.secret');
     for (const locale of ['ko', 'en']) {
       expect(String(dig(lang(locale), 'admin.providers.hints.secret'))).toContain('••••••••');
+    }
+  });
+});
+
+describe('[case:components-misc-remount-iteration-dynamic-id] 반복 안 스위치를 되돌리는 remount', () => {
+  const nodes = all(SETTINGS);
+
+  /**
+   * 엔진은 data-each 반복 노드의 remount 키를 치환 전 원본 id 로 대조한다 — 동적 id 를 대상으로 걸면 맞지 않아
+   * 거절된 스위치가 눌린 모양으로 남는다. 대상은 반복 밖 고정 id 상자여야 한다.
+   *
+   * @scenario surface=settings, tab=notifications
+   * @effects remount_targets_static_box_outside_iteration
+   */
+  it('remount 대상은 표현식 없는 고정 id 이고, 그 id 를 가진 상자가 화면에 있다', () => {
+    const targets = nodes.filter((a) => a.handler === 'remount').map((a) => String(a.params?.componentId));
+    expect(targets.length).toBeGreaterThan(0);
+    for (const id of targets) {
+      expect(id).not.toContain('{{');
+      expect(nodes.some((n) => n.id === id && !n.iteration)).toBe(true);
     }
   });
 });

@@ -5,6 +5,7 @@ namespace App\Http\Requests\NotificationTemplate;
 use App\Extension\HookManager;
 use App\Models\NotificationTemplate;
 use App\Rules\LocaleRequiredTranslatable;
+use App\Services\NotificationChannelService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,7 +32,11 @@ class UpdateNotificationTemplateRequest extends FormRequest
             // subject 컬럼은 nullable 이다 (제목 개념이 없는 채널이 존재).
             // 스키마와 정합하도록 미전송/null 을 허용한다.
             'subject' => ['sometimes', 'nullable', 'array', new LocaleRequiredTranslatable(maxLength: 500)],
-            'body' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 65535)],
+            // 본문을 확장이 자기 저장소에서 받는 채널(편집기 `none`, 예: 알림톡)은 코어 본문 칸이 화면에 없다 — 그 확장의
+            // 저장 버튼이 받는 사람을 저장하려고 이 API 를 부를 때, 운영자가 수단을 켜서 만든 빈 템플릿이면 본문이 비어 있다.
+            'body' => $this->isExtensionEditedChannel()
+                ? ['sometimes', 'array']
+                : ['required', 'array', new LocaleRequiredTranslatable(maxLength: 65535)],
             'click_url' => ['nullable', 'string', 'max:500'],
             'recipients' => ['sometimes', 'nullable', 'array'],
             'recipients.*.type' => ['required', 'string', 'in:trigger_user,related_user,role,specific_users'],
@@ -78,6 +83,19 @@ class UpdateNotificationTemplateRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    /**
+     * 이 템플릿의 채널이 본문을 확장이 따로 받는 채널(편집기 `none`)인지 판정합니다.
+     *
+     * @return bool 편집기가 `none` 이면 true
+     */
+    private function isExtensionEditedChannel(): bool
+    {
+        $template = $this->route('template');
+
+        return $template instanceof NotificationTemplate
+            && app(NotificationChannelService::class)->templateEditorFor((string) $template->channel) === 'none';
     }
 
     /**

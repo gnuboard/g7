@@ -1,0 +1,167 @@
+<!-- 알림 탭 — 이 플러그인이 등록한 알림 정의(가입 급증·제공자 연속 실패·웹훅 처리 실패·연결 해제 2종)마다 사용 여부와 발송 채널(복수)을 정하고,
+     켠 채널의 템플릿을 활성화·편집하고 기본값으로 되돌린다. 코어 「알림 정의」 화면은 extension_type=core 로 코어 정의만 받으므로
+     확장이 들인 정의는 그 확장의 설정 화면이 유일한 진입점이다(형제: gdpr·환율 플러그인, 게시판·이커머스 모듈).
+     정의 사용 여부·템플릿 활성화는 스위치 즉시, 채널 선택은 저장 버튼으로 서버에 반영한다. -->
+<partial name="partials/plugin_settings/_notifications_tab" description="알림 탭">
+  <div data-ref="notifications_tab" data-if="{{query.tab === 'notifications'}}" class="sl:mt-6">
+    <div data-ref="card_sl_notifications" class="sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700">
+      <div data-ref="card_sl_notifications_header" class="sl:px-6 sl:pt-6">
+        <h2 class="sl:text-lg sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.admin.notifications.title</h2>
+        <p class="sl-form-hint">$t:sirsoft-social_login.admin.notifications.description</p>
+      </div>
+      <div data-ref="card_sl_notifications_fields" class="sl:p-6 sl:space-y-4">
+        <div data-each="def, defIdx in {{slNotificationDefinitions?.data?.data ?? []}}" data-ref="sl_notification_definition_{{defIdx}}" class="sl:p-4 sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:rounded-lg sl:space-y-3">
+          <div class="sl:flex sl:flex-wrap sl:items-start sl:justify-between sl:gap-3">
+            <div class="sl:flex-1 sl:min-w-0">
+              <p class="sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white">{{$localized(def.name)}}</p>
+              <p class="sl-form-hint">{{$localized(def.description)}}</p>
+            </div>
+            <toggle data-type="composite" data-ref="sl_definition_active_{{defIdx}}" label="$t:sirsoft-social_login.admin.notifications.definition_active" ariaLabel="$t:common.item_enabled|name={{$localized(def.name)}}" checked="{{def.is_active}}" disabled="{{_computed.isNotificationReadOnly}}">
+              <on type="change">
+                <!-- 이 알림 자체를 켜고 끈다 — 끄면 훅이 와도 어느 채널로도 보내지 않는다. 즉시 서버에 반영하고 목록을 다시 받는다 -->
+                <api-call target="/api/admin/notification-definitions/{{def.id}}/toggle-active" method="PATCH" :auth_required="true">
+                  <success>
+                    <refetch-data-source dataSourceId="slNotificationDefinitions"/>
+                    <toast type="success" message="{{response.message}}"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </on>
+            </toggle>
+          </div>
+          <!-- 발송 수단 — 코어가 core.notification.filter_available_channels 로 런타임에 정하는 목록을
+               그대로 깔고 복수로 켠다. 화면에 채널을 적어 두면 확장이 들인 채널에 도달할 수 없다.
+               켠 값은 폼에만 두고 저장 버튼을 눌러야 서버에 반영한다(코어 알림 정의 탭과 같은 규약). -->
+          <p class="sl-form-label">$t:sirsoft-social_login.admin.notifications.channels</p>
+          <div data-each="ch, chIdx in {{slNotificationChannels?.data?.channels ?? []}}" data-ref="sl_channel_row_{{defIdx}}_{{chIdx}}" class="sl-flex-between sl:p-3 sl:bg-gray-50 sl:dark:bg-gray-900 sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:rounded-lg">
+            <div class="sl-flex-center sl:gap-2">
+              <icon name="{{ch.icon ?? 'bell'}}" class="sl:text-gray-500 sl:dark:text-gray-400"/>
+              <div>
+                <span class="sl:text-sm sl:font-medium sl:text-gray-900 sl:dark:text-white">{{ch.name ?? ch.id}}</span>
+                <span data-if="{{ch.source &amp;&amp; ch.source !== 'core'}}" class="sl-text-hint sl:block">{{ch.source_label ?? ch.source}}</span>
+                <!-- 켰는데 그 채널 템플릿이 없으면 발송 때 조용히 건너뛴다(코어가 로그에만 남긴다).
+                     화면이 그 사실을 말해 주지 않으면 "켰는데 안 온다" 로만 보인다. -->
+                <span data-if="{{(_local.slChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; !(def.templates ?? []).some(t => t.channel === ch.id)}}" class="sl-text-hint sl:block sl:text-amber-700 sl:dark:text-amber-400">$t:sirsoft-social_login.admin.notifications.channel_template_missing</span>
+                <!-- 저장으로 코어가 만든 빈 템플릿(운영자 생성)이 꺼져 있으면 아직 발송되지 않는다 — 채우고 켜도록 안내 -->
+                <span data-if="{{(_local.slChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; (def.templates ?? []).some(t => t.channel === ch.id &amp;&amp; t.is_user_created &amp;&amp; !t.is_active)}}" class="sl-text-hint sl:block sl:text-amber-700 sl:dark:text-amber-400">$t:admin.settings.notification_definitions.user_template_inactive</span>
+              </div>
+            </div>
+            <!-- 채널 이름은 왼쪽에 이미 보이므로 스위치 옆 글자(label)는 두지 않고 화면 읽기용 이름(ariaLabel)만 준다 -->
+            <toggle data-type="composite" ariaLabel="{{$localized(def.name) + ' / ' + (ch.name ?? ch.id)}}" checked="{{(_local.slChannels?.[def.id] ?? def.channels ?? []).includes(ch.id)}}" disabled="{{_computed.isNotificationReadOnly}}">
+              <on type="change">
+                <!-- 배열을 제자리에서 바꾸지 않고 새 배열로 갈아 끼운다. -->
+                <set-state target="local" slChannels="{{({...(_local.slChannels ?? {}), [def.id]: ((_local.slChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) ? (_local.slChannels?.[def.id] ?? def.channels ?? []).filter(c => c !== ch.id) : [...(_local.slChannels?.[def.id] ?? def.channels ?? []), ch.id])})}}"/>
+              </on>
+            </toggle>
+          </div>
+          <div class="sl-flex-center sl:gap-2">
+            <!-- 채널을 모두 끄면 알림이 사라지므로 코어가 min:1 로 거절한다 — 버튼에서 먼저 막는다. -->
+            <button type="button" data-ref="sl_save_channels_{{defIdx}}" class="sl-btn sl-btn-primary sl-flex-center sl:gap-1.5 sl:text-sm sl:disabled:opacity-50 sl:disabled:cursor-not-allowed" disabled="{{_computed.isNotificationReadOnly || _local.slSavingChannels !== null &amp;&amp; _local.slSavingChannels !== undefined || !(JSON.stringify([...(_local.slChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.slChannels?.[def.id] ?? def.channels ?? []).length === 0}}">
+              <on type="click">
+                <sequence>
+                  <set-state target="local" slSavingChannels="{{def.id}}"/>
+                  <api-call target="/api/admin/notification-definitions/{{def.id}}" method="PUT" :auth_required="true">
+                    <body channels="{{_local.slChannels?.[def.id] ?? def.channels ?? []}}"/>
+                    <success>
+                      <sequence>
+                        <!-- 폼의 임시 값은 비우지 않는다. 목록 재조회가 끝나기 전에 비우면 화면이 낡은 `def.channels` 로
+                             되돌아가, 방금 끈 스위치가 켜졌다가 다시 꺼진다(형제 확장 제보 2026-09-15). 「고칠 것 없음」 판정은
+                             저장값과의 비교가 하므로, 재조회가 도착하면 버튼은 저절로 가라앉는다. -->
+                        <set-state target="local" :slSavingChannels="null"/>
+                        <refetch-data-source dataSourceId="slNotificationDefinitions"/>
+                        <toast type="success" message="{{response.message}}"/>
+                      </sequence>
+                    </success>
+                    <fail>
+                      <sequence>
+                        <!-- 실패하면 고친 값은 남긴다 — 다시 누를 수 있어야 한다. -->
+                        <set-state target="local" :slSavingChannels="null"/>
+                        <toast type="error" message="{{error.message}}"/>
+                      </sequence>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.slSavingChannels === def.id}}" name="spinner" class="sl:animate-spin"/>
+              <span>$t:sirsoft-social_login.admin.notifications.save_channels</span>
+            </button>
+            <button type="button" data-ref="sl_cancel_channels_{{defIdx}}" data-if="{{JSON.stringify([...(_local.slChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())}}" class="sl-btn sl-btn-secondary sl:text-sm sl:disabled:opacity-50 sl:disabled:cursor-not-allowed" disabled="{{_local.slSavingChannels !== null &amp;&amp; _local.slSavingChannels !== undefined}}">
+              <on type="click">
+                <!-- 취소 — 폼의 임시 채널 값을 전부 버려 저장된 def.channels 로 되돌린다(이 버튼은 저장값과 다를 때만 보인다).
+                     기본 병합(deep)은 빈 객체 {} 로 기존 키를 지우지 않으므로 먼저 null 로 덮고 다시 {} 로 쓴다 -->
+                <sequence>
+                  <set-state target="local" :slChannels="null"/>
+                  <set-state target="local" :slChannels="{}"/>
+                </sequence>
+              </on>
+              <span>$t:common.cancel</span>
+            </button>
+          </div>
+          <!-- 템플릿 — 채널을 나눠 그리지 않는다. 목록을 template_channel=all 로 받아 켠 채널 전부를
+               한 번에 보여주므로 채널을 바꾸려고 화면을 다시 부를 일이 없다. -->
+          <p class="sl-form-label">$t:sirsoft-social_login.admin.notifications.templates</p>
+          <div data-each="template, tplIdx in {{def.templates ?? []}}" data-ref="sl_template_row_{{defIdx}}_{{tplIdx}}" class="sl:flex sl:flex-wrap sl:items-center sl:gap-3">
+            <span class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:min-w-24">{{((slNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}</span>
+            <!-- 위 채널 스위치와 이름이 겹치지 않게 「템플릿 사용」으로 구분한다 -->
+            <toggle data-type="composite" ariaLabel="$t:sirsoft-social_login.admin.notifications.template_active|name={{$localized(def.name)}}|channel={{((slNotificationChannels?.data?.channels ?? []).find(c => c.id === template.channel)?.name ?? template.channel)}}" checked="{{template.is_active}}" disabled="{{_computed.isNotificationReadOnly}}">
+              <on type="change">
+                <!-- 채널 템플릿 켜고 끄기 — 저장 버튼과 무관하게 즉시 서버에 반영하고 정의 목록을 다시 받는다 -->
+                <api-call target="/api/admin/notification-templates/{{template.id}}/toggle-active" method="PATCH" :auth_required="true">
+                  <success>
+                    <refetch-data-source dataSourceId="slNotificationDefinitions"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message}}"/>
+                    <!-- 서버가 거절하면(예: 운영자가 만든 빈 템플릿을 내용 없이 켬) 스위치는 눌린 모양으로 남는다 — 목록 상자를 다시 마운트해 저장된 값으로 돌린다(엔진은 반복 안 동적 id 로는 다시 마운트하지 못한다) -->
+                    <remount componentId="card_sl_notifications_fields"/>
+                  </fail>
+                </api-call>
+              </on>
+            </toggle>
+            <button type="button" data-ref="sl_edit_template_{{defIdx}}_{{tplIdx}}" class="sl-btn sl-btn-secondary sl:text-sm" disabled="{{_computed.isNotificationReadOnly}}">
+              <on type="click">
+                <!-- 템플릿 편집 창 열기 — 템플릿·수신자를 깊은 복사로 전역 폼에 실어, 창 안의 편집이 목록 데이터를 건드리지 않게 한다 -->
+                <sequence>
+                  <set-state target="global">
+                    <field name="sl_notification_template_form_modal">
+                      <field name="template" value="{{JSON.parse(JSON.stringify(template))}}"/>
+                      <field name="definition" value="{{def}}"/>
+                      <field name="recipients" value="{{JSON.parse(JSON.stringify(template.recipients ?? []))}}"/>
+                      <field name="editLang" value="{{$locale}}"/>
+                      <field name="errors" :value="null"/>
+                      <field name="isSaving" :value="false"/>
+                      <field name="roleSearchResults" :value="[]"/>
+                      <field name="userSearchResults" :value="[]"/>
+                    </field>
+                  </set-state>
+                  <open-modal target="modal_sl_notification_template_edit"/>
+                </sequence>
+              </on>
+              <span>$t:sirsoft-social_login.admin.notifications.edit_template</span>
+            </button>
+          </div>
+          <div class="sl:pt-1">
+            <button type="button" data-ref="sl_reset_definition_{{defIdx}}" class="sl-btn sl-btn-secondary sl:text-sm" disabled="{{_computed.isNotificationReadOnly}}">
+              <on type="click">
+                <!-- 정의 초기화 창 열기 — 대상 ID·이름을 전역에 두고 확인 창에서 실제 초기화를 보낸다 -->
+                <sequence>
+                  <set-state target="global" resetTargetId="{{def.id}}" resetTargetName="{{$localized(def.name)}}"/>
+                  <open-modal target="modal_sl_notification_definition_reset"/>
+                </sequence>
+              </on>
+              <span>$t:sirsoft-social_login.admin.notifications.reset</span>
+            </button>
+          </div>
+        </div>
+        <div data-ref="sl_notifications_loading" data-if="{{slNotificationDefinitions === undefined &amp;&amp; !_local.slNotificationDefinitionsError}}" class="sl:text-sm sl:text-gray-500 sl:dark:text-gray-400">$t:common.loading</div>
+        <!-- 0건 안내 — 정의 조회가 실패하면 fallback 이 빈 배열을 주므로 카드가 아무 말 없이 비는데, 그 침묵은 "기능이 없다" 와 구분되지 않는다. -->
+        <p data-ref="sl_notification_empty" data-if="{{slNotificationDefinitions !== undefined &amp;&amp; (slNotificationDefinitions?.data?.data ?? []).length === 0 &amp;&amp; !_local.slNotificationDefinitionsError}}" class="sl:text-sm sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.notifications.empty_message</p>
+        <!-- 조회 실패 — 권한 없음(403)과 그 밖(500·네트워크)을 가른다. 실패 종류는 데이터 소스 error-handling 이 남긴다. -->
+        <p data-ref="sl_notification_forbidden" data-if="{{_local.slNotificationDefinitionsError === 'forbidden'}}" role="status" class="sl-alert-warning">$t:sirsoft-social_login.admin.notifications.forbidden_message</p>
+        <p data-ref="sl_notification_load_failed" data-if="{{_local.slNotificationDefinitionsError === 'failed'}}" role="alert" class="sl-alert-warning">$t:sirsoft-social_login.admin.notifications.load_failed_message</p>
+      </div>
+    </div>
+  </div>
+</partial>

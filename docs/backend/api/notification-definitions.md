@@ -538,6 +538,10 @@ HTTP/1.1 200
 
 **설명** 알림 정의의 활성 채널(`channels`), 트리거 훅(`hooks`), 활성 상태(`is_active`)를 수정합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. Service 계층에서 수정 후 템플릿을 다시 로드해 반환하며, 확장이 `core.notification_definition.update_validation_rules` 훅으로 추가 파라미터를 검증에 넣을 수 있습니다. 발송 채널 구성이나 훅 연결을 변경할 때 사용합니다.
 
+**템플릿이 없는 수단(7.2.0)** 저장한 `channels` 가운데 그 정의에 템플릿 행이 없는 수단이 있으면, 같은 트랜잭션에서 빈 템플릿을 만든다 — 제목 `null`, 본문 `[]`, 받는 사람 `[]`, `is_active=false`, `is_user_created=true`. 발송은 템플릿 행이 있는 채널로만 나가므로, 확장이 그 수단의 템플릿을 선언하지 않았어도 운영자가 수단을 켜면 바로 편집할 곳이 생긴다. 이미 템플릿이 있는 수단은 건드리지 않고, 수단을 다시 빼도 만든 행은 지우지 않는다(다시 켜면 써 둔 내용이 그대로다). 응답의 `templates` 에 새 행이 함께 실린다.
+
+**수정 보존** `channels` 는 운영자 수정 추적 대상이다(`user_overrides` 에 `channels`). 확장을 업데이트해도 운영자가 바꾼 발송 수단 목록이 선언값으로 덮이지 않는다. 순서만 바꾼 저장은 수정으로 치지 않는다.
+
 
 ### DELETE /api/admin/notification-definitions/{definition}
 <!-- @generated:start:api.admin.notification-definitions.destroy -->

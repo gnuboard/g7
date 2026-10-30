@@ -2550,6 +2550,8 @@
         "btn_confirming": "復元中..."
       },
       "no_template_for_channel": "このチャネルのテンプレートはありません。",
+      "user_template_inactive": "空のテンプレートが作成されました。内容と受信者を入力してから有効にすると、この手段で配信されます。",
+      "user_template_created": "空のテンプレートを作成しました。[編集] で内容と受信者を入力してから有効にしてください。",
       "body_preview": "本文プレビュー",
       "save_success": "通知設定が保存されました。",
       "save_error": "通知設定の保存に失敗しました。",

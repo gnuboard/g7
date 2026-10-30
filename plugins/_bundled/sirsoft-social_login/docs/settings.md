@@ -40,7 +40,7 @@
 <!-- @generated:permissions END -->
 
 <!-- @intent START -->
-설정 화면은 화면이 받는 두 목록과 같은 열람 권한(이 플러그인 `settings.view` 와 코어 `core.plugins.read`)으로 열립니다. 정책 탭 저장은 코어 설정 API 라 코어 `core.plugins.update` 를 따르고, 그 권한이 없으면 정책 탭이 안내 띠와 함께 읽기 전용이 됩니다. 이 플러그인의 권한 4종은 제공자 카드와 진단 통계 조회(`settings.view`), 제공자 변경과 연결 테스트(`settings.update`), 관리자 회원 상세 탭과 목록 가입경로 필터와 「소셜 연결」 열(`accounts.view`), 강제 해제(`accounts.unlink`)에 씁니다. `settings.update` 가 없으면 제공자 카드는 읽기 전용 안내와 함께 편집 단추가 꺼집니다.
+설정 화면은 화면이 받는 두 목록과 같은 열람 권한(이 플러그인 `settings.view` 와 코어 `core.plugins.read`)으로 열립니다. 정책 탭 저장은 코어 설정 API 라 코어 `core.plugins.update` 를 따르고, 그 권한이 없으면 정책 탭이 안내 띠와 함께 읽기 전용이 됩니다. 이 플러그인의 권한 4종은 제공자 카드와 진단 통계 조회(`settings.view`), 제공자 변경과 연결 테스트(`settings.update`), 관리자 회원 상세 탭과 목록 가입경로 필터와 「소셜 연결」 열(`accounts.view`), 강제 해제(`accounts.unlink`)에 씁니다. `settings.update` 가 없으면 제공자 카드는 읽기 전용 안내와 함께 편집 단추가 꺼집니다. 알림 탭은 코어 알림 정의 API 를 쓰므로 코어 알림 설정 권한(`core.settings.read`, 바꾸려면 `core.settings.update`)을 따르고, 열람 권한이 없으면 권한 안내만 보입니다.
 <!-- @intent END -->
 
 ## 메뉴

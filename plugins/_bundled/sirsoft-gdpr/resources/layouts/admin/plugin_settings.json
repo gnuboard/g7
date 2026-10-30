@@ -3604,6 +3604,16 @@
                                                                                     "className": "gdpr-text-hint gdpr:block gdpr:text-amber-700 gdpr:dark:text-amber-400"
                                                                                 },
                                                                                 "text": "$t:sirsoft-gdpr.channel_template_missing"
+                                                                            },
+                                                                            {
+                                                                                "comment": "저장으로 코어가 만든 빈 템플릿(운영자 생성)이 꺼져 있으면 아직 발송되지 않는다 — 채우고 켜도록 안내",
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "if": "{{(_local.gdprChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) && (def.templates ?? []).some(t => t.channel === ch.id && t.is_user_created && !t.is_active)}}",
+                                                                                "props": {
+                                                                                    "className": "gdpr-text-hint gdpr:block gdpr:text-amber-700 gdpr:dark:text-amber-400"
+                                                                                },
+                                                                                "text": "$t:admin.settings.notification_definitions.user_template_inactive"
                                                                             }
                                                                         ]
                                                                     }
@@ -3818,13 +3828,21 @@
                                                                                 "dataSourceId": "gdprNotificationDefinitions"
                                                                             }
                                                                         },
-                                                                        "onError": {
-                                                                            "handler": "toast",
-                                                                            "params": {
-                                                                                "type": "error",
-                                                                                "message": "{{error.message}}"
+                                                                        "onError": [
+                                                                            {
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "{{error.message}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "remount",
+                                                                                "params": {
+                                                                                    "componentId": "card_gdpr_notifications_fields"
+                                                                                }
                                                                             }
-                                                                        }
+                                                                        ]
                                                                     }
                                                                 ],
                                                                 "props": {

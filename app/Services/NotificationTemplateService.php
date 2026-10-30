@@ -216,6 +216,40 @@ class NotificationTemplateService
     }
 
     /**
+     * 운영자가 수단을 켜서 만든 템플릿을 만들었을 때의 빈 상태로 되돌립니다.
+     *
+     * 선언된 기본값이 없으므로 제목·본문·이동 주소·받는 사람을 비우고 끈다(행은 남긴다 — 수단은 켜진 채라 다시 채워 쓸 수
+     * 있다). 복원은 운영자 수정이 아니므로 seeding 컨텍스트로 감싸 수정 표식이 다시 기록되지 않게 한다.
+     *
+     * @param  NotificationTemplate  $template  운영자가 만든 템플릿
+     * @return NotificationTemplate 비운 템플릿
+     */
+    public function resetUserCreated(NotificationTemplate $template): NotificationTemplate
+    {
+        app()->instance('user_overrides.seeding', true);
+        try {
+            $updated = $this->templateRepository->update($template, [
+                'subject' => null,
+                'body' => [],
+                'click_url' => null,
+                'recipients' => [],
+                'is_active' => false,
+                'is_default' => true,
+                'user_overrides' => null,
+            ]);
+        } finally {
+            app()->forgetInstance('user_overrides.seeding');
+        }
+
+        $definition = $updated->definition;
+        if ($definition) {
+            $this->invalidateCache($definition->type, $updated->channel);
+        }
+
+        return $updated;
+    }
+
+    /**
      * 시더에서 기본 템플릿 데이터를 조회합니다.
      *
      * @param  string  $type  알림 정의 타입

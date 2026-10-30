@@ -8,6 +8,7 @@
 
 ### Added
 
+- 알림 설정의 「빈 템플릿이 만들어졌습니다」 안내와 「빈 템플릿을 만들었습니다」 알림 문구 일본어 번역을 추가했습니다.
 - 큐 모니터링·환경설정 권한 안내 일본어 번역을 추가했습니다 — 「큐 작업 조회」 권한이 없을 때의 안내(`admin.schedules.queue.notice.no_permission`), 목록·상태를 불러오지 못했을 때의 안내(`admin.schedules.queue.errors.list_load_failed`·`status_load_failed`), 언어팩·본인인증 구획을 볼 권한이 없을 때의 안내(`admin.settings.permission_required.*`).
 - 환경설정 → 일반 탭 「사용자 화면 URL」 칸의 이름·도움말과, 코어 업데이트 확인 창의 custom 사전 검사 중단 영역(충돌 표·예약 파일·해결 순서) 문구의 일본어 번역을 추가했습니다.
 - 모듈·플러그인 제거 창의 「함께 지워지는 공유 데이터」에 예약 작업(スケジュール) 항목 이름의 일본어 번역을 추가했습니다.

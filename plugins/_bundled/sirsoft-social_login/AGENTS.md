@@ -139,7 +139,7 @@
 |---|---|---|
 | PHPUnit | 43개 | `plugins/_bundled/sirsoft-social_login/tests` |
 | Vitest | 8개 | `vitest.config.ts` |
-| Playwright | 7개 | `tests/Playwright` |
+| Playwright | 8개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 15개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
