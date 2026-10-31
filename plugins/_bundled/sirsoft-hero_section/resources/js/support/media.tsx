@@ -150,6 +150,9 @@ interface HeroVideoMediaProps extends MediaCallbacks {
   /** 지금 재생할지 (활성 장이고 일시정지가 아님) */
   playing: boolean;
 
+  /** 활성 장인지 — 일시정지는 그 자리에 멈추고, 활성 장이 아니게 되면 처음으로 돌린다 */
+  active: boolean;
+
   /** 배너가 한 장뿐이면 반복 재생 */
   loop: boolean;
 
@@ -158,13 +161,13 @@ interface HeroVideoMediaProps extends MediaCallbacks {
 }
 
 /**
- * 직접 올린 영상 — 소리 없이·화면 안에서(playsInline) 재생하고, 활성 장이 아니면 멈추고 처음으로 돌린다.
+ * 직접 올린 영상 — 소리 없이·화면 안에서(playsInline) 재생한다. 일시정지는 그 자리에 멈추고, 활성 장이 아니면 멈추고 처음으로 돌린다.
  * 영상은 장식이라 화면 읽기에서 감추고(대체 텍스트는 아래 대표 이미지가 맡는다), 끝나면 슬라이더에 알린다.
  *
  * @param props 영상 속성
  * @returns 영상 요소
  */
-export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDevice, poster, playing, loop, eager, onEnded, onFailed }) => {
+export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDevice, poster, playing, active, loop, eager, onEnded, onFailed }) => {
   const ref = useRef<HTMLVideoElement>(null);
   const narrow = useNarrowScreen();
   const mobile = forceDevice ? forceDevice === 'mobile' : narrow;
@@ -176,18 +179,23 @@ export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDe
       return;
     }
     if (playing) {
-      // 자동 재생이 막혀도(절전 모드 등) 오류로 보지 않는다 — 대표 이미지·첫 프레임이 남고 간격 넘김으로 돌린다
+      // 자동 재생이 막히면(절전 모드 등) 대표 이미지·첫 프레임이 남고 간격 넘김으로 돌린다. 시작 전에 멈추거나 넘기거나 화면을 돌려
+      // 재생 요청이 취소된 것(AbortError)은 실패가 아니다 — 실패로 보면 그 배너는 방문 내내 다시 재생되지 않는다
       const started = video.play();
       if (started && typeof started.catch === 'function') {
-        started.catch(() => onFailed());
+        started.catch((error: unknown) => {
+          if ((error as { name?: string } | null)?.name !== 'AbortError') {
+            onFailed();
+          }
+        });
       }
     } else {
       video.pause();
-      if (video.currentTime > 0 && !video.ended) {
+      if (!active && video.currentTime > 0 && !video.ended) {
         video.currentTime = 0;
       }
     }
-  }, [playing, source?.url]);
+  }, [playing, active, source?.url]);
 
   if (!source) {
     return null;
@@ -323,7 +331,7 @@ export const HeroYoutubeMedia: React.FC<HeroYoutubeMediaProps> = ({ videoId, tit
     };
   }, [allowed, videoId, loop]);
 
-  // 재생·멈춤 — 멈추면 처음으로 돌려 다음에 활성 장이 될 때 처음부터 본다. 재생 신호가 오지 않으면 간격 넘김으로 돌린다
+  // 재생·멈춤 — 일시정지는 그 자리에 멈추고, 활성 장이 아니게 되면 처음으로 돌려 다음 차례에 처음부터 본다. 재생 신호가 오지 않으면 간격 넘김으로 돌린다
   useEffect(() => {
     const frame = frameRef.current;
     if (!allowed || !frame) {
@@ -334,7 +342,9 @@ export const HeroYoutubeMedia: React.FC<HeroYoutubeMediaProps> = ({ videoId, tit
     };
     if (!playing) {
       post('pauseVideo');
-      post('seekTo', [0, true]);
+      if (!active) {
+        post('seekTo', [0, true]);
+      }
       return;
     }
     post('playVideo');
@@ -343,7 +353,7 @@ export const HeroYoutubeMedia: React.FC<HeroYoutubeMediaProps> = ({ videoId, tit
     }
     const timer = setTimeout(() => callbacks.current.onFailed(), YOUTUBE_START_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [allowed, playing, ready]);
+  }, [allowed, playing, active, ready]);
 
   return (
     <div className={`hs__youtube${ready ? ' hs__youtube--ready' : ''}`}>

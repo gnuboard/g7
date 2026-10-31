@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
@@ -98,6 +99,8 @@ class BannerService
      * @param  array<string, mixed>  $data  검증된 값 (temp_key 포함)
      * @param  int|null  $actorId  등록한 회원 ID
      * @return Banner 만든 배너
+     *
+     * @throws ValidationException 검증 뒤 고른 이미지를 먼저 저장된 다른 요청이 가져갔을 때(등록 저장 연타)
      */
     public function create(array $data, ?int $actorId): Banner
     {
@@ -115,7 +118,12 @@ class BannerService
             ]);
 
             if ($tempKey !== '') {
-                $this->imageService->applySelection($banner, $this->imageService->resolveTempSelection($tempKey, $selected));
+                $selection = $this->imageService->resolveTempSelection($tempKey, $selected);
+                // 검증 뒤 같은 묶음의 PC 이미지를 먼저 저장된 요청이 가져갔으면 이미지 없는 배너를 만들지 않는다
+                if ($selection['pc'] === null) {
+                    throw ValidationException::withMessages(['temp_key' => __('sirsoft-hero_section::validation.pc_image.required')]);
+                }
+                $this->imageService->applySelection($banner, $selection);
             }
 
             return $this->banners->findOrFail($banner->id);

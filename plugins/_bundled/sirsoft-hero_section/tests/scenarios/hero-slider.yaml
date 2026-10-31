@@ -23,6 +23,7 @@ axes:
     - new_window_sets_rel_noopener_noreferrer
     - autoplay_advances_by_interval
     - autoplay_pauses_on_hover_and_focus
+    - pointer_click_does_not_hold_autoplay
     - pause_button_toggles_autoplay
     - reduced_motion_disables_autoplay
     - effect_fade_and_none

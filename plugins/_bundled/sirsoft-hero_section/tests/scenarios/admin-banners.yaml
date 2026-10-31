@@ -68,6 +68,7 @@ axes:
     - destroy_file_failure_left_for_prune
     - store_links_one_image_per_device
     - store_respects_selected_images
+    - store_double_submit_keeps_first_image
     - position_settings_reports_upload_limits
     - position_settings_default_when_missing
     - position_settings_upsert

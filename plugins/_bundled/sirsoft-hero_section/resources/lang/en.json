@@ -335,6 +335,7 @@
                 "mine": "My change",
                 "latest": "Latest",
                 "stale_image": "This image was already replaced or removed by another admin and cannot be reused.",
+                "stale_video": "This video was already replaced or removed by another admin and cannot be reused.",
                 "yes": "Active",
                 "no": "Inactive",
                 "empty": "None",
@@ -360,6 +361,7 @@
                     "description_style": "Description visibility, color, alignment",
                     "presentation": "Image focus and text background",
                     "link": "Link",
+                    "media": "Media (type, YouTube URL, video)",
                     "pc_image": "PC image",
                     "mobile_image": "Mobile image"
                 },

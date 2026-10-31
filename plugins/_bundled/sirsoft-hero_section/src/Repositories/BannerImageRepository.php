@@ -48,6 +48,17 @@ class BannerImageRepository implements BannerImageRepositoryInterface
     /**
      * {@inheritDoc}
      *
+     * @param  int  $id  이미지 ID
+     * @return BannerImage|null 이미지 (없으면 null)
+     */
+    public function findForUpdate(int $id): ?BannerImage
+    {
+        return BannerImage::query()->lockForUpdate()->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * @param  string  $hash  공개 해시
      * @return BannerImage|null 이미지
      */

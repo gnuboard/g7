@@ -304,9 +304,11 @@
           "pc_image": "PC画像",
           "mobile_image": "モバイル画像",
           "eyebrow": "見出し",
-          "eyebrow_style": "見出し表示"
+          "eyebrow_style": "見出し表示",
+          "media": "メディア(種類·YouTubeアドレス·動画)"
         },
-        "text_spot": "文言 PC {{pc}} / モバイル {{mobile}} · 幅 {{width}}%"
+        "text_spot": "文言 PC {{pc}} / モバイル {{mobile}} · 幅 {{width}}%",
+        "stale_video": "別の管理者がすでに変更または削除した動画のため、再度使用することはできません。"
       },
       "button_needs_link": "移動先アドレスを入力すると、ボタンがサイトに表示されます。アドレスなしで保存すると、ボタンテキストは表示されません。",
       "link_behavior": {

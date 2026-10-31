@@ -86,6 +86,61 @@ test('추가 효과 4종이 무한 반복으로 넘어가고, 화살표·점·�
   }
 });
 
+/**
+ * 홈 공개 응답의 첫 배너를 복제해 세 장으로 만들고 자동 넘김(3초)을 켠다 — 운영 배너·설정은 건드리지 않는다.
+ *
+ * @param page 페이지
+ */
+async function injectThreeSlides(page: Page): Promise<void> {
+  await page.route('**/api/plugins/sirsoft-hero_section/hero?position=home_hero*', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const first = body.data.banners[0];
+    if (!first) {
+      // 홈에 배너가 없으면 복제할 수 없다 — 응답을 그대로 넘겨 장 수 단언에서 드러나게 한다
+      await route.fulfill({ response });
+      return;
+    }
+    body.data.banners = [0, 1, 2].map((i) => ({ ...first, id: 990100 + i, title: `E2E 자동 넘김 ${i}`, media_type: 'image' }));
+    body.data.settings = { ...body.data.settings, autoplay: true, interval_seconds: 3, effect: 'slide' };
+    await route.fulfill({ response, json: body });
+  });
+}
+
+/** 자동 넘김이 돌고 있는지(Swiper autoplay.running) */
+const autoplayRunning = (page: Page) => page.evaluate(() => (document.querySelector('section.hs .swiper') as HTMLElement & { swiper: any }).swiper.autoplay.running);
+
+// @scenario surface=pointer_click_does_not_hold_autoplay
+test('마우스로 화살표를 누르고 나가면 자동 넘김이 다시 돌고, 단추 표시도 「재생 중」 그대로다(데스크톱)', async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.desktop);
+  await injectThreeSlides(page);
+  await gotoUser(page, '/');
+  await expect(page.locator('section.hs .hs__pagination button')).toHaveCount(3, { timeout: 30_000 });
+
+  await page.locator('section.hs .hs__next').click();
+  await settle(page, 1);
+  await page.mouse.move(0, 0);
+  await expect.poll(() => autoplayRunning(page), { timeout: 5_000 }).toBe(true);
+  await expect(page.locator('section.hs .hs__toggle')).toHaveAttribute('aria-pressed', 'false');
+  await expect.poll(() => state(page).then((s) => s.realIndex), { timeout: 8_000 }).toBe(2);
+});
+
+test.describe('휴대폰 점 탭 뒤 자동 넘김', () => {
+  test.use({ hasTouch: true, viewport: VIEWPORTS.mobile });
+
+  // @scenario surface=pointer_click_does_not_hold_autoplay
+  test('휴대폰에서 점을 탭해 옮긴 뒤에도 자동 넘김이 계속 돈다', async ({ page }) => {
+    await injectThreeSlides(page);
+    await gotoUser(page, '/');
+    await expect(page.locator('section.hs .hs__pagination button')).toHaveCount(3, { timeout: 30_000 });
+
+    await page.locator('section.hs .hs__pagination button').nth(1).tap();
+    await settle(page, 1);
+    await expect.poll(() => autoplayRunning(page), { timeout: 5_000 }).toBe(true);
+    await expect.poll(() => state(page).then((s) => s.realIndex), { timeout: 8_000 }).toBe(2);
+  });
+});
+
 // @scenario surface=swiper_pagination_and_arrows
 test('휴대폰에서는 화살표를 감추고(문구를 가리지 않게) 점 표시로 장을 옮긴다', async ({ page, request, managerToken, created }) => {
   const original = await readSettings(request, managerToken);

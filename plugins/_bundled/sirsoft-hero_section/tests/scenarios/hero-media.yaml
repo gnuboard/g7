@@ -30,6 +30,8 @@ axes:
     - video_ends_while_hovered
     - single_video_loops
     - pause_stops_video
+    - pause_keeps_video_position
+    - video_play_abort_is_not_failure
     - reduced_motion_starts_paused
     - video_error_falls_back_to_interval
     - video_only_when_media_type_video

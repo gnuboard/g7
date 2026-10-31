@@ -109,6 +109,63 @@ test('영상 파일 배너는 소리 없이 화면 안에서 재생되고, 끝�
   expect(Date.now() - started).toBeLessThan(6_000);
 });
 
+// @scenario surface=pause_keeps_video_position
+test('일시정지(❚❚)는 그 자리에서 멈추고, 다시 재생(▶)하면 이어서 본다', async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.desktop);
+  await gotoUser(page, '/');
+  const webm = await recordWebm(page, 4_000);
+  await page.route(`**${VIDEO_URL}`, (route) => route.fulfill({ status: 200, contentType: 'video/webm', body: webm }));
+  await injectBanners(page, (poster) => [videoBanner(poster)], { autoplay: true, interval_seconds: 7, effect: 'slide' });
+  await page.reload();
+
+  await expect.poll(async () => (await videoState(page))?.time ?? 0, { timeout: 20_000 }).toBeGreaterThan(1);
+  await page.getByRole('button', { name: '배너 일시정지' }).click();
+  await expect.poll(async () => (await videoState(page))?.paused, { timeout: 5_000 }).toBe(true);
+  const stopped = (await videoState(page))!.time;
+  expect(stopped).toBeGreaterThan(1);
+  await page.waitForTimeout(500);
+  expect((await videoState(page))!.time).toBeCloseTo(stopped, 1);
+
+  await page.getByRole('button', { name: '배너 다시 재생' }).click();
+  await expect.poll(async () => (await videoState(page))?.paused, { timeout: 5_000 }).toBe(false);
+  expect((await videoState(page))!.time).toBeGreaterThanOrEqual(stopped - 0.05);
+});
+
+// @scenario surface=video_play_abort_is_not_failure
+test('영상을 받는 중(재생 시작 전)에 다른 배너로 넘겼다 돌아와도 그 영상은 재생된다', async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.desktop);
+  await gotoUser(page, '/');
+  const webm = await recordWebm(page, 4_000);
+  // 영상 응답을 늦춰 재생 요청이 끝나기 전에 넘긴다 — 브라우저는 그 재생 요청을 취소(AbortError)한다
+  await page.route(`**${VIDEO_URL}`, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2_500));
+    await route.fulfill({ status: 200, contentType: 'video/webm', body: webm });
+  });
+  await injectBanners(page, (poster) => [videoBanner(poster)], { autoplay: true, interval_seconds: 7, effect: 'slide' });
+  // 재생 요청이 실제로 취소됐는지 확인하려고 거절 이유를 모은다(취소가 일어나지 않으면 이 시험은 아무것도 보지 않는다)
+  await page.addInitScript(() => {
+    const original = HTMLMediaElement.prototype.play;
+    (window as any).__playRejections = [];
+    HTMLMediaElement.prototype.play = function play(this: HTMLMediaElement) {
+      const result = original.call(this);
+      result.catch((error: Error) => (window as any).__playRejections.push(error.name));
+      return result;
+    };
+  });
+  await page.reload();
+
+  await expect(page.locator('.hs__slide--active video.hs__video')).toBeAttached({ timeout: 20_000 });
+  await page.locator('section.hs .hs__next').click();
+  await expect.poll(() => realIndex(page), { timeout: 5_000 }).toBe(1);
+  await page.waitForTimeout(700);
+  await page.locator('section.hs .hs__prev').click();
+  await expect.poll(() => realIndex(page), { timeout: 5_000 }).toBe(0);
+  await page.mouse.move(0, 0);
+  await expect.poll(async () => (await videoState(page))?.time ?? 0, { timeout: 15_000 }).toBeGreaterThan(0.2);
+  expect((await videoState(page))?.paused).toBe(false);
+  expect(await page.evaluate(() => (window as any).__playRejections)).toContain('AbortError');
+});
+
 // @scenario surface=reduced_motion_starts_paused
 test('움직임 줄이기에서는 영상이 멈춘 채 시작하고, 「배너 다시 재생」 단추로 재생한다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);

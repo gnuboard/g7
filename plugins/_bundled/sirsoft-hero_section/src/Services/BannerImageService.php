@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Plugins\Sirsoft\HeroSection\Enums\MediaKind;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
@@ -176,9 +177,14 @@ class BannerImageService
      * 새 이미지는 배너에 붙이고, 지금 붙어 있던 이미지는 떼어 임시 이미지로 돌려 둔다. 떼어 낸 이미지의 파일은
      * 트랜잭션이 끝난 뒤 `deleteImage()` 로 지우며, 그때 실패해도 임시 이미지로 남아 고아 임시 이미지 정리가 다시 지운다.
      *
+     * 붙일 파일은 행을 잠그고 다시 본다 — 검증은 요청 앞에서 끝나므로, 등록 저장을 연달아 누르면 먼저 커밋된 요청이 그 사이에
+     * 같은 임시 파일을 가져갈 수 있다. 다른 배너에 붙었거나 사라졌으면 빼앗지 않고 저장 전체를 되돌린다(422).
+     *
      * @param  Banner  $banner  대상 배너
      * @param  array<string, int|null>  $selection  선택 키(pc·mobile·pc_video·mobile_video) => 남길 파일 ID (null 이면 없음, 키가 없으면 그대로)
      * @return array{changes: array<string, string>, released: array<int, BannerImage>} 바뀐 선택 키(replaced·removed)와 떼어 낸 파일
+     *
+     * @throws ValidationException 고른 파일이 다른 배너에 붙었거나 없어졌을 때
      */
     public function applySelection(Banner $banner, array $selection): array
     {
@@ -197,12 +203,18 @@ class BannerImageService
                 continue;
             }
 
+            $next = $imageId !== null ? $this->images->findForUpdate($imageId) : null;
+            if ($imageId !== null && ($next === null || ($next->banner_id !== null && $next->banner_id !== $banner->id))) {
+                throw ValidationException::withMessages([
+                    self::selectionField($slot) => __('sirsoft-hero_section::validation.image_selection.invalid'),
+                ]);
+            }
+
             if ($current !== null) {
                 $this->images->release($current, self::RELEASED_KEY_PREFIX.$banner->id);
                 $released[] = $current;
             }
 
-            $next = $imageId !== null ? $this->images->find($imageId) : null;
             if ($next !== null) {
                 $this->images->attach($next, $banner->id);
             }
@@ -211,6 +223,17 @@ class BannerImageService
         }
 
         return ['changes' => $changes, 'released' => $released];
+    }
+
+    /**
+     * 선택 키의 요청 필드 이름을 반환합니다 — 검증 오류를 화면의 그 칸에 붙이려고 쓴다.
+     *
+     * @param  string  $slot  선택 키 (pc·mobile·pc_video·mobile_video)
+     * @return string 요청 필드 (pc_image_id·mobile_image_id·pc_video_id·mobile_video_id)
+     */
+    private static function selectionField(string $slot): string
+    {
+        return in_array($slot, ['pc', 'mobile'], true) ? $slot.'_image_id' : $slot.'_id';
     }
 
     /**

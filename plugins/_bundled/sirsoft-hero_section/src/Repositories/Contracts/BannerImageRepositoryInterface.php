@@ -39,6 +39,14 @@ interface BannerImageRepositoryInterface
     public function find(int $id): ?BannerImage;
 
     /**
+     * id 로 이미지를 찾아 행을 잠급니다 — 트랜잭션 안에서 붙이기 직전에 다른 요청이 먼저 가져갔는지 다시 보려고 쓴다.
+     *
+     * @param  int  $id  이미지 ID
+     * @return BannerImage|null 이미지 (없으면 null)
+     */
+    public function findForUpdate(int $id): ?BannerImage;
+
+    /**
      * 공개 해시로 이미지를 찾습니다 — 저장 전 미리보기가 임시 업로드도 그려야 해서 연결 여부를 가리지 않는다.
      *
      * @param  string  $hash  공개 해시

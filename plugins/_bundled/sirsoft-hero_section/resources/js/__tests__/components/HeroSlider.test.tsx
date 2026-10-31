@@ -204,9 +204,9 @@ describe('HeroSlider', () => {
     const region = container.querySelector('section') as HTMLElement;
     const autoplay = swiperState.instance!.autoplay;
 
-    fireEvent.mouseEnter(region);
+    fireEvent.pointerEnter(region, { pointerType: 'mouse' });
     expect(autoplay.running).toBe(false);
-    fireEvent.mouseLeave(region);
+    fireEvent.pointerLeave(region, { pointerType: 'mouse' });
     expect(autoplay.running).toBe(true);
 
     fireEvent.focus(container.querySelector('.hs__next') as HTMLElement);
@@ -223,13 +223,52 @@ describe('HeroSlider', () => {
     const next = container.querySelector('.hs__next')!;
     const autoplay = swiperState.instance!.autoplay;
     fireEvent.focus(next);
-    fireEvent.mouseEnter(region);
-    fireEvent.mouseLeave(region);
+    fireEvent.pointerEnter(region, { pointerType: 'mouse' });
+    fireEvent.pointerLeave(region, { pointerType: 'mouse' });
     expect(autoplay.running).toBe(false);
-    fireEvent.mouseEnter(region);
+    fireEvent.pointerEnter(region, { pointerType: 'mouse' });
     fireEvent.blur(next, { relatedTarget: document.body });
     expect(autoplay.running).toBe(false);
+    fireEvent.pointerLeave(region, { pointerType: 'mouse' });
+    expect(autoplay.running).toBe(true);
+  });
+
+  // @scenario surface=pointer_click_does_not_hold_autoplay
+  it('[case:components-misc-carousel-autoplay-held-by-pointer-focus] 마우스로 화살표를 누르면(누르며 포커스가 들어가도) 마우스가 나간 뒤 자동 넘김이 다시 돈다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
+    const region = container.querySelector('section')!;
+    const next = container.querySelector('.hs__next')!;
+    const autoplay = swiperState.instance!.autoplay;
+
+    fireEvent.pointerEnter(region, { pointerType: 'mouse' });
+    fireEvent.mouseEnter(region);
+    fireEvent.pointerDown(next, { pointerType: 'mouse' });
+    fireEvent.focus(next);
+    fireEvent.pointerUp(next, { pointerType: 'mouse' });
+    fireEvent.click(next);
+    expect(autoplay.running).toBe(false);
+    fireEvent.pointerLeave(region, { pointerType: 'mouse' });
     fireEvent.mouseLeave(region);
+    expect(autoplay.running).toBe(true);
+    expect(container.querySelector('.hs__toggle')?.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  // @scenario surface=pointer_click_does_not_hold_autoplay
+  it('[case:components-misc-carousel-autoplay-held-by-pointer-focus] 휴대폰에서 점을 탭해도(뒤따르는 흉내 마우스 이벤트·포커스 포함) 자동 넘김이 계속 돈다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
+    const region = container.querySelector('section')!;
+    const dot = container.querySelectorAll('.swiper-pagination-bullet')[2] as HTMLElement;
+    const autoplay = swiperState.instance!.autoplay;
+
+    // 탭 순서: pointerenter·pointerdown·pointerup·pointerleave(touch) → 흉내 mouseenter·mousedown·focus·click — mouseleave 는 오지 않는다
+    fireEvent.pointerEnter(region, { pointerType: 'touch' });
+    fireEvent.pointerDown(dot, { pointerType: 'touch' });
+    fireEvent.pointerUp(dot, { pointerType: 'touch' });
+    fireEvent.pointerLeave(region, { pointerType: 'touch' });
+    fireEvent.mouseEnter(region);
+    fireEvent.focus(dot);
+    fireEvent.click(dot);
+    expect(activeId(container)).toBe('3');
     expect(autoplay.running).toBe(true);
   });
 
@@ -315,9 +354,9 @@ describe('HeroSlider', () => {
     const counter = container.querySelector('.hs__counter') as HTMLElement;
     expect(counter.getAttribute('aria-live')).toBe('off');
 
-    fireEvent.mouseEnter(container.querySelector('section') as HTMLElement);
+    fireEvent.pointerEnter(container.querySelector('section') as HTMLElement, { pointerType: 'mouse' });
     expect(counter.getAttribute('aria-live')).toBe('polite');
-    fireEvent.mouseLeave(container.querySelector('section') as HTMLElement);
+    fireEvent.pointerLeave(container.querySelector('section') as HTMLElement, { pointerType: 'mouse' });
     fireEvent.click(container.querySelector('.hs__toggle') as HTMLElement);
     fireEvent.blur(container.querySelector('.hs__toggle') as HTMLElement, { relatedTarget: document.body });
     expect(counter.getAttribute('aria-live')).toBe('polite');

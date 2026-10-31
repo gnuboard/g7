@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { basic, translate } from '../../support/editor';
+import { youtubeIdFromUrl } from '../../support/media';
 
 type Detail = Record<string, any>;
 type Change = 'theirs' | 'mine' | 'both';
@@ -21,11 +22,11 @@ export interface HeroConflictResolverProps {
 interface Group {
   field: string;
   keys: string[];
-  kind: 'enum' | 'bool' | 'period' | 'ml' | 'style' | 'presentation' | 'link' | 'image';
+  kind: 'enum' | 'bool' | 'period' | 'ml' | 'style' | 'presentation' | 'link' | 'media' | 'image';
   device?: 'pc' | 'mobile';
 }
 
-/** 비교 단위 — 함께 저장되는 칸은 한 항목으로 묶는다(기간·문구 표시·링크). */
+/** 비교 단위 — 함께 저장되는 칸은 한 항목으로 묶는다(기간·문구 표시·링크·미디어 종류와 그 유튜브 주소·영상). */
 const GROUPS: Group[] = [
   { field: 'position', keys: ['position'], kind: 'enum' },
   { field: 'is_active', keys: ['is_active'], kind: 'bool' },
@@ -40,6 +41,7 @@ const GROUPS: Group[] = [
   { field: 'description_style', keys: ['description_visible', 'description_color', 'description_align'], kind: 'style' },
   { field: 'presentation', keys: ['presentation'], kind: 'presentation' },
   { field: 'link', keys: ['link_url', 'link_new_window'], kind: 'link' },
+  { field: 'media', keys: ['media_type', 'youtube_url', 'youtube_id', 'videos'], kind: 'media' },
   { field: 'pc_image', keys: [], kind: 'image', device: 'pc' },
   { field: 'mobile_image', keys: [], kind: 'image', device: 'mobile' },
 ];
@@ -84,6 +86,15 @@ function normalize(group: Group, value: Detail | null | undefined): unknown {
     }
     case 'link':
       return { url: v.link_url || null, newWindow: v.link_new_window === true };
+    case 'media': {
+      // 저장되는 것은 고른 종류의 값뿐이다(이미지면 유튜브 주소·영상을 보내지 않는다). 유튜브는 주소 모양이 달라도 같은 영상이면 같다
+      const type = v.media_type === 'youtube' || v.media_type === 'video' ? v.media_type : 'image';
+      if (type === 'youtube') {
+        const url = String(v.youtube_url ?? '').trim();
+        return { type, youtube: youtubeIdFromUrl(url) ?? v.youtube_id ?? (url || null) };
+      }
+      return type === 'video' ? { type, pc: v.videos?.pc?.id ?? null, mobile: v.videos?.mobile?.id ?? null } : { type };
+    }
     case 'image':
       return v.images?.[group.device!]?.id ?? null;
     default:
@@ -92,6 +103,12 @@ function normalize(group: Group, value: Detail | null | undefined): unknown {
 }
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/** 내 쪽 영상이 최신본에 없는지 — 다른 운영자가 바꾸거나 뺀 영상의 옛 ID 는 서버가 이미 지웠을 수 있다(이미지와 같은 이유로 고를 수 없다). */
+function staleVideo(mine: any, latest: any): boolean {
+  const kept = latest?.type === 'video' ? [latest.pc, latest.mobile] : [];
+  return mine?.type === 'video' && [mine.pc, mine.mobile].some((id) => id !== null && !kept.includes(id));
+}
 
 /** 한 쪽 값을 운영자가 읽을 글자로 바꿉니다. */
 function display(group: Group, value: Detail | null | undefined, locales: string[]): string {
@@ -115,6 +132,17 @@ function display(group: Group, value: Detail | null | undefined, locales: string
         + ` · ${translate(`admin.form.text_layout.tones.${n.tone}`)}`;
     case 'link':
       return `${n.url ?? t('empty')}${n.newWindow ? ` · ${t('new_window')}` : ''}`;
+    case 'media': {
+      const type = translate(`admin.form.media.${n.type}`);
+      if (n.type === 'youtube') {
+        return `${type} · ${String(value?.youtube_url ?? '').trim() || n.youtube || t('empty')}`;
+      }
+      if (n.type === 'video') {
+        const file = (video?: Detail | null) => (video ? video.original_filename ?? `#${video.id}` : t('empty'));
+        return `${type} · PC ${file(value?.videos?.pc)} / ${translate('admin.preview.mobile')} ${file(value?.videos?.mobile)}`;
+      }
+      return type;
+    }
     case 'image': {
       const img = value?.images?.[group.device!];
       return img ? `${img.original_filename ?? `#${img.id}`}${img.width ? ` (${img.width}×${img.height})` : ''}` : t('empty');
@@ -139,7 +167,7 @@ export const HeroConflictResolver: React.FC<HeroConflictResolverProps> = ({ base
     const mineChanged = !same(m, b);
     const theirsChanged = !same(l, b);
     const change: Change = mineChanged && theirsChanged ? 'both' : mineChanged ? 'mine' : 'theirs';
-    return [{ group, change, staleMine: group.kind === 'image' && change === 'theirs' }];
+    return [{ group, change, staleMine: change === 'theirs' && (group.kind === 'image' || (group.kind === 'media' && staleVideo(m, l))) }];
   }), [base, mine, latest]);
   const defaults = useMemo(() => Object.fromEntries(rows.filter((r) => r.change !== 'both').map((r) => [r.group.field, r.change === 'mine' ? 'mine' : 'latest'])) as Record<string, Choice>, [rows]);
   const [picked, setPicked] = useState<Record<string, Choice>>({});
@@ -185,7 +213,7 @@ export const HeroConflictResolver: React.FC<HeroConflictResolverProps> = ({ base
           />
           <Span className="hs-conflict__side">{t(side)}</Span>
           <Span className="hs-conflict__value">{display(group, side === 'mine' ? mine : latest, locales)}</Span>
-          {side === 'mine' && staleMine ? <Span className="form-hint hs-conflict__stale">{t('stale_image')}</Span> : null}
+          {side === 'mine' && staleMine ? <Span className="form-hint hs-conflict__stale">{t(group.kind === 'media' ? 'stale_video' : 'stale_image')}</Span> : null}
         </Label>)}
       </Div>;
     })}

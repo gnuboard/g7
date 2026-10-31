@@ -130,10 +130,10 @@ describe('HeroSlider 영상 배너', () => {
   it('마우스가 올라가 있는 동안 영상이 끝나면 넘기지 않고, 나가면 간격 넘김으로 돌아간다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} settings={{ autoplay: true }} />);
     const region = container.querySelector('section.hs')!;
-    fireEvent.mouseEnter(region);
+    fireEvent.pointerEnter(region, { pointerType: 'mouse' });
     fireEvent.ended(container.querySelector('[data-banner-id="1"] video')!);
     expect(swiperState.instance!.slideNext).not.toHaveBeenCalled();
-    fireEvent.mouseLeave(region);
+    fireEvent.pointerLeave(region, { pointerType: 'mouse' });
     expect(swiperState.instance!.autoplay.running).toBe(true);
   });
 
@@ -156,6 +156,43 @@ describe('HeroSlider 영상 배너', () => {
     expect(pause).toHaveBeenCalled();
     fireEvent.click(container.querySelector('.hs__toggle')!);
     expect(play).toHaveBeenCalled();
+  });
+
+  // @scenario surface=pause_keeps_video_position
+  it('일시정지는 그 자리에서 멈추고(다시 재생하면 이어서 본다), 다른 장으로 넘어가면 처음으로 돌린다', () => {
+    const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} />);
+    const video = container.querySelector('[data-banner-id="1"] video') as HTMLVideoElement;
+    Object.defineProperty(video, 'currentTime', { configurable: true, writable: true, value: 20 });
+    fireEvent.click(container.querySelector('.hs__toggle')!);
+    expect(pause).toHaveBeenCalled();
+    expect(video.currentTime).toBe(20);
+    fireEvent.click(container.querySelector('.hs__next')!);
+    expect(video.currentTime).toBe(0);
+  });
+
+  // @scenario surface=video_play_abort_is_not_failure
+  it('[case:components-misc-video-play-abort-treated-as-failure] 재생 시작 전에 멈추거나 넘겨 재생 요청이 취소(AbortError)돼도 실패로 보지 않고, 다시 재생할 수 있다', async () => {
+    play.mockImplementationOnce(() => Promise.reject(new DOMException('The play() request was interrupted by a call to pause().', 'AbortError')));
+    const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} settings={{ autoplay: true }} />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    // 아직 영상 장이라 간격 넘김은 멈춰 있고, 단추로 다시 재생하면 재생을 요청한다
+    expect(swiperState.instance!.autoplay.running).toBe(false);
+    fireEvent.click(container.querySelector('.hs__toggle')!);
+    play.mockClear();
+    fireEvent.click(container.querySelector('.hs__toggle')!);
+    expect(play).toHaveBeenCalled();
+  });
+
+  // @scenario surface=video_error_falls_back_to_interval
+  it('자동 재생이 막히면(NotAllowedError) 그 장은 이미지처럼 간격으로 넘긴다', async () => {
+    play.mockImplementationOnce(() => Promise.reject(new DOMException('play() failed because the user didn\'t interact', 'NotAllowedError')));
+    render(<HeroSlider banners={[videoBanner(1), banner(2)]} settings={{ autoplay: true }} />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(swiperState.instance!.autoplay.running).toBe(true);
   });
 
   // @scenario surface=reduced_motion_starts_paused
@@ -265,6 +302,22 @@ describe('HeroSlider 영상 배너', () => {
         window.dispatchEvent(new MessageEvent('message', { data: ended, origin: 'https://www.youtube-nocookie.com', source: frame.contentWindow }));
       });
       expect(swiperState.instance!.slideNext).toHaveBeenCalledTimes(1);
+    });
+
+    // @scenario surface=pause_keeps_video_position
+    it('유튜브도 일시정지는 그 자리에서 멈추고, 다른 장으로 넘어가면 처음으로 돌린다', () => {
+      mockConsent(ready(true));
+      const { container } = render(<HeroSlider banners={[youtubeBanner(1), banner(2)]} settings={{ autoplay: true }} />);
+      const frame = container.querySelector('iframe') as HTMLIFrameElement;
+      const posted = vi.spyOn(frame.contentWindow!, 'postMessage');
+      const commands = () => posted.mock.calls.map(([message]) => JSON.parse(message as string).func);
+
+      fireEvent.click(container.querySelector('.hs__toggle')!);
+      expect(commands()).toContain('pauseVideo');
+      expect(commands()).not.toContain('seekTo');
+
+      fireEvent.click(container.querySelector('.hs__next')!);
+      expect(commands()).toContain('seekTo');
     });
 
     // @scenario surface=youtube_timeout_falls_back

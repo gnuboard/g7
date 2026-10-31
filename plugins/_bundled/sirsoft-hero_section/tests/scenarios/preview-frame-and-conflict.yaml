@@ -30,6 +30,7 @@ axes:
     - conflict_both_changed_requires_choice
     - conflict_stale_image_not_resent
     - conflict_reapply_and_conflict_again
+    - conflict_media_compared
     - conflict_load_latest_and_retry
     - long_text_fits_slot
     - long_text_overflow_hint
@@ -41,6 +42,7 @@ effects:
   - others_changes_not_overwritten
   - stale_image_id_never_resent
   - my_temp_images_preserved
+  - my_media_change_not_dropped
   - long_text_not_lost
 
 test_files:

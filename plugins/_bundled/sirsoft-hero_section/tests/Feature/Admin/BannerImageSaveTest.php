@@ -7,9 +7,12 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Illuminate\Validation\ValidationException;
+use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Services\BannerImageService;
+use Plugins\Sirsoft\HeroSection\Services\BannerService;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /**
@@ -276,6 +279,36 @@ class BannerImageSaveTest extends PluginTestCase
         $foreign = $this->uploadImage($this->admin, 'pc', ['temp_key' => (string) Str::uuid()])->assertCreated()->json('data.id');
         $this->actingAs($this->admin)->postJson($this->api('/admin/banners'), $this->bannerPayload(['temp_key' => $tempKey, 'pc_image_id' => $foreign]))
             ->assertStatus(422)->assertJsonValidationErrors(['pc_image_id']);
+    }
+
+    /**
+     * 등록 저장을 연달아 두 번 눌러 두 요청이 같은 임시 이미지를 골랐을 때 — 검증은 둘 다 통과했지만 먼저 저장된 배너가 이미지를 가져갔으면,
+     * 뒤 요청은 그 이미지를 빼앗지 않고 저장 전체를 되돌린다(이미지 없는 배너도, 같은 배너 둘도 남지 않는다).
+     *
+     * @scenario surface=store_double_submit_keeps_first_image
+     *
+     * @return void 반환값 없음
+     */
+    public function test_store_double_submit_does_not_steal_image(): void
+    {
+        $tempKey = (string) Str::uuid();
+        $pc = $this->uploadImage($this->admin, 'pc', ['temp_key' => $tempKey])->assertCreated()->json('data.id');
+        $first = $this->actingAs($this->admin)->postJson($this->api('/admin/banners'), $this->bannerPayload(['temp_key' => $tempKey, 'pc_image_id' => $pc]))
+            ->assertCreated()->json('data.id');
+        $count = Banner::query()->count();
+
+        // 두 번째 요청은 첫 요청이 커밋되기 전에 검증을 통과했다 — 그 뒤 단계(서비스)부터 재현한다
+        foreach ([['temp_key' => $tempKey, 'pc_image_id' => $pc], ['temp_key' => $tempKey]] as $data) {
+            try {
+                app(BannerService::class)->create($this->bannerPayload($data), $this->admin->id);
+                $this->fail('먼저 저장된 배너의 이미지를 가져가면 안 된다');
+            } catch (ValidationException $e) {
+                $this->assertArrayHasKey(isset($data['pc_image_id']) ? 'pc_image_id' : 'temp_key', $e->errors());
+            }
+        }
+
+        $this->assertSame($first, BannerImage::query()->find($pc)->banner_id);
+        $this->assertSame($count, Banner::query()->count());
     }
 
     /**

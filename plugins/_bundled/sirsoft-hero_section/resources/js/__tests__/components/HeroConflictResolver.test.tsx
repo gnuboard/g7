@@ -108,6 +108,51 @@ describe('HeroConflictResolver', () => {
     expect(onApply.mock.calls[0][0].images).toEqual({ pc: image(30, 'pc'), mobile: image(31, 'mobile') });
   });
 
+  // @scenario surface=conflict_media_compared
+  // @effects my_media_change_not_dropped
+  it('미디어(종류·유튜브 주소·영상)도 비교해, 나만 바꾼 미디어는 적용 뒤에도 남는다', () => {
+    const base = detail({ media_type: 'image', youtube_url: null, youtube_id: null, videos: { pc: null, mobile: null } });
+    const mine = detail({ media_type: 'youtube', youtube_url: 'https://youtu.be/abcdefghijk', youtube_id: null, videos: { pc: null, mobile: null } });
+    const latest = detail({ revision: 4, title: { ko: '남이 바꾼 제목' }, media_type: 'image', youtube_url: null, youtube_id: null, videos: { pc: null, mobile: null } });
+    const { row, apply, onApply } = mount(base, mine, latest);
+
+    expect(row('media')?.getAttribute('data-change')).toBe('mine');
+    fireEvent.click(apply());
+    const [merged] = onApply.mock.calls[0];
+    expect(merged.revision).toBe(4);
+    expect(merged.title).toEqual({ ko: '남이 바꾼 제목' });
+    expect(merged.media_type).toBe('youtube');
+    expect(merged.youtube_url).toBe('https://youtu.be/abcdefghijk');
+  });
+
+  // @scenario surface=conflict_media_compared
+  it('같은 유튜브 영상을 다른 주소 모양으로 적었으면 같은 미디어로 본다', () => {
+    const base = detail({ media_type: 'image' });
+    const mine = detail({ media_type: 'youtube', youtube_url: 'https://www.youtube.com/watch?v=abcdefghijk' });
+    const latest = detail({ revision: 4, media_type: 'youtube', youtube_url: 'https://youtu.be/abcdefghijk', youtube_id: 'abcdefghijk' });
+    const { row } = mount(base, mine, latest);
+    expect(row('media')).toBeNull();
+  });
+
+  // @scenario surface=conflict_media_compared
+  // @effects stale_image_id_never_resent
+  it('다른 운영자가 영상을 바꾸거나 뺐으면 내 쪽의 옛 영상은 고를 수 없고, 둘 다 바꾼 미디어는 직접 고른다', () => {
+    const video = (id: number, device: 'pc' | 'mobile') => ({ id, device, url: `/vid/${id}`, original_filename: `${device}-${id}.mp4` });
+    const base = detail({ media_type: 'video', videos: { pc: video(40, 'pc'), mobile: null } });
+    const stale = mount(base, base, detail({ revision: 4, media_type: 'image', videos: { pc: null, mobile: null } }));
+    expect(stale.row('media')?.getAttribute('data-change')).toBe('theirs');
+    expect(stale.row('media')!.querySelector<HTMLInputElement>('input[value="mine"]')!.disabled).toBe(true);
+    cleanup();
+
+    const both = mount(base, detail({ media_type: 'video', videos: { pc: video(41, 'pc'), mobile: null } }), detail({ revision: 4, media_type: 'youtube', youtube_url: 'https://youtu.be/abcdefghijk', youtube_id: 'abcdefghijk' }));
+    expect(both.row('media')?.getAttribute('data-change')).toBe('both');
+    expect(both.apply().disabled).toBe(true);
+    fireEvent.click(both.row('media')!.querySelector<HTMLInputElement>('input[value="mine"]')!);
+    fireEvent.click(both.apply());
+    expect(both.onApply.mock.calls[0][0].media_type).toBe('video');
+    expect(both.onApply.mock.calls[0][0].videos).toEqual({ pc: video(41, 'pc'), mobile: null });
+  });
+
   // @scenario surface=conflict_reapply_and_conflict_again
   // @effects others_changes_not_overwritten
   it('재적용 뒤 다시 충돌하면 새 기준·최신본으로 다시 비교하고 앞서 고른 값은 남기지 않는다', () => {

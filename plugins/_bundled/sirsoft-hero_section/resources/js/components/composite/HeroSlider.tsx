@@ -335,6 +335,19 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const [focusWithin, setFocusWithin] = useState(false);
   const [swiper, setSwiper] = useState<SwiperInstance | null>(null);
   const regionRef = useRef<HTMLElement>(null);
+  // 마우스·탭으로 누르며 들어온 포커스는 자동 넘김을 붙잡지 않는다 — 키보드를 쓰면 다시 포커스로 멈춘다(누르고 나간 뒤 넘김이 멈춘 채 남지 않게)
+  const pointerInput = useRef(false);
+  useEffect(() => {
+    const doc = regionRef.current?.ownerDocument;
+    if (!doc) {
+      return;
+    }
+    const onKey = () => {
+      pointerInput.current = false;
+    };
+    doc.addEventListener('keydown', onKey, true);
+    return () => doc.removeEventListener('keydown', onKey, true);
+  }, [count > 0]);
 
   // 배너 목록이 바뀌면(언어 전환·재조회) Swiper 를 새로 만들어 첫 장으로
   const key = banners.map((b) => b.id).join(',');
@@ -487,9 +500,14 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       aria-roledescription="carousel"
       aria-label={t('sirsoft-hero_section.slider.label', '메인 배너')}
       data-position={position}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocus={() => setFocusWithin(true)}
+      // 휴대폰 탭은 흉내 mouseenter 만 오고 mouseleave 가 오지 않아 hover 로 보지 않는다 — 마우스·펜 포인터만 센다
+      onPointerEnter={(event) => event.pointerType !== 'touch' && setHovered(true)}
+      onPointerLeave={(event) => event.pointerType !== 'touch' && setHovered(false)}
+      onPointerDownCapture={() => {
+        pointerInput.current = true;
+        setFocusWithin(false);
+      }}
+      onFocus={() => !pointerInput.current && setFocusWithin(true)}
       onBlur={(event) => {
         if (!regionRef.current?.contains(event.relatedTarget as Node | null)) {
           setFocusWithin(false);
@@ -849,6 +867,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
           forceDevice={forceDevice}
           poster={main?.url}
           playing={playing}
+          active={active}
           loop={loop}
           eager={eager}
           onEnded={onMediaEnded}
