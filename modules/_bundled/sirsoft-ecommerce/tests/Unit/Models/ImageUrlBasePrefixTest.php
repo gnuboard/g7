@@ -26,6 +26,11 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class ImageUrlBasePrefixTest extends ModuleTestCase
 {
+    /**
+     * 강제로 지정한 마운트 접두사를 해제해 다른 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetUrl::forceBasePrefix(null);
@@ -34,7 +39,9 @@ class ImageUrlBasePrefixTest extends ModuleTestCase
     }
 
     /**
-     * @return array<string, array{0: class-string, 1: string}>
+     * 이미지 모델 3종(상품, 카테고리, 리뷰)과 /g7 마운트에서 기대하는 폴백 다운로드 주소를 묶는다.
+     *
+     * @return array<string, array{0: class-string, 1: string}> 모델 클래스와 기대 주소 케이스
      */
     public static function imageModels(): array
     {
@@ -46,7 +53,15 @@ class ImageUrlBasePrefixTest extends ModuleTestCase
     }
 
     /**
+     * /g7 마운트에서 직접 URL 을 만들 수 없는 레거시 형태의 이미지 행이 접두사가 붙은 폴백 다운로드 주소를 내는지 확인한다.
+     *
+     * @param  string  $model  검사할 이미지 모델 클래스
+     * @param  string  $expected  기대하는 폴백 다운로드 주소
+     *
+     * @scenario base_path=subpath, url_kind=ecommerce_image_fallback
      * @effects ecommerce_image_fallback_urls_carry_the_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('imageModels')]
@@ -66,6 +81,11 @@ class ImageUrlBasePrefixTest extends ModuleTestCase
 
     /**
      * 접두사가 없는 배치에서는 종전 문자열 그대로다 (회귀 0).
+     *
+     * @scenario base_path=root, url_kind=ecommerce_image_fallback
+     * @effects ecommerce_image_fallback_urls_carry_the_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function image_fallback_urls_are_unchanged_without_a_mount_prefix(): void

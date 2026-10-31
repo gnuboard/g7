@@ -26,6 +26,11 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
 {
     use ScansPhpSourceFunctions;
 
+    /**
+     * 저장소 루트 절대경로를 돌려준다.
+     *
+     * @return string 저장소 루트 경로
+     */
     private function repoRoot(): string
     {
         return dirname(__DIR__, 3);
@@ -55,7 +60,7 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
     /**
      * 문서 §1.4 의 「자동 검사 N개(...)」 문단에서 개수와 이름을 뽑는다.
      *
-     * @return array{count: int, names: array<int, string>}
+     * @return array{count: int, names: array<int, string>} 문서가 말하는 개수와 문단에 적힌 확장 이름 목록
      */
     private function documentedExtensions(): array
     {
@@ -73,7 +78,11 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
     }
 
     /**
+     * 설치기 설정의 필수 확장 목록과 공개 문서 §1.4 자동 검사 문단의 이름 목록이 순서와 무관하게 같은지 확인한다.
+     *
      * @effects required_extension_list_matches_public_doc
+     *
+     * @return void 반환값 없음
      */
     public function test_required_extension_list_matches_public_doc(): void
     {
@@ -89,7 +98,11 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
     }
 
     /**
+     * 공개 문서 §1.4 문단의 개수와 §9 요약 표의 개수가 실제 필수 확장 수와 같은지 확인한다.
+     *
      * @effects required_extension_count_matches_public_doc
+     *
+     * @return void 반환값 없음
      */
     public function test_required_extension_count_matches_public_doc(): void
     {
@@ -116,6 +129,10 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
      *
      * 자동 검사 문단에만 이름을 적고 분류표에서 빠뜨리면, 그 확장은 문서상 근거 없이
      * 설치를 막는 항목이 된다.
+     *
+     * @effects required_extension_list_matches_public_doc
+     *
+     * @return void 반환값 없음
      */
     public function test_every_checked_extension_is_classified_required_in_the_table(): void
     {

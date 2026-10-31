@@ -67,6 +67,11 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
         'tests/scenarios/no-cli-execution-mode.yaml',
     ];
 
+    /**
+     * 테스트 파일 위치에서 세 단계 올라간 저장소 루트 절대 경로를 돌려준다.
+     *
+     * @return string 저장소 루트 절대 경로
+     */
     private static function root(): string
     {
         return dirname(__DIR__, 3);
@@ -75,7 +80,8 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
     /**
      * 매니페스트의 `test_files` 목록을 읽는다 (yaml 파서 없이 — 이 블록은 단순 목록이다).
      *
-     * @return array<int, string>
+     * @param  string  $manifest  저장소 상대 매니페스트 경로
+     * @return array<int, string> 선언된 테스트 파일 상대 경로 (꼬리 주석 제거)
      */
     private function declaredTestFiles(string $manifest): array
     {
@@ -111,7 +117,8 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
     /**
      * 매니페스트의 `effects` 목록을 읽는다.
      *
-     * @return array<int, string>
+     * @param  string  $manifest  저장소 상대 매니페스트 경로
+     * @return array<int, string> 선언된 효과 이름 (꼬리 주석 제거)
      */
     private function declaredEffects(string $manifest): array
     {
@@ -147,7 +154,8 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
     /**
      * 파일이 실제로 들고 있는 `@effects` 항목 (쉼표 분리 — 파서와 같은 규칙).
      *
-     * @return array<int, string>
+     * @param  string  $relative  저장소 상대 테스트 파일 경로
+     * @return array<int, string> 그 파일이 표시한 효과 이름 (중복 제거)
      */
     private function markedEffects(string $relative): array
     {
@@ -184,6 +192,17 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
         return array_values(array_unique($names));
     }
 
+    /**
+     * 두 매니페스트 파일이 존재하고, 줄 단위 파서가 각각에서 test_files 와 effects 를 하나 이상 읽어 내는지 확인한다.
+     *
+     * 파서가 빈 배열을 돌려주면 아래 방향 검사가 모두 빈 집합으로 초록이 된다.
+     *
+     * @scenario manifest_direction=parser_reads_blocks
+     *
+     * @effects no_cli_manifest_parser_reads_declared_blocks
+     *
+     * @return void 반환값 없음
+     */
     public function test_population_is_not_empty(): void
     {
         foreach (self::MANIFESTS as $manifest) {
@@ -199,7 +218,11 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      * 매니페스트가 「이 파일도 이 기능을 검증한다」고 선언해 두었는데 마킹이 없으면, 그 파일이
      * 무엇을 떠받치는지 알 수 없고 지워도 아무 게이트가 울지 않는다.
      *
+     * @scenario manifest_direction=declared_file_has_marker
+     *
      * @effects no_cli_manifest_files_all_carry_markers
+     *
+     * @return void 반환값 없음
      */
     public function test_every_declared_file_carries_a_marker(): void
     {
@@ -233,7 +256,11 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      * 하나만 더해도 이 게이트가 red 가 된다 — 이 게이트가 소유하지도 않은 파일의 변경에
      * 결합되는 상태다.
      *
+     * @scenario manifest_direction=marker_is_declared
+     *
      * @effects no_cli_manifest_effects_are_bidirectional
+     *
+     * @return void 반환값 없음
      */
     public function test_markers_reference_declared_effects(): void
     {
@@ -268,7 +295,11 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      * `effects:` 에 아무 이름이나 한 줄 더해도 초록이었다 — 「이 축은 덮여 있다」는 선언이
      * 사실 확인 없이 통과하는 상태다. 지금은 미마킹 0 이지만 그것을 지키는 것이 없었다.
      *
+     * @scenario manifest_direction=declared_effect_is_marked
+     *
      * @effects no_cli_manifest_effects_are_bidirectional
+     *
+     * @return void 반환값 없음
      */
     public function test_every_declared_effect_is_marked_somewhere(): void
     {
@@ -362,16 +393,6 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
     }
 
     /**
-     * `task` 축이 실제 태스크 목록과 전수 대응한다 (네 번째 방향 — 12차 M-1).
-     *
-     * 종전에는 `axes:` 를 검증하는 장치가 **하나도 없었다**. 두 매니페스트가 머리에
-     * `audit:allow test-scenario-coverage` 를 달아 조합 커버리지 룰이 꺼져 있고, 10·11차가
-     * 좁힌 것은 `effects`/`test_files` 세 방향뿐이다. 11차 #C2 가 「살아 있는 태스크 4종이
-     * 축에 없다」를 **손으로** 고쳤지만, 그 드리프트를 만든 메커니즘은 그대로 남아 있었다 —
-     * 새 태스크가 추가되면 다시 조용히 어긋난다. 어긋난 결과는 롤백 디스패치·수동 복구
-     * 안내의 모집단에서 그 태스크가 빠지는 것이고, 오류로는 나타나지 않는다.
-     */
-    /**
      * 마커를 단 인스톨러 테스트는 **어느 매니페스트엔가 등재**돼 있다 (네 번째 방향 — 14차 #6).
      *
      * 앞의 세 방향은 전부 `declaredTestFiles($manifest)` 를 기점으로 돈다 — 즉 **매니페스트가
@@ -386,6 +407,12 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      *
      * 모집단은 이 공정이 소유한 `tests/Unit/Installer` 로 한정한다 — 저장소 전체로 넓히면
      * 이 게이트가 다른 공정의 파일 추가에 결합된다(11차가 세 번째 방향에서 정한 것과 같은 이유).
+     *
+     * @scenario manifest_direction=marked_file_is_declared
+     *
+     * @effects no_cli_marked_installer_tests_are_declared_by_a_manifest
+     *
+     * @return void 반환값 없음
      */
     public function test_every_marked_installer_test_is_declared_by_some_manifest(): void
     {
@@ -431,7 +458,20 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
     }
 
     /**
+     * `task` 축이 실제 태스크 목록과 전수 대응한다 (네 번째 방향 — 12차 M-1).
+     *
+     * 종전에는 `axes:` 를 검증하는 장치가 **하나도 없었다**. 두 매니페스트가 머리에
+     * `audit:allow test-scenario-coverage` 를 달아 조합 커버리지 룰이 꺼져 있고, 10·11차가
+     * 좁힌 것은 `effects`/`test_files` 세 방향뿐이다. 11차 #C2 가 「살아 있는 태스크 4종이
+     * 축에 없다」를 **손으로** 고쳤지만, 그 드리프트를 만든 메커니즘은 그대로 남아 있었다 —
+     * 새 태스크가 추가되면 다시 조용히 어긋난다. 어긋난 결과는 롤백 디스패치·수동 복구
+     * 안내의 모집단에서 그 태스크가 빠지는 것이고, 오류로는 나타나지 않는다.
+     *
+     * @scenario manifest_direction=axis_matches_source
+     *
      * @effects no_cli_manifest_axes_match_their_source_of_truth
+     *
+     * @return void 반환값 없음
      */
     public function test_task_axis_covers_every_live_task(): void
     {
@@ -470,7 +510,11 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      * 축에 열거형 밖의 값이 들어가면 그 조합은 실제로 만들어질 수 없고, 열거형에 값이 하나
      * 늘어도 축은 조용히 그대로다 — 어느 쪽도 오류가 되지 않는다.
      *
+     * @scenario manifest_direction=axis_matches_source
+     *
      * @effects no_cli_manifest_axes_match_their_source_of_truth
+     *
+     * @return void 반환값 없음
      */
     public function test_execution_mode_axes_come_from_the_core_enum(): void
     {
@@ -507,7 +551,11 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
     /**
      * 진행 모드 축의 어휘가 인스톨러 소스와 일치한다 (12차 M-1).
      *
+     * @scenario manifest_direction=axis_matches_source
+     *
      * @effects no_cli_manifest_axes_match_their_source_of_truth
+     *
+     * @return void 반환값 없음
      */
     public function test_installation_mode_axis_matches_the_installer_vocabulary(): void
     {
@@ -539,6 +587,12 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      *
      * 파서가 죽으면 위 세 검사가 「축이 없다」로 red 가 나야 하는데, 빈 배열을 돌려주는
      * 형태로 망가지면 `assertArrayHasKey` 가 그것을 잡는다 — 그 경로를 실제로 확인한다.
+     *
+     * @scenario manifest_direction=parser_reads_blocks
+     *
+     * @effects no_cli_manifest_parser_reads_declared_blocks
+     *
+     * @return void 반환값 없음
      */
     public function test_axis_parser_reads_declared_values(): void
     {
@@ -557,6 +611,12 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      *
      * 중복은 개수를 부풀려 라운드 수치와 실제 고정 계약 수를 어긋나게 만들고, 한쪽을 지워도
      * 아무 게이트가 울지 않는다.
+     *
+     * @scenario manifest_direction=no_duplicate_effects
+     *
+     * @effects no_cli_manifest_effects_have_no_duplicates
+     *
+     * @return void 반환값 없음
      */
     public function test_declared_effects_have_no_duplicates(): void
     {

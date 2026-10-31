@@ -20,9 +20,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * `safe` 경로는 `redirectToStep()` 이 `exit` 하므로 프로세스 안에서 직접 부를 수 없다 —
  * 그 경로는 소스 대조로 잠근다.
  *
- * @scenario exposure_probe=exposed
- *
- * @effects exposed_verdict_is_rejected_server_side_and_stays_on_step_2
+ * 효과 요약(마커 아님 — 평문): 노출됨 판정의 서버측 거부와 2단계 머무름. 표식은 각 테스트 메서드에 있다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -31,6 +29,11 @@ class InstallerWebExposureServerGateTest extends TestCase
     use CleansTemporaryBasePath;
     use ScansPhpSourceFunctions;
 
+    /**
+     * 번역 대역과 기록에 필요한 설치기 상수를 갖추고, 실제 저장소 루트를 박지 않도록 임시 BASE_PATH 아래에서 요청 처리기 파일들을 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__.'/stubs/lang_stub.php';
@@ -58,6 +61,11 @@ class InstallerWebExposureServerGateTest extends TestCase
         require_once $projectRoot.'/public/install/includes/request-handler.php';
     }
 
+    /**
+     * BASE_PATH 가 임시 폴더 아래가 아니면 건너뛰고, 이전 테스트가 남긴 설치 기록 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -74,12 +82,26 @@ class InstallerWebExposureServerGateTest extends TestCase
         }
     }
 
+    /**
+     * 테스트가 채운 POST 값을 비운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $_POST = [];
         parent::tearDown();
     }
 
+    /**
+     * 노출됨 판정을 실은 2단계 POST 가 오류 키를 받고 서버측 차단이 설치 기록에 남는지 확인한다.
+     *
+     * @scenario exposure_probe=exposed
+     *
+     * @effects exposed_verdict_is_rejected_server_side_and_stays_on_step_2
+     *
+     * @return void 반환값 없음
+     */
     public function test_exposed_verdict_keeps_step_2_and_reports_an_error(): void
     {
         $_POST = ['proceed' => '1', 'web_exposure_verdict' => 'exposed'];
@@ -95,6 +117,12 @@ class InstallerWebExposureServerGateTest extends TestCase
 
     /**
      * 판정값의 정규화는 한 곳이다 — 로그 문구와 게이트가 서로 다른 집합을 보면 한쪽이 샌다.
+     *
+     * @scenario exposure_probe=exposed, exposure_probe=safe, exposure_probe=unknown, exposure_probe=unknown_confirmed
+     *
+     * @effects exposed_verdict_is_rejected_server_side_and_stays_on_step_2
+     *
+     * @return void 반환값 없음
      */
     public function test_verdict_normalization_is_a_closed_set_shared_by_label_and_gate(): void
     {
@@ -124,6 +152,8 @@ class InstallerWebExposureServerGateTest extends TestCase
      * @scenario exposure_probe=unknown
      *
      * @effects installer_web_exposure_pending_verdict_is_in_the_closed_set
+     *
+     * @return void 반환값 없음
      */
     public function test_pending_verdict_is_in_the_closed_set_with_its_own_label(): void
     {
@@ -145,6 +175,12 @@ class InstallerWebExposureServerGateTest extends TestCase
     /**
      * 비-노출 판정은 종전대로 진행한다 — 그리고 진입점이 Step 2 핸들러에 `$error` 를 넘기며
      * 화면이 그것을 그린다. 함수만 받고 배선이 없으면 차단은 「조용한 무반응」이 된다.
+     *
+     * @scenario exposure_probe=safe
+     *
+     * @effects exposed_verdict_is_rejected_server_side_and_stays_on_step_2
+     *
+     * @return void 반환값 없음
      */
     public function test_non_exposed_verdicts_still_advance_and_the_error_is_wired_to_the_screen(): void
     {

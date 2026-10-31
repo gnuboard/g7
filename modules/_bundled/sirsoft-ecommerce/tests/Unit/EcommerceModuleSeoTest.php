@@ -18,6 +18,11 @@ class EcommerceModuleSeoTest extends ModuleTestCase
 {
     private Module $module;
 
+    /**
+     * 활성 모듈 관리자에서 이커머스 모듈 인스턴스를 꺼내고, 없으면 모듈 경로로 직접 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -27,6 +32,10 @@ class EcommerceModuleSeoTest extends ModuleTestCase
 
     /**
      * 회귀: 상품 name/description 이 다국어 JSON array 일 때 throw 없이 정상 추출.
+     *
+     * @effects seo_og_defaults_handle_multilingual_array
+     *
+     * @return void 반환값 없음
      */
     public function test_product_seo_og_defaults_handles_multilingual_array(): void
     {
@@ -52,6 +61,10 @@ class EcommerceModuleSeoTest extends ModuleTestCase
      * 회귀: thumbnail_url 이 상대 경로(/api/...) 일 때 og:image 가 절대 URL 로 변환.
      *
      * 슬랙·페이스북·쓰레드 모두 og:image 는 절대 URL 필수. 상대 경로 출력 시 이미지 미표시.
+     *
+     * @effects seo_og_image_is_absolute_url
+     *
+     * @return void 반환값 없음
      */
     public function test_product_seo_og_defaults_image_is_absolute_url(): void
     {
@@ -80,6 +93,10 @@ class EcommerceModuleSeoTest extends ModuleTestCase
      * 크롤러만 받는 값이라 화면에는 아무 표시가 없고, 미리보기 이미지만 404 다.
      * 오리진만 붙이는 `AssetUrl::absolute()` 가 그 SSoT 이고, 그 독블록이 바로 이
      * 실패를 이름으로 적고 있다.
+     *
+     * @effects seo_image_mount_prefix_applied_once
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_image_does_not_double_apply_the_mount_prefix(): void
     {
@@ -145,6 +162,10 @@ class EcommerceModuleSeoTest extends ModuleTestCase
      * 형제 모듈(`BoardModuleSeoTest`)이 이미 갖고 있던 축인데 이쪽에는 없었다.
      * 그래서 `schema.image` 의 표준 배치 동작은 어느 검사에도 걸리지 않았다
      * (16차 G3 라운드 A-5).
+     *
+     * @effects seo_image_unchanged_without_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_image_is_unchanged_without_a_mount_prefix(): void
     {
@@ -176,6 +197,10 @@ class EcommerceModuleSeoTest extends ModuleTestCase
      * 그리고 접두사를 채우는 주체가 없어 리터럴 사이트 경로는 하위 폴더 배치에서
      * 접두사를 잃었다. 넷 다 오류가 나지 않고 그 이미지만 안 나온다
      * (16차 G3 라운드 A-4).
+     *
+     * @effects seo_image_leaves_non_site_paths_alone
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_image_leaves_non_site_paths_alone_and_fills_the_prefix(): void
     {
@@ -218,6 +243,8 @@ class EcommerceModuleSeoTest extends ModuleTestCase
      * @scenario product-content-thumbnail-fallback
      *
      * @effects category_og_image_emitted_from_thumbnail_url
+     *
+     * @return void 반환값 없음
      */
     public function test_category_seo_og_defaults_emits_image_from_thumbnail_url(): void
     {
@@ -245,6 +272,8 @@ class EcommerceModuleSeoTest extends ModuleTestCase
      * @scenario product-content-thumbnail-fallback
      *
      * @effects category_og_image_omitted_without_thumbnail
+     *
+     * @return void 반환값 없음
      */
     public function test_category_seo_og_defaults_omits_image_without_thumbnail(): void
     {
@@ -265,6 +294,10 @@ class EcommerceModuleSeoTest extends ModuleTestCase
 
     /**
      * 회귀: 상품 structured_data 도 다국어 array 안전 처리.
+     *
+     * @effects structured_data_handles_multilingual_array
+     *
+     * @return void 반환값 없음
      */
     public function test_product_structured_data_handles_multilingual_array(): void
     {
@@ -292,6 +325,10 @@ class EcommerceModuleSeoTest extends ModuleTestCase
 
     /**
      * seoOgDefaultMeta 가 데이터 경로(연결 칩) + 다국어 라벨을 선언한다.
+     *
+     * @effects og_default_meta_declares_data_path_and_label
+     *
+     * @return void 반환값 없음
      */
     public function test_product_seo_og_default_meta_declares_data_path_and_label(): void
     {
@@ -314,6 +351,10 @@ class EcommerceModuleSeoTest extends ModuleTestCase
 
     /**
      * seoStructuredDataMeta 가 점 경로 키별 데이터 경로를 선언한다.
+     *
+     * @effects structured_data_meta_declares_dotted_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_product_structured_data_meta_declares_dotted_paths(): void
     {
@@ -339,6 +380,10 @@ class EcommerceModuleSeoTest extends ModuleTestCase
      * 정합성: 메타가 선언한 키는 운영 declaration 이 산출 가능한 키여야 한다(키 드리프트 차단).
      * og.image/image_alt 는 declaration 키 집합에 존재해야 하고, structured 점 경로는 평탄화한
      * declaration 키에 존재해야 한다(파생값 제외는 허용 — 메타 ⊆ declaration).
+     *
+     * @effects seo_meta_keys_subset_of_declaration
+     *
+     * @return void 반환값 없음
      */
     public function test_meta_keys_are_subset_of_declaration_keys(): void
     {
@@ -369,6 +414,10 @@ class EcommerceModuleSeoTest extends ModuleTestCase
      * 결함(라이브 검수 2026-06-14): structured offers.availability 가 존재하지 않는 'in_stock' 키를
      * 참조해 **모든 상품이 OutOfStock** 으로 출력됨. ProductResource 실제 키는 sales_status(enum value)
      * 와 stock_quantity. sales_status='on_sale' → InStock 이어야 한다.
+     *
+     * @effects structured_availability_follows_sales_status
+     *
+     * @return void 반환값 없음
      */
     public function test_product_structured_availability_uses_sales_status_not_missing_in_stock_key(): void
     {
@@ -390,7 +439,13 @@ class EcommerceModuleSeoTest extends ModuleTestCase
         $this->assertSame('https://schema.org/OutOfStock', $suspended['offers']['availability'], '판매중지 상품은 OutOfStock');
     }
 
-    /** 중첩 배열을 점 경로 키 목록으로 평탄화(@type/@context 제외). */
+    /**
+     * 중첩 배열을 점 경로 키 목록으로 평탄화(@type/@context 제외).
+     *
+     * @param  array  $block  평탄화할 중첩 배열
+     * @param  string  $prefix  상위 경로 접두사(최상위는 빈 문자열)
+     * @return array 점 경로 키 목록
+     */
     private function flattenKeys(array $block, string $prefix = ''): array
     {
         $out = [];

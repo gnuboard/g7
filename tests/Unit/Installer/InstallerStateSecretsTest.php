@@ -151,6 +151,12 @@ class InstallerStateSecretsTest extends TestCase
 
     /**
      * GitHub 접속 토큰은 state.json(0664) 이 아니라 runtime.php(0600) 로 이송된다.
+     *
+     * @scenario runtime_state=absent
+     *
+     * @effects github_token_is_stripped_from_state_and_carried_by_runtime
+     *
+     * @return void 반환값 없음
      */
     public function test_github_token_is_stripped_from_state_and_carried_by_runtime(): void
     {

@@ -21,6 +21,11 @@ class StorageLinkUsabilityTest extends TestCase
 {
     private string $sandbox;
 
+    /**
+     * storage 아래에 링크 대상 디렉토리를 둔 임시 샌드박스를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -29,6 +34,11 @@ class StorageLinkUsabilityTest extends TestCase
         mkdir($this->sandbox.'/target', 0755, true);
     }
 
+    /**
+     * 링크 판정 SSoT 로 링크와 junction 은 링크만 걷고, 남은 디렉토리와 샌드박스를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach (['link', 'target'] as $entry) {
@@ -52,6 +62,13 @@ class StorageLinkUsabilityTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 디렉토리 링크를 만든다. Windows 에서 symlink 가 실패하면 junction 으로 대신한다.
+     *
+     * @param  string  $link  만들 링크 경로
+     * @param  string  $target  링크가 가리킬 대상 디렉토리
+     * @return bool 링크를 만들었으면 true
+     */
     private function makeDirectoryLink(string $link, string $target): bool
     {
         if (PHP_OS_FAMILY !== 'Windows') {
@@ -70,7 +87,11 @@ class StorageLinkUsabilityTest extends TestCase
     }
 
     /**
+     * 링크 경로에 아무것도 없으면 가용하지 않다고 판정하는지 확인한다.
+     *
      * @effects public_storage_url_switches_to_route_when_link_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_link_is_not_usable(): void
     {
@@ -80,6 +101,15 @@ class StorageLinkUsabilityTest extends TestCase
         );
     }
 
+    /**
+     * 링크 자리에 일반 디렉토리가 있으면 가용하지 않다고 판정하는지 확인한다.
+     *
+     * @scenario storage_link=plain_dir
+     *
+     * @effects public_storage_link_usability_rejects_broken_link
+     *
+     * @return void 반환값 없음
+     */
     public function test_plain_directory_is_not_usable(): void
     {
         mkdir($this->sandbox.'/link', 0755, true);
@@ -91,7 +121,11 @@ class StorageLinkUsabilityTest extends TestCase
     }
 
     /**
+     * 대상이 살아 있는 디렉토리 링크는 가용하다고 판정하는지 확인한다.
+     *
      * @effects public_storage_url_switches_to_route_when_link_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_working_link_is_usable(): void
     {
@@ -109,6 +143,8 @@ class StorageLinkUsabilityTest extends TestCase
      * 「링크는 있는데 대상이 없다」 — 이 반쪽 상태를 가용으로 읽으면 전 이미지가 404 가 된다.
      *
      * @effects public_storage_link_usability_rejects_broken_link
+     *
+     * @return void 반환값 없음
      */
     public function test_broken_link_is_not_usable(): void
     {
@@ -135,6 +171,8 @@ class StorageLinkUsabilityTest extends TestCase
      * 트리를 가리키므로 그 사이트의 공개 자산이 통째로 404 가 된다. 오류도 로그도 없다.
      *
      * @effects public_storage_link_usability_rejects_broken_link
+     *
+     * @return void 반환값 없음
      */
     public function test_link_pointing_elsewhere_than_the_configured_root_is_not_usable(): void
     {
@@ -177,6 +215,10 @@ class StorageLinkUsabilityTest extends TestCase
      * 통째로 대체 서빙 경로로 넘어간다 — 1차가 고친 결함의 재발이다.
      *
      * 사실을 문장으로만 남기면 또 뒤집힌다. 그래서 표 자체를 여기서 잰다.
+     *
+     * @effects junction_detection_matches_storage_link_helper_ssot
+     *
+     * @return void 반환값 없음
      */
     public function test_junction_file_predicates_match_the_measured_table(): void
     {

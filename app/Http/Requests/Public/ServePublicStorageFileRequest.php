@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage 609 후속 — 메서드 PHPDoc(목적 설명, @param, @return)만 더했다. 라우트, 요청, 응답 모양은 그대로라 API 문서에 반영할 표면이 없다.
+
 namespace App\Http\Requests\Public;
 
 use App\Http\Requests\Concerns\ResolvesDualModeFilePath;
@@ -49,6 +51,8 @@ class ServePublicStorageFileRequest extends FormRequest
 
     /**
      * 검증을 위한 데이터 준비
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {

@@ -1487,6 +1487,15 @@ MD;
         $this->assertStringContainsString('X-G7-Cron-Token', $block);
     }
 
+    /**
+     * 응답 예시의 URL 에 든 page 같은 비밀이 아닌 쿼리 파라미터는 마스킹하지 않고 그대로 두는지 확인한다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects example_sensitive_values_masked
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 비밀이_아닌_쿼리_파라미터는_보존된다(): void
     {
@@ -1507,6 +1516,15 @@ MD;
         $this->assertStringNotContainsString('{MASKED}', $block);
     }
 
+    /**
+     * 실측 응답 body 의 절대 URL 호스트가 포트까지 통째로 placeholder 호스트로 바뀌어 실측 기준 호스트가 문서에 남지 않는지 확인한다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects example_sensitive_values_masked
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 응답_예시_body의_절대_ur_l_호스트는_placeholder로_마스킹된다(): void
     {
@@ -1644,6 +1662,12 @@ MD;
      * 그래서 개요 안에 인용 줄이 하나라도 있으면 그 위의 서술이 재생성 때마다 조용히
      * 잘려 나갔다 — 코어 API 목차의 공통 규약(인증·로케일·페이지네이션)이 그렇게 사라졌고,
      * 남은 문서는 문법상 멀쩡해 오류도 경고도 나지 않았다.
+     *
+     * @scenario stage=readme_index
+     *
+     * @effects readme_index_regenerated_preserving_prose
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function readme_개요_안의_인용줄이_그_위_서술을_잘라내지_않는다(): void
@@ -2716,6 +2740,12 @@ MD;
      * 회귀 배경: 보존 대상이 생성 블록 **뒤**의 `**설명**` 자리뿐이라, 표를 읽는 방법을
      * 그 표 아래에 적어 둔 문단이 재생성 때마다 통째로 사라졌다 — 검색 API 문서의 정확도
      * 설명 3문단이 그렇게 없어졌고, 남은 문서는 문법상 멀쩡해 아무 신호도 나지 않았다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 생성블록_안_표_아래의_사람_서술이_재생성에서_보존된다(): void

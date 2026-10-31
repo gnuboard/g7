@@ -21,6 +21,8 @@ use PHPUnit\Framework\Attributes\Test;
 class PublicCategoryThumbnailTest extends ModuleTestCase
 {
     /**
+     * 썸네일 검증용 활성 루트 카테고리를 만든다.
+     *
      * @param  array  $attributes  덮어쓸 속성
      * @return Category 생성된 활성 카테고리
      */
@@ -37,7 +39,11 @@ class PublicCategoryThumbnailTest extends ModuleTestCase
     }
 
     /**
+     * 이미지가 있는 카테고리의 공개 상세 응답이 로드된 첫 이미지의 다운로드 주소를 thumbnail_url 로 내는지 확인한다.
+     *
      * @effects category_detail_emits_thumbnail_url
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function detail_emits_first_image_url_as_thumbnail(): void
@@ -67,7 +73,11 @@ class PublicCategoryThumbnailTest extends ModuleTestCase
     }
 
     /**
+     * 이미지가 없는 카테고리의 공개 상세 응답에 thumbnail_url 키가 있고 값이 null 인지 확인한다.
+     *
      * @effects category_detail_emits_thumbnail_url
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function detail_emits_null_thumbnail_without_images(): void

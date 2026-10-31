@@ -28,7 +28,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: task_outcome done·aborted / resume_point retry_after_failure / endpoint_guard general
  *
- * @effects rollback_dispatch_accepts_composite_task_key, worker_lock_cleared_on_abort_or_reset_allows_reacquire, worker_stale_window_declared_by_owner_is_lower_bound, lock_loss_inside_task_body_is_not_a_task_failure, installer_worker_lock_lost_judgment_is_shared
+ * 효과 요약(마커 아님 — 평문): 롤백 디스패치가 합성 키를 받고, 중단과 초기화가 워커 lock 을 비우며, 점유자 선언 창이 하한이고, 태스크 본문 안의 lock 상실은 실패로 바뀌지 않으며, lock 상실 판정을 세 송신기가 공유한다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -43,6 +43,13 @@ class InstallerWorkerLockRecoveryTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스마다 한 번 임시 BASE_PATH 와 저장소 디렉토리를 만들고 인스톨러 런타임, 태스크 러너, 롤백 함수를 적재한다.
+     *
+     * BASE_PATH 가 이미 시스템 임시 디렉토리 밖으로 정의돼 있으면 적재하지 않고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function bootInstallerRuntime(): void
     {
         if (self::$booted) {
@@ -87,6 +94,11 @@ class InstallerWorkerLockRecoveryTest extends TestCase
         require_once $root.'/public/install/api/rollback-functions.php';
     }
 
+    /**
+     * 런타임을 적재하고 상태 파일과 설치 로그를 지운 뒤 진행 기록을 버퍼 송신기로 받는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -112,6 +124,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
     /**
      * 중단·연결끊김 경로는 current_task 를 그대로 rollbackTask 로 넘긴다.
      * 확장 태스크의 current_task 는 합성 키이므로 디스패치가 이를 해석해야 한다.
+     *
+     * @scenario task_outcome=aborted, task=module
+     *
+     * @effects rollback_dispatch_accepts_composite_task_key
+     *
+     * @return void 반환값 없음
      */
     public function test_rollback_dispatch_accepts_composite_extension_task_key(): void
     {
@@ -129,6 +147,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
 
     /**
      * bare id 는 종전과 동일하게 동작한다 (합성 키 지원이 기존 판정을 바꾸지 않는다).
+     *
+     * @scenario task_outcome=aborted, task=module, task=env
+     *
+     * @effects rollback_dispatch_accepts_composite_task_key
+     *
+     * @return void 반환값 없음
      */
     public function test_rollback_dispatch_keeps_bare_task_id_behaviour(): void
     {
@@ -146,6 +170,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
 
     /**
      * 정말로 알 수 없는 태스크는 여전히 실패로 남는다 (가드가 넓어지지 않았다).
+     *
+     * @scenario task_outcome=aborted
+     *
+     * @effects rollback_dispatch_accepts_composite_task_key
+     *
+     * @return void 반환값 없음
      */
     public function test_rollback_dispatch_still_rejects_unknown_task(): void
     {
@@ -161,6 +191,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
      * 그렇게 변환하면 호출자가 롤백을 돌리고 installation_status=failed 를 기록한다 —
      * 이미 다른 요청(승자)이 이어받아 진행 중인 설치 위에 실패를 덮어쓰는 것이다.
      * 그래서 이 예외만은 catch (Exception) 을 통과해야 한다.
+     *
+     * @scenario installation_mode=stepwise, task=settings
+     *
+     * @effects lock_loss_inside_task_body_is_not_a_task_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_lock_lost_inside_task_body_is_not_converted_into_task_failure(): void
     {
@@ -180,8 +216,20 @@ class InstallerWorkerLockRecoveryTest extends TestCase
         {
             private int $seen = 0;
 
+            /**
+             * 통과시킬 진행 이벤트 수를 받아 둔다.
+             *
+             * @param  int  $passThrough  예외 없이 통과시킬 이벤트 수
+             */
             public function __construct(private readonly int $passThrough) {}
 
+            /**
+             * 정해 둔 수만큼은 통과시키고 그 뒤 이벤트에서 워커 lock 상실 예외를 던진다.
+             *
+             * @param  string  $event  진행 이벤트 이름
+             * @param  array<string, mixed>  $data  이벤트 데이터
+             * @return void 반환값 없음
+             */
             public function emit(string $event, array $data): void
             {
                 $this->seen++;
@@ -191,6 +239,11 @@ class InstallerWorkerLockRecoveryTest extends TestCase
                 }
             }
 
+            /**
+             * 클라이언트 연결은 늘 살아 있는 것으로 답한다.
+             *
+             * @return bool 연결 끊김 여부 (항상 false)
+             */
             public function isConnectionAborted(): bool
             {
                 return false;
@@ -204,6 +257,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
 
     /**
      * 점유자가 선언한 시간 예산은 하한이다 — 호출자가 더 짧은 값을 줘도 탈취하지 않는다.
+     *
+     * @scenario installation_mode=stepwise, runner_strategy=inprocess
+     *
+     * @effects worker_stale_window_declared_by_owner_is_lower_bound
+     *
+     * @return void 반환값 없음
      */
     public function test_owner_declared_stale_window_is_a_lower_bound(): void
     {
@@ -226,6 +285,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
     /**
      * 죽은 워커의 잔존 선언이 복구를 영구히 막지 않는다 —
      * 재시작·초기화 경로가 워커 키를 비우면 즉시 다시 점유할 수 있다.
+     *
+     * @scenario resume_point=retry_after_failure
+     *
+     * @effects worker_lock_cleared_on_abort_or_reset_allows_reacquire
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_worker_lock_allows_reacquire_after_dead_worker(): void
     {
@@ -259,6 +324,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
      * lock 을 빼앗긴 요청이 자기 실패로 오인해 롤백을 부르면 **승자 요청의 토큰까지 사라져**
      * 브라우저의 다음 run-task 가 403 이 된다(화면에서 복구 불가). 다른 두 태스크 본문과
      * 같은 이유이며, 판정 기준도 같다 — try 안에서 emit 하는 태스크 함수.
+     *
+     * @scenario installation_mode=stepwise, task=complete_flag
+     *
+     * @effects lock_loss_inside_task_body_is_not_a_task_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_lock_lost_inside_complete_flag_is_not_converted_into_task_failure(): void
     {
@@ -273,8 +344,20 @@ class InstallerWorkerLockRecoveryTest extends TestCase
         {
             private int $seen = 0;
 
+            /**
+             * 통과시킬 진행 이벤트 수를 받아 둔다.
+             *
+             * @param  int  $passThrough  예외 없이 통과시킬 이벤트 수
+             */
             public function __construct(private readonly int $passThrough) {}
 
+            /**
+             * 정해 둔 수만큼은 통과시키고 그 뒤 이벤트에서 워커 lock 상실 예외를 던진다.
+             *
+             * @param  string  $event  진행 이벤트 이름
+             * @param  array<string, mixed>  $data  이벤트 데이터
+             * @return void 반환값 없음
+             */
             public function emit(string $event, array $data): void
             {
                 $this->seen++;
@@ -284,6 +367,11 @@ class InstallerWorkerLockRecoveryTest extends TestCase
                 }
             }
 
+            /**
+             * 클라이언트 연결은 늘 살아 있는 것으로 답한다.
+             *
+             * @return bool 연결 끊김 여부 (항상 false)
+             */
             public function isConnectionAborted(): bool
             {
                 return false;
@@ -301,6 +389,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
      * 죽은 in-process 워커가 남긴 worker_stale_after(600) 는 stale 판정의 하한이므로,
      * 중단 후 [계속 진행] 이 최대 10분간 거짓 busy 로 막힌다. clearWorkerLock 의 계약은
      * "재시작·초기화" 인데 초기화(reset)에만 배선돼 있던 것을 중단까지 넓힌다.
+     *
+     * @scenario task_outcome=aborted, resume_point=retry_after_failure
+     *
+     * @effects worker_lock_cleared_on_abort_or_reset_allows_reacquire
+     *
+     * @return void 반환값 없음
      */
     public function test_abort_state_transition_clears_worker_lock(): void
     {
@@ -333,6 +427,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
      * 두 지점은 인자를 주고받지 않으므로 `installerCurrentWorkerId()` 가 그 유일한 통로다 —
      * 이 왕복이 끊기면 in-process 부팅이 예산을 늘려도 lock 창은 그대로라 아직 살아 있는
      * 요청을 다른 요청이 탈취해 같은 태스크를 겹쳐 돌린다.
+     *
+     * @scenario installation_mode=stepwise, runner_strategy=inprocess
+     *
+     * @effects worker_stale_window_declared_by_owner_is_lower_bound
+     *
+     * @return void 반환값 없음
      */
     public function test_current_worker_id_round_trips_between_entry_point_and_task_body(): void
     {
@@ -353,6 +453,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
      *
      * 요청 수명(INSTALLER_INPROCESS_TIME_LIMIT)과 선언한 stale 창이 어긋나면 둘 중 하나다 —
      * 창이 짧으면 겹침 실행, 길면 죽은 워커가 복구를 막는다. 그래서 같은 값이어야 한다.
+     *
+     * @scenario runner_strategy=inprocess
+     *
+     * @effects worker_stale_window_declared_by_owner_is_lower_bound
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_time_limit_becomes_the_declared_stale_window(): void
     {
@@ -380,6 +486,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
      * 종전에는 같은 판정이 세 사본에 흩어져 있었고 **예외로 끝나는 한 사본만** 행위
      * 테스트가 덮었다. 나머지 둘(SSE·폴링)은 조기 반환 조건을 뒤집어도 초록이라, lock 을
      * 뺏긴 워커가 계속 돌아 두 요청이 같은 DB 를 조작하는 상태가 검사 밖이었다.
+     *
+     * @scenario installation_mode=sse, installation_mode=polling, installation_mode=stepwise
+     *
+     * @effects installer_worker_lock_lost_judgment_is_shared
+     *
+     * @return void 반환값 없음
      */
     public function test_worker_lock_lost_judgment_is_shared_by_all_emitters(): void
     {
@@ -404,6 +516,12 @@ class InstallerWorkerLockRecoveryTest extends TestCase
 
     /**
      * 세 emitter 가 **그 판정을 실제로 부르는가** — 사본이 하나라도 남으면 그 경로만 뒤처진다.
+     *
+     * @scenario installation_mode=sse, installation_mode=polling, installation_mode=stepwise
+     *
+     * @effects installer_worker_lock_lost_judgment_is_shared
+     *
+     * @return void 반환값 없음
      */
     public function test_all_three_emitters_call_the_shared_judgment(): void
     {

@@ -23,7 +23,11 @@ use PHPUnit\Framework\Attributes\Test;
 class NewDisplayHoursCastTest extends BoardTestCase
 {
     /**
+     * 요청 입력처럼 문자열 '48' 로 대량 대입한 직후, 재조회 없이 읽어도 정수 48 인지 확인한다.
+     *
      * @effects board_new_display_hours_is_integer
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function new_display_hours_is_integer_right_after_mass_assignment(): void
@@ -34,6 +38,13 @@ class NewDisplayHoursCastTest extends BoardTestCase
         $this->assertSame(48, $board->new_display_hours);
     }
 
+    /**
+     * 문자열 값으로 Board::create 한 직후 refresh 없이 읽어도 정수로 캐스트되는지 확인한다.
+     *
+     * @effects board_new_display_hours_is_integer
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function new_display_hours_is_integer_after_create_without_refresh(): void
     {
@@ -48,7 +59,11 @@ class NewDisplayHoursCastTest extends BoardTestCase
     }
 
     /**
+     * DB 에 저장된 값을 다시 읽었을 때도 정수로 돌아오는지 확인한다.
+     *
      * @effects board_new_display_hours_is_integer
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function new_display_hours_is_cast_to_integer_when_loaded_from_db(): void
@@ -60,6 +75,13 @@ class NewDisplayHoursCastTest extends BoardTestCase
         $this->assertSame(12, $board->new_display_hours);
     }
 
+    /**
+     * 게시판 속성에 문자열 '24' 가 들어와도 Post::isNew() 가 예외 없이 새 글로 판정하는지 확인한다.
+     *
+     * @effects board_new_display_hours_is_integer
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function post_is_new_does_not_crash_when_board_attribute_is_string(): void
     {
@@ -72,6 +94,13 @@ class NewDisplayHoursCastTest extends BoardTestCase
         $this->assertTrue($post->isNew());
     }
 
+    /**
+     * 5시간 전 글은 문자열 '1' 시간 기준에서 새 글이 아니라고 판정하는지 확인한다.
+     *
+     * @effects board_new_display_hours_is_integer
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function post_is_new_returns_false_for_old_post(): void
     {

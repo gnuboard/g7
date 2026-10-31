@@ -11,11 +11,12 @@
  *
  * @scenario board-form-restriction-fields
  * @axes field=blocked_keywords field=allowed_extensions tab=basic tab=post mode=create mode=update
- * @effects blocked_keywords_renders_as_taginput_on_post_tab,
+ * 효과 요약(마커 아님 — 평문, 시험별 마킹은 각 test 위에 있다):
+ *          blocked_keywords_renders_as_taginput_on_post_tab,
  *          allowed_extensions_renders_as_taginput_on_post_tab,
  *          blocked_keywords_absent_from_basic_tab,
- *          taginput_values_persist_as_array_chips_on_reentry,
- *          blocked_keyword_blocks_matching_comment_on_user_side
+ *          taginput_values_persist_as_array_chips_on_reentry
+ * 사용자 화면 댓글 차단어 반영은 아직 이 spec 에 시험이 없다(댓글 차단은 CommentCrudScenarioTest 가 잰다).
  *
  * 활성화 절차: PlaywrightIssueToken 발급이 가능한 환경에서 test.describe.skip → test.describe.
  */

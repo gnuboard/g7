@@ -26,7 +26,7 @@ use ValidationApi;
  *
  * 커버 축: php_binary_sapi cli·non_cli·unknown / php_binary_source detected_autodetect
  *
- * @effects installer_php_validation_reports_sapi, installer_php_candidates_are_cli_first, installer_cli_version_check_reports_sapi
+ * 효과 요약(마커 아님 — 평문): 검증 결과의 SAPI 보고, CLI 후보 우선 정렬, CLI 버전 검사의 SAPI 보고. 표식은 각 테스트 메서드에 있다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -34,6 +34,11 @@ class InstallerPhpBinaryDetectionTest extends TestCase
 {
     private static bool $loaded = false;
 
+    /**
+     * 클래스 시작 때 한 번 번역 대역과 설치기 상수를 갖추고 요구사항 검사 API 와 공용 함수 파일을 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         if (self::$loaded) {
@@ -64,7 +69,11 @@ class InstallerPhpBinaryDetectionTest extends TestCase
     }
 
     /**
-     * @param  array<int, mixed>  $args
+     * 요구사항 검사 API 의 비공개 메서드를 리플렉션으로 불러 결과를 돌려준다.
+     *
+     * @param  string  $method  부를 메서드 이름
+     * @param  array<int, mixed>  $args  메서드에 넘길 인자 목록
+     * @return mixed 메서드가 돌려준 값
      */
     private function invoke(string $method, array $args = []): mixed
     {
@@ -78,6 +87,12 @@ class InstallerPhpBinaryDetectionTest extends TestCase
 
     /**
      * #M8 — 검증 결과가 SAPI 를 함께 돌려준다.
+     *
+     * @scenario php_binary_source=configured
+     *
+     * @effects installer_php_validation_reports_sapi
+     *
+     * @return void 반환값 없음
      */
     public function test_validation_reports_sapi_for_the_running_php(): void
     {
@@ -97,6 +112,12 @@ class InstallerPhpBinaryDetectionTest extends TestCase
      *
      * 탐색은 실제 프로세스를 스폰하므로 이 저장소 환경에서는 CLI 후보만 나온다 — 정렬을
      * 지워도 탐색 경로는 통과한다. 순수 함수에 비-CLI 가 섞인 목록을 직접 주입해 고정한다.
+     *
+     * @scenario php_binary_source=detected_autodetect
+     *
+     * @effects installer_php_candidates_are_cli_first
+     *
+     * @return void 반환값 없음
      */
     public function test_detected_candidates_put_cli_first(): void
     {
@@ -113,6 +134,12 @@ class InstallerPhpBinaryDetectionTest extends TestCase
 
     /**
      * #L7 — 요구사항 화면의 CLI 버전 비교도 같은 probe 를 쓰고 SAPI 를 남긴다.
+     *
+     * @scenario php_binary_source=detected_autodetect
+     *
+     * @effects installer_cli_version_check_reports_sapi
+     *
+     * @return void 반환값 없음
      */
     public function test_cli_version_check_reports_sapi(): void
     {

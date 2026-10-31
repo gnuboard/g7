@@ -96,11 +96,15 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
     });
 
     describe('L1 — 전환은 단방향 1회', () => {
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_switch_is_one_way_and_once
         it('extension → extensionless 는 1회만 성공한다', () => {
             expect(setAssetUrlMode(MODE_EXTENSIONLESS)).toBe(true);
             expect(setAssetUrlMode(MODE_EXTENSIONLESS)).toBe(false);
         });
 
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_switch_is_one_way_and_once
         it('역방향 전환 경로가 존재하지 않는다', () => {
             setAssetUrlMode(MODE_EXTENSIONLESS);
 
@@ -108,6 +112,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             expect(getAssetUrlMode()).toBe(MODE_EXTENSIONLESS);
         });
 
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_switch_is_one_way_and_once
         it('G7Config 가 재대입되어도 전환 결과가 유지된다', () => {
             setAssetUrlMode(MODE_EXTENSIONLESS);
 
@@ -119,6 +125,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
     });
 
     describe('L5 — 클라이언트는 서버 설정을 쓰지 않는다', () => {
+        // @scenario asset_url_mode=extensionless
+        // @effects asset_url_mode_switch_leaves_server_settings_untouched
         it('전환이 settings 원본을 변경하지 않는다', () => {
             (globalThis as any).G7Config = {
                 cache_version: 7,
@@ -132,6 +140,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
     });
 
     describe('L7 — 캐시는 cache_version 을 포함하고 TTL 을 둔다', () => {
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_cache_is_scoped_by_cache_version_and_ttl
         it('캐시 키에 cache_version 이 포함된다', () => {
             setAssetUrlMode(MODE_EXTENSIONLESS);
 
@@ -157,6 +167,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             '/api/system/public-storage/theme/custom.css?v=7',
         ];
 
+        // @scenario asset_url_mode=extensionless, base_path=root
+        // @effects blade_inline_recovery_converter_matches_ts_builder
         it('모든 대표 URL 에서 두 구현의 결과가 동일하다', () => {
             const inline = loadInlineConverter();
             (globalThis as any).__g7AssetUrlMode = MODE_EXTENSIONLESS;
@@ -167,6 +179,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             }
         });
 
+        // @scenario asset_url_mode=extensionless, base_path=root
+        // @effects public_storage_asset_url_conversion_matches_the_route_form
         it('공개 스토리지는 접미사 제거가 아니라 ?file= 로 변환된다 (규칙 순서)', () => {
             // 두 구현이 **같이** 틀리면 위의 드리프트 대조는 초록이다. 그래서 결과값 자체를
             // 잠근다 — 접미사 제거 규칙이 먼저 걸리면 `.../custom.css` 가 `.../custom` 이 되고,
@@ -181,6 +195,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             expect(inline(cssUrl)).toBe(expected);
         });
 
+        // @scenario asset_url_mode=extensionless, base_path=root
+        // @effects public_storage_asset_url_conversion_matches_the_route_form, blade_inline_recovery_converter_matches_ts_builder
         it('경로에 리터럴 %가 있어도 던지지 않는다 (5차 G3 · H6)', () => {
             // 서버의 확장자 모드는 경로를 **인코딩하지 않는다**(형제 `AssetUrl::asset()` 과
             // 동형이고 정적 `/storage/…` 도 그렇다). 그래서 `50%off.png` 같은 파일명이 그대로
@@ -277,6 +293,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
                 .toBe('/api/modules/bundle/js');
         });
 
+        // @scenario asset_url_mode=extensionless, base_path=root
+        // @effects core_engine_bundle_is_never_converted_by_recovery
         it('코어 엔진 번들은 두 구현 모두 변환하지 않는다', () => {
             const inline = loadInlineConverter();
             (globalThis as any).__g7AssetUrlMode = MODE_EXTENSIONLESS;
@@ -288,6 +306,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             expect(convertToCurrentMode(coreBundle)).toBe(coreBundle);
         });
 
+        // @scenario asset_url_mode=extension, base_path=root
+        // @effects extension_mode_recovery_conversion_is_identity
         it('확장자 모드에서는 TS 빌더가 원본을 그대로 돌려준다', () => {
             (globalThis as any).__g7AssetUrlMode = undefined;
             (globalThis as any).G7Config = { cache_version: 7, assetUrlMode: MODE_EXTENSION };
@@ -347,6 +367,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             '/build/ext/1234/plugins/sirsoft-gdpr/assets/custom/custom.js',
         ];
 
+        // @scenario publish_state=partial, environment=production
+        // @effects static_asset_tag_recovers_to_api_url
         it('모든 정적 게시 URL 에서 두 구현의 결과가 동일하다', () => {
             const inline = loadInlineStaticToLegacy();
 
@@ -356,6 +378,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             }
         });
 
+        // @scenario publish_state=partial, environment=production
+        // @effects static_asset_tag_recovers_to_api_url
         it('정적 게시 경로가 아닌 URL 은 두 구현 모두 변환하지 않는다', () => {
             const inline = loadInlineStaticToLegacy();
 
@@ -411,6 +435,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             (globalThis as any).window.__g7AssetUrlMode = undefined;
         });
 
+        // @scenario asset_url_mode=extension, publish_state=partial, environment=production
+        // @effects static_asset_tag_recovers_to_api_url
         it('확장자 모드에서는 확장자 형태 API URL 로 교체한다', () => {
             const api = loadPartialApi();
 
@@ -423,6 +449,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             );
         });
 
+        // @scenario asset_url_mode=extensionless, publish_state=partial, environment=production
+        // @effects static_asset_tag_recovers_to_api_url
         it('extensionless 모드에서는 확장자 없는 형태까지 도달한다', () => {
             (globalThis as any).window.__g7AssetUrlMode = MODE_EXTENSIONLESS;
             const api = loadPartialApi();
@@ -437,6 +465,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             ).toBe('/api/templates/assets/sirsoft-basic?file=css%2Fcomponents.css&v=1234');
         });
 
+        // @scenario asset_url_mode=extension, publish_state=partial, environment=production
+        // @effects static_asset_tag_recovers_to_api_url
         it('교체는 링크당 1회로 유지된다 (L1)', () => {
             const api = loadPartialApi();
 
@@ -461,6 +491,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
          * 사라지면 이 테스트가 red 가 된다. `200 + 에러 HTML` 을 반환하는 서버에서
          * 설치가 영원히 `extension` 으로 오판되는 것을 막는 검사다.
          */
+        // @scenario asset_url_mode=extensionless
+        // @effects installer_asset_url_probe_checks_body_token_and_content_type
         it('인스톨러 프로브가 두 검사를 모두 수행한다', () => {
             const installerPath = resolve(
                 __dirname,
@@ -503,6 +535,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
          *
          * 프로브 엔드포인트를 호출하는 코드가 엔진에 새로 들어오면 이 테스트가 잡는다.
          */
+        // @scenario asset_url_mode=extensionless
+        // @effects engine_layers_never_call_the_asset_url_probe
         it('엔진 소스에 프로브 엔드포인트 호출이 없다', () => {
             const engineRoot = resolve(__dirname, '../../');
             const repoRoot = resolve(__dirname, '../../../../../');
@@ -570,6 +604,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             (globalThis as any).__g7AssetUrlMode = MODE_EXTENSIONLESS;
         });
 
+        // @scenario asset_url_mode=extensionless, base_path=root
+        // @effects frontend_extensionless_mode_urls_carry_no_static_extension
         it('자산은 file 쿼리로, 번들은 세그먼트로, 접미사는 제거로', () => {
             expect(convertToCurrentMode('/api/templates/assets/t/js/a.js?v=7')).toBe(
                 '/api/templates/assets/t?file=js%2Fa.js&v=7',
@@ -578,6 +614,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             expect(convertToCurrentMode('/api/templates/t/routes.json')).toBe('/api/templates/t/routes');
         });
 
+        // @scenario asset_url_mode=extensionless, base_path=root
+        // @effects frontend_extensionless_mode_urls_carry_no_static_extension
         it('변환 결과 경로에 정적 확장자가 남지 않는다', () => {
             for (const url of [
                 '/api/templates/assets/t/js/a.js?v=7',
@@ -590,6 +628,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             }
         });
 
+        // @scenario asset_url_mode=extensionless
+        // @effects recovery_conversion_leaves_external_origin_urls_untouched
         it('외부 origin URL 은 건드리지 않는다', () => {
             const external = 'https://cdn.example.com/lib.js';
 
@@ -599,6 +639,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
         // 회귀: `<script>.src` / `<link>.href` 는 절대 URL 을 돌려준다. same-origin
         // 접두사를 벗기지 않으면 부트스트랩 재시도에서 변환이 항상 null 이 되어
         // 자가 복구가 통째로 죽는다 — 외형은 "3회 재시도 후 폴백 UI" 라 원인이 안 보인다.
+        // @scenario asset_url_mode=extensionless
+        // @effects recovery_conversion_handles_same_origin_absolute_urls
         it('same-origin 절대 URL 도 변환한다 (DOM 프로퍼티 형태)', () => {
             const origin = globalThis.location.origin;
 
@@ -610,6 +652,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             );
         });
 
+        // @scenario asset_url_mode=extensionless
+        // @effects recovery_conversion_handles_same_origin_absolute_urls
         it('blade 인라인 복구기도 same-origin 절대 URL 을 변환한다', () => {
             const inline = loadInlineConverter();
             const origin = globalThis.location.origin;

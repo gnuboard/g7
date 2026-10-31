@@ -6,6 +6,7 @@ use Dotenv\Dotenv;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * inprocess 설치가 큐 연결을 `sync` 로 기록하는지 (A-6 · D6).
@@ -25,10 +26,17 @@ use PHPUnit\Framework\TestCase;
 #[PreserveGlobalState(false)]
 class InstallerQueueConnectionSyncTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private string $tempBase = '';
 
     private string $skipReason = '';
 
+    /**
+     * 임시 폴더를 만들고 BASE_PATH 는 저장소 루트, 상태 파일과 런타임 비밀 파일은 임시 경로로 정의한 뒤 .env 생성 모듈을 불러온다. 두 경로가 임시 폴더 밖으로 이미 정의돼 있으면 운영 파일 보호를 위해 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -68,6 +76,11 @@ class InstallerQueueConnectionSyncTest extends TestCase
         require_once $projectRoot.'/public/install/includes/installer-runtime.php';
     }
 
+    /**
+     * 건너뛰지 않은 테스트가 임시 경로에 남긴 상태 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if ($this->skipReason === '' && is_file(STATE_PATH)) {
@@ -81,6 +94,7 @@ class InstallerQueueConnectionSyncTest extends TestCase
      * state.json 의 config 섹션을 temp 경로에 기록한다.
      *
      * @param  array<string, mixed>  $config  config 섹션
+     * @return void 반환값 없음
      */
     private function writeState(array $config): void
     {
@@ -101,7 +115,7 @@ class InstallerQueueConnectionSyncTest extends TestCase
     /**
      * 정상 입력(무해한 값) 조합.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 설정 키별 무해한 입력 값
      */
     private function benignConfig(): array
     {
@@ -135,7 +149,7 @@ class InstallerQueueConnectionSyncTest extends TestCase
      * 각 값은 `.env` 문법에서 위험한 문자를 모두 담는다: 개행(라인 분리), `"`(따옴표 조기 종료),
      * `$1`·`\`(preg_replace 치환문자열 역참조/escape), `${...}`(phpdotenv 변수 보간).
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 설정 키별 주입 페이로드 값
      */
     private function injectedConfig(): array
     {
@@ -163,7 +177,11 @@ class InstallerQueueConnectionSyncTest extends TestCase
     /**
      * inprocess 설치는 `QUEUE_CONNECTION=sync` 를 기록한다.
      *
+     * @scenario execution_mode=inprocess
+     *
      * @effects inprocess_install_records_sync_queue_connection
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_install_records_sync_queue_connection(): void
     {
@@ -181,7 +199,11 @@ class InstallerQueueConnectionSyncTest extends TestCase
     /**
      * subprocess 설치는 템플릿 기본값을 덮지 않는다.
      *
+     * @scenario execution_mode=subprocess
+     *
      * @effects subprocess_install_leaves_queue_connection_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_subprocess_install_leaves_the_template_default(): void
     {
@@ -199,7 +221,11 @@ class InstallerQueueConnectionSyncTest extends TestCase
     /**
      * 두 모드의 결과가 실제로 갈린다 (한쪽만 재면 분기가 죽어도 초록이다).
      *
+     * @scenario execution_mode=inprocess
+     *
      * @effects queue_connection_differs_between_execution_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_the_two_modes_do_not_produce_the_same_value(): void
     {
@@ -228,6 +254,8 @@ class InstallerQueueConnectionSyncTest extends TestCase
      * 실제 사고는 형제 테스트(`InstallerEnvValueInjectionTest`)가 red 가 되면서 드러났다.
      *
      * @effects env_generation_never_redetects_the_execution_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_env_generation_does_not_redetect_the_execution_mode(): void
     {
@@ -254,6 +282,8 @@ class InstallerQueueConnectionSyncTest extends TestCase
      * 실행 방식이 확정되지 않았으면 큐 연결을 덮지 않는다.
      *
      * @effects unresolved_execution_mode_leaves_queue_connection_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_unresolved_execution_mode_leaves_queue_connection_untouched(): void
     {
@@ -280,7 +310,7 @@ class InstallerQueueConnectionSyncTest extends TestCase
      */
     private function generateEnvContentBody(): string
     {
-        $source = (string) file_get_contents(BASE_PATH.'/public/install/includes/functions.php');
+        $source = $this->sourceWithoutComments(BASE_PATH.'/public/install/includes/functions.php');
         $start = strpos($source, 'function generateEnvContent(');
 
         $this->assertNotFalse($start, 'generateEnvContent() 를 소스에서 찾지 못했습니다.');
@@ -298,7 +328,7 @@ function ', (int) $start + 10);
      * `execution_mode_resolved` 는 설치가 확정한 유효 모드이며
      * `installerEffectiveExecutionMode()` 가 가장 먼저 읽는 값이다.
      *
-     * @param  string  $mode  subprocess|inprocess
+     * @param  string  $mode  고정할 유효 실행 모드 (subprocess, inprocess)
      * @return string|null 완성된 `.env` 본문
      */
     private function generateFor(string $mode): ?string

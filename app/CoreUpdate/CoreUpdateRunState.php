@@ -236,6 +236,7 @@ class CoreUpdateRunState
      * 상태의 일부를 갱신합니다 (얕은 병합 + `updated_at` 갱신).
      *
      * @param  array<string, mixed>  $changes  변경할 최상위 키
+     * @return void 반환값 없음
      */
     public function patch(array $changes): void
     {
@@ -254,6 +255,7 @@ class CoreUpdateRunState
      * 실행 문맥에 값을 병합합니다.
      *
      * @param  array<string, mixed>  $values  문맥 키/값
+     * @return void 반환값 없음
      */
     public function mergeContext(array $values): void
     {
@@ -272,6 +274,7 @@ class CoreUpdateRunState
      * 진행 기록에 줄을 덧붙입니다.
      *
      * @param  string  $message  기록 내용
+     * @return void 반환값 없음
      */
     public function appendLog(string $message): void
     {
@@ -295,6 +298,7 @@ class CoreUpdateRunState
      * 운영자에게 보일 경고를 덧붙입니다 (중복 제거).
      *
      * @param  array<int, string>  $messages  경고 문구
+     * @return void 반환값 없음
      */
     public function appendWarnings(array $messages): void
     {
@@ -305,6 +309,7 @@ class CoreUpdateRunState
      * 운영자에게 보일 통보를 덧붙입니다 (실패는 아니지만 알아야 하는 사실).
      *
      * @param  array<int, string>  $messages  통보 문구
+     * @return void 반환값 없음
      */
     public function appendNotices(array $messages): void
     {
@@ -330,6 +335,7 @@ class CoreUpdateRunState
      * 될 수 있고, 그 배열이 매 단계마다 다시 직렬화되면 진행 자체가 느려진다.
      *
      * @param  list<string>|null  $applyList  적용 대상 상대 경로 (null 이면 파일 삭제)
+     * @return void 반환값 없음
      */
     public function storeApplyList(?array $applyList): void
     {
@@ -410,6 +416,7 @@ class CoreUpdateRunState
      * 점유를 놓습니다.
      *
      * @param  string  $token  이 요청의 점유 토큰
+     * @return void 반환값 없음
      */
     public function releaseClaim(string $token): void
     {
@@ -430,6 +437,8 @@ class CoreUpdateRunState
 
     /**
      * 실행 기록을 지웁니다 (완료·되돌리기 확인 후).
+     *
+     * @return void 반환값 없음
      */
     public function clear(): void
     {
@@ -444,6 +453,8 @@ class CoreUpdateRunState
 
     /**
      * 다시 읽도록 캐시를 비웁니다.
+     *
+     * @return void 반환값 없음
      */
     public function refresh(): void
     {
@@ -467,6 +478,7 @@ class CoreUpdateRunState
      *
      * @param  string  $key  상태 키
      * @param  array<int, string>  $messages  문구
+     * @return void 반환값 없음
      */
     private function appendMessages(string $key, array $messages): void
     {
@@ -511,6 +523,7 @@ class CoreUpdateRunState
      * 상태 파일을 씁니다.
      *
      * @param  array<string, mixed>  $state  저장할 상태
+     * @return void 반환값 없음
      */
     private function write(array $state): void
     {

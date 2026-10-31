@@ -30,11 +30,22 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
 
     private User $managerUser;
 
+    /**
+     * 이 시험이 쓰는 게시판 슬러그를 돌려준다.
+     *
+     * @return string 게시판 슬러그
+     */
     protected function getTestBoardSlug(): string
     {
         return 'del-attach';
     }
 
+    /**
+     * 댓글을 켜고 비밀글과 금지어를 끈 시험용 게시판 속성을 돌려준다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return array<string, mixed> 게시판 생성 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -47,6 +58,11 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 읽기와 첨부 다운로드 권한만 가진 일반 사용자와 manager 권한을 더 가진 사용자를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -88,6 +104,7 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
      *
      * @param  int  $postId  게시글 ID
      * @param  string  $hash  첨부파일 해시
+     * @param  bool  $image  true 면 이미지(jpg), false 면 문서(pdf) 첨부로 만든다
      * @return int 생성된 첨부파일 ID
      */
     private function createAttachment(int $postId, string $hash, bool $image = false): int
@@ -110,16 +127,34 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
         ]);
     }
 
+    /**
+     * 게시글 상세 API 주소를 만든다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return string 상세 API 경로
+     */
     private function showUrl(int $postId): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}";
     }
 
+    /**
+     * 첨부 다운로드 API 주소를 만든다.
+     *
+     * @param  string  $hash  첨부파일 해시
+     * @return string 다운로드 API 경로
+     */
     private function downloadUrl(string $hash): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/attachment/{$hash}";
     }
 
+    /**
+     * 첨부 미리보기 API 주소를 만든다.
+     *
+     * @param  string  $hash  첨부파일 해시
+     * @return string 미리보기 API 경로
+     */
     private function previewUrl(string $hash): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/attachment/{$hash}/preview";
@@ -130,7 +165,13 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
     // ==========================================
 
     /**
+     * manager 가 삭제된 게시글 상세를 열면 첨부 목록이 비지 않고 내려오는지 확인한다.
+     *
+     * @scenario viewer=manager
+     *
      * @effects manager_sees_deleted_post_attachments_in_detail
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_sees_deleted_post_attachments_in_detail(): void
     {
@@ -150,7 +191,13 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
     }
 
     /**
+     * 정상 게시글의 첨부 목록은 일반 사용자에게도 그대로 노출되는지 확인한다.
+     *
+     * @scenario viewer=regular
+     *
      * @effects normal_post_attachments_still_visible
+     *
+     * @return void 반환값 없음
      */
     public function test_normal_post_attachments_still_visible(): void
     {
@@ -174,7 +221,13 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
     // ==========================================
 
     /**
+     * 일반 사용자가 삭제된 게시글 첨부를 해시로 직접 내려받으려 하면 403 으로 막히는지 확인한다.
+     *
+     * @scenario viewer=regular
+     *
      * @effects regular_user_cannot_download_deleted_post_attachment
+     *
+     * @return void 반환값 없음
      */
     public function test_regular_user_cannot_download_deleted_post_attachment(): void
     {
@@ -194,7 +247,13 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
     }
 
     /**
+     * 정상 게시글 첨부 다운로드는 일반 사용자에게 권한 차단(403)이 나지 않는지 확인한다.
+     *
+     * @scenario viewer=regular
+     *
      * @effects regular_user_can_download_normal_post_attachment_passes_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_regular_user_can_download_normal_post_attachment_passes_gate(): void
     {
@@ -218,7 +277,13 @@ class DeletedPostAttachmentAccessTest extends BoardTestCase
     // ==========================================
 
     /**
+     * 일반 사용자가 삭제된 게시글의 이미지 첨부 미리보기를 요청하면 403 으로 막히는지 확인한다.
+     *
+     * @scenario viewer=regular
+     *
      * @effects regular_user_cannot_preview_deleted_post_attachment
+     *
+     * @return void 반환값 없음
      */
     public function test_regular_user_cannot_preview_deleted_post_attachment(): void
     {

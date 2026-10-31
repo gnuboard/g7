@@ -30,6 +30,7 @@ class AttachmentS3DiskServingTest extends TestCase
      * 원격(S3) 디스크 의미를 재현하는 스토리지 대역을 컨텍스트 바인딩합니다.
      *
      * @param  string  $content  스트림으로 서빙될 바이트
+     * @return void 반환값 없음
      */
     private function bindRemoteDiskStorage(string $content = 'png-bytes'): void
     {
@@ -58,6 +59,8 @@ class AttachmentS3DiskServingTest extends TestCase
 
     /**
      * s3 디스크 이미지 행을 생성합니다.
+     *
+     * @return Attachment disk 가 s3 이고 PNG 경로를 가진 첨부 행
      */
     private function makeS3ImageAttachment(): Attachment
     {
@@ -76,6 +79,8 @@ class AttachmentS3DiskServingTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=follow_s3
      *
      * @effects attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_disk_image_attachment_serves_200_with_cache_headers(): void
     {
@@ -95,6 +100,12 @@ class AttachmentS3DiskServingTest extends TestCase
      *
      * ETag 는 파일 stat 이 아닌 행 메타(디스크·경로·수정시각·크기) 기반이어야
      * 원격 디스크에서도 결정적이다.
+     *
+     * @scenario attachment_disk=follow_s3, conditional_request=if_none_match, consumer=attachment
+     *
+     * @effects attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_disk_image_attachment_etag_roundtrip_yields_304(): void
     {
@@ -125,6 +136,8 @@ class AttachmentS3DiskServingTest extends TestCase
      * @scenario conditional_request=ims, consumer=attachment
      *
      * @effects attachment_stream_declares_last_modified_and_honours_ims
+     *
+     * @return void 반환값 없음
      */
     public function test_attachment_stream_declares_last_modified_and_honours_if_modified_since(): void
     {
@@ -150,6 +163,12 @@ class AttachmentS3DiskServingTest extends TestCase
      * 로컬 디스크 이미지 행의 서빙 계약(200 + ETag)이 유지되어야 합니다 (혼재 회귀 가드).
      *
      * 기존 행은 행 disk 로 계속 서빙된다 — s3 전환 후에도 과거 로컬 행이 깨지면 안 된다.
+     *
+     * @scenario attachment_disk=local_default, consumer=attachment
+     *
+     * @effects attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_local_disk_image_attachment_still_serves(): void
     {

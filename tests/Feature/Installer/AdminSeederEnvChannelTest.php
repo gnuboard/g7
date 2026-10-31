@@ -55,6 +55,11 @@ class AdminSeederEnvChannelTest extends TestCase
         'INSTALLER_ADMIN_LANGUAGE',
     ];
 
+    /**
+     * 관리자 환경변수 네 키의 원래 값을 보관한 뒤 $_ENV, $_SERVER, 프로세스 환경에서 모두 비우고, 회원 테이블을 비워 설치 직후 상태를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -77,6 +82,11 @@ class AdminSeederEnvChannelTest extends TestCase
         DB::table('users')->delete();
     }
 
+    /**
+     * 테스트가 심은 관리자 환경변수를 지우고, setUp 에서 보관한 원래 $_ENV, $_SERVER 값을 되돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach (self::KEYS as $key) {
@@ -94,7 +104,13 @@ class AdminSeederEnvChannelTest extends TestCase
     }
 
     /**
+     * putenv 없이 $_ENV 에만 실린 관리자 이름, 이메일, 비밀번호, 언어로 시더가 최고관리자 계정을 만드는지 확인한다.
+     *
+     * @scenario task=db_seed
+     *
      * @effects installer_admin_seeder_reads_env_without_putenv
+     *
+     * @return void 반환값 없음
      */
     public function test_seeder_reads_admin_credentials_from_env_superglobal(): void
     {
@@ -120,7 +136,13 @@ class AdminSeederEnvChannelTest extends TestCase
     }
 
     /**
+     * $_SERVER 로만 전달된 이메일과 비밀번호로도 계정이 만들어지고, 지정하지 않은 이름과 언어는 문서화된 기본값으로 채워지는지 확인한다.
+     *
+     * @scenario task=db_seed
+     *
      * @effects installer_admin_seeder_reads_env_without_putenv
+     *
+     * @return void 반환값 없음
      */
     public function test_seeder_reads_admin_credentials_from_server_superglobal(): void
     {
@@ -140,6 +162,15 @@ class AdminSeederEnvChannelTest extends TestCase
         $this->assertSame('ko', $admin->language);
     }
 
+    /**
+     * 어느 통로에도 관리자 값이 없으면 시더가 계정을 하나도 만들지 않는지 확인한다(폴백 확장이 무값 생성으로 새지 않게).
+     *
+     * @scenario task=db_seed
+     *
+     * @effects installer_admin_seeder_creates_no_account_without_credentials
+     *
+     * @return void 반환값 없음
+     */
     public function test_seeder_creates_no_account_when_no_channel_carries_the_credentials(): void
     {
         // 폴백을 넓히는 변경이 「아무 값 없이도 계정을 만든다」로 새지 않아야 한다.

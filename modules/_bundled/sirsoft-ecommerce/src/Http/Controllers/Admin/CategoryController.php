@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage 609 후속 — 메서드 PHPDoc(목적 설명, @param, @return)만 더했다. 라우트, 요청, 응답 모양은 그대로라 API 문서에 반영할 표면이 없다.
+
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
 use App\Helpers\ResponseHelper;
@@ -24,6 +26,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class CategoryController extends AdminBaseController
 {
+    /**
+     * 카테고리 서비스와 카테고리 이미지 서비스를 주입받는다.
+     *
+     * @param  CategoryService  $categoryService  카테고리 서비스
+     * @param  CategoryImageService  $categoryImageService  카테고리 이미지 서비스
+     */
     public function __construct(
         private CategoryService $categoryService,
         private CategoryImageService $categoryImageService

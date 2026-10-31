@@ -43,6 +43,11 @@ class AttachmentServeContractTest extends ModuleTestCase
     /** @var MockInterface&StorageInterface */
     private $storage;
 
+    /**
+     * 첨부와 게시판 저장소, 스토리지를 모의 객체로 두고 시험 대상 AttachmentService 를 조립한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -66,6 +71,11 @@ class AttachmentServeContractTest extends ModuleTestCase
         $this->service = new AttachmentService($this->repository, $boardRepository, $this->storage);
     }
 
+    /**
+     * Mockery 기대값을 검증하고 닫는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -109,6 +119,8 @@ class AttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=download, contract_axis=conditional_request
      *
      * @effects get_file_info_carries_last_modified_from_row_meta
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_get_file_info_carries_last_modified_from_row_meta(): void
@@ -134,6 +146,8 @@ class AttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=download, contract_axis=content_length
      *
      * @effects get_file_info_carries_size_from_row_meta
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_get_file_info_carries_size_from_row_meta(): void
@@ -158,6 +172,8 @@ class AttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=download, contract_axis=conditional_request
      *
      * @effects get_file_info_always_fills_etag_source
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_get_file_info_always_fills_etag_source(): void
@@ -182,6 +198,8 @@ class AttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=download, contract_axis=conditional_request
      *
      * @effects controller_does_not_fall_back_to_path_for_etag_source
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_controller_does_not_fall_back_to_path_for_etag_source(): void
@@ -205,6 +223,8 @@ class AttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=download, contract_axis=content_length
      *
      * @effects stream_file_declares_content_length_from_row_meta
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_stream_file_declares_content_length_from_row_meta(): void
@@ -241,6 +261,8 @@ class AttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=preview, contract_axis=filename_declaration
      *
      * @effects preview_serves_through_the_same_stream_point
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_preview_serves_through_the_same_stream_point(): void
@@ -283,6 +305,8 @@ class AttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=preview, serving_type=download, contract_axis=row_disk
      *
      * @effects serving_follows_the_disk_recorded_on_the_row
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_serving_follows_the_disk_recorded_on_the_row(): void

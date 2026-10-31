@@ -16,6 +16,11 @@ class PaymentCloseController extends Controller
 
     private const CLOSE_JS_URL_LIVE = 'https://stdpay.inicis.com/stdjs/INIStdPay_close.js';
 
+    /**
+     * 테스트/운영 모드 판정에 쓸 플러그인 설정 서비스를 주입받는다.
+     *
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
+     */
     public function __construct(
         private readonly PluginSettingsService $pluginSettingsService,
     ) {}

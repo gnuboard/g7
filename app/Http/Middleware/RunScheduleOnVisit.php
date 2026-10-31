@@ -57,6 +57,7 @@ class RunScheduleOnVisit
      *
      * @param  Request  $request  요청
      * @param  Response  $response  응답
+     * @return void 반환값 없음
      */
     public function terminate(Request $request, Response $response): void
     {

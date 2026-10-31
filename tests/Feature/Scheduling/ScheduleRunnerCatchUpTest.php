@@ -50,6 +50,8 @@ class ScheduleRunnerCatchUpTest extends TestCase
 
     /**
      * 테스트 준비 — 상태 파일을 케이스 전용 임시 경로로 격리한다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -74,7 +76,9 @@ class ScheduleRunnerCatchUpTest extends TestCase
     }
 
     /**
-     * 테스트 정리 — 상태 파일을 걷는다.
+     * 케이스 전용 상태 파일을 지운 뒤 부모 정리를 돌린다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -88,7 +92,11 @@ class ScheduleRunnerCatchUpTest extends TestCase
     /**
      * 고정 시각을 지나친 성긴 호출에서 그 사이 due 였던 작업이 소급 실행된다.
      *
+     * @scenario catch_up=missed_window, event_kind=callback_event, runtime_budget=within
+     *
      * @effects missed_fixed_time_task_runs_on_next_call
+     *
+     * @return void 반환값 없음
      */
     public function test_missed_fixed_time_task_runs_on_a_later_call(): void
     {
@@ -106,7 +114,11 @@ class ScheduleRunnerCatchUpTest extends TestCase
     /**
      * 같은 작업이 이어지는 호출에서 다시 실행되지 않는다 (중복 0).
      *
+     * @scenario catch_up=missed_window, event_kind=callback_event
+     *
      * @effects catch_up_does_not_duplicate
+     *
+     * @return void 반환값 없음
      */
     public function test_catch_up_does_not_run_the_same_occurrence_twice(): void
     {
@@ -127,7 +139,11 @@ class ScheduleRunnerCatchUpTest extends TestCase
      *
      * 정리 배치는 멱등이라 횟수 보전이 무의미하고, 반복은 실행 상한만 소모한다.
      *
+     * @scenario catch_up=long_gap, event_kind=callback_event
+     *
      * @effects periodic_task_runs_once_per_call
+     *
+     * @return void 반환값 없음
      */
     public function test_periodic_task_runs_once_even_after_a_long_gap(): void
     {
@@ -147,7 +163,11 @@ class ScheduleRunnerCatchUpTest extends TestCase
      * 스킵된 호출은 러너를 부르지 않으므로 점검 시각이 전진하지 않고, 다음 유효
      * 호출의 소급 창이 그 사이 시각을 그대로 덮는다.
      *
+     * @scenario catch_up=missed_window, min_interval=within
+     *
      * @effects throttled_calls_do_not_lose_work
+     *
+     * @return void 반환값 없음
      */
     public function test_work_survives_a_throttled_call_gap(): void
     {
@@ -166,7 +186,11 @@ class ScheduleRunnerCatchUpTest extends TestCase
     /**
      * 소급 창의 상한을 넘어선 과거는 소급하지 않는다 (첫 호출 폭주 방지).
      *
+     * @scenario catch_up=beyond_cap, event_kind=callback_event
+     *
      * @effects catch_up_is_bounded_by_the_window_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_catch_up_is_bounded_by_the_window_cap(): void
     {
@@ -189,7 +213,11 @@ class ScheduleRunnerCatchUpTest extends TestCase
      * 확장의 `enabled_config` 가 OFF 인 상태가 이 경로로 무시되면, 운영자가 끈
      * 기능이 웹 크론에서만 되살아난다.
      *
+     * @scenario catch_up=missed_window, overlap=filtered
+     *
      * @effects conditional_registration_is_respected_on_catch_up
+     *
+     * @return void 반환값 없음
      */
     public function test_conditional_registration_is_respected(): void
     {
@@ -211,7 +239,11 @@ class ScheduleRunnerCatchUpTest extends TestCase
      *
      * 점검 시각을 전진시키면 그 잔여 작업이 창 밖으로 밀려나 영영 실행되지 않는다.
      *
+     * @scenario catch_up=missed_window, runtime_budget=exceeded
+     *
      * @effects runtime_limit_defers_remaining_work
+     *
+     * @return void 반환값 없음
      */
     public function test_runtime_limit_defers_remaining_work(): void
     {
@@ -247,7 +279,11 @@ class ScheduleRunnerCatchUpTest extends TestCase
      * 앞 케이스는 "미뤄졌다" 만 재고, 이 케이스가 "그래서 결국 돈다" 를 잰다 —
      * 둘을 함께 재지 않으면 영원히 미루는 구현도 초록이다.
      *
+     * @scenario catch_up=missed_window, runtime_budget=exceeded, runtime_budget=within
+     *
      * @effects deferred_work_runs_on_the_next_call
+     *
+     * @return void 반환값 없음
      */
     public function test_deferred_work_runs_on_the_next_call(): void
     {
@@ -276,7 +312,11 @@ class ScheduleRunnerCatchUpTest extends TestCase
     /**
      * 실패한 작업은 요약에 실패로 집계되고 다른 작업의 실행을 막지 않는다.
      *
+     * @scenario catch_up=missed_window, event_kind=callback_event, runtime_budget=within
+     *
      * @effects failed_task_does_not_stop_the_run
+     *
+     * @return void 반환값 없음
      */
     public function test_failed_task_is_counted_and_does_not_stop_the_run(): void
     {

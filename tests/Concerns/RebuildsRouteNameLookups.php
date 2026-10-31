@@ -27,6 +27,8 @@ trait RebuildsRouteNameLookups
      * 컴파일된 라우트 컬렉션을 일반 컬렉션으로 옮겨 이름·액션 조회를 재구성합니다.
      *
      * 확장 테스트 케이스의 `registerModuleRoutes()` 끝에서 부른다.
+     *
+     * @return void 반환값 없음
      */
     protected function rebuildRouteNameLookups(): void
     {

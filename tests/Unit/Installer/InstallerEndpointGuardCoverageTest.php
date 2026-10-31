@@ -44,12 +44,19 @@ class InstallerEndpointGuardCoverageTest extends TestCase
         'index.php' => 'complete_flag 이후 새로고침 — 완료 화면에 도달하려면 열려 있어야 한다',
     ];
 
+    /**
+     * 저장소 안 인스톨러 API 디렉토리의 절대 경로를 만든다.
+     *
+     * @return string 인스톨러 API 디렉토리 절대 경로
+     */
     private function apiDir(): string
     {
         return dirname(__DIR__, 3).'/public/install/api';
     }
 
     /**
+     * API 디렉토리를 재귀로 훑어 PHP 파일 이름을 모으고, 함수만 정의하는 라이브러리 파일을 뺀 엔드포인트 목록을 만든다.
+     *
      * @return array<int, string> 엔드포인트 파일명 목록
      */
     private function endpoints(): array
@@ -104,7 +111,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
      * 그 밖(`installerHasFunction`·`installerSetTimeLimit` 같은 유틸)은 어느 엔드포인트든
      * 부르므로 배선 축이 아니다 — 넣으면 모든 파일이 걸려 표가 소음으로 부푼다.
      *
-     * @return array<int, string>
+     * @return array<int, string> 결정 헬퍼 함수 이름 (정렬됨)
      */
     private function decisionHelpers(): array
     {
@@ -140,6 +147,15 @@ class InstallerEndpointGuardCoverageTest extends TestCase
         return $decision;
     }
 
+    /**
+     * 엔드포인트 스캔이 10개 이상을 모으고 단계별 실행 엔드포인트를 포함하는지 확인한다. 모집단이 비면 아래 전수 검사가 무의미해진다.
+     *
+     * @scenario endpoint_guard=general
+     *
+     * @effects installer_every_api_endpoint_passes_completion_guard
+     *
+     * @return void 반환값 없음
+     */
     public function test_population_is_not_empty(): void
     {
         $this->assertGreaterThanOrEqual(10, count($this->endpoints()));
@@ -147,7 +163,13 @@ class InstallerEndpointGuardCoverageTest extends TestCase
     }
 
     /**
+     * 모든 엔드포인트(주석 제거)가 진입 가드 파일을 불러오고 일반 또는 완화 가드 함수를 실제로 호출하는지 확인한다.
+     *
+     * @scenario endpoint_guard=general, endpoint_guard=finalize_allowed
+     *
      * @effects installer_every_api_endpoint_passes_completion_guard
+     *
+     * @return void 반환값 없음
      */
     public function test_every_endpoint_loads_guard_and_calls_it(): void
     {
@@ -170,6 +192,15 @@ class InstallerEndpointGuardCoverageTest extends TestCase
         }
     }
 
+    /**
+     * 완화된 finalize 전용 가드를 쓰는 엔드포인트가 모두 허용 목록에 사유와 함께 있고, 허용 목록의 파일이 실제로 존재하는지 확인한다.
+     *
+     * @scenario endpoint_guard=finalize_allowed, endpoint_guard=finalize_unexpected
+     *
+     * @effects installer_finalize_guard_is_limited_to_allowed_endpoints
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalize_guard_is_used_only_by_allowed_endpoints(): void
     {
         foreach ($this->endpoints() as $file) {
@@ -197,6 +228,12 @@ class InstallerEndpointGuardCoverageTest extends TestCase
      * `config_cache` 와 `.env` 머지(finalize)가 온다. 그 창에서 재시작·SSE 재연결·
      * 새로고침이 엄격 가드에 걸리면, 설치가 끝나지 않은 상태(.env 미머지)인데 운영자는
      * 실패 화면에서 어느 쪽으로도 나갈 수 없다 — 세 진입점 모두 410 이기 때문이다.
+     *
+     * @scenario endpoint_guard=finalize_allowed, task=complete_flag
+     *
+     * @effects installer_recovery_entry_points_stay_open_until_env_merge
+     *
+     * @return void 반환값 없음
      */
     public function test_recovery_entry_points_stay_open_until_env_is_merged(): void
     {
@@ -229,6 +266,12 @@ class InstallerEndpointGuardCoverageTest extends TestCase
 
     /**
      * run-task.php 는 세션이 아니라 토큰으로 호출자를 확인한다 (R8) — 세션 include 금지.
+     *
+     * @scenario installation_mode=stepwise, endpoint_guard=general
+     *
+     * @effects installer_state_mutation_endpoints_are_wired_to_the_token_header
+     *
+     * @return void 반환값 없음
      */
     public function test_run_task_endpoint_uses_token_not_session(): void
     {
@@ -261,6 +304,12 @@ class InstallerEndpointGuardCoverageTest extends TestCase
      * state-management.php?action=skip_task 는 run-task.php 와 같은 stepwise 토큰을 요구한다.
      * 판정을 인라인으로 복제하면 그 사본의 `hash_equals` 가 `==` 로 바뀌어도 어떤 테스트도
      * red 가 되지 않는다 — 위 테스트는 run-task.php 만 보기 때문이다. 판정 SSoT 는 하나다.
+     *
+     * @scenario installation_mode=stepwise, skip_request=skippable
+     *
+     * @effects installer_state_mutation_endpoints_are_wired_to_the_token_header
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_task_endpoint_uses_the_same_token_judgment(): void
     {
@@ -297,6 +346,12 @@ class InstallerEndpointGuardCoverageTest extends TestCase
      *
      * 새 배선이 생기면 이 표에 한 줄을 더한다 — 표가 비면(모집단 0) 검사가 무의미해지므로
      * 하한도 함께 단언한다.
+     *
+     * @scenario endpoint_guard=general, installation_mode=stepwise, installation_mode=sse
+     *
+     * @effects installer_decision_helpers_are_wired_at_every_call_site
+     *
+     * @return void 반환값 없음
      */
     public function test_judgment_helpers_are_actually_wired(): void
     {
@@ -504,7 +559,11 @@ class InstallerEndpointGuardCoverageTest extends TestCase
      * 일반 통신 오류만 보인다. 일회성 probe(check-env·session-probe)와 SSE 주 응답
      * (install-worker)은 이 모집단이 아니다 — 반복 파싱 루프에 실리지 않는다.
      *
+     * @scenario installation_mode=stepwise, installation_mode=polling
+     *
      * @effects stepwise_endpoint_wraps_uncaught_errors_in_a_json_envelope
+     *
+     * @return void 반환값 없음
      */
     public function test_browser_polled_json_endpoints_have_a_top_level_throwable_envelope(): void
     {
@@ -525,6 +584,12 @@ class InstallerEndpointGuardCoverageTest extends TestCase
      * 손상된 state.json 이나 runtime.php 로 인한 Error 가 나는 곳이 바로 그 구간이다 —
      * lock 획득 이후만 감싸면 정작 위험한 초반 구간이 봉투 밖에 남는다. 응답 헬퍼는
      * try 밖에서 정의돼야 catch 가 응답할 수 있다 (try 안 선언은 그 지점에 닿아야 정의된다).
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects stepwise_endpoint_wraps_uncaught_errors_in_a_json_envelope
+     *
+     * @return void 반환값 없음
      */
     public function test_run_task_protected_region_starts_before_state_read(): void
     {
@@ -548,6 +613,12 @@ class InstallerEndpointGuardCoverageTest extends TestCase
 
     /**
      * install-process.php 는 토큰을 runtime.php 에만 싣고 state.json 에는 싣지 않는다 (R3).
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_stepwise_token_stays_out_of_state_file
+     *
+     * @return void 반환값 없음
      */
     public function test_install_process_keeps_stepwise_token_out_of_state(): void
     {
@@ -563,6 +634,12 @@ class InstallerEndpointGuardCoverageTest extends TestCase
      * 위 두 검사(run-task·skip_task)는 종전에 `file_get_contents` **원문**을 봤다 —
      * 형제 2검사만 `stripComments()` 를 쓰고 있어 한 파일 안에서 규칙이 갈려 있었다.
      * 실 소스가 준수 상태라 그 사실은 red 로 드러나지 않는다. 합성 입력으로 고정한다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_state_mutation_endpoints_are_wired_to_the_token_header
+     *
+     * @return void 반환값 없음
      */
     public function test_token_judgment_detection_ignores_commented_out_calls(): void
     {
@@ -599,6 +676,12 @@ require_once __DIR__.'/../includes/execution-mode.php';
      *
      * 실 엔드포인트가 전부 준수 상태라 위 검사들은 늘 통과한다 — 정규식이 무엇이든 통과시키게
      * 망가져도 red 가 나지 않는다. 「가드가 없는 엔드포인트」를 실제로 만들어 잡히는지 본다.
+     *
+     * @scenario endpoint_guard=general, endpoint_guard=finalize_allowed, endpoint_guard=missing
+     *
+     * @effects installer_every_api_endpoint_passes_completion_guard
+     *
+     * @return void 반환값 없음
      */
     public function test_guard_detection_actually_discriminates(): void
     {

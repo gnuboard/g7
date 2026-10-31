@@ -42,6 +42,11 @@ class BundledSourceVendorInstallTest extends TestCase
 {
     private string $tempDir;
 
+    /**
+     * 테스트마다 쓸 임시 확장 디렉토리를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -50,6 +55,11 @@ class BundledSourceVendorInstallTest extends TestCase
         File::makeDirectory($this->tempDir, 0755, true);
     }
 
+    /**
+     * 임시 확장 디렉토리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (is_dir($this->tempDir)) {
@@ -60,7 +70,11 @@ class BundledSourceVendorInstallTest extends TestCase
     }
 
     /**
+     * 스폰이 막힌 매니저로 composer 설치를 시도하면 예외를 던지지 않고 false 를 돌려주는지 확인한다.
+     *
      * @effects composer_binary_lookup_does_not_leak_exception_when_spawn_blocked
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 스폰_불가_환경에서_composer_바이너리_탐색이_예외를_흘리지_않는다(): void
@@ -82,9 +96,13 @@ class BundledSourceVendorInstallTest extends TestCase
     }
 
     /**
+     * canSpawnProcess 가 ExecutionEnvironment 로 proc_open 을 판정하고, findComposerBinary 의 스폰 호출이 그 판정 뒤에 있는지 소스로 확인한다.
+     *
      * @scenario function_availability=all_blocked
      *
      * @effects spawn_availability_is_judged_through_execution_environment_ssot
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 스폰_가용성_판정은_실행환경_ssot_를_경유한다(): void
@@ -113,9 +131,13 @@ class BundledSourceVendorInstallTest extends TestCase
     }
 
     /**
+     * 모듈과 플러그인 설치 메서드가 복사 뒤에 활성 디렉토리 기준으로 resolver 통로를 부르고, 그 통로가 vendor 해결 여부로 막혀 있는지 소스로 확인한다.
+     *
      * @scenario extension_vendor_source=bundled_source
      *
      * @effects bundled_source_install_routes_vendor_through_resolver
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 설치_경로는_pending_가드_밖에서도_resolver_를_경유한다(): void
@@ -180,9 +202,13 @@ class BundledSourceVendorInstallTest extends TestCase
     }
 
     /**
+     * 두 매니저 설치 메서드에서 raw composer 폴백 호출이 vendor 해결 게이트 뒤에 놓였는지 소스 위치로 확인한다.
+     *
      * @scenario extension_vendor_source=force_reinstall
      *
      * @effects raw_composer_fallback_is_gated_by_vendor_resolution_flag
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function raw_composer_폴백은_vendor_해결_플래그_뒤에_있다(): void
@@ -207,9 +233,13 @@ class BundledSourceVendorInstallTest extends TestCase
     }
 
     /**
+     * 모듈 매니저와 플러그인 매니저 설치 메서드의 resolver 통로 호출 수가 같은지 확인한다.
+     *
      * @scenario extension_vendor_source=pending_staging
      *
      * @effects module_and_plugin_managers_have_symmetric_vendor_paths
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 두_매니저의_vendor_통로_개수가_대칭이다(): void
@@ -236,6 +266,11 @@ class BundledSourceVendorInstallTest extends TestCase
     {
         return new class(app(ModuleRepositoryInterface::class), app(PluginRepositoryInterface::class)) extends ExtensionManager
         {
+            /**
+             * 스폰 불가 환경을 흉내 내도록 항상 스폰할 수 없다고 답한다.
+             *
+             * @return bool 언제나 false
+             */
             protected function canSpawnProcess(): bool
             {
                 return false;

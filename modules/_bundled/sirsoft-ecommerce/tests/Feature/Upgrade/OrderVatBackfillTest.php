@@ -58,6 +58,8 @@ class OrderVatBackfillTest extends ModuleTestCase
 
     /**
      * 1.0.5 업그레이드 스텝을 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     private function runUpgrade(): void
     {
@@ -78,7 +80,10 @@ class OrderVatBackfillTest extends ModuleTestCase
     /**
      * 부가세가 0 인 주문만 스냅샷 세율로 백필되는지 테스트합니다.
      *
-     * @effects order_vat_backfilled_for_zero_only
+     * @scenario tax_status=taxable, order_composition=single_rate, write_point=upgrade_backfill
+     * @effects upgrade_backfills_only_zero_vat_orders
+     *
+     * @return void 반환값 없음
      */
     public function test_zero_vat_order_is_backfilled_with_snapshot_rate(): void
     {
@@ -94,7 +99,10 @@ class OrderVatBackfillTest extends ModuleTestCase
      *
      * 부분취소로 정상화된 주문을 재계산으로 덮어쓰면 회계 수치가 조용히 바뀐다.
      *
-     * @effects order_vat_backfilled_for_zero_only
+     * @scenario tax_status=taxable, order_composition=single_rate, write_point=upgrade_backfill
+     * @effects upgrade_backfills_only_zero_vat_orders
+     *
+     * @return void 반환값 없음
      */
     public function test_order_with_existing_vat_is_left_untouched(): void
     {
@@ -107,6 +115,11 @@ class OrderVatBackfillTest extends ModuleTestCase
 
     /**
      * 과세표준이 없는 주문(전액 면세)은 0 으로 남는지 테스트합니다.
+     *
+     * @scenario tax_status=tax_free, write_point=upgrade_backfill
+     * @effects tax_free_item_has_no_vat
+     *
+     * @return void 반환값 없음
      */
     public function test_tax_free_order_stays_zero(): void
     {
@@ -122,7 +135,10 @@ class OrderVatBackfillTest extends ModuleTestCase
      *
      * 주문 전체 과세표준에 단일 세율을 적용하면 값이 어긋난다.
      *
-     * @effects mixed_tax_rate_summed_per_option
+     * @scenario tax_status=taxable, order_composition=mixed_rate, write_point=upgrade_backfill
+     * @effects mixed_tax_rates_summed_per_option
+     *
+     * @return void 반환값 없음
      */
     public function test_mixed_rate_order_is_summed_per_option(): void
     {
@@ -139,6 +155,11 @@ class OrderVatBackfillTest extends ModuleTestCase
 
     /**
      * 재실행해도 결과가 같은지 테스트합니다 (멱등).
+     *
+     * @scenario tax_status=taxable, write_point=upgrade_backfill
+     * @effects upgrade_backfills_only_zero_vat_orders
+     *
+     * @return void 반환값 없음
      */
     public function test_backfill_is_idempotent(): void
     {

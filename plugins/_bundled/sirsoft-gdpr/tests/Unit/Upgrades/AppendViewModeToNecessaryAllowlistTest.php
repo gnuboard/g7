@@ -28,7 +28,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *
  * @scenario scope=localStorage, notation=prefix, settings_state=seeded, request=key_absent
  *
- * @effects upgrade_appends_view_mode_pattern_when_absent, upgrade_leaves_allowlist_untouched_when_pattern_present
+ * 효과 요약(마커 아님 — 평문): upgrade_appends_view_mode_pattern_when_absent, upgrade_leaves_allowlist_untouched_when_pattern_present
  */
 class AppendViewModeToNecessaryAllowlistTest extends PluginTestCase
 {

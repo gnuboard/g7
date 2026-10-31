@@ -19,6 +19,11 @@ use Tests\TestCase;
  */
 class NotificationLinkSiteAbsoluteTest extends TestCase
 {
+    /**
+     * app.url 을 후행 슬래시가 붙은 하위 폴더 주소로 두고 요청은 다른 호스트로 바꿔, 링크 이어 붙이기가 가장 쉽게 깨지는 조건을 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,6 +33,11 @@ class NotificationLinkSiteAbsoluteTest extends TestCase
         app()->instance('request', Request::create('http://localhost/api/x'));
     }
 
+    /**
+     * 강제로 지정한 마운트 접두사를 풀어 다른 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetUrl::forceBasePrefix(null);
@@ -40,6 +50,11 @@ class NotificationLinkSiteAbsoluteTest extends TestCase
         return ['notifiable' => null, 'notifiables' => null, 'data' => [], 'context' => []];
     }
 
+    /**
+     * 알림 수신자로 쓸 저장하지 않은 사용자를 만든다.
+     *
+     * @return User 이름과 이메일, ID 를 채운 사용자
+     */
     private function user(): User
     {
         $user = new User(['name' => '홍길동', 'email' => 'hong@example.com']);
@@ -49,9 +64,13 @@ class NotificationLinkSiteAbsoluteTest extends TestCase
     }
 
     /**
+     * 코어 알림(가입 환영, 비밀번호 변경, 재설정)의 action_url 과 site_url 이 설정 주소를 따르고 이중 슬래시나 후행 슬래시가 새지 않는지 확인한다.
+     *
      * @scenario base_path=subpath, navigation_direction=navigation
      *
      * @effects notification_links_are_built_by_the_site_absolute_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_core_listener_links_follow_the_configured_site_url_without_double_slash(): void
     {
@@ -72,9 +91,13 @@ class NotificationLinkSiteAbsoluteTest extends TestCase
     }
 
     /**
+     * 사이트맵 재생성 성공과 실패 알림의 action_url 이 설정 주소 아래 SEO 설정 탭으로 이중 슬래시 없이 이어지는지 확인한다.
+     *
      * @scenario base_path=subpath, navigation_direction=navigation
      *
      * @effects notification_links_are_built_by_the_site_absolute_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_listener_links_follow_the_configured_site_url_without_double_slash(): void
     {

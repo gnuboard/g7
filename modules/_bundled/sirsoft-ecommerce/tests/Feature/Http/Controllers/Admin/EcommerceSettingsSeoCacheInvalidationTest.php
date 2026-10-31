@@ -39,6 +39,11 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      */
     private array $received = [];
 
+    /**
+     * 설정 권한 관리자를 만들고, SEO 캐시 리스너를 실제 등록 경로로 등록한 뒤 모듈 설정 저장 훅 수신 기록기를 붙인다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -73,6 +78,8 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * @scenario actor=admin, save_path=bulk
      *
      * @effects module_settings_after_save_hook_fired
+     *
+     * @return void 반환값 없음
      */
     public function test_settings_save_fires_module_settings_after_save_hook(): void
     {
@@ -95,6 +102,8 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * @scenario actor=admin, save_path=save_banks
      *
      * @effects module_settings_after_save_hook_fired
+     *
+     * @return void 반환값 없음
      */
     public function test_bank_save_fires_module_settings_after_save_hook(): void
     {
@@ -117,6 +126,8 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * @scenario actor=admin, save_path=bulk
      *
      * @effects module_settings_after_save_hook_not_fired_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_hook_is_not_fired_when_validation_fails(): void
     {
@@ -136,6 +147,8 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * @scenario actor=admin, save_path=bulk
      *
      * @effects seo_cache_invalidated_on_module_settings_save
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_cache_listener_receives_the_hook(): void
     {
@@ -167,6 +180,8 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * @scenario actor=admin, save_path=bulk
      *
      * @effects seo_cache_invalidated_on_module_settings_save
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_tab_save_actually_invalidates_layout_cache(): void
     {
@@ -191,6 +206,8 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * @scenario actor=admin, save_path=bulk
      *
      * @effects seo_cache_untouched_for_non_seo_tab
+     *
+     * @return void 반환값 없음
      */
     public function test_non_seo_tab_save_does_not_invalidate_layout_cache(): void
     {
@@ -220,6 +237,8 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * @scenario actor=admin, save_path=single_key
      *
      * @effects module_settings_after_save_hook_fired
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_single_key_save_fires_module_settings_after_save_hook(): void
     {
@@ -251,6 +270,8 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * @scenario actor=system, save_path=single_key
      *
      * @effects service_level_save_stays_silent
+     *
+     * @return void 반환값 없음
      */
     public function test_service_level_save_does_not_fire_the_hook(): void
     {
@@ -268,6 +289,8 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * @scenario actor=system, save_path=bulk
      *
      * @effects service_level_save_stays_silent
+     *
+     * @return void 반환값 없음
      */
     public function test_service_level_bulk_save_does_not_fire_the_hook(): void
     {
@@ -284,6 +307,8 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * @scenario actor=system, save_path=save_banks
      *
      * @effects service_level_save_stays_silent
+     *
+     * @return void 반환값 없음
      */
     public function test_service_level_bank_save_does_not_fire_the_hook(): void
     {
@@ -305,6 +330,8 @@ class EcommerceSettingsSeoCacheInvalidationTest extends ModuleTestCase
      * @scenario actor=admin, save_path=bulk
      *
      * @effects module_settings_save_recorded_in_activity_log
+     *
+     * @return void 반환값 없음
      */
     public function test_settings_save_is_recorded_in_activity_log(): void
     {

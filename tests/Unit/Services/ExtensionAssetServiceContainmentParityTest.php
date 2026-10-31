@@ -41,7 +41,11 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
     ];
 
     /**
+     * 템플릿, 모듈, 플러그인 자산 서비스가 모두 2차 봉쇄 trait(SecuresExtensionAssetPath)을 쓰는지 확인한다.
+     *
      * @effects extension_asset_services_share_one_containment
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function every_extension_asset_service_uses_the_shared_containment_trait(): void
@@ -57,7 +61,11 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
     }
 
     /**
+     * 어느 자산 서비스에도 경로 정제 사본(sanitizePath)이 남아 공유 trait 과 판정이 갈리지 않는지 확인한다.
+     *
      * @effects extension_asset_services_share_one_containment
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function no_asset_service_keeps_a_private_copy_of_the_sanitizer(): void
@@ -80,7 +88,11 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
     }
 
     /**
+     * 세 자산 서비스가 모두 유형 판정 trait(ResolvesExtensionAssetType)을 써서 확장자 확인과 MIME 표를 공유하는지 확인한다.
+     *
      * @effects extension_asset_services_share_one_type_resolution
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function every_extension_asset_service_uses_the_shared_type_resolution_trait(): void
@@ -96,7 +108,11 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
     }
 
     /**
+     * 어느 자산 서비스에도 MIME 표 사본(getMimeType)이 남아 같은 파일이 통로마다 다른 유형으로 나가지 않는지 확인한다.
+     *
      * @effects extension_asset_services_share_one_type_resolution
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function no_asset_service_keeps_a_private_copy_of_the_mime_table(): void
@@ -125,6 +141,15 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
         }
     }
 
+    /**
+     * 공유 유형 표가 소스맵을 application/json 으로, 번들 JS 를 application/javascript 로 판정하는지 확인한다.
+     *
+     * @scenario mime_table=sourcemap
+     *
+     * @effects extension_asset_services_share_one_type_resolution
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function the_shared_mime_table_types_source_maps_as_json(): void
     {
@@ -150,6 +175,13 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
         $this->assertFalse($resolver->allowed('a/b.php', ['js', 'css']));
     }
 
+    /**
+     * 세 자산 서비스 소스가 모두 확장자 허용 판정을 불러 file_type_not_allowed 분기가 어느 통로에서도 죽은 코드가 되지 않는지 확인한다.
+     *
+     * @effects every_asset_serving_service_gates_the_file_extension
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function every_asset_serving_service_gates_the_file_extension(): void
     {
@@ -196,6 +228,8 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
      * @scenario baseline_source=request_rule, baseline_source=service, extension_type=template, extension_type=module, extension_type=plugin
      *
      * @effects extension_asset_request_baseline_matches_the_serving_root
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function every_request_rule_measures_the_same_baseline_as_its_service(): void
@@ -334,6 +368,15 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
         return null;
     }
 
+    /**
+     * 봉쇄 판정이 기준 디렉토리 안의 경로만 통과시키고, 이름이 기준으로 시작하는 형제 디렉토리처럼 밖으로 풀리는 경로는 거부하는지 확인한다.
+     *
+     * @scenario defense_layer=second_containment
+     *
+     * @effects containment_check_rejects_paths_resolving_outside_the_base
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function the_containment_check_rejects_a_path_that_resolves_outside_the_base(): void
     {
@@ -374,6 +417,8 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
      * 이미 서비스 계층에 갖고 있었다 — 한쪽에만 있는 성질이 곧 결함이다 (15차 G3).
      *
      * @effects extension_asset_second_barrier_rejects_null_byte_and_hidden_segments
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_sanitizer_rejects_null_bytes_and_hidden_segments(): void

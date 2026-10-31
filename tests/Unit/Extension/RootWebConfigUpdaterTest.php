@@ -27,6 +27,8 @@ class RootWebConfigUpdaterTest extends RootHtaccessUpdaterTest
      * @scenario marker_syntax=xml_comment, destination_state=with_block
      *
      * @effects root_web_config_updates_replace_only_core_block
+     *
+     * @return void 반환값 없음
      */
     public function test_markers_are_xml_comments_and_the_updater_shares_the_htaccess_abstraction(): void
     {
@@ -53,6 +55,8 @@ class RootWebConfigUpdaterTest extends RootHtaccessUpdaterTest
      * @scenario marker_syntax=xml_comment, htaccess_operator_state=modified_outside_block
      *
      * @effects root_web_config_updates_replace_only_core_block
+     *
+     * @return void 반환값 없음
      */
     public function test_operator_elements_outside_the_block_survive_and_the_result_stays_valid_xml(): void
     {
@@ -88,6 +92,8 @@ class RootWebConfigUpdaterTest extends RootHtaccessUpdaterTest
      * @scenario marker_syntax=xml_comment, destination_state=with_block
      *
      * @effects root_web_config_updates_replace_only_core_block
+     *
+     * @return void 반환값 없음
      */
     public function test_indented_markers_are_recognized_after_iis_reserialization(): void
     {
@@ -142,6 +148,8 @@ class RootWebConfigUpdaterTest extends RootHtaccessUpdaterTest
      * @scenario marker_syntax=xml_comment, htaccess_operator_state=modified_outside_block
      *
      * @effects root_web_config_updates_replace_only_core_block
+     *
+     * @return void 반환값 없음
      */
     public function test_splice_that_produces_invalid_xml_is_refused_before_writing(): void
     {

@@ -43,6 +43,7 @@ class TrustedProxySettingsTest extends TestCase
      * 변경은 그 테스트 안에만 머문다.
      *
      * @param  array<string, mixed>  $debugSettings  debug 카테고리 저장값
+     * @return void 반환값 없음
      */
     private function applyDebugSettings(array $debugSettings): void
     {
@@ -58,6 +59,8 @@ class TrustedProxySettingsTest extends TestCase
 
     /**
      * 프록시 뒤에 있는 것처럼 보이는 요청을 만듭니다.
+     *
+     * @return Request 직전 호출 IP 와 X-Forwarded-For/Proto 헤더를 실은 GET 요청
      */
     private function forwardedRequest(): Request
     {
@@ -78,6 +81,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=unset
      *
      * @effects unset_setting_leaves_env_authority_intact
+     *
+     * @return void 반환값 없음
      */
     public function test_저장한_적_없으면_env_값이_살아남는다(): void
     {
@@ -96,6 +101,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=unset
      *
      * @effects unset_setting_leaves_env_authority_intact
+     *
+     * @return void 반환값 없음
      */
     public function test_키가_없으면_env_값이_살아남는다(): void
     {
@@ -115,6 +122,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=unset
      *
      * @effects saved_setting_overrides_env_value
+     *
+     * @return void 반환값 없음
      */
     public function test_빈_배열은_env_를_덮어_아무도_신뢰하지_않는다(): void
     {
@@ -131,6 +140,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=cidr
      *
      * @effects saved_setting_overrides_env_value
+     *
+     * @return void 반환값 없음
      */
     public function test_저장한_목록이_env_를_덮는다(): void
     {
@@ -150,6 +161,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=star
      *
      * @effects env_priority_locks_the_trusted_proxy_field
+     *
+     * @return void 반환값 없음
      */
     public function test_env_우선_모드에서는_저장값이_주입되지_않는다(): void
     {
@@ -172,6 +185,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=cidr
      *
      * @effects env_priority_locks_the_trusted_proxy_field
+     *
+     * @return void 반환값 없음
      */
     public function test_잠긴_설치의_표시값이_태그_배열이_된다(): void
     {
@@ -192,6 +207,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=star
      *
      * @effects env_priority_locks_the_trusted_proxy_field
+     *
+     * @return void 반환값 없음
      */
     public function test_신뢰_프록시_키가_env_우선_맵에_등재되어_있다(): void
     {
@@ -211,6 +228,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=star
      *
      * @effects unset_setting_leaves_env_authority_intact
+     *
+     * @return void 반환값 없음
      */
     public function test_저장값이_없으면_화면에_적용중인_값이_실린다(): void
     {
@@ -228,6 +247,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=single_ip_match
      *
      * @effects saved_list_is_normalized_to_a_config_value
+     *
+     * @return void 반환값 없음
      */
     public function test_저장값이_있으면_그_값이_실린다(): void
     {
@@ -261,6 +282,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=single_ip_mismatch
      *
      * @effects invalid_proxy_address_is_rejected_on_save
+     *
+     * @return void 반환값 없음
      */
     public function test_저장_규칙에_주소_검증이_걸려_있다(): void
     {
@@ -287,6 +310,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=single_ip_mismatch
      *
      * @effects invalid_proxy_address_is_rejected_on_save
+     *
+     * @return void 반환값 없음
      */
     public function test_검증_룰이_잘못된_주소를_거부한다(): void
     {
@@ -314,6 +339,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=cidr
      *
      * @effects saved_setting_overrides_env_value
+     *
+     * @return void 반환값 없음
      */
     public function test_신뢰_프록시_필드가_debug_카테고리로_갈라진다(): void
     {
@@ -339,6 +366,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=star, forwarded_proto=https, forwarded_for=single
      *
      * @effects probe_reports_resolution_without_saving
+     *
+     * @return void 반환값 없음
      */
     public function test_사전_검사가_후보값의_해석_결과를_돌려준다(): void
     {
@@ -364,6 +393,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=single_ip_mismatch, forwarded_for=single
      *
      * @effects probe_reports_resolution_without_saving
+     *
+     * @return void 반환값 없음
      */
     public function test_목록이_앞단을_포함하지_않으면_변화없음으로_판정한다(): void
     {
@@ -384,6 +415,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=star, forwarded_proto=absent, forwarded_for=absent
      *
      * @effects probe_reports_resolution_without_saving
+     *
+     * @return void 반환값 없음
      */
     public function test_프록시_헤더가_없으면_판정할_것이_없다고_답한다(): void
     {
@@ -405,6 +438,8 @@ class TrustedProxySettingsTest extends TestCase
      * @scenario proxies_setting=star
      *
      * @effects probe_restores_global_trust_state
+     *
+     * @return void 반환값 없음
      */
     public function test_검사가_전역_신뢰_상태를_원복한다(): void
     {

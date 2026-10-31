@@ -51,6 +51,7 @@ trait ValidatesExtensionAssetPath
      * @param  string  $basePath  봉쇄 기준 디렉토리
      * @param  string  $messagePrefix  다국어 키 접두사 (예: `validation.template_path`)
      * @param  bool  $rejectHiddenSegments  점으로 시작하는 세그먼트를 이 계층에서 거부할지 여부
+     * @return void 반환값 없음
      */
     protected function validateExtensionAssetPath(
         mixed $value,

@@ -28,6 +28,11 @@ class ScheduleRunStateTest extends TestCase
     /** 케이스 전용 상태 파일 */
     private string $statePath;
 
+    /**
+     * 테스트마다 겹치지 않는 스케줄 실행 상태 파일 경로를 정한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,6 +40,11 @@ class ScheduleRunStateTest extends TestCase
         $this->statePath = storage_path('framework/testing/schedule-run-state-'.bin2hex(random_bytes(4)).'.json');
     }
 
+    /**
+     * 테스트가 만든 스케줄 실행 상태 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (is_file($this->statePath)) {
@@ -48,6 +58,8 @@ class ScheduleRunStateTest extends TestCase
      * 정상 쓰기는 실패 플래그를 세우지 않는다 (반대 방향 고정).
      *
      * @effects schedule_state_persist_success_leaves_no_failure_flag
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_successful_write_reports_no_failure(): void
@@ -70,6 +82,8 @@ class ScheduleRunStateTest extends TestCase
      * 성립하지 않아 그 환경의 CI 에서만 조용히 통과하는 가드가 된다.
      *
      * @effects schedule_state_persist_failure_is_reported
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_write_failure_is_flagged_and_logged(): void
@@ -97,6 +111,8 @@ class ScheduleRunStateTest extends TestCase
      * 실패 뒤 성공하면 플래그가 내려간다 — 한 번 켜지고 고착되면 안 된다.
      *
      * @effects schedule_state_persist_flag_clears_after_recovery
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_failure_flag_clears_once_a_write_succeeds(): void

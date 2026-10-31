@@ -1291,6 +1291,8 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * @scenario base_path=subpath, navigation_direction=navigation
      *
      * @effects notification_links_are_built_by_the_site_absolute_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_post_url_follows_the_configured_site_url_without_double_slash(): void
     {

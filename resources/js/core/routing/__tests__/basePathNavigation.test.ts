@@ -72,26 +72,36 @@ describe('하위 폴더 마운트의 화면 이동', () => {
     });
 
     describe('접두사 헬퍼 (양방향)', () => {
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects base_prefix_helpers_are_inverse_and_idempotent
         it('붙였다 벗기면 원래 경로로 돌아온다', () => {
             for (const path of ['/', '/admin', '/board/free', '/admin/users/7']) {
                 expect(stripBasePrefix(withBasePrefix(path))).toBe(path);
             }
         });
 
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects base_prefix_helpers_are_inverse_and_idempotent
         it('이미 접두사를 가진 값에 다시 붙지 않는다', () => {
             expect(withBasePrefix('/g7/admin')).toBe('/g7/admin');
         });
 
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects base_prefix_helpers_are_inverse_and_idempotent
         it('접두사가 경계 없이 이어지는 경로는 벗기지 않는다', () => {
             // `/g7abc` 는 `/g7` 로 시작하지만 다른 경로다. 벗기면 루트 상대가 아닌
             // `abc` 가 되어 이후 판정이 전부 어긋난다.
             expect(stripBasePrefix('/g7abc/x')).toBe('/g7abc/x');
         });
 
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects base_prefix_helpers_are_inverse_and_idempotent
         it('접두사만 남으면 루트가 된다', () => {
             expect(stripBasePrefix('/g7')).toBe('/');
         });
 
+        // @scenario base_path=root, navigation_direction=navigation
+        // @effects base_prefix_helpers_are_inverse_and_idempotent
         it('루트 설치(접두사 없음)에서는 어느 쪽도 값을 바꾸지 않는다', () => {
             setMount(undefined);
             expect(withBasePrefix('/board/free')).toBe('/board/free');
@@ -108,6 +118,8 @@ describe('하위 폴더 마운트의 화면 이동', () => {
             } as any);
         });
 
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects route_matching_strips_the_site_base_path
         it('하위 폴더 주소가 접두사 없는 라우트 패턴에 매칭된다', async () => {
             const router = new Router('sirsoft-basic');
             (router as any).routes = [{ path: '/board/:slug', layout: 'board' }];
@@ -131,6 +143,8 @@ describe('하위 폴더 마운트의 화면 이동', () => {
             });
         });
 
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects history_entries_carry_the_site_base_path
         it('히스토리에 싣는 주소에는 접두사가 붙는다', async () => {
             const router = new Router('sirsoft-basic');
             (router as any).routes = [{ path: '/board/:slug', layout: 'board' }];
@@ -144,6 +158,7 @@ describe('하위 폴더 마운트의 화면 이동', () => {
             expect(pushState.mock.calls[0][2]).toBe('/g7/board/notice');
         });
 
+        // @scenario base_path=subpath, navigation_direction=navigation
         // @effects login_redirect_stays_inside_the_site
         it('접두사를 벗긴 결과가 `//host` 형태여도 어떤 라우트에도 매치되지 않는다 (사이트 밖 이동 차단)', async () => {
             // `stripBasePrefix('/g7//evil.com')` 은 `//evil.com` 이다 — 벗기는 쪽은 접두사 뒤
@@ -181,6 +196,8 @@ describe('하위 폴더 마운트의 화면 이동', () => {
     });
 
     describe('RouteResolver', () => {
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects route_matching_strips_the_site_base_path, history_entries_carry_the_site_base_path
         it('현재 주소를 벗겨 대조하고, 이동은 붙여서 싣는다', () => {
             const router = new Router('sirsoft-basic');
             (router as any).routes = [{ path: '/board/:slug', layout: 'board' }];
@@ -206,6 +223,8 @@ describe('하위 폴더 마운트의 화면 이동', () => {
     });
 
     describe('로그인 복귀', () => {
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects login_redirect_stays_inside_the_site
         it('로그인 주소가 사이트 안을 가리킨다', () => {
             const auth = AuthManager.getInstance();
             const url = auth.getLoginRedirectUrl('admin', '/g7/admin/users', 'session_expired');
@@ -217,6 +236,8 @@ describe('하위 폴더 마운트의 화면 이동', () => {
             expect(url).toContain('reason=session_expired');
         });
 
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects login_redirect_stays_inside_the_site, history_entries_carry_the_site_base_path
         it('쿼리가 붙은 하위 폴더 홈으로의 복귀가 이중 접두 없이 히스토리에 실린다', async () => {
             // 실재 경로: `https://host/g7?ref=x` 에서 세션 만료 → 복귀 주소
             // `/g7?ref=x`(접두사를 품은 원본) → 로그인 → `getRedirectUrl()` →
@@ -243,6 +264,8 @@ describe('하위 폴더 마운트의 화면 이동', () => {
             expect(pushState.mock.calls[0][2]).toBe('/g7?ref=x');
         });
 
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects login_redirect_stays_inside_the_site
         it('접두사가 이미 실린 loginPath 에 다시 붙지 않는다', () => {
             // 템플릿이 부트스트랩에서 접두사까지 담아 넘기는 경우가 있다.
             // 이중 접두(`/g7/g7/login`)는 조용한 404 다.
@@ -257,6 +280,8 @@ describe('하위 폴더 마운트의 화면 이동', () => {
     });
 
     describe('레이아웃 편집기 진입 판정', () => {
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects layout_editor_boots_under_a_subpath_mount
         it('하위 폴더 주소에서도 편집기 모드로 판정된다', () => {
             // 벗기지 않으면 이 배치에서 편집기가 **아예 부팅하지 않는다**.
             expect(checkLayoutEditorMode('/g7/admin/layout-editor/sirsoft-admin_basic')).toEqual({
@@ -264,6 +289,8 @@ describe('하위 폴더 마운트의 화면 이동', () => {
             });
         });
 
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects layout_editor_boots_under_a_subpath_mount
         it('편집기 주소가 아닌 값은 여전히 null 이다 (오탐 대조)', () => {
             expect(checkLayoutEditorMode('/g7/admin/users')).toBeNull();
         });
@@ -277,6 +304,8 @@ describe('하위 폴더 마운트의 화면 이동', () => {
         // 주소창이 마운트 밖으로 바뀌어, 새로고침·북마크·주소 공유·뒤로가기 재진입에서
         // 문서 루트의 다른 사이트(또는 404)가 열렸다. 오류도 콘솔 메시지도 없다.
         // `replaceState` 라 히스토리 항목 자체가 그 잘못된 주소로 대체된다 (14차 G3 라운드).
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects history_entries_carry_the_site_base_path
         it('주소창에 싣는 값에 마운트 접두사가 붙는다', async () => {
             const { TemplateApp } = await import('../../TemplateApp');
 
@@ -301,6 +330,8 @@ describe('하위 폴더 마운트의 화면 이동', () => {
             expect(replaceState.mock.calls[0][2]).toBe('/g7/admin/users?page=2');
         });
 
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects history_entries_carry_the_site_base_path
         it('이미 접두사가 붙은 값에는 두 번 붙지 않는다 (멱등)', async () => {
             const { TemplateApp } = await import('../../TemplateApp');
 

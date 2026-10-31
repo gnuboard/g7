@@ -38,6 +38,8 @@ class ScheduleRunnerIntegrityTest extends TestCase
 
     /**
      * 테스트 준비 — 상태 파일을 격리하고 스케줄러를 케이스 전용 인스턴스로 바꾼다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -53,7 +55,9 @@ class ScheduleRunnerIntegrityTest extends TestCase
     }
 
     /**
-     * 테스트 정리 — 상태 파일을 걷는다.
+     * 케이스 전용 상태 파일을 지운 뒤 부모 정리를 돌린다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -75,7 +79,11 @@ class ScheduleRunnerIntegrityTest extends TestCase
      * 그래서 이 케이스는 요약의 `executed` 만 보지 않고 **콜백이 실제로 불렸는지**를
      * 함께 단언한다. 둘 중 하나만 보면 이 결함이 통과한다.
      *
+     * @scenario event_kind=callback_event, overlap=none, catch_up=on_time
+     *
      * @effects overlapping_callback_actually_executes
+     *
+     * @return void 반환값 없음
      */
     public function test_callback_with_without_overlapping_actually_runs(): void
     {
@@ -99,7 +107,11 @@ class ScheduleRunnerIntegrityTest extends TestCase
      * 풀리지 않으면 다음 호출부터 만료(위 케이스는 30분)까지 'overlapping' 으로
      * 건너뛰어, 그 사이 도래한 실행이 통째로 사라진다.
      *
+     * @scenario event_kind=callback_event, overlap=none, catch_up=on_time
+     *
      * @effects overlapping_lock_is_released_after_run
+     *
+     * @return void 반환값 없음
      */
     public function test_overlapping_lock_is_released_after_the_run(): void
     {
@@ -125,7 +137,11 @@ class ScheduleRunnerIntegrityTest extends TestCase
      * 조용히 빼면 그 예약은 due 에도 skipped 에도 없어, 확장이 잘못된 표현식을 등록한
      * 사이트의 운영자는 그 작업이 안 돈다는 사실 자체를 화면에서 볼 수 없다.
      *
+     * @scenario event_kind=callback_event
+     *
      * @effects unparsable_expression_is_reported_not_dropped
+     *
+     * @return void 반환값 없음
      */
     public function test_unparsable_expression_is_reported(): void
     {
@@ -148,7 +164,11 @@ class ScheduleRunnerIntegrityTest extends TestCase
      * 상태 파일의 '직전 1회' 요약은 다음 호출에 덮이므로, 그것만으로는 「어젯밤 그
      * 작업이 실패했나」를 나중에 볼 수 없다.
      *
+     * @scenario event_kind=callback_event, overlap=none
+     *
      * @effects each_run_leaves_one_history_row
+     *
+     * @return void 반환값 없음
      */
     public function test_each_executed_event_leaves_a_history_row(): void
     {
@@ -174,7 +194,11 @@ class ScheduleRunnerIntegrityTest extends TestCase
     /**
      * 실패한 예약의 이력에 사유가 실린다.
      *
+     * @scenario event_kind=callback_event, catch_up=on_time
+     *
      * @effects failed_run_history_carries_the_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_failed_run_records_the_reason_in_history(): void
     {
@@ -196,7 +220,11 @@ class ScheduleRunnerIntegrityTest extends TestCase
     /**
      * 건너뛴 예약은 이력을 남기지 않는다 — 실행되지 않았다는 사실은 요약이 나른다.
      *
+     * @scenario overlap=filtered, catch_up=on_time
+     *
      * @effects skipped_event_leaves_no_history_row
+     *
+     * @return void 반환값 없음
      */
     public function test_skipped_event_does_not_leave_history(): void
     {
@@ -224,7 +252,11 @@ class ScheduleRunnerIntegrityTest extends TestCase
      * 일어나지 않는다. 실제 배치에서는 서버마다 프로세스가 달라 인스턴스도 다르다.
      * 상태 파일도 서버마다 따로 둔다 — 스토리지를 공유하지 않는 배치가 이 축의 대상이다.
      *
+     * @scenario overlap=other_server, catch_up=missed_window
+     *
      * @effects one_server_lock_keys_on_due_time_not_call_time
+     *
+     * @return void 반환값 없음
      */
     public function test_one_server_lock_uses_the_due_time(): void
     {

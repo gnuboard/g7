@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\CoreUpdate;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -14,7 +16,11 @@ use Tests\TestCase;
  *
  * 모집단은 손으로 열거하지 않는다. 로케일 파일을 디스크에서 읽어 「실패·복구」 성격의
  * 키를 도출하므로, 같은 성격의 키가 새로 생기면 이 검사가 자동으로 그것까지 본다.
+ *
+ * 인스톨러 언어 파일(`public/install/lang/*.php`)을 `require` 로 읽으므로 BASE_PATH 정의자 판정에 걸린다 — 다른 인스톨러 테스트와 같은 프로세스에서 상수가 엇갈리지 않게 클래스를 따로 돌린다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class NoCliRecoveryGuidanceTest extends TestCase
 {
     /** 실패·복구 성격의 키 — 운영자가 「무언가 잘못된 뒤」 읽는 자리 */
@@ -106,6 +112,10 @@ class NoCliRecoveryGuidanceTest extends TestCase
 
     /**
      * 채널마다 파일이 실제로 잡히는지 잰다 — 하나가 0이면 그 채널이 통째로 사각이다.
+     *
+     * @effects recovery_guidance_locale_channels_each_yield_files
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_every_locale_channel_yields_files(): void
@@ -133,6 +143,10 @@ class NoCliRecoveryGuidanceTest extends TestCase
      * 이 안이 웹 코어 업데이트를 만든 이상 그 단정은 사실이 아니며, 되돌리기 직후
      * 열리는 안내 모달이 정확히 그렇게 적혀 있었다 — 웹 업데이트가 실패한 운영자가
      * 그 옆 버튼을 눌러 「터미널에서만 실행할 수 있습니다」를 읽었다.
+     *
+     * @effects no_message_claims_the_command_line_is_the_only_way
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_no_message_claims_the_command_line_is_the_only_way(): void
@@ -157,6 +171,10 @@ class NoCliRecoveryGuidanceTest extends TestCase
 
     /**
      * 낡은 면제를 남기지 않는다.
+     *
+     * @effects recovery_guidance_exemptions_are_still_needed
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_every_recovery_exemption_is_still_needed(): void
@@ -192,8 +210,9 @@ class NoCliRecoveryGuidanceTest extends TestCase
     /**
      * 중첩 배열을 점 표기 경로의 문자열 목록으로 폅니다.
      *
-     * @param  array<string, mixed>  $data
-     * @return array<string, string>
+     * @param  array<string, mixed>  $data  펼칠 중첩 배열
+     * @param  string  $prefix  지금까지 내려온 점 표기 경로(최상위는 빈 문자열)
+     * @return array<string, string> 점 표기 경로를 키로 한 문자열 값 목록
      */
     private function flatten(array $data, string $prefix = ''): array
     {
@@ -210,6 +229,13 @@ class NoCliRecoveryGuidanceTest extends TestCase
         return $flat;
     }
 
+    /**
+     * 로케일 파일에서 실패와 복구 성격의 키를 도출해, SSH 나 php artisan 을 가리키는 문구가 면제가 아니면 FTP 같은 다른 수단을 함께 제시하는지 확인한다.
+     *
+     * @effects recovery_guidance_never_points_only_at_ssh
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_recovery_guidance_never_points_only_at_ssh(): void
     {

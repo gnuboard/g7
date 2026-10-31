@@ -47,6 +47,8 @@ class NotificationSendCountLogTest extends TestCase
      * 남은 건수가 전부인지 잘린 것인지 구분되지 않는다.
      *
      * @effects notification_send_logs_the_intended_total
+     *
+     * @return void 반환값 없음
      */
     public function test_send_start_is_logged_with_the_intended_total(): void
     {
@@ -64,6 +66,8 @@ class NotificationSendCountLogTest extends TestCase
      * 발송 **완료** 줄이 대상·성공·실패 건수를 남긴다.
      *
      * @effects notification_send_logs_sent_and_failed_counts
+     *
+     * @return void 반환값 없음
      */
     public function test_send_completion_is_logged_with_counts(): void
     {
@@ -88,6 +92,8 @@ class NotificationSendCountLogTest extends TestCase
      * 로그 줄만 있고 카운터가 고정값이면 관측은 언제나 0 을 보고한다.
      *
      * @effects notification_send_counters_are_incremented
+     *
+     * @return void 반환값 없음
      */
     public function test_counters_are_incremented_in_the_send_loop(): void
     {

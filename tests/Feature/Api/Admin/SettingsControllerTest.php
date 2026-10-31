@@ -857,6 +857,8 @@ class SettingsControllerTest extends TestCase
      * @scenario setting_key=system.execution_mode,value_kind=undeclared
      *
      * @effects single_key_update_rejects_undeclared_enumerated_value
+     *
+     * @return void 반환값 없음
      */
     public function test_update_rejects_undeclared_execution_mode(): void
     {
@@ -874,6 +876,8 @@ class SettingsControllerTest extends TestCase
      * @scenario setting_key=system.execution_mode,value_kind=declared
      *
      * @effects single_key_update_accepts_declared_enumerated_value
+     *
+     * @return void 반환값 없음
      */
     public function test_update_accepts_declared_execution_mode(): void
     {
@@ -891,6 +895,8 @@ class SettingsControllerTest extends TestCase
      * @scenario setting_key=general.asset_url_mode,value_kind=undeclared
      *
      * @effects single_key_update_rejects_undeclared_enumerated_value
+     *
+     * @return void 반환값 없음
      */
     public function test_update_rejects_undeclared_asset_url_mode(): void
     {
@@ -912,6 +918,8 @@ class SettingsControllerTest extends TestCase
      * @scenario save_path=bulk,setting_key=general.asset_url_mode,value_kind=undeclared
      *
      * @effects bulk_save_rejects_undeclared_enumerated_value
+     *
+     * @return void 반환값 없음
      */
     public function test_store_rejects_undeclared_asset_url_mode(): void
     {
@@ -937,6 +945,8 @@ class SettingsControllerTest extends TestCase
      * @scenario save_path=bulk,setting_key=system.execution_mode,value_kind=undeclared
      *
      * @effects bulk_save_rejects_undeclared_enumerated_value
+     *
+     * @return void 반환값 없음
      */
     public function test_store_rejects_undeclared_execution_mode(): void
     {
@@ -964,6 +974,8 @@ class SettingsControllerTest extends TestCase
      * @scenario save_path=bulk,setting_key=general.asset_url_mode,value_kind=declared
      *
      * @effects bulk_save_accepts_declared_enumerated_value
+     *
+     * @return void 반환값 없음
      */
     public function test_store_accepts_declared_asset_url_mode(): void
     {
@@ -2019,7 +2031,6 @@ class SettingsControllerTest extends TestCase
      * @effects opcache_status_exposed_in_system_info
      *
      * @param  array  $probe  스텁이 돌려줄 OPcache 판정 결과(loaded, enabled)
-     *
      * @return void 반환값 없음
      */
     #[DataProvider('opcacheStateProvider')]

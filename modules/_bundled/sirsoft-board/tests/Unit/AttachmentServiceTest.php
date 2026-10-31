@@ -1070,6 +1070,10 @@ class AttachmentServiceTest extends ModuleTestCase
      *
      * 디스크를 옮긴 사이트에서는 주입 디스크에 그 파일이 없으므로 읽기가 항상 실패한다
      * (11차 G3 라운드 B11-9).
+     *
+     * @effects temp_link_move_uses_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_link_temp_attachments_moves_files_on_the_row_disk(): void
@@ -1116,6 +1120,10 @@ class AttachmentServiceTest extends ModuleTestCase
      * 이동을 건너뛰면서 DB `path` 는 갱신됐다 — 행은 최종 경로를 가리키는데 파일은
      * 임시 경로에 남거나 아예 없어 첨부가 오류도 로그도 없이 영구 유실된다.
      * 여기서는 `update` 가 **불리지 않는 것**이 판정이다 (11차 G3 라운드 B11-9).
+     *
+     * @effects unreadable_temp_file_skips_link_without_path_update
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_link_temp_attachments_skips_the_row_when_the_file_is_unreadable(): void
@@ -1148,6 +1156,10 @@ class AttachmentServiceTest extends ModuleTestCase
      * 0 바이트 파일은 정상 이동한다 (반대 방향 — 회귀 0 확인).
      *
      * 종전 `if ($content)` 는 빈 문자열도 falsy 로 접어 정상 업로드물을 조용히 버렸다.
+     *
+     * @effects zero_byte_temp_file_moved
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_link_temp_attachments_moves_zero_byte_files(): void
@@ -1180,6 +1192,8 @@ class AttachmentServiceTest extends ModuleTestCase
 
     /**
      * 행 disk 를 config 에 등록합니다 (미등록이면 고아 disk 폴백에 걸린다).
+     *
+     * @return void 반환값 없음
      */
     private function registerRowDisk(): void
     {

@@ -20,7 +20,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * @see https://github.com/gnuboard/g7/issues/23
  *
- * @effects installer_runtime_helpers_behave_as_contracted
+ * 효과 요약(마커 아님 — 평문): 런타임 파일의 읽기, 쓰기, 삭제, 재구성과 .env 머지 헬퍼가 약속대로 동작한다. 시나리오 표식은 메서드마다 단다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -33,6 +33,13 @@ class InstallerRuntimeHelperTest extends TestCase
 
     private string $skipReason = '';
 
+    /**
+     * 임시 BASE_PATH 와 런타임 저장 디렉토리를 준비하고 런타임 헬퍼를 적재한다.
+     *
+     * BASE_PATH 가 이미 시스템 임시 디렉토리 밖으로 정의돼 있으면 실 런타임 파일 보호를 위해 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -70,6 +77,11 @@ class InstallerRuntimeHelperTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/installer-runtime.php';
     }
 
+    /**
+     * 건너뛰지 않은 테스트에 한해 테스트가 만든 런타임 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // skip 상태(= BASE_PATH 가 실 루트)면 파괴적 정리를 절대 수행하지 않는다.
@@ -80,12 +92,30 @@ class InstallerRuntimeHelperTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 런타임 파일이 없으면 읽기 헬퍼가 null 을 돌려주는지 확인한다.
+     *
+     * @scenario runtime_state=absent
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
+     */
     public function test_read_returns_null_when_file_absent(): void
     {
         $this->assertFileDoesNotExist(INSTALLER_RUNTIME_PATH);
         $this->assertNull(readInstallerRuntime());
     }
 
+    /**
+     * 쓰기 헬퍼가 런타임 파일을 만들고 쓴 DB 정보와 앱 키를 그대로 다시 읽을 수 있는지 확인한다.
+     *
+     * @scenario runtime_state=present_with_db_and_key
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
+     */
     public function test_write_creates_file_atomically(): void
     {
         $data = [
@@ -101,6 +131,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertSame('base64:abc', $read['app']['key']);
     }
 
+    /**
+     * 쓴 런타임 파일을 삭제 헬퍼가 지우고, 파일이 없을 때 다시 불러도 성공하는지 확인한다.
+     *
+     * @scenario runtime_state=present_with_db_and_key, runtime_state=absent
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
+     */
     public function test_write_then_delete_round_trip(): void
     {
         writeInstallerRuntime(['app' => ['key' => 'base64:xyz']]);
@@ -119,6 +158,12 @@ class InstallerRuntimeHelperTest extends TestCase
      * `runtime.php` 는 PHP 파일이라 OPcache 가 캐시한다. 쓰기(`writeInstallerRuntime`)와 읽기는
      * 갱신 직후 항목을 버리는데 삭제만 빠져 있었다 — 지운 뒤 `revalidate_freq` 창 안의 다음
      * 요청이 stale 항목을 include 해 이미 삭제된 비밀을 읽는다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_runtime_opcache_is_invalidated_on_write
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_invalidates_the_runtime_opcache_entry_like_the_write_path(): void
     {
@@ -131,6 +176,15 @@ class InstallerRuntimeHelperTest extends TestCase
         );
     }
 
+    /**
+     * 배열이 아닌 값을 돌려주는 손상된 런타임 파일을 읽기 헬퍼가 null 로 처리하는지 확인한다.
+     *
+     * @scenario runtime_state=present_corrupted
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
+     */
     public function test_read_returns_null_for_corrupted_file(): void
     {
         file_put_contents(INSTALLER_RUNTIME_PATH, "<?php\nreturn 'not-an-array';\n");
@@ -138,6 +192,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertNull(readInstallerRuntime());
     }
 
+    /**
+     * 순수 PHP 로 만든 앱 키가 base64 접두와 32바이트 길이를 갖고 호출마다 달라지는지 확인한다.
+     *
+     * @scenario runtime_state=absent
+     *
+     * @effects key_generate_task_writes_app_key_to_runtime_php_via_pure_php
+     *
+     * @return void 반환값 없음
+     */
     public function test_generate_app_key_inline_produces_valid_laravel_format(): void
     {
         $key = generateAppKeyInline();
@@ -152,6 +215,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertNotSame($key, generateAppKeyInline());
     }
 
+    /**
+     * 기존 런타임 파일에 앱 키가 있으면 재구성이 그 키를 새 키로 덮어쓰지 않는지 확인한다.
+     *
+     * @scenario runtime_state=present_with_db_and_key, retry_kind=resume_after_failure
+     *
+     * @effects build_runtime_preserves_existing_app_key_unchanged_regression_guard, retry_run_preserves_existing_app_key_in_runtime_php
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_runtime_preserves_existing_app_key(): void
     {
         $existingKey = generateAppKeyInline();
@@ -167,6 +239,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertSame($existingKey, $built['app']['key']);
     }
 
+    /**
+     * 런타임 파일이 없을 때 재구성이 형식에 맞는 새 앱 키를 만드는지 확인한다.
+     *
+     * @scenario runtime_state=absent
+     *
+     * @effects key_generate_task_writes_app_key_to_runtime_php_via_pure_php
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_runtime_generates_new_app_key_when_absent(): void
     {
         $this->assertFileDoesNotExist(INSTALLER_RUNTIME_PATH);
@@ -181,6 +262,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertSame(32, strlen(base64_decode(substr($built['app']['key'], 7), true)));
     }
 
+    /**
+     * Read DB 사용을 고르고 다른 호스트를 주면 재구성 결과에 별도 read 연결이 실리는지 확인한다.
+     *
+     * @scenario read_db=enabled_separate_host
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_runtime_includes_separate_read_when_specified(): void
     {
         $built = buildInstallerRuntimeFromState([
@@ -196,6 +286,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertSame('g7_replica', $built['db']['read']['database']);
     }
 
+    /**
+     * Read DB 호스트가 Write 와 같으면 별도 read 연결을 만들지 않는지 확인한다.
+     *
+     * @scenario runtime_state=absent
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_runtime_omits_read_when_same_as_write(): void
     {
         $built = buildInstallerRuntimeFromState([
@@ -210,6 +309,12 @@ class InstallerRuntimeHelperTest extends TestCase
     /**
      * 이슈 #63 회귀 — use_read_db=false 인데 db_read_host 에 잘못된 값이 잔존한 경우
      * read 커넥션을 만들지 않아야 한다 (Laravel 이 write 로 자동 fallback).
+     *
+     * @scenario read_db=disabled
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
      */
     public function test_build_runtime_omits_read_when_use_read_db_false(): void
     {
@@ -227,6 +332,12 @@ class InstallerRuntimeHelperTest extends TestCase
     /**
      * 이슈 #63 회귀 — use_read_db 키 자체가 없는 레거시 state 도
      * read 를 만들지 않아야 한다 (기본 미사용).
+     *
+     * @scenario read_db=disabled
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
      */
     public function test_build_runtime_omits_read_when_use_read_db_absent(): void
     {
@@ -238,6 +349,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertArrayNotHasKey('read', $built['db']);
     }
 
+    /**
+     * 접두 없는 옛 DB 키만 있는 상태에서도 재구성이 write 연결 값을 채우는지 확인한다.
+     *
+     * @scenario runtime_state=absent
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_runtime_falls_back_to_legacy_db_keys(): void
     {
         // 일부 인스톨러 경로가 db_host/db_database 등 prefix 없는 키를 사용
@@ -252,6 +372,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertSame('admin', $built['db']['write']['username']);
     }
 
+    /**
+     * .env 의 빈 APP_KEY 줄을 런타임 키로 바꾸고 다른 줄은 보존하는지 확인한다.
+     *
+     * @scenario finalize_call=success, env_state=example_only
+     *
+     * @effects finalize_replaces_app_key_line_in_env_when_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_merge_replaces_app_key_line_in_env_content(): void
     {
         $envContent = "APP_NAME=Test\nAPP_KEY=\nDB_HOST=localhost\n";
@@ -264,6 +393,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertStringContainsString('DB_HOST=localhost', $merged); // 다른 라인 보존
     }
 
+    /**
+     * .env 에 APP_KEY 줄이 없으면 런타임 키 줄을 덧붙이는지 확인한다.
+     *
+     * @scenario finalize_call=success, env_state=example_only
+     *
+     * @effects finalize_appends_app_key_line_when_absent_from_template
+     *
+     * @return void 반환값 없음
+     */
     public function test_merge_appends_app_key_when_not_present(): void
     {
         $envContent = "APP_NAME=Test\nDB_HOST=localhost\n";
@@ -274,6 +412,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertStringContainsString('APP_KEY=base64:xyz', $merged);
     }
 
+    /**
+     * 머지 결과에 설치 상태 주석과 설치 완료 표시 줄이 붙는지 확인한다.
+     *
+     * @scenario finalize_call=success, env_state=example_only
+     *
+     * @effects finalize_appends_installer_completed_true_with_status_comment
+     *
+     * @return void 반환값 없음
+     */
     public function test_merge_appends_installer_completed_flag(): void
     {
         $envContent = "APP_KEY=base64:test\n";
@@ -285,6 +432,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertStringContainsString('# Installation Status', $merged);
     }
 
+    /**
+     * 이미 설치 완료 표시가 있는 .env 를 다시 머지해도 그 줄이 한 번만 남는지 확인한다.
+     *
+     * @scenario finalize_call=retry_after_failure, env_state=partially_filled
+     *
+     * @effects finalize_does_not_duplicate_installer_completed_on_retry
+     *
+     * @return void 반환값 없음
+     */
     public function test_merge_does_not_duplicate_installer_completed(): void
     {
         $envContent = "APP_KEY=base64:test\n\nINSTALLER_COMPLETED=true\n";
@@ -297,6 +453,15 @@ class InstallerRuntimeHelperTest extends TestCase
         $this->assertSame(1, $count, 'INSTALLER_COMPLETED 가 중복되지 않아야 함');
     }
 
+    /**
+     * base64 접두가 없는 런타임 키는 기존 APP_KEY 줄을 바꾸지 않는지 확인한다.
+     *
+     * @scenario finalize_call=success, env_state=partially_filled
+     *
+     * @effects finalize_skips_app_key_when_runtime_value_lacks_base64_prefix
+     *
+     * @return void 반환값 없음
+     */
     public function test_merge_skips_app_key_when_invalid_format(): void
     {
         $envContent = "APP_KEY=existing\n";
@@ -315,6 +480,12 @@ class InstallerRuntimeHelperTest extends TestCase
      * 회귀 시나리오: setInstallationCompleteSSE 가 state.json 을 finalize 호출 전에
      * 삭제 → finalize 가 generateEnvContent() 호출 시 state.config 를 못 읽어 .env.example
      * 의 placeholder 값(127.0.0.1 / g7 / root / 빈 비밀번호) 으로 .env 가 작성되던 회귀.
+     *
+     * @scenario finalize_call=success, env_state=example_only
+     *
+     * @effects finalize_replaces_db_write_credentials_with_runtime_values, finalize_replaces_db_prefix_with_runtime_value, finalize_completes_env_even_when_state_json_is_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_merge_replaces_db_credentials_with_runtime_values(): void
     {
@@ -361,6 +532,12 @@ ENV;
     /**
      * 이슈 #63 — read 미지정(use_read_db=false) 시 DB_READ_* 를 빈 값으로 남긴다.
      * write 값을 복사하지 않고 config/database.php 의 Elvis fallback 에 위임한다.
+     *
+     * @scenario finalize_call=success, env_state=example_only, read_db=disabled
+     *
+     * @effects finalize_replaces_db_read_credentials_with_runtime_values_or_syncs_with_write
+     *
+     * @return void 반환값 없음
      */
     public function test_merge_leaves_read_empty_when_read_not_specified(): void
     {
@@ -390,6 +567,15 @@ ENV;
         $this->assertStringContainsString('DB_WRITE_HOST=w-host', $merged);
     }
 
+    /**
+     * 런타임에 별도 read 연결이 있으면 DB_READ 줄이 그 값으로 채워지는지 확인한다.
+     *
+     * @scenario finalize_call=success, env_state=example_only, read_db=enabled_separate_host
+     *
+     * @effects finalize_replaces_db_read_credentials_with_runtime_values_or_syncs_with_write
+     *
+     * @return void 반환값 없음
+     */
     public function test_merge_uses_separate_read_when_specified(): void
     {
         $envContent = "DB_READ_HOST=\nDB_READ_DATABASE=\n";
@@ -407,6 +593,15 @@ ENV;
         $this->assertStringContainsString('DB_READ_DATABASE=rdb', $merged);
     }
 
+    /**
+     * .env 에 DB 줄이 없는 비표준 템플릿이면 런타임 DB 값을 끝에 덧붙이는지 확인한다.
+     *
+     * @scenario finalize_call=success, env_state=example_only
+     *
+     * @effects finalize_appends_db_lines_when_absent_from_template
+     *
+     * @return void 반환값 없음
+     */
     public function test_merge_appends_db_lines_when_absent_from_template(): void
     {
         $envContent = "APP_NAME=Test\n";
@@ -430,6 +625,15 @@ ENV;
         $this->assertStringContainsString('DB_WRITE_DATABASE=d', $merged);
     }
 
+    /**
+     * 런타임에 DB 블록이 없으면 기존 .env 의 DB 줄을 그대로 두는지 확인한다.
+     *
+     * @scenario finalize_call=success, env_state=partially_filled
+     *
+     * @effects finalize_preserves_db_lines_when_runtime_has_no_db_block
+     *
+     * @return void 반환값 없음
+     */
     public function test_merge_preserves_db_lines_when_runtime_has_no_db(): void
     {
         $envContent = "DB_WRITE_HOST=user-input.com\nAPP_KEY=\n";
@@ -448,6 +652,12 @@ ENV;
      * mergeRuntimeIntoEnv 는 db/app.key 만 명시 치환하는 화이트리스트 방식이다.
      * 이후 누군가 "runtime 배열을 통째로 .env 로 덤프" 하는 방식으로 리팩터링하면
      * 관리자 평문 비밀번호가 .env 에 영구 기록되므로, 그 회귀를 여기서 차단한다.
+     *
+     * @scenario runtime_state=present_with_db_and_admin
+     *
+     * @effects merge_runtime_into_env_never_writes_admin_section_whitelist_invariant, merge_runtime_into_env_still_writes_db_credentials_and_app_key
+     *
+     * @return void 반환값 없음
      */
     public function test_merge_runtime_into_env_never_writes_admin_section(): void
     {
@@ -474,6 +684,12 @@ ENV;
     /**
      * 단계별 실행 토큰(installer 섹션)은 runtime 재구성에서 보존된다 — env_update 태스크가
      * runtime 을 다시 만들 때 토큰이 사라지면 그 다음 태스크 요청이 전부 거부된다.
+     *
+     * @scenario installation_mode=stepwise, runtime_state=present_with_db_and_key
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
      */
     public function test_build_runtime_preserves_installer_section(): void
     {
@@ -493,6 +709,12 @@ ENV;
 
     /**
      * R3 — installer 섹션(토큰)은 .env 로 새어나가지 않는다 (화이트리스트 머지).
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
      */
     public function test_merge_runtime_into_env_never_writes_installer_section(): void
     {
@@ -505,6 +727,15 @@ ENV;
         $this->assertStringNotContainsString('stepwise', $merged);
     }
 
+    /**
+     * 큰따옴표와 달러 기호가 섞인 DB 비밀번호가 이스케이프되어 큰따옴표로 감싸이는지 확인한다.
+     *
+     * @scenario finalize_call=success, env_state=example_only
+     *
+     * @effects finalize_escapes_db_password_special_characters_via_escapeEnvValue
+     *
+     * @return void 반환값 없음
+     */
     public function test_merge_escapes_password_with_special_characters(): void
     {
         $envContent = "DB_WRITE_PASSWORD=\n";
@@ -533,7 +764,11 @@ ENV;
      * 스윕 모집단이 0 인 채 형제(`installer-state.php`)만 `{16,}` 이었다 (13차 G3 W1-1).
      * 생성 규칙과 판정 패턴이 같은 SSoT(`functions.php`)를 보는지를 실제 이름으로 잰다.
      *
+     * @scenario runtime_state=present_with_db_and_key
+     *
      * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
      */
     public function test_stale_runtime_tmp_files_named_by_the_real_suffix_rule_are_swept(): void
     {
@@ -571,7 +806,11 @@ ENV;
      * `functions.php` 의 한 상수다. mtime 조회 실패 보존은 실 파일로 재현할 수 없어(정상
      * 파일시스템에서 `filemtime` 은 실패하지 않는다) 소스 계약으로 잠근다.
      *
+     * @scenario runtime_state=present_with_db_and_key
+     *
      * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
      */
     public function test_tmp_suffix_rule_and_sweep_pattern_share_one_source(): void
     {

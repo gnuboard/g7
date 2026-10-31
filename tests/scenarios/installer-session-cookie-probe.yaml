@@ -35,6 +35,8 @@ effects:
   - second_verify_after_consumption_returns_matched_false
   - probe_endpoint_requires_installer_guard
   - probe_endpoint_emits_application_json_content_type
+  # 609 docblock 정리 — set 을 거듭 불러도 이전 nonce 가 재사용되지 않는다 (SessionProbeTest).
+  - set_action_issues_a_fresh_nonce_on_every_call
 
 test_files:
   - tests/Unit/Installer/SessionProbeTest.php

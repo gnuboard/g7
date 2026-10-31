@@ -194,6 +194,8 @@ class WebCronTokenStore
 
     /**
      * 같은 요청 안에서 파일이 바뀐 경우 다시 읽도록 캐시를 비웁니다.
+     *
+     * @return void 반환값 없음
      */
     public function refresh(): void
     {
@@ -224,6 +226,7 @@ class WebCronTokenStore
      * 토큰 파일을 씁니다.
      *
      * @param  array<string, mixed>  $payload  저장할 내용
+     * @return void 반환값 없음
      */
     private function write(array $payload): void
     {

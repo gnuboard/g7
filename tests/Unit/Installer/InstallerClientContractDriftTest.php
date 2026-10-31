@@ -26,11 +26,21 @@ class InstallerClientContractDriftTest extends TestCase
 {
     use ScansPhpSourceFunctions;
 
+    /**
+     * 저장소 안 설치기 공개 폴더의 절대 경로를 돌려준다.
+     *
+     * @return string 설치기 폴더 경로
+     */
     private function installRoot(): string
     {
         return dirname(__DIR__, 3).'/public/install';
     }
 
+    /**
+     * 설치기 화면 스크립트를 주석을 걷어낸 원문으로 읽는다.
+     *
+     * @return string 주석이 제거된 화면 스크립트
+     */
     private function installerJs(): string
     {
         return $this->sourceWithoutComments($this->installRoot().'/assets/js/installer.js');
@@ -38,6 +48,10 @@ class InstallerClientContractDriftTest extends TestCase
 
     /**
      * `(` 에서 시작해 짝이 맞는 `)` 까지의 인자 텍스트. 문자열 안의 괄호는 세지 않는다.
+     *
+     * @param  string  $js  주석이 제거된 화면 스크립트
+     * @param  int  $openParen  여는 괄호 위치
+     * @return string 괄호 안 인자 텍스트 (짝이 없으면 빈 문자열)
      */
     private function callArguments(string $js, int $openParen): string
     {
@@ -84,6 +98,15 @@ class InstallerClientContractDriftTest extends TestCase
         return '';
     }
 
+    /**
+     * 실시간 스트리밍, 폴링, 단계별 모니터를 만드는 세 지점이 모두 서버가 정한 정지 감지 창을 넘기는지 확인한다.
+     *
+     * @scenario installation_mode=sse, installation_mode=polling, installation_mode=stepwise, task_duration=long_no_feedback
+     *
+     * @effects monitors_share_time_based_stall_detection
+     *
+     * @return void 반환값 없음
+     */
     public function test_세_모니터가_같은_정지_감지_창을_받는다(): void
     {
         $js = $this->installerJs();
@@ -106,6 +129,15 @@ class InstallerClientContractDriftTest extends TestCase
         }
     }
 
+    /**
+     * 설치 진행 화면이 정지 감지 창을 서버의 하위 프로세스 시간 상한에서 파생해 주입하고, 화면 스크립트가 그 값을 읽는지 확인한다.
+     *
+     * @scenario task_duration=long_no_feedback
+     *
+     * @effects monitors_share_time_based_stall_detection
+     *
+     * @return void 반환값 없음
+     */
     public function test_정지_감지_창의_근거가_서버_상수에서_온다(): void
     {
         $view = $this->sourceWithoutComments($this->installRoot().'/views/5-installation.php');
@@ -124,6 +156,15 @@ class InstallerClientContractDriftTest extends TestCase
         );
     }
 
+    /**
+     * 실패 이벤트를 받는 콜백 본문이 확장 식별자(target)를 읽어, 어느 확장이 실패했는지가 경로마다 갈리지 않는지 확인한다.
+     *
+     * @scenario task_outcome=failed_extension, installation_mode=sse, installation_mode=stepwise
+     *
+     * @effects sse_event_parsing_is_symmetric
+     *
+     * @return void 반환값 없음
+     */
     public function test_실패_이벤트의_확장_식별자가_버려지지_않는다(): void
     {
         $js = $this->installerJs();
@@ -148,6 +189,13 @@ class InstallerClientContractDriftTest extends TestCase
         );
     }
 
+    /**
+     * 설치기 첫 화면의 인라인 스크립트 문자열에 이스케이프 없이 짧은 출력 태그로 박히는 값이 하나도 없는지 확인한다.
+     *
+     * @effects installer_inline_script_strings_use_shared_escaping
+     *
+     * @return void 반환값 없음
+     */
     public function test_인라인_j_s_로_나가는_값이_전부_이스케이프를_지난다(): void
     {
         $index = $this->sourceWithoutComments($this->installRoot().'/index.php');
@@ -164,6 +212,15 @@ class InstallerClientContractDriftTest extends TestCase
         );
     }
 
+    /**
+     * 모드 확정 응답의 강등 필드를 화면이 읽고, 강제 전환 안내를 화면이 서버와 겹쳐 다시 기록하지 않는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, installation_mode=sse
+     *
+     * @effects installation_mode_downgrade_is_observable
+     *
+     * @return void 반환값 없음
+     */
     public function test_모드_확정_응답_필드가_대칭으로_소비된다(): void
     {
         $js = $this->installerJs();
@@ -197,6 +254,10 @@ class InstallerClientContractDriftTest extends TestCase
      * 형제 항목(`opcache`·`php_limits`)은 같은 3상태를 이미 경고로 그리고 있었다 — 규칙이
      * 한 목록 안에서 갈려 있었다. 서버가 새 항목에 `unknown` 을 붙일 때마다 같은 사각이
      * 생기므로 「unknown 을 내보내는 항목 → 화면이 읽는가」를 대조한다.
+     *
+     * @effects installer_disk_space_check_reports_unknown_instead_of_blocking
+     *
+     * @return void 반환값 없음
      */
     public function test_서버가_확인_불가로_표시하는_항목은_화면도_그_갈래를_읽는다(): void
     {
@@ -277,6 +338,7 @@ class InstallerClientContractDriftTest extends TestCase
      *
      * @param  string  $js  주석이 제거된 installer.js
      * @param  string  $key  요구사항 항목 키
+     * @return bool 화면이 그 항목의 확인 불가 표시를 읽으면 참
      */
     private function jsReadsUnknownFlag(string $js, string $key): bool
     {
@@ -307,6 +369,10 @@ class InstallerClientContractDriftTest extends TestCase
      * max_execution_time)가 응답에만 실리고 렌더 분기가 없었다 — 128M 공유호스팅에서 in-process
      * 부팅 + migrate + seed 가 죽는데, 운영자는 요구사항을 전부 통과하고서 중간에 멈추는 설치를
      * 만난다. 서버가 항목을 하나 더 실을 때마다 같은 사각이 생기므로 목록을 대조한다.
+     *
+     * @effects installer_requirements_response_items_are_all_rendered
+     *
+     * @return void 반환값 없음
      */
     public function test_요구사항_응답의_모든_항목이_화면에_그려진다(): void
     {

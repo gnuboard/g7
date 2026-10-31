@@ -15,6 +15,11 @@ use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
  */
 class VbankNotifyUrlFollowsSiteUrlTest extends PluginTestCase
 {
+    /**
+     * 테스트가 강제한 자산 주소 접두사를 비워 다음 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetUrl::forceBasePrefix(null);
@@ -23,9 +28,13 @@ class VbankNotifyUrlFollowsSiteUrlTest extends PluginTestCase
     }
 
     /**
+     * 요청이 localhost 로 와도 관리자 API 가 돌려주는 가상계좌 입금통보 주소가 설정된 사이트 주소로 시작하는지 확인한다.
+     *
      * @scenario base_path=subpath, navigation_direction=navigation
      *
      * @effects pg_return_and_notify_addresses_follow_the_configured_site_url
+     *
+     * @return void 반환값 없음
      */
     public function test_vbank_notify_url_follows_the_configured_site_url(): void
     {

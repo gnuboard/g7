@@ -50,6 +50,11 @@ class InstallerCssCascadeContractTest extends TestCase
     /** @var array<int, array{sel: string, props: array<string, string>, line: int, media: bool}> */
     private array $rules = [];
 
+    /**
+     * 설치기 스타일시트를 읽어 규칙 목록으로 풀어 두고, 규칙을 하나도 읽지 못하면 실패시킨다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,7 +69,8 @@ class InstallerCssCascadeContractTest extends TestCase
     /**
      * 스타일시트를 규칙 목록으로 훑는다 (중괄호 깊이 추적 + 주석 건너뛰기).
      *
-     * @return array<int, array{sel: string, props: array<string, string>, line: int, media: bool}>
+     * @param  string  $css  훑을 스타일시트 원문
+     * @return array<int, array{sel: string, props: array<string, string>, line: int, media: bool}> 선택자 하나마다 선언, 시작 줄, 미디어 쿼리 안인지를 담은 규칙 목록
      */
     private function parse(string $css): array
     {
@@ -160,7 +166,11 @@ class InstallerCssCascadeContractTest extends TestCase
     }
 
     /**
+     * 미디어 쿼리 밖의 펼친 작업 그룹 규칙에 높이 상한이 없어 넘친 단계가 잘려 사라지지 않는지 확인한다.
+     *
      * @effects installer_expanded_accordion_has_no_height_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_펼친_작업_그룹에_높이_상한이_없다(): void
     {
@@ -182,6 +192,7 @@ class InstallerCssCascadeContractTest extends TestCase
     /**
      * 선택자 하나의 최상위 선언들을 소스 순서대로 병합해 돌려준다.
      *
+     * @param  string  $selector  선언을 모을 선택자
      * @return array<string, string> 실효 선언 (뒤에 온 선언이 이긴다)
      */
     private function topLevelProps(string $selector): array
@@ -210,6 +221,8 @@ class InstallerCssCascadeContractTest extends TestCase
      * 접히지 않는다. 그래서 클리핑을 맡는 자식 규칙까지 함께 고정한다.
      *
      * @effects installer_accordion_collapse_uses_interpolable_transition
+     *
+     * @return void 반환값 없음
      */
     public function test_접힘_전환은_보간되는_속성으로_구현된다(): void
     {
@@ -256,6 +269,8 @@ class InstallerCssCascadeContractTest extends TestCase
      * 스타일시트만 보면 정상으로 읽힌다.
      *
      * @effects installer_accordion_collapse_child_wrapper_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_접힘_전환이_요구하는_단일_자식이_마크업에_있다(): void
     {
@@ -270,7 +285,11 @@ class InstallerCssCascadeContractTest extends TestCase
     }
 
     /**
+     * 미디어 쿼리 안의 보정 선언을 소스 순서상 뒤에 오는 같은 선택자의 최상위 선언이 같은 속성으로 덮지 않는지 확인한다.
+     *
      * @effects installer_media_query_corrections_are_not_overridden
+     *
+     * @return void 반환값 없음
      */
     public function test_미디어_쿼리_보정을_뒤의_중복_선언이_덮지_않는다(): void
     {
@@ -306,7 +325,11 @@ class InstallerCssCascadeContractTest extends TestCase
     }
 
     /**
+     * 0 과 1 사이의 불투명도를 쓰는 규칙이 면제 목록에 근거와 함께 등록된 선택자뿐인지 확인한다.
+     *
      * @effects installer_opacity_is_limited_to_documented_cases
+     *
+     * @return void 반환값 없음
      */
     public function test_불투명도_감소는_문서화된_지점에만_있다(): void
     {
@@ -339,6 +362,13 @@ class InstallerCssCascadeContractTest extends TestCase
         );
     }
 
+    /**
+     * 불투명도 면제 목록의 선택자가 모두 실제로 흐린 불투명도를 선언하고 있어 죽은 면제 항목이 남지 않았는지 확인한다.
+     *
+     * @effects installer_opacity_is_limited_to_documented_cases
+     *
+     * @return void 반환값 없음
+     */
     public function test_면제_목록에_이미_해소된_항목이_남아_있지_않다(): void
     {
         $declared = [];

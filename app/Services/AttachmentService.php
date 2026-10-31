@@ -322,6 +322,7 @@ class AttachmentService
      * 순서 변경
      *
      * @param  array<int, array{id: int, order: int}>  $orderData  순서 데이터
+     * @return void 반환값 없음
      */
     public function reorder(array $orderData): void
     {
@@ -351,6 +352,7 @@ class AttachmentService
      * "제외" 를 택한 것과 의미론이 다르다).
      *
      * @param  array<int, array{id: int, order: int}>  $orderData  순서 데이터
+     * @return void 반환값 없음
      *
      * @throws AuthorizationException 스코프 밖 첨부가 하나라도 포함된 경우
      */

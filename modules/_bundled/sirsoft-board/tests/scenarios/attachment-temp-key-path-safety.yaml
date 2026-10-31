@@ -51,6 +51,10 @@ effects:
   - admin_delete_rejects_missing_or_forbidden
   - admin_reorder_requires_permission
   - admin_download_by_hash_requires_permission
+  # #609 docblock 정리 때 사후 등재 — AttachmentServiceTest 의 임시 첨부 이동 단언(11차 G3 B11-9)
+  - temp_link_move_uses_row_disk
+  - unreadable_temp_file_skips_link_without_path_update
+  - zero_byte_temp_file_moved
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/AttachmentTempKeyTraversalTest.php

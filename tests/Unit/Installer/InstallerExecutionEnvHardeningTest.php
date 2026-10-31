@@ -24,7 +24,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: env_injection putenv_available·putenv_blocked / exit_code normal·signal / output_file reserved·unreserved / seed_outcome success·failure
  *
- * @effects env_injection_fills_superglobals, putenv_calls_are_guarded, signal_exit_is_explained, output_file_reservation_failure_is_explicit, artisan_command_line_forces_non_interaction, admin_password_purged_on_seed_failure
+ * 효과 요약(마커 아님 — 평문): env_injection_fills_superglobals, putenv_calls_are_guarded, signal_exit_is_explained, output_file_reservation_failure_is_explicit, artisan_command_line_forces_non_interaction, admin_password_purged_on_seed_failure
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -38,6 +38,12 @@ class InstallerExecutionEnvHardeningTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스마다 한 번 임시 기준 경로와 저장, 설정 디렉터리를 준비하고 오토로더와 설치기 설정, 상태, 런타임, 진행 이벤트, 태스크 러너 소스를 읽어 들인다.
+     * 기준 경로 상수가 시스템 임시 경로 밖으로 이미 정의돼 있으면 실제 상태 파일을 지키려고 건너뛰기 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function bootInstallerRuntime(): void
     {
         if (self::$booted) {
@@ -81,6 +87,11 @@ class InstallerExecutionEnvHardeningTest extends TestCase
         require_once $root.'/public/install/includes/task-runner.php';
     }
 
+    /**
+     * 설치기 런타임을 올리고 남은 상태 파일, 설치 로그, 런타임 파일을 지운 뒤 진행 이벤트를 버퍼로 받고 영어 번역 사전을 싣는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -110,6 +121,11 @@ class InstallerExecutionEnvHardeningTest extends TestCase
         $GLOBALS['translations'] = loadTranslations('en');
     }
 
+    /**
+     * 테스트가 심은 실행기 대체 함수와 관리자 환경변수 네 개를 전역에서 걷어 낸다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         unset($GLOBALS['g7_installer_artisan_executor_override']);
@@ -157,6 +173,12 @@ class InstallerExecutionEnvHardeningTest extends TestCase
 
     /**
      * 환경#3 — 주입은 `$_ENV`/`$_SERVER` 를 항상 채운다.
+     *
+     * @scenario runner_strategy=inprocess
+     *
+     * @effects env_injection_fills_superglobals
+     *
+     * @return void 반환값 없음
      */
     public function test_env_injection_fills_superglobals(): void
     {
@@ -175,6 +197,12 @@ class InstallerExecutionEnvHardeningTest extends TestCase
      * 환경#2·#3 — `putenv` 직접 호출은 단일 지점(installerPutEnv) 밖에 없다.
      *
      * `disable_functions=putenv` 환경에서 무가드 호출은 `Error` 이고, `@` 로도 막히지 않는다.
+     *
+     * @scenario runner_strategy=inprocess
+     *
+     * @effects putenv_calls_are_guarded
+     *
+     * @return void 반환값 없음
      */
     public function test_putenv_calls_are_guarded(): void
     {
@@ -208,6 +236,12 @@ class InstallerExecutionEnvHardeningTest extends TestCase
 
     /**
      * 환경#25 — 시그널 종료는 사유가 붙는다 (cgroup OOM-kill 은 exit 137).
+     *
+     * @scenario runner_strategy=subprocess
+     *
+     * @effects signal_exit_is_explained
+     *
+     * @return void 반환값 없음
      */
     public function test_signal_exit_is_explained(): void
     {
@@ -228,6 +262,12 @@ class InstallerExecutionEnvHardeningTest extends TestCase
 
     /**
      * 환경#12 — 출력 파일을 예약하지 못하면 그 사실을 명시한다.
+     *
+     * @scenario runner_strategy=subprocess
+     *
+     * @effects output_file_reservation_failure_is_explicit
+     *
+     * @return void 반환값 없음
      */
     public function test_output_file_reservation_failure_is_explicit(): void
     {
@@ -253,6 +293,12 @@ class InstallerExecutionEnvHardeningTest extends TestCase
 
     /**
      * E3 — 서브프로세스 argv 는 in-process 러너와 같은 비대화형 규약을 쓴다.
+     *
+     * @scenario runner_strategy=subprocess
+     *
+     * @effects artisan_command_line_forces_non_interaction
+     *
+     * @return void 반환값 없음
      */
     public function test_artisan_command_line_forces_non_interaction(): void
     {
@@ -283,6 +329,12 @@ class InstallerExecutionEnvHardeningTest extends TestCase
      *
      * in-process 는 putenv 가 FPM 워커 수명 동안 유지되므로, 실패 경로에서 남으면 이후 다른
      * 요청의 자식 프로세스가 평문을 상속한다.
+     *
+     * @scenario task=db_seed, task_outcome=failed_db
+     *
+     * @effects admin_password_purged_on_seed_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_password_purged_on_seed_failure(): void
     {
@@ -305,6 +357,12 @@ class InstallerExecutionEnvHardeningTest extends TestCase
 
     /**
      * 환경#3 — 시딩 직전 주입은 `$_ENV` 로도 도달한다 (putenv 만으로는 부족하다).
+     *
+     * @scenario installation_mode=stepwise, task=db_seed, task_outcome=done
+     *
+     * @effects env_injection_fills_superglobals, stepwise_seed_injects_admin_env_in_same_request
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_credentials_reach_superglobals_before_seeding(): void
     {
@@ -332,6 +390,8 @@ class InstallerExecutionEnvHardeningTest extends TestCase
 
     /**
      * 시딩 태스크가 요구하는 최소 상태를 세운다 (DB 설정은 비운다 — 롤백이 DB 에 닿지 않도록).
+     *
+     * @return void 반환값 없음
      */
     private function seedStateForSeeding(): void
     {

@@ -172,6 +172,8 @@ describe.each([
     }
   };
 
+  // @scenario base_path=subpath, navigation_direction=request
+  // @effects template_img_component_applies_base_prefix
   it('루트 상대 src 에 마운트 접두사를 붙인다', () => {
     // 종전에는 `src` 를 그대로 흘려 하위 폴더 사이트에서 `/images/…` 가 사이트 밖을
     // 가리켰다 — 오류 없이 깨진 이미지만 남는 형태다.
@@ -180,6 +182,8 @@ describe.each([
     expectDelegated('/images/logo.png');
   });
 
+  // @scenario base_path=subpath, navigation_direction=request
+  // @effects template_img_component_applies_base_prefix
   it('이미 접두사를 가진 src · 절대 URL · data: · 상대 경로는 그대로 둔다 (멱등)', () => {
     const cases: Array<[string, string]> = [
       ['/g7/images/logo.png', '/g7/images/logo.png'],
@@ -196,6 +200,8 @@ describe.each([
     }
   });
 
+  // @scenario base_path=root, navigation_direction=request
+  // @effects template_img_component_applies_base_prefix
   it('루트 설치에서는 src 를 바꾸지 않는다', () => {
     delete (globalThis as any).G7Config.basePath;
     apiSpy.mockImplementation((path: string) => path);
@@ -204,6 +210,8 @@ describe.each([
     expectDelegated('/images/logo.png');
   });
 
+  // @scenario base_path=subpath, navigation_direction=request
+  // @effects template_img_component_applies_base_prefix
   it('src 가 없으면 속성을 만들지 않는다', () => {
     render(<Img data-testid="img" alt="빈 이미지" />);
     expect(screen.getByTestId('img')).not.toHaveAttribute('src');

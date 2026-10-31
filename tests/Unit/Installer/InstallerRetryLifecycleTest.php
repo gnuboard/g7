@@ -27,7 +27,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * - **#21-4 (높음)**: Step 3 저장의 경로 검증이 검사 버튼(check-core-pending-path)과
  *   비대칭 — `..`/NUL 거부·Windows 절대경로 인식·stat 진단 억제가 전부 빠져 있었다.
  *
- * @effects installer_retry_run_preserves_progress_history
+ * 효과 요약(마커 아님 — 평문): installer_retry_run_preserves_progress_history
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -36,6 +36,11 @@ class InstallerRetryLifecycleTest extends TestCase
     use CleansTemporaryBasePath;
     use ScansPhpSourceFunctions;
 
+    /**
+     * 임시 BASE_PATH 와 상태 파일 경로를 정하고 언어 스텁, 설치기 설정, 상태, 실행 모드 모듈을 적재한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,6 +62,12 @@ class InstallerRetryLifecycleTest extends TestCase
 
     /**
      * #21-9 ①: 설정 재저장은 진행 이력 상태를 되감지 않는다.
+     *
+     * @scenario resume_point=retry_after_failure, task_outcome=failed_db
+     *
+     * @effects installer_retry_run_preserves_progress_history
+     *
+     * @return void 반환값 없음
      */
     public function test_config_save_preserves_lifecycle_status(): void
     {
@@ -69,6 +80,12 @@ class InstallerRetryLifecycleTest extends TestCase
 
     /**
      * #21-9 ①-배선: Step 3 저장이 그 판정을 실제로 경유한다.
+     *
+     * @scenario resume_point=retry_after_failure
+     *
+     * @effects installer_retry_run_preserves_progress_history
+     *
+     * @return void 반환값 없음
      */
     public function test_step3_save_routes_through_status_patch(): void
     {
@@ -80,6 +97,12 @@ class InstallerRetryLifecycleTest extends TestCase
 
     /**
      * #21-9 ②: 재시도 판정은 상태 문자열만이 아니라 이번 회전의 실재 이력도 본다.
+     *
+     * @scenario resume_point=retry_after_failure, task=db_migrate
+     *
+     * @effects installer_retry_run_preserves_progress_history
+     *
+     * @return void 반환값 없음
      */
     public function test_retry_judgment_considers_run_history(): void
     {
@@ -100,6 +123,12 @@ class InstallerRetryLifecycleTest extends TestCase
 
     /**
      * #21-9 ②-배선: 시작 엔드포인트가 그 판정을 경유한다.
+     *
+     * @scenario resume_point=retry_after_failure
+     *
+     * @effects installer_retry_run_preserves_progress_history
+     *
+     * @return void 반환값 없음
      */
     public function test_install_start_routes_through_retry_judgment(): void
     {
@@ -110,6 +139,12 @@ class InstallerRetryLifecycleTest extends TestCase
 
     /**
      * #21-8: 진행 이력이 있는 설치의 확장 선택 교체는 거부된다.
+     *
+     * @scenario resume_point=retry_after_failure, task=module
+     *
+     * @effects installer_extension_selection_is_locked_once_a_run_has_history
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_selection_rejected_while_run_in_progress(): void
     {
@@ -126,6 +161,12 @@ class InstallerRetryLifecycleTest extends TestCase
 
     /**
      * #21-8-배선: save-extensions 가 그 판정을 경유한다.
+     *
+     * @scenario endpoint_guard=general, task=module
+     *
+     * @effects installer_extension_selection_is_locked_once_a_run_has_history
+     *
+     * @return void 반환값 없음
      */
     public function test_save_extensions_routes_through_selection_gate(): void
     {
@@ -137,6 +178,12 @@ class InstallerRetryLifecycleTest extends TestCase
     /**
      * #21-1: 설치 완료 판정은 API 게이트(_guard)와 같은 파서다 — 등호 공백은 완료로,
      * 주석 처리된 줄은 미완료로 읽는다.
+     *
+     * @scenario resume_point=all_completed, endpoint_guard=general
+     *
+     * @effects installer_completion_flag_judgment_shares_one_parser
+     *
+     * @return void 반환값 없음
      */
     public function test_completion_flag_parsing_matches_api_guard(): void
     {
@@ -162,6 +209,12 @@ class InstallerRetryLifecycleTest extends TestCase
      * parse_ini_file 실패 시 줄 앵커 정규식 폴백으로 2차 판정한다. 운영자가 손으로 편집한
      * `.env`(따옴표 불일치·섹션 괄호)는 escapeEnvValue 규율 밖이고, finalize 계열 가드는
      * 락 파일 폴백조차 없어 이 판정이 열리면 run-task(Artisan 실행)가 열린다.
+     *
+     * @scenario resume_point=all_completed, endpoint_guard=general
+     *
+     * @effects installer_completion_flag_judgment_shares_one_parser
+     *
+     * @return void 반환값 없음
      */
     public function test_completion_flag_survives_env_parse_failure(): void
     {
@@ -186,6 +239,12 @@ class InstallerRetryLifecycleTest extends TestCase
     /**
      * 22차 N-3 대칭: API 게이트(_guard)의 세 판정도 같은 폴백을 공유한다 (소스 계약 —
      * _guard 는 자기 경로 역산을 쓰므로 temp 기반 행위 재현이 위험하다).
+     *
+     * @scenario endpoint_guard=finalize_allowed
+     *
+     * @effects installer_completion_flag_judgment_shares_one_parser
+     *
+     * @return void 반환값 없음
      */
     public function test_guard_shares_parse_failure_fallback(): void
     {
@@ -202,6 +261,12 @@ class InstallerRetryLifecycleTest extends TestCase
      * 22차 N-2: Step 3 저장의 읽기-판정-쓰기는 상태 잠금 안에서 수행된다 (소스 계약).
      * 잠금 밖이면 #21-9 ① 이 막으려던 「다른 탭」 경합 창이 좁아졌을 뿐 남는다 —
      * 같은 라운드의 reset 은 installerWithStateLock 안에서 재조회하는 규율을 지켰다.
+     *
+     * @scenario resume_point=retry_after_failure
+     *
+     * @effects installer_retry_run_preserves_progress_history
+     *
+     * @return void 반환값 없음
      */
     public function test_step3_save_runs_under_state_lock(): void
     {
@@ -213,6 +278,12 @@ class InstallerRetryLifecycleTest extends TestCase
     /**
      * #21-4: Step 3 저장의 경로 검증이 검사 버튼과 같은 규칙을 갖는다 (소스 계약 —
      * 저장 흐름은 세션·리다이렉트에 결합돼 행위 재현 비용이 크다).
+     *
+     * @scenario endpoint_guard=general
+     *
+     * @effects installer_step3_pending_path_validation_matches_check_button
+     *
+     * @return void 반환값 없음
      */
     public function test_step3_pending_path_validation_matches_check_button(): void
     {

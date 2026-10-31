@@ -28,6 +28,11 @@ class TemplateLayoutAttachmentServingTest extends TestCase
 
     private $storage;
 
+    /**
+     * 첨부와 템플릿 저장소, 스토리지를 모의 객체로 두고 레이아웃 첨부 서비스를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +50,10 @@ class TemplateLayoutAttachmentServingTest extends TestCase
 
     /**
      * 소속 템플릿 첨부를 만듭니다 (DB 미저장).
+     *
+     * @param  int  $templateId  첨부가 속한 템플릿 ID
+     * @param  string  $disk  첨부 행의 disk
+     * @return TemplateLayoutAttachment 저장하지 않은 레이아웃 첨부 모델
      */
     private function makeAttachment(int $templateId, string $disk = 's3'): TemplateLayoutAttachment
     {
@@ -67,6 +76,8 @@ class TemplateLayoutAttachmentServingTest extends TestCase
      * @scenario region_shape=aws_region,endpoint=absent,driver_usability=adapter_present,attachment_disk=follow_s3
      *
      * @effects attachment_upload_follows_driver
+     *
+     * @return void 반환값 없음
      */
     public function test_s3_disk_attachment_returns_streamed_response(): void
     {
@@ -94,6 +105,10 @@ class TemplateLayoutAttachmentServingTest extends TestCase
 
     /**
      * 경로 템플릿과 첨부 소속이 다르면 null 이어야 합니다 (교차 템플릿 접근 차단 유지).
+     *
+     * @effects layout_attachment_cross_template_access_returns_null
+     *
+     * @return void 반환값 없음
      */
     public function test_cross_template_access_returns_null(): void
     {
@@ -120,6 +135,12 @@ class TemplateLayoutAttachmentServingTest extends TestCase
      *
      * 폴백 결과는 그 디스크에 파일이 없으므로 404 다 — 그것이 「저장 위치를 잃은
      * 첨부」의 정상 degradation 이고, 500 은 아니다.
+     *
+     * @scenario public_asset_disk=ghost_disk, row_disk=attachments, filter_url_hook=absent
+     *
+     * @effects orphan_row_disk_serves_without_exception
+     *
+     * @return void 반환값 없음
      */
     public function test_orphan_row_disk_falls_back_instead_of_throwing(): void
     {
@@ -143,6 +164,10 @@ class TemplateLayoutAttachmentServingTest extends TestCase
 
     /**
      * 스토리지에 파일이 없으면(response null) null 이어야 합니다.
+     *
+     * @effects layout_attachment_missing_file_returns_null
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_file_returns_null(): void
     {
@@ -173,6 +198,8 @@ class TemplateLayoutAttachmentServingTest extends TestCase
      * @scenario public_asset_disk=ghost_disk,row_disk=attachments,filter_url_hook=absent
      *
      * @effects orphan_row_disk_serves_without_exception, proxy_url_otherwise
+     *
+     * @return void 반환값 없음
      */
     public function test_orphan_row_disk_falls_back_to_injected_storage(): void
     {

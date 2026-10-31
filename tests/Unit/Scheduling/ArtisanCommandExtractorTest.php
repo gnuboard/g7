@@ -24,6 +24,8 @@ class ArtisanCommandExtractorTest extends TestCase
 
     /**
      * 테스트 준비.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -36,6 +38,8 @@ class ArtisanCommandExtractorTest extends TestCase
      * 인자 없는 커맨드가 그대로 되뽑힌다.
      *
      * @effects shell_event_command_is_recovered
+     *
+     * @return void 반환값 없음
      */
     public function test_plain_command_is_recovered(): void
     {
@@ -51,6 +55,8 @@ class ArtisanCommandExtractorTest extends TestCase
      * `--opt=값` 옵션이 파라미터 표기로 옮겨진다.
      *
      * @effects shell_event_command_is_recovered
+     *
+     * @return void 반환값 없음
      */
     public function test_value_option_is_recovered(): void
     {
@@ -66,6 +72,8 @@ class ArtisanCommandExtractorTest extends TestCase
      * 값 없는 플래그는 true 로 옮겨진다 (Artisan::call 규약).
      *
      * @effects shell_event_command_is_recovered
+     *
+     * @return void 반환값 없음
      */
     public function test_flag_option_is_recovered_as_true(): void
     {
@@ -81,6 +89,8 @@ class ArtisanCommandExtractorTest extends TestCase
      * 같은 옵션이 반복되면 배열로 모인다 (배열 옵션).
      *
      * @effects shell_event_command_is_recovered
+     *
+     * @return void 반환값 없음
      */
     public function test_repeated_option_becomes_an_array(): void
     {
@@ -95,6 +105,8 @@ class ArtisanCommandExtractorTest extends TestCase
      * 위치 인자는 숫자 키로 남아 러너가 인자명에 매핑한다.
      *
      * @effects shell_event_command_is_recovered
+     *
+     * @return void 반환값 없음
      */
     public function test_positional_argument_keeps_numeric_key(): void
     {
@@ -113,6 +125,8 @@ class ArtisanCommandExtractorTest extends TestCase
      * Symfony 의 토크나이저를 그대로 쓰는 것이 이 단언의 의도다.
      *
      * @effects shell_event_command_is_recovered
+     *
+     * @return void 반환값 없음
      */
     public function test_quoted_argument_is_unescaped(): void
     {
@@ -130,6 +144,8 @@ class ArtisanCommandExtractorTest extends TestCase
      * 도달해야 한다.
      *
      * @effects non_artisan_event_fails_loudly
+     *
+     * @return void 반환값 없음
      */
     public function test_non_artisan_command_throws(): void
     {
@@ -142,6 +158,8 @@ class ArtisanCommandExtractorTest extends TestCase
      * 접두사만 있고 커맨드가 없으면 예외다.
      *
      * @effects non_artisan_event_fails_loudly
+     *
+     * @return void 반환값 없음
      */
     public function test_prefix_without_command_throws(): void
     {

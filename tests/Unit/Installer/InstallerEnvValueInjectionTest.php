@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
  * **키가 하나도 늘지 않았는지**를 본다. 어느 키가 원문 보간으로 남아 있든 새 키가 생기므로
  * 배선 누락이 그대로 red 가 된다.
  *
- * @effects installer_env_writes_are_injection_safe
+ * 효과 요약(마커 아님 — 평문): 환경 파일 쓰기의 라인 주입 안전성. 표식은 각 테스트 메서드에 있다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -27,6 +27,13 @@ class InstallerEnvValueInjectionTest extends TestCase
 
     private string $skipReason = '';
 
+    /**
+     * 상태 파일과 런타임 파일 경로를 임시 폴더로 떼어 정하고 설치기 함수 파일들을 불러온다.
+     *
+     * 다른 테스트가 먼저 그 상수를 운영 경로로 정해 두었으면 운영 파일을 지키려고 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -66,6 +73,11 @@ class InstallerEnvValueInjectionTest extends TestCase
         require_once $projectRoot.'/public/install/includes/installer-runtime.php';
     }
 
+    /**
+     * 건너뛰지 않은 경우에만 임시 상태 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if ($this->skipReason === '' && is_file(STATE_PATH)) {
@@ -79,6 +91,7 @@ class InstallerEnvValueInjectionTest extends TestCase
      * state.json 의 config 섹션을 temp 경로에 기록한다.
      *
      * @param  array<string, mixed>  $config  config 섹션
+     * @return void 반환값 없음
      */
     private function writeState(array $config): void
     {
@@ -99,7 +112,7 @@ class InstallerEnvValueInjectionTest extends TestCase
     /**
      * 정상 입력(무해한 값) 조합.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 설정 키별 무해한 값
      */
     private function benignConfig(): array
     {
@@ -133,7 +146,7 @@ class InstallerEnvValueInjectionTest extends TestCase
      * 각 값은 `.env` 문법에서 위험한 문자를 모두 담는다: 개행(라인 분리), `"`(따옴표 조기 종료),
      * `$1`·`\`(preg_replace 치환문자열 역참조/escape), `${...}`(phpdotenv 변수 보간).
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> 설정 키별 주입 페이로드 값
      */
     private function injectedConfig(): array
     {
@@ -158,6 +171,15 @@ class InstallerEnvValueInjectionTest extends TestCase
     // 보안#1 — generateEnvContent() 의 전 키가 escape 를 거친다
     // ========================================================================
 
+    /**
+     * 정상 설정으로 만든 환경 파일의 키를 기준으로 삼고, 주입 페이로드가 든 설정은 생성 단계에서 거부되는지 확인한다.
+     *
+     * @scenario task=env
+     *
+     * @effects installer_env_writes_are_injection_safe
+     *
+     * @return void 반환값 없음
+     */
     public function test_generated_env_gains_no_keys_from_injected_config_values(): void
     {
         $this->writeState($this->benignConfig());
@@ -181,6 +203,12 @@ class InstallerEnvValueInjectionTest extends TestCase
 
     /**
      * 13차 감사가 제시한 정확한 재현 입력 두 건.
+     *
+     * @scenario task=env
+     *
+     * @effects installer_env_writes_are_injection_safe
+     *
+     * @return void 반환값 없음
      */
     public function test_generated_env_blocks_audit_reported_payloads(): void
     {
@@ -196,6 +224,12 @@ class InstallerEnvValueInjectionTest extends TestCase
 
     /**
      * `${VAR}` 보간 — 다른 변수 값이 이 값으로 흘러들지 않는다.
+     *
+     * @scenario task=env
+     *
+     * @effects installer_env_writes_are_injection_safe
+     *
+     * @return void 반환값 없음
      */
     public function test_escaped_value_does_not_interpolate_other_variables(): void
     {
@@ -210,6 +244,15 @@ class InstallerEnvValueInjectionTest extends TestCase
     // 보안#2 — replaceEnvLine() 이 치환문자열 메타문자를 해석하지 않는다
     // ========================================================================
 
+    /**
+     * 정상 런타임 값의 병합은 키를 늘리지 않고, 주입 페이로드가 든 런타임 값은 병합 단계에서 거부되는지 확인한다.
+     *
+     * @scenario task=env
+     *
+     * @effects installer_env_writes_are_injection_safe
+     *
+     * @return void 반환값 없음
+     */
     public function test_merged_env_gains_no_keys_from_injected_runtime_values(): void
     {
         $this->writeState($this->benignConfig());
@@ -253,6 +296,12 @@ class InstallerEnvValueInjectionTest extends TestCase
      *
      * preg_replace 의 치환문자열 해석이 남아 있으면 `a$1b\c` 가 `ab\c` 로 조용히 줄어들어
      * 설치는 성공으로 끝나고 첫 부팅의 DB 인증에서만 드러난다.
+     *
+     * @scenario task=env
+     *
+     * @effects installer_env_writes_are_injection_safe
+     *
+     * @return void 반환값 없음
      */
     public function test_password_with_backreference_metacharacters_round_trips(): void
     {
@@ -266,6 +315,12 @@ class InstallerEnvValueInjectionTest extends TestCase
 
     /**
      * 백슬래시 escape 가 붕괴하지 않는다 — 붕괴하면 보안#1 의 escape 자체가 무력화된다.
+     *
+     * @scenario task=env
+     *
+     * @effects installer_env_writes_are_injection_safe
+     *
+     * @return void 반환값 없음
      */
     public function test_replace_env_line_does_not_collapse_escape_backslashes(): void
     {

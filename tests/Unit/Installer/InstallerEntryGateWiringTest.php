@@ -25,6 +25,11 @@ class InstallerEntryGateWiringTest extends TestCase
 {
     use ScansPhpSourceFunctions;
 
+    /**
+     * 설치기 소스 디렉터리의 절대경로를 돌려준다.
+     *
+     * @return string 설치기 디렉터리 절대경로
+     */
     private function installRoot(): string
     {
         return dirname(__DIR__, 3).'/public/install';
@@ -34,6 +39,7 @@ class InstallerEntryGateWiringTest extends TestCase
      * 주석을 제거한 생산 소스.
      *
      * @param  string  $relative  public/install 기준 상대 경로
+     * @return string 주석을 지운 소스
      */
     private function source(string $relative): string
     {
@@ -51,6 +57,8 @@ class InstallerEntryGateWiringTest extends TestCase
      * 그 지점이 우회로가 되므로 목록으로 고정한다.
      *
      * @effects installer_state_changing_endpoints_check_request_origin
+     *
+     * @return void 반환값 없음
      */
     public function test_state_changing_endpoints_check_request_origin(): void
     {
@@ -217,6 +225,8 @@ class InstallerEntryGateWiringTest extends TestCase
      * 사이트에서 재시작·중단·초기화가 영구히 열린 채 남는다.
      *
      * @effects installer_post_complete_endpoints_are_closed
+     *
+     * @return void 반환값 없음
      */
     public function test_post_complete_guard_is_wired_to_destructive_entries(): void
     {
@@ -248,6 +258,12 @@ class InstallerEntryGateWiringTest extends TestCase
 
     /**
      * 스트리밍 워커의 진입 전제 (13차 보안#5·F6).
+     *
+     * @scenario installation_mode=sse
+     *
+     * @effects installer_sse_worker_requires_running_installation
+     *
+     * @return void 반환값 없음
      */
     public function test_sse_worker_state_gate_is_wired(): void
     {
@@ -273,6 +289,8 @@ class InstallerEntryGateWiringTest extends TestCase
      * `text/event-stream` 헤더가 서지 못해 EventSource 는 사유 대신 "연결 실패" 만 본다.
      *
      * @effects installer_display_errors_is_disabled_before_state_read
+     *
+     * @return void 반환값 없음
      */
     public function test_display_errors_is_disabled_before_the_state_file_is_read(): void
     {
@@ -294,6 +312,8 @@ class InstallerEntryGateWiringTest extends TestCase
      * 호스팅이 흔히 막는 함수의 호출 지점에 가드가 있는가 (13차 환경#1).
      *
      * @effects installer_blocked_function_call_sites_are_guarded
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_function_call_sites_are_guarded(): void
     {
@@ -381,6 +401,12 @@ class InstallerEntryGateWiringTest extends TestCase
 
     /**
      * 「번들이 있다」가 아니라 「번들을 쓸 수 있다」를 보는가 (13차 환경#4).
+     *
+     * @scenario bundle_state=present
+     *
+     * @effects installer_vendor_bundle_usability_requires_ziparchive
+     *
+     * @return void 반환값 없음
      */
     public function test_vendor_bundle_usability_is_judged_by_the_shared_helper(): void
     {
@@ -443,6 +469,12 @@ class InstallerEntryGateWiringTest extends TestCase
 
     /**
      * 무인증 probe 엔드포인트의 호출 횟수 상한 (13차 보안#6·보안#7).
+     *
+     * @scenario endpoint_guard=general
+     *
+     * @effects installer_probe_endpoints_are_rate_limited
+     *
+     * @return void 반환값 없음
      */
     public function test_probe_endpoints_are_rate_limited(): void
     {
@@ -485,6 +517,12 @@ class InstallerEntryGateWiringTest extends TestCase
 
     /**
      * 예외 원문이 무인증 응답으로 나가지 않는가 (13차 보안#9).
+     *
+     * @scenario endpoint_guard=general
+     *
+     * @effects installer_exception_text_is_not_returned_to_unauthenticated_callers
+     *
+     * @return void 반환값 없음
      */
     public function test_exception_text_is_not_returned_to_unauthenticated_callers(): void
     {
@@ -503,6 +541,12 @@ class InstallerEntryGateWiringTest extends TestCase
 
     /**
      * 판정이 두 벌이면 한쪽만 프록시를 고려하게 된다 (13차 환경#17·환경#21·D10).
+     *
+     * @scenario request_scheme=forwarded_https
+     *
+     * @effects installer_https_judgment_is_proxy_aware, installer_finalize_idempotent_recall_uses_state_file_presence
+     *
+     * @return void 반환값 없음
      */
     public function test_shared_judgments_replace_their_local_copies(): void
     {
@@ -535,6 +579,10 @@ class InstallerEntryGateWiringTest extends TestCase
      *
      * 죽은 헬퍼를 남겨 두면 다음 라운드가 다시 「방어가 있다」고 읽는다 — 실제로 SameSite
      * 완화 주석이 그것을 근거로 삼고 있었다.
+     *
+     * @effects installer_state_changing_endpoints_check_request_origin
+     *
+     * @return void 반환값 없음
      */
     public function test_dead_csrf_helpers_are_gone(): void
     {
@@ -547,6 +595,10 @@ class InstallerEntryGateWiringTest extends TestCase
 
     /**
      * 운영자가 직접 지정한 비-CLI 바이너리를 저장하지 않는가 (13차 보안#7 ②).
+     *
+     * @effects installer_non_cli_php_binary_is_rejected_at_save_time
+     *
+     * @return void 반환값 없음
      */
     public function test_non_cli_binary_is_rejected_at_save_time(): void
     {
@@ -559,6 +611,12 @@ class InstallerEntryGateWiringTest extends TestCase
 
     /**
      * 단계별 실행 토큰의 소유자 표식이 발급 지점에서 심어지는가 (13차 보안#3 — 절반).
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_stepwise_token_is_rendered_only_for_the_owning_session
+     *
+     * @return void 반환값 없음
      */
     public function test_stepwise_token_records_its_owning_session(): void
     {

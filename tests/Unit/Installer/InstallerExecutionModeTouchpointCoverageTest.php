@@ -32,6 +32,11 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
     /** 보정 함수를 정의하는 파일 — 자기 자신을 소비자로 세지 않는다 */
     private const DEFINITION_FILES = ['includes/execution-mode.php'];
 
+    /**
+     * 저장소 안 인스톨러 공개 디렉토리의 절대 경로를 만든다.
+     *
+     * @return string 인스톨러 루트 절대 경로
+     */
     private function installerDir(): string
     {
         return dirname(__DIR__, 3).'/public/install';
@@ -70,8 +75,9 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
     /**
      * 주어진 키를 배열 첨자로 읽는 파일만 고른다 (`['vendor_mode']` / `["vendor_mode"]`).
      *
-     * @param  array<string, string>  $sources
-     * @return array<string, string>
+     * @param  array<string, string>  $sources  상대 경로 → 주석 제거 소스
+     * @param  string  $key  찾을 배열 첨자 이름
+     * @return array<string, string> 그 키를 읽는 파일만 남긴 상대 경로 → 소스
      */
     private function readersOf(array $sources, string $key): array
     {
@@ -84,6 +90,17 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
         );
     }
 
+    /**
+     * 인스톨러 PHP 소스 스캔이 20개 이상을 모으고, 태스크 러너, 요청 처리기, 설치 진행 API, Step 3 화면 같은 알려진 지점을 실제로 담는지 확인한다.
+     *
+     * 스캔 모집단이 비면 아래 전수 검사가 모두 빈 집합으로 초록이 된다.
+     *
+     * @scenario mode_touchpoint=vendor_mode_read, mode_touchpoint=execution_mode_read
+     *
+     * @effects installer_every_vendor_mode_read_is_coerced_by_execution_mode, installer_every_execution_mode_read_is_normalized
+     *
+     * @return void 반환값 없음
+     */
     public function test_population_is_derived_by_scanning_not_by_hand(): void
     {
         $sources = $this->sources();
@@ -98,7 +115,11 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
     /**
      * R9/R10/A-4 — vendor_mode 를 읽는 모든 지점이 실행 모드 보정을 거친다.
      *
+     * @scenario mode_touchpoint=vendor_mode_read, execution_mode_resolved=inprocess, execution_mode_resolved=subprocess
+     *
      * @effects installer_every_vendor_mode_read_is_coerced_by_execution_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_every_vendor_mode_read_goes_through_execution_mode_coercion(): void
     {
@@ -117,7 +138,11 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
     /**
      * 실행 모드 선택값을 읽는 모든 지점이 정규화/해석 헬퍼를 거친다.
      *
+     * @scenario mode_touchpoint=execution_mode_read, execution_mode_choice=invalid
+     *
      * @effects installer_every_execution_mode_read_is_normalized
+     *
+     * @return void 반환값 없음
      */
     public function test_every_execution_mode_read_goes_through_normalizer_or_resolver(): void
     {
@@ -134,6 +159,12 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
     /**
      * 태스크 실행 시점의 전파 지점은 vendorModeFromState() 하나로 수렴한다 — 커맨드 조립부가 state 를
      * 직접 읽으면 보정이 빠진다.
+     *
+     * @scenario mode_touchpoint=vendor_mode_read
+     *
+     * @effects installer_every_vendor_mode_read_is_coerced_by_execution_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_task_runner_reads_vendor_mode_only_through_state_helper(): void
     {
@@ -308,6 +339,12 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
      *
      * 실 소스가 준수 상태라 위 두 검사의 `$missing` 은 늘 빈 배열이다 — 판정이 헐거워져도
      * red 가 나지 않는다. 통과해야 할 형태와 잡혀야 할 형태를 나란히 태운다.
+     *
+     * @scenario mode_touchpoint=vendor_mode_read
+     *
+     * @effects installer_every_vendor_mode_read_is_coerced_by_execution_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_read_judgment_requires_the_value_to_reach_the_helper(): void
     {

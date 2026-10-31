@@ -24,7 +24,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * - **#3 파서 이중화**: `installerIniBytes`(알 수 없는 단위를 조용히 숫자로 접음)와
  *   `installerParseByteSize`(-1 보존·해석 불가 null)의 규칙이 달랐다. 전자는 후자로 위임한다.
  *
- * @effects installer_memory_budget_declarations_are_consistent
+ * 효과 요약(마커 아님 — 평문): installer_memory_budget_declarations_are_consistent
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -35,6 +35,11 @@ class InstallerMemoryBudgetTest extends TestCase
 
     private string $projectRoot = '';
 
+    /**
+     * 임시 BASE_PATH 와 로그 폴더를 만들고 언어 스텁, 설치기 설정, 상태, 실행 모드, Artisan 실행기 모듈을 적재한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -55,6 +60,12 @@ class InstallerMemoryBudgetTest extends TestCase
 
     /**
      * #1: 권장치(Step 2)·subprocess `-d`·in-process 상향 목표 — 세 선언은 같은 값이어야 한다.
+     *
+     * @scenario execution_mode_resolved=subprocess
+     *
+     * @effects installer_memory_budget_declarations_are_consistent
+     *
+     * @return void 반환값 없음
      */
     public function test_memory_declarations_agree_across_screen_and_both_strategies(): void
     {
@@ -71,6 +82,12 @@ class InstallerMemoryBudgetTest extends TestCase
 
     /**
      * #1: in-process 상향은 재조회로 실적용을 확인하고, 미달이면 진행 기록에 남긴다.
+     *
+     * @scenario execution_mode_resolved=inprocess
+     *
+     * @effects installer_memory_budget_declarations_are_consistent
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_memory_raise_shortfall_is_recorded(): void
     {
@@ -88,6 +105,12 @@ class InstallerMemoryBudgetTest extends TestCase
 
     /**
      * #3: installerIniBytes 는 installerParseByteSize 로 위임한다 — 해석 불가는 null, -1 보존.
+     *
+     * @scenario execution_mode_resolved=inprocess
+     *
+     * @effects installer_memory_budget_declarations_are_consistent
+     *
+     * @return void 반환값 없음
      */
     public function test_ini_bytes_parser_is_unified(): void
     {
@@ -100,6 +123,12 @@ class InstallerMemoryBudgetTest extends TestCase
 
     /**
      * #2: offset 절단이 연관배열 매핑보다 앞이어야 한다 (소스 계약).
+     *
+     * @scenario progress_log_volume=large
+     *
+     * @effects installer_memory_budget_declarations_are_consistent
+     *
+     * @return void 반환값 없음
      */
     public function test_log_offset_slices_before_materialization(): void
     {
@@ -118,6 +147,12 @@ class InstallerMemoryBudgetTest extends TestCase
 
     /**
      * #2: 절단 위치를 옮겨도 offset 의미(증분 조회 계약)는 불변이어야 한다 (행위).
+     *
+     * @scenario progress_log_volume=large
+     *
+     * @effects installer_memory_budget_declarations_are_consistent
+     *
+     * @return void 반환값 없음
      */
     public function test_log_offset_semantics_unchanged(): void
     {

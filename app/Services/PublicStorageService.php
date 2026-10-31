@@ -31,6 +31,8 @@ class PublicStorageService
 
     /**
      * 경고 memo 를 비웁니다 (테스트 전용).
+     *
+     * @return void 반환값 없음
      */
     public static function resetRootPathWarnings(): void
     {
@@ -194,6 +196,7 @@ class PublicStorageService
      *
      * @param  string  $message  경고 메시지 (memo 키)
      * @param  array<string, mixed>  $context  로그 컨텍스트
+     * @return void 반환값 없음
      */
     private static function warnRootPathOnce(string $message, array $context): void
     {

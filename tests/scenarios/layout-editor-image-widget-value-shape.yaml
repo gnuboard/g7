@@ -111,6 +111,10 @@ effects:
   # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
   - backfill_skips_missing_table_without_error
   - backfill_transform_is_callable_directly_and_matches_the_db_path
+  # 2026-10-31 issue609 테스트 매핑 부채 정리: 레이아웃 편집기 단위 테스트가 실제로 재는 효과 (메서드 단위 마킹)
+  - image_picker_url_blur_emits_full_image_value_object   # 이미지 URL blur 가 url 과 기본 표시 방식을 담은 값 객체를 내보낸다
+  - image_picker_display_mode_fit_sets_size_contain       # 표시 방식 맞춤 선택이 size contain 으로 바꾼다
+  - image_picker_clear_emits_undefined                    # 이미지 기본 버튼이 undefined 를 내보낸다
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/spec/recipeEngine.test.ts

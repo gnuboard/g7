@@ -181,7 +181,15 @@ class DeferredJoinCallSiteContractTest extends TestCase
     }
 
     /**
+     * 호출처 쿼리에 with 나 withCount 를 붙였다면 지연 조인 호출에 relations 나 withCount 인자가 함께 넘어가는지 확인한다.
+     *
      * @effects call_sites_pass_relations_as_argument
+     *
+     * @param  string  $file  호출처 파일 경로
+     * @param  int  $line  호출처 줄 번호
+     * @param  string  $args  지연 조인 호출의 인자 원문
+     * @param  string  $body  호출처를 감싼 메서드 본문
+     * @return void 반환값 없음
      */
     #[DataProvider('callSiteWithMethodBodyProvider')]
     public function test_call_site_passes_relations_as_argument(string $file, int $line, string $args, string $body): void
@@ -203,7 +211,14 @@ class DeferredJoinCallSiteContractTest extends TestCase
     }
 
     /**
-     * @effects call_sites_declare_columns
+     * 지연 조인 호출처마다 비어 있지 않은 columns 인자를 명시하는지 확인한다.
+     *
+     * @effects every_call_site_declares_columns
+     *
+     * @param  string  $file  호출처 파일 경로
+     * @param  int  $line  호출처 줄 번호
+     * @param  string  $args  지연 조인 호출의 인자 원문
+     * @return void 반환값 없음
      */
     #[DataProvider('callSiteProvider')]
     public function test_call_site_declares_columns(string $file, int $line, string $args): void
@@ -222,7 +237,14 @@ class DeferredJoinCallSiteContractTest extends TestCase
     }
 
     /**
-     * @effects call_sites_declare_sort
+     * 지연 조인 호출처마다 비어 있지 않은 sort 인자를 명시하는지 확인한다.
+     *
+     * @effects every_call_site_declares_non_empty_sort
+     *
+     * @param  string  $file  호출처 파일 경로
+     * @param  int  $line  호출처 줄 번호
+     * @param  string  $args  지연 조인 호출의 인자 원문
+     * @return void 반환값 없음
      */
     #[DataProvider('callSiteProvider')]
     public function test_call_site_declares_sort_spec(string $file, int $line, string $args): void
@@ -240,6 +262,13 @@ class DeferredJoinCallSiteContractTest extends TestCase
         );
     }
 
+    /**
+     * 호출처 스캔이 적어도 한 곳을 찾아 위 계약 검사들이 빈 데이터로 무력화되지 않는지 확인한다.
+     *
+     * @effects call_site_scan_finds_at_least_one_call_site
+     *
+     * @return void 반환값 없음
+     */
     public function test_scan_finds_call_sites(): void
     {
         // 스캔이 0건이면 위 두 테스트가 조용히 통과해 계약 검사가 무력화된다

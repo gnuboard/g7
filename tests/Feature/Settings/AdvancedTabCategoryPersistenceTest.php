@@ -27,7 +27,11 @@ class AdvancedTabCategoryPersistenceTest extends TestCase
     /**
      * 고급 탭에서 저장한 목록 상한값이 pagination 카테고리에 기록되는지 확인합니다.
      *
+     * @scenario cap_source=settings
+     *
      * @effects pagination_limits_persist_from_admin_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_pagination_limits_saved_from_advanced_tab_are_persisted(): void
     {
@@ -60,7 +64,11 @@ class AdvancedTabCategoryPersistenceTest extends TestCase
      *
      * 모집단은 스키마에서 도출하므로, 분류표가 뒤처지면 그 카테고리에서 실패합니다.
      *
+     * @scenario cap_source=settings
+     *
      * @effects advanced_tab_persists_every_merged_category
+     *
+     * @return void 반환값 없음
      */
     public function test_every_category_merged_into_advanced_is_persisted(): void
     {

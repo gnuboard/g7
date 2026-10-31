@@ -18,7 +18,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: endpoint_guard general / task_outcome failed
  *
- * @effects display_errors_off_precedes_guarded_region, progress_record_has_no_hardcoded_english, task_body_catches_throwable, worker_toplevel_catch_records_state, installation_mode_downgrade_is_observable, best_effort_key_is_never_reported_as_user_skip
+ * 효과 요약(마커 아님 — 평문): display_errors_off_precedes_guarded_region, progress_record_has_no_hardcoded_english, task_body_catches_throwable, worker_toplevel_catch_records_state, installation_mode_downgrade_is_observable, best_effort_key_is_never_reported_as_user_skip
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -33,11 +33,22 @@ class InstallerServerHardeningContractTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 저장소 루트 절대경로를 돌려준다.
+     *
+     * @return string 저장소 루트 경로
+     */
     private static function root(): string
     {
         return dirname(__DIR__, 3);
     }
 
+    /**
+     * 프로세스마다 한 번 임시 기준 경로와 저장 디렉터리를 준비하고 설치기 설정, 상태, 런타임, 진행 이벤트, 태스크 러너 소스를 읽어 들인다.
+     * 기준 경로 상수가 시스템 임시 경로 밖으로 이미 정의돼 있으면 실제 상태 파일을 지키려고 건너뛰기 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function boot(): void
     {
         if (self::$booted) {
@@ -80,6 +91,11 @@ class InstallerServerHardeningContractTest extends TestCase
         require_once $root.'/public/install/includes/task-runner.php';
     }
 
+    /**
+     * 설치기 소스를 올리고 건너뛰기 사유가 있으면 건너뛰며, 남은 상태 파일을 지우고 진행 이벤트 수집기를 버퍼 방식으로 바꾼다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -116,7 +132,9 @@ class InstallerServerHardeningContractTest extends TestCase
     // ------------------------------------------------------------------
 
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * JSON 이나 SSE 를 내보내는 설치기 진입점과 그보다 뒤에 와야 하는 보호 구간 시작 표식을 짝지어 공급한다.
+     *
+     * @return array<string, array{0: string, 1: string}> 사례 이름별 [저장소 상대 경로, 보호 구간 시작 표식]
      */
     public static function jsonEndpointProvider(): array
     {
@@ -130,6 +148,17 @@ class InstallerServerHardeningContractTest extends TestCase
         ];
     }
 
+    /**
+     * 진입점 소스에서 오류 화면 출력을 끄는 설정이 보호 구간 시작보다 앞에 있어 경고 문구가 응답 본문 앞에 붙지 않는지 확인한다.
+     *
+     * @scenario endpoint_guard=general
+     *
+     * @effects display_errors_off_precedes_guarded_region
+     *
+     * @param  string  $relative  검사할 진입점의 저장소 상대 경로
+     * @param  string  $marker  보호 구간이 시작되는 소스 표식
+     * @return void 반환값 없음
+     */
     #[DataProvider('jsonEndpointProvider')]
     public function test_display_errors_is_disabled_before_the_guarded_region(string $relative, string $marker): void
     {
@@ -154,7 +183,9 @@ class InstallerServerHardeningContractTest extends TestCase
     // ------------------------------------------------------------------
 
     /**
-     * @return array<int, array{0: string, 1: string}>
+     * 과거에 진행 기록으로 나갔던 영문 하드코딩 문구와 그 문구가 있던 소스 파일을 하나씩 공급한다.
+     *
+     * @return array<int, array{0: string, 1: string}> [저장소 상대 경로, 되살아나면 안 되는 영문 문구] 목록
      */
     public static function hardcodedEnglishProvider(): array
     {
@@ -174,6 +205,15 @@ class InstallerServerHardeningContractTest extends TestCase
         ];
     }
 
+    /**
+     * 과거 위반 문구 하나가 해당 소스에 다시 나타나지 않는지 확인한다.
+     *
+     * @effects progress_record_has_no_hardcoded_english
+     *
+     * @param  string  $relative  검사할 소스의 저장소 상대 경로
+     * @param  string  $literal  그 소스에 없어야 하는 영문 문구
+     * @return void 반환값 없음
+     */
     #[DataProvider('hardcodedEnglishProvider')]
     public function test_progress_record_carries_no_hardcoded_english(string $relative, string $literal): void
     {
@@ -194,6 +234,10 @@ class InstallerServerHardeningContractTest extends TestCase
      * 그래서 진행 기록으로 나가는 호출(`addLog(` · `sendSSEEvent('log'`)이 있는 줄에서
      * **직접 문자열 리터럴**을 뽑아, 문장으로 읽히는 라틴 문자열이면 잡는다. `lang(...)` 을
      * 지나는 것은 리터럴이 키 이름이라 공백이 없다 — 그 차이로 가른다.
+     *
+     * @effects progress_record_has_no_hardcoded_english
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_record_has_no_new_hardcoded_english(): void
     {
@@ -247,7 +291,9 @@ class InstallerServerHardeningContractTest extends TestCase
     }
 
     /**
-     * @return array<int, array{0: string}>
+     * 영문 하드코딩을 대신하려고 새로 만든 설치기 다국어 키를 하나씩 공급한다.
+     *
+     * @return array<int, array{0: string}> [다국어 키] 목록
      */
     public static function newLangKeyProvider(): array
     {
@@ -265,6 +311,16 @@ class InstallerServerHardeningContractTest extends TestCase
         ];
     }
 
+    /**
+     * 새 다국어 키가 ko 와 en 두 언어 파일 모두에 정의돼 있는지 확인한다.
+     *
+     * @scenario locale=en
+     *
+     * @effects progress_record_has_no_hardcoded_english
+     *
+     * @param  string  $key  두 언어 파일에 있어야 하는 다국어 키
+     * @return void 반환값 없음
+     */
     #[DataProvider('newLangKeyProvider')]
     public function test_new_lang_keys_exist_in_both_locales(string $key): void
     {
@@ -287,6 +343,11 @@ class InstallerServerHardeningContractTest extends TestCase
      * 호출을 통째로 지우고 lang 파일의 정의만 남겨도 초록이다. 그러면 죽은 lang 키가
      * 게이트에 의해 보존되는 형태가 된다(1차 라운드가 「죽은 lang 키 3」을 결함으로 처리한
      * 것과 방향이 반대다).
+     *
+     * @effects progress_record_has_no_hardcoded_english
+     *
+     * @param  string  $key  설치기 코드 어딘가에서 쓰여야 하는 다국어 키
+     * @return void 반환값 없음
      */
     #[DataProvider('newLangKeyProvider')]
     public function test_new_lang_keys_are_actually_wired(string $key): void
@@ -310,7 +371,7 @@ class InstallerServerHardeningContractTest extends TestCase
     /**
      * 인스톨러 PHP 소스 전수 (주석 제거, 다국어 파일 제외).
      *
-     * @return array<int, string>
+     * @return array<int, string> 주석을 지운 설치기 PHP 소스 목록
      */
     private function installerPhpSources(): array
     {
@@ -336,6 +397,13 @@ class InstallerServerHardeningContractTest extends TestCase
     // #A9 — 태스크 본문은 Throwable 을 잡는다
     // ------------------------------------------------------------------
 
+    /**
+     * 태스크 러너 소스에 Exception 만 잡는 catch 가 남아 있지 않아 Error 계열도 실패 처리로 들어가는지 확인한다.
+     *
+     * @effects task_body_catches_throwable
+     *
+     * @return void 반환값 없음
+     */
     public function test_task_bodies_catch_throwable_not_exception(): void
     {
         $this->assertStringNotContainsString(
@@ -350,6 +418,15 @@ class InstallerServerHardeningContractTest extends TestCase
     // #A11 — 최상위 catch 도 상태를 남긴다
     // ------------------------------------------------------------------
 
+    /**
+     * SSE 설치 워커의 마지막 Throwable catch 가 실행 예외를 상태에 기록하는 헬퍼를 부르는지 확인한다.
+     *
+     * @scenario installation_mode=sse
+     *
+     * @effects worker_toplevel_catch_records_state
+     *
+     * @return void 반환값 없음
+     */
     public function test_sse_worker_toplevel_catch_records_the_failure_state(): void
     {
         $source = $this->source('public/install/api/install-worker.php');
@@ -368,6 +445,15 @@ class InstallerServerHardeningContractTest extends TestCase
     // #A5 — 진행 방식 하향은 흔적을 남긴다
     // ------------------------------------------------------------------
 
+    /**
+     * 폴링 진입점이 진행 방식 하향 판정을 실제로 읽고 하향 사실을 응답 필드와 진행 기록 키로 남기는지 확인한다.
+     *
+     * @scenario installation_mode=sse
+     *
+     * @effects installation_mode_downgrade_is_observable
+     *
+     * @return void 반환값 없음
+     */
     public function test_installation_mode_downgrade_is_logged_and_reported(): void
     {
         $source = $this->source('public/install/api/install-process.php');
@@ -385,6 +471,15 @@ class InstallerServerHardeningContractTest extends TestCase
     // #A12 — best-effort 로 지나간 태스크는 「운영자가 건너뛴 것」이 아니다
     // ------------------------------------------------------------------
 
+    /**
+     * 이미 완료로 기록된 최선노력 태스크를 다시 만났을 때 진행 기록이 운영자 건너뛰기 문구가 아니라 최선노력 문구와 같은지 확인한다.
+     *
+     * @scenario task_outcome=best_effort_failed, resume_point=already_completed
+     *
+     * @effects best_effort_key_is_never_reported_as_user_skip
+     *
+     * @return void 반환값 없음
+     */
     public function test_best_effort_key_is_never_reported_as_user_skip(): void
     {
         $task = [
@@ -438,6 +533,15 @@ class InstallerServerHardeningContractTest extends TestCase
         );
     }
 
+    /**
+     * 태스크 러너 소스에 최선노력 키를 운영자 건너뛰기 목록에 넣는 분기가 남아 있지 않은지 확인한다.
+     *
+     * @scenario task_outcome=best_effort_failed
+     *
+     * @effects best_effort_key_is_never_reported_as_user_skip
+     *
+     * @return void 반환값 없음
+     */
     public function test_best_effort_loop_does_not_write_into_the_user_skip_list(): void
     {
         $source = $this->source('public/install/includes/task-runner.php');

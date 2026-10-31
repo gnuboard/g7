@@ -21,8 +21,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *  1. 두 로케일의 키 집합이 같다 (중첩 그룹 평탄화 기준).
  *  2. 같은 키의 자리표시자 집합이 같다 — 한쪽에만 있으면 그 로케일에서 값이 빠진 문장이 나간다.
  *  3. 중괄호 자리표시자를 쓰지 않는다 — 치환기가 모르는 표기다.
- *  3-b. 줄바꿈 이스케이프가 값에 문자 그대로 남지 않는다 — 홑따옴표 문자열의 `
-` 은
+ *  3-b. 줄바꿈 이스케이프가 값에 문자 그대로 남지 않는다 — 홑따옴표 문자열의 `\n` 은
  *       PHP 가 해석하지 않아 화면에 역슬래시와 n 이 그대로 나간다. 중괄호 금지와 같은
  *       종류(치환기·파서가 모르는 표기)인데 한쪽만 잠겨 있었다 (11차 #B18).
  *  4. 코드가 **리터럴로** 부르는 키가 정의돼 있다 (PHP·JS 양쪽. 동적 조립은 대상 밖).
@@ -59,6 +58,11 @@ class InstallerLanguageParityTest extends TestCase
         'dir_',
     ];
 
+    /**
+     * 인스톨러 공개 디렉토리의 절대 경로를 돌려준다.
+     *
+     * @return string 인스톨러 루트 절대 경로
+     */
     private static function installRoot(): string
     {
         return dirname(__DIR__, 3).'/public/install';
@@ -67,8 +71,9 @@ class InstallerLanguageParityTest extends TestCase
     /**
      * 중첩 표를 점 경로로 평탄화한다.
      *
-     * @param  array<string, mixed>  $table
-     * @return array<string, string>
+     * @param  array<string, mixed>  $table  평탄화할 다국어 표
+     * @param  string  $prefix  상위 그룹의 점 경로 (최상위면 빈 문자열)
+     * @return array<string, string> 점 경로 키 → 문구
      */
     private static function flatten(array $table, string $prefix = ''): array
     {
@@ -86,9 +91,6 @@ class InstallerLanguageParityTest extends TestCase
         return $flat;
     }
 
-    /**
-     * @return array<string, string>
-     */
     /**
      * 검사할 로케일 목록 — 인스톨러가 실제로 배포하는 lang 파일에서 도출한다 (11차 #C7).
      *
@@ -112,6 +114,12 @@ class InstallerLanguageParityTest extends TestCase
         return $codes;
     }
 
+    /**
+     * 로케일의 다국어 파일을 읽어 점 경로로 평탄화한 표를 돌려준다.
+     *
+     * @param  string  $code  로케일 코드
+     * @return array<string, string> 점 경로 키 → 문구
+     */
     private function locale(string $code): array
     {
         $path = self::installRoot().'/lang/'.$code.'.php';
@@ -126,7 +134,8 @@ class InstallerLanguageParityTest extends TestCase
     /**
      * 문장에서 `:name` 자리표시자를 뽑는다.
      *
-     * @return array<int, string>
+     * @param  string  $message  자리표시자를 찾을 문구
+     * @return array<int, string> 정렬된 자리표시자 이름 목록
      */
     private static function placeholders(string $message): array
     {
@@ -141,7 +150,13 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
+     * ko 와 en 의 평탄화한 키 집합이 서로 남김없이 같은지 확인한다.
+     *
+     * @scenario locale=ko, locale=en
+     *
      * @effects installer_lang_locales_have_identical_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_locales_define_the_same_keys(): void
     {
@@ -161,7 +176,13 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
+     * 두 로케일에 모두 있는 키마다 자리표시자 집합이 같은지 확인한다.
+     *
+     * @scenario locale=ko, locale=en
+     *
      * @effects installer_lang_placeholders_match_across_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_placeholders_match_across_locales(): void
     {
@@ -188,7 +209,13 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
+     * 배포되는 모든 로케일의 문구에 치환기가 모르는 중괄호 자리표시자가 없는지 확인한다.
+     *
+     * @scenario locale=ko, locale=en
+     *
      * @effects installer_lang_rejects_brace_placeholders
+     *
+     * @return void 반환값 없음
      */
     public function test_brace_placeholders_are_not_used(): void
     {
@@ -220,6 +247,8 @@ class InstallerLanguageParityTest extends TestCase
      * 넓히지 않는다 — **버튼을 지목하는 안내**만 그 버튼의 라벨과 대조한다.
      *
      * @effects installer_lang_guidance_names_existing_buttons
+     *
+     * @return void 반환값 없음
      */
     public function test_guidance_names_the_button_that_exists(): void
     {
@@ -261,6 +290,8 @@ class InstallerLanguageParityTest extends TestCase
      * @scenario exposure_control=unreachable
      *
      * @effects installer_control_failed_hint_counts_its_causes
+     *
+     * @return void 반환값 없음
      */
     public function test_control_failed_hint_states_the_number_of_causes_it_lists(): void
     {
@@ -288,6 +319,8 @@ class InstallerLanguageParityTest extends TestCase
      * @scenario exposure_probe=unknown
      *
      * @effects exposure_unknown_detail_names_its_actual_cause
+     *
+     * @return void 반환값 없음
      */
     public function test_shared_unknown_detail_key_is_gone_from_both_tables(): void
     {
@@ -327,6 +360,8 @@ class InstallerLanguageParityTest extends TestCase
      * @scenario progress_log_volume=large, task_duration=long_no_feedback
      *
      * @effects progress_log_has_a_screen_cap_and_says_so
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_log_notices_exist_in_both_locales(): void
     {
@@ -364,13 +399,14 @@ class InstallerLanguageParityTest extends TestCase
     /**
      * 이스케이프 시퀀스가 값에 문자 그대로 남아 있지 않은가 (11차 #B18).
      *
-     * PHP 홑따옴표 문자열은 `
-` 을 해석하지 않는다 — 그 값을 alert/confirm 에 넘기면
+     * PHP 홑따옴표 문자열은 `\n` 을 해석하지 않는다 — 그 값을 alert/confirm 에 넘기면
      * 줄바꿈 대신 역슬래시와 n 이 화면에 뜬다. 같은 파일 안에서 형제 키는 쌍따옴표라
      * 정상이었고, 표기가 갈렸다는 사실을 어떤 게이트도 보지 않았다. 중괄호 금지 축과
      * 같은 종류의 결함이라 같은 자리에서 잠근다.
      *
      * @effects installer_lang_rejects_literal_escape_sequences
+     *
+     * @return void 반환값 없음
      */
     public function test_escape_sequences_are_not_literal(): void
     {
@@ -396,13 +432,6 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
-     * 코드가 리터럴로 부르는 키가 정의돼 있는가.
-     *
-     * PHP 는 `lang('key')`, JS 는 `lang('key')` · `getLangMessage('key')` 를 본다. 동적 조립
-     * (`lang('task_'.$id)`) 은 리터럴이 아니므로 정규식이 애초에 잡지 않고, 접두사만 남는
-     * 형태는 DYNAMIC_PREFIXES 로 걸러 오탐을 막는다.
-     */
-    /**
      * 동적으로 조립되는 서버별 안내 키가 **전부 정의돼 있다**.
      *
      * `installer.js` 는 `lang('web_exposure_server_guide_' + kind)` 로 키를 만든다.
@@ -413,6 +442,8 @@ class InstallerLanguageParityTest extends TestCase
      * @scenario server_kind=apache
      *
      * @effects server_guide_keys_exist_for_every_branch
+     *
+     * @return void 반환값 없음
      */
     public function test_dynamic_server_guide_keys_are_defined_for_every_branch(): void
     {
@@ -452,7 +483,17 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
+     * 코드가 리터럴로 부르는 키가 정의돼 있는가.
+     *
+     * PHP 는 `lang('key')`, JS 는 `lang('key')` · `getLangMessage('key')` 를 본다. 동적 조립
+     * (`lang('task_'.$id)`) 은 리터럴이 아니므로 정규식이 애초에 잡지 않고, 접두사만 남는
+     * 형태는 DYNAMIC_PREFIXES 로 걸러 오탐을 막는다.
+     *
+     * @scenario locale=ko
+     *
      * @effects installer_lang_literal_references_are_defined
+     *
+     * @return void 반환값 없음
      */
     public function test_literal_key_references_are_defined(): void
     {
@@ -491,11 +532,12 @@ class InstallerLanguageParityTest extends TestCase
      * 무해해 보이지만(값은 무시된다) 그 자리는 **문구를 고치다 자리표시자만 지운 흔적**이다 —
      * 반대 방향(자리표시자는 있는데 값을 안 넘김)은 화면에 `:error` 토큰을 그대로 노출시키는
      * 알려진 결함군이고, 이 검사는 그 짝을 코드 쪽에서 잡는다.
-     */
-    /**
+     *
      * @scenario locale=ko, locale=en
      *
      * @effects installer_lang_placeholders_match_across_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_substitution_arguments_have_a_matching_placeholder(): void
     {
@@ -536,11 +578,12 @@ class InstallerLanguageParityTest extends TestCase
      *
      * 프론트가 그 경로를 따라 내려갈 수 있어야 한다 — 평면 조회만 하면 `fields.db_prefix` 처럼
      * 그룹 안에 사는 키가 통째로 원문 노출된다 (10차).
-     */
-    /**
+     *
      * @scenario locale=ko
      *
      * @effects installer_lang_literal_references_are_defined
+     *
+     * @return void 반환값 없음
      */
     public function test_dotted_keys_resolve_through_the_nested_table(): void
     {
@@ -576,11 +619,12 @@ class InstallerLanguageParityTest extends TestCase
      * `config.php` 를 **require 하지 않는다** — 그 파일은 `BASE_PATH` 를 실 저장소 루트로
      * 박으므로, 같은 프로세스에서 도는 다른 인스톨러 테스트가 temp 격리 안전가드에 걸려
      * 통째로 skip 된다(종료 코드는 0 이라 초록으로 보인다). 상수 선언만 소스에서 읽는다.
-     */
-    /**
+     *
      * @scenario locale=ko, locale=en
      *
      * @effects installer_lang_locales_have_identical_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_supported_languages_constant_matches_shipped_lang_files(): void
     {
@@ -616,11 +660,12 @@ class InstallerLanguageParityTest extends TestCase
      * 이 게이트는 평탄화한 키 집합으로 판정하므로 그 호출을 「정의된 키」로 보고
      * 초록을 준다 — 검사는 통과하는데 화면에는 키가 뜨는 조합이다. 그래서 PHP 채널만
      * 따로 점 없는 키로 좁힌다. (두 층의 조회 규칙 자체를 통일하는 안은 별도 판단 사항이다.)
-     */
-    /**
+     *
      * @scenario locale=ko
      *
      * @effects installer_lang_literal_references_are_defined
+     *
+     * @return void 반환값 없음
      */
     public function test_php_lang_calls_do_not_use_dotted_keys(): void
     {
@@ -655,11 +700,12 @@ class InstallerLanguageParityTest extends TestCase
      * 다른 곳(키 표·Enum·판정기)에 선언돼 있는데 lang 과 대조하는 장치가 없었다.
      * 표에 항목을 하나 더 적고 문구를 빠뜨리면 그 화면에만 키 문자열이 나가고,
      * 예외도 경고도 남지 않는다.
-     */
-    /**
+     *
      * @scenario locale=ko
      *
      * @effects installer_lang_literal_references_are_defined
+     *
+     * @return void 반환값 없음
      */
     public function test_dynamically_composed_keys_have_definitions(): void
     {
@@ -779,11 +825,12 @@ class InstallerLanguageParityTest extends TestCase
      *
      * 잔존 지점은 이 공정의 소유 밖이므로 **상한(ceiling)** 으로 고정한다: 새로 늘지
      * 않도록 막고, 고쳐서 줄어드는 것은 통과시킨다. 0 이 되면 이 표를 지운다.
-     */
-    /**
+     *
      * @scenario locale=ko, locale=en
      *
      * @effects installer_lang_placeholders_match_across_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_placeholder_substitution_goes_through_the_lang_helper(): void
     {
@@ -824,11 +871,6 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
-     * 대조 대상 소스 — 인스톨러 PHP 전체 + 인스톨러 JS.
-     *
-     * @return array<int, string>
-     */
-    /**
      * 재귀 스캔 — 한 겹 `glob('*.php')` 은 하위 디렉토리가 하나 생기는 순간 그 안을 통째로
      * 놓친다. 모집단 밖의 위반은 영원히 초록이므로 예외 없이 재귀로 훑는다.
      *
@@ -856,6 +898,13 @@ class InstallerLanguageParityTest extends TestCase
         return $files;
     }
 
+    /**
+     * 대조 대상 소스 — 인스톨러 PHP 전체 + 인스톨러 JS.
+     *
+     * 다국어 디렉토리 아래 파일은 정의 쪽이므로 대조 대상에서 뺀다.
+     *
+     * @return array<int, string> 파일 절대 경로 목록 (정렬됨)
+     */
     private function sourceFiles(): array
     {
         $root = self::installRoot();
@@ -888,6 +937,8 @@ class InstallerLanguageParityTest extends TestCase
      * 곳은 서로 다른 규칙(지역 상수·맨 json_encode)을 쓰고 있었고 그 사실도 무검사였다.
      *
      * @effects installer_inline_script_strings_use_shared_escaping
+     *
+     * @return void 반환값 없음
      */
     public function test_inline_script_string_helper_escapes_dangerous_characters(): void
     {
@@ -920,6 +971,8 @@ line2',
      * 규칙이 파일마다 다르면 한 파일만 규칙에서 뒤처져도 아무도 모른다.
      *
      * @effects installer_inline_script_strings_use_shared_escaping
+     *
+     * @return void 반환값 없음
      */
     public function test_inline_scripts_use_the_shared_escaping_helper(): void
     {

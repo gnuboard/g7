@@ -25,7 +25,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: state_file valid·absent·corrupt / log_path single·batch / encoding valid·invalid / clock forward·backward
  *
- * @effects corrupt_state_is_preserved_and_blocks_writes, log_encoding_defense_is_shared, windows_detection_is_single_source, worker_stale_handles_clock_skew
+ * 효과 요약(마커 아님 — 평문): corrupt_state_is_preserved_and_blocks_writes, log_encoding_defense_is_shared, windows_detection_is_single_source, worker_stale_handles_clock_skew
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -39,6 +39,12 @@ class InstallerStateIntegrityTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스마다 한 번 임시 기준 경로를 정하고 저장 디렉터리를 만든 뒤 설치기 설정, 공용 함수, 상태 헬퍼를 읽어 들인다.
+     * 기준 경로 상수가 시스템 임시 경로 밖으로 이미 정의돼 있으면 실제 상태 파일을 지키려고 건너뛰기 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function bootInstallerRuntime(): void
     {
         if (self::$booted) {
@@ -78,6 +84,11 @@ class InstallerStateIntegrityTest extends TestCase
         require_once $root.'/public/install/includes/installer-state.php';
     }
 
+    /**
+     * 설치기 런타임을 올리고 건너뛰기 사유가 있으면 건너뛰며, 이전 테스트가 남긴 상태 파일과 사본, 설치 로그를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -132,6 +143,12 @@ class InstallerStateIntegrityTest extends TestCase
 
     /**
      * #D13 — 파손된 state.json 은 보존되고, 그 위에 덮어쓰는 저장은 거부된다.
+     *
+     * @scenario state_file=corrupt
+     *
+     * @effects corrupt_state_is_preserved_and_blocks_writes
+     *
+     * @return void 반환값 없음
      */
     public function test_corrupt_state_is_preserved_and_blocks_writes(): void
     {
@@ -173,6 +190,12 @@ class InstallerStateIntegrityTest extends TestCase
      * 종전에는 상한에서 조용히 `return` 했다. 사본 다섯이 차면 그 뒤 최대 30일(프루너의
      * 백업 등급)동안 **새 파손의 근거가 0** 이고, 그 침묵은 로그에도 없었다. 상한의 목적은
      * 디렉토리 잠식 방지이지 최신 근거 폐기가 아니므로, 상한 유지 + 최신 보존이 맞다.
+     *
+     * @scenario state_file=corrupt
+     *
+     * @effects corrupt_state_copy_cap_evicts_the_oldest_and_logs
+     *
+     * @return void 반환값 없음
      */
     public function test_corrupt_copy_cap_evicts_the_oldest_and_logs(): void
     {
@@ -222,6 +245,12 @@ class InstallerStateIntegrityTest extends TestCase
     /**
      * 사본 나열은 **정렬된** 목록이다 — 내보낼 「가장 오래된 것」은 열거 순서가 아니라 이름
      * (타임스탬프)로 정한다. `scandir`·`glob` 모두 순서를 보장하지 않는다.
+     *
+     * @scenario state_file=corrupt
+     *
+     * @effects corrupt_state_copy_listing_is_sorted
+     *
+     * @return void 반환값 없음
      */
     public function test_corrupt_copy_listing_is_sorted_by_stamp(): void
     {
@@ -244,6 +273,12 @@ class InstallerStateIntegrityTest extends TestCase
      * 무관하지만 열거 순서에는 좌우되지 않는다. 종전 주석은 이 구간을 「가장 오래된 것」으로
      * 불렀는데, 그 구간에서 실제로 성립하는 약속은 「언제나 같은 하나가 나간다 + 새 사본은
      * 남는다」뿐이다. 정렬 방식은 바꾸지 않는다 — 계약을 사실대로 잠근다.
+     *
+     * @scenario state_file=corrupt
+     *
+     * @effects corrupt_state_copy_listing_is_sorted, corrupt_state_copy_cap_evicts_the_oldest_and_logs
+     *
+     * @return void 반환값 없음
      */
     public function test_same_second_corrupt_copies_sort_deterministically_and_keep_the_new_copy(): void
     {
@@ -293,6 +328,12 @@ class InstallerStateIntegrityTest extends TestCase
      *
      * 비밀은 상태 파일에 없어야 하지만(이슈 #465) 레거시 상태 파일이 남아 있을 수 있다. 종전에는
      * 파싱 실패 메시지가 원문 200 바이트를 무마스킹으로 진행 기록과 PHP 오류 로그에 실었다.
+     *
+     * @scenario state_file=corrupt
+     *
+     * @effects corrupt_state_preview_is_not_logged_verbatim
+     *
+     * @return void 반환값 없음
      */
     public function test_corrupt_state_preview_is_not_logged_verbatim(): void
     {
@@ -329,6 +370,10 @@ class InstallerStateIntegrityTest extends TestCase
      * `realpath` 는 하드닝 프로필이 막을 수 있고, 이 줄은 단독 로드 경로에서 그 파일이 실행하는
      * 첫 코드다. `config.php` 만 가드를 갖고 형제 둘(`installer-state.php` · `progress-emitter.php`)
      * 은 무가드 사본이었다 — 사본이 갈리면 같은 호스팅에서 진입점에 따라 백지가 갈린다.
+     *
+     * @effects installer_blocked_function_call_sites_are_guarded
+     *
+     * @return void 반환값 없음
      */
     public function test_base_path_fallback_guards_realpath_in_every_copy(): void
     {
@@ -353,6 +398,12 @@ class InstallerStateIntegrityTest extends TestCase
 
     /**
      * #D13 — 상태 파일이 사라지면(초기화) 다시 정상 경로로 돌아온다.
+     *
+     * @scenario state_file=absent
+     *
+     * @effects corrupt_state_is_preserved_and_blocks_writes
+     *
+     * @return void 반환값 없음
      */
     public function test_removing_the_corrupt_file_restores_writes(): void
     {
@@ -369,6 +420,12 @@ class InstallerStateIntegrityTest extends TestCase
 
     /**
      * 환경#11 — 로그 인코딩 방어는 단건·배치가 같은 함수를 쓴다.
+     *
+     * @scenario log_path=batch, text_encoding=invalid_utf8
+     *
+     * @effects log_encoding_defense_is_shared
+     *
+     * @return void 반환값 없음
      */
     public function test_log_encoding_defense_is_shared(): void
     {
@@ -400,6 +457,10 @@ class InstallerStateIntegrityTest extends TestCase
 
     /**
      * 환경#16 — Windows 판정은 `isWindows()` 하나다.
+     *
+     * @effects windows_detection_is_single_source
+     *
+     * @return void 반환값 없음
      */
     public function test_windows_detection_is_single_source(): void
     {
@@ -417,6 +478,12 @@ class InstallerStateIntegrityTest extends TestCase
 
     /**
      * 환경#19 — 시계가 뒤로 가도 stale 판정이 무력화되지 않는다.
+     *
+     * @scenario clock_direction=backward
+     *
+     * @effects worker_stale_handles_clock_skew
+     *
+     * @return void 반환값 없음
      */
     public function test_worker_stale_handles_clock_skew(): void
     {
@@ -456,6 +523,12 @@ class InstallerStateIntegrityTest extends TestCase
      * 치환 플래그가 없으면 `json_encode` 가 false 를 돌려 **실패 기록 자체가 저장되지 않는다**.
      * 그러면 `installation_status` 는 `running` 인 채 `failed_task` 가 비어, 12차 #A2 와
      * 13차 환경#10 이 각각 닫은 「[건너뛰고 계속] 이 원리상 불가능한」 고착 상태가 재현된다.
+     *
+     * @scenario state_file=valid, text_encoding=invalid_utf8
+     *
+     * @effects state_save_survives_invalid_utf8_in_command_output
+     *
+     * @return void 반환값 없음
      */
     public function test_state_save_survives_invalid_utf8_in_command_output(): void
     {
@@ -490,6 +563,12 @@ class InstallerStateIntegrityTest extends TestCase
      *
      * 초기화는 진행분을 **의도적으로 버리는** 유일한 조작이므로 그 자리에서만 원본을 치운다.
      * 덮어쓰기 거부 자체는 그대로 유지된다 — 파손 사본도 남는다.
+     *
+     * @scenario state_file=corrupt
+     *
+     * @effects corrupt_state_can_be_discarded_by_an_explicit_reset
+     *
+     * @return void 반환값 없음
      */
     public function test_corrupt_state_can_be_discarded_by_an_explicit_reset(): void
     {
@@ -522,6 +601,12 @@ class InstallerStateIntegrityTest extends TestCase
 
     /**
      * 17차 #C5 — 파손이 아닐 때는 아무것도 하지 않는다 (자동 삭제 금지).
+     *
+     * @scenario state_file=valid
+     *
+     * @effects corrupt_state_can_be_discarded_by_an_explicit_reset
+     *
+     * @return void 반환값 없음
      */
     public function test_discard_is_a_no_op_when_the_state_is_healthy(): void
     {
@@ -542,6 +627,12 @@ class InstallerStateIntegrityTest extends TestCase
      * 이 결함의 실체는 「되돌릴 수 없음」이 아니라 「보이지 않음」이다. 파손 거부는 의도된
      * 동작이므로(13차 #D13) 우회해서는 안 되고, 디스크·권한은 인스톨러가 고칠 수 없다.
      * 그래서 헬퍼는 재시도하지 않고 기록만 남기며, 호출부가 반환값으로 판단할 수 있게 한다.
+     *
+     * @scenario state_file=corrupt
+     *
+     * @effects state_persist_failure_is_reported_not_swallowed
+     *
+     * @return void 반환값 없음
      */
     public function test_persist_failure_is_reported_not_swallowed(): void
     {
@@ -572,6 +663,10 @@ class InstallerStateIntegrityTest extends TestCase
      *
      * 나머지 저장 지점은 버려져도 회복 가능하거나 다른 검증이 덮는다(완료 마커는
      * 오케스트레이터가 재조회로 확인한다) — 여기서 고정하는 것은 그 셋뿐이다.
+     *
+     * @effects state_persist_failure_is_reported_not_swallowed
+     *
+     * @return void 반환값 없음
      */
     public function test_consequential_persist_sites_go_through_the_reporting_helper(): void
     {
@@ -595,6 +690,12 @@ class InstallerStateIntegrityTest extends TestCase
      * 17차 #C1 — 그 방어가 형제 지점과 같은 수단이어야 한다 (SSoT).
      *
      * 값 단언만 두면 다른 수단(사전 scrub 등)으로 통과시킨 뒤 형제와 강도가 갈릴 수 있다.
+     *
+     * @scenario text_encoding=invalid_utf8
+     *
+     * @effects state_save_survives_invalid_utf8_in_command_output
+     *
+     * @return void 반환값 없음
      */
     public function test_state_save_uses_the_same_encoding_flag_as_sibling_encoders(): void
     {

@@ -293,6 +293,7 @@ class AssetUrl
      * 워커에서 매 잡마다 같은 경고를 쏟지 않게 한다. 테스트 프로세스는 제외한다.
      *
      * @param  string  $path  절대화하려던 경로
+     * @return void 반환값 없음
      */
     private static function warnOriginUnresolvableOnce(string $path): void
     {
@@ -542,6 +543,7 @@ class AssetUrl
      *
      * @param  Request  $request  현재 요청
      * @param  string  $fromRequest  요청이 실어 온 접두사
+     * @return void 반환값 없음
      */
     private static function warnPrefixMismatchOnce(Request $request, string $fromRequest): void
     {
@@ -590,6 +592,7 @@ class AssetUrl
      * 경로 접두사를 강제합니다 (테스트 전용).
      *
      * @param  string|null  $prefix  `null` 이면 요청에서 다시 판정
+     * @return void 반환값 없음
      */
     public static function forceBasePrefix(?string $prefix): void
     {

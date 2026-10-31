@@ -51,6 +51,11 @@ namespace Tests\Unit\Services {
         /** @var bool `App\Services\filemtime()` 가로채기 토글 — 켜면 조회 실패(false)를 돌려준다 */
         public static bool $filemtimeFails = false;
 
+        /**
+         * 남아 있을 수 있는 잠금 경고 버퍼를 비우고 테스트 전용 임시 디렉토리를 만든다.
+         *
+         * @return void 반환값 없음
+         */
         protected function setUp(): void
         {
             parent::setUp();
@@ -61,6 +66,11 @@ namespace Tests\Unit\Services {
             File::ensureDirectoryExists($this->fixtureRoot);
         }
 
+        /**
+         * filemtime 실패 흉내를 끄고 경고 버퍼와 임시 디렉토리를 정리한다.
+         *
+         * @return void 반환값 없음
+         */
         protected function tearDown(): void
         {
             self::$filemtimeFails = false;
@@ -70,6 +80,15 @@ namespace Tests\Unit\Services {
             parent::tearDown();
         }
 
+        /**
+         * storage/app 자리를 파일로 막아 잠금을 쓸 수 없게 해도 업데이트는 진행하되, 호출부가 표면화할 번역된 사유가 경고 버퍼에 남는지 확인한다.
+         *
+         * @scenario lock_state=unavailable, channel=console
+         *
+         * @effects run_lock_degradation_reaches_the_operator_not_only_the_log
+         *
+         * @return void 반환값 없음
+         */
         public function test_unusable_lock_records_a_reason_the_caller_can_surface(): void
         {
             // `storage/app` 자리를 **파일**로 만들어 디렉토리 생성을 실패시킨다 —
@@ -115,6 +134,8 @@ namespace Tests\Unit\Services {
          * @scenario lock_failure=cannot_open_file, reason_source=php_error, reason_source=fallback_message
          *
          * @effects run_lock_degradation_reaches_the_operator_not_only_the_log
+         *
+         * @return void 반환값 없음
          */
         public function test_unopenable_lock_file_records_a_reason_not_the_path(): void
         {
@@ -164,6 +185,15 @@ namespace Tests\Unit\Services {
             $service->releaseRunLock();
         }
 
+        /**
+         * 잠금 경고 버퍼를 한 번 꺼내면 비워져 같은 경고가 두 번 나가지 않는지 확인한다.
+         *
+         * @scenario lock_state=unavailable, channel=console
+         *
+         * @effects run_lock_warning_buffer_is_drained_once
+         *
+         * @return void 반환값 없음
+         */
         public function test_buffer_is_cleared_after_being_taken(): void
         {
             $isolated = $this->fixtureRoot.DIRECTORY_SEPARATOR.'storage2';
@@ -185,6 +215,15 @@ namespace Tests\Unit\Services {
             $service->releaseRunLock();
         }
 
+        /**
+         * 코어 업데이트 커맨드가 잠금 저하 사유를 꺼내 운영자 화면에 내는 배선을 갖는지 소스에서 확인한다.
+         *
+         * @scenario lock_state=unavailable, channel=console
+         *
+         * @effects run_lock_degradation_reaches_the_operator_not_only_the_log
+         *
+         * @return void 반환값 없음
+         */
         public function test_command_consumes_the_channel(): void
         {
             // 채널이 있어도 소비자가 없으면 로그 전용이던 종전 상태와 같다.
@@ -220,6 +259,8 @@ namespace Tests\Unit\Services {
          * @scenario lock_file=stale, mtime=readable
          *
          * @effects run_lock_degradation_reaches_the_operator_not_only_the_log
+         *
+         * @return void 반환값 없음
          */
         public function test_stale_lock_file_with_readable_mtime_is_reported(): void
         {
@@ -248,6 +289,8 @@ namespace Tests\Unit\Services {
          * @scenario lock_file=fresh, mtime=unreadable
          *
          * @effects run_lock_degradation_reaches_the_operator_not_only_the_log
+         *
+         * @return void 반환값 없음
          */
         public function test_unreadable_mtime_does_not_masquerade_as_a_stale_lock(): void
         {

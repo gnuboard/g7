@@ -25,6 +25,11 @@ use Tests\TestCase;
  */
 class AttachmentUrlTest extends TestCase
 {
+    /**
+     * 강제로 지정한 마운트 접두사를 풀어 다른 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetUrl::forceBasePrefix(null);
@@ -33,7 +38,11 @@ class AttachmentUrlTest extends TestCase
     }
 
     /**
+     * 루트 설치에서 해시로 만든 첨부 주소가 코어 첨부 API 경로 그대로인지 확인한다.
+     *
      * @effects board_response_strings_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function url_for_hash_builds_core_attachment_url(): void
@@ -43,6 +52,13 @@ class AttachmentUrlTest extends TestCase
         $this->assertSame('/api/attachment/abc123def456', Attachment::urlForHash('abc123def456'));
     }
 
+    /**
+     * download_url 접근자가 urlForHash 와 같은 첨부 API 경로를 돌려주는지 확인한다.
+     *
+     * @effects board_response_strings_unchanged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function download_url_accessor_delegates_to_url_for_hash(): void
     {
@@ -62,6 +78,8 @@ class AttachmentUrlTest extends TestCase
      * 접근자 경로도 함께 잰다 — 정적 메서드만 재면 접근자가 따로 조립하는 회귀를 놓친다.
      *
      * @effects attachment_url_carries_the_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function attachment_url_carries_the_mount_prefix_in_a_subfolder_install(): void

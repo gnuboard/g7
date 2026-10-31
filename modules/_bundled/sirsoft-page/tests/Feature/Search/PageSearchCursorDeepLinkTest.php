@@ -21,6 +21,11 @@ class PageSearchCursorDeepLinkTest extends ModuleTestCase
 {
     private PageService $pageService;
 
+    /**
+     * 검색 커서 판정을 지나는 실제 페이지 서비스를 컨테이너에서 받아 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,6 +37,8 @@ class PageSearchCursorDeepLinkTest extends ModuleTestCase
      * 커서 없이 깊은 페이지를 지목한 요청이 offset 을 유지하는지 확인
      *
      * @effects search_deep_page_link_keeps_offset
+     *
+     * @return void 반환값 없음
      */
     public function test_deep_page_without_cursor_stays_on_offset(): void
     {
@@ -55,6 +62,8 @@ class PageSearchCursorDeepLinkTest extends ModuleTestCase
      * 첫 페이지는 커서가 없어도 커서 경로로 시작하는지 확인
      *
      * @effects search_first_page_starts_cursor
+     *
+     * @return void 반환값 없음
      */
     public function test_first_page_starts_cursor_mode(): void
     {
@@ -75,6 +84,8 @@ class PageSearchCursorDeepLinkTest extends ModuleTestCase
      * 관련도순은 페이지 번호와 무관하게 offset 을 유지하는지 확인
      *
      * @effects search_deep_page_link_keeps_offset
+     *
+     * @return void 반환값 없음
      */
     public function test_relevance_sort_never_uses_cursor(): void
     {

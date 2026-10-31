@@ -100,6 +100,8 @@ class SeoNodeKeyParityTest extends TestCase
      * 봇 대상 자산에서 사용되는 노드 키가 모두 판정된 목록 안에 있습니다.
      *
      * @effects unclassified_node_key_is_detected
+     *
+     * @return void 반환값 없음
      */
     public function test_all_node_keys_in_bot_facing_assets_are_classified(): void
     {
@@ -151,6 +153,8 @@ class SeoNodeKeyParityTest extends TestCase
      * 바로 그 형태이므로, 감시망이 비어 있는 채로 초록이 되는 상황을 여기서 차단한다.
      *
      * @effects node_rooted_partials_are_scanned
+     *
+     * @return void 반환값 없음
      */
     public function test_scan_covers_node_rooted_partial_documents(): void
     {
@@ -175,6 +179,8 @@ class SeoNodeKeyParityTest extends TestCase
      * 스캔 대상 파일 중 노드 루트 partial 이 실제로 다수를 차지하며 모두 수집됩니다.
      *
      * @effects node_rooted_partials_are_scanned
+     *
+     * @return void 반환값 없음
      */
     public function test_node_rooted_partials_are_not_silently_skipped(): void
     {
@@ -208,6 +214,8 @@ class SeoNodeKeyParityTest extends TestCase
      * 지원/무시 목록이 서로 겹치지 않습니다 (분류 모호성 차단).
      *
      * @effects key_classification_is_unambiguous
+     *
+     * @return void 반환값 없음
      */
     public function test_supported_and_ignored_key_lists_are_disjoint(): void
     {
@@ -413,6 +421,7 @@ class SeoNodeKeyParityTest extends TestCase
      *
      * @param  array<mixed>  $node  문서 또는 노드
      * @param  list<string>  $names  모을 목록 (참조)
+     * @return void 반환값 없음
      */
     private function collectExtensionPointNames(array $node, array &$names): void
     {
@@ -526,6 +535,7 @@ class SeoNodeKeyParityTest extends TestCase
      *
      * @param  mixed  $node  노드
      * @param  array  $keys  수집 결과 (참조)
+     * @return void 반환값 없음
      */
     private function collectFromNode(mixed $node, array &$keys): void
     {
@@ -545,6 +555,7 @@ class SeoNodeKeyParityTest extends TestCase
      *
      * @param  array  $node  노드
      * @param  array  $keys  수집 결과 (참조)
+     * @return void 반환값 없음
      */
     private function collectDescendantKeys(array $node, array &$keys): void
     {

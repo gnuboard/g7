@@ -87,6 +87,7 @@ class AssetUrlModeCommand extends Command
      * 현재 모드와 진단 안내를 출력합니다.
      *
      * @param  string  $current  현재 모드
+     * @return void 반환값 없음
      */
     private function showStatus(string $current): void
     {
@@ -135,6 +136,8 @@ class AssetUrlModeCommand extends Command
      * 가리키는데, 웹에서는 재현되지 않아 운영자가 알 길이 없었다 — 이 커맨드가 유일하게
      * 그 값을 보여 주는 자리다. 웹 요청 안에서의 불일치는 `AssetUrl::basePrefix()` 가
      * 요청당 1회 경고 로그로 남긴다 (15차 G3 라운드 W4-4).
+     *
+     * @return void 반환값 없음
      */
     private function showBasePathStatus(): void
     {

@@ -48,6 +48,19 @@ effects:
   - stale_disk_normalized_with_notice
   # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
   - api_client_refuses_to_store_non_string_or_empty_tokens
+  # 609 테스트 매핑 부채 정리: ApiClient.test.ts 의 it 단위 효과
+  - api_client_token_storage_roundtrip   # 토큰 저장, 조회, 삭제, 부재 시 null
+  - api_client_http_methods_unwrap_response_data   # GET/POST/PUT/PATCH/DELETE 가 응답의 data 를 돌려준다
+  - api_client_singleton_instance_is_shared   # createApiClient/getApiClient 가 같은 인스턴스를 준다
+  - api_client_428_is_routed_through_identity_guard   # 428 만 본인인증 가드로 보내고 취소나 다른 오류는 원 에러를 전파
+  - api_client_passes_identity_target_to_identity_guard   # config.identity_target 을 가드의 target 인자로 넘긴다
+  - api_client_api_path_is_neither_lost_nor_duplicated_under_subfolder   # 하위 폴더 마운트에서 /api 접두사가 빠지지도 겹치지도 않는다
+  - same_origin_request_attaches_session_token   # 같은 출처 요청에는 Authorization 을 붙인다
+  - api_client_absolute_urls_are_left_untouched_by_interceptor   # 절대 URL 은 인터셉터가 바꾸지 않는다
+  # 609 docblock 정리: 값 검증은 카탈로그 부착과 같은 조건(스키마에 public_asset_disk 선언)에서만 붙는다
+  - public_asset_disk_validation_follows_the_catalog_attach_gate
+  - core_storage_driver_put_get_delete_roundtrip
+  - public_asset_disk_injection_is_skipped_in_testing_env
 
 test_files:
   - tests/Unit/Extension/Storage/CoreStorageDriverTest.php

@@ -25,6 +25,11 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
     /** @var array<int, string> */
     private array $created = [];
 
+    /**
+     * 이설 스텝 파일을 읽어 들이고 노출 경고 버퍼를 비운 뒤, 번역 그룹을 미리 올려 두고 public 과 storage/app 을 갖춘 가짜 기준 트리로 옮긴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -65,6 +70,11 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
 
     private string $originalBase = '';
 
+    /**
+     * 노출 경고 버퍼를 비우고 기준 경로를 되돌린 뒤 테스트가 만든 경로를 모두 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         StorageLinkHelper::takeDocrootExposureWarnings();
@@ -87,6 +97,8 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
      * 그 축을 잰다고 말하고 있었다.
      *
      * @effects docroot_storage_backup_residue_is_moved_out_of_web_root
+     *
+     * @return void 반환값 없음
      */
     public function test_matching_links_and_plain_files_are_left_alone(): void
     {
@@ -117,6 +129,15 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
         $this->assertTrue(is_link($link), '링크를 옮기면 원본이 무엇을 가리켰는지 잃는다');
     }
 
+    /**
+     * 문서 루트에 잔해가 없으면 스텝이 아무것도 만들거나 옮기지 않는지 확인한다.
+     *
+     * @scenario residue=none, destination=free, entry_kind=directory
+     *
+     * @effects docroot_storage_backup_residue_is_moved_out_of_web_root
+     *
+     * @return void 반환값 없음
+     */
     public function test_no_residue_is_a_no_op(): void
     {
         $before = $this->listResidue();
@@ -126,6 +147,15 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
         $this->assertSame($before, $this->listResidue(), '잔해가 없으면 아무것도 만들지 않는다');
     }
 
+    /**
+     * public 안의 storage.broken 잔해 디렉토리들이 지워지지 않고 내용째 storage/app 아래 정해진 이름으로 옮겨지는지 확인한다.
+     *
+     * @scenario residue=present, destination=free, entry_kind=directory
+     *
+     * @effects docroot_storage_backup_residue_is_moved_out_of_web_root
+     *
+     * @return void 반환값 없음
+     */
     public function test_residue_directories_are_moved_out_of_the_document_root(): void
     {
         $first = $this->makeResidue('storage.broken.20260101010101', 'alpha.txt');
@@ -145,6 +175,15 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
         $this->assertFileExists($movedSecond.'/beta.txt');
     }
 
+    /**
+     * 옮길 자리에 이전 백업이 이미 있으면 덮어쓰지 않고, 형제 생산자와 같은 16진 접미사를 붙인 유일한 이름으로 옮기는지 확인한다.
+     *
+     * @scenario residue=present, destination=stale_file, entry_kind=directory
+     *
+     * @effects docroot_storage_backup_residue_is_moved_out_of_web_root
+     *
+     * @return void 반환값 없음
+     */
     public function test_existing_destination_does_not_overwrite(): void
     {
         $source = $this->makeResidue('storage.broken.20260303030303', 'gamma.txt');
@@ -184,6 +223,12 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
      * 축을 재지 않았다 — 링크를 옮기는 변이를 이 케이스는 잡지 못한다. 그 축은 위
      * `test_matching_links_and_plain_files_are_left_alone` 이 소유하므로 이름을 사실에
      * 맞춘다.
+     *
+     * @scenario residue=present, entry_kind=directory
+     *
+     * @effects docroot_storage_backup_residue_is_moved_out_of_web_root
+     *
+     * @return void 반환값 없음
      */
     public function test_unrelated_entries_are_left_alone(): void
     {
@@ -208,6 +253,8 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
      * @scenario move_outcome=skipped, move_outcome=all_moved, warning_channel=console_buffer, warning_channel=log_only
      *
      * @effects docroot_storage_backup_residue_is_moved_out_of_web_root
+     *
+     * @return void 반환값 없음
      */
     public function test_entries_left_inside_the_document_root_reach_the_operator_channel(): void
     {
@@ -243,6 +290,8 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
      * @scenario residue=present, destination=missing
      *
      * @effects docroot_storage_backup_residue_is_moved_out_of_web_root
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_destination_directory_still_reports_docroot_exposure(): void
     {
@@ -268,6 +317,8 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
      * @scenario move_outcome=all_moved
      *
      * @effects docroot_storage_backup_residue_is_moved_out_of_web_root
+     *
+     * @return void 반환값 없음
      */
     public function test_a_clean_move_records_no_exposure_warning(): void
     {
@@ -299,6 +350,8 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
      * @scenario upgrade_step=move_broken_backups, run=second
      *
      * @effects upgrade_step_is_idempotent_on_rerun
+     *
+     * @return void 반환값 없음
      */
     public function test_second_run_moves_nothing(): void
     {
@@ -331,6 +384,12 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
      * 접두사만 보면 운영자가 손으로 둔 `storage.broken.메모` 같은 디렉토리까지 말없이
      * 옮긴다 — 클래스 독블록은 형식을 받는다고 적었는데 코드는 접두사만 봤다
      * (10차 G3 라운드 F10-12).
+     *
+     * @scenario move_outcome=skipped
+     *
+     * @effects docroot_storage_backup_residue_is_moved_out_of_web_root
+     *
+     * @return void 반환값 없음
      */
     public function test_foreign_name_shapes_are_skipped_not_moved(): void
     {
@@ -345,6 +404,11 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
         $this->assertFileDoesNotExist($this->storageAppPath.'/public-storage-broken-memo/note.txt');
     }
 
+    /**
+     * 7.0.8 에서 7.2.0 으로 가는 문맥으로 이설 스텝을 한 번 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     private function runMigration(): void
     {
         $context = new UpgradeContext(
@@ -376,7 +440,7 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
     /**
      * 문서 루트 안의 잔해 목록을 돌려줍니다.
      *
-     * @return array<int, string>
+     * @return array<int, string> 문서 루트 안 잔해 이름 목록
      */
     private function listResidue(): array
     {
@@ -390,6 +454,7 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
      * 테스트가 만든 트리를 지웁니다.
      *
      * @param  string  $path  절대 경로
+     * @return void 반환값 없음
      */
     private function removeTree(string $path): void
     {

@@ -29,6 +29,11 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
 {
     private CategoryImageService $service;
 
+    /**
+     * 직접 URL 을 가진 가짜 CDN 디스크를 설정에 등록하고 자산 스토리지 캐시를 비운 뒤 실제 카테고리 이미지 서비스를 꺼낸다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,6 +48,11 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
         $this->service = app(CategoryImageService::class);
     }
 
+    /**
+     * 자산 스토리지 캐시를 비워 가짜 디스크 해석이 다른 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetStorage::flush();
@@ -75,7 +85,11 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
     }
 
     /**
+     * 주입 스토리지와 다른 디스크에 기록된 행도 그 행의 디스크에서 스트리밍 서빙되는지 확인한다(혼재 운용).
+     *
      * @effects serve_and_delete_follow_row_disk, mixed_rows_resolve_per_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function download_serves_row_from_its_recorded_disk(): void
@@ -89,7 +103,11 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
     }
 
     /**
+     * 삭제가 행에 기록된 디스크의 파일을 지우는지 확인한다.
+     *
      * @effects serve_and_delete_follow_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function delete_removes_file_on_row_disk(): void
@@ -107,6 +125,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * 행 disk 를 제공하던 플러그인이 비활성화되어 config 에서 사라진 상태를 만듭니다.
      *
      * @param  string  $disk  사라지게 할 디스크명
+     *
+     * @return void 반환값 없음
      */
     private function vanishDisk(string $disk): void
     {
@@ -124,6 +144,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * 이미지 링크가 살아 있는데 열면 500 인 상태가 된다.
      *
      * @effects orphan_disk_falls_back_to_streaming
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function download_falls_back_when_row_disk_is_orphaned(): void
@@ -139,6 +161,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * 고아 disk 행의 삭제도 예외 없이 완료되어야 한다(카테고리 삭제 자체가 막히면 안 됨).
      *
      * @effects orphan_disk_falls_back_to_streaming
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function delete_succeeds_when_row_disk_is_orphaned(): void
@@ -155,6 +179,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * 신규 행의 disk 컬럼에 기록되는지 단언합니다(배선 회귀 검출).
      *
      * @effects mixed_rows_resolve_per_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function upload_records_configured_public_asset_disk_on_row(): void
@@ -176,6 +202,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * put 종단 — 공개 자산 디스크 미설정이면 신규 행이 기본 디스크로 기록(현행 보존).
      *
      * @effects mixed_rows_resolve_per_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function upload_records_base_disk_when_public_asset_disk_unset(): void
@@ -210,6 +238,10 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * red 가 되지 않는 공허한 단언이었다. 여기서는 응답 클래스(코어 `NotModifiedResponse`)와
      * 200 과의 헤더 대칭(`Last-Modified`·`Cache-Control`·`Expires`)을 잰다 — 옛 형태로 되돌리면
      * 클래스 단언에서 red 가 된다 (14차 G3 라운드).
+     *
+     * @param  TestResponse  $full  같은 자원의 200 응답
+     * @param  TestResponse  $notModified  조건부 요청으로 받은 304 응답
+     * @return void 반환값 없음
      */
     private function assertNotModifiedMirrors200(TestResponse $full, TestResponse $notModified): void
     {
@@ -244,6 +276,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * (11차 G3 라운드 B11-12). 14차부터 그 계약은 코어 단일 지점이 만든다.
      *
      * @effects serve_and_delete_follow_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function download_emits_row_meta_validators_and_answers_revalidation(): void
@@ -286,6 +320,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * 동작한다. 같은 요청을 운영 환경으로 돌리면 정책이 바뀌는 것으로 코어 지점 경유를 잰다.
      *
      * @effects serve_and_delete_follow_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function cache_control_follows_the_environment_like_the_core_serving_helper(): void
@@ -334,6 +370,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * 전문 200 이었다. 304 는 클라이언트가 보유한 표현의 검증자를 그대로 돌려준다.
      *
      * @effects serve_and_delete_follow_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function gzip_suffixed_validator_is_recognised_and_echoed_by_the_core_judgment(): void
@@ -354,7 +392,10 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
     /**
      * `assertNotModifiedMirrors200()` 에서 일부 헤더의 동일성 단언만 제외합니다.
      *
+     * @param  TestResponse  $full  같은 자원의 200 응답
+     * @param  TestResponse  $notModified  조건부 요청으로 받은 304 응답
      * @param  array<int, string>  $except  제외할 헤더
+     * @return void 반환값 없음
      */
     private function assertNotModifiedMirrors200Except(TestResponse $full, TestResponse $notModified, array $except): void
     {
@@ -372,6 +413,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * 프록시가 쓰는 경로. 판정이 `If-None-Match` 만 보면 이 경로는 영원히 전문 200 이다.
      *
      * @effects serve_and_delete_follow_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function download_answers_if_modified_since_alone_with_304(): void
@@ -391,6 +434,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * 검증자가 다르면 전문 200 이다 — 304 판정이 헐거우면 갈아 끼운 이미지가 도달하지 않는다.
      *
      * @effects serve_and_delete_follow_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function download_returns_full_200_for_a_non_matching_validator(): void
@@ -407,6 +452,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * 사용자 업로드물 통로는 압축 제외를 **선언**한다 (형제 `PublicStorageController` 와 같다).
      *
      * @effects serve_and_delete_follow_row_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function serving_declares_compression_skip(): void

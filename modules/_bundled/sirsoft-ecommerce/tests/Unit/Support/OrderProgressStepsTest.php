@@ -18,15 +18,17 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * @scenario order_stage=in_progress, order_stage=off_path
  *
- * @effects order_progress_steps_seven_stages,
- *   order_progress_steps_carry_icon_and_variant,
- *   order_progress_off_path_appends_last_cell,
- *   order_progress_reached_index_uses_stamps
+ * 효과 요약(마커 아님 — 평문): 7단계 배열, 단계별 아이콘과 변형, 이탈 상태의 마지막 칸, 시각 기준 도달 지점.
+ *   각 효과는 그 효과를 재는 메서드 docblock 에 마킹한다.
  */
 class OrderProgressStepsTest extends ModuleTestCase
 {
     /**
+     * 배송중 주문의 진행단계가 상태 Enum 순서대로 7칸이고, 배송중 칸 하나만 현재이며 앞은 완료, 뒤는 예정인지 확인한다.
+     *
      * @effects order_progress_steps_seven_stages
+     *
+     * @return void 반환값 없음
      */
     public function test_in_progress_order_has_seven_cells_with_one_current(): void
     {
@@ -46,7 +48,11 @@ class OrderProgressStepsTest extends ModuleTestCase
     }
 
     /**
+     * 결제완료 주문의 각 칸이 자기 상태 Enum 의 아이콘, 색 변형, 라벨을 그대로 싣는지 확인한다.
+     *
      * @effects order_progress_steps_carry_icon_and_variant
+     *
+     * @return void 반환값 없음
      */
     public function test_every_step_carries_the_icon_and_variant_of_its_status(): void
     {
@@ -63,7 +69,11 @@ class OrderProgressStepsTest extends ModuleTestCase
     }
 
     /**
+     * 결제 뒤 취소된 주문은 7칸 뒤에 취소 칸이 이탈 상태로 붙고, 결제완료까지만 완료로 그리며 순서 안에 현재 칸이 없는지 확인한다.
+     *
      * @effects order_progress_off_path_appends_last_cell
+     *
+     * @return void 반환값 없음
      */
     public function test_cancelled_order_appends_an_off_path_cell_after_the_reached_stage(): void
     {
@@ -82,7 +92,11 @@ class OrderProgressStepsTest extends ModuleTestCase
     }
 
     /**
+     * 반품 진행 중인 주문에서 상품 행의 배송완료 시각이 도달 지점을 배송완료까지 끌어올리는지 확인한다.
+     *
      * @effects order_progress_reached_index_uses_stamps
+     *
+     * @return void 반환값 없음
      */
     public function test_delivered_stamp_on_an_option_advances_the_reached_index(): void
     {
@@ -104,6 +118,8 @@ class OrderProgressStepsTest extends ModuleTestCase
      * 주문대기는 순서 밖이지만 이탈이 아니다 — 첫 칸(결제대기)을 현재로 그린다.
      *
      * @effects order_progress_pending_order_is_not_off_path
+     *
+     * @return void 반환값 없음
      */
     public function test_pending_order_renders_first_cell_as_current(): void
     {

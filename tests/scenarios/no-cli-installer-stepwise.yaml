@@ -59,6 +59,29 @@ axes:
   # 메인 스레드가 1,579 ms 멈췄다.
   progress_log_volume: [small, large, rotated]                      # 화면·파일에 쌓이는 진행 기록의 양
   task_duration: [short, long_no_feedback]                          # 한 요청이 사는 길이 (피드백 부재 구간)
+  # 609 docblock 정리 — 테스트 머리말의 「커버 축」 평문이 쓰던 이름을 선언으로 올린다 (값은 그 평문에서 도출).
+  # a11y_axis 보다 앞에 둬야 declaredAxes() 파서가 읽는다.
+  state_file: [valid, absent, corrupt]                              # 상태 파일의 형태 (InstallerStateIntegrityTest)
+  log_path: [single, batch]                                         # 진행 기록을 쓰는 경로 (단건, 배치)
+  text_encoding: [valid_utf8, invalid_utf8]                         # 기록되는 문자열의 인코딩
+  clock_direction: [forward, backward]                              # 워커 heartbeat 기준 시계의 방향
+  bundle_state: [missing, present]                                  # vendor 번들 파일의 존재
+  request_scheme: [direct_https, forwarded_https, plain]            # 요청이 HTTPS 인지 알리는 통로
+  request_origin: [same, cross, absent, opaque]                     # 상태 변경 요청의 출처
+  worker_entry: [running, completed, not_started, failed, polling_mode]  # 스트리밍 워커가 만나는 설치 상태
+  finalize_call: [state_file_present, state_file_absent]            # 마무리 재호출 시점의 상태 파일 존재
+  session_ownership: [owner, absent, mismatch]                      # 단계별 설치를 시작한 세션과 요청 세션의 관계
+  db_prefix_length: [within_limit, at_limit, over_limit]            # DB 접두사 길이와 상한(6자)의 관계 (DbPrefixLengthGuardTest)
+  time_limit_applied: [granted, capped, blocked, unlimited, unreadable]  # 실행 시간 상한이 실제로 적용된 형태
+  error_channel_surface: [display_errors_guard, include_order, stat_diagnostics, typed_call_argument]  # API 응답 본문을 오염시킬 수 있는 출력 채널 지점
+  guard_population: [installer_sources, synthetic_source]           # 함수 가드 판정이 읽는 입력 (실 설치기 소스, 합성 입력)
+  manifest_direction: [declared_file_has_marker, marker_is_declared, declared_effect_is_marked, axis_matches_source, marked_file_is_declared, parser_reads_blocks, no_duplicate_effects]  # 매니페스트와 마커의 정합 방향 (InstallerScenarioMarkerCoverageTest)
+  style_class_declared: [declared, undeclared, external, allowlisted]  # 화면 클래스와 스타일 규칙의 관계 (InstallerStyleClassCoverageTest)
+  isolation_declaration: [class_isolated, method_isolated, missing]  # BASE_PATH 를 다루는 테스트의 프로세스 격리 선언 (InstallerTestIsolationCoverageTest)
+  accessibility_surface: [decorative_svg, inline_opacity, attribute_escape, focus_order]  # 화면 접근성 검사 지점 (InstallerViewAccessibilityContractTest)
+  blocked_function_entry: [requirements_screen, session_boot, stepwise_runtime, corrupt_state_copies, exposure_cleanup, boot_path_ledger]  # 함수가 막힌 환경에서 서야 하는 진입 경로 (InstallerDisabledFunctionResilienceTest)
+  collapse_path: [manual, automatic]                                # 진행 화면의 접힘이 바뀌는 경로 (installer-ui-state.test.ts)
+  card_interactivity: [running, finished]                           # 진행 카드 헤더가 눌리는 시점 (설치 중, 끝난 뒤)
 
   # a11y_axis 는 이름에 숫자가 들어 InstallerScenarioMarkerCoverageTest::declaredAxes() 의
   # `[a-z_]+` 파서가 여기서 멈춘다 — 그 검사의 대조 대상(task)은 위에 이미 있으므로 이 둘은
@@ -373,6 +396,91 @@ effects:
   # 호출 대장이 「손으로 비운 목록」이 아니라 룰에서 도출된 것임을 검사가 증명한다.
   - installer_listing_guards_survive_blocked_glob
   - installer_unguarded_call_ledger_is_derived_not_hand_emptied
+  - installer_admin_seeder_creates_no_account_without_credentials   # 어느 통로에도 관리자 값이 없으면 시더가 계정을 만들지 않는다
+  - delete_directory_preserves_git_placeholder_files   # 비우기 삭제가 .gitkeep, .gitignore 같은 자리표시 파일을 남긴다
+  - delete_directory_remove_dir_flag_decides_the_root   # 루트 폴더 삭제 여부는 플래그와 보존 파일 유무가 함께 정한다
+  - installer_requirements_response_items_are_all_rendered   # 요구사항 응답에 실린 항목은 전부 화면이 그린다
+  - installer_db_server_version_notice_flags_unsupported_servers   # DB 서버 버전 하한 미달만 안내하고 해석 불가는 경고하지 않는다
+  # 609 docblock 정리 (g1 묶음1) — 메서드별 마킹이 쓰는 효과 중 이 원장에 없던 것.
+  - corrupt_state_copy_cap_evicts_the_oldest_and_logs   # 파손 사본 상한에서 가장 오래된 것을 내보내고 새 것을 남기며 그 사실을 로그에 남긴다
+  - corrupt_state_copy_listing_is_sorted   # 파손 사본 목록은 열거 순서가 아니라 이름 순으로 정렬된다
+  - corrupt_state_preview_is_not_logged_verbatim   # 파손 원문 대신 길이와 digest 만 로그에 남는다
+  - state_save_survives_invalid_utf8_in_command_output   # 명령 원출력의 깨진 UTF-8 이 상태 저장을 실패시키지 않는다
+  - corrupt_state_can_be_discarded_by_an_explicit_reset   # 초기화만 파손 원본을 치우고 정상 상태는 지우지 않는다
+  - state_persist_failure_is_reported_not_swallowed   # 결과가 중요한 상태 저장 실패는 진행 기록에 남고 거짓을 돌려준다
+  - installer_probe_endpoints_are_rate_limited   # 무인증 probe 에 호출 상한이 걸리고 DB 연결 실패 원문이 응답에 실리지 않는다
+  - installer_exception_text_is_not_returned_to_unauthenticated_callers   # 예외 원문이 무인증 응답의 메시지 칸에 실리지 않는다
+  - installer_non_cli_php_binary_is_rejected_at_save_time   # CLI 가 아닌 PHP 바이너리는 저장 시점에 거부된다
+  - installer_disk_headroom_warning_stays_out_of_the_value_slot   # 디스크 여유 경고는 카드 값 칸이 아니라 별도 안내로 나간다
+  - installer_role_expansion_edges_are_bounded   # 롤 토큰 꼬리가 제한되고 전개되지 않은 롤이 신호로 남는다
+  - installer_required_directories_include_static_publish_root   # 쓰기 권한 검사 목록에 정적 게시 루트의 상위가 들어 있다
+  - installer_extension_scan_failure_reasons_reach_the_screen   # 확장 스캔 실패 사유가 다국어 키로 화면까지 간다
+  - installer_execution_mode_selectability_shares_the_save_gate   # 화면의 실행 모드 선택 가능 판정이 저장 게이트와 같은 함수를 쓴다
+  # 609 docblock 정리 (g1 묶음4) — 메서드별 마킹이 쓰는 효과 중 이 원장에 없던 것.
+  - installer_db_prefix_length_limit_is_six   # DB 접두사 길이 상한 상수가 6 으로 정의된다
+  - installer_db_prefix_over_limit_is_rejected   # 6자를 넘는 DB 접두사는 거부되고 이하는 통과한다
+  - installer_db_prefix_plus_longest_index_fits_identifier_limit   # 최대 접두사와 최장 자동 인덱스명의 합이 MySQL 식별자 한도 안이다
+  - installer_abort_marker_is_a_noop_after_completion   # 끝난 설치에는 중단 표식을 남기지 않는다
+  - installer_blocking_requests_release_the_session_lock_first   # 중단 대기와 인라인 워커가 블로킹 전에 세션 잠금을 놓는다
+  - installer_apache_setenv_second_argument_is_a_string   # 설치기 트리 전체에서 apache_setenv 두 번째 인자가 문자열이다
+  - complete_flag_rollback_reports_a_surviving_marker   # 완료 표식을 지우지 못하면 되돌리기가 실패로 보고된다
+  - complete_flag_rollback_never_writes_an_unread_env   # 읽지 못한 .env 에는 되돌리기가 쓰지 않는다
+  - step3_post_rejects_unusable_explicit_inprocess   # 동봉 묶음을 쓸 수 없을 때 명시한 inprocess 는 저장 시점에 거부된다
+  # 609 docblock 정리 (g1 묶음3) — 메서드별 마킹이 쓰는 효과 중 이 원장에 없던 것.
+  - polling_response_disables_output_compression_before_echo   # 폴링 분기가 응답 출력 전에 zlib 압축, output_buffering, Apache gzip 을 끈다
+  - polling_response_pads_past_fcgid_buffer_before_flush   # 폴링 응답 뒤 flush 앞에 64KB 를 넘는 공백 채움을 내보낸다
+  - polling_response_content_length_counts_json_only   # Content-Length 는 채움을 뺀 응답 JSON 바이트 수만 싣는다
+  - installer_already_applied_judgment_recognizes_every_core_message   # 코어 다국어 표의 「이미 설치, 활성」 문구 전수가 성공 판정을 통과한다
+  - sse_directly_written_frames_have_client_listeners   # 방출기를 거치지 않고 직접 쓴 SSE 프레임에도 화면 리스너가 있다
+  - seed_rollback_reports_reverted_only_when_it_reverted   # 시드 롤백은 실제로 되돌렸을 때만 되돌렸다고 답하고 호출부는 그때만 마커를 지운다
+  - finalize_leaves_no_dead_session_write   # 설치 마무리 함수에 응답에 반영되지 않는 현재 단계 세션 쓰기가 없다
+  - no_cli_manifest_parser_reads_declared_blocks   # 매니페스트 줄 파서가 test_files, effects, axes 블록을 실제로 읽는다
+  - no_cli_marked_installer_tests_are_declared_by_a_manifest   # 마커를 단 인스톨러 테스트는 어느 매니페스트엔가 등재돼 있다
+  - no_cli_manifest_effects_have_no_duplicates   # 한 매니페스트 안에 같은 효과 이름이 두 번 선언되지 않는다
+  - installer_finalize_guard_is_limited_to_allowed_endpoints   # 완화된 finalize 가드는 허용 목록의 엔드포인트만 쓴다
+  - installer_recovery_entry_points_stay_open_until_env_merge   # 완료 표식 뒤 .env 병합 전 창에서도 복구 진입점이 열려 있다
+  - installer_decision_helpers_are_wired_at_every_call_site   # 결정 헬퍼를 부르는 엔드포인트와 화면의 호출 줄이 배선 표와 양방향으로 맞는다
+  - installer_stepwise_token_stays_out_of_state_file   # 단계별 토큰은 런타임 파일에만 실리고 상태 파일 배열에는 대입되지 않는다
+  # 609 docblock 정리 (g1 묶음5) — 메서드별 마킹이 쓰는 효과 중 이 원장에 없던 것.
+  - installer_extension_selection_is_locked_once_a_run_has_history   # 진행 이력이 있는 설치는 확장 선택 교체를 409 로 거부한다
+  - installer_completion_flag_judgment_shares_one_parser   # 화면과 API 게이트의 설치 완료 판정이 같은 파서와 파싱 실패 폴백을 쓴다
+  - installer_step3_pending_path_validation_matches_check_button   # Step 3 저장의 경로 검증이 검사 버튼과 같은 규칙을 갖는다
+  - exception_response_reports_the_current_task   # 예외 응답의 태스크는 요청 진입 시점이 아니라 현재 태스크다
+  - command_output_leftovers_are_cleaned   # 강제 종료가 남긴 명령 출력 임시 로그를 청소한다
+  - installer_status_text_uses_text_tier_tokens   # 상태 문구는 아이콘 층이 아니라 문구 층 색 토큰으로 칠한다
+  - installer_task_list_order_and_flags_are_fixed   # 태스크 목록의 순서, 키, 필수와 best_effort 표시가 고정된다
+  - sse_orchestrator_completes_the_whole_list_in_one_request   # SSE, 폴링 오케스트레이터가 한 요청 안에서 목록 전체를 완주한다
+  - required_task_skip_is_rejected   # 필수 태스크의 건너뛰기 요청은 거부되고 완료 마커가 생기지 않는다
+  - skip_request_without_failure_is_rejected   # 실패한 단계가 없으면 건너뛰기 요청이 거부된다
+  - rejected_php_binary_path_falls_back_with_logged_reason   # 형태 규칙에 걸린 PHP 경로는 기본값으로 떨어지되 사유를 한 번 남긴다
+  - failure_carries_message_params_for_placeholder_keys   # 자리표시자를 가진 실패 키는 치환값을 이벤트와 상태에 함께 싣는다
+  - seed_early_failure_reports_through_failure_path_keys   # 시드의 조기 실패가 실패 경로가 읽는 키로 사유를 돌려준다
+  - skip_guard_runs_before_the_app_boots
+  - php_probe_placeholder_keys_are_substituted
+  - env_generation_survives_template_default_drift   # 템플릿 기본값이 바뀌어도 .env 치환은 키 기준으로 성립하고 없는 키는 줄을 더한다
+  - installer_write_sites_reject_partial_writes   # 설치기 쓰기 지점이 잘린 쓰기를 성공으로 통과시키지 않는다
+  # 609 docblock 정리 — 소유 매니페스트가 없던 화면 행위 테스트 6건(test_files 끝에 등재)과 요구사항 실패 테스트의 효과.
+  - sse_monitor_counts_heartbeat_as_liveness   # 번들 추출 구간의 heartbeat 를 살아 있음의 증거로 세어 정지 판정을 미룬다
+  - sse_monitor_forwards_heartbeat_progress   # heartbeat 의 done/total 진행을 화면으로 나르고, 값이 없으면 덮지 않는다
+  - sse_busy_abort_hands_off_instead_of_showing_aborted   # busy 로 거부된 재연결은 중단 화면 대신 진행 조회로 갈아탄다
+  - polling_never_overlaps_requests   # 앞선 진행 조회가 끝나기 전에는 다음 조회를 보내지 않는다
+  - stepwise_stop_is_not_counted_as_network_failure   # 단계별 실행을 멈추며 끊은 요청을 네트워크 실패로 세지 않는다
+  - sse_monitor_hands_off_to_polling_when_superseded   # 워커 물러남 프레임을 받으면 스트림을 닫고 진행 조회로 갈아탄다
+  - polling_monitor_emits_on_state_like_stepwise   # 폴링 모니터도 폴 한 번마다 상태 요약 콜백을 부른다
+  - monitors_share_failure_reason_fallback_chain   # 세 모니터가 같은 실패 사유 폴백 사슬을 쓴다
+  - step3_gate_exempts_php_cli_when_inprocess   # inprocess 에서는 Step 3 제출 게이트가 PHP CLI 와 composer 검증을 요구하지 않는다
+  - step3_gate_still_requires_php_cli_when_subprocess   # subprocess 에서는 PHP CLI 검증을 그대로 요구한다
+  - installer_group_collapse_syncs_aria_on_both_paths   # 작업 그룹이 자동으로 접히고 펼쳐질 때도 aria-expanded 가 따라온다
+  - installer_card_collapse_syncs_aria_on_both_paths   # 진행 카드가 완료, 실패 화면에서 접히고 펼쳐질 때도 aria-expanded 가 따라온다
+  - installer_card_header_is_inert_while_running   # 설치 중 진행 카드 헤더는 비활성임이 키보드와 보조기술에 전달된다
+  - installer_current_task_shows_intra_task_progress   # 현재 작업 줄이 한 단계 안의 부분 진행을 덧붙이고 단계가 바뀌면 버린다
+  - requirements_failure_detail_omits_empty_status_text   # 요구사항 실패의 진단 상세가 빈 statusText 로 끝나지 않는다
+  # 609 docblock 정리 — SourceGateHygieneTest 의 메서드별 마킹이 쓰는 효과 중 이 원장에 없던 것.
+  - source_gate_population_meets_derived_floor   # 게이트 위생 검사의 모집단이 인스톨러 테스트 실재 수에서 도출한 하한 이상이다
+  - source_gate_stripper_closes_fail_open_channels   # 공용 스트리퍼가 열기 태그 부재, 문자열 채널, HTML 주석 속 script 의 세 구멍을 닫는다
+  - installer_sources_all_pass_the_stripper   # 인스톨러 생산 PHP 소스 전수가 스트리퍼를 예외 없이 지난다
+  - source_gate_pending_ledgers_are_documented_and_alive   # 이관 대기 목록 항목이 사유를 갖고 실재 파일을 가리킨다
+  - source_gate_detectors_discriminate_synthetic_inputs   # 원문 대조, 한 겹 스캔 검출기가 합성 입력의 위반과 준수를 가른다
 
 test_files:
   # D2 현장 제보 — 진행 기록 렌더(화면)·배치 기록(서버)·파일 회전. 세 파일이 한 증상의
@@ -483,6 +591,26 @@ test_files:
   # 유일한 테스트다. 마커는 달려 있었으나 어느 매니페스트도 이 파일을 몰라, 지워도
   # 우는 게이트가 없었다 (리베이스 4차).
   - tests/Unit/Installer/InstallerBestEffortMessageTest.php
+  # 609 docblock 부채 정리 — 마커를 달면서 소유 매니페스트가 없던 파일을 등재한다.
+  # 비우기 삭제 헬퍼의 보존 파일 계약, stepwise 토큰의 화면 배선 대조, 화면과 서버 계약의 비대칭.
+  - tests/Unit/Installer/DeleteDirectoryTest.php
+  - tests/Unit/Installer/InstallerStepwiseTokenClientParityTest.php
+  - tests/Unit/Installer/InstallerClientContractDriftTest.php
+  # 609 docblock 정리 (g1 묶음1) — 정적 게시 태스크가 기대는 쓰기 권한 검사 목록 (소유 매니페스트가 없던 파일).
+  - tests/Unit/Installer/RequiredDirectoriesPublishRootTest.php
+  # 609 docblock 정리 (g1 묶음4) — DB 접두사 길이 상한 (소유 매니페스트가 없던 파일).
+  - tests/Unit/Installer/DbPrefixLengthGuardTest.php
+  # 609 docblock 정리 (g1 묶음3) — 폴링 응답 즉시 송출 (소유 매니페스트가 없던 파일).
+  - tests/Unit/Installer/PollingResponseFlushTest.php
+  # 609 docblock 정리 (총괄 16 파일) — 쓰기 지점의 부분 쓰기 판정 (소유 매니페스트가 없던 파일).
+  - tests/Unit/Installer/PartialWriteDetectionContractTest.php
+  # 609 docblock 정리 — 마커를 달고도 어느 매니페스트에도 없던 모니터, Step 3 게이트, 진행 화면 행위 테스트
+  - resources/js/installer/__tests__/installation-monitor-heartbeat.test.ts
+  - resources/js/installer/__tests__/installation-monitor-liveness.test.ts
+  - resources/js/installer/__tests__/installation-monitor-state-and-failure-parity.test.ts
+  - resources/js/installer/__tests__/installation-monitor-worker-superseded.test.ts
+  - resources/js/installer/__tests__/installer-step3-cli-gate.test.ts
+  - resources/js/installer/__tests__/installer-ui-state.test.ts
 
 # 화면(W1~W3 라이트/다크 · Step 3 선택란 · Step 5 라디오 고정 · 새로고침 재개 · 건너뛰기 버튼)은
 # P0 격리 환경(http://localhost:8090, disable_functions 프로필) 브라우저 실측으로 판정한다 —

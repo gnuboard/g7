@@ -24,7 +24,8 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: rollback db_seed / task_outcome failed
  *
- * @effects seed_rollback_completion_uses_task_marker_not_row_heuristic
+ * 효과 요약(마커 아님 — 평문): 시드 롤백의 완료 판정은 행 휴리스틱이 아니라 태스크 완료 마커를 쓴다.
+ * 표식은 그 효과를 재는 각 테스트 메서드가 단다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -39,6 +40,13 @@ class InstallerSeedRollbackMarkerTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스당 한 번만 임시 BASE_PATH 를 정하고 저장소 디렉토리를 만든 뒤 인스톨러 설정, 상태, 런타임, 진행 방출기, 태스크 러너, 롤백 함수를 불러온다.
+     *
+     * BASE_PATH 가 이미 시스템 temp 밖으로 정의돼 있으면 실제 상태 파일을 지키려고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function boot(): void
     {
         if (self::$booted) {
@@ -82,6 +90,11 @@ class InstallerSeedRollbackMarkerTest extends TestCase
         require_once $root.'/public/install/api/rollback-functions.php';
     }
 
+    /**
+     * 인스톨러를 부팅하고 건너뛸 사유가 있으면 건너뛴 뒤, 남은 상태 파일을 지우고 진행 방출기를 버퍼 방출기로 바꾼다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -99,6 +112,15 @@ class InstallerSeedRollbackMarkerTest extends TestCase
         setProgressEmitter(new \BufferEmitter);
     }
 
+    /**
+     * 시드 롤백의 「이미 완료」 판정이 완료 목록의 db_seed 마커 유무만으로 갈리는지(마커 없음, 있음, 빈 상태) 확인한다.
+     *
+     * @scenario task=db_seed, task_outcome=failed_db, task_outcome=done
+     *
+     * @effects seed_rollback_completion_uses_task_marker_not_row_heuristic
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_judgment_reads_the_task_marker(): void
     {
         $this->assertFalse(
@@ -114,6 +136,15 @@ class InstallerSeedRollbackMarkerTest extends TestCase
         $this->assertFalse(installerSeedRollbackIsAlreadyDone([]));
     }
 
+    /**
+     * 이미 완료로 판정된 시드 롤백이 접속할 수 없는 DB 좌표로도 성공을 돌려주고(DB 를 보지 않는다는 증거), 되돌림 여부는 거짓으로 답하는지 확인한다.
+     *
+     * @scenario task=db_seed, task_outcome=aborted, resume_point=already_completed
+     *
+     * @effects seed_rollback_completion_uses_task_marker_not_row_heuristic, seed_rollback_reports_reverted_only_when_it_reverted
+     *
+     * @return void 반환값 없음
+     */
     public function test_already_completed_seed_returns_without_touching_the_database(): void
     {
         // 접속 자체가 불가능한 좌표 — 「이미 완료」 판정이 DB 를 보지 않고 끝난다는 증거다
@@ -148,6 +179,12 @@ class InstallerSeedRollbackMarkerTest extends TestCase
      * 호출부가 그 `true` 를 「되돌렸다」로 읽고 `removeTaskCompleted('db_seed')` 를 부르면
      * **DB 에는 시드가 남고 상태에는 없는** 상태가 만들어지고, 재개하면 `db:seed` 가 다시 돌아
      * `AdminUserSeeder` 가 전체 사용자를 삭제한다.
+     *
+     * @scenario task=db_seed, task_outcome=failed_db
+     *
+     * @effects seed_rollback_reports_reverted_only_when_it_reverted
+     *
+     * @return void 반환값 없음
      */
     public function test_no_config_branch_reports_nothing_reverted(): void
     {
@@ -166,6 +203,12 @@ class InstallerSeedRollbackMarkerTest extends TestCase
      * 중단 경로는 `markTaskCompleted($taskId)` **뒤**에 있어, db_seed 성공 직후의 중단에서는
      * 방금 세운 마커가 곧바로 「이미 끝났다」 단락을 성립시킨다. 그 갈래의 `success:true` 로
      * 마커를 지우는 것이 R3 의 실체이므로, 두 지점 모두 `reverted` 를 조건으로 갖는지 본다.
+     *
+     * @scenario task=db_seed, task_outcome=failed_db, task_outcome=aborted
+     *
+     * @effects seed_rollback_reports_reverted_only_when_it_reverted
+     *
+     * @return void 반환값 없음
      */
     public function test_both_marker_removals_are_conditioned_on_actual_revert(): void
     {
@@ -193,6 +236,15 @@ class InstallerSeedRollbackMarkerTest extends TestCase
         );
     }
 
+    /**
+     * 롤백 함수 소스(주석 제거)에 roles 테이블 행 존재로 시딩 완료를 추정하던 SQL 이 남아 있지 않은지 확인한다.
+     *
+     * @scenario task=db_seed, task_outcome=failed_db
+     *
+     * @effects seed_rollback_completion_uses_task_marker_not_row_heuristic
+     *
+     * @return void 반환값 없음
+     */
     public function test_row_count_heuristic_is_gone(): void
     {
         // 주석을 지운 뒤 대조한다 — 주석 처리된 판정 호출도 원문에는 글자로 남는다.
@@ -206,6 +258,15 @@ class InstallerSeedRollbackMarkerTest extends TestCase
         $this->assertStringNotContainsString('SELECT COUNT(*) FROM roles', $source);
     }
 
+    /**
+     * 시드 롤백 함수가 상태를 마커 기반 완료 판정에 넘기는 배선을 갖고 있는지 소스(주석 제거)로 확인한다.
+     *
+     * @scenario task=db_seed, task_outcome=failed_db
+     *
+     * @effects seed_rollback_completion_uses_task_marker_not_row_heuristic
+     *
+     * @return void 반환값 없음
+     */
     public function test_seed_rollback_passes_the_marker_judgment(): void
     {
         // 주석을 지운 뒤 대조한다 — 주석 처리된 판정 호출도 원문에는 글자로 남는다.

@@ -69,6 +69,8 @@ function describeFailure(status: number, payload: unknown): Failure {
 }
 
 describe('요구사항 검사 실패 사유', () => {
+  // @scenario failure_kind=rate_limited
+  // @effects requirements_failure_reason_reaches_the_screen
   it('레이트리밋(429)의 번역 키가 제목에 실린다', () => {
     const failure = describeFailure(429, {
       success: false,
@@ -80,6 +82,8 @@ describe('요구사항 검사 실패 사유', () => {
     expect(failure.heading).not.toBe(LANG.requirements_check_failed);
   });
 
+  // @scenario failure_kind=unexpected_exception
+  // @effects requirements_failure_reason_reaches_the_screen
   it('예외(500)의 원문이 진단 상세에 실린다', () => {
     const failure = describeFailure(500, {
       success: false,
@@ -93,6 +97,8 @@ describe('요구사항 검사 실패 사유', () => {
     expect(failure.detail).toContain('HTTP 500');
   });
 
+  // @scenario failure_kind=unparsable_body
+  // @effects requirements_failure_reason_reaches_the_screen
   it('본문을 파싱할 수 없으면 일반 문구로 내려간다', () => {
     const failure = describeFailure(502, null);
 
@@ -100,6 +106,8 @@ describe('요구사항 검사 실패 사유', () => {
     expect(failure.detail).toBe('HTTP 502');
   });
 
+  // @scenario failure_kind=unexpected_exception
+  // @effects requirements_failure_detail_omits_empty_status_text
   it('진단 상세가 빈 사유로 끝나지 않는다 (HTTP/2 의 빈 statusText)', () => {
     // 종전 형태(`HTTP ${status}: ${response.statusText}`)는 HTTP/2 에서 언제나
     // `HTTP 500: ` 로 끝났다 — 콜론 뒤가 비어 있으면 사유가 있는 것처럼 보인다.
@@ -111,6 +119,8 @@ describe('요구사항 검사 실패 사유', () => {
     }
   });
 
+  // @scenario failure_kind=unexpected_exception
+  // @effects requirements_failure_detail_omits_empty_status_text
   it('소스가 statusText 를 더 이상 참조하지 않는다', () => {
     const src = readFileSync(INSTALLER_SOURCE, 'utf8');
     const openMarker = src.indexOf('async function checkRequirements');

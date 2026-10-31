@@ -45,6 +45,7 @@ class CoreUpdatePreflight
      * 사전 진단을 수행합니다.
      *
      * @param  bool  $requiresArchiveExtraction  아카이브 추출이 필요한지 (수동 소스 디렉토리면 false)
+     * @param  bool  $deep  하위 항목까지 훑어 쓰기 가능성과 필요 용량을 잴지 (false 면 얕게 본다)
      * @return array{
      *     ok: bool,
      *     requirements: array<string, mixed>,
@@ -165,6 +166,7 @@ class CoreUpdatePreflight
      * **측정 불가**로 두고 통과시킨다 — 잴 수 없는 것을 실패로 접으면 그 호스팅에서는
      * 업데이트가 영영 시작되지 않는다 (0% 로 표시하지 않는 A-8 규율과 같은 판단).
      *
+     * @param  bool  $deep  현재 트리 크기를 훑어 필요 용량까지 잴지 (false 면 여유 공간만 잰다)
      * @return array{measurable: bool, free_bytes: int|null, required_bytes: int|null, ok: bool} 판정 결과
      */
     public function checkDiskSpace(bool $deep = true): array

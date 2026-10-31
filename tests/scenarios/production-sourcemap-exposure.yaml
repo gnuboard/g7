@@ -59,6 +59,8 @@ effects:
   # 브라우저 실측
   - no_sourcemap_requests_from_loaded_bundles
   - page_renders_without_map_related_console_errors
+  - public_build_dir_has_no_sourcemap_artifacts
+  - active_extension_dirs_have_no_sourcemap_artifacts
 
 test_files:
   - tests/Unit/Extension/BuildCommandSourcemapEnvTest.php

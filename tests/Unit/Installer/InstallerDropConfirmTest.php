@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 기존 테이블 삭제 확인 토큰 회귀 테스트.
@@ -12,6 +13,8 @@ use PHPUnit\Framework\TestCase;
  */
 class InstallerDropConfirmTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /**
      * 순수 함수 로드.
      *
@@ -197,7 +200,7 @@ class InstallerDropConfirmTest extends TestCase
      */
     public function test_install_process_applies_confirmation_through_helper(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/api/install-process.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/api/install-process.php');
 
         $this->assertSame(1, substr_count($source, 'installer_apply_drop_confirm('));
         $this->assertStringNotContainsString('installer_verify_drop_confirm(', $source);

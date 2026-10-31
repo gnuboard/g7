@@ -19,6 +19,11 @@ use Tests\TestCase;
  */
 class ApiHttpExceptionJsonResponseTest extends TestCase
 {
+    /**
+     * `api` 미들웨어 아래에 404, 403, 503(재시도 안내 헤더 포함)을 던지는 임시 라우트를 등록해 렌더러 한 곳만 재도록 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +43,8 @@ class ApiHttpExceptionJsonResponseTest extends TestCase
      * @scenario api_validation_client=browser
      *
      * @effects api_http_exception_is_json_regardless_of_accept
+     *
+     * @return void 반환값 없음
      */
     public function test_browser_style_request_gets_json_for_abort_404_and_403(): void
     {
@@ -62,6 +69,8 @@ class ApiHttpExceptionJsonResponseTest extends TestCase
      * @scenario api_validation_client=browser
      *
      * @effects api_http_exception_is_json_regardless_of_accept
+     *
+     * @return void 반환값 없음
      */
     public function test_exception_headers_survive_the_json_rendering(): void
     {
@@ -78,6 +87,8 @@ class ApiHttpExceptionJsonResponseTest extends TestCase
      * @scenario api_validation_client=browser
      *
      * @effects api_http_exception_is_json_regardless_of_accept
+     *
+     * @return void 반환값 없음
      */
     public function test_unmatched_api_route_is_json_for_browser_style_requests(): void
     {
@@ -98,6 +109,8 @@ class ApiHttpExceptionJsonResponseTest extends TestCase
      * @scenario api_validation_client=xhr
      *
      * @effects api_http_exception_is_json_regardless_of_accept
+     *
+     * @return void 반환값 없음
      */
     public function test_xhr_request_gets_success_false_and_non_empty_message(): void
     {

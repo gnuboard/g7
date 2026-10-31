@@ -19,6 +19,11 @@ use Tests\TestCase;
  */
 class PublicSearchControllerFailureFlagTest extends TestCase
 {
+    /**
+     * 테스트가 등록한 통합 검색 결과 필터를 걷어 다른 테스트로 새지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::clearFilter('core.search.results');
@@ -29,7 +34,11 @@ class PublicSearchControllerFailureFlagTest extends TestCase
     /**
      * 실패한 카테고리가 categories_failed / search_failed 로 표면화되는지 확인
      *
+     * @scenario failure=single
+     *
      * @effects failed_flag_in_response
+     *
+     * @return void 반환값 없음
      */
     public function test_failed_category_surfaces_in_response_flags(): void
     {
@@ -64,6 +73,8 @@ class PublicSearchControllerFailureFlagTest extends TestCase
      * 키 자체가 없으면 화면이 "실패 정보 없음(구버전)" 과 "실패 없음" 을 구분하지 못한다.
      *
      * @effects failure_flags_default_to_false
+     *
+     * @return void 반환값 없음
      */
     public function test_flags_default_to_false_when_no_failure(): void
     {

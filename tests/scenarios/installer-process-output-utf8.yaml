@@ -67,6 +67,8 @@ effects:
   - no_raw_json_encode_remains_in_installer_output_paths
   - sse_emitter_routes_through_guarded_encoder
   - get_cpu_info_routes_both_branches_through_normalizer
+  # 609 docblock 정리 — 인코딩 실패 폴백이 호출자가 넘긴 응답 형태(status 등)를 유지한다
+  - encode_failure_keeps_caller_fallback_shape
 
 test_files:
   - tests/Unit/Support/ProcessOutputEncodingTest.php

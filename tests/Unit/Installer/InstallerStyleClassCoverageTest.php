@@ -77,6 +77,11 @@ class InstallerStyleClassCoverageTest extends TestCase
         'single-select' => '소비처 0 — 단일 선택 카드 표식만, 스타일·선택자 소비 없음 (HEAD 기원)',
     ];
 
+    /**
+     * 저장소 안 설치기 폴더의 절대 경로를 만든다.
+     *
+     * @return string 설치기 폴더 경로
+     */
     private function installDir(): string
     {
         return dirname(__DIR__, 3).'/public/install';
@@ -88,7 +93,7 @@ class InstallerStyleClassCoverageTest extends TestCase
      * 종전에는 `installer.css` 한 파일을 하드코딩했다 — 스타일시트가 하나 더 생기면 그 안의
      * 규칙은 「선언 없음」으로 계상되어 정상 스타일이 위반으로 잡힌다 (12차 L-1).
      *
-     * @return array<string, int>
+     * @return array<string, int> 스타일시트가 선언한 클래스 이름을 키로 둔 집합
      */
     private function declaredClasses(): array
     {
@@ -174,7 +179,7 @@ class InstallerStyleClassCoverageTest extends TestCase
      *    반대 방향은 없다 — 주석으로 감싼 마크업이 모집단에서 빠지는 것은 실제로 붙지 않는
      *    클래스가 빠지는 것이라 옳다.
      *
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, string>> 클래스 이름별로 그 이름이 나온 파일 이름 목록
      */
     private function usedClasses(): array
     {
@@ -218,7 +223,8 @@ class InstallerStyleClassCoverageTest extends TestCase
      * 이름(`task-failed`·`status-skipped` 등)이 통째로 사각이 되고, 실제로 그 사각에 미선언
      * 클래스가 살아 있었다 (9차 #G5).
      *
-     * @return array<int, string>
+     * @param  string  $source  주석을 걷어낸 마크업 또는 스크립트 소스
+     * @return array<int, string> 속성 리터럴과 동적 부착에서 모은 클래스 토큰
      */
     private function classesInSource(string $source): array
     {
@@ -325,6 +331,12 @@ class InstallerStyleClassCoverageTest extends TestCase
      *
      * 실제 대비 계산 대신 「어느 층의 토큰을 썼는가」를 본다 — 토큰 층이 곧 그 규칙이고,
      * rgba 합성까지 계산하는 검사는 배경 스택을 재현해야 해서 되레 신뢰도가 낮다.
+     *
+     * @scenario style_class_declared=declared
+     *
+     * @effects installer_status_text_uses_text_tier_tokens
+     *
+     * @return void 반환값 없음
      */
     public function test_status_text_uses_text_tier_tokens(): void
     {
@@ -418,6 +430,15 @@ class InstallerStyleClassCoverageTest extends TestCase
         );
     }
 
+    /**
+     * 마크업 클래스 모집단과 스타일시트 선언 집합이 추출 실패로 비지 않고 하한 이상인지 확인한다.
+     *
+     * @scenario style_class_declared=declared
+     *
+     * @effects installer_markup_classes_have_style_rules
+     *
+     * @return void 반환값 없음
+     */
     public function test_population_is_not_empty(): void
     {
         $used = $this->usedClasses();
@@ -427,7 +448,13 @@ class InstallerStyleClassCoverageTest extends TestCase
     }
 
     /**
+     * 마크업이 붙이는 모든 클래스가 스타일 규칙을 갖거나 면제 목록에 사유와 함께 올라 있는지 확인한다.
+     *
+     * @scenario style_class_declared=undeclared
+     *
      * @effects installer_markup_classes_have_style_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_every_markup_class_has_a_style_rule_or_a_stated_reason(): void
     {
@@ -454,6 +481,12 @@ class InstallerStyleClassCoverageTest extends TestCase
      *
      * 실제로 스타일링해 해소한 클래스가 목록에 남아 있으면 다음 사람이 "면제된 것" 으로
      * 읽고, 그 규칙을 지워도 아무도 모른다.
+     *
+     * @scenario style_class_declared=allowlisted
+     *
+     * @effects installer_markup_classes_have_style_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_allowlist_has_no_stale_entries(): void
     {
@@ -480,6 +513,12 @@ class InstallerStyleClassCoverageTest extends TestCase
      *
      * 실 소스가 준수 상태라 위 검사의 「미선언 0」은 추출기가 죽어도 유지된다 — 그 상태는
      * 「검사했으나 통과」가 아니라 「아무것도 보지 않음」이다.
+     *
+     * @scenario style_class_declared=external
+     *
+     * @effects installer_markup_classes_have_style_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_class_extraction_covers_both_channels(): void
     {
@@ -509,6 +548,12 @@ class InstallerStyleClassCoverageTest extends TestCase
      *
      * 실 디렉토리가 지금은 평면이라 한 겹 glob 과 재귀 스캔의 결과가 같다 — 그 상태에서는
      * 스캔을 한 겹으로 되돌려도 red 가 나지 않는다. 하위 디렉토리를 실제로 만들어 잡는다.
+     *
+     * @scenario style_class_declared=undeclared
+     *
+     * @effects installer_markup_classes_have_style_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_population_scan_is_recursive(): void
     {
@@ -532,6 +577,12 @@ class InstallerStyleClassCoverageTest extends TestCase
 
     /**
      * 선언 추출은 주석 안의 이름을 세지 않는다 (9차 #G6).
+     *
+     * @scenario style_class_declared=declared
+     *
+     * @effects installer_markup_classes_have_style_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_declaration_extraction_ignores_comments(): void
     {

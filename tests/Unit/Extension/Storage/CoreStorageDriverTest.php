@@ -21,6 +21,11 @@ use Tests\TestCase;
  */
 class CoreStorageDriverTest extends TestCase
 {
+    /**
+     * url 이 설정된 가짜 CDN 디스크(fake_cdn)를 local 드라이버로 등록한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,6 +38,11 @@ class CoreStorageDriverTest extends TestCase
         ]);
     }
 
+    /**
+     * 등록된 훅을 비우고 public 디스크에 만든 테스트 디렉토리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::resetAll();
@@ -41,6 +51,13 @@ class CoreStorageDriverTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 코어 드라이버로 파일을 쓰고 읽고 존재를 확인한 뒤 지우면 더는 존재하지 않는지 확인한다.
+     *
+     * @effects core_storage_driver_put_get_delete_roundtrip
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_can_put_get_and_delete_file(): void
     {
@@ -54,9 +71,13 @@ class CoreStorageDriverTest extends TestCase
     }
 
     /**
+     * url 설정이 없는 local 디스크는 직접 URL 을 만들지 않고 null 을 돌려주는지 확인한다.
+     *
      * @scenario consumer=product, disk_setting=none, e2e=drivers_tab_card, hook=unregistered, override=follow_core, row_state=legacy_local_row
      *
      * @effects url_null_for_disk_without_url_config, download_url_falls_back_to_api_path_when_direct_unavailable
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_returns_null_url_for_disk_without_url_config(): void
@@ -68,9 +89,13 @@ class CoreStorageDriverTest extends TestCase
     }
 
     /**
+     * 링크가 쓸 수 있는 표준 배치에서 public 디스크 URL 이 종전과 같은 직접 URL 형태 그대로인지 확인한다.
+     *
      * @scenario consumer=product, disk_setting=public, e2e=drivers_tab_card, hook=unregistered, override=none_override, row_state=legacy_local_row
      *
      * @effects url_returned_for_public_and_url_configured_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_returns_url_for_public_disk(): void
@@ -89,9 +114,13 @@ class CoreStorageDriverTest extends TestCase
     }
 
     /**
+     * url 이 설정된 디스크는 그 주소 아래에 카테고리와 경로를 붙인 직접 URL 을 돌려주는지 확인한다.
+     *
      * @scenario consumer=category, disk_setting=fake_cdn, e2e=drivers_tab_card, hook=unregistered, override=follow_core, row_state=new_remote_row
      *
      * @effects url_returned_for_public_and_url_configured_disk
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_returns_url_for_disk_with_url_config(): void
@@ -105,9 +134,13 @@ class CoreStorageDriverTest extends TestCase
     }
 
     /**
+     * 디스크 url 설정이 빈 문자열이거나 공백뿐이면 직접 URL 을 만들지 않는지 확인한다.
+     *
      * @scenario consumer=category, disk_setting=s3_without_url, e2e=save_roundtrip, hook=unregistered, override=none_override, row_state=legacy_local_row
      *
      * @effects blank_url_config_defended
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_returns_null_url_when_disk_url_config_is_blank(): void
@@ -136,6 +169,8 @@ class CoreStorageDriverTest extends TestCase
      * 오류도 로그도 남지 않는다. 하위 폴더 마운트는 이 저장소가 1급으로 지원하는 배치다.
      *
      * @effects public_storage_url_switches_to_route_when_link_missing
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function public_disk_url_switches_to_the_serving_route_in_a_subfolder_mount(): void
@@ -170,6 +205,8 @@ class CoreStorageDriverTest extends TestCase
      * (14차 G3 라운드).
      *
      * @effects public_storage_url_switches_to_route_when_link_missing
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function public_disk_url_switches_to_the_serving_route_when_app_url_has_a_trailing_slash(): void
@@ -192,6 +229,8 @@ class CoreStorageDriverTest extends TestCase
      * 하위 폴더 + 후행 슬래시가 겹쳐도 성립해야 한다 (두 정규화가 함께 걸리는 자리).
      *
      * @effects public_storage_url_switches_to_route_when_link_missing
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function public_disk_url_keeps_a_neighbouring_prefix_without_a_boundary(): void
@@ -219,6 +258,15 @@ class CoreStorageDriverTest extends TestCase
         }
     }
 
+    /**
+     * 링크가 없고 하위 폴더 마운트의 앱 주소에 꼬리 슬래시가 있어도 public 디스크 URL 이 접두사 한 번만 붙은 대체 서빙 경로로 바뀌는지 확인한다.
+     *
+     * @scenario storage_link=missing, base_path=subpath
+     *
+     * @effects public_storage_url_switches_to_route_when_link_missing
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function public_disk_url_switches_to_the_serving_route_in_a_subfolder_mount_with_trailing_slash(): void
     {
@@ -245,6 +293,12 @@ class CoreStorageDriverTest extends TestCase
      *
      * 이 대조군이 없으면 「무조건 대체 서빙으로 전환」하는 구현으로도 위 테스트가 초록이
      * 되고, CDN 으로 돌린 사이트의 공개 자산이 통째로 앱 오리진으로 끌려온다.
+     *
+     * @scenario storage_link=missing
+     *
+     * @effects public_disk_url_keeps_operator_configured_location_without_a_link
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function public_disk_url_keeps_an_operator_configured_location_even_without_a_link(): void
@@ -265,6 +319,13 @@ class CoreStorageDriverTest extends TestCase
         }
     }
 
+    /**
+     * 모듈과 플러그인 드라이버도 url 설정 디스크에서 식별자 경로를 붙인 직접 URL 을 돌려주는지 확인한다.
+     *
+     * @effects url_returned_for_public_and_url_configured_disk
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function module_and_plugin_drivers_return_url_for_url_configured_disk(): void
     {
@@ -282,9 +343,13 @@ class CoreStorageDriverTest extends TestCase
     }
 
     /**
+     * 직접 URL 이 null 이어도 filter_url 훅이 불리고, 훅이 공급한 URL 이 그대로 쓰이는지 확인한다.
+     *
      * @scenario consumer=editor, disk_setting=s3_without_url, e2e=drivers_tab_card, hook=supply, override=none_override, row_state=new_remote_row
      *
      * @effects filter_url_hook_always_fires_with_six_context_keys, hook_supply_modify_block_respected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function filter_url_hook_fires_even_when_url_is_null(): void
@@ -305,9 +370,13 @@ class CoreStorageDriverTest extends TestCase
     }
 
     /**
+     * filter_url 훅이 생성된 직접 URL 을 바꾸면 그 값이 돌아오는지 확인한다.
+     *
      * @scenario consumer=product, disk_setting=fake_cdn, e2e=ecommerce_settings_field, hook=supply, override=none_override, row_state=legacy_local_row
      *
      * @effects hook_supply_modify_block_respected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function filter_url_hook_can_modify_generated_url(): void
@@ -325,9 +394,13 @@ class CoreStorageDriverTest extends TestCase
     }
 
     /**
+     * filter_url 훅이 빈 문자열을 돌려주면 URL 이 null 로 막혀 스트리밍 폴백으로 가는지 확인한다.
+     *
      * @scenario consumer=review, disk_setting=fake_cdn, e2e=save_roundtrip, hook=block, override=none_override, row_state=legacy_local_row
      *
      * @effects hook_supply_modify_block_respected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function filter_url_hook_can_block_url_by_returning_empty(): void
@@ -341,7 +414,11 @@ class CoreStorageDriverTest extends TestCase
     }
 
     /**
+     * filter_url 훅이 null, false, 배열, 공백 같은 계약 밖 값을 돌려줘도 예외 없이 null 로 떨어지는지 확인한다.
+     *
      * @effects hook_supply_modify_block_respected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function filter_url_hook_non_string_or_blank_returns_fall_back_to_null(): void
@@ -361,9 +438,13 @@ class CoreStorageDriverTest extends TestCase
     }
 
     /**
+     * filter_url 훅이 scope, identifier, disk, category, path, full_path 여섯 키의 문맥을 받는지 확인한다.
+     *
      * @scenario consumer=review, disk_setting=none, e2e=drivers_tab_card, hook=supply, override=none_override, row_state=legacy_local_row
      *
      * @effects filter_url_hook_always_fires_with_six_context_keys
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function filter_url_hook_receives_six_context_keys(): void
@@ -387,6 +468,13 @@ class CoreStorageDriverTest extends TestCase
         ], $captured);
     }
 
+    /**
+     * 모듈과 플러그인 드라이버가 훅 문맥에 자기 scope 와 식별자, 식별자가 붙은 full_path 를 싣는지 확인한다.
+     *
+     * @effects filter_url_hook_always_fires_with_six_context_keys
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function filter_url_hook_context_identifies_module_and_plugin_scope(): void
     {

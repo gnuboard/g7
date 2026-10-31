@@ -110,6 +110,28 @@ effects:
   - nodekey_apply_ignores_device_and_dark_scope
   - nodekey_apply_keeps_the_input_node_immutable
   - nodekey_apply_noops_on_non_string_or_empty_key
+  # 2026-10-31 issue609 테스트 매핑 부채 정리: 레이아웃 편집기 단위 테스트가 실제로 재는 효과 (메서드 단위 마킹)
+  - recipe_class_token_option_replaces_same_group_and_clear_removes_only_group_tokens   # classToken 택1 옵션이 같은 group 토큰을 교체하고 해제 시 그 group 토큰만 지운다
+  - recipe_group_tokens_family_is_replaced_even_outside_options                         # groupTokens 로 선언한 패밀리는 옵션 밖 기본 토큰도 교체된다
+  - recipe_toggle_off_option_without_apply_removes_group_token                          # apply 없는 off 옵션 선택이 on 토큰을 지우고 역해석은 미매칭이다
+  - recipe_style_and_css_var_and_token_template_primitives_write_the_node               # styleProp, cssVar, tokenTemplate 프리미티브가 노드에 값을 쓰고 빈 style 은 남기지 않는다
+  - recipe_reverse_resolve_reads_current_value_per_apply_type                           # reverseResolve 가 apply 종류별 현재값을 역해석한다
+  - recipe_reverse_resolve_flags_unmatched_as_advanced_and_group_conflict               # 매칭이 없으면 matched false, 같은 group 토큰이 둘이면 conflict 로 표시한다
+  - recipe_apply_and_reverse_resolve_roundtrip_symmetrically                            # apply 뒤 reverseResolve 가 같은 값을 돌려준다
+  - recipe_apply_keeps_the_input_node_immutable                                         # applyRecipe 가 입력 노드를 바꾸지 않는다
+  - recipe_control_level_apply_fallback_applies_dimension_values                        # 옵션 apply 가 없으면 control 단위 apply 로 자유값과 프리셋을 적용한다
+  - composite_settings_form_renders_groups_and_fields                                   # 복합 컴포넌트 설정 폼이 그룹과 필드를 렌더한다
+  - composite_settings_form_value_prefers_instance_prop_then_spec_default               # 설정 필드 값은 인스턴스 prop 이 우선이고 없으면 스펙 기본값이다
+  - composite_settings_field_change_patches_typed_prop_value                            # 설정 필드 변경이 필드 형식에 맞는 값으로 prop 을 패치한다
+  - advanced_props_form_permissions_tag_input_patches_node_permissions                  # 고급 속성 permissions 가 태그 입력으로 노출되고 node.permissions 를 패치한다
+  - advanced_props_form_toggle_and_comment_patch_node_top_level_keys                    # 고급 속성 blur_until_loaded 와 comment 가 노드 최상위 키를 패치한다
+  - advanced_props_form_unsupported_props_degrade_and_developer_props_stay_readonly     # 미지원 고급 속성은 안내로 디그레이드하고 개발자 속성은 읽기 전용으로 보존한다
+  - control_renderer_dispatches_widget_and_resolves_label                               # ControlRenderer 가 widget 으로 위젯을 고르고 $t: 라벨을 해석한다
+  - control_renderer_rows_guard_min_width_zero                                          # 컨트롤 행과 위젯 상자에 minWidth 0 을 걸어 가로 스크롤을 막는다
+  - control_renderer_change_applies_recipe_and_patches_node                             # 위젯 값 변경이 applyRecipe 를 거쳐 패치된 노드로 나간다
+  - control_renderer_reflects_reverse_resolved_value                                    # 역해석한 현재값이 위젯 활성 상태에 반영된다
+  - control_renderer_shows_group_conflict_badge                                         # 같은 group 토큰 충돌이면 conflict 배지를 띄운다
+  - control_renderer_unregistered_widget_falls_back_to_unsupported_notice               # 등록되지 않은 위젯은 지원하지 않는 위젯 안내로 폴백한다
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/components/OptionsListControl.test.tsx

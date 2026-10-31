@@ -120,6 +120,11 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
         // BLOCKED_FUNCTIONS 전수 검사로 승격됐다.
     ];
 
+    /**
+     * 하위 프로세스를 띄울 수단(exec 함수와 PHP 실행 파일 경로)이 없으면 이 클래스의 실측을 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -161,7 +166,11 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * 가드가 동시에 증발해 폴링마다 마스킹 전 상태 사본이 무제한 증식한다. 형제
      * (`installerListExposureProbeFiles`)와 같은 `scandir` 폴백을 요구한다.
      *
+     * @scenario blocked_function_entry=corrupt_state_copies, state_file=corrupt
+     *
      * @effects installer_listing_guards_survive_blocked_glob
+     *
+     * @return void 반환값 없음
      */
     public function test_corrupt_state_copies_are_listed_when_glob_is_blocked(): void
     {
@@ -192,7 +201,11 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * 없었다**: `glob` 은 `disable_functions` 로만 막히고, 그 설정은 돌고 있는 프로세스
      * 안에서 만들 수 없다. 그래서 형제 하네스와 같은 방식으로 별도 프로세스에서 잰다.
      *
+     * @scenario blocked_function_entry=exposure_cleanup
+     *
      * @effects installer_listing_guards_survive_blocked_glob
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_reports_it_could_not_sweep_when_glob_is_blocked(): void
     {
@@ -229,7 +242,13 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
     }
 
     /**
+     * 차단 목록의 함수를 하나씩 막은 하위 프로세스에서 요구사항 화면 하네스가 치명 종료 없이 항목이 담긴 JSON 을 내는지 확인한다.
+     *
+     * @scenario blocked_function_entry=requirements_screen
+     *
      * @effects installer_requirements_screen_survives_blocked_functions
+     *
+     * @return void 반환값 없음
      */
     public function test_requirements_screen_renders_when_common_functions_are_blocked(): void
     {
@@ -267,7 +286,11 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * 다음 줄의 `ini_get('max_execution_time')` 은 무가드였다. `run-task.php` 가 lock 을
      * 잡기 전에 부르는 자리라, 막힌 호스팅에서는 JSON 봉투도 서지 못한 500 이 된다.
      *
+     * @scenario blocked_function_entry=stepwise_runtime, installation_mode=stepwise
+     *
      * @effects installer_stepwise_runtime_survives_blocked_functions
+     *
+     * @return void 반환값 없음
      */
     public function test_stepwise_runtime_judgment_survives_blocked_functions(): void
     {
@@ -297,7 +320,13 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
     }
 
     /**
+     * 디스크 여유 공간 함수가 막히면 요구사항 응답이 확인 불가로 표시하되 통과로 두고, 측정하지 못한 값을 숫자로 단정하지 않는지 확인한다.
+     *
+     * @scenario blocked_function_entry=requirements_screen
+     *
      * @effects installer_disk_space_check_reports_unknown_instead_of_blocking
+     *
+     * @return void 반환값 없음
      */
     public function test_disk_space_check_reports_unknown_instead_of_blocking(): void
     {
@@ -324,7 +353,11 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * 행위 재현이 불가한 갈래(실 디스크에서 false 를 강제할 수 없음)라 소스 계약으로
      * 고정한다 — false 갈래의 반환 배열이 차단 갈래와 같은 3상태 값을 갖는지.
      *
+     * @scenario blocked_function_entry=requirements_screen
+     *
      * @effects installer_disk_space_check_reports_unknown_instead_of_blocking
+     *
+     * @return void 반환값 없음
      */
     public function test_disk_probe_failure_branch_matches_blocked_branch(): void
     {
@@ -343,7 +376,13 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
     }
 
     /**
+     * ini_set 이 막힌 하위 프로세스에서 세션 부팅 하네스가 치명 종료 없이 세션을 띄웠다는 JSON 을 내는지 확인한다.
+     *
+     * @scenario blocked_function_entry=session_boot
+     *
      * @effects installer_session_boot_survives_blocked_ini_set
+     *
+     * @return void 반환값 없음
      */
     public function test_session_boot_survives_blocked_ini_set(): void
     {
@@ -364,7 +403,11 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
     /**
      * 「알려진 무가드 지점 없음」이 **손으로 비운 선언**이 아님을 증명한다 (7차 G3 D-13).
      *
+     * @scenario blocked_function_entry=boot_path_ledger, guard_population=installer_sources
+     *
      * @effects installer_unguarded_call_ledger_is_derived_not_hand_emptied
+     *
+     * @return void 반환값 없음
      */
     public function test_pending_unguarded_call_sites_still_fatal_and_stay_on_the_ledger(): void
     {
@@ -401,6 +444,8 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * **부팅 경로가 실제로 부르는 것**을 도출해, 이 파일의 전수 검사 목록이 그것을 전부
      * 담고 있는지 본다. 룰에 이름이 늘거나 부팅 경로에 새 호출이 생기면 red 가 된다
      * (7차 G3 라운드 D-13).
+     *
+     * @return void 반환값 없음
      */
     private function assertPendingLedgerIsDerivedNotHandEmptied(): void
     {
@@ -463,7 +508,8 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
         // 두 번째 경로를 적어 두는 대신 **위임을 따라간다.** 진입점이 가리키는 곳을 읽으므로
         // 원본이 어디로 옮겨져도 이 검사가 따라가고, 테스트가 하네스 배치를 알 필요도 없다.
         for ($hop = 0; $hop < 3; $hop++) {
-            $raw = (string) file_get_contents($path);
+            // 위임 판정도 주석을 지운 뒤에 한다 — 주석에 적힌 위임 경로를 따라가지 않게 한다.
+            $raw = $this->sourceWithoutComments($path, false);
 
             // shim 은 작다(1 KB 미만). 룰 원본은 수십 KB 라 크기로 가른다 — 원본 안의
             // `require('node:fs')` 같은 호출을 위임으로 오인하지 않기 위한 구분이다.
@@ -587,7 +633,11 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * 확장을 언로드할 수는 없으므로 그 확장의 **함수를 막는다**. 호출 지점에서 일어나는 일은
      * 확장 부재와 동일하다(PHP 8 은 막힌 함수를 함수 테이블에서 제거한다).
      *
+     * @scenario blocked_function_entry=session_boot
+     *
      * @effects installer_boot_survives_missing_required_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_boot_and_requirements_survive_missing_mbstring(): void
     {

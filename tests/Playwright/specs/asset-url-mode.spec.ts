@@ -136,6 +136,8 @@ test.describe('자산 URL 이중 모드 자가 복구', () => {
         ).toEqual([]);
     });
 
+    // @scenario asset_url_mode=extensionless, e2e_asset_url_recovery=browser_self_heal
+    // @effects asset_recovery_attempts_are_capped_and_end_in_fallback_ui
     test('L2·L4 — 양쪽 형태가 모두 실패하면 3시도에서 멈추고 폴백 UI 로 끝난다', async ({ page }) => {
         // PHP 다운 모사 — 확장자 유무와 무관하게 모든 /api/ 를 404
         const attempts: string[] = [];
@@ -194,6 +196,8 @@ test.describe('자산 URL 이중 모드 자가 복구', () => {
         ).toBe(0);
     });
 
+    // @scenario asset_url_mode=extensionless, e2e_asset_url_recovery=browser_self_heal
+    // @effects asset_recovery_initializes_template_app_exactly_once
     test('L8 — 전환 성공 시 초기화가 정확히 1회만 일어난다', async ({ page }) => {
         const blocked: string[] = [];
         await installStaticOptimizationServer(page, blocked);

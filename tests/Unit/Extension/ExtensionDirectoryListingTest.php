@@ -30,7 +30,11 @@ class ExtensionDirectoryListingTest extends TestCase
     ];
 
     /**
+     * 확장 발견과 로딩 소스 파일들이 glob() 을 직접 부르지 않는지 확인한다.
+     *
      * @effects extension_file_listing_survives_disabled_glob
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_listing_sources_do_not_call_glob(): void
@@ -48,6 +52,15 @@ class ExtensionDirectoryListingTest extends TestCase
         }
     }
 
+    /**
+     * 확장 나열 소스 파일들이 모두 공유 헬퍼 ExtensionManager::listDirectoryFiles 를 부르는지 확인한다.
+     *
+     * @scenario hosting_restriction=disabled_glob, extension_discovery=upgrade_steps
+     *
+     * @effects extension_file_listing_survives_disabled_glob
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function extension_listing_sources_route_through_the_shared_helper(): void
     {
@@ -62,7 +75,11 @@ class ExtensionDirectoryListingTest extends TestCase
     }
 
     /**
+     * 파일 나열 헬퍼가 접두와 확장자로 거르고 점으로 시작하는 항목을 빼며 이름순으로 정렬해 glob 판본과 같은 결과를 내는지 확인한다.
+     *
      * @effects extension_file_listing_survives_disabled_glob
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_helper_sorts_filters_and_skips_dot_entries(): void
@@ -113,6 +130,13 @@ class ExtensionDirectoryListingTest extends TestCase
         }
     }
 
+    /**
+     * 없는 디렉토리를 넘기면 파일 나열 헬퍼가 예외 없이 빈 배열을 돌려주는지 확인한다.
+     *
+     * @effects extension_file_listing_survives_disabled_glob
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function the_helper_returns_empty_for_a_missing_directory(): void
     {
@@ -129,6 +153,12 @@ class ExtensionDirectoryListingTest extends TestCase
      * 그 지점들(템플릿 오버라이드 순회 · `_pending` 잔여물 정리 · 손상 백업 정리)은
      * 확장 설치 흐름에서 먼저 실행된다 — 먼저 죽는 쪽이 남아 있으면 옮긴 회피는
      * 도달조차 하지 못한다 (12차 G3 라운드).
+     *
+     * @scenario hosting_restriction=disabled_glob, extension_discovery=upgrade_steps
+     *
+     * @effects extension_directory_listing_matches_glob_onlydir
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_directory_helper_matches_glob_only_dir(): void
@@ -176,6 +206,13 @@ class ExtensionDirectoryListingTest extends TestCase
         }
     }
 
+    /**
+     * 없는 디렉토리를 넘기면 디렉토리 나열 헬퍼가 예외 없이 빈 배열을 돌려주는지 확인한다.
+     *
+     * @effects extension_directory_listing_matches_glob_onlydir
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function the_directory_helper_returns_empty_for_a_missing_directory(): void
     {

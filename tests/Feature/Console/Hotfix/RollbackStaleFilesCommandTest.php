@@ -44,21 +44,6 @@ class RollbackStaleFilesCommandTest extends TestCase
     }
 
     /**
-     * 시나리오 6: 백업 디렉토리 자체가 비어있음 → "백업 없음" 안내 + exit 0.
-     *
-     * `core_backups/` 가 비어있어야 의미 있는 케이스이므로 `--backup` 으로 비어있는 임시
-     * 디렉토리 지정 — listBackups 호출 자체를 회피.
-     *
-     * 단, 비어있는 임시 디렉토리는 그 자체로 "유효한 백업" 이므로 manifest 부재 경고가
-     * 발화. 본 케이스는 진단 모드에서 잔존 후보가 0 일 때 정상 종료를 검증.
-     *
-     * @scenario hotfix_command_mode=missing_backup
-     *
-     * @effects hotfix_command_missing_backup_dir_completes_safely
-     *
-     * @return void 반환값 없음
-     */
-    /**
      * 백업 선택기의 정렬이 **형제 규율**과 같다 — fail-closed + 전순서 (23차 D23-10).
      *
      * 두 축이 각각 조용한 결함이다.
@@ -70,6 +55,12 @@ class RollbackStaleFilesCommandTest extends TestCase
      * 소스 계약으로 잰다. 이 명령은 실제 백업 트리를 읽어 두 상황(조회 실패 · 같은 초)을
      * 테스트가 만들 수 없고, 그래서 종전에는 **두 축을 되돌려도 이 클래스가 전부 초록**
      * 이었다 (24차 G3 라운드 R24-C M13 실측).
+     *
+     * @scenario hotfix_command_mode=diagnose
+     *
+     * @effects hotfix_command_backup_selector_is_fail_closed_with_total_order
+     *
+     * @return void 반환값 없음
      */
     public function test_backup_selector_keeps_the_sibling_ordering_discipline(): void
     {
@@ -101,6 +92,21 @@ class RollbackStaleFilesCommandTest extends TestCase
         );
     }
 
+    /**
+     * 시나리오 6: 백업 디렉토리 자체가 비어있음 → "백업 없음" 안내 + exit 0.
+     *
+     * `core_backups/` 가 비어있어야 의미 있는 케이스이므로 `--backup` 으로 비어있는 임시
+     * 디렉토리 지정 — listBackups 호출 자체를 회피.
+     *
+     * 단, 비어있는 임시 디렉토리는 그 자체로 "유효한 백업" 이므로 manifest 부재 경고가
+     * 발화. 본 케이스는 진단 모드에서 잔존 후보가 0 일 때 정상 종료를 검증.
+     *
+     * @scenario hotfix_command_mode=missing_backup
+     *
+     * @effects hotfix_command_missing_backup_dir_completes_safely
+     *
+     * @return void 반환값 없음
+     */
     public function test_empty_backup_completes_successfully(): void
     {
         $exitCode = $this->artisan('hotfix:rollback-stale-files', [

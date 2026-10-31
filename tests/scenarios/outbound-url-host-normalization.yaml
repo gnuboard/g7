@@ -75,6 +75,11 @@ effects:
   # 웹소켓 연결 테스트 — 브라우저가 붙는 주소라 사설·로컬 호스트가 정상 구성이다(내부망 차단 대상 아님). 구조 위조만 거부
   - websocket_test_allows_local_and_private_hosts
   - websocket_test_rejects_structurally_forged_hosts
+  - whitelisted_host_must_match_exactly
+  - whitelist_check_defaults_to_https_only
+  - whitelist_check_rejects_explicit_ports_by_default
+  - bare_host_judgement_uses_the_same_internal_rules
+  - whitelist_comparison_uses_the_normalized_host
 
 test_files:
   - tests/Unit/Support/OutboundUrlValidatorTest.php

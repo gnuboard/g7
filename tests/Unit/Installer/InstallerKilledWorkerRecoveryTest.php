@@ -41,7 +41,8 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: task_outcome failed / resume_point retry_after_failure / installation_mode stepwise
  *
- * @effects killed_worker_promoted_by_next_request, killed_worker_promotion_keeps_skip_available, killed_worker_promotion_never_kills_a_live_worker, killed_worker_promotion_is_idempotent
+ * 효과 요약(마커 아님 — 평문): 다음 요청의 실패 승격, 승격 뒤 건너뛰기 가능, 살아 있는 워커 보호, 승격의 멱등성.
+ * 표식은 그 효과를 재는 각 테스트 메서드가 단다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -56,6 +57,13 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스당 한 번만 임시 BASE_PATH 를 정하고 저장소 디렉토리를 만든 뒤 인스톨러 설정, 함수, 상태 헬퍼를 불러온다.
+     *
+     * BASE_PATH 가 이미 시스템 temp 밖으로 정의돼 있으면 실제 상태 파일을 지키려고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function boot(): void
     {
         if (self::$booted) {
@@ -95,6 +103,11 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         require_once $root.'/public/install/includes/installer-state.php';
     }
 
+    /**
+     * 인스톨러를 부팅하고 건너뛸 사유가 있으면 건너뛴 뒤, 앞 테스트(또는 같은 테스트의 앞 갈래)가 남긴 상태 파일과 설치 로그를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -118,7 +131,8 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
     /**
      * 시그널로 죽은 워커가 남긴 상태를 만든다 — lock 흔적은 남고 heartbeat 는 멈춰 있다.
      *
-     * @param  array<string, mixed>  $overrides
+     * @param  array<string, mixed>  $overrides  기본 고착 상태 위에 덮어쓸 필드
+     * @return void 반환값 없음
      */
     private function seedKilledWorker(array $overrides = []): void
     {
@@ -139,6 +153,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertTrue(saveInstallationState($state));
     }
 
+    /**
+     * 예산을 넘긴 점유 흔적만 남은 running 상태를 다음 요청이 읽을 때 실패로 승격하고, 실패 태스크, 대상, 건너뛰기 가능 여부, 오류 키를 채우며 그 결과가 상태 파일에 남는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, task=module, task_outcome=failed_extension, resume_point=retry_after_failure
+     *
+     * @effects killed_worker_promoted_by_next_request
+     *
+     * @return void 반환값 없음
+     */
     public function test_the_next_request_promotes_a_signal_killed_worker_to_failed(): void
     {
         $this->seedKilledWorker();
@@ -157,6 +180,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertSame('failed', $reread['installation_status'] ?? null);
     }
 
+    /**
+     * 승격된 상태에 대해 건너뛰기 요청이 성공하고 실패했던 모듈 설치 태스크가 건너뜀 목록에 실리는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, task=module, task_outcome=failed_extension, skip_request=skippable
+     *
+     * @effects killed_worker_promotion_keeps_skip_available
+     *
+     * @return void 반환값 없음
+     */
     public function test_promoted_state_makes_skip_and_continue_possible(): void
     {
         $this->seedKilledWorker();
@@ -171,6 +203,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertContains('module_install:sirsoft-board', $result['skipped']);
     }
 
+    /**
+     * 치명 종료 승격과 시그널 종료 승격을 각각 만든 뒤, 시그널 쪽이 같은 필드 집합을 갖고 상태, 실패 태스크, 대상, 건너뛰기 가능 여부, 수동 명령 값이 치명 종료 쪽과 같은지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, task=module, task_outcome=failed_extension
+     *
+     * @effects killed_worker_promoted_by_next_request, killed_worker_promotion_keeps_skip_available
+     *
+     * @return void 반환값 없음
+     */
     public function test_promotion_writes_the_same_field_set_as_the_fatal_shutdown_channel(): void
     {
         // 치명 종료 채널 (기존 빠른 경로)
@@ -217,6 +258,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertSame($fatal['manual_commands'], $killed['manual_commands']);
     }
 
+    /**
+     * 시작한 지 선언 예산 안쪽인 워커의 running 상태는 승격되지 않고 실패 태스크도 비어 있는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, task=module, task_duration=short
+     *
+     * @effects killed_worker_promotion_never_kills_a_live_worker
+     *
+     * @return void 반환값 없음
+     */
     public function test_a_worker_inside_its_declared_budget_is_never_promoted(): void
     {
         $now = time();
@@ -230,6 +280,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertNull(getInstallationState()['failed_task'] ?? null);
     }
 
+    /**
+     * 선언 예산은 넘겼지만 heartbeat 가 방금 갱신된 워커는 기존 생존 판정과 맞춰 승격하지 않는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, task=module, task_duration=long_no_feedback
+     *
+     * @effects killed_worker_promotion_never_kills_a_live_worker
+     *
+     * @return void 반환값 없음
+     */
     public function test_a_heartbeating_worker_past_its_budget_is_not_promoted(): void
     {
         // 선언 예산은 넘겼지만 heartbeat 는 방금 갱신됐다 — 기존 생존 판정
@@ -245,6 +304,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertSame('running', getInstallationState()['installation_status'] ?? null);
     }
 
+    /**
+     * 이 프로세스가 점유자로 기록된 경우 heartbeat 가 멈춰 있어도 자기 상태를 승격하지 않는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, task=module
+     *
+     * @effects killed_worker_promotion_never_kills_a_live_worker
+     *
+     * @return void 반환값 없음
+     */
     public function test_the_owning_process_never_promotes_its_own_state(): void
     {
         $this->seedKilledWorker(['active_worker_id' => 'myself']);
@@ -255,6 +323,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertSame('running', getInstallationState()['installation_status'] ?? null);
     }
 
+    /**
+     * 시작 시각과 heartbeat 가 현재보다 미래인(시계 역행으로 경과가 음수인) 흔적은 승격하지 않는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, task=module
+     *
+     * @effects killed_worker_promotion_never_kills_a_live_worker
+     *
+     * @return void 반환값 없음
+     */
     public function test_a_clock_rollback_does_not_promote(): void
     {
         // 시계가 뒤로 가면(NTP 보정·컨테이너 시각 점프) 경과가 음수가 된다 — 워커가 죽은 것이
@@ -268,6 +345,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertSame('running', getInstallationState()['installation_status'] ?? null);
     }
 
+    /**
+     * 시작 시각이 없는 구 상태, 예산이 0 인 흔적, 점유자가 없는 요청 사이의 running 상태를 각각 만들어 셋 다 승격하지 않는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, task=module, execution_mode_resolved=absent
+     *
+     * @effects killed_worker_promotion_never_kills_a_live_worker
+     *
+     * @return void 반환값 없음
+     */
     public function test_states_without_a_declared_budget_are_left_alone(): void
     {
         // 구 상태 파일에는 시작 시각이 없다 — 판정 근거가 없으므로 종전 동작을 유지한다.
@@ -285,6 +371,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertSame('running', getInstallationState()['installation_status'] ?? null);
     }
 
+    /**
+     * completed, aborted, failed 로 이미 끝난 설치는 예산을 넘긴 흔적이 있어도 상태를 바꾸지 않는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, task_outcome=done, task_outcome=aborted, task_outcome=failed_extension
+     *
+     * @effects killed_worker_promotion_is_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_finished_installations_are_not_touched(): void
     {
         foreach (['completed', 'aborted', 'failed'] as $status) {
@@ -299,6 +394,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         }
     }
 
+    /**
+     * 상태를 두 번 읽어도 같은 실패 결말이 유지되고, 죽은 워커의 점유 id, 시작 시각, 예산 흔적이 지워지는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, task=module, task_outcome=failed_extension, resume_point=retry_after_failure
+     *
+     * @effects killed_worker_promotion_is_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_promotion_is_idempotent_and_clears_the_dead_lock(): void
     {
         $this->seedKilledWorker();
@@ -315,6 +419,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertArrayNotHasKey('worker_stale_after', $second);
     }
 
+    /**
+     * 워커 잠금을 얻으면 시작 시각과 선언 예산이 기록되고, 잠금을 놓으면 두 필드가 지워지는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects killed_worker_promoted_by_next_request
+     *
+     * @return void 반환값 없음
+     */
     public function test_lock_acquisition_records_the_start_time_and_release_clears_it(): void
     {
         $lock = acquireWorkerLock(180);
@@ -332,6 +445,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertArrayNotHasKey('worker_stale_after', $released);
     }
 
+    /**
+     * 중단과 초기화 경로가 쓰는 잠금 흔적 정리가 시작 시각과 점유 id 를 함께 지우는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, task_outcome=aborted
+     *
+     * @effects killed_worker_promotion_never_kills_a_live_worker
+     *
+     * @return void 반환값 없음
+     */
     public function test_clear_worker_lock_drops_the_recorded_start_time(): void
     {
         // 중단·초기화 경로는 lock 흔적을 통째로 지운다 — 시작 시각만 남으면 다음 점유자의
@@ -347,6 +469,15 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
         $this->assertArrayNotHasKey('active_worker_id', $cleared);
     }
 
+    /**
+     * 상태 헬퍼 소스(주석 제거)에서 상태 읽기 함수가 죽은 워커 승격 채널을 경유하는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, installation_mode=sse, installation_mode=polling
+     *
+     * @effects killed_worker_promoted_by_next_request
+     *
+     * @return void 반환값 없음
+     */
     public function test_the_judgment_lives_in_the_single_state_read_point(): void
     {
         // 세 진입점에 흩어 놓으면 한 곳만 빠져도 그 모드에서 같은 고착이 남는다 —

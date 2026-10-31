@@ -16,6 +16,8 @@ class ExecutionModeTest extends TestCase
      * 열거 값은 auto/subprocess/inprocess 셋뿐이다.
      *
      * @effects execution_mode_enum_has_exactly_three_cases
+     *
+     * @return void 반환값 없음
      */
     public function test_enum_cases(): void
     {
@@ -29,6 +31,8 @@ class ExecutionModeTest extends TestCase
      * fromStringOrAuto: null/빈 문자열/미지원 값은 전부 Auto 폴백.
      *
      * @effects execution_mode_unknown_value_falls_back_to_auto
+     *
+     * @return void 반환값 없음
      */
     public function test_from_string_or_auto_falls_back_to_auto(): void
     {

@@ -259,6 +259,8 @@ class CoreUpdateServiceTest extends TestCase
      * @scenario release_payload=missing_tag_name, api_message=absent
      *
      * @effects version_check_failure_message_has_no_unfilled_placeholder
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_tag_name_error_has_no_unfilled_placeholder(): void
     {
@@ -310,6 +312,8 @@ class CoreUpdateServiceTest extends TestCase
      * @scenario api_message=absent, http_status=401|403|404|500
      *
      * @effects version_check_failure_message_has_no_unfilled_placeholder
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_api_message_does_not_leave_a_blank_reason(): void
     {
@@ -362,6 +366,8 @@ class CoreUpdateServiceTest extends TestCase
      * @scenario write_outcome=partial, write_outcome=complete, recovery_slot=occupied, recovery_slot=free
      *
      * @effects replaced_root_index_copy_reports_only_a_complete_write
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_write_of_the_preserved_root_index_is_reported_as_not_preserved(): void
     {
@@ -421,6 +427,8 @@ class CoreUpdateServiceTest extends TestCase
      * @scenario write_outcome=complete
      *
      * @effects replaced_root_index_copy_reports_only_a_complete_write
+     *
+     * @return void 반환값 없음
      */
     public function test_complete_write_of_the_preserved_root_index_returns_the_copy_path(): void
     {
@@ -471,6 +479,8 @@ class CoreUpdateServiceTest extends TestCase
      * @scenario copy_outcome=silently_failed, copy_outcome=succeeded, destination=stale_file
      *
      * @effects root_file_copy_that_did_not_land_is_reported_not_claimed_as_updated
+     *
+     * @return void 반환값 없음
      */
     public function test_silently_failed_root_file_copy_is_reported(): void
     {
@@ -516,6 +526,8 @@ class CoreUpdateServiceTest extends TestCase
      * @scenario copy_outcome=succeeded
      *
      * @effects root_file_copy_that_did_not_land_is_reported_not_claimed_as_updated
+     *
+     * @return void 반환값 없음
      */
     public function test_successful_root_file_copy_records_no_warning(): void
     {
@@ -555,6 +567,7 @@ class CoreUpdateServiceTest extends TestCase
              * @param  string  $target  정규화된 대상 이름
              * @param  string  $source  소스 파일
              * @param  string  $destination  대상 파일
+             * @return void 반환값 없음
              */
             public function exposeCopyRootFile(string $target, string $source, string $destination): void
             {
@@ -2129,6 +2142,8 @@ MD;
      * @scenario deploy_fragment_state=operator_modified
      *
      * @effects operator_modified_deploy_fragment_is_kept_and_new_version_lands_beside_it
+     *
+     * @return void 반환값 없음
      */
     public function test_operator_modified_deploy_fragment_is_preserved_with_dist_sidecar_and_warning(): void
     {
@@ -2178,6 +2193,8 @@ MD;
      * @scenario deploy_fragment_state=unmodified
      *
      * @effects unmodified_deploy_fragment_is_updated_and_stale_dist_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_unmodified_deploy_fragment_is_updated_and_stale_dist_is_removed(): void
     {
@@ -2238,6 +2255,8 @@ MD;
      * @scenario rollback_leftover=deploy_dist_sidecar
      *
      * @effects rollback_removes_deploy_dist_sidecars_and_returns_warnings
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_from_backup_removes_deploy_dist_sidecars_and_returns_warnings(): void
     {
@@ -2296,6 +2315,8 @@ MD;
      * @scenario deploy_fragment_state=operator_modified, deploy_fragment_ledger=absent, deploy_fragment_merge=merged
      *
      * @effects merged_deploy_fragment_escapes_preservation_on_the_next_update
+     *
+     * @return void 반환값 없음
      */
     public function test_merged_dist_escapes_preservation_on_the_next_update_even_without_a_prior_ledger(): void
     {
@@ -2352,6 +2373,8 @@ MD;
      * @scenario deploy_fragment_state=operator_modified, deploy_fragment_ledger=absent, deploy_fragment_merge=unmerged
      *
      * @effects unmerged_deploy_fragment_stays_preserved_and_conflicting_dist_is_not_overwritten
+     *
+     * @return void 반환값 없음
      */
     public function test_unmerged_fragment_stays_preserved_and_a_conflicting_dist_is_kept_beside_a_dist_new(): void
     {
@@ -2402,6 +2425,8 @@ MD;
      * @scenario deploy_fragment_state=unmodified, deploy_fragment_ledger=unwritable
      *
      * @effects deploy_fragment_ledger_write_failure_reaches_the_operator
+     *
+     * @return void 반환값 없음
      */
     public function test_deploy_fragment_ledger_write_failure_is_reported_not_swallowed(): void
     {
@@ -2440,6 +2465,8 @@ MD;
      * @scenario deploy_fragment_ledger=absent, deploy_fragment_state=unmodified
      *
      * @effects deploy_fragment_ledger_can_be_seeded_from_disk_without_touching_preserved_fragments
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_deploy_fragment_ledger_hashes_the_disk_and_skips_fragments_with_sidecars(): void
     {
@@ -2484,6 +2511,8 @@ MD;
      * @scenario server_kind=iis_webconfig, htaccess_operator_state=modified_outside_block, update_targets_state=current
      *
      * @effects root_marker_files_are_updated_by_the_block_updater_in_both_apply_branches
+     *
+     * @return void 반환값 없음
      */
     public function test_apply_update_preserves_operator_elements_outside_the_web_config_block(): void
     {
@@ -2514,6 +2543,8 @@ MD;
      * @scenario server_kind=iis_webconfig, htaccess_operator_state=modified_outside_block, update_targets_state=stale_without_root_files
      *
      * @effects root_marker_files_are_updated_by_the_block_updater_in_both_apply_branches
+     *
+     * @return void 반환값 없음
      */
     public function test_auto_discovery_fallback_preserves_operator_elements_outside_the_web_config_block(): void
     {
@@ -2544,6 +2575,8 @@ MD;
      * @scenario process_shape=standalone, warning_channel=console
      *
      * @effects rollback_removes_deploy_dist_sidecars_and_returns_warnings
+     *
+     * @return void 반환값 없음
      */
     public function test_update_command_consumes_the_return_values_for_root_file_warnings(): void
     {
@@ -2578,6 +2611,10 @@ MD;
      * 오류가 아니라 **정리 대상에서 조용히 빠지는 것**으로만 나타난다 — 코어 백업이 실제로
      * 그랬다(`BackupDirectoryName` 독블록). 이름은 SSoT 가 만들고, 정리자의 패턴이 그 이름을
      * 받아들이는지를 여기서 함께 잰다.
+     *
+     * @effects preserved_root_index_directory_name_comes_from_the_backup_name_ssot
+     *
+     * @return void 반환값 없음
      */
     public function test_preserved_root_index_directory_name_comes_from_the_backup_name_ssot(): void
     {
@@ -2591,6 +2628,12 @@ MD;
 
         $service = new class extends CoreUpdateService
         {
+            /**
+             * 보호된 preserveReplacedRootIndex 를 시험에서 부를 수 있게 드러낸다.
+             *
+             * @param  string  $contents  보존할 루트 진입 파일 본문
+             * @return ?string 보존 사본 경로(실패하면 null)
+             */
             public function exposePreserve(string $contents): ?string
             {
                 return $this->preserveReplacedRootIndex($contents);
@@ -2643,6 +2686,8 @@ MD;
      * 구버전으로 남는다 — 다른 코어 파일은 전부 신 버전인 채로.
      *
      * @effects root_htaccess_write_failure_is_reported_not_claimed_as_updated
+     *
+     * @return void 반환값 없음
      */
     public function test_root_htaccess_write_failure_surfaces_to_the_caller(): void
     {
@@ -2691,6 +2736,8 @@ MD;
      * 「항상 경고를 쌓는」 구현으로도 초록이 된다.
      *
      * @effects root_htaccess_write_failure_is_reported_not_claimed_as_updated
+     *
+     * @return void 반환값 없음
      */
     public function test_successful_root_htaccess_update_records_no_warning(): void
     {
@@ -2719,6 +2766,12 @@ MD;
      *
      * 서비스가 경고를 쌓아도 아무도 읽지 않으면 종전과 같다. 배선은 형제 축
      * (`surfacePermissionWarnings`)과 같은 형태이며, 그 자리가 지워지면 이 단언이 red 다.
+     *
+     * @scenario process_shape=standalone, warning_channel=console
+     *
+     * @effects root_file_copy_that_did_not_land_is_reported_not_claimed_as_updated
+     *
+     * @return void 반환값 없음
      */
     public function test_update_command_surfaces_root_file_warnings(): void
     {
@@ -2752,6 +2805,12 @@ MD;
      * `web.config` 이고 그 배치에서 `.htaccess` 는 아무 의미가 없다. 즉 그 서버에서는
      * 유일한 보호 수단이 사라져도 경고가 발화하지 않았고, 증상은 「경고가 없다」뿐이라
      * 운영자가 알아챌 방법이 없었다.
+     *
+     * @scenario process_shape=standalone, warning_channel=console
+     *
+     * @effects rollback_reports_missing_root_protection_files_to_the_console
+     *
+     * @return void 반환값 없음
      */
     public function test_rollback_reports_missing_root_protection_files(): void
     {
@@ -2823,6 +2882,12 @@ MD;
      *
      * 콘솔 출력 배선 자체(`surfaceRootFileWarnings()` 가 롤백 catch 에 있음)는 바로 위
      * 형제 테스트가 이미 잠근다 — 여기서는 그 통로에 **실린다**는 것을 잰다.
+     *
+     * @scenario process_shape=standalone, warning_channel=console
+     *
+     * @effects rollback_reports_public_file_copies_restored_inside_the_document_root
+     *
+     * @return void 반환값 없음
      */
     public function test_rollback_reports_public_file_copies_restored_inside_the_document_root(): void
     {
@@ -2879,6 +2944,12 @@ MD;
         }
     }
 
+    /**
+     * 원본과 가짜 기준 경로를 임시로 만들고 기준 경로를 옮기되 언어 경로는 원래 자리에 고정한 뒤, 업데이트 대상 설정을 주입한다.
+     *
+     * @param  array  $targets  주입할 app.update.targets 목록
+     * @return array{0: string, 1: string, 2: Closure} 원본 경로, 가짜 기준 경로, 경로를 되돌리는 클로저
+     */
     private function prepareApplyUpdateEnv(array $targets): array
     {
         $source = storage_path('test_apply3_src_'.uniqid());
@@ -3004,6 +3075,8 @@ MD;
      * 시작하면 `.env` 도 후보에 들어오기 때문이다.
      *
      * @effects root_entry_files_reach_installs_running_older_targets
+     *
+     * @return void 반환값 없음
      */
     public function test_apply_update_auto_discovers_hidden_top_level_files(): void
     {
@@ -3429,6 +3502,8 @@ MD;
      * @scenario update_concurrency=reentrant
      *
      * @effects run_lock_release_requires_ownership
+     *
+     * @return void 반환값 없음
      */
     public function test_run_lock_release_is_owned_by_the_acquirer(): void
     {

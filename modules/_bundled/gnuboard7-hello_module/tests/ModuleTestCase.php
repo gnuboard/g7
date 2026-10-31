@@ -49,6 +49,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -71,6 +73,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * tearDown 에 HookManager 상태 복원 — 테스트 본문이 추가한 훅만 제거.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -81,6 +85,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
+     *
+     * @return void 반환값 없음
      */
     private function snapshotHookManager(): void
     {
@@ -94,6 +100,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 스냅샷 시점으로 HookManager 복원.
+     *
+     * @return void 반환값 없음
      */
     private function restoreHookManager(): void
     {
@@ -111,6 +119,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈 마이그레이션을 필요 시 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function runModuleMigrationIfNeeded(): void
     {
@@ -132,6 +142,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈 오토로드를 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleAutoload(): void
     {
@@ -169,6 +181,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈을 활성화 상태로 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleAsActive(): void
     {
@@ -188,6 +202,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈 라우트를 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleRoutes(): void
     {
@@ -217,6 +233,8 @@ abstract class ModuleTestCase extends TestCase
      *
      * 실제 런타임에서는 ModuleManager 가 자동 등록하지만
      * 테스트 환경에서는 수동으로 HookManager 에 주입해야 합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleHookListeners(): void
     {
@@ -244,6 +262,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 기본 역할을 생성합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function createDefaultRoles(): void
     {

@@ -32,6 +32,11 @@ class AttachmentServeMetaContractTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 훅 등록을 비우고 첨부 디스크를 가짜 `attachments` 디스크로 바꿔 업로드와 서빙 메타를 격리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +52,8 @@ class AttachmentServeMetaContractTest extends TestCase
      * @scenario conditional_request=none
      *
      * @effects attachment_recorded_size_matches_stored_bytes_after_the_resize_path
+     *
+     * @return void 반환값 없음
      */
     public function test_recorded_size_matches_stored_bytes_after_the_resize_path(): void
     {
@@ -93,6 +100,8 @@ class AttachmentServeMetaContractTest extends TestCase
      * @scenario conditional_request=none
      *
      * @effects attachment_missing_serve_meta_fails_loudly
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_serve_meta_fails_loudly(): void
     {
@@ -133,6 +142,8 @@ class AttachmentServeMetaContractTest extends TestCase
      * @scenario conditional_request=none
      *
      * @effects unknown_mime_is_served_as_octet_stream_download, file_serving_response_declares_nosniff
+     *
+     * @return void 반환값 없음
      */
     public function test_blank_mime_type_row_is_served_as_octet_stream_download(): void
     {
@@ -159,6 +170,8 @@ class AttachmentServeMetaContractTest extends TestCase
      * @scenario conditional_request=if_modified_since
      *
      * @effects attachment_complete_serve_meta_still_serves_with_last_modified
+     *
+     * @return void 반환값 없음
      */
     public function test_complete_serve_meta_still_serves_with_last_modified(): void
     {
@@ -183,6 +196,8 @@ class AttachmentServeMetaContractTest extends TestCase
      *
      * 컨텍스트 바인딩(`when(AttachmentService::class)`)은 서브클래스에 적용되지 않으므로
      * 스토리지를 직접 만들어 넘깁니다 — 코어 바인딩과 같은 구성입니다.
+     *
+     * @return void 반환값 없음
      */
     private function bindServiceThatDropsServeMetaKey(): void
     {

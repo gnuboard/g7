@@ -32,6 +32,11 @@ class RootHtaccessUpdaterTest extends TestCase
 
     protected string $workDir;
 
+    /**
+     * 테스트마다 쓸 임시 작업 디렉토리를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,6 +45,11 @@ class RootHtaccessUpdaterTest extends TestCase
         mkdir($this->workDir, 0755, true);
     }
 
+    /**
+     * 임시 작업 디렉토리의 파일과 디렉토리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach (glob($this->workDir.'/*') ?: [] as $file) {
@@ -52,6 +62,9 @@ class RootHtaccessUpdaterTest extends TestCase
 
     /**
      * 마커 블록을 가진 판본을 생성합니다.
+     *
+     * @param  string  $ruleLine  마커 블록 안에 넣을 규칙 한 줄
+     * @return string 시작과 끝 마커로 감싼 판본 본문
      */
     protected function coreFile(string $ruleLine): string
     {
@@ -61,6 +74,13 @@ class RootHtaccessUpdaterTest extends TestCase
             .(static::UPDATER)::END_MARKER."\n";
     }
 
+    /**
+     * 갱신기가 도출한 실패 결과 코드 전부가 실패로 분류되고 운영자에게 보일 문구를 갖는지 확인한다.
+     *
+     * @effects root_htaccess_every_failure_result_has_an_operator_message
+     *
+     * @return void 반환값 없음
+     */
     public function test_every_failure_result_reaches_the_operator_message(): void
     {
         // 결과 코드는 재는데 그 코드의 **문구 도달**은 일부만 잰 상태였다 — `failureMessage()`
@@ -114,6 +134,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * 실패 문구를 갖추거나 둘 중 하나를 해야 하고, 아무것도 하지 않으면 이 검사가 red 다.
      *
      * @effects root_htaccess_result_codes_are_partitioned_not_hand_enumerated
+     *
+     * @return void 반환값 없음
      */
     public function test_every_result_constant_is_classified_as_success_or_failure(): void
     {
@@ -189,6 +211,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * Windows 에서는 skip 한다(형제 선례: 링크 종류별 케이스).
      *
      * @effects root_htaccess_read_failure_is_reported_not_mistaken_for_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_unreadable_destination_is_reported_as_read_failure(): void
     {
@@ -224,6 +248,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * 소스를 읽지 못하는 경우도 같은 결과로 수렴한다 (형제 축).
      *
      * @effects root_htaccess_read_failure_is_reported_not_mistaken_for_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_unreadable_source_is_reported_as_read_failure(): void
     {
@@ -248,6 +274,15 @@ class RootHtaccessUpdaterTest extends TestCase
         $this->assertSame((static::UPDATER)::RESULT_READ_FAILED, $result);
     }
 
+    /**
+     * 대상 .htaccess 가 없으면 원본 그대로 새로 만들고, 그 결과가 실패가 아닌 통보로 운영자에게 실리는지 확인한다.
+     *
+     * @scenario destination_state=absent, source_state=with_block
+     *
+     * @effects root_htaccess_missing_destination_is_created_and_announced
+     *
+     * @return void 반환값 없음
+     */
     public function test_missing_destination_is_created_from_source(): void
     {
         $src = $this->workDir.'/src.htaccess';
@@ -284,6 +319,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * @scenario copy_outcome=block_count_mismatch, destination_state=absent
      *
      * @effects root_htaccess_creation_reports_only_a_complete_copy
+     *
+     * @return void 반환값 없음
      */
     public function test_creation_result_is_verified_not_assumed(): void
     {
@@ -318,6 +355,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * @scenario copy_outcome=clean, destination_state=absent
      *
      * @effects root_htaccess_creation_reports_only_a_complete_copy
+     *
+     * @return void 반환값 없음
      */
     public function test_clean_source_still_creates(): void
     {
@@ -344,6 +383,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * 소유자 상이). 그 사이트는 보호 규칙 파일이 없는 상태로 `.env` 가 열려 있다.
      *
      * @effects root_htaccess_creation_failure_is_reported_not_claimed_as_updated
+     *
+     * @return void 반환값 없음
      */
     public function test_failed_creation_of_missing_destination_is_reported_as_failure(): void
     {
@@ -367,7 +408,11 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
+     * 코어 블록이 바뀌면 블록만 신버전으로 교체되고 블록 뒤의 운영자 규칙은 남는지 확인한다.
+     *
      * @effects root_htaccess_updates_replace_only_core_block
+     *
+     * @return void 반환값 없음
      */
     public function test_operator_rules_outside_block_survive_core_block_change(): void
     {
@@ -390,7 +435,11 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
+     * 코어 블록 앞에 둔 운영자 규칙도 블록 교체 뒤 그대로 맨 앞에 남는지 확인한다.
+     *
      * @effects root_htaccess_updates_replace_only_core_block
+     *
+     * @return void 반환값 없음
      */
     public function test_operator_rules_before_block_survive_too(): void
     {
@@ -408,7 +457,11 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
+     * 마커가 없는 대상 파일은 운영자 의도로 보고 건드리지 않으며, 그 결과를 실패로 분류하지 않는지 확인한다.
+     *
      * @effects root_htaccess_without_marker_is_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_destination_without_markers_is_left_untouched(): void
     {
@@ -438,6 +491,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * 쓴다. 손상은 실패로 분류해 그 사유를 그대로 싣는다 (13차 G3 라운드 W4-2).
      *
      * @effects root_htaccess_broken_block_is_reported_not_mistaken_for_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_begin_only_block_is_reported_as_broken_not_preserved(): void
     {
@@ -464,6 +519,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * END 만 남은 파일도 같은 분류입니다 — 앞부분이 잘린 형태.
      *
      * @effects root_htaccess_broken_block_is_reported_not_mistaken_for_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_end_only_block_is_reported_as_broken_not_preserved(): void
     {
@@ -485,6 +542,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * 역순(END 가 BEGIN 앞)도 손상입니다 — 두 마커가 다 있는데 블록이 서지 않는 형태.
      *
      * @effects root_htaccess_broken_block_is_reported_not_mistaken_for_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_reversed_markers_are_reported_as_broken_not_preserved(): void
     {
@@ -507,6 +566,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * 교체된 블록의 줄바꿈은 대상 파일의 것(CR)을 따라야 한 파일 안에서 갈리지 않는다.
      *
      * @effects root_htaccess_write_is_atomic_and_line_endings_follow_destination
+     *
+     * @return void 반환값 없음
      */
     public function test_cr_only_destination_is_recognized_and_updated(): void
     {
@@ -536,6 +597,12 @@ class RootHtaccessUpdaterTest extends TestCase
      * 프로젝트 루트인 배치에서 그것은 `.env` 노출이다.
      *
      * 동작(파일을 건드리지 않는다)은 그대로 두고, 그 사실만 운영자에게 알린다.
+     *
+     * @scenario htaccess_operator_state=marker_removed
+     *
+     * @effects root_htaccess_without_marker_is_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_preserved_result_carries_an_operator_notice(): void
     {
@@ -566,6 +633,10 @@ class RootHtaccessUpdaterTest extends TestCase
      * 관리하려고 `.htaccess` 를 링크로 묶어 두면 그 구성이 조용히 해체되고, 이후 원본을
      * 고쳐도 사이트에 반영되지 않는다(결과는 `updated`, 경고 없음). 형제 파일인 루트
      * `index.php` 는 `copy()` 경로라 링크를 통과해 대상에 쓴다 — 두 파일이 정반대였다.
+     *
+     * @effects root_htaccess_symlinked_destination_is_written_through
+     *
+     * @return void 반환값 없음
      */
     public function test_symlinked_destination_is_written_through_not_replaced(): void
     {
@@ -596,6 +667,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * 「구버전 규칙 생존 + 성공 보고」가 이 형태로 재현된다.
      *
      * @effects root_htaccess_duplicate_blocks_are_refused
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_end_marker_is_also_treated_as_duplicate(): void
     {
@@ -618,6 +691,10 @@ class RootHtaccessUpdaterTest extends TestCase
      * 파일 전체를 세면 ~100행짜리 LF 코어 블록이 표본을 지배해, 운영자가 CRLF 로 몇 줄
      * 덧붙인 파일에서도 LF 가 이긴다 — 한 파일 안에서 줄바꿈이 갈린 채로 남으며, 그것이
      * 3차 L9 가 닫으려던 상태다.
+     *
+     * @effects root_htaccess_write_is_atomic_and_line_endings_follow_destination
+     *
+     * @return void 반환값 없음
      */
     public function test_line_ending_sample_excludes_the_core_block(): void
     {
@@ -659,6 +736,10 @@ class RootHtaccessUpdaterTest extends TestCase
      * `rename` 자체의 교차 장치 실패는 단위 테스트로 재현할 수 없으므로 **잔해 스윕이 보는
      * 자리**로 판정한다 — 임시 파일 생성 규칙과 스윕 규칙은 같은 접두사를 쓰므로, 링크 대상
      * 옆의 오래된 임시 파일이 걷히면 임시 파일도 그 자리에 만들어진다.
+     *
+     * @effects root_htaccess_symlinked_destination_is_written_through
+     *
+     * @return void 반환값 없음
      */
     public function test_temp_file_lives_next_to_the_link_target_not_the_link(): void
     {
@@ -703,6 +784,15 @@ class RootHtaccessUpdaterTest extends TestCase
         }
     }
 
+    /**
+     * 원본과 대상의 코어 블록이 같으면 파일을 쓰지 않고, 변경 없음 결과를 실패와 구분하는지 확인한다.
+     *
+     * @scenario destination_state=with_block, block_delta=same
+     *
+     * @effects root_htaccess_identical_block_skips_write
+     *
+     * @return void 반환값 없음
+     */
     public function test_identical_block_skips_write(): void
     {
         $src = $this->workDir.'/src.htaccess';
@@ -724,6 +814,13 @@ class RootHtaccessUpdaterTest extends TestCase
         $this->assertSame($core."\n# operator tail\n", file_get_contents($dest));
     }
 
+    /**
+     * 마커가 없는 릴리즈 원본은 원본 무효 결과를 내고 대상 파일에 전파되지 않는지 확인한다.
+     *
+     * @effects root_htaccess_markerless_source_is_not_applied
+     *
+     * @return void 반환값 없음
+     */
     public function test_markerless_source_is_not_applied(): void
     {
         $src = $this->workDir.'/src.htaccess';
@@ -743,6 +840,10 @@ class RootHtaccessUpdaterTest extends TestCase
      * 공유 호스팅에서 루트 파일만 읽기 전용인 경우가 있다. 그때 결과를 확인하지 않으면
      * 갱신기는 변경했다고 보고하고 실제로는 옛 보호 규칙이 그대로 남는다 — 다른 코어
      * 파일은 신 버전인데 진입·보호 규칙만 구버전인 상태가 로그 한 줄 없이 생긴다.
+     *
+     * @effects root_htaccess_write_failure_is_reported_not_claimed_as_updated
+     *
+     * @return void 반환값 없음
      */
     public function test_write_failure_is_reported_and_logged(): void
     {
@@ -785,6 +886,8 @@ class RootHtaccessUpdaterTest extends TestCase
      * 경우가 많아 실질적으로 **구버전 규칙이 살아남는데**, 반환값도 로그도 「갱신 성공」이었다.
      *
      * @effects root_htaccess_duplicate_blocks_are_refused
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_core_blocks_are_refused_not_half_updated(): void
     {
@@ -811,6 +914,10 @@ class RootHtaccessUpdaterTest extends TestCase
      *
      * 릴리즈 판본은 항상 LF 다(.gitattributes 강제). 그대로 끼우면 한 파일 안에서 줄바꿈이
      * 갈리고, 이 저장소는 툴체인의 CRLF 사각으로 이미 한 번 사고를 겪었다.
+     *
+     * @effects root_htaccess_write_is_atomic_and_line_endings_follow_destination
+     *
+     * @return void 반환값 없음
      */
     public function test_block_line_endings_follow_the_destination_file(): void
     {
@@ -838,6 +945,10 @@ class RootHtaccessUpdaterTest extends TestCase
      *
      * 찾지 못하면 갱신이 **영구히** 건너뛰어지고, 로그에는 「운영자가 지웠다」는 사실이
      * 아닌 사유가 남아 다음 라운드가 그 오기록을 전제로 판단한다.
+     *
+     * @effects root_htaccess_updates_replace_only_core_block
+     *
+     * @return void 반환값 없음
      */
     public function test_bom_prefixed_destination_is_still_updated(): void
     {
@@ -860,6 +971,10 @@ class RootHtaccessUpdaterTest extends TestCase
      * 직접 truncate-then-write 는 그 창에 들어온 요청에게 **보호 규칙도 위임 규칙도 없는**
      * `.htaccess` 를 보여 준다. 그 잔해는 「BEGIN 만 남은 파일」로 굳어 이후 모든 업데이트가
      * 「운영자가 지웠다」로 오판해 영구히 건너뛴다.
+     *
+     * @effects root_htaccess_write_is_atomic_and_line_endings_follow_destination
+     *
+     * @return void 반환값 없음
      */
     public function test_write_goes_through_a_temporary_file_and_leaves_no_residue(): void
     {
@@ -899,6 +1014,10 @@ class RootHtaccessUpdaterTest extends TestCase
      *
      * 마커는 **줄 끝**(뒤에 공백만 허용)에서만 성립한다 — 릴리즈 판본이 그 형태이고, 뒤에
      * 텍스트가 오는 줄은 마커가 아니라 그것을 언급하는 문장이다.
+     *
+     * @effects root_htaccess_marker_is_recognized_only_as_a_whole_line
+     *
+     * @return void 반환값 없음
      */
     public function test_marker_followed_by_text_is_not_counted_as_a_marker(): void
     {
@@ -929,6 +1048,10 @@ class RootHtaccessUpdaterTest extends TestCase
 
     /**
      * 마커 뒤의 **공백만**은 여전히 마커다 — 편집기가 남긴 후행 공백으로 블록을 잃지 않는다.
+     *
+     * @effects root_htaccess_marker_is_recognized_only_as_a_whole_line
+     *
+     * @return void 반환값 없음
      */
     public function test_marker_with_trailing_whitespace_only_is_still_a_marker(): void
     {
@@ -949,6 +1072,13 @@ class RootHtaccessUpdaterTest extends TestCase
         $this->assertStringContainsString('# tail', $result);
     }
 
+    /**
+     * 블록 안 주석이 마커 문자열을 언급해도 블록 경계로 오인하지 않고, END 줄 종결자까지 블록으로 추출하는지 확인한다.
+     *
+     * @effects root_htaccess_marker_is_recognized_only_as_a_whole_line
+     *
+     * @return void 반환값 없음
+     */
     public function test_marker_inside_comment_text_is_not_mistaken_for_block_boundary(): void
     {
         // 실제 배포 파일은 블록 안 주석에 마커 문자열을 언급한다 — 줄 시작이 아닌 언급이

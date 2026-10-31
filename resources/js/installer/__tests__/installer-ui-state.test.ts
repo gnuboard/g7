@@ -94,6 +94,8 @@ describe('작업 그룹 접힘 (#B25)', () => {
   const group = () => document.querySelector('.task-group');
   const header = () => document.querySelector('.task-group-header');
 
+  // @scenario collapse_path=automatic
+  // @effects installer_group_collapse_syncs_aria_on_both_paths
   it('자동으로 접힐 때도 트리거의 aria-expanded 가 따라온다', () => {
     ui.setTaskGroupCollapsed(group(), true);
 
@@ -104,6 +106,8 @@ describe('작업 그룹 접힘 (#B25)', () => {
     ).toBe('false');
   });
 
+  // @scenario collapse_path=automatic
+  // @effects installer_group_collapse_syncs_aria_on_both_paths
   it('다시 펼칠 때도 aria-expanded 가 따라온다', () => {
     ui.setTaskGroupCollapsed(group(), true);
     ui.setTaskGroupCollapsed(group(), false);
@@ -112,6 +116,8 @@ describe('작업 그룹 접힘 (#B25)', () => {
     expect(header()!.getAttribute('aria-expanded')).toBe('true');
   });
 
+  // @scenario collapse_path=automatic
+  // @effects installer_group_collapse_syncs_aria_on_both_paths
   it('그룹이 없으면 아무 일도 하지 않는다', () => {
     expect(() => ui.setTaskGroupCollapsed(null, true)).not.toThrow();
   });
@@ -121,6 +127,8 @@ describe('진행 카드 접힘 (#B26)', () => {
   const header = () => document.getElementById('installation-card-header')!;
   const body = () => document.getElementById('installation-card-body')!;
 
+  // @scenario collapse_path=automatic, task_outcome=done
+  // @effects installer_card_collapse_syncs_aria_on_both_paths
   it('완료 화면이 카드를 접을 때 aria-expanded 가 따라온다', () => {
     ui.setInstallationCardCollapsed(true);
 
@@ -131,6 +139,8 @@ describe('진행 카드 접힘 (#B26)', () => {
     ).toBe('false');
   });
 
+  // @scenario collapse_path=automatic
+  // @effects installer_card_collapse_syncs_aria_on_both_paths
   it('실패·중단 화면이 카드를 펼칠 때도 aria-expanded 가 따라온다', () => {
     ui.setInstallationCardCollapsed(true);
     ui.setInstallationCardCollapsed(false);
@@ -143,6 +153,8 @@ describe('진행 카드 접힘 (#B26)', () => {
 describe('진행 카드 헤더의 조작 가능 여부 (#B28)', () => {
   const header = () => document.getElementById('installation-card-header')!;
 
+  // @scenario card_interactivity=running
+  // @effects installer_card_header_is_inert_while_running
   it('설치 중에는 비활성이라는 사실이 키보드·보조기술에 전달된다', () => {
     ui.setInstallationCardInteractive(false);
 
@@ -153,6 +165,8 @@ describe('진행 카드 헤더의 조작 가능 여부 (#B28)', () => {
     ).toBe('-1');
   });
 
+  // @scenario card_interactivity=finished
+  // @effects installer_card_header_is_inert_while_running
   it('완료·실패·중단 뒤에는 다시 누를 수 있는 상태가 된다', () => {
     ui.setInstallationCardInteractive(true);
 
@@ -164,6 +178,8 @@ describe('진행 카드 헤더의 조작 가능 여부 (#B28)', () => {
 describe('현재 작업 줄의 부분 진행 (#B35)', () => {
   const label = () => document.getElementById('current-task')!.textContent;
 
+  // @scenario task_duration=long_no_feedback
+  // @effects installer_current_task_shows_intra_task_progress
   it('한 단계 안의 진행을 단계 이름 뒤에 덧붙인다', () => {
     ui.setCurrentTaskLabel('필수 패키지 설치');
     ui.setCurrentTaskProgress(7, 25);
@@ -174,6 +190,8 @@ describe('현재 작업 줄의 부분 진행 (#B35)', () => {
     ).toBe('필수 패키지 설치 (7/25)');
   });
 
+  // @scenario task_duration=long_no_feedback
+  // @effects installer_current_task_shows_intra_task_progress
   it('단계가 바뀌면 앞 단계의 부분 진행을 버린다', () => {
     ui.setCurrentTaskLabel('필수 패키지 설치');
     ui.setCurrentTaskProgress(7, 25);
@@ -182,6 +200,8 @@ describe('현재 작업 줄의 부분 진행 (#B35)', () => {
     expect(label(), '앞 단계의 묶음 수가 다음 단계 이름 뒤에 그대로 남았다').toBe('데이터베이스 마이그레이션');
   });
 
+  // @scenario task_duration=long_no_feedback
+  // @effects installer_current_task_shows_intra_task_progress
   it('진행 값이 없으면 표시를 덮지 않는다', () => {
     ui.setCurrentTaskLabel('필수 패키지 설치');
     ui.setCurrentTaskProgress(undefined, undefined);

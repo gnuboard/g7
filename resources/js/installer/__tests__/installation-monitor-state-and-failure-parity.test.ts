@@ -86,6 +86,8 @@ function stubFetch(payload: any, ok = true) {
 }
 
 describe('폴링 모니터도 onState 계약을 만족한다 (F11)', () => {
+  // @scenario installation_mode=polling
+  // @effects polling_monitor_emits_on_state_like_stepwise
   it('폴 한 번마다 서버 상태 요약을 그대로 넘긴다', async () => {
     const state = { status: 'running', current_task: 'db_migrate', completed_tasks: [], logs: [] };
     stubFetch(state);
@@ -105,6 +107,8 @@ describe('폴링 모니터도 onState 계약을 만족한다 (F11)', () => {
 });
 
 describe('실패 문구 폴백 사슬을 세 경로가 공유한다 (F12)', () => {
+  // @scenario installation_mode=polling
+  // @effects monitors_share_failure_reason_fallback_chain
   it('공유 폴백 함수가 노출되어 있다', () => {
     expect(
       typeof monitors.failurePayload,
@@ -112,6 +116,8 @@ describe('실패 문구 폴백 사슬을 세 경로가 공유한다 (F12)', () =
     ).toBe('function');
   });
 
+  // @scenario installation_mode=polling
+  // @effects monitors_share_failure_reason_fallback_chain
   it('폴링: 상세가 없으면 state.error 를 사유로 쓴다', async () => {
     stubFetch({ status: 'failed', error: '마이그레이션 실패', completed_tasks: [], logs: [] });
 
@@ -128,6 +134,8 @@ describe('실패 문구 폴백 사슬을 세 경로가 공유한다 (F12)', () =
     ).toBe('마이그레이션 실패');
   });
 
+  // @scenario installation_mode=stepwise
+  // @effects monitors_share_failure_reason_fallback_chain
   it('단계별 실행: 상세가 없으면 state.error 를 사유로 쓴다', async () => {
     stubFetch({ outcome: 'failed', state: { error: '마이그레이션 실패' }, events: [] });
 
@@ -144,6 +152,8 @@ describe('실패 문구 폴백 사슬을 세 경로가 공유한다 (F12)', () =
     ).toBe('마이그레이션 실패');
   });
 
+  // @scenario installation_mode=stepwise
+  // @effects monitors_share_failure_reason_fallback_chain, stepwise_monitor_surfaces_envelope_failure_reason
   it('단계별 실행: 상태가 비어도 응답 봉투의 사유를 쓴다', async () => {
     stubFetch({ outcome: 'failed', state: {}, message: '치명적 오류', events: [] });
 

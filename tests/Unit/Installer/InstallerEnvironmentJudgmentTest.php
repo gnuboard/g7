@@ -22,7 +22,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: bundle_state missing·present / request_scheme direct_https·forwarded_https·plain / request_origin same·cross·absent·opaque / worker_entry running·completed·not_started·failed·polling_mode / finalize_call state_file_present·state_file_absent
  *
- * @effects installer_vendor_bundle_usability_requires_ziparchive, installer_https_judgment_is_proxy_aware, installer_cross_origin_state_change_is_rejected, installer_sse_worker_requires_running_installation, installer_finalize_idempotent_recall_uses_state_file_presence
+ * 효과 요약(마커 아님 — 평문): installer_vendor_bundle_usability_requires_ziparchive, installer_https_judgment_is_proxy_aware, installer_cross_origin_state_change_is_rejected, installer_sse_worker_requires_running_installation, installer_finalize_idempotent_recall_uses_state_file_presence
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -30,6 +30,11 @@ class InstallerEnvironmentJudgmentTest extends TestCase
 {
     use CleansTemporaryBasePath;
 
+    /**
+     * 클래스 시작 때 언어 스텁을 읽고 기준 경로가 없으면 임시 경로로 정한 뒤 실행 모드 판정 헬퍼 소스를 읽어 들인다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__.'/stubs/lang_stub.php';
@@ -41,6 +46,11 @@ class InstallerEnvironmentJudgmentTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/execution-mode.php';
     }
 
+    /**
+     * 기준 경로가 시스템 임시 경로 밖이면 실제 파일을 읽지 않도록 건너뛰고, 기준 디렉터리가 없으면 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,6 +67,13 @@ class InstallerEnvironmentJudgmentTest extends TestCase
         }
     }
 
+    /**
+     * 공용 함수 가용 판정이 존재하는 함수는 참으로, 없는 함수는 거짓으로 돌려주는지 확인한다.
+     *
+     * @effects installer_blocked_function_call_sites_are_guarded
+     *
+     * @return void 반환값 없음
+     */
     public function test_function_availability_is_judged_through_the_shared_resolver(): void
     {
         $this->assertTrue(installerHasFunction('strlen'), '존재하는 함수는 가용으로 판정해야 한다');
@@ -66,6 +83,15 @@ class InstallerEnvironmentJudgmentTest extends TestCase
         );
     }
 
+    /**
+     * 번들 묶음 파일이 없으면 사용 불가, 있으면 ZipArchive 가용 여부까지 함께 봐서 판정하는지 확인한다.
+     *
+     * @scenario bundle_state=present
+     *
+     * @effects installer_vendor_bundle_usability_requires_ziparchive
+     *
+     * @return void 반환값 없음
+     */
     public function test_vendor_bundle_usability_requires_the_archive_and_ziparchive(): void
     {
         $bundle = BASE_PATH.'/vendor-bundle.zip';
@@ -90,6 +116,15 @@ class InstallerEnvironmentJudgmentTest extends TestCase
         @unlink($bundle);
     }
 
+    /**
+     * HTTPS 판정이 서버 변수뿐 아니라 프록시가 넘기는 전달 프로토콜 헤더와 SSL 헤더까지 보는지 확인한다.
+     *
+     * @scenario request_scheme=forwarded_https
+     *
+     * @effects installer_https_judgment_is_proxy_aware
+     *
+     * @return void 반환값 없음
+     */
     public function test_https_judgment_sees_proxy_headers(): void
     {
         $this->assertFalse(installerRequestIsHttps([]));
@@ -104,6 +139,15 @@ class InstallerEnvironmentJudgmentTest extends TestCase
         $this->assertTrue(installerRequestIsHttps(['HTTP_X_FORWARDED_SSL' => 'on']));
     }
 
+    /**
+     * 같은 출처나 출처 불명 요청은 통과시키고, 다른 출처, null, 깨진 Origin 은 403 거부로 돌려주며 Referer 로 우회되지 않는지 확인한다.
+     *
+     * @scenario request_origin=cross
+     *
+     * @effects installer_cross_origin_state_change_is_rejected
+     *
+     * @return void 반환값 없음
+     */
     public function test_cross_origin_state_change_is_rejected(): void
     {
         $host = ['HTTP_HOST' => 'example.test'];
@@ -139,6 +183,15 @@ class InstallerEnvironmentJudgmentTest extends TestCase
         $this->assertNotNull($bypass, 'Origin 이 다른 출처인데 Referer 로 통과하면 검사가 무의미하다');
     }
 
+    /**
+     * 스트리밍 워커 입구가 진행 중이거나 막 끝난 sse 설치만 받고, 다른 상태나 다른 진행 모드의 설치는 거부 사유와 함께 돌려보내는지 확인한다.
+     *
+     * @scenario worker_entry=not_started
+     *
+     * @effects installer_sse_worker_requires_running_installation
+     *
+     * @return void 반환값 없음
+     */
     public function test_sse_worker_requires_a_running_installation_of_its_own_mode(): void
     {
         // 진행 중인 설치만 받는다 — 종전에는 상태 전제가 없어 GET 하나로 전 태스크가 돌았다.
@@ -168,6 +221,15 @@ class InstallerEnvironmentJudgmentTest extends TestCase
         }
     }
 
+    /**
+     * 마무리 재호출 판정이 상태 내용이 아니라 상태 파일 존재 여부로 갈려, 파일이 없으면 통과하고 있으면서 미완료면 거부되는지 확인한다.
+     *
+     * @scenario finalize_call=state_file_absent
+     *
+     * @effects installer_finalize_idempotent_recall_uses_state_file_presence
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalize_idempotent_recall_is_judged_by_state_file_presence(): void
     {
         // getInstallationState() 는 파일 부재 시 **기본 상태**(비어 있지 않다)를 돌려준다.
@@ -189,6 +251,15 @@ class InstallerEnvironmentJudgmentTest extends TestCase
         $this->assertNull(installerFinalizeRejection([], 'POST', '', ''));
     }
 
+    /**
+     * 단계별 설치의 세션 소유 판정이 상태와 세션의 소유 표식이 같고 비어 있지 않을 때만 참인지 확인한다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_stepwise_token_is_rendered_only_for_the_owning_session
+     *
+     * @return void 반환값 없음
+     */
     public function test_session_ownership_of_a_running_stepwise_install(): void
     {
         $owner = bin2hex(random_bytes(8));
@@ -210,6 +281,15 @@ class InstallerEnvironmentJudgmentTest extends TestCase
         ));
     }
 
+    /**
+     * 프로브 호출 상한이 창 안에서 상한까지는 통과시키고 넘으면 거부하며, 버킷끼리는 서로 세지 않는지 확인한다.
+     *
+     * @scenario probe_identity=stable
+     *
+     * @effects probe_rate_limit_counts_calls_within_the_window
+     *
+     * @return void 반환값 없음
+     */
     public function test_probe_rate_limit_counts_within_a_window(): void
     {
         if (! is_dir(BASE_PATH.'/storage')) {
@@ -249,6 +329,8 @@ class InstallerEnvironmentJudgmentTest extends TestCase
      * @scenario rate_limit=client_identity, deployment=reverse_proxy_shared_ip
      *
      * @effects probe_rate_limit_is_scoped_per_browser_behind_a_proxy
+     *
+     * @return void 반환값 없음
      */
     public function test_client_key_uses_the_session_even_after_write_close(): void
     {
@@ -315,6 +397,12 @@ class InstallerEnvironmentJudgmentTest extends TestCase
      * 종전에는 이 분기에 **들어가는 테스트가 하나도 없었다** — 식별자는 세션 또는
      * `REMOTE_ADDR` 에서 오는데 PHPUnit CLI 에는 둘 다 없어 언제나 빈 문자열이었고,
      * 그래서 분기 전체를 지워도 초록이었다. 여기서 `REMOTE_ADDR` 을 심어 그 경로를 연다.
+     *
+     * @scenario rate_limit=client_identity
+     *
+     * @effects exposure_probe_rate_limit_cannot_downgrade_the_blocking_verdict
+     *
+     * @return void 반환값 없음
      */
     public function test_probe_rate_limit_is_counted_per_client(): void
     {
@@ -368,6 +456,8 @@ class InstallerEnvironmentJudgmentTest extends TestCase
      * 그 강등을 일으킬 수 있었다.
      *
      * @effects exposure_probe_rate_limit_cannot_downgrade_the_blocking_verdict
+     *
+     * @return void 반환값 없음
      */
     public function test_client_scoped_limit_ignores_the_global_window(): void
     {
@@ -426,6 +516,8 @@ class InstallerEnvironmentJudgmentTest extends TestCase
      * @scenario probe_identity=stable
      *
      * @effects probe_rate_limit_survives_identity_rotation
+     *
+     * @return void 반환값 없음
      */
     public function test_client_scoped_limit_still_bounds_identity_rotation(): void
     {
@@ -478,6 +570,13 @@ class InstallerEnvironmentJudgmentTest extends TestCase
         }
     }
 
+    /**
+     * 메모리 크기 문자열 해석이 단위를 바이트로 바꾸고, 무제한은 -1 로, 빈 값이나 알 수 없는 값은 null 로 구분하는지 확인한다.
+     *
+     * @effects installer_memory_budget_declarations_are_consistent
+     *
+     * @return void 반환값 없음
+     */
     public function test_byte_size_parsing_keeps_unlimited_distinct_from_unknown(): void
     {
         $this->assertSame(256 * 1024 * 1024, installerParseByteSize('256M'));

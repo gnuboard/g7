@@ -21,6 +21,7 @@ class SettingsServiceProviderAppConfigTest extends TestCase
      * applyAppConfig 를 리플렉션으로 호출합니다.
      *
      * @param  array  $generalSettings  general 카테고리 설정 데이터
+     * @return void 반환값 없음
      */
     private function callApplyAppConfig(array $generalSettings): void
     {
@@ -36,6 +37,12 @@ class SettingsServiceProviderAppConfigTest extends TestCase
 
     /**
      * 단일 문자열 site_name 은 그대로 config('app.name')에 적용됩니다.
+     *
+     * @scenario site_name_shape=plain_string
+     *
+     * @effects plain_site_name_is_applied_as_is
+     *
+     * @return void 반환값 없음
      */
     public function test_string_site_name_applied_as_is(): void
     {
@@ -46,6 +53,12 @@ class SettingsServiceProviderAppConfigTest extends TestCase
 
     /**
      * 다국어 array site_name 은 현재 로케일 string 으로 정규화되어 적용됩니다.
+     *
+     * @scenario site_name_shape=multilingual_current_locale
+     *
+     * @effects multilingual_site_name_is_normalized_to_a_locale_string
+     *
+     * @return void 반환값 없음
      */
     public function test_multilingual_site_name_normalized_to_current_locale(): void
     {
@@ -63,6 +76,12 @@ class SettingsServiceProviderAppConfigTest extends TestCase
 
     /**
      * 현재 로케일 키가 없으면 폴백 로케일 string 으로 적용됩니다.
+     *
+     * @scenario site_name_shape=multilingual_fallback_locale
+     *
+     * @effects multilingual_site_name_is_normalized_to_a_locale_string
+     *
+     * @return void 반환값 없음
      */
     public function test_multilingual_site_name_falls_back_to_fallback_locale(): void
     {
@@ -82,6 +101,10 @@ class SettingsServiceProviderAppConfigTest extends TestCase
      * 관리자 저장 경로(SaveSettingsRequest)는 이미 정규화하지만 인스톨러는 그 경로를 우회해
      * 원값을 저장한다. 저장된 값이 모두 이 지점을 지나 app.url 이 되므로, 여기서 정규화하면
      * 저장 경로와 무관하게 app.url 이 후행 슬래시 없는 형태로 고정된다.
+     *
+     * @effects site_url_is_injected_without_trailing_slash_or_whitespace
+     *
+     * @return void 반환값 없음
      */
     public function test_site_url_trailing_slash_and_whitespace_are_stripped(): void
     {
@@ -97,6 +120,12 @@ class SettingsServiceProviderAppConfigTest extends TestCase
 
     /**
      * 정규화 결과가 Blade e() (htmlspecialchars)에서 TypeError 없이 string 으로 렌더됩니다.
+     *
+     * @scenario site_name_shape=multilingual_current_locale
+     *
+     * @effects normalized_site_name_renders_in_blade_without_type_error
+     *
+     * @return void 반환값 없음
      */
     public function test_normalized_site_name_renders_without_type_error(): void
     {

@@ -89,6 +89,8 @@ function runCliGate(options: GateOptions): GateError[] {
 }
 
 describe('Step 3 CLI 검증 게이트', () => {
+  // @scenario execution_mode_choice=inprocess
+  // @effects step3_gate_exempts_php_cli_when_inprocess
   it('inprocess 에서는 PHP CLI 검증을 요구하지 않는다 — 요구하면 통과할 방법이 없다', () => {
     const errors = runCliGate({
       effectiveMode: 'inprocess',
@@ -103,6 +105,8 @@ describe('Step 3 CLI 검증 게이트', () => {
     ).not.toContain('error_php_cli_not_verified');
   });
 
+  // @scenario execution_mode_choice=inprocess
+  // @effects step3_gate_exempts_php_cli_when_inprocess
   it('inprocess 에서는 composer 검증도 함께 면제된다 (형제 축과 같은 규칙)', () => {
     const errors = runCliGate({
       effectiveMode: 'inprocess',
@@ -114,6 +118,8 @@ describe('Step 3 CLI 검증 게이트', () => {
     expect(errors, '두 축이 같은 실행 방식에서 서로 다른 결론을 내면 안 된다').toHaveLength(0);
   });
 
+  // @scenario execution_mode_choice=subprocess
+  // @effects step3_gate_still_requires_php_cli_when_subprocess
   it('subprocess 에서는 PHP CLI 검증을 그대로 요구한다 — 면제가 넓어지면 안 된다', () => {
     const errors = runCliGate({
       effectiveMode: 'subprocess',
@@ -128,6 +134,8 @@ describe('Step 3 CLI 검증 게이트', () => {
     ).toContain('error_php_cli_not_verified');
   });
 
+  // @scenario execution_mode_choice=subprocess
+  // @effects step3_gate_still_requires_php_cli_when_subprocess
   it('subprocess + 검증 완료면 오류가 없다', () => {
     const errors = runCliGate({
       effectiveMode: 'subprocess',

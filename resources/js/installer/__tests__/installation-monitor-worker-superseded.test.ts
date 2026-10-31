@@ -131,6 +131,8 @@ function startSse(overrides: Record<string, any> = {}) {
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('SseMonitor — worker_superseded', () => {
+  // @scenario installation_mode=sse
+  // @effects sse_monitor_hands_off_to_polling_when_superseded
   it('물러남 프레임을 받으면 스트림을 닫고 진행 조회로 갈아탄다', async () => {
     const fetchSpy = stubStateFetch();
     const { source, calls } = startSse();
@@ -152,6 +154,8 @@ describe('SseMonitor — worker_superseded', () => {
     expect(calls.onLog, '무슨 일이 일어났는지는 진행 기록에 남겨야 한다').toBeTruthy();
   });
 
+  // @scenario installation_mode=sse
+  // @effects sse_monitor_hands_off_to_polling_when_superseded
   it('갈아탄 뒤에도 stop() 이 진행 조회를 멈춘다', async () => {
     const fetchSpy = stubStateFetch();
     const { monitor, source } = startSse();
@@ -173,6 +177,8 @@ describe('SseMonitor — worker_superseded', () => {
     ).toBe(before);
   });
 
+  // @scenario installation_mode=sse
+  // @effects sse_monitor_hands_off_to_polling_when_superseded
   it('진행 조회 주소가 없으면 종전 동작을 유지한다 (갈아탈 곳이 없다)', async () => {
     const fetchSpy = stubStateFetch();
     const { source } = startSse({ stateUrl: undefined });

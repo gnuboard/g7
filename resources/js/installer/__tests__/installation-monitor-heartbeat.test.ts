@@ -97,6 +97,8 @@ function collector() {
 }
 
 describe('SseMonitor heartbeat (#B27 · #B35)', () => {
+  // @scenario installation_mode=sse, task_duration=long_no_feedback
+  // @effects sse_monitor_counts_heartbeat_as_liveness
   it('heartbeat 를 「살아 있음」의 증거로 세어 정지 판정을 미룬다 (#B27)', () => {
     vi.useFakeTimers();
     vi.stubGlobal('EventSource', FakeEventSource as any);
@@ -129,6 +131,8 @@ describe('SseMonitor heartbeat (#B27 · #B35)', () => {
     expect(c.calls.onError?.[0]?.[0]?.stuck, '침묵이 이어지는데 정지 판정이 나오지 않았다').toBe(true);
   });
 
+  // @scenario installation_mode=sse, task_duration=long_no_feedback
+  // @effects sse_monitor_forwards_heartbeat_progress
   it('heartbeat 의 done/total 진행을 화면으로 나른다 (#B35)', () => {
     vi.stubGlobal('EventSource', FakeEventSource as any);
 
@@ -150,6 +154,8 @@ describe('SseMonitor heartbeat (#B27 · #B35)', () => {
     monitor.stop();
   });
 
+  // @scenario installation_mode=sse, task_duration=long_no_feedback
+  // @effects sse_monitor_forwards_heartbeat_progress
   it('진행 값이 없는 heartbeat 는 진행을 덮어쓰지 않는다', () => {
     vi.stubGlobal('EventSource', FakeEventSource as any);
 

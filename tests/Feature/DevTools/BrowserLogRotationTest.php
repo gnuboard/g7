@@ -25,6 +25,8 @@ class BrowserLogRotationTest extends TestCase
      * 브라우저 로그는 날짜별 파일에 기록되고, 단일 browser.log 에는 더 이상 쓰지 않는다.
      *
      * @effects browser_logs_rotate_daily_with_finite_retention
+     *
+     * @return void 반환값 없음
      */
     public function test_browser_logs_are_written_to_a_dated_file(): void
     {
@@ -71,6 +73,8 @@ class BrowserLogRotationTest extends TestCase
      * 로거는 로테이션 핸들러를 쓰고 보존일이 유한해야 한다 (0 = 무제한 금지).
      *
      * @effects browser_logs_rotate_daily_with_finite_retention
+     *
+     * @return void 반환값 없음
      */
     public function test_browser_log_channel_uses_rotating_handler_with_finite_retention(): void
     {

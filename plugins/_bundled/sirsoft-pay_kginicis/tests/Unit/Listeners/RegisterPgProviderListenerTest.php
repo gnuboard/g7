@@ -9,8 +9,20 @@ use App\Support\AssetUrl;
 use Plugins\Sirsoft\PayKginicis\Listeners\RegisterPgProviderListener;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
+/**
+ * KG 이니시스 PG 등록 리스너가 화면에 내려 주는 클라이언트 설정을 검증한다.
+ */
 class RegisterPgProviderListenerTest extends PluginTestCase
 {
+    /**
+     * 운영 모드에서 운영 MID 가 비면 서명 키가 있어도 표준결제와 모바일결제를 미설정으로 알리는지 확인한다.
+     *
+     * @scenario mode=live
+     *
+     * @effects live_mode_without_live_mid_reports_unconfigured
+     *
+     * @return void 반환값 없음
+     */
     public function test_live_standard_config_reports_unconfigured_when_live_mid_is_missing(): void
     {
         $this->mockSettings([
@@ -27,6 +39,15 @@ class RegisterPgProviderListenerTest extends PluginTestCase
         $this->assertFalse($config['mobile_configured']);
     }
 
+    /**
+     * 테스트 모드 설정이 갖춰지면 준비 완료로 알리고, 간편결제는 켜 둔 네이버페이와 카카오페이만 싣는지 확인한다.
+     *
+     * @scenario mode=test
+     *
+     * @effects client_config_lists_only_enabled_easy_pay_methods
+     *
+     * @return void 반환값 없음
+     */
     public function test_client_config_exposes_enabled_easy_pay_methods_only(): void
     {
         $this->mockSettings([
@@ -56,6 +77,8 @@ class RegisterPgProviderListenerTest extends PluginTestCase
      * @scenario base_path=subpath, navigation_direction=navigation
      *
      * @effects pg_return_and_notify_addresses_follow_the_configured_site_url
+     *
+     * @return void 반환값 없음
      */
     public function test_cbt_cvs_noti_url_follows_the_configured_site_url(): void
     {
@@ -74,6 +97,12 @@ class RegisterPgProviderListenerTest extends PluginTestCase
         );
     }
 
+    /**
+     * 플러그인 설정 서비스를 주어진 설정을 돌려주는 목으로 바꿔 컨테이너에 넣는다.
+     *
+     * @param  array<string, mixed>  $settings  목이 돌려줄 플러그인 설정
+     * @return void 반환값 없음
+     */
     private function mockSettings(array $settings): void
     {
         $settingsService = $this->createMock(PluginSettingsService::class);

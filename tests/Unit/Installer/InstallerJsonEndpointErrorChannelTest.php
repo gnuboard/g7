@@ -27,6 +27,11 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
 {
     use ScansPhpSourceFunctions;
 
+    /**
+     * 인스톨러 API 진입점 디렉토리의 절대 경로를 돌려준다.
+     *
+     * @return string API 디렉토리 절대 경로
+     */
     private function apiDir(): string
     {
         return dirname(__DIR__, 3).'/public/install/api';
@@ -37,6 +42,9 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
      * 주석 한 줄로 꺼진다 (19차 #4 가 실측한 위장 형태). 토크나이저가 지우므로 코드 뒤
      * 꼬리 주석도 걷히고 문자열 안 `//`(URL)는 보존된다 — 종전의 정규식(줄 시작 `//` 만)은
      * 꼬리 주석 속 배선을 남겼다.
+     *
+     * @param  string  $file  API 디렉토리 안의 파일 이름
+     * @return string 주석을 걷어낸 소스
      */
     private function strippedSource(string $file): string
     {
@@ -103,6 +111,12 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
      * 자체가 없어 가드가 호출을 건너뛰므로 어떤 단위 게이트도 울리지 않았고, G3 의 P0
      * 리허설에서 finalize-env 가 500 으로 죽으며 실측됐다 (`.env` 머지 통째 소실).
      * 모집단은 installer 트리 전체 — 운영자 안내 문구(lang)의 예시 코드도 같은 계약이다.
+     *
+     * @scenario error_channel_surface=typed_call_argument, script_home=installer
+     *
+     * @effects installer_apache_setenv_second_argument_is_a_string
+     *
+     * @return void 반환값 없음
      */
     public function test_apache_setenv_second_argument_is_always_a_string(): void
     {
@@ -151,7 +165,11 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
     /**
      * #13: 모든 API 진입점이 display_errors 를 가드된 형태로 끄고 error_reporting 을 유지한다.
      *
+     * @scenario error_channel_surface=display_errors_guard
+     *
      * @effects installer_api_error_output_never_corrupts_response_body
+     *
+     * @return void 반환값 없음
      */
     public function test_every_api_endpoint_disables_display_errors_with_guard(): void
     {
@@ -184,7 +202,11 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
      * 선행 로드가 허용되는 것은 실행 모드 헬퍼 파일 하나뿐이다 — 최상위 실행문이 없고
      * 프로젝트 루트를 자체 역산하며, 가드 함수 `installerHasFunction` 의 출처다.
      *
+     * @scenario error_channel_surface=include_order
+     *
      * @effects installer_api_error_output_never_corrupts_response_body
+     *
+     * @return void 반환값 없음
      */
     public function test_error_channel_guard_precedes_include_chain(): void
     {
@@ -227,6 +249,12 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
      * 위 순서 검사의 예외 2파일은 **선언 전용**이어야 한다 — 최상위 실행문이 생기는 순간
      * 그 warning 이 가드보다 먼저 나갈 수 있으므로, 예외의 근거를 구조로 잠근다.
      * 최상위 줄은 선언·가드 블록 여닫이·use 문만 허용된다.
+     *
+     * @scenario error_channel_surface=include_order
+     *
+     * @effects installer_api_error_output_never_corrupts_response_body
+     *
+     * @return void 반환값 없음
      */
     public function test_ordering_exempt_files_are_declaration_only(): void
     {
@@ -252,6 +280,12 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
 
     /**
      * #8: detect-php 의 문서루트 밖 후보 stat 은 진단을 억제한다 (open_basedir warning → 본문 오염 차단).
+     *
+     * @scenario error_channel_surface=stat_diagnostics
+     *
+     * @effects installer_api_error_output_never_corrupts_response_body
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_php_candidate_stat_suppresses_diagnostics(): void
     {
@@ -266,6 +300,12 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
 
     /**
      * #9: check-core-pending-path 의 후속 stat(is_dir·is_writable)도 진단을 억제한다.
+     *
+     * @scenario error_channel_surface=stat_diagnostics
+     *
+     * @effects installer_api_error_output_never_corrupts_response_body
+     *
+     * @return void 반환값 없음
      */
     public function test_pending_path_probe_stat_suppresses_diagnostics(): void
     {

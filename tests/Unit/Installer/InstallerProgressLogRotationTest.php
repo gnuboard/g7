@@ -27,9 +27,8 @@ use PHPUnit\Framework\TestCase;
  *
  * BASE_PATH 를 temp 로 박으므로 클래스 격리 실행이 필요하다.
  *
- * @scenario progress_log_volume=rotated
- *
- * @effects installation_log_rotates_before_it_grows_unbounded
+ * 효과 요약(마커 아님 — 평문): 진행 기록 파일이 상한을 넘기면 한 번 회전한다
+ * (installation_log_rotates_before_it_grows_unbounded). 표식은 각 테스트 메서드가 단다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -39,6 +38,11 @@ class InstallerProgressLogRotationTest extends TestCase
 
     private static string $skipReason = '';
 
+    /**
+     * 시스템 임시 폴더 아래에 BASE_PATH 와 로그 폴더를 세우고, 회전 상한을 4 KB 로 낮춘 뒤 설치기 설정과 상태 모듈을 불러온다. BASE_PATH 가 임시 폴더 밖이면 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -77,6 +81,11 @@ class InstallerProgressLogRotationTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/installer-state.php';
     }
 
+    /**
+     * 임시 BASE_PATH 아래에 남은 진행 기록 파일과 회전본을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     public static function tearDownAfterClass(): void
     {
         if (self::$skipReason === '' && self::$sharedBase !== '') {
@@ -89,7 +98,11 @@ class InstallerProgressLogRotationTest extends TestCase
         parent::tearDownAfterClass();
     }
 
-    /** @return array{0: string, 1: string} [현재 파일, 회전본] */
+    /**
+     * 이 테스트가 다루는 현재 진행 기록 파일과 회전본의 경로를 돌려준다.
+     *
+     * @return array{0: string, 1: string} [현재 파일, 회전본]
+     */
     private static function files(): array
     {
         return [
@@ -98,6 +111,11 @@ class InstallerProgressLogRotationTest extends TestCase
         ];
     }
 
+    /**
+     * 건너뛸 사유가 있으면 건너뛰고, 아니면 앞 테스트가 남긴 기록 파일과 회전본을 지워 빈 상태에서 시작한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -113,7 +131,11 @@ class InstallerProgressLogRotationTest extends TestCase
         }
     }
 
-    /** 상한을 확실히 넘기는 크기로 채운다. */
+    /**
+     * 상한을 확실히 넘기는 크기로 채운다.
+     *
+     * @return void 반환값 없음
+     */
     private function fillPastLimit(): void
     {
         [$log] = self::files();
@@ -126,9 +148,13 @@ class InstallerProgressLogRotationTest extends TestCase
         );
     }
     /**
+     * 상한을 넘긴 파일에 한 줄을 더 쓰면 이전 내용이 회전본으로 그대로 옮겨지고, 새 파일은 작아지며 방금 쓴 줄을 담는지 확인한다.
+     *
      * @scenario progress_log_volume=rotated
      *
      * @effects installation_log_rotates_before_it_grows_unbounded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_rotates_once_when_the_file_passes_the_limit(): void
@@ -142,16 +168,18 @@ class InstallerProgressLogRotationTest extends TestCase
         $this->assertFileExists($rotated, '상한을 넘겼는데 회전본이 없다 — 파일이 무한히 자란다');
         $this->assertSame($before, filesize($rotated), '회전본이 이전 내용 그대로여야 한다 — 기록을 버리지 않는다');
         $this->assertLessThan($before, filesize($log), '새 파일이 이전 크기를 그대로 물려받았다');
+        // meta:allow raw-source-read — 소스가 아니라 진행 기록 파일(산출물)을 읽는다.
         $this->assertStringContainsString('회전 뒤 첫 줄', (string) file_get_contents($log));
     }
 
     /**
      * 회전 사실을 새 파일이 말한다 — 말하지 않으면 운영자에게는 기록이 **사라진** 것이다.
-     */
-    /**
+     *
      * @scenario progress_log_volume=rotated
      *
      * @effects installation_log_rotates_before_it_grows_unbounded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_new_file_says_that_the_previous_record_was_moved(): void
@@ -161,6 +189,7 @@ class InstallerProgressLogRotationTest extends TestCase
         addLog('이어지는 줄');
 
         [$log] = self::files();
+        // meta:allow raw-source-read — 소스가 아니라 진행 기록 파일(산출물)을 읽는다.
         $lines = array_values(array_filter(
             preg_split('/\r\n|\n|\r/', (string) file_get_contents($log)) ?: [],
             static fn (string $line): bool => trim($line) !== ''
@@ -177,11 +206,12 @@ class InstallerProgressLogRotationTest extends TestCase
     /**
      * 회전 뒤 총 줄 수가 새 파일 기준으로 **다시 센다**. 클라이언트는 이 값이 작아지는 것을
      * 보고 offset 을 되돌린다 — 그러지 않으면 회전 뒤의 줄이 한 줄도 실리지 않는다.
-     */
-    /**
+     *
      * @scenario progress_log_volume=rotated
      *
      * @effects installation_log_rotates_before_it_grows_unbounded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_line_count_restarts_from_the_new_file(): void
@@ -199,9 +229,13 @@ class InstallerProgressLogRotationTest extends TestCase
         $this->assertSame(3, $afterCount);
     }
     /**
+     * 이미 회전본이 있을 때 다시 회전하면 옛 회전본을 덮고 두 번째 세대 파일을 만들지 않는지 확인한다.
+     *
      * @scenario progress_log_volume=rotated
      *
      * @effects installation_log_rotates_before_it_grows_unbounded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_replaces_the_previous_archive_instead_of_keeping_generations(): void
@@ -213,6 +247,7 @@ class InstallerProgressLogRotationTest extends TestCase
         addLog('새 줄');
 
         $this->assertFileExists($rotated);
+        // meta:allow raw-source-read — 소스가 아니라 회전본(산출물)을 읽는다.
         $this->assertStringNotContainsString(
             '오래된 회전본',
             (string) file_get_contents($rotated),
@@ -221,9 +256,13 @@ class InstallerProgressLogRotationTest extends TestCase
         $this->assertFileDoesNotExist($log.'.2', '세대가 늘어났다');
     }
     /**
+     * 상한 아래의 짧은 기록에서는 회전본이 생기지 않는지 확인한다.
+     *
      * @scenario progress_log_volume=small
      *
      * @effects installation_log_rotates_before_it_grows_unbounded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_does_nothing_below_the_limit(): void
@@ -235,9 +274,13 @@ class InstallerProgressLogRotationTest extends TestCase
         $this->assertFileDoesNotExist($rotated, '상한 아래에서 회전하면 정상 설치의 기록이 매번 쪼개진다');
     }
     /**
+     * 없는 파일에 회전을 시도하면 오류 없이 거짓을 돌려주고 파일도 만들지 않는지 확인한다.
+     *
      * @scenario progress_log_volume=small
      *
      * @effects installation_log_rotates_before_it_grows_unbounded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_missing_file_is_not_an_error(): void
@@ -254,11 +297,12 @@ class InstallerProgressLogRotationTest extends TestCase
     /**
      * 배치 통로도 같은 지점을 지난다 — 한쪽 통로로만 쓰는 모드에서 파일이 조용히 자라면
      * 회전을 넣은 의미가 절반만 성립한다.
-     */
-    /**
+     *
      * @scenario progress_log_volume=rotated
      *
      * @effects installation_log_rotates_before_it_grows_unbounded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_batch_writer_rotates_too(): void

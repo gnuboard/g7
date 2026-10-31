@@ -60,6 +60,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
 
     /**
      * 테스트 사전 준비를 수행합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -88,6 +90,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
     /**
      * 게시판 관리자(manager) 역할을 생성하고 managerUser 에 부여합니다.
      * (목록 조회용 posts.read 포함)
+     *
+     * @return void 반환값 없음
      */
     private function setupManagerRole(): void
     {
@@ -162,6 +166,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects published_preview_visible_in_list
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function published_post_preview_is_visible_in_list(): void
@@ -186,6 +192,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects secret_preview_empty_for_guest
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_preview_is_empty_for_guest(): void
@@ -209,6 +217,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=other_member
      *
      * @effects secret_preview_empty_for_other_member
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_preview_is_empty_for_other_member(): void
@@ -233,6 +243,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=author
      *
      * @effects secret_preview_empty_for_author
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_preview_is_empty_for_author_in_list(): void
@@ -256,6 +268,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=manager
      *
      * @effects secret_preview_empty_for_manager
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_preview_is_empty_for_manager_in_list(): void
@@ -276,9 +290,13 @@ class PostSearchSecretPreviewTest extends BoardTestCase
     /**
      * 검색 필터(search=) 경유 시에도 비밀글 미리보기가 차단된다.
      *
-     * @scenario viewer=guest, channel=search
+     * 검색 경유 변종(축 아님, 매니페스트 axes 주석의 channel 변종)이다.
+     *
+     * @scenario viewer=guest
      *
      * @effects secret_preview_empty_via_search_filter
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_preview_is_empty_via_search_filter(): void
@@ -311,6 +329,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects blinded_preview_empty_in_list
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function blinded_post_preview_is_empty_in_list(): void
@@ -334,6 +354,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects secret_title_visible_in_list
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_title_is_visible_in_list(): void

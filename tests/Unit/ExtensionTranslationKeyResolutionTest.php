@@ -33,6 +33,8 @@ class ExtensionTranslationKeyResolutionTest extends TestCase
      * 확장의 네임스페이스 없는 다국어 키가 전부 코어 그룹으로 해석되는지 확인
      *
      * @effects extension_non_namespaced_key_resolves_to_core_group
+     *
+     * @return void 반환값 없음
      */
     public function test_every_non_namespaced_key_in_extensions_resolves_to_a_core_group(): void
     {
@@ -65,6 +67,10 @@ class ExtensionTranslationKeyResolutionTest extends TestCase
      * 검사기가 실제로 위반을 잡아내는지 합성 표본으로 확인
      *
      * 이 단언이 없으면 패턴이 아무것도 매칭하지 못하게 되어도 위 테스트는 계속 초록이다.
+     *
+     * @effects extension_translation_key_detector_flags_non_core_groups
+     *
+     * @return void 반환값 없음
      */
     public function test_detector_flags_a_key_whose_group_is_not_in_core(): void
     {
@@ -80,6 +86,10 @@ class ExtensionTranslationKeyResolutionTest extends TestCase
 
     /**
      * 네임스페이스가 붙은 키는 검사 대상이 아님을 확인
+     *
+     * @effects extension_translation_key_detector_ignores_namespaced_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_detector_ignores_namespaced_keys(): void
     {
@@ -92,7 +102,7 @@ class ExtensionTranslationKeyResolutionTest extends TestCase
     /**
      * 확장 소스에서 네임스페이스 없는 키 호출을 모읍니다.
      *
-     * @return array<int, array{file: string, line: int, group: string, key: string}>
+     * @return array<int, array{file: string, line: int, group: string, key: string}> 네임스페이스 없는 키 호출 목록
      */
     private function collectCalls(): array
     {
@@ -125,7 +135,7 @@ class ExtensionTranslationKeyResolutionTest extends TestCase
      * 소스 문자열에서 네임스페이스 없는 키 호출을 뽑습니다.
      *
      * @param  string  $contents  PHP 소스
-     * @return array<int, array{line: int, group: string, key: string}>
+     * @return array<int, array{line: int, group: string, key: string}> 소스 안 네임스페이스 없는 키 호출 목록
      */
     private function matchesIn(string $contents): array
     {

@@ -79,22 +79,30 @@ describe('ApiClient', () => {
   });
 
   describe('토큰 관리', () => {
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_token_storage_roundtrip
     it('토큰을 저장할 수 있어야 함', () => {
       apiClient.setToken('test-token');
       expect(localStorage.getItem('auth_token')).toBe('test-token');
     });
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_token_storage_roundtrip
     it('토큰을 조회할 수 있어야 함', () => {
       localStorage.setItem('auth_token', 'test-token');
       expect(apiClient.getToken()).toBe('test-token');
     });
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_token_storage_roundtrip
     it('토큰을 삭제할 수 있어야 함', () => {
       localStorage.setItem('auth_token', 'test-token');
       apiClient.removeToken();
       expect(localStorage.getItem('auth_token')).toBeNull();
     });
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_token_storage_roundtrip
     it('토큰이 없으면 null을 반환해야 함', () => {
       expect(apiClient.getToken()).toBeNull();
     });
@@ -126,6 +134,8 @@ describe('ApiClient', () => {
   });
 
   describe('HTTP 메서드', () => {
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_http_methods_unwrap_response_data
     it('GET 요청을 수행할 수 있어야 함', async () => {
       const mockData = { data: 'test' };
       const mockResponse = { data: mockData };
@@ -138,6 +148,8 @@ describe('ApiClient', () => {
       expect(instance.get).toHaveBeenCalledWith('/test', undefined);
     });
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_http_methods_unwrap_response_data
     it('POST 요청을 수행할 수 있어야 함', async () => {
       const mockData = { data: 'test' };
       const mockResponse = { data: mockData };
@@ -151,6 +163,8 @@ describe('ApiClient', () => {
       expect(instance.post).toHaveBeenCalledWith('/test', postData, undefined);
     });
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_http_methods_unwrap_response_data
     it('PUT 요청을 수행할 수 있어야 함', async () => {
       const mockData = { data: 'test' };
       const mockResponse = { data: mockData };
@@ -164,6 +178,8 @@ describe('ApiClient', () => {
       expect(instance.put).toHaveBeenCalledWith('/test', putData, undefined);
     });
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_http_methods_unwrap_response_data
     it('PATCH 요청을 수행할 수 있어야 함', async () => {
       const mockData = { data: 'test' };
       const mockResponse = { data: mockData };
@@ -177,6 +193,8 @@ describe('ApiClient', () => {
       expect(instance.patch).toHaveBeenCalledWith('/test', patchData, undefined);
     });
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_http_methods_unwrap_response_data
     it('DELETE 요청을 수행할 수 있어야 함', async () => {
       const mockData = { data: 'test' };
       const mockResponse = { data: mockData };
@@ -191,12 +209,16 @@ describe('ApiClient', () => {
   });
 
   describe('싱글톤 인스턴스', () => {
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_singleton_instance_is_shared
     it('createApiClient는 싱글톤 인스턴스를 반환해야 함', () => {
       const client1 = createApiClient();
       const client2 = createApiClient();
       expect(client1).toBe(client2);
     });
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_singleton_instance_is_shared
     it('getApiClient는 싱글톤 인스턴스를 반환해야 함', () => {
       const client1 = getApiClient();
       const client2 = getApiClient();
@@ -235,6 +257,8 @@ describe('ApiClient', () => {
       },
     };
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_428_is_routed_through_identity_guard
     it('428 응답을 IdentityGuardInterceptor 로 인터셉트하고 verify 성공 시 재실행 응답을 반환한다', async () => {
       mockedGuard.isIdentityRequired.mockReturnValue(true);
       mockedGuard.handle.mockResolvedValue({
@@ -249,6 +273,8 @@ describe('ApiClient', () => {
       expect(result.data).toEqual({ success: true, data: { confirmed: true } });
     });
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_428_is_routed_through_identity_guard
     it('428 인데 사용자가 본인인증을 취소(handle=null)하면 원 에러를 그대로 전파한다', async () => {
       mockedGuard.isIdentityRequired.mockReturnValue(true);
       mockedGuard.handle.mockResolvedValue(null);
@@ -257,6 +283,8 @@ describe('ApiClient', () => {
       await expect(onRejected(idv428Error)).rejects.toBe(idv428Error);
     });
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_428_is_routed_through_identity_guard
     it('428 이 아니면 IdentityGuard 를 호출하지 않고 일반 에러로 전파한다', async () => {
       mockedGuard.isIdentityRequired.mockReturnValue(false);
 
@@ -270,6 +298,8 @@ describe('ApiClient', () => {
      * 신규(engine-v1.51.0) — axios(G7Core.api) 호출 경로도 config.identity_target 을 launcher 로 전달.
      * apiCall(handleApiCall, native fetch) 경로와 동일하게 모든 API 호출 방식에서 IDV target 지원.
      */
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_passes_identity_target_to_identity_guard
     it('config.identity_target 을 IdentityGuardInterceptor.handle 의 target 인자로 전달한다', async () => {
       mockedGuard.isIdentityRequired.mockReturnValue(true);
       mockedGuard.handle.mockResolvedValue({
@@ -357,6 +387,8 @@ describe('ApiClient', () => {
     // baseURL 기본값이 `withBasePrefix('/api')` 인데 중복 제거 조건이 리터럴 `/api` 와
     // 비교라 그 조건이 영원히 거짓이었고, 결과는 `/g7/api` + `/api/…` = `/g7/api/api/…`
     // 404 였다. **루트 설치에서는 정상**이라 개발 환경에서 재현되지 않는다 (15차 G3).
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_api_path_is_neither_lost_nor_duplicated_under_subfolder
     it('하위 폴더 마운트에서 /api 로 시작하는 URL 이 접두사를 잃지도 중복되지도 않는다', () => {
         (globalThis as any).G7Config = { basePath: '/g7' };
 
@@ -384,6 +416,8 @@ describe('ApiClient', () => {
     // `url.startsWith('/api')` 라 접두사가 붙은 값(`/g7/api/…`)에는 **거짓**이고,
     // baseURL(`/g7/api`)이 남아 `/g7/api/g7/api/…` 가 됐다 — 15차가 고친 것의
     // **반대 방향 짝**이며 루트 설치에서는 접두사가 빈 문자열이라 재현되지 않는다.
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_api_path_is_neither_lost_nor_duplicated_under_subfolder
     it('하위 폴더 마운트에서 접두사가 이미 붙은 URL 은 접두사가 두 번 붙지 않는다', () => {
         (globalThis as any).G7Config = { basePath: '/g7' };
 
@@ -403,6 +437,8 @@ describe('ApiClient', () => {
         }
     });
 
+    // @scenario disk_setting=none, hook=unregistered
+    // @effects api_client_api_path_is_neither_lost_nor_duplicated_under_subfolder
     it('루트 설치에서는 /api 중복 제거 동작이 종전과 같다', () => {
         const onRequest = buildClientCapturingRequest();
         const config = onRequest({
@@ -414,6 +450,8 @@ describe('ApiClient', () => {
         expect(buildFullPath(config.baseURL, config.url)).toBe('/api/modules/x/bulk-update');
     });
 
+    // @scenario disk_setting=public, hook=unregistered
+    // @effects same_origin_request_attaches_session_token
     it('동일 출처 상대 경로에는 Authorization 을 첨부한다', () => {
       const onRequest = buildClientCapturingRequest();
 
@@ -422,6 +460,8 @@ describe('ApiClient', () => {
       expect(config.headers.Authorization).toBe('Bearer secret-token');
     });
 
+    // @scenario disk_setting=public, hook=unregistered
+    // @effects same_origin_request_attaches_session_token
     it('동일 출처 절대 URL 에는 Authorization 을 첨부한다', () => {
       const onRequest = buildClientCapturingRequest();
 
@@ -439,6 +479,8 @@ describe('ApiClient', () => {
     // 접두사가 없는 루트 설치에서만 돌았다. 인터셉터가 절대 URL 을 만나 baseURL 을
     // 잘못 건드리면 그 요청은 사이트 밖으로 나가는데 그 회귀를 잡을 것이 없었다
     // (9차 G3 라운드 A-6).
+    // @scenario disk_setting=fake_cdn, hook=unregistered
+    // @effects api_client_absolute_urls_are_left_untouched_by_interceptor
     it('하위 폴더 마운트에서도 절대 URL 은 인터셉터가 손대지 않는다', () => {
         (globalThis as any).G7Config = { basePath: '/g7' };
 
@@ -494,6 +536,8 @@ describe('ApiClient', () => {
         }
     });
 
+    // @scenario disk_setting=fake_cdn, consumer=product, hook=unregistered
+    // @effects cross_origin_asset_request_omits_session_token
     it('교차 출처 절대 URL(공개 자산 CDN)에는 Authorization 을 첨부하지 않는다', () => {
       const onRequest = buildClientCapturingRequest();
 
@@ -506,6 +550,8 @@ describe('ApiClient', () => {
       expect(config.headers.Authorization).toBeUndefined();
     });
 
+    // @scenario disk_setting=fake_cdn, consumer=product, hook=unregistered
+    // @effects cross_origin_asset_request_omits_session_token
     it('프로토콜 상대 URL(//cdn) 도 교차 출처면 Authorization 을 첨부하지 않는다', () => {
       const onRequest = buildClientCapturingRequest();
 

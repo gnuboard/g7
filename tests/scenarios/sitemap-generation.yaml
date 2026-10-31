@@ -66,6 +66,31 @@ effects:
   - sitemap_command_passes_mode_option_to_job
   - sitemap_command_rebuild_option_forces_full_mode
   - sitemap_command_rejects_invalid_mode_without_dispatch
+  # ── 리스너 경유 색인기 (SitemapIndexer) ──
+  - indexed_url_normalized_to_site_absolute_loc   # 상대 url 이 설정 기준 절대 loc 으로 정규화돼 색인된다
+  - collect_filter_hook_can_transform_entries   # collect_for_resource 필터가 덧붙인 항목도 색인된다
+  - collect_filter_removing_all_entries_deindexes   # 필터가 항목을 모두 지우면 기존 색인도 제거된다
+  - child_sitemaps_are_well_formed_urlsets
+  - entries_without_loc_are_skipped
+  - gzip_children_are_opt_in_and_indexed_as_gz
+  - sitemap_manifest_is_the_commit_marker
+  - sitemap_commit_leaves_no_tmp_or_stale_children
+  - child_split_respects_protocol_url_and_byte_caps
+  - large_sitemap_generation_keeps_memory_bounded
+  - sitemap_child_paths_and_urls_have_one_owner
+  - sitemap_store_reads_only_a_committed_set
+  - sitemap_files_are_streamed_with_xml_content_type
+  - sitemap_child_number_outside_the_set_is_rejected
+  - gzip_child_responses_declare_content_encoding_and_index_stays_plain
+  - sitemap_contributors_register_by_identifier
+  - sitemap_xml_is_generated_from_contributor_urls
+  - static_routes_are_collected_without_private_or_dynamic_paths
+  - contributor_failure_does_not_stop_other_contributors
+  - multilingual_sitemap_emits_hreflang_alternates
+  - single_locale_sitemap_keeps_the_standard_format
+  - sitemap_url_block_escapes_xml_special_characters
+  - sitemap_contributors_are_streamed_one_at_a_time
+  - sitemap_loc_origin_follows_configured_site_url
 
 # scale: 대용량 회귀 축. block-array of flow objects (내장 fallback 파서 제약 — flow 객체만 중첩 파싱)
 scale:

@@ -34,7 +34,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 안에서 두 파일을 로드하면 다른 Installer 테스트를 오염시킨다. 실제 fatal 여부를
  * 관측하려면 격리된 PHP 프로세스에서 로드해야 한다.
  *
- * @effects installer_includes_are_load_order_independent
+ * 효과 요약(마커 아님 — 평문): 인스톨러 include 파일은 어떤 순서로 로드되어도 함수 재선언 fatal 을 내지 않는다. 시나리오 표식은 메서드마다 단다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -509,6 +509,12 @@ class InstallerIncludeOrderTest extends TestCase
      * 파일 단위로 재면(그 이름의 `function_exists` 가 파일 어딘가에 있으면 통과) 선언이
      * 가드 밖으로 나가도 같은 파일의 **사용 여부 검사** 하나가 그 자리를 메워 초록이 된다
      * (14차 B11-7). 판정 대상 집합이 비면 이 검사 자체가 공허해지므로 그 크기도 함께 잰다.
+     *
+     * @scenario guard_population=installer_sources
+     *
+     * @effects installer_includes_are_load_order_independent
+     *
+     * @return void 반환값 없음
      */
     public function test_every_duplicated_top_level_function_is_guarded_at_each_site(): void
     {
@@ -599,6 +605,12 @@ class InstallerIncludeOrderTest extends TestCase
      * 같은 형태의 선언 가드는 `api/_guard.php`(8개)·`api/*.php`·`views/*.php` 에도 있고,
      * 종전 모집단(`includes/*.php`)은 그것들을 통째로 밖에 두고 있었다 — 그 자리에 형제를
      * 중첩시켜도 이 검사가 초록이었다(실측).
+     *
+     * @scenario guard_population=installer_sources
+     *
+     * @effects installer_includes_are_load_order_independent
+     *
+     * @return void 반환값 없음
      */
     public function test_function_exists_guards_wrap_only_their_own_function(): void
     {
@@ -653,6 +665,12 @@ class InstallerIncludeOrderTest extends TestCase
      * 뒤엣것이 앞엣것을 덮어, 선언 가드가 **빈 집합으로 측정**되고 그 안에 중첩된 형제가
      * 검사에서 사라진다. 실 소스가 준수 상태라 이 사실은 red 로 드러나지 않으므로
      * 합성 입력으로 고정한다.
+     *
+     * @scenario guard_population=synthetic_source
+     *
+     * @effects installer_includes_are_load_order_independent
+     *
+     * @return void 반환값 없음
      */
     public function test_guard_block_collection_keeps_every_block_of_a_reused_name(): void
     {
@@ -695,6 +713,12 @@ class InstallerIncludeOrderTest extends TestCase
      *
      * 실 소스가 준수 상태라 red 로 드러나지 않으므로 합성 입력으로 고정한다
      * (10차 G3 라운드 B10-4).
+     *
+     * @scenario guard_population=synthetic_source
+     *
+     * @effects installer_includes_are_load_order_independent
+     *
+     * @return void 반환값 없음
      */
     public function test_guard_block_end_is_not_cut_short_by_string_interpolation(): void
     {
@@ -721,6 +745,12 @@ class InstallerIncludeOrderTest extends TestCase
 
     /**
      * `${var}` 형태(구식 보간)도 같은 판정을 탄다.
+     *
+     * @scenario guard_population=synthetic_source
+     *
+     * @effects installer_includes_are_load_order_independent
+     *
+     * @return void 반환값 없음
      */
     public function test_guard_block_end_is_not_cut_short_by_dollar_brace_interpolation(): void
     {

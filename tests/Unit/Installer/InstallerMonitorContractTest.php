@@ -17,7 +17,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: monitor_mode sse·polling·stepwise / stall_detection time_based·payload_based / cancel_check start·await
  *
- * @effects monitors_share_time_based_stall_detection, stepwise_request_has_timeout, sse_event_parsing_is_symmetric, abort_stops_the_running_monitor, start_path_checks_cancellation, completion_keeps_passed_over_evidence
+ * 효과 요약(마커 아님 — 평문): monitors_share_time_based_stall_detection, stepwise_request_has_timeout, sse_event_parsing_is_symmetric, abort_stops_the_running_monitor, start_path_checks_cancellation, completion_keeps_passed_over_evidence
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -62,11 +62,12 @@ class InstallerMonitorContractTest extends TestCase
      * 것은 **이 클래스의 다른 단언들이 기대는 전제**를 같은 파일 안에서 눈에 띄게 두기 위한
      * 것이다. 지우지 않는 이유는 그 문서적 값 때문이지 게이트로서의 값 때문이 아니다 —
      * 다음 감사가 이것을 「인스톨러 게이트」로 세지 않도록 여기 적어 둔다.
-     */
-    /**
+     *
      * @scenario installation_mode=stepwise
      *
      * @effects monitors_share_time_based_stall_detection
+     *
+     * @return void 반환값 없음
      */
     public function test_source_comparison_ignores_commented_out_wiring(): void
     {
@@ -91,6 +92,10 @@ class InstallerMonitorContractTest extends TestCase
 
     /**
      * 클래스 본문만 잘라낸다 (다음 `class ` 선언 전까지).
+     *
+     * @param  string  $source  주석을 걷어낸 설치기 스크립트 소스
+     * @param  string  $className  잘라낼 클래스 이름
+     * @return string 그 클래스 선언부터 다음 클래스 선언 전까지의 본문
      */
     private function classBody(string $source, string $className): string
     {
@@ -107,11 +112,12 @@ class InstallerMonitorContractTest extends TestCase
      *
      * 응답 내용으로만 판정하면 서버가 계속 4xx/5xx 를 주거나 응답 자체가 오지 않는 동안
      * 판정 지점에 도달하지 못해 화면이 마지막 진행률에서 영구 정지한다.
-     */
-    /**
+     *
      * @scenario installation_mode=stepwise
      *
      * @effects monitors_share_time_based_stall_detection
+     *
+     * @return void 반환값 없음
      */
     public function test_all_three_monitors_arm_the_shared_stall_timer(): void
     {
@@ -133,9 +139,6 @@ class InstallerMonitorContractTest extends TestCase
     }
 
     /**
-     * #M17 — 단계별 실행 요청은 스스로 끝난다 (응답 없는 요청에 상한).
-     */
-    /**
      * 상태 스냅샷을 받는 모니터는 전부 `onState` 를 발화한다 (14차 #10).
      *
      * `onState` 는 세 모드 중 둘에만 있었다. 지금의 소비자는 이벤트로도 같은 일을 하므로
@@ -145,11 +148,12 @@ class InstallerMonitorContractTest extends TestCase
      * SSE 는 스트림으로 이벤트만 받아 스냅샷 자체가 없다. 그래서 발화하지 않는 것이 옳고,
      * 그 사실을 계약으로 못 박는다 — 스냅샷을 소비하는 모니터가 늘면 그때 이 검사가 red 가
      * 된다. 워커를 뺏긴 SSE 는 폴링으로 갈아타므로 그 뒤로는 후계 모니터가 발화한다.
-     */
-    /**
+     *
      * @scenario installation_mode=polling
      *
      * @effects installer_stepwise_state_summary_matches_polling
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_consuming_monitors_all_emit_on_state(): void
     {
@@ -176,9 +180,13 @@ class InstallerMonitorContractTest extends TestCase
     }
 
     /**
+     * #M17 — 단계별 실행 요청은 스스로 끝난다 (응답 없는 요청에 상한).
+     *
      * @scenario installation_mode=stepwise
      *
      * @effects stepwise_request_has_timeout
+     *
+     * @return void 반환값 없음
      */
     public function test_stepwise_request_has_a_timeout(): void
     {
@@ -194,11 +202,12 @@ class InstallerMonitorContractTest extends TestCase
      *
      * `completed` 본문이 프록시에 잘리면 예외가 디스패치 밖으로 새어 onComplete 가 발화하지
      * 않는다 — 성공한 설치가 잠시 뒤 「응답이 없습니다」로 뒤집힌다.
-     */
-    /**
+     *
      * @scenario installation_mode=sse
      *
      * @effects sse_event_parsing_is_symmetric
+     *
+     * @return void 반환값 없음
      */
     public function test_sse_event_parsing_is_symmetric(): void
     {
@@ -222,6 +231,8 @@ class InstallerMonitorContractTest extends TestCase
      * @scenario progress_log_volume=large
      *
      * @effects stepwise_command_output_is_written_in_one_batch
+     *
+     * @return void 반환값 없음
      */
     public function test_log_batch_event_name_matches_between_server_and_client(): void
     {
@@ -260,6 +271,8 @@ class InstallerMonitorContractTest extends TestCase
      * @scenario installation_mode=stepwise, task_outcome=aborted
      *
      * @effects abort_explains_why_it_waits_for_the_running_task
+     *
+     * @return void 반환값 없음
      */
     public function test_abort_tells_the_operator_why_it_waits(): void
     {
@@ -284,11 +297,12 @@ class InstallerMonitorContractTest extends TestCase
 
     /**
      * #M13 — 중단은 진행 중인 모니터를 멈춘다.
-     */
-    /**
+     *
      * @scenario installation_mode=stepwise, task_outcome=aborted
      *
      * @effects abort_stops_the_running_monitor
+     *
+     * @return void 반환값 없음
      */
     public function test_abort_stops_the_running_monitor(): void
     {
@@ -308,11 +322,12 @@ class InstallerMonitorContractTest extends TestCase
 
     /**
      * #M14 · #M15 — 시작 경로가 취소를 확인하고, 재개 버튼이 연타로 두 번 뜨지 않는다.
-     */
-    /**
+     *
      * @scenario installation_mode=stepwise, resume_point=retry_after_failure
      *
-     * @effects abort_stops_the_running_monitor
+     * @effects abort_stops_the_running_monitor, start_path_checks_cancellation
+     *
+     * @return void 반환값 없음
      */
     public function test_start_path_checks_cancellation_and_locks_resume_buttons(): void
     {
@@ -354,11 +369,12 @@ class InstallerMonitorContractTest extends TestCase
 
     /**
      * #M12 — 완료 화면이 지나간 단계의 증거를 지우지 않는다.
-     */
-    /**
+     *
      * @scenario installation_mode=stepwise, skip_request=skippable
      *
      * @effects completion_keeps_passed_over_evidence
+     *
+     * @return void 반환값 없음
      */
     public function test_completion_keeps_evidence_of_passed_over_steps(): void
     {
@@ -387,11 +403,12 @@ class InstallerMonitorContractTest extends TestCase
 
     /**
      * #L14 · #L15 — 문구는 lang() 을 지나고, 브라우저 원문은 진단 상세로만 간다.
-     */
-    /**
+     *
      * @scenario locale=ko
      *
      * @effects installer_lang_literal_references_are_defined
+     *
+     * @return void 반환값 없음
      */
     public function test_messages_go_through_lang_and_raw_errors_stay_in_detail(): void
     {
@@ -411,11 +428,12 @@ class InstallerMonitorContractTest extends TestCase
 
     /**
      * #L16 — 결과 섹션 전환은 CSS 가 소유하고 prefers-reduced-motion 을 존중한다.
-     */
-    /**
+     *
      * @scenario installation_mode=stepwise, a11y_axis=live_region
      *
      * @effects installer_markup_classes_have_style_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_result_transition_is_owned_by_css(): void
     {
@@ -433,11 +451,12 @@ class InstallerMonitorContractTest extends TestCase
 
     /**
      * #L20 — 재렌더 경로의 속성값도 이스케이프한다 (확장 식별자는 스캔된 디렉터리명에서 온다).
-     */
-    /**
+     *
      * @scenario installation_mode=stepwise, a11y_axis=live_region
      *
      * @effects installer_markup_classes_have_style_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_task_list_escapes_attribute_values(): void
     {
@@ -461,11 +480,12 @@ class InstallerMonitorContractTest extends TestCase
      *
      * 이 파일은 닫힌 IIFE 라 함수를 꺼내 돌릴 수 없다 — 그래서 구조를 본다. 다섯 상태가
      * 전부 라벨 키를 갖고, 아이콘 주입이 `.sr-only` 를 함께 넣는지 확인한다.
-     */
-    /**
+     *
      * @scenario installation_mode=stepwise, a11y_axis=live_region
      *
      * @effects installer_markup_classes_have_style_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_list_icons_carry_a_text_alternative(): void
     {
@@ -504,11 +524,12 @@ class InstallerMonitorContractTest extends TestCase
      * installer.js 는 닫힌 IIFE 라 그 안의 함수가 뷰의 인라인 스크립트에서 보이지 않는다 —
      * 사본이 존재하는 것 자체는 구조상 불가피하다. 문제는 그 사실을 **아무도 지키지 않았다**는
      * 것이다: 3·4·8차가 세 라운드에 걸쳐 고친 aria 동기화를 한쪽에서만 지워도 초록이었다.
-     */
-    /**
+     *
      * @scenario installation_mode=stepwise, a11y_axis=live_region
      *
      * @effects installer_markup_classes_have_style_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicated_input_disable_helper_stays_in_sync(): void
     {

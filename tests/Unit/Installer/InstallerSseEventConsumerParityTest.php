@@ -38,6 +38,11 @@ class InstallerSseEventConsumerParityTest extends TestCase
         'error' => 'EventSource 가 전송 오류에도 같은 이름을 쓴다 — 넣으면 연결이 끊길 때마다 침묵 시계가 되감긴다',
     ];
 
+    /**
+     * 저장소 안 인스톨러 공개 디렉토리의 절대 경로를 만든다.
+     *
+     * @return string 인스톨러 루트 절대 경로
+     */
     private function installRoot(): string
     {
         return dirname(__DIR__, 3).'/public/install';
@@ -46,7 +51,7 @@ class InstallerSseEventConsumerParityTest extends TestCase
     /**
      * 서버가 내보내는 SSE 이벤트 이름 전수.
      *
-     * @return array<int, string>
+     * @return array<int, string> 태스크 러너와 진행 방출기의 이벤트 이름 (중복 제거, 정렬됨)
      */
     private function serverEventNames(): array
     {
@@ -72,7 +77,7 @@ class InstallerSseEventConsumerParityTest extends TestCase
     /**
      * 화면이 침묵 감시 대상으로 세는 이벤트 이름.
      *
-     * @return array<int, string>
+     * @return array<int, string> 설치 모니터 스크립트의 침묵 감시 상수에 실린 이름 (정렬됨)
      */
     private function livenessEventNames(): array
     {
@@ -92,7 +97,13 @@ class InstallerSseEventConsumerParityTest extends TestCase
     }
 
     /**
+     * 서버가 보내는 이벤트 이름 가운데 종료 성격으로 의도적으로 뺀 셋을 제외한 전부가 화면의 침묵 감시 목록에 있는지 확인한다.
+     *
+     * @scenario installation_mode=sse
+     *
      * @effects installer_liveness_event_list_covers_every_server_event
+     *
+     * @return void 반환값 없음
      */
     public function test_침묵_감시_목록이_서버가_보내는_이벤트_전수를_덮는다(): void
     {
@@ -114,7 +125,13 @@ class InstallerSseEventConsumerParityTest extends TestCase
     }
 
     /**
+     * 화면의 침묵 감시 목록에 서버가 실제로 보내지 않는 죽은 이름이 없는지 확인한다.
+     *
+     * @scenario installation_mode=sse
+     *
      * @effects installer_liveness_event_list_covers_every_server_event
+     *
+     * @return void 반환값 없음
      */
     public function test_감시_목록에_서버가_보내지_않는_이름이_없다(): void
     {
@@ -135,6 +152,12 @@ class InstallerSseEventConsumerParityTest extends TestCase
      * 위 두 검사의 모집단(`sendSSEEvent`/`->emit`)에 잡히지 않는 형태다. 이름만 바뀌어도
      * 화면은 조용히 그 프레임을 못 알아듣고, EventSource 가 재연결 → busy → 「중단」 화면을
      * 그린다. 승자 요청은 멀쩡히 도는 중이므로 오류도 로그도 남지 않는다.
+     *
+     * @scenario installation_mode=sse
+     *
+     * @effects sse_directly_written_frames_have_client_listeners
+     *
+     * @return void 반환값 없음
      */
     public function test_직접_써_내려간_프레임에도_리스너가_있다(): void
     {
@@ -168,6 +191,15 @@ class InstallerSseEventConsumerParityTest extends TestCase
         }
     }
 
+    /**
+     * 서버가 heartbeat 이벤트에 진행값(done, total)을 싣는 지점이 실재하고, 설치 모니터와 설치 화면 스크립트가 그 진행값을 받는 콜백을 배선했는지 확인한다.
+     *
+     * @scenario installation_mode=sse, task_duration=long_no_feedback
+     *
+     * @effects bundle_extraction_reports_progress_in_chunks
+     *
+     * @return void 반환값 없음
+     */
     public function test_진행값을_실은_heartbeat_는_소비된다(): void
     {
         // 서버가 `done`/`total` 을 싣는 지점이 실재하는지 먼저 확인한다 — 서버가 그만두면

@@ -22,6 +22,8 @@ class TrustedProxySettingTest extends TestCase
      * @scenario proxies_setting=cidr
      *
      * @effects saved_list_is_normalized_to_a_config_value
+     *
+     * @return void 반환값 없음
      */
     public function test_콤마_문자열이_태그_목록이_된다(): void
     {
@@ -40,6 +42,8 @@ class TrustedProxySettingTest extends TestCase
      * @scenario proxies_setting=single_ip_match
      *
      * @effects saved_list_is_normalized_to_a_config_value
+     *
+     * @return void 반환값 없음
      */
     public function test_빈_토큰과_중복을_걷어낸다(): void
     {
@@ -57,6 +61,8 @@ class TrustedProxySettingTest extends TestCase
      * @scenario proxies_setting=double_star
      *
      * @effects double_star_behaves_like_star
+     *
+     * @return void 반환값 없음
      */
     public function test_이중_별표가_단일_별표로_정규화된다(): void
     {
@@ -70,6 +76,8 @@ class TrustedProxySettingTest extends TestCase
      * @scenario proxies_setting=unset
      *
      * @effects saved_list_is_normalized_to_a_config_value
+     *
+     * @return void 반환값 없음
      */
     public function test_빈_목록은_설정값_null_이_된다(): void
     {
@@ -86,6 +94,8 @@ class TrustedProxySettingTest extends TestCase
      * @scenario proxies_setting=star
      *
      * @effects saved_list_is_normalized_to_a_config_value
+     *
+     * @return void 반환값 없음
      */
     public function test_와일드카드가_섞이면_목록_전체를_대신한다(): void
     {
@@ -98,6 +108,8 @@ class TrustedProxySettingTest extends TestCase
      * @scenario proxies_setting=cidr
      *
      * @effects saved_list_is_normalized_to_a_config_value
+     *
+     * @return void 반환값 없음
      */
     public function test_지정_목록이_콤마_문자열로_합쳐진다(): void
     {
@@ -117,6 +129,8 @@ class TrustedProxySettingTest extends TestCase
      * @scenario proxies_setting=cidr
      *
      * @effects invalid_proxy_address_is_rejected_on_save
+     *
+     * @return void 반환값 없음
      */
     public function test_유효한_주소를_받아들인다(): void
     {
@@ -134,6 +148,8 @@ class TrustedProxySettingTest extends TestCase
      * @scenario proxies_setting=single_ip_mismatch
      *
      * @effects invalid_proxy_address_is_rejected_on_save
+     *
+     * @return void 반환값 없음
      */
     public function test_쓸_수_없는_주소를_거부한다(): void
     {
@@ -150,6 +166,8 @@ class TrustedProxySettingTest extends TestCase
      * @scenario proxies_setting=cidr
      *
      * @effects invalid_proxy_address_is_rejected_on_save
+     *
+     * @return void 반환값 없음
      */
     public function test_주소_계열마다_프리픽스_상한이_다르다(): void
     {
@@ -168,6 +186,8 @@ class TrustedProxySettingTest extends TestCase
      * @scenario proxies_setting=unset
      *
      * @effects unset_setting_leaves_env_authority_intact
+     *
+     * @return void 반환값 없음
      */
     public function test_null_은_빈_목록으로_읽힌다(): void
     {

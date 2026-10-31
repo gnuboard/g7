@@ -30,6 +30,11 @@ class InstallerCommandOutputChannelTest extends TestCase
 {
     use ScansPhpSourceFunctions;
 
+    /**
+     * 저장소 안 설치기 폴더의 절대 경로를 만든다.
+     *
+     * @return string 설치기 폴더 경로
+     */
     private function installRoot(): string
     {
         return dirname(__DIR__, 3).'/public/install';
@@ -40,6 +45,8 @@ class InstallerCommandOutputChannelTest extends TestCase
      *
      * 상수를 `define` 으로 가져오면 이 테스트가 BASE_PATH 를 실 저장소 루트로 박아
      * 형제 인스톨러 테스트를 전부 skip 시킨다 (R7 · 7차 후속 주의).
+     *
+     * @return string 서버 설정이 정의한 커맨드 출력 표식 문자열
      */
     private function serverPrefix(): string
     {
@@ -59,7 +66,11 @@ class InstallerCommandOutputChannelTest extends TestCase
     /**
      * 서버와 화면이 같은 리터럴을 쓴다.
      *
+     * @scenario installation_mode=sse
+     *
      * @effects installer_command_output_prefix_is_shared_by_server_and_client
+     *
+     * @return void 반환값 없음
      */
     public function test_prefix_literal_is_shared_by_server_and_client(): void
     {
@@ -82,7 +93,11 @@ class InstallerCommandOutputChannelTest extends TestCase
      * 표식이 붙는 자리가 갈리면 한 진행 모드에서만 원문이 새어 나간다 — 폴링은 배치
      * 기록(addLogBatch), SSE·단계별 실행은 스트림 emit 을 쓰기 때문이다.
      *
+     * @scenario installation_mode=polling
+     *
      * @effects installer_command_output_never_enters_the_progress_log
+     *
+     * @return void 반환값 없음
      */
     public function test_every_command_output_emitter_goes_through_the_marked_channel(): void
     {
@@ -115,7 +130,11 @@ class InstallerCommandOutputChannelTest extends TestCase
      *
      * 표식만 붙이고 화면이 분류하지 않으면 표식 문자열째로 진행 기록에 찍힌다.
      *
+     * @scenario installation_mode=stepwise
+     *
      * @effects installer_command_output_has_a_collapsible_home
+     *
+     * @return void 반환값 없음
      */
     public function test_client_routes_marked_lines_into_the_collapsible_detail(): void
     {

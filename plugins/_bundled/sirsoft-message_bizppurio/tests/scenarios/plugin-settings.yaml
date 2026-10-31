@@ -123,6 +123,26 @@ effects:
   - password_is_not_stored_as_plaintext_in_settings_file
   - report_url_requires_authentication_returns_401
   - report_url_returns_absolute_url_built_from_app_url
+  # 설치 선언, 발송 Enum, 토큰 서비스와 연결 확인 세부 (PHPUnit 이 이미 재던 것을 #609 에서 명시)
+  - plugin_identifier_and_vendor_match_directory_name
+  - settings_schema_marks_credentials_sensitive
+  - defaults_json_frontend_schema_exposes_no_fields
+  - dispatch_channel_enum_values_and_text_helper
+  - dispatch_status_enum_final_state_flags
+  - dispatch_source_enum_values
+  - result_category_enum_retry_and_failure_flags
+  - dispatch_enum_labels_resolve_to_strings
+  - token_check_success_refreshes_cached_token
+  - token_check_connection_failure_returns_422_not_500
+  - token_check_returns_422_when_credentials_missing
+  - token_service_reuses_cached_token_with_single_http_call
+  - token_refresh_forgets_cache_and_reissues
+  - token_issue_throws_when_credentials_missing
+  - token_issue_throws_on_http_failure
+  - verify_credentials_bypasses_cache_and_stores_fresh_token
+  - verify_credentials_failure_propagates_and_keeps_cached_token
+  - token_issue_failure_message_includes_bizppurio_reason_and_code
+  - token_issue_failure_without_reason_falls_back_to_fixed_message
 
 test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/plugin_settings.test.tsx

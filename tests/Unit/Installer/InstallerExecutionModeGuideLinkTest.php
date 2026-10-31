@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * W1 실행 방식 정보 카드의 [자세히 보기] 링크 계약 (D32 · §11.12 · P7).
@@ -26,20 +27,35 @@ use PHPUnit\Framework\TestCase;
  */
 class InstallerExecutionModeGuideLinkTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
+    /**
+     * 이 테스트 파일에서 세 단계 위인 저장소 루트 경로를 돌려준다.
+     *
+     * @return string 저장소 루트 절대 경로
+     */
     private function repoRoot(): string
     {
         return dirname(__DIR__, 3);
     }
 
+    /**
+     * 설치 화면 스크립트 원문을 주석을 지운 형태로 읽는다.
+     *
+     * @return string 주석을 지운 설치 화면 스크립트 소스
+     */
     private function installerJs(): string
     {
-        return (string) file_get_contents($this->repoRoot().'/public/install/assets/js/installer.js');
+        return $this->sourceWithoutComments($this->repoRoot().'/public/install/assets/js/installer.js');
     }
 
     /**
      * GitHub 이 마크다운 제목에서 앵커를 만드는 규칙.
      *
      * 소문자화 → 공백을 하이픈으로 → 그 외 비단어 문자 제거. 한글은 그대로 남는다.
+     *
+     * @param  string  $heading  앵커로 바꿀 마크다운 제목 문장
+     * @return string GitHub 규칙으로 만든 앵커 조각
      */
     private function slug(string $heading): string
     {
@@ -60,7 +76,13 @@ class InstallerExecutionModeGuideLinkTest extends TestCase
     }
 
     /**
+     * W1 실행 방식 정보 카드 본문이 안내 주소 상수와 다국어 [자세히 보기] 문구를 쓰고, 새 창 링크에 noopener 를 붙이는지 확인한다.
+     *
+     * @scenario installer_gate_status=info_blue
+     *
      * @effects installer_execution_mode_card_links_to_install_guide
+     *
+     * @return void 반환값 없음
      */
     public function test_info_card_renders_the_guide_link(): void
     {
@@ -92,7 +114,13 @@ class InstallerExecutionModeGuideLinkTest extends TestCase
     }
 
     /**
+     * 안내 주소가 공개 저장소의 설치 문서를 가리키고, 그 주소의 앵커를 만드는 제목이 설치 문서에 실제로 있는지 확인한다.
+     *
+     * @scenario installer_gate_status=info_blue
+     *
      * @effects installer_execution_mode_card_links_to_install_guide
+     *
+     * @return void 반환값 없음
      */
     public function test_guide_url_points_at_a_heading_that_exists_in_install_md(): void
     {
@@ -129,6 +157,15 @@ class InstallerExecutionModeGuideLinkTest extends TestCase
         );
     }
 
+    /**
+     * 설치기 언어 폴더에서 찾은 모든 로케일 파일에 [자세히 보기] 문구 키가 있는지 확인한다.
+     *
+     * @scenario installer_gate_status=info_blue
+     *
+     * @effects installer_execution_mode_card_links_to_install_guide
+     *
+     * @return void 반환값 없음
+     */
     public function test_learn_more_label_exists_in_every_installer_locale(): void
     {
         $codes = $this->localeCodes();
@@ -156,7 +193,11 @@ class InstallerExecutionModeGuideLinkTest extends TestCase
      * 링크가 죽어도 404 가 아니라 문서 맨 위가 열리므로 오류로 드러나지 않는다. 화면마다
      * 따로 재면 새로 생긴 링크가 사각이 되므로 모집단을 추적 파일에서 도출한다.
      *
+     * @scenario installer_gate_status=info_blue
+     *
      * @effects install_guide_link_targets_exist_repo_wide
+     *
+     * @return void 반환값 없음
      */
     public function test_every_install_guide_link_in_the_repository_points_at_an_existing_heading(): void
     {
@@ -222,6 +263,9 @@ class InstallerExecutionModeGuideLinkTest extends TestCase
                 continue;
             }
 
+            // meta:allow raw-source-read — 링크 모집단은 스크립트만이 아니라 레이아웃 JSON 과 템플릿 HTML 까지
+            // 형식을 가리지 않는다. 언어별 주석 규칙을 고를 수 없고, 주석 속 안내 링크도 죽으면 안 되는 링크라
+            // 원문 전체를 본다.
             $content = (string) file_get_contents($this->repoRoot().'/'.$relative);
             preg_match_all('~'.preg_quote($prefix, '~').'([A-Za-z0-9%._-]*)~', $content, $m);
 
@@ -236,7 +280,7 @@ class InstallerExecutionModeGuideLinkTest extends TestCase
     /**
      * `INSTALL.md` 의 제목이 만드는 앵커 전수 (중복 제목은 GitHub 규칙대로 `-N` 을 붙인다).
      *
-     * @return list<string>
+     * @return list<string> 설치 문서 제목이 만드는 앵커 목록
      */
     private function installMdAnchors(): array
     {
@@ -260,13 +304,20 @@ class InstallerExecutionModeGuideLinkTest extends TestCase
     /**
      * 인스톨러 로케일 코드 전수 — 목록을 손으로 적지 않는다(새 로케일이 사각이 된다).
      *
-     * @return list<string>
+     * @return list<string> 정렬된 설치기 로케일 코드 목록
      */
     private function localeCodes(): array
     {
         $codes = [];
-        foreach ((array) glob($this->repoRoot().'/public/install/lang/*.php') as $file) {
-            $codes[] = basename((string) $file, '.php');
+        // 재귀로 훑는다 — 한 겹 나열은 하위 폴더가 생기는 순간 그 안의 로케일을 놓친다.
+        // 코드는 언어 폴더 기준 상대 경로라 아래 require 경로 조립과 그대로 맞물린다.
+        $langDir = $this->repoRoot().'/public/install/lang';
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($langDir, \FilesystemIterator::SKIP_DOTS));
+        foreach ($it as $file) {
+            if ($file->isFile() && str_ends_with($file->getFilename(), '.php')) {
+                $relative = str_replace('\\', '/', substr($file->getPathname(), strlen($langDir) + 1));
+                $codes[] = substr($relative, 0, -strlen('.php'));
+            }
         }
         sort($codes);
 
@@ -275,6 +326,9 @@ class InstallerExecutionModeGuideLinkTest extends TestCase
 
     /**
      * 정보 카드 렌더 함수의 본문만 잘라낸다 — 형제 카드(fail)의 선언이 판정을 가리지 않게.
+     *
+     * @param  string  $js  주석을 지운 설치 화면 스크립트 소스
+     * @return string 정보 카드 렌더 함수의 본문
      */
     private function extractInfoCardBody(string $js): string
     {

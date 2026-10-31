@@ -51,6 +51,8 @@ class Ckeditor5ImageUpload extends Model
 
     /**
      * 모델 부트 메서드
+     *
+     * @return void 반환값 없음
      */
     protected static function boot(): void
     {
@@ -130,6 +132,8 @@ class Ckeditor5ImageUpload extends Model
 
     /**
      * 행 disk 드라이버 memoize 캐시를 비웁니다 (테스트 격리용).
+     *
+     * @return void 반환값 없음
      */
     public static function flushStorageCache(): void
     {

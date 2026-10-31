@@ -38,6 +38,11 @@ class CoreUpdateServiceVersionEnvSyncTest extends TestCase
 
     private mixed $originalConfigVersion = null;
 
+    /**
+     * 기준 경로와 프로세스, config 의 APP_VERSION 원래 값을 기억하고 .env 를 둘 임시 샌드박스를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -50,6 +55,11 @@ class CoreUpdateServiceVersionEnvSyncTest extends TestCase
         File::ensureDirectoryExists($this->sandbox);
     }
 
+    /**
+     * 기준 경로, 슈퍼전역 APP_VERSION, config 버전을 원래대로 되돌리고 샌드박스를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->app->setBasePath($this->originalBasePath);
@@ -73,6 +83,12 @@ class CoreUpdateServiceVersionEnvSyncTest extends TestCase
 
     /**
      * `.env` 를 고친 뒤 **같은 프로세스**의 `env()` · `config('app.version')` 이 새 값을 본다.
+     *
+     * @scenario memory_version_source=env_app_version
+     *
+     * @effects env_version_update_reaches_the_running_process
+     *
+     * @return void 반환값 없음
      */
     public function test_version_update_reaches_the_running_process_not_only_the_env_file(): void
     {
@@ -110,6 +126,12 @@ class CoreUpdateServiceVersionEnvSyncTest extends TestCase
      *
      * 이 갈래가 프로세스 값을 먼저 고치면, 파일이 없어 되돌릴 수 없는 상태에서 메모리만
      * 새 버전이 되어 디스크와 메모리가 영구히 어긋난다.
+     *
+     * @scenario memory_version_source=config_only_env_absent
+     *
+     * @effects missing_env_file_leaves_process_version_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_env_file_leaves_process_version_untouched(): void
     {

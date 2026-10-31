@@ -20,6 +20,11 @@ class BoardModuleSeoTest extends ModuleTestCase
 {
     private Module $module;
 
+    /**
+     * 설치된 게시판 모듈 인스턴스를 꺼내고, 없으면 모듈 경로로 직접 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -29,6 +34,10 @@ class BoardModuleSeoTest extends ModuleTestCase
 
     /**
      * 회귀: PostResource toArray() 의 'thumbnail' 키에서 og:image URL 추출.
+     *
+     * @effects og_defaults_read_image_from_thumbnail_key
+     *
+     * @return void 반환값 없음
      */
     public function test_post_seo_og_defaults_uses_thumbnail_key(): void
     {
@@ -49,6 +58,10 @@ class BoardModuleSeoTest extends ModuleTestCase
 
     /**
      * 회귀: thumbnail 부재 시에도 throw 없이 image 키 생략.
+     *
+     * @effects og_defaults_omit_image_without_thumbnail
+     *
+     * @return void 반환값 없음
      */
     public function test_post_seo_og_defaults_without_thumbnail(): void
     {
@@ -79,6 +92,8 @@ class BoardModuleSeoTest extends ModuleTestCase
      * @scenario mount=subfolder, surface=seo_bot
      *
      * @effects seo_image_carries_the_mount_prefix_exactly_once
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_image_does_not_double_apply_the_mount_prefix(): void
     {
@@ -127,6 +142,10 @@ class BoardModuleSeoTest extends ModuleTestCase
 
     /**
      * 접두사가 없는 표준 배치에서는 종전과 동일하다 — 위 수정이 그 배치를 건드리지 않는다.
+     *
+     * @effects seo_image_is_absolute_without_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_image_is_unchanged_without_a_mount_prefix(): void
     {
@@ -152,6 +171,10 @@ class BoardModuleSeoTest extends ModuleTestCase
 
     /**
      * seoOgDefaultMeta / seoStructuredDataMeta 가 게시글 데이터 경로(연결 칩) + 라벨을 선언한다.
+     *
+     * @effects module_declares_seo_default_meta_data_path_and_label_for_og_and_structured
+     *
+     * @return void 반환값 없음
      */
     public function test_post_seo_meta_declares_data_path_and_label(): void
     {
@@ -173,6 +196,10 @@ class BoardModuleSeoTest extends ModuleTestCase
 
     /**
      * 정합성: 메타가 선언한 키는 운영 declaration 산출 키의 부분집합이어야 한다(키 드리프트 차단).
+     *
+     * @effects meta_method_keys_are_subset_of_operational_declaration_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_post_meta_keys_are_subset_of_declaration_keys(): void
     {

@@ -30,6 +30,11 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
 {
     protected User $adminUser;
 
+    /**
+     * 로케일을 ko 로 고정하고 쿠폰 조회, 생성, 수정 권한을 가진 관리자를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -72,6 +77,7 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
      * 수정 요청 본문 기본값 (부분 수정이므로 필수 필드만)
      *
      * @param  array  $overrides  오버라이드할 속성
+     * @return array 쿠폰 수정 요청 본문
      */
     private function updatePayload(array $overrides = []): array
     {
@@ -84,6 +90,8 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
      * 수정: valid_type=days_from_issue 로 바꾸면서 valid_days 를 비우면 거부된다.
      *
      * @effects coupon_update_rejects_days_from_issue_without_valid_days
+     *
+     * @return void 반환값 없음
      */
     public function test_update_rejects_days_from_issue_with_null_valid_days(): void
     {
@@ -110,6 +118,8 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
      * valid_type 이 요청에 없으므로, 저장돼 있던 값을 승계해 판정해야 잡힌다.
      *
      * @effects coupon_update_rejects_days_from_issue_without_valid_days
+     *
+     * @return void 반환값 없음
      */
     public function test_update_rejects_clearing_valid_days_when_existing_type_is_days_from_issue(): void
     {
@@ -135,6 +145,8 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
      * 초록이 유지된다. 자기 계약을 말하는 effect 로 옮긴다.
      *
      * @effects coupon_update_allows_changes_that_keep_a_usable_validity
+     *
+     * @return void 반환값 없음
      */
     public function test_update_allows_type_change_when_stored_valid_days_exists(): void
     {
@@ -158,6 +170,8 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
      * 위 케이스와 같은 **음성 대조군**(200)이라 같은 effect 를 마킹한다.
      *
      * @effects coupon_update_allows_changes_that_keep_a_usable_validity
+     *
+     * @return void 반환값 없음
      */
     public function test_update_unrelated_field_is_not_blocked_on_legacy_broken_coupon(): void
     {
@@ -177,6 +191,8 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
      * 수정 전에는 만료일이 발급 시각과 같아져 즉시 만료된 쿠폰이 조용히 발급됐다.
      *
      * @effects coupon_issue_blocked_when_validity_not_configured
+     *
+     * @return void 반환값 없음
      */
     public function test_issue_is_blocked_when_valid_days_is_null(): void
     {
@@ -196,6 +212,8 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
      * 발급 관문: 0 일도 만료일을 만들 수 없으므로 동일하게 차단된다.
      *
      * @effects coupon_issue_blocked_when_validity_not_configured
+     *
+     * @return void 반환값 없음
      */
     public function test_issue_is_blocked_when_valid_days_is_zero(): void
     {
@@ -214,6 +232,8 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
      * 발급 관문: 기간지정 쿠폰은 valid_days 가 비어 있어도 영향받지 않는다. (과잉 차단 방지)
      *
      * @effects coupon_issue_blocked_when_validity_not_configured
+     *
+     * @return void 반환값 없음
      */
     public function test_period_coupon_is_unaffected_by_empty_valid_days(): void
     {
@@ -232,6 +252,8 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
      * 발급: 정상값은 그대로 발급일 + N일이 된다. (기준선)
      *
      * @effects coupon_issue_blocked_when_validity_not_configured
+     *
+     * @return void 반환값 없음
      */
     public function test_issue_uses_valid_days_when_configured(): void
     {
@@ -254,6 +276,8 @@ class CouponValidDaysIntegrityTest extends ModuleTestCase
      * 모델 속성 경유 경로에서도 고정한다.
      *
      * @effects coupon_issue_blocked_when_validity_not_configured
+     *
+     * @return void 반환값 없음
      */
     public function test_issue_survives_numeric_string_valid_days(): void
     {

@@ -30,6 +30,8 @@ class RootIndexShimTest extends TestCase
      * 없다. 하나라도 놓치면 그 표기의 사이트에서 거짓 경고와 사본이 쌓인다.
      *
      * @effects root_index_shim_detection_has_one_owner
+     *
+     * @return void 반환값 없음
      */
     public function test_코어_shim_은_표기가_달라도_판별된다(): void
     {
@@ -54,6 +56,12 @@ class RootIndexShimTest extends TestCase
 
     /**
      * 운영자 파일은 shim 이 아니다 — 이 축이 무너지면 사본 보존이 통째로 사라진다.
+     *
+     * @scenario shim_detection=literal, entry_file=root_index
+     *
+     * @effects root_index_shim_detection_has_one_owner
+     *
+     * @return void 반환값 없음
      */
     public function test_운영자_파일은_shim_이_아니다(): void
     {
@@ -74,6 +82,12 @@ class RootIndexShimTest extends TestCase
 
     /**
      * 저장소의 실제 루트 진입 파일은 이 판정을 통과한다.
+     *
+     * @scenario shim_detection=literal, entry_file=root_index
+     *
+     * @effects root_index_shim_detection_has_one_owner
+     *
+     * @return void 반환값 없음
      */
     public function test_저장소의_루트_진입_파일은_shim_으로_판별된다(): void
     {
@@ -90,6 +104,8 @@ class RootIndexShimTest extends TestCase
      * 이 결함의 형태였다.
      *
      * @effects root_index_shim_detection_has_one_owner
+     *
+     * @return void 반환값 없음
      */
     public function test_런타임_판정은_사본_대신_공유_지점을_쓴다(): void
     {

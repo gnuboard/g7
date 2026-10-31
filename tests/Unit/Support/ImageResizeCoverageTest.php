@@ -23,7 +23,10 @@ class ImageResizeCoverageTest extends TestCase
     /**
      * 업로드 파일을 디스크에 저장하는 서비스 전수.
      *
+     * @effects every_upload_service_applies_the_configured_image_bounds, attachment_recorded_size_matches_stored_bytes_after_the_resize_path
+     *
      * @param  string  $relativePath  검사 대상 서비스 경로
+     * @return void 반환값 없음
      */
     #[Test]
     #[TestWith(['app/Services/AttachmentService.php'])]

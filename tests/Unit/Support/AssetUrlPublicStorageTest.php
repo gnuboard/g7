@@ -21,6 +21,11 @@ use Tests\TestCase;
  */
 class AssetUrlPublicStorageTest extends TestCase
 {
+    /**
+     * 강제로 지정한 자산 URL 모드와 링크 가용 판정을 풀어 다른 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetUrl::forceMode(null);
@@ -30,7 +35,11 @@ class AssetUrlPublicStorageTest extends TestCase
     }
 
     /**
+     * 운영자가 public 디스크 url 을 외부 호스트로 지정하면 링크가 없어도 로컬 서빙 라우트로 끌어오지 않고 그 주소를 쓰는지 확인한다.
+     *
      * @effects configured_public_disk_url_outranks_link_detection
+     *
+     * @return void 반환값 없음
      */
     public function test_configured_public_disk_url_outranks_link_detection(): void
     {
@@ -56,6 +65,15 @@ class AssetUrlPublicStorageTest extends TestCase
         $this->assertStringNotContainsString('public-storage', $url, '설정을 무시하고 로컬 서빙 라우트로 끌어오면 그 사이트의 자산이 전부 어긋난다');
     }
 
+    /**
+     * 공개 스토리지 라우트 주소가 확장자 모드에서는 경로 형태로, 확장자 없는 모드에서는 file 쿼리 형태로 버전까지 실려 만들어지는지 확인한다.
+     *
+     * @scenario asset_url_mode=extension, asset_url_mode=extensionless
+     *
+     * @effects dual_mode_query_form_matches_path_form
+     *
+     * @return void 반환값 없음
+     */
     public function test_public_storage_url_has_dual_mode_forms(): void
     {
         AssetUrl::forceMode(AssetUrl::MODE_EXTENSION);
@@ -68,7 +86,11 @@ class AssetUrlPublicStorageTest extends TestCase
     }
 
     /**
+     * public 디스크 주소가 링크가 쓸 수 있으면 정적 /storage 경로를, 링크가 없으면 공개 스토리지 라우트를 가리키는지 확인한다.
+     *
      * @effects public_storage_url_switches_to_route_when_link_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_public_disk_url_switches_to_route_when_link_missing(): void
     {
@@ -88,7 +110,11 @@ class AssetUrlPublicStorageTest extends TestCase
     }
 
     /**
+     * 링크가 없어 라우트로 바뀐 주소가 확장자 없는 모드에서는 file 쿼리 형태를 따르는지 확인한다.
+     *
      * @effects public_storage_url_switches_to_route_when_link_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_route_form_follows_asset_url_mode_when_link_missing(): void
     {
@@ -110,6 +136,8 @@ class AssetUrlPublicStorageTest extends TestCase
      * 코어 번들과 확장 번들이 서로 다른 규칙을 따르고 있었다.
      *
      * @effects asset_urls_follow_the_site_base_path
+     *
+     * @return void 반환값 없음
      */
     public function test_generated_urls_carry_the_site_base_path(): void
     {
@@ -136,6 +164,12 @@ class AssetUrlPublicStorageTest extends TestCase
 
     /**
      * 루트 설치에서는 종전과 같은 형태다 (회귀 축).
+     *
+     * @scenario base_path=root
+     *
+     * @effects asset_urls_follow_the_site_base_path
+     *
+     * @return void 반환값 없음
      */
     public function test_root_installs_keep_the_previous_url_shape(): void
     {
@@ -156,6 +190,8 @@ class AssetUrlPublicStorageTest extends TestCase
      * 경로에 쓰면 `/g7/g7/api/…` 가 된다. 그 조합은 404 로만 나타난다.
      *
      * @effects asset_urls_follow_the_site_base_path
+     *
+     * @return void 반환값 없음
      */
     public function test_absolute_does_not_double_the_base_path(): void
     {
@@ -183,6 +219,12 @@ class AssetUrlPublicStorageTest extends TestCase
      * `basePrefix()` 안의 `rtrim($request->getBaseUrl(), '/')` 를 `return ''` 로
      * 바꿔도 전 스위트가 초록이었다 — 하위 폴더 배치에서 모든 자산 URL 이 사이트 밖을
      * 가리키게 되는 변이를 어떤 게이트도 잡지 못한다.
+     *
+     * @scenario base_path=subpath, navigation_direction=request
+     *
+     * @effects asset_urls_follow_the_site_base_path
+     *
+     * @return void 반환값 없음
      */
     public function test_base_prefix_is_derived_from_the_request_without_an_override(): void
     {
@@ -204,6 +246,12 @@ class AssetUrlPublicStorageTest extends TestCase
      * 두 배치가 이 폴백에 걸린다 — 앞단 프록시가 접두사를 벗겨 전달하는 구성과,
      * 요청 자체가 없는 문맥(큐가 만드는 메일 본문·콘솔이 렌더하는 사이트맵).
      * 후자는 종전에 빈 문자열이라 그 주소가 사이트 밖을 가리켰다.
+     *
+     * @scenario base_path=subpath
+     *
+     * @effects asset_urls_follow_the_site_base_path
+     *
+     * @return void 반환값 없음
      */
     public function test_base_prefix_falls_back_to_the_configured_path(): void
     {
@@ -222,6 +270,10 @@ class AssetUrlPublicStorageTest extends TestCase
      * `APP_URL` 파생이다. 여기서 요청을 우선하면 TLS 를 앞단에서 끝내는 프록시 뒤에서
      * 같은 자산이 한쪽은 `https://`, 한쪽은 `http://` 로 나가고 브라우저가 후자를
      * 혼합 콘텐츠로 조용히 차단한다.
+     *
+     * @effects absolute_asset_urls_take_the_configured_origin
+     *
+     * @return void 반환값 없음
      */
     public function test_absolute_prefers_the_configured_origin_over_the_request_scheme(): void
     {
@@ -235,6 +287,10 @@ class AssetUrlPublicStorageTest extends TestCase
 
     /**
      * 요청이 없어도 절대 URL 이다 (큐·콘솔).
+     *
+     * @effects absolute_asset_urls_take_the_configured_origin
+     *
+     * @return void 반환값 없음
      */
     public function test_absolute_yields_an_origin_without_a_request(): void
     {
@@ -249,6 +305,10 @@ class AssetUrlPublicStorageTest extends TestCase
      *
      * vitest 하네스는 그 값을 인자로 주입하므로 blade 의 실제 배선을 보지 않는다 —
      * `@json(AssetUrl::basePrefix())` 를 `''` 로 바꿔도 프론트 테스트가 전부 초록이다.
+     *
+     * @effects blade_entrypoints_wire_the_server_base_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_blade_entrypoints_wire_the_server_base_prefix(): void
     {

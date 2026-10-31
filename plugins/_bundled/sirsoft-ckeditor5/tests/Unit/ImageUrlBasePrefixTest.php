@@ -20,6 +20,11 @@ use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
  */
 class ImageUrlBasePrefixTest extends PluginTestCase
 {
+    /**
+     * 테스트마다 강제한 마운트 접두사를 풀어 다음 테스트에 새지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetUrl::forceBasePrefix(null);
@@ -28,7 +33,12 @@ class ImageUrlBasePrefixTest extends PluginTestCase
     }
 
     /**
+     * 디스크 URL 이 없어 서빙 라우트로 폴백할 때 그 주소 앞에 마운트 접두사가 붙는지 확인한다.
+     *
+     * @scenario base_path=subpath, url_kind=ckeditor5_image_fallback
      * @effects ckeditor5_image_fallback_urls_carry_the_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function image_fallback_url_carries_the_mount_prefix(): void
@@ -48,6 +58,11 @@ class ImageUrlBasePrefixTest extends PluginTestCase
 
     /**
      * 접두사가 없는 배치에서는 종전 문자열 그대로다 (회귀 0).
+     *
+     * @scenario base_path=root, url_kind=ckeditor5_image_fallback
+     * @effects ckeditor5_image_fallback_urls_carry_the_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function image_fallback_url_is_unchanged_without_a_mount_prefix(): void

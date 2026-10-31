@@ -22,6 +22,11 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
 {
     use ScansPhpSourceFunctions;
 
+    /**
+     * 「이미 설치/활성화」 판정 함수가 들어 있는 실행 모드 헬퍼 파일을 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,7 +35,13 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
     }
 
     /**
+     * 코어 커맨드가 실제로 내보내는 「이미 설치되어 있다」, 「이미 활성화되어 있다」 문구(한국어, 영어, 앞뒤 잡음 줄 포함)를 판정이 성공으로 인정하는지 확인한다.
+     *
+     * @scenario task=module, task=plugin, task=template, task_outcome=done, locale=ko, locale=en
+     *
      * @effects installer_already_applied_judgment_rejects_mid_sentence_matches
+     *
+     * @return void 반환값 없음
      */
     public function test_real_command_messages_are_recognized(): void
     {
@@ -42,7 +53,13 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
     }
 
     /**
+     * 의존성 충돌처럼 「이미 설치」 구가 문장 중간에 나오는 실패 출력과 빈 출력을 판정이 성공으로 뒤집지 않는지 확인한다.
+     *
+     * @scenario task=module, task_outcome=failed_extension, locale=ko, locale=en
+     *
      * @effects installer_already_applied_judgment_rejects_mid_sentence_matches
+     *
+     * @return void 반환값 없음
      */
     public function test_mid_sentence_occurrence_is_not_success(): void
     {
@@ -66,6 +83,12 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
      * 역방향 회귀였고, 수기 케이스 목록이 그것을 통과시켰다. 모집단을
      * lang/{ko,en}/{modules,plugins,templates}.php 의 `already_installed`/`already_active`
      * 키에서 **도출**한다 (§16.25.10 규약 ② — 새 문구가 추가되면 이 게이트가 자동 요구).
+     *
+     * @scenario task=module, task=plugin, task=template, task_outcome=done, locale=ko, locale=en
+     *
+     * @effects installer_already_applied_judgment_recognizes_every_core_message
+     *
+     * @return void 반환값 없음
      */
     public function test_every_core_already_message_is_recognized(): void
     {
@@ -96,8 +119,11 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
     }
 
     /**
-     * @param  array<string, mixed>  $table
-     * @return array<string, string>
+     * 다국어 표를 재귀로 내려가며 키 경로가 already_installed 나 already_active 로 끝나는 문자열 문구만 모은다.
+     *
+     * @param  array<string, mixed>  $table  훑을 다국어 표 (중첩 배열)
+     * @param  string  $path  지금 표의 상위 키 경로 (최상위는 빈 문자열)
+     * @return array<string, string> 점으로 이은 키 경로 → 문구
      */
     private function collectAlreadyMessages(array $table, string $path = ''): array
     {
@@ -121,7 +147,15 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
     }
 
     /**
+     * 주석과 문자열을 벗긴 태스크 러너 소스에서 판정 함수 호출이 있고 예전의 무경계 부분문자열 판정이 사라졌는지 확인한다.
+     *
      * 배선: 태스크 러너가 인라인 패턴 루프가 아니라 이 판정을 경유한다.
+     *
+     * @scenario task=module, task_outcome=failed_extension
+     *
+     * @effects installer_already_applied_judgment_rejects_mid_sentence_matches
+     *
+     * @return void 반환값 없음
      */
     public function test_task_runner_routes_through_judgment(): void
     {

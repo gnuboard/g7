@@ -11,20 +11,30 @@ namespace Tests\Fixtures\ScheduleCommandExtension;
 class FixtureExtension
 {
     /**
+     * 테스트가 넘긴 예약 목록과 식별자를 그대로 보관하는 가짜 확장을 만든다.
+     *
      * @param  array<int, array<string, mixed>>  $schedules  선언할 예약 목록
+     * @param  string  $identifier  확장 식별자 (기본값은 픽스처 전용 식별자)
      */
     public function __construct(
         private readonly array $schedules,
         private readonly string $identifier = 'fixture-schedule_ext',
     ) {}
 
+    /**
+     * 생성 시 받은 확장 식별자를 돌려준다.
+     *
+     * @return string 확장 식별자
+     */
     public function getIdentifier(): string
     {
         return $this->identifier;
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * 생성 시 받은 예약 목록을 실제 확장의 `getSchedules()` 처럼 그대로 돌려준다.
+     *
+     * @return array<int, array<string, mixed>> 선언된 예약 목록
      */
     public function getSchedules(): array
     {

@@ -17,9 +17,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 떨어진다. 상수 파생은 API 진입 스크립트(`install/api/*.php`)에서도 옳아야 한다 —
  * dirname 이 `.../install/api` 가 되는 컨텍스트가 서버측 리다이렉트의 실제 실행 지점이다.
  *
- * @scenario entry_context=api_script, consumer=server_sse
- *
- * @effects installer_redirects_derive_from_base_url
+ * 효과 요약(마커 아님 — 평문): 인스톨러의 리다이렉트와 주소는 기준 URL 파생에서 나온다. 조합과 효과 표식은 각 테스트 메서드가 단다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -28,6 +26,13 @@ class InstallerBaseUrlDerivationTest extends TestCase
     use CleansTemporaryBasePath;
     use ScansPhpSourceFunctions;
 
+    /**
+     * 임시 BASE_PATH 를 세우고 API 진입 스크립트 컨텍스트(SCRIPT_NAME)를 재현한 뒤 인스톨러 설정을 불러와 기준 URL 상수를 그 컨텍스트로 고정한다.
+     *
+     * 스킴 판정 헬퍼가 있는 실행 모드 파일도 함께 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         if (! defined('BASE_PATH')) {
@@ -45,6 +50,15 @@ class InstallerBaseUrlDerivationTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/execution-mode.php';
     }
 
+    /**
+     * API 진입 스크립트 컨텍스트에서 고정된 기준 URL 상수가 api 꼬리를 벗긴 인스톨러 루트를 가리키는지 확인한다.
+     *
+     * @scenario entry_context=api_script, consumer=server_sse, redirect_context=subpath
+     *
+     * @effects installer_redirects_derive_from_base_url
+     *
+     * @return void 반환값 없음
+     */
     public function test_base_url_from_api_entry_script_points_to_install_root(): void
     {
         $this->assertSame(
@@ -57,7 +71,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
     /**
      * 상수는 최초 require 시점에 고정되므로 여러 입력을 재는 축은 파생 함수를 직접 부른다.
      *
-     * @return array<string, array{0: string, 1: string}>
+     * @return array<string, array{0: string, 1: string}> 경우 이름 → [SCRIPT_NAME, 기대 기준 URL]
      */
     public static function scriptNameProvider(): array
     {
@@ -77,6 +91,18 @@ class InstallerBaseUrlDerivationTest extends TestCase
         ];
     }
 
+    /**
+     * 표준 배치, 레이아웃 ②, 서브디렉토리, Windows 구분자, 대소문자가 다른 표기의 SCRIPT_NAME 마다 기준 URL 파생이 기대값과 같은지 확인한다.
+     *
+     * @param  string  $scriptName  서버가 넘기는 SCRIPT_NAME
+     * @param  string  $expected  기대 기준 URL
+     *
+     * @scenario entry_context=api_script, redirect_context=install_root, redirect_context=subpath, base_path=root, base_path=subpath
+     *
+     * @effects installer_redirects_derive_from_base_url
+     *
+     * @return void 반환값 없음
+     */
     #[DataProvider('scriptNameProvider')]
     public function test_base_url_derivation_covers_entry_contexts(string $scriptName, string $expected): void
     {
@@ -133,6 +159,16 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * 종전 데이터 제공자는 인자를 하나만 넘겨(`installerDeriveBaseUrl($scriptName)`) 이 분기가
      * **한 번도 실행되지 않았다.** 레이아웃 ② 노출 프로브의 기준점을 정하는 것이 바로 이
      * 분기인데, 그 근거가 무게이트였다 (14차 G3 라운드).
+     *
+     * @param  string  $scriptName  서버가 넘기는 SCRIPT_NAME
+     * @param  string  $requestUri  브라우저가 친 REQUEST_URI
+     * @param  string  $expected  기대 기준 URL
+     *
+     * @scenario entry_context=api_script, deployment_layout=docroot_project_root, base_path=root, base_path=subpath
+     *
+     * @effects installer_base_url_follows_the_browser_address
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('requestUriProvider')]
     public function test_request_uri_branch_takes_precedence_over_script_name(
@@ -152,6 +188,12 @@ class InstallerBaseUrlDerivationTest extends TestCase
      *
      * 대조군이 없으면 「언제나 REQUEST_URI 를 쓴다」는 구현으로도 위 케이스가 초록이 되고,
      * 프록시가 경로를 갈아 끼운 배치에서 기준점이 통째로 어긋난다.
+     *
+     * @scenario entry_context=api_script, deployment_layout=docroot_project_root
+     *
+     * @effects installer_base_url_follows_the_browser_address
+     *
+     * @return void 반환값 없음
      */
     public function test_request_uri_without_install_segment_falls_back_to_script_name(): void
     {
@@ -177,7 +219,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * 경로 접두사로만 받는다(`/` 시작 · `//` 아님 · 제어문자 없음). 요청 경로가 이미 그
      * 접두사로 시작하면(프록시가 벗기지 않는 배치) 두 번 붙이지 않는다.
      *
-     * @return array<string, array{0: string, 1: string|null, 2: string|null, 3: string}>
+     * @return array<string, array{0: string, 1: string|null, 2: string|null, 3: string}> 경우 이름 → [SCRIPT_NAME, REQUEST_URI, 전달 접두사, 기대 기준 URL]
      */
     public static function forwardedPrefixProvider(): array
     {
@@ -230,6 +272,12 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * 종전에는 값을 버리고 `''` 로 떨어질 뿐이라, 프록시 뒤에서 인스톨러가 통째로 404 가 되는데
      * 운영자에게 닿는 단서가 없었다. 사유·길이만 기록한다 — 값 자체는 신뢰 경계 밖에서 온
      * 것이라 로그에 싣지 않는다.
+     *
+     * @scenario base_path=subpath, forwarded_prefix_spelling=raw
+     *
+     * @effects installer_rejected_forwarded_prefix_is_observable
+     *
+     * @return void 반환값 없음
      */
     public function test_rejected_forwarded_prefix_is_recorded_with_reason_and_length_only(): void
     {
@@ -279,9 +327,15 @@ class InstallerBaseUrlDerivationTest extends TestCase
     /**
      * 「이미 그 접두사로 시작한다」 대조는 **같은 정규형**끼리 한다 (16차 G3 A1).
      *
+     * @param  string  $requestUri  브라우저가 친 요청 경로 (원문 표기)
+     * @param  string  $forwardedPrefix  프록시가 넘긴 접두사
+     * @param  string  $expected  기대 기준 URL
+     *
      * @scenario forwarded_prefix_spelling=raw, forwarded_prefix_spelling=percent_encoded, base_path=subpath
      *
      * @effects installer_forwarded_prefix_comparison_is_encoding_normalized
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('forwardedPrefixNormalizationProvider')]
     public function test_forwarded_prefix_comparison_uses_one_percent_encoding_normal_form(
@@ -342,9 +396,14 @@ class InstallerBaseUrlDerivationTest extends TestCase
     /**
      * 원시 표기와 인코딩 표기의 판정이 같고, 빈 세그먼트는 접힌다 (16차 G3 A6 · A14).
      *
+     * @param  string  $forwardedPrefix  프록시가 넘긴 접두사 (원시 또는 인코딩 표기)
+     * @param  string  $expected  기대 정제 결과 (빈 문자열은 거부)
+     *
      * @scenario forwarded_prefix_spelling=raw, forwarded_prefix_spelling=percent_encoded, base_path=subpath
      *
      * @effects installer_forwarded_prefix_pchar_is_accepted_in_both_spellings, installer_forwarded_prefix_collapses_empty_segments
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('forwardedPrefixSpellingProvider')]
     public function test_forwarded_prefix_spellings_receive_the_same_verdict(string $forwardedPrefix, string $expected): void
@@ -366,6 +425,8 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * @scenario base_path=root
      *
      * @effects installer_app_url_host_falls_back_to_server_name
+     *
+     * @return void 반환값 없음
      */
     public function test_app_url_host_falls_back_to_server_name_when_the_host_header_is_absent(): void
     {
@@ -385,6 +446,12 @@ class InstallerBaseUrlDerivationTest extends TestCase
 
     /**
      * 정제기가 버린 접두사는 노출 점검의 `unmeasured` 사유로 화면에 도달한다.
+     *
+     * @scenario base_path=subpath, exposure_probe=unknown, exposure_unknown_cause=unmeasured_only, locale=ko, locale=en
+     *
+     * @effects installer_rejected_forwarded_prefix_is_observable
+     *
+     * @return void 반환값 없음
      */
     public function test_rejected_forwarded_prefix_reaches_the_exposure_plan_as_unmeasured(): void
     {
@@ -413,6 +480,12 @@ class InstallerBaseUrlDerivationTest extends TestCase
     /**
      * 정제기는 **허용 문자 화이트리스트**로 판정한다 — 차단 문자를 열거하는 형태는 새 우회
      * (역슬래시·퍼센트 인코딩)가 나올 때마다 한 글자씩 뒤따르게 된다.
+     *
+     * @scenario base_path=subpath, forwarded_prefix_spelling=raw, forwarded_prefix_spelling=percent_encoded
+     *
+     * @effects installer_base_url_never_leaves_the_mount_or_origin
+     *
+     * @return void 반환값 없음
      */
     public function test_forwarded_prefix_sanitizer_is_an_allow_list_not_a_deny_list(): void
     {
@@ -437,6 +510,12 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * 인라인 JS 축(`window.INSTALLER_BASE_URL`)은 `JSON_HEX_*` 로 이미 닫혀 있었는데 속성 축
      * (`href`·`src`)은 원문 그대로였다 — 정제기가 한 글자라도 놓치면 그 자리가 스크립트
      * 주입 통로가 된다. 정제기와 출력 이스케이프는 서로 다른 방어선이라 둘 다 둔다.
+     *
+     * @scenario base_path=subpath
+     *
+     * @effects installer_base_url_attribute_outputs_are_escaped
+     *
+     * @return void 반환값 없음
      */
     public function test_base_url_html_attribute_outputs_are_escaped(): void
     {
@@ -466,6 +545,20 @@ class InstallerBaseUrlDerivationTest extends TestCase
         );
     }
 
+    /**
+     * 프록시가 넘긴 접두사가 안전한 경로 접두사일 때만 기준 URL 앞에 한 번 붙고, 빈 값, 상대 경로, 프로토콜 상대, 절대 URL, 제어문자, 디렉토리 이동, 위험한 인코딩은 버려지는지 확인한다.
+     *
+     * @param  string  $scriptName  서버가 넘기는 SCRIPT_NAME
+     * @param  string|null  $requestUri  브라우저가 친 REQUEST_URI
+     * @param  string|null  $forwardedPrefix  프록시가 넘긴 접두사
+     * @param  string  $expected  기대 기준 URL
+     *
+     * @scenario base_path=root, base_path=subpath, forwarded_prefix_spelling=raw, forwarded_prefix_spelling=percent_encoded
+     *
+     * @effects installer_base_url_never_leaves_the_mount_or_origin
+     *
+     * @return void 반환값 없음
+     */
     #[DataProvider('forwardedPrefixProvider')]
     public function test_forwarded_prefix_is_prepended_only_when_it_is_a_safe_path_prefix(
         string $scriptName,
@@ -482,6 +575,12 @@ class InstallerBaseUrlDerivationTest extends TestCase
 
     /**
      * 진입점이 그 헤더를 실제로 파생 함수에 넘긴다 — 함수만 받고 호출부가 안 넘기면 사문이다.
+     *
+     * @scenario base_path=subpath
+     *
+     * @effects installer_base_url_follows_the_browser_address
+     *
+     * @return void 반환값 없음
      */
     public function test_entry_point_passes_the_forwarded_prefix_header(): void
     {
@@ -498,7 +597,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * `/g7/%2E%2E/%2E%2E/install` 이 `/g7/../../install` 이 되어 마운트 밖을 가리켰다. 요청에
      * 없던 dot-segment 를 기준 URL 에 만들지 않고 `SCRIPT_NAME` 파생으로 떨어진다.
      *
-     * @return array<string, array{0: string, 1: string, 2: string|null, 3: string}> [scriptName, requestUri, prefix, 기대]
+     * @return array<string, array{0: string, 1: string, 2: string|null, 3: string}> [scriptName, requestUri, prefix, 기대] 경우 이름별 입력과 기대 기준 URL
      */
     public static function dotSegmentRequestPathProvider(): array
     {
@@ -513,6 +612,20 @@ class InstallerBaseUrlDerivationTest extends TestCase
         ];
     }
 
+    /**
+     * 요청 경로에 원시 또는 인코딩된 dot-segment 가 있으면 요청 경로 분기를 버리고 SCRIPT_NAME 파생으로 떨어지며, 이름에 점이 든 세그먼트는 정상 마운트로 통과하는지 확인한다.
+     *
+     * @param  string  $scriptName  서버가 넘기는 SCRIPT_NAME
+     * @param  string  $requestUri  브라우저가 친 REQUEST_URI
+     * @param  string|null  $prefix  프록시가 넘긴 접두사
+     * @param  string  $expected  기대 기준 URL
+     *
+     * @scenario base_path=root, base_path=subpath
+     *
+     * @effects installer_base_url_never_leaves_the_mount_or_origin
+     *
+     * @return void 반환값 없음
+     */
     #[DataProvider('dotSegmentRequestPathProvider')]
     public function test_request_path_with_dot_segment_falls_back_to_script_name(
         string $scriptName,
@@ -533,6 +646,12 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * `str_replace('\\','/')` 는 `parse_url` 뒤라 앞머리 역슬래시 두 개를 `//` 로 바꾼다 —
      * 그 값은 `<script src>`·`Location:` 에 실려 외부 오리진을 가리킨다. 접두사 정제기의
      * 프로토콜 상대 거부와 같은 판정을 요청 경로 축에도 적용한다.
+     *
+     * @scenario base_path=root
+     *
+     * @effects installer_base_url_never_leaves_the_mount_or_origin
+     *
+     * @return void 반환값 없음
      */
     public function test_backslash_derived_protocol_relative_request_path_is_rejected(): void
     {
@@ -557,6 +676,12 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * `$message`·`$redirectUrl` 은 인라인 `<script>` 의 JS 문자열 문맥에 실린다 — `htmlspecialchars`
      * 는 `</script>`·역슬래시·개행을 이스케이프하지 않아 스크립트 탈출 통로가 된다. index.php:232
      * 규약(인라인 script 값은 예외 없이 JSON_HEX 를 지난다)과 통일한다.
+     *
+     * @scenario redirect_context=install_root, redirect_context=subpath
+     *
+     * @effects install_redirect_destination_uses_a_javascript_encoder
+     *
+     * @return void 반환값 없음
      */
     public function test_alert_redirect_encodes_js_context_with_json_hex_not_htmlspecialchars(): void
     {
@@ -577,6 +702,15 @@ class InstallerBaseUrlDerivationTest extends TestCase
         );
     }
 
+    /**
+     * 태스크 러너의 서버측 완료 리다이렉트와 설치 모니터의 완료 폴백 세 곳이 고정 설치 경로 대신 기준 URL 에서 주소를 만드는지 소스(주석 제거)로 확인한다.
+     *
+     * @scenario redirect_context=subpath, consumer=server_sse, installation_mode=sse, installation_mode=polling, installation_mode=stepwise
+     *
+     * @effects installer_redirects_derive_from_base_url
+     *
+     * @return void 반환값 없음
+     */
     public function test_completion_redirects_never_hardcode_install_path(): void
     {
         $installerRoot = dirname(__DIR__, 3).'/public/install';
@@ -619,7 +753,11 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * 파생은 형제 SSoT(`installerDeriveBaseUrl`)를 경유해야 한다. 여기서 다시 조립하면
      * Alias·API 컨텍스트 흡수가 사본으로 갈린다.
      *
+     * @scenario base_path=root, base_path=subpath
+     *
      * @effects installer_seeds_app_url_with_the_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_app_url_default_carries_the_mount_prefix(): void
     {
@@ -658,7 +796,11 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * 불러, 접두사를 벗기는 프록시 뒤에서는 `.env` 에 접두사 없는 `APP_URL` 이 **영구 저장**됐다.
      * 두 호출은 같은 인자 집합이어야 한다 — 한쪽만 넘기면 같은 요청을 두 지점이 다르게 읽는다.
      *
+     * @scenario base_path=subpath
+     *
      * @effects installer_seeds_app_url_with_the_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_app_url_derivation_passes_the_same_arguments_as_the_base_url_derivation(): void
     {
@@ -706,7 +848,11 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * 안 쓰고 있었다 — 판정이 갈리면 같은 요청을 두 곳이 다르게 읽는다 (12차 G3 라운드
      * A12-3, 제품 결정 「같은 저장소의 공용 판정으로 통일」).
      *
+     * @scenario base_path=root
+     *
      * @effects installer_seeds_app_url_scheme_from_shared_https_judgment
+     *
+     * @return void 반환값 없음
      */
     public function test_app_url_default_takes_the_scheme_from_the_shared_judgment(): void
     {

@@ -43,6 +43,7 @@ axes:
   actor_permission: [settings_read, settings_update, none]  # 관리자 API 권한 경계
   stale_state: [never_run, recent, stale]                   # 미실행 경고 발화 조건 (D19)
   setting_save_path: [bulk, single]                         # 설정 저장 두 경로 — 한쪽만 검증하면 다른 쪽이 우회로다
+  schedule_declaration: [declared, empty, explicit_class, unresolvable, core_vendor, regeneration_path]  # 확장 예약 커맨드 해석 입력 (D42) — 선언분만/선언 없음/클래스 명시/해석 불가/코어가 진 벤더 커맨드/오토로드 재생성 경로
   # 브라우저에서만 재현되는 축
   vector: [browser_reveal, browser_run_now, browser_detect]  # 화면 동선 — 가림/노출·지금 실행·다시 감지
 
@@ -182,6 +183,14 @@ effects:
   - run_now_executes_the_runner
   - execution_reason_is_shown_on_screen
   - in_flight_controls_are_blocked_until_the_call_returns
+  # 화면 구조 계약 (609 docblock 정리 — admin-settings-system-tab.test.tsx 가 이미 재던 효과를 선언으로 올린다)
+  - system_tab_tree_renders_only_on_the_system_tab         # 다른 탭 쿼리에서는 시스템 탭 트리가 그려지지 않는다
+  - system_tab_shows_the_never_run_notice                  # 마지막 실행 기록이 없으면 그 사실을 알리는 문구가 나온다
+  - token_rotate_modal_warns_and_calls_the_rotate_api      # 재발급 확인 모달이 경고 문구와 재발급 API 호출을 함께 갖는다
+  - token_rotate_modal_refreshes_the_parent_call_url       # 재발급 성공 시 모달이 아니라 부모 화면의 주소칸을 갱신한다
+  - dashboard_alert_color_follows_severity_not_name        # 대시보드 경고 색이 경고 이름 열거가 아니라 alert.type 심각도로 갈린다
+  - system_tab_inputs_disable_when_read_only               # 실행 방식 라디오가 읽기 전용 판정으로 비활성화된다
+  - cron_url_field_is_excluded_from_form_binding           # 호출 주소 입력란은 name 이 없고 폼 자동 바인딩에서 빠진다
 
 pending_effects:
   # 아직 재는 테스트가 없는 효과 — 지우지 않고 원장으로 보존한다.

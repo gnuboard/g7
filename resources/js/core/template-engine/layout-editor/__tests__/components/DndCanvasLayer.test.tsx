@@ -58,6 +58,8 @@ afterEach(() => {
 });
 
 describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
+  // @scenario insertion_path=drag_drop, dragged_kind=div, nesting_decision=denied_no_draggable
+  // @effects drag_handle_present_only_for_nesting_draggable_components
   it('draggable 노드에만 핸들 렌더', () => {
     const components: EditorNode[] = [
       { name: 'Div', id: 'a' },
@@ -82,6 +84,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(screen.queryByTestId('g7le-dnd-handle-1')).not.toBeInTheDocument();
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=basic_selected
+  // @effects drag_handle_double_click_forwards_inline_edit_request
   it('핸들 더블클릭 → onRequestInlineEdit(path) forward', () => {
     // 드래그 핸들이 노드 박스를 pointerEvents:auto 로 덮으므로 실제 마우스 더블클릭은
     // 핸들에 먼저 맞는다. 핸들이 더블클릭을 인라인 편집 진입점으로 forward 해야 한다.
@@ -105,6 +109,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(onRequestInlineEdit).toHaveBeenCalledWith('0');
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=data_bound_selected
+  // @effects data_bound_node_draggable_and_selectable
   it('data_bound 노드도 드래그 핸들 렌더 — 선택/이동 허용', () => {
     //  명세: data_bound 노드는 인라인 텍스트 편집만 불가하고 선택·드래그·구조
     // 편집은 허용. 자신이 데이터 바인딩(`{{}}`)인 노드(상품 이미지 갤러리 등 composite
@@ -134,6 +140,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(screen.queryByTestId('g7le-dnd-handle-1')).toBeInTheDocument();
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=iteration_instance_selected
+  // @effects iteration_instance_not_individually_draggable, iteration_virtual_group_select_move_ghost
   it('반복(iteration) 인스턴스 내부 노드는 핸들 미렌더 — 개별 인스턴스 직접 편집 금지', () => {
     // 자신 바인딩 data_bound 는 허용하되, **조상이 iteration** 인 펼침 인스턴스 내부
     // 노드는 핸들 미렌더(묶음 단위 편집은 가상 묶음/iteration_item 모드).
@@ -186,6 +194,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(groupHandle?.style.height).toBe('100px');
   });
 
+  // @scenario insertion_path=drag_drop, dragged_kind=div
+  // @effects drag_handle_absent_for_nodes_clipped_outside_frame
   it('frame 밖으로 클리핑된 노드(닫힌 모바일 드로어 등)는 핸들 미렌더', () => {
     // 닫힌 모바일 드로어(`fixed translate-x-full`)는 frame 밖으로 밀려 overflow:hidden
     // 으로 시각적으로 가려지지만 getBoundingClientRect 좌표는 그대로다. 가려진 노드
@@ -216,6 +226,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(screen.queryByTestId('g7le-dnd-handle-2')).not.toBeInTheDocument();
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=base_locked_selected
+  // @effects drag_handle_absent_for_base_origin_nodes_in_route_edit_mode
   it('실제 잠금(base 출처) 노드는 여전히 핸들 미렌더', () => {
     // data_bound 와 달리 base/partial/extension 출처 잠금은 핸들 미렌더 유지(회귀 가드).
     const components: EditorNode[] = [
@@ -241,6 +253,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(screen.queryByTestId('g7le-dnd-handle-1')).toBeInTheDocument();
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=base_locked_selected
+  // @effects drag_handle_absent_for_base_origin_nodes_in_route_edit_mode
   it('base 출처 노드는 route 모드에서 핸들 미렌더', () => {
     const components: EditorNode[] = [
       { name: 'Div', id: 'base', __source: { kind: 'base' } },
@@ -265,6 +279,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(screen.queryByTestId('g7le-dnd-handle-1')).toBeInTheDocument();
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=empty_selection
+  // @effects drag_handle_click_delegates_selection_to_select_path
   it('핸들 클릭 시 onSelectPath 위임', () => {
     const onSelect = vi.fn();
     const components: EditorNode[] = [{ name: 'Div', id: 'a' }];
@@ -284,6 +300,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(onSelect).toHaveBeenCalledWith('0');
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=basic_selected
+  // @effects handle_zindex_depth_ordered, selection_based_drag_substitution
   it('모든 핸들은 드래그 가능(grab) + z 깊이순 — 클릭/드래그 시작 모두 깊은 핸들 우선 (결함 2)', () => {
     // 부모 Div(0) 안에 자식 Div(0.children.0). 둘 다 draggable.
     // 핸들 비활성화로 선택 기준 드래그를 구현하면 자손이 덮은 영역에서 부모 드래그가
@@ -329,6 +347,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(childHandle.style.pointerEvents).toBe('auto');
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=basic_selected
+  // @effects child_reselect_under_selected_parent
   it('자손 핸들 클릭 시 자손 path 로 재선택 위임 (자식 재선택 가능)', () => {
     const onSelect = vi.fn();
     const components: EditorNode[] = [
@@ -362,6 +382,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(onSelect).toHaveBeenCalledWith('0.children.0');
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=empty_selection
+  // @effects drag_handle_present_for_draggable
   it('선택이 없으면 모든 draggable 핸들이 활성(첫 클릭/드래그 가능)', () => {
     const components: EditorNode[] = [
       { name: 'Div', id: 'parent', children: [{ name: 'Div', id: 'child' }] },
@@ -393,6 +415,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(screen.getByTestId('g7le-dnd-handle-0.children.0').style.cursor).toBe('grab');
   });
 
+  // @scenario insertion_path=drag_drop, selected_node_state=basic_selected
+  // @effects drag_handle_present_for_draggable
   it('자손이 아닌 형제는 선택 무관하게 드래그 활성', () => {
     // 선택='0' 일 때 형제 '1' 은 자손이 아니므로 드래그 가능해야.
     const components: EditorNode[] = [
@@ -418,6 +442,8 @@ describe('DndCanvasLayer — 드래그 핸들 렌더 가드', () => {
     expect(screen.getByTestId('g7le-dnd-handle-1').style.cursor).toBe('grab');
   });
 
+  // @scenario insertion_path=drag_drop
+  // @effects dnd_layer_renders_nothing_without_frame
   it('frameEl 이 null 이면 렌더 안 함', () => {
     const { container } = render(
       <DndCanvasLayer

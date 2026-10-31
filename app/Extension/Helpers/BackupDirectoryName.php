@@ -73,6 +73,8 @@ final class BackupDirectoryName
      * `random_bytes()` 는 시스템 엔트로피원이 없으면 던진다. 이 값은 암호학적 용도가
      * 아니라 **같은 초 안에서만 구별되면 되는** 값이므로, 던지는 환경에서는 약한
      * 난수로 내려가는 편이 백업 생성 자체를 실패시키는 것보다 낫다.
+     *
+     * @return string 16진 8자리 접미사
      */
     private static function randomSuffix(): string
     {

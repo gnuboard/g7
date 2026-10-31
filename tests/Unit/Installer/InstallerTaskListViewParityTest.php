@@ -25,7 +25,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: task_source server·view / task_visibility rendered·orphaned / label_locale ko·en
  *
- * @effects installer_view_task_list_matches_server_task_list, installer_every_task_has_a_display_label
+ * 효과 요약(마커 아님 — 평문): 화면 진행 목록이 서버 태스크 목록과 같고, 모든 태스크가 표시 이름을 가진다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -38,6 +38,8 @@ class InstallerTaskListViewParityTest extends TestCase
 
     /**
      * 인스톨러 런타임을 세션·출력 부작용 없이 적재한다.
+     *
+     * @return void 반환값 없음
      */
     private static function bootInstaller(): void
     {
@@ -120,6 +122,15 @@ class InstallerTaskListViewParityTest extends TestCase
         'finalize' => true,
     ];
 
+    /**
+     * 진행 화면을 렌더해 얻은 태스크 키가 서버 태스크 목록과 빠짐도 남음도 없이 같은 순서인지 확인한다.
+     *
+     * @scenario task=dependency_precheck, task=db_cleanup, task=config_cache
+     *
+     * @effects installer_view_task_list_matches_server_task_list
+     *
+     * @return void 반환값 없음
+     */
     public function test_화면_진행_목록이_서버_태스크_목록_전수를_담는다(): void
     {
         $viewKeys = $this->renderTaskKeys();
@@ -150,6 +161,15 @@ class InstallerTaskListViewParityTest extends TestCase
         $this->assertSame($serverKeys, $viewKeys, '화면 목록의 순서가 서버 실행 순서와 다르다');
     }
 
+    /**
+     * 화면의 태스크 ID 그룹 소속표가 서버 목록 함수가 만들 수 있는 모든 태스크 ID 를 담는지 원문에서 대조한다.
+     *
+     * @scenario task=dependency_precheck, task=db_cleanup, task=config_cache, task=module, task=plugin
+     *
+     * @effects installer_view_task_list_matches_server_task_list
+     *
+     * @return void 반환값 없음
+     */
     public function test_그룹_소속표가_서버_태스크_i_d_전수를_안다(): void
     {
         // 렌더 시점의 상태에는 확장이 선택돼 있지 않을 수 있다. 소속표 자체를 소스에서 읽어
@@ -192,6 +212,15 @@ class InstallerTaskListViewParityTest extends TestCase
         );
     }
 
+    /**
+     * 화면 스크립트의 상태 갱신 함수가 DOM 항목이 없을 때 콘솔 경고를 남기는지 확인한다.
+     *
+     * @scenario task=config_cache
+     *
+     * @effects installer_view_task_list_matches_server_task_list
+     *
+     * @return void 반환값 없음
+     */
     public function test_목록에_없는_단계의_상태_갱신이_조용히_사라지지_않는다(): void
     {
         // 목록이 갈라지면 서버가 도는 단계의 DOM 항목이 없다. `setTaskStatus()` 가 그때
@@ -215,6 +244,15 @@ class InstallerTaskListViewParityTest extends TestCase
         );
     }
 
+    /**
+     * 그룹 소속표에 오른 모든 태스크 ID 가 ko 와 en 다국어 파일에 단계 이름 키를 가지는지 확인한다.
+     *
+     * @scenario locale=ko, locale=en
+     *
+     * @effects installer_every_task_has_a_display_label
+     *
+     * @return void 반환값 없음
+     */
     public function test_모든_태스크가_ko_en_양쪽에_표시_이름을_가진다(): void
     {
         $installRoot = dirname(__DIR__, 3).'/public/install';

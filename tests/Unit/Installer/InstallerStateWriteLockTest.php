@@ -26,7 +26,8 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: state_write concurrent_helper / endpoint_guard general
  *
- * @effects state_mutating_helpers_share_one_exclusive_section, state_lock_is_reentrant_within_one_process
+ * 효과 요약(마커 아님 — 평문): 상태를 고쳐 쓰는 헬퍼가 한 배타 구간을 공유하고, 그 구간은 한 프로세스 안에서 재진입한다.
+ * 표식은 그 효과를 재는 각 테스트 메서드가 단다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -46,7 +47,7 @@ class InstallerStateWriteLockTest extends TestCase
     /**
      * 상태 파일을 읽고 고쳐 쓰는 헬퍼 전수 — 하나라도 구간 밖이면 그 경로가 곧 유실 창이다.
      *
-     * @return array<int, string>
+     * @return array<int, string> 상태 헬퍼 함수 이름 목록
      */
     private static function stateMutatingHelpers(): array
     {
@@ -66,6 +67,13 @@ class InstallerStateWriteLockTest extends TestCase
         ];
     }
 
+    /**
+     * 프로세스당 한 번만 임시 BASE_PATH 를 정하고 저장소 디렉토리를 만든 뒤 인스톨러 설정, 함수, 상태 헬퍼를 불러온다.
+     *
+     * BASE_PATH 가 이미 시스템 temp 밖으로 정의돼 있으면 실제 상태 파일을 지키려고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function boot(): void
     {
         if (self::$booted) {
@@ -105,6 +113,11 @@ class InstallerStateWriteLockTest extends TestCase
         require_once $root.'/public/install/includes/installer-state.php';
     }
 
+    /**
+     * 인스톨러를 부팅하고 건너뛸 사유가 있으면 건너뛴 뒤, 앞 테스트가 남긴 상태 파일, 상태 잠금 파일, 설치 로그를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -151,6 +164,15 @@ class InstallerStateWriteLockTest extends TestCase
         return $body;
     }
 
+    /**
+     * 상태 파일 쓰기의 배타 구간을 한 지점에 모으는 공용 잠금 헬퍼가 정의돼 있는지 확인한다.
+     *
+     * @scenario endpoint_guard=general
+     *
+     * @effects state_mutating_helpers_share_one_exclusive_section
+     *
+     * @return void 반환값 없음
+     */
     public function test_state_lock_helper_exists(): void
     {
         $this->assertTrue(
@@ -161,13 +183,26 @@ class InstallerStateWriteLockTest extends TestCase
     }
 
     /**
-     * @return array<int, array{0: string}>
+     * 상태 헬퍼 전수 목록을 데이터 공급자 형태(헬퍼 이름 하나짜리 행)로 바꾼다.
+     *
+     * @return array<int, array{0: string}> 헬퍼 이름 한 개씩 담은 행 목록
      */
     public static function helperProvider(): array
     {
         return array_map(static fn (string $name): array => [$name], self::stateMutatingHelpers());
     }
 
+    /**
+     * 상태를 읽고 고쳐 쓰는 헬퍼 하나의 본문(주석 제거)이 공용 배타 구간 호출을 담고 있는지 확인한다.
+     *
+     * @param  string  $helper  검사할 상태 헬퍼 함수 이름
+     *
+     * @scenario endpoint_guard=general
+     *
+     * @effects state_mutating_helpers_share_one_exclusive_section
+     *
+     * @return void 반환값 없음
+     */
     #[DataProvider('helperProvider')]
     public function test_state_mutating_helper_runs_inside_the_shared_exclusive_section(string $helper): void
     {
@@ -181,6 +216,15 @@ class InstallerStateWriteLockTest extends TestCase
         );
     }
 
+    /**
+     * 배타 구간 안에서 같은 구간을 다시 열어도 교착하지 않고, 안쪽 콜백의 반환값이 바깥까지 그대로 전달되는지 확인한다.
+     *
+     * @scenario endpoint_guard=general
+     *
+     * @effects state_lock_is_reentrant_within_one_process
+     *
+     * @return void 반환값 없음
+     */
     public function test_state_lock_is_reentrant_and_returns_the_callback_value(): void
     {
         $inner = installerWithStateLock(static function (): string {
@@ -192,6 +236,15 @@ class InstallerStateWriteLockTest extends TestCase
         $this->assertSame('nested-ok', $inner);
     }
 
+    /**
+     * 배타 구간으로 옮긴 뒤에도 현재 태스크 기록, 완료 마커 기록과 제거가 상태 파일에 실제로 저장되는지 확인한다.
+     *
+     * @scenario endpoint_guard=general, task=db_migrate
+     *
+     * @effects state_mutating_helpers_share_one_exclusive_section
+     *
+     * @return void 반환값 없음
+     */
     public function test_helpers_still_persist_their_change_inside_the_section(): void
     {
         $state = DEFAULT_INSTALLATION_STATE;
@@ -212,6 +265,15 @@ class InstallerStateWriteLockTest extends TestCase
         $this->assertNotContains('db_migrate', getInstallationState()['completed_tasks'] ?? []);
     }
 
+    /**
+     * 배타 구간 안에서도 워커 잠금 획득, heartbeat 갱신(남의 id 는 거부), stale 창 연장, 잠금 해제가 상태 파일에 반영되는지 확인한다.
+     *
+     * @scenario endpoint_guard=general, installation_mode=stepwise
+     *
+     * @effects state_mutating_helpers_share_one_exclusive_section
+     *
+     * @return void 반환값 없음
+     */
     public function test_worker_lock_helpers_still_work_inside_the_section(): void
     {
         $this->assertTrue(saveInstallationState(DEFAULT_INSTALLATION_STATE));
@@ -240,6 +302,12 @@ class InstallerStateWriteLockTest extends TestCase
      * (「읽기·판정·쓰기를 전부 구간 안에서」)이 소스 문자열 검사만으로는 초록이던 자리다.
      *
      * 유실되면 그 태스크가 다시 뽑히고, DB 정리 태스크가 다시 돌면 방금 만든 테이블이 DROP 된다.
+     *
+     * @scenario skip_request=skippable, task=module, task_outcome=failed_extension
+     *
+     * @effects state_mutating_helpers_share_one_exclusive_section
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_does_not_clobber_writes_made_after_the_caller_read(): void
     {

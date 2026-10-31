@@ -75,6 +75,7 @@ effects:
   # ── 정렬 화이트리스트 (P0) ──
   - sort_column_resolved_from_closed_set
   - unknown_sort_column_falls_back_to_default
+  - call_site_scan_finds_at_least_one_call_site
 
 # scale: 대용량 회귀 축. block-array of flow objects (내장 fallback 파서 제약 — flow 객체만 중첩 파싱)
 scale:

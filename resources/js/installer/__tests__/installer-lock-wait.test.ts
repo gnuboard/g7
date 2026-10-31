@@ -33,8 +33,96 @@ type LockWaitRegion = {
   cancelLockWait: () => void;
 };
 
+/**
+ * 원문 그대로의 소스.
+ *
+ * meta:allow raw-source-read — 아래 regionSource() 가 잘라 쓰는 구간 표식
+ * (`region:lock-wait`)이 **주석 안에** 있다. 주석을 지우면 그 표식이 사라져 구간을 찾을
+ * 수 없다. 문자 대조 판정은 전부 strippedInstallerSource() 를 쓴다.
+ */
 function installerSource(): string {
   return readFileSync(INSTALLER_SOURCE, 'utf8');
+}
+
+/** 주석을 지운 소스 — 호출부 배선을 문자로 재는 단언은 전부 이쪽을 쓴다. */
+function strippedInstallerSource(): string {
+  return withoutComments(installerSource());
+}
+
+/**
+ * JS 주석을 지운 소스. 문자열, 템플릿, 정규식 리터럴 안은 보존한다.
+ *
+ * 원문 대조는 주석 처리된 호출을 구분하지 못한다 — 호출을 줄 주석으로 감싸도 글자는 남는다.
+ * (installer-token-wiring.test.ts 의 같은 이름 헬퍼와 같은 규칙이다.)
+ */
+function withoutComments(src: string): string {
+  let out = '';
+  let i = 0;
+  let last = '';
+
+  while (i < src.length) {
+    const ch = src[i];
+    const next = src[i + 1] ?? '';
+
+    if (ch === '/' && next === '/') {
+      while (i < src.length && src[i] !== '\n') i++;
+      continue;
+    }
+    if (ch === '/' && next === '*') {
+      const end = src.indexOf('*/', i + 2);
+      i = end === -1 ? src.length : end + 2;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === '`') {
+      out += ch;
+      i++;
+      while (i < src.length) {
+        out += src[i];
+        if (src[i] === '\\') {
+          i++;
+          if (i < src.length) out += src[i];
+          i++;
+          continue;
+        }
+        if (src[i] === ch) {
+          i++;
+          break;
+        }
+        i++;
+      }
+      last = ch;
+      continue;
+    }
+    if (ch === '/' && !/[A-Za-z0-9_$)\]]/.test(last)) {
+      out += ch;
+      i++;
+      let inClass = false;
+      while (i < src.length) {
+        out += src[i];
+        if (src[i] === '\\') {
+          i++;
+          if (i < src.length) out += src[i];
+          i++;
+          continue;
+        }
+        if (src[i] === '[') inClass = true;
+        else if (src[i] === ']') inClass = false;
+        else if ((src[i] === '/' && !inClass) || src[i] === '\n') {
+          i++;
+          break;
+        }
+        i++;
+      }
+      last = '/';
+      continue;
+    }
+
+    out += ch;
+    if (ch.trim() !== '') last = ch;
+    i++;
+  }
+
+  return out;
 }
 
 function regionSource(): string {
@@ -306,7 +394,7 @@ describe('해제 대기 — 호출부 배선 (소스 단언)', () => {
    * @effects lock_wait_counts_down_and_resumes_once
    */
   it('409 분기가 showError 보다 먼저 startLockWait 로 간다', () => {
-    const src = installerSource();
+    const src = strippedInstallerSource();
     const at = src.indexOf('const retryAfter = Number(result.retry_after);');
 
     expect(at, '시작 응답의 retry_after 분기가 없다 — 서버가 남은 시간을 줘도 화면이 버린다').toBeGreaterThan(-1);
@@ -333,7 +421,7 @@ describe('해제 대기 — 호출부 배선 (소스 단언)', () => {
    * @effects lock_wait_counts_down_and_resumes_once
    */
   it('로드 복원과 대기 재개가 같은 판정 함수를 쓴다', () => {
-    const src = installerSource();
+    const src = strippedInstallerSource();
 
     expect(
       (src.match(/stepwiseResumeApplies\(/g) || []).length,
@@ -356,7 +444,7 @@ describe('해제 대기 — 호출부 배선 (소스 단언)', () => {
    * @effects lock_wait_counts_down_and_resumes_once
    */
   it('수동 [재시도] 가 대기 타이머를 먼저 끈다', () => {
-    const src = installerSource();
+    const src = strippedInstallerSource();
     const at = src.indexOf('function retryInstallation()');
 
     expect(at).toBeGreaterThan(-1);

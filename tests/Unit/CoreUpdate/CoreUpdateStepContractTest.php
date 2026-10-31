@@ -31,6 +31,8 @@ class CoreUpdateStepContractTest extends TestCase
      * @scenario run_state=running, failing_step=none
      *
      * @effects step_order_keeps_safety_invariants
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_step_order_keeps_safety_invariants(): void
@@ -79,6 +81,8 @@ class CoreUpdateStepContractTest extends TestCase
      * @scenario run_state=running, failing_step=none
      *
      * @effects every_case_appears_in_the_sequence
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_every_case_appears_in_the_sequence(): void
@@ -98,6 +102,8 @@ class CoreUpdateStepContractTest extends TestCase
      * @scenario run_state=running, failing_step=none
      *
      * @effects every_step_has_a_translated_label
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_every_step_has_a_translated_label(): void
@@ -122,6 +128,8 @@ class CoreUpdateStepContractTest extends TestCase
      * @scenario run_state=running, failing_step=none
      *
      * @effects maintenance_exempt_uris_match_the_registered_routes
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_maintenance_exempt_uris_match_the_registered_routes(): void

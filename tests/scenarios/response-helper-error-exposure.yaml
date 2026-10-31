@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변종이다. success 의 로케일 축과 error 계열의 payload, debug 축은 서로 다른 메서드에만 쓰이므로 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#609 축은 시험마다 따로 고른 입력 변종이다. success 의 로케일 축과 error 계열의 payload, debug 축은 서로 다른 메서드에만 쓰이므로 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
 feature: ResponseHelper 오류 정보 노출 제어와 응답 메시지 번역
 
 description: |
@@ -35,6 +35,11 @@ effects:
   - non_builtin_locale_respected
   - default_success_message_translated
   - no_caller_passes_unresolvable_success_key
+  # 치환 자리 노출 방지 — `:error` 등 자리표시자를 가진 키를 파라미터 없이 불러 운영자 화면에 자리표시자가 그대로 보이는 것을 막는다
+  - error_placeholder_keys_always_receive_error_param   # ->error() 호출부 전수가 :error 키에 messageParams 의 'error' 를 싣는다
+  - exception_constructors_pass_error_param_for_placeholder_keys   # *OperationException 생성자 전수가 :error 키에 둘째 인자로 'error' 를 싣는다
+  - translator_direct_calls_supply_placeholder_params   # __()/trans() 단일 인자 직접 호출이 자리표시자 있는 문구를 만들지 않는다 (Validator 가 채우는 자리는 예외)
 
 test_files:
   - tests/Unit/Helpers/ResponseHelperTest.php
+  - tests/Feature/Http/ErrorMessageParamSubstitutionTest.php

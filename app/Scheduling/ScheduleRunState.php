@@ -92,6 +92,7 @@ class ScheduleRunState
      * @param  string  $eventKey  이벤트 식별 키
      * @param  CarbonImmutable  $at  실행 완료 시각
      * @param  bool  $failed  실패로 끝났는지
+     * @return void 반환값 없음
      */
     public function recordEventRun(string $eventKey, CarbonImmutable $at, bool $failed = false): void
     {
@@ -110,6 +111,7 @@ class ScheduleRunState
      *
      * @param  ScheduleRunSummary  $summary  실행 요약
      * @param  bool  $advanceCheckpoint  점검 시각을 전진시킬지 (due 전량 처리 시에만 true)
+     * @return void 반환값 없음
      */
     public function recordRun(ScheduleRunSummary $summary, bool $advanceCheckpoint): void
     {
@@ -137,6 +139,7 @@ class ScheduleRunState
      * 여부(`lastExecutedAt`)와 다른 축이다.
      *
      * @param  CarbonImmutable  $at  호출 시각
+     * @return void 반환값 없음
      */
     public function recordInvocation(CarbonImmutable $at): void
     {
@@ -180,6 +183,8 @@ class ScheduleRunState
 
     /**
      * 상태를 다시 읽도록 캐시를 비웁니다 (같은 요청 안에서 파일이 바뀐 경우).
+     *
+     * @return void 반환값 없음
      */
     public function refresh(): void
     {
@@ -220,6 +225,7 @@ class ScheduleRunState
      * 나를 수 있도록 플래그로 보관한다 — 로그를 볼 수 없는 운영자가 대다수다.
      *
      * @param  array<string, mixed>  $state  저장할 상태
+     * @return void 반환값 없음
      */
     private function write(array $state): void
     {

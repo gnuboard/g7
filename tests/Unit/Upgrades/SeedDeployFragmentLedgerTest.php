@@ -28,6 +28,11 @@ class SeedDeployFragmentLedgerTest extends TestCase
 
     private string $originalStoragePath;
 
+    /**
+     * 스텝 파일을 읽어 들이고 deploy 와 storage 를 갖춘 임시 샌드박스로 기준 경로와 storage 경로를 옮긴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +52,11 @@ class SeedDeployFragmentLedgerTest extends TestCase
         app()->useStoragePath($this->sandbox.DIRECTORY_SEPARATOR.'storage');
     }
 
+    /**
+     * 기준 경로와 storage 경로를 원래대로 되돌리고 샌드박스를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         app()->setBasePath($this->originalBasePath);
@@ -57,9 +67,13 @@ class SeedDeployFragmentLedgerTest extends TestCase
     }
 
     /**
+     * 원장이 없을 때 스텝이 디스크 해시로 원장을 씨앗하고, 사이드카가 있는 조각은 건너뛰며, 결과가 서비스 씨앗기와 같은지 확인한다.
+     *
      * @scenario deploy_fragment_ledger=absent, deploy_fragment_state=unmodified, process_shape=spawn_child
      *
      * @effects deploy_fragment_ledger_can_be_seeded_from_disk_without_touching_preserved_fragments
+     *
+     * @return void 반환값 없음
      */
     public function test_step_seeds_the_ledger_from_disk_and_matches_the_service_seeder(): void
     {
@@ -100,6 +114,8 @@ class SeedDeployFragmentLedgerTest extends TestCase
      * @scenario deploy_fragment_ledger=present, deploy_fragment_state=operator_modified
      *
      * @effects deploy_fragment_ledger_can_be_seeded_from_disk_without_touching_preserved_fragments
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_ledger_is_merged_not_skipped_by_both_the_service_and_the_step(): void
     {
@@ -140,6 +156,8 @@ class SeedDeployFragmentLedgerTest extends TestCase
      * @scenario deploy_fragment_ledger=absent, deploy_fragment_state=unmodified
      *
      * @effects deploy_fragment_ledger_can_be_seeded_from_disk_without_touching_preserved_fragments
+     *
+     * @return void 반환값 없음
      */
     public function test_dotfiles_are_excluded_by_both_the_service_and_the_step(): void
     {
@@ -171,6 +189,8 @@ class SeedDeployFragmentLedgerTest extends TestCase
      * @scenario deploy_fragment_ledger=absent, process_shape=spawn_child
      *
      * @effects deploy_fragment_ledger_can_be_seeded_from_disk_without_touching_preserved_fragments
+     *
+     * @return void 반환값 없음
      */
     public function test_step_literals_match_the_service_constants(): void
     {
@@ -192,6 +212,8 @@ class SeedDeployFragmentLedgerTest extends TestCase
      * @scenario deploy_fragment_ledger=absent, deploy_fragment_state=unmodified, process_shape=spawn_child
      *
      * @effects deploy_fragment_ledger_write_failure_reaches_the_operator
+     *
+     * @return void 반환값 없음
      */
     public function test_ledger_write_failure_reaches_the_operator_not_only_the_log(): void
     {

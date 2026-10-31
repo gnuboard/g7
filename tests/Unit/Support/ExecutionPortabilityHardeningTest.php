@@ -27,6 +27,10 @@ class ExecutionPortabilityHardeningTest extends TestCase
      *
      * 목록이 POSIX 배포판 관행뿐이면 cPanel/Plesk/CloudLinux/LiteSpeed 서버는
      * "PATH 에 php 가 없다" 만으로 in-process 로 떨어진다 — 실제로는 가능한 경로를 두고.
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
      */
     public function test_candidate_paths_cover_shared_hosting_panels(): void
     {
@@ -46,6 +50,10 @@ class ExecutionPortabilityHardeningTest extends TestCase
      * Windows 후보는 `PHP_BINARY` 형제 디렉토리에서 파생된다.
      *
      * 고정 목록이 POSIX 뿐이면 Windows 에서는 후보가 0 이라 폴백이 아무 일도 하지 않는다.
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
      */
     public function test_candidate_paths_include_sibling_of_current_binary(): void
     {
@@ -57,6 +65,10 @@ class ExecutionPortabilityHardeningTest extends TestCase
 
     /**
      * 후보 목록에 중복이 없다 — 같은 경로를 두 번 probe 하면 그만큼 스폰이 늘어난다.
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
      */
     public function test_candidate_paths_are_unique(): void
     {
@@ -78,6 +90,8 @@ class ExecutionPortabilityHardeningTest extends TestCase
      * stat 조기 실패가 남아 있으면 이 단언이 red 가 된다.
      *
      * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_does_not_reject_path_that_stat_cannot_see(): void
     {
@@ -109,6 +123,10 @@ class ExecutionPortabilityHardeningTest extends TestCase
 
     /**
      * 실재하지 않는 경로의 **사유**는 그대로 "파일 없음" 이다 (기존 계약 보존).
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_still_reports_missing_file_reason(): void
     {
@@ -127,6 +145,10 @@ class ExecutionPortabilityHardeningTest extends TestCase
      *
      * 코어가 한국어 문장을 확정해 API 응답에 실으면 그 항목만 번역되지 않은 채 나간다
      * (같은 응답의 다른 사유들은 lang 키를 쓴다).
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_carries_translatable_message_key_in_every_branch(): void
     {
@@ -145,6 +167,10 @@ class ExecutionPortabilityHardeningTest extends TestCase
 
     /**
      * probe 결과도 그 키를 그대로 실어 나른다 — 중간에서 잃어버리면 소비처가 번역할 수 없다.
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
      */
     public function test_probe_propagates_message_key(): void
     {
@@ -160,6 +186,10 @@ class ExecutionPortabilityHardeningTest extends TestCase
 
     /**
      * exec 차단·함수 차단 분기도 키를 싣는다.
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
      */
     public function test_probe_carries_message_key_when_exec_unavailable(): void
     {
@@ -173,6 +203,13 @@ class ExecutionPortabilityHardeningTest extends TestCase
     // 환경#24 — disable_functions 대조는 대소문자를 가리지 않는다
     // ========================================================================
 
+    /**
+     * disable_functions 목록 대조가 함수 이름의 대소문자와 앞뒤 공백을 가리지 않고, 목록에 없는 함수는 쓸 수 있다고 판정하는지 확인한다.
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
+     */
     public function test_has_function_matches_disabled_list_case_insensitively(): void
     {
         $this->assertFalse(
@@ -188,6 +225,13 @@ class ExecutionPortabilityHardeningTest extends TestCase
     // 보안#11 — 공백 포함 Composer 입력이 셸로 원문 전달되지 않는다
     // ========================================================================
 
+    /**
+     * 공백으로 나뉜 composer 경로 설정이 원문 그대로 명령줄에 붙지 않고 토큰마다 escapeshellarg 로 인용되는지 확인한다.
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_composer_command_escapes_space_separated_tokens(): void
     {
         $raw = 'sh -c "id > /tmp/g7_should_not_run"';
@@ -202,6 +246,13 @@ class ExecutionPortabilityHardeningTest extends TestCase
         );
     }
 
+    /**
+     * 인터프리터와 composer.phar 스크립트로 된 설정이 두 토큰 모두 따로 인용된 형태로 조립되는지 확인한다.
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
+     */
     public function test_build_composer_command_keeps_interpreter_plus_script_form(): void
     {
         $result = PhpBinaryResolver::buildComposerCommand('php', '/usr/local/php84/bin/php /home/u/composer.phar');
@@ -227,6 +278,8 @@ class ExecutionPortabilityHardeningTest extends TestCase
      * `@` 로는 막히지 않는다(진단 억제일 뿐).
      *
      * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
      */
     public function test_inherited_environment_survives_disabled_getenv(): void
     {
@@ -269,6 +322,8 @@ class ExecutionPortabilityHardeningTest extends TestCase
      * 다른 요청이 같은 작업을 겹쳐 실행한다.
      *
      * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
      */
     public function test_output_read_gives_up_on_a_silent_child(): void
     {
@@ -316,6 +371,10 @@ class ExecutionPortabilityHardeningTest extends TestCase
 
     /**
      * 정상 자식의 출력은 한 바이트도 잃지 않는다 (비블로킹 전환 회귀 가드).
+     *
+     * @effects core_execution_layer_survives_restricted_hosting
+     *
+     * @return void 반환값 없음
      */
     public function test_output_read_collects_full_child_output(): void
     {

@@ -5,6 +5,7 @@ namespace Tests\Unit\Installer;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ScansPhpSourceFunctions;
 use Tests\TestCase;
 
 /**
@@ -28,6 +29,8 @@ use Tests\TestCase;
 #[PreserveGlobalState(false)]
 class PartialWriteDetectionContractTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /**
      * 판정 없이 통과시켜도 되는 지점과 그 근거.
      *
@@ -48,6 +51,12 @@ class PartialWriteDetectionContractTest extends TestCase
 
     /**
      * 인스톨러의 모든 `file_put_contents()` 가 부분 쓰기를 판정한다.
+     *
+     * @scenario guard_population=installer_sources
+     *
+     * @effects installer_write_sites_reject_partial_writes
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function installer_write_sites_detect_partial_writes(): void
@@ -78,6 +87,12 @@ class PartialWriteDetectionContractTest extends TestCase
 
     /**
      * 모집단이 비어 있지 않다 — 비면 위 검사가 공허하게 통과한다.
+     *
+     * @scenario guard_population=installer_sources
+     *
+     * @effects installer_write_sites_reject_partial_writes
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_population_is_not_empty(): void
@@ -89,7 +104,7 @@ class PartialWriteDetectionContractTest extends TestCase
         $writeSites = 0;
 
         foreach ($files as $file) {
-            $writeSites += substr_count((string) file_get_contents($file), 'file_put_contents(');
+            $writeSites += substr_count($this->sourceWithoutComments($file), 'file_put_contents(');
         }
 
         $this->assertGreaterThanOrEqual(
@@ -101,6 +116,12 @@ class PartialWriteDetectionContractTest extends TestCase
 
     /**
      * 판정 헬퍼가 실제로 부분 쓰기를 걸러낸다 (항등식 픽스처 방지).
+     *
+     * @scenario guard_population=synthetic_source
+     *
+     * @effects installer_write_sites_reject_partial_writes
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_helper_rejects_a_short_write(): void
@@ -160,14 +181,16 @@ class PartialWriteDetectionContractTest extends TestCase
      * 반환값을 변수에 담아 같은 줄 또는 뒤따르는 세 줄 안에서 `strlen()` 과 대조하거나.
      *
      * @param  string  $file  절대 경로
-     * @return array<int, string> 줄 번호 => 원문
+     * @return array<int, string> 줄 번호 => 주석을 지운 그 줄
      */
     private function uncheckedWriteLines(string $file): array
     {
         // 줄 종결자만 자른다 — `\R` 은 `u` 수식자 없이 바이트 모드라 0x85(NEL)를
         // 개행으로 읽어 한글을 글자 한가운데서 쪼갠다 (저장소 규약 「한글 텍스트를
         // 정규식으로 자를 때」).
-        $lines = preg_split('~\r\n|\r|\n~', (string) file_get_contents($file)) ?: [];
+        // 주석을 지운 소스로 본다 — 주석 속 호출 언급은 쓰기 지점이 아니다. 스트리퍼가 줄 수를
+        // 보존하므로 보고하는 줄 번호는 원문과 같다.
+        $lines = preg_split('~\r\n|\r|\n~', $this->sourceWithoutComments($file)) ?: [];
         $offenders = [];
 
         foreach ($lines as $index => $line) {

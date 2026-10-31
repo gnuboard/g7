@@ -67,6 +67,7 @@ class ExtensionBackupHelper
      * @param  string  $dest  대상 디렉토리
      * @param  string  $basePath  상대 경로 계산 기준
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      */
     private static function copyDirectoryWithProgress(
         string $source,
@@ -106,6 +107,7 @@ class ExtensionBackupHelper
      * @param  string  $identifier  확장 식별자
      * @param  string  $backupPath  백업 경로
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @return void 반환값 없음
      *
      * @throws \RuntimeException 백업 디렉토리가 없을 때
      *
@@ -129,6 +131,7 @@ class ExtensionBackupHelper
      * 백업 디렉토리를 삭제합니다.
      *
      * @param  string  $backupPath  백업 경로
+     * @return void 반환값 없음
      */
     public static function deleteBackup(string $backupPath): void
     {

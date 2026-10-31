@@ -1102,6 +1102,7 @@ class CoreActivityLogListener implements HookListenerInterface
      * @param  string  $fromVersion  현재 버전
      * @param  string|null  $toVersion  대상 버전 (수동 ZIP 은 추출 후 판별되므로 null 가능)
      * @param  array  $options  착수 선택 (번들 확장 · 검색 인덱스 · 레이아웃 전략 · 수동 ZIP)
+     * @return void 반환값 없음
      */
     public function handleCoreUpdateStarted(string $runId, string $fromVersion, ?string $toVersion, array $options = []): void
     {
@@ -1119,6 +1120,7 @@ class CoreActivityLogListener implements HookListenerInterface
      * @param  string  $fromVersion  이전 버전
      * @param  string|null  $toVersion  적용된 버전
      * @param  array  $bundledResult  번들 확장 일괄 업데이트 결과 (수행하지 않았으면 빈 배열)
+     * @return void 반환값 없음
      */
     public function handleCoreUpdateCompleted(string $runId, string $fromVersion, ?string $toVersion, array $bundledResult = []): void
     {
@@ -1140,6 +1142,7 @@ class CoreActivityLogListener implements HookListenerInterface
      * @param  string|null  $toVersion  적용하려던 버전
      * @param  array  $error  실패 단계·사유·리포트 경로
      * @param  array  $rollback  되돌리기 결과
+     * @return void 반환값 없음
      */
     public function handleCoreUpdateFailed(string $runId, string $fromVersion, ?string $toVersion, array $error = [], array $rollback = []): void
     {

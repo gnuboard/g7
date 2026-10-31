@@ -15,6 +15,7 @@ class EnvPriorityTest extends TestCase
      * 스위치를 켜고 지정한 env 변수만 명시 상태로 만듭니다.
      *
      * @param  array<int, string>  $explicitVars  명시 상태로 만들 env 변수 목록
+     * @return void 반환값 없음
      */
     private function enableWith(array $explicitVars): void
     {
@@ -28,6 +29,8 @@ class EnvPriorityTest extends TestCase
      * @scenario switch=off, key_state=unlocked, surface=inject
      *
      * @effects switch_off_behaves_identically
+     *
+     * @return void 반환값 없음
      */
     public function test_switch_off_locks_nothing(): void
     {
@@ -49,6 +52,8 @@ class EnvPriorityTest extends TestCase
      * @scenario switch=on, key_state=locked_plain, surface=get_meta
      *
      * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_explicit_env_locks_only_that_key(): void
     {
@@ -63,6 +68,8 @@ class EnvPriorityTest extends TestCase
      * 매핑에 없는 키는 잠기지 않습니다 (면제 목록 등재 키 포함).
      *
      * @scenario switch=on, key_state=unlocked, surface=get_meta
+     *
+     * @return void 반환값 없음
      */
     public function test_unmapped_key_is_never_locked(): void
     {
@@ -79,6 +86,8 @@ class EnvPriorityTest extends TestCase
      * @scenario switch=on, key_state=locked_plain, surface=inject
      *
      * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_any_of_env_vars_locks_the_setting(): void
     {
@@ -98,6 +107,8 @@ class EnvPriorityTest extends TestCase
      * @scenario switch=on, key_state=unlocked, surface=inject
      *
      * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_filter_locked_removes_only_locked_keys(): void
     {
@@ -117,6 +128,8 @@ class EnvPriorityTest extends TestCase
      * 저장 게이트는 잠긴 키를 조용히 제거합니다 (화면 disabled 우회 경로 차단).
      *
      * @scenario switch=on, key_state=locked_plain, surface=post_filter
+     *
+     * @return void 반환값 없음
      */
     public function test_reject_locked_for_save_strips_locked_keys(): void
     {
@@ -136,6 +149,8 @@ class EnvPriorityTest extends TestCase
      * @scenario switch=off, key_state=unlocked, surface=post_filter
      *
      * @effects switch_off_behaves_identically
+     *
+     * @return void 반환값 없음
      */
     public function test_reject_locked_for_save_is_noop_when_switch_off(): void
     {
@@ -153,6 +168,8 @@ class EnvPriorityTest extends TestCase
      * @scenario switch=on, key_state=locked_sensitive, surface=get_meta
      *
      * @effects locked_sensitive_hides_effective_value
+     *
+     * @return void 반환값 없음
      */
     public function test_sensitive_contract(): void
     {
@@ -178,6 +195,8 @@ class EnvPriorityTest extends TestCase
      * @scenario switch=on, key_state=locked_sensitive, surface=get_meta
      *
      * @effects locked_sensitive_hides_effective_value
+     *
+     * @return void 반환값 없음
      */
     public function test_credential_named_keys_are_all_marked_sensitive(): void
     {
@@ -200,6 +219,8 @@ class EnvPriorityTest extends TestCase
      * @scenario switch=on, key_state=locked_plain, surface=get_effective_value
      *
      * @effects locked_plain_shows_effective_value
+     *
+     * @return void 반환값 없음
      */
     public function test_effective_value_reads_runtime_config(): void
     {
@@ -214,6 +235,8 @@ class EnvPriorityTest extends TestCase
      * @scenario switch=on, key_state=locked_plain, surface=get_effective_value
      *
      * @effects locked_plain_shows_effective_value
+     *
+     * @return void 반환값 없음
      */
     public function test_effective_value_converts_kb_to_mb(): void
     {
@@ -226,6 +249,8 @@ class EnvPriorityTest extends TestCase
      * 웹소켓 마스터 토글은 broadcasting 드라이버가 reverb 인지로 표현됩니다.
      *
      * @scenario switch=on, key_state=locked_falsy, surface=get_meta
+     *
+     * @return void 반환값 없음
      */
     public function test_effective_value_maps_broadcast_driver_to_toggle(): void
     {
@@ -242,6 +267,8 @@ class EnvPriorityTest extends TestCase
      * @scenario switch=on, key_state=locked_plain, surface=get_effective_value
      *
      * @effects locked_plain_shows_effective_value
+     *
+     * @return void 반환값 없음
      */
     public function test_effective_value_takes_first_stack_channel(): void
     {
@@ -253,7 +280,13 @@ class EnvPriorityTest extends TestCase
     /**
      * 매핑에 없는 키의 유효값은 null 입니다.
      */
-    /** @scenario switch=on, key_state=unlocked, surface=get_effective_value */
+    /**
+     * env 매핑에 없는 설정 키의 유효값은 null 인지 확인한다.
+     *
+     * @scenario switch=on, key_state=unlocked, surface=get_effective_value
+     *
+     * @return void 반환값 없음
+     */
     public function test_effective_value_is_null_for_unmapped_key(): void
     {
         $this->assertNull(EnvPriority::effectiveValue('mail.encryption'));
@@ -261,6 +294,10 @@ class EnvPriorityTest extends TestCase
 
     /**
      * envVars() 는 매핑의 env 변수를 중복 없이 반환합니다.
+     *
+     * @effects env_vars_are_listed_without_duplicates
+     *
+     * @return void 반환값 없음
      */
     public function test_env_vars_are_deduplicated(): void
     {
@@ -282,6 +319,8 @@ class EnvPriorityTest extends TestCase
      * @scenario switch=on, key_state=locked_falsy, surface=inject
      *
      * @effects empty_string_env_not_explicit, false_env_is_explicit
+     *
+     * @return void 반환값 없음
      */
     public function test_explicit_capture_is_strict_about_presence(): void
     {

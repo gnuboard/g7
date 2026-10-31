@@ -43,7 +43,9 @@ class SystemExecutionApiTest extends TestCase
     private string $statePath;
 
     /**
-     * 테스트 준비.
+     * 토큰 파일과 상태 파일을 케이스 전용 임시 경로로 격리하고, 콘솔 커널을 부팅한 뒤 스케줄러를 빈 UTC 인스턴스로 갈아 끼운다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -63,7 +65,9 @@ class SystemExecutionApiTest extends TestCase
     }
 
     /**
-     * 테스트 정리.
+     * 케이스 전용 토큰 파일과 상태 파일을 지운 뒤 부모 정리를 돌린다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -79,7 +83,11 @@ class SystemExecutionApiTest extends TestCase
     /**
      * 상태 조회는 판정 근거와 예약 상태를 돌려주되 **호출 번호는 싣지 않는다** (D20).
      *
+     * @scenario caller=panel, actor_permission=settings_read, token=valid
+     *
      * @effects status_response_excludes_the_cron_token
+     *
+     * @return void 반환값 없음
      */
     public function test_status_does_not_carry_the_cron_token(): void
     {
@@ -100,7 +108,11 @@ class SystemExecutionApiTest extends TestCase
      * 전용 경로만 잠그고 일반 통로를 재지 않으면, 카탈로그에 키가 하나 늘어나는 순간
      * 그 통로가 조용히 열린다.
      *
+     * @scenario caller=panel, actor_permission=settings_read, token=valid
+     *
      * @effects settings_response_excludes_the_cron_token
+     *
+     * @return void 반환값 없음
      */
     public function test_general_settings_response_does_not_carry_the_cron_token(): void
     {
@@ -115,7 +127,11 @@ class SystemExecutionApiTest extends TestCase
     /**
      * 설정 단건 조회로도 호출 번호에 닿을 수 없다 (D20 — 세 번째 통로).
      *
+     * @scenario caller=panel, actor_permission=settings_read, token=valid
+     *
      * @effects single_setting_read_cannot_reach_the_cron_token
+     *
+     * @return void 반환값 없음
      */
     public function test_single_setting_read_cannot_reach_the_cron_token(): void
     {
@@ -132,7 +148,11 @@ class SystemExecutionApiTest extends TestCase
      *
      * 읽기 권한만으로 얻을 수 있으면 등급 구분이 사라진다.
      *
+     * @scenario caller=panel, actor_permission=settings_read
+     *
      * @effects token_reveal_requires_update_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_token_reveal_requires_update_permission(): void
     {
@@ -144,7 +164,11 @@ class SystemExecutionApiTest extends TestCase
     /**
      * 수정 권한이 있으면 호출 주소를 받는다 (없으면 그 시점에 발급).
      *
+     * @scenario caller=panel, actor_permission=settings_update, token=unissued
+     *
      * @effects token_reveal_returns_the_call_url
+     *
+     * @return void 반환값 없음
      */
     public function test_token_reveal_returns_the_call_url(): void
     {
@@ -164,7 +188,11 @@ class SystemExecutionApiTest extends TestCase
     /**
      * 재발급은 새 주소를 돌려주고 이전 번호를 무효화한다.
      *
+     * @scenario caller=panel, actor_permission=settings_update, token=rotated
+     *
      * @effects token_rotation_replaces_the_call_url
+     *
+     * @return void 반환값 없음
      */
     public function test_token_rotation_replaces_the_call_url(): void
     {
@@ -185,7 +213,11 @@ class SystemExecutionApiTest extends TestCase
     /**
      * 재발급도 수정 권한을 요구한다.
      *
+     * @scenario caller=panel, actor_permission=settings_read
+     *
      * @effects token_rotation_requires_update_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_token_rotation_requires_update_permission(): void
     {
@@ -197,7 +229,11 @@ class SystemExecutionApiTest extends TestCase
     /**
      * 재감지는 판정 근거와 유효 모드를 함께 돌려준다.
      *
+     * @scenario caller=panel, actor_permission=settings_read
+     *
      * @effects detect_returns_the_reason_and_effective_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_returns_reason_and_effective_mode(): void
     {
@@ -220,7 +256,11 @@ class SystemExecutionApiTest extends TestCase
      * 화면은 동적 키 + 치환을 조합할 수단이 없으므로, 번역이 서버에서 끝나지 않으면
      * 그 자리는 영원히 비어 있다.
      *
+     * @scenario caller=panel, actor_permission=settings_read
+     *
      * @effects detect_reason_is_localized_server_side
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_reason_is_localized(): void
     {
@@ -246,7 +286,11 @@ class SystemExecutionApiTest extends TestCase
      * 권한 스코프 캐시가 프로세스 정적이라 한 케이스 안에서 두 행위자를 쓰면 앞
      * 행위자의 판정이 뒤로 샌다 — 행위자마다 케이스를 나눈다.
      *
+     * @scenario caller=panel, actor_permission=settings_read
+     *
      * @effects run_now_requires_update_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_run_now_is_denied_without_update_permission(): void
     {
@@ -258,7 +302,11 @@ class SystemExecutionApiTest extends TestCase
     /**
      * "지금 실행" 은 수정 권한이 있으면 실행 요약을 돌려준다.
      *
+     * @scenario caller=panel, actor_permission=settings_update
+     *
      * @effects run_now_returns_a_summary
+     *
+     * @return void 반환값 없음
      */
     public function test_run_now_returns_a_summary(): void
     {
@@ -271,7 +319,11 @@ class SystemExecutionApiTest extends TestCase
     /**
      * `system` 탭 저장이 카탈로그에 반영된다 (신규 카테고리의 저장 경로).
      *
+     * @scenario setting_save_path=bulk, cron_mode=web, execution_mode=inprocess, actor_permission=settings_update
+     *
      * @effects system_tab_save_persists_to_the_catalog
+     *
+     * @return void 반환값 없음
      */
     public function test_system_tab_save_persists(): void
     {
@@ -299,7 +351,11 @@ class SystemExecutionApiTest extends TestCase
     /**
      * 허용값 밖의 실행 방식은 벌크 저장에서 거부된다.
      *
+     * @scenario setting_save_path=bulk, actor_permission=settings_update
+     *
      * @effects invalid_cron_mode_is_rejected_on_bulk_save
+     *
+     * @return void 반환값 없음
      */
     public function test_invalid_cron_mode_is_rejected_on_bulk_save(): void
     {
@@ -314,7 +370,11 @@ class SystemExecutionApiTest extends TestCase
     /**
      * 허용값 밖의 실행 방식은 **단건** 저장에서도 거부된다 (우회로 차단).
      *
+     * @scenario setting_save_path=single, actor_permission=settings_update
+     *
      * @effects invalid_cron_mode_is_rejected_on_single_save
+     *
+     * @return void 반환값 없음
      */
     public function test_invalid_cron_mode_is_rejected_on_single_save(): void
     {
@@ -329,7 +389,11 @@ class SystemExecutionApiTest extends TestCase
      * 형태 규칙이 한쪽에만 있으면 다른 쪽이 우회로가 되고, 판정기는 그 항목을
      * 조용히 매칭 실패로 처리해 운영자가 원인을 알 수 없다.
      *
+     * @scenario setting_save_path=bulk, setting_save_path=single, actor_permission=settings_update
+     *
      * @effects invalid_ip_allow_list_is_rejected_on_both_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_invalid_ip_allow_list_is_rejected_on_both_paths(): void
     {
@@ -347,7 +411,11 @@ class SystemExecutionApiTest extends TestCase
     /**
      * 최소 간격의 경계값은 설정 한계표에서 도출된다 (상한 초과는 거부).
      *
+     * @scenario setting_save_path=bulk, actor_permission=settings_update
+     *
      * @effects min_interval_bounds_come_from_the_limits_table
+     *
+     * @return void 반환값 없음
      */
     public function test_min_interval_upper_bound_is_enforced(): void
     {
@@ -424,7 +492,11 @@ class SystemExecutionApiTest extends TestCase
      * 시간대인데 이쪽만 표준시라, 운영자가 9시간 차이를 「안 돌았다」로 읽는다
      * (G8 실측 2026-09-02 · 계획서 §9.11.3 F5).
      *
+     * @scenario caller=panel, actor_permission=settings_read
+     *
      * @effects schedule_status_times_use_the_site_timezone
+     *
+     * @return void 반환값 없음
      */
     public function test_status_times_are_returned_in_the_site_timezone(): void
     {

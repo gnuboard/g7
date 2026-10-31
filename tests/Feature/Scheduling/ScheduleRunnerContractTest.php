@@ -33,7 +33,11 @@ class ScheduleRunnerContractTest extends TestCase
     use SkipsWhenExtensionTablesAreMissing;
 
     /**
+     * 앱을 만들기 전에 확장 테이블 존재를 확인해, 없으면 이 케이스를 건너뛰고 있으면 부모 준비를 돌린다.
+     *
      * 확장 테이블 판정은 앱 부팅 **전**에 한다 — 부팅이 바로 그 실패 지점이다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -63,7 +67,11 @@ class ScheduleRunnerContractTest extends TestCase
     /**
      * 등록된 shell 이벤트 전수가 Artisan 커맨드로 되뽑힌다 (실패 0).
      *
+     * @scenario event_kind=shell_event
+     *
      * @effects every_registered_shell_event_is_recoverable
+     *
+     * @return void 반환값 없음
      */
     public function test_every_registered_shell_event_is_recoverable(): void
     {
@@ -99,7 +107,11 @@ class ScheduleRunnerContractTest extends TestCase
      *
      * 러너가 자체 목록을 두면 이 단언이 red 가 된다.
      *
+     * @scenario event_kind=callback_event
+     *
      * @effects runner_targets_are_derived_from_registration
+     *
+     * @return void 반환값 없음
      */
     public function test_runner_targets_are_derived_from_registration(): void
     {
@@ -119,7 +131,11 @@ class ScheduleRunnerContractTest extends TestCase
      * 키가 흔들리면 "이미 실행했다" 는 기록이 매번 빗나가 소급 창이 같은 작업을
      * 반복 실행한다 — 오류 없이 실행 상한만 소모하는 형태다.
      *
+     * @scenario event_kind=callback_event
+     *
      * @effects event_identity_key_is_stable_across_invocations
+     *
+     * @return void 반환값 없음
      */
     public function test_event_identity_key_is_stable_across_invocations(): void
     {
@@ -137,7 +153,11 @@ class ScheduleRunnerContractTest extends TestCase
      * 키가 겹치면 한 이벤트의 실행 기록이 다른 이벤트를 "이미 실행함" 으로 만들어
      * 그 예약이 영영 돌지 않는다.
      *
+     * @scenario event_kind=callback_event
+     *
      * @effects event_identity_keys_do_not_collide
+     *
+     * @return void 반환값 없음
      */
     public function test_event_identity_keys_do_not_collide(): void
     {
@@ -154,6 +174,8 @@ class ScheduleRunnerContractTest extends TestCase
      * 실행 상한·소급 창 값은 설정에서 도출한다 (리터럴 재기입 금지).
      *
      * @effects runner_limits_come_from_config
+     *
+     * @return void 반환값 없음
      */
     public function test_runner_limits_come_from_config(): void
     {
@@ -178,7 +200,11 @@ class ScheduleRunnerContractTest extends TestCase
      *
      * 모집단은 실제 등록분에서 도출한다 — 목록을 손으로 들지 않는다.
      *
+     * @scenario event_kind=shell_event
+     *
      * @effects schedule_history_name_is_human_readable
+     *
+     * @return void 반환값 없음
      */
     public function test_history_display_name_never_carries_the_php_binary_path(): void
     {

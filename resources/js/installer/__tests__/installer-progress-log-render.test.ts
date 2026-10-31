@@ -33,6 +33,12 @@ type ProgressLogRegion = {
   displayLogs: (logs: unknown[]) => void;
 };
 
+/**
+ * 진행 기록 구간을 원문에서 잘라 낸다.
+ *
+ * meta:allow raw-source-read — 구간 표식(`region:progress-log`)이 **주석 안에** 있어 원문이
+ * 필요하다. 이 결과는 실행에 쓰고, 문자 대조는 withoutComments() 를 지난 뒤에 한다.
+ */
 function regionSource(): string {
   const src = readFileSync(INSTALLER_SOURCE, 'utf8');
   const openMarker = src.indexOf('region:progress-log');
@@ -45,6 +51,82 @@ function regionSource(): string {
   const bodyEnd = src.lastIndexOf('/*', closeMarker);
 
   return src.slice(bodyStart, bodyEnd);
+}
+
+/**
+ * JS 주석을 지운 소스. 문자열, 템플릿, 정규식 리터럴 안은 보존한다.
+ *
+ * 원문 대조는 주석 처리된 호출을 구분하지 못한다 — 호출을 줄 주석으로 감싸도 글자는 남는다.
+ * (installer-token-wiring.test.ts 의 같은 이름 헬퍼와 같은 규칙이다.)
+ */
+function withoutComments(src: string): string {
+  let out = '';
+  let i = 0;
+  let last = '';
+
+  while (i < src.length) {
+    const ch = src[i];
+    const next = src[i + 1] ?? '';
+
+    if (ch === '/' && next === '/') {
+      while (i < src.length && src[i] !== '\n') i++;
+      continue;
+    }
+    if (ch === '/' && next === '*') {
+      const end = src.indexOf('*/', i + 2);
+      i = end === -1 ? src.length : end + 2;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === '`') {
+      out += ch;
+      i++;
+      while (i < src.length) {
+        out += src[i];
+        if (src[i] === '\\') {
+          i++;
+          if (i < src.length) out += src[i];
+          i++;
+          continue;
+        }
+        if (src[i] === ch) {
+          i++;
+          break;
+        }
+        i++;
+      }
+      last = ch;
+      continue;
+    }
+    if (ch === '/' && !/[A-Za-z0-9_$)\]]/.test(last)) {
+      out += ch;
+      i++;
+      let inClass = false;
+      while (i < src.length) {
+        out += src[i];
+        if (src[i] === '\\') {
+          i++;
+          if (i < src.length) out += src[i];
+          i++;
+          continue;
+        }
+        if (src[i] === '[') inClass = true;
+        else if (src[i] === ']') inClass = false;
+        else if ((src[i] === '/' && !inClass) || src[i] === '\n') {
+          i++;
+          break;
+        }
+        i++;
+      }
+      last = '/';
+      continue;
+    }
+
+    out += ch;
+    if (ch.trim() !== '') last = ch;
+    i++;
+  }
+
+  return out;
 }
 
 /**
@@ -184,10 +266,7 @@ describe('커맨드 상세 — 문자열 누적을 쓰지 않는다 (D2 L1)', ()
     // 주석을 먼저 지운다 — 이 구간의 주석이 「`textContent += …` 는 …」이라고 **금지 사유를
     // 설명**하므로, 원문 그대로 대조하면 설명문이 위반으로 잡힌다(문자 대조 게이트는 주석을
     // 지운다는 저장소 규약과 같은 이유다).
-    const code = regionSource()
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^\s*\/\/.*$/gm, '')
-      .replace(/\s+/g, '');
+    const code = withoutComments(regionSource()).replace(/\s+/g, '');
 
     expect(
       code,

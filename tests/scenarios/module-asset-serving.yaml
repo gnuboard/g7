@@ -1,0 +1,20 @@
+feature: 모듈 자산(JS, CSS, JSON, 이미지, 글꼴) 파일 경로 해석 — ModuleService::getAssetFilePath
+
+description: |
+  활성 모듈의 dist 아래 자산을 공개 서빙하기 전에 ModuleService 가 실제 파일 경로와 MIME 을 정한다.
+  있는 파일은 경로와 형식별 MIME 을 돌려주고, 로컬 환경 밖의 소스맵(.map)은 확장자 화이트리스트에서
+  거부한다. 없는 모듈과 비활성 모듈은 module_not_found, 없는 파일은 file_not_found 로 끝난다.
+  형제 템플릿 통로는 template-asset-serving.yaml 이 소유한다.
+
+axes:
+  case: [serve, mime, file_type, missing]
+
+effects:
+  - module_asset_existing_file_resolves_to_its_path
+  - module_asset_mime_type_follows_the_extension
+  - module_source_map_is_not_served_outside_local
+  - module_asset_returns_module_not_found_for_missing_or_inactive_module
+  - module_asset_returns_file_not_found_for_missing_file
+
+test_files:
+  - tests/Unit/Services/ModuleServiceAssetTest.php

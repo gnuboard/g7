@@ -26,7 +26,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: task_outcome failed_db·aborted·best_effort_failed / rollback_dispatch known·unknown·db_seed·db_migrate
  *
- * @effects rollback_dispatch_covers_every_live_task, manual_commands_cover_every_live_task, db_seed_failure_rolls_back_seed_not_migrate, abort_survives_later_task_failure, best_effort_exception_keeps_completion, skip_clears_error_message_params
+ * 효과 요약(마커 아님 — 평문): rollback_dispatch_covers_every_live_task, manual_commands_cover_every_live_task, db_seed_failure_rolls_back_seed_not_migrate, abort_survives_later_task_failure, best_effort_exception_keeps_completion, skip_clears_error_message_params
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -43,6 +43,13 @@ class InstallerRollbackDispatchTest extends TestCase
     /** @var array<int, array{command: string, parameters: array<string|int, mixed>}> */
     private array $calls = [];
 
+    /**
+     * 임시 BASE_PATH 와 저장소, 설정 폴더를 한 번만 만들고 기본 설정 파일을 복사한 뒤 태스크 실행기와 롤백 함수까지 적재한다.
+     *
+     * 이미 정의된 BASE_PATH 가 시스템 임시 폴더 밖이면 실제 상태 파일을 지키려고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function bootInstallerRuntime(): void
     {
         if (self::$booted) {
@@ -91,6 +98,11 @@ class InstallerRollbackDispatchTest extends TestCase
         require_once $root.'/public/install/api/rollback-functions.php';
     }
 
+    /**
+     * 설치기 런타임을 준비하고 상태, 진행 기록, 설치 완료 표식, 런타임 파일을 지운 뒤 늘 성공하는 Artisan 실행기를 끼운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -119,6 +131,11 @@ class InstallerRollbackDispatchTest extends TestCase
         $this->installExecutor(fn (string $command, array $parameters): array => ['exit_code' => 0, 'output' => ["ran {$command}"]]);
     }
 
+    /**
+     * 테스트가 끼운 Artisan 실행기 대체 함수를 걷어낸다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         unset($GLOBALS['g7_installer_artisan_executor_override']);
@@ -127,7 +144,10 @@ class InstallerRollbackDispatchTest extends TestCase
     }
 
     /**
-     * @param  callable  $decider  fn (string $command, array $parameters): array{exit_code:int, output:array}
+     * Artisan 실행기 대체 함수를 끼워 호출을 기록하고 결과는 주어진 판정 함수에 맡긴다.
+     *
+     * @param  callable  $decider  fn (string $command, array $parameters): array{exit_code:int, output:array}  명령과 인자를 받아 종료 코드와 출력을 돌려주는 판정 함수
+     * @return void 반환값 없음
      */
     private function installExecutor(callable $decider): void
     {
@@ -139,8 +159,11 @@ class InstallerRollbackDispatchTest extends TestCase
     }
 
     /**
-     * @param  array<int, string>  $completed
-     * @param  array<string, mixed>  $overrides
+     * 단계별 모드, subprocess 실행, 관리자 템플릿 하나를 고른 실행 중 상태와 런타임 비밀값 파일을 깐다.
+     *
+     * @param  array<int, string>  $completed  이미 끝난 것으로 둘 태스크 키 목록
+     * @param  array<string, mixed>  $overrides  기본 상태 위에 덮어쓸 키와 값
+     * @return void 반환값 없음
      */
     private function seedState(array $completed, array $overrides = []): void
     {
@@ -185,7 +208,7 @@ class InstallerRollbackDispatchTest extends TestCase
     /**
      * 태스크 목록이 만드는 id 전수 (확장 target 은 떼어낸 종류 단위).
      *
-     * @return array<int, string>
+     * @return array<int, string> 확장 종류를 모두 채운 상태에서 태스크 목록이 만드는 고유 태스크 id
      */
     private function liveTaskIds(): array
     {
@@ -211,6 +234,12 @@ class InstallerRollbackDispatchTest extends TestCase
 
     /**
      * #M1 — 살아 있는 태스크는 전부 롤백 디스패치가 알아본다.
+     *
+     * @scenario task=module, task_outcome=failed_db
+     *
+     * @effects rollback_dispatch_covers_every_live_task
+     *
+     * @return void 반환값 없음
      */
     public function test_rollback_dispatch_knows_every_live_task(): void
     {
@@ -238,6 +267,12 @@ class InstallerRollbackDispatchTest extends TestCase
      * #L10 — 수동 복구 안내도 같은 목록을 모집단으로 갖는다 (subprocess 환경).
      *
      * 안내가 비면 `handleInstallationTaskFailure` 가 문단 자체를 건너뛰므로 조용히 사라진다.
+     *
+     * @scenario task=language_pack, runner_strategy=subprocess
+     *
+     * @effects manual_commands_cover_every_live_task
+     *
+     * @return void 반환값 없음
      */
     public function test_manual_commands_cover_every_live_task(): void
     {
@@ -256,6 +291,12 @@ class InstallerRollbackDispatchTest extends TestCase
 
     /**
      * #M2 — db_seed 실패는 seed 롤백으로 디스패치된다 (migrate:rollback 아님).
+     *
+     * @scenario task=db_seed, task_outcome=failed_db
+     *
+     * @effects db_seed_failure_rolls_back_seed_not_migrate
+     *
+     * @return void 반환값 없음
      */
     public function test_db_seed_failure_rolls_back_seed_not_migrate(): void
     {
@@ -288,6 +329,12 @@ class InstallerRollbackDispatchTest extends TestCase
 
     /**
      * #M10 — 중단으로 확정된 설치는 뒤이은 태스크 실패로 「실패」가 되지 않는다.
+     *
+     * @scenario task=key_generate, task_outcome=aborted
+     *
+     * @effects abort_survives_later_task_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_abort_survives_later_task_failure(): void
     {
@@ -308,6 +355,12 @@ class InstallerRollbackDispatchTest extends TestCase
 
     /**
      * #M18 — best_effort 태스크의 예외가 이미 기록된 완료를 실패로 덮지 않는다.
+     *
+     * @scenario task=config_cache, task_outcome=best_effort_failed
+     *
+     * @effects best_effort_exception_keeps_completion
+     *
+     * @return void 반환값 없음
      */
     public function test_best_effort_exception_keeps_completion(): void
     {
@@ -327,6 +380,12 @@ class InstallerRollbackDispatchTest extends TestCase
 
     /**
      * #L4 — 건너뛰기가 직전 실패의 자리표시자 치환값을 남기지 않는다.
+     *
+     * @scenario task=module, skip_request=skippable
+     *
+     * @effects skip_clears_error_message_params
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_clears_error_message_params(): void
     {
@@ -347,6 +406,12 @@ class InstallerRollbackDispatchTest extends TestCase
 
     /**
      * #L6 — 예외 응답의 태스크는 현재 태스크다 (요청 진입 시점 스냅샷 아님).
+     *
+     * @scenario task=db_cleanup, task_outcome=failed_db
+     *
+     * @effects exception_response_reports_the_current_task
+     *
+     * @return void 반환값 없음
      */
     public function test_exception_response_reports_the_current_task(): void
     {
@@ -373,6 +438,12 @@ class InstallerRollbackDispatchTest extends TestCase
 
     /**
      * #L9 — 강제 종료가 남긴 명령 출력 임시 로그를 청소한다.
+     *
+     * @scenario resume_point=retry_after_failure
+     *
+     * @effects command_output_leftovers_are_cleaned
+     *
+     * @return void 반환값 없음
      */
     public function test_command_output_leftovers_are_cleaned(): void
     {

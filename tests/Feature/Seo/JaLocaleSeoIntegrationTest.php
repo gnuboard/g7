@@ -32,6 +32,11 @@ class JaLocaleSeoIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * supported_locales 에 ja 를 넣은 상태(언어팩 동적 주입 결과와 같은 상태)와 hreflang 방출 설정을 고정한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -55,6 +60,15 @@ class JaLocaleSeoIntegrationTest extends TestCase
         Config::set('g7_settings.core.seo.sitemap_hreflang_enabled', true);
     }
 
+    /**
+     * contributor 주소 하나가 ja 로케일 <url> 과 hreflang alternate 로 확장되고 xhtml 네임스페이스가 켜지는지 확인한다.
+     *
+     * @scenario surface=sitemap_xml, locale=dynamic_ja
+     *
+     * @effects sitemap_expands_contributor_urls_to_dynamic_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_sitemap_xml_includes_ja_locale_urls(): void
     {
         /** @var SitemapGenerator $generator */
@@ -101,6 +115,15 @@ class JaLocaleSeoIntegrationTest extends TestCase
         );
     }
 
+    /**
+     * ja 가 추가돼도 기본 로케일(ko) 주소는 ?locale=ko 없는 정본 주소로 나가는지 확인한다.
+     *
+     * @scenario surface=sitemap_xml, locale=default_ko
+     *
+     * @effects sitemap_default_locale_url_has_no_locale_query
+     *
+     * @return void 반환값 없음
+     */
     public function test_sitemap_xml_default_locale_url_has_no_query_string(): void
     {
         /** @var SitemapGenerator $generator */
@@ -128,6 +151,15 @@ class JaLocaleSeoIntegrationTest extends TestCase
         );
     }
 
+    /**
+     * 봇 UA 로 ?locale=ja 를 요청했을 때 SEO 미들웨어가 거부하지 않고 200 또는 리다이렉트로 응답하는지 확인한다.
+     *
+     * @scenario surface=seo_middleware, locale=dynamic_ja
+     *
+     * @effects seo_middleware_accepts_dynamic_locale_query
+     *
+     * @return void 반환값 없음
+     */
     public function test_seo_middleware_accepts_ja_locale_query(): void
     {
         // 봇 요청으로 SEO 렌더링 트리거
@@ -145,6 +177,15 @@ class JaLocaleSeoIntegrationTest extends TestCase
         );
     }
 
+    /**
+     * ja 가 활성인 상태에서도 미지원 로케일 ?locale=fr 봇 요청이 기본 로케일로 접혀 정상 응답하는지 확인한다.
+     *
+     * @scenario surface=seo_middleware, locale=unsupported_fr
+     *
+     * @effects seo_middleware_unsupported_locale_falls_back
+     *
+     * @return void 반환값 없음
+     */
     public function test_unsupported_locale_still_falls_back_when_ja_active(): void
     {
         // 등록되지 않은 'fr' 은 여전히 거부되고 default 로 fallback
@@ -161,6 +202,15 @@ class JaLocaleSeoIntegrationTest extends TestCase
         );
     }
 
+    /**
+     * SeoCacheManager::buildKey 가 같은 URL 에 대해 ko, en, ja 로케일마다 서로 다른 캐시 키를 만드는지 확인한다.
+     *
+     * @scenario surface=seo_cache_key, locale=dynamic_ja, locale=default_ko
+     *
+     * @effects seo_cache_key_isolated_per_dynamic_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_seo_cache_isolated_for_ja_locale(): void
     {
         Cache::flush();
@@ -186,6 +236,11 @@ class JaLocaleSeoIntegrationTest extends TestCase
         $this->assertNotSame($keyKo, $keyEn, 'ko/en 캐시 키도 격리되어 있어야 함 (회귀 가드)');
     }
 
+    /**
+     * Mockery 기대값을 검증하고 닫는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();

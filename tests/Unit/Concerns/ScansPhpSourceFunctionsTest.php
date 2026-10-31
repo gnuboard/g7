@@ -27,6 +27,8 @@ class ScansPhpSourceFunctionsTest extends TestCase
      * `runTask` 가 걸려 **다른 함수 본문**을 검사했다.
      *
      * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_function_body_matches_exact_name_not_prefix_sibling(): void
     {
@@ -55,6 +57,8 @@ PHP;
      * 파일 끝의 최상위 호출이 마지막 함수 안에 있는 것으로 보였다.
      *
      * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_top_level_code_after_a_function_is_not_attributed_to_it(): void
     {
@@ -88,6 +92,8 @@ PHP;
      * 그 뒤의 PHP 호출이 존재하지 않는 함수 안에 있는 것으로 판정된다.
      *
      * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_inline_script_declarations_are_not_counted_as_php_functions(): void
     {
@@ -116,6 +122,10 @@ PHP;
 
     /**
      * 중첩 중괄호(조건·클로저)를 지나 올바른 끝을 찾는다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_nested_braces_do_not_end_the_body_early(): void
     {
@@ -138,6 +148,10 @@ PHP;
 
     /**
      * 없는 이름은 빈 문자열 — 호출부가 「본문에 가드가 없다」로 읽어 fail-closed 가 된다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_function_returns_empty_body(): void
     {
@@ -154,6 +168,10 @@ PHP;
      *
      * 소비처는 `'(none)'` 을 「함수 밖」으로 읽고 판정 범위를 **파일 전체로 넓힌다**(fail-open).
      * 즉 검출기의 실패가 가드 검사의 통과로 바뀌었다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_string_literal_braces_do_not_break_the_function_boundary(): void
     {
@@ -194,6 +212,10 @@ PHP;
      *
      * 종전 구현은 짝을 못 찾으면 `null` → 호출부에서 빈 본문/`(none)` 으로 접혔다. 두 상태가
      * 같은 값이면 소비처는 실패를 「대상이 없다」로 읽고 그대로 통과시킨다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_unbalanced_source_raises_instead_of_looking_like_an_absent_function(): void
     {
@@ -208,6 +230,10 @@ PHP;
      * 이 도출은 「막힌 함수를 부르는 파일」의 모집단을 만드는 데 쓴다. 번역 파일이 안내
      * 문구로 담은 `ini_set(` 을 호출로 세면 그 파일에 없는 가드 의무가 생겨 거짓 red 가 나고,
      * 반대로 문자 대조로 넓게 세면 모집단이 부풀어 진짜 사각이 묻힌다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_direct_function_calls_ignore_strings_declarations_and_methods(): void
     {
@@ -245,6 +271,10 @@ PHP;
      * 모든 JS 소스 게이트가 주석 채널에 무방비였다. 그런데 「스트리퍼를 거쳤다」는 사실은
      * 변하지 않으므로 위생 검사(`SourceGateHygieneTest`)는 초록이다 — 거쳤는지는 보지만
      * 제대로 작동하는지는 보지 않는다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_comments_after_a_nested_template_literal_are_stripped(): void
     {
@@ -274,6 +304,10 @@ JS;
      *
      * `${ {a:1} }` 처럼 객체 리터럴이 오거나 문자열 안에 `}` 가 있으면 균형 계산이 틀려
      * 위와 같은 desync 가 다시 생긴다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_interpolation_with_braces_and_strings_keeps_the_literal_balanced(): void
     {
@@ -300,6 +334,10 @@ JS;
      *
      * 양쪽 방향을 다 잰다: 거짓 red(짝을 못 찾아 예외)와 fail-open(경계를 잘못 잡아
      * 가드 밖 호출이 가드 안으로 읽히는 것) 둘 다 이 경계 판정에서 나온다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_function_body_fragment_is_read_with_php_rules(): void
     {
@@ -345,7 +383,7 @@ SQL;
      * 그 값을 판정 범위 확대의 신호로 읽는다(fail-open). 정규식 리터럴 `/\{/` 과 `// }` 주석도
      * 같은 형태다.
      *
-     * @return array<string, array{0: string}>
+     * @return array<string, array{0: string}> 사례 이름을 키로 한 JS 소스
      */
     public static function jsSingleBraceSources(): array
     {
@@ -359,6 +397,14 @@ SQL;
         ];
     }
 
+    /**
+     * JS 문자열, 정규식, 주석, 템플릿 리터럴 안의 홑중괄호가 함수 본문 경계를 옮기지 않아 본문이 끝까지 잡히는지 확인한다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @param  string  $source  홑중괄호를 품은 JS 소스
+     * @return void 반환값 없음
+     */
     #[DataProvider('jsSingleBraceSources')]
     public function test_js_single_braces_in_strings_regex_and_comments_do_not_move_the_boundary(string $source): void
     {
@@ -378,6 +424,10 @@ SQL;
     /**
      * 정규식 리터럴과 나눗셈을 가른다 — 나눗셈 뒤의 코드가 「정규식 안」으로 읽히면 그 줄
      * 이후의 중괄호가 전부 사라진다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_js_division_is_not_read_as_a_regex_literal(): void
     {
@@ -398,7 +448,7 @@ SQL;
      * 함수 경계를 옮기고(fail-open 또는 거짓 red), 같은 판정을 쓰는 주석 제거기는 그
      * 뒤의 `//` 주석을 남긴다.
      *
-     * @return array<string, array{0: string, 1: string}>
+     * @return array<string, array{0: string, 1: string}> 사례 이름을 키로 한 JS 소스와 지워져야 할 주석
      */
     public static function jsSlashJudgmentSources(): array
     {
@@ -422,6 +472,15 @@ SQL;
         ];
     }
 
+    /**
+     * 후위 증감 연산자와 키워드 뒤의 슬래시를 나눗셈과 정규식으로 바르게 갈라, 함수 본문이 잘리지 않고 그 뒤 주석도 지워지는지 확인한다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @param  string  $source  슬래시 판정이 갈리는 JS 소스
+     * @param  string  $comment  지워져야 할 주석 문자열
+     * @return void 반환값 없음
+     */
     #[DataProvider('jsSlashJudgmentSources')]
     public function test_js_slash_judgment_uses_postfix_operators_and_keywords(string $source, string $comment): void
     {
@@ -446,6 +505,10 @@ SQL;
      *
      * CRLF 파일도 같은 결과여야 한다 — 줄 종결자가 `\r\n` 인 뷰에서 `\r` 이 판정에 끼면
      * 같은 자리가 다시 사각이 된다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_source_without_comments_treats_php_inline_segment_as_operand(): void
     {
@@ -487,7 +550,7 @@ SQL;
      * 돌려줬다 — 둘 다 「주석을 지웠다」는 사실은 변하지 않으므로 위생 검사가 초록이고,
      * 그 구간의 주석 채널 방어만 사라진다.
      *
-     * @return array<string, array{0: string}>
+     * @return array<string, array{0: string}> 사례 이름을 키로 한 뷰 소스
      */
     public static function unbalancedScriptSources(): array
     {
@@ -504,6 +567,14 @@ SQL;
         ];
     }
 
+    /**
+     * 짝이 맞지 않는 script 구간을 가진 뷰 파일은 원문을 그대로 돌려주지 않고 예외를 던지는지 확인한다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @param  string  $source  짝이 맞지 않는 script 구간을 가진 뷰 소스
+     * @return void 반환값 없음
+     */
     #[DataProvider('unbalancedScriptSources')]
     public function test_unbalanced_script_regions_raise_instead_of_falling_open(string $source): void
     {
@@ -526,6 +597,10 @@ SQL;
      * 실물(`public/install/includes/functions.php` 의 `echo '<script>'; … echo '</script>';`)이
      * 이 형태다. 텍스트로 구간을 찾으면 그 문자열 사이가 JS 로 읽혀 PHP 문자열의 내용이
      * 주석으로 지워진다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_script_tags_inside_php_strings_are_not_html_script_regions(): void
     {
@@ -551,6 +626,10 @@ SQL;
      * needle 에 디렉토리가 없다는 이유로 `continue` → **false** 로 접었다. 「무엇을 로드하는지
      * 모른다」가 「로드하지 않는다」로 바뀌는 자리이고, 소비처(격리 커버리지)는 false 를
      * 모집단 밖으로 읽는다(fail-open).
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_loads_file_with_bare_needle_treats_dynamic_require_as_undecidable(): void
     {
@@ -580,6 +659,10 @@ SQL;
      * 못한다」)과 모순됐다.
      * 그리고 `require $var;` 는 문자열 토큰이 없어 `false` 로 떨어졌다 — 「로드하지 않는다」와
      * 「무엇을 로드하는지 모른다」가 같은 값이면 소비처는 후자를 모집단 밖으로 접는다(fail-open).
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_loads_file_ignores_comment_tokens_and_separates_dynamic_requires(): void
     {
@@ -635,6 +718,10 @@ SQL;
 
     /**
      * 경로 대조는 세그먼트 경계다 — `config.php` 는 `some-config.php` 에 맞지 않는다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_loads_file_matches_on_segment_boundaries(): void
     {
@@ -649,6 +736,10 @@ SQL;
      *
      * 이관한 게이트 전부가 이 한 지점을 지난다. 여기가 주석을 남기면 20여 게이트가 한꺼번에
      * 「주석 속 문장」을 통과시키므로, 두 언어·뷰 안의 `<script>` 까지 이 픽스처가 잰다.
+     *
+     * @effects installer_source_function_scanner_discriminates_known_failure_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_source_without_comments_strips_by_language(): void
     {

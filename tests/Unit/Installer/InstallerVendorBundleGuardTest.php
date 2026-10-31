@@ -27,7 +27,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: composer_availability recorded_true·recorded_false·unrecorded / vendor_backup complete·partial / bundle_extraction chunked
  *
- * @effects composer_capability_follows_recorded_probe, vendor_backup_is_all_or_nothing, bundle_extraction_reports_progress_in_chunks
+ * 효과 요약(마커 아님 — 평문): composer_capability_follows_recorded_probe, vendor_backup_is_all_or_nothing, bundle_extraction_reports_progress_in_chunks
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -41,6 +41,13 @@ class InstallerVendorBundleGuardTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 임시 BASE_PATH 와 저장소 폴더를 한 번만 만들고, 설치기 설정부터 번들 vendor 설치기까지 실행 경로의 모듈을 적재한다.
+     *
+     * 이미 정의된 BASE_PATH 가 시스템 임시 폴더 밖이면 실제 파일을 지키려고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function boot(): void
     {
         if (self::$booted) {
@@ -84,6 +91,11 @@ class InstallerVendorBundleGuardTest extends TestCase
         require_once $root.'/public/install/includes/vendor-bundle-installer.php';
     }
 
+    /**
+     * 설치기 런타임을 준비하고, 이전 테스트의 상태 파일을 지운 뒤 진행 기록을 메모리 버퍼로 받도록 바꾼다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -102,7 +114,10 @@ class InstallerVendorBundleGuardTest extends TestCase
     }
 
     /**
-     * @param  array<string, mixed>  $overrides
+     * 실행 중 상태에 vendor 자동 모드와 빈 composer 경로를 깔고 덮어쓸 값을 얹어 상태 파일로 저장한다.
+     *
+     * @param  array<string, mixed>  $overrides  기본 상태 위에 덮어쓸 키와 값
+     * @return void 반환값 없음
      */
     private function seedState(array $overrides = []): void
     {
@@ -116,6 +131,12 @@ class InstallerVendorBundleGuardTest extends TestCase
 
     /**
      * #M4 — 기록된 판정이 있으면 그대로 쓴다 (실행 불가로 기록됐으면 false).
+     *
+     * @scenario vendor_mode_choice=auto, task=composer
+     *
+     * @effects composer_capability_follows_recorded_probe
+     *
+     * @return void 반환값 없음
      */
     public function test_composer_capability_follows_the_recorded_probe(): void
     {
@@ -138,6 +159,12 @@ class InstallerVendorBundleGuardTest extends TestCase
      *
      * 목적지에 같은 이름의 **비어 있지 않은 디렉토리**가 있으면 rename 은 실패한다(두 OS 공통).
      * 그 상태에서 성공으로 보고하면 복원이 원본을 지운다.
+     *
+     * @scenario vendor_mode_choice=bundled, task=composer
+     *
+     * @effects vendor_backup_is_all_or_nothing
+     *
+     * @return void 반환값 없음
      */
     public function test_vendor_backup_is_all_or_nothing(): void
     {
@@ -170,6 +197,12 @@ class InstallerVendorBundleGuardTest extends TestCase
      *
      * 결과물이 한 번에 푼 것과 같아야 하므로 파일 내용까지 대조한다 — 묶음 분할이 디렉토리
      * 구조를 흘리면 vendor 가 반쪽으로 풀린 채 설치가 이어진다.
+     *
+     * @scenario vendor_mode_choice=bundled, task_duration=long_no_feedback
+     *
+     * @effects bundle_extraction_reports_progress_in_chunks
+     *
+     * @return void 반환값 없음
      */
     public function test_bundle_extraction_reports_progress_in_chunks(): void
     {

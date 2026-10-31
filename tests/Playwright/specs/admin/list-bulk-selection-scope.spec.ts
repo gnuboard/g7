@@ -94,6 +94,8 @@ async function checkFirstRow(page: any): Promise<void> {
   await expect(checkbox).toBeChecked({ timeout: 10_000 });
 }
 
+// @scenario transition=search_filter_change, scope=page
+// @effects hidden_row_selection_dropped, bulk_button_disabled_when_selection_empties, bulk_request_carries_only_visible_checked_rows
 test('@smoke 회원 목록: 검색으로 사라진 행은 선택이 풀리고 일괄 처리 대상에서도 빠진다', async ({ page }) => {
   const token = issueToken(...ADMIN_PERMISSIONS);
   await authenticatePage(page, token);

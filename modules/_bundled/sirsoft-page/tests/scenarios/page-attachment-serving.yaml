@@ -73,6 +73,13 @@ effects:
   - preview_does_not_override_the_storage_filename_declaration
   - serving_follows_the_disk_recorded_on_the_row
   - recorded_size_matches_stored_bytes_after_the_resize_path
+  # 609 docblock 정리 — 테스트가 이미 재던 효과를 선언으로 올린다.
+  # 다운로드 통로도 코어 서빙 헬퍼를 지나 검증자 일치 시 304 와 200 의 캐시 헤더를 그대로 싣는다.
+  - download_matching_etag_returns_304_with_the_cache_headers_of_200
+  # 첨부 서빙 응답은 `X-Content-Type-Options: nosniff` 를 선언한다.
+  - file_serving_response_declares_nosniff
+  # KVE-2026-1914 이후 현행 계약 — 미발행 페이지 이미지 썸네일도 비로그인에게 404 로 막힌다.
+  - preview_unpublished_blocked_404_for_guest
 
 test_files:
   - modules/_bundled/sirsoft-page/tests/Feature/User/PublicPageControllerTest.php

@@ -37,6 +37,11 @@ class CoreUpdateWebFlowTest extends TestCase
 
     private string $stateDirectory;
 
+    /**
+     * 실행 상태 파일이 놓이는 디렉터리를 정하고, 앞선 테스트가 남긴 상태 파일을 지워 진행 중 실행이 없는 상태에서 시작하게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -52,6 +57,11 @@ class CoreUpdateWebFlowTest extends TestCase
         }
     }
 
+    /**
+     * 테스트가 심은 실행 상태 파일과 적용 목록 파일을 지워 다음 테스트로 상태가 새지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach ($this->stateFiles() as $path) {
@@ -146,6 +156,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=without_permission, run_state=idle
      *
      * @effects settings_update_permission_alone_cannot_reach_the_apply_endpoints
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_settings_update_permission_alone_cannot_reach_the_apply_endpoints(): void
@@ -168,6 +180,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=with_permission, run_state=idle
      *
      * @effects status_returns_the_shape_the_screen_needs
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_status_returns_the_shape_the_screen_needs(): void
@@ -216,6 +230,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=with_permission, run_state=running, concurrency=duplicate_request
      *
      * @effects a_second_start_is_refused_while_a_run_is_active
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_a_second_start_is_refused_while_a_run_is_active(): void
@@ -237,6 +253,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=with_permission, run_state=running
      *
      * @effects dismiss_is_refused_while_a_run_is_active
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_dismiss_is_refused_while_a_run_is_active(): void
@@ -258,6 +276,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=with_permission, run_state=idle
      *
      * @effects advance_without_a_run_is_refused
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_advance_without_a_run_is_refused(): void
@@ -275,6 +295,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=with_permission, run_state=finished
      *
      * @effects a_finished_run_can_be_dismissed
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_a_finished_run_can_be_dismissed(): void
@@ -301,6 +323,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=with_permission, run_state=idle, source=manual_zip
      *
      * @effects starting_with_a_missing_zip_is_refused_before_anything_changes
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_starting_with_a_missing_zip_is_refused_before_anything_changes(): void
@@ -320,6 +344,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=with_permission, run_state=idle, source=manual_zip
      *
      * @effects a_zip_name_with_path_components_is_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_a_zip_name_with_path_components_is_rejected(): void
@@ -338,6 +364,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=with_permission, run_state=idle, source=manual_zip
      *
      * @effects uploaded_zip_files_appear_in_the_manual_source_list
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_uploaded_zip_files_appear_in_the_manual_source_list(): void
@@ -374,6 +402,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=with_permission, run_state=idle
      *
      * @effects settings_abilities_expose_the_core_update_permission
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_settings_abilities_expose_the_core_update_permission_when_granted(): void
@@ -391,6 +421,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=without_permission, run_state=idle
      *
      * @effects settings_abilities_expose_the_core_update_permission
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_settings_abilities_withhold_the_core_update_permission_when_not_granted(): void
@@ -418,6 +450,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=with_permission, failing_step=apply, rollback_outcome=restore_failed
      *
      * @effects a_failed_rollback_opens_the_manual_recovery_guidance
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_a_failed_rollback_opens_the_manual_recovery_guidance(): void
@@ -479,6 +513,8 @@ class CoreUpdateWebFlowTest extends TestCase
      * @scenario actor=with_permission, failing_step=preflight, rollback_outcome=not_needed
      *
      * @effects preflight_blocks_the_run_when_target_paths_are_not_writable
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_preflight_blocks_the_run_when_target_paths_are_not_writable(): void
@@ -489,11 +525,25 @@ class CoreUpdateWebFlowTest extends TestCase
 
         $this->app->instance(CoreUpdatePreflight::class, new class(app(CoreUpdateService::class), $blockedPath) extends CoreUpdatePreflight
         {
+            /**
+             * 진단 대역을 만들고, 쓰기 불가로 보고할 경로를 기억한다.
+             *
+             * @param  CoreUpdateService  $service  부모 진단이 요구하는 코어 업데이트 서비스
+             * @param  string  $blocked  쓰기 불가로 보고할 상대 경로
+             * @return void 반환값 없음
+             */
             public function __construct(CoreUpdateService $service, private readonly string $blocked)
             {
                 parent::__construct($service);
             }
 
+            /**
+             * 실제 점검 없이 지정 경로가 쓰기 불가라는 실패 진단 결과를 돌려준다.
+             *
+             * @param  bool  $requiresArchiveExtraction  압축 해제 수단 점검 여부(대역에서는 무시)
+             * @param  bool  $deep  정밀 점검 여부(대역에서는 무시)
+             * @return array<string, mixed> 쓰기 불가 경로를 담은 실패 진단 결과
+             */
             public function run(bool $requiresArchiveExtraction = true, bool $deep = true): array
             {
                 return [

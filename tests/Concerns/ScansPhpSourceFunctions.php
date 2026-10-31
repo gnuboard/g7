@@ -270,6 +270,7 @@ trait ScansPhpSourceFunctions
      * 블록이 그 자리에서 끝난 것으로 읽힌다.
      *
      * @param  string  $source  PHP 소스
+     * @param  bool|null  $isPhp  소스가 PHP 인지 호출부가 아는 값 (null 이면 `<?php` 포함 여부로 추론)
      * @return array<int, string> 오프셋 => 중괄호 문자 (오프셋 오름차순)
      */
     private function braceOffsets(string $source, ?bool $isPhp = null): array
@@ -1051,6 +1052,7 @@ trait ScansPhpSourceFunctions
      *
      * @param  string  $source  소스
      * @param  int  $open  여는 중괄호 위치
+     * @param  bool|null  $isPhp  소스가 PHP 인지 호출부가 아는 값 (null 이면 중괄호 표 도출이 추론)
      * @return int 닫는 위치
      *
      * @throws \RuntimeException 그 위치가 여는 중괄호가 아니거나 짝이 없을 때

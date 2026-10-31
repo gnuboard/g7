@@ -185,6 +185,8 @@ describe('상태 변경 요청의 토큰 배선', () => {
     }
   });
 
+  // @scenario installation_mode=stepwise
+  // @effects installer_state_mutation_requests_carry_the_stepwise_token
   it('헤더에 토큰을 실어 보낸다 — 이 항이 빠지면 세 버튼이 전부 403 이 된다', () => {
     const helpers = loadTokenHelpers();
     helpers.rememberStepwiseToken('tok-abc');
@@ -195,6 +197,8 @@ describe('상태 변경 요청의 토큰 배선', () => {
     expect(headers['Content-Type']).toBe('application/json');
   });
 
+  // @scenario installation_mode=stepwise
+  // @effects installer_state_mutation_requests_carry_the_stepwise_token
   it('세션 CSRF 토큰도 같은 헤더에 실린다 — 빠지면 소유 세션의 상태변경이 403 이 된다', () => {
     (window as any).INSTALLER_CSRF = 'csrf-xyz';
     try {
@@ -210,12 +214,16 @@ describe('상태 변경 요청의 토큰 배선', () => {
     }
   });
 
+  // @scenario installation_mode=sse
+  // @effects installer_state_mutation_requests_carry_the_stepwise_token
   it('토큰이 없는 진행 모드(SSE·폴링)에서는 빈 값을 실어 정상 경로를 막지 않는다', () => {
     const helpers = loadTokenHelpers();
 
     expect(helpers.stateMutationHeaders()['X-Installer-Token']).toBe('');
   });
 
+  // @scenario installation_mode=stepwise, resume_point=first_pending
+  // @effects installer_token_is_remembered_across_reload
   it('메모리 > 페이지 주입 > sessionStorage 순으로 찾는다 (새로고침 재개 경로)', () => {
     const helpers = loadTokenHelpers();
 
@@ -229,6 +237,8 @@ describe('상태 변경 요청의 토큰 배선', () => {
     expect(helpers.getStepwiseToken(), '메모리 값이 가장 앞선다').toBe('from-memory');
   });
 
+  // @scenario installation_mode=stepwise
+  // @effects installer_token_is_remembered_across_reload
   it('토큰을 지우면 sessionStorage 에서도 사라진다 (설치 종료 후 잔존 금지)', () => {
     const helpers = loadTokenHelpers();
 
@@ -245,6 +255,8 @@ describe('상태 변경 엔드포인트의 헤더 배선', () => {
    * 헤더를 만드는 함수가 옳아도 **부르지 않으면** 소용이 없다. 세 액션의 fetch 가
    * 그 함수를 지나는지 고정한다 — 여기가 10차 fail-closed 의 나머지 절반이다.
    */
+  // @scenario installation_mode=stepwise
+  // @effects installer_state_mutation_endpoints_are_wired_to_the_token_header
   it('중단·초기화·건너뛰기·재개가 모두 stateMutationHeaders() 를 지난다', () => {
     const src = strippedSource();
     const wired = (src.match(/headers:\s*stateMutationHeaders\(\)/g) ?? []).length;
@@ -252,6 +264,8 @@ describe('상태 변경 엔드포인트의 헤더 배선', () => {
     expect(wired, '상태를 바꾸는 요청은 전부 이 한 지점에서 헤더를 만든다').toBeGreaterThanOrEqual(4);
   });
 
+  // @scenario installation_mode=stepwise
+  // @effects installer_token_is_remembered_across_reload
   it('발급받은 토큰을 기억한다 — 이 한 줄이 빠지면 다음 요청부터 403 이다', () => {
     // **정의를 뺀 나머지**에서 센다. 종전에는 `toContain('rememberStepwiseToken(')` 하나였는데,
     // 그 조건은 정의(`function rememberStepwiseToken(token)`)만으로 충족된다 — 실제 호출
@@ -265,6 +279,8 @@ describe('상태 변경 엔드포인트의 헤더 배선', () => {
     ).toBeGreaterThanOrEqual(1);
   });
 
+  // @scenario installation_mode=stepwise, resume_point=first_pending
+  // @effects installer_token_is_remembered_across_reload
   it('그 호출은 설치 시작 응답 처리 안에 있다 — 다른 곳으로 옮기면 재개 경로가 끊긴다', () => {
     const src = strippedSource();
     const start = src.indexOf('async function startInstallation');
@@ -277,6 +293,8 @@ describe('상태 변경 엔드포인트의 헤더 배선', () => {
     expect(body).toContain('result.stepwise_token');
   });
 
+  // @scenario installation_mode=stepwise
+  // @effects installer_state_mutation_endpoints_are_wired_to_the_token_header
   it('검출기 자신이 정의와 호출을 구분한다 (부정 픽스처)', () => {
     const definitionOnly = 'function rememberStepwiseToken(token) { stepwiseToken = token; }';
     const commentedCall = '// rememberStepwiseToken(result.stepwise_token);';

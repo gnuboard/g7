@@ -481,6 +481,11 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_profile_edit_reauth.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_reauth_methods.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_social_accounts_card.g7.html',
+        // 7.2.0 소셜 로그인 알림 탭(0111923eba)이 만들고 명단에 올리지 않은 4개 — 609 병합 뒤 등재
+        'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_definition_reset.g7.html',
+        'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.g7.html',
+        'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_preview.g7.html',
+        'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_notifications_tab.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_policy_tab.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_provider_add.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_provider_editor.g7.html',
@@ -1158,7 +1163,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
                 continue;
             }
 
-            $jsonFile = preg_replace('/\.g7\.html$/i', '.json', $markupFile);
+            $jsonFile = preg_replace('/\.g7\.html$/iu', '.json', $markupFile);
             $source = File::get($markupFile);
 
             if (str_contains($source, '<json')) {

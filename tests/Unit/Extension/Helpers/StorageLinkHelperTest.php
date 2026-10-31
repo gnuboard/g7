@@ -23,6 +23,11 @@ class StorageLinkHelperTest extends TestCase
 
     private ?string $originalBasePath = null;
 
+    /**
+     * 임시 기저 경로로 앱 기준 경로를 옮기고, 공개 디스크 루트도 같은 트리 아래로 맞춘다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,6 +44,11 @@ class StorageLinkHelperTest extends TestCase
         config(['filesystems.disks.public.root' => $this->fakeBase.'/storage/app/public']);
     }
 
+    /**
+     * 링크 대상을 따라가지 않도록 public 아래 링크를 먼저 걷은 뒤 임시 트리를 지우고 기준 경로를 되돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if ($this->originalBasePath !== null) {
@@ -71,6 +81,8 @@ class StorageLinkHelperTest extends TestCase
 
     /**
      * symlink 생성 권한이 없으면 테스트를 건너뛴다 (Windows 일반 사용자).
+     *
+     * @return void 반환값 없음
      */
     private function skipIfNoSymlink(): void
     {
@@ -84,6 +96,15 @@ class StorageLinkHelperTest extends TestCase
         File::deleteDirectory($target);
     }
 
+    /**
+     * public/storage 가 이미 올바른 symlink 이면 복구기가 링크와 대상을 바꾸지 않는지 확인한다.
+     *
+     * @scenario storage_link=usable, link_kind=symlink
+     *
+     * @effects public_storage_link_recovery_keeps_a_healthy_link
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 이미_정상_symlink_이면_no_op_으로_보존합니다(): void
     {
@@ -101,6 +122,15 @@ class StorageLinkHelperTest extends TestCase
         $this->assertSame($targetBefore, readlink($this->fakeBase.'/public/storage'), 'target 미변경 (멱등)');
     }
 
+    /**
+     * public/storage 가 없으면 복구기가 storage/app/public 을 가리키는 symlink 를 새로 만드는지 확인한다.
+     *
+     * @scenario storage_link=missing, link_kind=symlink
+     *
+     * @effects public_storage_link_recovery_recreates_a_missing_link
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function public_storage_부재_시_symlink_를_신규_생성합니다(): void
     {
@@ -116,6 +146,15 @@ class StorageLinkHelperTest extends TestCase
         $this->assertSame($this->fakeBase.'/storage/app/public', readlink($this->fakeBase.'/public/storage'));
     }
 
+    /**
+     * public/storage 가 일반 디렉토리로 손상돼 있으면 내용을 보존한 .broken 백업 하나를 남기고 symlink 로 다시 만드는지 확인한다.
+     *
+     * @scenario storage_link=plain_dir, link_kind=symlink
+     *
+     * @effects public_storage_link_recovery_backs_up_a_plain_directory_and_relinks
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 일반_디렉토리_손상_시_broken_백업_후_재생성합니다(): void
     {
@@ -143,6 +182,15 @@ class StorageLinkHelperTest extends TestCase
         $this->assertSame('dereferenced content', File::get($this->fakeBase.'/public/'.$backups[0].'/uploaded.txt'));
     }
 
+    /**
+     * storage/app/public 원본이 없으면 링크도 백업도 만들지 않고 운영자 디렉토리를 그대로 두는지 확인한다.
+     *
+     * @scenario storage_link=plain_dir
+     *
+     * @effects public_storage_link_recovery_skips_when_source_is_absent
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function storage_app_public_source_부재_시_skip_합니다(): void
     {
@@ -164,6 +212,15 @@ class StorageLinkHelperTest extends TestCase
         $this->assertEmpty($backups, 'source 부재 시 rename 백업도 생성되지 않아야 한다');
     }
 
+    /**
+     * 로거를 넘기지 않아도 예외 없이 링크를 만드는지 확인한다.
+     *
+     * @scenario storage_link=missing
+     *
+     * @effects public_storage_link_recovery_runs_without_an_injected_logger
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 로거_null_이면_upgrade_채널_폴백으로_예외없이_동작합니다(): void
     {
@@ -188,6 +245,10 @@ class StorageLinkHelperTest extends TestCase
      * 실측 방법: uid 변경은 root 권한이 필요하므로, 부모 public/ 의 그룹을 프로세스의 보조
      * 그룹 중 하나로 바꾼 뒤 링크를 재생성 → 링크 그룹이 부모 그룹을 상속하는지로 검증한다
      * (sudo 상황에서 링크만 다른 소유로 남는 회귀와 동형). Windows / 보조 그룹 부재 시 skip.
+     *
+     * @effects public_storage_link_recovery_inherits_parent_ownership
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 재생성된_링크는_부모_디렉토리의_소유권을_상속합니다(): void
@@ -234,6 +295,12 @@ class StorageLinkHelperTest extends TestCase
      *
      * Windows 일반 사용자는 symlink 를 못 만들지만 junction(`mklink /J`)은 만들 수 있으므로,
      * `createLink` 의 junction 폴백이 부재 케이스를 실제로 복구하는지 검증한다.
+     *
+     * @scenario storage_link=missing
+     *
+     * @effects public_storage_link_recovery_recreates_a_missing_link
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function public_storage_부재_시_junction_폴백으로_재생성합니다(): void
@@ -255,6 +322,12 @@ class StorageLinkHelperTest extends TestCase
 
     /**
      * 일반 디렉토리 손상 시 junction 폴백으로 재생성 + .broken 백업 (Windows).
+     *
+     * @scenario storage_link=plain_dir
+     *
+     * @effects public_storage_link_recovery_backs_up_a_plain_directory_and_relinks
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 일반_디렉토리_손상_시_junction_폴백으로_재생성합니다(): void
@@ -312,6 +385,12 @@ class StorageLinkHelperTest extends TestCase
 
     /**
      * 이미 junction(정상 링크)이면 no-op — rename 백업하지 않고 보존 (Windows).
+     *
+     * @scenario storage_link=usable
+     *
+     * @effects public_storage_link_recovery_keeps_a_healthy_link
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 이미_junction_이면_no_op_으로_보존합니다(): void
@@ -348,6 +427,12 @@ class StorageLinkHelperTest extends TestCase
      * 기록했지만, 픽스처가 공개 루트를 `storage/app/public` 과 **같은 값**으로 두어
      * 「옮긴」 상황을 한 번도 만들지 않았다 — 리터럴로 되돌려도 전 케이스가 초록이었다.
      * 그 축을 여기서 연다 (23차 G3 라운드 D23-1).
+     *
+     * @scenario storage_link=missing
+     *
+     * @effects public_storage_link_recovery_targets_the_configured_public_root
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 공개_루트를_옮긴_사이트에서_설정된_루트를_가리키는_링크를_만듭니다(): void
@@ -387,6 +472,10 @@ class StorageLinkHelperTest extends TestCase
      * 이미 그 상태인 사이트는 복구기가 그대로 지나쳤고 — 링크는 살아 있으니 true 다 —
      * 판정기는 같은 상태를 대상 불일치로 「불가」로 읽었다. 생산은 막혔는데 잔존은 영구였다
      * (23차 G3 라운드 D23-2).
+     *
+     * @effects public_storage_link_recovery_targets_the_configured_public_root
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 옛_위치를_가리키는_살아있는_링크를_설정된_루트로_재연결합니다(): void
@@ -439,6 +528,12 @@ class StorageLinkHelperTest extends TestCase
 
     /**
      * 끊어진(dangling) 링크도 복구 대상이다 — `is_link()` 는 대상을 보지 않는다.
+     *
+     * @scenario storage_link=broken
+     *
+     * @effects public_storage_link_recovery_targets_the_configured_public_root
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 끊어진_링크를_재연결합니다(): void

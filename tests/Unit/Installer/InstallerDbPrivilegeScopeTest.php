@@ -33,7 +33,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * + `missing=[]` 로 돌려, 게이트 구조가 어긋나도 차단으로 새지 않게 한다(fail-open 은
  * 제품에서 명시적으로 결정한 방향이다 — 임의 완화가 아니다).
  *
- * @effects installer_db_privilege_check_scopes_to_target_database
+ * 효과 요약(마커 아님 — 평문): DB 권한 검사의 대상 DB 한정. 표식은 각 테스트 메서드에 있다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -42,6 +42,11 @@ class InstallerDbPrivilegeScopeTest extends TestCase
     use CleansTemporaryBasePath;
     use ScansPhpSourceFunctions;
 
+    /**
+     * 임시 BASE_PATH 를 정하고 번역 대역과 설치기 설정, 상태, 공용 함수 파일을 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,6 +69,7 @@ class InstallerDbPrivilegeScopeTest extends TestCase
      * @param  array<int, string>|PDOException  $direct  직접 조회 응답 (또는 던질 예외)
      * @param  array<int, string>|PDOException|null  $using  USING 전개 응답 (null = 호출되면 실패)
      * @param  array<int, string>  $issuedQueries  실행된 쿼리 기록 (참조)
+     * @return PDO 조회 종류별로 응답이 갈리는 PDO 대역
      */
     private function pdoStub(array|PDOException $direct, array|PDOException|null $using, array &$issuedQueries): PDO
     {
@@ -91,6 +97,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
     /**
      * #4: 다른 DB 에만 부여된 ALL PRIVILEGES 는 대상 DB 검사를 통과시키지 못한다.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_grants_on_other_database_do_not_count(): void
     {
@@ -109,6 +119,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
     /**
      * 전역 부여(*.*)와 대상 DB 부여는 통과한다. 백틱 안 이스케이프 와일드카드(\_)는 리터럴이다.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_global_and_matching_database_grants_count(): void
     {
@@ -125,6 +139,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
     /**
      * 부여 대상의 미이스케이프 와일드카드(% · _)는 MySQL 규칙대로 패턴 매칭한다.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_wildcard_database_pattern_matches_like_mysql(): void
     {
@@ -139,6 +157,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
     /**
      * #5: 권한명은 토큰 단위로 대조한다 — CREATE TEMPORARY TABLES 는 CREATE 가 아니다.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_privilege_names_match_whole_tokens(): void
     {
@@ -158,6 +180,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
     /**
      * #6: 롤로만 권한을 받은 계정은 USING 전개 재조회로 확인한다.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_role_grants_are_expanded_via_using(): void
     {
@@ -184,6 +210,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
     /**
      * #6/제품 결정: 롤 전개가 실패하면 차단이 아니라 「확인 불가」로 강등한다.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_unexpandable_roles_degrade_to_indeterminate(): void
     {
@@ -206,6 +236,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
     /**
      * #6/제품 결정: SHOW GRANTS 자체가 거부되는 환경도 차단이 아니라 「확인 불가」다.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_show_grants_failure_is_indeterminate_not_blocking(): void
     {
@@ -222,6 +256,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
     /**
      * 21차 N1: 테이블 스코프 부여(`db`.`tbl`)는 DB 전체 검사를 통과시키지 못한다 —
      * 객체 부분이 `*` 인 부여만 DB 를 덮는다.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_table_scoped_grant_does_not_cover_database(): void
     {
@@ -239,6 +277,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
     /**
      * 21차 N2: partial_revokes(MySQL 8.0.16+) — 회수된 권한은 found 에서 빠지고
      * missing 에 정확히 반영된다 (REVOKE 행을 해석 불가로 뭉개면 회수분이 초록 통과).
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_revoke_subtracts_privileges(): void
     {
@@ -259,6 +301,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
     /**
      * 21차 N2 파생: 해석하지 못한 행이 남으면 missing 이 비어도 「확인」을 단정하지 않는다 —
      * 그 행이 REVOKE 변형일 수 있다. 확인 불가는 경고 후 진행(제품 결정)이므로 안전 방향이다.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_unparseable_line_degrades_even_when_nothing_missing(): void
     {
@@ -276,6 +322,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
     /**
      * 21차 N3: MariaDB 는 롤을 인용 없이 출력한다 — 무인용 롤 토큰도 전개 대상이다.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_mariadb_unquoted_role_grants_are_expanded(): void
     {
@@ -302,6 +352,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
     /**
      * 21차 1c: 컬럼 권한(`SELECT (col)`)은 전체 권한이 아니다 — Read DB 도 통과 불가.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_column_scoped_privilege_is_not_full_privilege(): void
     {
@@ -317,6 +371,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
     /**
      * Read DB 는 SELECT 하나만 요구한다 (기존 계약 유지).
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database
+     *
+     * @return void 반환값 없음
      */
     public function test_read_db_requires_only_select(): void
     {
@@ -334,6 +392,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
      *
      * 해석 불가를 경고로 접지 않는 이유: 포크·프록시가 임의 문자열을 돌려줄 수 있고,
      * 그때 뜨는 거짓 경고는 운영자가 진짜 경고를 무시하게 만든다.
+     *
+     * @effects installer_db_server_version_notice_flags_unsupported_servers
+     *
+     * @return void 반환값 없음
      */
     public function test_db_server_version_notice_thresholds(): void
     {
@@ -352,6 +414,10 @@ class InstallerDbPrivilegeScopeTest extends TestCase
      *
      * 행위 재현이 API 스크립트 구조상 불가하므로 소스 계약으로 고정한다 — 서버는
      * `privilege_warning`·`db_server_notice` 를 생산하고, installer.js 성공 렌더가 둘을 소비한다.
+     *
+     * @effects installer_db_privilege_check_scopes_to_target_database, installer_db_server_version_notice_flags_unsupported_servers
+     *
+     * @return void 반환값 없음
      */
     public function test_privilege_and_version_warnings_reach_screen(): void
     {

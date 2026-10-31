@@ -47,6 +47,11 @@ class PageAttachmentServeContractTest extends ModuleTestCase
     /** @var MockInterface&StorageInterface */
     private $storage;
 
+    /**
+     * 행에 기록할 가짜 디스크를 등록하고, 모킹한 스토리지를 넣어 첨부 서비스를 직접 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -74,6 +79,11 @@ class PageAttachmentServeContractTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 스토리지 모킹의 기대를 검증하고 닫는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -113,6 +123,8 @@ class PageAttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=download, published=published, viewer=guest
      *
      * @effects download_disposition_is_built_by_the_storage_layer
+     *
+     * @return void 반환값 없음
      */
     public function test_download_delegates_disposition_to_the_storage_layer(): void
     {
@@ -145,6 +157,8 @@ class PageAttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=download, published=published, viewer=guest
      *
      * @effects download_matching_etag_returns_304_with_the_cache_headers_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_download_info_shares_the_preview_validator_source(): void
     {
@@ -169,6 +183,8 @@ class PageAttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=preview, published=published, viewer=guest
      *
      * @effects preview_does_not_override_the_storage_filename_declaration
+     *
+     * @return void 반환값 없음
      */
     public function test_preview_does_not_override_the_storage_filename_declaration(): void
     {
@@ -194,6 +210,8 @@ class PageAttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=download, published=published, viewer=guest
      *
      * @effects serving_follows_the_disk_recorded_on_the_row
+     *
+     * @return void 반환값 없음
      */
     public function test_download_serves_from_the_disk_recorded_on_the_row(): void
     {
@@ -218,6 +236,8 @@ class PageAttachmentServeContractTest extends ModuleTestCase
      * @scenario serving_type=preview, published=published, viewer=guest
      *
      * @effects serving_follows_the_disk_recorded_on_the_row
+     *
+     * @return void 반환값 없음
      */
     public function test_preview_serves_from_the_disk_recorded_on_the_row(): void
     {
@@ -246,6 +266,8 @@ class PageAttachmentServeContractTest extends ModuleTestCase
      * 스토리지에 실제로 넘어간 바이트를 잡아 비교하므로 파일시스템에 의존하지 않는다.
      *
      * @effects recorded_size_matches_stored_bytes_after_the_resize_path
+     *
+     * @return void 반환값 없음
      */
     public function test_recorded_size_matches_stored_bytes_after_the_resize_path(): void
     {

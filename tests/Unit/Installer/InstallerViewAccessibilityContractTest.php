@@ -23,16 +23,16 @@ class InstallerViewAccessibilityContractTest extends TestCase
 {
     use ScansPhpSourceFunctions;
 
+    /**
+     * 저장소 안 설치기 폴더의 절대 경로를 만든다.
+     *
+     * @return string 설치기 폴더 경로
+     */
     private function installRoot(): string
     {
         return dirname(__DIR__, 3).'/public/install';
     }
 
-    /**
-     * 검사 대상 파일 (인스톨러가 소유한 화면 표면).
-     *
-     * @return array<int, string>
-     */
     /**
      * 재귀 스캔 — 하위 디렉토리까지 훑는다.
      *
@@ -60,6 +60,11 @@ class InstallerViewAccessibilityContractTest extends TestCase
         return $files;
     }
 
+    /**
+     * 검사 대상 파일 (인스톨러가 소유한 화면 표면).
+     *
+     * @return array<int, string> 화면 파일 전수와 진입 파일, 설치기 스크립트 경로
+     */
     private function markupFiles(): array
     {
         // 재귀 스캔 — 한 겹 `glob('*.php')` 은 `views/` 아래에 디렉토리가 하나 생기는 순간
@@ -72,7 +77,13 @@ class InstallerViewAccessibilityContractTest extends TestCase
     }
 
     /**
+     * 화면 파일의 모든 SVG 가 보조기술 숨김과 포커스 제외 속성을 함께 달았는지 줄 단위로 확인한다.
+     *
+     * @scenario accessibility_surface=decorative_svg
+     *
      * @effects installer_decorative_svgs_are_hidden_from_assistive_tech
+     *
+     * @return void 반환값 없음
      */
     public function test_모든_장식_sv_g_가_보조기술에서_감춰진다(): void
     {
@@ -109,7 +120,13 @@ class InstallerViewAccessibilityContractTest extends TestCase
     }
 
     /**
+     * 화면 파일의 인라인 style 이 투명도로 글자 대비를 깎지 않는지 확인한다.
+     *
+     * @scenario accessibility_surface=inline_opacity
+     *
      * @effects installer_views_do_not_dim_text_with_inline_opacity
+     *
+     * @return void 반환값 없음
      */
     public function test_화면_파일이_인라인_style_로_글자를_흐리게_하지_않는다(): void
     {
@@ -134,7 +151,13 @@ class InstallerViewAccessibilityContractTest extends TestCase
     }
 
     /**
+     * 결과로 통째로 교체되는 영역을 소스에서 도출하고 그 영역마다 라이브 리전 선언이 있는지 확인한다.
+     *
+     * @scenario a11y_axis=live_region
+     *
      * @effects installer_replaced_regions_declare_live_semantics
+     *
+     * @return void 반환값 없음
      */
     public function test_통째로_갈아_끼워지는_결과_영역이_라이브_리전을_선언한다(): void
     {
@@ -177,7 +200,13 @@ class InstallerViewAccessibilityContractTest extends TestCase
     }
 
     /**
+     * 짧은 출력 태그로 속성값을 채우는 자리가 모두 이스케이프 헬퍼를 거치는지 확인한다(상수와 리터럴 삼항은 예외).
+     *
+     * @scenario accessibility_surface=attribute_escape
+     *
      * @effects installer_translated_attribute_values_are_escaped
+     *
+     * @return void 반환값 없음
      */
     public function test_번역문을_속성값에_넣을_때_이스케이프한다(): void
     {
@@ -220,7 +249,13 @@ class InstallerViewAccessibilityContractTest extends TestCase
     }
 
     /**
+     * 설치 중 진행 카드 헤더가 처음에는 Tab 순서에서 빠져 비활성으로 알려지고, 끝난 뒤 다시 활성화하는 지점이 있는지 확인한다.
+     *
+     * @scenario accessibility_surface=focus_order
+     *
      * @effects installer_running_card_header_is_inert
+     *
+     * @return void 반환값 없음
      */
     public function test_설치_중_진행_카드_헤더가_tab_순서에_남지_않는다(): void
     {
@@ -275,7 +310,7 @@ class InstallerViewAccessibilityContractTest extends TestCase
      * 각 선언에는 **그것을 그리는 함수**를 함께 붙인다 — 중첩 여부는 「그 조각이 어디에
      * 붙는가」로 갈리고, 그 판별자가 함수 단위이기 때문이다.
      *
-     * @return array<string, array{line: int, function: string, snippet: string, appendsToBody: bool}>
+     * @return array<string, array{line: int, function: string, snippet: string, appendsToBody: bool}> 라이브 리전 선언 목록
      *                                                                                                 키는 `줄번호:함수명` (한 줄이 두 패턴에 걸려도 한 건으로 접는다)
      */
     private function jsLiveRegionDeclarations(): array
@@ -358,6 +393,8 @@ class InstallerViewAccessibilityContractTest extends TestCase
      * @scenario a11y_axis=live_region, nesting=none
      *
      * @effects installer_live_regions_are_not_nested
+     *
+     * @return void 반환값 없음
      */
     public function test_라이브_리전이_중첩되지_않는다(): void
     {

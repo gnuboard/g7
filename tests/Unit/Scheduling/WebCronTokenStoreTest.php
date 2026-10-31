@@ -27,6 +27,11 @@ class WebCronTokenStoreTest extends TestCase
     /** 케이스 전용 토큰 파일 */
     private string $tokenPath;
 
+    /**
+     * 테스트마다 겹치지 않는 웹 크론 토큰 파일 경로를 정한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -34,6 +39,11 @@ class WebCronTokenStoreTest extends TestCase
         $this->tokenPath = storage_path('framework/testing/web-cron-token-'.bin2hex(random_bytes(4)).'.json');
     }
 
+    /**
+     * 테스트가 만든 웹 크론 토큰 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (is_file($this->tokenPath)) {
@@ -50,6 +60,8 @@ class WebCronTokenStoreTest extends TestCase
      * 다른 곳의 `hash_equals` 하나가 이 자리의 후퇴를 가려 준다.
      *
      * @effects web_cron_token_is_compared_in_constant_time
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_token_comparison_uses_constant_time_equality(): void
@@ -81,6 +93,8 @@ class WebCronTokenStoreTest extends TestCase
      * 대조 결과 자체는 그대로다 (계약을 바꾸지 않았음을 함께 고정).
      *
      * @effects web_cron_token_matches_only_the_stored_value
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_token_matches_only_the_stored_value(): void
@@ -99,6 +113,8 @@ class WebCronTokenStoreTest extends TestCase
      * 토큰이 발급되지 않았으면 무엇을 제시해도 통과하지 못한다.
      *
      * @effects web_cron_token_absent_rejects_every_candidate
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_absent_token_rejects_every_candidate(): void

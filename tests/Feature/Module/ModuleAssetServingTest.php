@@ -516,6 +516,12 @@ class ModuleAssetServingTest extends TestCase
      *
      * 위 형제와 짝이다 — 한쪽만 두면 「immutable 을 통째로 없앴다」와 「기준에 따라 갈린다」를
      * 구분할 수 없고, 캐싱 이점을 잃은 것도 green 으로 보인다.
+     *
+     * @scenario extension_type=module, request=applies_immutable_caching_in_production
+     *
+     * @effects applies_immutable_caching_in_production
+     *
+     * @return void 반환값 없음
      */
     public function test_applies_immutable_caching_when_the_url_carries_a_version(): void
     {
@@ -625,6 +631,8 @@ class ModuleAssetServingTest extends TestCase
      * @scenario url_mode=path
      *
      * @effects dual_mode_query_form_matches_path_form
+     *
+     * @return void 반환값 없음
      */
     public function test_dual_mode_query_form_matches_the_path_form(): void
     {
@@ -648,6 +656,8 @@ class ModuleAssetServingTest extends TestCase
      * @scenario url_mode=path
      *
      * @effects hidden_segments_rejected_in_both_url_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_hidden_segments_are_rejected_in_both_url_modes(): void
     {
@@ -715,6 +725,8 @@ class ModuleAssetServingTest extends TestCase
      * @scenario identifier_shape=valid
      *
      * @effects asset_identifier_cannot_pick_the_containment_base
+     *
+     * @return void 반환값 없음
      */
     public function test_identifier_cannot_select_the_containment_base(): void
     {

@@ -20,7 +20,11 @@ class EnvPriorityContractTest extends TestCase
      * Provider 에 새 주입이 추가되면 이 단언이 red 가 되어, 그 키가 `.env` 대응을 갖는지
      * 판단하도록 강제합니다. 등재를 잊으면 그 키는 영원히 settings 승으로 남습니다.
      *
+     * @scenario switch=on, surface=inject
+     *
      * @effects map_parity_covers_every_injected_default_key
+     *
+     * @return void 반환값 없음
      */
     public function test_모든_주입_카테고리_키가_맵이나_면제목록에_등재된다(): void
     {
@@ -50,7 +54,11 @@ class EnvPriorityContractTest extends TestCase
      *
      * 반대 방향 — 오타나 사라진 키가 맵에 남아 있으면 그 항목은 영원히 잠기지 않습니다.
      *
+     * @scenario switch=on, surface=inject
+     *
      * @effects map_parity_covers_every_injected_default_key
+     *
+     * @return void 반환값 없음
      */
     public function test_맵의_모든_키가_defaults에_실존한다(): void
     {
@@ -78,7 +86,11 @@ class EnvPriorityContractTest extends TestCase
      * 오타난 config 키는 표시값이 조용히 null 이 되고, 문서 근거도 함께 어긋납니다.
      * 런타임에 생성되는 키(`RUNTIME_CREATED_CONFIG_KEYS`)만 사유와 함께 제외합니다.
      *
+     * @scenario switch=on, key_state=locked_plain, surface=get_effective_value
+     *
      * @effects locked_plain_shows_effective_value
+     *
+     * @return void 반환값 없음
      */
     public function test_맵의_config_키가_실존한다(): void
     {
@@ -108,7 +120,11 @@ class EnvPriorityContractTest extends TestCase
      *
      * 캡처 목록이 뒤처지면 그 env 변수는 명시해도 잠기지 않습니다 — 오류 없이.
      *
+     * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
      * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_캡처_대상이_맵의_env_변수와_일치한다(): void
     {
@@ -134,7 +150,11 @@ class EnvPriorityContractTest extends TestCase
     /**
      * 스위치는 `config('env-priority.enabled')` 만으로 해석됩니다.
      *
+     * @scenario switch=on, switch=off
+     *
      * @effects switch_off_behaves_identically
+     *
+     * @return void 반환값 없음
      */
     public function test_스위치가_config_로만_해석된다(): void
     {
@@ -163,7 +183,11 @@ class EnvPriorityContractTest extends TestCase
      * 열거하면 새 주입 메서드가 늘어도 케이스 없이 통과한다(오늘 우연히 일치할 뿐이다).
      * EXEMPT 키만 읽어 필터가 no-op 인 지점은 그 메서드 안의 `audit:allow` 사유로 면제한다.
      *
+     * @scenario switch=on, key_state=locked_plain, surface=inject
+     *
      * @effects explicit_env_skips_injection
+     *
+     * @return void 반환값 없음
      */
     public function test_provider_주입_지점에_잠금_필터가_배선된다(): void
     {
@@ -200,7 +224,11 @@ class EnvPriorityContractTest extends TestCase
      * 이 상수는 맵 패리티 검사의 모집단이다. 손으로 적힌 채 뒤처지면 새 카테고리의 키가
      * MAP/EXEMPT 등재 검사를 통째로 비껴가고, 그 상태는 "이상 0건" 과 구분되지 않는다.
      *
+     * @scenario switch=on, surface=inject
+     *
      * @effects map_parity_covers_every_injected_default_key
+     *
+     * @return void 반환값 없음
      */
     public function test_주입_카테고리_상수가_소스_도출_결과와_일치한다(): void
     {
@@ -228,7 +256,11 @@ class EnvPriorityContractTest extends TestCase
      *
      * 반대 방향(MAP 만 민감)은 과하게 가리는 쪽이라 안전측이므로 검사하지 않는다.
      *
+     * @scenario switch=on, key_state=locked_sensitive, surface=get_effective_value
+     *
      * @effects locked_sensitive_hides_effective_value
+     *
+     * @return void 반환값 없음
      */
     public function test_스키마가_민감으로_표시한_키는_맵에서도_민감이다(): void
     {
@@ -278,7 +310,11 @@ class EnvPriorityContractTest extends TestCase
      *
      * config:cache 환경에서 env() 는 null 이라 가드가 통째로 무력해집니다.
      *
+     * @scenario switch=on, switch=off
+     *
      * @effects switch_off_behaves_identically
+     *
+     * @return void 반환값 없음
      */
     public function test_provider_가_런타임_env_로_환경을_판별하지_않는다(): void
     {
@@ -301,7 +337,11 @@ class EnvPriorityContractTest extends TestCase
     /**
      * `.env.example` 은 스위치를 주석 상태로 안내하고, 테스트용 env 는 활성 라인을 두지 않습니다.
      *
+     * @scenario switch=off
+     *
      * @effects env_examples_document_env_priority_switch
+     *
+     * @return void 반환값 없음
      */
     public function test_env_예시가_스위치를_주석으로_안내한다(): void
     {

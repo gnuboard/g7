@@ -21,7 +21,7 @@ use PHPUnit\Framework\TestCase;
  *
  * 커버 축: env_state pre_existing·absent / finalize_outcome backup_written·no_backup / backup_content matches_original
  *
- * @effects installer_finalize_backs_up_existing_env_before_overwriting, installer_finalize_without_existing_env_writes_no_backup
+ * 효과 요약(마커 아님 — 평문): installer_finalize_backs_up_existing_env_before_overwriting, installer_finalize_without_existing_env_writes_no_backup
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -29,6 +29,11 @@ class InstallerEnvBackupTest extends TestCase
 {
     private string $root = '';
 
+    /**
+     * 임시 설치 루트에 폴더, 환경 템플릿, 완료 상태 파일, 런타임 파일을 깔아 finalize 흐름을 끝까지 태울 준비를 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -76,6 +81,11 @@ class InstallerEnvBackupTest extends TestCase
         );
     }
 
+    /**
+     * 임시 설치 루트를 통째로 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->removeTree($this->root);
@@ -83,6 +93,12 @@ class InstallerEnvBackupTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 주어진 폴더 아래를 재귀로 비우고 폴더 자체도 지운다.
+     *
+     * @param  string  $path  지울 폴더 경로(빈 값이거나 폴더가 아니면 아무것도 하지 않음)
+     * @return void 반환값 없음
+     */
     private function removeTree(string $path): void
     {
         if ($path === '' || ! is_dir($path)) {
@@ -119,6 +135,8 @@ class InstallerEnvBackupTest extends TestCase
     }
 
     /**
+     * 임시 설치 루트에 남은 환경 파일 사본 이름을 모은다.
+     *
      * @return array<int, string> `.env.bak.*` 목록
      */
     private function backups(): array
@@ -129,6 +147,15 @@ class InstallerEnvBackupTest extends TestCase
         ));
     }
 
+    /**
+     * 운영자가 넣어 둔 기존 환경 파일이 덮어쓰기 전에 사본으로 하나 남고, 그 사본 내용이 원본과 같은지 확인한다.
+     *
+     * @scenario endpoint_guard=finalize_allowed
+     *
+     * @effects installer_finalize_backs_up_existing_env_before_overwriting
+     *
+     * @return void 반환값 없음
+     */
     public function test_existing_env_is_backed_up_before_being_overwritten(): void
     {
         $original = "APP_NAME=Legacy\nMAIL_MAILER=smtp\nMAIL_HOST=mail.example.test\nREDIS_PASSWORD=keepme\n";
@@ -152,6 +179,15 @@ class InstallerEnvBackupTest extends TestCase
         );
     }
 
+    /**
+     * 기존 환경 파일이 없는 첫 설치에서는 사본이 생기지 않는지 확인한다.
+     *
+     * @scenario endpoint_guard=finalize_allowed
+     *
+     * @effects installer_finalize_without_existing_env_writes_no_backup
+     *
+     * @return void 반환값 없음
+     */
     public function test_first_install_leaves_no_backup(): void
     {
         // 첫 설치에는 보존할 원본이 없다 — 빈 사본을 만들어 두면 그것이 곧 잡음이다.

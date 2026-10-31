@@ -26,6 +26,15 @@ use Tests\TestCase;
  */
 class RootEntrypointContractTest extends TestCase
 {
+    /**
+     * 릴리즈 ZIP 최상위에 동봉되는 루트 index.php shim 과 루트 .htaccess 가 저장소에 실재하는지 확인한다.
+     *
+     * @scenario entry_file=root_index, update_wiring=targets
+     *
+     * @effects root_entry_files_are_update_targets
+     *
+     * @return void 반환값 없음
+     */
     public function test_root_entry_files_exist(): void
     {
         $this->assertFileExists(base_path('index.php'), '루트 shim 은 릴리즈 ZIP 최상위 동봉 대상이다 (D25)');
@@ -50,6 +59,8 @@ class RootEntrypointContractTest extends TestCase
      * 테스트가 같은 파일 목록으로 잰다 — 이 테스트에는 두지 않는다.
      *
      * @effects root_entry_files_are_update_targets
+     *
+     * @return void 반환값 없음
      */
     public function test_root_entry_files_are_not_excluded_from_the_release_payload(): void
     {
@@ -138,6 +149,7 @@ class RootEntrypointContractTest extends TestCase
      * 무시 설정 하나뿐이고, 이 검사는 그 하나를 잰다.
      *
      * @param  list<string>  $rootFiles  루트 상대 경로 목록
+     * @return void 반환값 없음
      */
     private function assertRootFilesAreNotIgnoredByGit(array $rootFiles): void
     {
@@ -175,7 +187,11 @@ class RootEntrypointContractTest extends TestCase
     }
 
     /**
+     * 루트 shim 이 런타임과 같은 판정(RootIndexShim)으로 public/index.php 에 위임하고, 확장 오토로드 블록 사본을 따로 갖지 않는지 확인한다.
+     *
      * @effects root_shim_delegates_to_public_front_controller
+     *
+     * @return void 반환값 없음
      */
     public function test_root_shim_delegates_to_public_front_controller_without_duplicating_autoload(): void
     {
@@ -219,9 +235,13 @@ class RootEntrypointContractTest extends TestCase
     }
 
     /**
+     * 루트 .htaccess 가 갱신기가 인식하는 G7 마커 블록과, 루프 없이 public/ 으로 위임하며 사이트 안 경로를 진입 스크립트에 넘기는 규칙을 갖는지 확인한다.
+     *
      * @scenario mount_shape=server_alias, deployment_layout=docroot_project_root
      *
      * @effects delegation_rule_hands_the_in_site_path_to_the_entry_script
+     *
+     * @return void 반환값 없음
      */
     public function test_root_htaccess_carries_managed_block_and_delegation_rule(): void
     {
@@ -327,6 +347,8 @@ class RootEntrypointContractTest extends TestCase
      * @scenario entry_file=public_htaccess, canonical_address=layout_gate, mount_prefix_shape=contains_public_segment, route_path_shape=contains_public_segment
      *
      * @effects canonical_address_rule_is_owned_by_the_file_that_evaluates_it, canonical_address_targets_come_from_the_decoded_request_uri, slash_correction_targets_come_from_the_original_request_line, mount_prefix_public_segment_is_not_mistaken_for_the_site_public_dir, route_path_public_segment_survives_the_canonical_redirect
+     *
+     * @return void 반환값 없음
      */
     public function test_canonical_address_rule_lives_where_it_is_evaluated(): void
     {
@@ -721,6 +743,8 @@ class RootEntrypointContractTest extends TestCase
      * @scenario deployment_layout=docroot_public, protection=htaccess_ok
      *
      * @effects canonical_redirects_never_emit_a_protocol_relative_destination
+     *
+     * @return void 반환값 없음
      */
     public function test_every_public_htaccess_redirect_guards_empty_segments(): void
     {
@@ -810,6 +834,8 @@ class RootEntrypointContractTest extends TestCase
      * @scenario deployment_layout=docroot_project_root, protection=htaccess_ok
      *
      * @effects root_protection_survives_restricted_allow_override
+     *
+     * @return void 반환값 없음
      */
     public function test_htaccess_avoids_directives_needing_elevated_allow_override(): void
     {
@@ -1063,6 +1089,7 @@ class RootEntrypointContractTest extends TestCase
      *
      * @param  list<string>  $directives  지시자 줄 목록
      * @param  string  $label  실패 메시지에 실을 파일 이름
+     * @return void 반환값 없음
      */
     private function assertDirectivesDoNotProbeTheFilesystemForLayout(array $directives, string $label): void
     {
@@ -1137,6 +1164,7 @@ class RootEntrypointContractTest extends TestCase
      * @param  list<string>  $directives  지시자 줄 목록
      * @param  list<string>  $block  연속해 나타나야 하는 줄들
      * @param  string  $message  실패 메시지
+     * @return void 반환값 없음
      */
     private function assertDirectiveBlock(array $directives, array $block, string $message): void
     {
@@ -1162,6 +1190,8 @@ class RootEntrypointContractTest extends TestCase
      * @scenario deployment_layout=docroot_project_root, apache_modules=absent
      *
      * @effects root_htaccess_declares_its_residual_risk
+     *
+     * @return void 반환값 없음
      */
     public function test_root_htaccess_declares_the_residual_risk_of_missing_modules(): void
     {
@@ -1193,6 +1223,8 @@ class RootEntrypointContractTest extends TestCase
      * 경로 패턴이 `/api/modules/...` 같은 정상 라우트와 충돌하지 않게 하기 위해서다.
      *
      * @effects rewrite_absent_defense_line_is_derived_from_the_deployed_tree, rewrite_absent_defense_line_covers_every_deployed_root_file
+     *
+     * @return void 반환값 없음
      */
     public function test_root_htaccess_guards_sensitive_paths_without_mod_rewrite(): void
     {
@@ -1367,7 +1399,11 @@ class RootEntrypointContractTest extends TestCase
     }
 
     /**
+     * 보호 파일 상수에 든 루트 파일 전부가 코어 업데이트 배포 대상이고 보호 경로에는 들지 않는지 확인한다.
+     *
      * @effects root_entry_files_are_update_targets
+     *
+     * @return void 반환값 없음
      */
     public function test_root_entry_files_are_core_update_targets(): void
     {
@@ -1416,6 +1452,10 @@ class RootEntrypointContractTest extends TestCase
      * 디렉토리를 보고 콘솔은 앱 루트의 `public/` 을 봐, `storage:link` 복구처럼 두 문맥이
      * 함께 쓰는 코드가 서로 다른 트리를 대상으로 돈다(오류 없이 링크만 엉뚱한 곳에 생긴다).
      * 실제 오버라이드 동작은 아래 케이스가 재므로, 여기서는 **통로의 존재**를 고정한다.
+     *
+     * @effects public_path_seam_is_reachable_without_an_entry_file
+     *
+     * @return void 반환값 없음
      */
     public function test_public_path_seam_is_reachable_without_an_entry_file(): void
     {
@@ -1468,7 +1508,11 @@ class RootEntrypointContractTest extends TestCase
     }
 
     /**
+     * 앱 루트를 바꾸면 public_path() 가 그 루트 아래 public 을 따라가 부팅 시점 절대경로에 고정되지 않는지 확인한다.
+     *
      * @effects public_path_follows_app_root_and_is_not_pinned_at_boot
+     *
+     * @return void 반환값 없음
      */
     public function test_public_path_follows_base_path_and_is_not_pinned_at_boot(): void
     {
@@ -1502,6 +1546,13 @@ class RootEntrypointContractTest extends TestCase
      * @scenario mount_shape=docroot_relative, base_path=subpath
      *
      * @effects mount_prefix_is_recovered_without_guessing_when_script_name_lost_it
+     *
+     * @param  string  $scriptName  요청의 SCRIPT_NAME
+     * @param  string  $requestUri  요청의 REQUEST_URI
+     * @param  string  $expectedScriptName  정규화 뒤 기대하는 SCRIPT_NAME
+     * @param  string  $why  이 사례가 지키는 배치 설명
+     * @param  array  $extraServer  덧붙일 서버 변수
+     * @return void 반환값 없음
      */
     #[DataProvider('delegationNormalizationCases')]
     public function test_delegation_normalization_applies_only_to_delegated_requests(
@@ -1548,6 +1599,12 @@ class RootEntrypointContractTest extends TestCase
      *
      * CLI 성 SAPI·비표준 FPM 설정은 그 키를 비울 수 있다. 구간은 `?? '/index.php'` 폴백으로
      * 읽고, 쓰기는 `isset` 가드로 건너뛴다 — 키가 없던 요청에 새 키를 만들어 내지 않는다.
+     *
+     * @scenario mount_shape=docroot_relative, base_path=subpath
+     *
+     * @effects delegation_normalization_survives_a_missing_script_name
+     *
+     * @return void 반환값 없음
      */
     public function test_delegation_normalization_survives_a_missing_script_name(): void
     {
@@ -1575,7 +1632,9 @@ class RootEntrypointContractTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string, 2: string, 3: string, 4?: array<string, mixed>}>
+     * 위임 흔적 정규화 판정에 넣을 배치별 요청 사례(별칭 마운트, 물리 하위 디렉토리, 위임 없는 배치 등)를 돌려준다.
+     *
+     * @return array<string, array{0: string, 1: string, 2: string, 3: string, 4?: array<string, mixed>}> 사례 이름을 키로 한 SCRIPT_NAME, REQUEST_URI, 기대값, 사유, 추가 서버 변수
      */
     public static function delegationNormalizationCases(): array
     {
@@ -1702,6 +1761,8 @@ class RootEntrypointContractTest extends TestCase
      * @scenario server_kind=iis_webconfig, update_targets_state=stale_without_root_files, htaccess_operator_state=modified_outside_block
      *
      * @effects root_marker_files_are_updated_by_the_block_updater_in_both_apply_branches
+     *
+     * @return void 반환값 없음
      */
     public function test_apply_update_routes_root_marker_files_through_the_block_updater(): void
     {
@@ -1787,6 +1848,8 @@ class RootEntrypointContractTest extends TestCase
      * @scenario server_kind=iis_webconfig, htaccess_operator_state=pristine
      *
      * @effects root_web_config_carries_a_managed_block_symmetric_to_htaccess
+     *
+     * @return void 반환값 없음
      */
     public function test_root_web_config_carries_a_managed_block_as_xml_comments(): void
     {
@@ -1834,6 +1897,8 @@ class RootEntrypointContractTest extends TestCase
      * 그것이 없으면 「언제나 사본을 남기고 언제나 경고하는」 구현으로도 초록이 된다.
      *
      * @effects replaced_root_index_is_recoverable_after_the_backup_is_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_replaced_root_index_is_copied_aside_and_the_copy_path_reaches_the_operator(): void
     {
@@ -1910,6 +1975,7 @@ class RootEntrypointContractTest extends TestCase
      * 테스트 임시 디렉토리를 재귀 삭제합니다.
      *
      * @param  string  $path  삭제할 절대 경로
+     * @return void 반환값 없음
      */
     private function removeDirectory(string $path): void
     {
@@ -1942,6 +2008,8 @@ class RootEntrypointContractTest extends TestCase
      * 파일명을 실제 릴리즈 버전으로 맞춰야 한다는 것을 메시지로 못박는다.
      *
      * @effects upgrade_step_version_must_not_outrun_the_release
+     *
+     * @return void 반환값 없음
      */
     public function test_upgrade_step_versions_are_reachable_from_the_declared_core_version(): void
     {
@@ -1989,6 +2057,8 @@ class RootEntrypointContractTest extends TestCase
      * (10차 G3 라운드 D10-8).
      *
      * @effects install_redirect_destination_uses_a_javascript_encoder
+     *
+     * @return void 반환값 없음
      */
     public function test_install_redirect_uses_a_javascript_string_encoder(): void
     {

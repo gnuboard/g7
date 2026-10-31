@@ -56,7 +56,10 @@ class ShopHomeQueryCountRegressionTest extends ModuleTestCase
      *
      * 판매량 집계가 상품마다 상관 서브쿼리로 나가면 여기서 드러난다.
      *
+     * @scenario measure=query_count
      * @effects shop_home_popular_query_count_stable
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_section_query_count_is_stable(): void
     {
@@ -73,7 +76,10 @@ class ShopHomeQueryCountRegressionTest extends ModuleTestCase
     /**
      * 신상품 섹션: 상품 수가 늘어도 쿼리 수가 늘지 않는지 확인
      *
+     * @scenario measure=query_count
      * @effects shop_home_new_query_count_stable
+     *
+     * @return void 반환값 없음
      */
     public function test_new_section_query_count_is_stable(): void
     {
@@ -93,7 +99,10 @@ class ShopHomeQueryCountRegressionTest extends ModuleTestCase
      * 이 섹션은 화면이 보관한 ID 목록으로 조회한다. ID 마다 단건 조회가 나가면
      * 목록이 길어질수록 쿼리가 그만큼 늘어난다.
      *
+     * @scenario measure=query_count
      * @effects shop_home_recent_query_count_stable
+     *
+     * @return void 반환값 없음
      */
     public function test_recent_section_query_count_is_stable(): void
     {

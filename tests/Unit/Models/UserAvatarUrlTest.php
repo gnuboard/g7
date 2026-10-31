@@ -67,6 +67,11 @@ class UserAvatarUrlTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 첨부 없이 레거시 avatar 파일명만 가진 사용자를 만든다.
+     *
+     * @return User avatar 값만 채운 사용자
+     */
     private function legacyAvatarUser(): User
     {
         $user = new User;
@@ -77,6 +82,12 @@ class UserAvatarUrlTest extends TestCase
 
     /**
      * ① 링크 정상 — 종전대로 정적 `/storage/...` 주소다.
+     *
+     * @scenario storage_link=usable, disk_url=default, hook=unregistered
+     *
+     * @effects legacy_avatar_url_stays_on_static_storage_when_link_usable
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_returns_the_static_storage_url_when_the_link_is_usable(): void
@@ -99,6 +110,8 @@ class UserAvatarUrlTest extends TestCase
      * 손조립 시절에는 이 상황에서도 `/storage/...` 를 내보내 아바타만 404 였다.
      *
      * @effects public_storage_url_switches_to_route_when_link_missing
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_switches_to_the_serving_route_when_the_link_is_unusable(): void
@@ -119,6 +132,10 @@ class UserAvatarUrlTest extends TestCase
      * ③ 운영자가 public 디스크를 다른 위치(CDN)로 지정 — 그 주소를 그대로 쓴다.
      *
      * 링크 부재를 이유로 로컬 라우트로 끌어오면 그 사이트의 공개 자산이 통째로 어긋난다.
+     *
+     * @effects public_disk_url_keeps_operator_configured_location_without_a_link
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_honours_an_operator_configured_public_disk_url(): void
@@ -136,6 +153,10 @@ class UserAvatarUrlTest extends TestCase
      * ④ 확장이 `core.storage.filter_url` 로 URL 을 갈아끼우면 그 결과가 나간다.
      *
      * 서명 URL·전용 도메인을 붙이는 자리다 — 손조립은 이 훅을 통째로 우회했다.
+     *
+     * @effects legacy_avatar_url_passes_through_the_storage_url_filter_hook
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_passes_through_the_storage_url_filter_hook(): void
@@ -155,6 +176,10 @@ class UserAvatarUrlTest extends TestCase
 
     /**
      * 레거시 값이 없으면 종전대로 null (분기 자체의 대조군).
+     *
+     * @effects avatar_url_is_null_without_attachment_or_legacy_value
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_returns_null_without_an_attachment_or_legacy_value(): void

@@ -23,6 +23,9 @@ axes:
   memo_input: [provided, empty, null]
   user_role: [privacy_operator, unauthenticated, regular_user_no_permission]
   expected_publish: [yes_v_plus_1, no]
+  # policy-version-snapshot-link.spec.ts 의 화면 마킹 축 (cross product 는 머리 면제 대상)
+  tab: [card_cookie_banner, card_operator]
+  permitted: [yes]
 
 exclusions:
   - { user_role: unauthenticated, change_type: material_add_category, reason: "인증 미들웨어가 차단 — change_type 평가 도달 불가" }

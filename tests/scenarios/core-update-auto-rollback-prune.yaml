@@ -96,6 +96,7 @@ effects:
   - hotfix_command_must_document_deprecation_passes_with_permanent_tag
   - hotfix_command_must_document_deprecation_violates_without_policy
   - check_dev_dashboard_commands_auto_excludes_hotfix_prefix
+  - hotfix_command_backup_selector_is_fail_closed_with_total_order   # 백업 선택기가 filemtime 실패를 보존 방향으로 접고 같은 초 백업을 이름으로 가른다
 
 test_files:
   - tests/Unit/Extension/CoreBackupHelperPruneTest.php

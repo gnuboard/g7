@@ -22,6 +22,11 @@ use Tests\TestCase;
  */
 class ErrorPageHomeLinkTest extends TestCase
 {
+    /**
+     * 테스트가 강제한 마운트 접두사를 해제해 다음 테스트로 새지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetUrl::forceBasePrefix(null);
@@ -30,7 +35,9 @@ class ErrorPageHomeLinkTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 「홈으로」 링크를 그리는 오류 뷰 다섯 종(401, 403, 404, 500, 503)을 공급한다.
+     *
+     * @return array<string, array{0: string}> 케이스 이름별 뷰 이름 목록
      */
     public static function errorViews(): array
     {
@@ -44,7 +51,14 @@ class ErrorPageHomeLinkTest extends TestCase
     }
 
     /**
+     * 마운트 접두사 `/g7` 를 강제했을 때 각 오류 뷰의 「홈으로」가 `href="/g7/"` 로 그려지는지 확인한다.
+     *
+     * @scenario base_path=subpath, page=error_view
+     *
      * @effects error_page_home_link_carries_the_mount_prefix
+     *
+     * @param  string  $view  렌더링할 오류 뷰 이름
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('errorViews')]
@@ -63,6 +77,12 @@ class ErrorPageHomeLinkTest extends TestCase
 
     /**
      * 접두사가 없는 배치에서는 종전 그대로다 (회귀 0).
+     *
+     * @scenario base_path=root, page=error_view
+     *
+     * @effects error_page_home_link_carries_the_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_home_link_is_unchanged_without_a_mount_prefix(): void

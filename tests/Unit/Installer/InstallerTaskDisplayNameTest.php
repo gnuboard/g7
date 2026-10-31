@@ -19,7 +19,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: task_key_shape bare·composite·unknown·empty_target
  *
- * @effects installer_task_key_renders_as_operator_facing_name, installer_abort_log_routes_task_key_through_display_name
+ * 효과 요약(마커 아님 — 평문): installer_task_key_renders_as_operator_facing_name, installer_abort_log_routes_task_key_through_display_name
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -34,6 +34,13 @@ class InstallerTaskDisplayNameTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 임시 BASE_PATH 를 정하고 설치기 설정, 공용 함수, 상태 모듈과 한국어 번역을 한 번만 적재한다.
+     *
+     * 이미 정의된 BASE_PATH 가 시스템 임시 폴더 밖이면 실제 상태 파일을 지키려고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function bootInstallerRuntime(): void
     {
         if (self::$booted) {
@@ -72,6 +79,11 @@ class InstallerTaskDisplayNameTest extends TestCase
         $GLOBALS['translations'] = loadTranslations('ko');
     }
 
+    /**
+     * 설치기 런타임을 준비하고, 안전한 임시 경로를 못 얻었으면 테스트를 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -83,6 +95,15 @@ class InstallerTaskDisplayNameTest extends TestCase
         }
     }
 
+    /**
+     * 종류만 있는 태스크 키가 번역된 운영자용 이름으로 바뀌고 번역 키 원문이 새지 않는지 확인한다.
+     *
+     * @scenario task=db_migrate
+     *
+     * @effects installer_task_key_renders_as_operator_facing_name
+     *
+     * @return void 반환값 없음
+     */
     public function test_bare_task_key_renders_as_translated_name(): void
     {
         $name = installerTaskKeyDisplayName('db_migrate');
@@ -91,6 +112,15 @@ class InstallerTaskDisplayNameTest extends TestCase
         $this->assertStringNotContainsString('task_', $name, '번역 키 원문이 새면 안 된다');
     }
 
+    /**
+     * 종류와 대상을 이은 합성 키가 개발자 표기 없이 이름 뒤 괄호 속 대상으로 그려지는지 확인한다.
+     *
+     * @scenario task=module
+     *
+     * @effects installer_task_key_renders_as_operator_facing_name
+     *
+     * @return void 반환값 없음
+     */
     public function test_composite_task_key_renders_name_with_target(): void
     {
         $name = installerTaskKeyDisplayName('module_install:sirsoft-board');
@@ -99,12 +129,30 @@ class InstallerTaskDisplayNameTest extends TestCase
         $this->assertStringContainsString('(sirsoft-board)', $name, '대상은 괄호로 덧붙인다');
     }
 
+    /**
+     * 번역이 없는 키는 접두사를 붙이지 않은 원래 식별자로 떨어지는지 확인한다.
+     *
+     * @scenario task=module
+     *
+     * @effects installer_task_key_renders_as_operator_facing_name
+     *
+     * @return void 반환값 없음
+     */
     public function test_unknown_task_key_falls_back_to_the_raw_id(): void
     {
         // 번역이 없는 키는 원 id 로 떨어진다 — 진단 가능성을 위해 "task_" 접두사는 붙이지 않는다
         $this->assertSame('no_such_task', installerTaskKeyDisplayName('no_such_task'));
     }
 
+    /**
+     * 대상이 빈 합성 키는 괄호도 구분 기호도 없이 이름만 남는지 확인한다.
+     *
+     * @scenario task=db_migrate
+     *
+     * @effects installer_task_key_renders_as_operator_facing_name
+     *
+     * @return void 반환값 없음
+     */
     public function test_composite_key_with_empty_target_omits_the_parentheses(): void
     {
         $name = installerTaskKeyDisplayName('db_migrate:');
@@ -118,6 +166,12 @@ class InstallerTaskDisplayNameTest extends TestCase
      *
      * 이 로그는 폼이 아니라 코드 경로라 단위 실행으로 재현하기 어렵다. 우회(원시 키 직접
      * 대입)가 되살아나는 것만 막으면 충분하므로 호출 형태를 고정한다.
+     *
+     * @scenario task=module, task_outcome=aborted
+     *
+     * @effects installer_abort_log_routes_task_key_through_display_name
+     *
+     * @return void 반환값 없음
      */
     public function test_abort_log_routes_current_task_through_the_display_name_helper(): void
     {

@@ -30,6 +30,7 @@ class SettingsEnvLockedMetaTest extends TestCase
      * `.env` 상태에 좌우되면 재현이 불가능해집니다.
      *
      * @param  array<int, string>  $explicitVars  명시 상태로 만들 env 변수 목록
+     * @return void 반환값 없음
      */
     private function enableWith(array $explicitVars): void
     {
@@ -101,6 +102,8 @@ class SettingsEnvLockedMetaTest extends TestCase
      * @effects meta_env_locked_uses_frontend_keys
      *
      * @scenario switch=on, key_state=locked_plain, surface=get_meta
+     *
+     * @return void 반환값 없음
      */
     public function test_env_locked_는_프론트엔드_키로_내려간다(): void
     {
@@ -122,6 +125,8 @@ class SettingsEnvLockedMetaTest extends TestCase
      * @effects switch_off_behaves_identically
      *
      * @scenario switch=off, key_state=unlocked, surface=get_meta
+     *
+     * @return void 반환값 없음
      */
     public function test_스위치가_꺼지면_잠금_목록이_비어있다(): void
     {
@@ -136,9 +141,12 @@ class SettingsEnvLockedMetaTest extends TestCase
     /**
      * 잠긴 일반 키의 표시값은 저장값이 아니라 유효값(적용 중인 값)입니다.
      *
+     * @scenario switch=on, key_state=locked_plain, surface=get_effective_value
+     *
      * @effects locked_plain_shows_effective_value
+     *
+     * @return void 반환값 없음
      */
-    /** @scenario switch=on, key_state=locked_plain, surface=get_effective_value */
     public function test_잠긴_일반_키는_유효값을_보여준다(): void
     {
         app(ConfigRepositoryInterface::class)->saveCategory('general', [
@@ -167,6 +175,8 @@ class SettingsEnvLockedMetaTest extends TestCase
      * @effects locked_sensitive_hides_effective_value
      *
      * @scenario switch=on, key_state=locked_sensitive, surface=get_effective_value
+     *
+     * @return void 반환값 없음
      */
     public function test_잠긴_민감_키는_유효값을_노출하지_않는다(): void
     {
@@ -192,6 +202,8 @@ class SettingsEnvLockedMetaTest extends TestCase
      * @effects locked_key_filtered_on_save_including_advanced
      *
      * @scenario switch=on, key_state=locked_plain, surface=post_filter
+     *
+     * @return void 반환값 없음
      */
     public function test_잠긴_키는_저장에서_필터된다(): void
     {
@@ -228,6 +240,8 @@ class SettingsEnvLockedMetaTest extends TestCase
      * @effects locked_key_filtered_on_save_including_advanced
      *
      * @scenario switch=on, key_state=locked_falsy, surface=post_filter
+     *
+     * @return void 반환값 없음
      */
     public function test_고급탭_저장에서도_잠긴_키가_필터된다(): void
     {
@@ -263,6 +277,8 @@ class SettingsEnvLockedMetaTest extends TestCase
      * @effects switch_off_behaves_identically
      *
      * @scenario switch=off, key_state=unlocked, surface=post_filter
+     *
+     * @return void 반환값 없음
      */
     public function test_스위치가_꺼지면_저장이_종전과_같다(): void
     {
@@ -292,6 +308,8 @@ class SettingsEnvLockedMetaTest extends TestCase
      * @effects meta_env_locked_uses_frontend_keys
      *
      * @scenario switch=on, key_state=unlocked, surface=post_filter
+     *
+     * @return void 반환값 없음
      */
     public function test_조회와_저장_응답이_같은_meta_를_동봉한다(): void
     {
@@ -333,9 +351,12 @@ class SettingsEnvLockedMetaTest extends TestCase
     /**
      * 스위치가 꺼진 응답은 종전 형태를 유지합니다 (잠금 목록만 비어 있음).
      *
+     * @scenario switch=off, key_state=unlocked, surface=get_effective_value
+     *
      * @effects switch_off_behaves_identically
+     *
+     * @return void 반환값 없음
      */
-    /** @scenario switch=off, key_state=unlocked, surface=get_effective_value */
     public function test_스위치가_꺼진_응답은_잠금이_비어있다(): void
     {
         [, $token] = $this->createAdminWithToken();
@@ -357,9 +378,12 @@ class SettingsEnvLockedMetaTest extends TestCase
      *
      * 오버레이 목록과 sensitive 목록이 갈라지면 그 키만 조용히 값이 새어 나갑니다.
      *
+     * @scenario switch=on, key_state=locked_sensitive, surface=get_effective_value
+     *
      * @effects locked_sensitive_hides_effective_value
+     *
+     * @return void 반환값 없음
      */
-    /** @scenario switch=on, key_state=locked_sensitive, surface=get_effective_value */
     public function test_민감_키는_오버레이_대상에서_전부_제외된다(): void
     {
         $sensitiveKeys = array_keys(array_filter(

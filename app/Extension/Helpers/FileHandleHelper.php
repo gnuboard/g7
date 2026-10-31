@@ -577,6 +577,7 @@ PSFOOTER;
      * 시도하면서 무한 대기를 유발합니다. PATH 검색 결과에서 이런 경로를 제외합니다.
      *
      * @param  string  $command  명령어 파일명 (예: 'handle.exe')
+     * @return bool Windows 에서 0바이트 스텁이 아닌 실행 파일이 PATH 에 있으면 true
      */
     private static function isCommandAvailable(string $command): bool
     {

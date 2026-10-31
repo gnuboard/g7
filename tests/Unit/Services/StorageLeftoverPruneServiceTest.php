@@ -42,6 +42,11 @@ class StorageLeftoverPruneServiceTest extends TestCase
 
     private StorageLeftoverPruneService $service;
 
+    /**
+     * 기준, storage, public 세 루트를 임시 픽스처 안에 만들고 코어 업데이트 전개 경로도 픽스처 안으로 옮긴 뒤 정리 서비스를 그 루트들로 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -65,6 +70,11 @@ class StorageLeftoverPruneServiceTest extends TestCase
         $this->service = new StorageLeftoverPruneService($this->baseRoot, $this->storageRoot, $this->publicRoot);
     }
 
+    /**
+     * 임시 픽스처 디렉토리를 통째로 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->fixtureRoot);
@@ -78,6 +88,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=update_staging, leftover_mode=real_delete, leftover_guard=aged_out
      *
      * @effects aged_leftovers_are_pruned_after_retention, fresh_leftovers_are_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_aged_leftovers_are_pruned_and_fresh_ones_are_kept(): void
     {
@@ -119,6 +131,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=extension_backups, leftover_mode=real_delete, leftover_guard=latest_backup_kept
      *
      * @effects latest_backup_is_always_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_latest_backup_is_kept_regardless_of_age(): void
     {
@@ -161,6 +175,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=core_backup, leftover_mode=real_delete, leftover_guard=latest_kept
      *
      * @effects backup_directory_name_produced_is_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_core_backup_name_from_the_real_producer_enters_the_prune_population(): void
     {
@@ -204,6 +220,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=extension_backup, leftover_mode=real_delete, leftover_guard=latest_kept
      *
      * @effects backup_directory_name_produced_is_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_backup_name_shape_matches_the_shared_convention(): void
     {
@@ -267,6 +285,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=core_update_preserved, leftover_mode=real_delete, leftover_guard=backup_grade
      *
      * @effects root_entry_backup_survives_temp_retention_and_latest_is_always_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_core_update_preserved_copies_follow_backup_retention(): void
     {
@@ -306,6 +326,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=core_update_preserved, leftover_mode=real_delete, leftover_guard=name_pattern
      *
      * @effects foreign_named_leftovers_never_occupy_the_latest_backup_slot
+     *
+     * @return void 반환값 없음
      */
     public function test_foreign_named_leftovers_do_not_occupy_the_latest_slot(): void
     {
@@ -333,6 +355,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=update_staging, leftover_mode=real_delete, leftover_guard=normal_pending_untouched
      *
      * @effects normal_pending_extension_dirs_are_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_normal_pending_extension_directories_are_untouched(): void
     {
@@ -353,6 +377,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=core_temp, leftover_mode=dry_run, leftover_guard=aged_out
      *
      * @effects dry_run_deletes_nothing
+     *
+     * @return void 반환값 없음
      */
     public function test_dry_run_deletes_nothing_and_reports_targets(): void
     {
@@ -377,6 +403,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=vendor_bundle_staging, leftover_mode=real_delete, leftover_guard=idempotent_second_run
      *
      * @effects leftover_prune_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_second_run_prunes_nothing(): void
     {
@@ -402,6 +430,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=legacy_browser_log, leftover_mode=real_delete, leftover_guard=aged_out
      *
      * @effects legacy_browser_log_is_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_legacy_browser_log_is_removed_but_dated_logs_are_kept(): void
     {
@@ -480,6 +510,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * 반대 방향도 함께 본다. 라벨만 남고 대상군이 사라지면 그 줄은 영원히 0 으로 출력되어
      * 운영자가 「그 축은 항상 깨끗하다」고 읽는다.
+     *
+     * @effects prune_command_labels_cover_every_prune_group
+     *
+     * @return void 반환값 없음
      */
     public function test_command_labels_cover_every_prune_group(): void
     {
@@ -517,6 +551,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=public_storage_broken, leftover_mode=real_delete, leftover_guard=latest_kept
      *
      * @effects backup_directory_name_produced_is_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_public_storage_broken_backup_enters_the_prune_population(): void
     {
@@ -549,6 +585,12 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * 형제 백업군과 같은 규약이다. 이름 게이트가 없으면 문자열 정렬에서 숫자보다 뒤에
      * 오는 잔해가 영구히 최신 자리를 차지하고, 진짜 최신 백업이 보존을 잃는다.
+     *
+     * @scenario leftover_target=public_storage_broken, leftover_mode=real_delete, leftover_guard=name_pattern
+     *
+     * @effects foreign_named_leftovers_never_occupy_the_latest_backup_slot
+     *
+     * @return void 반환값 없음
      */
     public function test_public_storage_broken_pruner_ignores_foreign_names(): void
     {
@@ -579,6 +621,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=installer_probe, leftover_mode=real_delete
      *
      * @effects installer_probe_leftovers_are_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_installer_probe_names_from_the_real_producer_enter_the_population(): void
     {
@@ -628,6 +672,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * 인스톨러는 Laravel 부팅 전 코드라 코어 상수를 직접 참조할 수 없어 값이 두 곳에
      * 있다. 그 일치를 여기서 잠근다 — 어긋나면 모집단이 조용히 빈다.
+     *
+     * @effects prune_name_rules_come_from_producer_constants
+     *
+     * @return void 반환값 없음
      */
     public function test_prune_prefixes_match_the_installer_producer_constants(): void
     {
@@ -682,6 +730,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=root_entry_temp, leftover_mode=real_delete
      *
      * @effects root_entry_temp_files_have_a_second_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_root_entry_temp_files_are_pruned_by_the_command(): void
     {
@@ -718,6 +768,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=root_entry_temp, leftover_mode=real_delete, root_entry_link=symlinked
      *
      * @effects root_entry_temp_files_have_a_second_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_root_entry_temp_files_next_to_a_link_target_are_pruned_too(): void
     {
@@ -771,6 +823,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=public_storage_broken_docroot, leftover_mode=real_delete, leftover_guard=latest_kept
      *
      * @effects backup_directory_name_produced_is_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_public_storage_broken_backup_inside_docroot_is_pruned(): void
     {
@@ -805,6 +859,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=core_backups, leftover_mode=real_delete, leftover_guard=latest_kept
      *
      * @effects backup_directory_name_produced_is_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_backup_set_keeps_a_stable_survivor_when_stamp_and_mtime_tie(): void
     {
@@ -854,6 +910,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=env_backups, leftover_mode=real_delete, leftover_guard=latest_kept
      *
      * @effects backup_directory_name_produced_is_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_env_file_backups_left_by_finalize_are_pruned(): void
     {
@@ -893,6 +951,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=public_storage_broken, leftover_mode=real_delete, leftover_guard=name_pattern
      *
      * @effects backup_directory_name_produced_is_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_migration_collision_name_enters_the_prune_population(): void
     {
@@ -922,6 +982,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * 두 곳이 각자 리터럴을 들고 있으면 한쪽만 넓혀도 나머지가 그대로 남는다 — 그 상태는
      * 오류가 아니라 모집단이 조용히 어긋나는 것으로만 나타난다.
+     *
+     * @effects prune_name_rules_come_from_producer_constants
+     *
+     * @return void 반환값 없음
      */
     public function test_migration_and_pruner_share_the_broken_backup_name_constants(): void
     {
@@ -962,6 +1026,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=core_update_reports, leftover_mode=real_delete, leftover_guard=backup_grade
      *
      * @effects core_update_report_logs_have_a_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_core_update_report_logs_follow_backup_retention(): void
     {
@@ -998,6 +1064,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=core_pending, leftover_mode=real_delete, leftover_guard=aged_out
      *
      * @effects finally_only_artifacts_have_a_second_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_finally_only_artifacts_have_a_second_pruner(): void
     {
@@ -1036,6 +1104,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=core_pending_staging, leftover_mode=real_delete, leftover_guard=aged_out
      *
      * @effects core_pending_staging_has_a_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_core_pending_staging_directories_are_pruned(): void
     {
@@ -1069,6 +1139,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=installer_probe, leftover_mode=real_delete, leftover_guard=install_completed
      *
      * @effects installer_residue_is_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_installer_residue_is_pruned_once_installation_completed(): void
     {
@@ -1104,6 +1176,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=installer_probe, leftover_mode=real_delete, leftover_guard=resumable_install
      *
      * @effects resumable_install_state_survives_temp_retention
+     *
+     * @return void 반환값 없음
      */
     public function test_resumable_installation_state_is_not_pruned_by_temp_retention(): void
     {
@@ -1136,6 +1210,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=root_entry_temp
      *
      * @effects root_entry_temp_files_have_a_second_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_root_entry_temp_targets_map_each_file_to_its_updater(): void
     {
@@ -1150,6 +1226,13 @@ class StorageLeftoverPruneServiceTest extends TestCase
         $this->assertSame(RootHtaccessUpdater::class, $map['.htaccess'] ?? null, '.htaccess 잔해는 RootHtaccessUpdater 가 판정해야 한다');
     }
 
+    /**
+     * 정리 서비스 소스가 잔여물 이름 규칙을 손으로 적지 않고 생산자 클래스의 상수와 패턴 메서드에서 가져오는지 확인한다.
+     *
+     * @effects prune_name_rules_come_from_producer_constants
+     *
+     * @return void 반환값 없음
+     */
     public function test_prune_name_rules_are_derived_from_producer_constants(): void
     {
         $pruner = (string) file_get_contents(base_path('app/Services/StorageLeftoverPruneService.php'));
@@ -1241,6 +1324,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 뒤 조용히 사라졌고 ② `@filemtime` 실패를 「아주 오래됨」으로 읽어 지웠다(fail-open —
      * `false < (time()-300)` 은 PHP 8 에서 true). 형제 둘은 정반대이고, 그중 하나는 이
      * 스윕을 **선례로 명시 인용**하면서 자기만 게이트를 받았다 (11차 G3 라운드 E11-2).
+     *
+     * @effects installer_state_tmp_sweep_shares_the_sibling_judgement
+     *
+     * @return void 반환값 없음
      */
     public function test_installer_state_tmp_sweep_shares_the_format_and_mtime_gate(): void
     {
@@ -1331,6 +1418,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * ② 인스톨러 워커 id 는 `bin2hex(random_bytes(8))` 무가드였다 — 비밀이 아니라 겹치지만
      * 않으면 되는 값이라 `installerUniqueSuffix()` 대상인데, CSPRNG 없는 호스팅에서는 그 한
      * 줄로 단계별 설치가 500 이 된다 (11차 G3 라운드 E11-12).
+     *
+     * @effects leftover_producing_call_sites_guard_blockable_functions
+     *
+     * @return void 반환값 없음
      */
     public function test_leftover_producing_call_sites_guard_blockable_functions(): void
     {
@@ -1372,6 +1463,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 종전에는 이 문구만 한국어 하드코딩이라 영어 운영자에게 한국어가 그대로 나갔다.
      * 모집단 판정도 접두사만 봐서 정리 주체(형식 판정)와 숫자가 갈렸다
      * (11차 G3 라운드 E11-11).
+     *
+     * @effects accumulated_backup_notice_is_translated_and_format_gated
+     *
+     * @return void 반환값 없음
      */
     public function test_accumulated_backup_notice_is_translated_and_format_gated(): void
     {
@@ -1427,6 +1522,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=installer_probe, leftover_mode=real_delete, leftover_guard=aged_out
      *
      * @effects installer_probe_leftovers_are_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_installer_atomic_write_tmp_files_are_pruned_even_when_installation_is_unfinished(): void
     {
@@ -1458,6 +1555,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=installer_probe, leftover_mode=real_delete, leftover_guard=latest_backup_kept
      *
      * @effects backup_directory_name_produced_is_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_corrupt_state_copies_follow_backup_retention(): void
     {
@@ -1486,6 +1585,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=installer_probe, leftover_mode=real_delete, leftover_guard=install_completed
      *
      * @effects installer_residue_is_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_state_lock_file_follows_the_state_file_retention(): void
     {
@@ -1502,6 +1603,15 @@ class StorageLeftoverPruneServiceTest extends TestCase
         $this->assertFileExists($fresh, '이름이 다른 파일을 지웠다');
     }
 
+    /**
+     * 설치가 아직 끝나지 않아 재개할 수 있을 때 오래된 인스톨러 상태 잠금 파일을 지우지 않고 남기는지 확인한다.
+     *
+     * @scenario leftover_target=installer_probe, leftover_mode=real_delete, leftover_guard=resumable_install
+     *
+     * @effects resumable_install_state_survives_temp_retention
+     *
+     * @return void 반환값 없음
+     */
     public function test_state_lock_file_is_kept_while_installation_is_resumable(): void
     {
         config(['app.installer_completed' => false]);
@@ -1516,6 +1626,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
 
     /**
      * 잠금 파일 이름 규칙이 생산자·finalize·프루너 세 곳에서 **같은 상수**다.
+     *
+     * @effects prune_name_rules_come_from_producer_constants
+     *
+     * @return void 반환값 없음
      */
     public function test_state_lock_name_rule_is_shared_by_producer_finalize_and_pruner(): void
     {
@@ -1538,6 +1652,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
 
     /**
      * 파손 사본 이름 규칙이 **생산자 상수**와 같다 (사본 드리프트 차단).
+     *
+     * @effects prune_name_rules_come_from_producer_constants
+     *
+     * @return void 반환값 없음
      */
     public function test_corrupt_state_name_rules_match_the_installer_producer_constants(): void
     {
@@ -1575,6 +1693,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=installer_probe, leftover_mode=real_delete
      *
      * @effects installer_probe_leftovers_are_recognized_by_the_pruner
+     *
+     * @return void 반환값 없음
      */
     public function test_write_probe_leftovers_enter_the_prune_population(): void
     {
@@ -1605,6 +1725,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 삭제 조건이면 조회 실패가 곧 삭제(fail-open)다. `isFresh()` 는 실패를 보존으로 읽는데
      * 레이트리밋 파일 분기만 그 헬퍼를 지나지 않았다. 조회 실패는 프로세스 안에서 흉내낼 수
      * 없으므로 소스로 잠근다: `@` 없는 호출 0 + 모든 호출이 `=== false` 분기를 갖는다.
+     *
+     * @effects pruner_mtime_reads_are_failure_guarded
+     *
+     * @return void 반환값 없음
      */
     public function test_pruner_never_reads_filemtime_without_a_failure_guard(): void
     {
@@ -1648,6 +1772,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
     /**
      * 레이트리밋 파일은 헬퍼(`isFresh`)로 나이를 재고, 오래된 것은 지운다 — 가드를 넣으며
      * 분기를 사문으로 만들지 않았는지 동작으로 확인한다.
+     *
+     * @effects pruner_mtime_reads_are_failure_guarded, aged_leftovers_are_pruned_after_retention
+     *
+     * @return void 반환값 없음
      */
     public function test_stale_rate_limit_file_is_still_pruned_through_the_guarded_helper(): void
     {
@@ -1665,6 +1793,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 종전에는 `glob` 차단 시 빈 배열로 돌아가 11개 디렉토리의 프로브 잔해에 정리 주체가
      * 0 이었다 — 그 호스팅이 곧 이 프루너가 대상으로 삼는 배치다. `disable_functions` 는
      * 프로세스 안에서 만들 수 없으므로 나열 헬퍼에 경로를 명시해 `scandir` 분기를 직접 잰다.
+     *
+     * @effects write_probe_listing_survives_disabled_glob
+     *
+     * @return void 반환값 없음
      */
     public function test_write_probe_listing_falls_back_to_scandir_when_glob_is_unavailable(): void
     {
@@ -1734,6 +1866,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
 
     /**
      * 프루너가 훑는 프로브 루트가 인스톨러가 **실제로 점검하는 디렉토리 목록**과 같다.
+     *
+     * @effects write_probe_roots_match_the_installer_required_directories
+     *
+     * @return void 반환값 없음
      */
     public function test_write_probe_roots_match_the_installer_required_directories(): void
     {
@@ -1757,6 +1893,8 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * @scenario leftover_target=update_staging, leftover_mode=real_delete, leftover_guard=normal_pending_untouched
      *
      * @effects aged_leftovers_are_pruned_after_retention, normal_pending_directories_are_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_language_pack_pending_extracts_are_pruned_and_named_packs_are_kept(): void
     {
@@ -1780,6 +1918,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * 이 분기를 태우는 픽스처가 0 이었다 — `$mtime === false ||` 를 지워도 초록이었다 (13차 G3 W1-9).
      * `(int) false === 0` 이면 `0 > cutoff` 가 언제나 거짓이라 삭제로 기운다.
+     *
+     * @effects mtime_lookup_failure_keeps_the_leftover
+     *
+     * @return void 반환값 없음
      */
     public function test_mtime_lookup_failure_is_treated_as_fresh(): void
     {
@@ -1811,6 +1953,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * `ENV_BACKUP_PREFIX`/`ENV_BACKUP_NAME_PATTERN` 리터럴 — 양쪽 다 리터럴이라 어느 쪽이
      * 바뀌어도 아무것도 red 가 되지 않았다 (13차 G3 W1-7). `installer_probes` 선례와 같이
      * 생산자 소스에서 상수를 도출해 대조한다.
+     *
+     * @effects prune_name_rules_come_from_producer_constants
+     *
+     * @return void 반환값 없음
      */
     public function test_env_backup_name_rules_are_derived_from_producer_constants(): void
     {
@@ -1861,6 +2007,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 실행 프로세스에서 `disable_functions` 를 재현할 수 없으므로(그 제약이 이 축의
      * 정적 검사가 존재하는 이유다) 소스 계약으로 잠근다. 모집단은 **도출**한다 —
      * 이 서비스가 실제로 부르는 나열기를 손으로 적으면 새 소비가 생겨도 초록이다.
+     *
+     * @effects transitive_directory_listers_guard_scandir
+     *
+     * @return void 반환값 없음
      */
     public function test_transitive_directory_listers_guard_scandir(): void
     {

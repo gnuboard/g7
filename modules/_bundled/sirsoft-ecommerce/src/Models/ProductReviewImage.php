@@ -32,6 +32,8 @@ class ProductReviewImage extends Model
 
     /**
      * 모델 부트 메서드
+     *
+     * @return void 반환값 없음
      */
     protected static function boot(): void
     {

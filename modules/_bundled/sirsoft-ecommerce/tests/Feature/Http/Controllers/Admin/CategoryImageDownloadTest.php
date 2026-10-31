@@ -30,6 +30,11 @@ class CategoryImageDownloadTest extends ModuleTestCase
 
     private CategoryController $controller;
 
+    /**
+     * 카테고리 서비스와 카테고리 이미지 서비스를 목으로 만들어 관리자 카테고리 컨트롤러에 주입한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,6 +48,11 @@ class CategoryImageDownloadTest extends ModuleTestCase
         );
     }
 
+    /**
+     * Mockery 기대값을 검증하고 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -54,6 +64,11 @@ class CategoryImageDownloadTest extends ModuleTestCase
      *
      * 전체 적재 경로(getByHash + Storage::get)로 회귀하면 download() 미호출 +
      * getByHash 호출로 이 테스트가 실패한다.
+     *
+     * @scenario operation=admin_download
+     * @effects admin_download_delegates_to_streaming_file_info
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_delegates_to_streaming_service(): void
@@ -100,6 +115,11 @@ class CategoryImageDownloadTest extends ModuleTestCase
 
     /**
      * 이미지가 없으면 404 를 반환한다 (기존 동작 회귀 유지).
+     *
+     * @scenario operation=admin_download
+     * @effects admin_download_missing_image_returns_404
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_returns_not_found_when_image_missing(): void

@@ -80,6 +80,8 @@ class PhpProbeMessageKeyDictionaryTest extends TestCase
      * 섞여, 팩 지연이 코어 사전의 실패로 보고된다.
      *
      * @effects php_probe_message_keys_resolve_in_base_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_every_produced_probe_key_resolves_in_base_locales(): void
     {
@@ -117,6 +119,10 @@ class PhpProbeMessageKeyDictionaryTest extends TestCase
      *
      * 자리표시자만 있고 파라미터가 오지 않으면 운영자 화면에 `:path` 가 그대로 남는다 —
      * 실패했을 때만 드러나므로 정상 흐름 테스트로는 잡히지 않는다.
+     *
+     * @effects php_probe_placeholder_keys_are_substituted
+     *
+     * @return void 반환값 없음
      */
     public function test_placeholder_keys_are_substituted(): void
     {

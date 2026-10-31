@@ -19,6 +19,11 @@ use Tests\TestCase;
  */
 class SeoRendererSiteUrlFallbackTest extends TestCase
 {
+    /**
+     * 강제로 지정한 마운트 접두사를 풀어 다른 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetUrl::forceBasePrefix(null);
@@ -27,9 +32,13 @@ class SeoRendererSiteUrlFallbackTest extends TestCase
     }
 
     /**
+     * general.site_url 설정을 비운 사이트에서 봇 전역 컨텍스트의 site_url 이 요청 호스트가 아니라 app.url 의 오리진과 접두사를 따르는지 확인한다.
+     *
      * @scenario base_path=subpath, navigation_direction=request
      *
      * @effects bot_global_site_url_fallback_follows_the_configured_site_url
+     *
+     * @return void 반환값 없음
      */
     public function test_site_url_fallback_uses_the_configured_site_url(): void
     {

@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  *
  * functions.php의 isWindows(), getEnvCopyCommand(), getPermissionFixCommand() 헬퍼 함수를 테스트합니다.
  *
- * @effects installer_permission_command_covers_both_os_branches
+ * 효과 요약(마커 아님 — 평문): installer_permission_command_covers_both_os_branches
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -25,6 +25,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * 프로세스로 BASE_PATH 를 누수시키면, 그 temp 경로 하위에는 public/install 이 없어
      * require 가 깨진다. 본 클래스는 __DIR__ 기준 절대경로로 인스톨러 파일을 로드해
      * 누수된 BASE_PATH 값과 무관하게 항상 실제 프로젝트 파일을 참조한다.
+     *
+     * @return string 이 테스트 파일에서 세 단계 위인 프로젝트 루트 경로
      */
     private function installerRoot(): string
     {
@@ -33,6 +35,8 @@ class InstallerWindowsCommandsTest extends TestCase
 
     /**
      * 테스트 전 인스톨러 설정 및 함수 파일을 로드합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -70,6 +74,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * @scenario os_command_kind=env_copy
      *
      * @effects platform_detection_returns_boolean
+     *
+     * @return void 반환값 없음
      */
     public function test_is_windows_returns_bool(): void
     {
@@ -90,6 +96,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * @scenario os_command_kind=env_copy
      *
      * @effects env_copy_command_matches_platform, env_copy_command_honors_base_path
+     *
+     * @return void 반환값 없음
      */
     public function test_get_env_copy_command_with_base_path(): void
     {
@@ -113,6 +121,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * @scenario os_command_kind=env_copy
      *
      * @effects env_copy_command_matches_platform
+     *
+     * @return void 반환값 없음
      */
     public function test_get_env_copy_command_without_base_path(): void
     {
@@ -137,6 +147,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * @scenario os_command_kind=permission_fix, permission_failure_cause=acl_only
      *
      * @effects permission_fix_command_ownership_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_get_permission_fix_command_ownership_mode(): void
     {
@@ -161,6 +173,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * @scenario permission_failure_cause=readonly_attribute
      *
      * @effects readonly_mode_returns_attrib_command, readonly_mode_does_not_return_icacls
+     *
+     * @return void 반환값 없음
      */
     public function test_get_permission_fix_command_windows_readonly_mode(): void
     {
@@ -184,6 +198,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * @scenario permission_failure_cause=readonly_attribute
      *
      * @effects readonly_directory_is_detected, normal_directory_is_not_misdiagnosed_as_readonly
+     *
+     * @return void 반환값 없음
      */
     public function test_has_windows_readonly_attribute_detects_readonly_directory(): void
     {
@@ -217,6 +233,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * @scenario os_command_kind=permission_fix, permission_failure_cause=acl_only
      *
      * @effects permission_fix_command_file_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_get_permission_fix_command_file_mode(): void
     {
@@ -237,6 +255,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * @scenario os_command_kind=permission_fix, permission_failure_cause=acl_only
      *
      * @effects permission_fix_command_uses_windows_path_separator
+     *
+     * @return void 반환값 없음
      */
     public function test_get_permission_fix_command_windows_path_separator(): void
     {
@@ -255,6 +275,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * @scenario os_command_kind=env_copy
      *
      * @effects env_copy_command_uses_windows_path_separator
+     *
+     * @return void 반환값 없음
      */
     public function test_get_env_copy_command_windows_path_separator(): void
     {
@@ -273,6 +295,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * @scenario os_command_kind=translation_keys
      *
      * @effects permission_translation_keys_exist
+     *
+     * @return void 반환값 없음
      */
     public function test_translation_keys_exist(): void
     {
@@ -291,6 +315,8 @@ class InstallerWindowsCommandsTest extends TestCase
      * @scenario os_command_kind=translation_keys
      *
      * @effects directory_create_guide_translation_keys_exist
+     *
+     * @return void 반환값 없음
      */
     public function test_directory_create_guide_translation_keys_exist(): void
     {
@@ -311,7 +337,7 @@ class InstallerWindowsCommandsTest extends TestCase
      * Windows 전용 두 테스트는 Linux 에서 통째로 skip 이라 「skip 0」이라는 수치도 측정 OS
      * 한정이었다. 판정을 OS 인자로 받는 함수로 분리해 양쪽을 고정한다.
      *
-     * @return array<string, array{0: string, 1: string, 2: bool, 3: array<int, string>, 4: array<int, string>}>
+     * @return array<string, array{0: string, 1: string, 2: bool, 3: array<int, string>, 4: array<int, string>}> 경로, 모드, Windows 여부, 있어야 할 조각, 없어야 할 조각을 담은 사례 표
      */
     public static function permissionCommandCases(): array
     {
@@ -327,6 +353,20 @@ class InstallerWindowsCommandsTest extends TestCase
         ];
     }
 
+    /**
+     * OS 를 인자로 받는 권한 수정 명령 판정이 Windows 와 POSIX 두 분기 모두에서 있어야 할 조각을 담고 없어야 할 조각을 뺐는지 한 프로세스에서 확인한다.
+     *
+     * @scenario os_command_kind=permission_fix, permission_failure_cause=acl_only
+     *
+     * @effects installer_permission_command_covers_both_os_branches
+     *
+     * @param  string  $path  명령에 실을 대상 경로
+     * @param  string  $mode  권한 수정 모드(ownership 또는 file)
+     * @param  bool  $isWindows  Windows 분기로 판정할지 여부
+     * @param  array<int, string>  $expected  명령에 들어 있어야 할 조각 목록
+     * @param  array<int, string>  $forbidden  명령에 들어 있으면 안 되는 조각 목록
+     * @return void 반환값 없음
+     */
     #[DataProvider('permissionCommandCases')]
     public function test_permission_fix_command_covers_both_os_branches(
         string $path,
@@ -348,6 +388,12 @@ class InstallerWindowsCommandsTest extends TestCase
 
     /**
      * 공개 진입점이 그 판정을 실제로 지나는가 — 지나지 않으면 위 표가 사문이 된다.
+     *
+     * @scenario os_command_kind=permission_fix
+     *
+     * @effects installer_permission_command_covers_both_os_branches
+     *
+     * @return void 반환값 없음
      */
     public function test_public_entry_point_delegates_to_the_os_aware_judgment(): void
     {

@@ -19,6 +19,15 @@ use Tests\TestCase;
  */
 class EnumeratedSettingValuesTest extends TestCase
 {
+    /**
+     * 허용값 표에 없는 키나 빈 키에는 규칙을 돌려주지 않는지(null) 확인한다.
+     *
+     * @scenario setting_key=non_enumerated
+     *
+     * @effects non_enumerated_key_has_no_allowed_value_rule
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 허용값이_닫힌_키가_아니면_null_을_돌려준다(): void
     {
@@ -26,6 +35,15 @@ class EnumeratedSettingValuesTest extends TestCase
         $this->assertNull(EnumeratedSettingValues::ruleFor(''));
     }
 
+    /**
+     * 실행 모드 허용값이 ExecutionMode 열거형의 케이스 값 목록과 순서까지 같은지 확인한다.
+     *
+     * @scenario setting_key=execution_mode
+     *
+     * @effects execution_mode_allowed_values_match_the_enum
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 실행_모드_허용값은_열거형의_모든_케이스와_같다(): void
     {
@@ -36,6 +54,15 @@ class EnumeratedSettingValuesTest extends TestCase
         $this->assertSame(['auto', 'subprocess', 'inprocess'], ExecutionMode::values());
     }
 
+    /**
+     * 자산 URL 방식 허용값이 AssetUrl 의 두 모드 상수와 같은지 확인한다.
+     *
+     * @scenario setting_key=asset_url_mode
+     *
+     * @effects asset_url_mode_allowed_values_match_the_constants
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 자산_url_방식_허용값은_상수와_같다(): void
     {
@@ -45,6 +72,13 @@ class EnumeratedSettingValuesTest extends TestCase
         );
     }
 
+    /**
+     * 허용값 표의 키마다 설정 카탈로그 기본값이 있고 그 기본값이 허용값 안에 드는지 확인한다.
+     *
+     * @effects enumerated_keys_exist_in_the_settings_catalog_with_allowed_defaults
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 표의_모든_키는_설정_카탈로그_기본값에_실재한다(): void
     {
@@ -56,6 +90,15 @@ class EnumeratedSettingValuesTest extends TestCase
         }
     }
 
+    /**
+     * 실행 모드 규칙이 In 규칙이며 열거형 값만 통과시키고 엉뚱한 값과 대문자 값은 거부하는지 확인한다.
+     *
+     * @scenario setting_key=execution_mode
+     *
+     * @effects enumerated_rule_accepts_only_allowed_values
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 규칙은_허용값만_통과시킨다(): void
     {

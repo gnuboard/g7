@@ -168,6 +168,8 @@ describe('admin-settings 정보 탭 — 메모리/디스크 측정 불가 표기
     testUtils.cleanup();
   });
 
+  // @scenario shell_exec_guard_surface=settings_memory, measurement_result=measured
+  // @effects resources_probe_failure_returns_null_percentage_not_zero
   it('percentage 0 은 측정 불가가 아니라 정상 측정값(0%)이다', async () => {
     const testUtils = createLayoutTest(infoLayout);
     testUtils.mockApi('systemInfo', { response: createSystemInfoResponse(0) });

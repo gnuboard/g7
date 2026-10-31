@@ -26,6 +26,11 @@ class DevVendorDetectionTest extends TestCase
 
     private string $vendorPath;
 
+    /**
+     * 테스트마다 고유한 임시 vendor/composer 디렉터리를 만들고, 판정 함수가 든 인스톨러 vendor 번들 파일을 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +42,11 @@ class DevVendorDetectionTest extends TestCase
         require_once base_path('public/install/includes/vendor-bundle-installer.php');
     }
 
+    /**
+     * 테스트가 만든 임시 vendor 디렉터리를 통째로 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->testBase)) {
@@ -50,6 +60,8 @@ class DevVendorDetectionTest extends TestCase
      * dev 설치본을 감지한다.
      *
      * @effects installer_detects_dev_vendor_from_installed_json
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function detect_dev_vendor_install_은_dev_설치본을_감지한다(): void
@@ -66,6 +78,8 @@ class DevVendorDetectionTest extends TestCase
      * `--no-dev` 설치본은 경고 대상이 아니다.
      *
      * @effects installer_reports_production_vendor_as_pass
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function detect_dev_vendor_install_은_운영용_설치본을_경고하지_않는다(): void
@@ -82,6 +96,8 @@ class DevVendorDetectionTest extends TestCase
      * installed.json 이 없으면 판정 불가(null) — 경고도 차단도 하지 않는다.
      *
      * @effects installer_treats_missing_installed_json_as_unknown
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function detect_dev_vendor_install_은_installed_json_부재를_판정_불가로_다룬다(): void
@@ -96,6 +112,8 @@ class DevVendorDetectionTest extends TestCase
      * 인스톨러 shim 과 코어 판정기가 같은 답을 낸다 — 갈라지면 화면과 로그가 어긋난다.
      *
      * @effects installer_shim_matches_core_composer_install_info
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 인스톨러_shim_과_코어_판정기의_결과가_같다(): void
@@ -120,6 +138,8 @@ class DevVendorDetectionTest extends TestCase
      * 감지·경고·"설치 계속" 셋이 한 분기 안에 있어야 한다 — 차단으로 바뀌면 설계 결정(D1) 위반이다.
      *
      * @effects installer_warns_and_keeps_dev_vendor
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 재사용_분기가_dev_를_감지해_경고하고_설치를_계속한다(): void
@@ -141,6 +161,8 @@ class DevVendorDetectionTest extends TestCase
      * 정리되지 않았다.
      *
      * @effects installer_clears_compiled_cache_on_reuse_path
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 재사용_분기가_컴파일_캐시를_정리하고_완료_표시보다_앞선다(): void
@@ -162,6 +184,8 @@ class DevVendorDetectionTest extends TestCase
      * 건수·패키지 목록이 사라진 문장이 나간다 — 둘 다 오류 없이 통과한다.
      *
      * @effects installer_lang_keys_exist_in_both_locales
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 신규_언어_키가_ko_와_en_양쪽에_있고_치환_자리를_보존한다(): void
@@ -231,6 +255,8 @@ class DevVendorDetectionTest extends TestCase
      * 실패시켜 "검사했으나 0건" 과 "보지 않음" 을 구분한다.
      *
      * @effects installer_composer_commands_all_carry_no_dev
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 안내하는_것까지_포함해_모든_composer_install_명령이_no_dev_를_갖는다(): void
@@ -319,6 +345,7 @@ class DevVendorDetectionTest extends TestCase
      * installed.json 픽스처를 씁니다.
      *
      * @param  array<string, mixed>  $payload  JSON 으로 직렬화할 내용
+     * @return void 반환값 없음
      */
     private function writeInstalledJson(array $payload): void
     {

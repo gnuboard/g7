@@ -39,6 +39,11 @@ class PollingResponseFlushTest extends TestCase
 
     private string $source;
 
+    /**
+     * 설치 진행 API 원문을 읽어 주석을 걷어낸 소스를 준비하고, 파일이 있고 내용이 비지 않았는지 먼저 확인한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,6 +56,17 @@ class PollingResponseFlushTest extends TestCase
         $this->assertNotSame('', $this->source);
     }
 
+    /**
+     * 폴링 분기 안에 zlib 출력 압축을 끄는 ini 설정 호출이 있는지 확인한다.
+     *
+     * 압축이 켜진 채 응답하면 Content-Length 와 실제 본문이 어긋나 브라우저 요청이 워커 종료까지 멈춘다.
+     *
+     * @scenario installation_mode=polling
+     *
+     * @effects polling_response_disables_output_compression_before_echo
+     *
+     * @return void 반환값 없음
+     */
     public function test_polling_branch_disables_zlib_output_compression(): void
     {
         $pollingBranch = $this->extractPollingBranch();
@@ -63,6 +79,15 @@ class PollingResponseFlushTest extends TestCase
         );
     }
 
+    /**
+     * 폴링 분기 안에 output_buffering ini 를 off 로 설정하는 호출이 있는지 확인한다.
+     *
+     * @scenario installation_mode=polling
+     *
+     * @effects polling_response_disables_output_compression_before_echo
+     *
+     * @return void 반환값 없음
+     */
     public function test_polling_branch_disables_output_buffering_ini(): void
     {
         $pollingBranch = $this->extractPollingBranch();
@@ -75,6 +100,15 @@ class PollingResponseFlushTest extends TestCase
         );
     }
 
+    /**
+     * 폴링 분기 안에 Apache 의 no-gzip 환경값을 문자열 인자로 켜는 호출이 있는지 확인한다.
+     *
+     * @scenario installation_mode=polling
+     *
+     * @effects polling_response_disables_output_compression_before_echo
+     *
+     * @return void 반환값 없음
+     */
     public function test_polling_branch_disables_apache_gzip(): void
     {
         $pollingBranch = $this->extractPollingBranch();
@@ -92,6 +126,15 @@ class PollingResponseFlushTest extends TestCase
         );
     }
 
+    /**
+     * 폴링 분기가 응답 뒤에 65536 바이트 이상의 공백 채움을 내보내 mod_fcgid 의 64KB 버퍼를 넘겨 즉시 송출되게 하는지 확인한다.
+     *
+     * @scenario installation_mode=polling
+     *
+     * @effects polling_response_pads_past_fcgid_buffer_before_flush
+     *
+     * @return void 반환값 없음
+     */
     public function test_polling_branch_emits_padding_to_force_fcgid_flush(): void
     {
         $pollingBranch = $this->extractPollingBranch();
@@ -106,6 +149,17 @@ class PollingResponseFlushTest extends TestCase
         );
     }
 
+    /**
+     * 공백 채움이 응답 JSON 출력 뒤, flush 호출 앞에 놓였는지 위치를 비교해 확인한다.
+     *
+     * 본문이 먼저 나가야 하고, flush 시점에 버퍼 임계를 넘겨야 송출이 일어난다.
+     *
+     * @scenario installation_mode=polling
+     *
+     * @effects polling_response_pads_past_fcgid_buffer_before_flush
+     *
+     * @return void 반환값 없음
+     */
     public function test_padding_position_is_after_json_echo_and_before_flush(): void
     {
         $pollingBranch = $this->extractPollingBranch();
@@ -137,6 +191,17 @@ class PollingResponseFlushTest extends TestCase
         );
     }
 
+    /**
+     * Content-Length 헤더가 공백 채움을 빼고 응답 JSON 의 바이트 수만 싣는지 확인한다.
+     *
+     * 브라우저는 그 길이만큼 읽고 요청을 끝내며 뒤따르는 채움은 무시한다.
+     *
+     * @scenario installation_mode=polling
+     *
+     * @effects polling_response_content_length_counts_json_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_content_length_remains_json_byte_count_only(): void
     {
         $pollingBranch = $this->extractPollingBranch();
@@ -150,6 +215,15 @@ class PollingResponseFlushTest extends TestCase
         );
     }
 
+    /**
+     * zlib 압축 해제와 no-gzip 설정이 폴링 분기 안에서 응답 JSON 출력보다 앞에 오는지 위치를 비교해 확인한다.
+     *
+     * @scenario installation_mode=polling
+     *
+     * @effects polling_response_disables_output_compression_before_echo
+     *
+     * @return void 반환값 없음
+     */
     public function test_output_disable_calls_precede_echo_response(): void
     {
         $pollingBranch = $this->extractPollingBranch();
@@ -190,6 +264,10 @@ class PollingResponseFlushTest extends TestCase
 
     /**
      * install-process.php 의 `if ($installationMode === 'polling') { ... }` 본문 추출.
+     *
+     * 분기 시작 위치에서 중괄호 깊이를 세어 짝이 맞는 닫는 중괄호까지 잘라 낸다. 찾지 못하면 테스트를 실패시킨다.
+     *
+     * @return string 여는 중괄호부터 닫는 중괄호까지의 폴링 분기 본문
      */
     private function extractPollingBranch(): string
     {

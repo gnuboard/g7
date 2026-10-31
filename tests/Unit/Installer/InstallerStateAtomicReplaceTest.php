@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 상태 파일 원자 교체의 경합 내성 (D4).
@@ -34,18 +35,24 @@ use PHPUnit\Framework\TestCase;
  *
  * BASE_PATH 를 temp 로 박으므로 클래스 격리 실행이 필요하다.
  *
- * @scenario task_outcome=done
- *
- * @effects installer_state_replace_survives_transient_handle_contention
+ * 효과 요약(마커 아님 — 평문): 상태 파일 교체가 짧은 핸들 경합을 견딘다
+ * (installer_state_replace_survives_transient_handle_contention). 표식은 각 테스트 메서드가 단다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
 class InstallerStateAtomicReplaceTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private static string $sharedBase = '';
 
     private static string $skipReason = '';
 
+    /**
+     * 시스템 임시 폴더 아래에 BASE_PATH 와 storage 폴더를 세우고, 교체 재시도 간격을 0 으로 낮춘 뒤 설치기 설정과 상태 모듈을 불러온다. BASE_PATH 가 임시 폴더 밖이면 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -84,6 +91,11 @@ class InstallerStateAtomicReplaceTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/installer-state.php';
     }
 
+    /**
+     * 임시 storage 폴더 바로 아래에 남은 픽스처 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     public static function tearDownAfterClass(): void
     {
         if (self::$skipReason === '' && self::$sharedBase !== '') {
@@ -96,6 +108,11 @@ class InstallerStateAtomicReplaceTest extends TestCase
         parent::tearDownAfterClass();
     }
 
+    /**
+     * 클래스 준비 단계에서 건너뛸 사유가 정해졌으면 각 테스트를 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -105,6 +122,12 @@ class InstallerStateAtomicReplaceTest extends TestCase
         }
     }
 
+    /**
+     * 임시 storage 폴더 아래의 픽스처 파일 경로를 만든다.
+     *
+     * @param  string  $name  픽스처 파일 이름
+     * @return string 픽스처 파일의 절대 경로
+     */
     private function tmp(string $name): string
     {
         return self::$sharedBase.'/storage/'.$name;
@@ -119,8 +142,8 @@ class InstallerStateAtomicReplaceTest extends TestCase
      *
      * @template T
      *
-     * @param  callable():T  $fn
-     * @return T
+     * @param  callable():T  $fn  경고를 삼킨 채 실행할 함수
+     * @return T 전달한 함수의 반환값
      */
     private function withoutPhpWarnings(callable $fn)
     {
@@ -133,9 +156,13 @@ class InstallerStateAtomicReplaceTest extends TestCase
     }
 
     /**
+     * 정상 경로에서 교체 헬퍼가 첫 시도에 성공하고, 원본을 없애며 내용을 그대로 옮기는지 확인한다.
+     *
      * @scenario task_outcome=done
      *
      * @effects installer_state_replace_survives_transient_handle_contention
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_moves_the_file_and_keeps_the_contents(): void
@@ -146,16 +173,18 @@ class InstallerStateAtomicReplaceTest extends TestCase
 
         $this->assertTrue(installerReplaceFileWithRetry($from, $to));
         $this->assertFileDoesNotExist($from, '원본이 남으면 tmp 잔해가 쌓인다');
+        // meta:allow raw-source-read — 소스가 아니라 교체한 임시 픽스처 파일의 내용을 되읽는다.
         $this->assertSame('{"current_step":3}', (string) file_get_contents($to));
     }
 
     /**
      * 교체이지 생성이 아니다 — 대상이 이미 있는 것이 **정상 경로**다(상태 파일은 매번 덮인다).
-     */
-    /**
+     *
      * @scenario task_outcome=done
      *
      * @effects installer_state_replace_survives_transient_handle_contention
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_replaces_an_existing_destination(): void
@@ -172,11 +201,12 @@ class InstallerStateAtomicReplaceTest extends TestCase
     /**
      * 원본이 없으면 **재시도하지 않는다** — 그것은 경합이 아니라 다른 실패이고, 기다려도
      * 달라지지 않는다. 설치 경로에서 무의미한 대기를 만들지 않기 위한 계약이다.
-     */
-    /**
+     *
      * @scenario task_outcome=done
      *
      * @effects installer_state_replace_survives_transient_handle_contention
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_does_not_retry_when_the_source_is_absent(): void
@@ -200,11 +230,12 @@ class InstallerStateAtomicReplaceTest extends TestCase
     /**
      * 재시도로 없앨 수 없는 실패는 **그대로 false** 다 — 재시도가 실패를 감추지 않는다.
      * 대상 경로가 디렉터리면 rename 은 어떤 시도에서도 성공하지 않는다.
-     */
-    /**
+     *
      * @scenario task_outcome=done
      *
      * @effects installer_state_replace_survives_transient_handle_contention
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_still_fails_for_an_unrecoverable_destination(): void
@@ -227,16 +258,17 @@ class InstallerStateAtomicReplaceTest extends TestCase
     /**
      * 상태 저장 경로가 이 헬퍼를 **실제로 지난다**. 위 단언은 헬퍼만 재므로, 저장부가 맨
      * `rename` 으로 되돌아가도 전부 초록일 수 있다.
-     */
-    /**
+     *
      * @scenario task_outcome=done
      *
      * @effects installer_state_replace_survives_transient_handle_contention
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_state_save_path_uses_the_retrying_replace(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/installer-state.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/installer-state.php');
         $at = strpos($source, 'function saveInstallationState');
         $this->assertNotFalse($at);
 
@@ -271,16 +303,17 @@ class InstallerStateAtomicReplaceTest extends TestCase
      *
      * `function_exists` 가드를 함께 확인한다. 이 헬퍼는 형제 파일에 있고, runtime.php 를
      * 단독으로 require 하는 진입 경로가 있으므로 가드 없이 부르면 그 경로가 치명 오류로 죽는다.
-     */
-    /**
+     *
      * @scenario task_outcome=done
      *
      * @effects installer_state_replace_survives_transient_handle_contention
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_runtime_secret_write_uses_the_retrying_replace(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/installer-runtime.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/installer-runtime.php');
         $at = strpos($source, 'function writeInstallerRuntime');
         $this->assertNotFalse($at);
 
@@ -308,11 +341,12 @@ class InstallerStateAtomicReplaceTest extends TestCase
 
     /**
      * 저장 전체가 끝단까지 성공한다 (헬퍼 교체가 저장 경로를 깨지 않았다는 회귀 축).
-     */
-    /**
+     *
      * @scenario task_outcome=done
      *
      * @effects installer_state_replace_survives_transient_handle_contention
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function saving_state_writes_the_file_atomically(): void
@@ -320,6 +354,7 @@ class InstallerStateAtomicReplaceTest extends TestCase
         $this->assertTrue(saveInstallationState(['current_step' => 2, 'installation_status' => 'not_started']));
 
         $this->assertFileExists(STATE_PATH);
+        // meta:allow raw-source-read — 소스가 아니라 저장된 상태 파일(JSON)을 읽는다.
         $decoded = json_decode((string) file_get_contents(STATE_PATH), true);
         $this->assertSame(2, $decoded['current_step'] ?? null);
 

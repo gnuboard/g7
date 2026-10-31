@@ -32,6 +32,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
      *
      * @effects proxy_setting_persists_to_debug_category
+     *
+     * @return void 반환값 없음
      */
     public function test_proxy_settings_saved_from_advanced_tab_are_persisted(): void
     {
@@ -63,6 +65,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=on, proxy_value=empty, bypass_list=empty
      *
      * @effects proxy_setting_persists_to_debug_category
+     *
+     * @return void 반환값 없음
      */
     public function test_new_keys_are_present_through_defaults_merge(): void
     {
@@ -80,6 +84,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=on, proxy_value=invalid, bypass_list=empty
      *
      * @effects proxy_setting_rejects_invalid_url
+     *
+     * @return void 반환값 없음
      */
     public function test_invalid_proxy_url_fails_validation(): void
     {
@@ -104,6 +110,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=on, proxy_value=invalid, bypass_list=empty
      *
      * @effects proxy_setting_rejects_invalid_url
+     *
+     * @return void 반환값 없음
      */
     public function test_non_string_proxy_value_error_message_has_schemes_substituted(): void
     {
@@ -131,6 +139,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=empty
      *
      * @effects proxy_setting_rejects_invalid_url
+     *
+     * @return void 반환값 없음
      */
     public function test_valid_and_empty_proxy_url_pass_validation(): void
     {
@@ -150,6 +160,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
      *
      * @effects proxy_setting_rejects_invalid_url
+     *
+     * @return void 반환값 없음
      */
     public function test_bypass_list_items_are_validated(): void
     {
@@ -167,6 +179,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
      *
      * @effects proxy_applied_to_global_http_options
+     *
+     * @return void 반환값 없음
      */
     public function test_resolved_proxy_is_applied_to_global_http_options(): void
     {
@@ -194,6 +208,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=off, proxy_value=valid, bypass_list=empty
      *
      * @effects proxy_absent_leaves_global_http_options_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_absent_proxy_leaves_global_http_options_untouched(): void
     {
@@ -213,6 +229,7 @@ class OutboundProxySettingTest extends TestCase
      * 고급 탭 검증기를 구성합니다.
      *
      * @param  array<string, mixed>  $advanced  advanced 탭 입력값
+     * @return Validator 고급 탭 저장 요청의 규칙, 메시지, 속성명을 그대로 적용한 검증기
      */
     private function validatorForAdvanced(array $advanced): Validator
     {
@@ -229,7 +246,9 @@ class OutboundProxySettingTest extends TestCase
     }
 
     /**
-     * AppServiceProvider 의 프록시 적용 로직만 실행합니다.
+     * Http 전역 옵션을 비운 뒤 AppServiceProvider 의 프록시 적용 로직(`configureOutboundProxy`)만 리플렉션으로 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     private function invokeOutboundProxyConfigurer(): void
     {
@@ -242,7 +261,9 @@ class OutboundProxySettingTest extends TestCase
     }
 
     /**
-     * Http 팩토리의 전역 옵션을 비웁니다.
+     * Http 팩토리의 전역 옵션을 빈 배열로 되돌려 앞 케이스의 프록시 설정이 남지 않게 합니다.
+     *
+     * @return void 반환값 없음
      */
     private function resetGlobalHttpOptions(): void
     {
@@ -252,7 +273,7 @@ class OutboundProxySettingTest extends TestCase
     /**
      * Http 팩토리에 설정된 전역 옵션을 읽습니다.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> Http 팩토리에 현재 걸린 전역 옵션 (없으면 빈 배열)
      */
     private function globalHttpOptions(): array
     {
@@ -271,6 +292,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=empty
      *
      * @effects proxy_connection_test_reports_egress_ip
+     *
+     * @return void 반환값 없음
      */
     public function test_connection_test_reports_egress_ip(): void
     {
@@ -289,6 +312,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=normalizable
      *
      * @effects proxy_connection_test_reports_egress_ip
+     *
+     * @return void 반환값 없음
      */
     public function test_connection_test_uses_submitted_proxy_not_stored_settings(): void
     {
@@ -314,6 +339,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=on, proxy_value=invalid, bypass_list=empty
      *
      * @effects proxy_connection_test_reports_egress_ip
+     *
+     * @return void 반환값 없음
      */
     public function test_connection_test_rejects_invalid_url_without_calling_out(): void
     {
@@ -332,6 +359,8 @@ class OutboundProxySettingTest extends TestCase
      * @scenario debug_mode=on, proxy_value=valid, bypass_list=empty
      *
      * @effects proxy_connection_test_reports_egress_ip
+     *
+     * @return void 반환값 없음
      */
     public function test_connection_test_reports_when_no_lookup_target_is_configured(): void
     {

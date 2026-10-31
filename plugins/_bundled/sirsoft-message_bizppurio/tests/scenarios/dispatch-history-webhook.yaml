@@ -73,6 +73,20 @@ effects:
   - webhook_blocked_ip_returns_403
   - webhook_replay_is_idempotent
   - webhook_unknown_refkey_absorbed_200
+  # 모델, 리포지토리, 결과코드 사유 세부 (PHPUnit 이 이미 재던 것을 #609 에서 명시)
+  - dispatch_model_casts_channel_and_status_to_enums
+  - dispatch_masked_number_hides_middle_four_digits
+  - dispatch_user_relation_loads_member_by_to_user_id
+  - dispatch_by_refkey_scope_finds_single_record
+  - repository_find_by_refkey_returns_match_or_null
+  - repository_update_persists_status_and_result_code
+  - repository_paginate_filters_by_channel_and_status
+  - repository_paginate_keyword_matches_number_or_refkey
+  - postpaid_limit_code_9071_has_reason
+  - newly_added_result_codes_have_reason
+  - retryable_codes_all_have_reason
+  - success_uncertain_7305_not_retryable
+  - reason_resolves_defined_codes_and_null_for_unknown
 
 test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Webhook/BizppurioWebhookTest.php

@@ -26,11 +26,22 @@ class ReplyFormParentBlockTest extends BoardTestCase
 {
     private User $writer;
 
+    /**
+     * 이 시험이 쓰는 게시판 슬러그를 돌려준다.
+     *
+     * @return string 게시판 슬러그
+     */
     protected function getTestBoardSlug(): string
     {
         return 'reply-block';
     }
 
+    /**
+     * 답글과 댓글을 켜고 답글 깊이 3, 비밀글과 금지어를 끈 시험용 게시판 속성을 돌려준다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return array<string, mixed> 게시판 생성 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -45,6 +56,11 @@ class ReplyFormParentBlockTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 게시글 작성 권한을 가진 user 역할 사용자를 답글 폼 진입자로 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,11 +80,23 @@ class ReplyFormParentBlockTest extends BoardTestCase
         }
     }
 
+    /**
+     * 답글 작성 폼 메타 API 주소를 만든다.
+     *
+     * @param  int  $parentId  부모 게시글 ID
+     * @return string form-meta API 경로
+     */
     private function formMetaUrl(int $parentId): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/form-meta?parent_id={$parentId}";
     }
 
+    /**
+     * 답글 작성 폼 데이터 API 주소를 만든다.
+     *
+     * @param  int  $parentId  부모 게시글 ID
+     * @return string form-data API 경로
+     */
     private function formDataUrl(int $parentId): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/form-data?parent_id={$parentId}";
@@ -79,7 +107,13 @@ class ReplyFormParentBlockTest extends BoardTestCase
     // ==========================================
 
     /**
+     * 블라인드 부모글로 form-meta 를 요청하면 404 이고 부모 제목과 본문이 응답에 없는지 확인한다.
+     *
+     * @scenario viewer=regular
+     *
      * @effects form_meta_blocks_blinded_parent_and_hides_original
+     *
+     * @return void 반환값 없음
      */
     public function test_form_meta_blocks_blinded_parent_and_hides_original(): void
     {
@@ -99,7 +133,13 @@ class ReplyFormParentBlockTest extends BoardTestCase
     }
 
     /**
+     * 블라인드 부모글로 form-data 를 요청하면 404 이고 부모 제목과 본문이 응답에 없는지 확인한다.
+     *
+     * @scenario viewer=regular
+     *
      * @effects form_data_blocks_blinded_parent_and_hides_original
+     *
+     * @return void 반환값 없음
      */
     public function test_form_data_blocks_blinded_parent_and_hides_original(): void
     {
@@ -123,7 +163,13 @@ class ReplyFormParentBlockTest extends BoardTestCase
     // ==========================================
 
     /**
+     * 삭제된 부모글로 form-meta 를 요청하면 404 이고 부모 제목과 본문이 응답에 없는지 확인한다.
+     *
+     * @scenario viewer=regular
+     *
      * @effects form_meta_blocks_deleted_parent_and_hides_original
+     *
+     * @return void 반환값 없음
      */
     public function test_form_meta_blocks_deleted_parent_and_hides_original(): void
     {
@@ -143,7 +189,13 @@ class ReplyFormParentBlockTest extends BoardTestCase
     }
 
     /**
+     * 삭제된 부모글로 form-data 를 요청하면 404 이고 부모 제목과 본문이 응답에 없는지 확인한다.
+     *
+     * @scenario viewer=regular
+     *
      * @effects form_data_blocks_deleted_parent_and_hides_original
+     *
+     * @return void 반환값 없음
      */
     public function test_form_data_blocks_deleted_parent_and_hides_original(): void
     {
@@ -167,7 +219,13 @@ class ReplyFormParentBlockTest extends BoardTestCase
     // ==========================================
 
     /**
+     * 정상 부모글이면 form-meta 가 200 으로 열리고 parent_post 제목을 싣는지 확인한다.
+     *
+     * @scenario viewer=regular
+     *
      * @effects form_meta_allows_published_parent
+     *
+     * @return void 반환값 없음
      */
     public function test_form_meta_allows_published_parent(): void
     {

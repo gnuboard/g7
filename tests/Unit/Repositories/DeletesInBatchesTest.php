@@ -27,6 +27,8 @@ class DeletesInBatchesTest extends TestCase
      * 단일 배치만 처리하고 끝내는 구현이면 나머지가 남아 red 가 된다.
      *
      * @effects large_purge_is_split_into_batches
+     *
+     * @return void 반환값 없음
      */
     public function test_deletes_every_matching_row_across_multiple_batches(): void
     {
@@ -49,6 +51,12 @@ class DeletesInBatchesTest extends TestCase
 
     /**
      * 조건 밖의 행은 배치가 몇 회전을 돌아도 건드리지 않는다.
+     *
+     * @scenario row_age=within_retention
+     *
+     * @effects batched_purge_keeps_rows_outside_the_condition
+     *
+     * @return void 반환값 없음
      */
     public function test_keeps_rows_outside_the_condition(): void
     {
@@ -77,6 +85,10 @@ class DeletesInBatchesTest extends TestCase
 
     /**
      * 대상이 없으면 0 을 돌려주고 끝난다 (무한 루프 방지).
+     *
+     * @effects batched_purge_returns_zero_when_nothing_matches
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_zero_when_nothing_matches(): void
     {

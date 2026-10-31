@@ -28,6 +28,8 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * 테스트 초기화 - 가짜 로컬 디스크를 준비합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -89,6 +91,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * childFilename: 자식 파일명 규칙이 고정된다 (경로 SSoT)
+     *
+     * @effects sitemap_child_paths_and_urls_have_one_owner
+     *
+     * @return void 반환값 없음
      */
     public function test_child_filename_follows_naming_rule(): void
     {
@@ -99,6 +105,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * childUrl: 자식 sitemap 의 공개 절대 URL 을 반환한다
+     *
+     * @effects sitemap_child_paths_and_urls_have_one_owner
+     *
+     * @return void 반환값 없음
      */
     public function test_child_url_returns_absolute_url(): void
     {
@@ -112,6 +122,12 @@ class SitemapFileStoreTest extends TestCase
      * 그 모드를 고른 사이트는 정적 최적화 블록이 `.xml` 을 가로채는 서버다 — 확장자
      * 형태를 그대로 적으면 봇이 따라간 자식이 전부 404 가 되고 색인이 조용히 빈다.
      * gzip 여부는 manifest 가 정하므로 두 형태가 같은 주소로 모인다 (7차 G3 라운드 B-6).
+     *
+     * @scenario asset_url_mode=extensionless
+     *
+     * @effects sitemap_child_paths_and_urls_have_one_owner
+     *
+     * @return void 반환값 없음
      */
     public function test_child_url_uses_segment_form_in_extensionless_mode(): void
     {
@@ -130,6 +146,10 @@ class SitemapFileStoreTest extends TestCase
      *
      * 규칙과 주소 생성이 어긋나면 증상이 「봇 화면에서만 404」라 사람이 볼 통로가 없다.
      * 두 모드의 <loc> 를 라우터에 직접 물어 확인한다.
+     *
+     * @effects sitemap_child_paths_and_urls_have_one_owner
+     *
+     * @return void 반환값 없음
      */
     public function test_child_url_matches_a_registered_route_in_both_modes(): void
     {
@@ -158,6 +178,8 @@ class SitemapFileStoreTest extends TestCase
      * @scenario base_path=subpath, navigation_direction=request
      *
      * @effects sitemap_index_child_locations_follow_the_configured_site_url
+     *
+     * @return void 반환값 없음
      */
     public function test_child_url_follows_the_configured_site_url_not_the_request(): void
     {
@@ -182,6 +204,8 @@ class SitemapFileStoreTest extends TestCase
      * @scenario base_path=subpath, navigation_direction=request
      *
      * @effects sitemap_index_child_locations_follow_the_configured_site_url
+     *
+     * @return void 반환값 없음
      */
     public function test_index_and_child_locations_share_the_configured_origin_and_prefix(): void
     {
@@ -210,6 +234,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * exists: 커밋된 세트가 없으면 false
+     *
+     * @effects sitemap_store_reads_only_a_committed_set
+     *
+     * @return void 반환값 없음
      */
     public function test_exists_returns_false_without_committed_set(): void
     {
@@ -218,6 +246,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * exists: 커밋 후 true
+     *
+     * @effects sitemap_store_reads_only_a_committed_set
+     *
+     * @return void 반환값 없음
      */
     public function test_exists_returns_true_after_commit(): void
     {
@@ -228,6 +260,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * getManifest: 세트가 없으면 null
+     *
+     * @effects sitemap_store_reads_only_a_committed_set
+     *
+     * @return void 반환값 없음
      */
     public function test_get_manifest_returns_null_without_committed_set(): void
     {
@@ -236,6 +272,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * getManifest: 커밋된 메타를 반환한다
+     *
+     * @effects sitemap_store_reads_only_a_committed_set
+     *
+     * @return void 반환값 없음
      */
     public function test_get_manifest_returns_committed_metadata(): void
     {
@@ -252,6 +292,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * getManifest: manifest 가 손상되면 null 을 반환한다 (예외 전파 금지)
+     *
+     * @effects sitemap_store_reads_only_a_committed_set
+     *
+     * @return void 반환값 없음
      */
     public function test_get_manifest_returns_null_when_manifest_is_corrupted(): void
     {
@@ -267,6 +311,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * indexResponse: 세트가 없으면 null
+     *
+     * @effects sitemap_store_reads_only_a_committed_set
+     *
+     * @return void 반환값 없음
      */
     public function test_index_response_returns_null_without_committed_set(): void
     {
@@ -275,6 +323,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * indexResponse: sitemapindex 를 XML Content-Type 으로 스트리밍한다
+     *
+     * @effects sitemap_files_are_streamed_with_xml_content_type
+     *
+     * @return void 반환값 없음
      */
     public function test_index_response_streams_sitemap_index(): void
     {
@@ -293,6 +345,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * childResponse: 세트가 없으면 null
+     *
+     * @effects sitemap_store_reads_only_a_committed_set
+     *
+     * @return void 반환값 없음
      */
     public function test_child_response_returns_null_without_committed_set(): void
     {
@@ -301,6 +357,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * childResponse: 자식 sitemap 본문을 스트리밍한다
+     *
+     * @effects sitemap_files_are_streamed_with_xml_content_type
+     *
+     * @return void 반환값 없음
      */
     public function test_child_response_streams_child_sitemap(): void
     {
@@ -319,6 +379,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * childResponse: 존재하지 않는 자식 번호는 null
+     *
+     * @effects sitemap_child_number_outside_the_set_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_child_response_returns_null_for_out_of_range_number(): void
     {
@@ -329,6 +393,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * childResponse: 0 이하 번호는 null (경로 조작 방어)
+     *
+     * @effects sitemap_child_number_outside_the_set_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_child_response_returns_null_for_non_positive_number(): void
     {
@@ -340,6 +408,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * childResponse: gzip 세트는 Content-Encoding 헤더를 붙인다
+     *
+     * @effects gzip_child_responses_declare_content_encoding_and_index_stays_plain
+     *
+     * @return void 반환값 없음
      */
     public function test_child_response_sets_gzip_content_encoding(): void
     {
@@ -353,6 +425,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * indexResponse: gzip 세트여도 인덱스는 비압축이다 (D13)
+     *
+     * @effects gzip_child_responses_declare_content_encoding_and_index_stays_plain
+     *
+     * @return void 반환값 없음
      */
     public function test_index_response_is_never_gzip_encoded(): void
     {
@@ -366,6 +442,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * lastGeneratedAt: 세트가 없으면 null
+     *
+     * @effects sitemap_store_reads_only_a_committed_set
+     *
+     * @return void 반환값 없음
      */
     public function test_last_generated_at_returns_null_without_committed_set(): void
     {
@@ -374,6 +454,10 @@ class SitemapFileStoreTest extends TestCase
 
     /**
      * lastGeneratedAt: manifest 의 생성 시각을 반환한다
+     *
+     * @effects sitemap_store_reads_only_a_committed_set
+     *
+     * @return void 반환값 없음
      */
     public function test_last_generated_at_returns_manifest_timestamp(): void
     {

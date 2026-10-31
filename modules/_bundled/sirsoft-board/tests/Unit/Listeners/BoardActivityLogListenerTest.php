@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
  * - Report create/update_status/bulk_update_status/delete/restore_content/blind_content/delete_content 로그
  * - 예외 발생 시 graceful 처리
  *
- * @effects aborted_activity_log_recorded
+ * 효과 요약(마커 아님 — 평문): aborted_activity_log_recorded
  */
 class BoardActivityLogListenerTest extends ModuleTestCase
 {
@@ -332,18 +332,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 설정 · 일괄 검증을 돕는 헬퍼입니다.
+     * 권한 적용 실패로 일괄 적용이 중단되면 실패 게시판명과 위치를 문구 인자에, 상세 사유를 properties 에 담아 기록하는지 확인한다.
      *
      * @scenario case=settings_bulk_apply_handlers
      *
-     * @effects bulk_apply_logs_with_and_without_loggable
+     * @effects bulk_apply_logs_with_and_without_loggable, aborted_activity_log_recorded
      *
      * @return void 반환값 없음
      */
     #[Test]
-    /**
-     * @effects aborted_activity_log_recorded
-     */
     public function handle_settings_after_bulk_apply_aborted는_권한_실패_시_게시판명을_담아_기록한다(): void
     {
         $fields = ['manager', 'per_page'];
@@ -373,18 +370,15 @@ class BoardActivityLogListenerTest extends ModuleTestCase
     }
 
     /**
-     * 설정 · 일괄 검증을 돕는 헬퍼입니다.
+     * 컬럼 일괄 업데이트 실패로 중단되면 게시판명 없이(failed_board=null) 중단 이력을 기록하는지 확인한다.
      *
      * @scenario case=settings_bulk_apply_handlers
      *
-     * @effects bulk_apply_logs_with_and_without_loggable
+     * @effects bulk_apply_logs_with_and_without_loggable, aborted_activity_log_recorded
      *
      * @return void 반환값 없음
      */
     #[Test]
-    /**
-     * @effects aborted_activity_log_recorded
-     */
     public function handle_settings_after_bulk_apply_aborted는_컬럼_실패_시_게시판명없이_기록한다(): void
     {
         // 컬럼 일괄 업데이트 실패는 특정 게시판을 짚을 수 없어 failed_board=null

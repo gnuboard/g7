@@ -13,6 +13,11 @@ use Plugins\Sirsoft\PayKginicis\Services\CbtCvsOperationsService;
  */
 class CbtCvsNotifyController
 {
+    /**
+     * CBT 편의점 입금 통보 처리 서비스를 주입받는다.
+     *
+     * @param  CbtCvsOperationsService  $operationsService  편의점 입금 통보 처리 서비스
+     */
     public function __construct(
         private readonly CbtCvsOperationsService $operationsService,
     ) {}
@@ -30,6 +35,12 @@ class CbtCvsNotifyController
         return $this->plain((string) ($result['body'] ?? 'FAIL'));
     }
 
+    /**
+     * 통보 응답 본문을 text/plain 200 응답으로 감싼다.
+     *
+     * @param  string  $body  PG 에 돌려줄 응답 본문(OK 또는 FAIL)
+     * @return Response text/plain 응답
+     */
     private function plain(string $body): Response
     {
         // file-serving:allow 파일이 아니라 이 자리에서 만든 통보 응답 본문을 돌려준다 — 서빙 계약

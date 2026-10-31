@@ -28,6 +28,11 @@ class AttachmentDownloadConditionalRequestTest extends TestCase
 
     private Attachment $attachment;
 
+    /**
+     * 훅을 비우고 첨부 디스크를 가짜로 바꾼 뒤 PDF 바이트를 저장하고 그 크기를 기록한 비이미지 첨부 행을 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -49,6 +54,11 @@ class AttachmentDownloadConditionalRequestTest extends TestCase
         ]);
     }
 
+    /**
+     * 준비한 첨부의 공개 다운로드 URL(`/api/attachment/{hash}`)을 만든다.
+     *
+     * @return string 첨부 다운로드 URL
+     */
     private function url(): string
     {
         return '/api/attachment/'.$this->attachment->hash;
@@ -56,6 +66,10 @@ class AttachmentDownloadConditionalRequestTest extends TestCase
 
     /**
      * 304 가 본문 없는 전용 응답이고 200 의 캐시 축을 그대로 싣는지 단언합니다.
+     *
+     * @param  TestResponse  $full  같은 URL 의 200 응답
+     * @param  TestResponse  $notModified  조건부 재요청의 304 응답
+     * @return void 반환값 없음
      */
     private function assertNotModifiedMirrors200(TestResponse $full, TestResponse $notModified): void
     {
@@ -77,6 +91,12 @@ class AttachmentDownloadConditionalRequestTest extends TestCase
 
     /**
      * 비이미지 다운로드도 검증자를 싣고, 다운로드 방식(attachment)은 유지된다.
+     *
+     * @scenario response_kind=streamed, conditional_request=none, consumer=attachment
+     *
+     * @effects attachment_stream_declares_last_modified_and_honours_ims, attachment_disposition_survives_the_streaming_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_non_image_download_carries_validators_and_keeps_attachment_disposition(): void
     {
@@ -102,7 +122,13 @@ class AttachmentDownloadConditionalRequestTest extends TestCase
     }
 
     /**
+     * 다운로드 통로에서 첫 응답의 ETag 를 되보내면 200 의 캐시 축을 그대로 실은 304 가 나오는지 확인한다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match, consumer=attachment
+     *
      * @effects conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_matching_etag_yields_304_on_the_download_path(): void
     {
@@ -115,7 +141,13 @@ class AttachmentDownloadConditionalRequestTest extends TestCase
     }
 
     /**
-     * @effects conditional_response_carries_the_full_cache_axis_of_200
+     * 다운로드 통로에서 `If-Modified-Since` 만 보내도 200 의 캐시 축을 그대로 실은 304 가 나오는지 확인한다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_modified_since, consumer=attachment
+     *
+     * @effects conditional_response_carries_the_full_cache_axis_of_200, attachment_stream_declares_last_modified_and_honours_ims
+     *
+     * @return void 반환값 없음
      */
     public function test_if_modified_since_alone_yields_304_on_the_download_path(): void
     {
@@ -127,6 +159,15 @@ class AttachmentDownloadConditionalRequestTest extends TestCase
         $this->assertNotModifiedMirrors200($first, $second);
     }
 
+    /**
+     * 현재 것과 다른 ETag 로 재요청하면 다운로드 방식(attachment)을 유지한 전문 200 이 나오는지 확인한다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match, consumer=attachment
+     *
+     * @effects non_matching_validator_returns_the_full_representation
+     *
+     * @return void 반환값 없음
+     */
     public function test_non_matching_validator_returns_the_full_download(): void
     {
         $stale = $this->withHeaders(['If-None-Match' => '"not-the-current-tag"'])->get($this->url());
@@ -140,6 +181,12 @@ class AttachmentDownloadConditionalRequestTest extends TestCase
      *
      * 스트림 응답이 오늘 압축되지 않는 것은 미들웨어가 응답 클래스를 보고 건너뛰는 우연이라,
      * 응답 헤더만으로는 이 축을 잴 수 없다 — 요청 속성으로 잰다.
+     *
+     * @scenario response_kind=streamed, conditional_request=none, consumer=attachment
+     *
+     * @effects serving_paths_declare_compression_skip_on_the_request
+     *
+     * @return void 반환값 없음
      */
     public function test_download_path_declares_compression_skip(): void
     {

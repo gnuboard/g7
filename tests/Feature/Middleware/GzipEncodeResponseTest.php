@@ -19,6 +19,8 @@ class GzipEncodeResponseTest extends TestCase
 {
     /**
      * 테스트용 대용량 JSON 데이터를 생성합니다.
+     *
+     * @return array<int, array<string, mixed>> 압축 하한을 넘는 항목 100개짜리 배열
      */
     private function getLargeJsonData(): array
     {
@@ -39,6 +41,11 @@ class GzipEncodeResponseTest extends TestCase
         return $data;
     }
 
+    /**
+     * 대용량 JSON, 소용량 JSON, HTML 을 돌려주는 시험 라우트 셋을 등록한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -62,6 +69,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * Accept-Encoding: gzip 헤더가 있으면 응답이 압축되어야 합니다.
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_compresses_compressible_responses_for_accepting_clients
+     *
+     * @return void 반환값 없음
      */
     public function test_compresses_json_response_when_client_accepts_gzip(): void
     {
@@ -89,6 +102,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * Accept-Encoding 헤더가 없으면 응답이 압축되지 않아야 합니다.
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_leaves_responses_uncompressed_without_gzip_acceptance
+     *
+     * @return void 반환값 없음
      */
     public function test_does_not_compress_when_client_does_not_accept_gzip(): void
     {
@@ -107,6 +126,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * 작은 응답은 압축하지 않아야 합니다 (1KB 미만).
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_skips_responses_below_the_size_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_does_not_compress_small_responses(): void
     {
@@ -123,6 +148,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * HTML 응답도 압축되어야 합니다.
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_compresses_compressible_responses_for_accepting_clients
+     *
+     * @return void 반환값 없음
      */
     public function test_compresses_html_response(): void
     {
@@ -136,6 +167,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * 이미 압축된 응답은 다시 압축하지 않아야 합니다.
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_does_not_double_compress_encoded_responses
+     *
+     * @return void 반환값 없음
      */
     public function test_does_not_double_compress(): void
     {
@@ -165,6 +202,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * Vary 헤더가 올바르게 설정되어야 합니다.
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_varies_on_accept_encoding_for_compressible_responses
+     *
+     * @return void 반환값 없음
      */
     public function test_sets_vary_header_correctly(): void
     {
@@ -181,6 +224,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * 압축 후 Content-Length가 올바르게 설정되어야 합니다.
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_declares_the_encoded_content_length
+     *
+     * @return void 반환값 없음
      */
     public function test_sets_correct_content_length(): void
     {
@@ -198,6 +247,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * 미들웨어 직접 테스트 - Accept-Encoding 확인.
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_compresses_compressible_responses_for_accepting_clients, gzip_leaves_responses_uncompressed_without_gzip_acceptance
+     *
+     * @return void 반환값 없음
      */
     public function test_middleware_checks_accept_encoding(): void
     {
@@ -225,6 +280,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * 304 Not Modified 응답은 압축하지 않아야 합니다.
+     *
+     * @scenario encoding=gzip, conditional_request=if_none_match
+     *
+     * @effects gzip_skips_not_modified_responses
+     *
+     * @return void 반환값 없음
      */
     public function test_does_not_compress_304_response(): void
     {
@@ -242,6 +303,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * 압축 효율성 테스트 - 압축 후 크기가 원본보다 작아야 합니다.
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_compresses_compressible_responses_for_accepting_clients
+     *
+     * @return void 반환값 없음
      */
     public function test_compression_reduces_size(): void
     {
@@ -281,6 +348,12 @@ class GzipEncodeResponseTest extends TestCase
      *
      * 기존에는 BinaryFileResponse.getContent() 가 false 를 반환해 미들웨어가
      * 압축 없이 통과시켜 번들이 비압축 전송되던 사각지대를 해소한 회귀 테스트입니다.
+     *
+     * @scenario encoding=gzip, response_kind=binary
+     *
+     * @effects gzip_compresses_compressible_responses_for_accepting_clients
+     *
+     * @return void 반환값 없음
      */
     public function test_compresses_binary_file_response(): void
     {
@@ -321,7 +394,11 @@ class GzipEncodeResponseTest extends TestCase
     /**
      * BinaryFileResponse 압축 시 원본 응답의 캐싱 헤더가 승계되어야 합니다.
      *
+     * @scenario encoding=gzip, response_kind=binary
+     *
      * @effects gzip_marks_encoded_representation_with_distinct_etag
+     *
+     * @return void 반환값 없음
      */
     public function test_binary_file_response_preserves_headers(): void
     {
@@ -359,7 +436,11 @@ class GzipEncodeResponseTest extends TestCase
      * 그 응답을 **일반 Response 로 치환**하면서 파일을 통째로 읽어 본문에 싣는다. 치환된
      * 응답은 prepare() 를 다시 거치지 않고 `Response::send()` 에는 HEAD 가드가 없다.
      *
+     * @scenario encoding=gzip, response_kind=binary, range_request=head
+     *
      * @effects gzip_skips_head_and_partial_responses
+     *
+     * @return void 반환값 없음
      */
     public function test_head_request_is_not_compressed_so_no_body_is_attached(): void
     {
@@ -388,7 +469,11 @@ class GzipEncodeResponseTest extends TestCase
      * 헤더를 승계하면 `Content-Range` 는 부분 범위를 가리키는데 본문은 **파일 전체**의
      * gzip 이 되어 둘이 정면으로 어긋난다. 미디어 시킹과 재개 다운로드가 이 경로를 쓴다.
      *
+     * @scenario encoding=gzip, response_kind=binary, range_request=partial
+     *
      * @effects gzip_skips_head_and_partial_responses
+     *
+     * @return void 반환값 없음
      */
     public function test_partial_content_response_is_not_compressed(): void
     {
@@ -424,6 +509,8 @@ class GzipEncodeResponseTest extends TestCase
      * @scenario range_request=status_only
      *
      * @effects partial_content_guard_holds_on_each_signal, gzip_skips_head_and_partial_responses
+     *
+     * @return void 반환값 없음
      */
     public function test_each_partial_content_signal_blocks_compression_on_its_own(): void
     {
@@ -461,6 +548,12 @@ class GzipEncodeResponseTest extends TestCase
      *
      * 종전에는 실제로 압축한 응답에만 붙어, 같은 URL 이 상한 초과·소용량·미지원
      * 클라이언트에서는 Vary 없이 나갔다 — 공유 캐시가 인코딩 구분 없이 재사용한다.
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects gzip_varies_on_accept_encoding_for_compressible_responses
+     *
+     * @return void 반환값 없음
      */
     public function test_uncompressed_compressible_response_still_varies_on_accept_encoding(): void
     {
@@ -482,6 +575,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * 작은 BinaryFileResponse(1KB 미만)는 압축하지 않아야 합니다.
+     *
+     * @scenario encoding=gzip, response_kind=binary
+     *
+     * @effects gzip_skips_responses_below_the_size_threshold
+     *
+     * @return void 반환값 없음
      */
     public function test_does_not_compress_small_binary_file_response(): void
     {
@@ -508,6 +607,12 @@ class GzipEncodeResponseTest extends TestCase
      * (`/api/system/public-storage/...`)가 생기면서 대상이 **운영자·사용자 업로드물**로
      * 넓어졌다 — 압축 대상 MIME(json·txt·css·js·html·xml)의 대용량 파일 하나로
      * memory_limit 를 넘긴다. 계획서 §7.6 R35 「신규 서빙 라우트도 스트리밍」.
+     *
+     * @scenario encoding=gzip, response_kind=binary
+     *
+     * @effects gzip_skips_file_responses_above_the_size_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_does_not_compress_file_response_above_size_cap(): void
     {
@@ -536,6 +641,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * gzip 미지원 클라이언트에는 BinaryFileResponse 를 압축하지 않아야 합니다.
+     *
+     * @scenario encoding=gzip, response_kind=binary
+     *
+     * @effects gzip_leaves_responses_uncompressed_without_gzip_acceptance
+     *
+     * @return void 반환값 없음
      */
     public function test_does_not_compress_binary_file_response_without_gzip_support(): void
     {
@@ -572,6 +683,8 @@ class GzipEncodeResponseTest extends TestCase
      * @scenario encoding=gzip, range_advertised=bytes
      *
      * @effects compressed_response_drops_the_range_advertisement
+     *
+     * @return void 반환값 없음
      */
     public function test_compressed_response_does_not_advertise_byte_ranges(): void
     {
@@ -601,6 +714,12 @@ class GzipEncodeResponseTest extends TestCase
 
     /**
      * 압축하지 않은 응답의 범위 광고는 그대로 둔다 (반대 방향 — 회귀 0).
+     *
+     * @scenario encoding=gzip, range_advertised=bytes, response_kind=binary
+     *
+     * @effects compressed_response_drops_the_range_advertisement
+     *
+     * @return void 반환값 없음
      */
     public function test_uncompressed_response_keeps_the_range_advertisement(): void
     {
@@ -638,6 +757,12 @@ class GzipEncodeResponseTest extends TestCase
      *
      * 판정은 "두 경로가 같은 자리를 쓰는가" 이므로, 일반 응답에 그 헤더를 실어 두고
      * 압축 뒤 사라지는지 잰다 (11차 G3 라운드 B11-11).
+     *
+     * @scenario encoding=gzip, range_advertised=bytes
+     *
+     * @effects compressed_response_drops_the_range_advertisement
+     *
+     * @return void 반환값 없음
      */
     public function test_compressed_plain_response_drops_the_range_advertisement(): void
     {
@@ -682,6 +807,8 @@ class GzipEncodeResponseTest extends TestCase
      * @scenario accept_encoding=weighted
      *
      * @effects gzip_honours_accept_encoding_q_values
+     *
+     * @return void 반환값 없음
      */
     public function test_accept_encoding_q_values_are_honoured(): void
     {
@@ -754,6 +881,12 @@ class GzipEncodeResponseTest extends TestCase
      * 사용자 업로드물 통로(코어 첨부·게시판·확장 이미지)는 이 표식으로 압축을 피한다. 종전에는
      * 그 통로가 압축을 피한 것이 스트림 응답 클래스를 미들웨어가 건너뛰는 우연이었고, 표식은
      * 공개 스토리지 한 곳에만 있었다 (14차 G3 라운드).
+     *
+     * @scenario encoding=gzip
+     *
+     * @effects declared_compression_skip_blocks_gzip_regardless_of_response_shape
+     *
+     * @return void 반환값 없음
      */
     public function test_route_declared_skip_attribute_blocks_compression_regardless_of_response_shape(): void
     {

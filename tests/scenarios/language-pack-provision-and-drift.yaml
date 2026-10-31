@@ -42,6 +42,10 @@ effects:
   - cli_list_surfaces_uninstalled_and_drift
   - admin_list_shows_drift_badge_and_reinstall
   - third_party_pack_without_bundle_source_not_offered_for_reinstall
+  - admin_menu_translation_filter_is_subscribed_by_scope
+  - admin_menu_seed_injector_is_scope_aware
+  - plugin_activation_menu_sync_passes_through_the_translation_filter
+  - every_menu_declaring_extension_pack_ships_a_menu_seed
 
 test_files:
   - tests/Feature/LanguagePack/ProvisionLanguagePackCommandTest.php
@@ -49,6 +53,7 @@ test_files:
   - tests/Feature/LanguagePack/ListDriftDetectionTest.php
   - tests/Feature/LanguagePack/ListLanguagePackCommandTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-language-pack-drift.test.tsx
+  - tests/Unit/LanguagePack/ExtensionMenuTranslationWiringTest.php
 
 e2e_files:
   - tests/Playwright/specs/admin/language-pack-drift-discovery.spec.ts

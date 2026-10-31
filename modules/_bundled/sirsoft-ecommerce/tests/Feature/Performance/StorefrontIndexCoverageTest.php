@@ -26,6 +26,8 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
 {
     /**
      * MySQL 계열이 아니면 건너뜁니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -39,7 +41,10 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
     /**
      * 전시 조건 + 정렬을 덮는 색인이 존재하는지 확인
      *
+     * @scenario measure=index_coverage
      * @effects display_sort_index_exists
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function display_sort_indexes_exist(): void
@@ -53,7 +58,10 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
     /**
      * 판매 집계용 커버링 색인이 존재하는지 확인
      *
+     * @scenario measure=index_coverage
      * @effects sales_aggregate_index_exists
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function sales_aggregate_index_exists(): void
@@ -72,7 +80,10 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      *
      * 컬럼 순서가 어긋나면 색인은 존재해도 정렬에 쓰이지 않는다.
      *
+     * @scenario measure=index_coverage
      * @effects product_list_uses_display_sort_index
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function index_column_order_matches_query_shape(): void
@@ -99,7 +110,10 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
     /**
      * 등록일 정렬 목록이 실제로 이 색인을 고르는지 EXPLAIN 으로 확인
      *
+     * @scenario measure=index_coverage
      * @effects product_list_uses_display_sort_index
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function query_plan_uses_the_display_sort_index(): void
@@ -118,7 +132,10 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
     /**
      * 판매가 정렬 목록이 실제로 이 색인을 고르는지 EXPLAIN 으로 확인
      *
+     * @scenario measure=index_coverage
      * @effects product_list_uses_price_sort_index
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function query_plan_uses_the_price_sort_index(): void
@@ -140,7 +157,10 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      * 이 색인은 `(product_id, created_at, quantity)` 커버링이라, 집계가 원본 행을 읽지
      * 않고 색인만으로 끝나야 한다.
      *
+     * @scenario measure=index_coverage
      * @effects sales_aggregate_uses_covering_index
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function query_plan_uses_the_sales_aggregate_index(): void
@@ -164,6 +184,8 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      *
      * @param  Builder  $query  판정 대상 쿼리
      * @param  string  $indexName  선택되어야 하는 색인명
+     *
+     * @return void 반환값 없음
      */
     private function assertQueryPlanUsesIndex($query, string $indexName): void
     {
@@ -186,6 +208,8 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      * 실행계획이 색인을 고를 만큼 상품 행을 채웁니다.
      *
      * 행이 몇 건뿐이면 전체 스캔이 정상 선택이라 `key` 단언이 성립하지 않는다.
+     *
+     * @return void 반환값 없음
      */
     private function seedProductsForPlanning(): void
     {
@@ -212,6 +236,8 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      * 실행계획이 색인을 고를 만큼 주문 옵션 행을 채웁니다.
      *
      * order_id / product_id 에 외래키가 걸려 있어 실제 부모 행이 먼저 있어야 한다.
+     *
+     * @return void 반환값 없음
      */
     private function seedOrderOptionsForPlanning(): void
     {
@@ -250,6 +276,8 @@ class StorefrontIndexCoverageTest extends ModuleTestCase
      * @param  string  $table  테이블명 (프리픽스 제외)
      * @param  string  $indexName  색인명
      * @param  array<int, string>  $expected  기대 컬럼 순서
+     *
+     * @return void 반환값 없음
      */
     private function assertIndexColumns(string $table, string $indexName, array $expected): void
     {

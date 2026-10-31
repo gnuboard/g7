@@ -384,6 +384,8 @@ class ExtensionMiddlewareRegistry implements ExtensionMiddlewareRegistryInterfac
      * 인덱스 캐시를 무효화합니다 (확장 활성/비활성/설치/제거/리로드 시).
      *
      * IDV `IdentityPolicy::flushRouteScopeCache()` 미러 정적 메서드.
+     *
+     * @return void 반환값 없음
      */
     public static function flush(): void
     {

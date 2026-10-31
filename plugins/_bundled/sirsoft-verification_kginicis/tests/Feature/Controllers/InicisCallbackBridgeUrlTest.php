@@ -20,6 +20,11 @@ class InicisCallbackBridgeUrlTest extends PluginTestCase
 {
     private const CALLBACK_URL = '/plugins/sirsoft-verification_kginicis/plugin/inicis/callback';
 
+    /**
+     * 테스트가 강제한 자산 주소 접두사를 비워 다음 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetUrl::forceBasePrefix(null);
@@ -28,9 +33,13 @@ class InicisCallbackBridgeUrlTest extends PluginTestCase
     }
 
     /**
+     * 인증 성공 콜백이 localhost 로 도착해도 팝업 브리지로 보내는 Location 이 설정된 사이트 주소로 시작하고 인증 토큰을 싣는지 확인한다.
+     *
      * @scenario base_path=subpath, navigation_direction=navigation
      *
      * @effects pg_return_and_notify_addresses_follow_the_configured_site_url
+     *
+     * @return void 반환값 없음
      */
     public function test_bridge_redirect_follows_the_configured_site_url(): void
     {

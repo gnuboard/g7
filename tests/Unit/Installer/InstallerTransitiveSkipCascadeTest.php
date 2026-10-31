@@ -25,7 +25,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: skip_dependency transitive_dependent·cycle
  *
- * @effects skip_cascade_reaches_indirect_dependents, skip_cascade_terminates_on_dependency_cycle
+ * 효과 요약(마커 아님 — 평문): 건너뛰기 파급이 간접 의존 확장까지 닿고, 순환 의존에서도 유한 종료한다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -39,6 +39,13 @@ class InstallerTransitiveSkipCascadeTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스마다 한 번 임시 BASE_PATH 와 저장소 디렉토리를 만들고 인스톨러 런타임을 적재한다.
+     *
+     * BASE_PATH 가 이미 시스템 임시 디렉토리 밖으로 정의돼 있으면 적재하지 않고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function boot(): void
     {
         if (self::$booted) {
@@ -81,6 +88,11 @@ class InstallerTransitiveSkipCascadeTest extends TestCase
         require_once $root.'/public/install/includes/task-runner.php';
     }
 
+    /**
+     * 런타임을 적재하고 이전 테스트의 상태 파일을 지운 뒤 진행 기록을 버퍼 송신기로 받는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -101,8 +113,9 @@ class InstallerTransitiveSkipCascadeTest extends TestCase
     /**
      * 모듈 1개 + 플러그인 2개로 A(plugin-c) → B(plugin-b) → C(module-a) 사슬을 만든다.
      *
-     * @param  array<string, array{modules?: array<int, string>, plugins?: array<int, string>}>  $pluginDeps
-     * @param  array<string, array{modules?: array<int, string>}>  $moduleDeps
+     * @param  array<string, array{modules?: array<int, string>}>  $moduleDeps  모듈 id → 의존 대상 목록
+     * @param  array<string, array{modules?: array<int, string>, plugins?: array<int, string>}>  $pluginDeps  플러그인 id → 의존 대상 목록
+     * @return void 반환값 없음
      */
     private function writeFixtures(array $moduleDeps, array $pluginDeps): void
     {
@@ -131,7 +144,12 @@ class InstallerTransitiveSkipCascadeTest extends TestCase
     }
 
     /**
-     * @param  array<int, string>  $completed
+     * 고른 모듈과 플러그인, 완료 태스크를 담은 stepwise 실패 상태를 상태 파일에 저장한다.
+     *
+     * @param  array<int, string>  $modules  선택된 모듈 id 목록
+     * @param  array<int, string>  $plugins  선택된 플러그인 id 목록
+     * @param  array<int, string>  $completed  완료로 기록할 태스크 키 목록
+     * @return void 반환값 없음
      */
     private function seedState(array $modules, array $plugins, array $completed): void
     {
@@ -151,6 +169,15 @@ class InstallerTransitiveSkipCascadeTest extends TestCase
         $this->assertTrue(saveInstallationState($state));
     }
 
+    /**
+     * 모듈을 건너뛰면 그 모듈에 직접 의존하는 플러그인과 그 플러그인에 의존하는 플러그인이 모두 대기 의존 목록에 오르는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, skip_request=skippable, task=module, task=plugin
+     *
+     * @effects skip_cascade_reaches_indirect_dependents
+     *
+     * @return void 반환값 없음
+     */
     public function test_cascade_reaches_the_indirect_dependent(): void
     {
         $this->writeFixtures(
@@ -172,6 +199,15 @@ class InstallerTransitiveSkipCascadeTest extends TestCase
         );
     }
 
+    /**
+     * 건너뛰고 계속을 실행하면 사슬 끝 플러그인의 설치와 활성화까지 건너뛴 목록에 실리는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, skip_request=skippable, task=module, task=plugin
+     *
+     * @effects skip_cascade_reaches_indirect_dependents
+     *
+     * @return void 반환값 없음
+     */
     public function test_skip_and_continue_marks_the_whole_chain(): void
     {
         $this->writeFixtures(
@@ -194,6 +230,15 @@ class InstallerTransitiveSkipCascadeTest extends TestCase
         $this->assertContains('plugin_activate:vendor-c', $result['skipped']);
     }
 
+    /**
+     * 이미 설치된 중간 의존 확장은 경고 대상에만 오르고 그 뒤 사슬은 대기 의존 목록에 끌려오지 않는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, skip_request=skippable, task=module, task=plugin
+     *
+     * @effects skip_records_warning_for_installed_dependents
+     *
+     * @return void 반환값 없음
+     */
     public function test_installed_dependent_is_warned_but_does_not_drag_its_own_dependents(): void
     {
         $this->writeFixtures(
@@ -217,6 +262,15 @@ class InstallerTransitiveSkipCascadeTest extends TestCase
         );
     }
 
+    /**
+     * 두 플러그인이 서로 의존하는 순환이 있어도 의존 판정이 끝나고 두 플러그인을 모두 돌려주는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, skip_request=skippable, task=module, task=plugin
+     *
+     * @effects skip_cascade_terminates_on_dependency_cycle
+     *
+     * @return void 반환값 없음
+     */
     public function test_dependency_cycle_terminates(): void
     {
         $this->writeFixtures(

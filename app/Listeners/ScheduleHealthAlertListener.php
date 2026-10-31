@@ -56,6 +56,7 @@ class ScheduleHealthAlertListener implements HookListenerInterface
      * 훅 이벤트 처리 (기본 핸들러).
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {

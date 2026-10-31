@@ -32,6 +32,7 @@ effects:
   - attachment_upload_download_unaffected
   - extension_asset_serving_unaffected
   - disk_storage_facade_put_get_still_works
+  - every_local_disk_declares_serve_false_explicitly   # local 드라이버 디스크 전부가 serve => false 를 기본값에 기대지 않고 명시한다
 
 test_files:
   - tests/Feature/StorageServeRouteTest.php

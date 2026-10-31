@@ -173,7 +173,11 @@ class BundledLanguagePackKeyParityTest extends TestCase
     }
 
     /**
+     * 번들 언어팩마다 이름에서 대상과 로케일을 읽어 그 대상의 ko 원본 키가 팩에 빠짐없이 있는지 확인하고, 원본을 찾지 못하는 팩은 실패로 센다.
+     *
      * @effects bundled_language_pack_covers_every_source_key
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_every_bundled_pack_covers_its_source_keys(): void

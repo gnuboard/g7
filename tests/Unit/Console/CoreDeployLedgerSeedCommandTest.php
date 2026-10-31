@@ -15,9 +15,13 @@ use Tests\TestCase;
 class CoreDeployLedgerSeedCommandTest extends TestCase
 {
     /**
+     * 원장 씨앗 커맨드가 프로젝트 루트로 서비스 씨앗기를 한 번 부르고, 씨앗한 조각 수를 출력하며 성공 코드로 끝나는지 확인한다.
+     *
      * @scenario deploy_fragment_ledger=absent
      *
      * @effects installer_seeds_deploy_fragment_ledger_at_finalize
+     *
+     * @return void 반환값 없음
      */
     public function test_command_seeds_the_ledger_from_the_project_root(): void
     {
@@ -43,6 +47,8 @@ class CoreDeployLedgerSeedCommandTest extends TestCase
      * @scenario deploy_fragment_ledger=unwritable
      *
      * @effects installer_seeds_deploy_fragment_ledger_at_finalize
+     *
+     * @return void 반환값 없음
      */
     public function test_command_reports_failure_and_emits_the_reason_when_the_ledger_write_fails(): void
     {
@@ -58,9 +64,13 @@ class CoreDeployLedgerSeedCommandTest extends TestCase
     }
 
     /**
+     * 이미 원장이 있어 씨앗할 조각이 없을 때 커맨드가 건너뜀 문구를 내고 여전히 성공 코드로 끝나 설치를 막지 않는지 확인한다.
+     *
      * @scenario deploy_fragment_ledger=present
      *
      * @effects installer_seeds_deploy_fragment_ledger_at_finalize
+     *
+     * @return void 반환값 없음
      */
     public function test_command_is_idempotent_and_never_fails_the_install(): void
     {
@@ -74,9 +84,13 @@ class CoreDeployLedgerSeedCommandTest extends TestCase
     }
 
     /**
+     * 인스톨러 task-runner 의 마무리 단계가 원장 씨앗 커맨드를 단일 Artisan 러너(installerRunArtisan)로 부르는지 소스에서 확인한다.
+     *
      * @scenario deploy_fragment_ledger=absent
      *
      * @effects installer_seeds_deploy_fragment_ledger_at_finalize
+     *
+     * @return void 반환값 없음
      */
     public function test_installer_finalize_calls_the_command_through_the_single_artisan_runner(): void
     {

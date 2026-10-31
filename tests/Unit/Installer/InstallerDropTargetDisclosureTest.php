@@ -20,7 +20,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * ② 더 긴 접두사의 다른 G7 설치가 감지되면 별도 경고를 띄운다
  * ③ 지운 테이블명을 설치 기록에 남긴다 (종전에는 count 만 남아 사후에도 알 수 없었다)
  *
- * @effects installer_drop_targets_are_disclosed_and_recorded
+ * 효과 요약(마커 아님 — 평문): 삭제 대상 테이블의 공개와 기록. 표식은 각 테스트 메서드에 있다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -29,6 +29,11 @@ class InstallerDropTargetDisclosureTest extends TestCase
     use CleansTemporaryBasePath;
     use ScansPhpSourceFunctions;
 
+    /**
+     * 임시 BASE_PATH 를 정하고 설치기 설정, 상태, 공용 함수 파일과 번역 대역을 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +50,12 @@ class InstallerDropTargetDisclosureTest extends TestCase
         require_once $projectRoot.'/public/install/includes/functions.php';
     }
 
+    /**
+     * 테이블 목록 조회에 주어진 이름들을 돌려주는 PDO 대역을 만든다.
+     *
+     * @param  array<int, string>  $tables  조회 결과로 돌려줄 테이블 이름 목록
+     * @return PDO 조회 결과가 고정된 PDO 대역
+     */
     private function pdoWithTables(array $tables): PDO
     {
         $stmt = $this->createStub(PDOStatement::class);
@@ -57,6 +68,12 @@ class InstallerDropTargetDisclosureTest extends TestCase
 
     /**
      * ②: 더 긴 접두사에 G7 시그니처 4종이 모두 있으면 「다른 G7 설치」로 감지한다.
+     *
+     * @scenario task=db_cleanup
+     *
+     * @effects installer_drop_targets_are_disclosed_and_recorded
+     *
+     * @return void 반환값 없음
      */
     public function test_nested_g7_prefix_is_detected(): void
     {
@@ -71,6 +88,12 @@ class InstallerDropTargetDisclosureTest extends TestCase
 
     /**
      * ②: 시그니처가 4종 미만이면 감지하지 않고(오경보 방지), 빈 접두사는 빈 결과다.
+     *
+     * @scenario task=db_cleanup
+     *
+     * @effects installer_drop_targets_are_disclosed_and_recorded
+     *
+     * @return void 반환값 없음
      */
     public function test_nested_detection_requires_full_signature(): void
     {
@@ -83,6 +106,12 @@ class InstallerDropTargetDisclosureTest extends TestCase
 
     /**
      * ①·②: 감지 응답이 삭제 대상 목록(삭제 계산과 동일 산출)과 이웃 경고를 싣는다.
+     *
+     * @scenario task=db_cleanup
+     *
+     * @effects installer_drop_targets_are_disclosed_and_recorded
+     *
+     * @return void 반환값 없음
      */
     public function test_existing_tables_response_discloses_drop_targets(): void
     {
@@ -101,6 +130,12 @@ class InstallerDropTargetDisclosureTest extends TestCase
 
     /**
      * ①·②-배선: 동의 카드가 삭제 대상 목록과 이웃 경고를 실제로 그린다.
+     *
+     * @scenario task=db_cleanup
+     *
+     * @effects installer_drop_targets_are_disclosed_and_recorded
+     *
+     * @return void 반환값 없음
      */
     public function test_consent_card_renders_disclosure(): void
     {
@@ -112,6 +147,12 @@ class InstallerDropTargetDisclosureTest extends TestCase
 
     /**
      * ③-배선: 드롭·TRUNCATE 가 테이블명을 기록에 남긴다.
+     *
+     * @scenario task=db_cleanup
+     *
+     * @effects installer_drop_targets_are_disclosed_and_recorded
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_and_truncate_record_table_names(): void
     {

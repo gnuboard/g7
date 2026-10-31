@@ -59,13 +59,21 @@ class InstallerManualVerificationCriteriaTest extends TestCase
         'web_exposure_manual_criteria',
     ];
 
+    /**
+     * 이 테스트 파일에서 세 단계 위인 저장소 루트 경로를 돌려준다.
+     *
+     * @return string 저장소 루트 절대 경로
+     */
     private function repoRoot(): string
     {
         return dirname(__DIR__, 3);
     }
 
     /**
-     * @return array<string, string>
+     * 인스톨러 언어 파일 하나를 읽어 문자열 값만 남긴 번역 표를 만든다.
+     *
+     * @param  string  $code  읽을 로케일 코드 (ko, en)
+     * @return array<string, string> 키별 번역 문자열 표
      */
     private function locale(string $code): array
     {
@@ -81,7 +89,8 @@ class InstallerManualVerificationCriteriaTest extends TestCase
     /**
      * 운영자 수동 확인 문구 집합 — 「직접 열어 보고 무엇을 보면 정상/실패인가」를 말하는 키.
      *
-     * @return array<string, string>
+     * @param  string  $code  문구를 고를 로케일 코드
+     * @return array<string, string> 수동 확인 문구 키와 문장 표
      */
     private function manualVerificationMessages(string $code): array
     {
@@ -115,6 +124,8 @@ class InstallerManualVerificationCriteriaTest extends TestCase
      * @scenario exposure_probe=unknown, deployment_layout=docroot_project_root
      *
      * @effects exposure_manual_criteria_judges_by_content_not_status
+     *
+     * @return void 반환값 없음
      */
     public function test_manual_verification_messages_do_not_judge_by_status_code(): void
     {
@@ -145,6 +156,8 @@ class InstallerManualVerificationCriteriaTest extends TestCase
      * @scenario exposure_probe=unknown
      *
      * @effects exposure_manual_criteria_judges_by_content_not_status
+     *
+     * @return void 반환값 없음
      */
     public function test_criteria_message_states_the_content_rule(): void
     {
@@ -174,6 +187,8 @@ class InstallerManualVerificationCriteriaTest extends TestCase
      * @scenario exposure_probe=unknown, exposure_control=unreachable
      *
      * @effects exposure_unknown_detail_names_its_actual_cause
+     *
+     * @return void 반환값 없음
      */
     public function test_every_unknown_cause_key_is_defined_and_referenced(): void
     {
@@ -216,6 +231,8 @@ class InstallerManualVerificationCriteriaTest extends TestCase
      * @scenario exposure_probe=unknown, deployment_layout=docroot_project_root
      *
      * @effects exposure_manual_criteria_judges_by_content_not_status
+     *
+     * @return void 반환값 없음
      */
     public function test_install_doc_undetermined_section_matches_the_screen_criteria(): void
     {
@@ -225,6 +242,7 @@ class InstallerManualVerificationCriteriaTest extends TestCase
         // `\R` 로 자르지 않는다 — 유니코드 모드가 아닌 `\R` 은 **바이트** `\x85`(NEL)도 줄바꿈으로
         // 읽어, 한글 UTF-8 시퀀스 한가운데에서 줄을 자른다(그 조각은 더 이상 올바른 문자열이
         // 아니라 대조가 조용히 어긋난다). 실제 줄바꿈 세 형태만 명시한다.
+        // meta:allow raw-source-read — 소스가 아니라 공개 설치 문서(INSTALL.md)의 문장을 대조한다.
         $lines = preg_split('/\r\n|\n|\r/', (string) file_get_contents($path)) ?: [];
         $matched = array_values(array_filter(
             $lines,

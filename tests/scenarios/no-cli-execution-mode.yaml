@@ -102,6 +102,13 @@ effects:
   # 같은 계약의 모집단은 그 화면 하나가 아니다 — 관리자 코어 업데이트 안내 모달에도 같은
   # 형태의 링크가 있고, 추적 파일 전수에서 도출해 함께 잰다 (P7 검증 라운드 1 결정)
   - install_guide_link_targets_exist_repo_wide
+  - both_runners_accept_positional_arguments   # 숫자 키 위치 인자가 두 러너 모두에서 인자로 도달한다
+  - inprocess_runner_maps_positional_values_to_required_arguments   # in-process 러너가 숫자 키 값을 필수 인자 이름에 매핑한다
+  - inprocess_runner_keeps_named_argument_convention   # 인자명 키 표기(['name' => 'value'])도 계속 성립한다
+  - inprocess_runner_collects_trailing_values_into_array_argument   # 남는 위치 값이 배열 인자({items*})에 모인다
+  - inprocess_runner_appends_overflow_values_to_trailing_array_argument   # 정의보다 많은 값이 마지막 배열 인자에 덧붙는다
+  - empty_detected_binary_falls_back_to_configured_binary
+  - empty_configuration_falls_back_to_plain_php
 
 test_files:
   - tests/Unit/Support/ExecutionEnvironmentTest.php
@@ -121,6 +128,8 @@ test_files:
   - tests/Unit/Support/ExecutionPortabilityHardeningTest.php
   # W1 [자세히 보기] 링크와 그 목적지의 실재 (D32 · P7)
   - tests/Unit/Installer/InstallerExecutionModeGuideLinkTest.php
+  # A-8 측정 불가 표기의 화면 쪽 절반 — 설정 정보 탭이 percentage null 을 0% 로 위장하지 않는다 (609 docblock 정리에서 소유 등재)
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-info-not-measurable.test.tsx
 
 # 번들 존재 축(vendor_bundle_presence)도 같은 이유로 단위 커버리지 밖이다 — 그 축이 갈리는
 # 지점은 인스톨러 게이트 카드(A-1)이고, `vendor-bundle.zip` 유무는 파일 배치의 문제라

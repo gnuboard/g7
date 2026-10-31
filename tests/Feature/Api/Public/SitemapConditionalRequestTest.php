@@ -30,6 +30,11 @@ class SitemapConditionalRequestTest extends TestCase
 {
     private CoreStorageDriver $storage;
 
+    /**
+     * sitemap 을 켜고 로컬 디스크를 가짜로 바꾼 뒤, 그 디스크 위의 파일 저장소를 컨테이너에 묶고 manifest 캐시를 비운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -68,6 +73,13 @@ class SitemapConditionalRequestTest extends TestCase
         return $meta;
     }
 
+    /**
+     * 304 가 본문 없는 전용 응답 객체이고 ETag, Last-Modified, Cache-Control, Expires, Vary 를 200 과 같은 값으로 싣는지 단언한다.
+     *
+     * @param  TestResponse  $full  같은 URL 의 200 응답
+     * @param  TestResponse  $notModified  조건부 재요청의 304 응답
+     * @return void 반환값 없음
+     */
     private function assertNotModifiedMirrors200(TestResponse $full, TestResponse $notModified): void
     {
         $notModified->assertStatus(304);
@@ -85,7 +97,9 @@ class SitemapConditionalRequestTest extends TestCase
     }
 
     /**
-     * @return array<string, array{string}>
+     * 조건부 요청 계약을 잴 sitemap 두 통로(인덱스, 자식)의 URL 을 공급한다.
+     *
+     * @return array<string, array{string}> 케이스 이름별 요청 URL
      */
     public static function sitemapUrls(): array
     {
@@ -95,6 +109,16 @@ class SitemapConditionalRequestTest extends TestCase
         ];
     }
 
+    /**
+     * 각 통로가 manifest 기반 ETag(따옴표 친 32자 hex), 커밋 시각의 Last-Modified, Expires, immutable 없는 Cache-Control, Vary 를 싣는지 확인한다.
+     *
+     * @scenario response_kind=streamed, conditional_request=none
+     *
+     * @effects sitemap_validators_come_from_the_committed_manifest
+     *
+     * @param  string  $url  요청할 sitemap URL
+     * @return void 반환값 없음
+     */
     #[DataProvider('sitemapUrls')]
     public function test_sitemap_carries_manifest_based_validators(string $url): void
     {
@@ -116,7 +140,14 @@ class SitemapConditionalRequestTest extends TestCase
     }
 
     /**
+     * 첫 응답의 ETag 를 `If-None-Match` 로 되보내면 200 의 캐시 축을 그대로 실은 304 가 나오는지 확인한다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
      * @effects conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @param  string  $url  요청할 sitemap URL
+     * @return void 반환값 없음
      */
     #[DataProvider('sitemapUrls')]
     public function test_matching_etag_yields_304(string $url): void
@@ -132,7 +163,14 @@ class SitemapConditionalRequestTest extends TestCase
     }
 
     /**
+     * `If-Modified-Since` 만 보내도 200 의 캐시 축을 그대로 실은 304 가 나오는지 확인한다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_modified_since
+     *
      * @effects conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @param  string  $url  요청할 sitemap URL
+     * @return void 반환값 없음
      */
     #[DataProvider('sitemapUrls')]
     public function test_if_modified_since_alone_yields_304(string $url): void
@@ -147,6 +185,16 @@ class SitemapConditionalRequestTest extends TestCase
         $this->assertNotModifiedMirrors200($first, $second);
     }
 
+    /**
+     * 현재 것과 다른 ETag 로 재요청하면 압축 없는 전문 200 이 나오는지 확인한다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
+     * @effects non_matching_validator_returns_the_full_representation
+     *
+     * @param  string  $url  요청할 sitemap URL
+     * @return void 반환값 없음
+     */
     #[DataProvider('sitemapUrls')]
     public function test_non_matching_validator_returns_the_full_document(string $url): void
     {
@@ -160,6 +208,12 @@ class SitemapConditionalRequestTest extends TestCase
 
     /**
      * 재생성되면 검증자가 바뀌어 옛 ETag 는 전문을 받는다 — 판정이 헐거우면 새 세트가 봇에 닿지 않는다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
+     * @effects sitemap_validators_come_from_the_committed_manifest
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerated_set_invalidates_the_old_validator(): void
     {
@@ -178,6 +232,12 @@ class SitemapConditionalRequestTest extends TestCase
     /**
      * gzip 세트의 자식은 `Content-Encoding: gzip` 을 유지한 채 같은 계약을 갖고, `.xml` 표현과
      * 다른 ETag 를 갖는다(파일 이름이 검증자 소스에 든다).
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match, encoding=gzip
+     *
+     * @effects sitemap_validators_come_from_the_committed_manifest, conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_gzip_child_keeps_its_encoding_and_has_a_distinct_validator(): void
     {
@@ -196,6 +256,12 @@ class SitemapConditionalRequestTest extends TestCase
 
     /**
      * sitemap 통로는 압축 제외를 선언한다 — 자식 파일은 사이트의 URL 수에 비례해 유계가 아니다.
+     *
+     * @scenario response_kind=streamed, conditional_request=none
+     *
+     * @effects serving_paths_declare_compression_skip_on_the_request
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_declares_compression_skip(): void
     {
@@ -214,9 +280,11 @@ class SitemapConditionalRequestTest extends TestCase
      * 방문자에게 재사용한다 — 봇이 받는 응답이라 세션이 있을 이유도 없다 (16차 G3 라운드 E-5).
      * 200 과 304 모두 잰다 — 304 도 같은 미들웨어 스택을 지난다.
      *
-     * @scenario conditional_request=if_none_match
+     * @scenario response_kind=streamed, conditional_request=if_none_match
      *
      * @effects sitemap_response_carries_no_session_cookie
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_responses_carry_no_session_cookie(): void
     {

@@ -53,6 +53,8 @@ class RowStorageOrphanDiskParityTest extends TestCase
      * 고아 disk 는 주입 스토리지로 폴백한다 — 예외가 아니라 404 가 정상 degradation 이다.
      *
      * @effects row_disk_orphan_fallback_is_shared_by_every_serving_path
+     *
+     * @return void 반환값 없음
      */
     public function test_orphan_disk_falls_back_to_the_injected_storage(): void
     {
@@ -83,6 +85,8 @@ class RowStorageOrphanDiskParityTest extends TestCase
      * 행 `disk` 를 읽는 지점 전수가 그 판정을 **실제로 경유한다.**
      *
      * @effects row_disk_orphan_fallback_is_shared_by_every_serving_path
+     *
+     * @return void 반환값 없음
      */
     public function test_every_row_disk_consumer_applies_the_orphan_guard(): void
     {
@@ -125,6 +129,10 @@ class RowStorageOrphanDiskParityTest extends TestCase
      *
      * 앞 테스트는 「판정문이 파일에 있는가」만 본다. 판정을 둔 채 그 옆에서 여전히
      * 날 `withDisk()` 를 부르면 그 검사는 통과하므로 이 축을 따로 잠근다.
+     *
+     * @effects row_disk_orphan_fallback_is_shared_by_every_serving_path
+     *
+     * @return void 반환값 없음
      */
     public function test_core_services_do_not_bypass_the_guard(): void
     {
@@ -146,6 +154,9 @@ class RowStorageOrphanDiskParityTest extends TestCase
 
     /**
      * trait 을 쓰는 최소 소비자 (주입 스토리지 하나를 갖는 코어 서비스의 축소판).
+     *
+     * @param  StorageInterface  $storage  주입할 스토리지
+     * @return object storageForRow 를 call 로 노출하는 trait 소비자
      */
     private function subjectUsing(StorageInterface $storage): object
     {
@@ -153,8 +164,19 @@ class RowStorageOrphanDiskParityTest extends TestCase
         {
             use ResolvesRowStorage;
 
+            /**
+             * 행 disk 판정 trait 이 기댈 주입 스토리지를 받는다.
+             *
+             * @param  StorageInterface  $storage  주입 스토리지
+             */
             public function __construct(protected StorageInterface $storage) {}
 
+            /**
+             * 보호된 storageForRow 를 시험에서 부를 수 있게 드러낸다.
+             *
+             * @param  ?string  $disk  행에 저장된 disk 이름
+             * @return StorageInterface 그 행을 서빙할 스토리지
+             */
             public function call(?string $disk): StorageInterface
             {
                 return $this->storageForRow($disk);
@@ -165,6 +187,9 @@ class RowStorageOrphanDiskParityTest extends TestCase
     /**
      * 실제 코어 드라이버를 쓴다 — `withDisk()` 가 clone 후 대입만 하고 **검증하지 않는다**는
      * 것이 이 결함의 전제이므로, 그 성질을 흉내 낸 대역으로 재면 전제 자체가 측정 밖이 된다.
+     *
+     * @param  string  $disk  대입할 행 disk 이름
+     * @return StorageInterface 그 disk 를 대입한 코어 드라이버
      */
     private function fakeStorage(string $disk): StorageInterface
     {

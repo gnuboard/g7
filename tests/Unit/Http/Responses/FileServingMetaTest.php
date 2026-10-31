@@ -14,7 +14,9 @@ use Tests\TestCase;
 class FileServingMetaTest extends TestCase
 {
     /**
-     * @return array<string, mixed>
+     * 필수 키(response, etag_source, mime_type, last_modified)를 모두 갖춘 서빙 메타를 만든다.
+     *
+     * @return array<string, mixed> 필수 키를 모두 갖춘 서빙 메타
      */
     private function completeMeta(): array
     {
@@ -32,6 +34,8 @@ class FileServingMetaTest extends TestCase
      * @scenario response_kind=streamed, conditional_request=none
      *
      * @effects file_serving_meta_missing_key_is_named_not_swallowed
+     *
+     * @return void 반환값 없음
      */
     public function test_complete_meta_yields_a_value_object(): void
     {
@@ -57,6 +61,8 @@ class FileServingMetaTest extends TestCase
      * @scenario response_kind=streamed, conditional_request=none
      *
      * @effects file_serving_meta_missing_key_is_named_not_swallowed
+     *
+     * @return void 반환값 없음
      */
     public function test_each_required_key_is_reported_when_absent(): void
     {
@@ -83,6 +89,8 @@ class FileServingMetaTest extends TestCase
      * @scenario response_kind=streamed, conditional_request=none
      *
      * @effects file_serving_meta_missing_key_is_named_not_swallowed
+     *
+     * @return void 반환값 없음
      */
     public function test_response_must_be_a_streamed_response(): void
     {
@@ -101,6 +109,8 @@ class FileServingMetaTest extends TestCase
      * @scenario response_kind=streamed, conditional_request=none
      *
      * @effects file_serving_meta_missing_key_is_named_not_swallowed
+     *
+     * @return void 반환값 없음
      */
     public function test_max_age_is_required_only_when_the_caller_delegates_it(): void
     {

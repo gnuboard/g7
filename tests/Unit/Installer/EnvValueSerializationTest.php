@@ -6,6 +6,7 @@ use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러 .env 값 직렬화 테스트 (KVE-2026-2042).
@@ -24,6 +25,13 @@ use PHPUnit\Framework\TestCase;
  */
 class EnvValueSerializationTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
+    /**
+     * 의존성 없는 .env 값 직렬화 정책 파일만 한 번 로드한다. BASE_PATH 나 lang 스텁은 두지 않는다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         require_once dirname(__DIR__, 3).'/public/install/includes/env-value.php';
@@ -31,6 +39,12 @@ class EnvValueSerializationTest extends TestCase
 
     /**
      * 정상 값은 큰따옴표로 감싸 반환된다.
+     *
+     * @scenario vector=serializeEnvValue, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects serializeEnvValue_wraps_normal_value_in_quotes
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_quotes_a_normal_value(): void
@@ -41,6 +55,12 @@ class EnvValueSerializationTest extends TestCase
 
     /**
      * 빈 값은 빈 따옴표로 반환된다 (기존 동작 보존).
+     *
+     * @scenario vector=serializeEnvValue, payload_class=empty, expected_outcome=accept_normal
+     *
+     * @effects serializeEnvValue_returns_empty_quotes_for_empty_value
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_returns_empty_quotes_for_an_empty_value(): void
@@ -50,6 +70,12 @@ class EnvValueSerializationTest extends TestCase
 
     /**
      * 큰따옴표와 백슬래시는 이스케이프된다 (기존 동작 보존).
+     *
+     * @scenario vector=serializeEnvValue, payload_class=quote_and_backslash, expected_outcome=accept_normal
+     *
+     * @effects serializeEnvValue_escapes_quotes_and_backslashes
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_escapes_quotes_and_backslashes(): void
@@ -63,6 +89,12 @@ class EnvValueSerializationTest extends TestCase
      *
      * @param  string  $value  주입 시도 값
      * @param  string  $reason  거부 사유 (실패 메시지용)
+     *
+     * @scenario vector=serializeEnvValue, payload_class=newline_lf, payload_class=newline_crlf, payload_class=null_byte, expected_outcome=throw_invalid_argument
+     *
+     * @effects serializeEnvValue_rejects_line_breaks_and_nul
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('lineBreakInjectionProvider')]
@@ -76,7 +108,9 @@ class EnvValueSerializationTest extends TestCase
     /**
      * 개행 주입 벡터.
      *
-     * @return array<string, array{0: string, 1: string}>
+     * LF, CR, CRLF, NUL 바이트, 선두 개행으로 새 환경변수 줄을 끼워 넣으려는 값을 모은다.
+     *
+     * @return array<string, array{0: string, 1: string}> 사례 이름을 키로 한 (주입 시도 값, 거부 사유) 목록
      */
     public static function lineBreakInjectionProvider(): array
     {
@@ -91,6 +125,12 @@ class EnvValueSerializationTest extends TestCase
 
     /**
      * 개행 검사는 값 전체를 본다 — 따옴표 안에 숨겨도 거부된다.
+     *
+     * @scenario vector=serializeEnvValue, payload_class=newline_lf, expected_outcome=throw_invalid_argument
+     *
+     * @effects serializeEnvValue_rejects_line_break_hidden_inside_quotes
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_rejects_line_breaks_even_inside_quotes(): void
@@ -110,6 +150,12 @@ class EnvValueSerializationTest extends TestCase
      * 함수를 실행해 대조하지 않고 소스를 검사하는 이유: 두 정의는 BASE_PATH 상수를
      * 요구하는 파일에 있고, 그 상수를 여기서 박으면 인접 Installer 테스트의 안전 가드가
      * 걸려 그 테스트들이 조용히 skip 된다(초록인데 검사는 멈춘 상태가 된다).
+     *
+     * @scenario vector=escapeEnvValue, payload_class=newline_lf, payload_class=newline_crlf
+     *
+     * @effects escapeEnvValue_aliases_delegate_to_serializeEnvValue
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function both_legacy_alias_definitions_delegate_to_the_single_gate(): void
@@ -122,7 +168,7 @@ class EnvValueSerializationTest extends TestCase
         ];
 
         foreach ($definitions as $label => $path) {
-            $source = (string) file_get_contents($path);
+            $source = $this->sourceWithoutComments($path);
 
             $this->assertMatchesRegularExpression(
                 '/function escapeEnvValue\(string \$value\): string\s*\{[^}]*return serializeEnvValue\(\$value\);/s',
@@ -140,6 +186,14 @@ class EnvValueSerializationTest extends TestCase
 
     /**
      * 개행이 없는 값은 검사기가 통과시킨다.
+     *
+     * URL 과 빈 값은 한 줄로 판정하고, LF, CR, NUL 이 섞인 값은 한 줄이 아니라고 판정하는지 함께 확인한다.
+     *
+     * @scenario vector=installer_env_value_is_single_line, payload_class=normal, payload_class=empty, payload_class=newline_lf, payload_class=null_byte
+     *
+     * @effects env_value_single_line_checker_flags_line_breaks_and_nul
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_line_break_checker_accepts_clean_values(): void

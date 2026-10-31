@@ -45,6 +45,8 @@ class OgDefaultImageSettingTest extends TestCase
      * @scenario image_chain=none, setting_state=absent
      *
      * @effects og_default_image_persists_to_seo_category
+     *
+     * @return void 반환값 없음
      */
     public function test_new_key_present_through_defaults_merge(): void
     {
@@ -60,6 +62,8 @@ class OgDefaultImageSettingTest extends TestCase
      * @scenario image_chain=site_default, setting_state=saved
      *
      * @effects og_default_image_persists_to_seo_category
+     *
+     * @return void 반환값 없음
      */
     public function test_saved_attachment_ids_persist_to_seo_category(): void
     {
@@ -93,6 +97,8 @@ class OgDefaultImageSettingTest extends TestCase
      * @scenario image_chain=site_default, setting_state=saved
      *
      * @effects og_default_image_resolves_first_image_url
+     *
+     * @return void 반환값 없음
      */
     public function test_resolves_first_image_url(): void
     {
@@ -115,6 +121,8 @@ class OgDefaultImageSettingTest extends TestCase
      * @scenario image_chain=none, setting_state=absent
      *
      * @effects og_default_image_resolves_first_image_url
+     *
+     * @return void 반환값 없음
      */
     public function test_resolves_null_when_not_configured(): void
     {

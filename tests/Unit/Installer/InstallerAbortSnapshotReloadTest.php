@@ -25,7 +25,8 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: task_outcome aborted / resume_point abort_then_resume
  *
- * @effects abort_reloads_state_after_rollback, abort_paths_share_one_finalizer, aborted_state_is_redacted_on_both_paths
+ * 효과 요약(마커 아님 — 평문): 롤백 뒤 재로드, 두 중단 경로의 확정 함수 공유, 두 경로 모두의 비밀 제거.
+ * 표식은 그 효과를 재는 각 테스트 메서드가 단다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -40,6 +41,13 @@ class InstallerAbortSnapshotReloadTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스당 한 번만 임시 BASE_PATH 를 정하고 저장소 디렉토리를 만든 뒤 인스톨러 설정, 함수, 상태 헬퍼를 불러온다.
+     *
+     * BASE_PATH 가 이미 시스템 temp 밖으로 정의돼 있으면 실제 상태 파일을 지키려고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function boot(): void
     {
         if (self::$booted) {
@@ -79,6 +87,11 @@ class InstallerAbortSnapshotReloadTest extends TestCase
         require_once $root.'/public/install/includes/installer-state.php';
     }
 
+    /**
+     * 인스톨러를 부팅하고 건너뛸 사유가 있으면 건너뛴 뒤, 앞 테스트가 남긴 상태 파일과 설치 로그를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -99,6 +112,11 @@ class InstallerAbortSnapshotReloadTest extends TestCase
         }
     }
 
+    /**
+     * 모듈 설치 중인 running 상태(완료 마커 하나, 평문 비밀 두 개)를 상태 파일에 저장하고, 그 진입 시점 스냅샷을 돌려준다.
+     *
+     * @return array<string, mixed> 저장한 진입 스냅샷
+     */
     private function seedRunning(): array
     {
         $state = DEFAULT_INSTALLATION_STATE;
@@ -115,6 +133,17 @@ class InstallerAbortSnapshotReloadTest extends TestCase
         return $state;
     }
 
+    /**
+     * 롤백 도중 워커가 상태 파일에 남긴 완료 마커, 건너뜀, best-effort 실패 기록이 중단 확정 뒤에도 그대로 남는지 확인한다.
+     *
+     * 진입 스냅샷이 실제로 뒤처져 있었다는 전제도 함께 확인한다.
+     *
+     * @scenario task_outcome=aborted, task=module
+     *
+     * @effects abort_reloads_state_after_rollback
+     *
+     * @return void 반환값 없음
+     */
     public function test_abort_finalizer_keeps_progress_written_during_the_rollback(): void
     {
         $entrySnapshot = $this->seedRunning();
@@ -144,6 +173,15 @@ class InstallerAbortSnapshotReloadTest extends TestCase
         $this->assertSame(['env_update'], $entrySnapshot['completed_tasks']);
     }
 
+    /**
+     * 중단 확정 함수가 연결 끊김 사유와 롤백 실패 정보를 상태에 기록하고 활성 워커 표식을 비우는지 확인한다.
+     *
+     * @scenario task_outcome=aborted, task=db_seed
+     *
+     * @effects abort_paths_share_one_finalizer
+     *
+     * @return void 반환값 없음
+     */
     public function test_abort_finalizer_records_reason_and_rollback_failure(): void
     {
         $this->seedRunning();
@@ -162,6 +200,15 @@ class InstallerAbortSnapshotReloadTest extends TestCase
         $this->assertNull($final['active_worker_id'] ?? null);
     }
 
+    /**
+     * 연결 끊김 경로로 중단을 확정한 뒤 상태 파일 원문에 DB 비밀번호와 관리자 비밀번호 평문이 남지 않는지 확인한다.
+     *
+     * @scenario task_outcome=aborted, installation_mode=sse
+     *
+     * @effects aborted_state_is_redacted_on_both_paths
+     *
+     * @return void 반환값 없음
+     */
     public function test_aborted_state_carries_no_plaintext_secret_on_either_path(): void
     {
         $this->seedRunning();
@@ -185,6 +232,12 @@ class InstallerAbortSnapshotReloadTest extends TestCase
      *
      * 진입 시 스냅샷($state)을 그대로 넘기는 형태가 남아 있으면 그 경로에서만 기록이 사라진다 —
      * 실행 재현이 어려운 창(롤백 수 초)이라 형태를 소스에서 고정한다.
+     *
+     * @scenario task_outcome=aborted
+     *
+     * @effects abort_reloads_state_after_rollback, abort_paths_share_one_finalizer, aborted_state_is_redacted_on_both_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_both_abort_paths_apply_the_transition_to_a_freshly_read_state(): void
     {

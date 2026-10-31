@@ -36,6 +36,8 @@ class ScheduleRunEntryPointParityTest extends TestCase
 
     /**
      * 테스트 준비 — 예약 하나만 있는 스케줄로 갈아 끼운다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -63,7 +65,9 @@ class ScheduleRunEntryPointParityTest extends TestCase
     }
 
     /**
-     * 테스트 정리.
+     * 케이스 전용 상태 파일과 토큰 파일을 지운 뒤 부모 정리를 돌린다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -79,7 +83,11 @@ class ScheduleRunEntryPointParityTest extends TestCase
     /**
      * CLI 진입점이 러너를 돌리고 요약을 출력한다.
      *
+     * @scenario entry_point=cli, event_kind=callback_event
+     *
      * @effects cli_entry_point_runs_the_same_runner
+     *
+     * @return void 반환값 없음
      */
     public function test_cli_entry_point_runs_the_schedule(): void
     {
@@ -93,7 +101,11 @@ class ScheduleRunEntryPointParityTest extends TestCase
      *
      * 기록이 갈리면 "마지막 실행" 표시와 미실행 경고가 진입점마다 다른 값을 말한다.
      *
+     * @scenario entry_point=cli, event_kind=callback_event
+     *
      * @effects both_entry_points_share_the_run_record
+     *
+     * @return void 반환값 없음
      */
     public function test_cli_entry_point_records_the_invocation(): void
     {
@@ -110,7 +122,11 @@ class ScheduleRunEntryPointParityTest extends TestCase
     /**
      * 웹 진입점도 같은 기록을 남긴다 (같은 상태 저장소).
      *
+     * @scenario entry_point=web, caller=external, token=valid, token_channel=query
+     *
      * @effects web_entry_point_records_the_same_state
+     *
+     * @return void 반환값 없음
      */
     public function test_web_entry_point_records_the_same_state(): void
     {
@@ -130,7 +146,11 @@ class ScheduleRunEntryPointParityTest extends TestCase
      *
      * 종료 코드가 언제나 0 이면 crontab 에 건 운영자가 실패를 알 방법이 없다.
      *
+     * @scenario entry_point=cli, event_kind=callback_event
+     *
      * @effects cli_exit_code_reflects_failures
+     *
+     * @return void 반환값 없음
      */
     public function test_cli_exit_code_reflects_failures(): void
     {

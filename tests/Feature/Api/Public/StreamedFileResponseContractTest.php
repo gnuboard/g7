@@ -34,7 +34,12 @@ class StreamedFileResponseContractTest extends TestCase
         return new class extends BaseApiController
         {
             /**
+             * 받은 스트림 응답을 max-age 3600 으로 `streamedFileResponse()` 에 그대로 넘겨 헬퍼의 결과를 돌려준다.
+             *
+             * @param  StreamedResponse  $response  헬퍼에 넘길 원본 스트림 응답
+             * @param  string  $etagSource  ETag 를 만들 근거 문자열
              * @param  array<string, mixed>  $args  `streamedFileResponse()` 의 명명 인자
+             * @return StreamedResponse|Response 200 스트림 응답 또는 304 응답
              */
             public function serve(StreamedResponse $response, string $etagSource, array $args = []): StreamedResponse|Response
             {
@@ -47,6 +52,7 @@ class StreamedFileResponseContractTest extends TestCase
      * 주어진 헤더의 요청을 컨테이너에 바인딩합니다 (헬퍼는 `request()` 를 읽는다).
      *
      * @param  array<string, string>  $headers  요청 헤더
+     * @return Request 컨테이너에 바인딩한 요청 객체
      */
     private function bindRequest(array $headers = []): Request
     {
@@ -59,6 +65,12 @@ class StreamedFileResponseContractTest extends TestCase
         return $request;
     }
 
+    /**
+     * 본문 `fixture` 를 내보내는 200 스트림 응답을 주어진 헤더로 만든다.
+     *
+     * @param  array<string, string>  $headers  응답에 세울 헤더
+     * @return StreamedResponse 픽스처 스트림 응답
+     */
     private function stream(array $headers = []): StreamedResponse
     {
         return new StreamedResponse(static function (): void {
@@ -78,6 +90,8 @@ class StreamedFileResponseContractTest extends TestCase
      * @scenario response_kind=streamed, conditional_request=if_none_match
      *
      * @effects unknown_mime_is_served_as_octet_stream_download
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_mime_type_falls_back_to_octet_stream_download(): void
     {
@@ -101,6 +115,8 @@ class StreamedFileResponseContractTest extends TestCase
      * @scenario response_kind=binary, conditional_request=none
      *
      * @effects unknown_mime_is_served_as_octet_stream_download
+     *
+     * @return void 반환값 없음
      */
     public function test_file_response_helper_applies_the_same_unknown_mime_rule(): void
     {
@@ -112,6 +128,13 @@ class StreamedFileResponseContractTest extends TestCase
 
         $controller = new class extends BaseApiController
         {
+            /**
+             * 로컬 파일을 주어진 MIME 과 max-age 3600 으로 `fileResponse()` 에 넘겨 결과를 돌려준다.
+             *
+             * @param  string  $path  서빙할 로컬 파일 경로
+             * @param  string  $mimeType  헬퍼에 넘길 MIME 문자열(빈 값 포함)
+             * @return Response|BinaryFileResponse 파일 응답 또는 304 응답
+             */
             public function serve(string $path, string $mimeType): Response|BinaryFileResponse
             {
                 return $this->fileResponse($path, $mimeType, 3600);
@@ -133,7 +156,11 @@ class StreamedFileResponseContractTest extends TestCase
      *
      * 스트림 응답에 `Content-Type` 이 없어도 인자가 있으면 200/304 가 같은 근거를 쓴다.
      *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
      * @effects conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_mime_type_argument_drives_content_type_and_vary_on_both_responses(): void
     {
@@ -162,6 +189,12 @@ class StreamedFileResponseContractTest extends TestCase
 
     /**
      * 인자가 없으면 스트림 응답에 세워진 `Content-Type` 을 같은 근거로 쓴다 (기존 호출부 호환).
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
+     * @effects conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_response_content_type_is_the_fallback_basis(): void
     {
@@ -181,6 +214,12 @@ class StreamedFileResponseContractTest extends TestCase
      * 형제 `PublicStorageController` 가 컨트롤러 진입에서 다는 것과 같은 표식이다 — 표식이
      * 없으면 이 응답이 압축을 피하는 것은 미들웨어가 응답 **클래스**를 보고 건너뛰는 우연이라,
      * 미들웨어 판정이 바뀌는 순간 사용자 업로드물 통로가 전체 적재 경로에 들어간다.
+     *
+     * @scenario response_kind=streamed, conditional_request=none
+     *
+     * @effects serving_paths_declare_compression_skip_on_the_request
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_compression_declares_the_request_attribute(): void
     {
@@ -195,6 +234,12 @@ class StreamedFileResponseContractTest extends TestCase
 
     /**
      * 304 경로에서도 제외 표식은 달린다 — 판정보다 앞서 선언되어야 응답 종류와 무관하다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
+     * @effects serving_paths_declare_compression_skip_on_the_request
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_compression_is_declared_before_the_conditional_judgment(): void
     {
@@ -211,6 +256,12 @@ class StreamedFileResponseContractTest extends TestCase
     /**
      * 다운로드(attachment) 스트림의 `Content-Disposition` 은 그대로 승계된다 — 헬퍼는
      * 그 헤더를 건드리지 않으므로 인라인·다운로드 두 통로가 같은 헬퍼를 지난다.
+     *
+     * @scenario response_kind=streamed, conditional_request=none
+     *
+     * @effects attachment_disposition_survives_the_streaming_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_attachment_disposition_survives_the_helper(): void
     {
@@ -235,6 +286,8 @@ class StreamedFileResponseContractTest extends TestCase
      * @scenario response_kind=streamed, conditional_request=none
      *
      * @effects file_serving_response_declares_nosniff, unknown_mime_is_served_as_octet_stream_download
+     *
+     * @return void 반환값 없음
      */
     public function test_blank_mime_type_argument_falls_back_to_the_response_header(): void
     {
@@ -263,7 +316,11 @@ class StreamedFileResponseContractTest extends TestCase
      * 실었을 헤더를 함께 싣는다(RFC 9110 §15.4.5) — 200 이 싣지 않는 축을 304 에만 붙이는
      * 것이 아니라 그 반대다.
      *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
      * @effects file_serving_response_declares_nosniff
+     *
+     * @return void 반환값 없음
      */
     public function test_streamed_responses_declare_nosniff_on_200_and_304(): void
     {
@@ -284,8 +341,12 @@ class StreamedFileResponseContractTest extends TestCase
      * 종전에는 `skipCompression` 이 스트림 헬퍼에만 있어 로컬 파일 통로(공개 스토리지)는
      * 컨트롤러가 요청 속성을 **직접** 세웠다 — 선언 수단이 통로마다 갈리면 한쪽만 바뀐다.
      *
+     * @scenario response_kind=binary, conditional_request=if_none_match
+     *
      * @effects file_serving_response_declares_nosniff,
      *          public_storage_response_is_not_buffered_for_compression
+     *
+     * @return void 반환값 없음
      */
     public function test_file_response_helper_declares_nosniff_and_accepts_skip_compression(): void
     {
@@ -298,7 +359,11 @@ class StreamedFileResponseContractTest extends TestCase
         $controller = new class extends BaseApiController
         {
             /**
+             * 로컬 파일을 `text/plain` 과 max-age 3600 으로 `fileResponse()` 에 넘겨 결과를 돌려준다.
+             *
+             * @param  string  $path  서빙할 로컬 파일 경로
              * @param  array<string, mixed>  $args  `fileResponse()` 의 명명 인자
+             * @return Response|BinaryFileResponse 파일 응답 또는 304 응답
              */
             public function serve(string $path, array $args = []): Response|BinaryFileResponse
             {

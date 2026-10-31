@@ -16,7 +16,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *  - vendor 번들 백업의 잔재 정리·위치·실패 보고
  *  - finalize 직전의 `.env` 보존
  *
- * @effects installer_survives_windows_and_shared_hosting_constraints
+ * 효과 요약(마커 아님 — 평문): Windows 와 공유 호스팅 제약 아래에서도 설치가 버틴다. 표식은 각 테스트 메서드가 단다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -28,6 +28,13 @@ class InstallerHostingPortabilityTest extends TestCase
 
     private string $skipReason = '';
 
+    /**
+     * 테스트마다 임시 루트를 만들고 바이너리 경로 정책을 불러온 뒤, BASE_PATH 가 시스템 temp 아래로 잡히면 언어 스텁과 인스톨러 함수, 런타임, 번들 설치기를 불러온다.
+     *
+     * BASE_PATH 가 temp 밖이면 실제 저장소를 건드리지 않도록 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -62,6 +69,11 @@ class InstallerHostingPortabilityTest extends TestCase
         require_once $projectRoot.'/public/install/includes/vendor-bundle-installer.php';
     }
 
+    /**
+     * 임시 루트를 쓴 테스트였으면 그 트리를 통째로 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if ($this->skipReason === '' && is_dir($this->tempBase)) {
@@ -71,6 +83,11 @@ class InstallerHostingPortabilityTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 임시 루트를 쓸 수 없는 프로세스라면 파일시스템을 건드리는 테스트를 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     private function requireTempBase(): void
     {
         if ($this->skipReason !== '') {
@@ -78,6 +95,12 @@ class InstallerHostingPortabilityTest extends TestCase
         }
     }
 
+    /**
+     * 디렉토리를 재귀로 지운다. 심볼릭 링크는 따라가지 않고 링크 자체만 지운다.
+     *
+     * @param  string  $dir  지울 디렉토리 절대 경로
+     * @return void 반환값 없음
+     */
     private function removeTree(string $dir): void
     {
         if (! is_dir($dir)) {
@@ -106,6 +129,12 @@ class InstallerHostingPortabilityTest extends TestCase
      * `C:\Program Files\PHP\php.exe` 는 Windows 기본 설치 위치다. 형태 규칙이 공백을 무조건
      * 차단하면 그 입력은 조용히 무시되고 `'php'` 로 되돌아간다 — 운영자에게는 자기가 넣은
      * 경로가 왜 없는 셈이 되는지 드러나지 않는다.
+     *
+     * @scenario php_binary_source=configured
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_quoted_path_with_spaces_is_accepted(): void
     {
@@ -116,6 +145,12 @@ class InstallerHostingPortabilityTest extends TestCase
 
     /**
      * 인용은 공백만 열어 준다 — 다른 셸 메타문자는 그대로 막힌다.
+     *
+     * @scenario php_binary_source=configured
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_quoting_does_not_open_a_bypass(): void
     {
@@ -138,6 +173,12 @@ class InstallerHostingPortabilityTest extends TestCase
 
     /**
      * 인용하지 않은 공백은 종전대로 거부된다 (토큰 분리 모호성).
+     *
+     * @scenario php_binary_source=configured
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_unquoted_space_is_still_rejected(): void
     {
@@ -146,6 +187,12 @@ class InstallerHostingPortabilityTest extends TestCase
 
     /**
      * 인용된 두 토큰 쌍이 해석되고, 결과는 따옴표를 벗긴 실제 경로다.
+     *
+     * @scenario php_binary_source=configured
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_quoted_pair_resolves_to_unquoted_paths(): void
     {
@@ -161,6 +208,12 @@ class InstallerHostingPortabilityTest extends TestCase
 
     /**
      * 인용된 PHP + 인용 없는 Composer 처럼 섞여도 해석된다.
+     *
+     * @scenario php_binary_source=configured
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_mixed_quoting_pair_resolves(): void
     {
@@ -174,6 +227,12 @@ class InstallerHostingPortabilityTest extends TestCase
 
     /**
      * 인용 뒤에 공백 없이 글자가 붙으면 경계가 모호하므로 거부한다.
+     *
+     * @scenario php_binary_source=configured
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_pair_rejects_ambiguous_quote_boundary(): void
     {
@@ -184,6 +243,15 @@ class InstallerHostingPortabilityTest extends TestCase
     // 환경#15 — 권한 판정은 실제 쓰기로 한다
     // ========================================================================
 
+    /**
+     * 실제 쓰기 probe 가 쓰기 가능한 임시 디렉토리를 통과시키는지 확인한다.
+     *
+     * @scenario task=dependency_precheck
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
+     */
     public function test_write_probe_accepts_a_writable_directory(): void
     {
         $this->requireTempBase();
@@ -194,6 +262,15 @@ class InstallerHostingPortabilityTest extends TestCase
         $this->assertTrue(installerDirectoryIsWritable($dir));
     }
 
+    /**
+     * 실제 쓰기 probe 가 존재하지 않는 디렉토리를 쓰기 불가로 판정하는지 확인한다.
+     *
+     * @scenario task=dependency_precheck
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
+     */
     public function test_write_probe_rejects_a_missing_directory(): void
     {
         $this->requireTempBase();
@@ -203,6 +280,12 @@ class InstallerHostingPortabilityTest extends TestCase
 
     /**
      * probe 는 흔적을 남기지 않는다 — 남기면 다음 검사가 그 파일을 세거나 배포본에 섞인다.
+     *
+     * @scenario task=dependency_precheck
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_write_probe_leaves_no_residue(): void
     {
@@ -218,6 +301,12 @@ class InstallerHostingPortabilityTest extends TestCase
 
     /**
      * 파일 경로는 디렉토리가 아니므로 통과하지 않는다.
+     *
+     * @scenario task=dependency_precheck
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_write_probe_rejects_a_file_path(): void
     {
@@ -238,6 +327,12 @@ class InstallerHostingPortabilityTest extends TestCase
      *
      * vendor/ 안에 두면 이미 깊은 패키지 경로에 한 단계가 더 붙어 Windows 의 260자 한계를
      * 그대로 넘긴다 — `rename()` 이 조용히 실패해 "부분 이동" 으로 끝난다.
+     *
+     * @scenario vendor_mode_choice=bundled, task=composer
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_backup_directory_lives_outside_vendor(): void
     {
@@ -259,6 +354,12 @@ class InstallerHostingPortabilityTest extends TestCase
 
     /**
      * storage/installer 를 쓸 수 없으면 종전 위치로 떨어진다 (기능 축소 없음).
+     *
+     * @scenario vendor_mode_choice=bundled, task=composer
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_backup_directory_falls_back_into_vendor_when_storage_unusable(): void
     {
@@ -282,6 +383,12 @@ class InstallerHostingPortabilityTest extends TestCase
      *
      * 복원은 같은 프로세스에서 추출이 false 를 돌려준 경우에만 돈다 — 프로세스가 그냥 죽으면
      * 백업이 남고, 재시도가 그것까지 새 백업으로 옮겨 담아 중첩된다.
+     *
+     * @scenario vendor_mode_choice=bundled, task=composer, resume_point=retry_after_failure
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_stale_backups_are_cleaned_before_a_new_run(): void
     {
@@ -305,6 +412,12 @@ class InstallerHostingPortabilityTest extends TestCase
 
     /**
      * 실제 vendor/ 항목은 정리 대상이 아니다 (오탐 방지).
+     *
+     * @scenario vendor_mode_choice=bundled, task=composer
+     *
+     * @effects installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_does_not_touch_real_vendor_packages(): void
     {
@@ -323,6 +436,15 @@ class InstallerHostingPortabilityTest extends TestCase
     // D8 — finalize 가 기존 `.env` 를 지우기 전에 한 벌 남긴다
     // ========================================================================
 
+    /**
+     * 기존 .env 를 다시 만들기 전에 같은 내용의 백업 사본이 원본 이름 뒤에 백업 접미사를 붙인 경로로 만들어지는지 확인한다.
+     *
+     * @scenario task=env
+     *
+     * @effects installer_finalize_backs_up_existing_env_before_overwriting, installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
+     */
     public function test_existing_env_is_preserved_before_regeneration(): void
     {
         $this->requireTempBase();
@@ -339,6 +461,15 @@ class InstallerHostingPortabilityTest extends TestCase
         $this->assertSame($original, file_get_contents($backup));
     }
 
+    /**
+     * 보존할 .env 가 없으면 백업을 만들지 않고 null 을 돌려주는지 확인한다.
+     *
+     * @scenario task=env
+     *
+     * @effects installer_finalize_without_existing_env_writes_no_backup
+     *
+     * @return void 반환값 없음
+     */
     public function test_env_backup_is_a_no_op_when_there_is_nothing_to_preserve(): void
     {
         $this->requireTempBase();
@@ -348,6 +479,12 @@ class InstallerHostingPortabilityTest extends TestCase
 
     /**
      * 같은 초에 두 번 불려도 앞의 사본을 덮어쓰지 않는다.
+     *
+     * @scenario task=env
+     *
+     * @effects installer_finalize_backs_up_existing_env_before_overwriting, installer_survives_windows_and_shared_hosting_constraints
+     *
+     * @return void 반환값 없음
      */
     public function test_env_backup_does_not_overwrite_an_earlier_copy(): void
     {

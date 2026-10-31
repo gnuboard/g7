@@ -438,6 +438,12 @@ class LayoutPermissionFilterTest extends TestCase
      * 저장소의 실제 `defines` 는 전부 이 형태다 — 레이아웃이 `{{_defines.settingsTabs}}` 로
      * 키를 찍어 참조하므로, 재색인되면 그 표현식이 undefined 를 받고 `?? []` 폴백을 타
      * 오류 없이 화면 요소만 사라진다.
+     *
+     * @scenario case=define_filter
+     *
+     * @effects layout_named_defines_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_defines_map_preserves_its_keys(): void
     {
@@ -475,6 +481,12 @@ class LayoutPermissionFilterTest extends TestCase
 
     /**
      * 맵 안의 define 이 권한을 통과하면 그 내부 컴포넌트도 필터링된다.
+     *
+     * @scenario case=define_filter
+     *
+     * @effects layout_defines_filtered_by_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_defines_map_still_filters_inner_components(): void
     {

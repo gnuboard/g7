@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage 609 후속 — 메서드 PHPDoc(목적 설명, @param, @return)만 더했다. 라우트, 요청, 응답 모양은 그대로라 API 문서에 반영할 표면이 없다.
+
 namespace App\Http\Controllers\Api\Public;
 
 use App\Contracts\Extension\CacheInterface;
@@ -120,6 +122,8 @@ class SitemapController extends PublicBaseController
 
     /**
      * Sitemap 기능이 비활성화되어 있으면 404 로 중단합니다.
+     *
+     * @return void 반환값 없음
      */
     private function assertSitemapEnabled(): void
     {

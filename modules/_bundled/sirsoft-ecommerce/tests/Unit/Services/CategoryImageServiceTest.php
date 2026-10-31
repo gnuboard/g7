@@ -35,6 +35,11 @@ class CategoryImageServiceTest extends ModuleTestCase
 
     private User $user;
 
+    /**
+     * 저장소와 StorageInterface 를 목으로 만든 카테고리 이미지 서비스를 준비하고 테스트 사용자로 로그인한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,12 +61,25 @@ class CategoryImageServiceTest extends ModuleTestCase
         Auth::login($this->user);
     }
 
+    /**
+     * Mockery 기대값을 검증하고 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
         parent::tearDown();
     }
 
+    /**
+     * 카테고리 이미지를 올리면 images 카테고리의 category/ 경로에 저장되고 작성자와 다음 정렬 순서로 행이 만들어지는지 확인한다.
+     *
+     * @scenario operation=upload
+     * @effects upload_stores_file_and_creates_record
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_stores_image_and_creates_record(): void
     {
@@ -125,6 +143,14 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals(600, $result->height);
     }
 
+    /**
+     * 임시 키로 올리면 카테고리 없이 임시 키 행이 만들어지는지 확인한다.
+     *
+     * @scenario operation=upload
+     * @effects upload_with_temp_key_creates_unlinked_image
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_with_temp_key_creates_temp_image(): void
     {
@@ -176,6 +202,14 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals($tempKey, $result->temp_key);
     }
 
+    /**
+     * 업로드 때 넘긴 다국어 대체 텍스트가 생성 행 데이터에 그대로 실리는지 확인한다.
+     *
+     * @scenario operation=upload
+     * @effects upload_persists_alt_text
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_with_alt_text(): void
     {
@@ -209,6 +243,14 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals($altText, $result->alt_text);
     }
 
+    /**
+     * 업로드가 before_upload, filter_upload_file, after_upload 훅을 모두 발행하는지 확인한다.
+     *
+     * @scenario operation=upload
+     * @effects upload_fires_before_filter_after_hooks
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_fires_hooks(): void
     {
@@ -254,6 +296,14 @@ class CategoryImageServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-ecommerce.category-image.after_upload');
     }
 
+    /**
+     * 이미지를 지우면 저장소 파일과 이미지 행이 함께 삭제되는지 확인한다.
+     *
+     * @scenario operation=delete
+     * @effects delete_removes_storage_file_and_record
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_delete_removes_file_from_storage(): void
     {
@@ -304,6 +354,14 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 삭제가 before_delete, after_delete 훅을 발행하는지 확인한다.
+     *
+     * @scenario operation=delete
+     * @effects delete_fires_before_after_hooks
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_delete_fires_hooks(): void
     {
@@ -340,6 +398,14 @@ class CategoryImageServiceTest extends ModuleTestCase
         HookManager::clearAction('sirsoft-ecommerce.category-image.after_delete');
     }
 
+    /**
+     * 임시 키 이미지를 카테고리에 연결하면 저장소가 돌려준 연결 수를 그대로 반환하는지 확인한다.
+     *
+     * @scenario operation=link_temp
+     * @effects link_temp_images_links_to_category
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_link_temp_images_links_temp_files_to_category(): void
     {
@@ -360,6 +426,14 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals(3, $result);
     }
 
+    /**
+     * 이미지 ID 와 순서 맵을 저장소 reorder 에 그대로 넘기는지 확인한다.
+     *
+     * @scenario operation=reorder
+     * @effects reorder_delegates_order_map_to_repository
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_reorder_updates_image_order(): void
     {
@@ -383,6 +457,14 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 정렬 변경이 before_reorder, after_reorder 훅을 발행하는지 확인한다.
+     *
+     * @scenario operation=reorder
+     * @effects reorder_fires_before_after_hooks
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_reorder_fires_hooks(): void
     {
@@ -421,6 +503,11 @@ class CategoryImageServiceTest extends ModuleTestCase
      * 스토리지에 넘기면 코어 지점이 덮어쓰거나 갈린 사본이 되므로, 여기서는 **넘기지 않는
      * 것**을 단언한다. HTTP 계약(검증자·304·환경별 정책)은 `CategoryImageServiceRowDiskTest`
      * 가 실제 라우트로 잰다.
+     *
+     * @scenario operation=download
+     * @effects download_streams_without_cache_policy_headers
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_returns_streamed_response(): void
@@ -496,6 +583,11 @@ class CategoryImageServiceTest extends ModuleTestCase
 
     /**
      * download 메서드가 존재하지 않는 해시에 대해 null을 반환하는지 테스트
+     *
+     * @scenario operation=download
+     * @effects download_returns_null_for_unknown_hash
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_returns_null_for_unknown_hash(): void
@@ -516,6 +608,11 @@ class CategoryImageServiceTest extends ModuleTestCase
 
     /**
      * download 메서드가 스토리지에 파일이 없을 때 null을 반환하는지 테스트
+     *
+     * @scenario operation=download
+     * @effects download_returns_null_when_file_missing
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_download_returns_null_when_file_missing_from_storage(): void
@@ -552,6 +649,14 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertNull($result);
     }
 
+    /**
+     * 대체 텍스트 수정 데이터가 저장소 update 로 전달되고 수정된 행이 돌아오는지 확인한다.
+     *
+     * @scenario operation=update
+     * @effects update_modifies_alt_text
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_update_modifies_image_metadata(): void
     {
@@ -579,6 +684,14 @@ class CategoryImageServiceTest extends ModuleTestCase
         $this->assertEquals($altText, $result->alt_text);
     }
 
+    /**
+     * 수정이 before_update, filter_update_data, after_update 훅을 모두 발행하는지 확인한다.
+     *
+     * @scenario operation=update
+     * @effects update_fires_before_filter_after_hooks
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_update_fires_hooks(): void
     {

@@ -34,9 +34,13 @@ class AdminTemplateAssetEditorCssCacheKeyTest extends TestCase
     }
 
     /**
+     * 없는 파일처럼 mtime 을 읽지 못하면 캐시 키를 만들지 않아(null) 실패한 요청들이 고정 키 하나를 공유하지 않는지 확인한다.
+     *
      * @scenario mtime_read=failed
      *
      * @effects editor_css_cache_key_is_skipped_when_mtime_is_unreadable
+     *
+     * @return void 반환값 없음
      */
     public function test_unreadable_mtime_yields_no_cache_key(): void
     {
@@ -50,9 +54,13 @@ class AdminTemplateAssetEditorCssCacheKeyTest extends TestCase
     }
 
     /**
+     * mtime 을 읽을 수 있으면 그 값이 캐시 키 끝에 실려 빌드가 바뀌면 키도 바뀌는지 확인한다.
+     *
      * @scenario mtime_read=ok
      *
      * @effects editor_css_cache_key_embeds_mtime_when_readable
+     *
+     * @return void 반환값 없음
      */
     public function test_readable_mtime_is_embedded_in_the_key(): void
     {

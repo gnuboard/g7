@@ -48,6 +48,8 @@ effects:
   - public_asset_disk_override_outranks_global_setting_and_none_forces_streaming
   - public_asset_disk_is_current_rejects_blank_none_and_orphan
   - public_asset_disk_resolution_is_not_memoized
+  - layout_attachment_cross_template_access_returns_null
+  - layout_attachment_missing_file_returns_null
 
 test_files:
   - tests/Unit/Support/PublicAssetDiskTest.php

@@ -47,6 +47,11 @@ class InstallerStepwiseTokenClientParityTest extends TestCase
         'install-process.php' => '토큰 발급 지점 — 진행 중 stepwise 를 재시작하는 화면 경로가 없다',
     ];
 
+    /**
+     * 저장소 안 설치기 공개 폴더의 절대 경로를 돌려준다.
+     *
+     * @return string 설치기 폴더 경로
+     */
     private function installRoot(): string
     {
         return dirname(__DIR__, 3).'/public/install';
@@ -57,7 +62,7 @@ class InstallerStepwiseTokenClientParityTest extends TestCase
      *
      * 재귀 스캔한다 — 한 겹 `glob()` 은 하위 디렉토리가 생기는 순간 그 안을 통째로 놓친다.
      *
-     * @return array<int, string>
+     * @return array<int, string> 토큰을 읽는 엔드포인트 파일명 목록 (정렬됨)
      */
     private function tokenRequiringEndpoints(): array
     {
@@ -146,6 +151,7 @@ class InstallerStepwiseTokenClientParityTest extends TestCase
      * @param  string  $name  식별자
      * @param  int  $before  이 위치보다 앞선 선언만 본다
      * @param  int  $depth  간접 참조 추적 잔여 횟수
+     * @return string|null 엔드포인트 파일명 (찾지 못하면 null)
      */
     private function resolveEndpoint(string $js, string $name, int $before, int $depth = 2): ?string
     {
@@ -195,7 +201,7 @@ class InstallerStepwiseTokenClientParityTest extends TestCase
     /**
      * 화면이 보내는 **변경 요청**(method 가 붙은 fetch) 전수.
      *
-     * @return array<int, array{endpoint: string, line: int, args: string}>
+     * @return array<int, array{endpoint: string, line: int, args: string}> 엔드포인트, 줄 번호, 인자 원문을 담은 호출 목록
      */
     private function clientMutatingCalls(): array
     {
@@ -255,7 +261,12 @@ class InstallerStepwiseTokenClientParityTest extends TestCase
         return $calls;
     }
 
-    /** 이 호출이 토큰을 싣는가 — 헤더 직접 기입·공용 헤더 헬퍼·본문 폴백 중 하나면 참. */
+    /**
+     * 이 호출이 토큰을 싣는가 — 헤더 직접 기입·공용 헤더 헬퍼·본문 폴백 중 하나면 참.
+     *
+     * @param  string  $args  호출 인자 원문
+     * @return bool 토큰을 싣고 있으면 참
+     */
     private function carriesToken(string $args): bool
     {
         return str_contains($args, 'X-Installer-Token')
@@ -263,6 +274,17 @@ class InstallerStepwiseTokenClientParityTest extends TestCase
             || preg_match('/\btoken\b\s*[:,}]/', $args) === 1;
     }
 
+    /**
+     * 서버 쪽 토큰 게이트 스캔과 화면 쪽 변경 요청 스캔이 마무리와 태스크 실행 엔드포인트를 실제로 찾아내는지 확인한다.
+     *
+     * 어느 한쪽이라도 비면 아래 대조가 통째로 사각이 된다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_state_mutation_requests_carry_the_stepwise_token
+     *
+     * @return void 반환값 없음
+     */
     public function test_스캐너가_토큰_요구_엔드포인트와_그_호출부를_실제로_찾는다(): void
     {
         $endpoints = $this->tokenRequiringEndpoints();
@@ -281,6 +303,15 @@ class InstallerStepwiseTokenClientParityTest extends TestCase
         $this->assertContains('run-task.php', $called, 'run-task 호출을 변경 요청으로 인식하지 못했다');
     }
 
+    /**
+     * 서버가 토큰을 요구하는 엔드포인트로 가는 화면의 변경 요청이 면제분을 빼고 전부 토큰을 싣는지 대조한다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_state_mutation_requests_carry_the_stepwise_token
+     *
+     * @return void 반환값 없음
+     */
     public function test_토큰을_요구하는_엔드포인트로_가는_변경_요청은_전부_토큰을_싣는다(): void
     {
         $endpoints = $this->tokenRequiringEndpoints();
@@ -309,6 +340,15 @@ class InstallerStepwiseTokenClientParityTest extends TestCase
         );
     }
 
+    /**
+     * 토큰 면제 목록에 서버가 더는 토큰을 요구하지 않는 엔드포인트가 남아 있지 않은지 확인한다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_state_mutation_requests_carry_the_stepwise_token
+     *
+     * @return void 반환값 없음
+     */
     public function test_면제_목록에_토큰을_요구하지_않는_엔드포인트가_남아_있지_않다(): void
     {
         $stale = array_values(array_diff(array_keys(self::CLIENT_TOKEN_EXCLUSIONS), $this->tokenRequiringEndpoints()));

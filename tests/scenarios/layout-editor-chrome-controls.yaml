@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 9축 cross product 는 105,840 조합이라 E2E 전수 전개가 불가능하다. 축별 판정은 test_files 의 단위/렌더 테스트(useDevicePreview 클램프·overlayGeometry 44px 임계·EditorToolbar hover/outline·ComponentPalette 태그 배지·admin-template-layout-edit replaceUrl)가 커버하고, 브라우저 통합은 chrome-controls.spec.ts(코어 chrome) + code-editor-route-sync.spec.ts(템플릿 소유 코드편집기)가 나눠 맡는다. effects 15건은 @effects 마킹으로 전건 커버(미커버 0)이며 이 면제는 cross_product 축에만 적용된다.
+# audit:allow test-scenario-coverage reason: issue:#383 9축 cross product 는 105,840 조합이라 E2E 전수 전개가 불가능하다. 축별 판정은 test_files 의 단위/렌더 테스트(useDevicePreview 클램프·overlayGeometry 44px 임계·EditorToolbar hover/outline·ComponentPalette 태그 배지·admin-template-layout-edit replaceUrl)가 커버하고, 브라우저 통합은 chrome-controls.spec.ts(코어 chrome) + code-editor-route-sync.spec.ts(템플릿 소유 코드편집기)가 나눠 맡는다. effects 15건은 @effects 마킹으로 전건 커버(미커버 0)이며 이 면제는 cross_product 축에만 적용된다.
 
 feature: 레이아웃 편집기 chrome 컨트롤 (디바이스 custom width / 툴바 나가기·코드편집·저장 스피너·hover / 오버레이 겹침 회피 / 팔레트 태그)
 phase: 3
@@ -16,6 +16,8 @@ issue: 383
 axes:
   preview_device: [desktop, tablet, mobile, custom]
   custom_width_input: [below_min_320, in_range, above_max_1920]
+  # 코드편집기 진입 경로 (609 docblock 정리 — sub_flows.code_editor_route_sync 의 설명에만 있고 선언이 없던 축을 올린다)
+  code_editor_entry: [from_wysiwyg_with_route, direct_route_query, no_route_query, stale_selection_from_other_template]
 exclusions:
   - { preview_device: desktop, custom_width_input: below_min_320,
       reason: "custom 이 아닌 디바이스는 custom 폭을 무시 — 대표로 in_range 1건만 검증" }

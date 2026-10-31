@@ -45,6 +45,9 @@ effects:
   - locked_sensitive_hides_effective_value
   - meta_env_locked_uses_frontend_keys
   - badge_and_disabled_rendered
+  - unlocked_websocket_server_endpoint_falls_back_to_client
+  - explicit_attachment_disk_wins_over_derivation
+  - env_vars_are_listed_without_duplicates
 
 test_files:
   - tests/Unit/Support/EnvPriorityTest.php

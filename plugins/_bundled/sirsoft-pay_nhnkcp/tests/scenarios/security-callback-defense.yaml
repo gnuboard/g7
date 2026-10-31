@@ -163,6 +163,9 @@ effects:
   - kcp_vbank_notify_retries_on_site_cd_mismatch
   - kcp_vbank_notify_retries_on_missing_site_cd
   - kcp_vbank_notify_retries_on_amount_mismatch
+  # 에스크로 공통 통보 — 거래번호(tno) 대조
+  - kcp_escrow_notify_retries_on_tno_mismatch_without_hooks
+  - kcp_escrow_notify_with_matching_tno_fires_purchase_confirmed_hook
 
 # 미작성 — 회차 16 W6 (G3): 어느 테스트도 아직 재지 않는 효과의 원장.
 # 재는 테스트가 생기면 effects 로 승격한다 (지우지 않는다 — 검사 도구가 개수를 노출한다).

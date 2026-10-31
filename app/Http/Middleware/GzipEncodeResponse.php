@@ -345,6 +345,7 @@ class GzipEncodeResponse
      * 응답 클래스가 정하는 것이 아니다 (11차 G3 라운드 B11-11).
      *
      * @param  Response  $response  압축을 마친 응답
+     * @return void 반환값 없음
      */
     private function finalizeEncodedResponse(Response $response): void
     {
@@ -420,6 +421,7 @@ class GzipEncodeResponse
      * 성립한다 — Apache `mod_deflate` 와 같은 규약이다 (3차 G3 라운드 L3).
      *
      * @param  Response  $response  압축된 응답
+     * @return void 반환값 없음
      */
     private function markEncodedEtag(Response $response): void
     {
@@ -435,6 +437,7 @@ class GzipEncodeResponse
      * 응답에 `Vary: Accept-Encoding` 헤더를 보장합니다 (캐시 프록시 지원).
      *
      * @param  Response  $response  HTTP 응답
+     * @return void 반환값 없음
      */
     private function ensureVaryAcceptEncoding(Response $response): void
     {

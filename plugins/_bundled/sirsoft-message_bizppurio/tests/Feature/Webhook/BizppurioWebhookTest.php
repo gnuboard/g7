@@ -28,6 +28,8 @@ class BizppurioWebhookTest extends PluginTestCase
     /**
      * 테스트 환경 캐시 드라이버가 file 이라 잔액부족 쿨다운 캐시가 실행 간 잔존한다.
      * 매 테스트 전 캐시를 비워 잔액부족 알림 중복방지 테스트 간 격리를 보장한다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -41,7 +43,7 @@ class BizppurioWebhookTest extends PluginTestCase
      * @param  string  $refkey  우리 부여 키
      * @param  string  $channel  채널
      * @param  array<string, mixed>|null  $requestPayload  발송 시점 요청 payload (resend 포함 여부 검증용)
-     * @return BizppurioDispatch
+     * @return BizppurioDispatch 생성한 발송 이력
      */
     private function seedDispatch(string $refkey, string $channel = 'sms', ?array $requestPayload = null): BizppurioDispatch
     {
@@ -64,6 +66,8 @@ class BizppurioWebhookTest extends PluginTestCase
      * @scenario webhook_ip=allowed, result_category=success
      *
      * @effects dispatch_status_updated_to_success,reported_at_set
+     *
+     * @return void 반환값 없음
      */
     public function test_allowed_ip_success_report_updates_status(): void
     {
@@ -91,6 +95,8 @@ class BizppurioWebhookTest extends PluginTestCase
      * @scenario webhook_ip=allowed, result_category=failure
      *
      * @effects dispatch_status_updated_to_failed
+     *
+     * @return void 반환값 없음
      */
     public function test_allowed_ip_failure_report_marks_failed(): void
     {
@@ -111,6 +117,8 @@ class BizppurioWebhookTest extends PluginTestCase
      * @scenario webhook_ip=blocked
      *
      * @effects webhook_blocked_ip_returns_403,dispatch_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_ip_returns_403(): void
     {
@@ -131,6 +139,8 @@ class BizppurioWebhookTest extends PluginTestCase
      * @scenario webhook_ip=allowed
      *
      * @effects webhook_unknown_refkey_absorbed_200
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_refkey_absorbed_with_200(): void
     {
@@ -147,6 +157,8 @@ class BizppurioWebhookTest extends PluginTestCase
      * @scenario webhook_ip=allowed
      *
      * @effects webhook_replay_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_replay_report_is_idempotent(): void
     {
@@ -175,6 +187,8 @@ class BizppurioWebhookTest extends PluginTestCase
      * @scenario channel=sms, webhook_ip=allowed, result_category=balance_low
      *
      * @effects webhook_balance_low_marks_failed,balance_low_hook_fired
+     *
+     * @return void 반환값 없음
      */
     public function test_balance_low_sms_marks_failed_and_fires_hook(): void
     {
@@ -204,6 +218,8 @@ class BizppurioWebhookTest extends PluginTestCase
      * @scenario channel=sms, webhook_ip=allowed, result_category=balance_low
      *
      * @effects balance_low_notification_deduplicated_within_cooldown,both_dispatches_marked_failed
+     *
+     * @return void 반환값 없음
      */
     public function test_balance_low_notification_is_deduplicated_within_cooldown(): void
     {
@@ -238,6 +254,8 @@ class BizppurioWebhookTest extends PluginTestCase
      * @scenario webhook_ip=allowed
      *
      * @effects webhook_bypasses_auth_middleware_returns_200
+     *
+     * @return void 반환값 없음
      */
     public function test_webhook_bypasses_auth_middleware(): void
     {
@@ -260,6 +278,8 @@ class BizppurioWebhookTest extends PluginTestCase
      * @scenario webhook_ip=allowed, result_category=success
      *
      * @effects fallback_status_remains_null_when_not_requested
+     *
+     * @return void 반환값 없음
      */
     public function test_fallback_status_stays_null_when_resend_was_not_requested(): void
     {
@@ -291,6 +311,8 @@ class BizppurioWebhookTest extends PluginTestCase
      * @scenario webhook_ip=allowed, result_category=balance_low
      *
      * @effects fallback_status_set_when_resend_was_requested
+     *
+     * @return void 반환값 없음
      */
     public function test_fallback_status_set_when_resend_was_requested(): void
     {

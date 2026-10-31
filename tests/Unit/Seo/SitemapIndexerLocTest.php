@@ -23,6 +23,11 @@ use Tests\TestCase;
  */
 class SitemapIndexerLocTest extends TestCase
 {
+    /**
+     * 수집 필터 훅을 비우고 app.url 을 하위 경로가 있는 주소로, 요청은 다른 호스트로 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,6 +37,11 @@ class SitemapIndexerLocTest extends TestCase
         app()->instance('request', Request::create('http://localhost/api/x'));
     }
 
+    /**
+     * 수집 필터 훅과 강제 접두사를 걷고 Mockery 를 닫는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::clearFilter(SitemapIndexer::COLLECT_FILTER);
@@ -42,9 +52,13 @@ class SitemapIndexerLocTest extends TestCase
     }
 
     /**
+     * 증분 색인이 상대 url 은 설정 오리진과 접두사로 절대화하고, 이미 접두사가 실린 값과 절대 loc 은 한 번 더 손대지 않는지 확인한다.
+     *
      * @scenario base_path=subpath, navigation_direction=request
      *
      * @effects sitemap_incremental_index_uses_the_same_loc_builder_as_full_generation
+     *
+     * @return void 반환값 없음
      */
     public function test_index_resource_builds_loc_with_the_configured_site_url_idempotently(): void
     {
@@ -79,6 +93,8 @@ class SitemapIndexerLocTest extends TestCase
      * @scenario base_path=subpath, navigation_direction=request
      *
      * @effects sitemap_incremental_index_uses_the_same_loc_builder_as_full_generation
+     *
+     * @return void 반환값 없음
      */
     public function test_indexer_and_generator_agree_on_loc_for_the_same_entry(): void
     {

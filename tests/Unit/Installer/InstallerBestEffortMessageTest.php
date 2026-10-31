@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\ScansPhpSourceFunctions;
 use Tests\TestCase;
 
 /**
@@ -20,13 +21,21 @@ use Tests\TestCase;
  */
 class InstallerBestEffortMessageTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /**
+     * 작업 러너 원문에서 best-effort 실패 분기가 작업 라벨 조립 함수와 실패 사유로 문구를 만들고, 언어팩 전용 키를 직접 부르던 옛 줄이 사라졌는지 확인한다.
+     *
+     * @scenario task_outcome=best_effort_failed, task=static_publish
+     *
      * @effects installer_best_effort_message_names_the_task
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function best_effort_분기는_작업_라벨_기반_문구_조립_함수를_쓴다(): void
     {
-        $source = (string) file_get_contents(base_path('public/install/includes/task-runner.php'));
+        $source = $this->sourceWithoutComments(base_path('public/install/includes/task-runner.php'));
 
         // 라벨 조립 SSoT — 작업 이름 + (대상)
         $this->assertStringContainsString('function installerTaskDisplayName(array $task): string', $source);
@@ -42,7 +51,11 @@ class InstallerBestEffortMessageTest extends TestCase
     /**
      * 문구 키가 `:task`·`:error` 치환 자리를 갖고, best-effort 작업 3종의 라벨 키가 양 로케일에 있다.
      *
+     * @scenario task_outcome=best_effort_failed, locale=ko
+     *
      * @effects installer_best_effort_message_names_the_task
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 문구_키와_작업_라벨_키가_양_로케일에_있다(): void

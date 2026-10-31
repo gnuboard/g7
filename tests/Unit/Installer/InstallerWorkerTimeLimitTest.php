@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 설치 워커 실행 시간 제한·비정상 종료 회귀 테스트.
@@ -44,6 +45,8 @@ use PHPUnit\Framework\TestCase;
 #[PreserveGlobalState(false)]
 class InstallerWorkerTimeLimitTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /** @var array<int, string> 이 클래스가 만든 임시 BASE_PATH 트리 (tearDownAfterClass 가 남은 것을 지운다) */
     private static array $createdBases = [];
 
@@ -330,7 +333,7 @@ PHP);
     public function test_both_worker_entrypoints_register_worker_shutdown_handler(): void
     {
         foreach (['public/install/api/install-worker.php', 'public/install/api/install-process.php'] as $file) {
-            $source = (string) file_get_contents($this->projectRoot.'/'.$file);
+            $source = $this->sourceWithoutComments($this->projectRoot.'/'.$file);
 
             $this->assertMatchesRegularExpression(
                 "/register_shutdown_function\\('installerHandleWorkerShutdown', \\\$workerId, '(sse|polling)'\\)/",
@@ -484,6 +487,7 @@ PHP;
 
         proc_close($process);
 
+        // meta:allow raw-source-read — 소스가 아니라 자식 프로세스의 표준 출력과 표준 오류를 읽는다.
         $stdout = (string) @file_get_contents($stdoutFile);
         $stderr = (string) @file_get_contents($stderrFile);
 

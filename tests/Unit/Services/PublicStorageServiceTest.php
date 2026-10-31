@@ -27,6 +27,11 @@ class PublicStorageServiceTest extends TestCase
 
     private string $outside;
 
+    /**
+     * 실제 storage/app/public 아래 작업 루트와 그 바깥 디렉토리를 만들고 안팎에 파일을 하나씩 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,6 +45,11 @@ class PublicStorageServiceTest extends TestCase
         file_put_contents($this->outside.'/secret.txt', 'outside');
     }
 
+    /**
+     * 이번 작업 디렉토리와 앞선 실행이 남긴 같은 접두사 잔여물까지 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->removeTree($this->root);
@@ -61,6 +71,12 @@ class PublicStorageServiceTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 링크와 junction 은 따라가지 않고 자신만 지우면서 디렉토리 트리를 재귀로 지운다.
+     *
+     * @param  string  $dir  지울 디렉토리
+     * @return void 반환값 없음
+     */
     private function removeTree(string $dir): void
     {
         if (! is_dir($dir)) {
@@ -101,6 +117,10 @@ class PublicStorageServiceTest extends TestCase
      *
      * POSIX 는 symlink, Windows 는 junction(`mklink /J` — symlink 와 달리 관리자 권한이
      * 필요 없다). 둘 다 실패하면 그 환경에서는 이 축을 잴 수 없다.
+     *
+     * @param  string  $link  만들 링크 경로
+     * @param  string  $target  링크가 가리킬 디렉토리
+     * @return bool 링크를 만들었으면 true
      */
     private function makeDirectoryLink(string $link, string $target): bool
     {
@@ -119,6 +139,12 @@ class PublicStorageServiceTest extends TestCase
         return $code === 0 && (is_dir($link) || is_link($link));
     }
 
+    /**
+     * 절대 경로를 공개 스토리지 루트 기준 상대 경로로 바꾼다.
+     *
+     * @param  string  $absolute  바꿀 절대 경로
+     * @return string 공개 스토리지 루트 기준 상대 경로
+     */
     private function relative(string $absolute): string
     {
         $base = str_replace('\\', '/', storage_path('app/public')).'/';
@@ -126,6 +152,15 @@ class PublicStorageServiceTest extends TestCase
         return substr(str_replace('\\', '/', $absolute), strlen($base));
     }
 
+    /**
+     * 공개 스토리지 루트 아래 일반 파일은 성공으로 해석되고 그 파일 내용을 가리키는지 확인한다.
+     *
+     * @scenario link_kind=symlink, link_position=leaf, target=inside_root
+     *
+     * @effects public_storage_route_resolves_plain_files_under_the_root
+     *
+     * @return void 반환값 없음
+     */
     public function test_resolves_plain_file_under_root(): void
     {
         $result = (new PublicStorageService)->getFilePath($this->relative($this->root.'/plain/ok.txt'));
@@ -144,11 +179,19 @@ class PublicStorageServiceTest extends TestCase
      * `chmod` 로 재현할 수 없는 환경에서는 그 자리를 덮어 잠근다.
      *
      * @effects public_storage_unreadable_file_is_forbidden_like_static_serving
+     *
+     * @return void 반환값 없음
      */
     public function test_unreadable_file_is_reported_as_not_readable(): void
     {
         $service = new class extends PublicStorageService
         {
+            /**
+             * 권한 판정을 언제나 읽을 수 없음으로 덮어, chmod 로 재현할 수 없는 환경에서도 그 분기를 태운다.
+             *
+             * @param  string  $filePath  판정할 파일 경로
+             * @return bool 언제나 false
+             */
             protected function isReadable(string $filePath): bool
             {
                 return false;
@@ -171,6 +214,8 @@ class PublicStorageServiceTest extends TestCase
      * 동작한다. `storage/app/public/.gitignore` 는 저장소에 실재하는 파일이다.
      *
      * @effects public_storage_route_refuses_dot_files_like_the_static_defense_line
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_dot_files_and_dot_directories(): void
     {
@@ -210,6 +255,8 @@ class PublicStorageServiceTest extends TestCase
      * @scenario path_shape=null_byte, segment_position=leaf, segment_position=intermediate
      *
      * @effects public_storage_route_rejects_null_byte_paths_at_the_service_layer
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_null_byte_paths(): void
     {
@@ -228,6 +275,8 @@ class PublicStorageServiceTest extends TestCase
      * `a/./b` 는 거부가 아니라 정규화다 — 정적 서빙이 200 을 주는 주소다.
      *
      * @effects public_storage_route_normalizes_dot_segment_like_static_serving
+     *
+     * @return void 반환값 없음
      */
     public function test_current_directory_segment_is_normalized_not_rejected(): void
     {
@@ -244,6 +293,8 @@ class PublicStorageServiceTest extends TestCase
      * 이 값이 갈리면 링크가 없는 그 사이트의 공개 자산이 통째로 404 가 된다.
      *
      * @effects configured_public_disk_root_is_the_single_source_for_serving
+     *
+     * @return void 반환값 없음
      */
     public function test_root_path_follows_the_configured_public_disk_root(): void
     {
@@ -270,6 +321,8 @@ class PublicStorageServiceTest extends TestCase
      * 풀려, 경로 봉쇄의 기준선이 storage 트리 밖의 임의 디렉토리가 된다.
      *
      * @effects configured_public_disk_root_is_the_single_source_for_serving
+     *
+     * @return void 반환값 없음
      */
     public function test_root_path_ignores_non_local_driver_and_relative_root(): void
     {
@@ -312,6 +365,8 @@ class PublicStorageServiceTest extends TestCase
      *     드러났다(실재하면 규칙이 422, 없으면 서비스가 403).
      *
      * @effects public_storage_route_rejects_traversal_and_symlink
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_parent_segment(): void
     {
@@ -331,6 +386,8 @@ class PublicStorageServiceTest extends TestCase
      * Windows junction 은 `is_link()` 로 보이지 않는다 — 그 사각을 이 케이스가 지킨다.
      *
      * @effects public_storage_route_rejects_traversal_and_symlink
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_intermediate_directory_link_even_when_target_is_inside_root(): void
     {
@@ -352,6 +409,8 @@ class PublicStorageServiceTest extends TestCase
      * 루트 밖을 가리키는 링크는 당연히 거부된다 (realpath 봉쇄와 링크 검사 이중 방어).
      *
      * @effects public_storage_route_rejects_traversal_and_symlink
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_directory_link_pointing_outside_root(): void
     {
@@ -382,6 +441,8 @@ class PublicStorageServiceTest extends TestCase
      * @scenario public_disk_root=non_local, observability=warn_once
      *
      * @effects root_path_fallback_warns_once_per_process
+     *
+     * @return void 반환값 없음
      */
     public function test_root_path_fallback_warns_once_per_process(): void
     {
@@ -416,6 +477,8 @@ class PublicStorageServiceTest extends TestCase
      * 형태만 맞추면 다시 갈리므로 **같은 답을 내는지**를 계약으로 고정한다 (15차 G3).
      *
      * @effects public_disk_locality_predicates_agree
+     *
+     * @return void 반환값 없음
      */
     public function test_local_disk_predicates_agree_across_both_consumers(): void
     {
@@ -478,6 +541,10 @@ class PublicStorageServiceTest extends TestCase
      * 걸쳐 닫은 결함의 **세 번째 출처**였다 (23차 G3 라운드 D23-3).
      *
      * 링크 키(`public/storage`)도 함께 잰다 — 그 자리가 바뀌면 판정기가 보는 경로와 갈린다.
+     *
+     * @effects configured_public_disk_root_is_the_single_source_for_serving
+     *
+     * @return void 반환값 없음
      */
     public function test_storage_link_target_follows_the_configured_public_disk_root(): void
     {

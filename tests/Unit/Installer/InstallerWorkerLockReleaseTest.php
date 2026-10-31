@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 워커 점유의 해제와 남은 시간 (D7).
@@ -41,18 +42,24 @@ use PHPUnit\Framework\TestCase;
  *
  * BASE_PATH 를 temp 로 박으므로 클래스 격리 실행이 필요하다.
  *
- * @scenario task_outcome=done
- *
- * @effects installer_worker_lock_release_reports_whether_it_persisted
+ * 효과 요약(마커 아님 — 평문): 워커 점유 해제가 저장에 성공했는지 돌려주고 shutdown 훅이 그 결과를 기록한다
+ * (installer_worker_lock_release_reports_whether_it_persisted). 표식은 각 테스트 메서드가 단다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
 class InstallerWorkerLockReleaseTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private static string $sharedBase = '';
 
     private static string $skipReason = '';
 
+    /**
+     * 시스템 임시 폴더 아래에 BASE_PATH 와 storage 폴더를 세우고 설치기 설정과 상태 모듈을 불러온다. BASE_PATH 가 임시 폴더 밖이면 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -86,6 +93,11 @@ class InstallerWorkerLockReleaseTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/installer-state.php';
     }
 
+    /**
+     * 임시 storage 폴더 바로 아래에 남은 상태 파일과 픽스처를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     public static function tearDownAfterClass(): void
     {
         if (self::$skipReason === '' && self::$sharedBase !== '') {
@@ -98,6 +110,11 @@ class InstallerWorkerLockReleaseTest extends TestCase
         parent::tearDownAfterClass();
     }
 
+    /**
+     * 클래스 준비 단계에서 건너뛸 사유가 정해졌으면 각 테스트를 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -107,10 +124,16 @@ class InstallerWorkerLockReleaseTest extends TestCase
         }
     }
 
-    /** 프로덕션 소스에서 함수 본문만 잘라 온다 — 길이 상수로 자르지 않는다(한글 주석은 글자당 3바이트). */
+    /**
+     * 프로덕션 소스에서 함수 본문만 잘라 온다 — 길이 상수로 자르지 않는다(한글 주석은 글자당 3바이트).
+     *
+     * @param  string  $file  설치기 includes 폴더 기준 파일 이름
+     * @param  string  $needle  본문을 자를 함수 선언 문자열
+     * @return string 다음 최상위 선언 직전까지의 함수 본문
+     */
     private function functionBody(string $file, string $needle): string
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/'.$file);
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/'.$file);
         $at = strpos($source, $needle);
         $this->assertNotFalse($at, $needle.' 를 찾지 못했다');
 
@@ -129,6 +152,8 @@ class InstallerWorkerLockReleaseTest extends TestCase
      * @scenario task_outcome=done
      *
      * @effects installer_worker_lock_release_reports_whether_it_persisted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function remaining_seconds_and_liveness_never_disagree(): void
@@ -161,6 +186,8 @@ class InstallerWorkerLockReleaseTest extends TestCase
      * @scenario task_outcome=done
      *
      * @effects installer_worker_lock_release_reports_whether_it_persisted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_reproduces_the_field_numbers(): void
@@ -181,6 +208,8 @@ class InstallerWorkerLockReleaseTest extends TestCase
      * @scenario task_outcome=done
      *
      * @effects installer_worker_lock_release_reports_whether_it_persisted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_honours_the_longer_of_declared_and_fallback(): void
@@ -199,6 +228,8 @@ class InstallerWorkerLockReleaseTest extends TestCase
      * @scenario task_outcome=done
      *
      * @effects installer_worker_lock_release_reports_whether_it_persisted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function releasing_reports_success_and_clears_the_holder(): void
@@ -222,6 +253,8 @@ class InstallerWorkerLockReleaseTest extends TestCase
      * @scenario task_outcome=done
      *
      * @effects installer_worker_lock_release_reports_whether_it_persisted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function releasing_a_lock_someone_else_took_over_is_not_a_failure(): void
@@ -249,6 +282,8 @@ class InstallerWorkerLockReleaseTest extends TestCase
      * @scenario task_outcome=done
      *
      * @effects installer_worker_lock_release_reports_whether_it_persisted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_release_returns_the_save_result(): void
@@ -269,6 +304,8 @@ class InstallerWorkerLockReleaseTest extends TestCase
      * @scenario task_outcome=done
      *
      * @effects installer_worker_lock_release_reports_whether_it_persisted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_shutdown_hook_records_a_release_that_did_not_persist(): void
@@ -299,6 +336,8 @@ class InstallerWorkerLockReleaseTest extends TestCase
      * @scenario task_outcome=done
      *
      * @effects installer_worker_lock_release_reports_whether_it_persisted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_free_space_note_is_always_usable(): void
@@ -315,6 +354,8 @@ class InstallerWorkerLockReleaseTest extends TestCase
      * @scenario task_outcome=done
      *
      * @effects installer_worker_lock_release_reports_whether_it_persisted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_state_write_failure_message_carries_free_space(): void
@@ -356,6 +397,8 @@ class InstallerWorkerLockReleaseTest extends TestCase
      * @scenario task_outcome=done
      *
      * @effects installer_corrupt_state_copy_failure_is_recorded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_corrupt_state_copy_failure_is_recorded_too(): void

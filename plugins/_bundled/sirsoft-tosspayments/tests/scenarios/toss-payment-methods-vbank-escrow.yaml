@@ -155,6 +155,10 @@ effects:
   - toss_methods_inserted_after_phone_or_appended                   # 휴대폰 뒤·포인트 앞, 휴대폰이 없으면 맨 끝
   - toss_easy_pay_methods_declare_brand_mark_matching_other_pg      # 같은 브랜드는 다른 PG 와 같은 배지
   - toss_non_brand_methods_have_no_brand_mark                       # 카드·가상계좌·계좌이체·휴대폰은 마크 없음
+  # 프론트 클라이언트 설정 노출 (RegisterPgProviderClientConfigTest)
+  - client_config_exposes_no_methods_when_order_sheet_off           # 주문서 모드가 꺼지면 enabled_methods 가 빈 배열
+  - client_config_exposes_vbank_and_escrow_settings                 # 가상계좌 유효시간, 현금영수증 유형, 에스크로 설정을 그대로 노출
+  - client_config_never_exposes_secret_key                          # 시크릿 키는 응답 어디에도 없고 클라이언트 키만 노출
 
 notes: |
   실계약 전이므로 실제 PG 결제창 진입/승인은 샌드박스 의존이며 M20·M21(Chrome MCP)은

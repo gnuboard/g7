@@ -73,6 +73,8 @@ effects:
   - real_user_page_honors_dark_token_under_dark_ancestor
   # 프리뷰 토글
   - preview_color_scheme_toggle_applies_dark_wrapper_to_preview_frame_only
+  # 2026-10-31 issue609 테스트 매핑 부채 정리: 레이아웃 편집기 단위 테스트가 실제로 재는 효과 (메서드 단위 마킹)
+  - dark_scope_classToken_control_stays_editable   # 다크 scope 에서도 classToken 컨트롤은 읽기 전용이 아니라 편집된다
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/spec/styleScope.test.ts

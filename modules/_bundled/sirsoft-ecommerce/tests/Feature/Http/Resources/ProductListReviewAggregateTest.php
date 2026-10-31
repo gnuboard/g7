@@ -37,6 +37,8 @@ class ProductListReviewAggregateTest extends ModuleTestCase
      * 최근 본 상품 조회가 실제 리뷰 통계를 싣는지 확인합니다.
      *
      * @effects recently_viewed_products_carry_real_review_stats
+     *
+     * @return void 반환값 없음
      */
     public function test_recently_viewed_products_carry_real_review_stats(): void
     {
@@ -64,6 +66,10 @@ class ProductListReviewAggregateTest extends ModuleTestCase
 
     /**
      * 리뷰가 0건이면 집계가 붙어도 0 으로 표기되는지 확인합니다.
+     *
+     * @effects recently_viewed_products_carry_real_review_stats
+     *
+     * @return void 반환값 없음
      */
     public function test_product_without_reviews_reports_zero_stats(): void
     {
@@ -81,6 +87,8 @@ class ProductListReviewAggregateTest extends ModuleTestCase
      * 집계를 붙이지 않은 모델에서는 리뷰 통계 필드가 생략되는지 확인합니다.
      *
      * @effects list_resource_omits_review_stats_when_not_aggregated
+     *
+     * @return void 반환값 없음
      */
     public function test_list_resource_omits_review_stats_when_not_aggregated(): void
     {
@@ -111,6 +119,8 @@ class ProductListReviewAggregateTest extends ModuleTestCase
      * 리뷰가 달린 상품도 별 0 개로 보인다.
      *
      * @effects wishlist_cards_carry_real_review_stats
+     *
+     * @return void 반환값 없음
      */
     public function test_wishlist_cards_carry_real_review_stats(): void
     {
@@ -142,6 +152,8 @@ class ProductListReviewAggregateTest extends ModuleTestCase
      *
      * @param  Product  $product  대상 상품
      * @param  int  $rating  평점
+     *
+     * @return void 반환값 없음
      */
     private function makeVisibleReview(Product $product, int $rating): void
     {

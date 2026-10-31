@@ -31,6 +31,8 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
             use SkipsWhenExtensionTablesAreMissing;
 
             /**
+             * 트레이트의 .env 줄 해석기를 그대로 부른다.
+             *
              * @param  array<int, string>  $lines  파일 줄 목록
              * @return array<string, string> 키-값
              */
@@ -40,6 +42,8 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
             }
 
             /**
+             * 트레이트가 부팅 전에 요구하는 확장 테이블 목록을 드러낸다.
+             *
              * @return array<int, string> 부팅이 요구하는 확장 테이블
              */
             public function requiredTables(): array
@@ -50,7 +54,11 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
     }
 
     /**
+     * 따옴표 없는 값, 큰따옴표 값, 작은따옴표 값이 모두 따옴표를 벗긴 원문으로 읽히는지 확인한다.
+     *
      * @effects skip_guard_parses_env_without_ini_semantics
+     *
+     * @return void 반환값 없음
      */
     public function test_parses_plain_and_quoted_values(): void
     {
@@ -69,6 +77,10 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
      * 값 안의 `=` 를 잘라 먹지 않는다.
      *
      * 비밀번호에 `=` 가 들어가는 것은 흔하다 — 첫 `=` 뒤 전부가 값이다.
+     *
+     * @effects skip_guard_parses_env_without_ini_semantics
+     *
+     * @return void 반환값 없음
      */
     public function test_keeps_equals_signs_inside_values(): void
     {
@@ -84,6 +96,8 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
      * 실패하면 판정 불가로 떨어져 가드가 조용히 통과하고, 그 다음이 부팅 실패다.
      *
      * @effects skip_guard_parses_env_without_ini_semantics
+     *
+     * @return void 반환값 없음
      */
     public function test_survives_values_that_would_break_ini_parsing(): void
     {
@@ -102,6 +116,10 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
      * `DB_PREFIX=g7_ # 접두사` 를 값으로 읽으면 표 이름이 `g7_ # 접두사…` 가 되어 트레이트가
      * 「표가 없다」로 판정하고 그 축의 클래스를 통째로 skip 한다 — 종료 코드는 0 이라 초록으로
      * 보인다. 커버 축 선언에 `comment` 가 있었지만 픽스처는 **줄 전체 주석**만 태우고 있었다.
+     *
+     * @effects skip_guard_parses_env_without_ini_semantics
+     *
+     * @return void 반환값 없음
      */
     public function test_inline_comment_is_not_part_of_the_value(): void
     {
@@ -116,6 +134,10 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
 
     /**
      * 따옴표로 감싼 값 안의 `#` 는 값의 일부다 — 비밀번호에 흔하다.
+     *
+     * @effects skip_guard_parses_env_without_ini_semantics
+     *
+     * @return void 반환값 없음
      */
     public function test_hash_inside_a_quoted_value_is_kept(): void
     {
@@ -126,6 +148,13 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
         $this->assertSame('p#ss w0rd', $config['DB_WRITE_PASSWORD']);
     }
 
+    /**
+     * 주석 줄, 빈 줄, 구분자가 없는 줄, 키가 빈 줄은 건너뛰고 올바른 키 값 쌍만 남기는지 확인한다.
+     *
+     * @effects skip_guard_parses_env_without_ini_semantics
+     *
+     * @return void 반환값 없음
+     */
     public function test_skips_comments_blanks_and_lines_without_a_separator(): void
     {
         $config = $this->subject()->parse([
@@ -146,6 +175,8 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
      * 부팅 실패가 다시 진짜 회귀처럼 보인다. 늘어나면 반대로 과잉 건너뜀이 된다.
      *
      * @effects skip_guard_required_tables_are_fixed
+     *
+     * @return void 반환값 없음
      */
     public function test_required_extension_tables_are_fixed(): void
     {
@@ -159,6 +190,10 @@ class SkipsWhenExtensionTablesAreMissingTest extends TestCase
      * 보지 않았다. 배선 한 줄이 빠지거나 순서가 뒤집히면 정상 DB 에서는 초록이라 드러나지
      * 않고, 리허설 직후에만 「Table 'g7_modules' doesn't exist」가 진짜 회귀와 섞여 나타난다.
      * 판정은 앱 부팅 **전**에 해야 한다 — 부팅이 바로 그 실패 지점이기 때문이다.
+     *
+     * @effects skip_guard_runs_before_the_app_boots
+     *
+     * @return void 반환값 없음
      */
     public function test_consumers_call_the_guard_before_booting_the_app(): void
     {

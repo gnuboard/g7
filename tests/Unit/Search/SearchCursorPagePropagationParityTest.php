@@ -34,6 +34,8 @@ class SearchCursorPagePropagationParityTest extends TestCase
      * 커서 판정을 호출하는 모든 곳이 페이지 번호를 함께 넘기는지 확인
      *
      * @effects every_uses_cursor_call_forwards_page
+     *
+     * @return void 반환값 없음
      */
     public function test_every_uses_cursor_call_forwards_the_page_number(): void
     {
@@ -65,7 +67,7 @@ class SearchCursorPagePropagationParityTest extends TestCase
     /**
      * 저장소에서 커서 판정 호출 지점을 모읍니다.
      *
-     * @return array<int, array{file: string, line: int, arguments: string}>
+     * @return array<int, array{file: string, line: int, arguments: string}> 커서 판정 호출 지점 목록
      */
     private function collectCallSites(): array
     {
@@ -106,7 +108,7 @@ class SearchCursorPagePropagationParityTest extends TestCase
     /**
      * 스캔 대상 PHP 파일 목록을 만듭니다.
      *
-     * @return array<int, string>
+     * @return array<int, string> 스캔 대상 PHP 파일 경로 목록
      */
     private function phpFiles(): array
     {

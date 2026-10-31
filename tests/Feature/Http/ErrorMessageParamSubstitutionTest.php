@@ -19,6 +19,17 @@ use Tests\TestCase;
  */
 class ErrorMessageParamSubstitutionTest extends TestCase
 {
+    /**
+     * app/ 전체의 `->error()` 호출부 중 `:error` 자리를 가진 키를 쓰는 곳이 넷째 인자(messageParams)에 'error' 를 싣는지 확인한다.
+     *
+     * 키는 번역기로 실제 해석해 판정하고, 검사한 호출부가 50건을 넘는지로 탐지 모집단이 살아 있음을 함께 본다.
+     *
+     * @scenario method=error, caller=codebase_scan
+     *
+     * @effects error_placeholder_keys_always_receive_error_param
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function error_치환_자리를_가진_키는_언제나_파라미터와_함께_호출된다(): void
     {
@@ -72,6 +83,17 @@ class ErrorMessageParamSubstitutionTest extends TestCase
         );
     }
 
+    /**
+     * app/ 전체의 `new *OperationException(...)` 중 `:error` 자리를 가진 키를 던지는 곳이 둘째 인자에 'error' 를 싣는지 확인한다.
+     *
+     * 예외 생성자는 파라미터 배열이 둘째 인자라 `->error()` 스캐너와 따로 잰다. 검사 건수가 0 이면 탐지가 모집단을 잃은 것으로 본다.
+     *
+     * @scenario method=error, caller=codebase_scan
+     *
+     * @effects exception_constructors_pass_error_param_for_placeholder_keys
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function error_치환_자리를_가진_키는_예외_생성자에서도_파라미터와_함께_전달된다(): void
     {
@@ -135,6 +157,12 @@ class ErrorMessageParamSubstitutionTest extends TestCase
      * 본문 텍스트가 전부 오탐이 된다.
      *
      * @param  string  $source  대상 소스
+     *
+     * @scenario caller=codebase_scan
+     *
+     * @effects translator_direct_calls_supply_placeholder_params
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 치환_자리를_가진_키는_번역기_직접_호출에서도_파라미터와_함께_불린다(): void

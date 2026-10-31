@@ -48,6 +48,8 @@ class MultiStepWriteAtomicityTest extends TestCase
      * deleteUser: 마지막 delete 실패 시 역할·동의·토큰·아바타 파일이 원상 복구된다.
      *
      * @effects withdraw_is_atomic_all_or_nothing, avatar_file_removed_only_after_commit
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_user_rolls_back_roles_and_tokens(): void
     {
@@ -89,6 +91,12 @@ class MultiStepWriteAtomicityTest extends TestCase
 
     /**
      * deleteRole: 마지막 delete 실패 시 사용자·권한 연결이 원상 복구된다.
+     *
+     * @scenario failure_injection=last_write_fails
+     *
+     * @effects role_delete_rolls_back_relations
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_role_rolls_back_relations(): void
     {
@@ -106,6 +114,12 @@ class MultiStepWriteAtomicityTest extends TestCase
 
     /**
      * register: 중간 실패 시 계정이 남지 않는다 (이메일 점유 유령 계정 차단).
+     *
+     * @scenario failure_injection=last_write_fails
+     *
+     * @effects register_rolls_back_user_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_register_rolls_back_user_on_failure(): void
     {
@@ -122,6 +136,12 @@ class MultiStepWriteAtomicityTest extends TestCase
 
     /**
      * resetPassword: 토큰 삭제 실패 시 비밀번호도 원상 복구된다 (토큰 재사용 차단).
+     *
+     * @scenario failure_injection=last_write_fails
+     *
+     * @effects reset_password_rolls_back_when_token_delete_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_reset_password_rolls_back_password_when_token_delete_fails(): void
     {
@@ -144,6 +164,11 @@ class MultiStepWriteAtomicityTest extends TestCase
         // 트랜잭션이 없어도 통과하므로 회귀를 검출하지 못한다.
         $failingRecord = new class extends PasswordResetToken
         {
+            /**
+             * 트랜잭션의 마지막 쓰기인 토큰 삭제를 항상 예외로 실패시킨다.
+             *
+             * @return bool 반환하지 않음(항상 예외를 던진다)
+             */
             public function delete(): bool
             {
                 throw new RuntimeException('마지막 쓰기 실패');
@@ -170,6 +195,12 @@ class MultiStepWriteAtomicityTest extends TestCase
 
     /**
      * AttachmentService::delete — DB 삭제 실패 시 파일이 남는다 (dangling 없음).
+     *
+     * @scenario failure_injection=last_write_fails
+     *
+     * @effects attachment_file_kept_when_db_delete_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_attachment_delete_keeps_file_when_db_delete_fails(): void
     {
@@ -192,6 +223,12 @@ class MultiStepWriteAtomicityTest extends TestCase
 
     /**
      * ScheduleService::delete — 스케줄 삭제 실패 시 실행 이력이 복구된다.
+     *
+     * @scenario failure_injection=last_write_fails
+     *
+     * @effects schedule_delete_rolls_back_histories
+     *
+     * @return void 반환값 없음
      */
     public function test_schedule_delete_rolls_back_histories(): void
     {
@@ -221,6 +258,8 @@ class MultiStepWriteAtomicityTest extends TestCase
      * updateUser — 역할 동기화 실패 시 프로필 갱신·토큰 정리가 원상 복구된다.
      *
      * @effects withdraw_is_atomic_all_or_nothing
+     *
+     * @return void 반환값 없음
      */
     public function test_update_user_rolls_back_profile_and_tokens(): void
     {
@@ -252,6 +291,12 @@ class MultiStepWriteAtomicityTest extends TestCase
 
     /**
      * MenuService::deleteMenu — 메뉴 삭제 실패 시 역할 연결이 복구된다.
+     *
+     * @scenario failure_injection=last_write_fails
+     *
+     * @effects menu_delete_rolls_back_role_links
+     *
+     * @return void 반환값 없음
      */
     public function test_menu_delete_rolls_back_role_links(): void
     {
@@ -294,6 +339,7 @@ class MultiStepWriteAtomicityTest extends TestCase
      *
      * @param  class-string  $interface  Repository 인터페이스
      * @param  string  $method  실패시킬 메서드
+     * @return void 반환값 없음
      */
     private function mockRepositoryFailure(string $interface, string $method): void
     {
@@ -309,6 +355,7 @@ class MultiStepWriteAtomicityTest extends TestCase
      * 롤백을 유발하는 호출이 예외로 끝나는지 확인합니다.
      *
      * @param  callable  $operation  실행할 동작
+     * @return void 반환값 없음
      */
     private function expectRollbackFailure(callable $operation): void
     {

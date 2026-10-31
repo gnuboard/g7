@@ -440,6 +440,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=canonical_address, servers=nginx+caddy+iis
      *
      * @effects every_server_config_fixes_the_canonical_address
+     *
+     * @return void 반환값 없음
      */
     public function test_every_server_config_carries_the_canonical_address_rule(): void
     {
@@ -535,6 +537,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=empty_segment_guard, servers=apache+nginx+caddy+iis
      *
      * @effects canonical_redirects_never_emit_a_protocol_relative_destination
+     *
+     * @return void 반환값 없음
      */
     public function test_every_server_config_settles_the_empty_segment_axis(): void
     {
@@ -582,6 +586,8 @@ class ServerConfigParityTest extends TestCase
      * 경고도 남지 않고, 그 서버로 배포한 운영자만 뒤늦게 알게 된다.
      *
      * @effects server_configs_share_the_htaccess_protection_lists
+     *
+     * @return void 반환값 없음
      */
     public function test_sensitive_directories_reach_every_server_config(): void
     {
@@ -606,6 +612,8 @@ class ServerConfigParityTest extends TestCase
      * 고치게 하고, 이 축이 나머지 세 파일을 따라오게 한다.
      *
      * @effects server_configs_share_the_htaccess_protection_lists
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_extensions_reach_every_server_config(): void
     {
@@ -643,6 +651,12 @@ class ServerConfigParityTest extends TestCase
      * 아니지만, 서빙되면 배치 구조와 소켓 경로가 그대로 나간다. 두 겹으로 막힌다 — `deploy`
      * 디렉토리 자체가 차단 목록에 있고, `dist` 확장자도 목록에 있다. 어느 한 겹이 목록에서
      * 빠지면 이 테스트가 그 사실을 이름으로 말한다 (15차 G3 라운드 W2-1).
+     *
+     * @scenario rollback_leftover=deploy_dist_sidecar, servers=apache+nginx+caddy+iis
+     *
+     * @effects deploy_fragment_dist_sidecars_are_blocked_on_every_server
+     *
+     * @return void 반환값 없음
      */
     public function test_deploy_fragment_dist_sidecars_are_blocked_on_every_server_config(): void
     {
@@ -664,6 +678,8 @@ class ServerConfigParityTest extends TestCase
      * `artisan` 은 PHP 소스인데 확장자가 없어 확장자 규칙으로는 걸리지 않는다.
      *
      * @effects server_configs_share_the_htaccess_protection_lists
+     *
+     * @return void 반환값 없음
      */
     public function test_bare_file_names_reach_every_server_config(): void
     {
@@ -685,6 +701,12 @@ class ServerConfigParityTest extends TestCase
      *
      * 숨김 파일 차단만 있고 `.well-known/` 예외가 없으면 인증서 자동 갱신이 **조용히**
      * 실패한다 — 만료되기 전까지 아무 증상이 없다.
+     *
+     * @scenario servers=nginx+caddy+iis
+     *
+     * @effects hidden_file_guard_keeps_the_acme_exception_on_every_server
+     *
+     * @return void 반환값 없음
      */
     public function test_hidden_file_guard_and_acme_exception_reach_every_server_config(): void
     {
@@ -740,6 +762,8 @@ class ServerConfigParityTest extends TestCase
      * 그 상태는 인증서가 만료될 때까지 아무 신호도 주지 않는다 — 갱신은 보통 만료
      * 30일 전에 조용히 시도되고 실패해도 사이트는 정상으로 보인다. 그래서 존재만
      * 재던 종전 축으로는 이 회귀가 통과했다.
+     *
+     * @return void 반환값 없음
      */
     private function assertIisAcmeRulePrecedesTheHiddenFileRule(): void
     {
@@ -791,6 +815,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=apache, protection=directory_listing
      *
      * @effects directory_listing_is_blocked_on_every_server
+     *
+     * @return void 반환값 없음
      */
     public function test_directory_listing_is_blocked_on_every_server_config(): void
     {
@@ -833,6 +859,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=reverse_direction, derivation=sensitive_dirs
      *
      * @effects server_configs_do_not_diverge_from_the_derived_list
+     *
+     * @return void 반환값 없음
      */
     public function test_no_server_config_blocks_a_directory_outside_the_derived_list(): void
     {
@@ -890,6 +918,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=reverse_direction, derivation=extensions+bare_names
      *
      * @effects server_configs_do_not_diverge_from_the_derived_list
+     *
+     * @return void 반환값 없음
      */
     public function test_no_server_config_blocks_a_file_pattern_outside_the_derived_list(): void
     {
@@ -937,6 +967,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=reverse_direction, server_kind=iis, surface=request_filtering
      *
      * @effects server_configs_do_not_diverge_from_the_derived_list
+     *
+     * @return void 반환값 없음
      */
     public function test_iis_request_filtering_does_not_diverge_from_the_derived_lists(): void
     {
@@ -1019,6 +1051,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=caddy, derivation=regex_engine
      *
      * @effects caddy_fragment_loads_under_re2
+     *
+     * @return void 반환값 없음
      */
     public function test_caddy_fragment_avoids_regex_syntax_re2_cannot_compile(): void
     {
@@ -1052,6 +1086,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_kind=iis, protection=effect
      *
      * @effects server_protection_rules_declare_a_blocking_effect
+     *
+     * @return void 반환값 없음
      */
     public function test_protection_rules_have_a_blocking_or_delegating_effect(): void
     {
@@ -1257,7 +1293,7 @@ class ServerConfigParityTest extends TestCase
      * @param  string  $block  검사할 nginx 블록 본문
      * @param  string  $label  실패 메시지에 실을 대상 이름
      * @param  string  $effect  그 서버의 위임 효과 정규식
-     * @return void
+     * @return void 반환값 없음
      */
     private function assertNginxDelegationIsReached(string $block, string $label, string $effect): void
     {
@@ -1385,6 +1421,8 @@ class ServerConfigParityTest extends TestCase
      * 건너뛰어 「함께 갱신」이 조용히 죽는다.
      *
      * @effects iis_web_config_is_a_core_update_target
+     *
+     * @return void 반환값 없음
      */
     public function test_iis_config_is_a_core_update_target_and_not_protected(): void
     {
@@ -1415,6 +1453,8 @@ class ServerConfigParityTest extends TestCase
      * 못한다. 그 축은 필터 옆의 내부 회귀 테스트가 같은 파일 목록으로 잰다.
      *
      * @effects server_configs_are_shipped_in_the_release_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_server_configs_are_not_excluded_from_the_release_payload(): void
     {
@@ -1453,6 +1493,10 @@ class ServerConfigParityTest extends TestCase
      *
      * IIS·Caddy 축은 실측 환경이 없어 정적 검토까지만 확인됐다. 그 사실이 파일에 적혀
      * 있지 않으면 다음 사람이 「검증된 설정」으로 읽고 그대로 운영에 올린다.
+     *
+     * @effects unverified_axes_are_declared_not_narrated
+     *
+     * @return void 반환값 없음
      */
     public function test_unverified_server_configs_declare_their_verification_status(): void
     {
@@ -1515,6 +1559,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=caddy, protection=public_dotfiles
      *
      * @effects caddy_fragment_declares_public_dotfile_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_caddy_fragment_declares_public_dotfile_limitation(): void
     {
@@ -1595,6 +1641,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=rule_level_reverse, servers=nginx+caddy
      *
      * @effects every_server_rule_is_accounted_for_in_its_correspondence_table
+     *
+     * @return void 반환값 없음
      */
     public function test_every_server_rule_carries_a_numbered_explanation(): void
     {
@@ -1911,7 +1959,7 @@ class ServerConfigParityTest extends TestCase
      * 인용된다. 손으로 유지하는 목록은 이 제외 다섯뿐이고, 새 지시어가 블록에 들어오면
      * 그것은 자동으로 축이 되어 세 표에 행을 요구한다.
      *
-     * @return array{directives: array<string, true>, markers: array<string, true>}
+     * @return array{directives: array<string, true>, markers: array<string, true>} 규칙을 여는 지시어 이름과 위임 환경 표식 집합
      */
     private function rootHtaccessRuleAxes(): array
     {
@@ -1966,6 +2014,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=correspondence_table, direction=forward
      *
      * @effects correspondence_tables_cite_only_live_root_htaccess_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_correspondence_tables_cite_only_directives_that_exist_in_the_root_htaccess(): void
     {
@@ -2007,6 +2057,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=correspondence_table, direction=reverse
      *
      * @effects every_root_htaccess_rule_axis_has_a_correspondence_row_on_every_server
+     *
+     * @return void 반환값 없음
      */
     public function test_every_root_htaccess_rule_axis_has_a_row_in_every_correspondence_table(): void
     {
@@ -2057,6 +2109,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=autoindex, protection=directory_listing_response_code
      *
      * @effects autoindex_response_code_parity_is_declared_on_every_server
+     *
+     * @return void 반환값 없음
      */
     public function test_autoindex_response_parity_is_declared_on_every_server_config(): void
     {
@@ -2097,6 +2151,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=nosniff, servers=apache+nginx+caddy+iis
      *
      * @effects nginx_every_response_location_declares_autoindex_and_nosniff
+     *
+     * @return void 반환값 없음
      */
     public function test_nginx_every_response_producing_location_declares_autoindex_off_and_nosniff(): void
     {
@@ -2167,6 +2223,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=reverse_direction, servers=nginx+caddy+iis
      *
      * @effects every_server_fragment_declares_its_reverse_only_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_every_non_apache_config_declares_its_reverse_only_rules(): void
     {
@@ -2200,6 +2258,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=reverse_direction, server_kind=iis, surface=request_filtering
      *
      * @effects every_server_fragment_declares_its_reverse_only_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_iis_deny_url_sequences_match_their_reverse_only_declaration(): void
     {
@@ -2237,6 +2297,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=reverse_direction, server_kind=iis, surface=request_filtering
      *
      * @effects every_server_fragment_declares_its_reverse_only_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_iis_file_extensions_do_not_readd_the_globally_scoped_exclusions(): void
     {
@@ -2326,6 +2388,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=verification_token, granularity=axis
      *
      * @effects unverified_axes_are_declared_not_narrated
+     *
+     * @return void 반환값 없음
      */
     public function test_partially_unverified_axes_carry_an_axis_scoped_token(): void
     {
@@ -2372,6 +2436,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=nosniff, servers=apache+nginx+caddy+iis
      *
      * @effects static_serving_sends_nosniff_on_every_server
+     *
+     * @return void 반환값 없음
      */
     public function test_every_server_config_sends_nosniff_for_static_files(): void
     {
@@ -2443,6 +2509,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_parity=nosniff, servers=apache+nginx+caddy+iis
      *
      * @effects static_serving_sends_nosniff_on_every_server
+     *
+     * @return void 반환값 없음
      */
     public function test_acme_well_known_static_serving_also_sends_nosniff(): void
     {
@@ -2494,6 +2562,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_kind=nginx_snippet, mount_shape=docroot_relative
      *
      * @effects nginx_fastcgi_overrides_follow_the_params_include
+     *
+     * @return void 반환값 없음
      */
     public function test_nginx_fastcgi_param_overrides_come_after_the_include(): void
     {
@@ -2528,6 +2598,8 @@ class ServerConfigParityTest extends TestCase
      * @scenario server_kind=nginx_snippet, protection=htaccess_ok
      *
      * @effects nginx_php_location_falls_back_to_the_front_controller
+     *
+     * @return void 반환값 없음
      */
     public function test_nginx_php_location_falls_back_to_the_front_controller(): void
     {

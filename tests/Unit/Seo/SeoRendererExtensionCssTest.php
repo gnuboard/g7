@@ -17,9 +17,7 @@ use Tests\TestCase;
  * 순서는 템플릿 CSS → `@layer g7-extension;` 선언 → 모듈 번들 CSS → 플러그인 번들 CSS → 호환 덮기 파일이고,
  * 봇 화면은 라이트로 그리므로 `<html data-g7-color-scheme="light">` 를 단다.
  *
- * @scenario surface=seo_render
- *
- * @effects seo_render_loads_extension_css_in_user_order
+ * 효과 요약(마커 아님 — 평문): 표면은 SEO 렌더이고, 각 시험이 확장 CSS 를 사용자 화면과 같은 순서로 싣는다는 효과를 잰다.
  */
 class SeoRendererExtensionCssTest extends TestCase
 {

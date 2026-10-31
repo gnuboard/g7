@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
 
 /**
@@ -14,6 +15,7 @@ use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
 class InstallerDbTestGateTest extends TestCase
 {
     use RunsInstallerSubprocess;
+    use ScansPhpSourceFunctions;
 
     /**
      * 임시 루트 준비.
@@ -48,7 +50,7 @@ class InstallerDbTestGateTest extends TestCase
      */
     public function test_db_test_failure_paths_do_not_store_false(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/api/check-configuration.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/api/check-configuration.php');
 
         $this->assertStringNotContainsString("\$_SESSION['db_write_tested'] = false", $source);
         $this->assertStringNotContainsString("\$_SESSION['db_read_tested'] = false", $source);
@@ -64,7 +66,7 @@ class InstallerDbTestGateTest extends TestCase
      */
     public function test_step3_does_not_use_isset_for_db_test_flag(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
 
         $this->assertStringNotContainsString("isset(\$_SESSION['db_write_tested'])", $source);
         $this->assertStringNotContainsString("isset(\$_SESSION['db_read_tested'])", $source);

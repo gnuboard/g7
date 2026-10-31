@@ -30,6 +30,8 @@ class DataRetentionCommandsTest extends TestCase
      * B2: seo:prune-stats — 보존 기간 초과 통계만 삭제.
      *
      * @effects rows_beyond_retention_are_deleted, rows_within_retention_are_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_prune_stats_removes_only_expired_rows(): void
     {
@@ -49,6 +51,8 @@ class DataRetentionCommandsTest extends TestCase
      * B3: schedules:prune-history — 보존 기간 초과 이력만 삭제.
      *
      * @effects rows_beyond_retention_are_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_schedule_history_prune_removes_only_expired_rows(): void
     {
@@ -82,6 +86,8 @@ class DataRetentionCommandsTest extends TestCase
      * B4: identity:expire-challenges — 만료 challenge 만 상태 전환(비파괴).
      *
      * @effects identity_challenges_transition_without_deletion
+     *
+     * @return void 반환값 없음
      */
     public function test_identity_expire_challenges_transitions_only_past_due(): void
     {
@@ -107,6 +113,8 @@ class DataRetentionCommandsTest extends TestCase
      * B6: identity:prune-logs — 보관 기간 초과 이력만 파기.
      *
      * @effects rows_beyond_retention_are_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_identity_prune_logs_removes_only_expired_rows(): void
     {
@@ -126,6 +134,8 @@ class DataRetentionCommandsTest extends TestCase
      * B7: activity-log:prune — 보존 기간 초과 로그만 삭제.
      *
      * @effects rows_beyond_retention_are_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_activity_log_prune_removes_only_expired_rows(): void
     {
@@ -150,6 +160,8 @@ class DataRetentionCommandsTest extends TestCase
      * B8: notification-log:prune — 보존 기간 초과 발송 이력만 삭제.
      *
      * @effects rows_beyond_retention_are_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_notification_log_prune_removes_only_expired_rows(): void
     {
@@ -183,6 +195,8 @@ class DataRetentionCommandsTest extends TestCase
      * 볼 방법이 사라진다 — 전용 훅이 그 자리를 대신한다.
      *
      * @effects automated_prune_emits_its_own_hooks
+     *
+     * @return void 반환값 없음
      */
     public function test_automated_prune_emits_its_own_hooks(): void
     {
@@ -221,6 +235,8 @@ class DataRetentionCommandsTest extends TestCase
      * 커맨드가 클램프를 들고 있으면 다른 호출자가 생길 때 그 보호가 따라오지 않는다.
      *
      * @effects retention_floor_is_owned_by_the_domain_layer, rows_within_retention_are_kept
+     *
+     * @return void 반환값 없음
      */
     public function test_retention_floor_is_enforced_below_the_command(): void
     {

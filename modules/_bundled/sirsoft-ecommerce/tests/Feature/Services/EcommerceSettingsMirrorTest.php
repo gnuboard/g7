@@ -19,6 +19,8 @@ class EcommerceSettingsMirrorTest extends ModuleTestCase
      * 설정 저장 후 같은 프로세스의 미러가 신값을 읽는다.
      *
      * @effects module_mirror_refreshed_after_save
+     *
+     * @return void 반환값 없음
      */
     public function test_module_settings_mirror_is_refreshed_after_save(): void
     {
@@ -40,6 +42,8 @@ class EcommerceSettingsMirrorTest extends ModuleTestCase
      * 캐시 초기화도 미러를 함께 갱신한다.
      *
      * @effects module_mirror_refreshed_after_cache_clear
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_cache_also_refreshes_mirror(): void
     {

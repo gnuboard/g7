@@ -21,7 +21,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: runner_strategy subprocess·inprocess·inprocess_no_vendor·override
  *
- * @effects installer_artisan_command_line_matches_legacy_shape, installer_runner_dispatches_by_resolved_mode, installer_inprocess_fails_clearly_without_vendor
+ * 효과 요약(마커 아님 — 평문): Artisan 인자 조립의 종전 형태 유지, 확정 모드에 따른 실행 분기, 의존성 부재 시 명확한 실패. 표식은 각 테스트 메서드에 있다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -35,6 +35,13 @@ class InstallerArtisanExecutorTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스마다 한 번 임시 BASE_PATH 와 저장 폴더를 갖추고 실행기에 필요한 설치기 파일들을 불러온다.
+     *
+     * 이미 정의된 BASE_PATH 가 시스템 임시 폴더 밖이면 실제 저장소를 건드리지 않도록 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function bootInstallerRuntime(): void
     {
         if (self::$booted) {
@@ -76,6 +83,11 @@ class InstallerArtisanExecutorTest extends TestCase
         require_once $root.'/public/install/includes/task-runner.php';
     }
 
+    /**
+     * 설치기 런타임을 부팅하고, 건너뛸 사유가 있으면 건너뛰며, 이전 테스트의 상태 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -92,12 +104,23 @@ class InstallerArtisanExecutorTest extends TestCase
         }
     }
 
+    /**
+     * 테스트가 심은 실행기 대체 함수를 걷어낸다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         unset($GLOBALS['g7_installer_artisan_executor_override']);
         parent::tearDown();
     }
 
+    /**
+     * 확정 실행 모드와 PHP 경로를 담은 설치 상태를 저장한다.
+     *
+     * @param  string  $resolved  상태에 박을 확정 실행 모드
+     * @return void 반환값 없음
+     */
     private function seedMode(string $resolved): void
     {
         $state = DEFAULT_INSTALLATION_STATE;
@@ -106,6 +129,15 @@ class InstallerArtisanExecutorTest extends TestCase
         $this->assertTrue(saveInstallationState($state));
     }
 
+    /**
+     * 실행기가 조립한 Artisan 인자 문자열이 종전 호출부가 손으로 만들던 형태(플래그, 인용된 값, 거짓 플래그 생략)와 같은지 확인한다.
+     *
+     * @scenario runner_strategy=subprocess
+     *
+     * @effects installer_artisan_command_line_matches_legacy_shape
+     *
+     * @return void 반환값 없음
+     */
     public function test_command_line_matches_legacy_hand_assembled_shape(): void
     {
         $this->assertSame('migrate --force', installerBuildArtisanCommandLine('migrate', ['--force' => true]));
@@ -121,6 +153,15 @@ class InstallerArtisanExecutorTest extends TestCase
         $this->assertSame('list', installerBuildArtisanCommandLine('list', ['--skip' => false]));
     }
 
+    /**
+     * 확정 모드가 인프로세스여도 테스트용 대체 함수가 심어져 있으면 그 결과와 대체 모드 표시가 돌아오는지 확인한다.
+     *
+     * @scenario runner_strategy=override, execution_mode_resolved=inprocess
+     *
+     * @effects installer_runner_dispatches_by_resolved_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_override_seam_takes_precedence_over_strategy(): void
     {
         $this->seedMode(ExecutionEnvironment::MODE_INPROCESS);
@@ -133,6 +174,15 @@ class InstallerArtisanExecutorTest extends TestCase
         $this->assertSame('override', $run['mode']);
     }
 
+    /**
+     * 의존성 폴더가 없는 상태에서 인프로세스 실행이 치명 종료 대신 종료 코드 1 과 의존성 부재 문구로 끝나는지 확인한다.
+     *
+     * @scenario runner_strategy=inprocess_no_vendor, execution_mode_resolved=inprocess
+     *
+     * @effects installer_inprocess_fails_clearly_without_vendor, installer_runner_dispatches_by_resolved_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_inprocess_without_vendor_fails_clearly_instead_of_fatal(): void
     {
         $this->seedMode(ExecutionEnvironment::MODE_INPROCESS);
@@ -155,6 +205,12 @@ class InstallerArtisanExecutorTest extends TestCase
      * 기존 계약 테스트(InstallerWorkerLockRecoveryTest)는 `extendWorkerStaleWindow` 를
      * **직접 불러** 왕복만 확인한다 — 부팅 안의 그 세 줄을 지워도 초록이다. 여기서는
      * 부팅 경로를 실제로 태워 배선이 살아 있는지 본다.
+     *
+     * @scenario runner_strategy=inprocess, execution_mode_resolved=inprocess
+     *
+     * @effects installer_lock_declarations_use_the_applied_time_budget
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_boot_declares_its_time_budget_on_the_worker_lock(): void
     {
@@ -187,6 +243,12 @@ class InstallerArtisanExecutorTest extends TestCase
      * 선언(`worker_stale_after`)과 요청 수명은 같이 움직여야 한다 — stepwise 요청은 180초로
      * 들어오는데 선언만 600 으로 올리면, 그 요청이 비정상 종료했을 때 이미 죽은 점유가 최대
      * 10분 남아 다음 요청이 그동안 busy 를 받는다. in-process 부팅과 같은 순서(수명 → 선언)다.
+     *
+     * @scenario runner_strategy=subprocess, execution_mode_resolved=subprocess, installation_mode=stepwise
+     *
+     * @effects installer_declared_time_budget_never_exceeds_the_applied_limit, installer_lock_declarations_use_the_applied_time_budget
+     *
+     * @return void 반환값 없음
      */
     public function test_subprocess_raises_its_own_request_lifetime_before_declaring_it(): void
     {
@@ -218,6 +280,15 @@ class InstallerArtisanExecutorTest extends TestCase
         );
     }
 
+    /**
+     * 확정 모드가 서브프로세스면 실제 스폰 경로를 타고, 실행 불가 조기 반환이 아닌 실패 종료 코드와 출력이 돌아오는지 확인한다.
+     *
+     * @scenario runner_strategy=subprocess, execution_mode_resolved=subprocess
+     *
+     * @effects installer_runner_dispatches_by_resolved_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_subprocess_strategy_spawns_and_returns_exit_code_and_output(): void
     {
         if (! ExecutionEnvironment::hasFunction('exec')) {
@@ -250,6 +321,13 @@ class InstallerArtisanExecutorTest extends TestCase
         );
     }
 
+    /**
+     * PHP 설정값의 크기 표기(M, G, K, 단위 없음)를 바이트 수로 바르게 풀어내는지 확인한다.
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
+     */
     public function test_ini_bytes_parses_php_size_notation(): void
     {
         $this->assertSame(128 * 1024 * 1024, installerIniBytes('128M'));

@@ -34,6 +34,9 @@ class InstallerStateTransitionConsistencyTest extends TestCase
 
     /**
      * 주석을 지운 소스 — 이 클래스의 모든 소스 계약은 이 지점을 지난다.
+     *
+     * @param  string  $relative  저장소 루트 기준 상대 경로
+     * @return string 주석을 지운 소스
      */
     private function src(string $relative): string
     {
@@ -44,6 +47,8 @@ class InstallerStateTransitionConsistencyTest extends TestCase
      * #22-1: 세 지점이 같은 술어(존재 + 쓰기 가능)를 쓴다.
      *
      * @effects installer_state_transitions_are_consistently_judged
+     *
+     * @return void 반환값 없음
      */
     public function test_env_readiness_judged_identically_at_all_three_gates(): void
     {
@@ -68,6 +73,8 @@ class InstallerStateTransitionConsistencyTest extends TestCase
      * #22-3: 재개 어휘가 [초기화]의 실제 기록값을 포함한다.
      *
      * @effects installer_state_transitions_are_consistently_judged
+     *
+     * @return void 반환값 없음
      */
     public function test_resume_vocabulary_includes_reset_status(): void
     {
@@ -78,6 +85,12 @@ class InstallerStateTransitionConsistencyTest extends TestCase
 
     /**
      * #22-4: 화면의 완료 표시가 「마커 제거」 전이를 반영한다.
+     *
+     * @scenario task_outcome=failed_db
+     *
+     * @effects installer_state_transitions_are_consistently_judged
+     *
+     * @return void 반환값 없음
      */
     public function test_completed_display_reverts_removed_markers(): void
     {
@@ -93,6 +106,12 @@ class InstallerStateTransitionConsistencyTest extends TestCase
 
     /**
      * #22-5: `.env` 기록도 실행과 같은 형태 검사·폴백을 지난다.
+     *
+     * @scenario php_binary_source=configured
+     *
+     * @effects installer_state_transitions_are_consistently_judged
+     *
+     * @return void 반환값 없음
      */
     public function test_env_php_binary_record_shares_shape_gate(): void
     {
@@ -103,6 +122,12 @@ class InstallerStateTransitionConsistencyTest extends TestCase
 
     /**
      * #22-7: 언어 변경의 상태 저장 실패는 무음 폐기되지 않는다.
+     *
+     * @scenario locale=en
+     *
+     * @effects state_persist_failure_is_reported_not_swallowed
+     *
+     * @return void 반환값 없음
      */
     public function test_language_change_reports_state_save_failure(): void
     {
@@ -118,6 +143,12 @@ class InstallerStateTransitionConsistencyTest extends TestCase
 
     /**
      * #22-8: SSE 입구의 두 모드 게이트가 같은 응답 봉투(message_key 포함)를 쓴다.
+     *
+     * @scenario installation_mode=sse
+     *
+     * @effects installer_state_transitions_are_consistently_judged
+     *
+     * @return void 반환값 없음
      */
     public function test_sse_mode_gates_share_response_envelope(): void
     {
@@ -132,6 +163,12 @@ class InstallerStateTransitionConsistencyTest extends TestCase
 
     /**
      * #22-9: 합성 키 분해는 단일 헬퍼(첫 콜론 기준)를 지난다 — 서버(explode limit 2)와 동형.
+     *
+     * @scenario task=module
+     *
+     * @effects installer_state_transitions_are_consistently_judged
+     *
+     * @return void 반환값 없음
      */
     public function test_composite_key_split_is_single_ruled(): void
     {
@@ -143,6 +180,10 @@ class InstallerStateTransitionConsistencyTest extends TestCase
 
     /**
      * N-5: 디스크 여유 경고는 카드 값 슬롯이 아니라 별도 안내로 나간다.
+     *
+     * @effects installer_disk_headroom_warning_stays_out_of_the_value_slot
+     *
+     * @return void 반환값 없음
      */
     public function test_disk_headroom_warning_leaves_value_slot(): void
     {
@@ -164,6 +205,10 @@ class InstallerStateTransitionConsistencyTest extends TestCase
 
     /**
      * N-6·N-8: 롤 토큰 꼬리 제한 + 전개 출력의 미전개 롤 강등.
+     *
+     * @effects installer_role_expansion_edges_are_bounded
+     *
+     * @return void 반환값 없음
      */
     public function test_role_expansion_edges_are_bounded(): void
     {
@@ -175,6 +220,12 @@ class InstallerStateTransitionConsistencyTest extends TestCase
 
     /**
      * 마이너: markTaskCompleted 의 방어가 형제(markTaskBestEffortFailed)와 같다.
+     *
+     * @scenario task_outcome=done
+     *
+     * @effects installer_state_transitions_are_consistently_judged
+     *
+     * @return void 반환값 없음
      */
     public function test_mark_task_completed_has_sibling_defenses(): void
     {

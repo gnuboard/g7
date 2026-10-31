@@ -33,7 +33,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: skip_paired_activate installed·not_installed·undeterminable / outcome pair_skipped·pair_kept
  *
- * @effects skip_keeps_paired_activate_when_extension_is_installed, skip_pairs_activate_when_extension_is_absent, skip_pairs_activate_when_verdict_is_unavailable, skip_cascade_keeps_activate_for_installed_dependents
+ * 효과 요약(마커 아님 — 평문): skip_keeps_paired_activate_when_extension_is_installed, skip_pairs_activate_when_extension_is_absent, skip_pairs_activate_when_verdict_is_unavailable, skip_cascade_keeps_activate_for_installed_dependents
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -47,6 +47,12 @@ class InstallerSkipPairedActivateTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스마다 한 번 임시 기준 경로와 저장, 설정 디렉터리를 준비하고, 설치 판정기 스텁을 상태 헬퍼보다 먼저 선언한 뒤 설치기 설정, 상태, 런타임, 진행 이벤트 소스를 읽어 들인다.
+     * 기준 경로 상수가 시스템 임시 경로 밖으로 이미 정의돼 있으면 실제 상태 파일을 지키려고 건너뛰기 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function boot(): void
     {
         if (self::$booted) {
@@ -99,6 +105,11 @@ class InstallerSkipPairedActivateTest extends TestCase
         // 의존 파급(task-runner 소유)은 InstallerSkipDependencyCascadeTest 가 맡는다.
     }
 
+    /**
+     * 설치기 소스를 올리고 건너뛰기 사유가 있으면 건너뛰며, 남은 상태 파일을 지우고 진행 이벤트를 버퍼로 받는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -121,6 +132,8 @@ class InstallerSkipPairedActivateTest extends TestCase
      *
      * 의존 확장은 두지 않는다 — 이 테스트가 가르는 것은 **같은 확장의 짝** 처리이며,
      * 의존 파급은 InstallerSkipDependencyCascadeTest 가 이미 고정한다.
+     *
+     * @return void 반환값 없음
      */
     private function seedFailedModuleInstall(): void
     {
@@ -147,6 +160,8 @@ class InstallerSkipPairedActivateTest extends TestCase
     }
 
     /**
+     * 현재 상태로 건너뛰기를 적용해 수락됐는지 확인하고, 이번에 지나간 태스크 키 목록을 돌려준다.
+     *
      * @return array<int, string> 이번 건너뛰기로 지나간 태스크 키
      */
     private function skip(): array
@@ -162,6 +177,12 @@ class InstallerSkipPairedActivateTest extends TestCase
      * 확장이 **실제로 설치되어 있으면** 짝 활성화는 지나가지 않는다.
      *
      * 이것이 16차 C-1 이 막는 상태다 — 지나가면 그 확장은 설치된 채 영영 켜지지 않는다.
+     *
+     * @scenario skip_request=skippable, task=module, task_outcome=failed_extension
+     *
+     * @effects skip_keeps_paired_activate_when_extension_is_installed
+     *
+     * @return void 반환값 없음
      */
     public function test_paired_activate_is_kept_when_the_extension_is_actually_installed(): void
     {
@@ -180,6 +201,12 @@ class InstallerSkipPairedActivateTest extends TestCase
 
     /**
      * 확장이 정말 설치되지 않았으면 짝 활성화도 함께 지나간다 (종전 계약 유지).
+     *
+     * @scenario skip_request=skippable, task=module, task_outcome=failed_extension
+     *
+     * @effects skip_pairs_activate_when_extension_is_absent
+     *
+     * @return void 반환값 없음
      */
     public function test_paired_activate_is_skipped_when_the_extension_is_absent(): void
     {
@@ -202,6 +229,12 @@ class InstallerSkipPairedActivateTest extends TestCase
      * `pending` 판정의 근거 역시 **완료 마커의 부재**다 — 직접 짝만 고치면 같은 결함이
      * 한 단계 밖(의존 확장)에 그대로 남는다. 건너뛴 확장은 미설치, 의존 확장은 설치됨으로
      * 갈라 두 규칙이 한 지점을 공유하는지 본다.
+     *
+     * @scenario skip_request=skippable, task=module, task_outcome=failed_extension
+     *
+     * @effects skip_cascade_keeps_activate_for_installed_dependents
+     *
+     * @return void 반환값 없음
      */
     public function test_dependent_activate_is_kept_when_that_dependent_is_actually_installed(): void
     {
@@ -233,6 +266,12 @@ class InstallerSkipPairedActivateTest extends TestCase
      *
      * DB 설정이 없거나 닿지 못하는 상태에서 동작을 바꾸면, 확인하지 못한 것을 근거로
      * 계약을 바꾸는 것이 된다. fail-safe 방향은 종전(함께 지나감)이다.
+     *
+     * @scenario skip_request=skippable, task=module, task_outcome=failed_extension
+     *
+     * @effects skip_pairs_activate_when_verdict_is_unavailable
+     *
+     * @return void 반환값 없음
      */
     public function test_paired_activate_is_skipped_when_the_verdict_is_unavailable(): void
     {

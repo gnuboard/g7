@@ -44,6 +44,8 @@ afterEach(() => cleanup());
 describe('ColorPickerControl', () => {
   const ctrl: EditorControlSpec = { widget: 'color' };
 
+  // @scenario control=textColor, value_state=free_value
+  // @effects color_picker_hex_blur_emits_normalized_hex
   it('HEX 입력 후 blur → onChange(정규화된 #값)', () => {
     const onChange = vi.fn();
     render(<ColorPickerControl control={ctrl} value={undefined} onChange={onChange} t={t} />);
@@ -53,6 +55,8 @@ describe('ColorPickerControl', () => {
     expect(onChange).toHaveBeenCalledWith('#1a1a1a');
   });
 
+  // @scenario control=textColor, value_state=preset_token
+  // @effects color_picker_preset_click_emits_preset_value
   it('프리셋 색상 클릭 → onChange(프리셋 HEX)', () => {
     const onChange = vi.fn();
     render(<ColorPickerControl control={ctrl} value={undefined} onChange={onChange} t={t} />);
@@ -60,6 +64,8 @@ describe('ColorPickerControl', () => {
     expect(onChange).toHaveBeenCalledWith('#dc2626');
   });
 
+  // @scenario control=textColor, value_state=default_unset
+  // @effects color_picker_clear_emits_undefined
   it('`기본` 버튼 → onChange(undefined) (미적용)', () => {
     const onChange = vi.fn();
     render(<ColorPickerControl control={ctrl} value="#abcdef" onChange={onChange} t={t} />);
@@ -67,6 +73,8 @@ describe('ColorPickerControl', () => {
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
+  // @scenario control=textColor, value_state=preset_token
+  // @effects color_picker_syncs_current_value_to_swatch_and_input
   it('현재값(외부 패치/역해석)이 스와치/입력에 동기된다', () => {
     render(<ColorPickerControl control={ctrl} value="#0f172a" onChange={vi.fn()} t={t} />);
     const hex = screen.getByTestId('g7le-color-hex') as HTMLInputElement;
@@ -76,6 +84,8 @@ describe('ColorPickerControl', () => {
     expect(preset.getAttribute('style') ?? '').toContain('2563eb');
   });
 
+  // @scenario control=textColor, value_state=free_value
+  // @effects color_picker_invalid_hex_emits_nothing
   it('잘못된 HEX 입력은 onChange 를 발화하지 않는다', () => {
     const onChange = vi.fn();
     render(<ColorPickerControl control={ctrl} value={undefined} onChange={onChange} t={t} />);
@@ -94,6 +104,8 @@ describe('ColorPickerControl', () => {
     ],
   } as unknown as EditorControlSpec;
 
+  // @scenario control=textColor, value_state=preset_token
+  // @effects color_picker_preset_click_emits_preset_value
   it('토큰 프리셋 선언 시 토큰 스와치 렌더 + 클릭 → onChange(토큰)', () => {
     const onChange = vi.fn();
     render(<ColorPickerControl control={tokenCtrl} value={undefined} onChange={onChange} t={t} />);
@@ -102,12 +114,16 @@ describe('ColorPickerControl', () => {
     expect(onChange).toHaveBeenCalledWith('text-blue-600');
   });
 
+  // @scenario control=textColor, value_state=preset_token
+  // @effects color_picker_syncs_current_value_to_swatch_and_input
   it('현재 토큰값이 활성 토큰 스와치에 표시된다', () => {
     render(<ColorPickerControl control={tokenCtrl} value="text-gray-900" onChange={vi.fn()} t={t} />);
     const sw = screen.getByTestId('g7le-color-token-text-gray-900');
     expect(sw.getAttribute('data-active')).toBe('true');
   });
 
+  // @scenario control=textColor, value_state=free_value
+  // @effects color_picker_hex_blur_emits_normalized_hex
   it('자유 HEX 입력은 라이트에서 정상(token 컨트롤도 control-level tokenTemplate 으로 자유색 허용)', () => {
     const onChange = vi.fn();
     render(<ColorPickerControl control={tokenCtrl} value={undefined} onChange={onChange} t={t} />);
@@ -116,6 +132,8 @@ describe('ColorPickerControl', () => {
     expect(onChange).toHaveBeenCalledWith('#3a7bd5');
   });
 
+  // @scenario control=textColor, color_scheme=dark
+  // @effects color_picker_dark_scope_hides_free_input_keeps_token_presets
   it('freeValueDisabled(다크) → 자유 입력 비노출 + 프리셋만 + 안내', () => {
     const onChange = vi.fn();
     render(<ColorPickerControl control={tokenCtrl} value={undefined} onChange={onChange} t={t} freeValueDisabled />);
@@ -158,6 +176,8 @@ describe('ImagePickerControl', () => {
     vi.restoreAllMocks();
   });
 
+  // @scenario widget_output=image_object, apply_type=styleProp
+  // @effects image_picker_url_blur_emits_full_image_value_object
   it('URL 입력 후 blur → onChange({ url, size, repeat, position })', () => {
     const onChange = renderImage(undefined);
     const url = screen.getByTestId('g7le-image-url');
@@ -169,6 +189,8 @@ describe('ImagePickerControl', () => {
     expect(v.size).toBe('cover'); // 기본 fill 모드
   });
 
+  // @scenario widget_output=image_object, apply_type=styleProp
+  // @effects image_picker_display_mode_fit_sets_size_contain
   it('표시 방식 변경(맞춤) → size:contain', () => {
     const onChange = renderImage({ url: 'https://x/a.png', size: 'cover', repeat: 'no-repeat' });
     fireEvent.click(screen.getByTestId('g7le-image-mode-fit'));
@@ -176,6 +198,8 @@ describe('ImagePickerControl', () => {
     expect(v.size).toBe('contain');
   });
 
+  // @scenario public_asset_disk=unset, row_disk=attachments, filter_url_hook=absent
+  // @effects editor_attachment_client_preserves_server_issued_url_verbatim
   it('업로드 → fetch mock 응답의 data.url 을 값으로 설정', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -194,6 +218,8 @@ describe('ImagePickerControl', () => {
     );
   });
 
+  // @scenario public_asset_disk=unset, row_disk=attachments, filter_url_hook=absent
+  // @effects editor_attachment_client_reports_missing_url_and_network_failure_as_errors
   it('업로드 실패 → 에러 메시지 표시', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, json: async () => ({ success: false }) }));
     renderImage(undefined);
@@ -247,6 +273,8 @@ describe('ImagePickerControl', () => {
     expect(screen.getByTestId('g7le-image-url')).toHaveValue(cdnUrl);
   });
 
+  // @scenario widget_output=undefined_cleared, apply_type=styleProp
+  // @effects image_picker_clear_emits_undefined
   it('`기본` → onChange(undefined)', () => {
     const onChange = renderImage({ url: 'https://x/a.png' });
     fireEvent.click(screen.getByTestId('g7le-image-clear'));
@@ -446,6 +474,8 @@ describe('TagInputControl', () => {
     { value: 'core.posts.manage', label: '게시글 관리' },
   ];
 
+  // @scenario permission_candidate=leaf_assignable
+  // @effects tag_input_adds_candidate_chip_emitting_key_array
   it('후보 목록에서 칩 추가 → onChange([키])', () => {
     const onChange = vi.fn();
     render(<TagInputControl control={ctrl} value={undefined} onChange={onChange} t={t} candidates={candidates} />);
@@ -454,12 +484,16 @@ describe('TagInputControl', () => {
     expect(onChange).toHaveBeenCalledWith(['core.users.view']);
   });
 
+  // @scenario permission_candidate=leaf_assignable
+  // @effects tag_input_chip_label_is_friendly_name_value_is_key
   it('칩 라벨은 친화 표시명, 내부 값은 키', () => {
     render(<TagInputControl control={ctrl} value={['core.users.view']} onChange={vi.fn()} t={t} candidates={candidates} />);
     const chip = screen.getByTestId('g7le-tag-chip-core.users.view');
     expect(within(chip).getByText('회원 조회')).toBeTruthy();
   });
 
+  // @scenario permission_candidate=leaf_assignable
+  // @effects permission_chip_shows_identifier_when_label_differs
   it('칩에 라벨과 식별자(키)를 함께 표시 (라벨≠키일 때)', () => {
     render(<TagInputControl control={ctrl} value={['core.users.view']} onChange={vi.fn()} t={t} candidates={candidates} />);
     const chip = screen.getByTestId('g7le-tag-chip-core.users.view');
@@ -467,18 +501,24 @@ describe('TagInputControl', () => {
     expect(within(chip).getByTestId('g7le-tag-chip-id-core.users.view').textContent).toBe('core.users.view');
   });
 
+  // @scenario permission_candidate=leaf_assignable
+  // @effects permission_candidate_shows_identifier_alongside_label
   it('후보 목록에도 식별자(키)를 함께 표시', () => {
     render(<TagInputControl control={ctrl} value={undefined} onChange={vi.fn()} t={t} candidates={candidates} />);
     fireEvent.click(screen.getByTestId('g7le-tag-add'));
     expect(screen.getByTestId('g7le-tag-candidate-id-core.users.view').textContent).toBe('core.users.view');
   });
 
+  // @scenario permission_candidate=leaf_assignable
+  // @effects permission_chip_shows_identifier_when_label_differs
   it('라벨이 키와 동일하면 식별자 중복 표시 안 함', () => {
     const sameKeyCandidates = [{ value: 'plain', label: 'plain' }];
     render(<TagInputControl control={ctrl} value={['plain']} onChange={vi.fn()} t={t} candidates={sameKeyCandidates} />);
     expect(screen.queryByTestId('g7le-tag-chip-id-plain')).toBeNull();
   });
 
+  // @scenario permission_candidate=leaf_assignable
+  // @effects tag_input_chip_remove_emits_rest_or_undefined_when_last
   it('칩 ✕ → onChange(나머지) / 마지막 제거 시 undefined', () => {
     const onChange = vi.fn();
     render(<TagInputControl control={ctrl} value={['core.users.view']} onChange={onChange} t={t} candidates={candidates} />);
@@ -486,6 +526,8 @@ describe('TagInputControl', () => {
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
+  // @scenario permission_candidate=leaf_assignable
+  // @effects tag_input_candidates_exclude_selected_and_disallow_free_input
   it('이미 선택된 항목은 후보 목록에서 제외 (후보 외 자유입력 불가 — 실재 후보만)', () => {
     render(<TagInputControl control={ctrl} value={['core.users.view']} onChange={vi.fn()} t={t} candidates={candidates} />);
     fireEvent.click(screen.getByTestId('g7le-tag-add'));
@@ -493,6 +535,8 @@ describe('TagInputControl', () => {
     expect(screen.getByTestId('g7le-tag-candidate-core.posts.manage')).toBeTruthy();
   });
 
+  // @scenario permission_candidate=leaf_assignable
+  // @effects tag_input_candidates_exclude_selected_and_disallow_free_input
   it('후보가 모두 선택되면 추가 버튼 비활성', () => {
     render(
       <TagInputControl
@@ -542,6 +586,8 @@ describe('CompositeSettingsForm', () => {
     ],
   };
 
+  // @scenario widget=select
+  // @effects composite_settings_form_renders_groups_and_fields
   it('그룹·필드를 친화 폼으로 렌더한다', () => {
     render(<CompositeSettingsForm spec={spec} node={{ name: 'RecentPosts' }} t={t} onPatchProp={vi.fn()} />);
     expect(screen.getByTestId('g7le-composite-settings')).toBeTruthy();
@@ -550,12 +596,16 @@ describe('CompositeSettingsForm', () => {
     expect(screen.getByTestId('g7le-setting-showFields')).toBeTruthy();
   });
 
+  // @scenario widget=text, prop_value_kind=string
+  // @effects composite_settings_form_value_prefers_instance_prop_then_spec_default
   it('필드 기본값(default)이 입력에 반영된다 (스펙이 기본값 SSoT)', () => {
     render(<CompositeSettingsForm spec={spec} node={{ name: 'RecentPosts' }} t={t} onPatchProp={vi.fn()} />);
     const count = screen.getByTestId('g7le-setting-input-count') as HTMLInputElement;
     expect(count.value).toBe('6');
   });
 
+  // @scenario widget=text, prop_value_kind=string
+  // @effects composite_settings_field_change_patches_typed_prop_value
   it('number 필드 변경 → onPatchProp(key, number)', () => {
     const onPatchProp = vi.fn();
     render(<CompositeSettingsForm spec={spec} node={{ name: 'RecentPosts' }} t={t} onPatchProp={onPatchProp} />);
@@ -563,6 +613,8 @@ describe('CompositeSettingsForm', () => {
     expect(onPatchProp).toHaveBeenCalledWith('count', 10);
   });
 
+  // @scenario widget=select, prop_value_kind=string
+  // @effects composite_settings_field_change_patches_typed_prop_value
   it('select 필드 변경 → onPatchProp(key, optionValue)', () => {
     const onPatchProp = vi.fn();
     render(<CompositeSettingsForm spec={spec} node={{ name: 'RecentPosts' }} t={t} onPatchProp={onPatchProp} />);
@@ -570,6 +622,8 @@ describe('CompositeSettingsForm', () => {
     expect(onPatchProp).toHaveBeenCalledWith('listType', 'popular');
   });
 
+  // @scenario widget=options-list, prop_value_kind=array
+  // @effects composite_settings_field_change_patches_typed_prop_value
   it('checkbox-group 체크 → onPatchProp(key, 배열)', () => {
     const onPatchProp = vi.fn();
     render(
@@ -586,6 +640,8 @@ describe('CompositeSettingsForm', () => {
     expect(onPatchProp).toHaveBeenCalledWith('showFields', ['title', 'author']);
   });
 
+  // @scenario widget=text, prop_value_kind=string
+  // @effects composite_settings_form_value_prefers_instance_prop_then_spec_default
   it('인스턴스 props 값이 default 보다 우선한다', () => {
     render(
       <CompositeSettingsForm
@@ -605,6 +661,8 @@ describe('CompositeSettingsForm', () => {
 describe('AdvancedPropsForm', () => {
   const permissionCandidates = [{ value: 'core.users.view', label: '회원 조회' }];
 
+  // @scenario permission_candidate=leaf_assignable
+  // @effects advanced_props_form_permissions_tag_input_patches_node_permissions
   it('advanced 화이트리스트의 permissions → TagInput 노출', () => {
     render(
       <AdvancedPropsForm
@@ -618,6 +676,8 @@ describe('AdvancedPropsForm', () => {
     expect(screen.getByTestId('g7le-advanced-permissions')).toBeTruthy();
   });
 
+  // @scenario permission_candidate=leaf_assignable
+  // @effects advanced_props_form_permissions_tag_input_patches_node_permissions
   it('권한 칩 추가 → onPatch(node.permissions)', () => {
     const onPatch = vi.fn();
     render(
@@ -635,6 +695,8 @@ describe('AdvancedPropsForm', () => {
     expect(patched.permissions).toEqual(['core.users.view']);
   });
 
+  // @scenario widget=toggle, prop_value_kind=boolean
+  // @effects advanced_props_form_toggle_and_comment_patch_node_top_level_keys
   it('blur_until_loaded 토글 → onPatch(true)', () => {
     const onPatch = vi.fn();
     render(<AdvancedPropsForm node={{ name: 'Div' }} advanced={['blur_until_loaded']} t={t} onPatch={onPatch} />);
@@ -643,6 +705,8 @@ describe('AdvancedPropsForm', () => {
     expect(patched.blur_until_loaded).toBe(true);
   });
 
+  // @scenario widget=text, prop_value_kind=string
+  // @effects advanced_props_form_toggle_and_comment_patch_node_top_level_keys
   it('comment 입력 → onPatch(comment)', () => {
     const onPatch = vi.fn();
     render(<AdvancedPropsForm node={{ name: 'Div' }} advanced={['comment']} t={t} onPatch={onPatch} />);
@@ -651,11 +715,15 @@ describe('AdvancedPropsForm', () => {
     expect(patched.comment).toBe('메모');
   });
 
+  // @scenario widget=text
+  // @effects advanced_props_form_unsupported_props_degrade_and_developer_props_stay_readonly
   it('Phase 4 미지원 고급 속성(lifecycle 등)은 "추후 지원" 안내로 디그레이드', () => {
     render(<AdvancedPropsForm node={{ name: 'Div' }} advanced={['onMount']} t={t} onPatch={vi.fn()} />);
     expect(screen.getByTestId('g7le-advanced-deferred-onMount')).toBeTruthy();
   });
 
+  // @scenario prop_value_kind=binding_expression
+  // @effects advanced_props_form_unsupported_props_degrade_and_developer_props_stay_readonly
   it('개발자 속성/복잡 표현식은 읽기 전용 보존 목록에 표시 (무손실)', () => {
     render(
       <AdvancedPropsForm
@@ -687,6 +755,8 @@ describe('ControlRenderer', () => {
     ],
   };
 
+  // @scenario widget=select
+  // @effects control_renderer_dispatches_widget_and_resolves_label
   it('control.widget → 위젯 디스패치 + 라벨 $t: 해석', () => {
     render(<ControlRenderer controlKey="textAlign" control={textAlign} node={{ name: 'H1' }} t={t} onPatch={vi.fn()} />);
     expect(screen.getByTestId('g7le-control-textAlign')).toBeTruthy();
@@ -694,6 +764,8 @@ describe('ControlRenderer', () => {
     expect(screen.getByTestId('g7le-widget-segmented')).toBeTruthy();
   });
 
+  // @scenario widget=select
+  // @effects control_renderer_rows_guard_min_width_zero
   it('컨트롤 행/위젯 컨테이너에 minWidth:0 가드 — 위젯 min-content 가 본문보다 넓어져 가로 스크롤 만드는 것 차단', () => {
     render(<ControlRenderer controlKey="textAlign" control={textAlign} node={{ name: 'H1' }} t={t} onPatch={vi.fn()} />);
     const row = screen.getByTestId('g7le-control-textAlign');
@@ -704,6 +776,8 @@ describe('ControlRenderer', () => {
     expect(['0', '0px']).toContain(widgetBox.style.minWidth);
   });
 
+  // @scenario apply_type=classToken, color_scheme=light, device=base
+  // @effects control_renderer_change_applies_recipe_and_patches_node
   it('값 변경 → applyRecipe → onPatch(패치된 노드)', () => {
     const onPatch = vi.fn();
     render(<ControlRenderer controlKey="textAlign" control={textAlign} node={{ name: 'H1' }} t={t} onPatch={onPatch} />);
@@ -712,6 +786,8 @@ describe('ControlRenderer', () => {
     expect(patched.props?.className).toBe('text-center');
   });
 
+  // @scenario apply_type=classToken, color_scheme=light, device=base
+  // @effects control_renderer_reflects_reverse_resolved_value
   it('현재값(reverseResolve)을 위젯에 반영한다', () => {
     render(
       <ControlRenderer
@@ -727,6 +803,8 @@ describe('ControlRenderer', () => {
     expect(seg.getAttribute('data-active')).toBe('true');
   });
 
+  // @scenario apply_type=classToken, color_scheme=light, device=base
+  // @effects control_renderer_shows_group_conflict_badge
   it('같은 group 토큰 충돌 시 conflict 배지 표시', () => {
     render(
       <ControlRenderer
@@ -751,6 +829,8 @@ describe('ControlRenderer', () => {
     apply: { type: 'styleProp', prop: 'color' },
   };
 
+  // @scenario color_scheme=dark, apply_type=styleProp
+  // @effects dark_inline_control_readonly_value_never_overwritten
   it('다크 scope + styleProp(인라인) 컨트롤 → 읽기전용 안내 + 패치 미발생 (D4)', () => {
     const onPatch = vi.fn();
     render(
@@ -767,6 +847,8 @@ describe('ControlRenderer', () => {
     expect(onPatch).not.toHaveBeenCalled();
   });
 
+  // @scenario color_scheme=dark, apply_type=classToken
+  // @effects dark_scope_classToken_control_stays_editable
   it('다크 scope + classToken 컨트롤 → 편집 가능(읽기전용 아님)', () => {
     render(
       <ControlRenderer
@@ -782,6 +864,8 @@ describe('ControlRenderer', () => {
     expect(screen.getByTestId('g7le-widget-segmented')).toBeTruthy();
   });
 
+  // @scenario device=tablet, apply_type=classToken, scope_override_state=no_override_inherits_base
+  // @effects scope_without_override_shows_base_inherited_value_as_placeholder
   it('tablet scope + base 상속값만 → placeholder(흐릿) 표시 (D6)', () => {
     render(
       <ControlRenderer
@@ -797,6 +881,8 @@ describe('ControlRenderer', () => {
     expect(widget?.getAttribute('data-placeholder')).toBe('true');
   });
 
+  // @scenario device=tablet, apply_type=classToken, scope_override_state=has_scope_override
+  // @effects device_scope_writes_responsive_breakpoint_props_base_unchanged
   it('tablet scope 값 변경 → applyRecipe(tablet scope) → responsive.tablet.props', () => {
     const onPatch = vi.fn();
     render(
@@ -816,6 +902,8 @@ describe('ControlRenderer', () => {
   });
 
   // 레지스트리를 비우는 테스트는 같은 describe 의 **마지막**에 둔다(다른 테스트 오염 방지).
+  // @scenario widget=text
+  // @effects control_renderer_unregistered_widget_falls_back_to_unsupported_notice
   it('미등록 위젯 → "지원하지 않는 위젯" 폴백', () => {
     clearWidgetRegistry(); // 레지스트리 비우기
     const ghost: EditorControlSpec = { widget: 'nonexistent-widget' };
@@ -845,6 +933,8 @@ describe('SpacingWidget (여백 방향+크기)', () => {
     groupPrefixes: ['p-', 'px-', 'py-', 'pt-', 'pr-', 'pb-', 'pl-'],
   } as unknown as EditorControlSpec;
 
+  // @scenario component_kind=container, value_state=default_unset
+  // @effects spacing_widget_renders_all_and_sides_modes
   it('일괄/개별 모드 토글 렌더 + 일괄 슬라이더', () => {
     render(<ControlRenderer controlKey="paddingAll" control={padding} node={{ name: 'Div' }} t={t} onPatch={vi.fn()} />);
     expect(screen.getByTestId('g7le-widget-spacing')).toBeTruthy();
@@ -854,6 +944,8 @@ describe('SpacingWidget (여백 방향+크기)', () => {
     expect(screen.getByTestId('g7le-spacing-all-range')).toBeTruthy();
   });
 
+  // @scenario component_kind=container, value_state=toggle_on
+  // @effects spacing_widget_all_enable_applies_uniform_token
   it('일괄 사용 체크 → 전체 토큰(p-4) 적용', () => {
     const onPatch = vi.fn();
     render(<ControlRenderer controlKey="paddingAll" control={padding} node={{ name: 'Div' }} t={t} onPatch={onPatch} />);
@@ -863,6 +955,8 @@ describe('SpacingWidget (여백 방향+크기)', () => {
   });
 
   // 상/우/하/좌를 각각 다른 값으로 줄 수 있어야 한다.
+  // @scenario component_kind=container, value_state=default_unset
+  // @effects spacing_widget_renders_all_and_sides_modes
   it('개별 모드 — 상/우/하/좌 슬라이더 4개 노출', () => {
     render(<ControlRenderer controlKey="paddingAll" control={padding} node={{ name: 'Div' }} t={t} onPatch={vi.fn()} />);
     fireEvent.click(screen.getByTestId('g7le-spacing-mode-sides'));
@@ -872,6 +966,8 @@ describe('SpacingWidget (여백 방향+크기)', () => {
     }
   });
 
+  // @scenario component_kind=container, value_state=preset_token
+  // @effects spacing_widget_side_values_coexist_and_reverse_resolve
   it('개별 측값 공존 — pt-4 와 pl-2 가 동시에 유지된다', () => {
     // 시작: 상=pt-4 이미 적용. 좌 슬라이더를 켜면 pl-* 가 추가되며 pt-4 는 보존.
     const onPatch = vi.fn();
@@ -893,6 +989,8 @@ describe('SpacingWidget (여백 방향+크기)', () => {
     expect(tokens.some((x) => x.startsWith('pl-'))).toBe(true); // 좌 추가 공존
   });
 
+  // @scenario component_kind=container, value_state=preset_token
+  // @effects spacing_widget_side_values_coexist_and_reverse_resolve
   it('개별 측값 — 상=4 / 좌=2 서로 다른 값 동시 적용', () => {
     // pt-4 pl-2 를 가진 노드 → 상 슬라이더는 step(4), 좌 슬라이더는 step(2)로 역해석.
     render(
@@ -911,12 +1009,16 @@ describe('SpacingWidget (여백 방향+크기)', () => {
     expect(screen.getByTestId('g7le-spacing-side-r-value').textContent).toBe('–');
   });
 
+  // @scenario component_kind=container, value_state=preset_token
+  // @effects spacing_widget_side_values_coexist_and_reverse_resolve
   it('현재값 역해석 — px-2 는 좌/우 양측에 반영', () => {
     render(<ControlRenderer controlKey="paddingAll" control={padding} node={{ name: 'Div', props: { className: 'px-2' } }} t={t} onPatch={vi.fn()} />);
     expect(screen.getByTestId('g7le-spacing-side-l-value').textContent).toBe('2');
     expect(screen.getByTestId('g7le-spacing-side-r-value').textContent).toBe('2');
   });
 
+  // @scenario component_kind=container, value_state=default_unset
+  // @effects spacing_widget_unrelated_tokens_leave_it_unset
   it('무관 토큰(w-full)만 있으면 미적용 — 일괄 모드 + all 미설정', () => {
     render(<ControlRenderer controlKey="paddingAll" control={padding} node={{ name: 'Div', props: { className: 'w-full max-w-md' } }} t={t} onPatch={vi.fn()} />);
     expect((screen.getByTestId('g7le-spacing-all-enabled') as HTMLInputElement).checked).toBe(false);

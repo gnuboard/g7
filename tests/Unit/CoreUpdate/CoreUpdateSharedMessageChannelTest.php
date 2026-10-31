@@ -58,7 +58,7 @@ class CoreUpdateSharedMessageChannelTest extends TestCase
      * 앞 판본은 이 목록이 손으로 적힌 **1개**여서, 같은 메서드에서 던져지는 형제 키
      * (`no_extract_method_available`)가 명령줄 옵션을 지시하는데도 초록이었다.
      *
-     * @return array<string, array{0: string}>
+     * @return array<string, array{0: string}> 키를 이름으로 한 공유 문구 키 목록
      */
     public static function sharedKeys(): array
     {
@@ -80,7 +80,7 @@ class CoreUpdateSharedMessageChannelTest extends TestCase
      *
      * DataProvider 는 앱 부팅 전에 돌므로 `base_path()` 를 쓰지 않는다.
      *
-     * @return list<string>
+     * @return list<string> 웹에서도 닿는 문구 키 목록
      */
     public static function webReachableKeys(): array
     {
@@ -129,6 +129,10 @@ class CoreUpdateSharedMessageChannelTest extends TestCase
 
     /**
      * 모집단이 죽으면 아래 케이스가 통째로 사라진다 — 그 상태와 「전부 통과」는 구분되지 않는다.
+     *
+     * @effects shared_core_update_message_population_is_derived_and_non_empty
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_the_derived_population_is_not_empty(): void
@@ -142,6 +146,10 @@ class CoreUpdateSharedMessageChannelTest extends TestCase
 
     /**
      * 낡은 면제를 남기지 않는다.
+     *
+     * @effects shared_message_cli_exemptions_are_still_needed
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_every_exemption_is_still_needed(): void
@@ -187,6 +195,14 @@ class CoreUpdateSharedMessageChannelTest extends TestCase
         }
     }
 
+    /**
+     * CLI 와 웹이 함께 쓰는 문구가 ko 와 en 모두에 번역돼 있고 명령줄 옵션이나 php artisan 실행 지시를 담지 않는지 확인한다.
+     *
+     * @effects shared_core_update_messages_name_no_command_line_only_action
+     *
+     * @param  string  $key  CLI 와 웹이 함께 쓰는 문구의 언어 키
+     * @return void 반환값 없음
+     */
     #[Test]
     #[DataProvider('sharedKeys')]
     public function test_shared_failure_message_names_no_command_line_only_action(string $key): void
@@ -212,6 +228,11 @@ class CoreUpdateSharedMessageChannelTest extends TestCase
      *
      * 로케일마다 다른 문구를 쓰므로 한 로케일만 재면 나머지가 조용히 어긋난다 — 실제로
      * ko·en 을 고칠 때 ja 팩이 그대로 남아 있었다.
+     *
+     * @effects shared_core_update_messages_name_no_command_line_only_action
+     *
+     * @param  string  $key  CLI 와 웹이 함께 쓰는 문구의 언어 키
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('sharedKeys')]

@@ -46,6 +46,11 @@ class StreamedFileConditionalRequestTest extends TestCase
 
     private TemplateLayoutAttachment $attachment;
 
+    /**
+     * 첨부 디스크를 가짜로 바꾸고 활성 템플릿 하나와 그 템플릿의 PNG 레이아웃 첨부 행(디스크에 실제 바이트 저장)을 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -78,6 +83,11 @@ class StreamedFileConditionalRequestTest extends TestCase
         ]);
     }
 
+    /**
+     * 준비한 레이아웃 첨부를 스트림으로 내주는 공개 서빙 라우트 URL 을 만든다.
+     *
+     * @return string 레이아웃 첨부 파일 서빙 URL
+     */
     private function serveUrl(): string
     {
         return route('api.public.templates.layout-attachment-file', [
@@ -98,6 +108,7 @@ class StreamedFileConditionalRequestTest extends TestCase
      *
      * @param  TestResponse  $full  200 응답
      * @param  TestResponse  $notModified  304 응답
+     * @return void 반환값 없음
      */
     private function assertNotModifiedMirrors200(TestResponse $full, TestResponse $notModified): void
     {
@@ -128,6 +139,15 @@ class StreamedFileConditionalRequestTest extends TestCase
         );
     }
 
+    /**
+     * 스트림 응답의 `Last-Modified` 가 첨부 행의 `updated_at` 을 HTTP 날짜 형식으로 옮긴 값인지 확인한다.
+     *
+     * @scenario response_kind=streamed, conditional_request=none
+     *
+     * @effects streamed_file_response_declares_last_modified
+     *
+     * @return void 반환값 없음
+     */
     public function test_streamed_response_declares_last_modified(): void
     {
         $response = $this->get($this->serveUrl());
@@ -143,7 +163,11 @@ class StreamedFileConditionalRequestTest extends TestCase
     /**
      * `If-Modified-Since` 만 보내는 클라이언트도 304 를 받는다 (형제 경로와 같은 규칙).
      *
+     * @scenario response_kind=streamed, conditional_request=if_modified_since
+     *
      * @effects conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_if_modified_since_alone_yields_304_on_the_streamed_path(): void
     {
@@ -162,6 +186,12 @@ class StreamedFileConditionalRequestTest extends TestCase
      * 판정 순서는 형제와 같다 — `If-None-Match` 가 우선이다 (RFC 9110 §13.1.2).
      *
      * 두 헤더가 함께 오고 ETag 가 어긋나면, 시각이 아무리 오래됐어도 전문을 준다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
+     * @effects if_none_match_takes_precedence_over_if_modified_since
+     *
+     * @return void 반환값 없음
      */
     public function test_if_none_match_takes_precedence_over_if_modified_since(): void
     {
@@ -177,7 +207,13 @@ class StreamedFileConditionalRequestTest extends TestCase
     }
 
     /**
+     * 첫 응답의 ETag 를 `If-None-Match` 로 되보내면 200 의 캐시 축을 그대로 실은 본문 없는 304 가 나오는지 확인한다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
      * @effects conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_matching_etag_still_yields_304(): void
     {
@@ -202,6 +238,12 @@ class StreamedFileConditionalRequestTest extends TestCase
      * 앞단 CDN·정적 서빙이 붙여 준 `-gzip` 값을 클라이언트가 되보내는 경우가 있다.
      * 형제 두 지점은 `negotiatedEtag()` 를 거치는데 이 경로만 빠져 있었다
      * (10차 G3 라운드 B10-1).
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match, encoding=gzip
+     *
+     * @effects not_modified_echoes_the_validator_of_the_representation_the_client_holds
+     *
+     * @return void 반환값 없음
      */
     public function test_304_echoes_the_representation_the_client_holds(): void
     {
@@ -231,6 +273,12 @@ class StreamedFileConditionalRequestTest extends TestCase
      * `W/` 는 표현이 아니라 비교 강도를 말하므로, 약한 비교로 매치돼도 서버가 가진
      * 표현은 여전히 강한 검증자다(7차 G3 라운드 C5 가 세운 계약). 이 케이스는 그
      * 구분이 유지되는지를 잠근다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
+     * @effects not_modified_echoes_the_validator_of_the_representation_the_client_holds
+     *
+     * @return void 반환값 없음
      */
     public function test_304_carries_the_strong_validator_for_a_weak_multi_value_match(): void
     {
@@ -249,6 +297,12 @@ class StreamedFileConditionalRequestTest extends TestCase
 
     /**
      * 다중 값 안의 압축 표현도 그대로 되돌려준다 — 위 두 케이스의 교집합.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match, encoding=gzip
+     *
+     * @effects not_modified_echoes_the_validator_of_the_representation_the_client_holds
+     *
+     * @return void 반환값 없음
      */
     public function test_304_echoes_the_gzip_candidate_from_a_multi_value_header(): void
     {
@@ -272,7 +326,11 @@ class StreamedFileConditionalRequestTest extends TestCase
      * 실제 HTTP 왕복으로 잰다 — 라우터가 304 응답을 다시 다듬으므로 컨트롤러 반환값만 보면
      * 「붙였다」와 「나갔다」가 구분되지 않는다.
      *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
      * @effects file_serving_response_declares_nosniff
+     *
+     * @return void 반환값 없음
      */
     public function test_full_and_not_modified_responses_declare_nosniff(): void
     {

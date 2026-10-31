@@ -26,7 +26,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: rollback_target seed_truncate·complete_flag·migrate_batch / prefix present·empty / baseline known·unknown
  *
- * @effects seed_truncate_respects_db_prefix, seed_truncate_refuses_empty_prefix, complete_flag_rollback_keeps_runtime, migrate_rollback_limits_to_installed_batches
+ * 효과 요약(마커 아님 — 평문): 시드 롤백은 접두사가 붙은 테이블만 비우고 빈 접두사를 거부하며, 완료 표시 롤백은 런타임 파일을 남기고, 마이그레이션 롤백은 이번 실행의 배치만 되돌린다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -40,6 +40,13 @@ class InstallerRollbackDataIntegrityTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스마다 한 번 임시 BASE_PATH 와 저장소 디렉토리를 만들고 인스톨러 런타임과 롤백 함수를 적재한다.
+     *
+     * BASE_PATH 가 이미 시스템 임시 디렉토리 밖으로 정의돼 있으면 적재하지 않고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function bootInstallerRuntime(): void
     {
         if (self::$booted) {
@@ -83,6 +90,11 @@ class InstallerRollbackDataIntegrityTest extends TestCase
         require_once $root.'/public/install/api/rollback-functions.php';
     }
 
+    /**
+     * 런타임을 적재하고 상태 파일, 설치 로그, 완료 표식, .env, 런타임 파일을 지운 뒤 진행 기록을 버퍼 송신기로 받는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -146,6 +158,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
 
     /**
      * #D1 — TRUNCATE 대상은 prefix 가 붙은 실재 테이블만이다.
+     *
+     * @scenario task=db_seed, task_outcome=failed_db
+     *
+     * @effects seed_truncate_respects_db_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_truncate_targets_are_prefixed(): void
     {
@@ -167,6 +185,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
 
     /**
      * #D1 — 실재하지 않는 테이블은 대상이 아니다 (부분 시딩 후 롤백).
+     *
+     * @scenario task=db_seed, task_outcome=failed_db
+     *
+     * @effects seed_truncate_respects_db_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_truncate_skips_tables_that_do_not_exist(): void
     {
@@ -178,6 +202,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
 
     /**
      * #D1 — 빈 prefix 는 전체 일치가 되므로 삭제 자체를 거부한다 (db_cleanup 과 같은 규칙).
+     *
+     * @scenario task=db_seed, task_outcome=failed_db
+     *
+     * @effects seed_truncate_refuses_empty_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_truncate_refuses_empty_prefix(): void
     {
@@ -190,6 +220,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
 
     /**
      * #D1 — 접두 없는 리터럴 테이블 목록이 TRUNCATE 경로에 남아 있지 않다.
+     *
+     * @scenario task=db_seed
+     *
+     * @effects seed_truncate_respects_db_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_truncate_has_no_bare_table_literals(): void
     {
@@ -212,6 +248,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
      *
      * 지우면 stepwise 토큰·APP_KEY·DB 비밀번호가 한꺼번에 사라져 run-task·abort·reset·
      * skip_task 가 전부 403 이 되고, 유일한 출구인 재시작도 DB 비밀번호를 잃는다.
+     *
+     * @scenario task=complete_flag, installation_mode=stepwise
+     *
+     * @effects complete_flag_rollback_keeps_runtime
+     *
+     * @return void 반환값 없음
      */
     public function test_complete_flag_rollback_keeps_installer_runtime(): void
     {
@@ -242,6 +284,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
 
     /**
      * #D3 — 롤백 경로에 runtime 삭제 배선이 남아 있지 않다.
+     *
+     * @scenario task=complete_flag
+     *
+     * @effects complete_flag_rollback_keeps_runtime
+     *
+     * @return void 반환값 없음
      */
     public function test_complete_flag_rollback_has_no_runtime_delete_wiring(): void
     {
@@ -260,6 +308,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
 
     /**
      * #D9 — 이번 실행이 만든 배치만 되돌린다.
+     *
+     * @scenario task=db_migrate, task_outcome=failed_db
+     *
+     * @effects migrate_rollback_limits_to_installed_batches
+     *
+     * @return void 반환값 없음
      */
     public function test_migrate_rollback_step_count_covers_only_new_batches(): void
     {
@@ -279,6 +333,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
 
     /**
      * #D9 — 기준선을 모르면 되돌리지 않는다 (fail-closed).
+     *
+     * @scenario task=db_migrate, task_outcome=failed_db
+     *
+     * @effects migrate_rollback_limits_to_installed_batches
+     *
+     * @return void 반환값 없음
      */
     public function test_migrate_rollback_step_count_is_null_without_baseline(): void
     {
@@ -290,6 +350,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
 
     /**
      * #D9 — 롤백 커맨드가 실제로 범위를 지정한다.
+     *
+     * @scenario task=db_migrate
+     *
+     * @effects migrate_rollback_limits_to_installed_batches
+     *
+     * @return void 반환값 없음
      */
     public function test_migrate_rollback_passes_step_option(): void
     {
@@ -313,6 +379,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
      *
      * 모집단을 손으로 적지 않는다 — `completed_tasks` 를 비우는 **파일 전수**를 소스에서
      * 도출한다. 새 초기화 지점이 생기면 그 파일이 자동으로 모집단에 들어온다.
+     *
+     * @scenario task=db_migrate, resume_point=retry_after_failure
+     *
+     * @effects migrate_rollback_limits_to_installed_batches
+     *
+     * @return void 반환값 없음
      */
     public function test_migrate_baseline_is_cleared_wherever_completed_tasks_are(): void
     {
@@ -353,6 +425,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
      * 계속 410 이었다 — 화면에 사유가 없어 탈출구가 사라진다.
      *
      * 제거 실패는 디렉토리로 재현한다: `file_exists` 는 참이고 `unlink` 는 실패한다.
+     *
+     * @scenario task=complete_flag
+     *
+     * @effects complete_flag_rollback_reports_a_surviving_marker
+     *
+     * @return void 반환값 없음
      */
     public function test_complete_flag_rollback_reports_failure_when_a_marker_survives(): void
     {
@@ -382,6 +460,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
      * DB 자격증명과 APP_KEY 가 한 번에 사라지고, 이 경로에는 finalize 형제와 달리 사본이 없다.
      *
      * 읽기 실패는 `.env` 를 디렉토리로 만들어 재현한다.
+     *
+     * @scenario task=complete_flag
+     *
+     * @effects complete_flag_rollback_never_writes_an_unread_env
+     *
+     * @return void 반환값 없음
      */
     public function test_complete_flag_rollback_never_writes_env_it_could_not_read(): void
     {
@@ -411,6 +495,12 @@ class InstallerRollbackDataIntegrityTest extends TestCase
      *
      * 그래서 이 검사는 리터럴이 아니라 **호출 여부**를 단언한다. 러너를 스텁으로 바꿔
      * 실행 기록을 받고, 그 기록이 비어 있는지를 본다.
+     *
+     * @scenario task=db_migrate, task_outcome=failed_db
+     *
+     * @effects migrate_rollback_limits_to_installed_batches
+     *
+     * @return void 반환값 없음
      */
     public function test_migrate_rollback_runs_nothing_when_the_range_is_unknown(): void
     {

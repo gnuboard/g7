@@ -22,7 +22,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: skip_dependency pending_dependent·already_installed_dependent·no_dependent
  *
- * @effects skip_cascades_to_pending_dependents, skip_records_warning_for_installed_dependents
+ * 효과 요약(마커 아님 — 평문): 건너뛴 확장에 의존하는 미실행 확장은 함께 지나가고, 이미 설치된 의존 확장은 경고로 남는다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -36,6 +36,13 @@ class InstallerSkipDependencyCascadeTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스마다 한 번 임시 BASE_PATH 와 저장소 디렉토리를 만들고 인스톨러 런타임을 적재한다.
+     *
+     * BASE_PATH 가 이미 시스템 임시 디렉토리 밖으로 정의돼 있으면 적재하지 않고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function boot(): void
     {
         if (self::$booted) {
@@ -78,6 +85,11 @@ class InstallerSkipDependencyCascadeTest extends TestCase
         require_once $root.'/public/install/includes/task-runner.php';
     }
 
+    /**
+     * 런타임을 적재하고 이전 테스트의 상태 파일을 지운 뒤 진행 기록을 버퍼 송신기로 받는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -98,7 +110,9 @@ class InstallerSkipDependencyCascadeTest extends TestCase
     /**
      * 모듈 A ← 플러그인 B 의존 관계를 매니페스트로 만든다.
      *
+     * @param  array<int, string>  $moduleIds  매니페스트를 만들 모듈 id 목록
      * @param  array<string, array<int, string>>  $pluginDeps  플러그인 id → 의존 모듈 id 목록
+     * @return void 반환값 없음
      */
     private function writeFixtures(array $moduleIds, array $pluginDeps): void
     {
@@ -120,8 +134,11 @@ class InstallerSkipDependencyCascadeTest extends TestCase
     }
 
     /**
-     * @param  array<int, string>  $completed
-     * @param  array<string, mixed>  $overrides
+     * 모듈 vendor-a 와 플러그인 vendor-b 를 고른 stepwise 실패 상태를 상태 파일에 저장한다.
+     *
+     * @param  array<int, string>  $completed  완료로 기록할 태스크 키 목록
+     * @param  array<string, mixed>  $overrides  기본 상태 위에 덮어쓸 필드
+     * @return void 반환값 없음
      */
     private function seedState(array $completed, array $overrides = []): void
     {
@@ -147,6 +164,12 @@ class InstallerSkipDependencyCascadeTest extends TestCase
      *
      * 태스크 순서는 모듈 → 플러그인이므로, 모듈을 건너뛰면 그 모듈에 의존하는 플러그인은
      * 아직 실행 전이다. 그대로 두면 의존이 없는 채 설치·활성화된다.
+     *
+     * @scenario installation_mode=stepwise, skip_request=skippable, task=module, task=plugin
+     *
+     * @effects skip_cascades_to_pending_dependents
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_cascades_to_pending_dependents(): void
     {
@@ -169,6 +192,12 @@ class InstallerSkipDependencyCascadeTest extends TestCase
 
     /**
      * 이미 설치된 의존 확장은 되돌릴 수 없으므로 사실을 남긴다.
+     *
+     * @scenario installation_mode=stepwise, skip_request=skippable, task=module, task=plugin
+     *
+     * @effects skip_records_warning_for_installed_dependents
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_records_warning_for_already_installed_dependents(): void
     {
@@ -191,6 +220,12 @@ class InstallerSkipDependencyCascadeTest extends TestCase
 
     /**
      * 의존 관계가 없으면 종전 동작 그대로 — 짝 태스크만 지나간다.
+     *
+     * @scenario installation_mode=stepwise, skip_request=skippable, task=module
+     *
+     * @effects stepwise_skip_marks_pair_and_advances
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_without_dependents_is_unchanged(): void
     {

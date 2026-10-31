@@ -213,6 +213,8 @@ class KcpCallbackControllerTest extends PluginTestCase
      * @scenario outcome=success,lookup=by_reg_cert_key,missing_field=none
      *
      * @effects pg_return_and_notify_addresses_follow_the_configured_site_url
+     *
+     * @return void 반환값 없음
      */
     public function test_bridge_redirect_follows_the_configured_site_url(): void
     {
@@ -238,6 +240,11 @@ class KcpCallbackControllerTest extends PluginTestCase
         );
     }
 
+    /**
+     * KCP 테스트 인증 서버의 조회 응답을 정상 처리(0000)와 암호화된 본인 정보로 가짜 응답한다.
+     *
+     * @return void 반환값 없음
+     */
     private function fakeCertQuery(): void
     {
         $encrypted = KcpCertCrypto::encrypt((string) json_encode([

@@ -82,7 +82,7 @@ class FileServingHelperSourceContractTest extends TestCase
     /**
      * 컨트롤러 소스 파일 전수 (코어 + 번들 확장).
      *
-     * @return array<string>
+     * @return array<string> 중복을 걷어낸 컨트롤러 파일 절대 경로 목록
      */
     private function controllerFiles(): array
     {
@@ -122,7 +122,8 @@ class FileServingHelperSourceContractTest extends TestCase
     /**
      * `**` 를 지원하는 glob (PHP `glob()` 은 재귀를 모른다).
      *
-     * @return array<string>
+     * @param  string  $pattern  `**` 를 포함할 수 있는 glob 패턴
+     * @return array<string> 패턴에 맞는 파일 경로 목록
      */
     private function recursiveGlob(string $pattern): array
     {
@@ -152,7 +153,8 @@ class FileServingHelperSourceContractTest extends TestCase
      * 신호(`FILE_SERVING_BODY_PATTERNS`)가 있거나. 반환 타입만 보면 타입을 넓힌 사본이 빠지고,
      * 본문 신호만 보면 위임만 하는 메서드(`return $this->serveX()`)가 빠진다.
      *
-     * @return array<string, string>
+     * @param  string  $source  컨트롤러 파일 소스 문자열
+     * @return array<string, string> 파일 서빙 메서드 이름별 본문
      */
     private function fileServingMethodBodies(string $source): array
     {
@@ -203,7 +205,8 @@ class FileServingHelperSourceContractTest extends TestCase
      *
      * 반환 타입이 없는 메서드도 포함한다 — 그 형태가 바로 반환 타입 기반 모집단이 놓치던 것이다.
      *
-     * @return array<string, array{string, string}>
+     * @param  string  $source  컨트롤러 파일 소스 문자열
+     * @return array<string, array{string, string}> 메서드 이름별 [반환 타입 문자열, 본문]
      */
     private function methodBodies(string $source): array
     {
@@ -252,6 +255,8 @@ class FileServingHelperSourceContractTest extends TestCase
      * @scenario response_kind=streamed, conditional_request=none
      *
      * @effects file_serving_controllers_go_through_core_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_population_survives_a_widened_return_type_mutation(): void
     {
@@ -283,6 +288,8 @@ class FileServingHelperSourceContractTest extends TestCase
      * @scenario response_kind=streamed, conditional_request=none
      *
      * @effects file_serving_controllers_go_through_core_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_every_streamed_helper_call_names_its_serving_arguments(): void
     {
@@ -315,7 +322,9 @@ class FileServingHelperSourceContractTest extends TestCase
     /**
      * `$this->{$helper}(` 호출의 인자 구간(괄호 균형)을 전부 뽑습니다.
      *
-     * @return array<string>
+     * @param  string  $source  컨트롤러 파일 소스 문자열
+     * @param  string  $helper  찾을 헬퍼 메서드 이름
+     * @return array<string> 호출마다의 괄호 안 인자 문자열 목록
      */
     private function helperCalls(string $source, string $helper): array
     {
@@ -351,6 +360,8 @@ class FileServingHelperSourceContractTest extends TestCase
      * @scenario response_kind=streamed, conditional_request=none
      *
      * @effects file_serving_controllers_go_through_core_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_population_covers_core_and_bundled_extension_controllers(): void
     {
@@ -381,6 +392,8 @@ class FileServingHelperSourceContractTest extends TestCase
      * @scenario response_kind=streamed, conditional_request=none
      *
      * @effects file_serving_response_declares_nosniff, file_serving_controllers_go_through_core_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_no_controller_builds_a_file_response_directly(): void
     {
@@ -408,6 +421,8 @@ class FileServingHelperSourceContractTest extends TestCase
      * @scenario response_kind=streamed, conditional_request=none
      *
      * @effects file_serving_response_declares_nosniff, file_serving_controllers_go_through_core_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_every_file_serving_controller_method_goes_through_a_core_helper(): void
     {

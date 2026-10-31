@@ -353,6 +353,7 @@ class InstallerFinalizeWaitsForWorkerTest extends TestCase
             return null;
         }
 
+        // meta:allow raw-source-read — 생산 소스가 아니라 이 테스트가 만든 임시 설정 캐시 파일을 실행해 값을 얻는다.
         $values = eval('?>'.file_get_contents($path));
 
         return is_array($values) ? $values : null;
@@ -568,6 +569,7 @@ PHP;
 
         proc_close($process);
 
+        // meta:allow raw-source-read — 소스가 아니라 자식 프로세스의 표준 출력과 표준 오류를 읽는다.
         return [
             'timed_out' => $timedOut,
             'output' => (string) @file_get_contents($handle['out']).(string) @file_get_contents($handle['err']),

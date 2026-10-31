@@ -31,6 +31,11 @@ class InstallerCompletedGuardTest extends TestCase
     /** @var array<int, string>|null 원본 argv 백업 */
     private ?array $originalArgv = null;
 
+    /**
+     * 설치 완료 플래그를 끄고, 바꿔 둔 argv 가 남아 있으면 원래 값으로 되돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         config(['app.installer_completed' => false]);
@@ -51,6 +56,7 @@ class InstallerCompletedGuardTest extends TestCase
      * argv 는 finally 에서 반드시 원복해 다른 테스트 오염을 막는다.
      *
      * @param  callable  $callback  마이그레이션 컨텍스트에서 실행할 코드
+     * @return void 반환값 없음
      */
     private function withMigrationArgv(callable $callback): void
     {
@@ -78,6 +84,7 @@ class InstallerCompletedGuardTest extends TestCase
      * 결정적으로 만든다. DB 커넥션은 base path 와 무관하므로 `hasTable` 계측에는 영향이 없다.
      *
      * @param  callable  $callback  실행할 코드
+     * @return void 반환값 없음
      */
     private function withFakeAppRoot(callable $callback): void
     {
@@ -117,6 +124,15 @@ class InstallerCompletedGuardTest extends TestCase
         );
     }
 
+    /**
+     * 설치 완료 상태에서 모듈 활성 목록 조회가 information_schema.tables 쿼리를 내지 않는지 확인한다.
+     *
+     * @scenario installer_completed_state=completed
+     *
+     * @effects schema_probe_skipped_when_installer_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_trait_skips_has_table_when_installer_completed(): void
     {
         config(['app.installer_completed' => true]);
@@ -128,6 +144,15 @@ class InstallerCompletedGuardTest extends TestCase
         $this->assertCount(0, $schemaQueries, 'installer_completed=true 에서는 information_schema.tables 쿼리가 발생하지 않아야 합니다');
     }
 
+    /**
+     * 설치 완료 상태에서 플러그인 활성 목록 조회가 information_schema.tables 쿼리를 내지 않는지 확인한다.
+     *
+     * @scenario installer_completed_state=completed
+     *
+     * @effects schema_probe_skipped_when_installer_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_trait_skips_has_table_when_installer_completed(): void
     {
         config(['app.installer_completed' => true]);
@@ -139,6 +164,15 @@ class InstallerCompletedGuardTest extends TestCase
         $this->assertCount(0, $schemaQueries);
     }
 
+    /**
+     * 설치 완료 상태에서 템플릿 활성 목록 조회가 information_schema.tables 쿼리를 내지 않는지 확인한다.
+     *
+     * @scenario installer_completed_state=completed
+     *
+     * @effects schema_probe_skipped_when_installer_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_template_trait_skips_has_table_when_installer_completed(): void
     {
         config(['app.installer_completed' => true]);
@@ -150,6 +184,15 @@ class InstallerCompletedGuardTest extends TestCase
         $this->assertCount(0, $schemaQueries);
     }
 
+    /**
+     * 설치가 끝나지 않은 상태에서는 모듈 활성 목록 조회가 hasTable 경로로 스키마를 묻는지 확인한다.
+     *
+     * @scenario installer_completed_state=not_completed
+     *
+     * @effects schema_probe_runs_when_installer_not_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_trait_falls_back_to_has_table_when_installer_not_completed(): void
     {
         config(['app.installer_completed' => false]);
@@ -166,6 +209,12 @@ class InstallerCompletedGuardTest extends TestCase
      *
      * 부팅 시점 동적 훅 등록 경로 — 설치 완료 상태에서 매 요청
      * `information_schema.tables` 조회(notification_definitions)가 사라져야 합니다.
+     *
+     * @scenario installer_completed_state=completed
+     *
+     * @effects schema_probe_skipped_when_installer_completed
+     *
+     * @return void 반환값 없음
      */
     public function test_notification_listener_skips_has_table_when_installer_completed(): void
     {
@@ -180,6 +229,15 @@ class InstallerCompletedGuardTest extends TestCase
         $this->assertCount(0, $schemaQueries, 'installer_completed=true 에서는 notification_definitions hasTable 조회가 발생하지 않아야 합니다');
     }
 
+    /**
+     * 설치가 끝나지 않은 상태에서는 알림 동적 훅 등록이 notification_definitions 테이블 존재를 묻는지 확인한다.
+     *
+     * @scenario installer_completed_state=not_completed
+     *
+     * @effects schema_probe_runs_when_installer_not_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_notification_listener_falls_back_to_has_table_when_installer_not_completed(): void
     {
         config(['app.installer_completed' => false]);
@@ -198,6 +256,12 @@ class InstallerCompletedGuardTest extends TestCase
      *
      * 부팅 시점 IDV 동적 hook target 동기화 경로 — 설치 완료 상태에서
      * `information_schema.tables` 조회(identity_policies)가 사라져야 합니다.
+     *
+     * @scenario installer_completed_state=completed
+     *
+     * @effects schema_probe_skipped_when_installer_completed
+     *
+     * @return void 반환값 없음
      */
     public function test_identity_policy_list_hook_targets_skips_has_table_when_installer_completed(): void
     {
@@ -212,6 +276,15 @@ class InstallerCompletedGuardTest extends TestCase
         $this->assertCount(0, $schemaQueries, 'installer_completed=true 에서는 identity_policies hasTable 조회가 발생하지 않아야 합니다');
     }
 
+    /**
+     * 설치가 끝나지 않은 상태에서는 본인인증 정책 훅 대상 조회가 identity_policies 테이블 존재를 묻는지 확인한다.
+     *
+     * @scenario installer_completed_state=not_completed
+     *
+     * @effects schema_probe_runs_when_installer_not_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_identity_policy_list_hook_targets_falls_back_when_installer_not_completed(): void
     {
         config(['app.installer_completed' => false]);
@@ -231,6 +304,12 @@ class InstallerCompletedGuardTest extends TestCase
      * `resolveByScopeTarget()` → `applyActiveExtensionScope()` → `activeExtensionIdentifiers()`
      * 경로로 modules/plugins 테이블 hasTable 조회가 트리거되며, 설치 완료 상태에서는
      * 해당 `information_schema.tables` 조회가 사라져야 합니다.
+     *
+     * @scenario installer_completed_state=completed
+     *
+     * @effects schema_probe_skipped_when_installer_completed
+     *
+     * @return void 반환값 없음
      */
     public function test_active_extension_scope_skips_has_table_when_installer_completed(): void
     {
@@ -245,6 +324,15 @@ class InstallerCompletedGuardTest extends TestCase
         $this->assertCount(0, $schemaQueries, 'installer_completed=true 에서는 modules/plugins hasTable 조회가 발생하지 않아야 합니다');
     }
 
+    /**
+     * 설치가 끝나지 않은 상태에서는 활성 확장 범위 판정이 modules, plugins 테이블 존재를 묻는지 확인한다.
+     *
+     * @scenario installer_completed_state=not_completed
+     *
+     * @effects schema_probe_runs_when_installer_not_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_active_extension_scope_falls_back_when_installer_not_completed(): void
     {
         config(['app.installer_completed' => false]);
@@ -271,6 +359,15 @@ class InstallerCompletedGuardTest extends TestCase
     |  hasTable 쿼리가 다시 발생하는지를 쿼리카운트로 검증)
     */
 
+    /**
+     * 설치 완료 플래그가 참이어도 migrate 명령 컨텍스트에서는 모듈 활성 목록 조회가 hasTable 실검증으로 돌아가는지 확인한다.
+     *
+     * @scenario installer_completed_state=completed_during_migration
+     *
+     * @effects schema_probe_runs_during_migration_despite_installer_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_trait_uses_has_table_during_migration_despite_installer_completed(): void
     {
         config(['app.installer_completed' => true]);
@@ -284,6 +381,15 @@ class InstallerCompletedGuardTest extends TestCase
         });
     }
 
+    /**
+     * 설치 완료 플래그가 참이어도 migrate 명령 컨텍스트에서는 플러그인 활성 목록 조회가 hasTable 실검증으로 돌아가는지 확인한다.
+     *
+     * @scenario installer_completed_state=completed_during_migration
+     *
+     * @effects schema_probe_runs_during_migration_despite_installer_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_trait_uses_has_table_during_migration_despite_installer_completed(): void
     {
         config(['app.installer_completed' => true]);
@@ -297,6 +403,15 @@ class InstallerCompletedGuardTest extends TestCase
         });
     }
 
+    /**
+     * 설치 완료 플래그가 참이어도 migrate 명령 컨텍스트에서는 템플릿 활성 목록 조회가 hasTable 실검증으로 돌아가는지 확인한다.
+     *
+     * @scenario installer_completed_state=completed_during_migration
+     *
+     * @effects schema_probe_runs_during_migration_despite_installer_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_template_trait_uses_has_table_during_migration_despite_installer_completed(): void
     {
         config(['app.installer_completed' => true]);
@@ -310,6 +425,15 @@ class InstallerCompletedGuardTest extends TestCase
         });
     }
 
+    /**
+     * 임시 앱 루트의 migrate 명령 컨텍스트에서 모듈 라우트 프로바이더가 설치 완료 플래그를 믿지 않고 modules 테이블 존재를 묻는지 확인한다.
+     *
+     * @scenario installer_completed_state=completed_during_migration
+     *
+     * @effects schema_probe_runs_during_migration_despite_installer_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_route_provider_uses_has_table_during_migration_despite_installer_completed(): void
     {
         config(['app.installer_completed' => true]);
@@ -329,6 +453,15 @@ class InstallerCompletedGuardTest extends TestCase
         });
     }
 
+    /**
+     * 임시 앱 루트의 migrate 명령 컨텍스트에서 플러그인 라우트 프로바이더가 설치 완료 플래그를 믿지 않고 plugins 테이블 존재를 묻는지 확인한다.
+     *
+     * @scenario installer_completed_state=completed_during_migration
+     *
+     * @effects schema_probe_runs_during_migration_despite_installer_completed
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_route_provider_uses_has_table_during_migration_despite_installer_completed(): void
     {
         config(['app.installer_completed' => true]);

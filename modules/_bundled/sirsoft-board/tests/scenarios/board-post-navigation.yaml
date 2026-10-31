@@ -54,6 +54,8 @@ effects:
   - asc_order_flips_prev_next_direction
   - notice_posts_excluded_from_navigation
   - newest_post_has_no_prev
+  # #609 docblock 정리 때 사후 등재 — PostNavigationApiTest 응답 구조 단언
+  - navigation_response_has_prev_next_keys
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/PostNavigationTest.php

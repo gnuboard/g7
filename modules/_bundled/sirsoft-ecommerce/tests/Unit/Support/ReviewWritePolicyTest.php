@@ -18,6 +18,8 @@ class ReviewWritePolicyTest extends ModuleTestCase
      * 모듈 config 네임스페이스가 실제로 해석된다. (기존 폴백은 null 이었다)
      *
      * @effects review_deadline_uses_single_policy_source
+     *
+     * @return void 반환값 없음
      */
     public function test_module_config_namespace_resolves(): void
     {
@@ -29,6 +31,8 @@ class ReviewWritePolicyTest extends ModuleTestCase
      * 설정 미지정 시 config 기본값을 사용한다.
      *
      * @effects review_deadline_uses_single_policy_source
+     *
+     * @return void 반환값 없음
      */
     public function test_deadline_days_falls_back_to_module_config(): void
     {
@@ -40,6 +44,10 @@ class ReviewWritePolicyTest extends ModuleTestCase
 
     /**
      * 기한 내 구매확정은 통과한다.
+     *
+     * @effects review_deadline_uses_single_policy_source
+     *
+     * @return void 반환값 없음
      */
     public function test_deadline_not_passed_within_period(): void
     {
@@ -48,6 +56,10 @@ class ReviewWritePolicyTest extends ModuleTestCase
 
     /**
      * 기한을 넘긴 구매확정은 차단된다.
+     *
+     * @effects review_deadline_uses_single_policy_source
+     *
+     * @return void 반환값 없음
      */
     public function test_deadline_passed_after_period(): void
     {
@@ -58,6 +70,10 @@ class ReviewWritePolicyTest extends ModuleTestCase
 
     /**
      * 미확정(null)은 기한 판정 대상이 아니다.
+     *
+     * @effects review_deadline_uses_single_policy_source
+     *
+     * @return void 반환값 없음
      */
     public function test_null_confirmed_at_is_not_deadline_passed(): void
     {
@@ -66,6 +82,10 @@ class ReviewWritePolicyTest extends ModuleTestCase
 
     /**
      * 판정이 인자를 변형하지 않는다. (copy 누락 시 호출자의 시각이 밀린다)
+     *
+     * @effects review_deadline_uses_single_policy_source
+     *
+     * @return void 반환값 없음
      */
     public function test_confirmed_at_is_not_mutated(): void
     {

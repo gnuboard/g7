@@ -50,6 +50,8 @@ trait SkipsWhenExtensionTablesAreMissing
      * 판정은 Laravel 을 거치지 않는다 — 부팅이 바로 그 실패 지점이므로 앱을 만들기 전에
      * 원시 PDO 로 확인해야 한다. 접속 자체가 불가하면 판정하지 않고 통과시킨다(그 실패는
      * 이 트레이트가 다룰 문제가 아니고, 감추면 진짜 설정 오류를 숨기게 된다).
+     *
+     * @return void 반환값 없음
      */
     protected function skipWhenExtensionTablesAreMissing(): void
     {

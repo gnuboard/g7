@@ -21,18 +21,26 @@ import {
 import type { EditorNode } from '../../utils/layoutTreeUtils';
 
 describe('parseEditorPath', () => {
+  // @scenario selected_node_state=empty_selection
+  // @effects editor_path_parses_children_indexes_into_source_path
   it('빈 문자열 → 빈 배열', () => {
     expect(parseEditorPath('')).toEqual([]);
   });
 
+  // @scenario selected_node_state=basic_selected
+  // @effects editor_path_parses_children_indexes_into_source_path
   it('단일 인덱스', () => {
     expect(parseEditorPath('0')).toEqual([0]);
   });
 
+  // @scenario selected_node_state=basic_selected
+  // @effects editor_path_parses_children_indexes_into_source_path
   it('children 키워드 무시', () => {
     expect(parseEditorPath('0.children.2')).toEqual([0, 2]);
   });
 
+  // @scenario selected_node_state=iteration_instance_selected
+  // @effects editor_path_strips_virtual_iteration_and_sortable_row_indexes
   it('iteration / sortable 뒤 데이터 행 인덱스는 가상 — 소스 path 에서 제외 (항목1)', () => {
     // `.iteration.1`·`.sortable.3` 의 1·3 은 데이터 행 인덱스(가상)다. 모든 행
     // 인스턴스는 같은 템플릿 노드 1개를 가리키므로 행 인덱스를 자식 인덱스로
@@ -42,6 +50,8 @@ describe('parseEditorPath', () => {
     ]);
   });
 
+  // @scenario selected_node_state=iteration_instance_selected
+  // @effects editor_path_strips_virtual_iteration_and_sortable_row_indexes
   it('iteration 단일 — 인스턴스 path 가 iteration 원본(템플릿) path 로 환원', () => {
     // `0.children.2.iteration.0` 와 `...iteration.5` 는 같은 소스 노드 [0,2] 를 가리킨다.
     expect(parseEditorPath('0.children.2.iteration.0')).toEqual([0, 2]);
@@ -51,6 +61,8 @@ describe('parseEditorPath', () => {
     expect(parseEditorPath('0.children.2.iteration.5.children.0')).toEqual([0, 2, 0]);
   });
 
+  // @scenario selected_node_state=iteration_instance_selected
+  // @effects editor_path_strips_virtual_iteration_and_sortable_row_indexes
   it('sortable 단일 — 인스턴스 path 가 sortable 원본(템플릿) path 로 환원', () => {
     expect(parseEditorPath('0.children.1.sortable.0')).toEqual([0, 1]);
     expect(parseEditorPath('0.children.1.sortable.4.children.2')).toEqual([0, 1, 2]);
@@ -58,12 +70,16 @@ describe('parseEditorPath', () => {
 });
 
 describe('classifyNavAffordance — 외부 / 내부 / 동적', () => {
+  // @scenario click_target_action=no_action
+  // @effects nav_destination_unreachable_affordance_hidden
   it('actions=undefined 노드 → none', () => {
     const { affordance, targetPath } = classifyNavAffordance({ name: 'Div' } as EditorNode);
     expect(affordance).toBe('none');
     expect(targetPath).toBe(null);
   });
 
+  // @scenario click_target_action=navigate_external, link_edit_destination=external_url
+  // @effects link_edit_affordance_external_or_unmatched_disabled_with_notice
   it('navigate 액션의 절대 외부 URL → external_url', () => {
     const node: EditorNode = {
       name: 'Button',
@@ -76,6 +92,8 @@ describe('classifyNavAffordance — 외부 / 내부 / 동적', () => {
     expect(result.targetPath).toBe('https://example.com/foo');
   });
 
+  // @scenario click_target_action=navigate_external, link_edit_destination=external_url
+  // @effects link_edit_affordance_external_or_unmatched_disabled_with_notice
   it('navigate 액션의 protocol-relative URL → external_url', () => {
     const node: EditorNode = {
       name: 'Button',
@@ -84,6 +102,8 @@ describe('classifyNavAffordance — 외부 / 내부 / 동적', () => {
     expect(classifyNavAffordance(node).affordance).toBe('external_url');
   });
 
+  // @scenario click_target_action=navigate_dynamic, link_edit_destination=dynamic_path_with_binding
+  // @effects link_edit_affordance_dynamic_path_disabled_with_notice
   it('navigate 액션의 동적 {{...}} 경로 → dynamic_path', () => {
     const node: EditorNode = {
       name: 'Button',
@@ -94,6 +114,8 @@ describe('classifyNavAffordance — 외부 / 내부 / 동적', () => {
     expect(classifyNavAffordance(node).affordance).toBe('dynamic_path');
   });
 
+  // @scenario click_target_action=navigate_internal, link_edit_destination=route_in_tree
+  // @effects link_edit_affordance_internal_route_transitions_via_select_route_without_reload
   it('내부 라우트 + resolveRouteMatch 사용 시 route_in_tree', () => {
     const node: EditorNode = {
       name: 'Button',
@@ -104,6 +126,8 @@ describe('classifyNavAffordance — 외부 / 내부 / 동적', () => {
     expect(result.targetPath).toBe('/posts');
   });
 
+  // @scenario click_target_action=navigate_internal, link_edit_destination=route_not_in_tree
+  // @effects link_edit_affordance_external_or_unmatched_disabled_with_notice
   it('내부 라우트 + resolveRouteMatch 없으면 보수적으로 route_not_in_tree', () => {
     const node: EditorNode = {
       name: 'Button',
@@ -112,6 +136,8 @@ describe('classifyNavAffordance — 외부 / 내부 / 동적', () => {
     expect(classifyNavAffordance(node).affordance).toBe('route_not_in_tree');
   });
 
+  // @scenario click_target_action=a_href_internal, link_edit_destination=route_in_tree
+  // @effects link_edit_affordance_internal_route_transitions_via_select_route_without_reload
   it('A 컴포넌트 + href 가 내부 경로 → 라우트 매처 사용', () => {
     const node: EditorNode = {
       name: 'A',
@@ -123,16 +149,22 @@ describe('classifyNavAffordance — 외부 / 내부 / 동적', () => {
 });
 
 describe('classifyLockKind', () => {
+  // @scenario selected_node_state=empty_selection
+  // @effects lock_kind_is_none_when_nothing_is_selected
   it('node=null → none', () => {
     expect(classifyLockKind(null, 'route')).toBe('none');
   });
 
+  // @scenario selected_node_state=extension_point_selected
+  // @effects extension_point_and_slot_nodes_classify_as_extension_point_lock
   it('extension_point 노드 → 모든 모드에서 extension_point', () => {
     const node: EditorNode = { type: 'extension_point' };
     expect(classifyLockKind(node, 'route')).toBe('extension_point');
     expect(classifyLockKind(node, 'base')).toBe('extension_point');
   });
 
+  // @scenario selected_node_state=extension_point_selected
+  // @effects extension_point_and_slot_nodes_classify_as_extension_point_lock
   it('슬롯 노드(slot/__editorSlotName) → extension_point 잠금', () => {
     const slotNode: EditorNode = { type: 'layout', name: 'Container', slot: 'content' } as any;
     expect(classifyLockKind(slotNode, 'base')).toBe('extension_point');
@@ -140,28 +172,38 @@ describe('classifyLockKind', () => {
     expect(classifyLockKind(markerNode, 'base')).toBe('extension_point');
   });
 
+  // @scenario selected_node_state=iteration_instance_selected
+  // @effects route_owned_or_untagged_bound_nodes_stay_data_bound_editable
   it('iteration 조상 → data_bound', () => {
     const ancestor: EditorNode = { iteration: { source: 'posts' } } as any;
     const node: EditorNode = { name: 'Span' };
     expect(classifyLockKind(node, 'route', undefined, [ancestor])).toBe('data_bound');
   });
 
+  // @scenario selected_node_state=base_locked_selected
+  // @effects route_edit_locks_base_originated_nodes
   it('route 모드에서 base 출처 노드 → base 잠금', () => {
     const node: EditorNode = { name: 'Header', __source: { kind: 'base' } };
     expect(classifyLockKind(node, 'route')).toBe('base');
   });
 
+  // @scenario edit_mode=route, lock_propagation=other_extension_locked
+  // @effects route_edit_locks_extension_originated_nodes
   it('route 모드에서 extension 출처 노드 → extension 잠금', () => {
     const node: EditorNode = { name: 'X', __source: { kind: 'extension', extensionId: 7 } };
     expect(classifyLockKind(node, 'route')).toBe('extension');
   });
 
+  // @scenario selected_node_state=basic_selected
+  // @effects route_owned_nodes_keep_inline_edit_delete_cut_and_duplicate
   it('route 모드 + 일반 라우트 노드 → none', () => {
     const node: EditorNode = { name: 'Div', __source: { kind: 'route' } };
     expect(classifyLockKind(node, 'route')).toBe('none');
   });
 
   // 출처 잠금이 data_bound 보다 우선.
+  // @scenario edit_mode=extension, lock_propagation=host_locked_in_route
+  // @effects extension_edit_locks_host_nodes_before_data_bound_classification
   it('extension 모드 + 호스트 본체 data_bound 노드 → base 잠금(선택 차단), data_bound 로 새지 않음', () => {
     // 호스트 폼 입력칸: route 출처 + 바인딩값. 확장 편집 모드에서는 잠겨야 한다.
     const node: EditorNode = {
@@ -174,6 +216,8 @@ describe('classifyLockKind', () => {
     expect(isContextMenuAllowed(classifyLockKind(node, 'extension', 7))).toBe(false);
   });
 
+  // @scenario edit_mode=extension, lock_propagation=current_extension_editable
+  // @effects current_extension_fragment_bound_nodes_stay_data_bound_editable
   it('extension 모드 + 편집 중 확장 조각의 data_bound 노드 → data_bound(편집 허용)', () => {
     // 편집 중 확장(7)의 조각은 미잠금 → 바인딩 있으면 data_bound(텍스트만 잠금, 선택/스타일 허용).
     const node: EditorNode = {
@@ -185,6 +229,8 @@ describe('classifyLockKind', () => {
     expect(isContextMenuAllowed(classifyLockKind(node, 'extension', 7))).toBe(true);
   });
 
+  // @scenario edit_mode=base
+  // @effects base_edit_treats_base_body_nodes_as_editable_not_base_locked
   it('base 모드 + route 출처 data_bound 노드(단독 base 본체) → data_bound (편집 가능)', () => {
     const node: EditorNode = {
       name: 'Input',
@@ -196,6 +242,8 @@ describe('classifyLockKind', () => {
     expect(classifyLockKind(node, 'base')).toBe('data_bound');
   });
 
+  // @scenario edit_mode=base, lock_propagation=other_extension_locked
+  // @effects base_edit_locks_injected_extension_nodes
   it('base 모드 + 주입된 확장 노드 → extension 잠금', () => {
     const node: EditorNode = { name: 'X', __source: { kind: 'extension', extensionId: 3 } };
     expect(classifyLockKind(node, 'base')).toBe('extension');
@@ -231,6 +279,8 @@ describe('classifyLockKind', () => {
     expect(isContextMenuAllowed(classifyLockKind(node, 'route'))).toBe(true);
   });
 
+  // @scenario edit_mode=route, lock_propagation=other_extension_locked
+  // @effects route_edit_locks_extension_originated_nodes, route_canvas_extension_lock_shows_edit_extension_affordance
   it('route 모드 + 확장 출처 (바인딩 없음) 노드 → extension 잠금(확장 편집 어포던스)', () => {
     // 바인딩 없는 확장 주입 노드는 route 모드에서 extension 잠금 → "확장 편집" 어포던스.
     const node: EditorNode = {
@@ -242,11 +292,15 @@ describe('classifyLockKind', () => {
 });
 
 describe('isContextMenuAllowed — ⓘ 속성 메뉴 허용 여부 ', () => {
+  // @scenario selected_node_state=data_bound_selected
+  // @effects context_menu_allowed_only_for_unlocked_and_data_bound_nodes
   it('none / data_bound 만 허용', () => {
     expect(isContextMenuAllowed('none')).toBe(true);
     expect(isContextMenuAllowed('data_bound')).toBe(true);
   });
 
+  // @scenario selected_node_state=base_locked_selected
+  // @effects context_menu_allowed_only_for_unlocked_and_data_bound_nodes
   it('잠금 출처(base/partial/extension/extension_point)는 차단', () => {
     expect(isContextMenuAllowed('base')).toBe(false);
     expect(isContextMenuAllowed('partial')).toBe(false);
@@ -256,6 +310,8 @@ describe('isContextMenuAllowed — ⓘ 속성 메뉴 허용 여부 ', () => {
 });
 
 describe('sliceDomPathToDepth — DOM path 진입점 prefix 절단 (통짜 표시)', () => {
+  // @scenario selected_node_state=extension_locked_selected
+  // @effects dom_path_slices_to_entry_depth_skipping_virtual_row_indexes
   it('단순 children 경로를 깊이만큼 자른다', () => {
     // [2,0,0] = "2.children.0.children.0" 깊이 1 → "2"
     expect(sliceDomPathToDepth('2.children.0.children.0', 1)).toBe('2');
@@ -263,11 +319,15 @@ describe('sliceDomPathToDepth — DOM path 진입점 prefix 절단 (통짜 표�
     expect(sliceDomPathToDepth('2.children.0.children.0', 2)).toBe('2.children.0');
   });
 
+  // @scenario selected_node_state=extension_locked_selected
+  // @effects dom_path_slices_to_entry_depth_skipping_virtual_row_indexes
   it('깊이 0/이상이면 원본 유지', () => {
     expect(sliceDomPathToDepth('2.children.0', 0)).toBe('2.children.0');
     expect(sliceDomPathToDepth('2.children.0', 5)).toBe('2.children.0');
   });
 
+  // @scenario selected_node_state=iteration_instance_selected
+  // @effects dom_path_slices_to_entry_depth_skipping_virtual_row_indexes
   it('iteration/sortable 행 인덱스 토큰을 건너뛰며 트리 깊이를 센다', () => {
     // "2.children.5.children.1.iteration.0.children.0" — 트리 깊이: 2(루트)→5→1→(iter행)→0
     // parseEditorPath 기준 인덱스: [2,5,1,0] (iteration.0 의 0 은 제외). 깊이 1 → "2"
@@ -280,12 +340,16 @@ describe('sliceDomPathToDepth — DOM path 진입점 prefix 절단 (통짜 표�
 });
 
 describe('resolveSourceExtensionId', () => {
+  // @scenario edit_mode=route, lock_propagation=other_extension_locked
+  // @effects selection_tracker_emits_source_extension_id
   it('extension 출처 노드 → __source.extensionId', () => {
     expect(
       resolveSourceExtensionId({ __source: { kind: 'extension', extensionId: 42 } } as EditorNode),
     ).toBe(42);
   });
 
+  // @scenario overlay_position=inject_props
+  // @effects selection_tracker_emits_source_extension_id
   it('inject_props 호스트 노드 → 첫 주입 확장 PK', () => {
     const node = {
       id: 'tabs',
@@ -297,6 +361,8 @@ describe('resolveSourceExtensionId', () => {
     expect(resolveSourceExtensionId(node)).toBe(9);
   });
 
+  // @scenario edit_mode=route
+  // @effects selection_tracker_emits_source_extension_id
   it('일반 노드 / null → null', () => {
     expect(resolveSourceExtensionId({ __source: { kind: 'route' } } as EditorNode)).toBeNull();
     expect(resolveSourceExtensionId({} as EditorNode)).toBeNull();

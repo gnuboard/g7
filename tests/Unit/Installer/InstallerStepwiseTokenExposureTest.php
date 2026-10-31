@@ -23,7 +23,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: session_ownership owner·absent·mismatch / install_state running·not_started
  *
- * @effects installer_stepwise_token_is_rendered_only_for_the_owning_session
+ * 효과 요약(마커 아님 — 평문): installer_stepwise_token_is_rendered_only_for_the_owning_session
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -39,6 +39,12 @@ class InstallerStepwiseTokenExposureTest extends TestCase
 
     private string $tempBase = '';
 
+    /**
+     * 임시 기준 경로를 정하고 설치기 상태 디렉터리를 만든 뒤 화면 렌더에 필요한 요청 변수와 설치기 설정, 상태, 런타임, 실행 모드, 태스크 러너 소스를 읽어 들인다.
+     * 기준 경로 상수가 시스템 임시 경로 밖으로 이미 정의돼 있으면 실제 저장소를 지키려고 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -76,6 +82,8 @@ class InstallerStepwiseTokenExposureTest extends TestCase
 
     /**
      * 진행 중인 단계별 설치 + 발급된 토큰을 상태 파일과 runtime.php 에 심는다.
+     *
+     * @return void 반환값 없음
      */
     private function seedRunningStepwiseInstall(): void
     {
@@ -94,6 +102,7 @@ class InstallerStepwiseTokenExposureTest extends TestCase
      * Step 5 화면을 렌더한다.
      *
      * @param  array<string, mixed>  $session  이 요청의 $_SESSION 스냅샷
+     * @return string 렌더된 Step 5 화면 HTML
      */
     private function renderStep5(array $session): string
     {
@@ -108,6 +117,9 @@ class InstallerStepwiseTokenExposureTest extends TestCase
 
     /**
      * 렌더 결과에서 화면에 실린 토큰 값을 꺼낸다 (없으면 null).
+     *
+     * @param  string  $html  Step 5 렌더 결과 HTML
+     * @return string|null 화면에 실린 토큰 값, 실리지 않았으면 null
      */
     private function renderedToken(string $html): ?string
     {
@@ -119,6 +131,15 @@ class InstallerStepwiseTokenExposureTest extends TestCase
         return is_string($decoded) ? $decoded : null;
     }
 
+    /**
+     * 진행 중인 단계별 설치를 시작한 세션의 표식으로 Step 5 를 렌더하면 발급된 토큰이 화면에 실리는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, session_ownership=owner
+     *
+     * @effects installer_stepwise_token_is_rendered_only_for_the_owning_session
+     *
+     * @return void 반환값 없음
+     */
     public function test_설치를_시작한_세션에는_토큰이_실린다(): void
     {
         $this->seedRunningStepwiseInstall();
@@ -132,6 +153,15 @@ class InstallerStepwiseTokenExposureTest extends TestCase
         );
     }
 
+    /**
+     * 세션 없는 요청으로 Step 5 를 렌더하면 토큰 칸이 비고 토큰 문자열이 화면 어디에도 없는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, session_ownership=absent
+     *
+     * @effects installer_stepwise_token_is_rendered_only_for_the_owning_session
+     *
+     * @return void 반환값 없음
+     */
     public function test_세션이_없는_요청에는_토큰이_실리지_않는다(): void
     {
         $this->seedRunningStepwiseInstall();
@@ -149,6 +179,15 @@ class InstallerStepwiseTokenExposureTest extends TestCase
         );
     }
 
+    /**
+     * 다른 소유자 표식을 가진 세션으로 Step 5 를 렌더하면 토큰이 실리지 않는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, session_ownership=mismatch
+     *
+     * @effects installer_stepwise_token_is_rendered_only_for_the_owning_session
+     *
+     * @return void 반환값 없음
+     */
     public function test_다른_세션의_표식으로는_토큰이_실리지_않는다(): void
     {
         $this->seedRunningStepwiseInstall();

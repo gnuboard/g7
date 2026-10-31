@@ -121,24 +121,15 @@ class SourceGateHygieneTest extends TestCase
     /**
      * ① 축 — 아직 주석 제거로 이관하지 않은 게이트 (파일 단위, 사유 필수).
      *
-     * 전부 「원문 대조로 생산 소스를 판정한다」는 같은 형태다. 이 라운드가 소유한 5건
-     * (엔드포인트 가드·터치포인트·모니터 계약·스타일 클래스·자리표시자 스캐너)은 이관했고,
-     * 나머지는 다른 공정이 같은 창에서 수정 중인 파일이라 여기서 함께 건드리면 충돌한다.
-     *
-     * develop-7.2.0 병합으로 이 모집단에 들어온 인스톨러 테스트 6건(7.2.0 이 F25·F37 등 설치기 결함을
-     * 고치며 더한 원문 대조 게이트)은 이관 전이라 여기 등재한다 — 그중 일부 읽기는 소스가 아니라
-     * 자식 프로세스 출력·eval 실행이라 줄마다 `meta:allow raw-source-read` 판정이 함께 필요하다.
+     * 전부 「원문 대조로 생산 소스를 판정한다」는 같은 형태다. 12차 라운드가 소유한 5건과
+     * develop-7.2.0 병합으로 들어온 인스톨러 테스트 6건, 그 뒤 모집단에 잡힌 19건은 609 부채
+     * 정리에서 모두 이관했다 — 소스 읽기는 공용 스트리퍼를 지나고, 원문이 꼭 필요한 읽기(주석 속
+     * 구간 표식, 면제 표식, 로그와 자식 프로세스 출력, 상태 파일)는 그 자리에 사유와 함께
+     * `meta:allow raw-source-read` 를 남겼다. 지금 대기 항목은 없다.
      *
      * @var array<string, string>
      */
-    private const PENDING_RAW_SOURCE_GATES = [
-        'tests/Unit/Installer/ExistingDbActionGuardTest.php' => '7.2.0 병합 유입 — task-runner.php 원문 대조, 주석 제거 이관 대기',
-        'tests/Unit/Installer/InstallerDbTestGateTest.php' => '7.2.0 병합 유입 — check-configuration.php·request-handler.php 원문 대조, 주석 제거 이관 대기',
-        'tests/Unit/Installer/InstallerDropConfirmTest.php' => '7.2.0 병합 유입 — install-process.php 원문 대조, 주석 제거 이관 대기',
-        'tests/Unit/Installer/InstallerFinalizeCacheTasksTest.php' => '7.2.0 병합 유입 — task-runner.php·installer-state.php 원문 대조, 주석 제거 이관 대기',
-        'tests/Unit/Installer/InstallerFinalizeWaitsForWorkerTest.php' => '7.2.0 병합 유입 — 자식 프로세스 출력·eval 읽기 판정(meta:allow) 포함 이관 대기',
-        'tests/Unit/Installer/InstallerWorkerTimeLimitTest.php' => '7.2.0 병합 유입 — 생산 소스 원문 대조와 자식 프로세스 출력 읽기 판정 이관 대기',
-    ];
+    private const PENDING_RAW_SOURCE_GATES = [];
 
     /**
      * ② 축 — 아직 재귀 스캔으로 이관하지 않은 지점 (파일 단위, 사유 필수).
@@ -147,6 +138,11 @@ class SourceGateHygieneTest extends TestCase
      */
     private const PENDING_NON_RECURSIVE_SCANS = [];
 
+    /**
+     * 저장소 루트의 절대 경로를 돌려준다. 모집단 경로와 매니페스트 경로가 모두 이 기준에서 이어진다.
+     *
+     * @return string 저장소 루트 절대 경로
+     */
     private static function root(): string
     {
         return dirname(__DIR__, 3);
@@ -197,7 +193,7 @@ class SourceGateHygieneTest extends TestCase
      * 매니페스트의 `test_files` 목록.
      *
      * @param  string  $manifest  매니페스트 상대 경로
-     * @return array<int, string>
+     * @return array<int, string> 매니페스트가 선언한 테스트 파일의 저장소 상대 경로 목록
      */
     private function declaredTestFiles(string $manifest): array
     {
@@ -477,7 +473,12 @@ class SourceGateHygieneTest extends TestCase
     }
 
     /**
-     * @param  array<string, true>  $names
+     * 문장 안에 주어진 변수 이름 중 하나가 식별자 경계로 등장하는지 판정한다. PHP 소스면 `$` 접두를 붙여 찾는다.
+     *
+     * @param  string  $text  판정할 문장
+     * @param  array<string, true>  $names  찾을 변수 이름 집합 (키가 이름)
+     * @param  bool  $isPhp  PHP 소스 여부 (참이면 `$` 접두로 대조)
+     * @return bool 하나라도 등장하면 true
      */
     private function mentionsAny(string $text, array $names, bool $isPhp): bool
     {
@@ -593,6 +594,7 @@ class SourceGateHygieneTest extends TestCase
      * 스캔 뿌리가 옮겨지거나 매니페스트 표기가 바뀌어 모집단이 비어도 그 실행은 「위반 0」이다.
      *
      * @param  array<int, string>  $files  모집단
+     * @return void 반환값 없음
      */
     private function assertPopulationFloor(array $files): void
     {
@@ -623,6 +625,13 @@ class SourceGateHygieneTest extends TestCase
         $this->assertContains('resources/js/installer/__tests__/installer-token-wiring.test.ts', $files, '매니페스트가 선언한 vitest 파일도 모집단이다');
     }
 
+    /**
+     * 모집단이 인스톨러 테스트 실재 수에서 도출한 하한 이상이고, 기준 인스톨러 게이트와 매니페스트가 선언한 Vitest 파일을 포함하는지 확인한다.
+     *
+     * @effects source_gate_population_meets_derived_floor
+     *
+     * @return void 반환값 없음
+     */
     public function test_population_is_not_empty(): void
     {
         $this->assertPopulationFloor($this->populationFiles());
@@ -631,7 +640,11 @@ class SourceGateHygieneTest extends TestCase
     /**
      * ① 소스를 문자로 대조하는 게이트는 예외 없이 주석을 제거한다.
      *
+     * 모집단의 각 파일에서 원문 대조 게이트를 찾고, 그 목록이 이관 대기 목록과 정확히 같은지 본다.
+     *
      * @effects installer_source_gates_strip_comments_and_scan_recursively
+     *
+     * @return void 반환값 없음
      */
     public function test_source_comparing_gates_strip_comments(): void
     {
@@ -665,7 +678,11 @@ class SourceGateHygieneTest extends TestCase
     /**
      * ② 생산 소스 모집단을 만드는 스캔은 예외 없이 재귀다.
      *
+     * 모집단의 각 파일에서 한 겹 나열 스캔을 찾고, 그 목록이 재귀 이관 대기 목록과 정확히 같은지 본다.
+     *
      * @effects installer_source_gates_strip_comments_and_scan_recursively
+     *
+     * @return void 반환값 없음
      */
     public function test_production_source_population_scans_are_recursive(): void
     {
@@ -700,6 +717,10 @@ class SourceGateHygieneTest extends TestCase
      *  ① PHP 열기 태그가 없는 `.php` — 원문이 그대로 돌아오던 것을 예외로 세웠다.
      *  ② nowdoc/heredoc·안내 문구 안의 배선 이름 — `sourceWithoutCommentsAndStrings()` 가 지운다.
      *  ③ HTML 주석 안의 `<script>` — 구간이 아니므로 예외를 내지 않는다.
+     *
+     * @effects source_gate_stripper_closes_fail_open_channels
+     *
+     * @return void 반환값 없음
      */
     public function test_stripper_closes_its_fail_open_channels(): void
     {
@@ -763,6 +784,12 @@ class SourceGateHygieneTest extends TestCase
 
     /**
      * 인스톨러 생산 소스 전수가 스트리퍼를 예외 없이 지난다 — 열기 태그 검사가 실물을 막지 않는다.
+     *
+     * `public/install` 아래 PHP 파일을 재귀로 모아 각 파일의 제거 결과가 비지 않는지와 모집단이 30개 이상인지 확인한다.
+     *
+     * @effects installer_sources_all_pass_the_stripper
+     *
+     * @return void 반환값 없음
      */
     public function test_installer_sources_all_pass_the_stripper(): void
     {
@@ -781,6 +808,12 @@ class SourceGateHygieneTest extends TestCase
 
     /**
      * 대기 목록 항목은 전부 사유를 갖고, 실재하는 파일을 가리킨다.
+     *
+     * 두 대기 목록이 배열 형태인지 먼저 고정하고, 항목마다 사유가 비지 않았는지와 가리키는 파일이 남아 있는지 확인한다.
+     *
+     * @effects source_gate_pending_ledgers_are_documented_and_alive
+     *
+     * @return void 반환값 없음
      */
     public function test_pending_ledgers_are_documented_and_alive(): void
     {
@@ -801,6 +834,10 @@ class SourceGateHygieneTest extends TestCase
      *
      * 실 모집단이 준수 상태(또는 대기 목록과 일치)라 위 두 검사는 판정이 무엇이든 통과하도록
      * 망가져도 초록을 유지한다 — 그 상태는 「검사했으나 통과」가 아니라 「아무것도 보지 않음」이다.
+     *
+     * @effects source_gate_detectors_discriminate_synthetic_inputs
+     *
+     * @return void 반환값 없음
      */
     public function test_detectors_actually_discriminate(): void
     {

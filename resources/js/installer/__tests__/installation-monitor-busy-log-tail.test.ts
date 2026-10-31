@@ -89,6 +89,8 @@ function collector() {
 }
 
 describe('StepwiseMonitor — busy 구간의 진행 기록', () => {
+  // @scenario installation_mode=stepwise, progress_log_volume=large
+  // @effects stepwise_busy_response_delivers_missed_log_lines, stepwise_log_offset_follows_the_server_total
   it('busy 응답이 실어 준 못 본 줄을 화면에 넘긴다', async () => {
     const { sent } = stubFetch([
       {
@@ -135,6 +137,8 @@ describe('StepwiseMonitor — busy 구간의 진행 기록', () => {
     expect(sent[1].log_offset, '서버가 알려 준 총 줄 수로 오프셋을 갱신하지 않았다').toBe(7);
   });
 
+  // @scenario installation_mode=stepwise
+  // @effects stepwise_busy_response_delivers_missed_log_lines
   it('busy 가 로그를 싣지 않아도 진행은 그대로다 (하위호환)', async () => {
     stubFetch([
       {

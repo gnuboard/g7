@@ -34,6 +34,8 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 테스트 초기화 - SitemapGenerator 인스턴스와 의존성 목(Mock)을 준비합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -66,6 +68,8 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 테스트 종료 - Mockery 리소스를 정리합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -80,6 +84,7 @@ class SitemapGeneratorTest extends TestCase
      * @param  SitemapGenerator  $generator  대상 인스턴스
      * @param  array  $routes  주입할 정적 라우트 배열 (TemplateService::getRoutesDataWithModules 응답의 routes 형식)
      * @param  array|null  $activeTemplate  활성 템플릿 배열 (null이면 정적 라우트 수집 스킵)
+     * @return void 반환값 없음
      */
     private function mockTemplateServiceForStaticRoutes(array $routes, ?array $activeTemplate = null): void
     {
@@ -93,6 +98,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 기여자를 등록하면 getContributors()에 포함되는지 확인합니다.
+     *
+     * @effects sitemap_contributors_register_by_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_register_contributor_adds_to_list(): void
     {
@@ -110,6 +119,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 동일 식별자로 기여자를 중복 등록하면 마지막 것만 유지되는지 확인합니다.
+     *
+     * @effects sitemap_contributors_register_by_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_register_contributor_overwrites_same_identifier(): void
     {
@@ -132,6 +145,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * generate()가 기여자 URL을 포함한 유효한 sitemap XML을 반환하는지 확인합니다.
+     *
+     * @effects sitemap_xml_is_generated_from_contributor_urls
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_returns_valid_xml(): void
     {
@@ -168,6 +185,10 @@ class SitemapGeneratorTest extends TestCase
      * generate()가 정적 라우트를 올바르게 수집하는지 확인합니다.
      *
      * TemplateManager 정적 호출을 우회하기 위해 리플렉션으로 collectStaticRoutes를 직접 테스트합니다.
+     *
+     * @effects static_routes_are_collected_without_private_or_dynamic_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_includes_static_routes(): void
     {
@@ -195,6 +216,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * auth_required 라우트가 제외되는지 확인합니다.
+     *
+     * @effects static_routes_are_collected_without_private_or_dynamic_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_excludes_auth_required_routes(): void
     {
@@ -219,6 +244,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 동적 파라미터(:)가 포함된 라우트가 제외되는지 확인합니다.
+     *
+     * @effects static_routes_are_collected_without_private_or_dynamic_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_excludes_dynamic_routes(): void
     {
@@ -248,6 +277,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 템플릿 표현식({{}})이 포함된 라우트가 제외되는지 확인합니다.
+     *
+     * @effects static_routes_are_collected_without_private_or_dynamic_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_excludes_template_expression_routes(): void
     {
@@ -273,6 +306,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 기여자에서 예외 발생 시 다른 기여자의 URL이 정상 수집되고 로그가 기록되는지 확인합니다.
+     *
+     * @effects contributor_failure_does_not_stop_other_contributors
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_handles_contributor_exception_gracefully(): void
     {
@@ -318,6 +355,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 기여자의 url 키가 절대 경로 loc으로 변환되는지 확인합니다.
+     *
+     * @effects indexed_url_normalized_to_site_absolute_loc
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_converts_contributor_url_to_absolute_loc(): void
     {
@@ -352,6 +393,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 기여자와 정적 라우트가 모두 없을 때 빈 urlset XML을 반환하는지 확인합니다.
+     *
+     * @effects sitemap_xml_is_generated_from_contributor_urls
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_with_no_contributors_returns_empty_urlset(): void
     {
@@ -373,6 +418,12 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 다국어 지원 시 xmlns:xhtml 네임스페이스가 포함되는지 확인합니다.
+     *
+     * @scenario multilingual=on
+     *
+     * @effects multilingual_sitemap_emits_hreflang_alternates
+     *
+     * @return void 반환값 없음
      */
     public function test_multilingual_xml_includes_xhtml_namespace(): void
     {
@@ -394,6 +445,12 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 다국어 지원 시 각 로케일별 <url> 항목이 생성되는지 확인합니다.
+     *
+     * @scenario multilingual=on
+     *
+     * @effects multilingual_sitemap_emits_hreflang_alternates
+     *
+     * @return void 반환값 없음
      */
     public function test_multilingual_xml_generates_url_per_locale(): void
     {
@@ -423,6 +480,12 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 다국어 지원 시 xhtml:link hreflang alternate 태그가 포함되는지 확인합니다.
+     *
+     * @scenario multilingual=on
+     *
+     * @effects multilingual_sitemap_emits_hreflang_alternates
+     *
+     * @return void 반환값 없음
      */
     public function test_multilingual_xml_includes_hreflang_alternates(): void
     {
@@ -462,6 +525,12 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 단일 로케일 시 기존 형식(xhtml 네임스페이스 없음)을 유지하는지 확인합니다.
+     *
+     * @scenario multilingual=off
+     *
+     * @effects single_locale_sitemap_keeps_the_standard_format
+     *
+     * @return void 반환값 없음
      */
     public function test_single_locale_uses_standard_xml_format(): void
     {
@@ -493,6 +562,12 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * renderUrlBlock()이 단일 언어 <url> 블록을 생성하는지 확인합니다.
+     *
+     * @scenario multilingual=off
+     *
+     * @effects single_locale_sitemap_keeps_the_standard_format
+     *
+     * @return void 반환값 없음
      */
     public function test_render_url_block_single_locale(): void
     {
@@ -511,6 +586,12 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * renderUrlBlock()이 다국어에서 로케일별 블록과 hreflang을 생성하는지 확인합니다.
+     *
+     * @scenario multilingual=on
+     *
+     * @effects multilingual_sitemap_emits_hreflang_alternates
+     *
+     * @return void 반환값 없음
      */
     public function test_render_url_block_multilingual(): void
     {
@@ -526,6 +607,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * XML 특수문자가 이스케이프되는지 확인합니다.
+     *
+     * @effects sitemap_url_block_escapes_xml_special_characters
+     *
+     * @return void 반환값 없음
      */
     public function test_render_url_block_escapes_xml_special_characters(): void
     {
@@ -538,6 +623,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * urlset 헤더/푸터가 로케일 수에 따라 분기되는지 확인합니다.
+     *
+     * @effects multilingual_sitemap_emits_hreflang_alternates
+     *
+     * @return void 반환값 없음
      */
     public function test_urlset_header_switches_on_multilingual(): void
     {
@@ -554,6 +643,10 @@ class SitemapGeneratorTest extends TestCase
     /**
      * generateToWriter()가 기여자 URL을 writer 에 한 건씩 전달하고
      * 상대 url 을 절대 loc 으로 변환하는지 확인합니다.
+     *
+     * @effects sitemap_contributors_are_streamed_one_at_a_time
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_to_writer_streams_entries_without_cross_merge(): void
     {
@@ -600,6 +693,10 @@ class SitemapGeneratorTest extends TestCase
      *
      * 모든 기여자의 URL 을 배열로 모은 뒤 한 번에 쓰는 구현이라면, 두 번째 기여자의
      * getUrls() 가 호출되는 시점에 writer 는 아직 비어 있다. 이 테스트는 그 구현을 걸러낸다.
+     *
+     * @effects sitemap_contributors_are_streamed_one_at_a_time
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_to_writer_drains_each_contributor_before_calling_the_next(): void
     {
@@ -637,6 +734,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 한 기여자가 실패해도 다른 기여자의 URL 이 계속 기록되는지 확인합니다.
+     *
+     * @effects contributor_failure_does_not_stop_other_contributors
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_to_writer_isolates_contributor_failure(): void
     {
@@ -670,6 +771,10 @@ class SitemapGeneratorTest extends TestCase
      *
      * getUrls() 를 호출하면 예외를 던지는 기여자를 사용해, generateToWriter 가
      * 지연 경로(getUrlsLazy)만 탄다는 것을 증명한다.
+     *
+     * @effects sitemap_contributors_are_streamed_one_at_a_time
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_to_writer_uses_lazy_path_for_capable_contributor(): void
     {
@@ -677,16 +782,31 @@ class SitemapGeneratorTest extends TestCase
 
         $contributor = new class extends AbstractSitemapContributor
         {
+            /**
+             * 지연 경로 시험용 기여자의 식별자를 돌려준다.
+             *
+             * @return string 기여자 식별자
+             */
             public function getIdentifier(): string
             {
                 return 'lazy-capable';
             }
 
+            /**
+             * 지연 경로에서 불리면 안 되는 일괄 수집 경로로, 불리는 순간 예외를 던진다.
+             *
+             * @return array 반환하지 않음(항상 예외)
+             */
             public function getUrls(): array
             {
                 throw new \LogicException('getUrls() 는 지연 경로에서 호출되면 안 됩니다.');
             }
 
+            /**
+             * URL 항목 두 개를 하나씩 내보내는 지연 수집 경로다.
+             *
+             * @return iterable 지연 생성되는 URL 항목
+             */
             public function getUrlsLazy(): iterable
             {
                 yield ['url' => '/lazy/1'];
@@ -706,6 +826,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * getUrlsLazy 가 없는 raw 기여자는 기존 getUrls() 경로로 소진된다 (하위호환).
+     *
+     * @effects sitemap_contributors_are_streamed_one_at_a_time
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_to_writer_uses_get_urls_for_raw_contributor(): void
     {
@@ -797,6 +921,10 @@ class SitemapGeneratorTest extends TestCase
      * 요청이 없어 `app.url` 을, 웹 요청이 만들면 그 요청의 호스트를 실어 **같은 사이트의
      * 사이트맵이 생성 경로에 따라 다른 오리진**을 가졌다. 페이지의 정본 주소(canonical)와
      * 같은 단일 지점(`AssetUrl::siteAbsolute()`)으로 통일한다 (15차 G3 라운드 W4-1).
+     *
+     * @effects sitemap_loc_origin_follows_configured_site_url
+     *
+     * @return void 반환값 없음
      */
     public function test_loc_는_요청_호스트가_아니라_설정_오리진을_싣는다(): void
     {
@@ -878,6 +1006,8 @@ class SpySitemapWriter extends SitemapWriter
 
     /**
      * {@inheritDoc}
+     *
+     * @return void 반환값 없음
      */
     public function open(): void
     {
@@ -886,6 +1016,8 @@ class SpySitemapWriter extends SitemapWriter
 
     /**
      * {@inheritDoc}
+     *
+     * @return void 반환값 없음
      */
     public function addUrl(array $entry): void
     {

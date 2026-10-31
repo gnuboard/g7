@@ -135,7 +135,11 @@ class GitIgnoreLeftoverContractTest extends TestCase
     }
 
     /**
+     * 잔여물을 만들 수 있는 모든 쓰기 프로브 경로가 .gitignore 로 무시되는지, git 이 없으면 .gitignore 해석으로 대신 확인한다.
+     *
      * @effects every_leftover_producer_prefix_is_registered_in_gitignore
+     *
+     * @return void 반환값 없음
      */
     public function test_every_write_probe_location_is_git_ignored(): void
     {
@@ -150,6 +154,8 @@ class GitIgnoreLeftoverContractTest extends TestCase
     }
 
     /**
+     * 이 환경에서 저장소 루트로 git 을 띄울 수 있는지 판정한다.
+     *
      * @param  string  $root  저장소 루트
      * @return bool `git check-ignore` 를 띄울 수 있는가
      */
@@ -171,6 +177,8 @@ class GitIgnoreLeftoverContractTest extends TestCase
     }
 
     /**
+     * 후보 경로마다 git check-ignore 를 돌려 무시되지 않는 경로만 모은다.
+     *
      * @param  string  $root  저장소 루트
      * @param  list<string>  $candidates  대조 경로
      * @return list<string> 무시되지 않는 경로

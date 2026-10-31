@@ -36,7 +36,11 @@ class ProductOptionResourceDimensionsTest extends ModuleTestCase
     }
 
     /**
+     * 옵션 리소스가 무게와 부피를 저장 단위(g, cm3) 값 그대로 직렬화하는지 확인한다.
+     *
      * @effects product_option_dimensions_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_it_serializes_weight_and_volume_in_storage_units(): void
     {
@@ -49,6 +53,14 @@ class ProductOptionResourceDimensionsTest extends ModuleTestCase
         $this->assertEquals(1200.0, $data['volume']);
     }
 
+    /**
+     * 무게와 부피가 null 이면 0 으로 바꾸지 않고 null 로 내보내 미입력과 0 을 구분하는지 확인한다.
+     *
+     * @scenario unit_source=g
+     * @effects product_option_dimensions_round_trip
+     *
+     * @return void 반환값 없음
+     */
     public function test_it_preserves_null_instead_of_coercing_to_zero(): void
     {
         // null 을 0 으로 내리면 "미입력"과 "무게 0" 이 구분되지 않는다
@@ -59,7 +71,11 @@ class ProductOptionResourceDimensionsTest extends ModuleTestCase
     }
 
     /**
+     * 소수 무게와 부피가 정밀도를 잃지 않고 직렬화되는지 확인한다.
+     *
      * @effects product_option_dimensions_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_it_preserves_decimal_precision(): void
     {

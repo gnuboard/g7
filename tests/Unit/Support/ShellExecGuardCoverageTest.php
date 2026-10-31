@@ -105,6 +105,12 @@ class ShellExecGuardCoverageTest extends TestCase
         return $found;
     }
 
+    /**
+     * 저장소 상대 경로의 파일이 있는지 확인하고 주석을 지운 원문을 돌려준다.
+     *
+     * @param  string  $relative  저장소 루트 기준 파일 경로
+     * @return string 주석을 지운 소스
+     */
     private function source(string $relative): string
     {
         $path = dirname(__DIR__, 3).'/'.$relative;
@@ -115,7 +121,11 @@ class ShellExecGuardCoverageTest extends TestCase
     }
 
     /**
+     * 스캔으로 찾은 스폰 표면의 모든 스폰 프리미티브 호출이 그것을 감싼 함수 안에서 사용 가능 판정 가드를 거치는지 확인한다.
+     *
      * @effects settings_system_info_shell_calls_are_guarded
+     *
+     * @return void 반환값 없음
      */
     public function test_every_shell_call_sits_behind_an_availability_guard(): void
     {
@@ -318,6 +328,10 @@ class ShellExecGuardCoverageTest extends TestCase
      * 실 소스가 준수 상태라 위 검사의 「무가드 0」은 판정이 무엇이든 통과시키게 망가져도
      * 유지된다. 실측한 두 변이(조건 반전·가드 밖 호출)를 그대로 픽스처로 고정한다 —
      * 종전 판정(`str_contains($body, 'hasFunction(')`)은 셋 다 통과시켰다.
+     *
+     * @effects settings_system_info_shell_calls_are_guarded
+     *
+     * @return void 반환값 없음
      */
     public function test_guard_judgment_actually_discriminates(): void
     {
@@ -359,6 +373,8 @@ class ShellExecGuardCoverageTest extends TestCase
      * 설정 화면의 두 지점이 모집단에서 빠지지 않는다 — 매니페스트 축이 그 둘을 요구한다.
      *
      * @effects settings_system_info_shell_calls_are_guarded
+     *
+     * @return void 반환값 없음
      */
     public function test_settings_surfaces_are_in_the_population(): void
     {

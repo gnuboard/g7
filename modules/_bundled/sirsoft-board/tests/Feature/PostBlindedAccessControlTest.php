@@ -59,6 +59,8 @@ class PostBlindedAccessControlTest extends BoardTestCase
 
     /**
      * 테스트 사전 준비를 수행합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -87,6 +89,8 @@ class PostBlindedAccessControlTest extends BoardTestCase
 
     /**
      * 게시판 관리자(manager) 역할을 생성하고 managerUser 에 부여합니다.
+     *
+     * @return void 반환값 없음
      */
     private function setupManagerRole(): void
     {
@@ -149,6 +153,8 @@ class PostBlindedAccessControlTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects published_content_visible_to_all
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function published_post_content_is_visible_to_guest(): void
@@ -171,6 +177,8 @@ class PostBlindedAccessControlTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects blinded_content_null_for_guest
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function blinded_post_content_is_hidden_from_guest(): void
@@ -193,6 +201,8 @@ class PostBlindedAccessControlTest extends BoardTestCase
      * @scenario viewer=other_member
      *
      * @effects blinded_content_null_for_other_member
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function blinded_post_content_is_hidden_from_other_member(): void
@@ -215,6 +225,8 @@ class PostBlindedAccessControlTest extends BoardTestCase
      * @scenario viewer=author
      *
      * @effects blinded_content_visible_to_author
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function blinded_post_content_is_visible_to_author(): void
@@ -237,6 +249,8 @@ class PostBlindedAccessControlTest extends BoardTestCase
      * @scenario viewer=manager
      *
      * @effects blinded_content_visible_to_manager
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function blinded_post_content_is_visible_to_manager(): void
@@ -259,6 +273,8 @@ class PostBlindedAccessControlTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects blinded_guest_authored_content_null_for_guest
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function blinded_guest_post_content_is_hidden_from_guest(): void
@@ -282,6 +298,8 @@ class PostBlindedAccessControlTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects blinded_post_preview_empty_in_list
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function blinded_post_preview_is_empty_in_list(): void
@@ -319,6 +337,8 @@ class PostBlindedAccessControlTest extends BoardTestCase
      * @scenario viewer=guest, viewer=other_member, viewer=author, viewer=manager
      *
      * @effects blinded_comment_content_matrix
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function blinded_comment_content_access_matrix(): void

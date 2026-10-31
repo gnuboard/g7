@@ -30,6 +30,11 @@ class CommentListDeferredJoinTest extends BoardTestCase
     /** 댓글 작성자로 사용할 사용자 ID */
     private int $userId = 4242;
 
+    /**
+     * 게시판을 준비하고 시험 대상 댓글 저장소를 컨테이너에서 꺼내 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,7 +42,11 @@ class CommentListDeferredJoinTest extends BoardTestCase
         $this->repository = app(CommentRepository::class);
     }
 
-    /** 쿼리 로그 수집을 시작합니다. */
+    /**
+     * 쿼리 로그 수집을 시작합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function startCapture(): void
     {
         $this->queries = [];
@@ -71,7 +80,13 @@ class CommentListDeferredJoinTest extends BoardTestCase
     }
 
     /**
-     * @effects soft_deleted_excluded
+     * 소프트 삭제된 댓글이 내 댓글 목록과 총 건수에서 빠지는지 확인한다.
+     *
+     * @scenario soft_delete=default_excluded, filter=scoped
+     *
+     * @effects soft_deleted_rows_stay_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_soft_deleted_comments_are_excluded(): void
     {
@@ -88,7 +103,13 @@ class CommentListDeferredJoinTest extends BoardTestCase
     }
 
     /**
-     * @effects soft_deleted_excluded
+     * 삭제된 게시글에 달린 내 댓글이 목록과 총 건수 양쪽에서 빠지는지 확인한다.
+     *
+     * @scenario soft_delete=default_excluded, filter=scoped
+     *
+     * @effects comments_of_soft_deleted_parents_stay_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_comments_of_soft_deleted_posts_are_excluded(): void
     {
@@ -105,6 +126,15 @@ class CommentListDeferredJoinTest extends BoardTestCase
         $this->assertSame(1, $result->total(), '삭제된 글의 댓글은 총 건수에서도 빠져야 한다');
     }
 
+    /**
+     * 다른 사용자의 댓글이 내 댓글 목록에 섞이지 않는지 확인한다.
+     *
+     * @scenario filter=scoped
+     *
+     * @effects self_scoped_list_returns_only_own_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_other_users_comments_are_not_included(): void
     {
         $postId = $this->createTestPost();
@@ -117,7 +147,13 @@ class CommentListDeferredJoinTest extends BoardTestCase
     }
 
     /**
-     * @effects page_boundary_stable
+     * 15건을 10건씩 나눴을 때 1쪽과 2쪽이 겹치거나 빠지는 행이 없고 마지막 쪽 정보가 맞는지 확인한다.
+     *
+     * @scenario page_position=last, total_source=counted
+     *
+     * @effects pages_do_not_overlap_or_drop_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_pages_do_not_overlap_and_last_page_is_reported(): void
     {
@@ -152,6 +188,15 @@ class CommentListDeferredJoinTest extends BoardTestCase
         $this->assertCount(15, array_unique(array_merge($firstIds, $secondIds)), '누락된 행이 없어야 한다');
     }
 
+    /**
+     * 검색어 조건이 걸리면 총 건수와 항목 수가 일치하는 댓글만 세는지 확인한다.
+     *
+     * @scenario filter=search, total_source=counted
+     *
+     * @effects filtered_query_total_reflects_filters
+     *
+     * @return void 반환값 없음
+     */
     public function test_search_filter_counts_only_matching_rows(): void
     {
         $postId = $this->createTestPost();
@@ -166,7 +211,13 @@ class CommentListDeferredJoinTest extends BoardTestCase
     }
 
     /**
-     * @effects cached_total_skips_count
+     * 캐시된 총 건수를 넘기면 COUNT 쿼리를 실행하지 않고 그 값을 total 로 쓰는지 확인한다.
+     *
+     * @scenario total_source=injected_cache
+     *
+     * @effects injected_total_skips_count_query
+     *
+     * @return void 반환값 없음
      */
     public function test_cached_total_skips_the_count_query(): void
     {
@@ -180,6 +231,15 @@ class CommentListDeferredJoinTest extends BoardTestCase
         $this->assertSame(999, $result->total());
     }
 
+    /**
+     * OFFSET 으로 ID 집합을 구하는 inner 쿼리가 댓글 본문 컬럼을 읽지 않는지 확인한다.
+     *
+     * @scenario columns=pruned
+     *
+     * @effects inner_excludes_wide_columns_from_offset_scan
+     *
+     * @return void 반환값 없음
+     */
     public function test_offset_scan_does_not_read_comment_content(): void
     {
         $postId = $this->createTestPost();

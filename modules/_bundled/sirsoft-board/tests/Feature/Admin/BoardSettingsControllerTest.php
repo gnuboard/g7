@@ -19,7 +19,7 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  *
  * BoardSettingsController의 CRUD + bulkApply + clearCache를 검증합니다.
  *
- * @effects permission_failure_rolls_back_all_boards,
+ * 효과 요약(마커 아님 — 평문): permission_failure_rolls_back_all_boards,
  *   permission_failure_response_has_rolled_back_and_board_name,
  *   column_failure_rolls_back_all_changes,
  *   column_failure_response_has_rolled_back_and_null_board
@@ -910,9 +910,6 @@ class BoardSettingsControllerTest extends ModuleTestCase
      *
      * @return void 반환값 없음
      */
-    /**
-     * @effects permission_failure_rolls_back_all_boards, permission_failure_response_has_rolled_back_and_board_name
-     */
     public function test_bulk_apply_rolls_back_all_when_permission_fails_midway(): void
     {
         $boards = [];
@@ -971,9 +968,6 @@ class BoardSettingsControllerTest extends ModuleTestCase
      * @effects bulk_apply_rolls_back_with_generic_when_column_update_fails, column_failure_rolls_back_all_changes, column_failure_response_has_rolled_back_and_null_board
      *
      * @return void 반환값 없음
-     */
-    /**
-     * @effects column_failure_rolls_back_all_changes, column_failure_response_has_rolled_back_and_null_board
      */
     public function test_bulk_apply_rolls_back_with_generic_when_column_update_fails(): void
     {

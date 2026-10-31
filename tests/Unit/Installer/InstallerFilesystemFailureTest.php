@@ -24,7 +24,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: enumerate ok·denied / entry file·dir·symlink / removal all·partial
  *
- * @effects delete_directory_reports_enumeration_failure, delete_directory_does_not_follow_symlinks, delete_directory_reports_partial_failure
+ * 효과 요약(마커 아님 — 평문): 열거 실패 보고, 심볼릭 링크 비추적, 부분 삭제 실패 보고. 표식은 각 테스트 메서드에 있다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -39,6 +39,13 @@ class InstallerFilesystemFailureTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 클래스 공용 임시 BASE_PATH 를 한 번만 정하고 설치기 함수 파일들을 불러온다.
+     *
+     * 이미 정의된 BASE_PATH 가 시스템 임시 폴더 밖이면 실제 파일을 지우지 않도록 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function boot(): void
     {
         if (self::$booted) {
@@ -80,6 +87,11 @@ class InstallerFilesystemFailureTest extends TestCase
         require_once $root.'/public/install/api/rollback-functions.php';
     }
 
+    /**
+     * 공용 부팅을 거친 뒤 건너뛸 사유가 있으면 건너뛰고, 진행 기록을 버퍼 송출기로 받는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -93,6 +105,12 @@ class InstallerFilesystemFailureTest extends TestCase
         setProgressEmitter(new \BufferEmitter);
     }
 
+    /**
+     * 임시 BASE_PATH 의 설치기 저장 폴더 아래에 이름이 겹치지 않는 작업 폴더를 만든다.
+     *
+     * @param  string  $name  폴더 이름 앞부분
+     * @return string 만든 작업 폴더 경로
+     */
     private function scratch(string $name): string
     {
         $path = self::$base.'/storage/installer/'.$name.'-'.bin2hex(random_bytes(3));
@@ -108,6 +126,12 @@ class InstallerFilesystemFailureTest extends TestCase
      * `is_dir()` 이 참인 경로가 아니면 함수는 앞단에서 false 를 돌려주므로, 열거 실패
      * 자체는 존재하는 디렉토리에서만 재현된다 — 그래서 여기서는 「false 를 순회하지
      * 않는다」를 소스가 아니라 **행위**로 확인할 수 있는 최소 형태만 고정한다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_reports_enumeration_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_directory_returns_false_for_a_non_directory(): void
     {
@@ -121,6 +145,12 @@ class InstallerFilesystemFailureTest extends TestCase
 
     /**
      * F3 — 심볼릭 링크된 디렉토리의 **대상**은 건드리지 않는다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_does_not_follow_symlinks
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_directory_does_not_follow_symlinked_directories(): void
     {
@@ -151,6 +181,12 @@ class InstallerFilesystemFailureTest extends TestCase
      * 위 행위 검사는 Windows 에서 심볼릭 링크 생성 권한이 없으면 skip 된다. 그 환경에서
      * 이 축이 통째로 사각이 되지 않도록, 두 삭제 헬퍼가 **열거 실패 검사**와 **링크 가드**를
      * 갖는지는 소스로도 고정한다. 두 헬퍼에 같은 규칙이 적용됐는지(형제 대칭)도 함께 본다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_reports_enumeration_failure, delete_directory_does_not_follow_symlinks
+     *
+     * @return void 반환값 없음
      */
     public function test_both_delete_helpers_guard_enumeration_and_symlinks(): void
     {
@@ -185,6 +221,12 @@ class InstallerFilesystemFailureTest extends TestCase
      *
      * 보존 대상(`.gitkeep`)이 있으면 디렉토리가 남는 것은 **의도된 동작**이므로 여전히
      * 성공이다. 그 구분이 유지되는지도 함께 본다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_reports_partial_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_directory_keeps_reporting_success_for_preserved_files(): void
     {
@@ -205,6 +247,12 @@ class InstallerFilesystemFailureTest extends TestCase
 
     /**
      * F5 — 정상 경로는 그대로 성공이다 (면제가 넓어지지 않았다).
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_reports_partial_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_directory_still_succeeds_on_a_clean_tree(): void
     {

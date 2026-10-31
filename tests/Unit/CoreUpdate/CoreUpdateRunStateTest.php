@@ -25,6 +25,11 @@ class CoreUpdateRunStateTest extends TestCase
 
     private string $path;
 
+    /**
+     * 테스트 전용 상태 디렉토리를 만들고 남아 있던 웹 실행 상태 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +43,11 @@ class CoreUpdateRunStateTest extends TestCase
         }
     }
 
+    /**
+     * 테스트 전용 상태 디렉토리를 통째로 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->directory);
@@ -61,6 +71,8 @@ class CoreUpdateRunStateTest extends TestCase
      * @scenario run_state=running, concurrency=single
      *
      * @effects progress_survives_a_new_state_instance
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_progress_survives_a_new_state_instance(): void
@@ -96,6 +108,8 @@ class CoreUpdateRunStateTest extends TestCase
      * @scenario run_state=running, source=manual_zip, bundled_extensions=off, rebuild_search_index=on, layout_strategy=keep
      *
      * @effects options_round_trip_through_the_state_file
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_options_round_trip_through_the_state_file(): void
@@ -130,6 +144,8 @@ class CoreUpdateRunStateTest extends TestCase
      * @scenario run_state=running, concurrency=duplicate_request
      *
      * @effects a_second_request_cannot_take_a_live_claim
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_a_second_request_cannot_take_a_live_claim(): void
@@ -155,6 +171,8 @@ class CoreUpdateRunStateTest extends TestCase
      * @scenario run_state=running, concurrency=stale_claim
      *
      * @effects a_stale_claim_is_reclaimed
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_a_stale_claim_is_reclaimed(): void
@@ -181,6 +199,8 @@ class CoreUpdateRunStateTest extends TestCase
      * @scenario run_state=running, concurrency=stale_claim
      *
      * @effects an_unreadable_heartbeat_is_treated_as_held
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_an_unreadable_heartbeat_is_treated_as_held(): void
@@ -202,6 +222,8 @@ class CoreUpdateRunStateTest extends TestCase
      * @scenario run_state=running, concurrency=single
      *
      * @effects apply_list_round_trips_through_a_sidecar_file
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_apply_list_round_trips_through_a_sidecar_file(): void
@@ -224,6 +246,8 @@ class CoreUpdateRunStateTest extends TestCase
      * @scenario run_state=finished, concurrency=single
      *
      * @effects clear_removes_both_the_state_and_the_sidecar
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_clear_removes_both_the_state_and_the_sidecar(): void
@@ -249,6 +273,8 @@ class CoreUpdateRunStateTest extends TestCase
      * @scenario run_state=running, concurrency=single
      *
      * @effects a_new_run_does_not_inherit_the_previous_apply_list
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_a_new_run_does_not_inherit_the_previous_apply_list(): void
@@ -271,6 +297,8 @@ class CoreUpdateRunStateTest extends TestCase
      * @scenario run_state=running, concurrency=single
      *
      * @effects logs_are_capped
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_logs_are_capped(): void

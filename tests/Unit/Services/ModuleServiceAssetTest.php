@@ -21,6 +21,11 @@ class ModuleServiceAssetTest extends TestCase
 
     private string $testModulePath;
 
+    /**
+     * 모듈 서비스를 꺼내고 테스트용 모듈의 dist/js 디렉토리를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,6 +38,11 @@ class ModuleServiceAssetTest extends TestCase
         }
     }
 
+    /**
+     * 테스트용 모듈 디렉토리를 통째로 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트용 파일 및 디렉토리 정리
@@ -44,6 +54,9 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * 디렉토리 재귀 삭제 헬퍼
+     *
+     * @param  string  $dir  지울 디렉토리 또는 파일 경로
+     * @return bool 삭제에 성공했거나 이미 없으면 true
      */
     private function deleteDirectory(string $dir): bool
     {
@@ -70,6 +83,12 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * 존재하는 파일 경로 반환 성공 테스트
+     *
+     * @scenario case=serve
+     *
+     * @effects module_asset_existing_file_resolves_to_its_path
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_success_for_existing_file(): void
     {
@@ -93,6 +112,12 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * JS 파일 MIME 타입 테스트
+     *
+     * @scenario case=mime
+     *
+     * @effects module_asset_mime_type_follows_the_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_correct_mime_type_for_js(): void
     {
@@ -115,6 +140,12 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * CSS 파일 MIME 타입 테스트
+     *
+     * @scenario case=mime
+     *
+     * @effects module_asset_mime_type_follows_the_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_correct_mime_type_for_css(): void
     {
@@ -141,6 +172,12 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * JSON 파일 MIME 타입 테스트
+     *
+     * @scenario case=mime
+     *
+     * @effects module_asset_mime_type_follows_the_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_correct_mime_type_for_json(): void
     {
@@ -178,6 +215,12 @@ class ModuleServiceAssetTest extends TestCase
      * 로컬 환경에서 표가 `application/json` 을 돌려주는 것은 의도다 — 그래야 devtools 가
      * 소스맵을 읽어 그 완화가 목적을 달성한다. 그 축은 세 통로 공유 trait 이 소유하고
      * `ExtensionAssetServiceContainmentParityTest` 가 고정한다.
+     *
+     * @scenario case=file_type
+     *
+     * @effects module_source_map_is_not_served_outside_local
+     *
+     * @return void 반환값 없음
      */
     public function test_source_map_is_not_served_outside_local(): void
     {
@@ -204,6 +247,12 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * 이미지 MIME 타입 테스트 (PNG)
+     *
+     * @scenario case=mime
+     *
+     * @effects module_asset_mime_type_follows_the_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_correct_mime_type_for_images(): void
     {
@@ -231,6 +280,12 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * 폰트 MIME 타입 테스트 (WOFF2)
+     *
+     * @scenario case=mime
+     *
+     * @effects module_asset_mime_type_follows_the_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_correct_mime_type_for_fonts(): void
     {
@@ -257,6 +312,12 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * 존재하지 않는 모듈 오류 테스트
+     *
+     * @scenario case=missing
+     *
+     * @effects module_asset_returns_module_not_found_for_missing_or_inactive_module
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_error_for_nonexistent_module(): void
     {
@@ -270,6 +331,12 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * 비활성 모듈 오류 테스트
+     *
+     * @scenario case=missing
+     *
+     * @effects module_asset_returns_module_not_found_for_missing_or_inactive_module
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_error_for_inactive_module(): void
     {
@@ -289,6 +356,12 @@ class ModuleServiceAssetTest extends TestCase
 
     /**
      * 존재하지 않는 파일 오류 테스트
+     *
+     * @scenario case=missing
+     *
+     * @effects module_asset_returns_file_not_found_for_missing_file
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_error_for_nonexistent_file(): void
     {

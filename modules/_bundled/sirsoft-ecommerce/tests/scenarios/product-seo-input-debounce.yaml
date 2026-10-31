@@ -38,6 +38,17 @@ effects:
   - counter_preview_localized            # 글자수 카운터·미리보기가 $localized 로 현재 로케일 추출
   - seo_meta_prefers_meta_then_name      # SEO 렌더 meta 우선/name 폴백 (shop/show.g7.html + seoStructuredDataMeta)
   - bot_meta_localized_per_locale        # 봇 접근 시 title/description 이 locale 별로 분기 출력
+  # 모듈 SEO 선언(seoOgDefaults, seoStructuredData, 메타 선언) 회귀 — EcommerceModuleSeoTest
+  - seo_og_defaults_handle_multilingual_array        # 다국어 JSON 배열 name/description 에서도 예외 없이 현재 로케일 값 추출
+  - seo_og_image_is_absolute_url                     # 상대 경로 썸네일이 og:image 에서 절대 URL 로 방출
+  - seo_image_mount_prefix_applied_once              # 하위 폴더 마운트에서 og:image, schema.image 에 접두사가 한 번만 붙음
+  - seo_image_unchanged_without_mount_prefix         # 접두사 없는 표준 배치에서는 종전 값과 동일
+  - seo_image_leaves_non_site_paths_alone            # 프로토콜 상대, 상대 경로, data: URI 는 그대로 두고 리터럴 사이트 경로에만 접두사를 채움
+  - structured_data_handles_multilingual_array       # 구조화 데이터도 다국어 배열 안전 처리
+  - og_default_meta_declares_data_path_and_label     # seoOgDefaultMeta 가 데이터 경로와 다국어 라벨을 선언
+  - structured_data_meta_declares_dotted_paths       # seoStructuredDataMeta 가 점 경로 키별 데이터 경로를 선언
+  - seo_meta_keys_subset_of_declaration              # 메타가 선언한 키는 운영 선언이 산출할 수 있는 키의 부분집합
+  - structured_availability_follows_sales_status     # offers.availability 가 sales_status 로 판정 (없는 in_stock 키 참조 금지)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductServiceSeoSyncTest.php

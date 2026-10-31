@@ -70,6 +70,24 @@ effects:
   - extension_overlay_save_reassembles_nodes_into_their_original_injection
   - extension_overlay_save_refuses_when_a_node_cannot_be_mapped_to_its_injection
   - overlay_injected_nodes_carry_injection_index_in_source_meta
+  # 2026-10-31 issue609 테스트 매핑 부채 정리: 레이아웃 편집기 단위 테스트가 실제로 재는 효과 (메서드 단위 마킹)
+  - save_conflict_reads_versions_from_response_helper_errors_payload                 # 확장 저장과 inject_props 교차 저장의 409 가 errors 아래 버전을 읽는다
+  - extension_edit_locks_host_nodes_before_data_bound_classification                 # 확장 편집에서 호스트 본체 노드는 바인딩이 있어도 data_bound 전에 잠긴다
+  - current_extension_fragment_bound_nodes_stay_data_bound_editable                  # 편집 중 확장 조각의 바인딩 노드는 data_bound 로 편집이 열린다
+  - base_edit_treats_base_body_nodes_as_editable_not_base_locked                     # base 편집에서 base 본체 노드는 base 잠금이 아니라 편집 대상이다
+  - base_edit_locks_injected_extension_nodes                                         # base 편집에서 주입된 확장 노드는 extension 잠금이다
+  - extension_edit_route_path_yields_extension_id                                    # __extension__/{id} 경로에서만 확장 id 를 뽑고 다른 형식은 null 이다
+  - extension_point_reassembly_replaces_components_keeping_other_keys_without_meta   # extension_point 재조립이 components 만 바꾸고 다른 키는 보존하며 합성 메타를 뺀다
+  - host_merge_extracts_only_current_extension_entry_nodes                           # 호스트 트리에서 현재 확장 진입점 노드만 모은다
+  - host_merge_replaces_current_extension_run_with_edited_fragment                   # 호스트 안 현재 확장 노드 묶음을 편집 조각으로 바꾸고 확장 메타를 붙인다
+  - extension_edit_renders_host_tree_as_is_with_source_meta                          # 확장 편집 캔버스가 with_source_meta 호스트 트리를 치환 없이 그대로 쓴다
+  - extension_edit_without_host_injection_reports_no_injection                       # 호스트에 그 확장 주입 노드가 없으면 no-injection 으로 알리고 조각을 덧붙이지 않는다
+  - extension_edit_appends_injected_modal_open_for_display                           # 주입이 모달 안에만 있으면 그 모달을 isOpen 사본으로 덧붙여 편집 가능하게 한다
+  - extension_edit_preserves_host_data_sources_in_host_raw                           # 호스트 data_sources 를 hostRaw 에 보존해 바인딩 샘플 해석에 쓴다
+  - extension_save_conflict_returns_concurrent_modification                          # 확장 저장 409 가 concurrent_modification 과 최신 버전을 돌려준다
+  - inject_props_cross_save_reports_injection_not_found_without_put                  # 대상 inject_props injection 이 없으면 injection_not_found 로 끝나고 PUT 하지 않는다
+  - inject_props_cross_save_409_returns_conflict_versions                            # inject_props 교차 저장 409 가 conflict 와 버전을 돌려준다
+  - inject_props_cross_save_404_returns_not_found                                    # 확장 행이 없으면 inject_props 교차 저장이 not_found 를 돌려준다
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useRouteTree.test.ts

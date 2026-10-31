@@ -21,6 +21,11 @@ class CoreUpdateContextTest extends TestCase
     /** @var array<int, string> 원래 argv */
     private array $originalArgv = [];
 
+    /**
+     * 업데이트 진행 플래그와 argv 의 원래 값을 기억한 뒤 플래그를 지우고 argv 를 업데이트와 무관한 명령으로 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,6 +38,11 @@ class CoreUpdateContextTest extends TestCase
         $_SERVER['argv'] = ['artisan', 'inspire'];
     }
 
+    /**
+     * 업데이트 진행 플래그와 argv 를 원래 값으로 되돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if ($this->originalFlag === null) {
@@ -52,6 +62,8 @@ class CoreUpdateContextTest extends TestCase
      * 플래그도 업데이트 argv 도 없으면 트리 밖이다.
      *
      * @effects CoreUpdateContext_isInProgress_detects_env_flag_or_update_argv
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 플래그와_argv_가_모두_없으면_트리_밖이다(): void
@@ -64,6 +76,8 @@ class CoreUpdateContextTest extends TestCase
      * `$_ENV` 채널만으로도 감지한다.
      *
      * @effects CoreUpdateContext_isInProgress_detects_env_flag_or_update_argv, CoreUpdateContext_env_flag_is_honored_regardless_of_sapi
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function env_배열_채널의_플래그를_감지한다(): void
@@ -78,6 +92,8 @@ class CoreUpdateContextTest extends TestCase
      * `$_SERVER` 채널만으로도 감지한다 (`variables_order` 에 `E` 가 없으면 `$_ENV` 가 빈다).
      *
      * @effects CoreUpdateContext_isInProgress_detects_env_flag_or_update_argv, CoreUpdateContext_env_flag_is_honored_regardless_of_sapi
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function server_배열_채널의_플래그를_감지한다(): void
@@ -92,6 +108,8 @@ class CoreUpdateContextTest extends TestCase
      * putenv 채널만으로도 감지한다 (proc_open 이 자식에 넘긴 프로세스 환경 테이블).
      *
      * @effects CoreUpdateContext_isInProgress_detects_env_flag_or_update_argv, CoreUpdateContext_env_flag_is_honored_regardless_of_sapi
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function putenv_채널의_플래그를_감지한다(): void
@@ -106,6 +124,8 @@ class CoreUpdateContextTest extends TestCase
      * '1' 이 아닌 값은 플래그가 아니다.
      *
      * @effects CoreUpdateContext_isInProgress_detects_env_flag_or_update_argv
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 플래그_값이_1_이_아니면_트리_밖이다(): void
@@ -120,6 +140,8 @@ class CoreUpdateContextTest extends TestCase
      * 플래그가 전파되지 않은 극단 상황 대비 — argv 로도 판정한다.
      *
      * @effects CoreUpdateContext_isInProgress_detects_env_flag_or_update_argv
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 업데이트_커맨드_argv_로도_트리_안으로_판정한다(): void
@@ -140,6 +162,8 @@ class CoreUpdateContextTest extends TestCase
      * 자가 치유가 요청마다 매니페스트를 지운다.
      *
      * @effects CoreUpdateContext_ignores_argv_outside_console_sapi
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 웹_sapi_에서는_위조_가능한_argv_를_인정하지_않는다(): void
@@ -161,6 +185,8 @@ class CoreUpdateContextTest extends TestCase
      * 업데이트 흐름이 프로세스 안에서 세우는 채널이다.
      *
      * @effects CoreUpdateContext_env_flag_is_honored_regardless_of_sapi
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function env_플래그는_웹_sapi_에서도_인정한다(): void
@@ -178,6 +204,8 @@ class CoreUpdateContextTest extends TestCase
      * 오판되어 사전·사후 단계를 통째로 건너뛴다.
      *
      * @effects CoreUpdateContext_hasEnvFlag_ignores_argv
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function has_env_flag_는_argv_만으로는_참이_되지_않는다(): void
@@ -202,6 +230,8 @@ class CoreUpdateContextTest extends TestCase
      * 클래스에서 파생 — 손으로 적으면 항목이 하나 늘어도 통과한다).
      *
      * @effects bootstrap_self_heal_condition_mirrors_CoreUpdateContext
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function bootstrap_자가치유_조건이_이_판정기와_동형이다(): void
@@ -284,6 +314,8 @@ class CoreUpdateContextTest extends TestCase
 
     /**
      * 세 채널($_ENV/$_SERVER/putenv)에서 플래그를 제거합니다.
+     *
+     * @return void 반환값 없음
      */
     private function clearFlag(): void
     {

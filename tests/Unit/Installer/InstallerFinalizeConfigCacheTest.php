@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
  *
  * 커버 축: config_cache_state present·absent·undeletable / finalize_outcome cache_cleared·cache_kept_with_log
  *
- * @effects installer_finalize_clears_config_cache_after_env_merge, installer_finalize_survives_config_cache_delete_failure
+ * 효과 요약(마커 아님 — 평문): 환경 파일 병합 뒤 설정 캐시 삭제, 캐시 삭제 실패에도 마무리 완주. 표식은 각 테스트 메서드에 있다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -36,6 +36,13 @@ class InstallerFinalizeConfigCacheTest extends TestCase
 {
     private string $root = '';
 
+    /**
+     * 임시 설치 루트를 만들고 환경 견본, 완료 상태 파일, 평문 비밀번호가 든 런타임 파일을 깔아 둔다.
+     *
+     * 하위 프로세스를 띄울 수 없는 환경이면 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -82,6 +89,11 @@ class InstallerFinalizeConfigCacheTest extends TestCase
         );
     }
 
+    /**
+     * 테스트마다 만든 임시 설치 루트를 통째로 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->removeTree($this->root);
@@ -89,6 +101,12 @@ class InstallerFinalizeConfigCacheTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * 주어진 폴더 아래를 재귀로 지우고 폴더 자신도 지운다.
+     *
+     * @param  string  $path  지울 폴더 경로 (빈 값이거나 폴더가 아니면 아무것도 하지 않는다)
+     * @return void 반환값 없음
+     */
     private function removeTree(string $path): void
     {
         if ($path === '' || ! is_dir($path)) {
@@ -124,11 +142,21 @@ class InstallerFinalizeConfigCacheTest extends TestCase
         return implode("\n", $output);
     }
 
+    /**
+     * 임시 설치 루트 안의 설정 캐시 파일 경로를 돌려준다.
+     *
+     * @return string 설정 캐시 파일 경로
+     */
     private function cachePath(): string
     {
         return $this->root.'/bootstrap/cache/config.php';
     }
 
+    /**
+     * 임시 설치 루트의 설치 진행 기록 파일 내용을 읽는다.
+     *
+     * @return string 기록 파일 내용 (파일이 없으면 빈 문자열)
+     */
     private function installationLog(): string
     {
         $path = $this->root.'/storage/logs/installation.log';
@@ -136,6 +164,15 @@ class InstallerFinalizeConfigCacheTest extends TestCase
         return is_file($path) ? (string) file_get_contents($path) : '';
     }
 
+    /**
+     * 환경 파일 병합 전에 구운 설정 캐시(미완료 표식과 평문 비밀번호 포함)를 마무리 단계가 지우는지 실제 흐름으로 확인한다.
+     *
+     * @scenario task=config_cache, endpoint_guard=finalize_allowed
+     *
+     * @effects installer_finalize_clears_config_cache_after_env_merge
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalize_deletes_the_config_cache_baked_before_the_env_merge(): void
     {
         // `config:cache` 가 남긴 형태 — runtime.php 의 평문 비밀번호와 미완료 표식이 함께 박혀 있다.
@@ -163,6 +200,12 @@ class InstallerFinalizeConfigCacheTest extends TestCase
      *
      * 같은 이름의 **디렉토리**를 두어 `unlink()` 를 실패시킨다. 파일 권한은 OS·실행 사용자에
      * 따라 root 가 그대로 지워 버려 재현되지 않는다.
+     *
+     * @scenario task=config_cache, endpoint_guard=finalize_allowed
+     *
+     * @effects installer_finalize_survives_config_cache_delete_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_finalize_completes_even_when_the_config_cache_cannot_be_deleted(): void
     {
@@ -198,6 +241,15 @@ class InstallerFinalizeConfigCacheTest extends TestCase
         );
     }
 
+    /**
+     * 설정 캐시가 없을 때 마무리 단계가 환경 파일을 쓰고 삭제 실패를 잘못 기록하지 않는지 확인한다.
+     *
+     * @scenario task=config_cache, endpoint_guard=finalize_allowed
+     *
+     * @effects installer_finalize_clears_config_cache_after_env_merge
+     *
+     * @return void 반환값 없음
+     */
     public function test_finalize_is_a_noop_when_no_config_cache_exists(): void
     {
         $this->assertFileDoesNotExist($this->cachePath());

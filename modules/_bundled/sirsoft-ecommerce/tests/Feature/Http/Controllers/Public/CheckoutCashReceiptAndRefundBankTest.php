@@ -37,6 +37,11 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
 
     protected ProductOption $productOption;
 
+    /**
+     * 장바구니 키와 판매 중인 옵션 상품(재고 있음)을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -71,6 +76,11 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 준비한 옵션 상품 2개, 결제금액 30000원으로 계산된 비회원 임시주문을 만든다.
+     *
+     * @return TempOrder 생성된 임시주문
+     */
     protected function createTempOrder(): TempOrder
     {
         return TempOrder::create([
@@ -103,8 +113,10 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     }
 
     /**
-     * @param  array<string, mixed>  $overrides
-     * @return array<string, mixed>
+     * 비회원 무통장 주문 생성 요청 본문 기본값(주문자, 배송지, 입금 계좌, 조회 비밀번호)에 덮어쓸 값을 합친다.
+     *
+     * @param  array<string, mixed>  $overrides  기본 본문에 덮어쓸 값
+     * @return array<string, mixed> 주문 생성 요청 본문
      */
     protected function payload(array $overrides = []): array
     {
@@ -133,7 +145,10 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     }
 
     /**
-     * @param  array<string, mixed>  $overrides
+     * 임시주문을 만든 뒤 장바구니 키 헤더를 붙여 비회원 주문 생성 API 를 호출한다.
+     *
+     * @param  array<string, mixed>  $overrides  기본 본문에 덮어쓸 값
+     * @return TestResponse 주문 생성 응답
      */
     protected function postOrder(array $overrides = []): TestResponse
     {
@@ -146,6 +161,11 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 가장 최근 생성된 주문의 결제행을 읽는다.
+     *
+     * @return OrderPayment 최근 주문의 결제행
+     */
     protected function latestPayment(): OrderPayment
     {
         $order = Order::latest('id')->firstOrFail();
@@ -155,6 +175,14 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
 
     // ---------------------------------------------------------------- 현금영수증
 
+    /**
+     * 현금영수증을 신청하지 않은 무통장 주문은 결제행의 신청 플래그가 꺼지고 용도와 식별번호가 비는지 확인한다.
+     *
+     * @scenario surface=checkout, payment_method=dbank
+     * @effects checkout_cash_receipt_request_persisted
+     *
+     * @return void 반환값 없음
+     */
     public function test_현금영수증_미신청_주문은_신청_플래그가_꺼진다(): void
     {
         $this->postOrder()->assertStatus(201);
@@ -168,7 +196,11 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     }
 
     /**
+     * 소득공제 휴대폰번호로 신청한 무통장 주문의 결제행에 신청 플래그, 용도, 발급수단이 저장되는지 확인한다.
+     *
      * @effects checkout_cash_receipt_request_persisted
+     *
+     * @return void 반환값 없음
      */
     public function test_현금영수증_신청이_결제행에_저장된다(): void
     {
@@ -187,7 +219,11 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     }
 
     /**
+     * 식별번호가 평문 컬럼에는 뒤 4자리만 남긴 마스킹본으로, 암호화 컬럼에는 원본 암호문으로 저장되는지 확인한다.
+     *
      * @effects checkout_cash_receipt_identifier_masked_and_encrypted
+     *
+     * @return void 반환값 없음
      */
     public function test_식별번호는_평문_컬럼에_마스킹본_암호화_컬럼에_원본이_저장된다(): void
     {
@@ -211,6 +247,14 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 지출증빙 용도에 휴대폰번호를 식별번호로 쓰면 주문이 생성되고 용도가 지출증빙으로 저장되는지 확인한다.
+     *
+     * @scenario surface=checkout, payment_method=dbank, receipt_type=expense, identifier_type=phone
+     * @effects checkout_expense_with_phone_allowed
+     *
+     * @return void 반환값 없음
+     */
     public function test_지출증빙에_휴대폰번호를_쓸_수_있다(): void
     {
         // D10 — 휴대폰번호는 소득공제/지출증빙 양쪽에서 유효하다
@@ -224,6 +268,14 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
         $this->assertSame(CashReceiptType::EXPENSE->value, $this->latestPayment()->cash_receipt_type);
     }
 
+    /**
+     * 지출증빙 용도에 자진발급 지정번호를 넣으면 소득공제 전용 오류 문구로 422 가 나는지 확인한다.
+     *
+     * @scenario surface=checkout, payment_method=dbank, receipt_type=expense, identifier_type=self_issue
+     * @effects checkout_expense_with_self_issue_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_지출증빙에_자진발급번호는_거부된다(): void
     {
         // 자진발급 지정번호는 소득공제 전용 (제도상 지출증빙 자진발급 불가)
@@ -236,6 +288,14 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
             ->assertJsonPath('errors.cash_receipt_identifier.0', __('sirsoft-ecommerce::cash_receipt.validation.self_issue_income_only'));
     }
 
+    /**
+     * 체크섬이 맞지 않는 사업자등록번호로 지출증빙을 신청하면 422 가 나고 주문 부산물이 남지 않는지 확인한다.
+     *
+     * @scenario surface=checkout, payment_method=dbank, receipt_type=expense, identifier_type=business
+     * @effects checkout_business_number_checksum_rejected_422, checkout_no_order_artifact_on_validation_failure
+     *
+     * @return void 반환값 없음
+     */
     public function test_사업자등록번호_체크섬이_틀리면_거부된다(): void
     {
         $this->postOrder([
@@ -248,6 +308,14 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
         $this->assertSame(0, Order::count(), '검증 실패 시 주문 부산물이 남아서는 안 된다');
     }
 
+    /**
+     * 신청 플래그만 보내고 용도, 발급수단, 식별번호를 빼면 세 필드 오류로 422 가 나는지 확인한다.
+     *
+     * @scenario surface=checkout, payment_method=dbank
+     * @effects checkout_requested_without_subkeys_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_신청했으나_하위키가_없으면_거부된다(): void
     {
         $this->postOrder(['cash_receipt_requested' => true])
@@ -269,6 +337,8 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * @param  string  $paymentMethod  무통장이 아닌 결제수단
      *
      * @effects cash_receipt_request_not_persisted_for_non_dbank
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('nonDbankPaymentMethodProvider')]
     public function test_무통장이_아니면_현금영수증_신청정보를_저장하지_않는다(string $paymentMethod): void
@@ -307,7 +377,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * 생성이 그 조합을 거절하며, 거절되는 조합으로 "현금영수증을 저장하지 않는다" 를 재 봤자
      * 저장 경로에 도달하지 못한 것을 통과로 읽게 된다.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 결제수단 값별 데이터 프로바이더 케이스
      */
     public static function nonDbankPaymentMethodProvider(): array
     {
@@ -345,6 +415,14 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
 
     // ---------------------------------------------------------------- 환불계좌
 
+    /**
+     * 환불계좌를 입력하지 않아도 주문이 생성되고 결제행의 환불계좌 필드가 비어 있는지 확인한다.
+     *
+     * @scenario surface=checkout, payment_method=dbank, refund_bank_input=empty
+     * @effects checkout_refund_bank_empty_allowed
+     *
+     * @return void 반환값 없음
+     */
     public function test_환불계좌_미입력이_허용된다(): void
     {
         $this->postOrder()->assertStatus(201);
@@ -357,7 +435,11 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     }
 
     /**
+     * 환불계좌 3필드를 모두 보내면 결제행에 저장되고 은행명도 은행코드로 조회해 채워지는지 확인한다.
+     *
      * @effects checkout_refund_bank_persisted
+     *
+     * @return void 반환값 없음
      */
     public function test_환불계좌_전체_입력이_결제행에_저장된다(): void
     {
@@ -389,6 +471,11 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
      * 주문에 계좌정보를 남기지 않도록 현금영수증(getCashReceiptInfo)과 같은 축으로 게이팅한다.
      *
      * @param  string  $paymentMethod  환불계좌를 쓰지 않는 결제수단
+     *
+     * @scenario surface=checkout, payment_method=card, refund_bank_input=complete
+     * @effects refund_bank_not_stored_for_non_bank_methods
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('nonRefundBankPaymentMethodProvider')]
     public function test_환불계좌를_쓰지_않는_결제수단이면_저장하지_않는다(string $paymentMethod): void
@@ -417,7 +504,7 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     /**
      * 환불계좌를 쓰지 않는 결제수단 (무통장·가상계좌 제외).
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 결제수단 값별 데이터 프로바이더 케이스
      */
     public static function nonRefundBankPaymentMethodProvider(): array
     {
@@ -425,7 +512,9 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     }
 
     /**
-     * @return array<string, array{array<string, mixed>, array<int, string>}>
+     * 환불계좌 3필드 중 일부만 채운 입력과 그때 기대하는 검증 오류 키 목록을 묶는다.
+     *
+     * @return array<string, array{array<string, mixed>, array<int, string>}> 부분 입력과 기대 오류 키 케이스
      */
     public static function partialRefundBankProvider(): array
     {
@@ -446,10 +535,15 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     }
 
     /**
-     * @param  array<string, mixed>  $refundBank
-     * @param  array<int, string>  $expectedErrors
+     * 환불계좌를 일부만 입력하면 빠진 필드 오류로 422 가 나고 주문이 하나도 만들어지지 않는지 확인한다.
      *
+     * @param  array<string, mixed>  $refundBank  일부만 채운 환불계좌 입력
+     * @param  array<int, string>  $expectedErrors  기대하는 검증 오류 키
+     *
+     * @scenario surface=checkout, payment_method=dbank, refund_bank_input=partial_account_only
      * @effects checkout_refund_bank_partial_input_rejected_422
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('partialRefundBankProvider')]
     public function test_환불계좌_부분_입력은_거부된다(array $refundBank, array $expectedErrors): void
@@ -464,7 +558,11 @@ class CheckoutCashReceiptAndRefundBankTest extends ModuleTestCase
     // ---------------------------------------------------------------- 사슬 무결성
 
     /**
+     * 현금영수증 신청과 환불계좌를 한 주문에 함께 보내면 두 정보가 모두 결제행에 저장되는지 확인한다.
+     *
      * @effects checkout_cash_receipt_request_persisted
+     *
+     * @return void 반환값 없음
      */
     public function test_현금영수증과_환불계좌를_함께_보내면_둘_다_저장된다(): void
     {

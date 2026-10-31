@@ -17,6 +17,11 @@ class BizppurioDispatchTest extends PluginTestCase
 {
     /**
      * enum 캐스트가 적용된다.
+     *
+     * @scenario channel=lms
+     * @effects dispatch_model_casts_channel_and_status_to_enums
+     *
+     * @return void 반환값 없음
      */
     public function test_enum_casts(): void
     {
@@ -35,6 +40,10 @@ class BizppurioDispatchTest extends PluginTestCase
 
     /**
      * 마스킹 접근자는 가운데 4자리를 가린다.
+     *
+     * @effects dispatch_masked_number_hides_middle_four_digits
+     *
+     * @return void 반환값 없음
      */
     public function test_masked_number(): void
     {
@@ -44,6 +53,10 @@ class BizppurioDispatchTest extends PluginTestCase
 
     /**
      * 하이픈 포함 번호도 정규화 후 마스킹한다.
+     *
+     * @effects dispatch_masked_number_hides_middle_four_digits
+     *
+     * @return void 반환값 없음
      */
     public function test_masked_number_with_hyphens(): void
     {
@@ -53,6 +66,11 @@ class BizppurioDispatchTest extends PluginTestCase
 
     /**
      * to_user_id 로 회원 관계를 로드한다.
+     *
+     * @scenario channel=sms, recipient_kind=member
+     * @effects dispatch_user_relation_loads_member_by_to_user_id
+     *
+     * @return void 반환값 없음
      */
     public function test_user_relation(): void
     {
@@ -73,6 +91,10 @@ class BizppurioDispatchTest extends PluginTestCase
 
     /**
      * byRefkey 스코프로 조회한다.
+     *
+     * @effects dispatch_by_refkey_scope_finds_single_record
+     *
+     * @return void 반환값 없음
      */
     public function test_by_refkey_scope(): void
     {

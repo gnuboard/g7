@@ -19,6 +19,11 @@ class ExtensionBundleServingTest extends TestCase
 {
     private string $fixtureDir;
 
+    /**
+     * 번들 산출물 픽스처를 둘 임시 디렉터리(`storage/framework/testing/ext-bundle-serving`)를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -26,6 +31,11 @@ class ExtensionBundleServingTest extends TestCase
         File::ensureDirectoryExists($this->fixtureDir);
     }
 
+    /**
+     * 픽스처 디렉터리의 파일과 디렉터리 자체를 지우고 Mockery 기대치를 닫는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (is_dir($this->fixtureDir)) {
@@ -53,6 +63,7 @@ class ExtensionBundleServingTest extends TestCase
      * @param  string  $memoryContent  buildBundleContent 반환값
      * @param  int  $declaredCount  countAssetDeclaringExtensions 반환값
      * @param  list<string>  $missing  findMissingDeclaredAssets 반환값 (소실 산출물 절대 경로)
+     * @return void 반환값 없음
      */
     private function bindBundleService(
         string $returnPath,
@@ -72,7 +83,13 @@ class ExtensionBundleServingTest extends TestCase
     }
 
     /**
+     * 모듈 JS 번들이 병합 파일 본문(IIFE 와 세미콜론 줄 구분자)을 `text/javascript` 와 ETag 를 실어 내주는지 확인한다.
+     *
+     * @scenario ext_type=module, asset_kind=js, file_state=all_present, version_state=first_request
+     *
      * @effects bundle_endpoint_serves_with_etag_and_304
+     *
+     * @return void 반환값 없음
      */
     public function test_module_bundle_js_serves_merged_file_with_etag(): void
     {
@@ -90,7 +107,13 @@ class ExtensionBundleServingTest extends TestCase
     }
 
     /**
+     * 플러그인 JS 번들의 첫 응답 ETag 를 `If-None-Match` 로 되보내면 304 가 나오는지 확인한다.
+     *
+     * @scenario ext_type=plugin, asset_kind=js, file_state=all_present, version_state=cache_hit
+     *
      * @effects bundle_endpoint_serves_with_etag_and_304
+     *
+     * @return void 반환값 없음
      */
     public function test_bundle_returns_304_on_matching_etag(): void
     {
@@ -108,7 +131,13 @@ class ExtensionBundleServingTest extends TestCase
     }
 
     /**
+     * 에셋을 선언한 활성 확장이 하나도 없으면 빈 본문 200 이 JS 콘텐츠 타입으로 나가는지 확인한다.
+     *
+     * @scenario ext_type=module, asset_kind=js, active_combo=none
+     *
      * @effects empty_bundle_returns_empty_path_and_empty_ok_response
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_bundle_returns_empty_ok_response(): void
     {
@@ -130,7 +159,11 @@ class ExtensionBundleServingTest extends TestCase
      * `UnableToWriteFile` 이 그대로 올라온다. 캐시는 최적화일 뿐이므로 그 실패가
      * 모든 확장의 프론트엔드 JS/CSS 를 통째로 막으면 안 된다.
      *
+     * @scenario ext_type=module, asset_kind=js, active_combo=multiple, environment=production
+     *
      * @effects bundle_disk_write_failure_falls_back_to_memory
+     *
+     * @return void 반환값 없음
      */
     public function test_disk_cache_failure_serves_memory_merged_result(): void
     {
@@ -156,9 +189,11 @@ class ExtensionBundleServingTest extends TestCase
      * 판정 근거는 선언 축이 아니라 **소실 축**이다. 선언 축만 보면 스타일이 비어 있는
      * 확장(정당한 0바이트 산출물)까지 장애로 잡혀 기본 구성이 503 이 된다.
      *
-     * // @scenario ext_type=module, asset_kind=js, active_combo=multiple, file_state=one_missing
+     * @scenario ext_type=module, asset_kind=js, active_combo=multiple, file_state=one_missing
      *
      * @effects bundle_empty_with_declared_assets_returns_503, empty_result_with_missing_declared_artifact_returns_503, bundle_unreadable_declared_assets_return_503
+     *
+     * @return void 반환값 없음
      */
     public function test_bundle_returns_503_when_declared_assets_cannot_be_read(): void
     {
@@ -176,9 +211,11 @@ class ExtensionBundleServingTest extends TestCase
      * 종전 판정은 "선언 > 0 && 병합 결과 0" 을 곧 배포 장애로 등치해, 그런 확장만 설치된
      * 기본 구성의 사용자 화면마다 실패 안내가 떴다.
      *
-     * // @scenario ext_type=module, asset_kind=css, active_combo=one, file_state=present_empty
+     * @scenario ext_type=module, asset_kind=css, active_combo=one, file_state=present_empty
      *
      * @effects empty_result_with_present_empty_artifacts_returns_200, bundle_readable_but_empty_declared_assets_return_200
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_result_with_present_empty_artifacts_returns_200(): void
     {
@@ -194,9 +231,11 @@ class ExtensionBundleServingTest extends TestCase
     /**
      * 플러그인 경로도 같은 판정을 쓴다 — 존재하되 비어 있으면 빈 200.
      *
-     * // @scenario ext_type=plugin, asset_kind=css, active_combo=one, file_state=present_empty
+     * @scenario ext_type=plugin, asset_kind=css, active_combo=one, file_state=present_empty
      *
      * @effects bundle_decision_is_shared_across_extension_types, empty_result_with_present_empty_artifacts_returns_200
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_bundle_returns_200_when_declared_artifacts_present_but_empty(): void
     {
@@ -214,9 +253,11 @@ class ExtensionBundleServingTest extends TestCase
      * 경로가 없으면 운영자는 조치 대상을 짚을 수 없다 — 선언 수만으로는 어느 확장의
      * 어느 파일인지 알 수 없다.
      *
-     * // @scenario ext_type=module, asset_kind=css, active_combo=one, file_state=one_missing
+     * @scenario ext_type=module, asset_kind=css, active_combo=one, file_state=one_missing
      *
      * @effects missing_artifact_paths_are_logged
+     *
+     * @return void 반환값 없음
      */
     public function test_503_log_lists_missing_artifact_paths(): void
     {
@@ -234,7 +275,11 @@ class ExtensionBundleServingTest extends TestCase
     /**
      * 플러그인 경로도 같은 판정을 쓴다 — 두 컨트롤러가 갈라지지 않는다 (장애 쪽).
      *
+     * @scenario ext_type=plugin, asset_kind=css, active_combo=one, file_state=one_missing
+     *
      * @effects bundle_decision_is_shared_across_extension_types
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_bundle_returns_503_when_declared_assets_cannot_be_read(): void
     {
@@ -246,7 +291,11 @@ class ExtensionBundleServingTest extends TestCase
     /**
      * 플러그인 경로도 같은 판정을 쓴다 — 두 컨트롤러가 갈라지지 않는다 (정상 쪽).
      *
+     * @scenario ext_type=plugin, asset_kind=css, active_combo=none
+     *
      * @effects bundle_decision_is_shared_across_extension_types
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_bundle_returns_empty_ok_when_nothing_declared(): void
     {
@@ -255,6 +304,15 @@ class ExtensionBundleServingTest extends TestCase
         $this->get('/api/plugins/bundle.css?v=777')->assertOk();
     }
 
+    /**
+     * 모듈 CSS 번들이 병합 파일을 `text/css` 콘텐츠 타입으로 내주는지 확인한다.
+     *
+     * @scenario ext_type=module, asset_kind=css, file_state=all_present
+     *
+     * @effects bundle_css_endpoint_declares_css_content_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_bundle_css_serves_with_css_content_type(): void
     {
         $path = $this->fixtureDir.'/module.777.css';
@@ -275,7 +333,11 @@ class ExtensionBundleServingTest extends TestCase
      * 전환(회차 20)을 재는 테스트가 없어, 되돌려도 전 스위트가 초록이었다
      * (22차 G3 라운드 B6).
      *
+     * @scenario ext_type=module, asset_kind=both, active_combo=none
+     *
      * @effects extension_bundle_empty_response_declares_nosniff
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_bundle_response_declares_nosniff_like_its_file_sibling(): void
     {
@@ -293,6 +355,15 @@ class ExtensionBundleServingTest extends TestCase
         }
     }
 
+    /**
+     * `bundle.js` 요청이 개별 에셋 라우트(`assets/{identifier}/{path}`)가 아니라 번들 서빙으로 응답되는지 본문 표식으로 확인한다.
+     *
+     * @scenario ext_type=module, asset_kind=js, file_state=all_present
+     *
+     * @effects bundle_route_takes_precedence_over_asset_route
+     *
+     * @return void 반환값 없음
+     */
     public function test_bundle_routes_do_not_collide_with_asset_route(): void
     {
         // bundle.js 는 assets/{identifier}/{path} 로 매칭되면 안 됨 (정적 세그먼트 우선)

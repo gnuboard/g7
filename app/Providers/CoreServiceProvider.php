@@ -878,6 +878,8 @@ class CoreServiceProvider extends ServiceProvider
      *
      * 웹 요청 비용은 없다 — `Artisan::starting()` 은 콜백만 담아 두고, 그 콜백은 콘솔 커널이
      * 실제로 뜰 때(= `Artisan::call` 또는 CLI)만 실행된다.
+     *
+     * @return void 반환값 없음
      */
     private function registerExtensionScheduleCommands(): void
     {

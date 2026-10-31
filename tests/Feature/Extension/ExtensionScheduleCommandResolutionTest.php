@@ -32,6 +32,11 @@ use Tests\TestCase;
  */
 class ExtensionScheduleCommandResolutionTest extends TestCase
 {
+    /**
+     * 케이스가 만든 Mockery 목을 닫아 기대 검증을 마친 뒤 부모 정리를 돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -58,7 +63,13 @@ class ExtensionScheduleCommandResolutionTest extends TestCase
     }
 
     /**
+     * 확장이 `getSchedules()` 로 선언한 커맨드만 매핑되고, 같은 확장 `src/` 에 있지만 선언하지 않은 커맨드는 매핑에 실리지 않는지 확인한다.
+     *
+     * @scenario schedule_declaration=declared
+     *
      * @effects only_declared_schedule_commands_are_registered
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_only_declared_commands_are_mapped(): void
@@ -84,7 +95,13 @@ class ExtensionScheduleCommandResolutionTest extends TestCase
     }
 
     /**
+     * 예약을 하나도 선언하지 않은 확장은 소스에 커맨드가 있어도 매핑과 미해석 원장이 모두 빈 배열인지 확인한다.
+     *
+     * @scenario schedule_declaration=empty
+     *
      * @effects only_declared_schedule_commands_are_registered
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_nothing_is_mapped_when_the_extension_declares_nothing(): void
@@ -96,7 +113,13 @@ class ExtensionScheduleCommandResolutionTest extends TestCase
     }
 
     /**
+     * 선언에 `command_class` 를 명시하면 이름 조회로 찾을 수 없는 커맨드 이름이어도 그 클래스로 바로 매핑되는지 확인한다.
+     *
+     * @scenario schedule_declaration=explicit_class
+     *
      * @effects declared_command_class_skips_the_lookup
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_declared_command_class_skips_the_lookup(): void
@@ -117,7 +140,13 @@ class ExtensionScheduleCommandResolutionTest extends TestCase
     }
 
     /**
+     * 소스에서 찾지 못한 선언이 매핑에서 빠지는 대신 미해석 원장에 소유 확장과 함께 기록되는지 확인한다.
+     *
+     * @scenario schedule_declaration=unresolvable
+     *
      * @effects unresolvable_schedule_declaration_is_recorded
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_unresolvable_declaration_is_recorded_not_swallowed(): void
@@ -136,7 +165,13 @@ class ExtensionScheduleCommandResolutionTest extends TestCase
     }
 
     /**
+     * 캐시 매핑에 실린 커맨드가 콘솔 애플리케이션 생성 시점(`Artisan::starting`)에 등록되어 커맨드 목록에서 보이는지 확인한다.
+     *
+     * @scenario schedule_declaration=declared, entry_point=web
+     *
      * @effects declared_schedule_command_is_resolvable_in_web_context
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_mapped_commands_are_resolvable_once_artisan_boots(): void
@@ -163,7 +198,13 @@ class ExtensionScheduleCommandResolutionTest extends TestCase
     }
 
     /**
+     * 코어가 예약하는 벤더 커맨드(`sanctum:prune-expired`)를 코어 서비스 프로바이더가 등록 목록에 직접 싣는지 확인한다.
+     *
+     * @scenario schedule_declaration=core_vendor
+     *
      * @effects core_registers_the_vendor_command_it_schedules
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_core_registers_the_vendor_command_it_schedules(): void
@@ -200,7 +241,11 @@ class ExtensionScheduleCommandResolutionTest extends TestCase
      *
      * 모집단은 소스에서 도출한다(목록을 손으로 들지 않는다).
      *
+     * @scenario schedule_declaration=regeneration_path
+     *
      * @effects only_declared_schedule_commands_are_registered
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_autoload_regeneration_paths_go_through_the_single_cache_owner(): void

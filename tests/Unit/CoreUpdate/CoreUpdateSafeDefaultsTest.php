@@ -33,6 +33,8 @@ class CoreUpdateSafeDefaultsTest extends TestCase
      * @scenario run_state=idle, source=github_download
      *
      * @effects the_start_request_has_no_input_for_dangerous_cli_options
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_the_start_request_has_no_input_for_dangerous_cli_options(): void
@@ -62,6 +64,8 @@ class CoreUpdateSafeDefaultsTest extends TestCase
      * @scenario run_state=idle, source=github_download
      *
      * @effects the_options_object_has_no_dangerous_fields
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_the_options_object_has_no_dangerous_fields(): void
@@ -82,6 +86,8 @@ class CoreUpdateSafeDefaultsTest extends TestCase
      * @scenario run_state=idle, bundled_extensions=on, rebuild_search_index=off, layout_strategy=overwrite
      *
      * @effects defaults_are_the_safe_side
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_defaults_are_the_safe_side(): void
@@ -101,6 +107,8 @@ class CoreUpdateSafeDefaultsTest extends TestCase
      * @scenario run_state=idle, layout_strategy=overwrite
      *
      * @effects an_unknown_layout_strategy_falls_back_to_overwrite
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_an_unknown_layout_strategy_falls_back_to_overwrite(): void
@@ -125,6 +133,8 @@ class CoreUpdateSafeDefaultsTest extends TestCase
      * @scenario run_state=idle, source=manual_zip
      *
      * @effects zip_file_names_are_stripped_of_path_components
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_zip_file_names_are_stripped_of_path_components(): void
@@ -158,6 +168,8 @@ class CoreUpdateSafeDefaultsTest extends TestCase
      * @scenario run_state=running, failing_step=none
      *
      * @effects the_orchestrator_never_passes_destructive_arguments
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_the_orchestrator_never_passes_destructive_arguments(): void
@@ -207,6 +219,8 @@ class CoreUpdateSafeDefaultsTest extends TestCase
      * @scenario run_state=idle, execution_mode=subprocess
      *
      * @effects the_cli_keeps_its_dangerous_options
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_the_cli_keeps_its_dangerous_options(): void

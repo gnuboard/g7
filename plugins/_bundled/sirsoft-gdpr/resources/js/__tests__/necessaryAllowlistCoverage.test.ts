@@ -891,11 +891,13 @@ describe('출하 카탈로그 전량 — 미동의 저장·회수 생존', () =>
         window.sessionStorage.clear();
     });
 
+    /** @effects shipped_catalog_items_survive_unconsented_write_and_cleanup */
     it('모집단이 비어 있지 않다 — 파생이 죽으면 아래 케이스가 통째로 사라진다', () => {
         expect(samples.length).toBeGreaterThanOrEqual(20);
         expect(samples.some((s) => s.storage === 'sessionStorage')).toBe(true);
     });
 
+    /** @effects shipped_catalog_items_survive_unconsented_write_and_cleanup */
     it.each(samples)('$label — 미동의 상태에서 저장되고 다음 방문까지 남는다', ({ key, storage }) => {
         installStorageInterceptor({
             functionalConsented: false,
@@ -911,6 +913,7 @@ describe('출하 카탈로그 전량 — 미동의 저장·회수 생존', () =>
         expect(target.getItem(key)).toBe('v');
     });
 
+    /** @effects shipped_catalog_items_survive_unconsented_write_and_cleanup */
     it('카탈로그 밖의 키는 같은 경로에서 회수된다 — 위 단언이 무조건 참이 아님을 고정', () => {
         installStorageInterceptor({
             functionalConsented: true,

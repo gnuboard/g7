@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 단계별 실행의 커맨드 원문이 **한 묶음**으로 기록·전달되는지 (D2 L6).
@@ -30,18 +31,24 @@ use PHPUnit\Framework\TestCase;
  *
  * BASE_PATH 를 temp 로 박으므로 클래스 격리 실행이 필요하다 (AddLogUtf8ScrubTest 와 같은 패턴).
  *
- * @scenario progress_log_volume=large
- *
- * @effects stepwise_command_output_is_written_in_one_batch
+ * 효과 요약(마커 아님 — 평문): 진행 기록 양이 많은 단계별 실행에서 커맨드 원문을 한 묶음으로 쓴다
+ * (stepwise_command_output_is_written_in_one_batch). 표식은 각 테스트 메서드가 단다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
 class InstallerProgressLogBatchingTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private static string $sharedBase = '';
 
     private static string $skipReason = '';
 
+    /**
+     * 시스템 임시 폴더 아래에 BASE_PATH 를 세우고 로그 폴더를 만든 뒤 설치기 상태, 진행 송출기, 작업 러너를 불러온다. BASE_PATH 가 이미 임시 폴더 밖이면 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -75,6 +82,11 @@ class InstallerProgressLogBatchingTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/task-runner.php';
     }
 
+    /**
+     * 임시 BASE_PATH 아래에 남은 설치 로그와 회전 사본을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     public static function tearDownAfterClass(): void
     {
         if (self::$skipReason === '' && self::$sharedBase !== '') {
@@ -87,6 +99,11 @@ class InstallerProgressLogBatchingTest extends TestCase
         parent::tearDownAfterClass();
     }
 
+    /**
+     * 건너뛸 사유가 있으면 테스트를 건너뛰고, 아니면 앞 테스트가 남긴 설치 로그를 지워 줄 수를 0 에서 시작하게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -101,6 +118,11 @@ class InstallerProgressLogBatchingTest extends TestCase
         }
     }
 
+    /**
+     * 임시 설치 로그 파일을 읽어 빈 줄을 뺀 줄 목록을 돌려준다. 파일이 없으면 빈 목록이다.
+     *
+     * @return array<int, string> 비어 있지 않은 로그 줄 목록
+     */
     private function logLines(): array
     {
         $path = self::$sharedBase.'/storage/logs/installation.log';
@@ -108,6 +130,7 @@ class InstallerProgressLogBatchingTest extends TestCase
             return [];
         }
 
+        // meta:allow raw-source-read — 소스가 아니라 설치 로그(산출물)를 읽는다.
         return array_values(array_filter(
             preg_split('/\r\n|\n|\r/', (string) file_get_contents($path)) ?: [],
             static fn (string $line): bool => trim($line) !== ''
@@ -115,9 +138,13 @@ class InstallerProgressLogBatchingTest extends TestCase
     }
 
     /**
+     * 단계별 송출기에서 커맨드 출력 250 줄이 묶음 이벤트 1건이 되고, 줄을 잃지 않으며 파일에도 250 줄이 남는지 확인한다.
+     *
      * @scenario progress_log_volume=large, installation_mode=stepwise
      *
      * @effects stepwise_command_output_is_written_in_one_batch
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function stepwise_command_output_becomes_one_batch_event(): void
@@ -156,9 +183,13 @@ class InstallerProgressLogBatchingTest extends TestCase
     }
 
     /**
+     * 빈 출력과 공백뿐인 출력은 이벤트도 로그 줄도 만들지 않는지 확인한다.
+     *
      * @scenario progress_log_volume=small, installation_mode=stepwise
      *
      * @effects stepwise_command_output_is_written_in_one_batch
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function empty_output_emits_nothing(): void
@@ -180,11 +211,12 @@ class InstallerProgressLogBatchingTest extends TestCase
      * 여기서는 같은 분기를 타는 `NullEmitter` 로 잰다 — `SseEmitter` 는 생성 자체가 출력
      * 버퍼·헤더를 만지므로 단위 테스트에서 세울 수 있는 대상이 아니다. 「SSE 를 묶지 않는다」는
      * 축은 아래 소스 계약(분기가 `BufferEmitter` 만 지목한다)이 함께 잠근다.
-     */
-    /**
+     *
      * @scenario progress_log_volume=small, installation_mode=polling
      *
      * @effects stepwise_command_output_is_written_in_one_batch
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function non_buffer_emitters_keep_line_by_line_emission(): void
@@ -200,16 +232,17 @@ class InstallerProgressLogBatchingTest extends TestCase
     /**
      * 세 모드의 분기가 **소스에 실재하는지** 함께 잠근다 — 위 단언은 emitter 종류로만
      * 갈리므로, 분기 자체가 사라지고 전부 줄 단위가 되어도 두 케이스는 초록일 수 있다.
-     */
-    /**
+     *
      * @scenario progress_log_volume=large, installation_mode=stepwise
      *
      * @effects stepwise_command_output_is_written_in_one_batch
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function batching_branch_is_explicit_about_the_emitter_it_targets(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/task-runner.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/task-runner.php');
 
         $this->assertStringContainsString(
             'instanceof BufferEmitter',

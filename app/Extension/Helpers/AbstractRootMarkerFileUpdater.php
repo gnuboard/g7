@@ -798,6 +798,7 @@ abstract class AbstractRootMarkerFileUpdater
      * 충분히 오래된 것만 지운다.
      *
      * @param  string  $destinationPath  대상 파일 절대 경로
+     * @return void 반환값 없음
      */
     protected static function sweepStaleTempFiles(string $destinationPath): void
     {

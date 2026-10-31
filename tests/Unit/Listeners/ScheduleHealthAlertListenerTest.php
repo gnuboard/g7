@@ -40,6 +40,8 @@ class ScheduleHealthAlertListenerTest extends TestCase
 
     /**
      * 테스트 준비.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -56,6 +58,8 @@ class ScheduleHealthAlertListenerTest extends TestCase
 
     /**
      * 테스트 정리.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -75,6 +79,8 @@ class ScheduleHealthAlertListenerTest extends TestCase
      * 신호와 구분되지 않는다.
      *
      * @effects fresh_site_does_not_warn
+     *
+     * @return void 반환값 없음
      */
     public function test_site_without_any_run_history_does_not_warn(): void
     {
@@ -87,6 +93,8 @@ class ScheduleHealthAlertListenerTest extends TestCase
      * 기준 일수 안에 실행된 사이트는 경고하지 않는다.
      *
      * @effects recent_run_does_not_warn
+     *
+     * @return void 반환값 없음
      */
     public function test_recent_run_does_not_warn(): void
     {
@@ -99,6 +107,8 @@ class ScheduleHealthAlertListenerTest extends TestCase
      * 기준 일수를 넘기면 실행 모드와 무관하게 경고한다 (D30).
      *
      * @effects stale_schedule_warns_in_every_execution_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_stale_schedule_warns_in_every_mode(): void
     {
@@ -117,6 +127,8 @@ class ScheduleHealthAlertListenerTest extends TestCase
      * 조치 안내 문구만 실행 모드에 따라 갈린다 (D30).
      *
      * @effects guidance_text_branches_by_execution_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_guidance_text_branches_by_execution_mode(): void
     {
@@ -134,6 +146,8 @@ class ScheduleHealthAlertListenerTest extends TestCase
      * 경고는 기존 알림 배열을 보존한 채 덧붙는다 (필터 훅 규약).
      *
      * @effects alert_is_appended_without_dropping_existing_alerts
+     *
+     * @return void 반환값 없음
      */
     public function test_alert_is_appended_to_existing_alerts(): void
     {
@@ -149,6 +163,8 @@ class ScheduleHealthAlertListenerTest extends TestCase
      * 경고는 조치 화면으로 가는 경로를 함께 싣는다.
      *
      * @effects alert_carries_the_settings_path
+     *
+     * @return void 반환값 없음
      */
     public function test_alert_carries_the_settings_path(): void
     {
@@ -163,6 +179,8 @@ class ScheduleHealthAlertListenerTest extends TestCase
      * 발화 기준 일수는 설정에서 도출된다.
      *
      * @effects stale_threshold_comes_from_config
+     *
+     * @return void 반환값 없음
      */
     public function test_stale_threshold_comes_from_config(): void
     {
@@ -179,6 +197,7 @@ class ScheduleHealthAlertListenerTest extends TestCase
      * 마지막 실행 시각을 상태 파일에 심습니다.
      *
      * @param  CarbonImmutable  $at  실행 시각
+     * @return void 반환값 없음
      */
     private function recordExecutionAt(CarbonImmutable $at): void
     {

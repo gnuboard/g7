@@ -32,6 +32,8 @@ class ShopPathResolverTest extends ModuleTestCase
      * `g7_settings.modules.*` 배열을 직접 주입해 파일 I/O 없이 축을 만든다.
      *
      * @param  array<string, mixed>  $basicInfo  basic_info 설정 값
+     *
+     * @return void 반환값 없음
      */
     private function setBasicInfo(array $basicInfo): void
     {
@@ -39,7 +41,11 @@ class ShopPathResolverTest extends ModuleTestCase
     }
 
     /**
+     * 상점 설정이 비어 있으면 기준 경로가 /shop 이고 하위 경로도 그 아래로 조립되는지 확인한다.
+     *
      * @effects default_shop_redirect_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 설정이_없으면_기본_상점_주소로_폴백한다(): void
@@ -51,7 +57,11 @@ class ShopPathResolverTest extends ModuleTestCase
     }
 
     /**
+     * 운영자가 상점 주소를 store 로 바꾸면 기준 경로와 주문 완료 경로가 /store 로 조립되는지 확인한다.
+     *
      * @effects payment_redirect_follows_route_path
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 운영자가_바꾼_주소를_반영한다(): void
@@ -63,7 +73,11 @@ class ShopPathResolverTest extends ModuleTestCase
     }
 
     /**
+     * 주소 없이 운영(no_route)하면 기준 경로가 빈 문자열이 되고 하위 경로가 루트에 붙는지 확인한다.
+     *
      * @effects payment_redirect_drops_segment_when_no_route
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 주소_없이_운영하면_루트에_붙는다(): void
@@ -75,6 +89,14 @@ class ShopPathResolverTest extends ModuleTestCase
         $this->assertSame('/', ShopPathResolver::path(''));
     }
 
+    /**
+     * 상점 주소가 빈 문자열이면 기본값 /shop 으로 폴백하는지 확인한다.
+     *
+     * @scenario route_setting=empty_value
+     * @effects resolver_falls_back_when_route_path_is_blank
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 주소가_빈_문자열이면_기본값으로_폴백한다(): void
     {
@@ -84,6 +106,14 @@ class ShopPathResolverTest extends ModuleTestCase
         $this->assertSame('/shop/guest/orders', ShopPathResolver::path('guest/orders'));
     }
 
+    /**
+     * 앞뒤 슬래시가 붙은 상점 주소와 하위 경로가 슬래시 한 겹으로 정규화되는지 확인한다.
+     *
+     * @scenario route_setting=slashed_value
+     * @effects resolver_normalizes_duplicate_slashes
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 앞뒤_슬래시가_붙은_주소도_한_겹으로_정규화한다(): void
     {
@@ -94,6 +124,14 @@ class ShopPathResolverTest extends ModuleTestCase
         $this->assertSame('/store/products', ShopPathResolver::path('products'));
     }
 
+    /**
+     * no_route 가 false 로 명시돼 있으면 운영자가 정한 주소를 그대로 쓰는지 확인한다.
+     *
+     * @scenario route_setting=custom
+     * @effects resolver_keeps_route_when_no_route_is_false
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function no_route_가_꺼져_있으면_주소를_유지한다(): void
     {

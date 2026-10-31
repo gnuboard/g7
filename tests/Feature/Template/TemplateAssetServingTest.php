@@ -585,6 +585,12 @@ class TemplateAssetServingTest extends TestCase
      * 이 축은 **압축이 실제로 일어나는 통로**에서만 잴 수 있다. 압축에서 제외된
      * 라우트(공개 스토리지)에 같은 왕복을 두면 접미사가 붙지 않아 엄격 비교로도
      * 통과하고, 그러면 「쟀다」와 「보지 않았다」가 구분되지 않는다.
+     *
+     * @scenario case=caching
+     *
+     * @effects gzip_marks_encoded_representation_with_distinct_etag, template_asset_returns_304_when_etag_matches
+     *
+     * @return void 반환값 없음
      */
     public function test_revalidation_succeeds_when_the_client_accepts_gzip(): void
     {
@@ -644,6 +650,12 @@ class TemplateAssetServingTest extends TestCase
      *
      * 단일값만 보내는 왕복으로는 두 해석이 같은 답을 내 이 축이 드러나지 않는다
      * (8차 G3 라운드 C-1).
+     *
+     * @scenario case=caching
+     *
+     * @effects not_modified_echoes_the_validator_of_the_representation_the_client_holds
+     *
+     * @return void 반환값 없음
      */
     public function test_negotiated_etag_follows_the_candidate_that_matched(): void
     {
@@ -691,6 +703,8 @@ class TemplateAssetServingTest extends TestCase
      * @scenario asset_url_mode=extensionless, channel=template
      *
      * @effects asset_response_declares_the_file_name
+     *
+     * @return void 반환값 없음
      */
     public function test_extensionless_mode_declares_the_file_name(): void
     {
@@ -825,6 +839,12 @@ class TemplateAssetServingTest extends TestCase
      *
      * 위 형제와 짝이다 — 한쪽만 두면 「immutable 을 통째로 없앴다」와 「기준에 따라 갈린다」를
      * 구분할 수 없고, 캐싱 이점을 잃은 것도 green 으로 보인다.
+     *
+     * @scenario case=caching
+     *
+     * @effects template_asset_applies_immutable_caching_in_production
+     *
+     * @return void 반환값 없음
      */
     public function test_applies_immutable_caching_when_the_url_carries_a_version(): void
     {
@@ -1183,6 +1203,8 @@ class TemplateAssetServingTest extends TestCase
      * @scenario url_mode=path
      *
      * @effects dual_mode_query_form_matches_path_form
+     *
+     * @return void 반환값 없음
      */
     public function test_dual_mode_query_form_matches_the_path_form(): void
     {
@@ -1206,6 +1228,8 @@ class TemplateAssetServingTest extends TestCase
      * @scenario url_mode=path
      *
      * @effects hidden_segments_rejected_in_both_url_modes
+     *
+     * @return void 반환값 없음
      */
     public function test_hidden_segments_are_rejected_in_both_url_modes(): void
     {

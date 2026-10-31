@@ -276,6 +276,7 @@ trait InspectsUninstallData
      *
      * @param  string  $type  확장 타입 ('modules' 또는 'plugins')
      * @param  string  $dirName  디렉토리명
+     * @return void 반환값 없음
      */
     protected function deleteVendorDirectory(string $type, string $dirName): void
     {

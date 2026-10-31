@@ -29,6 +29,11 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
 {
     use ScansPhpSourceFunctions;
 
+    /**
+     * 설치기 화면 스크립트 원문에서 주석을 지운 소스를 돌려준다.
+     *
+     * @return string 주석을 지운 화면 스크립트 소스
+     */
     private function clientSource(): string
     {
         return $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
@@ -38,6 +43,8 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
      * S-2 — 사전 점검이 서버의 쓰기 권한 판정을 읽는다.
      *
      * @effects installer_precheck_reads_env_writable
+     *
+     * @return void 반환값 없음
      */
     public function test_pre_install_check_consumes_env_writable(): void
     {
@@ -63,6 +70,10 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
      *
      * 조치가 다르다(생성 vs 권한). 한 문구로 뭉개면 운영자가 `cp` 를 다시 실행하고 같은
      * 자리에 머문다.
+     *
+     * @effects installer_precheck_reads_env_writable
+     *
+     * @return void 반환값 없음
      */
     public function test_pre_install_check_distinguishes_missing_from_unwritable(): void
     {
@@ -85,6 +96,8 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
      * S-3 — 마무리 요청의 수락 여부를 본다.
      *
      * @effects installer_finalize_checks_acceptance
+     *
+     * @return void 반환값 없음
      */
     public function test_finalize_checks_acceptance(): void
     {
@@ -122,6 +135,12 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
      * 본문을 읽기 **전에** `response.ok` 로 던져 「HTTP 500」 다섯 글자만 남겼다. 게다가
      * 서버가 싣던 `error_message` 는 lang 키가 아닌 **영어 원문**이라, 그 경로가 살아나면
      * 한국어 화면에 개발자 문구가 그대로 떴다.
+     *
+     * @scenario locale=ko
+     *
+     * @effects installer_extension_scan_failure_reasons_reach_the_screen
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_scan_failure_reasons_reach_the_screen(): void
     {
@@ -170,6 +189,12 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
      * 저장 게이트는 **필수 함수가 막혔을 때만** subprocess 를 거부하고 PHP probe 실패는
      * 일부러 막지 않는다(A-0 ③). 화면이 `mode !== inprocess` 로 따로 판정하면, 서버가
      * 받아들이는 선택을 화면이 잠근다 — A-4 가 없앤 비대칭의 역방향이다.
+     *
+     * @scenario execution_mode_choice=subprocess
+     *
+     * @effects installer_execution_mode_selectability_shares_the_save_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_execution_mode_selectability_shares_the_save_gate(): void
     {

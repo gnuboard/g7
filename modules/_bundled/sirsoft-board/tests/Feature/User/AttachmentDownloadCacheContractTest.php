@@ -26,11 +26,22 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  */
 class AttachmentDownloadCacheContractTest extends BoardTestCase
 {
+    /**
+     * 이 시험이 쓰는 게시판 슬러그를 돌려준다.
+     *
+     * @return string 게시판 슬러그
+     */
     protected function getTestBoardSlug(): string
     {
         return 'download-cache';
     }
 
+    /**
+     * 첨부 업로드를 켜고 텍스트 확장자까지 허용한 게시판 속성을 돌려준다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return array<string, mixed> 게시판 생성 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -43,6 +54,11 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 공개 디스크를 가짜로 바꾸고 비회원에게 읽기, 쓰기, 첨부 업로드와 다운로드 권한을 준다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -79,11 +95,23 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
         return $row;
     }
 
+    /**
+     * 사용자 다운로드 통로 주소를 만든다.
+     *
+     * @param  string  $hash  첨부 해시
+     * @return string 사용자 다운로드 API 경로
+     */
     private function userDownloadUrl(string $hash): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/attachment/{$hash}";
     }
 
+    /**
+     * 관리자 다운로드 통로 주소를 만든다.
+     *
+     * @param  string  $hash  첨부 해시
+     * @return string 관리자 다운로드 API 경로
+     */
     private function adminDownloadUrl(string $hash): string
     {
         return "/api/modules/sirsoft-board/admin/board/{$this->board->slug}/attachments/download/{$hash}";
@@ -91,6 +119,10 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
 
     /**
      * 304 가 본문 없는 전용 응답이고 200 의 캐시 축을 그대로 싣는지 단언합니다.
+     *
+     * @param  TestResponse  $full  검증자 없이 받은 200 응답
+     * @param  TestResponse  $notModified  조건부 요청으로 받은 304 응답
+     * @return void 반환값 없음
      */
     private function assertNotModifiedMirrors200(TestResponse $full, TestResponse $notModified): void
     {
@@ -110,6 +142,12 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
 
     /**
      * 사용자 다운로드는 행 메타 기준 검증자를 싣고 다운로드 방식(attachment)을 유지한다.
+     *
+     * @scenario serving_type=download, contract_axis=conditional_request
+     *
+     * @effects download_carries_row_meta_validators_and_keeps_attachment_disposition
+     *
+     * @return void 반환값 없음
      */
     public function test_user_download_carries_validators_and_keeps_attachment_disposition(): void
     {
@@ -134,7 +172,13 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
     }
 
     /**
+     * 사용자 다운로드가 200 의 ETag 를 If-None-Match 로 되보내면 본문 없는 304 를 같은 캐시 헤더로 돌려주는지 확인한다.
+     *
+     * @scenario serving_type=download, contract_axis=conditional_request
+     *
      * @effects download_answers_conditional_requests_with_304_carrying_the_cache_headers_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_user_download_answers_if_none_match_with_304(): void
     {
@@ -149,7 +193,13 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
     }
 
     /**
+     * 사용자 다운로드가 200 의 Last-Modified 를 If-Modified-Since 로 되보내면 304 를 같은 캐시 헤더로 돌려주는지 확인한다.
+     *
+     * @scenario serving_type=download, contract_axis=conditional_request
+     *
      * @effects download_answers_conditional_requests_with_304_carrying_the_cache_headers_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_user_download_answers_if_modified_since_with_304(): void
     {
@@ -163,6 +213,15 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
         $this->assertNotModifiedMirrors200($full, $notModified);
     }
 
+    /**
+     * 현재 ETag 와 다른 검증자를 보내면 304 대신 attachment 방식의 전체 200 을 돌려주는지 확인한다.
+     *
+     * @scenario serving_type=download, contract_axis=conditional_request
+     *
+     * @effects download_returns_full_200_for_a_non_matching_validator
+     *
+     * @return void 반환값 없음
+     */
     public function test_user_download_returns_full_200_for_a_non_matching_validator(): void
     {
         $row = $this->uploadTextAttachment();
@@ -176,6 +235,12 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
     /**
      * 사용자 업로드물 통로는 압축 제외를 **선언**한다 — 텍스트 첨부는 압축 대상 유형이라 선언이
      * 없으면 미들웨어가 응답 클래스를 보고 건너뛰는 우연에만 기대게 된다.
+     *
+     * @scenario serving_type=download, contract_axis=conditional_request
+     *
+     * @effects download_declares_compression_skip
+     *
+     * @return void 반환값 없음
      */
     public function test_user_download_declares_compression_skip(): void
     {
@@ -190,6 +255,8 @@ class AttachmentDownloadCacheContractTest extends BoardTestCase
      * 관리자 다운로드 통로도 같은 계약을 갖는다 — 한쪽만 고치면 그 비대칭이 다음 사각이 된다.
      *
      * @effects download_answers_conditional_requests_with_304_carrying_the_cache_headers_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_download_shares_the_same_conditional_contract(): void
     {

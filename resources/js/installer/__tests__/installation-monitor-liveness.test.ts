@@ -101,6 +101,8 @@ function collector() {
 }
 
 describe('J1 — busy 로 거부된 재연결', () => {
+  // @scenario installation_mode=sse
+  // @effects sse_busy_abort_hands_off_instead_of_showing_aborted
   it('중단 화면을 그리지 않고 진행 조회로 갈아탄다', () => {
     vi.stubGlobal('EventSource', FakeEventSource as unknown as typeof EventSource);
     vi.stubGlobal('fetch', vi.fn(async () => ({ status: 200, ok: true, json: async () => ({}) }) as any));
@@ -123,6 +125,8 @@ describe('J1 — busy 로 거부된 재연결', () => {
     if (monitor.successor) monitor.successor.stop();
   });
 
+  // @scenario installation_mode=sse, task_outcome=aborted
+  // @effects sse_busy_abort_hands_off_instead_of_showing_aborted
   it('사용자 중단은 그대로 중단 화면으로 간다 — 면제가 넓어지면 안 된다', () => {
     vi.stubGlobal('EventSource', FakeEventSource as unknown as typeof EventSource);
 
@@ -142,6 +146,8 @@ describe('J1 — busy 로 거부된 재연결', () => {
 });
 
 describe('J2 — 폴링 요청 겹침', () => {
+  // @scenario installation_mode=polling
+  // @effects polling_never_overlaps_requests
   it('앞선 조회가 끝나기 전에는 다음 조회를 보내지 않는다', async () => {
     vi.useFakeTimers();
 
@@ -175,6 +181,8 @@ describe('J2 — 폴링 요청 겹침', () => {
 });
 
 describe('J5 — 단계별 실행의 중단', () => {
+  // @scenario installation_mode=stepwise, task_outcome=aborted
+  // @effects stepwise_stop_is_not_counted_as_network_failure
   it('중단으로 끊은 요청을 네트워크 실패로 세지 않는다', async () => {
     const c = collector();
     let abortRequest: (() => void) | null = null;

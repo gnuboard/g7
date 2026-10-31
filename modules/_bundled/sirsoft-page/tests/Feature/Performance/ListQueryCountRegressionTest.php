@@ -23,6 +23,8 @@ class ListQueryCountRegressionTest extends ModuleTestCase
      *
      * @param  int  $count  생성할 수
      * @param  string  $prefix  슬러그 접두
+     *
+     * @return void 반환값 없음
      */
     private function seedPages(int $count, string $prefix): void
     {
@@ -40,6 +42,8 @@ class ListQueryCountRegressionTest extends ModuleTestCase
      * 페이지 목록: 페이지 수가 늘어도 쿼리 수가 늘지 않는지 확인
      *
      * @effects page_list_query_count_stable
+     *
+     * @return void 반환값 없음
      */
     public function test_page_list_query_count_is_stable(): void
     {
@@ -59,6 +63,8 @@ class ListQueryCountRegressionTest extends ModuleTestCase
      * 종전에는 PHP_INT_MAX 로 매칭 전량을 읽고 PHP 에서 잘라냈다.
      *
      * @effects page_search_query_count_stable
+     *
+     * @return void 반환값 없음
      */
     public function test_page_search_query_count_is_stable(): void
     {

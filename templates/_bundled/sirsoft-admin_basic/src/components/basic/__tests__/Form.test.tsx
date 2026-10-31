@@ -4,12 +4,16 @@ import { Form } from '../Form';
 
 describe('Form 컴포넌트', () => {
   describe('기본 렌더링', () => {
+    // @scenario component=form
+    // @effects form_renders_element_and_children
     it('form 요소가 렌더링된다', () => {
       const { container } = render(<Form>Form Content</Form>);
       const form = container.querySelector('form');
       expect(form).toBeTruthy();
     });
 
+    // @scenario component=form
+    // @effects form_renders_element_and_children
     it('자식 요소를 렌더링한다', () => {
       render(<Form>Test Form Content</Form>);
       expect(screen.getByText('Test Form Content')).toBeTruthy();
@@ -17,6 +21,8 @@ describe('Form 컴포넌트', () => {
   });
 
   describe('이벤트 핸들링', () => {
+    // @scenario component=form
+    // @effects form_dispatches_submit_reset_change_handlers
     it('onSubmit 핸들러가 호출된다', () => {
       const handleSubmit = vi.fn((e) => e.preventDefault());
       const { container } = render(<Form onSubmit={handleSubmit}>Submit Form</Form>);
@@ -27,6 +33,8 @@ describe('Form 컴포넌트', () => {
       expect(handleSubmit).toHaveBeenCalledTimes(1);
     });
 
+    // @scenario component=form
+    // @effects form_dispatches_submit_reset_change_handlers
     it('onReset 핸들러가 호출된다', () => {
       const handleReset = vi.fn();
       const { container } = render(<Form onReset={handleReset}>Reset Form</Form>);
@@ -37,6 +45,8 @@ describe('Form 컴포넌트', () => {
       expect(handleReset).toHaveBeenCalledTimes(1);
     });
 
+    // @scenario component=form
+    // @effects form_dispatches_submit_reset_change_handlers
     it('onChange 핸들러가 호출된다', () => {
       const handleChange = vi.fn();
       const { container } = render(
@@ -53,36 +63,48 @@ describe('Form 컴포넌트', () => {
   });
 
   describe('HTML 속성', () => {
+    // @scenario component=form
+    // @effects form_applies_html_and_custom_attributes
     it('action 속성이 적용된다', () => {
       const { container } = render(<Form action="/submit">Form</Form>);
       const form = container.querySelector('form');
       expect(form?.action).toContain('/submit');
     });
 
+    // @scenario component=form
+    // @effects form_applies_html_and_custom_attributes
     it('method 속성이 적용된다', () => {
       const { container } = render(<Form method="post">Form</Form>);
       const form = container.querySelector('form');
       expect(form?.method).toBe('post');
     });
 
+    // @scenario component=form
+    // @effects form_applies_html_and_custom_attributes
     it('encType 속성이 적용된다', () => {
       const { container } = render(<Form encType="multipart/form-data">Form</Form>);
       const form = container.querySelector('form');
       expect(form?.enctype).toBe('multipart/form-data');
     });
 
+    // @scenario component=form
+    // @effects form_applies_html_and_custom_attributes
     it('target 속성이 적용된다', () => {
       const { container } = render(<Form target="_blank">Form</Form>);
       const form = container.querySelector('form');
       expect(form?.target).toBe('_blank');
     });
 
+    // @scenario component=form
+    // @effects form_applies_html_and_custom_attributes
     it('autoComplete 속성이 적용된다', () => {
       const { container } = render(<Form autoComplete="off">Form</Form>);
       const form = container.querySelector('form');
       expect(form?.getAttribute('autocomplete')).toBe('off');
     });
 
+    // @scenario component=form
+    // @effects form_applies_html_and_custom_attributes
     it('noValidate 속성이 적용된다', () => {
       const { container } = render(<Form noValidate>Form</Form>);
       const form = container.querySelector('form');
@@ -91,24 +113,32 @@ describe('Form 컴포넌트', () => {
   });
 
   describe('사용자 정의 Props', () => {
+    // @scenario component=form
+    // @effects form_applies_html_and_custom_attributes
     it('사용자 정의 클래스가 추가된다', () => {
       const { container } = render(<Form className="custom-form">Form</Form>);
       const form = container.querySelector('form');
       expect(form?.className).toContain('custom-form');
     });
 
+    // @scenario component=form
+    // @effects form_applies_html_and_custom_attributes
     it('id 속성이 적용된다', () => {
       const { container } = render(<Form id="login-form">Form</Form>);
       const form = container.querySelector('form');
       expect(form?.id).toBe('login-form');
     });
 
+    // @scenario component=form
+    // @effects form_applies_html_and_custom_attributes
     it('data 속성이 적용된다', () => {
       const { container } = render(<Form data-testid="test-form">Form</Form>);
       const form = container.querySelector('form');
       expect(form?.getAttribute('data-testid')).toBe('test-form');
     });
 
+    // @scenario component=form
+    // @effects form_applies_html_and_custom_attributes
     it('name 속성이 적용된다', () => {
       const { container } = render(<Form name="registration">Form</Form>);
       const form = container.querySelector('form');
@@ -117,6 +147,8 @@ describe('Form 컴포넌트', () => {
   });
 
   describe('복잡한 Form 구조', () => {
+    // @scenario component=form
+    // @effects form_renders_element_and_children
     it('여러 input 요소를 포함한다', () => {
       const { container } = render(
         <Form>
@@ -131,6 +163,8 @@ describe('Form 컴포넌트', () => {
       expect(screen.getByText('제출')).toBeTruthy();
     });
 
+    // @scenario component=form
+    // @effects form_renders_element_and_children
     it('중첩된 div와 label을 포함한다', () => {
       render(
         <Form>
@@ -146,6 +180,8 @@ describe('Form 컴포넌트', () => {
   });
 
   describe('복합 Props', () => {
+    // @scenario component=form
+    // @effects form_applies_html_and_custom_attributes, form_dispatches_submit_reset_change_handlers
     it('여러 props가 함께 적용된다', () => {
       const handleSubmit = vi.fn((e) => e.preventDefault());
       const { container } = render(
@@ -213,6 +249,8 @@ describe.each([
     }
   };
 
+  // @scenario base_path=subpath, navigation_direction=request
+  // @effects template_form_component_applies_base_prefix
   it('루트 상대 action 에 마운트 접두사를 붙인다', () => {
     // 접두사가 없으면 하위 폴더 사이트에서 제출이 사이트 밖으로 나간다 — 오류 없이
     // 다른 사이트의 응답(또는 404)만 남는 형태다.
@@ -221,6 +259,8 @@ describe.each([
     expectDelegated('/api/x');
   });
 
+  // @scenario base_path=subpath, navigation_direction=request
+  // @effects template_form_component_applies_base_prefix
   it('이미 접두사를 가진 action · 절대 URL 은 그대로 둔다 (멱등)', () => {
     for (const value of ['/g7/api/x', 'https://pg.example.com/pay', '//pg.example.com/pay']) {
       const { container, unmount } = render(<Form action={value}>F</Form>);
@@ -230,12 +270,16 @@ describe.each([
     }
   });
 
+  // @scenario base_path=subpath, navigation_direction=request
+  // @effects template_form_component_applies_base_prefix
   it('action 이 없으면 속성을 만들지 않는다', () => {
     const { container } = render(<Form>F</Form>);
     expect(container.querySelector('form')).not.toHaveAttribute('action');
     expect(apiSpy).not.toHaveBeenCalled();
   });
 
+  // @scenario base_path=root, navigation_direction=request
+  // @effects template_form_component_applies_base_prefix
   it('루트 설치에서는 action 을 바꾸지 않는다', () => {
     delete (globalThis as any).G7Config.basePath;
     apiSpy.mockImplementation((path: string) => path);

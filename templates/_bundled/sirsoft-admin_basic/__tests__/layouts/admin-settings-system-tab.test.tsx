@@ -201,6 +201,7 @@ describe('환경설정 시스템 탭 (W5)', () => {
         expect(screen.getByTestId('radio-system.cron_mode')).toBeInTheDocument();
     });
 
+    /** @effects system_tab_tree_renders_only_on_the_system_tab */
     it('다른 탭에서는 이 트리가 렌더되지 않는다', async () => {
         active = createLayoutTest(buildLayout(), {
             componentRegistry: setupTestRegistry(),
@@ -269,6 +270,8 @@ describe('환경설정 시스템 탭 (W5)', () => {
         expect(input.value).toContain('token=abc');
     });
 
+    // @scenario stale_state=never_run
+    // @effects system_tab_shows_the_never_run_notice
     it('마지막 실행 기록이 없으면 그 사실을 알리는 문구가 나온다', async () => {
         active = createLayoutTest(buildLayout(), {
             componentRegistry: setupTestRegistry(),
@@ -284,6 +287,8 @@ describe('환경설정 시스템 탭 (W5)', () => {
 });
 
 describe('호출 번호 재발급 확인 모달', () => {
+    // @scenario token=rotated
+    // @effects token_rotate_modal_warns_and_calls_the_rotate_api
     it('경고 문구와 재발급 호출을 함께 갖는다', () => {
         const modal = loadPartial(MODAL_PATH);
         const serialized = JSON.stringify(modal);
@@ -302,6 +307,8 @@ describe('호출 번호 재발급 확인 모달', () => {
      * 옛 주소**가 화면에 남아, 운영자가 그것을 복사해 호스팅에 등록하고 예약 작업은
      * 계속 멈춘 채로 남는다. 오류도 토스트도 나지 않아 화면만 보면 성공으로 보인다.
      */
+    // @scenario token=rotated
+    // @effects token_rotate_modal_refreshes_the_parent_call_url
     it('주소칸 갱신을 부모 스코프에 쓴다', () => {
         const modal = loadPartial(MODAL_PATH);
         const serialized = JSON.stringify(modal);
@@ -333,6 +340,8 @@ describe('대시보드 예약 미실행 경고 (D19 · D30)', () => {
      * amber 로 렌더되는지는 `admin-dashboard-alert-severity.test.tsx` 가 렌더로 재고,
      * 리스너가 경고 심각도를 싣는지는 `ScheduleHealthAlertListenerTest` 가 잰다.
      */
+    // @scenario stale_state=stale
+    // @effects dashboard_alert_color_follows_severity_not_name
     it('경고 색 분기가 이름 열거가 아니라 심각도를 본다', () => {
         const serialized = JSON.stringify(loadPartial(DASHBOARD_PATH));
 
@@ -353,6 +362,8 @@ describe('대시보드 예약 미실행 경고 (D19 · D30)', () => {
      * 읽는 노드가 없으면 경고 문구만 뜨고 조치 화면으로 가는 길이 없어, 운영자가
      * 환경설정의 어느 탭인지를 스스로 찾아야 한다.
      */
+    // @scenario stale_state=stale
+    // @effects alert_carries_the_settings_path
     it('action_path 를 읽는 노드가 있다', () => {
         const serialized = JSON.stringify(loadPartial(DASHBOARD_PATH));
 
@@ -362,6 +373,8 @@ describe('대시보드 예약 미실행 경고 (D19 · D30)', () => {
 });
 
 describe('레이아웃 구조 계약', () => {
+    // @scenario setting_save_path=bulk
+    // @effects system_tab_save_persists_to_the_catalog
     it('입력 필드가 시스템 카테고리 이름으로 폼에 묶인다', () => {
         const serialized = JSON.stringify(loadPartial(PARTIAL_PATH));
 
@@ -399,6 +412,8 @@ describe('레이아웃 구조 계약', () => {
         }
     });
 
+    // @scenario actor_permission=settings_read
+    // @effects system_tab_inputs_disable_when_read_only
     it('입력 요소 전부가 읽기 전용일 때 비활성화된다', () => {
         const partial = loadPartial(PARTIAL_PATH);
 
@@ -410,6 +425,7 @@ describe('레이아웃 구조 계약', () => {
         }
     });
 
+    /** @effects cron_url_field_is_excluded_from_form_binding */
     it('호출 주소 입력란은 폼 자동 바인딩 대상이 아니다', () => {
         const partial = loadPartial(PARTIAL_PATH);
         const node = findById(partial, 'cron_url_value');

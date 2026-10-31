@@ -21,7 +21,8 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *   (DSN·경로 입력)은 NUL 을 명시 거부한다 — `.env` 기록 경로만 규칙이 없었다.
  *   폴리필(installer-runtime.php)과 본 정의(functions.php)는 같은 정책을 유지해야 한다.
  *
- * @effects installer_env_writes_are_injection_safe
+ * 효과 요약(마커 아님 — 평문): .env 기록이 주입에 안전하고 템플릿 표류를 견딘다
+ * (installer_env_writes_are_injection_safe, env_generation_survives_template_default_drift). 표식은 각 테스트 메서드가 단다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -30,6 +31,11 @@ class InstallerEnvTemplateDriftTest extends TestCase
     use CleansTemporaryBasePath;
     use ScansPhpSourceFunctions;
 
+    /**
+     * 임시 BASE_PATH 와 상태 파일, 런타임 비밀 파일 경로를 정의하고 .env 생성에 필요한 설치기 모듈과 다국어 대역을 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,6 +62,12 @@ class InstallerEnvTemplateDriftTest extends TestCase
 
     /**
      * #11: 템플릿 기본값이 표류해도 치환은 키 기준으로 성립하고, 키가 없으면 라인을 추가한다.
+     *
+     * @scenario task=env
+     *
+     * @effects env_generation_survives_template_default_drift
+     *
+     * @return void 반환값 없음
      */
     public function test_env_generation_survives_template_default_drift(): void
     {
@@ -108,6 +120,12 @@ class InstallerEnvTemplateDriftTest extends TestCase
      * 운영자가 입력한 값과 실제 저장된 값이 달라지는데 그 사실이 화면에 나타나지 않는다.
      * 정책은 `serializeEnvValue()` 단일 관문이 소유하고, 본 정의와 폴리필은 그 관문에
      * 위임하기만 한다.
+     *
+     * @scenario task=env
+     *
+     * @effects installer_env_writes_are_injection_safe
+     *
+     * @return void 반환값 없음
      */
     public function test_escape_env_value_rejects_nul_bytes(): void
     {
@@ -119,13 +137,19 @@ class InstallerEnvTemplateDriftTest extends TestCase
     /**
      * 본 정의와 폴리필이 같은 관문에 위임한다 — 소스 대조 (로드 순서상 여기서는
      * functions.php 정의가 이겨, 폴리필의 행위는 직접 실행으로 검증할 수 없다).
+     *
+     * @scenario task=env, guard_population=installer_sources
+     *
+     * @effects installer_env_writes_are_injection_safe
+     *
+     * @return void 반환값 없음
      */
     public function test_escape_env_value_delegates_to_single_gateway(): void
     {
         $projectRoot = dirname(__DIR__, 3);
 
         foreach (['functions.php', 'installer-runtime.php'] as $file) {
-            $source = (string) file_get_contents($projectRoot.'/public/install/includes/'.$file);
+            $source = $this->sourceWithoutComments($projectRoot.'/public/install/includes/'.$file);
 
             $this->assertMatchesRegularExpression(
                 '/function escapeEnvValue\(string \$value\): string\s*\{[^}]*return serializeEnvValue\(\$value\);/s',

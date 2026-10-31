@@ -70,6 +70,15 @@ class DocrootExposureWarningReachTest extends TestCase
         return $found;
     }
 
+    /**
+     * 업그레이드 스텝을 도는 커맨드를 두 개 이상 도출하고, 각 커맨드가 노출 통보 버퍼를 비우며 소비 메서드를 선언만 하지 않고 실제로 부르는지 소스로 확인한다.
+     *
+     * @scenario process_shape=standalone, warning_channel=console
+     *
+     * @effects docroot_exposure_warning_reaches_the_operator_from_every_process_that_can_produce_it
+     *
+     * @return void 반환값 없음
+     */
     public function test_every_command_that_runs_upgrade_steps_drains_the_warning_buffer(): void
     {
         $commands = $this->upgradeStepCommands();
@@ -111,6 +120,15 @@ class DocrootExposureWarningReachTest extends TestCase
         }
     }
 
+    /**
+     * 자식 커맨드가 [DOCROOT_EXPOSURE] 라인으로 통보를 넘기고, 부모 커맨드가 그 라인을 읽어 자기 기록 통로로 되돌리는지 소스로 확인한다.
+     *
+     * @scenario process_shape=spawn_child, warning_channel=update_record
+     *
+     * @effects docroot_exposure_warning_reaches_the_operator_from_every_process_that_can_produce_it
+     *
+     * @return void 반환값 없음
+     */
     public function test_spawn_child_hands_the_warning_to_the_parent_and_parent_reads_it(): void
     {
         $child = (string) file_get_contents(
@@ -151,6 +169,8 @@ class DocrootExposureWarningReachTest extends TestCase
      * @scenario parent_path=failure, parent_path=handoff, cleanup_outcome=ok, cleanup_outcome=throws
      *
      * @effects docroot_exposure_warning_reaches_the_operator_from_every_process_that_can_produce_it
+     *
+     * @return void 반환값 없음
      */
     public function test_parent_drains_the_buffer_on_failure_and_handoff_paths(): void
     {
@@ -223,6 +243,13 @@ class DocrootExposureWarningReachTest extends TestCase
         );
     }
 
+    /**
+     * 기록한 통보가 빈 문구를 뺀 순서 그대로 한 번만 돌아오고, 소비한 뒤에는 버퍼가 비는지 확인한다.
+     *
+     * @effects docroot_exposure_warning_buffer_is_consumed_exactly_once
+     *
+     * @return void 반환값 없음
+     */
     public function test_recorded_warning_is_returned_once_and_then_cleared(): void
     {
         StorageLinkHelper::takeDocrootExposureWarnings();

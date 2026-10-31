@@ -32,6 +32,7 @@ class TokenCheckEndpointTest extends PluginTestCase
      * 지정 권한을 가진 admin 사용자를 생성합니다.
      *
      * @param  array<int, string>  $permissionIds  부여할 권한 식별자
+     * @return User 권한이 부여된 관리자 사용자
      */
     private function adminWith(array $permissionIds): User
     {
@@ -67,7 +68,8 @@ class TokenCheckEndpointTest extends PluginTestCase
     /**
      * 사용자 토큰으로 요청 헤더를 만듭니다.
      *
-     * @return array<string, string>
+     * @param  User  $user  토큰을 발급할 사용자
+     * @return array<string, string> Authorization 과 Accept 요청 헤더
      */
     private function authHeaders(User $user): array
     {
@@ -78,7 +80,11 @@ class TokenCheckEndpointTest extends PluginTestCase
     }
 
     /**
-     * 비즈뿌리오 아이디/비밀번호를 저장합니다.
+     * 검수 모드를 켠 채로 비즈뿌리오 아이디와 비밀번호를 플러그인 설정에 저장합니다.
+     *
+     * @param  string  $id  비즈뿌리오 아이디
+     * @param  string  $password  비즈뿌리오 모듈 비밀번호
+     * @return void 반환값 없음
      */
     private function storeCredentials(string $id = 'biz-account', string $password = 'secret'): void
     {
@@ -89,11 +95,25 @@ class TokenCheckEndpointTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * 토큰 없이 연결 확인 API 를 부르면 401 인지 확인한다.
+     *
+     * @effects token_check_endpoint_requires_authentication_and_manage_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_인증_없이_요청하면_401이다(): void
     {
         $this->postJson(self::ENDPOINT)->assertStatus(401);
     }
 
+    /**
+     * view 권한만 가진 관리자가 연결 확인 API 를 부르면 403 인지 확인한다.
+     *
+     * @effects token_check_endpoint_requires_authentication_and_manage_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_manage_권한_없이_요청하면_403이다(): void
     {
         $admin = $this->adminWith(['sirsoft-message_bizppurio.messaging.view']);
@@ -103,6 +123,14 @@ class TokenCheckEndpointTest extends PluginTestCase
         $response->assertStatus(403);
     }
 
+    /**
+     * 저장된 자격증명으로 토큰 발급이 성공하면 연결 확인 API 가 200 과 success true 를 돌려주는지 확인한다.
+     *
+     * @scenario credential_state=filled, test_mode=on, connection_check_result=valid_credentials
+     * @effects token_check_endpoint_returns_200_on_valid_credentials
+     *
+     * @return void 반환값 없음
+     */
     public function test_자격증명이_유효하면_200을_반환한다(): void
     {
         Http::fake([
@@ -118,6 +146,14 @@ class TokenCheckEndpointTest extends PluginTestCase
         $response->assertJson(['success' => true]);
     }
 
+    /**
+     * 연결 확인이 성공하면 플러그인 캐시의 토큰이 새로 발급된 값으로 바뀌는지 확인한다.
+     *
+     * @scenario credential_state=filled, test_mode=on, connection_check_result=valid_credentials
+     * @effects token_check_success_refreshes_cached_token
+     *
+     * @return void 반환값 없음
+     */
     public function test_자격증명이_유효하면_캐시가_새_토큰으로_갱신된다(): void
     {
         Http::fake([
@@ -139,6 +175,14 @@ class TokenCheckEndpointTest extends PluginTestCase
         $this->assertSame('FRESH_TOKEN', $cache->get('bizppurio:token'));
     }
 
+    /**
+     * 토큰 요청이 연결 예외로 끊기면 연결 확인 API 가 500 이 아니라 422 를 돌려주는지 확인한다.
+     *
+     * @scenario credential_state=filled, test_mode=on
+     * @effects token_check_connection_failure_returns_422_not_500
+     *
+     * @return void 반환값 없음
+     */
     public function test_비즈뿌리오_서버에_연결할_수_없으면_500_대신_422를_반환한다(): void
     {
         Http::fake(['*/v1/token' => fn () => throw new ConnectionException('Connection refused')]);
@@ -151,6 +195,14 @@ class TokenCheckEndpointTest extends PluginTestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * 비즈뿌리오가 실패 코드와 사유를 주면 422 의 errors 에 result_code 와 원문 사유가 담기고 message 에는 원문이 없는지 확인한다.
+     *
+     * @scenario credential_state=filled, test_mode=on, connection_check_result=invalid_credentials
+     * @effects token_check_endpoint_returns_422_with_bizppurio_reason_and_result_code_on_failure
+     *
+     * @return void 반환값 없음
+     */
     public function test_비즈뿌리오가_실패_사유를_반환하면_422와_함께_원문_사유가_노출된다(): void
     {
         Http::fake([
@@ -170,6 +222,14 @@ class TokenCheckEndpointTest extends PluginTestCase
         $this->assertStringNotContainsString('invalid password in bizppurio', (string) $response->json('message'));
     }
 
+    /**
+     * 아이디와 비밀번호가 비어 있으면 연결 확인 API 가 422 를 돌려주는지 확인한다.
+     *
+     * @scenario credential_state=empty, test_mode=on, connection_check_result=invalid_credentials
+     * @effects token_check_returns_422_when_credentials_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_자격증명_미설정시_422를_반환한다(): void
     {
         $this->storeCredentials(id: '', password: '');

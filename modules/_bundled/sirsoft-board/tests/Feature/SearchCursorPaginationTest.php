@@ -26,6 +26,11 @@ class SearchCursorPaginationTest extends BoardTestCase
 {
     private PostService $postService;
 
+    /**
+     * 게시판을 준비하고 시험 대상 PostService 를 컨테이너에서 꺼내 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +42,8 @@ class SearchCursorPaginationTest extends BoardTestCase
      * 검색 대상 게시글을 만듭니다.
      *
      * @param  int  $count  생성할 수
+     *
+     * @return void 반환값 없음
      */
     private function seedPosts(int $count): void
     {
@@ -57,6 +64,8 @@ class SearchCursorPaginationTest extends BoardTestCase
      * 실제 컬럼 기준 정렬은 커서 경로를 타는지 확인
      *
      * @effects search_latest_sort_uses_cursor
+     *
+     * @return void 반환값 없음
      */
     public function test_real_column_sorts_use_cursor(): void
     {
@@ -83,6 +92,8 @@ class SearchCursorPaginationTest extends BoardTestCase
      * FULLTEXT 점수는 계산값이라 WHERE 절 경계로 쓸 수 없다.
      *
      * @effects search_relevance_sort_stays_on_offset
+     *
+     * @return void 반환값 없음
      */
     public function test_relevance_sort_stays_on_offset(): void
     {
@@ -109,6 +120,8 @@ class SearchCursorPaginationTest extends BoardTestCase
      * 다음 커서가 발급될 자리가 사라져 화면이 영원히 offset 에 머문다.
      *
      * @effects search_latest_sort_uses_cursor
+     *
+     * @return void 반환값 없음
      */
     public function test_first_page_without_cursor_starts_cursor_path(): void
     {
@@ -134,6 +147,8 @@ class SearchCursorPaginationTest extends BoardTestCase
      * 주소로 특정 페이지를 열어 둔 링크는 그 페이지를 그대로 보여줘야 한다.
      *
      * @effects search_relevance_sort_stays_on_offset
+     *
+     * @return void 반환값 없음
      */
     public function test_deep_page_without_cursor_stays_on_offset(): void
     {
@@ -161,6 +176,8 @@ class SearchCursorPaginationTest extends BoardTestCase
      * 이 형태가 조용히 갈라진다.
      *
      * @effects search_cursor_payload_keeps_offset_key_set
+     *
+     * @return void 반환값 없음
      */
     public function test_cursor_and_offset_payloads_share_key_set(): void
     {

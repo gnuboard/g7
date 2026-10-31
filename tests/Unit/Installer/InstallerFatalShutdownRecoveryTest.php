@@ -30,7 +30,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: task_outcome failed / resume_point retry_after_failure / endpoint_guard general
  *
- * @effects fatal_shutdown_promotes_running_task_to_failed, fatal_shutdown_promotion_keeps_skip_available, fatal_shutdown_promotion_is_idempotent, worker_entrypoints_share_one_shutdown_handler
+ * 효과 요약(마커 아님 — 평문): fatal_shutdown_promotes_running_task_to_failed, fatal_shutdown_promotion_keeps_skip_available, fatal_shutdown_promotion_is_idempotent, worker_entrypoints_share_one_shutdown_handler
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -45,6 +45,13 @@ class InstallerFatalShutdownRecoveryTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 임시 BASE_PATH 와 저장소 폴더를 한 번만 만들고 설치기 설정, 공용 함수, 상태 모듈을 적재한다.
+     *
+     * 이미 정의된 BASE_PATH 가 시스템 임시 폴더 밖이면 실제 상태 파일을 지키려고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function boot(): void
     {
         if (self::$booted) {
@@ -84,6 +91,11 @@ class InstallerFatalShutdownRecoveryTest extends TestCase
         require_once $root.'/public/install/includes/installer-state.php';
     }
 
+    /**
+     * 설치기 런타임을 준비하고 이전 테스트가 남긴 상태 파일과 진행 기록 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -105,7 +117,10 @@ class InstallerFatalShutdownRecoveryTest extends TestCase
     }
 
     /**
-     * @param  array<string, mixed>  $overrides
+     * 단계별 모드로 게시판 모듈 설치 태스크를 실행하던 중인 상태를 상태 파일로 저장한다.
+     *
+     * @param  array<string, mixed>  $overrides  기본 실행 중 상태 위에 덮어쓸 키와 값
+     * @return void 반환값 없음
      */
     private function seedRunning(array $overrides = []): void
     {
@@ -120,7 +135,10 @@ class InstallerFatalShutdownRecoveryTest extends TestCase
     }
 
     /**
-     * @return array{type: int, message: string, file: string, line: int}
+     * 종료 훅이 받는 마지막 오류 정보 모양으로 메모리 고갈 치명 오류를 꾸며 돌려준다.
+     *
+     * @param  int  $type  오류 종류 상수(기본은 치명 오류)
+     * @return array{type: int, message: string, file: string, line: int} 오류 종류, 메시지, 파일, 줄 번호
      */
     private function fatal(int $type = E_ERROR): array
     {
@@ -132,6 +150,15 @@ class InstallerFatalShutdownRecoveryTest extends TestCase
         ];
     }
 
+    /**
+     * 치명 오류로 끝난 요청이 실행 중 태스크를 실패로 올리고 대상, 건너뛰기 가능 여부, 오류 메시지 키를 정상 실패와 같이 기록하는지 확인한다.
+     *
+     * @scenario task_outcome=failed_extension, task=module
+     *
+     * @effects fatal_shutdown_promotes_running_task_to_failed
+     *
+     * @return void 반환값 없음
+     */
     public function test_fatal_shutdown_promotes_the_running_task_to_failed(): void
     {
         $this->seedRunning();
@@ -147,6 +174,15 @@ class InstallerFatalShutdownRecoveryTest extends TestCase
         $this->assertNotNull($state['error_message_key'] ?? null);
     }
 
+    /**
+     * 실패로 승격된 상태에서 건너뛰고 계속하기가 실제로 성공하고 그 태스크가 건너뛴 목록에 오르는지 확인한다.
+     *
+     * @scenario task_outcome=failed_extension, skip_request=skippable
+     *
+     * @effects fatal_shutdown_promotion_keeps_skip_available
+     *
+     * @return void 반환값 없음
+     */
     public function test_promoted_state_makes_skip_and_continue_possible(): void
     {
         $this->seedRunning();
@@ -163,6 +199,15 @@ class InstallerFatalShutdownRecoveryTest extends TestCase
         $this->assertContains('module_install:sirsoft-board', $result['skipped']);
     }
 
+    /**
+     * 오류 없는 정상 종료와 경고 수준 종료는 승격하지 않고 실행 중 상태를 그대로 두는지 확인한다.
+     *
+     * @scenario task_outcome=done
+     *
+     * @effects fatal_shutdown_promotion_is_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_non_fatal_or_clean_shutdown_leaves_the_state_untouched(): void
     {
         $this->seedRunning();
@@ -179,6 +224,15 @@ class InstallerFatalShutdownRecoveryTest extends TestCase
         $this->assertNull(getInstallationState()['failed_task'] ?? null);
     }
 
+    /**
+     * 완료, 중단, 실패로 이미 끝난 설치는 치명 오류가 와도 결말을 덮어쓰지 않는지 확인한다.
+     *
+     * @scenario task_outcome=aborted, resume_point=all_completed
+     *
+     * @effects fatal_shutdown_promotion_is_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_finished_installations_are_not_touched(): void
     {
         foreach (['completed', 'aborted', 'failed'] as $status) {
@@ -192,6 +246,15 @@ class InstallerFatalShutdownRecoveryTest extends TestCase
         }
     }
 
+    /**
+     * 필수 태스크가 치명 오류로 끝나면 대상 없이 건너뛰기 불가로 기록되는지 확인한다.
+     *
+     * @scenario task_outcome=failed_db, task=db_migrate, skip_request=required
+     *
+     * @effects fatal_shutdown_promotes_running_task_to_failed
+     *
+     * @return void 반환값 없음
+     */
     public function test_promotion_records_a_non_skippable_required_task_as_such(): void
     {
         $this->seedRunning(['current_task' => 'db_migrate']);
@@ -205,6 +268,15 @@ class InstallerFatalShutdownRecoveryTest extends TestCase
         $this->assertFalse((bool) ($state['failed_task_skippable'] ?? true));
     }
 
+    /**
+     * 세 워커 진입점이 주석을 걷어낸 소스에서 모두 같은 종료 처리 함수를 등록하는지 대조한다.
+     *
+     * @scenario endpoint_guard=general
+     *
+     * @effects worker_entrypoints_share_one_shutdown_handler
+     *
+     * @return void 반환값 없음
+     */
     public function test_all_three_worker_entrypoints_register_the_shared_shutdown_handler(): void
     {
         $root = dirname(__DIR__, 3);

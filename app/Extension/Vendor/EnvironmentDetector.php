@@ -238,6 +238,8 @@ class EnvironmentDetector
 
     /**
      * 캐시 초기화 (테스트용).
+     *
+     * @return void 반환값 없음
      */
     public function resetCache(): void
     {
@@ -307,6 +309,8 @@ class EnvironmentDetector
      * 를 일으키므로 보조 신호로만 쓴다. stat 통과 후보가 있으면 우선 반환하고,
      * 그렇지 않은 경우 메타문자 없는 첫 후보를 반환해 canExecuteComposer 의
      * proc_open 결과로 최종 판정한다.
+     *
+     * @return string|null stat 통과 후보, 없으면 첫 후보 경로 (PATH 가 비어 있으면 null)
      */
     private function searchComposerInPath(): ?string
     {
@@ -351,6 +355,9 @@ class EnvironmentDetector
      * stat (is_file) 의존을 제거해 open_basedir 환경의 false negative 를 피한다.
      * 단일 토큰의 셸 메타문자만 차단하고, 실제 실행 가능 여부는 canExecuteComposer
      * 의 proc_open 결과로 최종 판정한다.
+     *
+     * @param  string|null  $candidate  검사할 composer 경로 또는 명령 문자열
+     * @return bool 비어 있지 않고 셸 메타문자가 없으면 true (공백이 든 명령은 신뢰해 true)
      */
     private function isExecutableCandidate(?string $candidate): bool
     {

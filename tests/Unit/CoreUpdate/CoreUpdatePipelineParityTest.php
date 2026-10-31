@@ -61,6 +61,8 @@ class CoreUpdatePipelineParityTest extends TestCase
      * @scenario run_state=running, execution_mode=subprocess
      *
      * @effects the_web_pipeline_covers_every_service_call_the_cli_makes
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_the_web_pipeline_covers_every_service_call_the_cli_makes(): void
@@ -89,6 +91,8 @@ class CoreUpdatePipelineParityTest extends TestCase
      * @scenario run_state=running, execution_mode=subprocess
      *
      * @effects no_stale_omission_declarations_remain
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_no_stale_omission_declarations_remain(): void
@@ -124,6 +128,8 @@ class CoreUpdatePipelineParityTest extends TestCase
      * @scenario run_state=running, handoff=none
      *
      * @effects apply_and_upgrade_steps_live_in_different_step_methods
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_apply_and_upgrade_steps_live_in_different_step_methods(): void
@@ -161,6 +167,8 @@ class CoreUpdatePipelineParityTest extends TestCase
      * @scenario run_state=running, execution_mode=inprocess, spawn_fallback=forced_inprocess
      *
      * @effects the_upgrade_step_stage_forces_the_inprocess_fallback_mode
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_the_upgrade_step_stage_forces_the_inprocess_fallback_mode(): void
@@ -214,6 +222,8 @@ class CoreUpdatePipelineParityTest extends TestCase
      * @scenario run_state=rolling_back, rollback_outcome=restored
      *
      * @effects the_rollback_path_finishes_as_strongly_as_the_success_path
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_the_rollback_path_finishes_as_strongly_as_the_success_path(): void
@@ -263,6 +273,8 @@ class CoreUpdatePipelineParityTest extends TestCase
      * @scenario run_state=idle, failing_step=preflight
      *
      * @effects preflight_covers_every_path_the_web_run_writes_to
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_preflight_covers_every_path_the_web_run_writes_to(): void
@@ -303,6 +315,8 @@ class CoreUpdatePipelineParityTest extends TestCase
      * @scenario actor=with_permission, run_state=idle
      *
      * @effects the_start_screen_receives_the_preflight_verdict
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_the_start_screen_receives_the_preflight_verdict(): void
@@ -433,6 +447,8 @@ class CoreUpdatePipelineParityTest extends TestCase
      * @scenario run_state=running
      *
      * @effects advance_runs_exactly_one_step_per_request
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_advance_runs_exactly_one_step_per_request(): void
@@ -472,6 +488,13 @@ class CoreUpdatePipelineParityTest extends TestCase
         );
     }
 
+    /**
+     * 소스에서 이름이 같은 메서드를 찾아 여는 중괄호부터 짝이 맞는 닫는 중괄호까지의 본문을 잘라 낸다.
+     *
+     * @param  string  $source  검사할 PHP 소스
+     * @param  string  $method  찾을 메서드 이름
+     * @return string 메서드 본문(찾지 못하면 빈 문자열)
+     */
     private function methodBody(string $source, string $method): string
     {
         $start = strpos($source, 'function '.$method.'(');

@@ -21,6 +21,11 @@ namespace Tests\Concerns;
  */
 trait CleansTemporaryBasePath
 {
+    /**
+     * 부모 클래스 정리를 먼저 돌린 뒤, 상수로 고정된 `BASE_PATH` 가 시스템 temp 하위 트리이면 그 트리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     public static function tearDownAfterClass(): void
     {
         parent::tearDownAfterClass();
@@ -34,7 +39,7 @@ trait CleansTemporaryBasePath
      * 시스템 temp 하위의 디렉토리 트리를 지운다 (그 밖이면 아무것도 하지 않는다).
      *
      * @param  string  $path  대상 경로
-     * @return void
+     * @return void 반환값 없음
      */
     protected static function removeTemporaryTree(string $path): void
     {

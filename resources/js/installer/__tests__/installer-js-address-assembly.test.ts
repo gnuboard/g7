@@ -37,6 +37,8 @@ const ROOT_RELATIVE_REQUEST = [
 ];
 
 describe('인스톨러 스크립트는 루트 상대 주소를 직접 요청하지 않는다', () => {
+    // @scenario base_path=subpath, script_home=installer
+    // @effects installer_scripts_never_request_a_root_relative_literal
     it('모집단 — 설치 화면 스크립트를 실제로 읽는다', () => {
         const files = readdirSync(SCRIPT_DIR).filter((name) => name.endsWith('.js'));
 
@@ -44,6 +46,8 @@ describe('인스톨러 스크립트는 루트 상대 주소를 직접 요청하�
         expect(files.length).toBeGreaterThan(1);
     });
 
+    // @scenario base_path=subpath, script_home=installer
+    // @effects installer_scripts_never_request_a_root_relative_literal
     it('루트 상대 리터럴 요청·이동이 없다', () => {
         const offenders: string[] = [];
 
@@ -65,6 +69,8 @@ describe('인스톨러 스크립트는 루트 상대 주소를 직접 요청하�
         expect(offenders, `루트 상대 주소를 직접 쓰는 지점:\n${offenders.join('\n')}`).toEqual([]);
     });
 
+    // @scenario base_path=subpath, script_home=installer
+    // @effects installer_scripts_never_request_a_root_relative_literal
     it('판정식 자기검증 — 위반 형태를 실제로 잡는다', () => {
         // 음성 대조가 없으면 정규식이 사문이 되어도 위 비교가 초록이다.
         const positives = [

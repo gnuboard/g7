@@ -28,6 +28,11 @@ class ZipBootstrapFlowTest extends TestCase
 {
     private string $workDir = '';
 
+    /**
+     * zip 확장과 PHP 실행 파일 경로가 있는지 확인하고 이 테스트 전용 임시 작업 폴더를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,6 +48,11 @@ class ZipBootstrapFlowTest extends TestCase
         $this->workDir = $this->makeTempDir();
     }
 
+    /**
+     * 테스트가 만든 임시 작업 폴더를 통째로 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if ($this->workDir !== '') {
@@ -54,6 +64,8 @@ class ZipBootstrapFlowTest extends TestCase
 
     /**
      * 자기 temp 밖을 절대 건드리지 않는다 (§7 R7 — 인스톨러 테스트가 실 `.env` 를 파괴한 선례).
+     *
+     * @return string 새로 만든 임시 폴더의 슬래시 경로
      */
     private function makeTempDir(): string
     {
@@ -63,6 +75,12 @@ class ZipBootstrapFlowTest extends TestCase
         return str_replace('\\', '/', $dir);
     }
 
+    /**
+     * 주어진 폴더 아래를 재귀로 비우고 폴더 자체도 지운다(심볼릭 링크는 따라가지 않는다).
+     *
+     * @param  string  $dir  지울 폴더 경로
+     * @return void 반환값 없음
+     */
     private function removeTree(string $dir): void
     {
         if (! is_dir($dir)) {
@@ -83,6 +101,7 @@ class ZipBootstrapFlowTest extends TestCase
     /**
      * 부트스트랩 사본을 담은 사이트 디렉토리를 만든다.
      *
+     * @param  string  $name  작업 폴더 아래에 만들 사이트 폴더 이름
      * @return string 사이트 디렉토리 절대 경로
      */
     private function makeSite(string $name = 'site'): string
@@ -100,6 +119,7 @@ class ZipBootstrapFlowTest extends TestCase
      * @param  string  $path  만들 ZIP 경로
      * @param  int  $filler  채움 파일 개수 (분할 해제를 강제하기 위한 축)
      * @param  string  $prefix  감싼 최상위 폴더 (빈 문자열이면 감싸지 않는다)
+     * @return void 반환값 없음
      */
     private function makePayloadZip(string $path, int $filler = 0, string $prefix = 'g7-9.9.9/'): void
     {
@@ -125,8 +145,9 @@ class ZipBootstrapFlowTest extends TestCase
     /**
      * 하네스를 띄워 부트스트랩을 한 번 호출한다.
      *
+     * @param  string  $site  부트스트랩 사본이 놓인 사이트 디렉토리 절대 경로
      * @param  array<string, string>  $post  POST 필드
-     * @return array{code: int, raw: string, json: array<string, mixed>|null}
+     * @return array{code: int, raw: string, json: array<string, mixed>|null} 종료 코드, 원문 출력, 해석된 JSON 응답
      */
     private function call(string $site, array $post): array
     {
@@ -148,6 +169,9 @@ class ZipBootstrapFlowTest extends TestCase
 
     /**
      * 확인 번호를 읽는다 (화면을 한 번 열어 발급시킨 뒤).
+     *
+     * @param  string  $site  부트스트랩 사본이 놓인 사이트 디렉토리 절대 경로
+     * @return string 화면 최초 진입이 발급한 확인 번호
      */
     private function issueToken(string $site): string
     {
@@ -161,7 +185,8 @@ class ZipBootstrapFlowTest extends TestCase
     /**
      * 상태 파일을 읽는다.
      *
-     * @return array<string, mixed>
+     * @param  string  $site  부트스트랩 사본이 놓인 사이트 디렉토리 절대 경로
+     * @return array<string, mixed> 사이트 폴더의 해제 상태 파일 내용(없거나 깨졌으면 빈 배열)
      */
     private function readState(string $site): array
     {
@@ -171,9 +196,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * 작은 배포본을 한 요청으로 풀 때 최상위 감싼 폴더가 벗겨지고, 진입 파일과 압축, 번호, 상태 파일이 모두 지워지는지 확인한다.
+     *
      * @scenario archive=g7_payload, token=valid, entry=fresh
      *
      * @effects zip_bootstrap_strips_wrapper_directory, zip_bootstrap_self_deletes_entry_archive_and_state
+     *
+     * @return void 반환값 없음
      */
     public function test_한_번에_끝나는_해제가_감싼_폴더를_벗기고_자기를_지운다(): void
     {
@@ -208,9 +237,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * 요청 상한을 넘는 배포본이 여러 요청에 걸쳐 이어 풀리고, 라우팅을 가로채는 루트 파일은 마지막 요청 전까지 놓이지 않는지 확인한다.
+     *
      * @scenario archive=g7_payload, token=valid, token=session, entry=fresh, entry=resume
      *
      * @effects zip_bootstrap_resumes_from_recorded_entry_index, zip_bootstrap_defers_routing_root_files_to_final_request
+     *
+     * @return void 반환값 없음
      */
     public function test_분할_해제가_이어서_진행되고_라우팅_파일은_마지막에_놓인다(): void
     {
@@ -259,9 +292,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * 분할 해제 도중 화면을 다시 열어도 진행 인덱스와 세션이 그대로 남아 다음 요청이 이어서 푸는지 확인한다.
+     *
      * @scenario archive=g7_payload, token=session, entry=resume
      *
      * @effects zip_bootstrap_refresh_preserves_progress_and_session
+     *
+     * @return void 반환값 없음
      */
     public function test_새로고침으로_재진입해도_진행_인덱스가_유지된다(): void
     {
@@ -286,9 +323,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * 세션 키를 잃은 뒤 재발급 경로로 새 확인 번호를 받아 처음부터가 아니라 멈춘 자리부터 이어 푸는지 확인한다.
+     *
      * @scenario archive=g7_payload, token=valid, entry=resume
      *
      * @effects zip_bootstrap_reissues_number_after_browser_session_loss
+     *
+     * @return void 반환값 없음
      */
     public function test_브라우저를_닫아_세션을_잃으면_번호를_다시_발급받아_이어서_푼다(): void
     {
@@ -320,9 +361,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * 잘못된 확인 번호 여러 형태가 모두 거부되고 어떤 파일도 쓰이지 않는지 확인한다.
+     *
      * @scenario archive=g7_payload, token=invalid, entry=fresh
      *
      * @effects zip_bootstrap_rejects_wrong_confirmation_number_without_writing
+     *
+     * @return void 반환값 없음
      */
     public function test_확인_번호가_틀리면_거부하고_파일시스템을_바꾸지_않는다(): void
     {
@@ -344,9 +389,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * 오입력이 시도 상한에 닿으면 잠금이 걸리고 번호가 새로 발급되며, 잠긴 동안에는 새 번호도 통하지 않는지 확인한다.
+     *
      * @scenario archive=g7_payload, token=exhausted, entry=fresh
      *
      * @effects zip_bootstrap_locks_and_reissues_after_attempt_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_연속_오입력이_상한에_닿으면_잠기고_번호가_재발급된다(): void
     {
@@ -379,9 +428,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * 원격 대입 시도가 건 잠금이 이미 인증된 운영자 세션의 해제 요청까지 막지 않는지 확인한다.
+     *
      * @scenario archive=g7_payload, token=session, entry=resume
      *
      * @effects zip_bootstrap_lock_does_not_stall_authenticated_session
+     *
+     * @return void 반환값 없음
      */
     public function test_잠금이_이미_인증된_세션을_멈추지_않는다(): void
     {
@@ -402,9 +455,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * 상위 경로로 빠져나가는 엔트리가 든 압축은 계획 단계에서 거부되어 대상 밖은 물론 안전한 엔트리도 쓰이지 않는지 확인한다.
+     *
      * @scenario archive=traversal, token=valid, entry=fresh
      *
      * @effects zip_bootstrap_rejects_path_traversal_entries
+     *
+     * @return void 반환값 없음
      */
     public function test_경로_순회_엔트리가_있으면_거부하고_대상_밖에_쓰지_않는다(): void
     {
@@ -431,9 +488,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * G7 배포본 형태가 아닌 압축은 거부 코드와 함께 아무것도 풀지 않는지 확인한다.
+     *
      * @scenario archive=foreign, token=valid, entry=fresh
      *
      * @effects zip_bootstrap_rejects_non_g7_archive
+     *
+     * @return void 반환값 없음
      */
     public function test_G7_배포본이_아닌_압축은_풀지_않는다(): void
     {
@@ -452,9 +513,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * 설치 완료 표식 파일이 있는 사이트에서는 화면이 완료 안내만 보이고 번호 발급과 해제를 모두 거부하는지 확인한다.
+     *
      * @scenario archive=g7_payload, token=valid, entry=completed_site
      *
      * @effects zip_bootstrap_refuses_on_completed_site
+     *
+     * @return void 반환값 없음
      */
     public function test_설치가_끝난_사이트에서는_아무것도_하지_않는다(): void
     {
@@ -473,9 +538,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * 환경 파일의 설치 완료 플래그만 있어도 해제 요청을 완료 사이트로 보고 거부하는지 확인한다.
+     *
      * @scenario archive=g7_payload, token=valid, entry=completed_site
      *
      * @effects zip_bootstrap_refuses_when_env_completion_flag_set
+     *
+     * @return void 반환값 없음
      */
     public function test_env_완료_표식만_있어도_차단한다(): void
     {
@@ -488,9 +557,13 @@ class ZipBootstrapFlowTest extends TestCase
     }
 
     /**
+     * 풀 압축 파일이 없으면 화면이 그 사실만 안내하고 확인 번호 파일을 만들지 않는지 확인한다.
+     *
      * @scenario archive=absent, token=valid, entry=fresh
      *
      * @effects zip_bootstrap_issues_no_number_without_archive
+     *
+     * @return void 반환값 없음
      */
     public function test_압축_파일이_없으면_안내만_하고_번호를_만들지_않는다(): void
     {

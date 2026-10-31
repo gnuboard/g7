@@ -19,16 +19,25 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - 첫 번째 글 prev=null, 마지막 글 next=null
  * - 존재하지 않는 게시글 → 404
  *
- * @effects navigation_boundary_null,
- *   navigation_null_for_notice
+ * 효과 요약(마커 아님 — 평문): navigation_boundary_null, navigation_null_for_notice
  */
 class PostNavigationApiTest extends BoardTestCase
 {
+    /**
+     * 이 시험이 쓰는 게시판 슬러그를 돌려준다.
+     *
+     * @return string 게시판 슬러그
+     */
     protected function getTestBoardSlug(): string
     {
         return 'post-navigation';
     }
 
+    /**
+     * 게시판을 준비하고 user 역할에 게시글 읽기 권한을 부여한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,6 +48,12 @@ class PostNavigationApiTest extends BoardTestCase
 
     /**
      * navigation API가 prev/next 키를 포함한 올바른 구조로 응답하는지 검증
+     *
+     * @scenario post_kind=original
+     *
+     * @effects navigation_response_has_prev_next_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_navigation_returns_correct_structure(): void
     {
@@ -64,6 +79,12 @@ class PostNavigationApiTest extends BoardTestCase
 
     /**
      * id DESC 정렬(기본) 기준으로 이전글/다음글이 올바르게 반환되는지 검증
+     *
+     * @scenario post_kind=original
+     *
+     * @effects returns_adjacent_posts_when_available
+     *
+     * @return void 반환값 없음
      */
     public function test_navigation_returns_correct_prev_and_next(): void
     {
@@ -93,9 +114,12 @@ class PostNavigationApiTest extends BoardTestCase
 
     /**
      * 목록의 첫 번째 글(가장 최신 = id가 가장 큰)은 prev가 null인지 검증
-     */
-    /**
+     *
+     * @scenario post_kind=original
+     *
      * @effects navigation_boundary_null
+     *
+     * @return void 반환값 없음
      */
     public function test_first_post_has_null_prev(): void
     {
@@ -116,9 +140,12 @@ class PostNavigationApiTest extends BoardTestCase
 
     /**
      * 목록의 마지막 글(가장 오래된 = id가 가장 작은)은 next가 null인지 검증
-     */
-    /**
+     *
+     * @scenario post_kind=original
+     *
      * @effects navigation_boundary_null
+     *
+     * @return void 반환값 없음
      */
     public function test_last_post_has_null_next(): void
     {
@@ -139,6 +166,12 @@ class PostNavigationApiTest extends BoardTestCase
 
     /**
      * 게시글이 1개뿐일 때 prev/next 모두 null인지 검증
+     *
+     * @scenario post_kind=original
+     *
+     * @effects navigation_boundary_null
+     *
+     * @return void 반환값 없음
      */
     public function test_single_post_has_null_prev_and_next(): void
     {
@@ -158,11 +191,12 @@ class PostNavigationApiTest extends BoardTestCase
 
     /**
      * 공지글은 navigation 미제공 — prev/next 모두 null 반환
-     */
-    /**
+     *
      * @scenario post_kind=notice
      *
      * @effects navigation_null_for_notice
+     *
+     * @return void 반환값 없음
      */
     public function test_notice_post_returns_null_navigation(): void
     {
@@ -187,6 +221,10 @@ class PostNavigationApiTest extends BoardTestCase
      *
      * 이슈 #269 이후 navigation 컨트롤러는 getAdjacent 실패를 모두 잡아 빈 응답으로 반환.
      * 500 을 내지 않도록 한 회귀 방지 정책.
+     *
+     * @effects returns_empty_when_post_not_found
+     *
+     * @return void 반환값 없음
      */
     public function test_navigation_with_nonexistent_post_returns_empty(): void
     {
@@ -204,6 +242,10 @@ class PostNavigationApiTest extends BoardTestCase
      * 비활성화된 게시판의 navigation 조회 시 404 응답
      *
      * BoardNotFoundException → NotFoundHttpException → 404
+     *
+     * @effects returns_error_for_inactive_board
+     *
+     * @return void 반환값 없음
      */
     public function test_navigation_on_inactive_board_returns_404(): void
     {

@@ -25,6 +25,11 @@ use PHPUnit\Framework\TestCase;
 #[PreserveGlobalState(false)]
 class PrivilegedDbAccountGuardTest extends TestCase
 {
+    /**
+     * BASE_PATH 를 저장소 루트로 세우고 인스톨러 설정(코어 판정 클래스 로드 포함), 함수, 요청 처리기를 한 번 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         if (! defined('BASE_PATH')) {
@@ -36,6 +41,11 @@ class PrivilegedDbAccountGuardTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/request-handler.php';
     }
 
+    /**
+     * 문구 함수가 읽는 전역 번역 표에 한국어 인스톨러 표를 싣는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -49,6 +59,8 @@ class PrivilegedDbAccountGuardTest extends TestCase
      * 인스톨러가 자체 목록을 갖게 되면 코어와 판정이 어긋난다.
      *
      * @effects installer_and_core_share_the_same_judgement_class
+     *
+     * @return void 반환값 없음
      */
     public function test_installer_loads_shared_judgement_class(): void
     {
@@ -61,9 +73,13 @@ class PrivilegedDbAccountGuardTest extends TestCase
     /**
      * Step 3 폼 POST 에서 Write DB 최고권한 계정이 거부되어야 한다.
      *
+     * @param  string  $username  데이터 공급자가 넘기는 DB 사용자명
+     *
      * @scenario account_kind=privileged, enforcement_point=installer_step3_write, install_state=not_completed
      *
      * @effects installer_step3_post_rejects_privileged_username
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('privilegedUsernameProvider')]
     public function test_step3_rejects_privileged_write_username(string $username): void
@@ -81,9 +97,13 @@ class PrivilegedDbAccountGuardTest extends TestCase
     /**
      * Read DB 도 동일하게 차단되어야 한다 (Write 만 막으면 Read 로 우회 가능).
      *
+     * @param  string  $username  데이터 공급자가 넘기는 DB 사용자명
+     *
      * @scenario account_kind=privileged, enforcement_point=installer_step3_read, install_state=not_completed
      *
      * @effects installer_step3_post_rejects_privileged_username
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('privilegedUsernameProvider')]
     public function test_step3_rejects_privileged_read_username(string $username): void
@@ -97,9 +117,13 @@ class PrivilegedDbAccountGuardTest extends TestCase
     /**
      * 빈 사용자명(설정 누락)도 Write DB 에서 거부되어야 한다.
      *
+     * @param  string  $username  데이터 공급자가 넘기는 DB 사용자명
+     *
      * @scenario account_kind=empty, enforcement_point=installer_step3_write, install_state=not_completed
      *
      * @effects installer_step3_post_rejects_empty_username
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('emptyUsernameProvider')]
     public function test_step3_rejects_empty_write_username(string $username): void
@@ -113,9 +137,13 @@ class PrivilegedDbAccountGuardTest extends TestCase
     /**
      * 빈 사용자명은 Read DB 에서도 거부되어야 한다.
      *
+     * @param  string  $username  데이터 공급자가 넘기는 DB 사용자명
+     *
      * @scenario account_kind=empty, enforcement_point=installer_step3_read, install_state=not_completed
      *
      * @effects installer_step3_post_rejects_empty_username
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('emptyUsernameProvider')]
     public function test_step3_rejects_empty_read_username(string $username): void
@@ -127,7 +155,9 @@ class PrivilegedDbAccountGuardTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 차단돼야 하는 최고권한 계정명과 대소문자, 앞뒤 공백 변형을 공급한다.
+     *
+     * @return array<string, array{0: string}> 경우 이름 → [사용자명]
      */
     public static function privilegedUsernameProvider(): array
     {
@@ -143,7 +173,9 @@ class PrivilegedDbAccountGuardTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 빈 문자열과 공백만 있는 사용자명을 공급한다.
+     *
+     * @return array<string, array{0: string}> 경우 이름 → [사용자명]
      */
     public static function emptyUsernameProvider(): array
     {
@@ -156,9 +188,13 @@ class PrivilegedDbAccountGuardTest extends TestCase
     /**
      * 정상 계정은 Write DB 에서 통과해야 한다 — 특히 `admin` 오차단 방지.
      *
+     * @param  string  $username  데이터 공급자가 넘기는 DB 사용자명
+     *
      * @scenario account_kind=normal, enforcement_point=installer_step3_write, install_state=not_completed
      *
      * @effects installer_step3_post_accepts_normal_username
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('acceptedUsernameProvider')]
     public function test_step3_accepts_normal_write_username(string $username): void
@@ -176,9 +212,13 @@ class PrivilegedDbAccountGuardTest extends TestCase
     /**
      * 정상 계정은 Read DB 에서도 통과해야 한다 (과잉 차단 방지).
      *
+     * @param  string  $username  데이터 공급자가 넘기는 DB 사용자명
+     *
      * @scenario account_kind=normal, enforcement_point=installer_step3_read, install_state=not_completed
      *
      * @effects installer_step3_post_accepts_normal_username
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('acceptedUsernameProvider')]
     public function test_step3_accepts_normal_read_username(string $username): void
@@ -190,7 +230,9 @@ class PrivilegedDbAccountGuardTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * 통과해야 하는 일반 계정명(admin, root 를 이름에 포함한 계정 포함)을 공급한다.
+     *
+     * @return array<string, array{0: string}> 경우 이름 → [사용자명]
      */
     public static function acceptedUsernameProvider(): array
     {
@@ -206,7 +248,11 @@ class PrivilegedDbAccountGuardTest extends TestCase
     /**
      * 빈 값과 최고권한 계정은 서로 다른 메시지여야 한다 — 운영자가 원인을 구분해야 한다.
      *
+     * @scenario account_kind=empty, account_kind=privileged, enforcement_point=installer_step3_write, install_state=not_completed
+     *
      * @effects empty_and_privileged_produce_distinct_messages
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_and_privileged_produce_different_messages(): void
     {
@@ -225,7 +271,11 @@ class PrivilegedDbAccountGuardTest extends TestCase
     /**
      * 차단 메시지는 입력한 계정명을 치환해 보여줘야 한다 (:username).
      *
+     * @scenario account_kind=privileged, enforcement_point=installer_step3_write, install_state=not_completed
+     *
      * @effects installer_message_substitutes_username_and_offers_alternative
+     *
+     * @return void 반환값 없음
      */
     public function test_privileged_message_substitutes_username(): void
     {
@@ -241,6 +291,15 @@ class PrivilegedDbAccountGuardTest extends TestCase
     /**
      * 차단만 하고 해결책이 없으면 사용자가 진행 불가 상태에 갇힌다.
      * ko/en 양쪽 문구가 대안(전용 계정 생성)을 제시하는지 확인한다.
+     *
+     * @param  string  $locale  확인할 인스톨러 로케일
+     * @param  string  $needle  그 로케일 문구에 있어야 하는 대안 안내 구절
+     *
+     * @scenario account_kind=privileged, enforcement_point=installer_step3_write, install_state=not_completed
+     *
+     * @effects installer_message_substitutes_username_and_offers_alternative
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('localeProvider')]
     public function test_message_offers_an_alternative(string $locale, string $needle): void
@@ -252,7 +311,9 @@ class PrivilegedDbAccountGuardTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * 로케일마다 최고권한 차단 문구가 담아야 하는 전용 계정 안내 구절을 공급한다.
+     *
+     * @return array<string, array{0: string, 1: string}> 로케일 → [로케일, 기대 구절]
      */
     public static function localeProvider(): array
     {
@@ -265,7 +326,11 @@ class PrivilegedDbAccountGuardTest extends TestCase
     /**
      * OPcache 관련 다국어 키가 ko/en 양쪽에 존재해야 한다 (요구사항 카드 렌더용).
      *
+     * @param  string  $locale  확인할 인스톨러 로케일
+     *
      * @effects installer_opcache_lang_keys_exist_in_ko_and_en
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('opcacheLocaleProvider')]
     public function test_opcache_lang_keys_exist(string $locale): void
@@ -278,7 +343,9 @@ class PrivilegedDbAccountGuardTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string}>
+     * OPcache 문구 키를 확인할 인스톨러 로케일(ko, en)을 공급한다.
+     *
+     * @return array<string, array{0: string}> 로케일 → [로케일]
      */
     public static function opcacheLocaleProvider(): array
     {

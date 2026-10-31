@@ -30,7 +30,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: task_outcome done·failed_db·failed_extension·best_effort_failed / resume_point first_pending·retry_after_failure·already_completed·all_completed / skip_request skippable·required·no_failure / php_binary_source detected_autodetect·configured / task composer·env·db_migrate·db_seed·template·module·plugin·language_pack·settings·cache·complete_flag·config_cache
  *
- * @effects stepwise_runs_first_pending_task_only, stepwise_seed_injects_admin_env_in_same_request, stepwise_db_failure_rolls_back_through_runner, stepwise_retry_re_executes_rolled_back_task, stepwise_full_list_completes_by_repeating_requests, stepwise_skip_marks_pair_and_advances, stepwise_inprocess_propagates_bundled_vendor_mode, stepwise_best_effort_failure_advances, stepwise_lock_loss_surfaces_as_busy, installer_php_binary_precedence_explicit_resolved_default, exception_error_event_carries_failure_path_display_fields, installer_settings_json_carries_locale_and_execution_mode, installer_completion_status_survives_best_effort_retry, installer_task_marker_persistence_is_verified
+ * 효과 요약(마커 아님 — 평문): stepwise_runs_first_pending_task_only, stepwise_seed_injects_admin_env_in_same_request, stepwise_db_failure_rolls_back_through_runner, stepwise_retry_re_executes_rolled_back_task, stepwise_full_list_completes_by_repeating_requests, stepwise_skip_marks_pair_and_advances, stepwise_inprocess_propagates_bundled_vendor_mode, stepwise_best_effort_failure_advances, stepwise_lock_loss_surfaces_as_busy, installer_php_binary_precedence_explicit_resolved_default, exception_error_event_carries_failure_path_display_fields, installer_settings_json_carries_locale_and_execution_mode, installer_completion_status_survives_best_effort_retry, installer_task_marker_persistence_is_verified
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -50,6 +50,8 @@ class InstallerStepwiseRunnerTest extends TestCase
 
     /**
      * 인스톨러 런타임을 temp BASE_PATH 로 부팅한다 (프로세스당 1회).
+     *
+     * @return void 반환값 없음
      */
     private static function bootInstallerRuntime(): void
     {
@@ -101,6 +103,9 @@ class InstallerStepwiseRunnerTest extends TestCase
 
     /**
      * 있을 때만 지운다 — 없는 파일의 unlink 경고가 테스트 결과를 WARN 으로 물들이지 않게.
+     *
+     * @param  string  ...$paths  지울 파일 경로들(없는 파일은 건너뛴다)
+     * @return void 반환값 없음
      */
     private static function removeIfExists(string ...$paths): void
     {
@@ -111,6 +116,11 @@ class InstallerStepwiseRunnerTest extends TestCase
         }
     }
 
+    /**
+     * 설치기 런타임을 준비하고 상태, 진행 기록, 완료 표식, 런타임 파일을 지운 뒤 진행 기록 버퍼와 늘 성공하는 실행기를 끼운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -135,6 +145,11 @@ class InstallerStepwiseRunnerTest extends TestCase
         $this->installExecutor(fn (string $command, array $parameters): array => ['exit_code' => 0, 'output' => ["ran {$command}"]]);
     }
 
+    /**
+     * 끼운 Artisan 실행기를 걷어내고 시딩이 남길 수 있는 관리자 환경 변수 넷을 비운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         unset($GLOBALS['g7_installer_artisan_executor_override']);
@@ -149,7 +164,8 @@ class InstallerStepwiseRunnerTest extends TestCase
     /**
      * 실행기 seam 을 설치하고 호출 기록을 남긴다.
      *
-     * @param  callable  $decider  fn (string $command, array $parameters): array{exit_code:int, output:array}
+     * @param  callable  $decider  fn (string $command, array $parameters): array{exit_code:int, output:array}  명령과 인자를 받아 종료 코드와 출력을 정하는 판정 함수
+     * @return void 반환값 없음
      */
     private function installExecutor(callable $decider): void
     {
@@ -172,6 +188,7 @@ class InstallerStepwiseRunnerTest extends TestCase
      *
      * @param  array<int, string>  $completed  완료 마커
      * @param  array<string, mixed>  $overrides  state 덮어쓰기
+     * @return void 반환값 없음
      */
     private function seedState(array $completed, array $overrides = []): void
     {
@@ -220,12 +237,27 @@ class InstallerStepwiseRunnerTest extends TestCase
         ]);
     }
 
-    /** 환경·DB 정리 단계까지 끝난 상태 (다음 = db_migrate) */
+    /**
+     * 환경·DB 정리 단계까지 끝난 상태 (다음 = db_migrate)
+     *
+     * Composer 확인부터 DB 정리까지 끝낸 완료 마커 목록을 돌려준다.
+     *
+     * @return array<int, string> 다음 미완료 태스크가 db_migrate 가 되는 완료 마커 목록
+     */
     private function completedThroughCleanup(): array
     {
         return ['composer_check', 'composer_install', 'env_update', 'key_generate', 'dependency_precheck', 'db_cleanup'];
     }
 
+    /**
+     * 태스크 목록의 순서와 키가 고정 목록과 같고, 필수, 선택 확장, best_effort 표시가 태스크마다 맞게 붙는지 확인한다.
+     *
+     * @scenario task=module, skip_request=skippable
+     *
+     * @effects installer_task_list_order_and_flags_are_fixed
+     *
+     * @return void 반환값 없음
+     */
     public function test_task_list_order_keys_and_skippable_flags(): void
     {
         $this->seedState([]);
@@ -262,6 +294,15 @@ class InstallerStepwiseRunnerTest extends TestCase
         $this->assertTrue($byKey['route_cache']['best_effort'], '라우트 캐시 실패가 완료된 설치를 실패로 뒤집으면 안 된다');
     }
 
+    /**
+     * DB 정리까지 끝난 상태에서 요청 하나가 첫 미완료 태스크인 db_migrate 하나만 실행하고 그 마커만 남기는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, resume_point=first_pending, task=db_migrate
+     *
+     * @effects stepwise_runs_first_pending_task_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_run_next_executes_only_first_pending_task(): void
     {
         $this->seedState($this->completedThroughCleanup());
@@ -283,6 +324,12 @@ class InstallerStepwiseRunnerTest extends TestCase
 
     /**
      * R2 — 관리자 언어·비밀번호 ENV 가 db_seed 커맨드 직전(같은 요청)에 주입되고, 끝나면 비워진다.
+     *
+     * @scenario installation_mode=stepwise, task=db_seed
+     *
+     * @effects stepwise_seed_injects_admin_env_in_same_request
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_task_injects_admin_env_in_same_request_and_purges_after(): void
     {
@@ -306,6 +353,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      *
      * 정상 경로와 폴백 경로가 서로 다른 값을 내는지까지 고정한다 — 두 출처가 같은 값이면
      * 폴백이 깨져도 테스트가 초록으로 남는다.
+     *
+     * @scenario installation_mode=stepwise, task=db_seed, locale=en
+     *
+     * @effects stepwise_seed_injects_admin_env_in_same_request
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_task_falls_back_to_site_locale_when_admin_language_missing(): void
     {
@@ -341,6 +394,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      * DB 가 없는 단위 환경에서는 `installerReadMigrationBatches()` 가 접속 불가(null)를 돌려주므로
      * 범위가 확정되지 않는다 → 롤백은 **수행되지 않는다**. 범위가 확정된 경우의 `--step` 전달은
      * `InstallerRollbackDataIntegrityTest` 가 소유한다.
+     *
+     * @scenario installation_mode=stepwise, task=db_migrate, task_outcome=failed_db
+     *
+     * @effects stepwise_db_failure_rolls_back_through_runner
+     *
+     * @return void 반환값 없음
      */
     public function test_db_failure_rolls_back_through_runner_and_clears_markers(): void
     {
@@ -378,6 +437,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      *
      * 재시도는 install-process.php 가 status 를 running 으로 되돌리되 completed_tasks 는 유지한 채
      * 다음 run-task 요청이 오는 흐름이다 — 그 상태 전이를 그대로 재현한다.
+     *
+     * @scenario installation_mode=stepwise, resume_point=retry_after_failure, task_outcome=failed_db
+     *
+     * @effects stepwise_retry_re_executes_rolled_back_task
+     *
+     * @return void 반환값 없음
      */
     public function test_retry_after_db_failure_re_executes_the_failed_task(): void
     {
@@ -419,6 +484,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      * 이 함수는 저장소 어느 테스트도 부르지 않아, 그 안에 든 두 수정(best-effort 를 pending
      * 필터에서 제외해 stepwise 와 규칙을 맞춘 것 · lock 손실 rethrow)을 지워도 전 스위트가
      * 초록이었다 — 「두 경로의 규칙을 맞췄다」는 수정 자체가 게이트로 잠기지 않은 상태다.
+     *
+     * @scenario installation_mode=sse, resume_point=all_completed, task_outcome=done
+     *
+     * @effects sse_orchestrator_completes_the_whole_list_in_one_request
+     *
+     * @return void 반환값 없음
      */
     public function test_sse_orchestrator_completes_the_whole_list_in_one_request(): void
     {
@@ -444,6 +515,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      *
      * completed 에만 의존하면 SSE 경로가 그 태스크를 다시 뽑아 stepwise 와 규칙이 갈린다.
      * 그 병합 루프(runInstallationTasks 안의 foreach)가 이 테스트의 대상이다.
+     *
+     * @scenario installation_mode=sse, task=config_cache, task_outcome=best_effort_failed
+     *
+     * @effects stepwise_best_effort_failure_advances
+     *
+     * @return void 반환값 없음
      */
     public function test_sse_orchestrator_treats_best_effort_failures_as_passed(): void
     {
@@ -468,6 +545,12 @@ class InstallerStepwiseRunnerTest extends TestCase
     /**
      * P2 "태스크 전수 완주" — run-task 요청을 반복하면 DB 단계부터 마무리까지 모든 태스크가 한 번씩
      * 실행되고 마지막 요청이 completed 로 끝난다. 요청 수 = 남은 태스크 수.
+     *
+     * @scenario installation_mode=stepwise, resume_point=all_completed, task_outcome=done
+     *
+     * @effects stepwise_full_list_completes_by_repeating_requests
+     *
+     * @return void 반환값 없음
      */
     public function test_full_task_list_completes_by_repeating_run_next(): void
     {
@@ -509,6 +592,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      *    로 옮긴 값. `getCurrentLanguage()` 로 되돌려도(=세션 의존 회귀) 전 스위트가 초록이었다.
      *  - **`system.execution_mode`** — D33 의 종단이다. Step 3 에서 고른 값이 설치본 설정에 남아야
      *    운영 중 실행 모드가 그 선택을 따른다. 저장 시점(Step 3)만 테스트가 덮고 있었다.
+     *
+     * @scenario task=settings, locale=en, execution_mode_choice=inprocess
+     *
+     * @effects installer_settings_json_carries_locale_and_execution_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_settings_json_carries_site_locale_and_execution_mode_choice(): void
     {
@@ -539,6 +628,12 @@ class InstallerStepwiseRunnerTest extends TestCase
 
     /**
      * W3 — 선택 확장 실패는 건너뛸 수 있고, 건너뛰면 짝(activate)까지 지나가 다음 태스크가 이어진다.
+     *
+     * @scenario task=module, task_outcome=failed_extension, skip_request=skippable
+     *
+     * @effects stepwise_skip_marks_pair_and_advances
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_failure_is_skippable_and_skip_advances_past_pair(): void
     {
@@ -577,6 +672,15 @@ class InstallerStepwiseRunnerTest extends TestCase
         $this->assertSame('plugin_install:sirsoft-gdpr', $pending[0]['key'], '건너뛴 짝 다음 태스크로 이어진다');
     }
 
+    /**
+     * 실패한 필수 DB 태스크에 대한 건너뛰기 요청이 거부 키와 함께 막히고 완료 마커가 생기지 않는지 확인한다.
+     *
+     * @scenario task=db_migrate, task_outcome=failed_db, skip_request=required
+     *
+     * @effects required_task_skip_is_rejected
+     *
+     * @return void 반환값 없음
+     */
     public function test_required_task_cannot_be_skipped(): void
     {
         $this->seedState($this->completedThroughCleanup(), [
@@ -593,6 +697,12 @@ class InstallerStepwiseRunnerTest extends TestCase
 
     /**
      * R10/A-4 — inprocess 확정 상태에서는 운영자가 composer 를 골랐어도 bundled 로 전파된다.
+     *
+     * @scenario execution_mode_resolved=inprocess, vendor_mode_choice=bundled, mode_touchpoint=vendor_mode_read, task=plugin
+     *
+     * @effects stepwise_inprocess_propagates_bundled_vendor_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_state_propagates_bundled_vendor_mode_to_extension_commands(): void
     {
@@ -640,6 +750,15 @@ class InstallerStepwiseRunnerTest extends TestCase
         }
     }
 
+    /**
+     * subprocess 로 확정된 설치에서는 운영자가 고른 composer 방식이 확장 설치 명령에 그대로 실리는지 확인한다.
+     *
+     * @scenario execution_mode_resolved=subprocess, vendor_mode_choice=composer, task=module
+     *
+     * @effects stepwise_inprocess_propagates_bundled_vendor_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_subprocess_state_keeps_operator_vendor_mode(): void
     {
         $this->seedState(array_merge($this->completedThroughCleanup(), [
@@ -653,6 +772,12 @@ class InstallerStepwiseRunnerTest extends TestCase
 
     /**
      * 새로고침 재개 — 완료 마커가 있는 태스크는 실행하지 않고 건너뛴 이벤트만 재생한다.
+     *
+     * @scenario installation_mode=stepwise, resume_point=already_completed, task=db_migrate
+     *
+     * @effects stepwise_runs_first_pending_task_only
+     *
+     * @return void 반환값 없음
      */
     public function test_already_completed_tasks_are_not_re_executed(): void
     {
@@ -667,6 +792,15 @@ class InstallerStepwiseRunnerTest extends TestCase
         $this->assertCount(0, $this->calls, '완료된 태스크를 다시 실행하면 안 된다');
     }
 
+    /**
+     * 모든 태스크에 완료 마커가 있으면 아무 명령도 실행하지 않고 남은 수 0 과 완료 이벤트로 끝나는지 확인한다.
+     *
+     * @scenario installation_mode=stepwise, resume_point=all_completed
+     *
+     * @effects stepwise_full_list_completes_by_repeating_requests
+     *
+     * @return void 반환값 없음
+     */
     public function test_no_pending_tasks_finalizes_with_completed_event(): void
     {
         $all = array_column(buildInstallationTaskListForSeed($this), 'key');
@@ -687,6 +821,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      * **그 뒤**에 온다. config_cache 만 실패한 뒤 재시도하면 complete_flag 는 이미 마커가 있어
      * 재실행되지 않으므로, 설치가 완주해도 상태는 재시작이 써 둔 running 으로 남는다.
      * 브라우저가 finalize 호출 전에 닫히면 그 뒤의 조회·요약이 계속 「진행 중」을 보고한다.
+     *
+     * @scenario resume_point=all_completed, task=complete_flag, task_outcome=best_effort_failed
+     *
+     * @effects installer_completion_status_survives_best_effort_retry
+     *
+     * @return void 반환값 없음
      */
     public function test_completion_marks_installation_status_even_when_complete_flag_is_not_re_executed(): void
     {
@@ -707,6 +847,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      * 마커만 없는 상태가 되면 단계별 실행은 completed_tasks 에 없는 첫 작업을 다시 뽑으므로
      * **같은 태스크를 무한 반복**한다 — 오류도 없고 진행률만 제자리이며, 클라이언트의 정지
      * 감지는 task_done 마다 재무장되어 영원히 발화하지 않는다.
+     *
+     * @scenario installation_mode=stepwise, task_outcome=failed_db
+     *
+     * @effects installer_task_marker_persistence_is_verified
+     *
+     * @return void 반환값 없음
      */
     public function test_task_without_persisted_marker_is_reported_as_failure_not_success(): void
     {
@@ -736,6 +882,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      * config_cache 는 목록 최후미라 completed 가 영영 나오지 않아 finalize 가 수행되지 않는다
      * (감사 2차 #1). 실패는 best_effort_failed_tasks 에 따로 남겨 화면이 "경고" 로 보여 주고
      * 재시도 때 다시 시도할 수 있게 한다.
+     *
+     * @scenario installation_mode=stepwise, task=config_cache, task_outcome=best_effort_failed
+     *
+     * @effects stepwise_best_effort_failure_advances
+     *
+     * @return void 반환값 없음
      */
     public function test_best_effort_failure_advances_instead_of_stalling(): void
     {
@@ -766,6 +918,12 @@ class InstallerStepwiseRunnerTest extends TestCase
     /**
      * 태스크 도중 워커 lock 을 잃으면 빈 응답(exit)이 아니라 예외로 올라온다 — run-task.php 가
      * busy 로 응답해 브라우저가 재시도하게 한다. 일반 실패(failed)로 뭉개지면 안 된다 (감사 2차 #8).
+     *
+     * @scenario installation_mode=stepwise, resume_point=first_pending
+     *
+     * @effects stepwise_lock_loss_surfaces_as_busy, lock_loss_inside_task_body_is_not_a_task_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_lock_loss_mid_task_surfaces_as_exception_not_failure(): void
     {
@@ -779,6 +937,12 @@ class InstallerStepwiseRunnerTest extends TestCase
 
     /**
      * D35 — 인스톨러 subprocess 경로의 PHP 바이너리 우선순위: 운영자 명시 > 설치 시작 시 자동 탐색된 경로 > 'php'.
+     *
+     * @scenario php_binary_source=configured, runner_strategy=subprocess
+     *
+     * @effects installer_php_binary_precedence_explicit_resolved_default
+     *
+     * @return void 반환값 없음
      */
     public function test_php_binary_precedence_explicit_then_resolved_then_default(): void
     {
@@ -802,6 +966,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      * [건너뛰고 계속] 은 실패 화면에서만 나타나지만 엔드포인트는 상태와 무관하게 호출될 수 있다 —
      * 실패가 없는데 받아 주면 아직 돌지도 않은 태스크가 completed·skipped 로 박혀 그 단계가
      * 영원히 실행되지 않는다(오류 없이 설치물만 빈다).
+     *
+     * @scenario skip_request=no_failure, task_outcome=done
+     *
+     * @effects skip_request_without_failure_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_request_without_failure_is_rejected(): void
     {
@@ -830,6 +1000,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      * 조용히 'php' 로 떨어지면 판정(subprocess 가능)과 실행(전 태스크 실패)이 어긋난 이유를
      * 운영자가 알 방법이 없다. 정책 자체는 불변이다 — 공백이 든 경로는 인자 주입 차단을 위해
      * 계속 거부한다. 기록은 경로당 1회(이 함수는 커맨드마다 호출된다).
+     *
+     * @scenario php_binary_source=configured, runner_strategy=subprocess
+     *
+     * @effects rejected_php_binary_path_falls_back_with_logged_reason
+     *
+     * @return void 반환값 없음
      */
     public function test_rejected_php_binary_path_falls_back_and_logs_reason_once(): void
     {
@@ -868,6 +1044,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      * 예외로 죽은 태스크의 error 이벤트도 실패 경로(handleInstallationTaskFailure)와 같은
      * 표시 정보를 실어야 한다 — 싣지 않으면 SSE·stepwise 는 [건너뛰고 계속] 과 수동 복구
      * 안내가 없고, 새로고침하면 그제야 나타난다 (§16.11.3 #13 이 state 만 고친 잔여 축).
+     *
+     * @scenario task=module, task_outcome=failed_extension, skip_request=skippable
+     *
+     * @effects exception_error_event_carries_failure_path_display_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_exception_error_event_carries_the_same_display_fields_as_the_failure_path(): void
     {
@@ -895,6 +1077,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      * 무엇이 왜 실패했는지가 통째로 사라지고 개발자 토큰만 화면에 남는다.
      * 새로고침 복원 경로에는 치환된 문장이 아예 없으므로(state 는 키만 저장) 폴백으로
      * 메울 수도 없다. 따라서 치환값이 이벤트와 state 양쪽에 실려야 한다.
+     *
+     * @scenario task_outcome=failed_extension, task=module
+     *
+     * @effects failure_carries_message_params_for_placeholder_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_failure_carries_message_params_for_placeholder_keys(): void
     {
@@ -934,6 +1122,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      * 남는다 — 생산 지점과 전달 경로는 별개 축이다. 대상 키를 손으로 열거하지 않고
      * 언어 파일에서 **자리표시자를 가진 키**를 도출하므로, 나중에 그런 키를 새로
      * 내보내는 지점이 생기면 이 테스트가 스스로 잡는다.
+     *
+     * @scenario locale=ko, task_outcome=failed_extension
+     *
+     * @effects failure_carries_message_params_for_placeholder_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_placeholder_message_keys_are_produced_with_their_params(): void
     {
@@ -1023,6 +1217,12 @@ class InstallerStepwiseRunnerTest extends TestCase
      * 남는다 — runtime.php 가 손상돼 관리자 비밀번호가 사라진 상황에서 운영자가
      * 원인을 알 수 있는 유일한 통로가 막힌다. 문구도 언어 파일을 거쳐야 en 로케일에
      * 한국어가 새지 않는다.
+     *
+     * @scenario task=db_seed, task_outcome=failed_db, locale=en
+     *
+     * @effects seed_early_failure_reports_through_failure_path_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_seed_early_failure_reports_through_the_keys_the_failure_path_reads(): void
     {
@@ -1054,6 +1254,12 @@ class InstallerStepwiseRunnerTest extends TestCase
     /**
      * 필수 태스크는 예외로 죽어도 skippable 이 아니다 — 표시 정보를 싣는 것과
      * 건너뛰기를 허용하는 것은 별개다.
+     *
+     * @scenario task=db_migrate, task_outcome=failed_db, skip_request=required
+     *
+     * @effects exception_error_event_carries_failure_path_display_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_exception_error_event_marks_required_task_as_not_skippable(): void
     {
@@ -1072,6 +1278,12 @@ class InstallerStepwiseRunnerTest extends TestCase
 
     /**
      * R3 — 토큰은 state.json 어디에도 기록되지 않는다 (runtime.php 전용).
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_stepwise_token_stays_out_of_state_file
+     *
+     * @return void 반환값 없음
      */
     public function test_stepwise_token_never_reaches_state_file(): void
     {

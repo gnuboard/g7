@@ -16,17 +16,9 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 않는다) ③ storage sentinel 은 검사 전용 난수이며 정리 헬퍼가 지운다. symlink 실측은
  * 환경 의존이므로 반환 형태(bool|null)와 잔여물 0 만 계약이다.
  *
- * @scenario target_file=env_example, file_presence=present, secret_channel=env_real_absent, symlink_probe=supported
- *
- * @effects exposure_probe_targets_carry_no_secrets, exposure_probe_targets_skip_missing_files,
- *          exposure_sentinel_is_random_and_cleaned_up, symlink_probe_reports_capability_or_unknown,
- *          exposure_missing_env_example_is_reported_as_unmeasured,
- *          exposure_entry_sweep_spares_concurrent_checks,
- *          exposure_cleanup_reports_whether_it_could_sweep,
- *          exposure_positive_control_detects_broken_delegation,
- *          exposure_sentinel_represents_real_storage_content,
- *          exposure_absent_vendor_family_is_reported_as_unmeasured,
- *          exposure_symlink_probe_rate_limit_is_client_scoped
+ * 효과 요약(마커 아님 — 평문): 프로브 대상의 비밀 무유출과 부재 파일 제외, sentinel 의 난수성과 정리, 링크 실측 형태,
+ * 재지 못한 계열 보고, 진입 스윕과 정리 보고, 양성 대조, sentinel 대표성, 링크 실측 상한의 클라이언트 한정.
+ * 표식은 각 테스트 메서드에 있다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -35,6 +27,11 @@ class InstallerWebExposureCheckTest extends TestCase
     use CleansTemporaryBasePath;
     use ScansPhpSourceFunctions;
 
+    /**
+     * 번역 대역과 임시 BASE_PATH 를 갖추고, 함수 가용 판정 헬퍼 다음에 노출 점검 파일을 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__.'/stubs/lang_stub.php';
@@ -48,6 +45,11 @@ class InstallerWebExposureCheckTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/exposure-check.php';
     }
 
+    /**
+     * BASE_PATH 가 시스템 임시 폴더 아래가 아니면 건너뛰고, 그 폴더가 없으면 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -66,6 +68,8 @@ class InstallerWebExposureCheckTest extends TestCase
 
     /**
      * 대표 프로젝트 루트 픽스처를 만든다.
+     *
+     * @return void 반환값 없음
      */
     private function seedProjectFixture(): void
     {
@@ -74,6 +78,15 @@ class InstallerWebExposureCheckTest extends TestCase
         file_put_contents(BASE_PATH.'/composer.json', json_encode(['name' => 'gnuboard/g7', 'require' => ['php' => '^8.2']]));
     }
 
+    /**
+     * 저장소 폴더와 의존성 폴더가 디스크에 있으면 그 두 계열이 프로브 대상에 들어가고, 의존성 계열 마커가 오토로더 이름으로 잡히는지 확인한다.
+     *
+     * @scenario file_presence=present
+     *
+     * @effects exposure_probe_targets_include_repository_and_dependency_families
+     *
+     * @return void 반환값 없음
+     */
     public function test_repository_and_dependency_families_are_probed_when_present(): void
     {
         // 이 두 계열은 **픽스처에 없으면 구조적으로 잴 수 없다.** 루트 `.htaccess` 의 숨김
@@ -97,6 +110,15 @@ class InstallerWebExposureCheckTest extends TestCase
         $this->assertSame('ComposerAutoloaderInit', $byPath['/vendor/autoload.php']['marker']);
     }
 
+    /**
+     * 환경 견본, 패키지 정의, 저장소 sentinel 세 계열이 대상에 오르고, 각 마커가 디스크 파일에서 나오며 환경 계열은 키 이름까지만 싣는지 확인한다.
+     *
+     * @scenario target_file=env_example, file_presence=present, probe_target=storage_sentinel
+     *
+     * @effects exposure_probe_targets_carry_no_secrets, exposure_sentinel_is_random_and_cleaned_up
+     *
+     * @return void 반환값 없음
+     */
     public function test_targets_cover_three_exposure_classes_with_disk_backed_markers(): void
     {
         $this->seedProjectFixture();
@@ -127,6 +149,12 @@ class InstallerWebExposureCheckTest extends TestCase
      * 받은 화면의 마커가 무효가 된다. 그 화면이 프로브하면 파일은 **실제로 서빙되는데도**
      * (= 노출) 마커가 달라 `exposed:false, judged:true` — 즉 「보호 확인됨」이다. D3 의
      * 판정이 정확히 반대로 뒤집힌다. 고유 이름이면 대상이 서로 달라 간섭이 성립하지 않는다.
+     *
+     * @scenario probe_target=storage_sentinel
+     *
+     * @effects exposure_sentinel_is_random_and_cleaned_up
+     *
+     * @return void 반환값 없음
      */
     public function test_sentinel_path_is_unique_per_call_so_concurrent_checks_cannot_alias(): void
     {
@@ -155,6 +183,12 @@ class InstallerWebExposureCheckTest extends TestCase
      * 종전에는 sentinel 을 만들지 못하면 그 대상만 사라졌고, 남은 두 계열이 403 이면 화면이
      * 초록 「보호 확인됨」이 됐다 — storage 계열은 한 번도 재지 않았는데도. 재지 못한 축은
      * 「안전」이 아니라 판정 불능(D21)이다.
+     *
+     * @scenario probe_target=storage_sentinel, exposure_unknown_cause=unmeasured_only
+     *
+     * @effects exposure_unmeasured_family_blocks_safe_verdict
+     *
+     * @return void 반환값 없음
      */
     public function test_unpreparable_family_is_reported_as_unmeasured_not_silently_dropped(): void
     {
@@ -193,6 +227,12 @@ class InstallerWebExposureCheckTest extends TestCase
      *
      * umask 는 환경마다 다르므로 상수와 비교하지 않는다. 같은 디렉토리에 같은 방식으로
      * 쓴 대조 파일과 **같은 권한**인지만 본다.
+     *
+     * @scenario probe_target=storage_sentinel
+     *
+     * @effects exposure_sentinel_represents_real_storage_content
+     *
+     * @return void 반환값 없음
      */
     public function test_sentinel_permission_matches_ordinary_storage_content(): void
     {
@@ -226,6 +266,12 @@ class InstallerWebExposureCheckTest extends TestCase
      * 403 이 나와도 경로 차단의 생존을 증명하지 못한다. 정작 그 규칙만이 지키는 실물은
      * 확장자가 없거나(`storage/framework/sessions/<40hex>`) 확장자 목록 밖
      * (`storage/app/public/*.png`)이다.
+     *
+     * @scenario probe_target=storage_sentinel
+     *
+     * @effects exposure_sentinel_represents_real_storage_content
+     *
+     * @return void 반환값 없음
      */
     public function test_sentinel_name_carries_no_extension_so_it_measures_the_path_rule(): void
     {
@@ -248,6 +294,12 @@ class InstallerWebExposureCheckTest extends TestCase
      * 않았다 — 이 점검이 대상으로 하는 바로 그 호스팅에서 vendor 계열은 **언제나** 재지
      * 못하는데, 종전에는 화면에 한 줄도 뜨지 않고 조용히 빠졌다. 배포 동선에 따라 있을 수도
      * 없을 수도 있는 `.git/` 과 달리 이 계열은 배포본에 언제나 실린다.
+     *
+     * @scenario exposure_unknown_cause=unmeasured_only
+     *
+     * @effects exposure_absent_vendor_family_is_reported_as_unmeasured
+     *
+     * @return void 반환값 없음
      */
     public function test_absent_vendor_family_is_reported_as_unmeasured_not_silently_dropped(): void
     {
@@ -297,6 +349,12 @@ class InstallerWebExposureCheckTest extends TestCase
      * 앞 호출의 대상을 지운다 — 앞 화면의 프로브가 404 를 받아 「보호 확인됨」이 되고, 그 파일은
      * 실제로 서빙되고 있었을 수도 있다. 3차 라운드가 고유 파일명으로 닫은 D3 판정 반전이
      * 정리 쪽으로 되살아나는 자리다.
+     *
+     * @scenario probe_target=storage_sentinel
+     *
+     * @effects exposure_entry_sweep_spares_concurrent_checks
+     *
+     * @return void 반환값 없음
      */
     public function test_entry_sweep_removes_only_stale_residue_so_concurrent_checks_survive(): void
     {
@@ -324,6 +382,10 @@ class InstallerWebExposureCheckTest extends TestCase
      *
      * 둘을 같은 `removed:0` 으로 뭉뚱그리면 정리가 통째로 무동작인 호스팅에서도 로그에
      * 「정리 완료 (0개)」가 남아, 운영자가 잔여물이 없다고 읽는다.
+     *
+     * @effects exposure_cleanup_reports_whether_it_could_sweep
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_reports_whether_it_could_sweep_at_all(): void
     {
@@ -337,6 +399,15 @@ class InstallerWebExposureCheckTest extends TestCase
         $this->assertNull($result['reason']);
     }
 
+    /**
+     * 실제 환경 파일의 비밀 값이 프로브 대상 직렬화 결과 어디에도 실리지 않는지 확인한다.
+     *
+     * @scenario target_file=env_example, secret_channel=env_real_absent
+     *
+     * @effects exposure_probe_targets_carry_no_secrets
+     *
+     * @return void 반환값 없음
+     */
     public function test_targets_never_carry_real_env_secrets(): void
     {
         $this->seedProjectFixture();
@@ -346,6 +417,15 @@ class InstallerWebExposureCheckTest extends TestCase
         $this->assertStringNotContainsString('super-secret-value-091', (string) $payload, '실제 .env 내용이 프로브 대상에 실리면 R3 위반이다');
     }
 
+    /**
+     * 환경 견본과 패키지 정의가 없는 트리에서는 그 둘이 프로브 대상에서 빠지는지 확인한다.
+     *
+     * @scenario target_file=env_example
+     *
+     * @effects exposure_probe_targets_skip_missing_files
+     *
+     * @return void 반환값 없음
+     */
     public function test_missing_files_are_skipped_not_probed(): void
     {
         // .env.example·composer.json 이 없는 트리 — 부재 파일의 404 는 보호를 증명하지 않으므로
@@ -357,6 +437,15 @@ class InstallerWebExposureCheckTest extends TestCase
         $this->assertNotContains('/composer.json', $paths);
     }
 
+    /**
+     * sentinel 마커가 호출마다 새 난수로 다시 만들어지는지 확인한다.
+     *
+     * @scenario probe_target=storage_sentinel
+     *
+     * @effects exposure_sentinel_is_random_and_cleaned_up
+     *
+     * @return void 반환값 없음
+     */
     public function test_sentinel_regenerates_random_token_per_call(): void
     {
         $firstToken = $this->sentinelTarget(installerExposureProbeTargets(BASE_PATH))['marker'] ?? null;
@@ -370,6 +459,12 @@ class InstallerWebExposureCheckTest extends TestCase
     /**
      * 정리는 **접두사 전체**를 걷는다 — 이름이 고유해졌으므로 단일 파일명 삭제로는 부족하고,
      * 링크 실측 임시 파일도 같은 디렉토리에 남을 수 있다 (3차 L4·L7).
+     *
+     * @scenario probe_target=storage_sentinel
+     *
+     * @effects exposure_sentinel_is_random_and_cleaned_up
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_removes_every_probe_residue(): void
     {
@@ -411,6 +506,8 @@ class InstallerWebExposureCheckTest extends TestCase
      * @scenario exposure_control=finalize
      *
      * @effects non_finalizing_cleanup_preserves_in_flight_probes
+     *
+     * @return void 반환값 없음
      */
     public function test_non_finalizing_cleanup_preserves_in_flight_probes_and_the_rate_limit(): void
     {
@@ -437,6 +534,15 @@ class InstallerWebExposureCheckTest extends TestCase
         @unlink($ratePath);
     }
 
+    /**
+     * 링크 실측이 참, 거짓, 판정 불가(null) 중 하나를 돌려주고 실측 산출물을 남기지 않는지 확인한다.
+     *
+     * @scenario symlink_probe=supported
+     *
+     * @effects symlink_probe_reports_capability_or_unknown
+     *
+     * @return void 반환값 없음
+     */
     public function test_symlink_probe_returns_capability_or_unknown_and_leaves_no_residue(): void
     {
         $dir = BASE_PATH.'/storage/installer';
@@ -462,6 +568,8 @@ class InstallerWebExposureCheckTest extends TestCase
      * 남지 않는다. 형제(`probe_exposure_sentinel`)는 정확히 이 사유로 이미 자기 창만 본다.
      *
      * @effects exposure_symlink_probe_rate_limit_is_client_scoped
+     *
+     * @return void 반환값 없음
      */
     public function test_symlink_probe_rate_limit_does_not_read_the_shared_window(): void
     {
@@ -494,6 +602,12 @@ class InstallerWebExposureCheckTest extends TestCase
      * (D21)으로 떨어져 운영자 확인을 요구하지만, 그 전에 **서버가 이 항목을 계속 내려주는지**
      * 를 재는 축이 없으면 배선이 빠진 것을 아무도 모른다. 요구사항 화면을 별도 프로세스에서
      * 실제로 실행해(대소문자·경로 가정 없이 런타임 그대로) 응답 형태를 고정한다.
+     *
+     * @scenario entry_context=api_script
+     *
+     * @effects requirements_response_carries_the_web_exposure_item
+     *
+     * @return void 반환값 없음
      */
     public function test_requirements_response_carries_web_exposure_item(): void
     {
@@ -647,6 +761,12 @@ class InstallerWebExposureCheckTest extends TestCase
      *
      * 대조는 「반드시 열려야 하는 주소」다. 목록이 비면 그 축은 선언만 있고 동작하지 않는다 —
      * 화면은 `controls: []` 를 「대조할 것이 없다」로 읽어 그대로 통과시킨다.
+     *
+     * @scenario exposure_control=reachable
+     *
+     * @effects exposure_positive_control_detects_broken_delegation
+     *
+     * @return void 반환값 없음
      */
     public function test_exposure_control_plan_targets_an_installer_asset_with_a_derived_marker(): void
     {
@@ -678,6 +798,12 @@ class InstallerWebExposureCheckTest extends TestCase
      * `.env` 로 이름을 바꿨다는 뜻이고(흔한 설치 절차), 그러면 숨김 파일 축을 한 번도 재지
      * 못한 상태가 된다. 종전에는 그 계열이 목록에서 조용히 빠져, `*.json`·`storage/` 만 막고
      * dotfile 은 안 막는 규칙에서 `.env` 가 노출인데 화면이 초록이었다.
+     *
+     * @scenario target_file=env_example, exposure_unknown_cause=unmeasured_only
+     *
+     * @effects exposure_missing_env_example_is_reported_as_unmeasured
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_env_example_is_reported_as_unmeasured_not_silently_dropped(): void
     {
@@ -702,6 +828,8 @@ class InstallerWebExposureCheckTest extends TestCase
      * 403 만으로 화면이 「보호 확인됨」이 된다. 재지 못한 축은 안전이 아니라 판정 불능(D21)이다.
      *
      * @effects exposure_missing_composer_json_is_reported_as_unmeasured
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_composer_json_is_reported_as_unmeasured_not_silently_dropped(): void
     {
@@ -730,6 +858,8 @@ class InstallerWebExposureCheckTest extends TestCase
      * 준비 실패 쪽으로 되살아난다. 형제 계열(`targets`)은 전부 승격한다.
      *
      * @effects exposure_control_preparation_failure_is_reported_as_unmeasured
+     *
+     * @return void 반환값 없음
      */
     public function test_exposure_control_plan_reports_preparation_failure(): void
     {
@@ -772,6 +902,8 @@ class InstallerWebExposureCheckTest extends TestCase
      * (14차 G3 라운드).
      *
      * @effects exposure_absent_control_restores_automatic_judgement
+     *
+     * @return void 반환값 없음
      */
     public function test_absent_control_is_unique_extensionless_and_cannot_exist_on_disk(): void
     {
@@ -810,6 +942,8 @@ class InstallerWebExposureCheckTest extends TestCase
      * 승격 근거가 사라져 자동 판정이 다시 D21 로 떨어진다.
      *
      * @effects exposure_absent_control_restores_automatic_judgement
+     *
+     * @return void 반환값 없음
      */
     public function test_probe_plan_carries_the_absent_control(): void
     {
@@ -832,6 +966,8 @@ class InstallerWebExposureCheckTest extends TestCase
      * 이 검사는 그 위임을 소스 계약으로 고정한다 — 실행으로는 CSPRNG 부재를 만들 수 없다.
      *
      * @effects exposure_absent_control_name_survives_blocked_csprng
+     *
+     * @return void 반환값 없음
      */
     public function test_absent_control_name_does_not_call_random_bytes_directly(): void
     {

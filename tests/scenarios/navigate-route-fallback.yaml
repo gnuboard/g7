@@ -24,6 +24,9 @@ effects:
   - route_match_uses_pathname_only
   - replace_navigation_skips_fallback
   - missing_router_navigates_in_app
+  - unmatched_fallback_refuses_external_origins   # 미등록 경로 fallback 이 외부 오리진(스킴, //, 백슬래시, 제어 문자 우회)으로 나가지 않는다
+  - unmatched_fallback_still_opens_in_site_paths   # 사이트 안 미등록 경로와 경로 중간 연속 슬래시는 과차단 없이 fallback 된다
+  - open_window_sink_refuses_external_origins   # openWindow 직접 호출(같은 탭, 새 탭)도 같은 오리진 게이트를 지난다
 
 test_files:
   - resources/js/core/template-engine/__tests__/ActionDispatcher.handleNavigate.fallback.test.ts

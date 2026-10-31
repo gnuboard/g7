@@ -239,6 +239,8 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
       ['앞뒤 공백을 두른 절대 URL', '  https://evil.com/x  '],
     ];
 
+    // @scenario route=unmatched, fallback=default
+    // @effects unmatched_fallback_refuses_external_origins
     it.each(external)('%s 은 바깥으로 나가지 않는다', async (_label, path) => {
       mockMatch.mockReturnValue(null);
 
@@ -252,6 +254,8 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
       expect(mockWindowOpen).not.toHaveBeenCalled();
     });
 
+    // @scenario route=unmatched, fallback=default
+    // @effects unmatched_fallback_still_opens_in_site_paths
     it('미등록이지만 사이트 안인 경로는 종전대로 fallback 이 동작한다 (과차단 없음)', async () => {
       mockMatch.mockReturnValue(null);
 
@@ -264,6 +268,8 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
       expect(mockLocationAssign).toHaveBeenCalledWith('/admin/users');
     });
 
+    // @scenario route=unmatched, fallback=default
+    // @effects unmatched_fallback_still_opens_in_site_paths
     it('경로 중간의 연속 슬래시는 authority 가 아니므로 통과한다 (과차단 없음)', async () => {
       mockMatch.mockReturnValue(null);
 
@@ -276,6 +282,8 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
       expect(mockLocationAssign).toHaveBeenCalledWith('/files/a//b.png');
     });
 
+    // @scenario route=unmatched, fallback=handler_name
+    // @effects open_window_sink_refuses_external_origins
     it('openWindow 를 직접 부르는 경로도 같은 게이트를 지난다', async () => {
       await dispatcher.dispatchAction({
         type: 'click',
@@ -287,6 +295,8 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
       expect(mockWindowOpen).not.toHaveBeenCalled();
     });
 
+    // @scenario route=unmatched, fallback=handler_name
+    // @effects open_window_sink_refuses_external_origins
     it('openWindow 의 새 탭 경로도 같은 게이트를 지난다', async () => {
       await dispatcher.dispatchAction({
         type: 'click',

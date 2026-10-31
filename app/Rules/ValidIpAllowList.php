@@ -25,6 +25,7 @@ class ValidIpAllowList implements ValidationRule
      * @param  string  $attribute  검증 대상 필드명
      * @param  mixed  $value  입력값
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

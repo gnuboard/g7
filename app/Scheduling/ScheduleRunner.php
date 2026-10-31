@@ -553,6 +553,7 @@ class ScheduleRunner
      * @param  CarbonImmutable  $endedAt  실행 종료 시각
      * @param  array{status: string, reason?: string}  $outcome  실행 결과
      * @param  ScheduleTriggerType  $trigger  트리거 유형
+     * @return void 반환값 없음
      */
     private function recordHistory(
         Event $event,

@@ -22,6 +22,11 @@ class PublicStorageServeTest extends TestCase
 
     private string $fixtureDir;
 
+    /**
+     * 공개 스토리지 아래에 픽스처 디렉터리를 만들고 작은 텍스트 파일과 압축 하한(1KB)을 넘는 텍스트 파일을 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +43,11 @@ class PublicStorageServeTest extends TestCase
         file_put_contents($this->fixtureDir.'/large.txt', str_repeat('g7 public storage compressible fixture payload. ', 200));
     }
 
+    /**
+     * 픽스처 디렉터리 안의 파일과 링크를 지우고 디렉터리를 걷어낸다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach (glob($this->fixtureDir.'/*') ?: [] as $file) {
@@ -51,7 +61,13 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
+     * 경로 세그먼트 형태와 `?file=` 쿼리 형태가 같은 파일 본문을 내주는지 확인한다.
+     *
+     * @scenario asset_url_mode=extension, url_form=path_segment
+     *
      * @effects public_storage_route_serves_both_url_forms
+     *
+     * @return void 반환값 없음
      */
     public function test_serves_file_in_both_url_forms(): void
     {
@@ -72,7 +88,11 @@ class PublicStorageServeTest extends TestCase
      * 않게 됐는데(압축 경로를 타지 않으므로 응답을 만드는 코드가 다르다), 그 사실이 같은
      * 라운드 안에서 재평가되지 않았다.
      *
+     * @scenario url_form=path_segment, range_request=head
+     *
      * @effects public_storage_route_honours_head_and_range_like_static_serving
+     *
+     * @return void 반환값 없음
      */
     public function test_head_and_range_match_the_get_representation(): void
     {
@@ -112,6 +132,15 @@ class PublicStorageServeTest extends TestCase
         $this->assertSame('bytes', $get->headers->get('Accept-Ranges'), '범위 요청을 받는 응답은 그 사실을 광고한다');
     }
 
+    /**
+     * 공개 스토리지에 없는 파일을 요청하면 404 가 나오는지 확인한다.
+     *
+     * @scenario url_form=path_segment, conditional_request=none
+     *
+     * @effects public_storage_route_returns_404_for_missing_files
+     *
+     * @return void 반환값 없음
+     */
     public function test_missing_file_returns_404(): void
     {
         $this->get('/api/system/public-storage/g7-test-public-storage/absent.txt')
@@ -125,7 +154,11 @@ class PublicStorageServeTest extends TestCase
      * 형태에서 같은지는 재지 않았고, 실제로 갈려 있었다 — 쿼리 모드만 전역 트림·널 정규화를
      * 타서 `%00` 과 선행 공백이 잘렸다. 잘린 값은 **다른 파일**을 가리킬 수 있다.
      *
+     * @scenario asset_url_mode=extensionless, path_shape=null_byte
+     *
      * @effects public_storage_url_modes_reject_the_same_inputs
+     *
+     * @return void 반환값 없음
      */
     public function test_both_url_modes_reject_the_same_inputs(): void
     {
@@ -150,7 +183,11 @@ class PublicStorageServeTest extends TestCase
      * 파일이 실재하면 같은 파일이 세그먼트 200 / 쿼리 404 로 갈렸다. 이중 모드는 같은
      * 파일을 두 형태로 여는 장치이지 해석 규칙을 가르는 장치가 아니다.
      *
+     * @scenario asset_url_mode=extensionless, url_form=path_segment
+     *
      * @effects public_storage_url_modes_reject_the_same_inputs
+     *
+     * @return void 반환값 없음
      */
     public function test_both_url_modes_decode_the_path_with_the_same_rule(): void
     {
@@ -187,7 +224,11 @@ class PublicStorageServeTest extends TestCase
      * 레이아웃 ②의 루트 `.htaccess` 는 정적 서빙에만 걸리므로, 이 통로가 같은 규칙을 갖지
      * 않으면 링크가 없는 사이트에서만 숨김 파일이 열린다.
      *
+     * @scenario asset_url_mode=extensionless, segment_position=leaf
+     *
      * @effects public_storage_route_refuses_dot_files_like_the_static_defense_line
+     *
+     * @return void 반환값 없음
      */
     public function test_dot_files_are_refused_in_both_url_forms(): void
     {
@@ -218,7 +259,13 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
+     * `?file=` 에 `../` 경로 순회(평문, 인코딩된 `%2f` 형태)를 넣으면 422 로 막히는지 확인한다.
+     *
+     * @scenario asset_url_mode=extensionless, api_validation_client=xhr
+     *
      * @effects public_storage_route_rejects_traversal_and_symlink
+     *
+     * @return void 반환값 없음
      */
     public function test_traversal_is_rejected(): void
     {
@@ -244,7 +291,11 @@ class PublicStorageServeTest extends TestCase
      * 응답 형태 자체도 갈렸다 — 링크가 있는 서버의 정적 서빙은 같은 요청에 404 를 준다.
      * 같은 라우트가 `Accept` 헤더에 따라 다른 종류의 응답을 내는 상태를 없앤다.
      *
+     * @scenario api_validation_client=browser
+     *
      * @effects api_validation_failure_never_redirects_to_referer
+     *
+     * @return void 반환값 없음
      */
     public function test_browser_style_request_failure_returns_json_not_a_referer_redirect(): void
     {
@@ -270,7 +321,11 @@ class PublicStorageServeTest extends TestCase
      * 버린다), ETag 를 쓰지 않는 프록시는 검증자를 갱신받지 못한다. 정적 서빙은 304 에도
      * 200 과 같은 헤더를 재전송한다 — 링크 유무로 응답이 갈리지 않아야 한다.
      *
+     * @scenario url_form=path_segment, conditional_request=if_none_match
+     *
      * @effects conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_not_modified_carries_the_same_cache_policy_and_validators_as_200(): void
     {
@@ -299,7 +354,13 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
+     * 304 가 200 과 같이 `Expires` 와 `Vary: Accept-Encoding` 을 싣는지, 200 쪽도 그 `Vary` 를 싣는지 함께 확인한다.
+     *
+     * @scenario url_form=path_segment, conditional_request=if_none_match
+     *
      * @effects conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_not_modified_carries_the_expiry_and_variance_axes_of_200(): void
     {
@@ -334,6 +395,15 @@ class PublicStorageServeTest extends TestCase
         );
     }
 
+    /**
+     * gzip 을 받아들이는 클라이언트가 첫 응답의 ETag 로 재요청해도 304 가 성립하는지 확인한다.
+     *
+     * @scenario url_form=path_segment, conditional_request=if_none_match, encoding=gzip
+     *
+     * @effects public_storage_response_revalidates_instead_of_immutable
+     *
+     * @return void 반환값 없음
+     */
     public function test_revalidation_succeeds_for_a_gzip_accepting_client(): void
     {
         // 이 통로는 **압축에서 제외**되어 있다(형제 테스트가 그 사실을 고정한다). 그래서
@@ -355,7 +425,13 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
+     * 압축 하한을 넘는 압축 대상 유형 파일도 `Content-Encoding` 없이, `-gzip` 접미사 없는 ETag 로 나가는지 확인한다.
+     *
+     * @scenario url_form=path_segment, encoding=gzip
+     *
      * @effects public_storage_response_is_not_buffered_for_compression
+     *
+     * @return void 반환값 없음
      */
     public function test_public_storage_is_not_gzip_compressed(): void
     {
@@ -396,6 +472,8 @@ class PublicStorageServeTest extends TestCase
      * @scenario url_form=path_segment, target=regular_file, method=get_only
      *
      * @effects public_storage_route_streams_large_files_without_buffering, public_storage_response_is_not_buffered_for_compression
+     *
+     * @return void 반환값 없음
      */
     public function test_large_file_is_streamed_not_buffered(): void
     {
@@ -424,6 +502,15 @@ class PublicStorageServeTest extends TestCase
         );
     }
 
+    /**
+     * 경로 세그먼트 형태와 `?file=` 형태 모두 `Content-Disposition` 에 inline 과 실제 파일 이름을 싣는지 확인한다.
+     *
+     * @scenario asset_url_mode=extensionless, url_form=path_segment
+     *
+     * @effects asset_response_declares_the_file_name
+     *
+     * @return void 반환값 없음
+     */
     public function test_file_name_is_declared_in_both_url_forms(): void
     {
         // 무확장자 모드는 URL 마지막 세그먼트가 `public-storage` 라, 이름을 명시하지 않으면
@@ -441,7 +528,13 @@ class PublicStorageServeTest extends TestCase
     }
 
     /**
+     * 공개 스토리지 안의 심볼릭 링크가 비공개 파일을 가리켜도 따라가지 않고 404 를 주는지 확인한다(링크 생성 불가 환경은 건너뜀).
+     *
+     * @scenario url_form=path_segment, link_kind=symlink
+     *
      * @effects public_storage_route_rejects_traversal_and_symlink
+     *
+     * @return void 반환값 없음
      */
     public function test_symlink_inside_public_storage_is_not_followed(): void
     {
@@ -482,7 +575,11 @@ class PublicStorageServeTest extends TestCase
      * 만료 전까지 재확인하지 말라는 지시라, 교체된 파일이 방문자 화면에 최대 만료 시간만큼
      * 옛것으로 남는다 — 링크가 되는 서버의 정적 서빙에는 없던 성질이다.
      *
+     * @scenario url_form=path_segment, conditional_request=none
+     *
      * @effects public_storage_response_revalidates_instead_of_immutable
+     *
+     * @return void 반환값 없음
      */
     public function test_response_is_revalidated_instead_of_immutable(): void
     {
@@ -506,6 +603,12 @@ class PublicStorageServeTest extends TestCase
 
     /**
      * 재확인 계약의 나머지 절반 — 안 바뀌었으면 304, 바뀌었으면 새 본문.
+     *
+     * @scenario url_form=path_segment, conditional_request=if_none_match
+     *
+     * @effects public_storage_response_revalidates_instead_of_immutable
+     *
+     * @return void 반환값 없음
      */
     public function test_conditional_request_returns_304_and_replacement_is_served(): void
     {
@@ -533,6 +636,12 @@ class PublicStorageServeTest extends TestCase
      *
      * 정적 서빙(Apache·nginx)은 항상 따옴표를 붙인다. 따옴표 없는 값은 규격상 유효한
      * entity-tag 가 아니라 중간 프록시·CDN 이 그 헤더를 버리거나 다시 쓸 수 있다.
+     *
+     * @scenario url_form=path_segment, conditional_request=none
+     *
+     * @effects file_serving_etag_is_a_quoted_entity_tag
+     *
+     * @return void 반환값 없음
      */
     public function test_etag_is_a_quoted_entity_tag(): void
     {
@@ -547,6 +656,12 @@ class PublicStorageServeTest extends TestCase
      *
      * 종전에는 `Last-Modified` 를 내보내면서 그 조건부 요청은 무시해, ETag 를 보내지 않는
      * 프록시가 매번 전문을 받아 갔다 — 링크가 되는 서버의 정적 서빙에는 없던 성질이다.
+     *
+     * @scenario url_form=path_segment, conditional_request=if_modified_since
+     *
+     * @effects conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_if_modified_since_alone_yields_304(): void
     {
@@ -568,7 +683,11 @@ class PublicStorageServeTest extends TestCase
      * octet-stream 으로 내보내므로, 스니핑은 이 대체 통로를 정적 서빙보다 넓게 만든다 —
      * 링크 유무에 따라 위험이 갈리면 「동등한 대체재」라는 계약이 깨진다.
      *
+     * @scenario url_form=path_segment, target=regular_file
+     *
      * @effects public_storage_unknown_extension_is_not_content_sniffed
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_extension_is_served_as_download_not_sniffed_html(): void
     {
@@ -592,6 +711,12 @@ class PublicStorageServeTest extends TestCase
      *
      * 이 대조군이 없으면 「전부 octet-stream 으로 내보내는」 구현으로도 위 테스트가 초록이
      * 되고, 이미지·CSS 가 브라우저에서 렌더되지 않는 기능 축소를 아무도 잡지 못한다.
+     *
+     * @scenario url_form=path_segment, target=regular_file
+     *
+     * @effects public_storage_unknown_extension_is_not_content_sniffed, public_storage_mime_table_matches_static_serving
+     *
+     * @return void 반환값 없음
      */
     public function test_known_extension_keeps_its_content_type(): void
     {
@@ -609,6 +734,12 @@ class PublicStorageServeTest extends TestCase
      * 과 갈린다. `.svgz` 는 표에 넣지 않는다 — 본문이 gzip 이라 `Content-Encoding: gzip` 을
      * 함께 실어야 하는데 이 통로는 그 축을 갖지 않으므로, 유형만 선언하면 브라우저가 압축
      * 바이트를 SVG 로 파싱해 깨진다. octet-stream(내려받기)이 그보다 낫다.
+     *
+     * @scenario url_form=path_segment, target=regular_file
+     *
+     * @effects public_storage_mime_table_matches_static_serving
+     *
+     * @return void 반환값 없음
      */
     public function test_xhtml_extension_matches_the_static_mime_table(): void
     {
@@ -626,7 +757,11 @@ class PublicStorageServeTest extends TestCase
      * 이 통로만 빠지면 링크 유무로 위험이 갈린다. 헬퍼 단일 지점이 붙이고, 304 는 200 이
      * 실었을 헤더를 함께 싣는다.
      *
+     * @scenario url_form=path_segment, conditional_request=if_none_match
+     *
      * @effects file_serving_response_declares_nosniff
+     *
+     * @return void 반환값 없음
      */
     public function test_full_and_not_modified_responses_declare_nosniff(): void
     {
@@ -649,7 +784,11 @@ class PublicStorageServeTest extends TestCase
      * (`PublicStorageServiceTest` 가 그 판정을 잠근다 — Windows 에서는 `chmod` 로 재현할 수
      * 없다), 여기서는 그 결과가 403 으로 나가는 배선을 잰다.
      *
+     * @scenario url_form=path_segment, target=regular_file
+     *
      * @effects public_storage_unreadable_file_is_forbidden_like_static_serving
+     *
+     * @return void 반환값 없음
      */
     public function test_unreadable_file_is_forbidden_not_a_server_error(): void
     {

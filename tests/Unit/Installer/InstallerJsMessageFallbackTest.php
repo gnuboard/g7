@@ -24,7 +24,13 @@ class InstallerJsMessageFallbackTest extends TestCase
     ];
 
     /**
+     * 화면 스크립트의 최후 폴백 자리에 영문 리터럴이 남지 않고 다국어 키 조회로 바뀌었으며, 그 키가 ko 와 en 표에 모두 있는지 확인한다.
+     *
+     * @scenario locale=ko, locale=en
+     *
      * @effects installer_client_messages_are_translated
+     *
+     * @return void 반환값 없음
      */
     public function test_last_resort_fallbacks_go_through_the_translation_table(): void
     {

@@ -69,6 +69,8 @@ class DataSourceResolverTest extends TestCase
      * @scenario base_path=subpath, navigation_direction=request
      *
      * @effects seo_data_source_calls_follow_the_configured_site_url
+     *
+     * @return void 반환값 없음
      */
     public function test_api_call_targets_the_configured_site_url_idempotently(): void
     {

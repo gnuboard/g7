@@ -36,9 +36,13 @@ class BladeRootRelativeLinkContractTest extends TestCase
     private const ALLOWED_PREFIXES = ['//', '/build/'];
 
     /**
+     * 모든 blade 뷰의 링크 속성에 허용 접두사 밖의 루트 절대 경로(`/...`)가 하드코딩되지 않았는지 전수 확인한다.
+     *
      * @scenario base_path=subpath, fetch_origin=core_asset, navigation_direction=request
      *
      * @effects blade_views_do_not_emit_root_relative_links
+     *
+     * @return void 반환값 없음
      */
     public function test_blade_views_do_not_hardcode_root_relative_urls(): void
     {

@@ -26,6 +26,8 @@ class InstallerDurableWriteCheckTest extends TestCase
     use ScansPhpSourceFunctions;
 
     /**
+     * 함수 본문에서 지정 함수의 반환값을 버리는 줄만 골라낸다.
+     *
      * 결과를 버리는 호출 = 그 줄이 **호출로 시작해서** `;` 로 끝나는 형태.
      *
      * `if (@mkdir(...))` · `$ok = file_put_contents(...)` · `! @mkdir(...)` 는 전부 결과를 쓴다.
@@ -53,7 +55,9 @@ class InstallerDurableWriteCheckTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * 설정 디렉토리 생성, 설정 파일 저장, 완료 표식 저장의 세 쓰기 지점을 공급한다.
+     *
+     * @return array<string, array{0: string, 1: string}> 사례 이름별 [검사할 함수, 쓰기 함수]
      */
     public static function durableWriteProvider(): array
     {
@@ -65,7 +69,15 @@ class InstallerDurableWriteCheckTest extends TestCase
     }
 
     /**
+     * 태스크 러너의 해당 함수 본문에 쓰기 함수 반환값을 버리는 줄이 하나도 없는지 확인한다.
+     *
+     * @scenario task=settings, task=complete_flag
+     *
      * @effects installer_durable_writes_never_discard_their_result
+     *
+     * @param  string  $function  본문을 잘라 볼 태스크 러너 함수 이름
+     * @param  string  $callee  반환값을 확인해야 하는 쓰기 함수 이름
+     * @return void 반환값 없음
      */
     #[DataProvider('durableWriteProvider')]
     public function test_durable_write_results_are_not_discarded(string $function, string $callee): void

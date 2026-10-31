@@ -53,6 +53,13 @@ class ExtensionMenuTranslationWiringTest extends TestCase
         return $found;
     }
 
+    /**
+     * 언어팩 서비스 프로바이더가 admin_menus 번역 필터를 module 로 고정하지 않고 스코프 변수로 구독해 플러그인 메뉴도 번역되는지 소스에서 확인한다.
+     *
+     * @effects admin_menu_translation_filter_is_subscribed_by_scope
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_menu_translation_filter_is_subscribed_by_scope_not_hardcoded_to_module(): void
     {
@@ -81,6 +88,10 @@ class ExtensionMenuTranslationWiringTest extends TestCase
      *
      * 필터는 정상 발화하고 값만 그대로 돌아오므로 오류도 로그도 남지 않는다. 형제 주입기
      * (roles·permissions·manifest)는 이미 스코프를 인자로 받는데 menus 만 빠져 있었다.
+     *
+     * @effects admin_menu_seed_injector_is_scope_aware
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_menu_seed_injector_is_scope_aware_like_its_siblings(): void
@@ -123,6 +134,10 @@ class ExtensionMenuTranslationWiringTest extends TestCase
      *
      * 실측: 활성화 직후 언어팩이 넣어 둔 ja 라벨이 원문으로 되돌아갔다. 필터를 아는 지점은
      * createPluginMenus 한 곳이므로 활성화도 그것을 지나야 한다.
+     *
+     * @effects plugin_activation_menu_sync_passes_through_the_translation_filter
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_plugin_activation_passes_through_the_filtered_menu_sync(): void
@@ -151,6 +166,10 @@ class ExtensionMenuTranslationWiringTest extends TestCase
      * 구독 자체가 등록되지 않는다(구독은 팩의 `seed/*.json` 을 순회하며 붙는다).
      *
      * 즉 ①②③ 이 모두 옳아도 이 축이 비면 화면은 그대로다.
+     *
+     * @effects every_menu_declaring_extension_pack_ships_a_menu_seed
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_every_pack_of_a_menu_declaring_extension_ships_a_menu_seed(): void

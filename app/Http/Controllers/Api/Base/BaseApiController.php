@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage 609 후속 — 메서드 PHPDoc(목적 설명, @param, @return)만 더했다. 라우트, 요청, 응답 모양은 그대로라 API 문서에 반영할 표면이 없다.
+
 namespace App\Http\Controllers\Api\Base;
 
 use App\Extension\Support\LifecycleWarnings;
@@ -387,6 +389,7 @@ abstract class BaseApiController extends Controller
      * 싣는다(RFC 9110 §15.4.5). 호출부로 내리면 열 통로 중 하나가 반드시 빠진다 (15차 G3 라운드).
      *
      * @param  Response|BinaryFileResponse|StreamedResponse  $response  파일 서빙 응답 (200 또는 304)
+     * @return void 반환값 없음
      */
     protected function declareNoSniff(Response|BinaryFileResponse|StreamedResponse $response): void
     {

@@ -7,6 +7,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * ZIP 부트스트랩(`g7-setup.php`)의 소스 계약 (G4 · B-7 · §7 R27 · §11.13).
@@ -22,16 +23,25 @@ use PHPUnit\Framework\TestCase;
 #[PreserveGlobalState(false)]
 class ZipBootstrapContractTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private string $bootstrapPath = '';
 
     private string $source = '';
 
+    /**
+     * 저장소 루트의 압축 풀기 부트스트랩 파일이 있는지 확인하고 원문을 읽어 둔 뒤, 요청 처리 없이 상수와 순수 함수만 쓰도록 라이브러리 모드로 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->bootstrapPath = dirname(__DIR__, 3).'/g7-setup.php';
         $this->assertFileExists($this->bootstrapPath, 'ZIP 부트스트랩 진입 파일이 저장소 루트에 있어야 한다');
+        // meta:allow raw-source-read — 원문은 이 클래스의 주석 제거기(아래 sourceWithoutComments)와
+        // 인라인 스타일시트 추출의 입력이다. 코드 문자 대조는 그 제거기를 지난 결과로만 한다.
         $this->source = (string) file_get_contents($this->bootstrapPath);
 
         // 상수·순수 함수만 쓰기 위해 요청 처리 없이 읽어 들인다 (파일 안의 경계 상수).
@@ -49,7 +59,11 @@ class ZipBootstrapContractTest extends TestCase
      * 증상이라 목록이 하나 빠져도 알아채기 어렵다. 그래서 손으로 유지하지 않고 코어
      * 상수에서 도출한 목록과 대조한다.
      *
+     * @scenario archive=g7_payload
+     *
      * @effects zip_bootstrap_deferred_root_files_match_core_protection_list
+     *
+     * @return void 반환값 없음
      */
     public function test_미루는_루트_파일_목록이_코어_보호_파일_목록과_같다(): void
     {
@@ -73,7 +87,11 @@ class ZipBootstrapContractTest extends TestCase
      * 아카이브 추출에서 제거됐다. 외부 명령(`unzip`·`tar`)은 이 파일의 존재 이유(명령을 쓸 수
      * 없는 환경)와 정면으로 어긋난다.
      *
+     * @scenario archive=g7_payload
+     *
      * @effects zip_bootstrap_uses_ziparchive_only
+     *
+     * @return void 반환값 없음
      */
     public function test_아카이브_전략에_PharData_와_외부_명령이_없다(): void
     {
@@ -131,7 +149,11 @@ class ZipBootstrapContractTest extends TestCase
      * FTP 로 파일을 열어 눈으로 옮겨 적는 값이라 길이가 곧 사용성이다. 늘리려면 시안 승인이
      * 필요하고, 줄이면 원격 대입 표면이 커진다.
      *
+     * @scenario token=exhausted
+     *
      * @effects zip_bootstrap_confirmation_number_length_is_approved
+     *
+     * @return void 반환값 없음
      */
     public function test_확인_번호_길이와_시도_제한이_승인된_값이다(): void
     {
@@ -146,7 +168,11 @@ class ZipBootstrapContractTest extends TestCase
      * 배포본에 든 사본을 건너뛰고 지우는 판정이 이 상수에 걸려 있다 — 어긋나면 완료 후에도
      * 진입 파일이 남아 임의 파일 쓰기 입구가 된다.
      *
+     * @scenario archive=g7_payload
+     *
      * @effects zip_bootstrap_self_name_constant_matches_file
+     *
+     * @return void 반환값 없음
      */
     public function test_정식_파일_이름_상수가_실제_파일과_일치한다(): void
     {
@@ -166,11 +192,15 @@ class ZipBootstrapContractTest extends TestCase
      * 언어를 든다는 것이 사전 주석이 선언한 계약이고, 손으로 적으면 언어가 하나 늘 때 같이
      * 늘지 않는다.
      *
+     * @scenario entry=fresh
+     *
      * @effects zip_bootstrap_dictionary_locales_are_symmetric
+     *
+     * @return void 반환값 없음
      */
     public function test_부트스트랩_사전의_두_언어가_대칭이다(): void
     {
-        $configSource = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/config.php');
+        $configSource = $this->stripComments((string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/config.php'));
         $block = (string) preg_replace('/^.*define\(\x27SUPPORTED_LANGUAGES\x27, \[/s', '', $configSource);
         $block = (string) preg_replace('/\]\);.*$/s', '', $block);
         preg_match_all("/^\s*'([a-z-]+)'\s*=>/m", $block, $localeMatch);
@@ -238,7 +268,11 @@ class ZipBootstrapContractTest extends TestCase
      * git 이 추적하지 않으면 배포 ZIP 에 들어가지 않고, 그러면 운영자가 이 파일을 손에 넣을
      * 방법이 없다. 내부 자산 제외 목록(`.claude` 등)에도 걸리지 않아야 한다.
      *
+     * @scenario archive=g7_payload
+     *
      * @effects zip_bootstrap_ships_in_release_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_부트스트랩이_배포_대상에_포함된다(): void
     {
@@ -269,7 +303,11 @@ class ZipBootstrapContractTest extends TestCase
      * 밖에 있다. 같은 규칙(색은 토큰 선언에만 리터럴로 두고 규칙 본문은 `var()` 로만 칠한다 ·
      * 다크 판이 라이트 토큰을 **전부** 재정의한다)을 여기서 다시 잰다.
      *
+     * @scenario entry=fresh
+     *
      * @effects zip_bootstrap_screen_tokenizes_colors_for_dark_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_W4_화면의_색이_토큰화되고_다크_판이_전부_재정의한다(): void
     {
@@ -320,7 +358,11 @@ class ZipBootstrapContractTest extends TestCase
      * 모집단은 **공유하는 토큰 이름 전량**이다(손으로 고른 목록이 아니다) — 부트스트랩이
      * 새 토큰을 들이면 그 이름이 인스톨러에도 있는 한 자동으로 대조 대상이 된다.
      *
+     * @scenario entry=fresh
+     *
      * @effects zip_bootstrap_screen_inherits_installer_color_tokens
+     *
+     * @return void 반환값 없음
      */
     public function test_W4_화면의_색이_인스톨러_토큰_값을_그대로_승계한다(): void
     {
@@ -364,7 +406,7 @@ class ZipBootstrapContractTest extends TestCase
      *
      * @param  string  $css  스타일시트 본문
      * @param  string  $selector  선택자 (`:root` 등)
-     * @return array<string, string>
+     * @return array<string, string> 커스텀 프로퍼티 이름별 선언 값
      */
     private function declarationsIn(string $css, string $selector): array
     {
@@ -401,6 +443,8 @@ class ZipBootstrapContractTest extends TestCase
 
     /**
      * W4 화면의 인라인 스타일시트 본문.
+     *
+     * @return string 첫 style 요소 안의 본문, 없으면 빈 문자열
      */
     private function inlineStylesheet(): string
     {
@@ -413,7 +457,7 @@ class ZipBootstrapContractTest extends TestCase
      * 선언 블록 안의 커스텀 프로퍼티 이름 목록.
      *
      * @param  string  $block  `{}` 안의 본문
-     * @return array<int, string>
+     * @return array<int, string> 블록에 선언된 커스텀 프로퍼티 이름 목록
      */
     private function declaredTokens(string $block): array
     {
@@ -432,7 +476,11 @@ class ZipBootstrapContractTest extends TestCase
      * @param  array<string, string>  $files  픽스처가 만들 파일 (상대 경로 => 내용)
      * @param  bool  $expected  완료로 판정되어야 하는가
      *
+     * @scenario entry=completed_site
+     *
      * @effects zip_bootstrap_completion_predicate_matches_installer_guard
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('completionFixtures')]
     public function test_완료_판정이_인스톨러_가드와_일치한다(array $files, bool $expected): void
@@ -482,7 +530,7 @@ class ZipBootstrapContractTest extends TestCase
     /**
      * 완료 판정 픽스처 — 판정이 갈릴 수 있는 형태를 전부 담는다.
      *
-     * @return array<string, array{0: array<string, string>, 1: bool}>
+     * @return array<string, array{0: array<string, string>, 1: bool}> 사례 이름별 픽스처 파일 묶음과 기대 완료 판정
      */
     public static function completionFixtures(): array
     {
@@ -500,6 +548,12 @@ class ZipBootstrapContractTest extends TestCase
         ];
     }
 
+    /**
+     * 픽스처가 만든 임시 폴더를 링크를 따라가지 않고 재귀로 지운다. 없는 폴더면 아무것도 하지 않는다.
+     *
+     * @param  string  $dir  지울 폴더 절대 경로
+     * @return void 반환값 없음
+     */
     private function removeTree(string $dir): void
     {
         if (! is_dir($dir)) {

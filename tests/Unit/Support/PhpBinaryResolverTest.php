@@ -23,6 +23,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=valid
      *
      * @effects php_binary_and_composer_paths_follow_configured_values
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_returns_config_value(): void
     {
@@ -37,6 +39,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=valid
      *
      * @effects php_binary_and_composer_paths_follow_configured_values
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_returns_php_when_config_is_empty(): void
     {
@@ -51,6 +55,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=valid
      *
      * @effects php_binary_and_composer_paths_follow_configured_values
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_returns_php_when_config_is_null(): void
     {
@@ -65,6 +71,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=valid
      *
      * @effects php_binary_and_composer_paths_follow_configured_values
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_composer_returns_config_value(): void
     {
@@ -79,6 +87,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=valid
      *
      * @effects php_binary_and_composer_paths_follow_configured_values
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_composer_returns_empty_when_config_is_empty(): void
     {
@@ -91,6 +101,8 @@ class PhpBinaryResolverTest extends TestCase
      * validate()는 빈 경로에 대해 invalid를 반환한다.
      *
      * @effects validate_rejects_empty_or_nonexistent_binary_path
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_returns_invalid_for_empty_path(): void
     {
@@ -110,6 +122,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=invalid_no_autodetect
      *
      * @effects validate_rejects_empty_or_nonexistent_binary_path
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_treats_whitespace_only_path_as_empty(): void
     {
@@ -133,6 +147,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=invalid_no_autodetect
      *
      * @effects validate_rejects_empty_or_nonexistent_binary_path
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_does_not_treat_zero_path_as_empty(): void
     {
@@ -150,6 +166,8 @@ class PhpBinaryResolverTest extends TestCase
      * validate()는 존재하지 않는 파일 경로에 대해 invalid를 반환한다.
      *
      * @effects validate_rejects_empty_or_nonexistent_binary_path
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_returns_invalid_for_nonexistent_path(): void
     {
@@ -166,6 +184,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=valid
      *
      * @effects validate_reports_sapi_for_configured_binary
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_accepts_current_php_binary(): void
     {
@@ -182,6 +202,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=valid
      *
      * @effects validate_reports_sapi_for_configured_binary
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_accepts_system_php(): void
     {
@@ -197,6 +219,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=valid
      *
      * @effects php_binary_and_composer_paths_follow_configured_values
+     *
+     * @return void 반환값 없음
      */
     public function test_build_composer_command_returns_composer_when_no_binary(): void
     {
@@ -211,6 +235,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=valid
      *
      * @effects php_binary_and_composer_paths_follow_configured_values
+     *
+     * @return void 반환값 없음
      */
     public function test_build_composer_command_uses_php_for_phar(): void
     {
@@ -226,6 +252,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=valid
      *
      * @effects php_binary_and_composer_paths_follow_configured_values
+     *
+     * @return void 반환값 없음
      */
     public function test_build_composer_command_uses_binary_directly(): void
     {
@@ -242,6 +270,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=invalid_with_autodetect
      *
      * @effects auto_detect_orders_cli_binaries_first
+     *
+     * @return void 반환값 없음
      */
     public function test_auto_detect_finds_at_least_one_php(): void
     {
@@ -258,6 +288,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=invalid_with_autodetect
      *
      * @effects auto_detect_orders_cli_binaries_first
+     *
+     * @return void 반환값 없음
      */
     public function test_auto_detect_results_have_valid_version_format(): void
     {
@@ -275,6 +307,8 @@ class PhpBinaryResolverTest extends TestCase
      * 괄호 안 SAPI 이름이 CLI 여부를 가리는 유일한 단서다.
      *
      * @effects validate_reports_sapi_for_configured_binary
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_reports_sapi(): void
     {
@@ -292,6 +326,8 @@ class PhpBinaryResolverTest extends TestCase
      * 그대로 실행 바이너리로 승격되면 판정(subprocess 가능)과 실행(전 태스크 실패)이 어긋난다.
      *
      * @effects auto_detect_orders_cli_binaries_first
+     *
+     * @return void 반환값 없음
      */
     public function test_auto_detect_orders_cli_binaries_first(): void
     {
@@ -325,6 +361,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=invalid_with_autodetect
      *
      * @effects auto_detect_orders_cli_binaries_first
+     *
+     * @return void 반환값 없음
      */
     public function test_sort_cli_first_moves_cli_ahead_and_preserves_order_within_groups(): void
     {
@@ -348,6 +386,8 @@ class PhpBinaryResolverTest extends TestCase
      * @scenario php_binary_probe=invalid_with_autodetect
      *
      * @effects auto_detect_orders_cli_binaries_first
+     *
+     * @return void 반환값 없음
      */
     public function test_sort_cli_first_keeps_unknown_sapi_candidates(): void
     {
@@ -368,6 +408,8 @@ class PhpBinaryResolverTest extends TestCase
      * 런타임**에서 돈다는 사실을 알 길이 없었다.
      *
      * @effects php_probe_reports_when_the_web_runtime_is_a_different_line
+     *
+     * @return void 반환값 없음
      */
     public function test_web_sapi_version_on_a_different_line_is_reported(): void
     {
@@ -391,6 +433,8 @@ class PhpBinaryResolverTest extends TestCase
      * 사이트의 안내가 묻힌다.
      *
      * @effects php_probe_reports_when_the_web_runtime_is_a_different_line
+     *
+     * @return void 반환값 없음
      */
     public function test_same_line_web_sapi_version_is_not_reported(): void
     {
@@ -409,6 +453,8 @@ class PhpBinaryResolverTest extends TestCase
      * 인수를 생략하면 이 프로세스의 버전을 쓴다 — 프로덕션 호출 경로가 그 형태다.
      *
      * @effects php_probe_reports_when_the_web_runtime_is_a_different_line
+     *
+     * @return void 반환값 없음
      */
     public function test_web_sapi_version_defaults_to_the_running_process(): void
     {

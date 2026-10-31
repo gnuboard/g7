@@ -22,7 +22,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: execution_mode_choice auto·subprocess·inprocess·invalid / runner_strategy subprocess·inprocess·override / task_outcome best_effort_failed·done
  *
- * @effects installer_execution_mode_vocabulary_comes_from_core_enum, installer_best_effort_failure_is_recorded_once, installer_task_display_name_is_operator_facing, installer_runtime_opcache_is_invalidated_on_write
+ * 효과 요약(마커 아님 — 평문): 실행 모드 어휘는 코어 열거형에서 오고, best-effort 실패는 한 번만 기록되며, 태스크 표시 이름은 운영자용이고, 런타임 파일 쓰기는 OPcache 를 무효화한다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -37,6 +37,13 @@ class InstallerUngatedHelperContractTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스마다 한 번 임시 BASE_PATH 와 저장소 디렉토리를 만들고 인스톨러 런타임, 실행기, 태스크 러너와 한국어 번역을 적재한다.
+     *
+     * BASE_PATH 가 이미 시스템 임시 디렉토리 밖으로 정의돼 있으면 적재하지 않고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function bootInstallerRuntime(): void
     {
         if (self::$booted) {
@@ -82,6 +89,11 @@ class InstallerUngatedHelperContractTest extends TestCase
         $GLOBALS['translations'] = loadTranslations('ko');
     }
 
+    /**
+     * 런타임을 적재하고 상태 파일, 설치 로그, 런타임 파일을 지운 뒤 진행 기록을 버퍼 송신기로 받는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -104,6 +116,12 @@ class InstallerUngatedHelperContractTest extends TestCase
     /**
      * 실행 모드 어휘는 코어 열거형에서 나온다 — 인스톨러가 자기 목록을 따로 들지 않는다
      * (§16.9.1 #3). 인스톨러가 목록을 복제하면 코어에 모드가 늘어도 화면·검증이 따라가지 않는다.
+     *
+     * @scenario execution_mode_choice=auto, execution_mode_choice=subprocess, execution_mode_choice=inprocess
+     *
+     * @effects installer_execution_mode_vocabulary_comes_from_core_enum
+     *
+     * @return void 반환값 없음
      */
     public function test_execution_mode_vocabulary_comes_from_the_core_enum(): void
     {
@@ -117,6 +135,12 @@ class InstallerUngatedHelperContractTest extends TestCase
 
     /**
      * 판정 SSoT 로드는 멱등이고, 로드 후에는 코어 클래스를 쓸 수 있어야 한다.
+     *
+     * @scenario mode_touchpoint=execution_mode_read
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
      */
     public function test_execution_environment_loader_is_idempotent(): void
     {
@@ -141,6 +165,12 @@ class InstallerUngatedHelperContractTest extends TestCase
 
     /**
      * 감지는 판정 결과와 근거를 함께 돌려준다 — 화면(W1·Step 3)이 사유를 그린다.
+     *
+     * @scenario execution_mode_choice=auto, php_binary_source=detected_autodetect
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_execution_mode_reports_mode_and_basis(): void
     {
@@ -166,6 +196,12 @@ class InstallerUngatedHelperContractTest extends TestCase
 
     /**
      * 실행기가 고르는 모드는 상태의 확정값(R1)을 따르고, 없으면 subprocess 다 (기본값 불변).
+     *
+     * @scenario execution_mode_resolved=inprocess, execution_mode_resolved=absent
+     *
+     * @effects installer_execution_mode_resolved_state_wins_over_redetection
+     *
+     * @return void 반환값 없음
      */
     public function test_artisan_execution_mode_follows_the_resolved_state_and_defaults_to_subprocess(): void
     {
@@ -184,6 +220,12 @@ class InstallerUngatedHelperContractTest extends TestCase
     /**
      * best-effort 실패는 한 번만 기록된다 — 중복 누적되면 pending 필터가 같은 태스크를
      * 반복해 무한 루프가 된다 (§16.8.1 #1 이 닫은 결함).
+     *
+     * @scenario task_outcome=best_effort_failed, task=config_cache
+     *
+     * @effects installer_best_effort_failure_is_recorded_once
+     *
+     * @return void 반환값 없음
      */
     public function test_best_effort_failure_is_recorded_once(): void
     {
@@ -199,6 +241,12 @@ class InstallerUngatedHelperContractTest extends TestCase
 
     /**
      * 태스크 표시 이름은 운영자용이다 (§12.0 W3) — 대상이 있으면 괄호로 덧붙인다.
+     *
+     * @scenario task=db_migrate, task=module
+     *
+     * @effects installer_task_display_name_is_operator_facing
+     *
+     * @return void 반환값 없음
      */
     public function test_task_display_name_is_operator_facing(): void
     {
@@ -213,6 +261,12 @@ class InstallerUngatedHelperContractTest extends TestCase
     /**
      * runtime.php 는 요청마다 다시 읽히는 include 라, 쓴 뒤 OPcache 를 무효화하지 않으면
      * 다음 요청이 이전 내용을 본다 (stepwise 토큰이 stale 이 되어 403 — P0 실측 결함).
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_runtime_opcache_is_invalidated_on_write
+     *
+     * @return void 반환값 없음
      */
     public function test_runtime_write_invalidates_opcache_and_round_trips(): void
     {
@@ -242,6 +296,12 @@ class InstallerUngatedHelperContractTest extends TestCase
      *
      * CLI 에서는 opcache 가 꺼져 있어 행위로 재현할 수 없으므로 **배선**을 고정한다.
      * 함수 본문은 중괄호로 잘라 본다 — 파일 전체를 보면 한쪽만 남아도 초록이 된다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects installer_runtime_opcache_is_invalidated_on_write
+     *
+     * @return void 반환값 없음
      */
     public function test_runtime_helpers_wire_the_opcache_invalidation(): void
     {
@@ -263,6 +323,12 @@ class InstallerUngatedHelperContractTest extends TestCase
 
     /**
      * 마무리는 completed 이벤트를 정확히 한 번 낸다 — 화면이 완료로 전환되는 유일한 신호다.
+     *
+     * @scenario task_outcome=done, resume_point=all_completed
+     *
+     * @effects installer_runtime_helpers_behave_as_contracted
+     *
+     * @return void 반환값 없음
      */
     public function test_finalize_run_emits_exactly_one_completed_event(): void
     {
@@ -283,6 +349,12 @@ class InstallerUngatedHelperContractTest extends TestCase
      * 여기서 고정하는 것은 그 반대 방향이다: exec 이 있는데도 조기 반환 형태를 돌려주면
      * 판정이 뒤집힌 것이다. 배열 키만 확인하면 두 분기가 구분되지 않아 어느 쪽으로
      * 뒤집혀도 초록이 된다(§16.11.3 #21 이 형제 테스트에 적용한 기준).
+     *
+     * @scenario runner_strategy=subprocess
+     *
+     * @effects installer_runner_dispatches_by_resolved_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_subprocess_runner_takes_the_spawn_path_when_exec_is_available(): void
     {
@@ -311,6 +383,12 @@ class InstallerUngatedHelperContractTest extends TestCase
     /**
      * in-process 실행기는 vendor 가 없으면 부팅을 시도하지 않고 실패 사유를 돌려준다.
      * (테스트 BASE_PATH 에는 vendor 가 없다 — 그 경로가 바로 이 계약이다.)
+     *
+     * @scenario runner_strategy=inprocess_no_vendor
+     *
+     * @effects installer_inprocess_fails_clearly_without_vendor
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_runner_fails_cleanly_without_vendor(): void
     {

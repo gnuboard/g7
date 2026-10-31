@@ -120,6 +120,11 @@ class InstallerTestIsolationCoverageTest extends TestCase
         return array_keys($definers);
     }
 
+    /**
+     * 모집단을 훑을 기준 폴더로 테스트 폴더 전체를 돌려준다.
+     *
+     * @return string 테스트 폴더 절대 경로
+     */
     private function scanDir(): string
     {
         return dirname(__DIR__, 2);   // tests/ 전체 — 인스톨러 테스트가 다른 디렉토리에 생겨도 잡는다
@@ -163,6 +168,9 @@ class InstallerTestIsolationCoverageTest extends TestCase
      *
      * 묶음 표기(`#[RunClassInSeparateProcess, PreserveGlobalState(false)]`)도 유효한
      * 선언이다 — 닫는 대괄호를 요구하면 정상 선언을 위반으로 잡는다.
+     *
+     * @param  string  $src  주석을 걷어낸 테스트 소스
+     * @return bool 클래스 단위나 메서드 단위 프로세스 격리 속성이 있으면 true
      */
     private function declaresIsolation(string $src): bool
     {
@@ -176,6 +184,8 @@ class InstallerTestIsolationCoverageTest extends TestCase
     }
 
     /**
+     * 테스트 폴더를 재귀로 훑어 설치기 소스를 적재하는 테스트 파일만 모은다(이 검사 파일 자신은 뺀다).
+     *
      * @return array<int, string> 인스톨러 테스트 파일 경로
      */
     private function scannedFiles(): array
@@ -206,13 +216,28 @@ class InstallerTestIsolationCoverageTest extends TestCase
         return array_values(array_filter($files, fn (string $f) => basename($f) !== basename(__FILE__)));
     }
 
+    /**
+     * 설치기 테스트 모집단이 하한 이상 잡혀 이 게이트가 빈 집합을 검사하지 않는지 확인한다.
+     *
+     * @scenario isolation_declaration=class_isolated
+     *
+     * @effects installer_test_defining_base_path_declares_process_isolation
+     *
+     * @return void 반환값 없음
+     */
     public function test_population_is_not_empty(): void
     {
         $this->assertGreaterThanOrEqual(20, count($this->scannedFiles()), '인스톨러 테스트 모집단이 비면 이 게이트는 무의미하다');
     }
 
     /**
+     * BASE_PATH 를 직접 또는 전이로 정의하는 테스트 클래스가 모두 프로세스 격리 속성을 선언했는지 확인한다.
+     *
+     * @scenario isolation_declaration=missing
+     *
      * @effects installer_test_defining_base_path_declares_process_isolation
+     *
+     * @return void 반환값 없음
      */
     public function test_every_class_defining_base_path_declares_process_isolation(): void
     {
@@ -253,6 +278,12 @@ class InstallerTestIsolationCoverageTest extends TestCase
     /**
      * 격리를 선언한 클래스는 전역 상태 보존도 함께 꺼야 한다 — 켜져 있으면 부모 프로세스의
      * 상수·전역이 자식으로 직렬화돼 격리가 반쪽이 된다.
+     *
+     * @scenario isolation_declaration=method_isolated
+     *
+     * @effects installer_test_defining_base_path_declares_process_isolation
+     *
+     * @return void 반환값 없음
      */
     public function test_isolated_classes_disable_global_state_preservation(): void
     {
@@ -289,7 +320,11 @@ class InstallerTestIsolationCoverageTest extends TestCase
      * 클래스는 14개뿐이었다. 정리는 공용 트레이트(`CleansTemporaryBasePath`)나 클래스 자신의
      * `tearDownAfterClass()` 둘 중 하나로 선언한다.
      *
+     * @scenario isolation_declaration=method_isolated
+     *
      * @effects installer_test_creating_temp_base_path_cleans_it_up
+     *
+     * @return void 반환값 없음
      */
     public function test_every_class_creating_a_temp_base_path_cleans_it_up(): void
     {
@@ -386,6 +421,12 @@ class InstallerTestIsolationCoverageTest extends TestCase
      *
      * 실 소스가 전부 준수 상태라 위 두 테스트의 `$offenders` 는 늘 빈 배열이다 — 판정이
      * 뒤집혀도(항상 true / 항상 false) red 가 나지 않는다. 합성 입력으로 양쪽 분기를 태운다.
+     *
+     * @scenario isolation_declaration=missing
+     *
+     * @effects installer_test_defining_base_path_declares_process_isolation, installer_test_creating_temp_base_path_cleans_it_up
+     *
+     * @return void 반환값 없음
      */
     public function test_detectors_actually_discriminate(): void
     {

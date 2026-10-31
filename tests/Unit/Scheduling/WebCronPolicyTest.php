@@ -23,6 +23,8 @@ class WebCronPolicyTest extends TestCase
 
     /**
      * 테스트 준비.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -35,6 +37,8 @@ class WebCronPolicyTest extends TestCase
      * 저장값이 없으면 자동 판단이고, 주소 호출이 열려 있다.
      *
      * @effects default_mode_allows_web_calls
+     *
+     * @return void 반환값 없음
      */
     public function test_default_mode_allows_web_calls(): void
     {
@@ -48,6 +52,8 @@ class WebCronPolicyTest extends TestCase
      * 뜻 모를 값이 저장돼 있어도 자동 판단으로 떨어진다 (파손 없음).
      *
      * @effects unknown_mode_falls_back_to_auto
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_mode_falls_back_to_auto(): void
     {
@@ -60,6 +66,8 @@ class WebCronPolicyTest extends TestCase
      * "서버 크론만" 일 때만 주소 호출이 닫힌다.
      *
      * @effects only_cron_mode_closes_web_calls
+     *
+     * @return void 반환값 없음
      */
     public function test_only_cron_mode_closes_web_calls(): void
     {
@@ -76,6 +84,8 @@ class WebCronPolicyTest extends TestCase
      * 허용 IP 는 줄바꿈과 쉼표 어느 쪽으로 적어도 같게 읽힌다.
      *
      * @effects ip_allow_list_accepts_both_separators
+     *
+     * @return void 반환값 없음
      */
     public function test_ip_allow_list_accepts_both_separators(): void
     {
@@ -92,6 +102,8 @@ class WebCronPolicyTest extends TestCase
      * 문자열 비교로 대신하면 `10.1.1.1` 규칙이 `10.1.1.10` 까지 통과시킨다.
      *
      * @effects ip_allow_list_matches_by_range
+     *
+     * @return void 반환값 없음
      */
     public function test_ip_allow_list_matches_by_range_not_prefix(): void
     {
@@ -110,6 +122,8 @@ class WebCronPolicyTest extends TestCase
      * 목록이 비어 있으면 제한하지 않고, 목록이 있는데 IP 를 알 수 없으면 막는다.
      *
      * @effects unknown_caller_ip_is_denied_when_a_list_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_ip_is_denied_only_when_a_list_exists(): void
     {
@@ -124,6 +138,8 @@ class WebCronPolicyTest extends TestCase
      * 최소 간격은 저장값 → 코드 기본값 순서로 해석되고 상한으로 잘린다.
      *
      * @effects min_interval_resolution_order_and_clamp
+     *
+     * @return void 반환값 없음
      */
     public function test_min_interval_resolution(): void
     {
@@ -150,6 +166,8 @@ class WebCronPolicyTest extends TestCase
      * 방문 트리거 폴백의 기본값은 꺼짐이다 (D5).
      *
      * @effects visit_fallback_defaults_to_off
+     *
+     * @return void 반환값 없음
      */
     public function test_visit_fallback_defaults_to_off(): void
     {
@@ -164,6 +182,8 @@ class WebCronPolicyTest extends TestCase
      * IP 허용 목록 검증 규칙이 형태를 판정한다.
      *
      * @effects ip_allow_list_rule_rejects_malformed_entries
+     *
+     * @return void 반환값 없음
      */
     public function test_ip_allow_list_rule(): void
     {
@@ -197,6 +217,8 @@ class WebCronPolicyTest extends TestCase
      * 그래서 덮어쓴 값이 아니라 **배포되는 파일 자체**를 잰다.
      *
      * @effects visit_fallback_ships_disabled_by_default
+     *
+     * @return void 반환값 없음
      */
     public function test_visit_fallback_ships_disabled_in_the_defaults_file(): void
     {
@@ -218,6 +240,8 @@ class WebCronPolicyTest extends TestCase
      * 설정이 없을 때의 해석도 꺼짐이다 (미설치 키·구설치본 대비).
      *
      * @effects visit_fallback_defaults_to_disabled_when_unset
+     *
+     * @return void 반환값 없음
      */
     public function test_visit_fallback_is_disabled_when_the_setting_is_absent(): void
     {

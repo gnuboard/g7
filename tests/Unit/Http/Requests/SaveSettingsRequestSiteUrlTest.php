@@ -14,6 +14,12 @@ use Tests\TestCase;
  */
 class SaveSettingsRequestSiteUrlTest extends TestCase
 {
+    /**
+     * 주어진 입력으로 설정 저장 요청을 만들고 검증 전 정규화(prepareForValidation)까지 돌린다.
+     *
+     * @param  array  $payload  요청 본문
+     * @return SaveSettingsRequest 정규화를 마친 요청
+     */
     private function prepared(array $payload): SaveSettingsRequest
     {
         $request = SaveSettingsRequest::create('/api/admin/settings', 'POST', $payload);
@@ -25,9 +31,13 @@ class SaveSettingsRequestSiteUrlTest extends TestCase
     }
 
     /**
+     * site_url 끝의 슬래시가 저장 전에 잘리고 형제 키는 그대로인지 확인한다.
+     *
      * @scenario base_path=subpath, navigation_direction=navigation
      *
      * @effects site_url_setting_is_stored_without_a_trailing_slash
+     *
+     * @return void 반환값 없음
      */
     public function test_trailing_slash_is_trimmed_from_site_url(): void
     {
@@ -44,6 +54,8 @@ class SaveSettingsRequestSiteUrlTest extends TestCase
      * @scenario base_path=root, navigation_direction=navigation
      *
      * @effects site_url_setting_is_stored_without_a_trailing_slash
+     *
+     * @return void 반환값 없음
      */
     public function test_root_site_url_keeps_only_the_origin(): void
     {
@@ -54,6 +66,12 @@ class SaveSettingsRequestSiteUrlTest extends TestCase
 
     /**
      * `site_url` 이 없거나 문자열이 아니면 손대지 않는다 (검증 규칙이 판정한다).
+     *
+     * @scenario base_path=root, navigation_direction=navigation
+     *
+     * @effects site_url_setting_is_stored_without_a_trailing_slash
+     *
+     * @return void 반환값 없음
      */
     public function test_absent_or_non_string_site_url_is_left_alone(): void
     {

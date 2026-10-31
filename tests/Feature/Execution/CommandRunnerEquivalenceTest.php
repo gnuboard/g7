@@ -27,6 +27,8 @@ class CommandRunnerEquivalenceTest extends TestCase
 
     /**
      * 확장 테이블 판정은 앱 부팅 **전**에 해야 한다 — 부팅이 바로 그 실패 지점이다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -39,6 +41,8 @@ class CommandRunnerEquivalenceTest extends TestCase
      * 파라미터 표기 → CLI 인자 변환 계약 (Artisan::call 규약과 동일 의미).
      *
      * @effects format_parameters_matches_artisan_call_convention
+     *
+     * @return void 반환값 없음
      */
     public function test_format_parameters_matches_artisan_call_convention(): void
     {
@@ -59,6 +63,8 @@ class CommandRunnerEquivalenceTest extends TestCase
      * in-process 러너: 안전한 커맨드(list)가 성공하고 출력이 채워진다.
      *
      * @effects inprocess_runner_executes_safe_command
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_runner_executes_safe_command(): void
     {
@@ -77,6 +83,8 @@ class CommandRunnerEquivalenceTest extends TestCase
      * 그 환경에서는 측정 대상이 아니다 (무CLI 축 종단 검증은 브라우저 실측 — §8).
      *
      * @effects both_runners_agree_on_safe_command_exit_status
+     *
+     * @return void 반환값 없음
      */
     public function test_both_runners_agree_on_safe_command_exit_status(): void
     {
@@ -103,6 +111,12 @@ class CommandRunnerEquivalenceTest extends TestCase
      * 숫자 키를 인자 이름으로 저장해 버려 "Not enough arguments (missing: …)" 가 된다 —
      * 인스톨러 태스크(`template:install {identifier}`)가 inprocess 에서 처음 밟은 사각.
      * `help {command_name}` 은 DB 를 건드리지 않는 위치 인자 커맨드다.
+     *
+     * @scenario runner_strategy=subprocess, runner_strategy=inprocess
+     *
+     * @effects both_runners_accept_positional_arguments
+     *
+     * @return void 반환값 없음
      */
     public function test_both_runners_accept_positional_arguments(): void
     {
@@ -123,6 +137,12 @@ class CommandRunnerEquivalenceTest extends TestCase
      * 필수 위치 인자 — `help` 의 인자는 선택이라 위 테스트만으로는 증명되지 않는다.
      * 필수 인자를 가진 임시 클로저 커맨드로, 숫자 키 값이 인자 **이름**에 매핑되어 도달하는지 고정한다.
      * (인스톨러 `template:install {identifier}` 가 inprocess 에서 밟은 결함의 직접 재현)
+     *
+     * @scenario runner_strategy=inprocess
+     *
+     * @effects inprocess_runner_maps_positional_values_to_required_arguments
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_runner_maps_positional_values_to_required_arguments(): void
     {
@@ -138,6 +158,12 @@ class CommandRunnerEquivalenceTest extends TestCase
 
     /**
      * 위치 인자를 인자명 키로 넘기는 기존 표기(`['name' => 'value']`)도 계속 성립한다.
+     *
+     * @scenario runner_strategy=inprocess
+     *
+     * @effects inprocess_runner_keeps_named_argument_convention
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_runner_keeps_named_argument_convention(): void
     {
@@ -152,6 +178,12 @@ class CommandRunnerEquivalenceTest extends TestCase
      * 종전 테스트는 전부 **단일 스칼라** 인자만 태워서 `$argument->isArray()` 두 분기와
      * 「정의보다 값이 많을 때」 폴백이 한 번도 평가되지 않았다 — 두 러너 등가 계약이
      * 인스톨러가 지금 쓰는 표기 범위에서만 성립하던 상태다.
+     *
+     * @scenario runner_strategy=inprocess
+     *
+     * @effects inprocess_runner_collects_trailing_values_into_array_argument
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_runner_collects_trailing_values_into_an_array_argument(): void
     {
@@ -170,6 +202,12 @@ class CommandRunnerEquivalenceTest extends TestCase
      *
      * 인자가 배열 하나뿐일 때는 위 테스트의 `array_slice` 경로가 아니라 「정의보다 값이 많다」
      * 폴백이 도는 조합이 생긴다 — 두 경로가 같은 결과를 내는지 함께 고정한다.
+     *
+     * @scenario runner_strategy=inprocess
+     *
+     * @effects inprocess_runner_appends_overflow_values_to_trailing_array_argument
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_runner_appends_overflow_values_to_a_trailing_array_argument(): void
     {
@@ -190,6 +228,8 @@ class CommandRunnerEquivalenceTest extends TestCase
      * 설정값을 우회해 스폰까지 도달했다는 뜻이다.
      *
      * @effects subprocess_runner_uses_injected_php_binary
+     *
+     * @return void 반환값 없음
      */
     public function test_subprocess_runner_uses_injected_php_binary(): void
     {
@@ -221,6 +261,8 @@ class CommandRunnerEquivalenceTest extends TestCase
      * (실패를 성공으로 뭉개는 러너가 없어야 한다)
      *
      * @effects both_runners_agree_on_unknown_command_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_both_runners_agree_on_unknown_command_failure(): void
     {

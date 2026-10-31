@@ -23,6 +23,11 @@ class ImageServeConditionalRequestTest extends PluginTestCase
 {
     private const BASE = '/api/plugins/sirsoft-ckeditor5/images/';
 
+    /**
+     * plugins 디스크를 가짜 저장소로 바꿔 실제 파일을 건드리지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -54,6 +59,8 @@ class ImageServeConditionalRequestTest extends PluginTestCase
      * @scenario conditional_request=if_none_match
      *
      * @effects image_serve_matching_etag_returns_304_with_the_cache_headers_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_matching_if_none_match_returns_304_with_the_cache_headers_of_200(): void
     {
@@ -85,6 +92,8 @@ class ImageServeConditionalRequestTest extends PluginTestCase
      * @scenario conditional_request=if_modified_since
      *
      * @effects image_serve_if_modified_since_alone_returns_304
+     *
+     * @return void 반환값 없음
      */
     public function test_if_modified_since_alone_returns_304_when_row_is_not_newer(): void
     {
@@ -102,6 +111,8 @@ class ImageServeConditionalRequestTest extends PluginTestCase
      * @scenario conditional_request=non_matching
      *
      * @effects image_serve_non_matching_validator_returns_full_200
+     *
+     * @return void 반환값 없음
      */
     public function test_non_matching_validator_returns_full_200(): void
     {

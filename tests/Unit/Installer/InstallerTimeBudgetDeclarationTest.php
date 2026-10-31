@@ -26,7 +26,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: time_limit_applied granted·capped·blocked·unlimited·unreadable / declaration_site stepwise·subprocess·inprocess
  *
- * @effects installer_declared_time_budget_never_exceeds_the_applied_limit, installer_lock_declarations_use_the_applied_time_budget
+ * 효과 요약(마커 아님 — 평문): 선언한 시간 예산은 실제 적용치를 넘지 않고, 워커 lock 선언 지점은 적용치를 넘긴다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -35,6 +35,11 @@ class InstallerTimeBudgetDeclarationTest extends TestCase
     use CleansTemporaryBasePath;
     use ScansPhpSourceFunctions;
 
+    /**
+     * 다국어 스텁과 임시 BASE_PATH 를 준비한 뒤 실행 모드 헬퍼를 적재한다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__.'/stubs/lang_stub.php';
@@ -48,6 +53,12 @@ class InstallerTimeBudgetDeclarationTest extends TestCase
 
     /**
      * `set_time_limit` 이 먹지 않는 상황 — ini 가 말하는 실제 적용치가 요청값보다 작다.
+     *
+     * @scenario time_limit_applied=capped, time_limit_applied=granted
+     *
+     * @effects installer_declared_time_budget_never_exceeds_the_applied_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_declared_budget_never_exceeds_the_limit_the_host_actually_applied(): void
     {
@@ -61,6 +72,12 @@ class InstallerTimeBudgetDeclarationTest extends TestCase
 
     /**
      * 0(무제한)·음수는 상한이 없다는 뜻이다 — CLI·일부 SAPI 가 그렇다.
+     *
+     * @scenario time_limit_applied=unlimited
+     *
+     * @effects installer_declared_time_budget_never_exceeds_the_applied_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_unlimited_execution_time_keeps_the_requested_budget(): void
     {
@@ -74,6 +91,12 @@ class InstallerTimeBudgetDeclarationTest extends TestCase
      *
      * 「확인 불가」를 0 초로 접으면 lock 선언이 사라져, 살아 있는 워커가 곧바로 stale 로
      * 탈취되고 같은 태스크가 겹쳐 돈다 — 좁히려다 반대편 결함을 만드는 형태다.
+     *
+     * @scenario time_limit_applied=unreadable
+     *
+     * @effects installer_declared_time_budget_never_exceeds_the_applied_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_unreadable_ini_value_leaves_the_requested_budget_untouched(): void
     {
@@ -87,6 +110,12 @@ class InstallerTimeBudgetDeclarationTest extends TestCase
      *
      * `set_time_limit` 이 먹은 환경(CLI)에서는 요청값이 그대로 나오고, 막히거나 잠긴
      * 환경에서는 `ini_get` 이 말하는 값 이하가 나온다 — 어느 쪽이든 「선언 ≤ 실제」다.
+     *
+     * @scenario time_limit_applied=granted, time_limit_applied=blocked
+     *
+     * @effects installer_declared_time_budget_never_exceeds_the_applied_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_helper_return_value_is_bounded_by_the_ini_value_after_the_call(): void
     {
@@ -111,6 +140,12 @@ class InstallerTimeBudgetDeclarationTest extends TestCase
      *
      * 헬퍼가 실제 적용치를 돌려주더라도 호출부가 상수를 그대로 넘기면 이 조치는 사문이
      * 된다 — 그 상태에서도 헬퍼 단위 테스트는 전부 초록이다.
+     *
+     * @scenario installation_mode=stepwise, runner_strategy=subprocess, runner_strategy=inprocess
+     *
+     * @effects installer_lock_declarations_use_the_applied_time_budget
+     *
+     * @return void 반환값 없음
      */
     public function test_every_lock_declaration_passes_the_applied_budget_not_the_requested_constant(): void
     {

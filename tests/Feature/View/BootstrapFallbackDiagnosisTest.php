@@ -36,7 +36,11 @@ class BootstrapFallbackDiagnosisTest extends TestCase
     }
 
     /**
+     * 사용자, 관리자 두 진입점의 부트스트랩 partial 이 전역 부재(비호환/손상)와 재시도 소진(차단/네트워크) 사유를 가르는 분기와 폴백 사유 마커를 모두 렌더하는지 확인한다.
+     *
      * @effects bootstrap_partial_emits_reason_branch
+     *
+     * @return void 반환값 없음
      */
     public function test_두_진입점_모두_사유별_분기를_렌더한다(): void
     {
@@ -68,6 +72,8 @@ class BootstrapFallbackDiagnosisTest extends TestCase
      * 버튼은 두 겹의 거짓 안내가 된다.
      *
      * @effects blocked_branch_is_emitted_with_https_http_judgment
+     *
+     * @return void 반환값 없음
      */
     public function test_혼합_콘텐츠_차단을_별도_사유로_가른다(): void
     {
@@ -104,6 +110,8 @@ class BootstrapFallbackDiagnosisTest extends TestCase
      * 원인을 통째로 감추면 운영자가 도달할 통로가 사라진다.
      *
      * @effects blocked_notice_splits_visitor_screen_and_operator_console
+     *
+     * @return void 반환값 없음
      */
     public function test_차단_안내는_화면과_콘솔로_대상을_나눈다(): void
     {
@@ -151,6 +159,15 @@ class BootstrapFallbackDiagnosisTest extends TestCase
         }
     }
 
+    /**
+     * 파싱 실패는 script 요소의 error 가 아니라 load 를 일으키므로, 번들 SyntaxError 를 window error 이벤트로 관측하는 리스너가 렌더 결과에 들어 있는지 확인한다.
+     *
+     * @scenario entrypoint=user, failure_mode=parse_error
+     *
+     * @effects parse_error_listener_is_installed_on_window
+     *
+     * @return void 반환값 없음
+     */
     public function test_파싱_오류_관측_리스너가_설치된다(): void
     {
         $html = $this->render();
@@ -163,7 +180,11 @@ class BootstrapFallbackDiagnosisTest extends TestCase
     }
 
     /**
+     * ko, en 로케일마다 비호환 안내 제목과 본문 키가 정의돼 비어 있지 않고, 비호환 문구가 네트워크 문구와 다른지 확인한다.
+     *
      * @effects incompatible_strings_defined_per_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_비호환_안내_문구가_지원_로케일마다_정의된다(): void
     {
@@ -197,7 +218,11 @@ class BootstrapFallbackDiagnosisTest extends TestCase
     }
 
     /**
+     * 번들 일본어 언어팩의 errors.php 에 비호환, 차단 안내 키가 있고 각 문구가 네트워크 문구와 다른지 확인한다(언어팩이 없으면 건너뛴다).
+     *
      * @effects incompatible_strings_defined_per_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_번들_일본어_언어팩에도_비호환_문구가_있다(): void
     {
@@ -226,6 +251,15 @@ class BootstrapFallbackDiagnosisTest extends TestCase
         );
     }
 
+    /**
+     * 주석을 걷어낸 인라인 부트스트랩 스크립트에 화살표 함수, const, let, 템플릿 리터럴, 옵셔널 체이닝 같은 ES2015+ 문법이 없는지 확인한다(코어 번들이 죽어도 안내는 떠야 하므로).
+     *
+     * @scenario entrypoint=user, failure_mode=parse_error
+     *
+     * @effects inline_bootstrap_uses_es5_syntax_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_인라인_부트스트랩은_구형_브라우저_문법만_사용한다(): void
     {
         $html = $this->render();

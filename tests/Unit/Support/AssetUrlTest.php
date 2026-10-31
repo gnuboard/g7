@@ -25,6 +25,11 @@ class AssetUrlTest extends TestCase
     /** 테스트 전용 public 루트 (실 게시 트리 격리) */
     private string $isolatedPublicPath;
 
+    /**
+     * 공개 경로를 테스트 전용 임시 디렉토리로 옮겨, 정적 게시 정리가 실제 public/build/ext 를 지우지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +42,11 @@ class AssetUrlTest extends TestCase
         $this->app->usePublicPath($this->isolatedPublicPath);
     }
 
+    /**
+     * 강제 모드와 강제 접두사를 풀고 임시 공개 경로를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetUrl::forceMode(null);
@@ -49,6 +59,12 @@ class AssetUrlTest extends TestCase
      * 기본 모드는 확장자 유지여야 한다.
      *
      * 기본값이 뒤집히면 정상 환경 다수가 확장자 기반 캐시·gzip 최적화를 잃는다.
+     *
+     * @scenario asset_url_mode=extension
+     *
+     * @effects asset_url_mode_defaults_to_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_기본_모드는_확장자_유지다(): void
     {
@@ -60,6 +76,12 @@ class AssetUrlTest extends TestCase
 
     /**
      * 확장자 모드 출력이 치환 이전 하드코딩 문자열과 동일해야 한다.
+     *
+     * @scenario asset_url_mode=extension
+     *
+     * @effects extension_mode_output_matches_the_legacy_literals
+     *
+     * @return void 반환값 없음
      */
     public function test_확장자_모드_출력이_기존_하드코딩과_바이트_동일하다(): void
     {
@@ -112,6 +134,12 @@ class AssetUrlTest extends TestCase
 
     /**
      * 확장자 없는 모드에서는 자산 경로가 `file` 쿼리로 옮겨져야 한다.
+     *
+     * @scenario asset_url_mode=extensionless
+     *
+     * @effects extensionless_mode_urls_carry_no_static_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_확장자_없는_모드는_자산_경로를_쿼리로_옮긴다(): void
     {
@@ -131,6 +159,12 @@ class AssetUrlTest extends TestCase
      * 확장자 없는 모드에서는 번들 접미사가 경로 세그먼트로 내려가야 한다.
      *
      * 접미사를 제거하면 js/css 가 둘 다 `bundle` 이 되어 구분 불가.
+     *
+     * @scenario asset_url_mode=extensionless
+     *
+     * @effects extensionless_mode_urls_carry_no_static_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_확장자_없는_모드는_번들_접미사를_세그먼트로_내린다(): void
     {
@@ -142,6 +176,12 @@ class AssetUrlTest extends TestCase
 
     /**
      * 확장자 없는 모드에서는 고정 접미사가 제거되어야 한다.
+     *
+     * @scenario asset_url_mode=extensionless
+     *
+     * @effects extensionless_mode_urls_carry_no_static_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_확장자_없는_모드는_고정_접미사를_제거한다(): void
     {
@@ -161,6 +201,12 @@ class AssetUrlTest extends TestCase
      * 생성된 URL 의 경로 부분에는 어떤 모드에서도 정적 확장자가 남지 않아야 한다.
      *
      * 이것이 이번 이슈의 본질 — 경로에 확장자가 남으면 nginx 정적 블록이 그대로 가로챈다.
+     *
+     * @scenario asset_url_mode=extensionless
+     *
+     * @effects extensionless_mode_urls_carry_no_static_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_확장자_없는_모드_주소_경로에_정적_확장자가_없다(): void
     {
@@ -190,6 +236,12 @@ class AssetUrlTest extends TestCase
      * 설정 조회가 실패해도 기본 모드로 폴백해야 한다.
      *
      * 이 값은 blade 렌더 경로에서 읽히므로 여기서 예외가 나면 화면 전체가 죽는다.
+     *
+     * @scenario asset_url_mode=extension
+     *
+     * @effects asset_url_mode_falls_back_to_default_when_settings_fail
+     *
+     * @return void 반환값 없음
      */
     public function test_설정_조회_실패시_기본_모드로_폴백한다(): void
     {
@@ -205,6 +257,7 @@ class AssetUrlTest extends TestCase
      *
      * @param  int  $version  버전
      * @param  array<string>  $files  버전 디렉토리 내 상대 경로 목록
+     * @return void 반환값 없음
      */
     private function publishFixture(int $version, array $files = []): void
     {
@@ -218,6 +271,11 @@ class AssetUrlTest extends TestCase
         }
     }
 
+    /**
+     * 정적 게시 트리를 지우고 게시 기준 경로 메모와 게시 예약 상태를 초기화한다.
+     *
+     * @return void 반환값 없음
+     */
     private function cleanupStaticFixture(): void
     {
         File::deleteDirectory(public_path('build/ext'));
@@ -232,6 +290,8 @@ class AssetUrlTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=self_heal, process_user=web
      *
      * @effects static_gate_requires_manifest, kill_switch_disables_publish_and_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_정적_게이트는_프로덕션_활성_게시완료_3조건이다(): void
     {
@@ -274,6 +334,10 @@ class AssetUrlTest extends TestCase
      * 기대표는 두 테스트가 **같은 파일**을 읽는다. 각자 적으면 그 사본이 다시 갈린다.
      *
      * @see resources/js/core/support/__tests__/assetUrl.test.ts 같은 표를 읽는 프론트 축
+     *
+     * @effects asset_url_encoders_match_the_frontend
+     *
+     * @return void 반환값 없음
      */
     public function test_file_쿼리_인코더가_프론트_판본과_같은_문자열을_만든다(): void
     {
@@ -304,6 +368,8 @@ class AssetUrlTest extends TestCase
      * @scenario publish_state=partial, artifact_integrity=intact, filesystem_writable=writable, environment=production, trigger=manual_command, process_user=web
      *
      * @effects tag_layer_checks_individual_file_existence
+     *
+     * @return void 반환값 없음
      */
     public function test_태그_계층은_개별_파일_존재까지_확인한다(): void
     {
@@ -347,6 +413,10 @@ class AssetUrlTest extends TestCase
      * 정적 경로는 항상 현재 게시본을 가리키므로, 다른 버전을 명시한 호출에 현재본을
      * 돌려주면 "요청 버전이 URL 에 반영된다" 는 시그니처 계약이 조용히 깨진다.
      * (현 호출부는 전부 현재 버전을 넘기므로 실동작 불변 — 미래 호출부 방어)
+     *
+     * @effects static_branch_is_skipped_for_a_different_requested_version
+     *
+     * @return void 반환값 없음
      */
     public function test_요청_버전이_현재_게시_버전과_다르면_정적_분기를_건너뛴다(): void
     {
@@ -382,6 +452,8 @@ class AssetUrlTest extends TestCase
      * 트레이트를 사용하는 클래스 경유로 호출해야 한다.
      *
      * @effects static_gate_requires_manifest
+     *
+     * @return void 반환값 없음
      */
     public function test_정적_게이트는_deprecation_없이_동작한다(): void
     {
@@ -414,6 +486,8 @@ class AssetUrlTest extends TestCase
      * base null(게이트 미통과) 이면 기존 URL 과 바이트 동일해야 한다 (호출부 무변경 계약).
      *
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=dev, trigger=kill_switch, process_user=web
+     *
+     * @return void 반환값 없음
      */
     public function test_게이트_미통과시_종전_ur_l_바이트_동일(): void
     {
@@ -432,6 +506,10 @@ class AssetUrlTest extends TestCase
      *
      * 정적 `/storage/…` 서빙도 인코딩하지 않으므로, 여기서만 인코딩하면 같은 파일의
      * 주소가 링크 유무로 갈린다.
+     *
+     * @effects asset_url_encoders_match_the_frontend
+     *
+     * @return void 반환값 없음
      */
     public function test_확장자_모드는_경로를_인코딩하지_않는다(): void
     {
@@ -461,6 +539,10 @@ class AssetUrlTest extends TestCase
      * (15차 G3 라운드 W4-3). 채움·멱등·비대상(빈 문자열 · 프로토콜 상대 · 절대 URL ·
      * `data:` · 상대 경로 · 쿼리/프래그먼트 전용) · 경계(`?`·`#`·경계 없는 이어짐) ·
      * 공백 전처리 행이 전부 그 표에 있다.
+     *
+     * @effects site_path_helpers_satisfy_the_shared_boundary_table
+     *
+     * @return void 반환값 없음
      */
     public function test_site_path_와_has_base_prefix_는_공유_기대표의_전_행을_만족한다(): void
     {
@@ -491,6 +573,10 @@ class AssetUrlTest extends TestCase
      *
      * 프론트는 `G7Config.basePath` 를 같은 결과로 정규화해야 한다(`assetUrl.test.ts` 가 같은
      * 행을 읽는다). 어긋나면 서버가 렌더한 주소와 화면이 만든 주소의 접두사가 갈린다.
+     *
+     * @effects site_path_helpers_satisfy_the_shared_boundary_table
+     *
+     * @return void 반환값 없음
      */
     public function test_configured_base_path_는_공유_기대표의_app_url_행을_만족한다(): void
     {
@@ -513,7 +599,7 @@ class AssetUrlTest extends TestCase
     /**
      * 공유 기대표를 읽습니다.
      *
-     * @return array{boundary: list<array{prefix: string, cases: list<array<string, mixed>>}>, base_path: list<array<string, mixed>>}
+     * @return array{boundary: list<array{prefix: string, cases: list<array<string, mixed>>}>, base_path: list<array<string, mixed>>} 접두사 경계 사례와 app.url 경로 사례를 담은 공유 기대표
      */
     private function boundaryFixture(): array
     {
@@ -526,6 +612,10 @@ class AssetUrlTest extends TestCase
 
     /**
      * 루트 설치(접두사 없음)에서는 `sitePath()` 가 항등이다.
+     *
+     * @effects site_path_helpers_satisfy_the_shared_boundary_table
+     *
+     * @return void 반환값 없음
      */
     public function test_루트_설치에서_site_path_는_항등이다(): void
     {
@@ -540,6 +630,10 @@ class AssetUrlTest extends TestCase
      *
      * 한 단계만 도는 형태(오리진만 붙이는 `absolute()` 단독)는 하위 폴더 배치에서 사이트
      * 밖을 가리키고, 접두사만 채우는 형태는 크롤러·메일에 상대 경로를 내보낸다.
+     *
+     * @effects site_absolute_adds_the_prefix_then_a_normalized_origin
+     *
+     * @return void 반환값 없음
      */
     public function test_site_absolute_는_접두사와_오리진을_함께_붙인다(): void
     {
@@ -570,6 +664,8 @@ class AssetUrlTest extends TestCase
      * @scenario base_path=subpath, navigation_direction=navigation
      *
      * @effects notification_links_are_built_by_the_site_absolute_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_site_absolute_는_site_url_에_위임해_요청_host_로_가지_않는다(): void
     {
@@ -610,6 +706,10 @@ class AssetUrlTest extends TestCase
      * (13차 G3 라운드 W3-1). 반대로 `/g7x/foo` 는 접두사가 **경계 없이** 이어진 다른
      * 경로라 붙여야 한다 — 경계 인식을 `str_starts_with($path, $prefix)` 로 넓히면
      * 이쪽이 조용히 빠진다.
+     *
+     * @effects site_path_helpers_satisfy_the_shared_boundary_table
+     *
+     * @return void 반환값 없음
      */
     public function test_site_path_는_접두사_뒤_쿼리_프래그먼트_경계를_인식한다(): void
     {
@@ -628,6 +728,10 @@ class AssetUrlTest extends TestCase
      * `app.url` 을 `HTTPS://Example.COM/g7/` 로 적어 둔 사이트에서 크롤러가 받는 절대
      * 주소가 그대로 대문자 오리진을 실었다 — 같은 자산의 정본 주소가 표기에 따라
      * 둘로 갈린다.
+     *
+     * @effects site_absolute_adds_the_prefix_then_a_normalized_origin
+     *
+     * @return void 반환값 없음
      */
     public function test_site_absolute_는_오리진_스킴_호스트를_소문자로_정규화한다(): void
     {
@@ -640,6 +744,10 @@ class AssetUrlTest extends TestCase
 
     /**
      * 선행·후행 공백은 판정 전에 걷어낸다. 빈 문자열(공백뿐인 값 포함)은 그대로 둔다.
+     *
+     * @effects site_path_helpers_satisfy_the_shared_boundary_table
+     *
+     * @return void 반환값 없음
      */
     public function test_site_path_와_site_absolute_는_선행_공백을_걷어낸다(): void
     {
@@ -658,6 +766,10 @@ class AssetUrlTest extends TestCase
      *
      * 프론트 `suffixed()` 는 `withBasePrefix()` 를 경유해 두 성질을 갖는데 서버는
      * `str_starts_with($url, '/')` 만 보고 접두사를 무조건 붙였다.
+     *
+     * @effects site_path_helpers_satisfy_the_shared_boundary_table
+     *
+     * @return void 반환값 없음
      */
     public function test_suffixed_는_프로토콜_상대와_기존_접두사에_접두사를_붙이지_않는다(): void
     {
@@ -675,6 +787,10 @@ class AssetUrlTest extends TestCase
      * 「어느 쪽이 맞는가」로 되돌아온다. 서버의 인코더는 `?file=` 와 같은 `rawurlencode`.
      * 종전 독블록은 프론트가 `encodeURIComponent` 라 적었고 실제로 그랬다 — `! ' ( ) *`
      * 에서 두 URL 이 갈렸다. 기대표는 프론트 테스트와 같은 픽스처 하나를 읽는다.
+     *
+     * @effects asset_url_encoders_match_the_frontend
+     *
+     * @return void 반환값 없음
      */
     public function test_확장_식별자는_양쪽_모드에서_인코딩된다(): void
     {
@@ -691,6 +807,10 @@ class AssetUrlTest extends TestCase
      * 식별자 인코더가 프론트 판본과 같은 문자열을 만든다 (공유 기대표).
      *
      * 회차 13 C-5 — 경로(`?file=`)는 맞춰 두고 식별자만 두 인코더가 갈려 있었다.
+     *
+     * @effects asset_url_encoders_match_the_frontend
+     *
+     * @return void 반환값 없음
      */
     public function test_확장_식별자_인코더가_프론트_판본과_같은_문자열을_만든다(): void
     {
@@ -723,6 +843,12 @@ class AssetUrlTest extends TestCase
      * 주소가 전부 사이트 밖을 가리킨다 — 웹에서는 재현되지 않는 조용한 404 다. 웹 요청
      * 안에서 두 값을 나란히 볼 수 있는 유일한 자리가 `basePrefix()` 라 그곳이 로그로 남긴다
      * (15차 G3 라운드 W4-4). 테스트 프로세스는 제외되므로 여기서는 환경을 잠시 바꾼다.
+     *
+     * @scenario base_path=subpath, navigation_direction=request
+     *
+     * @effects prefix_mismatch_warning_is_keyed_to_the_request_not_a_reusable_object_id
+     *
+     * @return void 반환값 없음
      */
     public function test_요청의_접두사가_app_url_경로와_다르면_요청당_한_번_경고한다(): void
     {
@@ -761,6 +887,8 @@ class AssetUrlTest extends TestCase
      * @scenario base_path=subpath, navigation_direction=navigation
      *
      * @effects notification_links_are_built_by_the_site_absolute_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_site_root_는_오리진과_접두사만_싣고_후행_슬래시가_없다(): void
     {
@@ -783,6 +911,8 @@ class AssetUrlTest extends TestCase
      * @scenario base_path=subpath, navigation_direction=request
      *
      * @effects prefix_mismatch_warning_is_keyed_to_the_request_not_a_reusable_object_id
+     *
+     * @return void 반환값 없음
      */
     public function test_접두사_불일치_경고는_해제된_요청의_id_재사용에_삼켜지지_않는다(): void
     {
@@ -819,6 +949,12 @@ class AssetUrlTest extends TestCase
 
     /**
      * 요청의 접두사와 설정이 같으면 경고하지 않는다 (정상 배치에서 로그를 더럽히지 않는다).
+     *
+     * @scenario base_path=subpath, navigation_direction=request
+     *
+     * @effects prefix_mismatch_warning_is_keyed_to_the_request_not_a_reusable_object_id
+     *
+     * @return void 반환값 없음
      */
     public function test_요청의_접두사가_app_url_경로와_같으면_경고하지_않는다(): void
     {
@@ -847,6 +983,10 @@ class AssetUrlTest extends TestCase
      *
      * 콘솔에서는 요청이 접두사를 싣지 않으므로 두 값이 같다 — 불일치는 운영자가 `APP_URL`
      * 을 고치기 전까지 웹 요청의 경고 로그로만 드러나고, 이 출력은 그 값을 확인하는 자리다.
+     *
+     * @effects asset_url_mode_command_prints_prefix_and_app_url_path
+     *
+     * @return void 반환값 없음
      */
     public function test_asset_url_mode_커맨드가_접두사와_app_url_경로를_출력한다(): void
     {
@@ -881,6 +1021,8 @@ class AssetUrlTest extends TestCase
      * @scenario base_path=root, navigation_direction=navigation
      *
      * @effects notification_links_are_built_by_the_site_absolute_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_absolute_는_오리진을_알_수_없으면_경로만_돌려주고_한_번_경고한다(): void
     {
@@ -919,6 +1061,8 @@ class AssetUrlTest extends TestCase
      * @scenario base_path=subpath, navigation_direction=request
      *
      * @effects prefix_mismatch_warning_is_keyed_to_the_request_not_a_reusable_object_id
+     *
+     * @return void 반환값 없음
      */
     public function test_요청의_오리진이_app_url_오리진과_다르면_경로가_같아도_한_번_경고한다(): void
     {
@@ -952,6 +1096,8 @@ class AssetUrlTest extends TestCase
 
     /**
      * `absolute()` 오리진 미해결 경고의 프로세스 정적 억제 플래그를 초기화합니다 (테스트 독립성).
+     *
+     * @return void 반환값 없음
      */
     private function resetOriginUnresolvableWarned(): void
     {

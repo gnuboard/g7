@@ -50,6 +50,8 @@ describe.each([
     }
   };
 
+  // @scenario base_path=subpath, navigation_direction=request
+  // @effects template_form_component_applies_base_prefix
   it('루트 상대 action 에 마운트 접두사를 붙인다', () => {
     // 접두사가 없으면 하위 폴더 사이트에서 제출이 사이트 밖으로 나간다 — 오류 없이
     // 다른 사이트의 응답(또는 404)만 남는 형태다.
@@ -58,6 +60,8 @@ describe.each([
     expectDelegated('/api/x');
   });
 
+  // @scenario base_path=subpath, navigation_direction=request
+  // @effects template_form_component_applies_base_prefix
   it('이미 접두사를 가진 action · 절대 URL 은 그대로 둔다 (멱등)', () => {
     for (const value of ['/g7/api/x', 'https://pg.example.com/pay', '//pg.example.com/pay']) {
       const { container, unmount } = render(<Form action={value}>F</Form>);
@@ -67,12 +71,16 @@ describe.each([
     }
   });
 
+  // @scenario base_path=subpath, navigation_direction=request
+  // @effects template_form_component_applies_base_prefix
   it('action 이 없으면 속성을 만들지 않는다', () => {
     const { container } = render(<Form>F</Form>);
     expect(container.querySelector('form')).not.toHaveAttribute('action');
     expect(apiSpy).not.toHaveBeenCalled();
   });
 
+  // @scenario base_path=root, navigation_direction=request
+  // @effects template_form_component_applies_base_prefix
   it('루트 설치에서는 action 을 바꾸지 않는다', () => {
     delete (globalThis as any).G7Config.basePath;
     apiSpy.mockImplementation((path: string) => path);

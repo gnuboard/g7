@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 권한 안내 무쉘 판본 (W7 · B-8) 과 Q7 판정.
@@ -35,11 +36,23 @@ use PHPUnit\Framework\TestCase;
 #[PreserveGlobalState(false)]
 class PermissionGuidanceShellFreeTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
+    /**
+     * 이 테스트 파일에서 세 단계 위인 저장소 루트 경로를 돌려준다.
+     *
+     * @return string 저장소 루트 절대 경로
+     */
     private function repoRoot(): string
     {
         return dirname(__DIR__, 3);
     }
 
+    /**
+     * 설치기 상수(BASE_PATH, 요구 권한 값, 필요한 디렉토리, 지원 언어, 설치기 주소)가 없으면 정의하고, 실행 모드와 공용 함수 모듈, 한국어 사전을 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -77,6 +90,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * @scenario target=directory, os=linux, ownership=matched
      *
      * @effects permission_guidance_ftp_steps_present_standard_value
+     *
+     * @return void 반환값 없음
      */
     public function test_FTP_절차가_표준_권한_값과_재검사를_안내한다(): void
     {
@@ -97,6 +112,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * @scenario target=file, os=linux, ownership=matched
      *
      * @effects permission_guidance_ftp_steps_target_file_permission_value
+     *
+     * @return void 반환값 없음
      */
     public function test_파일_대상_절차가_파일용_값을_제시한다(): void
     {
@@ -113,6 +130,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * @scenario target=directory, target=file, os=windows, ownership=matched
      *
      * @effects permission_guidance_keeps_windows_branch
+     *
+     * @return void 반환값 없음
      */
     public function test_Windows_에서는_숫자_값_대신_보안_탭_절차를_안내한다(): void
     {
@@ -130,6 +149,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * @scenario target=directory, target=file, os=linux, ownership=mismatched
      *
      * @effects permission_guidance_adds_fallback_value_on_ownership_mismatch
+     *
+     * @return void 반환값 없음
      */
     public function test_소유_관계가_어긋나면_보조_권한_값을_병기한다(): void
     {
@@ -150,6 +171,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * @scenario target=directory, target=file, os=windows, ownership=mismatched
      *
      * @effects permission_guidance_shell_free_version_omits_ownership_change
+     *
+     * @return void 반환값 없음
      */
     public function test_무쉘_판본에_소유자_변경_안내가_없다(): void
     {
@@ -178,6 +201,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * @param  bool  $expected  쓰기가 허용되는가
      *
      * @effects permission_value_write_grant_follows_posix_model
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('writeGrantCases')]
     public function test_권한_값이_주는_쓰기_권한을_모델대로_판정한다(int $mode, bool $isOwner, bool $isGroupMember, bool $expected): void
@@ -186,7 +211,9 @@ class PermissionGuidanceShellFreeTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: int, 1: bool, 2: bool, 3: bool}>
+     * 권한 값과 소유 관계 조합별로 POSIX 모델상 쓰기가 허용되는지를 담은 데이터 공급자다. 755 가 소유자도 그룹도 아닌 계정에 쓰기를 주지 않는 Q7 핵심 사례를 포함한다.
+     *
+     * @return array<string, array{0: int, 1: bool, 2: bool, 3: bool}> 사례 이름별 권한 값, 소유자 여부, 그룹 여부, 기대 쓰기 허용
      */
     public static function writeGrantCases(): array
     {
@@ -208,6 +235,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * 이미 쓸 수 있는 대상은 손대지 않는다 (§7 R41 — 운영자 의도를 덮어쓰지 않는다).
      *
      * @effects permission_repair_leaves_writable_targets_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_이미_쓸_수_있는_대상의_권한을_바꾸지_않는다(): void
     {
@@ -232,6 +261,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * 없는 경로는 조용히 건너뛴다 (실패는 무해해야 한다).
      *
      * @effects permission_repair_skips_missing_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_없는_경로는_오류_없이_건너뛴다(): void
     {
@@ -248,10 +279,12 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * 전부 초록이므로 배선 자체를 여기서 잰다.
      *
      * @effects permission_guidance_renders_both_versions_on_every_surface
+     *
+     * @return void 반환값 없음
      */
     public function test_안내_화면이_두_판본을_모두_그린다(): void
     {
-        $welcome = (string) file_get_contents($this->repoRoot().'/public/install/views/0-welcome.php');
+        $welcome = $this->sourceWithoutComments($this->repoRoot().'/public/install/views/0-welcome.php');
 
         $this->assertStringContainsString('installerFtpPermissionGuide(', $welcome, 'Step 0 이 FTP 판본을 만들지 않는다');
         $this->assertStringContainsString('<details class="permission-guide" open>', $welcome, 'FTP 판본이 기본 펼침이 아니다');
@@ -266,7 +299,7 @@ class PermissionGuidanceShellFreeTest extends TestCase
             'Step 0 의 아코디언이 닫히지 않았다'
         );
 
-        $js = (string) file_get_contents($this->repoRoot().'/public/install/assets/js/installer.js');
+        $js = $this->sourceWithoutComments($this->repoRoot().'/public/install/assets/js/installer.js');
 
         // 정의 1회 + 호출 N회 — 호출 수가 두 헬퍼에서 같아야 두 판본이 짝을 이룬다.
         $ftpCalls = substr_count($js, 'renderFtpPermissionGuide(') - 1;
@@ -287,11 +320,13 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * 쉘 안내 한 벌로 남는다.
      *
      * @effects permission_guidance_server_steps_reach_the_screen
+     *
+     * @return void 반환값 없음
      */
     public function test_서버가_내보내는_절차_키를_화면이_전부_소비한다(): void
     {
-        $api = (string) file_get_contents($this->repoRoot().'/public/install/api/check-configuration.php');
-        $js = (string) file_get_contents($this->repoRoot().'/public/install/assets/js/installer.js');
+        $api = $this->sourceWithoutComments($this->repoRoot().'/public/install/api/check-configuration.php');
+        $js = $this->sourceWithoutComments($this->repoRoot().'/public/install/assets/js/installer.js');
 
         $this->assertSame(
             2,
@@ -332,11 +367,13 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * 수단이므로, 두 검사 지점(Step 0 · Step 2) 모두에서 검사보다 **먼저** 불러야 한다.
      *
      * @effects permission_repair_runs_before_the_check_on_both_surfaces
+     *
+     * @return void 반환값 없음
      */
     public function test_두_검사_지점이_검사_전에_직접_권한_부여를_시도한다(): void
     {
-        $welcome = (string) file_get_contents($this->repoRoot().'/public/install/views/0-welcome.php');
-        $api = (string) file_get_contents($this->repoRoot().'/public/install/api/check-configuration.php');
+        $welcome = $this->sourceWithoutComments($this->repoRoot().'/public/install/views/0-welcome.php');
+        $api = $this->sourceWithoutComments($this->repoRoot().'/public/install/api/check-configuration.php');
 
         $repairPos = strpos($welcome, 'installerRepairPermissions(');
         $checkPos = strpos($welcome, 'checkDirectoryPermissions(');
@@ -359,6 +396,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * 화면이 통째로 죽는다. `disable_functions` 는 PHP_INI_SYSTEM 이라 하위 프로세스로만 잰다.
      *
      * @effects permission_repair_survives_blocked_chmod
+     *
+     * @return void 반환값 없음
      */
     public function test_chmod_이_막힌_환경에서도_죽지_않는다(): void
     {
@@ -376,6 +415,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * 쓰기를 막지 않아 애초에 「쓰기 불가」 상태를 만들 수 없다.
      *
      * @effects permission_repair_grants_write_when_chmod_works
+     *
+     * @return void 반환값 없음
      */
     public function test_쓰기_불가_디렉토리를_직접_복구한다(): void
     {
@@ -403,6 +444,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
 
     /**
      * 하네스 전용 임시 BASE_PATH.
+     *
+     * @return string 슬래시 구분으로 바꾼 새 임시 폴더 절대 경로
      */
     private function makeProbeBase(): string
     {
@@ -476,6 +519,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * 파일)을 저장소에서 도출하고, 비면 실패한다 — 도출이 비면 단언이 통째로 공회전한다.
      *
      * @effects permission_guidance_ownership_change_confined_to_mismatch_branch
+     *
+     * @return void 반환값 없음
      */
     public function test_소유자_변경_안내는_소유자_불일치_갈래에만_있다(): void
     {
@@ -536,6 +581,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
      * 재배열하면 가장 위험한 선택지가 첫 번째 안내가 되는데 화면은 정상으로 보인다.
      *
      * @effects permission_guidance_ownership_options_keep_safety_order
+     *
+     * @return void 반환값 없음
      */
     public function test_소유자_불일치_안내가_권장_대안_최후_순서를_지킨다(): void
     {
@@ -605,7 +652,7 @@ class PermissionGuidanceShellFreeTest extends TestCase
                 continue;
             }
 
-            $source = (string) file_get_contents($file->getPathname());
+            $source = $this->sourceWithoutComments($file->getPathname());
 
             if (str_contains($source, "lang('ownership_mismatch_option_chown')")) {
                 $found[] = str_replace('\\', '/', $file->getPathname());
@@ -628,38 +675,19 @@ class PermissionGuidanceShellFreeTest extends TestCase
      */
     private function stripSourceComments(string $path): string
     {
-        $source = (string) file_get_contents($path);
+        // PHP 와 뷰의 스크립트 구간, JS 파일은 공용 스트리퍼가 언어별로 지운다(줄 수 보존).
+        $source = $this->sourceWithoutComments($path);
 
-        if (str_ends_with($path, '.php')) {
-            $out = '';
-            foreach (token_get_all($source) as $token) {
-                if (is_array($token)) {
-                    $out .= in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)
-                        ? str_repeat("\n", substr_count($token[1], "\n"))
-                        : $token[1];
-
-                    continue;
-                }
-                $out .= $token;
-            }
-
-            // 인라인 HTML 은 토크나이저가 통째로 넘기므로 HTML 주석은 따로 지운다.
-            return (string) preg_replace_callback(
-                '/<!--.*?-->/s',
-                static fn (array $m): string => str_repeat("\n", substr_count($m[0], "\n")),
-                $out
-            );
+        if (! str_ends_with($path, '.php')) {
+            return $source;
         }
 
-        // JS — 블록 주석을 먼저 지우고(줄 수 보존), 줄 주석은 앞이 `:` 가 아닐 때만 지운다
-        // (`https://` 같은 문자열을 자르지 않기 위해).
-        $source = (string) preg_replace_callback(
-            '#/\*.*?\*/#s',
+        // 인라인 HTML 은 토크나이저가 통째로 넘기므로 HTML 주석은 따로 지운다.
+        return (string) preg_replace_callback(
+            '/<!--.*?-->/s',
             static fn (array $m): string => str_repeat("\n", substr_count($m[0], "\n")),
             $source
         );
-
-        return (string) preg_replace('#(^|[^:])//.*$#m', '$1', $source);
     }
 
     /**
@@ -681,6 +709,12 @@ class PermissionGuidanceShellFreeTest extends TestCase
         return null;
     }
 
+    /**
+     * 하네스가 만든 임시 폴더를 링크를 따라가지 않고 재귀로 지운다. 없는 폴더면 아무것도 하지 않는다.
+     *
+     * @param  string  $dir  지울 폴더 절대 경로
+     * @return void 반환값 없음
+     */
     private function removeTree(string $dir): void
     {
         if (! is_dir($dir)) {
@@ -698,6 +732,12 @@ class PermissionGuidanceShellFreeTest extends TestCase
         @rmdir($dir);
     }
 
+    /**
+     * 절대 경로를 BASE_PATH 기준 상대 경로로 바꾼다. BASE_PATH 밖이면 상위 폴더로 거슬러 오르는 상대 경로를 만든다.
+     *
+     * @param  string  $absolute  바꿀 절대 경로
+     * @return string BASE_PATH 기준 상대 경로
+     */
     private function relativeToBase(string $absolute): string
     {
         $base = str_replace('\\', '/', BASE_PATH);

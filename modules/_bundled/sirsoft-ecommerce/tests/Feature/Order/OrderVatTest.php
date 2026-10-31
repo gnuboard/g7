@@ -59,6 +59,7 @@ class OrderVatTest extends ModuleTestCase
      * 계산 결과를 반환합니다.
      *
      * @param  array<int, array{option_id: int, product_id: int, quantity: int}>  $items  계산 대상
+     * @return OrderCalculationResult 주문 계산 서비스 결과
      */
     private function calculate(array $items): OrderCalculationResult
     {
@@ -77,7 +78,10 @@ class OrderVatTest extends ModuleTestCase
     /**
      * 과세 상품의 부가세가 계산 단계에서 산출되는지 테스트합니다.
      *
-     * @effects order_vat_calculated_at_creation
+     * @scenario tax_status=taxable, tax_rate=standard_10, order_composition=single_rate, write_point=order_create
+     * @effects vat_calculated_for_taxable_items
+     *
+     * @return void 반환값 없음
      */
     public function test_vat_is_calculated_for_taxable_items(): void
     {
@@ -95,6 +99,11 @@ class OrderVatTest extends ModuleTestCase
 
     /**
      * 면세 상품은 부가세가 0 인지 테스트합니다.
+     *
+     * @scenario tax_status=tax_free, order_composition=single_rate, write_point=order_create
+     * @effects tax_free_item_has_no_vat
+     *
+     * @return void 반환값 없음
      */
     public function test_tax_free_item_has_no_vat(): void
     {
@@ -115,7 +124,10 @@ class OrderVatTest extends ModuleTestCase
      *
      * 전체 과세표준에 단일 세율을 적용하면 값이 어긋난다.
      *
-     * @effects mixed_tax_rate_summed_per_option
+     * @scenario tax_status=taxable, tax_rate=reduced_5, order_composition=mixed_rate, write_point=order_create
+     * @effects mixed_tax_rates_summed_per_option
+     *
+     * @return void 반환값 없음
      */
     public function test_mixed_tax_rates_are_summed_per_option(): void
     {
@@ -140,6 +152,11 @@ class OrderVatTest extends ModuleTestCase
      *
      * (세율 미지정 시 기본 세율 폴백은 VatCalculatorTest 가 커버 — DB 컬럼이 NOT NULL 이라
      *  Product 레벨에서는 null 세율이 존재할 수 없고, 스냅샷 모드에서만 가능하다.)
+     *
+     * @scenario tax_status=tax_free, tax_rate=standard_10, order_composition=taxable_plus_free, write_point=order_create
+     * @effects tax_free_item_rate_ignored
+     *
+     * @return void 반환값 없음
      */
     public function test_tax_free_item_ignores_its_rate(): void
     {
@@ -165,7 +182,10 @@ class OrderVatTest extends ModuleTestCase
      *
      * 수정 전: 쓰기 지점이 부분취소 재계산뿐이라 신규 주문은 영구 0.
      *
-     * @effects order_vat_calculated_at_creation
+     * @scenario tax_status=taxable, tax_rate=standard_10, order_composition=single_rate, write_point=order_create
+     * @effects order_row_records_vat_at_creation
+     *
+     * @return void 반환값 없음
      */
     public function test_order_row_records_vat_at_creation(): void
     {
@@ -219,6 +239,11 @@ class OrderVatTest extends ModuleTestCase
      * 부분취소·재계산은 스냅샷 모드로 돈다. 이때 세율을 DB 현재값에서 읽으면 관리자가
      * 세율을 조정한 순간 과거 주문의 세액이 통째로 뒤바뀐다 — 이미 발행한 증빙과 어긋나는
      * 회계 사고다. 스냅샷의 주문 시점 세율만 쓰는지 고정한다.
+     *
+     * @scenario tax_status=taxable, tax_rate=standard_10, write_point=partial_cancel_recalc
+     * @effects snapshot_rate_freezes_order_time_value
+     *
+     * @return void 반환값 없음
      */
     public function test_snapshot_rate_freezes_order_time_value(): void
     {
@@ -272,6 +297,11 @@ class OrderVatTest extends ModuleTestCase
      * 계산 결과 직렬화/역직렬화에서 부가세가 보존되는지 테스트합니다.
      *
      * 임시주문은 calculation_result 를 JSON 으로 저장했다가 주문 확정 시 다시 읽는다.
+     *
+     * @scenario tax_status=taxable, tax_rate=standard_10, write_point=order_create
+     * @effects vat_survives_calculation_result_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_vat_survives_array_round_trip(): void
     {

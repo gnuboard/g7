@@ -21,9 +21,9 @@ use Tests\TestCase;
  * 옛 content 를 받는다(실측: 초기화 직후 lock 4 응답, DB 는 lock 7). 서빙 캐시 키는 서버 현재
  * 버전으로만 조립하고 `?v` 는 브라우저 HTTP 캐시 우회용으로만 쓴다.
  *
- * @scenario compile_unit=layout,source_health=valid
+ * 이 파일이 재는 효과는 서빙 캐시 키가 서버 현재 버전으로만 조립된다는 것이며, 그 표식은 메서드 docblock 에 둔다.
  *
- * @effects serving_cache_key_uses_server_current_version
+ * @scenario compile_unit=layout,source_health=valid
  */
 class LayoutServingStaleClientVersionKeyTest extends TestCase
 {
@@ -37,7 +37,13 @@ class LayoutServingStaleClientVersionKeyTest extends TestCase
     ];
 
     /**
-     * @effects serving_cache_key_uses_server_current_version_not_client_query_version, save_followup_reload_returns_fresh_editor_response_with_new_lock_version
+     * 편집기가 부팅 시점 `cache_version` 에 nonce 만 붙여 재요청해도, 저장을 두 번 거친 뒤 최신 content 를 받는지 확인한다.
+     *
+     * @scenario save_outcome=valid_save
+     *
+     * @effects serving_cache_key_uses_server_current_version, serving_cache_key_uses_server_current_version_not_client_query_version, save_followup_reload_returns_fresh_editor_response_with_new_lock_version
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function serve_with_boot_time_client_version_returns_fresh_content_after_two_saves(): void
@@ -89,8 +95,10 @@ class LayoutServingStaleClientVersionKeyTest extends TestCase
     }
 
     /**
-     * @param  string  $title  meta.title
-     * @return array<string, mixed>
+     * 주어진 제목을 `meta.title` 에 싣고 Div 하나만 가진 최소 레이아웃 content 배열을 만든다.
+     *
+     * @param  string  $title  `meta.title` 에 넣을 제목 문자열
+     * @return array<string, mixed> 레이아웃 content 배열
      */
     private function content(string $title): array
     {

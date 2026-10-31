@@ -31,6 +31,11 @@ class AuthServicePasswordResetLinkTest extends TestCase
 {
     private const HOOK = 'core.auth.after_reset_password_request';
 
+    /**
+     * 재설정 훅을 비우고 app.url 을 후행 슬래시가 붙은 하위 폴더 주소로, 요청은 다른 호스트로 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,6 +45,11 @@ class AuthServicePasswordResetLinkTest extends TestCase
         app()->instance('request', Request::create('http://localhost/api/x'));
     }
 
+    /**
+     * 재설정 훅과 강제 접두사를 걷어 다른 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::clearAction(self::HOOK);
@@ -49,9 +59,13 @@ class AuthServicePasswordResetLinkTest extends TestCase
     }
 
     /**
+     * 사용자와 관리자 비밀번호 재설정 링크가 요청 호스트가 아니라 설정 주소를 따르고 이중 슬래시 없이 각 재설정 경로로 이어지는지 확인한다.
+     *
      * @scenario base_path=subpath, navigation_direction=navigation
      *
      * @effects notification_links_are_built_by_the_site_absolute_helper
+     *
+     * @return void 반환값 없음
      */
     public function test_reset_url_follows_the_configured_site_url_without_double_slash(): void
     {

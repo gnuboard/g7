@@ -205,6 +205,8 @@ test.describe('@layout-editor overlay affordance z-index', () => {
     expect(probedDirections, '+ 버튼이 1개 이상 검사돼야 함').toBeGreaterThan(0);
   });
 
+  // @scenario insertion_path=context_plus_button, selected_node_state=basic_selected
+  // @effects overlay_affordance_click_not_intercepted_by_drag_handle, context_menu_three_items_exactly_setting_duplicate_delete
   test('ⓘ 버튼 클릭 시 컨텍스트 메뉴가 열림 — 클릭이 핸들러에 도달', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);

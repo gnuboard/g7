@@ -48,12 +48,14 @@ function findComponentById(obj: any, id: string): any | null {
 }
 
 describe('게시판 신고현황 named_actions 검증', () => {
+    /** @effects search_keyword_propagated_to_url_query */
     it('레이아웃에 named_actions.searchBoardReports가 정의되어 있어야 함', () => {
         const namedActions = (boardReports as any).named_actions;
         expect(namedActions).toBeDefined();
         expect(namedActions.searchBoardReports).toBeDefined();
     });
 
+    /** @effects search_keyword_propagated_to_url_query */
     it('searchBoardReports가 올바른 navigate 핸들러를 가져야 함', () => {
         const action = (boardReports as any).named_actions.searchBoardReports;
         expect(action.handler).toBe('navigate');
@@ -63,18 +65,21 @@ describe('게시판 신고현황 named_actions 검증', () => {
         expect(action.params.query.type).toBeDefined();
     });
 
+    /** @effects mobile_search_propagates_to_url_query */
     it('Desktop + Mobile Enter keypress가 actionRef로 searchBoardReports를 참조해야 함', () => {
         const refs = findActionRefs(boardReports, 'searchBoardReports');
         const enterRefs = refs.filter((r: any) => r.type === 'keypress' && r.key === 'Enter');
         expect(enterRefs.length).toBe(2); // desktop + mobile
     });
 
+    /** @effects search_keyword_propagated_to_url_query */
     it('검색 버튼 click이 actionRef로 searchBoardReports를 참조해야 함', () => {
         const refs = findActionRefs(boardReports, 'searchBoardReports');
         const clickRef = refs.find((r: any) => r.type === 'click');
         expect(clickRef).toBeDefined();
     });
 
+    /** @effects search_keyword_propagated_to_url_query, mobile_search_propagates_to_url_query */
     it('총 3개의 actionRef가 searchBoardReports를 참조해야 함', () => {
         const refs = findActionRefs(boardReports, 'searchBoardReports');
         expect(refs.length).toBe(3);
@@ -90,12 +95,14 @@ describe('검색어 상태 스코프 정합 검증 (#413-72 회귀)', () => {
      * searchBoardReports 액션과 value 바인딩은 _local 을 읽어 검색어가 전달되지 않음.
      */
 
+    /** @effects search_field_propagated_to_url_query, search_keyword_propagated_to_url_query */
     it('searchBoardReports가 _local.searchField / _local.searchQuery 를 읽어야 함', () => {
         const action = (boardReports as any).named_actions.searchBoardReports;
         expect(action.params.query['filters[0][field]']).toContain('_local.searchField');
         expect(action.params.query['filters[0][value]']).toContain('_local.searchQuery');
     });
 
+    /** @effects search_input_value_retained_after_navigation */
     it('검색 Select/Input의 value 바인딩이 _local 을 읽어야 함', () => {
         for (const id of ['search_field_select', 'mobile_search_field_select']) {
             const cmp = findComponentById(boardReports, id);
@@ -109,6 +116,7 @@ describe('검색어 상태 스코프 정합 검증 (#413-72 회귀)', () => {
         }
     });
 
+    /** @effects search_keyword_propagated_to_url_query, mobile_search_propagates_to_url_query */
     it('검색 Select/Input의 change setState가 _local 에 저장해야 함 (target:"global" 금지)', () => {
         const ids = [
             'search_field_select',
@@ -129,6 +137,7 @@ describe('검색어 상태 스코프 정합 검증 (#413-72 회귀)', () => {
         }
     });
 
+    /** @effects reset_clears_search_keyword */
     it('reset 버튼이 검색어를 _local 스코프로 초기화해야 함', () => {
         const reset = findComponentById(boardReports, 'reset_button');
         expect(reset).toBeDefined();
@@ -150,6 +159,7 @@ describe('검색어 상태 스코프 정합 검증 (#413-72 회귀)', () => {
 });
 
 describe('모바일 Dropdown 일괄 처리 검증', () => {
+    /** @effects mobile_bulk_dropdown_items_use_value_field */
     it('mobile_bulk_action_dropdown의 items가 value 필드를 가져야 함 (key 금지)', () => {
         const dropdown = findComponentById(boardReports, 'mobile_bulk_action_dropdown');
         expect(dropdown).toBeDefined();
@@ -164,6 +174,7 @@ describe('모바일 Dropdown 일괄 처리 검증', () => {
         }
     });
 
+    /** @effects mobile_bulk_dropdown_switch_cases_match_items */
     it('mobile_bulk_action_dropdown의 switch cases가 items의 value와 일치해야 함', () => {
         const dropdown = findComponentById(boardReports, 'mobile_bulk_action_dropdown');
         const items = dropdown.props.items as Array<{ value: string }>;
@@ -180,6 +191,7 @@ describe('모바일 Dropdown 일괄 처리 검증', () => {
         }
     });
 
+    /** @effects mobile_bulk_dropdown_cases_are_sequences */
     it('switch cases의 각 케이스가 sequence 객체여야 함 (배열 직접 사용 금지)', () => {
         const dropdown = findComponentById(boardReports, 'mobile_bulk_action_dropdown');
         const switchAction = dropdown.actions?.find((a: any) => a.handler === 'switch');

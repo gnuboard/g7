@@ -18,7 +18,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: execution_mode_choice auto·subprocess·inprocess·invalid / vendor_mode_choice auto·composer·bundled / execution_mode_resolved subprocess·inprocess·absent / installation_mode sse·polling·stepwise
  *
- * @effects installer_execution_mode_explicit_choice_skips_detection, installer_execution_mode_inprocess_forces_bundled_vendor, installer_execution_mode_resolved_state_wins_over_redetection, installer_resolved_php_binary_prefers_explicit_then_detected, installer_progress_mode_guards_are_symmetric, installer_stepwise_blocked_when_composer_can_run, installer_installation_mode_forced_to_stepwise_under_inprocess, installer_finalize_rejects_unfinished_or_unauthorized_requests, installer_start_rejects_live_worker_and_token_hijack, installer_token_rejection_separates_missing_from_mismatch
+ * 효과 요약(마커 아님 — 평문): 명시 선택의 감지 생략, 인프로세스의 번들 의존성 고정, 확정 상태 우선, PHP 경로 우선순위, 진행 모드 가드 대칭, 단계별 실행 차단과 강제, 마무리와 시작 요청 거부, 토큰 거부 사유 구분. 표식은 각 테스트 메서드에 있다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -26,6 +26,11 @@ class InstallerExecutionModeHelperTest extends TestCase
 {
     use CleansTemporaryBasePath;
 
+    /**
+     * 번역 대역을 불러오고 임시 BASE_PATH 를 정한 뒤 실행 모드 판정 헬퍼 파일을 불러온다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__.'/stubs/lang_stub.php';
@@ -37,6 +42,11 @@ class InstallerExecutionModeHelperTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/execution-mode.php';
     }
 
+    /**
+     * BASE_PATH 가 시스템 임시 폴더 아래가 아니면 번들 판정이 실제 파일을 읽지 않도록 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -50,9 +60,13 @@ class InstallerExecutionModeHelperTest extends TestCase
     }
 
     /**
+     * 실행 모드 정규화가 알려진 값은 앞뒤 공백을 걷어 그대로 받고, 모르는 값이나 문자열이 아닌 값은 자동으로 되돌리는지 확인한다.
+     *
      * @scenario execution_mode_choice=invalid
      *
      * @effects installer_execution_mode_explicit_choice_skips_detection
+     *
+     * @return void 반환값 없음
      */
     public function test_normalize_accepts_known_values_and_falls_back_to_auto(): void
     {
@@ -70,6 +84,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario execution_mode_choice=subprocess
      *
      * @effects installer_execution_mode_explicit_choice_skips_detection
+     *
+     * @return void 반환값 없음
      */
     public function test_explicit_choice_skips_detection(): void
     {
@@ -89,6 +105,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario execution_mode_choice=auto
      *
      * @effects installer_execution_mode_explicit_choice_skips_detection
+     *
+     * @return void 반환값 없음
      */
     public function test_auto_follows_detection(): void
     {
@@ -110,6 +128,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario vendor_mode_choice=auto
      *
      * @effects installer_execution_mode_inprocess_forces_bundled_vendor
+     *
+     * @return void 반환값 없음
      */
     public function test_inprocess_forces_bundled_vendor_mode(): void
     {
@@ -124,6 +144,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario vendor_mode_choice=composer
      *
      * @effects installer_execution_mode_inprocess_forces_bundled_vendor
+     *
+     * @return void 반환값 없음
      */
     public function test_subprocess_keeps_vendor_mode_choice(): void
     {
@@ -139,6 +161,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario execution_mode_resolved=subprocess
      *
      * @effects installer_execution_mode_resolved_state_wins_over_redetection
+     *
+     * @return void 반환값 없음
      */
     public function test_resolved_state_wins_over_redetection(): void
     {
@@ -151,9 +175,13 @@ class InstallerExecutionModeHelperTest extends TestCase
     }
 
     /**
+     * 확정 모드가 상태에 없으면 유효 모드가 설정에 저장된 선택값을 따르는지 확인한다.
+     *
      * @scenario execution_mode_resolved=absent
      *
      * @effects installer_execution_mode_resolved_state_wins_over_redetection
+     *
+     * @return void 반환값 없음
      */
     public function test_effective_mode_falls_back_to_config_when_not_resolved(): void
     {
@@ -163,9 +191,13 @@ class InstallerExecutionModeHelperTest extends TestCase
     }
 
     /**
+     * 자동 판정의 사유 문구가 차단된 함수 목록이나 PHP 실행 확인 실패를 한 줄로 설명하고, 걸림이 없으면 비는지 확인한다.
+     *
      * @scenario execution_mode_choice=auto
      *
      * @effects installer_execution_mode_explicit_choice_skips_detection
+     *
+     * @return void 반환값 없음
      */
     public function test_reasons_describe_blocked_functions_or_probe_failure(): void
     {
@@ -206,6 +238,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario execution_mode_choice=subprocess
      *
      * @effects installer_execution_mode_explicit_choice_skips_detection
+     *
+     * @return void 반환값 없음
      */
     public function test_explicit_execution_mode_is_rejected_when_the_environment_cannot_run_it(): void
     {
@@ -243,6 +277,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario execution_mode_choice=inprocess
      *
      * @effects installer_execution_mode_explicit_choice_skips_detection
+     *
+     * @return void 반환값 없음
      */
     public function test_execution_mode_rejection_keys_are_defined_in_every_locale(): void
     {
@@ -268,6 +304,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario execution_mode_choice=subprocess
      *
      * @effects installer_resolved_php_binary_prefers_explicit_then_detected
+     *
+     * @return void 반환값 없음
      */
     public function test_resolved_php_binary_prefers_explicit_then_detected(): void
     {
@@ -290,6 +328,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario installation_mode=stepwise
      *
      * @effects installer_token_rejection_separates_missing_from_mismatch
+     *
+     * @return void 반환값 없음
      */
     public function test_stepwise_token_judgment_accepts_only_the_exact_issued_token(): void
     {
@@ -326,6 +366,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario installation_mode=stepwise
      *
      * @effects installer_progress_mode_guards_are_symmetric
+     *
+     * @return void 반환값 없음
      */
     public function test_progress_mode_guards_are_symmetric_between_two_entry_points(): void
     {
@@ -361,6 +403,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario installation_mode=stepwise
      *
      * @effects installer_stepwise_blocked_when_composer_can_run
+     *
+     * @return void 반환값 없음
      */
     public function test_stepwise_is_blocked_when_composer_can_run(): void
     {
@@ -408,6 +452,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario installation_mode=stepwise
      *
      * @effects installer_installation_mode_forced_to_stepwise_under_inprocess
+     *
+     * @return void 반환값 없음
      */
     public function test_installation_mode_is_forced_to_stepwise_under_inprocess(): void
     {
@@ -443,6 +489,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario installation_mode=stepwise
      *
      * @effects installer_progress_mode_guards_are_symmetric
+     *
+     * @return void 반환값 없음
      */
     public function test_stepwise_endpoint_accepts_only_running_and_completed(): void
     {
@@ -476,6 +524,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario execution_mode_choice=auto
      *
      * @effects installer_resolved_php_binary_prefers_explicit_then_detected
+     *
+     * @return void 반환값 없음
      */
     public function test_detection_php_binary_reports_when_it_falls_back_to_default(): void
     {
@@ -506,6 +556,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario installation_mode=stepwise
      *
      * @effects installer_progress_mode_guards_are_symmetric
+     *
+     * @return void 반환값 없음
      */
     public function test_stepwise_failure_payload_keeps_the_response_contract(): void
     {
@@ -530,6 +582,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario installation_mode=stepwise
      *
      * @effects installer_progress_mode_guards_are_symmetric
+     *
+     * @return void 반환값 없음
      */
     public function test_endpoint_rejection_carries_message_params(): void
     {
@@ -564,6 +618,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario installation_mode=stepwise
      *
      * @effects installer_token_rejection_separates_missing_from_mismatch
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_requires_the_stepwise_token_only_in_stepwise_mode(): void
     {
@@ -583,6 +639,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario installation_mode=stepwise
      *
      * @effects installer_token_rejection_separates_missing_from_mismatch
+     *
+     * @return void 반환값 없음
      */
     public function test_token_rejection_separates_missing_from_mismatch(): void
     {
@@ -618,6 +676,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario installation_mode=stepwise
      *
      * @effects installer_finalize_rejects_unfinished_or_unauthorized_requests
+     *
+     * @return void 반환값 없음
      */
     public function test_finalize_rejects_wrong_method_unfinished_install_and_bad_token(): void
     {
@@ -664,6 +724,8 @@ class InstallerExecutionModeHelperTest extends TestCase
      * @scenario installation_mode=stepwise
      *
      * @effects installer_start_rejects_live_worker_and_token_hijack
+     *
+     * @return void 반환값 없음
      */
     public function test_start_rejects_live_worker_and_requires_existing_token_while_running(): void
     {

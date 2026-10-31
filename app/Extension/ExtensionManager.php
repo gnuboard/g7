@@ -155,6 +155,7 @@ class ExtensionManager
      *
      * @param  ModuleManager  $moduleManager  로드된 모듈 매니저
      * @param  PluginManager  $pluginManager  로드된 플러그인 매니저
+     * @return void 반환값 없음
      */
     public function regenerateExtensionStaticCaches(
         ModuleManager $moduleManager,

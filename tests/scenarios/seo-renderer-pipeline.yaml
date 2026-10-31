@@ -92,6 +92,7 @@ effects:
   - renderer_seo_context_not_injected_without_extensions
   - renderer_filter_og_data_hook_triggers_rerender_via_metaresolver
   - renderer_filter_structured_data_hook_triggers_rerender_via_metaresolver
+  - canonical_og_url_and_hreflang_use_the_configured_origin
 
 test_files:
   - tests/Unit/Seo/SeoRendererTest.php

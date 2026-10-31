@@ -27,7 +27,8 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 커버 축: abort_point after_seed·after_migrate / flag_write ok·failed / emitter heartbeat_folded·log_kept / remaining done·failed·aborted
  *
- * @effects abort_after_task_rolls_back_that_task, complete_flag_write_failure_is_reported, remaining_uses_one_rule, buffer_emitter_folds_heartbeats, sse_announces_lock_loss
+ * 효과 요약(마커 아님 — 평문): 완료 직후 중단은 그 태스크의 롤백으로, 완료 플래그 쓰기 실패는 실패로, 남은 수는 한 기준으로,
+ * 버퍼의 heartbeat 는 하나로 접고, SSE 워커는 물러나기 전에 알린다. 표식은 각 테스트 메서드가 단다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -45,6 +46,13 @@ class InstallerTaskFlowContractTest extends TestCase
     /** @var array<int, string> */
     private array $calls = [];
 
+    /**
+     * 프로세스당 한 번만 임시 BASE_PATH 를 정하고 저장소와 설정 디렉토리를 만든 뒤 오토로더와 인스톨러 설정, 상태, 런타임, 진행 방출기, 태스크 러너를 불러온다.
+     *
+     * BASE_PATH 가 이미 시스템 temp 밖으로 정의돼 있으면 실제 상태 파일을 지키려고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function bootInstallerRuntime(): void
     {
         if (self::$booted) {
@@ -88,6 +96,13 @@ class InstallerTaskFlowContractTest extends TestCase
         require_once $root.'/public/install/includes/task-runner.php';
     }
 
+    /**
+     * 인스톨러를 부팅하고 건너뛸 사유가 있으면 건너뛴 뒤, 호출 기록을 비우고 상태 파일과 사본, 설치 로그, 완료 플래그, 런타임 파일을 지운다.
+     *
+     * 진행 방출기는 버퍼 방출기로 바꾸고 번역 표는 영어로 싣는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -116,6 +131,11 @@ class InstallerTaskFlowContractTest extends TestCase
         $GLOBALS['translations'] = loadTranslations('en');
     }
 
+    /**
+     * Artisan 실행기 대체 훅을 걷어 내고, 검사가 파일로 막아 둔 앱 저장소 자리를 디렉토리로 되돌린다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         unset($GLOBALS['g7_installer_artisan_executor_override']);
@@ -170,6 +190,7 @@ class InstallerTaskFlowContractTest extends TestCase
      * 시딩 태스크가 요구하는 최소 상태 (DB 설정은 비워 롤백이 실 DB 에 닿지 않게 한다).
      *
      * @param  array<int, string>  $completed  완료 마커
+     * @return void 반환값 없음
      */
     private function seedState(array $completed): void
     {
@@ -194,7 +215,15 @@ class InstallerTaskFlowContractTest extends TestCase
     }
 
     /**
+     * 시딩 도중 중단이 표시되면 설치 로그에 시드 롤백 문구만 남고 마이그레이션 롤백은 돌지 않으며, 마이그레이션 완료 마커가 유지되는지 확인한다.
+     *
      * #D4 — db_seed 완료 직후 중단은 **시드**를 되돌린다 (스키마가 아니라).
+     *
+     * @scenario installation_mode=stepwise, task=db_seed, task_outcome=aborted
+     *
+     * @effects abort_after_task_rolls_back_that_task
+     *
+     * @return void 반환값 없음
      */
     public function test_abort_after_seed_rolls_back_seed_not_migrate(): void
     {
@@ -239,7 +268,15 @@ class InstallerTaskFlowContractTest extends TestCase
     }
 
     /**
+     * 태스크 러너 소스(주석 제거)에 중단 경로의 마이그레이션 롤백 하드코딩 대입이 남아 있지 않은지 확인한다.
+     *
      * #D4 — 중단 경로도 태스크별 디스패치를 쓴다 (하드코딩 잔존 금지).
+     *
+     * @scenario task=db_seed, task_outcome=aborted
+     *
+     * @effects abort_after_task_rolls_back_that_task
+     *
+     * @return void 반환값 없음
      */
     public function test_abort_path_dispatches_by_task(): void
     {
@@ -253,7 +290,15 @@ class InstallerTaskFlowContractTest extends TestCase
     }
 
     /**
+     * 앱 저장소 자리를 파일로 막아 완료 플래그를 쓸 수 없게 만든 뒤, 완료 처리가 성공이 아니라 실패를 돌려주는지 확인한다.
+     *
      * #D12 — 완료 플래그를 쓰지 못하면 실패로 보고한다.
+     *
+     * @scenario task=complete_flag
+     *
+     * @effects complete_flag_write_failure_is_reported
+     *
+     * @return void 반환값 없음
      */
     public function test_complete_flag_write_failure_is_reported(): void
     {
@@ -276,7 +321,15 @@ class InstallerTaskFlowContractTest extends TestCase
     }
 
     /**
+     * 남은 태스크 수 계산이 완료, 실패, 중단 갈래마다 한 규칙으로 나오고 음수가 되지 않으며, 태스크 러너에 흩어진 별도 계산식이 없는지 확인한다.
+     *
      * F1/F2 — `remaining` 은 한 기준으로만 계산한다.
+     *
+     * @scenario task_outcome=done, task_outcome=failed_db, task_outcome=aborted
+     *
+     * @effects remaining_uses_one_rule
+     *
+     * @return void 반환값 없음
      */
     public function test_remaining_uses_one_rule(): void
     {
@@ -295,7 +348,15 @@ class InstallerTaskFlowContractTest extends TestCase
     }
 
     /**
+     * 버퍼 방출기가 여러 heartbeat 를 마지막 값 하나로 접고 log 이벤트는 그대로 남기는지 확인한다.
+     *
      * F7 — stepwise 버퍼는 heartbeat 을 마지막 1건으로 접는다.
+     *
+     * @scenario installation_mode=stepwise
+     *
+     * @effects buffer_emitter_folds_heartbeats
+     *
+     * @return void 반환값 없음
      */
     public function test_buffer_emitter_folds_heartbeats(): void
     {
@@ -320,7 +381,15 @@ class InstallerTaskFlowContractTest extends TestCase
     }
 
     /**
+     * SSE 방출기 클래스 본문에서 worker_superseded 알림이 프로세스 종료 호출보다 앞에 있는지 확인한다.
+     *
      * E5 — SSE 워커는 물러나기 전에 그 사실을 한 프레임 보낸다.
+     *
+     * @scenario installation_mode=sse
+     *
+     * @effects sse_announces_lock_loss
+     *
+     * @return void 반환값 없음
      */
     public function test_sse_announces_lock_loss_before_retreat(): void
     {
@@ -344,7 +413,15 @@ class InstallerTaskFlowContractTest extends TestCase
     }
 
     /**
+     * 설치 마무리 함수 본문에 응답에 반영되지 않는 현재 단계 세션 쓰기가 따옴표나 값 형태와 무관하게 남아 있지 않은지 정규식으로 확인한다.
+     *
      * F3 — 응답에 반영되지 않는 세션 쓰기는 남기지 않는다.
+     *
+     * @scenario installation_mode=sse, installation_mode=polling, installation_mode=stepwise
+     *
+     * @effects finalize_leaves_no_dead_session_write
+     *
+     * @return void 반환값 없음
      */
     public function test_finalize_has_no_dead_session_write(): void
     {

@@ -659,6 +659,7 @@ class CoreBackupHelper
      * 나눠 남긴다 — 정보 로그에 묻히면 운영자는 사이트가 왜 열려 있는지 알 방법이 없다.
      *
      * @param  string  $projectRoot  프로젝트 루트 절대 경로
+     * @return void 반환값 없음
      */
     private static function warnIfRootProtectionFilesAreMissing(string $projectRoot): void
     {
@@ -691,6 +692,7 @@ class CoreBackupHelper
      * 손에 쥐고 콘솔 통로에 실을 수 있다.
      *
      * @param  string  $projectRoot  프로젝트 루트 절대 경로
+     * @return void 반환값 없음
      */
     private static function warnIfRollbackRestoredDocrootResidue(string $projectRoot): void
     {

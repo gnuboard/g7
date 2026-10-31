@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * existing_db_action 변경 시 db_cleanup 재실행 보장 회귀 테스트
@@ -26,7 +27,13 @@ use Tests\Concerns\CleansTemporaryBasePath;
 class ExistingDbActionGuardTest extends TestCase
 {
     use CleansTemporaryBasePath;
+    use ScansPhpSourceFunctions;
 
+    /**
+     * 임시 BASE_PATH 와 storage 폴더를 만들고 설치 상태 모듈을 불러와 가드 함수를 쓸 수 있게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,9 +47,13 @@ class ExistingDbActionGuardTest extends TestCase
     }
 
     /**
+     * 이전 선택이 skip 이던 상태에서 drop_tables 로 바꾸면 db_cleanup 마커만 지워지고 다른 작업의 마커는 남는지 확인한다.
+     *
      * @scenario task_kind=db_schema, marker_shape=bare_id, new_action=drop_tables, worker_liveness=no_worker
      *
      * @effects db_schema_markers_are_invalidated, filesystem_only_markers_are_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_tables_resets_db_cleanup_when_previous_was_skip(): void
     {
@@ -59,9 +70,13 @@ class ExistingDbActionGuardTest extends TestCase
     }
 
     /**
+     * 이전 선택이 기록되지 않은 상태에서 drop_tables 를 고르면 db_cleanup 마커가 지워지는지 확인한다.
+     *
      * @scenario task_kind=db_schema, marker_shape=bare_id, new_action=drop_tables, worker_liveness=no_worker
      *
      * @effects db_schema_markers_are_invalidated
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_tables_resets_db_cleanup_when_previous_was_null(): void
     {
@@ -86,6 +101,8 @@ class ExistingDbActionGuardTest extends TestCase
      * @scenario task_kind=db_schema, marker_shape=bare_id, new_action=drop_tables, worker_liveness=no_worker
      *
      * @effects db_schema_markers_are_invalidated, filesystem_only_markers_are_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_tables_resets_db_cleanup_and_migrate_even_when_already_drop_tables(): void
     {
@@ -106,6 +123,12 @@ class ExistingDbActionGuardTest extends TestCase
      * 재시도(확장 단계 실패 → 재시도/건너뛰기)에서 마커를 지우면 db_cleanup 이 설치물 테이블을
      * 다시 DROP 하고, 확장 완료 마커는 남아 템플릿 행만 사라진 채 "완료" 된다 (실측: g7_templates 빈 설치).
      * 종전 테스트(test_drop_tables_resets_db_seed_marker_too)는 그 파괴를 계약으로 고정하고 있었다.
+     *
+     * @scenario task_kind=db_schema, marker_shape=bare_id, new_action=drop_tables, worker_liveness=no_worker
+     *
+     * @effects completed_db_stage_markers_are_preserved_on_retry
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_tables_preserves_markers_once_db_stage_completed(): void
     {
@@ -125,6 +148,12 @@ class ExistingDbActionGuardTest extends TestCase
     /**
      * 시딩이 끝나기 전(마이그레이션만 완료) 의 재시도는 종전대로 처음부터 다시 한다 —
      * 이 구간에는 아직 확장 설치물이 없어 재DROP 이 파괴적이지 않다.
+     *
+     * @scenario task_kind=db_schema, marker_shape=bare_id, new_action=drop_tables, worker_liveness=no_worker
+     *
+     * @effects db_schema_markers_are_invalidated
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_tables_resets_markers_while_seed_incomplete(): void
     {
@@ -139,9 +168,13 @@ class ExistingDbActionGuardTest extends TestCase
     }
 
     /**
+     * drop_tables 에서 skip 으로 바꿔도 이미 끝난 db_cleanup 마커가 그대로 남는지 확인한다.
+     *
      * @scenario task_kind=db_schema, marker_shape=bare_id, new_action=skip, worker_liveness=no_worker
      *
      * @effects skip_preserves_all_markers
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_does_not_reset_anything(): void
     {
@@ -157,9 +190,13 @@ class ExistingDbActionGuardTest extends TestCase
     }
 
     /**
+     * 상태에 완료 목록이 아예 없어도 가드가 오류 없이 빈 목록을 돌려주는지 확인한다.
+     *
      * @scenario task_kind=db_schema, marker_shape=bare_id, new_action=drop_tables, worker_liveness=no_worker
      *
      * @effects missing_completed_tasks_yields_empty_array
+     *
+     * @return void 반환값 없음
      */
     public function test_handles_missing_completed_tasks_gracefully(): void
     {
@@ -171,9 +208,13 @@ class ExistingDbActionGuardTest extends TestCase
     }
 
     /**
+     * 마커를 걸러낸 뒤 완료 목록의 키가 0 부터 이어지는 순번으로 다시 매겨지는지 확인한다.
+     *
      * @scenario task_kind=db_schema, marker_shape=bare_id, new_action=drop_tables, worker_liveness=no_worker
      *
      * @effects filtered_markers_are_reindexed_sequentially
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_array_values_so_keys_are_sequential(): void
     {
@@ -205,6 +246,8 @@ class ExistingDbActionGuardTest extends TestCase
      * @scenario task_kind=db_schema, marker_shape=id_with_target, new_action=drop_tables, worker_liveness=active_worker
      *
      * @effects active_worker_preserves_all_markers
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_tables_does_not_reset_when_other_worker_is_active(): void
     {
@@ -231,6 +274,8 @@ class ExistingDbActionGuardTest extends TestCase
      * @scenario task_kind=db_schema, marker_shape=bare_id, new_action=drop_tables, worker_liveness=stale_worker
      *
      * @effects stale_worker_allows_takeover_reset
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_tables_resets_when_other_worker_is_stale(): void
     {
@@ -256,6 +301,12 @@ class ExistingDbActionGuardTest extends TestCase
      * 존중하는데 이 가드만 15초로 고정하면, 아직 도는 워커를 죽은 것으로 보고 그 워커의
      * db_* 완료 마커를 지운다 → 다음 요청이 db_cleanup 을 다시 뽑아 **방금 만든 테이블을
      * DROP** 한다. 두 판정은 같은 함수를 써야 한다.
+     *
+     * @scenario task_kind=db_schema, marker_shape=bare_id, new_action=drop_tables, worker_liveness=active_worker
+     *
+     * @effects active_worker_preserves_all_markers
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_tables_respects_declared_worker_stale_window(): void
     {
@@ -280,6 +331,8 @@ class ExistingDbActionGuardTest extends TestCase
      * @scenario task_kind=db_schema, marker_shape=bare_id, new_action=drop_tables, worker_liveness=no_worker
      *
      * @effects db_schema_markers_are_invalidated
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_tables_resets_when_no_active_worker(): void
     {
@@ -310,6 +363,8 @@ class ExistingDbActionGuardTest extends TestCase
      * @scenario task_kind=extension_registration, marker_shape=id_with_target, new_action=drop_tables, worker_liveness=no_worker
      *
      * @effects extension_install_markers_are_invalidated, extension_activate_markers_are_invalidated, filesystem_only_markers_are_preserved, board_installed_before_cleanup_reinstalls_on_retry, installer_never_skips_an_extension_whose_db_row_was_dropped
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_tables_resets_extension_markers_so_they_reinstall(): void
     {
@@ -355,6 +410,8 @@ class ExistingDbActionGuardTest extends TestCase
      * @scenario task_kind=finalization, marker_shape=id_with_target, new_action=drop_tables, worker_liveness=no_worker
      *
      * @effects extension_install_markers_are_invalidated, extension_activate_markers_are_invalidated, language_pack_markers_are_invalidated, finalization_markers_are_invalidated, cache_clear_marker_is_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_drop_tables_resets_plugin_user_template_and_finalization_markers(): void
     {
@@ -400,10 +457,12 @@ class ExistingDbActionGuardTest extends TestCase
      * @scenario task_kind=filesystem_only, marker_shape=bare_id, new_action=drop_tables, worker_liveness=no_worker
      *
      * @effects every_task_id_in_runner_is_classified, filesystem_only_markers_are_preserved, bare_task_id_is_classified
+     *
+     * @return void 반환값 없음
      */
     public function test_every_task_id_in_runner_is_classified(): void
     {
-        $source = file_get_contents(dirname(__DIR__, 3) . '/public/install/includes/task-runner.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3) . '/public/install/includes/task-runner.php');
         preg_match_all("/'id' => '([a-z_]+)'/", $source, $matches);
         $taskIds = array_unique($matches[1]);
 
@@ -441,6 +500,8 @@ class ExistingDbActionGuardTest extends TestCase
      * @scenario task_kind=extension_registration, marker_shape=id_with_target, new_action=drop_tables, worker_liveness=no_worker
      *
      * @effects targeted_marker_parses_task_id_before_colon, hyphenated_identifier_target_is_parsed, underscored_identifier_target_is_parsed, bare_task_id_is_classified
+     *
+     * @return void 반환값 없음
      */
     public function test_task_id_is_parsed_from_targeted_marker(): void
     {

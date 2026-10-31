@@ -9,7 +9,7 @@ description: |
   탭 편집 모드 측정 마커는 `tests/scenarios/layout-editor-tabnav-inplace.yaml` 이 따로 잠근다.
 
 axes:
-  component: [icon, chip_checkbox, page_header, tab_navigation, theme_toggle, toast, toggle]
+  component: [icon, chip_checkbox, page_header, tab_navigation, theme_toggle, toast, toggle, form]
 
 effects:
   # 아이콘
@@ -40,6 +40,10 @@ effects:
   - toggle_reflects_checked_value_and_changes_on_click
   - toggle_applies_size_disabled_and_dark_styles
   - toggle_exposes_switch_role_name_and_keyboard
+  # 폼 (609 docblock 정리 — 소유 매니페스트가 하위 폴더 접두사 축뿐이던 기본 렌더 계약을 이 축으로 묶는다)
+  - form_renders_element_and_children                 # form 요소와 자식, 여러 입력, 중첩 label 을 그린다
+  - form_dispatches_submit_reset_change_handlers      # 제출, 초기화, 변경 이벤트가 각 콜백에 닿는다
+  - form_applies_html_and_custom_attributes           # action, method, encType 등 HTML 속성과 사용자 클래스, id, data 속성이 반영된다
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Icon.test.tsx
@@ -50,6 +54,7 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Toast.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Toggle.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/utils/__tests__/accessibleColor.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Form.test.tsx
 
 notes: |
   e2e_browser=not_applicable — 컴포넌트 단위 계약이라 jsdom 렌더(Vitest)로 잠근다. 실제 화면에서의 접근 가능한 이름과

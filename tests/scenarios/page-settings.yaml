@@ -177,6 +177,10 @@ effects:
   - seo_vars_editor_uses_data_chip_value_input_value_only_no_keyification
   # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
   - core_prop_keys_exclude_isolated_scope_keys_owned_by_dedicated_ui
+  # 2026-10-31 issue609 테스트 매핑 부채 정리: 레이아웃 편집기 단위 테스트가 실제로 재는 효과 (메서드 단위 마킹)
+  - default_core_prop_keys_keep_datakey_opt_in                         # 코어 속성 기본 목록은 id 만이고 dataKey 는 선언해야 붙는다
+  - core_datakey_apply_is_node_key_not_prop_value                      # dataKey 컨트롤 apply 는 nodeKey 라 props 를 오염시키지 않는다
+  - core_datakey_label_and_placeholder_use_core_props_i18n_namespace   # dataKey 라벨과 안내문이 layout_editor.core_props.dataKey 다국어 키를 쓴다
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/PageSettingsModal.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/computed-inheritance.test.tsx

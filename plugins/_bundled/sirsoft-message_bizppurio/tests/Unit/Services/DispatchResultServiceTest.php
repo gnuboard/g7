@@ -20,6 +20,11 @@ class DispatchResultServiceTest extends PluginTestCase
 {
     private DispatchResultService $service;
 
+    /**
+     * 실제 리포지토리와 결과코드 해석기로 검증 대상 DispatchResultService 를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,7 +37,9 @@ class DispatchResultServiceTest extends PluginTestCase
     /**
      * 코어 로그 id 에 연결된 dispatch 1건을 만듭니다.
      *
+     * @param  int  $logId  연결할 코어 알림 로그 id
      * @param  array<string, mixed>  $overrides  dispatch 오버라이드
+     * @return BizppurioDispatch 생성한 발송 이력
      */
     private function linkedDispatch(int $logId, array $overrides = []): BizppurioDispatch
     {
@@ -50,6 +57,14 @@ class DispatchResultServiceTest extends PluginTestCase
         ], $overrides));
     }
 
+    /**
+     * 성공 발송 결과가 로그 id 키 아래 상태, 결과코드, 잔액부족 아님으로 담기고 수신번호는 빠지는지 확인한다.
+     *
+     * @scenario channel=sms, result_category=success, link_outcome=linked
+     * @effects success_result_derives_status_and_reason_code_label, result_map_excludes_recipient_phone_masking_not_needed
+     *
+     * @return void 반환값 없음
+     */
     public function test_성공_결과를_로그id_키_맵으로_반환한다(): void
     {
         $this->linkedDispatch(10);
@@ -64,6 +79,14 @@ class DispatchResultServiceTest extends PluginTestCase
         $this->assertArrayNotHasKey('to_number', $results[10]);
     }
 
+    /**
+     * 알림톡 잔액부족 코드(7436) 결과에 is_low_balance 가 참으로 담기는지 확인한다.
+     *
+     * @scenario channel=alimtalk, result_category=balance_low, link_outcome=linked
+     * @effects balance_low_result_flags_is_low_balance_true
+     *
+     * @return void 반환값 없음
+     */
     public function test_잔액부족_코드는_is_low_balance_true다(): void
     {
         $this->linkedDispatch(20, ['channel' => 'alimtalk', 'status' => 'failed', 'result_code' => '7436']);
@@ -73,6 +96,14 @@ class DispatchResultServiceTest extends PluginTestCase
         $this->assertTrue($results[20]['is_low_balance']);
     }
 
+    /**
+     * dispatch 의 대체발송 상태가 결과의 fallback_status 로 그대로 실리는지 확인한다.
+     *
+     * @scenario fallback=present, link_outcome=linked
+     * @effects fallback_status_surfaced_in_result
+     *
+     * @return void 반환값 없음
+     */
     public function test_대체발송_상태가_결과에_포함된다(): void
     {
         $this->linkedDispatch(30, ['fallback_status' => '성공']);
@@ -82,6 +113,14 @@ class DispatchResultServiceTest extends PluginTestCase
         $this->assertSame('성공', $results[30]['fallback_status']);
     }
 
+    /**
+     * 결과코드가 아직 없는 발송중 이력은 result_label 이 null 이고 status_label 은 채워지는지 확인한다.
+     *
+     * @scenario link_outcome=linked
+     * @effects missing_result_code_yields_null_result_label_with_status_label
+     *
+     * @return void 반환값 없음
+     */
     public function test_result_code_없으면_result_label_null이다(): void
     {
         $this->linkedDispatch(40, ['status' => 'sent', 'result_code' => null]);
@@ -92,6 +131,14 @@ class DispatchResultServiceTest extends PluginTestCase
         $this->assertNotNull($results[40]['status_label']); // 상태 라벨은 있음(발송중)
     }
 
+    /**
+     * 발송 당시 검수 모드 스냅샷(is_test_mode true)이 결과에 실리는지 확인한다.
+     *
+     * @scenario link_outcome=linked
+     * @effects inspection_mode_snapshot_included_in_result
+     *
+     * @return void 반환값 없음
+     */
     public function test_검수_모드_스냅샷이_결과에_포함된다(): void
     {
         $this->linkedDispatch(70, ['is_test_mode' => true]);
@@ -101,6 +148,14 @@ class DispatchResultServiceTest extends PluginTestCase
         $this->assertTrue($results[70]['is_test_mode']);
     }
 
+    /**
+     * 검수 모드 스냅샷이 없던 과거 이력은 결과의 is_test_mode 가 null 인지 확인한다.
+     *
+     * @scenario link_outcome=linked
+     * @effects legacy_dispatch_without_inspection_snapshot_yields_null
+     *
+     * @return void 반환값 없음
+     */
     public function test_검수_모드_스냅샷이_없는_과거_이력은_null이다(): void
     {
         $this->linkedDispatch(71, ['is_test_mode' => null]);
@@ -110,6 +165,14 @@ class DispatchResultServiceTest extends PluginTestCase
         $this->assertNull($results[71]['is_test_mode']);
     }
 
+    /**
+     * 연결된 dispatch 가 없는 로그 id 는 결과 맵에서 빠지는지 확인한다.
+     *
+     * @scenario link_outcome=unmatched
+     * @effects unmatched_log_id_excluded_from_result_map
+     *
+     * @return void 반환값 없음
+     */
     public function test_매칭되지_않는_로그id는_맵에서_빠진다(): void
     {
         $this->linkedDispatch(50);
@@ -120,6 +183,14 @@ class DispatchResultServiceTest extends PluginTestCase
         $this->assertArrayNotHasKey(999, $results);
     }
 
+    /**
+     * recentResults 가 연결된 최근 이력을 로그 id 키 맵으로 돌려주고 성공과 잔액부족을 구분하는지 확인한다.
+     *
+     * @scenario link_outcome=linked
+     * @effects recent_results_returns_linked_results_keyed_by_log_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_recent_results_는_연결된_최근_결과를_로그id_키_맵으로_반환한다(): void
     {
         $this->linkedDispatch(60, ['result_code' => '4100']);
@@ -135,6 +206,11 @@ class DispatchResultServiceTest extends PluginTestCase
      * 실제 발송 본문(dispatch.content)이 결과에 포함된다 — 알림톡은 코어
      * notification_logs.body(대체발송용 코어 템플릿 값)와 실제 카카오 발송 내용이 달라,
      * 화면이 채널별로 구분해 실제 발송 내용을 보여줄 수 있도록 결과에 담아야 한다.
+     *
+     * @scenario link_outcome=linked
+     * @effects sent_content_included_in_result
+     *
+     * @return void 반환값 없음
      */
     public function test_실제_발송_본문이_결과에_포함된다(): void
     {

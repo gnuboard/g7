@@ -99,6 +99,8 @@ effects:
   - legacy_browser_log_is_removed
   - browser_logs_rotate_daily_with_finite_retention
   - successful_install_leaves_no_temp_directory
+  - batched_purge_keeps_rows_outside_the_condition
+  - batched_purge_returns_zero_when_nothing_matches
 
 # E2E axis 없음 (스토리지 잔존물 GC): 브라우저 표면은 dev-dashboard 의 실행 버튼뿐이고
 # blade 는 frontend-change-requires-e2e 룰 대상 경로가 아니다. 판정(패턴 매칭·mtime·

@@ -31,6 +31,12 @@ class CoreAlertListenerRegistrationTest extends TestCase
      * 이 훅을 구독하는 코어 리스너 수 == 등록된 콜백 수.
      *
      * 하나라도 두 경로로 등록되면 콜백 수가 리스너 수를 넘는다.
+     *
+     * @scenario registration_source=core, listener_type=filter
+     *
+     * @effects core_listener_registered_exactly_once_across_registration_paths
+     *
+     * @return void 반환값 없음
      */
     public function test_core_alert_listeners_are_registered_exactly_once(): void
     {
@@ -67,7 +73,7 @@ class CoreAlertListenerRegistrationTest extends TestCase
      * `app/Listeners/` 를 재귀 스캔하므로(`Analytics/AnalyticsAlertListener` 등), 모집단이 한
      * 겹이면 하위 폴더 리스너의 정상 등록 1회가 「중복」으로 잡힌다.
      *
-     * @return list<class-string>
+     * @return list<class-string> core.dashboard.alerts 훅을 구독하는 코어 리스너 클래스 목록
      */
     private function coreListenerClassesSubscribingToHook(): array
     {
@@ -102,6 +108,11 @@ class CoreAlertListenerRegistrationTest extends TestCase
 
     /**
      * `HookManager` 에 등록된 필터 콜백 수 (우선순위 전체 합).
+     *
+     * 비공개 filters 속성을 리플렉션으로 읽어 우선순위별 콜백 수를 더한다.
+     *
+     * @param  string  $hook  콜백 수를 셀 필터 훅 이름
+     * @return int 그 훅에 등록된 콜백 총수
      */
     private function registeredCallbackCount(string $hook): int
     {

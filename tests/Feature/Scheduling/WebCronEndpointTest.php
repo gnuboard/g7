@@ -47,6 +47,8 @@ class WebCronEndpointTest extends TestCase
 
     /**
      * 테스트 준비 — 토큰·상태 파일을 케이스 전용 경로로 격리하고 스케줄을 비운다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -68,7 +70,9 @@ class WebCronEndpointTest extends TestCase
     }
 
     /**
-     * 테스트 정리.
+     * 케이스 전용 토큰 파일과 상태 파일을 지운 뒤 부모 정리를 돌린다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -84,7 +88,11 @@ class WebCronEndpointTest extends TestCase
     /**
      * 번호가 없으면 401 이다.
      *
+     * @scenario caller=external, entry_point=web, token=missing
+     *
      * @effects missing_token_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_call_without_a_token_is_rejected(): void
     {
@@ -96,7 +104,11 @@ class WebCronEndpointTest extends TestCase
     /**
      * 번호가 틀리면 401 이다.
      *
+     * @scenario caller=external, token=invalid, token_channel=query
+     *
      * @effects invalid_token_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_call_with_a_wrong_token_is_rejected(): void
     {
@@ -111,7 +123,11 @@ class WebCronEndpointTest extends TestCase
      * 미발급 상태를 "비교 대상 없음 → 통과" 로 다루면 그 사이트의 예약 실행이
      * 무인증 표면이 된다.
      *
+     * @scenario caller=external, token=unissued, token_channel=query
+     *
      * @effects unissued_token_never_matches
+     *
+     * @return void 반환값 없음
      */
     public function test_call_before_any_token_is_issued_is_rejected(): void
     {
@@ -121,7 +137,11 @@ class WebCronEndpointTest extends TestCase
     /**
      * 재발급하면 이전 번호는 즉시 무효가 된다.
      *
+     * @scenario caller=external, token=rotated, token=valid, token_channel=query
+     *
      * @effects rotated_token_invalidates_the_previous_address
+     *
+     * @return void 반환값 없음
      */
     public function test_rotated_token_invalidates_the_previous_one(): void
     {
@@ -137,7 +157,11 @@ class WebCronEndpointTest extends TestCase
     /**
      * 유효한 번호면 실행 0건이어도 200 + 요약이다.
      *
+     * @scenario caller=external, token=valid, token_channel=query
+     *
      * @effects authenticated_call_always_returns_200
+     *
+     * @return void 반환값 없음
      */
     public function test_authenticated_call_returns_200_even_with_nothing_to_run(): void
     {
@@ -152,7 +176,11 @@ class WebCronEndpointTest extends TestCase
     /**
      * 번호를 헤더로도 받는다 (접근 로그에 쿼리스트링이 남는 환경 대응).
      *
+     * @scenario caller=external, token=valid, token_channel=header
+     *
      * @effects token_is_accepted_from_the_header
+     *
+     * @return void 반환값 없음
      */
     public function test_token_is_accepted_from_the_header(): void
     {
@@ -166,7 +194,11 @@ class WebCronEndpointTest extends TestCase
     /**
      * 허용 IP 목록에 없는 호출자는 403 이다.
      *
+     * @scenario caller=external, token=valid, ip_allow_list=mismatch
+     *
      * @effects disallowed_ip_is_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_call_from_a_disallowed_ip_is_rejected(): void
     {
@@ -179,7 +211,11 @@ class WebCronEndpointTest extends TestCase
     /**
      * 허용 IP 목록이 비어 있으면 제한하지 않는다.
      *
+     * @scenario caller=external, token=valid, ip_allow_list=empty
+     *
      * @effects empty_ip_allow_list_permits_any_caller
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_ip_allow_list_permits_any_caller(): void
     {
@@ -192,7 +228,11 @@ class WebCronEndpointTest extends TestCase
     /**
      * 실행 방식이 "서버 크론만" 이면 인증을 통과해도 실행하지 않는다 (200 유지).
      *
+     * @scenario caller=external, token=valid, cron_mode=cron
+     *
      * @effects cron_only_mode_does_not_run_on_web_call
+     *
+     * @return void 반환값 없음
      */
     public function test_cron_only_mode_does_not_run(): void
     {
@@ -208,7 +248,11 @@ class WebCronEndpointTest extends TestCase
     /**
      * 최소 간격 미만의 호출은 실행 없이 200 으로 되돌아간다 (중복 호출 차단).
      *
+     * @scenario caller=external, token=valid, min_interval=within
+     *
      * @effects throttled_call_returns_200_without_running
+     *
+     * @return void 반환값 없음
      */
     public function test_call_within_the_minimum_interval_is_throttled(): void
     {
@@ -230,7 +274,11 @@ class WebCronEndpointTest extends TestCase
      *
      * 앞 케이스만 재면 "영원히 막는" 구현도 초록이다.
      *
+     * @scenario caller=external, token=valid, min_interval=elapsed
+     *
      * @effects call_after_the_interval_runs_again
+     *
+     * @return void 반환값 없음
      */
     public function test_call_after_the_interval_runs_again(): void
     {
@@ -248,7 +296,11 @@ class WebCronEndpointTest extends TestCase
     /**
      * 최소 간격이 0 이면 제한하지 않는다.
      *
+     * @scenario caller=external, token=valid, min_interval=zero
+     *
      * @effects zero_interval_disables_throttling
+     *
+     * @return void 반환값 없음
      */
     public function test_zero_interval_disables_throttling(): void
     {
@@ -266,7 +318,11 @@ class WebCronEndpointTest extends TestCase
      * (「번호가 틀렸다」)이 두 가지 응답으로 갈린다 — 외부 크론 서비스는 둘을 다르게
      * 다루고, 운영자는 왜 갈리는지 알 수 없다.
      *
+     * @scenario caller=external, token=invalid, token_channel=query
+     *
      * @effects oversized_token_is_unauthorized_not_unprocessable
+     *
+     * @return void 반환값 없음
      */
     public function test_oversized_token_is_rejected_as_unauthorized(): void
     {
@@ -282,7 +338,11 @@ class WebCronEndpointTest extends TestCase
      * 500 이 나가면 외부 크론 서비스가 「사이트 장애」로 읽고 알림을 쏟아, 운영자는
      * 예약이 아니라 사이트가 죽었다고 판단한다. 실행 실패는 장애가 아니라 보고할 사실이다.
      *
+     * @scenario caller=external, token=valid, token_channel=query
+     *
      * @effects runner_failure_still_returns_200
+     *
+     * @return void 반환값 없음
      */
     public function test_runner_failure_still_returns_200(): void
     {
@@ -306,7 +366,11 @@ class WebCronEndpointTest extends TestCase
      * 못한다 — 스킵 분기에 상태 기록이 추가되면 그 사이에 낀 고정 시각 예약이 소급 창
      * 밖으로 밀려 영영 실행되지 않는데, 오류도 로그도 남지 않는다.
      *
+     * @scenario caller=external, token=valid, min_interval=within
+     *
      * @effects throttled_call_does_not_advance_the_checkpoint
+     *
+     * @return void 반환값 없음
      */
     public function test_throttled_call_does_not_advance_the_checkpoint(): void
     {
@@ -351,7 +415,11 @@ class WebCronEndpointTest extends TestCase
      *
      * 확장자로 끝나면 정적 최적화 블록이 있는 서버에서 그 주소만 404 가 된다 (R33).
      *
+     * @scenario entry_point=web
+     *
      * @effects cron_route_has_no_static_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_cron_route_is_named_and_has_no_static_extension(): void
     {
@@ -379,7 +447,11 @@ class WebCronEndpointTest extends TestCase
      * 그래서 카나리아 한 줄을 먼저 남겨 **포착 경로가 살아 있음을 먼저 단언**한 뒤
      * 그 파일에서 토큰을 찾는다.
      *
+     * @scenario caller=external, token=valid, token=invalid, token_channel=query, token_channel=header
+     *
      * @effects web_cron_token_never_reaches_any_log
+     *
+     * @return void 반환값 없음
      */
     public function test_token_is_never_written_to_any_log(): void
     {
@@ -429,6 +501,8 @@ class WebCronEndpointTest extends TestCase
      *
      * 이미 해석된 매니저는 옛 채널을 캐시하고 있어, 설정만 바꾸면 기록이 원래 파일로
      * 계속 간다 — 그러면 포착 파일이 비어 단언이 아무것도 재지 못한다.
+     *
+     * @return void 반환값 없음
      */
     private function resetLogManager(): void
     {
@@ -445,6 +519,7 @@ class WebCronEndpointTest extends TestCase
      *
      * @param  string  $key  필드명 (카테고리 접두사 없이)
      * @param  mixed  $value  값
+     * @return void 반환값 없음
      */
     private function setSetting(string $key, mixed $value): void
     {

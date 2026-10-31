@@ -82,6 +82,8 @@ effects:
   - prod_empty_result_with_missing_artifact_is_not_cached
   - prod_build_with_skipped_extension_is_not_cached
   - zero_byte_bundle_is_statically_published
+  - bundle_css_endpoint_declares_css_content_type   # CSS 번들 응답이 text/css 로 나간다
+  - bundle_route_takes_precedence_over_asset_route   # bundle.js 가 개별 에셋 라우트에 잡히지 않는다
 
 test_files:
   - tests/Unit/Services/ExtensionBundleServiceTest.php

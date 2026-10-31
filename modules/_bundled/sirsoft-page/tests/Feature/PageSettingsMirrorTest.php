@@ -21,6 +21,10 @@ class PageSettingsMirrorTest extends ModuleTestCase
 {
     /**
      * 설정 서비스가 defaults.json 을 읽어 전체 설정을 만든다.
+     *
+     * @scenario scope=module, value_origin=defaults_only, consumer=dedicated_getter
+     *
+     * @return void 반환값 없음
      */
     public function test_settings_service_reads_defaults(): void
     {
@@ -35,6 +39,8 @@ class PageSettingsMirrorTest extends ModuleTestCase
      * 미러가 채워지고, 소비자가 config 직접 주입 없이 그 값을 읽는다.
      *
      * @effects page_module_mirror_exists, page_module_consumers_read_configured_values
+     *
+     * @return void 반환값 없음
      */
     public function test_mirror_is_populated_without_direct_config_injection(): void
     {
@@ -58,6 +64,8 @@ class PageSettingsMirrorTest extends ModuleTestCase
      * 설정 저장이 같은 프로세스의 미러를 즉시 갱신한다.
      *
      * @effects module_mirror_refreshed_after_save
+     *
+     * @return void 반환값 없음
      */
     public function test_save_refreshes_the_mirror_in_the_same_process(): void
     {

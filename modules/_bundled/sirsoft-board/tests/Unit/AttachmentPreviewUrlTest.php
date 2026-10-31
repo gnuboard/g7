@@ -16,7 +16,11 @@ use PHPUnit\Framework\Attributes\Test;
 class AttachmentPreviewUrlTest extends ModuleTestCase
 {
     /**
+     * previewUrlForSlug 가 슬러그와 해시로 기존과 같은 미리보기 경로 문자열을 만드는지 확인한다.
+     *
      * @effects board_response_strings_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function preview_url_for_slug_builds_board_preview_url(): void
@@ -30,6 +34,13 @@ class AttachmentPreviewUrlTest extends ModuleTestCase
         );
     }
 
+    /**
+     * board 관계가 없을 때 preview_url 접근자가 빈 슬러그로 같은 조립 지점을 거쳐 기존 문자열을 유지하는지 확인한다.
+     *
+     * @effects board_response_strings_unchanged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function preview_url_accessor_delegates_to_single_assembly_point(): void
     {
@@ -45,6 +56,11 @@ class AttachmentPreviewUrlTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 강제로 넣은 마운트 접두사를 걷어 다음 시험에 새지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetUrl::forceBasePrefix(null);
@@ -64,6 +80,8 @@ class AttachmentPreviewUrlTest extends ModuleTestCase
      * @scenario base_path=subpath, url_kind=board_attachment
      *
      * @effects board_attachment_urls_carry_the_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function attachment_urls_carry_the_mount_prefix(): void
@@ -106,6 +124,12 @@ class AttachmentPreviewUrlTest extends ModuleTestCase
      *
      * 그때까지 이 검사는 **현행 계약을 고정한다** — 서명 분기의 산출물에는 접두사가 없다.
      * 무서명 분기(형제)는 접두사를 갖는다는 것을 위 검사가 함께 잠근다.
+     *
+     * @scenario base_path=subpath, url_kind=board_attachment
+     *
+     * @effects board_attachment_urls_carry_the_mount_prefix
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function signed_preview_url_stays_free_of_the_mount_prefix(): void

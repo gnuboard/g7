@@ -4335,6 +4335,10 @@ class SeoRendererTest extends TestCase
      *
      * 접두사는 한 번만 실린다 — `url()` 은 요청 루트(오리진 + 마운트 접두사)를 붙이는데
      * `siteAbsolute()` 는 접두사를 멱등으로 채운 뒤 오리진만 붙인다.
+     *
+     * @effects canonical_og_url_and_hreflang_use_the_configured_origin
+     *
+     * @return void 반환값 없음
      */
     public function test_canonical_og_url_hreflang_은_요청_호스트가_아니라_설정_오리진을_싣는다(): void
     {

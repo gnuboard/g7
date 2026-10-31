@@ -47,6 +47,9 @@ class ScheduleCommandCacheManager
      */
     private static array|false|null $memo = null;
 
+    /**
+     * 캐시 파일 경로를 `bootstrap/cache/extension-schedule-commands.php` 로 정합니다.
+     */
     public function __construct()
     {
         $this->cacheFilePath = base_path('bootstrap/cache/extension-schedule-commands.php');
@@ -192,6 +195,7 @@ class ScheduleCommandCacheManager
      * @param  string  $type  확장 유형(module|plugin) — 미해석 항목의 소유자 표기에 쓴다
      * @param  array<string, class-string>  $commands  해석 결과 누적(참조)
      * @param  array<string, string>  $unresolved  미해석 누적(참조)
+     * @return void 반환값 없음
      */
     protected function collect(array $extensions, string $type, array &$commands, array &$unresolved): void
     {

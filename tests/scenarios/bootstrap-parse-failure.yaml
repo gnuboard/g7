@@ -37,6 +37,8 @@ effects:
   - incompatible_strings_defined_per_locale
   - core_source_has_no_lookbehind
   - variable_extraction_contract_unchanged
+  - parse_error_listener_is_installed_on_window   # 번들 SyntaxError 를 window error 이벤트로 관측하는 리스너가 렌더된다
+  - inline_bootstrap_uses_es5_syntax_only   # 인라인 부트스트랩에 ES2015+ 문법이 섞이지 않는다
 
 test_files:
   - tests/Playwright/specs/smoke/bootstrap-parse-failure.spec.ts

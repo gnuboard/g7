@@ -33,6 +33,7 @@ axes:
   query_shape: [flat, grouped, deferred_join, fulltext]
   cap_source: [settings, config_fallback, hook_override, unlimited]
   surface: [core_repository, module_search, admin_datagrid, product_grid]
+  link: [board-secret-thread-visibility]                # 다른 매니페스트 시나리오와 잇는 교차 참조 표기 — 게시판 테스트 마킹에 이미 쓰이던 축 (#609 부채 정리, cross_product 면제)
 
 exclusions:
   - { navigation: keyset_cursor, query_shape: fulltext, reason: "관련도순은 계산값 정렬이라 커서 경계로 쓸 수 없다 — KeysetPaginator::supports 가 거부하고 offset 을 유지한다" }
@@ -132,6 +133,17 @@ effects:
   # "몇 번 읽었는가" 를 직접 세야만 회귀가 드러난다.
   - post_detail_reads_post_row_once
   - post_detail_reads_board_row_once
+  # ── 페이지 모듈 목록 조회 비용 (#519 F5 — 609 docblock 정리에서 선언으로 올림) ──
+  # 행 수가 늘어도 조회 횟수가 그대로인지, 발행 목록 정렬 색인이 실제 실행계획에서 골라지는지 잰다.
+  - page_list_query_count_stable
+  - page_search_query_count_stable
+  - published_sort_index_exists
+  - published_sort_index_column_order
+  - page_list_query_uses_published_sort_index
+  - extension_translation_key_detector_flags_non_core_groups
+  - extension_translation_key_detector_ignores_namespaced_keys
+  - cursor_starts_on_first_page
+  - deep_page_without_cursor_stays_on_offset
 
 # scale: 대용량 회귀 축. block-array of flow objects (내장 fallback 파서 제약 — flow 객체만 중첩 파싱)
 scale:

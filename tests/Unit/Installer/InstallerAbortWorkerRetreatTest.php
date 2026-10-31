@@ -29,7 +29,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 커버 축: worker_liveness already_gone·retreats_during_wait·never_retreats /
  *          wait_outcome immediate·waited·capped / request_budget unlimited·bounded
  *
- * @effects installer_abort_waits_for_the_running_task_to_step_down, installer_abort_proceeds_after_the_wait_cap, installer_abort_marker_precedes_rollback
+ * 효과 요약(마커 아님 — 평문): 중단은 실행 중인 태스크가 물러나기를 기다리되 상한을 넘으면 진행하고, 중단 표식이 되돌리기보다 먼저 기록된다.
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -44,6 +44,13 @@ class InstallerAbortWorkerRetreatTest extends TestCase
 
     private static bool $booted = false;
 
+    /**
+     * 프로세스마다 한 번 임시 BASE_PATH 와 저장소 디렉토리를 만들고 인스톨러 상태 헬퍼를 적재한다.
+     *
+     * BASE_PATH 가 이미 시스템 임시 디렉토리 밖으로 정의돼 있으면 적재하지 않고 건너뛸 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     private static function bootInstallerRuntime(): void
     {
         if (self::$booted) {
@@ -84,6 +91,11 @@ class InstallerAbortWorkerRetreatTest extends TestCase
         require_once $root.'/public/install/includes/installer-state.php';
     }
 
+    /**
+     * 런타임을 적재하고 이전 테스트가 남긴 상태 파일과 설치 로그를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -107,7 +119,7 @@ class InstallerAbortWorkerRetreatTest extends TestCase
     /**
      * 살아 있는 워커가 점유한 상태.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> db_migrate 를 실행 중이고 방금 heartbeat 를 남긴 상태 배열
      */
     private function occupiedState(): array
     {
@@ -121,6 +133,15 @@ class InstallerAbortWorkerRetreatTest extends TestCase
         ];
     }
 
+    /**
+     * 워커가 이미 물러난 상태면 한 번도 기다리지 않고 곧바로 물러남을 돌려주는지 확인한다.
+     *
+     * @scenario task_outcome=aborted, task=db_migrate
+     *
+     * @effects installer_abort_waits_for_the_running_task_to_step_down
+     *
+     * @return void 반환값 없음
+     */
     public function test_no_wait_when_the_worker_has_already_stepped_down(): void
     {
         $slept = 0;
@@ -138,6 +159,15 @@ class InstallerAbortWorkerRetreatTest extends TestCase
         $this->assertSame(0, $slept, '대기 호출이 한 번도 없어야 한다');
     }
 
+    /**
+     * 실행 중인 워커가 세 번째 확인에서 물러날 때 그때까지만 기다리고 대기 시간을 정확히 돌려주는지 확인한다.
+     *
+     * @scenario task_outcome=aborted, task=db_migrate
+     *
+     * @effects installer_abort_waits_for_the_running_task_to_step_down
+     *
+     * @return void 반환값 없음
+     */
     public function test_waits_until_the_running_worker_steps_down(): void
     {
         $reads = 0;
@@ -163,6 +193,12 @@ class InstallerAbortWorkerRetreatTest extends TestCase
 
     /**
      * 상한을 넘으면 기다리지 않고 진행한다 — 중단은 어떤 경우에도 완료되어야 한다.
+     *
+     * @scenario task_outcome=aborted, task=db_migrate
+     *
+     * @effects installer_abort_proceeds_after_the_wait_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_gives_up_waiting_at_the_cap_and_reports_it(): void
     {
@@ -183,6 +219,12 @@ class InstallerAbortWorkerRetreatTest extends TestCase
 
     /**
      * 대기 상한은 이 요청에 실제로 적용된 시간 예산에서 도출한다.
+     *
+     * @scenario task_outcome=aborted
+     *
+     * @effects installer_abort_proceeds_after_the_wait_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_wait_cap_leaves_room_for_the_rollback_inside_the_request_budget(): void
     {
@@ -205,6 +247,12 @@ class InstallerAbortWorkerRetreatTest extends TestCase
      * 중단 표식은 워커 lock 흔적과 current_task 를 **남긴다**.
      *
      * 지우면 「그 작업이 실제로 물러났는가」를 볼 근거가 사라지고, 되돌리기 대상도 함께 사라진다.
+     *
+     * @scenario task_outcome=aborted, task=db_migrate
+     *
+     * @effects installer_abort_marker_precedes_rollback
+     *
+     * @return void 반환값 없음
      */
     public function test_abort_marker_preserves_the_evidence_the_wait_needs(): void
     {
@@ -221,6 +269,15 @@ class InstallerAbortWorkerRetreatTest extends TestCase
         $this->assertSame('abort_reason_user', $state['abort_reason'] ?? null);
     }
 
+    /**
+     * 이미 완료된 설치에는 중단 표식을 기록하지 않고 완료 상태를 그대로 두는지 확인한다.
+     *
+     * @scenario task_outcome=done, resume_point=all_completed
+     *
+     * @effects installer_abort_marker_is_a_noop_after_completion
+     *
+     * @return void 반환값 없음
+     */
     public function test_abort_marker_is_a_noop_when_the_installation_is_not_running(): void
     {
         saveInstallationState(['installation_status' => 'completed', 'current_task' => null]);
@@ -234,6 +291,12 @@ class InstallerAbortWorkerRetreatTest extends TestCase
      *
      * 표식이 되돌리기 뒤에 있으면 워커는 물러날 기회를 얻지 못하고, 대기가 빠지면 이 조치
      * 전체가 사문이 된다. 세 함수가 모두 존재하는 것만으로는 겹침이 막히지 않는다.
+     *
+     * @scenario task_outcome=aborted
+     *
+     * @effects installer_abort_marker_precedes_rollback
+     *
+     * @return void 반환값 없음
      */
     public function test_abort_endpoint_marks_then_waits_then_rolls_back(): void
     {
@@ -261,6 +324,12 @@ class InstallerAbortWorkerRetreatTest extends TestCase
      * 두었다 — 13차 결정 3 이 이 분기에 대기를 넣으면서 그 조치를 승계하지 않았다.
      *
      * 존재만 보면 대기 **뒤**에 놓아도 초록이므로 순서를 단언한다.
+     *
+     * @scenario task_outcome=aborted
+     *
+     * @effects installer_blocking_requests_release_the_session_lock_first
+     *
+     * @return void 반환값 없음
      */
     public function test_abort_releases_the_session_lock_before_blocking(): void
     {
@@ -281,6 +350,12 @@ class InstallerAbortWorkerRetreatTest extends TestCase
      *
      * 인라인 워커(최대 600초)는 이 조치가 없으면 폴링이 통째로 막힌다. 이쪽이 먼저 지키고
      * 있었고 중단만 빠져 있었으므로, 둘을 한 게이트에 묶어 다음에 한쪽만 빠지는 것을 막는다.
+     *
+     * @scenario installation_mode=polling
+     *
+     * @effects installer_blocking_requests_release_the_session_lock_first
+     *
+     * @return void 반환값 없음
      */
     public function test_inline_polling_worker_also_releases_the_session_lock_first(): void
     {

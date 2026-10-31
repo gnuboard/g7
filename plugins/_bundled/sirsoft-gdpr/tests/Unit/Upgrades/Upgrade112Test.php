@@ -21,7 +21,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *
  * @scenario scope=localStorage, notation=wildcard, locked=operator_item, settings_state=populated, request=key_absent
  *
- * @effects computed_keys_removed_from_saved_settings, ecommerce_order_keys_removed_from_allowlist, shipped_catalog_has_no_ecommerce_order_keys
+ * 효과 요약(마커 아님 — 평문): computed_keys_removed_from_saved_settings, ecommerce_order_keys_removed_from_allowlist, shipped_catalog_has_no_ecommerce_order_keys
  */
 class Upgrade112Test extends PluginTestCase
 {

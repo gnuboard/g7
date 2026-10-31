@@ -21,14 +21,17 @@ use PHPUnit\Framework\TestCase;
  * 저장/리다이렉트 분기에 도달하지 않도록 DB 검증을 일부러 실패시켜 상태 파일·세션을
  * 건드리지 않는다.
  *
- * @scenario vector=handleStep3Post, payload_class=env_line_injection, expected_outcome=return_invalid_message
- *
- * @effects step3_post_rejects_env_line_breaks_before_save
+ * 효과 요약(마커 아님 — 평문): Step 3 저장 시점에 .env 대상 필드의 개행을 거부한다. 시나리오 표식은 메서드마다 단다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
 class InstallerStep3EnvValueGuardTest extends TestCase
 {
+    /**
+     * 다국어 스텁과 상수를 세우고 Step 3 처리기와 그 의존 인스톨러 파일을 적재한다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__.'/stubs/lang_stub.php';
@@ -50,6 +53,11 @@ class InstallerStep3EnvValueGuardTest extends TestCase
         require_once $projectRoot.'/public/install/includes/request-handler.php';
     }
 
+    /**
+     * 테스트가 채운 POST 전역을 비워 다음 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $_POST = [];
@@ -84,8 +92,13 @@ class InstallerStep3EnvValueGuardTest extends TestCase
     /**
      * 개행이 섞인 .env 대상 필드는 저장 시점에 거부된다.
      *
+     * @scenario vector=handleStep3Post, payload_class=newline_lf, payload_class=newline_crlf, payload_class=null_byte, expected_outcome=return_invalid_message
+     *
+     * @effects step3_post_rejects_env_line_breaks_before_save
+     *
      * @param  string  $field  필드명
      * @param  string  $payload  주입 시도 값
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('lineBreakFieldProvider')]
@@ -103,7 +116,7 @@ class InstallerStep3EnvValueGuardTest extends TestCase
     /**
      * 개행 주입 벡터 (필드 × CR/LF).
      *
-     * @return array<string, array{0: string, 1: string}>
+     * @return array<string, array{0: string, 1: string}> 사례 이름별 [필드명, 주입 시도 값]
      */
     public static function lineBreakFieldProvider(): array
     {
@@ -119,6 +132,12 @@ class InstallerStep3EnvValueGuardTest extends TestCase
 
     /**
      * 스킴 없는 URL 은 거부된다.
+     *
+     * @scenario vector=handleStep3Post, expected_outcome=return_invalid_message
+     *
+     * @effects step3_post_rejects_url_without_http_scheme
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_rejects_url_fields_without_an_http_scheme(): void
@@ -130,6 +149,12 @@ class InstallerStep3EnvValueGuardTest extends TestCase
 
     /**
      * 정상 값은 이 게이트에 걸리지 않는다 (회귀 방지).
+     *
+     * @scenario vector=handleStep3Post, payload_class=normal, expected_outcome=accept_normal
+     *
+     * @effects step3_post_accepts_normal_env_values
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_accepts_normal_values(): void
@@ -147,6 +172,12 @@ class InstallerStep3EnvValueGuardTest extends TestCase
 
     /**
      * 값이 비어 있으면 URL 형태 검사는 건너뛴다 (선택 입력 보존).
+     *
+     * @scenario vector=handleStep3Post, payload_class=empty, expected_outcome=accept_normal
+     *
+     * @effects step3_post_skips_url_shape_check_for_empty_values
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_skips_url_shape_check_for_empty_values(): void

@@ -27,6 +27,9 @@ class ProcessOutputEncodingTest extends TestCase
      * 한국어 Windows 의 whoami 출력을 재현한 CP949 바이트.
      *
      * hex 를 손으로 적지 않는다 — 오타로 다른 글자가 되는 사고가 실제로 있었다.
+     *
+     * @param  string  $utf8  변환할 UTF-8 문자열
+     * @return string CP949 로 인코딩한 바이트열
      */
     private static function cp949(string $utf8): string
     {
@@ -36,7 +39,7 @@ class ProcessOutputEncodingTest extends TestCase
     /**
      * 유효 UTF-8 입력은 한 바이트도 변형되지 않아야 한다.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름을 키로 한 유효 UTF-8 표본
      */
     public static function validUtf8Provider(): array
     {
@@ -49,6 +52,16 @@ class ProcessOutputEncodingTest extends TestCase
         ];
     }
 
+    /**
+     * 유효 UTF-8 입력은 정규화를 거쳐도 한 바이트도 바뀌지 않는지 확인한다.
+     *
+     * @scenario output_encoding=utf8
+     *
+     * @effects valid_utf8_passes_through_unchanged
+     *
+     * @param  string  $value  유효 UTF-8 표본
+     * @return void 반환값 없음
+     */
     #[Test]
     #[DataProvider('validUtf8Provider')]
     public function valid_utf8_passes_through_unchanged(string $value): void
@@ -60,6 +73,15 @@ class ProcessOutputEncodingTest extends TestCase
         );
     }
 
+    /**
+     * CP949 로 인코딩된 한글 계정명이 json_encode 를 깨뜨리는 바이트임을 전제로, 정규화 뒤 대체 문자 없이 원문 그대로 복원되는지 확인한다.
+     *
+     * @scenario output_encoding=cp949_korean
+     *
+     * @effects korean_account_name_restored_exactly
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function cp949_korean_account_name_is_restored_exactly(): void
     {
@@ -77,6 +99,15 @@ class ProcessOutputEncodingTest extends TestCase
         );
     }
 
+    /**
+     * KS X 1001 밖의 확장 한글도 CP949 로 판정돼 원문대로 복원되는지 확인한다.
+     *
+     * @scenario output_encoding=cp949_extended_hangul
+     *
+     * @effects extended_hangul_restored
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function cp949_extended_hangul_is_restored(): void
     {
@@ -95,7 +126,7 @@ class ProcessOutputEncodingTest extends TestCase
      * 임의 바이트 경계에서 잘릴 때 생기는 형태다. 여기서는 "정확한 복원" 이 아니라
      * "응답이 살아남는다" 만 요구한다.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름을 키로 한 복원 불가능한 바이트 표본
      */
     public static function unrecoverableProvider(): array
     {
@@ -107,6 +138,14 @@ class ProcessOutputEncodingTest extends TestCase
         ];
     }
 
+    /**
+     * 복원할 수 없는 손상 바이트라도 정규화 결과가 유효 UTF-8 이고 json_encode 가 실패하지 않는지 확인한다.
+     *
+     * @effects unrecoverable_bytes_still_yield_encodable_utf8
+     *
+     * @param  string  $raw  복원 불가능한 손상 바이트
+     * @return void 반환값 없음
+     */
     #[Test]
     #[DataProvider('unrecoverableProvider')]
     public function damaged_bytes_still_yield_encodable_utf8(string $raw): void
@@ -123,6 +162,15 @@ class ProcessOutputEncodingTest extends TestCase
         );
     }
 
+    /**
+     * 중첩 배열의 값과 배열 키까지 깊게 정규화해 전체가 직렬화되고, 문자열이 아닌 스칼라는 타입과 값을 그대로 지키는지 확인한다.
+     *
+     * @scenario value_position=nested_array_value, value_position=array_key
+     *
+     * @effects non_string_scalars_preserve_type_and_value
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function normalize_deep_covers_nested_values_and_keys(): void
     {
@@ -153,6 +201,13 @@ class ProcessOutputEncodingTest extends TestCase
         $this->assertSame(1.5, $out['directories']['nested'][4]);
     }
 
+    /**
+     * 잘못된 UTF-8 값이 든 필드를 점 표기 키 경로로 보고하고, 정상 입력에서는 보고할 경로가 없는지 확인한다.
+     *
+     * @effects encode_failure_logged_with_key_path
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function invalid_paths_reports_dotted_key_path(): void
     {
@@ -171,6 +226,15 @@ class ProcessOutputEncodingTest extends TestCase
         );
     }
 
+    /**
+     * 스칼라 루트와 잘못된 UTF-8 배열 키도 보고 대상으로 잡히는지 확인한다.
+     *
+     * @scenario value_position=scalar, value_position=array_key
+     *
+     * @effects encode_failure_logged_with_key_path
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function invalid_paths_reports_scalar_root_and_invalid_keys(): void
     {
@@ -187,6 +251,10 @@ class ProcessOutputEncodingTest extends TestCase
      *
      * 결과 문자열은 머신 로케일에 따라 달라지므로 값은 단언하지 않는다 —
      * "항상 유효 UTF-8 을 돌려준다" 는 계약만 검사한다.
+     *
+     * @effects unrecoverable_bytes_still_yield_encodable_utf8
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function windows_oem_fallback_still_returns_valid_utf8(): void

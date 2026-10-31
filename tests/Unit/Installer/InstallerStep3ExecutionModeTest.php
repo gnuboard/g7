@@ -23,7 +23,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *
  * 커버 축: execution_mode_choice auto·subprocess·inprocess·invalid / vendor_mode_choice auto·composer·bundled
  *
- * @effects step3_post_normalizes_execution_mode, step3_post_forces_bundled_vendor_when_inprocess
+ * 효과 요약(마커 아님 — 평문): Step 3 저장이 실행 모드를 허용 어휘로 정규화하고, inprocess 면 Vendor 방식을 bundled 로 고정한다.
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
@@ -31,6 +31,11 @@ class InstallerStep3ExecutionModeTest extends TestCase
 {
     use CleansTemporaryBasePath;
 
+    /**
+     * 임시 BASE_PATH 와 필요한 상수를 세우고 Step 3 처리기와 그 의존 인스톨러 파일을 적재한다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__.'/stubs/lang_stub.php';
@@ -55,6 +60,11 @@ class InstallerStep3ExecutionModeTest extends TestCase
         require_once $projectRoot.'/public/install/includes/request-handler.php';
     }
 
+    /**
+     * BASE_PATH 가 시스템 임시 디렉토리 하위가 아니면 실 저장소 보호를 위해 테스트를 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -68,6 +78,11 @@ class InstallerStep3ExecutionModeTest extends TestCase
         }
     }
 
+    /**
+     * 테스트가 채운 POST 전역을 비워 다음 테스트에 남지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $_POST = [];
@@ -75,6 +90,8 @@ class InstallerStep3ExecutionModeTest extends TestCase
     }
 
     /**
+     * DB 검증이 일부러 실패하는 기본값을 덧붙여 Step 3 POST 를 처리하고 폼 값과 오류를 함께 돌려준다.
+     *
      * @param  array<string, string>  $post  POST 본문
      * @return array{form: array<string, mixed>, errors: array<string, mixed>} 처리 후 formData 와 검증 오류
      */
@@ -98,6 +115,8 @@ class InstallerStep3ExecutionModeTest extends TestCase
     }
 
     /**
+     * DB 검증이 일부러 실패하는 기본값을 덧붙여 Step 3 POST 를 처리하고 정규화된 폼 값만 돌려준다.
+     *
      * @param  array<string, string>  $post  POST 본문
      * @return array<string, mixed> 처리 후 formData
      */
@@ -120,6 +139,15 @@ class InstallerStep3ExecutionModeTest extends TestCase
         return $formData;
     }
 
+    /**
+     * 허용 어휘 밖의 실행 모드를 보내면 auto 로 저장되는지 확인한다.
+     *
+     * @scenario execution_mode_choice=invalid, vendor_mode_choice=bundled
+     *
+     * @effects step3_post_normalizes_execution_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_invalid_execution_mode_is_normalized_to_auto(): void
     {
         $formData = $this->runStep3(['execution_mode' => 'shell', 'vendor_mode' => 'bundled']);
@@ -127,6 +155,15 @@ class InstallerStep3ExecutionModeTest extends TestCase
         $this->assertSame('auto', $formData['execution_mode']);
     }
 
+    /**
+     * 실행 모드를 보내지 않으면 기본값 auto 로 저장되는지 확인한다.
+     *
+     * @scenario execution_mode_choice=auto, vendor_mode_choice=bundled
+     *
+     * @effects step3_post_normalizes_execution_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_missing_execution_mode_defaults_to_auto(): void
     {
         $formData = $this->runStep3(['vendor_mode' => 'bundled']);
@@ -134,6 +171,15 @@ class InstallerStep3ExecutionModeTest extends TestCase
         $this->assertSame('auto', $formData['execution_mode']);
     }
 
+    /**
+     * inprocess 와 composer 를 함께 보내도 Vendor 방식이 bundled 로 고정되는지 확인한다.
+     *
+     * @scenario execution_mode_choice=inprocess, vendor_mode_choice=composer
+     *
+     * @effects step3_post_forces_bundled_vendor_when_inprocess
+     *
+     * @return void 반환값 없음
+     */
     public function test_inprocess_forces_bundled_vendor_even_if_composer_was_posted(): void
     {
         $formData = $this->runStep3(['execution_mode' => 'inprocess', 'vendor_mode' => 'composer']);
@@ -142,6 +188,15 @@ class InstallerStep3ExecutionModeTest extends TestCase
         $this->assertSame('bundled', $formData['vendor_mode'], 'inprocess 에서 composer 가 저장되면 설치 도중에 실패한다 (A-4)');
     }
 
+    /**
+     * subprocess 에서는 보낸 Vendor 방식 composer 가 그대로 저장되는지 확인한다.
+     *
+     * @scenario execution_mode_choice=subprocess, vendor_mode_choice=composer
+     *
+     * @effects step3_post_normalizes_execution_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_subprocess_keeps_posted_vendor_mode(): void
     {
         $formData = $this->runStep3(['execution_mode' => 'subprocess', 'vendor_mode' => 'composer']);
@@ -159,6 +214,12 @@ class InstallerStep3ExecutionModeTest extends TestCase
      *
      * BASE_PATH 가 temp 라 동봉 묶음이 없다 — inprocess 가 성립하지 않는 조건이 환경과 무관하게
      * 고정된다. 판정 자체의 전 조합은 InstallerExecutionModeHelperTest 가 순수 함수로 덮는다.
+     *
+     * @scenario execution_mode_choice=inprocess, vendor_mode_choice=bundled
+     *
+     * @effects step3_post_rejects_unusable_explicit_inprocess
+     *
+     * @return void 반환값 없음
      */
     public function test_explicit_inprocess_is_rejected_when_the_bundle_cannot_be_used(): void
     {
@@ -174,6 +235,12 @@ class InstallerStep3ExecutionModeTest extends TestCase
 
     /**
      * `auto` 는 감지가 정하므로 저장 게이트가 걸리지 않는다 — 정상 경로 불변 단언.
+     *
+     * @scenario execution_mode_choice=auto, vendor_mode_choice=auto
+     *
+     * @effects step3_post_normalizes_execution_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_auto_execution_mode_is_never_rejected(): void
     {

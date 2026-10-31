@@ -22,11 +22,22 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  */
 class AttachmentPreviewCacheContractTest extends BoardTestCase
 {
+    /**
+     * 이 시험이 쓰는 게시판 슬러그를 돌려준다.
+     *
+     * @return string 게시판 슬러그
+     */
     protected function getTestBoardSlug(): string
     {
         return 'preview-cache';
     }
 
+    /**
+     * 첨부 업로드를 켜고 파일 이름 축을 재려고 텍스트 확장자까지 허용한 게시판 속성을 돌려준다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return array<string, mixed> 게시판 생성 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -44,6 +55,11 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 공개 디스크를 가짜로 바꾸고 비회원에게 읽기, 쓰기, 첨부 업로드 권한을 준다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -97,6 +113,8 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      * @scenario serving_type=preview, contract_axis=conditional_request
      *
      * @effects preview_emits_last_modified_from_row_meta
+     *
+     * @return void 반환값 없음
      */
     public function test_preview_emits_last_modified_from_row_meta(): void
     {
@@ -122,6 +140,8 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      * @scenario serving_type=preview, contract_axis=conditional_request
      *
      * @effects preview_answers_if_modified_since_with_304_carrying_the_cache_headers_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_preview_answers_if_modified_since_with_304(): void
     {
@@ -158,6 +178,8 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      * @scenario serving_type=preview, contract_axis=content_length
      *
      * @effects preview_content_length_matches_streamed_bytes
+     *
+     * @return void 반환값 없음
      */
     public function test_preview_content_length_matches_streamed_bytes(): void
     {
@@ -191,6 +213,8 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      * @scenario serving_type=preview, contract_axis=content_length
      *
      * @effects content_length_matches_after_the_resize_path
+     *
+     * @return void 반환값 없음
      */
     public function test_content_length_matches_after_the_resize_path(): void
     {
@@ -243,6 +267,8 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      * @scenario serving_type=download, contract_axis=content_length
      *
      * @effects download_streams_the_stored_bytes
+     *
+     * @return void 반환값 없음
      */
     public function test_download_streams_the_stored_bytes(): void
     {
@@ -271,6 +297,8 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      * @scenario serving_type=download, contract_axis=filename_declaration
      *
      * @effects download_disposition_is_built_by_the_storage_layer
+     *
+     * @return void 반환값 없음
      */
     public function test_download_disposition_is_built_by_the_storage_layer(): void
     {
@@ -336,6 +364,8 @@ class AttachmentPreviewCacheContractTest extends BoardTestCase
      * @scenario serving_type=download, contract_axis=filename_declaration
      *
      * @effects download_declares_non_ascii_filename_via_rfc5987
+     *
+     * @return void 반환값 없음
      */
     public function test_download_declares_non_ascii_filename_via_rfc5987(): void
     {

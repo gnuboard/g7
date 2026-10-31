@@ -20,6 +20,11 @@ use PHPUnit\Framework\TestCase;
  */
 class InstallerCssColorLiteralGateTest extends TestCase
 {
+    /**
+     * 인스톨러 스타일시트 원문을 읽어 문자열로 돌려준다.
+     *
+     * @return string 스타일시트 전체 원문
+     */
     private function stylesheetSource(): string
     {
         return (string) file_get_contents(dirname(__DIR__, 3).'/public/install/assets/css/installer.css');
@@ -31,6 +36,9 @@ class InstallerCssColorLiteralGateTest extends TestCase
      * 토큰 선언은 줄 앵커가 아니라 선언 단위로 걷는다 (21차 7c) — `:root { --a:#fff; --b:#000 }`
      * 처럼 한 줄에 여러 선언이 와도, 규칙 본문의 지역 커스텀 프로퍼티 선언이어도 전부
      * 허용 자리다. `var(--a, #fff)` 폴백은 `--x:` 형태가 아니라 걷히지 않는다(위반으로 잡힌다).
+     *
+     * @param  string  $css  검사할 스타일시트 원문
+     * @return string 주석과 토큰 선언을 걷어낸 나머지
      */
     private function stripAllowedZones(string $css): string
     {
@@ -42,6 +50,7 @@ class InstallerCssColorLiteralGateTest extends TestCase
     /**
      * 허용 자리 밖의 색 리터럴을 수집한다.
      *
+     * @param  string  $strippedCss  허용 자리를 걷어낸 스타일시트
      * @return array<int, string> 위반 목록
      */
     private function collectColorLiterals(string $strippedCss): array
@@ -83,6 +92,8 @@ class InstallerCssColorLiteralGateTest extends TestCase
      * 실 스타일시트: 허용 자리 밖 색 리터럴 0.
      *
      * @effects installer_css_colors_come_from_tokens_only
+     *
+     * @return void 반환값 없음
      */
     public function test_stylesheet_has_no_color_literals_outside_token_declarations(): void
     {
@@ -98,6 +109,10 @@ class InstallerCssColorLiteralGateTest extends TestCase
     /**
      * 탐지기 자기증명 (red-probe) — 위장 리터럴 4형태를 실제로 잡는지. 탐지기가 죽으면
      * 실 파일 검사는 영원히 초록이므로, 게이트 자신의 판정력을 먼저 잠근다.
+     *
+     * @effects installer_css_colors_come_from_tokens_only
+     *
+     * @return void 반환값 없음
      */
     public function test_detector_catches_probe_literals(): void
     {

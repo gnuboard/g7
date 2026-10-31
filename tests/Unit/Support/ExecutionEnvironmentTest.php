@@ -20,6 +20,8 @@ class ExecutionEnvironmentTest extends TestCase
      * 함수 전부 가용 + probe 통과 → subprocess (현행 경로 유지).
      *
      * @effects detect_returns_subprocess_when_functions_available_and_probe_valid
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_returns_subprocess_when_functions_available_and_probe_valid(): void
     {
@@ -38,6 +40,8 @@ class ExecutionEnvironmentTest extends TestCase
      * 필수 함수 차단 → 서브프로세스가 명확히 불가 → inprocess.
      *
      * @effects detect_returns_inprocess_when_functions_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_returns_inprocess_when_functions_blocked(): void
     {
@@ -54,6 +58,8 @@ class ExecutionEnvironmentTest extends TestCase
      * 일부 함수만 차단되어도 서브프로세스 요건 미충족 → inprocess.
      *
      * @effects detect_returns_inprocess_when_single_function_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_returns_inprocess_when_single_function_blocked(): void
     {
@@ -70,6 +76,8 @@ class ExecutionEnvironmentTest extends TestCase
      * 함수 가용 + probe 명확 실패 + 자동 탐색도 실패 → inprocess.
      *
      * @effects detect_returns_inprocess_when_probe_invalid_and_no_autodetect
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_returns_inprocess_when_probe_invalid_and_no_autodetect(): void
     {
@@ -89,6 +97,8 @@ class ExecutionEnvironmentTest extends TestCase
      * (PATH 에 php 가 없고 비표준 경로에만 있는 호스팅을 오판하지 않는다)
      *
      * @effects detect_falls_back_to_autodetected_binary
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_falls_back_to_autodetected_binary(): void
     {
@@ -108,6 +118,8 @@ class ExecutionEnvironmentTest extends TestCase
      * probe 판정 불확실(unavailable) → fail-safe 는 subprocess (기존 환경 보호).
      *
      * @effects detect_fail_safe_to_subprocess_when_probe_uncertain
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_fail_safe_to_subprocess_when_probe_uncertain(): void
     {
@@ -125,6 +137,8 @@ class ExecutionEnvironmentTest extends TestCase
      * probe: exec 차단 환경에서는 실행 없이 unavailable(불확실) 을 돌려준다.
      *
      * @effects probe_returns_unavailable_when_exec_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_probe_returns_unavailable_when_exec_blocked(): void
     {
@@ -142,6 +156,8 @@ class ExecutionEnvironmentTest extends TestCase
      * (집합 변경 = 설치 게이트 판정 변경 — 의도 없는 변경을 차단)
      *
      * @effects subprocess_function_set_is_stable
+     *
+     * @return void 반환값 없음
      */
     public function test_subprocess_function_set_is_stable(): void
     {
@@ -154,6 +170,10 @@ class ExecutionEnvironmentTest extends TestCase
      * `php-fpm --version` · `php-cgi --version` 은 CLI 와 똑같이 정상 종료하고 같은 형태로
      * 버전을 찍는다. 그래서 버전만 보면 valid 지만 그 바이너리는 artisan 을 받지 못한다 —
      * SAPI 가 그 둘을 가르는 유일한 신호이므로 버리지 않는다.
+     *
+     * @effects validate_reports_sapi_for_configured_binary
+     *
+     * @return void 반환값 없음
      */
     public function test_probe_reports_sapi(): void
     {
@@ -173,6 +193,10 @@ class ExecutionEnvironmentTest extends TestCase
      * 자동 탐색 경로는 CLI 우선 정렬로 이미 닫혔지만(3차 라운드), 명시 경로는 그대로였다 —
      * Step 3 이나 process.php_binary 에 FPM/CGI 를 넣으면 판정은 subprocess 인데 태스크는
      * 전부 실패하는 조합이 남는다.
+     *
+     * @effects auto_detect_orders_cli_binaries_first
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_prefers_cli_binary_when_configured_binary_is_not_cli(): void
     {
@@ -191,6 +215,10 @@ class ExecutionEnvironmentTest extends TestCase
      * 단, CLI 후보가 하나도 없으면 명시한 바이너리를 그대로 쓴다.
      *
      * php-cgi 로만 동작하던 환경을 새로 막지 않는다 — 자동 탐색 경로의 정렬 규칙과 같은 원칙이다.
+     *
+     * @effects auto_detect_orders_cli_binaries_first
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_keeps_non_cli_binary_when_no_cli_candidate_exists(): void
     {
@@ -213,6 +241,10 @@ class ExecutionEnvironmentTest extends TestCase
      * 통째로 지워 `if (true)` 로 만들어도 초록이었다. 여기서는 후보를 실제로 하나 주어
      * 그 분기를 태운다: 지정도 비-CLI, 후보도 비-CLI 면 바꿀 이유가 없으므로 교체하지 않는다
      * (docblock 이 약속한 "php-cgi 로만 동작하던 환경을 새로 막지 않는다").
+     *
+     * @effects auto_detect_orders_cli_binaries_first
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_does_not_swap_a_non_cli_binary_for_another_non_cli_candidate(): void
     {
@@ -233,6 +265,10 @@ class ExecutionEnvironmentTest extends TestCase
      * 지정이 비-CLI 인데 자동 탐색이 **CLI 후보**를 찾으면 그쪽으로 옮긴다.
      *
      * 위 테스트와 짝이다 — 두 방향을 함께 고정해야 `$candidateIsCli` 가 판정으로서 살아 있다.
+     *
+     * @effects auto_detect_orders_cli_binaries_first
+     *
+     * @return void 반환값 없음
      */
     public function test_detect_swaps_a_non_cli_binary_for_a_cli_candidate(): void
     {

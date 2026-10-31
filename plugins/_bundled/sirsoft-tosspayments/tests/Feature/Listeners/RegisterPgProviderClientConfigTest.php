@@ -15,6 +15,11 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
 {
     private RegisterPgProviderListener $listener;
 
+    /**
+     * 검사 대상 PG 프로바이더 리스너를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -22,7 +27,11 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
     }
 
     /**
-     * @param  array<string, mixed>  $settings
+     * 플러그인 설정 서비스를 목으로 바꿔 get 이 주어진 설정을 돌려주게 한다.
+     *
+     * @param  array<string, mixed>  $settings  get 이 돌려줄 플러그인 설정
+     *
+     * @return void 반환값 없음
      */
     private function mockSettings(array $settings): void
     {
@@ -31,6 +40,14 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
         $this->app->instance(PluginSettingsService::class, $mock);
     }
 
+    /**
+     * 주문서 모드가 꺼져 있으면 카드 토글이 켜져 있어도 클라이언트 설정의 결제수단 목록이 비는지 확인한다.
+     *
+     * @scenario order_sheet_mode=false
+     * @effects client_config_exposes_no_methods_when_order_sheet_off
+     *
+     * @return void 반환값 없음
+     */
     public function test_order_sheet_off_returns_empty_enabled_methods(): void
     {
         $this->mockSettings([
@@ -47,7 +64,11 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
     }
 
     /**
+     * 주문서 모드에서 켠 결제수단이 SDK 결제 방식, 간편결제 제공자, 코어 결제수단 매핑과 함께 노출되는지 확인한다.
+     *
      * @effects enabled_methods_exposed_with_core_mapping
+     *
+     * @return void 반환값 없음
      */
     public function test_order_sheet_on_returns_enabled_methods_with_mapping(): void
     {
@@ -74,6 +95,14 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
         $this->assertSame('card', $byId['toss_kakaopay']['core_payment_method']);
     }
 
+    /**
+     * 가상계좌 유효시간, 현금영수증 유형, 에스크로 설정이 클라이언트 설정에 그대로 실리는지 확인한다.
+     *
+     * @scenario payment_method=toss_virtual_account, use_escrow=buyer_choice
+     * @effects client_config_exposes_vbank_and_escrow_settings
+     *
+     * @return void 반환값 없음
+     */
     public function test_exposes_vbank_and_escrow_config(): void
     {
         $this->mockSettings([
@@ -91,6 +120,13 @@ class RegisterPgProviderClientConfigTest extends PluginTestCase
         $this->assertSame('buyer_choice', $config['use_escrow']);
     }
 
+    /**
+     * 클라이언트 설정 응답 어디에도 시크릿 키가 없고 클라이언트 키만 노출되는지 확인한다.
+     *
+     * @effects client_config_never_exposes_secret_key
+     *
+     * @return void 반환값 없음
+     */
     public function test_does_not_leak_secret_key(): void
     {
         $this->mockSettings([

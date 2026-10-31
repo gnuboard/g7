@@ -150,6 +150,8 @@ class StorageLinkHelper
 
     /**
      * memo 를 초기화합니다 (테스트 및 링크 생성/복구 직후 재판정용).
+     *
+     * @return void 반환값 없음
      */
     public static function resetPublicStorageLinkMemo(): void
     {
@@ -160,6 +162,7 @@ class StorageLinkHelper
      * 링크 가용 판정을 강제로 지정합니다 (테스트 전용 — `AssetUrl::forceMode` 와 같은 계열).
      *
      * @param  bool|null  $usable  강제할 판정. null 이면 강제 해제(재실측)
+     * @return void 반환값 없음
      */
     public static function forcePublicStorageLinkUsable(?bool $usable): void
     {
@@ -292,6 +295,7 @@ class StorageLinkHelper
      * 도는 흐름이 있고, 그 프로세스에는 소비자가 없어 통보가 종료와 함께 폐기됐다.
      *
      * @param  string  $warning  운영자 안내 문구
+     * @return void 반환값 없음
      */
     public static function recordDocrootExposureWarning(string $warning): void
     {
@@ -319,6 +323,7 @@ class StorageLinkHelper
      *
      * @param  LoggerInterface|null  $logger  로그 채널 격리용 주입 로거.
      *                                        `null` 이면 `Log::channel('upgrade')` 로 폴백.
+     * @return void 반환값 없음
      */
     public static function ensurePublicStorageLink(?LoggerInterface $logger = null): void
     {
@@ -560,6 +565,7 @@ class StorageLinkHelper
      * `lchown`/`lchgrp` 을 사용한다. 비-POSIX(Windows) 또는 함수 부재/권한 부족 시 무해하게 skip.
      *
      * @param  string  $link  방금 생성한 링크 경로
+     * @return void 반환값 없음
      */
     protected static function inheritParentOwnership(string $link): void
     {
@@ -594,6 +600,7 @@ class StorageLinkHelper
      * 경로에서만 빠져 있었다 (10차 G3 라운드 F10-3).
      *
      * @param  LoggerInterface  $logger  로거
+     * @return void 반환값 없음
      */
     public static function warnOnAccumulatedBackups(LoggerInterface $logger): void
     {

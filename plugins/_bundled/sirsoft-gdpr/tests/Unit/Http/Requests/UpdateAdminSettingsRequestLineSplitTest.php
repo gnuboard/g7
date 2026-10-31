@@ -38,6 +38,15 @@ class UpdateAdminSettingsRequestLineSplitTest extends PluginTestCase
         return $method->invoke(new UpdateAdminSettingsRequest, $input, $categories);
     }
 
+    /**
+     * 마지막 바이트가 0x85(NEL) 인 한글 「종」이 든 줄이 글자 중간에서 갈리지 않고 한 줄로 남는지 확인한다.
+     *
+     * @scenario input_shape=multiline_text, charset=korean_nel_byte
+     *
+     * @effects operator_multiline_input_is_split_only_at_real_line_terminators
+     *
+     * @return void 반환값 없음
+     */
     public function test_korean_line_containing_nel_byte_is_not_split_mid_character(): void
     {
         // `종` 은 EC A2 85 — 마지막 바이트가 NEL 이다. 바이트를 직접 쌓아 이 파일의
@@ -57,9 +66,13 @@ class UpdateAdminSettingsRequestLineSplitTest extends PluginTestCase
     }
 
     /**
+     * CRLF, CR, LF 줄 종결자는 여전히 가르고 빈 줄과 앞뒤 공백은 걷어내는지 확인한다.
+     *
      * @scenario input_shape=multiline_text, charset=ascii
      *
      * @effects operator_multiline_input_is_split_only_at_real_line_terminators
+     *
+     * @return void 반환값 없음
      */
     public function test_real_line_terminators_are_still_split(): void
     {

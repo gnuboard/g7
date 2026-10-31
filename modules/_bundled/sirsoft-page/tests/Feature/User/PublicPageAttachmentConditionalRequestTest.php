@@ -33,6 +33,11 @@ class PublicPageAttachmentConditionalRequestTest extends FeatureTestCase
 {
     private const BASE = '/api/modules/sirsoft-page/pages/attachment';
 
+    /**
+     * 이 테스트가 만든 attach-cond- 슬러그 페이지를 강제 삭제하고 서비스 모킹을 닫는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Page::where('slug', 'like', 'attach-cond-%')->forceDelete();
@@ -66,6 +71,8 @@ class PublicPageAttachmentConditionalRequestTest extends FeatureTestCase
      * @scenario serving_type=preview, published=published, viewer=guest
      *
      * @effects preview_matching_etag_returns_304_with_the_cache_headers_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_matching_if_none_match_returns_304_with_the_cache_headers_of_200(): void
     {
@@ -98,6 +105,8 @@ class PublicPageAttachmentConditionalRequestTest extends FeatureTestCase
      * @scenario serving_type=preview, published=published, viewer=guest
      *
      * @effects preview_if_modified_since_alone_returns_304
+     *
+     * @return void 반환값 없음
      */
     public function test_if_modified_since_alone_returns_304_when_row_is_not_newer(): void
     {
@@ -115,6 +124,8 @@ class PublicPageAttachmentConditionalRequestTest extends FeatureTestCase
      * @scenario serving_type=preview, published=published, viewer=guest
      *
      * @effects preview_non_matching_validator_returns_full_200
+     *
+     * @return void 반환값 없음
      */
     public function test_non_matching_validator_returns_full_200(): void
     {
@@ -175,6 +186,8 @@ class PublicPageAttachmentConditionalRequestTest extends FeatureTestCase
      *
      * @effects download_matching_etag_returns_304_with_the_cache_headers_of_200,
      *          file_serving_response_declares_nosniff
+     *
+     * @return void 반환값 없음
      */
     public function test_download_revalidates_through_the_core_helper(): void
     {
