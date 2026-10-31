@@ -696,7 +696,12 @@ if (! function_exists('installerStartRejection')) {
             //
             // 우리가 아는 것은 「아직 예산 안이다」와 「언제 풀린다」뿐이므로 그것만 말한다.
             // 남은 시간을 함께 주면 화면이 기다렸다가 스스로 이어갈 수 있다.
-            $rejection = ['message_key' => 'error_installation_lock_held', 'status' => 409];
+            // 문구가 `:seconds` 를 가진다 — 매개변수 없이 내보내면 화면에 자리표시자가 그대로 나간다.
+            $rejection = [
+                'message_key' => 'error_installation_lock_held',
+                'message_params' => ['seconds' => max(0, (int) $lockRemaining)],
+                'status' => 409,
+            ];
             if ($lockRemaining > 0) {
                 $rejection['retry_after'] = $lockRemaining;
             }

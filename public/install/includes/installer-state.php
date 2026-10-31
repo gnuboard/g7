@@ -2306,7 +2306,13 @@ function installerRotateProgressLogIfLarge(string $logFile): bool
 
     $microtime = microtime(true);
     $stamp = date('Y-m-d H:i:s', (int) $microtime).'.'.sprintf('%03d', (int) (($microtime - floor($microtime)) * 1000));
-    @file_put_contents($logFile, "\xEF\xBB\xBF[{$stamp}] {$notice}\n");
+    $noticeLine = "\xEF\xBB\xBF[{$stamp}] {$notice}\n";
+    $written = @file_put_contents($logFile, $noticeLine);
+    if ($written !== strlen($noticeLine) && installerHasFunction('error_log')) {
+        // 안내 한 줄을 다 쓰지 못해도 회전은 이미 끝났다 — 새 파일은 다음 기록이 이어 쓰므로 실패로 돌리지 않는다.
+        // 옛 기록을 옮긴 곳을 알리는 줄이 잘렸다는 사실만 서버 로그에 남긴다(운영자가 옛 기록을 찾을 단서).
+        @error_log('[g7-installer] progress log rotated to '.basename($rotated).' but the notice line was not fully written');
+    }
 
     return true;
 }

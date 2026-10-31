@@ -194,8 +194,8 @@ class TemplateLayoutAttachmentService
         }
 
         // 게이트를 통과한 disk 는 PublicAssetDisk::resolve() 가 존재를 이미 확인했다.
-        return $this->storage
-            ->withDisk($attachment->disk)
+        // 행 disk 는 고아 disk 방어(`storageForRow()`)를 거친다 — 형제 서빙, 삭제 자리와 같은 판정이다.
+        return $this->storageForRow($attachment->disk)
             ->url(self::STORAGE_CATEGORY, $attachment->path);
     }
 
