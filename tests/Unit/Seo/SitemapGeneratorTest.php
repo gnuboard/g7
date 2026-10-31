@@ -221,6 +221,30 @@ class SitemapGeneratorTest extends TestCase
     }
 
     /**
+     * 끝·연속 슬래시가 붙은 라우트 경로는 301 이동 대상인 정규형 주소로 싣고, 정규형이 같으면 한 번만 싣는다.
+     *
+     * @scenario static=noncanonical_slash
+     *
+     * @effects static_route_uses_canonical_path
+     *
+     * @return void 반환값 없음
+     */
+    public function test_generate_writes_canonical_path_for_slash_variants(): void
+    {
+        $this->collector->shouldReceive('collect')->andReturn([
+            $this->declaration('*/about/'),
+            $this->declaration('*/board//free'),
+            $this->declaration('*/board/free'),
+            $this->declaration('*/about'),
+            $this->declaration('*/'),
+        ]);
+
+        $locs = array_column($this->entriesOf($this->generator->generate()), 'loc');
+
+        $this->assertSame([url('/about'), url('/board/free'), url('/')], $locs);
+    }
+
+    /**
      * 레이아웃 toggle_setting 이 꺼진 화면은 싣지 않는다 (봇 화면 기준과 동일, D2).
      *
      * @scenario static=toggle_off

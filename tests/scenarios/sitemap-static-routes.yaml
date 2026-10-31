@@ -15,7 +15,7 @@ description: |
     - 재발 방지: 코어·번들 확장의 `X::m()` 정적 호출 대상이 static 인지 구조 검사한다.
 
 axes:
-  static: [declared_home, dynamic_path, toggle_off, invalid_priority, duplicate_contributor, duplicate_home_slash, duplicate_writer_paths, bounded_dedupe, collector_failure, contributor_failure]
+  static: [declared_home, dynamic_path, noncanonical_slash, toggle_off, invalid_priority, duplicate_contributor, duplicate_home_slash, duplicate_writer_paths, bounded_dedupe, collector_failure, contributor_failure]
   case: [core_only, board_active, search_toggle, module_route, invariant]
   toggle: [undeclared, module_implicit, module_explicit, module_missing, plugin, core, parse_key]
   queue: [sync]
@@ -26,6 +26,7 @@ effects:
   # ── 정적 화면 판정 (SitemapGeneratorTest) ──
   - static_route_uses_layout_priority_and_changefreq
   - static_route_skips_dynamic_and_expression_paths
+  - static_route_uses_canonical_path
   - static_route_follows_toggle_setting
   - static_route_falls_back_to_default_priority_and_changefreq
   - static_route_dedupes_contributor_same_loc

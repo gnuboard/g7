@@ -7,6 +7,7 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Seo\Contracts\SitemapContributorInterface;
 use App\Services\TemplateService;
+use App\Support\RequestPath;
 use App\Support\SiteUrl;
 
 /**
@@ -331,11 +332,9 @@ class SitemapGenerator
                     continue;
                 }
 
-                // 와일드카드(*) 접두사(언어 접두사 자리) 제거
-                $routePath = ltrim($routePath, '*/');
-                if (! str_starts_with($routePath, '/')) {
-                    $routePath = '/'.$routePath;
-                }
+                // 와일드카드(*) 접두사(언어 접두사 자리) 제거 후 정규형으로 — 끝·연속 슬래시 주소는
+                // 301 로 이동하므로(공개#156) 이동 대상 주소를 싣는다
+                $routePath = RequestPath::normalize(ltrim($routePath, '*/'));
 
                 $loc = SiteUrl::absolute($routePath);
 
