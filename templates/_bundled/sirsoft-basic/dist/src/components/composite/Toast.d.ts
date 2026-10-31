@@ -9,6 +9,11 @@ export interface ToastItem {
     icon?: string;
     /** 개별 토스트 자동 닫힘 시간 (ms) */
     duration?: number;
+    /**
+     * 항목을 만든 시각 (epoch ms, 엔진 toast 핸들러가 넣는다).
+     * 있으면 자동 닫힘 시간을 이 시각부터 센다 — 화면이 바뀌어 Toast 가 새로 마운트돼도 같은 항목은 같은 시각에 닫힌다.
+     */
+    createdAt?: number;
 }
 export interface ToastProps {
     /** 토스트 배열 (전역 상태 _global.toasts) */
@@ -34,7 +39,7 @@ export interface ToastProps {
  * - 수동 닫기 버튼
  *
  * @example
- * // 레이아웃 JSON 사용 예시 (_user_base.json)
+ * // 레이아웃 JSON 사용 예시 (_user_base.g7.html)
  * {
  *   "id": "global_toast",
  *   "type": "composite",

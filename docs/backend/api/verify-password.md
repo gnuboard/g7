@@ -27,7 +27,8 @@
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| password | body | string | 예 | — | 비밀번호 |
+| password | body | string | verification_token 이 없으면 예 | — | 비밀번호 — 비밀번호가 없는 회원(외부 인증 전용)이 보내면 422 `user.password_not_set` |
+| verification_token | body | string | 아니오 | 최대 128자 | 비밀번호가 없는 회원의 대체 확인 — 코어 본인인증(`purpose: sensitive_action`)으로 확인해 받은 토큰. 본인 것·미사용·미만료여야 하고 통과하면 소비된다(무효면 422 `user.reauthentication_invalid`) (7.2.0) |
 
 **요청 예시**
 
@@ -70,6 +71,6 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 
 **설명**
 
-현재 로그인한 사용자의 비밀번호를 재확인한다. 민감한 작업 직전 본인 확인 게이트로 사용되며, 프론트의 `_password_verify_section.json` 이 호출한다. 요청의 `password` 를 `Hash::check` 로 저장된 해시와 대조해, 일치하면 성공 응답(`user.password_verified`)을, 틀리면 401(`user.password_incorrect`)을 반환한다. 비밀번호를 변경하지 않고 신원만 확인하므로 사용자 데이터는 바뀌지 않는다.
+현재 로그인한 사용자의 비밀번호를 재확인한다. 민감한 작업 직전 본인 확인 게이트로 사용되며, 프론트의 `_password_verify_section.g7.html` 이 호출한다. 요청의 `password` 를 `Hash::check` 로 저장된 해시와 대조해, 일치하면 성공 응답(`user.password_verified`)을, 틀리면 401(`user.password_incorrect`)을 반환한다. 비밀번호를 변경하지 않고 신원만 확인하므로 사용자 데이터는 바뀌지 않는다.
 
 

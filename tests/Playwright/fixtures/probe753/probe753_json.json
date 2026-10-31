@@ -1,0 +1,180 @@
+{
+  "version": "1.0.0",
+  "layout_name": "__probe_753_json",
+  "meta": {
+    "title": "probe 753 json"
+  },
+  "named_actions": {
+    "probeNamed": {
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "probe.ia": "named"
+      }
+    }
+  },
+  "init_actions": [
+    {
+      "actionRef": "probeNamed"
+    },
+    {
+      "handler": "setState",
+      "params": {
+        "target": "local",
+        "probe.ia_after": "1"
+      }
+    }
+  ],
+  "data_sources": [
+    {
+      "id": "p_ds",
+      "type": "api",
+      "endpoint": "/api/__probe753_missing",
+      "method": "GET",
+      "auto_fetch": true,
+      "errorHandling": {
+        "404": {
+          "handler": "conditions",
+          "conditions": [
+            {
+              "if": "{{query.mode === 'quiet'}}",
+              "then": {
+                "handler": "setState",
+                "params": {
+                  "target": "global",
+                  "probe753Ds": "quiet"
+                }
+              }
+            },
+            {
+              "then": {
+                "handler": "setState",
+                "params": {
+                  "target": "global",
+                  "probe753Ds": "loud"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "components": [
+    {
+      "id": "p_root",
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "id": "p_state",
+          "type": "basic",
+          "name": "Span",
+          "text": "{{JSON.stringify(_local.probe ?? {})}}"
+        },
+        {
+          "id": "p_fa1",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button"
+          },
+          "text": "FA1",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "apiCall",
+              "target": "/api/__probe753_missing",
+              "params": {
+                "method": "GET"
+              },
+              "onError": [
+                {
+                  "handler": "conditions",
+                  "conditions": [
+                    {
+                      "if": "{{error.status === 404}}",
+                      "then": {
+                        "handler": "setState",
+                        "params": {
+                          "target": "local",
+                          "probe.fa1": "404"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "p_sw",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button"
+          },
+          "text": "SW",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "switch",
+              "params": {
+                "value": "x"
+              },
+              "cases": {
+                "x": [
+                  {
+                    "handler": "setState",
+                    "params": {
+                      "target": "local",
+                      "probe.sw_arr": "1"
+                    }
+                  },
+                  {
+                    "handler": "setState",
+                    "params": {
+                      "target": "local",
+                      "probe.sw_arr2": "1"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "p_nav",
+          "type": "basic",
+          "name": "Button",
+          "props": {
+            "type": "button"
+          },
+          "text": "NAV",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/admin/__probe753_nowhere",
+                "fallback": {
+                  "handler": "sequence",
+                  "actions": [
+                    {
+                      "handler": "setState",
+                      "params": {
+                        "target": "local",
+                        "probe.nav_fb": "1"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

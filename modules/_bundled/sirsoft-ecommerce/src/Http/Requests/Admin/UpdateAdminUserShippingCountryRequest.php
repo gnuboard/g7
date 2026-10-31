@@ -43,6 +43,8 @@ class UpdateAdminUserShippingCountryRequest extends FormRequest
 
     /**
      * 검증 전 국가 코드를 대문자로 정규화합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {

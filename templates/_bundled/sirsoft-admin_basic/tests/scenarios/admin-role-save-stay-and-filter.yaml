@@ -1,0 +1,32 @@
+feature: 역할 저장 후 수정 화면 유지 · 역할 목록 소유 구분 필터 · 비회원 안내 정렬
+
+description: |
+  역할 수정 저장 뒤 목록으로 돌아가던 것을 그 화면에 머물게 한다(역할을 다시 받아 서버 값으로 폼을 채움).
+  등록·복제 저장은 방금 만든 역할의 수정 화면으로 라우트 전환해 간다(목록 상태는 mergeQuery 로 잇고 복제 진입 쿼리
+  clone_from 은 버린다). replace 는 같은 화면의 쿼리만 바꾸는 이동이라 route.id 가 갱신되지 않아, 넘어간 수정 화면의
+  「저장」이 PUT 대신 POST 로 나갔다.
+  역할 목록에 「구분」 선택 상자를 두어 시스템(코어)·모듈·플러그인이 만든 역할과 직접 만든 역할을 나눠 본다 —
+  목록 API 의 extension_type 쿼리로 거른다(API 판정은 코어 tests/scenarios/role-list-extension-type-filter.yaml).
+  비회원 역할 수정 화면의 범위 안내는 아이콘과 글이 한 줄 가운데로 맞는다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-role-save-stay-and-filter.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-role-form-create-then-edit-route.test.ts
+
+axes:
+  surface:
+    - form_save
+    - list_filter
+    - guest_hint
+
+effects:
+  - no_return_to_list                   # 저장 성공 뒤 /admin/roles 이동 없음
+  - update_stays_and_refetches          # 수정 저장 → role 재조회
+  - create_goes_to_new_edit             # 등록·복제 저장 → /admin/roles/{id}/edit (라우트 전환, clone_from 제거)
+  - list_passes_extension_type          # 목록 데이터 소스가 query.extension_type 을 API 로 넘김
+  - filter_select_resets_page           # 선택 상자 변경 → extension_type 쿼리 + page 1
+  - guest_hint_single_line              # 안내 flex-center, 아이콘 위 여백 없음
+
+validation:
+  note: |
+    브라우저 실측은 관리자 > 권한 관리 목록의 「구분」 선택과 역할 수정·등록 저장 뒤 주소로 확인한다.

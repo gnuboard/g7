@@ -6,6 +6,7 @@ use App\Contracts\Repositories\LayoutPreviewRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\HookManager;
 use App\Models\TemplateLayoutPreview;
+use App\Support\LayoutEmptyObjects;
 use Illuminate\Support\Str;
 
 /**
@@ -109,6 +110,11 @@ class LayoutPreviewService
      * 편집 중인 content에 extends가 있으면 부모 레이아웃과 병합하고,
      * 모듈/플러그인 extension도 적용합니다.
      *
+     * 미리보기는 **화면 렌더** 경로다(브라우저가 이 JSON 으로 실제 화면을 그린다). 그래서 공개
+     * 서빙과 같은 계약을 진다 — 개발자 주석은 브라우저에 닿지 않는다. 제거를 **이 한 자리**에서
+     * 하는 이유는 분기가 둘이기 때문이다: 각 분기 끝에 걸면 세 번째 분기가 생기는 날 조용히
+     * 빠진다(같은 형태로 `getLayout` 의 확장 주입 경로가 한 번 새어 나갔다).
+     *
      * @param  string  $token  미리보기 토큰
      * @return array|null 병합된 레이아웃 데이터 또는 null
      */
@@ -124,10 +130,13 @@ class LayoutPreviewService
 
         // 레이아웃 확장 미리보기: 편집 중인 확장 content 를 대표 레이아웃에 임시 적용
         if (($preview->preview_type ?? 'layout') === 'extension') {
-            return $this->renderExtensionPreview($preview, $templateId);
+            return $this->layoutService->stripDeveloperComments(
+                $this->renderExtensionPreview($preview, $templateId)
+            );
         }
 
-        $layoutData = $preview->content;
+        // 저장 원문을 다시 읽어 값 자리의 빈 객체 `{}` 를 보존한다 — 공개 서빙과 같은 기준 (#758)
+        $layoutData = LayoutEmptyObjects::decode($preview->getAttributes()['content'] ?? null, $preview->content ?? []);
 
         // extends 상속 병합
         if (isset($layoutData['extends'])) {
@@ -139,7 +148,7 @@ class LayoutPreviewService
         // 모듈/플러그인 Extension 적용
         $layoutData = $this->layoutExtensionService->applyExtensions($layoutData, $templateId);
 
-        return $layoutData;
+        return $this->layoutService->stripDeveloperComments($layoutData);
     }
 
     /**
@@ -159,9 +168,10 @@ class LayoutPreviewService
 
         // 편집 중인 확장 content 를 임시 적용
         if ($preview->extension_id) {
+            // 원문 그대로 넘긴다 — 확장 모델 캐스트가 다시 `{}` 로 인코딩해야 적용 단계가 빈 객체를 보존한다 (#758)
             $this->layoutExtensionService->setPreviewContentOverride(
                 $preview->extension_id,
-                $preview->content
+                LayoutEmptyObjects::rawPreserving($preview)
             );
         }
 
@@ -191,6 +201,24 @@ class LayoutPreviewService
         $template = $this->templateRepository->findById($preview->template_id);
 
         return $template?->identifier;
+    }
+
+    /**
+     * 미리보기를 열 화면 셸 주소를 만듭니다.
+     *
+     * 관리자 템플릿 레이아웃은 관리자 셸(`/admin/preview/{token}`)로 열어야 그 템플릿의 컴포넌트·다국어·라우트로
+     * 그려진다. 사용자 셸(`/preview/{token}`)로 열면 활성 사용자 템플릿 자원으로 그려졌다(7.1.0).
+     * 두 셸 경로는 코어가 모든 템플릿 routes 에 주입하는 시스템 라우트다(`core.routes.filter_merged`).
+     *
+     * @param  TemplateLayoutPreview  $preview  생성된 미리보기
+     * @return string 미리보기 주소
+     */
+    public function previewUrl(TemplateLayoutPreview $preview): string
+    {
+        $template = $this->templateRepository->findById($preview->template_id);
+        $prefix = $template?->type === 'admin' ? '/admin/preview/' : '/preview/';
+
+        return $prefix.$preview->token;
     }
 
     /**

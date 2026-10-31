@@ -22,6 +22,12 @@ export interface ActionButton {
     variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
     iconName?: IconName;
     disabled?: boolean;
+    /**
+     * 바로가기 주소 — 있으면 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
+     * 보통 클릭은 onClick(없으면 SPA 이동), 수정키 클릭은 브라우저 기본 동작. 바깥 주소는 새 탭으로 연다.
+     * `disabled` 면 링크로 그리지 않고 종전처럼 비활성 단추다(href 없음).
+     */
+    href?: string;
 }
 /**
  * PageHeader Props
@@ -45,7 +51,7 @@ export interface PageHeaderProps {
 /**
  * PageHeader 컴포넌트
  *
- * 페이지 헤더 - admin_dashboard.json의 page_header 스타일과 동일
+ * 페이지 헤더 - admin_dashboard.g7.html의 page_header 스타일과 동일
  * 배경색 없음, flex items-center justify-between mb-6 레이아웃
  *
  * @example

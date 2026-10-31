@@ -3,7 +3,10 @@
  *
  * @description
  * - buildOrderBulkConfirmData: delivered 상태에서 운송장 필수 해제 검증
- * - processOrderDetailBulkChange: carrier_id 키 전송 검증
+ * - processOrderDetailBulkChange: carrier_id 키 전송 · 송장번호 보정 순서 검증
+ * - executeOrderBulkAction · processOrderDetailBulkChange: 422 시 서버 메시지 토스트 후 오류 재전파 검증
+ *
+ * 시나리오 매니페스트: tests/scenarios/admin-order-bulk-status-handlers.yaml
  *
  * @vitest-environment jsdom
  */
@@ -59,6 +62,12 @@ beforeEach(() => {
 // ========== buildOrderBulkConfirmData 테스트 ==========
 
 describe('buildOrderBulkConfirmDataHandler - delivered 배송정보 필수 해제', () => {
+    /**
+     * 배송완료는 운송장 없이도 확인 창을 연다 — 운송장 필수는 배송 출발 단계에만 걸린다.
+     *
+     * @scenario handler=build_list_bulk_confirm
+     * @effects list_bulk_confirm_delivered_opens_modal_without_tracking
+     */
     it('delivered 상태 선택 시 운송장 없이도 모달이 열림', () => {
         mockGlobalState = {
             bulkSelectedItems: [1, 2],
@@ -81,6 +90,12 @@ describe('buildOrderBulkConfirmDataHandler - delivered 배송정보 필수 해�
         expect(mockGlobalState.bulkConfirmData.orderStatus).toBe('delivered');
     });
 
+    /**
+     * 배송완료에 운송장을 함께 넣으면 확인 데이터가 입력한 택배사를 그대로 싣는다.
+     *
+     * @scenario handler=build_list_bulk_confirm
+     * @effects list_bulk_confirm_delivered_keeps_entered_courier
+     */
     it('delivered 상태 + 운송장 입력 시에도 정상 동작', () => {
         mockGlobalState = {
             bulkSelectedItems: [1],
@@ -99,6 +114,12 @@ describe('buildOrderBulkConfirmDataHandler - delivered 배송정보 필수 해�
         expect(mockGlobalState.bulkConfirmData.courierId).toBe('1');
     });
 
+    /**
+     * 배송중은 운송장이 없으면 경고 토스트만 띄우고 확인 창을 열지 않는다.
+     *
+     * @scenario handler=build_list_bulk_confirm
+     * @effects list_bulk_confirm_shipping_states_require_tracking_and_stay_closed
+     */
     it('shipping 상태 선택 시 운송장 없으면 경고 toast', () => {
         mockGlobalState = {
             bulkSelectedItems: [1],
@@ -118,6 +139,12 @@ describe('buildOrderBulkConfirmDataHandler - delivered 배송정보 필수 해�
         expect(mockG7Core.modal.open).not.toHaveBeenCalled();
     });
 
+    /**
+     * 배송준비중도 배송중과 같이 운송장이 없으면 경고 토스트만 띄우고 확인 창을 열지 않는다.
+     *
+     * @scenario handler=build_list_bulk_confirm
+     * @effects list_bulk_confirm_shipping_states_require_tracking_and_stay_closed
+     */
     it('shipping_ready 상태 선택 시 운송장 없으면 경고 toast', () => {
         mockGlobalState = {
             bulkSelectedItems: [1],
@@ -139,6 +166,12 @@ describe('buildOrderBulkConfirmDataHandler - delivered 배송정보 필수 해�
 // ========== processOrderDetailBulkChange 테스트 ==========
 
 describe('processOrderDetailBulkChangeHandler - carrier_id 키 전송', () => {
+    /**
+     * 택배사는 서버 검증 규칙이 읽는 `carrier_id` 키로 보내고 `carrier` 키는 쓰지 않는다.
+     *
+     * @scenario handler=process_detail_bulk_change
+     * @effects detail_bulk_change_sends_carrier_under_carrier_id_key
+     */
     it('carrier_id 키로 API에 전송됨 (carrier 아님)', async () => {
         mockG7Core.dataSource.get.mockReturnValue({
             data: {
@@ -173,6 +206,12 @@ describe('processOrderDetailBulkChangeHandler - carrier_id 키 전송', () => {
         expect(body.tracking_number).toBe('TRACK456');
     });
 
+    /**
+     * 택배사를 고르지 않으면 본문에 `carrier_id` 를 아예 싣지 않는다.
+     *
+     * @scenario handler=process_detail_bulk_change
+     * @effects detail_bulk_change_omits_carrier_id_when_not_entered
+     */
     it('carrier 미입력 시 body에 carrier_id가 포함되지 않음', async () => {
         mockG7Core.dataSource.get.mockReturnValue({
             data: {
@@ -211,6 +250,12 @@ describe('processOrderDetailBulkChangeHandler - carrier_id 키 전송', () => {
 // (readBatchTrackingFromDom) + getLocal fallback 으로 보정했다. 이 회귀를 고정한다.
 
 describe('processOrderDetailBulkChangeHandler - 송장번호 fallback (송장 input 버그)', () => {
+    /**
+     * 인자에 송장번호가 없으면 화면의 송장 입력칸 값을 앞뒤 공백을 걷어 보낸다.
+     *
+     * @scenario handler=process_detail_bulk_change
+     * @effects detail_bulk_change_reads_tracking_from_dom_input_trimmed
+     */
     it('params.batchTrackingNumber 가 비면 DOM input[name=batchTrackingNumber] 값을 읽어 전송한다', async () => {
         // 화면에 실제 표시된 송장 input (폼 컨텍스트 자동바인딩으로 top-level params 와 어긋난 상황 재현)
         const input = document.createElement('input');
@@ -244,6 +289,12 @@ describe('processOrderDetailBulkChangeHandler - 송장번호 fallback (송장 in
         document.body.removeChild(input);
     });
 
+    /**
+     * 인자도 입력칸도 없으면 페이지 `_local` 의 송장번호로 보정한다.
+     *
+     * @scenario handler=process_detail_bulk_change
+     * @effects detail_bulk_change_falls_back_to_local_tracking_number
+     */
     it('params 가 비고 DOM 도 없으면 getLocal(페이지 _local) 의 batchTrackingNumber 로 보정한다', async () => {
         const getLocalSpy = vi
             .spyOn(mockG7Core.state, 'getLocal')
@@ -273,6 +324,12 @@ describe('processOrderDetailBulkChangeHandler - 송장번호 fallback (송장 in
         getLocalSpy.mockRestore();
     });
 
+    /**
+     * 인자에 송장번호가 있으면 입력칸 값이 있어도 인자를 쓴다 — 보정은 비었을 때만 돈다.
+     *
+     * @scenario handler=process_detail_bulk_change
+     * @effects detail_bulk_change_prefers_params_tracking_over_fallbacks
+     */
     it('params.batchTrackingNumber 가 있으면 그대로 사용한다 (fallback 우선순위 — params 최우선)', async () => {
         // DOM 값이 있어도 params 가 우선해야 함
         const input = document.createElement('input');
@@ -313,6 +370,13 @@ describe('processOrderDetailBulkChangeHandler - 송장번호 fallback (송장 in
 //       왜 막혔는지 알 수 없음. 서버는 정확한 메시지를 내려주지만 클라이언트가 버림.
 
 describe('executeOrderBulkActionHandler - 422 서버 검증 메시지 노출 (주문일괄)', () => {
+    /**
+     * 상태 전이가 422 로 막히면 axios 원문이 아니라 서버 검증 메시지를 토스트로 한 번만 띄우고,
+     * 오류를 다시 던져 확인 창의 실패 분기(창 유지)로 넘긴다.
+     *
+     * @scenario handler=execute_list_bulk_action
+     * @effects list_bulk_action_422_toasts_server_message_once, bulk_status_422_rethrows_to_keep_confirm_modal_open
+     */
     it('상태 전이 차단(422) 시 axios raw 메시지가 아니라 서버 검증 메시지를 토스트로 표시', async () => {
         mockGlobalState = {
             bulkConfirmData: {
@@ -334,11 +398,14 @@ describe('executeOrderBulkActionHandler - 422 서버 검증 메시지 노출 (�
         };
         mockG7Core.api.patch.mockRejectedValueOnce(axiosError);
 
-        await executeOrderBulkActionHandler(
+        // 실패를 다시 던져 확인 창의 `<fail>` 분기(창 유지)로 넘긴다 — 삼키면 성공 분기의 `<close-modal/>` 이 돌아
+        // 운영자가 고른 값이 사라진다(#747 C12 M4).
+        await expect(executeOrderBulkActionHandler(
             { handler: 'sirsoft-ecommerce.executeOrderBulkAction', params: {} } as any,
             mockContext
-        );
+        )).rejects.toBeTruthy();
 
+        expect(mockG7Core.toast.error).toHaveBeenCalledTimes(1);
         expect(mockG7Core.toast.error).toHaveBeenCalledWith(
             '구매확정 상태에서 결제완료 상태로는 변경할 수 없습니다.'
         );
@@ -347,9 +414,56 @@ describe('executeOrderBulkActionHandler - 422 서버 검증 메시지 노출 (�
             'Request failed with status code 422'
         );
     });
+
+    /**
+     * 서버가 터진 5xx 와 전송 실패는 사유가 없다 — 본문 없는 500 이면 axios 원문 「Request failed with status
+     * code 500」, 운영 환경 500 이면 「Server Error」 가 토스트에 그대로 떴다(S1-D12 실측: 주문 목록 일괄 변경).
+     * 번역된 일괄 실패 문구로 떨어져야 한다.
+     *
+     * @scenario handler=execute_list_bulk_action
+     * @effects list_bulk_action_server_error_toasts_localized_fallback
+     */
+    it('5xx·전송 실패는 원문 대신 번역된 일괄 실패 문구를 띄운다', async () => {
+        const cases: any[] = [];
+
+        const emptyBody: any = new Error('Request failed with status code 500');
+        emptyBody.isAxiosError = true;
+        emptyBody.response = { status: 500, data: '' };
+        cases.push(emptyBody);
+
+        const serverError: any = new Error('Request failed with status code 500');
+        serverError.isAxiosError = true;
+        serverError.response = { status: 500, data: { message: 'Server Error' } };
+        cases.push(serverError);
+
+        const transport: any = new Error('Network Error');
+        transport.isAxiosError = true;
+        cases.push(transport);
+
+        for (const error of cases) {
+            mockGlobalState = { bulkConfirmData: { selectedItems: [101], orderStatus: 'preparing' } };
+            mockG7Core.toast.error.mockClear();
+            mockG7Core.api.patch.mockRejectedValueOnce(error);
+
+            await expect(executeOrderBulkActionHandler(
+                { handler: 'sirsoft-ecommerce.executeOrderBulkAction', params: {} } as any,
+                mockContext
+            )).rejects.toBeTruthy();
+
+            expect(mockG7Core.toast.error).toHaveBeenCalledTimes(1);
+            expect(mockG7Core.toast.error).toHaveBeenCalledWith('sirsoft-ecommerce.admin.order.bulk.error');
+        }
+    });
 });
 
 describe('processOrderDetailBulkChangeHandler - 422 서버 검증 메시지 노출 (옵션일괄)', () => {
+    /**
+     * 상태 전이가 422 로 막히면 고정 실패 문구가 아니라 서버 검증 메시지를 토스트로 띄우고,
+     * 오류를 다시 던져 확인 창을 닫지 않는다.
+     *
+     * @scenario handler=process_detail_bulk_change
+     * @effects detail_bulk_change_422_toasts_server_message, bulk_status_422_rethrows_to_keep_confirm_modal_open
+     */
     it('상태 전이 차단(422) 시 고정 문구가 아니라 서버 검증 메시지를 토스트로 표시', async () => {
         const axiosError: any = new Error('Request failed with status code 422');
         axiosError.response = {
@@ -363,7 +477,7 @@ describe('processOrderDetailBulkChangeHandler - 422 서버 검증 메시지 노�
         };
         mockG7Core.api.patch.mockRejectedValueOnce(axiosError);
 
-        await processOrderDetailBulkChangeHandler(
+        await expect(processOrderDetailBulkChangeHandler(
             {
                 handler: 'sirsoft-ecommerce.processOrderDetailBulkChange',
                 params: {
@@ -373,7 +487,7 @@ describe('processOrderDetailBulkChangeHandler - 422 서버 검증 메시지 노�
                 },
             } as any,
             mockContext
-        );
+        )).rejects.toBeTruthy();
 
         expect(mockG7Core.toast.error).toHaveBeenCalledWith(
             '구매확정 상태에서 결제완료 상태로는 변경할 수 없습니다.'

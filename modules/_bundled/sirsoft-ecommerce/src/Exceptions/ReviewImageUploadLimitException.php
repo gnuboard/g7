@@ -19,7 +19,7 @@ class ReviewImageUploadLimitException extends RuntimeException
         public readonly int $maxImages
     ) {
         parent::__construct(
-            __('sirsoft-ecommerce::review.image_upload_limit_exceeded', ['max' => $maxImages])
+            trans_choice('sirsoft-ecommerce::review.image_upload_limit_exceeded', $maxImages, ['max' => $maxImages])
         );
     }
 }

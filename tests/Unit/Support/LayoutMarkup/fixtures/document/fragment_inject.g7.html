@@ -1,0 +1,10 @@
+<extension target-layout="admin_user_detail">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>{"tabs": {"_append": [{"id": "ext_notification", "label": "알림", "iconName": "cubes"}]}}</props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_notification_content" data-if="{{(order.data?.payments ?? []).length > 0}}" class="admin-card">
+      <span text="확장 콘텐츠"/>
+    </div>
+  </inject>
+</extension>

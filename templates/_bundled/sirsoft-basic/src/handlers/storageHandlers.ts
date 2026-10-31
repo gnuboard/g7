@@ -9,7 +9,7 @@ import { apiUrl } from '../support/apiUrl';
  *
  * G7Core API 사용:
  * - G7Core.state.set() - 전역 상태 설정
- * - G7Core.state.get()._global?.currentUser - 현재 사용자 확인
+ * - G7Core.state.get()?.currentUser - 현재 사용자 확인 (반환값이 곧 `_global` 이라 `._global` 을 덧붙이지 않는다)
  */
 
 const CART_KEY_STORAGE_NAME = 'g7_cart_key';
@@ -17,6 +17,8 @@ const CART_KEY_API_ENDPOINT = '/api/modules/sirsoft-ecommerce/cart/key';
 const GUEST_ORDER_TOKEN_STORAGE_NAME = 'g7_guest_order_token';
 const GUEST_ORDER_NUMBER_STORAGE_NAME = 'g7_guest_order_number';
 const GUEST_ORDER_EXPIRES_AT_STORAGE_NAME = 'g7_guest_order_expires_at';
+export const SECRET_VIEW_TOKEN_STORAGE_NAME = 'g7_board_secret_view_token';
+export const SECRET_VIEW_EXPIRES_AT_STORAGE_NAME = 'g7_board_secret_view_expires_at';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Handler:Storage')) ?? {
@@ -30,7 +32,7 @@ const logger = ((window as any).G7Core?.createLogger?.('Handler:Storage')) ?? {
  *
  * @returns 발급된 cart_key 또는 null (실패 시)
  */
-async function issueCartKeyFromApi(): Promise<string | null> {
+export async function issueCartKeyFromApi(): Promise<string | null> {
   try {
     const response = await fetch(apiUrl(CART_KEY_API_ENDPOINT), {
       method: 'POST',
@@ -283,6 +285,14 @@ function clearGuestOrderTokenInternal(): void {
  * 3. `_global.guestOrderToken` 에 토큰 또는 null 설정
  * 4. `_user_base.globalHeaders` 의 `X-Guest-Order-Token: {{_global.guestOrderToken}}` 패턴이
  *    토큰 있을 때만 `guest/orders/*` 호출에 헤더 자동 주입 (엔진이 null/빈값 자동 제외)
+ * 5. `_global.guestOrderNumber` 에 그 토큰이 묶인 주문번호 설정
+ *
+ * 주문번호를 함께 올리는 이유는 비회원 클레임 화면(`{shopBase}/guest/claims/{번호}` · `.../edit`)
+ * 때문이다 — 그 주소에는 주문번호가 없는데 비회원 클레임 API 는 전부 주문 스코프
+ * (`guest/orders/{주문번호}/claims/...`)다. 토큰이 주문 하나에 묶여 있으므로 그 짝인 주문번호가
+ * 곧 스코프이며, 셸이 이 값으로 API 주소 앞부분을 만든다. 토큰과 같은 자리에서 함께 세워야
+ * 한쪽만 남는 상태가 생기지 않는다 — 주문번호만 남으면 셸은 주소를 만들고 요청은 토큰이 없어
+ * 404 가 된다.
  *
  * @param _action 액션 정의 (사용하지 않음)
  * @param _context 액션 컨텍스트 (사용하지 않음)
@@ -293,9 +303,11 @@ export function initGuestOrderTokenHandler(
 ): void {
   let token: string | null = null;
   let expiresAt: string | null = null;
+  let orderNumber: string | null = null;
   try {
     token = sessionStorage.getItem(GUEST_ORDER_TOKEN_STORAGE_NAME);
     expiresAt = sessionStorage.getItem(GUEST_ORDER_EXPIRES_AT_STORAGE_NAME);
+    orderNumber = sessionStorage.getItem(GUEST_ORDER_NUMBER_STORAGE_NAME);
   } catch {
     // sessionStorage 접근 불가 시 무시
   }
@@ -315,7 +327,7 @@ export function initGuestOrderTokenHandler(
 
   if (token) {
     // sessionStorage 에 유효 토큰이 있으면 그 값으로 _global 동기화 (새로고침/재방문 경로)
-    setGlobalState({ guestOrderToken: token });
+    setGlobalState({ guestOrderToken: token, guestOrderNumber: orderNumber });
     logger.log('Guest order token loaded from sessionStorage');
     return;
   }
@@ -335,7 +347,7 @@ export function initGuestOrderTokenHandler(
     }
   }
 
-  setGlobalState({ guestOrderToken: null });
+  setGlobalState({ guestOrderToken: null, guestOrderNumber: null });
   logger.log('No guest order token (visitor not authenticated)');
 }
 
@@ -346,8 +358,9 @@ export function initGuestOrderTokenHandler(
 /**
  * 비회원 주문 토큰을 sessionStorage 에 저장하고 _global 에 동기 set 합니다.
  *
- * 토큰/주문번호/만료시각 3개 키를 함께 저장하며, _global.guestOrderToken 도 즉시 갱신해
- * 직후 호출되는 navigate 의 globalHeaders 자동 주입이 동작하도록 한다.
+ * 토큰/주문번호/만료시각 3개 키를 함께 저장하며, _global.guestOrderToken 과
+ * _global.guestOrderNumber 도 즉시 갱신해 직후 호출되는 navigate 의 globalHeaders 자동 주입과
+ * 비회원 클레임 화면의 주문 스코프 주소 조립이 동작하도록 한다.
  *
  * @param action params.token, params.orderNumber, params.expiresAt 필수
  * @param _context 액션 컨텍스트 (사용하지 않음)
@@ -368,7 +381,7 @@ export function saveGuestOrderTokenHandler(
   } catch {
     // sessionStorage 접근 불가 시 무시 (private 모드 등) — _global 만 set 되어 현재 페이지는 동작
   }
-  setGlobalState({ guestOrderToken: token });
+  setGlobalState({ guestOrderToken: token, guestOrderNumber: orderNumber });
 }
 
 /**
@@ -384,7 +397,7 @@ export function clearGuestOrderTokenHandler(
   _context?: any
 ): void {
   clearGuestOrderTokenInternal();
-  setGlobalState({ guestOrderToken: null });
+  setGlobalState({ guestOrderToken: null, guestOrderNumber: null });
 }
 
 /**
@@ -405,5 +418,113 @@ export function clearGuestTokenOnEntryHandler(
   _context?: any
 ): void {
   clearGuestOrderTokenInternal();
-  setGlobalState({ guestOrderToken: null });
+  setGlobalState({ guestOrderToken: null, guestOrderNumber: null });
+}
+
+/**
+ * sessionStorage 의 비밀글 열람 토큰 두 키(토큰·만료 시각)를 지웁니다 (내부 헬퍼).
+ */
+function clearSecretViewTokenInternal(): void {
+  try {
+    sessionStorage.removeItem(SECRET_VIEW_TOKEN_STORAGE_NAME);
+    sessionStorage.removeItem(SECRET_VIEW_EXPIRES_AT_STORAGE_NAME);
+  } catch {
+    // sessionStorage 접근 불가 시 무시
+  }
+}
+
+/**
+ * 비밀글 열람 토큰 초기화 (init_actions 전용)
+ *
+ * 비밀번호로 비밀글을 연 사실은 서버가 토큰 하나에 글별 인증으로 기록하고, 화면은 그 토큰을
+ * `_user_base.globalHeaders` 의 `X-Board-Secret-View-Token` 으로 게시판 요청에 싣는다. 토큰이
+ * 메모리(`_global.secretViewToken`)에만 있으면 답변 링크(`<a href>` 전체 이동)·새로고침에서 사라져
+ * 원글 비밀번호를 맞힌 비회원도 답변 화면에서 다시 잠긴다. 그래서 탭 세션(sessionStorage)에 두고
+ * 부팅마다 여기서 `_global` 로 복원한다 — 탭을 닫으면 사라지므로 공용 PC 에 남지 않는다.
+ *
+ * - 만료됐거나 만료 시각이 날짜가 아니면(NaN) 두 키를 지우고 null 로 둔다.
+ * - 저장 토큰이 없는데 같은 화면에서 막 받은 in-memory 토큰이 있으면 덮어쓰지 않는다
+ *   (sessionStorage 를 쓸 수 없는 환경 — `initGuestOrderToken` 과 같은 이유).
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export function initSecretViewTokenHandler(
+  _action?: any,
+  _context?: any
+): void {
+  let token: string | null = null;
+  let expiresAt: string | null = null;
+  try {
+    token = sessionStorage.getItem(SECRET_VIEW_TOKEN_STORAGE_NAME);
+    expiresAt = sessionStorage.getItem(SECRET_VIEW_EXPIRES_AT_STORAGE_NAME);
+  } catch {
+    // sessionStorage 접근 불가 시 무시
+  }
+
+  let expired = false;
+  if (token) {
+    const expiryTs = expiresAt ? new Date(expiresAt).getTime() : NaN;
+    if (isNaN(expiryTs) || expiryTs <= Date.now()) {
+      clearSecretViewTokenInternal();
+      token = null;
+      expired = true;
+    }
+  }
+
+  if (token) {
+    setGlobalState({ secretViewToken: token });
+    return;
+  }
+
+  if (!expired) {
+    const existing = (window as any).G7Core?.state?.get?.()?.secretViewToken;
+    if (typeof existing === 'string' && existing !== '') {
+      return;
+    }
+  }
+
+  setGlobalState({ secretViewToken: null });
+}
+
+/**
+ * 비밀글 열람 토큰을 sessionStorage 에 저장하고 `_global.secretViewToken` 에 동기 set 합니다.
+ *
+ * 비밀번호 확인(글 비밀번호·원글 비밀번호) 성공 응답의 `secret_view_token`·`secret_view_expires_at`
+ * 을 받는다. 서버는 같은 탭의 두 번째 인증에 같은 토큰을 다시 돌려주고 그 토큰에 글별 인증만 더하므로,
+ * 여기서는 마지막 응답 값으로 덮어쓰면 된다. 토큰이 비면(응답에 없음) 기존 값을 건드리지 않는다.
+ *
+ * @param action params.token, params.expiresAt
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export function saveSecretViewTokenHandler(
+  action?: any,
+  _context?: any
+): void {
+  const { token, expiresAt } = action?.params || {};
+  if (typeof token !== 'string' || token === '') {
+    logger.warn('saveSecretViewToken: token is required');
+    return;
+  }
+  try {
+    sessionStorage.setItem(SECRET_VIEW_TOKEN_STORAGE_NAME, token);
+    sessionStorage.setItem(SECRET_VIEW_EXPIRES_AT_STORAGE_NAME, typeof expiresAt === 'string' ? expiresAt : '');
+  } catch {
+    // sessionStorage 접근 불가 시 무시 — _global 만 set 되어 현재 화면은 동작
+  }
+  setGlobalState({ secretViewToken: token });
+}
+
+/**
+ * 비밀글 열람 토큰을 sessionStorage 에서 지우고 `_global.secretViewToken` 도 비웁니다.
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export function clearSecretViewTokenHandler(
+  _action?: any,
+  _context?: any
+): void {
+  clearSecretViewTokenInternal();
+  setGlobalState({ secretViewToken: null });
 }

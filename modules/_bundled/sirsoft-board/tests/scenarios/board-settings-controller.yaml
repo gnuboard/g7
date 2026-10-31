@@ -1,0 +1,89 @@
+feature: 게시판 환경설정 API (조회·저장·일괄 적용·요청 범위·캐시 삭제)
+
+description: |
+  BoardSettingsController 의 조회·저장·일괄 적용·캐시 삭제와 설정 요청의 범위 검증을 잠근다.
+  인증 없는 요청 거부, 알림 채널·신고 알림 강제값, 허용 카테고리 필터, 일괄 적용의 필드 검증과
+  대상 지정, config SSoT 를 따르는 상·하한, 첨부 정리 설정 저장을 한 테스트 파일이 다룬다.
+  일괄 적용의 첫 실패 전체 롤백은 board-settings-bulk-apply-rollback.yaml 이, 권한 필드 일괄 적용과
+  기본 권한 저장의 권한 부여 상한은 board-acl-escalation-ceiling.yaml 이 소유한다 — 여기의 일괄
+  적용 허용 필드 케이스는 상한이 없는 슈퍼관리자로 검증 축만 본다.
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardSettingsControllerTest.php
+
+axes:
+  case:
+    - admin_can_fetch_all_settings
+    - unauthenticated_user_cannot_fetch_settings
+    - admin_can_fetch_category_settings
+    - admin_can_save_settings
+    - admin_can_save_notification_channels
+    - notification_channels_included_in_settings_response
+    - report_notification_enable_flags_are_forced_true_on_save
+    - save_rejects_invalid_notification_channel
+    - store_ignores_invalid_categories
+    - unauthenticated_user_cannot_save_settings
+    - admin_can_bulk_apply_settings_to_all_boards
+    - admin_can_bulk_apply_settings_to_specific_boards
+    - bulk_apply_requires_fields
+    - bulk_apply_requires_board_ids_when_not_apply_all
+    - bulk_apply_rejects_invalid_fields
+    - bulk_apply_allows_manager_permission_field
+    - bulk_apply_allows_dotted_permission_fields
+    - bulk_apply_rejects_out_of_range_override_new_display_hours
+    - bulk_apply_rejects_out_of_range_override_min_title_length
+    - bulk_apply_accepts_in_range_override_values
+    - settings_request_max_reply_depth_allows_up_to_config_max
+    - settings_request_max_reply_depth_rejects_above_config_max
+    - settings_request_per_page_rejects_below_config_min
+    - settings_request_per_page_allows_config_min
+    - settings_request_per_page_mobile_rejects_below_config_min
+    - settings_request_max_file_count_allows_config_max
+    - settings_request_max_file_count_rejects_above_config_max
+    - settings_request_bounds_follow_config
+    - settings_request_auto_hide_threshold_allows_zero
+    - settings_request_auto_hide_threshold_rejects_above_config_max
+    - admin_can_clear_cache
+    - unauthenticated_user_cannot_clear_cache
+    - bulk_apply_rolls_back_all_when_permission_fails_midway
+    - bulk_apply_rolls_back_with_generic_when_column_update_fails
+    - attachment_cleanup_settings_are_saved_on_general_tab
+    - attachment_purge_retention_days_below_minimum_is_rejected
+
+effects:
+  - admin_can_fetch_all_settings
+  - unauthenticated_user_cannot_fetch_settings
+  - admin_can_fetch_category_settings
+  - admin_can_save_settings
+  - admin_can_save_notification_channels
+  - notification_channels_included_in_settings_response
+  - report_notification_enable_flags_are_forced_true_on_save
+  - save_rejects_invalid_notification_channel
+  - store_ignores_invalid_categories
+  - unauthenticated_user_cannot_save_settings
+  - admin_can_bulk_apply_settings_to_all_boards
+  - admin_can_bulk_apply_settings_to_specific_boards
+  - bulk_apply_requires_fields
+  - bulk_apply_requires_board_ids_when_not_apply_all
+  - bulk_apply_rejects_invalid_fields
+  - bulk_apply_allows_manager_permission_field
+  - bulk_apply_allows_dotted_permission_fields
+  - bulk_apply_rejects_out_of_range_override_new_display_hours
+  - bulk_apply_rejects_out_of_range_override_min_title_length
+  - bulk_apply_accepts_in_range_override_values
+  - settings_request_max_reply_depth_allows_up_to_config_max
+  - settings_request_max_reply_depth_rejects_above_config_max
+  - settings_request_per_page_rejects_below_config_min
+  - settings_request_per_page_allows_config_min
+  - settings_request_per_page_mobile_rejects_below_config_min
+  - settings_request_max_file_count_allows_config_max
+  - settings_request_max_file_count_rejects_above_config_max
+  - settings_request_bounds_follow_config
+  - settings_request_auto_hide_threshold_allows_zero
+  - settings_request_auto_hide_threshold_rejects_above_config_max
+  - admin_can_clear_cache
+  - unauthenticated_user_cannot_clear_cache
+  - bulk_apply_rolls_back_all_when_permission_fails_midway
+  - bulk_apply_rolls_back_with_generic_when_column_update_fails
+  - attachment_cleanup_settings_are_saved_on_general_tab
+  - attachment_purge_retention_days_below_minimum_is_rejected

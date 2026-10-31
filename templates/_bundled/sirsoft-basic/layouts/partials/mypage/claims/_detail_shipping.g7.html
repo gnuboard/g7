@@ -1,0 +1,98 @@
+<partial description="클레임 상세 - 배송 (회수 · 재발송 운송장 묶음 + 주소)" editor_label="$t:user.modal_label.mypage_claims.detail_shipping">
+  <!-- §6-2 — 회수(교환·반품)와 재발송(교환)을 한 카드 안 두 항목으로 둔다. 관리자 상세(D17-②)와 같은 형태다 — 두 배송을 별도 카드로 나누면 같은 신청서의 오고 가는 흐름이 끊겨 보인다. 환불·취소는 회수 배송이 없어 이 카드가 통째로 서지 않는다.
+조회 전용이다. 송장 입력·상태 변경은 운영자 화면 소관이며, 여기에 입력 요소를 두면 구매자가 고칠 수 없는 값을 고칠 수 있는 것처럼 보인다.
+송장은 **상품 행마다** 있다(#599) — 한 신청서의 상품이 여러 상자로 오갈 수 있다. 서버가 같은 (택배사, 운송장)을 가진 행을 묶어 `tracking_groups` 로 싣고, 이 카드는 그 묶음을 방향별로 그리기만 한다. 추적 URL 도 서버가 배송사 템플릿으로 만든다(`tracking_url`) — 화면이 규칙을 재조립하면 주문 배송 조회와 두 벌이 된다. -->
+  <div data-if="{{claim.data?.claim?.claim_type === 'exchange' || claim.data?.claim?.claim_type === 'return'}}" class="bg-white dark:bg-gray-800 rounded-lg p-6">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4"/>
+    <!-- 섹션 제목 -->
+    <div class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <icon name="truck" class="text-base text-gray-900 dark:text-white"/>
+      <h2 class="text-base font-bold text-gray-900 dark:text-white">$t:claim.detail.shipping_title</h2>
+    </div>
+    <!-- 선교환 안내 — 새 상품을 먼저 보내고 헌 상품은 기한까지 받는다(D1·D2). 기한은 재발송이 나간 뒤에 정해지므로 없을 때는 기한 없는 문장을 쓴다. 기한을 넘기면 지난 일수를 함께 띄운다.
+끝난 신청서(완료·미회수 완료)에는 세우지 않는다 — 처리가 끝났는데 「보내 주세요」 가 남으면 고객이 무엇을 더 해야 하는지 헷갈린다(Chrome 실측 A-5). -->
+    <div data-if="{{claim.data?.claim?.is_advance_exchange === true &amp;&amp; claim.data?.claim?.is_final !== true}}" class="flex items-start gap-2 p-3 mb-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
+      <icon name="circle-info" class="text-base text-indigo-600 dark:text-indigo-400 flex-shrink-0"/>
+      <div class="min-w-0 space-y-1">
+        <p data-if="{{!!claim.data?.claim?.collection_due_date_formatted}}" class="text-sm text-indigo-800 dark:text-indigo-200">$t:claim.detail.advance_exchange_notice|date={{claim.data?.claim?.collection_due_date_formatted ?? ''}}</p>
+        <p data-if="{{!claim.data?.claim?.collection_due_date_formatted}}" class="text-sm text-indigo-800 dark:text-indigo-200">$t:claim.detail.advance_exchange_notice_no_due</p>
+        <span data-if="{{claim.data?.claim?.is_collection_overdue === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">$t:claim.detail.collection_overdue|count={{claim.data?.claim?.collection_overdue_days ?? 0}}|days={{claim.data?.claim?.collection_overdue_days ?? 0}}</span>
+      </div>
+    </div>
+    <!-- 회수 — 교환·반품 공통. 운송장마다 한 묶음이고 묶음 안에 담긴 상품 × 수량과 도착 여부를 적는다. 송장 없이 회수도착한 상품은 「송장 없이 도착」 묶음으로 따로 온다(no_tracking). -->
+    <div class="space-y-3">
+      <p class="text-sm font-semibold text-gray-900 dark:text-white">$t:claim.detail.collection_title</p>
+      <!-- 「등록 전」 은 아직 올 운송장이 있을 때만 — 모든 상품이 미회수로 끝났으면 기다릴 운송장이 없다. -->
+      <p data-if="{{(claim.data?.claim?.tracking_groups?.collection ?? []).length === 0 &amp;&amp; !(claim.data?.claim?.items ?? []).every(i => i.is_unreturned === true)}}" class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.tracking_pending</p>
+      <div data-each="group in {{claim.data?.claim?.tracking_groups?.collection ?? []}}" class="rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-1.5">
+        <div class="flex items-start justify-between gap-3">
+          <a data-if="{{!group.no_tracking &amp;&amp; !!group.tracking_url}}" href="{{group.tracking_url}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:underline break-all">
+            <span>{{group.carrier_name ?? ''}} {{group.tracking_number ?? ''}}</span>
+            <icon name="arrow-up-right-from-square" class="text-xs"/>
+          </a>
+          <span data-if="{{!group.no_tracking &amp;&amp; !group.tracking_url}}" class="text-sm text-gray-900 dark:text-white break-all">{{group.carrier_name ?? ''}} {{group.tracking_number ?? ''}}</span>
+          <span data-if="{{group.no_tracking === true}}" class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.tracking_no_tracking</span>
+          <span data-if="{{group.all_arrived === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">$t:claim.detail.tracking_arrived</span>
+          <span data-if="{{group.all_arrived !== true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">$t:claim.detail.tracking_in_transit</span>
+        </div>
+        <p data-each="row in {{group.items ?? []}}" class="text-xs text-gray-600 dark:text-gray-400">{{row.product_name ?? ''}}{{row.option_name ? ' (' + row.option_name + ')' : ''}} × {{row.quantity ?? 0}}</p>
+      </div>
+      <!-- 미회수로 완료된 상품 — 선교환에서 헌 상품이 오지 않은 채 운영자가 완료한 행(unreturned). 돈 청구는 쇼핑몰 밖에서 한다(D2). -->
+      <div data-if="{{(claim.data?.claim?.items ?? []).some(i => i.is_unreturned === true)}}" class="rounded-lg border border-red-200 dark:border-red-800 p-3 space-y-1.5">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">$t:claim.detail.unreturned_badge</span>
+        <p data-each="row in {{(claim.data?.claim?.items ?? []).filter(i => i.is_unreturned === true)}}" class="text-xs text-gray-600 dark:text-gray-400">{{row.product_name ?? ''}}{{row.product_option_name ? ' (' + row.product_option_name + ')' : ''}} × {{row.quantity ?? 0}}</p>
+      </div>
+      <!-- 전체 회수 완료 — 헤더 시각은 **모든** 상품이 회수됐을 때만 찍힌다(S2). 상품별 도착은 위 묶음이 보여 준다. -->
+      <div data-if="{{!!claim.data?.claim?.collection_completed_at_formatted}}" class="flex items-baseline justify-between gap-3">
+        <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.collection_completed_at</span>
+        <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.collection_completed_at_formatted}}</span>
+      </div>
+      <!-- 회수지 — 운영자가 배송정책에 등록한 주소를 신청 시점에 상품마다 동결한 값이다(S4). 상품마다 회수지가 다를 수 있어, 둘 이상이면 주소별로 담긴 상품을 함께 적는다. -->
+      <div data-if="{{(claim.data?.claim?.return_addresses ?? []).length === 1}}" class="flex items-start justify-between gap-3">
+        <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">$t:claim.detail.collection_address</span>
+        <span class="text-sm text-gray-900 dark:text-white text-right">({{claim.data?.claim?.return_addresses?.[0]?.address_snapshot?.zipcode ?? ''}}) {{claim.data?.claim?.return_addresses?.[0]?.address_snapshot?.address1 ?? ''}} {{claim.data?.claim?.return_addresses?.[0]?.address_snapshot?.address2 ?? ''}}</span>
+      </div>
+      <div data-if="{{(claim.data?.claim?.return_addresses ?? []).length > 1}}" class="space-y-2">
+        <div data-each="address, addressIdx in {{claim.data?.claim?.return_addresses ?? []}}" class="space-y-0.5">
+          <div class="flex items-start justify-between gap-3">
+            <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">$t:claim.detail.collection_address_n|n={{addressIdx + 1}}</span>
+            <span class="text-sm text-gray-900 dark:text-white text-right">({{address.address_snapshot?.zipcode ?? ''}}) {{address.address_snapshot?.address1 ?? ''}} {{address.address_snapshot?.address2 ?? ''}}</span>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-gray-400 text-right">{{(claim.data?.claim?.items ?? []).filter(i => (address.claim_item_ids ?? []).includes(i.id)).map(i => i.product_name).join(', ')}}</p>
+        </div>
+      </div>
+    </div>
+    <!-- 재발송 — 교환만. 재발송지는 구매자가 신청·수정에서 바꿀 수 있으므로(D14) 고친 사실을 뱃지로 남긴다. -->
+    <div data-if="{{claim.data?.claim?.claim_type === 'exchange'}}" class="space-y-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+      <div class="flex items-center gap-2">
+        <p class="text-sm font-semibold text-gray-900 dark:text-white">$t:claim.detail.redelivery_title</p>
+        <!-- 구매자가 재발송지를 바꾼 신청서 — 값이 원 배송지와 같아도 바꾼 사실 자체를 남긴다(changed_by_user). -->
+        <span data-if="{{claim.data?.claim?.redelivery_address_snapshot?.changed_by_user === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">$t:claim.detail.redelivery_changed_badge</span>
+      </div>
+      <div data-if="{{!!claim.data?.claim?.redelivery_address_snapshot}}" class="space-y-0.5">
+        <p class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.redelivery_address_snapshot?.recipient_name ?? ''}} / {{claim.data?.claim?.redelivery_address_snapshot?.phone ?? ''}}</p>
+        <!-- 해외 재발송지는 도시·주를 따로 담는다 — 뒤에 붙여야 주소가 완결된다(S2-D8). 국내 스냅샷은 두 칸이 비어 종전 모양 그대로다. -->
+        <p class="text-sm text-gray-600 dark:text-gray-400">({{claim.data?.claim?.redelivery_address_snapshot?.zipcode ?? ''}}) {{[claim.data?.claim?.redelivery_address_snapshot?.address1, claim.data?.claim?.redelivery_address_snapshot?.address2].filter(Boolean).join(' ') + [claim.data?.claim?.redelivery_address_snapshot?.city, claim.data?.claim?.redelivery_address_snapshot?.state].filter(Boolean).map(part => ', ' + part).join('')}}</p>
+      </div>
+      <p data-if="{{(claim.data?.claim?.tracking_groups?.redelivery ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.tracking_pending</p>
+      <div data-each="group in {{claim.data?.claim?.tracking_groups?.redelivery ?? []}}" class="rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-1.5">
+        <div class="flex items-start justify-between gap-3">
+          <a data-if="{{!group.no_tracking &amp;&amp; !!group.tracking_url}}" href="{{group.tracking_url}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-indigo-600 dark:text-indigo-400 hover:underline break-all">
+            <span>{{group.carrier_name ?? ''}} {{group.tracking_number ?? ''}}</span>
+            <icon name="arrow-up-right-from-square" class="text-xs"/>
+          </a>
+          <span data-if="{{!group.no_tracking &amp;&amp; !group.tracking_url}}" class="text-sm text-gray-900 dark:text-white break-all">{{group.carrier_name ?? ''}} {{group.tracking_number ?? ''}}</span>
+          <span data-if="{{group.no_tracking === true}}" class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.tracking_no_tracking</span>
+          <span data-if="{{group.all_arrived === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">$t:claim.detail.tracking_arrived</span>
+          <span data-if="{{group.all_arrived !== true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">$t:claim.detail.tracking_in_transit</span>
+        </div>
+        <p data-each="row in {{group.items ?? []}}" class="text-xs text-gray-600 dark:text-gray-400">{{row.product_name ?? ''}}{{row.option_name ? ' (' + row.option_name + ')' : ''}} × {{row.quantity ?? 0}}</p>
+      </div>
+      <!-- 전체 재발송 완료 — 모든 상품이 도착했을 때만 찍힌다(S2). -->
+      <div data-if="{{!!claim.data?.claim?.redelivered_at_formatted}}" class="flex items-baseline justify-between gap-3">
+        <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.redelivered_at</span>
+        <span class="text-sm text-gray-900 dark:text-white">{{claim.data?.claim?.redelivered_at_formatted}}</span>
+      </div>
+    </div>
+  </div>
+</partial>

@@ -31,6 +31,11 @@ class ComponentExists implements DataAwareRule, ValidationRule
 
     /**
      * 검증 수행
+     *
+     * @param  string  $attribute  검증 대상 속성명
+     * @param  mixed  $value  레이아웃 JSON 값
+     * @param  Closure  $fail  실패 콜백
+     * @return void
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -64,6 +69,9 @@ class ComponentExists implements DataAwareRule, ValidationRule
 
     /**
      * 검증 데이터 설정
+     *
+     * @param  array  $data  검증 데이터 전체
+     * @return static 자기 자신
      */
     public function setData(array $data): static
     {
@@ -74,6 +82,9 @@ class ComponentExists implements DataAwareRule, ValidationRule
 
     /**
      * 컴포넌트 매니페스트 로드 (캐싱 적용)
+     *
+     * @param  int|string  $templateId  템플릿 ID 또는 식별자
+     * @return array|null 컴포넌트 이름 Set, 매니페스트가 없거나 깨졌으면 null
      */
     private function loadComponentManifest(int|string $templateId): ?array
     {
@@ -125,6 +136,8 @@ class ComponentExists implements DataAwareRule, ValidationRule
 
     /**
      * CacheInterface 인스턴스를 lazy 조회합니다.
+     *
+     * @return CacheInterface 캐시 드라이버
      */
     private function resolveCache(): CacheInterface
     {
@@ -137,6 +150,9 @@ class ComponentExists implements DataAwareRule, ValidationRule
 
     /**
      * 매니페스트에서 컴포넌트 Set 생성
+     *
+     * @param  array  $manifest  components.json 내용
+     * @return array<string, bool> 컴포넌트 이름 => true
      */
     private function buildComponentSet(array $manifest): array
     {
@@ -174,6 +190,11 @@ class ComponentExists implements DataAwareRule, ValidationRule
 
     /**
      * components 배열을 재귀적으로 검증
+     *
+     * @param  array  $components  컴포넌트 노드 목록
+     * @param  array  $manifest  컴포넌트 이름 Set
+     * @param  Closure  $fail  실패 콜백
+     * @return void
      */
     private function validateComponents(array $components, array $manifest, Closure $fail): void
     {
@@ -195,6 +216,13 @@ class ComponentExists implements DataAwareRule, ValidationRule
                     $fail(__('validation.component.name_empty', ['index' => $index]));
 
                     return;
+                }
+
+                // 확장 컴포넌트(`확장식별자.이름`)는 템플릿 목록에 없는 것이 정상이다 — 그 확장이 제공한다.
+                // 편집기 검사는 설치된 확장 선언까지 합쳐 판정하고, 목록에 없으면(삭제된 확장·오타) 경고만 내고
+                // 저장은 허용한다(결정 C3, 2026-09-28). 이 규칙이 거부하면 같은 레이아웃이 저장 경로에서만 막힌다.
+                if (str_contains($componentName, '.')) {
+                    continue;
                 }
 
                 // 컴포넌트 존재 여부 확인

@@ -38,7 +38,7 @@ Layout Extension 시스템은 모듈/플러그인이 코어 또는 다른 확장
 그룹(출처별 하위그룹)이 표시되며, 확장 항목을 선택하면 확장 편집 모드로 진입해 확장 조각
 (extension_point=`content.components`, overlay=각 injection 의 `components`)을 일반 레이아웃과
 동등하게 시각 편집한다. 저장은 해당 확장 행(layout-extensions API)으로 적재되어 버전 관리·수정
-감지·`--layout-strategy=keep` 보존이 동작한다.
+감지·`--layout-strategy=keep` 병합(고친 부분 유지 + 새 버전 반영)이 동작한다.
 
 `inject_props` 주입은 편집할 컴포넌트 트리가 없으므로, 그 호스트 노드를 라우트/공통 레이아웃
 편집 중 선택해 **속성 모달의 "확장이 주입한 속성" 섹션**(출처 배지)에서 편집한다 — 편집 결과는
@@ -78,7 +78,36 @@ injection 또는 modals/data_sources/scripts/init_actions 보유, EP: 병합할 
 필수: 플러그인이 자기 화면을 가질 때 라우트는 plugins/{identifier}/ 네임스페이스 안에 선언
    (다른 확장이 소유한 경로를 선언하면 설치 순서에 따라 화면이 조용히 바뀐다)
 필수: 다른 확장의 화면에 UI 를 끼워 넣을 때는 확장 지점(layout_extensions) 사용
+필수: 다른 모듈·플러그인의 화면을 target_layout 으로 지목하면 그 확장을 manifest dependencies 또는 integrations 에 선언
+필수: 남의 화면에 끼우는 조각이 쓰는 전역 키는 자기 접두 또는 자기 state_contracts 이름 (아래 접두 규칙)
 ```
+
+### 대상 화면이 없을 때와 선언
+
+대상 화면이 없는 설치에서 코어는 그 조각을 **건너뛸 뿐 오류를 내지 않습니다**(아래 「템플릿 대상 판정」). 그래서 조각은 대상 확장이 없어도
+안전하지만, 그 사실이 **선언을 생략해도 된다는 뜻은 아닙니다.** 다른 모듈·플러그인이 소유한 화면을 `target_layout` 으로 지목하면 그 확장을
+`integrations`(있으면 연동, 없어도 동작) 또는 `dependencies`(없으면 동작 불가)에 선언합니다 — 선언이 없으면 운영자와 상대 확장 개발자가 그
+결합을 알 수 없고, 상대가 화면 이름을 바꾸면 조각이 조용히 사라집니다. 정적 검사 `extension-undeclared-extension-reference` 가 조각의
+`target_layout` 을 소유 확장으로 되돌려 확인합니다. 템플릿의 화면(`admin_settings` 등 코어 화면 계약)은 어느 템플릿이든 같은 이름이라
+선언 대상이 아닙니다. 선언 형식은 [플러그인 개발 — 의존성](plugin-development.md#2-의존성-dependency)에 있습니다.
+
+### 조각의 전역 상태 키 접두 규칙
+
+조각은 **남의 화면**에 끼워집니다. 그 화면도 전역 상태(`_global`)를 쓰므로, 조각이 무접두 이름(`grantTarget`, `cashReceiptForm` 등)을 쓰면 화면
+주인이나 같은 화면의 다른 조각이 같은 이름을 쓰는 순간 서로의 값을 덮습니다 — 오류 없이 화면만 틀립니다.
+
+조각이 쓰는 전역 키는 다음 중 하나여야 합니다.
+
+| 허용 | 예 |
+| --- | --- |
+| 자기 접두 + 대문자 또는 `_` | `gdprGrantTargetKey`, `ecommerceCashReceiptForm` |
+| 자기 manifest `state_contracts` 에 선언한 이름 | 쇼핑몰의 `preferredCurrency` |
+| 코어 `plugins`·`modules` 의 자기 식별자 하위 | `plugins.sirsoft-ckeditor5` |
+
+접두는 식별자의 vendor 뒤 이름에서 분류어(`pay_`, `message_`, `verification_`)를 뗀 camelCase 입니다(`sirsoft-gdpr` → `gdpr`,
+`sirsoft-pay_kginicis` → `kginicis`). 이미 관례가 있는 확장은 그 접두를 씁니다(나이스페이먼츠 `nicepay`, 토스페이먼츠 `toss`,
+비즈뿌리오 `bz`). 정적 검사 `overlay-global-key-prefix` 가 조각 마크업(`resources/extensions/*.g7.html`)을 확인합니다. 다른 확장이 읽어야 하는
+값이면 접두 대신 `state_contracts` 로 공개 계약을 선언합니다 — [전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts).
 
 ---
 
@@ -100,7 +129,7 @@ modules/
 └── vendor-module/
     └── resources/
         └── extensions/           ← 확장 정의 디렉토리
-            └── *.json            ← 확장 JSON 파일
+            └── *.g7.html         ← 확장 소스 파일 (소스 SSoT · 문서 루트 <extension>)
 ```
 
 ### 플러그인
@@ -110,7 +139,7 @@ plugins/
 └── vendor-plugin/
     └── resources/
         └── extensions/
-            └── *.json
+            └── *.g7.html
 ```
 
 ### 템플릿 오버라이드
@@ -119,9 +148,13 @@ plugins/
 templates/
 └── vendor-template/
     └── extensions/
-        └── {module-identifier}/    ← 오버라이드 대상 모듈
-            └── *.json              ← 오버라이드 JSON
+        └── {module-identifier}/    ← 오버라이드 대상 확장
+            └── *.g7.html           ← 오버라이드 소스 파일 (문서 루트 <extension>)
 ```
+
+확장 주입 fragment 를 템플릿 판본으로 대체하는 것이므로 문서 루트는 원본과 같은 `<extension>` 입니다. `<override>` 는 **레이아웃** 대체(`layouts/overrides/`) 전용 루트입니다 ([layout-markup.md](../frontend/layout-markup.md) §문서 루트).
+
+세 등록 경로(모듈 · 플러그인 · 템플릿 오버라이드)는 모두 같은 소스 선택 규약을 씁니다 — `.g7.html` 소스가 있으면 등록 시점에 메모리로 컴파일하고, 짝 마크업이 없는 `.json` 만 직접 읽습니다(`CollectsFragmentSources`).
 
 ---
 
@@ -130,6 +163,14 @@ templates/
 기존 레이아웃의 특정 컴포넌트를 찾아 UI를 주입합니다.
 
 ### JSON 스키마
+
+```html
+<extension target-layout="admin_user_form" priority="100">
+  <inject target-id="section_marketing_consent" position="append"/>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -177,6 +218,41 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 - 같은 overlay 가 중복 적용되지 않도록 매칭 결과는 확장 ID 기준으로 합집합 후 `priority` 로 재정렬된다.
 - 편집기에서 자식 라우트 레이아웃을 편집할 때, base 타겟 overlay 가 주입한 영역은 확장 출처 메타가 부여되어 확장 잠금 영역으로 표시된다(해당 overlay 자체의 편집 호스트는 base 레이아웃).
 
+### partial 재사용은 전파되지 않는다 — 여러 화면이 쓰는 카드에는 슬롯을 쓴다
+
+앞 절의 전파는 **`extends` 상속 체인**에만 해당한다. `partial` 로 마운트되는 공유 조각은
+그 체인에 들어가지 않으므로, overlay 가 겨냥한 `target_id` 노드가 partial 안에 있으면
+**그 partial 을 쓰는 다른 레이아웃에서는 주입이 일어나지 않는다.**
+
+증상이 조용하다. 카드 자체는 정상으로 뜨고 주입 블록만 빠진 채 열리며, 매칭 실패는 브라우저에
+오류도 경고도 콘솔 로그도 남기지 않는다(서버 로그에만 `Layout extension target not found` 경고가 남는다).
+두 화면을 나란히 놓고 보기 전에는 드러나지 않는다.
+
+**같은 파일을 한 화면의 여러 갈래에 include 해도 같다.** overlay 는 트리에서 `target_id` 가 일치하는 **첫 노드 하나**에만
+들어간다. `sirsoft-basic` 의 글쓰기·글 상세는 같은 조각을 게시판 유형별 갈래(basic·gallery·card) 세 곳에 include 하므로,
+그 안의 `parent_post_card`·`content_section`·`parent_post_html_content` 를 겨냥한 overlay 는 **basic 게시판에만** 들어간다.
+글쓰기에는 `board_post_form_top`·`board_post_form_bottom`, 상세에는 `board_post_header_badges` 확장점을 쓴다 — 확장점은 같은
+이름의 모든 자리를 채운다. 목록도 세 유형 파일이 한 화면에 함께 있으므로 행에는 `board_post_row_badges` 를 쓴다.
+목록 검색 줄의 `board_search_field_select` 도 세 유형 파일에 같은 이름으로 있어, 이를 겨냥한 overlay 는 basic 목록에만 들어간다.
+
+반복 행이나 여러 자리에 들어가는 조각에 **고정 `data-ref` 를 쓰지 않는다.** 자리 수(행 수 × 갈래 수)만큼 같은 DOM id 가 생긴다.
+id 가 필요하면 반복 문맥 값을 보간한다(예: `my_badge_{{extensionPointProps.context}}_{{extensionPointProps.postId}}`).
+basic 목록과 마이페이지 스크랩은 PC·모바일 두 자리라 조각이 행마다 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다.
+카드·갤러리 목록은 카드 전체를 덮는 링크(`z-10`)가 위에 있으므로, 누를 수 있어야 하는 조각은 `relative z-20` 으로 올린다.
+
+| 상황 | 방식 |
+| --- | --- |
+| 한 레이아웃(또는 그 상속 체인)에만 붙이는 주입 | overlay (`target_layout` + `target_id`) |
+| **여러 레이아웃이 partial 로 공유하는 카드**에 붙이는 주입 | partial 안에 `type: extension_point` 슬롯을 두고 `extension_point` 로 주입 |
+
+슬롯은 병합된 컴포넌트 트리를 직접 스캔하므로 그 카드가 서는 곳이면 어디든 함께 선다.
+호스트 템플릿이 슬롯을 아직 두지 않았다면, 주입 대상을 늘리기 전에 그 partial 에 슬롯을
+먼저 신설한다(내용을 복제해 화면마다 별도 주입 파일을 두면, 한쪽을 고칠 때 다른 쪽만 낡는다).
+
+overlay 를 슬롯으로 **전환**할 때는 기설치본을 함께 본다. 확장 갱신은 등록과 "적용 불가"
+정리만 하고 파일이 더 이상 선언하지 않는 대상의 행은 지우지 않으므로, 전환 뒤 구 overlay 행이
+남아 원래 화면에 블록이 **두 번** 뜬다. 구행을 지우는 업그레이드 스텝을 함께 작성한다.
+
 ### position 옵션
 
 | 값 | 설명 | 다이어그램 |
@@ -199,9 +275,87 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 | `_append` | 배열 끝에 추가 | `tabs._append: [newTab]` → 기존 tabs 뒤에 추가 |
 | `_prepend` | 배열 앞에 추가 | `tabs._prepend: [newTab]` → 기존 tabs 앞에 추가 |
 | `_merge` | 객체 병합 (shallow) | `style._merge: {color: 'red'}` → 기존 style에 병합 |
+| `_patch` | **목록 중 지목한 항목만** 교체 | `columns._patch: {by, items}` → 그 항목만 손대고 나머지는 보존 |
 | (직접 값) | 스칼라 덮어쓰기 | `disabled: true` → 기존 값 대체 |
 
+#### `_patch` — 목록에서 한 항목만 고치기
+
+목록형 prop(`columns` · `tabs` 등)에서 **한 항목만** 바꿀 때 씁니다. 이것이 없으면 확장은
+목록 전체를 복사해야 하는데, 그 복사본은 **만든 시점에 얼어붙습니다** — 호스트가 나중에
+항목을 더해도 확장의 낡은 복사본이 그것을 덮어써 조용히 지웁니다.
+
+```json
+"columns": {
+  "_patch": {
+    "by": "field",
+    "items": [{ "field": "payment_method", "width": "140px" }]
+  }
+}
+```
+
+- `by` 로 항목을 식별합니다. 값이 같은 항목에 **shallow 병합**되어 적지 않은 키는 보존됩니다.
+- `by` 값이 기존에 없으면 목록 **끝에 추가**됩니다. 이때도 항목 안의 `_append`·중첩 `_patch` 는
+  빈 대상에 적용한 결과로 풀려 들어갑니다(`{"_append": [a]}` → `[a]`) — 지시자 객체가 그대로 남지 않습니다.
+- 항목 안 `_append`·`_patch` 의 대상이 표현식 문자열이면 덮어쓰지 않고 경고 로그만 남기고 건너뜁니다.
+- 손대지 않은 항목은 그대로 남고 **순서와 개수도 보존**됩니다.
+- 형식이 어긋나면(`by` 누락 등) **원본 목록을 그대로 둡니다.** 잘못 쓴 패치가 목록을 비우면
+  그 화면이 통째로 사라지기 때문입니다.
+
+##### 여러 확장이 같은 항목을 고칠 때 — `_append` 와 중첩 `_patch`
+
+항목 안의 값을 그냥 적으면 **덮어쓰기**입니다. 그래서 확장 둘 이상이 같은 항목의 같은 키를
+쓰면 **priority 가 가장 높은 하나만 남습니다.** 이때는 값을 `{"_append": [ … ]}` 로 적어
+기존 배열 뒤에 덧붙이세요. 한 겹 더 들어가야 하면 값에 `_patch` 를 다시 씁니다.
+
+```json
+"columns": {
+  "_patch": {
+    "by": "field",
+    "items": [{
+      "field": "payment_method",
+      "cellChildren": {
+        "_patch": {
+          "by": "id",
+          "items": [{
+            "id": "payment_method_cell",
+            "children": { "_append": [ { "type": "basic", "name": "Span", "text": "…" } ] }
+          }]
+        }
+      }
+    }]
+  }
+}
+```
+
+> **호스트가 래퍼를 소유하게 하세요.** 확장이 각자 래퍼를 만들어 통째로 넣으면 서로 지웁니다.
+> 호스트 레이아웃이 래퍼와 기본 내용을 갖고 확장은 그 안에 `_append` 만 하면, 확장이 몇 개든
+> 공존합니다. 이때 확장이 지목하는 `id` 는 **공개 앵커**이므로 호스트가 함부로 바꾸면 안 됩니다.
+>
+> 실제로 결제 플러그인 3종이 주문목록 「결제수단」 칸에 각자 배지를 달았는데, 덮어쓰기 탓에
+> 하나만 남아 그 하나가 나머지 몫까지 대신 그려 주는 우회가 생겼습니다. 그 우회는 남의
+> 플러그인이 선언한 데이터소스를 참조해야 해서, 그 플러그인이 없는 사이트에서는 미정의
+> 참조가 됐습니다.
+
 #### inject_props 예시: 탭에 항목 추가
+
+```html
+<extension target-layout="admin_user_detail" priority="100">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_verification" label="$t:admin.users.form.sections.verification_info" iconName="shield"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_verification_content" data-if="{{(_global.activeUserDetailTab || query.tab || 'basic') === 'ext_verification'}}"/>
+  </inject>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -243,10 +397,30 @@ home 화면에 _user_base 타겟 overlay 가 적용됨 (슬롯·init_actions 포
 #### 주의사항
 
 - `inject_props`일 때 `components` 필드는 무시됩니다
-- 대상 prop이 표현식 문자열인 경우 `_append`/`_prepend`/`_merge` 적용이 불가하며, 경고 로그가 기록됩니다
+- 대상 prop이 표현식 문자열인 경우 `_append`/`_prepend`/`_merge`/`_patch` 적용이 불가하며, 경고 로그가 기록됩니다
 - `_append`와 `_merge` 등 여러 전략을 하나의 prop에 혼합 사용할 수 없습니다 (첫 번째 매칭 전략 우선)
+- 목록형 prop을 통째로 적어 넣지 마세요 — 그 복사본은 만든 시점에 얼어붙어, 호스트가 나중에
+  더한 항목을 조용히 지웁니다. 한 항목만 고칠 때는 `_patch` 를 쓰세요
+- 여러 확장이 같은 자리를 함께 쓸 수 있는 곳(셀 배지 등)이면 덮어쓰기 대신 `_append` 를 쓰고,
+  래퍼는 호스트가 소유하게 하세요 (위 「여러 확장이 같은 항목을 고칠 때」 참고)
 
 ### 예시: 사용자 폼에 알림 설정 추가
+
+```html
+<extension target-layout="admin_user_form" priority="100">
+  <inject target-id="section_marketing_consent" position="append">
+    <div data-ref="section_notification_settings" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.form.sections.notification_settings</h3>
+        <extension-badge type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+      </div>
+      <input type="checkbox" name="notify_post_complete" checked="{{_local.form?.notify_post_complete ?? false}}"/>
+    </div>
+  </inject>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -322,13 +496,111 @@ Extension Point는 레이아웃의 다음 섹션에서 사용할 수 있습니�
 |----------------|------|--------------------------------------|
 | `components`   | ✅   | 메인 컴포넌트 트리 (기본)            |
 | `modals`       | ✅   | 모달 내부 컴포넌트 트리 (v1.17.0+)   |
+| 반복 렌더 템플릿 | ✅ | DataGrid·CardGrid 의 셀 템플릿(`props.columns[].cellChildren`·`props.cardColumns[].cellChildren`), 확장 행·하위 행 템플릿(`props.expandChildren`·`props.subRowChildren`) (7.1.0+) |
 
 ```text
 v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 ✅ v1.17.0+: components와 modals 양쪽 모두 재귀적으로 extension_point 처리
+✅ 7.1.0+: 셀·확장 행 템플릿(props 안에 실리는 트리) 안의 extension_point 도 처리
+✅ engine-v1.73.0+: 프런트 반복 렌더러(renderItemChildren)가 셀 안 확장점을 행 컨텍스트로 그린다
+   (호스트 <div> 규칙은 DynamicRenderer 와 공용 — 그 이전 엔진은 「컴포넌트를 찾을 수 없습니다」 로 버렸다)
 ```
 
+#### 템플릿이 열어 두어야 하는 확장점
+
+번들 모듈·플러그인의 조각은 아래 확장점에 붙는다. 템플릿을 직접 만들거나 고칠 때 이 자리를 지우면 그 조각은 등록 단계에서
+빠지고 화면에는 오류 없이 그 표시만 사라진다. 이름은 바꾸지 않는다. 관리자 템플릿의 자리는
+[admin-template-contract.md](admin-template-contract.md#조각-앵커) 에 따로 정리했다.
+
+사용자 템플릿(기준 구현 `sirsoft-basic`):
+
+| 확장점 | 놓는 곳 | 붙는 확장 | 빠지면 |
+| --- | --- | --- | --- |
+| `mypage_order_payment_provider_slot` (7.1.0+) | 내 주문·비회원 주문·신청서 상세의 결제 정보 카드 | 결제 플러그인 4종(KG이니시스·NHN KCP·나이스페이먼츠·토스페이먼츠) | 가상계좌 입금 안내(계좌·금액·기한)·매출전표·영수증 링크가 보이지 않는다 |
+| `mypage_order_cash_receipt_slot` | 같은 결제 정보 카드 | 이커머스 | 현금영수증 카드가 보이지 않는다 |
+| `withdraw_warnings` (7.1.0+) | 회원 탈퇴 확인 창의 경고 목록 | 이커머스 | 「환불로 받은 마일리지도 탈퇴하면 소멸」 경고가 빠진다 |
+| `shop_checkout_cash_receipt_slot` | 주문서 결제 영역 | 이커머스 | 주문서에서 현금영수증을 신청할 수 없다 |
+| `shop_checkout_extensions` | 주문서 화면(모달 자리) | 토스페이먼츠 | 결제 실패·취소 안내 창이 뜨지 않는다 |
+| `address_search_slot` | 배송지·회원정보의 주소 입력 칸(5곳) | 다음 우편번호 | 주소 검색 단추가 없다 |
+| `html_content` | 페이지 본문·약관·개인정보 창, 게시글 본문·원글·답글, 글쓰기의 원글 미리보기 | 편집기 플러그인(CKEditor5) | 편집기 본문 서식(`ck-content`)이 빠진 채 기본 HTML 로 보인다 |
+| `html_editor` | 글쓰기 본문 입력 칸 | 편집기 플러그인(CKEditor5) | 본문이 서식 편집기 대신 기본 입력 칸으로 나온다 |
+| `identity_provider_ui:provider` | 본인인증 요구 창(`_user_base` 모달) | 본인인증 플러그인 2종(KG이니시스·NHN KCP) | 본인인증 창에 제공자 인증 단추가 없다 |
+| `user_global_overlay` | `_user_base` 끝 | GDPR | 쿠키 동의 배너가 뜨지 않는다 |
+| `user_global_footer` | `_user_base` 푸터 바로 뒤 | (번들 사용처 없음 — 확장 공용 자리) | 푸터 아래 정보 영역을 붙일 곳이 없다 |
+| `board_post_row_badges` (7.1.1+) | 글이 보이는 모든 목록의 제목 바로 뒤 — 게시판 목록 세 유형(basic 은 PC·모바일 두 자리), 홈 최근 글·게시판 요약, 인기글, 통합 검색(전체·글 탭), 회원 글·회원 프로필, 마이페이지 내 글·스크랩(PC·모바일) | (번들 사용처 없음 — 확장 공용 자리) | 글마다 표시(언어·상태 배지 등)를 붙일 곳이 없다 |
+| `board_post_header_badges` (7.1.1+) | 글 상세 제목 바로 뒤(게시판 유형 세 갈래 모두) | (번들 사용처 없음) | 상세 제목 옆 표시를 붙일 곳이 없다 |
+| `board_comment_row_badges` (7.1.1+) | 글 상세 댓글 머리 줄(작성자·시각 옆), 마이페이지 내 댓글의 원글 제목 뒤 | (번들 사용처 없음) | 댓글마다 표시를 붙일 곳이 없다 |
+| `board_post_form_top` (7.1.1+) | 글쓰기 폼 맨 위(검증 오류 상자 아래, 작성자 정보 앞) | (번들 사용처 없음) | 글쓰기에 입력칸을 더할 곳이 없다 |
+| `board_post_form_bottom` (7.1.1+) | 글쓰기 폼 맨 아래(취소·저장 단추 바로 위) | (번들 사용처 없음) | 동의 문구·부가 입력칸을 더할 곳이 없다 |
+
+- 슬롯형 확장점은 `<extension-point name="…"><default/></extension-point>` 로 둔다. 주입이 없으면 아무것도 그리지 않는다.
+- 모달 안의 목록(예: 탈퇴 경고)은 노드 id 를 겨냥하는 Overlay 가 닿지 않으므로 확장점으로 연다.
+- 표시 분기(결제수단·PG·발급 상태 등)는 주입하는 쪽이 조건으로 처리한다 — 템플릿은 자리만 둔다.
+
+##### 게시판 확장 자리 5종의 props
+
+게시판 자리는 화면마다 반복 변수 이름(`post`·`item`·`comment`)과 응답 모양이 다르다. 그래서 확장점이 **정규화한 props** 를
+넘기고, 조각은 화면을 몰라도 같은 이름으로 읽는다(`{{extensionPointProps.postId}}`).
+
+| 확장점 | props | `context` 값 |
+| --- | --- | --- |
+| `board_post_row_badges` | `post`(행 원본) · `postId` · `boardSlug` · `context` | `board_list`(목록 세 유형 공통) · `popular` · `home_recent` · `home_board_summary` · `user_posts` · `user_profile_recent` · `mypage_posts` · `mypage_scrap` · `search_all` · `search_posts` |
+| `board_post_header_badges` | `post`(상세 응답의 `data`) · `postId` · `boardSlug` · `context` | `board_show` |
+| `board_comment_row_badges` | `commentData`(행 원본) · `commentId` · `postId` · `boardSlug` · `context` | `board_show_comment` · `mypage_comments` |
+| `board_post_form_top` · `board_post_form_bottom` | `mode`(`create`·`reply`·`edit`) · `boardSlug` · `postId`(새 글은 `null`) · `board`(글쓰기 틀 응답의 게시판) | — |
+
+- 마이페이지 스크랩의 행 원본 `id` 는 스크랩 번호다. 글 번호는 `postId` 로 읽는다. 내 댓글 목록의 글 번호도 `postId` 로 읽는다.
+- 댓글 행 원본은 `comment` 가 아니라 `commentData` 다 — 화면 응답은 props 의 `comment` 키를 개발자 주석으로 보고 지운다.
+- 글쓰기 자리에 끼운 입력칸이 이름(`name`)으로 값을 쓰면 글쓰기 폼 상태(`_local.form`)에 들어가고, 저장 요청 본문에 함께 실린다.
+  서버에 저장하는 것은 게시판 모듈 훅의 몫이다(모르는 키는 저장하지 않고 무시한다).
+- 호스트는 `<div class="contents" data-extension-point="이름">` 로 렌더된다. 상자를 만들지 않으므로 제목 줄 흐름을 깨지 않고,
+  주입이 없을 때 행 높이도 그대로다. 자리를 CSS·테스트로 찾을 때는 `[data-extension-point="이름"]` 을 쓴다(검색 봇 화면의
+  HTML 에는 이 표지가 실리지 않는다).
+
+#### 셀 템플릿 안의 확장점
+
+목록의 한 칸에 확장이 표시를 덧붙여야 할 때(예: 주문 목록 결제수단 칸의 결제 플러그인 배지), 컬럼 배열을
+`inject_props` 로 통째로 덮지 말고 호스트가 그 칸에 확장점을 연다. 컬럼 배열을 덮으면 확장이 컬럼 전체의
+사본을 들고 있어야 하고, 호스트가 컬럼을 고치면 그 사본에 묻혀 화면에서 사라진다. 여러 확장이 같은 배열을
+덮으면 우선순위가 가장 높은 하나만 남는다.
+
+```html
+<column field="payment_method" header="$t:sirsoft-ecommerce.admin.order.column.payment_method">
+  <cell>
+    <div class="stack-flush">
+      <span>{{row.payment?.payment_method_label}}</span>
+      <extension-point name="admin_order_list_payment_method_badges"/>
+    </div>
+  </cell>
+</column>
+```
+
+- 셀 템플릿은 행마다 렌더되므로 주입 컴포넌트는 `row` 문맥을 그대로 읽는다(`{{my_map.data?.[row.order_number]}}`).
+- 주입 조각의 `data_sources` 는 셀이 아니라 레이아웃에 한 번 병합된다 — 행마다 다시 부르지 않는다.
+- 확장점 호스트는 빈 `<div>` 로 렌더된다. 주입이 없는 행에서도 자리를 차지하지 않도록 간격·구분선은
+  호스트 셀이 아니라 주입 컴포넌트 쪽에 둔다.
+- 여러 확장이 같은 칸에 붙으므로 주입 컴포넌트는 자기 행에서만 보이게 조건(`data-if`)을 건다.
+
 ### 레이아웃에서 Extension Point 정의
+
+```html
+<layout name="admin_user_form" version="1.0.0">
+  <div data-ref="user_form_container">
+    <extension-point name="user_form_additional_fields">
+      <prop name="readOnlyFields">
+        <item>zipcode</item>
+        <item>address</item>
+      </prop>
+      <default/>
+      <callback name="onAddressSelect">
+        <set-state target="local" form.zipcode="{{$event.zipcode}}"/>
+      </callback>
+    </extension-point>
+  </div>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -382,6 +654,14 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 
 ### 모듈에서 Extension Point에 주입
 
+```html
+<extension extension-point="user_form_additional_fields" mode="replace" priority="100">
+  <div data-ref="custom_field_section"/>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "extension_point": "user_form_additional_fields",
@@ -419,6 +699,38 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 | `prepend` | default **앞에** 추가 | `[NEW] [default...]` |
 | `replace` | default **완전 교체** | `[NEW]` (default 제거) |
 
+### 예시: 관리자 회원 목록 필터에 행 추가
+
+관리자 템플릿의 회원 목록은 상세검색 아래에 `admin_user_list_filters` 확장점을 연다. 이 자리에 붙은 행은
+「검색편집」의 기본/상세 이동 대상이 아니고(코어가 모르는 키라 `visibleFilters` 순서에 넣을 수 없다),
+상세검색을 펼쳤을 때만 보인다.
+
+```html
+<extension extension-point="admin_user_list_filters" mode="append" priority="200">
+  <div data-ref="ext_vendor_point_filter_row" class="flex flex-col gap-2 md:flex-row md:items-center">
+    <permissions>
+      <permission>vendor-module.points.read</permission>
+    </permissions>
+    <span class="block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0">$t:vendor-module.admin.user_filter.points</span>
+    <input type="number" name="vendorPointMin" class="input w-32" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('vendor-module.point_min=')) || '').slice('vendor-module.point_min='.length)}}">
+      <on type="change">
+        <!-- 값은 URL 에 직접 싣지 않는다 — 이 모듈의 핸들러가 확장 값 배열을 갱신하고, 확장점을 연 관리자 템플릿의 검색 버튼이 ext_filters[] 로 보낸다. -->
+        <sequence>
+          <action handler="vendor-module.setUserFilterExt" key="vendor-module.point_min" value="{{$event.target.value}}" current="{{_local.userFilterExtraQuery || []}}"/>
+          <set-state target="_local" userFilterExtraQuery="{{$prev}}"/>
+        </sequence>
+      </on>
+    </input>
+  </div>
+</extension>
+```
+
+- 행은 평범한 유틸 클래스로 편다. 관리자 템플릿의 필터 행 클래스(`filter-row`·`filter-label`)는 그 템플릿 CSS 에만 있어, 다른 관리자 템플릿에 주입되면 행 배치가 무너진다.
+- 값 조립 핸들러는 모듈이 자기 네임스페이스로 등록한다(`vendor-module.setUserFilterExt` — 같은 키 교체, 빈 값 제거, `{확장id}.{키}={값}` 원소). 관리자 템플릿의 `setUserFilterExt` 는 그 템플릿 화면용이라 다른 관리자 템플릿에는 없다 — 조각이 부르면 그 템플릿에서 값이 검색에 실리지 않는다. 구현 예: `modules/_bundled/sirsoft-ecommerce/resources/js/handlers/userListFilterExtHandlers.ts`.
+- 표시값은 같은 배열(`_local.userFilterExtraQuery`)에서 되읽는다 — 새로고침·뒤로가기에서 URL 의 `ext_filters[]` 로 복원된다.
+- 코어의 필터 초기화는 이 배열을 비운다.
+- 서버 쪽 검증·조건은 [훅 문서의 관리자 회원 목록 확장 필터 훅](hooks.md#관리자-회원-목록-확장-필터-훅) 을 본다.
+
 ### 확장 병합 칸 (주입 폼의 값을 템플릿 API 요청에 실어 보내기)
 
 슬롯에 주입한 폼이 입력값을 서버로 보내려면, 그 값이 **템플릿이 소유한 apiCall 의 `params.body`** 에 도달해야 한다. 그런데 확장에는 body 에 키를 추가할 수단이 없다.
@@ -442,6 +754,14 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 
 **확장 쪽** — 자기 필드를 그 칸에 setState 한다.
 
+```html
+<on type="change">
+  <set-state target="local" checkoutExtraPayload.cash_receipt_requested="{{$event.target.checked}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "change",
@@ -456,7 +776,11 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 지켜야 할 것:
 
 - 확장은 **자기 도메인 키만** 쓴다. spread 가 뒤에 오므로 템플릿의 기존 키를 덮어쓸 수 있다
-- 폼을 접거나 신청을 해제하면 칸을 `{}` 로 비운다. 남겨 두면 서버가 신청으로 오인한다
+- 폼을 접거나 신청을 해제하면 칸에서 **자기 키를 지운다.** 남겨 두면 서버가 신청으로 오인한다. `setState` 기본은 깊은 병합이라
+  `{}` 를 넣으면 아무 키도 지워지지 않는다 — `merge: "shallow"` 로 최상위 칸을 바꾸되, 값은 기존 칸에서 자기 접두 키만 걸러 낸
+  객체로 만든다(다른 확장의 키 보존). 예: `Object.fromEntries(Object.entries(_local.checkoutExtraPayload ?? {}).filter(e => !e[0].startsWith('cash_receipt_')))`
+- 칸의 주인은 호스트다 — 호스트는 자기 사정으로 칸을 통째로 갈아끼울 수 있다(결제수단 전환 등). 그러니 확장의 **표시 상태를 자기 스크래치 키만으로 파생하지 않는다.** 호스트가 칸을 비워도 그 키는 남아 있어, 화면은 신청 켜짐인데 제출 내용은 비어 있는 상태가 만들어진다. 표시·렌더 게이트는 자기 키와 **칸의 값을 함께** 보고 판정하고, 다시 신청할 때의 기본값도 스크래치가 아니라 칸에서 읽는다
+- 표시 게이트와 입력 영역 게이트가 나뉘어 있으면 **두 판정식이 같은지** 테스트로 고정한다. 한쪽만 열리면 빈 칸이 뜨거나 보이지 않는 값이 제출된다
 - 템플릿이 소유한 필드(예: 환불계좌)는 칸을 경유하지 않고 body 에 직접 기재한다
 - body 를 통짜 표현식으로 전환할 때는 **전환 전후 산출값이 동일한지** 회귀 테스트로 고정한다 (`DataBindingEngine.evaluateExpression` 으로 실제 평가)
 
@@ -464,7 +788,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 
 | 칸 이름 | 위치 | 소비처 |
 |---------|------|--------|
-| `_local.checkoutExtraPayload` | `sirsoft-basic` 주문서 (`_checkout_summary.json`) | 주문 생성 `POST /user/orders` |
+| `_local.checkoutExtraPayload` | `sirsoft-basic` 주문서 (`_checkout_summary.g7.html`) | 주문 생성 `POST /user/orders` |
 
 ---
 
@@ -475,19 +799,28 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 ### 디렉토리 구조
 
 ```
-templates/_bundled/sirsoft-admin_basic/
+templates/_bundled/sirsoft-basic/
 └── extensions/
-    └── sirsoft-board/                    ← 오버라이드 대상 모듈
-        └── user-notification-settings.json   ← 오버라이드 파일
+    └── sirsoft-daum_postcode/            ← 오버라이드 대상 확장
+        └── user-address-search.g7.html   ← 오버라이드 파일 (소스 SSoT)
 ```
 
-### 오버라이드 파일명 규칙
+### 오버라이드 매칭 규칙
 
-모듈의 원본 확장 파일명과 **동일한 이름**을 사용합니다.
+오버라이드는 **파일명으로 짝지어지지 않습니다**. `registerTemplateOverride()` 가 쓰는 키는 다음 두 가지입니다.
+
+| 키 | 출처 |
+| --- | --- |
+| `override_target` | 상위 **디렉토리명** (= 대상 확장 식별자) |
+| `target_name` | 파일 내용의 `extension_point` 또는 `target_layout` |
+
+파일명은 가독성 관례일 뿐이라 원본과 달라도 됩니다. 소스 SSoT 는 `.g7.html`, 문서 루트는 원본과 같은 `<extension>` 입니다.
 
 ```
-모듈 원본:    modules/_bundled/sirsoft-board/resources/extensions/user-notification-settings.json
-템플릿 오버라이드: templates/_bundled/sirsoft-admin_basic/extensions/sirsoft-board/user-notification-settings.json
+확장 원본:      plugins/_bundled/sirsoft-daum_postcode/resources/extensions/ecommerce-address-search.g7.html
+                (extension_point: address_search_slot, priority 100)
+템플릿 오버라이드: templates/_bundled/sirsoft-basic/extensions/sirsoft-daum_postcode/user-address-search.g7.html
+                (같은 extension_point, priority 50 — 파일명은 다름)
 ```
 
 ### 오버라이드 우선순위
@@ -501,6 +834,16 @@ templates/_bundled/sirsoft-admin_basic/
 ### 오버라이드 예시
 
 모듈의 기본 확장을 템플릿에서 스타일 변경:
+
+```html
+<extension target-layout="admin_user_form" priority="100">
+  <inject target-id="section_marketing_consent" position="append">
+    <div data-ref="section_notification_settings" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-6 mb-6"/>
+  </inject>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -532,19 +875,45 @@ templates/_bundled/sirsoft-admin_basic/
 
 ### 활성화 시
 
-1. `resources/extensions/*.json` 파일 스캔
-2. **대상 템플릿 적용 가능 여부 판별** (아래 "템플릿 대상 판정" 참조)
-3. `template_layout_extensions` 테이블에 등록 (또는 기존 레코드 복원)
-4. 레이아웃 캐시 무효화
+1. `resources/extensions/` 스캔 — `.g7.html` 소스 우선(등록 시점 메모리 컴파일), 짝 마크업이 없는 `.json` 은 직접 읽음
+2. **템플릿과 무관하게 컴파일** — 이름은 태그 표기 규칙, 종류는 `data-type` 으로 정해지므로 어느 템플릿에 붙든 산출이 같다(JSON 조각과 같음). 그 템플릿에 해당 컴포넌트가 있는지는 렌더러가 판정한다(없으면 그리지 않는다). 그래서 조각은 **한 번만** 읽고 그 결과를 모든 템플릿에 쓴다. 읽지 못한 조각(마크업 오류·JSON 형식 오류)은 그 파일만 건너뛰고, 한 요청 안에서 **파일마다 ERROR 한 줄**(소유 확장·원인의 행·열)로 알린다 — 템플릿 수만큼 되풀이하지 않는다. 파일을 고치면 다음 읽기에서 다시 컴파일된다
+3. **대상 템플릿 적용 가능 여부 판별** (아래 "템플릿 대상 판정" 참조)
+4. `template_layout_extensions` 테이블에 등록 (또는 기존 레코드 복원 — 붙을 자리가 있는 활성 템플릿의 행만) — 행의 고유 키는 대상 5축 + **`fragment_key`**
+5. 활성 확장 전부의 조각을 모든 활성 템플릿에 **다시 등록**(멱등) — 이 확장이 가져온 호스트 레이아웃을 겨냥하던 다른 확장의 조각이 이제 붙는다
+6. 레이아웃 캐시 무효화
+
+### 조각 식별자 `fragment_key`
+
+`fragment_key` 는 조각 소스 파일의 기본 이름에서 `.g7.html`/`.json` 을 뗀 문자열이다(`admin-user-currency-field.g7.html` → `admin-user-currency-field`). 같은 확장이 **같은 대상에 조각을 둘** 보낼 수 있으므로(예: 회원 폼에 통화 필드와 배송 국가 필드) DB 행은 대상만으로 갈리지 않고, 이 키가 행을 가른다. 짝(`x.g7.html`·`x.json`)은 같은 논리 조각이라 같은 키다. 관리자 레이아웃 편집기의 확장 목록은 대상 이름 아래 이 키를 작게 표시해 같은 대상의 두 행을 구분한다.
+
+확장이 `LayoutExtensionService::registerExtension()` 을 직접 부르는 자리는 여섯 번째 인자로 이 키를 넘긴다. 업데이트 뒤 조각 재등록은 코어 업데이트 절차가 하므로(켜진 템플릿 가운데 붙을 자리가 있는 곳에만) 확장이 업데이트 완료 훅에서 조각을 따로 다시 등록할 필요는 없다 — 그렇게 하면 꺼 둔 템플릿에까지 행을 만들기 쉽다. 넘기지 않으면 같은 대상의 기존 행이 하나일 때 그 키를 잇고, 둘 이상이면 어느 조각인지 알 수 없어 처리하지 않는다(경고 로그).
+
+#### 7.0 에서 올라온 조각 행
+
+7.0.x 의 행은 대상 단위로 하나였고, 이 키를 더할 때 기존 행은 대상 이름으로 채워졌다. 코어 7.1.0 업데이트는 그 행을 소스 파일 키로 옮긴다 — 같은 대상을 겨냥한 파일이 하나면 그 파일 키로, 여럿이면 등록 당시 원본 해시가 같은 파일의 키로 옮긴다. 이미 파일 키 행이 있으면 운영자가 고친 쪽을 남긴다. 템플릿 오버라이드(`templates/{식별자}/extensions/{대상}/`) 행도 같은 규칙이다. 어느 조각이었는지 정할 수 없는 고친 행은 손대지 않고 업데이트 기록에 경고로 남기므로, 운영자가 레이아웃 편집기에서 확인해 정리한다.
+
+#### 편집기에서 연 7.0 조각 행
+
+7.0 은 조각을 모든 활성 템플릿에 등록해, 그 템플릿의 컴포넌트 목록에 없는 컴포넌트를 쓴 행이 남아 있을 수 있다. 레이아웃 편집기는 그런 행을 저장할 수 있도록 **저장본에 이미 있던** 목록 밖 템플릿 컴포넌트를 그 개수까지 허용하고 경고(`template_component_kept`)로 알린다. 새로 적은 목록 밖 컴포넌트는 종전대로 오류(`component_not_in_registry`)다. 그런 행이 붙을 자리가 없는 템플릿에 있으면 다음 동기화가 정리한다(아래 「템플릿 대상 판정」).
 
 ### 템플릿 대상 판정
 
-모듈/플러그인 확장은 admin·user 등 모든 활성 템플릿에 동기화되지만, 확장이 **대상으로 하는 레이아웃이 실제 존재하는 템플릿에만 등록**된다.
+모듈/플러그인 확장은 admin·user 등 모든 활성 템플릿에 동기화되지만, 확장이 **대상으로 하는 레이아웃이 실제 존재하는 템플릿에만 등록**된다. 확장 활성화·템플릿 활성화·확장 갱신 세 경로가 모두 같은 판정을 거친다.
 
-- **Overlay**: `target_layout` 이 그 템플릿에 레이아웃으로 존재해야 한다.
+- **Overlay**: `target_layout` 이 그 템플릿에 레이아웃으로 존재해야 한다. 모듈 레이아웃은 `{모듈}.{layout_name}` 으로 저장되므로 논리 이름(`layout_name`)으로 대조한다.
 - **Extension Point**: `extension_point`(확장점명)이 그 템플릿의 어느 레이아웃 `content` 에 `type: extension_point` 노드로 정의되어 있어야 한다.
 
-판정은 `RefreshesLayoutExtensions` trait 이 `LayoutExtensionService::isExtensionApplicableToTemplate()` 로 수행한다. 대상이 없는 템플릿(예: admin 레이아웃 대상 확장 ↔ user 템플릿)에는 등록하지 않으며, 과거 무차별 등록으로 잘못 생성된 행은 다음 동기화 시 `removeInapplicableExtension()` 으로 정리(soft delete)된다.
+판정은 `LayoutExtensionService::isExtensionApplicableToTemplate()` 이 수행한다. 대상이 없는 템플릿(예: admin 레이아웃 대상 확장 ↔ user 템플릿)에는 등록하지 않으며, 과거 무차별 등록으로 잘못 생성된 행은 다음 동기화 시 `removeInapplicableExtension()` 으로 정리(soft delete)되고, 소스 디렉토리에서 사라진 조각의 행도 같은 동기화가 정리한다. 호스트 레이아웃이 나중에 설치되는 경우는 확장 활성화·업데이트가 활성 확장 전부의 조각을 전 템플릿에 다시 등록해 메운다.
+
+**재활성화 복원**: 확장을 다시 켜면 비활성화 때 숨긴 행 가운데 **템플릿이 켜져 있고 그 템플릿에 붙을 자리가 있는 행만** 되살린다. 대상 부재로 일부러 숨긴 행(예: 관리자 화면 조각 ↔ 사용자 템플릿)과 꺼진 템플릿의 행은 숨긴 시각 그대로 둔다 — 재활성화마다 되살았다가 다시 숨겨지지 않는다. 운영자가 고친 본문은 행과 함께 그대로 돌아온다. 꺼진 템플릿에 남은 행은 그 템플릿을 켤 때의 동기화가 정리한다.
+
+**화면에 실제로 적용될 행**: 같은 대상(오버레이의 화면 · 확장점)에 붙은 행 가운데 화면에 적용될 행은 한 판정이 정한다 — ① 출처가 꺼진 행은 빠진다(템플릿 오버라이드는 오버라이드 **대상** 확장이 켜져 있어야 한다) ② 대상별로 호환 오버라이드가 있으면 첫 호환 오버라이드만 남고 그 대상의 원본 조각은 가려진다 ③ 버전이 맞지 않는 오버라이드뿐이면 오버라이드 대신 원본 조각이 그 자리를 채운다. 오버레이와 확장점이 같은 판정을 쓰므로 확장점도 비호환 오버라이드 때문에 빈 자리가 되지 않는다. 관리자 레이아웃 편집기의 확장 트리도 같은 판정으로 보여 주므로, 트리에 있는 항목이 곧 화면에 나오는 항목이다(대상 확장을 끈 오버라이드는 트리에서 빠졌다가, 켜면 다시 나타난다).
+
+설치본 전량의 정합성은 `php artisan layout:check-installed` 로 점검한다 — 행마다 역변환→프로덕션 컴파일→왕복 대조에 더해 부적합 등록·소실·고아·**읽기 실패** 조각을 보고하고, 하나라도 있으면 종료 코드 1 이다. 읽지 못한 조각 소스는 템플릿 수와 무관하게 출처당 1행(`unreadable`, 원인의 행·열 포함)이다. 꺼진 템플릿은 켤 때 등록되므로 소실로 세지 않는다. 플러그인 사용자 화면이 어느 사용자 템플릿 라우트에도 연결되지 않았으면 정보로 함께 보여 준다(종료 코드에는 반영하지 않는다 — [플러그인 개발](plugin-development.md#플러그인-사용자-화면과-라우트) 참조).
+
+업데이트 백업(이전 판)의 조각을 읽지 못하면 그 조각만 비교 기준 없이 진행하고, 업데이트 한 번에 WARNING 한 줄로 못 읽은 파일과 원인을 모아 알린다.
+
+조각 원본이 `{}` 인데 저장본이 `[]` 로 굳은 행(7.1.0 까지 편집기 저장·버전 복원·`.json` 단독 조각 등록이 연관 배열로 읽어 다시 쓴 결과)은 동기화로는 고쳐지지 않는다 — 동기화기는 `{}`·`[]` 를 같은 문서로 본다. `php artisan layout:repair-empty-objects` 로 레이아웃·확장 조각·두 버전 테이블을 원본 기준으로 확인하고(기본 미리보기), `--apply` 로 그 자리만 `{}` 로 되돌린다. 노드 목록은 `id` 로 짝을 맞추므로 운영자가 끼워 넣은 노드나 고친 값은 그대로 남는다.
 
 ### 비활성화 시
 
@@ -574,6 +943,14 @@ sirsoft-board를 오버라이드하는 템플릿 확장도 숨김
 - 낮을수록 먼저 렌더링
 - 같은 위치에 여러 확장이 있을 경우 순서 결정
 
+```html
+<extension target-layout="admin_user_form" priority="50">
+  <inject target-id="target_node" position="append_child">…</inject>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "admin_user_form",
@@ -596,6 +973,14 @@ sirsoft-board를 오버라이드하는 템플릿 확장도 숨김
 ## 데이터 소스 병합
 
 확장에서 정의한 `data_sources`는 호스트 레이아웃의 데이터 소스에 병합됩니다.
+
+```html
+<extension target-layout="admin_user_form">
+  <data-source id="notification_settings" type="api" method="GET" endpoint="/api/modules/sirsoft-board/admin/users/{{route.id}}/notification-settings" :auto_fetch="true" :auth_required="true"/>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -628,6 +1013,16 @@ Extension Point의 children으로 주입된 인라인 Modal(`show` prop 기반)�
 
 ### Extension JSON에서 modals 정의
 
+```html
+<extension extension-point="shop_checkout_extensions" priority="100">
+  <modal>
+    <modal data-ref="payment_error_modal" title="$t:plugin.payment_error_title" size="small"/>
+  </modal>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "extension_point": "shop_checkout_extensions",
@@ -657,6 +1052,14 @@ G7Core?.modal?.open?.('payment_error_modal');
 ```
 
 또는 레이아웃 JSON 액션에서:
+
+```html
+<on type="click">
+  <open-modal target="payment_error_modal"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -698,6 +1101,16 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 
 ### 예시: Overlay에서 computed와 state 추가
 
+```html
+<extension target-layout="admin_user_detail" priority="100">
+  <modal>
+    <modal data-ref="ext_verification_modal" title="인증 이력"/>
+  </modal>
+</extension>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "target_layout": "admin_user_detail",
@@ -705,7 +1118,7 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
   "computed": {
     "verificationStatus": "{{user?.data?.identity_verified ? 'verified' : 'pending'}}"
   },
-  "state": {
+  "initLocal": {
     "showVerificationHistory": false
   },
   "modals": [
@@ -734,7 +1147,8 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 | 구분 | 레이아웃 오버라이드 | 확장 오버라이드 |
 |------|-------------------|---------------|
 | 대상 | 모듈이 등록한 완전한 레이아웃 | 확장 지점/Overlay로 주입된 UI |
-| 위치 | `templates/{t}/layouts/overrides/{module}/*.json` | `templates/{t}/extensions/{module}/*.json` |
+| 위치 | `templates/{t}/layouts/overrides/{module}/*.g7.html` | `templates/{t}/extensions/{module}/*.g7.html` |
+| 문서 루트 | `<override>` | `<extension>` |
 | DB 테이블 | `template_layouts` | `template_layout_extensions` |
 | 해석 서비스 | `LayoutResolverService` | `LayoutExtensionService` |
 | version_constraint | 지원 | 지원 |
@@ -757,7 +1171,7 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 
 이는 관리자가 "저장은 되지만 화면에 반영되지 않는" 가려진 확장 행을 편집하는 것을 막기 위함이다. 트리에는 항상 해당 템플릿에서 실제로 적용되는 확장(템플릿 오버라이드 + 오버라이드되지 않은 모듈/플러그인 확장)만 표시된다.
 
-해석 로직은 `LayoutExtensionRepository::resolveOverrides()` 단일 출처를 사용하며, 렌더링 경로(`getResolvedExtensionPoints` / `getResolvedOverlays`)와 편집 트리(`getResolvedByTemplateId`)가 동일한 가시성 기준을 공유한다.
+해석 로직은 `LayoutExtensionService::resolveApplicableExtensions()` 단일 출처를 사용하며, 렌더링 경로(확장점·오버레이)와 편집 트리가 동일한 가시성 기준을 공유한다 — 출처(오버라이드는 그 대상 확장)가 꺼진 행은 빠지고, 버전 비호환 오버라이드만 있는 대상은 원본 확장이 대신 쓰인다(「템플릿 대상 판정」 절 참조).
 
 | 메서드 | 라우트 |
 | ------ | ------ |
@@ -775,14 +1189,15 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 
 ### 사용자 수정 감지 (`original_content_hash`)
 
-`template_layout_extensions` 의 `original_content_hash` / `original_content_size` 컬럼은 모듈/플러그인이 등록한 원본 확장 콘텐츠의 정규화 해시를 보존한다. 관리자가 확장을 편집해도 이 원본 해시는 변경되지 않는다 — 현재 `content` 해시와 원본 해시를 비교하여 "사용자가 수정한 확장"을 판별한다.
+`template_layout_extensions` 의 `original_content`(원본 본문 — `keep` 병합의 기준, API 응답에서 숨김) / `original_content_hash` / `original_content_size` 컬럼은 모듈/플러그인이 등록한 원본 확장 콘텐츠의 정규화 해시를 보존한다. 관리자가 확장을 편집해도 이 원본 해시는 변경되지 않는다 — 현재 `content` 해시와 원본 해시를 비교하여 "사용자가 수정한 확장"을 판별한다.
 
 ### 모듈/플러그인 업데이트 시 충돌 전략
 
 `module:update` / `plugin:update` 의 `--layout-strategy` 옵션이 확장에도 적용된다 (일반 레이아웃과 동일한 수준):
 
 - `overwrite` (기본): 파일 내용으로 확장 `content` 를 무조건 덮어쓴다. 관리자가 편집한 확장이 있으면 업데이트 전 경고를 출력한다.
-- `keep`: 관리자가 편집한 확장(`original_content_hash` 불일치)은 `content`/`priority` 갱신을 건너뛰고 `is_active` 만 갱신한다. 사용자 수정분이 보존된다.
+- `keep`: 관리자가 편집한 확장 조각에도 일반 레이아웃과 같은 3자 병합을 쓴다 — 기준은 `original_content`(등록 당시 원본), 고친 부분은 운영자 것, 손대지 않은 부분은 새 버전, 겹치면 운영자 것 유지. 결과는 업데이트 보고의 `kind: extension` 행으로 남는다(규칙: [extension-update-system.md §10](extension-update-system.md#10-레이아웃-충돌-전략-3종-공통)).
+- 다른 모듈·플러그인을 켜거나 끄면 확장 조각이 다시 등록되는데, 이때도 `keep` 병합을 써서 **관리자가 고친 조각이 원본으로 돌아가지 않는다**.
 
 ### 미리보기
 
@@ -863,8 +1278,8 @@ php artisan cache:clear
 
 **확인 사항**:
 1. 템플릿 오버라이드 파일 경로 확인
-   - `templates/{template}/extensions/{module-identifier}/{filename}.json`
-2. 파일명이 원본과 동일한지 확인
+   - `templates/{template}/extensions/{module-identifier}/{filename}.{g7.html,json}`
+2. 디렉토리명이 대상 확장 식별자와 일치하는지, 내용의 `extension_point`/`target_layout` 이 원본과 같은지 확인
 3. `template_layout_extensions` 테이블에서 `source_type = 'template'` 레코드 확인
 
 ### 모듈 비활성화 후에도 확장 표시됨

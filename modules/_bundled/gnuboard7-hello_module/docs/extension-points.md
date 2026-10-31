@@ -5,11 +5,12 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 1종 / 호출 지점 1곳. 이 중 1종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
+발행 훅 2종 / 호출 지점 2곳. 이 중 2종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `gnuboard7-hello_module.memo.created` | action | — | `src/Services/MemoService.php:62` |
+| `gnuboard7-hello_module.memo.created` | action | — | `src/Services/MemoService.php:69` |
+| `gnuboard7-hello_module.memo.title.filter` | filter | — | `src/Services/MemoService.php:64` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -107,8 +108,8 @@ _등록하는 스케줄이 없습니다._
 <!-- @intent START -->
 없습니다. 샘플에는 시간 축 동작이 없습니다.
 
-스케줄 선언 형태(`command` · `schedule` · `description` · `enabled_config`)는 실제로 스케줄을
-쓰는 확장의 문서를 참고합니다.
+스케줄 선언 형태(7.2.0 — `name` · `label` · `description` · `type` · `expression` · `enabled_condition` 등)는 [모듈 스케줄 문서](../../../../docs/extension/module-schedules.md)와 실제로 스케줄을
+쓰는 확장의 문서를 참고합니다. 옛 형식(`command` · `schedule` · `enabled_config`)도 받아 새 형식으로 바꿔 등록하지만 새 확장은 새 형식으로 씁니다. 필수 키(`name` 과 `expression`/`schedule` 중 하나)가 빠진 항목은 검증에서 건너뛰고 로그에 경고를 남깁니다.
 <!-- @intent END -->
 
 ## 알림 정의

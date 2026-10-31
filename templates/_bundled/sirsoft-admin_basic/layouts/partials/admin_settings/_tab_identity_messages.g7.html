@@ -1,0 +1,27 @@
+<!-- 본인인증 탭의 **메시지** 하위 구획 — 7.1.0 부터 안내 상자 하나만 남는다.
+  본인인증 메일 문구는 알림 정의(category=identity)가 되어 「환경설정 > 알림 설정」의 분류 「본인인증」에서 편집·
+  정책별 문구 추가·삭제·기본값 복원을 한다(채널 토글·발송 로그를 함께 쓰기 위해서다). 운영자가 옛 자리로 찾아와도
+  길을 잃지 않도록 그 화면으로 가는 링크를 둔다 — 링크는 분류 칩까지 미리 골라 둔 주소다. -->
+<partial description="환경설정 본인인증 메시지 서브탭 — 알림 설정(분류: 본인인증)으로 옮겨졌다는 안내와 이동 링크">
+  <div data-ref="identity_section_messages" class="scroll-mt-44 space-y-6">
+    <div class="section-header">
+      <h3>$t:admin.settings.identity.messages.title</h3>
+    </div>
+    <div data-ref="identity_messages_moved_notice" class="admin-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p class="text-body">$t:admin.settings.identity.messages.moved_notice.body</p>
+      <a data-ref="identity_messages_moved_link" href="/admin/settings?tab=notification_definitions&amp;category=identity" class="flex-shrink-0 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300">
+        <on type="click">
+          <!-- 같은 화면 안 이동이라 새로고침 없이 탭·분류만 바꾼다 — 알림 설정 탭이 분류 「본인인증」 으로 열린다. -->
+          <sequence>
+            <set-state target="global" activeSettingsTab="notification_definitions"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 본인인증 탭의 쿼리를 알림 설정 탭이 물려받으면 엉뚱한 분류·쪽이 열린다. 탭과 분류만 명시해 연다(설정 화면 탭 전환과 같은 규칙). -->
+            <navigate path="/admin/settings">
+              <query tab="notification_definitions" category="identity"/>
+            </navigate>
+          </sequence>
+        </on>
+        $t:admin.settings.identity.messages.moved_notice.link
+      </a>
+    </div>
+  </div>
+</partial>

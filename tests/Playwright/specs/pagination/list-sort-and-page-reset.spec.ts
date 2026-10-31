@@ -31,6 +31,16 @@ async function gotoAdmin(page: Page, path: string): Promise<void> {
   await page.goto(path);
   await page.waitForLoadState('domcontentloaded');
   await page.waitForSelector('table tbody tr, [data-testid="empty-state"]', { timeout: 20000 });
+  // 목록 데이터소스는 progressive 라 표가 **데이터보다 먼저** 빈 상태 행으로 그려진다. 그 행도
+  // `tbody tr` 이므로 위 대기만으로는 데이터 도착을 보장하지 못한다 — 같은 화면이 부가 데이터소스
+  // (예: 회원관리 필터의 역할 목록, #705)를 함께 부르면 응답이 늦어져 빈 표를 판정하게 된다.
+  // 실제 데이터 행(빈 상태 문구가 아닌 행)이 뜰 때까지 기다린다.
+  await page
+    .waitForFunction(() => {
+      const row = document.querySelector('table tbody tr');
+      return !!row && !/데이터가 없습니다|No data/.test(row.textContent ?? '');
+    }, null, { timeout: 20000 })
+    .catch(() => undefined);
   await page.waitForTimeout(800);
 }
 
@@ -50,6 +60,8 @@ async function activeSortHeaderIndex(page: Page): Promise<number> {
 }
 
 test.describe('목록 정렬 조작의 표시·요청·페이지 정합', () => {
+  // @scenario case=user_header_sort
+  // @effects header_sort_targets_clicked_column, sort_change_resets_page
   test('사용자 관리: 다른 컬럼 헤더를 누르면 그 컬럼 기준으로 정렬되고 첫 페이지로 돌아간다', async ({ page }) => {
     const token = await issueToken(['core.users.read']);
     await authenticatePage(page, token);
@@ -87,6 +99,8 @@ test.describe('목록 정렬 조작의 표시·요청·페이지 정합', () => 
     expect(await page.locator('table tbody tr').count()).toBeGreaterThan(0);
   });
 
+  // @scenario case=notification_sort_select
+  // @effects screen_sort_options_all_succeed
   test('알림 발송 이력: 정렬 셀렉트가 제공하는 모든 옵션이 오류 없이 목록을 반환한다', async ({ page }) => {
     const token = await issueToken(['core.notification-logs.read']);
     await authenticatePage(page, token);
@@ -119,8 +133,10 @@ test.describe('목록 정렬 조작의 표시·요청·페이지 정합', () => 
     }
   });
 
+  // @scenario case=coupon_header_no_client_sort
+  // @effects header_sort_targets_clicked_column
   test('쿠폰 목록: 서버 페이지네이션 화면의 헤더 클릭이 현재 페이지만 정렬하지 않는다 (#492 D-18)', async ({ page }) => {
-    const token = await issueToken(['sirsoft-ecommerce.coupons.read']);
+    const token = await issueToken(['sirsoft-ecommerce.promotion-coupon.read']);
     await authenticatePage(page, token);
 
     await gotoAdmin(page, '/admin/ecommerce/promotion-coupons?per_page=10&page=1');
@@ -150,8 +166,10 @@ test.describe('목록 정렬 조작의 표시·요청·페이지 정합', () => 
     expect(requests, '정렬 요청을 낼 수 없는 화면이므로 요청도 없어야 한다').toEqual([]);
   });
 
+  // @scenario case=coupon_sort_select_valid_period
+  // @effects screen_sort_options_all_succeed
   test('쿠폰 목록: 정렬 셀렉트의 유효기간 옵션이 422 없이 목록을 반환한다 (#492 D-19)', async ({ page }) => {
-    const token = await issueToken(['sirsoft-ecommerce.coupons.read']);
+    const token = await issueToken(['sirsoft-ecommerce.promotion-coupon.read']);
     await authenticatePage(page, token);
 
     for (const order of ['asc', 'desc'] as const) {
@@ -170,6 +188,8 @@ test.describe('목록 정렬 조작의 표시·요청·페이지 정합', () => 
     }
   });
 
+  // @scenario case=order_sort_shipped_at
+  // @effects screen_sort_options_all_succeed
   test('주문 목록: 발송일 정렬(관계 테이블 컬럼)이 422 없이 목록을 반환한다 (#492 D-19)', async ({ page }) => {
     const token = await issueToken(['sirsoft-ecommerce.orders.read']);
     await authenticatePage(page, token);
@@ -194,6 +214,8 @@ test.describe('목록 정렬 조작의 표시·요청·페이지 정합', () => 
     }
   });
 
+  // @scenario case=menu_api_sort_only
+  // @effects screen_sort_options_all_succeed
   test('메뉴 목록 API: 필터 없이 정렬만 줘도 순서가 반영된다 (#492 D-22)', async ({ page }) => {
     const token = await issueToken(['core.menus.read']);
     await authenticatePage(page, token);
@@ -224,8 +246,10 @@ test.describe('목록 정렬 조작의 표시·요청·페이지 정합', () => 
     expect(desc.slice().reverse()).toEqual(asc);
   });
 
+  // @scenario case=coupon_back_keeps_filter_controls
+  // @effects list_filter_controls_restored_on_back
   test('쿠폰 목록: 상세 진입 후 뒤로가기로 복귀해도 필터 컨트롤이 URL 과 일치한다 (#492 D-20)', async ({ page }) => {
-    const token = await issueToken(['sirsoft-ecommerce.coupons.read']);
+    const token = await issueToken(['sirsoft-ecommerce.promotion-coupon.read']);
     await authenticatePage(page, token);
 
     // 정렬·페이지를 함께 실어 라우트 진입 시드와 initLocal 동기화가 겹치는 조건을 만든다.

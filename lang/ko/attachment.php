@@ -28,6 +28,8 @@ return [
         'file_invalid' => '유효한 파일이 아닙니다.',
         'file_max' => '파일 크기는 :maxMB를 초과할 수 없습니다.',
         'file_extension_invalid' => '허용되지 않는 파일 형식입니다. 허용 형식: :extensions',
+        'file_mimetype_invalid' => '파일 내용이 허용된 형식과 일치하지 않습니다. 허용 형식: :extensions',
+        'file_empty' => '빈 파일(0바이트)은 올릴 수 없습니다.',
         'files_required' => '파일을 선택해주세요.',
         'files_array' => '파일 형식이 올바르지 않습니다.',
         'files_min' => '최소 1개 이상의 파일을 선택해주세요.',
@@ -64,4 +66,13 @@ return [
     'access_denied' => '이 첨부파일에 대한 접근 권한이 없습니다.',
     'update_denied' => '이 첨부파일에 대한 수정 권한이 없습니다.',
     'delete_denied' => '이 첨부파일에 대한 삭제 권한이 없습니다.',
+    // `attachments:prune-orphans` 명령 출력
+    'console' => [
+        'prune_orphans' => [
+            'disabled' => '고아 첨부 자동 정리가 꺼져 있어 실행하지 않았습니다. (upload.orphan_cleanup_enabled = false)',
+            'retention_below_minimum' => '고아 첨부 보존기간이 1일 미만이어서 정리를 수행하지 않았습니다.',
+            'dry_run' => '보존기간(:days일) 경과 고아 첨부: :count건',
+            'done' => '보존기간(:days일) 경과 고아 첨부 :scanned건 중 :deleted건을 삭제했습니다. (실패 :failed건)',
+        ],
+    ],
 ];

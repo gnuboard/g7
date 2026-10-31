@@ -206,6 +206,13 @@ trait PaginatesWithDeferredJoin
 
         $outer->whereIn($qualifiedKey, $ids);
 
+        // select 목록을 **가장 먼저** 확정한다. `withCount()`/`addSelect()` 는 select 가 아직
+        // 비어 있으면 `테이블.*` 를 먼저 깔아 놓는데(Eloquent 규약), 그러면 마지막 `get($columns)`
+        // 가 `onceWithColumns()` 에서 무시되어 프루닝이 조용히 사문화된다 — 집계나 상관 서브쿼리를
+        // 하나라도 붙인 목록은 전 컬럼을 읽게 된다. 여기서 먼저 select 를 세우면 이후의
+        // addSelect 는 이 목록에 덧붙는다.
+        $outer->select($columns);
+
         // 결과 집합을 좁히지 않는 조인/집계(최근 댓글 서브쿼리, 상관 COUNT 등)는 여기서만
         // 붙인다. inner 에 두면 건너뛸 행 전체에 대해 실행되므로 OFFSET 이 깊어질수록 그
         // 비용이 그대로 누적된다. whereIn 뒤에 적용하므로 이번 페이지 건수에만 실행된다.
@@ -229,7 +236,8 @@ trait PaginatesWithDeferredJoin
             $this->applySortSpec($outer, $sort);
         }
 
-        return $outer->get($columns);
+        // select 는 위에서 확정했다 — 여기서 다시 넘기면 `onceWithColumns()` 가 무시한다.
+        return $outer->get();
     }
 
     /**

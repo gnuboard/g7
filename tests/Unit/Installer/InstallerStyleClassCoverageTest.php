@@ -58,6 +58,7 @@ class InstallerStyleClassCoverageTest extends TestCase
         'env-hardening-hint-status' => '동상',
         'env-hardening-hint-option' => '동상',
         'env-hardening-hint-note' => '동상',
+        'cron-hint' => '예약 작업 안내 블록의 식별 이름 — 함께 붙은 env-hardening-hint 규칙이 담당 (7.2.0 합류)',
 
         // ③ 소비처 0 — 종전 코드에 남아 있는 표식. 제거는 이 검사와 별개 결정이라 여기서는 고정만 한다
         'execution-mode-cards' => '소비처 0 (스타일은 vendor-mode-cards) — 제거는 별개 결정',

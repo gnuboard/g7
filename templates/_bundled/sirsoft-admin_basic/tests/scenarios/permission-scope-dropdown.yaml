@@ -1,0 +1,35 @@
+feature: 역할 폼 권한 범위(스코프) 드롭다운 노출 조건 (sirsoft-admin_basic, #789)
+
+description: |
+  역할 수정 화면의 권한 트리는 체크한 권한 옆에 범위(전체·소유역할·본인만) 드롭다운을 그린다.
+
+  결함(수정 전): 「체크했고 + 리소스 라우트 키가 있으면」 드롭다운을 그려
+    - 비회원 역할에도 드롭다운이 떠 「본인만」을 저장할 수 있었다. 비회원은 글의 주인을 가릴 수 없어 서버가
+      범위 판정을 생략하므로, 고르는 순간 제한 없는 부여가 됐다(비밀번호 없이 모든 비밀글이 열림).
+    - 소유자 컬럼(owner_key)이 없는 권한에도 드롭다운이 떠, 골라도 적용되지 않는 거짓 선택지가 됐다.
+
+  처치:
+    - 트리 prop `scopeDisabled` — 역할 응답의 `supports_permission_scope === false`(비회원)인 수정 화면에서 켠다.
+      복제(`clone_from`)로 만드는 새 역할은 일반 역할이므로 켜지 않는다(`!!route?.id` 조건).
+    - 노드 `scope_supported`(서버 판정)를 우선하고, 없으면 `resource_route_key && owner_key` 로 폴백한다.
+    - 비회원 역할 저장 본문은 권한마다 `scope_type: null` 로 정규화한다(서버는 비null 을 422 로 거부).
+    - 같은 자리에 안내 문구를 보인다.
+
+axes:
+  role: [general, guest]
+  support: [scope_supported, owner_key_missing]
+
+effects:
+  - general_role_scope_dropdown_unchanged
+  - scope_dropdown_hidden_for_guest_role
+  - scope_dropdown_hidden_without_owner_key
+  - server_scope_flag_overrides_key_fallback
+  - guest_role_save_nulls_scope_type
+  - guest_scope_hint_shown_only_in_edit
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/PermissionTree.scopeDropdown.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-role-form-guest-scope.test.ts
+
+# 브라우저 실측: 계획서 §8.2 T1(c)·T4(d) — 라이브 사이트 세션(M1)이 Chrome MCP 로 측정한다.
+# 서버 거부(422 permissions.N.scope_type)는 코어 PHPUnit(RoleControllerTest)이 맡는다.

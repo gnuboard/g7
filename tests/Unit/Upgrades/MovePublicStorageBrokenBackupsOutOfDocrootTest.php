@@ -4,11 +4,11 @@ namespace Tests\Unit\Upgrades;
 
 use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\UpgradeContext;
-use App\Upgrades\Data\V7_1_0\Migrations\MovePublicStorageBrokenBackupsOutOfDocroot;
+use App\Upgrades\Data\V7_2_0\Migrations\MovePublicStorageBrokenBackupsOutOfDocroot;
 use Tests\TestCase;
 
 /**
- * 7.1.0 업그레이드 스텝 — 문서 루트 안의 `public/storage` 손상 백업 정리.
+ * 7.2.0 업그레이드 스텝 — 문서 루트 안의 `public/storage` 손상 백업 정리.
  *
  * 소스를 고쳐도 **이미 그 상태인 사이트는 낫지 않는다** — 링크 복구는 `public/storage` 가
  * 정상이면 즉시 반환하므로 잔해에 영영 닿지 않는다. 그 잔해는 공개 파일 전량의 사본이고,
@@ -34,7 +34,7 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
         // 데이터 마이그레이션은 오토로드 대상이 아니다 — 실행기(`AbstractUpgradeStep`)가
         // `data/{version}/migrations/*.php` 를 `require_once` 로 읽는다. 테스트도 같은
         // 방식으로 읽어, 실제 실행 경로와 로딩 방식이 갈리지 않게 한다.
-        require_once base_path('upgrades/data/7.1.0/migrations/01_MovePublicStorageBrokenBackupsOutOfDocroot.php');
+        require_once base_path('upgrades/data/7.2.0/migrations/04_MovePublicStorageBrokenBackupsOutOfDocroot.php');
 
         // 노출 통보 버퍼는 **정적**이라 테스트 사이로 샌다 — 이 클래스의 여러 케이스가
         // 「옮기지 못한 항목」을 만들므로, 진입·종료 양쪽에서 비워 격리를 지킨다.
@@ -349,8 +349,8 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
     {
         $context = new UpgradeContext(
             fromVersion: '7.0.8',
-            toVersion: '7.1.0',
-            currentStep: '7.1.0',
+            toVersion: '7.2.0',
+            currentStep: '7.2.0',
         );
 
         (new MovePublicStorageBrokenBackupsOutOfDocroot)->run($context);

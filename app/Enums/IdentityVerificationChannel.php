@@ -20,6 +20,9 @@ enum IdentityVerificationChannel: string
     /** 이메일 */
     case Email = 'email';
 
+    /** 인증 앱 (TOTP 등 사용자 단말의 인증 앱이 코드를 생성하는 채널) */
+    case App = 'app';
+
     /**
      * 코어 채널 값 배열.
      *

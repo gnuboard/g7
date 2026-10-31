@@ -61,9 +61,21 @@ class UpdateOrderRequestTest extends ModuleTestCase
 
     public function test_valid_order_status_passes(): void
     {
-        foreach (OrderStatusEnum::values() as $status) {
+        foreach (OrderStatusEnum::adminAssignableValues() as $status) {
             $validator = $this->validate($this->validData(['order_status' => $status]));
             $this->assertFalse($validator->fails(), "주문상태 '{$status}'가 유효해야 합니다.");
+        }
+    }
+
+    public function test_claim_course_order_status_fails(): void
+    {
+        // 클레임 코스 상태(교환진행중/반품진행중/교환완료/반품완료)는 교환·반품 서비스가
+        // 신청서와 짝을 맞춰 기록한다. 주문 단건 수정에서 직접 지정하면 신청서 없는
+        // 코스 상태가 남아 이후 클레임 흐름과 어긋난다.
+        foreach (OrderStatusEnum::claimCourseValues() as $status) {
+            $validator = $this->validate($this->validData(['order_status' => $status]));
+            $this->assertTrue($validator->fails(), "주문상태 '{$status}'는 직접 지정할 수 없어야 합니다.");
+            $this->assertArrayHasKey('order_status', $validator->errors()->toArray());
         }
     }
 

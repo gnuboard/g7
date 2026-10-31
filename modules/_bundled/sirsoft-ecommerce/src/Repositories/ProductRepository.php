@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Helpers\PermissionHelper;
+use App\Models\User;
 use App\Models\ActivityLog;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
@@ -46,6 +47,11 @@ class ProductRepository implements ProductRepositoryInterface
     /** 상품 통계 캐시 태그 */
     private const STATISTICS_CACHE_TAG = 'ecommerce.products';
 
+    /**
+     * 상품 저장소를 생성합니다.
+     *
+     * @param  Product  $model  상품 모델
+     */
     public function __construct(
         protected Product $model
     ) {}
@@ -72,7 +78,7 @@ class ProductRepository implements ProductRepositoryInterface
     {
         return $this->model->newQuery()
             ->where('display_status', ProductDisplayStatus::VISIBLE->value)
-            ->select(['id', 'updated_at'])
+            ->select(['id', 'product_code', 'updated_at'])
             ->orderBy('id')
             ->lazyById($chunkSize);
     }
@@ -130,6 +136,51 @@ class ProductRepository implements ProductRepositoryInterface
             'stock_quantity'
         );
 
+        // 검색어·필터 — 내보내기와 같은 한 경로(applyListFilters)를 지난다
+        $this->applyListFilters($query, $filters);
+
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: $this->resolveAdminSortSpec($filters),
+            perPage: $perPage,
+            relations: $listRelations,
+            withCount: $listWithCount,
+            outerUsing: $listOuterUsing,
+            resultCap: PaginationLimits::resultCap('admin.products'),
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function newExportQuery(array $filters, ?array $ids, User $requester): Builder
+    {
+        $query = $this->model->newQuery();
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.products.read', $requester);
+
+        if ($ids !== null) {
+            // 「선택한 행」은 그 선택이 대상이다 — 목록 필터를 덧씌우지 않는다
+            return $query->whereIn('id', $ids);
+        }
+
+        $this->applyListFilters($query, $filters);
+
+        return $query;
+    }
+
+    /**
+     * 목록 필터 조건을 쿼리에 겁니다 — 목록 조회와 내보내기 원천 쿼리(`newExportQuery`)가 같은 이 한 경로를 지난다.
+     *
+     * 축을 두 곳에 복제하면 한쪽에만 필터가 늘어나는 순간 화면 건수와 파일 행 수가 조용히 어긋난다. 권한 범위는 걸지
+     * 않는다 — 필터가 아니라 호출자의 열람 범위이므로 호출부가 각자 건다.
+     *
+     * @param  Builder  $query  쿼리
+     * @param  array  $filters  검증된 목록 필터
+     * @return void 반환값 없음 (쿼리에 직접 조건을 건다)
+     */
+    protected function applyListFilters(Builder $query, array $filters): void
+    {
         // 문자열 검색
         if (! empty($filters['search_keyword'])) {
             $keyword = $filters['search_keyword'];
@@ -144,49 +195,23 @@ class ProductRepository implements ProductRepositoryInterface
             // total 계산 경로와 결과 조회 경로가 같은 술어를 공유한다는 성질도 유지된다.
             if (in_array($field, ['all', 'name', 'description'])) {
                 $this->applyKeywordMatch($query, $keyword, includeAuxFields: $field === 'all');
-
-                // 필터 적용
-                $this->applyAdminFilters($query, $filters);
-
-                return $this->paginateWithDeferredJoin(
-                    query: $query,
-                    columns: ['*'],
-                    sort: $this->resolveAdminSortSpec($filters),
-                    perPage: $perPage,
-                    relations: $listRelations,
-                    withCount: $listWithCount,
-                    outerUsing: $listOuterUsing,
-                    resultCap: PaginationLimits::resultCap('admin.products'),
-                );
+            } else {
+                // FULLTEXT 미대상 필드 (product_code, sku, barcode) → LIKE 직접
+                $query->where(function ($q) use ($keyword, $field) {
+                    if ($field === 'product_code') {
+                        $q->where('product_code', 'like', "%{$keyword}%");
+                    }
+                    if ($field === 'sku') {
+                        $q->where('sku', 'like', "%{$keyword}%");
+                    }
+                    if ($field === 'barcode') {
+                        $q->where('barcode', 'like', "%{$keyword}%");
+                    }
+                });
             }
-
-            // FULLTEXT 미대상 필드 (product_code, sku, barcode) → LIKE 직접
-            $query->where(function ($q) use ($keyword, $field) {
-                if ($field === 'product_code') {
-                    $q->where('product_code', 'like', "%{$keyword}%");
-                }
-                if ($field === 'sku') {
-                    $q->where('sku', 'like', "%{$keyword}%");
-                }
-                if ($field === 'barcode') {
-                    $q->where('barcode', 'like', "%{$keyword}%");
-                }
-            });
         }
 
-        // 필터 적용
         $this->applyAdminFilters($query, $filters);
-
-        return $this->paginateWithDeferredJoin(
-            query: $query,
-            columns: ['*'],
-            sort: $this->resolveAdminSortSpec($filters),
-            perPage: $perPage,
-            relations: $listRelations,
-            withCount: $listWithCount,
-            outerUsing: $listOuterUsing,
-            resultCap: PaginationLimits::resultCap('admin.products'),
-        );
     }
 
     /**
@@ -467,6 +492,8 @@ class ProductRepository implements ProductRepositoryInterface
      *
      * 상품이 생성·수정·삭제되면 통계도 곧바로 달라져야 합니다. 쓰기 경로가 이 메서드를
      * 부르지 않으면 화면이 TTL 이 끝날 때까지 이전 수치를 보여 줍니다.
+     *
+     * @return void 반환값 없음
      */
     public function forgetStatisticsCache(): void
     {
@@ -556,6 +583,7 @@ class ProductRepository implements ProductRepositoryInterface
      * @param  string  $method  변경 방식
      * @param  float  $value  변경 값
      * @param  string  $unit  단위
+     * @return float 새 가격
      */
     protected function calculateNewPrice(float $currentPrice, string $method, float $value, string $unit): float
     {
@@ -994,6 +1022,7 @@ class ProductRepository implements ProductRepositoryInterface
      * @param  string  $keyword  검색 키워드
      * @param  bool  $includeAuxFields  상품코드·SKU·바코드·ID 보조 매칭 포함 여부
      * @param  string|null  $limitContext  키 집합 상한 해석에 쓸 목록 컨텍스트 이름
+     * @return void 반환값 없음
      */
     private function applyKeywordMatch($query, string $keyword, bool $includeAuxFields = true, ?string $limitContext = null): void
     {
@@ -1042,6 +1071,7 @@ class ProductRepository implements ProductRepositoryInterface
      *
      * @param  Builder  $query  Eloquent 쿼리 빌더
      * @param  array  $filters  필터 배열
+     * @return void 반환값 없음
      */
     private function applyAdminFilters($query, array $filters): void
     {
@@ -1062,8 +1092,9 @@ class ProductRepository implements ProductRepositoryInterface
         if (! empty($filters['date_type']) && (! empty($filters['start_date']) || ! empty($filters['end_date']))) {
             $dateField = $filters['date_type'];
 
-            // whereDate 는 인덱스를 무력화한다 — 범위 조건으로 준다.
-            $this->applyDateRangeFilter(
+            // whereDate 는 인덱스를 무력화한다 — 범위 조건으로 준다. 목록이 등록일·수정일을
+            // 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+            $this->applyViewerDateRangeFilter(
                 $query,
                 $dateField,
                 $filters['start_date'] ?? null,

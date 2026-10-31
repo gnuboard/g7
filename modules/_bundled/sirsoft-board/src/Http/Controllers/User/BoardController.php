@@ -45,12 +45,13 @@ class BoardController extends PublicBaseController
      */
     public function index(IndexBoardRequest $request): JsonResponse
     {
-        // 활성 게시판 중 호출자가 열람 가능한 게시판만 조회 — 디렉토리와 내장 최근글이
-        // 비공개 게시판·글 제목의 우회 노출로가 되지 않게 한다 (최근글·인기글과 동일 기준)
-        $boards = $this->boardService->getReadableActiveBoards();
-
         // limit 파라미터 (0이면 최신글 미포함, 최대 10개)
         $recentPostsLimit = $request->recentPostsLimit();
+
+        // 활성 게시판 중 호출자가 열람 가능한 게시판만 조회 — 디렉토리와 내장 최근글이
+        // 비공개 게시판·글 제목의 우회 노출로가 되지 않게 한다 (최근글·인기글과 동일 기준).
+        // 순서는 관리자가 정한 표시 순서이고, 조회 결과 훅이 적용된 목록에 최근글을 붙인다.
+        $boards = $this->boardService->getPublicBoardList($recentPostsLimit);
 
         // toListArray() 메서드를 사용하여 경량 데이터 반환
         $data = $boards->map(function ($board) use ($recentPostsLimit) {
@@ -78,10 +79,10 @@ class BoardController extends PublicBaseController
      */
     public function show(string $slug): JsonResponse
     {
-        $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
+        $board = $this->boardService->getPublicBoardBySlug($slug);
 
         // 게시판이 없거나 비활성화된 경우 404 (보안: 존재 여부 숨김)
-        if (! $board || ! $board->is_active) {
+        if (! $board) {
             return $this->notFound();
         }
 
@@ -96,14 +97,14 @@ class BoardController extends PublicBaseController
      *
      * 헤더 메뉴 등에서 사용할 최소한의 게시판 정보만 반환합니다.
      * - id, name, slug만 포함
-     * - 활성화된 게시판만 조회
-     * - 오래된 순으로 정렬 (created_at ASC)
+     * - 활성화된 게시판 중 호출자가 열람할 수 있는 게시판만 (게시판 목록 화면과 같은 기준)
+     * - 관리자가 정한 표시 순서 (같은 순서는 만든 순서)
      *
      * @return JsonResponse
      */
     public function boardMenu(): JsonResponse
     {
-        $boards = $this->boardService->getCachedActiveBoardsForMenu();
+        $boards = $this->boardService->getMenuBoards();
 
         return $this->success(
             'common.success',

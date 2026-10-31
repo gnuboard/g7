@@ -12,14 +12,18 @@ use App\Services\SettingsService;
 /**
  * 비즈뿌리오 문자·알림톡 채널을 코어 알림 시스템에 등록하는 필터 리스너.
  *
- * 코어를 수정하지 않고 다음 4계열 필터 훅을 구독해 sms·alimtalk 채널을 노출·게이트한다.
+ * 코어 알림 계약의 필터 훅 4종에만 답해 sms·alimtalk 채널을 노출·게이트한다. 이 플러그인은
+ * 어떤 도메인(코어 인증·게시판·이커머스 등)이 알림을 보내는지 알지 못한다.
  *
  * 1) core.notification.filter_available_channels
  *    - 알림 설정 화면의 채널 탭 SSoT. sms·alimtalk 메타(name_key/allow_guest 등)를 추가한다.
  * 2) core.notification.channel_readiness
  *    - 채널별 환경설정 충족 여부({ready, reason})를 반환한다(D2).
- * 3) {prefix}.notification.channels  (core.auth / sirsoft-ecommerce / sirsoft-board)
- *    - 레거시 다채널 자동 결정 경로에서 정의별 채널 후보에 sms·alimtalk 을 더한다(D7 3영역).
+ * 3) core.notification.channel_enabled
+ *    - 우리 채널의 "미저장=비활성(OFF)" 정책을 적용한다.
+ * 4) core.notification.channels
+ *    - 채널 미지정(다채널) 결정 경로에서 모든 도메인 공통으로 채널 후보에 sms·alimtalk 을 더한다.
+ *      도메인별 후보 훅({prefix}.notification.channels)은 코어가 이 훅 뒤에 도메인에게 넘긴다.
  *
  * 실제 발송 위임({prefix}.notification.to_sms/to_alimtalk)은 채널 드라이버가
  * ChannelManager 에 등록되어야 발화하므로, 드라이버 등록은 ServiceProvider::boot() 가
@@ -42,9 +46,6 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
     /** 이 플러그인이 등록하는 채널 ID 목록 (Plugin::cleanupChannelContributions 에서도 참조) */
     public const CHANNEL_IDS = ['sms', 'alimtalk'];
 
-    /** 3영역 채널 후보 확장을 구독할 hookPrefix (D7) */
-    private const CHANNEL_HOOK_PREFIXES = ['core.auth', 'sirsoft-ecommerce', 'sirsoft-board'];
-
     /**
      * @param  PluginSettingsService  $pluginSettings  readiness 검사를 위한 환경설정 조회
      */
@@ -55,14 +56,13 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
     /**
      * 구독할 훅 목록 반환.
      *
-     * filter_available_channels / channel_readiness 는 고정 훅이고,
-     * {prefix}.notification.channels 는 3영역 prefix 별로 동적으로 펼쳐 등록한다.
+     * 전부 코어 소유 훅이다 — 도메인 접두사 목록을 적지 않는다.
      *
-     * @return array<string, array<string, mixed>>
+     * @return array<string, array<string, mixed>> 훅 이름 => 구독 설정
      */
     public static function getSubscribedHooks(): array
     {
-        $hooks = [
+        return [
             'core.notification.filter_available_channels' => [
                 'method' => 'addChannels',
                 'priority' => 20,
@@ -78,23 +78,19 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
                 'priority' => 20,
                 'type' => 'filter',
             ],
-        ];
-
-        foreach (self::CHANNEL_HOOK_PREFIXES as $prefix) {
-            $hooks["{$prefix}.notification.channels"] = [
+            'core.notification.channels' => [
                 'method' => 'addChannelCandidates',
                 'priority' => 20,
                 'type' => 'filter',
-            ];
-        }
-
-        return $hooks;
+            ],
+        ];
     }
 
     /**
      * 기본 핸들러 (미사용 — 필터 메서드로 처리).
      *
-     * @param  mixed  ...$args
+     * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -141,7 +137,7 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
      *
      * @param  array{ready: bool, reason: string|null}  $result  이전 필터까지의 판정
      * @param  string  $channelId  검사 대상 채널
-     * @return array{ready: bool, reason: string|null}
+     * @return array{ready: bool, reason: string|null} 결과 배열
      */
     public function checkReadiness(array $result, string $channelId): array
     {
@@ -241,18 +237,20 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
     }
 
     /**
-     * 레거시 다채널 자동 결정 경로에서 채널 후보에 sms·alimtalk 을 더합니다.
+     * 채널 미지정(다채널) 결정 경로에서 채널 후보에 sms·alimtalk 을 더합니다 (core.notification.channels).
      *
-     * {prefix}.notification.channels 는 채널 미지정(다채널) 발송 경로에서만 발화하며(코어 확인),
+     * 코어가 모든 도메인의 채널 후보 결정에서 이 훅을 발화하므로 도메인을 가리지 않고 더한다.
      * 채널 지정 경로에서는 filter_available_channels 가 SSoT 다. 두 경로 모두에서 채널이
-     * 누락되지 않도록 후보에 우리 채널 id 를 더한다(중복 제거).
+     * 누락되지 않도록 후보에 우리 채널 id 를 더한다(중복 제거). 실제 발송 여부는 이어지는
+     * 확장 단위 활성(channel_enabled)·준비 상태(channel_readiness) 판정이 정한다.
      *
      * @param  array<int, string>  $channels  정의별 채널 id 후보
      * @param  string  $type  알림 정의 유형 (미사용)
      * @param  object|null  $notifiable  수신자 (미사용)
+     * @param  string  $hookPrefix  알림을 보내는 도메인의 훅 접두사 (미사용 — 도메인을 가리지 않는다)
      * @return array<int, string> 우리 채널이 더해진 후보
      */
-    public function addChannelCandidates(array $channels, string $type = '', ?object $notifiable = null): array
+    public function addChannelCandidates(array $channels, string $type = '', ?object $notifiable = null, string $hookPrefix = ''): array
     {
         foreach (self::CHANNEL_IDS as $id) {
             if (! in_array($id, $channels, true)) {
@@ -278,7 +276,7 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
      * 코어 getAvailableChannels 는 임의 필드를 보존하므로 프론트까지 그대로 도달한다
      * (is_test_mode 와 동일 경로).
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> 결과 배열
      */
     private function channelMetas(): array
     {
@@ -311,7 +309,7 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
     /**
      * SMS 채널 준비 상태를 검사합니다.
      *
-     * @return array{ready: bool, reason: string|null}
+     * @return array{ready: bool, reason: string|null} 결과 배열
      */
     private function checkSmsReadiness(): array
     {
@@ -329,7 +327,7 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
     /**
      * 알림톡 채널 준비 상태를 검사합니다.
      *
-     * @return array{ready: bool, reason: string|null}
+     * @return array{ready: bool, reason: string|null} 결과 배열
      */
     private function checkAlimtalkReadiness(): array
     {
@@ -381,7 +379,7 @@ class RegisterNotificationChannelsListener implements HookListenerInterface
      * ready=false 판정을 lang reason key 와 함께 반환합니다.
      *
      * @param  string  $reasonKey  messages.readiness.* 하위 키
-     * @return array{ready: bool, reason: string}
+     * @return array{ready: bool, reason: string} 결과 배열
      */
     private function notReady(string $reasonKey): array
     {

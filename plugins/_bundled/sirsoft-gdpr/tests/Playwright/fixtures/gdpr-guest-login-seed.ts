@@ -7,6 +7,7 @@
  */
 import { test as base } from '@playwright/test';
 import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,10 +24,13 @@ type GdprGuestLoginSeedFixtures = {
 };
 
 export const test = base.extend<GdprGuestLoginSeedFixtures>({
-  gdprGuestLoginSeed: async ({}, use) => {
+  gdprGuestLoginSeed: async ({}, use, testInfo) => {
     // 6단계 상위 = 코어 루트 (artisan 실행 cwd)
     const coreRoot = process.env.G7_ROOT || resolve(__dirname, '../../../../../../');
-    const out = execSync('php artisan playwright:seed-gdpr-guest-login --json', {
+    // 이 시드를 쓰는 spec 이 여럿이고 설정이 fullyParallel 이라, 고정 주체를 함께 쓰면 다른 워커가 서로의
+    // 게스트 세션·회원을 지운다 — spec 파일마다 다른 꼬리로 주체를 가른다.
+    const suffix = createHash('sha1').update(testInfo.file).digest('hex').slice(0, 8);
+    const out = execSync(`php artisan playwright:seed-gdpr-guest-login --json --suffix=${suffix}`, {
       cwd: coreRoot,
       encoding: 'utf-8',
       env: {

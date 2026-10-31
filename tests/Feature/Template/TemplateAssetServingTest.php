@@ -18,6 +18,11 @@ class TemplateAssetServingTest extends TestCase
 
     private string $testIdentifier;
 
+    /**
+     * 활성 템플릿 행과 그 dist 디렉토리를 고유 식별자로 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +43,11 @@ class TemplateAssetServingTest extends TestCase
         }
     }
 
+    /**
+     * 테스트가 만든 템플릿 디렉토리를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트용 파일 및 디렉토리 정리
@@ -50,6 +60,9 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 테스트용 asset URL 생성 헬퍼
+     *
+     * @param  string  $path  dist 기준 파일 경로
+     * @return string 자산 API 경로
      */
     private function assetUrl(string $path): string
     {
@@ -58,6 +71,9 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 테스트용 template URL 생성 헬퍼
+     *
+     * @param  string  $path  템플릿 API 하위 경로
+     * @return string 템플릿 API 경로
      */
     private function templateUrl(string $path): string
     {
@@ -66,6 +82,9 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 디렉토리 재귀 삭제 헬퍼 메서드
+     *
+     * @param  string  $dir  지울 디렉토리 또는 파일
+     * @return bool 모두 지웠으면 true
      */
     private function deleteDirectory(string $dir): bool
     {
@@ -92,6 +111,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 활성화된 템플릿의 JS 파일 서빙 성공
+     *
+     * @scenario case=serve
+     *
+     * @effects template_asset_serves_js_file_from_active_template
+     *
+     * @return void 반환값 없음
      */
     public function test_serves_js_file_from_active_template(): void
     {
@@ -110,6 +135,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 활성화된 템플릿의 CSS 파일 서빙 성공
+     *
+     * @scenario case=serve
+     *
+     * @effects template_asset_serves_css_file_from_active_template
+     *
+     * @return void 반환값 없음
      */
     public function test_serves_css_file_from_active_template(): void
     {
@@ -131,6 +162,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 비활성화 템플릿 접근 시 404 반환
+     *
+     * @scenario case=missing
+     *
+     * @effects template_asset_returns_404_for_inactive_template
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_inactive_template(): void
     {
@@ -144,14 +181,19 @@ class TemplateAssetServingTest extends TestCase
         $response = $this->get('/api/templates/assets/inactive-template/js/main.js');
 
         // Assert
-        // 검증 실패는 `api/*` 전 경로에서 JSON 422 다 — 302 를 허용하면 그 목적지가
-        // `Referer` 인 무인증 오픈 리다이렉트를 통과시키게 되고, 404 와 함께 열거하면
-        // 「어느 쪽이 계약인가」가 흐려진다. 실제 응답 하나로 고정한다.
+        // 검증 실패 또는 404 허용. `/api/*` 는 검증 실패를 리다이렉트가 아니라 항상 JSON 422 로 돌려준다
+        // (bootstrap/app.php shouldRenderJsonWhen) — 예전 기대값 302 는 그 전의 동작이다.
         $this->assertContains($response->status(), [404, 422]);
     }
 
     /**
      * 존재하지 않는 파일 접근 시 404 반환
+     *
+     * @scenario case=missing
+     *
+     * @effects template_asset_returns_404_for_nonexistent_file
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_file(): void
     {
@@ -167,6 +209,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * Path Traversal 공격 차단 - 기본 패턴 (../)
+     *
+     * @scenario case=traversal
+     *
+     * @effects template_asset_blocks_path_traversal_attack
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_path_traversal_attack(): void
     {
@@ -180,6 +228,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * Path Traversal 공격 차단 - 백슬래시 패턴 (..\)
+     *
+     * @scenario case=traversal
+     *
+     * @effects template_asset_blocks_path_traversal_with_backslash
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_path_traversal_with_backslash(): void
     {
@@ -192,6 +246,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * Path Traversal 공격 차단 - 이중 슬래시 (//)
+     *
+     * @scenario case=traversal
+     *
+     * @effects template_asset_blocks_double_slash_pattern
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_double_slash_pattern(): void
     {
@@ -204,6 +264,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * Path Traversal 공격 차단 - URL 인코딩 패턴 (%2e%2e%2f)
+     *
+     * @scenario case=traversal
+     *
+     * @effects template_asset_blocks_url_encoded_path_traversal
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_url_encoded_path_traversal(): void
     {
@@ -228,6 +294,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 절대 경로 차단 - Windows 경로 (C:\)
+     *
+     * @scenario case=traversal
+     *
+     * @effects template_asset_blocks_windows_absolute_path
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_windows_absolute_path(): void
     {
@@ -240,6 +312,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 절대 경로 차단 - Linux 경로 (/etc/)
+     *
+     * @scenario case=traversal
+     *
+     * @effects template_asset_blocks_linux_absolute_path
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_linux_absolute_path(): void
     {
@@ -252,6 +330,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * NULL 바이트 공격 차단
+     *
+     * @scenario case=traversal
+     *
+     * @effects template_asset_blocks_null_byte_attack
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_null_byte_attack(): void
     {
@@ -264,6 +348,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 불허 파일 타입 차단 - PHP
+     *
+     * @scenario case=file_type
+     *
+     * @effects template_asset_blocks_disallowed_file_types
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_disallowed_file_types(): void
     {
@@ -280,6 +370,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 불허 파일 타입 차단 - 실행 파일들
+     *
+     * @scenario case=file_type
+     *
+     * @effects template_asset_blocks_various_disallowed_file_types
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_various_disallowed_file_types(): void
     {
@@ -309,6 +405,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 허용된 파일 타입 확인 - 모든 화이트리스트 확장자
+     *
+     * @scenario case=file_type
+     *
+     * @effects template_asset_allows_all_whitelisted_file_types
+     *
+     * @return void 반환값 없음
      */
     public function test_allows_all_whitelisted_file_types(): void
     {
@@ -363,6 +465,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * MIME 타입 헤더 정상 설정 - PNG
+     *
+     * @scenario case=mime
+     *
+     * @effects template_asset_sets_correct_mime_type_for_png
+     *
+     * @return void 반환값 없음
      */
     public function test_sets_correct_mime_type_for_png(): void
     {
@@ -381,6 +489,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 캐싱 헤더 정상 설정
+     *
+     * @scenario case=caching
+     *
+     * @effects template_asset_sets_caching_headers
+     *
+     * @return void 반환값 없음
      */
     public function test_sets_caching_headers(): void
     {
@@ -402,6 +516,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * ETag 헤더 생성 확인
+     *
+     * @scenario case=caching
+     *
+     * @effects template_asset_generates_etag_header
+     *
+     * @return void 반환값 없음
      */
     public function test_generates_etag_header(): void
     {
@@ -425,6 +545,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * ETag 매칭 시 304 Not Modified 응답
+     *
+     * @scenario case=caching
+     *
+     * @effects template_asset_returns_304_when_etag_matches
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_304_when_etag_matches(): void
     {
@@ -592,6 +718,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * ETag 불일치 시 200 응답 및 새 콘텐츠 반환
+     *
+     * @scenario case=caching
+     *
+     * @effects template_asset_returns_200_when_etag_does_not_match
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_200_when_etag_does_not_match(): void
     {
@@ -614,6 +746,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 파일 수정 시 ETag 변경 확인
+     *
+     * @scenario case=caching
+     *
+     * @effects template_asset_etag_changes_when_file_is_modified
+     *
+     * @return void 반환값 없음
      */
     public function test_etag_changes_when_file_is_modified(): void
     {
@@ -649,6 +787,12 @@ class TemplateAssetServingTest extends TestCase
      * 종전 이 테스트는 **버전 없는 주소**를 요청하고 `immutable` 이 있어야 통과라고
      * 단언했다. 즉 규정 위반 상태가 곧 green 이었고, 그 계약이 서 있는 한 결함을 고치면
      * 테스트가 red 가 되는 구조였다. 계약을 판정 기준 자체로 교체한다 (11차 G3 라운드).
+     *
+     * @scenario case=caching
+     *
+     * @effects template_asset_applies_immutable_caching_in_production
+     *
+     * @return void 반환값 없음
      */
     public function test_applies_immutable_caching_in_production(): void
     {
@@ -699,6 +843,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 개발 환경에서 no-cache 정책 적용
+     *
+     * @scenario case=caching
+     *
+     * @effects template_asset_applies_no_cache_in_development
+     *
+     * @return void 반환값 없음
      */
     public function test_applies_no_cache_in_development(): void
     {
@@ -720,6 +870,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * components.json 파일 정상 반환
+     *
+     * @scenario case=components
+     *
+     * @effects template_asset_serves_components_json
+     *
+     * @return void 반환값 없음
      */
     public function test_serves_components_json(): void
     {
@@ -747,6 +903,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * components.json If-None-Match 일치 시 304 (조건부 캐시 — #122 작업 C)
+     *
+     * @scenario case=components
+     *
+     * @effects template_asset_components_json_returns_304_with_matching_etag
+     *
+     * @return void 반환값 없음
      */
     public function test_components_json_returns_304_with_matching_etag(): void
     {
@@ -775,6 +937,8 @@ class TemplateAssetServingTest extends TestCase
      * @scenario publish_state=unpublished, artifact_integrity=intact, filesystem_writable=writable, environment=dev, trigger=self_heal, process_user=web
      *
      * @effects fallback_api_no_cache_in_dev
+     *
+     * @return void 반환값 없음
      */
     public function test_components_json_no_cache_in_development(): void
     {
@@ -797,6 +961,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 비활성화 템플릿의 components.json 접근 시 404 반환
+     *
+     * @scenario case=components
+     *
+     * @effects template_asset_returns_404_for_components_of_inactive_template
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_components_of_inactive_template(): void
     {
@@ -815,6 +985,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 존재하지 않는 components.json 접근 시 404 반환
+     *
+     * @scenario case=components
+     *
+     * @effects template_asset_returns_404_for_nonexistent_components
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_components(): void
     {
@@ -827,6 +1003,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 계층 구조 경로 처리 테스트 - 2단계 중첩
+     *
+     * @scenario case=nested_path
+     *
+     * @effects template_asset_handles_nested_path_two_levels
+     *
+     * @return void 반환값 없음
      */
     public function test_handles_nested_path_two_levels(): void
     {
@@ -845,6 +1027,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 계층 구조 경로 처리 테스트 - 3단계 중첩
+     *
+     * @scenario case=nested_path
+     *
+     * @effects template_asset_handles_nested_path_three_levels
+     *
+     * @return void 반환값 없음
      */
     public function test_handles_nested_path_three_levels(): void
     {
@@ -863,6 +1051,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 특수 문자를 포함한 파일명 처리 테스트
+     *
+     * @scenario case=nested_path
+     *
+     * @effects template_asset_handles_special_characters_in_filename
+     *
+     * @return void 반환값 없음
      */
     public function test_handles_special_characters_in_filename(): void
     {
@@ -883,6 +1077,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 다양한 이미지 포맷 MIME 타입 테스트
+     *
+     * @scenario case=mime
+     *
+     * @effects template_asset_serves_various_image_formats
+     *
+     * @return void 반환값 없음
      */
     public function test_serves_various_image_formats(): void
     {
@@ -913,6 +1113,12 @@ class TemplateAssetServingTest extends TestCase
 
     /**
      * 폰트 파일 MIME 타입 테스트
+     *
+     * @scenario case=mime
+     *
+     * @effects template_asset_serves_font_files
+     *
+     * @return void 반환값 없음
      */
     public function test_serves_font_files(): void
     {
@@ -945,6 +1151,12 @@ class TemplateAssetServingTest extends TestCase
      *
      * api 미들웨어 그룹에 기본 throttle이 적용되어 있으므로
      * 헤더 존재 여부만 확인합니다.
+     *
+     * @scenario case=rate_limit
+     *
+     * @effects template_asset_applies_rate_limiting
+     *
+     * @return void 반환값 없음
      */
     public function test_applies_rate_limiting(): void
     {

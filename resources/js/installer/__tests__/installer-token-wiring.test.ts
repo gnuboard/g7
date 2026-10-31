@@ -149,10 +149,21 @@ function loadTokenHelpers() {
   const end = src.lastIndexOf('/*', closeMarker);
 
   const region = src.slice(start, end);
+
+  // `stateMutationHeaders()` 는 상태변경 헤더의 공통 부분(Content-Type · 세션 CSRF)을
+  // 구간 밖의 `stateChangeHeaders()` 에서 펼쳐 담는다(설치 소유 게이트 합류). 사본을 쓰지 않고
+  // 그 함수의 **프로덕션 소스**를 잘라 함께 싣는다 — 헤더를 만드는 지점이 여전히 하나다.
+  const commonAt = src.indexOf('function stateChangeHeaders(');
+  expect(commonAt, 'stateChangeHeaders() 정의를 찾지 못했다 — 공통 헤더 지점이 옮겨졌으면 이 적재도 함께 옮긴다').toBeGreaterThan(-1);
+  const commonEnd = src.indexOf('\n    }\n', commonAt);
+  expect(commonEnd, 'stateChangeHeaders() 본문 끝을 찾지 못했다').toBeGreaterThan(commonAt);
+  const common = src.slice(commonAt, commonEnd + '\n    }\n'.length);
+
   // 구간에는 `stepwiseToken` 선언이 없다(IIFE 상단에 있다) — 실행을 위해 그것만 덧댄다.
   const factory = new Function(
     `"use strict";
      let stepwiseToken = null;
+     ${common}
      ${region}
      return { getStepwiseToken, rememberStepwiseToken, stateMutationHeaders };`,
   );
@@ -182,6 +193,21 @@ describe('상태 변경 요청의 토큰 배선', () => {
 
     expect(headers['X-Installer-Token']).toBe('tok-abc');
     expect(headers['Content-Type']).toBe('application/json');
+  });
+
+  it('세션 CSRF 토큰도 같은 헤더에 실린다 — 빠지면 소유 세션의 상태변경이 403 이 된다', () => {
+    (window as any).INSTALLER_CSRF = 'csrf-xyz';
+    try {
+      const helpers = loadTokenHelpers();
+      helpers.rememberStepwiseToken('tok-abc');
+
+      const headers = helpers.stateMutationHeaders();
+
+      expect(headers['X-CSRF-Token']).toBe('csrf-xyz');
+      expect(headers['X-Installer-Token'], 'CSRF 를 펼친 뒤에도 단계별 토큰 항이 남아야 한다').toBe('tok-abc');
+    } finally {
+      delete (window as any).INSTALLER_CSRF;
+    }
   });
 
   it('토큰이 없는 진행 모드(SSE·폴링)에서는 빈 값을 실어 정상 경로를 막지 않는다', () => {

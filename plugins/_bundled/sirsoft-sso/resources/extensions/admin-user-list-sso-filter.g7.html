@@ -1,0 +1,35 @@
+<!-- 관리자 회원 목록 상세검색에 덧붙이는 「SSO IdP」 행. 관리자 템플릿이 연 확장점(`admin_user_list_filters`)에 붙는다.
+  값은 `_local.userFilterExtraQuery` 배열에 `sirsoft-sso.idp={키}`(그 IdP 연결 회원) 또는 `sirsoft-sso.unlinked=1`(회사 계정 연결이 없는 회원) 원소
+  하나로 넣고 뺀다 — 템플릿의 검색 버튼이 그 배열을 `ext_filters[]` 로 보낸다.
+  서버 쪽 규칙과 조건은 `Listeners\Admin\MemberListSsoListener`. 회원 연결 열람 권한이 없으면 행을 내지 않는다(서버도 조건을 무시한다).
+  선택지는 등록된 IdP 전부(꺼진 것 포함 — 꺼진 IdP 로 연결된 회원도 찾을 수 있어야 한다). -->
+<extension extension-point="admin_user_list_filters" mode="append" priority="220">
+  <!-- 등록된 IdP — 선택지. 회원 연결 목록 응답이 IdP 목록을 함께 준다(설정 조회 권한 없이 회원 연결 열람 권한으로). 권한이 없으면 403 이고 행도 숨는다 -->
+  <data-source id="ssoFilterIdps" label_key="$t:sirsoft-sso.editor.data_source.admin_idps" type="api" endpoint="/api/plugins/sirsoft-sso/admin/accounts" method="GET" :auto_fetch="true" :auth_required="true">
+    <params per_page="1"/>
+    <error-handling>
+      <on-code code="403">
+        <set-state target="local" :ssoFilterForbidden="true"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <div data-ref="ext_sso_idp_filter_row" data-if="{{_local.ssoFilterForbidden !== true}}" class="sso:flex sso:flex-col sso:gap-2 sso:md:flex-row sso:md:items-center">
+    <permissions>
+      <permission>sirsoft-sso.accounts.view</permission>
+    </permissions>
+    <responsive on="portable" class="sso:flex sso:flex-col sso:gap-2 sso:items-start"/>
+    <span class="sso:block sso:mb-2 sso:w-32 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400 sso:md:mb-0 sso:shrink-0 sso:md:flex sso:md:items-center">$t:sirsoft-sso.admin.user_list.filter_label</span>
+    <div class="sso:flex sso:items-center sso:flex-wrap sso:gap-2">
+      <select data-ref="sso_idp_filter" name="ssoIdpFilter" class="sso:w-48" value="{{(_local.userFilterExtraQuery || []).includes('sirsoft-sso.unlinked=1') ? '__unlinked__' : ((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-sso.idp=')) || '').slice('sirsoft-sso.idp='.length)}}" aria-label="$t:sirsoft-sso.admin.user_list.filter_label">
+        <option value="">$t:sirsoft-sso.admin.user_list.filter_all</option>
+        <option value="__unlinked__">$t:sirsoft-sso.admin.user_list.filter_unlinked</option>
+        <option data-each="item in ssoFilterIdps?.data?.idps ?? []" value="{{item.key}}">{{item.label}}</option>
+        <on type="change">
+          <!-- IdP 선택 — 이 확장의 원소(IdP, 연결 없음)를 모두 빼고 새 값을 넣는다(전체를 고르면 빼기만). 검색 버튼을 눌러야 목록에 반영된다 -->
+          <set-state target="_local" userFilterExtraQuery="{{(_local.userFilterExtraQuery || []).filter(e => !e.startsWith('sirsoft-sso.idp=') &amp;&amp; e !== 'sirsoft-sso.unlinked=1').concat($event.target.value === '__unlinked__' ? ['sirsoft-sso.unlinked=1'] : ($event.target.value ? ['sirsoft-sso.idp=' + $event.target.value] : []))}}"/>
+        </on>
+      </select>
+      <extension-badge data-type="composite" type="plugin" identifier="sirsoft-sso" installedPlugins="{{_global.installedPlugins}}"/>
+    </div>
+  </div>
+</extension>

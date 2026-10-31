@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 인기 게시글 API 테스트
@@ -22,14 +23,15 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * - 기간별 필터링 (today, week, month, all)
  * - author nested 객체 구조
  * - comment_count 서브쿼리 집계
- *
- * @group board
- * @group board-popular
  */
+#[Group('board')]
+#[Group('board-popular')]
 class BoardPopularApiTest extends ModuleTestCase
 {
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -44,6 +46,8 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * 테스트 종료 후 정리
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -56,6 +60,8 @@ class BoardPopularApiTest extends ModuleTestCase
      * @scenario case=popular_readable_filter
      *
      * @effects unreadable_board_titles_absent_for_caller
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_returns_correct_structure(): void
     {
@@ -87,6 +93,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * 기본 limit이 20개인지 테스트
+     *
+     * @scenario case=limit_default
+     *
+     * @effects popular_limit_default_20
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_default_limit_is_twenty(): void
     {
@@ -105,6 +117,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * limit 파라미터가 동작하는지 테스트
+     *
+     * @scenario case=limit_param
+     *
+     * @effects popular_limit_param_applied
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_respects_limit_parameter(): void
     {
@@ -123,6 +141,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * limit 최대값이 50인지 테스트
+     *
+     * @scenario case=limit_max
+     *
+     * @effects popular_limit_capped_50
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_max_limit_is_fifty(): void
     {
@@ -141,6 +165,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * view_count 기준 내림차순 정렬되는지 테스트
+     *
+     * @scenario case=sort
+     *
+     * @effects popular_sorted_by_popularity
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_sorted_by_popularity_score_desc(): void
     {
@@ -167,6 +197,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * period=today 필터가 동작하는지 테스트
+     *
+     * @scenario case=period_today
+     *
+     * @effects popular_period_filter_applied
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_filters_by_period_today(): void
     {
@@ -191,6 +227,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * period=week 필터가 동작하는지 테스트
+     *
+     * @scenario case=period_week
+     *
+     * @effects popular_period_filter_applied
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_filters_by_period_week(): void
     {
@@ -216,6 +258,12 @@ class BoardPopularApiTest extends ModuleTestCase
     /**
      * period=all이 year(최근 1년)로 매핑되는지 테스트
      * all → year 하위 호환 매핑: 최근 1년 이내 게시글만 반환
+     *
+     * @scenario case=period_all
+     *
+     * @effects popular_period_all_maps_to_year
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_period_all_maps_to_year(): void
     {
@@ -248,6 +296,12 @@ class BoardPopularApiTest extends ModuleTestCase
      * 북마크 가능한 공개 URL 이라 미지원 값에 422 를 돌려주면 기존 링크가 깨진다.
      * 동시에 period 는 캐시 키에 들어가므로, 원문을 그대로 쓰면 임의 문자열마다
      * 캐시 엔트리가 생겨 키 공간이 무한히 늘어난다 (요청 값이 아니라 해석된 값으로 키를 만든다).
+     *
+     * @scenario case=period_unsupported
+     *
+     * @effects popular_unsupported_period_normalized
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_unsupported_period_falls_back_to_year_and_normalizes_cache_key(): void
     {
@@ -269,12 +323,18 @@ class BoardPopularApiTest extends ModuleTestCase
         $this->assertNotContains('Over One Year', $titles);
 
         // Then: 캐시 키에는 요청 원문이 아니라 해석된 값이 들어간다
-        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_year_5'));
-        $this->assertFalse(Cache::has('g7:module.sirsoft-board:popular_posts_nonsense_5'));
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_v2_year_5_'.app()->getLocale()));
+        $this->assertFalse(Cache::has('g7:module.sirsoft-board:popular_posts_v2_nonsense_5_'.app()->getLocale()));
     }
 
     /**
      * 게시글이 없을 때 빈 배열을 반환하는지 테스트
+     *
+     * @scenario case=empty
+     *
+     * @effects popular_empty_when_no_posts
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_returns_empty_when_no_posts(): void
     {
@@ -294,6 +354,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * 비활성화된 게시판의 게시글은 제외되는지 테스트
+     *
+     * @scenario case=inactive_board
+     *
+     * @effects popular_excludes_inactive_board
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_excludes_inactive_board_posts(): void
     {
@@ -320,6 +386,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * comment_count가 서브쿼리로 정확히 집계되는지 테스트
+     *
+     * @scenario case=comment_count
+     *
+     * @effects popular_comment_count_aggregated
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_returns_correct_comment_count(): void
     {
@@ -351,6 +423,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * author 객체 구조가 올바른지 테스트 (게스트)
+     *
+     * @scenario case=guest_author
+     *
+     * @effects popular_guest_author_structure
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_returns_correct_author_structure_for_guest(): void
     {
@@ -385,6 +463,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * 결과가 캐시되는지 테스트
+     *
+     * @scenario case=cache
+     *
+     * @effects popular_cached_under_versioned_key
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_are_cached(): void
     {
@@ -395,8 +479,8 @@ class BoardPopularApiTest extends ModuleTestCase
         $response1 = $this->getJson('/api/modules/sirsoft-board/boards/popular?limit=5&period=week');
         $response1->assertStatus(200);
 
-        // 캐시 키 확인 (형식: g7:module.sirsoft-board:popular_posts_{period}_{limit})
-        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_week_5'));
+        // 캐시 키 확인 (형식: g7:module.sirsoft-board:popular_posts_v2_{period}_{limit}_{locale} — 게시판 이름이 언어별 값)
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:popular_posts_v2_week_5_'.app()->getLocale()));
 
         // When: 두 번째 API 호출
         $response2 = $this->getJson('/api/modules/sirsoft-board/boards/popular?limit=5&period=week');
@@ -408,6 +492,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * 여러 게시판의 게시글이 통합되는지 테스트
+     *
+     * @scenario case=multi_board
+     *
+     * @effects popular_aggregates_multiple_boards
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_aggregates_posts_from_multiple_boards(): void
     {
@@ -429,6 +519,12 @@ class BoardPopularApiTest extends ModuleTestCase
 
     /**
      * 인기글 응답에 created_at(Y-m-d H:i:s 포맷)과 created_at_formatted(표시용) 필드가 포함되는지 확인
+     *
+     * @scenario case=created_at
+     *
+     * @effects popular_created_at_fields_present
+     *
+     * @return void 반환값 없음
      */
     public function test_popular_includes_created_at_and_created_at_formatted(): void
     {
@@ -497,6 +593,7 @@ class BoardPopularApiTest extends ModuleTestCase
      * 공개 노출을 기대하는 테스트 게시판은 프로덕션처럼 guest read 권한을 갖춰야 한다.
      *
      * @param  Board  $board  대상 게시판
+     * @return void 반환값 없음
      */
     private function grantGuestRead(Board $board): void
     {

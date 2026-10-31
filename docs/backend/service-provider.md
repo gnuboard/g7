@@ -458,6 +458,10 @@ if (! config('app.installer_completed') && ! Schema::hasTable('notification_defi
 
 `installer_completed` 가드가 부팅 시 DB 조회를 줄이는 것과 별개로, `CoreServiceProvider::boot()` 의 정적 훅 리스너 등록(`app/Listeners` 재귀 스캔 + 모듈/플러그인 `getHookListeners()` 클래스 로딩)은 `bootstrap/cache/hooks.php` 캐시로 매 요청 스캔·리플렉션을 제거한다. 캐시 부재/테스트 환경에서는 기존 스캔 경로로 안전 폴백하며, 등록 결과는 스캔 경로와 바이트 동일하다. 상세: [extension/hooks.md "정적 훅 매핑 캐시"](../extension/hooks.md).
 
+### 부팅 중 번역 문구 로그 (BootDeferredLog)
+
+활성 언어팩(ja 등)의 번역 경로는 `LanguagePackServiceProvider` 의 booted 콜백에서 등록된다. 그보다 앞선 `register()`·`boot()`(예: `CoreServiceProvider` 의 확장 자동 비활성화 판정)에서 `Log::warning(__('…'))` 처럼 문구를 바로 만들면 사이트 언어가 ja 여도 폴백(ko) 문구로 기록된다. 부팅 중에도 불리는 번역 문구 로그는 `App\Support\BootDeferredLog::warning()`·`info()` 에 번역 키·치환값·맥락을 넘긴다 — 부팅 중이면 언어팩 등록 직후 사이트 언어로 한 번 남기고(언어팩이 없거나 설치 전이어도 비운다), booted 뒤에는 바로 남긴다.
+
 ### 주의사항
 
 - **인스톨러 설치 완료 시점에 `INSTALLER_COMPLETED=true` 가 `.env` 에 기록되어야 함** — G7 인스톨러(`public/install/includes/task-runner.php`)는 이를 이미 수행
@@ -474,6 +478,7 @@ if (! config('app.installer_completed') && ! Schema::hasTable('notification_defi
 - [ ] `config('app.installer_completed')` 가드로 hasTable 블록 래핑 (성능 최적화)
 - [ ] 인스톨러 환경에서 테스트 수행 (`INSTALLER_COMPLETED` 미설정 상태)
 - [ ] `composer install` 단독 실행 테스트
+- [ ] `boot()` 중에 남기는 번역 문구 로그는 `BootDeferredLog` 로 남긴다 (언어팩 번역 등록 전이라 `__()` 가 폴백 문구가 됨)
 
 ---
 
@@ -516,7 +521,7 @@ config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확�
 
 | 라이프사이클 | 재생성 위치 |
 | --- | --- |
-| 코어 설치 완료 | 인스톨러 `complete_flag` 직후 `config:cache` task |
+| 코어 설치 완료 | 인스톨러 `complete_flag` 직후 `config:cache` task (라우트 캐시도 같은 자리에서 굽는다 — `docs/backend/routing.md` 「갱신이 필요한 지점」) |
 | 코어 업데이트 | `CoreUpdateCommand` Step 11 완료 지점 |
 | 코어 업그레이드 스텝(단독 실행) | `ExecuteUpgradeStepsCommand` 캐시 정리 블록 (spawn 자식은 부모가 처리) |
 | 코어 관리자 설정 저장 / 캐시 정리 / GeoIP / APP_KEY | `SettingsService` / `GeoIpDatabaseService` 의 각 지점 |
@@ -541,4 +546,5 @@ config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확�
 
 - [middleware.md](./middleware.md) - 미들웨어 등록 규칙
 - [authentication.md](./authentication.md) - 인증 및 세션 처리
+- [custom-development.md](../custom-development.md) - 사이트 개발자의 `App\Custom\CustomServiceProvider`(있으면 코어가 마지막에 등록, 7.2.0+)
 - [README.md](./README.md) - 백엔드 가이드 인덱스

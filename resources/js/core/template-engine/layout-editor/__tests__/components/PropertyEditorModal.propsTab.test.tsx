@@ -75,12 +75,16 @@ function renderModal(node: EditorNode) {
 }
 
 describe('PropertyEditorModal — 속성(props) 탭', () => {
+  // @scenario node=prop_controls
+  // @effects props_tab_appears_for_editable_node
   it('propControls 보유 → [속성] 탭 등장 + no-editable 탈출', () => {
     renderModal({ name: 'Icon' });
     expect(screen.getByTestId('g7le-property-tab-props')).toBeTruthy();
     expect(screen.queryByTestId('g7le-property-modal-no-editable')).toBeNull();
   });
 
+  // @scenario node=prop_controls
+  // @effects props_tab_appears_for_editable_node
   it('propControls 만 보유 → 속성 탭 기본 활성 + propValue 컨트롤 렌더(BASE_SCOPE)', () => {
     renderModal({ name: 'Icon' });
     const tab = screen.getByTestId('g7le-property-tab-props');
@@ -89,6 +93,8 @@ describe('PropertyEditorModal — 속성(props) 탭', () => {
     expect(screen.getByTestId('g7le-control-iconName')).toBeTruthy();
   });
 
+  // @scenario node=prop_controls
+  // @effects props_tab_ordered_between_settings_and_style
   it('탭 순서: 속성 탭이 스타일 탭보다 앞(설정→속성→스타일)', () => {
     renderModal({ name: 'Img' });
     const bar = screen.getByRole('tablist');
@@ -103,6 +109,8 @@ describe('PropertyEditorModal — 속성(props) 탭', () => {
 });
 
 describe('PropertyEditorModal — nodeEditor kind-agnostic 디스패치', () => {
+  // @scenario node=node_editor
+  // @effects registered_node_editor_renders_in_props_tab
   it('등록된 kind → [속성] 탭에 노드 에디터 직접 렌더(구조 편집=CSS 아님)', () => {
     const DummyChildren = (): React.ReactElement => (
       <div data-testid="dummy-children-editor" />
@@ -116,6 +124,8 @@ describe('PropertyEditorModal — nodeEditor kind-agnostic 디스패치', () => 
     expect(screen.queryByTestId('g7le-property-modal-no-editable')).toBeNull();
   });
 
+  // @scenario node=node_editor
+  // @effects unregistered_node_editor_degrades_without_render
   it('미등록 kind → 디그레이드(노드 에디터 렌더 0, 속성 탭은 코어 id 로 유지)', () => {
     renderModal({ name: 'Mystery' });
     // 등록 핸들러 없음 → hasNodeEditor=false → 노드 에디터 미렌더.
@@ -137,7 +147,7 @@ describe('PropertyEditorModal — 데이터 연결(dataProps) 영역', () => {
     componentCapabilities: {
       // 데이터형 prop(배열) 선언 → 데이터 연결 영역 노출.
       CardGrid: { dataProps: [{ propKey: 'data', shape: 'array', itemFields: ['name'] }] },
-      // 구조/수치 prop 만(dataProps 없음) → 데이터 연결 영역 0(1차 결함 근절 회귀 가드).
+      // 구조/수치 prop 만(dataProps 없음) → 데이터 연결 영역 0(결함 근절 회귀 가드).
       Spacer: { propControls: ['colCount'] },
     },
   };
@@ -167,6 +177,8 @@ describe('PropertyEditorModal — 데이터 연결(dataProps) 영역', () => {
     );
   }
 
+  // @scenario node=data_props
+  // @effects data_binding_area_only_for_declared_dataprops
   it('dataProps 선언 컴포넌트 → [속성] 탭에 데이터 연결 영역 노출 + 기본 활성', () => {
     renderBinding({ name: 'CardGrid', props: {} });
     expect(screen.getByTestId('g7le-property-tab-props').getAttribute('data-active')).toBe('true');
@@ -174,6 +186,8 @@ describe('PropertyEditorModal — 데이터 연결(dataProps) 영역', () => {
     expect(screen.getByTestId('g7le-binding-row-data')).toBeTruthy();
   });
 
+  // @scenario node=data_props
+  // @effects data_binding_area_only_for_declared_dataprops
   it('회귀 가드: 구조/수치 prop 만 보유(dataProps 없음) → 데이터 연결 영역 0', () => {
     renderBinding({ name: 'Spacer', props: {} });
     // propControls(구조/수치)는 속성 탭에 있으나 데이터 연결 섹션은 렌더되지 않는다.
@@ -184,6 +198,8 @@ describe('PropertyEditorModal — 데이터 연결(dataProps) 영역', () => {
   // iteration(반복) 노드 공용 데이터 연결. node.iteration 은 구조 키라
   // capability 무관 — capability 에 dataProps/nodeEditor 가 없는 순수 Div 라도 iteration 이
   // 있으면 "반복 데이터 연결" 영역이 [속성] 탭에 떠야 한다.
+  // @scenario node=iteration
+  // @effects iteration_binding_area_follows_node_structure
   it('iteration 노드(capability dataProps 무관) → [속성] 탭에 반복 데이터 연결 영역 노출 + no-editable 탈출', () => {
     renderBinding({ name: 'Spacer', iteration: { source: '', item_var: 'item' } });
     expect(screen.getByTestId('g7le-property-tab-props').getAttribute('data-active')).toBe('true');
@@ -191,6 +207,8 @@ describe('PropertyEditorModal — 데이터 연결(dataProps) 영역', () => {
     expect(screen.queryByTestId('g7le-property-modal-no-editable')).toBeNull();
   });
 
+  // @scenario node=iteration
+  // @effects iteration_binding_area_follows_node_structure
   it('iteration 없는 노드 → 반복 데이터 연결 영역 0(노드 구조 기반 게이트)', () => {
     renderBinding({ name: 'CardGrid', props: {} });
     expect(screen.queryByTestId('g7le-iteration-binding-section')).toBeNull();
@@ -212,6 +230,8 @@ describe('PropertyEditorModal — 코어 dataKey(nodeKey apply) 통합', () => {
     },
   };
 
+  // @scenario node=core_props
+  // @effects core_data_key_written_to_node_not_props
   it('5-15 dataKey 입력 → onPatchNode 인자의 node.dataKey 설정, props.dataKey 부재', () => {
     const onPatchNode = vi.fn();
     render(

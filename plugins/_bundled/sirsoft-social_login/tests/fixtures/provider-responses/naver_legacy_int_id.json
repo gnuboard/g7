@@ -1,0 +1,8 @@
+{
+    "resultcode": "00",
+    "message": "success",
+    "response": {
+        "id": 32742776,
+        "email": "naver.legacy@example.test"
+    }
+}

@@ -1,0 +1,17 @@
+feature: 코어 업데이트 확인 실패 사유 문구 (CoreUpdateService::fetchLatestVersionFromGithub)
+
+description: |
+  코어 업데이트 확인이 관리자 화면에 돌려주는 실패 사유 문구가 번역 자리표시자(:status, :message)를
+  남기지 않고 실제 값으로 채워지는지 고정한다(#703 브라우저 실측 후속 — 같은 문구를 쓰는 다른 분기는
+  값을 넘기는데 「200 이지만 릴리스 정보 없음」 분기만 빠져 있었다).
+
+  축 response 는 GitHub 최신 릴리스 API 응답의 형태다.
+
+axes:
+  response: [ok_without_release]
+
+effects:
+  - release_check_reason_has_no_placeholder
+
+test_files:
+  - tests/Unit/Services/CoreUpdateReleaseCheckMessageTest.php

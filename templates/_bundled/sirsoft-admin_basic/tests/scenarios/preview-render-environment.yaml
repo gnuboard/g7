@@ -1,0 +1,42 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 컴포넌트(7)×미리보기 기기(3)×렌더 환경 유무(2) 조합은 컴포넌트마다 읽는 값이 달라 곱으로 전개해도 의미가 없다. 컴포넌트마다 「환경 우선」과 「환경 없음 폴백」을 effects 로 잠근다. effects·test_files 축은 계속 검사한다.
+feature: 레이아웃 편집기 미리보기 렌더 환경 — 관리자 기본 템플릿 컴포넌트 (공개 이슈 #141)
+
+description: |
+  레이아웃 편집기 미리보기는 같은 관리자 문서 안의 div 라서, 브라우저 창 폭·호스트 언어·호스트 dispatcher 는
+  미리보기 기기 폭·콘텐츠 언어·미리보기 격리 dispatcher 와 다르다. 이 템플릿의 컴포넌트 중 자식을 직접 그리거나
+  폭으로 형태를 고르는 것들이 호스트 값을 읽었다.
+
+  - CardGrid 셀 — 셀 렌더 함수에 렌더 환경을 넘기지 않음
+  - RichSelect component_layout — 같은 이유
+  - SlotContainer·Modal footer — 호스트 레지스트리·dispatcher 로 그리고 isEditMode·편집 경로 누락
+  - FileTreePicker(mode=auto)·CodeWorkspace(글자 크기·줄바꿈) — `window.innerWidth` 로 분기
+
+  고침: 엔진이 넘겨 주는 `__componentContext.renderEnvRef.current`(렌더 환경)를 쓰고, 폭은
+  `G7Core.useResponsive()`(공용 훅 `useRenderWidth`)를 우선한다. 환경·훅이 없으면 종전대로 호스트 값·창 폭이다.
+
+axes:
+  component: [CardGrid, DataGrid, RichSelect, SlotContainer, Modal, FileTreePicker, CodeWorkspace]
+  preview_device: [desktop, tablet, mobile]
+  render_env: [present, absent]
+
+effects:
+  - preview_cell_render_follows_preview_width                  # CardGrid·DataGrid 셀이 렌더 환경을 받는다
+  - preview_cell_wrapper_uses_render_env_over_host             # RichSelect component_layout 이 렌더 환경을 넘긴다
+  - preview_slot_and_footer_use_render_env                     # SlotContainer·Modal footer 가 환경의 레지스트리·dispatcher·편집 모드로 그린다
+  - preview_render_env_falls_back_to_host_outside_preview      # 환경이 없으면 호스트 값(편집기 밖 무변화)
+  - preview_component_width_branch_follows_render_width        # FileTreePicker·CodeWorkspace 가 렌더 폭으로 분기
+  - preview_component_width_falls_back_to_window_without_hook  # 훅이 없으면 창 폭 + resize
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CardGrid.renderEnvironment.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGrid.renderEnvironment.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/RichSelect.renderEnvironment.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/SlotContainer.renderEnvironment.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Modal.renderEnvironment.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileTreePicker.renderWidth.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeWorkspace.renderWidth.test.tsx
+
+validation:
+  note: |
+    코어 쪽 렌더 환경 통로와 CSS 매체 격리는 `tests/scenarios/layout-editor-preview-render-environment.yaml` 이 소유한다.
+    DataGrid 는 코드 변경 없이 6경로 모두 `__componentContext` 를 넘겨 환경이 자동 전달되므로, 그 전달을 회귀 잠금한다.

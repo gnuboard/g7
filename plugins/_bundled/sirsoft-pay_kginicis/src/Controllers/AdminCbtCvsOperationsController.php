@@ -8,10 +8,18 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Services\CbtCvsOperationsService;
 
 class AdminCbtCvsOperationsController extends AdminBaseController
 {
+    use GuardsOrderScope;
+
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  CbtCvsOperationsService  $operationsService  해외 편의점 결제 운영 서비스
+     */
     public function __construct(
         private readonly CbtCvsOperationsService $operationsService,
     ) {
@@ -26,6 +34,10 @@ class AdminCbtCvsOperationsController extends AdminBaseController
      */
     public function show(string $orderNumber): JsonResponse
     {
+        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.read')) {
+            return $denied;
+        }
+
         $summary = $this->operationsService->summary($orderNumber);
         if ($summary === null) {
             return ResponseHelper::pluginError(
@@ -48,6 +60,10 @@ class AdminCbtCvsOperationsController extends AdminBaseController
     // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — 감사 로그용 ip() 만 참조 (검증 대상 필드 없음)
     public function simulateNotify(Request $request, string $orderNumber): JsonResponse
     {
+        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.update')) {
+            return $denied;
+        }
+
         $result = $this->operationsService->simulatePaidNotify($orderNumber, $request->ip());
 
         if (! ($result['ok'] ?? false)) {
@@ -69,6 +85,10 @@ class AdminCbtCvsOperationsController extends AdminBaseController
      */
     public function expire(string $orderNumber): JsonResponse
     {
+        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.update')) {
+            return $denied;
+        }
+
         $result = $this->operationsService->expireOverdue($orderNumber);
 
         if (! ($result['ok'] ?? false)) {
@@ -90,6 +110,10 @@ class AdminCbtCvsOperationsController extends AdminBaseController
      */
     public function recheck(string $orderNumber): JsonResponse
     {
+        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.update')) {
+            return $denied;
+        }
+
         $result = $this->operationsService->markRechecked($orderNumber);
 
         if (! ($result['ok'] ?? false)) {
@@ -103,6 +127,12 @@ class AdminCbtCvsOperationsController extends AdminBaseController
         );
     }
 
+    /**
+     * 운영 서비스의 실패 결과를 플러그인 오류 응답으로 바꿉니다.
+     *
+     * @param  array<string, mixed>  $result  운영 서비스 결과 (오류 키·상태 포함)
+     * @return JsonResponse 오류 응답
+     */
     private function operationError(array $result): JsonResponse
     {
         return ResponseHelper::pluginError(

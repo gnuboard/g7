@@ -29,6 +29,11 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
 
     private string $storagePath;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,6 +48,11 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
         $this->service->clearCache();
     }
 
+    /**
+     * 테스트 환경을 정리합니다.
+     *
+     * @return void 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->storagePath)) {
@@ -56,6 +66,7 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * 살아 있는 PG provider 를 레지스트리에 등록합니다.
      *
      * @param  array<int, string>  $ids  provider ID 목록
+     * @return void 없음
      */
     private function registerPgProviders(array $ids): void
     {
@@ -76,6 +87,7 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * PG 고정(`pg_locked`) 확장 결제수단을 카탈로그에 등록합니다.
      *
      * @param  string  $pgProvider  이 수단이 고정으로 쓰는 PG
+     * @return void 없음
      */
     private function registerLockedExtensionMethod(string $pgProvider): void
     {
@@ -105,6 +117,7 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      *
      * @param  string|null  $cardPgProvider  card 수단에 지정할 PG
      * @param  string|null  $defaultPgProvider  기본 PG
+     * @return void 없음
      */
     private function seedOrderSettings(?string $cardPgProvider, ?string $defaultPgProvider): void
     {
@@ -114,6 +127,10 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
             'payment_methods' => [
                 ['id' => 'card', 'is_active' => true, 'sort_order' => 1, 'pg_provider' => $cardPgProvider],
                 ['id' => 'dbank', 'is_active' => true, 'sort_order' => 2],
+            ],
+            // 무통장입금은 사용 중인 입금 계좌가 있어야 공개 목록에 남는다(#703) — PG 판정과 무관한 전제
+            'bank_accounts' => [
+                ['bank_code' => '004', 'account_number' => '123-456', 'account_holder' => '테스트상점', 'is_active' => true, 'is_default' => true],
             ],
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
@@ -151,6 +168,8 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * @scenario pg_provider_state=dead_own
      *
      * @effects dead_pg_method_hidden_from_checkout, dead_pg_method_flagged_for_admin
+     *
+     * @return void 없음
      */
     public function test_dead_own_pg_provider_is_hidden_from_public(): void
     {
@@ -171,6 +190,8 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * @scenario pg_provider_state=dead_own
      *
      * @effects dead_pg_method_hidden_from_checkout
+     *
+     * @return void 없음
      */
     public function test_live_default_does_not_rescue_dead_own_provider(): void
     {
@@ -186,6 +207,8 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * @scenario pg_provider_state=dead_default
      *
      * @effects dead_pg_method_hidden_from_checkout, dead_default_pg_normalized_in_public
+     *
+     * @return void 없음
      */
     public function test_dead_default_pg_provider_blocks_method_without_own(): void
     {
@@ -210,6 +233,8 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * @scenario pg_provider_state=none
      *
      * @effects unconfigured_pg_keeps_legacy_contract
+     *
+     * @return void 없음
      */
     public function test_unset_pg_provider_keeps_method_visible(): void
     {
@@ -229,6 +254,8 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * @scenario pg_provider_state=live
      *
      * @effects live_pg_method_remains_visible
+     *
+     * @return void 없음
      */
     public function test_live_pg_provider_stays_visible(): void
     {
@@ -246,6 +273,8 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * @scenario pg_provider_state=dead_default
      *
      * @effects non_pg_method_unaffected_by_registry
+     *
+     * @return void 없음
      */
     public function test_non_pg_method_is_not_affected(): void
     {
@@ -266,6 +295,8 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * @scenario pg_provider_state=dead_own
      *
      * @effects dead_pg_method_hidden_from_checkout, dead_pg_method_flagged_for_admin
+     *
+     * @return void 없음
      */
     public function test_pg_locked_method_has_no_orphan_exemption(): void
     {
@@ -299,6 +330,8 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * @scenario pg_provider_state=live
      *
      * @effects live_pg_method_remains_visible
+     *
+     * @return void 없음
      */
     public function test_pg_locked_method_with_live_provider_stays_visible(): void
     {
@@ -324,6 +357,8 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * @scenario pg_provider_state=dead_own
      *
      * @effects runtime_only_flag_not_persisted
+     *
+     * @return void 없음
      */
     public function test_orphaned_pg_flag_is_not_persisted(): void
     {
@@ -353,6 +388,8 @@ class PaymentSettingsOrphanedPgProviderTest extends ModuleTestCase
      * @scenario pg_provider_state=dead_own
      *
      * @effects dead_pg_method_hidden_from_checkout, dead_default_pg_normalized_in_public
+     *
+     * @return void 없음
      */
     public function test_checkout_endpoint_returns_the_same_filtered_list(): void
     {

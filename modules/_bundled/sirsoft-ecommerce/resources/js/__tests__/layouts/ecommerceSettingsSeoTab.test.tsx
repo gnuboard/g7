@@ -95,14 +95,20 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // 1. Partial 메타 검증
   // ==============================
   describe('Partial 메타 정보', () => {
+    // @scenario case=seo_tab_c01
+    // @effects seo_tab_layout_structure_holds
     it('is_partial이 true이다', () => {
       expect(tabSeo.meta.is_partial).toBe(true);
     });
 
+    // @scenario case=seo_tab_c02
+    // @effects seo_tab_layout_structure_holds
     it('루트 ID는 tab_content_seo이다', () => {
       expect(tabSeo.id).toBe('tab_content_seo');
     });
 
+    // @scenario case=seo_tab_c03
+    // @effects seo_tab_layout_structure_holds
     it('탭 활성화 조건(if)이 seo 탭을 체크한다', () => {
       expect(tabSeo.if).toContain("'seo'");
       expect(tabSeo.if).toContain('activeEcommerceSettingsTab');
@@ -113,11 +119,15 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // 2. Phase 1 변경사항 — 제거된 섹션 확인
   // ==============================
   describe('Phase 1 변경사항 — 코어 이관 섹션 제거', () => {
+    // @scenario case=seo_tab_c04
+    // @effects seo_tab_layout_structure_holds
     it('메인화면 SEO 설정 섹션(main_seo_card)이 없다', () => {
       const mainSeoCard = findById(tabSeo, 'main_seo_card');
       expect(mainSeoCard).toBeNull();
     });
 
+    // @scenario case=seo_tab_c05
+    // @effects seo_tab_layout_structure_holds
     it('User-Agent 관리 섹션(ua_card 또는 bot_ua)이 없다', () => {
       const uaCard = findById(tabSeo, 'ua_card');
       const botUa = findById(tabSeo, 'bot_ua_card');
@@ -125,16 +135,22 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       expect(botUa).toBeNull();
     });
 
+    // @scenario case=seo_tab_c06
+    // @effects seo_tab_layout_structure_holds
     it('seo_user_agents 바인딩이 없다 (코어로 이관됨)', () => {
       const uaInput = findByPropName(tabSeo, 'seo.seo_user_agents');
       expect(uaInput).toBeNull();
     });
 
+    // @scenario case=seo_tab_c07
+    // @effects seo_tab_layout_structure_holds
     it('seo_meta_title 바인딩이 없다 (코어로 이관됨)', () => {
       const metaTitleInput = findByPropName(tabSeo, 'seo.seo_meta_title');
       expect(metaTitleInput).toBeNull();
     });
 
+    // @scenario case=seo_tab_c08
+    // @effects seo_tab_layout_structure_holds
     it('seo_meta_description 바인딩이 없다 (코어로 이관됨)', () => {
       const metaDescInput = findByPropName(tabSeo, 'seo.seo_meta_description');
       expect(metaDescInput).toBeNull();
@@ -147,12 +163,16 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // @scenario layout-semantic-asset-mapping-408-seo-tab
   // @effects ecommerce_seo_tab_meta_settings_header_uses_section_header_asset, ecommerce_seo_tab_replaces_card_accordion_with_admin_card_for_four_page_types, ecommerce_seo_tab_form_field_names_preserve_seo_meta_category_search_product_shop_index
   describe('메타 설정 섹션 (section-header + admin-card × 4)', () => {
+    // @scenario case=seo_tab_c09
+    // @effects seo_tab_layout_structure_holds
     it('meta_settings_header가 section-header 자산을 사용한다', () => {
       const header = findById(tabSeo, 'meta_settings_header');
       expect(header).not.toBeNull();
-      expect(header.props.className).toBe('section-header');
+      expect(header.props.className).toBe('ecommerce-section-header');
     });
 
+    // @scenario case=seo_tab_c10
+    // @effects seo_tab_layout_structure_holds
     it('섹션 헤더의 H3 제목이 다국어 키를 사용한다', () => {
       const header = findById(tabSeo, 'meta_settings_header');
       const h3 = findAllByComponentName(header, 'H3')[0];
@@ -160,6 +180,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       expect(h3.text).toContain('$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.title');
     });
 
+    // @scenario case=seo_tab_c11
+    // @effects seo_tab_layout_structure_holds
     it('섹션 헤더의 P 설명이 다국어 키를 사용한다', () => {
       const header = findById(tabSeo, 'meta_settings_header');
       const p = findAllByComponentName(header, 'P')[0];
@@ -167,6 +189,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       expect(p.text).toContain('$t:sirsoft-ecommerce.admin.settings.seo.meta_settings.description');
     });
 
+    // @scenario case=seo_tab_c12
+    // @effects seo_tab_layout_structure_holds
     it('페이지별 admin-card 4개가 존재한다 (category/search/product/shop_index)', () => {
       const cardIds = [
         'category_page_card',
@@ -177,12 +201,14 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       for (const id of cardIds) {
         const card = findById(tabSeo, id);
         expect(card, `${id} 카드가 없다`).not.toBeNull();
-        expect(card.props.className).toBe('admin-card');
+        expect(card.props.className).toBe('ecommerce-admin-card');
         expect(card.name).toBe('SectionLayout');
       }
     });
 
     describe('카테고리 페이지 카드', () => {
+      // @scenario case=seo_tab_c13
+      // @effects seo_tab_layout_structure_holds
       it('meta_category_title Input이 존재한다', () => {
         const input = findByPropName(tabSeo, 'seo.meta_category_title');
         expect(input).not.toBeNull();
@@ -190,12 +216,16 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
         expect(input.props.type).toBe('text');
       });
 
+      // @scenario case=seo_tab_c14
+      // @effects seo_tab_layout_structure_holds
       it('meta_category_description Textarea가 존재한다', () => {
         const textarea = findByPropName(tabSeo, 'seo.meta_category_description');
         expect(textarea).not.toBeNull();
         expect(textarea.name).toBe('Textarea');
       });
 
+      // @scenario case=seo_tab_c15
+      // @effects seo_tab_layout_structure_holds
       it('카테고리 title 에러 표시 조건이 올바르다', () => {
         const titleField = findById(tabSeo, 'field_category_title');
         expect(titleField).not.toBeNull();
@@ -206,6 +236,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
         expect(errorSpans[0].if).toContain("_local.errors?.['seo.meta_category_title']");
       });
 
+      // @scenario case=seo_tab_c16
+      // @effects seo_tab_layout_structure_holds
       it('카테고리 title placeholder에 변수 패턴이 있다', () => {
         const input = findByPropName(tabSeo, 'seo.meta_category_title');
         expect(input.props.placeholder).toContain('{commerce_name}');
@@ -214,18 +246,24 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
     });
 
     describe('검색 페이지 카드', () => {
+      // @scenario case=seo_tab_c17
+      // @effects seo_tab_layout_structure_holds
       it('meta_search_title Input이 존재한다', () => {
         const input = findByPropName(tabSeo, 'seo.meta_search_title');
         expect(input).not.toBeNull();
         expect(input.name).toBe('Input');
       });
 
+      // @scenario case=seo_tab_c18
+      // @effects seo_tab_layout_structure_holds
       it('meta_search_description Textarea가 존재한다', () => {
         const textarea = findByPropName(tabSeo, 'seo.meta_search_description');
         expect(textarea).not.toBeNull();
         expect(textarea.name).toBe('Textarea');
       });
 
+      // @scenario case=seo_tab_c19
+      // @effects seo_tab_layout_structure_holds
       it('검색 title placeholder에 변수 패턴이 있다', () => {
         const input = findByPropName(tabSeo, 'seo.meta_search_title');
         expect(input.props.placeholder).toContain('{commerce_name}');
@@ -234,18 +272,24 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
     });
 
     describe('상품 페이지 카드', () => {
+      // @scenario case=seo_tab_c20
+      // @effects seo_tab_layout_structure_holds
       it('meta_product_title Input이 존재한다', () => {
         const input = findByPropName(tabSeo, 'seo.meta_product_title');
         expect(input).not.toBeNull();
         expect(input.name).toBe('Input');
       });
 
+      // @scenario case=seo_tab_c21
+      // @effects seo_tab_layout_structure_holds
       it('meta_product_description Textarea가 존재한다', () => {
         const textarea = findByPropName(tabSeo, 'seo.meta_product_description');
         expect(textarea).not.toBeNull();
         expect(textarea.name).toBe('Textarea');
       });
 
+      // @scenario case=seo_tab_c22
+      // @effects seo_tab_layout_structure_holds
       it('상품 title placeholder에 변수 패턴이 있다', () => {
         const input = findByPropName(tabSeo, 'seo.meta_product_title');
         expect(input.props.placeholder).toContain('{commerce_name}');
@@ -258,11 +302,15 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // 4. SEO Friendly 카드 구조
   // ==============================
   describe('SEO Friendly 카드 (seo_friendly_card)', () => {
+    // @scenario case=seo_tab_c23
+    // @effects seo_tab_layout_structure_holds
     it('seo_friendly_card가 존재한다', () => {
       const card = findById(tabSeo, 'seo_friendly_card');
       expect(card).not.toBeNull();
     });
 
+    // @scenario case=seo_tab_c24
+    // @effects seo_tab_layout_structure_holds
     it('카드 제목이 다국어 키를 사용한다', () => {
       const title = findById(tabSeo, 'seo_friendly_title');
       expect(title).not.toBeNull();
@@ -270,25 +318,33 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
     });
 
     describe('페이지 제공 체크박스', () => {
+      // @scenario case=seo_tab_c25
+      // @effects seo_tab_layout_structure_holds
       it('seo_category 체크박스가 존재한다', () => {
         const checkbox = findByPropName(tabSeo, 'seo.seo_category');
         expect(checkbox).not.toBeNull();
         expect(checkbox.props.type).toBe('checkbox');
-        expect(checkbox.props.className).toBe('checkbox');
+        expect(checkbox.props.className).toBe('ecommerce-checkbox');
       });
 
+      // @scenario case=seo_tab_c26
+      // @effects seo_tab_layout_structure_holds
       it('seo_search_result 체크박스가 존재한다', () => {
         const checkbox = findByPropName(tabSeo, 'seo.seo_search_result');
         expect(checkbox).not.toBeNull();
         expect(checkbox.props.type).toBe('checkbox');
       });
 
+      // @scenario case=seo_tab_c27
+      // @effects seo_tab_layout_structure_holds
       it('seo_product_detail 체크박스가 존재한다', () => {
         const checkbox = findByPropName(tabSeo, 'seo.seo_product_detail');
         expect(checkbox).not.toBeNull();
         expect(checkbox.props.type).toBe('checkbox');
       });
 
+      // @scenario case=seo_tab_c28
+      // @effects seo_tab_layout_structure_holds
       it('모든 체크박스의 기본값이 true이다', () => {
         const category = findByPropName(tabSeo, 'seo.seo_category');
         const search = findByPropName(tabSeo, 'seo.seo_search_result');
@@ -301,11 +357,15 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
     });
 
     describe('캐시 관리 섹션', () => {
+      // @scenario case=seo_tab_c29
+      // @effects seo_tab_layout_structure_holds
       it('cache_section이 존재한다', () => {
         const section = findById(tabSeo, 'cache_section');
         expect(section).not.toBeNull();
       });
 
+      // @scenario case=seo_tab_c30
+      // @effects seo_tab_layout_structure_holds
       it('캐시 관련 다국어 키가 사용된다', () => {
         const section = findById(tabSeo, 'cache_section');
         const keys = collectI18nKeys(section);
@@ -313,6 +373,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
         expect(keys).toContain('sirsoft-ecommerce.admin.settings.seo.seo_friendly.cache_description');
       });
 
+      // @scenario case=seo_tab_c31
+      // @effects seo_tab_layout_structure_holds
       it('캐시 삭제 버튼이 존재한다', () => {
         const section = findById(tabSeo, 'cache_section');
         const buttons = findAllByComponentName(section, 'Button');
@@ -326,6 +388,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
         expect(clearBtn.props.className).toContain('btn-danger');
       });
 
+      // @scenario case=seo_tab_c32
+      // @effects seo_tab_layout_structure_holds
       it('캐시 정보 행(cache_info_row)이 존재한다', () => {
         const row = findById(tabSeo, 'cache_info_row');
         expect(row).not.toBeNull();
@@ -337,6 +401,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // 5. 전체 구조 검증
   // ==============================
   describe('전체 구조', () => {
+    // @scenario case=seo_tab_c33
+    // @effects seo_tab_layout_structure_holds
     it('루트 children이 section-header + admin-card × 4 + seo_friendly_card 순서다', () => {
       const ids = tabSeo.children.map((c: any) => c.id);
       expect(ids).toEqual([
@@ -349,6 +415,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       ]);
     });
 
+    // @scenario case=seo_tab_c34
+    // @effects seo_tab_layout_structure_holds
     it('모든 Input/Textarea의 name이 seo. 접두사를 사용한다', () => {
       const inputs = findAllByComponentName(tabSeo, 'Input')
         .filter((i: any) => i.props?.name && i.props.type !== 'checkbox');
@@ -362,6 +430,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       }
     });
 
+    // @scenario case=seo_tab_c35
+    // @effects seo_tab_layout_structure_holds
     it('체크박스의 name도 seo. 접두사를 사용한다 (4개: category/search/product/shop_index)', () => {
       const checkboxes = findAllByComponentName(tabSeo, 'Input')
         .filter((i: any) => i.props?.type === 'checkbox');
@@ -377,6 +447,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
   // 6. 다국어 키 검증
   // ==============================
   describe('다국어 키', () => {
+    // @scenario case=seo_tab_c36
+    // @effects seo_tab_layout_structure_holds
     it('모든 다국어 키가 sirsoft-ecommerce 네임스페이스를 사용한다', () => {
       const keys = collectI18nKeys(tabSeo);
       expect(keys.length).toBeGreaterThan(0);
@@ -386,6 +458,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       }
     });
 
+    // @scenario case=seo_tab_c37
+    // @effects seo_tab_layout_structure_holds
     it('meta_settings 관련 키가 포함된다', () => {
       const keys = collectI18nKeys(tabSeo);
       expect(keys).toContain('sirsoft-ecommerce.admin.settings.seo.meta_settings.title');
@@ -394,6 +468,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       expect(keys).toContain('sirsoft-ecommerce.admin.settings.seo.meta_settings.meta_description');
     });
 
+    // @scenario case=seo_tab_c38
+    // @effects seo_tab_layout_structure_holds
     it('seo_friendly 관련 키가 포함된다', () => {
       const keys = collectI18nKeys(tabSeo);
       expect(keys).toContain('sirsoft-ecommerce.admin.settings.seo.seo_friendly.title');
@@ -401,6 +477,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       expect(keys).toContain('sirsoft-ecommerce.admin.settings.seo.seo_friendly.provide_pages');
     });
 
+    // @scenario case=seo_tab_c39
+    // @effects seo_tab_layout_structure_holds
     it('페이지 아코디언 타이틀 키가 포함된다', () => {
       const keys = collectI18nKeys(tabSeo);
       expect(keys).toContain('sirsoft-ecommerce.admin.settings.seo.meta_settings.category_page');
@@ -420,6 +498,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       'shop_index_page_card',
     ];
 
+    // @scenario case=seo_tab_c40
+    // @effects seo_tab_layout_structure_holds
     it('페이지별 카드 4개에 걸쳐 Input 4 + Textarea 4가 존재한다', () => {
       const inputs = pageCardIds.flatMap((id) => {
         const card = findById(tabSeo, id);
@@ -434,6 +514,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       expect(textareas).toHaveLength(4);
     });
 
+    // @scenario case=seo_tab_c41
+    // @effects seo_tab_layout_structure_holds
     it('SEO Friendly 체크박스 4개가 존재한다', () => {
       const friendlyCard = findById(tabSeo, 'seo_friendly_card');
       const checkboxes = findAllByComponentName(friendlyCard, 'Input')
@@ -442,6 +524,8 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       expect(checkboxes).toHaveLength(4);
     });
 
+    // @scenario case=seo_tab_c42
+    // @effects seo_tab_layout_structure_holds
     it('에러 표시 Span이 8개 존재한다 (각 Input/Textarea 마다)', () => {
       const errorSpans = pageCardIds.flatMap((id) => {
         const card = findById(tabSeo, id);
@@ -452,11 +536,13 @@ describe('이커머스 SEO 설정 탭 (_tab_seo.json)', () => {
       expect(errorSpans).toHaveLength(8);
     });
 
+    // @scenario case=seo_tab_c43
+    // @effects seo_tab_layout_structure_holds
     it('힌트(form-hint) P 태그가 카테고리/검색/상품/쇼핑몰메인 카드에 분포한다', () => {
       const hints = pageCardIds.flatMap((id) => {
         const card = findById(tabSeo, id);
         return findAllByComponentName(card, 'P')
-          .filter((p: any) => p.props?.className === 'form-hint');
+          .filter((p: any) => p.props?.className === 'ecommerce-form-hint');
       });
 
       expect(hints.length).toBeGreaterThanOrEqual(4);

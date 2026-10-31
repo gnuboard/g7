@@ -26,6 +26,7 @@ class GenericEntitySyncHelper
      * 내부적으로 `HasUserOverrides::syncOrCreateFromUpgrade` 를 위임 호출합니다.
      *
      * @template T of Model
+     *
      * @param  class-string<T>  $modelClass  HasUserOverrides 적용 모델 클래스
      * @param  array<string, mixed>  $finder  updateOrCreate 의 unique 키 조건
      * @param  array<string, mixed>  $attributes  갱신할 속성
@@ -40,6 +41,10 @@ class GenericEntitySyncHelper
      * 주어진 scope 내에서 currentKeys 에 없는 row 를 삭제합니다 (완전 동기화).
      *
      * 정책: `user_overrides` 무관 — seeder/config 에 없는 row 는 삭제.
+     *
+     * **운영자가 직접 행을 만드는 표라면 운영자 행을 가를 범위 조건 없이 부르지 말 것** — 예: `['created_by' => null]`
+     * (시더가 만든 행만). 조건 없이 부르면 언어팩을 켜고 끌 때(시더 재실행)마다 운영자가 만든 행이 흔적 없이 지워진다
+     * (#727 — 게시판 유형·클레임 사유·배송유형·택배사). 가를 표식이 없는 표는 호출하지 않는다.
      *
      * @param  class-string<Model>  $modelClass  대상 모델 클래스
      * @param  array<string, mixed>  $scopeFilter  삭제 대상 한정 조건 (예: ['extension_identifier' => 'x', 'type' => 'refund']). 빈 배열이면 전체 테이블 대상.

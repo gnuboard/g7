@@ -6,6 +6,7 @@ use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\HookManager;
 use App\Search\SearchPagePolicy;
 use App\Support\ExtensionStoragePath;
+use App\Support\LocalizedValue;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -26,6 +27,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValu
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 상품 서비스
@@ -86,6 +88,17 @@ class ProductService
         return g7_module_settings('sirsoft-ecommerce', 'language_currency')['default_currency'] ?? 'KRW';
     }
 
+    /**
+     * 상품 서비스가 사용하는 저장소·하위 서비스를 주입받습니다.
+     *
+     * @param  ProductRepositoryInterface  $repository  상품 저장소
+     * @param  ProductImageService  $productImageService  상품 이미지 파일 관리 서비스
+     * @param  SequenceService  $sequenceService  상품 코드 채번 서비스
+     * @param  OrderOptionRepositoryInterface  $orderOptionRepository  주문 옵션 저장소 (옵션 삭제 시 주문 이력 확인용)
+     * @param  ProductLabelRepositoryInterface  $productLabelRepository  상품 라벨 저장소
+     * @param  ProductAdditionalOptionValueRepositoryInterface  $additionalOptionValueRepository  추가옵션 선택지 저장소
+     * @param  ProductInquiryService  $inquiryService  상품 문의 서비스
+     */
     public function __construct(
         protected ProductRepositoryInterface $repository,
         protected ProductImageService $productImageService,
@@ -408,7 +421,7 @@ class ProductService
         return [
             'canDelete' => $ordersCount === 0,
             'reason' => $ordersCount > 0
-                ? __('sirsoft-ecommerce::messages.products.has_order_history', ['count' => $ordersCount])
+                ? trans_choice('sirsoft-ecommerce::messages.products.has_order_history', $ordersCount)
                 : null,
             'relatedData' => [
                 'orders' => $ordersCount,
@@ -503,6 +516,7 @@ class ProductService
      * ProductImageService에 위임하여 상품 이미지 폴더 전체를 삭제합니다.
      *
      * @param  Product  $product  상품
+     * @return void 반환값 없음
      */
     private function deleteProductImageFiles(Product $product): void
     {
@@ -719,6 +733,7 @@ class ProductService
      *
      * @param  Product  $product  대상 상품 (DB 기존값)
      * @param  array  $updateData  적용될 수정 데이터
+     * @return void 반환값 없음
      *
      * @throws ProductPriceRelationException 판매가가 정가를 초과하는 경우
      */
@@ -771,6 +786,7 @@ class ProductService
      * 재고 일치 검증
      *
      * @param  Product  $product  상품 모델
+     * @return void 반환값 없음
      *
      * @throws StockMismatchException
      */
@@ -790,6 +806,7 @@ class ProductService
      *
      * @param  Product  $product  상품 모델
      * @param  array  $options  옵션 데이터 배열
+     * @return void 반환값 없음
      */
     protected function createOptions(Product $product, array $options): void
     {
@@ -814,6 +831,7 @@ class ProductService
      *
      * @param  Product  $product  상품 모델
      * @param  array  $options  옵션 데이터 배열
+     * @return void 반환값 없음
      */
     protected function syncOptions(Product $product, array $options): void
     {
@@ -875,6 +893,7 @@ class ProductService
      * 상품 재고를 옵션 재고 합계로 동기화
      *
      * @param  Product  $product  상품 모델
+     * @return void 반환값 없음
      */
     protected function syncProductStock(Product $product): void
     {
@@ -891,6 +910,7 @@ class ProductService
      * 옵션 보유 상품에서 기본 옵션이 존재하면 상품 selling_price 를 일치시킵니다.
      *
      * @param  Product  $product  상품 모델
+     * @return void 반환값 없음
      */
     protected function syncProductSellingPriceFromDefaultOption(Product $product): void
     {
@@ -916,6 +936,7 @@ class ProductService
      * 옵션 삭제/수정/추가 후 option_groups와 실제 옵션 간 동기화에 사용됩니다.
      *
      * @param  Product  $product  상품 모델
+     * @return void 반환값 없음
      */
     public function rebuildOptionGroups(Product $product): void
     {
@@ -983,6 +1004,7 @@ class ProductService
      * option_values가 배열 형식인지 확인
      *
      * @param  mixed  $optionValues  옵션 값
+     * @return bool 옵션 값이 비어 있지 않은 배열 형식이면 true
      */
     protected function isOptionValuesArrayFormat($optionValues): bool
     {
@@ -1020,7 +1042,7 @@ class ProductService
                 $parts = [];
                 foreach ($optionValues as $item) {
                     $value = $item['value'] ?? [];
-                    $localizedValue = is_array($value) ? ($value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? '') : $value;
+                    $localizedValue = is_array($value) ? (LocalizedValue::pick($value, $locale, anyAsLast: false) ?? '') : $value;
                     if ($localizedValue !== '') {
                         $parts[] = $localizedValue;
                     }
@@ -1039,6 +1061,7 @@ class ProductService
      * 다국어 객체 또는 문자열을 정규화된 키로 변환
      *
      * @param  mixed  $key  키 (문자열 또는 다국어 객체)
+     * @return string 정규화된 옵션 키 (다국어 객체면 ko 값 우선)
      */
     protected function normalizeOptionKey($key): string
     {
@@ -1053,6 +1076,7 @@ class ProductService
      * 다국어 객체 또는 문자열을 정규화된 값으로 변환
      *
      * @param  mixed  $value  값 (문자열 또는 다국어 객체)
+     * @return string 정규화된 옵션 값 (다국어 객체면 ko 값 우선)
      */
     protected function normalizeOptionValue($value): string
     {
@@ -1068,6 +1092,7 @@ class ProductService
      *
      * @param  Product  $product  상품 모델
      * @param  array  $additionalOptions  추가옵션 데이터 배열
+     * @return void 반환값 없음
      */
     protected function createAdditionalOptions(Product $product, array $additionalOptions): void
     {
@@ -1087,6 +1112,7 @@ class ProductService
      *
      * @param  ProductAdditionalOption  $group  추가옵션 그룹 모델
      * @param  array  $values  선택지 데이터 배열
+     * @return void 반환값 없음
      */
     protected function createAdditionalOptionValues(ProductAdditionalOption $group, array $values): void
     {
@@ -1110,6 +1136,7 @@ class ProductService
      *
      * @param  Product  $product  상품 모델
      * @param  array  $additionalOptions  추가옵션 데이터 배열
+     * @return void 반환값 없음
      */
     protected function syncAdditionalOptions(Product $product, array $additionalOptions): void
     {
@@ -1162,6 +1189,7 @@ class ProductService
      *
      * @param  ProductAdditionalOption  $group  추가옵션 그룹 모델
      * @param  array  $values  선택지 데이터 배열
+     * @return void 반환값 없음
      */
     protected function syncAdditionalOptionValues(ProductAdditionalOption $group, array $values): void
     {
@@ -1200,6 +1228,7 @@ class ProductService
      * 주문 이력이 있는 옵션은 삭제할 수 없습니다.
      *
      * @param  array  $optionIds  삭제 대상 옵션 ID 배열
+     * @return void 반환값 없음
      *
      * @throws OptionHasOrderHistoryException 주문 이력이 있는 경우
      */
@@ -1219,6 +1248,7 @@ class ProductService
      *
      * @param  Product  $product  상품 모델
      * @param  array  $images  이미지 데이터 배열
+     * @return void 반환값 없음
      */
     protected function createImages(Product $product, array $images): void
     {
@@ -1256,6 +1286,8 @@ class ProductService
      *
      * @param  Product  $product  상품 모델
      * @param  array  $images  이미지 데이터 배열
+     * @param  string|null  $thumbnailHash  대표 이미지로 지정할 이미지 hash (null 이면 기존 대표 유지, 없으면 첫 이미지)
+     * @return void 반환값 없음
      */
     protected function syncImages(Product $product, array $images, ?string $thumbnailHash = null): void
     {
@@ -1308,6 +1340,7 @@ class ProductService
      *
      * @param  Product  $product  상품 모델
      * @param  array  $labelAssignments  라벨 할당 데이터 배열
+     * @return void 반환값 없음
      */
     protected function syncLabels(Product $product, array $labelAssignments): void
     {
@@ -1575,21 +1608,8 @@ class ProductService
             return '';
         }
 
-        $primary = config('app.locale', 'ko');
-        $fallback = config('app.fallback_locale', 'ko');
-
-        $resolved = $value[$primary] ?? $value[$fallback] ?? null;
-        if ($resolved === null) {
-            // 첫 번째 비어있지 않은 로케일 값
-            foreach ($value as $localized) {
-                if (is_string($localized) && $localized !== '') {
-                    $resolved = $localized;
-                    break;
-                }
-            }
-        }
-
-        return is_string($resolved) ? $resolved : '';
+        // 사이트 언어 → 사이트 기본 언어 → 영어 → 첫 비어 있지 않은 값 (#148)
+        return LocalizedValue::pick($value, (string) config('app.locale', 'ko')) ?? '';
     }
 
     /**
@@ -1600,6 +1620,7 @@ class ProductService
      *
      * @param  Product  $product  상품 모델
      * @param  array|null  $noticeItems  고시 항목 데이터
+     * @return void 반환값 없음
      */
     protected function syncNotice(Product $product, ?array $noticeItems): void
     {
@@ -1623,6 +1644,7 @@ class ProductService
      * @param  Product  $product  상품 모델
      * @param  array  $categoryIds  카테고리 ID 배열
      * @param  int|null  $primaryCategoryId  대표 카테고리 ID
+     * @return void 반환값 없음
      */
     protected function syncCategories(Product $product, array $categoryIds, ?int $primaryCategoryId = null): void
     {
@@ -1681,6 +1703,30 @@ class ProductService
 
         // ID로 찾지 못하면 product_code로 조회
         return $this->repository->findByProductCode($identifier);
+    }
+
+    /**
+     * 관리자 상세 조회용으로 상품을 찾고 `products.read` 스코프를 단언합니다.
+     *
+     * 관리자 상세 라우트는 `{identifier}`·`by-code/{code}` 라 권한의 `resource_route_key`(`product`)와
+     * 이름이 달라 미들웨어 스코프 검사가 돌지 않는다. 공개 상세가 함께 쓰는 `getDetail()` 에 넣으면
+     * 방문자 경로까지 관리자 스코프에 묶이므로 관리자 전용 진입점을 따로 둔다.
+     *
+     * @param  string  $identifier  상품 ID 숫자 문자열 또는 product_code
+     * @param  bool  $codeOnly  true 면 product_code 로만 찾는다 (by-code 라우트)
+     * @return Product|null 일치 상품 또는 부재 시 null
+     *
+     * @throws AccessDeniedHttpException 스코프 밖 상품인 경우
+     */
+    public function findForAdminRead(string $identifier, bool $codeOnly = false): ?Product
+    {
+        $product = $codeOnly ? $this->findByCode($identifier) : $this->findByIdOrCode($identifier);
+
+        if ($product) {
+            $this->assertWithinScope($product, 'sirsoft-ecommerce.products.read');
+        }
+
+        return $product;
     }
 
     /**
@@ -1833,6 +1879,10 @@ class ProductService
         unset($data['id']);
         $data['product_code'] = $this->generateUniqueCode();
 
+        // 가격 — 복사 화면은 이 값을 그대로 등록 요청에 싣는다. DB `decimal:2` 문자열("30000.00")을
+        // 그대로 내리면 소수 0자리 통화(원화)의 등록 규칙 `integer` 에 걸려 고치지 않은 복사 상품이 422 가 된다.
+        $data = $this->roundCopyPricesToBaseCurrency($data);
+
         // 이미지 — id 제거 (원본 이미지 삭제 방지, hash 기반으로 식별)
         if ($copyOptions['images'] ?? true) {
             foreach ($data['images'] as &$image) {
@@ -1930,9 +1980,54 @@ class ProductService
     }
 
     /**
+     * 복사 데이터의 가격 필드를 기본 통화의 소수 자릿수로 맞춥니다.
+     *
+     * 수정 화면이 받는 상품 응답(ProductResource)과 같은 형태 — 0자리 통화는 정수, 그 외는 그 자릿수의 숫자.
+     *
+     * @param  array  $data  getDetailForForm() 결과
+     * @return array 가격 필드를 맞춘 데이터
+     */
+    private function roundCopyPricesToBaseCurrency(array $data): array
+    {
+        $currencyService = app(CurrencyConversionService::class);
+        $decimalPlaces = $currencyService->getDecimalPlaces($currencyService->getDefaultCurrency());
+        $round = static function ($price) use ($decimalPlaces) {
+            if ($price === null || $price === '') {
+                return $price;
+            }
+            $rounded = round((float) $price, $decimalPlaces);
+
+            return $decimalPlaces === 0 ? (int) $rounded : $rounded;
+        };
+
+        foreach (['list_price', 'selling_price'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = $round($data[$field]);
+            }
+        }
+        foreach ($data['options'] ?? [] as $i => $option) {
+            foreach (['list_price', 'selling_price'] as $field) {
+                if (array_key_exists($field, $option)) {
+                    $data['options'][$i][$field] = $round($option[$field]);
+                }
+            }
+        }
+        foreach ($data['additional_options'] ?? [] as $i => $option) {
+            foreach ($option['values'] ?? [] as $j => $value) {
+                if (array_key_exists('price_adjustment', $value)) {
+                    $data['additional_options'][$i]['values'][$j]['price_adjustment'] = $round($value['price_adjustment']);
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * 파일 크기를 읽기 쉬운 형식으로 변환
      *
      * @param  int|null  $bytes  바이트 크기
+     * @return string 단위(B·KB·MB·GB)가 붙은 파일 크기 문자열
      */
     private function formatFileSize(?int $bytes): string
     {

@@ -1,0 +1,108 @@
+{
+    "source": "config/core.php identity_policies (7.1.0)",
+    "declarations": {
+        "core.auth.signup_before_submit": {
+            "scope": "route",
+            "target": "api.auth.register",
+            "purpose": "signup",
+            "provider_id": null,
+            "grace_minutes": 0,
+            "enabled": false,
+            "applies_to": "self",
+            "fail_mode": "block",
+            "priority": 110,
+            "conditions": {
+                "signup_stage": "before_submit",
+                "http_method": [
+                    "POST"
+                ]
+            }
+        },
+        "core.auth.signup_after_create": {
+            "scope": "hook",
+            "target": "core.auth.after_register",
+            "purpose": "signup",
+            "provider_id": null,
+            "grace_minutes": 0,
+            "enabled": false,
+            "applies_to": "self",
+            "fail_mode": "block",
+            "priority": 100,
+            "conditions": {
+                "signup_stage": "after_create"
+            }
+        },
+        "core.auth.password_reset": {
+            "scope": "hook",
+            "target": "core.auth.before_reset_password",
+            "purpose": "password_reset",
+            "provider_id": null,
+            "grace_minutes": 0,
+            "enabled": false,
+            "applies_to": "both",
+            "fail_mode": "block",
+            "priority": 100
+        },
+        "core.profile.password_change": {
+            "scope": "route",
+            "target": "api.me.password",
+            "purpose": "sensitive_action",
+            "grace_minutes": 5,
+            "enabled": true,
+            "applies_to": "self",
+            "fail_mode": "block"
+        },
+        "core.profile.contact_change": {
+            "scope": "hook",
+            "target": "core.user.before_update",
+            "purpose": "sensitive_action",
+            "grace_minutes": 5,
+            "enabled": true,
+            "applies_to": "self",
+            "fail_mode": "block",
+            "conditions": {
+                "changed_fields": [
+                    "email",
+                    "phone",
+                    "mobile"
+                ]
+            }
+        },
+        "core.account.withdraw": {
+            "scope": "route",
+            "target": "api.me.destroy",
+            "purpose": "sensitive_action",
+            "grace_minutes": 0,
+            "enabled": true,
+            "applies_to": "self",
+            "fail_mode": "block"
+        },
+        "core.admin.app_key_regenerate": {
+            "scope": "route",
+            "target": "api.admin.settings.regenerate-app-key",
+            "purpose": "sensitive_action",
+            "grace_minutes": 0,
+            "enabled": false,
+            "applies_to": "admin",
+            "fail_mode": "block"
+        },
+        "core.admin.user_delete": {
+            "scope": "hook",
+            "target": "core.user.before_delete",
+            "purpose": "sensitive_action",
+            "grace_minutes": 0,
+            "enabled": false,
+            "applies_to": "admin",
+            "fail_mode": "block"
+        },
+        "core.admin.extension_uninstall": {
+            "scope": "route",
+            "target": "api.admin.{modules,plugins}.uninstall",
+            "purpose": "sensitive_action",
+            "grace_minutes": 0,
+            "enabled": false,
+            "applies_to": "admin",
+            "fail_mode": "block"
+        }
+    }
+}

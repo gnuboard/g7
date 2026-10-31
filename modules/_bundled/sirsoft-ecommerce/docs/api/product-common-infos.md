@@ -274,7 +274,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 관리자가 새 상품 공통정보를 생성합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.product-common-infos.create` 권한이 필요하며, `ProductCommonInfoController@store`가 `ProductCommonInfoService::createCommonInfo()`에 검증된 데이터를 전달해 저장합니다. `name`은 다국어 배열(필수), `content`는 다국어 안내 내용, `content_mode`는 `text`/`html` 중 하나이며, `is_default`·`is_active`·`sort_order`로 기본 사용 여부·활성 여부·정렬을 지정합니다. 확장이 `sirsoft-ecommerce.product-common-info.create_validation_rules` 필터로 추가 파라미터를 붙일 수 있고, 성공 시 HTTP 201을, 처리 실패 시 400 에러 응답을 반환합니다.
+**설명** 관리자가 새 상품 공통정보를 생성합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.product-common-infos.create` 권한이 필요하며, `ProductCommonInfoController@store`가 `ProductCommonInfoService::createCommonInfo()`에 검증된 데이터를 전달해 저장합니다. `name`은 다국어 배열(필수), `content`는 다국어 안내 내용, `content_mode`는 `text`/`html` 중 하나이며, `is_default`·`is_active`·`sort_order`로 기본 사용 여부·활성 여부·정렬을 지정합니다. 확장이 `sirsoft-ecommerce.product-common-info.create_validation_rules` 필터로 추가 파라미터를 붙일 수 있고, 성공 시 HTTP 201을, 처리 실패 시 400 에러 응답을 반환합니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「공통정보명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Common Info Name field is required.").
 
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/product-common-infos/{id}
@@ -531,7 +531,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 상품 공통정보 1건을 수정합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.product-common-infos.update` 권한이 필요하며, `ProductCommonInfoController@update`가 `ProductCommonInfoService::updateCommonInfo()`에 검증된 데이터를 전달해 갱신합니다. `name`(다국어 배열)은 필수이고 `content`·`content_mode`·`is_default`·`is_active`·`sort_order`를 함께 변경할 수 있습니다. 확장이 `sirsoft-ecommerce.product-common-info.update_validation_rules` 필터로 파라미터를 추가할 수 있으며, 대상이 없거나 처리 실패 시 각각 404/400 에러 응답을 반환합니다.
+**설명** 관리자가 상품 공통정보 1건을 수정합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.product-common-infos.update` 권한이 필요하며, `ProductCommonInfoController@update`가 `ProductCommonInfoService::updateCommonInfo()`에 검증된 데이터를 전달해 갱신합니다. `name`(다국어 배열)은 필수이고 `content`·`content_mode`·`is_default`·`is_active`·`sort_order`를 함께 변경할 수 있습니다. 확장이 `sirsoft-ecommerce.product-common-info.update_validation_rules` 필터로 파라미터를 추가할 수 있으며, 대상이 없거나 처리 실패 시 각각 404/400 에러 응답을 반환합니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「공통정보명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Common Info Name field is required.").
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/admin/product-common-infos/{id}/toggle-active

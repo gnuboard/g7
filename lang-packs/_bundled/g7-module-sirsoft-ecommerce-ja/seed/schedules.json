@@ -1,0 +1,54 @@
+{
+  "cancel-pending-orders": {
+    "label": "入金期限切れ注文のキャンセル",
+    "description": "入金期限を過ぎた注文を自動でキャンセルします(注文設定で有効にした場合のみ)。"
+  },
+  "prune-expired-carts": {
+    "label": "期限切れカートの削除",
+    "description": "保管期間を過ぎたカートを削除します。"
+  },
+  "prune-temp-product-images": {
+    "label": "一時商品画像の削除",
+    "description": "商品に紐付いていない一時画像を削除します。"
+  },
+  "prune-temp-orders": {
+    "label": "期限切れ一時注文の削除",
+    "description": "有効期限を過ぎた一時注文を削除します。"
+  },
+  "earn-mileage": {
+    "label": "保留マイレージの付与",
+    "description": "付与予定日を迎えたマイレージを付与します(マイレージを有効にした場合のみ)。"
+  },
+  "expire-mileage": {
+    "label": "マイレージの失効",
+    "description": "有効期限を過ぎたマイレージを失効させます(失効を有効にした場合のみ)。"
+  },
+  "notify-expiring-mileage": {
+    "label": "失効予定マイレージの通知",
+    "description": "まもなく失効するマイレージを会員に通知します(失効予定通知を有効にした場合のみ)。"
+  },
+  "reconcile-mileage-balance": {
+    "label": "マイレージ残高の補正",
+    "description": "会員のマイレージ残高キャッシュを台帳と一致させます(マイレージを有効にした場合のみ)。"
+  },
+  "aggregate-stats": {
+    "label": "販売状況の集計",
+    "description": "ダッシュボードの販売状況を集計します。"
+  },
+  "prune-pending-claim-images": {
+    "label": "クレーム一時添付の削除",
+    "description": "申請に至らなかったクレームの一時添付を削除します。"
+  },
+  "cancel-orphan-claim-payments": {
+    "label": "孤立したクレーム決済のキャンセル",
+    "description": "終了した申請に残ったクレームの決済待ちをキャンセルします。"
+  },
+  "notify-overdue-collections": {
+    "label": "回収遅延の通知",
+    "description": "先行交換後の旧商品の回収が遅れている件を管理者に一度だけ通知します。"
+  },
+  "prune-exports": {
+    "label": "エクスポートファイルのクリーンアップ",
+    "description": "保管期間を過ぎたエクスポートファイルを削除し、長時間停止している作業を失敗として処理します。"
+  }
+}

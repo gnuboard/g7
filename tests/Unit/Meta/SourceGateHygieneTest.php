@@ -125,9 +125,20 @@ class SourceGateHygieneTest extends TestCase
      * (엔드포인트 가드·터치포인트·모니터 계약·스타일 클래스·자리표시자 스캐너)은 이관했고,
      * 나머지는 다른 공정이 같은 창에서 수정 중인 파일이라 여기서 함께 건드리면 충돌한다.
      *
+     * develop-7.2.0 병합으로 이 모집단에 들어온 인스톨러 테스트 6건(7.2.0 이 F25·F37 등 설치기 결함을
+     * 고치며 더한 원문 대조 게이트)은 이관 전이라 여기 등재한다 — 그중 일부 읽기는 소스가 아니라
+     * 자식 프로세스 출력·eval 실행이라 줄마다 `meta:allow raw-source-read` 판정이 함께 필요하다.
+     *
      * @var array<string, string>
      */
-    private const PENDING_RAW_SOURCE_GATES = [];
+    private const PENDING_RAW_SOURCE_GATES = [
+        'tests/Unit/Installer/ExistingDbActionGuardTest.php' => '7.2.0 병합 유입 — task-runner.php 원문 대조, 주석 제거 이관 대기',
+        'tests/Unit/Installer/InstallerDbTestGateTest.php' => '7.2.0 병합 유입 — check-configuration.php·request-handler.php 원문 대조, 주석 제거 이관 대기',
+        'tests/Unit/Installer/InstallerDropConfirmTest.php' => '7.2.0 병합 유입 — install-process.php 원문 대조, 주석 제거 이관 대기',
+        'tests/Unit/Installer/InstallerFinalizeCacheTasksTest.php' => '7.2.0 병합 유입 — task-runner.php·installer-state.php 원문 대조, 주석 제거 이관 대기',
+        'tests/Unit/Installer/InstallerFinalizeWaitsForWorkerTest.php' => '7.2.0 병합 유입 — 자식 프로세스 출력·eval 읽기 판정(meta:allow) 포함 이관 대기',
+        'tests/Unit/Installer/InstallerWorkerTimeLimitTest.php' => '7.2.0 병합 유입 — 생산 소스 원문 대조와 자식 프로세스 출력 읽기 판정 이관 대기',
+    ];
 
     /**
      * ② 축 — 아직 재귀 스캔으로 이관하지 않은 지점 (파일 단위, 사유 필수).

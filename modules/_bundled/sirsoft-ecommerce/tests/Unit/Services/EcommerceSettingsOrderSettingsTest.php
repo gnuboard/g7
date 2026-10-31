@@ -36,6 +36,11 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
      */
     private array $originalFilters = [];
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,6 +61,11 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->service = new EcommerceSettingsService;
     }
 
+    /**
+     * 테스트 환경을 정리합니다.
+     *
+     * @return void 없음
+     */
     protected function tearDown(): void
     {
         // 테스트용 설정 파일 정리
@@ -75,6 +85,9 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
 
     /**
      * 결제수단 필터를 등록합니다.
+     *
+     * @param  callable  $callback  결제수단 목록 필터 콜백
+     * @return void 없음
      */
     private function addPaymentMethodFilter(callable $callback): void
     {
@@ -88,6 +101,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // 기본값 로딩
     // ──────────────────────────────────────────────
 
+    /**
+     * 기본 설정에 주문 설정 카테고리가 포함되는지 검증합니다.
+     *
+     * @scenario settings_source=defaults
+     *
+     * @effects order_settings_defaults_loaded
+     *
+     * @return void 없음
+     */
     public function test_defaults_include_order_settings_category(): void
     {
         $settings = $this->service->getAllSettings();
@@ -99,6 +121,12 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
      * testing 환경에서는 설정 저장 경로가 운영 경로(storage/app/modules/...)가 아닌
      * 격리 경로(storage/framework/testing/...)여야 한다. 테스트가 운영 설정을
      * 덮어쓰는 회귀를 차단한다.
+     *
+     * @scenario settings_source=saved
+     *
+     * @effects settings_storage_isolated_from_production_in_tests
+     *
+     * @return void 없음
      */
     public function test_storage_path_is_isolated_in_testing_environment(): void
     {
@@ -114,6 +142,12 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
 
     /**
      * 설정 저장이 운영 mileage.json 등을 건드리지 않는지 검증한다 (운영 설정 영구 보존).
+     *
+     * @scenario settings_source=saved
+     *
+     * @effects settings_storage_isolated_from_production_in_tests
+     *
+     * @return void 없음
      */
     public function test_saving_settings_does_not_touch_production_path(): void
     {
@@ -138,6 +172,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 주문 설정 기본값이 정의대로 로드되는지 검증합니다.
+     *
+     * @scenario settings_source=defaults
+     *
+     * @effects order_settings_defaults_loaded
+     *
+     * @return void 없음
+     */
     public function test_order_settings_default_values(): void
     {
         $settings = $this->service->getSettings('order_settings');
@@ -152,6 +195,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertArrayNotHasKey('dbank_due_days', $settings);
     }
 
+    /**
+     * 기본 은행 목록이 로드되는지 검증합니다.
+     *
+     * @scenario settings_source=defaults
+     *
+     * @effects order_settings_defaults_loaded
+     *
+     * @return void 없음
+     */
     public function test_default_banks_loaded(): void
     {
         $settings = $this->service->getSettings('order_settings');
@@ -162,6 +214,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertEquals('국민은행', $settings['banks'][0]['name']['ko']);
     }
 
+    /**
+     * 기본 입금 계좌 목록이 로드되는지 검증합니다.
+     *
+     * @scenario settings_source=defaults
+     *
+     * @effects order_settings_defaults_loaded
+     *
+     * @return void 없음
+     */
     public function test_default_bank_accounts_loaded(): void
     {
         $settings = $this->service->getSettings('order_settings');
@@ -176,6 +237,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // getSetting() 조회
     // ──────────────────────────────────────────────
 
+    /**
+     * 점 표기 키로 설정값을 조회할 수 있는지 검증합니다.
+     *
+     * @scenario settings_source=defaults
+     *
+     * @effects get_setting_reads_dot_notation_with_default_fallback
+     *
+     * @return void 없음
+     */
     public function test_get_setting_with_dot_notation(): void
     {
         $this->assertTrue(
@@ -188,6 +258,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 없는 키 조회 시 인자 기본값을 돌려주는지 검증합니다.
+     *
+     * @scenario settings_source=defaults
+     *
+     * @effects get_setting_reads_dot_notation_with_default_fallback
+     *
+     * @return void 없음
+     */
     public function test_get_setting_returns_default_for_missing_key(): void
     {
         $this->assertEquals(
@@ -200,6 +279,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // 결제수단 병합 (builtin)
     // ──────────────────────────────────────────────
 
+    /**
+     * 내장 결제수단이 기본 목록에 모두 있는지 검증합니다.
+     *
+     * @scenario settings_source=defaults, catalog_origin=builtin
+     *
+     * @effects order_settings_defaults_loaded
+     *
+     * @return void 없음
+     */
     public function test_default_builtin_payment_methods(): void
     {
         $settings = $this->service->getSettings('order_settings');
@@ -211,6 +299,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertEquals(['card', 'vbank', 'dbank', 'bank', 'phone', 'point', 'deposit', 'free'], $ids);
     }
 
+    /**
+     * 내장 결제수단에 표시용 캐시 메타데이터가 채워지는지 검증합니다.
+     *
+     * @scenario settings_source=defaults, catalog_origin=builtin
+     *
+     * @effects payment_method_display_metadata_cached
+     *
+     * @return void 없음
+     */
     public function test_builtin_payment_methods_have_cached_metadata(): void
     {
         $settings = $this->service->getSettings('order_settings');
@@ -225,6 +322,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // 결제수단 병합 (플러그인 필터)
     // ──────────────────────────────────────────────
 
+    /**
+     * 필터로 등록한 플러그인 결제수단이 카탈로그에 병합되는지 검증합니다.
+     *
+     * @scenario settings_source=defaults, catalog_origin=plugin
+     *
+     * @effects plugin_payment_method_merged_via_filter
+     *
+     * @return void 없음
+     */
     public function test_plugin_payment_method_added_via_filter(): void
     {
         // 플러그인이 결제수단을 추가하는 시나리오
@@ -260,9 +366,13 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     }
 
     /**
+     * 브랜드 마크·iOS 전용 표시가 결제수단 정의에서 병합 카탈로그까지 전달되는지 검증합니다.
+     *
      * @scenario mark_form=svg, requires_ios=false, device=non_ios
      *
      * @effects brand_mark_flows_to_cached, requires_ios_flag_carried, none_form_cached_brand_mark_null
+     *
+     * @return void 없음
      */
     public function test_brand_mark_and_requires_ios_flow_from_definition_to_merged_catalog(): void
     {
@@ -314,6 +424,12 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
      * 배경(#454): toss_* 등 플러그인 결제수단은 코어 PaymentMethodEnum 이 거부하므로, 프론트가
      * 주문 생성 시 이 core 값을 payment_method 로 전송해야 한다. 병합이 이 필드를 떨구면
      * 프론트가 번역 근거를 잃어 원시 id 를 전송 → 422. _cached_* 처럼 provider-agnostic 하게 보존한다.
+     *
+     * @scenario settings_source=defaults, catalog_origin=plugin
+     *
+     * @effects plugin_core_payment_method_preserved_through_merge_and_save
+     *
+     * @return void 없음
      */
     public function test_plugin_payment_method_core_payment_method_preserved_after_merge(): void
     {
@@ -353,6 +469,12 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
      *
      * 사용자가 결제수단을 저장하면 snapshotPaymentMethodMetadata 가 _cached_* 를 재적재하는데,
      * 이때 core_payment_method 도 함께 스냅샷되어야 재조회 응답(프론트 소비)에 남는다.
+     *
+     * @scenario settings_source=saved, catalog_origin=plugin
+     *
+     * @effects plugin_core_payment_method_preserved_through_merge_and_save
+     *
+     * @return void 없음
      */
     public function test_plugin_payment_method_core_payment_method_preserved_after_save(): void
     {
@@ -393,6 +515,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // 결제수단 병합 (사용자 저장 설정 오버라이드)
     // ──────────────────────────────────────────────
 
+    /**
+     * 저장된 사용자 설정이 결제수단 기본값을 덮어쓰는지 검증합니다.
+     *
+     * @scenario settings_source=saved, catalog_origin=builtin
+     *
+     * @effects saved_settings_override_payment_method_defaults
+     *
+     * @return void 없음
+     */
     public function test_user_settings_override_payment_method_defaults(): void
     {
         // 사용자가 결제수단 순서를 변경하고 dbank를 비활성화한 설정 저장
@@ -431,6 +562,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // 고아 결제수단 감지
     // ──────────────────────────────────────────────
 
+    /**
+     * 공급 확장이 사라진 결제수단이 고아로 표시되는지 검증합니다.
+     *
+     * @scenario settings_source=saved, catalog_origin=plugin
+     *
+     * @effects orphaned_payment_method_flagged_in_admin_settings
+     *
+     * @return void 없음
+     */
     public function test_orphaned_payment_method_detected(): void
     {
         // 이전에 tosspayments 플러그인이 있었지만 지금은 비활성화된 시나리오
@@ -482,6 +622,12 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
      * available 카탈로그에서 빠지지만 저장값의 is_active 는 true 로 남는다.
      * 관리자 화면은 _orphaned 를 읽어 차단하는데 체크아웃은 is_active 만 보므로,
      * 서버가 걸러주지 않으면 비활성화된 결제수단이 그대로 선택 가능했다.
+     *
+     * @scenario settings_source=saved, catalog_origin=plugin
+     *
+     * @effects orphaned_payment_method_excluded_from_public_payment_and_checkout
+     *
+     * @return void 없음
      */
     public function test_public_payment_settings_exclude_orphaned_methods(): void
     {
@@ -499,6 +645,10 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
                     '_cached_icon' => 'wallet',
                     '_cached_source' => 'plugin:sirsoft-tosspayments',
                 ],
+            ],
+            // 무통장입금은 사용 중인 입금 계좌가 있어야 공개 목록에 남는다(#703) — 고아 판정과 무관한 전제
+            'bank_accounts' => [
+                ['bank_code' => '004', 'account_number' => '123-456', 'account_holder' => '테스트상점', 'is_active' => true, 'is_default' => true],
             ],
         ];
 
@@ -530,6 +680,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // _cached_* 메타데이터 스냅샷
     // ──────────────────────────────────────────────
 
+    /**
+     * 저장 시 결제수단 표시 메타데이터가 스냅샷으로 남는지 검증합니다.
+     *
+     * @scenario settings_source=saved, catalog_origin=plugin
+     *
+     * @effects payment_method_display_metadata_cached
+     *
+     * @return void 없음
+     */
     public function test_cached_metadata_snapshot_on_save(): void
     {
         // 플러그인 결제수단 추가
@@ -595,6 +754,8 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
      * @scenario catalog_state=registered, saved_state=present
      *
      * @effects merge_quadrant_pinned
+     *
+     * @return void 없음
      */
     public function test_merge_quadrants_of_catalog_and_saved_state(): void
     {
@@ -651,6 +812,8 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
      * @scenario catalog_state=unregistered, saved_state=present
      *
      * @effects merge_quadrant_pinned
+     *
+     * @return void 없음
      */
     public function test_orphaned_method_is_admin_only(): void
     {
@@ -676,6 +839,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // payment → order_settings 마이그레이션
     // ──────────────────────────────────────────────
 
+    /**
+     * 구 payment 설정이 주문 설정으로 이관되는지 검증합니다.
+     *
+     * @scenario settings_source=legacy_payment, catalog_origin=builtin
+     *
+     * @effects legacy_payment_settings_migrated_once
+     *
+     * @return void 없음
+     */
     public function test_migrate_payment_to_order_settings(): void
     {
         // 기존 payment.json 생성 (레거시 형식)
@@ -717,6 +889,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertTrue(File::exists($this->storagePath.'/payment.json'));
     }
 
+    /**
+     * 무통장 단일 계좌 필드가 입금 계좌 목록으로 이관되는지 검증합니다.
+     *
+     * @scenario settings_source=legacy_payment
+     *
+     * @effects legacy_payment_settings_migrated_once
+     *
+     * @return void 없음
+     */
     public function test_migrate_dbank_single_fields_to_bank_accounts(): void
     {
         // 기존 단일 필드 형식 (dbank_bank_code 등)
@@ -741,6 +922,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertTrue($settings['bank_accounts'][0]['is_default']);
     }
 
+    /**
+     * 주문 설정이 이미 있으면 이관을 건너뛰는지 검증합니다.
+     *
+     * @scenario settings_source=legacy_payment
+     *
+     * @effects legacy_payment_settings_migrated_once
+     *
+     * @return void 없음
+     */
     public function test_migration_skipped_when_order_settings_exists(): void
     {
         // order_settings.json이 이미 있으면 마이그레이션 스킵
@@ -763,6 +953,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // order_settings 카테고리 저장/로드
     // ──────────────────────────────────────────────
 
+    /**
+     * 주문 설정 저장 후 같은 값으로 다시 읽히는지 검증합니다.
+     *
+     * @scenario settings_source=saved
+     *
+     * @effects order_settings_and_bank_accounts_persist_round_trip
+     *
+     * @return void 없음
+     */
     public function test_save_and_load_order_settings(): void
     {
         $this->service->saveSettings([
@@ -787,6 +986,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // 은행 CRUD
     // ──────────────────────────────────────────────
 
+    /**
+     * 입금 계좌 추가·수정·삭제가 저장에 반영되는지 검증합니다.
+     *
+     * @scenario settings_source=saved
+     *
+     * @effects order_settings_and_bank_accounts_persist_round_trip
+     *
+     * @return void 없음
+     */
     public function test_save_bank_accounts_crud(): void
     {
         // 2개 계좌 저장
@@ -814,6 +1022,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     //  Admin API는 getAllSettings() 사용)
     // ──────────────────────────────────────────────
 
+    /**
+     * 전체 설정 응답에 입금 계좌가 포함되는지 검증합니다.
+     *
+     * @scenario settings_source=saved
+     *
+     * @effects all_settings_expose_order_fields_and_bank_accounts
+     *
+     * @return void 없음
+     */
     public function test_all_settings_includes_bank_accounts(): void
     {
         // bank_accounts에 은행 코드 설정
@@ -838,6 +1055,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertEquals('088', $accounts[1]['bank_code']);
     }
 
+    /**
+     * 공개 결제 설정이 입금 계좌의 은행명을 채워 주는지 검증합니다.
+     *
+     * @scenario settings_source=saved
+     *
+     * @effects public_payment_settings_resolve_bank_name
+     *
+     * @return void 없음
+     */
     public function test_public_payment_settings_resolves_bank_name(): void
     {
         // bank_accounts에 은행 코드 설정
@@ -860,6 +1086,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertEquals(['ko' => '신한은행', 'en' => 'Shinhan Bank'], $accounts[1]['bank_name']);
     }
 
+    /**
+     * 전체 설정 응답에 주문 설정 필드가 모두 포함되는지 검증합니다.
+     *
+     * @scenario settings_source=defaults
+     *
+     * @effects all_settings_expose_order_fields_and_bank_accounts
+     *
+     * @return void 없음
+     */
     public function test_all_settings_includes_order_settings_fields(): void
     {
         $allSettings = $this->service->getAllSettings();
@@ -877,6 +1112,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertArrayNotHasKey('dbank_due_days', $allSettings['order_settings']);
     }
 
+    /**
+     * 주문 설정의 불리언 필드가 불리언 타입으로 내려가는지 검증합니다.
+     *
+     * @scenario settings_source=defaults
+     *
+     * @effects all_settings_expose_order_fields_and_bank_accounts
+     *
+     * @return void 없음
+     */
     public function test_all_settings_boolean_fields_are_boolean_type(): void
     {
         $allSettings = $this->service->getAllSettings();
@@ -891,6 +1135,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 프론트엔드 노출 설정에서 주문 설정이 빠지는지 검증합니다.
+     *
+     * @scenario settings_source=defaults
+     *
+     * @effects frontend_settings_exclude_order_settings
+     *
+     * @return void 없음
+     */
     public function test_frontend_settings_excludes_order_settings(): void
     {
         $frontendSettings = $this->service->getFrontendSettings();
@@ -903,6 +1156,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // saveBanks() — 은행 목록만 별도 저장
     // ──────────────────────────────────────────────
 
+    /**
+     * 은행 목록만 저장해도 다른 주문 설정이 보존되는지 검증합니다.
+     *
+     * @scenario settings_source=saved
+     *
+     * @effects order_settings_and_bank_accounts_persist_round_trip
+     *
+     * @return void 없음
+     */
     public function test_save_banks_only_preserves_other_order_settings(): void
     {
         // 먼저 전체 order_settings 저장
@@ -939,6 +1201,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertEquals('홍길동', $settings['bank_accounts'][0]['account_holder']);
     }
 
+    /**
+     * 빈 은행 목록 저장이 허용되는지 검증합니다.
+     *
+     * @scenario settings_source=saved
+     *
+     * @effects order_settings_and_bank_accounts_persist_round_trip
+     *
+     * @return void 없음
+     */
     public function test_save_banks_with_empty_array(): void
     {
         // 기본 설정 로드 (은행 17개)
@@ -953,6 +1224,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertCount(0, $settings['banks']);
     }
 
+    /**
+     * 은행 목록 저장 성공 시 true 를 돌려주는지 검증합니다.
+     *
+     * @scenario settings_source=saved
+     *
+     * @effects order_settings_and_bank_accounts_persist_round_trip
+     *
+     * @return void 없음
+     */
     public function test_save_banks_returns_true_on_success(): void
     {
         $result = $this->service->saveBanks([
@@ -966,6 +1246,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // 고아 항목 삭제
     // ──────────────────────────────────────────────
 
+    /**
+     * 저장 시 고아 결제수단 항목이 제거되는지 검증합니다.
+     *
+     * @scenario settings_source=saved, catalog_origin=plugin
+     *
+     * @effects orphaned_payment_method_removed_on_save
+     *
+     * @return void 없음
+     */
     public function test_orphaned_item_removed_on_save(): void
     {
         // 고아 항목 포함된 상태에서 해당 항목 제외하고 저장
@@ -991,6 +1280,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
     // getStockDeductionTiming()
     // ──────────────────────────────────────────────
 
+    /**
+     * 결제수단별 재고 차감 시점 설정값을 돌려주는지 검증합니다.
+     *
+     * @scenario settings_source=saved
+     *
+     * @effects stock_deduction_timing_resolved_per_method_with_default
+     *
+     * @return void 없음
+     */
     public function test_get_stock_deduction_timing_returns_configured_value(): void
     {
         // dbank는 기본값이 order_placed
@@ -1009,6 +1307,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertEquals('order_placed', $this->service->getStockDeductionTiming('free'));
     }
 
+    /**
+     * 모르는 결제수단은 재고 차감 시점 기본값을 돌려주는지 검증합니다.
+     *
+     * @scenario settings_source=defaults
+     *
+     * @effects stock_deduction_timing_resolved_per_method_with_default
+     *
+     * @return void 없음
+     */
     public function test_get_stock_deduction_timing_returns_default_for_unknown_method(): void
     {
         $this->service->clearCache();
@@ -1017,6 +1324,15 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
         $this->assertEquals('payment_complete', $this->service->getStockDeductionTiming('nonexistent_method'));
     }
 
+    /**
+     * 저장값이 없으면 재고 차감 시점 기본값을 쓰는지 검증합니다.
+     *
+     * @scenario settings_source=defaults
+     *
+     * @effects stock_deduction_timing_resolved_per_method_with_default
+     *
+     * @return void 없음
+     */
     public function test_get_stock_deduction_timing_uses_defaults_when_no_saved_settings(): void
     {
         $this->service->clearCache();
@@ -1033,6 +1349,9 @@ class EcommerceSettingsOrderSettingsTest extends ModuleTestCase
 
     /**
      * order_settings.json을 직접 생성하여 저장된 설정을 시뮬레이션합니다.
+     *
+     * @param  array  $settings  저장할 주문 설정 배열
+     * @return void 없음
      */
     private function saveOrderSettings(array $settings): void
     {

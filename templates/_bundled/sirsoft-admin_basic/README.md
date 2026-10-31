@@ -5,9 +5,9 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-0066FF?style=flat-square" alt="version 1.1.0">
+  <img src="https://img.shields.io/badge/version-1.2.0-0066FF?style=flat-square" alt="version 1.2.0">
   <img src="https://img.shields.io/badge/type-%ED%85%9C%ED%94%8C%EB%A6%BF-555555?style=flat-square" alt="type 템플릿">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.0">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.2.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.2.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -61,6 +61,10 @@ flowchart TD
 인증 화면(로그인/비밀번호 찾기·재설정)과 에러 화면은 의도적으로 `_admin_base` 를 상속하지
 않습니다 — 로그인 전이거나 정상 화면 렌더링 자체가 불가능한 상황이라 사이드바·헤더 같은
 "이미 로그인된 관리자" 전제의 UI 를 보여줄 수 없기 때문입니다.
+
+색 모드·사이드바 접힘·목록 필터·표시 열·보기 방식처럼 관리 화면이 쿠키 동의와 무관하게 쓰는 브라우저 저장
+항목은 `template.json` 의 `necessary_storage` 에 선언돼 있어, 개인정보 동의 플러그인을 쓰는 사이트에서도 동의
+전에 지워지지 않습니다(그누보드7 7.1.3 이상).
 <!-- @intent END -->
 
 ## 요구 사항
@@ -68,7 +72,7 @@ flowchart TD
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.1.0` |
+| 그누보드7 코어 | `>=7.2.0` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 
@@ -92,14 +96,15 @@ php artisan template:update sirsoft-admin_basic --force
 ## 제공 컴포넌트
 
 <!-- @generated:settings-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 125개 (루트: `src/components`).
+컴포넌트 134개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 39개 |
-| `composite` | 80개 |
+| `composite` | 88개 |
 | `layout` | 5개 |
 | `modals` | 1개 |
+| `shared` | 1개 |
 <!-- @generated:settings-summary END -->
 
 <!-- @intent START -->
@@ -169,7 +174,7 @@ formal 의존성이 양쪽 다 "없음"인 것은 이 템플릿이 코어만으�
 | 사이드바 메뉴 아이콘이 안 보임 | `Icon` 컴포넌트로 렌더 시도(API 는 FontAwesome 클래스 문자열을 내려줌) | `I` 컴포넌트로 교체 (`docs/components.md` "AdminSidebar 상세" 참고) |
 | 다른 admin 템플릿으로 교체 후 특정 확장 화면이 깨짐 | 그 확장이 필수 컴포넌트 목록 밖의 컴포넌트를 사용 | 그 확장의 레이아웃을 필수 컴포넌트(35개)만으로 재작성하거나, 새 템플릿에 같은 컴포넌트를 구현 |
 | 사이드바 접힘 상태가 새로고침 후 풀림 | localStorage 접근 실패(시크릿 모드 등) 또는 부트스트랩 순서 문제 | `initSidebar()` 가 템플릿 부트스트랩에서 호출되는지 확인 (`src/index.ts`) |
-| 로그인 화면에 다크 모드/언어 전환이 적용 안 됨 | 로그인 화면은 `_admin_base` 를 상속하지 않아 초기화 경로가 다름 | `admin_login.json` 자체의 초기화 액션을 확인 — `_admin_base` 수정으로는 반영되지 않는다 |
+| 로그인 화면에 다크 모드/언어 전환이 적용 안 됨 | 로그인 화면은 `_admin_base` 를 상속하지 않아 초기화 경로가 다름 | `admin_login.g7.html` 자체의 초기화 액션을 확인 — `_admin_base` 수정으로는 반영되지 않는다 |
 <!-- @intent END -->
 
 ## 변경 이력

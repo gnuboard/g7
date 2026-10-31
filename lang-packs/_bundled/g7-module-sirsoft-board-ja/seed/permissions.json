@@ -58,5 +58,37 @@
   "sirsoft-board.reports.manage": {
     "name": "通報処理",
     "description": "通報ステータス変更および処理"
+  },
+  "sirsoft-board.dashboard": {
+    "name": "掲示板ダッシュボード",
+    "description": "掲示板ダッシュボードの閲覧権限"
+  },
+  "sirsoft-board.dashboard.view": {
+    "name": "ダッシュボード閲覧",
+    "description": "掲示板ダッシュボード(状況・推移・新着記事・未処理の通報)の閲覧"
+  },
+  "sirsoft-board.scraps": {
+    "name": "投稿スクラップ管理",
+    "description": "全会員投稿スクラップ閲覧·削除権限"
+  },
+  "sirsoft-board.scraps.view": {
+    "name": "スクラップ閲覧",
+    "description": "全会員スクラップリスト閲覧"
+  },
+  "sirsoft-board.scraps.manage": {
+    "name": "スクラップ削除",
+    "description": "会員スクラップ個別·一括削除"
+  },
+  "sirsoft-board.reactions": {
+    "name": "投稿リアクション管理",
+    "description": "全会員の投稿·コメントリアクション閲覧·削除権限"
+  },
+  "sirsoft-board.reactions.view": {
+    "name": "リアクション閲覧",
+    "description": "全会員リアクションリスト閲覧"
+  },
+  "sirsoft-board.reactions.manage": {
+    "name": "リアクション削除",
+    "description": "会員リアクション個別·一括削除"
   }
 }

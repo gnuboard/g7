@@ -1,0 +1,45 @@
+feature: KG이니시스 영수증 조회 API — 회원·비회원 접근 판정과 결제 종류별 응답
+
+description: |
+  마이페이지·비회원 주문 상세의 영수증 링크와 결제 정보 카드 스크립트가 부르는 API 다. 회원(세션·Bearer)이면 본인 주문만,
+  비로그인이면 조회 토큰 헤더(X-Guest-Order-Token) 또는 결제 직후 쿠키로만 통과하고 그 밖에는 404(대상 없음)다.
+  로그인한 회원은 비회원 조회 토큰을 실어도 회원 분기가 먼저라 비회원 주문에 닿지 않는다.
+  응답은 공통 형식({ success, message, data })이고, 일반 결제는 KG이니시스 매출전표 주소(inicis_receipt),
+  일본(CBT) 결제는 매출전표 없이 결제확인서 항목(cbt_confirmation)을 준다.
+
+axes:
+  viewer: [member_session, member_bearer, guest_valid_token, guest_invalid_token, guest_other_order_token, member_with_guest_token]
+  payment: [domestic_card, easy_pay, cbt_card, cbt_cvs_waiting, vbank_waiting]
+
+exclusions:
+  - { viewer: [member_bearer, guest_valid_token, guest_invalid_token, guest_other_order_token, member_with_guest_token], payment: vbank_waiting, reason: "은행코드는 조회가 통과한 뒤 결제 종류로만 갈린다 — member_session 조합이 같은 코드를 잠근다" }
+  - { viewer: member_bearer, payment: easy_pay, reason: "인증 수단만 다른 경로 — 결제 종류별 응답은 member_session 조합이 같은 코드를 잠근다" }
+  - { viewer: member_bearer, payment: cbt_card, reason: "인증 수단만 다른 경로 — 결제 종류별 응답은 member_session 조합이 같은 코드를 잠근다" }
+  - { viewer: member_bearer, payment: cbt_cvs_waiting, reason: "인증 수단만 다른 경로 — 결제 종류별 응답은 member_session 조합이 같은 코드를 잠근다" }
+  - { viewer: guest_valid_token, payment: easy_pay, reason: "인증 수단만 다른 경로 — 결제 종류별 응답은 member_session 조합이 같은 코드를 잠근다" }
+  - { viewer: guest_valid_token, payment: cbt_card, reason: "인증 수단만 다른 경로 — 결제 종류별 응답은 member_session 조합이 같은 코드를 잠근다" }
+  - { viewer: guest_valid_token, payment: cbt_cvs_waiting, reason: "인증 수단만 다른 경로 — 결제 종류별 응답은 member_session 조합이 같은 코드를 잠근다" }
+  - { viewer: guest_invalid_token, payment: easy_pay, reason: "조회가 거절돼 결제 종류 판정까지 가지 않는다" }
+  - { viewer: guest_invalid_token, payment: cbt_card, reason: "조회가 거절돼 결제 종류 판정까지 가지 않는다" }
+  - { viewer: guest_invalid_token, payment: cbt_cvs_waiting, reason: "조회가 거절돼 결제 종류 판정까지 가지 않는다" }
+  - { viewer: guest_other_order_token, payment: easy_pay, reason: "조회가 거절돼 결제 종류 판정까지 가지 않는다" }
+  - { viewer: guest_other_order_token, payment: cbt_card, reason: "조회가 거절돼 결제 종류 판정까지 가지 않는다" }
+  - { viewer: guest_other_order_token, payment: cbt_cvs_waiting, reason: "조회가 거절돼 결제 종류 판정까지 가지 않는다" }
+  - { viewer: member_with_guest_token, payment: easy_pay, reason: "조회가 거절돼 결제 종류 판정까지 가지 않는다" }
+  - { viewer: member_with_guest_token, payment: cbt_card, reason: "조회가 거절돼 결제 종류 판정까지 가지 않는다" }
+  - { viewer: member_with_guest_token, payment: cbt_cvs_waiting, reason: "조회가 거절돼 결제 종류 판정까지 가지 않는다" }
+
+effects:
+  - inicis_receipt_url_returned
+  - easy_pay_display_label_returned
+  - base_payment_label_kept
+  - cbt_confirmation_returned_without_inicis_url
+  - cbt_cvs_waiting_uses_cvs_labels
+  - lookup_denied_as_not_found
+  - response_uses_common_envelope
+  - vbank_bank_code_returned
+  # 주문 조회 권한이 없는 일반 회원에게는 은행코드를 싣지 않는다 — 화면 숨김이 아니라 응답에서 뺀다(7.1.0 abilities 게이트)
+  - vbank_bank_code_withheld_from_member
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/UserReceiptControllerTest.php

@@ -8,6 +8,7 @@ use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 use Modules\Sirsoft\Board\Upgrades\Upgrade_1_0_0_beta_2;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Upgrade_1_0_0_beta_2 멱등성 테스트
@@ -16,17 +17,27 @@ use Modules\Sirsoft\Board\Upgrades\Upgrade_1_0_0_beta_2;
  * - syncCountColumns run() 2회 연속 호출 시 동일 결과 보장 (멱등성)
  * - 파티션 부재 상황에서 예외 없이 완료 (graceful)
  * - 카운트 0인 게시판/게시글에서 run() 후 0 유지
- *
- * @group board
- * @group upgrade
  */
+#[Group('board')]
+#[Group('upgrade')]
 class Upgrade_1_0_0_beta_2_Test extends BoardTestCase
 {
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'upgrade-idempotency';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -42,6 +53,12 @@ class Upgrade_1_0_0_beta_2_Test extends BoardTestCase
 
     /**
      * syncCountColumns은 2회 연속 실행 시 동일한 카운트를 유지한다
+     *
+     * @scenario upgrade_step=beta_2_count_sync, existing_data=already_applied
+     *
+     * @effects sync_count_columns_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_count_columns_is_idempotent(): void
     {
@@ -82,6 +99,12 @@ class Upgrade_1_0_0_beta_2_Test extends BoardTestCase
 
     /**
      * 게시글/댓글/첨부가 없는 빈 게시판에서 run() 후 카운트가 0이다
+     *
+     * @scenario upgrade_step=beta_2_count_sync, existing_data=nothing_to_change
+     *
+     * @effects empty_board_counts_remain_zero_after_upgrade
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_board_counts_remain_zero_after_upgrade(): void
     {
@@ -100,6 +123,12 @@ class Upgrade_1_0_0_beta_2_Test extends BoardTestCase
 
     /**
      * 삭제된(soft-delete) 게시글은 boards.posts_count에서 제외된다
+     *
+     * @scenario upgrade_step=beta_2_count_sync, existing_data=needs_change
+     *
+     * @effects soft_deleted_posts_excluded_from_posts_count
+     *
+     * @return void 반환값 없음
      */
     public function test_soft_deleted_posts_excluded_from_posts_count(): void
     {
@@ -118,6 +147,12 @@ class Upgrade_1_0_0_beta_2_Test extends BoardTestCase
 
     /**
      * 삭제된(soft-delete) 댓글은 board_posts.comments_count에서 제외된다
+     *
+     * @scenario upgrade_step=beta_2_count_sync, existing_data=needs_change
+     *
+     * @effects soft_deleted_comments_excluded_from_comments_count
+     *
+     * @return void 반환값 없음
      */
     public function test_soft_deleted_comments_excluded_from_comments_count(): void
     {
@@ -138,6 +173,12 @@ class Upgrade_1_0_0_beta_2_Test extends BoardTestCase
 
     /**
      * run()은 파티션이 없는 환경에서도 예외 없이 완료된다
+     *
+     * @scenario upgrade_step=beta_2_count_sync, existing_data=nothing_to_change
+     *
+     * @effects run_completes_without_exception_when_no_partitions
+     *
+     * @return void 반환값 없음
      */
     public function test_run_completes_without_exception_when_no_partitions(): void
     {
@@ -147,12 +188,18 @@ class Upgrade_1_0_0_beta_2_Test extends BoardTestCase
         try {
             $this->runUpgrade();
         } catch (\Throwable $e) {
-            $this->fail("run() should not throw in partition-free environment: " . $e->getMessage());
+            $this->fail('run() should not throw in partition-free environment: '.$e->getMessage());
         }
     }
 
     /**
      * run() 2회 실행 시 boards.comments_count가 중복 누적되지 않는다
+     *
+     * @scenario upgrade_step=beta_2_count_sync, existing_data=already_applied
+     *
+     * @effects boards_comments_count_does_not_accumulate_on_double_run
+     *
+     * @return void 반환값 없음
      */
     public function test_boards_comments_count_does_not_accumulate_on_double_run(): void
     {
@@ -177,6 +224,11 @@ class Upgrade_1_0_0_beta_2_Test extends BoardTestCase
     // Helper
     // ==========================================
 
+    /**
+     * 1.0.0-beta.1 에서 1.0.0-beta.2 로 가는 업그레이드 단계를 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function runUpgrade(): void
     {
         $context = new UpgradeContext(
@@ -185,10 +237,16 @@ class Upgrade_1_0_0_beta_2_Test extends BoardTestCase
             currentStep: '1.0.0-beta.2',
         );
 
-        $upgrade = new Upgrade_1_0_0_beta_2();
+        $upgrade = new Upgrade_1_0_0_beta_2;
         $upgrade->run($context);
     }
 
+    /**
+     * 업그레이드 시험용 게시글을 직접 넣습니다.
+     *
+     * @param  array<string, mixed>  $attributes  덮어쓸 컬럼
+     * @return int 게시글 ID
+     */
     private function createUpgradeTestPost(array $attributes = []): int
     {
         $defaults = [
@@ -213,6 +271,13 @@ class Upgrade_1_0_0_beta_2_Test extends BoardTestCase
         return DB::table('board_posts')->insertGetId(array_merge($defaults, $attributes));
     }
 
+    /**
+     * 업그레이드 시험용 댓글을 직접 넣습니다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @param  array<string, mixed>  $attributes  덮어쓸 컬럼
+     * @return int 댓글 ID
+     */
     private function createUpgradeTestComment(int $postId, array $attributes = []): int
     {
         $defaults = [

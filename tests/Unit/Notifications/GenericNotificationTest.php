@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Notifications;
 
-use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
 use App\Models\User;
@@ -11,6 +10,7 @@ use App\Services\NotificationDefinitionService;
 use App\Services\NotificationTemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\Notification;
+use Tests\Helpers\MocksChannelReadiness;
 use Tests\TestCase;
 
 /**
@@ -20,31 +20,15 @@ use Tests\TestCase;
  */
 class GenericNotificationTest extends TestCase
 {
+    use MocksChannelReadiness;
     use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // readiness mock: 모든 채널 ready
-        $this->app->singleton(ChannelReadinessCheckerInterface::class, function () {
-            return new class implements ChannelReadinessCheckerInterface {
-                public function isReady(string $channelId): bool
-                {
-                    return true;
-                }
-
-                public function check(string $channelId): array
-                {
-                    return ['ready' => true, 'reason' => null];
-                }
-
-                public function checkAll(array $channelIds): array
-                {
-                    return array_fill_keys($channelIds, ['ready' => true, 'reason' => null]);
-                }
-            };
-        });
+        // readiness mock: 모든 채널 ready (SSoT = Tests\Helpers\MocksChannelReadiness)
+        $this->mockAllChannelsReady();
     }
 
     /**

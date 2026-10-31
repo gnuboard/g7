@@ -319,7 +319,18 @@ class InstallerWorkerLockReleaseTest extends TestCase
     #[Test]
     public function the_state_write_failure_message_carries_free_space(): void
     {
-        $body = $this->functionBody('installer-state.php', 'function saveInstallationState');
+        // 기록 지점은 일반 저장과 CAS 저장이 함께 지나는 installerWriteStateFile() 이다
+        // (7.2.0 CAS 합류로 saveInstallationState() 는 병합 뒤 그 함수에 위임한다). 두 저장
+        // 경로가 실제로 그 지점을 지나는지 먼저 보고, 실패 기록은 그 함수 본문에서 본다.
+        foreach (['function saveInstallationState(', 'function saveInstallationStateCas('] as $caller) {
+            $this->assertStringContainsString(
+                'installerWriteStateFile(',
+                $this->functionBody('installer-state.php', $caller),
+                $caller.' 가 공용 기록 지점을 지나지 않는다 — 그 경로의 쓰기 실패에는 여유 공간이 기록되지 않는다'
+            );
+        }
+
+        $body = $this->functionBody('installer-state.php', 'function installerWriteStateFile(');
         $this->assertGreaterThan(1000, strlen($body), '함수 본문을 제대로 자르지 못했다');
 
         $this->assertStringContainsString(

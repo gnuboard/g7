@@ -1,0 +1,98 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 렌더 경로(5)×미리보기 기기(4)×창 폭(3)×스타일 방식(4)×값 종류(4) 조합(960)은 전개가 무의미하다. 결함은 축 조합이 아니라 「호스트 전역값을 읽는 지점」 단위로 생기므로, 지점마다 effects 로 잠그고 브라우저 spec 이 기기 3종×창 폭 2종을 실측한다. effects·test_files 축은 계속 검사한다.
+feature: 레이아웃 편집기 미리보기 렌더 환경 격리 (공개 이슈 #141)
+
+description: |
+  레이아웃 편집기 미리보기는 iframe 이 아니라 관리자 문서 안의 div(`.g7le-preview-frame`, 폭 = 기기 폭)다.
+  미리보기 전용 값(기기 폭·콘텐츠 언어·격리 액션 처리기·편집 대상 템플릿 컴포넌트·편집 모드)은 DynamicRenderer
+  에 prop 과 React Context 로만 전달되는데, 다음 지점이 그 대신 관리자 화면(호스트) 전역값을 읽었다.
+
+  - 셀 렌더 함수(`renderItemChildren`)의 `responsive` 분기 — 브라우저 창 폭 (D1, 제보 내용)
+  - G7Core 셀 렌더 래퍼 3종의 번역·dispatcher·컴포넌트 목록 — 호스트 값 (D2·D3·D10)
+  - 템플릿 FileTreePicker·CodeWorkspace 의 폭 분기 — `window.innerWidth` (D4·D5)
+  - 편집기 styleScope 폭 폴백 — 창 폭 (D6)
+  - CSS 폭 `@media`·`vw` — 브라우저가 창 폭으로 판정 (D7)
+  - SlotContainer·Modal footer 의 DynamicRenderer — 호스트 레지스트리·dispatcher, isEditMode 누락 (D8·D9)
+
+  고침: DynamicRenderer 가 렌더 환경을 안정 ref(`__componentContext.renderEnvRef`)로 노출하고, 셀 렌더 함수·
+  래퍼·SlotContainer·Modal 은 「명시 옵션 > 렌더 환경 > 호스트 값」 순으로 고른다. CSS 는 편집기 생존 동안
+  폭 `@media` 를 원본(프레임 밖 가드) + `@container g7le-preview` 복제본으로 나누고 `vw` 를 프레임 폭 변수로 바꾼다.
+  편집기 밖에서는 렌더 환경이 곧 호스트 값이고 CSS 재작성은 언마운트 때 원복되므로 동작 변화가 없다.
+
+axes:
+  render_path: [dynamic_renderer, cell_plain, cell_iteration, expand_content, component_layout]
+  preview_device: [desktop, tablet, mobile, custom]
+  window_width: [wider_than_preview, narrower_than_preview, equal]
+  style_source: [json_responsive, css_media, css_vw, js_width_branch]
+  env_value: [width, translation, action_dispatcher, component_registry]
+
+axis_notes:
+  render_path: >-
+    dynamic_renderer 는 대조군(원래 Context 폭을 쓴다). cell_* 는 RenderHelpers.renderItemChildren,
+    expand_content·component_layout 은 G7Core 래퍼 경로.
+  window_width: 미리보기 폭과 창 폭이 다를 때만 결함이 드러난다(편집기 밖에서는 둘이 같다).
+  style_source: >-
+    json_responsive = 레이아웃 JSON 의 responsive 키, css_media·css_vw = 브라우저 판정 CSS,
+    js_width_branch = 컴포넌트 코드의 폭 분기(FileTreePicker·CodeWorkspace).
+
+effects:
+  # 렌더 환경 통로 (코어)
+  - preview_render_env_priority_explicit_over_env_over_host      # 명시 옵션 > 렌더 환경 > 호스트 값
+  - preview_render_env_falls_back_to_host_outside_preview        # 환경이 없으면 종전대로 호스트 값(편집기 밖 무변화)
+  - preview_render_env_does_not_merge_state                      # renderEnv 는 _local 을 병합하지 않는 환경 전용 통로
+  - preview_render_env_exposed_via_component_context             # DynamicRenderer 가 __componentContext.renderEnvRef 로 노출
+  - preview_render_env_ref_identity_stable_across_width_change   # 폭이 바뀌어도 __componentContext identity 불변(재계산 폭주 방지)
+  - preview_slot_registration_carries_render_env_and_path        # 슬롯 등록에 getRenderEnv·componentPath
+  - preview_cell_render_follows_preview_width                    # 셀 responsive 분기가 미리보기 폭을 따른다 (#141 본 증상)
+  - preview_cell_defer_translation_follows_content_locale        # 셀 $t:defer: 가 콘텐츠 언어로 번역
+  - preview_cell_actions_bind_to_preview_dispatcher              # 셀 액션이 미리보기 격리 dispatcher 에 묶임
+  - preview_cell_actions_not_bound_in_edit_mode                  # 편집 모드 셀 액션 미바인딩(DynamicRenderer 규약과 동일)
+  - preview_cell_wrapper_uses_render_env_over_host               # G7Core 래퍼 3종이 환경 값·레지스트리 우선
+  - preview_style_scope_fallback_ignores_window_width            # styleScope 폭 폴백이 창 폭을 쓰지 않음
+  # CSS 매체 격리 (코어 편집기)
+  - preview_media_isolation_width_media_to_container             # 폭 @media → 원본 가드 + @container 복제
+  - preview_media_isolation_rem_uses_media_basis                 # rem/em 조건을 @media 기준 px 로 변환
+  - preview_media_isolation_non_width_kept_outer                 # 비폭 조건은 바깥 @media 로 유지
+  - preview_media_isolation_non_width_untouched                  # 폭 조건 없는 규칙·vh/vmin 은 손대지 않음
+  - preview_media_isolation_vw_follows_frame_width               # vw → 프레임 폭 변수
+  - preview_media_isolation_selector_split_respects_escapes      # 이스케이프·괄호·따옴표 안 쉼표로 쪼개지 않음
+  - preview_media_isolation_guard_keeps_selector_valid           # 가짜 요소 앞에 가드, 이스케이프 콜론 오인 없음
+  - preview_media_isolation_at_rules_not_cloned                  # @keyframes 류는 복제하지 않음
+  - preview_media_isolation_unsupported_counted                  # 변환 불가·거부·시트 media 는 원문 유지 + 카운트
+  - preview_media_isolation_cross_origin_skipped                 # 교차 출처 시트 건너뜀
+  - preview_media_isolation_idempotent                           # 재실행 무변화
+  - preview_media_isolation_restored_on_unmount                  # 언마운트 시 원문 그대로 복원
+  - preview_media_isolation_noop_without_container_queries       # 컨테이너 쿼리 미지원 환경 no-op
+  - preview_media_isolation_container_declared_while_mounted     # 편집기 생존 동안만 프레임이 컨테이너
+  # 브라우저 (Playwright)
+  - preview_browser_css_breakpoints_follow_preview_device        # 창 1441 에서 기기 전환 시 열 수·방향이 기기 폭을 따름
+  - preview_browser_css_and_json_responsive_agree_at_boundaries  # 767/768/1023/1024 경계에서 CSS·JSON 판정 일치
+  - preview_browser_narrow_window_keeps_desktop_preview          # 창 700 + 데스크톱 미리보기에서 손으로 쓴 max-width 규칙이 표를 숨기지 않음
+  - preview_browser_expand_row_follows_preview_width             # 상품 확장 행이 모바일 미리보기에서 표를 그리지 않음
+  - preview_browser_cell_defer_translation_follows_content_locale # 콘텐츠 언어 en 에서 셀 문구가 영어
+  - preview_browser_runtime_style_isolated                       # 실행 중 주입한 <style> 도 격리
+  - preview_browser_no_isolation_trace_after_leaving_editor      # 편집기를 떠나면 격리 흔적 0, 창 기준 그대로
+  - preview_browser_isolation_metrics_within_budget              # unsupported 0, 처리 시간 측정
+
+test_files:
+  - resources/js/core/template-engine/helpers/__tests__/RenderEnvironment.test.ts
+  - resources/js/core/template-engine/helpers/__tests__/RenderHelpers.renderEnvironment.test.tsx
+  - resources/js/core/template-engine/helpers/__tests__/RenderHelpers.bundledExpandChildren.test.tsx
+  - resources/js/core/__tests__/G7CoreGlobals.renderEnvironment.test.ts
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.renderEnvRef.test.tsx
+  - resources/js/core/template-engine/__tests__/ResponsiveOverride.renderPathParity.test.tsx
+  - resources/js/core/template-engine/__tests__/troubleshooting-render-path-environment.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/styleScope.fallback.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/previewMediaIsolation/selectorGuard.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/previewMediaIsolation/mediaQuery.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/previewMediaIsolation/vwRewrite.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/previewMediaIsolation/sheetRewriter.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/usePreviewMediaIsolation.test.ts
+  - tests/Playwright/specs/layout-editor/preview-render-environment.spec.ts
+
+validation:
+  note: |
+    단위 테스트는 「호스트 값을 읽던 지점」마다 렌더 환경 우선을 잠그고, 제보자 요청 회귀(두 렌더 경로 패리티)는
+    `ResponsiveOverride.renderPathParity.test.tsx` 가 실물 DynamicRenderer + ResponsiveProvider 로 잰다.
+    CSS 격리는 브라우저만 판정할 수 있어(jsdom 은 @container·@layer 를 지원하지 않는다) 순수 함수·가짜 CSSOM 단위
+    테스트 위에 Playwright spec 이 실제 Chromium 에서 열 수·방향·computed style 을 잰다.
+    템플릿 쪽 잠금은 각 템플릿의 `tests/scenarios/preview-render-environment.yaml` 이 소유한다.

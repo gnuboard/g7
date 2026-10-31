@@ -1,0 +1,32 @@
+feature: 쿠폰 받기 창 — 상품 상세에서도 쿠폰을 받을 수 있고, 닫았다 다시 열면 여는 쪽이 준 새 목록이 보인다 (7.1.1)
+
+description: |
+  상품 상세 「+N」 이 창에 넣는 목록(`products/{id}/downloadable-coupons`)의 항목에는 `id` 가 없고 `coupon_id` 만 있다. 창은
+  `coupon.id` 로 받기 주소를 만들어 `POST …/user/coupons//download` 가 404 였고, 「다운로드 중」 판정이 undefined === undefined 라 카드
+  전부가 함께 잠겼다(결함 A). 주문서 목록(`user/coupons/downloadable`)은 `coupon_id` 도 함께 실어 정상이었다. 두 목록 공통의
+  `coupon_id` 를 읽고, 할인 종류가 없는 목록은 혜택 문구·기간 문구로 카드 윗줄·유효기간을 채운다. 주문서가 없는 화면에서는 주문서
+  갱신(PUT /checkout)을 보내지 않는다.
+  modals 섹션 창은 영구 마운트라 창이 `_local` 에 쓴 목록(받음 표시·더보기로 늘어난 장수)이 다시 열 때 여는 쪽이 넣은 새 목록을
+  가렸다(출시 전 실측). 창 상태를 창 고유 `_global.couponDownloadModal` 로 옮기고 여는 쪽이 null 로 비운 뒤 다시 쓴다(배송지 창 재작업과
+  같은 방식, 엔진 무변경). 시험은 운영과 같은 TemplateApp + renderTemplate 로 창을 modals 섹션에 그린다.
+
+# axis 의미:
+#   source — 창을 여는 화면(상품 상세 「+N」 / 주문서 「쿠폰 다운로드」 / 정적 판정)
+axes:
+  source: [product_detail, checkout, static]
+
+effects:
+  - download_request_carries_coupon_id                    # 받기 요청 주소에 누른 카드의 쿠폰 번호가 실린다(빈 번호 // 없음)
+  - only_pressed_card_shows_progress                      # 응답 전 「다운로드 중」·응답 뒤 「다운로드 완료」 는 누른 카드 하나뿐이다
+  - no_checkout_put_outside_checkout                      # 상품 상세에서 받은 뒤 PUT /checkout 을 보내지 않는다(주문서에서는 보낸다)
+  - card_shows_benefit_and_validity_from_product_response # 상품 상세 카드 윗줄 할인값·유효기간이 그 목록 필드(혜택·기간 문구)로 보인다
+  - reopen_shows_fresh_list                               # 닫았다 다시 열면 여는 쪽이 새로 준 목록(장수·받음 표시)이다
+  - infinite_scroll_loads_next_page                       # 창 스크롤이 다음 페이지를 이어 붙인다(debounce·마지막 페이지 가드, 더보기 중 표시)
+  - window_state_not_in_page_local                        # 창 상태(목록·더보기 중·받는 중)는 페이지 _local 초기값에 두지 않는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/coupon-download-modal-real-structure.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/coupon-download-modal.test.tsx
+
+validation:
+  browser_check: 재실측 — 로그인 회원 상품 상세 「+N」 창에서 카드 하나 「다운로드」(요청 주소에 쿠폰 번호, 누른 카드만 진행·완료, 토스트 「쿠폰이 다운로드되었습니다.」, PUT /checkout 없음, 카드 윗줄 할인값·「발급일로부터 N일」 표시) → 닫기 → 다시 열기(재조회 목록). 주문서 「쿠폰 다운로드」 → 더보기 11장 → 닫기 → 다시 열기 8장

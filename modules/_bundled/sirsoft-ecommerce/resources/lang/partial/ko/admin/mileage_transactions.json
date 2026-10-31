@@ -39,6 +39,7 @@
   "sort": {
     "label": "정렬",
     "created_at_desc": "최신순",
+    "created_at_asc": "오래된순",
     "amount_desc": "금액 높은순",
     "amount_asc": "금액 낮은순"
   },
@@ -68,7 +69,8 @@
     "partial_expired": "일부 소멸",
     "expired_amount": "{{amount}} 소멸",
     "unlimited": "무기한",
-    "none": "-"
+    "none": "-",
+    "deleted_member": "삭제된 회원"
   },
   "row_action": {
     "expand": "상세 보기",

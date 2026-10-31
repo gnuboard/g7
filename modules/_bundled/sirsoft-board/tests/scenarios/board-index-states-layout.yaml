@@ -1,0 +1,23 @@
+feature: 사용자 게시판 목록 상태 분기 레이아웃 계약 (#757 건드린 시험 파일 매핑)
+
+description: |
+  사용자 템플릿(sirsoft-basic) 게시판 목록의 빈 상태 3종(빈 페이지·게시글 없음·검색 결과 없음) · 로딩/오류 · 글쓰기 버튼
+  권한 분기를 굽기 산출물(JSON)의 if 식과 컴포넌트 트리로 고정한다. 「처음으로」·「검색 초기화」는 링크(href + 경로 없는 navigate)다.
+
+axes:
+  state:
+    - empty_page      # page > 1 인데 0건 — 「처음으로」 링크
+    - no_posts        # 검색·카테고리 없이 0건
+    - no_results      # 검색·카테고리가 있는데 0건 — 「검색 초기화」 링크
+    - loading         # 게시판 정보 전
+    - error           # 오류 — 새로고침
+    - write_button    # 글쓰기 버튼 권한 분기
+
+exclusions:
+  - { state: empty_page, reason: "제외 없음 — 분기 단위 단일 축" }
+
+effects:
+  - board_index_state_branch_defined   # 각 분기의 if 식·안내 문구·이동 수단이 정의돼 있고 서로 배타적이다
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/board-index-empty-states.test.tsx

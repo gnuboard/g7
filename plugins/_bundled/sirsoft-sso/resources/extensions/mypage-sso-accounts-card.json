@@ -1,0 +1,452 @@
+{
+    "comment": "e2e:allow Playwright 스펙 없음(이 플러그인 tests/Playwright/specs/sso-*.spec.ts 는 로그인 흐름만 덮는다) — 브라우저 실측은 F1 Chrome MCP 계획서 §10 M4·M14(W40) — P4 는 Vitest 로 덮음\n     마이페이지 프로필에 「연결된 회사 계정」 카드를 덧붙이는 조각 — IdP, 연결일, 마지막 로그인을 보고 연결하거나 해제한다.\n     연결은 API 가 1회용 시작 티켓 주소를 발급한 뒤 그리로 이동한다(브라우저 이동에는 로그인 토큰이 실리지 않으므로 — W25).\n     해제는 두 경우에 막힌다 — 비밀번호가 없고 이 연결이 마지막 로그인 수단일 때, SSO 강제 대상일 때. 서버 응답의 `unlink_block` 으로 미리 안내한다.\n     priority 95 — 같은 자리에 붙는 마케팅 카드(100)보다 앞. 해제 확인 창이 읽고 쓰는 값은 _global 이다(모달은 페이지 _local 의 낡은 값을 본다).",
+    "target_layout": "mypage/profile",
+    "priority": 95,
+    "data_sources": [
+        {
+            "id": "ssoMyAccounts",
+            "label_key": "$t:sirsoft-sso.editor.data_source.my_accounts",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-sso/me/accounts",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "마이페이지 덧붙임 — 못 받으면 카드만 그리지 않는다",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "내 연결 — 로그인 회원 본인"
+        }
+    ],
+    "init_actions": [
+        {
+            "comment": "연결 왕복에서 돌아온 결과 안내 (sso_linked = 연결한 IdP 키)",
+            "handler": "toast",
+            "if": "{{!!query.sso_linked}}",
+            "params": {
+                "type": "success",
+                "message": "$t:sirsoft-sso.mypage.linked_toast"
+            }
+        },
+        {
+            "comment": "연결 실패(sso_error = 사유 코드, 이 화면에서 시작한 연결이 돌아온다) — 문구 키가 없으면(IdP 가 준 낯선 코드) 일반 실패 문구",
+            "handler": "toast",
+            "if": "{{!!query.sso_error}}",
+            "params": {
+                "type": "error",
+                "message": "{{$t('sirsoft-sso.errors.' + query.sso_error) === 'sirsoft-sso.errors.' + query.sso_error ? $t('sirsoft-sso.errors.generic') : $t('sirsoft-sso.errors.' + query.sso_error)}}"
+            }
+        }
+    ],
+    "modals": [
+        {
+            "comment": "해제 확인 — 확인하면 연결을 끊고 목록을 다시 받는다",
+            "id": "sso_unlink_confirm",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-sso.mypage.unlink_title",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "sso:space-y-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-sso.mypage.unlink_confirm|idp={{_global.ssoUnlinkTarget?.idp_label ?? ''}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "sso:flex sso:gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "sso:flex-1 sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer"
+                                    },
+                                    "text": "$t:common.cancel"
+                                },
+                                {
+                                    "id": "sso_unlink_confirm_submit",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "연결 해제 확정 — 성공하면 창을 닫고 목록을 다시 받으며, 실패하면 사유를 카드에 남긴다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoUnlinking": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-sso/me/accounts/{{_global.ssoUnlinkTarget?.id}}",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "DELETE"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoUnlinking": false,
+                                                                "ssoUnlinkTarget": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal"
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "ssoMyAccounts"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "$t:sirsoft-sso.mypage.unlinked_toast"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoUnlinking": false,
+                                                                "ssoUnlinkError": "{{error.message}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "sso:flex-1 sso:px-3 sso:py-2 sso:bg-red-600 sso:text-white sso:rounded-lg sso:text-sm sso:cursor-pointer sso:disabled:opacity-50",
+                                        "disabled": "{{_global.ssoUnlinking}}"
+                                    },
+                                    "text": "$t:sirsoft-sso.mypage.unlink"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "injections": [
+        {
+            "target_id": "profile_view_bio_card",
+            "position": "append",
+            "components": [
+                {
+                    "id": "sso_accounts_card",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!ssoMyAccounts?.data && ((ssoMyAccounts?.data?.accounts ?? []).length > 0 || (ssoMyAccounts?.data?.linkable ?? []).length > 0)}}",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "sso:bg-white sso:dark:bg-gray-800 sso:rounded-lg sso:shadow-sm sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-4"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "sso:bg-white sso:dark:bg-gray-800 sso:rounded-lg sso:shadow-sm sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "sso:mb-4 sso:pb-3 sso:border-b sso:border-gray-200 sso:dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H2",
+                                    "props": {
+                                        "className": "sso:text-base sso:font-semibold sso:text-gray-900 sso:dark:text-white"
+                                    },
+                                    "text": "$t:sirsoft-sso.mypage.title"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "sso_accounts_enforced",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{ssoMyAccounts?.data?.enforced === true}}",
+                            "props": {
+                                "className": "sso:mb-4 sso:p-3 sso:rounded-lg sso:bg-blue-50 sso:dark:bg-blue-900/20 sso:border sso:border-blue-200 sso:dark:border-blue-800 sso:text-sm sso:text-blue-700 sso:dark:text-blue-300"
+                            },
+                            "text": "$t:sirsoft-sso.mypage.enforced"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(ssoMyAccounts?.data?.accounts ?? []).length === 0}}",
+                            "props": {
+                                "className": "sso:py-2 sso:text-sm sso:text-gray-500 sso:dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-sso.mypage.empty"
+                        },
+                        {
+                            "id": "sso_accounts_list",
+                            "type": "basic",
+                            "name": "Ul",
+                            "if": "{{(ssoMyAccounts?.data?.accounts ?? []).length > 0}}",
+                            "props": {
+                                "className": "sso:divide-y sso:divide-gray-200 sso:dark:divide-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "ssoMyAccounts?.data?.accounts ?? []",
+                                        "item_var": "account"
+                                    },
+                                    "dataKey": "{{account.id}}",
+                                    "props": {
+                                        "className": "sso:py-3 sso:flex sso:flex-col sso:gap-2 sso:sm:flex-row sso:sm:items-center sso:sm:gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "sso:flex-1 sso:min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "sso:text-sm sso:font-medium sso:text-gray-900 sso:dark:text-white"
+                                                    },
+                                                    "text": "{{account.idp_label}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-sso.mypage.linked_at"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": " {{account.linked_at | date}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-sso.mypage.last_login_at"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!account.last_login_at}}",
+                                                            "text": " {{account.last_login_at | datetime}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!account.last_login_at}}",
+                                                            "text": " -"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{account.active === false}}",
+                                                    "props": {
+                                                        "className": "sso:text-xs sso:text-red-600 sso:dark:text-red-400"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.mypage.inactive"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "sso_account_unlink_{{account.id}}",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "해제 — 확인 창에 대상을 넘기고 연다",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoUnlinkTarget": "{{account}}",
+                                                                "ssoUnlinkError": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "sso_unlink_confirm"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "sso:shrink-0 sso:px-3 sso:py-1.5 sso:text-xs sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:text-gray-700 sso:dark:text-gray-300 sso:rounded sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700 sso:cursor-pointer sso:disabled:opacity-50",
+                                                "disabled": "{{!!account.unlink_block}}",
+                                                "aria-label": "$t:sirsoft-sso.mypage.unlink_named|idp={{account.idp_label}}"
+                                            },
+                                            "text": "$t:sirsoft-sso.mypage.unlink"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!account.unlink_block}}",
+                                            "props": {
+                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:md:max-w-xs"
+                                            },
+                                            "text": "{{$t('sirsoft-sso.mypage.unlink_block.' + account.unlink_block)}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_global.ssoUnlinkError}}",
+                            "props": {
+                                "className": "sso:mt-3 sso:text-sm sso:text-red-600 sso:dark:text-red-400",
+                                "role": "alert"
+                            },
+                            "text": "{{_global.ssoUnlinkError ?? ''}}"
+                        },
+                        {
+                            "comment": "연결할 수 있는 회사 계정",
+                            "id": "sso_accounts_linkable",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(ssoMyAccounts?.data?.linkable ?? []).length > 0}}",
+                            "props": {
+                                "className": "sso:mt-4 sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "sso:mb-3 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-sso.mypage.linkable"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "sso:flex sso:flex-col sso:gap-2 sso:sm:flex-row sso:flex-wrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "sso_link_button_{{idp.key}}",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "iteration": {
+                                                "source": "ssoMyAccounts?.data?.linkable ?? []",
+                                                "item_var": "idp"
+                                            },
+                                            "dataKey": "{{idp.key}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "연결 시작 — API 가 시작 티켓 주소를 주면 그 회사 계정 로그인으로 이동한다",
+                                                    "type": "click",
+                                                    "handler": "sirsoft-sso.startWithTicket",
+                                                    "params": {
+                                                        "endpoint": "/plugins/sirsoft-sso/me/links/start",
+                                                        "body": "{{({ idp: idp.key })}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "sso:inline-flex sso:items-center sso:justify-center sso:gap-2 sso:px-4 sso:py-2 sso:text-sm sso:font-medium sso:rounded-lg sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:text-gray-800 sso:dark:text-gray-200 sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700 sso:cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "aria-hidden": "true",
+                                                        "className": "sso:inline-flex sso:items-center sso:justify-center sso:w-5 sso:h-5 sso:rounded-full sso:ring-1 sso:ring-current sso:text-xs sso:font-semibold"
+                                                    },
+                                                    "text": "{{idp.initial}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-sso.mypage.link_with|idp={{idp.label}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

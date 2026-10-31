@@ -46,7 +46,8 @@ _이 엔드포인트는 JSON 봉투(`data`)를 반환하지 않습니다. 성공
 | 본문 | 이미지 원본 바이너리 | `category_images.path` 에 저장된 파일을 스토리지에서 스트리밍 |
 | `Content-Type` 헤더 | `image/jpeg` (레코드의 `mime_type` 값) | 업로드 시 저장된 MIME 타입을 그대로 사용 |
 | `Cache-Control` 헤더 | `public, max-age=31536000, must-revalidate` (프로덕션) / `no-cache` (그 외) | 코어 파일 서빙 단일 지점이 환경에 따라 정하는 캐싱 정책 — `ETag`·`Last-Modified`·`Expires` 동반, 조건부 요청은 304 |
-| `Content-Disposition` 헤더 | 원본 파일명(`original_filename`) 포함 | 다운로드 시 표시될 파일명 |
+| `Content-Disposition` 헤더 | 원본 파일명(`original_filename`) 포함 | 래스터 이미지(JPEG·PNG·GIF·WebP 등)만 `inline`, 그 밖(SVG 포함)은 `attachment` + CSP sandbox. 모든 응답에 `X-Content-Type-Options: nosniff` (KVE-2026-2366) |
+| `X-Content-Type-Options` 헤더 | `nosniff` | 브라우저의 형식 추측 차단 |
 
 **응답 예시**
 
@@ -58,6 +59,7 @@ ETag: "9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d"
 Last-Modified: Wed, 15 Jul 2026 00:00:00 GMT
 Expires: Thu, 15 Jul 2027 00:00:00 GMT
 Content-Disposition: inline; filename="category-main.jpg"
+X-Content-Type-Options: nosniff
 
 <이미지 바이너리 데이터>
 ```

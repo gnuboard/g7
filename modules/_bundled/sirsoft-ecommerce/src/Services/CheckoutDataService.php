@@ -16,12 +16,43 @@ use Modules\Sirsoft\Ecommerce\Models\TempOrder;
  */
 class CheckoutDataService
 {
+    /**
+     * 체크아웃 데이터 서비스를 생성합니다.
+     *
+     * @param  UserCouponService  $userCouponService  회원 쿠폰 서비스
+     * @param  UserMileageService  $userMileageService  회원 마일리지 서비스
+     * @param  EcommerceSettingsService  $settings  쇼핑몰 설정 서비스
+     * @param  CurrencyConversionService  $currencyConversion  통화 환산 서비스
+     * @param  CheckoutPaymentMethodFilter  $paymentMethodFilter  결제 통화별 결제수단 필터
+     * @param  PaymentMethodResolver  $paymentMethodResolver  결제수단 카탈로그 해석기
+     */
     public function __construct(
         protected UserCouponService $userCouponService,
         protected UserMileageService $userMileageService,
         protected EcommerceSettingsService $settings,
         protected CurrencyConversionService $currencyConversion,
+        protected CheckoutPaymentMethodFilter $paymentMethodFilter,
+        protected PaymentMethodResolver $paymentMethodResolver,
     ) {}
+
+    /**
+     * 결제 통화에서 고를 수 있는 결제수단 id 목록을 만듭니다 (#639 D17).
+     *
+     * 후보는 결제수단 화이트리스트 전체이고, 통화 판정은 확장이 필터 훅으로 뺀다. 통화는 계산 결과의 결제 통화를 먼저
+     * 쓰고, 없으면 주문 생성과 같은 규칙으로 구한다.
+     *
+     * @param  array  $calculationArray  계산 결과 배열
+     * @return array<int, string> 허용 결제수단 id
+     */
+    protected function buildAllowedPaymentMethods(array $calculationArray): array
+    {
+        $currency = $calculationArray['summary']['selected_payment_currency'] ?? null;
+
+        return $this->paymentMethodFilter->allowedFor(
+            $this->paymentMethodResolver->allValidIds(),
+            is_string($currency) && $currency !== '' ? $currency : $this->paymentMethodFilter->currentCurrency(),
+        );
+    }
 
     /**
      * 체크아웃 응답 데이터 구성
@@ -83,6 +114,9 @@ class CheckoutDataService
             'selected_shipping_country' => ResolveShippingCountry::getCountry(),
             // 무료배송 기준액 결제통화 환산 (B7 — 다통화 정합)
             'free_shipping' => $this->buildFreeShippingInfo($calculationArray),
+            // 결제 통화에서 고를 수 있는 결제수단 id (#639 D17) — 템플릿이 결제수단 버튼을 이 목록으로 거른다.
+            // 주문 생성 검증(CreateOrderRequest)과 같은 판정이다.
+            'allowed_payment_methods' => $this->buildAllowedPaymentMethods($calculationArray),
         ];
 
         // 구매불가 상품이 있는 경우에만 포함

@@ -2,16 +2,22 @@
 
 namespace Plugins\Sirsoft\Tosspayments\Tests;
 
+use App\Enums\ExtensionStatus;
 use App\Enums\PermissionType;
 use App\Extension\HookManager;
+use App\Models\Module as ModuleRegistration;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Routing\CompiledRouteCollection;
+use Illuminate\Routing\RouteCollection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\TestingSeeder;
 use Modules\Sirsoft\Ecommerce\Providers\EcommerceServiceProvider;
+use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
+use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 use Tests\TestCase;
 
 /**
@@ -25,9 +31,9 @@ abstract class PluginTestCase extends TestCase
     use RefreshDatabase;
 
     /**
-     * 시딩 활성화
+     * 데이터베이스 초기화 뒤 시더를 실행하도록 true 를 돌려줍니다.
      *
-     * @return bool
+     * @return bool 시더 실행 여부(항상 true)
      */
     protected function shouldSeed(): bool
     {
@@ -35,9 +41,9 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 테스트용 시더 클래스
+     * 데이터베이스 초기화 때 실행할 이커머스 테스트 시더 클래스를 돌려줍니다.
      *
-     * @return string
+     * @return string 시더 클래스 FQCN
      */
     protected function seeder(): string
     {
@@ -45,9 +51,9 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 마이그레이션 경로를 반환합니다.
+     * 코어와 모든 번들 모듈·플러그인의 마이그레이션 경로를 포함한 migrate:fresh 옵션을 만듭니다.
      *
-     * @return array
+     * @return array<string, mixed> migrate:fresh 명령 옵션
      */
     protected function migrateFreshUsing(): array
     {
@@ -78,7 +84,9 @@ abstract class PluginTestCase extends TestCase
     private ?array $hookSnapshot = null;
 
     /**
-     * 테스트 환경 설정
+     * 오토로드·이커머스 서비스 프로바이더·라우트를 등록하고 앱 URL 을 APP_URL 로 되돌린 뒤 HookManager 상태를 스냅샷합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -92,12 +100,14 @@ abstract class PluginTestCase extends TestCase
 
         // 이커머스 모듈 ServiceProvider 등록 (Repository 바인딩)
         $this->app->register(EcommerceServiceProvider::class);
+        $this->ensureEcommerceModuleReady();
 
         // 모듈 라우트를 수동으로 등록
         $this->registerModuleRoutes();
 
         // 플러그인 라우트를 수동으로 등록
         $this->registerPluginRoutes();
+        $this->rebuildRouteNameLookups();
 
         // SettingsServiceProvider 가 storage/app/settings/general.json 의 site_url 로
         // app.url 을 override 하면 Laravel 의 assertRedirect (APP_URL 기반) 와 mismatch.
@@ -109,7 +119,42 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * tearDown 에 HookManager 상태 복원.
+     * 이커머스 등록 행과 설정 미러를 매 테스트마다 보장합니다.
+     *
+     * 등록 행은 TestingSeeder 가 만들지만 시딩은 migrate:fresh 와 함께 프로세스당 1회만 돈다. 같은 프로세스에서
+     * 코어 테스트(Tests\TestCase 상속)가 먼저 migrate:fresh 를 돌리면 스키마만 있고 이 행이 없는 DB 가 되고,
+     * 앱 부팅 때 설정 미러(`g7_module_settings()`)는 활성 모듈만 싣기 때문에 이커머스 통화 설정이 빈다.
+     * 그러면 KRW 소수 자릿수가 2로 읽혀 청구액 3,000 이 300,000 으로 대조되고, 청구 승인 리스너가
+     * 금액 불일치로 거절한다(단독 실행 통과·묶음 실행 실패). 이커머스 ModuleTestCase 와 같은 방식으로
+     * 행을 보장하고 미러·통화 서비스 싱글톤·통화 설정 캐시를 다시 만든다. 테스트 트랜잭션 안이라 롤백된다.
+     *
+     * @return void 반환값 없음
+     */
+    private function ensureEcommerceModuleReady(): void
+    {
+        $registration = ModuleRegistration::firstOrCreate(
+            ['identifier' => 'sirsoft-ecommerce'],
+            [
+                'vendor' => 'sirsoft',
+                'name' => ['ko' => '이커머스', 'en' => 'Ecommerce'],
+                'status' => ExtensionStatus::Active->value,
+                'version' => '1.0.0',
+            ]
+        );
+
+        if ($registration->status !== ExtensionStatus::Active->value) {
+            $registration->update(['status' => ExtensionStatus::Active->value]);
+        }
+
+        g7_refresh_module_settings_config('sirsoft-ecommerce');
+        $this->app->forgetInstance(CurrencyConversionService::class);
+        CurrencySettingsCache::clear();
+    }
+
+    /**
+     * setUp 때 찍어 둔 HookManager 상태를 복원한 뒤 부모 tearDown 을 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -119,7 +164,9 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
+     * HookManager 의 static $hooks·$filters·$dispatching 값을 인스턴스 속성에 저장합니다.
+     *
+     * @return void 반환값 없음
      */
     private function snapshotHookManager(): void
     {
@@ -132,7 +179,9 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 스냅샷 시점으로 HookManager 복원.
+     * 저장해 둔 스냅샷이 있으면 HookManager static 상태를 그 값으로 되돌리고 스냅샷을 비웁니다.
+     *
+     * @return void 반환값 없음
      */
     private function restoreHookManager(): void
     {
@@ -149,7 +198,9 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 이커머스 모듈 오토로드를 등록합니다.
+     * sirsoft-ecommerce 모듈 네임스페이스 오토로더를 등록하고 모듈 헬퍼 파일을 불러옵니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleAutoload(): void
     {
@@ -183,7 +234,9 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 플러그인 오토로드를 등록합니다.
+     * 이 테스트 파일이 속한 플러그인 디렉터리의 src 를 기준으로 Plugins\Sirsoft\Tosspayments\ 네임스페이스 오토로더를 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerPluginAutoload(): void
     {
@@ -213,7 +266,9 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 모듈 라우트를 등록합니다.
+     * sirsoft-ecommerce 모듈 API 라우트를 api.modules.sirsoft-ecommerce. 이름 접두사로 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleRoutes(): void
     {
@@ -228,15 +283,19 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 플러그인 라우트를 등록합니다.
+     * 이 플러그인의 web 라우트를 web.plugins.sirsoft-tosspayments., api 라우트를 api.plugins.sirsoft-tosspayments. 이름 접두사로 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerPluginRoutes(): void
     {
         $webRoutesFile = dirname(__DIR__).'/src/routes/web.php';
 
         if (file_exists($webRoutesFile)) {
+            // 프로덕션 PluginRouteServiceProvider 와 동일한 'web.plugins.' 이름 접두사 —
+            // 코어 self-gate 미들웨어가 라우트명(web.plugins.{id}.*)으로 타게팅하므로 정합 필수.
             Route::prefix('plugins/sirsoft-tosspayments')
-                ->name('plugins.sirsoft-tosspayments.')
+                ->name('web.plugins.sirsoft-tosspayments.')
                 ->middleware('web')
                 ->group($webRoutesFile);
         }
@@ -253,10 +312,37 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 관리자 사용자를 생성합니다.
+     * 런타임에 등록한 라우트의 이름·액션 조회표를 다시 만듭니다.
      *
-     * @param  array  $permissions  추가 권한 목록
-     * @return User
+     * fluent `->name()` 은 컬렉션에 추가된 **뒤** 이름을 붙이므로 추가 시점의 조회표에 오르지 않는다.
+     * 라우트 캐시가 있는 머신의 `CompiledRouteCollection` 은 `refreshNameLookups()` 가 이 몫을 채우지
+     * 못하므로 새 `RouteCollection` 에 옮겨 담는다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function rebuildRouteNameLookups(): void
+    {
+        $routes = Route::getRoutes();
+
+        if ($routes instanceof CompiledRouteCollection) {
+            $rebuilt = new RouteCollection;
+            foreach ($routes->getRoutes() as $route) {
+                $rebuilt->add($route);
+            }
+            Route::setRoutes($rebuilt);
+
+            return;
+        }
+
+        $routes->refreshNameLookups();
+        $routes->refreshActionLookups();
+    }
+
+    /**
+     * 관리자 접근 권한과 지정 권한을 가진 전용 역할을 붙인 사용자를 만듭니다.
+     *
+     * @param  array<int, string>  $permissions  추가로 부여할 권한 식별자 목록
+     * @return User 생성된 관리자 사용자
      */
     protected function createAdminUser(array $permissions = []): User
     {
@@ -295,9 +381,9 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 일반 사용자를 생성합니다.
+     * 사용자를 만들고 user 역할이 있으면 붙입니다.
      *
-     * @return User
+     * @return User 생성된 일반 사용자
      */
     protected function createUser(): User
     {

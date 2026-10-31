@@ -1,0 +1,153 @@
+{
+    "comment": "e2e:allow 2026-09-23 마이페이지 내 정보의 기본 배송지 카드 — 데이터소스·상태 변경 없이 로그인 응답(`user.data.ecommerce_default_address`)을 읽어 그리기만 하는 조각이라, 브라우저 관통 대신 레이아웃 계약 테스트(`resources/js/__tests__/layouts/mypageProfileAddressCard.test.ts`)가 주입 위치·빈 상태 분기·**사용자 템플릿 등록 컴포넌트만 쓰는지**를 잠근다(종전 `Badge` 는 sirsoft-basic 미등록이라 배지 자리가 조용히 비었다).\n\n  마이페이지 내 정보에 붙는 기본 배송지 카드.\n  내 정보 화면의 「주소」 는 가입할 때 적은 회원 주소이고, 물건이 실제로 가는 곳은 배송지다 —\n  그 둘이 다른데 화면이 배송지를 한 줄도 말해 주지 않아, 확인하려면 배송지 관리로 나가야 했다\n  (2026-09-21 검수 지적).\n  주소를 따로 불러오지 않는다 — 로그인 사용자 정보(`user.data.ecommerce_default_address`)에\n  이커머스가 이미 실어 보낸 한 줄을 읽기만 한다(마일리지 카드와 같은 짜임). 그래서 이 조각에는\n  데이터소스가 없고, 카드가 비어 보이면 원인은 이 파일이 아니라 그 응답에 있다.\n  아직 등록한 배송지가 없으면 값이 `null` 로 와서 안내문과 등록 링크만 선다 — 카드를 통째로\n  감추면 \"배송지를 여기서 관리한다\" 는 사실 자체가 화면에서 사라진다.",
+    "target_layout": "mypage/profile",
+    "priority": 321,
+    "injections": [
+        {
+            "target_id": "mypage_tab_content",
+            "position": "append_child",
+            "components": [
+                {
+                    "id": "ext_my_default_address_card",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce:mt-4 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-5"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "ecommerce:text-base ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:flex ecommerce:items-center ecommerce:gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "map-pin",
+                                                "className": "ecommerce:text-base ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.user_address_card.title"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "manage_my_addresses",
+                                    "type": "basic",
+                                    "name": "A",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate"
+                                        }
+                                    ],
+                                    "props": {
+                                        "href": "/mypage/addresses",
+                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.user_address_card.manage"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "arrow-right",
+                                                "className": "ecommerce:text-sm"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{user !== undefined && user !== null && (!user?.data?.ecommerce_default_address)}}",
+                            "props": {
+                                "className": "ecommerce:block ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.user_address_card.empty_notice"
+                        },
+                        {
+                            "id": "ext_my_default_address_body",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!user?.data?.ecommerce_default_address}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white"
+                                            },
+                                            "text": "{{user?.data?.ecommerce_default_address?.recipient_name}}"
+                                        },
+                                        {
+                                            "comment": "「기본」 배지 — 사용자 템플릿에는 Badge 컴포넌트가 없다(관리자 템플릿 전용). 등록된 Span 으로 배지 모양을 그린다.",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:font-medium ecommerce:bg-blue-100 ecommerce:dark:bg-blue-900/30 ecommerce:text-blue-700 ecommerce:dark:text-blue-300"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.user_address_card.default_badge"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{user?.data?.ecommerce_default_address?.label}}",
+                                            "props": {
+                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
+                                            },
+                                            "text": "{{user?.data?.ecommerce_default_address?.label}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mt-1"
+                                    },
+                                    "text": "{{user?.data?.ecommerce_default_address?.address_summary}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{user?.data?.ecommerce_default_address?.recipient_phone}}",
+                                    "props": {
+                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
+                                    },
+                                    "text": "{{user?.data?.ecommerce_default_address?.recipient_phone}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

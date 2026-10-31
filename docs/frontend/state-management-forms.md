@@ -13,7 +13,7 @@
 4. [setState 액션](#setstate-액션)
 5. [깊은 병합 (Deep Merge)](#깊은-병합-deep-merge)
    - [얕은 병합 (merge: "shallow")](#얕은-병합-merge-shallow)
-6. [payload 표현식 평가](#payload-표현식-평가)
+6. [params 표현식 평가](#params-표현식-평가)
 
 ---
 
@@ -60,6 +60,15 @@
 
 레이아웃 JSON 최상위에 `initGlobal` 블록을 정의하여 `_global` 초기값을 설정합니다:
 
+```html
+<init-global>
+  <field name="sidebarOpen" :value="true"/>
+  <field name="theme" value="light"/>
+</init-global>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "initGlobal": {
@@ -72,6 +81,17 @@
 ### initIsolated (격리 상태 초기값)
 
 레이아웃 JSON 최상위에 `initIsolated` 블록을 정의하여 `_isolated` 초기값을 설정합니다:
+
+```html
+<init-isolated>
+  <field name="selectedItems" :value="[]"/>
+  <field name="filterOptions">
+    <field name="status" value="all"/>
+  </field>
+</init-isolated>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -129,9 +149,21 @@
 
 `data_sources`의 `initLocal` 옵션으로 API 응답을 로컬 상태에 자동 바인딩합니다:
 
+```html
+<data-source id="board" type="api" endpoint="/api/modules/sirsoft-board/boards/{{route?.id}}" method="GET" auto_fetch="{{!!route?.id}}" condition="{{!!route?.id}}" initLocal="formData"/>
+<init-local>
+  <field name="formData">
+    <field name="name" value=""/>
+    <field name="slug" value=""/>
+  </field>
+</init-local>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "state": {
+  "initLocal": {
     "formData": {
       "name": "",
       "slug": ""
@@ -141,7 +173,7 @@
     {
       "id": "board",
       "type": "api",
-      "endpoint": "/api/boards/{{route?.id}}",
+      "endpoint": "/api/modules/sirsoft-board/boards/{{route?.id}}",
       "method": "GET",
       "auto_fetch": "{{!!route?.id}}",
       "condition": "{{!!route?.id}}",
@@ -168,9 +200,22 @@
 
 ### 두 방법 함께 사용 (권장)
 
+```html
+<data-source id="board" endpoint="/api/modules/sirsoft-board/boards/{{route?.id}}" auto_fetch="{{!!route?.id}}" initLocal="formData"/>
+<init-local>
+  <field name="formData">
+    <field name="name" value=""/>
+    <field name="type" value="basic"/>
+    <field name="use_comment" :value="false"/>
+  </field>
+</init-local>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "state": {
+  "initLocal": {
     "formData": {
       "name": "",
       "type": "basic",
@@ -180,7 +225,7 @@
   "data_sources": [
     {
       "id": "board",
-      "endpoint": "/api/boards/{{route?.id}}",
+      "endpoint": "/api/modules/sirsoft-board/boards/{{route?.id}}",
       "auto_fetch": "{{!!route?.id}}",
       "initLocal": "formData"
     }
@@ -210,6 +255,21 @@
 
 ### 기존 방식 (verbose)
 
+```html
+<input name="title" value="{{_local.formData.title}}">
+  <on type="change">
+    <set-state target="local" :hasChanges="true">
+      <field name="formData">
+        <field name="..." value="{{_local.formData}}"/>
+        <field name="title" value="{{event.target.value}}"/>
+      </field>
+    </set-state>
+  </on>
+</input>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "name": "Input",
@@ -238,13 +298,21 @@
 
 #### 로컬 상태 바인딩 (기본)
 
+```html
+<div data-key="formData" data-track-changes>
+  <input name="title"/>
+  <textarea name="content"/>
+  <select name="category" options="{{categories}}"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "name": "Div",
-  "props": {
-    "dataKey": "formData",
-    "trackChanges": true
-  },
+  "dataKey": "formData",
+  "trackChanges": true,
   "children": [
     {
       "name": "Input",
@@ -274,6 +342,16 @@
 `initLocal` 로는 막을 수 없다. 기본 병합은 shallow 라 데이터소스 응답이 `form` 객체를 통째로 교체하고, `_merge: "deep"` 을 써도 `deepMergeState` 가 `source` 의 `null` 을 그대로 반영한다.
 
 따라서 **저장값이 boolean 이 아닐 수 있는 체크박스는 레이아웃이 boolean 을 직접 보장**한다:
+
+```html
+<checkbox name="method_card" :autoBinding="false" checked="{{!!_local.form?.method_card}}">
+  <on type="change">
+    <set-state target="local" form.method_card="{{$event.target.checked}}" :hasChanges="true"/>
+  </on>
+</checkbox>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -330,13 +408,20 @@
 
 ##### 기본 사용법
 
+```html
+<div data-key="_global.formData" data-track-changes>
+  <input name="title"/>
+  <toggle name="isActive"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "name": "Div",
-  "props": {
-    "dataKey": "_global.formData",
-    "trackChanges": true
-  },
+  "dataKey": "_global.formData",
+  "trackChanges": true,
   "children": [
     {
       "name": "Input",
@@ -353,6 +438,30 @@
 ##### 필수: init_actions로 초기값 설정
 
 `dataKey="_global.xxx"` 패턴을 사용하려면 **반드시** `init_actions`에서 전역 상태를 초기화해야 합니다:
+
+```html
+<layout name="login_page" version="1.0.0">
+  <init>
+    <set-state target="global">
+      <field name="loginForm">
+        <field name="email" value=""/>
+        <field name="password" value=""/>
+      </field>
+    </set-state>
+  </init>
+  <form data-key="_global.loginForm">
+    <on type="submit">
+      <login>
+        <body email="{{_global.loginForm.email}}" password="{{_global.loginForm.password}}"/>
+      </login>
+    </on>
+    <input name="email" type="email"/>
+    <input name="password" type="password"/>
+  </form>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -427,6 +536,27 @@
 
 init_actions에서 `target: "global"`과 `_local` 래퍼를 함께 사용하여 _local 상태를 동적 값으로 초기화할 수 있습니다. 이 패턴은 특히 **URL 쿼리 파라미터를 _local 상태에 동기화**할 때 사용됩니다.
 
+```html
+<layout name="admin_product_list" version="1.0.0">
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="filter">
+          <field name="searchField" value="{{query.search_field || 'all'}}"/>
+          <field name="displayStatus" value="{{query.display_status || 'all'}}"/>
+          <field name="taxStatus" value="{{query.tax_status || 'all'}}"/>
+          <field name="category" value="{{query.category || ''}}"/>
+          <field name="keyword" value="{{query.keyword || ''}}"/>
+        </field>
+      </field>
+    </set-state>
+  </init>
+  …
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "version": "1.0.0",
@@ -495,9 +625,27 @@ init_actions에서 `target: "global"`과 `_local` 래퍼를 함께 사용하여 
 
 ##### 기본 사용법
 
+```html
+<div>
+  <isolated-state scope-id="quick-form">
+    <field name="miniForm">
+      <field name="name" value=""/>
+      <field name="email" value=""/>
+    </field>
+  </isolated-state>
+  <div data-key="_isolated.miniForm" data-track-changes>
+    <input name="name" placeholder="이름"/>
+    <input name="email" type="email" placeholder="이메일"/>
+  </div>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
-  "type": "Div",
+  "type": "basic",
+  "name": "Div",
   "isolatedState": {
     "miniForm": {
       "name": "",
@@ -509,10 +657,8 @@ init_actions에서 `target: "global"`과 `_local` 래퍼를 함께 사용하여 
     {
       "type": "basic",
       "name": "Div",
-      "props": {
-        "dataKey": "_isolated.miniForm",
-        "trackChanges": true
-      },
+      "dataKey": "_isolated.miniForm",
+      "trackChanges": true,
       "children": [
         {
           "type": "basic",
@@ -584,6 +730,12 @@ init_actions에서 `target: "global"`과 `_local` 래퍼를 함께 사용하여 
 
 컴포넌트 props에 `autoBinding: false`가 명시되면 해당 필드의 자동 바인딩이 스킵됩니다:
 
+```html
+<input type="radio" name="purchase_restriction" value="none" checked="{{(_local.form.purchase_restriction ?? 'none') === 'none'}}" :autoBinding="false"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",
@@ -628,10 +780,21 @@ init_actions에서 `target: "global"`과 `_local` 래퍼를 함께 사용하여 
 
 `dataKey`가 있는 컴포넌트 내부에 여러 단계의 자식이 있어도 자동 바인딩이 작동합니다:
 
+```html
+<form data-key="formData">
+  <div class="form-group">
+    <label>제목</label>
+    <input name="title"/>
+  </div>
+</form>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "name": "Form",
-  "props": { "dataKey": "formData" },
+  "dataKey": "formData",
   "children": [
     {
       "name": "Div",
@@ -655,10 +818,19 @@ init_actions에서 `target: "global"`과 `_local` 래퍼를 함께 사용하여 
 
 일부 필드만 명시적으로 바인딩하고 나머지는 자동 바인딩 사용:
 
+```html
+<div data-key="formData">
+  <input name="title"/>
+  <input name="customField" value="{{_local.customValue}}" onChange="customHandler"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "name": "Div",
-  "props": { "dataKey": "formData" },
+  "dataKey": "formData",
   "children": [
     {
       "name": "Input",
@@ -681,6 +853,14 @@ init_actions에서 `target: "global"`과 `_local` 래퍼를 함께 사용하여 
 ### setState dot notation 지원
 
 폼 자동 바인딩과 함께 `setState` 액션에서도 dot notation 경로를 지원합니다:
+
+```html
+<on type="change">
+  <set-state target="_local.formData.title" value="{{event.target.value}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -716,17 +896,27 @@ G7에서 debounce는 두 가지 레벨에서 설정할 수 있습니다. 혼동�
 
 | 레벨 | 설정 위치 | 적용 대상 | 설명 |
 |------|----------|----------|------|
-| **컴포넌트 레벨** | `dataKey` 부모의 `debounce` prop | 자동 바인딩 onChange | 폼 자동 바인딩의 상태 업데이트 지연 |
+| **컴포넌트 레벨** | `dataKey` 부모의 `debounce` 노드 속성 | 자동 바인딩 onChange | 폼 자동 바인딩의 상태 업데이트 지연 |
 | **액션 레벨** | `actions[].debounce` 속성 | 개별 액션 실행 | 특정 액션(apiCall, refetchDataSource 등)의 실행 지연 |
+
+```html
+<div data-key="formData" data-debounce="300">
+  <input name="keyword">
+    <on type="change">
+      <refetch-data-source :debounce="500" dataSourceId="search_results"/>
+    </on>
+  </input>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
   "type": "basic",
   "name": "Div",
-  "props": {
-    "dataKey": "formData",
-    "debounce": 300
-  },
+  "dataKey": "formData",
+  "debounce": 300,
   "children": [
     {
       "type": "basic",
@@ -770,10 +960,22 @@ G7에서 debounce는 두 가지 레벨에서 설정할 수 있습니다. 혼동�
 ✅ trackChanges로 변경 추적 활성화: 부모 컴포넌트에 trackChanges: true 설정
 ✅ hasChanges 자동 관리: 입력 시 _local.hasChanges가 자동으로 true로 설정
 ✅ 초기 로드 시 리셋: initLocal 적용 시 hasChanges가 자동으로 false로 초기화
+   (engine-v1.77.2+: 그 initLocal 이 변경 추적 폼의 dataKey 첫 키를 담을 때만. 폼과 무관한 키만
+    싣는 initLocal — 예: 목록 페이지 정보 — 이 다시 와도 편집 중인 폼의 hasChanges 는 유지된다.
+    변경 추적 폼이 없는 화면은 종전대로 항상 초기화)
 ✅ 저장 성공 시 리셋: onSuccess 핸들러에서 hasChanges: false로 수동 리셋 필요
 ```
 
 ### 기본 사용법
+
+```html
+<div data-ref="form_container" data-key="formData" data-track-changes>
+  <input name="title"/>
+  <input name="description"/>
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -799,6 +1001,26 @@ G7에서 debounce는 두 가지 레벨에서 설정할 수 있습니다. 혼동�
 
 `hasChanges` 플래그를 사용하여 저장 버튼의 활성화 상태를 제어합니다:
 
+```html
+<button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving}}">
+  <on type="click">
+    <set-state target="local" :isSaving="true"/>
+    <api-call target="/api/admin/settings" method="POST" body="{{_local.formData}}">
+      <success>
+        <set-state target="local" :isSaving="false" :hasChanges="false"/>
+        <toast type="success" message="$t:common.save_success"/>
+      </success>
+      <fail>
+        <set-state target="local" :isSaving="false"/>
+      </fail>
+    </api-call>
+  </on>
+  $t:common.save
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "save_button",
@@ -822,7 +1044,7 @@ G7에서 debounce는 두 가지 레벨에서 설정할 수 있습니다. 혼동�
         },
         {
           "handler": "apiCall",
-          "target": "/api/settings",
+          "target": "/api/admin/settings",
           "params": { "method": "POST", "body": "{{_local.formData}}" },
           "onSuccess": [
             {
@@ -857,6 +1079,17 @@ G7에서 debounce는 두 가지 레벨에서 설정할 수 있습니다. 혼동�
 ### 취소 버튼과 연동
 
 데이터를 다시 불러와서 폼을 초기 상태로 되돌립니다:
+
+```html
+<button data-ref="cancel_button">
+  <on type="click">
+    <refetch-data-source dataSourceId="settings"/>
+  </on>
+  $t:common.cancel
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -916,6 +1149,12 @@ G7에서 debounce는 두 가지 레벨에서 설정할 수 있습니다. 혼동�
 
 `data_sources`에서 `initLocal`이 설정된 경우, API 응답이 로컬 상태에 적용될 때 `hasChanges`가 자동으로 `false`로 초기화됩니다:
 
+```html
+<data-source id="settings" type="api" endpoint="/api/admin/settings" method="GET" :auto_fetch="true" initLocal="formData" :refetchOnMount="true"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "data_sources": [
@@ -947,13 +1186,19 @@ setLocalDynamicState(prev => ({
 
 `dataKey`가 `_global.`로 시작하는 경우, `hasChanges`도 전역 상태에 저장됩니다:
 
+```html
+<div data-key="_global.formData" data-track-changes>
+  …
+</div>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "name": "Div",
-  "props": {
-    "dataKey": "_global.formData",
-    "trackChanges": true
-  },
+  "dataKey": "_global.formData",
+  "trackChanges": true,
   "children": [...]
 }
 ```
@@ -981,10 +1226,10 @@ setLocalDynamicState(prev => ({
 {
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "component" | "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "component" | "global",
         "key": "value"
       }
     }
@@ -996,10 +1241,10 @@ setLocalDynamicState(prev => ({
 
 | 필드 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| `event` | string | ✅ | 이벤트 타입 (`onClick`, `onChange` 등) |
-| `type` | string | ✅ | `"setState"` 고정 |
-| `target` | string | ✅ | `"component"` (로컬) 또는 `"global"` (전역) |
-| `payload` | object | ✅ | 업데이트할 상태 객체 |
+| `type` | string | ✅ | 이벤트 타입 (`click`, `change` 등). 컴포넌트 prop 이름으로 걸 때는 `event`(`onSelectionChange` 등)를 함께 쓴다 |
+| `handler` | string | ✅ | `"setState"` 고정 |
+| `params.target` | string | ❌ | `"component"`(기본, 로컬) · `"global"` · `"isolated"` · `"$parent._local"` 등. 생략 시 `component` |
+| `params.*` | any | ✅ | `target` 을 뺀 나머지 키가 곧 업데이트할 상태다 (별도 `payload` 키는 없다) |
 
 ### target 옵션 비교
 
@@ -1014,10 +1259,10 @@ setLocalDynamicState(prev => ({
 {
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "component",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "component",
         "isOpen": true,
         "selectedTab": "profile"
       }
@@ -1032,10 +1277,10 @@ setLocalDynamicState(prev => ({
 {
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
         "sidebarOpen": false,
         "currentTheme": "dark"
       }
@@ -1077,6 +1322,20 @@ deep:     { form: { name: "신규", price: 1000 }, ui: { tab: "basic" } }  ← p
 
 기존 상태를 완전히 무시하고 새 값으로 교체합니다. 서버에서 받은 데이터로 전체 상태를 덮어쓰거나, 폼을 완전 초기화할 때 사용합니다.
 
+```html
+<on type="click">
+  <set-state target="_local" merge="replace">
+    <field name="formData">
+      <field name="name" value=""/>
+      <field name="price" :value="0"/>
+      <field name="description" value=""/>
+    </field>
+  </set-state>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "setState",
@@ -1106,6 +1365,21 @@ replace는 해당 target의 모든 기존 키를 제거합니다
 > **버전**: engine-v1.4.0+
 
 전체 객체를 교체해야 할 때 사용합니다. 프리셋 적용이나 폼 초기화 시 기존 값을 모두 덮어쓰고 새 값으로 교체합니다.
+
+```html
+<on type="click">
+  <set-state target="_local" merge="shallow">
+    <field name="filter">
+      <field name="searchField" value="all"/>
+      <field name="displayStatus" value="all"/>
+      <field name="taxStatus" value="all"/>
+      <field name="category" value=""/>
+    </field>
+  </set-state>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1167,6 +1441,19 @@ replace는 해당 target의 모든 기존 키를 제거합니다
 
 ### 기존 방식 (spread 연산자 필요)
 
+```html
+<on type="change">
+  <set-state target="local" :hasChanges="true">
+    <field name="formData">
+      <field name="..." value="{{_local.formData}}"/>
+      <field name="name" value="{{$event.target.value}}"/>
+    </field>
+  </set-state>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "change",
@@ -1183,6 +1470,18 @@ replace는 해당 target의 모든 기존 키를 제거합니다
 ```
 
 ### 새로운 방식 (깊은 병합)
+
+```html
+<on type="change">
+  <set-state target="local" :hasChanges="true">
+    <field name="formData">
+      <field name="name" value="{{$event.target.value}}"/>
+    </field>
+  </set-state>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -1245,9 +1544,9 @@ spread 연산자 없이도 `formData.name`만 업데이트되고 `formData.email
 
 ---
 
-## payload 표현식 평가
+## params 표현식 평가
 
-payload 값에 `{{}}` 표현식을 사용하여 동적으로 값을 계산할 수 있습니다.
+`params` 값에 `{{}}` 표현식을 사용하여 동적으로 값을 계산할 수 있습니다.
 
 ### 지원하는 표현식
 
@@ -1255,10 +1554,11 @@ payload 값에 `{{}}` 표현식을 사용하여 동적으로 값을 계산할 �
 {
   "actions": [
     {
-      "event": "onClick",
-      "type": "setState",
-      "target": "global",
-      "payload": {
+      "type": "click",
+      "handler": "setState",
+      "params": {
+        "target": "global",
+
         // boolean 토글
         "sidebarOpen": "{{!_global.sidebarOpen}}",
 

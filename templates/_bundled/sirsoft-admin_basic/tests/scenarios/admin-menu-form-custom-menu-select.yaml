@@ -1,0 +1,22 @@
+feature: 관리자 메뉴 관리 › 새 메뉴 — 「사용자 정의 메뉴」 를 고르면 주소 칸이 채워지고 직전에 친 다른 칸은 남는다 (7.1.1 관찰 7 판정)
+
+description: |
+  선택칸은 `data-key="_global.formData"` 폼의 자동바인딩 칸이고, change 동작이 `Object.assign({}, _global.formData, {custom_menu_key, url})`
+  로 폼을 다시 쓴다. 주소 칸 미채움은 엔진이 자동바인딩 칸 동작에 넘기는 이벤트 사본이 `selectedOptions` 를 잃던 결함(engine-v1.81.1
+  수정)이었다. 동작 식의 `_global.formData` 는 액션 실행 시점의 최신 전역(ActionDispatcher evaluateExpression 의 `G7Core.state.get()`)
+  으로 평가되어, 칸 입력 직후 골라도 앞 칸을 되돌리지 않는다 — 실 TemplateApp(미뤄진 전역 다시 그리기)으로 잠근다.
+  축 timing 은 고르기 직전 입력과의 간격, option 은 고른 항목 모양이다.
+
+axes:
+  timing: [after_fast_typing, settled]
+  option: [with_url, without_url, none]
+
+exclusions:
+  - { timing: after_fast_typing, option: none, reason: "「선택 안 함」 은 주소를 건드리지 않아 입력 간격과 무관하다" }
+  - { timing: settled, option: [with_url, without_url], reason: "렌더가 지난 뒤의 선택은 빠른 입력 갈래가 포함한다(더 엄격한 조건)" }
+
+effects:
+  - custom_menu_select_fills_url_keeps_other_fields
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-menu-form-custom-menu-select.test.tsx

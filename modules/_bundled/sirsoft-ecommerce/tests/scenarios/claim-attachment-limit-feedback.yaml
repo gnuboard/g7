@@ -1,0 +1,84 @@
+feature: 첨부 상한 초과 시 사용자 안내 (S2-D10 · 수정 완료 2026-09-16)
+
+description: |
+  클레임 신청 화면의 사진 첨부는 운영자 설정이 상한을 정한다
+  (`claim.max_images` = 5 · `claim.image_max_size_kb` = 2048). 화면에도
+  「최대 5장, 1장당 2048KB 까지 올릴 수 있습니다」로 안내가 서 있다.
+
+  **그런데 그 상한을 넘긴 파일은 아무 안내 없이 사라진다.**
+
+  #599 통합실측 세션2 실측(주문 754 · 2026-09-15):
+
+    5장 업로드 → 미리보기 5장            (정상)
+    6장째 추가 → 미리보기 5장 유지        토스트 없음 · 인라인 없음 · 콘솔 없음
+    2.4MB 1장 → 목록 빈 채 유지          토스트 없음 · 인라인 없음 · 콘솔 없음
+    4.79KB 1장 → 즉시 목록에 추가         (대조군 — 정상 파일은 바로 뜬다)
+
+  사용자는 사진을 골랐는데 화면에 아무 변화가 없다. 왜 안 올라가는지 알 방법이 없다.
+
+  **핸들러 쪽 코드는 이미 옳다** — `setClaimImageFilesHandler` 가
+  `filterClaimFilesByLimits()` 로 판정해 `claim.image.size_exceeded` ·
+  `claim.image.limit_exceeded` 토스트를 띄우게 되어 있고, 그 독블록도
+  「그 자리에서 안내한다 — 제출 시점에 처음 알리면 사용자가 무엇이 빠졌는지 알 수 없다」
+  라고 의도를 적어 두었다.
+
+  **문제는 그 핸들러가 호출되지 않는다는 것이다.** 레이아웃의 `FileUploader` 컴포지트가
+  `maxFiles`·`maxSize` 로 **자기가 먼저 걸러 낸 뒤** change 를 쏘기 때문에, 상한을 넘긴
+  파일은 change 페이로드에도 없고 **DOM `input.files` 에도 없다**. 실측으로 확인했다:
+
+    setInputFiles(2.4MB) → 핸들러 호출 0건 · 토스트 0건 · input.files 빈 배열
+
+  즉 거절은 **엔진 컴포지트 안에서 일어나고, 그 사실이 바깥으로 전혀 새어 나오지 않는다.**
+
+  **왜 고치지 않고 회귀만 세워 두는가** (§3-8 예외 ⓑ):
+    `FileUploader` 는 **엔진 공용 컴포지트**다 — `grep` 기준 레이아웃 **32곳**에서
+    쓰이고 `sirsoft-board` · `sirsoft-ecommerce` · `sirsoft-page` · `sirsoft-admin_basic`
+    이 모두 의존한다. 거절 시 신호를 내보내도록 바꾸는 것은 그 전부의 동작을 바꾸는
+    일이라 이 세션이 단독으로 결정할 수 없다.
+
+    모듈 쪽에서 우회를 시도했으나 **성립하지 않는다.** 핸들러가 `input.files` 원본을
+    다시 읽게 해 봤지만, 위 실측대로 거절된 파일은 거기에도 없다(그 시도는 되돌렸다).
+    바깥에서는 「무엇이 거절됐는지」를 알 방법 자체가 없다.
+
+  **택한 수정(선택지 ② · 최소 범위)** — 레이아웃에서 **`maxSize` 만** 빼고 `maxFiles` 는 둔다.
+
+  용량 상한을 컴포지트에 주지 않으면 파일이 change 로 넘어오고, 핸들러가
+  `filterClaimFilesByLimits()` 로 판정해 **그 자리에서 토스트를 띄운다.** 판정 기준은 화면
+  안내 문구와 **같은 설정값**(`image_max_size_kb`)이라 상한의 정본은 서버 설정 한 곳 그대로다.
+
+  `maxFiles` 를 남긴 이유는 두 가지다. ⓐ 장수는 컴포지트가 걸러도 사용자가 「몇 장까지」를
+  즉시 알 수 있다. ⓑ 컴포지트의 안내 문구(`attachment.upload_limit`)가 이 props 를 읽으므로
+  둘 다 빼면 **「최대 10개, 각 10MB까지」라는 엔진 기본값**이 떠서 바로 위의 올바른 안내
+  (「최대 5장, 1장당 2048KB」)와 **모순된다** — 실측으로 확인하고 되돌렸다.
+
+  **엔진(`FileUploader`)은 건드리지 않았다.** 그 컴포지트는 레이아웃 32곳·모듈 4종이
+  공유하므로 거절 신호를 내보내도록 바꾸는 것은 이 세션의 범위를 넘는다.
+
+  #599 세션2 재실측(2026-09-16 · 주문 107 반품 신청 화면):
+
+    props 원상태(maxSize 有)   2.4MB 투입 → 토스트 0 · state 0 · 미리보기 0   ← 결함 재현
+    maxSize 제거               2.4MB 투입 → 토스트 「사진 1장은 2048KB 를 넘을 수 없습니다.」
+                                            claimImages 0 (업로드 안 됨)      ← 수정 확인
+    대조군                     5KB 투입   → claimImageFiles 1 · 미리보기 1 · 파일명 노출
+    안내 문구                  「최대 5장, 1장당 2048KB 까지 올릴 수 있습니다.」 (불변)
+
+  업로드 루프가 `accepted` 만 순회하므로 **거절된 파일은 서버로 가지 않는다** — 미리보기는
+  컴포지트의 로컬 썸네일이지 귀속된 첨부가 아니다.
+
+  계약: 판정 함수(`filterClaimFilesByLimits`)가 상한을 정확히 판정하는 것을 잠근다.
+  거절 사유가 사용자에게 **도달하는지**는 위 브라우저 재실측이 담당한다(레이아웃 축이라
+  단위 테스트로는 잡히지 않는다 — jsdom 에 컴포지트가 없다).
+
+axes:
+  attachment_limit:
+    - within_limits
+    - count_exceeded
+    - size_exceeded
+
+effects:
+  - claim_attachment_filter_accepts_within_limits
+  - claim_attachment_filter_flags_count_exceeded
+  - claim_attachment_filter_flags_size_exceeded
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimImageHandlers.test.ts

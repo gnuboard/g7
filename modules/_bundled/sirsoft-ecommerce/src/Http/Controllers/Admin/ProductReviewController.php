@@ -23,6 +23,9 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class ProductReviewController extends AdminBaseController
 {
+    /**
+     * @param  ProductReviewService  $reviewService  상품 리뷰 서비스
+     */
     public function __construct(
         private ProductReviewService $reviewService
     ) {}
@@ -40,10 +43,14 @@ class ProductReviewController extends AdminBaseController
             $perPage = (int) ($filters['per_page'] ?? 20);
             $reviews = $this->reviewService->getAdminList($filters, $perPage);
 
+            // 목록 수준 능력 키 — 일괄 상태 변경·행 선택을 잠그는 근거다(행이 0 건이어도 정해야 한다).
+            // 식별자는 행 Resource 의 abilityMap 과 같다(일괄 상태 변경 = reviews.update, 삭제 = reviews.delete).
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
                 'messages.reviews.fetch_success',
-                ProductReviewResource::collection($reviews)->response()->getData(true)
+                ProductReviewResource::collection($reviews)
+                    ->additional(['abilities' => ProductReviewResource::collectionAbilities($request->user())])
+                    ->response()->getData(true)
             );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');

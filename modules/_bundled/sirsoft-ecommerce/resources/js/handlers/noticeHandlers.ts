@@ -719,8 +719,9 @@ export async function confirmSaveNoticeTemplateHandler(
             ?? 'Template has been saved.'
         );
 
-        // 템플릿 목록 새로고침
-        G7Core.datasources?.refresh?.('notice_templates');
+        // 템플릿 목록 새로고침 — 코어 공개 API `G7Core.dataSource.refetch`(예전 `datasources.refresh` 는 코어에 없어
+        // 저장한 템플릿이 목록에 뜨지 않았다, D3-2)
+        G7Core.dataSource?.refetch?.('notice_templates');
 
         logger.log(`[confirmSaveNoticeTemplate] Template saved: ${response.data.id}`);
     } catch (error) {

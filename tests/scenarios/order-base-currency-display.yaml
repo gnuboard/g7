@@ -1,0 +1,39 @@
+feature: order_base_currency_display
+
+description: |
+  주문된 뒤의 금액은 **주문 시점 기준 통화**로 표기하고, 보는 사람의 표시 통화는 병기만 한다.
+
+  통화에는 서로 다른 성격의 화면 두 종류가 있고, 같은 표현식을 쓰면 안 된다:
+
+    - **카탈로그 화면**(상품·장바구니·체크아웃) — 주문 스냅샷이 없는 **실시간 가격**이다.
+      보는 사람이 고른 통화를 그대로 따라가는 것이 맞고, `mc_*[preferredCurrency]` 를
+      **선택키**로 쓰는 것이 정본이다.
+    - **주문 후 화면**(주문 상세·목록·결제·클레임) — 이미 결제된 **기록**이다. 운영자가 나중에
+      기본 통화를 바꿔도 과거 주문의 표기 통화는 불변이어야 한다. 그래서 기준줄은 `*_formatted`
+      로 찍고, `preferredCurrency` 는 보조 통화 줄에서 **제외키**로만 쓴다
+      (`Object.entries(mc_*).filter(([code]) => code !== base)`).
+
+  **두 규칙이 섞이면 흔적이 남지 않는다.** 주문 후 화면이 선택키를 쓰면 기준통화 줄이
+  통째로 사라지고 보조 통화 값 하나만 남는데, 그 값도 서식이 멀쩡해서 응답에도 화면에도
+  어긋난 표시가 없다. 표시통화를 바꿔 보기 전에는 드러나지 않는다.
+
+  SSoT: `HasMultiCurrencyPrices::formatOrderCurrency()` — 주문 스냅샷의
+  `currency_snapshot.base_currency` 를 명시적으로 받아 포맷한다.
+
+axes:
+  surface: [payment, order_list, order_items, order_shipping, claim_comparison]
+  currency_binding: [base_primary, preferred_excluded]
+
+effects:
+  # ── 기준줄 (P0) ──
+  # primary 를 표시통화로 렌더하면 기준통화 줄이 사라진다.
+  - primary_amount_binds_order_base_not_preferred_currency
+  # ── 보조 통화 줄 (P0) ──
+  # 보조 통화 iteration 이 표시통화만 제외하면 기준통화가 보조 줄에 중복해 선다.
+  - secondary_currency_iteration_excludes_order_base_currency
+  # ── 결제 통화 병기 (P1) ──
+  - cross_currency_order_states_charged_amount_in_payment_currency
+
+test_files:
+  # 화면 — 주문 결제·목록·상품·배송 + 클레임 비교표의 통화 바인딩 전수(레이아웃 JSON 직렬화 검사)
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypageOrderBaseCurrencyDisplay.test.tsx

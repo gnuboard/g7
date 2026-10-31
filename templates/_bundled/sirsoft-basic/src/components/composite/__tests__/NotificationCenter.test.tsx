@@ -42,21 +42,29 @@ const mockNotifications: NotificationItem[] = [
 
 describe('NotificationCenter (sirsoft-basic)', () => {
   describe('기본 렌더링', () => {
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('Bell 트리거 버튼이 렌더링됨', () => {
       render(<NotificationCenter />);
       expect(screen.getByLabelText('알림')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('unreadCount가 0보다 크면 배지가 표시됨', () => {
       render(<NotificationCenter unreadCount={5} />);
       expect(screen.getByText('5')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('unreadCount가 99 초과 시 99+로 표시됨', () => {
       render(<NotificationCenter unreadCount={150} />);
       expect(screen.getByText('99+')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=closed
+    // @effects trigger_shows_unread_badge
     it('unreadCount가 0이면 배지가 표시되지 않음', () => {
       const { container } = render(<NotificationCenter unreadCount={0} notifications={[]} />);
       // 배지는 .bg-red-500 클래스를 가지는 Span
@@ -65,6 +73,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
   });
 
   describe('드롭다운 토글', () => {
+    // @scenario dropdown=open
+    // @effects dropdown_toggles_and_closes_on_outside_click
     it('Bell 클릭 시 드롭다운이 열림', () => {
       render(<NotificationCenter notifications={mockNotifications} titleText="알림" />);
       fireEvent.click(screen.getByLabelText('알림'));
@@ -72,12 +82,16 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       expect(screen.getByText('시스템 알림')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects empty_list_shows_empty_text
     it('알림이 비어있을 때 emptyText가 표시됨', () => {
       render(<NotificationCenter notifications={[]} emptyText="알림이 없습니다." />);
       fireEvent.click(screen.getByLabelText('알림'));
       expect(screen.getByText('알림이 없습니다.')).toBeInTheDocument();
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_toggles_and_closes_on_outside_click
     it('드롭다운 외부 클릭 시 닫힘 (외부 클릭 의존성 회귀)', () => {
       const { container } = render(
         <div>
@@ -94,6 +108,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
   });
 
   describe('button-in-button 회귀 — 알림 카드는 Div', () => {
+    // @scenario dropdown=open
+    // @effects notification_card_is_not_nested_button
     it('알림 카드가 button 태그가 아닌 div 태그여야 함', () => {
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
       fireEvent.click(screen.getByLabelText('알림'));
@@ -107,6 +123,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
   });
 
   describe('이벤트 핸들러', () => {
+    // @scenario dropdown=open
+    // @effects card_click_passes_full_notification
     it('알림 클릭 시 onNotificationClick 콜백에 객체 전체가 전달됨', () => {
       const handler = vi.fn();
       render(
@@ -125,6 +143,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       );
     });
 
+    // @scenario dropdown=open
+    // @effects delete_button_isolated_from_card_click
     it('개별 삭제 버튼 클릭 시 onDelete가 호출되고 카드 클릭 이벤트는 전파되지 않음', () => {
       const onDelete = vi.fn();
       const onClick = vi.fn();
@@ -149,6 +169,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       expect(onClick).not.toHaveBeenCalled();
     });
 
+    // @scenario dropdown=open
+    // @effects bulk_actions_invoke_callbacks
     it('"모두 읽음" 버튼은 displayCount > 0 일 때만 표시되고 onMarkAllRead 호출', () => {
       const onMarkAllRead = vi.fn();
       render(
@@ -164,6 +186,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       expect(onMarkAllRead).toHaveBeenCalledTimes(1);
     });
 
+    // @scenario dropdown=open
+    // @effects bulk_actions_invoke_callbacks
     it('"모두 삭제" 버튼은 notifications.length > 0 일 때만 표시되고 onDeleteAll 호출', () => {
       const onDeleteAll = vi.fn();
       render(
@@ -178,6 +202,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       expect(onDeleteAll).toHaveBeenCalledTimes(1);
     });
 
+    // @scenario dropdown=open
+    // @effects bulk_actions_invoke_callbacks
     it('"안 읽은 알림만" 체크박스 토글 시 onUnreadOnlyToggle 호출', () => {
       const onUnreadOnlyToggle = vi.fn();
       render(
@@ -197,12 +223,16 @@ describe('NotificationCenter (sirsoft-basic)', () => {
   });
 
   describe('dropdownAlign prop', () => {
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('기본값은 right (right-0 클래스)', () => {
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
       fireEvent.click(screen.getByLabelText('알림'));
       expect(container.querySelector('.right-0')).not.toBeNull();
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('left 지정 시 left-0 클래스', () => {
       const { container } = render(
         <NotificationCenter notifications={mockNotifications} dropdownAlign="left" />
@@ -213,6 +243,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
   });
 
   describe('읽음/미읽음 시각 구분', () => {
+    // @scenario dropdown=open
+    // @effects read_and_unread_visually_distinct
     it('미읽음 알림에는 파란 점이 있음', () => {
       const { container } = render(
         <NotificationCenter notifications={mockNotifications} />
@@ -223,6 +255,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       expect(blueDots.length).toBe(1);
     });
 
+    // @scenario dropdown=open
+    // @effects read_and_unread_visually_distinct
     it('미읽음 카드에는 파란 배경 클래스가 적용됨', () => {
       render(<NotificationCenter notifications={mockNotifications} />);
       fireEvent.click(screen.getByLabelText('알림'));
@@ -230,11 +264,16 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       expect(unread?.className).toMatch(/bg-blue-50/);
     });
 
-    it('읽음 카드에는 opacity-70 클래스가 적용됨', () => {
+    // @scenario dropdown=open
+    // @effects read_and_unread_visually_distinct
+    it('읽음 카드는 흰 바탕으로 구분하고 흐리게 하지 않는다', () => {
+      // 읽음 카드에 opacity-70 을 걸면 제목·본문·시각 글자가 대비 4.5 아래로 떨어진다(읽어야 하는 내용).
+      // 읽음/미읽음 구분은 바탕(흰/파랑)·파란 점·글자 굵기로 한다.
       render(<NotificationCenter notifications={mockNotifications} />);
       fireEvent.click(screen.getByLabelText('알림'));
       const read = screen.getByText('시스템 알림').closest('[data-notification-id]');
-      expect(read?.className).toMatch(/opacity-70/);
+      expect(read?.className).toMatch(/bg-white/);
+      expect(read?.className).not.toMatch(/(^|\s)opacity-\d/);
     });
   });
 
@@ -284,6 +323,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
         read: false,
       }));
 
+    // @scenario dropdown=open
+    // @effects infinite_scroll_loads_once_per_length
     it('같은 notifications.length 에서 sentinel 이 재교차해도 onLoadMore 는 한 번만 호출된다', () => {
       const onLoadMore = vi.fn();
       render(
@@ -303,6 +344,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       expect(onLoadMore).toHaveBeenCalledTimes(1);
     });
 
+    // @scenario dropdown=open
+    // @effects infinite_scroll_loads_once_per_length
     it('loading=true 일 때는 onLoadMore 를 발행하지 않는다', () => {
       const onLoadMore = vi.fn();
       render(
@@ -319,6 +362,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       expect(onLoadMore).not.toHaveBeenCalled();
     });
 
+    // @scenario dropdown=open
+    // @effects infinite_scroll_loads_once_per_length
     it('hasMore=false 일 때는 onLoadMore 를 발행하지 않는다', () => {
       const onLoadMore = vi.fn();
       render(
@@ -335,6 +380,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       expect(onLoadMore).not.toHaveBeenCalled();
     });
 
+    // @scenario dropdown=open
+    // @effects infinite_scroll_loads_once_per_length
     it('notifications.length 가 증가한 뒤 재교차하면 onLoadMore 를 다시 발행한다', () => {
       const onLoadMore = vi.fn();
       const { rerender } = render(
@@ -367,6 +414,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
   });
 
   describe('[회귀] 닫기 시 read-batch 불필요 호출 방지', () => {
+    // @scenario dropdown=open
+    // @effects close_skips_read_batch_without_unread
     it('unreadCount=0 + 모든 알림 read=true 상태에서 닫으면 onClose 를 호출하지 않는다', () => {
       const onClose = vi.fn();
       const allRead: NotificationItem[] = mockNotifications.map((n) => ({ ...n, read: true }));
@@ -387,6 +436,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       expect(onClose).not.toHaveBeenCalled();
     });
 
+    // @scenario dropdown=open
+    // @effects close_skips_read_batch_without_unread
     it('뷰포트에 노출됐던 ID 라도 현재 notifications 에서 read=true 로 바뀐 것은 onClose 인자에서 제외된다', () => {
       const onClose = vi.fn();
 
@@ -427,6 +478,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('드롭다운에 max-w-[calc(100vw-1rem)] 클래스가 적용된다', () => {
       const { container } = render(<NotificationCenter notifications={mockNotifications} />);
       fireEvent.click(screen.getByLabelText('알림'));
@@ -437,6 +490,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('드롭다운이 뷰포트 오른쪽을 이탈하면 translateX 로 왼쪽으로 보정된다', () => {
       Element.prototype.getBoundingClientRect = vi.fn(() => ({
         left: 100,
@@ -462,6 +517,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('드롭다운이 뷰포트 왼쪽을 이탈하면 translateX 로 오른쪽으로 보정된다', () => {
       Element.prototype.getBoundingClientRect = vi.fn(() => ({
         left: -50,
@@ -487,6 +544,8 @@ describe('NotificationCenter (sirsoft-basic)', () => {
       Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
     });
 
+    // @scenario dropdown=open
+    // @effects dropdown_aligned_within_viewport
     it('드롭다운이 뷰포트 안에 있으면 transform 이 적용되지 않는다', () => {
       Element.prototype.getBoundingClientRect = vi.fn(() => ({
         left: 100,

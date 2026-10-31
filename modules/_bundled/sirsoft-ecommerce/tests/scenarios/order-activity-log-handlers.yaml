@@ -1,0 +1,50 @@
+feature: 주문 활동 로그 리스너의 핸들러별 기록 계약
+
+description: |
+  `OrderActivityLogListener` 는 주문 축의 모든 사건을 활동 로그로 남긴다. 이 매니페스트는
+  **각 핸들러가 무엇을 어떻게 남기는지**를 잠근다 — 구독 목록 자체는
+  `order-activity-log-listener-subscriptions.yaml` 이 따로 잠근다.
+
+  핸들러마다 계약이 셋으로 갈린다:
+
+  1. **loggable 이 무엇인가** — 일괄 처리는 건별로 `loggable` 이 각 대상을 가리켜야 한다.
+     한 줄에 묶으면 "어느 주문의 일인가" 가 사라진다. 배송지 변경은 `OrderAddress`,
+     그것이 없으면 `Order` 로 폴백한다.
+  2. **`changes` 에 전/후가 실리는가** — 활동 로그 화면은 여기 실린 항목만 「변경 전 → 변경 후」
+     표로 그린다. 스냅샷이 없으면 `null` 이어야 하고, 있으면 `ChangeDetector` 결과여야 한다.
+     상태 계열은 enum 라벨 키(`old_label_key`/`new_label_key`)까지 실어 화면이 상태 어휘를
+     다시 적지 않게 한다.
+  3. **`description_params` 가 채워지는가** — 일괄 처리 문구의 `:count` 가 여기서 온다.
+     비면 화면에 자리표시자가 그대로 노출된다(#599 세션2 S2-D1 이 그 사례였다).
+
+  다루는 사건: 주문 생성·수정·삭제·일괄수정(상태/배송)·상태 동기화·배송지 변경·
+  결제완료·결제실패·취소·부분취소·이메일 발송, 상품 단위 상태 변경·일괄 상태 변경·구매확정,
+  쿠폰 사용/복원·마일리지 사용/적립/복원, 그리고 대상이 없을 때 아무것도 남기지 않는 것.
+
+  이 목록이 곧 **"주문에 무슨 일이 생기면 무엇이 이력에 남는가"의 명세**다. 구독이 살아
+  있어도 핸들러가 조용히 빈 로그를 남기면 화면에는 "원래 그런 줄" 처럼 보여 런타임에서
+  알아채기 어렵다 — #599 통합실측 세션2 의 S2-D6(배송지 변경 줄 자체가 없음)·
+  S2-D7(구매확정 전/후 표가 빔)이 모두 그 형태였다.
+
+axes:
+  log_handler:
+    - order_lifecycle
+    - order_bulk
+    - order_shipping_address
+    - order_option
+    - money_side_effect
+    - no_op
+
+effects:
+  - order_lifecycle_events_are_logged_with_before_and_after
+  - order_deposit_record_is_logged_with_changes # 입금 기록도 활동 로그와 결제금액 변경 내역을 남긴다
+  - bulk_events_log_per_item_with_correct_loggable_and_count
+  - shipping_address_change_logs_against_order_address
+  - order_option_events_log_status_transitions_with_label_keys
+  - coupon_and_mileage_side_effects_are_logged
+  - handler_stays_silent_when_there_is_nothing_to_log
+  - payment_time_earn_log_reads_as_scheduled # 결제 완료 시점 적립 훅은 「적립 예정」으로 남긴다(S3-D21)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderActivityLogListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/OrderDepositActivityLogTest.php

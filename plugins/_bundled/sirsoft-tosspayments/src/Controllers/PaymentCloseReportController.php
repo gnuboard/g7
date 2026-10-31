@@ -7,27 +7,36 @@ namespace Plugins\Sirsoft\Tosspayments\Controllers;
 use App\Helpers\ResponseHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
+use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\Tosspayments\Concerns\RecordsPaymentWindowClosure;
+use Plugins\Sirsoft\Tosspayments\Concerns\VerifiesOrderOwnership;
 use Plugins\Sirsoft\Tosspayments\Http\Requests\PaymentCloseReportRequest;
 
 /**
  * 토스페이먼츠 결제창 닫힘·결제 실패 보고 컨트롤러
  *
  * 브라우저 리턴 콜백(`/payment/fail`)은 인증도 서명도 없고 주문번호가 쿼리스트링으로 오므로
- * 주문 상태를 바꾸지 않는다. 주문을 실패로 전이시키는 것은 구매자 정보를 대조한 이 경로뿐이며,
+ * 주문 상태를 바꾸지 않는다. 주문을 실패로 전이시키는 것은 주문 소유자(회원 본인 로그인 /
+ * 비회원 조회 토큰)를 확인한 이 경로뿐이며 — 주문자 연락처 대조는 제3자도 통과할 수 있어 쓰지 않는다 —
  * KCP·KG이니시스·나이스페이 플러그인의 close-report 와 같은 계약이다.
  */
 class PaymentCloseReportController
 {
     use RecordsPaymentWindowClosure;
+    use VerifiesOrderOwnership;
 
     private const FAILURE_CODE = 'USER_CANCEL';
 
     private const FAILURE_MESSAGE = '사용자가 토스페이먼츠 결제창을 닫았습니다.';
 
+    /**
+     * @param  OrderProcessingService  $orderService  주문 처리 서비스
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스 (주문 소유자 확인)
+     */
     public function __construct(
         private readonly OrderProcessingService $orderService,
+        private readonly GuestOrderAuthService $guestOrderAuthService,
     ) {}
 
     /**
@@ -74,9 +83,9 @@ class PaymentCloseReportController
             ]);
         }
 
-        if (! $this->requestMatchesOrderBuyer($request, $order)) {
+        if (! $this->requestOwnsOrder($request, $order, $this->guestOrderAuthService)) {
             return ResponseHelper::error('common.failed', 403, [
-                'message' => ['Order buyer verification failed.'],
+                'message' => ['Order ownership verification failed.'],
             ]);
         }
 

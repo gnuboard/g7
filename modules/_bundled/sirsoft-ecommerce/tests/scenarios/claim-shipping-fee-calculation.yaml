@@ -1,0 +1,166 @@
+feature: claim_shipping_fee_calculation
+
+description: |
+  클레임 회수·재발송 배송비 산정 — 모드 · 부과정책 · 클레임 유형 · 귀책의 조합 (#599 S15a)
+
+  이 매니페스트는 화면이 아니라 **금액을 만드는 규칙**을 잰다. 계획서 §9-1 이 처음부터 요구한
+  도메인 조합축인데, S2b1~S14 가 만든 매니페스트 14종은 전부 화면·세션 단위라 이 곱을 어디에도
+  선언하지 않았다. 선언되지 않은 축은 커버리지 게이트의 모집단에서 빠질 뿐 red 가 되지 않으므로,
+  로직 테스트 190건이 이미 있었는데도 "무엇을 덮고 있는지" 는 코드 밖에 기록된 적이 없었다.
+
+  조용히 갈리는 지점은 넷이다.
+
+  ① **모드가 부과정책을 읽는지 여부가 갈린다.** `fixed` 는 운영자가 정책 화면에 유형별 총액으로
+     적어 둔 값을 그대로 쓴다 — 반품은 편도액, 교환은 이미 왕복 총액이라 배수를 다시 곱하지
+     않고 도서산간도 얹지 않는다(D11). `original_policy` 만 주문 시점 부과정책을 되살려
+     편도액을 재산출하고 교환에서 ×2 한다. 두 모드가 같은 정책 행을 읽는데 결과가 다르므로,
+     한쪽 축만 재면 다른 쪽은 "정책을 안 읽는 것" 인지 "잘못 읽는 것" 인지 구분되지 않는다.
+
+  ② **귀책 게이트는 계산보다 먼저 발화한다.** 판매자·배송사 귀책은 부과정책을 보기 전에 0원으로
+     끝난다. 그런데 `free` · `조건부무료 충족` 처럼 **정책 자신이 0원인** 조합이 있어서, 대조군
+     없이 0원만 단언하면 그 행은 게이트가 죽어도 계속 초록이다. 그래서 이 축의 셀은 언제나
+     같은 신청을 고객 귀책으로 한 번 더 태워 정책이 실제로 계산됐음을 함께 본다.
+
+  ③ **부과정책 파라미터의 출처와 클레임 약관의 출처가 다르다.** 부과정책(`charge_policy` ·
+     `base_fee` · `free_threshold` · `ranges`)은 **주문 시점 스냅샷**에서 복원하고, 클레임 약관
+     3종(`claim_fee_mode` · `return_fixed_fee` · `exchange_fixed_fee`)은 스냅샷에 없어 **현재
+     정책 행**이 정한다. 한쪽 출처로 통일하면 과거 주문의 배송비가 오늘의 요금표로 다시 계산되거나
+     (스냅샷만 볼 때) 오늘 바꾼 클레임 약관이 과거 주문에 닿지 않는다.
+
+  ④ **외부 요금 API 는 클레임 문맥에서 호출하지 않는다.** 부과정책이 `api` 인 주문의 반품비를
+     계산하려고 배송사 API 를 부르면, 그 API 가 죽어 있을 때 신청 화면이 통째로 멈춘다. 대신
+     `base_fee` 로 폴백하고 그 사실을 근거에 남긴다 — 남기지 않으면 스냅샷이 "이 정책이 이
+     금액을 냈다" 고 잘못 말한다.
+
+# axis 의미:
+#   fee_mode      — 클레임 약관. `fixed` 는 선언액 그대로, `original_policy` 만 부과정책을 읽는다.
+#   charge_policy — 주문 시점 부과정책. `not_read` 는 값이 아니라 **자리표시**다: `fixed` 모드에서는
+#                   이 축이 계산에 들어가지 않는다는 사실 자체가 산출물이라(`fixed_mode_fee_is_
+#                   independent_of_the_charge_policy`), 실제 정책 값을 곱해 세면 재지 않은 칸이
+#                   재어진 것처럼 보인다. 조건부무료는 임계 미달/충족이 서로 반대 결과를 내므로
+#                   한 값이 아니라 두 값이다.
+#   claim_type    — 회수 구간만 있는 반품(×1)과 재발송 구간까지 있는 교환(×2). 환불·취소는 회수
+#                   배송 자체가 없어 축의 값이 아니라 **게이트**이며 이름 붙은 effect 가 덮는다.
+#   fault         — 고객 귀책만 청구한다. 판매자·배송사는 정책을 읽기 전에 0원이라 부과정책 축과
+#                   곱해지지 않는다 — exclusions 가 그 곱을 잘라내고, 6정책 × 2유형 × 2귀책의
+#                   전수는 `test_non_customer_fault_is_zero_for_every_charge_policy` 의
+#                   DataProvider(36행)가 대조군과 함께 따로 돌린다.
+#   currency      — 주문 통화 스냅샷의 유무. `order_snapshot` 이면 산정액이 주문 시점 환율로 통화별
+#                   금액(`mc_claim_shipping_fee`)까지 만들어지고, `no_snapshot` 이면 그 맵이 비어
+#                   있다. 청구가 없는 결과(귀책 게이트·비청구 유형)에서도 맵은 0원으로 채워진다.
+#   apportionment — 한 정책 그룹에 담긴 클레임 대상의 수. `single_item` 은 그룹액이 통째로 그 한
+#                   줄에 실리고, `multi_item` 은 금액 비례로 나뉜다. 그룹액 자체는 아이템 수에
+#                   비례하지 않는다 — 고정액을 두 상품에 두 번 물리지 않는다.
+#   remote_area   — 도서산간 추가배송비. 설정은 언제나 켜 두고 **배송지 우편번호만** 바꿔 축을
+#                   가른다(`none` 은 구간 밖, `flat`·`multiplied` 는 구간 안). `multiplied` 는
+#                   `extra_fee_multiply` 가 켜진 상태이며, 그 플래그는 per_* 부과정책에서만
+#                   실제로 곱해진다 — 그 밖의 조합에서 `flat` 과 같은 값이 나오는 것이 산출물이다.
+#
+# 2026-09-02 확정(S15a 인터뷰 ①)으로 통화 · 수량 안분 · 도서산간이 effect 에서 **축으로 승격**
+# 됐다. 24셀이 288셀이 되고 그 규모가 한 세션의 상한을 넘으므로 S15a2 · S15a3 · S15a4 로 나눠
+# 채운다. 아직 차례가 오지 않은 몫은 침묵이 아니라 **이월 exclusion** 으로 이 파일에 적혀 있다 —
+# 게이트는 exclusion 과 이월을 구분하지 못하므로, 구분은 사유 문구가 진다.
+axes:
+  fee_mode: [fixed, original_policy]
+  charge_policy: [not_read, free, fixed, conditional_free_met, conditional_free_unmet, per_quantity, range_amount, api]
+  claim_type: [return, exchange]
+  fault: [customer, seller, carrier]
+  currency: [order_snapshot, no_snapshot]
+  apportionment: [single_item, multi_item]
+  remote_area: [none, flat, multiplied]
+
+exclusions:
+  - { fee_mode: fixed, charge_policy: [free, fixed, conditional_free_met, conditional_free_unmet, per_quantity, range_amount, api], reason: "고정액 모드는 부과정책을 읽지 않는다 — 정책 값을 바꿔도 결과가 같으므로 실제 정책 값과 곱하면 재지 않은 칸이 재어진 것으로 보인다. 자리표시 not_read 한 칸이 이 모드의 관측 전부다" }
+  - { fee_mode: original_policy, charge_policy: not_read, reason: "원 정책 모드는 언제나 부과정책을 되살려 읽는다 — 읽지 않는 상태가 존재하지 않는다" }
+  - { fault: [seller, carrier], charge_policy: [free, conditional_free_met, conditional_free_unmet, per_quantity, range_amount, api], reason: "판매자·배송사 귀책은 부과정책을 읽기 전에 0원으로 끝난다 — 정책 축이 결과를 가르지 않는다. 대표 정책(fixed) 한 값만 남기고, 6정책 전수는 DataProvider 가 대조군과 함께 따로 돌린다" }
+  # ↓ 아래 둘은 제외가 아니라 **이월**이다. 실재하는 조합이고 언젠가 재어야 하며, 그 담당 세션이
+  #   정해져 있다. 담당 세션은 자기 몫의 exclusion 을 지우고 그만큼의 셀을 마킹으로 채운다.
+  #   S15a3 이 자기 두 줄(고정·조건부무료 × 고객 72셀 · 판매자 귀책 24셀)을 지우고 채웠으므로
+  #   남은 것은 S15a4 몫뿐이다.
+  - { fee_mode: original_policy, charge_policy: [per_quantity, range_amount, api], fault: customer, reason: "이월(S15a4) — 수량당·구간(금액)·API 정책 × 고객 귀책 72셀. 제외가 아니라 아직 재지 않은 칸이다" }
+  - { fee_mode: original_policy, fault: carrier, reason: "이월(S15a4) — 원 정책 모드의 배송사 귀책 24셀(위 3번 exclusion 이 남긴 대표 정책 fixed 분). 제외가 아니라 아직 재지 않은 칸이다" }
+
+effects:
+  # 청구 대상 게이트
+  - claim_shipping_fee_not_charged_for_refund_and_cancel
+  - claim_shipping_fee_zero_for_non_customer_fault
+  - claim_shipping_fee_records_declared_mode_even_when_not_charged
+  # fixed 모드 (D11)
+  - claim_shipping_fee_fixed_mode_uses_the_declared_amount
+  - claim_shipping_fee_fixed_mode_does_not_double_for_an_exchange
+  - claim_shipping_fee_fixed_mode_ignores_the_charge_policy
+  - claim_shipping_fee_fixed_mode_charges_once_per_policy_group
+  # original_policy 모드 × 부과정책
+  - claim_shipping_fee_original_policy_return_is_one_way
+  - claim_shipping_fee_original_policy_exchange_is_round_trip
+  - claim_shipping_fee_conditional_free_threshold_decides_the_charge
+  - claim_shipping_fee_per_quantity_scales_with_the_claim_quantity
+  - claim_shipping_fee_range_tier_matches_the_claim_subtotal
+  - claim_shipping_fee_api_policy_falls_back_to_the_base_fee
+  - claim_shipping_fee_api_policy_makes_no_external_request
+  # 파라미터 출처 (주문 스냅샷 vs 현재 정책 행)
+  - claim_shipping_fee_charge_policy_comes_from_the_order_snapshot
+  - claim_shipping_fee_claim_terms_come_from_the_live_policy_row
+  - claim_shipping_fee_basis_records_the_policy_source
+  - claim_shipping_fee_deactivated_country_row_still_charges
+  # 다중 정책 그룹
+  - claim_shipping_fee_groups_are_summed_across_policies
+  - claim_shipping_fee_header_mode_falls_back_to_original_policy_when_mixed
+  - claim_shipping_fee_unresolvable_policy_is_not_charged
+  # 결과에 얹히는 항 — 도서산간
+  - claim_shipping_fee_remote_area_fee_is_added_per_leg
+  - claim_shipping_fee_remote_area_multiply_follows_the_claim_quantity
+  - claim_shipping_fee_remote_area_is_skipped_in_fixed_mode
+  - claim_shipping_fee_remote_area_multiply_is_inert_for_a_non_per_unit_policy
+  - claim_shipping_fee_free_policy_still_charges_the_remote_area_surcharge
+  - claim_shipping_fee_redelivery_address_change_reprices_the_second_leg
+  # 결과에 얹히는 항 — 수량 안분
+  - claim_shipping_fee_group_fee_is_apportioned_across_items
+  - claim_shipping_fee_apportioned_shares_sum_to_the_group_fee
+  - claim_shipping_fee_quantity_is_clamped_to_the_ordered_amount
+  # 결과에 얹히는 항 — 다통화
+  - claim_shipping_fee_multi_currency_uses_the_order_snapshot_rate
+  - claim_shipping_fee_multi_currency_is_empty_without_a_snapshot
+  # 확장 seam
+  - claim_shipping_fee_hook_can_override_the_original_policy_fee
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimShippingFeeServiceTest.php
+
+notes: |
+  **이 매니페스트는 기존 로직 위에 선언을 얹은 것이다.** S15a 착수 시점에 이미
+  `ClaimShippingFeeServiceTest` 가 190케이스를 갖고 있었고, 24셀 중 22셀이 그 안에 있었다.
+  없던 두 칸은 `original_policy` 모드의 반품·배송사 귀책과 교환·판매자 귀책이었다 — 같은 모드의
+  나머지 둘(반품·판매자 / 교환·배송사)만 개별 테스트를 갖고 있어, 네 칸을 나란히 놓기 전에는
+  둘이 빠진 것이 보이지 않았다. 두 칸은 이 세션이 추가했다.
+
+  **결과 3축은 S15a2 에서 곱으로 승격됐다 (2026-09-02 확정).** 통화 · 수량 안분 · 도서산간을
+  effect 로만 고정하던 원안은 "그 셋은 네 축의 판정을 바꾸지 않는다" 를 전제로 삼았는데, 그 전제
+  자체가 재어진 적이 없었다. 곱으로 세우자 24셀이 288셀이 됐고 실제로 재보니 전제가 성립하지 않는
+  칸이 있었다 — 무료 정책은 기본 배송비가 0인데도 도서산간 추가액은 구간마다 붙는다(반품 1회 ·
+  교환 2회). 그 칸은 어느 테스트도 재고 있지 않았다.
+
+  **288셀은 세 세션에 나눠 채운다.** 한 세션의 신규 케이스 상한을 넘기 때문이다. S15a2 는
+  고정액 모드 전 조합(72셀)과 원 정책 × 무료 × 고객 귀책(24셀)을, S15a3 은 원 정책 ×
+  {고정, 조건부무료 충족·미달} × 고객 귀책(72셀)과 원 정책 × 판매자 귀책(24셀)을 맡아
+  각각 96셀을 채웠다. 남은 96셀은 지우지 않고 **이월 exclusion** 으로 남겼다 — 커버리지
+  게이트는 "제외" 와 "아직 재지 않음" 을 구분하지 못하므로, 그 둘을 가르는 것은 사유 문구뿐이다.
+  담당 세션(S15a4)은 자기 몫의 exclusion 두 줄을 지우고 그만큼의 셀을 마킹으로 채운다.
+  이월분이 남아 있는 동안 이 매니페스트의 선언 셀 수는 288 이 아니라 192 다.
+
+  **`multiplied` 는 지금까지의 몫에서 `flat` 과 같은 값을 낸다.** `extra_fee_multiply` 는 per_*
+  부과정책에서만 실제로 곱해지는데, S15a2·S15a3 이 맡은 부과정책(고정액 모드의 `not_read` · 원
+  정책 모드의 `free` · `fixed` · `conditional_free_met` · `conditional_free_unmet`)은 어느 것도
+  per_* 가 아니다. 같은 값이 나오는 것이 산출물이며, 플래그가 곱을 일으키는 칸은 S15a4 의
+  `per_quantity` 가 연다.
+
+  **원 정책 모드는 고정액 모드와 달리 도서산간을 구간마다 실제로 얹는다.** S15a3 이 채운 96셀의
+  기대액은 `편도액 × 배수 + 구간별 추가액` 이며, S15a2 의 몫에서 성립하던 "추가액 0" 전제가
+  여기서는 성립하지 않는다. 조건부무료 충족(임계 10,000 · 그룹 40,000)은 기본액을 0으로 만들지만
+  추가액은 남으므로 무료 정책과 결과가 같아 보이는데, 같은 `base_fee` 2,500 을 쓰는 미달 24셀이
+  짝으로 붙어 있어 임계 판정이 죽으면 둘 중 하나가 반드시 깨진다.
+
+  **`not_read` 는 값이 아니라 자리표시다.** YAML 상으로는 `charge_policy` 의 한 값이지만 실제
+  설정에 그런 부과정책은 없다. `fixed` 모드가 부과정책을 **읽지 않는다**는 사실을 곱에 표현할
+  방법이 그것뿐이라 이렇게 적었다 — 대신 실제 정책 값으로 곱하지 않으므로, 이 모드에서 정책
+  독립성을 재는 것은 `fixed_mode_fee_is_independent_of_the_charge_policy`(6정책 DataProvider)다.

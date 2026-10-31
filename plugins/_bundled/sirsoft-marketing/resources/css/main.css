@@ -1,0 +1,46 @@
+/* g7-extension-css:start — convert-layout-classes.mjs 가 생성·갱신하는 블록. 손으로 고치지 않는다. */
+@import "tailwindcss/theme.css" layer(theme) prefix(marketing);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(marketing) source(none);
+@import "./g7-extension.generated.css";
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@source "../../src";
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+@plugin "@tailwindcss/typography";
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+/* g7-extension-css:end */
+
+/*
+ * 층 밖 의미 규칙 — 관리자 템플릿이 층 없이 둔 배치 규칙(dashboard.css 의 flex-between)의 이 플러그인 사본.
+ * 생성 파일(g7-extension.generated.css)은 의미 클래스를 모두 가장 낮은 칸에 담지만, 템플릿에서 이 규칙은 층 밖이라
+ * 같은 요소의 유틸리티를 이겼다. 이 플러그인 유틸리티는 층 없이 실리므로 같은 우선순위를 지키려고 이 규칙만
+ * 층 밖(유틸리티 뒤)에 한 번 더 둔다. 값은 템플릿 정의와 같다.
+ */
+.marketing-flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

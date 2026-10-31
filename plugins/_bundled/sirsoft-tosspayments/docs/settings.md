@@ -29,7 +29,7 @@
 | `use_escrow` | `string` | `off` | 에스크로 사용 |
 | `webhook_secret_verify` | `boolean` | `true` | 웹훅 secret 검증 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->
@@ -40,6 +40,7 @@
 `ValidateTossSettingsListener`가 저장 시점에 범위를 강제합니다 — UI 의 input 힌트만으로는
 관리자 설정 저장 API 직접 호출을 막을 수 없기 때문입니다. `webhook_secret_verify`를 끄면
 가상계좌 웹훅의 유일한 위조 방지 수단이 사라지므로 기본값 `true`를 유지해야 합니다.
+끄면 주문번호만 아는 사람도 입금 없이 주문을 결제완료로 만들 수 있고, 끈 상태에서 생긴 보안 사고는 운영자 책임입니다(스위치는 운영자 선택으로 남겨 둡니다 — 2026-09-29 결정).
 <!-- @intent END -->
 
 ## 권한
@@ -61,7 +62,7 @@ _등록하는 메뉴가 없습니다._
 <!-- @generated:menus END -->
 
 <!-- @intent START -->
-설정 화면(`plugin_settings.json`)은 코어의 "플러그인 관리 > 설정" 공통 진입점을 통해
+설정 화면(`plugin_settings.g7.html`)은 코어의 "플러그인 관리 > 설정" 공통 진입점을 통해
 접근합니다 — PG 플러그인마다 전용 사이드바 메뉴를 만들면 PG 를 여러 개 설치했을 때 메뉴가
 난립합니다.
 <!-- @intent END -->
@@ -78,10 +79,10 @@ _등록하는 메뉴가 없습니다._
 <!-- @generated:routes END -->
 
 <!-- @intent START -->
-다른 PG 플러그인과 달리 `api` 라우트 파일이 없습니다 — 이 플러그인은 로그인 사용자가
-Bearer 토큰으로 직접 호출하는 엔드포인트(예: 관리자 거래조회)를 두지 않습니다. 승인
-콜백·가상계좌 웹훅 모두 결제창 리다이렉트나 토스 서버가 도달하는 경로라 `web`에만
-있습니다.
+승인 콜백·가상계좌 웹훅은 결제창 리다이렉트나 토스 서버가 도달하는 경로라 `web`에
+있습니다. `api` 에는 결제창 닫힘 보고(`/payment/close-report`)와, 관리자 설정 화면이
+입금통보 웹훅 전체 URL 을 받아 보여 주는 조회(`/admin/webhook-url`, 서버가 접속한 주소가 아니라
+사이트 주소(`APP_URL`)를 붙여 만든다)만 둡니다 — 관리자 거래조회 같은 운영 API 는 두지 않습니다.
 <!-- @intent END -->
 
 ## 의존 관계
@@ -91,7 +92,7 @@ Bearer 토큰으로 직접 호출하는 엔드포인트(예: 관리자 거래조
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-ecommerce` | 모듈 | `>=1.1.0` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 

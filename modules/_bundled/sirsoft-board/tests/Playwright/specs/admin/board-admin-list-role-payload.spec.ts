@@ -13,7 +13,7 @@
  *
  * @scenario board-admin-list-role-payload-pruning
  * @axes endpoint=admin_list endpoint=detail
- * @effects admin_list_omits_role_member_payload admin_list_never_exposes_member_email admin_list_keeps_display_fields detail_still_provides_role_assignments
+ * @effects admin_list_omits_role_member_payload, admin_list_never_exposes_member_email, admin_list_keeps_display_fields, detail_still_provides_role_assignments
  */
 import { test, expect, authenticatePage } from '../../fixtures/board-auth';
 
@@ -97,15 +97,14 @@ test.describe('관리자 게시판 목록 역할 페이로드 (#518)', () => {
       expect(first, `목록이 그리는 필드 ${key} 가 빠졌다`).toHaveProperty(key);
     }
 
-    // 렌더 결과 — 존재를 먼저 확정한 뒤 값을 본다
-    const rows = page.locator('tbody tr');
-    await expect(rows.first()).toBeVisible({ timeout: 30_000 });
-
+    // 렌더 결과 — 이 목록은 표가 아니라 카드로 그린다(도입 이래 계속). 행 대신 첫 항목의
+    // 식별자가 화면에 실제로 보이는지로 판정한다 — "경량 전환이 화면을 깎았는가" 라는
+    // 이 테스트의 의도는 선택자 형태가 아니라 그 값의 노출 여부에 달려 있다.
     const slug = String(first.slug);
     await expect(
-      page.locator('tbody').getByText(slug, { exact: false }).first(),
+      page.getByText(slug, { exact: false }).first(),
       '식별자 열이 비면 경량 전환이 화면을 깎은 것이다',
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 30_000 });
   });
 
   // @scenario endpoint=detail

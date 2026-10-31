@@ -1,0 +1,18 @@
+feature: 이커머스 알림 정의 행 하단 확장 슬롯 위치
+
+description: |
+  알림 정의 행의 notification_definition_row_footer 확장점이 행 정보 컬럼 안에 있어야 한다.
+  형제로 빠지면 확장이 넣은 내용이 행 오른쪽으로 밀려난다(2026-07-28 실측). 시험 하나가 시나리오 하나다.
+
+axes:
+  case:
+    # modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/notificationRowFooterExtensionPoint.test.tsx — 확장점이 행 정보 컬럼(flex-1 min-w-0) 안에 있다
+    - row_footer_c01
+    - row_footer_c02
+    - row_footer_c03
+
+effects:
+  - row_footer_extension_point_inside_info_column   # 확장점이 행 정보 컬럼(flex-1 min-w-0) 안에 있다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/notificationRowFooterExtensionPoint.test.tsx

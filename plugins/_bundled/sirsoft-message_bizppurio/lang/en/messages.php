@@ -58,11 +58,14 @@ return [
         'alimtalk_sender_key_missing' => 'Please set the Alimtalk sender profile key.',
     ],
 
-    // 설정 검증 — 운영(live) 환경 필수 자격증명 항목 라벨 (validation.attributes 병합용)
+    // 설정 검증 — 설정 항목 이름 (검증 오류 문구의 validation.attributes 병합용, 스키마 전 항목)
     'settings' => [
+        'is_test_mode_attribute' => 'Test Mode',
         'bizppurio_id_attribute' => 'Bizppurio ID',
         'password_attribute' => 'Password',
+        'api_key_attribute' => 'API Key',
         'sender_number_attribute' => 'Sender Number',
+        'sender_key_attribute' => 'Alimtalk Sender Profile Key',
     ],
 
     // webhook(URL PUSH) 리포트 수신
@@ -87,10 +90,10 @@ return [
 
     // Send skipped (channel driver send() precondition not met — recorded as "Failed" in core notification log)
     'send_skipped' => [
-        'alimtalk_template_not_approved' => 'Skipped sending: no approved alimtalk template or alimtalk delivery is off. (notification type: :type)',
-        'sms_template_missing' => 'Skipped sending: no SMS body is configured. (notification type: :type)',
-        'recipient_phone_missing' => 'Skipped sending: recipient phone number is missing. (notification type: :type)',
-        'message_body_empty' => 'Skipped sending: message body is empty. (notification type: :type)',
+        'alimtalk_template_not_approved' => 'Could not send: no approved alimtalk template or alimtalk delivery is off. (notification type: :type)',
+        'sms_template_missing' => 'Could not send: no SMS body is configured. (notification type: :type)',
+        'recipient_phone_missing' => 'Could not send: recipient phone number is missing. (notification type: :type)',
+        'message_body_empty' => 'Could not send: message body is empty. (notification type: :type)',
     ],
 
     // Notification template lifecycle (#597 — BizppurioTemplateController responses and state guards)
@@ -111,6 +114,11 @@ return [
         'cancel_approval_not_allowed' => 'Approval cannot be cancelled because the template is not approved. (current: :status)',
         'release_not_allowed' => 'The template is not dormant. (current: :status)',
         'code_generation_failed' => 'Failed to allocate a template code. Please try again later.',
+        // Lookup responses (list, summary, detail, AlimTalk categories and sender profiles, missing row)
+        'loaded' => 'Notification templates loaded.',
+        'not_found' => 'Notification template not found.',
+        'categories_loaded' => 'AlimTalk categories loaded.',
+        'profiles_loaded' => 'AlimTalk sender profiles loaded.',
     ],
 
     // Notification template validation (FormRequest — only documented limits; kapi is the final gate)
@@ -179,9 +187,32 @@ return [
         ],
     ],
 
+    // Dispatch result lookup (DispatchResultController — result column of the notification log screen)
+    'dispatch_result' => [
+        'loaded' => 'Dispatch results loaded.',
+    ],
+
     // Connection check (TokenCheckController response)
     'token_check' => [
         'success' => 'Authentication verified successfully. The ID and password are correct.',
         'failed' => 'Authentication check failed. See the detailed reason.',
+    ],
+    // Notification template editor "Available variables" descriptions — common: default per variable key, by_type: variables whose meaning differs for that notification. Missing keys fall back to the declared string.
+    'notification_variables' => [
+        'common' => [
+            'name' => 'Recipient (administrator) name',
+            'app_name' => 'Site name',
+            'result_code' => 'Result code (9070 SMS / 7436 AlimTalk)',
+            'channel_label' => 'Sending channel (SMS/AlimTalk)',
+            'settings_url' => 'Messaging settings URL',
+            'site_url' => 'Site URL',
+        ],
+    ],
+    // Console command output
+    'console' => [
+        'sync_template_status' => [
+            'no_requested' => 'No templates are awaiting inspection (requested), so the Kakao lookup is skipped.',
+            'done' => 'Templates awaiting inspection checked: :checked, status transitions: :transitioned.',
+        ],
     ],
 ];

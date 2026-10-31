@@ -245,6 +245,8 @@ class InstallerStepwiseRunnerTest extends TestCase
             'user_template_install:sirsoft-basic', 'user_template_activate:sirsoft-basic',
             'language_pack_install:g7-core-ja',
             'create_settings_json', 'cache_clear', 'complete_flag', 'config_cache',
+            // 라우트 캐시 — complete_flag 뒤라 실패해도 설치는 완료로 남는다(best_effort).
+            'route_cache',
             // 부트스트랩 리소스 정적 게시 — 없으면 첫 방문자가 자가 치유(1회 API 폴백)를 겪는다.
             // SSE 인라인 목록에만 있던 것을 목록 SSoT(buildInstallationTaskList)로 옮겼다.
             'static_publish',
@@ -257,6 +259,7 @@ class InstallerStepwiseRunnerTest extends TestCase
         $this->assertTrue($byKey['plugin_install:sirsoft-gdpr']['skippable'], '플러그인도 선택 확장이다');
         $this->assertTrue($byKey['user_template_install:sirsoft-basic']['skippable'], '사용자 템플릿도 선택 확장이다');
         $this->assertTrue($byKey['config_cache']['best_effort']);
+        $this->assertTrue($byKey['route_cache']['best_effort'], '라우트 캐시 실패가 완료된 설치를 실패로 뒤집으면 안 된다');
     }
 
     public function test_run_next_executes_only_first_pending_task(): void

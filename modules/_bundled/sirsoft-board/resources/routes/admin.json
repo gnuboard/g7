@@ -68,6 +68,26 @@
             }
         },
         {
+            "path": "*/admin/boards/scraps",
+            "layout": "admin_board_scraps_index",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.scraps.page_title",
+                "description": "$t:sirsoft-board.admin.scraps.page_description",
+                "permission": "sirsoft-board.scraps.view"
+            }
+        },
+        {
+            "path": "*/admin/boards/reactions",
+            "layout": "admin_board_reactions_index",
+            "auth_required": true,
+            "meta": {
+                "title": "$t:sirsoft-board.admin.reactions.page_title",
+                "description": "$t:sirsoft-board.admin.reactions.page_description",
+                "permission": "sirsoft-board.reactions.view"
+            }
+        },
+        {
             "path": "*/admin/boards/reports",
             "layout": "admin_board_reports_index",
             "auth_required": true,

@@ -48,9 +48,30 @@ effects:
   - null_render_refunds_render_budget
   - stats_url_column_fits_normalized_cache_url
 
+sub_flows:
+  - id: cache_manager_basics
+    description: |
+      상한과 무관한 SeoCacheManager 기본 계약 — 저장·조회 왕복, 캐시 비활성 시 무동작,
+      URL(와일드카드)·레이아웃·전체 무효화, 로케일별 키 분리. 상한 판정은 이 계약 위에서 돈다.
+    effects:
+      - page_cache_round_trip
+      - disabled_cache_is_noop
+      - invalidation_by_url_layout_and_all
+      - locale_is_a_separate_key_axis
+
+  - id: seo_cache_key_namespace
+    description: |
+      SEO 캐시(페이지·병합 설정·사이트맵)는 코어 캐시 드라이버의 `g7:core:` 이름공간에 저장되고,
+      페이지 키는 사이트 주소 origin 까지 묶는다(요청 Host 가 슬롯을 가르거나 공유하지 않게).
+      설정·사이트맵 캐시는 확장·설정 변경 시 키 삭제로 비워진다.
+    effects:
+      - seo_cache_keys_live_under_core_namespace
+      - seo_config_and_sitemap_cache_forget_on_change
+
 test_files:
   - tests/Unit/Seo/SeoCacheBoundsTest.php
   - tests/Unit/Seo/SeoCacheManagerTest.php
+  - tests/Unit/Cache/Migration/SeoCacheTest.php
   - tests/Feature/Seo/SeoMiddlewareTest.php
   - tests/Unit/Seo/SeoCacheStatsServiceTest.php
   - tests/Feature/Database/ModifyUrlInSeoCacheStatsMigrationTest.php

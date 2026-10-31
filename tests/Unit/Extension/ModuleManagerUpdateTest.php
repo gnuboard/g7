@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Extension;
 
+use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
@@ -11,6 +12,7 @@ use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\ExtensionManager;
+use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Models\Module;
 use App\Services\LayoutExtensionService;
@@ -33,6 +35,11 @@ class ModuleManagerUpdateTest extends TestCase
 
     private ModuleManager $manager;
 
+    /**
+     * 모듈 관리자를 목 저장소로 만들고 _pending·_bundled 테스트 모듈을 배치합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,6 +58,8 @@ class ModuleManagerUpdateTest extends TestCase
             pluginRepository: Mockery::mock(PluginRepositoryInterface::class),
             layoutRepository: Mockery::mock(LayoutRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
+            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
+            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
 
         // _pending 테스트 모듈 디렉토리 생성
@@ -78,6 +87,11 @@ class ModuleManagerUpdateTest extends TestCase
         ]));
     }
 
+    /**
+     * _pending·_bundled·활성 디렉토리에 만든 테스트 모듈을 지우고 목을 닫습니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트 디렉토리 정리
@@ -102,6 +116,7 @@ class ModuleManagerUpdateTest extends TestCase
      * Module mock을 생성합니다.
      *
      * @param  array  $attributes  모델 속성
+     * @return Module|Mockery\MockInterface 속성을 채운 모듈 부분 목
      */
     private function createModuleMock(array $attributes): Module|Mockery\MockInterface
     {
@@ -115,6 +130,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * loadPendingModules가 _pending의 메타데이터를 올바르게 로드하는지 테스트
+     *
+     * @scenario operation=source_loading
+     *
+     * @effects pending_and_bundled_metadata_loaded
+     *
+     * @return void 반환값 없음
      */
     public function test_load_pending_modules_populates_pending_array(): void
     {
@@ -130,6 +151,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * loadBundledModules가 _bundled의 메타데이터를 올바르게 로드하는지 테스트
+     *
+     * @scenario operation=source_loading
+     *
+     * @effects pending_and_bundled_metadata_loaded
+     *
+     * @return void 반환값 없음
      */
     public function test_load_bundled_modules_populates_bundled_array(): void
     {
@@ -144,6 +171,12 @@ class ModuleManagerUpdateTest extends TestCase
     /**
      * checkModuleUpdate가 _pending은 업데이트 감지에 사용하지 않는지 테스트
      * (_pending은 임시 스테이징 디렉토리이므로 버전 비교 대상이 아님)
+     *
+     * @scenario operation=update_check
+     *
+     * @effects pending_ignored_for_update_check
+     *
+     * @return void 반환값 없음
      */
     public function test_check_module_update_does_not_use_pending_for_version_check(): void
     {
@@ -172,6 +205,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * checkModuleUpdate가 _bundled에서 업데이트를 감지하는지 테스트
+     *
+     * @scenario operation=update_check
+     *
+     * @effects bundled_newer_version_detected_as_update
+     *
+     * @return void 반환값 없음
      */
     public function test_check_module_update_detects_bundled_update(): void
     {
@@ -201,6 +240,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * checkModuleUpdate가 미설치 모듈에 대해 업데이트 없음을 반환하는지 테스트
+     *
+     * @scenario operation=update_check
+     *
+     * @effects no_update_for_uninstalled_or_latest
+     *
+     * @return void 반환값 없음
      */
     public function test_check_module_update_returns_false_when_not_installed(): void
     {
@@ -216,6 +261,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * checkModuleUpdate가 이미 최신 버전이면 업데이트 없음을 반환하는지 테스트
+     *
+     * @scenario operation=update_check
+     *
+     * @effects no_update_for_uninstalled_or_latest
+     *
+     * @return void 반환값 없음
      */
     public function test_check_module_update_returns_false_when_already_latest(): void
     {
@@ -242,6 +293,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * checkAllModulesForUpdates가 여러 모듈을 검사하고 DB를 갱신하는지 테스트
+     *
+     * @scenario operation=bulk_update_check
+     *
+     * @effects bulk_check_records_only_bundled_updates
+     *
+     * @return void 반환값 없음
      */
     public function test_check_all_modules_for_updates_scans_and_updates_db(): void
     {
@@ -297,6 +354,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * getUninstalledModules가 pending/bundled 모듈을 is_pending/is_bundled 필드와 함께 포함하는지 테스트
+     *
+     * @scenario operation=uninstalled_listing
+     *
+     * @effects uninstalled_list_flags_pending_and_bundled
+     *
+     * @return void 반환값 없음
      */
     public function test_get_uninstalled_modules_includes_pending_and_bundled(): void
     {
@@ -321,6 +384,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * copyFromPendingOrBundled가 _pending에서 활성 디렉토리로 올바르게 복사하는지 테스트
+     *
+     * @scenario operation=source_copy
+     *
+     * @effects copy_prefers_pending_then_bundled
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_from_pending_copies_to_active(): void
     {
@@ -338,6 +407,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * copyFromPendingOrBundled가 이미 활성 디렉토리에 존재하면 복사하지 않는지 테스트
+     *
+     * @scenario operation=source_copy
+     *
+     * @effects copy_keeps_existing_active_unless_forced
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_from_pending_skips_when_active_exists(): void
     {
@@ -357,6 +432,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * copyFromPendingOrBundled가 _pending에 없으면 _bundled에서 복사하는지 테스트
+     *
+     * @scenario operation=source_copy
+     *
+     * @effects copy_prefers_pending_then_bundled
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_from_bundled_as_fallback(): void
     {
@@ -377,6 +458,12 @@ class ModuleManagerUpdateTest extends TestCase
      *
      * 불완전 설치 복구 시나리오: 활성 디렉토리에 일부 파일만 남아있을 때
      * --force 로 원본(_bundled/_pending)에서 재복사하여 manifest 포함 전체를 복원한다.
+     *
+     * @scenario operation=source_copy
+     *
+     * @effects forced_copy_restores_incomplete_active_directory
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_from_pending_or_bundled_overwrites_when_force_is_true(): void
     {
@@ -398,6 +485,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * force=false (기본) 시 활성 디렉토리 존재하면 복사 스킵 (기존 동작 유지 회귀 테스트).
+     *
+     * @scenario operation=source_copy
+     *
+     * @effects copy_keeps_existing_active_unless_forced
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_from_pending_or_bundled_preserves_active_when_force_is_false(): void
     {
@@ -416,6 +509,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * 상태 가드가 updating 상태에서 updateModule을 차단하는지 테스트
+     *
+     * @scenario operation=status_guard
+     *
+     * @effects in_progress_status_blocks_lifecycle
+     *
+     * @return void 반환값 없음
      */
     public function test_update_module_blocked_when_status_is_updating(): void
     {
@@ -436,6 +535,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * 상태 가드가 installing 상태에서 installModule을 차단하는지 테스트
+     *
+     * @scenario operation=status_guard
+     *
+     * @effects in_progress_status_blocks_lifecycle
+     *
+     * @return void 반환값 없음
      */
     public function test_install_module_blocked_when_status_is_installing(): void
     {
@@ -457,6 +562,12 @@ class ModuleManagerUpdateTest extends TestCase
     /**
      * checkModuleUpdate가 업데이트 없을 때 update_available=false를 반환하고,
      * updateModule(force: false)는 이를 기반으로 조기 반환하는지 간접 테스트
+     *
+     * @scenario operation=update_check
+     *
+     * @effects no_update_for_uninstalled_or_latest
+     *
+     * @return void 반환값 없음
      */
     public function test_check_module_update_no_update_and_force_false_early_return(): void
     {
@@ -485,6 +596,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * resolveForceUpdateSource가 _bundled에 존재하는 모듈에 대해 'bundled'를 반환하는지 테스트
+     *
+     * @scenario operation=force_update_source
+     *
+     * @effects force_update_source_resolved_from_bundled
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_force_update_source_returns_bundled(): void
     {
@@ -500,6 +617,12 @@ class ModuleManagerUpdateTest extends TestCase
 
     /**
      * resolveForceUpdateSource가 _bundled에 없는 모듈에 대해 null을 반환하는지 테스트
+     *
+     * @scenario operation=force_update_source
+     *
+     * @effects force_update_source_null_without_bundled
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_force_update_source_returns_null_when_no_source(): void
     {

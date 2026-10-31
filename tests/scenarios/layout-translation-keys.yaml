@@ -1,0 +1,24 @@
+feature: 관리자 템플릿 레이아웃의 $t: 키가 언어 파일에 정의돼 있는지 전수 검사
+
+description: |
+  레이아웃(이 템플릿 + 같은 관리자 화면에 얹히는 번들 모듈·플러그인)이 참조하는 `$t:` 키를 스캔해
+  템플릿 언어 파일 ko/en 에 모두 있는지 본다. 정의되지 않은 키는 오류 없이 화면에 키 원문으로 노출된다.
+
+  - common: 공통 문구. 새로고침·활성화·건너뛰기 키 누락(D13)이 계기다.
+  - countries: 국가 선택지. 회원 폼·회원 목록 국가 필터가 코드마다 `$t:countries.XX` 를 쓴다 —
+    en 파일에 칠레·콜롬비아·페루가 빠져 영어 화면에 키 원문이 보였다(#705 국가 표시 복원 뒤 발견).
+  - population: 스캔 모집단이 비면 모든 검사가 조용히 통과하므로 모집단 도달부터 잰다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/i18n/layout-translation-keys.test.ts
+
+axes:
+  namespace:
+    - population
+    - common
+    - countries
+
+effects:
+  - layout_translation_refs_collected
+  - layout_common_keys_defined
+  - layout_country_keys_defined

@@ -33,6 +33,10 @@ class CoreUpdateResumeGuidanceTest extends TestCase
 
     /**
      * 모드/유저를 입력해 renderResumeGuidance 를 실행하고 콘솔 출력 문자열을 반환한다.
+     *
+     * @param  string  $mode  실행 맥락 판정값(non_root·root_web_known 등)
+     * @param  string|null  $webUser  식별한 웹서버 계정명, 모르면 null
+     * @return string 안내가 찍힌 콘솔 출력 문자열
      */
     private function render(string $mode, ?string $webUser): string
     {
@@ -56,6 +60,12 @@ class CoreUpdateResumeGuidanceTest extends TestCase
 
     /**
      * 케이스 1: non_root — 명령만 그대로. sudo -u 접두사·경고 없음.
+     *
+     * @scenario resume_exec_context=non_root
+     *
+     * @effects renderResumeGuidance_non_root_prints_command_verbatim_without_permission_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_non_root_prints_command_verbatim_without_permission_warning(): void
     {
@@ -68,6 +78,12 @@ class CoreUpdateResumeGuidanceTest extends TestCase
 
     /**
      * 케이스 2: root_web_known — sudo -u {webUser} 접두사 + 계정명 명시 경고.
+     *
+     * @scenario resume_exec_context=root_web_known
+     *
+     * @effects renderResumeGuidance_root_web_known_prefixes_sudo_u_and_warns_with_account_name
+     *
+     * @return void 반환값 없음
      */
     public function test_root_web_known_prefixes_sudo_and_warns_with_account_name(): void
     {
@@ -83,6 +99,12 @@ class CoreUpdateResumeGuidanceTest extends TestCase
 
     /**
      * 케이스 3: root_web_symmetric — root 서비스 구성 → 명령만 그대로.
+     *
+     * @scenario resume_exec_context=root_web_symmetric
+     *
+     * @effects renderResumeGuidance_root_web_symmetric_prints_command_verbatim
+     *
+     * @return void 반환값 없음
      */
     public function test_root_web_symmetric_prints_command_verbatim(): void
     {
@@ -94,12 +116,18 @@ class CoreUpdateResumeGuidanceTest extends TestCase
 
     /**
      * 케이스 4: root_web_unknown — placeholder + 계정명 미상 경고.
+     *
+     * @scenario resume_exec_context=root_web_unknown
+     *
+     * @effects renderResumeGuidance_root_web_unknown_uses_placeholder_and_generic_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_root_web_unknown_uses_placeholder_and_generic_warning(): void
     {
         $out = $this->render('root_web_unknown', null);
 
-        $this->assertStringContainsString('sudo -u <웹서버계정> '.self::RESUME, $out);
+        $this->assertStringContainsString(__('settings.core_update.console.resume_command_unknown_user', ['command' => self::RESUME]), $out);
         $this->assertStringContainsString('식별하지 못했습니다', $out);
         // 대표 웹서버 계정 예시를 안내에 포함해 운영자가 직접 확인하도록 유도
         $this->assertStringContainsString('www-data', $out);

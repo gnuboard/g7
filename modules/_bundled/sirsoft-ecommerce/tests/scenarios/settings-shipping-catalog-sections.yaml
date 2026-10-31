@@ -1,0 +1,53 @@
+feature: 쇼핑몰 환경설정 배송 탭 — 택배사·배송유형 카탈로그 섹션
+
+description: |
+  배송설정 탭의 택배사·배송유형 관리 섹션(인라인 추가 폼·표/카드·행 편집·삭제·오류 표시)과, 배송유형을 읽는
+  주문목록 필터·배송정책 폼 배송방법. 기존 레이아웃 구조 테스트 두 파일을 소유한다.
+
+  수정 이력: 후속 B 세션 B3 (2026-10-08) — 이름 필수 언어를 보는 언어에서 사이트 기본 언어
+  (`_global.appConfig.siteLocale`, 서버 `app.site_locale`)로 바꾸면서 두 파일을 고쳐, 매니페스트를 세우고
+  describe 묶음별로 효과를 매핑했다. 추가 폼 게이트·오류 플래그·행 오류 조회 키 모두 서버 422 키
+  `…name.{사이트 기본 언어}` 와 같은 축을 본다.
+
+axes:
+  section: [carrier, type]
+
+effects:
+  - settings_shipping_tab_includes_carrier_section
+  - settings_carrier_section_root_structure
+  - settings_carrier_add_button_opens_inline_form
+  - settings_carrier_add_form_requires_site_locale_name
+  - settings_carrier_add_form_shows_validation_errors
+  - settings_carrier_empty_state_shown
+  - settings_carrier_table_structure
+  - settings_carrier_row_fields_update_by_map
+  - settings_carrier_row_shows_server_errors
+  - settings_carrier_delete_button
+  - settings_carrier_rows_saved_with_page
+  - settings_carrier_i18n_keys_exist
+  - settings_carrier_dark_mode_pairs
+  - settings_carrier_input_styles
+  - settings_remote_area_fee_inputs
+  - settings_carrier_table_switches_to_cards
+  - settings_carrier_card_root_structure
+  - settings_carrier_card_header
+  - settings_carrier_card_body_fields
+  - settings_carrier_card_shows_server_errors
+  - settings_carrier_card_delete_and_toggle
+  - settings_carrier_card_i18n_and_dark_mode
+  - settings_shipping_tab_includes_type_section
+  - settings_shipping_type_section_structure
+  - settings_shipping_type_add_form_requires_site_locale_name
+  - settings_shipping_type_table
+  - settings_shipping_type_mobile_cards
+  - settings_shipping_type_card_structure
+  - settings_shipping_type_i18n_keys_exist
+  - order_list_filter_uses_active_shipping_types
+  - shipping_policy_form_methods_from_shipping_types
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingCarrierSection.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingTypeSection.test.tsx
+
+validation:
+  browser_check: 관리자 언어 English · 사이트 기본 언어 한국어로 쇼핑몰 환경설정 배송 탭 → 택배사 추가 폼에서 EN 이름만 넣고 확정하면 막히고 KO(*) 칸을 채우면 추가된다

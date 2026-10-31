@@ -5,14 +5,25 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 79개 (루트: `src/components`).
+컴포넌트 78개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 38개 |
-| `composite` | 36개 |
+| `composite` | 35개 |
 | `layout` | 5개 |
 <!-- @generated:components END -->
+
+## 상태 의미 토큰 (`status-*`)
+
+`Icon` 은 Font Awesome 글리프 이름 외에 **아이콘 라이브러리 중립 토큰**을 받는다. 서버(예:
+쇼핑몰 모듈의 클레임·주문 상태 Enum)는 특정 아이콘 글꼴을 알지 않고 `status-request` · `status-pickup`
+같은 의미 토큰만 내보내며, 그 토큰을 이 템플릿의 글리프로 바꾸는 표는
+`templates/_bundled/sirsoft-basic/src/components/basic/IconTypes.ts` 의 `iconNameMap` 한 곳이다. 어휘(21종 — 클레임 15 + 주문 전용 6)와 각 토큰의 뜻은
+쇼핑몰 모듈 API 문서(`modules/_bundled/sirsoft-ecommerce/docs/api/admin-claims.md` "아이콘 의미 토큰 어휘")가 소유한다.
+
+표에 없는 토큰은 `fa-status-…` 로 떨어져 오류 없이 빈 네모가 그려진다 — 어휘가 늘면 이 표에
+먼저 더한다. 다른 아이콘 세트를 쓰는 템플릿은 같은 토큰을 자기 글리프로 해석하면 된다.
 
 <!-- @intent START -->
 세 분류는 "얼마나 조합됐는가" 로 나뉩니다 — `basic` 은 HTML 태그를 그대로 래핑한 최소 단위
@@ -23,8 +34,8 @@
 
 **이 템플릿은 방문자 화면 전용**이라 관리자 템플릿(`sirsoft-admin_basic`)과 컴포넌트 구성이
 크게 다릅니다. `DataGrid` · `AdminSidebar` · `MultilingualInput` 같은 관리 도구가 없고, 대신
-`ProductCard` · `ProductImageViewer` · `QuantitySelector` · `PostReactions` · `MobileNav` ·
-`SocialLoginButtons` 처럼 상점·게시판·인증 화면에 필요한 것들이 있습니다. **모듈이 방문자
+`ProductCard` · `ProductImageViewer` · `QuantitySelector` · `MobileNav` 처럼
+상점·게시판·인증 화면에 필요한 것들이 있습니다. **모듈이 방문자
 화면을 그리지 않고 API 만 제공하는 구조**(게시판·이커머스 모두 레이아웃이 전부 `admin` 그룹)
 이므로, 방문자가 보는 커머스·게시판 UI 는 사실상 이 템플릿의 컴포넌트가 전부입니다.
 
@@ -102,7 +113,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
-| `A` | 앵커/링크 | href | - |
+| `A` | 앵커/링크 — 레이아웃 클릭 액션이 없으면 같은 출처 주소의 보통 클릭만 SPA 로 옮기고, 수정키·가운데 단추는 브라우저 기본(새 탭). `disabled` 면 href 를 빼고 `aria-disabled`, `mergeQuery` 면 현재 쿼리를 href 에 합친다. `fallbackHref` 를 주면 이 사이트 주소가 아닌 href(실행 주소·다른 사이트·`//host`)를 그 대체 주소로 바꾼다(알림 이동 주소처럼 바깥에서 정해지는 href). `target="_blank"` 면 rel 에 `noopener noreferrer` 를 합친다 | href, disabled, mergeQuery, fallbackHref, target, rel | - |
 | `H1` | 제목 (h1) | - | - |
 | `H2` | 제목 (h2) | - | - |
 | `H3` | 제목 (h3) | - | - |
@@ -127,7 +138,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
 | `Input` | 텍스트 입력 | label, error | checkable |
-| `Select` | 선택 박스 | label, error | - |
+| `Select` | 선택 박스. `searchable` 이면 펼침 목록 위에 검색칸이 생기고, 검색칸 안내·화면 읽기 이름·「결과 없음」 문구는 `searchPlaceholder` 가 없으면 화면 언어(`common.search_placeholder`·`common.search`·`common.no_results`)를 따른다. `options` 로 그리는 목록형은 `aria-label`(또는 `aria-labelledby`)을 단추에 이어 「{이름} {현재 값}」으로 읽힌다 — `placeholder`·`title` 은 단추 이름이 되지 않는다 | label, error, options, searchable, searchPlaceholder, aria-label, aria-labelledby | - |
 | `Option` | Select 내부 옵션 | value, disabled | - |
 | `Textarea` | 텍스트 영역 | label, error | - |
 | `Checkbox` | 체크박스 | label | checked |
@@ -151,6 +162,14 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 ---
 
+#### PasswordInput 검증 규칙 (#736)
+
+`enableRules` 는 「규칙:값」 목록입니다(`minLength:N`·`maxLength:N`·`hasUppercase`·`hasLowercase`·`hasNumber`·`hasSpecial`·`noSpaces`·`minTypes:N`).
+`hasSpecial` 은 서버(`PasswordPolicy`·`PasswordComposition`)와 같은 유니코드 구두점·기호·공백 범주로 판정하고, `minTypes` 는 **영문(대·소문자 한 종류)·숫자·특수문자**
+세 종류 중 N종 이상 섞였는지 봅니다(기본 2 — 서버 「문자 종류 조합」과 같다). 종전에는 특수문자 집합이 좁고 `minTypes` 가 대·소문자를 따로 세어 화면 체크와 서버 판정이
+갈렸습니다. 비밀번호 칸에서는 규칙을 리터럴로 두지 말고 `_global.settings.security.*` 로 만든 식에 바인딩합니다(→ [layouts.md](layouts.md) 「비밀번호 규칙 바인딩」).
+재사용·아이디 포함·반복·연속처럼 서버만 판정하는 규칙은 이 컴포넌트가 확인하지 않습니다.
+
 ### Composite Components (27개)
 
 > **정정(#601)**: 제목의 개수는 이관 시점 문서 값입니다(코드 실측 36종). 목록 자체는 원문 그대로입니다.
@@ -165,34 +184,36 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | `Footer` | 사이트 푸터 (저작권, 링크, 소셜) | siteName |
 | `MobileNav` | 모바일 네비게이션 드로어 | - |
 
+- **`Header` 언어 메뉴와 장바구니 단추**: 언어 단추는 `aria-haspopup="listbox"` 와 펼쳤을 때 `aria-controls` 로 목록을 가리키고, 목록은 `role="listbox"`(이름 = 언어), 항목은 `role="option"` + `aria-selected` 다. 단추에서 ↓/↑·Enter·Space 로 열면 현재 언어 항목에 초점이 가고, 목록 안에서 ↓/↑·Home·End 로 옮기며 Enter 로 고른다. Esc 는 닫고 단추로 초점을 돌리고, 고른 뒤에도 초점은 단추로 돌아온다. 아이콘만 있는 장바구니 단추의 이름은 `nav.cart_with_count`(담긴 수 포함), 좁은 폭에서 그리는 메뉴 단추의 이름은 `user.menu` 다. 회귀 테스트: `src/components/composite/__tests__/HeaderLanguageListbox.test.tsx`.
+- **모바일 머리글(`_user_base` 레이아웃)**: 아이콘만 있는 단추는 다국어 `aria-label` 을 갖는다 — 장바구니 `nav.cart_with_count`(담긴 수), 사용자 `common.mypage`/`common.login`(로그인 여부는 `_global.currentUser?.uuid` 로 가린다 — 비회원의 `currentUser` 는 빈 값이어도 참으로 읽힌다), 메뉴 `user.menu` + `aria-expanded`(드로어 열림), 드로어 닫기 `nav.close_menu`. 드로어 언어 칩(`role="option"`)을 감싼 목록은 `role="listbox"`(이름 `common.language`)다. 회귀 테스트: `__tests__/layouts/user-base-mobile-header-a11y.test.ts`.
+
 #### 쇼핑몰
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `ProductCard` | 상품 카드 (이미지, 제목, 가격) | product, showDiscount |
+| `ProductCard` | 상품 카드 (이미지, 제목, 가격) — `onClick` 이 없으면 카드 전체가 상세 주소 링크(`preserveListQuery` 면 현재 쿼리도 href 에) | product, showDiscount |
 | `ProductImageViewer` | 상품 이미지 뷰어 (메인 + 썸네일 + 라이트박스) | images |
-| `QuantitySelector` | 수량 선택기 (+/- 버튼) | value, min, max |
+| `QuantitySelector` | 수량 선택기 (+/- 버튼). 범위 밖 직접 입력은 min~max 로 고쳐 올리고, 칸에는 늘 고친 값을 보인다(고친 값이 지금 값과 같아도) | value, min, max |
 
 #### 게시판
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `PostReactions` | 게시글 리액션 버튼 그룹 | postId, reactions |
 | `ExpandableContent` | 콘텐츠 펼치기/접기 (높이 초과 시 그라데이션) | maxHeight, expandText, collapseText |
 
 #### 인증
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `SocialLoginButtons` | 소셜 로그인 버튼 그룹 | providers |
 
 #### 사용자
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
 | `Avatar` | 사용자 아바타 (이미지 또는 이름 첫 글자) | name, avatar, size, text |
-| `AvatarUploader` | 아바타 이미지 업로드 (원형 UI, 즉시 업로드) | src, fallbackText, size, uploadEndpoint, deleteEndpoint, showDeleteButton, ... |
-| `UserInfo` | 사용자 정보 표시 및 드롭다운 | name, userId, subText, isGuest, showDropdown, clickable, ... |
+| `VisitorCounter` | 방문자 카운터 (오늘·어제·최대·전체, 순수 표시) | today, yesterday, max, total, layout(`row`·`column`), labels{title,today,yesterday,max,total}, className, id, editorAttrs |
+| `AvatarUploader` | 아바타 이미지 업로드 (원형 UI, 즉시 업로드. 업로드·삭제 주소가 동일 출처일 때만 토큰을 싣는다. 성공 후 액션(`uploadSuccessActions`·`deleteSuccessActions`)이 없으면 코어 `G7Core.dataSource.refetch('user')` 로 회원 정보를 다시 읽는다) | src, fallbackText, size, uploadEndpoint, deleteEndpoint, showDeleteButton, ... |
+| `UserInfo` | 사용자 정보 표시 및 드롭다운 | name, userId, subText, subTextTitle, isGuest, isWithdrawn, showDropdown, clickable, profilePath, text, author, layout, stopPropagation, menuItems, hideMenuItems, appendMenuItems, className |
 
 #### 에디터/콘텐츠
 
@@ -209,12 +230,18 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 |----------|------|-----------|
 | `FileUploader` | 파일 업로드 | accept, maxSize, multiple |
 
+- **키보드 초점 자리**: 항목의 「삭제」로 항목이 사라지면 초점은 다음 항목(없으면 이전 항목, 둘 다 없으면 「추가」 타일, 목록이 비면 드롭존)의 같은 단추로 간다. 빈 드롭존이나 「추가」 타일로 파일을 고른 뒤 그 요소가 사라지면 「추가」 타일(한도가 차서 없으면 새로 추가된 첫 항목)로 간다. 삭제 확인 창을 거친 삭제도 같다. 초점이 업로더 밖으로 나간 뒤에는 끌어오지 않는다. 자리 판정은 항목 루트의 `data-uploader-item` 과 단추의 `data-uploader-action`(`pick`·`add`·`primary`·`drag`·`download`·`retry`·`remove`)으로 하므로 이 표식을 지우지 않는다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderFocusRecovery.test.tsx`.
+- **언어 전환 인계**: 화면 언어를 바꾸면 엔진이 같은 화면을 새로 마운트한다. 업로더는 언어 전환 중에 내려갈 때만 아직 올리지 않은 대기 파일과 끌어 놓은 순서를 `G7Core.locale.handoff` 에 맡기고(키: 경로 + collection + 업로드 시점), 새 인스턴스가 마운트 때 한 번 꺼내 이어 쓴다. 올리던 항목은 대기 상태로 되돌린다. 일반 화면 이동에서는 맡기지 않는다(engine-v1.79.0). 회귀 테스트: `src/components/composite/__tests__/FileUploaderLocaleHandoff.test.tsx`.
+- **생략한 배열 속성의 기본값**: `initialFiles`·`roleIds` 를 생략하면 모듈 상수인 얼린 빈 배열을 쓴다(렌더마다 새 배열을 기본값으로 만들면 `initialFiles` 동기화 effect 가 끝없이 돈다). 훅은 같은 ID 목록이 새 배열로 들어와도 이전 참조를 쓴다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderDefaultInitialFiles.test.tsx`.
+
 #### 네비게이션/피드백
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `TabNavigation` | 탭 네비게이션 (underline/pills/enclosed) | tabs, activeTabId, variant, onTabChange, hiddenTabIds |
-| `Pagination` | 페이지네이션 | currentPage, totalPages, maxVisiblePages, showFirstLast, prevText, nextText |
+| `TabNavigation` | 탭 네비게이션 (underline/pills/enclosed) — 탭 항목에 `href` 를 주면 `<a role="tab">` 로 그려 새 탭으로 열 수 있다(보통 클릭은 onTabChange) | tabs, activeTabId, variant, onTabChange, hiddenTabIds, tabHrefMergeQuery(탭 주소에 현재 쿼리를 합침) |
+| `Pagination` | 페이지네이션 — `pageHref`(`{page}` 자리표시자)를 주면 번호·이전·다음이 링크(현재 쪽 `aria-current`), `pageHrefMergeQuery` 면 현재 쿼리 합침 | currentPage, totalPages, maxVisiblePages, showFirstLast, prevText, nextText, pageHref, pageHrefMergeQuery |
+
+> **TabNavigation 넘침 (1.3.0)**: 탭은 줄어들지 않으므로(`shrink-0`·`whitespace-nowrap`) 데스크톱 분기(기본 768px 이상)에서 탭 줄이 화면보다 넓으면 nav(`overflow-x-auto`)만 가로로 스크롤됩니다 — 페이지 전체가 밀리지 않습니다. 마운트·활성 탭 변경 때 활성 탭이 보이도록 탭 줄의 가로 위치만 옮깁니다(페이지 세로 스크롤은 그대로).
 
 > **TabNavigation `hiddenTabIds`**: 특정 조건에서 탭을 동적으로 숨길 때 사용합니다. 탭 아이템의 `id` 배열을 전달하면 해당 탭이 렌더링에서 제외됩니다.
 > ```json
@@ -227,10 +254,18 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 > }
 > ```
 | `SearchBar` | 검색 바 (자동완성 지원) | name, placeholder, value, showButton, suggestions, showSuggestions |
-| `Modal` | 모달 다이얼로그 (ESC, 포커스 트랩) | isOpen, onClose, title, width |
+| `Modal` | 모달 다이얼로그 (ESC, 포커스 트랩) | isOpen, onClose, title, icon, iconClassName, size, width, className, style |
 | `ConfirmDialog` | 확인/취소 다이얼로그 | isOpen, onClose, title, message, confirmText, cancelText, ... |
 | `Toast` | 토스트 알림 | toasts, position, duration |
 | `ThemeToggle` | 테마 전환 토글 (auto/light/dark) | autoText, lightText, darkText |
+
+- `Modal` 의 Esc 는 **창 안에 펼친 팝업이 있으면 팝업만 닫는다**(관리자 템플릿과 같은 규칙). 펼친 팝업은 `aria-haspopup` 과 `aria-expanded="true"` 를 함께 단 요소로 판정하므로, 창 안 드롭다운·메뉴는 이 두 속성을 트리거에 달고 자기 Esc 처리로 닫아야 한다. 키를 누른 순간(캡처 단계)의 펼침 여부로 판정하고, `aria-haspopup` 없는 펼침과 창 밖 팝업은 창 닫기를 막지 않는다. 회귀 테스트: `src/components/composite/__tests__/Modal.popupEscape.test.tsx`.
+- `Toast` 는 항목의 만든 시각(`createdAt`, 엔진 toast 핸들러가 넣음)부터 표시 시간(`duration`, 항목의 `duration` 이 우선)을 센다. 화면이 바뀌어 Toast 가 새로 마운트돼도 남은 시간만 보이고, 이미 지난 항목은 그리지 않고 `_global.toasts` 에서 지운다. 떠나는 Toast 는 타이머를 거둔다. 만든 시각이 없는 항목은 처음 받은 시각부터 센다. 회귀 테스트: `src/components/composite/__tests__/Toast.lifetime.test.tsx`.
+- **아이콘 단추와 상태 영역의 접근 이름**: `ThemeToggle` 단추는 `common.theme_select`(펼침 여부는 `aria-expanded`), `NotificationCenter` 항목 삭제 단추는 `common.delete_notification`, `PageSkeleton` 상태 영역은 `common.loading` 을 이름으로 단다. 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다. 이 이름을 영문 문자열로 되돌려 박지 않는다(한국어, 일본어 화면에서 영어로 읽힌다). 회귀 테스트: `src/components/composite/__tests__/AccessibleNameI18n.test.tsx`.
+- **화면 이동은 링크로 그린다**: 머리글 메뉴·로고·장바구니·회원 메뉴, 모바일 서랍, 꼬리말 링크, 프로필로 가는 회원 이름, 상품 카드, 페이지 번호(`pageHref`), 탭(`href`)은 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다. 보통 클릭(왼쪽 단추·수정키 없음)만 지금처럼 SPA 로 옮기고 나머지는 브라우저 기본 동작이다. 판정은 엔진 `G7Core.navigation.isPlainLeftClick`·`mergeQueryIntoHref` 에 맡긴다(`src/support/navigationLink.ts`). 레이아웃에서 직접 옮기는 자리는 `<a href="…">` + 경로 없는 `<navigate/>` 로 쓴다. 회귀 테스트: `src/components/composite/__tests__/NavigationLinks.test.tsx`.
+- **현재 쿼리를 합치는 링크는 주소를 구독한다 (1.2.2)**: 렌더할 때 `mergeQueryIntoHref` 로 href 를 만드는 링크(`A` 의 `mergeQuery`, `Pagination` 의 `pageHrefMergeQuery`, `ProductCard` 의 `preserveListQuery`, `TabNavigation` 의 `tabHrefMergeQuery`)는 `src/support/navigationLink.ts` 의 `useLocationSearch(enabled)` 를 부른다. 같은 화면에서 쿼리만 바꾸는 `navigate replace` 는 화면을 다시 마운트하지 않고 링크 props 도 그대로라 엔진이 그 링크를 다시 그리지 않는다 — 구독하지 않으면 가운데 클릭·새 탭·주소 복사가 바꾸기 전 쿼리로 간다. 훅은 엔진 `G7Core.navigation.subscribeLocationSearch` 를 구독하고(없는 옛 엔진은 뒤로/앞으로만), 쿼리를 합치지 않는 링크는 `enabled=false` 로 구독하지 않는다. 같은 방식의 새 링크 컴포넌트도 이 훅을 부른다. 회귀 테스트: `src/components/composite/__tests__/NavigationLinks.locationSync.test.tsx`.
+- **입력칸 이름은 레이아웃이 단다**: 이 템플릿에는 칸 옆 제목을 이름으로 잇는 자동 연결이 없다. 입력칸·선택칸·체크박스는 보이는 제목의 문구 키를 `aria-label` 로 직접 달고(예: `aria-label="$t:mypage.profile.country"`), 체크박스와 옆 글자는 `<label>` 하나로 감싼다(글자를 눌러도 체크). 목록 줄 체크박스는 `common.select_item`(`{{name}}`), 줄 안 칸은 `common.row_cell`(`{{row}}`·`{{column}}`), 제목 없는 정렬·검색 대상 선택칸은 `common.sort_order`·`common.search_field`. 회귀 테스트: `__tests__/layouts/control-accessible-names.test.ts`(레이아웃 전수 이름 없는 칸 0), `src/components/basic/__tests__/Select.accessibleName.test.tsx`.
+- **꾸밈 아이콘과 아이콘만 있는 단추**: `Icon` 은 `ariaLabel` 을 받으면 `role="img"` 와 그 이름으로 읽히고, 받지 않으면 꾸밈이라 `aria-hidden="true"` 로 숨는다(글리프 이름을 이름으로 만들지 않는다). 아이콘만 담은 단추와 링크는 단추 자신에 이름(`aria-label`)을 문구 키로 단다. 레이아웃 예: 삭제 `common.delete`, 뒤로가기 `common.back`, 더보기 `common.more`, 이전과 다음 `common.prev`/`common.next`, 펼치기와 접기 `common.expand`/`common.collapse`(펼침 여부는 `aria-expanded`), 찜 `shop.product.add_to_wishlist`/`remove_from_wishlist`, 리뷰 별점 `mypage.order_detail.review_modal.rating_star`(`{{count}}`). 기본 문구도 키를 따른다: `FileInput`(`common.file_input.*`), `ThemeToggle` 메뉴(`common.theme.auto`/`light`/`dark`), `Select` 검색칸(`common.search_placeholder`, `common.search`, `common.no_results`), `AvatarUploader` 미리보기 대체 글 `mypage.profile.avatar_preview`. 번역이 없거나 엔진 밖이면 종전 영문을 쓴다. 회귀 테스트: `src/components/basic/__tests__/Icon.a11y.test.tsx`, `src/components/composite/__tests__/IconOnlyControlNames.test.tsx`(번들 레이아웃 정적 대조 포함).
 
 #### 페이지 전환
 
@@ -278,9 +313,8 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | Composite | `MobileNav` | 모바일 드로어 네비게이션 |
 | Composite | `ProductImageViewer` | 상품 이미지 뷰어 |
 | Composite | `QuantitySelector` | 수량 선택기 |
-| Composite | `PostReactions` | 게시글 리액션 |
-| Composite | `SocialLoginButtons` | 소셜 로그인 |
 | Composite | `Avatar`, `AvatarUploader` | 아바타 관련 |
+| Composite | `VisitorCounter` | 방문자 카운터(홈 하단) |
 | Composite | `UserInfo` | 사용자 정보 드롭다운 |
 | Composite | `RichTextEditor` | 리치 텍스트 에디터 |
 | Composite | `ExpandableContent` | 콘텐츠 접기/펼치기 |

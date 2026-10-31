@@ -1,0 +1,146 @@
+feature: 레이아웃 코드 편집기 HTML(.g7.html) 기본화 (#476)
+
+description: |
+  관리자 레이아웃 코드 편집기의 정본을 JSON 에서 HTML(`.g7.html`)로 바꾼다. DB 는 JSON 만 유지하고
+  (결정 C1), 열 때 `?with_markup=1` 로 역변환하며 저장·미리보기는 `format=markup` 으로 HTML 을
+  보내 서버가 프로덕션 컴파일한다. JSON 서브탭은 읽기 전용 산출물이고(C2) 타이핑이 멈춘 1초 뒤
+  `markup-compile` 이 갱신한다(C7). 컴파일 오류는 422 `errors.compile_error {code,message,line,column}`
+  로 돌아와 편집기 마커·오류 패널이 되고 저장을 막는다. lint 경고는 저장을 막지 않는다.
+
+  결정 사슬:
+    - 오라클과 편집기가 같은 진입점(LayoutMarkupCompiler)을 탄다 — 게이트가 초록인데 저장이 막히는
+      상태가 다시 생기지 않는다.
+    - 설치본 행은 조각이 인라인된 평탄 문서라 저장소 파일과 다르다 — 편집기 하단 안내가 이를 밝힌다.
+    - 확장 조각 갈래도 같은 규칙(C4)이고, 같은 대상의 조각 둘은 `fragment_key` 로 구분한다(C13).
+
+  ## 축을 이 셋으로 좁힌 근거
+
+  착수 판본은 `action` 에 `restore_version` 을, `input` 에 `no_change` 를 두고 `pairwise` 로 11 조합을
+  뽑았다. 그 판본은 **어느 테스트도 그 조합을 주장하지 않는 상태**로 초록이 날 수 없었고, 맞추려면
+  마킹을 사실과 다르게 적어야 했다 — 그 방향은 매니페스트를 거짓말로 만든다. 그래서 반대로
+  **축을 실제 서버 왕복 셋(유휴 변환·저장·미리보기) × 두 갈래 × 두 입력**으로 좁히고
+  `coverage_strategy: full` 로 12 조합 전건을 `LayoutMarkupApiTest` 가 직접 덮는다(마킹 12건).
+
+  빠진 표면은 축이 아니라 **효과**로 관측한다 — 판본 복원은
+  `code_editor_version_restore_relies_on_refetch_not_stale_reread`, 편집이 없을 때의 저장·미리보기는
+  축으로 세울 만한 분기가 아니라 같은 `valid_edit` 경로다.
+
+coverage_strategy: full
+
+axes:
+  branch: [layout, extension]
+  input: [valid_edit, compile_error]
+  action: [idle_compile, save, preview]
+
+test_files:
+  # 서버 계약 — 12 조합 전건의 소유자.
+  - tests/Feature/Api/Admin/LayoutMarkupApiTest.php
+  # 편집기 표면 (레이아웃 데이터 단언 · Monaco 마커 · 핸들러 · 브라우저).
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit-markup-default.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeEditor.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeEditor.lateMount.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeEditor.reveal.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/downloadMarkupFile.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/copyMarkupToClipboard.test.ts
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-markup-default.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-markup-readers.spec.ts
+  # 7.1.0 P16·P17 — 경고·보안 오류 줄 이동, 휴대폰 위쪽 정보 접기(브라우저)
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-issue-location-mobile.spec.ts
+
+effects:
+  # --- 서버 계약 (LayoutMarkupApiTest)
+  - with_markup_returns_decompiled_markup_and_lint_fields
+  - with_markup_preserves_empty_map_vs_empty_list
+  - markup_save_compiles_to_json_and_bumps_lock_version
+  - markup_save_preserves_global_header_comments_and_order
+  - markup_compile_error_returns_422_with_position
+  - markup_preview_accepts_format_markup
+  - layout_preview_rejects_invalid_markup_with_422
+  - layout_markup_compile_rejects_invalid_markup_with_422
+  - markup_compile_endpoint_returns_json_or_422_and_needs_only_read_permission
+  - extension_markup_save_persists_compiled_json
+  - extension_markup_save_is_symmetric
+  - extension_preview_accepts_format_markup
+  - extension_preview_rejects_invalid_markup_with_422
+  - extension_markup_compile_returns_json_for_valid_fragment
+  - extension_markup_compile_rejects_invalid_fragment_with_422
+  - extends_only_layout_saves_without_synthesized_slot # 물려받기만 하는 화면 저장에 빈 content 슬롯을 지어 넣지 않는다
+  # --- 편집기 표면
+  - code_editor_markup_tab_is_default
+  - code_editor_json_tab_is_read_only
+  - code_editor_idle_compile_updates_json_view
+  - code_editor_compile_error_blocks_save
+  - code_editor_markup_save_persists
+  - code_editor_saves_markup_format
+  - code_editor_opens_with_decompiled_markup_buffer
+  - code_editor_shows_g7_html_labels_and_fragment_key
+  # --- editorMarkup 을 읽는 6곳 1:1 (계획서 §13) — 파생 전역이 방금 친 글자를 담는가
+  - code_editor_save_reads_the_live_buffer
+  - code_editor_extension_save_reads_the_live_buffer
+  - code_editor_preview_reads_the_live_buffer
+  - code_editor_extension_preview_reads_the_live_buffer
+  - code_editor_download_reads_the_live_buffer
+  - code_editor_copy_reads_the_live_buffer
+  - code_editor_downloads_and_copies_the_markup_buffer
+  - code_editor_version_restore_relies_on_refetch_not_stale_reread
+  - code_editor_file_selection_is_not_reset_by_init_global
+  - code_editor_marks_compile_errors_in_monaco_with_g7_markup_owner
+  - code_editor_opens_extension_fragments_in_the_markup_tab
+  - code_editor_saves_the_last_edit_inside_the_debounce_window
+  # CodeEditor 컴포넌트 계약 — 축 조합이 아니라 prop 단위 약속이라 `@effects` 만 단다.
+  - code_editor_renders_with_default_props
+  - code_editor_shows_the_value_prop
+  - code_editor_calls_on_change_when_content_changes
+  - code_editor_applies_the_language_prop
+  - code_editor_applies_the_theme_prop
+  - code_editor_defaults_language_to_json
+  # `vs-dark` 하드코딩은 #476 코드 편집기 개편에서 `theme="auto"` 로 바뀌었다(D8) —
+  # 명제가 뒤집혔으므로 이름째 교체한다. 라이트 모드에서 검은 편집기가 뜨던 결함의 잠금이다.
+  - code_editor_follows_document_theme
+  - code_editor_defaults_theme_to_document_theme # 기본 테마 prop 은 auto(문서 테마)
+  - code_editor_follows_dark_class # 문서 루트의 dark 클래스를 따라 vs-dark 로 해석한다
+  - code_editor_explicit_theme_wins_over_document # 명시한 테마가 문서 테마보다 앞선다
+  - code_editor_container_carries_the_layout_classes
+  # 검색 결과 줄을 눌렀을 때의 좌표 이동 — 파일 전환과 좌표가 같은 순간에 오고 본문은 뒤에 온다.
+  - code_editor_defers_reveal_until_the_target_file_content_arrives
+  - code_editor_does_not_re_reveal_the_same_coordinate_while_typing
+  # 편집기 레이아웃 선언 계약 — 미리보기·판본 이력·확장 갈래 트리·모바일 셀렉터·라우트 동기화.
+  # 축 조합이 아니라 "선언이 규약대로 적혔는가" 라 `@effects` 만 단다.
+  - editor_preview_uses_sequence_api_call_then_open_window
+  - editor_buttons_declare_button_type_so_forms_do_not_submit
+  - version_history_button_branches_layout_and_extension_by_conditions
+  - layout_version_modal_has_the_expected_id_and_structure
+  - layout_version_modal_iterates_layout_versions
+  - newest_layout_version_carries_the_latest_badge
+  - non_newest_layout_versions_carry_a_restore_button
+  - version_history_modal_partial_is_registered
+  - save_button_is_gated_by_can_update
+  - extension_branch_declares_its_three_data_sources
+  - layout_extensions_loads_blocking_on_entry
+  - transition_overlay_waits_for_layout_extensions
+  - extension_section_header_exists_in_the_file_tree
+  - extension_tree_groups_by_source
+  - extension_tree_nests_each_group_items
+  - clicking_an_extension_switches_the_selected_node_kind
+  - group_header_icon_distinguishes_plugin_from_module
+  - override_extension_item_shows_the_override_badge
+  # --- 모바일 셀렉터(`rich-select`) 6종은 이 매니페스트에서 내렸다 ---
+  # 그 선택기는 #476 코드 편집기 개편에서 **제거**되고 `<file-tree-picker mode="sheet">` 로
+  # 대체됐다(계획서 Phase 4-3). 검색이 없어 144개를 스크롤해야 했던 것이 교체 사유다.
+  # 없어진 위젯의 명제를 남겨 두면 영원히 미검증으로 뜨거나, 더 나쁘게는 누군가 그 위젯을
+  # 되살리는 근거로 읽는다. 대체 표면의 약속은 `code-editor-file-tree.yaml` 이 소유한다.
+  - extension_version_modal_has_the_expected_id_and_structure
+  - extension_version_modal_iterates_extension_versions
+  - extension_version_restore_calls_the_extension_restore_endpoint
+  - preview_layout_picker_modal_has_the_expected_id
+  - extension_preview_calls_the_extension_preview_endpoint_with_a_host_layout
+  - extension_version_and_preview_picker_modals_are_registered
+  - extension_save_calls_the_extension_put_endpoint
+  - init_actions_restore_the_selected_layout_from_the_route_query
+  # 7.1.0 잔여 관측 R-07·R-08 — 좌표 모르는 경고는 0:0 대신 좌표 없이, 컴파일 실패 시 직전 경고 마커를 지운다, 두 갈래가 한 버퍼 맵을 쓴다
+  - code_editor_uses_one_buffer_map_for_both_branches
+  - code_editor_compile_failure_clears_stale_warnings
+  - code_editor_panels_hide_unknown_coordinates
+  - code_editor_issue_rows_reveal_source_line
+  - code_editor_mobile_info_collapsed

@@ -1,0 +1,28 @@
+feature: 게시판 첨부파일 등록, 조회, 삭제 흐름
+
+description: |
+  게시글 첨부파일을 올리고 보고 지우는 사용자 흐름을 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 operation 은 첨부를 다루는 요청(첨부 업로드, 게시글 작성, 첨부 삭제), file_upload_setting 은 게시판의 파일 첨부 사용 설정이다.
+  업로드 권한이 있는 회원, 없는 회원, 권한을 받은 비회원은 operation=upload, file_upload_setting=enabled 칸 안에서 갈라 본다.
+
+axes:
+  operation: [upload, post_create, delete]
+  file_upload_setting: [enabled, disabled]
+
+exclusions:
+  - { operation: delete, file_upload_setting: disabled,
+      reason: "첨부 삭제 경로는 파일 첨부 사용 설정을 보지 않아 설정을 꺼도 삭제 판정이 바뀌지 않는다." }
+
+effects:
+  - member_with_upload_permission_can_upload
+  - user_without_upload_permission_cannot_upload
+  - guest_with_upload_permission_can_upload
+  - upload_blocked_when_board_disables_file_upload
+  - post_with_file_blocked_when_board_disables_file_upload
+  - can_delete_attachment
+  - post_without_file_has_zero_attachments_count
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/AttachmentCrudScenarioTest.php

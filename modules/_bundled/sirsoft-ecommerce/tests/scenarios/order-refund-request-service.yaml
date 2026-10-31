@@ -1,0 +1,85 @@
+feature: 취소·환불 신청 분기 서비스 — 분기 판정 · 접수 · 철회/수정 · 전이 게이트 · 금액 수정
+
+description: |
+  `OrderRefundRequestService` 는 구매자·운영자의 취소·환불 신청을 **두 분기**로 가른다.
+  결제완료 상품은 자동 전이 분기(`auto`, 구 즉시취소)로, 상품준비중 이후 상품은 환불신청 분기
+  (`request`)로 간다. 두 분기 **모두 환불신청서를 만들고** 전이 방식만 다르다 — 자동 전이는
+  요청 → 승인 → 완료를 한 트랜잭션 안에서 실제로 거치고(단계를 건너뛰면 활동로그가 한 줄만
+  남는다), 완료 시점에 취소신청서가 생긴다. 환불신청은 접수에서 멈추고 수량을 잠근다.
+
+  조용히 깨지는 지점:
+    - 두 분기의 상품이 섞이면 신청 **전체**를 거절한다. 한쪽만 처리하면 구매자는 일부만 환불된
+      것을 모른다.
+    - 미리보기는 신청과 **같은 잠금**을 쓴다 — 다르면 미리보기는 통과하는데 신청이 422 다.
+      수정 중인 신청서 자신은 잠금에서 뺀다.
+    - 철회(구매자가 거둠)와 반려(판매자가 거절)는 다른 사실이라 상품 행 상태도 따로 남긴다.
+    - 결제수단이 PG 를 쓰지 않는 주문은 `pg` 환불수단을 거절한다 — 저장되면 화면만 「PG사 환불」로
+      남고 실제로는 사람이 송금해야 끝난다. 카드 주문을 계좌이체로 환불하는 운영은 허용하되 카드
+      결제행의 취소 누적은 건드리지 않는다(운영 결정 2026-09-16).
+    - 운영자 금액 수정은 신청상품 행까지 **비율로** 내려간다. 헤더만 고치면 상세가 접수 당시 금액을
+      계속 말한다.
+    - 분기를 못박은 창구(운영자·시스템 어댑터)도 빈 상품 목록으로 신청서를 만들 수 없다.
+
+# axis 의미: 서비스가 책임지는 관심사 단위. 관심사마다 다른 메서드·가드를 타므로 관심사가 곧
+# 커버리지 단위다. 같은 전이의 중복 지시는 refund-transition-concurrency.yaml 이 소유한다.
+axes:
+  concern:
+    - branch_resolution         # 상태 → 분기 판정 / 혼재·대상 아님·미존재 거절
+    - preview                   # 미리보기 — 분기·계산, 신청과 같은 잠금
+    - auto_branch               # 자동 전이 분기 — 신청서 생성 + 전 단계 전이 + 완료 시 취소 기록
+    - request_branch            # 환불신청 분기 — direct 신청서 접수·잠금·자동 승인·계좌·사유 검사
+    - withdraw_and_edit         # 철회 / 반려 / 승인 전 수정
+    - transition_gate           # 전이 게이트 — 완료는 실행 흐름으로만
+    - refund_method_capability  # 환불수단 ↔ 결제수단 정합
+    - amount_edit               # 운영자 금액 수정 → 신청상품 행 반영
+    - intake_guard              # 빈 상품 목록 구조 가드
+
+effects:
+  # 분기 판정
+  - payment_complete_items_resolve_to_the_auto_branch
+  - preparing_items_resolve_to_the_request_branch
+  - delivered_items_are_not_refund_requestable
+  - mixed_branches_are_rejected
+  - an_unknown_option_is_rejected
+  - auto_branch_wins_when_both_lists_contain_the_same_status
+  # 미리보기
+  - preview_returns_the_branch_and_the_refund_calculation
+  - preview_applies_the_quantity_lock_like_the_request
+  - preview_excludes_the_refund_request_being_edited_from_the_lock
+  # 자동 전이 분기
+  - auto_branch_files_a_refund_request_and_records_the_cancellation
+  - auto_advance_walks_every_status_step
+  # 환불신청 분기
+  - refund_branch_files_a_direct_refund_request
+  - refund_branch_locks_the_quantity_against_a_second_request
+  - refund_branch_can_auto_approve_by_setting
+  - refund_branch_stores_the_refund_bank_when_given
+  - request_rejects_an_inactive_reason
+  # 철회 / 반려 / 수정 / 전이
+  - withdraw_closes_the_request_and_releases_the_quantity
+  - reject_keeps_the_option_rows_rejected
+  - withdraw_is_blocked_after_approval
+  - update_changes_the_reason_before_approval_only
+  - transition_follows_the_refund_gate_and_refuses_completion
+  # 환불 상태 어휘·전이표 (ClaimEnumsTest — 게이트가 읽는 Enum 자체를 행 단위로 고정한다)
+  - refund_status_gains_withdrawn_and_keeps_legacy_cases
+  - refund_status_transition_table_is_pinned_row_by_row
+  - refund_status_withdrawn_is_final
+  - refund_status_labels_are_translated
+  # 환불수단 ↔ 결제수단
+  - refund_method_must_match_payment_capability
+  - non_pg_refund_leaves_payment_cancelled_amount_untouched
+  # 운영자 금액 수정
+  - amount_reduction_reaches_the_option_rows
+  - amount_change_tracks_the_option_rows_in_both_directions
+  - reduction_scales_option_rows_when_header_exceeds_their_sum
+  - non_amount_update_leaves_the_option_rows_untouched
+  # 구조 가드
+  - claim_intake_rejects_empty_items_even_when_the_branch_is_pinned
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderRefundRequestServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

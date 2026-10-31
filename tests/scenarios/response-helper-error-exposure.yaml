@@ -1,0 +1,40 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변종이다. success 의 로케일 축과 error 계열의 payload, debug 축은 서로 다른 메서드에만 쓰이므로 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
+feature: ResponseHelper 오류 정보 노출 제어와 응답 메시지 번역
+
+description: |
+  ResponseHelper::error(), serverError(), moduleError() 는 디버그 모드에서만 예외 메시지와 debug 블록(최대 10프레임
+  trace)을 붙이고, 운영 모드에서는 번역 메시지만 낸다. 500 이상 문자열 오류는 운영 모드에서 errors 키를 숨기고,
+  422 검증 오류 배열과 500 미만 문자열 오류는 디버그 여부와 상관없이 errors 로 낸다. messageParams 로 예외 메시지를
+  넘기면 message 에 같은 문구를 두 번 붙이지 않는다. success() 는 App::getLocale() 을 그대로 써서 번역하고,
+  기본 메시지 키는 실제 번역문이어야 하며 코드베이스에 미해석 키(messages.success)를 넘기는 호출이 없어야 한다.
+
+axes:
+  method: [error, serverError, moduleError, success]
+  payload: [throwable, string_500, string_400, string, array_422, throwable_with_params, deep_throwable, none]
+  debug: [on, off]
+  locale: [ko_en, ja, zh_CN]
+  caller: [codebase_scan]
+
+exclusions: []
+
+effects:
+  - throwable_debug_info_exposed_in_debug
+  - throwable_detail_hidden_in_production
+  - server_error_string_hidden_in_production
+  - server_error_string_shown_in_debug
+  - validation_errors_always_shown
+  - client_error_string_shown_in_production
+  - server_error_throwable_debug_exposed
+  - server_error_throwable_hidden_in_production
+  - module_error_delegates_to_error
+  - server_error_string_kept_in_error_key
+  - exception_message_not_duplicated
+  - null_errors_adds_no_extra_keys
+  - debug_trace_limited_to_10_frames
+  - message_uses_current_app_locale
+  - non_builtin_locale_respected
+  - default_success_message_translated
+  - no_caller_passes_unresolvable_success_key
+
+test_files:
+  - tests/Unit/Helpers/ResponseHelperTest.php

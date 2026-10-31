@@ -53,9 +53,9 @@
 | 검증 영역 | Rule | 핵심 |
 |----------|------|------|
 | JSON 구조 | ValidLayoutStructure | 필수 필드, 깊이 10단계 제한, 타입 검증 |
-| 컴포넌트 | ComponentExists | components.json 매니페스트 대조 |
+| 컴포넌트 | ComponentExists | components.json 매니페스트 대조 (확장 컴포넌트 `식별자.이름` 은 제외 — 편집기 검사가 설치 확장 선언으로 경고) |
 | API 엔드포인트 | WhitelistedEndpoint | `/api/(admin\|auth\|public)/` 패턴만 허용 |
-| 외부 URL | NoExternalUrls | http, data, javascript 등 7개 위험 스킴 차단. 사이트 자기 host·선언된 공개 자산 디스크 host 의 http(s) 절대 URL 은 외부가 아니다(서버가 발급하는 첨부 주소) |
+| 외부 URL | NoExternalUrls | http, data, javascript 등 7개 위험 스킴 차단. 사이트 자기 host·선언된 공개 자산 디스크 host 의 http(s) 절대 URL 은 외부가 아니다(서버가 발급하는 첨부 주소). 컴포넌트 prop 의 입력 안내 문구(`placeholder`)·링크(`href`)와 액션 요청 본문(`params.body`)은 http(s) 웹 주소 허용(실행 스킴·`//`·`ftp:` 는 차단, 자리로 판정). 확장 조각 `injections[].components`·`props` 도 같은 규칙 |
 | 상속 | ValidParentLayout | 순환 참조 방지, 상속 깊이 10 제한 |
 | 슬롯 | ValidSlotStructure | 부모에서 정의된 슬롯만 허용 |
 | 데이터소스 | ValidDataSourceMerge | 상속 체인 ID 고유성 |
@@ -129,7 +129,7 @@ HTML을 렌더링해야 하는 경우 (게시판 본문, 상품 설명 등) **�
 
 템플릿 엔진은 `{{expression}}` 내부를 **화이트리스트 AST 평가기**(`SafeExpressionEvaluator`)로 해석합니다. `new Function()`·`with(ctx)` 를 사용하지 않으므로, `''.constructor.constructor('code')()` 같은 프로토타입 체인 우회로 임의 코드를 실행할 수 없습니다.
 
-평가기는 프로퍼티/옵셔널체이닝 접근, 산술·비교·논리·삼항·nullish, 배열/객체/문자열 리터럴, 화살표 함수·템플릿 리터럴·스프레드, 그리고 화이트리스트 전역(`Math`/`JSON`/`Date`/`Array`/`Object`/`Number`/`String` 등)만 허용합니다. `constructor`/`__proto__`/`prototype` 프로퍼티 접근, `Function(`/`eval(`/`import(` 는 파싱·평가 양쪽에서 거부됩니다.
+평가기는 프로퍼티/옵셔널체이닝 접근, 산술·비교·논리·삼항·nullish, 배열/객체/문자열 리터럴, 화살표 함수·템플릿 리터럴·스프레드, 그리고 화이트리스트 전역(`Math`/`JSON`/`Date`/`Array`/`Object`/`Number`/`String`/`encodeURIComponent` 등)만 허용합니다. `constructor`/`__proto__`/`prototype` 프로퍼티 접근, `Function(`/`eval(`/`import(` 는 파싱·평가 양쪽에서 거부됩니다.
 
 ### 표현식 샌드박스 우회 토큰
 
@@ -145,9 +145,69 @@ HTML을 렌더링해야 하는 경우 (게시판 본문, 상품 설명 등) **�
 
 화살표 함수(`=>`)와 템플릿 리터럴(백틱)은 정상 표현식에서 널리 쓰이므로 차단하지 않습니다 — 평가기가 인터프리터로 안전하게 해석합니다.
 
+호스트 객체 그래프도 같은 이유로 막힙니다. `ownerDocument`·`defaultView`·`XMLHttpRequest`·`fetch(`·`localStorage.getItem(` 같은
+저장소 호출은 저장 시점에 거부됩니다(`localStorage` 단어 자체는 설정 키 이름으로 쓰이므로 호출 형태만 봅니다).
+
+### 호스트 객체 타입 경계
+
+금지 이름 목록만으로는 DOM 요소에서 출발해 `.ownerDocument.defaultView.localStorage` 로 브라우저 창에 닿는 경로를
+막을 수 없습니다. 평가기는 이름이 아니라 **값의 종류**로 막습니다.
+
+- 표현식이 식별자·프로퍼티 읽기·함수 호출 결과로 **브라우저 객체**(화면 요소·문서·창·저장소·주소·방문 기록·Promise 등)를 쥐는
+  순간 평가를 거부합니다. 호출 없는 경로 바인딩(`{{a.b.c}}`)과 `$get(obj, [경로])` 도우미도 경로 한 단계마다 같은 기준으로
+  끊겨, 중간의 브라우저 객체를 건너뛰어 값을 꺼낼 수 없습니다(폴백 값을 돌려줌).
+- 함수는 **순수 계산 함수만** 호출합니다 — 평가기가 만든 화살표 함수, 문자열·숫자·배열·날짜·Map/Set 메서드,
+  `Math`/`JSON`/`Number`/`String`/`Array`/`Date`/`Object` 의 정적 함수, 엔진이 컨텍스트에 넣는 도우미(`$t`·`$get` 등).
+  `call`/`apply`/`bind`, 리플렉션, 브라우저 API 는 호출되지 않습니다.
+
+### 표현식에 전달되는 이벤트·오류·콜백 값
+
+액션 표현식의 `$event`·`error`·`$args` 는 원본 객체가 아니라 **값 사본**입니다.
+
+| 값 | 담기는 것 |
+|----|----------|
+| `$event` | 이벤트 종류·키·좌표 같은 값, `target` 의 `value`·`checked`·`name`·`type`·`tagName`·`id`·`dataset`·`files`·`selectedOptions`(scroll 이벤트면 스크롤 위치, 폼 제출이면 이름 있는 입력칸 `target.<이름>.value`). 합성 컴포넌트가 넘긴 데이터는 그대로 복사 |
+| `error` | `message`·`name` 과 오류에 실린 필드(`status`·`errors`·`response`·`code` 등). 스택은 담지 않음 |
+| `$args` | 콜백 인자의 사본. 인자 속 이벤트·화면 요소는 위 형태로, 브라우저 객체는 `null` |
+
+화면 요소의 메서드 호출이나 요소를 거친 탐색(`$event.target.closest(...)`)은 되지 않습니다. 원본 이벤트가 필요한 처리는
+**동작 처리기(핸들러)** 에서 하세요 — 처리기는 종전대로 원본 이벤트를 받습니다.
+
+### 이동 주소 검증
+
+같은 탭 이동(`navigate` 의 라우트 미매칭 폴백, `openWindow` `target: '_self'`, `redirect`)은 **사이트 안의 절대 경로**만 따라갑니다.
+같은 사이트의 전체 주소(`https://이 사이트/board/free/14` — 서버가 알림 이동 주소를 이 꼴로 준다)는 경로로 바꿔 따라가고,
+`navigate` 는 그 경로로 화면 전환 없이 이동합니다(engine-v1.80.1). 판정은 브라우저 URL 파서의 출처 비교라
+`https://이 사이트@다른곳/`·다른 스킴·다른 포트는 다른 출처입니다.
+외부 주소·`//host`·`javascript:` 같은 실행 스킴은 **이동하지 않습니다**(engine-v1.80.1 — 종전에는 첫 화면 `/` 로 문서 전체 이동했다).
+주소가 비어 있을 때만 기본 경로로 갑니다. 로그인 후 복귀 경로는 어디든 가야 하므로 거부된 값이면 그 화면의 기본 경로로 갑니다.
+새 창(`openWindow` 기본)과 화면에 그려지는 링크(`href`)·폼 제출 주소는 정상 외부 링크가 있으므로 실행 스킴만 무해화합니다.
+검색 로봇용 화면(SEO 렌더링)이 `navigate`·`openWindow` 에서 만드는 링크도 같은 판정입니다 — 같은 탭 이동은 같은 출처만
+링크로 만들고(같은 출처 전체 주소는 경로로), 새 창 링크는 같은 출처 또는 https 외부 주소만 `rel="noopener noreferrer"` 와 함께 만듭니다.
+`query` 로 받은 주소를 이동에 쓰는 화면을 만들 때도 이 기준에 기대면 되지만, 외부 origin 으로 같은 탭 이동이 필요한 흐름은
+처리기에서 허용 대상을 명시해 다루세요. 거부되면 화면에 머무르므로, 로그인 복귀처럼 반드시 어딘가로 가야 하는 자리는
+`navigate` 에 대체 경로 `fallbackPath` 를 적습니다(`<navigate path="{{query.redirect}}" fallbackPath="/"/>` — 대체 경로도 같은 판정).
+표현식으로 주소를 직접 거르지 마세요. 우회 변형(대소문자 스킴·백슬래시·제어문자)을 화면마다 다시 짜야 합니다.
+
+### API 호출의 인증 정보
+
+`apiCall` 은 로그인 토큰(`Authorization: Bearer`)과 CSRF 헤더(`X-XSRF-TOKEN`)를 **사이트와 같은 출처의 주소**로 보낼 때만
+싣습니다(`auth_required`·`auth_mode` 를 지정해도 마찬가지). 요청 주소는 표현식으로 만들 수 있어 저장 시점 검사가 모든 외부 주소를
+잡지 못하므로, 보내는 자리에서 판정합니다. 외부 API 호출 자체는 막지 않지만 토큰은 실리지 않습니다 — 외부 서비스 인증이
+필요하면 서버 API 를 거치세요. 데이터 소스도 같은 원칙입니다. 레이아웃 저장 시에는 이동·호출 대상(`target`·`params.path`·
+`params.url`)의 외부 주소를 화면 정의의 어느 위치에 있든 거부합니다.
+
+외부 주소의 **응답**도 인증 흐름을 움직이지 못합니다. 외부 주소가 돌려준 428(본인인증 필요)은 본인인증 창을 열지 않고,
+401 은 토큰 갱신·재시도·로그아웃 처리를 일으키지 않습니다. 응답이 지정한 주소로 토큰을 싣거나 갱신한 토큰을 같은 외부
+주소로 다시 보내던 경로입니다.
+
+확장 컴포넌트·처리기가 `fetch` 로 직접 요청하면서 `G7Core.api.getToken()` 을 실을 때도 같은 원칙을 지키세요. 대상 주소가
+prop 이나 응답 본문처럼 바깥에서 정해지는 값이면, `G7Core.api.isSameOriginUrl(url)` 이 true 일 때만 토큰을 싣습니다.
+prop 으로 받은 주소로 직접 이동(`location.href`)할 때도 같은 판정을 거치세요.
+
 ### 레이아웃 밖에서 저장되는 표현식
 
-표현식을 평가하는 것은 레이아웃 JSON 만이 아닙니다. 커스텀 번역 문구, 알림 템플릿, 본인인증 메시지 템플릿처럼 **레이아웃보다 낮은 권한으로 저장되는 콘텐츠**도 최종적으로 같은 엔진 평가 경로(`DataBindingEngine.evaluateExpression`)에 도달합니다.
+표현식을 평가하는 것은 레이아웃 JSON 만이 아닙니다. 커스텀 번역 문구, 알림 템플릿(본인인증 알림 포함)처럼 **레이아웃보다 낮은 권한으로 저장되는 콘텐츠**도 최종적으로 같은 엔진 평가 경로(`DataBindingEngine.evaluateExpression`)에 도달합니다.
 
 이 경로의 방어는 **런타임 평가기 한 겹**입니다.
 
@@ -305,6 +365,37 @@ AuthManager.refreshToken()
 ✅ _global 적합 대상: UI 상태 (사이드바 열림, 테마), 공개 설정값, 인증 여부 (boolean)
 ```
 
+#### 예외 — 창 고유 이름 공간은 창을 닫을 때 비우면 허용
+
+`modals` 섹션 창은 부모 `_local` 을 읽지 못해, 편집 창의 입력값·편집 대상은 창별 고유 `_global` 이름 공간에 두는 것이 표준이다([modal-usage.md 「편집 모달의 form 데이터」](modal-usage.md#편집-모달의-form-데이터--_global-namespace-패턴)). 그 창이 다루는 값이 개인정보(배송지·받는 분·연락처·계좌·현금영수증 식별번호 등)나 비밀값(재확인 비밀번호·한시 서명 URL 등)이어도, 아래를 모두 지키면 허용한다.
+
+- 이름 공간은 그 창만 읽는다(창 밖 화면이 표현식으로 참조하지 않는다).
+- 여는 쪽이 매번 `null` 로 먼저 비운 뒤 채운다.
+- **창이 닫히는 모든 갈래에서 비운다** — 닫기 단추·취소·바깥 클릭·Esc·저장 성공·선택. 창 머리 닫기·바깥 클릭·Esc 는 엔진이 주입한 `closeModal` 로만 이어져 레이아웃 동작을 타지 않으므로, 창이 열려 있는 동안 내내 붙어 있는 본문 노드(조건·반복 밖)의 `lifecycle.onUnmount` 에서 비운다. 방법은 [modal-usage.md 「창을 닫을 때 이름 공간 비우기」](modal-usage.md#창을-닫을-때-이름-공간-비우기) 참조.
+- 창을 닫지 않고 폼만 접는 동작(저장 뒤 목록으로 돌아가기 등)은 그 폼의 값(편집 대상)을 비운다.
+- 창이 닫힌 뒤 도착한 응답(검색 자동완성·상세 조회)이 이름 공간을 다시 만들지 않는다 — 응답 콜백은 이름 공간이 `null` 이면 `null` 을 그대로 쓴다([modal-usage.md 「창을 닫을 때 이름 공간 비우기」](modal-usage.md#창을-닫을-때-이름-공간-비우기)).
+
+창이 닫힌 뒤에도 써야 하는 값(검증을 마친 비회원 비밀번호처럼 다음 요청에 실리는 값)은 이 예외가 아니다 — 창 이름 공간에 두지 않는다. 그런 값은 아래 두 예외 중 하나에 들어야 한다.
+
+#### 예외 — 진행 중인 작업의 확인 값은 작업이 끝나는 모든 갈래에서 비우면 허용
+
+비밀번호 확인 창이 검증한 값을 이어지는 한 번의 요청에 실어야 할 때(비회원 댓글 수정의 `verifiedGuestPassword`), 그 값은 작업(수정 모드)이 이어지는 동안만 둔다.
+
+- 작업이 끝나는 모든 갈래에서 비운다 — 저장 성공·취소, 그리고 저장·취소 없이 작업 화면이 내려갈 때(다른 글·화면으로 이동). 마지막 갈래는 작업 폼 노드의 `lifecycle.onUnmount` 가 「지금 작업 대상 = 이 폼의 대상」 일 때 비운다(다른 대상의 작업으로 넘어가며 내려갈 때는 새 값을 지킨다 — 비교는 값 식의 최신 `_global` 로).
+- 같은 값을 쓰지 않는 다른 작업으로 바로 넘어가는 진입(회원 댓글·관리자 수정)은 앞 값을 비운다.
+- 화면 사이를 건너가지 않는다(이동하면 위 갈래로 비워진다).
+
+#### 예외 — 화면 간 소유 증명 토큰
+
+서버가 발급한 한시 토큰을 여러 화면이 요청 헤더로 실어야 할 때는 `_global` 에 둔다. 해당 키와 근거:
+
+| 키 | 쓰는 화면 | 화면 간에 필요한 이유 | 비우는 때 |
+| --- | --- | --- | --- |
+| `guestOrderToken`(이커머스 공개 상태 계약) | 주문 완료·비회원 주문 조회·비회원 클레임 신청/조회·결제 플러그인 영수증·결제창 닫힘 보고 | 비회원은 계정이 없어 이 토큰이 주문 소유 증명이다. 주문 완료 → 조회 → 클레임 화면을 건너가며 같은 토큰을 헤더(`X-Guest-Order-Token`)로 싣고, 결제 플러그인은 브라우저 저장소 대신 이 공개 상태 하나만 읽는다 | 서버 유효기간(30분) 만료·로그인·로그아웃(템플릿 인증 경계 처리기), 탭 세션 저장소와 함께 |
+| `secretViewToken` | 게시판 화면 전체(전역 요청 헤더 `X-Board-Secret-View-Token`) | 비밀번호로 연 비밀글의 열람 증명이다. 답글 링크(전체 이동)·새로고침 뒤에도 같은 글을 다시 열 수 있어야 해 탭 세션 저장소에서 되살린다 | 서버 유효기간 만료·로그인·로그아웃(토큰은 발급한 신원에 묶여 경계를 넘으면 쓸모가 없다), 탭 세션 저장소와 함께 |
+
+이 표에 없는 토큰·비밀번호는 화면 간 예외가 아니다. 새 키를 더하려면 이 표에 화면·이유·비우는 때를 함께 적는다.
+
 ### initGlobal 서버 주입 범위 제한
 
 `initGlobal`로 서버에서 주입하는 데이터는 최소한으로 제한합니다:
@@ -350,11 +441,12 @@ AuthManager.refreshToken()
 | 필드 `expose: false` | 해당 필드만 미노출 |
 | 필드 `sensitive: true` | 해당 필드 미노출 (비밀번호, 토큰 등) |
 
-#### 노출 차단 카테고리
+#### 노출 차단·제한 카테고리
 
 | 카테고리 | expose | 사유 |
 |----------|--------|------|
-| `security` | `false` | 로그인 시도 제한, 비밀번호 정책 등 공격자 정보 제공 위험 |
+| `security` | `true` + `fields` 10키 | 비밀번호 작성·재사용 규칙 10키(`password_min_length`·`require_password_special_char`·`password_require_char_types`·`password_block_*`·`password_*_chars_length`·`password_reuse_*`)만 노출 — 가입·변경·재설정 화면이 실제 정책대로 안내하기 위함. 로그인 시도 제한·잠금·비밀번호 만료·IP 제한·2단계 인증·토큰 키는 `fields` 에 선언하지 않아 내보내지 않는다(공격자 정보 제공 위험) |
+| `general` | `true` + `fields` | `site_url`·`admin_email`·`language` 는 필드 `expose: false`(프론트 미참조). `timezone` 은 노출한다 — 관리자 화면의 빠른 기간 버튼·통계 기간이 「오늘」을 계정 시간대(회원 시간대 → 없으면 이 값)·사이트 표준시로 정하는 데 쓴다(민감 정보 아님). 값은 저장된 설정값이라 `.env` 우선 모드(`G7_ENV_PRIORITY`)로 시간대가 잠긴 설치에서는 서버가 쓰는 유효값과 다를 수 있다 |
 | `mail` | `false` | SMTP password, API secret 포함 |
 | `seo` | `false` | 프론트엔드 미참조 (관리자 환경설정은 API 데이터 기반) |
 | `drivers` | `false` | S3 secret, Redis password 등 인프라 자격증명 포함 |
@@ -373,8 +465,12 @@ AuthManager.refreshToken()
       }
     },
     "security": {
-      "expose": false,
-      "_comment": "보안 정책은 프론트엔드에서 미참조 — 노출 시 공격자에게 정보 제공 위험"
+      "expose": true,
+      "_comment": "비밀번호 작성·재사용 규칙만 노출(예시는 10키 중 2개) — 만료·IP·2FA·토큰·잠금 키는 fields 에 선언하지 않아 내보내지 않는다",
+      "fields": {
+        "password_min_length": { "type": "integer", "sensitive": false },
+        "require_password_special_char": { "type": "boolean", "sensitive": false }
+      }
     },
     "mail": {
       "expose": false,
@@ -567,7 +663,7 @@ class ComponentErrorBoundary extends Component<Props, State> {
 
 백엔드에서의 원인과 해결책은 다음 문서 참조:
 
-- [api-resources.md - $this->when() 사용 시 주의사항](../backend/api-resources.md#thisw-사용-시-주의사항)
+- [api-resources.md - $this->when() 사용 주의사항](../backend/api-resources.md#this-when-사용-주의사항)
 
 ---
 

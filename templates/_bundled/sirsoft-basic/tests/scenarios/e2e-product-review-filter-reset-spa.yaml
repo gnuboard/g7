@@ -1,0 +1,23 @@
+feature: 상품 상세 상품평 옵션 필터 비우기 브라우저 회귀 (7.1.1)
+
+description: |
+  비회원 상품 상세 상품평 탭에서 옵션 필터 「색상=블랙」 을 고른 뒤 다른 상품으로 SPA 이동하거나 「필터 초기화」 를 누르면
+  필터 상태가 `{}` 이고 다음 상품평 요청에 블랙이 실리지 않는다. 상품평 응답의 option_filters 만 이 브라우저에서 고정한다.
+  엔진 단독 축은 상품 상세 레이아웃 응답에서 `reviewOptionFilters` 의 null 선행 쓰기(레이아웃 우회)를 걷어 낸다.
+
+axes:
+  case:
+    - spa_move_to_other_product
+    - reset_button_same_product
+    - spa_move_engine_only
+
+effects:
+  - review_filter_empty_after_spa_move
+  - review_filter_empty_after_reset
+  - review_request_not_filtered_after_move
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/product-review-filter-reset-spa.spec.ts
+
+notes: |
+  레이아웃 축 두 개는 수정 전 엔진에서도 통과한다(레이아웃 null 선행 덕분 — 회귀 가드). 엔진 단독 축은 수정 전 번들 53a3a088 에서 실패.

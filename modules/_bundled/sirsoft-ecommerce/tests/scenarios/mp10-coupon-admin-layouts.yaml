@@ -1,0 +1,40 @@
+feature: 쿠폰 관리자 화면 레이아웃 계약 (MP10 A14·A16②③·A18② + 발급내역·발급취소 + 7.1.1 출시 전 점검)
+
+description: |
+  쿠폰 관리자 목록·폼과 그 모달(직접발급·발급내역·발급취소 확인)의 레이아웃 JSON 이 지키는 계약을 정적으로 잠근다.
+  서버 계약(발급·취소·검색·검증)은 mp10-coupon-*.yaml 과 coupon-issue-cancel.yaml 의 PHPUnit 이 덮고, 이 매니페스트는
+  화면이 그 계약에 닿는 길(행 메뉴·모달 등록·요청 본문·재조회 대상·바인딩 깊이·링크 주소)을 덮는다.
+    - A14: 할인값 입력 최솟값 1 · A16②: 상품 검색 쿼리 키 search_keyword · A18②: 상세 필터 쿼리가 있으면 상세 필터를 펼친다
+    - A16③: 직접발급이 PC 표·모바일 카드 행 메뉴 모두에서 열리고, 회원을 실시간 검색해 user_uuids 로 발급한다
+    - 발급내역: refetchDataSource + dataSourceId 로 다시 부르고 페이지네이션 응답의 안쪽 배열을 바인딩한다
+    - 발급내역 사용 주문 링크는 주문 id 가 아니라 주문번호로 간다(관리자 주문 상세 라우트가 주문번호를 받는다)
+
+axes:
+  surface:
+    - coupon_form          # 쿠폰 등록·수정 폼 조각(혜택·사용 조건·기본 정보)
+    - coupon_list          # 쿠폰 목록 레이아웃과 표 조각(행 메뉴·init_actions·modals·발급수량 칸)
+    - direct_issue_modal   # _modal_direct_issue
+    - issue_history_modal  # _modal_issue_history
+    - cancel_issue_modal   # _modal_cancel_issue_confirm
+
+effects:
+  - discount_value_min_is_one                       # 할인값 Input min = 1
+  - product_search_uses_search_keyword              # 상품 검색 query 가 search_keyword·search_field ?? 'all'
+  - direct_issue_guide_only_for_direct_method       # 발급 방식이 직접발급일 때만 안내 문구
+  - row_actions_reach_issue_history_and_direct_issue  # 행 메뉴(카드·PC 표)에서 발급내역·직접발급 모달이 열린다
+  - detail_filter_restored_from_query               # 상세 필터 쿼리가 있으면 showDetailFilter 복원
+  - issue_count_opens_issue_history                 # 발급수량 숫자가 링크 외형 단추로 발급내역을 연다
+  - direct_issue_posts_user_uuids                   # 직접발급이 issue-direct 로 user_uuids 를 보낸다
+  - direct_issue_submit_shows_progress              # 발급 단추 제출 중 잠금·스피너·문구 전환
+  - direct_issue_refreshes_coupon_list              # 발급 성공이 coupons 를 다시 불러 발급수량을 갱신
+  - direct_issue_member_search_is_live              # 회원 검색이 디바운스 입력 검색이고 별도 검색 단추가 없다
+  - issue_history_refetches_by_data_source_id       # couponIssues 재조회가 refetchDataSource + dataSourceId
+  - issue_history_binds_paginated_rows              # 발급내역 표가 couponIssues.data.data 를 바인딩
+  - issue_history_modal_layout_tidy                 # 창 너비 px·중복 부제 제거·상태 배지 셀 점유 방지
+  - issue_history_order_column_links_order          # 사용처 칸이 관리자 주문 상세 링크
+  - issue_history_order_link_uses_order_number      # 그 링크가 주문번호로 간다
+  - issue_cancel_opens_confirm_modal                # 취소 가능 건만 발급취소 단추 → 확인 창(target) · 목록에 창 등록
+  - issue_cancel_deletes_and_refetches              # 확인 창이 DELETE issues/{id} 뒤 couponIssues 재조회
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/mp10CouponAdminLayouts.test.tsx

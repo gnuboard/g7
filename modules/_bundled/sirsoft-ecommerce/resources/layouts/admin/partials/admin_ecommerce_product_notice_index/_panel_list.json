@@ -1,358 +1,451 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Notice Template List Panel - Left Sidebar with Search"
-  },
-  "id": "template_list_panel",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card col-span-1-lg flex flex-col"
-  },
-  "lifecycle": {
-    "onMount": [
-      {
-        "type": "click",
-        "handler": "sirsoft-ecommerce.initNoticeFromUrl"
-      }
-    ]
-  },
-  "children": [
-    {
-      "id": "template_list_header",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 panel-header"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "file-alt",
-                "className": "text-gray-700 dark:text-gray-300",
-                "size": "md"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "H3",
-              "props": {
-                "className": "text-heading"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.title"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-              },
-              "text": "{{templates?.data?.pagination?.total ?? templates?.data?.data?.length ?? 0}}"
-            }
-          ]
-        }
-      ]
+    "comment": "공지 템플릿 화면 왼쪽 목록. 공통정보 목록과 같은 무한 스크롤 구조이고, 검색어는 URL 에 남는다.\n  항목을 고를 때 **편집·등록 중이면 곧바로 넘어가지 않는다** — 고른 항목을 `_global.pendingTemplate*` 에\n  잡아 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 그 창이다(공통정보 목록과 같은 규칙. 7.1.0 까지는\n  묻지 않고 바로 넘어가 고치던 내용이 사라졌다 — 7.1.1 출시 전 실측).\n  선택은 `replace-url` 로 주소에 남겨 새로고침·공유에는 살아 있되 뒤로가기 이력은 늘리지 않는다.\n  행의 노출 스위치는 클릭이 행 선택으로 번지지 않도록 전파를 끊는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Product Notice Template List Panel - Left Sidebar with Search"
     },
-    {
-      "id": "search_area",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 panel-header"
-      },
-      "children": [
-        {
-          "type": "composite",
-          "name": "SearchBar",
-          "props": {
-            "placeholder": "$t:sirsoft-ecommerce.admin.product_notice_template.list.search_placeholder",
-            "value": "{{query.search || ''}}",
-            "className": "w-full"
-          },
-          "actions": [
+    "id": "template_list_panel",
+    "type": "basic",
+    "name": "Div",
+    "lifecycle": {
+        "onMount": [
             {
-              "type": "submit",
-              "handler": "navigate",
-              "params": {
-                "path": "/admin/ecommerce/product-notices",
-                "mergeQuery": true,
-                "query": {
-                  "search": "{{$event.target.search.value}}"
-                }
-              }
+                "handler": "sirsoft-ecommerce.initNoticeFromUrl"
             }
-          ]
-        }
-      ]
+        ]
     },
-    {
-      "id": "template_list",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(templates?.data?.data?.length ?? 0) > 0}}",
-      "props": {
-        "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto"
-      },
-      "actions": [
+    "props": {
+        "className": "ecommerce-admin-card ecommerce-col-span-1-lg ecommerce:flex ecommerce:flex-col"
+    },
+    "children": [
         {
-          "type": "scroll",
-          "debounce": 200,
-          "handler": "sequence",
-          "actions": [
-            {
-              "handler": "switch",
-              "params": {
-                "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && _global.infiniteScroll.hasMore && !_global.infiniteScroll.isLoadingMore}}"
-              },
-              "cases": {
-                "true": {
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "infiniteScroll.isLoadingMore": true
-                      }
-                    },
-                    {
-                      "handler": "scrollIntoView",
-                      "params": {
-                        "selector": "#loading_indicator",
-                        "scrollContainer": "#template_list",
-                        "behavior": "smooth",
-                        "block": "end",
-                        "waitForElement": true,
-                        "timeout": 2000
-                      }
-                    },
-                    {
-                      "handler": "apiCall",
-                      "auth_required": true,
-                      "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates",
-                      "params": {
-                        "method": "GET",
-                        "query": {
-                          "page": "{{_global.infiniteScroll.currentPage + 1}}",
-                          "per_page": 20,
-                          "search": "{{query.search || ''}}"
-                        }
-                      },
-                      "onSuccess": [
-                        {
-                          "handler": "appendDataSource",
-                          "params": {
-                            "dataSourceId": "templates",
-                            "dataPath": "data.data",
-                            "newData": "{{response.data.data}}"
-                          }
-                        },
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "infiniteScroll.currentPage": "{{_global.infiniteScroll.currentPage + 1}}",
-                            "infiniteScroll.hasMore": "{{response.data?.pagination?.has_more_pages ?? false}}",
-                            "infiniteScroll.isLoadingMore": false
-                          }
-                        }
-                      ],
-                      "onError": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "infiniteScroll.isLoadingMore": false
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              }
-            }
-          ]
-        }
-      ],
-      "children": [
-        {
-          "id": "template_list_items",
-          "type": "basic",
-          "name": "Div",
-          "iteration": {
-            "source": "{{templates?.data?.data ?? []}}",
-            "item_var": "template"
-          },
-          "children": [
-            {
-              "id": "template_item_{{template.id}}",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "{{_global.selectedTemplateId === template.id ? 'admin-card-selected' : 'admin-card-clickable'}}"
-              },
-              "actions": [
+            "id": "template_list_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "ecommerce:px-4 ecommerce-panel-header"
+            },
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "selectedTemplateId": "{{template.id}}",
-                        "selectedTemplate": "{{template}}",
-                        "panelMode": "view"
-                      }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce-flex-center ecommerce:gap-2"
                     },
-                    {
-                      "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75).",
-                      "handler": "replaceUrl",
-                      "params": {
-                        "mergeQuery": true,
-                        "query": {
-                          "id": "{{template.id}}",
-                          "mode": "view"
-                        }
-                      }
-                    }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-primary text-sm font-medium"
-                      },
-                      "text": "{{$localized(template.name)}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center gap-2"
-                      },
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700"
-                          },
-                          "text": "{{template.fields_count ?? 0}}"
-                        },
-                        {
-                          "type": "composite",
-                          "name": "Toggle",
-                          "props": {
-                            "size": "sm",
-                            "checked": "{{template.is_active}}",
-                            "disabled": "{{!template.abilities?.can_update}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "apiCall",
-                              "auth_required": true,
-                              "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{template.id}}/toggle-active",
-                              "params": {
-                                "method": "PATCH"
-                              },
-                              "onSuccess": [
-                                {
-                                  "handler": "refetchDataSource",
-                                  "params": {
-                                    "dataSourceId": "templates"
-                                  }
-                                },
-                                {
-                                  "handler": "toast",
-                                  "params": {
-                                    "type": "success",
-                                    "message": "{{response.message}}"
-                                  }
-                                }
-                              ],
-                              "onError": [
-                                {
-                                  "handler": "toast",
-                                  "params": {
-                                    "type": "error",
-                                    "message": "{{error.message}}"
-                                  }
-                                }
-                              ],
-                              "stopPropagation": true
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "file-alt",
+                                "className": "ecommerce:text-gray-700 ecommerce:dark:text-gray-300",
+                                "size": "md"
                             }
-                          ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "H3",
+                            "props": {
+                                "className": "ecommerce-text-heading"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ecommerce:px-2 ecommerce:py-0.5 ecommerce:text-xs ecommerce:font-medium ecommerce:rounded-full ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                            },
+                            "text": "{{templates?.data?.pagination?.total ?? templates?.data?.data?.length ?? 0}}"
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "id": "loading_indicator",
-          "type": "composite",
-          "name": "LoadingSpinner",
-          "if": "{{_global.infiniteScroll.isLoadingMore}}",
-          "props": {
-            "size": "sm",
-            "text": "$t:sirsoft-ecommerce.common.loading",
-            "color": "text-blue-600 dark:text-blue-400",
-            "className": "py-3"
-          }
-        }
-      ]
-    },
-    {
-      "id": "empty_template_state",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(templates?.data?.data?.length ?? 0) === 0}}",
-      "props": {
-        "className": "flex-center flex-1 justify-center gap-3 px-4 py-8"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "file-alt",
-            "className": "text-gray-400 dark:text-gray-500",
-            "size": "md"
-          }
+            "id": "search_area",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "ecommerce:px-4 ecommerce-panel-header"
+            },
+            "children": [
+                {
+                    "type": "composite",
+                    "name": "SearchBar",
+                    "actions": [
+                        {
+                            "comment": "검색 — 조건을 URL 에 실어 다시 들어간다. 화면이 다시 뜨면서 무한 스크롤 상태도 처음으로 돌아간다.",
+                            "type": "submit",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/ecommerce/product-notices",
+                                "mergeQuery": true,
+                                "query": {
+                                    "search": "{{$event.target.search.value}}"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "placeholder": "$t:sirsoft-ecommerce.admin.product_notice_template.list.search_placeholder",
+                        "value": "{{query.search || ''}}",
+                        "className": "ecommerce:w-full"
+                    }
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-label-subtle"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.empty"
+            "id": "template_list",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(templates?.data?.data?.length ?? 0) > 0}}",
+            "actions": [
+                {
+                    "comment": "무한 스크롤. 대기시간(200ms) 뒤에도 세 조건이 모두 참일 때만 요청한다 — 바닥 100px 안에\n          닿았고 · 더 받을 것이 남았고 · 지금 받는 중이 아님. 받은 쪽은 갈아끼우지 않고 뒤에 잇는다.\n          실패해도 '받는 중' 깃발은 반드시 푼다 — 안 풀면 조건이 영영 거짓이라 스크롤이 죽는다.",
+                    "type": "scroll",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "switch",
+                            "params": {
+                                "value": "{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 && _global.infiniteScroll.hasMore && !_global.infiniteScroll.isLoadingMore}}"
+                            },
+                            "cases": {
+                                "true": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "infiniteScroll.isLoadingMore": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "scrollIntoView",
+                                            "params": {
+                                                "selector": "#loading_indicator",
+                                                "scrollContainer": "#template_list",
+                                                "behavior": "smooth",
+                                                "block": "end",
+                                                "waitForElement": true,
+                                                "timeout": 2000
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET",
+                                                "query": {
+                                                    "page": "{{_global.infiniteScroll.currentPage + 1}}",
+                                                    "per_page": 20,
+                                                    "search": "{{query.search || ''}}"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "appendDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "templates",
+                                                        "dataPath": "data.data",
+                                                        "newData": "{{response.data.data}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "infiniteScroll.currentPage": "{{_global.infiniteScroll.currentPage + 1}}",
+                                                        "infiniteScroll.hasMore": "{{response.data?.pagination?.has_more_pages ?? false}}",
+                                                        "infiniteScroll.isLoadingMore": false
+                                                    }
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "infiniteScroll.isLoadingMore": false
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    "debounce": 200
+                }
+            ],
+            "props": {
+                "className": "ecommerce:p-2 ecommerce:max-h-[calc(90vh-140px)] ecommerce:overflow-y-auto"
+            },
+            "children": [
+                {
+                    "id": "template_list_items_{{templateIdx}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{templates?.data?.data ?? []}}",
+                        "item_var": "template",
+                        "index_var": "templateIdx"
+                    },
+                    "children": [
+                        {
+                            "id": "template_item_{{template.id}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "actions": [
+                                {
+                                    "comment": "항목 선택 — 편집·등록 중이면 곧바로 넘어가지 않고 고른 항목을 대기 자리에 두고 이탈 확인 창을 연다(공통정보 목록과 같은 규칙). 이동을 완결하는 것은 그 창이다. 편집 중이 아니면 목록이 들고 있는 행 전체를 전역에 옮기고 주소를 갈아끼운다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "switch",
+                                            "params": {
+                                                "value": "{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}"
+                                            },
+                                            "cases": {
+                                                "true": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "pendingTemplateId": "{{template.id}}",
+                                                                "pendingTemplate": "{{template}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "editing_confirm_modal"
+                                                        }
+                                                    ]
+                                                },
+                                                "false": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "selectedTemplateId": "{{template.id}}",
+                                                                "selectedTemplate": "{{template}}",
+                                                                "panelMode": "view"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75).",
+                                                            "handler": "replaceUrl",
+                                                            "params": {
+                                                                "mergeQuery": true,
+                                                                "query": {
+                                                                    "id": "{{template.id}}",
+                                                                    "mode": "view"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "{{_global.selectedTemplateId === template.id ? 'ecommerce-admin-card-selected' : 'ecommerce-admin-card-clickable'}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "ecommerce-flex-between"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "항목 이름은 링크 — 가운데 클릭·Ctrl+클릭으로 그 템플릿을 새 탭에 연다(#757 결정 2026-10-15). 카드 전체를\n                 링크로 감싸지 않는 것은 노출 스위치가 링크 안에 들어가기 때문이다. 보통 클릭은 카드와 같은 선택을 하고\n                 전파를 끊어 카드 클릭이 한 번 더 돌지 않게 한다(카드의 나머지 자리는 카드 클릭이 맡는다).",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "switch",
+                                                            "params": {
+                                                                "value": "{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}"
+                                                            },
+                                                            "cases": {
+                                                                "true": {
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "pendingTemplateId": "{{template.id}}",
+                                                                                "pendingTemplate": "{{template}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "openModal",
+                                                                            "target": "editing_confirm_modal"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                "false": {
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "selectedTemplateId": "{{template.id}}",
+                                                                                "selectedTemplate": "{{template}}",
+                                                                                "panelMode": "view"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "replaceUrl",
+                                                                            "params": {
+                                                                                "mergeQuery": true,
+                                                                                "query": {
+                                                                                    "id": "{{template.id}}",
+                                                                                    "mode": "view"
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            }
+                                                        }
+                                                    ],
+                                                    "stopPropagation": true
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "/admin/ecommerce/product-notices?id={{template.id}}&mode=view",
+                                                "mergeQuery": true,
+                                                "className": "ecommerce-text-primary ecommerce:text-sm ecommerce:font-medium ecommerce:hover:underline"
+                                            },
+                                            "text": "{{$localized(template.name)}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "ecommerce-flex-center ecommerce:gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "ecommerce-text-secondary ecommerce:dark:text-gray-300 ecommerce:px-2 ecommerce:py-0.5 ecommerce:text-xs ecommerce:rounded-full ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700"
+                                                    },
+                                                    "text": "{{template.fields_count ?? 0}}"
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Toggle",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "행의 노출 스위치. `stopPropagation` 이 없으면 이 클릭이 행 선택으로 번져, 스위치를 눌렀을 뿐인데 오른쪽 패널이 바뀐다.",
+                                                            "type": "change",
+                                                            "handler": "apiCall",
+                                                            "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{template.id}}/toggle-active",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "PATCH"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "templates"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "{{response.message}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message}}"
+                                                                }
+                                                            },
+                                                            "stopPropagation": true
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "ariaLabel": "$t:common.item_enabled|name={{$localized(template.name)}}",
+                                                        "size": "sm",
+                                                        "checked": "{{template.is_active}}",
+                                                        "disabled": "{{!template.abilities?.can_update}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "loading_indicator",
+                    "type": "composite",
+                    "name": "LoadingSpinner",
+                    "if": "{{_global.infiniteScroll.isLoadingMore}}",
+                    "props": {
+                        "size": "sm",
+                        "text": "$t:sirsoft-ecommerce.common.loading",
+                        "color": "text-blue-600 dark:text-blue-400",
+                        "className": "ecommerce:py-3"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "empty_template_state",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{templates !== undefined && ((templates?.data?.data?.length ?? 0) === 0)}}",
+            "props": {
+                "className": "ecommerce-flex-center ecommerce:flex-1 ecommerce:justify-center ecommerce:gap-3 ecommerce:px-4 ecommerce:py-8"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "file-alt",
+                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-500",
+                        "size": "md"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "ecommerce-text-label-subtle"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.product_notice_template.list.empty"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

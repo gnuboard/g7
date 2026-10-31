@@ -52,6 +52,20 @@ class UserFactory extends Factory
     }
 
     /**
+     * 비밀번호가 없는 회원(소셜 로그인 같은 외부 인증 전용)을 만듭니다.
+     *
+     * 변경일도 비운다 — 비밀번호를 처음 정할 때 기록된다.
+     */
+    public function passwordless(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'password' => null,
+            'password_changed_at' => null,
+            'password_change_required' => false,
+        ]);
+    }
+
+    /**
      * 모든 프로필 필드가 채워진 완전한 상태를 만듭니다.
      *
      * API 문서 실측 시 응답 필드의 예시값이 null 이 되지 않도록, 모델 로직상

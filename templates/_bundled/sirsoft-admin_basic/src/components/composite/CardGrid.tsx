@@ -1,9 +1,11 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useId, useMemo, useState, useCallback } from 'react';
 import { Div } from '../basic/Div';
 import { P } from '../basic/P';
+import { A } from '../basic/A';
 import { ActionMenuItem } from './ActionMenu';
 import { Pagination } from './Pagination';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, navigateTo, resolveLinkHref } from '../../support/navigationLink';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:CardGrid')) ?? {
@@ -69,6 +71,20 @@ export interface CardGridProps {
   // 카드 스타일
   cardClassName?: string;
 
+  /**
+   * 카드 이동 주소(행 표현식) — 있으면 카드 전체를 덮는 `<a href>` 를 깔아 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가
+   * 된다(#757). 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) 카드마다 그 행으로 푼다.
+   * 예: `cardHref="/admin/boards/{{row.slug}}/edit"`. 보통 클릭은 SPA 이동, 수정키 클릭은 브라우저 기본 동작,
+   * 바깥 주소는 새 탭. 카드 내용은 링크 밖 위층이라(링크 안 단추 없음) 안쪽 단추·스위치·메뉴는 그 요소만 동작한다.
+   * 카드는 쌓임 맥락을 만들므로 카드 안 펼침 요소는 포털로 그린다(ActionMenu 는 이미 포털).
+   */
+  cardHref?: string;
+
+  /**
+   * 카드 덮는 링크의 이름(행 표현식) — 예: `cardLinkLabel="{{row.name}} 편집"`. 없으면 카드 글자 전체가 링크 이름이다.
+   */
+  cardLinkLabel?: string;
+
   // 행 ID 필드
   idField?: string;
 
@@ -80,6 +96,12 @@ export interface CardGridProps {
   serverTotalPages?: number;
   alwaysShowPagination?: boolean;
   onPageChange?: (page: number) => void;
+  /**
+   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/boards?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
+   */
+  pageHref?: string;
+  /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
+  pageHrefMergeQuery?: boolean;
 
   // 행 액션 메뉴 (DataGrid 패턴)
   rowActions?: ActionMenuItem[];
@@ -110,6 +132,17 @@ export interface CardGridProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
+
+  /**
+   * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트
+   *
+   * `renderEnvRef.current` 는 이 CardGrid 를 그린 렌더러의 렌더 환경(폭·언어·dispatcher·레지스트리·
+   * 편집 모드)이다. 셀을 그릴 때 이 값을 넘겨, 레이아웃 편집기 미리보기에서 셀이 브라우저 창 폭·
+   * 호스트 언어가 아니라 미리보기 값을 따르게 한다(#141).
+   *
+   * @internal 템플릿 엔진 내부 사용
+   */
+  __componentContext?: { renderEnvRef?: { current: Record<string, any> | null } };
 }
 
 /**
@@ -139,6 +172,35 @@ const evaluateCondition = (condition: string, row: any): boolean => {
 
   logger.warn('G7Core.evaluateCondition 미노출 — 조건을 평가할 수 없습니다:', condition);
   return true;
+};
+
+/**
+ * 카드 행 표현식(cardHref·cardLinkLabel)을 그 카드의 행 기준으로 풉니다.
+ *
+ * DataGrid 의 rowClassName 과 같은 방식이다 — skipBindingKeys 로 원문을 받아 엔진의 바인딩 해석기
+ * (`G7Core.getDataBindingEngine`)로 푼다. 식이 없는 고정 문자열은 그대로 쓴다.
+ *
+ * @param cardHref 카드 문자열 또는 행 표현식
+ * @param row 현재 행 데이터
+ * @returns 그 카드의 값 (풀 수 없으면 null)
+ */
+const resolveCardHref = (cardHref: string | undefined, row: any): string | null => {
+  if (typeof cardHref !== 'string' || cardHref === '') return null;
+  if (!cardHref.includes('{{')) return cardHref;
+
+  const engine = (window as any).G7Core?.getDataBindingEngine?.();
+  if (!engine?.resolveBindings) {
+    logger.warn('G7Core.getDataBindingEngine 미노출 — 카드 주소를 풀 수 없습니다:', cardHref);
+    return null;
+  }
+
+  try {
+    const resolved = engine.resolveBindings(cardHref, { row, item: row, $item: row }, { skipCache: true });
+    return typeof resolved === 'string' ? resolved : null;
+  } catch (error) {
+    logger.warn('카드 주소 해석 실패:', error);
+    return null;
+  }
 };
 
 /**
@@ -182,13 +244,13 @@ const processActionMenuActions = (
           const actionId = item.onClick;
           const actionDef = actionsMap.get(actionId);
 
-          if (actionDef && G7Core?.ActionDispatcher) {
+          // 실행은 코어 공개 API `G7Core.dispatch` 로 한다. 카드 행 컨텍스트(row·$value·index)를
+          // 바인딩 데이터로 넘겨 `{{row.id}}` 같은 표현식이 그 카드의 행으로 풀리게 한다.
+          if (actionDef && typeof G7Core?.dispatch === 'function') {
             return {
               ...item,
               onClick: () => {
-                // 액션 컨텍스트 생성 (row 데이터 포함)
-                const actionContext = { ...context };
-                G7Core.ActionDispatcher.dispatch(actionDef, actionContext);
+                G7Core.dispatch(actionDef, { componentContext: { data: { ...context } } });
               },
             };
           }
@@ -221,6 +283,10 @@ const processActionMenuActions = (
 /**
  * cellChildren 배열을 React 요소로 렌더링합니다.
  * DataGrid의 renderCellChildren 패턴을 따릅니다.
+ *
+ * `renderEnv` 는 렌더 환경(폭·언어·dispatcher·레지스트리·편집 모드)이다. `componentContext` 를
+ * 넘기지 않는 이유: 넘기면 셀의 `_local` 이 CardGrid 렌더러의 상태로 병합되고 setState 대상도
+ * 바뀐다 — 렌더 환경만 필요하므로 상태를 병합하지 않는 `renderEnv` 통로를 쓴다(#141).
  */
 const renderCellChildren = (
   cellChildren: CardGridCellChild[],
@@ -228,7 +294,8 @@ const renderCellChildren = (
   index: number,
   keyPrefix: string = '',
   rowActions?: ActionMenuItem[],
-  onRowActionHandler?: (actionId: string | number, row: any) => void
+  onRowActionHandler?: (actionId: string | number, row: any) => void,
+  renderEnv?: Record<string, any> | null
 ): React.ReactNode => {
   const G7Core = (window as any).G7Core;
 
@@ -264,7 +331,8 @@ const renderCellChildren = (
         processedChildren,
         context,
         componentMap,
-        keyPrefix
+        keyPrefix,
+        { renderEnv }
       );
     } catch (error) {
       return (
@@ -386,6 +454,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
   gap = 4,
   responsiveColumns,
   cardClassName = '',
+  cardHref,
+  cardLinkLabel,
   idField = 'id',
   pagination = true,
   pageSize = 12,
@@ -394,6 +464,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
   serverTotalPages,
   alwaysShowPagination = false,
   onPageChange,
+  pageHref,
+  pageHrefMergeQuery,
   paginationInfoText,
   rowActions,
   onRowAction,
@@ -407,7 +479,10 @@ export const CardGrid: React.FC<CardGridProps> = ({
   skeletonCellChildren,
   id,
   editorAttrs,
+  __componentContext,
 }) => {
+  // 덮는 링크의 이름을 카드 글자에서 가져올 때 쓰는 카드 id 접두
+  const cardIdPrefix = useId();
   // props로 전달된 값이 없으면 다국어 키 사용
   const resolvedEmptyMessage = emptyMessage ?? t('common.no_data');
 
@@ -417,11 +492,17 @@ export const CardGrid: React.FC<CardGridProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
 
   // 반응형 상태 구독 - cellChildren 내 responsive 속성 지원을 위해 필요
-  // 화면 크기 변경 시 CardGrid가 리렌더링되어 renderItemChildren이 새로운 너비로 재실행됨
-  // 훅 호출 자체가 리렌더링을 트리거하므로 반환값은 사용하지 않음 (void 처리)
+  // 화면 크기 변경 시 CardGrid가 리렌더링되어 renderItemChildren이 새로운 너비로 재실행됨.
+  // 반환 폭은 Provider 폭(편집기 미리보기에서는 기기 폭)이라 셀의 responsive 분기 폭으로 넘긴다(#141).
   const G7Core = (window as any).G7Core;
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  G7Core?.useResponsive?.();
+  const responsive = G7Core?.useResponsive?.();
+
+  // 셀 렌더 환경 — 이 CardGrid 를 그린 렌더러의 환경에 자기 Provider 폭을 얹는다(#141)
+  const renderEnv = {
+    ...(__componentContext?.renderEnvRef?.current ?? {}),
+    ...(typeof responsive?.width === 'number' ? { responsiveWidth: responsive.width } : {}),
+  };
 
   // 서버/클라이언트 페이지 정보
   const effectiveCurrentPage = serverSidePagination ? (serverCurrentPage ?? 1) : currentPage;
@@ -555,11 +636,35 @@ export const CardGrid: React.FC<CardGridProps> = ({
     <Div className={className} style={style} id={id} {...editorAttrs}>
       {/* 카드 그리드 */}
       <Div className={`grid ${gridClasses} gap-${gap}`}>
-        {paginatedData.map((row, index) => (
-          <Div key={row[idField] || index} className={cardClassName}>
-            {renderCellChildren(cellChildren, row, index, `card-${index}`, rowActions, handleRowAction)}
-          </Div>
-        ))}
+        {paginatedData.map((row, index) => {
+          const cardContent = renderCellChildren(cellChildren, row, index, `card-${index}`, rowActions, handleRowAction, renderEnv);
+          // 카드 주소가 있으면 카드 전체를 덮는 링크를 깐다(#757) — 없거나 링크로 그릴 수 없는 주소면 종전 그대로.
+          // 카드는 div 그대로이고 링크는 내용 아래층의 마지막 자식이다(링크 안에 단추·스위치를 넣지 않는다 — main.css .card-link-card).
+          const link = cardHref ? resolveLinkHref(resolveCardHref(cardHref, row)) : null;
+          if (link) {
+            const cardId = `${cardIdPrefix}card-${index}`;
+            const label = cardLinkLabel ? resolveCardHref(cardLinkLabel, row) : null;
+            return (
+              <Div key={row[idField] || index} id={cardId} className={`card-link-card relative isolate ${cardClassName}`}>
+                {cardContent}
+                <A
+                  href={link.href}
+                  {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  {...(label ? { 'aria-label': label } : { 'aria-labelledby': cardId })}
+                  data-ref="card_link"
+                  className="absolute inset-0 -z-10 rounded-[inherit] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  onClick={(event) => handleLinkClick(event, () => navigateTo(link.href))}
+                />
+              </Div>
+            );
+          }
+
+          return (
+            <Div key={row[idField] || index} className={cardClassName}>
+              {cardContent}
+            </Div>
+          );
+        })}
       </Div>
 
       {/* 페이지네이션 */}
@@ -569,6 +674,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
             currentPage={effectiveCurrentPage}
             totalPages={effectiveTotalPages}
             onPageChange={handlePageChange}
+            pageHref={pageHref}
+            pageHrefMergeQuery={pageHrefMergeQuery}
             showFirstLast={false}
             maxVisiblePages={5}
             prevText={prevText}

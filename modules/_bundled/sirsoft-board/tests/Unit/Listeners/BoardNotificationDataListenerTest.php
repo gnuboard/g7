@@ -3,9 +3,11 @@
 namespace Modules\Sirsoft\Board\Tests\Unit\Listeners;
 
 use App\Contracts\Repositories\RoleRepositoryInterface;
+use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\AssetUrl;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Mockery;
@@ -17,10 +19,12 @@ use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Report;
+use Modules\Sirsoft\Board\Models\ReportLog;
 use Modules\Sirsoft\Board\Models\UserNotificationSetting;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Services\UserNotificationSettingService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -43,17 +47,23 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     private RoleRepositoryInterface $roleRepository;
 
+    /** @var MockInterface&ReportRepositoryInterface */
+    private $reportRepository;
+
     /** @var MockInterface&UserNotificationSettingService */
     private $userNotificationSettingService;
 
     /**
      * 테스트 환경 설정
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 회원 알림의 {site_url} 은 사용자 화면 URL, 운영자 알림은 사이트 주소 (#792)
+        config(['app.url' => 'https://site.example.test', 'g7_settings.core.general.user_screen_url' => 'https://front.example.test']);
 
         $this->boardRepository = Mockery::mock(BoardRepositoryInterface::class);
         $this->postRepository = Mockery::mock(PostRepositoryInterface::class);
@@ -70,12 +80,16 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         ]);
         $this->userNotificationSettingService->shouldReceive('getByUserId')->andReturn($defaultSettings)->byDefault();
 
+        $this->reportRepository = Mockery::mock(ReportRepositoryInterface::class);
+
         $this->listener = new BoardNotificationDataListener(
             $this->boardRepository,
             $this->postRepository,
             $this->commentRepository,
             $this->userNotificationSettingService,
             $this->roleRepository,
+            app(UserRepositoryInterface::class),
+            $this->reportRepository,
         );
     }
 
@@ -83,6 +97,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 구독할 훅 목록이 올바르게 정의되어 있는지 확인합니다.
+     *
+     * @scenario notification_type=dispatch
+     *
+     * @effects subscribes_extract_data_filter
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_get_subscribed_hooks_올바른_훅_구독(): void
@@ -97,6 +117,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 지원하지 않는 타입은 기본값을 반환합니다.
+     *
+     * @scenario notification_type=dispatch
+     *
+     * @effects unknown_type_returns_default
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_extract_data_미지원_타입_기본값_반환(): void
@@ -112,6 +138,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 새 댓글 알림 데이터를 올바르게 추출합니다.
+     *
+     * @scenario notification_type=new_comment
+     *
+     * @effects new_comment_extracts_data_and_context
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_new_comment_정상_추출(): void
@@ -136,6 +168,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->postRepository->shouldReceive('find')->with('test-board', 100)->andReturn($post);
 
         $result = $this->listener->extractData([], 'new_comment', [$comment, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertEquals('테스트 게시글', $result['data']['post_title']);
@@ -147,6 +180,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 대댓글이면 new_comment에서 빈 결과를 반환합니다 (reply_comment 타입에서 처리).
+     *
+     * @scenario notification_type=new_comment
+     *
+     * @effects new_comment_skips_reply_comment
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_new_comment_대댓글이면_빈결과(): void
@@ -163,6 +202,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 게시판 알림 설정이 꺼져있으면 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=new_comment
+     *
+     * @effects new_comment_skips_when_board_notice_off
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_new_comment_알림_of_f_빈결과(): void
@@ -179,6 +224,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 사용자 알림 설정 레코드가 없으면 빈 결과를 반환합니다 (기본값: 미수신).
+     *
+     * @scenario notification_type=new_comment
+     *
+     * @effects new_comment_skips_without_user_setting
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_new_comment_설정레코드없음_빈결과(): void
@@ -210,6 +261,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 사용자 개인 알림 설정에서 댓글 알림이 꺼져있으면 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=new_comment
+     *
+     * @effects new_comment_skips_when_user_setting_off
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_new_comment_사용자설정_of_f_빈결과(): void
@@ -244,6 +301,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 대댓글 알림 데이터를 올바르게 추출합니다.
+     *
+     * @scenario notification_type=reply_comment
+     *
+     * @effects reply_comment_extracts_data_and_context
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_reply_comment_정상_추출(): void
@@ -275,6 +338,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->commentRepository->shouldReceive('find')->with('test-board', 1)->andReturn($parentComment);
 
         $result = $this->listener->extractData([], 'reply_comment', [$comment, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertEquals(20, $result['context']['trigger_user_id']);
@@ -283,6 +347,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * parent_id가 없으면 reply_comment에서 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=reply_comment
+     *
+     * @effects reply_comment_skips_without_parent
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_reply_comment_부모없으면_빈결과(): void
@@ -296,6 +366,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 사용자 개인 알림 설정에서 대댓글 알림이 꺼져있으면 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=reply_comment
+     *
+     * @effects reply_comment_skips_when_user_setting_off
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_reply_comment_사용자설정_of_f_빈결과(): void
@@ -338,6 +414,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 답변글 알림 데이터를 올바르게 추출합니다.
+     *
+     * @scenario notification_type=post_reply
+     *
+     * @effects post_reply_extracts_data_and_context
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_reply_정상_추출(): void
@@ -353,6 +435,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->postRepository->shouldReceive('find')->with('test-board', 100)->andReturn($originalPost);
 
         $result = $this->listener->extractData([], 'post_reply', [$replyPost, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertEquals('원본 게시글', $result['data']['post_title']);
@@ -362,6 +445,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * parent_id가 없으면 post_reply에서 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=post_reply
+     *
+     * @effects post_reply_skips_non_reply_post
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_reply_답변글아니면_빈결과(): void
@@ -375,6 +464,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 사용자 개인 알림 설정에서 답변글 알림이 꺼져있으면 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=post_reply
+     *
+     * @effects post_reply_skips_when_user_setting_off
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_reply_사용자설정_of_f_빈결과(): void
@@ -402,6 +497,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 관리자 직권 처리 알림 데이터를 올바르게 추출합니다.
+     *
+     * @scenario notification_type=post_action
+     *
+     * @effects post_action_extracts_data_and_context
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_action_정상_추출(): void
@@ -421,6 +522,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->boardRepository->shouldReceive('findBySlug')->with('test-board')->andReturn($board);
 
         $result = $this->listener->extractData([], 'post_action', [$post, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('target_type', $result['data']);
@@ -431,6 +533,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * trigger_type이 report이면 post_action에서 빈 결과를 반환합니다 (report_action에서 처리).
+     *
+     * @scenario notification_type=post_action
+     *
+     * @effects post_action_skips_report_triggered
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_action_신고처리이면_빈결과(): void
@@ -448,6 +556,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * trigger_type이 auto_hide이면 post_action에서 빈 결과를 반환합니다 (report_action에서 처리).
+     *
+     * @scenario notification_type=post_action
+     *
+     * @effects post_action_skips_auto_blind
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_action_자동블라인드이면_빈결과(): void
@@ -465,6 +579,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 댓글의 trigger_type이 auto_hide이면 post_action에서 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=post_action
+     *
+     * @effects post_action_skips_comment_auto_blind
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_action_댓글_자동블라인드이면_빈결과(): void
@@ -486,6 +606,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 댓글에 대한 관리자 직권 처리 알림 데이터를 올바르게 추출합니다.
+     *
+     * @scenario notification_type=post_action
+     *
+     * @effects post_action_extracts_comment_admin_action
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_action_댓글_직권처리_정상_추출(): void
@@ -512,6 +638,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->postRepository->shouldReceive('find')->with('test-board', 100)->andReturn($post);
 
         $result = $this->listener->extractData([], 'post_action', [$comment, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('target_type', $result['data']);
@@ -521,6 +648,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 댓글의 trigger_type이 report이면 post_action에서 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=post_action
+     *
+     * @effects post_action_skips_comment_report_triggered
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_action_댓글_신고처리이면_빈결과(): void
@@ -544,6 +677,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * 게시글 작성자가 notify_post_complete를 끄면 post_action에서 빈 결과를 반환합니다 (#413 10-2).
      *
      * 회귀: 기존엔 게이트가 없어 OFF여도 발송 데이터가 생성됨.
+     *
+     * @scenario notification_type=post_action
+     *
+     * @effects post_action_skips_when_post_author_setting_off
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_action_게시글작성자_알림_of_f_빈결과(): void
@@ -571,6 +710,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 댓글 작성자가 notify_post_complete를 끄면 post_action에서 빈 결과를 반환합니다 (#413 10-2).
+     *
+     * @scenario notification_type=post_action
+     *
+     * @effects post_action_skips_when_comment_author_setting_off
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_action_댓글작성자_알림_of_f_빈결과(): void
@@ -605,6 +750,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 알림 설정 레코드가 없으면 post_action에서 빈 결과를 반환합니다 (#413 10-2, 형제 알림과 일관).
+     *
+     * @scenario notification_type=post_action
+     *
+     * @effects post_action_skips_without_user_setting
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_post_action_설정레코드없음_빈결과(): void
@@ -633,6 +784,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 신고 처리 결과 알림 데이터를 올바르게 추출합니다.
+     *
+     * @scenario notification_type=report_action
+     *
+     * @effects report_action_extracts_data_and_context
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_report_action_정상_추출(): void
@@ -656,6 +813,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->boardRepository->shouldReceive('findBySlug')->with('test-board')->andReturn($board);
 
         $result = $this->listener->extractData([], 'report_action', [$post, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('action_type', $result['data']);
@@ -667,6 +825,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 신고 처리 결과 알림 — 댓글에 대해 올바르게 추출합니다.
+     *
+     * @scenario notification_type=report_action
+     *
+     * @effects report_action_extracts_comment_data
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_report_action_댓글_정상_추출(): void
@@ -698,6 +862,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->postRepository->shouldReceive('find')->with('test-board', 100)->andReturn($post);
 
         $result = $this->listener->extractData([], 'report_action', [$comment, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('target_type', $result['data']);
@@ -707,6 +872,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 자동 블라인드(auto_hide)도 report_action에서 정상 추출합니다.
+     *
+     * @scenario notification_type=report_action
+     *
+     * @effects report_action_extracts_auto_blind
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_report_action_자동블라인드_정상_추출(): void
@@ -730,6 +901,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->boardRepository->shouldReceive('findBySlug')->with('test-board')->andReturn($board);
 
         $result = $this->listener->extractData([], 'report_action', [$post, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('action_type', $result['data']);
@@ -739,6 +911,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 자동 블라인드(auto_hide) 댓글도 report_action에서 정상 추출합니다.
+     *
+     * @scenario notification_type=report_action
+     *
+     * @effects report_action_extracts_comment_auto_blind
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_report_action_댓글_자동블라인드_정상_추출(): void
@@ -770,6 +948,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $this->postRepository->shouldReceive('find')->with('test-board', 100)->andReturn($post);
 
         $result = $this->listener->extractData([], 'report_action', [$comment, 'test-board']);
+        $this->assertSame('https://front.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertArrayHasKey('target_type', $result['data']);
@@ -778,6 +957,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 댓글의 trigger_type이 report가 아니면 report_action에서 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=report_action
+     *
+     * @effects report_action_skips_comment_admin_action
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_report_action_댓글_직권처리이면_빈결과(): void
@@ -803,6 +988,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * notify_author_on_report_action이 꺼져있으면 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=report_action
+     *
+     * @effects report_action_skips_when_setting_off
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_report_action_설정_of_f_빈결과(): void
@@ -822,6 +1013,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 신규 게시글 관리자 알림 데이터를 올바르게 추출합니다.
+     *
+     * @scenario notification_type=new_post_admin
+     *
+     * @effects new_post_admin_extracts_board_managers
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_new_post_admin_정상_추출(): void
@@ -842,11 +1039,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
         $board = $this->createMockBoard('test-board', true, true); // notify_admin_on_post = true
 
         $this->boardRepository->shouldReceive('findBySlug')->with('test-board')->andReturn($board);
-        $this->roleRepository->shouldReceive('findByIdentifier')
+        $this->roleRepository->shouldReceive('getUsersByIdentifier')
             ->with('sirsoft-board.test-board.manager')
-            ->andReturn($role);
+            ->andReturn($role->users()->get());
 
         $result = $this->listener->extractData([], 'new_post_admin', [$post, 'test-board']);
+        $this->assertSame('https://site.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertEquals('새 게시글', $result['data']['post_title']);
@@ -856,6 +1054,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * notify_admin_on_post가 꺼져있으면 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=new_post_admin
+     *
+     * @effects new_post_admin_skips_when_board_notice_off
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_new_post_admin_알림_of_f_빈결과(): void
@@ -872,6 +1076,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * skip_notification 옵션이 있으면 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=new_post_admin
+     *
+     * @effects new_post_admin_honours_skip_notification
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_new_post_admin_skip_notification_빈결과(): void
@@ -885,6 +1095,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 답변글은 new_post_admin에서 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=new_post_admin
+     *
+     * @effects new_post_admin_skips_reply_post
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_new_post_admin_답변글_빈결과(): void
@@ -903,6 +1119,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 신고 접수 관리자 알림 데이터를 올바르게 추출합니다.
+     *
+     * @scenario notification_type=report_received_admin
+     *
+     * @effects report_received_admin_extracts_data_and_context
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_report_received_admin_정상_추출(): void
@@ -916,19 +1138,25 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
         $board = $this->createMockBoard('test-board', true);
 
-        $log = Mockery::mock();
+        $log = new ReportLog;
         $log->snapshot = ['title' => '신고된 게시글', 'board_name' => '자유게시판'];
         $log->reason_type = 'spam';
 
         $report = Mockery::mock(Report::class)->makePartial();
+        $report->id = 55;
         $report->target_type = 'post';
         $report->reporter_id = 20;
         $report->reporter = $reporter;
         $report->board = $board;
-        $report->shouldReceive('loadMissing')->andReturnSelf();
-        $report->logs = collect([$log]);
+
+        // 신고 로그는 Repository 경유로 읽는다 (리스너가 모델 관계를 직접 조회하지 않는다)
+        $this->reportRepository->shouldReceive('findLatestLogByReport')->with(55)->andReturn($log);
+        $this->roleRepository->shouldReceive('getUsersByIdentifier')
+            ->with('sirsoft-board.test-board.manager')
+            ->andReturn(new Collection);
 
         $result = $this->listener->extractData([], 'report_received_admin', [$report]);
+        $this->assertSame('https://site.example.test', $result['data']['site_url'] ?? null);
 
         $this->assertNotEmpty($result['data']);
         $this->assertEquals('신고된 게시글', $result['data']['post_title']);
@@ -938,6 +1166,12 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * notify_admin_on_report가 꺼져있으면 빈 결과를 반환합니다.
+     *
+     * @scenario notification_type=report_received_admin
+     *
+     * @effects report_received_admin_skips_when_setting_off
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function test_report_received_admin_설정_of_f_빈결과(): void
@@ -959,7 +1193,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * 빈 결과 구조를 검증합니다.
      *
      * @param  array  $result  검증 대상
-     * @return void
+     * @return void 반환값 없음
      */
     private function assertEmptyResult(array $result): void
     {
@@ -976,7 +1210,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      *
      * @param  int  $id  사용자 ID
      * @param  string  $name  사용자 이름
-     * @return User
+     * @return User Mock 사용자
      */
     private function createMockUser(int $id, string $name): User
     {
@@ -993,7 +1227,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * @param  string  $slug  게시판 슬러그
      * @param  bool  $notifyAuthor  작성자 알림 여부
      * @param  bool  $notifyAdminOnPost  관리자 알림 여부
-     * @return Board
+     * @return Board Mock 게시판
      */
     private function createMockBoard(string $slug, bool $notifyAuthor, bool $notifyAdminOnPost = false): Board
     {
@@ -1015,7 +1249,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * @param  int|null  $userId  작성자 ID
      * @param  User|null  $user  작성자 User 객체
      * @param  int|null  $parentId  부모 게시글 ID
-     * @return Post
+     * @return Post Mock 게시글
      */
     private function createMockPost(int $id, string $title, ?int $userId, ?User $user = null, ?int $parentId = null): Post
     {
@@ -1035,7 +1269,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * Mock Comment 객체를 생성합니다.
      *
      * @param  array  $attributes  댓글 속성
-     * @return Comment
+     * @return Comment Mock 댓글
      */
     private function createMockComment(array $attributes): Comment
     {
@@ -1052,6 +1286,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      *
      * `config('app.url').'/board/…'` 는 후행 슬래시를 그대로 실어 `https://host/g7//board/…` 를
      * 만든다 — 메일 안의 링크가 조용히 깨진다 (16차 G3 라운드 B-4).
+     * 회원 알림 링크는 「사용자 화면 URL」을 따르므로(#792) 그 값을 비워 사이트 주소 폴백을 검사한다.
      *
      * @scenario base_path=subpath, navigation_direction=navigation
      *
@@ -1060,6 +1295,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     public function test_post_url_follows_the_configured_site_url_without_double_slash(): void
     {
         Config::set('app.url', 'https://example.com/g7/');
+        Config::set('g7_settings.core.general.user_screen_url', '');
         $board = new Board(['slug' => 'free']);
         $post = new Post;
         $post->id = 5;

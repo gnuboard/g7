@@ -1,14 +1,40 @@
 {
-  "attachment": {
-    "max_count": 5,
-    "max_size_mb": 10,
-    "allowed_types": [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-      "application/pdf",
-      "application/zip"
+  "_meta": {
+    "version": "1.0.0",
+    "description": "페이지 모듈 환경설정",
+    "categories": [
+      "attachment"
     ]
+  },
+  "defaults": {
+    "attachment": {
+      "max_count": 5,
+      "max_size_mb": 10,
+      "allowed_types": [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "application/pdf",
+        "application/zip"
+      ]
+    }
+  },
+  "frontend_schema": {
+    "_comment": "첨부 정책만 노출 — 관리자 페이지 폼의 업로더(개수·용량·형식 안내와 클라이언트 차단)가 서버 검증과 같은 값을 쓰도록",
+    "attachment": {
+      "expose": true,
+      "fields": {
+        "max_count": {
+          "expose": true
+        },
+        "max_size_mb": {
+          "expose": true
+        },
+        "allowed_types": {
+          "expose": true
+        }
+      }
+    }
   }
 }

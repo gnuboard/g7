@@ -1,0 +1,43 @@
+feature: 마이페이지 게시판 활동 API (내 글·댓글 단 글·내 댓글·통계)
+
+description: |
+  마이페이지 「게시판 활동」 화면이 쓰는 본인 전용 API 다(me/board-activities · me/activity-stats ·
+  me/my-comments). 작성글(authored)과 댓글 단 글(commented)을 한 목록으로 내주고, 게시판 필터·제목 검색·
+  정렬·페이지네이션·per_page 상하한을 적용한다. 삭제 글·비활성 게시판의 행은 빠진다.
+
+  「내가 댓글 단 글」은 행이 남의 글이라, 열람자가 읽을 수 있는 게시판의 글만 싣는다(KVE-2026-2371 동반,
+  board-secret-content-bypass-paths 참조). 그래서 이 테스트의 회원은 실제와 같게 user 역할 + 게시판
+  읽기 권한을 갖는다.
+
+axes:
+  viewer: [owner, guest]
+
+effects:
+  - authenticated_user_can_fetch_own_board_activities
+  - guest_cannot_fetch_board_activities
+  - can_filter_activities_by_board_slug
+  - can_search_activities_by_title
+  - activity_includes_authored_posts
+  - authored_post_activity_includes_created_at_formatted
+  - board_activities_per_page_capped_at_100
+  - board_activities_per_page_zero_clamped
+  - board_activities_per_page_negative_clamped
+  - activity_includes_commented_posts
+  - can_fetch_activity_stats
+  - guest_cannot_fetch_activity_stats
+  - stats_comments_on_deleted_posts_are_excluded
+  - stats_total_comments_counts_comments_written_by_user
+  - can_sort_activities
+  - deleted_posts_are_excluded_from_activities
+  - pagination_works
+  - authored_activity_takes_priority_over_commented
+  - can_filter_by_activity_type
+  - authenticated_user_can_fetch_own_comments
+  - guest_cannot_fetch_own_comments
+  - my_comments_supports_board_filter_and_sort
+  - comments_on_deleted_posts_are_excluded
+  - posts_on_inactive_board_are_excluded
+  - comments_on_inactive_board_are_excluded
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/UserActivityApiTest.php

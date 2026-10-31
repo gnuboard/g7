@@ -1,0 +1,56 @@
+feature: TabNavigation 탭 이동·표시
+
+description: |
+  window.G7Core.useResponsive mock
+  
+  기본값은 데스크톱 (1024px). 모바일 케이스는 `mockUseResponsive.mockReturnValueOnce({...})`로 개별 오버라이드.
+
+  수정 이력: 이커머스 전수 실측 S5 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33, c34, c35, c36, c37]
+  # c01: 모든 탭을 Nav 안의 버튼으로 렌더링해야 함
+  # c02: Nav 요소로 렌더링되어야 함
+  # c03: Select 드롭다운은 렌더링되지 않아야 함
+  # c04: activeTabId가 설정된 탭에 활성화 스타일을 적용해야 함
+  # c05: activeTabId가 없으면 활성화 스타일이 없어야 함
+  # c06: 탭 클릭 시 onTabChange가 호출되어야 함
+  # c07: 현재 활성화된 탭 클릭 시 onTabChange가 호출되지 않아야 함
+  # c08: 비활성화된 탭 클릭 시 onTabChange가 호출되지 않아야 함
+  # c09: 아이콘이 있는 탭을 렌더링해야 함
+  # c10: 아이콘이 없는 탭은 아이콘을 렌더링하지 않아야 함
+  # c11: 뱃지가 있는 탭을 렌더링해야 함
+  # c12: 뱃지가 0일 때도 렌더링해야 함
+  # c13: 비활성화된 탭에 disabled 속성을 적용해야 함
+  # c14: 비활성화된 탭에 비활성화 스타일을 적용해야 함
+  # c15: variant="default"일 때 기본 스타일을 적용해야 함
+  # c16: variant="pills"일 때 pill 스타일을 적용해야 함
+  # c17: variant="underline"일 때 underline 스타일을 적용해야 함
+  # c18: className prop을 적용해야 함
+  # c19: style prop을 적용해야 함
+  # c20: Nav 대신 Select 드롭다운만 렌더링해야 함
+  # c21: 현재 활성 탭의 label을 Select trigger에 표시해야 함
+  # c22: 뱃지가 있는 탭은 label과 함께 뱃지 수를 병기해야 함
+  # c23: Select trigger 클릭 후 옵션 선택 시 onTabChange가 호출되어야 함
+  # c24: 아이콘, 뱃지, 비활성화를 모두 함께 사용할 수 있어야 함
+  # c25: editorAttrs 주입 시 각 탭 버튼에 data-editor-item-path 를 부여한다
+  # c26: editorAttrs 미주입(런타임) 시 마커를 부여하지 않는다
+  # c27: 목록은 tablist, 각 항목은 tab 으로 노출된다
+  # c28: 활성 탭만 aria-selected=true 다
+  # c29: 활성 탭만 Tab 키 초점을 받는다 (roving tabindex)
+  # c30: 활성 탭이 지정되지 않아도 첫 탭이 초점 진입점이 된다
+  # c31: 좌우 화살표로 이전/다음 탭으로 이동한다
+  # c32: 화살표 이동은 양 끝에서 순환한다
+  # c33: Home/End 로 첫/마지막 탭으로 이동한다
+  # c34: 화살표 이동은 비활성 탭을 건너뛴다
+  # c35: 모바일 전환 시에는 tablist 대신 Select 드롭다운으로 렌더된다
+  # c36: 데스크톱: if 가 false 인 탭은 그리지 않고 나머지는 그린다
+  # c37: 모바일 선택 목록에도 if 가 false 인 탭은 없다
+
+effects:
+  - tab_navigation_behaves
+  - tabnavigation_emits_item_path_marker_only_in_editor_mode
+  - core_measures_data_editor_item_path_markers_into_cellboxes
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TabNavigation.test.tsx

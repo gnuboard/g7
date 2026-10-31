@@ -15,6 +15,8 @@ abstract class FeatureTestCase extends ModuleTestCase
 {
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -23,15 +25,14 @@ abstract class FeatureTestCase extends ModuleTestCase
         // 모듈을 활성화 상태로 등록 (테스트 환경)
         $this->registerModuleAsActive();
 
-        // 모듈 라우트를 수동으로 등록 — 등록 뒤 이름 조회 재구성까지 포함한 ModuleTestCase 의
-        // 구현을 쓴다. 종전에는 이 클래스가 같은 메서드를 사본으로 override 해, 라우트 캐시가
-        // 있는 머신에서는 fluent `->name()` 이 조회표에 오르지 않아 `route()`/서명 URL 이
-        // `Route [...] not defined` 를 던졌다. (G3 회차 15)
+        // 모듈 라우트를 수동으로 등록 (부모 ModuleTestCase 의 등록·이름 조회표 재구성을 그대로 쓴다 — 사본 override 금지)
         $this->registerModuleRoutes();
     }
 
     /**
      * 모듈을 활성화 상태로 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleAsActive(): void
     {

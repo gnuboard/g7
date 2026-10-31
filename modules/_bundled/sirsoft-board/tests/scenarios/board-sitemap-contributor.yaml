@@ -1,0 +1,40 @@
+feature: 게시판 사이트맵 기여자
+
+description: |
+  게시판 모듈이 사이트맵에 넣는 주소의 범위와 형태를 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 url_kind 는 사이트맵 주소 종류(게시판 목록, 게시판, 게시글), entry_condition 은 그 주소가 담기거나 빠지는 조건이다.
+  hidden_record 는 비활성 게시판, 비밀글, 블라인드, 삭제 글이고 toggle_off 는 모듈 SEO 설정의 해당 종류 토글을 끈 경우다.
+
+axes:
+  url_kind: [boards_index, board_detail, post_detail]
+  entry_condition: [listed, hidden_record, toggle_off, over_url_limit]
+
+exclusions:
+  - { url_kind: boards_index, entry_condition: [hidden_record, over_url_limit],
+      reason: "게시판 목록 주소는 행에 매이지 않고 늘 첫 항목으로 담겨 숨길 행 상태도 상한에 밀릴 자리도 없다." }
+
+effects:
+  - implements_sitemap_contributor_interface
+  - get_identifier_returns_sirsoft_board
+  - get_urls_returns_only_static_url_when_no_active_boards
+  - get_urls_truncates_at_max_urls_per_contributor
+  - get_urls_truncates_within_board_loop
+  - get_urls_includes_boards_index
+  - get_urls_includes_active_board
+  - get_urls_excludes_inactive_board
+  - get_urls_includes_published_post
+  - get_urls_excludes_secret_post
+  - get_urls_excludes_blinded_post
+  - get_urls_excludes_deleted_post
+  - get_urls_all_items_have_url_key
+  - get_urls_board_item_has_changefreq_and_priority
+  - get_urls_excludes_boards_index_when_toggle_off
+  - get_urls_excludes_board_detail_when_toggle_off
+  - get_urls_excludes_post_detail_when_toggle_off
+  - get_urls_includes_all_when_toggles_default_on
+  - get_urls_lazy_streams_entries
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Seo/BoardSitemapContributorTest.php

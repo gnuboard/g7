@@ -1,0 +1,59 @@
+feature: 코드 편집기의 파일명·내용 검색
+
+description: |
+  코드 편집기에 파일 검색이 **0건**이었다(#476). 144개 평면 목록을 눈으로 훑는 수밖에 없었다.
+
+  검색 범위는 파일명과 **전체 파일 내용** 둘 다다(결정 D-7). 두 범위의 비용이 크게 달라 경로를
+  나눈다 — 파일명은 트리가 이름을 모두 들고 있으므로 **왕복 0회**로 즉시 거르고, 내용은 서버만
+  할 수 있는 일이라 한 번 부른다.
+
+  서버가 훑는 대상은 DB 의 JSON 이 아니라 **역변환한 마크업**이다. 사용자가 편집기에서 보는 것이
+  마크업이므로, 줄 번호가 같은 좌표계여야 결과를 눌러 그 줄로 갈 수 있다. 역변환은 비싸서
+  lock_version 을 키에 담아 캐시한다 — 저장하면 키가 바뀌어 자동으로 무효화된다.
+
+  실측(2026-09-12 · 레이아웃 82 + 조각 30): 첫 조회 3,136ms / 캐시 후 92ms / 파일명만 14ms.
+  그래서 파일명 검색을 서버에서 걷어내 체감 반응을 0ms 로 만들었다.
+
+axes:
+  scope: [name, content]
+  target: [layout, extension_fragment]
+
+axis_notes:
+  scope: >-
+    name = 이름만(역변환 없음), content = 역변환한 마크업 본문. `both` 는 두 경로를 합쳐 부르는
+    것이라 새로운 동작이 없어 축에서 뺐다.
+  target: 레이아웃 행과 확장 조각은 본문을 얻는 경로가 달라(역변환 대상이 다름) 축으로 남긴다.
+  removed_keyword_length: >-
+    `keyword_length`(one_char / two_chars / long) 는 축이 아니라 **입력 검증 효과**다 —
+    1자는 422 로 잘리고 200자 초과도 422 다. 조합축으로 두면 «1자 × content × 확장조각» 처럼
+    도달 불가능한 칸이 생긴다. 효과(`layout_search_rejects_short_keyword`)로 잰다.
+
+effects:
+  - code_editor_filters_names_without_a_round_trip          # 파일명 검색은 서버를 부르지 않는다
+  - code_editor_skips_content_search_below_two_characters   # 2자 미만은 내용 검색을 부르지 않는다
+  - code_editor_searches_contents_with_editor_line_numbers  # 줄 번호가 편집기와 같은 좌표계
+  - code_editor_search_result_click_reveals_the_matching_line # 결과를 누르면 그 줄로 이동
+  - file_tree_lists_content_matches_as_children             # 매치 줄이 파일 아래로 펼쳐진다
+  - file_tree_highlights_name_matches                       # 걸린 조각 강조
+  - file_tree_shows_empty_state_for_no_match                # 0건이면 검색 지우기를 함께 준다
+  - custom_asset_editor_filters_by_name                     # 커스텀 자산 모달도 같은 규약
+  - custom_asset_editor_searches_open_buffers_locally       # 열린 파일의 미저장 본문은 클라이언트가 찾는다 (§4.7)
+  - layout_search_name_scope_includes_extension_fragments   # scope=name 에서도 확장 조각이 라벨로 잡힌다 (§5.2 «같은 방식으로 포함»)
+  - code_editor_content_search_is_debounced                 # 내용 검색 재조회는 이벤트 최상위 액션에 디바운스 — 글자마다 서버를 부르지 않는다
+
+test_files:
+  - tests/Feature/Api/Admin/LayoutSearchTest.php
+  - tests/Feature/Api/Admin/AdminExtensionCustomAssetControllerTest.php
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileTree.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/CustomAssetsModal.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-search.spec.ts
+
+validation:
+  note: |
+    PHPUnit 이 좌표계 일치를 직접 잰다 — 서버가 돌려준 line·column 으로 역변환 마크업의 그 줄을
+    다시 꺼내 검색어가 그 자리에 있는지 확인한다. 캐시 키 규약(lock_version 증가 시 무효화)도
+    같은 파일이 잠근다.
+
+    브라우저 spec 은 그 좌표가 **Monaco 커서까지** 이어지는지를 잰다 — 결과 줄을 눌러 편집기
+    커서의 줄 번호가 같은지. 서버가 JSON 을 훑도록 되돌아가면 여기서 어긋난다.

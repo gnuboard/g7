@@ -64,6 +64,7 @@ sub_flows:
       - condition_builder_reverse_matches_single_preset
       - condition_builder_preserves_advanced_handwritten_expr
       - condition_param_widget_dispatches_via_widget_registry
+      - condition_recipe_ds_state_matches_engine_datasource_value   # 「불러오는 중」= 값 undefined, 「없을 때」= 받은 뒤 0건 — 엔진은 데이터소스 값에 loading 을 싣지 않는다
 
 effects:
   - action_recipe_build_emits_correct_handler_name_and_top_level_target

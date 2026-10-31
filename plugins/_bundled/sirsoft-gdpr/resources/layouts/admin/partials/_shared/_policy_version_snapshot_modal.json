@@ -4,8 +4,8 @@
         "_e2e_allow": "e2e:allow meta.is_partial 플래그만 추가 — 렌더링/동작 변화 없는 레이아웃 개수 집계 정정",
         "editor_label": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.editor_label"
     },
+    "comment": "정책 버전 snapshot 모달 — admin 권한자가 v배지/이력 표 행 클릭 시 노출. 부모 layout 의 gdprPolicyVersionSnapshot data_source 가 _global.viewingPolicyVersion 정수를 endpoint path 에 보간하여 그 시점 settings snapshot (cookie_categories / 개인정보처리방침 주소 / blocked_domains) 을 표시. DPO 가 회원 분쟁 시 입증 자료로 활용 (GDPR Art.7(1)). Partial 파일에 data_sources 정의 금지 규정 — 부모 layout 에서 정의하고 본 partial 은 컴포넌트만 참조.",
     "id": "policy_version_snapshot_modal",
-    "comment": "정책 버전 snapshot 모달 — admin 권한자가 v배지/이력 표 행 클릭 시 노출. 부모 layout 의 gdprPolicyVersionSnapshot data_source 가 _global.viewingPolicyVersion 정수를 endpoint path 에 보간하여 그 시점 settings snapshot (cookie_categories / privacy_policy_slug / blocked_domains) 을 표시. DPO 가 회원 분쟁 시 입증 자료로 활용 (GDPR Art.7(1)). Partial 파일에 data_sources 정의 금지 규정 — 부모 layout 에서 정의하고 본 partial 은 컴포넌트만 참조.",
     "type": "composite",
     "name": "Modal",
     "props": {
@@ -18,7 +18,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "row-stack"
+                "className": "gdpr-row-stack"
             },
             "children": [
                 {
@@ -26,31 +26,43 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-secondary text-xs leading-relaxed"
+                        "className": "gdpr-text-secondary gdpr:text-xs gdpr:leading-relaxed"
                     },
                     "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.description"
                 },
                 {
-                    "comment": "메타 — 발행일시 + 발행자 + 변경사유 + 변경 종류 (4개를 grid 2열).",
+                    "comment": "스냅샷을 받지 못했으면(값 null) 「주소·차단 도메인 없음」 대신 불러오기 실패를 알린다",
+                    "id": "policy_version_snapshot_load_failed",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{gdprPolicyVersionSnapshot === null}}",
+                    "props": {
+                        "role": "alert",
+                        "className": "gdpr:text-sm gdpr:text-red-600 gdpr:dark:text-red-400"
+                    },
+                    "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.load_failed"
+                },
+                {
+                    "comment": "메타 — 발행일시 + 발행자 + 변경사유 + 변경 종류 (4개를 grid 2열). 라벨 칸을 맞춰 값이 한 줄로 시작하게 kv-list-2(admin_basic 자산).",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{gdprPolicyVersionSnapshot?.data?.data}}",
                     "props": {
-                        "className": "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs border border-gray-200 dark:border-gray-700 rounded-md p-3 bg-gray-50 dark:bg-gray-900"
+                        "className": "gdpr-kv-list-2 gdpr:gap-y-2 gdpr:text-xs gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded-md gdpr:p-3 gdpr:bg-gray-50 gdpr:dark:bg-gray-900"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-baseline gap-2"
+                                "className": "gdpr-kv-row"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                        "className": "gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0"
                                     },
                                     "text": "$t:sirsoft-gdpr.settings.policy_version.published_at_label"
                                 },
@@ -58,7 +70,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-900 dark:text-gray-100"
+                                        "className": "gdpr:text-gray-900 gdpr:dark:text-gray-100"
                                     },
                                     "text": "{{gdprPolicyVersionSnapshot?.data?.data?.created_at ?? '-'}}"
                                 }
@@ -68,14 +80,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-baseline gap-2"
+                                "className": "gdpr-kv-row"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                        "className": "gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0"
                                     },
                                     "text": "$t:sirsoft-gdpr.settings.policy_version.publisher_label"
                                 },
@@ -83,7 +95,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-900 dark:text-gray-100"
+                                        "className": "gdpr:text-gray-900 gdpr:dark:text-gray-100"
                                     },
                                     "text": "{{gdprPolicyVersionSnapshot?.data?.data?.publisher?.name ? (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ? gdprPolicyVersionSnapshot.data.data.publisher.name + ' (' + gdprPolicyVersionSnapshot.data.data.publisher.email + ')' : gdprPolicyVersionSnapshot.data.data.publisher.name) : (gdprPolicyVersionSnapshot?.data?.data?.publisher?.email ?? '$t:sirsoft-gdpr.settings.policy_version.publisher_system')}}"
                                 }
@@ -93,14 +105,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-baseline gap-2"
+                                "className": "gdpr-kv-row"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                        "className": "gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0"
                                     },
                                     "text": "$t:sirsoft-gdpr.settings.policy_version.history.col.change_type"
                                 },
@@ -108,7 +120,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-900 dark:text-gray-100"
+                                        "className": "gdpr:text-gray-900 gdpr:dark:text-gray-100"
                                     },
                                     "text": "{{gdprPolicyVersionSnapshot?.data?.data?.change_type === 'material' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.material' : (gdprPolicyVersionSnapshot?.data?.data?.change_type === 'initial' ? '$t:sirsoft-gdpr.settings.policy_version.change_type.initial' : '$t:sirsoft-gdpr.settings.policy_version.change_type.non_material')}}"
                                 }
@@ -118,14 +130,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-baseline gap-2 min-w-0"
+                                "className": "gdpr-kv-row"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                        "className": "gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:flex-shrink-0"
                                     },
                                     "text": "$t:sirsoft-gdpr.settings.policy_version.memo_label"
                                 },
@@ -133,7 +145,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-900 dark:text-gray-100 truncate"
+                                        "className": "gdpr:text-gray-900 gdpr:dark:text-gray-100 gdpr:truncate"
                                     },
                                     "text": "{{gdprPolicyVersionSnapshot?.data?.data?.memo ?? '-'}}"
                                 }
@@ -142,47 +154,49 @@
                     ]
                 },
                 {
-                    "comment": "정책 본문 슬러그 섹션 — 가장 위로 (정보 위계: 큰 것 → 작은 것). 슬러그가 있으면 평문 + 새 탭 열기 링크 Button, 없으면 안내문.",
+                    "comment": "개인정보처리방침 주소 섹션 — 가장 위로 (정보 위계: 큰 것 → 작은 것). 백엔드가 푼 privacy_policy.url 을 쓴다: 1.1.0 이후 스냅샷은 운영자가 적은 주소, 그 이전 스냅샷은 옛 슬러그를 그 시절 링크 경로(/page/{slug})로 푼 값이며 이때 legacy_slug 가 함께 온다. 주소가 있으면 평문 + 새 탭 열기 링크, 옛 형식이면 안내 한 줄, 없으면 안내문.",
+                    "id": "policy_version_snapshot_privacy_policy_section",
                     "type": "basic",
                     "name": "Div",
+                    "if": "{{gdprPolicyVersionSnapshot !== undefined && gdprPolicyVersionSnapshot !== null}}",
                     "props": {
-                        "className": "row-stack"
+                        "className": "gdpr-row-stack"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H4",
                             "props": {
-                                "className": "text-sm font-semibold text-gray-900 dark:text-gray-100"
+                                "className": "gdpr:text-sm gdpr:font-semibold gdpr:text-gray-900 gdpr:dark:text-gray-100"
                             },
                             "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.section_privacy_policy"
                         },
                         {
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug}}",
+                            "if": "{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url}}",
                             "props": {
-                                "className": "flex-center gap-2 flex-wrap"
+                                "className": "gdpr-flex-center gdpr:gap-2 gdpr:flex-wrap"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "px-3 py-2 text-xs font-mono text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded flex-1 min-w-0 break-all"
+                                        "className": "gdpr:px-3 gdpr:py-2 gdpr:text-xs gdpr:font-mono gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:bg-gray-50 gdpr:dark:bg-gray-900 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded gdpr:flex-1 gdpr:min-w-0 gdpr:break-all gdpr-break-all"
                                     },
-                                    "text": "{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug ?? '-'}}"
+                                    "text": "{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url ?? '-'}}"
                                 },
                                 {
+                                    "comment": "본문 페이지 새 탭 열기 — 서버가 허용 형식(/ 로 시작하는 사이트 경로 또는 https 주소)으로 푼 주소만 내보내므로 그대로 href 로 쓴다. 화면에서 경로를 조합하지 않는다.",
                                     "id": "policy_version_snapshot_open_policy_page_link",
-                                    "comment": "본문 페이지 새 탭 열기 — 페이지 모듈(sirsoft-page) URL 패턴 /page/{slug} 로 조합 (예: 'privacy-policy' → '/page/privacy-policy'). 쿠키 배너의 '변경된 정책 본문 보기' 링크(cookie_banner.json)와 동일한 조합 방식. 운영자가 검증한 슬러그라 사용자 입력 검증 불요.",
                                     "type": "basic",
                                     "name": "A",
                                     "props": {
-                                        "href": "/page/{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug ?? ''}}",
+                                        "href": "{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url ?? ''}}",
                                         "target": "_blank",
                                         "rel": "noopener",
-                                        "className": "text-info-soft inline-flex items-center gap-1 px-3 py-2 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex-shrink-0"
+                                        "className": "gdpr:text-xs gdpr-tone-info gdpr:inline-flex gdpr:items-center gdpr:gap-1 gdpr:px-3 gdpr:py-2 gdpr:font-medium gdpr:bg-blue-50 gdpr:dark:bg-blue-900/30 gdpr:border gdpr:border-blue-200 gdpr:dark:border-blue-700 gdpr:rounded gdpr:hover:bg-blue-100 gdpr:dark:hover:bg-blue-900/50 gdpr:transition-colors gdpr:flex-shrink-0"
                                     },
                                     "children": [
                                         {
@@ -195,30 +209,40 @@
                             ]
                         },
                         {
+                            "comment": "옛 형식 안내 — 1.0.x 가 발행한 스냅샷은 주소가 아니라 페이지 슬러그를 기록했다. 입증 자료의 원문이 슬러그임을 밝힌다.",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.legacy_slug}}",
+                            "props": {
+                                "className": "gdpr-text-tertiary gdpr:text-xs"
+                            },
+                            "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.legacy_slug_note|slug={{gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.legacy_slug ?? ''}}"
+                        },
+                        {
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!gdprPolicyVersionSnapshot?.data?.data?.snapshot?.privacy_policy_slug}}",
+                            "if": "{{!gdprPolicyVersionSnapshot?.data?.data?.privacy_policy?.url}}",
                             "props": {
-                                "className": "text-tertiary italic px-3 py-2 border border-dashed border-gray-200 dark:border-gray-700 rounded"
+                                "className": "gdpr-text-tertiary gdpr:italic gdpr:px-3 gdpr:py-2 gdpr:border gdpr:border-dashed gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded"
                             },
-                            "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_policy_slug"
+                            "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_policy_url"
                         }
                     ]
                 },
                 {
-                    "comment": "쿠키 카테고리 섹션 — snapshot.cookie_categories[] iteration. 다국어 객체 (ko/en) / plain 문자열 양쪽 호환.",
+                    "comment": "쿠키 카테고리 섹션 — snapshot.cookie_categories[] iteration. 다국어 객체 (ko/en) / plain 문자열 양쪽 호환. 반복 상자 묶음이라 row-stack(입력 행 전용) 대신 stack-tight 로 상자 사이 8px 를 둔다(audit row-stack-boxed-child).",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories}}",
                     "props": {
-                        "className": "row-stack"
+                        "className": "gdpr-stack-tight"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H4",
                             "props": {
-                                "className": "text-sm font-semibold text-gray-900 dark:text-gray-100"
+                                "className": "gdpr:text-sm gdpr:font-semibold gdpr:text-gray-900 gdpr:dark:text-gray-100"
                             },
                             "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.section_categories"
                         },
@@ -227,7 +251,7 @@
                             "name": "Div",
                             "if": "{{(gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories ?? []).length === 0}}",
                             "props": {
-                                "className": "text-tertiary italic px-3 py-2 border border-dashed border-gray-200 dark:border-gray-700 rounded"
+                                "className": "gdpr-text-tertiary gdpr:italic gdpr:px-3 gdpr:py-2 gdpr:border gdpr:border-dashed gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded"
                             },
                             "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_categories"
                         },
@@ -235,65 +259,65 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{(gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories ?? []).length > 0}}",
-                            "props": {
-                                "className": "divider-list border border-gray-200 dark:border-gray-700 rounded-md"
-                            },
                             "iteration": {
                                 "source": "gdprPolicyVersionSnapshot?.data?.data?.snapshot?.cookie_categories ?? []",
                                 "item_var": "category"
+                            },
+                            "props": {
+                                "className": "gdpr-divider-list gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded-md"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "px-3 py-2 text-xs space-y-1"
+                                        "className": "gdpr:px-3 gdpr:py-2 gdpr:text-xs gdpr:space-y-1"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-baseline gap-2"
+                                                "className": "gdpr:flex gdpr:items-baseline gdpr:gap-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-mono text-gray-900 dark:text-gray-100 font-semibold"
+                                                        "className": "gdpr:font-mono gdpr:text-gray-900 gdpr:dark:text-gray-100 gdpr:font-semibold"
                                                     },
                                                     "text": "{{category?.key ?? '?'}}"
                                                 },
                                                 {
-                                                    "comment": "라벨 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. 객체일 때 ko 우선 추출, 아니면 그대로.",
+                                                    "comment": "라벨 — 다국어 객체 또는 plain 문자열 양쪽 호환. 객체일 때 현재 로케일 우선 추출(없으면 사이트 기본 언어→영어), 아니면 그대로.",
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "gdpr:text-gray-500 gdpr:dark:text-gray-400"
                                                     },
-                                                    "text": "{{(category?.label && typeof category.label === 'object') ? (category.label.ko ?? category.label.en ?? '-') : (category?.label ?? '-')}}"
+                                                    "text": "{{(category?.label && typeof category.label === 'object') ? ($localized(category.label) || '-') : (category?.label ?? '-')}}"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "if": "{{category?.required === true}}",
                                                     "props": {
-                                                        "className": "ml-auto px-2 py-0.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/40 text-warning-soft rounded"
+                                                        "className": "gdpr:ml-auto gdpr:px-2 gdpr:py-0.5 gdpr:text-[10px] gdpr:font-medium gdpr:bg-amber-100 gdpr:dark:bg-amber-900/40 gdpr-tone-warning-strong gdpr:rounded"
                                                     },
                                                     "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.category_required_badge"
                                                 }
                                             ]
                                         },
                                         {
-                                            "comment": "설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환.",
+                                            "comment": "설명 — 다국어 객체 (ko/en) 또는 plain 문자열 양쪽 호환. 라벨과 같이 현재 로케일 우선(없으면 사이트 기본 언어→영어).",
                                             "type": "basic",
                                             "name": "P",
                                             "if": "{{category?.description}}",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-300 leading-relaxed"
+                                                "className": "gdpr:text-gray-600 gdpr:dark:text-gray-300 gdpr:leading-relaxed"
                                             },
-                                            "text": "{{(category?.description && typeof category.description === 'object') ? (category.description.ko ?? category.description.en ?? '') : (category?.description ?? '')}}"
+                                            "text": "{{(category?.description && typeof category.description === 'object') ? $localized(category.description) : (category?.description ?? '')}}"
                                         }
                                     ]
                                 }
@@ -302,27 +326,27 @@
                     ]
                 },
                 {
-                    "comment": "차단 도메인 카탈로그 섹션 — 백엔드가 변환한 blocked_domains_list 배열 사용. [{category, domains[]}] 형태. snapshot.blocked_domains 객체를 G7 엔진이 직접 iteration 못하므로 백엔드에서 변환.",
+                    "comment": "차단 도메인 카탈로그 섹션 — 백엔드가 변환한 blocked_domains_list 배열 사용. [{category, domains[]}] 형태. snapshot.blocked_domains 객체를 G7 엔진이 직접 iteration 못하므로 백엔드에서 변환. 반복 상자 묶음이라 stack-tight.",
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "gdpr-stack-tight"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H4",
                             "props": {
-                                "className": "text-sm font-semibold text-gray-900 dark:text-gray-100"
+                                "className": "gdpr:text-sm gdpr:font-semibold gdpr:text-gray-900 gdpr:dark:text-gray-100"
                             },
                             "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.section_blocked_domains"
                         },
                         {
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{(gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []).length === 0}}",
+                            "if": "{{gdprPolicyVersionSnapshot !== undefined && gdprPolicyVersionSnapshot !== null && ((gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []).length === 0)}}",
                             "props": {
-                                "className": "text-tertiary italic px-3 py-2 border border-dashed border-gray-200 dark:border-gray-700 rounded"
+                                "className": "gdpr-text-tertiary gdpr:italic gdpr:px-3 gdpr:py-2 gdpr:border gdpr:border-dashed gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded"
                             },
                             "text": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.no_blocked_domains"
                         },
@@ -330,45 +354,45 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{(gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []).length > 0}}",
-                            "props": {
-                                "className": "divider-list border border-gray-200 dark:border-gray-700 rounded-md"
-                            },
                             "iteration": {
                                 "source": "gdprPolicyVersionSnapshot?.data?.data?.blocked_domains_list ?? []",
                                 "item_var": "blockedGroup"
+                            },
+                            "props": {
+                                "className": "gdpr-divider-list gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded-md"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "px-3 py-2 text-xs space-y-1"
+                                        "className": "gdpr:px-3 gdpr:py-2 gdpr:text-xs gdpr:space-y-1"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "font-mono text-gray-900 dark:text-gray-100 font-semibold"
+                                                "className": "gdpr:font-mono gdpr:text-gray-900 gdpr:dark:text-gray-100 gdpr:font-semibold"
                                             },
                                             "text": "{{blockedGroup?.category ?? '?'}}"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Ul",
-                                            "props": {
-                                                "className": "list-disc list-inside text-gray-700 dark:text-gray-300 space-y-0.5"
-                                            },
                                             "iteration": {
                                                 "source": "blockedGroup?.domains ?? []",
                                                 "item_var": "domain"
+                                            },
+                                            "props": {
+                                                "className": "gdpr:list-disc gdpr:list-inside gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:space-y-0.5"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Li",
                                                     "props": {
-                                                        "className": "font-mono break-all"
+                                                        "className": "gdpr:font-mono gdpr:break-all gdpr-break-all"
                                                     },
                                                     "text": "{{domain}}"
                                                 }
@@ -385,22 +409,22 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end pt-2"
+                        "className": "gdpr:flex gdpr:justify-end gdpr:pt-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
                                     "handler": "closeModal"
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "gdpr:px-4 gdpr:py-2 gdpr:text-xs gdpr:font-medium gdpr:text-gray-700 gdpr:dark:text-gray-200 gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:rounded gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors"
+                            },
                             "children": [
                                 {
                                     "type": "basic",

@@ -1,0 +1,506 @@
+<!-- 엑셀 내려받기 관리 (운영자) — 각 목록 화면에서 걸어 둔 엑셀 추출 요청이 여기에 쌓인다. 추출은
+  건수가 많아 즉시 끝나지 않으므로 요청 → 생성중 → 완료 → 만료의 흐름을 갖고, 만들어진 파일은
+  누가 언제 받아 갔는지까지 남긴다. 아직 데이터소스가 없어 표가 예시 값으로 박혀 있는 골격 단계다. -->
+<layout name="admin_ecommerce_excel_download_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.excel_download.title" description="$t:sirsoft-ecommerce.admin.excel_download.description"/>
+  <init-local>
+    <field name="statusFilter" value=""/>
+    <field name="categoryFilter" value=""/>
+    <field name="dateType" value="request_date"/>
+    <field name="startDate" value=""/>
+    <field name="endDate" value=""/>
+    <field name="searchField" value="file_content"/>
+    <field name="searchKeyword" value=""/>
+    <field name="sortBy" value="request_date_desc"/>
+    <field name="perPage" :value="10"/>
+    <field name="selectedItem" :value="null"/>
+    <field name="showCreatorDropdown" :value="null"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="excel_download_content" class="ecommerce-admin-page-content">
+      <div data-ref="page_header" class="ecommerce:mb-6">
+        <div class="ecommerce-flex-center ecommerce:gap-3 ecommerce:mb-1">
+          <icon name="file-excel" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+          <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.excel_download.title</h1>
+        </div>
+        <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.excel_download.description</p>
+      </div>
+      <div data-ref="filter_card" class="ecommerce-admin-card ecommerce:mb-6">
+        <div data-ref="search_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-6">
+          <div data-ref="search_field_select" class="ecommerce-select-custom ecommerce:w-32">
+            <button type="button" class="ecommerce-select-trigger">
+              <span>$t:sirsoft-ecommerce.admin.excel_download.search.file_content</span>
+              <icon name="chevron-down" class="ecommerce-select-trigger-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            </button>
+          </div>
+          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.excel_download.search.placeholder" class="ecommerce-input ecommerce:flex-1 ecommerce:min-w-64" value="{{_local.searchKeyword}}">
+            <on type="change">
+              <!-- 입력을 마칠 때 담는다 — 검색 대상은 왼쪽 선택칸이 따로 정한다 -->
+              <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <button data-ref="reset_button" type="button" class="ecommerce-btn ecommerce-btn-outline">
+            <on type="click">
+              <!-- 검색 초기화 — 아래 상태·구분·기간 필터까지 함께 되돌린다(검색어만 비우면 걸린 필터가 남는다) -->
+              <set-state target="_local" statusFilter="" categoryFilter="" dateType="request_date" startDate="" endDate="" searchKeyword=""/>
+            </on>
+            <icon name="arrows-rotate" class="ecommerce:text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.search.reset</span>
+          </button>
+        </div>
+        <div data-ref="status_filter_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <span class="ecommerce-text-label ecommerce:w-16">$t:sirsoft-ecommerce.admin.excel_download.filter.status</span>
+          <!-- 처리 상태를 가리지 않고 모두 -->
+          <button type="button" class="{{_local.statusFilter === '' ? 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-200 ecommerce:text-gray-700 ecommerce:ring-1 ecommerce:ring-gray-400 ecommerce:dark:ring-gray-500 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300' : 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:hover:bg-gray-200 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:hover:bg-gray-700'}}" aria-pressed="{{_local.statusFilter === ''}}">
+            <on type="click">
+              <set-state target="_local" statusFilter=""/>
+            </on>
+            $t:sirsoft-ecommerce.admin.excel_download.filter.all
+          </button>
+          <button type="button" class="{{_local.statusFilter === 'completed' ? 'ecommerce-badge-status ecommerce-badge-status-success ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500' : 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:hover:bg-gray-200 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:hover:bg-gray-700'}}" aria-pressed="{{_local.statusFilter === 'completed'}}">
+            <on type="click">
+              <!-- 완료 — 파일이 만들어져 아직 보관기한 안에 있는 건 -->
+              <set-state target="_local" statusFilter="completed"/>
+            </on>
+            <icon name="check-circle" class="ecommerce:text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.completed</span>
+          </button>
+          <button type="button" class="{{_local.statusFilter === 'processing' ? 'ecommerce-badge-status ecommerce-badge-status-processing ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-blue-400 ecommerce:dark:ring-blue-500' : 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:hover:bg-gray-200 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:hover:bg-gray-700'}}" aria-pressed="{{_local.statusFilter === 'processing'}}">
+            <on type="click">
+              <!-- 생성중 — 아직 파일이 없어 내려받기를 걸 수 없는 건 -->
+              <set-state target="_local" statusFilter="processing"/>
+            </on>
+            <icon name="spinner" class="ecommerce:text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.processing</span>
+          </button>
+          <button type="button" class="{{_local.statusFilter === 'failed' ? 'ecommerce-badge-status ecommerce-badge-status-error ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-red-400 ecommerce:dark:ring-red-500' : 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:hover:bg-gray-200 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:hover:bg-gray-700'}}" aria-pressed="{{_local.statusFilter === 'failed'}}">
+            <on type="click">
+              <!-- 실패 — 생성 도중 끊긴 건. 다시 요청해야 한다 -->
+              <set-state target="_local" statusFilter="failed"/>
+            </on>
+            <icon name="circle-exclamation" class="ecommerce:text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.failed</span>
+          </button>
+          <button type="button" class="{{_local.statusFilter === 'expired' ? 'ecommerce-badge-status ecommerce-badge-status-expired ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-gray-400 ecommerce:dark:ring-gray-500' : 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:hover:bg-gray-200 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:hover:bg-gray-700'}}" aria-pressed="{{_local.statusFilter === 'expired'}}">
+            <on type="click">
+              <!-- 만료 — 보관기한이 지나 파일이 지워진 건. 이력은 남지만 내려받을 수 없다 -->
+              <set-state target="_local" statusFilter="expired"/>
+            </on>
+            <icon name="file-text" class="ecommerce:text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+          </button>
+        </div>
+        <div data-ref="category_filter_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <span class="ecommerce-text-label ecommerce:w-16">$t:sirsoft-ecommerce.admin.excel_download.filter.category</span>
+          <select name="categoryFilter" aria-label="$t:sirsoft-ecommerce.admin.excel_download.filter.category" class="ecommerce:w-40" value="{{_local.categoryFilter}}">
+            <options>
+              <option value="">$t:sirsoft-ecommerce.admin.excel_download.category_options.all</option>
+              <option value="product">$t:sirsoft-ecommerce.admin.excel_download.category_options.product</option>
+              <option value="order">$t:sirsoft-ecommerce.admin.excel_download.category_options.order</option>
+              <option value="visit">$t:sirsoft-ecommerce.admin.excel_download.category_options.visit</option>
+              <option value="member">$t:sirsoft-ecommerce.admin.excel_download.category_options.member</option>
+            </options>
+            <on type="change">
+              <!-- 어느 화면에서 뽑은 파일인지로 좁힌다(상품·주문·방문·회원) -->
+              <set-state target="_local" categoryFilter="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+        <div data-ref="date_filter_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3">
+          <span class="ecommerce-text-label ecommerce:w-16">$t:sirsoft-ecommerce.admin.excel_download.filter.date_search</span>
+          <select name="dateType" aria-label="$t:sirsoft-ecommerce.admin.excel_download.filter.date_search" class="ecommerce:w-32" value="{{_local.dateType}}">
+            <options>
+              <option value="request_date">$t:sirsoft-ecommerce.admin.excel_download.filter.request_date</option>
+            </options>
+          </select>
+          <!-- 부모(date_filter_row)는 flex-wrap 이지만 이 행 자신은 nowrap 이라, 시작일~종료일(각 input w-36 = 144px)이 좁은 뷰포트에서 콘텐츠 영역을 11px 넘긴다. 자식에도 flex-wrap 을 준다. -->
+          <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.excel_download.filter.date_search')}}" placeholder="$t:sirsoft-ecommerce.admin.excel_download.filter.start_date" class="ecommerce-input ecommerce:w-36" value="{{_local.startDate}}">
+                <on type="change">
+                  <!-- 기간 시작일 — 무엇을 기준으로 한 날짜인지는 왼쪽 선택칸(요청일)이 정한다 -->
+                  <set-state target="_local" startDate="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+            <span class="ecommerce-text-muted">~</span>
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.excel_download.filter.date_search')}}" placeholder="$t:sirsoft-ecommerce.admin.excel_download.filter.end_date" class="ecommerce-input ecommerce:w-36" value="{{_local.endDate}}">
+                <on type="change">
+                  <!-- 기간 종료일 -->
+                  <set-state target="_local" endDate="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="table_card" class="ecommerce-admin-card">
+        <div data-ref="table_header" class="ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-4 ecommerce:mb-6">
+          <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.excel_download.table.total_count|count=11</span>
+          <div class="ecommerce-flex-center ecommerce:gap-3">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="ecommerce:w-44" value="{{_local.sortBy}}">
+              <options>
+                <option value="request_date_desc">$t:sirsoft-ecommerce.admin.excel_download.table.sort_by</option>
+              </options>
+            </select>
+            <select name="perPage" aria-label="$t:common.per_page" class="ecommerce:w-24" value="{{_local.perPage}}">
+              <options>
+                <option :value="10">$t:sirsoft-ecommerce.admin.excel_download.table.per_page|count=10</option>
+                <option :value="20">$t:sirsoft-ecommerce.admin.excel_download.table.per_page|count=20</option>
+                <option :value="50">$t:sirsoft-ecommerce.admin.excel_download.table.per_page|count=50</option>
+              </options>
+              <on type="change">
+                <!-- 선택값은 문자열로 오므로 수로 바꿔 담는다 — 아래 표가 이 값을 수로 견주기 때문이다 -->
+                <set-state target="_local" perPage="{{parseInt($event.target.value)}}"/>
+              </on>
+            </select>
+          </div>
+        </div>
+        <div data-ref="table_container" class="ecommerce:overflow-x-auto">
+          <responsive on="portable">
+            <div data-ref="mobile_cards_container">
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:mb-3">
+                  <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition</span>
+                  <span class="ecommerce-badge-status ecommerce-badge-status-success">
+                    <icon name="check-circle" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.completed</span>
+                  </span>
+                </div>
+                <div class="ecommerce:text-sm ecommerce-text-secondary ecommerce:mb-3">$t:sirsoft-ecommerce.admin.excel_download.category_options.product</div>
+                <div class="ecommerce:space-y-2 ecommerce:text-sm">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date</span>
+                    <span class="ecommerce-text-primary">2025-10-27 14:20:00</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date</span>
+                    <span class="ecommerce-text-primary">2025-10-27 14:30:00</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count</span>
+                    <span class="ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.fmt.times|count=3</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date</span>
+                    <span class="ecommerce-text-primary">2025-11-03 14:30:00</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator</span>
+                    <span class="ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.people.admin</span>
+                  </div>
+                </div>
+                <div class="ecommerce:mt-4 ecommerce:flex ecommerce:justify-center">
+                  <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:w-full">$t:sirsoft-ecommerce.admin.excel_download.actions.download</button>
+                </div>
+              </div>
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:mb-3">
+                  <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition</span>
+                  <span class="ecommerce-badge-status ecommerce-badge-status-processing">
+                    <icon name="spinner" class="ecommerce:text-xs ecommerce:animate-spin"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.processing</span>
+                  </span>
+                </div>
+                <div class="ecommerce:text-sm ecommerce-text-secondary ecommerce:mb-3">$t:sirsoft-ecommerce.admin.excel_download.category_options.visit</div>
+                <div class="ecommerce:space-y-2 ecommerce:text-sm">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date</span>
+                    <span class="ecommerce-text-primary">2025-10-27 12:00:00</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date</span>
+                    <span class="ecommerce-text-primary">-</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count</span>
+                    <span class="ecommerce-text-primary">-</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date</span>
+                    <span class="ecommerce-text-primary">2025-11-03 12:00:00</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator</span>
+                    <span class="ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.people.lee_younghee</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:mb-3">
+                  <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition</span>
+                  <span class="ecommerce-badge-status ecommerce-badge-status-error">
+                    <icon name="circle-exclamation" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.failed</span>
+                  </span>
+                </div>
+                <div class="ecommerce:text-sm ecommerce-text-secondary ecommerce:mb-3">$t:sirsoft-ecommerce.admin.excel_download.category_options.order</div>
+                <div class="ecommerce:space-y-2 ecommerce:text-sm">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date</span>
+                    <span class="ecommerce-text-primary">2025-10-25 11:30:00</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date</span>
+                    <span class="ecommerce-text-primary">-</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count</span>
+                    <span class="ecommerce-text-primary">-</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date</span>
+                    <span class="ecommerce-text-primary">2025-11-01 11:30:00</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator</span>
+                    <span class="ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:mb-3">
+                  <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.misc.selected_products</span>
+                  <span class="ecommerce-badge-status ecommerce-badge-status-expired">
+                    <icon name="file-text" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+                  </span>
+                </div>
+                <div class="ecommerce:text-sm ecommerce-text-secondary ecommerce:mb-3">$t:sirsoft-ecommerce.admin.excel_download.category_options.product</div>
+                <div class="ecommerce:space-y-2 ecommerce:text-sm">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date</span>
+                    <span class="ecommerce-text-primary">2025-10-20 09:45:00</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date</span>
+                    <span class="ecommerce-text-primary">2025-10-20 10:00:00</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count</span>
+                    <span class="ecommerce-text-primary">-</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date</span>
+                    <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator</span>
+                    <span class="ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.people.lee_younghee</span>
+                  </div>
+                </div>
+                <div class="ecommerce:mt-4 ecommerce:text-center">
+                  <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+                </div>
+              </div>
+            </div>
+          </responsive>
+          <table data-ref="data_table" class="ecommerce:w-full">
+            <thead>
+              <tr class="ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-left ecommerce:w-16">$t:sirsoft-ecommerce.admin.excel_download.table.columns.no</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-left ecommerce:w-24">$t:sirsoft-ecommerce.admin.excel_download.table.columns.category</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-left">$t:sirsoft-ecommerce.admin.excel_download.table.columns.file_content</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-24">$t:sirsoft-ecommerce.admin.excel_download.table.columns.status</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-36">$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-36">$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-28">$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-24">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-28">$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-36">$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">1</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.excel_download.category_options.product</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge-status ecommerce-badge-status-success">
+                    <icon name="check-circle" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.completed</span>
+                  </span>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-10-27
+14:20:00</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-10-27
+14:30:00</td>
+                <td class="ecommerce-empty-state-cell">
+                  <div class="ecommerce:relative ecommerce:inline-block">
+                    <div class="ecommerce:text-sm">
+                      <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.people.admin</span>
+                      <div class="ecommerce-text-tertiary">(admin)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm">$t:sirsoft-ecommerce.admin.excel_download.actions.download</button>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <button type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm">
+                    <on type="click">
+                      <!-- 내려받기 이력 창을 연다 — 창은 별도 컨텍스트라 행 데이터를 못 보므로, 보여 줄 값 전부를 미리 한 곳(selectedItem)에 옮겨 담은 뒤 연다 -->
+                      <sequence>
+                        <set-state target="_local">
+                          <field name="selectedItem">
+                            <field name="file_content" value="$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"/>
+                            <field name="category_name" value="$t:sirsoft-ecommerce.admin.sample.misc.product_management"/>
+                            <field name="status" value="completed"/>
+                            <field name="created_date" value="2025-10-27 14:30:00"/>
+                            <field name="expire_date" value="2025-11-12 14:30:00"/>
+                            <field name="download_count" :value="3"/>
+                            <field name="download_history">
+                              <item user_name="$t:sirsoft-ecommerce.admin.sample.people.lee_younghee" user_id="leeyh" downloaded_at="2025-10-29 11:45:00" :sequence="3"/>
+                              <item user_name="$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu" user_id="kimcs" downloaded_at="2025-10-28 09:20:00" :sequence="2"/>
+                              <item user_name="$t:sirsoft-ecommerce.admin.sample.people.admin" user_id="admin" downloaded_at="2025-10-27 14:35:00" :sequence="1"/>
+                            </field>
+                          </field>
+                        </set-state>
+                        <open-modal target="download_history_modal"/>
+                      </sequence>
+                    </on>
+                    $t:sirsoft-ecommerce.admin.sample.fmt.times|count=3
+                  </button>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-11-03
+14:30:00</td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">2</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.excel_download.category_options.order</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.misc.selected_orders</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge-status ecommerce-badge-status-success">
+                    <icon name="check-circle" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.completed</span>
+                  </span>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-10-27
+13:00:00</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-10-27
+13:15:00</td>
+                <td class="ecommerce-empty-state-cell">
+                  <div class="ecommerce:relative ecommerce:inline-block">
+                    <div class="ecommerce:text-sm">
+                      <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu</span>
+                      <div class="ecommerce-text-tertiary">(kimcs)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm">$t:sirsoft-ecommerce.admin.excel_download.actions.download</button>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <button type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm">$t:sirsoft-ecommerce.admin.sample.fmt.times|count=5</button>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-11-03
+13:15:00</td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">3</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.excel_download.category_options.visit</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge-status ecommerce-badge-status-processing">
+                    <icon name="spinner" class="ecommerce:text-xs ecommerce:animate-spin"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.processing</span>
+                  </span>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-10-27
+12:00:00</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell">
+                  <div class="ecommerce:text-sm">
+                    <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.people.lee_younghee</span>
+                    <div class="ecommerce-text-tertiary">(leeyh)</div>
+                  </div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-11-03
+12:00:00</td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">4</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.excel_download.category_options.order</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge-status ecommerce-badge-status-error">
+                    <icon name="circle-exclamation" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.failed</span>
+                  </span>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-10-25
+11:30:00</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell">
+                  <div class="ecommerce:text-sm">
+                    <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu</span>
+                    <div class="ecommerce-text-tertiary">(kimcs)</div>
+                  </div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-11-01
+11:30:00</td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">5</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.excel_download.category_options.product</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.misc.selected_products</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge-status ecommerce-badge-status-expired">
+                    <icon name="file-text" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+                  </span>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-10-20
+09:45:00</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-10-20
+10:00:00</td>
+                <td class="ecommerce-empty-state-cell">
+                  <div class="ecommerce:text-sm">
+                    <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.sample.people.lee_younghee</span>
+                    <div class="ecommerce-text-tertiary">(leeyh)</div>
+                  </div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.excel_download.status.expired</span>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2025-10-27
+10:00:00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div data-ref="pagination_container" class="ecommerce:flex ecommerce:justify-center ecommerce:mt-6">
+          <div class="ecommerce-pagination">
+            <button aria-label="$t:common.first_page" type="button" class="ecommerce-pagination-btn" :disabled="true">
+              <icon name="angles-left" class="ecommerce:text-base"/>
+            </button>
+            <button aria-label="$t:common.prev_page" type="button" class="ecommerce-pagination-btn" :disabled="true">
+              <icon name="chevron-left" class="ecommerce:text-base"/>
+            </button>
+            <button type="button" class="ecommerce-pagination-btn ecommerce-active">1</button>
+            <button type="button" class="ecommerce-pagination-btn">2</button>
+            <button aria-label="$t:common.next_page" type="button" class="ecommerce-pagination-btn">
+              <icon name="chevron-right" class="ecommerce:text-base"/>
+            </button>
+            <button aria-label="$t:common.last_page" type="button" class="ecommerce-pagination-btn">
+              <icon name="angles-right" class="ecommerce:text-base"/>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 내려받기 이력 — 이 파일을 누가 몇 번째로 언제 받아 갔는지 -->
+  <modal src="partials/admin_ecommerce_excel_download_index/_modal_download_history.g7.html"/>
+</layout>

@@ -466,6 +466,17 @@ class ApiRouteInventory
         // context(me 등) 직후가 REST 액션명이면 리소스가 아니라 그 컨텍스트가 도메인이다
         // (api.me.show → 'me', api.me.destroy → 'me'). 아니면 그 세그먼트가 리소스.
         $restActions = ['show', 'index', 'store', 'update', 'destroy', 'edit', 'create'];
+
+        // 상위 리소스 아래에 있지만 별도 레퍼런스 문서로 다루는 하위 리소스 (`상위.하위` ⇒ 도메인).
+        // 큐 관리 API 는 스케줄 관리 화면 경로(`api.admin.schedules.queue.*`)에 있으나 queue.md 로 문서화한다.
+        $subResourceDomains = ['schedules.queue' => 'queue'];
+        if (isset($segments[$i], $segments[$i + 1])) {
+            $pair = $segments[$i].'.'.$segments[$i + 1];
+            if (isset($subResourceDomains[$pair])) {
+                return $subResourceDomains[$pair];
+            }
+        }
+
         if (isset($segments[$i])) {
             if (in_array($segments[$i], $restActions, true) && $i > 0 && in_array($segments[$i - 1], $leading, true)) {
                 return Str::slug($segments[$i - 1]) ?: 'misc';

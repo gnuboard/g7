@@ -24,11 +24,18 @@ use Tests\TestCase;
  * - NotificationTemplateService: 템플릿 캐시 생성/히트/수정/토글/복원 (5건)
  *
  * 실제 CoreCacheDriver(array store)를 사용하며, Repository는 mock 처리합니다.
+ *
+ * @scenario-manifest tests/scenarios/cache-notification-migration.yaml
  */
 class NotificationCacheTest extends TestCase
 {
     private CoreCacheDriver $cache;
 
+    /**
+     * 각 테스트 전에 캐시를 비우고 큐를 가짜로 바꾼 뒤 array 저장소 코어 캐시 드라이버를 CacheInterface 로 바인딩합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,6 +47,11 @@ class NotificationCacheTest extends TestCase
         $this->app->instance(CacheInterface::class, $this->cache);
     }
 
+    /**
+     * 각 테스트 뒤에 캐시를 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Cache::flush();
@@ -52,6 +64,12 @@ class NotificationCacheTest extends TestCase
 
     /**
      * D-1-1: 알림 정의 캐시 생성 — resolve() 호출 시 새 키에 저장.
+     *
+     * @scenario case=definition_resolve
+     *
+     * @effects definition_cached_under_core_key
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function d_1_1_definition_cache_stored_under_new_key(): void
@@ -73,6 +91,12 @@ class NotificationCacheTest extends TestCase
 
     /**
      * D-1-2: 알림 정의 캐시 히트 — 두 번째 호출은 Repository 미호출.
+     *
+     * @scenario case=definition_resolve
+     *
+     * @effects definition_cache_hit_skips_repository
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function d_1_2_definition_cache_hit_skips_repository(): void
@@ -89,6 +113,12 @@ class NotificationCacheTest extends TestCase
 
     /**
      * D-1-3: 정의 수정 시 type 키 + all_active 키 모두 무효화.
+     *
+     * @scenario case=definition_update
+     *
+     * @effects definition_keys_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function d_1_3_update_definition_invalidates_both_keys(): void
@@ -110,6 +140,12 @@ class NotificationCacheTest extends TestCase
 
     /**
      * D-1-4: 활성/비활성 토글 시 캐시 무효화.
+     *
+     * @scenario case=definition_toggle
+     *
+     * @effects definition_keys_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function d_1_4_toggle_active_invalidates_cache(): void
@@ -131,6 +167,12 @@ class NotificationCacheTest extends TestCase
 
     /**
      * D-1-5: 전체 활성 정의 캐시 생성 + 히트.
+     *
+     * @scenario case=definition_all_active
+     *
+     * @effects all_active_cached_and_reused
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function d_1_5_all_active_cache_created_and_hit(): void
@@ -158,6 +200,12 @@ class NotificationCacheTest extends TestCase
 
     /**
      * D-2-1: 알림 템플릿 캐시 생성 — 새 키 형식.
+     *
+     * @scenario case=template_resolve
+     *
+     * @effects template_cached_under_core_key
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function d_2_1_template_cache_stored_under_new_key(): void
@@ -183,6 +231,12 @@ class NotificationCacheTest extends TestCase
 
     /**
      * D-2-2: 알림 템플릿 캐시 히트 — 재호출 시 Repository 미호출.
+     *
+     * @scenario case=template_resolve
+     *
+     * @effects template_cache_hit_skips_repository
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function d_2_2_template_cache_hit_skips_repository(): void
@@ -200,6 +254,12 @@ class NotificationCacheTest extends TestCase
 
     /**
      * D-2-3: 템플릿 수정 시 캐시 무효화.
+     *
+     * @scenario case=template_update
+     *
+     * @effects template_key_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function d_2_3_update_template_invalidates_cache(): void
@@ -221,6 +281,12 @@ class NotificationCacheTest extends TestCase
 
     /**
      * D-2-4: 템플릿 활성/비활성 토글 시 무효화.
+     *
+     * @scenario case=template_toggle
+     *
+     * @effects template_key_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function d_2_4_toggle_template_active_invalidates_cache(): void
@@ -243,6 +309,12 @@ class NotificationCacheTest extends TestCase
 
     /**
      * D-2-5: 기본값 복원 시 무효화.
+     *
+     * @scenario case=template_reset
+     *
+     * @effects template_key_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function d_2_5_reset_to_default_invalidates_cache(): void
@@ -269,6 +341,10 @@ class NotificationCacheTest extends TestCase
     /**
      * NotificationTemplate 인스턴스에 definition 관계를 직접 주입합니다.
      * (Eloquent setRelation 패턴)
+     *
+     * @param  NotificationDefinition  $definition  연결할 알림 정의
+     * @param  string  $channel  템플릿 채널
+     * @return NotificationTemplate 정의 관계를 주입한 알림 템플릿
      */
     private function makeTemplateWithDefinition(NotificationDefinition $definition, string $channel): NotificationTemplate
     {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Enums\AttachmentSourceType;
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Http\Controllers\Api\Base\AuthBaseController;
 use App\Http\Requests\Auth\VerifyPasswordRequest;
@@ -12,9 +13,13 @@ use App\Http\Requests\User\UploadAvatarRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AttachmentService;
+use App\Services\Auth\ReauthenticationService;
+use App\Services\IdentityPolicyService;
+use App\Services\UserLockedFieldsService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -26,9 +31,21 @@ use Illuminate\Validation\ValidationException;
  */
 class ProfileController extends AuthBaseController
 {
+    /**
+     * 프로필 컨트롤러를 생성합니다.
+     *
+     * @param  UserService  $userService  회원 서비스
+     * @param  AttachmentService  $attachmentService  첨부파일 서비스 (아바타)
+     * @param  IdentityPolicyService  $identityPolicyService  본인인증 정책 서비스 (정보수정 API 의 비밀번호 변경)
+     * @param  ReauthenticationService  $reauthenticationService  민감 작업 재확인 서비스 (비밀번호 또는 이메일 인증번호)
+     * @param  UserLockedFieldsService  $lockedFields  회원 칸 수정 잠금 (언어 변경 경로)
+     */
     public function __construct(
         private UserService $userService,
-        private AttachmentService $attachmentService
+        private AttachmentService $attachmentService,
+        private IdentityPolicyService $identityPolicyService,
+        private ReauthenticationService $reauthenticationService,
+        private UserLockedFieldsService $lockedFields,
     ) {
         parent::__construct();
     }
@@ -73,8 +90,19 @@ class ProfileController extends AuthBaseController
                 return $this->unauthorized('auth.unauthenticated');
             }
 
-            $updatedUser = $this->userService->updateUser($user, $request->validated());
-            $this->logUserActivity('profile.update', $request->validated());
+            $validated = $request->validated();
+
+            // 이 경로로 비밀번호를 함께 바꾸면 전용 변경 경로(`PUT /api/me/password`)와 같은 본인인증 정책을
+            // 건다(D18) — 그러지 않으면 정책을 켠 사이트에서도 이 경로가 우회로가 된다. 판정은 라우트
+            // 미들웨어와 같은 한 곳(`enforceForRequest`)이고, 위반이면 428 로 끊겨 아래 저장에 닿지 않는다.
+            if (! empty($validated['password'])) {
+                $this->identityPolicyService->enforceForRequest('core.profile.password_change', $request);
+            }
+
+            $updatedUser = $this->userService->updateUser($user, $validated);
+
+            // 비밀번호 3종(새 값·확인·현재 값)은 원문이라 로그에 남기지 않는다.
+            $this->logUserActivity('profile.update', Arr::except($validated, ['password', 'password_confirmation', 'current_password']));
 
             return $this->successWithResource(
                 'user.update_success',
@@ -82,6 +110,9 @@ class ProfileController extends AuthBaseController
             );
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'user.update_failed');
+        } catch (PasswordAuthDisallowedException $e) {
+            // 비밀번호 인증 정책 거절 — 전역 렌더러가 403 + 「회사 계정으로 로그인」 안내 데이터로 답한다
+            throw $e;
         } catch (\Exception $e) {
             return $this->error('user.update_failed', 500, $e->getMessage());
         }
@@ -104,6 +135,12 @@ class ProfileController extends AuthBaseController
 
             if (! in_array($language, config('app.supported_locales', ['ko', 'en']), true)) {
                 return $this->error('user.invalid_language', 400);
+            }
+
+            // 외부(회사 계정)가 관리하는 언어는 바꾸지 못한다(7.2.0) — 정보 수정 요청과 같은 칸 잠금
+            if ($language !== $user->language
+                && in_array('language', $this->lockedFields->lockedFor($user, UserLockedFieldsService::SURFACE_PROFILE), true)) {
+                return $this->validationError(['language' => [__('user.field_locked')]], 'user.field_locked');
             }
 
             $updatedUser = $this->userService->updateUser($user, ['language' => $language]);
@@ -244,7 +281,18 @@ class ProfileController extends AuthBaseController
                 return $this->unauthorized('auth.unauthenticated');
             }
 
-            if (! Hash::check($request->password, $user->password)) {
+            // 비밀번호가 있는 회원은 비밀번호로, 없는 회원은 이메일 인증번호로 받은 토큰으로 확인한다.
+            $result = $this->reauthenticationService->verify($user, $request->validated());
+
+            if ($result === ReauthenticationService::PASSWORD_NOT_SET) {
+                return $this->error('user.password_not_set', 422, ['password' => [__('user.password_not_set')]]);
+            }
+
+            if ($result === ReauthenticationService::TOKEN_INVALID) {
+                return $this->error('user.reauthentication_invalid', 422, ['verification_token' => [__('user.reauthentication_invalid')]]);
+            }
+
+            if ($result !== ReauthenticationService::PASSED) {
                 return $this->error('user.password_incorrect', 401);
             }
 
@@ -283,6 +331,9 @@ class ProfileController extends AuthBaseController
             return $this->success('user.password_change_success');
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'user.password_change_failed');
+        } catch (PasswordAuthDisallowedException $e) {
+            // 비밀번호 인증 정책 거절 — 전역 렌더러가 403 + 「회사 계정으로 로그인」 안내 데이터로 답한다
+            throw $e;
         } catch (\Exception $e) {
             // 주의: IdentityVerificationRequiredException 은 \Error 자식이라 이 catch 에 잡히지 않음.
             // 글로벌 핸들러가 자동으로 428 매핑 — 모든 컨트롤러 (코어/모듈/플러그인) 에 동일 보장.

@@ -31,7 +31,307 @@
             }
           ]
         }
+      },
+      "settings": {
+        "data": {
+          "marketing_consent_enabled": true,
+          "marketing_consent_terms_slug": "marketing-terms",
+          "third_party_consent_enabled": true,
+          "third_party_consent_terms_slug": "third-party-terms",
+          "info_disclosure_enabled": false,
+          "info_disclosure_terms_slug": "",
+          "channels": [
+            {
+              "key": "email_subscription",
+              "label": {
+                "ko": "광고성 이메일 수신",
+                "en": "Email marketing"
+              },
+              "page_slug": "marketing-terms",
+              "enabled": true,
+              "is_system": true
+            },
+            {
+              "key": "sms_subscription",
+              "label": {
+                "ko": "광고성 문자 수신",
+                "en": "SMS marketing"
+              },
+              "page_slug": "sms-marketing-terms",
+              "enabled": true,
+              "is_system": false
+            },
+            {
+              "key": "push_subscription",
+              "label": {
+                "ko": "앱 푸시 수신",
+                "en": "App push"
+              },
+              "page_slug": "",
+              "enabled": false,
+              "is_system": false
+            }
+          ],
+          "abilities": {
+            "can_update": true
+          }
+        }
       }
     }
+  },
+  "states": {
+    "comment": "마케팅 동의 플러그인 설정 화면 변종. 채널 표는 _global.channels(없으면 _local.form.channels)를 읽고, 추가·수정 창의 대상은 [추가]/[수정] 클릭이 _global.editingChannel 에 담는 값이라 상태 없이는 창이 빈 채로 열린다.",
+    "groups": [
+      {
+        "comment": "설정 입력칸은 settings 데이터소스의 initLocal(\"form\")으로 채워지는데 편집기는 그 흐름을 실행하지 않으므로 _local.form 을 샘플과 같은 값으로 직접 시드한다.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-marketing/settings"
+        },
+        "items": [
+          {
+            "id": "settings_default",
+            "label": "$t:editor.state.with_data",
+            "default": true,
+            "initialState": {
+              "local": {
+                "isSaving": false,
+                "errors": null,
+                "form": {
+                  "marketing_consent_enabled": true,
+                  "marketing_consent_terms_slug": "marketing-terms",
+                  "third_party_consent_enabled": true,
+                  "third_party_consent_terms_slug": "third-party-terms",
+                  "info_disclosure_enabled": false,
+                  "info_disclosure_terms_slug": "",
+                  "channels": [
+                    {
+                      "key": "email_subscription",
+                      "label": {
+                        "ko": "광고성 이메일 수신",
+                        "en": "Email marketing"
+                      },
+                      "page_slug": "marketing-terms",
+                      "enabled": true,
+                      "is_system": true
+                    },
+                    {
+                      "key": "sms_subscription",
+                      "label": {
+                        "ko": "광고성 문자 수신",
+                        "en": "SMS marketing"
+                      },
+                      "page_slug": "sms-marketing-terms",
+                      "enabled": true,
+                      "is_system": false
+                    },
+                    {
+                      "key": "push_subscription",
+                      "label": {
+                        "ko": "앱 푸시 수신",
+                        "en": "App push"
+                      },
+                      "page_slug": "",
+                      "enabled": false,
+                      "is_system": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": "settings_validation_failed",
+            "label": "$t:editor.state.validation_failed",
+            "comment": "상단 오류 알림은 _local.errors 가 항목을 가진 객체일 때만 그려진다.",
+            "initialState": {
+              "local": {
+                "isSaving": false,
+                "form": {
+                  "marketing_consent_enabled": true,
+                  "marketing_consent_terms_slug": "marketing-terms",
+                  "third_party_consent_enabled": true,
+                  "third_party_consent_terms_slug": "third-party-terms",
+                  "info_disclosure_enabled": false,
+                  "info_disclosure_terms_slug": "",
+                  "channels": [
+                    {
+                      "key": "email_subscription",
+                      "label": {
+                        "ko": "광고성 이메일 수신",
+                        "en": "Email marketing"
+                      },
+                      "page_slug": "marketing-terms",
+                      "enabled": true,
+                      "is_system": true
+                    },
+                    {
+                      "key": "sms_subscription",
+                      "label": {
+                        "ko": "광고성 문자 수신",
+                        "en": "SMS marketing"
+                      },
+                      "page_slug": "sms-marketing-terms",
+                      "enabled": true,
+                      "is_system": false
+                    },
+                    {
+                      "key": "push_subscription",
+                      "label": {
+                        "ko": "앱 푸시 수신",
+                        "en": "App push"
+                      },
+                      "page_slug": "",
+                      "enabled": false,
+                      "is_system": false
+                    }
+                  ]
+                }
+              }
+            },
+            "formErrors": {
+              "_local.errors.marketing_consent_terms_slug": [
+                "약관 페이지 주소를 입력해 주세요."
+              ],
+              "_local.errors.channels": [
+                "사용 중인 채널은 삭제할 수 없습니다."
+              ]
+            }
+          },
+          {
+            "id": "channels_empty",
+            "label": "$t:editor.state.empty_data",
+            "comment": "채널이 하나도 없을 때의 표 — 목록 본문이 접힌다.",
+            "initialState": {
+              "local": {
+                "isSaving": false,
+                "errors": null,
+                "form": {
+                  "marketing_consent_enabled": true,
+                  "marketing_consent_terms_slug": "marketing-terms",
+                  "third_party_consent_enabled": true,
+                  "third_party_consent_terms_slug": "third-party-terms",
+                  "info_disclosure_enabled": false,
+                  "info_disclosure_terms_slug": "",
+                  "channels": []
+                }
+              },
+              "global": {
+                "channels": []
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "채널 추가·수정 창 — 대상은 _global.editingChannel 이다. _editing 이 true 면 수정(키 입력칸 잠김), false 면 신규 추가다.",
+        "scope": {
+          "kind": "modal",
+          "match": "channel_edit_modal"
+        },
+        "items": [
+          {
+            "id": "channel_edit",
+            "label": "$t:editor.state.marketing_channel_edit",
+            "default": true,
+            "initialState": {
+              "global": {
+                "editingChannel": {
+                  "key": "sms_subscription",
+                  "label": {
+                    "ko": "광고성 문자 수신",
+                    "en": "SMS marketing"
+                  },
+                  "page_slug": "sms-marketing-terms",
+                  "enabled": true,
+                  "is_system": false,
+                  "_editing": true
+                }
+              }
+            }
+          },
+          {
+            "id": "channel_create",
+            "label": "$t:editor.state.marketing_channel_create",
+            "comment": "신규 추가는 _editing 이 없어 키 입력칸이 열린다.",
+            "initialState": {
+              "global": {
+                "editingChannel": {
+                  "key": "",
+                  "label": {
+                    "ko": "",
+                    "en": ""
+                  },
+                  "page_slug": "",
+                  "enabled": true,
+                  "is_system": false
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "채널 되살리기 확인 창 — 확정 동작이 _global.deletingChannelKey 로 대상 채널을 고른다.",
+        "scope": {
+          "kind": "modal",
+          "match": "channel_deactivate_modal"
+        },
+        "items": [
+          {
+            "id": "channel_deactivate",
+            "label": "$t:editor.state.marketing_channel_deactivate",
+            "default": true,
+            "initialState": {
+              "global": {
+                "deletingChannelKey": "sms_subscription"
+              },
+              "local": {
+                "form": {
+                  "marketing_consent_enabled": true,
+                  "marketing_consent_terms_slug": "marketing-terms",
+                  "third_party_consent_enabled": true,
+                  "third_party_consent_terms_slug": "third-party-terms",
+                  "info_disclosure_enabled": false,
+                  "info_disclosure_terms_slug": "",
+                  "channels": [
+                    {
+                      "key": "email_subscription",
+                      "label": {
+                        "ko": "광고성 이메일 수신",
+                        "en": "Email marketing"
+                      },
+                      "page_slug": "marketing-terms",
+                      "enabled": true,
+                      "is_system": true
+                    },
+                    {
+                      "key": "sms_subscription",
+                      "label": {
+                        "ko": "광고성 문자 수신",
+                        "en": "SMS marketing"
+                      },
+                      "page_slug": "sms-marketing-terms",
+                      "enabled": true,
+                      "is_system": false
+                    },
+                    {
+                      "key": "push_subscription",
+                      "label": {
+                        "ko": "앱 푸시 수신",
+                        "en": "App push"
+                      },
+                      "page_slug": "",
+                      "enabled": false,
+                      "is_system": false
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
   }
 }

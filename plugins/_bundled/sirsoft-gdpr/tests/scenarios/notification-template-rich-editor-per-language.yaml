@@ -1,0 +1,23 @@
+feature: GDPR 알림 템플릿 편집 창 — 서식 편집기 슬롯이 편집 언어마다 따로 선다
+
+description: |
+  메일 본문은 html_editor 확장 슬롯(CKEditor)으로 열리고, 편집기는 마운트 때 본문과 쓰기 경로(활성 언어 포함)를
+  한 번만 받는다. 슬롯 하나를 언어 사이에 돌려 쓰면서 id 에 언어를 넣어 두면 다시 선다고 여겼지만 엔진은 자식 key 를
+  바인딩 전 원문 id 로 잡아 같은 인스턴스가 남았다 — 영어 탭을 눌러도 한국어 본문이 보이고 입력이 한국어 칸에
+  저장됐다(실측 2026-10-03). 설치 언어마다 슬롯을 두고 편집 중인 언어의 것만 세운다. 편집기 이름도 언어별이다.
+
+axes:
+  case: [slot_per_language, lang_switch]
+
+effects:
+  - gdpr_rich_editor_slot_per_language
+  - gdpr_only_active_language_rich_editor_mounts
+  - gdpr_rich_editor_reads_and_writes_its_language
+  - gdpr_rich_editor_name_differs_per_language
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/gdprNotificationTemplateRichEditorPerLanguage.test.ts
+
+notes: |
+  브라우저 실측: 메일 템플릿 편집 → 영어 탭 → 새 편집기에 영어 본문, 입력은 body.en 에만 담김 →
+  한국어 탭 → 한국어 본문, 입력은 body.ko 에만 → 다시 영어 탭에서 앞서 쓴 영어 입력이 남아 있음. 편집기는 늘 1개.

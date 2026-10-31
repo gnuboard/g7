@@ -23,6 +23,7 @@ final class ConsoleConfirm
      * @param  bool  $default  기본값 (true=[yes], false=[no])
      * @param  resource|null  $stdin  테스트용 STDIN 주입. null 이면 STDIN 사용
      * @param  callable|null  $writer  테스트용 출력 콜백. null 이면 echo 사용
+     * @return bool yes 면 true, no 면 false (非TTY·EOF·빈 입력이면 $default)
      */
     public static function ask(
         string $question,
@@ -58,7 +59,7 @@ final class ConsoleConfirm
                 return $parsed;
             }
 
-            $writer("  yes, y, no, n 중 하나로 입력해 주세요.\n");
+            $writer('  '.self::invalidAnswerMessage()."\n");
         }
     }
 
@@ -88,6 +89,8 @@ final class ConsoleConfirm
 
     /**
      * STDIN 이 TTY 인지 검사한다.
+     *
+     * @return bool TTY 면 true (STDIN 이 없거나 판정 함수가 없으면 false)
      */
     private static function isTty(): bool
     {
@@ -102,5 +105,22 @@ final class ConsoleConfirm
         }
 
         return false;
+    }
+
+    /**
+     * 잘못된 답을 받았을 때의 재질문 안내 문구를 돌려준다.
+     *
+     * 이 헬퍼는 Laravel 이 부팅되지 않은 단순 PHP 스크립트에서도 불리므로, 번역기가 없으면 번역 키 대신
+     * 원문(한국어)을 쓴다. Laravel 안에서는 사이트 언어의 문구가 나온다.
+     *
+     * @return string 안내 문구
+     */
+    private static function invalidAnswerMessage(): string
+    {
+        if (function_exists('app') && app()->bound('translator')) {
+            return __('common.console.console_confirm.invalid_answer');
+        }
+
+        return 'yes, y, no, n 중 하나로 입력해 주세요.';
     }
 }

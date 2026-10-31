@@ -1,5 +1,10 @@
 {
-    "meta": { "is_partial": true, "description": "코어 업데이트 확인 결과 모달", "editor_label": "$t:admin.modal_label.admin_settings.core_update_result_modal" },
+    "comment": "코어 새 버전 확인 결과 창 — 있으면 버전과 이력을, 없으면 최신이라는 안내를 보여 준다.\n  올리는 것은 여기서 하지 않고 안내 창(`_modal_core_update_guide`)으로 넘긴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "코어 업데이트 확인 결과 모달",
+        "editor_label": "$t:admin.modal_label.admin_settings.core_update_result_modal"
+    },
     "id": "core_update_result_modal",
     "type": "composite",
     "name": "Modal",
@@ -11,24 +16,305 @@
         {
             "type": "basic",
             "name": "Div",
-            "props": { "className": "row-stack" },
+            "props": {
+                "className": "row-stack"
+            },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "flex-between border-b border-gray-100 dark:border-gray-700" },
+                    "props": {
+                        "className": "flex-between border-b border-gray-100 dark:border-gray-700"
+                    },
                     "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-label" }, "text": "$t:admin.settings.info.current_version" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-heading" }, "text": "{{$parent._local.coreUpdateInfo?.current_version ?? '-'}}" }
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:admin.settings.info.current_version"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-heading"
+                            },
+                            "text": "{{$parent._local.coreUpdateInfo?.current_version ?? '-'}}"
+                        }
                     ]
                 },
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": { "className": "flex-between border-b border-gray-100 dark:border-gray-700" },
+                    "props": {
+                        "className": "flex-between border-b border-gray-100 dark:border-gray-700"
+                    },
                     "children": [
-                        { "type": "basic", "name": "Span", "props": { "className": "text-label" }, "text": "$t:admin.settings.info.latest_version" },
-                        { "type": "basic", "name": "Span", "props": { "className": "text-heading" }, "text": "{{$parent._local.coreUpdateInfo?.latest_version ?? '-'}}" }
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:admin.settings.info.latest_version"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-heading"
+                            },
+                            "text": "{{$parent._local.coreUpdateInfo?.latest_version ?? '-'}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "직전 업데이트 시도가 개발자 custom 자리 사전 검사로 시작 전에 멈췄을 때만 보인다(같은 새 버전 한정) —\n     개발자 패키지(custom/composer.lock)가 새 코어와 맞지 않거나 배포본이 custom 예약 자리에 파일을 실었다.",
+                    "id": "custom_preflight_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!$parent._local.coreUpdateInfo?.custom_preflight}}",
+                    "props": {
+                        "className": "space-y-3",
+                        "role": "alert"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "alert-warning space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_preflight_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{($parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_preflight_desc|count={{($parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length}}|version={{$parent._local.coreUpdateInfo?.custom_preflight?.to_version ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{($parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []).length > 0}}",
+                            "props": {
+                                "className": "overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Table",
+                                    "props": {
+                                        "className": "min-w-full text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Thead",
+                                            "props": {
+                                                "className": "bg-gray-50 dark:bg-gray-700/50"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.settings.info.custom_conflict_package"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.settings.info.custom_conflict_reason"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.settings.info.custom_conflict_core"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Tbody",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "iteration": {
+                                                        "source": "{{$parent._local.coreUpdateInfo?.custom_preflight?.conflicts ?? []}}",
+                                                        "item_var": "conflict"
+                                                    },
+                                                    "props": {
+                                                        "className": "border-t border-gray-200 dark:border-gray-700 align-top"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "block font-mono text-gray-900 dark:text-white"
+                                                                    },
+                                                                    "text": "{{conflict.package}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "$t:admin.settings.info.custom_conflict_installed|version={{conflict.installed}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{conflict.type === 'duplicate'}}",
+                                                                    "text": "$t:admin.settings.info.custom_conflict_duplicate"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{conflict.type !== 'duplicate'}}",
+                                                                    "text": "$t:admin.settings.info.custom_conflict_constraint|requires={{conflict.requires}}|constraint={{conflict.constraint}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 font-mono text-xs text-amber-700 dark:text-amber-400"
+                                                            },
+                                                            "text": "{{conflict.core_package}} {{conflict.core_version}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{($parent._local.coreUpdateInfo?.custom_preflight?.reserved_files ?? []).length > 0}}",
+                            "props": {
+                                "className": "space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_reserved_files"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "text-xs font-mono text-gray-600 dark:text-gray-400 list-disc pl-5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "{{$parent._local.coreUpdateInfo?.custom_preflight?.reserved_files ?? []}}",
+                                                "item_var": "reservedFile"
+                                            },
+                                            "text": "{{reservedFile}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-1 text-sm text-gray-700 dark:text-gray-300"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "font-semibold"
+                                    },
+                                    "text": "$t:admin.settings.info.custom_fix_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ol",
+                                    "props": {
+                                        "className": "list-decimal pl-5 space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "text": "$t:admin.settings.info.custom_fix_step1"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "text": "$t:admin.settings.info.custom_fix_step2"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "text": "$t:admin.settings.info.custom_fix_step3"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
                     ]
                 },
                 {
@@ -36,17 +322,23 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{$parent._local.coreUpdateInfo?.update_available}}",
-                    "props": { "className": "space-y-3" },
+                    "props": {
+                        "className": "space-y-3"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "alert-success" },
+                            "props": {
+                                "className": "alert-success"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
-                                    "props": { "className": "text-success-soft" },
+                                    "props": {
+                                        "className": "text-success-soft"
+                                    },
                                     "text": "$t:admin.settings.info.update_available_message"
                                 }
                             ]
@@ -54,74 +346,74 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "flex gap-2 justify-end" },
+                            "props": {
+                                "className": "flex gap-2 justify-end"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "comment": "같은 [변경사항 보기]가 정보 탭·업데이트 탭·이 결과 모달 셋에 있다. 셋 중 하나만 왕복 중에 아무 표시가 없으면 운영자는 그 자리에서만 다시 누른다 — 세 자리 모두 같은 진행 표시를 건다. 이 모달은 포털이라 `target: 'local'` 은 모달 자신의 _local 이고, 플래그도 부모의 같은 이름과 섞이지 않는다.",
+                                    "actions": [
+                                        {
+                                            "comment": "변경 이력 보기 — 현재↔최신 두 버전 사이의 이력을 받아 이력 창을 연다. 실패해도 빈 이력으로\n     창을 연다(이력이 없다고 안내 자체를 막지 않는다). 받은 값은 **부모 화면의 상태**로 담기고\n     이력 창이 그것을 `$parent` 로 읽는다.\n     같은 [변경사항 보기]가 정보 탭·업데이트 탭·이 결과 창 셋에 있어 세 자리 모두 같은 진행 표시를 건다(하나만 표시가 없으면\n     운영자가 그 자리에서만 다시 누른다). 이 창은 포털이라 `target: 'local'` 은 창 자신의 _local 이고, 진행 플래그도\n     부모의 같은 이름과 섞이지 않는다.",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "loadingChangelog": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/admin/core-update/changelog",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "GET",
+                                                        "query": {
+                                                            "from_version": "{{$parent._local.coreUpdateInfo?.current_version ?? ''}}",
+                                                            "to_version": "{{$parent._local.coreUpdateInfo?.latest_version ?? ''}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "loadingChangelog": false,
+                                                                "coreChangelog": "{{result.data.changelog ?? []}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "core_changelog_modal"
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "loadingChangelog": false,
+                                                                "coreChangelog": []
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "core_changelog_modal"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
                                     "props": {
                                         "type": "button",
                                         "className": "px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors",
                                         "disabled": "{{_local.loadingChangelog}}"
                                     },
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "sequence",
-                                            "params": {
-                                                "actions": [
-                                                    {
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "loadingChangelog": true
-                                                        }
-                                                    },
-                                                    {
-                                                        "handler": "apiCall",
-                                                        "auth_required": true,
-                                                        "target": "/api/admin/core-update/changelog",
-                                                        "params": {
-                                                            "method": "GET",
-                                                            "query": {
-                                                                "from_version": "{{$parent._local.coreUpdateInfo?.current_version ?? ''}}",
-                                                                "to_version": "{{$parent._local.coreUpdateInfo?.latest_version ?? ''}}"
-                                                            }
-                                                        },
-                                                        "onSuccess": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "loadingChangelog": false,
-                                                                    "coreChangelog": "{{result.data.changelog ?? []}}"
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "openModal",
-                                                                "target": "core_changelog_modal"
-                                                            }
-                                                        ],
-                                                        "onError": [
-                                                            {
-                                                                "handler": "setState",
-                                                                "params": {
-                                                                    "target": "local",
-                                                                    "loadingChangelog": false,
-                                                                    "coreChangelog": []
-                                                                }
-                                                            },
-                                                            {
-                                                                "handler": "openModal",
-                                                                "target": "core_changelog_modal"
-                                                            }
-                                                        ]
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    ],
                                     "children": [
                                         {
                                             "type": "basic",
@@ -142,10 +434,6 @@
                                 {
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                                    },
                                     "actions": [
                                         {
                                             "type": "click",
@@ -153,6 +441,10 @@
                                             "target": "core_update_guide_modal"
                                         }
                                     ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                                    },
                                     "text": "$t:admin.settings.info.how_to_update"
                                 }
                             ]
@@ -164,14 +456,25 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{!$parent._local.coreUpdateInfo?.update_available}}",
-                    "props": { "className": "" },
+                    "props": {
+                        "className": ""
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "alert-info" },
+                            "props": {
+                                "className": "alert-info"
+                            },
                             "children": [
-                                { "type": "basic", "name": "P", "props": { "className": "text-info-soft" }, "text": "$t:admin.settings.info.no_update_message" }
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-info-soft"
+                                    },
+                                    "text": "$t:admin.settings.info.no_update_message"
+                                }
                             ]
                         }
                     ]

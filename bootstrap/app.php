@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
+use App\Exceptions\Auth\TwoFactorMeansRequiredException;
 use App\Exceptions\CannotModifyProtectedRoleException;
 use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\CoreVersionMismatchException;
@@ -7,27 +9,40 @@ use App\Exceptions\IdentityVerificationRequiredException;
 use App\Exceptions\PermissionEscalationException;
 use App\Helpers\ResponseHelper;
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\AllowInactiveUser;
+use App\Http\Middleware\Analytics\EnsureArchiveFresh;
+use App\Http\Middleware\Analytics\TrackBotHit;
+use App\Http\Middleware\Analytics\TrackServerVisit;
 use App\Http\Middleware\CheckTemplateDependencies;
 use App\Http\Middleware\CheckUserStatus;
+use App\Http\Middleware\Custom\RequireScreenAdmin;
+use App\Http\Middleware\Custom\RequireScreenUser;
 use App\Http\Middleware\DatabaseCredentialGuard;
 use App\Http\Middleware\EnforceIdentityPolicy;
+use App\Http\Middleware\EnsureActiveUser;
 use App\Http\Middleware\EnsureDebugMode;
 use App\Http\Middleware\ExtensionMiddlewareGate;
 use App\Http\Middleware\GzipEncodeResponse;
 use App\Http\Middleware\MaintenanceModePage;
+use App\Http\Middleware\MarkBotRequest;
 use App\Http\Middleware\OptionalSanctumMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
+use App\Http\Middleware\RedirectToCanonicalHost;
 use App\Http\Middleware\RefreshTokenExpiration;
+use App\Http\Middleware\RestrictIpAccess;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\RunScheduleOnVisit;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetTimezone;
 use App\Http\Middleware\StartApiSession;
+use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Middleware\SyncBoostWithDebugMode;
 use App\Seo\SeoMiddleware;
 use App\Support\ExecutionEnvironment;
+use App\Support\TrustedHosts;
 use App\Support\UmaskHelper;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -115,6 +130,20 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', $localeTimezoneMiddleware);
         $middleware->appendToGroup('api', $localeTimezoneMiddleware);
 
+        // IP 접근 제한 (인증 불필요, 전역) — 관리자 셸·코어 API·확장 API 전 표면을 한 판정으로 덮는다.
+        // prepend 가 아니라 append 인 이유: 신뢰 프록시는 기본 전역 스택의 TrustProxies 가 적용하므로
+        // 그보다 앞에서 돌면 프록시 뒤에서 $request->ip() 가 프록시 주소가 된다. append 도 그룹·라우트
+        // 미들웨어보다는 먼저 돌아 withoutMiddleware() 로 빠져나갈 수 없다. Gzip 보다 앞에 두어 차단
+        // 응답이 압축 단계를 거치지 않게 한다.
+        $middleware->append(RestrictIpAccess::class);
+
+        // 신뢰 Host (전역, 인증 불필요) — 사이트 주소(APP_URL)의 도메인·하위 도메인·www 쌍과 TRUSTED_HOSTS 가
+        // 아닌 Host 헤더로 온 요청을 받지 않는다. 위조 Host 로 절대 URL 을 만드는 코드가 남아 있을 때의
+        // 마지막 겹이다(보안: 근본 조치는 절대 URL 을 요청 Host 가 아니라 사이트 주소로 만드는 것 —
+        // App\Support\SiteUrl). 하위 도메인·포트만 바꾼 Host 는 통과하므로 그 자체로는 충분하지 않다.
+        // 설치 전·TRUSTED_HOSTS_ENABLED=false 면 빈 목록(제한 없음), 로컬·테스트는 Laravel 이 건너뛴다.
+        $middleware->trustHosts(at: fn (): array => TrustedHosts::patterns(), subdomains: false);
+
         // Gzip 압축 미들웨어 (웹서버 설정 없이 애플리케이션 레벨에서 압축)
         $middleware->append(GzipEncodeResponse::class);
 
@@ -122,6 +151,22 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // 등록이 가능하고, 실행은 응답을 보낸 뒤(terminate)에만 일어난다. 설정이 꺼져
         // 있으면 판정 한 번으로 끝나는 no-op 이다.
         $middleware->append(RunScheduleOnVisit::class);
+
+        // 방문자 통계 수집 제외 표식은 암호화하지 않는다.
+        // 사용자 화면의 트래커가 `document.cookie` 로 이 값을 직접 읽고 보내기 전에 스스로
+        // 멈춘다 — 서버가 암호문으로만 받으면 그 표식을 서버가 되읽지 못해, 트래커를 거치지
+        // 않는 경로(서버 폴백·내부 검색 훅)에서 제외가 무시된다. 담긴 값은 「제외됨」이라는
+        // 사실 하나뿐이라 위조돼도 잃는 것이 자기 방문 통계뿐이다.
+        // 방문자 쿠키(`g7_vid`)도 같은 이유로 암호화하지 않는다. 이 쿠키는 수집 API(api 그룹 —
+        // 쿠키 암호화 미들웨어가 없다)가 평문으로 심는데, 화면 요청(web 그룹)이 그것을
+        // 복호화하려다 실패해 없는 쿠키로 본다. 그러면 재방문자의 서버 폴백이 임시 키로
+        // 따로 방문을 열어 전체 로드마다 방문이 둘로 갈라진다. 담긴 값은 뜻 없는 난수다.
+        // 이 지점은 설정이 아직 올라오기 전이라 `config()` 를 쓸 수 없다 — 이름을 그대로 적는다
+        // (`config/analytics.php` 의 `cookies.opt_out`·`cookies.visitor` 기본값과 같아야 한다).
+        // 로그인 인계 묶음 쿠키(`g7_login_bind`)와 외부 인증 확장의 묶음 쿠키(`g7_sso_bind`)도 암호화하지 않는다 —
+        // web 라우트(외부 인증 콜백)가 굽고 api 라우트(인계 교환·동의 완료)가 읽는다. 암호화하면 api 쪽이 암호문을
+        // 읽어 늘 불일치가 된다. 값은 sha256 대조용 난수라 평문이어도 잃는 것이 없다.
+        $middleware->encryptCookies(except: ['g7_analytics_optout', 'g7_vid', 'g7_login_bind', 'g7_sso_bind']);
 
         // 토큰 만료 시간 슬라이딩 갱신 미들웨어 (API 요청 시 토큰 만료 시간 자동 연장)
         $middleware->appendToGroup('api', [
@@ -134,6 +179,15 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('api', [
             EnforceIdentityPolicy::class,
         ]);
+
+        // 공통 회원 상태 관문(7.2.0) — 코어·모듈·플러그인 API 전부가 같은 회원 상태 재검사를 받는다. 확장 라우트에 따로 붙이지
+        // 않는다. 인증 미들웨어(`auth:sanctum`, `optional.sanctum`) **뒤**에서 돌아야 회원을 안다 — 그룹 미들웨어는 라우트 미들웨어보다
+        // 앞에 놓이므로 우선순위 목록으로 순서를 보장한다(인증 → 선택 인증 → 상태 관문).
+        $middleware->appendToGroup('api', [
+            EnsureActiveUser::class,
+        ]);
+        $middleware->appendToPriorityList(AuthenticatesRequests::class, OptionalSanctumMiddleware::class);
+        $middleware->appendToPriorityList(OptionalSanctumMiddleware::class, EnsureActiveUser::class);
 
         // 확장 선언 미들웨어 self-gate 래퍼 — 확장이 getMiddleware() 로 선언한 미들웨어를
         // 요청 시점에 라우트명·URI 매칭으로 실행. web/api × before_core/after_core 로 4회 등록.
@@ -167,18 +221,47 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => AdminMiddleware::class,
             'check.user_status' => CheckUserStatus::class,
+            // 공통 회원 상태 관문 통과 표식 — 가입 후 인증 대기 회원의 본인인증 경로(`api.identity.*`)에만 붙인다(7.2.0)
+            'allow.inactive_user' => AllowInactiveUser::class,
             'permission' => PermissionMiddleware::class,
             'role' => RoleMiddleware::class,
+            // 최고관리자 전용 — 판정은 회원의 최고관리자 표지(is_super). 코어에 최고관리자 역할은 없다.
+            'super.admin' => SuperAdminMiddleware::class,
             'template.dependencies' => CheckTemplateDependencies::class,
             'optional.sanctum' => OptionalSanctumMiddleware::class,
             'start.api.session' => StartApiSession::class,
             'seo' => SeoMiddleware::class,
+            // 사이트 주소가 아닌 Host 의 화면 요청 → 사이트 주소로 301 (화면 셸 라우트에만 붙인다)
+            'canonical.host' => RedirectToCanonicalHost::class,
             'identity.policy' => EnforceIdentityPolicy::class,
             'extension.middleware' => ExtensionMiddlewareGate::class,
             'debug.gate' => EnsureDebugMode::class,
+            // 방문자 통계: 봇 기록은 SEO 앞(그 판정과 캐시 상태를 함께 읽는다),
+            // 서버 폴백은 SEO 뒤(봇으로 판정된 요청을 사람 방문으로 세지 않는다).
+            'analytics.bots' => TrackBotHit::class,
+            'analytics.fallback' => TrackServerVisit::class,
+            // 집계 조회 라우트 앞에서 오래된 집계를 다시 계산하고 응답에 신선도를 싣는다(권한 미들웨어 뒤).
+            'analytics.archive_on_view' => EnsureArchiveFresh::class,
+            // 개발자 화면(custom 예약 자리, #792) 회원 필수 / 관리자 필수 — routes/custom.php 에서 라우트에 붙인다
+            'custom.auth' => RequireScreenUser::class,
+            'custom.admin' => RequireScreenAdmin::class,
+        ]);
+
+        // 개발자 화면(routes/custom.php, #792) 묶음 — G7 화면 catch-all 과 같은 순서 계약을 따른다:
+        // 정식 주소 이동 → 봇 표식(SEO 렌더 없이 표식만) → 봇 기록 → 서버 폴백 집계(봇 표식이 있으면 세지 않음).
+        // 사용자 템플릿 의존성 검사(template.dependencies)는 넣지 않는다 — 템플릿이 없어도 개발자 화면은 뜬다.
+        $middleware->group('custom.screen', [
+            'canonical.host',
+            MarkBotRequest::class,
+            'analytics.bots',
+            'analytics.fallback',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // API 경로는 Accept 헤더와 무관하게 항상 JSON 으로 렌더링한다 — 기본 검증 실패 처리는 JSON 을
+        // 기대하지 않는 요청을 previous()(Referer → 세션 → 요청 Host)로 302 이동시킨다.
+        $exceptions->shouldRenderJsonWhen(fn (Request $request): bool => $request->is('api/*') || $request->expectsJson());
+
         // API 401 응답 시 잔존 세션 쿠키 정리
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             // API 경로는 Accept 헤더 유무와 무관하게 항상 JSON 401 (web redirect/route('login') 폴백 차단).
@@ -219,7 +302,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // 등급 상한(rank ceiling) / 권한 상승 차단 예외 → HTTP 403 (KVE-2026-1919).
+        // 등급 상한(rank ceiling) / 권한 상승 차단 예외 → HTTP 403.
         // 컨트롤러 catch 가 우선 처리하지만, 새 호출부가 로컬 catch 없이 이 예외를 던져도
         // 조용한 500 대신 일관된 403 이 되도록 전역 렌더러를 둔다(심층 방어). 메시지는 예외
         // 생성자가 lang 키로 설정한 것을 그대로 쓴다 — 컨트롤러 매핑과 동일 문구.
@@ -265,6 +348,24 @@ $app = Application::configure(basePath: dirname(__DIR__))
                     'success' => false,
                     'message' => $message,
                 ], $status, $e->getHeaders());
+            }
+        });
+
+        // 비밀번호 인증 정책 거절 → 403 + `errors.code = auth.password_auth_disabled` + `data{method_label, redirect_url}` (7.2.0).
+        // 로그인·재설정 컨트롤러는 직접 잡아 상태 코드를 고른다. 비밀번호 설정·관리자 지정처럼 회원 서비스 안에서 나는 경로는
+        // 여기서 같은 모양으로 답한다 — 화면이 「회사 계정으로 로그인」 안내를 한 분기로 그린다.
+        $exceptions->render(function (PasswordAuthDisallowedException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                [$messageKey, $params] = PasswordAuthDisallowedException::messageKeyAndParams($e->decision);
+
+                return ResponseHelper::error($messageKey, 403, ['code' => PasswordAuthDisallowedException::ERROR_CODE] + $e->decision->toResponseData(), $params, 'core', $e->decision->toResponseData());
+            }
+        });
+
+        // 정책이 요구한 2단계 인증의 수단이 없음 → 422 (7.2.0)
+        $exceptions->render(function (TwoFactorMeansRequiredException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return ResponseHelper::error('auth.two_factor_means_required', 422, ['code' => 'auth.two_factor_means_required']);
             }
         });
 
@@ -350,6 +451,12 @@ if (is_string($g7PublicPath) && trim($g7PublicPath) !== '') {
 | 테이블에서 제거해 호출이 치명 오류가 되므로 순수 PHP `function_exists` 로 가린다. 이 블록은 App\ 클래스를
 | 참조하지 않는 규칙이라 `ExecutionEnvironment::hasFunction()` 을 부르지 않는다 — PHP 8 은 차단 함수를
 | 등록하지 않으므로 두 판정은 같다(위 Public Path 블록은 부팅 뒤에도 도는 앱 코드라 SSoT 를 경유한다).
+|
+| Core Update: APP_VERSION 정합 — 같은 조건 안에서 프로세스 env 의 APP_VERSION 을 디스크 `.env` 값으로 올린다
+| (bootstrap/g7-update-env.php). 7.0.0~7.0.10 부모는 `.env` 만 바꾸고 자기 env 는 옛 버전으로 두므로, 그 env 를
+| 물려받은 새 코드 자식과 부모 안의 config:cache 일회용 앱이 옛 버전을 config/hooks 캐시에 구워 업데이트 뒤 첫
+| 프로세스가 확장을 자동 비활성화했다(#145, #137). 옛 부모 코드는 고칠 수 없지만 config:cache 는 어느 프로세스에서
+| 돌든 이 파일을 디스크에서 새로 require 하므로, 여기가 옛 부모 안과 모든 자식을 한 번에 덮는 유일한 지점이다.
 */
 $g7UpdateFlag = $_ENV['G7_UPDATE_IN_PROGRESS'] ?? $_SERVER['G7_UPDATE_IN_PROGRESS']
     ?? (function_exists('getenv') ? getenv('G7_UPDATE_IN_PROGRESS') : false);
@@ -357,6 +464,15 @@ $g7UpdateArgv = in_array(PHP_SAPI, ['cli', 'phpdbg'], true) ? ($_SERVER['argv'][
 
 if ($g7UpdateFlag === '1' || $g7UpdateFlag === 1 || $g7UpdateFlag === true
     || in_array($g7UpdateArgv, ['core:update', 'core:execute-upgrade-steps'], true)) {
+    try {
+        if (is_file(__DIR__.'/g7-update-env.php')) {
+            require_once __DIR__.'/g7-update-env.php';
+            g7_reconcile_update_app_version(dirname(__DIR__));
+        }
+    } catch (Throwable) {
+        // 정합 실패는 부팅을 막지 않는다.
+    }
+
     try {
         foreach ([$app->getCachedPackagesPath(), $app->getCachedServicesPath()] as $g7ManifestPath) {
             if (is_file($g7ManifestPath)) {

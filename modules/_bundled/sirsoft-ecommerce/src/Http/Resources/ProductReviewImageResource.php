@@ -76,8 +76,10 @@ class ProductReviewImageResource extends BaseApiResource
      */
     protected function abilityMap(): array
     {
+        // 이미지 삭제 라우트(`user/reviews/{review}/images/{image}`)의 권한과 같은 식별자다 — 관리자 리뷰 삭제 권한
+        // (`reviews.delete`)이 아니다. 본인 리뷰인지는 리뷰의 `is_owner` 와 서버의 소유권 검사가 맡는다.
         return [
-            'can_delete' => 'sirsoft-ecommerce.reviews.delete',
+            'can_delete' => 'sirsoft-ecommerce.user-reviews.write',
         ];
     }
 }

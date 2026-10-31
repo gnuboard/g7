@@ -27,6 +27,8 @@ export interface MenuItem {
         name: string | Record<string, string>;
         permission_type?: string | null;
     }[];
+    /** 관리 목록이 싣는 부여 역할 ID (이름은 roleOptions 에서 찾는다) */
+    role_ids?: number[];
     created_at?: string;
     updated_at?: string;
 }
@@ -60,6 +62,31 @@ export interface SortableMenuListProps {
     titleClassName?: string;
     enableDrag?: boolean;
     toggleDisabled?: boolean;
+    /**
+     * 여러 개 선택 모드 (기본값: false). 켜면 항목 앞에 체크박스가 보이고, 끌어 옮기기와 상태
+     * 토글이 꺼지며, 항목 클릭은 상세 선택(onSelect) 대신 체크를 토글한다. 자식은 모두 펼친다.
+     */
+    selectionMode?: boolean;
+    /** 선택 모드에서 체크된 메뉴 ID */
+    selectedIds?: number[];
+    /** 선택 모드에서 체크가 바뀔 때 — 새 ID 배열 */
+    onSelectionChange?: (ids: number[]) => void;
+    /**
+     * 역할 이름표 — 항목의 role_ids 를 이름으로 바꿔 행마다 배지로 보인다. 주지 않으면 배지를 그리지 않는다.
+     * 목록에 없는 ID(비활성 역할 등)는 건너뛴다.
+     */
+    roleOptions?: {
+        id: number;
+        name: string | Record<string, string>;
+    }[];
+    /**
+     * 항목 편집 주소(행 표현식, 예: `/admin/menus?id={{row.id}}&mode=edit`) — 주면 항목 이름이 그 주소의 링크가 되어
+     * 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」로 그 항목 편집 화면을 연다(#757). 보통 클릭은 지금처럼 onSelect.
+     * 엔진은 원문을 넘기고(components.json skipBindingKeys) 항목마다 그 항목으로 푼다. 여러 개 선택 모드에서는 링크를 그리지 않는다.
+     */
+    itemHref?: string;
+    /** 참이면 현재 주소의 쿼리(검색 등)를 항목 주소에 합친다(같은 키는 항목 주소 쪽이 이긴다) */
+    itemHrefMergeQuery?: boolean;
     /**
      * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
      */

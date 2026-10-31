@@ -1299,7 +1299,7 @@ describe('DynamicRenderer - TranslationEngine 통합', () => {
 
   /**
    * Regression Tests
-   * @see docs/frontend/troubleshooting-state-closure.md
+   * @see 트러블슈팅 가이드 troubleshooting-state-closure.md
    */
   describe('Regression Tests - Stale Closure Prevention', () => {
     /**

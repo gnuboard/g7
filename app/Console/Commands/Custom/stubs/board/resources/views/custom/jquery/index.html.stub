@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!--
+  HTML + jQuery 견본 (custom:example board)
+  서버는 이 파일을 그대로 내보낸다(Blade 해석 없음). 데이터는 브라우저의 jQuery 가 API 로 가져온다:
+    POST /api/auth/login → data.token 을 localStorage 'auth_token' 에 저장 → 이후 Authorization: Bearer
+    GET  /api/modules/sirsoft-board/boards/free/posts
+-->
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HTML + jQuery 견본</title>
+    <link rel="stylesheet" href="/custom/example.css">
+</head>
+<body class="cx-body">
+<header class="cx-header">
+    <div class="cx-wrap cx-header-row">
+        <a class="cx-brand" href="/">그누보드7</a>
+        <span class="cx-chip">HTML + jQuery 견본</span>
+        <div class="cx-account" id="jq-account" hidden>
+            <span id="jq-member" class="cx-member"></span>
+            <button type="button" id="jq-logout" class="cx-button-outline">로그아웃</button>
+        </div>
+    </div>
+</header>
+<main class="cx-main">
+    <div class="cx-wrap cx-jq-grid">
+        <section class="cx-card cx-pad cx-stack-tight" aria-labelledby="jq-login-title">
+            <h2 id="jq-login-title" class="cx-h2">로그인</h2>
+            <p id="jq-logged-in" class="cx-muted" hidden>로그인했습니다. 토큰을 브라우저에 저장했고, 이후 API 호출에 <code>Authorization: Bearer</code> 로 실어 보냅니다.</p>
+            <form id="jq-login-form" class="cx-stack-tight" novalidate>
+                <label for="jq-email">이메일</label>
+                <input id="jq-email" name="email" type="email" class="cx-input" autocomplete="username" required>
+                <label for="jq-password">비밀번호</label>
+                <input id="jq-password" name="password" type="password" class="cx-input" autocomplete="current-password" aria-describedby="jq-error" required>
+                <p id="jq-error" class="cx-error-text" role="alert" hidden></p>
+                <button type="submit" class="cx-button">로그인</button>
+            </form>
+            <div class="cx-code-note">POST /api/auth/login<br>→ data.token → localStorage<br>GET /api/modules/sirsoft-board/boards/free/posts</div>
+        </section>
+        <section class="cx-card cx-table" aria-labelledby="jq-list-title">
+            <div class="cx-pad cx-title-row">
+                <h2 id="jq-list-title" class="cx-h2">자유게시판 최신 글</h2>
+                <span id="jq-list-note" class="cx-muted cx-push"></span>
+            </div>
+            <ul id="jq-posts" class="cx-list"></ul>
+        </section>
+    </div>
+</main>
+<footer class="cx-footer">
+    <div class="cx-wrap cx-footer-row">
+        <span class="cx-badge">custom 견본</span>
+        <span>이 화면은 resources/views/custom/jquery/index.html 과 public/custom/example.js 입니다. 서버는 HTML 을 그대로 내보내고, 데이터는 브라우저의 jQuery 가 API 로 가져옵니다.</span>
+    </div>
+</footer>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script src="/custom/example.js"></script>
+</body>
+</html>

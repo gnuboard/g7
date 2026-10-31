@@ -1,0 +1,38 @@
+feature: 레이아웃 데이터 소스 엔드포인트 화이트리스트 규칙 (WhitelistedEndpoint)
+
+description: |
+  레이아웃 저장 API(Store/Update Layout 요청)와 마크업 강검증이 재사용하는 WhitelistedEndpoint 규칙은
+  데이터 소스 엔드포인트를 코어가 실제로 등록한 API 네임스페이스와 확장 API 프리픽스로만 제한한다.
+
+  판정 근거는 라우트 표다 — 종전에는 `(admin|auth|public)` 만 하드코딩해 정상 출하 중인 코어
+  엔드포인트(identity·me·users·search 등)를 쓰는 레이아웃을 편집기 저장 API 가 거부했다.
+
+  핵심 동작:
+    - /api/{ns}/... 는 {ns} 가 라우트 표에 등록된 코어 네임스페이스일 때만 허용 (유령 항목 public 은 차단)
+    - /api/(modules|plugins)/{vendor-name}/... 는 식별자 형태(하이픈 포함)가 맞을 때만 허용
+    - 직접 경로·외부 URL·경로 트래버설·문자열 아닌 값·대문자 경로는 차단
+    - 빈 문자열·null 은 이 규칙이 실패시키지 않는다 (required 규칙 몫)
+
+axes:
+  input_kind: [registered_core_namespace, extension_api_prefix, unregistered_namespace, invalid_extension_segment, direct_path, external_url, path_traversal, empty_value, non_string, case_mismatch]
+
+effects:
+  - registered_core_namespace_allowed
+  - route_table_namespaces_beyond_legacy_list_allowed
+  - query_and_id_suffix_allowed
+  - unregistered_namespace_blocked
+  - blocked_endpoint_reports_failure_message
+  - extension_api_prefix_with_identifier_allowed
+  - non_identifier_extension_segment_blocked
+  - non_api_direct_path_blocked
+  - external_url_blocked
+  - path_traversal_blocked
+  - empty_value_deferred_to_required_rule
+  - non_string_value_blocked
+  - uppercase_path_blocked
+
+test_files:
+  - tests/Feature/Rules/WhitelistedEndpointTest.php
+
+validation:
+  automated: "php artisan test --filter=WhitelistedEndpointTest"

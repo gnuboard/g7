@@ -24,8 +24,15 @@ SSoT 는 코어 `config/template.php` 의 `required_admin_components` 입니다.
 이 템플릿으로 바꿔 보면 그 규칙을 지키지 않은 화면이 드러납니다 — **모듈 호환성 확인용
 실험 도구**로 쓸 수 있습니다.
 
-컴포넌트를 추가할 때는 소스(`src/components/{분류}/`) · `template.json` 의 레지스트리 ·
-`components.json` 을 함께 갱신합니다. 하나라도 빠지면 레이아웃이 그 이름을 찾지 못해 그
-컴포넌트만 조용히 렌더되지 않습니다. TSX 를 고쳤으면 `template:build --production` 후
+컴포넌트를 추가할 때는 소스(`src/components/{분류}/`), `src/index.ts` 의 export,
+`template.json` 의 레지스트리, `components.json` 을 함께 갱신합니다. 코어는 `components.json` 에
+선언된 `name` 으로 번들의 export 를 찾아 등록하므로, 선언이 없거나 export 이름이 다르면
+레이아웃이 그 이름을 찾지 못해 그 컴포넌트만 조용히 렌더되지 않습니다. TSX 를 고쳤으면 `template:build --production` 후
 `dist/` 를 함께 커밋합니다.
+
+`A` 의 `mergeQuery` 는 렌더할 때 현재 쿼리를 href 에 합치므로, 같은 화면에서 쿼리만 바꾸는 `navigate replace` 뒤에도
+href 가 새 쿼리를 따르도록 코어 훅 `G7Core.navigation.useLocationSearch` 로 주소를 구독합니다(코어 7.1.3). 훅이 없는 7.1.2 코어에서는
+엔진 `G7Core.navigation.subscribeLocationSearch` 로 구독하고, 그마저 없는 옛 엔진에서만 뒤로/앞으로를 봅니다.
+링크 props 가 그대로라 엔진이 그 링크를 다시 그리지 않기 때문입니다 — 구독하지 않으면 가운데 클릭·새 탭·주소 복사가
+바꾸기 전 쿼리로 갑니다. `mergeQuery` 가 없는 링크는 구독하지 않습니다(0.2.2).
 <!-- @intent END -->

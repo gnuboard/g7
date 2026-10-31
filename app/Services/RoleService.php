@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Exceptions\CannotModifyProtectedRoleException;
 use App\Exceptions\ExtensionOwnedRoleDeleteException;
+use App\Exceptions\RoleActiveStateLockedException;
 use App\Exceptions\SystemRoleDeleteException;
 use App\Extension\HookManager;
 use App\Models\Role;
@@ -15,12 +16,21 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class RoleService
 {
+    /**
+     * RoleService 생성자
+     *
+     * @param  RoleRepositoryInterface  $roleRepository  역할 리포지토리
+     * @param  PermissionEscalationGuard  $escalationGuard  권한 상승 방지 가드 (행위자 보유 범위 밖 권한 부여 차단)
+     * @param  MenuService  $menuService  메뉴 서비스 (역할 폼 「접근 가능 메뉴」 동기화)
+     */
     public function __construct(
         private RoleRepositoryInterface $roleRepository,
-        private PermissionEscalationGuard $escalationGuard
+        private PermissionEscalationGuard $escalationGuard,
+        private MenuService $menuService
     ) {}
 
     /**
@@ -85,7 +95,7 @@ class RoleService
      */
     public function getRoleWithPermissions(Role $role): Role
     {
-        $role->load(['permissions' => fn ($q) => $q->withPivot('scope_type'), 'users']);
+        $role->load(['permissions' => fn ($q) => $q->withPivot('scope_type'), 'users', 'menus' => fn ($q) => $q->select('menus.id')]);
         $role->loadCount('users');
 
         return $role;
@@ -108,6 +118,15 @@ class RoleService
         $permissions = $data['permissions'] ?? [];
         unset($data['permissions']);
 
+        // 접근 가능 메뉴 분리 (보내지 않았으면 메뉴를 건드리지 않는다)
+        $menuIds = array_key_exists('menu_ids', $data) ? (array) $data['menu_ids'] : null;
+        unset($data['menu_ids']);
+
+        // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+        if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
+            unset($data['password_expiry_policy']);
+        }
+
         // 권한 상승 상한을 **역할 생성 전에** 검사한다. 생성 뒤에 검사하면 거부된 요청이
         // 권한 0개짜리 고아 역할 행을 남긴다(사용자 경로와 동일한 "가드 → 쓰기" 순서).
         if (! empty($permissions)) {
@@ -120,13 +139,20 @@ class RoleService
         // 훅: 생성 데이터 필터
         $data = HookManager::applyFilters('core.role.filter_create_data', $data);
 
-        // 역할 생성
-        $role = $this->roleRepository->create($data);
+        // 역할 생성·권한·메뉴를 한 번에 — 메뉴 지정이 거부되면 역할 행도 남기지 않는다.
+        $role = DB::transaction(function () use ($data, $permissions, $menuIds) {
+            $role = $this->roleRepository->create($data);
 
-        // 권한 할당
-        if (! empty($permissions)) {
-            $this->syncPermissions($role, $permissions);
-        }
+            if (! empty($permissions)) {
+                $this->syncPermissions($role, $permissions);
+            }
+
+            if ($menuIds !== null) {
+                $this->menuService->syncRoleMenus($role, $menuIds);
+            }
+
+            return $role;
+        });
 
         // 훅: 생성 후
         HookManager::doAction('core.role.after_create', $role);
@@ -140,6 +166,8 @@ class RoleService
      * @param  Role  $role  역할 모델
      * @param  array  $data  업데이트 데이터
      * @return Role 업데이트된 역할 모델
+     *
+     * @throws RoleActiveStateLockedException 최고관리자 역할을 끄려 할 때
      */
     public function updateRole(Role $role, array $data): Role
     {
@@ -147,9 +175,23 @@ class RoleService
         // 비-슈퍼관리자 액터는 admin 등 코어/확장 소유 역할을 변경할 수 없다.
         $this->assertActorMayModifyRole($role);
 
+        // 최고관리자 역할은 끌 수 없다 — 끄면 운영자 전원의 권한이 회수된다.
+        if ($role->isActiveStateLocked() && array_key_exists('is_active', $data) && ! $data['is_active']) {
+            throw new RoleActiveStateLockedException;
+        }
+
         // 권한 목록 분리
         $permissions = $data['permissions'] ?? null;
         unset($data['permissions']);
+
+        // 접근 가능 메뉴 분리 (보내지 않았으면 메뉴를 건드리지 않는다)
+        $menuIds = array_key_exists('menu_ids', $data) ? (array) $data['menu_ids'] : null;
+        unset($data['menu_ids']);
+
+        // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+        if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
+            unset($data['password_expiry_policy']);
+        }
 
         // 권한 상승 상한을 **속성 업데이트 전에** 검사한다. update 뒤에 검사하면
         // 403 을 받은 요청이 name/is_active 변경만 반영된 상태를 남긴다.
@@ -166,13 +208,19 @@ class RoleService
         // 훅: 업데이트 데이터 필터
         $data = HookManager::applyFilters('core.role.filter_update_data', $data, $role);
 
-        // 역할 정보 업데이트
-        $this->roleRepository->update($role, $data);
+        // 속성·권한·메뉴를 한 트랜잭션으로 — 메뉴 지정이 거부(422)되면 이름·권한 변경도 남기지 않는다.
+        DB::transaction(function () use ($role, $data, $permissions, $menuIds) {
+            $this->roleRepository->update($role, $data);
 
-        // 권한 동기화 (null이 아닌 경우에만)
-        if ($permissions !== null) {
-            $this->syncPermissions($role, $permissions);
-        }
+            // 권한 동기화 (null이 아닌 경우에만)
+            if ($permissions !== null) {
+                $this->syncPermissions($role, $permissions);
+            }
+
+            if ($menuIds !== null) {
+                $this->menuService->syncRoleMenus($role, $menuIds);
+            }
+        });
 
         $role->refresh();
 
@@ -229,6 +277,7 @@ class RoleService
      *
      * @param  Role  $role  역할 모델
      * @param  array  $permissions  권한 배열 [{id, scope_type}, ...]
+     * @return void 반환값 없음
      */
     public function syncPermissions(Role $role, array $permissions): void
     {
@@ -240,6 +289,10 @@ class RoleService
         // 권한 상승 상한(ceiling): 비-슈퍼관리자 액터는 자신이 보유하지 않았거나
         // 자신의 범위(scope)보다 넓은 범위의 권한을 부여할 수 없다(SSoT 가드에 위임).
         $this->escalationGuard->assertGrantWithinActorCeiling($permissions);
+
+        // 비회원 역할은 권한 범위(본인·소유역할)를 가질 수 없다(7.1.1). 요청 검증(422)과 같은 판정 —
+        // 이 메서드는 public 이라 확장이 요청을 거치지 않고 부를 수 있으므로 여기서도 막는다.
+        $this->assertScopeSupported($role, $permissions);
 
         // 동기화 전 현재 권한 식별자 캡처 (Listener diff 계산용)
         $previousPermIdentifiers = $role->permissions()->pluck('identifier')->toArray();
@@ -265,15 +318,49 @@ class RoleService
     }
 
     /**
+     * 스코프를 지원하지 않는 역할(비회원)에 스코프가 실린 부여가 있으면 거부합니다.
+     *
+     * @param  Role  $role  대상 역할
+     * @param  array<int, array{id: int, scope_type?: string|null}>  $permissions  부여할 권한 목록
+     * @return void 반환값 없음
+     *
+     * @throws ValidationException 비회원 역할에 스코프가 실렸을 때
+     */
+    private function assertScopeSupported(Role $role, array $permissions): void
+    {
+        if ($role->supportsPermissionScope()) {
+            return;
+        }
+
+        $errors = [];
+        foreach (array_values($permissions) as $index => $permission) {
+            if (($permission['scope_type'] ?? null) !== null) {
+                $errors["permissions.{$index}.scope_type"] = __('role.validation.guest_scope_not_allowed');
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    /**
      * 역할의 활성화 상태를 토글합니다.
      *
      * @param  Role  $role  역할 모델
      * @return bool 토글 성공 여부
+     *
+     * @throws RoleActiveStateLockedException 최고관리자 역할일 때
      */
     public function toggleRoleStatus(Role $role): bool
     {
         // 보호된 역할(코어/확장 소유) 상태변경 상한: 삭제 경로와 대칭.
         $this->assertActorMayModifyRole($role);
+
+        // 최고관리자 역할은 사용 여부를 바꿀 수 없다 — 끄면 운영자 전원의 권한이 회수된다.
+        if ($role->isActiveStateLocked()) {
+            throw new RoleActiveStateLockedException;
+        }
 
         $newStatus = ! $role->is_active;
 
@@ -298,6 +385,7 @@ class RoleService
      * 코어/확장 소유 역할을 수정할 수 없습니다.
      *
      * @param  Role  $role  대상 역할
+     * @return void 반환값 없음
      *
      * @throws CannotModifyProtectedRoleException 상한 위반 시
      */
@@ -305,18 +393,10 @@ class RoleService
     {
         $actor = Auth::user();
 
-        // 인증 액터 부재 = 내부/Artisan 신뢰 경로 → 가드 미적용
-        if (! $actor instanceof User) {
-            return;
-        }
-
-        // 슈퍼 관리자는 모든 역할 수정 가능
-        if ($actor->isSuperAdmin()) {
-            return;
-        }
-
-        // 비-슈퍼관리자는 코어/확장 소유 역할 수정 불가
-        if ($role->isCore() || $role->isExtensionOwned()) {
+        // 판정은 모델 한 곳(Role::isModifiableBy)에 둔다 — 응답의 abilities 가 같은 판정을
+        // 읽어야 화면의 수정·토글 버튼이 서버 수락 여부와 어긋나지 않는다.
+        // 인증 액터 부재(내부/Artisan 신뢰 경로)·슈퍼 관리자는 통과, 그 외는 보호 역할 수정 불가.
+        if (! $role->isModifiableBy($actor instanceof User ? $actor : null)) {
             throw new CannotModifyProtectedRoleException;
         }
     }

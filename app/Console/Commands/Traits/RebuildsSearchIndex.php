@@ -72,7 +72,7 @@ trait RebuildsSearchIndex
         }
 
         $this->newLine();
-        $this->warn('⚠️  '.__('search.index.stale_after_update', ['count' => count($stale)]));
+        $this->warn('⚠️  '.trans_choice('search.index.stale_after_update', count($stale)));
 
         foreach ($stale as $health) {
             $this->line('   - '.$health->identifier);

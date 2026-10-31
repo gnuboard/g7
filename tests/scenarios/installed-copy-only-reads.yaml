@@ -1,0 +1,67 @@
+feature: 편집기·관리 서비스의 설치본 전용 읽기 (배포 원본 폴백 제거)
+
+description: |
+  확장·템플릿은 배포 원본(`{templates|modules|plugins}/_bundled/{id}`)과 설치본
+  (`{templates|modules|plugins}/{id}`) 두 곳에 있다. 레이아웃 편집기와 관리 서비스의 여러 읽기
+  경로가 설치본에 파일이 없으면 배포 원본을 대신 읽었고, 그 규칙도 경로마다 달랐다(편집기
+  스펙 합본은 이미 설치본 전용). 사이트에서 실제로 돌아가는 것은 설치본이므로, 원본을 대신
+  읽으면 편집기가 운영 화면과 다른 내용을 보여 준다.
+
+  결정 D1(2026-09-28): 편집기·관리 서비스 읽기는 설치본만 본다. 파일이 없으면 원본으로
+  대신하지 않고, 편집에 꼭 필요한 파일(components.json·routes.json·편집기 빌드)은 「설치본에
+  파일이 없습니다 — 다시 업데이트하세요」 안내를, 없어도 정상인 파일(다국어·CSS·다크 격리 규칙·
+  공통 레이아웃·모듈/플러그인 컴포넌트 매니페스트·SEO 기본값)은 부재로 처리한다.
+
+  원본 읽기가 목적인 경로는 그대로 둔다 — 설치 마법사, 미설치 번들 확장 목록(아이콘·라이선스·
+  변경 이력 포함), `{type}:update --source=bundled`, 번들 업데이트 안내, 업그레이드 스텝,
+  개발용 레이아웃 변환 명령, 문서 생성 명령, 번들 언어팩 설치.
+
+axes:
+  read_site:
+    - template_editor_components
+    - template_editor_routes
+    - template_editor_layout_tree
+    - template_editor_assets
+    - template_editor_css
+    - template_editor_dark_isolation
+    - template_editor_language
+    - module_components
+    - plugin_components
+    - seo_defaults
+  file_state: [installed_present, installed_missing_bundled_present]
+
+cross_product: |
+  read_site × file_state 20 조합 전부를 테스트한다. 각 조합은 설치본과 배포 원본에 서로 다른
+  표식을 둔 픽스처로, 설치본이 있으면 설치본 표식이 나오고 설치본이 없으면 원본 표식이 절대
+  나오지 않음을 단언한다. 「둘 다 없음」 은 종전 동작과 같아(부재) 축에서 뺐다.
+
+effects:
+  - installed_file_served
+  - bundled_copy_never_read
+  - missing_required_file_returns_404_with_update_guidance
+  - missing_required_file_returns_update_guidance_message
+  - missing_optional_file_treated_as_absent
+  - editor_assets_response_omits_manifest_source
+
+sub_flows:
+  - id: editor_asset_endpoint_contract
+    description: |
+      같은 편집기 자산 엔드포인트의 기존 계약(설치본 기준 정상 응답·라우트 source 태깅·공통
+      레이아웃/모달 수집·인증과 편집 권한 가드·표시 권한 후보·프리뷰 CSS 다크 치환과 @layer
+      평탄화). 설치본 전용 읽기로 바꾼 뒤에도 그대로 유지돼야 하는 동작을 묶는다.
+    effects:
+      - editor_endpoints_respond_200_for_installed_template
+      - editor_routes_tag_every_route_with_source
+      - editor_routes_collect_base_layouts_and_modals
+      - editor_endpoints_reject_unauthenticated_or_unpermitted
+      - permission_candidates_returned_as_key_name
+      - editor_assets_css_points_to_editor_endpoint
+      - editor_css_rewrites_dark_ancestor_and_flattens_layers
+
+# E2E 없음: 설치본에서 파일을 지운 상태를 브라우저 테스트 환경에서 만들면 실제 설치본을
+# 파괴한다. 서버 응답(404·빈 응답·안내 메시지)은 Feature 테스트가 픽스처로 전수 검증하고,
+# 편집기 화면은 서버 message 를 그대로 오류 패널에 보여 주는 기존 경로(buildEditorAccessError)를 탄다.
+
+test_files:
+  - tests/Feature/Extension/InstalledCopyOnlyReadsTest.php
+  - tests/Feature/Api/Admin/AdminTemplateAssetControllerTest.php

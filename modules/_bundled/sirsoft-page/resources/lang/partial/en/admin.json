@@ -63,15 +63,18 @@
       "restore_success": "Version has been restored.",
       "bulk_publish_title": "Bulk Publish",
       "bulk_publish_confirm": "Change {{count}} pages to published status.",
+      "bulk_publish_confirm_one": "Change {{count}} page to published status.",
       "bulk_publish_success": "Selected pages have been published.",
       "bulk_unpublish_title": "Bulk Unpublish",
       "bulk_unpublish_confirm": "Change {{count}} pages to unpublished status.",
+      "bulk_unpublish_confirm_one": "Change {{count}} page to unpublished status.",
       "bulk_unpublish_success": "Selected pages have been unpublished."
     },
     "errors": {
       "delete_failed": "Failed to delete page.",
       "restore_failed": "Failed to restore version.",
-      "publish_change_failed": "Failed to change publish status."
+      "publish_change_failed": "Failed to change publish status.",
+      "download_failed": "Failed to download the attachment."
     },
     "form": {
       "page_title_create": "Create Page",
@@ -117,7 +120,8 @@
       "create_success": "Page has been created.",
       "update_success": "Page has been updated.",
       "validation_error": "Please check the input information.",
-      "read_only_message": "Displayed in read-only mode because you do not have edit permission."
+      "read_only_message": "Displayed in read-only mode because you do not have edit permission.",
+      "read_only_message_create": "Displayed in read-only mode because you do not have create permission."
     },
     "attachment": {
       "download": "Download"

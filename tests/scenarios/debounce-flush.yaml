@@ -1,0 +1,56 @@
+feature: 디바운스 대기분 flush — 비디바운스 액션이 최신 상태를 읽는다
+
+description: |
+  `set-state :debounce` 로 지연된 상태 변경이 아직 반영되지 않은 시점에 저장·전송 같은
+  **비디바운스 액션**이 눌리면, 그 액션은 반영 전 값을 읽는다. 엔진은 그래서 비디바운스 액션을
+  실행하기 전에 대기 중인 디바운스를 즉시 실행한다(`flushPendingDebounceTimers`).
+
+  축은 셋이다 — **무엇이 대기 중인가**(없음·하나·여럿), **무엇이 flush 를 부르는가**(직접 호출·
+  비디바운스 액션·타이머 만료), 그리고 그 결과를 읽는 쪽이 렌더 시점 문맥인가 flush 이후 문맥인가.
+
+  #476 이 마지막 축을 추가했다: flush 는 store 를 갱신하지만 액션에 넘어가는 `dataContext` 는
+  **렌더 시점 스냅샷**이라, 그대로 두면 타이핑 직후 저장이 직전 버퍼를 보낸다. 응답은 200 이라
+  화면에는 성공으로 보인다 — 그래서 회귀를 재려면 **응답 상태가 아니라 요청 본문**을 봐야 한다.
+
+  `_changedKeys` 는 객체 값(다국어 입력 등)의 디바운스 병합 규약이다. 이것이 없으면 창 안의
+  앞선 로케일 변경분이 마지막 값으로 덮인다.
+
+axes:
+  pending_debounce: [none, single, multiple]
+  trigger: [explicit_flush, non_debounced_action, timer_expiry]
+
+exclusions:
+  - { pending_debounce: multiple, trigger: non_debounced_action,
+      reason: "비디바운스 액션은 대기분 **전량**을 한 번에 flush 하므로 단일·복수의 코드 경로가 같다 — explicit_flush 축이 복수 대기를 대표로 검증한다" }
+  - { pending_debounce: multiple, trigger: timer_expiry,
+      reason: "타이머는 키별로 독립 만료라 복수 대기가 서로의 만료에 관여하지 않는다 — 단일 만료 검증이 대표다" }
+
+effects:
+  # flush 자체
+  - flush_with_no_pending_does_nothing
+  - flush_runs_pending_trailing_immediately
+  - flush_clears_timer_so_it_does_not_run_twice
+  - flush_runs_every_pending_action
+  - flush_handles_leading_plus_trailing_mode
+  - repeated_input_flushes_with_the_last_value
+  # 타이머·flusher 정리
+  - clearing_timers_also_clears_flushers
+  - clearing_by_component_id_clears_only_that_flusher
+  - expired_timer_leaves_nothing_to_flush
+  # 비디바운스 액션 진입점
+  - non_debounced_action_flushes_pending_first
+  - non_debounced_action_runs_alone_when_nothing_pending
+  - debounced_handler_runs_before_non_debounced_one
+  # flush 이후 데이터 문맥 (#476)
+  - action_inside_debounce_window_reads_global_after_flush
+  - context_is_reused_untouched_when_nothing_was_flushed
+  # _changedKeys 병합 규약
+  - changed_keys_preserves_earlier_locale_edits
+  - without_changed_keys_the_last_value_wins
+  - changed_keys_accumulator_is_cleared_after_completion
+  - changed_keys_merge_applies_on_flush_too
+  - plain_object_event_preserves_changed_keys
+  - plain_object_event_changed_keys_merge_on_flush
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.debounceFlush.test.ts

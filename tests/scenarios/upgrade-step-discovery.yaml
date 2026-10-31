@@ -1,0 +1,31 @@
+feature: 업그레이드 단계·데이터 마이그레이션 클래스 누락은 업데이트 실패다 (7.1.3)
+
+description: |
+  파일은 있는데 네임스페이스 오타·오토로드 누락으로 클래스가 없거나 UpgradeStepInterface·DataMigration 을 구현하지 않으면
+  예전에는 그 단계를 조용히 건너뛰어 데이터는 옛 형태인데 버전만 올라갔다. 모듈·플러그인 단계 수집, 데이터 마이그레이션
+  수집, 코어 단계 수집이 UpgradeStepClassMissingException 으로 업데이트를 실패시키고, 기존 업데이트 실패 경로를 탄다.
+  이번 업데이트 범위 밖의 깨진 단계 파일은 막지 않는다(확장 수집은 자리 표시를 두고 범위 안일 때만 실패 — 코어와 같은 규칙).
+
+axes:
+  owner: [module, plugin, data_migration, core]
+  defect: [class_missing, interface_missing, none, out_of_range]
+
+exclusions:
+  - { owner: plugin, defect: interface_missing, reason: "플러그인 수집은 모듈 수집과 같은 assertUsable 한 줄 — 인터페이스 판정은 module 칸이 덮는다" }
+  - { owner: plugin, defect: none, reason: "정상 수집 동작은 module 칸과 기존 플러그인 업데이트 시험이 덮는다" }
+  - { owner: data_migration, defect: interface_missing, reason: "같은 assertUsable(DataMigration) — 판정 분기는 module 칸이 덮는다" }
+  - { owner: data_migration, defect: none, reason: "정상 데이터 마이그레이션은 기존 AbstractUpgradeStepTest 가 덮는다" }
+  - { owner: core, defect: interface_missing, reason: "코어는 같은 assertUsable 결과를 CoreUpdateOperationException 으로 옮길 뿐 — 키 분기는 class_missing 칸으로 확인" }
+  - { owner: core, defect: none, reason: "정상 코어 단계 실행은 기존 CoreUpdateService 업그레이드 시험이 덮는다" }
+  - { owner: plugin, defect: out_of_range, reason: "플러그인 매니저도 같은 UnusableUpgradeStep::assertNoneIn 한 줄을 범위 거르기 뒤에 둔다 — module 칸이 덮는다" }
+  - { owner: data_migration, defect: out_of_range, reason: "데이터 마이그레이션은 범위 안 단계가 실행될 때만 수집된다 — 범위 밖 개념 없음" }
+  - { owner: core, defect: out_of_range, reason: "코어 수집은 원래 범위 안 파일만 require 한다(CoreUpdateService::runUpgradeSteps)" }
+
+effects:
+  - missing_upgrade_class_fails_update
+  - non_step_class_fails_update
+  - valid_step_still_collected
+  - out_of_range_broken_step_does_not_block_update
+
+test_files:
+  - tests/Unit/Extension/UpgradeStepDiscoveryTest.php

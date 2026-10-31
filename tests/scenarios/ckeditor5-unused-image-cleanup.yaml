@@ -72,6 +72,8 @@ effects:
   - manual_run_ignores_toggle
   # 관리 API
   - admin_index_lists_uploads
+  # 업로드일 필터는 보는 사람의 시간대 하루로 자른다(UTC 하루면 한국 새벽 업로드가 그날 필터에서 빠진다 — 7.1.0)
+  - admin_index_date_filter_follows_viewer_day
   - admin_index_column_pruning
   - admin_index_referenced_badge
   - admin_index_unreferenced_filter
@@ -97,7 +99,7 @@ effects:
 sub_flows:
   - id: schedule_gate
     description: |
-      자동 정리는 사용자 파일을 지우므로 기본 꺼짐이다. 스케줄 등록부의 enabled_config 게이트는
+      자동 정리는 사용자 파일을 지우므로 기본 꺼짐이다. 스케줄 등록부의 실행 조건(enabled_condition) 게이트는
       설정 조회가 실패하면 true 로 폴백하므로, 커맨드가 `--scheduled` 에서 같은 설정을 false
       폴백으로 재확인한다. 인수 기준은 "설정을 만지지 않은 사이트에서 자동 삭제 0".
     effects:
@@ -119,6 +121,7 @@ sub_flows:
     description: 관리 화면이 쓰는 조회·단건 삭제·일괄 삭제 API 와 권한 경계
     effects:
       - admin_index_lists_uploads
+      - admin_index_date_filter_follows_viewer_day
       - admin_index_referenced_badge
       - admin_index_unreferenced_filter
       - admin_index_scan_window_limited

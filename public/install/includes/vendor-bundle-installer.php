@@ -3,6 +3,8 @@
 use App\Support\ExecutionEnvironment;
 use App\Support\ComposerInstallInfo;
 
+require_once __DIR__.'/safe-archive-extractor.php';
+
 /**
  * Vendor 번들 설치 헬퍼 (웹 인스톨러 전용 shim).
  *
@@ -164,6 +166,18 @@ function extractVendorBundle(string $sourceDir, string $targetDir, ?callable $on
         }
     }
 
+    // 추출 방식은 둘이다. 어느 쪽이든 위 사전 검증(checkVendorBundleZipSafety — `..` 조각·절대경로·
+    // 드라이브·UNC·널 문자·심볼릭 링크 거부)을 이미 통과했다.
+    //
+    //  - 안전 추출기(g7InstallSafeExtractZip) — 역슬래시 경로를 정규화하고, 대상 안에 미리 있던 링크를
+    //    따라 밖으로 나가는 쓰기도 막는다. 항목을 하나씩 스트림으로 풀어 진행 알림이 없다.
+    //    Windows 에서 만든 묶음(역슬래시 항목)이거나, 백업 실패로 기존 vendor/ 항목이 그대로 남아 있을 때 쓴다.
+    //  - 묶음 단위 추출(extractVendorBundleInChunks) — 그 밖의 경우. 한 번의 extractTo 로 전부 푸는 대신
+    //    묶음으로 나눠 그 사이에 호출자가 「아직 살아 있다」를 알릴 수 있게 한다. 번들 추출은 설치에서
+    //    가장 오래 걸리는 태스크(P0 실측 ≈10~15s)인데 그 구간에 emit 이 하나도 없으면 워커 heartbeat 가
+    //    멈춰, 새로고침한 요청이 아직 살아 있는 이 요청을 stale 로 보고 탈취해 **두 요청이 같은 vendor/ 를
+    //    동시에 옮기고 푼다** (10차 #M2). vendor/ 는 백업으로 비워졌거나 새로 만들어졌으므로 미리 있던
+    //    링크가 없다.
     $zip = new ZipArchive;
     $openResult = $zip->open($zipPath);
     if ($openResult !== true) {
@@ -174,19 +188,32 @@ function extractVendorBundle(string $sourceDir, string $targetDir, ?callable $on
         return ['success' => false, 'error' => 'extraction_failed: ZipArchive::open failed (code '.$openResult.')'];
     }
 
-    // 한 번의 extractTo 로 전부 푸는 대신 묶음으로 나눈다 — 그 사이에 호출자가 「아직 살아 있다」를
-    // 알릴 수 있어야 하기 때문이다. 번들 추출은 설치에서 가장 오래 걸리는 태스크(P0 실측 ≈10~15s)인데
-    // 그 구간에는 emit 이 하나도 없어 워커 heartbeat 가 멈춘다. 그러면 새로고침한 요청이 아직 살아
-    // 있는 이 요청을 stale 로 보고 탈취해 **두 요청이 같은 vendor/ 를 동시에 옮기고 푼다** (10차 #M2).
-    $extracted = extractVendorBundleInChunks($zip, $targetDir, $onProgress);
-    $zip->close();
+    if ($backupState === 'failed' || vendorBundleHasBackslashEntries($zip)) {
+        $zip->close();
 
-    if (! $extracted) {
+        $extracted = g7InstallSafeExtractZip($zipPath, $targetDir);
+
+        if ($extracted['success'] && $onProgress !== null) {
+            $count = count($extracted['files'] ?? []);
+            $onProgress($count, $count);
+        }
+    } else {
+        $extracted = extractVendorBundleInChunks($zip, $targetDir, $onProgress)
+            ? ['success' => true]
+            : ['success' => false, 'error' => 'ZipArchive::extractTo returned false'];
+        $zip->close();
+    }
+
+    if (! $extracted['success']) {
         if ($hasBackup && is_dir($backupDir)) {
             restoreVendorFromBackup($vendorDir, $backupDir, $backupDirName);
         }
 
-        return ['success' => false, 'error' => 'extraction_failed: ZipArchive::extractTo returned false'];
+        if (($extracted['error'] ?? '') === 'unsafe_entry') {
+            return ['success' => false, 'error' => 'bundle_contains_unsafe_path: '.$extracted['unsafe_entry']];
+        }
+
+        return ['success' => false, 'error' => 'extraction_failed: '.($extracted['error'] ?? 'unknown')];
     }
 
     // 성공: 백업 디렉토리 삭제 (vendor/.bundle_backup_{ts}/)
@@ -301,6 +328,27 @@ function recordVendorBundleWarning(string $message): void
     if (function_exists('error_log')) {
         error_log('[vendor-bundle] '.$message);
     }
+}
+
+/**
+ * 묶음에 역슬래시 경로 항목이 있는지 — 있으면 안전 추출기가 경로를 정규화하며 풀어야 한다.
+ *
+ * Windows 에서 만든 zip 은 경로 구분자를 역슬래시로 담을 수 있다. 그대로 extractTo 하면 리눅스에서는
+ * `vendor\pkg\file.php` 라는 이름의 파일 하나가 생겨 vendor/ 가 깨진다 (코어 7.1.3 압축 해제 검사).
+ *
+ * @param  ZipArchive  $zip  열린 묶음
+ * @return bool 역슬래시 항목이 하나라도 있으면 true
+ */
+function vendorBundleHasBackslashEntries(ZipArchive $zip): bool
+{
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = $zip->getNameIndex($i);
+        if ($name !== false && strpos($name, '\\') !== false) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -466,31 +514,8 @@ function restoreVendorFromBackup(string $vendorDir, string $backupDir, string $b
  */
 function checkVendorBundleZipSafety(string $zipPath): ?string
 {
-    $zip = new ZipArchive;
-    if ($zip->open($zipPath) !== true) {
-        return 'cannot open zip';
-    }
-
-    for ($i = 0; $i < $zip->numFiles; $i++) {
-        $name = $zip->getNameIndex($i);
-        if ($name === false) {
-            continue;
-        }
-        $normalized = str_replace('\\', '/', $name);
-        if (
-            str_contains($normalized, '../')
-            || str_starts_with($normalized, '/')
-            || preg_match('#^[A-Za-z]:/#', $normalized)
-        ) {
-            $zip->close();
-
-            return $name;
-        }
-    }
-
-    $zip->close();
-
-    return null;
+    // `..` 조각·절대경로·드라이브·UNC·널 문자·심볼릭 링크 거부 (safe-archive-extractor.php)
+    return g7InstallFindUnsafeZipEntry($zipPath);
 }
 
 /**
@@ -669,4 +694,65 @@ function buildVendorBundlePermissionHint(string $path): string
         'user' => $currentUser,
         'owner' => $ownerUser,
     ]);
+}
+
+/**
+ * 개발자 전용 composer(`custom/`, 7.2.0 #792)의 vendor 를 맞춥니다.
+ *
+ * custom/composer.json 이 있을 때만 동작한다. 설치본이 custom/composer.lock 과 맞으면(설치 표식
+ * `vendor/.g7-custom-lock.sha256`) 건너뛴다. vendor 묶음 모드이거나 auto 인데 composer 를 쓸 수 없고
+ * custom/vendor-bundle.zip 이 있으면 묶음을 무결성 검사 후 풀고, 아니면 composer install --no-dev 를
+ * custom 에서 실행한다. 표식 형식은 코어 App\Extension\Custom\CustomVendorService 와 같다.
+ *
+ * @param  string  $basePath  설치 루트
+ * @param  bool  $useBundle  묶음으로 풀지 여부 (호출자가 vendor 모드로 판정)
+ * @param  callable|null  $composerRunner  composer 실행 콜백 (작업 디렉터리를 받아 성공 여부 반환)
+ * @return array{success: bool, skipped?: bool, mode?: string, error?: string}
+ */
+function installCustomVendorIfNeeded(string $basePath, bool $useBundle, ?callable $composerRunner = null): array
+{
+    $customDir = rtrim($basePath, '/\\').DIRECTORY_SEPARATOR.'custom';
+    if (! file_exists($customDir.DIRECTORY_SEPARATOR.'composer.json')) {
+        return ['success' => true, 'skipped' => true];
+    }
+
+    $lockFile = file_exists($customDir.DIRECTORY_SEPARATOR.'composer.lock')
+        ? $customDir.DIRECTORY_SEPARATOR.'composer.lock'
+        : $customDir.DIRECTORY_SEPARATOR.'composer.json';
+    $lockHash = (string) hash_file('sha256', $lockFile);
+    $vendorDir = $customDir.DIRECTORY_SEPARATOR.'vendor';
+    $marker = $vendorDir.DIRECTORY_SEPARATOR.'.g7-custom-lock.sha256';
+
+    if (file_exists($vendorDir.DIRECTORY_SEPARATOR.'autoload.php') && file_exists($marker)
+        && trim((string) file_get_contents($marker)) === $lockHash) {
+        return ['success' => true, 'skipped' => true, 'mode' => 'in-sync'];
+    }
+
+    if ($useBundle) {
+        $integrity = verifyVendorBundle($customDir);
+        if (! $integrity['valid']) {
+            return ['success' => false, 'error' => 'custom vendor-bundle.zip: '.implode(', ', $integrity['errors'])];
+        }
+        $result = extractVendorBundle($customDir, $customDir);
+        if (! $result['success']) {
+            return ['success' => false, 'error' => 'custom vendor-bundle.zip: '.($result['error'] ?? 'unknown')];
+        }
+        $mode = 'bundled';
+    } else {
+        if ($composerRunner === null || ! $composerRunner($customDir)) {
+            return ['success' => false, 'error' => 'composer install (custom) failed'];
+        }
+        $mode = 'composer';
+    }
+
+    if (! is_dir($vendorDir)) {
+        @mkdir($vendorDir, 0755, true);
+    }
+    $written = @file_put_contents($marker, $lockHash);
+    if ($written !== strlen($lockHash)) {
+        // 잘린 표식은 다음 설치에서 해시 불일치로 읽혀 다시 설치될 뿐이지만, 잘린 파일은 남기지 않는다.
+        @unlink($marker);
+    }
+
+    return ['success' => true, 'mode' => $mode];
 }

@@ -1,0 +1,62 @@
+feature: 클레임 신청 수량 입력의 상한 클램프 (S2-D9)
+
+description: |
+  신청 화면의 수량 칸은 잔여 수량(`available_quantity`)을 상한으로 가진다.
+  `updateClaimQuantityHandler` 가 state 를 그 상한으로 자르고, 화면은
+  `value: {{claimItem.quantity}}` 로 그 값을 되비춘다 — 그래서 넘겨 치면
+  칸이 상한으로 되돌아오는 것이 정상이다.
+
+  **그런데 「이미 상한인 상태에서 더 큰 값을 치면」 칸이 따라오지 않았다.**
+
+  클램프 결과가 state 에 들어 있던 값과 **같으면** state 가 안 바뀌고,
+  리액트는 바뀐 것이 없으니 입력 칸을 다시 그리지 않는다. 사용자가 친 값이
+  칸에 그대로 남고 전송만 상한 값으로 나간다 — **화면이 말하는 수량과 실제
+  신청 수량이 어긋난다.**
+
+  #599 통합실측 세션2 실측(주문 754 · 에코백 가용 2):
+
+    입력 3  → DOM 2  · state 2   (state 1→2 로 바뀌어 리렌더 → 칸이 따라옴)
+    입력 99 → DOM 99 · state 2   ← 결함 (state 2→2 무변화 → 리렌더 없음)
+    입력 2  → DOM 2  · state 2
+
+    전송 본문: {"items":[{"order_option_id":1049,"quantity":2}], …}
+    DB 기록  : return_quantity=2 · subtotal 22,000
+
+  서버와 DB 는 언제나 클램프 값이라 **금액·데이터는 안전**하다. 위험한 것은
+  **고객이 99개를 반품한다고 믿은 채 제출**한다는 점이다. 같은 핸들러의 독블록이
+  이미 그 위험을 적어 두었다 — *「입력 칸이 넘는 값을 그대로 보여 주면 요약이
+  그 수량으로 계산된 것처럼 읽힌다」*.
+
+  수정: 클램프 값이 입력값과 다르면 **입력 칸도 직접 맞춘다.** 리액트가 관리하는
+  칸이라 `el.value = …` 만으로는 리액트가 되돌려 놓으므로, 리액트가 추적하는
+  **네이티브 setter** 로 쓰고 `input` 이벤트를 흘려 내부 값까지 같은 수로 맞춘다.
+
+  계약: 이 매니페스트는 **화면과 state 가 같은 수를 말하는 것**을 잠근다.
+  금액 계산·요약 표기는 `user-claim-refund-return-apply.yaml` 이 따로 잠근다.
+
+  **E2E 가 실제로 무는지 확인하며 드러난 것 둘** (#599 세션2 계획서준수검증 결함3 해소):
+
+  1. **`fill()` 로는 재현되지 않는다.** Playwright 의 fill 은 리액트의 추적 값까지 맞춰 놓아
+     「state 무변화」 조건이 서지 않는다 — 수정을 통째로 꺼도 칸이 저절로 상한으로 돌아와
+     **red 가 나지 않았다.** 네이티브 setter + `input` 이벤트로 써야 사람이 친 경로가 된다.
+     순서도 **3 → 99** 여야 한다(실측 순서). `2 → 99` 는 첫 입력이 state 를 바꾸지 못해 어긋난다.
+  2. **모듈 `npm run build` 만으로는 브라우저에 반영되지 않는다.** 화면이 받는 것은
+     `public/build/ext/{ext.cache_version}/bundles/modules.js` 병합 번들이고, 그 버전은 확장
+     구성이 바뀔 때만 오른다. dist 를 다시 빌드해도 번들은 옛 코드 그대로다 — 캐시 버전을
+     올리고 `ext-static:publish --force` 를 해야 바뀐다. **프론트 수정의 브라우저 재실측은
+     이 단계까지 해야 유효하다.**
+
+axes:
+  quantity_input:
+    - below_max
+    - already_at_max
+
+effects:
+  - claim_quantity_input_clamps_to_available
+  - claim_quantity_input_stays_clamped_when_state_is_unchanged
+
+test_files:
+  # 단위 — state 클램프 + (활성 입력이 있을 때의) 칸 동기화
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimApplyHandlers.test.ts
+  # 브라우저 — 리액트가 DOM 값을 되돌리는 것이 본질이라 jsdom 으로는 재현되지 않는다
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/claim-quantity-input-clamp.spec.ts

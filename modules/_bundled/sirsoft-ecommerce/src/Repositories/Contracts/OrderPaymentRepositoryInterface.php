@@ -103,6 +103,20 @@ interface OrderPaymentRepositoryInterface
     ): OrderPayment;
 
     /**
+     * 미리 채워 둔 취소 누적을 결제행에 기록합니다.
+     *
+     * 환불 실행은 취소 누적을 **먼저 채우고 나중에 저장한다**. 채우기는 PG 환불 훅의 입력이기
+     * 때문이고(리스너가 "이번이 잔액 전부인가" 를 이 행으로 판정한다), 저장을 미루는 것은 PG 가
+     * 거절한 환불이 장부를 깎지 않게 하기 위해서다. 그래서 이 메서드는 **갱신할 값을 받지
+     * 않는다** — 무엇을 쓸지는 이미 모델에 담겨 있고, 여기서 하는 일은 그 dirty 속성을 넘기는
+     * 것뿐이다.
+     *
+     * @param  OrderPayment  $payment  채워 둔 결제 모델
+     * @return OrderPayment 저장된 결제 모델
+     */
+    public function savePendingChanges(OrderPayment $payment): OrderPayment;
+
+    /**
      * 동일 PG 거래 ID 가 이미 결제완료(PAID) 상태로 저장되어 있는지 확인합니다.
      *
      * PG 웹훅/콜백의 리플레이(중복 통보) 멱등 처리에 사용한다. transaction_id 컬럼에는

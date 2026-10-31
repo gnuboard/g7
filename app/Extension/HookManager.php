@@ -39,6 +39,7 @@ class HookManager implements HookManagerInterface
      *
      * @param  string  $hookName  Hook 이름
      * @param  mixed  ...$args  Hook에 전달할 인수들
+     * @return void 없음
      */
     public static function doAction(string $hookName, ...$args): void
     {
@@ -119,6 +120,7 @@ class HookManager implements HookManagerInterface
      * @param  string  $hookName  Hook 이름
      * @param  callable  $callback  실행할 콜백 함수
      * @param  int  $priority  실행 우선순위 (기본값: 10)
+     * @return void 없음
      */
     public static function addAction(string $hookName, callable $callback, int $priority = 10): void
     {
@@ -147,6 +149,7 @@ class HookManager implements HookManagerInterface
      * @param  string  $filterName  Filter 이름
      * @param  callable  $callback  실행할 콜백 함수
      * @param  int  $priority  실행 우선순위 (기본값: 10)
+     * @return void 없음
      */
     public static function addFilter(string $filterName, callable $callback, int $priority = 10): void
     {
@@ -162,6 +165,29 @@ class HookManager implements HookManagerInterface
     }
 
     /**
+     * 이 사이트에서 방송이 실제로 나가는 상태인지 판정합니다.
+     *
+     * 화면이 「소켓이 있으니 폴링은 끈다」를 정할 때도 같은 식을 써야 한다. 키만 보고 판정하면
+     * 키는 있는데 드라이버가 `null` 이거나 호스트가 비어 있는 사이트에서 방송도 폴링도 없어
+     * 진행률이 멈춘다(#682 S3 라운드 3).
+     *
+     * @return bool 방송이 나가면 true
+     */
+    public static function broadcastingEnabled(): bool
+    {
+        $driver = config('broadcasting.default');
+
+        if (in_array($driver, ['null', 'log', null], true)) {
+            return false;
+        }
+
+        // Reverb/Pusher 드라이버: 호스트 미설정 시 연결 시도 없이 건너뜀
+        $connection = config("broadcasting.connections.{$driver}");
+
+        return ! empty($connection['options']['host'] ?? null);
+    }
+
+    /**
      * WebSocket 브로드캐스트를 실행합니다.
      *
      * broadcast(new Event(...)) 직접 호출 대신 이 메서드를 사용합니다.
@@ -170,18 +196,11 @@ class HookManager implements HookManagerInterface
      * @param  string  $channel  채널명 (예: 'admin.dashboard', 'user.notifications.123')
      * @param  string  $eventName  이벤트명 (예: 'dashboard.stats.updated', 'notification.received')
      * @param  array  $payload  브로드캐스트 데이터
+     * @return void 없음
      */
     public static function broadcast(string $channel, string $eventName, array $payload = []): void
     {
-        $driver = config('broadcasting.default');
-
-        if (in_array($driver, ['null', 'log', null], true)) {
-            return;
-        }
-
-        // Reverb/Pusher 드라이버: 호스트 미설정 시 연결 시도 없이 건너뜀
-        $connection = config("broadcasting.connections.{$driver}");
-        if (empty($connection['options']['host'] ?? null)) {
+        if (! self::broadcastingEnabled()) {
             return;
         }
 
@@ -201,6 +220,7 @@ class HookManager implements HookManagerInterface
      *
      * @param  string  $hookName  Hook 이름
      * @param  callable  $callback  제거할 콜백 함수
+     * @return void 없음
      */
     public static function removeAction(string $hookName, callable $callback): void
     {
@@ -222,6 +242,7 @@ class HookManager implements HookManagerInterface
      *
      * @param  string  $filterName  Filter 이름
      * @param  callable  $callback  제거할 콜백 함수
+     * @return void 없음
      */
     public static function removeFilter(string $filterName, callable $callback): void
     {
@@ -259,6 +280,7 @@ class HookManager implements HookManagerInterface
      * 특정 Hook에 등록된 모든 콜백을 제거합니다.
      *
      * @param  string  $hookName  Hook 이름
+     * @return void 없음
      */
     public static function clearAction(string $hookName): void
     {
@@ -274,6 +296,7 @@ class HookManager implements HookManagerInterface
      * 특정 Filter에 등록된 모든 콜백을 제거합니다.
      *
      * @param  string  $filterName  Filter 이름
+     * @return void 없음
      */
     public static function clearFilter(string $filterName): void
     {
@@ -286,6 +309,8 @@ class HookManager implements HookManagerInterface
      * 테스트 환경에서 등록된 모든 Hook과 Filter를 초기화합니다.
      *
      * 주의: 이 메서드는 테스트 환경에서만 사용해야 합니다.
+     *
+     * @return void 없음
      */
     public static function resetAll(): void
     {
@@ -302,6 +327,7 @@ class HookManager implements HookManagerInterface
      *
      * @param  string  $hookName  훅 이름
      * @param  User|null  $user  사용자 (null이면 현재 인증된 사용자)
+     * @return void 없음
      *
      * @throws AuthorizationException 권한이 없는 경우
      */
@@ -343,6 +369,7 @@ class HookManager implements HookManagerInterface
      * @param  string  $hookName  훅 이름
      * @param  User|null  $user  권한 체크 대상 사용자
      * @param  mixed  ...$args  훅에 전달할 인자
+     * @return void 없음
      *
      * @throws AuthorizationException 권한이 없는 경우
      */
@@ -368,6 +395,40 @@ class HookManager implements HookManagerInterface
         static::checkHookPermission($hookName, $user);
 
         return static::applyFilters($hookName, $value, ...$args);
+    }
+
+    /**
+     * 표준 이름과 구 이름을 함께 발행하는 Action 실행
+     *
+     * 이미 공개된 액션 훅의 이름을 옮겨야 할 때 쓴다(공개 훅 이름은 마이너 버전에서 바꾸지 않는다 —
+     * 새 이름을 더하고 옛 이름을 함께 발화하며, 제거는 메이저 버전에서). 표준 이름을 먼저 발화하고,
+     * 구 이름에 구독자가 있을 때만 같은 인자로 한 번 더 발화하며 개명 경고를 한 번 남긴다.
+     *
+     * 공개 배포본에서 한 번도 발화된 적 없는 옛 이름은 이 헬퍼로 되살리지 않는다 — 한 번도 돈 적 없는
+     * 서드파티 코드가 갑자기 돌게 된다(docs/extension/hooks.md 「사용 중단 훅」 의 공개 배포 발화 이력 「없음」).
+     *
+     * @param  string  $hookName  표준 훅 이름
+     * @param  string  $legacyHookName  구 훅 이름 (하위호환용)
+     * @param  mixed  ...$args  훅 인자
+     * @return void
+     */
+    public static function doActionWithLegacyName(string $hookName, string $legacyHookName, ...$args): void
+    {
+        static::doAction($hookName, ...$args);
+
+        if (empty(self::$hooks[$legacyHookName])) {
+            return;
+        }
+
+        if (! isset(self::$legacyHookNoticeShown[$legacyHookName])) {
+            self::$legacyHookNoticeShown[$legacyHookName] = true;
+            Log::warning('구 훅 이름 사용 중 — 표준 이름으로 옮겨 주세요', [
+                'legacy' => $legacyHookName,
+                'standard' => $hookName,
+            ]);
+        }
+
+        static::doAction($legacyHookName, ...$args);
     }
 
     /**

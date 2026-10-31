@@ -83,6 +83,13 @@ class GeneratesComponentManifestNewlineTest extends TestCase
         @rmdir($dir);
     }
 
+    /**
+     * 종결 개행은 빌드 OS 와 무관하게 LF 다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects component_manifest_ends_with_lf_regardless_of_platform
+     */
     public function test_manifest_ends_with_lf_not_platform_eol(): void
     {
         $result = $this->generate();
@@ -95,6 +102,13 @@ class GeneratesComponentManifestNewlineTest extends TestCase
         $this->assertStringNotContainsString("\r", $raw, '어느 줄에도 CR 이 없어야 한다 — 있으면 Windows 빌드에서만 변경으로 잡힌다');
     }
 
+    /**
+     * 같은 소스를 다시 빌드하면 바이트가 같다 — 재빌드만으로 변경이 잡히지 않는다.
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects component_manifest_rebuild_is_byte_identical
+     */
     public function test_rebuilding_the_same_source_produces_identical_bytes(): void
     {
         $first = file_get_contents($this->generate()['path']);

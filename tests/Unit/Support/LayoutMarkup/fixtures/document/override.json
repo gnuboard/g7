@@ -1,0 +1,29 @@
+{
+    "version": "1.0.0",
+    "layout_name": "admin_dashboard",
+    "meta": {
+        "title": "$t:sample.dashboard.title"
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "custom_dashboard",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "custom-card"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "props": {
+                            "text": "오버라이드된 대시보드"
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "version_constraint": "^1.0"
+}

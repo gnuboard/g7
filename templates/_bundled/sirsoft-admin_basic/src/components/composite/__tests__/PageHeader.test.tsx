@@ -20,12 +20,20 @@ describe('PageHeader', () => {
     { id: 1, label: '새로 만들기', variant: 'primary', iconName: IconName.Plus },
   ];
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_renders_title_description_breadcrumb_tabs_actions
+   */
   it('컴포넌트가 렌더링됨', () => {
     render(<PageHeader title="테스트 페이지" />);
 
     expect(screen.getByText('테스트 페이지')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_renders_title_description_breadcrumb_tabs_actions
+   */
   it('description이 표시됨', () => {
     render(
       <PageHeader
@@ -37,6 +45,10 @@ describe('PageHeader', () => {
     expect(screen.getByText('페이지 설명')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_renders_title_description_breadcrumb_tabs_actions
+   */
   it('breadcrumb이 표시됨', () => {
     render(
       <PageHeader
@@ -50,6 +62,10 @@ describe('PageHeader', () => {
     expect(screen.getByText('관리')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_renders_title_description_breadcrumb_tabs_actions
+   */
   it('탭이 표시됨', () => {
     render(
       <PageHeader
@@ -62,6 +78,10 @@ describe('PageHeader', () => {
     expect(screen.getByText('관리자')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_tab_and_action_clicks_dispatch
+   */
   it('탭 클릭 시 onTabChange가 호출됨', async () => {
     const user = userEvent.setup();
     const onTabChange = vi.fn();
@@ -80,6 +100,10 @@ describe('PageHeader', () => {
     expect(onTabChange).toHaveBeenCalledWith('admin');
   });
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_renders_title_description_breadcrumb_tabs_actions
+   */
   it('활성 탭에 active 스타일이 적용됨', () => {
     render(
       <PageHeader
@@ -92,6 +116,10 @@ describe('PageHeader', () => {
     expect(activeTab).toHaveClass('tab-btn-active');
   });
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_renders_title_description_breadcrumb_tabs_actions
+   */
   it('탭 뱃지가 표시됨', () => {
     const tabsWithBadge: TabItem[] = [
       { id: 1, label: '알림', value: 'notifications', badge: 3 },
@@ -107,6 +135,10 @@ describe('PageHeader', () => {
     expect(screen.getByText('3')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_renders_title_description_breadcrumb_tabs_actions
+   */
   it('액션 버튼이 표시됨', () => {
     render(
       <PageHeader
@@ -118,6 +150,10 @@ describe('PageHeader', () => {
     expect(screen.getByText('새로 만들기')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_tab_and_action_clicks_dispatch
+   */
   it('액션 버튼 클릭 시 onClick이 호출됨', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
@@ -138,6 +174,10 @@ describe('PageHeader', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_tab_and_action_clicks_dispatch
+   */
   it('비활성화된 액션 버튼은 클릭되지 않음', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
@@ -159,6 +199,10 @@ describe('PageHeader', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_renders_title_description_breadcrumb_tabs_actions
+   */
   it('모든 요소가 함께 표시됨', () => {
     render(
       <PageHeader
@@ -177,6 +221,10 @@ describe('PageHeader', () => {
     expect(screen.getByText('새로 만들기')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=page_header
+   * @effects page_header_renders_title_description_breadcrumb_tabs_actions
+   */
   it('className prop이 적용됨', () => {
     const { container } = render(
       <PageHeader
@@ -187,3 +235,4 @@ describe('PageHeader', () => {
     expect(container.firstChild).toHaveClass('custom-header');
   });
 });
+

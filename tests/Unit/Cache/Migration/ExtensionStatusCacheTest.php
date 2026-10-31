@@ -24,11 +24,18 @@ use Tests\TestCase;
  *
  * 모델 모킹은 복잡하므로 keys/cache 동작 검증에 집중하고,
  * DB 통합 검증은 기존 ModuleManagerLayoutTest / TemplateManagerOverrideTest 에 의존합니다.
+ *
+ * @scenario-manifest tests/scenarios/cache-extension-status-migration.yaml
  */
 class ExtensionStatusCacheTest extends TestCase
 {
     private CoreCacheDriver $cache;
 
+    /**
+     * 각 테스트 전에 캐시를 비우고 array 저장소 코어 캐시 드라이버를 CacheInterface 로 바인딩합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +45,11 @@ class ExtensionStatusCacheTest extends TestCase
         $this->app->instance(CacheInterface::class, $this->cache);
     }
 
+    /**
+     * 각 테스트 뒤에 캐시를 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Cache::flush();
@@ -50,6 +62,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-1: 모듈 활성/설치 캐시 키 형식 검증.
+     *
+     * @scenario case=module_status
+     *
+     * @effects key_uses_core_prefix, status_value_cached
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_1_module_cache_key_uses_new_prefix(): void
@@ -69,6 +87,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-3 ~ A-1-6: invalidateModuleStatusCache() 가 두 키 모두 무효화.
+     *
+     * @scenario case=module_status
+     *
+     * @effects status_keys_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_3_invalidate_module_status_clears_both_keys(): void
@@ -92,6 +116,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-2-1: 플러그인 캐시 키 형식 검증.
+     *
+     * @scenario case=plugin_status
+     *
+     * @effects key_uses_core_prefix, status_value_cached
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_2_1_plugin_cache_key_uses_new_prefix(): void
@@ -107,6 +137,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-2-3: invalidatePluginStatusCache() 가 두 키 모두 무효화.
+     *
+     * @scenario case=plugin_status
+     *
+     * @effects status_keys_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_2_3_invalidate_plugin_status_clears_both_keys(): void
@@ -130,6 +166,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-3-1: 템플릿 캐시 키 형식 검증 (4종).
+     *
+     * @scenario case=template_status
+     *
+     * @effects key_uses_core_prefix, status_value_cached
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_3_1_template_cache_keys_use_new_prefix(): void
@@ -149,6 +191,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-3-3: invalidateTemplateStatusCache() 가 4개 키 모두 무효화.
+     *
+     * @scenario case=template_status
+     *
+     * @effects status_keys_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_3_3_invalidate_template_status_clears_all_four_keys(): void
@@ -176,6 +224,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-4-1: 확장 캐시 버전 키 형식 + 증가 동작 검증.
+     *
+     * @scenario case=cache_version
+     *
+     * @effects cache_version_incremented, key_uses_core_prefix
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_4_1_increment_extension_cache_version(): void
@@ -204,6 +258,12 @@ class ExtensionStatusCacheTest extends TestCase
      * 회귀 가드 (버그 ②): `cache:clear` 로 키 소실 시 0 을 반환하면 자원 URL 이
      * `?v=0` 으로 수렴해 immutable 에셋이 stale 고착된다. 키가 없으면 새 `time()`
      * 버전을 생성·저장·반환해야 한다.
+     *
+     * @scenario case=cache_version_unset
+     *
+     * @effects cache_version_regenerated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_4_3_get_extension_cache_version_regenerates_when_unset(): void
@@ -228,6 +288,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-1: 모듈 활성 목록 캐시 생성 — put 후 has=true.
+     *
+     * @scenario case=module_status
+     *
+     * @effects status_value_cached
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_create_active_modules_cache(): void
@@ -242,6 +308,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-2: 모듈 활성 목록 캐시 히트 — 두 번째 read 동일.
+     *
+     * @scenario case=module_status
+     *
+     * @effects status_value_cached
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_active_modules_cache_hit(): void
@@ -256,6 +328,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-4: 모듈 활성화 시 캐시 무효화 — invalidate 후 has=false.
+     *
+     * @scenario case=module_status
+     *
+     * @effects status_keys_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_4_module_activate_invalidates_cache(): void
@@ -273,6 +351,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-5: 모듈 비활성화 시 캐시 무효화 — installed 키도 함께 삭제.
+     *
+     * @scenario case=module_status
+     *
+     * @effects status_keys_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_5_module_deactivate_invalidates_both_keys(): void
@@ -292,6 +376,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-1-7: 빈 배열 처리 — 빈 배열도 정상 캐시 가능 (무효화로 보장).
+     *
+     * @scenario case=empty_array
+     *
+     * @effects status_value_cached, status_keys_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_1_7_empty_array_can_be_cached_and_invalidated(): void
@@ -317,6 +407,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-2-2: 플러그인 활성 목록 캐시 히트.
+     *
+     * @scenario case=plugin_status
+     *
+     * @effects status_value_cached
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_2_2_active_plugins_cache_hit(): void
@@ -329,6 +425,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-2-4: 플러그인 활성화/비활성화/삭제 시 캐시 무효화 (라이프사이클).
+     *
+     * @scenario case=plugin_status
+     *
+     * @effects status_keys_invalidated
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_2_4_plugin_lifecycle_invalidates_cache(): void
@@ -360,6 +462,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-3-2: 템플릿 타입별 캐시 히트 (admin/user 분리).
+     *
+     * @scenario case=template_status
+     *
+     * @effects status_value_cached
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_3_2_template_type_cache_hit(): void
@@ -377,6 +485,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-4-2: 모듈 설치 시 캐시 버전 증가 (T1 → T2 시뮬레이션).
+     *
+     * @scenario case=cache_version
+     *
+     * @effects cache_version_incremented
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_4_2_install_increments_cache_version(): void
@@ -398,6 +512,12 @@ class ExtensionStatusCacheTest extends TestCase
 
     /**
      * A-4-3: 라이프사이클 단계마다 버전 증가 (T0 < T1 < T2 < T3).
+     *
+     * @scenario case=cache_version
+     *
+     * @effects cache_version_incremented
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_4_3_lifecycle_increments_each_step(): void

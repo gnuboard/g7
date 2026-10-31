@@ -141,9 +141,11 @@ if (function_exists('apache_setenv')) {
 
 installerDiscardOutputBuffers();
 
-// 타임아웃 설정 (10분) — 막힌 호스팅에서도 설치는 진행되어야 하므로 가용할 때만 부른다 (13차 환경#1)
+// 타임아웃 설정 — 작업 루프(runInstallationTasks)가 작업마다 같은 값으로 다시 건다.
+// 여기서는 첫 작업 전 준비 구간만 덮는다. 전체 설치 시간에는 제한이 없다.
+// 막힌 호스팅에서도 설치는 진행되어야 하므로 가용할 때만 부른다 (13차 환경#1).
 if (installerHasFunction('set_time_limit')) {
-    set_time_limit(600);
+    set_time_limit((int) INSTALLER_TASK_TIME_LIMIT);
 }
 
 // 클라이언트 연결 끊김 시 즉시 워커 종료 (이슈 #319 부수 발견)
@@ -164,6 +166,20 @@ try {
     // Worker 시작 로그 — 진행 기록의 독자는 운영자다 (§12.0 W3)
     addLog(lang('log_worker_started'));
     addLog(lang('log_worker_client_ip', ['ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown']));
+
+    // 설치 계획 검증 — 이 워커는 세션을 쓰지 않으므로(세션 잠금 방지) 요청자를 세션으로 확인할 수 없다.
+    // 대신 소유 게이트를 통과한 install-process 만 쓸 수 있는 running 상태 + 계획 서명을 확인한다.
+    // 서명이 없거나 어긋나면 어떤 작업도 실행하지 않는다.
+    $planVerdict = installer_plan_verify(getInstallationState(), readInstallerRuntime());
+    if ($planVerdict !== 'ok') {
+        addLog(lang('log_worker_rejected_plan_unverified', ['reason' => $planVerdict]));
+        setProgressEmitter(new SseEmitter);
+        sendSSEEvent('aborted', [
+            'message' => lang('error_install_plan_unverified'),
+            'reason' => 'plan_unverified',
+        ]);
+        exit;
+    }
 
     // 워커 lock 획득 — 다른 워커가 활동 중이면 진입 거부 (race 차단).
     // SSE 응답으로 거부 사유 전달 후 종료.
@@ -187,8 +203,9 @@ try {
 
     // 워커 종료 시 lock 자동 해제 + 치명 종료면 상태를 실패로 승격 (12차 #A2) —
     // 승격하지 않으면 fatal/OOM/시간초과 뒤 상태가 running 에 고착해 [건너뛰고 계속] 이
-    // 원리상 불가능해진다.
-    register_shutdown_function('installerHandleWorkerShutdown', $workerId);
+    // 원리상 불가능해진다. SSE 모드면 실패를 error 이벤트로도 보내고, 연결 끊김으로 끝났으면
+    // 그 사실을 진행 기록에 남긴다(화면이 새 워커로 다시 연결해 이어 받는다).
+    register_shutdown_function('installerHandleWorkerShutdown', $workerId, 'sse');
 
     // SSE emitter 등록 후 task runner 실행
     setProgressEmitter(new SseEmitter($workerId));

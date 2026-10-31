@@ -17,6 +17,7 @@ import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTe
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 
 import pluginSettings from '../../../layouts/admin/plugin_settings.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 플러그인 루트(plugin.json 기준)를 위로 훑어 찾는다.
@@ -89,10 +90,20 @@ function manifestType(name: string): string {
 const cleanupCard = findNode(pluginSettings, (n) => n.id === 'section_cleanup_card');
 
 describe('미사용 이미지 정리 섹션 — 계약', () => {
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
+    /**
+     * @effects settings_cleanup_keys_declared
+     */
     it('설정 섹션이 존재한다', () => {
         expect(cleanupCard).not.toBeNull();
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
+    /**
+     * @effects settings_cleanup_keys_declared
+     */
     it('설정 화면의 모든 Toggle 노드 type 이 매니페스트 선언과 같다', () => {
         const collected: any[] = [];
         const collect = (node: any): void => {
@@ -113,6 +124,11 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         }
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
+    /**
+     * @effects settings_cleanup_keys_declared
+     */
     it('토글과 보존기간 입력이 저장 키를 그대로 바인딩한다', () => {
         const toggle = findNode(cleanupCard, (n) => n.name === 'Toggle');
         const input = findNode(cleanupCard, (n) => n.name === 'Input');
@@ -122,6 +138,11 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         expect(input.props.min).toBe(1);
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
+    /**
+     * @effects settings_cleanup_toggle_default_off
+     */
     it('기본값이 꺼짐이고 보존기간 기본이 30일이다 (defaults.json)', () => {
         const defaults = JSON.parse(
             fs.readFileSync(path.join(pluginRoot(), 'config/settings/defaults.json'), 'utf-8'),
@@ -131,6 +152,11 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         expect(defaults.defaults.unusedImageRetentionDays).toBe(30);
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
+    /**
+     * @effects settings_cleanup_keys_declared
+     */
     it('두 키가 프론트엔드에 노출되지 않는다 (운영자 전용 설정)', () => {
         const defaults = JSON.parse(
             fs.readFileSync(path.join(pluginRoot(), 'config/settings/defaults.json'), 'utf-8'),
@@ -140,6 +166,11 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         expect(defaults.frontend_schema.unusedImageRetentionDays.expose).toBe(false);
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
+    /**
+     * @effects settings_cleanup_keys_declared
+     */
     it('설정 스키마가 같은 키를 선언한다 (저장 검증 whitelist)', () => {
         const pluginSource = fs.readFileSync(path.join(pluginRoot(), 'plugin.php'), 'utf-8');
 
@@ -148,17 +179,30 @@ describe('미사용 이미지 정리 섹션 — 계약', () => {
         expect(pluginSource).toContain("'default' => false");
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
+    /**
+     * @effects schedule_gate_off_by_default
+     */
     it('스케줄 게이트가 같은 설정 키를 가리킨다', () => {
         const pluginSource = fs.readFileSync(path.join(pluginRoot(), 'plugin.php'), 'utf-8');
 
-        expect(pluginSource).toContain("'enabled_config' => 'sirsoft-ckeditor5.unusedImageCleanup'");
+        // 7.2.0 스케줄 선언 — 옛 `enabled_config` 대신 실행 조건(enabled_condition)이 같은 설정 키를 가리킨다.
+        expect(pluginSource).toContain("['source' => 'plugin_setting', 'key' => 'unusedImageCleanup', 'operator' => 'truthy'");
         expect(pluginSource).toContain('sirsoft-ckeditor5:prune-unused-images --scheduled');
     });
 
+    // @scenario case=contract
+    // @effects cleanup_settings_contract
+    /**
+     * @effects settings_cleanup_keys_declared
+     */
     it('업로드 관리 화면으로 가는 링크가 있다', () => {
         const button = findNode(cleanupCard, (n) => n.id === 'open_uploads_button');
 
-        expect(button.actions[0].params.path).toBe('/admin/plugins/sirsoft-ckeditor5/uploads');
+        // 링크(#757) — 목적지는 href 한 곳, path 없는 navigate 가 클릭한 링크의 href 로 간다
+        expect(button.name).toBe('A');
+        expect(actionsOf(button)[0].params?.path ?? button.props.href).toBe('/admin/plugins/sirsoft-ckeditor5/uploads');
     });
 });
 
@@ -173,6 +217,7 @@ const TestH3: React.FC<any> = ({ className, children, text }) => <h3 className={
 const TestToggle: React.FC<any> = ({ name }) => <input type="checkbox" data-name={name} readOnly />;
 const TestInput: React.FC<any> = ({ name, type }) => <input type={type} data-name={name} readOnly />;
 const TestButton: React.FC<any> = ({ className, children }) => <button type="button" className={className}>{children}</button>;
+const TestA: React.FC<any> = ({ className, href, children }) => <a href={href} className={className}>{children}</a>;
 const TestSpan: React.FC<any> = ({ className, children, text }) => <span className={className}>{children || text}</span>;
 const TestFragment: React.FC<any> = ({ children }) => <>{children}</>;
 
@@ -190,6 +235,7 @@ describe('미사용 이미지 정리 섹션 — 렌더링', () => {
             Toggle: { component: TestToggle, metadata: { name: 'Toggle', type: 'composite' } },
             Input: { component: TestInput, metadata: { name: 'Input', type: 'basic' } },
             Button: { component: TestButton, metadata: { name: 'Button', type: 'basic' } },
+            A: { component: TestA, metadata: { name: 'A', type: 'basic' } },
             Span: { component: TestSpan, metadata: { name: 'Span', type: 'basic' } },
             Fragment: { component: TestFragment, metadata: { name: 'Fragment', type: 'layout' } },
         };
@@ -201,6 +247,11 @@ describe('미사용 이미지 정리 섹션 — 렌더링', () => {
         (registry as any).registry = {};
     });
 
+    // @scenario case=render
+    // @effects cleanup_settings_render_translated
+    /**
+     * @effects settings_cleanup_keys_declared
+     */
     it('라벨과 힌트가 다국어 해석되어 렌더된다', async () => {
         testUtils = createLayoutTest(
             {

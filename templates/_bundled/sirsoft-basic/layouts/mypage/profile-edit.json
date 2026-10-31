@@ -1,153 +1,370 @@
 {
-  "version": "1.0.0",
-  "layout_name": "mypage/profile-edit",
-  "extends": "_user_base",
-  "permissions": [],
-  "data_sources": [
-    {
-      "id": "user",
-      "label_key": "$t:editor.data_source.user",
-      "type": "api",
-      "endpoint": "/api/me",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "loading_strategy": "progressive",
-      "initLocal": "profileEditForm",
-      "blur_until_loaded": true,
-      "refetchOnMount": true
-    }
-  ],
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "local",
-        "isPasswordVerified": false,
-        "verifyPassword": "",
-        "isVerifyingPassword": false,
-        "verifyPasswordError": false
-      }
-    }
-  ],
-  "defines": {
-    "countryList": [
-        { "code": "KR", "name": "countries.KR" },
-        { "code": "US", "name": "countries.US" },
-        { "code": "JP", "name": "countries.JP" },
-        { "code": "CN", "name": "countries.CN" },
-        { "code": "GB", "name": "countries.GB" },
-        { "code": "DE", "name": "countries.DE" },
-        { "code": "FR", "name": "countries.FR" },
-        { "code": "CA", "name": "countries.CA" },
-        { "code": "AU", "name": "countries.AU" },
-        { "code": "IN", "name": "countries.IN" },
-        { "code": "BR", "name": "countries.BR" },
-        { "code": "RU", "name": "countries.RU" },
-        { "code": "IT", "name": "countries.IT" },
-        { "code": "ES", "name": "countries.ES" },
-        { "code": "MX", "name": "countries.MX" },
-        { "code": "NL", "name": "countries.NL" },
-        { "code": "SE", "name": "countries.SE" },
-        { "code": "CH", "name": "countries.CH" },
-        { "code": "SG", "name": "countries.SG" },
-        { "code": "HK", "name": "countries.HK" },
-        { "code": "TW", "name": "countries.TW" },
-        { "code": "TH", "name": "countries.TH" },
-        { "code": "VN", "name": "countries.VN" },
-        { "code": "PH", "name": "countries.PH" },
-        { "code": "MY", "name": "countries.MY" },
-        { "code": "ID", "name": "countries.ID" },
-        { "code": "NZ", "name": "countries.NZ" },
-        { "code": "AT", "name": "countries.AT" },
-        { "code": "BE", "name": "countries.BE" },
-        { "code": "DK", "name": "countries.DK" },
-        { "code": "FI", "name": "countries.FI" },
-        { "code": "NO", "name": "countries.NO" },
-        { "code": "PL", "name": "countries.PL" },
-        { "code": "PT", "name": "countries.PT" },
-        { "code": "IE", "name": "countries.IE" },
-        { "code": "GR", "name": "countries.GR" },
-        { "code": "CZ", "name": "countries.CZ" },
-        { "code": "HU", "name": "countries.HU" },
-        { "code": "TR", "name": "countries.TR" },
-        { "code": "IL", "name": "countries.IL" },
-        { "code": "AE", "name": "countries.AE" },
-        { "code": "SA", "name": "countries.SA" },
-        { "code": "ZA", "name": "countries.ZA" },
-        { "code": "EG", "name": "countries.EG" },
-        { "code": "AR", "name": "countries.AR" },
-        { "code": "CL", "name": "countries.CL" },
-        { "code": "CO", "name": "countries.CO" },
-        { "code": "PE", "name": "countries.PE" }
-    ],
-    "languageList": [
-        { "code": "ko", "name": "languages.ko" },
-        { "code": "en", "name": "languages.en" }
-    ]
-  },
-  "slots": {
-    "content": [
-      {
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
-        },
-        "children": [
-          {
-            "type": "layout",
-            "name": "Container",
-            "props": {
-              "className": "py-8"
-            },
-            "responsive": {
-              "portable": {
-                "props": {
-                  "className": "py-4"
+    "comment": "내 정보 수정 — 보기 화면(`profile`)과 짝을 이루는 별도 화면이다.",
+    "version": "1.0.0",
+    "layout_name": "mypage/profile-edit",
+    "extends": "_user_base",
+    "data_sources": [
+        {
+            "id": "user",
+            "label_key": "$t:editor.data_source.user",
+            "type": "api",
+            "endpoint": "/api/me",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "initLocal": "profileEditForm",
+            "blur_until_loaded": true,
+            "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
-              }
             },
-            "children": [
-              {
-                "comment": "페이지 제목",
+            "comment": "본인 정보를 받아 `initLocal` 로 폼 초깃값까지 채운다. `refetchOnMount` 라 다른 화면을 다녀와도\n       화면에 남아 있던 낡은 값이 아니라 서버 값으로 다시 시작한다"
+        }
+    ],
+    "permissions": [],
+    "defines": {
+        "countryList": [
+            {
+                "code": "KR",
+                "name": "countries.KR"
+            },
+            {
+                "code": "US",
+                "name": "countries.US"
+            },
+            {
+                "code": "JP",
+                "name": "countries.JP"
+            },
+            {
+                "code": "CN",
+                "name": "countries.CN"
+            },
+            {
+                "code": "GB",
+                "name": "countries.GB"
+            },
+            {
+                "code": "DE",
+                "name": "countries.DE"
+            },
+            {
+                "code": "FR",
+                "name": "countries.FR"
+            },
+            {
+                "code": "CA",
+                "name": "countries.CA"
+            },
+            {
+                "code": "AU",
+                "name": "countries.AU"
+            },
+            {
+                "code": "IN",
+                "name": "countries.IN"
+            },
+            {
+                "code": "BR",
+                "name": "countries.BR"
+            },
+            {
+                "code": "RU",
+                "name": "countries.RU"
+            },
+            {
+                "code": "IT",
+                "name": "countries.IT"
+            },
+            {
+                "code": "ES",
+                "name": "countries.ES"
+            },
+            {
+                "code": "MX",
+                "name": "countries.MX"
+            },
+            {
+                "code": "NL",
+                "name": "countries.NL"
+            },
+            {
+                "code": "SE",
+                "name": "countries.SE"
+            },
+            {
+                "code": "CH",
+                "name": "countries.CH"
+            },
+            {
+                "code": "SG",
+                "name": "countries.SG"
+            },
+            {
+                "code": "HK",
+                "name": "countries.HK"
+            },
+            {
+                "code": "TW",
+                "name": "countries.TW"
+            },
+            {
+                "code": "TH",
+                "name": "countries.TH"
+            },
+            {
+                "code": "VN",
+                "name": "countries.VN"
+            },
+            {
+                "code": "PH",
+                "name": "countries.PH"
+            },
+            {
+                "code": "MY",
+                "name": "countries.MY"
+            },
+            {
+                "code": "ID",
+                "name": "countries.ID"
+            },
+            {
+                "code": "NZ",
+                "name": "countries.NZ"
+            },
+            {
+                "code": "AT",
+                "name": "countries.AT"
+            },
+            {
+                "code": "BE",
+                "name": "countries.BE"
+            },
+            {
+                "code": "DK",
+                "name": "countries.DK"
+            },
+            {
+                "code": "FI",
+                "name": "countries.FI"
+            },
+            {
+                "code": "NO",
+                "name": "countries.NO"
+            },
+            {
+                "code": "PL",
+                "name": "countries.PL"
+            },
+            {
+                "code": "PT",
+                "name": "countries.PT"
+            },
+            {
+                "code": "IE",
+                "name": "countries.IE"
+            },
+            {
+                "code": "GR",
+                "name": "countries.GR"
+            },
+            {
+                "code": "CZ",
+                "name": "countries.CZ"
+            },
+            {
+                "code": "HU",
+                "name": "countries.HU"
+            },
+            {
+                "code": "TR",
+                "name": "countries.TR"
+            },
+            {
+                "code": "IL",
+                "name": "countries.IL"
+            },
+            {
+                "code": "AE",
+                "name": "countries.AE"
+            },
+            {
+                "code": "SA",
+                "name": "countries.SA"
+            },
+            {
+                "code": "ZA",
+                "name": "countries.ZA"
+            },
+            {
+                "code": "EG",
+                "name": "countries.EG"
+            },
+            {
+                "code": "AR",
+                "name": "countries.AR"
+            },
+            {
+                "code": "CL",
+                "name": "countries.CL"
+            },
+            {
+                "code": "CO",
+                "name": "countries.CO"
+            },
+            {
+                "code": "PE",
+                "name": "countries.PE"
+            }
+        ],
+        "languageList": [
+            {
+                "code": "ko",
+                "name": "languages.ko"
+            },
+            {
+                "code": "en",
+                "name": "languages.en"
+            }
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "isPasswordVerified": false,
+                "verifyPassword": "",
+                "isVerifyingPassword": false,
+                "verifyPasswordError": false
+            }
+        },
+        {
+            "comment": "외부 수단(회사 계정 다시 로그인 등)으로 재확인하고 돌아왔다(7.2.0) — 받은 확인 토큰으로 재확인을 마치고 주소에서 토큰을 지운다",
+            "handler": "sequence",
+            "if": "{{!!query?.verification_token}}",
+            "actions": [
+                {
+                    "handler": "apiCall",
+                    "target": "/api/me/verify-password",
+                    "auth_required": true,
+                    "params": {
+                        "method": "POST",
+                        "body": {
+                            "verification_token": "{{query.verification_token}}"
+                        }
+                    },
+                    "onSuccess": {
+                        "handler": "setState",
+                        "params": {
+                            "target": "local",
+                            "isPasswordVerified": true
+                        }
+                    },
+                    "onError": {
+                        "handler": "setState",
+                        "params": {
+                            "target": "local",
+                            "reauthError": "{{error.message}}"
+                        }
+                    }
+                },
+                {
+                    "handler": "replaceUrl",
+                    "params": {
+                        "path": "/mypage/profile/edit"
+                    }
+                }
+            ]
+        }
+    ],
+    "slots": {
+        "content": [
+            {
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "flex items-center gap-2 mb-6"
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "pen-to-square",
-                      "size": "xl",
-                      "className": "text-gray-900 dark:text-white"
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "children": [
+                            {
+                                "comment": "페이지 제목",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "pen-to-square",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:mypage.profile_edit_title"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "비밀번호 검증 섹션",
+                                "partial": "partials/mypage/profile/_password_verify_section.json"
+                            },
+                            {
+                                "comment": "프로필 편집 폼",
+                                "partial": "partials/mypage/profile/_edit.json"
+                            }
+                        ]
                     }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H1",
-                    "props": {
-                      "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                    },
-                    "text": "$t:mypage.profile_edit_title"
-                  }
                 ]
-              },
-              {
-                "comment": "비밀번호 검증 섹션",
-                "partial": "partials/mypage/profile/_password_verify_section.json"
-              },
-              {
-                "comment": "프로필 편집 폼",
-                "partial": "partials/mypage/profile/_edit.json"
-              }
-            ]
-          }
+            }
         ]
-      }
-    ]
-  }
+    }
 }

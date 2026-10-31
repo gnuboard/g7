@@ -1,0 +1,35 @@
+feature: 이커머스 샘플 시더가 실제 주문 흐름과 같은 모양의 데이터를 만들고 운영 데이터를 지우지 않는다
+
+description: |
+  샘플 시더가 결제·배송 행이 빠진 주문, 가짜 PG id, 택배사 없는 송장, 취소 문서 없는 취소 주문, 시간이 거꾸로 흐르는
+  주문·마일리지, 문자열로 감싼 리뷰 옵션 스냅샷을 만들었고, 샘플 없이 시드만 돌려도 전 회원 배송지를 지웠다.
+  재시드는 실제 활동 로그와 상품 문의 게시판 답변까지 지웠다. 설치 시더에는 배송유형이 빠져 새 설치에 배송유형이 없었다.
+  샘플 재시드는 비울 데이터 목록을 보여 주고 확인을 받으며(--force 로 생략), 상품 문의는 지울 상품의 문의 글만
+  게시판에 넘기고, 단독 실행 때 기존 문의가 있으면 건드리지 않는다.
+
+axes:
+  run: [full_sample, reseed_twice, inquiry_standalone, install_only, non_interactive, image_download_failure, claim_standalone]
+
+effects:
+  - every_order_has_payment_and_shipping
+  - pg_rows_use_registered_provider_and_test_marker
+  - tracking_always_has_carrier
+  - cancelled_orders_have_documents
+  - timelines_are_monotonic
+  - order_amount_formula_holds
+  - claim_course_states_present
+  - mileage_never_consumes_future_lot
+  - earn_balance_after_includes_itself
+  - review_snapshot_is_json_object
+  - inquiry_board_posts_do_not_accumulate
+  - existing_inquiries_survive_standalone_run
+  - user_addresses_untouched_without_sample
+  - real_activity_logs_preserved
+  - non_interactive_without_force_aborts
+  - install_seeders_fill_shipping_types
+  - image_download_failure_does_not_abort
+  - claim_seeder_standalone_leaves_orders_untouched
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Seeders/SampleSeederIntegrityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Database/Seeders/SampleImageDownloadFailureTest.php

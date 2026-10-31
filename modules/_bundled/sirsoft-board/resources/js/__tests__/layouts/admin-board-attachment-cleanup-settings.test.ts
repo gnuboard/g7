@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import generalTab from '../../../layouts/admin/partials/admin_board_settings/_tab_general.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 모듈 루트(module.json 기준)를 위로 훑어 찾는다.
@@ -107,7 +108,7 @@ describe('게시판 첨부 정리 설정 — 계약', () => {
 
     it('변경 시 form 상태와 hasChanges 를 함께 갱신한다', () => {
         const toggle = findNode(section, (n) => n.name === 'Toggle');
-        const action = toggle.actions.find((a: any) => a.type === 'change');
+        const action = actionsOf(toggle).find((a: any) => a.type === 'change');
 
         expect(action.params.hasChanges).toBe(true);
 

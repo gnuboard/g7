@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\DTO;
 
+use App\Support\LocalizedValue;
+
 /**
  * 스냅샷 기반 가상 상품옵션 객체
  *
@@ -77,7 +79,7 @@ class SnapshotProductOption
     public function getLocalizedOptionName(): string
     {
         if (is_array($this->option_name)) {
-            return $this->option_name[app()->getLocale()] ?? $this->option_name['ko'] ?? reset($this->option_name) ?: '';
+            return LocalizedValue::pick($this->option_name) ?? '';
         }
 
         return $this->option_name ?? '';

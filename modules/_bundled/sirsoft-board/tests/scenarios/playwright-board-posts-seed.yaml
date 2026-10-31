@@ -1,0 +1,38 @@
+feature: E2E·실측용 「두 쪽인 공개 게시판」과 쓰기 회원 시드 — 쪽당 2건·글 3건 게시판과 기본 user 역할 회원을 워커별 tag 로 세우고 지우기 (#757)
+
+description: |
+  `playwright:seed-board-posts` 는 사용자 화면 이동 링크 spec(`templates/_bundled/sirsoft-basic/tests/Playwright/specs/user-navigation-links.spec.ts`)의
+  게시판 시험 셋(게시글 행 · 2쪽 번호 · 글쓰기)이 끝까지 잴 게시판을 세운다. 설치본의 기존 게시판에 기대면 글 수가 달라
+  건너뛰어 통과로 세어졌고, 화면·API 로 글을 여럿 쓰면 글 쿨다운(기본 60초)에 막혔다(#757 U1).
+
+  - 게시판 `e2e-nav-{tag}` — 쪽당 2건(PC·모바일), 글 3건이라 두 쪽. 권한은 글 열람 비로그인·회원·관리자, 글쓰기 회원·관리자로 명시한다.
+  - 회원 `e2e-nav-{tag}@example.test` — 실제 가입처럼 기본 `user` 역할을 붙이고 토큰을 낸다. 역할 없는 토큰 계정은 「회원」 역할이
+    없어 쓰기 권한을 받지 못해 글쓰기 링크 갈래를 잴 수 없었다(#757 M1 실측).
+
+  판정은 브라우저가 읽는 **글 목록 응답의 쓰기 권한**(`data.abilities.can_write`)으로 한다 — 행이 생겼는지가 아니라 화면 갈래가 서는지.
+
+  축 op 는 시드·같은 tag 재시드·정리. 축 tag 는 호출자가 준 꼬리표의 상태 — 형식에 맞음(valid)·없거나 형식 위반(invalid)·
+  생략(omitted, 정리에서만 뜻이 있다 — 전량). `fullyParallel` 워커마다 다른 tag 를 써야 한 워커의 재시드·정리가 다른 워커의
+  게시판·회원을 지우지 않는다.
+
+axes:
+  op: [seed, reseed, teardown]
+  tag: [valid, invalid, omitted]
+
+exclusions:
+  - { op: seed, tag: omitted, reason: "시드에서 tag 생략은 invalid 칸의 시험(test_seed_without_a_valid_tag_fails_without_side_effects)이 함께 확인한다 — 같은 거절 경로" }
+  - { op: reseed, tag: invalid, reason: "재시드는 앞선 시드가 있다는 전제라 유효 tag 에서만 성립한다 — 형식 거절은 seed×invalid 가 대표" }
+  - { op: reseed, tag: omitted, reason: "재시드는 앞선 시드가 있다는 전제라 유효 tag 에서만 성립한다 — tag 없는 시드는 거절된다" }
+  - { op: teardown, tag: invalid, reason: "tag 형식 검사는 시드·정리 분기 앞의 같은 자리에서 한 번 한다 — seed×invalid 가 대표" }
+
+effects:
+  - seeds_two_page_public_board
+  - seeds_member_who_can_write
+  - guest_reads_but_cannot_write
+  - reseed_same_tag_replaces_previous_set
+  - teardown_by_tag_keeps_other_tags
+  - teardown_without_tag_sweeps_every_seed_only
+  - seed_without_valid_tag_fails_without_side_effects
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Console/PlaywrightSeedBoardPostsCommandTest.php

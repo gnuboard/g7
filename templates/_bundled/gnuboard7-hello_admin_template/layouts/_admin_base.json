@@ -1,85 +1,89 @@
 {
-  "version": "1.0.0",
-  "layout_name": "_admin_base",
-  "meta": {
-    "title": "$t:admin.base_layout_title",
-    "is_base": true
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "admin_shell",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "flex min-h-screen bg-gray-50"
-        },
-        "children": [
-          {
-            "id": "sidebar",
+    "comment": "학습용 관리자 베이스 레이아웃 — 사이드바 + 콘텐츠 슬롯만 있는 최소 골격이다. 실제 관리자 템플릿(sirsoft-admin_basic)이 무엇을 더 얹는지 견주어 보라고 남긴 자리다",
+    "version": "1.0.0",
+    "layout_name": "_admin_base",
+    "meta": {
+        "title": "$t:admin.base_layout_title",
+        "is_base": true
+    },
+    "components": [
+        {
+            "id": "admin_shell",
             "type": "basic",
             "name": "Div",
             "props": {
-              "className": "w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4"
+                "className": "flex min-h-screen bg-gray-50"
             },
             "children": [
-              {
-                "id": "sidebar_title",
-                "type": "basic",
-                "name": "H2",
-                "props": {
-                  "className": "section-heading mb-4"
-                },
-                "text": "$t:admin.sidebar.title"
-              },
-              {
-                "id": "nav_dashboard",
-                "type": "basic",
-                "name": "A",
-                "props": {
-                  "href": "/admin",
-                  "className": "block px-3 py-2 text-body rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                },
-                "text": "$t:admin.sidebar.dashboard"
-              }
-            ]
-          },
-          {
-            "id": "main_column",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "flex-1 flex flex-col"
-            },
-            "children": [
-              {
-                "id": "header",
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex-center h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6"
-                },
-                "children": [
-                  {
-                    "id": "header_title",
+                {
+                    "id": "sidebar",
                     "type": "basic",
-                    "name": "Span",
+                    "name": "Div",
                     "props": {
-                      "className": "text-primary text-sm font-medium"
+                        "className": "w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4"
                     },
-                    "text": "$t:admin.header.title"
-                  }
-                ]
-              },
-              {
-                "id": "content_slot",
-                "type": "slot",
-                "name": "content"
-              }
+                    "children": [
+                        {
+                            "id": "sidebar_title",
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                                "className": "section-heading mb-4"
+                            },
+                            "text": "$t:admin.sidebar.title"
+                        },
+                        {
+                            "id": "nav_dashboard",
+                            "type": "basic",
+                            "name": "A",
+                            "props": {
+                                "href": "/admin",
+                                "className": "block px-3 py-2 text-body rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                            },
+                            "text": "$t:admin.sidebar.dashboard"
+                        }
+                    ]
+                },
+                {
+                    "id": "main_column",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 flex flex-col"
+                    },
+                    "children": [
+                        {
+                            "id": "header",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center h-14 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6"
+                            },
+                            "children": [
+                                {
+                                    "id": "header_title",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-primary text-sm font-medium"
+                                    },
+                                    "text": "$t:admin.header.title"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "자식 레이아웃이 끼워지는 자리 — 베이스는 components 에 실제 노드를 두고 그 노드에 slot 키를 단다. slots 섹션 + type:slot 자리표시 노드는 정본이 아니며(코퍼스의 다른 베이스는 전부 이 형태), 강검증도 통과하지 못했다.",
+                            "id": "main_content",
+                            "type": "basic",
+                            "name": "Div",
+                            "slot": "content",
+                            "props": {
+                                "className": "flex-1 p-6"
+                            }
+                        }
+                    ]
+                }
             ]
-          }
-        ]
-      }
+        }
     ]
-  }
 }

@@ -73,6 +73,7 @@ HTTP/1.1 200
 - **라우트명**: `api.modules.sirsoft-ecommerce.checkout.show`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CheckoutController@show`
 - **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근)
+- **권한 메모(1.3.0)**: 응답 `abilities.can_order`(= `sirsoft-ecommerce.user-orders.create`) — [결제하기] 잠금 키.
 
 **요청 파라미터**
 
@@ -112,6 +113,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
 | has_unshippable_items | boolean | `false` | 선택된 배송국가로 배송 불가한 상품이 1개라도 있으면 `true` (주문하기 차단 플래그) |
 | selected_shipping_country | string | `KR` | 현재 선택된 배송 국가 코드 |
 | free_shipping | object | `{...}` | 무료배송 기준액 정보 (아래 "free_shipping" 표) |
+| allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id (#639). 결제수단 화이트리스트를 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 로 거른 결과이고, 템플릿이 결제수단 버튼을 이 목록으로 거른다. 주문 생성 검증(`POST /user/orders` 의 `payment_method`)과 같은 판정이다 |
 | unavailable_items | array | `[]` | 구매 불가 상품 목록 (존재할 때만 포함) |
 | has_stock_issue | boolean | `false` | 구매 불가 사유에 재고 부족이 포함되면 `true` (`unavailable_items` 존재 시에만 포함) |
 | has_status_issue | boolean | `false` | 구매 불가 사유에 판매 상태 문제가 포함되면 `true` (`unavailable_items` 존재 시에만 포함) |
@@ -327,6 +329,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
         "validation_errors": [],
         "has_unshippable_items": false,
         "selected_shipping_country": "KR",
+        "allowed_payment_methods": ["card", "vbank", "dbank"],
         "free_shipping": {
             "enabled": false,
             "threshold_base": 0,
@@ -440,11 +443,12 @@ _단건 응답: `data` 객체의 필드 (`CheckoutController@store` 가 직접 �
 | --- | --- | --- |
 | 400 | Bad Request | 장바구니가 비어 있음. 메시지: `장바구니가 비어있습니다.` |
 | 422 | Unprocessable Entity | 보유 잔액을 초과하는 마일리지 사용 요청 (`error.code: mileage_exceeds_balance`). 메시지: `주문서 생성에 실패했습니다.` |
+| 422 | Unprocessable Entity | 바로 구매(`direct_items`) 항목이 지정한 옵션이 그 상품에 없음 (`error.code: option_not_found`), 또는 옵션을 지정하지 않았는데 판매 중인 옵션이 하나도 없는 상품 (`error.code: no_purchasable_option`). 메시지: `지금은 구매할 수 있는 옵션이 없는 상품입니다.` 등 사유별 문구 |
 | 500 | Internal Server Error | 임시 주문 생성 중 예외 발생. 메시지: `주문서 생성에 실패했습니다.` |
 
 <!-- @generated:end -->
 
-**설명** 장바구니에서 선택한 아이템으로 임시 주문을 생성해 주문서 작성 단계로 진입합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CheckoutController@store`가 `direct_items`가 있으면 `TempOrderService::createTempOrderFromDirectItems()`(바로 구매, 장바구니 미경유), 없으면 `item_ids`로 `createTempOrderFromSelectedItems()`(장바구니 경유)를 호출합니다. 응답에는 임시 주문 ID·계산 결과·만료 시각(`expires_at`)이 포함됩니다. 재고 부족·판매 중지·구매 제한 상품이 있으면 400(cart_unavailable), 빈 장바구니는 400을 반환합니다.
+**설명** 장바구니에서 선택한 아이템으로 임시 주문을 생성해 주문서 작성 단계로 진입합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CheckoutController@store`가 `direct_items`가 있으면 `TempOrderService::createTempOrderFromDirectItems()`(바로 구매, 장바구니 미경유), 없으면 `item_ids`로 `createTempOrderFromSelectedItems()`(장바구니 경유)를 호출합니다. 응답에는 임시 주문 ID·계산 결과·만료 시각(`expires_at`)이 포함됩니다. 재고 부족·판매 중지·구매 제한 상품이 있으면 400(cart_unavailable), 빈 장바구니는 400을 반환합니다. 비회원은 `X-Cart-Key`(`ck_`+32자)가 필수이며, 없거나 형식이 틀리면 422(`cart_key`)를 반환합니다 — 조회·연장·삭제와 같은 판정이라 키 없는 요청이 아무도 조회·삭제할 수 없는 임시 주문을 만들지 않습니다.
 
 마일리지 사용은 보유 잔액뿐 아니라 관리자 설정 사용 정책(최소 사용액 `min_use_amount`, 사용 단위 `use_unit`, 최대 한도 `max_use_percent`/`max_use_value`)까지 서버에서 강제하며, 위반 시 422 를 반환합니다. 한도 초과 응답 메시지에는 사용 가능한 최대 금액이 함께 안내됩니다. 판정 기준 금액은 마일리지 차감 전 결제금액이며, 비회원의 `use_points` 는 예외 없이 0 으로 처리됩니다.
 
@@ -510,6 +514,7 @@ _단건 응답: `data` 객체의 필드. GET `/api/modules/sirsoft-ecommerce/che
 | has_unshippable_items | boolean | `false` | 선택된 배송국가로 배송 불가한 상품 존재 여부 |
 | selected_shipping_country | string | `KR` | 현재 선택된 배송 국가 코드 |
 | free_shipping | object | `{...}` | 무료배송 기준액 정보 (`enabled` / `threshold_base` / `threshold_multi_currency` / `remaining_base` / `remaining_multi_currency`) |
+| allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id (조회 응답과 같은 판정, #639) |
 
 **응답 예시**
 
@@ -562,6 +567,7 @@ _단건 응답: `data` 객체의 필드. GET `/api/modules/sirsoft-ecommerce/che
         "validation_errors": [],
         "has_unshippable_items": false,
         "selected_shipping_country": "KR",
+        "allowed_payment_methods": ["card", "vbank", "dbank"],
         "free_shipping": {
             "enabled": false,
             "threshold_base": 0,
@@ -583,7 +589,7 @@ _단건 응답: `data` 객체의 필드. GET `/api/modules/sirsoft-ecommerce/che
 
 <!-- @generated:end -->
 
-**설명** 주문서 작성 중 쿠폰·마일리지·배송 주소가 변경될 때 임시 주문 금액을 재계산합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CheckoutController@update`가 전송된 프로모션 필드(`item_coupons`·`order_coupon_issue_id`·`shipping_coupon_issue_id`)와 `use_points`만 반영하고 미전송 필드는 `TempOrderService::updateTempOrder()`에서 기존 값을 유지합니다. `zipcode`/`country_code`로 배송 주소를 함께 넘기면 배송비가 다시 계산됩니다. 임시 주문이 만료·미존재면 404, 보유 잔액 초과 또는 사용 정책(최소 사용액·사용 단위·최대 한도) 위반 마일리지는 422를 반환합니다.
+**설명** 주문서 작성 중 쿠폰·마일리지·배송 주소가 변경될 때 임시 주문 금액을 재계산합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CheckoutController@update`가 전송된 프로모션 필드(`item_coupons`·`order_coupon_issue_id`·`shipping_coupon_issue_id`)와 `use_points`만 반영하고 미전송 필드는 `TempOrderService::updateTempOrder()`에서 기존 값을 유지합니다. `zipcode`/`country_code`로 배송 주소를 함께 넘기면 배송비가 다시 계산됩니다. 임시 주문이 만료·미존재면 404, 보유 잔액 초과 또는 사용 정책(최소 사용액·사용 단위·최대 한도) 위반 마일리지는 422를 반환합니다. 비회원은 `X-Cart-Key`(`ck_`+32자)가 필수이며, 없거나 형식이 틀리면 422(`cart_key`)를 반환합니다 — 조회·연장·삭제와 같은 판정이라 키 없는 요청이 아무도 조회·삭제할 수 없는 임시 주문을 만들지 않습니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/checkout/extend

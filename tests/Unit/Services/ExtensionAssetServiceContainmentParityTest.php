@@ -236,7 +236,12 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
     }
 
     /**
-     * 소스에서 `$basePath = base_path(...)` 의 인자 표현식을 도출해 정규화합니다.
+     * 소스에서 `$basePath = …` 가 고르는 `base_path(...)` 인자 표현식(들)을 도출해 정규화합니다.
+     *
+     * 기준선은 갈래를 가질 수 있다 — 템플릿 통로는 운영자 디렉토리(`custom/`)면 확장 루트,
+     * 아니면 `dist` 를 쓴다(7.2.0). 그래서 대입문 안의 `base_path(...)` 를 **전부** 순서대로 모아
+     * `|` 로 잇는다. 대입이 같은 클래스의 메서드 호출(`$this->basePathFor(…)`)이면 그 메서드의
+     * `return` 문에서 같은 방식으로 모은다 — 기준선을 한 메서드로 뽑아 둔 형태도 같은 값을 잰다.
      *
      * @param  string  $relative  프로젝트 루트 기준 파일 경로
      * @param  string  $methodNeedle  탐색 시작 지점이 되는 메서드 선언 문자열
@@ -251,42 +256,82 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
             return '';
         }
 
-        $assignAt = strpos($source, '$basePath = base_path(', $methodAt);
+        $assignAt = strpos($source, '$basePath = ', $methodAt);
         if ($assignAt === false) {
             return '';
         }
 
-        $open = strpos($source, '(', $assignAt + strlen('$basePath = base_path'));
-        if ($open === false) {
-            return '';
+        $statement = $this->statementFrom($source, $assignAt);
+
+        if (! str_contains($statement, 'base_path(')
+            && preg_match('/\$this->(\w+)\(/', $statement, $call) === 1) {
+            $helperAt = strpos($source, 'function '.$call[1].'(');
+            $returnAt = $helperAt === false ? false : strpos($source, 'return ', $helperAt);
+            if ($returnAt === false) {
+                return '';
+            }
+            $statement = $this->statementFrom($source, $returnAt);
         }
 
+        $expressions = [];
+        $offset = 0;
+        while (($at = strpos($statement, 'base_path(', $offset)) !== false) {
+            $open = $at + strlen('base_path');
+            $close = $this->matchingParenAt($statement, $open);
+            if ($close === null) {
+                return '';
+            }
+
+            $expression = substr($statement, $open + 1, $close - $open - 1);
+
+            // 표기 차이를 접는다 — `"templates/{$identifier}/dist"` 와
+            // `'templates/'.$identifier.'/dist'` 는 같은 경로다.
+            $expression = str_replace(['{$identifier}', '$identifier'], '{id}', $expression);
+            $expression = str_replace(['"', "'", '.', ' ', "\t", "\n", "\r"], '', $expression);
+            $expressions[] = trim($expression, '/');
+
+            $offset = $close + 1;
+        }
+
+        return implode('|', $expressions);
+    }
+
+    /**
+     * `$offset` 에서 시작하는 문장을 첫 `;` 까지 잘라 돌려줍니다.
+     *
+     * @param  string  $source  소스
+     * @param  int  $offset  문장 시작 위치
+     * @return string 문장 (끝 `;` 제외)
+     */
+    private function statementFrom(string $source, int $offset): string
+    {
+        $end = strpos($source, ';', $offset);
+
+        return $end === false ? '' : substr($source, $offset, $end - $offset);
+    }
+
+    /**
+     * `$open` 위치의 `(` 와 짝이 맞는 `)` 의 위치.
+     *
+     * @param  string  $source  소스
+     * @param  int  $open  여는 괄호 위치
+     * @return int|null 닫는 괄호 위치 (짝이 없으면 null)
+     */
+    private function matchingParenAt(string $source, int $open): ?int
+    {
         $depth = 0;
-        $close = null;
         for ($i = $open, $len = strlen($source); $i < $len; $i++) {
             if ($source[$i] === '(') {
                 $depth++;
             } elseif ($source[$i] === ')') {
                 $depth--;
                 if ($depth === 0) {
-                    $close = $i;
-                    break;
+                    return $i;
                 }
             }
         }
 
-        if ($close === null) {
-            return '';
-        }
-
-        $expression = substr($source, $open + 1, $close - $open - 1);
-
-        // 표기 차이를 접는다 — `"templates/{$identifier}/dist"` 와
-        // `'templates/'.$identifier.'/dist'` 는 같은 경로다.
-        $expression = str_replace(['{$identifier}', '$identifier'], '{id}', $expression);
-        $expression = str_replace(['"', "'", '.', ' ', "\t", "\n", "\r"], '', $expression);
-
-        return trim($expression, '/');
+        return null;
     }
 
     #[Test]

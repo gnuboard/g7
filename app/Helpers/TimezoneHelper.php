@@ -123,6 +123,29 @@ class TimezoneHelper
     }
 
     /**
+     * Carbon datetime을 사이트 기본 타임존 Y-m-d H:i:s 문자열로 변환합니다.
+     *
+     * 보는 사람이 아니라 **사이트**를 기준으로 시각을 보여야 하는 화면에 씁니다 — 방문자 통계처럼
+     * 집계 경계 자체가 사이트 자정에 잠긴 기능이 그렇습니다. 사용자 타임존으로 보이면 「오늘 KPI」와
+     * 목록의 시각이 서로 다른 하루를 가리켜, 같은 화면 안에서 숫자가 어긋납니다.
+     *
+     * 오프셋을 붙이지 않은 문자열을 돌려줍니다 — 프론트의 `| datetime` 이 이 값을 그대로 찍도록
+     * (`formatDateTimeStringForUser` 와 같은 계약). 오프셋을 실으면 브라우저가 자기 시간대로
+     * 다시 옮겨 사이트 기준이 깨집니다.
+     *
+     * @param  Carbon|null  $datetime  변환할 datetime
+     * @return string|null Y-m-d H:i:s 형식
+     */
+    public static function toSiteDateTimeString(?Carbon $datetime): ?string
+    {
+        if (! $datetime) {
+            return null;
+        }
+
+        return $datetime->copy()->setTimezone(static::getSiteTimezone())->format('Y-m-d H:i:s');
+    }
+
+    /**
      * 날짜 문자열을 사이트 기본 타임존 기준 하루 시작(00:00:00)으로 해석하여 UTC Carbon을 반환합니다.
      *
      * 예: '2026-03-15' + Asia/Seoul → 2026-03-15 00:00:00 KST → 2026-03-14 15:00:00 UTC

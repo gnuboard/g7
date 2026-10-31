@@ -8,6 +8,7 @@
   "preview": {
     "title": "Customer Preview",
     "info": "Total {{count}} banners · Auto-rotate every {{interval}} seconds",
+    "info_one": "Total {{count}} banner · Auto-rotate every {{interval}} seconds",
     "carousel_placeholder": "Carousel component development required"
   },
   "list": {
@@ -41,6 +42,8 @@
       "hide": "Hide",
       "color": "Color",
       "position": "Position",
+      "title_position": "Title position",
+      "content_position": "Content position",
       "position_left": "Left",
       "position_center": "Center",
       "position_right": "Right",

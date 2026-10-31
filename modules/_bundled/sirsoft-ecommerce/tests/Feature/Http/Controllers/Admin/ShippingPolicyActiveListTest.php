@@ -71,6 +71,7 @@ class ShippingPolicyActiveListTest extends ModuleTestCase
     #[Test]
     /**
      * @scenario endpoint=active_list,opt_in=default
+     *
      * @effects list_keeps_fields_the_screen_draws
      */
     public function test_active_filtered_response_includes_form_fields(): void

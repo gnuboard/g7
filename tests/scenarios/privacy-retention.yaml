@@ -1,0 +1,84 @@
+feature: 보유기간 경과 개인정보 파기·익명화 (이슈 #636 트랙4 코어)
+
+description: |
+  보유기간이 지난 개인정보를 도메인별 핸들러가 파기·익명화한다. 코어는 어떤 도메인이
+  무엇을 지우는지 모른 채 수집·실행·집계만 하고, 확장은 필터 훅으로 자기 핸들러를 더한다.
+
+  코어 기본 핸들러는 **탈퇴 회원 잔여 정보 2차 파기** 하나다. `User::withdraw()` 는 분쟁
+  대응을 위해 이름·이메일의 원값을 접미사 형태로 보존한 채 탈퇴시키므로, 그 보존기간이
+  지난 뒤 실제로 지우는 단계가 없으면 "파기했다" 는 말이 사실이 아니게 된다.
+
+  설계에서 못박은 것:
+    - **전 핸들러 기본 꺼짐.** 확장을 설치했다는 사실만으로 회원 데이터가 지워지면 안 된다.
+      `process()` 는 수집기가 이미 걸러 주더라도 자기 토글을 다시 본다 — 되돌릴 수 없는
+      파기라 호출자를 믿지 않는다.
+    - **"꺼짐" 과 "대상 0건" 을 구분해 보고한다.** 둘을 같은 0 으로 뭉개면 운영자가 켠 줄
+      아는 기능이 놀고 있어도 알아챌 수 없다. 단 **건수는 꺼져 있어도 센다**(2026-09-23
+      확정) — 켜기 전에 규모를 봐야 하므로 건수를 null 로 가리지 않고 `enabled` 로 구분한다.
+    - **관리자가 대상 명단을 모달로 본다.** 명단은 건수·배치와 같은 쿼리에서 나오고, 볼 권한은
+      공급자가 선언한 「설정 읽기 + 도메인 읽기」를 코어 목록 API 가 요청 시점에 검사한다.
+      확장 핸들러는 필터 훅 등록만으로 그 API 에 붙는다.
+    - **한 도메인의 실패가 다른 도메인의 법정 파기를 멈추지 않는다.** 대신 조용히 버리지도
+      않는다 — 건너뛴 사실이 로그에 남지 않으면 그 도메인이 처리되고 있다고 믿게 된다.
+    - **미리보기와 실행이 같은 조건식을 공유한다.** 어긋나면 화면에서 본 숫자와 실제로
+      지워진 양이 다르다.
+    - **본인인증 파생 컬럼(`identity_hash` 등)도 함께 지운다.** 연락처만 지우고 동일인
+      식별자를 남기면 이 기능의 존재 이유가 무너진다.
+
+  설정 읽기 경로 주의: 판정은 `g7_core_settings()`(config 미러) 경유다.
+  `ExtensionSettingsMirror::CORE_CATEGORIES` 에 `privacy` 가 빠지면 관리자가 토글을 켜고
+  저장에 성공하고 `privacy.json` 에 true 가 찍혀도 커맨드는 영원히 기본값을 읽어 **"대상
+  0건" 이라는 정상 출력**을 낸다 — 실패가 아니라 정상처럼 보이므로 회귀 단언을 미러 경유로 둔다.
+
+axes:
+  toggle: [off, on]
+  row_age: [within_retention, beyond_retention]
+  run_mode: [dry_run, real_run]
+
+exclusions:
+  - { toggle: off, row_age: within_retention, reason: "꺼져 있으면 나이 판정에 도달하지 않는다 — 경과분 축 1건으로 충분" }
+  - { toggle: on, row_age: within_retention, run_mode: dry_run, reason: "미경과분 미리보기는 실행 경로와 같은 쿼리를 쓴다 — 실행 축 1건으로 충분" }
+
+sub_flows:
+  - id: settings_surface
+    description: |
+      화면 바인딩 키가 코어 기본값·서버 검증과 일치하는지, 그리고 저장값이 커맨드가 읽는
+      경로(config 미러)까지 실제로 도달하는지.
+    effects:
+      - core_settings_mirror_exposes_the_privacy_category
+      - settings_tab_opens_with_every_feature_off
+      - period_field_appears_only_when_its_toggle_is_on
+
+effects:
+  - retention_handlers_are_collected_from_core_and_extensions
+  - disabled_handler_is_reported_separately_from_zero_targets
+  - withdrawn_residual_pii_is_erased_after_retention
+  - withdrawn_erasure_is_idempotent
+  - rows_within_retention_are_kept
+  - dry_run_deletes_nothing
+  - settings_tab_opens_with_every_feature_off
+  - period_field_appears_only_when_its_toggle_is_on
+  - preview_badges_render_the_same_counts_the_api_returns
+  - saved_privacy_settings_survive_a_browser_reload
+  - target_list_matches_the_preview_population
+  - target_list_requires_domain_read_permission
+  - extension_handler_targets_are_served_by_the_core_api
+  - target_list_pages_until_has_more_pages_is_false
+  - target_list_modal_pages_with_infinite_scroll
+  - target_buttons_wrap_on_narrow_viewports
+
+test_files:
+  - tests/Feature/Privacy/PrivacyRetentionManagerTest.php
+  - tests/Feature/Privacy/WithdrawnUserRetentionTest.php
+  - tests/Feature/Privacy/PrivacyTargetApiTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-privacy-targets.test.ts
+  - tests/Playwright/specs/admin/settings-privacy-retention.spec.ts
+
+rules_layer_coverage:
+  - rule: offset-chunk-mutates-filter
+    coverage: |
+      대상 순회는 `chunkById` 다 — 처리하면서 조건에서 빠지는 행을 다루므로 OFFSET 순회는
+      커서가 밀려 건을 건너뛴다. 매 회전이 같은 술어를 다시 평가하고, 직전 회전이 처리한
+      만큼 모집단이 줄어든다.
+  - rule: console-confirm
+    coverage: 무인 실행 전용 커맨드로 확인 프롬프트가 없다 — 안전장치는 설정 토글과 보존기간이다.

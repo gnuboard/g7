@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Auth\TokenExpirySlider;
 use Closure;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -35,26 +36,8 @@ class RefreshTokenExpiration
             return $response;
         }
 
-        // 설정에서 토큰 유지시간 조회 (분)
-        $lifetime = (int) g7_core_settings('security.auth_token_lifetime', 30);
-        if ($lifetime === 0) {
-            return $response; // 무한대면 갱신 불필요
-        }
-
-        // 남은 시간 계산 (초 단위로 정확히 계산)
-        $remainingSeconds = now()->diffInSeconds($token->expires_at, false);
-        $thresholdSeconds = ($lifetime / 2) * 60;
-
-        // 임계값 미만이고 아직 만료 전이면 갱신
-        if ($remainingSeconds > 0 && $remainingSeconds < $thresholdSeconds) {
-            $token->expires_at = now()->addMinutes($lifetime);
-            $token->save();
-
-            // 세션 만료 시간도 토큰과 동기화 (웹 세션이 있는 경우)
-            if ($request->hasSession()) {
-                config(['session.lifetime' => $lifetime]);
-            }
-        }
+        // 연장 규칙은 개발자 화면 요청(ScreenAuth)과 공유한다 (#792)
+        app(TokenExpirySlider::class)->slide($token, $request);
 
         return $response;
     }

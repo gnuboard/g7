@@ -166,8 +166,14 @@ class RequirementsVendorDevPackagesTest extends TestCase
         $start = strpos($js, 'data.vendor_dev_packages && data.vendor_dev_packages.vendor_exists');
         $this->assertNotFalse($start, 'vendor_dev_packages 카드 렌더 블록이 있어야 한다');
 
-        $end = strpos($js, '// 10. 자산 URL 방식 카드', $start);
-        $this->assertNotFalse($end, '전제: 다음 카드 블록이 경계를 이룬다');
+        // 경계는 **다음 카드의 번호 주석**이다 — 카드 번호는 카드가 늘 때마다 밀리므로(실행 예산
+        // 카드가 끼어 자산 URL 카드가 11번이 됐다) 특정 번호·제목에 묶지 않는다.
+        $this->assertSame(
+            1,
+            preg_match('~\n[ \t]*// \d+\. [^\n]*카드~u', $js, $next, PREG_OFFSET_CAPTURE, $start),
+            '전제: 다음 카드 블록이 경계를 이룬다'
+        );
+        $end = $next[0][1];
 
         $block = substr($js, $start, $end - $start);
 

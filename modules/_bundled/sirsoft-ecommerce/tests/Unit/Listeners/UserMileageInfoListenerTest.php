@@ -8,6 +8,8 @@ use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\UserMileageInfoListener;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -18,6 +20,11 @@ class UserMileageInfoListenerTest extends ModuleTestCase
 {
     private UserMileageInfoListener $listener;
 
+    /**
+     * 마일리지 설정을 심고 리스너를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +32,11 @@ class UserMileageInfoListenerTest extends ModuleTestCase
         $this->listener = app(UserMileageInfoListener::class);
     }
 
+    /**
+     * 테스트가 심은 마일리지 설정 파일을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 운영 경로가 아닌 testing 격리 경로를 정리한다 (EcommerceSettingsService 가드와 동일 경로).
@@ -39,6 +51,7 @@ class UserMileageInfoListenerTest extends ModuleTestCase
      * 마일리지 설정 파일을 작성합니다.
      *
      * @param  array  $overrides  덮어쓸 값
+     * @return void 반환값 없음
      */
     private function writeMileageSettings(array $overrides = []): void
     {
@@ -84,6 +97,13 @@ class UserMileageInfoListenerTest extends ModuleTestCase
         return $user;
     }
 
+    /**
+     * 기능이 켜져 있으면 회원 응답에 잔액 요약을 싣는다.
+     *
+     * @effects injects_mileage_summary_into_user_data
+     *
+     * @return void 반환값 없음
+     */
     public function test_injects_mileage_summary_into_user_data(): void
     {
         $user = $this->seedUserWithBalance();
@@ -98,6 +118,13 @@ class UserMileageInfoListenerTest extends ModuleTestCase
         $this->assertArrayHasKey('by_currency', $result['ecommerce_mileage']);
     }
 
+    /**
+     * 거래가 없는 회원도 0 으로 채운 요약을 싣는다.
+     *
+     * @effects injects_zero_filled_summary_for_user_without_activity
+     *
+     * @return void 반환값 없음
+     */
     public function test_injects_zero_filled_summary_for_user_without_activity(): void
     {
         $user = User::factory()->create();
@@ -109,6 +136,13 @@ class UserMileageInfoListenerTest extends ModuleTestCase
         $this->assertSame(0.0, $result['ecommerce_mileage']['pending']);
     }
 
+    /**
+     * 기능이 꺼져 있으면 잔액 대신 비활성 신호만 싣는다.
+     *
+     * @effects injects_disabled_signal_when_mileage_disabled
+     *
+     * @return void 반환값 없음
+     */
     public function test_injects_disabled_signal_when_mileage_disabled(): void
     {
         $this->writeMileageSettings(['enabled' => false]);
@@ -123,6 +157,13 @@ class UserMileageInfoListenerTest extends ModuleTestCase
         $this->assertArrayNotHasKey('available', $result['ecommerce_mileage']);
     }
 
+    /**
+     * 잔액은 원장 합계가 아니라 잔액 캐시 한 행에서 읽는다.
+     *
+     * @effects reads_cache_not_ledger_sum
+     *
+     * @return void 반환값 없음
+     */
     public function test_reads_cache_not_ledger_sum(): void
     {
         $user = User::factory()->create();
@@ -133,13 +174,25 @@ class UserMileageInfoListenerTest extends ModuleTestCase
             ->with($user->id)
             ->willReturn(['available' => 1200.0, 'pending' => 0.0, 'by_currency' => []]);
 
-        $listener = new UserMileageInfoListener($repository, app(EcommerceSettingsService::class));
+        $listener = new UserMileageInfoListener(
+            $repository,
+            app(EcommerceSettingsService::class),
+            app(MileageTransactionRepositoryInterface::class),
+            app(CurrencyConversionService::class),
+        );
 
         $result = $listener->injectMileageTotal([], $user);
 
         $this->assertSame(1200.0, $result['ecommerce_mileage']['available']);
     }
 
+    /**
+     * 회원 응답 필터 훅을 filter 타입으로 구독한다.
+     *
+     * @effects subscribes_to_filter_resource_data_as_filter_hook
+     *
+     * @return void 반환값 없음
+     */
     public function test_subscribes_to_filter_resource_data_as_filter_hook(): void
     {
         $hooks = UserMileageInfoListener::getSubscribedHooks();

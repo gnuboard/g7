@@ -1,0 +1,37 @@
+{
+    "identifier": "sirsoft-social_login",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "소셜 로그인",
+        "en": "Social Login"
+    },
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": {
+        "ko": "카카오, 네이버, 구글, 페이스북과 일반 OIDC 제공자로 로그인하고 가입하는 플러그인. 본인 확인은 제공자가, 로그인 관문(잠금, 2단계 인증, 비밀번호 변경, 휴면 해제)은 코어가 맡는다.",
+        "en": "Sign in and sign up with Kakao, Naver, Google, Facebook and generic OIDC providers. The provider confirms identity; the core keeps every login gate (lockout, two-factor, password change, dormancy)."
+    },
+    "g7_version": ">=7.2.0",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-social_login",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-social_login/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "css": {
+            "entry": "resources/css/main.css",
+            "output": "dist/css/plugin.css",
+            "namespace": "sl"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

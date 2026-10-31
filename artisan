@@ -10,15 +10,20 @@ define('LARAVEL_START', microtime(true));
 $loader = require __DIR__.'/vendor/autoload.php';
 
 // Register extension (module/plugin) autoload...
-// CoreServiceProvider에서 중복 등록 방지용 플래그 (테스트 시에도 설정하여 tests/bootstrap.php에 위임)
-define('G7_EXTENSION_AUTOLOAD_REGISTERED', true);
-
-// 테스트 실행 시에는 확장 오토로드를 건너뛰기
-// tests/bootstrap.php가 _bundled 기준으로 확장을 우선 로드합니다.
+// `test` 명령에서는 여기서 등록하지 않는다 — 실제 테스트는 PHPUnit **자식 프로세스**에서
+// 돌고, 그 프로세스는 tests/bootstrap.php 가 _bundled 기준으로 우선 로드(prepend)한다.
+// 부모 프로세스의 오토로더 등록은 자식에 전파되지 않으므로 그 전제는 그대로 유지된다.
 $isTestCommand = isset($_SERVER['argv'][1]) && $_SERVER['argv'][1] === 'test';
 $extensionAutoloadFile = __DIR__.'/bootstrap/cache/autoload-extensions.php';
 
 if (!$isTestCommand && file_exists($extensionAutoloadFile)) {
+    // CoreServiceProvider 의 중복 등록 방지 플래그는 **실제로 등록하는 이 경로에서만** 세운다.
+    // 등록을 건너뛰면서 플래그만 세우면 CoreServiceProvider 의 등록까지 막혀, 부모 artisan
+    // 프로세스가 확장 오토로더 없이 부팅한다 — 라우트 캐시가 비어 있으면
+    // ModuleRouteServiceProvider 가 확장 라우트 파일을 실행하다 확장 클래스를 못 찾고 죽는다
+    // (캐시가 있으면 라우트 파일을 아예 읽지 않아 오래 가려져 있었다).
+    define('G7_EXTENSION_AUTOLOAD_REGISTERED', true);
+
     $extensionAutoloads = require $extensionAutoloadFile;
 
     // PSR-4 네임스페이스 등록

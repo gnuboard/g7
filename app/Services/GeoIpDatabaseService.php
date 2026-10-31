@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\ExtensionManager;
+use App\Extension\Helpers\SafeArchiveExtractor;
 use App\Extension\HookManager;
 use App\Support\ConfigCacheHelper;
 use Illuminate\Http\Client\ConnectionException;
@@ -19,6 +20,12 @@ use Illuminate\Support\Facades\Log;
  */
 class GeoIpDatabaseService
 {
+    /**
+     * 설정 저장소를 주입받습니다.
+     *
+     * @param  ConfigRepositoryInterface  $configRepository  GeoIP 설정(라이선스 키·마지막 갱신 시각) 저장소
+     * @return void 반환값 없음
+     */
     public function __construct(
         private ConfigRepositoryInterface $configRepository
     ) {}
@@ -250,6 +257,7 @@ class GeoIpDatabaseService
      * @param  string  $geoipDir  GeoIP 최종 디렉토리
      * @param  string  $tmpDir  임시 디렉토리
      * @param  string  $extractPath  추출 경로
+     * @return void 반환값 없음
      */
     private function prepareDirectories(string $geoipDir, string $tmpDir, string $extractPath): void
     {
@@ -331,8 +339,8 @@ class GeoIpDatabaseService
     private function extractArchive(string $archivePath, string $extractPath): array
     {
         try {
-            $phar = new \PharData($archivePath);
-            $phar->extractTo($extractPath, null, true);
+            // 압축 밖 경로 항목 거부 + 역슬래시 경로 정규화
+            SafeArchiveExtractor::extractTarGz($archivePath, $extractPath);
         } catch (\Throwable $e) {
             return [
                 'success' => false,
@@ -371,6 +379,8 @@ class GeoIpDatabaseService
 
     /**
      * settings의 cache 카테고리에 geoip_last_updated_at을 기록합니다.
+     *
+     * @return void 반환값 없음
      */
     private function updateLastUpdatedAt(): void
     {

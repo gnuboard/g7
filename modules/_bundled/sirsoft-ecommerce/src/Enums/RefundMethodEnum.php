@@ -32,6 +32,20 @@ enum RefundMethodEnum: string
     }
 
     /**
+     * 다국어 라벨 키를 반환합니다.
+     *
+     * 활동 로그의 변경 이력(changes)은 값이 아니라 **키**를 저장하고 표시 시점에 해석한다 —
+     * 라벨 문자열을 박제하면 그 이력만 기록 당시 로케일로 굳는다. 형제 Enum
+     * (`ClaimChargeMethodEnum` 등)이 같은 이름으로 제공하는 계약이다.
+     *
+     * @return string 다국어 키
+     */
+    public function labelKey(): string
+    {
+        return 'sirsoft-ecommerce::enums.refund_method.'.$this->value;
+    }
+
+    /**
      * 상태 뱃지 variant를 반환합니다.
      *
      * @return string

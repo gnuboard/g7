@@ -38,11 +38,11 @@ return [
     'date' => 'The :attribute field must be a valid date.',
     'date_equals' => 'The :attribute field must be a date equal to :date.',
     'date_format' => 'The :attribute field must match the format :format.',
-    'decimal' => 'The :attribute field must have :decimal decimal places.',
+    'decimal' => 'The :attribute field must have :decimal decimal place.|The :attribute field must have :decimal decimal places.',
     'declined' => 'The :attribute field must be declined.',
     'declined_if' => 'The :attribute field must be declined when :other is :value.',
     'different' => 'The :attribute field and :other must be different.',
-    'digits' => 'The :attribute field must be :digits digits.',
+    'digits' => 'The :attribute field must be :digits digit.|The :attribute field must be :digits digits.',
     'digits_between' => 'The :attribute field must be between :min and :max digits.',
     'dimensions' => 'The :attribute field has invalid image dimensions.',
     'distinct' => 'The :attribute field has a duplicate value.',
@@ -56,16 +56,16 @@ return [
     'file' => 'The :attribute field must be a file.',
     'filled' => 'The :attribute field must have a value.',
     'gt' => [
-        'array' => 'The :attribute field must have more than :value items.',
-        'file' => 'The :attribute field must be greater than :value kilobytes.',
+        'array' => 'The :attribute field must have more than :value item.|The :attribute field must have more than :value items.',
+        'file' => 'The :attribute field must be greater than :value kilobyte.|The :attribute field must be greater than :value kilobytes.',
         'numeric' => 'The :attribute field must be greater than :value.',
-        'string' => 'The :attribute field must be greater than :value characters.',
+        'string' => 'The :attribute field must be greater than :value character.|The :attribute field must be greater than :value characters.',
     ],
     'gte' => [
-        'array' => 'The :attribute field must have :value items or more.',
-        'file' => 'The :attribute field must be greater than or equal to :value kilobytes.',
+        'array' => 'The :attribute field must have :value item or more.|The :attribute field must have :value items or more.',
+        'file' => 'The :attribute field must be greater than or equal to :value kilobyte.|The :attribute field must be greater than or equal to :value kilobytes.',
         'numeric' => 'The :attribute field must be greater than or equal to :value.',
-        'string' => 'The :attribute field must be greater than or equal to :value characters.',
+        'string' => 'The :attribute field must be greater than or equal to :value character.|The :attribute field must be greater than or equal to :value characters.',
     ],
     'hex_color' => 'The :attribute field must be a valid hexadecimal color.',
     'image' => 'The :attribute field must be an image.',
@@ -79,34 +79,34 @@ return [
     'list' => 'The :attribute field must be a list.',
     'lowercase' => 'The :attribute field must be lowercase.',
     'lt' => [
-        'array' => 'The :attribute field must have less than :value items.',
-        'file' => 'The :attribute field must be less than :value kilobytes.',
+        'array' => 'The :attribute field must have less than :value item.|The :attribute field must have less than :value items.',
+        'file' => 'The :attribute field must be less than :value kilobyte.|The :attribute field must be less than :value kilobytes.',
         'numeric' => 'The :attribute field must be less than :value.',
-        'string' => 'The :attribute field must be less than :value characters.',
+        'string' => 'The :attribute field must be less than :value character.|The :attribute field must be less than :value characters.',
     ],
     'lte' => [
-        'array' => 'The :attribute field must not have more than :value items.',
-        'file' => 'The :attribute field must be less than or equal to :value kilobytes.',
+        'array' => 'The :attribute field must not have more than :value item.|The :attribute field must not have more than :value items.',
+        'file' => 'The :attribute field must be less than or equal to :value kilobyte.|The :attribute field must be less than or equal to :value kilobytes.',
         'numeric' => 'The :attribute field must be less than or equal to :value.',
-        'string' => 'The :attribute field must be less than or equal to :value characters.',
+        'string' => 'The :attribute field must be less than or equal to :value character.|The :attribute field must be less than or equal to :value characters.',
     ],
     'mac_address' => 'The :attribute field must be a valid MAC address.',
     'max' => [
-        'array' => 'The :attribute field must not have more than :max items.',
-        'file' => 'The :attribute field must not be greater than :max kilobytes.',
+        'array' => 'The :attribute field must not have more than :max item.|The :attribute field must not have more than :max items.',
+        'file' => 'The :attribute field must not be greater than :max kilobyte.|The :attribute field must not be greater than :max kilobytes.',
         'numeric' => 'The :attribute field must not be greater than :max.',
-        'string' => 'The :attribute field must not be greater than :max characters.',
+        'string' => 'The :attribute field must not be greater than :max character.|The :attribute field must not be greater than :max characters.',
     ],
-    'max_digits' => 'The :attribute field must not have more than :max digits.',
+    'max_digits' => 'The :attribute field must not have more than :max digit.|The :attribute field must not have more than :max digits.',
     'mimes' => 'The :attribute field must be a file of type: :values.',
     'mimetypes' => 'The :attribute field must be a file of type: :values.',
     'min' => [
-        'array' => 'The :attribute field must have at least :min items.',
-        'file' => 'The :attribute field must be at least :min kilobytes.',
+        'array' => 'The :attribute field must have at least :min item.|The :attribute field must have at least :min items.',
+        'file' => 'The :attribute field must be at least :min kilobyte.|The :attribute field must be at least :min kilobytes.',
         'numeric' => 'The :attribute field must be at least :min.',
-        'string' => 'The :attribute field must be at least :min characters.',
+        'string' => 'The :attribute field must be at least :min character.|The :attribute field must be at least :min characters.',
     ],
-    'min_digits' => 'The :attribute field must have at least :min digits.',
+    'min_digits' => 'The :attribute field must have at least :min digit.|The :attribute field must have at least :min digits.',
     'missing' => 'The :attribute field must be missing.',
     'missing_if' => 'The :attribute field must be missing when :other is :value.',
     'missing_unless' => 'The :attribute field must be missing unless :other is :value.',
@@ -145,10 +145,10 @@ return [
     'required_without_all' => 'The :attribute field is required when none of :values are present.',
     'same' => 'The :attribute field must match :other.',
     'size' => [
-        'array' => 'The :attribute field must contain :size items.',
-        'file' => 'The :attribute field must be :size kilobytes.',
+        'array' => 'The :attribute field must contain :size item.|The :attribute field must contain :size items.',
+        'file' => 'The :attribute field must be :size kilobyte.|The :attribute field must be :size kilobytes.',
         'numeric' => 'The :attribute field must be :size.',
-        'string' => 'The :attribute field must be :size characters.',
+        'string' => 'The :attribute field must be :size character.|The :attribute field must be :size characters.',
     ],
     'starts_with' => 'The :attribute field must start with one of the following: :values.',
     'string' => 'The :attribute field must be a string.',
@@ -247,6 +247,11 @@ return [
         'content' => [
             'required' => 'The layout content is required.',
             'array' => 'The layout content must be an array.',
+            'markup_compile_failed' => 'The layout markup (.g7.html) could not be compiled: :detail',
+        ],
+        'markup' => [
+            'required' => 'The markup (.g7.html) to compile is required.',
+            'string' => 'The markup must be a string.',
         ],
         'version' => [
             'required' => 'The layout version is required.',
@@ -455,7 +460,7 @@ return [
         'extension_point_invalid' => 'The extension_point field must be a non-empty string.',
         'target_layout_invalid' => 'The target_layout field must be a non-empty string.',
         'components_must_be_array' => 'The components field must be an array.',
-        'injections_required' => 'An overlay extension requires the injections field.',
+        'contribution_required' => 'An overlay extension requires at least one of injections, modals, data_sources, scripts, or init_actions.',
         'injections_must_be_array' => 'The injections field must be an array.',
         'injection_must_be_array' => 'injections[:index] must be an array.',
         'injection_target_id_required' => 'injections[:index] requires the target_id field.',
@@ -473,6 +478,7 @@ return [
         'content' => [
             'required' => 'Extension content is required.',
             'array' => 'Extension content must be an array.',
+            'markup_compile_failed' => 'The extension markup (.g7.html) could not be compiled: :detail',
         ],
         'priority' => [
             'integer' => 'priority must be an integer.',
@@ -589,11 +595,23 @@ return [
         'max_length' => "The ':lang' translation may not be greater than :max characters.",
         'min_length' => "The ':lang' translation must be at least :min characters.",
         'at_least_one_required' => 'At least one translation is required.',
-        'current_locale_required' => 'The :locale language value is required.',
+        'current_locale_required' => 'The :language (:locale) value of the :attribute field is required.',
+        'current_locale_required_unnamed' => 'The :language (:locale) value is required.',
+    ],
+
+    // Member search (member picker) field display names
+    'user_search' => [
+        'attributes' => [
+            'uuid' => 'member',
+        ],
     ],
 
     // Menu validation messages
     'menu' => [
+        // Display names of multilingual fields — used as the field name in the required-locale message
+        'attributes' => [
+            'name' => 'menu name',
+        ],
         'roles' => [
             'array' => 'The roles must be an array.',
             'integer' => 'Each role ID must be an integer.',
@@ -680,6 +698,11 @@ return [
 
     // Permission validation messages
     'permission' => [
+        // Display names of multilingual fields — used as the field name in the required-locale message
+        'attributes' => [
+            'name' => 'permission name',
+            'description' => 'permission description',
+        ],
         'name' => [
             'required' => 'Please enter a permission name.',
         ],
@@ -690,11 +713,22 @@ return [
 
     // Role validation messages
     'role' => [
+        // Display names of multilingual fields — used as the field name in the required-locale message
+        'attributes' => [
+            'name' => 'role name',
+            'description' => 'role description',
+        ],
         'name' => [
             'required' => 'Please enter a role name.',
         ],
         'description' => [
             'max' => 'The role description may not be greater than :max characters.',
+        ],
+        'menu_ids' => [
+            'array' => 'Accessible menus must be an array.',
+            'integer' => 'Menu IDs must be numbers.',
+            'exists' => 'The selected menu could not be found.',
+            'unmanageable' => 'You cannot add menus you are not allowed to manage.',
         ],
     ],
 
@@ -779,6 +813,16 @@ return [
             'challenge_invalid' => 'Verification request is not valid.',
             'code_required' => 'Enter the verification code.',
         ],
+        // 로그인 인계 (#40)
+        'login_handoff' => [
+            'code_required' => 'The sign-in handoff code is missing. Please sign in again.',
+        ],
+        // Sign-in password change step (#736)
+        'password_change' => [
+            'challenge_required' => 'Password change step is missing. Please sign in again.',
+            'challenge_invalid' => 'Password change step is not valid.',
+            'password_confirmation_required' => 'Please confirm the new password.',
+        ],
         'email' => [
             'required' => 'Email is required.',
             'email' => 'Please enter a valid email address.',
@@ -845,7 +889,18 @@ return [
             'type' => 'The setting value has an unsupported format.',
             'max' => 'Setting value may not be greater than :max characters.',
             'array_max' => 'Setting value may not be larger than :max characters.',
+            'server_only' => 'This setting is recorded by the server and cannot be saved directly.',
         ],
+    ],
+
+    // Password composition and reuse rules (only the rules enabled in security settings apply)
+    'password_policy' => [
+        'char_types' => 'The password must mix at least two of letters, numbers, and special characters.',
+        'contains_identifier' => 'The password may not contain the user ID (the part of the email before @).',
+        'repeated_chars' => 'The password may not repeat the same character :count or more times in a row.',
+        'sequential_chars' => 'The password may not contain :count or more sequential characters (such as 1234, abcd, qwer).',
+        'reused' => 'This password was used recently. Your last :count password cannot be reused.|This password was used recently. Your last :count passwords cannot be reused.',
+        'same_as_current' => 'Please enter a password different from your current one.',
     ],
 
     // User validation messages
@@ -863,6 +918,8 @@ return [
         'site_url_required' => 'Please enter the site URL.',
         'site_url_invalid' => 'Invalid URL format.',
         'site_url_max' => 'Site URL may not be greater than 255 characters.',
+        'user_screen_url_invalid' => 'Enter a full address starting with http:// or https://.',
+        'user_screen_url_max' => 'User screen URL may not be greater than 255 characters.',
         'site_description_max' => 'Site description may not be greater than 500 characters.',
         'admin_email_required' => 'Please enter the admin email.',
         'admin_email_invalid' => 'Invalid email format.',
@@ -878,6 +935,22 @@ return [
         'force_https_required' => 'Please select the Force HTTPS setting.',
         'force_https_boolean' => 'Force HTTPS must be true or false.',
         'allow_internal_outbound_urls_boolean' => 'Allow internal network address calls must be true or false.',
+        // IP access restriction
+        'ip_restriction_enabled_boolean' => 'IP access restriction must be true or false.',
+        'ip_or_cidr_invalid' => '":value" is not an IP address or CIDR range (e.g. 203.0.113.0/24).',
+        'admin_allowed_ips_array' => 'The admin area allowed IPs must be a list.',
+        'admin_allowed_ips_max' => 'You can register up to :max admin area allowed IPs.',
+        'ip_restriction_rules_array' => 'The route rules must be a list.',
+        'ip_restriction_rules_max' => 'You can register up to :max route rules.',
+        'ip_restriction_rule_pattern_required' => 'Please enter the URI pattern of the rule.',
+        'ip_restriction_rule_pattern_max' => 'The URI pattern of the rule may not be greater than :max characters.',
+        'ip_restriction_rule_pattern_invalid' => 'The URI pattern of the rule cannot contain spaces, ? or #. Use a path and * only (e.g. /api/admin/users*).',
+        'ip_restriction_rule_ips_required' => 'Please enter at least one allowed IP for each rule.',
+        'ip_restriction_rule_ips_max' => 'You can register up to :max allowed IPs per rule.',
+        'ip_restriction_rule_memo_max' => 'The rule memo may not be greater than :max characters.',
+        'ip_restriction_rule_enabled_boolean' => 'The rule enabled flag must be true or false.',
+        'ip_restriction_self_lockout' => 'Your current IP (:ip) is not in the admin area allowed list. Saving now would lock you out of the admin area, including this screen — add your current IP to the list and save again.',
+        'ip_restriction_self_lockout_rule' => 'The rule ":pattern" blocks your current IP (:ip). Saving now would lock you out of this screen — add your current IP to that rule or turn the rule off, then save again.',
         'login_attempt_enabled_required' => 'Please select the login attempt limit setting.',
         'login_attempt_enabled_boolean' => 'Login attempt limit must be true or false.',
         'auth_token_lifetime_integer' => 'Auth token lifetime must be an integer.',
@@ -1033,8 +1106,6 @@ return [
         'sitemap_max_urls_per_contributor_integer' => 'Maximum URLs per contributor must be an integer.',
         'sitemap_max_urls_per_contributor_min' => 'Maximum URLs per contributor must be at least 0.',
         'sitemap_hreflang_enabled_boolean' => 'The sitemap hreflang alternate links setting must be true or false.',
-        'sitemap_schedule_invalid' => 'Please select a valid sitemap generation schedule.',
-        'sitemap_schedule_time_invalid' => 'Sitemap generation time must be in HH:mm format.',
 
         // Misc
         'session_lifetime_integer' => 'Session lifetime must be an integer.',
@@ -1089,6 +1160,16 @@ return [
         // Driver settings - Queue
         'queue_driver_required' => 'Please select a queue driver.',
         'queue_driver_invalid' => 'Please select a valid queue driver.',
+        'queue_connection_invalid' => 'This queue connection cannot be registered.',
+        'queue_connection_duplicate' => 'The same queue connection appears twice.',
+        'queue_connection_default_required' => 'The connection of the current queue driver (:driver) cannot be unregistered.',
+        'queue_names_connection_unknown' => 'Queue list for an unknown queue connection (:connection).',
+        'queue_names_required' => 'Register at least one queue for the :connection connection.',
+        'queue_names_max' => 'You can register up to 20 queues per connection.',
+        'queue_name_required' => 'Enter a queue name.',
+        'queue_name_invalid' => 'Queue names may contain only letters, numbers, underscores, hyphens and dots, and must start with a letter or number.',
+        'queue_name_max' => 'Queue names may not be longer than 64 characters.',
+        'queue_name_duplicate' => 'The queue name (:name) appears twice on the :connection connection.',
 
         // Driver settings - WebSocket
         'websocket_enabled_boolean' => 'WebSocket enabled must be true or false.',
@@ -1122,6 +1203,11 @@ return [
         'log_days_integer' => 'Log retention days must be an integer.',
         'log_days_min' => 'Log retention days must be at least 1.',
         'log_days_max' => 'Log retention days may not be greater than 365.',
+        // Queue job records (#17)
+        'queue_job_log_enabled_boolean' => 'Job record logging must be on or off.',
+        'queue_record_retention_days_integer' => 'Job record retention must be a whole number of days.',
+        'queue_record_retention_days_min' => 'Job record retention must be at least :min days.',
+        'queue_record_retention_days_max' => 'Job record retention may not be greater than :max days.',
 
         // Public asset disk settings
         'public_asset_disk_invalid' => 'Please select a valid public asset disk.',
@@ -1140,6 +1226,25 @@ return [
         'identity_max_attempts_integer' => 'Maximum attempts must be an integer.',
         'identity_max_attempts_min' => 'Maximum attempts must be at least 1.',
         'identity_max_attempts_max' => 'Maximum attempts may not be greater than 20.',
+
+        // Privacy retention / dormant accounts
+        'privacy_days_integer' => 'The period must be an integer number of days.',
+        'privacy_retention_days_min' => 'The retention period must be at least 1 day.',
+        'privacy_retention_days_max' => 'The retention period may not be greater than 3650 days (10 years).',
+        'privacy_dormant_days_min' => 'The dormancy period must be at least 30 days.',
+        'privacy_dormant_notice_days_min' => 'The advance notice period must be at least 1 day.',
+        'privacy_dormant_notice_days_max' => 'The advance notice period may not be greater than 365 days.',
+        'privacy_dormant_notice_days_lt_dormant_days' => 'The advance notice period must be shorter than the dormancy period. If it is equal or longer, the notice and the transition happen on the same day, leaving no advance notice at all.',
+        // Password policy (#736)
+        'password_policy_boolean' => 'The :attribute must be on or off.',
+        'password_policy_integer' => 'The :attribute must be an integer.',
+        'password_policy_min' => 'The :attribute must be at least :min.',
+        'password_policy_max' => 'The :attribute may not be greater than :max.',
+        'activity_log_retention_days_min' => 'The :attribute must be at least the legal minimum of :min days.',
+        'password_expiry_scope_in' => 'The scope must be all members, administrators only, or selected roles and members.',
+        'password_expiry_action_in' => 'The expiry action must be either require change to sign in or allow changing later.',
+        'password_expiry_notice_days_lt_expiry_days' => 'The advance notice must be shorter than the expiry period. If it is equal or longer, the notice and the expiry happen on the same day, leaving no advance notice at all.',
+        'privacy_consent_provider_unknown' => 'The selected consent management provider could not be found. Choose one from the list again.',
     ],
 
     // Identity verification policy validation messages
@@ -1170,11 +1275,19 @@ return [
         'fail_mode_invalid' => 'Fail mode must be block or log_only.',
     ],
 
-    // Identity message definition validation
-    'identity_message' => [
-        'provider_not_registered' => 'The IDV provider is not registered.',
-        'scope_value_not_admin_policy' => 'The scope value must match the key of an admin-created policy (source_type=admin).',
-        'definition_already_exists' => 'A definition with the same (provider, scope_type, scope_value) already exists.',
+    // Identity notifications — Notification settings > Identity "Add policy message"
+    'identity_notification' => [
+        'policy_key_not_admin_policy' => 'Select the key of an identity policy added by an administrator.',
+        'definition_already_exists' => 'This policy already has an identity verification message.',
+        'attributes' => [
+            'category' => 'category',
+            'policy_key' => 'policy',
+            'description' => 'description',
+            'templates' => 'mail template',
+            'name' => 'message name',
+            'subject' => 'subject',
+            'body' => 'body',
+        ],
     ],
 
     // Layout version list
@@ -1186,15 +1299,82 @@ return [
         ],
     ],
 
+    // Privacy target list
+    'privacy_targets' => [
+        'page' => [
+            'integer' => 'The page number must be a number.',
+            'min' => 'The page number must be at least 1.',
+        ],
+        'per_page' => [
+            'integer' => 'The page size must be a number.',
+            'min' => 'The page size must be at least 1.',
+            'max' => 'The page size may not exceed :max.',
+        ],
+    ],
+
+    'privacy_manual_run' => [
+        'since' => [
+            'date' => 'The reference time is not a valid date.',
+        ],
+        'skip_waiting' => [
+            'boolean' => 'The skip-waiting value must be true or false.',
+        ],
+        'targets' => [
+            'required' => 'Specify the targets to look up.',
+            'string' => 'The target list must be a comma-separated string.',
+            'max' => 'The target list is too long (max :max characters).',
+        ],
+    ],
+
     // Validation attribute names (validation.attributes)
+    // Analytics beacon validation messages
+    'analytics' => [
+        'type_required' => 'An action type is required.',
+        'type_invalid' => 'Unknown action type.',
+        'url_required' => 'A visit URL is required.',
+        'url_too_long' => 'The visit URL is too long.',
+        'resolution_invalid' => 'The screen resolution format is invalid.',
+        'dimensions_too_many' => 'At most 20 breakdown values may be sent.',
+        'range_too_long' => 'You can query at most :days days at a time.',
+        'report_unknown' => 'Unknown report.',
+        'subject_required' => 'Specify at least one of IP address, member id or visitor key.',
+        'confirm_required' => 'This cannot be undone — tick the confirmation box to proceed.',
+        'anonymize_target_required' => 'Specify either a mask octet count or hashing.',
+        'bucket_bounds' => 'Bucket bounds must be comma-separated integers between :min and :max, in increasing order without duplicates.',
+    ],
+
+    // 검증 실패 요약(422 응답 message)의 나머지 오류 수 꼬리 — Laravel 원문 「(and :count more error)」(단수)와 「…errors)」(복수)를 대신한다
+    'summary_more_error' => '(and :count more error)',
+    'summary_more_errors' => '(and :count more errors)',
+
     'attributes' => [
+        'layout_source' => 'layout install source',
+        'layout_meta_icon' => 'menu icon',
+        'layout_meta_editor_label' => 'editor label',
+        'layout_meta_authoring_note' => 'authoring note',
+        'layout_meta_leave_guard' => 'leave confirmation condition',
+        'layout_meta_leave_message' => 'leave confirmation message',
+        'layout_seo_title' => 'SEO title',
+        'layout_seo_description' => 'SEO description',
+        'layout_seo_twitter' => 'Twitter card',
+        'exclude_withdrawn' => 'exclude withdrawn members',
+        'since' => 'reference time',
+        'skip_waiting' => 'skip waiting period',
+        'targets' => 'targets',
+        'page' => 'page number',
+        'per_page' => 'page size',
         'ids' => 'ID list',
         'user_ids' => 'user ID list',
         'user_id' => 'user ID',
         'status' => 'status',
+        'menu_ids' => 'menu list',
+        'role_ids' => 'role list',
+        'mode' => 'action',
+        'uuids' => 'member list',
         // Settings fields
         'site_name' => 'site name',
         'site_url' => 'site URL',
+        'user_screen_url' => 'user screen URL',
         'site_description' => 'site description',
         'admin_email' => 'admin email',
         'timezone' => 'timezone',
@@ -1211,6 +1391,14 @@ return [
         'identity_purpose_providers' => 'purpose-to-provider mapping',
         'identity_challenge_ttl_minutes' => 'challenge TTL',
         'identity_max_attempts' => 'maximum attempts',
+        'privacy_consent_provider' => 'consent management provider',
+        'privacy_withdrawn_retention_enabled' => 'withdrawn member data erasure',
+        'privacy_withdrawn_retention_days' => 'withdrawn member data retention period',
+        'privacy_dormant_enabled' => 'dormant account transition',
+        'privacy_dormant_days' => 'dormancy period',
+        'privacy_dormant_notice_days' => 'dormancy advance notice period',
+        'privacy_dormant_withdraw_enabled' => 'automatic withdrawal of dormant accounts',
+        'privacy_dormant_withdraw_days' => 'period before withdrawing a dormant account',
         // Identity verification policy fields
         'identity_policy_key' => 'policy key',
         'identity_policy_scope' => 'scope',
@@ -1268,6 +1456,9 @@ return [
         'session_driver' => 'session driver',
         'session_lifetime' => 'session lifetime',
         'queue_driver' => 'queue driver',
+        'queue_connections' => 'queue connections',
+        'queue_names' => 'queues per connection',
+        'queue_name' => 'queue name',
         'websocket_enabled' => 'WebSocket enabled',
         'websocket_app_key' => 'WebSocket app key',
         'websocket_host' => 'WebSocket host',
@@ -1279,6 +1470,7 @@ return [
         'layout' => 'layout',
         'module' => 'module',
         'token' => 'token',
+        'claim_secret' => 'verification claim value',
         'mailgun_domain' => 'Mailgun domain',
         'mailgun_secret' => 'Mailgun secret',
         'ses_key' => 'SES access key',
@@ -1288,6 +1480,22 @@ return [
         // General settings (additional)
         'channels' => 'channels',
         'notification_channels' => 'notification channels',
+        // Settings tab containers — used when the tab payload itself is malformed.
+        'settings_tab' => 'settings tab',
+        'settings_tab_general' => 'general settings',
+        'settings_tab_mail' => 'mail settings',
+        'settings_tab_upload' => 'upload settings',
+        'settings_tab_seo' => 'SEO settings',
+        'settings_tab_security' => 'security settings',
+        'settings_tab_drivers' => 'driver settings',
+        'settings_tab_advanced' => 'advanced settings',
+        'settings_tab_notifications' => 'notification settings',
+        'settings_tab_identity' => 'identity verification settings',
+        'settings_tab_analytics' => 'visitor analytics settings',
+        'settings_tab_privacy' => 'privacy settings',
+        'notification_channel_id' => 'notification channel id',
+        'notification_channel_is_active' => 'notification channel active flag',
+        'notification_channel_sort_order' => 'notification channel sort order',
         'currency' => 'currency',
         'default_currency' => 'default currency',
         'maintenance_mode' => 'maintenance mode',
@@ -1313,20 +1521,52 @@ return [
         'sitemap_serve_stale_on_miss' => 'serve stale sitemap on miss',
         'sitemap_max_urls_per_contributor' => 'sitemap max URLs per contributor',
         'sitemap_hreflang_enabled' => 'sitemap hreflang links',
-        'sitemap_schedule' => 'sitemap schedule',
-        'sitemap_schedule_time' => 'sitemap schedule time',
         'generator_enabled' => 'SEO page generator',
         'generator_content' => 'SEO page generator content',
         // Security settings (additional)
         'force_https' => 'force HTTPS',
         'login_attempt_enabled' => 'login attempt limit',
+        'registration_enabled' => 'accept public registration',
+        // Identity challenge — screen to return to after an external method finishes (7.2.0)
+        'return_path' => 'return path',
+        'scope' => 'starting screen scope',
         'auth_token_lifetime' => 'auth token lifetime',
         'max_login_attempts' => 'max login attempts',
         'login_lockout_time' => 'login lockout time',
         'password_min_length' => 'minimum password length',
         'require_password_special_char' => 'require special character in password',
+        'password_require_char_types' => 'require two or more character types',
+        'password_block_identifier' => 'block ID in password',
+        'password_block_repeated_chars' => 'block repeated characters',
+        'password_repeated_chars_length' => 'repeated character length',
+        'password_block_sequential_chars' => 'block sequential characters',
+        'password_sequential_chars_length' => 'sequential character length',
+        'password_reuse_prevention_enabled' => 'password reuse prevention',
+        'password_reuse_count' => 'number of passwords that cannot be reused',
+        'password_expiry_enabled' => 'password expiry',
+        'password_expiry_days' => 'password expiry period',
+        'password_expiry_notice_days' => 'expiry advance notice days',
+        'password_expiry_scope' => 'password expiry scope',
+        'password_expiry_action' => 'password expiry action',
+        'password_expiry_remind_days' => 'change postponement period',
+        'password_expiry_batch_size' => 'notices per run limit',
+        'activity_log_retention_days' => 'activity log retention period',
+        'password_expiry_policy' => 'password expiry',
+        'current_password' => 'current password',
+        'password_confirmation' => 'password confirmation',
+        'challenge_id' => 'password change step ID',
+        'verification_token' => 'identity verification',
+        'login_handoff_code' => 'sign-in handoff code',
         'two_factor_auth' => 'two-factor authentication',
+        'two_factor_scope' => 'two-factor authentication scope',
         'allow_internal_outbound_urls' => 'allow internal outbound URLs',
+        'ip_restriction_enabled' => 'IP access restriction',
+        'admin_allowed_ips' => 'admin area allowed IPs',
+        'ip_restriction_rules' => 'route access rules',
+        'ip_restriction_rule_pattern' => 'rule URI pattern',
+        'ip_restriction_rule_ips' => 'rule allowed IPs',
+        'ip_restriction_rule_memo' => 'rule memo',
+        'ip_restriction_rule_enabled' => 'rule enabled',
         // Advanced settings (additional)
         'advanced_cache_enabled' => 'cache',
         'layout_cache_enabled' => 'layout cache',
@@ -1359,6 +1599,8 @@ return [
         'log_driver' => 'log driver',
         'log_level' => 'log level',
         'log_days' => 'log retention days',
+        'queue_job_log_enabled' => 'queue job records',
+        'queue_record_retention_days' => 'queue job record retention',
         'public_asset_disk' => 'public asset disk',
     ],
 ];

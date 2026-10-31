@@ -1,0 +1,26 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 폐기 예고(1.3.0) 관리자 전용 API 의 기존 회귀 테스트를 사후 등재한 매니페스트. 다음 버전에서 API 와 함께 제거된다.
+
+feature: 관리자 회원 결제 통화·배송국가 변경 API (폐기 예고)
+
+description: |
+  `PATCH /api/modules/sirsoft-ecommerce/admin/users/{user}/currency` · `…/shipping-country` 의 계약.
+
+  2026-09-28 결정(C1): 번들 관리자 회원 수정 화면은 이제 코어 회원 저장(`PUT /api/admin/users/{user}`)
+  본문에 두 값을 함께 보내고 `UserPreferenceCoreSaveListener` 가 코어 훅으로 검증·저장한다. 이 두 API 는
+  그 변경 전 관리자 템플릿과 함께 쓰는 사이트를 위해 1.3.0 까지 폐기 예고로 남기고 다음 버전에서 제거한다.
+
+axes:
+  field: [currency, shipping_country]
+
+effects:
+  - admin_with_permission_can_change_user_currency
+  - unregistered_currency_rejected_422
+  - admin_without_permission_forbidden
+  - currency_change_fires_activity_log_hook
+  - admin_with_permission_can_change_user_shipping_country
+  - inactive_country_rejected_422
+  - shipping_country_change_fires_activity_log_hook
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/AdminUserCurrencyControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/AdminUserShippingCountryControllerTest.php

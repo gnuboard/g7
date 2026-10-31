@@ -67,8 +67,8 @@ async function activePaymentMethods(
  *
  * 상품 id 를 상수로 박지 않고 목록 API 에서 **판매 중인 상품을 찾아 쓴다**. 시드 데이터는
  * 재설치·재시드마다 id 가 바뀌므로(실제로 product_id=1 이 사라져 spec 이 깨졌다) 라이브 카탈로그를
- * 신뢰한다. option_values 는 저장된 다국어 JSON 이 아니라 **현재 로케일로 평탄화된 맵**과 대조되므로
- * 상품 상세의 옵션 값을 ko 로 풀어서 그대로 되돌려준다.
+ * 신뢰한다. 옵션은 상품 상세가 내려준 옵션 ID(`product_option_id`)로 지정한다 — 담기 API 는
+ * 옵션 값 맵을 받지 않는다.
  */
 async function seedCheckout(page: Page): Promise<void> {
   const result = await page.evaluate(async (locale) => {
@@ -110,14 +110,10 @@ async function seedCheckout(page: Page): Promise<void> {
       // 옵션은 `options` 에 있다. `additional_options`(추가옵션)는 **다른 개념**이고 보통 비어 있어,
       // 그쪽을 먼저 보면 항상 빈 배열을 집어 상품을 못 찾는다(실측으로 이 함정에 빠졌다).
       const option = (product?.options ?? []).find(
-        (o: { is_active?: boolean; is_sold_out?: boolean; stock_quantity?: number }) =>
-          o.is_active !== false && !o.is_sold_out && (o.stock_quantity ?? 0) > 0
+        (o: { id?: number; is_active?: boolean; is_sold_out?: boolean; stock_quantity?: number }) =>
+          typeof o.id === 'number' && o.is_active !== false && !o.is_sold_out && (o.stock_quantity ?? 0) > 0
       );
       if (!option) continue;
-
-      // API 가 이미 현재 로케일로 평탄화한 맵을 준다 ({ 색상: '빨강' }) — CartService 가 대조하는 형태와 같다.
-      const optionValues: Record<string, string> = option.option_values_localized ?? {};
-      if (Object.keys(optionValues).length === 0) continue;
 
       // 2) 카트를 비우고 담는다.
       await fetch('/api/modules/sirsoft-ecommerce/cart/all', { method: 'DELETE', headers });
@@ -126,7 +122,10 @@ async function seedCheckout(page: Page): Promise<void> {
         headers,
         body: JSON.stringify({
           product_id: p.id,
-          items: [{ option_values: optionValues, quantity: 1 }],
+          // 담기 계약은 옵션 ID 다(`items.*.product_option_id`). 옵션 값 맵(option_values)은 받지 않는
+          // 필드라 무시되고, 옵션을 지정하지 않은 요청으로 처리돼 상품의 첫 옵션이 담긴다 —
+          // 첫 옵션 재고가 0 이면 여기서 422 로 떨어져 상품 탐색이 헛돈다(2026-09-30 실측).
+          items: [{ product_option_id: option.id, quantity: 1 }],
         }),
       });
       if (!added.ok) continue; // 품절·판매중지 등 — 다음 상품으로
@@ -305,6 +304,13 @@ test.describe('플러그인 결제수단 → 코어 결제수단 번역 (주문 
     await seedCheckout(page);
   });
 
+  /**
+   * 결제수단 카탈로그가 플러그인 결제수단의 코어 매핑을 함께 내려준다.
+   *
+   * @scenario order_sheet_mode=true, core_payment_method_sent=translated
+   *
+   * @effects core_payment_method_preserved_through_settings_merge
+   */
   test('결제수단 카탈로그가 플러그인 결제수단의 코어 매핑을 함께 내려준다', async ({ page }) => {
     await gotoCheckout(page);
 
@@ -327,6 +333,13 @@ test.describe('플러그인 결제수단 → 코어 결제수단 번역 (주문 
     }
   });
 
+  /**
+   * 코어 매핑이 없는 결제수단은 raw id 를 그대로 쓴다.
+   *
+   * @scenario core_payment_method_sent=raw_fallback
+   *
+   * @effects non_mapped_method_falls_back_to_raw_id
+   */
   test('코어 매핑이 없는 결제수단(무통장)은 raw id 를 그대로 쓴다', async ({ page }) => {
     await gotoCheckout(page);
 
@@ -338,6 +351,13 @@ test.describe('플러그인 결제수단 → 코어 결제수단 번역 (주문 
     expect(dbank?.core_payment_method).toBeUndefined();
   });
 
+  /**
+   * 플러그인 결제수단으로 주문하면 코어 결제수단으로 전송되어 주문이 생성된다.
+   *
+   * @scenario order_sheet_mode=true, core_payment_method_sent=translated
+   *
+   * @effects checkout_body_sends_core_payment_method, order_created_with_core_payment_method
+   */
   test('플러그인 결제수단으로 주문하면 코어 결제수단으로 전송되어 주문이 생성된다', async ({
     page,
   }) => {
@@ -421,6 +441,13 @@ test.describe('플러그인 결제수단 → 코어 결제수단 번역 (주문 
    *
    * 토스 SDK 는 스텁으로 대체한다. 실제 결제창을 여는 것이 목적이 아니라,
    * requestPayment() 에 무엇이 전달되는지가 목적이다.
+   */
+  /**
+   * 에스크로 가상계좌 결제는 SDK 페이로드에 escrowProducts 를 싣는다.
+   *
+   * @scenario order_sheet_mode=true, payment_method=toss_virtual_account, use_escrow=on
+   *
+   * @effects escrow_products_attached_to_virtual_account_sdk_payload
    */
   test('에스크로 가상계좌 결제는 SDK 페이로드에 escrowProducts 를 싣는다', async ({ page }) => {
     test.setTimeout(120_000);
@@ -520,5 +547,47 @@ test.describe('플러그인 결제수단 → 코어 결제수단 번역 (주문 
     ).toBeTruthy();
     expect(payload.escrowProducts!.length).toBe(serverEscrowProducts.length);
     expect(payload.escrowProducts![0].unitPrice).toBe(serverEscrowProducts[0].unitPrice);
+  });
+});
+
+test.describe('결제 통화별 결제수단 표시 (#639 D17)', () => {
+  test.beforeEach(async ({ page, noPermissionToken }) => {
+    await authenticatePage(page, noPermissionToken);
+    await page.addInitScript((locale) => localStorage.setItem('g7_locale', locale), CART_LOCALE);
+    await page.goto('/shop');
+    await page.waitForLoadState('domcontentloaded');
+    await dismissCookieNotice(page);
+    await seedCheckout(page);
+  });
+
+  /**
+   * 주문서는 서버가 알려 준 허용 목록(`allowed_payment_methods`) 밖의 결제수단 버튼을 그리지 않는다.
+   *
+   * 실제 JPY 제한은 결제 플러그인 설정(이니시스 일본 결제)에 달려 있어 상점마다 다르다. 이 spec 은
+   * 화면 쪽 계약만 잠근다 — 체크아웃 응답의 허용 목록을 무통장입금 하나로 바꿔 내려 보내고, 다른 활성
+   * 수단 버튼이 사라지는지 본다. 서버 판정(직접 POST 422)은 PHPUnit `PaymentMethodsForCurrencyTest` 가 잠근다.
+   *
+   * @scenario currency=JPY, method=disallowed
+   *
+   * @effects checkout_display_and_validation_share_currency_filter
+   */
+  test('허용 목록 밖의 결제수단 버튼은 주문서에 그려지지 않는다', async ({ page }) => {
+    const active = (await activePaymentMethods(page)).map((m) => m.id);
+    test.skip(active.length < 2, '활성 결제수단이 하나뿐이면 거르는 효과를 볼 수 없다');
+
+    await page.route('**/api/modules/sirsoft-ecommerce/checkout?**', async (route) => {
+      if (route.request().method() !== 'GET') return route.continue();
+      const response = await route.fetch();
+      const json = await response.json();
+      if (json?.data) json.data.allowed_payment_methods = ['dbank'];
+      await route.fulfill({ response, json });
+    });
+
+    await gotoCheckout(page);
+
+    await expect(paymentMethod(page, 'dbank')).toBeVisible();
+    for (const id of active.filter((m) => m !== 'dbank')) {
+      await expect(paymentMethod(page, id), `${id} 는 허용 목록 밖인데 버튼이 그려졌다`).toHaveCount(0);
+    }
   });
 });

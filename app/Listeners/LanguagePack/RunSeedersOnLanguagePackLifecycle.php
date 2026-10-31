@@ -5,11 +5,14 @@ namespace App\Listeners\LanguagePack;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\LanguagePackScope;
+use App\Extension\ExtensionManager;
+use App\Extension\Helpers\ExtensionProviderRegistrar;
+use App\Extension\Support\LifecycleWarnings;
 use App\Models\LanguagePack;
 use App\Providers\LanguagePackServiceProvider;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePack\LanguagePackSeedInjector;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
+use Database\Seeders\CoreScheduleSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Illuminate\Foundation\Application;
@@ -39,8 +42,8 @@ class RunSeedersOnLanguagePackLifecycle
     /** @var array<int, class-string> 코어 entity 시더 — translation 필터를 사용하는 시더만 등록 */
     private const CORE_ENTITY_SEEDERS = [
         NotificationDefinitionSeeder::class,
-        IdentityMessageDefinitionSeeder::class,
         IdentityPolicySeeder::class,
+        CoreScheduleSeeder::class,
     ];
 
     /**
@@ -58,6 +61,7 @@ class RunSeedersOnLanguagePackLifecycle
      * 언어팩 활성화 시 호출됩니다.
      *
      * @param  LanguagePack  $pack  활성화된 언어팩
+     * @return void 반환값 없음
      */
     public function handleActivated(LanguagePack $pack): void
     {
@@ -71,6 +75,7 @@ class RunSeedersOnLanguagePackLifecycle
      * 수행하여 일관된 상태를 유지합니다.
      *
      * @param  LanguagePack  $pack  비활성화된 언어팩
+     * @return void 반환값 없음
      */
     public function handleDeactivated(LanguagePack $pack): void
     {
@@ -79,6 +84,9 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 언어팩의 scope 에 따라 적절한 시더를 재실행합니다.
+     *
+     * @param  LanguagePack  $pack  활성/비활성이 바뀐 언어팩
+     * @return void 반환값 없음
      */
     private function reseedForScope(LanguagePack $pack): void
     {
@@ -97,18 +105,21 @@ class RunSeedersOnLanguagePackLifecycle
                 default => null,
             };
         } catch (Throwable $e) {
-            // 시더 실패가 언어팩 활성화 트랜잭션을 깨뜨리지 않도록 로그만 남김
+            // 시더 실패가 언어팩 활성화 트랜잭션을 깨뜨리지 않도록 계속 진행하되 경고 목록으로 알린다
             Log::error('[language-pack] 시더 재실행 실패', [
                 'pack' => $pack->identifier,
                 'scope' => $pack->scope,
                 'target' => $pack->target_identifier,
                 'error' => $e->getMessage(),
             ]);
+            LifecycleWarnings::current()->add('language_pack_seed', (string) $pack->identifier, $e->getMessage());
         }
     }
 
     /**
      * LanguagePackRegistry 의 인스턴스 캐시를 무효화하고 supported_locales 를 갱신합니다.
+     *
+     * @return void 반환값 없음
      */
     private function refreshRegistry(): void
     {
@@ -134,6 +145,8 @@ class RunSeedersOnLanguagePackLifecycle
      *
      * 멱등성: 동일 키에 클로저를 추가 등록해도 LanguagePackSeedInjector 는 활성 팩에서
      * 한 번만 sub-key 머지하므로 결과 동일.
+     *
+     * @return void 반환값 없음
      */
     private function refreshExtensionSeedFilters(): void
     {
@@ -148,6 +161,8 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 코어 entity 시더 + 모든 활성 모듈/플러그인 시더를 재실행합니다.
+     *
+     * @return void 반환값 없음
      */
     private function reseedCoreScope(): void
     {
@@ -158,6 +173,8 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 코어 entity 시더 (translation 필터를 사용하는 것) 만 재실행.
+     *
+     * @return void 반환값 없음
      */
     private function runCoreEntitySeeders(): void
     {
@@ -168,15 +185,15 @@ class RunSeedersOnLanguagePackLifecycle
                     $seeder->run();
                 }
             } catch (Throwable $e) {
-                Log::warning("[language-pack] 코어 시더 실행 실패: {$seederClass}", [
-                    'error' => $e->getMessage(),
-                ]);
+                $this->warn('core_seed', $seederClass, $e->getMessage());
             }
         }
     }
 
     /**
      * 모든 활성 모듈의 시더를 재실행합니다 (module:seed 명령).
+     *
+     * @return void 반환값 없음
      */
     private function runAllActiveModuleSeeders(): void
     {
@@ -187,6 +204,8 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 모든 활성 플러그인의 시더를 재실행합니다 (plugin:seed 명령).
+     *
+     * @return void 반환값 없음
      */
     private function runAllActivePluginSeeders(): void
     {
@@ -197,6 +216,10 @@ class RunSeedersOnLanguagePackLifecycle
 
     /**
      * 단일 확장의 시더를 재실행합니다.
+     *
+     * @param  string  $type  확장 유형 (module | plugin)
+     * @param  string|null  $targetIdentifier  대상 확장 식별자
+     * @return void 반환값 없음
      */
     private function reseedExtensionTarget(string $type, ?string $targetIdentifier): void
     {
@@ -204,44 +227,86 @@ class RunSeedersOnLanguagePackLifecycle
             return;
         }
 
+        // 대상 확장이 비활성이면 건너뛴다 — 확장을 끌 때 그 언어팩이 함께 꺼지며 여기로 오는데, 비활성 확장의 시더 명령은
+        // 늘 거절한다(7.1.2 까지는 그 반환값을 버려 결과가 같았다). 반환값을 경고로 올린 뒤로는 끌 때마다 거짓 경고가 났다(7.1.3)
         if ($type === 'module') {
-            $this->runModuleSeeder($targetIdentifier);
+            if (in_array($targetIdentifier, $this->moduleRepository->getActiveModuleIdentifiers(), true)) {
+                $this->runModuleSeeder($targetIdentifier);
+            }
         } elseif ($type === 'plugin') {
-            $this->runPluginSeeder($targetIdentifier);
+            if (in_array($targetIdentifier, $this->pluginRepository->getActivePluginIdentifiers(), true)) {
+                $this->runPluginSeeder($targetIdentifier);
+            }
         }
     }
 
     /**
      * 모듈 시더를 안전하게 호출합니다.
+     *
+     * @param  string  $identifier  모듈 식별자
+     * @return void 반환값 없음
      */
     private function runModuleSeeder(string $identifier): void
     {
         try {
-            Artisan::call('module:seed', [
+            // 같은 요청에서 방금 설치·활성화된 확장이면 프로바이더가 없다 — 시더가 저장소를 해석하기 전에 등록(7.1.3)
+            ExtensionManager::registerExtensionAutoloadPaths('modules', $identifier);
+            ExtensionProviderRegistrar::ensureRegistered('modules', $identifier);
+
+            $exitCode = Artisan::call('module:seed', [
                 'identifier' => $identifier,
                 '--force' => true,
             ]);
+
+            // 반환값을 버리면 시더 실패가 조용히 묻힌다 — 경고 목록으로 올린다
+            if ($exitCode !== 0) {
+                $output = trim(Artisan::output());
+                $this->warn('module:seed', $identifier, $output !== '' ? $output : "exit code {$exitCode}");
+            }
         } catch (Throwable $e) {
-            Log::warning("[language-pack] module:seed 실패: {$identifier}", [
-                'error' => $e->getMessage(),
-            ]);
+            $this->warn('module:seed', $identifier, $e->getMessage());
         }
     }
 
     /**
      * 플러그인 시더를 안전하게 호출합니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @return void 반환값 없음
      */
     private function runPluginSeeder(string $identifier): void
     {
         try {
-            Artisan::call('plugin:seed', [
+            // 같은 요청에서 방금 설치·활성화된 확장이면 프로바이더가 없다 — 시더가 저장소를 해석하기 전에 등록(7.1.3)
+            ExtensionManager::registerExtensionAutoloadPaths('plugins', $identifier);
+            ExtensionProviderRegistrar::ensureRegistered('plugins', $identifier);
+
+            $exitCode = Artisan::call('plugin:seed', [
                 'identifier' => $identifier,
                 '--force' => true,
             ]);
+
+            // 반환값을 버리면 시더 실패가 조용히 묻힌다 — 경고 목록으로 올린다
+            if ($exitCode !== 0) {
+                $output = trim(Artisan::output());
+                $this->warn('plugin:seed', $identifier, $output !== '' ? $output : "exit code {$exitCode}");
+            }
         } catch (Throwable $e) {
-            Log::warning("[language-pack] plugin:seed 실패: {$identifier}", [
-                'error' => $e->getMessage(),
-            ]);
+            $this->warn('plugin:seed', $identifier, $e->getMessage());
         }
+    }
+
+    /**
+     * 시더 재실행 실패를 로그와 생명주기 경고 목록에 남깁니다 (언어팩 작업은 성공 유지).
+     *
+     * @param  string  $step  실패한 단계 (module:seed · plugin:seed · core_seed)
+     * @param  string  $target  확장 식별자 또는 시더 클래스
+     * @param  string  $message  실패 사유
+     * @return void 반환값 없음
+     */
+    private function warn(string $step, string $target, string $message): void
+    {
+        Log::warning("[language-pack] {$step} 실패: {$target}", ['error' => $message]);
+        LifecycleWarnings::current()->add('language_pack_seed', $target, $message);
     }
 }

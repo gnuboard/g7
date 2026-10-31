@@ -38,6 +38,7 @@ vi.mock('../template-engine', () => ({
   initTemplateEngine: vi.fn().mockResolvedValue(undefined),
   renderTemplate: vi.fn().mockResolvedValue(undefined),
   destroyTemplate: vi.fn(),
+  releaseTemplateRoot: vi.fn(),
   getActionDispatcher: vi.fn().mockReturnValue(sharedActionDispatcher),
   getState: vi.fn().mockReturnValue({
     actionDispatcher: sharedActionDispatcher,
@@ -180,6 +181,10 @@ describe('TemplateApp.loadLayoutScripts', () => {
     expect(created[0].src).toContain('#converted');
   });
 
+  /**
+   * @scenario asset_class=service_sdk, outcome=loaded
+   * @effects trusted_external_layout_script_not_mode_converted
+   */
   it('외부 신뢰 호스트 스크립트는 모드 보정 대상이 아니다', async () => {
     app = build(['t1.daumcdn.net']);
     stub(alwaysLoad);
@@ -220,6 +225,10 @@ describe('TemplateApp.loadLayoutScripts', () => {
     expect(created.filter(el => String(el.getAttribute('src')).includes('/ok.js'))).toHaveLength(1);
   });
 
+  /**
+   * @scenario asset_class=vendored, outcome=loaded
+   * @effects already_loaded_layout_script_skipped
+   */
   it('이미 로드된 id 는 건너뛴다', async () => {
     const existing = document.createElement('script');
     existing.id = 's-6';
@@ -231,11 +240,59 @@ describe('TemplateApp.loadLayoutScripts', () => {
     expect(created).toHaveLength(0);
   });
 
+  /**
+   * @scenario asset_class=service_sdk, outcome=failed
+   * @effects undeclared_external_layout_script_blocked
+   */
   it('미선언 외부 origin 은 로드하지 않는다', async () => {
     stub(alwaysLoad);
 
     await load(app, [{ id: 's-7', src: 'https://evil.example.com/a.js' }]);
 
     expect(created).toHaveLength(0);
+  });
+
+  describe('실패 안내 이름 (engine-v1.79.0)', () => {
+    afterEach(() => {
+      delete (window as any).G7Core;
+    });
+
+    const failedLabel = async (script: Record<string, unknown>): Promise<string | undefined> => {
+      stub(() => 'error');
+      await load(app, [script]);
+      return getAssetFailures().find(f => f.id === `layout-script:${script.id}`)?.label;
+    };
+
+    /**
+     * @scenario asset_class=vendored, outcome=failed
+     * @effects layout_script_failure_label_is_human_readable
+     */
+    it('이름을 선언하지 않은 스크립트는 id 대신 일반 이름으로 안내한다', async () => {
+      const label = await failedLabel({ id: 'daum_postcode_script', src: '/postcode.js' });
+
+      expect(label).not.toBe('daum_postcode_script');
+      expect(label).toBe('화면 기능 스크립트');
+    });
+
+    /**
+     * @scenario asset_class=vendored, outcome=failed
+     * @effects layout_script_failure_label_is_human_readable
+     */
+    it('레이아웃이 선언한 이름(label)으로 안내한다', async () => {
+      expect(await failedLabel({ id: 's-8', src: '/a.js', label: '주소 검색' })).toBe('주소 검색');
+    });
+
+    /**
+     * @scenario asset_class=vendored, outcome=failed
+     * @effects layout_script_failure_label_is_human_readable
+     */
+    it('$t: 이름은 번역해 안내하고, 풀리지 않으면 일반 이름을 쓴다', async () => {
+      (window as any).G7Core = {
+        t: (key: string) => (key === 'sirsoft-daum_postcode.script_label' ? 'address search' : key),
+      };
+
+      expect(await failedLabel({ id: 's-9', src: '/a.js', label: '$t:sirsoft-daum_postcode.script_label' })).toBe('address search');
+      expect(await failedLabel({ id: 's-10', src: '/b.js', label: '$t:sirsoft-daum_postcode.missing' })).toBe('화면 기능 스크립트');
+    });
   });
 });

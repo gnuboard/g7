@@ -1,0 +1,22 @@
+feature: 템플릿 목록 카드의 의존성 이름은 항상 글자다
+
+description: |
+  관리자 「템플릿 관리」 목록 카드는 템플릿이 기대는 모듈·플러그인 이름을 글자로 그린다.
+  목록 API 가 의존 모듈 이름을 비워(null) 주면, 카드 목록 식(`d.name ?? d`)이 의존성 객체
+  `{identifier, name, type}` 통째를 글자 자리에 넣어 React #31 로 카드 목록 전체가 그려지지 않았다
+  (#727 실측 중 발견 — 의존 모듈 이름이 비어 있는 상태에서 재현).
+
+  두 겹으로 막는다: 목록 API 는 이름이 비면 식별자를 주고, 카드 식은 이름이 없으면 식별자로 대신한다.
+
+axes:
+  surface: [template_list_api, template_list_card]
+
+effects:
+  - template_list_dependency_name_is_always_text
+
+test_files:
+  - tests/Unit/Resources/TemplateResourceDependencyNameTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-list-dependency-names.test.ts
+
+notes:
+  - 모듈·플러그인 목록 카드는 `d.name` 만 쓰므로 객체가 글자 자리에 들어가지 않는다 — 이 매니페스트 범위 밖.

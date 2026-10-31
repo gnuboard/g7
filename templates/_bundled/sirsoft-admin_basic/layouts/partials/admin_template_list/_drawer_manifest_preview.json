@@ -1,222 +1,307 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "템플릿 manifest 미리보기 드로어 — ZIP 업로드 후 설치 전 template.json 검증 결과 조회",
-    "editor_label": "$t:admin.modal_label.admin_template_list.template_manifest_preview_drawer"
-  },
-  "id": "template_manifest_preview_drawer",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.templates.modal.preview.title",
-    "size": "large"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-label mb-4"
-      },
-      "text": "$t:admin.templates.modal.preview.description"
+    "comment": "압축 파일을 **설치하지 않고 검사만 해 보는** 서랍(수동 설치 창에서 연다).\n  모듈 쪽 같은 이름 조각과 짝을 이루며 검사 대상 매니페스트만 다르다.\n  결과는 정상 / 오류 목록 / 이미 설치됨 셋으로 갈려 보이고, 판정은 전부 서버가 한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "템플릿 manifest 미리보기 드로어 — ZIP 업로드 후 설치 전 template.json 검증 결과 조회",
+        "editor_label": "$t:admin.modal_label.admin_template_list.template_manifest_preview_drawer"
     },
-    {
-      "type": "basic",
-      "name": "FileInput",
-      "props": {
-        "accept": ".zip",
-        "buttonText": "$t:common.browse",
-        "placeholder": "$t:admin.templates.tabs.no_file_selected",
-        "className": "w-full"
-      },
-      "actions": [
-        {
-          "type": "change",
-          "handler": "setState",
-          "params": {
-            "target": "global",
-            "templatePreviewFile": "{{$event.target.value}}",
-            "templatePreviewFileName": "{{$event.target.value?.name}}"
-          }
-        }
-      ]
+    "id": "template_manifest_preview_drawer",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.templates.modal.preview.title",
+        "size": "large"
     },
-    {
-      "type": "basic",
-      "name": "Button",
-      "if": "{{_global.templatePreviewFile}}",
-      "props": {
-        "type": "button",
-        "disabled": "{{_global.isTemplatePreviewLoading}}",
-        "className": "mt-3 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-      },
-      "actions": [
+    "children": [
         {
-          "event": "onClick",
-          "handler": "sequence",
-          "actions": [
-            {
-              "handler": "setState",
-              "params": {
-                "target": "global",
-                "isTemplatePreviewLoading": true,
-                "templatePreviewResult": null
-              }
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-label mb-4"
             },
-            {
-              "handler": "apiCall",
-              "auth_required": true,
-              "target": "/api/admin/templates/manifest-preview",
-              "params": {
-                "method": "POST",
-                "contentType": "multipart/form-data",
-                "body": "{{ ({ file: _global.templatePreviewFile }) }}"
-              },
-              "onSuccess": [
+            "text": "$t:admin.templates.modal.preview.description"
+        },
+        {
+            "type": "basic",
+            "name": "FileInput",
+            "actions": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isTemplatePreviewLoading": false,
-                    "templatePreviewResult": "{{response.data}}"
-                  }
+                    "comment": "고른 파일을 전역에 담는다. 객체(요청 본문용)와 이름(표시용)을 따로 둔다. 파일을 바꾸면 직전 판정도 함께 비운다 — 남겨 두면 아직 검사하지 않은 새 파일 이름 아래 앞 파일의 결과가 그대로 보인다.",
+                    "type": "change",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "templatePreviewFile": "{{$event.target.value}}",
+                        "templatePreviewFileName": "{{$event.target.value?.name}}",
+                        "templatePreviewResult": null
+                    }
                 }
-              ],
-              "onError": [
+            ],
+            "props": {
+                "accept": ".zip",
+                "buttonText": "$t:common.browse",
+                "placeholder": "$t:admin.templates.tabs.no_file_selected",
+                "className": "w-full"
+            }
+        },
+        {
+            "type": "basic",
+            "name": "Button",
+            "if": "{{_global.templatePreviewFile}}",
+            "actions": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isTemplatePreviewLoading": false
-                  }
+                    "comment": "검사 실행 — 직전 결과를 먼저 지운다(옛 판정이 이번 파일의 것으로 읽히지 않게).\n             설치는 하지 않는다.",
+                    "event": "onClick",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "isTemplatePreviewLoading": true,
+                                "templatePreviewResult": null
+                            }
+                        },
+                        {
+                            "handler": "apiCall",
+                            "target": "/api/admin/templates/manifest-preview",
+                            "auth_required": true,
+                            "params": {
+                                "method": "POST",
+                                "contentType": "multipart/form-data",
+                                "body": "{{ ({ file: _global.templatePreviewFile }) }}"
+                            },
+                            "onSuccess": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isTemplatePreviewLoading": false,
+                                    "templatePreviewResult": "{{response.data}}"
+                                }
+                            },
+                            "onError": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isTemplatePreviewLoading": false
+                                    }
+                                },
+                                {
+                                    "handler": "toast",
+                                    "params": {
+                                        "type": "error",
+                                        "message": "{{error.message ?? '$t:admin.templates.modal.preview.failed'}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "props": {
+                "type": "button",
+                "disabled": "{{_global.isTemplatePreviewLoading}}",
+                "className": "mt-3 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "if": "{{_global.isTemplatePreviewLoading}}",
+                    "props": {
+                        "name": "fas fa-spinner",
+                        "className": "animate-spin",
+                        "size": "sm"
+                    }
                 },
                 {
-                  "handler": "toast",
-                  "params": {
-                    "type": "error",
-                    "message": "{{error.message ?? '$t:admin.templates.modal.preview.failed'}}"
-                  }
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:admin.templates.modal.preview.run"
                 }
-              ]
-            }
-          ]
-        }
-      ],
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "if": "{{_global.isTemplatePreviewLoading}}",
-          "props": {
-            "name": "fas fa-spinner",
-            "className": "animate-spin",
-            "size": "sm"
-          }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Span",
-          "text": "$t:admin.templates.modal.preview.run"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.templatePreviewResult}}",
-      "props": {
-        "className": "mt-4 space-y-3"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.templatePreviewResult?.manifest}}",
-          "props": {
-            "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "font-semibold text-gray-700 dark:text-gray-300"
-              },
-              "text": "{{_global.templatePreviewResult?.manifest?.identifier}} v{{_global.templatePreviewResult?.manifest?.version}}"
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.templatePreviewResult}}",
+            "props": {
+                "className": "mt-4 space-y-3"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "ml-2 text-gray-500 dark:text-gray-400"
-              },
-              "text": "({{_global.templatePreviewResult?.manifest?.vendor}})"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.templatePreviewResult?.manifest}}",
+                    "props": {
+                        "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "font-semibold text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "{{_global.templatePreviewResult?.manifest?.identifier}} v{{_global.templatePreviewResult?.manifest?.version}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ml-2 text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "({{_global.templatePreviewResult?.manifest?.vendor}})"
+                        }
+                    ]
+                },
+                {
+                    "id": "template_preview_icon",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.templatePreviewResult?.icon}}",
+                    "props": {
+                        "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded text-sm flex items-start gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "{{_global.templatePreviewResult?.manifest?.type === 'admin' ? 'cog' : 'palette'}}",
+                                        "className": "text-xl text-gray-600 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.templatePreviewResult?.icon?.present && _global.templatePreviewResult?.icon?.valid}}",
+                                    "props": {
+                                        "className": "text-success-soft"
+                                    },
+                                    "text": "$t:extensions.manifest_preview.icon_present|path={{_global.templatePreviewResult?.icon?.path ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_global.templatePreviewResult?.icon?.present && !_global.templatePreviewResult?.icon?.valid}}",
+                                    "props": {
+                                        "className": "text-warning-soft"
+                                    },
+                                    "text": "$t:extensions.manifest_preview.icon_invalid"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!_global.templatePreviewResult?.icon?.present}}",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:extensions.manifest_preview.icon_missing"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "_global.templatePreviewResult?.icon?.warnings",
+                                        "item_var": "w"
+                                    },
+                                    "props": {
+                                        "className": "text-label-subtle text-xs mt-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "text": "• {{w.message}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.templatePreviewResult?.validation?.is_valid === true}}",
+                    "props": {
+                        "className": "p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-success-soft"
+                    },
+                    "text": "$t:admin.templates.modal.preview.valid"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.templatePreviewResult?.validation?.is_valid === false}}",
+                    "iteration": {
+                        "source": "_global.templatePreviewResult?.validation?.errors",
+                        "item_var": "err"
+                    },
+                    "props": {
+                        "className": "p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-danger-soft"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "text": "• {{err}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.templatePreviewResult?.validation?.already_installed === true}}",
+                    "props": {
+                        "className": "p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-warning-soft"
+                    },
+                    "text": "$t:admin.templates.modal.preview.already_installed|version={{_global.templatePreviewResult?.validation?.existing_version}}"
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.templatePreviewResult?.validation?.is_valid === true}}",
-          "props": {
-            "className": "p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-success-soft"
-          },
-          "text": "$t:admin.templates.modal.preview.valid"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.templatePreviewResult?.validation?.is_valid === false}}",
-          "props": {
-            "className": "p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-danger-soft"
-          },
-          "iteration": {
-            "source": "_global.templatePreviewResult?.validation?.errors",
-            "item_var": "err"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "text": "• {{err}}"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.templatePreviewResult?.validation?.already_installed === true}}",
-          "props": {
-            "className": "p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-warning-soft"
-          },
-          "text": "$t:admin.templates.modal.preview.already_installed|version={{_global.templatePreviewResult?.validation?.existing_version}}"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-2 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "event": "onClick",
+                            "handler": "closeModal",
+                            "target": "template_manifest_preview_drawer"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md"
+                    },
+                    "text": "$t:common.close"
+                }
+            ]
         }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-end gap-2 mt-6"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md"
-          },
-          "text": "$t:common.close",
-          "actions": [
-            {
-              "event": "onClick",
-              "handler": "closeModal",
-              "target": "template_manifest_preview_drawer"
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    ]
 }

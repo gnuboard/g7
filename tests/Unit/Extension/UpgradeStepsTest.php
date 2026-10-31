@@ -15,6 +15,11 @@ use Tests\TestCase;
  */
 class UpgradeStepsTest extends TestCase
 {
+    /**
+     * Mockery 기대값을 닫고 부모 정리를 수행합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -23,6 +28,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * 빈 업그레이드 스텝 배열에서 아무 작업도 하지 않는지 테스트
+     *
+     * @scenario subject=runUpgradeSteps, range=empty_steps
+     * @effects empty_steps_no_op
+     *
+     * @return void 반환값 없음
      */
     public function test_run_upgrade_steps_does_nothing_with_empty_steps(): void
     {
@@ -41,6 +51,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * fromVersion 초과 ~ toVersion 이하 필터링 테스트
+     *
+     * @scenario subject=runUpgradeSteps, range=normal_range, step_type=interface
+     * @effects steps_filtered_by_version_range
+     *
+     * @return void 반환값 없음
      */
     public function test_run_upgrade_steps_filters_by_version_range(): void
     {
@@ -86,6 +101,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * 버전순 정렬 테스트 (역순으로 제공된 스텝이 올바른 순서로 실행되는지)
+     *
+     * @scenario subject=runUpgradeSteps, range=reversed_order, step_type=interface
+     * @effects steps_executed_in_version_order
+     *
+     * @return void 반환값 없음
      */
     public function test_run_upgrade_steps_executes_in_version_order(): void
     {
@@ -129,6 +149,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * callable 스텝 실행 테스트
+     *
+     * @scenario subject=runUpgradeSteps, range=normal_range, step_type=callable
+     * @effects callable_step_receives_context
+     *
+     * @return void 반환값 없음
      */
     public function test_run_upgrade_steps_supports_callable(): void
     {
@@ -164,6 +189,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * 스텝 실행 중 예외 발생 시 전파되는지 테스트
+     *
+     * @scenario subject=runUpgradeSteps, range=normal_range, step_type=failing
+     * @effects step_exception_propagates
+     *
+     * @return void 반환값 없음
      */
     public function test_run_upgrade_steps_propagates_exception(): void
     {
@@ -191,6 +221,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * UpgradeContext의 withCurrentStep이 올바르게 동작하는지 테스트
+     *
+     * @scenario subject=UpgradeContext
+     * @effects context_with_current_step_is_immutable
+     *
+     * @return void 반환값 없음
      */
     public function test_upgrade_context_with_current_step_creates_new_instance(): void
     {
@@ -210,6 +245,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * fromVersion과 toVersion이 같은 경우 아무 스텝도 실행되지 않는지 테스트
+     *
+     * @scenario subject=runUpgradeSteps, range=equal_versions, step_type=interface
+     * @effects equal_versions_run_nothing
+     *
+     * @return void 반환값 없음
      */
     public function test_run_upgrade_steps_no_execution_when_versions_equal(): void
     {
@@ -232,6 +272,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * force + 동일 버전: 해당 버전의 스텝이 실행되는지 테스트
+     *
+     * @scenario subject=runUpgradeSteps, range=force_same_version, step_type=interface
+     * @effects force_same_version_runs_that_step
+     *
+     * @return void 반환값 없음
      */
     public function test_run_upgrade_steps_force_with_same_version_executes_step(): void
     {
@@ -266,6 +311,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * force + 프리릴리스 동일 버전: 해당 버전의 스텝이 실행되는지 테스트
+     *
+     * @scenario subject=runUpgradeSteps, range=force_same_prerelease, step_type=interface
+     * @effects force_same_prerelease_runs_that_step
+     *
+     * @return void 반환값 없음
      */
     public function test_run_upgrade_steps_force_with_same_prerelease_version(): void
     {
@@ -300,6 +350,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * force + 다른 버전 범위: 기존 범위 필터링이 정상 동작하는지 테스트
+     *
+     * @scenario subject=runUpgradeSteps, range=force_different_versions, step_type=interface
+     * @effects force_different_versions_uses_normal_range
+     *
+     * @return void 반환값 없음
      */
     public function test_run_upgrade_steps_force_with_different_versions_uses_normal_range(): void
     {
@@ -341,6 +396,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * 업그레이드 스텝 파일명에서 일반 버전을 올바르게 파싱합니다.
+     *
+     * @scenario subject=step_filename, filename=standard
+     * @effects filename_parses_standard_version
+     *
+     * @return void 반환값 없음
      */
     public function test_upgrade_step_filename_parses_standard_version(): void
     {
@@ -359,6 +419,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * 업그레이드 스텝 파일명에서 프리릴리스 버전을 올바르게 파싱합니다.
+     *
+     * @scenario subject=step_filename, filename=prerelease
+     * @effects filename_parses_prerelease_version
+     *
+     * @return void 반환값 없음
      */
     public function test_upgrade_step_filename_parses_prerelease_version(): void
     {
@@ -391,6 +456,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * 무효한 업그레이드 스텝 파일명은 매칭되지 않습니다.
+     *
+     * @scenario subject=step_filename, filename=invalid
+     * @effects filename_rejects_invalid_names
+     *
+     * @return void 반환값 없음
      */
     public function test_upgrade_step_filename_rejects_invalid_names(): void
     {
@@ -406,6 +476,11 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * 프리릴리스 버전이 포함된 업그레이드 스텝의 범위 필터링 테스트
+     *
+     * @scenario subject=runUpgradeSteps, range=prerelease_range, step_type=interface
+     * @effects prerelease_range_filtered
+     *
+     * @return void 반환값 없음
      */
     public function test_run_upgrade_steps_filters_prerelease_versions(): void
     {
@@ -447,6 +522,8 @@ class UpgradeStepsTest extends TestCase
 
     /**
      * 모든 의존성을 Mock으로 대체한 ModuleManager 인스턴스를 생성합니다.
+     *
+     * @return \App\Extension\ModuleManager 의존성이 모의 객체로 채워진 ModuleManager
      */
     private function createModuleManagerWithMocks(): \App\Extension\ModuleManager
     {
@@ -460,6 +537,9 @@ class UpgradeStepsTest extends TestCase
             pluginRepository: Mockery::mock(\App\Contracts\Repositories\PluginRepositoryInterface::class),
             layoutRepository: Mockery::mock(\App\Contracts\Repositories\LayoutRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(\App\Services\LayoutExtensionService::class),
+            // final 이라 모의할 수 없다 — 생성자는 저장소만 받고 여기서는 부르지 않으므로 컨테이너 실물을 쓴다
+            layoutRowSynchronizer: app(\App\Extension\Layout\LayoutRowSynchronizer::class),
+            layoutExtensionRepository: Mockery::mock(\App\Contracts\Repositories\LayoutExtensionRepositoryInterface::class),
         );
     }
 }

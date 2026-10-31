@@ -130,6 +130,10 @@ class InstallerEntryGateWiringTest extends TestCase
             'api/check-configuration.php' => 'POST action 셋(`test-db`·`test-php-binary`·`test-composer`·'
                 .'`detect-execution-mode`)은 **상태를 바꾸지 않는 probe** 다. 남용 축은 출처가 아니라 '
                 .'호출 횟수이고 `installerProbeRateLimitExceeded()` 가 그 축을 소유한다',
+            'includes/installer-ownership.php' => '요청을 직접 받는 진입점이 아니라 소유권·CSRF 판정 라이브러리다 — '
+                .'`$_POST` 는 `installer_request_csrf_token()` 이 폼 필드의 csrf_token 을 읽는 한 자리뿐이다. '
+                .'출처 확인은 이 파일을 싣는 엔드포인트(위 목록)가 각자 소유하고, 이 파일에 걸면 '
+                .'싣는 쪽마다 같은 요청을 두 번 판정하게 된다',
         ];
 
         $postEntries = [];

@@ -12,4 +12,12 @@ return [
         'delete_success' => 'Memo deleted successfully.',
         'delete_failed' => 'Failed to delete memo.',
     ],
+    // Hello module seeder console output
+    'seeders' => [
+        'database' => [
+            'start' => 'Running Hello module seeders',
+            'sample_start' => 'Running Hello module sample seeders',
+            'done' => 'Hello module seeders finished',
+        ],
+    ],
 ];

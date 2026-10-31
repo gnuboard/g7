@@ -1,0 +1,15 @@
+feature: 관리자 대시보드 통계 실시간 갱신
+
+description: |
+  회원 수·확장 수가 바뀌는 사건마다 대시보드 통계를 방송한다. 셀프 가입은 core.user.after_create 가 아니라
+  core.auth.after_register 로 발화해 관리자가 만든 회원만 실시간 반영되던 것을 바로잡았다(#138 후속 11번 ①).
+
+axes:
+  trigger: [admin_user_change, self_registration]
+
+effects:
+  - dashboard_stats_broadcast
+  - dashboard_stats_payload_from_service
+
+test_files:
+  - tests/Unit/Listeners/Dashboard/DashboardStatsListenerTest.php

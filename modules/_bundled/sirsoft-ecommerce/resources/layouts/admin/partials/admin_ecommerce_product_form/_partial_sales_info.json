@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 판매정보 구획. 정가·판매가·과세·판매상태·진열상태를 정한다. 재고는 여기서 못 고친다 —\n  옵션별 재고의 합이라 옵션 구획이 정한다. 좁은 화면은 배치가 달라 같은 항목을 두 벌 세우고\n  `responsive` 로 한쪽만 남긴다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Sales Information Section"
@@ -7,14 +8,27 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card-accordion"
+        "className": "ecommerce-admin-card-accordion"
     },
     "children": [
         {
             "type": "basic",
-            "name": "Div",
+            "name": "Button",
+            "actions": [
+                {
+                    "comment": "구획 접기/펼치기",
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.salesInfoExpanded": "{{!_local.ui.salesInfoExpanded}}"
+                    }
+                }
+            ],
             "props": {
-                "className": "card-header"
+                "type": "button",
+                "className": "ecommerce:flex ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-card-header",
+                "aria-expanded": "{{_local.ui.salesInfoExpanded !== false}}"
             },
             "children": [
                 {
@@ -22,14 +36,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "coins",
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.sections.sales_info"
                 },
@@ -38,17 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.salesInfoExpanded !== false ? 'rotate-180' : ''}}"
-                    }
-                }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.salesInfoExpanded": "{{!_local.ui.salesInfoExpanded}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.salesInfoExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -59,7 +63,7 @@
             "name": "Div",
             "if": "{{_local.ui.salesInfoExpanded !== false}}",
             "props": {
-                "className": "row-stack"
+                "className": "ecommerce-row-stack"
             },
             "children": [
                 {
@@ -72,14 +76,14 @@
                         }
                     },
                     "props": {
-                        "className": "flex-center form-group gap-4"
+                        "className": "ecommerce-flex-center ecommerce-form-group ecommerce:gap-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label w-28 shrink-0 mb-0"
+                                "className": "ecommerce-form-label ecommerce:w-28 ecommerce:shrink-0 ecommerce:mb-0"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.fields.base_currency"
                         },
@@ -88,7 +92,7 @@
                             "name": "Input",
                             "props": {
                                 "type": "text",
-                                "className": "input w-40",
+                                "className": "ecommerce-input ecommerce:w-40",
                                 "value": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}})",
                                 "disabled": true
                             }
@@ -105,14 +109,14 @@
                         }
                     },
                     "props": {
-                        "className": "form-group"
+                        "className": "ecommerce-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.fields.base_currency"
                         },
@@ -121,7 +125,7 @@
                             "name": "Input",
                             "props": {
                                 "type": "text",
-                                "className": "input",
+                                "className": "ecommerce-input",
                                 "value": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}} ({{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}})",
                                 "disabled": true
                             }
@@ -146,49 +150,49 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "grid-2col"
+                                        "className": "ecommerce-grid-2col"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "form-group"
+                                                "className": "ecommerce-form-group"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "form-label"
+                                                        "className": "ecommerce-form-label"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.price.list_price"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
-                                                    "props": {
-                                                        "name": "list_price",
-                                                        "type": "number",
-                                                        "className": "{{_local.errors?.list_price ? 'input input-error' : 'input'}}",
-                                                        "min": "0",
-                                                        "step": "100",
-                                                        "placeholder": "0",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                    },
                                                     "actions": [
                                                         {
                                                             "type": "change",
                                                             "handler": "sirsoft-ecommerce.validatePriceRelation"
                                                         }
-                                                    ]
+                                                    ],
+                                                    "props": {
+                                                        "name": "list_price",
+                                                        "type": "number",
+                                                        "className": "{{_local.errors?.list_price ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
+                                                        "min": "0",
+                                                        "step": "100",
+                                                        "placeholder": "0",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.list_price}}",
                                                     "props": {
-                                                        "className": "form-error-xs mt-1"
+                                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                                     },
                                                     "text": "{{_local.errors?.list_price?.[0]}}"
                                                 }
@@ -198,31 +202,23 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "form-group"
+                                                "className": "ecommerce-form-group"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "form-label"
+                                                        "className": "ecommerce-form-label"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.price.selling_price"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Input",
-                                                    "props": {
-                                                        "name": "selling_price",
-                                                        "type": "number",
-                                                        "className": "{{_local.errors?.selling_price ? 'input input-error' : 'input'}}",
-                                                        "min": "0",
-                                                        "step": "100",
-                                                        "placeholder": "0",
-                                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                                    },
                                                     "actions": [
                                                         {
+                                                            "comment": "판매가를 바꾸면 옵션마다 걸어 둔 추가금을 다시 계산한다 — 옵션 값은 판매가에 얹는 차액이라 기준이 움직이면 최종가가 어긋난다. 정가와의 앞뒤 관계(정가 ≥ 판매가)도 함께 본다",
                                                             "type": "change",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -237,14 +233,23 @@
                                                                 }
                                                             ]
                                                         }
-                                                    ]
+                                                    ],
+                                                    "props": {
+                                                        "name": "selling_price",
+                                                        "type": "number",
+                                                        "className": "{{_local.errors?.selling_price ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
+                                                        "min": "0",
+                                                        "step": "100",
+                                                        "placeholder": "0",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.selling_price}}",
                                                     "props": {
-                                                        "className": "form-error-xs mt-1"
+                                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                                     },
                                                     "text": "{{_local.errors?.selling_price?.[0]}}"
                                                 }
@@ -256,12 +261,11 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-tertiary"
+                                        "className": "ecommerce-text-tertiary"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.price.option_price_hint"
                                 }
-                            ],
-                            "props": {}
+                            ]
                         }
                     ]
                 },
@@ -279,42 +283,42 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.price.list_price"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "name": "list_price",
-                                        "type": "number",
-                                        "className": "{{_local.errors?.list_price ? 'input input-error' : 'input'}}",
-                                        "min": "0",
-                                        "step": "100",
-                                        "placeholder": "0",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
                                             "handler": "sirsoft-ecommerce.validatePriceRelation"
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "name": "list_price",
+                                        "type": "number",
+                                        "className": "{{_local.errors?.list_price ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
+                                        "min": "0",
+                                        "step": "100",
+                                        "placeholder": "0",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{_local.errors?.list_price}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.list_price?.[0]}}"
                                 }
@@ -324,31 +328,23 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.price.selling_price"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "name": "selling_price",
-                                        "type": "number",
-                                        "className": "{{_local.errors?.selling_price ? 'input input-error' : 'input'}}",
-                                        "min": "0",
-                                        "step": "100",
-                                        "placeholder": "0",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "좁은 화면 판매가 — 위와 같다",
                                             "type": "change",
                                             "handler": "sequence",
                                             "actions": [
@@ -363,14 +359,23 @@
                                                 }
                                             ]
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "name": "selling_price",
+                                        "type": "number",
+                                        "className": "{{_local.errors?.selling_price ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
+                                        "min": "0",
+                                        "step": "100",
+                                        "placeholder": "0",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{_local.errors?.selling_price}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.selling_price?.[0]}}"
                                 }
@@ -380,12 +385,11 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-tertiary"
+                                "className": "ecommerce-text-tertiary"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.price.option_price_hint"
                         }
-                    ],
-                    "props": {}
+                    ]
                 },
                 {
                     "id": "stock_row_desktop",
@@ -397,14 +401,14 @@
                         }
                     },
                     "props": {
-                        "className": "flex-center form-group gap-4"
+                        "className": "ecommerce-flex-center ecommerce-form-group ecommerce:gap-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label w-28 shrink-0 mb-0"
+                                "className": "ecommerce-form-label ecommerce:w-28 ecommerce:shrink-0 ecommerce:mb-0"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.fields.stock"
                         },
@@ -413,7 +417,7 @@
                             "name": "Input",
                             "props": {
                                 "type": "number",
-                                "className": "input w-24",
+                                "className": "ecommerce-input ecommerce:w-24",
                                 "value": "{{_local.form.stock_quantity ?? 0}}",
                                 "disabled": true
                             }
@@ -422,7 +426,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "ecommerce-text-label-subtle"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.stock.option_total_hint"
                         }
@@ -438,14 +442,14 @@
                         }
                     },
                     "props": {
-                        "className": "form-group"
+                        "className": "ecommerce-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.fields.stock"
                         },
@@ -453,7 +457,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2"
+                                "className": "ecommerce-flex-center ecommerce:gap-2"
                             },
                             "children": [
                                 {
@@ -461,7 +465,7 @@
                                     "name": "Input",
                                     "props": {
                                         "type": "number",
-                                        "className": "input w-24",
+                                        "className": "ecommerce-input ecommerce:w-24",
                                         "value": "{{_local.form.stock_quantity ?? 0}}",
                                         "disabled": true
                                     }
@@ -470,7 +474,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "ecommerce-text-label-subtle"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.stock.option_total_hint"
                                 }
@@ -488,14 +492,14 @@
                         }
                     },
                     "props": {
-                        "className": "flex-center form-group gap-4"
+                        "className": "ecommerce-flex-center ecommerce-form-group ecommerce:gap-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label w-28 shrink-0 mb-0"
+                                "className": "ecommerce-form-label ecommerce:w-28 ecommerce:shrink-0 ecommerce:mb-0"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.fields.tax_status"
                         },
@@ -503,18 +507,13 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "btn-group"
+                                "className": "ecommerce-btn-group"
                             },
                             "children": [
                                 {
+                                    "comment": "과세 상품 (넓은 화면)",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -524,17 +523,18 @@
                                                 "form.tax_status": "taxable"
                                             }
                                         }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
+                                    ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "className": "ecommerce-btn-group-item {{_local.form.tax_status === 'taxable' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
+                                },
+                                {
+                                    "comment": "면세 상품 — 부가세 계산과 세금계산서 발행이 갈린다 (넓은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -544,7 +544,13 @@
                                                 "form.tax_status": "tax_free"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "ecommerce-btn-group-item {{_local.form.tax_status === 'tax_free' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
                                 }
                             ]
                         }
@@ -560,14 +566,14 @@
                         }
                     },
                     "props": {
-                        "className": "form-group"
+                        "className": "ecommerce-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.fields.tax_status"
                         },
@@ -575,18 +581,13 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "btn-group"
+                                "className": "ecommerce-btn-group"
                             },
                             "children": [
                                 {
+                                    "comment": "과세 상품 (좁은 화면)",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.tax_status === 'taxable' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -596,17 +597,18 @@
                                                 "form.tax_status": "taxable"
                                             }
                                         }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
+                                    ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-group-item {{_local.form.tax_status === 'tax_free' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "className": "ecommerce-btn-group-item {{_local.form.tax_status === 'taxable' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
+                                },
+                                {
+                                    "comment": "면세 상품 — 부가세 계산과 세금계산서 발행이 갈린다 (좁은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -616,7 +618,13 @@
                                                 "form.tax_status": "tax_free"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "ecommerce-btn-group-item {{_local.form.tax_status === 'tax_free' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
                                 }
                             ]
                         }
@@ -632,14 +640,14 @@
                         }
                     },
                     "props": {
-                        "className": "flex-center form-group gap-4"
+                        "className": "ecommerce-flex-center ecommerce-form-group ecommerce:gap-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label w-28 shrink-0 mb-0"
+                                "className": "ecommerce-form-label ecommerce:w-28 ecommerce:shrink-0 ecommerce:mb-0"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.fields.sales_status"
                         },
@@ -647,18 +655,13 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "btn-group"
+                                "className": "ecommerce-btn-group"
                             },
                             "children": [
                                 {
+                                    "comment": "판매중 (넓은 화면)",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.on_sale",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -668,17 +671,18 @@
                                                 "form.sales_status": "on_sale"
                                             }
                                         }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
+                                    ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "className": "ecommerce-btn-group-item {{_local.form.sales_status === 'on_sale' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.sold_out",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.on_sale"
+                                },
+                                {
+                                    "comment": "품절 — 재고와 별개로 운영자가 직접 세우는 표시다 (넓은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -688,17 +692,18 @@
                                                 "form.sales_status": "sold_out"
                                             }
                                         }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
+                                    ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "className": "ecommerce-btn-group-item {{_local.form.sales_status === 'sold_out' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.suspended",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.sold_out"
+                                },
+                                {
+                                    "comment": "판매중지 — 상품 화면은 열리되 살 수 없다 (넓은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -708,17 +713,18 @@
                                                 "form.sales_status": "suspended"
                                             }
                                         }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
+                                    ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "className": "ecommerce-btn-group-item {{_local.form.sales_status === 'suspended' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.suspended"
+                                },
+                                {
+                                    "comment": "판매예정 (넓은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -728,7 +734,13 @@
                                                 "form.sales_status": "coming_soon"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "ecommerce-btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon"
                                 }
                             ]
                         }
@@ -744,14 +756,14 @@
                         }
                     },
                     "props": {
-                        "className": "form-group"
+                        "className": "ecommerce-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.fields.sales_status"
                         },
@@ -759,18 +771,13 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "btn-group flex-wrap"
+                                "className": "ecommerce-btn-group ecommerce:flex-wrap"
                             },
                             "children": [
                                 {
+                                    "comment": "판매중 (좁은 화면)",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'on_sale' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.on_sale",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -780,17 +787,18 @@
                                                 "form.sales_status": "on_sale"
                                             }
                                         }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
+                                    ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'sold_out' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "className": "ecommerce-btn-group-item {{_local.form.sales_status === 'on_sale' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.sold_out",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.on_sale"
+                                },
+                                {
+                                    "comment": "품절 — 재고와 별개로 운영자가 직접 세우는 표시다 (좁은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -800,17 +808,18 @@
                                                 "form.sales_status": "sold_out"
                                             }
                                         }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
+                                    ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'suspended' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "className": "ecommerce-btn-group-item {{_local.form.sales_status === 'sold_out' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.suspended",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.sold_out"
+                                },
+                                {
+                                    "comment": "판매중지 — 상품 화면은 열리되 살 수 없다 (좁은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -820,17 +829,18 @@
                                                 "form.sales_status": "suspended"
                                             }
                                         }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
+                                    ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "className": "ecommerce-btn-group-item {{_local.form.sales_status === 'suspended' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.suspended"
+                                },
+                                {
+                                    "comment": "판매예정 (좁은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -840,7 +850,13 @@
                                                 "form.sales_status": "coming_soon"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "ecommerce-btn-group-item {{_local.form.sales_status === 'coming_soon' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.sales_status.coming_soon"
                                 }
                             ]
                         }
@@ -856,14 +872,14 @@
                         }
                     },
                     "props": {
-                        "className": "flex-center form-group gap-4"
+                        "className": "ecommerce-flex-center ecommerce-form-group ecommerce:gap-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label w-28 shrink-0 mb-0"
+                                "className": "ecommerce-form-label ecommerce:w-28 ecommerce:shrink-0 ecommerce:mb-0"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.fields.display_status"
                         },
@@ -871,18 +887,13 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "btn-group"
+                                "className": "ecommerce-btn-group"
                             },
                             "children": [
                                 {
+                                    "comment": "진열 — 목록·검색에 노출된다 (넓은 화면)",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.visible",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -892,17 +903,18 @@
                                                 "form.display_status": "visible"
                                             }
                                         }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
+                                    ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "className": "ecommerce-btn-group-item {{_local.form.display_status === 'visible' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.hidden",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.visible"
+                                },
+                                {
+                                    "comment": "미진열 — 목록에서 빠지지만 주소를 알면 열린다 (넓은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -912,7 +924,13 @@
                                                 "form.display_status": "hidden"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "ecommerce-btn-group-item {{_local.form.display_status === 'hidden' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.hidden"
                                 }
                             ]
                         }
@@ -928,14 +946,14 @@
                         }
                     },
                     "props": {
-                        "className": "form-group"
+                        "className": "ecommerce-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.fields.display_status"
                         },
@@ -943,18 +961,13 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "btn-group"
+                                "className": "ecommerce-btn-group"
                             },
                             "children": [
                                 {
+                                    "comment": "진열 — 목록·검색에 노출된다 (좁은 화면)",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "btn-group-item {{_local.form.display_status === 'visible' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.visible",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -964,17 +977,18 @@
                                                 "form.display_status": "visible"
                                             }
                                         }
-                                    ]
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Button",
+                                    ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-group-item {{_local.form.display_status === 'hidden' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
+                                        "className": "ecommerce-btn-group-item {{_local.form.display_status === 'visible' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.hidden",
+                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.visible"
+                                },
+                                {
+                                    "comment": "미진열 — 목록에서 빠지지만 주소를 알면 열린다 (좁은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -984,7 +998,13 @@
                                                 "form.display_status": "hidden"
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "ecommerce-btn-group-item {{_local.form.display_status === 'hidden' ? 'ecommerce-active' : ''}} ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.display_status.hidden"
                                 }
                             ]
                         }

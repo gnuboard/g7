@@ -4,6 +4,7 @@ namespace Tests\Unit\Seo;
 
 use App\Seo\ComponentHtmlMapper;
 use App\Seo\ExpressionEvaluator;
+use App\Seo\SeoUrl;
 use App\Support\AssetUrl;
 use Tests\TestCase;
 
@@ -15,6 +16,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 테스트 초기화 - ComponentHtmlMapper 및 ExpressionEvaluator 인스턴스를 준비합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -210,6 +213,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Div + children 텍스트를 올바르게 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_div_with_children_text(): void
     {
@@ -234,6 +239,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * H1 + text prop을 올바르게 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_h1_with_text_prop(): void
     {
@@ -251,6 +258,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Img + src/alt를 셀프 클로징 태그로 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_img_with_src_and_alt(): void
     {
@@ -274,6 +283,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * A + href + children을 올바르게 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     /**
      * 봇 화면의 사이트 내부 링크도 마운트 접두사를 거친다.
@@ -386,6 +397,12 @@ class ComponentHtmlMapperTest extends TestCase
                 continue;
             }
 
+            // 클래스 상수 선언(`URL_ATTRS` — 평가 옵션을 고르는 속성 이름 목록)도 값을 만들지 않는다.
+            // 메서드 밖이라 감싸는 메서드 판정이 성립하지 않는다.
+            if (preg_match('/^(?:(?:private|protected|public|final)\s+)*const\s+[A-Z_]+\s*=/', $text) === 1) {
+                continue;
+            }
+
             if (! str_contains($this->enclosingMethodBody($lines, $lineNo), 'siteHref(')) {
                 $unwired[] = $lineNo.': '.substr($text, 0, 90);
             }
@@ -413,6 +430,8 @@ class ComponentHtmlMapperTest extends TestCase
      */
     public function test_internal_src_is_absolute_and_carries_the_mount_prefix_once(): void
     {
+        // 하위 폴더 설치의 사이트 주소는 접두사를 품는다 — 절대 주소의 접두사 출처는 사이트 주소(SiteUrl)다.
+        config(['app.url' => 'http://localhost/g7']);
         AssetUrl::forceBasePrefix('/g7');
 
         try {
@@ -635,6 +654,8 @@ class ComponentHtmlMapperTest extends TestCase
      */
     public function test_component_props_src_carries_the_mount_prefix_and_origin(): void
     {
+        // 하위 폴더 설치의 사이트 주소는 접두사를 품는다 — 절대 주소의 접두사 출처는 사이트 주소(SiteUrl)다.
+        config(['app.url' => 'http://localhost/g7']);
         AssetUrl::forceBasePrefix('/g7');
 
         try {
@@ -733,6 +754,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Container 컴포넌트는 div 태그로 렌더링됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_container_renders_as_div(): void
     {
@@ -757,6 +780,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 중첩 컴포넌트를 올바르게 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_nested_components(): void
     {
@@ -789,6 +814,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * if=true 조건의 컴포넌트는 렌더링에 포함됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_if_true_included(): void
     {
@@ -807,6 +834,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * if=false 조건의 컴포넌트는 렌더링에서 제외됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_if_false_excluded(): void
     {
@@ -825,6 +854,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iteration으로 반복 렌더링을 올바르게 수행합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_iteration_renders_repeated_output(): void
     {
@@ -857,6 +888,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iteration의 source 키로 반복 렌더링을 수행합니다 (레이아웃 JSON 스키마 호환).
+     *
+     * @return void 반환값 없음
      */
     public function test_iteration_with_source_key(): void
     {
@@ -898,6 +931,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 알 수 없는 컴포넌트명은 div 태그로 폴백됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_component_fallback_to_div(): void
     {
@@ -915,6 +950,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * className prop이 class 속성으로 변환됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_classname_prop_to_class_attribute(): void
     {
@@ -938,6 +975,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * children이 빈 배열이면 빈 태그를 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_children_renders_empty_tag(): void
     {
@@ -955,6 +994,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 데이터 바인딩이 포함된 prop을 올바르게 평가합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_data_binding_in_props(): void
     {
@@ -986,6 +1027,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 허용되지 않은 속성(이벤트 핸들러 등)은 HTML에 포함되지 않습니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_disallowed_attributes_excluded(): void
     {
@@ -1009,6 +1052,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 셀프 클로징 태그(hr, br)가 올바르게 렌더링됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_self_closing_tags(): void
     {
@@ -1027,6 +1072,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 컴포넌트 레벨 text 속성이 렌더링됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_component_level_text_attribute(): void
     {
@@ -1047,6 +1094,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 컴포넌트 레벨 text가 props.text보다 우선합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_component_text_takes_priority_over_props_text(): void
     {
@@ -1066,6 +1115,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Composite 컴포넌트가 div 태그로 렌더링되고 children이 포함됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_composite_component_renders_with_children(): void
     {
@@ -1096,6 +1147,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * ProductImageViewer가 이미지 태그를 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_product_image_viewer_renders_images(): void
     {
@@ -1129,6 +1182,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * TabNavigation이 탭 버튼을 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_tab_navigation_renders_tabs(): void
     {
@@ -1162,6 +1217,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * dangerouslySetInnerHTML prop이 HTML 콘텐츠를 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_dangerously_set_inner_html_renders_content(): void
     {
@@ -1189,6 +1246,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Fragment 컴포넌트는 래퍼 태그 없이 children만 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fragment_renders_children_without_wrapper(): void
     {
@@ -1214,6 +1273,8 @@ class ComponentHtmlMapperTest extends TestCase
     /**
      * componentMap 미설정 시 모든 컴포넌트가 div로 렌더링됩니다.
      * textProps/allowedAttrs도 미설정이므로 텍스트/속성 미출력 (안전한 저하).
+     *
+     * @return void 반환값 없음
      */
     public function test_no_config_all_components_fallback_to_div(): void
     {
@@ -1229,6 +1290,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * renderModes 미설정 + component_map에 render 키 → 빈 문자열 반환
+     *
+     * @return void 반환값 없음
      */
     public function test_no_render_modes_render_key_ignored(): void
     {
@@ -1246,6 +1309,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * selfClosing 미설정 시 img, hr도 닫힘 태그 생성
+     *
+     * @return void 반환값 없음
      */
     public function test_no_self_closing_all_tags_have_closing(): void
     {
@@ -1266,6 +1331,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * selfClosing에 커스텀 태그 추가 시 해당 태그 셀프 클로징
+     *
+     * @return void 반환값 없음
      */
     public function test_custom_self_closing_tags(): void
     {
@@ -1284,6 +1351,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * skip:true 컴포넌트는 렌더링되지 않습니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_true_component_renders_nothing(): void
     {
@@ -1296,6 +1365,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * skip:true 컴포넌트는 children이 있어도 렌더링되지 않습니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_skip_true_ignores_children(): void
     {
@@ -1315,6 +1386,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * tag:"" (Fragment) → 래퍼 없이 children만 렌더링
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_tag_renders_children_only(): void
     {
@@ -1335,6 +1408,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 같은 이름으로 다른 tag 지정 시 config 태그 사용
+     *
+     * @return void 반환값 없음
      */
     public function test_component_map_overrides_default_behavior(): void
     {
@@ -1357,6 +1432,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: image_gallery → img 태그 목록 생성
+     *
+     * @return void 반환값 없음
      */
     public function test_iterate_mode_renders_image_gallery(): void
     {
@@ -1386,6 +1463,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: 빈 배열 → 빈 래퍼 태그만
+     *
+     * @return void 반환값 없음
      */
     public function test_iterate_mode_with_empty_array(): void
     {
@@ -1406,6 +1485,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: source가 null → 빈 래퍼 태그만
+     *
+     * @return void 반환값 없음
      */
     public function test_iterate_mode_with_null_source(): void
     {
@@ -1425,6 +1506,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: 1개 아이템 → 정확히 1개 아이템 태그
+     *
+     * @return void 반환값 없음
      */
     public function test_iterate_mode_with_single_item(): void
     {
@@ -1448,6 +1531,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: 10개 아이템 → 10개 아이템 태그
+     *
+     * @return void 반환값 없음
      */
     public function test_iterate_mode_with_many_items(): void
     {
@@ -1467,6 +1552,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: tab_list → span 태그에 label 텍스트
+     *
+     * @return void 반환값 없음
      */
     public function test_iterate_mode_tab_list_with_labels(): void
     {
@@ -1490,6 +1577,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: tab_list + badge → badge span 포함
+     *
+     * @return void 반환값 없음
      */
     public function test_iterate_mode_tab_list_with_badge(): void
     {
@@ -1512,6 +1601,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드: item_attrs {url|src} → url 없으면 src 사용
+     *
+     * @return void 반환값 없음
      */
     public function test_iterate_mode_item_attrs_fallback_field(): void
     {
@@ -1536,6 +1627,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * format 모드: "{value} / {max}" → "4.5 / 5"
+     *
+     * @return void 반환값 없음
      */
     public function test_format_mode_star_rating(): void
     {
@@ -1554,6 +1647,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * format 모드: max 미전달 → defaults의 "5" 사용
+     *
+     * @return void 반환값 없음
      */
     public function test_format_mode_with_defaults(): void
     {
@@ -1571,6 +1666,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * format 모드: props 없음 → 기본값만 표시
+     *
+     * @return void 반환값 없음
      */
     public function test_format_mode_all_placeholders_missing(): void
     {
@@ -1588,6 +1685,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * format 모드: 일부 prop만 있음 → 있는 것만 치환
+     *
+     * @return void 반환값 없음
      */
     public function test_format_mode_partial_placeholders(): void
     {
@@ -1605,6 +1704,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * format 모드: format 키 없음 → 빈 문자열
+     *
+     * @return void 반환값 없음
      */
     public function test_format_mode_no_format_string(): void
     {
@@ -1627,6 +1728,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * raw 모드: HTML 콘텐츠 그대로 출력 (이스케이프 없음)
+     *
+     * @return void 반환값 없음
      */
     public function test_raw_mode_html_content(): void
     {
@@ -1646,6 +1749,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * raw 모드: {{binding}} → context에서 해석 후 출력
+     *
+     * @return void 반환값 없음
      */
     public function test_raw_mode_with_binding(): void
     {
@@ -1665,6 +1770,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * raw 모드: 콘텐츠 없음 → 빈 래퍼 태그
+     *
+     * @return void 반환값 없음
      */
     public function test_raw_mode_empty_content(): void
     {
@@ -1685,6 +1792,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * raw 모드: 여러 줄 HTML → 전부 보존
+     *
+     * @return void 반환값 없음
      */
     public function test_raw_mode_multiline_html(): void
     {
@@ -1710,6 +1819,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 상품 상세 페이지: Header+Main(이미지갤러리+상품정보)+Footer
+     *
+     * @return void 반환값 없음
      */
     public function test_product_detail_page_structure(): void
     {
@@ -1749,6 +1860,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 상품 목록 페이지: 카테고리명+ProductCard iteration
+     *
+     * @return void 반환값 없음
      */
     public function test_product_list_page_with_iteration(): void
     {
@@ -1782,6 +1895,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 카테고리 페이지: Breadcrumb+H1+Grid+Pagination
+     *
+     * @return void 반환값 없음
      */
     public function test_category_page_with_nested_components(): void
     {
@@ -1807,6 +1922,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 검색 결과 페이지: SearchBar+결과목록+조건부 빈결과
+     *
+     * @return void 반환값 없음
      */
     public function test_search_results_page(): void
     {
@@ -1848,6 +1965,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 로그인 폼: Form+FormField(Label+Input)+Button
+     *
+     * @return void 반환값 없음
      */
     public function test_login_page_form_structure(): void
     {
@@ -1884,6 +2003,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 게시글 페이지: 제목+작성자+본문(raw HTML)
+     *
+     * @return void 반환값 없음
      */
     public function test_article_page_with_html_content(): void
     {
@@ -1911,6 +2032,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 헤더: Logo(Img)+Nav(Ul>Li>A 반복)
+     *
+     * @return void 반환값 없음
      */
     public function test_header_navigation_structure(): void
     {
@@ -1956,6 +2079,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 푸터: 링크+저작권 텍스트
+     *
+     * @return void 반환값 없음
      */
     public function test_footer_with_links_and_copyright(): void
     {
@@ -1980,6 +2105,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 조건부 섹션: 로그인 시 마이페이지, 비로그인 시 로그인 버튼
+     *
+     * @return void 반환값 없음
      */
     public function test_page_with_conditional_sections(): void
     {
@@ -2001,6 +2128,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 전체 페이지에 걸친 데이터 바인딩
+     *
+     * @return void 반환값 없음
      */
     public function test_page_with_data_binding_throughout(): void
     {
@@ -2030,6 +2159,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 5단계 이상 중첩: Div>Section>Article>Div>P
+     *
+     * @return void 반환값 없음
      */
     public function test_deeply_nested_layout(): void
     {
@@ -2062,6 +2193,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 상품 카드 iteration 내부에 이미지+제목+가격+Badge
+     *
+     * @return void 반환값 없음
      */
     public function test_complex_iteration_with_nested_children(): void
     {
@@ -2099,6 +2232,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * name 키 없음 → div fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_component_with_no_name(): void
     {
@@ -2109,7 +2244,9 @@ class ComponentHtmlMapperTest extends TestCase
     }
 
     /**
-     * name:"" → div fallback
+     * name 이 빈 문자열("")이면 div 로 폴백합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_component_with_empty_name(): void
     {
@@ -2121,6 +2258,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text에 <script> → 이스케이프 처리
+     *
+     * @return void 반환값 없음
      */
     public function test_xss_prevention_in_text(): void
     {
@@ -2133,6 +2272,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * className에 xss 시도 → 이스케이프 처리
+     *
+     * @return void 반환값 없음
      */
     public function test_xss_prevention_in_attributes(): void
     {
@@ -2146,6 +2287,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * context에서 null 값 → 빈 문자열
+     *
+     * @return void 반환값 없음
      */
     public function test_null_context_values(): void
     {
@@ -2157,6 +2300,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 빈 components 배열 → 빈 문자열
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_components_array(): void
     {
@@ -2167,6 +2312,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iteration source가 문자열 → 빈 결과 (에러 없음)
+     *
+     * @return void 반환값 없음
      */
     public function test_iteration_with_non_array_data(): void
     {
@@ -2185,6 +2332,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * {{a.b.c.d.e}} 5단계 중첩 경로 → 정상 해석
+     *
+     * @return void 반환값 없음
      */
     public function test_binding_with_nested_dot_path(): void
     {
@@ -2198,6 +2347,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * {{first}} {{last}} 여러 바인딩 → 모두 치환
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_bindings_in_single_text(): void
     {
@@ -2211,6 +2362,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 한국어, 특수 문자 → 정상 렌더링
+     *
+     * @return void 반환값 없음
      */
     public function test_special_characters_in_content(): void
     {
@@ -2229,6 +2382,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Img → <img ...> (닫힘 태그 없음)
+     *
+     * @return void 반환값 없음
      */
     public function test_img_self_closing_no_end_tag(): void
     {
@@ -2241,6 +2396,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Input → <input ...> (닫힘 태그 없음)
+     *
+     * @return void 반환값 없음
      */
     public function test_input_self_closing_no_end_tag(): void
     {
@@ -2253,6 +2410,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Hr, Br → <hr>, <br> (닫힘 태그 없음)
+     *
+     * @return void 반환값 없음
      */
     public function test_hr_br_self_closing(): void
     {
@@ -2264,6 +2423,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Div, Span → 반드시 닫힘 태그 있음
+     *
+     * @return void 반환값 없음
      */
     public function test_non_self_closing_has_end_tag(): void
     {
@@ -2283,6 +2444,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * $t:shop.title → 번역된 한국어 텍스트
+     *
+     * @return void 반환값 없음
      */
     public function test_translation_key_in_text(): void
     {
@@ -2297,6 +2460,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * $t:shop.greeting|name=홍길동 → 파라미터 치환
+     *
+     * @return void 반환값 없음
      */
     public function test_translation_with_params(): void
     {
@@ -2311,6 +2476,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 같은 페이지에 $t: 텍스트 + {{data}} 바인딩 공존
+     *
+     * @return void 반환값 없음
      */
     public function test_binding_and_translation_mixed(): void
     {
@@ -2330,6 +2497,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 존재하지 않는 번역 키 → 빈 문자열 (raw key 노출 방지)
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_translation_key_empty_string(): void
     {
@@ -2346,6 +2515,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * responsive.desktop의 props가 기본 props에 병합됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_desktop_props_merged(): void
     {
@@ -2372,6 +2543,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * responsive.desktop의 if 조건이 적용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_desktop_if_override(): void
     {
@@ -2398,6 +2571,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * responsive.desktop의 text 속성이 적용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_desktop_text_override(): void
     {
@@ -2421,6 +2596,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * responsive에 desktop이 없으면 기본 속성이 유지됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_without_desktop_keeps_defaults(): void
     {
@@ -2451,6 +2628,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon의 name prop이 Font Awesome class로 변환됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_icon_name_to_font_awesome_class(): void
     {
@@ -2469,6 +2648,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon의 name이 바인딩 표현식인 경우 평가 후 변환합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_icon_name_binding_evaluated(): void
     {
@@ -2486,6 +2667,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon의 fa- 접두사가 중복 방지됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_icon_fa_prefix_dedup(): void
     {
@@ -2504,6 +2687,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon의 기존 className이 name_to_class 결과와 병합됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_icon_classname_merged(): void
     {
@@ -2521,6 +2706,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon에 aria-label과 role이 자동 생성됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_icon_accessibility_attrs(): void
     {
@@ -2539,6 +2726,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Icon name이 빈 문자열이면 변환하지 않습니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_icon_empty_name_no_transform(): void
     {
@@ -2560,6 +2749,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Header가 text_format으로 site_name을 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_header_renders_site_name(): void
     {
@@ -2579,6 +2770,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Header에 site_name 미전달 시 기본값 G7이 사용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_header_default_site_name(): void
     {
@@ -2596,6 +2789,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Footer가 copyright 포맷으로 렌더링됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_footer_renders_copyright(): void
     {
@@ -2616,6 +2811,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Footer에 site_name 미전달 시 기본값 G7이 사용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_footer_default_site_name(): void
     {
@@ -2639,6 +2836,8 @@ class ComponentHtmlMapperTest extends TestCase
      * url 필드가 비어있을 때 download_url로 fallback합니다.
      *
      * @effects download_url_falls_back_to_api_path_when_direct_unavailable
+     *
+     * @return void 반환값 없음
      */
     public function test_image_gallery_download_url_fallback(): void
     {
@@ -2682,6 +2881,8 @@ class ComponentHtmlMapperTest extends TestCase
      * (공개 자산 디스크 설정 시 download_url 이 직접 CDN URL 이어도 동일 경로로 소비)
      *
      * @effects download_url_falls_back_to_api_path_when_direct_unavailable
+     *
+     * @return void 반환값 없음
      */
     public function test_image_gallery_url_takes_priority(): void
     {
@@ -2722,6 +2923,8 @@ class ComponentHtmlMapperTest extends TestCase
      * 깨진 src 가 봇 화면에 나간다.
      *
      * @effects seo_guard_passes_absolute_cdn_url_unmodified
+     *
+     * @return void 반환값 없음
      */
     public function test_image_gallery_absolute_cdn_download_url_passes_unmodified(): void
     {
@@ -2761,6 +2964,8 @@ class ComponentHtmlMapperTest extends TestCase
      * 그대로 통과하고, 상대 경로일 때만 절대화됩니다.
      *
      * @effects seo_guard_passes_absolute_cdn_url_unmodified
+     *
+     * @return void 반환값 없음
      */
     public function test_product_card_thumbnail_absolute_cdn_url_passes_unmodified(): void
     {
@@ -2821,10 +3026,15 @@ class ComponentHtmlMapperTest extends TestCase
             $m[1],
             '봇 자산 주소의 오리진이 사이트가 선언한 오리진이 아니다',
         );
+
+        // 사이트 주소(app.url) 기준 절대화 — SeoUrl(= SiteUrl) 과 같은 값이다
+        $this->assertStringContainsString('src="'.SeoUrl::absolute('/storage/products/rel.jpg').'"', $relativeHtml);
     }
 
     /**
      * alt_text_current 필드로 alt 속성이 렌더링됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_image_gallery_alt_text_current_field(): void
     {
@@ -2863,6 +3073,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * condition 속성이 if의 별칭으로 동작합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_condition_property_acts_as_if_alias(): void
     {
@@ -2880,6 +3092,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * conditions AND 그룹은 모든 조건이 참일 때만 렌더링됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_conditions_and_group(): void
     {
@@ -2896,6 +3110,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * conditions OR 그룹은 하나라도 참이면 렌더링됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_conditions_or_group(): void
     {
@@ -2912,6 +3128,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * conditions 중첩 그룹(AND 안의 OR)이 평가됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_conditions_nested_group(): void
     {
@@ -2928,6 +3146,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * conditions if/else 체인은 하나라도 매칭되면 렌더링됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_conditions_branch_chain(): void
     {
@@ -2947,6 +3167,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * conditions if/else 체인의 else 브랜치(if 없음)는 항상 매칭됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_conditions_else_branch_always_matches(): void
     {
@@ -2964,6 +3186,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 빈 AND 그룹은 true, 빈 OR 그룹은 false 로 평가됩니다 (React와 동일).
+     *
+     * @return void 반환값 없음
      */
     public function test_conditions_empty_groups(): void
     {
@@ -2980,6 +3204,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * type: "iterator" 노드가 iteration 으로 변환되어 반복 렌더링됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_iterator_type_is_converted_to_iteration(): void
     {
@@ -3001,6 +3227,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * type: "iterator" 의 itemName 을 생략하면 기본 별칭 item 이 사용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_iterator_type_defaults_item_var(): void
     {
@@ -3020,6 +3248,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * children 배열 내 문자열은 텍스트 노드로 출력됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_string_child_is_rendered_as_text_node(): void
     {
@@ -3037,6 +3267,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * children 배열 내 문자열은 HTML 이스케이프되어 출력됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_string_child_is_escaped(): void
     {
@@ -3053,6 +3285,8 @@ class ComponentHtmlMapperTest extends TestCase
      *
      * React DynamicRenderer 가 문자열 자식을 그대로 반환하므로(표현식 미해석),
      * SEO 가 해석하면 반대 방향의 패리티 격차가 생깁니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_string_child_expression_is_not_resolved(): void
     {
@@ -3066,6 +3300,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text 와 children 이 함께 있으면 text 가 우선합니다 (React와 동일 우선순위).
+     *
+     * @return void 반환값 없음
      */
     public function test_node_text_takes_precedence_over_children(): void
     {
@@ -3087,6 +3323,8 @@ class ComponentHtmlMapperTest extends TestCase
      *
      * React 는 `text !== undefined` 인 순간 children 경로로 내려가지 않는다
      * (DynamicRenderer.tsx:2591,2639). 폴백하면 봇 화면에만 없는 내용이 나타난다.
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_node_text_does_not_fall_back_to_children(): void
     {
@@ -3107,6 +3345,8 @@ class ComponentHtmlMapperTest extends TestCase
      *
      * bool/null 판정 때문에 text 해석 경로를 바꾸더라도, 파이프·인라인 `$t:` 후처리를
      * 건너뛰면 안 된다 — 건너뛰면 봇 화면에 `$t:home.welcome_description` 이 그대로 남는다.
+     *
+     * @return void 반환값 없음
      */
     public function test_translation_token_in_fallback_literal_is_resolved_in_node_text(): void
     {
@@ -3129,6 +3369,8 @@ class ComponentHtmlMapperTest extends TestCase
      *
      * React 는 단일 바인딩 text 를 raw 값으로 받아 그대로 자식에 넘기므로 {false} 가
      * 화면에 나오지 않는다. 문자열화하면 봇 화면에만 'false' 라는 글자가 노출된다.
+     *
+     * @return void 반환값 없음
      */
     public function test_boolean_and_null_node_text_are_not_rendered(): void
     {
@@ -3153,6 +3395,8 @@ class ComponentHtmlMapperTest extends TestCase
      * 알 수 없는 conditions 형식은 렌더링됩니다 (React evaluateRenderCondition 동형).
      *
      * 여기서 숨기면 봇 화면에서만 노드가 사라진다 — #86 과 동일한 실패 모드.
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_conditions_format_still_renders(): void
     {
@@ -3182,6 +3426,8 @@ class ComponentHtmlMapperTest extends TestCase
      *
      * React ResponsiveManager::getMatchingKey() 와 동일한 우선순위. 매칭 키를 전부
      * 순차 병합하면 JSON 키 선언 순서에 따라 봇 화면 출력이 달라진다.
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_custom_range_wins_over_preset(): void
     {
@@ -3210,6 +3456,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 커스텀 범위끼리는 좁은 범위가 넓은 범위를 이깁니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_narrower_range_wins(): void
     {
@@ -3231,6 +3479,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * min > max 인 잘못된 범위 키는 무시됩니다 (React parseRange 와 동일).
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_invalid_range_key_is_ignored(): void
     {
@@ -3251,6 +3501,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * responsive.desktop 의 children 오버라이드가 적용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_desktop_children_override(): void
     {
@@ -3273,6 +3525,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * responsive.desktop 의 iteration 오버라이드가 적용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_desktop_iteration_override(): void
     {
@@ -3294,6 +3548,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 데스크톱 폭을 포함하는 숫자 범위 responsive 키가 적용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_numeric_range_matching_desktop_is_applied(): void
     {
@@ -3311,6 +3567,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 데스크톱 폭 밖의 responsive 키(모바일/좁은 범위)는 무시됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_responsive_non_desktop_breakpoints_are_ignored(): void
     {
@@ -3335,6 +3593,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * if 결과 문자열 "null" / "undefined" 는 거짓으로 판정됩니다 (React와 동일).
+     *
+     * @return void 반환값 없음
      */
     public function test_if_treats_null_and_undefined_strings_as_falsy(): void
     {
@@ -3349,6 +3609,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * if 결과가 참이면 정상 렌더링됩니다 (거짓 목록 확장의 회귀 방지).
+     *
+     * @return void 반환값 없음
      */
     public function test_if_truthy_values_still_render(): void
     {
@@ -3408,6 +3670,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text_props 설정에 따라 텍스트를 추출합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_text_props_from_config(): void
     {
@@ -3425,6 +3689,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text_props가 빈 배열이면 텍스트를 추출하지 않습니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_text_props_no_text_output(): void
     {
@@ -3444,6 +3710,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text_props 순서가 텍스트 추출 우선순위를 결정합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_custom_text_props_order(): void
     {
@@ -3468,6 +3736,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * attr_map에 따라 className이 class로 변환됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_attr_map_from_config(): void
     {
@@ -3489,6 +3759,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 커스텀 attr_map으로 추가 매핑이 가능합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_custom_attr_map(): void
     {
@@ -3517,6 +3789,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * allowed_attrs에 포함된 속성만 출력됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_allowed_attrs_from_config(): void
     {
@@ -3543,6 +3817,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * allowed_attrs가 빈 배열이면 속성을 출력하지 않습니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_allowed_attrs_no_attributes(): void
     {
@@ -3571,6 +3847,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 커스텀 속성(data-* 등)을 허용 목록에 추가할 수 있습니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_extra_allowed_attrs(): void
     {
@@ -3604,6 +3882,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Button + 정적 path navigate → <a href="/login"> 변환을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_button_static_path(): void
     {
@@ -3626,6 +3906,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Div + navigate → <a>로 래핑을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_div_wrapping(): void
     {
@@ -3650,6 +3932,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 동적 path (데이터소스 컨텍스트) 해석을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_dynamic_path_from_context(): void
     {
@@ -3671,6 +3955,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * navigate + query params → 쿼리스트링 빌드를 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_with_query_params(): void
     {
@@ -3697,6 +3983,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * replace: true인 navigate → 링크 미생성을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_replace_true_skipped(): void
     {
@@ -3718,6 +4006,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * sequence 내 navigate 추출을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_in_sequence(): void
     {
@@ -3745,6 +4035,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 미해석 _global 표현식 → 링크 생성 skip을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_unresolved_global_skipped(): void
     {
@@ -3767,6 +4059,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * globalResolver로 _global.shopBase 해석을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_global_resolver(): void
     {
@@ -3795,6 +4089,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * A 컴포넌트 + 기존 href 있음 → navigate 무시(스킵)를 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_a_tag_existing_href_skipped(): void
     {
@@ -3817,6 +4113,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * A 컴포넌트 + href 없음 + navigate → href 주입을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_a_tag_no_href_inject(): void
     {
@@ -3839,6 +4137,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * click 외 이벤트(keydown) → navigate 무시를 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_non_click_event_ignored(): void
     {
@@ -3860,6 +4160,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iteration 내 navigate → 각 아이템별 다른 href 생성을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_in_iteration(): void
     {
@@ -3894,6 +4196,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Button 변환 시 class 보존을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_button_preserves_class(): void
     {
@@ -3917,6 +4221,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * self-closing 태그(Img) + navigate → <a>로 래핑을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_navigate_self_closing_wrapping(): void
     {
@@ -3938,6 +4244,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * openWindow → target="_blank" 자동 부여를 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_open_window_target_blank(): void
     {
@@ -3960,6 +4268,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * sequence 내 openWindow 추출을 검증합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_open_window_in_sequence(): void
     {
@@ -3991,6 +4301,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: ProductCard에서 상품 객체의 주요 필드가 HTML로 렌더링되는지 확인합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_renders_product_card_basic_fields(): void
     {
@@ -4071,6 +4383,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: 할인율 없는 상품에서 원가/할인율이 렌더링되지 않는지 확인합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_conditional_fields_hidden_when_empty(): void
     {
@@ -4125,6 +4439,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: name_localized가 없으면 name으로 fallback되는지 확인합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_field_pattern_fallback(): void
     {
@@ -4157,6 +4473,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: 소스 객체가 빈 경우 빈 article 태그만 렌더링되는지 확인합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_empty_source_renders_empty(): void
     {
@@ -4178,6 +4496,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: 여러 상품이 iteration으로 반복 렌더링되는지 확인합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_multiple_products_via_iteration(): void
     {
@@ -4243,6 +4563,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 각 필드 항목 사이에 줄바꿈이 삽입됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_entries_separated_by_newlines(): void
     {
@@ -4283,6 +4605,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: children 그룹핑 — <p> 래퍼 내 <span> 2개 정상 렌더링
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_children_grouping(): void
     {
@@ -4317,6 +4641,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: children 그룹핑 — 모든 자식이 조건부+빈값이면 <p> 태그 미출력
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_children_all_empty(): void
     {
@@ -4354,6 +4680,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: link 래핑 — <a href="/products/42"> 전체 필드 래핑
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_link_wrapping(): void
     {
@@ -4385,6 +4713,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: link + $var:shopBase → /shop/products/1
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_link_with_var_base_url(): void
     {
@@ -4417,6 +4747,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: seoVars 미설정 시 $var: base_url은 빈 문자열, href만 사용
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_link_no_var_fallback(): void
     {
@@ -4449,6 +4781,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: base_url="/" → 이중 슬래시 방지 → /products/1
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_link_base_url_slash(): void
     {
@@ -4480,6 +4814,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: id 필드 없으면 link 미생성, 필드만 출력
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_link_missing_id(): void
     {
@@ -4513,6 +4849,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드: link/children 없는 기존 flat 설정 → 동일 동작 (하위 호환)
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_backward_compatible_flat(): void
     {
@@ -4551,6 +4889,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * seoVars 설정 시 Header의 {site_name}이 seoVars 값으로 치환됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_format_mode_seo_vars_override_defaults(): void
     {
@@ -4572,6 +4912,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * seoVars 설정 시 Footer의 {site_name}도 seoVars 값으로 치환됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_format_mode_seo_vars_footer(): void
     {
@@ -4592,6 +4934,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * props가 seoVars보다 우선합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_format_mode_props_override_seo_vars(): void
     {
@@ -4612,6 +4956,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * seoVars 미설정 시 기존대로 defaults가 사용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_format_mode_no_seo_vars_uses_defaults(): void
     {
@@ -4630,6 +4976,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * seoVars에 빈 문자열이면 defaults로 폴백합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_format_mode_empty_seo_vars_falls_back_to_defaults(): void
     {
@@ -4649,6 +4997,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * seoVars는 format 모드에서만 작동하며 일반 태그 렌더링에는 영향 없습니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_vars_do_not_affect_normal_tag_rendering(): void
     {
@@ -4670,6 +5020,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * StarRating의 props가 seoVars보다 우선하여 렌더링됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_format_mode_star_rating_props_over_seo_vars(): void
     {
@@ -4694,6 +5046,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Avatar 컴포넌트: author 객체에서 nickname을 추출합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_avatar_renders_author_nickname(): void
     {
@@ -4718,6 +5072,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * UserInfo 컴포넌트: author nickname + subText(날짜)를 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_userinfo_renders_author_and_date(): void
     {
@@ -4747,6 +5103,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text_format dot notation: author가 null이면 빈 문자열을 출력합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_text_format_dot_notation_null_object(): void
     {
@@ -4767,6 +5125,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * text_format dot notation: 깊은 경로도 해석합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_text_format_deep_dot_notation(): void
     {
@@ -4803,6 +5163,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Pagination — 여러 페이지가 있으면 페이지 링크 생성
+     *
+     * @return void 반환값 없음
      */
     public function test_pagination_renders_page_links(): void
     {
@@ -4831,6 +5193,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Pagination — 1 페이지만 있으면 빈 nav
+     *
+     * @return void 반환값 없음
      */
     public function test_pagination_single_page_renders_empty(): void
     {
@@ -4853,6 +5217,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Pagination — 현재 페이지는 span, 나머지는 a 태그
+     *
+     * @return void 반환값 없음
      */
     public function test_pagination_current_page_is_span(): void
     {
@@ -4881,6 +5247,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 source: $all_props 사용 시 모든 props를 해석하여 데이터로 사용합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_all_props_renders_site_name(): void
     {
@@ -4915,6 +5283,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 source: $all_props + iterate로 boards 네비게이션을 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_all_props_renders_boards_navigation(): void
     {
@@ -4963,6 +5333,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 source: $all_props + 중첩 객체 (socialLinks) dot notation if 조건을 지원합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_all_props_renders_footer_with_social_links(): void
     {
@@ -5021,6 +5393,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate에서 item_attrs를 지원하여 아이템별 동적 속성을 렌더링합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_field_iterate_with_item_attrs(): void
     {
@@ -5065,6 +5439,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 $t: 번역 키를 content에서 해석합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_translates_t_keys_in_content(): void
     {
@@ -5116,6 +5492,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * fields 모드에서 $t: 번역 키를 children 내 중첩 구조에서 해석합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_fields_mode_translates_t_keys_in_footer_link_groups(): void
     {
@@ -5206,6 +5584,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * classMap의 key 표현식이 variants와 매칭되면 해당 클래스가 적용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_classmap_resolves_matching_variant(): void
     {
@@ -5233,6 +5613,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * classMap의 key가 variants에 없으면 default 클래스가 적용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_classmap_falls_back_to_default(): void
     {
@@ -5260,6 +5642,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * classMap과 기존 className이 함께 사용되면 클래스가 병합됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_classmap_merges_with_existing_classname(): void
     {
@@ -5289,6 +5673,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * classMap에 base가 없어도 variant 클래스만 적용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_classmap_without_base(): void
     {
@@ -5315,6 +5701,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * classMap의 key가 빈 문자열이면 default가 적용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_classmap_empty_key_uses_default(): void
     {
@@ -5344,6 +5732,8 @@ class ComponentHtmlMapperTest extends TestCase
      *
      * 일반 화면은 option 라벨을 그리는데 봇 화면에는 선택값(내부 식별자)이 글자로 나가고
      * 있었다 (`<select>created_at_desc</select>`).
+     *
+     * @return void 반환값 없음
      */
     public function test_select_renders_option_list_from_options_prop(): void
     {
@@ -5371,6 +5761,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * options 가 없는 Select 는 선택값을 글자로 노출하지 않습니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_select_without_options_does_not_leak_value_as_text(): void
     {
@@ -5387,6 +5779,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * children 으로 정의된 Option 은 option 태그로 보존됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_select_children_options_are_preserved(): void
     {
@@ -5408,6 +5802,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * Input/Textarea 도 선택값을 글자로 노출하지 않습니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_form_controls_do_not_render_value_prop_as_text(): void
     {
@@ -5423,6 +5819,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 폼 제어가 아닌 태그는 종전대로 value prop 을 텍스트로 승계합니다 (기존 동작 보존).
+     *
+     * @return void 반환값 없음
      */
     public function test_non_form_tag_still_uses_value_prop_as_text(): void
     {
@@ -5435,6 +5833,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * iterate 모드에서 item_attrs 와 item_content 는 함께 적용됩니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_iterate_mode_applies_attrs_and_content_together(): void
     {
@@ -5453,6 +5853,8 @@ class ComponentHtmlMapperTest extends TestCase
 
     /**
      * 속성만 선언된 iterate 모드(image_gallery)는 종전 동작을 유지합니다.
+     *
+     * @return void 반환값 없음
      */
     public function test_iterate_mode_attrs_only_keeps_previous_behaviour(): void
     {

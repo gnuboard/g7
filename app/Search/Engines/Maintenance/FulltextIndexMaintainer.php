@@ -92,7 +92,7 @@ class FulltextIndexMaintainer implements SearchIndexMaintainer
      * 점검기 결과를 엔진 중립 판정 DTO 로 옮깁니다.
      *
      * @param  array{definition: FulltextIndexDefinition, status: SearchIndexStatus, probed: int, found: int, reason: ?string}  $result  점검기 결과
-     * @return SearchIndexHealth
+     * @return SearchIndexHealth 엔진 중립 인덱스 상태 판정
      */
     private function toHealth(array $result): SearchIndexHealth
     {
@@ -101,7 +101,7 @@ class FulltextIndexMaintainer implements SearchIndexMaintainer
 
         $measurement = $status === SearchIndexStatus::Skipped
             ? (string) $result['reason']
-            : __('search.index.fulltext.self_match', ['found' => $result['found'], 'probed' => $result['probed']]);
+            : trans_choice('search.index.fulltext.self_match', (int) $result['probed'], ['found' => $result['found'], 'probed' => $result['probed']]);
 
         return new SearchIndexHealth(
             driver: self::DRIVER,

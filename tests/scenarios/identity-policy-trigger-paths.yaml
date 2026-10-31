@@ -1,0 +1,38 @@
+feature: 본인인증 정책이 걸리는 경로 — 바뀐 항목 판정, 428 이후 challenge 의 출처 정책, 링크 방식 결과 받아 가기
+
+description: |
+  정책은 라우트·훅에서 판정되고(428), 화면이 그 응답으로 `POST /api/identity/challenges` 를 연다. 이 사이에서
+  두 가지가 빠져 있었다(#699 브라우저 실측 중 발견, 7.0.11 부터 있던 결함).
+
+  - 회원 정보 수정은 `core.user.before_update` 를 (아직 값을 채우지 않은 회원 모델, 저장할 데이터) 로 발화한다.
+    리스너가 모델의 getDirty() 만 보아 바뀐 항목이 늘 빈 목록이었고, 연락처 변경 정책(email·phone·mobile 조건)이
+    켜져 있어도 회원이 휴대폰 번호를 인증 없이 바꿨다. 이제 저장 데이터를 현재 값과 비교해 바뀐 항목을 뽑는다.
+  - challenge API 가 정책 키를 받지 않아 메일 발송부가 정책을 몰랐고, 운영자가 알림 설정에서 단 정책별 문구가
+    428 경로에서는 한 번도 쓰이지 않았다. 이제 정책 키를 받되 그 정책이 있고 켜져 있으며 목적이 같을 때만
+    출처 정책으로 쓴다(아니면 종전처럼 목적 문구).
+  - 링크 방식(비밀번호 재설정 목적)은 확인을 메일 링크가 하므로 인증을 시작한 화면이 결과를 알 수 없었다. 시작
+    응답에만 일회용 비밀값을 주고(저장은 해시), 확인이 끝나면 그 비밀값으로 토큰을 한 번 받아 간다. 누구나 부를
+    수 있는 상태 조회에는 비밀값도 토큰도 싣지 않는다.
+
+# axis 의미: 결함이 드러난 진입면(surface) 하나. 면마다 다른 계층(훅 인자 · challenge API · 화면 처리기 · 레이아웃)이라 곱해지지 않는다.
+axes:
+  surface: [profile_update_hook, challenge_api_policy_key, challenge_claim]
+
+effects:
+  - contact_change_policy_fires_on_profile_update        # 연락처 칸을 바꾸는 회원 수정은 정책에 걸린다(같은 값 재전송은 통과)
+  - challenge_with_policy_key_uses_policy_text            # 쓸 수 있는 정책 키 → 정책별 문구 메일 + 이력 origin_policy_key
+  - challenge_with_unusable_policy_key_falls_back_to_purpose_text  # 목적 불일치·꺼짐·없음 → 목적 문구, 출처 정책 없음
+  - link_challenge_start_returns_claim_secret_only_to_starter  # 링크 방식만 시작 응답에 비밀값, 상태 조회·저장값에는 평문 없음
+  - claim_before_link_opened_is_pending                   # 링크를 열기 전에는 202 pending, 토큰 없음
+  - claim_after_link_verified_returns_token_once          # 확인 뒤 비밀값으로 토큰 1회, 두 번째는 409
+  - claim_with_wrong_secret_is_rejected                   # 비밀값이 틀리면 403
+
+test_files:
+  - tests/Feature/Identity/ContactChangePolicyHookArgsTest.php
+  - tests/Feature/Api/Identity/ChallengePolicyKeyTest.php
+  - tests/Feature/Api/Identity/ChallengeClaimTest.php
+
+validation:
+  note: |
+    화면 쪽(launcher 가 정책 키를 싣는가, 재전송이 정책 키를 싣는가, 비밀번호 찾기·재설정 화면이 인증 대상을
+    선언하는가)은 두 템플릿 매니페스트 `identity-challenge-request-shape.yaml` 이 잰다.

@@ -84,52 +84,93 @@ function collectNodes(node: any, predicate: (n: any) => boolean): any[] {
 }
 
 describe('레이아웃 코드 편집 화면 — 패널 폭 규약', () => {
+    /**
+     * @scenario promise=panel_width, surface=layout_declaration
+     *
+     * @effects file_list_and_editor_keep_their_own_width_rules
+     */
     it('파일 목록과 편집기가 각자 폭 규약을 갖는다 (내용 길이로 폭이 갈리지 않는다)', () => {
         const layout = readLayout(LAYOUT);
 
-        const listCard = findNode(layout, (n) => n.id === 'file_list_card');
+        const picker = findNode(layout, (n) => n.name === 'FileTreePicker');
         const editorCard = findNode(layout, (n) => n.id === 'editor_card');
 
-        expect(listCard, 'file_list_card 노드가 사라졌다').toBeTruthy();
+        expect(picker, 'file-tree-picker 노드가 사라졌다').toBeTruthy();
         expect(editorCard, 'editor_card 노드가 사라졌다').toBeTruthy();
 
-        const listClass = String(listCard.props?.className ?? '');
-        const editorClass = String(editorCard.props?.className ?? '');
+        // 목록: 줄어들지 않는다. 폭 **값**은 이제 컴포넌트가 소유하고(240~480px 드래그 + 기억),
+        // 레이아웃은 "이 칸은 내용 길이로 밀리지 않는다" 만 선언한다.
+        expect(
+            String(picker.props?.className ?? ''),
+            '파일 목록이 shrink 되면 긴 파일명이 편집기 폭을 빼앗는다',
+        ).toContain('shrink-0');
 
-        // 목록: 고정 폭 + 줄어들지 않음
-        expect(listClass, '파일 목록에 고정 폭이 없으면 긴 파일명이 편집기 폭을 빼앗는다').toMatch(/\bw-\d+\b/);
-        expect(listClass, '파일 목록이 shrink 되면 고정 폭 선언이 무력해진다').toContain('shrink-0');
+        // 폭을 기억할 자리가 있어야 드래그 결과가 다음 진입까지 남는다.
+        expect(String(picker.props?.storageKey ?? ''), '트리 폭·접힘을 적어 둘 키가 없다').toBeTruthy();
 
         // 편집기: 남는 폭 전부 + 최소폭 해제
+        const editorClass = String(editorCard.props?.className ?? '');
         expect(editorClass, '편집기가 flex-1 이 아니면 남는 폭을 가져가지 못한다').toContain('flex-1');
         expect(editorClass, 'min-w-0 이 없으면 코드의 긴 줄이 편집기 최소폭을 밀어 올린다').toContain('min-w-0');
     });
 
-    it('파일명과 설명이 줄바꿈되어 목록 폭을 넘지 않는다', () => {
+    /**
+     * 편집기 높이는 **고정 계산식이 아니다**(D13).
+     *
+     * 종전에는 `calc(100vh - 420px)` 이라 툴바가 한 줄만 늘어도 모바일에서 편집 영역이 과소해졌고,
+     * iOS 주소창이 수축하면 `vh` 자체가 어긋났다.
+     *
+     * @scenario promise=editor_height, surface=layout_declaration
+     *
+     * @effects editor_height_flexes_instead_of_fixed_calc
+     */
+    it('편집 영역이 남는 높이를 가져간다 (고정 calc 금지 · dvh 기준)', () => {
         const layout = readLayout(LAYOUT);
 
-        // 파일명 노드 — `{{file.name}}.json`
-        const nameNode = findNode(layout, (n) => typeof n.text === 'string' && n.text.includes('{{file.name}}.json'));
-        expect(nameNode, '파일명 노드를 찾지 못했다').toBeTruthy();
-        expect(
-            String(nameNode.props?.className ?? ''),
-            '모듈 파티션 이름은 공백이 없어 break-all 없이는 끊기지 않는다',
-        ).toContain('break-all');
+        const editorCard = findNode(layout, (n) => n.id === 'editor_card');
+        expect(String(editorCard.props?.className ?? '')).toContain('flex-col');
 
-        // 설명 노드 — 설명이 없으면 이름으로 폴백하므로 같은 규칙이 필요하다
-        const descNode = findNode(
-            layout,
-            (n) => typeof n.text === 'string' && n.text.includes('file.description') && n.text.includes('file.name'),
-        );
-        expect(descNode, '설명 노드를 찾지 못했다').toBeTruthy();
+        const workspace = findNode(layout, (n) => n.name === 'CodeWorkspace');
+        expect(workspace, 'code-workspace 노드가 사라졌다').toBeTruthy();
+        expect(String(workspace.props?.className ?? '')).toContain('flex-1');
+        expect(String(workspace.props?.className ?? '')).toContain('min-h-0');
+
+        const grid = findNode(layout, (n) => n.id === 'main_grid');
+        const gridClass = String(grid.props?.className ?? '');
+        expect(gridClass, '높이 기준은 dvh 다 — vh 는 iOS 주소창 수축에서 어긋난다').toContain('dvh');
+        expect(gridClass).not.toContain('100vh');
+    });
+
+    /**
+     * 긴 파일명은 이제 **폴더로 쪼개져** 마지막 세그먼트만 보인다.
+     *
+     * 줄바꿈 규칙(`break-all`)으로 버티던 자리를 구조가 대신한다 — 트리 행은 자르고(`truncate`)
+     * 전체 경로는 툴팁으로 남긴다.
+     *
+     * @scenario promise=panel_width, surface=component_contract
+     *
+     * @effects long_file_name_wraps_instead_of_widening_the_list
+     */
+    it('긴 파일명이 목록 폭을 넘지 않는다 (폴더 분할 + 마지막 세그먼트)', () => {
+        const layout = readLayout(LAYOUT);
+
+        const picker = findNode(layout, (n) => n.name === 'FileTreePicker');
+
+        // 트리는 평면 이름을 받아 **컴포넌트가** 폴더로 쪼갠다 — 레이아웃에 목록 iteration 이 없다.
+        expect(String(picker.props?.nodes ?? '')).toContain('layout_files');
         expect(
-            String(descNode.props?.className ?? ''),
-            '설명은 이름으로 폴백하므로 파일명과 같은 줄바꿈 규칙이 필요하다',
-        ).toContain('break-all');
+            findNode(layout, (n) => Boolean(n.iteration?.source?.includes('layout_files'))),
+            '평면 파일 목록 iteration 이 남아 있다 (트리로 대체됐어야 한다)',
+        ).toBeFalsy();
     });
 });
 
 describe('레이아웃 코드 편집 화면 — 저장 후 목록 갱신', () => {
+    /**
+     * @scenario promise=list_refresh_after_save, surface=layout_declaration
+     *
+     * @effects successful_save_refetches_both_detail_and_list
+     */
     it('저장 성공 시 상세와 목록을 모두 다시 부른다', () => {
         const layout = readLayout(LAYOUT);
 
@@ -152,6 +193,11 @@ describe('레이아웃 코드 편집 화면 — 저장 후 목록 갱신', () =>
 });
 
 describe('레이아웃 코드 편집 화면 — 버전 이력 상한', () => {
+    /**
+     * @scenario promise=version_limit, surface=layout_declaration
+     *
+     * @effects version_query_carries_a_limit_and_resets_on_open
+     */
     it('버전 목록 조회에 limit 이 붙고 열 때마다 첫 묶음으로 초기화된다', () => {
         const layout = readLayout(LAYOUT);
 
@@ -171,6 +217,11 @@ describe('레이아웃 코드 편집 화면 — 버전 이력 상한', () => {
         expect(openSequence.some((n) => n.params.layoutVersionLimit === VERSION_PAGE_SIZE)).toBe(true);
     });
 
+    /**
+     * @scenario promise=version_limit, surface=layout_declaration
+     *
+     * @effects load_more_widens_the_limit_one_page_at_a_time_and_stops_at_the_server_cap
+     */
     it('더 보기 버튼이 상한을 한 묶음씩 넓히고 서버 상한에서 멈춘다', () => {
         const modal = readLayout(VERSION_MODAL);
 

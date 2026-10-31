@@ -1,0 +1,16 @@
+feature: 관리자 게시글 상세 첨부 카드 — 단추로 바꿔 키보드로 내려받기
+
+description: |
+  원글·답글 카드의 첨부 카드가 클릭 동작만 달린 Div 라 Tab 이 닿지 않고 Enter·Space 로 내려받을 수 없었다
+  (7.1.1 — 「같은 모양」 표의 게시판 첨부 행). 카드를 type="button" 단추로 그린다 — 링크가 아니다
+  (내려받기에 로그인 토큰을 실어야 해서 이 모듈의 핸들러가 받는다). 잠금 시험의 첫 단언은 게시판 레이아웃 전체에서
+  모집단을 파생하고, 같은 값을 고르는 라디오를 품은 설정 카드(일괄 적용 대상·날짜 표시 형식)만 남긴다.
+
+axes:
+  surface: [admin_post_detail]
+
+effects:
+  - admin_click_only_regions_are_keyboard_buttons
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/click-only-keyboard.test.tsx

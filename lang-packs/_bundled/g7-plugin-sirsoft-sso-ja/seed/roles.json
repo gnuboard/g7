@@ -1,0 +1,6 @@
+{
+  "sirsoft-sso.manager": {
+    "name": "SSO 運用者",
+    "description": "会員連携の閲覧、追加、解除と SSO 履歴の閲覧 (設定変更はなし)"
+  }
+}

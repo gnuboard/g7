@@ -201,6 +201,11 @@
             "required": false,
             "description": "표시할 규칙 키 목록 (minLength, hasUppercase, hasLowercase, hasNumber, hasSpecial)"
           },
+          "enableRules": {
+            "type": "array",
+            "required": false,
+            "description": "켤 검증 규칙 목록. 파라미터는 「규칙:값」 (minLength:N, maxLength:N, hasUppercase, hasLowercase, hasNumber, hasSpecial, noSpaces, minTypes:N). hasSpecial 은 서버와 같은 유니코드 구두점·기호·공백 범주로 판정하고, minTypes 는 영문·숫자·특수문자 세 종류 중 N종 이상 섞였는지 본다(서버 「문자 종류 조합」과 같다). 보안 환경설정 값으로 식을 만들어 바인딩한다 — 예: {{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)]}}"
+          },
           "wrapperClassName": {
             "type": "string",
             "required": false,
@@ -338,6 +343,31 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "description": "비활성 링크 — 참이면 href 를 빼고 aria-disabled·tabindex -1 로 그리며 클릭을 무시한다(꾸밈은 aria-disabled: 변형)"
+          },
+          "mergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "description": "현재 주소의 쿼리를 href 에 합친다(href 자신의 키가 이김) — 보통 클릭과 새 탭이 같은 목록 조건으로 열린다"
+          },
+          "fallbackHref": {
+            "type": "string",
+            "required": false,
+            "description": "대체 주소 — href 가 이 사이트 주소가 아니면(실행 주소·다른 사이트·//host) 대신 이 주소를 href 로 단다. 바깥에서 정해지는 href(알림 이동 주소 등)가 새 탭으로 그대로 열리지 않게 하며, 보통 클릭의 navigate fallbackPath 와 같은 착지점을 적는다. 빈 href 는 그대로"
+          },
+          "target": {
+            "type": "string",
+            "required": false,
+            "description": "링크를 열 창 — \"_blank\" 면 rel 에 noopener noreferrer 를 합친다(넘긴 rel 토큰은 남긴다)"
+          },
+          "rel": {
+            "type": "string",
+            "required": false,
+            "description": "링크 관계 — target=\"_blank\" 면 noopener noreferrer 가 빠져 있어도 컴포넌트가 채운다"
           }
         }
       },
@@ -476,6 +506,7 @@
         "type": "basic",
         "description": "FontAwesome icon wrapper",
         "path": "src/components/basic/Icon.tsx",
+        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -693,52 +724,6 @@
         }
       },
       {
-        "name": "PostReactions",
-        "type": "composite",
-        "description": "게시글 리액션 버튼 그룹",
-        "path": "src/components/composite/PostReactions.tsx",
-        "props": {
-          "postId": {
-            "type": "number",
-            "required": true,
-            "description": "게시글 ID"
-          },
-          "reactions": {
-            "type": "object",
-            "required": false,
-            "description": "리액션 데이터"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
-        "name": "SocialLoginButtons",
-        "type": "composite",
-        "description": "소셜 로그인 버튼 그룹",
-        "path": "src/components/composite/SocialLoginButtons.tsx",
-        "props": {
-          "providers": {
-            "type": "array",
-            "required": false,
-            "default": [
-              "google",
-              "naver",
-              "kakao"
-            ],
-            "description": "활성화할 소셜 로그인 프로바이더"
-          },
-          "className": {
-            "type": "string",
-            "required": false,
-            "description": "사용자 정의 클래스"
-          }
-        }
-      },
-      {
         "name": "FileUploader",
         "type": "composite",
         "description": "파일 업로드 컴포넌트",
@@ -891,7 +876,7 @@
             "type": "array",
             "required": false,
             "default": [],
-            "description": "알림 아이템 목록 (id, title, message, time, read, iconName, data)"
+            "description": "알림 아이템 목록 (id, title, message, time, read, iconName, data, url) — url 이 있으면 알림 본문이 <a href> 링크가 되어 새 탭으로 열 수 있다(보통 클릭은 onNotificationClick, 삭제 단추는 링크 밖)"
           },
           "unreadCount": {
             "type": "number",
@@ -1022,6 +1007,16 @@
             "type": "string",
             "required": false,
             "description": "사용자 정의 클래스"
+          },
+          "pageHref": {
+            "type": "string",
+            "required": false,
+            "description": "페이지 주소 틀 — {page} 자리에 번호를 넣는다. 주면 번호·이전·다음·처음·끝이 링크가 되어 새 탭으로 열 수 있다(보통 클릭은 onPageChange)"
+          },
+          "pageHrefMergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "description": "페이지 주소에 현재 주소의 쿼리(검색·정렬 조건)를 합친다"
           }
         }
       },
@@ -1076,6 +1071,7 @@
         "type": "composite",
         "description": "사용자 아바타 (이미지 또는 이름 첫 글자)",
         "path": "src/components/composite/Avatar.tsx",
+        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -1106,10 +1102,60 @@
         }
       },
       {
+        "name": "VisitorCounter",
+        "type": "composite",
+        "description": "방문자 카운터 (오늘·어제·최대·전체) — 순수 표시 컴포넌트, 데이터는 레이아웃 데이터소스가 넘긴다",
+        "path": "src/components/composite/VisitorCounter.tsx",
+        "autoBinding": false,
+        "props": {
+          "today": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "오늘 방문자"
+          },
+          "yesterday": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "어제 방문자"
+          },
+          "max": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "하루 최대 방문자"
+          },
+          "total": {
+            "type": "number",
+            "required": false,
+            "default": 0,
+            "description": "전체 방문자(일별 순방문자 합)"
+          },
+          "layout": {
+            "type": "string",
+            "required": false,
+            "default": "row",
+            "description": "배치 (row | column) — row 는 모바일에서 2×2"
+          },
+          "labels": {
+            "type": "object",
+            "required": false,
+            "description": "항목 라벨 { today, yesterday, max, total }"
+          },
+          "className": {
+            "type": "string",
+            "required": false,
+            "description": "사용자 정의 클래스"
+          }
+        }
+      },
+      {
         "name": "UserInfo",
         "type": "composite",
         "description": "사용자 정보 표시 및 드롭다운 메뉴 (이름, 서브텍스트, 프로필 링크, 비회원 배지)",
         "path": "src/components/composite/UserInfo.tsx",
+        "autoBinding": false,
         "props": {
           "name": {
             "type": "string",
@@ -1154,6 +1200,34 @@
             "type": "string",
             "required": false,
             "description": "레이아웃 JSON에서 text 속성으로 전달되는 이름"
+          },
+          "author": {
+            "type": "object",
+            "required": false,
+            "description": "작성자 객체 (name/id/is_guest/status 를 일괄 전달). 개별 props 가 우선"
+          },
+          "subTextTitle": {
+            "type": "string",
+            "required": false,
+            "description": "서브 텍스트의 title 속성 (툴팁)"
+          },
+          "isWithdrawn": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "탈퇴 회원 여부 (author.status === 'withdrawn' 와 OR)"
+          },
+          "layout": {
+            "type": "string",
+            "required": false,
+            "default": "vertical",
+            "description": "레이아웃 방향 (vertical | horizontal)"
+          },
+          "stopPropagation": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "클릭 이벤트 버블링 방지 (목록 행 안에서 쓸 때 행 선택 발화 차단). 액션 top-level 키 stopPropagation 과 이름만 같은 별개 표면"
           },
           "menuItems": {
             "type": "array",
@@ -1288,6 +1362,46 @@
         "description": "모달 다이얼로그 (ESC 키 닫기, 포커스 트랩, 오버레이 클릭 닫기)",
         "path": "src/components/composite/Modal.tsx",
         "props": {
+          "closeOnBackdropClick": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "Backdrop(오버레이) 클릭 시 모달 닫기 여부"
+          },
+          "closeOnOverlayClick": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "closeOnBackdropClick 별칭 (레이아웃 JSON 호환)"
+          },
+          "showCloseButton": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "헤더 닫기 버튼 표시 여부"
+          },
+          "closeOnEscape": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "ESC 키로 모달 닫기 허용 여부"
+          },
+          "icon": {
+            "type": "string",
+            "required": false,
+            "description": "제목 앞에 표시할 Font Awesome 아이콘 이름"
+          },
+          "iconClassName": {
+            "type": "string",
+            "required": false,
+            "default": "text-gray-500 dark:text-gray-400",
+            "description": "아이콘 클래스"
+          },
+          "style": {
+            "type": "CSSProperties",
+            "required": false,
+            "description": "인라인 스타일"
+          },
           "isOpen": {
             "type": "boolean",
             "required": true,
@@ -1303,11 +1417,16 @@
             "required": false,
             "description": "모달 제목"
           },
+          "size": {
+            "type": "string",
+            "required": false,
+            "description": "이름 있는 너비 단계 (sm/small 400px, md/medium 500px, lg/large 720px, xl 900px, 2xl 1120px). width 를 함께 주면 width 가 우선하며, 모르는 값은 기본 500px 으로 떨어진다"
+          },
           "width": {
             "type": "string",
             "required": false,
             "default": "500px",
-            "description": "모달 너비"
+            "description": "모달 너비 CSS 값 (size 보다 우선)"
           },
           "className": {
             "type": "string",
@@ -1462,7 +1581,7 @@
           "tabs": {
             "type": "array",
             "required": true,
-            "description": "탭 목록 (id, label, iconName)"
+            "description": "탭 목록 (id, label, iconName) — 탭 항목에 href 를 주면 <a role=\"tab\" href> 로 그려 새 탭으로 열 수 있다(보통 클릭은 onTabChange)"
           },
           "activeTabId": {
             "type": "string",
@@ -1479,6 +1598,11 @@
             "type": "function",
             "required": false,
             "description": "탭 변경 핸들러"
+          },
+          "tabHrefMergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "description": "탭 주소(tabs[].href)에 현재 주소의 쿼리를 합친다 — 같은 화면 안에서 쿼리만 바꾸는 탭이 목록 문맥을 이고 갈 때"
           },
           "className": {
             "type": "string",

@@ -1,0 +1,37 @@
+feature: 전역 상태 공개 계약 (state_contracts) — 선언·집계·충돌 검사·조회 (#639)
+
+description: |
+  다른 확장이 읽는 전역 상태(`_global.{이름}`)만 소유자가 manifest `state_contracts` 로 선언한다(화면 전용 임시 값은
+  선언하지 않는다). 코어 예약 계약(consent·identityChallenge·currentUser·settings·plugins·modules·appConfig)과 활성
+  확장 선언을 모아 프론트(`G7Core.stateContracts`)와 설치·활성화 충돌 검사가 함께 쓴다.
+
+  정적 룰 두 가지(남의 계약 키에 허락 없이 쓰기 금지 `state-contract-write-ownership`, 남의 화면 조각의 무접두 키
+  금지 `overlay-global-key-prefix`)는 정적 검사 fixture 테스트가 잠근다.
+
+  실측(2026-10-05, 하네스 lib/global-state-inventory.cjs): 번들 마크업 전역 쓰기 키 524개, 두 확장 이상 같은 이름 30개,
+  다른 소유자가 실제로 읽는 공개 상태 → 쇼핑몰 7(preferredCurrency·availableCurrencies·defaultCurrency·
+  preferredShippingCountry·availableShippingCountries·guestOrderToken·activeEcommerceSettingsTab), 기본 템플릿 4
+  (shopBase·selectedAddressId·changeAddressMode·editingShippingAddress).
+
+axes:
+  case: [aggregate, core_reserved_list, failing_source, malformed, foreign_owned, core_reserved, own, replaced_template, frontend_read, frontend_missing, documented]
+
+effects:
+  - contracts_are_aggregated_with_owner
+  - core_reserved_contracts_are_fixed
+  - aggregation_survives_one_failing_source
+  - malformed_declarations_are_dropped
+  - conflicting_declaration_blocks_install_with_owner_in_message
+  - core_reserved_name_cannot_be_declared
+  - reinstall_of_same_owner_passes
+  - replacing_template_is_excluded_from_conflict_check
+  - state_contracts_are_exposed_read_only
+  - declared_contracts_reach_the_extension_docs
+
+test_files:
+  - tests/Unit/Support/StateContractsTest.php
+  - tests/Feature/Extension/StateContractInstallValidationTest.php
+  - resources/js/core/__tests__/G7CoreGlobals.stateContracts.test.ts
+  - tests/Feature/Documentation/StateContractDocsTest.php
+
+# E2E axis 없음: 브라우저 표면은 읽기 전용 조회뿐이다 — Chrome MCP 매트릭스에서 G7Core.stateContracts.list() 를 잰다.

@@ -1,0 +1,26 @@
+feature: extension_update_rollback_cache_repair
+
+description: |
+  확장 업데이트 실패로 이전 판을 되돌린 뒤, 업데이트 도중 새 판 기준으로 만든 훅 캐시·확장 autoload 에 새 판 전용 리스너가 남아 사이트가 500 이던
+  결함(W3 최종 리허설 2회 재현 — KCP 1.1.0 갱신이 업그레이드 가드로 롤백된 뒤 ProvideNecessaryStorageKeysListener 잔존). 실패 처리가 상태 복원 뒤
+  새 프로세스로 extension:update-autoload 를 돌리고, 띄울 수 없으면 autoload 만 다시 만들고 훅 캐시를 지운다. 실패 안내는 실제 결과
+  (되돌림·되돌리지 못함·새 판 유지·변경 없음)를 말한다.
+
+coverage_strategy: full
+
+axes:
+  fresh_process: [available, unavailable, any]
+  failure_stage: [after_cache_rebuild, all]
+
+exclusions:
+  - { fresh_process: [available, unavailable], failure_stage: all, reason: "결과 판정·호출 계약은 프로세스 가용성과 무관 — any 칸이 잰다" }
+  - { fresh_process: any, failure_stage: after_cache_rebuild, reason: "캐시 재생성 방식은 가용성별 칸(available·unavailable)이 잰다" }
+
+effects:
+  - rollback_rebuilds_caches_in_fresh_process
+  - rollback_without_fresh_process_clears_hook_cache_so_no_stale_listener_remains
+  - failure_notice_matches_actual_outcome
+  - update_failure_paths_repair_caches_and_report_outcome
+
+test_files:
+  - tests/Feature/Extension/ExtensionUpdateRollbackCacheRepairTest.php

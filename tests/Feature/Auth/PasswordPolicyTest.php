@@ -15,6 +15,7 @@ use App\Rules\PasswordPolicy;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\Rules\Password;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
@@ -34,6 +35,8 @@ class PasswordPolicyTest extends TestCase
      * `rules()` 는 확장이 규칙을 덧붙이는 필터 훅을 함께 실행한다. 이 테스트가 보려는 것은
      * 코어가 선언한 password 규칙이므로, 확장 리스너 의존이 끼어들지 않도록 비운다
      * (모듈 프로바이더 등록 여부가 실행 순서에 따라 달라져 결과가 흔들리는 것도 함께 막는다).
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -55,6 +58,7 @@ class PasswordPolicyTest extends TestCase
      * 보안 환경설정 값을 테스트용으로 덮어씁니다.
      *
      * @param  array  $values  덮어쓸 보안 설정 값
+     * @return void 반환값 없음
      */
     private function setSecuritySettings(array $values): void
     {
@@ -63,10 +67,13 @@ class PasswordPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 설정한 최소 길이가 회원가입에 적용된다.
      *
      * @effects password_shorter_than_setting_is_rejected
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 설정한_최소_길이가_회원가입에_적용된다(): void
     {
         $this->setSecuritySettings(['password_min_length' => 12]);
@@ -78,10 +85,13 @@ class PasswordPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 설정한 최소 길이를 만족하면 통과한다.
      *
      * @effects password_meeting_setting_is_accepted
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 설정한_최소_길이를_만족하면_통과한다(): void
     {
         $this->setSecuritySettings(['password_min_length' => 12]);
@@ -92,10 +102,13 @@ class PasswordPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 특수문자 필수 설정이 적용된다.
      *
      * @effects special_char_requirement_is_enforced_when_enabled
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 특수문자_필수_설정이_적용된다(): void
     {
         $this->setSecuritySettings([
@@ -109,10 +122,13 @@ class PasswordPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 로그인 규칙에는 길이 제한이 없다.
      *
      * @effects login_request_has_no_length_rule
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 로그인_규칙에는_길이_제한이_없다(): void
     {
         // 로그인은 기존 비밀번호를 대조하는 지점이며, 길이 규칙은 정책 미달 사실을
@@ -124,10 +140,13 @@ class PasswordPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 정책 규칙이 설정값을 읽는다.
      *
      * @effects policy_rule_reads_min_length_from_settings, policy_rule_reads_special_requirement_from_settings
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 정책_규칙이_설정값을_읽는다(): void
     {
         $this->setSecuritySettings(['password_min_length' => 20]);
@@ -140,10 +159,13 @@ class PasswordPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 설정이 비어도 기본값으로 동작한다.
      *
      * @effects empty_security_settings_fall_back_to_defaults
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 설정이_비어도_기본값으로_동작한다(): void
     {
         $this->setSecuritySettings(['password_min_length' => 0]);
@@ -155,10 +177,13 @@ class PasswordPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 비로그인 비밀번호 요청은 모두 정책을 사용한다.
      *
      * @effects all_password_setting_paths_share_one_rule
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 비로그인_비밀번호_요청은_모두_정책을_사용한다(): void
     {
         $this->setSecuritySettings(['password_min_length' => 17]);
@@ -193,10 +218,13 @@ class PasswordPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 두 보안 설정 키가 저장 후 재조회에 반영된다.
      *
      * @effects saved_security_settings_are_visible_on_reload
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 두_보안_설정_키가_저장_후_재조회에_반영된다(): void
     {
         // 저장 화이트리스트에 두 키가 없으면 저장 요청이 조용히 탈락해 UI 가 값을 잃는다.

@@ -1,0 +1,20 @@
+feature: 언어팩 설치 폴더 교체의 실패 안전성
+
+description: |
+  언어팩을 설치·재설치·강제 업데이트하면 `_pending` 사본을 활성 폴더(lang-packs/<식별자>) 자리에 놓는다.
+  예전에는 활성 폴더를 먼저 지우고 rename 결과를 보지 않아, rename 이 실패하면(Windows 에서 다른 프로그램이
+  트리 안 파일을 잡고 있을 때) 예외 없이 DB 만 새 판·active 가 되고 활성 폴더는 사라졌다 — 2026-10-14 20:03:28
+  `g7-plugin-sirsoft-pay_nicepayments-ja` 재설치 뒤 사본이 lang-packs/_pending/5d807708-… 에 남고 설치 폴더가 없어진
+  것이 실측 사례다. 이제 확장 폴더 교체와 같은 ExtensionPendingHelper::copyToActive 로 놓는다 — 옛 폴더를 옆으로
+  옮긴 뒤 새 폴더를 놓고, rename 이 막히면 파일 단위 복사·제자리 동기화로 폴백하며, 놓은 폴더의 manifest 가 설치하려던
+  판과 다르면 설치 실패로 돌려준다(DB 기록 전).
+
+axes:
+  case: [reinstall_rename_into_active_blocked, reinstall_active_tree_locked, fresh_install_rename_blocked, forced_update_active_tree_locked, static_source_lock]
+
+effects:
+  - install_directory_never_lost_on_blocked_rename
+  - lang_pack_code_checks_move_directory_result
+
+test_files:
+  - tests/Unit/Services/LanguagePack/LanguagePackInstallDirectoryReplaceTest.php

@@ -5,7 +5,7 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 1개 (루트: `resources/layouts`).
+레이아웃 1개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -39,6 +39,11 @@ IDV 공통 팝업 UI로 존재합니다.
 정보를 저장한 뒤 전체 페이지 리다이렉트를 씁니다. 반드시 클릭 이벤트 핸들러 안에서
 호출돼야 팝업 차단을 피할 수 있다는 제약은 데스크톱 경로에만 해당합니다 — 모바일
 리다이렉트는 팝업 차단과 무관합니다.
+
+실패 뒤 재시도의 새 거래 발급(`POST /api/identity/challenges`)과 인증 창을 그냥 닫았을 때의 거래 취소 통보
+(`POST /api/identity/challenges/{id}/cancel`)는 코어 API 클라이언트(`G7Core.api.post`)로 보냅니다. Bearer 부착,
+401 처리(토큰 갱신·재로그인 유도), 운영자 로케일(`Accept-Language`)은 코어가 맡으므로 토큰을 꺼내 헤더를
+만들지 않습니다. 4xx·5xx 는 예외로 오므로 재발급 실패는 그 예외를 잡아 안내만 띄웁니다.
 <!-- @intent END -->
 
 ## 전역 진입점
@@ -66,6 +71,7 @@ IDV 공통 팝업 UI로 존재합니다.
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
@@ -75,6 +81,8 @@ IDV 공통 팝업 UI로 존재합니다.
 <!-- @intent START -->
 제3자 SDK 스크립트가 목록에 없는 이유는 §전역 진입점과 동일합니다 — 인증 화면은 팝업
 안의 서버 렌더링 페이지이거나 모바일 리다이렉트 대상이라 프론트가 동적 로드할 자산이
-없습니다. CSS 산출물이 없는 것은 UI가 버튼·상태 카드 같은 최소한의 코어 컴포넌트로만
-구성되기 때문입니다.
+없습니다. CSS 산출물(`dist/css/plugin.css`, 원본 `resources/css/main.css`)은 이 플러그인 화면(환경설정 화면과
+본인인증 설정·마이페이지에 붙는 조각)의 스타일 전부를 싣습니다 — 템플릿 CSS 에 기대지 않고, 배치·색 유틸리티는 `verificationnhnkcp:`
+접두 Tailwind 빌드로, 템플릿에서 가져온 의미 클래스는 `verification-nhnkcp-*` 사본(가장 낮은 칸 `@layer g7-extension`)으로,
+경고·안내 글자색은 `verification-nhnkcp-tone-*` 손 CSS 로 둡니다. 다크 모드는 코어의 중립 표식(`data-g7-color-scheme`)을 따릅니다.
 <!-- @intent END -->

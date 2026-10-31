@@ -1,0 +1,48 @@
+feature: 나이스페이먼츠 브라우저 코드는 코어 공개 API·공개 상태 계약만 쓴다
+
+description: |
+  결제창 호출·결제수단 선택·결제창 닫힘 보고·비회원 조회 토큰이 코어의 비공개 내부에 손대던 것을 공개 API 로 옮긴다(#639).
+  종전에는 엔진 내부 전역(window.__templateApp)의 화면 상태로 결제수단을 추측하고, 저장소의 로그인 토큰
+  (localStorage auth_token)과 비회원 토큰(sessionStorage)을 직접 읽어 Bearer 를 손수 붙인 원시 fetch 로 SignData·닫힘
+  보고를 보냈으며, 상태 변화 구독은 해제 함수를 버려 재초기화마다 쌓였다.
+
+  - 결제수단은 액션 인자로만 받는다(paymentMethod → 서버가 내려준 pgPaymentData.payment_method). 없으면 결제를 시작하지 않는다.
+  - SignData 발급·과세 금액 조회·닫힘 보고는 G7Core.api 로 보낸다 — 회원 Bearer 와 401 처리는 코어 몫이다.
+  - 비회원 조회 토큰은 이커머스의 공개 상태 계약 `_global.guestOrderToken` 에서만 읽어 X-Guest-Order-Token 으로 싣는다.
+  - 닫힘 보고는 플러그인 API 상대 경로로 보낸다 — client-config 의 close_report_url 은 #704 이후 웹 경로를 가리켜
+    API 라우트에 닿지 않았다.
+  - 간편결제 선택 표시는 이커머스 결제수단 목록이 그린다 — 주입 대상이 없던 주문서 간편결제 조각과 한국어 문구 DOM 탐색·상태 구독
+    감시는 7.1.0 에서 걷어냈다(D-6).
+
+axes:
+  concern:
+    - guest_token
+    - private_internals
+    - close_report_member
+    - close_report_guest
+    - payment_method_selection
+    - payment_entry
+    - pay_method_mapping
+    - sign_data_member
+    - sign_data_guest
+    - sdk_host
+
+effects:
+  - guest_token_read_from_public_state_contract     # 비회원 토큰은 _global.guestOrderToken 에서만
+  - no_private_core_internals_in_source             # 로그인 토큰 직접 읽기·엔진 내부 전역·fetch/history 덮어쓰기·원시 fetch 없음
+  - close_report_via_core_api                       # 닫힘 보고는 G7Core.api + 플러그인 API 상대 경로
+  - close_report_failure_is_swallowed               # 보고 실패는 예외로 흘리지 않음
+  - selected_method_saved_unchanged                 # 고른 결제수단 ID 를 그대로 저장
+  - easy_pay_rendered_by_payment_method_catalog_only # 주입 대상 없던 주문서 간편결제 조각을 다시 두지 않음
+  - no_locale_dependent_dom_lookup                  # 결제수단 선택이 화면 문구로 DOM 을 찾지 않음
+  - payment_entry_guarded                           # 입력·설정·서명 실패 시 결제 폼을 제출하지 않음
+  - payment_method_from_action_argument_only        # 결제수단은 액션 인자로만 — 화면 상태·card 기본값 추측 없음
+  - mobile_pay_method_mapped                        # 결제수단 → PayMethod·간편결제 지시 필드 매핑
+  - sign_data_via_core_api                          # SignData 는 G7Core.api 로, 비회원은 조회 토큰 헤더
+  - sdk_host_gated                                  # SDK 주입 직전 신뢰 호스트 확인
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/guestOrderToken.test.ts
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/paymentCloseReport.test.ts
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/handlers/setPaymentMethod.test.ts
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/handlers/requestPayment.test.ts

@@ -12,13 +12,18 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Board\Enums\PostStatus;
+use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Exceptions\CommentDepthExceededException;
+use Modules\Sirsoft\Board\Exceptions\CommentParentDeletedException;
+use Modules\Sirsoft\Board\Exceptions\DeletedContentBlindException;
 use Modules\Sirsoft\Board\Exceptions\PostNotCommentableException;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\BoardManageScope;
+use Modules\Sirsoft\Board\Support\ReadHookContext;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
@@ -38,6 +43,7 @@ class CommentService
      * @param  BoardRepositoryInterface  $boardRepository  게시판 리포지토리
      * @param  CommentRepositoryInterface  $commentRepository  댓글 리포지토리
      * @param  PostRepositoryInterface  $postRepository  게시글 리포지토리
+     * @param  CacheInterface  $cache  모듈 캐시
      */
     public function __construct(
         private BoardRepositoryInterface $boardRepository,
@@ -59,6 +65,15 @@ class CommentService
      */
     public function getCommentsByPostId(string $slug, int $postId, string $context = 'admin', ?bool $withTrashed = null, ?int $boardId = null, ?Board $board = null): Collection
     {
+        // 조회 결과 훅은 사용자 맥락(댓글 목록 API·게시글 상세)에서만 발행한다 — 관리자 조회 동작은 그대로 둔다
+        $hookContext = $context === 'user'
+            ? ReadHookContext::make(['board' => $board, 'post_id' => $postId, 'paginated' => false])
+            : null;
+
+        if ($hookContext !== null) {
+            HookManager::doAction('sirsoft-board.comment.before_public_list', $hookContext);
+        }
+
         // withTrashed가 외부에서 지정되지 않은 경우 권한으로 결정
         if ($withTrashed === null) {
             $withTrashed = $this->checkBoardPermission($slug, 'admin.control')
@@ -86,7 +101,15 @@ class CommentService
             ? "sirsoft-board.{$slug}.admin.comments.read"
             : "sirsoft-board.{$slug}.comments.read";
 
-        return $this->commentRepository->getByPostId($slug, $postId, $withTrashed, $orderDirection, $scopePermission, $boardId);
+        $comments = $this->commentRepository->getByPostId($slug, $postId, $withTrashed, $orderDirection, $scopePermission, $boardId);
+
+        if ($hookContext !== null) {
+            $comments = HookManager::applyFilters('sirsoft-board.comment.filter_public_list_result', $comments, $hookContext);
+
+            HookManager::doAction('sirsoft-board.comment.after_public_list', $comments, $hookContext);
+        }
+
+        return $comments;
     }
 
     /**
@@ -115,6 +138,14 @@ class CommentService
         ?int $boardId = null,
         ?Board $board = null
     ): BoundedPage {
+        $hookContext = $context === 'user'
+            ? ReadHookContext::make(['board' => $board, 'post_id' => $postId, 'paginated' => true])
+            : null;
+
+        if ($hookContext !== null) {
+            HookManager::doAction('sirsoft-board.comment.before_public_list', $hookContext);
+        }
+
         if ($withTrashed === null) {
             $withTrashed = $this->checkBoardPermission($slug, 'admin.control')
                 || $this->checkBoardPermission($slug, 'admin.manage')
@@ -137,7 +168,7 @@ class CommentService
             ? "sirsoft-board.{$slug}.admin.comments.read"
             : "sirsoft-board.{$slug}.comments.read";
 
-        return $this->commentRepository->paginateRootsByPostId(
+        $page = $this->commentRepository->paginateRootsByPostId(
             $slug,
             $postId,
             $perPage,
@@ -147,6 +178,16 @@ class CommentService
             $scopePermission,
             $boardId
         );
+
+        if ($hookContext !== null) {
+            // 페이지 경로도 리스너는 같은 타입(댓글 컬렉션)을 받는다 — 고친 컬렉션을 페이지에 되돌린다
+            $comments = HookManager::applyFilters('sirsoft-board.comment.filter_public_list_result', $page->getCollection(), $hookContext);
+            $page->setCollection($comments);
+
+            HookManager::doAction('sirsoft-board.comment.after_public_list', $comments, $hookContext);
+        }
+
+        return $page;
     }
 
     /**
@@ -446,6 +487,38 @@ class CommentService
         // 훅: before_delete
         HookManager::doAction('sirsoft-board.comment.before_delete', $comment, $slug);
 
+        $this->executeDelete($slug, $id, $triggerType);
+
+        return true;
+    }
+
+    /**
+     * 개인정보 보유기간 처리로 댓글을 삭제합니다 (이슈 #636 — 시스템 삭제).
+     *
+     * 사용자·관리자 삭제와 같은 실행 본체를 지나 after_delete 리스너(건수 동기화·활동 로그)가
+     * 똑같이 돈다. **before_delete 는 발화하지 않는다** — 그 훅에 걸리는 본인인증 정책은
+     * 무인 배치에서 인증할 사람이 없어, 켜지는 순간 법정 파기가 전부 멈춘다
+     * ({@see PostService::deleteForRetention()} 과 같은 판단).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  댓글 ID
+     * @return void 반환값 없음
+     */
+    public function deleteForRetention(string $slug, int $id): void
+    {
+        $this->executeDelete($slug, $id, TriggerType::System->value);
+    }
+
+    /**
+     * 댓글 삭제의 실행 본체입니다 (before_delete 훅 없음).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  int  $id  댓글 ID
+     * @param  string|null  $triggerType  트리거 유형
+     * @return void 반환값 없음
+     */
+    private function executeDelete(string $slug, int $id, ?string $triggerType): void
+    {
         // 작업 이력 생성
         $actionLog = $this->buildActionLog('delete', null);
 
@@ -458,8 +531,6 @@ class CommentService
 
         // 통계 캐시 무효화 (댓글 수 변경됨)
         $this->invalidateStatsCache();
-
-        return true;
     }
 
     /**
@@ -473,10 +544,22 @@ class CommentService
      * @return Comment 블라인드 처리된 댓글 모델
      *
      * @throws ModelNotFoundException
+     * @throws DeletedContentBlindException 삭제된 댓글인 경우 (먼저 복구해야 한다)
      */
     public function blindComment(string $slug, int $id, string $reason, ?string $triggerType = null, ?int $postId = null): Comment
     {
+        // 관리자 직접 처리(triggerType 없음)는 게시판 관리 권한의 게시판 스코프를 다시 본다 —
+        // 라우트가 {slug} 라 미들웨어 스코프 검사가 돌지 않는다. 신고 처리·자동 블라인드는 reports.manage 관할.
+        if ($triggerType === null) {
+            BoardManageScope::assert($slug);
+        }
+
         $comment = $this->commentRepository->findOrFail($slug, $id, $postId);
+
+        // 삭제된 댓글은 블라인드하지 않는다 — 상태 변경이 deleted_at 을 지워 삭제가 풀린다.
+        if ($comment->status === PostStatus::Deleted || $comment->trashed()) {
+            throw DeletedContentBlindException::comment();
+        }
 
         // 멱등성: 이미 블라인드 상태이면 중복 처리 방지
         if ($comment->status === PostStatus::Blinded) {
@@ -509,14 +592,26 @@ class CommentService
      * @return Comment 복원된 댓글 모델
      *
      * @throws ModelNotFoundException
+     * @throws CommentParentDeletedException 원글이 삭제된 상태인 경우 (원글을 먼저 복구해야 한다)
      */
     public function restoreComment(string $slug, int $id, ?string $reason = null, ?string $triggerType = null, ?int $postId = null): Comment
     {
+        // 관리자 직접 처리만 게시판 스코프 재적용 (blindComment 와 같은 이유)
+        if ($triggerType === null) {
+            BoardManageScope::assert($slug);
+        }
+
         $comment = $this->commentRepository->findOrFail($slug, $id, $postId);
 
-        // 멱등성: 이미 게시됨 상태이면 중복 처리 방지
-        if ($comment->status === PostStatus::Published) {
+        // 멱등성: 이미 게시됨 상태이면 중복 처리 방지 — 원글 삭제로 함께 지워진 댓글은 상태가 게시인 채
+        // deleted_at 만 찍혀 있으므로(연쇄 삭제) 게시 상태라도 지워져 있으면 멱등 처리하지 않는다
+        if ($comment->status === PostStatus::Published && ! $comment->trashed()) {
             return $comment;
+        }
+
+        // 원글이 지워진 채로 댓글만 살리면 보이지 않는 글 아래 고아 댓글이 된다 — 원글 복구가 먼저다
+        if ($this->postRepository->findWithBoard((int) $comment->post_id) === null) {
+            throw new CommentParentDeletedException;
         }
 
         // 훅: before_restore
@@ -544,6 +639,10 @@ class CommentService
      */
     public function getUserComments(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
+        $hookContext = ReadHookContext::make(['subject_user_id' => $userId, 'filters' => $filters]);
+
+        HookManager::doAction('sirsoft-board.comment.before_user_list', $hookContext);
+
         $boardSlug = $filters['board_slug'] ?? '';
         $search = $filters['search'] ?? '';
 
@@ -566,6 +665,10 @@ class CommentService
             $this->cache->remember($cacheKey, fn () => $total, $ttl, tags: ['board-stats']);
         }
 
+        $result = HookManager::applyFilters('sirsoft-board.comment.filter_user_list_result', $result, $hookContext);
+
+        HookManager::doAction('sirsoft-board.comment.after_user_list', $result, $hookContext);
+
         return $result;
     }
 
@@ -573,6 +676,8 @@ class CommentService
      * 통계 캐시를 무효화합니다.
      *
      * 댓글 생성/삭제 시 홈페이지 통계 캐시를 무효화합니다.
+     *
+     * @return void 반환값 없음
      */
     private function invalidateStatsCache(): void
     {
@@ -585,6 +690,7 @@ class CommentService
      * @param  string  $slug  게시판 슬러그
      * @param  string|int  $identifier  사용자 ID 또는 IP
      * @param  int  $seconds  쿨다운 시간 (초)
+     * @return void 반환값 없음
      */
     public function recordCommentCooldown(string $slug, string|int $identifier, int $seconds): void
     {

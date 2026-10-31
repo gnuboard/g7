@@ -18,6 +18,11 @@ return [
         // 검증 에러 메시지의 필드 이름용 짧은 라벨 (화면 라벨의 부가 설명 "(SRB 프리픽스)" 제외)
         'live_mid_attribute' => '라이브 MID',
         'live_api_key_attribute' => '라이브 API 키',
+        'is_test_mode_attribute' => '테스트 모드',
+        'test_mid_attribute' => '테스트 MID',
+        'test_api_key_attribute' => '테스트 API 키',
+        'duplicate_field_attribute' => '중복체크 기준',
+        'duplicate_block_enabled_attribute' => '중복 가입 차단',
         'duplicate_field' => '중복체크 기준',
         'duplicate_block_enabled' => [
             'label' => '중복 가입 차단',

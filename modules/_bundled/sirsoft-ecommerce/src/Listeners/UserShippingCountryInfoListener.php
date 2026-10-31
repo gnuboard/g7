@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Helpers\PermissionHelper;
 use App\Models\User;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ShippingCountryResolver;
@@ -12,11 +13,15 @@ use Modules\Sirsoft\Ecommerce\Services\ShippingCountryResolver;
  *
  * 코어 UserResource 의 프로필(/api/me)·관리자 상세 응답에 발화하는 core.user.filter_resource_data
  * 필터 훅을 구독해, 유저의 영속 배송국가(ecommerce_preferred_shipping_country)와 현지화된
- * 국가명(_name)을 병합합니다(UserCurrencyInfoListener 미러). 프론트(_user_base.json)는 로그인
+ * 국가명(_name)을 병합합니다(UserCurrencyInfoListener 미러). 프론트(_user_base.g7.html)는 로그인
  * 유저면 이 값으로 _global.preferredShippingCountry 를 초기화합니다.
  */
 class UserShippingCountryInfoListener implements HookListenerInterface
 {
+    /**
+     * @param  EcommerceUserProfileRepositoryInterface  $profileRepository  회원 쇼핑 프로필 Repository
+     * @param  ShippingCountryResolver  $resolver  배송국가 판정기 (국가명 현지화)
+     */
     public function __construct(
         private EcommerceUserProfileRepositoryInterface $profileRepository,
         private ShippingCountryResolver $resolver,
@@ -42,6 +47,7 @@ class UserShippingCountryInfoListener implements HookListenerInterface
      * 기본 핸들러 (getSubscribedHooks 의 method 매핑 사용)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -65,6 +71,8 @@ class UserShippingCountryInfoListener implements HookListenerInterface
         $data['ecommerce_preferred_shipping_country_name'] = $country !== null
             ? $this->resolver->countryName($country)
             : null;
+        // 관리자 회원 상세의 배송국가 칸을 잠그는 키 — 저장 검증(`UserPreferenceCoreSaveListener`)과 같은 권한이다.
+        $data['ecommerce_shipping_country_can_manage'] = PermissionHelper::check('sirsoft-ecommerce.user-shipping-country.manage');
 
         return $data;
     }

@@ -100,6 +100,9 @@ afterEach(() => {
 const logs = (ids: number[], channel: string = 'sms') => ({ data: { data: ids.map((id) => ({ id, channel })) } });
 
 describe('A-2 결과 컬럼 주입 — overlay 구조', () => {
+    /**
+     * @effects overlay_appends_result_column_to_core_history_datagrid
+     */
     it('코어 알림 발송 이력 datagrid 에 결과 컬럼을 _append 로 얹는다', () => {
         expect((overlay as any).target_layout).toBe('admin_notification_log_list');
         const inj = (overlay as any).injections.find((i: any) => i.target_id === 'notification_log_datagrid');
@@ -107,6 +110,9 @@ describe('A-2 결과 컬럼 주입 — overlay 구조', () => {
         expect(inj.props.columns._append).toBeTruthy();
     });
 
+    /**
+     * @effects result_column_fetches_recent_result_map_without_params
+     */
     it('결과는 파라미터 없이 GET 으로 최근 결과 맵을 받는다(타이밍 무관, kginicis 선례)', () => {
         // 다른 data_source(notificationLogs)를 params 로 참조하면, params 가 notificationLogs 응답
         // 도착 전에 평가돼 빈 배열이 전송되는 타이밍 결함이 있다(브라우저 실측: 결과 컬럼 전부 빈 셀).
@@ -118,6 +124,9 @@ describe('A-2 결과 컬럼 주입 — overlay 구조', () => {
         expect(ds.if).toBeUndefined();
     });
 
+    /**
+     * @effects result_cell_shown_only_for_bizppurio_channel_rows
+     */
     it('결과 컬럼 셀은 비즈뿌리오 발송 행(row.channel)에서만 표시한다(메일·사이트내알림 숨김)', () => {
         const cell = getResultCellChildren();
         const guard = cell[0];
@@ -126,6 +135,9 @@ describe('A-2 결과 컬럼 주입 — overlay 구조', () => {
         expect(guard.if).toContain("['sms','lms','alimtalk'].includes(row.channel)");
     });
 
+    /**
+     * @effects result_column_hidden_on_mail_and_database_tabs
+     */
     it('컬럼(헤더 포함)은 메일·사이트내알림 탭에서 hidden 으로 숨긴다', () => {
         // 컬럼 정의는 datagrid props 로 페이지 컨텍스트에서 평가되므로 query 접근 가능(셀과 다름).
         // 메일·사이트내알림(mail/database) 탭이면 hidden=true → 헤더까지 숨긴다.
@@ -134,6 +146,9 @@ describe('A-2 결과 컬럼 주입 — overlay 구조', () => {
         expect(column.hidden).toContain("['mail','database'].includes(query.channel");
     });
 
+    /**
+     * @effects row_expand_appends_result_block_for_matched_rows
+     */
     it('행 토글(expandChildren)에도 결과 블록을 append 한다(비즈뿌리오 발송 행만)', () => {
         const inj = (overlay as any).injections.find((i: any) => i.target_id === 'notification_log_datagrid');
         const appended = inj.props.expandChildren._append;
@@ -144,6 +159,9 @@ describe('A-2 결과 컬럼 주입 — overlay 구조', () => {
         expect(JSON.stringify(block)).toContain('dispatch_result.detail_title');
     });
 
+    /**
+     * @effects result_badges_use_solid_dark_mode_colors
+     */
     it('배지는 다크모드에서 solid 색을 쓴다(색-불투명도 희석 금지)', () => {
         const raw = JSON.stringify(overlay);
         // /40 등 색-불투명도는 작은 배지에서 다크 배경과 섞여 묽어지므로 solid(dark:bg-*-700 등) 사용.
@@ -154,6 +172,9 @@ describe('A-2 결과 컬럼 주입 — overlay 구조', () => {
 });
 
 describe('A-2 결과 컬럼 주입 — 렌더', () => {
+    /**
+     * @effects success_cell_renders_reason_code_label
+     */
     it('성공 결과는 사유(코드) 라벨을 렌더한다', async () => {
         const utils = createLayoutTest(buildProbe(), { componentRegistry: registry as any, locale: 'ko' });
         utils.mockApi('notificationLogs', { response: logs([1]) });
@@ -165,6 +186,9 @@ describe('A-2 결과 컬럼 주입 — 렌더', () => {
         utils.cleanup();
     });
 
+    /**
+     * @effects balance_low_cell_renders_low_balance_badge
+     */
     it('잔액부족 실패는 사유(코드) 라벨과 잔액부족 배지를 렌더한다', async () => {
         const utils = createLayoutTest(buildProbe(), { componentRegistry: registry as any, locale: 'ko' });
         utils.mockApi('notificationLogs', { response: logs([2]) });
@@ -179,6 +203,9 @@ describe('A-2 결과 컬럼 주입 — 렌더', () => {
         utils.cleanup();
     });
 
+    /**
+     * @effects non_low_balance_cell_omits_low_balance_badge
+     */
     it('is_low_balance=false 이면 잔액부족 배지를 렌더하지 않는다', async () => {
         const utils = createLayoutTest(buildProbe(), { componentRegistry: registry as any, locale: 'ko' });
         utils.mockApi('notificationLogs', { response: logs([2]) });
@@ -191,6 +218,9 @@ describe('A-2 결과 컬럼 주입 — 렌더', () => {
         utils.cleanup();
     });
 
+    /**
+     * @effects fallback_cell_renders_fallback_badge
+     */
     it('대체발송 결과가 있으면 대체발송 배지를 렌더한다', async () => {
         const utils = createLayoutTest(buildProbe(), { componentRegistry: registry as any, locale: 'ko' });
         utils.mockApi('notificationLogs', { response: logs([3]) });
@@ -203,6 +233,9 @@ describe('A-2 결과 컬럼 주입 — 렌더', () => {
         utils.cleanup();
     });
 
+    /**
+     * @effects unmatched_row_renders_empty_cell
+     */
     it('비즈뿌리오 발송(sms) 행이지만 결과 미매칭이면 빈 셀(-)을 렌더한다', async () => {
         const utils = createLayoutTest(buildProbe(), { componentRegistry: registry as any, locale: 'ko' });
         utils.mockApi('notificationLogs', { response: logs([9], 'sms') });
@@ -212,6 +245,9 @@ describe('A-2 결과 컬럼 주입 — 렌더', () => {
         utils.cleanup();
     });
 
+    /**
+     * @effects result_cell_shown_only_for_bizppurio_channel_rows
+     */
     it('메일 채널 행은 셀 자체를 비운다(빈 셀 - 도 표시 안 함)', async () => {
         // row.channel 이 mail 이면 셀 최상위 가드가 false → 셀 내용(빈 셀 - 포함) 전체 미렌더.
         const utils = createLayoutTest(buildProbe(), { componentRegistry: registry as any, locale: 'ko' });
@@ -222,6 +258,9 @@ describe('A-2 결과 컬럼 주입 — 렌더', () => {
         utils.cleanup();
     });
 
+    /**
+     * @effects inspection_mode_dispatch_shows_inspection_label
+     */
     it('검수 모드 발송 건은 상태 라벨(발송중) 대신 검수 라벨을 렌더한다', async () => {
         // is_test_mode=true 이면 status='sent'(발송중)이어도 검수 라벨로 대체 표시한다(제품 결정 —
         // "발송중" 문구 자체가 검수 모드에서는 오해 소지라 배지 병기가 아니라 라벨 교체).
@@ -237,6 +276,9 @@ describe('A-2 결과 컬럼 주입 — 렌더', () => {
         utils.cleanup();
     });
 
+    /**
+     * @effects live_mode_dispatch_keeps_status_label
+     */
     it('운영 모드 발송 건은 검수 라벨 없이 기존 상태 라벨을 그대로 렌더한다', async () => {
         const utils = createLayoutTest(buildProbe(), { componentRegistry: registry as any, locale: 'ko' });
         utils.mockApi('notificationLogs', { response: logs([5]) });
@@ -249,6 +291,9 @@ describe('A-2 결과 컬럼 주입 — 렌더', () => {
         utils.cleanup();
     });
 
+    /**
+     * @effects live_mode_dispatch_keeps_status_label
+     */
     it('is_test_mode 필드가 없는 과거 이력은 검수 라벨 없이 기존 라벨을 렌더한다', async () => {
         // 컬럼 신설 이전 이력(is_test_mode 미포함)도 undefined === true 가 false 이므로 안전하게 기존 라벨.
         const utils = createLayoutTest(buildProbe(), { componentRegistry: registry as any, locale: 'ko' });
@@ -264,6 +309,9 @@ describe('A-2 결과 컬럼 주입 — 렌더', () => {
 });
 
 describe('A-2 행 토글 — 알림톡 실제 발송 내용', () => {
+    /**
+     * @effects alimtalk_row_expand_renders_sent_content
+     */
     it('알림톡 채널 + 실제 발송 내용이 있으면 코어 "본문"과 별도로 렌더한다', async () => {
         const utils = createLayoutTest(buildExpandProbe(), { componentRegistry: registry as any, locale: 'ko' });
         utils.mockApi('notificationLogs', { response: logs([7], 'alimtalk') });
@@ -289,6 +337,9 @@ describe('A-2 행 토글 — 알림톡 실제 발송 내용', () => {
         utils.cleanup();
     });
 
+    /**
+     * @effects sent_content_omitted_for_sms_or_missing_content
+     */
     it('sms 채널은 실제 발송 내용 값이 있어도 렌더하지 않는다(코어 본문과 동일하므로 중복 표시 불필요)', async () => {
         const utils = createLayoutTest(buildExpandProbe(), { componentRegistry: registry as any, locale: 'ko' });
         utils.mockApi('notificationLogs', { response: logs([8], 'sms') });
@@ -314,6 +365,9 @@ describe('A-2 행 토글 — 알림톡 실제 발송 내용', () => {
         utils.cleanup();
     });
 
+    /**
+     * @effects sent_content_omitted_for_sms_or_missing_content
+     */
     it('알림톡 채널이지만 실제 발송 내용이 없으면(과거 이력 등) 렌더하지 않는다', async () => {
         const utils = createLayoutTest(buildExpandProbe(), { componentRegistry: registry as any, locale: 'ko' });
         utils.mockApi('notificationLogs', { response: logs([9], 'alimtalk') });

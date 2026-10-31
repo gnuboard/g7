@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file board-index-empty-states.test.tsx
  * @description 게시판 목록 - 빈 상태 / 로딩 / 오류 / 글쓰기 버튼 레이아웃 JSON 구조 검증
@@ -13,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 import emptyStatesPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/index/_empty_states.json';
 import loadingErrorPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/index/_loading_error.json';
 import writeButtonPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/index/_write_button.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 컴포넌트 트리에서 if 표현식이 특정 패턴을 포함하는 첫 노드를 찾는다.
@@ -61,19 +63,24 @@ function findByName(node: any, name: string): any | null {
 
 describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)', () => {
     describe('빈 상태 3종 조건부 렌더링 (_empty_states.json)', () => {
+        // @scenario state=empty_page
+        // @effects board_index_state_branch_defined
         it('빈 페이지 (page > 1 + total 0건) 분기가 정의되어 있다', () => {
             const node = findByIfPattern(emptyStatesPartial, 'query.page');
             expect(node).not.toBeNull();
             expect(node.if).toContain('Number(query.page) > 1');
             expect(node.if).toContain("posts?.data?.data?.length === 0");
-            // "처음으로" 이동 버튼이 함께 존재
-            const goFirstBtn = findByName(node, 'Button');
-            expect(goFirstBtn).not.toBeNull();
-            expect(goFirstBtn.text).toContain('go_to_first_page');
-            expect(goFirstBtn.actions[0].handler).toBe('navigate');
-            expect(goFirstBtn.actions[0].params.path).toContain('/board/');
+            // "처음으로" 이동 링크가 함께 존재 — 목적지는 링크 href, 클릭은 경로 없는 navigate(#757)
+            const goFirstLink = findByName(node, 'A');
+            expect(goFirstLink).not.toBeNull();
+            expect(goFirstLink.text).toContain('go_to_first_page');
+            expect(goFirstLink.props.href).toContain('/board/');
+            expect(actionsOf(goFirstLink)[0].handler).toBe('navigate');
+            expect(actionsOf(goFirstLink)[0].params.path).toBeUndefined();
         });
 
+        // @scenario state=no_posts
+        // @effects board_index_state_branch_defined
         it('게시글 없음 (검색/카테고리 없이 total === 0) 분기가 정의되어 있다', () => {
             const node = findByIfPattern(emptyStatesPartial, '!query.search');
             expect(node).not.toBeNull();
@@ -84,6 +91,8 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
             expect(noPostsTexts.length).toBeGreaterThanOrEqual(1);
         });
 
+        // @scenario state=no_results
+        // @effects board_index_state_branch_defined
         it('검색 결과 없음 (search 또는 category + total === 0) 분기가 정의되어 있다', () => {
             const node = findByIfPattern(emptyStatesPartial, '(query.search || query.category)');
             expect(node).not.toBeNull();
@@ -91,12 +100,16 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
             // "검색 결과 없음" 안내 텍스트 + 검색 초기화 버튼
             const noResultsTexts = findAllByText(node, 'no_search_results');
             expect(noResultsTexts.length).toBeGreaterThanOrEqual(1);
-            const clearBtn = findByName(node, 'Button');
-            expect(clearBtn).not.toBeNull();
-            expect(clearBtn.text).toContain('clear_search');
-            expect(clearBtn.actions[0].handler).toBe('navigate');
+            // 검색 초기화는 조건 없는 목록 주소로 가는 링크(#757)
+            const clearLink = findByName(node, 'A');
+            expect(clearLink).not.toBeNull();
+            expect(clearLink.text).toContain('clear_search');
+            expect(clearLink.props.href).toBe('/board/{{route.slug}}');
+            expect(actionsOf(clearLink)[0].handler).toBe('navigate');
         });
 
+        // @scenario state=empty_page, state=no_posts, state=no_results
+        // @effects board_index_state_branch_defined
         it('세 분기는 서로 배타적인 if 조건을 사용한다 (page>1 / 검색없음 / 검색있음)', () => {
             const branches = emptyStatesPartial.children.filter((c: any) => typeof c.if === 'string');
             expect(branches.length).toBe(3);
@@ -112,6 +125,8 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
     });
 
     describe('로딩 / 오류 표시 조건 (_loading_error.json)', () => {
+        // @scenario state=loading
+        // @effects board_index_state_branch_defined
         it('로딩 분기가 !posts.data.board && !_global.hasError 조건으로 정의된다', () => {
             const loading = findByIfPattern(loadingErrorPartial, '!posts?.data?.board');
             expect(loading).not.toBeNull();
@@ -121,6 +136,8 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
             expect(loadingTexts.length).toBeGreaterThanOrEqual(1);
         });
 
+        // @scenario state=error
+        // @effects board_index_state_branch_defined
         it('오류 분기가 _global.hasError 조건으로 정의되며 새로고침 버튼을 가진다', () => {
             // 로딩 분기도 !_global.hasError 를 포함하므로, 부정 키워드(!) 없는
             // 오류 전용 분기를 children 에서 직접 식별
@@ -138,9 +155,11 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
             // 새로고침 버튼 (refresh handler)
             const reloadBtn = findByName(errorNode, 'Button');
             expect(reloadBtn).not.toBeNull();
-            expect(reloadBtn.actions[0].handler).toBe('refresh');
+            expect(actionsOf(reloadBtn)[0].handler).toBe('refresh');
         });
 
+        // @scenario state=loading, state=error
+        // @effects board_index_state_branch_defined
         it('로딩과 오류 분기는 서로 배타적이다 (오류 시 로딩 미표시)', () => {
             const branches = loadingErrorPartial.children.filter((c: any) => typeof c.if === 'string');
             expect(branches.length).toBe(2);
@@ -154,6 +173,8 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
     });
 
     describe('글쓰기 버튼 권한 분기 (_write_button.json)', () => {
+        // @scenario state=write_button
+        // @effects board_index_state_branch_defined
         it('글쓰기 버튼이 정의되어 있고 i18n 텍스트와 아이콘을 포함한다', () => {
             // _write_button.json 의 최상위 또는 children 어딘가에 Button + write 텍스트
             const writeBtn = findByName(writeButtonPartial, 'Button');
@@ -164,6 +185,8 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
             expect(typeof iconNode.props?.name).toBe('string');
         });
 
+        // @scenario state=write_button
+        // @effects board_index_state_branch_defined
         it('글쓰기 권한이 없거나 비로그인 시 분기 노출 (if 표현식 존재)', () => {
             // can_write 또는 currentUser 등 권한/인증 분기가 어딘가 있어야 함
             const ifPatterns = JSON.stringify(writeButtonPartial);

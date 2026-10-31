@@ -1,0 +1,21 @@
+feature: 나이스페이먼츠 결제 환경설정 화면 — 플러그인 자체 글자색 클래스
+
+description: |
+  라이브 모드 경고가 관리자 템플릿의 의미 글자색 클래스에 기대고 있었다. 템플릿이 그 클래스를 바꾸면 색이 함께 바뀐다
+  (#408 때 형제 플러그인 KG이니시스에서 색이 뒤바뀜).
+  결정(2026-10-09)대로 플러그인이 접두 `pay-nicepayments-tone-*` 클래스를 resources/css/main.css 에 정의하고(다크 모드 짝 포함)
+  레이아웃이 그것을 쓴다. 다른 결제 플러그인의 클래스를 참조하지 않는다.
+
+axes:
+  plugin: [sirsoft-pay_nicepayments]
+  element: [layout, live_mode_warning, plugin_css, asset_pipeline]
+
+effects:
+  - no_template_tone_classes
+  - live_warning_uses_warning_tone
+  - tone_classes_defined_with_dark_pair
+  - css_is_self_contained
+  - css_asset_declared_and_built
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/layouts/pluginSettingsToneClasses.test.ts

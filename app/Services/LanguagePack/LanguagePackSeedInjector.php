@@ -98,6 +98,44 @@ class LanguagePackSeedInjector
     }
 
     /**
+     * core.schedules.config 필터 — config('core.schedules') 카탈로그의 label·description 에 locale 키 병합.
+     *
+     * seed/schedules.json 형식: `{ "<스케줄 name>": { "label": "…", "description": "…" } }`.
+     * 카탈로그는 name 을 키로 쓰는 연관 배열이다(CoreScheduleSeeder 가 동기화). 카탈로그에 없는 name 은 무시한다.
+     *
+     * @param  array<string, mixed>  $schedules  스케줄 카탈로그 (name ⇒ 선언)
+     * @return array<string, mixed> locale 키가 보강된 카탈로그
+     *
+     * @since 7.2.0
+     */
+    public function injectCoreSchedules(array $schedules): array
+    {
+        foreach ($this->extraCoreLocales() as $locale) {
+            $seed = $this->loadCoreSeed($locale, 'schedules');
+            if (! $seed) {
+                continue;
+            }
+            foreach ($schedules as $name => $schedule) {
+                if (! is_array($schedule) || ! is_array($seed[$name] ?? null)) {
+                    continue;
+                }
+                foreach (['label', 'description'] as $field) {
+                    $value = $seed[$name][$field] ?? null;
+                    if (! is_string($value) || $value === '') {
+                        continue;
+                    }
+                    if (! is_array($schedules[$name][$field] ?? null)) {
+                        $schedules[$name][$field] = [];
+                    }
+                    $schedules[$name][$field][$locale] = $value;
+                }
+            }
+        }
+
+        return $schedules;
+    }
+
+    /**
      * seed.notifications.translations 필터 — Definition × Template 3-tier 병합.
      *
      * @param  array<int, mixed>  $definitions  알림 정의 배열
@@ -196,158 +234,6 @@ class LanguagePackSeedInjector
         }
 
         return $definitions;
-    }
-
-    /**
-     * seed.identity_messages.translations 필터 — IDV 메시지 정의의 다국어 키 병합.
-     *
-     * 코어 IDV 메시지(config/core.php::identity_messages)의 ko/en 다국어 데이터에
-     * 활성 코어 언어팩의 seed/identity_messages.json 기반 추가 locale 키를 병합한다.
-     *
-     * config 의 array key (예: `mail.provider_default`, `mail.purpose.signup`)가 식별자로 사용되고,
-     * seed JSON 도 동일 array key 를 사용한다. 병합 대상 필드:
-     * - definition: name, description (배열)
-     * - templates[].subject, templates[].body (배열)
-     *
-     * @param  array<int|string, mixed>  $definitions  identity_messages 정의 배열 (string-keyed 또는 numeric)
-     * @return array<int|string, mixed> locale 키가 보강된 정의
-     */
-    public function injectIdentityMessages(array $definitions): array
-    {
-        foreach ($this->extraCoreLocales() as $locale) {
-            $seed = $this->loadCoreSeed($locale, 'identity_messages');
-            if (! $seed) {
-                continue;
-            }
-
-            foreach ($definitions as $defKey => $def) {
-                // config/core.php 는 string-keyed (예: 'mail.provider_default')
-                // Seeder 는 그 키를 사용하므로 동일 키로 매칭.
-                if (! isset($seed[$defKey])) {
-                    continue;
-                }
-                $entry = $seed[$defKey];
-
-                foreach (['name', 'description'] as $field) {
-                    if (isset($entry['definition'][$field])) {
-                        if (! isset($definitions[$defKey][$field]) || ! is_array($definitions[$defKey][$field])) {
-                            $definitions[$defKey][$field] = [];
-                        }
-                        $definitions[$defKey][$field][$locale] = $entry['definition'][$field];
-                    }
-                }
-
-                $templates = $def['templates'] ?? [];
-                foreach ($templates as $tplIdx => $tpl) {
-                    $channel = $tpl['channel'] ?? null;
-                    $tplSrc = $entry['templates'][$channel] ?? null;
-                    if (! $channel || ! $tplSrc) {
-                        continue;
-                    }
-                    foreach (['subject', 'body'] as $field) {
-                        if (isset($tplSrc[$field])) {
-                            if (! isset($templates[$tplIdx][$field]) || ! is_array($templates[$tplIdx][$field])) {
-                                $templates[$tplIdx][$field] = [];
-                            }
-                            $templates[$tplIdx][$field][$locale] = $tplSrc[$field];
-                        }
-                    }
-                }
-                $definitions[$defKey]['templates'] = $templates;
-            }
-        }
-
-        return $definitions;
-    }
-
-    /**
-     * 확장(모듈/플러그인) IDV 메시지 시더용 주입기 — `seed.{target}.identity_messages.translations` 필터.
-     *
-     * 코어 메시지와 동일한 definition × templates × channels 3-tier 구조이지만 활성 팩 검색 범위가
-     * 모듈/플러그인 + 동일 target_identifier 로 한정된다. ModuleManager / PluginManager 의
-     * syncModuleIdentityMessages / syncPluginIdentityMessages 가 호출.
-     *
-     * @param  array<int|string, mixed>  $definitions  IDV 메시지 정의 배열
-     * @param  string  $targetIdentifier  대상 모듈/플러그인 식별자
-     * @return array<int|string, mixed> locale 키가 보강된 정의
-     */
-    public function injectExtensionIdentityMessages(array $definitions, string $targetIdentifier): array
-    {
-        $packs = $this->registry->getActivePacks(LanguagePackScope::Module->value)
-            ->merge($this->registry->getActivePacks(LanguagePackScope::Plugin->value))
-            ->filter(fn (LanguagePack $pack) => $pack->target_identifier === $targetIdentifier);
-
-        foreach ($packs as $pack) {
-            $seed = $this->loadPackSeed($pack, 'identity_messages');
-            if (! $seed) {
-                continue;
-            }
-            foreach ($definitions as $defKey => $def) {
-                // 모듈 측은 numeric-indexed 일 수 있으므로 provider_id+scope_type+scope_value 를 lookup 키로 합성.
-                $compositeKey = $this->identityMessageCompositeKey($def);
-                $matchKey = $compositeKey && isset($seed[$compositeKey])
-                    ? $compositeKey
-                    : (is_string($defKey) && isset($seed[$defKey]) ? $defKey : null);
-                if (! $matchKey) {
-                    continue;
-                }
-                $entry = $seed[$matchKey];
-
-                foreach (['name', 'description'] as $field) {
-                    if (isset($entry['definition'][$field])) {
-                        if (! isset($definitions[$defKey][$field]) || ! is_array($definitions[$defKey][$field])) {
-                            $definitions[$defKey][$field] = [];
-                        }
-                        $definitions[$defKey][$field][$pack->locale] = $entry['definition'][$field];
-                    }
-                }
-
-                $templates = $def['templates'] ?? [];
-                foreach ($templates as $tplIdx => $tpl) {
-                    $channel = $tpl['channel'] ?? null;
-                    $tplSrc = $entry['templates'][$channel] ?? null;
-                    if (! $channel || ! $tplSrc) {
-                        continue;
-                    }
-                    foreach (['subject', 'body'] as $field) {
-                        if (isset($tplSrc[$field])) {
-                            if (! isset($templates[$tplIdx][$field]) || ! is_array($templates[$tplIdx][$field])) {
-                                $templates[$tplIdx][$field] = [];
-                            }
-                            $templates[$tplIdx][$field][$pack->locale] = $tplSrc[$field];
-                        }
-                    }
-                }
-                $definitions[$defKey]['templates'] = $templates;
-            }
-        }
-
-        return $definitions;
-    }
-
-    /**
-     * IDV 메시지 정의의 복합 키(provider_id × scope_type × scope_value) 를 합성한다.
-     *
-     * 모듈/플러그인 정의는 numeric-indexed 이므로 키 매칭 시 합성 키를 사용한다.
-     * 코어 정의의 array key 패턴(`mail.provider_default`, `mail.purpose.{purpose}`)도 같은 형식.
-     *
-     * @param  array<string, mixed>  $def  IDV 메시지 정의
-     * @return string|null 합성 키 또는 null (필수 필드 부재)
-     */
-    private function identityMessageCompositeKey(array $def): ?string
-    {
-        $provider = $def['provider_id'] ?? null;
-        $scopeType = $def['scope_type'] ?? null;
-        $scopeValue = $def['scope_value'] ?? '';
-        if (! $provider || ! $scopeType) {
-            return null;
-        }
-        // provider_id 의 콜론은 키에 부적합 — channel.scope_type.scope_value 형태로 합성.
-        // 코어 array key 패턴 (`mail.provider_default`, `mail.purpose.signup`) 에 맞춘다.
-        $channel = str_contains($provider, '.mail') ? 'mail' : 'sms';
-        $suffix = $scopeValue ? "{$scopeType}.{$scopeValue}" : $scopeType;
-
-        return "{$channel}.{$suffix}";
     }
 
     /**
@@ -496,9 +382,11 @@ class LanguagePackSeedInjector
     /**
      * 권한 config 트리를 walk 하며 seed 의 locale 번역을 name/description 에 병합.
      *
-     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $config  권한 config 트리
      * @param  array<string, mixed>  $seed  identifier ⇒ {name, description} 맵
-     * @return array<string, mixed>
+     * @param  string  $locale  병합할 로케일
+     * @param  string|null  $targetIdentifier  확장 권한이면 그 확장 식별자 (코어는 null)
+     * @return array<string, mixed> 번역이 병합된 config 트리
      */
     private function mergePermissionTranslations(array $config, array $seed, string $locale, ?string $targetIdentifier = null): array
     {
@@ -559,23 +447,18 @@ class LanguagePackSeedInjector
     }
 
     /**
-     * `{scope}.{id}.admin_menus.translations` 필터 — 확장의 admin_menus 다국어 필드에
-     * 활성 언어팩의 menus seed 를 주입합니다.
+     * `{module|plugin}.{id}.admin_menus.translations` 필터 — 모듈·플러그인의 admin_menus 다국어 필드에
+     * 같은 범위 활성 언어팩의 menus seed 를 주입합니다.
      *
      * 메뉴는 children 으로 중첩되므로 재귀적으로 walk 합니다. 매칭은 `slug` 키 기준이며
      * seed 형식은 `{ slug: { name: 'ja translation' } }` 입니다.
      *
-     * 스코프를 인자로 받는다 — 형제 주입기(roles·permissions·manifest)와 같은 형태다.
-     * 앞 판본은 모듈 팩만 조회하도록 고정돼 있어, 구독을 스코프로 바꾼 뒤에도 플러그인
-     * 메뉴는 여전히 번역되지 않았다. 구독이 옳아도 찾는 곳이 틀리면 결과는 같다 —
-     * 필터는 정상 발화하고 값만 그대로 돌아오므로 오류도 로그도 남지 않는다.
-     *
-     * @param  array<int, mixed>  $menus  확장의 getAdminMenus() 결과
-     * @param  string  $targetIdentifier  확장 식별자
-     * @param  string  $scope  언어팩 스코프 (module|plugin|template)
+     * @param  array<int, mixed>  $menus  getAdminMenus() 결과
+     * @param  string  $targetIdentifier  모듈·플러그인 식별자
+     * @param  string  $scope  팩 범위 (`module`·`plugin`, 기본 module — 종전 호출 호환)
      * @return array<int, mixed> locale 키가 보강된 메뉴 배열
      */
-    public function injectExtensionMenus(array $menus, string $targetIdentifier, string $scope): array
+    public function injectExtensionMenus(array $menus, string $targetIdentifier, string $scope = 'module'): array
     {
         $packs = $this->registry->getActivePacks($scope)
             ->filter(fn (LanguagePack $pack) => $pack->target_identifier === $targetIdentifier);
@@ -594,9 +477,10 @@ class LanguagePackSeedInjector
     /**
      * 메뉴 배열을 재귀적으로 walk 하며 seed 의 locale 번역을 name 필드에 병합합니다.
      *
-     * @param  array<int, mixed>  $menus
+     * @param  array<int, mixed>  $menus  메뉴 배열
      * @param  array<string, mixed>  $seed  slug ⇒ {name: ...} 맵
-     * @return array<int, mixed>
+     * @param  string  $locale  병합할 로케일
+     * @return array<int, mixed> 번역이 병합된 메뉴 배열
      */
     private function mergeMenuTranslations(array $menus, array $seed, string $locale): array
     {

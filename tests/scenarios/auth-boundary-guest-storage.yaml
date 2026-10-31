@@ -1,0 +1,27 @@
+feature: 인증 경계의 비회원 저장값 정리 (#639 ⑦)
+
+description: |
+  비회원 장바구니 키(`localStorage.g7_cart_key`)와 비회원 주문 조회 토큰(세션 저장소 3키)은
+  로그인·로그아웃 경계를 넘어 남으면 안 된다.
+
+  배경(실측 2026-10-05): 로그아웃 뒤에도 카트키와 비회원 주문 토큰이 남아 `_global.guestOrderToken` 에
+  다시 실렸고, 로그인한 회원의 요청에도 `X-Guest-Order-Token` 이 섞였다. 로그인 전후 카트키도 같았다.
+
+  처치(D15): 로그아웃이면 지우고 전역 값을 비운다. 로그인이면(서버 병합이 끝난 뒤) 카트키를 새로 발급한다.
+  재발급은 코어 `login` 이벤트에만 건다 — 부팅 시 인증 복원(`authStateChange` 만)은 로그인이 아니다(실측 2026-10-06:
+  새로고침마다 키가 바뀌었다).
+
+axes:
+  surface: [auth_boundary]
+  storage: [guest_keys]
+  e2e: [member_reload]
+
+effects:
+  - guest_storage_is_cleared_or_reissued_at_auth_boundary
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/authBoundaryStorage.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/cart-key-member-reload.spec.ts
+
+# E2E: 회원 새로고침의 키 유지는 쇼핑몰 cart-key-member-reload.spec.ts(부팅 순서는 브라우저에서만 드러난다).
+# 로그인·로그아웃 왕복은 gdpr consent-runtime-login-boundary.spec.ts 와 Chrome MCP T5·T7 이 덮는다.

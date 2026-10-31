@@ -574,6 +574,10 @@ test_files:
   - tests/Unit/Http/Responses/FileServingMetaTest.php
   - tests/Feature/Http/FileServingHelperSourceContractTest.php
   - tests/Feature/Attachment/AttachmentServeMetaContractTest.php
+  # 15차 G3 라운드 — 무인증 레이아웃 첨부 서빙(`PublicTemplateController::serveFile`)의 헬퍼 인자 계약.
+  # 위 세 effects(304 캐시 축·immutable 대신 재검증·nosniff)를 단언하는데 등재가 빠져 있어, develop-7.2.0
+  # 병합(2026-10-31)에서 레이아웃 트랙의 「마킹 파일은 어느 매니페스트엔가 등재」 게이트가 잡았다.
+  - tests/Feature/Api/Public/PublicTemplateLayoutAttachmentServeTest.php
   # 링크 복구·문서 루트 밖 이동의 4상태 술어
   - tests/Unit/Extension/Helpers/StorageLinkHelperTest.php
   # 레이아웃 서빙의 이중 모드 계약

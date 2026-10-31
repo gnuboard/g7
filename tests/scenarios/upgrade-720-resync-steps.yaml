@@ -1,0 +1,19 @@
+feature: upgrade_720_resync_steps
+
+description: |
+  7.2.0 데이터 스텝 00(코어 선언 — 스케줄 카탈로그 포함)·01(활성 모듈·플러그인 선언 — 스케줄 포함)을 새 코드로 재동기화한다.
+  부모(7.1.x 코드)는 스케줄 동기화를 모르므로 이 스텝이 없으면 스케줄 등록부가 비어 예약이 모두 멈춘다.
+  실패는 경고·복구 명령으로만 남기고 업데이트를 되돌리지 않는다.
+
+coverage_strategy: full
+
+axes:
+  step: [resync_core, resync_extensions]
+  outcome: [success, failure]
+
+effects:
+  - resync_called_once
+  - failure_does_not_abort_upgrade
+
+test_files:
+  - tests/Unit/Upgrades/Upgrade720ResyncStepsTest.php

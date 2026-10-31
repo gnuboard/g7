@@ -22,9 +22,13 @@ return [
         'invalid_code' => '認証コードが正しくありません。',
         'invalid_verification_token' => '無効な本人認証トークンです。',
         'missing_target' => '認証対象 (メール·電話番号) が必要です。',
+        'claim_denied' => '本人確認の結果を受け取れません。認証をやり直してください。',
+        'claim_already_used' => 'この本人確認はすでに使用されています。認証をやり直してください。',
+        'claim_unavailable' => '本人確認の期限が切れたか、完了していません。認証をやり直してください。',
         'target_mismatch' => '認証された対象とリクエストされた対象が一致しません。',
         'purpose_not_supported' => '選択されたプロバイダーはこの目的をサポートしていません。',
         'provider_unavailable' => '本人認証プロバイダーを使用できません。',
+        'challenge_dispatch_failed' => '認証コードを送信できませんでした。しばらくしてからもう一度お試しいただくか、別の認証手段をご利用ください。',
         'generic' => '本人認証に失敗しました。',
         'missing_scope_or_target' => 'ポリシー照会には scope と target の両方が必要です。',
         'admin_policy_has_no_default' => '管理者が直接作成したポリシーには宣言デフォルト値がありません。',
@@ -35,6 +39,7 @@ return [
     'messages' => [
         'challenge_requested' => '本人認証コードを送信しました。',
         'challenge_verified' => '本人確認が完了しました。',
+        'challenge_pending' => 'メールのリンクによる本人確認を待っています。',
         'challenge_cancelled' => '本人認証リクエストがキャンセルされました。',
     ],
     'logs' => [
@@ -70,6 +75,7 @@ return [
     ],
     'channels' => [
         'email' => 'メール',
+        'app' => '認証アプリ',
     ],
     'origin_types' => [
         'route' => 'ルート',
@@ -102,11 +108,10 @@ return [
             'admin' => '管理者',
         ],
     ],
-    'message' => [
-        'scope_type' => [
-            'provider_default' => 'Provider デフォルト',
-            'purpose' => 'Purpose 別',
-            'policy' => 'Policy 別',
+    // `identity:expire-challenges` コマンド出力
+    'console' => [
+        'expire_challenges' => [
+            'done' => '本人認証 challenge :count 件を期限切れにしました。',
         ],
     ],
 ];

@@ -151,6 +151,9 @@
       "label": "Avatar",
       "default_alt": "User avatar"
     },
+    "visitor_counter": {
+      "label": "Visitor counter"
+    },
     "user_info": {
       "label": "User info",
       "default_name": "Username"
@@ -161,9 +164,6 @@
     "product_image_viewer": {
       "label": "Product image viewer",
       "default_alt": "Product image"
-    },
-    "post_reactions": {
-      "label": "Post reactions"
     },
     "group": {
       "design": "Design",

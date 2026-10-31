@@ -1,0 +1,74 @@
+{
+  "page_title": "リアクション管理",
+  "page_description": "全会員が投稿·コメントに残したリアクションを閲覧し、整理します。",
+  "search_placeholder": "検索キーワード入力",
+  "search": "検索",
+  "reset": "初期化",
+  "advanced_search": "詳細検索",
+  "selected_count": "{{count}}個選択されました",
+  "search_fields": {
+    "all": "すべて",
+    "target_title": "投稿タイトル",
+    "target_content": "内容",
+    "board_name": "掲示板名",
+    "member": "会員(名前、メールアドレス)",
+    "author_name": "投稿者名"
+  },
+  "filters": {
+    "board_label": "掲示板",
+    "board_all": "すべての掲示板",
+    "type_label": "リアクションタイプ",
+    "type_all": "すべてのタイプ",
+    "type_inactive_suffix": "(無効化)",
+    "target_all": "すべての対象",
+    "target_post": "投稿",
+    "target_comment": "コメント",
+    "reacted_at_label": "リアクション日",
+    "member_filter_notice": "特定会員のリアクションのみ表示中",
+    "member_filter_clear": "会員フィルター解除",
+    "date_quick_today": "今日",
+    "date_quick_3days": "3日",
+    "date_quick_week": "1週間",
+    "date_quick_month": "1か月",
+    "date_quick_3months": "3か月",
+    "date_quick_all": "すべて"
+  },
+  "columns": {
+    "reacted_at": "リアクション日",
+    "member": "会員",
+    "target": "対象",
+    "board_name": "掲示板",
+    "reaction_type": "リアクションタイプ",
+    "target_status": "ステータス"
+  },
+  "badges": {
+    "deleted_target": "削除された対象",
+    "board_deleted": "掲示板削除",
+    "reaction_off": "リアクション無効",
+    "type_inactive": "無効なタイプ",
+    "withdrawn": "退会"
+  },
+  "actions": {
+    "go_to_post": "投稿を表示",
+    "go_to_member": "会員情報",
+    "delete": "削除",
+    "bulk_delete": "選択削除"
+  },
+  "modals": {
+    "delete_title": "このリアクションを削除しますか？",
+    "delete_confirm": "会員のリアクション一覧から削除され、対象のリアクション数が再集計されます。投稿·コメント自体は削除されません。",
+    "delete_editor_label": "リアクション削除確認",
+    "bulk_delete_title": "選択したリアクションを削除しますか？",
+    "bulk_delete_confirm": "選択した{{count}}個のリアクションを削除しますか？会員のリアクション一覧から削除されます。",
+    "bulk_delete_editor_label": "リアクション選択削除確認",
+    "processing": "処理中..."
+  },
+  "pagination_info": "全{{total}}件中{{from}}-{{to}}",
+  "table_empty": "条件に合う反応がありません。",
+  "refresh": "更新",
+  "total_count": "合計 {{count}}件",
+  "cell": {
+    "view_member": "会員情報を表示",
+    "search_member": "このユーザーで検索"
+  }
+}

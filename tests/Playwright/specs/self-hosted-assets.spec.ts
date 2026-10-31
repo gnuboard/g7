@@ -67,9 +67,12 @@ function thirdPartyOffenders(urls: string[], origin: string): string[] {
 }
 
 test.describe('구동 에셋 자체 제공', () => {
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects no_third_party_request_on_page_load, runtime_asset_served_same_origin
+     */
     test('관리자 화면 로드에 제3자 origin 요청이 없다', async ({ page }) => {
-        // @scenario asset_class=vendored, outcome=loaded
-        // @effects no_third_party_request_on_page_load, runtime_asset_served_same_origin
         const urls = collectRequests(page);
 
         await page.goto('/admin/login');
@@ -85,9 +88,12 @@ test.describe('구동 에셋 자체 제공', () => {
         expect(thirdPartyOffenders(urls, origin)).toEqual([]);
     });
 
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects no_third_party_request_on_page_load
+     */
     test('사용자 화면 로드에 제3자 origin 요청이 없다', async ({ page }) => {
-        // @scenario asset_class=vendored, outcome=loaded
-        // @effects no_third_party_request_on_page_load
         const urls = collectRequests(page);
 
         await page.goto('/');
@@ -99,11 +105,14 @@ test.describe('구동 에셋 자체 제공', () => {
         expect(thirdPartyOffenders(urls, origin)).toEqual([]);
     });
 
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects runtime_asset_served_same_origin
+     */
     test('아이콘 폰트가 실제로 적용된다 (자체 제공본이 동작한다)', async ({ page }) => {
         // 요청이 same-origin 이어도 그 파일이 깨졌으면 아이콘은 안 보인다.
         // "외부로 안 나갔다" 와 "아이콘이 보인다" 는 다른 사실이므로 둘 다 측정한다.
-        // @scenario asset_class=vendored, outcome=loaded
-        // @effects runtime_asset_served_same_origin
         await page.goto('/admin/login');
         await page.waitForLoadState('networkidle');
 
@@ -123,9 +132,12 @@ test.describe('구동 에셋 자체 제공', () => {
         }
     });
 
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects runtime_asset_served_same_origin, vendored_asset_declared_path_exists_on_disk
+     */
     test('동봉 자산이 same-origin 경로로 200 을 돌려준다', async ({ page }) => {
-        // @scenario asset_class=vendored, outcome=loaded
-        // @effects runtime_asset_served_same_origin, vendored_asset_declared_path_exists_on_disk
         await page.goto('/admin/login');
 
         const results = await page.evaluate(async () => {
@@ -160,6 +172,72 @@ test.describe('구동 에셋 자체 제공', () => {
             expect(result.type).toContain('css');
         }
     });
+
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects runtime_asset_served_same_origin, amd_module_id_without_js_suffix_resolves_to_js_file
+     */
+    test('AMD 디렉토리 URL 뒤에 로더·모듈 경로를 이어 붙여도 200 이다 (코드 편집기)', async ({ page }) => {
+        // `templateDir()` 은 정적 게시본 → 확장자 없는 모드의 `?file=` 디렉토리 → 경로 형태 순으로 고른다.
+        // AMD 로더(Monaco)는 그 뒤에 `/loader.js`·`/editor/editor.main` 을 이어 붙이고, URL 에 쿼리가 있으면
+        // 모듈 id 에 `.js` 를 붙이지 않는다. 확장자를 가로채는 서버에서 정적 게시본이 없으면 종전에는 경로
+        // 형태가 404 라 편집기가 늘 textarea 폴백이었다(#712 후속). 로더가 하는 이어 붙이기를 그대로 재현한다.
+        // 환경 기본 모드만 재면 확장자 모드이거나 정적 게시본이 있는 환경에서 새 분기(`?file=` 디렉토리 + 서버 `.js`
+        // 보완)를 한 번도 지나지 않고 통과한다 — 그래서 확장자 없는 모드·정적 게시본 없음을 강제한 디렉토리도 잰다.
+        // 질의 형태는 서버의 자산 URL 모드와 무관하게 PHP 가 받는다.
+        await page.goto('/admin/login');
+        await page.waitForFunction(() => typeof (window as any).G7Core?.asset?.templateDir === 'function', null, {
+            timeout: 30_000,
+        });
+
+        const results = await page.evaluate(async () => {
+            const resolveDir = (): string => (window as any).G7Core.asset.templateDir(
+                'sirsoft-admin_basic',
+                'vendor/monaco-editor/0.56.0/vs',
+            );
+            const probe = async (dir: string) => {
+                // 로더 규칙: 쿼리가 있으면 모듈 id 에 `.js` 를 붙이지 않는다
+                const moduleSuffix = dir.includes('?') ? '' : '.js';
+                const urls = [`${dir}/loader.js`, `${dir}/editor/editor.main${moduleSuffix}`, `${dir}/editor/editor.main.css`];
+
+                return {
+                    dir,
+                    responses: await Promise.all(
+                        urls.map(async (url) => {
+                            const response = await fetch(url, { method: 'GET' });
+
+                            return { url, status: response.status, type: response.headers.get('content-type') ?? '' };
+                        }),
+                    ),
+                };
+            };
+
+            const environment = await probe(resolveDir());
+
+            (window as any).__g7AssetUrlMode = 'extensionless';
+            if ((window as any).G7Config) {
+                delete (window as any).G7Config.staticBase;
+            }
+            const extensionless = await probe(resolveDir());
+
+            return [environment, extensionless];
+        });
+
+        expect(results[1].dir, '확장자 없는 모드 강제가 `?file=` 디렉토리를 고르지 않았습니다').toContain('?file=');
+
+        for (const result of results) {
+            expect(result.dir.startsWith('/'), `same-origin 경로가 아닙니다: ${result.dir}`).toBe(true);
+
+            for (const response of result.responses) {
+                expect(response.status, `${response.url} 가 200 이 아닙니다 (디렉토리: ${result.dir})`).toBe(200);
+            }
+
+            expect(result.responses[0].type).toContain('javascript');
+            expect(result.responses[1].type).toContain('javascript');
+            expect(result.responses[2].type).toContain('css');
+        }
+    });
 });
 
 test.describe('서버가 심은 externals 의 로드 실패', () => {
@@ -167,9 +245,12 @@ test.describe('서버가 심은 externals 의 로드 실패', () => {
     // 실패해도 자바스크립트에는 아무 신호가 오지 않아, 안내 계층이 이 경로만 비어 있었다.
     // 그 결과는 "아이콘이 통째로 사라진 화면" 이고, 아이콘만으로 조작하는 버튼이 있는
     // 화면에서는 곧 조작 불능인데 배너도 로그도 남지 않았다.
+    /**
+     * @scenario asset_class=vendored, outcome=failed
+     *
+     * @effects failed_asset_shows_retry_notice
+     */
     test('아이콘 글꼴을 못 불러오면 안내가 뜨고, 복구되면 사라진다', async ({ page, editToken }) => {
-        // @scenario asset_class=vendored, outcome=failed
-        // @effects failed_asset_shows_retry_notice
         test.setTimeout(120_000);
 
         let blocked = true;
@@ -218,10 +299,13 @@ test.describe('서버가 심은 externals 의 로드 실패', () => {
             .toBeGreaterThan(0);
     });
 
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects runtime_asset_served_same_origin
+     */
     test('정상 경로에서는 안내가 뜨지 않는다', async ({ page, editToken }) => {
         // 실패 신호가 오탐하면 모든 화면에 배너가 상주해 안내가 잡음이 된다.
-        // @scenario asset_class=vendored, outcome=loaded
-        // @effects runtime_asset_served_same_origin
         await authenticatePage(page, editToken);
         await page.goto('/admin/dashboard');
         await page.waitForTimeout(6000);

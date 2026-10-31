@@ -16,6 +16,11 @@ use App\Models\User;
  */
 class HandleSuccessfulLoginListener implements HookListenerInterface
 {
+    /**
+     * 리스너를 생성합니다.
+     *
+     * @param  UserRepositoryInterface  $userRepository  로그인 시도 추적 컬럼을 갱신할 사용자 저장소
+     */
     public function __construct(
         private UserRepositoryInterface $userRepository,
     ) {}
@@ -27,8 +32,10 @@ class HandleSuccessfulLoginListener implements HookListenerInterface
      */
     public static function getSubscribedHooks(): array
     {
+        // sync: 실패 횟수 초기화는 로그인과 같은 요청 안에서 끝나야 한다. 큐로 미루면 성공 직후의
+        // 실패가 초기화 전 카운터에 더해져 잠금이 앞당겨지거나, 워커가 없는 사이트에서는 영영 초기화되지 않는다.
         return [
-            'core.auth.after_login' => ['method' => 'handleLogin', 'priority' => 20],
+            'core.auth.after_login' => ['method' => 'handleLogin', 'priority' => 20, 'sync' => true],
         ];
     }
 
@@ -36,6 +43,7 @@ class HandleSuccessfulLoginListener implements HookListenerInterface
      * 기본 핸들러 — 사용하지 않음.
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -48,6 +56,7 @@ class HandleSuccessfulLoginListener implements HookListenerInterface
      * Repository 메서드는 멱등 — 모든 컬럼이 이미 초기 상태면 UPDATE 미발행.
      *
      * @param  User  $user  로그인한 사용자
+     * @return void 반환값 없음
      */
     public function handleLogin(User $user): void
     {

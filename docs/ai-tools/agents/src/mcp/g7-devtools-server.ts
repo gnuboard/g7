@@ -677,12 +677,20 @@ server.tool(
     // 진단 규칙 (서버 사이드)
     const rules = [
       {
+        id: 'spa-local-leak',
+        name: 'SPA 이동 후 이전 페이지 _local 잔존',
+        keywords: ['페이지 전환', '페이지 이동', '다른 목록', '이전 페이지', '컬럼이 사라', '목록이 깨', '체크박스만', '잔존', '유출', 'visibleColumns', 'SPA'],
+        solution: 'g7-state 로 _local 을 읽어 현재 레이아웃 state 에 없는 키(이전 화면 전용 키)가 있는지 본다. 있으면 보존(_fromBase) 컴포넌트의 저장소 A 가 새 페이지 첫 렌더에 병합된 뒤 자식 마운트 콜백(ColumnSelector·FilterVisibilitySelector init)이 되쓴 경로다 — 엔진 engine-v1.72.1 이상인지, 렌더 단계 초기화(appliedLayoutKey)가 살아 있는지 확인. 시크릿 창(목록 컬럼 저장값 없음)에서 재현한다',
+        doc: 'troubleshooting-state-closure.md#사례-4-spa-이동-시-보존된-base-루트의-stale-저장소-a-가-첫-렌더에-병합되어-마운트-콜백이-이전-페이지-값을-되쓴다-engine-v1721',
+        example: '// g7-state _local → 쿠폰 목록인데 bulkCourier·ordererSearchResults(주문 목록 키) 잔존, visibleColumns 가 주문 컬럼\n// → DynamicRenderer.tsx isBaseLayoutSwitch(렌더 단계 초기화) 확인',
+      },
+      {
         id: 'stale-closure',
         name: 'Stale Closure',
         keywords: ['이전 값', '오래된', '첫 값만', '저장 시', '클로저'],
-        solution: 'G7Core.state.get()._global 사용',
+        solution: 'G7Core.state.get() 사용하여 최신 상태 참조 (반환값이 곧 _global 이다 — ._global 을 덧붙이지 말 것. 예: state.get()._remountKeys)',
         doc: 'troubleshooting-state.md#stale-closure',
-        example: '// ❌ "body": { "email": "{{_global.email}}" }\n// ✅ "body": { "email": "{{G7Core.state.get()._global.email}}" }',
+        example: '// ❌ "body": { "email": "{{_global.email}}" }\n// ❌ "body": { "email": "{{G7Core.state.get()._global.email}}" } — get() 결과에 ._global 을 또 붙이면 언제나 undefined\n// ✅ "body": { "email": "{{G7Core.state.get().email}}" }',
       },
       {
         id: 'cache-iteration',
@@ -4205,7 +4213,7 @@ server.tool(
       '',
       '// ✅ 해결: await 후 상태 재조회',
       'await apiCall();',
-      'const { email } = G7Core.state.get()._global;',
+      'const { email } = G7Core.state.get(); // get() 반환값이 곧 _global — ._global 을 덧붙이지 않는다',
       '```',
       '',
       '**2. callback-state-capture (콜백 상태 캡처)**',
@@ -4433,7 +4441,7 @@ server.tool(
       '|------|------|-------------------|',
       '| `expandChildren` | DataGrid 행 확장 | `row`, `rowIndex` |',
       '| `cellChildren` | DataGrid 셀 커스텀 렌더링 | `cell`, `row`, `column` |',
-      '| `iteration` | 반복 렌더링 | `item`, `index` (또는 `item_var`, `index_var`) |',
+      '| `iteration` | 반복 렌더링 | `item_var`, `index_var` (정본. `item`/`index` 는 미지원) |',
       '| `modal` | 모달 컴포넌트 | 부모 상태 + 모달 로컬 상태 |',
       '| `slot` | 슬롯/Partial 렌더링 | 부모에서 전달된 props |',
       '',

@@ -41,7 +41,7 @@ Laravel `Command::confirm()` (Symfony `ConfirmationQuestion`) 의 기본 동작�
 - 입력을 trim + 소문자 정규화
 - `yes`/`y` 만 true, `no`/`n` 만 false
 - empty → default
-- 그 외 입력 → "yes, y, no, n 중 하나로 입력해 주세요." 출력 후 재질문 루프
+- 그 외 입력 → "yes, y, no, n 중 하나로 입력해 주세요." 출력 후 재질문 루프 (안내 문구는 사이트 언어를 따른다 — Laravel 이 부팅되지 않은 단순 PHP 스크립트에서는 이 원문)
 - `--no-interaction` 또는 비TTY 환경 → default 즉시 반환
 
 ---

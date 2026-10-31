@@ -1,0 +1,36 @@
+# 시나리오 매니페스트 — 관리자 목록 표·빈 안내의 받는 중·빈 결과 표시
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_list_loading_empty_state
+
+description: >-
+  관리자 화면은 화면을 먼저 그린 뒤 목록을 받는다(progressive·background). 받기 전에는 데이터소스 값이
+  undefined 라 표·안내가 「행 0개」로 판단해, 회원·역할·스케줄·로그·분석·확장 목록 등에서 데이터가 있어도
+  받는 동안 「데이터가 없습니다」류 문구가 먼저 보였다. 일부 화면은 `소스?.loading` 으로 받는 중을 가르려 했지만
+  엔진은 데이터소스 값에 loading 을 싣지 않아 그 조건은 늘 거짓이었다. 빈 안내는 받은 결과가 0건이거나 받기에
+  실패했을 때(엔진이 null 로 둠)만 보이고, 받는 중에는 표를 빈 문구 없이 흐리게 덮는다. 표 16개·빈 안내 26개·
+  확장 카드 그리드 4개·알림 센터 2개가 같은 규칙을 쓰고, 새 목록이 규칙 없이 들어오면 전수 검사가 잡는다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-list-loading-empty-state.test.tsx
+
+coverage_strategy: full
+
+# axis 의미:
+#   load_state — 목록 데이터소스 상태. loading 은 엔진이 화면을 먼저 그릴 때 넣는 undefined,
+#                loaded_empty 는 받은 결과 0건, loaded_rows 는 1건 이상, error 는 받기 실패(엔진이 null 로 둠).
+#                화면들은 같은 규칙을 쓰므로 축으로 곱하지 않고 각 시험이 표본 전부를 돈다(it.each).
+axes:
+  load_state: [loading, loaded_empty, loaded_rows, error]
+
+effects:
+  - loading_hides_empty_notice   # 받는 중에는 빈 안내·빈 문구가 없다
+  - loading_blurs_grid   # 받는 중에는 표가 흐림 처리된다
+  - loaded_empty_shows_notice   # 받은 결과 0건이면 그 화면의 빈 안내가 보인다(0건이면 표를 숨기는 화면은 표가 사라진다)
+  - loaded_rows_hide_notice   # 받은 결과가 있으면 빈 안내가 없다
+  - load_failure_releases_notice   # 받기 실패(null)면 받는 중으로 남지 않고 빈 안내가 보인다
+  - every_deferred_list_notice_gated   # 화면 뒤에 받는 목록에 묶인 표·카드·빈 안내는 모두 표본이거나 사유 있는 제외(전수)
+  - no_dead_loading_flag   # 데이터소스 값의 loading 을 읽는 조건이 없다
+  - modal_opens_after_fetch   # 받은 뒤에 여는 창은 여는 시퀀스가 refetch 를 기다린 뒤 연다
+  - opened_modal_failure_shows_notice   # 그런 창이 열렸는데 값이 없으면(받기 실패) 안내를 보인다 — 받는 중으로 가리지 않는다
+  - editor_recipe_matches_engine   # 편집기 조건 레시피 「불러오는 중」「없을 때」가 엔진 실제 값(undefined·null)과 맞는다

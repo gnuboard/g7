@@ -45,9 +45,12 @@ return [
         'alimtalk_sender_key_missing' => 'アラートトーク発信プロフィールキーを設定してください。',
     ],
     'settings' => [
+        'is_test_mode_attribute' => '検査モード',
         'bizppurio_id_attribute' => 'ビズプリオアイディ',
         'password_attribute' => 'パスワード',
+        'api_key_attribute' => 'API キー',
         'sender_number_attribute' => '発信番号',
+        'sender_key_attribute' => 'アラートトーク 発信プロフィール キー',
     ],
     'webhook' => [
         'received' => 'レポートを受け取りました。',
@@ -66,10 +69,10 @@ return [
         'image_unreadable' => 'アップロードした画像ファイルを読み込めません。',
     ],
     'send_skipped' => [
-        'alimtalk_template_not_approved' => '承認されたアラートトークテンプレートがないか、アラートトーク送信がオフになっているため送信をスキップしました。(通知タイプ: :type)',
-        'sms_template_missing' => 'SMS本文が設定されていないため送信をスキップしました。(通知タイプ: :type)',
-        'recipient_phone_missing' => '受信者の電話番号がないため送信をスキップしました。(通知タイプ: :type)',
-        'message_body_empty' => '送信本文が空いているため送信をスキップしました。(通知タイプ: :type)',
+        'alimtalk_template_not_approved' => '承認されたアラートトークテンプレートがないか、アラートトーク送信がオフになっているため送信できませんでした。(通知タイプ: :type)',
+        'sms_template_missing' => 'SMS本文が設定されていないため送信できませんでした。(通知タイプ: :type)',
+        'recipient_phone_missing' => '受信者の電話番号がないため送信できませんでした。(通知タイプ: :type)',
+        'message_body_empty' => '送信本文が空のため送信できませんでした。(通知タイプ: :type)',
     ],
     'template' => [
         'created' => '通知テンプレートを保存しました。',
@@ -88,6 +91,10 @@ return [
         'cancel_approval_not_allowed' => '承認ステータスではないため、承認を取り消せません。(現在: :status)',
         'release_not_allowed' => '休眠ステータスではないため、解除できません。(現在: :status)',
         'code_generation_failed' => 'テンプレートコードを採番できませんでした。しばらくしてからもう一度お試しください。',
+        'loaded' => '通知テンプレートを読み込みました。',
+        'not_found' => '通知テンプレートが見つかりません。',
+        'categories_loaded' => 'アラートトークのカテゴリを読み込みました。',
+        'profiles_loaded' => 'アラートトークの発信プロフィールを読み込みました。',
     ],
     'validation' => [
         'link_mo_required' => 'ウェブリンク(WL)ボタンにはモバイルリンクが必要です。',
@@ -153,8 +160,29 @@ return [
             'per_page' => '1ページあたりの件数',
         ],
     ],
+    'dispatch_result' => [
+        'loaded' => '送信結果を読み込みました。',
+    ],
     'token_check' => [
         'success' => '認証が正常に確認されました。ユーザーIDとパスワードが正しいです。',
         'failed' => '認証の確認に失敗しました。詳細な理由をご確認ください。',
+    ],
+    // 通知テンプレート編集ウィンドウ「使用可能な変数」の説明 — common は変数キーごとの既定、by_type はその通知でのみ意味が異なる変数。キーがない場合は宣言文字列をそのまま使う。
+    'notification_variables' => [
+        'common' => [
+            'name' => '受信者（管理者）名',
+            'app_name' => 'サイト名',
+            'result_code' => '結果コード（9070 SMS / 7436 アリムトーク）',
+            'channel_label' => '送信チャネル（SMS/アリムトーク）',
+            'settings_url' => 'メッセージング設定URL',
+            'site_url' => 'サイトURL',
+        ],
+    ],
+    // コンソールコマンド出力
+    'console' => [
+        'sync_template_status' => [
+            'no_requested' => '審査中(requested)のテンプレートがないため、カカオへの照会をスキップします。',
+            'done' => '審査中テンプレート:checked件を点検し、:transitioned件のステータスが遷移しました。',
+        ],
     ],
 ];

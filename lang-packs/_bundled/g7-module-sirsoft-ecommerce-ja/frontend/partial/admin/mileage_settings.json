@@ -15,11 +15,8 @@
     "earn_trigger_delivered": "配送完了",
     "earn_delay_prefix": "後",
     "earn_delay_suffix": "日経過時に積立",
-    "earn_trigger_hint": "デフォルト=購入確定 / 配送完了から選択可能",
-    "deduction_timing": "ポイント差引のタイミング",
-    "deduction_timing_payment_complete": "決済完了時",
-    "deduction_timing_order_placed": "注文受付時",
-    "deduction_timing_hint": "デフォルト=決済完了時に差引。クレジットカードなどの決済が完了した後にポイントを差引きます(決済未完了·失敗注文での先立て差引防止)。全額ポイント決済は常に注文時点で差引かれます。"
+    "earn_delay_days": "積立遅延日数",
+    "earn_trigger_hint": "デフォルト=購入確定 / 配送完了から選択可能"
   },
   "currency": {
     "title": "通貨別使用単位",
@@ -41,6 +38,10 @@
     "duplicate_currency_error": "すでに登録されている通貨です。",
     "max_use_fixed_suffix": "ウォン",
     "earn_rounding": "積立端数処理",
+    "earn_rounding_unit_label": "積立の切り捨て単位",
+    "earn_rounding_method_label": "積立の切り捨て方式",
+    "earn_rounding_unit_of": "{{currency}} 積立の切り捨て単位",
+    "earn_rounding_method_of": "{{currency}} 積立の切り捨て方式",
     "earn_rounding_hint": "積立ポイントの算出・按分時に適用",
     "earn_rounding_units": {
       "1": "1ポイント",

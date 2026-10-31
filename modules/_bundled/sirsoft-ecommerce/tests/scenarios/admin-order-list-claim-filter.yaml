@@ -1,0 +1,88 @@
+feature: 주문 목록 클레임 기준 필터 · 클레임 컬럼 (#599 S10 — D22)
+
+description: |
+  주문관리 필터 카드에 **클레임 기준 블록**을 신설하고, DataGrid 에 유형별 최신 상태를
+  보여주는 **클레임 컬럼**을 더한다. 서버 축(파라미터·whereExists·요약 직렬화)은 S6c 가
+  놓았고 이 세션은 그것을 화면에 잇는다. 조용히 깨지는 지점은 넷이다.
+
+  ① **화면 어휘가 서버 게이트를 벗어나면** 칩 하나를 누른 순간 목록 전체가 422 가 되는데,
+     화면에는 직전 목록이 그대로 남아 "필터가 걸렸다" 로 보인다. 반대로 Enum 값이 칩에서
+     빠지면 그 상태로 기록된 클레임이 달린 주문은 어떤 필터 조합으로도 도달 불가가 된다.
+     취소 축의 어휘는 상태가 아니라 **취소 유형**(전체/부분)이다 (S6c 판정 ①).
+
+  ② **왕복이 한 지점이라도 빠지면** 새로고침에서 그 필터만 사라진다. 필터 상태 → URL →
+     데이터소스 파라미터 → 재진입 복원 네 지점이 같은 축 집합을 나른다.
+
+  ③ **컬럼 표시의 근거가 둘이면 어긋난다.** 종전에는 요약을 `with_claim_summary` 요청에만
+     싣는 opt-in 이었는데, 컬럼 표시는 브라우저 저장값이 정하고 값 수신은 주소가 정해
+     서로 갈렸다 — 컬럼을 한 번 켠 운영자의 다음 진입에서 컬럼은 보이는데 전 행이 "-" 가
+     되고, 반대로 공유 링크 수신자는 서버가 계산한 값을 받고도 컬럼을 못 봤다. 오류·로그가
+     남지 않는다. 서버가 항상 싣도록 되돌려(확정) 근거를 하나로 만든다.
+
+  ④ **총 건수가 부풀면** 목록은 정상으로 보이는데 페이지 경계가 어긋난다. 저장소가
+     `whereExists` 대신 조인으로 걸면 1:N 이라 원 행이 늘어난다.
+
+  같은 화면에 **서버가 모르는 단수 키**(`claimRefundStatus` → `claim_refund_status[]`)가
+  프리셋·엑셀 배선에 남아 있었다. 어느 서버 경로도 그 이름을 읽지 않아 프리셋이 클레임
+  조건을 저장한 것처럼 보이고 실제로는 아무것도 거르지 않았다 — 계약상의 복수 키로 옮긴다.
+
+# axis 의미:
+#   claim_axis — 필터 축의 성격. presence 는 스칼라(한 값만, 다시 누르면 해제)이고
+#                type_status 는 유형별 배열 누적이며, fault_and_date 는 유형과 직교한다.
+#                세 성격이 상태 저장·URL 직렬화 형태를 서로 다르게 만든다.
+axes:
+  claim_axis: [presence, type_status, fault_and_date]
+
+effects:
+  # 블록 구성 (①)
+  - order_list_claim_filter_axes_are_registered_in_slot_area
+  - order_list_claim_filter_is_visible_by_default
+  - order_list_claim_filter_vocabulary_matches_server_gate
+  - order_list_claim_presence_is_scalar
+  - order_list_claim_requested_range_has_both_bounds
+  # 왕복 (②)
+  - order_list_claim_filter_round_trips_through_url
+  - order_list_claim_filter_search_passes_changed_values
+  - order_list_claim_filter_reset_clears_axes
+  - order_list_claim_filter_preset_carries_axes
+  - order_list_claim_filter_dead_singular_keys_removed
+  # 컬럼 (③)
+  - order_list_claim_column_is_always_served
+  - order_list_claim_column_renders_latest_status_per_type
+  - order_list_claim_column_display_has_single_source
+  - order_list_claim_summary_survives_deferred_join
+  # 브라우저 실측 (④ 포함 — Playwright spec 헤더가 선언하는 3건)
+  - order_list_claim_filter_block_renders
+  - order_list_claim_filter_narrows_result
+  - order_list_claim_filter_total_is_not_inflated
+  # 구조 계약 (Vitest — 귀책·신청일 축 배선, 브라우저 실측 아님)
+  - order_list_claim_filter_fault_and_date_axes_are_wired
+  # 모달 브리지 — 모달은 별도 컨텍스트라 페이지 _local 을 읽지 못한다. 엑셀 다운로드가
+  # 싣는 필터에 목록의 클레임 축 전건이 도달하는지를 이 축이 담당한다.
+  - order_list_claim_filter_reaches_the_excel_modal_through_the_global_bridge
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/OrderListClaimFilterTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderListClaimFilter.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Layouts/OrderListClaimFilterVocabularyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Layouts/ClaimWordingMatchesBehaviourTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-order-list-claim-filter.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/OrderListDeferredJoinTest.php
+
+notes: |
+  **어휘 집합은 Enum 단일 출처에서 파생한다.** 화면 칩 값을 손으로 적으면 Enum 이 늘 때
+  칩만 옛 집합으로 남고, 그 상태로 기록된 행은 도달 불가가 된다. 구조 검사가 칩 값 집합과
+  `OrderListRequest` 게이트의 Enum 집합을 **정확히 같은 집합**으로 비교한다 — 부분집합도
+  초과집합도 위반이다.
+
+  **클레임 유무는 스칼라다.** 서버 규칙이 `in:none,any,active` 라 배열이 아니다. 칩을 배열
+  토글로 만들면 두 값이 동시에 선택되어 마지막 값만 URL 에 실리고, 화면은 둘 다 켜진 것으로
+  보인다.
+
+  **컬럼 표시의 출처는 하나다.** 서버가 클레임 요약을 항상 싣고, 표시 여부는 컬럼 선택
+  (브라우저 저장값)만이 정한다. 요약 요청을 주소로 나르는 축을 다시 만들면 표시와 값
+  수신이 두 근거를 갖게 되어 같은 결함이 재현된다 — 구조 검사가 세 레이아웃 파일에
+  `with_claim_summary` 가 없음을 고정한다.
+
+  **클레임 기준 블록은 기본 노출이다** (계획서 §6-4-2). 검색 편집에서 숨길 수는 있지만
+  기본 목록에 들어 있어, 운영자가 편집을 열어보지 않아도 이 기능이 있다는 것을 안다.

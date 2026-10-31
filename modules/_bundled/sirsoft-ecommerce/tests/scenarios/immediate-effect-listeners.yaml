@@ -1,0 +1,37 @@
+feature: 저장 직후 결과가 보여야 하는 훅 리스너의 동기 실행
+
+description: |
+  훅 리스너는 sync 를 선언하지 않으면 큐로 간다. 큐 작업은 호출한 쪽의 트랜잭션이 커밋된 뒤에,
+  database·redis 드라이버면 별도 워커 프로세스에서 돈다. 워커가 없으면 영영 돌지 않는다.
+
+  다음 리스너는 결과가 저장한 그 요청·바로 다음 화면에 보여야 하므로 sync 로 돈다.
+  - 공유 캐시 비우기(카테고리 트리·검색엔진용 SEO 캐시). 본문은 DB::afterCommit 으로 감싸 커밋 뒤에 비운다.
+  - 같은 응답에 보이는 파생 데이터 갱신(상품 총재고·옵션 그룹, 가입 기본 통화·배송국가).
+
+  무거운 일(상품 상세 미리 다시 그리기)은 별도 큐 리스너로 나눠 큐에 남긴다.
+
+axis_notes:
+  listener: 대상 리스너 묶음.
+  queue: |
+    sync 는 테스트 기본값이라 큐 작업이 같은 자리에서 돌아 결함을 가린다. database 는 워커를 돌리지 않은
+    상태로 운영의 「웹 요청과 워커가 다른 프로세스」 를 재현한다.
+
+axes:
+  listener: [category_tree, seo_product, option_sync, register_assignment]
+  queue: [sync, database]
+
+effects:
+  - shared_cache_invalidated_without_worker   # 워커 없이 저장 직후 공유 캐시가 비워진다
+  - invalidation_deferred_until_commit        # 트랜잭션 안 발화는 커밋 뒤에 비운다
+  - heavy_work_stays_queued                   # 상세 재렌더는 새 큐 리스너로 push 된다
+  - derived_data_visible_in_same_request      # 파생 데이터가 저장 응답·직후 조회에 보인다
+  - option_groups_rebuilt_for_mixed_ids_bulk_update  # 옵션 API 의 「상품ID-옵션ID」 일괄 수정도 그 상품의 옵션 그룹을 다시 만든다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Listeners/CategoryTreeCacheListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Seo/SeoCacheListenersQueuedTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/SeoProductDetailRegenerateListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Services/ProductOptionSyncQueuedTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/RegisterDefaultAssignmentQueuedTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/SeoProductCacheListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/RegisterCurrencyAssignmentTest.php

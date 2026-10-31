@@ -1,0 +1,118 @@
+/* g7-extension-css:start — convert-layout-classes.mjs 가 생성·갱신하는 블록. 손으로 고치지 않는다. */
+@import "tailwindcss/theme.css" layer(theme) prefix(bizppurio);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(bizppurio) source(none);
+@import "./g7-extension.generated.css";
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@source "../../src";
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+/* g7-extension-css:end */
+
+/**
+ * sirsoft-message_bizppurio 손 CSS — 비즈뿌리오 환경설정·알림 조각의 자기 클래스
+ *
+ * 화면 모양의 대부분은 위 진입 블록이 만드는 접두 유틸리티(`bizppurio:flex` 등)와 생성 파일
+ * `g7-extension.generated.css` 의 의미 클래스(`bizppurio-btn` 등)가 맡는다. 이 아래는 이 플러그인이 손으로 쓴
+ * 호버·다크 짝과 임의값이다(다른 확장·템플릿 클래스를 정의하거나 덮지 않는다).
+ *
+ * - 칸: 의미 글자색(`bizppurio-tone-*`)은 템플릿이 덮을 수 있는 가장 낮은 칸 `@layer g7-extension` 에 둔다.
+ *   접두 유틸리티를 보완하는 호버·다크 짝은 일반 칸(층 없음)에 둔다
+ * - 다크 모드: 템플릿 종류와 무관한 중립 표식(`<html data-g7-color-scheme="dark">`)으로 짝을 둔다.
+ *   「다크 안의 라이트」(관리자 다크 화면 속 라이트 미리보기)는 제외하는 규격이고, 특이도는 템플릿의 `.dark .x` 와 같다
+ */
+
+/* 청록 테두리 작은 버튼(템플릿 불러오기 등) — 다크 테두리와 호버 배경 */
+.bizppurio-btn-teal:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(60% 0.118 184.704); /* teal-600 */
+}
+
+@media (hover: hover) {
+    .bizppurio-btn-teal:hover {
+        background-color: oklch(98.4% 0.014 180.72); /* teal-50 */
+    }
+
+    .bizppurio-btn-teal:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        background-color: color-mix(in oklab, oklch(38.6% 0.063 188.416) 30%, transparent); /* teal-900/30 */
+    }
+}
+
+/* 청록 안내 상자 — 다크 테두리 */
+.bizppurio-notice-teal:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(43.7% 0.078 188.216); /* teal-800 */
+}
+
+/* 템플릿 편집 창 본문 — 화면 높이의 65% 까지만 키우고 넘치면 스크롤 */
+.bizppurio-scroll-panel {
+    max-height: 65vh;
+}
+
+/* 진한 청록·호박색 단추(흰 글자) — 호버 바탕을 한 단계 더 짙게 */
+@media (hover: hover) {
+    .bizppurio-btn-teal-solid:hover,
+    .bizppurio-btn-teal-solid:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        background-color: oklch(43.7% 0.078 188.216); /* teal-800 */
+    }
+
+    .bizppurio-btn-amber-solid:hover,
+    .bizppurio-btn-amber-solid:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        background-color: oklch(47.3% 0.137 46.201); /* amber-800 */
+    }
+}
+
+/* 변수 끼워 넣기 칩 — 호버 테두리(다크 짝 포함) */
+@media (hover: hover) {
+    .bizppurio-chip-teal:hover {
+        border-color: oklch(77.7% 0.152 181.912); /* teal-400 */
+    }
+
+    .bizppurio-chip-teal:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        border-color: oklch(60% 0.118 184.704); /* teal-600 */
+    }
+}
+
+/* 경고 글자색 — 템플릿이 덮을 수 있는 가장 낮은 칸. 글자 크기는 레이아웃의 bizppurio:text-xs 등 */
+@layer g7-extension {
+    .bizppurio-tone-warning {
+        color: oklch(55.4% 0.135 66.442); /* yellow-700 */
+    }
+
+    .bizppurio-tone-warning:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(90.5% 0.182 98.111); /* yellow-300 */
+    }
+}
+
+/*
+ * 층 밖 의미 규칙 — 관리자 템플릿이 층 없이 둔 배치 규칙(dashboard.css 의 flex-between)의 이 플러그인 사본.
+ * 생성 파일(g7-extension.generated.css)은 의미 클래스를 모두 가장 낮은 칸에 담지만, 템플릿에서 이 규칙은 층 밖이라
+ * 같은 요소의 유틸리티를 이겼다. 이 플러그인 유틸리티는 층 없이 실리므로 같은 우선순위를 지키려고 이 규칙만
+ * 층 밖(유틸리티 뒤)에 한 번 더 둔다. 값은 템플릿 정의와 같다.
+ */
+.bizppurio-flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

@@ -360,17 +360,23 @@ class Plugin extends AbstractPlugin
     public function getHookListeners(): array
     {
         return [
+            Listeners\ValidateRedirectUrlSettingsListener::class,
             Listeners\RegisterPgProviderListener::class,
             Listeners\RegisterCashReceiptProviderListener::class,
             Listeners\PaymentRefundListener::class,
+            Listeners\ClaimPaymentApproveListener::class,
+            Listeners\ClaimPaymentRefundListener::class,
             Listeners\CancelActivityLogListener::class,
+            Listeners\ScrubEscrowRecipientOnOrderAnonymizeListener::class,
             Listeners\RegisterEasyPayMethodsListener::class,
+            Listeners\RestrictPaymentMethodsForCurrencyListener::class,
             Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,
-            Listeners\EnsureAdminOrderListTestBadgeLayoutListener::class,
             Listeners\EnsureAdminOrderDetailTestModeLayoutListener::class,
             Listeners\EnsureAdminOrderDetailPaymentQueryLayoutListener::class,
-            Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,
             Listeners\ValidateCbtSettingsListener::class,
+            Listeners\ProvideNecessaryStorageKeysListener::class,
+            // 스코프 강제 지점 원장 (core.permission.scope_enforcement_ledger 필터)
+            Listeners\OrderScopeLedgerListener::class,
         ];
     }
 

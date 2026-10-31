@@ -21,13 +21,13 @@ class DatabaseSeeder extends Seeder
             CoreAdminMenuSeeder::class,
             NotificationDefinitionSeeder::class,
             IdentityPolicySeeder::class,
-            IdentityMessageDefinitionSeeder::class,
+            CoreScheduleSeeder::class,
         ]);
 
         // 샘플 시더 (--sample 옵션 시에만 실행)
         if ($this->shouldIncludeSample()) {
             $this->command->info('');
-            $this->command->info('=== 코어 샘플 시더 실행 시작 ===');
+            $this->command->info('=== '.__('common.console.seeders.database.sample_start').' ===');
 
             $this->call([
                 Sample\DummyUserSeeder::class,
@@ -38,7 +38,7 @@ class DatabaseSeeder extends Seeder
                 Sample\ActivityLogSampleSeeder::class,
             ]);
 
-            $this->command->info('=== 코어 샘플 시더 실행 완료 ===');
+            $this->command->info('=== '.__('common.console.seeders.database.sample_done').' ===');
         }
     }
 }

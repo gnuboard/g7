@@ -53,7 +53,7 @@ DB 에 쓰지 않고 임시 보관했다가 가입 완료 시에만 레코드로
 | `src/Enums/` | 상태·타입·분류 | 문자열 리터럴 대신 Enum 을 SSoT 로 둔다 |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-verification_nhnkcp --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-verification_nhnkcp --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
@@ -61,7 +61,8 @@ DB 에 쓰지 않고 임시 보관했다가 가입 완료 시에만 레코드로
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -94,6 +95,8 @@ stash(`nhnkcp:pending_record:`) → `core.auth.after_register`에서 흡수,
 `live_site_cd`에 `SM` 프리픽스가 없으면 자동으로 붙여 저장. 두 훅이 분리된 이유는 코어의
 FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이기 때문입니다 — "필수값이
 비어있지 않은가"는 검증 단계에서, "저장될 값의 형식을 교정"은 저장 단계에서 처리합니다.
+
+**외부로 나가는 주소**: KCP 거래등록의 복귀 주소(`Ret_URL`)와 콜백 뒤 브리지 이동은 요청 Host 가 아니라 코어 사이트 주소(`App\Support\SiteUrl`, `APP_URL`)로 만든다. 챌린지 공개 payload 의 `siteOrigin` 은 프론트가 브리지 메시지의 출처를 대조하는 기준이다. 브리지는 결과를 사이트 출처 리터럴로만 `postMessage` 하고, 모바일 복귀는 같은 출처 경로만 따르며, `Referrer-Policy: no-referrer`·`Cache-Control: no-store` 로 응답한다.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -102,8 +105,8 @@ FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 0개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 7개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 8개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 7개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -125,7 +128,7 @@ FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이�
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-verification_nhnkcp` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`verificationnhnkcp:` 유틸리티·`verification-nhnkcp-*`)를 쓰면 `plugin:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] PII 컬럼을 다루는 코드 변경 시 GDPR 삭제/탈퇴 정리 리스너(`CleanKcpRecordOnUserDelete`/`CleanKcpRecordOnUserWithdraw`)가 여전히 그 컬럼을 정리하는지 확인
@@ -152,10 +155,10 @@ FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 20개 | `plugins/_bundled/sirsoft-verification_nhnkcp/tests` |
-| Vitest | 7개 | `vitest.config.ts` |
-| Playwright | 2개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
+| PHPUnit | 23개 | `plugins/_bundled/sirsoft-verification_nhnkcp/tests` |
+| Vitest | 17개 | `vitest.config.ts` |
+| Playwright | 3개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 27개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -189,3 +192,27 @@ cd plugins/_bundled/sirsoft-verification_nhnkcp && npm run test:e2e -- specs/<�
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
+
+## 화면 클래스 규약 — 이 플러그인이 자기 CSS 를 싣는다
+
+환경설정 레이아웃과 `resources/extensions/` 조각(본인인증 설정의 공급자 카드, 마이페이지 본인인증 카드 — 다른 패키지 화면 안에서 그려지는 것)은 **템플릿 CSS 에 기대지 않는다.** 모든 클래스는 이 플러그인 앞글자를 쓰고, 규칙은 이 플러그인의
+`dist/css/plugin.css` 에 실재한다(manifest `assets.css.namespace: verification-nhnkcp`). 템플릿이 어떤 CSS 라이브러리를 쓰든 같은 모양으로 보인다.
+
+1. **배치·색 유틸리티는 `verificationnhnkcp:` 접두 Tailwind 로 쓴다**(`verificationnhnkcp:flex verificationnhnkcp:dark:text-gray-400`).
+   Tailwind 는 이 플러그인의 작성 도구일 뿐이고(preflight 없음), `resources/css/main.css` 맨 앞 생성 블록이
+   `resources/{layouts,extensions,js}` 와 `src`(PHP 가 내보내는 클래스)를 훑어 쓰인 클래스만 만든다. 새 클래스를 쓰면
+   `php artisan plugin:build sirsoft-verification_nhnkcp --production` 으로 CSS 를 다시 만들고 update 한다 — 빌드하지 않으면
+   그 스타일만 조용히 빠진다. 앞글자 없는 `flex` 를 쓰면 정적 검사가 막는다.
+2. **템플릿 의미 클래스는 `verification-nhnkcp-*` 사본을 쓴다**(`verification-nhnkcp-btn`·`verification-nhnkcp-form-label`·`verification-nhnkcp-section-heading-md`).
+   정의는 `resources/css/g7-extension.generated.css`(생성 파일, 손으로 고치지 않는다)의 가장 낮은 칸
+   `@layer g7-extension` 에 있어 템플릿이 같은 이름을 덮을 수 있다. 템플릿 의미 클래스를 새로 가져오려면
+   원래 이름으로 적은 뒤 `node scripts/extension-css/convert-layout-classes.mjs plugins/_bundled/sirsoft-verification_nhnkcp` 를
+   다시 돌린다(같은 입력이면 결과가 같다).
+3. **이 플러그인 고유의 의미 색과 상태 짝은 손 CSS 다** — `resources/css/main.css` 의 생성 블록 아래.
+   의미 글자색 `verification-nhnkcp-tone-*` 은 `@layer g7-extension` 안에 두고(색만 맡는다), 포커스 짝은 층 없이 둔다.
+4. **다크 모드는 `verificationnhnkcp:dark:` 변형이나 중립 표식(`[data-g7-color-scheme="dark"]`)으로 쓴다.** 템플릿 표지
+   `.dark` 를 손 CSS 선택자에 쓰지 않는다.
+5. **아이콘에 글자 크기 유틸리티(`verificationnhnkcp:text-xl` 등)를 주면 `verificationnhnkcp:leading-none` 을 함께 준다** — 아이콘 글꼴 CSS 의
+   줄 높이(1)와 같게 맞춘다. 입력칸(`<input>`)에는 글자색 의미 클래스를 주지 않는다 — 템플릿 입력 컴포넌트가 자기 색을 정한다.
+
+규약 전체는 [확장 CSS 자기 공급 규약](../../../docs/extension/module-assets.md#확장-css-자기-공급-규약), 변환 도구는 `scripts/extension-css/README.md`.

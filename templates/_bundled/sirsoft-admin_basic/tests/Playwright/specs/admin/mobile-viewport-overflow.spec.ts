@@ -17,7 +17,7 @@
  *  - 대신 두 지표를 쓴다: ① 요소 우측 끝이 뷰포트를 넘는가(clip)
  *                        ② `#right_content_area` 의 `scrollWidth - clientWidth`(rcaExcess)
  *
- * @scenario admin_viewport=390|320|1023|1024|1280 x surface=header|drawer|content
+ * @scenario admin_viewport=390|320|1023|1024|1280, surface=header|drawer|content
  * @effects mobile_header_no_clip, drawer_prefs_chips_on_screen, content_area_no_overflow,
  *          portable_desktop_boundary_flips_at_1024, desktop_header_currency_dropdown_preserved,
  *          drawer_prefs_collapsed_by_default, drawer_prefs_accordions_independent

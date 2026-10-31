@@ -1,0 +1,22 @@
+feature: 머리글 수 배지 넘침과 전체 게시판 카드 글 수 다국어 (7.1.0 실측 D-N2·D-N3)
+
+description: |
+  머리글 알림 수·장바구니 수 배지가 고정 폭(w-5, 20px) 원이라 「99+」(12px 글자, 약 23px)가 양옆으로
+  넘쳤다. 최소 폭(min-w-5) + 좌우 여백(px-1)으로 숫자 폭에 맞춰 늘어나게 한다.
+  전체 게시판 카드의 글 수가 `{{posts_count}}개` 로 하드코딩돼 영어·일본어 화면에서도 「16개」로 보였다.
+  이미 있는 다국어 키 `board.post_count` 를 쓰고, shop 밖 사용자 레이아웃의 text 에 한글을 직접 적지 않도록 잠근다.
+
+# axis 의미: 갈라지는 축은 «어느 표면인가» 하나다. 두 배지는 같은 계약(글자가 원 안에 든다),
+# 게시판 카드와 레이아웃 전수 검사는 같은 계약(문구는 번역 키로만)을 각자 표면에서 잠근다.
+axes:
+  surface: [notification_badge, cart_badge, mobile_cart_badge, all_boards_card, non_shop_layouts]
+
+effects:
+  - count_badge_grows_with_text
+  - board_card_post_count_uses_translation_key
+  - non_shop_layouts_have_no_hardcoded_korean_text
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/CountBadgeOverflow.test.tsx
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-card-post-count-i18n.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/user-base-mobile-cart-badge.test.ts

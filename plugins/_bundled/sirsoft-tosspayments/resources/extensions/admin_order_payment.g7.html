@@ -1,0 +1,29 @@
+<!-- 관리자 주문 상세에 토스페이먼츠 결제 정보 패널을 덧붙인다. 가상계좌 입금 정보와 에스크로 여부처럼 이 PG 에만 있는 값이라 코어 주문 화면이 알 수 없다 -->
+<extension target-layout="admin_ecommerce_order_detail">
+  <inject target-id="tab_content_area" position="append_child">
+    <div data-ref="tosspayments_payment_panel" data-if="{{(order.data?.payments?.filter(p => p.pg_provider === 'tosspayments' &amp;&amp; p.transaction_id) ?? []).length > 0}}" class="pay-tosspayments-admin-card">
+      <div data-ref="tosspayments_payment_header" class="paytosspayments:flex paytosspayments:items-center paytosspayments:gap-2 paytosspayments:mb-4">
+        <div class="paytosspayments:w-1.5 paytosspayments:h-4 paytosspayments:bg-blue-500 paytosspayments:rounded-full paytosspayments:flex-shrink-0"/>
+        <h3 class="paytosspayments:text-sm paytosspayments:font-semibold paytosspayments:text-gray-800 paytosspayments:dark:text-gray-200">$t:sirsoft-tosspayments.admin.payment_panel_title</h3>
+      </div>
+      <div data-ref="tosspayments_payment_rows" class="paytosspayments:space-y-2">
+        <div data-ref="tosspayments_escrow_row" data-if="{{!!order.data?.payment?.is_escrow}}" class="pay-tosspayments-flex-between paytosspayments:text-sm">
+          <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.admin.escrow_label</span>
+          <span class="paytosspayments:inline-flex paytosspayments:items-center paytosspayments:gap-1 paytosspayments:px-2 paytosspayments:py-0.5 paytosspayments:rounded-full paytosspayments:text-xs paytosspayments:font-semibold paytosspayments:bg-blue-100 paytosspayments:text-blue-800 paytosspayments:dark:bg-blue-900/30 paytosspayments:dark:text-blue-300">$t:sirsoft-tosspayments.admin.escrow_yes</span>
+        </div>
+        <div data-ref="tosspayments_vbank_row" data-if="{{!!order.data?.payment?.vbank_number}}" class="pay-tosspayments-flex-between paytosspayments:text-sm">
+          <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.admin.vbank_label</span>
+          <span class="paytosspayments:text-gray-900 paytosspayments:dark:text-white paytosspayments:font-medium">{{(order.data?.payment?.vbank_name ?? '') + ' ' + (order.data?.payment?.vbank_number ?? '') + ' (' + (order.data?.payment?.vbank_holder ?? '') + ')'}}</span>
+        </div>
+        <div data-ref="tosspayments_vbank_due_row" data-if="{{!!order.data?.payment?.vbank_due_at_formatted}}" class="pay-tosspayments-flex-between paytosspayments:text-sm">
+          <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.admin.vbank_due_label</span>
+          <span class="paytosspayments:text-gray-900 paytosspayments:dark:text-white paytosspayments:font-medium">{{order.data?.payment?.vbank_due_at_formatted ?? ''}}</span>
+        </div>
+        <div data-ref="tosspayments_receipt_row" data-if="{{!!order.data?.payment?.pg_receipt_url}}" class="pay-tosspayments-flex-between paytosspayments:text-sm">
+          <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.admin.receipt_label</span>
+          <a data-ref="tosspayments_receipt_link" href="{{order.data.payment.pg_receipt_url}}" target="_blank" rel="noopener noreferrer" class="paytosspayments:text-sm paytosspayments:text-blue-600 paytosspayments:dark:text-blue-400 paytosspayments:hover:underline">$t:sirsoft-tosspayments.admin.receipt_view</a>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

@@ -14,6 +14,7 @@
 import { describe, it, expect } from 'vitest';
 
 import userBase from '../../layouts/_user_base.json';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 type ActionNode = {
   event?: string;
@@ -51,8 +52,8 @@ function collectActionsByEvent(layout: any, eventName: string): ActionNode[] {
   const roots = Array.isArray(layout.components) ? layout.components : [layout];
   const matched: ActionNode[] = [];
   walk(roots, (node) => {
-    if (!Array.isArray(node.actions)) return;
-    for (const action of node.actions) {
+    if (!asArray(node?.actions).length > 0) return;
+    for (const action of asArray(node?.actions)) {
       if (action && action.event === eventName) {
         matched.push(action);
       }
@@ -62,8 +63,8 @@ function collectActionsByEvent(layout: any, eventName: string): ActionNode[] {
 }
 
 function flattenSequenceActions(action: ActionNode): ActionNode[] {
-  if (action.handler === 'sequence' && Array.isArray(action.params?.actions)) {
-    return action.params!.actions as ActionNode[];
+  if (action.handler === 'sequence' && callbacksOf(action, 'actions').length > 0) {
+    return callbacksOf(action, 'actions') as ActionNode[];
   }
   return [action];
 }
@@ -89,7 +90,7 @@ describe('사용자 알림 레이어 동기화 (gnuboard/g7#14)', () => {
       const apiCall = steps.find(
         (s) => s.handler === 'apiCall' && typeof s.target === 'string' && s.target.endsWith('/notifications/read-batch'),
       )!;
-      const successSteps = (apiCall.onSuccess ?? []) as ActionNode[];
+      const successSteps = asArray(apiCall?.onSuccess) as ActionNode[];
       const refetchIds = successSteps
         .filter((s) => s.handler === 'refetchDataSource')
         .map((s) => s.params?.dataSourceId);
@@ -102,7 +103,7 @@ describe('사용자 알림 레이어 동기화 (gnuboard/g7#14)', () => {
       const apiCall = steps.find(
         (s) => s.handler === 'apiCall' && typeof s.target === 'string' && s.target.endsWith('/notifications/read-batch'),
       )!;
-      const successSteps = (apiCall.onSuccess ?? []) as ActionNode[];
+      const successSteps = asArray(apiCall?.onSuccess) as ActionNode[];
       const setState = successSteps.find((s) => s.handler === 'setState');
       expect(setState).toBeDefined();
       expect(setState!.params?.target).toBe('global');

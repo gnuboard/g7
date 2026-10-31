@@ -1,0 +1,20 @@
+feature: 마이페이지 주문 상세 › 나이스페이먼츠 입금 안내·영수증 행은 레이아웃 조각 하나만 그린다
+
+description: |
+  조각(user_mypage_order_receipt)과 주입 스크립트(mypageOrderShowInjector)가 같은 「가상계좌 입금 안내」와 「영수증」 행을
+  각각 그려 두 번 나오던 것을 조각 하나로 모은다. 스크립트 쪽은 한국어 고정
+  글자·자체 날짜 서식이었다. 조각의 입금 기한은 쇼핑몰이 서식을 입힌 vbank_due_at_formatted 를 쓰고, 스크립트가 열던
+  매출전표(type=0)는 조각 영수증 행의 링크로 옮긴다.
+  #639 에서 그 주입 스크립트를 걷어냈다 — 이제 조각을 엔진에 태워 입금 안내·영수증 행이 한 번만 그려지는지 보고,
+  결제 정보 카드를 DOM 에서 찾아 덧그리는 모듈이 다시 생기지 않았는지 소스로 확인한다.
+
+axes:
+  order: [vbank_waiting, card_paid]
+
+effects:
+  - script_draws_no_duplicate
+  - due_date_uses_shop_formatted_value
+  - sales_slip_link_in_fragment
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/layouts/mypagePaymentPanelSingleSource.test.ts

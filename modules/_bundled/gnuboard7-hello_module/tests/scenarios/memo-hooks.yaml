@@ -1,0 +1,17 @@
+feature: Hello 모듈 메모 훅 (Action·Filter 시연)
+
+description: |
+  학습용 모듈이 메모를 만들 때 발행하는 훅. 저장 전 제목을 gnuboard7-hello_module.memo.title.filter 필터에
+  통과시키고(Hello 플러그인이 구독 — 종전에는 발행 지점이 없어 한 번도 실행되지 않았다, #138 후속),
+  저장 뒤 gnuboard7-hello_module.memo.created 액션을 발행한다.
+
+axes:
+  case: [memo_created_action, memo_title_filter]
+
+effects:
+  - memo_created_action_fires_once_with_memo
+  - memo_title_filter_applied_before_save
+  - default_listener_runs_without_exception
+
+test_files:
+  - modules/_bundled/gnuboard7-hello_module/tests/Feature/HookIntegrationTest.php

@@ -4,7 +4,6 @@ namespace Tests\Feature\Upgrade;
 
 use App\Extension\UpgradeContext;
 use App\Upgrades\Data\V7_0_0_beta_7\Migrations\FinalizeOrphanedInstallerRuntime;
-use Illuminate\Support\Facades\File;
 use Tests\Concerns\IsolatesInstallerBasePath;
 use Tests\TestCase;
 
@@ -35,9 +34,9 @@ class Beta7FinalizeOrphanedInstallerRuntimeTest extends TestCase
     private string $stateJsonPath;
 
     /**
-     * @var array<string, string|null> axis 12 가 putenv / $_ENV / $_SERVER 를
-     *      덮어쓰므로 후속 테스트 / 다음 테스트 파일의 DB 자격증명이 오염되지
-     *      않도록 tearDown 에서 복원할 ENV 키별 원본 스냅샷.
+     * @var array<string, string|null> axis 12 가 putenv / / 를
+     *                                 덮어쓰므로 후속 테스트 / 다음 테스트 파일의 DB 자격증명이 오염되지
+     *                                 않도록 tearDown 에서 복원할 ENV 키별 원본 스냅샷.
      */
     private array $originalEnvSnapshot = [];
 

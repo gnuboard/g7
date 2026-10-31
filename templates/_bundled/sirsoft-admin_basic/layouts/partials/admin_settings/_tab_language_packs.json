@@ -1,18 +1,217 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "환경설정 > 언어팩 관리 탭 — 본문은 partials/admin_language_pack_list/_content.json 공유 (SSoT). 활성 탭 가드만 유지하고 본문은 모듈/플러그인/템플릿 페이지와 동일."
-  },
-  "id": "tab_content_language_packs",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'language_packs'}}",
-  "props": {
-    "className": "mt-6"
-  },
-  "children": [
-    {
-      "partial": "partials/admin_language_pack_list/_content.json"
-    }
-  ]
+    "comment": "언어팩 탭 — 이 조각이 하는 일은 **활성 탭 가드 하나**뿐이고 본문은 언어팩 관리 화면 조각을 그대로\n  빌려 쓴다. 그래서 설정 화면의 언어팩 탭과 별도 언어팩 화면이 언제나 같은 모습이다(사본이 없다).\n  그 조각이 읽는 소스와 여는 창들도 부모 화면이 같은 id 로 갖춰 둔다.\n  언어팩 조회 권한이 없는 관리자(설정 조회만)에게는 탭 항목이 숨지만, 주소로 직접 들어오면 빌린 본문 대신 권한 안내를 보인다 —\n  받지 못한 목록(403 → 빈 fallback)을 「설치된 언어팩이 없습니다」로 그리지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 > 언어팩 관리 탭 — 본문은 partials/admin_language_pack_list/_content.json 공유 (SSoT). 활성 탭 가드만 유지하고 본문은 모듈/플러그인/템플릿 페이지와 동일."
+    },
+    "id": "tab_content_language_packs",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'language_packs'}}",
+    "props": {
+        "className": "mt-6"
+    },
+    "children": [
+        {
+            "id": "language_packs_permission_denied",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_computed.canReadLanguagePacks === false}}",
+            "props": {
+                "role": "status",
+                "className": "alert-warning"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "lock",
+                        "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-warning-soft"
+                    },
+                    "text": "$t:admin.settings.permission_required.language_packs"
+                }
+            ]
+        },
+        {
+            "id": "language_packs_body",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_computed.canReadLanguagePacks !== false}}",
+            "children": [
+                {
+                    "comment": "미배치 공식 번들 안내(#146). [닫기]는 이 관리자에게서만 숨기고(다음 기록에서 다시 보임),\n      배치·정리하면 서버가 항목을 빼 모두에게서 사라진다. 명령은 클릭 한 번에 전체 선택된다.",
+                    "id": "unplaced_bundled_notice_wrapper",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(unplaced_bundled_notice?.data?.items?.language_packs?.length ?? 0) > 0}}",
+                    "props": {
+                        "className": "alert-info mb-4",
+                        "role": "status"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start justify-between gap-4 w-full"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-start gap-3 flex-1 min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-1 min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "unplaced_bundled_notice_title",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-info-soft mb-1 break-words"
+                                                    },
+                                                    "text": "$t:extensions.unplaced_bundled.title_language_packs|version={{unplaced_bundled_notice?.data?.core_version ?? ''}}|count={{unplaced_bundled_notice?.data?.items?.language_packs?.length ?? 0}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-xs text-info-soft mb-2 break-words"
+                                                    },
+                                                    "text": "$t:extensions.unplaced_bundled.description"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "row-stack"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "{{unplaced_bundled_notice?.data?.items?.language_packs ?? []}}",
+                                                                "item_var": "notice_item"
+                                                            },
+                                                            "props": {
+                                                                "className": "text-info-soft break-words"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "font-mono"
+                                                                    },
+                                                                    "text": "{{notice_item.identifier}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": " — {{notice_item.name}} ({{notice_item.version}})"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-xs text-info-soft mt-2"
+                                                    },
+                                                    "text": "$t:extensions.unplaced_bundled.command_label"
+                                                },
+                                                {
+                                                    "id": "unplaced_bundled_notice_command",
+                                                    "type": "basic",
+                                                    "name": "Code",
+                                                    "props": {
+                                                        "className": "block mt-1 px-2 py-1 rounded font-mono text-xs break-all select-all bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                                                    },
+                                                    "text": "{{unplaced_bundled_notice?.data?.commands?.language_packs ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "unplaced_bundled_notice_dismiss",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "이 관리자에게서만 언어팩 안내를 닫는다(번들 자체는 그대로 미배치다).\n                 성공하면 안내 소스만 다시 받아 블록이 사라졌는지 확인한다.",
+                                            "type": "click",
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/extensions/unplaced-bundled/language_pack/dismiss",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST"
+                                            },
+                                            "onSuccess": {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "unplaced_bundled_notice"
+                                                }
+                                            },
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "shrink-0 text-info-soft hover:underline",
+                                        "aria-label": "$t:extensions.unplaced_bundled.dismiss"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "times",
+                                                "size": "xs"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "partial": "partials/admin_language_pack_list/_content.json"
+                }
+            ]
+        }
+    ]
 }

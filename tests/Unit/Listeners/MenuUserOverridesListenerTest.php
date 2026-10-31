@@ -23,6 +23,11 @@ class MenuUserOverridesListenerTest extends TestCase
 
     private MockInterface $menuRepository;
 
+    /**
+     * 메뉴 저장소 목과 테스트 대상 리스너를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,25 +38,40 @@ class MenuUserOverridesListenerTest extends TestCase
 
     /**
      * getSubscribedHooks()가 올바른 훅 매핑을 반환하는지 검증
+     *
+     * @scenario surface=menu
+     *
+     * @effects menu_override_listener_records_changes
+     *
+     * @return void 반환값 없음
      */
     public function test_get_subscribed_hooks_returns_correct_mapping(): void
     {
         $hooks = MenuUserOverridesListener::getSubscribedHooks();
 
         $this->assertArrayHasKey('core.menu.before_update', $hooks);
-        $this->assertArrayHasKey('core.menu.after_update_order', $hooks);
         $this->assertArrayHasKey('core.menu.after_sync_roles', $hooks);
         $this->assertEquals('handleBeforeUpdate', $hooks['core.menu.before_update']['method']);
-        $this->assertEquals('handleAfterUpdateOrder', $hooks['core.menu.after_update_order']['method']);
         $this->assertEquals('handleAfterSyncRoles', $hooks['core.menu.after_sync_roles']['method']);
+
+        // 순서 변경은 UserOverridesAwareBuilder 가 실제로 바뀐 메뉴만 기록한다 — 훅 핸들러로 payload 전부에
+        // order 를 기록하던 과잉 기록은 제거됐다(#727 W11).
+        $this->assertArrayNotHasKey('core.menu.after_update_order', $hooks);
+        $this->assertArrayNotHasKey('core.menu.after_update_order_flat', $hooks);
     }
 
     /**
      * name/icon/order/url 변경 시 user_overrides에 해당 필드명 기록
+     *
+     * @scenario surface=menu
+     *
+     * @effects menu_override_listener_records_changes
+     *
+     * @return void 반환값 없음
      */
     public function test_field_changes_record_user_overrides(): void
     {
-        $menu = new Menu();
+        $menu = new Menu;
         $menu->name = ['ko' => '대시보드', 'en' => 'Dashboard'];
         $menu->icon = 'fa-home';
         $menu->order = 1;
@@ -84,10 +104,16 @@ class MenuUserOverridesListenerTest extends TestCase
 
     /**
      * 변경 없는 필드는 user_overrides에 기록하지 않음
+     *
+     * @scenario surface=menu
+     *
+     * @effects menu_override_listener_records_changes
+     *
+     * @return void 반환값 없음
      */
     public function test_unchanged_field_not_recorded(): void
     {
-        $menu = new Menu();
+        $menu = new Menu;
         $menu->name = ['ko' => '대시보드', 'en' => 'Dashboard'];
         $menu->icon = 'fa-home';
         $menu->order = 1;
@@ -106,63 +132,17 @@ class MenuUserOverridesListenerTest extends TestCase
     }
 
     /**
-     * 부모 메뉴 순서 변경 시 user_overrides에 "order" 기록
-     */
-    public function test_order_update_records_user_override_for_parent_menus(): void
-    {
-        $menu = new Menu();
-        $menu->forceFill(['id' => 1, 'user_overrides' => []]);
-
-        $this->menuRepository->shouldReceive('findById')
-            ->with(1)
-            ->once()
-            ->andReturn($menu);
-
-        $this->menuRepository->shouldReceive('update')
-            ->once()
-            ->with($menu, Mockery::on(function ($arg) {
-                return in_array('order', $arg['user_overrides'], true);
-            }))
-            ->andReturn(true);
-
-        $this->listener->handleAfterUpdateOrder([
-            'parent_menus' => [['id' => 1, 'order' => 3]],
-        ]);
-    }
-
-    /**
-     * 자식 메뉴 순서 변경 시 user_overrides에 "order" 기록
-     */
-    public function test_order_update_records_user_override_for_child_menus(): void
-    {
-        $childMenu = new Menu();
-        $childMenu->forceFill(['id' => 10, 'user_overrides' => []]);
-
-        $this->menuRepository->shouldReceive('findById')
-            ->with(10)
-            ->once()
-            ->andReturn($childMenu);
-
-        $this->menuRepository->shouldReceive('update')
-            ->once()
-            ->with($childMenu, Mockery::on(function ($arg) {
-                return in_array('order', $arg['user_overrides'], true);
-            }))
-            ->andReturn(true);
-
-        $this->listener->handleAfterUpdateOrder([
-            'child_menus' => [
-                1 => [['id' => 10, 'order' => 2]],
-            ],
-        ]);
-    }
-
-    /**
      * 역할 추가/제거 시 변경된 개별 역할 식별자를 user_overrides에 기록
+     *
+     * @scenario surface=menu
+     *
+     * @effects menu_override_listener_records_changes
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_roles_records_changed_identifiers(): void
     {
-        $menu = new Menu();
+        $menu = new Menu;
         $menu->forceFill(['user_overrides' => []]);
 
         $previous = ['admin', 'manager', 'editor'];
@@ -182,10 +162,16 @@ class MenuUserOverridesListenerTest extends TestCase
 
     /**
      * 역할 변경 없으면 user_overrides 미변경
+     *
+     * @scenario surface=menu
+     *
+     * @effects menu_override_listener_records_changes
+     *
+     * @return void 반환값 없음
      */
     public function test_sync_roles_no_change_no_record(): void
     {
-        $menu = new Menu();
+        $menu = new Menu;
         $menu->forceFill(['user_overrides' => []]);
 
         $roles = ['admin', 'manager'];
@@ -198,11 +184,17 @@ class MenuUserOverridesListenerTest extends TestCase
 
     /**
      * 이미 기록된 필드는 중복 추가하지 않음
+     *
+     * @scenario surface=menu
+     *
+     * @effects menu_override_listener_records_changes
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_override_not_added(): void
     {
         // name.ko, name.en, icon 이 이미 user_overrides 에 있는 경우 (sub-key dot-path 형식)
-        $menu = new Menu();
+        $menu = new Menu;
         $menu->name = ['ko' => '대시보드', 'en' => 'Dashboard'];
         $menu->icon = 'fa-home';
         $menu->forceFill(['user_overrides' => ['name.ko', 'name.en', 'icon']]);
@@ -220,10 +212,16 @@ class MenuUserOverridesListenerTest extends TestCase
 
     /**
      * 이미 기록된 역할 식별자는 중복 추가하지 않음
+     *
+     * @scenario surface=menu
+     *
+     * @effects menu_override_listener_records_changes
+     *
+     * @return void 반환값 없음
      */
     public function test_duplicate_role_identifier_not_added(): void
     {
-        $menu = new Menu();
+        $menu = new Menu;
         $menu->forceFill(['user_overrides' => ['editor']]);
 
         $previous = ['admin', 'manager', 'editor'];
@@ -233,29 +231,5 @@ class MenuUserOverridesListenerTest extends TestCase
         $this->menuRepository->shouldNotReceive('update');
 
         $this->listener->handleAfterSyncRoles($menu, $previous, $current);
-    }
-
-    /**
-     * orderData에 id가 없는 항목은 건너뜀
-     */
-    public function test_order_update_skips_items_without_id(): void
-    {
-        $this->menuRepository->shouldNotReceive('findById');
-        $this->menuRepository->shouldNotReceive('update');
-
-        $this->listener->handleAfterUpdateOrder([
-            'parent_menus' => [['order' => 3]],
-        ]);
-    }
-
-    /**
-     * parent_menus/child_menus 키가 없는 경우 안전하게 처리
-     */
-    public function test_order_update_handles_empty_order_data(): void
-    {
-        $this->menuRepository->shouldNotReceive('findById');
-        $this->menuRepository->shouldNotReceive('update');
-
-        $this->listener->handleAfterUpdateOrder([]);
     }
 }

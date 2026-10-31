@@ -1,0 +1,29 @@
+feature: 주문 생성 응답의 비회원 조회 토큰 발급 (결제창 닫힘 보고 소유자 증명)
+
+description: |
+  KVE-2026-2434. 결제창 닫힘 보고(PG 플러그인 close-report)는 PG 서명이 없는 브라우저 요청으로
+  결제대기 주문을 취소한다. 종전에는 주문자 이메일·전화번호 대조만으로 통과해, 연락처를 아는
+  제3자가 남의 주문을 취소할 수 있었다.
+
+  소유 증명은 회원이면 로그인(Sanctum), 비회원이면 조회 토큰(X-Guest-Order-Token)이다.
+  비회원은 결제 시점에 토큰이 없었으므로, 주문을 실제로 만든 브라우저만 받는 주문 생성 응답에서
+  토큰을 발급한다. 결제 서명 단계에서 발급하면 그 단계의 게이트가 연락처 대조라 제3자도 받는다.
+
+  - 비회원 주문: 응답에 guest_order_token + guest_order_token_expires_at. 토큰은 그 주문에만 유효.
+  - 회원 주문: 토큰을 싣지 않는다.
+
+# 입력 axis
+#  actor: 주문을 만든 사람
+axes:
+  actor: [guest, member]
+
+effects:
+  - guest_order_response_carries_order_token
+  - guest_order_token_is_bound_to_its_order
+  - member_order_response_has_no_guest_token
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/GuestOrderTokenIssuanceTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

@@ -1,0 +1,24 @@
+feature: TOTP 진입점 부트스트랩 — 등록 화면의 QR 이 실제로 DOM 에 그려진다
+
+description: |
+  등록 화면에서 QR 자리가 빈 사각형으로 남았다(실측 2026-09-18). 진입점이 디스패처의 `registerHandler` 를
+  변수로 떼어내 불러 수신자(`this`)를 잃었고, 그 TypeError 가 `start()` 를 통째로 멈춰 QR 관측자가 설치되지 않았다.
+  `qr.test.ts`(반환 문자열)와 레이아웃 시험(`data-totp-qr` 표기)은 둘 다 초록이어도 이 연결 구간을 재지 않는다.
+  이 매니페스트는 번들 진입점이 실행돼 관측자를 걸고 QR 을 채우는 구간을 jsdom 에서 잰다.
+
+axes:
+  case: [no_dispatcher, late_node, attribute_filled_later, handler_registration_throws]
+
+axis_notes:
+  case: >-
+    no_dispatcher = 디스패처 없이 적재, late_node = 적재 뒤 붙은 노드, attribute_filled_later = 빈 속성이 나중에 채워짐
+    (등록 시작 시 실제 순서), handler_registration_throws = 수신자를 잃은 등록이 터지는 사고 재현.
+
+effects:
+  - qr_renders_without_dispatcher                 # 디스패처가 없어도 이미 있는 QR 자리를 채운다
+  - qr_observer_fills_late_nodes                  # 나중에 붙은 QR 자리도 관측자가 채운다
+  - qr_renders_when_attribute_is_filled_later     # 빈 값에서 채워진 속성도 그린다
+  - qr_survives_handler_registration_failure      # 핸들러 등록이 터져도 QR 은 그려진다
+
+test_files:
+  - plugins/_bundled/sirsoft-totp/resources/js/__tests__/bootstrap.test.ts

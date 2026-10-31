@@ -1,0 +1,97 @@
+# 시나리오 매니페스트 — 클레임 핵심 서비스 결함 수정 (#599 validate P2-A)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+feature: validate_p2_claim_core
+
+description: |
+  브랜치 전체 검증이 클레임 핵심 서비스 5종(관리자·교환·반품·환불신청·유저 클레임)에서 찾은
+  결함을 닫는다. 결함은 모두 **오류 없이 돈·재고·상태로만** 드러나는 종류라, 항목마다 실패하는
+  테스트를 먼저 세웠다.
+
+  핵심 동작:
+    - 상품 단위 승인도 신청서 단위 승인과 같은 미수납 게이트를 지난다. 결제대기 상품 행에는
+      승인을 제시하지 않는다(그 승인은 결제 확정이 잇는다).
+    - 상품 단위 전량 반려·철회로 헤더가 종결되면 헤더 경로와 같은 헬퍼로 돈을 닫는다.
+    - 완료·신청 수정·상품 단위 전이는 **잠금 안에서 다시 읽은 값**으로 판정한다. 한 요청 안에서는
+      동시성을 재현할 수 없어 낡은 모델을 넘겨 같은 판정을 부른다.
+    - 부분 완료의 재고 플래그는 실제로 완료 상태가 된 분할 행에 적는다.
+    - 도메인 훅(`claim.{type}.*`)은 커밋 뒤에 발화한다 — 동기 리스너 장애가 전이를 되돌리지
+      않고, 롤백된 전이의 알림이 나가지 않는다.
+    - 금액 수정과 청구 정산은 한 트랜잭션이다. 이미 낸 청구는 환불금 차감으로 바꾸지 못한다.
+    - 일괄 전이는 도메인 예외가 아닌 건별 실패도 skip 으로 보고한다.
+    - 알 수 없는 Enum 입력·짝이 맞지 않는 환불 계좌는 500 이 아니라 도메인 예외(4xx)다.
+    - 기준 통화는 스냅샷 → 설정 기본 통화 한 규칙이다(결제 통화로 폴백하지 않는다).
+    - 접수 때 고른 환불 우선순위를 신청서(교환·반품·환불)에 저장한다. 저장 전 신청서는 null 로
+      두어 화면이 종전 추측으로 떨어진다(되짚을 근거가 없어 백필하지 않는다).
+    - 환불수단 `pg` 는 한 판정(`pgRefundAvailable()`)만 읽는다 — 금액 수정 저장·상세 선택지·실행
+      게이트가 같다. PG 리스너가 없어 계좌로 떨어지는 주문에 PG 를 저장하지 못한다.
+    - 접수·완료의 주문 잠금은 `findForUpdateOrFail()` 이다 — 잠기지 않은 호출부 모델로 떨어져
+      계속 진행하지 않는다.
+    - 상품 단위 분할 전이의 로그 변경분이 잔여 수량(`remainder_quantity`)을 발행 시점 값으로 싣는다.
+    - 접수 뒤의 재계산(완료·수동 접수·완료 미리보기·신청 수정)은 저장된 환불 우선순위를 잇고,
+      완료가 만드는 환불신청서도 그 값을 기록한다(저장값 없으면 종전 PG 우선).
+
+axes:
+  defect:
+    - item_approval_gate
+    - item_termination_money
+    - bulk_isolation
+    - amount_atomicity
+    - deduct_after_payment
+    - unknown_enum_input
+    - base_currency_resolution
+    - completion_recheck
+    - split_completion_target
+    - zero_charge_auto_approve
+    - update_request_recheck
+    - refund_bank_pair
+    - hook_after_commit
+    - header_sync_lock
+    - refund_priority_persisted
+    - refund_method_single_gate
+    - intake_lock_or_fail
+    - split_change_remainder_quantity
+    - refund_priority_carried_after_intake
+
+effects:
+  - item_approval_with_outstanding_charge_is_refused_like_the_header
+  - item_approval_on_pay_on_approval_requests_payment_instead
+  - item_vocabulary_hides_approval_on_payment_pending_rows
+  - item_rejection_closing_the_header_cancels_the_pending_payment
+  - bulk_transition_reports_an_unexpected_throwable_as_skipped
+  - amount_update_rolls_back_when_charge_settlement_fails
+  - paid_charge_cannot_switch_to_deduct_from_refund_by_admin
+  - paid_charge_cannot_switch_to_deduct_from_refund_by_buyer
+  - unknown_charge_method_or_priority_is_a_domain_error
+  - claim_base_currency_falls_back_to_the_store_default_not_the_payment_currency
+  - stale_return_completion_does_not_restore_stock_twice
+  - stale_exchange_completion_does_not_restore_stock_twice
+  - partial_completion_marks_stock_on_the_transitioned_order_option
+  - fractional_charge_is_not_treated_as_zero_for_auto_approval
+  - zero_charge_auto_approval_failure_keeps_the_intake_successful
+  - stale_return_update_is_refused_after_approval
+  - stale_exchange_update_is_refused_after_approval
+  - stale_refund_update_is_refused_after_approval
+  - incomplete_refund_bank_is_a_domain_error
+  - item_hook_of_a_header_transition_fires_after_commit
+  - refund_request_hook_fires_after_commit
+  - header_sync_writes_inside_the_item_transition_transaction
+  - exchange_and_return_keep_the_chosen_refund_priority
+  - refund_request_keeps_the_priority_it_was_calculated_with
+  - amount_update_refuses_pg_when_no_pg_refund_listener
+  - amount_update_and_options_accept_pg_when_listener_exists
+  - claim_intake_fails_instead_of_continuing_unlocked
+  - split_change_carries_the_remainder_quantity_for_returns
+  - split_change_carries_the_remainder_quantity_for_exchanges
+  - split_change_carries_the_remainder_quantity_for_refunds
+  - return_completion_refund_follows_the_stored_priority
+  - exchange_completion_refund_follows_the_stored_priority
+  - update_request_recalculates_with_the_stored_priority
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ValidateP2ClaimCoreTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ValidateP2ClaimConcurrencyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ValidateP2ClaimFollowupTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ValidateP2ClaimLockSplitTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

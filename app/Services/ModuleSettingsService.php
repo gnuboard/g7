@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
+use App\Extension\Support\ComputedSettingKeys;
 use App\Extension\TemplateManager;
 use App\Traits\FiltersFrontendSchema;
 use App\Traits\NormalizesSettingsData;
@@ -101,8 +102,8 @@ class ModuleSettingsService
         // 기본값 로드
         $defaults = $moduleInstance->getConfigValues();
 
-        // 저장된 설정 파일 로드
-        $savedSettings = $this->loadSettingsFromFile($identifier);
+        // 저장된 설정 파일 로드 — 계산값 키는 파일에 남아 있어도 무시하고 늘 실시간 값(기본값)을 쓴다 (7.1.3)
+        $savedSettings = ComputedSettingKeys::strip($this->loadSettingsFromFile($identifier), ComputedSettingKeys::of($moduleInstance));
 
         // 기본값과 저장된 설정 병합
         $settings = array_merge($defaults, $savedSettings);
@@ -131,7 +132,7 @@ class ModuleSettingsService
      * 1. 인터페이스 바인딩: Modules\{Vendor}\{Module}\Contracts\{Module}SettingsServiceInterface
      * 2. 구체 클래스: Modules\{Vendor}\{Module}\Services\{Module}SettingsService
      *
-     * @param string $identifier 모듈 식별자 (예: sirsoft-ecommerce)
+     * @param  string  $identifier  모듈 식별자 (예: sirsoft-ecommerce)
      * @return ModuleSettingsInterface|null 설정 서비스 인스턴스
      */
     private function resolveModuleService(string $identifier): ?ModuleSettingsInterface
@@ -152,7 +153,7 @@ class ModuleSettingsService
     /**
      * 모듈별 설정 서비스를 검색합니다.
      *
-     * @param string $identifier 모듈 식별자
+     * @param  string  $identifier  모듈 식별자
      * @return ModuleSettingsInterface|null 설정 서비스 인스턴스
      */
     private function discoverModuleService(string $identifier): ?ModuleSettingsInterface
@@ -225,6 +226,13 @@ class ModuleSettingsService
         return $settings ?? [];
     }
 
+    /**
+     * 모듈 환경설정을 저장합니다.
+     *
+     * @param  string  $identifier  모듈 식별자
+     * @param  array  $settings  저장할 설정 배열
+     * @return bool 저장 성공 여부
+     */
     public function save(string $identifier, array $settings): bool
     {
         // Before 훅
@@ -249,9 +257,10 @@ class ModuleSettingsService
         $schema = $moduleInstance->getSettingsSchema();
         $settings = $this->encryptSensitiveFields($settings, $schema);
 
-        // 기존 설정과 병합
-        $existingSettings = $this->loadSettingsFromFile($identifier);
-        $mergedSettings = array_merge($existingSettings, $settings);
+        // 기존 설정과 병합 — 계산값 키는 요청에서도 기존 파일에서도 빼고 쓴다 (7.1.3)
+        $computedKeys = ComputedSettingKeys::of($moduleInstance);
+        $existingSettings = ComputedSettingKeys::strip($this->loadSettingsFromFile($identifier), $computedKeys);
+        $mergedSettings = array_merge($existingSettings, ComputedSettingKeys::strip($settings, $computedKeys));
 
         // 파일에 저장
         $result = $this->saveSettingsToFile($identifier, $mergedSettings);
@@ -287,6 +296,12 @@ class ModuleSettingsService
         return $storage->put('settings', self::SETTINGS_FILENAME, $content);
     }
 
+    /**
+     * 모듈 환경설정을 기본값으로 초기화합니다.
+     *
+     * @param  string  $identifier  모듈 식별자
+     * @return bool 초기화 성공 여부
+     */
     public function reset(string $identifier): bool
     {
         // Before 훅
@@ -315,6 +330,12 @@ class ModuleSettingsService
         return true;
     }
 
+    /**
+     * 모듈의 설정 디렉토리를 삭제합니다.
+     *
+     * @param  string  $identifier  모듈 식별자
+     * @return bool 삭제 성공 여부
+     */
     public function deleteSettingsDirectory(string $identifier): bool
     {
         // Before 훅
@@ -324,8 +345,9 @@ class ModuleSettingsService
         if ($moduleInstance) {
             $storage = $moduleInstance->getStorage();
 
-            // 모듈 전체 스토리지 디렉토리 삭제 ({identifier}/)
-            $storage->deleteDirectory('', '');
+            // 설정 카테고리 디렉토리 삭제 ({identifier}/settings) — 확장 루트는 드라이버가
+            // 파괴 작업 대상으로 허용하지 않으므로 카테고리 전체 삭제 API 로만 정리한다
+            $storage->deleteAll('settings');
         }
 
         // 캐시 초기화
@@ -341,6 +363,7 @@ class ModuleSettingsService
      * 설정 캐시를 초기화합니다.
      *
      * @param  string|null  $identifier  특정 모듈만 초기화 (null이면 전체)
+     * @return void
      */
     public function clearCache(?string $identifier = null): void
     {

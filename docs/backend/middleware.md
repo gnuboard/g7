@@ -70,6 +70,15 @@
    - 특정 라우트에만 적용
    - 가장 마지막에 실행
 
+### 회원 상태 공통 관문 (7.2.0)
+
+api 그룹 전체에 `EnsureActiveUser` 가 붙어 인증된 회원의 상태(차단·탈퇴·휴면·가입 후 인증 대기)를 매 요청 다시 본다.
+
+- `auth:sanctum` 라우트: 비활성 회원은 403(상태별 문구 키 `auth.account_*`).
+- `optional.sanctum` 라우트: 비활성 회원을 손님으로 낮춰 통과시킨다 — 공개 목록은 그대로 보이고 회원 자격 쓰기만 막힌다.
+- 확장 라우트에 상태 검사 미들웨어를 따로 붙이지 않는다. 비활성 회원이 꼭 써야 하는 경로(가입 후 본인인증 등)만 표식 `allow.inactive_user` 를
+  붙인다(코어는 `api.identity.*` 하나). 자세한 규칙은 [authentication.md](authentication.md#외부-인증-확장점-720) 공통 규칙.
+
 ---
 
 ## 미들웨어 등록 방식
@@ -78,7 +87,7 @@
 
 | 방식 | 실행 시점 | Auth 사용 | 사용 사례 |
 |------|----------|----------|----------|
-| `append()` | 인증 **전** | ❌ 불가 | CORS, 로깅 등 |
+| `append()` | 인증 **전** | ❌ 불가 | CORS, 로깅, IP 접근 제한 등 |
 | `prepend()` | 인증 **전** (최우선) | ❌ 불가 | 보안 헤더 등 |
 | `appendToGroup('api', ...)` | 인증 **후** | ✅ 가능 | 사용자별 설정 |
 | `appendToGroup('web', ...)` | 인증 **후** | ✅ 가능 | 사용자별 설정 |
@@ -210,6 +219,12 @@ target 이 `/` 로 시작하면 **URI 패턴**(`$request->path()` 매칭), 아�
 ```
 
 > **참고**: `EnsureFrontendRequestsAreStateful` (stateful)은 제거되었습니다. API 인증은 Bearer 토큰 전용이며, 세션은 `start.api.session` 미들웨어로 로그인/로그아웃 라우트에서만 생성됩니다. 상세: [authentication.md](authentication.md)
+
+### 전역 미들웨어에서 클라이언트 IP 를 볼 때 (IP 접근 제한 선례)
+
+IP 로 요청을 가르는 전역 미들웨어는 **`prepend()` 가 아니라 `append()`** 로 등록합니다. 신뢰 프록시를 적용하는 `TrustProxies` 가 라라벨 기본 전역 스택에 들어 있어, 그보다 **앞**에 두면 `$request->ip()` 가 프록시 주소로 보입니다 — 프록시 뒤 사이트에서는 모든 방문자가 한 IP 로 보여 판정이 통째로 무너집니다. `append()` 도 그룹·라우트 미들웨어보다는 먼저 돌므로, 라우트의 `withoutMiddleware()` 로 빠져나갈 수 없다는 성질은 그대로입니다.
+
+설정을 읽어 판정하는 미들웨어는 **읽기가 깨졌을 때 열어 두고 오류를 남깁니다**(fail-open). 닫아 두면 설정 파일 한 줄이 깨졌을 때 관리자를 포함한 전원이 잠기고, 복구 수단이 서버 셸뿐이 됩니다. 코어 구현과 운영자용 설명은 [IP 접근 제한](api/settings.md#ip-접근-제한-security-탭) 을 참고하세요.
 
 ---
 
@@ -343,6 +358,20 @@ PermissionHelper::applyPermissionScope($query, 'core.users.read');
 - only:owner:{param}   → scope_type='self'로 대체
 - menu:{slug}          → 제거 (메뉴 접근 제어는 scope_type으로 불필요)
 ```
+
+---
+
+## 개발자 화면 미들웨어 (custom, 7.2.0)
+
+`routes/custom.php` 의 라우트에는 `web` 과 `custom.screen` 이 자동으로 붙는다. 회원·관리자 제한은 라우트에 직접 단다.
+
+| 이름 | 종류 | 동작 |
+| --- | --- | --- |
+| `custom.screen` | 그룹 | `canonical.host`(정식 주소 이동) → `MarkBotRequest`(봇 표식) → `analytics.bots`(봇 방문 기록) → `analytics.fallback`(서버 방문 집계) |
+| `custom.auth` | 별칭 (`RequireScreenUser`) | `ScreenAuth::user()` 가 없으면 로그인 화면(`ScreenUrl` 키 `auth.login`)으로 `?redirect=` 를 붙여 보내고, JSON 요청이면 401 |
+| `custom.admin` | 별칭 (`RequireScreenAdmin`) | 비회원은 관리자 로그인(`admin.login`)으로, 관리자가 아닌 회원은 403 |
+
+등록 위치는 `bootstrap/app.php`. 사용법은 [개발자 화면 가이드](../custom-development.md).
 
 ---
 
@@ -488,6 +517,7 @@ if (Auth::check()) {  // ✅ 정상 작동! Sanctum 인증 후이므로
 
 - [권한 시스템](../extension/permissions.md) - scope_type 시스템 상세, resource_route_key/owner_key 매핑
 - [인증 시스템](authentication.md) - Sanctum 인증 및 세션 처리
+- [개발자 화면 가이드](../custom-development.md) - `custom.auth`·`custom.admin`·`custom.screen`
 - [서비스 프로바이더 안전성](service-provider.md) - 프로바이더 등록 규칙
 - [백엔드 가이드 인덱스](README.md) - 전체 가이드 목록
 

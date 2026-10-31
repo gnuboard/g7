@@ -18,5 +18,16 @@ return [
     ],
     'errors' => [
         'payment_failed' => '決済処理に失敗しました。しばらく後に再度お試しください。',
+        'approval_verification_cancel_reason' => '決済承認検証失敗による自動キャンセル',
+    ],
+    'claim' => [
+        'invalid_callback' => 'クレーム決済承認に必要なコールバックパラメータ(paymentKey, orderId, amount)がありません。',
+        'order_id_mismatch' => 'コールバックの注文番号が承認対象クレーム決済番号と一致しません。',
+        'deposit_not_supported' => 'クレーム追加決済は入金待機方式(仮想口座)をサポートしていません。',
+        'amount_mismatch' => '決済画面を開いた後に請求額が変更されました。申請書から決済をやり直してください。',
+        'amount_mismatch_cancel_reason' => 'クレーム決済承認金額不一致による自動キャンセル',
+    ],
+    'settings' => [
+        'redirect_url_format' => '決済後の移動先アドレスは {shopBase}、/ または http(s):// で始まり、空白を含めることはできません。他サイトへ送る //アドレス と javascript: は使用できません。',
     ],
 ];

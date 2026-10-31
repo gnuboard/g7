@@ -23,6 +23,8 @@ class TestingSeeder extends Seeder
 {
     /**
      * 테스트용 기본 데이터를 시딩합니다.
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
@@ -33,7 +35,8 @@ class TestingSeeder extends Seeder
                 'vendor' => 'sirsoft',
                 'name' => ['ko' => '이커머스', 'en' => 'Ecommerce'],
                 'status' => ExtensionStatus::Active->value,
-                'version' => '1.0.0',
+                // 버전은 manifest 를 따른다 — 고정값이면 버전 비교 경로(업그레이드·의존 검사)가 옛 버전으로 판단한다
+                'version' => $this->manifestVersion(),
             ]
         );
 
@@ -78,6 +81,8 @@ class TestingSeeder extends Seeder
 
     /**
      * 주문 시퀀스를 초기화합니다.
+     *
+     * @return void 반환값 없음
      */
     private function createOrderSequence(): void
     {
@@ -104,6 +109,8 @@ class TestingSeeder extends Seeder
 
     /**
      * 배송사 초기 데이터를 생성합니다.
+     *
+     * @return void 반환값 없음
      */
     private function createShippingCarriers(): void
     {
@@ -127,18 +134,22 @@ class TestingSeeder extends Seeder
 
     /**
      * 클레임 사유 초기 데이터를 생성합니다.
+     *
+     * 목록은 설치 시더(`ClaimReasonSeeder::getDefaults()`)에서 가져온다 — 여기에 사본을 두면 설치
+     * 시더에 코드가 늘 때(예: 만료 자동취소 `auto_cancel_expired`) 테스트 환경에만 그 행이 없어,
+     * 실제 설치본에서는 성공하는 경로가 테스트에서만 `reasonUnavailable` 로 실패한다.
+     *
+     * 환불 유형만 시드한다. 교환·반품 사유는 테스트가 필요한 것만 직접 만든다 — 기본 목록을 깔면
+     * 사유 개수를 세는 테스트가 설치 시더의 목록 변경에 묶인다.
+     *
+     * @return void 반환값 없음
      */
     private function createClaimReasons(): void
     {
-        $reasons = [
-            ['type' => 'refund', 'code' => 'order_mistake', 'name' => ['ko' => '주문 실수', 'en' => 'Order Mistake'], 'fault_type' => 'customer', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 0],
-            ['type' => 'refund', 'code' => 'changed_mind', 'name' => ['ko' => '단순 변심', 'en' => 'Changed Mind'], 'fault_type' => 'customer', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 1],
-            ['type' => 'refund', 'code' => 'reorder_other', 'name' => ['ko' => '다른 상품으로 재주문', 'en' => 'Reorder with Different Product'], 'fault_type' => 'customer', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 2],
-            ['type' => 'refund', 'code' => 'delayed_delivery', 'name' => ['ko' => '배송 지연', 'en' => 'Delayed Delivery'], 'fault_type' => 'seller', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 3],
-            ['type' => 'refund', 'code' => 'product_info_different', 'name' => ['ko' => '상품 정보 상이', 'en' => 'Product Info Different'], 'fault_type' => 'seller', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 4],
-            ['type' => 'refund', 'code' => 'admin_cancel', 'name' => ['ko' => '관리자 취소', 'en' => 'Admin Cancel'], 'fault_type' => 'seller', 'is_user_selectable' => false, 'is_active' => true, 'sort_order' => 5],
-            ['type' => 'refund', 'code' => 'etc', 'name' => ['ko' => '기타', 'en' => 'Etc'], 'fault_type' => 'customer', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 6],
-        ];
+        $reasons = array_values(array_filter(
+            (new ClaimReasonSeeder)->getDefaults(),
+            fn (array $reason): bool => $reason['type'] === 'refund',
+        ));
 
         foreach ($reasons as $reason) {
             ClaimReason::firstOrCreate(
@@ -153,6 +164,7 @@ class TestingSeeder extends Seeder
      *
      * @param  Role  $guestRole  비회원 역할
      * @param  Role  $userRole  일반 사용자 역할
+     * @return void 반환값 없음
      */
     private function createUserPermissions(Role $guestRole, Role $userRole): void
     {
@@ -162,6 +174,10 @@ class TestingSeeder extends Seeder
             ['identifier' => 'sirsoft-ecommerce.user-orders.cancel', 'name' => ['ko' => '주문 취소', 'en' => 'Cancel Order']],
             ['identifier' => 'sirsoft-ecommerce.user-orders.confirm', 'name' => ['ko' => '구매확정', 'en' => 'Confirm Purchase']],
             ['identifier' => 'sirsoft-ecommerce.user-reviews.write', 'name' => ['ko' => '리뷰 작성', 'en' => 'Write Review']],
+            ['identifier' => 'sirsoft-ecommerce.user-claims.request', 'name' => ['ko' => '클레임 신청', 'en' => 'Request Claim']],
+            ['identifier' => 'sirsoft-ecommerce.user-claims.read', 'name' => ['ko' => '클레임 조회', 'en' => 'View Claims']],
+            ['identifier' => 'sirsoft-ecommerce.user-claims.withdraw', 'name' => ['ko' => '클레임 철회', 'en' => 'Withdraw Claim']],
+            ['identifier' => 'sirsoft-ecommerce.user-claims.pay', 'name' => ['ko' => '클레임 추가결제', 'en' => 'Pay Claim Charge']],
         ];
 
         $permissionIds = [];
@@ -179,5 +195,17 @@ class TestingSeeder extends Seeder
         // guest와 user 역할에 모든 사용자 권한 부여
         $guestRole->permissions()->syncWithoutDetaching($permissionIds);
         $userRole->permissions()->syncWithoutDetaching($permissionIds);
+    }
+
+    /**
+     * 모듈 manifest(module.json)의 버전을 읽습니다.
+     *
+     * @return string 모듈 버전 (읽지 못하면 1.0.0)
+     */
+    private function manifestVersion(): string
+    {
+        $manifest = json_decode((string) @file_get_contents(dirname(__DIR__, 2).'/module.json'), true);
+
+        return is_array($manifest) && is_string($manifest['version'] ?? null) ? $manifest['version'] : '1.0.0';
     }
 }

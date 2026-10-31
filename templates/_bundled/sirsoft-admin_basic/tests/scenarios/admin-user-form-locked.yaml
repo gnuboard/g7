@@ -1,0 +1,23 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 잠금 대상 칸은 서버 UserLockedFieldsService::LOCKABLE 을 읽어 칸마다 돈다
+# (it.each). mode × locked × locale 의 곱 대신 칸 × 상태로 단언하며 locale 은 lang 키 검사에만 의미가 있다.
+# 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
+
+feature: 회원 수정 회사 계정 관리 칸 잠금 (sirsoft-admin_basic 1.2.0, 7.2.0 A2t, K8)
+
+description: |
+  수정 모드에서 회원 응답 locked_fields 에 든 칸은 disabled 이고 칸 아래 admin.users.form.fields.locked_by_company 안내가 보인다.
+  잠글 수 있는 칸 목록은 서버 LOCKABLE 과 대조한다. 추가 모드는 잠금이 없다.
+
+axes:
+  mode: [create, edit]
+  locked: ["yes", "no"]
+  locale: [ko, en]
+
+effects:
+  - locked_fields_disabled_in_edit_mode
+  - locked_field_shows_company_notice
+  - create_mode_never_locked
+  - locked_notice_lang_key_present
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-form-locked.test.ts

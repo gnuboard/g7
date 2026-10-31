@@ -20,6 +20,13 @@ return [
         'cascade' => 'Delete together (replies are deleted with the post)',
     ],
 
+    // 비밀 답변 열람 범위
+    'secret_reply_visibility' => [
+        'thread_path' => 'Thread path (default)',
+        'descendants_only' => 'Descendants only',
+        'per_post' => 'Per post',
+    ],
+
     // Order Direction
     'order_direction' => [
         'asc' => 'Ascending',

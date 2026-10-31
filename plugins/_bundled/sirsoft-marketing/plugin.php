@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Marketing;
 
 use App\Extension\AbstractPlugin;
+use Plugins\Sirsoft\Marketing\Listeners\MarketingConsentListener;
 
 class Plugin extends AbstractPlugin
 {
@@ -20,6 +21,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '사용자 마케팅 동의 변경 시 실행되는 액션 훅',
                     'en' => 'Action hook executed when user marketing consent changes',
+                    'ja' => 'ユーザーのマーケティング同意が変更されたときに実行されるアクションフック',
                 ],
                 'parameters' => [
                     'consent' => 'Model - 마케팅 동의 모델 (MarketingConsent)',
@@ -32,6 +34,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '사용자 마케팅 동의 필드가 동의(granted)로 변경될 때 실행되는 액션 훅',
                     'en' => 'Action hook executed when a marketing consent field is granted',
+                    'ja' => 'ユーザーのマーケティング同意項目が同意(granted)に変わったときに実行されるアクションフック',
                 ],
                 'parameters' => [
                     'consent' => 'Model - 마케팅 동의 모델 (MarketingConsent)',
@@ -44,6 +47,7 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '사용자 마케팅 동의 필드가 철회(revoked)로 변경될 때 실행되는 액션 훅',
                     'en' => 'Action hook executed when a marketing consent field is revoked',
+                    'ja' => 'ユーザーのマーケティング同意項目が撤回(revoked)に変わったときに実行されるアクションフック',
                 ],
                 'parameters' => [
                     'consent' => 'Model - 마케팅 동의 모델 (MarketingConsent)',
@@ -54,12 +58,14 @@ class Plugin extends AbstractPlugin
                 'name' => 'sirsoft-marketing.filter_consent_data',
                 'type' => 'filter',
                 'description' => [
-                    'ko' => '마케팅 동의 데이터를 필터링하는 훅',
-                    'en' => 'Filter hook to modify marketing consent data',
+                    'ko' => '동의 항목을 일괄 저장하기 전에 동의 데이터를 가공하는 필터 훅',
+                    'en' => 'Filter hook to modify marketing consent data before saving consents in bulk',
+                    'ja' => '同意項目を一括保存する前に同意データを加工するフィルターフック',
                 ],
                 'parameters' => [
-                    'data' => 'array - 동의 데이터',
-                    'user' => 'Model - 사용자 모델',
+                    'data' => 'array - 동의 데이터 [동의 키 => bool]',
+                    'user_id' => 'int - 회원 ID',
+                    'source' => 'string - 변경 경로 (register, admin, profile 등)',
                 ],
                 'return' => 'array - 필터링된 동의 데이터',
             ],
@@ -75,20 +81,20 @@ class Plugin extends AbstractPlugin
     {
         return [
             // 마케팅 전체 동의 사용 여부 및 약관 slug
-            'marketing_consent_enabled'    => true,
+            'marketing_consent_enabled' => true,
             'marketing_consent_terms_slug' => 'marketing-terms',
             // 법적 동의 항목 사용 여부 및 약관 slug
-            'third_party_consent_enabled'    => true,
+            'third_party_consent_enabled' => true,
             'third_party_consent_terms_slug' => '',
-            'info_disclosure_enabled'        => true,
-            'info_disclosure_terms_slug'     => '',
+            'info_disclosure_enabled' => true,
+            'info_disclosure_terms_slug' => '',
             // 채널 목록 (JSON 배열 문자열)
             'channels' => json_encode([
                 [
-                    'key'       => 'email_subscription',
-                    'label'     => ['ko' => '광고성 이메일 수신', 'en' => 'Email Marketing'],
+                    'key' => 'email_subscription',
+                    'label' => ['ko' => '광고성 이메일 수신', 'en' => 'Email Marketing'],
                     'page_slug' => '',
-                    'enabled'   => true,
+                    'enabled' => true,
                     'is_system' => true,
                 ],
             ]),
@@ -104,48 +110,48 @@ class Plugin extends AbstractPlugin
     {
         return [
             'marketing_consent_enabled' => [
-                'type'     => 'boolean',
-                'default'  => true,
-                'label'    => ['ko' => '마케팅 동의 사용', 'en' => 'Enable Marketing Consent'],
-                'hint'     => ['ko' => '비활성화 시 모든 화면에서 마케팅 동의 항목이 숨겨집니다.', 'en' => 'When disabled, the marketing consent item is hidden from all screens.'],
+                'type' => 'boolean',
+                'default' => true,
+                'label' => ['ko' => '마케팅 동의 사용', 'en' => 'Enable Marketing Consent'],
+                'hint' => ['ko' => '비활성화 시 모든 화면에서 마케팅 동의 항목이 숨겨집니다.', 'en' => 'When disabled, the marketing consent item is hidden from all screens.'],
                 'required' => false,
             ],
             'marketing_consent_terms_slug' => [
-                'type'     => 'string',
-                'default'  => 'marketing-terms',
-                'label'    => ['ko' => '마케팅 동의 약관 페이지 Slug', 'en' => 'Marketing Consent Terms Page Slug'],
-                'hint'     => ['ko' => '페이지 모듈에서 관리하는 약관 페이지의 SLUG를 입력하세요. 비워두면 약관 보기 버튼이 숨겨집니다.', 'en' => 'Enter the SLUG of the terms page managed by the Page module. Leave empty to hide the view terms button.'],
+                'type' => 'string',
+                'default' => 'marketing-terms',
+                'label' => ['ko' => '마케팅 동의 약관 페이지 Slug', 'en' => 'Marketing Consent Terms Page Slug'],
+                'hint' => ['ko' => '페이지 모듈에서 관리하는 약관 페이지의 SLUG를 입력하세요. 비워두면 약관 보기 버튼이 숨겨집니다.', 'en' => 'Enter the SLUG of the terms page managed by the Page module. Leave empty to hide the view terms button.'],
                 'required' => false,
             ],
             'channels' => [
-                'type'     => 'json',
-                'default'  => '[]',
-                'label'    => ['ko' => '채널 목록', 'en' => 'Channel List'],
-                'hint'     => ['ko' => '마케팅 동의 채널 목록 (JSON). 관리자 UI에서 편집합니다.', 'en' => 'Marketing consent channel list (JSON). Edit via admin UI.'],
+                'type' => 'json',
+                'default' => '[]',
+                'label' => ['ko' => '채널 목록', 'en' => 'Channel List'],
+                'hint' => ['ko' => '마케팅 동의 채널 목록 (JSON). 관리자 UI에서 편집합니다.', 'en' => 'Marketing consent channel list (JSON). Edit via admin UI.'],
                 'required' => false,
             ],
             'third_party_consent_enabled' => [
-                'type'     => 'boolean',
-                'default'  => true,
-                'label'    => ['ko' => '제3자 제공 동의 사용', 'en' => 'Enable Third Party Consent'],
+                'type' => 'boolean',
+                'default' => true,
+                'label' => ['ko' => '제3자 제공 동의 사용', 'en' => 'Enable Third Party Consent'],
                 'required' => false,
             ],
             'third_party_consent_terms_slug' => [
-                'type'     => 'string',
-                'default'  => '',
-                'label'    => ['ko' => '제3자 제공 동의 약관 페이지 Slug', 'en' => 'Third Party Consent Terms Page Slug'],
+                'type' => 'string',
+                'default' => '',
+                'label' => ['ko' => '제3자 제공 동의 약관 페이지 Slug', 'en' => 'Third Party Consent Terms Page Slug'],
                 'required' => false,
             ],
             'info_disclosure_enabled' => [
-                'type'     => 'boolean',
-                'default'  => true,
-                'label'    => ['ko' => '정보 공개 동의 사용', 'en' => 'Enable Info Disclosure Consent'],
+                'type' => 'boolean',
+                'default' => true,
+                'label' => ['ko' => '정보 공개 동의 사용', 'en' => 'Enable Info Disclosure Consent'],
                 'required' => false,
             ],
             'info_disclosure_terms_slug' => [
-                'type'     => 'string',
-                'default'  => '',
-                'label'    => ['ko' => '정보 공개 동의 약관 페이지 Slug', 'en' => 'Info Disclosure Terms Page Slug'],
+                'type' => 'string',
+                'default' => '',
+                'label' => ['ko' => '정보 공개 동의 약관 페이지 Slug', 'en' => 'Info Disclosure Terms Page Slug'],
                 'required' => false,
             ],
         ];
@@ -159,13 +165,13 @@ class Plugin extends AbstractPlugin
     public function getMetadata(): array
     {
         return [
-                'author' => 'Sirsoft',
-                'license' => 'MIT',
-                'homepage' => 'https://sir.kr',
-                'keywords' => ['marketing', 'consent', 'subscription', 'gdpr'],
+            'author' => 'Sirsoft',
+            'license' => 'MIT',
+            'homepage' => 'https://sir.kr',
+            'keywords' => ['marketing', 'consent', 'subscription', 'gdpr'],
         ];
     }
-    
+
     /**
      * 플러그인이 동적으로 생성한 테이블 목록 반환
      *
@@ -190,8 +196,7 @@ class Plugin extends AbstractPlugin
     public function getHookListeners(): array
     {
         return [
-            \Plugins\Sirsoft\Marketing\Listeners\MarketingConsentListener::class,
+            MarketingConsentListener::class,
         ];
     }
-
 }

@@ -1,0 +1,23 @@
+feature: 관리자 버전 목록(VersionList) 표시와 선택 계약
+
+description: |
+  레이아웃 버전 이력을 고르는 목록 컴포넌트다. 각 버전의 번호·생성 날짜(로케일 형식)·추가/삭제 줄 수를 보이고,
+  추가는 녹색(흰 바탕 대비 4.5 이상인 단계)·삭제는 빨간색으로 구분한다. 버전이 없으면 목록 대신 안내 문구를 보인다.
+  selectedId 와 같은 항목은 aria-selected 와 선택 스타일로 표시되고, 항목을 누르면 onSelect 가 그 id 로 불린다
+  (onSelect 가 없어도 오류 없이 동작한다). 목록·항목은 list·listitem 역할을 갖는다.
+
+# axis 의미:
+#   selection — none 은 selectedId 없이 그린 목록, selected 는 selectedId 로 한 항목을 고른 목록.
+axes:
+  selection: [none, selected]
+
+effects:
+  - version_items_show_version_date_and_line_counts   # 버전 번호·로케일 날짜·추가/삭제 줄 수를 보인다
+  - empty_versions_show_notice                        # 버전이 없으면 목록 없이 안내 문구를 보인다
+  - selected_item_marked                              # selectedId 항목만 aria-selected=true 와 선택 스타일, 나머지는 기본 테두리
+  - item_click_calls_on_select_with_id                # 항목 클릭이 onSelect 를 그 id 로 부르고, onSelect 가 없어도 오류가 없다
+  - list_has_list_semantics                           # list·listitem 역할과 항목별 aria-selected 속성을 갖는다
+  - line_counts_colored_by_direction                  # 추가 줄 수는 녹색, 삭제 줄 수는 빨간색이다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/VersionList.test.tsx

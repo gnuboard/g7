@@ -7,6 +7,7 @@ use App\Extension\HookManager;
 use App\Models\User;
 use App\Search\Contracts\FulltextSearchable;
 use App\Support\HtmlImageExtractor;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,6 +32,8 @@ class Page extends Model implements FulltextSearchable
 
     /**
      * 팩토리 클래스를 반환합니다.
+     *
+     * @return PageFactory 페이지 팩토리
      */
     protected static function newFactory(): PageFactory
     {
@@ -87,6 +90,8 @@ class Page extends Model implements FulltextSearchable
      * 모델 saving 이벤트에 두는 이유: PageService::restoreVersion() 이 서비스
      * create/update 를 우회해 Repository 를 직접 호출하므로, 버전 롤백 시에도 캐시가
      * 자동 재계산되는 유일 지점이 모델 이벤트다 (공개 이슈 #22 동종 — board 와 동형).
+     *
+     * @return void 반환값 없음
      */
     protected static function booted(): void
     {
@@ -204,14 +209,14 @@ class Page extends Model implements FulltextSearchable
             return (string) $this->title;
         }
 
-        return $this->title[$locale]
-            ?? $this->title[config('app.fallback_locale')]
-            ?? (! empty($this->title) ? array_values($this->title)[0] : '')
-            ?? '';
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        return LocalizedValue::pick($this->title, $locale) ?? '';
     }
 
     /**
      * 현재 로케일의 제목 반환
+     *
+     * @return Attribute 현재 로케일 제목 접근자
      */
     protected function localizedTitle(): Attribute
     {

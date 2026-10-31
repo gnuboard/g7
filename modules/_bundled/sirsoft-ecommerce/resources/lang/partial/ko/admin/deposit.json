@@ -76,7 +76,6 @@
   "modal": {
     "manual_match": {
       "title": "수동 매칭",
-      "description": "입금 내역과 주문을 수동으로 연결합니다",
       "deposit_info": "입금 정보",
       "depositor_name": "입금자명",
       "deposit_amount": "입금금액",
@@ -88,7 +87,6 @@
     },
     "process_history": {
       "title": "처리이력",
-      "description": "입금 처리 이력 및 웹훅 로그를 확인합니다",
       "order_number": "주문번호",
       "timeline_title": "처리 타임라인",
       "system_pg_webhook": "시스템(PG웹훅)",
@@ -102,7 +100,6 @@
     },
     "bulk_match": {
       "title": "일괄 매칭",
-      "description": "선택된 {{count}}건의 입금 내역을 주문과 매칭합니다.",
       "instruction_1": "• 주문번호를 직접 입력하거나, 주문번호/고객명을 입력하면 자동으로 검색 결과가 표시됩니다.",
       "instruction_2": "• 검색 결과에서 원하는 주문을 선택하면 자동으로 입력됩니다. (예: ORD20251118-0001)",
       "columns": {

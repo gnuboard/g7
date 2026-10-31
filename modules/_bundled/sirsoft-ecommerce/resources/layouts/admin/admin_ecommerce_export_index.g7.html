@@ -1,0 +1,145 @@
+<!-- 내보내기 관리 (운영자) — 상품·주문·마일리지 목록에서 요청한 내보내기 작업의 진행 상황을 보고 파일을 내려받는다.
+  배송정책 목록과 같은 규약이다: 검색·필터·정렬·쪽수를 전부 URL 쿼리에 싣고, 진입 시 `<init>` 이 쿼리를 필터
+  입력값으로 되돌려 담는다. 작업은 큐에서 돌므로 대기·진행중 행이 있으면 목록이 몇 초마다 스스로 다시 받고,
+  모두 끝나면 멈춘다(판정은 서버가 내려 주는 `has_active` 하나). 행의 버튼·메뉴는 서버 abilities 로만 잠근다. -->
+<layout name="admin_ecommerce_export_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.export.title"/>
+  <!-- 목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 응답의 `has_active` 가
+       참이면 5초 주기 재조회를 걸고 거짓이면 푼다 — 판정을 응답값으로만 하는 까닭은 직전에 넣은 전역 값이 이 성공
+       핸들러에서 낡은 값으로 읽히기 때문이다(이커머스 환경설정 개인정보 직권 실행과 같은 방식). -->
+  <data-source id="exports" label_key="$t:sirsoft-ecommerce.editor.data_source.exports" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/exports" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" requester_uuid="{{query.requester_uuid}}" statuses="{{query['statuses[]']}}" types="{{query['types[]']}}" personal="{{query.personal}}" start_date="{{query.start_date}}" end_date="{{query.end_date}}" mine="{{query.mine}}" sort_by="{{query.sort_by || 'requested_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
+    <success>
+      <start-interval if="{{response?.data?.data?.has_active === true}}" id="export_list_poll" :intervalMs="5000">
+        <actions>
+          <refetch-data-source dataSourceId="exports"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{response?.data?.data?.has_active !== true}}" id="export_list_poll"/>
+    </success>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="filter">
+      <field name="searchField" value="all"/>
+      <field name="search" value=""/>
+      <field name="statuses" :value="[]"/>
+      <field name="types" :value="[]"/>
+      <field name="personal" value=""/>
+      <field name="startDate" value=""/>
+      <field name="endDate" value=""/>
+      <field name="mine" :value="false"/>
+    </field>
+  </init-local>
+  <init-global>
+    <field name="ecommerceExportTarget" :value="null"/>
+    <field name="ecommerceExportIsDeleting" :value="false"/>
+    <field name="ecommerceExportIsBulkDeleting" :value="false"/>
+    <field name="ecommerceExportIsRetrying" :value="false"/>
+    <field name="ecommerceExportDownloadingId" :value="null"/>
+    <field name="ecommerceExportBulkSelectedItems" :value="[]"/>
+    <field name="ecommerceExportDownloadsPage" :value="1"/>
+  </init-global>
+  <permissions>
+    <permission>sirsoft-ecommerce.exports.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>exports</wait-for>
+  </transition-overlay>
+  <!-- 필터 적용 — 입력칸이 여럿이라 필터 조각·엔터·초기화가 이 액션 하나를 공유한다. 빈 값은 undefined 로 떨어뜨려
+       주소에 남기지 않고, 조건이 바뀌었으니 쪽수는 1로 되돌린다. 요청자 메뉴가 건 요청자 한정(`requester_uuid`)은 필터 칸의
+       「요청자」 검색어가 그때 그대로일 때만 이어 간다 — 검색어를 바꾸면 그 이름이 아닌 사람으로 몰래 걸러지지 않게 푼다 -->
+  <action name="searchExports">
+    <navigate path="/admin/ecommerce/exports" :mergeQuery="true" :replace="true" transition_overlay_target="export_datagrid__body">
+      <query :page="1" search_field="{{_local.filter.search ? (_local.filter.searchField || 'all') : undefined}}" search_keyword="{{_local.filter.search || undefined}}" requester_uuid="{{query.requester_uuid &amp;&amp; _local.filter.searchField === 'requester' &amp;&amp; _local.filter.search === query.search_keyword ? query.requester_uuid : undefined}}" statuses[]="{{_local.filter.statuses?.length > 0 ? _local.filter.statuses : undefined}}" types[]="{{_local.filter.types?.length > 0 ? _local.filter.types : undefined}}" personal="{{_local.filter.personal || undefined}}" start_date="{{_local.filter.startDate || undefined}}" end_date="{{_local.filter.endDate || undefined}}" mine="{{_local.filter.mine ? 'true' : undefined}}"/>
+    </navigate>
+  </action>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="filter">
+          <field name="searchField" value="{{query.search_field || 'all'}}"/>
+          <field name="search" value="{{query.search_keyword || ''}}"/>
+          <field name="statuses" value="{{[].concat(query['statuses[]'] || [])}}"/>
+          <field name="types" value="{{[].concat(query['types[]'] || [])}}"/>
+          <field name="personal" value="{{query.personal || ''}}"/>
+          <field name="startDate" value="{{query.start_date || ''}}"/>
+          <field name="endDate" value="{{query.end_date || ''}}"/>
+          <field name="mine" value="{{query.mine === 'true'}}"/>
+        </field>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="export_index_content" class="ecommerce-admin-page-content">
+      <div data-ref="page_header" class="ecommerce-flex-between ecommerce:mb-6">
+        <div>
+          <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.export.title</h1>
+          <p class="ecommerce-text-label-subtle ecommerce:mt-1">$t:sirsoft-ecommerce.admin.export.description</p>
+        </div>
+        <button type="button" class="ecommerce-btn ecommerce-btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
+          <on type="click">
+            <!-- 새로고침 — 같은 조건·쪽을 다시 부른다(진행률은 자동 갱신과 별개로 바로 확인할 수 있어야 한다) -->
+            <refetch-data-source dataSourceId="exports"/>
+          </on>
+          <icon name="arrows-rotate" class="ecommerce:text-xl"/>
+        </button>
+      </div>
+      <include src="partials/admin_ecommerce_export_index/_partial_warnings.g7.html"/>
+      <include src="partials/admin_ecommerce_export_index/_partial_filter.g7.html"/>
+      <div data-ref="data_table_section" class="ecommerce:mt-6">
+        <include src="partials/admin_ecommerce_export_index/_partial_bulk_actions.g7.html"/>
+        <div data-ref="table_header_bar" class="ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <span class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.export.pagination.total|count={{exports?.data?.pagination?.total || 0}}</span>
+          <div class="ecommerce-flex-center ecommerce:gap-3">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="ecommerce:w-40 ecommerce:px-3 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'requested_at_desc'}}">
+              <options>
+                <option value="requested_at_desc">$t:sirsoft-ecommerce.admin.export.sort.requested_at_desc</option>
+                <option value="requested_at_asc">$t:sirsoft-ecommerce.admin.export.sort.requested_at_asc</option>
+                <option value="completed_at_desc">$t:sirsoft-ecommerce.admin.export.sort.completed_at_desc</option>
+                <option value="file_size_desc">$t:sirsoft-ecommerce.admin.export.sort.file_size_desc</option>
+                <option value="download_count_desc">$t:sirsoft-ecommerce.admin.export.sort.download_count_desc</option>
+              </options>
+              <on type="change">
+                <!-- 선택값은 `필드명_방향` 한 덩어리라 마지막 마디를 방향으로 떼어 낸다(`requested_at_desc` 처럼 필드명 자체에 밑줄이 있어 앞쪽은 다시 이어 붙인다) -->
+                <navigate path="/admin/ecommerce/exports" :mergeQuery="true" :replace="true" transition_overlay_target="export_datagrid__body">
+                  <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+            <select name="perPage" aria-label="$t:common.per_page" class="ecommerce:w-20 ecommerce:px-3 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:text-sm" value="{{query.per_page || '20'}}">
+              <options>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </options>
+              <on type="change">
+                <!-- 한 쪽에 담는 수가 달라지면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다 -->
+                <navigate path="/admin/ecommerce/exports" :mergeQuery="true" :replace="true" transition_overlay_target="export_datagrid__body">
+                  <query per_page="{{$event.target.value}}" :page="1"/>
+                </navigate>
+              </on>
+            </select>
+          </div>
+        </div>
+        <include src="partials/admin_ecommerce_export_index/_partial_datagrid.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 한 건 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_export_index/_modal_delete.g7.html"/>
+  <!-- 선택한 여러 건 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_export_index/_modal_bulk_delete.g7.html"/>
+  <!-- 실패한 작업을 같은 조건으로 다시 요청 -->
+  <modal src="partials/admin_ecommerce_export_index/_modal_retry.g7.html"/>
+  <!-- 다운로드 이력 — 파일 정보·요청 조건과 누가 언제 내려받았는지 -->
+  <modal src="partials/admin_ecommerce_export_index/_modal_downloads.g7.html"/>
+</layout>

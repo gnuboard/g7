@@ -1,0 +1,563 @@
+{
+    "plugin_read_only": "You do not have permission to change these settings. You can only view them.",
+    "editor": {
+        "data_source": {
+            "settings": "Social login settings",
+            "providers": "Social sign-in providers",
+            "accounts": "My linked social accounts",
+            "diagnostics": "Diagnostics summary",
+            "attempts": "Attempts",
+            "webhook_events": "Webhook events",
+            "stats": "Stats",
+            "user_accounts": "Member social links"
+        },
+        "palette": {
+            "group": "Social Login",
+            "provider_buttons": {
+                "label": "Social sign-in buttons"
+            }
+        },
+        "state": {
+            "signup_email_input": "Sign-up modal — email input",
+            "signup_code_sent": "Sign-up modal — code sent",
+            "signup_email_locked": "Sign-up modal — provider-verified email",
+            "signup_expired": "Sign-up modal — expired",
+            "existing_with_password": "Existing account — has password",
+            "existing_without_password": "Existing account — no password",
+            "unlink_confirm": "Unlink confirmation",
+            "unlink_last_method": "Unlink — last sign-in method"
+        }
+    },
+    "settings": {
+        "title": "Social Login Settings",
+        "description": "Manage the signup, linking and retention policies of social login.",
+        "sections": {
+            "policy": "Signup and Linking Policy",
+            "limits": "Time, Retention and Notice Thresholds"
+        },
+        "fields": {
+            "email_conflict_policy": {
+                "label": "Existing Member With Same Email",
+                "hint": "What to do when the social account email matches an existing member email.",
+                "options": {
+                    "verify_link": "Link after confirming the existing account (recommended)",
+                    "auto_link_verified": "Link at once when the provider verified the email (caution: trusts the provider check as is)",
+                    "never_link": "Never link"
+                }
+            },
+            "extra_info_mode": {
+                "label": "Signup Extra Info Screen",
+                "hint": "When to show the extra info screen on social signup.",
+                "options": {
+                    "when_missing": "Only when required info is missing",
+                    "always": "Always"
+                }
+            },
+            "webhook_unlink_policy": {
+                "label": "Provider Unlink Notice",
+                "hint": "What to do when the provider reports that the member removed the app connection.",
+                "options": {
+                    "unlink_only": "Remove the link only",
+                    "withdraw_user": "Withdraw the member (administrators excluded)"
+                }
+            },
+            "two_factor_enabled": {
+                "label": "Two-Factor For Social Login",
+                "hint": "When off, even members with an authenticator app skip two-factor on social login."
+            },
+            "allow_admin_social_login": {
+                "label": "Allow Administrators",
+                "hint": "Allow members with an administrator role to sign in with a social account."
+            },
+            "allow_unlink_last_method": {
+                "label": "Allow Unlinking Last Method",
+                "hint": "Allow a member without a password to remove their last social link. They can then only return through password reset."
+            },
+            "revoke_on_unlink": {
+                "label": "Revoke Provider Access On Unlink",
+                "hint": "Also revoke the app authorization at the provider when a member or administrator removes a link."
+            },
+            "state_ttl_minutes": {
+                "label": "Sign-In Round Trip Lifetime (Minutes)",
+                "hint": "The member must return from the provider within this time. 3 to 30."
+            },
+            "pending_signup_ttl_minutes": {
+                "label": "Pending Signup Lifetime (Minutes)",
+                "hint": "Time to finish the signup screen after the provider check. 5 to 120."
+            },
+            "custom_provider_limit": {
+                "label": "Custom Provider Limit",
+                "hint": "Number of OIDC providers an administrator can add. 0 to 10."
+            },
+            "profile_raw_retention_days": {
+                "label": "Raw Profile Retention (Days)",
+                "hint": "How long to keep the raw provider profile for troubleshooting. 0 keeps nothing. 0 to 90."
+            },
+            "attempt_log_retention_days": {
+                "label": "Attempt Log Retention (Days)",
+                "hint": "How long to keep attempt records used by stats and diagnostics. 7 to 365."
+            },
+            "webhook_event_retention_days": {
+                "label": "Webhook Log Retention (Days)",
+                "hint": "How long to keep provider notice records. 7 to 365."
+            },
+            "signup_surge_threshold_per_hour": {
+                "label": "Signup Surge Threshold (Per Hour)",
+                "hint": "Notify administrators when this many members sign up through one provider within an hour. 0 disables the notice."
+            },
+            "provider_failure_streak_threshold": {
+                "label": "Provider Failure Streak Threshold",
+                "hint": "Notify administrators once a day when one provider fails this many times within 10 minutes, even with successes in between. 0 disables the notice."
+            },
+            "notification_link": "Change recipients and wording on the Notifications tab"
+        },
+        "warnings": {
+            "auto_link_verified": "Risk: links an existing account with the same email at once, trusting only the provider's verified flag. If someone signed up with that email first or the provider's check is wrong, the account can be taken over.",
+            "two_factor_off": "Caution: when off, even members with an authenticator app (TOTP) are not asked for a code on social sign-in."
+        }
+    },
+    "divider": {
+        "or": "or",
+        "or_email_signup": "or sign up with email"
+    },
+    "buttons": {
+        "login_with": {
+            "kakao": "Login with Kakao",
+            "naver": "Log in with NAVER",
+            "google": "Sign in with Google",
+            "facebook": "Continue with Facebook",
+            "custom": "Sign in with {{provider}}"
+        },
+        "register_with": {
+            "kakao": "Login with Kakao",
+            "naver": "Sign up with NAVER",
+            "google": "Sign up with Google",
+            "facebook": "Sign up with Facebook",
+            "custom": "Sign up with {{provider}}"
+        },
+        "link_with": "Link {{provider}}",
+        "reauth_with": "Confirm with {{provider}}",
+        "reconsent_with": "Share your email with {{provider}} again"
+    },
+    "errors": {
+        "provider_error": "Social sign-in failed. Please try again later or sign in another way.",
+        "access_denied": "You did not agree on the provider screen, so you were not signed in.",
+        "state_invalid": "The sign-in has expired or was already handled. Please try again.",
+        "code_missing": "The provider did not send a sign-in result. Please try again.",
+        "unexpected_error": "Something went wrong during social sign-in. Please try again later.",
+        "profile_missing_id": "The provider did not send account information. Please try again.",
+        "profile_fetch_failed": "Could not get account information from the provider. Please try again later.",
+        "provider_disabled": "Sign-in with this provider is not available now.",
+        "provider_unknown": "Sign-in with this provider is not available now.",
+        "admin_blocked": "Administrator accounts cannot use social sign-in. Please sign in with your password.",
+        "signup_disabled": "New sign-ups are not allowed with this provider. If you already have an account, sign in and link it from My Page.",
+        "registration_closed": "Sign-up is currently closed. If you already have an account, sign in with it and link this account from My Page.",
+        "email_required": "An email is required to sign up. Use the button below to reopen the provider consent screen and allow email sharing.",
+        "account_missing": "The linked member cannot be found. Please sign up again.",
+        "already_linked_other_user": "This social account is linked to another member.",
+        "provider_already_linked": "Another account of this provider is already linked. Unlink it first.",
+        "user_missing": "Your sign-in has changed. Please sign in again and link the account.",
+        "reauth_mismatch": "You signed in with an account other than the linked one. Please confirm with the linked account.",
+        "reauth_failed": "The identity check could not be completed. Please try again.",
+        "last_method": "Set a password or link another account before unlinking this one.",
+        "expired": "The pending sign-up has expired. Please start the social sign-in again."
+    },
+    "notices": {
+        "pending_verification": "Your sign-up is complete. You can sign in after identity verification.",
+        "reconsent": "You could not sign up because email sharing was not allowed. The button below reopens the provider consent screen."
+    },
+    "signup": {
+        "title": "Sign up with {{provider}}",
+        "provider_generic": "a social account",
+        "intro": "Review the details below and agree to finish signing up. You do not need to set a password.",
+        "expired": "The pending sign-up has expired or is already complete. Please start the social sign-in again.",
+        "retry_login": "Sign in again",
+        "name": "Name",
+        "nickname": "Nickname",
+        "email": "Email",
+        "placeholder_notice": "You are signing up without an email. A placeholder email is issued, so you cannot receive email notices or email codes. You can change the email on My Page later.",
+        "request_code": "Get code",
+        "resend_code": "Resend code",
+        "code_placeholder": "6-digit code",
+        "code_sent": "We sent a code. Please check your inbox.",
+        "verify_code": "Verify",
+        "email_verified": "Your email is verified.",
+        "submit": "Sign up and start",
+        "code_remaining": "Time remaining {{minutes}}:{{seconds}}",
+        "code_expired": "The code has expired. Press resend to get a new one."
+    },
+    "existing": {
+        "title": "Email already registered",
+        "message": "An account is registered with {{email}}. Confirm that you own it to link the social account and sign in.",
+        "hint": "Accounts are never merged just because the email matches.",
+        "by_password": "Confirm with the existing account password",
+        "by_email": "Get a code at the existing account email",
+        "confirm": "Confirm",
+        "new_account": "Sign up as a new account"
+    },
+    "mypage": {
+        "title": "Linked social accounts",
+        "no_password": "This account has no password. Set one to also sign in with your email.",
+        "set_password": "Set password",
+        "empty": "No social account is linked.",
+        "linked_label": "Linked",
+        "unlink": "Unlink",
+        "unlink_title": "Unlink social account",
+        "unlink_confirm": "Unlink the {{provider}} account? You will no longer be able to sign in with it.",
+        "unlink_last_warning": "This is your last sign-in method. Once you sign out, you can only get back in by setting a password through Forgot password.",
+        "unlinked_toast": "The account is unlinked.",
+        "last_method": "You have no password and only one link, so it cannot be removed. Set a password or link another account first.",
+        "available": "Link another account",
+        "linked_toast": "The social account is linked."
+    },
+    "reauth": {
+        "notice": "This account cannot receive email codes. Sign in again with your linked social account to confirm your identity.",
+        "unavailable": "No social account is linked, so your identity cannot be confirmed. Please contact the administrator.",
+        "verified_toast": "Your identity is confirmed.",
+        "password_notice": "Before setting your first password, sign in again with your linked social account to confirm your identity.",
+        "password_ready": "Your identity is confirmed. Save the new password within a few minutes."
+    },
+    "admin": {
+        "tabs": {
+            "providers": "Providers",
+            "policy": "Policies",
+            "notifications": "Notifications"
+        },
+        "providers": {
+            "read_only": "You can only view this; you have no permission to change settings.",
+            "types": {
+                "builtin": "Built-in",
+                "custom": "Generic OIDC",
+                "extension": "Registered by an extension (read-only)"
+            },
+            "enabled": "On",
+            "disabled": "Off",
+            "move_up": "Move up",
+            "move_down": "Move down",
+            "extension_notice": "This provider was registered by another extension and cannot be changed here.",
+            "extension_hint": "Providers registered by other extensions appear above as read-only rows.",
+            "credentials_unreadable": "The stored secret cannot be decrypted. If the site app key changed, enter the secret again and save.",
+            "redirect_uri": "Redirect URI",
+            "copy": "Copy",
+            "copied": "Copied.",
+            "copy_failed": "Could not copy. Select the address and copy it manually.",
+            "webhook_kinds": {
+                "unlink": "Unlink webhook",
+                "deauthorize": "Deauthorize callback",
+                "data_deletion": "Data deletion callback"
+            },
+            "last_success": "Last success",
+            "last_error": "Last failure",
+            "edit": "Edit settings",
+            "test": "Connection test",
+            "test_login": "Test sign-in in browser",
+            "impact": "View impact",
+            "test_failed": "Could not run the connection test.",
+            "test_login_failed": "Could not start the sign-in test.",
+            "popup_blocked": "The new window was blocked. Allow pop-ups in your browser and try again.",
+            "provider_code": "Provider response code",
+            "test_results": {
+                "credentials_ok": "Credentials are correct (the provider accepted the client). Check a real sign-in with [Test sign-in in browser].",
+                "inconclusive": "This provider does not confirm credentials for a test request. Check them with [Test sign-in in browser].",
+                "invalid_client": "The client ID or secret is wrong.",
+                "redirect_mismatch": "The Redirect URI registered in the provider console differs from the address above.",
+                "unreachable": "Could not reach the provider (network or provider outage).",
+                "credentials_missing": "Required credentials are empty.",
+                "credentials_unreadable": "The stored secret cannot be decrypted (the app key changed). Enter the secret again and save.",
+                "discovery_failed": "Could not fetch the discovery document.",
+                "discovery_incomplete": "The discovery document lacks required entries.",
+                "jwks_unreachable": "Could not fetch the signing keys (JWKS).",
+                "unexpected": "Unexpected response. Check the provider response code."
+            },
+            "delete_confirm": "Delete this generic OIDC provider? It is not deleted while members are linked to it.",
+            "deleted": "Provider deleted.",
+            "saved": "Provider settings saved.",
+            "save_failed": "Could not save.",
+            "created": "Generic OIDC provider added. Turn it on after a connection test.",
+            "discover": "Read discovery",
+            "discovered": "Endpoints were filled from the discovery document. Review them and save.",
+            "fields": {
+                "enabled": "Enabled",
+                "label": "Display name",
+                "client_id_kakao": "REST API key",
+                "client_id_naver": "Client ID",
+                "client_id_google": "Client ID",
+                "client_id_facebook": "App ID",
+                "client_id_oidc": "Client ID",
+                "client_secret_kakao": "Client Secret",
+                "client_secret_naver": "Client Secret",
+                "client_secret_google": "Client secret",
+                "client_secret_facebook": "App secret",
+                "client_secret_oidc": "Client secret",
+                "admin_key": "Admin key",
+                "graph_api_version": "Graph API version",
+                "scopes": "Scopes",
+                "discovery_url": "Discovery URL",
+                "issuer": "Issuer",
+                "authorize_url": "Authorization URL",
+                "token_url": "Token URL",
+                "userinfo_url": "Userinfo URL",
+                "jwks_url": "Signing keys (JWKS) URL",
+                "button_bg": "Button background",
+                "button_fg": "Button text color",
+                "button_border": "Button border color",
+                "signup_allowed": "Allow new signups with this provider",
+                "webhook_app_id": "Webhook app ID",
+                "webhook_ip_allowlist_enabled": "Check webhook sender IP",
+                "email_missing_policy": "When no email is given",
+                "email_trust": "Trust in provider email",
+                "key": "Provider key"
+            },
+            "hints": {
+                "enabled": "When on, the button appears on the sign-in and signup screens. Credentials are required to turn it on.",
+                "secret": "A stored value shows as ••••••••. Leave it to keep it; clear it and save to delete it.",
+                "admin_key": "Used to verify unlink webhooks and to revoke member links.",
+                "scopes": "Separate with spaces or commas. Leave empty for the driver defaults.",
+                "scopes_placeholder": "e.g. openid email profile",
+                "signup_allowed": "When off, only linked members can sign in with this provider; new signups are refused.",
+                "webhook_app_id": "Enter the app ID (digits) from the Kakao developer console to ignore unlink notices sent for other apps. Leave empty to skip the check.",
+                "webhook_ip_allowlist_enabled": "Accept webhooks only from Kakao sender ranges. Behind a reverse proxy, configure trusted proxies first.",
+                "placeholder_warning": "Members who sign up with a placeholder email (…@social.invalid) cannot receive mail — no mail two-factor, notices or password reset mail; they confirm themselves by signing in again with the provider.",
+                "email_trust": "Kakao, Google and generic OIDC default to \"Trust the verified flag only\"; Naver and Facebook, which send no email verified flag, default to \"Always trust\". \"Always trust\" treats even unverified provider emails as confirmed.",
+                "key": "2 to 50 lowercase letters, digits or underscores, starting with a letter. Built-in provider names and keys starting with mock_ are reserved.",
+                "label_example": "e.g. Company Account"
+            },
+            "email_missing": {
+                "ask": "Ask for it (code check)",
+                "deny": "Refuse sign-in (ask to consent again at the provider)",
+                "placeholder": "Issue a placeholder email"
+            },
+            "email_trust": {
+                "flag": "Trust the provider's verified flag only",
+                "trust": "Always trust",
+                "verify": "Always check with a code"
+            },
+            "impact_title": "Impact of the change",
+            "impact_body": "Turning off {{provider}} or changing its credentials affects these members.",
+            "impact_social_only": "Members who sign in only with this provider",
+            "impact_linked": "Linked members",
+            "impact_warning": "Members who sign in only with this provider lose every way to sign in when it is turned off. Ask them to set a password via password reset.",
+            "impact_continue": "Save anyway",
+            "add_title": "Add a generic OIDC provider",
+            "add_limit": "Added providers {{count}} / up to {{limit}}",
+            "add_button": "+ Add",
+            "add_submit": "Add",
+            "notes": {
+                "kakao": {
+                    "client_secret_default_on": "Kakao turns Client Secret on by default. Issue the code under [App] > [Platform Keys] > [REST API Key] > [Client Secret] in the console and enter it (KOE010 otherwise). The Redirect URI is registered on the same REST API Key screen.",
+                    "biz_app_email": "Receiving emails requires switching to a business app and setting the email consent item.",
+                    "reconsent_needs_email_item": "If the app has no email consent item and \"When no email is given\" is set to \"Refuse sign-in\", the [Share your email again] button on the sign-in screen ends in a Kakao error (KOE205). Choose \"Ask for it\" for such apps.",
+                    "redirect_koe006": "KOE006 occurs when the Redirect URI differs from the registered value.",
+                    "webhook_https_443": "Kakao accepts only https on port 443 for the unlink webhook URL. If the site runs on another port, provide a separate address served on 443."
+                },
+                "naver": {
+                    "review_no_test_account": "Until the review is approved, only test IDs registered in the console can sign in. Naver rejects the review if sign-up asks for a separate site password (this plugin never asks).",
+                    "redirect_exact": "Register the service URL and callback URL exactly as the address above."
+                },
+                "google": {
+                    "redirect_exact_match": "Authorized redirect URIs must match character for character (including a trailing /).",
+                    "unverified_app": "Before the app is published, only accounts added as test users can sign in."
+                },
+                "facebook": {
+                    "strict_mode": "Add the address above to Valid OAuth Redirect URIs and keep Strict Mode on.",
+                    "email_app_review": "The email permission may need App Review (advanced access).",
+                    "data_deletion_callback": "Put the data deletion callback address above into the app's \"Data Deletion Callback URL\"."
+                },
+                "oidc": {
+                    "redirect_exact": "Register the Redirect URI above at the IdP exactly as shown.",
+                    "discovery_https": "The discovery URL and every endpoint must be https."
+                }
+            }
+        },
+        "diagnostics": {
+            "title": "Social Login Diagnostics",
+            "description": "See provider status, webhook receipts and failures in one place.",
+            "refresh": "Refresh",
+            "queue": {
+                "title": "Queue",
+                "connection": "Connection",
+                "pending": "Pending jobs",
+                "failed_jobs": "Failed jobs of this plugin",
+                "sync_hint": "The queue is synchronous, so webhooks are processed inside the request. Run a queue worker in production."
+            },
+            "mail": {
+                "title": "Mail",
+                "mailer": "Mailer",
+                "delivering": "Available",
+                "not_delivering": "This mailer does not actually send (codes are not delivered)",
+                "recent_failures": "Code mail failures in the last 7 days: {{count}}"
+            },
+            "mock": {
+                "title": "Mock providers",
+                "on": "On — until {{until}}",
+                "off": "Off",
+                "hint": "Mock providers are turned on and off only by a server command."
+            },
+            "members": {
+                "title": "Members",
+                "linked": "Members with social links: {{count}}",
+                "passwordless": "Of them, without a password: {{count}}"
+            },
+            "providers": {
+                "title": "Provider status",
+                "provider": "Provider",
+                "state": "State",
+                "last_success": "Last success",
+                "last_error": "Last failure",
+                "last_webhook": "Last webhook",
+                "configured": "Configured (off)",
+                "not_configured": "No credentials",
+                "unreadable": "Secret cannot be decrypted"
+            },
+            "attempts": {
+                "title": "Recent attempts",
+                "empty": "No records.",
+                "col": {
+                    "created_at": "Time",
+                    "provider": "Provider",
+                    "intent": "Intent",
+                    "outcome": "Outcome",
+                    "error": "Error"
+                }
+            },
+            "webhooks": {
+                "title": "Webhook history",
+                "empty": "No webhooks received.",
+                "attempts": "Attempts",
+                "summary": "Last {{days}} days: received {{received}} · ignored {{ignored}} · failed {{failed}}",
+                "proxy_hint": "Some webhooks were ignored and no trusted proxy is configured. Behind a proxy, every sender IP check may fail.",
+                "providers": {
+                    "kakao": "Kakao",
+                    "naver": "Naver",
+                    "facebook": "Facebook"
+                },
+                "col": {
+                    "received_at": "Received",
+                    "provider": "Provider",
+                    "event_type": "Type",
+                    "status": "Status",
+                    "detail": "Detail"
+                }
+            },
+            "filters": {
+                "provider": "Provider",
+                "outcome": "Outcome",
+                "status": "Status",
+                "all_providers": "All providers",
+                "all_outcomes": "All outcomes",
+                "all_statuses": "All statuses"
+            },
+            "intents": {
+                "login": "Sign-in",
+                "link": "Link",
+                "test": "Test",
+                "reauth": "Reconfirm"
+            },
+            "outcomes": {
+                "login": "Sign-in",
+                "signup": "Signup",
+                "link": "Link",
+                "pending": "Pending",
+                "handoff": "Sign-in handoff",
+                "denied": "Denied",
+                "failed": "Failed"
+            },
+            "statuses": {
+                "received": "Received",
+                "processed": "Processed",
+                "ignored": "Ignored",
+                "failed": "Failed"
+            },
+            "event_types": {
+                "unlink": "Unlink",
+                "account_delete": "Provider account deleted",
+                "deauthorize": "App authorization removed",
+                "data_deletion": "Data deletion request",
+                "incomplete_signup": "Incomplete signup"
+            }
+        },
+        "stats": {
+            "title": "Social Login Stats",
+            "description": "Signups, sign-ins and failures per provider in the period, and current links (admin connection tests excluded).",
+            "period": "Period",
+            "days_7": "7 days",
+            "days_30": "30 days",
+            "days_90": "90 days",
+            "since": "Since {{since}}",
+            "empty": "No data.",
+            "totals": "Total — signups {{signups}} · sign-ins {{logins}} · failures {{failures}}",
+            "col": {
+                "provider": "Provider",
+                "signups": "Signups",
+                "logins": "Sign-ins",
+                "links": "Links",
+                "failures": "Failures",
+                "linked_accounts": "Linked",
+                "social_only_users": "Sign in only with this"
+            }
+        },
+        "users": {
+            "filter_label": "Signup route (social)",
+            "filter_all": "All",
+            "column_header": "Social links",
+            "tab_label": "Social Login",
+            "tab_title": "Social Account Links",
+            "forbidden": "You have no permission to view member links.",
+            "passwordless_notice": "This member has no password — removing every link leaves only password reset as a way back in.",
+            "empty": "No linked social accounts.",
+            "unlink": "Force unlink",
+            "unlink_confirm": "Force-remove this social account link? The member is notified and it is recorded in the activity log.",
+            "unlink_failed": "Could not remove the link.",
+            "col": {
+                "provider": "Provider",
+                "provider_user_id": "Provider user ID",
+                "email": "Provider email",
+                "linked_at": "Linked",
+                "last_login_at": "Last sign-in"
+            }
+        },
+        "notifications": {
+            "title": "Notifications",
+            "description": "Turn each notification this plugin sends on or off, choose its delivery channels, and edit the subject, body and recipients per channel. These notifications do not appear on the Notification Settings tab of the site settings.",
+            "definition_active": "Use this notification",
+            "channels": "Delivery channels",
+            "channel_template_missing": "No template for this channel — nothing will be sent",
+            "save_channels": "Save channels",
+            "templates": "Templates by channel",
+            "edit_template": "Edit template",
+            "template_active": "Use the {{channel}} template of {{name}}",
+            "reset": "Restore defaults",
+            "empty_message": "No notifications registered yet.",
+            "forbidden_message": "You do not have permission to view notifications. Ask an administrator who can manage notifications to change them.",
+            "load_failed_message": "Could not load the notifications. Refresh the page and try again later.",
+            "reset_success": "Notification has been reset to default.",
+            "reset_failed": "Failed to reset notification.",
+            "reset_modal": {
+                "title": "Reset to Default",
+                "confirm_message": "All channel templates of this notification will be restored to defaults.",
+                "warning_message": "The saved subject, body, and recipient settings will be permanently lost.",
+                "target_label": "Target:",
+                "btn_confirm": "Reset",
+                "btn_confirming": "Resetting..."
+            },
+            "save_success": "Notification settings saved successfully.",
+            "save_error": "Failed to save notification settings.",
+            "edit_modal": {
+                "title": "Edit Notification Template",
+                "type_label": "Type:",
+                "channel_label": "Channel:",
+                "subject": "Subject",
+                "body": "Body",
+                "variables_title": "Available Variables",
+                "btn_preview": "Preview",
+                "validation_error": "Please check the input fields."
+            },
+            "preview_modal": {
+                "title": "Notification Preview",
+                "rendered_subject": "Rendered Subject",
+                "rendered_body": "Rendered Body",
+                "btn_close": "Close"
+            }
+        }
+    }
+}

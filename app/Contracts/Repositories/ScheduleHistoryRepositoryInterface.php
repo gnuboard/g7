@@ -25,6 +25,22 @@ interface ScheduleHistoryRepositoryInterface
     public function create(array $data): ScheduleHistory;
 
     /**
+     * 저장하지 않은 실행 이력 인스턴스를 만듭니다.
+     *
+     * @param  array  $data  이력 데이터
+     * @return ScheduleHistory 저장되지 않은 이력 모델
+     */
+    public function make(array $data): ScheduleHistory;
+
+    /**
+     * 스케줄의 가장 최근 「실행 중」 이력을 찾습니다.
+     *
+     * @param  int  $scheduleId  스케줄 ID
+     * @return ScheduleHistory|null 실행 중 이력 또는 null
+     */
+    public function findLatestRunning(int $scheduleId): ?ScheduleHistory;
+
+    /**
      * 기존 실행 이력을 업데이트합니다.
      *
      * @param  ScheduleHistory  $history  업데이트할 이력 모델

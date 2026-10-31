@@ -1,0 +1,16 @@
+feature: 빈 객체로 비우는 setState 의 null 선행 (7.1.1 출시 전 점검)
+
+description: |
+  setState 기본(deep) 병합은 값이 빈 객체 `{}` 이면 기존 객체의 키를 지우지 못한다. 「비우기」로 쓴 `{}` 앞에는 같은 동작 목록에서
+  그 경로(또는 조상)를 null 로 먼저 덮는다. 환경설정 › 본인인증 정책 「새 정책」·「편집」은 폼을 null 로 비운 뒤 채운다 —
+  앞 정책의 조건·user_overrides 가 새 폼에 남지 않는다.
+
+axes:
+  surface:
+    - layout_json_corpus   # 확장 레이아웃·조각 JSON 전수의 deep setState
+
+effects:
+  - empty_object_preceded_by_null_reset
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/empty-object-reset.test.ts

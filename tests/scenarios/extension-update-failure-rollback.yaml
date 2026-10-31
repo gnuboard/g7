@@ -1,0 +1,32 @@
+feature: 확장 업데이트가 버전 기록 뒤에 실패하면 DB 버전도 업데이트 전으로 돌아간다
+
+description: |
+  모듈·플러그인·템플릿 업데이트는 새 버전을 DB 에 먼저 저장(커밋)한 뒤 업그레이드 스텝·레이아웃 갱신을 한다.
+  그 뒤 단계가 실패하면 파일은 백업으로 되돌아가지만 DB 는 새 버전으로 남아, 관리자 화면이 설치되지 않은 버전을
+  보여 주고 「업데이트 없음」 으로 판정돼 같은 업데이트를 다시 시도할 수 없었다 (#727 실측 중 발견: 파일 0.2.0 · DB 0.2.1).
+
+  실패 경로의 상태 복원이 버전·이름·설명·업데이트 표시·출처·메타데이터(모듈·플러그인은 vendor_mode 포함)를
+  업데이트 전 값으로 함께 되돌리는지 고정한다(테스트는 버전·최신 버전·업데이트 표시·출처·이름·vendor_mode 를 단언).
+  반대로 백업을 지운 뒤(완료 훅 단계) 실패하면 파일을 되돌릴 수 없으므로 버전 칸도 새 버전으로 둔다 —
+  「파일은 새 버전, DB 는 옛 버전」 의 거울상 불일치를 만들지 않는다.
+
+axes:
+  source: [module, plugin, template]
+  path: [update_failed_after_version_recorded, update_failed_after_backup_deleted]
+  unit: [version_columns]
+
+exclusions:
+  - { source: [module, plugin], path: update_failed_after_backup_deleted, reason: "백업 삭제 뒤 실패 분기(파일 복원 여부로 버전 복원 결정)는 세 관리자가 같은 코드 모양이라 템플릿 한 곳에서 잰다" }
+
+effects:
+  - update_failure_after_backup_deleted_keeps_new_version
+  - template_update_failure_restores_version_columns
+  - module_update_failure_restores_version_columns
+  - plugin_update_failure_restores_version_columns
+
+test_files:
+  - tests/Feature/Extension/ExtensionUpdateFailureRestoresVersionTest.php
+
+notes:
+  - 버전 기록 전 단계(스테이징·파일 교체)의 실패는 DB 를 건드리지 않으므로 상태만 복원한다 — 이 매니페스트 범위 밖.
+  - 업그레이드 스텝이 이미 반영한 데이터와 마이그레이션은 되돌리지 않는다. 스텝은 멱등이 규정이라(upgrade-step-guide 원칙 4) 재시도가 처음부터 돌아도 안전하다.

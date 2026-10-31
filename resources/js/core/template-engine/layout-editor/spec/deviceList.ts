@@ -40,6 +40,14 @@ export const DESKTOP_PRESET_WIDTH = 1280;
 export const TABLET_PRESET_WIDTH = 820;
 export const MOBILE_PRESET_WIDTH = 390;
 
+/**
+ * 「사용자 지정」 기기의 기본 폭(px) — 편집기 초기 상태와, 폭을 넘겨받지 못한 판정의 결정적 폴백.
+ * 편집기 미리보기에서 브라우저 창 폭은 미리보기 폭과 무관하므로 폴백에 창 폭을 쓰지 않는다(#141).
+ *
+ * @since engine-v1.75.2
+ */
+export const DEFAULT_PREVIEW_CUSTOM_WIDTH = 1024;
+
 /** 폭 산출 결과의 안전 상한 — 무한대/과대 범위 클램프(useDevicePreview CUSTOM_WIDTH_MAX 와 동일). */
 const WIDTH_CLAMP_MAX = 1920;
 /** 폭 산출 결과의 안전 하한. */

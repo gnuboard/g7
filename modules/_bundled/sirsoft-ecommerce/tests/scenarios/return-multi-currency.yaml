@@ -1,0 +1,83 @@
+feature: return_multi_currency
+
+description: |
+  반품 흐름이 **통화 조합 네 가지 전부**에서 성립하는지 고정한다.
+
+  KRW 단일 통화 주문만으로는 이 축이 서지 않는다 — 기준 통화 금액과 결제 통화 금액이 **같은
+  숫자**라서, 어느 쪽을 읽든 통과한다. 단위를 혼용하는 오류가 드러나려면 두 값이 달라야 한다
+  (50 USD ↔ 50,000 KRW · `foreignPaidClaimOrder(rate: 0.001, paidLocal: 50)`).
+
+  네 조합:
+    - **기본 KRW · 결제 KRW** — 대조군. 다통화 단언이 「통화가 달라서」가 아니라
+      「계약이 지켜져서」 통과함을 보이는 기준선이다.
+    - **기본 KRW · 표시 비KRW** — 보조 통화 맵과 서식. 보조 통화가 설정에 없으면
+      「기준 줄과 보조 줄이 어긋난다」는 결함 형태가 구조적으로 생길 수 없어, 그 상태의 통과는
+      아무것도 증명하지 못한다 — 그래서 이 스위트는 setUp 에서 KRW·USD·JPY 를 세운다.
+    - **결제 통화 ≠ 기준 통화**(cross) — 해외 결제. 실 해외결제는 처리할 수 없어
+      시뮬레이션으로 대체한다(승인 2026-09-15).
+    - **상점 기본 통화가 비KRW** — 기본 통화를 원화로 하드코딩한 자리가 드러나는 조합.
+      과거 신청서의 표기 통화·금액은 상점 설정이 바뀌어도 **불변**이어야 한다.
+
+  **반품에만 있는 축** — 교환(`exchange-multi-currency.yaml`)과 갈라지는 지점이다:
+
+    | 문서 | 자기 `currency_code` | 통화의 출처 |
+    | --- | --- | --- |
+    | 반품(`ecommerce_order_returns`) | **있다** | `resolveBaseCurrency()` = **기준 통화** |
+    | 환불(`ecommerce_order_refunds`) | **없다**(컬럼 자체가 없다) | 주문 스냅샷이 소유 |
+
+  반품 신청서는 **자기 통화를 박제**한다(`OrderReturnService:349`). 그 값은 결제 통화(USD)가
+  아니라 **기준 통화(KRW)** 다 — 회수 배송비·청구액이 기준 통화로 산정되기 때문이다.
+
+  그리고 반품 완료가 환불 신청서를 낳을 때(`createRefundRequestForCompleted`)
+  **그 통화는 함께 넘어가지 않는다** — 환불에는 담을 칸이 없다. 이 이관 지점에서 금액이 결제
+  통화 단위로 새면, 고객은 50,000원 대신 50원을 돌려받고 **그 사실을 가리킬 통화 값조차
+  남지 않는다.** 금액이 0 이 아니라 그럴듯한 숫자라 화면에도 응답에도 흔적이 없다.
+
+  핵심 계약:
+    - 신청서가 박제하는 통화는 **기준 통화**다. 결제 통화를 박으면 이후 정산이 그 단위로 읽힌다.
+    - 금액 산정은 **기준 통화**로 한다. 결제 통화로 세면 3,000 이 3 이 되어 1,000배 어긋난다.
+    - 보조 통화 맵은 기준 줄과 **같은 값의 다른 표기**다. 어긋나도 둘 다 정상 서식이라 흔적이 없다.
+    - 응답의 `mc_*` 는 `{amount, formatted}` 객체다. 맨숫자면 화면이 `[1]?.formatted ?? [1]` 로
+      폴백해 **기호도 자릿수도 없는 숫자**를 그린다(S3-D14 전례).
+    - 금액이 맞아도 전이가 통화에 걸려 멈추면 반품이 끝나지 않는다 — 상태 기계를 실제로 돌린다.
+    - 접수 시점 금액은 상점 통화를 바꿔도 **재환산되지 않는다**.
+
+  #599 통합실측 세션2 브라우저 실측(주문 754 · KRW 단일)이 남긴 값:
+
+    returns.currency_code          = 'KRW'
+    returns.mc_claim_shipping_fee  = {KRW:3000, USD:3, JPY:345, CNY:17.4, EUR:2.34}
+    returns.mc_total_charge_amount = 동일 (접수 시점 스냅샷)
+
+  그 실측은 **기준=결제=KRW** 라 「기준을 박았는지 결제를 박았는지」를 가르지 못한다.
+  이 스위트가 그 구분을 담당한다.
+
+axes:
+  base_currency: [krw, non_krw]
+  payment_currency: [same_as_base, cross]
+
+exclusions:
+  # 상점 기본 통화를 바꾸는 축은 과거 신청서의 불변성을 보는 것이라, 그 주문은 이미 cross 로 만든다.
+  - { base_currency: non_krw, payment_currency: same_as_base, reason: "기본 통화를 바꾼 뒤의 신규 주문 생성 축은 세션2(반품군) 범위 밖 — 주문 생성 축은 다른 세션이 덮는다" }
+
+effects:
+  # ── 스냅샷 소유 축 (P0 · 반품 고유) ──
+  # 반품만 자기 `currency_code` 를 들고 있다. 그 값이 결제 통화면 이후 정산이 전부 어긋난다.
+  - return_snapshot_records_the_base_currency_not_the_payment_currency
+  # ── 금액 축 (P0) ──
+  - return_amounts_are_computed_in_the_base_currency
+  - return_secondary_currency_map_matches_the_base_amount
+  # ── 표기 축 (P0) ──
+  - return_response_secondary_currency_is_formatted
+  # ── 관통 축 (P0) ──
+  # 금액이 맞아도 전이가 통화에 걸려 멈추면 반품이 끝나지 않는다.
+  - return_transitions_complete_under_cross_currency_payment
+  # ── 이관 축 (P0 · 반품 고유) ──
+  # 환불 문서에는 통화 칸이 없다 — 이 지점에서 새면 가리킬 값조차 남지 않는다.
+  - return_sourced_refund_is_computed_in_the_base_currency
+  # ── 상점 통화 변경 (P0) ──
+  - return_amounts_hold_when_the_store_base_currency_is_not_krw
+  - return_frozen_amounts_survive_a_store_currency_change
+
+test_files:
+  # 반품 관통 × 결제통화 USD × 상점 기본통화 변경 (시뮬레이션 — 실 해외결제 대체)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claim/ReturnMultiCurrencyTest.php

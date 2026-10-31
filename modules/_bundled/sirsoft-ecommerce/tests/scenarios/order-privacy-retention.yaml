@@ -1,0 +1,104 @@
+feature: 종결 주문 개인정보 보유기간 파기 (이슈 #636 트랙4 확장 — 이커머스)
+
+description: |
+  코어 보유기간 계약(`core.privacy.retention_handlers`)에 이커머스가 종결 주문 핸들러
+  (`sirsoft-ecommerce.order`)를 기여하고, 연간 통지 계약(`core.privacy.notice_sections`)에
+  「주문 정보」 섹션을 기여한다. 코어 매니페스트 `tests/scenarios/privacy-retention.yaml` 이
+  계약(수집·꺼짐 보고·실패 격리)을 소유하고, 이 매니페스트는 이커머스 도메인의 처리 결과만 소유한다.
+
+  「종결」 = 주문 상태 구매확정·취소 + 진행 중 환불·교환·반품 없음. 종결 시각 = 상태 도달 시각과 환불·
+  교환·반품 완료 시각 중 늦은 것(부수의무 #41 — 「환불완료」는 주문 상태가 아니라 환불 레코드의 상태다.
+  교환·반품도 주문 상태를 바꾸지 않고 주문 곁에서 진행된다). 거절·철회로 끝난 신청서는 진행 중이 아니다.
+  종결 시각이 빈 레거시 주문은 수정 시각으로 대신한다(더 오래 보존하는 쪽으로만 틀린다).
+
+  설계에서 못박은 것:
+    - **기본 꺼짐**, 하한 5년(전자상거래법)을 저장 검증과 판독부 바닥값 둘 다에서 강제한다.
+    - **익명화**: NOT NULL 칸은 NULL 이 아니라 치환값(`***`) — 스키마 불변(#24). 주문번호·금액·상태는
+      법정 거래 기록이라 남는다. 처리 후 비회원 주문조회·관리자 이름 검색으로 찾을 수 없다(설정 화면 고지).
+      주문 메타의 수령인 사본(저장 대기 배송지·배송비 계산 주소)도 지우고, 주문 한 건마다
+      `sirsoft-ecommerce.order.after_anonymize` 를 같은 트랜잭션에서 발행해 확장이 자기 사본을 지우게 한다
+      (리스너가 던지면 표지까지 롤백). 교환·반품·환불 신청서의 환불 계좌 명의·번호와 상세 사유·관리자 메모도
+      비우고, 교환 재배송지는 주문 배송지와 같은 기준으로 가린다(#599 — 16차 병합 뒤 보완).
+    - **삭제**: DB CASCADE 에 기대지 않고 참조 행을 전부 명시 삭제한다(#33). 주문 옵션에 묶인 상품 리뷰는
+      이미지 파일째 사라지고, 교환·반품·클레임 결제와 클레임 첨부 사진(임시 첨부 포함 — 주문 FK 가 없는
+      다형 연결)도 행·파일째 사라진다. 쿠폰 발급·마일리지 거래는 행을 남기고 주문·클레임 결제·환불 연결만 끊는다. 결제 플러그인의
+      주문번호 역조회는 FK 가 없어 끊긴다(#46) — 삭제 경고 문구에 적고 기본을 익명화로 둔다.
+    - **미리보기 = 처리 건수**, 재실행 멱등(익명화 표지는 익명화 모드에서만 제외 조건).
+
+  결정 사항 (#51): `tags: [batch]` 를 붙이지 않는다 — 코어·게시판과 같은 근거.
+
+axes:
+  order_state: [confirmed, cancelled]
+  toggle: [off, on]
+  mode: [anonymize, delete]
+
+exclusions:
+  - { toggle: off, mode: delete, reason: "꺼져 있으면 방식 판정에 닿지 않는다 — anonymize 칸 1건으로 충분" }
+  - { order_state: cancelled, toggle: off, reason: "꺼짐 판정은 주문 상태와 무관하다 — confirmed 칸 1건으로 충분" }
+  - { order_state: cancelled, mode: delete, reason: "삭제는 주문 상태와 무관하게 같은 명시 삭제 경로를 탄다 — confirmed 칸 1건으로 충분" }
+
+sub_flows:
+  - id: settings_surface
+    description: |
+      「개인정보 보유기간」 탭의 저장(카테고리 화이트리스트·검증·기본값)과 화면 바인딩·방식별 안내·
+      미리보기 API. 한 곳만 어긋나도 저장은 200 인데 값이 조용히 버려진다.
+    effects:
+      - order_retention_settings_are_saved
+      - order_retention_settings_enforce_legal_minimum
+      - order_retention_preview_api_counts_while_off
+      - order_retention_settings_tab_binds_saved_keys
+      - order_retention_settings_warn_per_mode
+  - id: settings_save_per_tab
+    description: 환경설정 저장이 활성 탭 몫만 보내는 계약 — 새 탭(개인정보 보유기간)이 기본 분기를 그대로 탄다
+    effects:
+      - settings_save_sends_only_active_tab
+      - settings_save_failure_shows_server_message
+      - settings_tabs_include_privacy_retention
+  - id: notice_section
+    description: 연간 통지문 「주문 정보」 섹션 — 수신자 로케일, 개인 식별정보 없음, 처리를 켰을 때만 방식·기간 덧붙임
+    effects:
+      - order_notice_section_is_contributed
+
+effects:
+  - order_retention_is_off_by_default
+  - order_retention_handler_is_registered_with_core
+  - order_personal_data_is_anonymized
+  - order_record_is_preserved_when_anonymized
+  - order_retention_preview_equals_processed
+  - order_retention_is_idempotent
+  - unclosed_orders_are_never_processed
+  - refund_completion_extends_closure
+  - order_is_purged_with_references
+  - order_purge_emits_after_delete
+  - order_reviews_are_purged_with_files
+  - order_meta_copies_are_anonymized
+  - order_anonymize_hook_failure_rolls_back
+  - order_retention_targets_match_the_population
+  - order_retention_target_button_wraps_on_narrow_viewports
+  - order_manual_run_processes_while_off
+  - order_delete_mode_manual_run_requires_order_delete_permission
+  - order_delete_mode_manual_run_is_runnable_by_the_admin_role
+  - order_manual_run_button_opens_the_confirm_modal
+  - claim_personal_data_is_anonymized_with_the_order
+  - claim_records_are_purged_with_images_without_cascade
+  - open_claims_hold_order_closure
+  - completed_claims_extend_closure
+  - withdrawn_claims_do_not_hold_closure
+  - claim_image_files_survive_a_rolled_back_purge
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Privacy/OrderRetentionHandlerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Privacy/OrderPrivacyRetentionSettingsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Privacy/OrderRetentionClaimRecordsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Privacy/OrderPrivacyRetentionServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-privacy-retention-settings.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsSavePerTab.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/ecommerce-settings-privacy-retention.spec.ts
+
+rules_layer_coverage:
+  - rule: offset-chunk-mutates-filter
+    coverage: |
+      대상 순회는 `chunkById` 다 — 익명화는 표지가 찍히며, 삭제는 행이 사라지며 조건에서 빠지므로
+      OFFSET 순회는 커서가 밀려 건을 건너뛴다.
+  - rule: console-confirm
+    coverage: 핸들러는 코어 무인 커맨드(`privacy:process-retention`)가 실행한다 — 안전장치는 설정 토글·5년 하한·보유기간이다.

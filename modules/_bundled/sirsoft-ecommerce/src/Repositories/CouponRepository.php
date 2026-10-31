@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Helpers\TimezoneHelper;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
@@ -31,6 +32,12 @@ class CouponRepository implements CouponRepositoryInterface
     /** 허용 정렬 컬럼 (CouponListRequest 와 동일 집합) */
     private const SORTABLE_COLUMNS = ['created_at', 'name', 'discount_value', 'issued_count', 'valid_to'];
 
+    /**
+     * 쿠폰 저장소를 생성합니다.
+     *
+     * @param  Coupon  $model  쿠폰 모델
+     * @param  CouponIssue  $issueModel  쿠폰 발급 모델
+     */
     public function __construct(
         protected Coupon $model,
         protected CouponIssue $issueModel
@@ -98,6 +105,7 @@ class CouponRepository implements CouponRepositoryInterface
      * @param  array  $filters  정렬 필터(sort_by/sort_order)
      * @param  array  $with  추가 eager loading 관계
      * @param  int  $perPage  페이지당 항목 수
+     * @return LengthAwarePaginator 페이지네이션된 쿠폰 목록
      */
     private function finalizeListQuery(Builder $query, array $filters, array $with, int $perPage): LengthAwarePaginator
     {
@@ -299,6 +307,7 @@ class CouponRepository implements CouponRepositoryInterface
      *
      * @param  Builder  $query  Eloquent 쿼리 빌더
      * @param  array  $filters  필터 배열
+     * @return void 반환값 없음
      */
     private function applyCouponFilters($query, array $filters): void
     {
@@ -341,29 +350,17 @@ class CouponRepository implements CouponRepositoryInterface
             $query->where('min_order_amount', '>=', $filters['min_order_amount']);
         }
 
-        // 등록일 필터
-        if (! empty($filters['created_start_date'])) {
-            $this->applyDateRangeFilter($query, 'created_at', $filters['created_start_date'], null);
-        }
-        if (! empty($filters['created_end_date'])) {
-            $this->applyDateRangeFilter($query, 'created_at', null, $filters['created_end_date']);
-        }
+        // 등록일 필터 — 목록이 등록일을 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+        $this->applyViewerDateRangeFilter($query, 'created_at', $filters['created_start_date'] ?? null, $filters['created_end_date'] ?? null);
 
-        // 유효기간 필터
-        if (! empty($filters['valid_start_date'])) {
-            $this->applyDateRangeFilter($query, 'valid_from', $filters['valid_start_date'], null);
-        }
-        if (! empty($filters['valid_end_date'])) {
-            $this->applyDateRangeFilter($query, 'valid_to', null, $filters['valid_end_date']);
-        }
-
-        // 발급기간 필터
-        if (! empty($filters['issue_start_date'])) {
-            $this->applyDateRangeFilter($query, 'issue_from', $filters['issue_start_date'], null);
-        }
-        if (! empty($filters['issue_end_date'])) {
-            $this->applyDateRangeFilter($query, 'issue_to', null, $filters['issue_end_date']);
-        }
+        // 유효기간·발급기간 필터 — 두 기간은 입력(`fromSiteDateStartOfDay`·`fromSiteDateTime`)과
+        // 표시(`formatDateStringForSite`) 모두 사이트 표준시라, 보는 사람 시간대와 무관하게
+        // 사이트 하루로 잘라야 목록에 보이는 날짜와 맞는다.
+        $siteTimezone = TimezoneHelper::getSiteTimezone();
+        $this->applyDateRangeFilterInTimezone($query, 'valid_from', $filters['valid_start_date'] ?? null, null, $siteTimezone);
+        $this->applyDateRangeFilterInTimezone($query, 'valid_to', null, $filters['valid_end_date'] ?? null, $siteTimezone);
+        $this->applyDateRangeFilterInTimezone($query, 'issue_from', $filters['issue_start_date'] ?? null, null, $siteTimezone);
+        $this->applyDateRangeFilterInTimezone($query, 'issue_to', null, $filters['issue_end_date'] ?? null, $siteTimezone);
 
         // 등록자 필터 (UUID → 정수 FK 변환)
         if (! empty($filters['created_by'])) {

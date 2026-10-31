@@ -1,0 +1,34 @@
+feature: 사용 마일리지를 차감하지 않은 주문 — 미리보기·접수·화면의 마일리지 환불 몫 0 (Q15 원천)
+
+description: |
+  수동 결제완료에서 「마일리지 차감」을 끈 주문처럼 사용 마일리지를 차감하지 않은 결제 주문(`is_mileage_deducted=false`)은
+  사용 마일리지가 고객이 낸 적 없는 돈이다. 실행은 신청서의 마일리지 몫을 0 으로 바꿔 왔지만(mileage_never_deducted_refunds_zero_points)
+  미리보기·접수 계산(`OrderAdjustmentService`)은 그 판정을 몰라, 회원 반품 신청 화면과 관리자 환불 확인 창이
+  「사용 마일리지 반환액 3,000」·환불 예정 24,000 을 보였다(실제 결과 21,000).
+
+  계산 원천에서 마일리지 몫을 0 으로 둔다 — 현금으로 옮기지 않는다(실행과 같은 수). 이 수정 전에 접수된 신청서는
+  응답이 0 과 이유(`points_not_deducted`)를 싣는다. 화면은 「0 (차감되지 않은 마일리지)」로 보이고 회원 화면의 환불
+  우선순위 선택을 숨긴다.
+
+# axis 의미:
+#   scope    — 부분 취소(재계산 경로) / 전체 취소(전량 제외 경로). 두 경로가 따로 배분한다.
+#   priority — 환불 우선순위: PG 먼저 / 마일리지 먼저.
+axes:
+  scope: [partial, full]
+  priority: [pg_first, points_first]
+
+effects:
+  - undeducted_mileage_share_is_zero_from_preview    # 미리보기·접수 계산의 마일리지 몫 0, 현금 몫은 차감 주문과 같음
+  - filed_refund_shows_zero_points_for_undeducted_order  # 이미 접수된 신청서 응답도 0 + points_not_deducted
+  - undeducted_points_row_shows_zero_with_reason     # 관리자 확인 창·회원 신청 화면이 0 과 사유를 보이고 우선순위 선택을 숨김
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/UndeductedMileageRefundShareTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimRefundExecuteUndeductedPoints.test.ts
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-claim-undeducted-points.test.ts
+
+validation:
+  browser_check: Chrome MCP
+  note: |
+    계산·응답은 PHPUnit, 화면 조건은 Vitest. 실브라우저는 수동 결제완료에서 마일리지 차감을 끈 주문으로
+    회원 반품 신청 화면과 관리자 환불 확인 창을 연다.

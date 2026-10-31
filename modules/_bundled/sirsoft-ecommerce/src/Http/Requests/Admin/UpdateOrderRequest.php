@@ -30,7 +30,8 @@ class UpdateOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'order_status' => ['nullable', 'string', Rule::in(OrderStatusEnum::values())],
+            // 클레임 코스 상태는 교환·반품 서비스 전담 — 주문 단건 수정에서 직접 지정 불가.
+            'order_status' => ['nullable', 'string', Rule::in(OrderStatusEnum::adminAssignableValues())],
             'admin_memo' => ['nullable', 'string', 'max:2000'],
             'recipient_name' => ['required', 'string', 'max:50'],
             'recipient_phone' => ['required_without:recipient_tel', 'nullable', 'string', 'max:20'],
@@ -47,6 +48,24 @@ class UpdateOrderRequest extends FormRequest
             'intl_postal_code' => ['required_with:address_line_1', 'nullable', 'string', 'max:20'],
             'delivery_memo' => ['nullable', 'string', 'max:500'],
             'recipient_country_code' => ['nullable', 'string', 'size:2'],
+            // 수동 결제 처리 확인 창의 세 항목 (Q13) — 보내지 않으면 모두 켬(기존 클라이언트 호환)
+            'apply_stock_deduction' => ['sometimes', 'boolean'],
+            'apply_mileage_deduction' => ['sometimes', 'boolean'],
+            'record_paid_amount' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓸 필드 라벨을 반환합니다.
+     *
+     * @return array<string, string> 필드 => 라벨
+     */
+    public function attributes(): array
+    {
+        return [
+            'apply_stock_deduction' => __('sirsoft-ecommerce::validation.attributes.apply_stock_deduction'),
+            'apply_mileage_deduction' => __('sirsoft-ecommerce::validation.attributes.apply_mileage_deduction'),
+            'record_paid_amount' => __('sirsoft-ecommerce::validation.attributes.record_paid_amount'),
         ];
     }
 
@@ -57,6 +76,7 @@ class UpdateOrderRequest extends FormRequest
      * 위반 시 422 + 다국어 메시지. 취소(CANCELLED) 진입은 게이트가 통과 처리(OrderCancellationService 전담).
      *
      * @param  Validator  $validator
+     * @return void 반환값 없음
      */
     public function withValidator($validator): void
     {

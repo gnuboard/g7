@@ -1,0 +1,180 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   cross product 면제는 `cross_product` 축 하나로 한정한다 — effects 커버리지는 계속 강제된다.
+#   이 매니페스트의 축은 화면이 받는 «입력 공간의 서술» 이고, 조합마다 서로 다른 동작이
+#   갈리는 분기가 아니다. 예컨대 표 컬럼 구성을 재는 테스트에 검색 대상·읽음 상태·회원
+#   한정 값을 곱해도 재는 대상이 달라지지 않는다 — 전개하면 인위적인 조합만 늘어난다.
+#   실제 커버리지 계약은 effects 목록이며, 선언한 항목은 모두 테스트가 재고 green 이다.
+
+feature: 관리자 이커머스 회원 데이터 목록 4종 (찜·장바구니·배송지·상품문의)
+
+description: |
+  이슈 #524 WP-E. 회원이 남긴 이커머스 데이터 네 갈래는 회원 본인만 볼 수 있었다. 운영자는
+  「이 회원이 무엇을 담아 뒀나」·「이 상품을 몇 명이 찜했나」를 물어 오면 DB 를 열어야 했고,
+  탈퇴·정리 요청이 들어와도 화면에서 지울 방법이 없었다.
+
+  네 화면은 같은 뼈대를 쓴다 — 조건은 주소에서 읽고, 검색 조립은 명명 액션 한 자리에 모이며,
+  선택은 보이는 쪽에만 걸리고, 삭제는 `can_manage` 능력이 있을 때만 열린다. 다른 것은
+  «무엇이 행의 주어인가» 와 전용 필터뿐이다:
+
+  - 찜: 숨김·품절 상품은 목록에서 빠진다(`Product::scopeVisible`) — 회원 화면에서 사라진
+    상품이 관리자 목록에만 남아 있으면 그 행을 설명할 수 없다.
+  - 장바구니: 비회원 것이 섞이므로 `owner` 로 가른다(정리 기준이 다르다).
+  - 배송지: 받는 사람·주소가 회원 이름과 다를 수 있어 별도 검색 갈래를 둔다. 회원 한정은
+    검색 대상/검색어와 **다른 축**이라 전용 다중선택 필터가 쥐고(`user_uuids[]`), 고른 회원의
+    이름표는 목록 응답이 `filters.members` 로 되돌려 준다 — 코어 회원 검색은 uuid 를 한 건씩만
+    받아, 한정이 세 명이면 화면이 왕복을 세 번 해야 한다(2026-09-21 검수 지적).
+  - 상품문의: 본문 검색이 다형 관계를 넘어가야 해서 서버가 morph 타입을 먼저 푼다.
+    해석되지 않는 타입이 섞여 있어도 화면이 500 으로 죽지 않고 그 타입만 건너뛴다.
+
+  회원 상세 「쇼핑 데이터」 탭은 네 건수만 보여 주고 각 전용 목록으로 넘긴다 — 같은 표를
+  회원 상세에 네 벌 더 두면 검색·일괄 삭제가 두 곳으로 갈린다.
+
+# 입력 axis
+#  list       : 목록 갈래
+#  permission : 운영자 권한 (read 만 / manage 까지)
+#  member_scope: 회원 한정(user_uuid) 으로 들어왔는가
+#  extra_filter: 그 목록만의 전용 필터
+axes:
+  list: [wishlist, cart, user_address, inquiry]
+  permission: [read, manage]
+  member_scope: [true, false, multi]
+  extra_filter: [none, owner, is_default, is_answered]
+
+# 의미 없는 조합 컷: 전용 필터는 그 목록에만 있다
+exclusions:
+  - { list: wishlist, extra_filter: owner, reason: "찜은 회원만 남긴다 — 비회원 축 없음" }
+  - { list: wishlist, extra_filter: is_default, reason: "배송지 전용" }
+  - { list: wishlist, extra_filter: is_answered, reason: "문의 전용" }
+  - { list: cart, extra_filter: is_default, reason: "배송지 전용" }
+  - { list: cart, extra_filter: is_answered, reason: "문의 전용" }
+  - { list: user_address, extra_filter: owner, reason: "장바구니 전용" }
+  - { list: user_address, extra_filter: is_answered, reason: "문의 전용" }
+  - { list: inquiry, extra_filter: owner, reason: "장바구니 전용" }
+  - { list: inquiry, extra_filter: is_default, reason: "배송지 전용" }
+
+effects:
+  # 백엔드 — 찜
+  - admin_wishlist_requires_read_permission
+  - admin_wishlist_returns_pagination_and_abilities
+  - admin_wishlist_read_only_cannot_manage
+  - admin_wishlist_filters_by_user_uuid
+  - admin_wishlist_unknown_uuid_returns_empty
+  - admin_wishlist_search_field_branches
+  - admin_wishlist_destroy_requires_manage_permission
+  - admin_wishlist_bulk_destroy_rejects_unknown_ids
+  - admin_wishlist_bulk_delete_writes_activity_log
+  # 백엔드 — 장바구니
+  - admin_cart_requires_read_permission
+  - admin_cart_returns_pagination_and_abilities
+  - admin_cart_read_only_cannot_manage
+  - admin_cart_filters_by_user_uuid
+  - admin_cart_unknown_uuid_returns_empty
+  - admin_cart_search_field_branches
+  - admin_cart_destroy_requires_manage_permission
+  - admin_cart_bulk_delete_writes_activity_log
+  - admin_cart_owner_filter_member_only
+  - admin_cart_owner_filter_guest_only
+  # 백엔드 — 배송지
+  - admin_user_address_requires_read_permission
+  - admin_user_address_returns_pagination_and_abilities
+  - admin_user_address_read_only_cannot_manage
+  - admin_user_address_filters_by_user_uuid
+  - admin_user_address_unknown_uuid_returns_empty
+  - admin_user_address_search_field_branches
+  - admin_user_address_destroy_requires_manage_permission
+  - admin_user_address_bulk_delete_writes_activity_log
+  - admin_user_address_is_default_filter
+  - admin_user_address_filters_by_multiple_user_uuids
+  - admin_user_address_unknown_user_uuids_returns_empty
+  - admin_user_address_returns_resolved_member_filter
+  - admin_user_address_accepts_comma_joined_user_uuids
+  - admin_user_address_all_search_spans_recipient_address_and_member
+  # 백엔드 — 상품문의
+  - admin_product_inquiry_requires_read_permission
+  - admin_product_inquiry_returns_pagination_and_abilities
+  - admin_product_inquiry_read_only_cannot_manage
+  - admin_product_inquiry_exposes_reply_and_delete_abilities
+  - admin_product_inquiry_filters_by_user_uuid
+  - admin_product_inquiry_unknown_uuid_returns_empty
+  - admin_product_inquiry_search_field_branches
+  - admin_product_inquiry_search_escapes_like_wildcards # 검색어의 % 와 _ 를 글자 그대로 찾는다
+  - admin_product_inquiry_destroy_requires_manage_permission
+  - admin_product_inquiry_bulk_delete_writes_activity_log
+  - admin_inquiry_is_answered_filter
+  - admin_inquiry_excludes_soft_deleted
+  - admin_product_inquiry_list_shows_content_excerpt   # 풀리는 원글 타입의 행만 묶어 싣고 본문 요약을 낸다(실측 2026-10-03: 모든 행이 「본문을 불러올 수 없습니다」)
+  - admin_inquiry_bulk_delete_rejects_soft_deleted_ids
+  # 문의 삭제는 피벗만 지우면 안 된다 — 게시판의 질문 글까지 함께 지워야 하고,
+  # 문의 게시판이 지정되지 않은 환경에서는 글 정리를 생략하되 행은 지울 수 있어야 한다.
+  - admin_product_inquiry_bulk_delete_removes_board_post
+  - admin_product_inquiry_bulk_delete_without_board_configured
+  # 백엔드 — 회원 상세 주입
+  - admin_user_detail_includes_ecommerce_summary
+  - admin_user_detail_includes_pending_inquiry_count
+  - profile_endpoint_omits_ecommerce_summary
+  - admin_user_detail_includes_saved_address_lines
+  - profile_endpoint_includes_default_address
+  # 레이아웃 — 네 목록이 공유하는 뼈대
+  - ecommerce_admin_list_datasource_passes_all_filters
+  - ecommerce_admin_list_requires_read_permission
+  - ecommerce_admin_list_search_field_matches_server_whitelist
+  - ecommerce_admin_list_search_action_resets_page_and_carries_member_scope
+  - ecommerce_admin_list_initlocal_matches_filter_fields
+  - ecommerce_admin_list_member_filter_is_its_own_multi_select_axis
+  - ecommerce_admin_list_member_filter_keeps_labels_outside_search_results
+  - ecommerce_admin_list_member_labels_come_from_the_list_response
+  - ecommerce_admin_list_member_name_opens_context_menu_not_navigation
+  # 배송지 목록 전면 재작성(2026-09-21 요구사항) — 쿠폰·주문·상품과 같은 뼈대로 옮기면서 생긴 축
+  - ecommerce_admin_list_reset_clears_state_before_url
+  - ecommerce_admin_list_page_change_clears_selection
+  - ecommerce_admin_list_has_no_preset_or_edit_mode
+  - ecommerce_admin_list_has_no_create_or_edit_entry
+  - ecommerce_admin_list_grid_columns_fixed
+  - ecommerce_admin_list_selectable_requires_manage
+  - ecommerce_admin_list_single_delete_targets_row
+  - ecommerce_admin_list_bulk_delete_sends_ids_and_clears_selection
+  - ecommerce_admin_list_bulk_failure_opens_error_modal
+  # 레이아웃 — 목록별 전용 필터
+  - ecommerce_admin_list_owner_filter_reaches_server
+  - ecommerce_admin_list_is_default_filter_reaches_server
+  - ecommerce_admin_list_is_answered_filter_reaches_server
+  # 레이아웃 — 문의 목록만의 쓰기 동작(답변). 다른 셋은 조회·삭제뿐이다.
+  - ecommerce_admin_inquiry_list_has_reply_entry_point
+  - ecommerce_admin_inquiry_reply_posts_to_existing_endpoint
+  - ecommerce_admin_inquiry_reply_draft_does_not_leak_between_rows
+  # 레이아웃 — 회원 상세 「쇼핑 데이터」 탭
+  - ecommerce_member_tab_targets_admin_user_detail
+  - ecommerce_member_tab_injects_button_and_body_separately
+  - ecommerce_member_tab_hidden_without_admin_payload
+  - ecommerce_member_tab_label_uses_module_lang_key
+  - ecommerce_member_tab_shows_four_counts
+  - ecommerce_member_tab_shows_pending_inquiry_count
+  - ecommerce_member_tab_carries_no_list_of_its_own
+  - ecommerce_member_tab_links_carry_user_uuid
+  - ecommerce_member_tab_shows_saved_address_lines
+  # 0건이어도 블록은 서고 「없다」 고 말한다 — 통째로 감추면 배송지가 없는 회원과 기능이 없는
+  # 화면이 구분되지 않는다(2026-09-21 운영자가 0건 회원을 열어 「버튼만 딸랑」 으로 읽은 자리).
+  - ecommerce_member_tab_address_block_stands_when_empty
+  # 실브라우저에서 «눌렀을 때 주소가 바뀌는가» — 레이아웃 JSON 검사로는 잡히지 않는 축이다.
+  # (href 식이 렌더 시 undefined 가 되어 링크가 죽어 있던 결함, 2026-09-15)
+  - member_detail_tab_links_navigate_in_browser
+  - admin_product_inquiry_bulk_delete_message_interpolates_count
+  - admin_product_inquiry_bulk_delete_counts_cascaded_rows
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdminWishlistControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdminCartControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdminUserAddressControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdminInquiryListControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Listeners/UserEcommerceDataInfoListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-wishlist-index.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-cart-index.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-user-address-index.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-inquiry-index.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-user-ecommerce-data-tab.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/wishlist-index.spec.ts
+  # 코어 spec 디렉터리에 둔다 — playwright.config.ts 의 testDir 이 확장 spec 을 잡지 못한다.
+  - tests/Playwright/specs/admin/member-detail-tab-links.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage

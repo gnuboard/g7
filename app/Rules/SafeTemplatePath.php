@@ -18,7 +18,9 @@ class SafeTemplatePath implements ValidationRule
     use ValidatesExtensionAssetPath;
 
     /**
-     * @param  string  $basePath  봉쇄 기준 디렉토리
+     * 규칙을 만듭니다.
+     *
+     * @param  string  $basePath  템플릿 루트 절대 경로 (이 폴더 밖 경로는 거부)
      * @param  bool  $rejectHiddenSegments  점으로 시작하는 세그먼트를 이 계층에서 거부할지 여부.
      *                                      공개 스토리지 통로는 소비 서비스가 같은 규칙을
      *                                      404 로 강제하므로 끈다 (정적 서빙과 같은 코드).
@@ -29,11 +31,12 @@ class SafeTemplatePath implements ValidationRule
     ) {}
 
     /**
-     * Path Traversal 방지 검증.
+     * Path Traversal 방지 검증
      *
-     * @param  string  $attribute  속성명
-     * @param  mixed  $value  검증 대상 값
+     * @param  string  $attribute  검증 대상 속성 이름
+     * @param  mixed  $value  템플릿 루트 기준 상대 경로
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

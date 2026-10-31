@@ -1,0 +1,19 @@
+feature: core_update_child_env_pinning
+
+description: |
+  코어 업데이트 트리 안에서 새 코드가 띄우는 자식 프로세스(번들 일괄 업데이트 core:execute-bundled-updates, 그 안의
+  언어팩 단계 새 프로세스, 훅 캐시 새 프로세스)가 APP_VERSION 과 G7_UPDATE_IN_PROGRESS 를 명시적으로 넘긴다(공개 #145 F10).
+  업데이트 트리 밖(확장 롤백의 훅 캐시 복구)에서는 상속 env 를 그대로 넘긴다.
+
+coverage_strategy: full
+
+axes:
+  case: [flag_channel, argv_channel, outside_tree, call_sites]
+
+effects:
+  - update_child_env_pins_app_version_and_flag
+  - update_child_env_untouched_outside_tree
+  - all_update_child_spawns_use_pinned_env
+
+test_files:
+  - tests/Feature/Console/BundledSpawnPinsAppVersionTest.php

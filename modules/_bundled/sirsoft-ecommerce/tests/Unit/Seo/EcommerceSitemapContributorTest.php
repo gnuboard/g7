@@ -30,6 +30,11 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
 
     private string $routePath = 'shop';
 
+    /**
+     * 컨테이너에서 기여자를 해석하고 현재 상점 경로를 읽어 둡니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,6 +45,8 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
 
     /**
      * 테스트용 활성 카테고리 1건을 생성합니다.
+     *
+     * @return Category 생성된 카테고리
      */
     private function createTestCategory(): Category
     {
@@ -55,6 +62,12 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
 
     /**
      * SitemapContributorInterface 를 구현한다
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_contributor_identity
+     *
+     * @return void 반환값 없음
      */
     public function test_implements_sitemap_contributor_interface(): void
     {
@@ -63,6 +76,12 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
 
     /**
      * getIdentifier: 'sirsoft-ecommerce' 반환
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_contributor_identity
+     *
+     * @return void 반환값 없음
      */
     public function test_get_identifier_returns_sirsoft_ecommerce(): void
     {
@@ -71,6 +90,12 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
 
     /**
      * getUrls: route_path 미설정 시 기본값 'shop' 을 사용한다
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_default_route_path
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_uses_default_route_path_when_not_configured(): void
     {
@@ -87,6 +112,12 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
      *
      * route_path 만 읽고 no_route 를 무시하면 사이트맵이 `/shop/...` 을 검색엔진에
      * 제출하지만 실제 화면은 `/...` 이다 — 색인된 URL 전부가 404 로 수집된다.
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_no_route_omits_segment
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_omits_route_segment_when_no_route(): void
     {
@@ -104,6 +135,12 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
 
     /**
      * getUrls: 정적/카테고리/상품 URL 항목이 각각 올바른 키 구조를 가진다
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_entry_structure, sitemap_product_url_uses_product_code
+     *
+     * @return void 반환값 없음
      */
     public function test_url_entries_have_correct_structure(): void
     {
@@ -126,8 +163,8 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
         $this->assertSame('weekly', $categoryEntry['changefreq']);
         $this->assertSame(0.6, $categoryEntry['priority']);
 
-        // 상품 URL — lastmod 있음
-        $productEntry = $urls->firstWhere('url', "/{$this->routePath}/products/{$product->id}");
+        // 상품 URL — lastmod 있음. 화면·검색과 같은 상품 코드 주소다(#792 W12 — 같은 상품을 두 주소로 색인하지 않는다)
+        $productEntry = $urls->firstWhere('url', "/{$this->routePath}/products/{$product->product_code}");
         $this->assertNotNull($productEntry);
         $this->assertArrayHasKey('lastmod', $productEntry);
         $this->assertSame('weekly', $productEntry['changefreq']);
@@ -136,6 +173,12 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
 
     /**
      * getUrls: 기여자당 URL 안전 상한을 초과하면 상품 URL이 잘린다
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_truncates_at_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_truncates_at_max_urls_per_contributor(): void
     {
@@ -152,6 +195,12 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
      * getUrls: 상한이 카테고리 루프에도 적용된다 (회귀)
      *
      * 상한 검사가 상품 루프에만 있으면, 카테고리만으로 상한을 초과해도 잘리지 않는다.
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_truncates_at_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_truncates_within_category_loop(): void
     {
@@ -181,6 +230,12 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
 
     /**
      * getUrls: 기본(토글 ON) 상태에서 목록/카테고리/상품 URL이 모두 포함된다 (비파괴 회귀)
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_toggles_respected, sitemap_product_url_uses_product_code
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_includes_all_when_toggles_default_on(): void
     {
@@ -192,11 +247,17 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
 
         $this->assertContains("/{$this->routePath}/products", $urlPaths);
         $this->assertContains("/{$this->routePath}/category/{$category->slug}", $urlPaths);
-        $this->assertContains("/{$this->routePath}/products/{$product->id}", $urlPaths);
+        $this->assertContains("/{$this->routePath}/products/{$product->product_code}", $urlPaths);
     }
 
     /**
      * getUrls: seo_shop_index 토글 OFF 시 상품 목록 URL이 제외된다 (회귀)
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_toggles_respected
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_excludes_shop_index_when_toggle_off(): void
     {
@@ -210,6 +271,12 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
 
     /**
      * getUrls: seo_category 토글 OFF 시 카테고리 URL이 제외된다 (회귀)
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_toggles_respected
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_excludes_category_when_toggle_off(): void
     {
@@ -224,6 +291,12 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
 
     /**
      * getUrls: seo_product_detail 토글 OFF 시 상품 상세 URL이 제외된다 (회귀)
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_toggles_respected
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_excludes_product_detail_when_toggle_off(): void
     {
@@ -233,11 +306,17 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
         $urls = $this->contributor->getUrls();
         $urlPaths = array_column($urls, 'url');
 
-        $this->assertNotContains("/{$this->routePath}/products/{$product->id}", $urlPaths);
+        $this->assertNotContains("/{$this->routePath}/products/{$product->product_code}", $urlPaths);
     }
 
     /**
      * getUrlsLazy: 배열을 실체화하지 않는 지연 제너레이터로 URL 을 흘려보낸다 (⑭ 스트리밍)
+     *
+     * @scenario case=sitemap
+     *
+     * @effects sitemap_lazy_stream
+     *
+     * @return void 반환값 없음
      */
     public function test_get_urls_lazy_streams_entries(): void
     {
@@ -249,6 +328,6 @@ class EcommerceSitemapContributorTest extends ModuleTestCase
         $this->assertInstanceOf(\Traversable::class, $lazy);
 
         $urlPaths = array_column(iterator_to_array($lazy, false), 'url');
-        $this->assertContains("/{$this->routePath}/products/{$product->id}", $urlPaths);
+        $this->assertContains("/{$this->routePath}/products/{$product->product_code}", $urlPaths);
     }
 }

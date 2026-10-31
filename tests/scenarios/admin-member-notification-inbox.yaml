@@ -1,0 +1,130 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   cross product 면제는 `cross_product` 축 하나로 한정한다 — effects 커버리지는 계속 강제된다.
+#   이 매니페스트의 축은 화면이 받는 «입력 공간의 서술» 이고, 조합마다 서로 다른 동작이
+#   갈리는 분기가 아니다. 예컨대 표 컬럼 구성을 재는 테스트에 검색 대상·읽음 상태·회원
+#   한정 값을 곱해도 재는 대상이 달라지지 않는다 — 전개하면 인위적인 조합만 늘어난다.
+#   실제 커버리지 계약은 effects 목록이며, 선언한 항목은 모두 테스트가 재고 green 이다.
+
+feature: 관리자 회원 알림함 (in-app 수신함) 조회·삭제
+
+description: |
+  이슈 #524 WP-F. 코어에는 알림 축이 둘 있었다 — 관리자 «본인» 수신함(`admin/notifications`)과
+  발송 이력(`admin/notification-logs`). 회원이 «받은» 알림, 즉 회원 화면에 지금 무엇이 남아
+  있는지를 보는 축은 없었다. 「알림이 안 왔다」는 문의가 들어오면 발송 이력에서 보낸 기록만
+  확인할 수 있었고, 그것이 회원 수신함에 남아 있는지·읽었는지는 알 수 없었다.
+
+  여기서 지우면 그 회원의 알림함에서 사라진다 — 발송 이력 삭제(기록만 지움)와 무게가 다르다.
+  그래서 채널 탭도 재발송도 두지 않는다.
+
+  `search_type` 네 갈래는 **실제로 동작한다**. 발송 이력 화면의 같은 이름 셀렉트는 Request
+  규칙에 없어 무시되는 장식이었다(계획서 부록 B D7) — 그 전례를 반복하지 않도록 규칙으로 닫고,
+  네 갈래 모두를 테스트가 잰다. 제목·본문은 표준 `notifications` 테이블의 `data` JSON 안에
+  있어 서버가 JSON 추출로 찾는다(원시 SQL 이라 테이블 접두사를 직접 붙인다).
+
+  식별자가 uuid 문자열이라 일괄 삭제 규칙도 uuid 다 — 발송 이력의 integer 규칙을 복사하면
+  모든 요청이 422 로 막힌다.
+
+  회원 상세 「알림함」 탭은 총건·안읽음 요약과 그 회원으로 좁힌 목록 링크만 낸다.
+  요약은 단건 상세 응답에만 싣는다 — 목록(`toListArray`)에 넣으면 행마다 집계가 돌아 N+1 이 된다.
+
+  엔드포인트:
+    - GET    /api/admin/member-notifications              (전 회원 수신함)
+    - POST   /api/admin/member-notifications/bulk-delete  (`{id}` 보다 먼저 선언 — uuid 로 잡히지 않게)
+    - DELETE /api/admin/member-notifications/{id}
+
+  권한: `core.member-notifications.read` / `.delete`. manager 역할은 read 를 스코프 없이 받는다 —
+  이 권한의 대상이 «회원이 받은» 알림이라 self 로 좁히면 매니저 본인의 수신함이 되어 버린다.
+
+# 입력 axis
+#  surface    : 조회 지점 (관리자 목록 / 회원 상세 탭)
+#  permission : 운영자 권한
+#  search_type: 검색 대상 4갈래
+#  read       : 읽음 상태 필터
+#  member_scope: 회원 한정(user_uuid) 으로 들어왔는가
+axes:
+  surface: [admin_member_notifications, member_detail_tab]
+  permission: [read, delete]
+  search_type: [all, recipient, subject, body]
+  read: [all, unread, read]
+  member_scope: [true, false]
+
+# 의미 없는 조합 컷:
+#  - 회원 상세 탭은 요약만 내므로 검색·읽음 필터가 없고, 언제나 그 회원 한정이다
+exclusions:
+  - { surface: member_detail_tab, search_type: recipient, reason: "요약만 내는 탭 — 검색 UI 없음" }
+  - { surface: member_detail_tab, search_type: subject, reason: "요약만 내는 탭 — 검색 UI 없음" }
+  - { surface: member_detail_tab, search_type: body, reason: "요약만 내는 탭 — 검색 UI 없음" }
+  - { surface: member_detail_tab, read: unread, reason: "요약이 총건·안읽음을 함께 낸다 — 필터 없음" }
+  - { surface: member_detail_tab, read: read, reason: "요약이 총건·안읽음을 함께 낸다 — 필터 없음" }
+  - { surface: member_detail_tab, member_scope: false, reason: "탭 자체가 그 회원 한정" }
+
+effects:
+  # 백엔드
+  - admin_member_notifications_requires_read_permission
+  - admin_member_notifications_lists_all_members
+  # 「종류」는 data.type 의 알림 정의 이름 — type 열(모든 행이 같은 알림 클래스명)이 아니다.
+  - admin_member_notifications_type_label_from_definition
+  - admin_member_notifications_read_only_cannot_delete
+  # 행 메뉴 「삭제」는 행의 abilities.can_delete 로 켜진다 — 행에 없으면 모든 줄이 비활성
+  - admin_member_notifications_row_abilities_enable_row_delete
+  - admin_member_notifications_filters_by_user_uuid
+  - admin_member_notifications_search_type_branches
+  # 검색어의 % · _ 는 글자 그대로 — 회원 목록 검색과 같은 기준
+  - admin_member_notifications_search_escapes_like_wildcards
+  - admin_member_notifications_read_filter
+  - admin_member_notifications_date_range
+  - admin_member_notifications_destroy_requires_delete_permission
+  - admin_member_notifications_destroy_deletes_uuid_row
+  - admin_member_notifications_bulk_delete_uuid_only
+  # 남의 수신함을 지우는 행위라 기록이 남아야 한다. 훅이 루프 앞뒤 1회라 로그도 일괄 1건이다.
+  - admin_member_notification_bulk_delete_writes_activity_log
+  # 없는 회원 id 는 «빈 알림함» 이 아니라 422 — 오탈자와 0건을 구분할 수 있어야 한다.
+  - admin_member_notification_rejects_unknown_user_id
+  - admin_member_notification_validation_messages_use_attribute_names
+  - admin_user_detail_includes_notifications_summary
+  - admin_user_list_omits_notifications_summary
+  # 레이아웃 — 목록
+  - list_datasource_passes_all_filters
+  - list_requires_read_permission
+  - list_forbidden_shows_error_page
+  - route_bound_to_read_permission
+  - search_type_select_offers_four_targets
+  - search_action_maps_search_type_to_query
+  - search_resets_page_and_keeps_member_filter
+  - search_entrypoints_share_named_action
+  - init_restores_filters_from_query
+  - read_state_select_offers_three_values
+  - created_range_uses_date_inputs
+  - reset_clears_all_conditions
+  - member_filter_banner_shows_only_when_scoped
+  - member_filter_clear_keeps_search_and_range
+  - grid_selectable_only_with_delete_permission
+  - grid_uses_uuid_id_field
+  - grid_columns_fixed_five
+  - grid_sortable_columns_match_server
+  - grid_selection_lifts_to_global
+  - member_cell_handles_deleted_member
+  - read_cell_shows_read_unread_badge
+  - row_delete_opens_confirm_modal
+  - page_change_keeps_conditions
+  - bulk_button_disabled_without_selection_or_permission
+  - single_delete_calls_delete_endpoint
+  - bulk_delete_sends_ids_and_clears_selection
+  - modals_map_403_to_permission_message
+  # 레이아웃 — 회원 상세 탭
+  - member_detail_tab_follows_consent_tab
+  - member_detail_tab_label_uses_lang_key
+  - member_detail_tab_anchors_to_section
+  - member_detail_tab_reads_notifications_summary
+  - member_detail_tab_makes_no_extra_request
+  - member_detail_tab_links_to_member_scoped_list
+  - member_detail_section_precedes_extension_slot
+
+test_files:
+  - tests/Feature/Api/Admin/MemberNotificationControllerTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-member-notification-list.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-detail-notifications-tab.test.tsx
+  - tests/Playwright/specs/admin/member-notifications.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage

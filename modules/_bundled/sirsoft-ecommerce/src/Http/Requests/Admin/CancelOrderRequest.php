@@ -10,10 +10,12 @@ use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundPriorityEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
 
 /**
  * 주문 취소 요청 (관리자)
@@ -46,7 +48,11 @@ class CancelOrderRequest extends FormRequest
             'items' => ['required_if:type,partial', 'array', 'min:1'],
             'items.*.order_option_id' => ['required_with:items', 'integer'],
             'items.*.cancel_quantity' => ['required_with:items', 'integer', 'min:1'],
-            'cancel_pg' => ['nullable', 'boolean'],
+            // `cancel_pg` 는 없앴다(P2). 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이
+            // `COMPLETED` + `refunded_at` 으로 찍혀, **고객 카드는 그대로인데 장부만 환불완료**가
+            // 됐다. 새 모델에서 관리자는 환불신청서를 만들 뿐이고 실제 집행은 [환불하기]가
+            // 한다 — "PG 없이 장부만" 이 필요하면 환불수단을 `BANK` 로 바꿔 수동 처리한다.
+            'auto_advance_refund' => ['nullable', 'boolean'],
             'refund_priority' => ['sometimes', 'string', 'in:'.implode(',', RefundPriorityEnum::values())],
 
             // 환불 계좌 — 표시/필수 조건은 결제수단·입금상태에 따라 다르므로 withValidator 가 판정한다.
@@ -95,6 +101,7 @@ class CancelOrderRequest extends FormRequest
      * 추가 검증 로직
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      */
     protected function withValidator(Validator $validator): void
     {
@@ -112,21 +119,11 @@ class CancelOrderRequest extends FormRequest
                 return;
             }
 
-            // 환경설정 기반 취소 가능 상태 확인
-            $cancellableStatuses = module_setting(
-                'sirsoft-ecommerce',
-                'order_settings.cancellable_statuses',
-                ['payment_complete']
-            );
-
-            if (! $order->isCancellable($cancellableStatuses)) {
-                $validator->errors()->add(
-                    'order_status',
-                    $order->getCancelDeniedReason($cancellableStatuses)
-                );
-
-                return;
-            }
+            // 취소 가능 상태는 여기서 보지 않는다(D5). 운영자의 취소·환불 접수는 설정
+            // (`order_settings.cancellable_statuses` — 고객 축)이 아니라 물리 게이트(아직 보내지 않은
+            // 상품)를 따르고, 그 판정은 서비스가 주문을 잠근 뒤 상품 단위로 한다
+            // (`AdminClaimRequestService::requestCancelOrRefund()`). 여기서 다시 재면 배송보류·상품준비중
+            // 주문처럼 설정 밖이지만 아직 보내지 않은 상품을 운영자가 취소할 수 없다.
 
             // 환불 계좌 조건부 검증 (결제수단·입금상태 기준)
             $this->validateRefundBank($validator, $order);
@@ -149,6 +146,7 @@ class CancelOrderRequest extends FormRequest
      *
      * @param  Validator  $validator  검증기
      * @param  Order  $order  취소 대상 주문
+     * @return void 반환값 없음
      */
     protected function validateRefundBank(Validator $validator, Order $order): void
     {
@@ -175,6 +173,16 @@ class CancelOrderRequest extends FormRequest
             return;
         }
 
+        // 돌려줄 돈이 없으면 계좌를 묻지 않는다.
+        //
+        // 브라우저 실측이 찾은 구멍이다. 아래 판정은 **결제수단만** 본다 — 아직 입금되지 않은
+        // 무통장 주문은 환불 예정액이 0원인데도 "계좌를 입력하세요" 422 를 받았고, 존재하지도
+        // 않는 환불을 위해 계좌를 지어내지 않는 한 **운영자가 그 주문을 취소할 수 없었다**.
+        // 만료 자동취소는 서버 내부 경로라 이 검증을 지나지 않으므로 수동 취소만 막혔다.
+        if (! $this->hasMoneyToReturn($order)) {
+            return;
+        }
+
         // 미입력 — 가상계좌 입금완료 건만 필수. 주문 시 입력된 계좌가 있으면 그것을 쓰므로 통과.
         $order->loadMissing('payment');
         $payment = $order->payment;
@@ -187,22 +195,56 @@ class CancelOrderRequest extends FormRequest
             return;
         }
 
+        // 사유가 수단마다 다르다 — "가상계좌라서 PG 가 요구한다" 와 "사람이 송금해야 한다" 는
+        // 운영자가 할 일이 다르므로 같은 문구로 뭉뚱그리면 무엇을 해야 하는지 알 수 없다.
+        $messageKey = $payment->refundMethod() === RefundMethodEnum::BANK
+            ? 'sirsoft-ecommerce::validation.order.refund_bank_required_for_manual_transfer'
+            : 'sirsoft-ecommerce::validation.order.refund_bank_required_for_vbank';
+
         foreach ($fields as $field) {
-            $validator->errors()->add(
-                "refund_bank.{$field}",
-                __('sirsoft-ecommerce::validation.order.refund_bank_required_for_vbank')
-            );
+            $validator->errors()->add("refund_bank.{$field}", __($messageKey));
         }
     }
 
     /**
+     * 이 취소로 **되돌려 줄 돈이 남아 있는지** 판정합니다.
+     *
+     * 두 축이다 — ⓐ 아직 결제 전이라 받은 돈이 없거나, ⓑ 받은 돈을 이미 전부 돌려줬거나.
+     * 서비스의 같은 판정(`OrderRefundRequestService::hasNothingToRefund`)은 금액 산정까지 한
+     * 뒤에 보지만, 검증 단계에서는 그 계산을 되풀이하지 않고 장부의 두 누적만 본다 —
+     * 계좌를 물을지 말지에는 그 정밀도면 충분하고, 산정을 두 번 하면 두 번째 사본이 생긴다.
+     *
+     * @param  Order  $order  취소 대상 주문
+     * @return bool 되돌려 줄 돈이 있으면 true
+     */
+    protected function hasMoneyToReturn(Order $order): bool
+    {
+        // 판정은 환불 도메인의 술어 하나다(결함 4 — `hasCashToReturn`). 여기에 사본을 두면 결제행 축
+        // (수동 결제완료로 헤더가 0 인 채 결제된 주문)처럼 한쪽만 고쳐진 규칙이 다시 갈린다.
+        return app(OrderRefundRequestService::class)->hasCashToReturn($order);
+    }
+
+    /**
      * 환불 계좌가 필수인 결제인지 판정합니다.
+     *
+     * 두 축이다 — ⓐ **사람이 송금하는 수단**(`refundMethod() === BANK`, 무통장입금 등)과
+     * ⓑ **PG 가 환불받을 계좌를 요구하는 수단**(입금완료된 가상계좌).
+     *
+     * 예전에는 ⓑ 만 봤다(P9). 그래서 무통장입금 주문을 취소하면 송금 대상 계좌가 없는 채로
+     * 환불이 `APPROVED` 에 앉고, 운영자는 어디로 보내야 할지 모르는 환불 건을 떠안았다 —
+     * 화면에도 오류에도 그 사실이 드러나지 않는다. 판정의 SSoT 는 `PaymentMethodResolver`
+     * 이므로 수단 코드를 여기서 다시 열거하지 않는다(확장 수단이 늘 때 판정이 갈린다).
      *
      * @param  OrderPayment  $payment  결제 정보
      * @return bool 필수 여부
      */
     protected function requiresRefundBank(OrderPayment $payment): bool
     {
+        // ⓐ 사람이 송금해야 하는 수단 — 입금 상태와 무관하게 계좌가 있어야 한다.
+        if ($payment->refundMethod() === RefundMethodEnum::BANK) {
+            return true;
+        }
+
         $method = $payment->payment_method instanceof PaymentMethodEnum
             ? $payment->payment_method
             : PaymentMethodEnum::tryFrom((string) $payment->payment_method);
@@ -215,7 +257,7 @@ class CancelOrderRequest extends FormRequest
             ? $payment->payment_status
             : PaymentStatusEnum::tryFrom((string) $payment->payment_status);
 
-        // 입금 전(waiting_deposit)이면 PG 가 환불받을 계좌를 요구하지 않는다.
+        // ⓑ 입금 전(waiting_deposit)이면 PG 가 환불받을 계좌를 요구하지 않는다.
         return $status !== null && ! $status->isAwaitingDeposit();
     }
 
@@ -224,6 +266,7 @@ class CancelOrderRequest extends FormRequest
      *
      * @param  Validator  $validator  검증기
      * @param  Order  $order  취소 대상 주문
+     * @return void 반환값 없음
      */
     protected function validateCancelItems(Validator $validator, Order $order): void
     {
@@ -267,6 +310,8 @@ class CancelOrderRequest extends FormRequest
     /**
      * 검증 실패 시 응답 커스터마이징
      *
+     * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      *
      * @throws ValidationException
      */
@@ -320,13 +365,17 @@ class CancelOrderRequest extends FormRequest
     }
 
     /**
-     * PG 결제 취소 여부를 반환합니다.
+     * 환불까지 한 번에 처리할지 여부를 반환합니다. (D7 — 모달의 "환불까지 한 번에" 체크박스)
      *
-     * @return bool PG 결제도 함께 취소하면 true
+     * **기본은 꺼짐**이다. 관리자 [주문취소]는 환불신청서를 만들 뿐이고, 금액확인 → 승인 →
+     * 환불완료는 운영자가 하나씩 밟는 것이 기본 운영이다. 체크하면 §4-2 의 자동 전이를
+     * 태운다 — 계좌 환불 수단은 그래도 승인에서 멈춘다(D4).
+     *
+     * @return bool 자동 전이 여부 (기본 false)
      */
-    public function shouldCancelPg(): bool
+    public function shouldAutoAdvanceRefund(): bool
     {
-        return (bool) ($this->validated('cancel_pg') ?? true);
+        return (bool) ($this->validated('auto_advance_refund') ?? false);
     }
 
     /**

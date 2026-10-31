@@ -1,0 +1,18 @@
+feature: 회원 클레임 신청 셸 — 주문 조회 404 를 주소로 가른다 (#753 X3)
+
+description: |
+  회원 클레임 신청서는 작성(`/mypage/orders/:order_number/claims/apply/:type`)과 수정(`/mypage/claims/:claim_number/edit`)이
+  한 셸(mypage/claims/apply)을 쓴다. 작성 진입의 주문 조회 404 는 열 수 없는 주문이라 오류 화면을 세우고, 수정 진입은 주소에
+  주문번호가 없어 첫 호출이 반드시 404 라 조용히 넘긴다. 종전에는 데이터소스 오류 처리가 조건 분기와 주소를 받지 못해
+  이커머스 전용 핸들러(claimApplyOrderMissing)로 우회했다. 코어 engine-v1.80.0 부터 레이아웃이 `<conditions>`(route.claim_number)로 직접 가른다.
+
+axes:
+  entry: [create, edit]
+
+effects:
+  - create_404_shows_error_page
+  - edit_first_404_is_silent
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/claim-apply-order-missing-branch.test.tsx
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/claim-apply-order-missing.spec.ts

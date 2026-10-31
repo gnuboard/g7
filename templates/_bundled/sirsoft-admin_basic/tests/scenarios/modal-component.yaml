@@ -1,0 +1,23 @@
+feature: 관리자 템플릿 Modal 컴포넌트 — 열기·닫기, 크기, 본문 스크롤, 제목 앞뒤 붙임, 하단 영역
+
+description: |
+  Modal 은 isOpen 일 때만 그려지고 닫기 단추·오버레이·ESC 로 닫히되 본문 클릭으로는 닫히지 않는다. 너비는 width 가
+  있으면 그것을, 없으면 size(sm·md·lg·xl·2xl 과 별칭)를 매핑해 쓰고 모르는 값·미지정은 기본 500px 로 떨어진다. 번들
+  전체가 쓰는 size 값은 모두 매핑에 있어야 한다 — 없으면 그 모달만 조용히 기본 너비가 된다. 열려 있는 동안 body
+  스크롤을 막고 닫히면 복원한다. 제목 앞뒤 붙임(titlePrefix·titleSuffix)은 생략·빈 배열·G7Core 부재에서도 렌더를
+  깨지 않고, footer 는 본문 스크롤 영역 밖에 그리며 없거나 비면 하단 영역 자체를 그리지 않는다.
+
+axes:
+  area: [open_close, sizing, body_scroll, title_affix, footer]
+
+effects:
+  - modal_renders_only_when_open
+  - modal_closes_via_button_overlay_or_escape_only
+  - modal_width_resolved_from_width_or_size
+  - bundled_modal_sizes_all_mapped
+  - modal_locks_and_restores_body_scroll
+  - modal_title_affix_optional_and_safe_without_core
+  - modal_footer_rendered_outside_scroll_area
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Modal.test.tsx

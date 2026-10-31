@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: issue:#609 이슈 #481(공개 #79) 사이트맵 생성 확장성 SSoT. 6축 cross product(216 조합)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 레이아웃 Vitest + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required / job-generator-needs-scale-test 룰이 별도 강제(면제 대상 아님) — scale.cases[].assert 는 @scale 마킹으로 전수 커버.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: issue:#609 이슈 #481(공개 #79) 사이트맵 생성 확장성 SSoT. 6축 cross product(216 조합)는 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit + 레이아웃 Vitest + Playwright E2E)로 커버한다. 대용량 축(scale)은 scenario-scale-axis-required / job-generator-needs-scale-test 룰이 별도 강제(면제 대상 아님) — scale.cases[].assert 는 @scale 마킹으로 전수 커버.
 # audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 # 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 18건이 미검증으로 드러난다.
 #   그 짝 맞추기는 이 공정(SEO)의 몫이며, 좁히는 시점에 함께 처리한다.
@@ -42,6 +42,7 @@ effects:
   - child_split_at_threshold
   - stale_served_on_miss
   - job_unique_lock
+  - retry_window_covers_timeouts
   - async_dispatch_from_admin
   # ── 재생성 모드 (P2) ──
   - admin_regen_is_always_full
@@ -59,6 +60,12 @@ effects:
   - polling_starts_only_when_reverb_off_and_running
   - polling_stops_on_completed
   - job_failure_marks_progress_failed
+  # ── 콘솔 커맨드 seo:generate-sitemap (큐 분기·모드 옵션) ──
+  - sitemap_command_dispatches_async_unless_queue_is_sync
+  - sitemap_command_runs_sync_when_queue_is_sync_or_forced
+  - sitemap_command_passes_mode_option_to_job
+  - sitemap_command_rebuild_option_forces_full_mode
+  - sitemap_command_rejects_invalid_mode_without_dispatch
 
 # scale: 대용량 회귀 축. block-array of flow objects (내장 fallback 파서 제약 — flow 객체만 중첩 파싱)
 scale:

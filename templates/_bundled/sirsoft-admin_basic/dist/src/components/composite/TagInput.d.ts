@@ -64,6 +64,10 @@ export interface TagInputProps {
     id?: string;
     /** 레이아웃 편집기 주입 속성 (data-editor-* 등 — 편집 모드 선택용) */
     editorAttrs?: EditorAttrs;
+    /** 입력칸 접근 가능한 이름 — 있으면 곁 라벨을 잇지 않는다(#757) */
+    'aria-label'?: string;
+    /** 입력칸 이름이 될 요소 id — 있으면 곁 라벨을 잇지 않는다 */
+    'aria-labelledby'?: string;
 }
 /**
  * 태그 입력 컴포넌트

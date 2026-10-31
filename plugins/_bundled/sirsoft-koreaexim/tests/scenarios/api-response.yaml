@@ -1,0 +1,8 @@
+feature: koreaexim_api_response
+description: 공식 결과 코드·빈/잘못된 응답·연결 실패의 분류와 인증키 비노출을 검증한다.
+axes:
+  response: [codes, malformed, connection_error]
+effects:
+  - api_response_classification
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/tests/Unit/Services/KoreaeximApiClientTest.php

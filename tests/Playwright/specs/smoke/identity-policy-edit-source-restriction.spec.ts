@@ -11,7 +11,7 @@
  *   인증 목적은 어떤 정책이든 운영자가 자유 부여 가능해야 한다. 본 spec 은 선언형 편집 시
  *   인증 목적·적용 대상이 활성(편집 가능)이고 키·시점·위치만 비활성임을 브라우저에서 확인한다.
  *
- * @scenario source=identity-policy-edit axis=source_type:declared,source_type:admin
+ * @scenario source=identity-policy-edit, axis=source_type:declared, source_type=admin
  * @effects key-scope-target-locked, purpose-editable-for-declared, applies-to-editable-for-declared, admin-fields-all-enabled
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
@@ -66,6 +66,26 @@ async function forceKoreanLocale(page: import('@playwright/test').Page) {
   });
 }
 
+/**
+ * 정책 표로 스코프를 좁힌 locator.
+ *
+ * 같은 화면(`?tab=identity&sub_tab=policies`)에는 정책 표 **아래에 메시지 템플릿 표**가 함께
+ * 렌더되고 그쪽에도 `편집` 버튼이 6개 있다. 종전 구현은 `getByRole('button',{name:'편집'}).first()`
+ * 로 **컨테이너 스코프 없이** 잡아, 정책 표가 늦게 그려지면 메시지 템플릿 쪽 버튼을 눌러
+ * `dialog "메시지 템플릿 편집"` 이 열렸다(S17 20차 게이트 ⑦ 실패의 실제 원인).
+ * 표의 고유 헤더 `정책 키` 로 컨테이너를 특정한다.
+ */
+function policyTable(page: import('@playwright/test').Page) {
+  return page
+    .locator('table')
+    .filter({ has: page.getByRole('columnheader', { name: '정책 키', exact: true }) });
+}
+
+/** 정책 표 안의 [편집] 버튼 (메시지 템플릿 표의 동명 버튼과 섞이지 않는다) */
+function policyEditButtons(page: import('@playwright/test').Page) {
+  return policyTable(page).getByRole('button', { name: '편집', exact: true });
+}
+
 async function openFirstEditModal(page: import('@playwright/test').Page, sourceType: string) {
   const listResp = page.waitForResponse(
     (r) =>
@@ -77,9 +97,11 @@ async function openFirstEditModal(page: import('@playwright/test').Page, sourceT
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   expect(page.url()).not.toMatch(/\/admin\/login/);
   await listResp;
-  await page.waitForTimeout(600);
 
-  const editBtn = page.getByRole('button', { name: '편집', exact: true }).first();
+  // 정책 표 자체가 마운트될 때까지 기다린 뒤 그 안에서 버튼을 찾는다 (고정 대기 대신 조건 대기)
+  await expect(policyTable(page)).toBeVisible({ timeout: 15_000 });
+
+  const editBtn = policyEditButtons(page).first();
   await expect(editBtn).toBeVisible({ timeout: 15_000 });
   await editBtn.click();
   await waitForPolicyModal(page);
@@ -121,9 +143,11 @@ test('@smoke 운영자 정책 편집 모달 — 모든 필드 편집가능 + 안
   await page.goto('/admin/settings?tab=identity&sub_tab=policies&source_type=admin');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   expect(page.url()).not.toMatch(/\/admin\/login/);
-  await page.waitForTimeout(800);
+  await expect(policyTable(page)).toBeVisible({ timeout: 15_000 });
 
-  const hasAdminRow = await page.getByRole('button', { name: '편집', exact: true }).count();
+  // 정책 표 안에서만 센다 — 무스코프로 세면 메시지 템플릿 표의 편집 버튼 6개 때문에
+  // 운영자 정책이 0건이어도 항상 non-zero 가 되어 아래 자족 생성 분기가 도달 불가였다.
+  const hasAdminRow = await policyEditButtons(page).count();
   if (hasAdminRow === 0) {
     // + 정책 추가 → 키/위치 입력 → 저장
     await page.getByRole('button', { name: '+ 정책 추가' }).click();

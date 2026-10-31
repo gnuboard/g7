@@ -20,6 +20,8 @@ return [
         'invalid_extension_target' => '대상 확장을 찾을 수 없습니다: :identifier',
         'extension_not_allowed' => '허용되지 않는 파일 형식입니다: :extension',
         'upload_too_large' => '업로드 파일이 너무 큽니다. (최대 :limit 바이트)',
+        'rename_target_exists' => '같은 이름의 파일이 이미 있습니다: :path',
+        'rename_extension_changed' => '이름을 바꾸면서 확장자를 :from 에서 :to 로 바꿀 수 없습니다. 확장자가 바뀌면 그 파일은 더 이상 같은 방식으로 서빙되지 않습니다.',
     ],
 
     'validation' => [
@@ -28,6 +30,7 @@ return [
         'file_required' => '올릴 파일을 선택해 주세요.',
         'file_invalid' => '올바른 파일이 아닙니다.',
         'file_mimes' => '허용되지 않는 파일 형식입니다. (허용: :allowed)',
+        'rename_same_path' => '지금과 다른 경로를 입력해 주세요.',
     ],
 
     'messages' => [
@@ -35,5 +38,6 @@ return [
         'saved' => '저장했습니다.',
         'uploaded' => '파일을 올렸습니다.',
         'deleted' => '파일을 삭제했습니다.',
+        'renamed' => '파일 이름을 바꿨습니다.',
     ],
 ];

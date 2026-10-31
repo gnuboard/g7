@@ -25,13 +25,16 @@ class OrderCollection extends BaseApiCollection
     {
         return [
             'can_update' => 'sirsoft-ecommerce.orders.update',
+            // [내보내기] 버튼(#787) — 목록 API 가 이미 이 목록의 조회 권한을 요구하므로 내보내기 요청 권한 하나로 정한다
+            // audit:allow abilitymap-permission-matches-route-ssot reason: 이 플래그가 여는 동작은 내보내기 요청 API(POST admin/exports)이고 그 라우트 권한(SSoT)이 exports.create 다 — 목록 리소스 권한으로 게이팅하면 내보내기 권한 없는 운영자에게 버튼이 보인다
+            'can_export' => 'sirsoft-ecommerce.exports.create',
         ];
     }
 
     /**
      * 주문 컬렉션을 배열로 변환합니다.
      *
-     * @param Request $request HTTP 요청 객체
+     * @param  Request  $request  HTTP 요청 객체
      * @return array<int|string, mixed> 변환된 주문 컬렉션 배열
      */
     public function toArray(Request $request): array
@@ -61,7 +64,7 @@ class OrderCollection extends BaseApiCollection
     /**
      * 통계가 포함된 형태의 배열을 반환합니다.
      *
-     * @param array $statistics 통계 데이터 배열
+     * @param  array  $statistics  통계 데이터 배열
      * @return array<string, mixed> 통계 정보가 포함된 주문 컬렉션
      */
     public function withStatistics(array $statistics = []): array

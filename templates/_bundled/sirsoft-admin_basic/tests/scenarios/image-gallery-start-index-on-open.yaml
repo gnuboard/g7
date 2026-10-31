@@ -1,0 +1,23 @@
+feature: ImageGallery 확대 창 — 열 때 고른 사진에서 시작 (#821)
+
+description: |
+  ImageGallery 가 닫힌 채 마운트된 뒤 isOpen 이 true 로 바뀌면서 startIndex 가 함께 바뀔 때,
+  확대 창이 startIndex 의 사진으로 열려야 한다. 현재 번호가 useState(startIndex) 초기값으로만 잡혀
+  마운트 때 번호(0)로 열리던 결함을 잠근다. yet-another-react-lightbox 는 열리는 렌더의 index 만 읽으므로
+  effect 가 아니라 열림 전환 렌더 중에 맞춰야 한다.
+
+axes:
+  case: [open_after_mount, reopen_other_index]
+  # open_after_mount: 닫힌 채 마운트 → startIndex=2 로 열기 → 「3 / 5」
+  # reopen_other_index: 4번째로 열기 → 닫기 → 1번째로 다시 열기 → 「1 / 5」
+
+effects:
+  - lightbox_opens_at_start_index   # 확대 창 카운터가 startIndex+1 / 전체
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ImageGallery.startIndexOnOpen.test.tsx
+
+notes: |
+  관리자 화면에는 아직 닫힌 채 마운트된 ImageGallery 를 여는 경로가 없다(FileUploader 는 열 때마다 key 로 새로 마운트).
+  레이아웃 컴포넌트로 등록돼 있어 isOpen·startIndex 를 바인딩하면 같은 결함이 나므로 컴포넌트 단위로 잠근다.
+  사용자 템플릿의 같은 결함: templates/_bundled/sirsoft-basic/tests/scenarios/product-image-viewer-lightbox-start-index.yaml

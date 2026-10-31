@@ -174,6 +174,20 @@
         }
     }
 
+    /**
+     * 상태변경 API 요청 헤더 — 세션 CSRF 토큰을 싣는다.
+     *
+     * 설치 소유권은 서버가 세션으로 판정하므로 소유 토큰 원문은 보내지 않는다.
+     *
+     * @return {Object} fetch headers
+     */
+    function stateChangeHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': window.INSTALLER_CSRF || '',
+        };
+    }
+
     // =========================================================================
     // Step 1: 라이선스 동의 체크박스
     // =========================================================================
@@ -1155,6 +1169,9 @@
         const notExistsPaths = []; // mkdir 대상 (not_exists)
         const failedDirRelPaths = []; // 상대경로
         const notExistsRelPaths = []; // 상대경로 (not_exists)
+        // Windows ReadOnly 속성이 원인인 경로가 하나라도 있으면 attrib -R 안내를 함께 노출한다.
+        // (ReadOnly 는 ACL 이 아니라 파일 속성이라 icacls 로는 해소되지 않는다)
+        let hasWindowsReadOnly = false;
         if (!allDirsPassed) {
             // 계층적 디렉토리 에러 메시지 생성
             let dirErrorHtml = `${lang('error_directory_permissions')}<ul style="margin-top: 0.5rem;">`;
@@ -1179,6 +1196,19 @@
                         // not_writable, not_readable, subdirectory_issues 등 모두 chmod 대상
                         failedDirPaths.push(fullPath);
                         failedDirRelPaths.push(relPath);
+
+                        if (info.error_type === 'windows_readonly') {
+                            hasWindowsReadOnly = true;
+                        }
+                    }
+
+                    // 하위 디렉토리 중 ReadOnly 속성이 원인인 항목이 있는지 확인
+                    if (Array.isArray(info.failed_subdirectories)) {
+                        info.failed_subdirectories.forEach(subdir => {
+                            if (subdir && typeof subdir === 'object' && subdir.windows_readonly) {
+                                hasWindowsReadOnly = true;
+                            }
+                        });
                     }
                     dirErrorHtml += `<li>${path}`;
 
@@ -1599,6 +1629,20 @@
                 if (isWindows) {
                     const winDirPaths = failedDirPaths.map(p => p.replace(/\//g, '\\'));
                     const winDirCommands = winDirPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
+
+                    // ReadOnly 속성이 원인이면 icacls 로는 해소되지 않는다(ACL 이 아니라 파일 속성).
+                    // attrib -R 안내를 먼저 노출한다.
+                    if (hasWindowsReadOnly) {
+                        // 폴더 자체와 안쪽을 따로 푼다 — `attrib -R "<폴더>" /D /S` 는 폴더 자체만 풀고 안쪽은 읽기 전용으로 남긴다.
+                        const winRoCommands = winDirPaths.flatMap(p => [`attrib -R "${p}"`, `attrib -R "${p}\\*" /S /D`]);
+                        html += `<p class="fix-guide-label">${lang('permission_readonly_fix_guide')}</p>`;
+                        html += '<div class="code-box">';
+                        html += `<pre class="fix-command">${escapeHtml(winRoCommands.join('\n'))}</pre>`;
+                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += '</div>';
+                        html += `<p class="fix-guide-hint">${lang('permission_readonly_hint')}</p>`;
+                    }
+
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winDirCommands.join('\n'))}</pre>`;
@@ -2216,7 +2260,7 @@
             const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/check-configuration.php?action=test-db`;
             const response = await fetch(apiUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: stateChangeHeaders(),
                 body: JSON.stringify(dbData)
             });
 
@@ -2288,6 +2332,13 @@
                         </div>
                     `;
                     window.__g7_existing_tables = info;
+                    // 서버가 발급한 삭제 확인 토큰 — 설치 시작 시 drop_tables 와 함께 제시해야
+                    // 삭제가 실행된다 (요청 본문의 액션 값만으로는 삭제되지 않음).
+                    if (result.drop_confirm) {
+                        sessionStorage.setItem('drop_confirm', result.drop_confirm);
+                    } else {
+                        sessionStorage.removeItem('drop_confirm');
+                    }
                     // FormValidator에 동의 요구 등록
                     if (typeof FormValidator !== 'undefined') {
                         FormValidator.setDbCleanupRequired(true);
@@ -2297,6 +2348,7 @@
                     // 빈 DB → 동의 요구 해제 + sessionStorage 정리
                     window.__g7_existing_tables = null;
                     sessionStorage.removeItem('existing_db_action');
+                    sessionStorage.removeItem('drop_confirm');
                     if (typeof FormValidator !== 'undefined') {
                         FormValidator.setDbCleanupRequired(false);
                         FormValidator.setDbCleanupConsented(false);
@@ -3224,6 +3276,13 @@
      * Step 3 폼 제출 이벤트 초기화
      */
     function initStep3FormSubmit() {
+        // 사이트 주소 기본값: 저장된 값이 없으면 운영자가 실제로 보고 있는 주소(앱 루트)로 채운다 —
+        // 서버가 아는 Host 는 프록시 뒤에서 내부 주소·http 일 수 있다.
+        const appUrlInput = document.getElementById('app_url');
+        if (appUrlInput && appUrlInput.dataset.autofill === '1') {
+            appUrlInput.value = getAppRootUrl();
+        }
+
         const form = document.getElementById('config-form');
         if (form) {
             form.addEventListener('submit', function(e) {
@@ -3445,6 +3504,15 @@
         else if (type === 'modules') iconClass = 'fa-cube';
         else if (type === 'plugins') iconClass = 'fa-plug';
 
+        // 확장이 아이콘을 동봉했으면 유형 글리프 대신 그 그림을 그린다.
+        // 서버(scan-extensions.php)가 검증기를 통과한 바이트만 data URI 로 보내지만,
+        // innerHTML 조립이라 여기서도 형태를 다시 검사한다 — 정규식이 따옴표·꺾쇠를
+        // 배제하므로 속성 탈출이 성립하지 않는다.
+        const DATA_URI_RE = /^data:image\/(svg\+xml|png|webp);base64,[A-Za-z0-9+/]+=*$/;
+        const iconHtml = (typeof item.icon_data_uri === 'string' && DATA_URI_RE.test(item.icon_data_uri))
+            ? '<img class="extension-card-icon-img" src="' + item.icon_data_uri + '" alt="" loading="lazy">'
+            : '<i class="fas ' + iconClass + '"></i>';
+
         const name = getLocalizedText(item.name) || item.identifier;
         const description = getLocalizedText(item.description);
         const version = item.version || '1.0.0';
@@ -3470,7 +3538,7 @@
 
         card.innerHTML =
             '<div class="extension-card-header">' +
-                '<div class="extension-card-icon"><i class="fas ' + iconClass + '"></i></div>' +
+                '<div class="extension-card-icon">' + iconHtml + '</div>' +
                 '<div class="extension-card-info">' +
                     '<h4 class="extension-card-name">' + escapeHtml(name) + '</h4>' +
                     '<div class="extension-card-meta">v' + escapeHtml(version) + (author ? ' · ' + escapeHtml(author) : '') + '</div>' +
@@ -4416,7 +4484,7 @@
         try {
             const response = await fetch(INSTALLER_BASE_URL + '/api/save-extensions.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: stateChangeHeaders(),
                 body: JSON.stringify({
                     ...selectedExtensions,
                     extension_names: extensionNames
@@ -4592,7 +4660,8 @@
      * @returns {Object} fetch headers
      */
     function stateMutationHeaders() {
-        return { 'Content-Type': 'application/json', 'X-Installer-Token': getStepwiseToken() || '' };
+        // 세션 CSRF 토큰(설치 소유 게이트)도 함께 싣는다 — 상태변경 헤더의 공통 부분은 stateChangeHeaders 가 소유한다.
+        return { ...stateChangeHeaders(), 'X-Installer-Token': getStepwiseToken() || '' };
     }
     /* endregion:stepwise-token */
 
@@ -4820,14 +4889,18 @@
             const saveConfigUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/install-process.php`;
 
             const existingDbAction = sessionStorage.getItem('existing_db_action') || 'skip';
+            const dropConfirm = existingDbAction === 'drop_tables'
+                ? (sessionStorage.getItem('drop_confirm') || '')
+                : '';
 
             const response = await fetch(saveConfigUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: stateChangeHeaders(),
                 body: JSON.stringify({
                     config: configData,
                     installation_mode: installationMode,
                     existing_db_action: existingDbAction,
+                    drop_confirm: dropConfirm,
                 }),
             });
 
@@ -4839,6 +4912,11 @@
                 restoreInstallationStartState();
 
                 return;
+            }
+
+            // 삭제 확인이 거부돼 삭제 없이 진행되는 경우 — 사용자에게 알린다
+            if (result.success && result.drop_confirm_rejected && result.warning) {
+                addLogMessage(result.warning);
             }
 
             if (!result.success) {
@@ -4948,8 +5026,10 @@
                 onTaskComplete: (taskId, message, target, skipped) => {
                     updateTaskStatus(taskId, skipped ? 'skipped' : 'completed', message, target || null);
                 },
+                // 한 줄씩 오는 실시간 경로(SSE)는 프레임 단위로 모아 붙인다 — 수천 줄이 한꺼번에
+                // 도착해도 줄마다 강제 리플로우를 하지 않는다.
                 onLog: (message) => {
-                    addLogMessage(message);
+                    queueLogMessage(message);
                 },
                 // 단계별 실행은 한 응답이 태스크 전체의 줄을 싣고 온다 — 배치로 받아 한 번에
                 // 그린다 (D2 L4). 이 콜백이 없으면 모니터가 줄마다 `onLog` 로 떨어뜨리고,
@@ -5183,7 +5263,9 @@
             const workerUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/install-worker.php`;
             currentMonitor = new MonitorNS.SseMonitor(callbacks, {
                 workerUrl: workerUrl,
-                // 다른 요청이 워커 lock 을 가져가면 재연결이 아니라 이 주소로 갈아탄다 (13차 E5)
+                // 다른 요청이 워커 lock 을 가져가면 재연결이 아니라 이 주소로 갈아탄다 (13차 E5).
+                // 연결 수립 뒤 스트림이 끊기면 이 주소로 결말(실패·중단·완료·멈춤)을 판정하고,
+                // 워커 없이 설치가 남았으면 새 워커로 다시 연결해 이어 받는다.
                 stateUrl: stateUrl,
                 connectionTimeoutMs: 5000,
                 stuckThresholdMs: stuckThresholdMs,
@@ -5589,11 +5671,50 @@
         }
     }
 
+    // 화면에 붙이기를 기다리는 로그 메시지 큐
+    let pendingLogMessages = [];
+    let logFlushScheduled = false;
+
     /**
      * 로그 메시지 한 줄 추가 — 배치 API 의 1건 호출이다 (호출부 호환).
+     *
+     * 화면에 곧바로 그린다. 여러 줄이 한 이벤트씩 몰려오는 경로(SSE)는 `queueLogMessage` 를 쓴다.
      */
     function addLogMessage(message) {
         addLogMessages([message]);
+    }
+
+    /**
+     * 로그 메시지를 큐에 넣고 프레임당 한 번 배치로 붙인다 (SSE 실시간 경로).
+     *
+     * SSE 는 이벤트가 한 줄씩 도착한다. 모듈 설치처럼 작업 종료 시점에 수천 줄이 한꺼번에 도착하면,
+     * 줄마다 DOM 추가와 scrollHeight 읽기(강제 레이아웃)가 반복되어 브라우저가 멈춘다.
+     * 큐에 모아 두고 다음 프레임에 배치 API 로 한 번만 붙이고 스크롤한다.
+     *
+     * @param {string} message 로그 줄
+     */
+    function queueLogMessage(message) {
+        pendingLogMessages.push(message);
+
+        if (logFlushScheduled) return;
+        logFlushScheduled = true;
+        const schedule = typeof requestAnimationFrame === 'function'
+            ? requestAnimationFrame
+            : (cb) => setTimeout(cb, 16);
+        schedule(flushLogMessages);
+    }
+
+    /**
+     * 큐에 쌓인 로그 메시지를 한 번에 화면에 붙인다
+     */
+    function flushLogMessages() {
+        logFlushScheduled = false;
+
+        const messages = pendingLogMessages;
+        pendingLogMessages = [];
+        if (messages.length === 0) return;
+
+        renderLogBatch(messages);
     }
 
     /**
@@ -5604,11 +5725,23 @@
      * 줄 수만큼 강제 리플로우가 나 화면이 그 시간 동안 통째로 멈춘다(실측: 1,579 ms).
      * 한 배치는 조립 한 번 · 삽입 한 번 · 스크롤 한 번이다.
      *
+     * 큐(queueLogMessage)에 남은 줄을 먼저 붙여 도착 순서를 지킨다.
+     *
      * @param {Array<string>} messages 로그 줄 배열
      */
     function addLogMessages(messages) {
         if (!Array.isArray(messages) || messages.length === 0) return;
 
+        flushLogMessages();
+        renderLogBatch(messages);
+    }
+
+    /**
+     * 배치 하나를 그린다 — 커맨드 원문과 진행 기록을 나눠 각자 한 번씩 붙인다.
+     *
+     * @param {Array<string>} messages 로그 줄 배열
+     */
+    function renderLogBatch(messages) {
         // 커맨드 원문은 다른 상자로 간다 — 두 갈래를 먼저 나누고 각자 한 번씩 붙인다.
         const commandLines = [];
         const logLines = [];
@@ -6237,6 +6370,9 @@
             installToggleIcon.classList.add('hidden');
         }
         if (logDiv) {
+            // 아직 큐에 남은 이전 로그를 먼저 붙여 구분선 앞뒤 순서를 지킨다
+            flushLogMessages();
+
             // 기존 로그 유지, 플레이스홀더만 제거
             const placeholder = logDiv.querySelector('.log-placeholder');
             if (placeholder) {
@@ -6881,8 +7017,12 @@
                     const apiUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/state-management.php?action=abort`;
 
                     // sendBeacon은 페이지 언로드 중에도 전송을 보장
-                    // sendBeacon 은 헤더를 실을 수 없다 — 서버가 함께 읽는 본문 폴백으로 토큰을 넘긴다
-                    const beaconBody = JSON.stringify({ token: getStepwiseToken() || '' });
+                    // sendBeacon 은 헤더를 실을 수 없다 — 서버가 함께 읽는 본문 폴백으로 단계별 실행 토큰과
+                    // 세션 CSRF 토큰을 넘긴다
+                    const beaconBody = JSON.stringify({
+                        token: getStepwiseToken() || '',
+                        csrf_token: window.INSTALLER_CSRF || '',
+                    });
                     navigator.sendBeacon(apiUrl, new Blob([beaconBody], {type: 'application/json'}));
                 }
             });
@@ -7598,6 +7738,57 @@
      *
      * @param {HTMLButtonElement} btn 클릭된 복사 버튼
      */
+    /**
+     * 복구 토큰으로 설치 소유권 되찾기 (소유권 잠금 화면)
+     *
+     * @param {Event} event submit 이벤트
+     * @returns {boolean} 기본 폼 제출 방지용 false
+     */
+    async function submitRecoveryToken(event) {
+        if (event) event.preventDefault();
+
+        const input = document.getElementById('recovery-token-input');
+        const button = document.getElementById('recovery-submit-btn');
+        const resultBox = document.getElementById('recovery-result');
+        if (!input || !resultBox) return false;
+
+        const showResult = (message, isSuccess) => {
+            resultBox.textContent = message;
+            resultBox.classList.remove('hidden', 'alert-error', 'alert-success');
+            resultBox.classList.add(isSuccess ? 'alert-success' : 'alert-error');
+        };
+
+        if (button) button.disabled = true;
+
+        try {
+            const response = await fetch(getStateApiUrl('reclaim'), {
+                method: 'POST',
+                // 상태 관리 엔드포인트로 가는 변경 요청은 한 헤더 헬퍼를 지난다 — 단계별 실행 토큰은
+                // 소유권을 잃은 세션에 없으므로 빈 값으로 실리고, 회수는 CSRF·복구 토큰으로 판정한다.
+                headers: stateMutationHeaders(),
+                body: JSON.stringify({ recovery_token: input.value }),
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                showResult(result.message || lang('recovery_success'), true);
+                setTimeout(() => { window.location.href = `${window.INSTALLER_BASE_URL}/`; }, 1500);
+                return false;
+            }
+
+            showResult(result.message || lang('error_recovery_token_invalid'), false);
+        } catch (error) {
+            // 브라우저 원문(비-JSON 응답의 `Unexpected token '<'` 등)은 결과 문구에 보간하지 않는다 —
+            // 운영자에게는 번역 문구, 원문은 진단용 콘솔로만 (§12.0 W3).
+            showResult(lang('unknown_error_occurred'), false);
+            console.warn('[installer] recovery token request failed:', error);
+        }
+
+        if (button) button.disabled = false;
+        return false;
+    }
+    window.submitRecoveryToken = submitRecoveryToken;
+
     function copyPermissionCommand(btn) {
         const pre = btn.previousElementSibling;
         if (!pre) return;

@@ -11,6 +11,7 @@ use Mockery;
 use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
+use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
 use Modules\Sirsoft\Page\Services\PageAttachmentService;
 use Modules\Sirsoft\Page\Tests\FeatureTestCase;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -155,6 +156,7 @@ class PublicPageAttachmentConditionalRequestTest extends FeatureTestCase
         $service = Mockery::mock(PageAttachmentService::class, [
             app(PageAttachmentRepositoryInterface::class),
             $storage,
+            app(PageRepositoryInterface::class),
         ])->makePartial();
         $service->shouldReceive('getByHash')->andReturn($attachment);
         $this->app->instance(PageAttachmentService::class, $service);

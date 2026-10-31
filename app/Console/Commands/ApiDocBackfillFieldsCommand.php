@@ -70,7 +70,7 @@ class ApiDocBackfillFieldsCommand extends Command
         }
 
         $prefix = $dryRun ? '[dry-run] ' : '';
-        $this->info("{$prefix}응답 필드 설명 채움: {$filled}건, TODO 유지(도메인 특이): {$skipped}건, 변경 파일: {$filesChanged}개");
+        $this->info($prefix.__('common.console.api_docgen_backfill_fields.summary', ['filled' => $filled, 'skipped' => $skipped, 'files' => $filesChanged]));
 
         return self::SUCCESS;
     }

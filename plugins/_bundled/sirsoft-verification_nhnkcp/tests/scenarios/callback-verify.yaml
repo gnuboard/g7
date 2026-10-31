@@ -53,6 +53,7 @@ effects:
   - decrypt_failure_returns_decrypt_failed
   - missing_identity_fields_returns_incomplete_identity
   - bridge_query_carries_no_personal_information
+  - bridge_rejects_non_string_result_field_with_422
   - unmapped_provider_code_carries_original_message
   - failure_bridge_query_carries_challenge_id_for_retry
   - resolver_only_failure_is_recorded_on_log

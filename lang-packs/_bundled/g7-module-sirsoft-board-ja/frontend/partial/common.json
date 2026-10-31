@@ -20,5 +20,6 @@
   "new": "New",
   "pagination_info": "合計{{total}}名中{{from}}-{{to}}名を表示",
   "error_occurred": "エラーが発生しました",
-  "optional": "選択"
+  "optional": "選択",
+  "list_load_failed": "一覧を読み込めませんでした。しばらくしてからもう一度お試しください。"
 }

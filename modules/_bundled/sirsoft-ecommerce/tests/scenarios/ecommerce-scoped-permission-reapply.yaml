@@ -1,0 +1,74 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   gap 축은 「미들웨어가 건너뛰는 출입구」 목록이다. 상세·단건·일괄 출입구(E1~E6·E8·E9)는 차단(target=others)과
+#   과차단 회귀(target=own)를 같은 데이터 프로바이더로 짝지어 세우고, 목록 출입구(E7·E8·E9·N1)는 self 걸러냄과
+#   전체 범위 무회귀를 짝지어 세운다. scope=role 은 판정식이 코어 단일 출처(PermissionHelper)라 self 와 같은
+#   재적용 지점을 지나므로 별도 행을 세우지 않는다. effects 축은 면제하지 않는다.
+# 시나리오 매니페스트 — 이커머스 권한 스코프 재적용 전수 (#789 계획서 §6.3 E1~E9)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+feature: ecommerce_scoped_permission_reapply
+
+description: |
+  관리자 권한의 「본인만」·「소유역할」 범위는 권한 미들웨어가 라우트 파라미터를 Model 로 바인딩할 때만
+  검사한다. 이커머스 관리자 라우트 중 `{id}`·`{identifier}`·`by-code/{code}`·`{productId}`·정적 `bulk`
+  경로는 바인딩이 일어나지 않아 범위가 적용되지 않았다. 서비스·저장소가 같은 판정을 재적용한다.
+
+  - E1 상품 관리자 상세(ID·코드) — `products.read`
+  - E2 상품 이미지 업로드(상품 있음)·삭제·순서·대표 지정 — `products.update`
+  - E3 옵션 일괄 가격·재고·통합 — `products.update`, 옵션의 실제 상품 기준(요청의 상품 ID 위조 차단)
+  - E4 브랜드 상세 — `brands.read`
+  - E5 쿠폰 상세·발급 내역(`.read`)·발급 취소(`.update`)
+  - E6 배송정책 상세·클레임 설정, 추가배송비 템플릿 상세 — `shipping-policies.read`
+  - E7 관리자 리뷰 목록 — `reviews.read`
+  - E8 관리자 찜·장바구니·회원 배송지 목록(`.read`)·단건·일괄 삭제(`.manage`)
+  - E9 관리자 마일리지 목록·연결 거래(`.read`)·적립건 편집·수동 지급·유효기간 연장(`.manage`)
+  - N1 추가배송비 템플릿 관리자 목록 — 원장 감사가 찾은 같은 결함군
+
+  거부는 403 `auth.scope_denied`(500 으로 위장되지 않음), 일괄은 하나라도 범위 밖이면 전량 거부하고
+  아무것도 바꾸지 않는다. 목록은 범위 밖 행을 걸러낸다. 강제 지점은 원장(`EcommerceScopeLedgerListener`)에
+  적고 감사 테스트가 「바인딩도 원장도 없는 라우트」·「낡은 강제 지점」을 잡는다.
+
+axes:
+  gap:
+    - E1
+    - E2
+    - E3
+    - E4
+    - E5
+    - E6
+    - E7
+    - E8
+    - E9
+    - N1
+  scope:
+    - self
+    - all
+  target:
+    - others
+    - own
+  surface:
+    - detail_or_bulk
+    - list
+    - ledger_audit
+
+effects:
+  # 상세·단건·일괄
+  - unbound_route_reapplies_scope_in_service
+  - scope_denial_surfaces_as_403_not_500
+  - denied_request_changes_nothing
+  - in_scope_target_still_allowed
+  # 목록
+  - admin_list_filters_out_of_scope_rows
+  - admin_list_keeps_in_scope_rows
+  - admin_list_unscoped_actor_sees_all_rows
+  # 원장 감사
+  - every_scoped_ecommerce_route_is_bound_or_ledgered
+  - ledger_enforcers_exist_and_check_scope
+  - missing_ledger_entry_is_reported
+  - no_permission_level_scope_keys_in_module_php
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Security/ServiceScopeReapplyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Security/EcommerceScopedRouteLedgerTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

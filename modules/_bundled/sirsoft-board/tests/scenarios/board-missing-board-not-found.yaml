@@ -1,0 +1,36 @@
+feature: 없는 게시판 주소의 404 응답 (7.1.1 출시 전 점검)
+
+description: |
+  게시판 하위 API 는 게시판별 동적 권한(`sirsoft-board.{slug}.*`)을 권한 미들웨어로 본다. 없는 게시판은 그 권한도
+  없어서 비회원 401·회원/관리자 403 이 나가 화면에 「권한이 없습니다」가 떴다. 게시판 slug 는 공개 주소라 존재를
+  감출 이유가 없으므로 EnsureBoardExists 가 권한 판정보다 먼저 404 로 끝낸다.
+  부착은 모듈 getMiddleware() self-gate(api 그룹 after_core, 라우트명 서브트리 glob)다 — 그룹 단계라 라우트의
+  admin·permission 보다 먼저 돌아, 관리자 API 도 없는 게시판이면 관리자 아닌 회원에게 404 다(2026-10-18 결정).
+  로그인 판정(auth:sanctum)은 라라벨 우선순위로 그룹보다 앞으로 옮겨져 비회원은 없는 게시판이어도 401 이다. 있는 게시판은 로그인 401·관리자 403·권한 판정을 그대로 받는다. `{slug}` 없는 같은 서브트리 라우트는 통과.
+
+axes:
+  case:
+    - missing_board_user_api_404
+    - missing_board_admin_api_404
+    - existing_board_admin_gate_kept
+    - missing_board_member_only_api_404
+    - existing_board_permission_kept
+    - slugless_route_in_subtree_passes
+    - slug_routes_check_existence_before_permission
+
+effects:
+  - missing_board_user_api_404
+  - missing_board_admin_api_404
+  - admin_gate_kept_for_existing_board
+  - admin_guest_login_first
+  - existing_board_permission_kept
+  - slugless_route_passes
+  - slug_routes_check_existence_before_permission
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/MissingBoardNotFoundTest.php
+
+validation:
+  note: |
+    수정 전 코드에서 없는 게시판 사례(사용자 7종·관리자 3종·회원 전용 1종)와 라우트 래칫이 실패(401·403, 미들웨어 없음)하는 것을
+    확인했다. 대조군(있는 게시판의 401·403, 관리자 API 의 비회원 401·관리자 아닌 회원 403, slug 없는 최근글 200)은 수정 전후 모두 통과한다.

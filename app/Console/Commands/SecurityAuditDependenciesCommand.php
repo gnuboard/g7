@@ -84,28 +84,23 @@ class SecurityAuditDependenciesCommand extends Command
         $this->line('');
 
         if ($totals['unmeasurable'] > 0) {
-            $this->warn(sprintf(
-                '점검 불가 %d건 — 감사 도구가 실행되지 않았습니다. "취약점 없음" 과 다릅니다.',
-                $totals['unmeasurable']
-            ));
+            $this->warn(__('common.console.security_audit_dependencies.unmeasurable_warning', ['count' => $totals['unmeasurable']]));
         }
 
         if ($totals['vulnerable'] === 0) {
-            $this->info(sprintf(
-                '운영 의존성 취약점 0건 (감사 %d개 / 대상 없음 %d개 / 발견 %d개 잠금파일).',
-                $totals['audited'],
-                $totals['empty'],
-                $totals['checked']
-            ));
+            $this->info(__('common.console.security_audit_dependencies.clean_summary', [
+                'audited' => $totals['audited'],
+                'empty' => $totals['empty'],
+                'checked' => $totals['checked'],
+            ]));
 
             return $totals['unmeasurable'] > 0 ? self::FAILURE : self::SUCCESS;
         }
 
-        $this->error(sprintf(
-            '%d개 잠금파일에서 운영 의존성 취약점이 발견되었습니다 (총 %d건).',
-            $totals['vulnerable'],
-            $totals['advisories']
-        ));
+        $this->error(__('common.console.security_audit_dependencies.vulnerable_summary', [
+            'count' => $totals['vulnerable'],
+            'advisories' => $totals['advisories'],
+        ]));
 
         return self::FAILURE;
     }
@@ -165,7 +160,7 @@ class SecurityAuditDependenciesCommand extends Command
         $decoded = json_decode($process['output'], true);
 
         if (! is_array($decoded) || ! isset($decoded['metadata']['vulnerabilities'])) {
-            return $this->unmeasurable($lockPath, 'npm', trim($process['error']) ?: 'npm audit 출력을 해석할 수 없습니다.');
+            return $this->unmeasurable($lockPath, 'npm', trim($process['error']) ?: __('common.console.security_audit_dependencies.audit_output_unparsable', ['command' => 'npm audit']));
         }
 
         $severities = array_filter(
@@ -202,7 +197,7 @@ class SecurityAuditDependenciesCommand extends Command
         $decoded = json_decode($this->firstJsonObject($process['output']), true);
 
         if (! is_array($decoded) || ! array_key_exists('advisories', $decoded)) {
-            return $this->unmeasurable($lockPath, 'composer', trim($process['error']) ?: 'composer audit 출력을 해석할 수 없습니다.');
+            return $this->unmeasurable($lockPath, 'composer', trim($process['error']) ?: __('common.console.security_audit_dependencies.audit_output_unparsable', ['command' => 'composer audit']));
         }
 
         $severities = [];
@@ -282,7 +277,7 @@ class SecurityAuditDependenciesCommand extends Command
             'status' => 'empty',
             'advisories' => 0,
             'severities' => [],
-            'detail' => '의존성 없음',
+            'detail' => __('common.console.security_audit_dependencies.no_dependencies'),
         ];
     }
 
@@ -407,7 +402,7 @@ class SecurityAuditDependenciesCommand extends Command
     private function renderTable(array $results): void
     {
         $this->line('');
-        $this->line('<options=bold>의존성 취약점 점검 (운영 의존성 기준)</>');
+        $this->line('<options=bold>'.__('common.console.security_audit_dependencies.table_title').'</>');
         $this->line('');
 
         $rows = [];
@@ -423,17 +418,23 @@ class SecurityAuditDependenciesCommand extends Command
                 $result['kind'],
                 $result['target'],
                 match ($result['status']) {
-                    'clean' => '이상 없음',
-                    'empty' => '대상 없음',
-                    'vulnerable' => '취약',
-                    default => '점검 불가',
+                    'clean' => __('common.console.security_audit_dependencies.status.clean'),
+                    'empty' => __('common.console.security_audit_dependencies.status.empty'),
+                    'vulnerable' => __('common.console.security_audit_dependencies.status.vulnerable'),
+                    default => __('common.console.security_audit_dependencies.status.unmeasurable'),
                 },
                 $result['advisories'] > 0 ? (string) $result['advisories'] : '-',
                 $severities === [] ? ($result['detail'] !== '' ? mb_substr($result['detail'], 0, 60) : '-') : implode(', ', $severities),
             ];
         }
 
-        $this->table(['종류', '대상', '상태', '건수', '내역'], $rows);
+        $this->table([
+            __('common.console.security_audit_dependencies.headers.kind'),
+            __('common.console.security_audit_dependencies.headers.target'),
+            __('common.console.security_audit_dependencies.headers.status'),
+            __('common.console.security_audit_dependencies.headers.count'),
+            __('common.console.security_audit_dependencies.headers.detail'),
+        ], $rows);
     }
 
     /**
@@ -445,22 +446,22 @@ class SecurityAuditDependenciesCommand extends Command
     private function renderVendored(array $vendored): void
     {
         $this->line('');
-        $this->line('<options=bold>동봉 제3자 자산 (감사 도구가 볼 수 없는 축 — 사람이 확인)</>');
+        $this->line('<options=bold>'.__('common.console.security_audit_dependencies.vendored_title').'</>');
         $this->line('');
 
         if ($vendored === []) {
-            $this->line('  (없음)');
+            $this->line('  '.__('common.console.security_audit_dependencies.none'));
 
             return;
         }
 
         $this->table(
-            ['확장', '라이브러리', '버전 디렉토리'],
+            [__('common.console.security_audit_dependencies.vendored_headers.extension'), __('common.console.security_audit_dependencies.vendored_headers.library'), __('common.console.security_audit_dependencies.vendored_headers.versions')],
             array_map(
                 static fn (array $row): array => [
                     $row['extension'],
                     $row['library'],
-                    $row['versions'] === [] ? '(버전 디렉토리 없음)' : implode(', ', $row['versions']),
+                    $row['versions'] === [] ? __('common.console.security_audit_dependencies.no_version_dirs') : implode(', ', $row['versions']),
                 ],
                 $vendored
             )

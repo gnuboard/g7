@@ -17,7 +17,7 @@
 ## 절차
 
 1. (backend) `.env.testing` 을 확인한다. 없으면 생성 필요를 알리고 기존 사용자 허가를 확인한다. 허가가 없으면 생성에 필요한 확인만 요청하고, 허가 후 `.env.testing.example` 을 복사해 `php artisan key:generate --env=testing` 을 실행한다. 존재 여부와 관계없이 테스트 DB가 개발 DB와 다른지 확인한 뒤 실행하며 접속 정보는 출력에 노출하지 않는다.
-2. 대상을 고른다 — 변경 파일에 걸리는 테스트와 그 변경이 영향을 주는 연관 테스트(run-every-test-class-that-pokes-the-changed-contract). 새 화면·기존 화면 수정·데이터 흐름 변경은 백엔드 + 프론트엔드 + 레이아웃 렌더링(+해당 시 E2E)이 한 묶음이며 단일 계층으로 완료를 선언하지 않는다.
+2. 대상을 고른다 — 변경 파일에 걸리는 테스트와 그 변경이 영향을 주는 호출처·구독자·데이터 흐름의 연관 테스트(run-every-test-class-that-pokes-the-changed-contract). 새 화면·기존 화면 수정·데이터 흐름 변경은 백엔드 + 프론트엔드 + 레이아웃 렌더링(+해당 시 E2E)이 한 묶음이며 단일 계층으로 완료를 선언하지 않는다.
 3. 실행한다. Windows 에서 Vitest 는 PowerShell 래퍼로, PHPUnit 은 Bash 로 직접 실행한다. 스위트는 한 번에 하나씩 순차로 띄우고 앞 스위트가 끝난 뒤 다음을 시작한다(never-run-two-phpunit-suites-concurrently, never-run-two-e2e-suites-concurrently). 진행 중인 스위트는 진행률 확인 목적으로도 중단하지 않는다(never-interrupt-running-test-db-corruption). 실행 중에는 훅·라우트 캐시를 다시 굽는 artisan 을 돌리지 않는다(no-cache-regeneration-while-phpunit-runs). 출력은 처음부터 상세 오류까지 `<agent-tmp>/test-<name>.txt` 로 저장한다(save-test-output-to-file, test-show-full-error-output-first-run).
 
    ```bash
@@ -26,14 +26,15 @@
    ```powershell
    ```
 
-4. 저장된 출력을 grep/sed 로 분석한다. `OK, but issues!` 안의 warnings·deprecations·skips·intermittent 까지 전수 확인한다(unrelated-test-errors). 실패는 에러 메시지 → 테스트 코드 → 구현 코드 → 테스트 데이터(Factory·Mock) 순으로 보고, git 히스토리·호출처 분석으로 테스트 stale 인지 로직 회귀인지 판정한다(test-failure-root-cause-analysis). skip 으로 회피하지 않는다(no-skip-without-root-fix). 수정 후에는 실패한 테스트만 다시 실행한다. 중단된 스위트의 실패 건은 재실행 없이 특정한다(locate-failures-in-aborted-phpunit-run).
-6. references/scope.md 보고 양식(아래 「scope」 절) 으로 보고한다. FAIL/ERROR/RISKY 는 전수 나열하고 항목마다 연관 여부·판정 근거·조치 분기를 적으며, 대표 1건만 적고 나머지를 생략하지 않는다.
+4. 저장된 출력을 grep/sed 로 분석한다. `OK, but issues!` 안의 warnings·deprecations·skips·intermittent 까지 전수 확인한다(unrelated-test-errors). 실패는 에러 메시지 → 테스트 코드 → 구현 코드 → 테스트 데이터(Factory·Mock) 순으로 보고, git 히스토리·호출처 분석으로 테스트 stale 인지 로직 회귀인지 판정한다(test-failure-root-cause-analysis). skip 으로 회피하지 않는다(no-skip-without-root-fix). 유형별 대응(Assertion·Exception·401/403·404·422·Mock·Factory)은 실패 유형별 대응 표. 수정 후에는 실패한 테스트만 다시 실행한다. 중단된 스위트의 실패 건은 재실행 없이 특정한다(locate-failures-in-aborted-phpunit-run).
+6. references/scope.md 보고 양식(아래 「scope」 절) 으로 보고한다. FAIL/ERROR/RISKY 는 전수 나열하고 항목마다 연관 여부·판정 근거·조치 분기를 적으며, 대표 1건만 적고 나머지를 생략하지 않는다. 계획서(`<agent-plans>/[화면명]/PROGRESS.md`) 기반 작업이면 회차마다 재검증 이력 표에 한 행(백엔드·프론트엔드·레이아웃 통과/전체, 실패 원인·대응 유형)을 더한다.
 
 ## 완료 조건
 
 - 관련 계층 전부의 스위트가 범위를 좁힌 명령으로 순차 실행됐고 출력 파일이 남아 있다.
 - 실패·오류·리스키가 0건이거나, 각 항목이 3필드(연관 여부·판정 근거·조치 분기)로 보고되고 같은 세션에서 처리됐다. 외부 환경 의존·계획서에 명시된 의도적 깨진 상태만 제외한다.
 - 신규 기능이면 `test-scenario-coverage` 위반 0건.
+- 계획서 기반 작업이면 PROGRESS.md 재검증 이력에 이번 회차 행이 있다.
 - 테스트 작성이 아니라 테스트 통과가 완료다.
 
 ## 참조
@@ -70,8 +71,10 @@
 
 `npm run test:e2e` / `npx playwright test` 단독 실행은 무필터이므로 차단된다. 전체 실행이 필요하면 사용자에게 소요 시간과 함께 먼저 제안한다.
 
+값은 `.env` `APP_URL` 과 같은 활성 호스트(vhost 경유 URL)다. 아래 `<활성 호스트>` 를 그 값으로 바꾼다.
+
 ```powershell
-$env:PLAYWRIGHT_BASE_URL='http://localhost'
+$env:PLAYWRIGHT_BASE_URL='https://<활성 호스트>'
 bash
 ```
 
@@ -113,7 +116,7 @@ Playwright spec 과 Chrome MCP 실측을 같은 개발 서버에서 동시에 �
 | 401 무한 redirect | 토큰이 testing DB 에만 있음 | `G7_PLAYWRIGHT_BYPASS=1` 로 호출 |
 | `preview-canvas-container 없음` | 위지윅 편집기 access-check 거부 | `page.route()` 로 access-check 200 mock |
 | 외부 origin 으로 trace 복잡 | spec 이 외부 도메인 로드 | `page.route('https://example.com/**', route => route.fulfill(...))` |
-| Sanctum 토큰 누적 | spec 마다 새 user/role | `globalTeardown.ts` 의 `php artisan playwright:cleanup-tokens` |
+| Sanctum 토큰·`playwright_test_*` 역할 누적 | spec 마다 새 user/role | 수동 회수 `$env:G7_PLAYWRIGHT_BYPASS='1'; php artisan playwright:cleanup`(`--dry-run`·`--keep-hours=N`). `tests/Playwright/global-teardown.ts` 는 시드 레이아웃만 지우고 토큰은 회수하지 않는다 |
 
 전체 표는 e2e-testing.md §10. fixture 의 동기 재시도 대기는 `execSync sleep` 대신 Atomics 를 쓴다(playwright-retry-wait-use-atomics-not-execsync-sleep). 이커머스 spec 의 함정은 ecommerce-playwright-e2e-traps.
 
@@ -134,15 +137,16 @@ Playwright spec 과 Chrome MCP 실측을 같은 개발 서버에서 동시에 �
 | --- | --- |
 | `app/{Models,Services,Enums}/*.php` | `tests/Unit/{Models,Services,Enums}/*Test.php` |
 | `app/Http/Controllers/**` | `tests/Feature/**/*Test.php` |
+| `database/migrations/*.php`, `{modules,plugins}/_bundled/{id}/database/migrations/*.php` | 그 테이블을 쓰는 모델·서비스 테스트(스키마 변경 검증) — 업그레이드 스텝이 있으면 그 스텝 테스트 포함 |
 | `modules/_bundled/{id}/src/**`, `plugins/_bundled/{id}/src/**` | 해당 확장 `tests/{Feature,Unit}/` |
 | `resources/js/core/**/*.ts` | `resources/js/core/**/__tests__/*.test.ts` |
-| `resources/layouts/**/*.json` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` |
-| `modules/_bundled/{id}/resources/layouts/**/*.json` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` |
-| `templates/_bundled/{id}/layouts/**/*.json`, `.../src/components/**/*.tsx` | `templates/_bundled/{id}/__tests__/layouts/`, `.../src/**/__tests__/` |
+| `resources/layouts/**/*.{json,g7.html}` | `resources/js/core/template-engine/__tests__/layouts/*.test.tsx` |
+| `modules/_bundled/{id}/resources/layouts/**/*.{json,g7.html}` | `modules/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` |
+| `templates/_bundled/{id}/layouts/**/*.{json,g7.html}`, `.../src/components/**/*.tsx` | `templates/_bundled/{id}/__tests__/layouts/`, `.../src/**/__tests__/` |
+| `plugins/_bundled/{id}/resources/layouts/**/*.{json,g7.html}` | `plugins/_bundled/{id}/resources/js/__tests__/layouts/*.test.tsx` |
+| `(templates\|modules\|plugins)/_bundled/**/extensions/**/*.{json,g7.html}` | 해당 확장의 `__tests__/layouts/*.test.tsx` (확장 주입 fragment) |
 
 확장 테스트는 확장 디렉토리에서 수집한다. 코어와 확장 테스트를 한 `--filter` 로 섞어 수집하면 모듈 마이그레이션이 누락된다(test-filter-cross-pollination).
-
-변경 파일에 직접 걸리는 테스트만이 아니라 그 변경이 영향을 주는 호출처·구독자·데이터 흐름의 연관 테스트까지 포함한다(run-every-test-class-that-pokes-the-changed-contract).
 
 ### 다계층 묶음
 

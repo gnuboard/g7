@@ -1,0 +1,27 @@
+feature: KG이니시스 결제 환경설정 화면 — 플러그인 자체 글자색 클래스(#408 색 밀림 교정)
+
+description: |
+  관리자 템플릿 의미 클래스 도입(#408) 때 글자색 치환이 한 칸씩 밀려 라이브 모드 경고 본문이 초록, CBT 연결 점검 「정상」이 노랑,
+  파란 CBT 도우미 카드 설명이 노랑, 주황 연결 진단 카드 설명이 파랑으로 보였다.
+  결정(2026-10-09)대로 확장이 템플릿에 의존하지 않게 플러그인이 접두 `pay-kginicis-tone-*` 클래스를
+  resources/css/main.css 에 정의하고(다크 모드 짝 포함) 레이아웃이 그것을 쓴다. 다른 결제 플러그인의 클래스를 참조하지 않는다.
+  같은 화면의 연결 진단 결과 칸 배치(콜백 점검 표 2열, 라벨 폭, 들여쓰기)도 템플릿 CSS 에 생성되지 않는 임의값 클래스
+  (grid-cols-[150px_1fr], min-w-[180px], min-w-[60px], pl-[180px]) 대신 플러그인 클래스 pay-kginicis-callback-grid 등으로 둔다.
+
+axes:
+  plugin: [sirsoft-pay_kginicis]
+  element: [layout, live_mode_warning, cbt_helper_card, cbt_connectivity_card, cbt_check_result, cbt_check_layout, plugin_css, asset_pipeline]
+
+effects:
+  - no_template_tone_classes
+  - live_warning_uses_warning_tone
+  - cbt_helper_uses_info_and_success_tone
+  - cbt_connectivity_uses_warning_tone
+  - cbt_ok_is_success_and_check_is_danger
+  - cbt_check_layout_uses_plugin_classes
+  - tone_classes_defined_with_dark_pair
+  - css_is_self_contained
+  - css_asset_declared_and_built
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/layouts/pluginSettingsToneClasses.test.ts

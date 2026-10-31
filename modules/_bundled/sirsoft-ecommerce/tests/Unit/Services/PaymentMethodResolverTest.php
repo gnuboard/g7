@@ -415,4 +415,116 @@ class PaymentMethodResolverTest extends ModuleTestCase
         $this->assertTrue((bool) ($config['needs_pg'] ?? false));
         $this->assertTrue($this->resolver()->needsPgProvider('nhnkcp_naverpay'));
     }
+
+    // ─────────────────────────────────────────────
+    // 환불 자동 승인 목록 (P16·P17)
+    // ─────────────────────────────────────────────
+
+    /**
+     * 기본 목록은 `card · point · free` 이고, 사람이 송금해야 하는 수단은 밖이다.
+     *
+     * @scenario gate_case=default_allow_list
+     *
+     * @effects auto_approve_default_list_is_card_point_free
+     */
+    #[Test]
+    public function the_default_allow_list_covers_only_the_methods_that_settle_themselves(): void
+    {
+        $this->assertTrue($this->resolver()->autoApprovesRefund('card'));
+        $this->assertTrue($this->resolver()->autoApprovesRefund('point'));
+        $this->assertTrue($this->resolver()->autoApprovesRefund('free'));
+
+        foreach (['dbank', 'vbank', 'bank', 'phone', 'deposit'] as $stopped) {
+            $this->assertFalse(
+                $this->resolver()->autoApprovesRefund($stopped),
+                "{$stopped} 는 사람이 송금해야 끝나므로 자동 승인 대상이 아니다 (P16)",
+            );
+        }
+    }
+
+    /**
+     * 플러그인이 `auto_approve_refund` 를 선언한 수단은 **운영자가 아직 결정하지 않았다면**
+     * 목록에 자동 합류한다. (P17)
+     *
+     * 합류가 없으면 PG 플러그인을 새로 설치한 순간부터 그 수단의 환불이 전부 승인 대기로 쌓이고,
+     * 운영자는 어디를 고쳐야 하는지 알 수 없다 — 설정에 없는 수단이라 목록에 보이지도 않는다.
+     *
+     * @scenario gate_case=plugin_declared_method_joins
+     *
+     * @effects plugin_declared_method_joins_until_operator_decides
+     */
+    #[Test]
+    public function a_plugin_declared_method_joins_the_allow_list_until_the_operator_decides(): void
+    {
+        $this->registerMethod('testpg_kakaopay', [
+            'needs_pg' => true,
+            'refund_method' => 'pg',
+            'auto_approve_refund' => true,
+        ]);
+
+        $this->assertTrue(
+            $this->resolver()->autoApprovesRefund('testpg_kakaopay'),
+            '선언 수단은 운영자 결정 이력이 없으면 자동 합류한다',
+        );
+    }
+
+    /**
+     * 선언하지 않은 확장 수단은 합류하지 않는다 — 미선언의 기본값은 false 다. (P17)
+     *
+     * 오판의 비용이 비대칭이다: 자동으로 잘못 완료하면 이중 환불이고, 멈추면 운영자가 한 번 더
+     * 누르면 된다. `needs_pg` 가 미등록 확장 수단에 true 로 기우는 것과 반대 방향이다.
+     *
+     * @scenario gate_case=plugin_undeclared_method_stops
+     *
+     * @effects undeclared_extension_method_does_not_join
+     */
+    #[Test]
+    public function an_undeclared_extension_method_does_not_join_the_allow_list(): void
+    {
+        $this->registerMethod('testpg_transfer', [
+            'needs_pg' => true,
+            'refund_method' => 'pg',
+        ]);
+
+        $this->assertFalse($this->resolver()->autoApprovesRefund('testpg_transfer'));
+    }
+
+    /**
+     * 운영자가 결정한 뒤에는 **저장값이 선언을 이긴다**. (P17 — 결정 이력)
+     *
+     * 이력이 없으면 운영자가 일부러 뺀 수단이 다음 조회의 자동 합류로 되살아난다. 그때 운영자는
+     * 자기가 뺀 수단이 왜 계속 돌아오는지 알 방법이 없다 — 화면에는 체크가 풀린 채 보이는데
+     * 실제 게이트는 열려 있기 때문이다.
+     *
+     * @scenario gate_case=operator_removed_declared_method
+     *
+     * @effects operator_decision_history_beats_plugin_declaration
+     */
+    #[Test]
+    public function the_operator_decision_history_beats_the_plugin_declaration(): void
+    {
+        $this->registerMethod('testpg_kakaopay', [
+            'needs_pg' => true,
+            'refund_method' => 'pg',
+            'auto_approve_refund' => true,
+        ]);
+
+        // 운영자가 목록에서 뺀 채 저장했다 — 결정 이력에는 그 수단이 남는다.
+        app(EcommerceSettingsService::class)->saveSettings([
+            'claim' => [
+                'auto_approve_refund_payment_methods' => ['card', 'point', 'free'],
+                'auto_approve_refund_payment_methods_decided' => ['card', 'point', 'free', 'testpg_kakaopay'],
+            ],
+        ]);
+        $this->app->forgetInstance(PaymentMethodResolver::class);
+
+        $this->assertFalse(
+            $this->resolver()->autoApprovesRefund('testpg_kakaopay'),
+            '운영자가 뺀 수단은 선언이 있어도 다시 합류하지 않는다',
+        );
+        $this->assertTrue(
+            $this->resolver()->autoApprovesRefund('card'),
+            '같은 저장에서 남긴 수단은 그대로 자동 승인 대상이다',
+        );
+    }
 }

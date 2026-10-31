@@ -3,13 +3,13 @@
  * @description 상품 상세 페이지 가격 표시 반응형 테스트
  *
  * 테스트 대상:
- * - templates/.../layouts/shop/show.json (상품 상세 메인 레이아웃)
- * - templates/.../partials/shop/detail/_price_mobile.json (모바일 전용 가격)
- * - templates/.../partials/shop/detail/_info_summary.json (가격 섹션 - 데스크톱 전용)
+ * - templates/.../layouts/shop/show.g7.html (상품 상세 메인 레이아웃)
+ * - templates/.../partials/shop/detail/_price_mobile.g7.html (모바일 전용 가격)
+ * - templates/.../partials/shop/detail/_info_summary.g7.html (가격 섹션 - 데스크톱 전용)
  *
  * 검증 항목:
- * - 모바일 가격(_price_mobile.json)은 모바일에서만 표시
- * - 정보 요약 가격(_info_summary.json)은 데스크톱에서만 표시
+ * - 모바일 가격(_price_mobile.g7.html)은 모바일에서만 표시
+ * - 정보 요약 가격(_info_summary.g7.html)은 데스크톱에서만 표시
  * - 가격이 모바일에서 중복 표시되지 않음
  *
  * @vitest-environment jsdom

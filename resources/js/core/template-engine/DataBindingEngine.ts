@@ -13,10 +13,36 @@ import { TranslationEngine } from './TranslationEngine';
 import { hasPipes, splitPipes, executePipeChain } from './PipeRegistry';
 import { classifyExpression, extractSingleBinding, isComplexExpression, LITERALS, scanBindings } from './BindingShape';
 import { RAW_PREFIX, wrapRaw, wrapRawDeep } from './rawMarkers';
-import { evaluateSafeExpression } from './SafeExpressionEvaluator';
+import { findTranslationParamZones, isInTranslationParamZone, wrapTranslationParamValue } from './translationParamValues';
+import { evaluateSafeExpression, isUnsafeHostValue, isExpressionSafeFunction } from './SafeExpressionEvaluator';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
+import { getCompiledExpression } from './ExpressionCompileCache';
+import { pickLocalized } from '../support/localeTag';
+import { getEngineFlags } from './EngineFlags';
 
 const logger = createLogger('DataBindingEngine');
+
+/**
+ * 변수 추출에서 컨텍스트 변수로 보지 않는 JavaScript 키워드·예약어·허용 내장 이름.
+ *
+ * 종전에는 호출마다 새로 만들었다(@since engine-v1.74.0 모듈 상수).
+ */
+const EXPRESSION_RESERVED_WORDS: ReadonlySet<string> = new Set([
+  'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
+  'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'return',
+  'function', 'class', 'const', 'let', 'var', 'new', 'delete', 'typeof', 'instanceof',
+  'this', 'super', 'import', 'export', 'default', 'try', 'catch', 'finally', 'throw',
+  // 내장 객체
+  'Math', 'Date', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean', 'RegExp',
+  // 컬렉션/표준 내장 객체 (@since engine-v1.50.0)
+  // 이들이 reserved 에 없으면 컨텍스트 변수로 오인되어 undefined 로 가려지고
+  // new Function 본문에서 `new Set(...)` 가 `new undefined()` 가 되어 실패한다.
+  // eval/Function/globalThis/window 등 위험 전역은 의도적으로 제외한다.
+  'Set', 'Map', 'WeakSet', 'WeakMap', 'Symbol', 'Promise', 'BigInt', 'Error',
+  // 전역 함수
+  'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI',
+  'encodeURIComponent', 'decodeURIComponent',
+]);
 
 /**
  * 함수 파라미터 이름으로 쓸 수 있는 식별자 패턴.
@@ -38,6 +64,46 @@ function getDevTools(): G7DevToolsInterface | undefined {
   } catch {
     return undefined;
   }
+}
+
+/**
+ * 영구 캐시(키 = 경로 글자, 30초)에 담으면 안 되는 경로인지 판정한다.
+ *
+ * 상태 루트(`_global`·`_local`·`_isolated`·`$parent`)와 화면 주소 루트(`route`·`query`)는
+ * 값이 바뀌어도 같은 경로 글자로 남는다. 종전에는 `route`·`query` 가 영구 캐시를 타서
+ * 글 보기(`/board/notice/226`) → SPA 로 다른 게시판 목록 이동 시 `{{route.slug}}` 가
+ * 30초 동안 직전 화면 값(notice)으로 그려졌다. 렌더 사이클 캐시만 쓴다.
+ * `route`·`query` 는 루트 이름이 정확히 일치할 때만 해당한다(`routes` 같은 데이터소스는 제외).
+ *
+ * @since engine-v1.82.1
+ */
+function isDynamicCachePath(path: string): boolean {
+  return path.startsWith('_global') ||
+    path.startsWith('_local') ||
+    path.startsWith('_isolated') ||
+    path.startsWith('$parent') ||
+    isRootPath(path, 'route') ||
+    isRootPath(path, 'query');
+}
+
+/**
+ * 어떤 캐시에도 담으면 안 되는 식인지 판정한다 — 같은 렌더 사이클 안에서도 컴포넌트마다 값이 다른 루트를 읽는다.
+ *
+ * `_computed`·`$computed` 는 컴포넌트 범위로 다시 계산되고(트러블슈팅 cache 사례 13), `extensionPointProps` 는
+ * 확장 지점 인스턴스마다 다르다. 종전에는 단일 바인딩 prop 만 렌더러가 캐시를 건너뛰어, 문자열 보간·배열·중첩 객체
+ * props(예: 통계 화면 탭 `href="...?tab=x{{_computed.tabQuery}}"`)는 기간을 바꿔도 30초 동안 옛 값이었고, 형제 확장 지점은
+ * 먼저 그린 인스턴스 값을 받았다. 식 안 어디에 있든 해당한다.
+ *
+ * @since engine-v1.82.1
+ */
+function isUncacheablePath(expr: string): boolean {
+  return UNCACHEABLE_ROOT_PATTERN.test(expr);
+}
+
+const UNCACHEABLE_ROOT_PATTERN = /(^|[^\w$.])(_computed|\$computed|extensionPointProps)(?![\w$])/;
+
+function isRootPath(path: string, root: string): boolean {
+  return path === root || path.startsWith(`${root}.`) || path.startsWith(`${root}[`) || path.startsWith(`${root}?`);
 }
 
 /**
@@ -86,6 +152,17 @@ export interface BindingOptions {
    * 반복 렌더링(DataGrid의 cellChildren 등)에서 같은 경로가 다른 값을 가져야 할 때 사용
    */
   skipCache?: boolean;
+
+  /**
+   * `$t:키|이름={{값}}` 의 인자 자리에 넣는 값을 보호 표식으로 감쌀지 여부 (`resolveBindings` 전용)
+   *
+   * 결과를 곧바로 번역 엔진(`TranslationEngine.resolveTranslations`)에 넘기는 렌더·액션 경로만 켠다 —
+   * 번역 엔진이 인자를 나눈 뒤 표식 안 글자를 그대로 치환하고 표식을 걷는다. 값에 든 `&`·`|`·`=`·끝 ` /` 가
+   * 인자 구분자·문장 꼬리로 읽히지 않는다. 번역하지 않는 경로에 켜면 표식이 결과에 남는다.
+   *
+   * @since engine-v1.80.1
+   */
+  protectTranslationParams?: boolean;
 }
 
 /**
@@ -358,8 +435,8 @@ export class DataBindingEngine {
           let value: any;
           let fromCache = false;
 
-          // skipCache가 아니면 렌더 사이클 캐시 사용
-          if (!opts.skipCache) {
+          // skipCache가 아니면 렌더 사이클 캐시 사용 (컴포넌트마다 값이 다른 루트를 읽는 식은 제외 — engine-v1.82.1)
+          if (!opts.skipCache && !isUncacheablePath(effectivePath)) {
             const exprCacheKey = `expr:${effectivePath}`;
             const exprCached = this.getFromRenderCycleCache(exprCacheKey);
             if (exprCached !== undefined) {
@@ -398,8 +475,8 @@ export class DataBindingEngine {
         }
       }
 
-      // skipCache 옵션이면 모든 캐시 사용 안 함
-      if (opts.skipCache) {
+      // skipCache 옵션이면 모든 캐시 사용 안 함 (컴포넌트마다 값이 다른 루트 포함 — engine-v1.82.1)
+      if (opts.skipCache || isUncacheablePath(effectivePath)) {
         const startTime = devTools?.isEnabled() ? performance.now() : 0;
         const value = this.resolvePath(effectivePath, extendedContext, opts);
 
@@ -425,10 +502,7 @@ export class DataBindingEngine {
       }
 
       // 동적 경로 여부 판단
-      const isDynamicPath = effectivePath.startsWith('_global') ||
-        effectivePath.startsWith('_local') ||
-        effectivePath.startsWith('_isolated') ||
-        effectivePath.startsWith('$parent');
+      const isDynamicPath = isDynamicCachePath(effectivePath);
 
       const startTime = devTools?.isEnabled() ? performance.now() : 0;
       let value: any;
@@ -483,11 +557,22 @@ export class DataBindingEngine {
     const bindings = scanBindings(template);
     if (bindings.length === 0) return template;
 
+    // `$t:키|이름={{값}}` 의 인자 자리 값 보호 — 번역 엔진이 인자를 나눈 뒤 글자 그대로 치환한다(engine-v1.80.1).
+    // 평가에 실패해 원본 `{{…}}` 를 돌려준 자리는 감싸지 않는다(종전처럼 번역 엔진이 다시 평가한다).
+    // 빈 값도 감싸지 않는다 — 종전처럼 그 인자가 빠져 자리표시자가 남는다(빈 인자 진단 단서 유지).
+    const zones = opts.protectTranslationParams && template.includes('$t:')
+      ? findTranslationParamZones(template, bindings)
+      : null;
+
     let output = '';
     let cursor = 0;
     for (const binding of bindings) {
       output += template.slice(cursor, binding.start);
-      output += replaceBinding(template.slice(binding.start, binding.end), binding.expr);
+      const matchText = template.slice(binding.start, binding.end);
+      const replaced = replaceBinding(matchText, binding.expr);
+      output += zones && replaced !== '' && replaced !== matchText && isInTranslationParamZone(zones, binding.start)
+        ? wrapTranslationParamValue(replaced)
+        : replaced;
       cursor = binding.end;
     }
     return output + template.slice(cursor);
@@ -537,12 +622,9 @@ export class DataBindingEngine {
     let fromCache = false;
     const isBaseExpression = isComplexExpression(baseExpr);
     // 동적 경로 여부 판단
-    const isDynamicPipeBase = baseExpr.startsWith('_global') ||
-      baseExpr.startsWith('_local') ||
-      baseExpr.startsWith('_isolated') ||
-      baseExpr.startsWith('$parent');
+    const isDynamicPipeBase = isDynamicCachePath(baseExpr);
 
-    if (opts.skipCache) {
+    if (opts.skipCache || isUncacheablePath(baseExpr)) {
       // skipCache: 모든 캐시 무시
       if (isBaseExpression) {
         value = this.evaluateExpression(baseExpr, extendedContext);
@@ -582,7 +664,9 @@ export class DataBindingEngine {
     }
 
     // 파이프 체인 실행
-    const result = executePipeChain(value, pipes);
+    const result = executePipeChain(value, pipes, {
+      locale: typeof extendedContext.$locale === 'string' ? extendedContext.$locale : undefined,
+    });
 
     // DevTools: 파이프 표현식 평가 추적
     if (devTools?.isEnabled()) {
@@ -629,7 +713,8 @@ export class DataBindingEngine {
     const startTime = devTools?.isEnabled() ? performance.now() : 0;
 
     // skipCache 옵션이 true면 모든 캐시 사용 안 함 (반복 렌더링에서 같은 경로가 다른 값을 가져야 할 때)
-    if (opts.skipCache) {
+    // 컴포넌트마다 값이 다른 루트도 같다 (engine-v1.82.1)
+    if (opts.skipCache || isUncacheablePath(path)) {
       const value = this.resolvePath(path, context, opts);
 
       // DevTools: 표현식 평가 추적
@@ -652,9 +737,9 @@ export class DataBindingEngine {
     }
 
     // 동적 경로 여부 판단
-    // - _global, _local, _isolated, $parent: 동적으로 자주 변경되므로 영구 캐시 사용 안 함
+    // - _global, _local, _isolated, $parent, route, query: 동적으로 변경되므로 영구 캐시 사용 안 함
     // - 단, 같은 렌더 사이클 내에서는 렌더 사이클 캐시 사용 (성능 최적화)
-    const isDynamicPath = path.startsWith('_global') || path.startsWith('_local') || path.startsWith('_isolated') || path.startsWith('$parent');
+    const isDynamicPath = isDynamicCachePath(path);
     let fromCache = false;
 
     // 1. 렌더 사이클 캐시 확인 (동적 경로용)
@@ -812,6 +897,18 @@ export class DataBindingEngine {
 
       // 다음 값으로 이동
       current = current[segment];
+
+      // 타입 경계 (KVE-2026-2350) — 호출 없는 경로 바인딩도 `….defaultView.localStorage.auth_token`
+      // 처럼 호스트 객체를 거쳐 값을 읽을 수 있다. 평가기(SafeExpressionEvaluator)와 같은 판정으로
+      // 호스트 capability 객체·허용목록 밖 네이티브 함수에 닿으면 기본값으로 끊는다.
+      if (
+        isUnsafeHostValue(current) ||
+        (typeof current === 'function' && !isExpressionSafeFunction(current))
+      ) {
+        logger.warn(`resolvePath: 호스트 객체 경로는 해석하지 않습니다 — ${path}`);
+        return options.defaultValue;
+      }
+
       // 디버깅 로그
       if (path === '_global.toasts') {
         logger.log(`[DataBindingEngine] segment: ${segment}, current:`, current);
@@ -938,17 +1035,24 @@ export class DataBindingEngine {
    * {{}} 표현식이 렌더 시점 JS 객체로 고정되어 stale 값이 전송됩니다.
    * 컴포넌트 레벨 actions 배열은 bindComponentActions에서 별도 처리되므로 비해당.
    *
+   * 분기·참조 모양(`{handler:'conditions', conditions}`·`{handler:'switch', cases}`·`{actionRef}`·
+   * `{handler, if}`)도 액션이다 — 종전에는 일반 객체로 보아 `if` 가 렌더 순간 값으로 굳었다(engine-v1.80.0).
+   *
    * @param obj 검사할 객체
    * @returns 액션 정의이면 true
    */
   public isActionDefinition(obj: Record<string, any>): boolean {
+    if (typeof obj.actionRef === 'string') return true;
     if (typeof obj.handler !== 'string') return false;
     return (
       obj.params !== undefined ||
       Array.isArray(obj.actions) ||
       typeof obj.target === 'string' ||
       obj.onSuccess !== undefined ||
-      obj.onError !== undefined
+      obj.onError !== undefined ||
+      Array.isArray(obj.conditions) ||
+      (obj.cases !== null && typeof obj.cases === 'object') ||
+      obj.if !== undefined
     );
   }
 
@@ -1194,26 +1298,24 @@ export class DataBindingEngine {
     context: BindingContext,
     trackingInfo?: { componentId?: string; componentName?: string; propName?: string; skipCache?: boolean },
   ): any {
-    // DevTools: 바인딩 평가 추적
+    // DevTools: 바인딩 평가 추적 — 활성 여부는 호출당 1회만 확인한다(@since engine-v1.74.0)
     const devTools = getDevTools();
-    const startTime = devTools?.isEnabled() ? performance.now() : 0;
+    const devToolsEnabled = !!devTools?.isEnabled();
+    const startTime = devToolsEnabled ? performance.now() : 0;
 
-    if (devTools?.isEnabled()) {
-      devTools.trackBindingEval();
+    if (devToolsEnabled) {
+      devTools!.trackBindingEval();
     }
 
     try {
-      // 1. 표현식 전체에서 변수 접근을 optional chaining으로 변환
-      // 예: perm.identifier -> perm?.identifier
-      // 이를 통해 iteration 변수가 undefined일 때 에러 방지
-      let processedExpr = this.preprocessOptionalChaining(expr);
-
-      // 2. $t: 패턴을 문자열로 자동 변환 (예: $t:common.error -> "$t:common.error")
-      // 이를 통해 사용자가 따옴표 없이 $t: 문법을 사용할 수 있음
-      processedExpr = this.preprocessTranslationTokens(processedExpr);
-
-      // 표현식에서 사용되는 최상위 변수 추출
-      const usedVariables = this.extractVariablesFromExpression(processedExpr);
+      // 전처리(optional chaining·$t: 토큰)와 최상위 변수 추출은 식 문자열만의 순수 함수라
+      // 식 문자열 키로 기억한다(값은 담지 않는다 — 아래 컨텍스트 조립은 매번 수행).
+      // @since engine-v1.74.0
+      const compiled = getEngineFlags().expressionCompileCache
+        ? getCompiledExpression(expr, (source) => this.compileExpression(source))
+        : this.compileExpression(expr);
+      const processedExpr = compiled.processed;
+      const usedVariables = compiled.variables;
 
       // 컨텍스트에 없는 변수를 undefined로 추가
       const extendedContext = { ...context };
@@ -1264,9 +1366,9 @@ export class DataBindingEngine {
         if (typeof value === 'string') {
           return value;
         }
-        // 1. 객체의 활성 로케일 키
-        if (value && typeof value === 'object' && value[locale]) {
-          return value[locale];
+        // 1. 객체의 활성 로케일 키 (빈 칸·공백만 있는 값은 건너뜀 — 백엔드 LocalizedValue 와 같다)
+        if (value && typeof value === 'object' && pickLocalized({ [locale]: value[locale] }, locale, false) !== null) {
+          return String(value[locale]);
         }
         // 2. fallbackKey 가 있으면 $t() 로 lang pack 보강 시도
         if (fallbackKey && typeof fallbackKey === 'string') {
@@ -1275,9 +1377,9 @@ export class DataBindingEngine {
             return translated;
           }
         }
-        // 3. 객체의 ko / en / 첫 번째 값
+        // 3. 사이트 기본 언어 → en → 첫 번째 값 (engine-v1.81.0 — 종전 ko 고정)
         if (value && typeof value === 'object') {
-          return value.ko || value.en || Object.values(value)[0] || '';
+          return pickLocalized(value, locale) ?? '';
         }
         if (value == null) {
           return '';
@@ -1306,18 +1408,25 @@ export class DataBindingEngine {
       // $t 헬퍼 함수 추가
       // 번역 키를 사용하여 다국어 텍스트를 반환
       // 사용법: $t('admin.settings.info.write_only') - 번역된 텍스트 반환
+      //         $t('common.row_n', {n: index + 1}) - 인자 치환(값은 글자 그대로)
       //
       // templateId / locale 은 위에서 해석된 값을 그대로 사용한다($localized 와 공유).
+      //
+      // @since engine-v1.80.1 두 번째 인자(객체) — 종전에는 인자를 버렸다. 객체가 아닌 값(배열 포함)은
+      //   인자 없는 호출과 같다.
       const translationContext = {
         templateId: templateId || '',
         locale,
       };
-      extendedContext.$t = (key: string): string => {
+      extendedContext.$t = (key: string, params?: unknown): string => {
         if (!key || typeof key !== 'string') {
           return '';
         }
         try {
           const translationEngine = TranslationEngine.getInstance();
+          if (params !== null && typeof params === 'object' && !Array.isArray(params)) {
+            return translationEngine.translate(key, translationContext, params as Record<string, unknown>);
+          }
           return translationEngine.translate(key, translationContext);
         } catch (error) {
           logger.warn('$t() translation failed for key:', key, error);
@@ -1357,6 +1466,13 @@ export class DataBindingEngine {
 
           // 다음 레벨로 이동
           current = current[key];
+
+          // 타입 경계 (KVE-2026-2350) — 평가기는 $get 의 최종 반환값만 검사하므로, 경로 도중의 호스트
+          // 객체(`…ownerDocument.defaultView.localStorage`)를 건너 문자열(토큰)을 꺼내지 못하게 여기서 끊는다.
+          // resolvePath 와 같은 판정이다.
+          if (isUnsafeHostValue(current) || (typeof current === 'function' && !isExpressionSafeFunction(current))) {
+            return fallback;
+          }
         }
 
         // 최종 값이 null/undefined이면 폴백 반환
@@ -1374,9 +1490,9 @@ export class DataBindingEngine {
       const result = evaluateSafeExpression(processedExpr, extendedContext);
 
       // DevTools: 표현식 평가 추적
-      if (devTools?.isEnabled()) {
+      if (devToolsEnabled) {
         const duration = performance.now() - startTime;
-        devTools.trackExpressionEval({
+        devTools!.trackExpressionEval({
           expression: expr,
           result: this.sanitizeResultForTracking(result),
           resultType: this.getResultType(result),
@@ -1396,6 +1512,26 @@ export class DataBindingEngine {
         `Failed to evaluate expression "${expr}": ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  /**
+   * 식을 평가 가능한 형태로 전처리하고 최상위 변수를 추출한다.
+   *
+   * 1. 변수 접근을 optional chaining 으로 변환(`perm.identifier` → `perm?.identifier`) —
+   *    iteration 변수가 undefined 일 때 에러 방지
+   * 2. `$t:` 패턴을 문자열/`$t()` 호출로 변환 — 따옴표 없는 `$t:` 문법 지원
+   * 3. 전처리된 식의 최상위 변수 추출
+   *
+   * 입력 문자열만으로 결과가 정해지므로 ExpressionCompileCache 에 보관된다.
+   *
+   * @param expr 원본 식
+   * @returns 전처리된 식과 변수 목록
+   * @since engine-v1.74.0
+   */
+  private compileExpression(expr: string): { processed: string; variables: string[] } {
+    let processed = this.preprocessOptionalChaining(expr);
+    processed = this.preprocessTranslationTokens(processed);
+    return { processed, variables: this.extractVariablesFromExpression(processed) };
   }
 
   /**
@@ -1536,25 +1672,11 @@ export class DataBindingEngine {
    * @returns 변수명 배열
    */
   private extractVariablesFromExpression(expr: string): string[] {
-    // JavaScript 키워드 및 예약어
-    const reserved = new Set([
-      'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
-      'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'return',
-      'function', 'class', 'const', 'let', 'var', 'new', 'delete', 'typeof', 'instanceof',
-      'this', 'super', 'import', 'export', 'default', 'try', 'catch', 'finally', 'throw',
-      // 내장 객체
-      'Math', 'Date', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean', 'RegExp',
-      // 컬렉션/표준 내장 객체 (@since engine-v1.50.0)
-      // 이들이 reserved 에 없으면 컨텍스트 변수로 오인되어 undefined 로 가려지고
-      // new Function 본문에서 `new Set(...)` 가 `new undefined()` 가 되어 실패한다.
-      // eval/Function/globalThis/window 등 위험 전역은 의도적으로 제외한다.
-      'Set', 'Map', 'WeakSet', 'WeakMap', 'Symbol', 'Promise', 'BigInt', 'Error',
-      // 전역 함수
-      'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI',
-      'encodeURIComponent', 'decodeURIComponent',
-    ]);
+    const reserved = EXPRESSION_RESERVED_WORDS;
 
     // 식별자 패턴 (변수명 시작 위치)
+    // 지역 변수로 둔다 — /g + exec 루프라 모듈 상수로 올리면 루프 도중 예외 한 번에 lastIndex 가
+    // 남아 다음 호출이 오염된다. 결과가 ExpressionCompileCache 에 보관되므로 생성은 미스 때만 일어난다.
     // 식별자는 문자, $, _로 시작하고 문자, 숫자, $, _로 계속됨
     // @since engine-v1.60.6 lookbehind 제거 — 문두(^) 또는 선행 구분자 1글자를 소비한다.
     //   식별자 사이에는 항상 구분자가 1개 이상 있고 각 매치는 정확히 1개만 소비하므로

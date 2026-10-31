@@ -1,0 +1,17 @@
+feature: 공개 훅 옛 이름 병행 발화 — 이름을 옮긴 공개 훅을 옛 이름으로 구독한 확장이 깨지지 않게 한다
+
+description: |
+  공개 훅의 이름·인자 위치는 서드파티 확장이 코드에 박아 쓰는 계약이라 마이너 버전에서 바꾸지 않는다.
+  이름을 옮겨야 하면 표준 이름을 먼저 발화하고, 옛 이름은 구독자가 있을 때만 같은 인자로 한 번 더 발화한다.
+    - 액션: HookManager::doActionWithLegacyName
+    - 필터: HookManager::applyFiltersWithLegacyName — 표준 이름 결과에 옛 이름 구독자를 이어 적용
+
+axes:
+  case: [legacy_action_alias, legacy_filter_alias]
+
+effects:
+  - legacy_action_name_fires_only_with_subscribers
+  - legacy_filter_name_applies_only_with_subscribers
+
+test_files:
+  - tests/Feature/Extension/HookManagerLegacyNameTest.php

@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Enums\UserStatus;
 use App\Helpers\PermissionHelper;
+use App\Helpers\TimezoneHelper;
 use App\Models\Attachment;
 use App\Models\User;
 use Carbon\Carbon;
@@ -13,10 +14,12 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Board\Http\Resources\BoardResource;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
 /**
@@ -83,6 +86,17 @@ class BoardRepository implements BoardRepositoryInterface
     public function findBySlug(string $slug): ?Board
     {
         return Board::where('slug', $slug)->first();
+    }
+
+    /**
+     * 슬러그의 게시판이 있는지 확인합니다(행을 읽지 않는 존재 확인).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return bool 게시판 존재 여부
+     */
+    public function existsBySlug(string $slug): bool
+    {
+        return Board::where('slug', $slug)->exists();
     }
 
     /**
@@ -215,9 +229,10 @@ class BoardRepository implements BoardRepositoryInterface
      * board_posts 단일 테이블에서 활성 게시판의 최근 게시글을 조회합니다.
      *
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 recent — 게시판별 하위 쿼리마다)
      * @return array<int, array<string, mixed>>
      */
-    public function getRecentPosts(int $limit): array
+    public function getRecentPosts(int $limit, ?PostQueryExtensions $extensions = null): array
     {
         // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         $activeBoardIds = Board::where('is_active', true)->pluck('id');
@@ -226,7 +241,8 @@ class BoardRepository implements BoardRepositoryInterface
             return [];
         }
 
-        $columns = ['id', 'board_id', 'title', 'author_name', 'created_at', 'view_count', 'is_secret', 'comments_count'];
+        // 반응 합계는 이 캐시 컬럼에서 나온다 — 빼면 위젯에서만 반응이 항상 0/누락된다.
+        $columns = ['id', 'board_id', 'user_id', 'title', 'author_name', 'created_at', 'view_count', 'is_secret', 'comments_count', 'reaction_counts'];
 
         // board_id IN (...) + ORDER BY created_at DESC → 풀스캔 방지
         // 각 board_id별 개별 쿼리(인덱스 활용) 후 UNION ALL로 합침
@@ -239,6 +255,8 @@ class BoardRepository implements BoardRepositoryInterface
                 ->where('status', 'published')
                 // 비밀글도 제목은 공개한다(본문만 보호) — 2026-02-04 확정 정책. 목록/검색/홈과 동일.
                 // 게시판별 열람 권한은 BoardService::getCachedRecentPosts 가 응답 시점에 적용한다.
+                // 확장 조건은 합치기(unionAll) 전 게시판별 하위 쿼리에 건다 — 걸러진 뒤의 최신 N건을 고른다.
+                ->tap(fn ($q) => $extensions?->apply('recent', $q))
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
         );
@@ -255,7 +273,8 @@ class BoardRepository implements BoardRepositoryInterface
             ->pluck('id');
 
         $posts = Post::query()
-            ->with('board:id,slug,name')
+            // 반응 게이트 판정에 use_reaction/active_reaction_types 가 필요하다
+            ->with('board:id,slug,name,use_reaction,active_reaction_types')
             ->select($columns)
             ->whereIn('id', $postIds)
             ->orderBy('created_at', 'desc')
@@ -273,8 +292,13 @@ class BoardRepository implements BoardRepositoryInterface
             'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
             'view_count' => $post->view_count,
             'comment_count' => $post->comments_count ?? 0,
+            ...$this->reactionTotalFor($post, $post->board),
             'is_secret' => (bool) $post->is_secret,
             'is_new' => $post->created_at && $post->created_at->diffInHours(now()) < $newHours,
+            // 캐시에서 꺼낼 때 보는 사람의 시간대·지금 시각으로 날짜 표기와 New 를 다시 계산하는 원본(UTC) — 응답 전에 뺀다
+            '_created_at' => $post->created_at?->toIso8601String(),
+            // 읽기 스코프(본인만·소유역할) 판정용 작성자 ID — 응답 전에 뺀다
+            '_owner_id' => $post->user_id !== null ? (int) $post->user_id : null,
         ])->toArray();
     }
 
@@ -285,9 +309,10 @@ class BoardRepository implements BoardRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 board_recent)
      * @return array<int, array<string, mixed>>
      */
-    public function getBoardRecentPosts(string $slug, int $limit): array
+    public function getBoardRecentPosts(string $slug, int $limit, ?PostQueryExtensions $extensions = null): array
     {
         $board = Board::where('slug', $slug)->first();
 
@@ -306,11 +331,13 @@ class BoardRepository implements BoardRepositoryInterface
                 'is_notice',
                 'is_secret',
                 'comments_count',
+                'reaction_counts',
             ])
             ->where('board_id', $board->id)
             ->whereNull('deleted_at')
             ->whereNull('parent_id')
             ->where('status', 'published')
+            ->tap(fn ($q) => $extensions?->apply('board_recent', $q))
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
@@ -326,6 +353,7 @@ class BoardRepository implements BoardRepositoryInterface
             'view_count' => $post->view_count,
             'comment_count' => $post->comments_count ?? 0,
             'category' => $post->category,
+            ...$this->reactionTotalFor($post, $board),
             'is_notice' => $post->is_notice,
             'is_secret' => (bool) $post->is_secret,
             'is_new' => $post->created_at && $post->created_at->diffInHours(now()) < $newHours,
@@ -337,10 +365,14 @@ class BoardRepository implements BoardRepositoryInterface
      *
      * @param  int  $boardId  게시판 ID
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 board_recent)
      * @return array<int, array<string, mixed>>
      */
-    public function getBoardRecentPostsById(int $boardId, int $limit): array
+    public function getBoardRecentPostsById(int $boardId, int $limit, ?PostQueryExtensions $extensions = null): array
     {
+        // 반응 게이트 판정용 설정 두 칸 + 읽기 스코프 판정용 슬러그
+        $board = Board::select(['id', 'slug', 'use_reaction', 'active_reaction_types'])->find($boardId);
+
         $posts = Post::query()
             ->select([
                 'id',
@@ -352,11 +384,15 @@ class BoardRepository implements BoardRepositoryInterface
                 'is_notice',
                 'is_secret',
                 'comments_count',
+                'reaction_counts',
             ])
             ->where('board_id', $boardId)
             ->whereNull('deleted_at')
             ->whereNull('parent_id')
             ->where('status', 'published')
+            // 게시판 디렉터리의 내장 최근글도 목록과 같은 읽기 스코프(본인만·소유역할)를 건다
+            ->when($board?->slug, fn ($q, $slug) => PermissionHelper::applyPermissionScope($q, "sirsoft-board.{$slug}.posts.read"))
+            ->tap(fn ($q) => $extensions?->apply('board_recent', $q))
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
@@ -372,10 +408,39 @@ class BoardRepository implements BoardRepositoryInterface
             'view_count' => $post->view_count,
             'comment_count' => $post->comments_count ?? 0,
             'category' => $post->category,
+            ...$this->reactionTotalFor($post, $board),
             'is_notice' => $post->is_notice,
             'is_secret' => (bool) $post->is_secret,
             'is_new' => $post->created_at && $post->created_at->diffInHours(now()) < $newHours,
         ])->toArray();
+    }
+
+    /**
+     * 최신글 위젯 한 줄에 실을 반응 합계를 만듭니다.
+     *
+     * 게시판이 반응을 껐거나 활성 유형이 없으면 **빈 배열**을 돌려 `reaction_total`
+     * 키 자체가 payload 에 실리지 않게 한다(2026-09-16 결정). 켜져 있으면 활성
+     * 유형의 카운트만 더한다 — 비활성으로 돌린 유형의 잔여 카운트는 제외해야
+     * 목록·상세(PostResource)와 같은 수가 나온다.
+     *
+     * @param  Post  $post  게시글
+     * @param  Board|null  $board  게시판 (반응 설정 보유)
+     * @return array<string, int> `reaction_total` 한 칸 또는 빈 배열
+     */
+    private function reactionTotalFor($post, $board): array
+    {
+        if (! BoardResource::reactionsEnabled($board)) {
+            return [];
+        }
+
+        $stored = $post->reaction_counts ?? [];
+        $total = 0;
+
+        foreach (BoardResource::buildReactionTypeOptions($board->active_reaction_types ?? []) as $option) {
+            $total += (int) ($stored[(string) $option['id']] ?? 0);
+        }
+
+        return ['reaction_total' => $total];
     }
 
     /**
@@ -440,9 +505,10 @@ class BoardRepository implements BoardRepositoryInterface
      *
      * @param  string  $period  기간 필터 (today, week, month, year)
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 popular — 작성자·첨부 조인이 있어 조건은 컬럼을 한정해야 한다)
      * @return array<int, array<string, mixed>>
      */
-    public function getPopularPosts(string $period, int $limit): array
+    public function getPopularPosts(string $period, int $limit, ?PostQueryExtensions $extensions = null): array
     {
         // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         $activeBoardIds = Board::where('is_active', true)->pluck('id');
@@ -453,7 +519,8 @@ class BoardRepository implements BoardRepositoryInterface
 
         // 기간별 날짜 필터 계산
         $dateFilter = match ($period) {
-            'today' => now()->startOfDay(),
+            // 인기글은 기간별 공용 캐시라 보는 사람마다 경계를 달리할 수 없다 — 사이트 표준시 자정(7.1.0)
+            'today' => Carbon::now(TimezoneHelper::getSiteTimezone() ?: 'UTC')->startOfDay()->utc(),
             'week' => now()->subWeek(),
             'month' => now()->subMonth(),
             'year' => now()->subYear(),
@@ -483,7 +550,6 @@ class BoardRepository implements BoardRepositoryInterface
                 'board_posts.user_id',
                 'board_posts.author_name as guest_author_name',
                 "{$usersTable}.name as user_name",
-                "{$usersTable}.email as user_email",
                 "{$usersTable}.status as user_status",
                 "{$attachmentsTable}.hash as attachment_hash",
                 'board_posts.view_count',
@@ -496,6 +562,8 @@ class BoardRepository implements BoardRepositoryInterface
             ->where('board_posts.status', 'published')
             ->where('board_posts.is_secret', false)
             ->where('board_posts.created_at', '>=', $dateFilter);
+
+        $extensions?->apply('popular', $query);
 
         $posts = $query
             ->orderBy('board_posts.view_count', 'desc')
@@ -529,7 +597,9 @@ class BoardRepository implements BoardRepositoryInterface
                 'author' => [
                     'id' => $post->user_id,
                     'name' => $authorName,
-                    'email' => $isWithdrawn ? null : $post->user_email,
+                    // 이메일은 싣지 않는다 — 이 배열은 호출자 권한과 무관하게 캐시에 저장되어 모든 요청이
+                    // 같은 값을 받으므로 응답 시점 게이트가 닿지 않는다. 키는 응답 구조 호환을 위해 유지한다.
+                    'email' => null,
                     'is_guest' => ! $post->user_id,
                     'avatar' => $isWithdrawn ? null : $avatarUrl,
                     'status' => $post->user_status,
@@ -539,6 +609,8 @@ class BoardRepository implements BoardRepositoryInterface
                 'comment_count' => $commentCount,
                 'created_at' => $this->formatCreatedAt(Carbon::parse($post->created_at)),
                 'created_at_formatted' => $this->formatCreatedAtFormat($post->created_at, g7_module_settings('sirsoft-board', 'display.date_display_format', 'standard')),
+                // 캐시에서 꺼낼 때 날짜 표기·New 를 다시 계산하는 원본(UTC) — 응답 전에 뺀다
+                '_created_at' => $post->created_at ? Carbon::parse($post->created_at)->toIso8601String() : null,
             ];
         })->toArray();
     }
@@ -577,13 +649,17 @@ class BoardRepository implements BoardRepositoryInterface
     /**
      * 필터용 전체 활성 게시판 목록을 반환합니다.
      *
-     * @return array 게시판 목록 [{slug, name}, ...]
+     * 관리자가 정한 표시 순서(`display_order`)를 따르고, 같은 순서는 만든 순서·id 로 정한다.
+     *
+     * @return Collection 활성 게시판 컬렉션 (표시 순서)
      */
     public function getActiveBoardsList(): Collection
     {
         // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         return Board::where('is_active', true)
-            ->orderBy('created_at', 'asc')
+            ->orderBy('display_order')
+            ->orderBy('created_at')
+            ->orderBy('id')
             ->get();
     }
 
@@ -643,9 +719,18 @@ class BoardRepository implements BoardRepositoryInterface
     public function getActiveBoardsOrdered(string $orderBy = 'created_at', string $orderDirection = 'desc'): Collection
     {
         // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
-        return Board::where('is_active', true)
-            ->orderBy($orderBy, $orderDirection)
-            ->get();
+        $query = Board::where('is_active', true)
+            ->orderBy($orderBy, $orderDirection);
+
+        // 동점 구간에서도 순서를 하나로 정한다 — 같은 초에 만든 게시판이 요청마다 다른 순서로 나오지 않게.
+        // 표시 순서 정렬은 「같은 순서면 만든 순서」라 created_at·id 를 오름차순으로 붙인다.
+        if ($orderBy === 'display_order') {
+            $query->orderBy('created_at')->orderBy('id');
+        } else {
+            $query->orderBy('id', $orderDirection);
+        }
+
+        return $query->get();
     }
 
     /**
@@ -665,17 +750,77 @@ class BoardRepository implements BoardRepositoryInterface
     /**
      * 메뉴용 경량 게시판 목록을 조회합니다.
      *
-     * id, name, slug 컬럼만 조회하여 메뉴 렌더링에 필요한 최소 데이터만 반환합니다.
+     * 메뉴 렌더링·결과 훅 리스너에 필요한 최소 컬럼만 조회합니다. 순서는 관리자가 정한 표시 순서이고,
+     * 같은 순서는 만든 순서·id 로 정합니다(같은 초에 만든 게시판의 순서가 요청마다 바뀌지 않게).
      *
-     * @return Collection 활성 게시판 컬렉션 (id, name, slug만 포함)
+     * @return Collection 활성 게시판 컬렉션 (id, name, slug, display_order, created_at)
      */
     public function getActiveBoardsForMenu(): Collection
     {
         // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         return Board::where('is_active', true)
-            ->select(['id', 'name', 'slug'])
-            ->orderBy('created_at', 'asc')
+            ->select(['id', 'name', 'slug', 'display_order', 'created_at'])
+            ->orderBy('display_order')
+            ->orderBy('created_at')
+            ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * 새 게시판에 매길 표시 순서를 반환합니다 (현재 최댓값 + 1 — 맨 끝).
+     *
+     * 순서를 한 번도 정하지 않은 사이트는 최댓값이 0 이라 1 이 되고, 0 들의 뒤인 맨 끝에 붙는다.
+     *
+     * @return int 다음 표시 순서
+     */
+    public function nextDisplayOrder(): int
+    {
+        return (int) Board::max('display_order') + 1;
+    }
+
+    /**
+     * 게시판 표시 순서를 한 번의 UPDATE 로 일괄 갱신합니다.
+     *
+     * @param  array<int, int>  $idToOrder  게시판 id => 표시 순서
+     * @return void 반환값 없음
+     */
+    public function updateDisplayOrders(array $idToOrder): void
+    {
+        if ($idToOrder === []) {
+            return;
+        }
+
+        // id·순서를 정수로 강제해 식에 직접 넣는다 — update() 의 원시 식에는 바인딩을 따로 줄 수 없다
+        $cases = [];
+        foreach ($idToOrder as $id => $order) {
+            $cases[] = sprintf('WHEN %d THEN %d', (int) $id, (int) $order);
+        }
+
+        Board::whereIn('id', array_keys($idToOrder))->update([
+            'display_order' => DB::raw('CASE id '.implode(' ', $cases).' END'),
+        ]);
+    }
+
+    /**
+     * 게시판 id => 표시 순서 맵을 반환합니다 (모든 게시판, 활성·비활성 포함).
+     *
+     * @return array<int, int> 게시판 id => 표시 순서
+     */
+    public function getDisplayOrderMap(): array
+    {
+        return Board::orderBy('id')->pluck('display_order', 'id')
+            ->map(fn ($order) => (int) $order)
+            ->all();
+    }
+
+    /**
+     * 모든 게시판의 id 목록을 반환합니다 (활성·비활성 포함, id 오름차순).
+     *
+     * @return array<int, int> 게시판 id 목록
+     */
+    public function getAllIds(): array
+    {
+        return Board::orderBy('id')->pluck('id')->map(fn ($id) => (int) $id)->all();
     }
 
     /**
@@ -715,5 +860,38 @@ class BoardRepository implements BoardRepositoryInterface
         Board::where('id', $boardId)->update(['comments_count' => $count]);
 
         return $count;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function stripReactionCodes(array $codes): int
+    {
+        if ($codes === []) {
+            return 0;
+        }
+
+        // active_reaction_types 는 JSON 컬럼이 아니라 TEXT + array 캐스트라 JSON 함수로
+        // 거를 수 없다 — LIKE 로 후보를 좁힌 뒤 PHP 에서 정확히 거른다.
+        $query = Board::query()->where(function ($q) use ($codes) {
+            foreach ($codes as $code) {
+                $q->orWhere('active_reaction_types', 'like', '%"'.$code.'"%');
+            }
+        });
+
+        $updated = 0;
+
+        foreach ($query->get() as $board) {
+            $current = $board->active_reaction_types ?? [];
+            $next = array_values(array_diff($current, $codes));
+
+            if ($next !== $current) {
+                $board->active_reaction_types = $next;
+                $board->save();
+                $updated++;
+            }
+        }
+
+        return $updated;
     }
 }

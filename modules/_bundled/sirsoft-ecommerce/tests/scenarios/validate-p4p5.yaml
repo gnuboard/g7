@@ -1,0 +1,108 @@
+feature: validate_p4p5_data_upgrade_hook_i18n
+
+description: |
+  #599 브랜치 검증이 찾은 데이터·업그레이드·훅·다국어 결함(P4·P5·P6)을 닫는다. 결함마다
+  한 축이며, 테스트는 결함 하나를 수정 전 코드에서 실패하게 짜서 수정의 근거로 삼는다.
+
+  데이터·업그레이드(P4)
+    - 운영자·시스템 발 환불 사유 2종(`admin_cancel`·`auto_cancel_expired`)은 업그레이드 스텝
+      (02_SeedClaimReasons) 한 곳이 시더와 같은 이름으로 보장하고 언어팩 번역을 병합한다. 모듈
+      마이그레이션이 다른 이름으로 먼저 넣어 일본어 상점에서 한국어로 남던 경로를 없앴다.
+    - 03 설정 병합은 1.2.x 기본값을 상수로 고정하고 자동 승인 3키를 넣는다.
+    - 04 배송지 백필은 배송지를 청크 단위로 읽는다.
+    - 배송정책·주문 삭제는 회수지·신청 상품 행을 FK CASCADE 에 기대지 않고 명시 삭제하며, 주문
+      삭제의 DB 정리는 한 트랜잭션이다.
+    - 클레임 마이그레이션은 DB 전용 raw SQL 을 쓰지 않고, 재실행 가드와 값 목록 주석을 갖춘다.
+
+  훅(P5)
+    - 지워진 첨부의 로그도 신청서 이력에 남는다.
+    - 주문상품 동기화 훅은 Service 가 쏜다(Repository 는 쓰기만).
+    - 사유·배송유형 일괄 동기화는 바뀐 행만 갱신하고 before/filter 를 거치며 after 는 커밋 뒤에 쏜다.
+    - 알림·활동 로그의 본문 값은 발행 시점에 캡처한다 — 큐 워커가 신청서를 다시 읽지 않는다.
+    - 클레임 첨부 업로드에 before_upload 가 있다.
+    - 범용 morph 별칭 충돌을 로그로 드러낸다(별칭 자체는 유지 — 1.3.0 미출시라 이관할 행이 없다).
+    - 잠금 조회의 옛 이름을 호환 별칭으로 두고, 실패 시 예외를 던지는 버전을 둔다.
+    - 호출처 없는 삭제 메서드를 계약에서 걷어 낸다.
+
+  다국어(P6)
+    - 클레임 사유 로그의 `:reason_type` 을 표시 시점 로케일 라벨로 해석한다.
+    - 이름을 되찾지 못한 엔티티의 `ID:` 표기를 다국어 키로 옮긴다.
+
+axes:
+  defect:
+    - seed_reasons
+    - settings_defaults
+    - backfill_n_plus_one
+    - cascade_dependency
+    - delete_atomicity
+    - db_specific_sql
+    - rerun_guard
+    - comment_values
+    - deleted_attachment_log
+    - repository_hook
+    - reason_sync
+    - publish_time_value
+    - before_upload
+    - morph_alias
+    - lock_contract
+    - activity_log_n_plus_one
+    - unused_contract
+    - hook_docs
+    - reason_type_label
+    - id_hardcode
+
+effects:
+  # P4 업그레이드 데이터
+  - upgrade_seeds_operator_refund_reasons_with_seeder_names_and_language_pack
+  - upgrade_fills_missing_reason_translations_from_bundled_language_pack
+  - no_module_migration_inserts_claim_reason_rows
+  - upgrade_step_and_fresh_install_seeder_produce_the_same_operator_reasons
+  - claim_settings_merge_freezes_legacy_default_and_adds_auto_approve_keys
+  - shipping_snapshot_backfill_reads_addresses_once_per_chunk
+  # P4 삭제 무결성
+  - shipping_policy_delete_removes_claim_addresses_without_cascade
+  - shipping_policy_bulk_delete_removes_claim_addresses_without_cascade
+  - order_delete_removes_claim_item_rows_without_cascade
+  - order_delete_rolls_back_claim_records_when_a_later_step_fails
+  # P4 마이그레이션
+  - uploader_backfill_uses_no_db_specific_sql
+  - uploader_backfill_splits_customer_and_admin_by_requester
+  - order_cancel_id_comment_changes_through_schema_builder
+  - claim_column_extension_rerun_emits_no_ddl
+  - claim_create_migrations_set_table_comment_through_schema_builder
+  - claim_create_migrations_skip_existing_tables
+  - delivered_at_rerun_completes_the_missing_index
+  - claim_status_and_boolean_comments_list_every_value
+  # P5 훅·리포지토리·리스너
+  - claim_activity_log_keeps_logs_of_deleted_attachments
+  - order_repository_option_sync_does_not_fire_hooks
+  - order_service_fires_option_sync_hook_once_with_changes
+  - unchanged_claim_reason_sync_fires_no_update_hooks
+  - changed_claim_reason_sync_passes_before_and_filter_hooks
+  - claim_reason_sync_after_hooks_wait_for_commit
+  - unchanged_shipping_type_sync_writes_no_rows
+  - shipping_type_sync_passes_before_filter_and_after_commit_hooks
+  - claim_notification_body_uses_the_publish_time_snapshot
+  - claim_status_notification_listener_is_sync_and_passes_a_snapshot
+  - claim_activity_log_reads_model_values_at_publish_time
+  - split_quantity_log_prefers_the_published_remainder_quantity
+  - claim_image_before_upload_can_reject_the_upload
+  - claim_morph_alias_collision_is_logged
+  - order_lock_lookup_keeps_the_legacy_alias_and_offers_a_failing_variant
+  - order_option_sync_log_reads_orders_in_one_query
+  - unused_claim_delete_methods_are_removed
+  - hook_docs_match_the_published_contracts
+  # P6 다국어
+  - claim_reason_log_type_is_resolved_at_display_time
+  - unknown_claim_reason_type_is_left_as_is
+  - unresolved_entity_id_uses_a_translated_key
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Validate/ValidateP4UpgradeDataTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Validate/ValidateP4DeletionIntegrityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Validate/ValidateP4MigrationsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Validate/ValidateP5HookDataTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Validate/ValidateP6ActivityLogI18nTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

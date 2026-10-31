@@ -16,6 +16,9 @@
  *
  * @scenario surface=code_editor,entry=direct
  * @effects code_editor_editor_panel_wider_than_file_list, code_editor_list_refetched_after_save
+ *
+ * 실행: `code-editor-*.spec.ts` 는 `--workers=1` 로 돌린다 — 사유는
+ * `code-editor-file-crud.spec.ts` 헤더 참조(같은 시드 화면을 공유해 병렬에서 서로를 밟는다).
  */
 import { test, expect, authenticatePage } from '../../fixtures/admin-template-auth';
 import type { Page, Route } from '@playwright/test';
@@ -36,36 +39,67 @@ async function openCodeEditor(page: Page, token: string): Promise<void> {
   await authenticatePage(page, token);
   await page.goto('/admin/templates/sirsoft-admin_basic/edit');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
-  await page.waitForSelector('#file_list_card', { timeout: 30_000 });
-  await expect(page.locator('#editor_card').getByText(/\.json$/).first()).toBeVisible({ timeout: 30_000 });
+  await page.waitForSelector('[role="tree"] [role="treeitem"]', { timeout: 30_000 });
+  await expect(page.locator('#editor_card').getByText(/\.g7\.html$/).first()).toBeVisible({ timeout: 30_000 });
 }
 
 test.describe('@sirsoft-admin_basic 코드 편집기 패널 폭', () => {
+  /**
+   * @scenario promise=panel_width, surface=browser
+   *
+   * @effects editor_pane_is_wider_than_the_file_list_in_the_browser
+   */
   test('편집기가 파일 목록보다 넓고, 긴 파일명이 목록 폭을 넘지 않는다', async ({ page, layoutEditToken }) => {
     await openCodeEditor(page, layoutEditToken);
 
     const measured = await page.evaluate(() => {
-      const list = document.querySelector('#file_list_card')!;
+      // 좌측은 이제 `<file-tree-picker>` 다 — 폭은 컴포넌트가 240~480px 로 묶어 소유한다(#476).
+      const list = document.querySelector('#file_tree_picker')!;
       const editor = document.querySelector('#editor_card')!;
 
-      // 목록 안에서 가로 스크롤을 만드는 요소 — 긴 파일명이 끊기지 않으면 여기서 잡힌다
-      const overflowing = [...list.querySelectorAll('*')].filter((e) => e.scrollWidth > e.clientWidth + 1).length;
+      /*
+       * 목록이 **가로로 밀리는가** — 긴 파일명이 끊기지 않으면 여기서 잡힌다.
+       *
+       * 자손을 전수로 훑어 `scrollWidth > clientWidth` 를 세던 종전 판정은 쓸 수 없다.
+       * `truncate`(= `overflow:hidden; text-overflow:ellipsis; white-space:nowrap`) 가 걸린
+       * 라벨은 **끊기고 있을 때 정확히 그 모양**이 되기 때문이다 — 실측 2026-09-12:
+       * 목록 자체는 326/326(밀림 없음) 인데 말줄임 중인 라벨 31개가 "위반" 으로 잡혔다.
+       * 그래서 판정은 ⓐ 목록 자신이 가로로 스크롤되지 않는가 ⓑ 라벨이 실제로 끊기게
+       * 선언돼 있는가 로 나눈다.
+       */
+      const labels = [...list.querySelectorAll('[role="treeitem"] span')].filter(
+        (e) => e.scrollWidth > e.clientWidth + 1,
+      );
+      const notTruncating = labels
+        .filter((e) => {
+          const style = getComputedStyle(e);
+
+          return style.overflowX === 'visible' || style.textOverflow !== 'ellipsis' || style.whiteSpace !== 'nowrap';
+        })
+        .map((e) => `${e.tagName.toLowerCase()}.${String(e.className).slice(0, 60)}`);
 
       return {
         listWidth: Math.round(list.getBoundingClientRect().width),
         editorWidth: Math.round(editor.getBoundingClientRect().width),
-        overflowing,
+        listOverflow: list.scrollWidth - list.clientWidth,
+        notTruncating,
       };
     });
 
     expect(measured.editorWidth, '편집기가 파일 목록보다 좁으면 코드를 볼 수 없다').toBeGreaterThan(
       measured.listWidth,
     );
-    expect(measured.overflowing, '목록 안에 가로 스크롤이 생기면 파일명이 끊기지 않은 것이다').toBe(0);
+    expect(measured.listOverflow, '목록이 가로로 밀리면 긴 파일명이 편집기를 밀어낸 것이다').toBeLessThanOrEqual(1);
+    expect(measured.notTruncating, '말줄임 없이 넘치는 라벨이 있다').toEqual([]);
   });
 });
 
 test.describe('@sirsoft-admin_basic 코드 편집기 저장 후 목록 갱신', () => {
+  /**
+   * @scenario promise=list_refresh_after_save, surface=browser
+   *
+   * @effects successful_save_refetches_the_file_list_in_the_browser
+   */
   test('저장이 성공하면 파일 목록을 다시 부른다', async ({ page, layoutEditToken }) => {
     const calls: string[] = [];
 

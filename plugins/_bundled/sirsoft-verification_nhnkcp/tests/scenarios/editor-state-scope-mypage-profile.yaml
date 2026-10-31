@@ -1,0 +1,20 @@
+feature: 마이페이지 본인확인 카드 편집기 상태가 실제 화면 경로에 붙는다
+
+description: |
+  레이아웃 편집기 상태 표본 전수 순회에서 마이페이지 「내 정보」의 이 플러그인 상태 고르개가 나타나지 않았다.
+  상태 범위가 */mypage/profile 로 적혀 있었는데 편집기의 * 는 정확히 한 경로 조각이라 사용자 화면 경로
+  /mypage/profile 과 맞지 않는다. 범위를 /mypage/profile 로 고치고 편집기 판정 함수로 가드한다.
+
+axes:
+  route: [mypage_profile]
+
+effects:
+  - nhnkcp_profile_states_match_user_route
+  - nhnkcp_profile_states_scope_has_no_segment_glob
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/resources/js/__tests__/layouts/editorStateScopeMypageProfile.test.ts
+
+notes: |
+  브라우저 실측: 레이아웃 편집기 sirsoft-basic ?route=/mypage/profile 에서 상태 고르개에 본인확인 세 상태가 나타나고,
+  「기록 없음」을 고르면 카드가 미인증 모양으로 바뀐다.

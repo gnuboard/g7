@@ -1,0 +1,129 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   이 매니페스트의 세 축(환불 수단 × PG 왕복 여부 × 복원 대상)은 한 Unit 메서드가 동시에
+#   재현하지 않는다 — 복원(쿠폰·마일리지·재고·현금영수증)은 `execute()` 와 별개로 직접 호출해
+#   격리 검증하고, 장부 누적은 수단·왕복 축만 곱한다. 조합의 실체는 클레임 접수 경로
+#   (mp02-order-cancellation · user-claim-refund-return-apply)가 화면·통합에서 잰다.
+#   effects 축은 면제하지 않는다 — 여기 적은 effect 는 전부 실제 검증 메서드에 매핑한다.
+feature: 환불 실행 서비스 — PG 왕복 · 복원 훅 · 장부 누적 (#599)
+
+description: |
+  `RefundExecutionService` 는 `OrderCancellationService` 에서 뽑아낸 **환불이 실제로 나가는
+  지점**이다. 돈이 PG 로 나가고, 쿠폰·마일리지·재고가 돌아오고, 현금영수증이 맞춰지고,
+  그 사실이 장부(주문 누적 · 결제행 취소 누적)에 남는다. 화면 매니페스트가 "구매자가 무엇을
+  신청하는가" 를 잰다면 여기는 **"접수된 환불이 나갈 때 무엇이 움직이는가"** 를 잰다.
+
+  조용히 깨지는 지점은 넷이다.
+
+  ① **송금 대상 계좌는 결제행 한 자리에서만 읽힌다.** PG 의 `refundReceiveAccount` 도, 무통장
+     수동 이체도 그 자리를 본다. 구매자가 신청서에서 고친 계좌는 실행 직전 거기에 닿아야
+     실제 송금에 반영된다 — 닿지 않으면 오류 없이 옛 계좌로 돈이 나간다. 반대로 계좌를 들지
+     않은 환불(카드 취소)이 그 자리를 **비우면** 뒤이어 계좌로 나가야 할 환불에서 이체 근거가
+     사라진다. 은행·계좌번호·예금주 셋 중 하나라도 비면 반영하지 않는다 — 은행만 바뀌고
+     번호는 옛 값으로 남은 조합이 송금 대상이 되면 남의 계좌로 간다.
+
+  ② **PG 는 트랜잭션의 마지막 단계다(P-D5).** 장부(송금 계좌·결제행 누적·주문 누적)를 먼저
+     저장하고(`prepareLedger` — 트랜잭션 밖에서는 거절) PG 를 맨 뒤에 부른다. 훅 진입 전
+     `processing`, 성공하면 `completed` + 거래 ID, 실패하면 오류 코드·메시지를 남기고 예외로
+     올려 PG 앞의 누적까지 롤백한다. PG 승인 직후 커밋이 실패하면 그 승인 기록을 호출부가 꺼내
+     표식을 남긴다(`takePgSettlement`). 금액은 **주문 통화**로 넘긴다 — 기준 통화 금액을 그대로
+     주면 다통화 상점의 PG 청구가 자릿수째 어긋난다.
+
+  ③ **쿠폰·재고·마일리지 복원 실패는 환불을 중단·롤백한다(D2).** 예전에는 삼켜서, 카드는
+     취소됐는데 마일리지·쿠폰·재고는 돌아오지 않은 채 「완료」로 닫혔다. 이제 실패는
+     `OrderCancellationException`(공개 면에 그대로 안내할 수 있는 키)으로 올라가고, 호출부가
+     PG 보다 먼저 부르므로 PG 를 부르지 않는다. 현금영수증만 커밋 뒤·트랜잭션 밖이라 삼킨다.
+     복원할 대상이 없으면 훅 자체를 쏘지 않고, 마일리지 복원은 취소 ID 를 멱등 축으로 함께
+     넘긴다. 재고 복원은 상점 설정이 켜져 있고 그 옵션이 실제로 차감됐을 때만 되돌린다.
+     「마일리지로 환불」은 현금 환불액을 회원 마일리지로 지급한다(`creditMileage` — D1). 지급
+     기록은 원장으로 확인한다 — 응답한 리스너가 없으면 실패다(fail-closed).
+
+  ④ **장부의 두 축을 동시에 깎지 않는다.** 예전에는 취소가 원 결제금액(`total_paid_amount`)을
+     재계산값으로 덮어써 잔여를 좁혔고, 거기에 환불 누적까지 쌓으면 같은 금액이 두 번 빠졌다
+     (10만원 주문의 6만원 환불 뒤 2차 부분환불이 0원으로 실행되던 결함). 지금은 원금을 두고
+     **누적이 잔여를 말한다**. 그리고 PG 를 부르지 않은 환불(카드 주문의 수동 계좌 송금)은
+     결제행의 취소 누적을 건드리지 않는다 — 카드사 잔액은 그대로이기 때문이다. 다만 바깥에서
+     이미 집행된 PG 환불은 장부에 그대로 남아야 한다(그 둘을 묶어 막으면 정상 취소의 누적이
+     사라진다).
+
+# axis 의미:
+#   refund_method — 환불 수단. `pg` 는 PG 왕복 대상, `bank` 는 사람이 송금하는 계좌 환불,
+#                   `points_only` 는 마일리지로 돌려주는 건(PG 훅에 진입하지 않는다 — 현금분은
+#                   마일리지로 지급한다, D1).
+#   pg_roundtrip  — 코어가 이번 실행에서 PG 를 직접 부르는가. `skipped_settled_outside` 는
+#                   바깥(가상계좌 환불 화면 등)에서 이미 집행돼 왕복만 건너뛰는 경우로,
+#                   `skipped_not_applicable`(애초에 PG 로 나가지 않음)과 장부 취급이 갈린다.
+#   restore_target — 복원 대상. 각 값이 서로 다른 훅/설정을 태운다.
+axes:
+  refund_method: [pg, bank, points_only]
+  pg_roundtrip: [called, skipped_settled_outside, skipped_not_applicable]
+  restore_target: [coupons, mileage, stock, cash_receipt, none]
+
+exclusions:
+  - { refund_method: bank, pg_roundtrip: called, reason: "사람이 송금하는 계좌 환불은 PG 왕복 자체가 없다" }
+  - { refund_method: points_only, pg_roundtrip: [called, skipped_settled_outside], reason: "마일리지만 돌려주는 건은 결제수단을 건드리지 않는다 — PG 경로가 성립하지 않는다" }
+
+effects:
+  # ① 송금 대상 계좌 (2026-08-31 확정)
+  - refund_account_on_the_refund_reaches_the_payment_row_at_execution
+  - refund_without_an_account_keeps_the_existing_payout_target
+  - partially_filled_refund_account_is_ignored_entirely
+  # ② PG 왕복
+  - pg_refund_marks_the_refund_completed_with_the_transaction_id_on_success
+  - pg_refund_marks_processing_before_calling_the_hook
+  - pg_refund_records_the_error_and_throws_on_failure
+  - pg_refund_hands_the_refund_record_to_the_listener
+  - pg_refund_stays_compatible_with_a_five_argument_listener
+  - pg_refund_sends_the_amount_in_the_order_currency
+  - pg_refund_falls_back_to_the_base_amount_without_an_order_currency_entry
+  - order_currency_refund_amount_prefers_the_order_currency_over_the_base_amount
+  # ③ 복원 훅 — 대상이 없으면 쏘지 않고, 돈·권리 복원 실패는 환불을 중단시킨다(D2)
+  - coupon_restore_hook_carries_the_restored_issue_ids
+  - coupon_restore_hook_is_not_fired_without_anything_to_restore
+  - coupon_restore_listener_failure_aborts_the_refund
+  - mileage_restore_skips_when_the_order_never_deducted_points
+  - mileage_restore_skips_when_there_are_no_points_to_refund
+  - mileage_restore_hook_carries_the_cancel_id_as_its_idempotency_axis
+  - mileage_restore_listener_failure_aborts_the_refund
+  - stock_restore_failure_aborts_the_refund
+  # 「마일리지로 환불」 현금분 지급 (D1·Q2)
+  - points_refund_credits_the_cash_amount_as_mileage
+  - credit_mileage_skips_a_zero_amount
+  - credit_mileage_rejects_a_guest_order
+  - credit_mileage_listener_failure_aborts_the_refund
+  - credit_mileage_fails_closed_when_no_ledger_row_appears
+  # P-D5 — 장부 준비는 트랜잭션 안에서만
+  - prepare_ledger_refuses_to_run_outside_a_transaction
+  - stock_restore_returns_the_cancelled_quantity_when_the_setting_is_on
+  - stock_restore_is_skipped_entirely_when_the_setting_is_off
+  - stock_restore_skips_options_that_were_never_deducted
+  - cash_receipt_sync_is_delegated_with_the_order_and_the_reason
+  - cash_receipt_provider_failure_does_not_reach_the_caller
+  # ④ 장부 누적 (§4-3-1 · §12-B)
+  - execute_accumulates_the_orders_total_refunded_amount
+  - execute_accumulates_the_orders_total_refunded_points_amount
+  - execute_adds_to_the_values_already_accumulated
+  - execute_accumulates_the_payment_rows_cancelled_amount
+  - execute_accumulates_the_multi_currency_cancelled_amount_per_currency
+  - execute_accumulates_on_every_round_not_just_the_first
+  - execute_leaves_the_cancel_only_payment_fields_untouched
+  - execute_accumulates_order_totals_even_without_a_payment_row
+  - execute_skips_the_pg_hook_for_a_non_pg_payment_method_but_still_accumulates
+  - execute_skips_the_pg_hook_when_the_caller_asks_it_not_to
+  - execute_skips_the_pg_hook_when_only_points_are_refunded
+  - execute_does_not_accumulate_anything_when_the_pg_call_fails
+  - cancelled_amount_updates_share_one_rule_with_the_cancellation_path
+  - accumulated_refunds_narrow_the_remaining_refundable_capacity
+  # 취소 경로를 탄 환불도 결제행의 취소 누적을 쌓고 부분취소 상태를 찍는다 —
+  # 주문 축 누적만 쌓고 결제행을 비워 두면 PG 환불가능액이 실제보다 크게 남는다.
+  - cancellation_path_also_accumulates_the_payment_rows_cancelled_amount
+  # 카드 주문을 계좌이체로 환불하면 PG 왕복이 없으므로 카드 결제행의 취소 누적은 그대로다
+  # (운영 결정 2026-09-16 — 허용하되 장부는 건드리지 않는다). 주문 축 누적은 쌓인다.
+  - non_pg_refund_leaves_payment_cancelled_amount_untouched
+  # 바깥(가상계좌 환불 화면 등)에서 이미 집행된 PG 환불은 왕복만 건너뛰고 장부에는 남는다.
+  - externally_settled_pg_refund_still_records_ledger
+  # 누적 지점은 하나다 — 취소 경로도 원 결제금액을 깎지 않고 환불 누적으로 잔여를 말한다
+  # (잔여 = total_paid_amount − total_refunded_amount). 두 축을 함께 깎으면 이중 차감이 된다.
+  - cancellation_path_reports_remaining_capacity_through_refund_accumulation
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/RefundExecutionServiceTest.php

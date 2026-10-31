@@ -1,0 +1,88 @@
+<!-- 분류 화면 왼쪽 트리. 브랜드 목록과 뼈대는 같지만 **드래그 정렬이 살아 있다**는 점이 다르다 —
+  분류는 순서 자체가 쇼핑몰에 노출되는 값이라 정렬 조건이 아니라 손으로 정하는 것이다.
+  그래서 검색·정렬 UI 가 없고, 대신 드래그·노출토글 두 이벤트가 각각 서버로 나간다.
+  드래그와 토글 모두 **성공·실패 양쪽에서 트리를 다시 부른다** — 화면이 먼저 움직인 뒤 서버가
+  거부하면 되돌릴 방법이 재조회뿐이기 때문이다.
+  드래그 가능 여부와 토글 잠금은 서버 권한(`abilities.can_update`)이 정한다. -->
+<partial description="Category List Panel - Hierarchical Tree with Drag &amp; Drop">
+  <div data-ref="category_list_panel" class="ecommerce-admin-card ecommerce-col-span-1-lg ecommerce:flex ecommerce:flex-col">
+    <div data-ref="category_list_header" class="ecommerce:px-4 ecommerce-panel-header ecommerce-flex-between">
+      <div class="ecommerce-flex-center ecommerce:gap-2">
+        <icon name="folder" class="ecommerce:text-xl ecommerce:text-gray-700 ecommerce:dark:text-gray-300"/>
+        <h3 class="ecommerce-text-heading">$t:sirsoft-ecommerce.admin.category.tree.title</h3>
+      </div>
+    </div>
+    <div>
+      <sortable-menu-list data-type="composite" data-ref="sortable_category_list" itemHref="/admin/ecommerce/categories?id={{row.id}}&amp;mode=view" :itemHrefMergeQuery="true" data-if="{{(categories?.data?.data?.length ?? 0) > 0}}" items="{{categories?.data?.data ?? []}}" selectedId="{{_global.selectedCategoryId}}" enableDrag="{{categories?.data?.abilities?.can_update === true}}" toggleDisabled="{{categories?.data?.abilities?.can_update !== true}}" class="ecommerce:p-2 ecommerce:max-h-[calc(90vh-140px)] ecommerce:overflow-y-auto" itemClassName="ecommerce:py-1 ecommerce:px-3 ecommerce:mb-1 ecommerce:rounded-lg ecommerce:border" itemSelectedClassName="ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/30 ecommerce:border-blue-500" itemDefaultClassName="ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:hover:border-gray-300 ecommerce:dark:hover:border-gray-600" childrenContainerClassName="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900/50">
+        <on type="action" event="onSelect">
+          <!-- 분류 선택 — 트리가 들고 있는 행 전체를 전역에 옮긴다. 오른쪽 보기 패널은 이 값만 읽고
+            상세를 따로 부르지 않는다.
+            주소는 `replace-url` 로 갈아끼워 새로고침·공유에는 남기되 뒤로가기 이력은 늘리지 않는다. -->
+          <sequence>
+            <!-- 편집·등록 중이면 곧바로 넘어가지 않고 고른 분류를 대기 자리(_global.pendingCategory*)에 두고 이탈 확인 창을 연다 —
+              이동을 완결하는 것은 그 창이다(브랜드·공통정보·고시 목록과 같은 규칙, 7.1.1 출시 전). -->
+            <switch on="{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}">
+              <case when="true">
+                <set-state target="global" pendingCategoryId="{{$args[0]?.id}}" pendingCategory="{{$args[0]}}"/>
+                <open-modal target="editing_confirm_modal"/>
+              </case>
+              <case when="false">
+                <set-state target="global" selectedCategoryId="{{$args[0]?.id}}" selectedCategory="{{$args[0]}}" panelMode="view"/>
+                <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75). -->
+                <replace-url :mergeQuery="true">
+                  <query id="{{$args[0]?.id}}" mode="view"/>
+                </replace-url>
+              </case>
+            </switch>
+          </sequence>
+        </on>
+        <on type="action" event="onOrderChange">
+          <!-- 드래그로 순서·상위분류가 바뀐 결과. 컴포넌트가 만든 배치 본문(`$args[0]`)을 그대로
+            보내므로 여기서 트리를 다시 계산하지 않는다.
+            성공·실패 어느 쪽이든 트리를 다시 부른다 — 화면은 놓는 순간 이미 움직였고, 서버가
+            거부했을 때 그 움직임을 되돌릴 유일한 방법이 재조회다. -->
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/categories/order" method="PUT" body="{{$args[0]}}">
+            <success>
+              <parallel>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.category.messages.order_updated"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </success>
+            <fail>
+              <parallel>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.category.messages.order_update_failed'}}"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </fail>
+          </api-call>
+        </on>
+        <on type="action" event="onToggleStatus">
+          <!-- 행의 노출 스위치. 드래그와 같은 이유로 성공·실패 양쪽에서 트리를 다시 부른다.
+            알림 문구만 갈린다 — 성공은 고정 문구, 실패는 서버가 준 사유를 그대로 보인다
+            (하위 분류가 있어 숨길 수 없다 같은 이유가 여기로 온다). -->
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/categories/{{$args[0]}}/toggle-status" method="PATCH">
+            <success>
+              <parallel>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.category.messages.status_changed"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </success>
+            <fail>
+              <parallel>
+                <toast type="error" message="{{error.message}}"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </fail>
+          </api-call>
+        </on>
+        <on event="mount">
+          <action handler="sirsoft-ecommerce.initCategoryFromUrl"/>
+        </on>
+      </sortable-menu-list>
+    </div>
+    <div data-ref="empty_category_state" data-if="{{categories !== undefined &amp;&amp; ((categories?.data?.data?.length ?? 0) === 0)}}" class="ecommerce-flex-center ecommerce:flex-1 ecommerce:justify-center ecommerce:gap-3 ecommerce:px-4">
+      <icon name="folder" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
+      <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.category.tree.empty</p>
+    </div>
+  </div>
+</partial>

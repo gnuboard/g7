@@ -24,6 +24,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class ReviewImageController extends AuthBaseController
 {
+    /**
+     * ReviewImageController 생성자
+     *
+     * @param  ProductReviewImageService  $imageService  리뷰 이미지 서비스
+     */
     public function __construct(
         private ProductReviewImageService $imageService
     ) {}
@@ -64,7 +69,7 @@ class ReviewImageController extends AuthBaseController
                 'review.image_upload_limit_exceeded',
                 422,
                 null,
-                ['max' => $e->maxImages],
+                ['max' => $e->maxImages, 'count' => $e->maxImages],
                 'sirsoft-ecommerce'
             );
         } catch (Exception $e) {

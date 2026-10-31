@@ -35,11 +35,31 @@ class BulkUpdateOrdersRequest extends FormRequest
         return [
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', Rule::exists(Order::class, 'id')],
+            // 주문대기는 PG 결제창 진입 전 임시 상태라 일괄 지정 대상이 아니고,
+            // 클레임 코스 상태는 교환·반품 서비스 전담이라 adminAssignableValues 에서 이미 빠져 있다.
             'order_status' => ['nullable', 'string', Rule::in(
-                collect(OrderStatusEnum::values())->reject(fn ($v) => $v === OrderStatusEnum::PENDING_ORDER->value)->values()->all()
+                collect(OrderStatusEnum::adminAssignableValues())->reject(fn ($v) => $v === OrderStatusEnum::PENDING_ORDER->value)->values()->all()
             )],
             'carrier_id' => ['nullable', 'integer', Rule::exists(ShippingCarrier::class, 'id')],
             'tracking_number' => ['nullable', 'string', 'max:50'],
+            // 수동 결제 처리 확인 창의 세 항목 (Q13) — 보내지 않으면 모두 켬(기존 클라이언트 호환)
+            'apply_stock_deduction' => ['sometimes', 'boolean'],
+            'apply_mileage_deduction' => ['sometimes', 'boolean'],
+            'record_paid_amount' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓸 필드 라벨을 반환합니다.
+     *
+     * @return array<string, string> 필드 => 라벨
+     */
+    public function attributes(): array
+    {
+        return [
+            'apply_stock_deduction' => __('sirsoft-ecommerce::validation.attributes.apply_stock_deduction'),
+            'apply_mileage_deduction' => __('sirsoft-ecommerce::validation.attributes.apply_mileage_deduction'),
+            'record_paid_amount' => __('sirsoft-ecommerce::validation.attributes.record_paid_amount'),
         ];
     }
 
@@ -47,6 +67,7 @@ class BulkUpdateOrdersRequest extends FormRequest
      * 추가 검증 로직
      *
      * @param  Validator  $validator
+     * @return void 반환값 없음
      */
     public function withValidator($validator): void
     {
@@ -93,7 +114,7 @@ class BulkUpdateOrdersRequest extends FormRequest
                         }
                     }
                     if (! empty($invalid)) {
-                        $validator->errors()->add('order_status', __('sirsoft-ecommerce::validation.orders.status_transition.bulk_invalid', [
+                        $validator->errors()->add('order_status', trans_count('sirsoft-ecommerce::validation.orders.status_transition.bulk_invalid', [
                             'count' => count($invalid),
                             'to' => $target->label(),
                             'from' => implode(', ', array_values(array_unique($invalid))),

@@ -1,0 +1,32 @@
+feature: 장바구니 담기 완료 창 (사용자 상품 상세 — sirsoft-basic 레이아웃)
+
+description: |
+  상품 상세에서 장바구니에 담으면 알림(toast) 대신 「담기 완료」 창이 열린다. 창은 배경 클릭으로 닫히지 않고,
+  「쇼핑 계속하기」는 옵션 선택 상태를 비운 뒤 창을 닫으며, 「장바구니로 이동」은 이동 중 표시를 켜고 창을 닫은 뒤
+  장바구니로 간다. 이동 중에는 두 단추가 잠기고 스피너가 돈다. 상품 상세 진입은 이동 중 표시를 끈다.
+
+  옵션 선택 상태 중 `currentSelection`·`additionalOptions` 는 옵션 그룹 이름을 키로 갖는 map 이다. setState 기본(deep)
+  병합은 빈 객체 `{}` 로 기존 키를 지우지 못하므로, 「쇼핑 계속하기」는 두 map 을 먼저 null 로 덮고 `{}` 로 다시 쓴다
+  (7.1.1 출시 전 점검). 레이아웃 원본은 templates/_bundled/sirsoft-basic 이고, 잠금 시험은 이 모듈에 있다.
+
+axes:
+  surface:
+    - modal           # partials/shop/detail/_modal_cart_added.g7.html
+    - show_layout     # shop/show.g7.html (modals 등록·init_actions)
+    - purchase_card   # partials/shop/detail/_purchase_card.g7.html (담기 onSuccess)
+
+effects:
+  - cart_added_modal_structure_and_text               # Modal id·다국어 제목·문구·체크 아이콘·다크 모드 색
+  - cart_added_modal_ignores_backdrop_click           # 배경 클릭으로 닫히지 않는다
+  - continue_shopping_resets_option_state_and_closes  # 쇼핑 계속하기 = 옵션 상태 초기화 + 창 닫기
+  - option_maps_nulled_before_empty_object_reset      # 두 map 을 null 로 먼저 덮은 뒤 {} 로 쓴다
+  - go_to_cart_sets_loading_closes_and_navigates      # 장바구니로 이동 = 이동 중 표시 + 창 닫기 + {shopBase}/cart 이동
+  - cart_buttons_reflect_navigating_state             # 이동 중 두 단추 잠김·스피너 표시
+  - show_layout_registers_cart_added_modal            # 상품 상세 modals 에 창 등록
+  - navigating_flag_reset_on_entry                    # 상품 상세 진입이 이동 중 표시를 false 로 둔다
+  - add_success_opens_modal_instead_of_toast          # 담기 성공은 toast 가 아니라 창을 연다
+  - add_success_updates_cart_count                    # 담기 성공이 장바구니 수량을 응답 값으로 갱신
+  - add_success_resets_option_state                   # 담기 성공이 옵션 상태를 목록 [] · map {} 모양으로 비운다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/cartAddedModal.test.tsx

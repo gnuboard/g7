@@ -5,7 +5,7 @@
  * 테스트 대상:
  * - 주문 상세 아이템 (_items.json): CSS hidden 대신 if+responsive 사용 검증
  * - 장바구니 요약 (_cart_summary.json): 모바일에서 sticky 제거 검증
- * - 상품 상세 가격 (show.json + _info_summary.json + _price_mobile.json): 가격 중복 방지
+ * - 상품 상세 가격 (show.g7.html + _info_summary.g7.html + _price_mobile.g7.html): 가격 중복 방지
  *
  * @vitest-environment jsdom
  */

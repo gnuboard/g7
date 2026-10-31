@@ -1,0 +1,40 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: SCIM 꺼짐과 PATCH 연산)이 대부분이라 명목상이다.
+feature: sso_session_logout
+description: |
+  SSO 세션과 로그아웃 — 세션 행·토큰 연결·수명 상한(IdP·사이트 최소), local·rp·both, 1회용 로그아웃 티켓, back-channel(서명·jti), IdP 발 로그아웃 공용 종료.
+axes:
+  ticket: ["missing|forged|reused|other_idp", missing, forged, reused, other_idp]
+  identity: ["session_ref+name_id"]
+  idp_cap: ["null|480|60", "null", 480, 60]
+  site_cap: ["0|120", 0, 120]
+  logout_mode: [local, rp, both]
+  member: [password_login]
+  channel: [backchannel, endFromIdp]
+  token_id: ["null"]
+  fixture: [mock_keys]
+effects:
+  - login_redirect
+  - no_idp_request
+  - first_idp_redirect
+  - second_login_redirect
+  - sso_session_row
+  - token_attached
+  - external_ref_in_context
+  - max_session_minutes
+  - absolute_expires_at
+  - redirect_url_null
+  - session_ended
+  - ticket_url
+  - idp_end_session_redirect
+  - return_to_login
+  - token_revoked
+  - session_ended_idp_logout
+  - replay_400
+  - backchannel_400
+  - same_idp_sessions_ended
+  - other_idp_session_kept
+  - rs256_signed
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Session/LogoutTicketTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Session/SessionCapContextTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Session/SessionLogoutTest.php

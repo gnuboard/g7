@@ -1,0 +1,17 @@
+feature: UserResource 커스텀 배열 메서드의 빈 값 누출 (toAuthArray · toAdminAuthArray · withAdminInfo)
+
+description: |
+  toArray() 안의 when()/whenLoaded() 는 Laravel 이 응답을 만들 때만 걸러진다. 커스텀 메서드가 toArray() 를
+  직접 부르면 걸러지지 않은 MissingValue 가 남아 JSON 에 `{}` 로 나갔다(#703 validate 에서 발견 —
+  로그인 사용자 응답과 관리자 회원 상세에 9개 키). 커스텀 메서드는 resolve() 로 걸러진 배열을 받는다.
+
+  축 method 는 대표 메서드다. 한 테스트가 세 메서드를 차례로 확인한다.
+
+axes:
+  method: [to_auth_array]
+
+effects:
+  - custom_array_has_no_missing_value
+
+test_files:
+  - tests/Feature/Http/Resources/UserResourceCustomArrayTest.php

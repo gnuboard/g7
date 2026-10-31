@@ -1,0 +1,25 @@
+feature: auth_policy_exception_report
+
+description: |
+  비밀번호 인증 정책 거절(403 `auth.password_auth_disabled`)·외부 인증 추가 단계(409 `auth.external_step_required`)·
+  2단계 수단 없음(422 `auth.two_factor_means_required`)은 사용자에게 안내로 답하는 정상 결과다. 세 예외
+  (`PasswordAuthDisallowedException`·`ExternalStepRequiredException`·`TwoFactorMeansRequiredException`)가 `RuntimeException` 이라
+  전역 렌더러가 응답을 만들어도 보고기가 laravel 로그에 ERROR + 스택을 남겼다(실측: 마이페이지 비밀번호 변경 403).
+  같은 성격의 기존 인증 예외(`AccountLockedException` 등)는 `HttpException` 이라 보고되지 않는다 — 세 예외도 `ShouldntReport` 로
+  보고하지 않는다. 응답 모양은 그대로다.
+
+axes:
+  path:
+    - me_password   # PUT /api/me/password (회원 기준 거절)
+    - me_profile    # PUT /api/me 비밀번호 함께 변경 (회원 기준 거절)
+    - handler       # 예외 처리기 shouldReport 직접 판정(세 예외 + 대조군)
+
+exclusions:
+  - { path: handler, reason: "제외 없음 — 경로 단일 축" }
+
+effects:
+  - policy_denial_not_reported        # 403 안내 응답, 보고 0
+  - policy_exceptions_not_reportable  # 세 예외 shouldReport false, 일반 RuntimeException 은 true
+
+test_files:
+  - tests/Feature/Auth/AuthPolicyExceptionReportTest.php

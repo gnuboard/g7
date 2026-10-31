@@ -1,0 +1,22 @@
+feature: 확장 필터 주입 안내 문서가 실제 규약과 어긋나지 않는지 검사
+
+description: |
+  관리자 목록 필터에 모듈·플러그인이 행을 더하는 규약(#705)의 공개 안내 문서를 잰다.
+
+  - 확장 조각 예시와 컨벤션 문서의 확장 주입 절이 관리자 템플릿에만 있는 컴포넌트 클래스를
+    쓰라고 하지 않는다 — 이커머스 예제 조각은 그 클래스를 걷어냈는데 문서 예시가
+    `filter-row`·`filter-label` 을 그대로 안내하고 있었다(#705 validate-plan 3라운드 발견).
+    금지 어휘는 관리자 템플릿 `@layer components` 에만 있고 사용자 템플릿 CSS 에는 없는
+    클래스로 파생한다.
+  - 컨벤션 문서가 확장 필터 훅을 이름으로 모두 적는다 — 모집단은 훅 문서의 확장 필터 훅 표다.
+
+test_files:
+  - tests/Unit/Docs/AdminListFilterConventionDocTest.php
+
+axes:
+  surface:
+    - extension_filter_docs
+
+effects:
+  - extension_filter_docs_use_template_neutral_classes
+  - convention_doc_names_every_user_list_extension_hook

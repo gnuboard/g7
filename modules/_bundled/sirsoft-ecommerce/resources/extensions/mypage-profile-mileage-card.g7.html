@@ -1,0 +1,33 @@
+<!-- 마이페이지 프로필에 붙는 내 마일리지 요약 카드.
+  숫자를 따로 불러오지 않는다 — 로그인 사용자 정보(`user.data.ecommerce_mileage`)에 이커머스가
+  이미 실어 보낸 값을 읽기만 한다. 그래서 이 조각에는 데이터소스가 없고, 카드가 안 보이면
+  원인은 이 파일이 아니라 그 응답에 마일리지가 실렸는지에 있다.
+  기능을 끈 상태에서도 카드는 남고 안내문만 대신 나온다(관리자 회원 상세의 마일리지 탭과 같은 규약). -->
+<extension target-layout="mypage/profile" priority="320">
+  <inject target-id="mypage_tab_content" position="append_child">
+    <div data-ref="ext_my_mileage_card" data-if="{{!!user?.data?.ecommerce_mileage}}" class="ecommerce:mt-4 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-5">
+      <div class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-3">
+        <h3 class="ecommerce:text-base ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:flex ecommerce:items-center ecommerce:gap-2">
+          <icon name="coins" class="ecommerce:text-base ecommerce:text-gray-600 ecommerce:dark:text-gray-400"/>
+          <span>$t:sirsoft-ecommerce.user_mileage.title</span>
+        </h3>
+      </div>
+      <!-- 비활성화 안내 (mileage.enabled=false) -->
+      <span data-if="{{!user?.data?.ecommerce_mileage?.enabled}}" class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.user_mileage.disabled_notice</span>
+      <div data-if="{{user?.data?.ecommerce_mileage?.enabled}}" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between">
+        <div>
+          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.user_mileage.available</span>
+          <span class="ecommerce:block ecommerce:text-xl ecommerce:font-bold ecommerce:text-gray-900 ecommerce:dark:text-white">{{(user?.data?.ecommerce_mileage?.available ?? 0).toLocaleString()}} P</span>
+          <span data-if="{{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0) > 0}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:mt-1">$t:sirsoft-ecommerce.user_mileage.expiring_soon|amount={{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0).toLocaleString()}}</span>
+        </div>
+        <a href="/mypage/mileage" data-ref="view_my_mileage_history" class="ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline">
+          <on type="click">
+            <navigate/>
+          </on>
+          <span>$t:sirsoft-ecommerce.user_mileage.view_history</span>
+          <icon name="arrow-right" class="ecommerce:text-sm"/>
+        </a>
+      </div>
+    </div>
+  </inject>
+</extension>

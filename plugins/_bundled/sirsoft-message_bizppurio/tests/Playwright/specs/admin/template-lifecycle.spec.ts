@@ -2,7 +2,7 @@
  * E2E: 비즈뿌리오 알림 템플릿 라이프사이클 화면 (#597)
  *
  * @scenario bizppurio_tab_integration_e2e, bizppurio_compose_modal_e2e, bizppurio_manage_round_trip_e2e
- * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_badge_and_lifecycle_actions,
+ * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_summary_only,
  *          compose_modal_switches_conditional_fields_by_type, manage_screen_lists_db_rows_with_merge_query_round_trip,
  *          manage_list_mobile_card_view_and_unified_toolbar
  *
@@ -57,7 +57,8 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
       await page.waitForLoadState('networkidle', { timeout: 30_000 });
     }
 
-    const tabTexts = await tabBar.locator('button').allInnerTexts();
+    // 채널 탭은 링크(#757) — 단추만 보면 빈 목록이 된다
+    const tabTexts = await tabBar.locator(':is(a, button)').allInnerTexts();
     const joined = tabTexts.join('|');
 
     // 통합 탭 라벨(tab_label_key) 노출 + 채널 개별 라벨 부재
@@ -83,7 +84,7 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
     await expect(firstRow.getByText('대체 SMS', { exact: false }).first()).toBeVisible();
     await expect(firstRow.getByText('SMS 단독', { exact: false }).first()).toBeVisible();
     // SMS 사용 여부는 문구("대체 SMS: 미사용")가 아니라 배지(사용/미사용)로 렌더된다 (제품 결정 2026-08-23)
-    expect(await firstRow.locator('span.rounded', { hasText: /^(사용|미사용)$/ }).count()).toBeGreaterThanOrEqual(2);
+    expect(await firstRow.locator('span.bizppurio\\:rounded', { hasText: /^(사용|미사용)$/ }).count()).toBeGreaterThanOrEqual(2);
     expect(await firstRow.getByText(/대체 SMS:|SMS 단독:/).count()).toBe(0);
     expect(await rows.locator('button').count()).toBe(0);
 
@@ -171,7 +172,7 @@ test.describe('비즈뿌리오 알림 템플릿 관리 (플러그인 설정)', (
     await expect(manageView).toBeVisible({ timeout: 30_000 });
 
     // 목록 SMS 열은 평문(단독/대체/-)이 아니라 상태 배지(단독·대체=초록, 미사용=회색) — 행 하단과 같은 규칙 (제품 결정 2026-08-23)
-    await expect(manageView.locator('span.rounded', { hasText: /^(단독|대체|미사용)$/ }).first()).toBeVisible({ timeout: 15_000 });
+    await expect(manageView.locator('span.bizppurio\\:rounded', { hasText: /^(단독|대체|미사용)$/ }).first()).toBeVisible({ timeout: 15_000 });
 
     // 상태 필터 변경 → URL bz_status 반영 (mergeQuery — tab 파라미터 유지)
     const filterRoot = manageView.locator('[aria-haspopup]').first();

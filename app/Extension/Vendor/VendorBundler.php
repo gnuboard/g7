@@ -59,6 +59,12 @@ class VendorBundler
      */
     private ?\Closure $composerInstallRunner = null;
 
+    /**
+     * 번들 빌더를 생성합니다.
+     *
+     * @param  VendorIntegrityChecker  $integrityChecker  manifest 읽기와 파일 해시 계산을 맡는 무결성 검사기
+     * @param  EnvironmentDetector|null  $environmentDetector  composer 실행 가능 여부 감지기 (null 이면 컨테이너에서 해석)
+     */
     public function __construct(
         private readonly VendorIntegrityChecker $integrityChecker,
         private readonly ?EnvironmentDetector $environmentDetector = null,
@@ -71,6 +77,7 @@ class VendorBundler
      * vendor/ 구조를 직접 생성해야 합니다.
      *
      * @param  \Closure|null  $runner  대체 러너 (null 이면 기본 composer install 사용)
+     * @return void 반환값 없음
      */
     public function setComposerInstallRunner(?\Closure $runner): void
     {
@@ -91,6 +98,29 @@ class VendorBundler
             sourcePath: base_path(),
             outputPath: base_path(),
             target: 'core',
+            force: $force,
+        );
+    }
+
+    /**
+     * 개발자 전용 composer(`custom/`, #792)의 vendor 번들을 빌드합니다.
+     *
+     * 결과물: custom/vendor-bundle.zip + custom/vendor-bundle.json. composer 가 없는 서버는 이 묶음을
+     * 올려 두면 설치·코어 업데이트가 풀어 준다.
+     *
+     * @param  bool  $force  stale 여부 무관 강제 재빌드
+     * @return VendorBundleResult 빌드 결과
+     *
+     * @since 7.2.0
+     */
+    public function buildForCustom(bool $force = false): VendorBundleResult
+    {
+        $customPath = base_path('custom');
+
+        return $this->build(
+            sourcePath: $customPath,
+            outputPath: $customPath,
+            target: 'custom',
             force: $force,
         );
     }
@@ -248,6 +278,7 @@ class VendorBundler
      * @param  string  $outputPath  vendor-bundle.zip 과 vendor-bundle.json 을 쓸 경로 (_bundled 또는 코어는 sourcePath 와 동일)
      * @param  string  $target  라벨용 대상 식별자 (예: 'core', 'module:sirsoft-ecommerce')
      * @param  bool  $force  해시 체크 무시 강제 재빌드
+     * @return VendorBundleResult 빌드 결과 (외부 의존성 없음·최신 상태면 skipped=true)
      */
     private function build(string $sourcePath, string $outputPath, string $target, bool $force): VendorBundleResult
     {
@@ -418,6 +449,7 @@ class VendorBundler
      *
      * @param  string  $tmpPath  임시 파일 경로 (성공적으로 생성 완료된 상태)
      * @param  string  $finalPath  최종 경로
+     * @return void 반환값 없음
      *
      * @throws VendorInstallException 이동 실패 시
      */
@@ -439,6 +471,10 @@ class VendorBundler
      * 스테이징 디렉토리에서 `composer install --no-dev` 를 실행합니다.
      *
      * 테스트에서는 setComposerInstallRunner() 로 주입된 closure 를 대신 호출합니다.
+     *
+     * @param  string  $stagingDir  composer.json/lock 을 복사해 둔 스테이징 디렉토리
+     * @param  string  $target  로그용 대상 식별자 (예: 'core', 'module:sirsoft-ecommerce')
+     * @return void 반환값 없음
      *
      * @throws VendorInstallException composer 미설치, 실행 실패 시
      */
@@ -563,6 +599,8 @@ class VendorBundler
      * 스테이징에서 composer install --no-dev 로 새로 생성된 vendor/ 를 대상으로 하므로
      * 화이트리스트 필터링은 불필요하며, EXCLUDE_PATTERNS (tests/, docs/ 등) 만 적용한다.
      *
+     * @param  string  $vendorPath  압축할 vendor/ 디렉토리 경로
+     * @param  string  $zipPath  기록할 zip 파일 경로
      * @return array{0: int, 1: int} [zipSize, fileCount]
      */
     private function writeZip(string $vendorPath, string $zipPath): array
@@ -627,6 +665,9 @@ class VendorBundler
 
     /**
      * 제외 패턴 검사.
+     *
+     * @param  string  $relativePath  zip 내부 상대 경로 (예: 'vendor/foo/bar/tests/X.php')
+     * @return bool 경로 세그먼트 중 하나라도 EXCLUDE_PATTERNS 에 해당하면 true
      */
     private function shouldExclude(string $relativePath): bool
     {
@@ -643,6 +684,7 @@ class VendorBundler
     /**
      * composer.lock 에서 설치된 패키지 목록 추출.
      *
+     * @param  string  $composerLockPath  읽을 composer.lock 경로
      * @return array<int, array{name: string, version: string, type: string}>
      */
     private function collectPackages(string $composerLockPath): array
@@ -675,6 +717,9 @@ class VendorBundler
 
     /**
      * composer.json 에서 php 요구 버전 추출.
+     *
+     * @param  string  $composerJsonPath  읽을 composer.json 경로
+     * @return string|null require.php 제약 문자열. 없거나 읽기 실패 시 null
      */
     private function extractPhpRequirement(string $composerJsonPath): ?string
     {
@@ -697,6 +742,9 @@ class VendorBundler
      *
      * 런타임 제약(php, ext-*)만 있는 경우 false 를 반환합니다.
      * 이런 확장은 vendor 번들링 대상이 아니므로 skip 처리됩니다.
+     *
+     * @param  string  $composerJsonPath  검사할 composer.json 경로
+     * @return bool php, ext-* 외의 패키지 require 가 있으면 true
      */
     private function hasExternalDependencies(string $composerJsonPath): bool
     {

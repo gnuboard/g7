@@ -35,7 +35,9 @@
       "write": "게시글 작성/수정/삭제",
       "write_desc": "게시글을 작성하고 본인의 글을 수정/삭제할 수 있습니다.",
       "read-secret": "비밀글 조회",
-      "read-secret_desc": "비밀글을 비밀번호 입력 없이 열람할 수 있습니다."
+      "read-secret_desc": "비밀글을 비밀번호 입력 없이 열람할 수 있습니다.",
+      "write-notice": "공지 등록",
+      "write-notice_desc": "글을 쓰거나 고칠 때 공지로 등록하거나 해제할 수 있습니다."
     },
     "comments": {
       "read": "댓글 조회",

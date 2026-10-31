@@ -31,6 +31,11 @@ class ClearModuleCacheCommand extends Command
 
     /**
      * 모듈 관리자 및 리포지토리
+     *
+     * @param  ModuleManager  $moduleManager  모듈 관리자
+     * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 리포지토리
+     * @param  ExtensionBundleService  $bundleService  확장 프론트엔드 번들 서비스
+     * @param  LayoutResolverService  $layoutResolver  레이아웃 해석 서비스
      */
     public function __construct(
         private ModuleManager $moduleManager,
@@ -47,6 +52,8 @@ class ClearModuleCacheCommand extends Command
      * 실재하는 서버 캐시(모듈 레이아웃 서빙/해석 캐시 + 상태 키 + 미들웨어 인덱스
      * + 버전 포함 키)를 무효화한다.
      * 종전 forget 대상(module.config.{id} 등)은 writer 가 없는 유령 키였다 (#588).
+     *
+     * @return int 종료 코드 (성공 0, 실패 1)
      */
     public function handle(): int
     {
@@ -77,7 +84,7 @@ class ClearModuleCacheCommand extends Command
                 ExtensionMiddlewareRegistry::flush();
                 $this->incrementExtensionCacheVersion();
 
-                $this->info('✅ '.__('modules.commands.cache_clear.success_single', [
+                $this->info('✅ '.trans_choice('modules.commands.cache_clear.success_single', $clearedCount, [
                     'module' => $identifier,
                     'count' => $clearedCount,
                 ]));
@@ -98,7 +105,7 @@ class ClearModuleCacheCommand extends Command
                 // 모듈 프론트엔드 병합 번들 파일 삭제 (캐시 키 forget 만으로는 미삭제)
                 $clearedCount += $this->bundleService->clearBundles('module');
 
-                $this->info('✅ '.__('modules.commands.cache_clear.success_all', ['count' => $clearedCount]));
+                $this->info('✅ '.trans_choice('modules.commands.cache_clear.success_all', $clearedCount));
             }
 
             Log::info('모듈 캐시 삭제 완료', [

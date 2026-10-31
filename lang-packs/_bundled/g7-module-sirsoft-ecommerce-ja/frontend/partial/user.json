@@ -31,5 +31,36 @@
     "image_upload_partial_fail": "一部の画像アップロードに失敗しました",
     "submit_success": "レビューが登録されました",
     "submit_failed": "レビュー登録に失敗しました"
+  },
+  "claim": {
+    "image": {
+      "size_exceeded": "写真1枚は {{size}}KB を超えることはできません。",
+      "limit_exceeded": "写真は最大 {{max}}枚まで添付できます。",
+      "upload_partial_failed": "写真 {{total}}枚中 {{failed}}枚をアップロードできませんでした。申請書で再度添付してください。",
+      "remove_failed": "添付削除に失敗しました。"
+    },
+    "withdraw": {
+      "success": "申請が取り下げられました。",
+      "failed": "申請取り下げに失敗しました。"
+    },
+    "pay": {
+      "success": "決済が完了しました。",
+      "failed": "決済を開始できませんでした。"
+    }
+  },
+  "claim_apply": {
+    "edit_not_editable": "承認後は申請内容を修正することができません。変更が必要な場合はカスタマーセンターにお問い合わせください。",
+    "refund_branch_mixed_blocked": "自動で処理される商品と販売者の確認が必要な商品は分けて申請してください。",
+    "change_product_load_failed": "交換可能なオプションを読み込めませんでした。",
+    "change_product_select_option_required": "交換受け取りオプションを選択してください。",
+    "estimate_failed": "予想金額を計算できませんでした。",
+    "select_items_first": "申請する商品を選択してください。",
+    "reason_required": "申請理由を選択してください。",
+    "cancel_blocked": "この組み合わせは返金額が0円を下回るため申請できません — 商品・数量をもう一度ご確認ください",
+    "submit_success": "申請が受け付けられました。",
+    "submit_failed": "申請受け付けに失敗しました。",
+    "edit_save_success": "申請内容が編集されました。",
+    "edit_save_failed": "申請内容の編集に失敗しました。",
+    "refund_account_masked_mixed": "伏せられた口座情報は一部だけ変更できません。銀行·口座番号·口座名義人をすべて新しく入力してください。"
   }
 }

@@ -1,14 +1,25 @@
 {
   "drop_or_click": "Drag files or click to upload",
   "upload_limit": "Max {{maxFiles}} files, {{maxSize}}MB each",
+  "upload_limit_one": "Max {{maxFiles}} file, {{maxSize}}MB",
+  "upload_limit_count": "Max {{maxFiles}} files",
+  "upload_limit_count_one": "Max {{maxFiles}} file",
   "delete_confirm_title": "Delete Attachment",
   "delete_confirm_message": "Are you sure you want to delete this file?",
   "deleting": "Deleting...",
   "attached_count": "{{count}}/{{max}} attached",
   "upload_limit_exceeded": "You can attach up to {{max}} files.",
+  "upload_limit_exceeded_one": "You can attach up to {{max}} file.",
   "max_size": "Max {{size}}MB",
   "reorder_failed": "Failed to reorder files",
+  "file_too_large": "[{{name}}] The file size ({{size}}) exceeds the maximum allowed size ({{max}}MB).",
+  "file_type_not_allowed": "[{{name}}] This file type is not allowed. (Allowed: {{accept}})",
+  "upload_failed": "Upload failed.",
+  "upload_response_invalid": "The upload response could not be read.",
   "drag_to_reorder": "Drag to reorder",
   "primary_image": "Primary image",
-  "set_as_primary": "Set as primary image"
+  "set_as_primary": "Set as primary image",
+  "empty_file": "[{{name}}] Empty (0-byte) files cannot be uploaded.",
+  "invalid_file_type": "This file type is not allowed.",
+  "delete_failed": "Failed to delete the file."
 }

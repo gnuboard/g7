@@ -29,7 +29,9 @@
     "report": "신고",
     "reported": "신고됨",
     "view_count": "조회 {{count}}",
+    "reaction_total": "반응 {{count}}",
     "attachments": "첨부파일 ({{count}})",
+    "download_failed": "첨부파일을 내려받지 못했습니다.",
     "prev": "이전",
     "next": "다음",
     "comments_title": "댓글 ({{count}})",
@@ -50,8 +52,8 @@
     "guest_password_verify_message": "비회원 글을 수정하시려면 비밀번호를 입력해주세요.",
     "password_placeholder": "비밀번호를 입력하세요",
     "password_incorrect": "비밀번호가 일치하지 않습니다.",
-    "show_replies": "답변글 {{count}}개 보기",
-    "hide_replies": "답변글 숨기기",
+    "show_replies": "대댓글 {{count}}개 보기",
+    "hide_replies": "대댓글 숨기기",
     "reply_blocked_blinded_post": "블라인드 처리된 게시글에는 답변글을 작성할 수 없습니다.",
     "reply_blocked_deleted_post": "삭제된 게시글에는 답변글을 작성할 수 없습니다.",
     "user_info": "사용자 정보",
@@ -78,6 +80,7 @@
     "blinded_comment_notice": "블라인드 처리된 댓글입니다",
     "blinded_comment_description": "운영 정책에 따라 댓글이 숨김 처리되었습니다",
     "deleted_comment_notice": "삭제된 댓글입니다",
+    "secret_comment_notice": "비밀 댓글입니다",
     "blind_reason_label": "사유:",
     "blinded_at": "블라인드 처리일: {{date}}",
     "view_original_content": "원본 내용 보기",
@@ -175,6 +178,7 @@
     "no_content_preview": "내용을 입력하면 미리보기가 표시됩니다",
     "attachments": "첨부파일",
     "attachments_desc": "최대 {{maxFiles}}개, 각 {{maxSize}}MB 이하",
+    "attachments_no_permission": "첨부파일 업로드 권한이 없어 파일을 올리거나 지울 수 없습니다.",
     "attached_files": "첨부된 파일",
     "confirm_remove_attachment_title": "첨부파일 삭제",
     "confirm_remove_attachment_message": "파일이 즉시 삭제됩니다. 게시글 저장과 관계없이 되돌릴 수 없습니다.",
@@ -202,12 +206,15 @@
     "category": "분류",
     "author": "작성자",
     "view_count": "조회수",
+    "reaction_total": "반응",
     "created_at": "작성일"
   },
   "search_fields": {
     "all": "전체",
     "title_content": "제목+내용",
-    "author": "작성자(이름, 이메일)"
+    "author": "작성자(이름, 이메일)",
+    "title": "제목",
+    "content": "내용"
   },
   "filters": {
     "category_label": "분류",
@@ -284,5 +291,27 @@
     "30": "30개씩 보기",
     "50": "50개씩 보기",
     "100": "100개씩 보기"
+  },
+  "bulk": {
+    "selected_count": "{{count}}개 선택됨",
+    "delete": "삭제",
+    "blind": "블라인드",
+    "restore": "복구",
+    "modal": {
+      "delete_title": "선택한 게시글을 삭제할까요?",
+      "delete_confirm": "선택한 {{count}}개 게시글을 삭제하시겠습니까?",
+      "replies_notice": "답글이 있는 글은 답글 삭제 정책에 따라 건너뛸 수 있습니다.",
+      "blind_title": "선택한 게시글을 블라인드 처리할까요?",
+      "blind_confirm": "선택한 {{count}}개 게시글을 블라인드 처리하시겠습니까?",
+      "restore_title": "선택한 게시글을 복구할까요?",
+      "restore_confirm": "선택한 {{count}}개 게시글을 복구하시겠습니까?",
+      "reason_label": "사유 (선택)",
+      "reason_placeholder": "처리 사유를 입력하세요",
+      "processing": "처리 중..."
+    },
+    "skipped": {
+      "title": "건너뛴 게시글",
+      "description": "아래 {{count}}개 게시글은 처리하지 않았습니다."
+    }
   }
 }

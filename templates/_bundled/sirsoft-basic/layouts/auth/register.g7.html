@@ -1,0 +1,52 @@
+<!-- 회원가입 화면 — 폼 본체와 약관·방침 모달은 조각으로 갈라 두고 여기서는 그것들을 모아 세운다. 약관 문서 둘을 이 화면이 선언하는 것은 모달 조각이 자기 데이터소스를 가질 수 없기 때문이다. -->
+<layout name="auth/register" version="1.0.0" extends="_user_base">
+  <meta title="$t:auth.register.title" :guest_only="true"/>
+  <!-- 이용약관 본문 — 약관 모달을 열 때만 부른다(auto_fetch 꺼짐). 가입 전이라 비로그인으로도 읽혀야 한다. -->
+  <data-source id="termsContent" label_key="$t:editor.data_source.termsContent" type="api" endpoint="/api/modules/sirsoft-page/pages/terms" method="GET" :auto_fetch="false" auth_mode="optional"/>
+  <!-- 개인정보처리방침 본문 — 방침 모달을 열 때만 부른다. -->
+  <data-source id="privacyContent" label_key="$t:editor.data_source.privacyContent" type="api" endpoint="/api/modules/sirsoft-page/pages/privacy" method="GET" :auto_fetch="false" auth_mode="optional"/>
+  <init>
+    <!-- 깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1) — 같은 레이아웃으로 다시 들어오면 앞 입력이 남는다. -->
+    <set-state target="local" :registerForm="null"/>
+    <!-- registerForm 초기 상태 시드 — language 기본값은 _register_form.g7.html 의 Select value 표현식이 렌더 시점에 $locale 로 채움 (init_actions 컨텍스트에는 $locale 미주입이라 여기서 시드하면 항상 'ko' fallback 으로 잘못 박힘) -->
+    <set-state target="local" :isRegistering="false" :registerError="null" :errors="null" :registerForm="{}"/>
+  </init>
+  <slot name="content">
+    <flex data-type="layout" data-blur-until-loaded="{{_global?.currentUser?.uuid}}" justify="center" class="min-h-[60vh] py-12">
+      <include src="partials/auth/_redirect_if_logged_in.g7.html"/>
+      <!-- 회원가입 폼 -->
+      <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.register.title</h2>
+        <!-- 「일반 회원가입 받지 않음」(7.2.0) — 폼·가입 확장 칸 대신 안내 카드와 로그인 버튼. 회사가 만드는 계정(회사 계정 자동 생성·관리자 추가)은 이 화면을 거치지 않는다. -->
+        <div data-if="{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) === false}}" data-ref="registration_closed_card" class="p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 space-y-4">
+          <p class="text-sm text-gray-700 dark:text-gray-300">$t:auth.register.closed_notice</p>
+          <a href="/login" class="inline-flex items-center justify-center w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+            <on type="click">
+              <navigate/>
+            </on>
+            $t:auth.login
+          </a>
+        </div>
+        <div data-if="{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}">
+          <!-- 확장 영역 — 소셜 계정으로 가입하기 버튼처럼 다른 가입 수단을 확장이 붙이는 자리(가입 폼 위). 붙인 확장이 없으면 아무것도 그리지 않는다. -->
+          <extension-point name="auth_register_extensions" data-ref="auth_register_extensions_slot"/>
+          <include src="partials/auth/_register_form.g7.html"/>
+        </div>
+        <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+          <span>$t:auth.already_member</span>
+          <span> </span>
+          <a href="/login" class="inline-flex items-center justify-center text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+            <on type="click">
+              <navigate/>
+            </on>
+            $t:auth.login
+          </a>
+        </div>
+      </div>
+    </flex>
+  </slot>
+  <!-- 약관 전문 창 — 가입 폼의 동의 줄에서 연다. -->
+  <modal src="partials/auth/_modal_terms.g7.html"/>
+  <!-- 방침 전문 창 — 같은 동의 줄의 다른 링크에서 연다. -->
+  <modal src="partials/auth/_modal_privacy.g7.html"/>
+</layout>

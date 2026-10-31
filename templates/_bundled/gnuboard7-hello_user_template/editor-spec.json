@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — Hello 사용자 템플릿 sampleData. home.g7.html 의 memos 데이터소스(모듈의 공개 엔드포인트 /api/modules/gnuboard7-hello_module/memos)를 비인증으로 받는 형태라 abilities 는 담지 않는다.",
+  "templateId": "gnuboard7-hello_user_template",
+  "version": "1.0.0",
+  "description": "Hello 사용자 템플릿 레이아웃 편집기 샘플 데이터.",
+  "sampleData": {
+    "byDataSourceId": {
+      "memos": {
+        "data": {
+          "data": [
+            {
+              "id": 12,
+              "uuid": "00000000-0000-4000-8000-000000000012",
+              "title": "첫 번째 메모",
+              "content": "샘플 모듈이 보여 주는 최소 CRUD 메모입니다.",
+              "created_at": "2026-05-12 10:24:00",
+              "updated_at": "2026-05-12 10:24:00"
+            },
+            {
+              "id": 11,
+              "uuid": "00000000-0000-4000-8000-000000000011",
+              "title": "공지 메모",
+              "content": "템플릿이 모듈의 공개 API 를 그대로 받아 그립니다.",
+              "created_at": "2026-05-11 09:05:00",
+              "updated_at": "2026-05-11 09:05:00"
+            }
+          ],
+          "meta": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 10,
+            "total": 2
+          }
+        }
+      }
+    }
+  }
+}

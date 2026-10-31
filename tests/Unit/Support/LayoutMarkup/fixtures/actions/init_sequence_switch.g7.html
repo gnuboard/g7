@@ -1,0 +1,9 @@
+<layout name="probe_init" version="1.0.0">
+  <action name="boot"><set-state target="local" booted="1"/></action>
+  <init>
+    <sequence><set-state target="local" a="1"/><set-state target="local" b="2"/></sequence>
+    <switch on="{{query.mode}}"><case when="quiet"><set-state target="local" m="q"/></case><default><set-state target="local" m="l"/></default></switch>
+    <action-ref name="boot"/>
+  </init>
+  <div data-ref="root">x</div>
+</layout>

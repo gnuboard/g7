@@ -1,0 +1,32 @@
+feature: koreaexim_exchange_rate_update
+description: 정기·재시도·수동 실행의 조기 종료 조건과 실제 호출을 pairwise로 검증한다. 공휴일 빈 응답·할당량·락·수동 역탐색은 별도 명시 케이스에서 검증한다.
+coverage_strategy: pairwise
+axes:
+  trigger: [scheduled, retry, manual]
+  auto_manage: [on, off]
+  key: [set, unset]
+  base: [KRW, USD, JPY, unsupported]
+  day: [run_day, off_day]
+  observed_at: [before_11, after_11]
+  success_today: [yes, no]
+  attempts: [zero, lt_max, ge_max]
+effects:
+  - console_dry_run_date_and_auth_error_exit_codes
+  - prune_command_calls_retention_repository
+  - success_saves_rates_run_and_currency_snapshots
+  - dry_run_does_not_apply_or_become_reapplication_source
+  - after_eleven_no_data_has_no_retry_and_no_notification
+  - before_eleven_no_data_is_retried
+  - disabled_and_out_of_weekday_paths_do_not_call_http
+  - manual_lookback_counts_every_request
+  - auth_error_and_quota_stop_retries_and_quota_blocks_manual
+  - lock_contention_and_missing_key_do_not_call_http
+  - success_and_retry_budget_suppress_more_attempts
+  - migration_preserves_existing_history
+  - reversible_schema
+  - update_eligibility
+  - http_call_budget
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/tests/Feature/MigrationSmokeTest.php
+  - plugins/_bundled/sirsoft-koreaexim/tests/Feature/Console/UpdateExchangeRatesCommandTest.php
+  - plugins/_bundled/sirsoft-koreaexim/tests/fixtures/UpdateCases.php

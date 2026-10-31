@@ -1,0 +1,118 @@
+<!-- 댓글 구획 전체 — 목록은 평평한 배열 하나이고 계층은 «들여쓰기»로만 낸다(깊이 × 1rem, 10단에서 멈춘다). 대댓글이 보일지는 그 줄의 뿌리 원댓글이 펼쳐져 있는지로 갈리고, 뿌리를 찾는 표는 부모 화면의 계산값(`commentRootMap`)이 준다. 아래에는 답글 칸과 새 댓글 칸 둘이 따로 있고 각자 자기 저장 상태를 쓴다 -->
+<partial description="Admin Board Post Detail - Comments Section (Header Separated)">
+  <div data-ref="comments_section" data-if="{{post?.data?.board?.use_comment}}" class="board:mt-6">
+    <div data-ref="comments_header" class="board-flex-center board:gap-2 board:px-6 board:pb-3 board:border-b board:border-gray-200 board:dark:border-gray-700 board:pb-2">
+      <icon name="comments" class="board:text-xl board:text-green-600 board:dark:text-green-400"/>
+      <h3 class="board-section-heading">$t:sirsoft-board.admin.posts.detail.comments_title|count={{post?.data?.comment_count ?? 0}}</h3>
+    </div>
+    <div data-ref="comments_card">
+      <div data-ref="comments_list_container" data-if="{{(post?.data?.comment_count ?? 0) > 0}}" class="">
+        <div data-ref="comment_wrapper_{{idx}}" data-each="comment, idx in post?.data?.comments ?? []">
+          <div data-ref="comment_visible_{{idx}}" data-if="{{(comment?.depth ?? 0) === 0 || (_local.collapsedReplies?.[$computed.commentRootMap?.[comment.id]] === false)}}">
+            <div data-ref="comment_item_{{idx}}" class="board:border-b board:border-gray-200 board:dark:border-gray-700 board:px-4 board:py-3 board:hover:bg-gray-50 board:dark:hover:bg-gray-700/50 board:transition-colors">
+              <prop name="style">
+                <field name="marginLeft" value="{{Math.min(comment.depth ?? 0, 10) * 1}}rem"/>
+              </prop>
+              <include src="_comment.g7.html"/>
+            </div>
+            <div data-ref="reply_form_for_comment_{{idx}}" data-if="{{_local.replyingTo === comment.id &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="board:px-4 board-panel-header">
+              <prop name="style">
+                <field name="marginLeft" value="{{Math.min((comment.depth ?? 0) + 1, 10) * 1}}rem"/>
+              </prop>
+              <div class="board:p-3 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg board:border board:border-gray-200 board:dark:border-gray-700">
+                <div class="board-flex-start board:gap-2 board:mb-2">
+                  <icon name="turn-up" class="board:text-sm board:rotate-90 board:mt-1 board:text-gray-500 board:dark:text-gray-400"/>
+                  <span class="board-text-label">$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name || $t('sirsoft-board.admin.posts.unknown_author')}}</span>
+                </div>
+                <textarea value="{{_local.reply_comment_content ?? ''}}" aria-label="$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name || $t('sirsoft-board.admin.posts.unknown_author')}}" placeholder="$t:sirsoft-board.admin.posts.detail.reply_placeholder" :rows="2" disabled="{{post?.data?.abilities?.can_write_comments !== true}}" class="board:w-full board:px-3 board:py-2 board:text-sm board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:mb-2 board:disabled:opacity-50 board:disabled:cursor-not-allowed">
+                  <on type="input">
+                    <!-- 답글 입력을 담는다 — 답글 칸은 한 번에 하나만 열리므로 어느 댓글에 다는지는 이 값이 아니라 `replyingTo` 가 들고 있다 -->
+                    <set-state target="local" reply_comment_content="{{$event.target.value}}"/>
+                  </on>
+                </textarea>
+                <div class="board:flex board:justify-end board:gap-2">
+                  <button type="button" class="board:px-3 board:py-1.5 board-text-body board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
+                    <on type="click">
+                      <!-- 답글 칸을 닫는다 — 적던 내용은 비우지 않으므로 다시 열면 그대로 남아 있다 -->
+                      <set-state target="local" :replyingTo="null"/>
+                    </on>
+                    <span>$t:sirsoft-board.admin.posts.detail.cancel</span>
+                  </button>
+                  <button type="button" class="board:px-3 board:py-1.5 board:text-sm board:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_write_comments !== true || _local.replySubmitting === true}}">
+                    <on type="click">
+                      <!-- 답글 등록 — 부모 댓글의 id 와 그보다 한 단 깊은 깊이를 함께 보낸다. 성공하면 글 전체를 다시 읽어 새 답글이 제자리(부모 아래)에 끼워지게 한다 -->
+                      <sequence if="{{_local.replySubmitting !== true}}">
+                        <set-state target="local" :replySubmitting="true"/>
+                        <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{comment?.post_id}}/comments" method="POST">
+                          <success>
+                            <refetch-data-source dataSourceId="post"/>
+                            <set-state target="local" :replyingTo="null" :replyingToPostId="null" :replyingToDepth="null" reply_comment_content="" :replySubmitting="false"/>
+                            <toast type="success" message="$t:sirsoft-board.admin.posts.detail.reply_submit_success"/>
+                          </success>
+                          <fail>
+                            <set-state target="local" :replySubmitting="false"/>
+                            <toast type="error" message="{{error.message}}"/>
+                          </fail>
+                          <body content="{{_local.reply_comment_content}}" parent_id="{{comment?.id}}" depth="{{(comment?.depth ?? 0) + 1}}"/>
+                        </api-call>
+                      </sequence>
+                    </on>
+                    <div class="board-flex-center board:gap-2">
+                      <icon data-if="{{!_local.replySubmitting}}" name="paper-plane" class="board:text-base"/>
+                      <icon data-if="{{_local.replySubmitting}}" name="spinner" class="board-spinner-sm"/>
+                      <span>{{_local.replySubmitting ? '$t:sirsoft-board.admin.posts.detail.reply_submitting' : '$t:sirsoft-board.admin.posts.detail.reply'}}</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="no_comments_message" data-if="{{(post?.data?.comment_count ?? 0) === 0}}" class="board:p-12 board:text-center">
+        <icon name="comment" class="board:text-5xl board:mx-auto board:mb-3 board:text-gray-500 board:dark:text-gray-500"/>
+        <p class="board-text-label-subtle">$t:sirsoft-board.admin.posts.detail.no_comments</p>
+      </div>
+      <div data-ref="comment_input_section" data-if="{{post?.data?.board?.use_comment &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="board:p-6 board:border-t board:border-gray-200 board:dark:border-gray-700">
+        <div class="board-flex-start board:gap-3">
+          <icon name="user-circle" class="board:text-[2rem] board:text-gray-500 board:dark:text-gray-500 board:flex-shrink-0 board:mt-1"/>
+          <div class="board:flex-1">
+            <textarea value="{{_local.new_comment_content ?? ''}}" placeholder="$t:sirsoft-board.admin.posts.detail.comment_placeholder" :rows="3" disabled="{{post?.data?.abilities?.can_write_comments !== true}}" class="board:w-full board:px-3 board:py-2 board:text-sm board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:focus:ring-2 board:focus:ring-blue-500 board:dark:focus:ring-blue-400 board:focus:border-blue-500 board:disabled:opacity-50 board:disabled:cursor-not-allowed">
+              <on type="input">
+                <!-- 맨 아래 새 댓글 칸 — 답글 칸과 다른 값을 써서 둘을 동시에 적어도 서로 섞이지 않는다 -->
+                <set-state target="local" new_comment_content="{{$event.target.value}}"/>
+              </on>
+            </textarea>
+            <div class="board:flex board:justify-end board:mt-2">
+              <button type="button" class="board:px-4 board:py-2 board:text-sm board:bg-gray-800 board:dark:bg-gray-700 board:text-white board:rounded-lg board:hover:bg-gray-900 board:dark:hover:bg-gray-600 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_write_comments !== true || _local.commentSubmitting === true}}">
+                <on type="click">
+                  <!-- 새 댓글 등록 — 부모가 없으므로 답글과 달리 `parent_id`·`depth` 를 보내지 않는다. 성공하면 입력칸을 비운다(답글 쪽은 칸 자체가 닫히므로 비우는 자리가 다르다) -->
+                  <sequence if="{{_local.commentSubmitting !== true}}">
+                    <set-state target="local" :commentSubmitting="true"/>
+                    <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/board/{{route.slug}}/posts/{{route.id}}/comments" method="POST">
+                      <success>
+                        <refetch-data-source dataSourceId="post"/>
+                        <set-state target="local" new_comment_content="" :commentSubmitting="false"/>
+                        <toast type="success" message="$t:sirsoft-board.admin.posts.detail.comment_submit_success"/>
+                      </success>
+                      <fail>
+                        <set-state target="local" :commentSubmitting="false"/>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                      <body content="{{_local.new_comment_content}}"/>
+                    </api-call>
+                  </sequence>
+                </on>
+                <div class="board-flex-center board:gap-2">
+                  <icon data-if="{{!_local.commentSubmitting}}" name="paper-plane" class="board:text-base"/>
+                  <icon data-if="{{_local.commentSubmitting}}" name="spinner" class="board-spinner-sm"/>
+                  <span>{{_local.commentSubmitting ? '$t:sirsoft-board.admin.posts.detail.comment_submitting' : '$t:sirsoft-board.admin.posts.detail.comment_submit'}}</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

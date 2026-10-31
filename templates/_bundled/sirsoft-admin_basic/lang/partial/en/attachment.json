@@ -7,11 +7,17 @@
   "deleting": "Deleting...",
   "drop_or_click": "Drag and drop files or click to upload",
   "upload_limit": "Max {{maxFiles}} files, {{maxSize}}MB each",
+  "upload_limit_one": "Max {{maxFiles}} file, {{maxSize}}MB",
   "upload_limit_exceeded": "You can attach up to {{max}} files.",
+  "upload_limit_exceeded_one": "You can attach up to {{max}} file.",
   "attached_count": "{{count}}/{{max}} attached",
   "max_size": "Max {{size}}MB",
   "drag_to_reorder": "Drag to reorder",
   "reorder_failed": "Failed to reorder.",
   "primary_image": "Primary image",
-  "set_as_primary": "Set as primary image"
+  "set_as_primary": "Set as primary image",
+  "empty_file": "[{{name}}] Empty (0-byte) files cannot be uploaded.",
+  "file_too_large": "[{{name}}] File size ({{size}}) exceeds the maximum allowed size ({{max}}MB).",
+  "type_not_allowed": "[{{name}}] This file type is not allowed. (Allowed: {{accept}})",
+  "upload_response_invalid": "The upload response could not be read."
 }

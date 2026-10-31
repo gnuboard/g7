@@ -3,6 +3,8 @@
 namespace App\Contracts\Repositories;
 
 use App\Models\IdentityVerificationLog;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 /**
  * identity_verification_logs 테이블 Repository 계약.
@@ -67,11 +69,44 @@ interface IdentityVerificationLogRepositoryInterface
     public function findVerifiedForToken(string $token, string $purpose): ?IdentityVerificationLog;
 
     /**
+     * 토큰으로 verified 상태의 challenge 를 소비·만료 여부와 무관하게 찾습니다.
+     *
+     * 가입 직후처럼 같은 요청에서 방금 소비한 토큰이 무엇을 확인했는지 다시 읽을 때 씁니다 — 통과 판정에는 쓰지 않는다
+     * (통과 판정은 소비 전 토큰만 보는 {@see self::findVerifiedForToken()}).
+     *
+     * @param  string  $token  verification_token
+     * @param  string  $purpose  IDV 목적 (예: signup)
+     * @return IdentityVerificationLog|null 매칭 로그 또는 null
+     */
+    public function findVerifiedByToken(string $token, string $purpose): ?IdentityVerificationLog;
+
+    /**
      * 만료 경과 challenge 를 일괄 expire 처리합니다.
      *
      * @return int 처리된 행 수
      */
     public function expirePastDue(): int;
+
+    /**
+     * 만료 시각이 지난 진행 중(requested·sent) challenge 를 ID 순으로 나눠 콜백에 넘깁니다.
+     *
+     * 건별로 만료 훅을 발화해야 하는 호출자가 쓴다 — 일괄 update 는 어느 건이 만료됐는지 돌려주지 않는다.
+     *
+     * @param  int  $size  한 번에 넘길 건수
+     * @param  callable(Collection<int, IdentityVerificationLog>): void  $callback  청크 콜백
+     * @return void
+     */
+    public function chunkPendingPastDue(int $size, callable $callback): void;
+
+    /**
+     * challenge 가 아직 진행 중(requested·sent)일 때만 만료로 바꿉니다.
+     *
+     * 조회와 변경 사이에 인증이 끝난 건을 만료로 덮지 않도록 상태 조건을 다시 건다.
+     *
+     * @param  IdentityVerificationLog  $log  대상 challenge
+     * @return bool 이번 호출로 만료로 바뀌었으면 true
+     */
+    public function expireIfPending(IdentityVerificationLog $log): bool;
 
     /**
      * 보관주기 경과 로그를 일괄 삭제합니다.
@@ -86,7 +121,7 @@ interface IdentityVerificationLogRepositoryInterface
      *
      * @param  array<string, mixed>  $filters  provider_id/purpose/status/user_id/date_from/date_to 등
      * @param  int  $perPage  페이지 크기
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @return LengthAwarePaginator
      */
     public function search(array $filters, int $perPage = 20);
 

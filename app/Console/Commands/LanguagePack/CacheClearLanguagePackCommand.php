@@ -42,14 +42,14 @@ class CacheClearLanguagePackCommand extends Command
     {
         try {
             $result = $this->service->refreshCache();
-            $this->info('언어팩 캐시 정리 완료:');
+            $this->info(__('language_packs.commands.cache_clear.done'));
             foreach ($result as $key => $ok) {
                 $this->line('  - '.$key.': '.($ok ? 'ok' : 'failed'));
             }
 
             return collect($result)->every(fn ($v) => $v === true) ? self::SUCCESS : self::FAILURE;
         } catch (Throwable $e) {
-            $this->error('언어팩 캐시 정리 실패: '.$e->getMessage());
+            $this->error(__('language_packs.commands.cache_clear.failed', ['error' => $e->getMessage()]));
 
             return self::FAILURE;
         }

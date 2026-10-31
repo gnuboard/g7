@@ -15,6 +15,12 @@ class ResponseHelperTest extends TestCase
 {
     /**
      * error() + \Throwable + debug=true → message에 예외 메시지 포함 + debug 키 존재
+     *
+     * @scenario method=error, payload=throwable, debug=on
+     *
+     * @effects throwable_debug_info_exposed_in_debug
+     *
+     * @return void 반환값 없음
      */
     public function test_error_with_throwable_in_debug_mode_includes_debug_info(): void
     {
@@ -38,6 +44,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * error() + \Throwable + debug=false → 번역 메시지만, debug 키 미존재
+     *
+     * @scenario method=error, payload=throwable, debug=off
+     *
+     * @effects throwable_detail_hidden_in_production
+     *
+     * @return void 반환값 없음
      */
     public function test_error_with_throwable_in_production_hides_debug_info(): void
     {
@@ -56,6 +68,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * error() + string + 500 + debug=false → errors 키 미존재 (프로덕션 보안)
+     *
+     * @scenario method=error, payload=string_500, debug=off
+     *
+     * @effects server_error_string_hidden_in_production
+     *
+     * @return void 반환값 없음
      */
     public function test_error_with_string_500_in_production_hides_errors(): void
     {
@@ -71,6 +89,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * error() + string + 500 + debug=true → errors 키 존재
+     *
+     * @scenario method=error, payload=string_500, debug=on
+     *
+     * @effects server_error_string_shown_in_debug
+     *
+     * @return void 반환값 없음
      */
     public function test_error_with_string_500_in_debug_mode_shows_errors(): void
     {
@@ -87,6 +111,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * error() + array + 422 → debug 무관하게 errors 존재 (기존 validation 동작 유지)
+     *
+     * @scenario method=error, payload=array_422, debug=off
+     *
+     * @effects validation_errors_always_shown
+     *
+     * @return void 반환값 없음
      */
     public function test_error_with_array_422_always_shows_errors(): void
     {
@@ -104,6 +134,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * error() + string + 400 + debug=false → errors 존재 (500 미만은 guard 미적용)
+     *
+     * @scenario method=error, payload=string_400, debug=off
+     *
+     * @effects client_error_string_shown_in_production
+     *
+     * @return void 반환값 없음
      */
     public function test_error_with_string_400_in_production_shows_errors(): void
     {
@@ -118,6 +154,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * serverError() + \Throwable + debug=true → message + debug 상세
+     *
+     * @scenario method=serverError, payload=throwable, debug=on
+     *
+     * @effects server_error_throwable_debug_exposed
+     *
+     * @return void 반환값 없음
      */
     public function test_server_error_with_throwable_in_debug_mode(): void
     {
@@ -136,6 +178,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * serverError() + \Throwable + debug=false → 번역 메시지만
+     *
+     * @scenario method=serverError, payload=throwable, debug=off
+     *
+     * @effects server_error_throwable_hidden_in_production
+     *
+     * @return void 반환값 없음
      */
     public function test_server_error_with_throwable_in_production(): void
     {
@@ -154,6 +202,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * moduleError() + \Throwable → error() 위임 동작 확인 (domain 전달)
+     *
+     * @scenario method=moduleError, payload=throwable, debug=on
+     *
+     * @effects module_error_delegates_to_error
+     *
+     * @return void 반환값 없음
      */
     public function test_module_error_with_throwable_delegates_to_error(): void
     {
@@ -176,6 +230,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * serverError() + string + debug=true → 기존 동작 유지 (error 키에 포함)
+     *
+     * @scenario method=serverError, payload=string, debug=on
+     *
+     * @effects server_error_string_kept_in_error_key
+     *
+     * @return void 반환값 없음
      */
     public function test_server_error_with_string_in_debug_mode_keeps_legacy_behavior(): void
     {
@@ -191,14 +251,21 @@ class ResponseHelperTest extends TestCase
 
     /**
      * error() + \Throwable + messageParams + debug=true → message 중복 방지 + debug 존재
+     *
+     * @scenario method=error, payload=throwable_with_params, debug=on
+     *
+     * @effects exception_message_not_duplicated
+     *
+     * @return void 반환값 없음
      */
     public function test_error_with_throwable_and_message_params_no_duplicate(): void
     {
         config(['app.debug' => true]);
 
         $exception = new \RuntimeException('DB connection failed');
+        // `:error` 자리를 가진 문구여야 중복 여부를 잴 수 있다 — 회원 생성 실패 문구는 내부 오류를 숨기도록 바뀌어 자리가 없다
         $response = ResponseHelper::error(
-            'user.create_failed',
+            'admin_layout.validation.schema_parse_error',
             500,
             $exception,
             ['error' => $exception->getMessage()]
@@ -218,6 +285,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * error() + null errors → errors/debug 키 모두 미존재
+     *
+     * @scenario method=error, payload=none
+     *
+     * @effects null_errors_adds_no_extra_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_error_with_null_errors_has_no_extra_keys(): void
     {
@@ -231,6 +304,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * formatException trace는 최대 10프레임
+     *
+     * @scenario method=error, payload=deep_throwable, debug=on
+     *
+     * @effects debug_trace_limited_to_10_frames
+     *
+     * @return void 반환값 없음
      */
     public function test_debug_trace_is_limited_to_10_frames(): void
     {
@@ -267,6 +346,12 @@ class ResponseHelperTest extends TestCase
      * config('app.locale') fallback 으로 떨어뜨렸다. 이 회귀 테스트는
      * SetLocale 미들웨어가 이미 set 한 App::getLocale() 결과(ja 등)가
      * 다국어 응답에 반영됨을 보장한다.
+     *
+     * @scenario method=success, locale=ja
+     *
+     * @effects message_uses_current_app_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_trans_uses_current_app_locale_not_hardcoded_whitelist(): void
     {
@@ -283,6 +368,12 @@ class ResponseHelperTest extends TestCase
 
     /**
      * 회귀: App::getLocale() 가 빌트인 ko/en 외 로케일이어도 ResponseHelper 가 그 값을 신뢰한다.
+     *
+     * @scenario method=success, locale=zh_CN
+     *
+     * @effects non_builtin_locale_respected
+     *
+     * @return void 반환값 없음
      */
     public function test_trans_respects_non_builtin_locale_when_app_locale_set(): void
     {
@@ -302,6 +393,12 @@ class ResponseHelperTest extends TestCase
      * `__()` 가 미해석 키 문자열을 그대로 반환해 API 응답에 `"message": "messages.success"` 가
      * 그대로 나갔다 (코어 7곳 + gdpr/marketing/pay_kginicis/verification_kginicis 등 43개 호출).
      * 정상 키는 `common.success` 다 (ko: "성공적으로 처리되었습니다." / en: "Successfully processed.").
+     *
+     * @scenario method=success, locale=ko_en
+     *
+     * @effects default_success_message_translated
+     *
+     * @return void 반환값 없음
      */
     public function test_default_success_message_key_is_translated(): void
     {
@@ -330,6 +427,12 @@ class ResponseHelperTest extends TestCase
      * 회귀: 코드베이스에 미해석 lang 키(`messages.success`)를 넘기는 호출이 없어야 한다.
      *
      * ResponseHelper 기본값만 고치면 명시적으로 그 키를 넘기던 호출부는 여전히 미해석 키를 낸다.
+     *
+     * @scenario method=success, caller=codebase_scan
+     *
+     * @effects no_caller_passes_unresolvable_success_key
+     *
+     * @return void 반환값 없음
      */
     public function test_no_caller_passes_unresolvable_messages_success_key(): void
     {

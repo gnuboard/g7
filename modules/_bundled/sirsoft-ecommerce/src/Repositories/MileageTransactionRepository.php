@@ -2,7 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Helpers\PermissionHelper;
 use App\Models\User;
+use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
 use Carbon\Carbon;
@@ -14,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 
 /**
@@ -21,6 +24,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositor
  */
 class MileageTransactionRepository implements MileageTransactionRepositoryInterface
 {
+    use FiltersByDateRange;
     use PaginatesWithDeferredJoin;
 
     /**
@@ -33,6 +37,7 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         'admin_earn',
         'refund_restore',
         'order_cancel_restore',
+        'refund_credit',
     ];
 
     /**
@@ -170,6 +175,66 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     /**
      * {@inheritdoc}
      */
+    public function existsRestoreForRefund(int $orderRefundId): bool
+    {
+        return MileageTransaction::query()
+            ->where('order_refund_id', $orderRefundId)
+            ->whereIn('type', [
+                MileageTransactionTypeEnum::REFUND_RESTORE->value,
+                MileageTransactionTypeEnum::ORDER_CANCEL_RESTORE->value,
+            ])
+            ->exists();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function existsCreditForRefund(int $orderRefundId): bool
+    {
+        return MileageTransaction::query()
+            ->where('order_refund_id', $orderRefundId)
+            ->where('type', MileageTransactionTypeEnum::REFUND_CREDIT->value)
+            ->exists();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function sumCancellationRestoredForOrder(int $orderId, array $cancelSourceValues): float
+    {
+        return (float) MileageTransaction::query()
+            ->where('order_id', $orderId)
+            ->whereNull('claim_payment_id')
+            ->whereIn('type', [
+                MileageTransactionTypeEnum::ORDER_CANCEL_RESTORE->value,
+                MileageTransactionTypeEnum::REFUND_RESTORE->value,
+            ])
+            ->where(function (Builder $query) use ($orderId, $cancelSourceValues) {
+                $query->whereNotNull('order_cancel_id')
+                    ->orWhereIn('order_refund_id', OrderRefund::query()
+                        ->select('id')
+                        ->where('order_id', $orderId)
+                        ->whereIn('refund_source_type', $cancelSourceValues));
+            })
+            ->sum('amount');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function sumReactivationUsageForOrder(int $orderId): float
+    {
+        return abs((float) MileageTransaction::query()
+            ->where('order_id', $orderId)
+            ->whereNull('claim_payment_id')
+            ->where('type', MileageTransactionTypeEnum::ORDER_USE->value)
+            ->where('metadata->reason', 'reactivation')
+            ->sum('amount'));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function linkUsageToCancel(int $orderId, int $orderCancelId): int
     {
         // 해당 주문의 사용 거래 중 아직 취소에 묶이지 않은 건에 cancel_id 를 채워
@@ -179,6 +244,20 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
             ->where('type', MileageTransactionTypeEnum::ORDER_USE->value)
             ->whereNull('order_cancel_id')
             ->update(['order_cancel_id' => $orderCancelId]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function linkUsageToRefund(int $orderId, int $orderRefundId): int
+    {
+        // 취소 축과 동형 — 해당 주문의 사용 거래 중 아직 환불에 묶이지 않은 건에
+        // refund_id 를 채워 환급 거래와 동일 order_refund_id 로 연결되게 한다.
+        return MileageTransaction::query()
+            ->where('order_id', $orderId)
+            ->where('type', MileageTransactionTypeEnum::ORDER_USE->value)
+            ->whereNull('order_refund_id')
+            ->update(['order_refund_id' => $orderRefundId]);
     }
 
     /**
@@ -202,6 +281,98 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         // (inner 에 두면 건너뛸 행 전체에 상관 서브쿼리가 돌아 깊은 OFFSET 비용이 그대로 남는다).
         $query = MileageTransaction::query();
 
+        // 권한 스코프 필터링 (`mileage.read` 의 본인·역할 범위) — 관리자 내역 목록 전용 쿼리다
+        // (호출부: UserMileageService::paginateAdminHistory 하나. 회원 본인 내역은 paginateForUser).
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.mileage.read');
+
+        // 필터 — 내보내기와 같은 한 경로(applyListFilters)를 지난다
+        $this->applyListFilters($query, $filters);
+
+        // 적립/사용 이력은 계속 쌓이므로 지연 조인으로 뒤쪽 페이지 비용을 고정한다.
+        //
+        // columns 를 ['*'] 로 두는 이유: 목록 응답(MileageTransactionResource)이 금액·잔액·
+        // 만료·메모·연결 주문까지 거의 모든 컬럼을 그대로 노출해 뺄 컬럼이 없다. 이 목록의
+        // 이득은 컬럼 프루닝이 아니라 "넓은 컬럼을 읽는 행 수를 이번 페이지로 고정" 하는 쪽이다.
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: $this->sortSpec($filters['sort'] ?? 'created_at_desc'),
+            perPage: $perPage,
+            relations: ['user', 'grantedByUser', 'order'],
+            // 소멸합 집계는 결과 집합을 좁히지 않으므로 outer 에서만 실행한다.
+            // `addSelect('*')` 를 함께 부르는 이유: outer 의 select 목록이 한 번 설정되면
+            // `get(['*'])` 가 그것을 보존하므로, 명시하지 않으면 본 컬럼이 통째로 빠진다.
+            outerUsing: fn (Builder $outer) => $outer
+                ->addSelect('*')
+                ->addSelect(['expired_amount' => $expiredAmount]),
+            resultCap: PaginationLimits::resultCap('admin.mileage_transactions'),
+        );
+    }
+
+    /**
+     * 정렬 조건을 쿼리에 적용합니다.
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @param  string  $sort  정렬 슬러그
+     * @return void 반환값 없음
+     */
+    protected function applySort($query, string $sort): void
+    {
+        foreach ($this->sortSpec($sort) as $spec) {
+            $query->orderBy($spec['column'], $spec['direction']);
+        }
+    }
+
+    /**
+     * 정렬 슬러그를 정렬 스펙으로 해석합니다.
+     *
+     * 지연 조인은 정렬이 적용되지 않은 쿼리와 정렬 스펙을 따로 받으므로, 쿼리에 직접
+     * `orderBy` 를 붙이는 대신 스펙을 돌려준다. 선택지가 닫힌 슬러그 집합이라 요청 값이
+     * 그대로 컬럼명으로 새지 않는다.
+     *
+     * @param  string  $sort  정렬 슬러그
+     * @return array<int, array{column: string, direction: string}> 정렬 스펙
+     */
+    protected function sortSpec(string $sort): array
+    {
+        return match ($sort) {
+            'created_at_asc' => [['column' => 'created_at', 'direction' => 'asc'], ['column' => 'id', 'direction' => 'asc']],
+            'amount_desc' => [['column' => 'amount', 'direction' => 'desc'], ['column' => 'id', 'direction' => 'desc']],
+            'amount_asc' => [['column' => 'amount', 'direction' => 'asc'], ['column' => 'id', 'direction' => 'asc']],
+            default => [['column' => 'created_at', 'direction' => 'desc'], ['column' => 'id', 'direction' => 'desc']],
+        };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function newExportQuery(array $filters, ?array $ids, User $requester): Builder
+    {
+        $query = MileageTransaction::query();
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.mileage.read', $requester);
+
+        if ($ids !== null) {
+            // 「선택한 행」은 그 선택이 대상이다 — 목록 필터를 덧씌우지 않는다
+            return $query->whereIn('id', $ids);
+        }
+
+        $this->applyListFilters($query, $filters);
+
+        return $query;
+    }
+
+    /**
+     * 목록 필터 조건을 쿼리에 겁니다 — 목록 조회와 내보내기 원천 쿼리(`newExportQuery`)가 같은 이 한 경로를 지난다.
+     *
+     * 축을 두 곳에 복제하면 한쪽에만 필터가 늘어나는 순간 화면 건수와 파일 행 수가 조용히 어긋난다. 권한 범위는 걸지
+     * 않는다 — 필터가 아니라 호출자의 열람 범위이므로 호출부가 각자 건다.
+     *
+     * @param  Builder  $query  쿼리
+     * @param  array  $filters  검증된 목록 필터
+     * @return void 반환값 없음 (쿼리에 직접 조건을 건다)
+     */
+    protected function applyListFilters(Builder $query, array $filters): void
+    {
         if (! empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);
         }
@@ -218,13 +389,8 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
         // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
         // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
-        if (! empty($filters['start_date'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['start_date'])->startOfDay());
-        }
-
-        if (! empty($filters['end_date'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['end_date'])->endOfDay());
-        }
+        // 목록이 일시를 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+        $this->applyViewerDateRangeFilter($query, 'created_at', $filters['start_date'] ?? null, $filters['end_date'] ?? null);
 
         // 검색: search_field 별 대상 컬럼/관계 분기 (member/member_id/email/order)
         if (! empty($filters['search_keyword'])) {
@@ -255,59 +421,6 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
                 }
             });
         }
-
-        // 적립/사용 이력은 계속 쌓이므로 지연 조인으로 뒤쪽 페이지 비용을 고정한다.
-        //
-        // columns 를 ['*'] 로 두는 이유: 목록 응답(MileageTransactionResource)이 금액·잔액·
-        // 만료·메모·연결 주문까지 거의 모든 컬럼을 그대로 노출해 뺄 컬럼이 없다. 이 목록의
-        // 이득은 컬럼 프루닝이 아니라 "넓은 컬럼을 읽는 행 수를 이번 페이지로 고정" 하는 쪽이다.
-        return $this->paginateWithDeferredJoin(
-            query: $query,
-            columns: ['*'],
-            sort: $this->sortSpec($filters['sort'] ?? 'created_at_desc'),
-            perPage: $perPage,
-            relations: ['user', 'grantedByUser', 'order'],
-            // 소멸합 집계는 결과 집합을 좁히지 않으므로 outer 에서만 실행한다.
-            // `addSelect('*')` 를 함께 부르는 이유: outer 의 select 목록이 한 번 설정되면
-            // `get(['*'])` 가 그것을 보존하므로, 명시하지 않으면 본 컬럼이 통째로 빠진다.
-            outerUsing: fn (Builder $outer) => $outer
-                ->addSelect('*')
-                ->addSelect(['expired_amount' => $expiredAmount]),
-            resultCap: PaginationLimits::resultCap('admin.mileage_transactions'),
-        );
-    }
-
-    /**
-     * 정렬 조건을 쿼리에 적용합니다.
-     *
-     * @param  Builder  $query  쿼리 빌더
-     * @param  string  $sort  정렬 슬러그
-     */
-    protected function applySort($query, string $sort): void
-    {
-        foreach ($this->sortSpec($sort) as $spec) {
-            $query->orderBy($spec['column'], $spec['direction']);
-        }
-    }
-
-    /**
-     * 정렬 슬러그를 정렬 스펙으로 해석합니다.
-     *
-     * 지연 조인은 정렬이 적용되지 않은 쿼리와 정렬 스펙을 따로 받으므로, 쿼리에 직접
-     * `orderBy` 를 붙이는 대신 스펙을 돌려준다. 선택지가 닫힌 슬러그 집합이라 요청 값이
-     * 그대로 컬럼명으로 새지 않는다.
-     *
-     * @param  string  $sort  정렬 슬러그
-     * @return array<int, array{column: string, direction: string}> 정렬 스펙
-     */
-    protected function sortSpec(string $sort): array
-    {
-        return match ($sort) {
-            'created_at_asc' => [['column' => 'created_at', 'direction' => 'asc'], ['column' => 'id', 'direction' => 'asc']],
-            'amount_desc' => [['column' => 'amount', 'direction' => 'desc'], ['column' => 'id', 'direction' => 'desc']],
-            'amount_asc' => [['column' => 'amount', 'direction' => 'asc'], ['column' => 'id', 'direction' => 'asc']],
-            default => [['column' => 'created_at', 'direction' => 'desc'], ['column' => 'id', 'direction' => 'desc']],
-        };
     }
 
     /**
@@ -342,6 +455,8 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     {
         $query = MileageTransaction::query()
             ->expiringBefore($now)
+            // 회원 삭제로 연결이 끊긴 행은 잔여를 0 으로 정리한 뒤라 대상이 아니다(E3 — 방어)
+            ->whereNotNull('user_id')
             ->orderBy('id', 'asc');
 
         if ($limit !== null) {
@@ -393,6 +508,11 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
                 if ($transaction->order_cancel_id !== null) {
                     $q->orWhere('order_cancel_id', $transaction->order_cancel_id);
                 }
+
+                // 동일 주문환불로 연결된 거래 (클레임 환불 발 환급 축 — 취소 축과 대칭)
+                if ($transaction->order_refund_id !== null) {
+                    $q->orWhere('order_refund_id', $transaction->order_refund_id);
+                }
             })
             ->where('id', '!=', $transaction->id)
             ->orderBy('id', 'asc')
@@ -410,7 +530,15 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     /**
      * {@inheritdoc}
      */
-    public function getEarnableOptions(string $triggerColumn, string $triggerStatus, int $delayDays, Carbon $now, ?int $limit = null): \Illuminate\Support\Collection
+    public function makeOwnedBy(int $userId): MileageTransaction
+    {
+        return (new MileageTransaction)->forceFill(['user_id' => $userId]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getEarnableOptions(string $triggerColumn, string|array $triggerStatus, int $delayDays, Carbon $now, ?int $limit = null): \Illuminate\Support\Collection
     {
         $threshold = $now->copy()->subDays($delayDays);
 
@@ -418,7 +546,8 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         $query = DB::table((new OrderOption)->getTable().' as opt')
             ->join((new Order)->getTable().' as ord', 'opt.order_id', '=', 'ord.id')
             ->whereNotNull('ord.user_id')
-            ->where('opt.option_status', $triggerStatus)
+            // 트리거 상태를 지난 상품도 대상이다(F4) — 호출부가 트리거 이후 상태 집합을 넘긴다.
+            ->whereIn('opt.option_status', (array) $triggerStatus)
             ->whereNotNull("opt.{$triggerColumn}")
             ->where("opt.{$triggerColumn}", '<=', $threshold)
             ->where('opt.subtotal_earned_points_amount', '>', 0)
@@ -486,10 +615,10 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     /**
      * {@inheritdoc}
      */
-    public function getRemainingLotsByIds(int $userId, array $lotIds): Collection
+    public function getRemainingLotsByIds(?int $userId, array $lotIds): Collection
     {
         return MileageTransaction::query()
-            ->where('user_id', $userId)
+            ->when($userId !== null, fn ($query) => $query->where('user_id', $userId))
             ->whereIn('id', $lotIds)
             ->where('remaining_amount', '>', 0)
             ->get();
@@ -507,11 +636,40 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     /**
      * {@inheritdoc}
      */
-    public function deleteForUser(int $userId): int
+    public function detachUser(int $userId): int
     {
         return MileageTransaction::query()
             ->where('user_id', $userId)
-            ->delete();
+            ->update(['user_id' => null]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getActiveLotsForUserForUpdate(int $userId): Collection
+    {
+        // audit:allow query-unbounded-get reason: 탈퇴 소멸은 활성 lot 전량을 0 으로 만들어야 한다 —
+        // 일부만 읽으면 잔액이 남는다. 소진된 lot 은 active() 에서 빠져 모수가 사용 이력에 비례해 늘지 않는다
+        return MileageTransaction::query()
+            ->where('user_id', $userId)
+            ->active()
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function sumRemainingByType(int $userId, string $type, string $currency): float
+    {
+        return (float) MileageTransaction::query()
+            ->where('user_id', $userId)
+            ->where('type', $type)
+            ->where('currency', $currency)
+            ->where('remaining_amount', '>', 0)
+            ->whereNull('expired_at')
+            ->sum('remaining_amount');
     }
 
     /**
@@ -528,5 +686,38 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         }
 
         return $map[$category] ?? [];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function existsRestoreForClaimPayment(int $claimPaymentId): bool
+    {
+        return MileageTransaction::query()
+            ->where('claim_payment_id', $claimPaymentId)
+            ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)
+            ->exists();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function sumRestoredForClaimPayment(int $claimPaymentId): float
+    {
+        return (float) MileageTransaction::query()
+            ->where('claim_payment_id', $claimPaymentId)
+            ->where('type', MileageTransactionTypeEnum::REFUND_RESTORE->value)
+            ->sum('amount');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findUsageForClaimPayment(int $claimPaymentId): ?MileageTransaction
+    {
+        return MileageTransaction::query()
+            ->where('claim_payment_id', $claimPaymentId)
+            ->where('type', MileageTransactionTypeEnum::ORDER_USE->value)
+            ->first();
     }
 }

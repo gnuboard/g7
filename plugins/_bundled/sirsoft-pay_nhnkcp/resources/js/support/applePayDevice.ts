@@ -1,3 +1,5 @@
+import { translateNhnkcp } from '../translate';
+
 export const NHNKCP_APPLEPAY_METHOD = 'nhnkcp_applepay';
 
 export function isNhnKcpApplePayMethod(paymentMethod: unknown): boolean {
@@ -26,13 +28,6 @@ export function isIosMobileDevice(): boolean {
 }
 
 export function applePayUnsupportedMessage(): string {
-    const lang = typeof document !== 'undefined'
-        ? document.documentElement.lang
-        : '';
-
-    if ((lang || '').toLowerCase().startsWith('ko')) {
-        return '애플페이는 IOS 기기에 모바일결제만 가능합니다.';
-    }
-
-    return 'Apple Pay is available only for mobile payments on iOS devices.';
+    // 화면 언어별 문구는 번역 키가 정한다(일본어는 언어팩). 번역 엔진이 없을 때만 한국어로 대신한다.
+    return translateNhnkcp('payment.error.applepay_ios_only', '애플페이는 IOS 기기에 모바일결제만 가능합니다.');
 }

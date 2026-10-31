@@ -1,0 +1,47 @@
+<!-- 마이페이지 «문의» 탭 — 여러 상품에 남긴 내 문의를 한자리에 모은다. 문의 기능 자체가 꺼져 있으면
+     빈 목록을 보여 주는 대신 404 화면으로 갈아 끼운다(응답의 `inquiry_available` 로 판정). -->
+<layout name="mypage/inquiries" version="1.0.0" extends="_user_base">
+  <!-- 내 문의 목록. 검색어·답변여부·쪽수가 전부 `_local` 에 있어 이 소스만 다시 받으면 된다 -->
+  <data-source id="myInquiries" label_key="$t:editor.data_source.myInquiries" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/inquiries" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :blur_until_loaded="true">
+    <params page="{{_local.inquiriesPage ?? query.page ?? 1}}" :per_page="10" search="{{_local.inquiriesSearch ?? ''}}" is_answered="{{_local.inquiriesFilter ?? ''}}"/>
+    <success>
+      <conditions>
+        <when if="{{response.data.data.meta.inquiry_available === false}}">
+          <show-error-page :errorCode="404" target="content"/>
+        </when>
+      </conditions>
+    </success>
+  </data-source>
+  <computed name="currentTab">inquiries</computed>
+  <permissions/>
+  <transition-overlay enabled style="skeleton" target="mypage_tab_content" fallback-target="main_content_area">
+    <skeleton component="PageSkeleton" animation="pulse" :iteration_count="5"/>
+  </transition-overlay>
+  <init>
+    <set-state target="local" inquiriesPage="{{query.page ?? 1}}" inquiriesSearch="" inquiriesFilter=""/>
+  </init>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 페이지 제목 -->
+        <div class="flex items-center gap-2 mb-6">
+          <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:mypage.title</h1>
+        </div>
+        <!-- 탭 네비게이션 -->
+        <include src="partials/mypage/_tab_navigation.g7.html"/>
+        <!-- 탭 컨텐츠 영역 (스켈레톤 타겟) -->
+        <div data-ref="mypage_tab_content">
+          <!-- 문의내역 -->
+          <include src="partials/mypage/inquiries/_list.g7.html"/>
+        </div>
+      </container>
+    </div>
+  </slot>
+  <!-- 문의 수정 창 — 상품 상세와 **같은 창**을 그대로 쓴다. 창이 `_global` 에서 값을 읽도록 짜여 있어
+       어느 화면에서 열든 여는 쪽이 값을 세워 주면 그만이다 -->
+  <modal src="partials/shop/detail/_modal_qna_write.g7.html"/>
+  <!-- 문의 삭제 확인 — 위와 같은 이유로 상품 상세와 공유한다 -->
+  <modal src="partials/shop/detail/_modal_inquiry_delete.g7.html"/>
+</layout>

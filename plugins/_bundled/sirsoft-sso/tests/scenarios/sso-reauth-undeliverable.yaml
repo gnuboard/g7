@@ -1,0 +1,26 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 화면(정보 수정·비밀번호 변경·관리자 회원 수정)과 IdP 비밀번호 허용 값은 시험마다 성립하는 조합만 있다 — 비밀번호를 허용하지 않으면 비밀번호 변경 본인 확인 자체가 없어 곱하지 않고 effects 로 잠근다.
+feature: sso_reauth_undeliverable_e2e
+description: |
+  메일을 받을 수 없는 회사 계정 회원(대체 주소 `….invalid`, 비밀번호 없음)의 정보 수정 본인 확인 종단. 마이페이지 > 내 정보 수정에서
+  「본인 확인 계속하기」 → 재확인 요청 응답이 「회사 계정으로 재확인」(external_redirect) → 모의 OIDC 다시 로그인 → 정보 수정 화면으로
+  돌아와 폼이 열린다. 휴대폰 본인확인처럼 회원별 판정이 없는 수단이 켜진 사이트에서도 그 수단으로 빠지지 않고, 받을 곳 없는
+  인증번호 칸·소셜 계정 안내가 보이지 않는다. 수단 선택 규칙은 PHPUnit(코어 `identity-per-user-fallback.yaml`, `reauth-provider.yaml`)이 덮는다.
+  IdP 가 이 사이트 비밀번호를 허용하면 비밀번호 변경 화면의 처음 저장(428) 재확인이 회사 계정으로 가고 비밀번호 변경 화면으로 돌아와 다시 저장하면
+  통과한다. 허용하지 않으면(기본) 비밀번호 변경 화면·관리자 회원 수정 화면이 칸 대신 「만들 수 없습니다」 안내를 보인다. 모의 IdP 칸은 켜기 전 값으로 되돌린다.
+axes:
+  member: [company_account_undeliverable]
+  screen: [mypage_profile_edit, mypage_change_password, "mypage_change_password|admin_user_form"]
+  allow_local_password: ['true', 'false']
+effects:
+  - e2e_reauth_screen_has_no_social_wording
+  - e2e_reauth_continue_picks_company_account
+  - e2e_reauth_roundtrip_opens_profile_form
+  - e2e_password_reauth_notice_matches_company_account  # 비밀번호 변경 화면 안내가 실제 수단(회사 계정)과 맞다(소셜·관리자 문의 아님)
+  - e2e_password_reauth_returns_to_change_password      # 비밀번호 첫 저장의 428 재확인이 지금 화면 경로를 싣고 비밀번호 변경 화면으로 돌아온다
+  - e2e_password_saved_after_return                     # 돌아와 다시 저장하면 유예 시간 안이라 통과
+  - e2e_unsettable_password_notice_on_mypage            # IdP 가 비밀번호를 허용하지 않으면 비밀번호 변경 화면이 칸 대신 안내
+  - e2e_unsettable_password_notice_on_admin_form        # 관리자 회원 수정 화면도 칸·본인 확인 대신 안내
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Playwright/specs/sso-reauth-undeliverable.spec.ts
+limitations:
+  - "실서버 한 대·DB 하나를 쓰는 종단 시험이라 직렬(워커 1)로만 돈다. 회원은 e2e798. 접두어로만 만들고 끝에 지운다."

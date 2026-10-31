@@ -1,0 +1,24 @@
+feature: 게시판 사용자 레이아웃의 권한 판정 키 — permissions → abilities 이관이 레이아웃에 남김없이 반영되고, 화면 갈래가 abilities 로 갈린다
+
+description: |
+  게시판 API 가 권한 판정을 `permissions`·`user_permissions` 에서 `abilities`·`user_abilities` 로 옮겼다. 사용자 템플릿 게시판
+  레이아웃(목록 글쓰기 · 상세 댓글 · 작성 폼 · 갤러리 목록)이 옛 키를 읽으면 판정이 늘 비어 단추가 숨거나 열린다.
+
+  이 시험은 레이아웃 JSON 의 모든 `{{…}}` 식을 모아 옛 키가 남지 않았는지(legacy_key_absent), 화면 갈래를 정하는 자리가
+  abilities 키를 읽는지(ability_key_present), 식 추출 도우미 자체가 맞게 모으는지(extractor) 본다.
+
+  글쓰기 단추는 #757 에서 쓸 수 있는 회원은 글쓰기 화면 링크(`<a>`, 새 탭 가능), 그 밖은 단추(로그인했는데 권한이 없으면 비활성)로
+  갈렸다 — 두 갈래가 모두 `abilities?.can_write` 로 갈리는지 본다.
+
+axes:
+  check: [legacy_key_absent, ability_key_present, extractor]
+
+effects:
+  - legacy_permission_keys_absent
+  - write_entry_splits_on_can_write
+  - comment_and_manage_entries_read_abilities
+  - form_entries_read_user_abilities
+  - expression_extractor_collects_all
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/boardUserAbilitiesLayout.test.ts

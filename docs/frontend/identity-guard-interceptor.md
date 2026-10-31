@@ -105,6 +105,7 @@ G7Core 미초기화 환경: `console.error` 만 출력 + `failed/G7_NOT_READY` �
 
 ```text
 1. payload.redirect_url 누락 → failed/MISSING_REDIRECT_URL
+   payload.redirect_url 이 실행 스킴(javascript:/vbscript:/data:) → failed/UNSAFE_REDIRECT_URL (이동하지 않음)
 2. sessionStorage[g7.identity.redirectStash] = JSON({ return_url, payload, stashed_at })
 3. window.location.href = redirect_url
 4. Promise<never>

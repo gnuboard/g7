@@ -71,7 +71,9 @@ class NotificationSendCountLogTest extends TestCase
 
         $this->assertStringContainsString("Log::info('알림 발송 완료'", $source);
 
-        foreach (["'recipients' => \$total", "'sent' => \$sent", "'failed' => \$failed"] as $field) {
+        // 발송 루프는 수신자 한 명 단위 메서드(sendToRecipient)로 나뉘어, 건수는 그 메서드가 참조로 받는
+        // 집계 배열 `$tally` 에 쌓인다 — 완료 줄은 그 집계를 읽는다.
+        foreach (["'recipients' => \$total", "'sent' => \$tally['sent']", "'failed' => \$tally['failed']"] as $field) {
             $this->assertMatchesRegularExpression(
                 "/Log::info\('알림 발송 완료'.*?".preg_quote($field, '/').'/s',
                 $source,
@@ -91,7 +93,10 @@ class NotificationSendCountLogTest extends TestCase
     {
         $source = $this->source();
 
-        $this->assertStringContainsString('$sent++;', $source);
-        $this->assertStringContainsString('$failed++;', $source);
+        $this->assertStringContainsString("\$tally['sent']++;", $source);
+        $this->assertStringContainsString("\$tally['failed']++;", $source);
+
+        // 집계 배열이 참조로 넘어가야 수신자 메서드의 증가가 완료 줄에 닿는다 — 값 전달이면 언제나 0 이다.
+        $this->assertStringContainsString('array &$tally', $source, '집계 배열이 참조로 넘어가지 않는다 — 완료 줄이 언제나 0 을 보고한다.');
     }
 }

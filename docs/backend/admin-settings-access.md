@@ -97,6 +97,8 @@ g7_core_settings('drivers.queue_driver');   // dev 공유 drivers.json 의 datab
 
 사용자에게 표시할 타임존이 필요하면 `config('app.default_user_timezone')` 또는 `g7_core_settings('general.timezone')` 을 사용한다. `config('app.timezone')` 사용은 항상 UTC 가 반환되므로 사용자 표시 의도라면 버그다.
 
+큐 워커 등록 키 `drivers.queue_connections`·`drivers.queue_names`(#139)도 `g7_core_settings()` 로만 읽는다 — `QueueWorkerRegistry` 가 유일한 소비자이고 대응하는 Laravel config 가 없어 sync 하지 않는다. 그래서 「새 키 추가 시 점검」 5번의 `EnvPriority` 등재 대상이 아니다(env 우선 모드에서도 이 두 키는 늘 저장값을 따른다). 응답에서 `drivers.queue_names` 는 빈 맵이어도 객체(`{}`)로 낸다.
+
 ---
 
 ## config 미러 갱신 시점 (부팅 + 저장)

@@ -8,11 +8,15 @@ use App\Enums\LanguagePackStatus;
 use App\Extension\HookManager;
 use App\Models\LanguagePack;
 use App\Services\LanguagePack\LanguagePackRegistry;
+use Illuminate\Console\Command;
+use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ClaimReasonSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingCarrierSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
@@ -29,6 +33,19 @@ use Symfony\Component\Console\Output\BufferedOutput;
  */
 class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
 {
+    /**
+     * 시험 전용 활성 팩 식별자.
+     *
+     * 실제 설치 팩(`g7-module-sirsoft-ecommerce-ja`)과 겹치지 않는 가짜 벤더(`g7test`)를 쓴다 — 시험이 활성 폴더를
+     * 만들고 지우므로 실제 이름이면 개발 환경의 설치본을 건드린다. 주입 대상은 target_identifier 로 고른다.
+     */
+    private const PACK_IDENTIFIER = 'g7test-module-sirsoft-ecommerce-ja';
+
+    /**
+     * 활성 모듈 시더 디렉토리를 확인하고, 이전 실행이 남긴 언어팩·시드 행을 비우고 번역 레지스트리 캐시를 무효화합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -58,17 +75,41 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
         // 본 테스트는 lang pack 활성 hook 이 LanguagePack::resolveDirectory() →
         // base_path('lang-packs/{identifier}/seed/*.json') 을 읽어 ja 키를 주입하는 경로를 검증한다.
         // 활성 디렉토리가 부재한 dev 환경(사용자가 language-pack:install 미실행) 에서도 테스트가 동작하도록,
-        // _bundled 원본을 활성 경로에 복사한다 (RefreshDatabase 가 파일시스템에 영향을 주지 않으므로 영구).
+        // _bundled 원본을 시험 전용 활성 경로(가짜 식별자)에 복사하고 tearDown 에서 지운다 — 실제 설치본
+        // (`lang-packs/g7-module-sirsoft-ecommerce-ja`)은 읽지도 쓰지도 않는다.
         $bundledDir = base_path('lang-packs/_bundled/g7-module-sirsoft-ecommerce-ja');
-        $activeDir = base_path('lang-packs/g7-module-sirsoft-ecommerce-ja');
-        if (\Illuminate\Support\Facades\File::isDirectory($bundledDir)
-            && ! \Illuminate\Support\Facades\File::isDirectory($activeDir)) {
-            \Illuminate\Support\Facades\File::copyDirectory($bundledDir, $activeDir);
+        $activeDir = base_path('lang-packs/'.self::PACK_IDENTIFIER);
+        File::deleteDirectory($activeDir);
+        if (File::isDirectory($bundledDir)) {
+            File::copyDirectory($bundledDir, $activeDir);
         }
 
-        app()->forgetInstance(LanguagePackRegistry::class);
+        // 레지스트리 싱글톤을 갈아 끼우지 않고 캐시만 비운다 — 부팅 때 등록된 번역 필터·주입기가 그 인스턴스를
+        // 쥐고 있어, 교체하면 새 활성 팩이 필터에 보이지 않는다(리스너 refreshRegistry 와 같은 규칙, #597).
+        app(LanguagePackRegistry::class)->invalidate();
     }
 
+    /**
+     * 시험 전용 활성 팩 폴더를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function tearDown(): void
+    {
+        File::deleteDirectory(base_path('lang-packs/'.self::PACK_IDENTIFIER));
+
+        parent::tearDown();
+    }
+
+    /**
+     * ja 모듈 언어팩을 켜면 배송유형 이름에 ja 가 채워지는지 검증합니다.
+     *
+     * @scenario entity=shipping_types,override=none
+     *
+     * @effects lang_pack_activation_injects_ja_into_seeded_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_lang_pack_activation_triggers_shipping_types_seeder(): void
     {
         $this->ensureSeeded();
@@ -84,6 +125,15 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
         $this->assertJaKeyPresentInTable('ecommerce_shipping_types');
     }
 
+    /**
+     * ja 모듈 언어팩을 켜면 택배사 이름에 ja 가 채워지는지 검증합니다.
+     *
+     * @scenario entity=shipping_carriers,override=none
+     *
+     * @effects lang_pack_activation_injects_ja_into_seeded_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_lang_pack_activation_triggers_shipping_carriers_seeder(): void
     {
         $this->ensureSeeded();
@@ -99,6 +149,15 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
         $this->assertJaKeyPresentInTable('ecommerce_shipping_carriers');
     }
 
+    /**
+     * ja 모듈 언어팩을 켜면 클레임 사유 이름에 ja 가 채워지는지 검증합니다.
+     *
+     * @scenario entity=claim_reasons,override=none
+     *
+     * @effects lang_pack_activation_injects_ja_into_seeded_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_lang_pack_activation_triggers_claim_reasons_seeder(): void
     {
         $this->ensureSeeded();
@@ -114,6 +173,15 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
         $this->assertJaKeyPresentInTable('ecommerce_claim_reasons');
     }
 
+    /**
+     * 운영자가 고친 ko 이름은 지키고 ja 만 채우는지 검증합니다.
+     *
+     * @scenario entity=shipping_types,override=name_ko
+     *
+     * @effects operator_ko_edit_survives_ja_sync
+     *
+     * @return void 반환값 없음
+     */
     public function test_user_overridden_ko_is_preserved_while_ja_auto_synced(): void
     {
         $this->ensureSeeded();
@@ -140,6 +208,11 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
         $this->assertNotNull($name['ja'] ?? null, 'ja 자동 동기화');
     }
 
+    /**
+     * 세 엔티티 시더를 테스트 트랜잭션 안에서 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function ensureSeeded(): void
     {
         // RefreshDatabase 환경 — 시더 클래스 직접 호출 (outer transaction 안에서)
@@ -148,19 +221,31 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
         $this->runSeeder(ClaimReasonSeeder::class);
     }
 
+    /**
+     * 시더 한 개를 콘솔 출력 대역을 붙여 실행합니다.
+     *
+     * @param  string  $seederClass  시더 클래스명
+     * @return void 반환값 없음
+     */
     private function runSeeder(string $seederClass): void
     {
         $seeder = app($seederClass);
         // Seeder->run() 안에서 $this->command->info() 호출 가능하도록 dummy command 주입
-        $command = new \Illuminate\Console\Command();
-        $command->setOutput(new \Illuminate\Console\OutputStyle(
-            new \Symfony\Component\Console\Input\ArrayInput([]),
-            new BufferedOutput(),
+        $command = new Command;
+        $command->setOutput(new OutputStyle(
+            new ArrayInput([]),
+            new BufferedOutput,
         ));
         $seeder->setCommand($command);
         $seeder->run();
     }
 
+    /**
+     * 테이블의 모든 행 이름에 ja 키가 있는지 단언합니다.
+     *
+     * @param  string  $table  테이블명
+     * @return void 반환값 없음
+     */
     private function assertJaKeyPresentInTable(string $table): void
     {
         $rows = DB::table($table)->get(['id', 'name']);
@@ -171,11 +256,17 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 이커머스 ja 모듈 언어팩 행을 만듭니다.
+     *
+     * @param  LanguagePackStatus  $status  초기 상태
+     * @return LanguagePack 생성된 언어팩
+     */
     private function createEcommerceJaLanguagePack(LanguagePackStatus $status): LanguagePack
     {
         return LanguagePack::create([
-            'identifier' => 'g7-module-sirsoft-ecommerce-ja',
-            'vendor' => 'g7',
+            'identifier' => self::PACK_IDENTIFIER,
+            'vendor' => 'g7test',
             'name' => 'Ecommerce JA Language Pack',
             'version' => '1.0.0-beta.1',
             'scope' => LanguagePackScope::Module->value,
@@ -186,7 +277,7 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
             'text_direction' => 'ltr',
             'is_protected' => false,
             'manifest' => [
-                'identifier' => 'g7-module-sirsoft-ecommerce-ja',
+                'identifier' => self::PACK_IDENTIFIER,
                 'scope' => 'module',
                 'target_identifier' => 'sirsoft-ecommerce',
                 'locale' => 'ja',
@@ -198,10 +289,15 @@ class EcommerceLanguagePackSeederTriggerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 번역 레지스트리 캐시를 비우고 지원 로케일 설정을 다시 맞춥니다.
+     *
+     * @return void 반환값 없음
+     */
     private function refreshLanguagePackRegistry(): void
     {
-        app()->forgetInstance(LanguagePackRegistry::class);
         $registry = app(LanguagePackRegistry::class);
+        $registry->invalidate();
         config([
             'app.supported_locales' => $registry->getActiveCoreLocales(),
             'app.locale_names' => $registry->getLocaleNames(),

@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Extension\ExtensionManager;
 use App\Support\ConfigCacheHelper;
 use Illuminate\Support\Facades\Log;
 
@@ -18,8 +19,8 @@ use Illuminate\Support\Facades\Log;
  * 캐시와 나란히 config 캐시를 재생성하므로 여기서 구독하지 않는다(이중 재생성 회피).
  * 이 리스너는 updateComposerAutoload 를 거치지 않는 activate/deactivate 만 담당한다.
  *
- * @see \App\Extension\ExtensionManager::updateComposerAutoload()
- * @see \App\Support\ConfigCacheHelper
+ * @see ExtensionManager::updateComposerAutoload()
+ * @see ConfigCacheHelper
  */
 class ExtensionConfigCacheListener implements HookListenerInterface
 {
@@ -34,11 +35,11 @@ class ExtensionConfigCacheListener implements HookListenerInterface
     {
         $hooks = [];
         $hookNames = [
-            'core.modules.activated',
+            'core.modules.after_activate',
             'core.modules.after_deactivate',
-            'core.plugins.activated',
+            'core.plugins.after_activate',
             'core.plugins.after_deactivate',
-            'core.templates.activated',
+            'core.templates.after_activate',
             'core.templates.after_deactivate',
         ];
 
@@ -62,6 +63,7 @@ class ExtensionConfigCacheListener implements HookListenerInterface
      * 기본 훅 핸들러 (HookListenerInterface 필수 메서드).
      *
      * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -72,6 +74,7 @@ class ExtensionConfigCacheListener implements HookListenerInterface
      * 확장 활성화/비활성화 직후 config 캐시를 재생성합니다.
      *
      * @param  mixed  ...$args  훅 인자 (확장 식별자 등)
+     * @return void 반환값 없음
      */
     public function onExtensionToggled(...$args): void
     {

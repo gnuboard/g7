@@ -1,0 +1,17 @@
+feature: Laravel 표준 검증 문구의 단·복수 (7.1.0 결정)
+
+description: |
+  「The tags field must have at least 1 items.」 처럼 규칙값(`:min`·`:max`·`:size`·`:value`·`:digits`·`:decimal`)
+  뒤 명사를 늘 복수로 적던 영어 표준 검증 문구를 영어 값 `단수|복수` 로 두고, 코어 검증 문구 치환기가 그
+  규칙값으로 고른다. 1 이면 단수, 그 밖이면 복수. 한국어·일본어 값은 그대로다. 표준 문구를 미리 번역해
+  넘기던 코어 FormRequest 메시지도 규칙값으로 고른 한 문장을 넘긴다.
+
+axes:
+  surface: [validator]
+
+effects:
+  - validation_message_singular_for_rule_value_one
+  - korean_validation_message_unchanged
+
+test_files:
+  - tests/Unit/Lang/ValidationRulePluralMessagesTest.php

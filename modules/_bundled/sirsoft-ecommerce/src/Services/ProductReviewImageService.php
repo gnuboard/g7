@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Models\ProductReview;
 use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ServesImageWithRowValidators;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -26,6 +28,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ProductReviewImageService
 {
     use ResolvesRowStorage;
+    use ResolvesStoredExtension;
     use ServesImageWithRowValidators;
 
     /**
@@ -68,7 +71,7 @@ class ProductReviewImageService
         // 필터 훅 - 파일 데이터 변형 (압축, 리사이즈 등 확장 포인트)
         $file = HookManager::applyFilters('sirsoft-ecommerce.review-image.filter_upload_file', $file);
 
-        $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $storedFilename = Str::uuid().'.'.$this->storedExtension($file);
         $path = "reviews/{$review->id}/{$storedFilename}";
 
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
@@ -221,6 +224,11 @@ class ProductReviewImageService
 
             return null;
         }
+
+        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366).
+        // 서빙 정보의 스트림에 굳혀 두면 코어 지점(`streamedFileResponseFromMeta()`)이 같은 응답 객체에
+        // 캐시 계약을 더해 내보낸다.
+        InlineMediaPolicy::harden($info['response'], $image->mime_type, $image->original_filename);
 
         return $info;
     }

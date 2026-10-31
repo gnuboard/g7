@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -361,6 +362,36 @@ class Order extends Model
     }
 
     /**
+     * 교환 신청 이력 관계
+     *
+     * @return HasMany 교환 신청서 모델과의 관계
+     */
+    public function exchanges(): HasMany
+    {
+        return $this->hasMany(OrderExchange::class, 'order_id');
+    }
+
+    /**
+     * 반품 신청 이력 관계
+     *
+     * @return HasMany 반품 신청서 모델과의 관계
+     */
+    public function returns(): HasMany
+    {
+        return $this->hasMany(OrderReturn::class, 'order_id');
+    }
+
+    /**
+     * 클레임 추가결제 이력 관계
+     *
+     * @return HasMany 클레임 추가결제 모델과의 관계
+     */
+    public function claimPayments(): HasMany
+    {
+        return $this->hasMany(ClaimPayment::class, 'order_id');
+    }
+
+    /**
      * 주문자명 반환 (배송지 기준)
      *
      * @return string|null 주문자명
@@ -591,5 +622,29 @@ class Order extends Model
             : $this->options()->where('option_status', '!=', OrderStatusEnum::CANCELLED->value)->count();
 
         return $activeCount > 0;
+    }
+
+    /**
+     * 주문 금액을 지금 덮고 있는 행(회계 주체)만 돌려줍니다.
+     *
+     * 재계산 입력(`OrderAdjustmentService::buildRecalcInput()`)과 같은 판정이다 — 취소 행과 교환완료
+     * (`EXCHANGED`)로 닫힌 원 행은 빼고(후속 행이 승계), 원 행이 아직 교환 진행 중인 후속 행도 뺀다
+     * (원 행이 주체). 반품 행은 금액을 덮은 채 남으므로 포함한다. 헤더 합계(판매가·결제액)가 이 행들의
+     * 값이므로, 화면의 정가·수량 합계도 이 행들로 세어야 같은 기준이 된다.
+     *
+     * @return Collection<int, OrderOption> 회계 주체 행
+     */
+    public function accountableOptions(): Collection
+    {
+        $exchangedSourceIds = $this->options
+            ->filter(fn (OrderOption $option) => $option->option_status === OrderStatusEnum::EXCHANGED)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return $this->options
+            ->reject(fn (OrderOption $option) => in_array($option->option_status, [OrderStatusEnum::CANCELLED, OrderStatusEnum::EXCHANGED], true))
+            ->reject(fn (OrderOption $option) => $option->isExchanged() && ! in_array((int) $option->source_option_id, $exchangedSourceIds, true))
+            ->values();
     }
 }

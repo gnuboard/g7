@@ -7,6 +7,7 @@ require_once __DIR__.'/../ModuleTestCase.php';
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 비회원 게시글 삭제 토큰 단위 테스트
@@ -16,15 +17,19 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * - consumeDeleteVerifyToken: 유효 토큰 소비 → true + 재소비 방지 (일회용)
  * - 존재하지 않는 토큰 소비 → false
  * - 다른 slug/postId 토큰은 소비되지 않음 (격리)
- *
- * @group board
- * @group unit
- * @group post
  */
+#[Group('board')]
+#[Group('unit')]
+#[Group('post')]
 class PostServiceGuestTokenTest extends ModuleTestCase
 {
     private PostService $postService;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,6 +38,12 @@ class PostServiceGuestTokenTest extends ModuleTestCase
 
     /**
      * storeDeleteVerifyToken: token 문자열 및 expires_at 반환
+     *
+     * @scenario concern=guest_post_token, condition=token_valid
+     *
+     * @effects store_returns_token_and_expires_at
+     *
+     * @return void 반환값 없음
      */
     public function test_store_returns_token_and_expires_at(): void
     {
@@ -47,6 +58,12 @@ class PostServiceGuestTokenTest extends ModuleTestCase
 
     /**
      * consumeDeleteVerifyToken: 저장된 토큰 소비 → true
+     *
+     * @scenario concern=guest_post_token, condition=token_valid
+     *
+     * @effects consume_valid_token_returns_true
+     *
+     * @return void 반환값 없음
      */
     public function test_consume_valid_token_returns_true(): void
     {
@@ -60,6 +77,12 @@ class PostServiceGuestTokenTest extends ModuleTestCase
 
     /**
      * consumeDeleteVerifyToken: 토큰은 일회용 — 두 번째 소비 → false
+     *
+     * @scenario concern=guest_post_token, condition=token_reused
+     *
+     * @effects consume_token_is_one_time_use
+     *
+     * @return void 반환값 없음
      */
     public function test_consume_token_is_one_time_use(): void
     {
@@ -74,6 +97,12 @@ class PostServiceGuestTokenTest extends ModuleTestCase
 
     /**
      * consumeDeleteVerifyToken: 저장하지 않은 토큰 소비 → false
+     *
+     * @scenario concern=guest_post_token, condition=token_mismatched
+     *
+     * @effects consume_nonexistent_token_returns_false
+     *
+     * @return void 반환값 없음
      */
     public function test_consume_nonexistent_token_returns_false(): void
     {
@@ -84,6 +113,12 @@ class PostServiceGuestTokenTest extends ModuleTestCase
 
     /**
      * 다른 slug로 저장한 토큰은 소비 불가 (캐시 키 격리)
+     *
+     * @scenario concern=guest_post_token, condition=token_mismatched
+     *
+     * @effects token_is_isolated_by_slug
+     *
+     * @return void 반환값 없음
      */
     public function test_token_is_isolated_by_slug(): void
     {
@@ -97,6 +132,12 @@ class PostServiceGuestTokenTest extends ModuleTestCase
 
     /**
      * 다른 postId로 저장한 토큰은 소비 불가 (캐시 키 격리)
+     *
+     * @scenario concern=guest_post_token, condition=token_mismatched
+     *
+     * @effects token_is_isolated_by_post_id
+     *
+     * @return void 반환값 없음
      */
     public function test_token_is_isolated_by_post_id(): void
     {

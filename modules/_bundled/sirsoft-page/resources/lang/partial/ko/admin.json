@@ -71,7 +71,8 @@
     "errors": {
       "delete_failed": "페이지 삭제에 실패했습니다.",
       "restore_failed": "버전 복원에 실패했습니다.",
-      "publish_change_failed": "발행 상태 변경에 실패했습니다."
+      "publish_change_failed": "발행 상태 변경에 실패했습니다.",
+      "download_failed": "첨부파일을 내려받지 못했습니다."
     },
     "form": {
       "page_title_create": "페이지 등록",
@@ -117,7 +118,8 @@
       "create_success": "페이지가 등록되었습니다.",
       "update_success": "페이지가 수정되었습니다.",
       "validation_error": "입력 정보를 확인해주세요.",
-      "read_only_message": "수정 권한이 없어 읽기 전용으로 표시됩니다."
+      "read_only_message": "수정 권한이 없어 읽기 전용으로 표시됩니다.",
+      "read_only_message_create": "등록 권한이 없어 읽기 전용으로 표시됩니다."
     },
     "attachment": {
       "download": "다운로드"

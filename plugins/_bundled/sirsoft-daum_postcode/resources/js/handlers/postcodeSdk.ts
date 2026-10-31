@@ -23,6 +23,22 @@ export const DAUM_POSTCODE_SCRIPT_ID = 'daum_postcode_script';
 /** 자산 실패 안내의 식별자 */
 const FAILURE_ID = 'daum-postcode-sdk';
 
+/**
+ * 같은 SDK 스크립트에 대해 코어 레이아웃 스크립트 로더가 따로 내는 실패 안내의 식별자.
+ *
+ * 코어 안내는 스크립트 id 원문(`daum_postcode_script`)을 이름으로 쓰고, 플러그인 안내와 겹치면 「2개 항목을
+ * 불러오지 못했습니다. daum_postcode_script, 주소 검색」 묶음 문구가 되어 플러그인의 「주소를 직접 입력해 주세요」
+ * 가 사라졌다(7.1.0 실측). 플러그인 안내의 재시도가 같은 SDK 를 다시 불러오므로 코어 쪽 안내는 걷는다.
+ */
+const CORE_SCRIPT_FAILURE_ID = `layout-script:${DAUM_POSTCODE_SCRIPT_ID}`;
+
+/** 코어 안내가 플러그인 안내보다 늦게 올 수 있어 다시 살피는 간격(ms)과 최대 시간(ms) */
+const CORE_DUPLICATE_SWEEP_MS = 500;
+const CORE_DUPLICATE_SWEEP_LIMIT_MS = 30000;
+
+/** 코어 중복 안내를 걷는 타이머 */
+let coreDuplicateSweep: ReturnType<typeof setInterval> | null = null;
+
 /** SDK 확보를 기다리는 최대 시간(ms) — 코어 스크립트 로더의 재시도 예산과 맞춘다 */
 const DEFAULT_WAIT_MS = 12000;
 
@@ -137,6 +153,56 @@ export async function reloadPostcodeSdk(): Promise<boolean> {
 }
 
 /**
+ * 코어가 같은 SDK 에 대해 낸 실패 안내를 걷습니다(플러그인 안내가 떠 있는 동안).
+ *
+ * 코어 레이아웃 스크립트 로더의 재시도가 끝나는 시점과 플러그인 대기가 끝나는 시점이 엇갈려, 코어 안내가
+ * 먼저 와 있을 수도 나중에 올 수도 있다. 지금 한 번 걷고, 플러그인 안내가 해제될 때까지 짧게 다시 살핀다.
+ *
+ * @return void
+ */
+function suppressCoreDuplicateNotice(): void {
+    const assets = (window as any)?.G7Core?.assets;
+
+    if (typeof assets?.clearFailure !== 'function') {
+        return;
+    }
+
+    const sweep = (): void => {
+        const failures: Array<{ id?: string }> = typeof assets.getFailures === 'function' ? assets.getFailures() : [];
+
+        if (failures.some((failure) => failure?.id === CORE_SCRIPT_FAILURE_ID)) {
+            assets.clearFailure(CORE_SCRIPT_FAILURE_ID);
+        }
+    };
+
+    sweep();
+    stopCoreDuplicateSweep();
+
+    const startedAt = Date.now();
+    coreDuplicateSweep = setInterval(() => {
+        if (Date.now() - startedAt >= CORE_DUPLICATE_SWEEP_LIMIT_MS) {
+            stopCoreDuplicateSweep();
+
+            return;
+        }
+
+        sweep();
+    }, CORE_DUPLICATE_SWEEP_MS);
+}
+
+/**
+ * 코어 중복 안내 감시를 멈춥니다.
+ *
+ * @return void
+ */
+function stopCoreDuplicateSweep(): void {
+    if (coreDuplicateSweep !== null) {
+        clearInterval(coreDuplicateSweep);
+        coreDuplicateSweep = null;
+    }
+}
+
+/**
  * SDK 미확보를 사용자에게 알립니다.
  *
  * @param onRetry 재시도 성공 시 수행할 후속 동작
@@ -168,6 +234,8 @@ export function notifyPostcodeSdkFailure(onRetry: () => void | Promise<void>): v
             await onRetry();
         },
     });
+
+    suppressCoreDuplicateNotice();
 }
 
 /**
@@ -176,5 +244,6 @@ export function notifyPostcodeSdkFailure(onRetry: () => void | Promise<void>): v
  * @return void
  */
 export function clearPostcodeSdkFailure(): void {
+    stopCoreDuplicateSweep();
     (window as any)?.G7Core?.assets?.clearFailure?.(FAILURE_ID);
 }

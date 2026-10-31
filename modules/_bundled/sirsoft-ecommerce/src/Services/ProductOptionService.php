@@ -3,14 +3,25 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Helpers\PermissionHelper;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 상품 옵션 서비스
  */
 class ProductOptionService
 {
+    use ReappliesPermissionScope;
+
+    /**
+     * ProductOptionService 생성자
+     *
+     * @param  ProductOptionRepositoryInterface  $repository  상품 옵션 리포지토리
+     * @param  ProductRepositoryInterface  $productRepository  상품 리포지토리
+     */
     public function __construct(
         protected ProductOptionRepositoryInterface $repository,
         protected ProductRepositoryInterface $productRepository
@@ -33,6 +44,38 @@ class ProductOptionService
         }
 
         return $optionIds;
+    }
+
+    /**
+     * 일괄 변경 대상 상품 전량이 액터의 `products.update` 스코프 안인지 단언합니다.
+     *
+     * 옵션 일괄 경로는 정적 경로라 미들웨어 스코프 검사가 돌지 않는다. 대상 상품은 요청의 상품 ID 와
+     * **옵션이 실제로 속한 상품**의 합집합이다 — 「상품ID-옵션ID」 의 상품 자리는 요청자가 쓴 값이라
+     * 그것으로 판정하면 자기 상품 ID 를 붙인 남의 옵션이 통과한다. 하나라도 범위 밖이면 전량 거부한다.
+     *
+     * @param  array<int, int>  $productIds  요청이 지정한 상품 ID 목록
+     * @param  array<int, int>  $optionIds  해석된 옵션 ID 목록
+     * @return void
+     *
+     * @throws AccessDeniedHttpException 스코프 밖 상품이 하나라도 있는 경우
+     */
+    private function assertOptionProductsWithinScope(array $productIds, array $optionIds): void
+    {
+        // 범위가 「전체」인 액터(와 비인증 내부 호출)는 판정 결과가 같으므로 대상 상품을 다시 읽지 않는다
+        if (PermissionHelper::getEffectiveScope('sirsoft-ecommerce.products.update') === null) {
+            return;
+        }
+
+        $targetIds = array_values(array_unique(array_map('intval', array_merge(
+            $productIds,
+            $this->repository->pluckProductIds($optionIds)
+        ))));
+
+        if ($targetIds === []) {
+            return;
+        }
+
+        $this->assertAllWithinScope($this->productRepository->findByIdsKeyed($targetIds), 'sirsoft-ecommerce.products.update');
     }
 
     /**
@@ -84,6 +127,8 @@ class ProductOptionService
             ];
         }
 
+        $this->assertOptionProductsWithinScope($productIds, $optionIds);
+
         // 2. 수정 전 스냅샷 캡처 (after 훅에 전달)
         $snapshots = $this->repository->getSnapshotsByIds($optionIds);
 
@@ -130,6 +175,8 @@ class ProductOptionService
                 'requested_product_count' => count($productIds),
             ];
         }
+
+        $this->assertOptionProductsWithinScope($productIds, $optionIds);
 
         // 2. 수정 전 스냅샷 캡처 (after 훅에 전달)
         $snapshots = $this->repository->getSnapshotsByIds($optionIds);
@@ -218,6 +265,8 @@ class ProductOptionService
             return ['options_updated' => 0];
         }
 
+        $this->assertOptionProductsWithinScope($data['product_ids'] ?? [], $optionIds);
+
         $bulkChanges = $data['bulk_changes'] ?? [];
         $items = $data['items'] ?? [];
 
@@ -302,24 +351,37 @@ class ProductOptionService
     /**
      * 가격 조정 적용
      *
+     * 옵션 판매가는 「상품 판매가 + 조정액」이다. 인하(subtract)·음수 가산·비율 변경 결과가
+     * 옵션 판매가를 0 아래로 끌어내리지 않도록 조정액 하한을 `-상품 판매가` 로 둔다.
+     *
      * @param  int  $optionId  옵션 ID
-     * @param  string  $method  변경 방식 (set, add, percent)
+     * @param  string  $method  변경 방식 (set, add, subtract, percent)
      * @param  float  $value  변경 값 (소수 통화 대응)
+     * @return void
      */
     private function applyPriceAdjustment(int $optionId, string $method, float $value): void
     {
-        $option = $this->repository->findById($optionId);
+        $option = $this->repository->findByIdWithProduct($optionId);
         if (! $option) {
             return;
         }
 
-        // 소수 통화 대응: 정수 절사 대신 소수 2자리로 반올림 보존
+        $productSellingPrice = (float) ($option->product?->selling_price ?? 0);
+
+        // 소수 통화 대응: 정수 절사 대신 소수 2자리로 반올림 보존.
+        // 비율(percent)은 옵션 판매가(상품 판매가 + 조정액)를 기준으로 계산한 뒤 조정액으로 되돌린다 —
+        // 조정액에만 곱하면 조정액 0 인 옵션은 「판매가 10% 인하」 를 해도 값이 그대로였다(EC-699).
         $newValue = match ($method) {
             'set' => $value,
             'add' => (float) $option->price_adjustment + $value,
-            'percent' => round((float) $option->price_adjustment * (1 + $value / 100), 2),
+            'subtract' => (float) $option->price_adjustment - $value,
+            'percent' => round(($productSellingPrice + (float) $option->price_adjustment) * (1 + $value / 100) - $productSellingPrice, 2),
             default => (float) $option->price_adjustment,
         };
+
+        // 옵션 판매가 하한 0 — 조정액이 상품 판매가만큼 음수가 되면 그 이상 내려가지 않는다
+        $floor = -1 * $productSellingPrice;
+        $newValue = max($newValue, $floor);
 
         $this->repository->update($optionId, ['price_adjustment' => $newValue]);
     }
@@ -330,6 +392,7 @@ class ProductOptionService
      * @param  int  $optionId  옵션 ID
      * @param  string  $method  변경 방식 (set, add, subtract)
      * @param  int  $value  변경 값
+     * @return void
      */
     private function applyStockChange(int $optionId, string $method, int $value): void
     {

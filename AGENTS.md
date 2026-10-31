@@ -8,10 +8,10 @@
 
 | 카테고리 | 문서 수 | 진입점 |
 |---|---:|---|
-| 백엔드 | 37 | [docs/backend/](docs/backend/) |
-| 프론트엔드 | 44 | [docs/frontend/](docs/frontend/) |
-| 확장 시스템 | 31 | [docs/extension/](docs/extension/) |
-| 공통 | 11 | [docs/](docs/) |
+| 백엔드 | 42 | [docs/backend/](docs/backend/) |
+| 프론트엔드 | 47 | [docs/frontend/](docs/frontend/) |
+| 확장 시스템 | 38 | [docs/extension/](docs/extension/) |
+| 공통 | 13 | [docs/](docs/) |
 
 전체 목록·작업 유형별 필수 문서·API 레퍼런스·확장 개발자 문서: [docs/README.md](docs/README.md)
 
@@ -25,7 +25,7 @@
 
 ## 버전 동기화 의무
 
-코어 또는 번들 확장의 공개 표면을 수정하면 영향 범위의 다른 확장 버전 제약(`g7_version`, `dependencies.{modules|plugins}`)을 함께 갱신한다. 판정 순서: ① 기존 소비자 API 시그니처/동작을 건드렸는가 → 소비 확장 최소 버전 상향 ② 새 공개 API 도입 → 후보 확장 전수 스캔 ③ 의존 관계 B 의 공개 API 변경 → A 의 `dependencies.B` 상향 ④ 대상이 없으면 그 근거를 변경 이력에 기록. 상세: [changelog-rules.md](docs/extension/changelog-rules.md) "코어 버전 제약 정책".
+코어 공개 확장 표면(`app/Extension/Abstract*`·`HookManager`·`app/Contracts/Extension/**`·`app/Extension/Helpers/**`·`app/Repositories/Concerns/**`·`app/Seo/Contracts/**`·`app/ActivityLog/**` 공개 API·[확장이 쓰는 코어 지원 클래스](docs/rules/extension-assets.md#확장이-쓰는-코어-지원-클래스)·루트 `CHANGELOG.md` Added/Changed/Removed)을 바꾸면 영향 번들 확장의 `g7_version` 을, 번들 확장의 공개 Service/Contract/Repository/Model/Route·훅·CHANGELOG 를 바꾸면 의존 확장의 `dependencies.{modules|plugins}` 를 함께 갱신하고, manifest 버전을 바꾸면 `package.json`·`composer.json` 도 같은 버전으로 맞춘다. 판정 순서·조치: [extension-assets.md](docs/rules/extension-assets.md#버전-동기화-의무).
 
 ## 핵심 원칙
 
@@ -82,9 +82,11 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 필수: 확장 코드 변경 시 manifest 버전 업 (미변경 시 업데이트 감지 불가)
 필수: 버전 업 시 CHANGELOG.md 기록 — Keep a Changelog 표준 (미기록 시 버전 업 불가)
 필수: StorageInterface 사용 (Storage::disk() 직접 호출 금지)
-필수: ActionDispatcher 에 핸들러를 등록하는 확장은 재등록 진입점을 window 전역에 고정 이름으로 노출 — 모듈 window.__[Name].initModule, 플러그인 window.__[Name].initPlugin (미노출 시 로케일 전환 후 해당 확장 액션…
+필수: ActionDispatcher 에 핸들러를 등록하는 확장은 재등록 진입점(모듈 window.__[Name].initModule, 플러그인 window.__[Name].initPlugin)을 window 전역에 노출 (미노출 시 로케일 전환 후 액션 무반응)
 필수: 확장 미들웨어는 getMiddleware() 로 부착 대상(targets) 명시 선언 (self-gate) — SP Kernel 미들웨어 그룹 직접 조작·라우트 파일 자기 미들웨어 FQCN 부착 금지, 무규율 전역 개입 금지
-필수: 라우트 정의를 바꾸는 지점은 App\Support\RouteCacheHelper::rebuild() 로 라우트 캐시 갱신 — 확장 설치/활성화/비활성화/삭제/업데이트, 코어 업데이트·업그레이드 스텝. route:clear/route:cache 를 각 지점에 직접 흩어 놓지…
+필수: 라우트 정의를 바꾸는 지점은 App\Support\RouteCacheHelper::rebuild() 로 라우트 캐시 갱신 (route:clear/route:cache 를 각 지점에 흩어 놓지 않는다)
+필수: 확장 컴포넌트는 `{확장식별자}.{이름}` 등록 (접두어 없는 이름은 거부), 대체 권한은 템플릿 전용 — 상세: docs/extension/extension-components.md
+필수: 플러그인 설정 UI 는 `resources/layouts/admin/plugin_settings.g7.html`, 짝 `.json` 디스크 상주 필수. 라우트는 `plugins/{identifier}/` 안에 선언
 ```
 
 ## 절대 금지 패턴 (CRITICAL RULES)
@@ -112,9 +114,11 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 | `app/Http/View/Composers/**` | [service-repository](docs/backend/service-repository.md), [template-basics](docs/extension/template-basics.md), [testing-guide](docs/testing-guide.md) |
 | `resources/views/**/*.blade.php` | [template-basics](docs/extension/template-basics.md), [testing-guide](docs/testing-guide.md) |
 | 코어 공개 확장 표면(`app/Extension/Abstract*`·`HookManager`·`app/Contracts/Extension/**`) | [changelog-rules](docs/extension/changelog-rules.md) |
+| `resources/js/core/{template-engine/**,TemplateApp.ts,template-engine.ts,auth/**,identity/**,support/**}` | [state-management](docs/frontend/state-management.md) |
 | 번들 확장 공개 표면(`src/{Services,Contracts,Repositories,Models}/**`·`routes/**`) | [changelog-rules](docs/extension/changelog-rules.md) |
+| `**/extensions/**/*.{g7.html,json}` | [layout-markup](docs/frontend/layout-markup.md), [layout-extensions](docs/extension/layout-extensions.md), [layout-json](docs/frontend/layout-json.md) |
 | `(modules|plugins|templates)/**/editor-spec.json`·`editor-spec/**/*.json` | [editor-spec](docs/extension/editor-spec.md) |
-| `modules/**/layouts/**/*.json` | [module-layouts](docs/extension/module-layouts.md), [layout-json](docs/frontend/layout-json.md) |
+| `modules/**/layouts/**/*.{g7.html,json}` | [layout-markup](docs/frontend/layout-markup.md), [module-layouts](docs/extension/module-layouts.md), [layout-json](docs/frontend/layout-json.md) |
 | `modules/**/lang/**` | [module-i18n](docs/extension/module-i18n.md) |
 | `modules/**/Module.php` | [module-basics](docs/extension/module-basics.md) |
 | `config/app.php` | [core-config](docs/backend/core-config.md) |
@@ -124,8 +128,8 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 | `templates/**/template.json` | [template-basics](docs/extension/template-basics.md) |
 | `plugins/**/plugin.json` | [plugin-development](docs/extension/plugin-development.md) |
 | `templates/**/routes.json` | [template-routing](docs/extension/template-routing.md) |
-| `**/layouts/**/*.json` | [layout-json](docs/frontend/layout-json.md), [actions-handlers](docs/frontend/actions-handlers.md) |
-| `**/partials/**/*.json` | [layout-json-inheritance](docs/frontend/layout-json-inheritance.md) |
+| `**/layouts/**/*.{g7.html,json}` | [layout-markup](docs/frontend/layout-markup.md), [layout-json](docs/frontend/layout-json.md), [actions-handlers](docs/frontend/actions-handlers.md) |
+| `**/partials/**/*.{g7.html,json}` | [layout-markup](docs/frontend/layout-markup.md), [layout-json-inheritance](docs/frontend/layout-json-inheritance.md) |
 | `**/handlers/**/*.ts` | [g7core-api](docs/frontend/g7core-api.md), [actions-handlers](docs/frontend/actions-handlers.md) |
 | `**/components/**/*.tsx` | [components](docs/frontend/components.md), [components](templates/_bundled/sirsoft-admin_basic/docs/components.md), [components](templates/_bundled/sirsoft-basic/docs/components.md) |
 | `**/upgrades/Upgrade_*.php` | [upgrade-step-guide](docs/extension/upgrade-step-guide.md) |
@@ -157,7 +161,7 @@ PHP 8.2+ · Laravel 12.x · MySQL 8.0 · Sanctum 4.x · PHPUnit 11.x · Pint(PSR
 | 주제 | 문서 |
 |---|---|
 | 엔진 CHANGELOG · 공개 CHANGELOG 작성 | [changelog-rules.md](docs/extension/changelog-rules.md#템플릿-엔진-내부-버전-engine-v1xx) |
-| 레이아웃 JSON 작성 체크리스트 | [layout-json.md](docs/frontend/layout-json.md#레이아웃-json-구현-규칙) |
+| 레이아웃 작성 체크리스트(`.g7.html` 소스 / `.json` 계약) | [layout-json.md](docs/frontend/layout-json.md#레이아웃-구현-규칙-작성-g7html--런타임-계약-json) |
 | 테스트 프로토콜 · Windows 실행 · npm install | [testing-guide.md](docs/testing-guide.md#테스트-프로토콜) |
 | 빌드·확장 업데이트·Artisan·SEO·코드 스타일·참고 파일 위치 | [cheatsheet.md](docs/cheatsheet.md) |
 | 한국어 사용 규칙 · PHPDoc | [cheatsheet.md](docs/cheatsheet.md#한국어-사용-규칙) |

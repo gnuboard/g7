@@ -1,0 +1,49 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 확장 종류(모듈·플러그인)와 요청 종류를 곱하면 한쪽에만 있는 기능(모듈 운영자 맞춤 자산, 플러그인 라우트 접근)과 겹쳐 명목상 조합이 생긴다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
+feature: extension_asset_serving
+
+description: |
+  모듈·플러그인 자산 내려주기(`/api/modules/assets/…`, `/api/plugins/assets/…`). 활성 확장의 JS·CSS·중첩 경로·허용 확장자를 내주고,
+  캐시 헤더·ETag·304, 운영(immutable)·개발(no-cache) 캐시 정책을 붙인다. 경로 이탈(../, 역슬래시, URL 인코딩, 절대 경로, 널 바이트)·허용 밖 확장자·
+  소스맵은 막는다. 비활성 확장(모듈·플러그인)의 자산 요청은 파일을 내주지 않는다 — 디렉토리가 없는 식별자는 경로 밖 접근이 아니라
+  요청 규칙이 문자열 봉쇄만 유지하고, 서비스가 비활성 확장을 JSON 404 로 끝낸다(정적 서빙과 같은 응답). 허용 밖 확장자·소스맵 같은
+  검증 실패는 리다이렉트가 아니라 JSON 422 로 답한다(bootstrap/app.php `shouldRenderJsonWhen`).
+  모듈은 운영자 맞춤 자산(convention scan)도 같은 규칙으로 내준다.
+
+axes:
+  extension_type: [module, plugin]
+  request: [allows_all_whitelisted_file_types, applies_immutable_caching_in_production, applies_no_cache_in_development, blocks_disallowed_file_types, blocks_linux_absolute_path, blocks_null_byte_attack, blocks_path_traversal_attack, blocks_path_traversal_with_backslash, blocks_url_encoded_path_traversal, blocks_various_disallowed_file_types, blocks_windows_absolute_path, generates_etag_header, handles_nested_path, plugin_route_is_accessible, rejects_sourcemap_file, returns_304_when_etag_matches, returns_404_for_nonexistent_file, serves_css_file_from_active, serves_js_file_from_active, sets_caching_headers]
+  custom_source: [convention_scan]
+  custom_asset: [css, static_file]
+
+exclusions: []
+
+effects:
+  - inactive_extension_asset_request_rejected_as_json
+  - allows_all_whitelisted_file_types
+  - applies_immutable_caching_in_production
+  - applies_no_cache_in_development
+  - blocks_disallowed_file_types
+  - blocks_linux_absolute_path
+  - blocks_null_byte_attack
+  - blocks_path_traversal_attack
+  - blocks_path_traversal_with_backslash
+  - blocks_url_encoded_path_traversal
+  - blocks_various_disallowed_file_types
+  - blocks_windows_absolute_path
+  - generates_etag_header
+  - handles_nested_path
+  - plugin_route_is_accessible
+  - rejects_sourcemap_file
+  - returns_304_when_etag_matches
+  - returns_404_for_nonexistent_file
+  - serves_css_file_from_active
+  - serves_js_file_from_active
+  - sets_caching_headers
+  - custom_asset_loaded_after_extension_bundles
+  - inactive_extension_custom_not_served
+  - custom_disallowed_extension_blocked
+  - custom_asset_url_busts_on_file_change
+
+test_files:
+  - tests/Feature/Module/ModuleAssetServingTest.php
+  - tests/Feature/Plugin/PluginAssetServingTest.php

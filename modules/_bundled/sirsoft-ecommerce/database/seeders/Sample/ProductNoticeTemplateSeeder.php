@@ -23,8 +23,11 @@ class ProductNoticeTemplateSeeder extends Seeder
      * 공통 기본값 상수
      */
     private const DEFAULT_SEE_PAGE = ['ko' => '상세페이지 참조', 'en' => 'See product page'];
+
     private const DEFAULT_CS_CONTACT = ['ko' => '고객센터 문의', 'en' => 'Contact customer service'];
+
     private const DEFAULT_WARRANTY = ['ko' => '제품 이상 시 공정거래위원회 고시에 따라 보상', 'en' => 'Compensation per FTC guidelines for defective products'];
+
     private const DEFAULT_NA = ['ko' => '해당 사항 없음', 'en' => 'N/A'];
 
     /**
@@ -49,13 +52,13 @@ class ProductNoticeTemplateSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('상품정보제공고시 템플릿 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product_notice_template.start'));
 
         $this->deleteExisting();
         $this->createTemplates();
 
         $count = ProductNoticeTemplate::count();
-        $this->command->info("상품정보제공고시 템플릿 {$count}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product_notice_template.done', ['count' => $count]));
     }
 
     /**
@@ -69,7 +72,7 @@ class ProductNoticeTemplateSeeder extends Seeder
 
         if ($deletedCount > 0) {
             ProductNoticeTemplate::query()->delete();
-            $this->command->warn("기존 템플릿 {$deletedCount}건을 삭제했습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product_notice_template.purged', ['count' => $deletedCount]));
         }
     }
 
@@ -90,7 +93,7 @@ class ProductNoticeTemplateSeeder extends Seeder
                 'sort_order' => $templateData['sort_order'],
             ]);
 
-            $this->command->line("  - 템플릿 생성: {$templateData['name']['ko']} ({$templateData['name']['en']})");
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.product_notice_template.created', ['name' => $templateData['name']['ko'], 'name_en' => $templateData['name']['en']]));
         }
 
         // 2. 테스트용 템플릿 38개 추가 (총 57개)
@@ -100,7 +103,7 @@ class ProductNoticeTemplateSeeder extends Seeder
     /**
      * 테스트용 템플릿 생성
      *
-     * @param int $count 생성할 테스트 템플릿 수
+     * @param  int  $count  생성할 테스트 템플릿 수
      * @return void
      */
     private function createTestTemplates(int $count): void
@@ -123,7 +126,7 @@ class ProductNoticeTemplateSeeder extends Seeder
                 'sort_order' => 19 + $i,
             ]);
 
-            $this->command->line("  - 템플릿 생성: 테스트{$i} (Test{$i})");
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.product_notice_template.created', ['name' => "테스트{$i}", 'name_en' => "Test{$i}"]));
         }
     }
 

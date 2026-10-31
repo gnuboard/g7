@@ -9,6 +9,11 @@ export interface ToggleProps {
     disabled?: boolean;
     /** 라벨 텍스트 */
     label?: string;
+    /**
+     * 보이는 라벨 없이 스위치에만 붙일 접근 가능한 이름(aria-label).
+     * 표의 열 머리글·옆 문구처럼 라벨이 스위치 밖에 있을 때 쓴다. 없으면 `label` → 곁 제목(aria-labelledby) → `name` 순으로 쓴다.
+     */
+    ariaLabel?: string;
     /** 설명 텍스트 */
     description?: string;
     /** 토글 크기 */

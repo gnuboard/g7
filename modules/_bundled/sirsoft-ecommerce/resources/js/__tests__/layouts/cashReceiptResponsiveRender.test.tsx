@@ -106,7 +106,7 @@ const PAYMENT_SETTINGS = {
  *
  * 두 개의 gate 를 모두 열어야 검사 대상 노드가 마운트된다:
  *  - 루트: paymentSettings.data.order_settings.cash_receipt_provider 가 truthy
- *  - 입력 영역: _local.cashReceiptRequested 가 truthy
+ *  - 입력 영역: _local.checkoutExtraPayload.cash_receipt_requested 가 truthy
  *
  * @param  width  주입할 화면 너비 (px)
  */
@@ -119,9 +119,13 @@ async function renderAtWidth(width: number) {
     initialState: {
       _local: {
         paymentMethod: 'dbank',
+        checkoutExtraPayload: { cash_receipt_requested: true },
         cashReceiptRequested: true,
         cashReceiptType: 'income',
         cashReceiptIdentifierType: 'phone',
+        // 신청 표시는 조각 미러와 확장 병합 칸이 **둘 다** 살아 있을 때만 열린다 —
+        // 결제수단을 바꾸면 템플릿이 이 칸을 비워 표시도 함께 닫히게 하기 위해서다.
+        checkoutExtraPayload: { cash_receipt_requested: true },
       },
     },
   });
@@ -160,48 +164,58 @@ describe('현금영수증 신청 폼 — 반응형 실렌더 (F5)', () => {
     vi.clearAllMocks();
   });
 
+  // @scenario actor=guest, change_mode=manual
+  // @effects portable_override_applies_below_1024_on_render, portable_override_absent_at_1024_on_render, new_ui_has_no_tailwind_breakpoint
   it('데스크톱(1280px)에서는 용도 라디오가 가로 배치된다', async () => {
     const t = await renderAtWidth(1280);
 
     const cls = classesOf('ext_checkout_cash_receipt_purpose');
-    expect(cls).toContain('flex-row');
-    expect(cls).not.toContain('flex-col');
+    expect(cls).toContain('ecommerce:flex-row');
+    expect(cls).not.toContain('ecommerce:flex-col');
 
     t.cleanup();
   });
 
+  // @scenario actor=guest, change_mode=manual
+  // @effects portable_override_applies_below_1024_on_render, portable_override_absent_at_1024_on_render, new_ui_has_no_tailwind_breakpoint
   it('모바일(375px)에서는 용도 라디오가 세로 스택으로 바뀐다', async () => {
     const t = await renderAtWidth(375);
 
     const cls = classesOf('ext_checkout_cash_receipt_purpose');
-    expect(cls).toContain('flex-col');
-    expect(cls).not.toContain('flex-row');
+    expect(cls).toContain('ecommerce:flex-col');
+    expect(cls).not.toContain('ecommerce:flex-row');
 
     t.cleanup();
   });
 
+  // @scenario actor=guest, change_mode=manual
+  // @effects portable_override_applies_below_1024_on_render, portable_override_absent_at_1024_on_render, new_ui_has_no_tailwind_breakpoint
   it('모바일에서 발급수단·번호 입력행이 1열로 접힌다', async () => {
     const t = await renderAtWidth(375);
 
     const cls = classesOf('ext_checkout_cash_receipt_identifier_row');
-    expect(cls).toContain('grid-cols-1');
-    expect(cls).not.toContain('grid-cols-2');
+    expect(cls).toContain('ecommerce:grid-cols-1');
+    expect(cls).not.toContain('ecommerce:grid-cols-2');
 
     t.cleanup();
   });
 
+  // @scenario actor=guest, change_mode=manual
+  // @effects portable_override_applies_below_1024_on_render, portable_override_absent_at_1024_on_render, new_ui_has_no_tailwind_breakpoint
   it('태블릿(1023px)까지 portable 이 적용되고 1024px 부터 base 로 돌아온다', async () => {
     // portable 은 0~1023px 단일 오버라이드 — 경계값을 양쪽에서 고정한다.
     const tablet = await renderAtWidth(1023);
-    expect(classesOf('ext_checkout_cash_receipt_purpose')).toContain('flex-col');
+    expect(classesOf('ext_checkout_cash_receipt_purpose')).toContain('ecommerce:flex-col');
     tablet.cleanup();
     cleanup();
 
     const desktop = await renderAtWidth(1024);
-    expect(classesOf('ext_checkout_cash_receipt_purpose')).toContain('flex-row');
+    expect(classesOf('ext_checkout_cash_receipt_purpose')).toContain('ecommerce:flex-row');
     desktop.cleanup();
   });
 
+  // @scenario actor=guest, change_mode=manual
+  // @effects portable_override_applies_below_1024_on_render, portable_override_absent_at_1024_on_render, new_ui_has_no_tailwind_breakpoint
   it('어떤 너비에서도 Tailwind 브레이크포인트 접두사를 쓰지 않는다 (§6-0)', async () => {
     const t = await renderAtWidth(375);
 

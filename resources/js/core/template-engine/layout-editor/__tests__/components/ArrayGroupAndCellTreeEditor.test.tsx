@@ -13,7 +13,7 @@
 
 // 시나리오 매니페스트(tests/scenarios/layout-editor-data-builtins.yaml) cross product 15 케이스
 // (data_surface × aspect) 전수 마킹(test-scenario-coverage 룰). single_object_array(DonutChart)/
-// flat_typed_array(DynamicFieldList)/primitive_enum_array(SocialLoginButtons)의 capability_attach·
+// flat_typed_array(DynamicFieldList)/primitive_enum_array(합성 표본 — dataBuiltinCapabilityShape.test.ts)의 capability_attach·
 // field_widget·structure_op 회귀는 ArrayItemsEditor.test.tsx + dataBuiltinCapabilityShape.test.ts
 // 가, multi_array(BarChart array-group)/cell_tree(CardGrid array-cell-tree)는 본 파일이 잠근다.
 // @scenario aspect=capability_attach, data_surface=single_object_array
@@ -138,12 +138,22 @@ describe('ArrayGroupEditor — 다중 배열 그룹(BarChart labels+datasets)', 
       },
     }) as EditorNode;
 
+  /**
+   * @scenario aspect=capability_attach, data_surface=multi_array
+   *
+   * @effects array_group_renders_multiple_array_editors_per_group
+   */
   it('그룹마다 ArrayItemsEditor 섹션을 렌더한다', () => {
     render(<ArrayGroupEditor {...baseProps} node={barNode()} params={groupParams} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId('g7le-array-group-labels')).toBeInTheDocument();
     expect(screen.getByTestId('g7le-array-group-datasets')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario aspect=field_widget, data_surface=multi_array
+   *
+   * @effects array_group_patch_one_group_preserves_other_group_value
+   */
   it('한 그룹(labels) 편집이 다른 그룹(datasets) 값을 보존한다', () => {
     const onPatchNode = vi.fn();
     render(<ArrayGroupEditor {...baseProps} node={barNode()} params={groupParams} onPatchNode={onPatchNode} />);
@@ -155,6 +165,11 @@ describe('ArrayGroupEditor — 다중 배열 그룹(BarChart labels+datasets)', 
     expect(patched.props!.datasets).toEqual([{ label: 'Sales', data: [1, 2], backgroundColor: '#7C3AED' }]);
   });
 
+  /**
+   * @scenario aspect=capability_attach, data_surface=multi_array
+   *
+   * @effects array_group_misconfigured_when_no_groups
+   */
   it('groups 미선언 → misconfigured 안내', () => {
     render(<ArrayGroupEditor {...baseProps} node={barNode()} params={{}} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId('g7le-array-group-misconfigured')).toBeInTheDocument();
@@ -172,6 +187,11 @@ describe('ArrayCellTreeEditor — 중첩 셀 트리(CardGrid cardColumns)', () =
   const cardNode = (cols: unknown): EditorNode =>
     ({ type: 'composite', name: 'CardGrid', props: { cardColumns: cols } }) as EditorNode;
 
+  /**
+   * @scenario aspect=structure_op, data_surface=cell_tree
+   *
+   * @effects cell_tree_column_add_remove_move_with_id_edit
+   */
   it('컬럼 추가 시 newItem 골격(id/cellChildren)을 push', () => {
     const onPatchNode = vi.fn();
     render(<ArrayCellTreeEditor {...baseProps} node={cardNode([])} params={cellParams} onPatchNode={onPatchNode} />);
@@ -180,6 +200,11 @@ describe('ArrayCellTreeEditor — 중첩 셀 트리(CardGrid cardColumns)', () =
     expect(patched.props!.cardColumns).toEqual([{ id: '', cellChildren: [] }]);
   });
 
+  /**
+   * @scenario aspect=structure_op, data_surface=cell_tree
+   *
+   * @effects cell_tree_column_add_remove_move_with_id_edit
+   */
   it('컬럼 id 편집이 해당 컬럼만 패치', () => {
     const onPatchNode = vi.fn();
     render(
@@ -198,6 +223,11 @@ describe('ArrayCellTreeEditor — 중첩 셀 트리(CardGrid cardColumns)', () =
     ]);
   });
 
+  /**
+   * @scenario aspect=structure_op, data_surface=cell_tree
+   *
+   * @effects cell_tree_column_add_remove_move_with_id_edit
+   */
   it('컬럼 삭제는 해당 인덱스만 제거', () => {
     const onPatchNode = vi.fn();
     render(
@@ -213,6 +243,11 @@ describe('ArrayCellTreeEditor — 중첩 셀 트리(CardGrid cardColumns)', () =
     expect(patched.props!.cardColumns).toEqual([{ id: 'b', cellChildren: [] }]);
   });
 
+  /**
+   * @scenario aspect=capability_attach, data_surface=cell_tree
+   *
+   * @effects cell_tree_expand_edits_cellchildren_via_children_control
+   */
   it('컬럼 펼침 → cellChildren 트리 편집기(ChildrenListControl) 노출', () => {
     render(
       <ArrayCellTreeEditor
@@ -227,6 +262,11 @@ describe('ArrayCellTreeEditor — 중첩 셀 트리(CardGrid cardColumns)', () =
     expect(screen.getByTestId('g7le-children-editor')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario aspect=structure_op, data_surface=cell_tree
+   *
+   * @effects cell_tree_expand_edits_cellchildren_via_children_control
+   */
   it('펼친 셀에 자식 추가 시 그 컬럼의 cellChildren 으로 되돌아 패치', () => {
     const onPatchNode = vi.fn();
     render(
@@ -245,6 +285,11 @@ describe('ArrayCellTreeEditor — 중첩 셀 트리(CardGrid cardColumns)', () =
     expect(cols[0].cellChildren.length).toBe(1);
   });
 
+  /**
+   * @scenario aspect=binding_guard, data_surface=cell_tree
+   *
+   * @effects cell_tree_binding_expression_degrades_to_bound_notice
+   */
   it('정적-바인딩 가드: cardColumns 가 {{...}} → 디그레이드', () => {
     render(
       <ArrayCellTreeEditor
@@ -258,6 +303,11 @@ describe('ArrayCellTreeEditor — 중첩 셀 트리(CardGrid cardColumns)', () =
     expect(screen.queryByTestId('g7le-cell-tree-add')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario aspect=capability_attach, data_surface=cell_tree
+   *
+   * @effects cell_tree_missing_array_prop_shows_misconfigured_notice
+   */
   it('arrayProp 미선언 → misconfigured 안내', () => {
     render(<ArrayCellTreeEditor {...baseProps} node={cardNode([])} params={{}} onPatchNode={vi.fn()} />);
     expect(screen.getByTestId('g7le-cell-tree-misconfigured')).toBeInTheDocument();

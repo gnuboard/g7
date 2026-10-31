@@ -1,0 +1,20 @@
+feature: 언어팩으로 보강한 통화·배송 국가 이름이 설정 저장으로 새지 않는다 (1.3.2)
+
+description: |
+  설정을 읽을 때 활성 언어팩 번역(ko·en 밖의 언어)으로 통화·국가 이름을 채운다. 관리자 화면이 그 값을 되돌려 저장하면
+  보강값이 운영자 입력처럼 파일에 굳어, 언어팩을 끄거나 번역을 고쳐도 옛 이름이 남았다(코어 7.1.3 계산값 키와 같은 유형).
+  저장 때 모듈 자체 언어 밖이면서 지금 번역과 같은 값은 빼고, 운영자가 다르게 적은 값은 남긴다.
+
+axes:
+  field: [currency_name, country_name]
+  value: [enriched, operator_edited]
+
+exclusions:
+  - { field: country_name, value: operator_edited, reason: "국가·통화는 같은 정리 함수 한 개를 쓴다 — 운영자 값 보존은 currency 칸이 덮는다" }
+
+effects:
+  - enrichment_not_persisted_on_save
+  - operator_edited_name_kept
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SettingsLanguagePackEnrichmentTest.php

@@ -1,0 +1,22 @@
+feature: KG이니시스 본인인증 설정 저장 — 검증 오류 문구의 항목 이름이 요청 언어를 따른다
+
+description: |
+  설정 저장(PUT /api/admin/plugins/{id}/settings)이 거절되면 오류 문구에 항목 이름이 들어간다. 리스너가 운영 모드
+  자격증명만, 그것도 운영 모드일 때만 언어별 이름을 등록해, 나머지 항목(테스트 모드, 테스트 자격증명, 중복 판정 등)은
+  설정 스키마 label(ko/en)로 대체됐다. ja 화면에서는 한국어 항목 이름이 나갔다(7.1.0 실측 P-11).
+  이제 운영 모드와 상관없이 설정 항목 전부의 이름을 요청 언어로 등록한다. ko/en 은 플러그인 lang,
+  ja 는 언어팩이 채운다.
+
+axes:
+  locale: [ko, en, ja]
+
+effects:
+  - every_settings_field_error_label_follows_request_locale
+  - no_korean_field_label_in_non_korean_error
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Settings/InicisLiveModeSettingsValidationTest.php
+
+notes: |
+  브라우저 실측: 설정 화면에서 저장 오류를 일으키면(운영 모드, 자격증명 비움) ja 화면의 오류 목록과 칸 아래 문구가
+  일본어 항목 이름으로 나온다. 형식 오류(테스트 모드 값 등)는 화면에서 만들 수 없어 HTTP 왕복 테스트로 잰다.

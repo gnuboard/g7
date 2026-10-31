@@ -1,0 +1,156 @@
+<!-- 일반 OIDC 제공자 추가 — discovery 주소로 주소 칸을 채우고(또는 직접 입력) 꺼진 상태로 추가한다. 한도(설정의 커스텀 제공자 최대 수)에 닿으면 막는다.
+     「SSO」라고 부르지 않는다 — 예시 이름은 「사내 계정」. -->
+<partial name="partials/plugin_settings/_provider_add" description="일반 OIDC 제공자 추가">
+  <div data-ref="provider_add_section" class="sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-dashed sl:border-gray-300 sl:dark:border-gray-600">
+    <div class="sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:px-4 sl:sm:px-6 sl:py-4">
+      <div>
+        <h2 class="sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.admin.providers.add_title</h2>
+        <p data-ref="custom_limit_text" data-if="{{!!providers?.data}}" class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.providers.add_limit|count={{providers?.data?.limits?.custom_count ?? 0}}|limit={{providers?.data?.limits?.custom_limit ?? 0}}</p>
+      </div>
+      <button data-ref="toggle_add_button" type="button" class="sl-btn sl-btn-secondary sl:text-sm" disabled="{{!_computed.canEditProviders || (providers?.data?.limits?.custom_count ?? 0) >= (providers?.data?.limits?.custom_limit ?? 0)}}">
+        <on type="click">
+          <!-- 추가 폼을 열고 닫는다 — 열 때마다 입력·오류를 비워 앞서 쓰다 만 값이 남지 않게 -->
+          <set-state target="local" merge="shallow" showAddForm="{{!_local.showAddForm}}" :newProviderErrors="null">
+            <field name="newProvider">
+              <field name="key" value=""/>
+              <field name="label" :value="{}"/>
+              <field name="client_id" value=""/>
+              <field name="client_secret" value=""/>
+              <field name="discovery_url" value=""/>
+              <field name="authorize_url" value=""/>
+              <field name="token_url" value=""/>
+              <field name="userinfo_url" value=""/>
+              <field name="jwks_url" value=""/>
+              <field name="issuer" value=""/>
+            </field>
+          </set-state>
+        </on>
+        <span>$t:sirsoft-social_login.admin.providers.add_button</span>
+      </button>
+    </div>
+    <div data-ref="provider_add_form" data-if="{{_local.showAddForm}}" data-key="newProvider" class="sl:px-4 sl:sm:px-6 sl:pb-5 sl:space-y-3">
+      <div class="sl-grid-2col-responsive">
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.key</label>
+          <input type="text" name="key" class="sl-input" placeholder="corp_account"/>
+          <p class="sl-form-hint">$t:sirsoft-social_login.admin.providers.hints.key</p>
+          <p data-if="{{!!_local.newProviderErrors?.key}}" class="sl-form-error">{{_local.newProviderErrors?.key?.[0] ?? ''}}</p>
+        </div>
+        <div>
+          <!-- 표시 이름 — 사이트가 쓰는 언어마다 칸이 나온다(기본 언어 칸은 필수). 값은 _local.newProvider.label 객체 -->
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.label</label>
+          <multilingual-input data-type="composite" name="label" :maxLength="100" placeholder="$t:sirsoft-social_login.admin.providers.hints.label_example"/>
+          <p data-if="{{!!_local.newProviderErrors &amp;&amp; Object.keys(_local.newProviderErrors).some((k) => k === 'label' || k.startsWith('label.'))}}" class="sl-form-error">{{_local.newProviderErrors ? Object.entries(_local.newProviderErrors).find(([k]) => k === 'label' || k.startsWith('label.'))?.[1]?.[0] : ''}}</p>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.client_id_oidc</label>
+          <input type="text" name="client_id" class="sl-input" autoComplete="off"/>
+          <p data-if="{{!!_local.newProviderErrors?.client_id}}" class="sl-form-error">{{_local.newProviderErrors?.client_id?.[0] ?? ''}}</p>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.client_secret_oidc</label>
+          <input type="password" name="client_secret" class="sl-input" autoComplete="new-password"/>
+          <p data-if="{{!!_local.newProviderErrors?.client_secret}}" class="sl-form-error">{{_local.newProviderErrors?.client_secret?.[0] ?? ''}}</p>
+        </div>
+      </div>
+      <div class="sl:flex sl:flex-col sl:sm:flex-row sl:sm:items-end sl:gap-2">
+        <div class="sl:flex-1">
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.discovery_url</label>
+          <input type="url" name="discovery_url" class="sl-input" placeholder="https://"/>
+          <p data-if="{{!!_local.newProviderErrors?.discovery_url}}" class="sl-form-error">{{_local.newProviderErrors?.discovery_url?.[0] ?? ''}}</p>
+        </div>
+        <button data-ref="add_discover_button" type="button" class="sl-btn sl-btn-secondary sl:text-sm">
+          <on type="click">
+            <!-- discovery 문서를 읽어 아래 주소 칸을 채운다 -->
+            <api-call :auth_required="true" target="/api/plugins/sirsoft-social_login/admin/providers/discover" method="POST">
+              <body discovery_url="{{_local.newProvider?.discovery_url ?? ''}}"/>
+              <success>
+                <set-state target="local" newProvider="{{Object.assign({}, _local.newProvider, response.data)}}"/>
+                <toast type="success" message="$t:sirsoft-social_login.admin.providers.discovered"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <span>$t:sirsoft-social_login.admin.providers.discover</span>
+        </button>
+      </div>
+      <div class="sl-grid-2col-responsive">
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.issuer</label>
+          <input type="text" name="issuer" class="sl-input"/>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.authorize_url</label>
+          <input type="url" name="authorize_url" class="sl-input"/>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.token_url</label>
+          <input type="url" name="token_url" class="sl-input"/>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.userinfo_url</label>
+          <input type="url" name="userinfo_url" class="sl-input"/>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.jwks_url</label>
+          <input type="url" name="jwks_url" class="sl-input"/>
+        </div>
+      </div>
+      <div class="sl:flex sl:justify-end sl:gap-2">
+        <button type="button" class="sl-btn sl-btn-secondary sl:text-sm">
+          <on type="click">
+            <!-- 추가를 취소한다 — 폼을 닫고 입력·오류를 비운다 -->
+            <set-state target="local" merge="shallow" :showAddForm="false" :newProviderErrors="null">
+              <field name="newProvider">
+                <field name="key" value=""/>
+                <field name="label" :value="{}"/>
+                <field name="client_id" value=""/>
+                <field name="client_secret" value=""/>
+                <field name="discovery_url" value=""/>
+                <field name="authorize_url" value=""/>
+                <field name="token_url" value=""/>
+                <field name="userinfo_url" value=""/>
+                <field name="jwks_url" value=""/>
+                <field name="issuer" value=""/>
+              </field>
+            </set-state>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="add_submit_button" type="button" class="sl-btn sl-btn-primary sl:text-sm" disabled="{{!_computed.canEditProviders}}">
+          <on type="click">
+            <!-- 추가 — 꺼진 상태로 만든다. 성공하면 목록을 다시 받고 폼을 닫아 비운다(남기면 다음 제공자가 앞 제공자의 비밀값·주소로 저장된다). 422 는 칸 아래에 -->
+            <api-call :auth_required="true" target="/api/plugins/sirsoft-social_login/admin/providers" method="POST" body="{{_local.newProvider}}">
+              <success>
+                <set-state target="local" merge="shallow" :showAddForm="false" :newProviderErrors="null">
+                  <field name="newProvider">
+                    <field name="key" value=""/>
+                    <field name="label" :value="{}"/>
+                    <field name="client_id" value=""/>
+                    <field name="client_secret" value=""/>
+                    <field name="discovery_url" value=""/>
+                    <field name="authorize_url" value=""/>
+                    <field name="token_url" value=""/>
+                    <field name="userinfo_url" value=""/>
+                    <field name="jwks_url" value=""/>
+                    <field name="issuer" value=""/>
+                  </field>
+                </set-state>
+                <toast type="success" message="$t:sirsoft-social_login.admin.providers.created"/>
+                <refetch-data-source dataSourceId="providers"/>
+              </success>
+              <fail>
+                <set-state target="local" newProviderErrors="{{error.errors}}"/>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <span>$t:sirsoft-social_login.admin.providers.add_submit</span>
+        </button>
+      </div>
+    </div>
+    <p data-ref="extension_providers_note" class="sl:px-4 sl:sm:px-6 sl:pb-4 sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.providers.extension_hint</p>
+  </div>
+</partial>

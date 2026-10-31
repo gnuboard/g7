@@ -429,6 +429,9 @@ class PublicStorageServiceTest extends TestCase
         $cases = [
             ['local', true],
             [null, true],   // 미설정 = Laravel 기본값(로컬)
+            // 순회 거부 로컬 드라이버 — config/filesystems.php 의 public 디스크 기본값이다. 이것을
+            // 로컬 밖으로 읽으면 링크 없는 사이트의 대체 서빙이 통째로 꺼진다.
+            ['local-safe', true],
             ['s3', false],
         ];
 

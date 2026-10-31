@@ -2,15 +2,18 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\User;
 
-use App\Models\User;
 use App\Extension\HookManager;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
+use Modules\Sirsoft\Ecommerce\Models\Coupon;
+use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\Sequence;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -30,7 +33,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
         HookManager::addFilter('sirsoft-ecommerce.payment.refund', function () {
             return [
                 'success' => true,
-                'transaction_id' => 'TEST_USER_TXN_' . time(),
+                'transaction_id' => 'TEST_USER_TXN_'.time(),
                 'error_code' => null,
                 'error_message' => null,
             ];
@@ -612,7 +615,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
         ]);
 
         // 쿠폰 발급 레코드 생성
-        $coupon = \Modules\Sirsoft\Ecommerce\Models\Coupon::create([
+        $coupon = Coupon::create([
             'name' => '사용자 테스트 쿠폰',
             'target_type' => 'order_amount',
             'discount_type' => 'fixed',
@@ -627,7 +630,7 @@ class OrderCancellationControllerTest extends ModuleTestCase
             'is_combinable' => false,
         ]);
 
-        $couponIssue = \Modules\Sirsoft\Ecommerce\Models\CouponIssue::create([
+        $couponIssue = CouponIssue::create([
             'coupon_id' => $coupon->id,
             'user_id' => $user->id,
             'coupon_code' => 'USER-TEST-COUPON-001',
@@ -732,5 +735,77 @@ class OrderCancellationControllerTest extends ModuleTestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true);
+    }
+
+    /**
+     * 회원이 낸 주문취소는 **고객 신청**으로 접수된다 (§12-F C-2).
+     *
+     * 이 입구는 클레임 접수 어댑터를 거치는데, 그 어댑터는 운영자·시스템 호출도 함께 받는다.
+     * 호출부를 구분하지 않고 운영자 축(`ADMIN` 출처 · 운영자 자격 목록 · 판매자 귀책 사유 허용)으로
+     * 못박으면 **구매자가 자기 신청을 철회·수정할 수 없다** — 철회·수정은 `DIRECT` 출처에만 열린다.
+     * 고객 창구 설정 대신 운영자 목록으로 자격을 재는 것도 같은 결함의 다른 얼굴이다.
+     *
+     * 되돌리면 red — 어댑터가 구매자 호출부를 구분하지 않으면 출처가 `ADMIN` 으로 저장된다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     *
+     * @effects user_cancel_is_filed_on_the_buyer_axis
+     */
+    public function test_user_cancel_is_filed_as_a_buyer_request(): void
+    {
+        $user = $this->createUser();
+
+        $order = Order::factory()->create([
+            'user_id' => $user->id,
+            'order_status' => OrderStatusEnum::PAYMENT_COMPLETE,
+            'subtotal_amount' => 40000,
+            'total_amount' => 40000,
+            'total_paid_amount' => 40000,
+            'total_cancelled_amount' => 0,
+            'cancellation_count' => 0,
+            'promotions_applied_snapshot' => [],
+            'shipping_policy_applied_snapshot' => [],
+        ]);
+
+        OrderOption::factory()->forOrder($order)->create([
+            'quantity' => 1,
+            'unit_price' => 40000,
+            'subtotal_price' => 40000,
+            'subtotal_paid_amount' => 40000,
+            'option_status' => OrderStatusEnum::PAYMENT_COMPLETE,
+        ]);
+
+        OrderPayment::factory()->forOrder($order)->create([
+            'payment_status' => PaymentStatusEnum::PAID,
+            'paid_amount_local' => 40000,
+            'paid_amount_base' => 40000,
+            'paid_at' => now(),
+        ]);
+
+        OrderShipping::factory()->forOrder($order)->create([
+            'base_shipping_amount' => 0,
+            'total_shipping_amount' => 0,
+        ]);
+
+        $this->createCancelSequences();
+
+        $this->actingAs($user)->postJson(
+            "/api/modules/sirsoft-ecommerce/user/orders/{$order->id}/cancel",
+            ['reason' => 'changed_mind']
+        )->assertOk();
+
+        $refund = OrderRefund::where('order_id', $order->id)->first();
+
+        $this->assertNotNull($refund, '구매자 취소도 환불신청서를 남긴다');
+        $this->assertSame(
+            RefundSourceTypeEnum::DIRECT,
+            $refund->refund_source_type,
+            '구매자가 낸 신청은 고객 신청(DIRECT)이라야 본인이 철회·수정할 수 있다',
+        );
+        $this->assertNotSame(
+            RefundSourceTypeEnum::ADMIN,
+            $refund->refund_source_type,
+            '운영자 대리 접수로 기록되면 고객이 자기 신청을 손댈 수 없다',
+        );
     }
 }

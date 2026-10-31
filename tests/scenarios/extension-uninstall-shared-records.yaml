@@ -1,0 +1,26 @@
+feature: 확장 삭제 모달의 공유 레코드 집계 (ResolvesExtensionSharedRecords)
+
+description: |
+  모듈·플러그인 삭제 확인 모달은 그 확장이 소유한 코어 공유 레코드(권한·메뉴·알림 정의·본인인증 정책)
+  건수를 보여 준다. ModuleManager / PluginManager 가 공유하는 ResolvesExtensionSharedRecords 트레이트가
+  각 Repository 를 거쳐 영역별 건수를 모은다.
+
+  핵심 동작:
+    - 0건인 영역은 목록에서 뺀다 (모달에 「0건」 행을 띄우지 않는다)
+    - 본인인증 메시지는 7.1.0 부터 알림 정의(category=identity)에 함께 집계된다 — 별도 영역이 없다 (#699)
+    - 한 Repository 가 예외를 던져도 그 영역만 빠지고 나머지 영역 집계는 계속된다 (모달 전체가 깨지지 않음)
+
+axes:
+  repository_state: [all_respond, one_throws]
+
+effects:
+  - nonzero_records_listed_with_counts
+  - zero_count_records_excluded
+  - identity_messages_not_listed_separately
+  - failing_repository_skipped_others_listed
+
+test_files:
+  - tests/Feature/Extension/ExtensionSharedRecordsResolverTest.php
+
+validation:
+  automated: "php artisan test --filter=ExtensionSharedRecordsResolverTest"

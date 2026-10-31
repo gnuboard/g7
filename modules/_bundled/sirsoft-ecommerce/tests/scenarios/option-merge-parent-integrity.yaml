@@ -1,0 +1,27 @@
+feature: 부분 수량 발송 뒤 남은 수량 발송 — 병합 후 주문 상태와 분할 부모 관계
+
+description: |
+  관리자 주문 상세에서 3개 중 2개를 먼저 배송중으로 보내면 행이 나뉜다(원본 1개 상품준비중,
+  분할 2개 배송중 — 분할 행의 부모는 원본). 남은 1개를 보내면 원본이 같은 상태가 된 분할 행에
+  흡수되고 원본 행은 지워진다.
+
+  실측(2026-10-03)에서 두 가지가 어긋났다.
+    - 부모 주문 상태 동기화가 변경 **뒤에** 옵션 id 로 주문을 찾았다. 요청에 실린 옵션이
+      병합으로 지워진 원본 하나뿐이라 주문을 못 찾아 동기화를 건너뛰었고, 모든 상품이
+      배송중인데 주문은 상품준비중으로 남았다.
+    - 병합이 피흡수 행(원본)의 자식을 생존 행으로 옮기면서 생존 행 자신도 옮겨,
+      생존 행의 부모가 자기 자신이 됐다(parent_option_id 가 자기 id).
+
+  계약: 일괄 변경은 소속을 확인한 상위 주문을 그대로 동기화한다. 생존 행이 피흡수 행의
+  자식이면 피흡수 행의 부모를 잇고, 자식 이전은 생존 행 자신을 건드리지 않는다.
+
+axes:
+  shipping_sequence:
+    - partial_then_rest   # 일부 수량 먼저 발송 → 남은 수량 발송(병합)
+
+effects:
+  - merge_after_partial_shipping_syncs_parent_order_status
+  - merge_never_makes_an_option_its_own_parent
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderOptionMergeParentIntegrityTest.php

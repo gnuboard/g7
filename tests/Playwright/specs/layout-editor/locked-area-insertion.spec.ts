@@ -16,7 +16,6 @@
  * 신규 노드는 `__source` 미부여라 저장 마스킹(stripInheritedNodes)이 항상 route
  * 콘텐츠로 보존한다.
  *
- * @scenario selected_node_state=extension_locked_selected,data_bound_selected
  * 효과 요약(마커 아님 — 평문): locked_node_shows_insertion_plus_via_anchor, insertion_inserts_outside_locked_group_as_sibling.
  */
 import type { Page } from '@playwright/test';
@@ -84,6 +83,7 @@ async function selectByText(page: Page, matcher: string, maxLen: number): Promis
         });
       return {
         found: true,
+        path: pick.el.getAttribute('data-editor-path'),
         lockKind: sel?.getAttribute('data-lock-kind') ?? null,
         affordancesMounted: !!document.querySelector('[data-testid="g7le-insertion-affordances"]'),
         enabledInViewCount: plus.filter((b) => b.disabled === 'false' && b.inView).length,
@@ -91,6 +91,23 @@ async function selectByText(page: Page, matcher: string, maxLen: number): Promis
     },
     { matcher, maxLen },
   );
+}
+
+/** 지정 경로의 노드를 합성 마우스 시퀀스로 선택하고 잠금 종류를 돌려준다. */
+async function selectByPathAndLockKind(page: Page, path: string): Promise<string | null> {
+  return page.evaluate(async (p: string) => {
+    const el = document
+      .querySelector('[data-testid="g7le-preview-frame"]')!
+      .querySelector(`[data-editor-path="${CSS.escape(p)}"]`) as HTMLElement | null;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    for (const t of ['pointerover', 'pointerenter', 'pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'])
+      el.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, clientX: cx, clientY: cy, view: window }));
+    await new Promise((res) => setTimeout(res, 350));
+    return document.querySelector('[data-testid="g7le-overlay-selected"]')?.getAttribute('data-lock-kind') ?? null;
+  }, path);
 }
 
 test.describe('@layout-editor 잠긴 영역 요소 추가(+) 복원', () => {
@@ -116,5 +133,93 @@ test.describe('@layout-editor 잠긴 영역 요소 추가(+) 복원', () => {
       expect(res.affordancesMounted).toBe(true);
       expect(res.enabledInViewCount as number).toBeGreaterThan(0);
     }
+  });
+
+  /**
+   * + 버튼이 **보이는가** 와 눌렀을 때 **어디에 들어가는가** 는 다른 명제다. 앞의 두 테스트는
+   * 노출만 본다 — 잠긴 묶음 *안쪽* 에 꽂혀도 통과한다. 이 테스트가 삽입 위치를 잠근다.
+   *
+   * 저장하지 않는다 — 편집기 문서에만 반영되므로 사이트 레이아웃은 그대로 남는다.
+   */
+  /** @effects insertion_inserts_outside_locked_group_as_sibling */
+  test('잠긴 조각의 + 로 요소를 추가하면 묶음 안이 아니라 형제로 들어간다', async ({ page }) => {
+    await openRegisterEditor(page);
+    const res = await selectByText(page, '마케팅 동의|광고성 이메일', 30);
+
+    expect(res.found).toBe(true);
+    expect(res.lockKind).toBe('extension');
+    const anchor = res.path as string;
+    expect(anchor).toBeTruthy();
+
+    // 선택된 잎만 보면 "묶음 안" 을 못 잰다(자손 0이라 무엇이 들어와도 0 그대로일 수 있다).
+    // 잎에서 위로 올라가며 잠금이 유지되는 **가장 바깥 확장 잠금 조상** = 묶음 박스를 찾는다.
+    const chain = await page.evaluate((leaf: string) => {
+      const frame = document.querySelector('[data-testid="g7le-preview-frame"]')!;
+      const el = frame.querySelector(`[data-editor-path="${CSS.escape(leaf)}"]`);
+      const out: string[] = [];
+      let cur: Element | null = el;
+      while (cur && cur !== frame) {
+        const p = cur.getAttribute?.('data-editor-path');
+        if (p) out.push(p);
+        cur = cur.parentElement;
+      }
+      return out.reverse(); // 얕은 → 깊은
+    }, anchor);
+
+    let groupPath = anchor;
+    for (const p of chain) {
+      if ((await selectByPathAndLockKind(page, p)) === 'extension') {
+        groupPath = p; // 가장 얕은 확장 잠금 노드 = 묶음 박스
+        break;
+      }
+    }
+    // 묶음 박스를 다시 선택해 둔다(+ 어포던스가 그 박스 기준으로 뜨도록).
+    expect(await selectByPathAndLockKind(page, groupPath)).toBe('extension');
+
+    const groupHandle = await page.evaluateHandle(
+      (sel: string) =>
+        document
+          .querySelector('[data-testid="g7le-preview-frame"]')!
+          .querySelector(`[data-editor-path="${CSS.escape(sel)}"]`) as HTMLElement | null,
+      groupPath,
+    );
+    const totalBefore = await page.evaluate(
+      () =>
+        document.querySelector('[data-testid="g7le-preview-frame"]')!.querySelectorAll('[data-editor-path]')
+          .length,
+    );
+    const innerBefore = await groupHandle.evaluate((el) => (el ? el.querySelectorAll('[data-editor-path]').length : -1));
+    expect(innerBefore).toBeGreaterThanOrEqual(0); // 잠긴 요소를 실제로 붙잡았다
+
+    // 화면 안에 떠 있는 활성 + 버튼을 누른다 → 팔레트 모달
+    const plus = page.locator('[data-testid^="g7le-insertion-"][data-disabled="false"]').first();
+    await expect(plus).toBeVisible({ timeout: 10_000 });
+    await plus.click();
+
+    await expect(page.getByTestId('g7le-palette-item-Div')).toBeVisible({ timeout: 10_000 });
+    await page.getByTestId('g7le-palette-item-Div').click();
+
+    // 삽입이 실제로 일어났는지 먼저 확정한다(안 일어났는데 "안 늘었다"로 통과하는 공허 방지).
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(
+            () =>
+              document
+                .querySelector('[data-testid="g7le-preview-frame"]')!
+                .querySelectorAll('[data-editor-path]').length,
+          ),
+        { timeout: 10_000 },
+      )
+      .toBeGreaterThan(totalBefore);
+
+    const after = await groupHandle.evaluate((el) => ({
+      connected: !!el && el.isConnected,
+      inner: el ? el.querySelectorAll('[data-editor-path]').length : -1,
+    }));
+
+    // 잠긴 요소가 재렌더로 교체됐다면 이 측정은 근거가 없다 — 공허 통과를 막는다.
+    expect(after.connected).toBe(true);
+    expect(after.inner).toBe(innerBefore);
   });
 });

@@ -44,18 +44,7 @@ class ServeTemplateAssetRequest extends FormRequest
         // 고정하면 `custom/**` 은 realpath 가 실패해 문자열 접두 비교로만 통과하므로,
         // 검증한 경로와 읽는 경로가 서로 다른 상태가 된다. 두 곳의 분기를 같은 조건으로
         // 맞춰 둔다 — 한쪽만 바뀌면 custom 서빙이 조용히 깨지거나 검증이 헐거워진다.
-        // 식별자는 **검증 전** 값이다. 라우트에 형태 제약이 없고 Laravel 은 매칭·바인딩을
-        // 모두 디코딩된 경로로 하므로 `%2e%2e` 가 `..` 로 들어온다 — 그대로 보간하면
-        // 봉쇄의 **기준선을 요청이 고르게** 된다. 확장 식별자는 `vendor-name` 형태이므로
-        // 그 형태가 아니면 실재할 수 없는 이름으로 접어 기준선이 트리 밖으로 나가지 않게 한다.
-        $identifier = $this->route('identifier');
-        $identifier = is_string($identifier) && preg_match('/^[A-Za-z0-9_.-]+$/', $identifier) && ! str_contains($identifier, '..')
-            ? $identifier
-            : '__invalid__';
-        $requestedPath = (string) $this->input('path');
-        $basePath = str_starts_with($requestedPath, CustomAssets::DIRECTORY.'/')
-            ? base_path("templates/{$identifier}")
-            : base_path("templates/{$identifier}/dist");
+        $basePath = $this->basePathFor((string) $this->input('path'));
 
         return [
             'identifier' => ['required', 'string'],
@@ -69,7 +58,9 @@ class ServeTemplateAssetRequest extends FormRequest
     }
 
     /**
-     * 검증을 위한 데이터 준비
+     * 검증을 위한 데이터 준비 — 라우트 세그먼트 또는 `?file=` 의 경로를 `path` 로 모으고 AMD 모듈 id 를 보완한다.
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
@@ -79,8 +70,53 @@ class ServeTemplateAssetRequest extends FormRequest
         // 어느 형태로 오든 컨트롤러는 동일하게 `path` 만 본다.
         $this->merge([
             'identifier' => $this->route('identifier'),
-            'path' => $this->dualModeFilePath(),
+            'path' => $this->resolveAmdModulePath($this->dualModeFilePath()),
         ]);
+    }
+
+    /**
+     * 요청 경로가 읽힐 기준 디렉토리를 정합니다 (검증 컨테인먼트 기준 = 서빙 루트).
+     *
+     * @param  string  $requestedPath  요청 경로
+     * @return string 기준 디렉토리 절대 경로
+     */
+    private function basePathFor(string $requestedPath): string
+    {
+        // 식별자는 **검증 전** 값이다. 라우트에 형태 제약이 없고 Laravel 은 매칭·바인딩을
+        // 모두 디코딩된 경로로 하므로 `%2e%2e` 가 `..` 로 들어온다 — 그대로 보간하면
+        // 봉쇄의 **기준선을 요청이 고르게** 된다. 확장 식별자는 `vendor-name` 형태이므로
+        // 그 형태가 아니면 실재할 수 없는 이름으로 접어 기준선이 트리 밖으로 나가지 않게 한다.
+        $identifier = $this->route('identifier');
+        $identifier = is_string($identifier) && preg_match('/^[A-Za-z0-9_.-]+$/', $identifier) && ! str_contains($identifier, '..')
+            ? $identifier
+            : '__invalid__';
+
+        return str_starts_with($requestedPath, CustomAssets::DIRECTORY.'/')
+            ? base_path("templates/{$identifier}")
+            : base_path("templates/{$identifier}/dist");
+    }
+
+    /**
+     * 확장자 없이 온 AMD 모듈 id 를 같은 이름의 `.js` 파일 경로로 보완합니다.
+     *
+     * AMD 로더(Monaco)는 URL 에 쿼리가 있으면 모듈 id 에 `.js` 를 붙이지 않는다. 확장자를 가로채는 서버에서
+     * 디렉토리를 `?file=` 형태로 받은 로더는 `…/editor/editor.main` 을 요청하므로, 그 파일이 없고 같은 이름의
+     * `.js` 가 있으면 그 경로로 바꾼다(`editor.main` 처럼 점이 든 id 라 확장자 유무로 가리지 않는다). 보완은 검증
+     * 전에 하고, 경로 이탈·확장자 검증은 보완된 경로로 그대로 돈다. 상위 디렉토리 표기가 든 경로는 존재 확인이
+     * 기준 디렉토리 밖을 보지 않도록 보완하지 않는다.
+     *
+     * @param  mixed  $path  요청 경로 (라우트 세그먼트 또는 `?file=` 값)
+     * @return mixed 보완된 경로, 해당 없으면 원래 값
+     */
+    private function resolveAmdModulePath(mixed $path): mixed
+    {
+        if (! is_string($path) || $path === '' || str_contains($path, '..')) {
+            return $path;
+        }
+
+        $absolute = $this->basePathFor($path).DIRECTORY_SEPARATOR.ltrim($path, '/\\');
+
+        return ! is_file($absolute) && is_file($absolute.'.js') ? $path.'.js' : $path;
     }
 
     /**

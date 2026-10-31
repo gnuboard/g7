@@ -1,0 +1,27 @@
+feature: E2E·실측용 회원 알림 시드 — 고정 회원 또는 기존 회원(토큰 회원)에게 심기·이동 주소 지정·심은 알림만 지우기
+
+description: |
+  `playwright:seed-member-notification` 은 회원 알림함(읽음/안 읽음·제목/본문 검색)과 관리자 알림 센터를 브라우저로 재는 데 쓴다.
+  관리자 알림 센터 E2E 는 시험마다 새로 생기는 토큰 회원의 알림 센터를 보므로, 고정 회원만 만들던 시드로는 그 회원에게
+  알림을 넣을 수 없어 사례가 건너뛰어졌다. `--user` 로 그 회원에게 심고 `--url` 로 이동 주소를 정하며,
+  `--teardown --user` 는 심은 알림(표식 `data.e2e_seed`)만 지워 회원과 다른 알림을 건드리지 않는다.
+
+  축 target 은 알림을 받는 회원 — 이 커맨드가 만드는 고정 회원(fixed_member)·이미 있는 회원(existing_member).
+  축 op 는 심기(seed)·지우기(teardown).
+
+axes:
+  target: [fixed_member, existing_member]
+  op: [seed, teardown]
+
+exclusions:
+  - { target: fixed_member, op: teardown, reason: "고정 회원 지우기는 같은 시험(test_default_flow_creates_and_tears_down_fixed_member)이 심기에 이어 확인한다 — 한 흐름이라 seed 칸이 대표" }
+
+effects:
+  - seeds_into_existing_member
+  - click_url_is_configurable
+  - teardown_removes_only_seeded_notifications
+  - unknown_user_fails_without_side_effects
+  - fixed_member_flow_unchanged
+
+test_files:
+  - tests/Feature/Console/PlaywrightSeedMemberNotificationCommandTest.php

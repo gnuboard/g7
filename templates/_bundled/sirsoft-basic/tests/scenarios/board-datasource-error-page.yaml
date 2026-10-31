@@ -1,0 +1,28 @@
+feature: 게시판 목록·글 보기 데이터소스의 403·404 는 오류 화면으로 연다 (7.1.1)
+
+description: |
+  사용자 템플릿의 게시판 목록(layouts/board/index — 데이터소스 posts)과 글 보기(layouts/board/show — 데이터소스 post)는
+  데이터소스 errorHandling 으로 상태별 처리를 둔다. 401 은 로그인 복귀(board-guest-access-login-redirect.yaml),
+  403·404 는 오류 화면(showErrorPage)이다.
+  7.1.1 에서 게시판 모듈이 없는 게시판 주소에 권한 판정보다 먼저 404 를 돌려주게 됐는데(모듈 매니페스트
+  board-missing-board-not-found.yaml), 목록 레이아웃에만 404 갈래가 없어 오류 화면이 뜨지 않았다 — 글 보기와 같은 모양으로
+  404 → showErrorPage 를 더했다. 처리는 데이터소스 단위로만 두고 레이아웃 최상위 errorHandling 은 두지 않는다.
+
+# axis 의미:
+#   layout — 게시판 목록(board_list) / 글 보기(board_show)
+#   status — 오류 화면으로 가는 응답: 403 권한 없음(forbidden) / 404 없음(not_found)
+axes:
+  layout: [board_list, board_show]
+  status: [forbidden, not_found]
+
+effects:
+  - error_status_shows_error_page          # 데이터소스 errorHandling 의 해당 상태가 showErrorPage 다
+  - error_handling_scoped_to_data_source   # 레이아웃 최상위 errorHandling 이 없다(데이터소스 단위로만 처리)
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-401-error-handling.test.tsx
+
+validation:
+  note: |
+    레이아웃 JSON 정합 판정. 브라우저 확인(`/board/없는게시판` → 「찾을 수 없음」 오류 화면)은 게시판 모듈 반영 뒤
+    보고 행의 절차를 따른다.

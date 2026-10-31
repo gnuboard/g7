@@ -13,7 +13,7 @@
 4. G7Core.t() 함수로 다국어 처리
 5. 다크 모드: light/dark variant 함께 지정
 6. 배열 props 는 fallback 필수 (Select options={{options ?? []}})
-7. 폼 안의 Button 은 type="button" 명시 (기본 submit 동작 방지)
+7. 모든 Button 은 type 명시 — 누르기만 하면 type="button", 제출은 type="submit" (기본 submit 동작 방지, 폼 밖 파셜도 포함될 폼을 알 수 없다)
 ```
 
 ---
@@ -156,3 +156,19 @@ import { Icon, IconName } from '../basic/Icon';
 - [sirsoft-basic 컴포넌트](../../templates/_bundled/sirsoft-basic/docs/components.md) - User 컴포넌트 목록 (확장 소유)
 - [다크 모드](./dark-mode.md) - 컴포넌트 다크 모드 지원 가이드
 - [상태 관리](./state-management.md) - 전역/로컬 상태 관리 및 동기화 패턴
+
+## 확장이 제공하는 컴포넌트
+
+마크업 어휘는 대상 템플릿의 `components.json` 단독이 아니라 **템플릿 + 활성 모듈 + 활성 플러그인 3계통**이다. 확장이 제공한 컴포넌트는 확장 식별자 프리픽스가 붙은 태그로 쓴다.
+
+```html
+<sirsoft-ecommerce-product-card title="{{product.name}}" :featured="true"/>
+```
+
+- 노드 `name` 은 `{확장식별자}.{이름}` (예: `sirsoft-ecommerce.ProductCard`)
+- 태그 프리픽스는 식별자의 `_` 를 `-` 로 접은 것 (`gnuboard7-hello_module` → `<gnuboard7-hello-module-...>`)
+- 템플릿 컴포넌트는 종전대로 프리픽스 없이 쓴다
+
+"미등록 컴포넌트 확인" 규율의 대상이 3계통으로 넓어졌다. 어떤 판본이 실제로 쓰이는지(확장 원본 / 템플릿 대체본 / 템플릿 전용 판본)는 작성자가 알 필요가 없다 — 셋 다 같은 태그·같은 이름이다.
+
+규약 전문: [../extension/extension-components.md](../extension/extension-components.md)

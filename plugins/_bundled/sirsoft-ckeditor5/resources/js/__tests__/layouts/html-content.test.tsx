@@ -272,7 +272,7 @@ describe('html_content extension_point — 플러그인 설치 시 (CSS 주입 +
   });
 });
 
-describe('html_content — 댓글 콘텐츠 패턴 (_reply_card_content.json)', () => {
+describe('html_content — 댓글 콘텐츠 패턴 (_reply_card_content.g7.html)', () => {
   it('댓글 HTML 콘텐츠가 렌더링된다', async () => {
     const testUtils = createLayoutTest(replyContentLayout, {
       componentRegistry: buildRegistry(),

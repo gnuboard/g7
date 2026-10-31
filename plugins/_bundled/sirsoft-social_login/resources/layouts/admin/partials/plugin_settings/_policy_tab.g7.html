@@ -1,0 +1,225 @@
+<!-- 정책 탭 — 사이트 전체 정책(가입·연결·보존·알림 기준). 코어 플러그인 설정 API 로 저장한다. 위험한 선택(검증 이메일 자동 연결·2단계 인증 끄기)에는
+     고르는 순간 빨간 경고를 보인다. -->
+<partial name="partials/plugin_settings/_policy_tab" description="정책 탭">
+  <div data-ref="policy_tab" data-if="{{query.tab === 'policy'}}" data-key="form" data-track-changes class="sl:mt-6">
+    <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="sl-alert-warning">
+      <icon name="lock" class="sl:text-xl sl:leading-none sl:text-amber-600 sl:dark:text-amber-400 sl:flex-shrink-0"/>
+      <span class="sl:text-sm sl:text-amber-800 sl:dark:text-amber-200">$t:sirsoft-social_login.plugin_read_only</span>
+    </div>
+    <div data-ref="policy_section" class="sl:mt-6 sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700">
+      <div data-ref="policy_section_header" class="sl:px-6 sl:pt-6">
+        <h2 class="sl:text-lg sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.settings.sections.policy</h2>
+      </div>
+      <div data-ref="policy_fields" class="sl:p-6 sl:space-y-6">
+        <div data-ref="field_email_conflict_policy" class="sl-grid-3col-responsive">
+          <div class="sl:lg:col-span-1">
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.email_conflict_policy.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.email_conflict_policy.hint</p>
+          </div>
+          <div class="sl:lg:col-span-2">
+            <select name="email_conflict_policy" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}">
+              <option value="verify_link">$t:sirsoft-social_login.settings.fields.email_conflict_policy.options.verify_link</option>
+              <option value="auto_link_verified">$t:sirsoft-social_login.settings.fields.email_conflict_policy.options.auto_link_verified</option>
+              <option value="never_link">$t:sirsoft-social_login.settings.fields.email_conflict_policy.options.never_link</option>
+            </select>
+            <p data-ref="auto_link_warning" data-if="{{_local.form?.email_conflict_policy === 'auto_link_verified'}}" role="alert" class="sl-form-error">$t:sirsoft-social_login.settings.warnings.auto_link_verified</p>
+            <p data-ref="error_email_conflict_policy" data-if="{{!!_local.errors?.email_conflict_policy}}" class="sl-form-error">{{_local.errors?.email_conflict_policy?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_extra_info_mode" class="sl-grid-3col-responsive">
+          <div class="sl:lg:col-span-1">
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.extra_info_mode.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.extra_info_mode.hint</p>
+          </div>
+          <div class="sl:lg:col-span-2">
+            <select name="extra_info_mode" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}">
+              <option value="when_missing">$t:sirsoft-social_login.settings.fields.extra_info_mode.options.when_missing</option>
+              <option value="always">$t:sirsoft-social_login.settings.fields.extra_info_mode.options.always</option>
+            </select>
+            <p data-ref="error_extra_info_mode" data-if="{{!!_local.errors?.extra_info_mode}}" class="sl-form-error">{{_local.errors?.extra_info_mode?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_webhook_unlink_policy" class="sl-grid-3col-responsive">
+          <div class="sl:lg:col-span-1">
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.webhook_unlink_policy.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.webhook_unlink_policy.hint</p>
+          </div>
+          <div class="sl:lg:col-span-2">
+            <select name="webhook_unlink_policy" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}">
+              <option value="unlink_only">$t:sirsoft-social_login.settings.fields.webhook_unlink_policy.options.unlink_only</option>
+              <option value="withdraw_user">$t:sirsoft-social_login.settings.fields.webhook_unlink_policy.options.withdraw_user</option>
+            </select>
+            <p data-ref="error_webhook_unlink_policy" data-if="{{!!_local.errors?.webhook_unlink_policy}}" class="sl-form-error">{{_local.errors?.webhook_unlink_policy?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_two_factor_enabled" class="sl-flex-start sl:gap-3">
+          <input type="checkbox" name="two_factor_enabled" class="sl:mt-1 sl:h-4 sl:w-4 sl:rounded sl:text-blue-600" disabled="{{_computed.isPluginReadOnly}}"/>
+          <div>
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.two_factor_enabled.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.two_factor_enabled.hint</p>
+            <p data-ref="two_factor_off_warning" data-if="{{_local.form?.two_factor_enabled === false}}" role="alert" class="sl-form-error">$t:sirsoft-social_login.settings.warnings.two_factor_off</p>
+            <p data-ref="error_two_factor_enabled" data-if="{{!!_local.errors?.two_factor_enabled}}" class="sl-form-error">{{_local.errors?.two_factor_enabled?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_allow_admin_social_login" class="sl-flex-start sl:gap-3">
+          <input type="checkbox" name="allow_admin_social_login" class="sl:mt-1 sl:h-4 sl:w-4 sl:rounded sl:text-blue-600" disabled="{{_computed.isPluginReadOnly}}"/>
+          <div>
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.allow_admin_social_login.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.allow_admin_social_login.hint</p>
+            <p data-ref="error_allow_admin_social_login" data-if="{{!!_local.errors?.allow_admin_social_login}}" class="sl-form-error">{{_local.errors?.allow_admin_social_login?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_allow_unlink_last_method" class="sl-flex-start sl:gap-3">
+          <input type="checkbox" name="allow_unlink_last_method" class="sl:mt-1 sl:h-4 sl:w-4 sl:rounded sl:text-blue-600" disabled="{{_computed.isPluginReadOnly}}"/>
+          <div>
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.allow_unlink_last_method.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.allow_unlink_last_method.hint</p>
+            <p data-ref="error_allow_unlink_last_method" data-if="{{!!_local.errors?.allow_unlink_last_method}}" class="sl-form-error">{{_local.errors?.allow_unlink_last_method?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_revoke_on_unlink" class="sl-flex-start sl:gap-3">
+          <input type="checkbox" name="revoke_on_unlink" class="sl:mt-1 sl:h-4 sl:w-4 sl:rounded sl:text-blue-600" disabled="{{_computed.isPluginReadOnly}}"/>
+          <div>
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.revoke_on_unlink.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.revoke_on_unlink.hint</p>
+            <p data-ref="error_revoke_on_unlink" data-if="{{!!_local.errors?.revoke_on_unlink}}" class="sl-form-error">{{_local.errors?.revoke_on_unlink?.[0] ?? ''}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="limits_section" class="sl:mt-6 sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700">
+      <div data-ref="limits_section_header" class="sl:px-6 sl:pt-6">
+        <h2 class="sl:text-lg sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.settings.sections.limits</h2>
+      </div>
+      <div data-ref="limits_fields" class="sl:p-6 sl:space-y-6">
+        <div data-ref="field_state_ttl_minutes" class="sl-grid-3col-responsive">
+          <div class="sl:lg:col-span-1">
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.state_ttl_minutes.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.state_ttl_minutes.hint</p>
+          </div>
+          <div class="sl:lg:col-span-2">
+            <input type="number" name="state_ttl_minutes" :min="3" :max="30" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <p data-ref="error_state_ttl_minutes" data-if="{{!!_local.errors?.state_ttl_minutes}}" class="sl-form-error">{{_local.errors?.state_ttl_minutes?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_pending_signup_ttl_minutes" class="sl-grid-3col-responsive">
+          <div class="sl:lg:col-span-1">
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.pending_signup_ttl_minutes.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.pending_signup_ttl_minutes.hint</p>
+          </div>
+          <div class="sl:lg:col-span-2">
+            <input type="number" name="pending_signup_ttl_minutes" :min="5" :max="120" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <p data-ref="error_pending_signup_ttl_minutes" data-if="{{!!_local.errors?.pending_signup_ttl_minutes}}" class="sl-form-error">{{_local.errors?.pending_signup_ttl_minutes?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_custom_provider_limit" class="sl-grid-3col-responsive">
+          <div class="sl:lg:col-span-1">
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.custom_provider_limit.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.custom_provider_limit.hint</p>
+          </div>
+          <div class="sl:lg:col-span-2">
+            <input type="number" name="custom_provider_limit" :min="0" :max="10" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <p data-ref="error_custom_provider_limit" data-if="{{!!_local.errors?.custom_provider_limit}}" class="sl-form-error">{{_local.errors?.custom_provider_limit?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_profile_raw_retention_days" class="sl-grid-3col-responsive">
+          <div class="sl:lg:col-span-1">
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.profile_raw_retention_days.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.profile_raw_retention_days.hint</p>
+          </div>
+          <div class="sl:lg:col-span-2">
+            <input type="number" name="profile_raw_retention_days" :min="0" :max="90" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <p data-ref="error_profile_raw_retention_days" data-if="{{!!_local.errors?.profile_raw_retention_days}}" class="sl-form-error">{{_local.errors?.profile_raw_retention_days?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_attempt_log_retention_days" class="sl-grid-3col-responsive">
+          <div class="sl:lg:col-span-1">
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.attempt_log_retention_days.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.attempt_log_retention_days.hint</p>
+          </div>
+          <div class="sl:lg:col-span-2">
+            <input type="number" name="attempt_log_retention_days" :min="7" :max="365" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <p data-ref="error_attempt_log_retention_days" data-if="{{!!_local.errors?.attempt_log_retention_days}}" class="sl-form-error">{{_local.errors?.attempt_log_retention_days?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_webhook_event_retention_days" class="sl-grid-3col-responsive">
+          <div class="sl:lg:col-span-1">
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.webhook_event_retention_days.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.webhook_event_retention_days.hint</p>
+          </div>
+          <div class="sl:lg:col-span-2">
+            <input type="number" name="webhook_event_retention_days" :min="7" :max="365" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <p data-ref="error_webhook_event_retention_days" data-if="{{!!_local.errors?.webhook_event_retention_days}}" class="sl-form-error">{{_local.errors?.webhook_event_retention_days?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_signup_surge_threshold_per_hour" class="sl-grid-3col-responsive">
+          <div class="sl:lg:col-span-1">
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.signup_surge_threshold_per_hour.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.signup_surge_threshold_per_hour.hint</p>
+            <a data-ref="notification_link_signup_surge_threshold_per_hour" href="/admin/plugins/sirsoft-social_login/settings?tab=notifications" class="sl:inline-block sl:mt-1 sl:text-xs sl:font-medium sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline">
+              <on type="click">
+                <!-- 받는 사람·문구·채널은 이 기준값이 아니라 알림 탭에서 바꾼다 — 기준 0 은 감시 자체를 멈추고, 알림 탭의 끄기는 감시는 두고 발송만 멈춘다 -->
+                <navigate path="/admin/plugins/sirsoft-social_login/settings">
+                  <query tab="notifications"/>
+                </navigate>
+              </on>
+              <span>$t:sirsoft-social_login.settings.fields.notification_link</span>
+            </a>
+          </div>
+          <div class="sl:lg:col-span-2">
+            <input type="number" name="signup_surge_threshold_per_hour" :min="0" :max="10000" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <p data-ref="error_signup_surge_threshold_per_hour" data-if="{{!!_local.errors?.signup_surge_threshold_per_hour}}" class="sl-form-error">{{_local.errors?.signup_surge_threshold_per_hour?.[0] ?? ''}}</p>
+          </div>
+        </div>
+        <div data-ref="field_provider_failure_streak_threshold" class="sl-grid-3col-responsive">
+          <div class="sl:lg:col-span-1">
+            <label class="sl-form-label">$t:sirsoft-social_login.settings.fields.provider_failure_streak_threshold.label</label>
+            <p class="sl-form-hint">$t:sirsoft-social_login.settings.fields.provider_failure_streak_threshold.hint</p>
+            <a data-ref="notification_link_provider_failure_streak_threshold" href="/admin/plugins/sirsoft-social_login/settings?tab=notifications" class="sl:inline-block sl:mt-1 sl:text-xs sl:font-medium sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline">
+              <on type="click">
+                <!-- 받는 사람·문구·채널은 이 기준값이 아니라 알림 탭에서 바꾼다 — 기준 0 은 감시 자체를 멈추고, 알림 탭의 끄기는 감시는 두고 발송만 멈춘다 -->
+                <navigate path="/admin/plugins/sirsoft-social_login/settings">
+                  <query tab="notifications"/>
+                </navigate>
+              </on>
+              <span>$t:sirsoft-social_login.settings.fields.notification_link</span>
+            </a>
+          </div>
+          <div class="sl:lg:col-span-2">
+            <input type="number" name="provider_failure_streak_threshold" :min="0" :max="1000" class="sl:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <p data-ref="error_provider_failure_streak_threshold" data-if="{{!!_local.errors?.provider_failure_streak_threshold}}" class="sl-form-error">{{_local.errors?.provider_failure_streak_threshold?.[0] ?? ''}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="footer_buttons" class="sl-sticky-footer-buttons">
+      <button data-ref="cancel_button" type="button" class="sl-btn sl-btn-secondary">
+        <on type="click">
+          <navigate path="/admin/plugins"/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="sl-btn sl-btn-primary sl-flex-center sl:gap-1.5">
+        <on type="click">
+          <!-- 정책 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다. 실패하면 칸 아래 검증 문구와 토스트를 띄운다 -->
+          <sequence>
+            <set-state target="local" :isSaving="true" :errors="null"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+              <success>
+                <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                <refetch-data-source dataSourceId="settings"/>
+              </success>
+              <fail>
+                <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+        <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+      </button>
+    </div>
+  </div>
+</partial>

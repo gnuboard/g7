@@ -1,0 +1,65 @@
+feature: 자동 전이의 주체 — 누가 눌렀는지가 로그에 정직하게 남는다
+
+description: |
+  활동 로그의 「작업자」는 나중에 **누가 이 결정을 했는가**를 묻는 자리다. 사람이 누르지 않은
+  전이에 사람 이름이 박히면, 그 사람이 하지 않은 일을 했다고 기록이 말한다.
+
+  조용히 깨지는 지점은 **접수 페이로드를 그대로 실어 나르는 자리**다. `claim.
+  auto_approve_refund_request` 가 켜져 있으면 고객이 낸 환불신청서가 접수 그 자리에서 승인으로
+  넘어가는데, 그 전이에 접수자(`processed_by` = 고객)를 넘기고 있었다. 활동 로그
+  「환불 신청서 상태 변경(환불신청 → 환불승인)」의 작업자가 **고객 이름**으로 남아,
+  고객이 자기 신청을 스스로 승인한 것처럼 읽힌다(#599 세션A 실측 2026-09-21 ·
+  RF20260921-1616082573 · 작업자 `MEAS599R-A-M` · 운영 결정 2026-09-22 「고친다」).
+
+  갈라야 하는 두 경로가 한 메서드에 붙어 있다.
+
+  ① **D8 토글 자동승인** — 누른 사람이 없다. 설정이 한 일이므로 주체를 비운다. 새 라벨을
+     만들지 않고 저장소가 이미 쓰는 관례에 합류한다 — 1-T 입금기한 만료 자동취소도 작업자를
+     NULL 로 남기고 화면이 그것을 시스템으로 읽는다.
+
+  ② **관리자 [주문취소] 자동전이**(`autoAdvance`) — **사람이 버튼을 눌러** 시작했으므로 주체가
+     있다. 둘을 뭉뚱그려 함께 비우면 운영자 조작의 책임 추적이 사라진다.
+
+  접수 줄(`claim_refund.request`)의 주체는 고객이 맞으므로 건드리지 않는다 — 고객이 낸 신청이다.
+
+  **인자를 비우는 것만으로는 부족했다**(S1-D16, 2026-10-07 실측). 활동 로그 작업자는 신청서의
+  `processed_by` 가 아니라 코어 `ActivityLogProcessor` 의 `Auth::id()` 에서 온다 — 큐로 가는 훅은
+  발화 시점의 `Auth::id()` 를 실어 간다. 자동 전이가 고객 요청 안에서 돌기 때문에 환불 자동 진행
+  (승인·완료)·청구 0원 자동 승인·결제 뒤 자동 승인 모두 고객이 작업자로 남았다. 자동 전이를
+  `Support\SystemActor::run()` 으로 감싸 그 동안 `Auth::id()` 를 비우고, 커밋 뒤로 미룬 훅
+  발화(`FiresClaimHooksAfterCommit`)도 같은 범위를 이어받게 한다. 결제 확정(`paid`)은 낸 사람이
+  한 일이라 고객 그대로다.
+
+  큐로 간 훅은 워커가 컨텍스트를 복원하는데, 코어 `restore()` 는 `user_id` 가 비어 있으면 인증
+  사용자를 그대로 둔다 — 오래 사는 워커에서 앞 작업의 사용자가 남아 작업자가 됐다(재실측 2026-10-07:
+  자동 진행 취소의 「취소신청서 상태 변경」 줄만 고객). `SystemActorContextListener` 가 캡처 때 시스템
+  범위 표지를 싣고 복원 때 작업자를 비운다. 코어 잔존은 결함인계대장에 코어 결함으로 보고했다.
+
+# axis 의미: 갈라지는 축은 «그 전이를 사람이 시작했는가» 하나다. 두 값이 서로를 지킨다 —
+# auto_approve 만 보면 admin 경로까지 비우는 과잉 수정이 통과하고, admin 경로만 보면
+# 원래 결함이 그대로 남는다.
+axes:
+  actor: [auto_approve, admin_auto_advance]
+
+effects:
+  - auto_approve_transition_has_no_human_actor      # 토글 자동승인은 주체 없이 전이한다
+  - admin_initiated_auto_advance_keeps_its_actor    # 관리자가 시작한 자동전이는 주체를 유지한다
+  - auto_transition_activity_log_actor_is_system    # 자동 전이의 활동 로그 작업자는 시스템(NULL) — 세 경로 (S1-D16)
+  - queued_auto_transition_hooks_restore_as_system  # 큐로 간 자동 전이 훅도 워커에서 시스템으로 복원 (S1-D16 후속)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/AutoApproveActorIsSystemTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/AutoTransitionActorTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/SystemActorContextListenerTest.php
+
+validation:
+  audit_rule: backend-change-requires-test
+  browser_check: |
+    #599 세션A 실측(2026-09-22 · 자동승인 ON · 마일리지 전액 주문).
+    수정 전 클레임 상세 활동 로그 2줄 모두 작업자 `MEAS599R-A-M`(고객).
+    수정 후 「환불 신청 접수」는 고객, 「환불 신청서 상태 변경(환불신청 → 환불승인)」은 주체 없음.
+  note: |
+    이 축은 런타임 상태가 아니라 **호출 지점의 인자**가 계약이라 소스 구조로 잰다.
+    `transition()` 은 3번째 인자가 선택적 배열이므로 생략이 곧 「주체 없음」이다.
+    자동승인 전이는 접수 훅이 이미 알림 억제를 걸어 두어 여기서 고객 알림 1통만 나간다
+    (§4-2 「마지막 상태에서 1건」) — 주체를 비워도 알림 경로는 바뀌지 않는다.

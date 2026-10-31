@@ -8,6 +8,7 @@
 
 1. [navigate](#navigate)
 2. [navigateBack](#navigateback)
+   - [이탈 확인 건너뛰기 (bypassLeaveGuard)](#이탈-확인-건너뛰기-bypassleaveguard) (engine-v1.82.0+)
 3. [openWindow](#openwindow)
 4. [reloadExtensions](#reloadextensions) ⭐ NEW (engine-v1.38.0+)
 5. [reloadRoutes](#reloadroutes) (deprecated)
@@ -19,6 +20,14 @@
 
 페이지 이동을 처리합니다.
 
+```html
+<on type="click">
+  <navigate path="/admin/users/{{row.id}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -29,24 +38,39 @@
 }
 ```
 
+> 목적지가 `G7Config.customRoutes` 패턴(서버 `routes/custom.php` 의 GET 주소 — 개발자 화면, engine-v1.84.0+)과 맞으면 SPA 로 그리지 않고 `location.assign` 으로 전체 페이지 이동한다. 뒤로 가기로 그 주소에 오면 새로 불러온다. 패턴의 `{정규식}` 구간은 서버 라우트의 경로 제약이다. [개발자 화면 가이드](../custom-development.md#12-운영-주의)
+
 ### navigate params 구조
 
 | 필드 | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
-| `path` | string | - | 이동할 경로. 목적지는 이 필드(없으면 액션 노드의 `target`)로만 정해진다 — `url` / `href` / `to` 같은 다른 이름으로 적으면 읽히지 않아 목적지가 `undefined` 가 되고, 예외도 404 도 없이 버튼만 동작하지 않는다 |
+| `path` | string | - | 이동할 경로. 목적지는 이 필드(없으면 액션 노드의 `target`)로 정해진다 — `url` / `href` / `to` 같은 다른 이름으로 적으면 읽히지 않아 목적지가 `undefined` 가 되고, 예외도 404 도 없이 버튼만 동작하지 않는다. 둘 다 **적지 않았고**(키 자체가 없음) 액션이 실제 주소 `<a href>` 에 붙어 있으면 **그 링크의 href** 로 이동한다(같은 출처 주소만, engine-v1.80.1+). `path="{{…}}"` 식이 빈 값으로 풀린 경우는 종전대로 이동하지 않는다 — [화면 이동을 링크로 쓰는 법](#화면-이동을-링크로-쓰는-법-engine-v1801) |
 | `query` | object | - | 쿼리 파라미터 객체 |
 | `mergeQuery` | boolean | false | 기존 쿼리 파라미터와 병합 |
 | `replace` | boolean | false | URL만 변경 (페이지 리로드 없음) |
 | `transition_overlay_target` | string | - | `replace: true` 호출 시 `transition_overlay.target` 을 동적으로 override (engine-v1.36.0+) |
+| `refetch_data_sources` | string \| string[] | - | `replace: true` 호출에서 다시 받을 데이터 소스 id(쉼표 구분 문자열 또는 배열). 생략하면 auto_fetch 소스 전부 (engine-v1.79.0+) |
 | `scroll` | string \| number \| object | `"top"` | 이동 후 스크롤 위치 (engine-v1.37.0+). `"top"` / `"preserve"` / 숫자 / `{x,y}` / `"#selector"` |
 | `scrollBehavior` | string | `"instant"` | 스크롤 애니메이션 (engine-v1.37.0+). `"instant"` (즉시) / `"smooth"` (부드럽게). 기본값 `"instant"`는 템플릿 CSS의 `scroll-behavior: smooth` 전역 설정을 무시하고 페이지 전환 시 즉시 이동 |
-| `fallback` | `false \| string \| object` | `"openWindow"` | 대상 경로가 현재 템플릿의 `routes.json`에 없을 때 실행할 fallback 핸들러 (engine-v1.40.0+). 기본값은 `openWindow`(새 창). `false` 시 비활성화(기존 동작), 문자열은 핸들러명만 지정, 객체는 `{handler, params}` 상세 지정. 관리자 ↔ 사용자 템플릿 교차 경로에 사용 |
+| `fallback` | `false \| string \| object` | `openWindow`(`target: "_self"`) | 대상 경로가 현재 템플릿의 `routes.json`에 없을 때 실행할 fallback 핸들러 (engine-v1.40.0+). 기본값은 `openWindow` 를 **같은 탭**(`_self`)으로 — 그 주소로 페이지 전체를 불러온다. `false` 시 비활성화(기존 동작), 문자열은 핸들러명만 지정(`"openWindow"` 면 새 창), 객체는 `{handler, params}` 상세 지정. 관리자 ↔ 사용자 템플릿 교차 경로에 사용. 아래 `fallbackPath` 와 다른 인자다 |
+| `bypassLeaveGuard` | boolean | false | 레이아웃 이탈 확인(`meta.leave_guard`)을 이 이동에 한해 묻지 않는다 — 저장 성공 뒤 이동 등 (engine-v1.82.0+). [이탈 확인 건너뛰기](#이탈-확인-건너뛰기-bypassleaveguard) |
+| `fallbackPath` | string | - | 이동 주소(`path`)가 **비었거나 거부될 때**(실행 스킴·다른 사이트·`//host`) 대신 갈 경로 (engine-v1.80.1+). 같은 판정을 거치며 그것도 거부되면 이동하지 않는다. 쿼리·서버 값으로 이동하는 자리(로그인 복귀·본인 확인 복귀·알림 이동)에 쓴다 — [fallbackPath 옵션](#fallbackpath-옵션-engine-v1801) |
 
 ### transition_overlay_target 옵션 (engine-v1.36.0+)
 
 `replace: true` 로 탭 전환/페이지네이션 시 `updateQueryParams` 경로에 진입할 때, 레이아웃의 `transition_overlay.target` 대신 **이 호출에 한해** 다른 영역에만 spinner 를 표시하도록 한다.
 
 **주 용도**: 탭 속 서브 탭(환경설정 > 알림 탭 > 채널 탭 등) 클릭 시 서브 탭 콘텐츠 영역에만 spinner 가 표시되어야 할 때.
+
+```html
+<on type="click">
+  <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="notif_channel_content">
+    <query channel="{{ch.id}}"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -89,6 +113,19 @@
 
 목록 페이지 페이지네이션 시 **pagination 영역은 제외하고 그리드 본문만** spinner 를 표시하려면 `transition_overlay_target` 에 DataGrid 의 `${id}__body` suffix 를 사용한다. DataGrid composite 컴포넌트는 root Div 에 `id` 를, 테이블/카드 목록을 감싸는 내부 wrapper Div 에 `${id}__body` 를 자동으로 부여한다 (pagination 은 body wrapper 밖의 형제).
 
+앞은 DataGrid 컴포넌트 정의, 뒤는 그 본문을 오버레이 대상으로 지목하는 페이지네이션 `navigate` 다.
+
+```html
+<data-grid data-ref="users_data_grid"/>
+<on type="click">
+  <navigate path="/admin/users" :replace="true" :mergeQuery="true" transition_overlay_target="users_data_grid__body">
+    <query page="{{$args[0]}}"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // DataGrid 컴포넌트 정의
 { "type": "composite", "name": "DataGrid", "id": "users_data_grid", "props": {...} }
@@ -110,9 +147,73 @@
 
 > 상세: [layout-json-components-loading.md#wait_for — 데이터소스 가드](../frontend/layout-json-components-loading.md#wait_for--데이터소스-가드-engine-v1340)
 
+### refetch_data_sources 옵션 (engine-v1.79.0+)
+
+`replace: true` 이동은 기본으로 현재 쿼리에서 고른 auto_fetch 데이터 소스를 **전부** 다시 받는다. 탭 전환처럼 화면 전체를 서버 값으로 되돌리는 것이 목적이면 이 기본이 맞다. 그러나 한 화면 안에 설정 폼(`initLocal`)과 목록이 함께 있고 목록만 검색·필터·쪽 넘김을 하는 경우, 기본 동작은 설정 소스까지 다시 받아 **고친 칸을 서버 값으로 되돌리고 `hasChanges` 를 푼다.**
+
+`refetch_data_sources` 를 주면 그 소스만 다시 받는다. URL·`query` 문맥·computed 는 종전처럼 갱신되고, 다시 받지 않은 소스의 데이터와 `_local` 은 그대로 남는다.
+
+```html
+<on type="change">
+  <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
+    <query tab="identity" scope="{{$event.target.value || undefined}}" :page="1"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "handler": "navigate",
+  "params": {
+    "path": "/admin/settings",
+    "replace": true,
+    "mergeQuery": true,
+    "transition_overlay_target": "policy_table_card",
+    "refetch_data_sources": "policies",
+    "query": { "tab": "identity", "scope": "{{$event.target.value || undefined}}", "page": 1 }
+  }
+}
+```
+
+- 목록 소스가 blocking 이 아니면 덮개는 `transition_overlay.wait_for` 에 그 소스가 있을 때만 뜬다. 목록 영역 덮개가 필요하면 `wait_for` 에 목록 소스를 넣는다.
+- 지정한 id 가 현재 쿼리에서 고른 소스에 없으면 아무것도 다시 받지 않는다(URL 만 바뀐다). id 오타를 레이아웃 테스트로 잠근다.
+- `replace` 없는 이동에서는 읽지 않는다(새 레이아웃 진입은 항상 전체를 받는다).
+
+### replace 이동이 겹칠 때 (engine-v1.79.0+)
+
+탭을 빠르게 오가면 `replace: true` 이동이 겹친다. 엔진은 데이터 소스마다 **가장 최근에 다시 받기 시작한 이동의 응답만** 화면에 적용하고, 늦게 끝난 옛 이동의 같은 소스 응답은 버린다. 덮개와 대기 표시(`blur_until_loaded`)는 현재 화면 소스를 아직 받고 있는 이동이 모두 끝난 뒤 걷는다. 종전에는 먼저 시작한 이동이 끝나면서 뒤 이동의 덮개를 걷어, 뒤 이동의 설정 응답(blocking·`initLocal`)이 도착하기 전에 칸이 열렸고 그 사이 입력이 응답에 말없이 덮였다.
+
+### fallbackPath 옵션 (engine-v1.80.1)
+
+같은 탭 이동은 거부된 주소 — `javascript:` 같은 실행 스킴, 다른 사이트 주소, `//host`·`/\host` — 로 **이동하지 않는다**(지금 화면에 머문다).
+`?redirect=`·서버 응답의 복귀 주소·알림 이동 주소처럼 바깥에서 오는 값으로 이동하는 자리는 그 값이 거부되거나 비면 화면에 머물게 되므로,
+`fallbackPath` 로 안전한 착지점을 적는다.
+
+| path | fallbackPath | 결과 |
+| --- | --- | --- |
+| 받아들여짐(사이트 안 경로·같은 사이트 전체 주소) | 무엇이든 | path 로 이동 (fallbackPath 를 읽지 않음) |
+| 비었거나 거부됨 | 받아들여짐 | fallbackPath 로 이동 |
+| 비었거나 거부됨 | 비었거나 거부됨 | 이동하지 않음 |
+| 거부됨 | 없음 | 이동하지 않음 (종전 그대로) |
+
+`query`·`mergeQuery` 는 고른 경로에 똑같이 붙는다. 표현식으로 주소를 직접 거르지 않는다(`?? '/'` 는 빈 값만 대체하고, 문자 검사 람다는 우회 변형을 화면마다 다시 짜야 한다). 검색 로봇용 화면도 같은 판정으로 링크를 만든다.
+쿼리·서버 값이 이동 주소의 앞자리를 정하는데 `fallbackPath` 가 없으면 레이아웃 정적 검사가 오류로 잡는다(`/admin/users/{{$args[1].uuid}}` 처럼 고정 경로로 시작하면 대상 아님).
+
+```html
+<navigate path="{{query.redirect}}" fallbackPath="/"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{ "handler": "navigate", "params": { "path": "{{query.redirect}}", "fallbackPath": "/" } }
+```
+
 ### fallback 옵션 (engine-v1.40.0+)
 
-대상 경로가 현재 템플릿의 `routes.json`에 등록되어 있지 않을 때(예: 관리자 화면에서 사용자 페이지 URL로 navigate 시도), 404 라우트가 아닌 다른 핸들러로 분기시킨다. **기본값은 `openWindow`** — 미지정 시 자동으로 새 창에서 열림.
+대상 경로가 현재 템플릿의 `routes.json`에 등록되어 있지 않을 때(예: 관리자 화면에서 사용자 페이지 URL로 navigate 시도), 404 라우트가 아닌 다른 핸들러로 분기시킨다. **기본값은 `openWindow` + `target: "_self"`** — 미지정 시 같은 탭에서 그 주소로 페이지 전체를 불러온다(SPA 이동이 아니다). 새 탭으로 열려면 ④ 형태로 `target: "_blank"` 를 준다. 문자열로 `"openWindow"` 만 주면(③) `target` 이 없어 새 창으로 열린다.
 
 **주 용도**: 알림센터에서 알림 클릭 시 관리자 ↔ 사용자 템플릿 교차 경로 처리.
 
@@ -126,14 +227,41 @@
 
 **파라미터 형태**:
 
+순서대로 **①** 미지정(기본값 `openWindow`, 같은 탭) · **②** 비활성화(기존 동작 — 미등록 경로 그대로 SPA navigate) ·
+**③** 핸들러명만 지정(string) · **④** 상세 지정(object — `params` 는 `finalPath` 위에 merge) 이다.
+
+```html
+<on type="click">
+  <navigate path="/shop/products"/>
+</on>
+<on type="click">
+  <navigate path="/admin/x" :fallback="false"/>
+</on>
+<on type="click">
+  <navigate path="/shop/products" fallback="openWindow"/>
+</on>
+<on type="click">
+  <navigate path="/shop/products">
+    <field name="fallback">
+      <field name="handler" value="openWindow"/>
+      <field name="params">
+        <field name="target" value="_blank"/>
+      </field>
+    </field>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```jsonc
-// 1. 미지정 (기본값: openWindow)
+// 1. 미지정 (기본값: openWindow, target "_self" — 같은 탭 전체 이동)
 { "handler": "navigate", "params": { "path": "/shop/products" } }
 
 // 2. 비활성화 (기존 동작 — 미등록 경로 그대로 SPA navigate)
 { "handler": "navigate", "params": { "path": "/admin/x", "fallback": false } }
 
-// 3. 핸들러명만 지정 (string)
+// 3. 핸들러명만 지정 (string) — openWindow 의 target 이 없어 새 창
 { "handler": "navigate", "params": { "path": "/shop/products", "fallback": "openWindow" } }
 
 // 4. 상세 지정 (object) — params는 finalPath 위에 merge
@@ -148,7 +276,18 @@
 
 **알림센터 클릭 패턴 (parallel + fallback)**:
 
-알림센터에서 알림 클릭 시 mark-as-read API 호출과 navigate를 **`parallel`로 묶어** 동시 실행하면, openWindow fallback이 즉시 새 창을 열고 mark-as-read는 백그라운드에서 진행된다. `sequence`로 묶으면 mark-as-read 완료(1~2초)를 기다린 후에야 새 창이 열려 사용자 체감이 나빠진다.
+알림센터에서 알림 클릭 시 mark-as-read API 호출과 navigate를 **`parallel`로 묶어** 동시 실행하면, openWindow fallback이 즉시 그 주소로 이동하고(기본 같은 탭) mark-as-read는 백그라운드에서 진행된다. `sequence`로 묶으면 mark-as-read 완료(1~2초)를 기다린 후에야 이동해 사용자 체감이 나빠진다.
+
+```html
+<on event="onNotificationClick">
+  <parallel>
+    <navigate path="{{$args[0].url}}" fallbackPath="/admin/notification-logs"/>
+    <api-call target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH"/>
+  </parallel>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -158,7 +297,7 @@
     "actions": [
       {
         "handler": "navigate",
-        "params": { "path": "{{$args[0].url ?? '/admin/notification-logs'}}" }
+        "params": { "path": "{{$args[0].url}}", "fallbackPath": "/admin/notification-logs" }
       },
       {
         "handler": "apiCall",
@@ -170,9 +309,88 @@
 }
 ```
 
+### 화면 이동을 링크로 쓰는 법 (engine-v1.80.1)
+
+화면을 옮기는 요소는 `<a href>` 로 그린다. 그래야 가운데 클릭·Ctrl/Cmd+클릭·우클릭 「새 탭에서 열기」가 된다(관리자는 여러 화면을 탭으로 띄워 두고 일한다). 단추(`<button>`)·`<div>` 에 `navigate` 만 붙이면 주소가 렌더 시점에 없어 새 탭으로 열 수 없다.
+
+- **주소는 href 한 곳**: `<navigate>` 의 `path` 를 생략하면(속성 자체를 적지 않음) 클릭한 링크의 href 로 이동한다. 링크 진입점의 `sequence`·`onSuccess` 안쪽 `navigate` 도 같다. 같은 출처 주소만 따른다 — 외부 주소 링크는 `navigate` 를 달지 말고 `target="_blank" rel="noopener"` 로 둔다.
+- **보통 클릭은 SPA 이동, 나머지는 브라우저**: 보통 왼쪽 클릭이면 엔진이 기본 동작을 막고 `navigate` 를 실행한다(전환 효과·데이터 재조회 그대로). Ctrl·Cmd·Shift·Alt+클릭·`target`·`download` 는 막지도 실행하지도 않는다 — 링크를 감싼 클릭 가능한 부모(카드 아코디언 등)의 click 액션도 그 클릭에서는 비켜 새 탭이 열린다. 이 판정은 액션 키 `preventDefault` 로 바꿀 수 있다 — [actions.md 「기본 동작 제어」](actions.md#기본-동작-제어--액션-키-preventdefault-engine-v1801).
+- **목록 문맥 유지**: 목록 안 링크는 A 에 `:mergeQuery="true"`(렌더할 때 현재 쿼리를 href 에 합침 — 새 탭도 같은 주소)와 `<navigate :mergeQuery="true"><query/></navigate>` 를 함께 준다. href 의 쿼리 키가 현재 쿼리를 이기고, `<query>` 값이 마지막에 덮는다. A 에 `:mergeQuery` 가 없으면 보통 클릭만 목록 상태를 승계하고 새 탭은 잃는다(정적 검사가 이 조합을 오류로 잡는다).
+- **링크로 바꾸지 않는 이동**: 저장 뒤 자동 이동(`apiCall` 성공 갈래), 확인 창(`confirm`)이 뜨는 이동, 비회원 주문 조회 화면의 이동(주문번호·비밀번호 확인 문맥을 주소에 싣지 않는다), 같은 화면의 필터 초기화·검색 실행·쪽 번호 아닌 `replace` 이동.
+
+```html
+<a href="/admin/users/create" :mergeQuery="true" disabled="{{!_global.can_create}}" class="btn btn-primary aria-disabled:opacity-50">
+  <on type="click"><navigate :mergeQuery="true"><query/></navigate></on>
+  회원 등록
+</a>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "name": "A",
+  "props": { "href": "/admin/users/create", "mergeQuery": true, "disabled": "{{!_global.can_create}}", "className": "btn btn-primary aria-disabled:opacity-50" },
+  "actions": [{ "type": "click", "handler": "navigate", "params": { "mergeQuery": true, "query": {} } }]
+}
+```
+
+합성 컴포넌트가 직접 `<a>` 를 그릴 때(사이드바·행 메뉴·페이지 번호·탭)는 `G7Core.navigation.isPlainLeftClick(event)` 가 참일 때만 `preventDefault()` 후 기존 콜백을 부르고, 목록 문맥이 필요한 주소는 `G7Core.navigation.mergeQueryIntoHref(href)` 로 렌더한다.
+
+#### 링크 컴포넌트는 코어 API 를 쓴다 (코어 7.1.3 · engine-v1.83.0)
+
+링크를 그리는 컴포넌트(A·페이지 번호·탭·메뉴)의 「주소 구독」·「내부 링크 판정」·「새 창 rel」은 코어가 준다. 템플릿은 이 셋을 직접 만들지 않는다 — 종전에는 템플릿마다 사본을 두다 판정이 갈라졌고(한 템플릿만 `https://이 사이트//다른호스트` 를 내부 링크로 봤다), 엔진이 바뀔 때마다 템플릿을 하나하나 고쳐야 했다.
+
+| 할 일 | 코어 API | 설명 |
+| --- | --- | --- |
+| 쿼리가 바뀌면 다시 그리기 | `G7Core.navigation.useLocationSearch(enabled)` | React 훅. 렌더할 때 현재 쿼리를 href 에 합치는 컴포넌트(`mergeQuery`·`pageHrefMergeQuery`)가 `enabled` 를 참으로 부른다. 같은 화면에서 쿼리만 바뀌면(`navigate` `replace`·`replaceUrl`) props 가 같아 다시 그려지지 않는데, 이 훅이 주소 검색부 변경(뒤로/앞으로 포함)을 구독해 다시 그린다. 구독하지 않으면 가운데 클릭·새 탭·주소 복사가 바꾸기 전 쿼리로 열린다. `enabled` 가 거짓이면 구독하지 않는다(렌더 비용 없음). 반환값은 현재 검색부(`?a=1`, 구독하지 않으면 `''`) |
+| 보통 클릭을 SPA 로 옮겨도 되는가 | `G7Core.navigation.resolveInternalHref(href)` | 같은 출처 내부 링크면 「경로?쿼리#해시」, 아니면 `null`. 엔진 `navigate` 와 같은 규칙이다 — 빈 값·`#…`·실행 스킴(`javascript:` 등)·다른 출처·`//host`·백슬래시 변형(`/\host`)·경로가 `//` 로 시작하는 같은 출처 주소는 `null` |
+| 새 창 링크의 rel | `G7Core.navigation.mergeRelForTarget(rel, target)` | `target` 이 `_blank` 면 `noopener`·`noreferrer` 중 빠진 것만 덧붙이고 넘겨받은 토큰은 남긴다(대소문자 무시). 새 창이 아니면 받은 값을 그대로(없으면 `undefined` — rel 을 달지 않는다) |
+
+훅은 컴포넌트 렌더 중에만 부른다(React 훅 규칙). 템플릿은 코어와 같은 React(`window.React`)를 쓰므로 코어 훅을 그대로 불러도 된다.
+
+**옛 코어(7.1.2 이하) 대체**: 이 API 가 없으면 짧은 대체로 동작만 유지한다 — 훅은 코어 `G7Core.navigation.subscribeLocationSearch`(7.1.2 부터, 뒤로/앞으로·같은 화면 쿼리 교체)가 있으면 그것으로 구독하고, 그마저 없는 코어에서만 `popstate` 를 구독한다(이때는 같은 화면 쿼리 교체를 따라가지 못한다). 7.1.2 코어에서 `popstate` 만 구독하면 7.1.2 가 고친 「검색어를 바꿔도 링크가 옛 쿼리를 가리킴」이 되살아난다. 내부 링크 판정은 `href.startsWith('/') && !href.startsWith('//')`, rel 은 `_blank` 일 때 `noopener noreferrer` 를 덧붙인다.
+
+```tsx
+const nav = (window as any).G7Core?.navigation;
+const React = (window as any).React;
+
+// 쿼리 구독 — 코어 훅이 없으면 코어 구독 함수(7.1.2), 그마저 없으면 popstate 로 구독하는 대체
+function useFallbackSearch(enabled: boolean): string {
+  const subscribe = React.useCallback(
+    (cb: () => void) => {
+      if (!enabled) return () => {};
+      if (typeof nav?.subscribeLocationSearch === 'function') return nav.subscribeLocationSearch(cb);
+      window.addEventListener('popstate', cb);
+      return () => window.removeEventListener('popstate', cb);
+    },
+    [enabled],
+  );
+  return React.useSyncExternalStore(subscribe, () => (enabled ? window.location.search : ''), () => '');
+}
+const useSearch: (enabled: boolean) => string = nav?.useLocationSearch ?? useFallbackSearch;
+
+const toInternal = (href: string): string | null =>
+  nav?.resolveInternalHref
+    ? nav.resolveInternalHref(href)
+    : href.startsWith('/') && !href.startsWith('//') ? href : null;
+```
+
+> 대체 훅을 고를 때 `nav?.useLocationSearch ?? …` 는 모듈 평가 때 한 번만 정한다 — 렌더마다 다른 훅을 부르면 훅 순서가 바뀐다.
+
 ### mergeQuery 옵션
 
 기존 쿼리 파라미터를 유지하면서 새 파라미터를 병합합니다.
+
+```html
+<on type="click">
+  <navigate path="/admin/users" :mergeQuery="true">
+    <query page="2"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -251,6 +469,16 @@
 
 배열 값은 자동으로 `key[]=value1&key[]=value2` 형태로 변환됩니다.
 
+```html
+<on type="click">
+  <navigate path="/admin/products" :mergeQuery="true">
+    <query sales_status[]="{{_local.salesStatus}}"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "navigate",
@@ -315,6 +543,16 @@ enum ProductSalesStatus: string
 
 `replace: true`를 사용하면 **컴포넌트 리마운트 없이** URL을 변경하고 데이터를 갱신합니다. 같은 페이지 내에서 검색/필터/정렬/페이지네이션 등의 쿼리 파라미터만 변경할 때 사용합니다.
 
+```html
+<on type="click">
+  <navigate path="/admin/products" :mergeQuery="true" :replace="true">
+    <query page="{{_local.page}}" sort="{{_local.sortField}}" order="{{_local.sortOrder}}"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "navigate",
@@ -367,6 +605,19 @@ replace: true는 같은 페이지 내에서만 사용
 
 **검색 필터 예시**:
 
+```html
+<button data-ref="search_button">
+  <on type="click">
+    <navigate path="/admin/products" :replace="true" :mergeQuery="true">
+      <query :page="1" search_field="{{_local.filter.searchField}}" search_keyword="{{_local.filter.searchKeyword}}"/>
+    </navigate>
+  </on>
+  $t:common.search
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "id": "search_button",
@@ -393,6 +644,22 @@ replace: true는 같은 페이지 내에서만 사용
 ```
 
 **정렬 드롭다운 예시**:
+
+```html
+<select value="{{query.sort || 'created_at'}}">
+  <options>
+    <option value="created_at">$t:common.sort.created_at</option>
+    <option value="name">$t:common.sort.name</option>
+  </options>
+  <on type="change">
+    <navigate path="/admin/products" :replace="true" :mergeQuery="true">
+      <query sort="{{$event.target.value}}"/>
+    </navigate>
+  </on>
+</select>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -469,6 +736,16 @@ replace: true는 같은 페이지 내에서만 사용
 
 **검색 필터에서 스크롤 유지**:
 
+```html
+<on type="click">
+  <navigate path="/admin/products" :replace="true" :mergeQuery="true" scroll="preserve">
+    <query search_keyword="{{_local.keyword}}"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "navigate",
@@ -484,6 +761,14 @@ replace: true는 같은 페이지 내에서만 사용
 
 **특정 엘리먼트로 이동 (단축)**:
 
+```html
+<on type="click">
+  <navigate path="/admin/docs" scroll="#section-api"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "navigate",
@@ -495,6 +780,19 @@ replace: true는 같은 페이지 내에서만 사용
 ```
 
 **관리자 템플릿 내부 컨테이너의 Y 좌표로 이동 (확장)**:
+
+```html
+<on type="click">
+  <navigate path="/admin/users">
+    <field name="scroll">
+      <field name="container" value="#right_content_area"/>
+      <field name="to" :value="500"/>
+    </field>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -511,6 +809,19 @@ replace: true는 같은 페이지 내에서만 사용
 
 **sticky 헤더가 있는 페이지에서 섹션으로 이동 (확장)**:
 
+```html
+<on type="click">
+  <navigate path="/admin/docs">
+    <field name="scroll">
+      <field name="to" value="#section-api"/>
+      <field name="offset" :value="80"/>
+    </field>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "navigate",
@@ -525,6 +836,20 @@ replace: true는 같은 페이지 내에서만 사용
 ```
 
 **특정 엘리먼트를 화면 중앙에 위치 (확장)**:
+
+```html
+<on type="click">
+  <navigate path="/admin/report">
+    <field name="scroll">
+      <field name="container" value="#right_content_area"/>
+      <field name="to" value="#chart-revenue"/>
+      <field name="block" value="center"/>
+    </field>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -548,6 +873,14 @@ replace: true는 같은 페이지 내에서만 사용
 
 새 브라우저 탭/창에서 URL을 엽니다. `window.open(path, '_blank')`을 호출합니다.
 
+```html
+<on type="click">
+  <open-window path="/admin/users/{{row.created_by}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -562,7 +895,10 @@ replace: true는 같은 페이지 내에서만 사용
 
 | 필드 | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
-| `path` | string | - | 새 창에서 열 경로 (필수) |
+| `path` | string | - | 열 경로 (필수). 생략하면 최상위 `target` 값을 경로로 쓴다 |
+| `query` | object | - | 경로 뒤에 붙일 쿼리 (빈 값은 제외) |
+| `target` | string | `"_blank"` | `"_self"` 이면 같은 탭 전체 이동(같은 출처 경로만), 그 밖의 값은 새 창 |
+| `bypassLeaveGuard` | boolean | false | `target: "_self"`(같은 탭 전체 이동)일 때 레이아웃 이탈 확인(브라우저 확인 창)을 이 이동에 한해 묻지 않는다 (engine-v1.82.0+) |
 
 ### 사용 사례
 
@@ -579,6 +915,17 @@ replace: true는 같은 페이지 내에서만 사용
 | 히스토리 | 현재 탭 히스토리 변경 | 변경 없음 |
 
 ### 예시: 등록자 정보 새 창으로 보기
+
+```html
+<button variant="ghost" size="sm">
+  <on type="click">
+    <open-window path="/admin/users/{{row.created_by}}"/>
+  </on>
+  $t:common.view_member
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -607,6 +954,14 @@ replace: true는 같은 페이지 내에서만 사용
 
 브라우저 히스토리에서 뒤로 이동합니다. `window.history.back()`을 호출합니다.
 
+```html
+<on type="click">
+  <navigate-back/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",
@@ -618,6 +973,18 @@ replace: true는 같은 페이지 내에서만 사용
 
 - 상세 페이지에서 목록으로 돌아가기
 - 폼 페이지에서 취소 버튼 클릭 시 이전 페이지로 이동
+
+```html
+<button data-ref="back_button">
+  <on type="click">
+    <navigate-back/>
+  </on>
+  <icon name="arrow-left" class="text-base"/>
+  <span>$t:common.back</span>
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -634,7 +1001,7 @@ replace: true는 같은 페이지 내에서만 사용
     {
       "type": "basic",
       "name": "Icon",
-      "props": { "name": "arrow-left", "className": "w-4 h-4" }
+      "props": { "name": "arrow-left", "className": "text-base" }
     },
     {
       "type": "basic",
@@ -644,6 +1011,38 @@ replace: true는 같은 페이지 내에서만 사용
   ]
 }
 ```
+
+### 이탈 확인 건너뛰기 (bypassLeaveGuard)
+
+> **버전**: engine-v1.82.0+
+
+레이아웃이 `meta.leave_guard` 로 「저장하지 않은 변경이 있으면 떠날 때 묻기」를 선언한 화면([layout-json.md](layout-json.md#metaleave_guard-저장하지-않은-변경-이탈-확인))에서, **묻지 않아야 하는** 이동에 `bypassLeaveGuard: true` 를 준다. 이름은 네 핸들러가 같다.
+
+| 핸들러 | 마크업 | 건너뛰는 확인 |
+| --- | --- | --- |
+| `navigate` | `<navigate path="/admin/users" :bypassLeaveGuard="true"/>` | 이 이동의 확인 창 |
+| `navigateBack` | `<navigate-back :bypassLeaveGuard="true"/>` | 바로 다음 뒤로 가기(또는 문서를 떠나면 브라우저 확인 창) 1회 |
+| `openWindow` | `<open-window path="/admin/boards/{{slug}}/edit" target="_self" :bypassLeaveGuard="true"/>` | 같은 탭 전체 이동의 브라우저 확인 창 1회 |
+| `redirect` | `<action handler="redirect" url="…" :bypassLeaveGuard="true"/>` | 같은 탭 전체 이동의 브라우저 확인 창 1회 |
+
+```html
+<!-- 저장 성공 뒤 목록으로: 방금 저장했으므로 묻지 않는다 -->
+<button type="button">
+  <on type="click">
+    <api-call auth_mode="required" target="/api/admin/users/{{route.id}}" method="PUT">
+      <success>
+        <navigate path="/admin/users" :bypassLeaveGuard="true"/>
+      </success>
+    </api-call>
+  </on>
+  $t:common.save
+</button>
+```
+
+- 쓰는 자리: 저장·삭제 성공 뒤 이동, 「취소」 단추, 기존 「변경사항 확인」 모달의 「페이지 나가기」 단추(이미 사용자에게 물었다).
+- `navigateBack`·`openWindow`·`redirect` 는 이동이 비동기라 「다음 1회」를 1초 동안 무장한다. 그 안에 이동이 일어나지 않으면(히스토리 첫 항목에서 뒤로 가기 등) 무장은 사라진다.
+- 확장 핸들러는 `G7Core.dispatch({ handler: navigate, params: { path, bypassLeaveGuard: true } })` 로 같은 효과를 낸다. 핸들러 문맥의 `context.navigate(path)` 는 확인을 거친다.
+- 사용자가 머무르기를 고르면 `navigate` 는 화면을 바꾸지 않고 스크롤도 옮기지 않는다. 같은 sequence 의 앞 액션(`setState` 등)은 이미 실행됐으므로, 이동 직전 상태 쓰기는 이동 뒤 화면에서 하거나 `bypassLeaveGuard` 와 함께 쓴다.
 
 ---
 
@@ -661,6 +1060,14 @@ replace: true는 같은 페이지 내에서만 사용
 4. LayoutLoader 캐시 버전 갱신 및 클리어
 5. TranslationEngine 재로드 — 활성 사전은 원자 교체되어 `$t:` 해석 경합 없음
 
+```html
+<on type="click">
+  <reload-extensions/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "reloadExtensions"
@@ -670,6 +1077,14 @@ replace: true는 같은 페이지 내에서만 사용
 ### 선택 파라미터 (모듈/플러그인 에셋 동적 로드/제거)
 
 모듈 또는 플러그인의 JS/CSS 에셋을 동시에 로드/제거하려면 `moduleInfo` 또는 `pluginInfo` 와 `action` 을 전달합니다.
+
+```html
+<on type="click">
+  <reload-extensions moduleInfo="{{result}}" action="add"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -722,6 +1137,14 @@ replace: true는 같은 페이지 내에서만 사용
 
 라우트(routes.json)를 다시 로드합니다.
 
+```html
+<on type="click">
+  <reload-routes/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "handler": "reloadRoutes"
@@ -738,6 +1161,14 @@ replace: true는 같은 페이지 내에서만 사용
 ## refresh
 
 현재 페이지를 새로고침합니다.
+
+```html
+<on type="click">
+  <refresh/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -757,6 +1188,16 @@ replace: true는 같은 페이지 내에서만 사용
 > **버전**: engine-v1.18.0+
 
 URL만 변경하고 데이터소스 refetch나 컴포넌트 리마운트를 수행하지 않습니다. 리스트 항목 선택 시 URL에 상태를 반영할 때 사용합니다.
+
+```html
+<on type="click">
+  <replace-url path="/admin/menus">
+    <query menu="{{$args[0].slug}}" mode="view"/>
+  </replace-url>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -781,7 +1222,7 @@ URL만 변경하고 데이터소스 refetch나 컴포넌트 리마운트를 수�
 | 특성 | `navigate` (`replace: true`) | `replaceUrl` |
 | ------ | ------------------------------ | -------------- |
 | URL 변경 | O | O |
-| 데이터소스 refetch | O (auto_fetch 전체) | **X** |
+| 데이터소스 refetch | O (auto_fetch 전체, `refetch_data_sources` 로 좁힘) | **X** |
 | 컴포넌트 리마운트 | X | **X** |
 | 히스토리 | 현재 항목 교체 | 현재 항목 교체 |
 
@@ -794,6 +1235,16 @@ URL만 변경하고 데이터소스 refetch나 컴포넌트 리마운트를 수�
 ### path 생략 예시
 
 `path`를 생략하면 현재 페이지 경로가 자동으로 사용됩니다.
+
+```html
+<on type="click">
+  <replace-url>
+    <query id="{{$args[0].id}}" mode="view"/>
+  </replace-url>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -812,3 +1263,4 @@ URL만 변경하고 데이터소스 refetch나 컴포넌트 리마운트를 수�
 - [상태 핸들러](actions-handlers-state.md)
 - [UI 핸들러](actions-handlers-ui.md)
 - [상태 관리](state-management.md)
+- [개발자 화면 가이드](../custom-development.md) - custom 주소로의 이동은 전체 페이지 이동

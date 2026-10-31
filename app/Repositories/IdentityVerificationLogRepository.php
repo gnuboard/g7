@@ -12,6 +12,7 @@ use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
  * identity_verification_logs Repository 구현체.
@@ -113,6 +114,22 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
     }
 
     /**
+     * 토큰으로 verified 상태의 challenge 를 소비·만료 여부와 무관하게 찾습니다.
+     *
+     * @param  string  $token  verification_token
+     * @param  string  $purpose  IDV 목적 (예: signup)
+     * @return IdentityVerificationLog|null 매칭 로그 또는 null
+     */
+    public function findVerifiedByToken(string $token, string $purpose): ?IdentityVerificationLog
+    {
+        return IdentityVerificationLog::query()
+            ->where('verification_token', $token)
+            ->where('purpose', $purpose)
+            ->where('status', IdentityVerificationStatus::Verified->value)
+            ->first();
+    }
+
+    /**
      * 만료 시각이 지난 챌린지를 일괄 만료 처리합니다.
      *
      * @return int 만료 처리된 행 수
@@ -126,6 +143,45 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
             ])
             ->where('expires_at', '<', Carbon::now())
             ->update(['status' => IdentityVerificationStatus::Expired->value]);
+    }
+
+    /**
+     * 만료 시각이 지난 진행 중(requested·sent) challenge 를 ID 순으로 나눠 콜백에 넘깁니다.
+     *
+     * @param  int  $size  한 번에 넘길 건수
+     * @param  callable(Collection<int, IdentityVerificationLog>): void  $callback  청크 콜백
+     * @return void
+     */
+    public function chunkPendingPastDue(int $size, callable $callback): void
+    {
+        IdentityVerificationLog::query()
+            ->whereIn('status', [
+                IdentityVerificationStatus::Requested->value,
+                IdentityVerificationStatus::Sent->value,
+            ])
+            ->where('expires_at', '<', Carbon::now())
+            ->chunkById($size, function ($logs) use ($callback) {
+                $callback($logs);
+            });
+    }
+
+    /**
+     * challenge 가 아직 진행 중(requested·sent)일 때만 만료로 바꿉니다.
+     *
+     * @param  IdentityVerificationLog  $log  대상 challenge
+     * @return bool 이번 호출로 만료로 바뀌었으면 true
+     */
+    public function expireIfPending(IdentityVerificationLog $log): bool
+    {
+        $affected = IdentityVerificationLog::query()
+            ->whereKey($log->getKey())
+            ->whereIn('status', [
+                IdentityVerificationStatus::Requested->value,
+                IdentityVerificationStatus::Sent->value,
+            ])
+            ->update(['status' => IdentityVerificationStatus::Expired->value]);
+
+        return $affected > 0;
     }
 
     /**

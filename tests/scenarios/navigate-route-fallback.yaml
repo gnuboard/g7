@@ -1,0 +1,29 @@
+feature: navigate 미등록 경로 fallback — 라우트에 없는 경로는 기본 openWindow(같은 탭)로, 옵션으로 끄거나 다른 핸들러로
+
+description: |
+  `navigate` 의 대상 경로가 현재 템플릿 `routes.json` 에 없으면(관리자 ↔ 사용자 교차 이동 등) 404 대신 fallback 핸들러로 보낸다
+  (engine-v1.40.0). 기본은 `openWindow` 같은 탭(`_self`) — 그 주소로 문서 전체를 부른다. `fallback: false` 는 SPA 이동을 강행하고,
+  문자열·객체는 다른 핸들러로 보낸다. `replace: true`(쿼리 갱신 전용)와 라우터가 없는 부팅 단계는 fallback 대상이 아니다.
+
+  축 route 는 대상 경로의 라우트 상태 — 등록됨(matched)·미등록(unmatched)·쿼리 갱신 전용(replace_only)·라우터 없음(router_missing).
+  축 fallback 은 navigate 의 `fallback` 옵션 — 생략(default)·`false`(disabled)·핸들러 이름(handler_name)·`{handler, params}`(handler_object).
+  같은 탭 sink 의 주소 판정(거부·같은 출처 전체 주소)은 navigation-target-policy 매니페스트가 잠근다.
+
+axes:
+  route: [matched, unmatched, replace_only, router_missing]
+  fallback: [default, disabled, handler_name, handler_object]
+
+exclusions:
+  - { route: [matched, replace_only, router_missing], fallback: [disabled, handler_name, handler_object], reason: "fallback 옵션은 미등록 경로에서만 읽힌다 — 등록 경로·쿼리 갱신·라우터 없음은 옵션과 무관하게 같은 갈래라 default 칸이 대표" }
+
+effects:
+  - matched_route_navigates_in_app
+  - unmatched_route_defaults_to_same_tab_window
+  - fallback_false_forces_in_app_navigate
+  - fallback_handler_receives_path
+  - route_match_uses_pathname_only
+  - replace_navigation_skips_fallback
+  - missing_router_navigates_in_app
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.handleNavigate.fallback.test.ts

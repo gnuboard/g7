@@ -1,0 +1,34 @@
+feature: 상품 코드 허용 문자 규칙과 기존 비정상 코드 처리 (KVE-2026-2349 후속)
+
+description: |
+  상품 코드는 이미지 저장 폴더(images/products/{코드})에 그대로 쓰인다. 저장소 경로 검사가
+  `\`·인코딩된 구분자·`.`/`..`·빈 조각을 거부하고 `/` 는 다른 상품 폴더와 겹치므로, 그런 코드의 상품은
+  이미지 업로드·복사·삭제가 500 으로 실패했다.
+
+  계층 결정:
+    - 입력: 등록 FormRequest 가 영문·숫자·하이픈·밑줄만 받는다(StoreProductRequest::PRODUCT_CODE_PATTERN).
+      수정은 코드를 바꿀 때만 같은 규칙 — 수정 화면은 코드 입력칸이 비활성인 채 현재 코드를 보내므로,
+      현재 코드에 규칙을 걸면 규칙 이전 코드(한글·공백 등)의 상품은 어떤 항목도 저장할 수 없다
+    - 기존 데이터: 코드 값은 외부 연동·주문 기록·주소에 쓰였을 수 있어 바꾸지 않는다 — 1.3.0 업그레이드가
+      이미지 폴더로 쓸 수 없는 코드의 상품만 경고하고 나머지 규칙 밖 코드는 건수만 남긴다. 상품 삭제는
+      이미지 폴더를 건너뛰고 경고를 남긴 뒤 진행한다
+  설계 결정(2026-09-26 인터뷰): "입력 규칙 + 기존 코드 점검", 후속 "수정은 코드가 바뀔 때만 규칙 적용".
+
+axes:
+  case: [unsafe_input, legacy_update, legacy_delete, legacy_upgrade_report, route_lookup]
+
+effects:
+  - unsafe_product_code_rejected_on_store_and_update
+  - safe_product_code_passes_rule
+  - legacy_code_kept_on_update_passes_rule
+  - changing_to_code_outside_rule_rejected
+  - legacy_unsafe_code_product_still_deletable
+  - skipped_image_folder_logged
+  - upgrade_reports_unsafe_codes_without_rewriting
+  - path_safe_legacy_code_counted_not_warned
+  - hyphen_underscore_code_resolves_public_routes   # 규칙이 허용한 -·_ 코드로 공개 상세·리뷰·문의·다운로드 쿠폰 조회
+  - hyphen_underscore_code_resolves_admin_routes    # 같은 코드로 관리자 상세·수정 폼·복사·삭제 가능 여부·로그 조회
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/ProductCodePathSafetyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/ProductCodeRouteConstraintTest.php

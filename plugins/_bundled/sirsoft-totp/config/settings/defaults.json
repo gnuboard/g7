@@ -1,0 +1,14 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "인증 앱(TOTP) 2단계 인증 환경설정. 코드 자릿수·주기·해시 알고리즘(6/30초/SHA1)은 인증 앱 호환성 때문에 고정이라 설정으로 열지 않는다."
+    },
+    "defaults": {
+        "issuer": "",
+        "allow_mail_fallback": true
+    },
+    "frontend_schema": {
+        "issuer": { "expose": false },
+        "allow_mail_fallback": { "expose": false }
+    }
+}

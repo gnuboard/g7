@@ -1,0 +1,23 @@
+feature: 관리자 로딩 스피너(LoadingSpinner) 표시 계약
+
+description: |
+  관리자 화면이 데이터를 기다리는 동안 보이는 스피너다. 제자리 표시(inline)와 화면 전체를 덮는
+  덮개(fullscreen) 두 방식이 있다.
+
+  - 제자리: status 역할·읽기 이름, 크기(sm·md·lg·xl), 색·추가 class, 안내 문구
+  - 덮개: 화면 고정·aria-busy, 바탕은 Tailwind v4 투명도 표기(`bg-white/90`·`dark:bg-gray-900/90`)
+    — v3 의 `bg-opacity-*` 는 v4 에 규칙이 없어 덮개가 불투명하게 그려졌다(7.1.1 수정)
+
+axes:
+  mode: [inline, fullscreen]
+
+effects:
+  - loading_spinner_renders_status
+  - loading_spinner_shows_text
+  - loading_spinner_size_classes
+  - loading_spinner_color_and_class_props
+  - loading_spinner_fullscreen_overlay
+  - loading_spinner_fullscreen_overlay_translucent
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/LoadingSpinner.test.tsx

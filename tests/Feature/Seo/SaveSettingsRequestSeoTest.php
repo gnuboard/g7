@@ -15,7 +15,7 @@ use Tests\TestCase;
 /**
  * SaveSettingsRequest SEO 필드 검증 테스트
  *
- * 코어 SEO 설정 필드(bot_user_agents, cache_ttl, sitemap_schedule 등)의
+ * 코어 SEO 설정 필드(bot_user_agents, cache_ttl, sitemap_cache_ttl 등)의
  * 유효성 검증 규칙이 올바르게 동작하는지 API 요청을 통해 검증합니다.
  */
 class SaveSettingsRequestSeoTest extends TestCase
@@ -28,6 +28,8 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -55,6 +57,7 @@ class SaveSettingsRequestSeoTest extends TestCase
      * 관리자 역할 및 권한을 가진 사용자를 생성합니다.
      *
      * @param  array  $permissions  부여할 권한 식별자 목록
+     * @return User 생성된 관리자 회원
      */
     private function createAdminUser(array $permissions = ['core.settings.read', 'core.settings.update']): User
     {
@@ -114,6 +117,7 @@ class SaveSettingsRequestSeoTest extends TestCase
      * SEO 탭 설정 저장 요청을 전송합니다.
      *
      * @param  array  $seoData  SEO 필드 데이터
+     * @return TestResponse SEO 탭 저장 응답
      */
     private function postSeoSettings(array $seoData): TestResponse
     {
@@ -130,6 +134,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * bot_user_agents 배열 전송 시 유효성 검증 통과
+     *
+     * @scenario tab=seo
+     *
+     * @effects seo_bot_user_agents_must_be_a_list_of_short_strings
+     *
+     * @return void 반환값 없음
      */
     public function test_bot_user_agents_array_passes_validation(): void
     {
@@ -142,6 +152,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * bot_user_agents 빈 배열 전송 시 유효성 검증 통과
+     *
+     * @scenario tab=seo
+     *
+     * @effects seo_bot_user_agents_must_be_a_list_of_short_strings
+     *
+     * @return void 반환값 없음
      */
     public function test_bot_user_agents_empty_array_passes_validation(): void
     {
@@ -154,6 +170,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * bot_user_agents 비배열 전송 시 422 응답
+     *
+     * @scenario tab=seo
+     *
+     * @effects seo_bot_user_agents_must_be_a_list_of_short_strings
+     *
+     * @return void 반환값 없음
      */
     public function test_bot_user_agents_non_array_fails_validation(): void
     {
@@ -167,6 +189,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * bot_user_agents 요소가 100자 초과 시 422 응답
+     *
+     * @scenario tab=seo
+     *
+     * @effects seo_bot_user_agents_must_be_a_list_of_short_strings
+     *
+     * @return void 반환값 없음
      */
     public function test_bot_user_agents_element_exceeding_100_chars_fails(): void
     {
@@ -184,6 +212,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * cache_enabled boolean 전송 시 유효성 검증 통과
+     *
+     * @scenario tab=seo
+     *
+     * @effects seo_cache_settings_are_validated_within_bounds
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_enabled_boolean_passes_validation(): void
     {
@@ -196,6 +230,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * cache_ttl 범위 내 값 전송 시 유효성 검증 통과
+     *
+     * @scenario tab=seo
+     *
+     * @effects seo_cache_settings_are_validated_within_bounds
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_ttl_in_range_passes_validation(): void
     {
@@ -208,6 +248,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * cache_ttl 최소값 미만 시 422 응답
+     *
+     * @scenario tab=seo
+     *
+     * @effects seo_cache_settings_are_validated_within_bounds
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_ttl_below_minimum_fails_validation(): void
     {
@@ -221,6 +267,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * cache_ttl 최대값 초과 시 422 응답
+     *
+     * @scenario tab=seo
+     *
+     * @effects seo_cache_settings_are_validated_within_bounds
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_ttl_above_maximum_fails_validation(): void
     {
@@ -237,53 +289,27 @@ class SaveSettingsRequestSeoTest extends TestCase
     // ========================================
 
     /**
-     * sitemap_schedule 유효 값(daily) 전송 시 검증 통과
+     * 사이트맵 생성 주기·시각은 더 이상 SEO 설정 키가 아니다 — 스케줄 관리의 `sitemap-generate` 행이 정한다
+     * (#17 D10). 보내도 검증하지 않고(형식이 틀려도 422 아님) 저장하지도 않는다.
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_schedule_keys_are_no_longer_settings
+     *
+     * @return void 반환값 없음
      */
-    public function test_sitemap_schedule_valid_value_passes_validation(): void
+    public function test_sitemap_schedule_keys_are_neither_validated_nor_stored(): void
     {
-        $response = $this->postSeoSettings([
-            'sitemap_schedule' => 'daily',
-        ]);
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * sitemap_schedule 유효하지 않은 값(monthly) 전송 시 422 응답
-     */
-    public function test_sitemap_schedule_invalid_value_fails_validation(): void
-    {
-        $response = $this->postSeoSettings([
+        $this->postSeoSettings([
+            'sitemap_enabled' => true,
             'sitemap_schedule' => 'monthly',
-        ]);
+            'sitemap_schedule_time' => '99:99',
+        ])->assertStatus(200);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['seo.sitemap_schedule']);
-    }
-
-    /**
-     * sitemap_schedule_time 유효 형식(02:00) 전송 시 검증 통과
-     */
-    public function test_sitemap_schedule_time_valid_format_passes(): void
-    {
-        $response = $this->postSeoSettings([
-            'sitemap_schedule_time' => '02:00',
-        ]);
-
-        $response->assertStatus(200);
-    }
-
-    /**
-     * sitemap_schedule_time 유효하지 않은 형식(2:00) 전송 시 422 응답
-     */
-    public function test_sitemap_schedule_time_invalid_format_fails(): void
-    {
-        $response = $this->postSeoSettings([
-            'sitemap_schedule_time' => '2:00',
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['seo.sitemap_schedule_time']);
+        $stored = $this->storedSettings('seo');
+        $this->assertArrayNotHasKey('sitemap_schedule', $stored);
+        $this->assertArrayNotHasKey('sitemap_schedule_time', $stored);
+        $this->assertTrue((bool) ($stored['sitemap_enabled'] ?? false), '사이트맵 사용 여부는 그대로 설정 키다');
     }
 
     // ========================================
@@ -292,6 +318,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * sitemap_cache_ttl 범위 내 값 전송 시 유효성 검증 통과
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_cache_ttl_is_validated_within_bounds
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_cache_ttl_in_range_passes_validation(): void
     {
@@ -304,6 +336,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * sitemap_cache_ttl 최소값 미만 시 422 응답
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_cache_ttl_is_validated_within_bounds
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_cache_ttl_below_minimum_fails_validation(): void
     {
@@ -317,6 +355,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * sitemap_cache_ttl 최대값 초과 시 422 응답
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_cache_ttl_is_validated_within_bounds
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_cache_ttl_above_maximum_fails_validation(): void
     {
@@ -334,6 +378,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * bot_detection_enabled boolean 전송 시 유효성 검증 통과
+     *
+     * @scenario tab=seo
+     *
+     * @effects seo_feature_toggles_accept_boolean
+     *
+     * @return void 반환값 없음
      */
     public function test_bot_detection_enabled_boolean_passes_validation(): void
     {
@@ -350,6 +400,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * sitemap_enabled boolean 전송 시 유효성 검증 통과
+     *
+     * @scenario tab=seo
+     *
+     * @effects seo_feature_toggles_accept_boolean
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_enabled_boolean_passes_validation(): void
     {
@@ -366,6 +422,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * generator_enabled boolean 전송 시 유효성 검증 통과
+     *
+     * @scenario tab=seo
+     *
+     * @effects validation_accepts_boolean_for_generator_enabled
+     *
+     * @return void 반환값 없음
      */
     public function test_generator_enabled_boolean_passes_validation(): void
     {
@@ -378,6 +440,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * generator_content 200자 이내 전송 시 유효성 검증 통과
+     *
+     * @scenario tab=seo
+     *
+     * @effects validation_accepts_content_within_200_chars
+     *
+     * @return void 반환값 없음
      */
     public function test_generator_content_within_limit_passes_validation(): void
     {
@@ -391,6 +459,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * generator_content 200자 초과 전송 시 422 응답
+     *
+     * @scenario tab=seo
+     *
+     * @effects validation_rejects_content_exceeding_200_chars
+     *
+     * @return void 반환값 없음
      */
     public function test_generator_content_exceeding_limit_fails_validation(): void
     {
@@ -408,6 +482,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * sitemap 분할/압축/서빙 설정이 저장되어 설정값에 반영되는지 확인
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_generation_settings_are_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_generation_settings_are_saved(): void
     {
@@ -431,6 +511,12 @@ class SaveSettingsRequestSeoTest extends TestCase
      * 파일당 URL 수 상한(50000)을 넘기면 422 응답
      *
      * 50000 은 sitemaps.org 프로토콜 상한이므로 저장 자체를 막습니다.
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_urls_per_file_is_bounded_by_the_protocol
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_urls_per_file_exceeding_protocol_limit_fails(): void
     {
@@ -444,6 +530,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * 파일당 URL 수 하한(1000) 미만이면 422 응답
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_urls_per_file_is_bounded_by_the_protocol
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_urls_per_file_below_minimum_fails(): void
     {
@@ -457,6 +549,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * 파일당 URL 수 경계값(1000/50000)은 통과하는지 확인
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_urls_per_file_is_bounded_by_the_protocol
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_urls_per_file_boundary_values_pass(): void
     {
@@ -466,6 +564,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * 수집기당 최대 URL 수는 0(무제한)을 허용하고 음수는 거부하는지 확인
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_contributor_limit_allows_zero_and_rejects_negative
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_max_urls_per_contributor_allows_zero_and_rejects_negative(): void
     {
@@ -478,6 +582,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * gzip 이 boolean 이 아니면 422 응답
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_flags_reject_non_boolean
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_gzip_non_boolean_fails_validation(): void
     {
@@ -491,6 +601,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * hreflang 사용 여부가 boolean 으로 저장되는지 확인
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_generation_settings_are_saved
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_hreflang_enabled_is_saved(): void
     {
@@ -502,6 +618,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * hreflang 사용 여부가 boolean 이 아니면 422 응답
+     *
+     * @scenario tab=seo
+     *
+     * @effects sitemap_flags_reject_non_boolean
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_hreflang_enabled_non_boolean_fails_validation(): void
     {
@@ -521,6 +643,7 @@ class SaveSettingsRequestSeoTest extends TestCase
      * 고급 탭 설정 저장 요청을 전송합니다.
      *
      * @param  array  $advancedData  고급 필드 데이터
+     * @return TestResponse 고급 탭 저장 응답
      */
     private function postAdvancedSettings(array $advancedData): TestResponse
     {
@@ -533,6 +656,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * 고급 탭의 Sitemap 캐시 기준값이 저장되어 cache 카테고리에 반영되는지 확인
+     *
+     * @scenario tab=advanced
+     *
+     * @effects advanced_sitemap_cache_ttl_is_saved_and_bounded
+     *
+     * @return void 반환값 없음
      */
     public function test_advanced_sitemap_cache_ttl_is_saved_to_cache_category(): void
     {
@@ -557,6 +686,12 @@ class SaveSettingsRequestSeoTest extends TestCase
      * 고급 탭 Sitemap 캐시 기준값이 기본값(86400)을 허용하는지 확인
      *
      * 형제 캐시 TTL 규칙(최대 14400)을 그대로 재사용하면 화면 기본값조차 저장할 수 없게 됩니다.
+     *
+     * @scenario tab=advanced
+     *
+     * @effects advanced_sitemap_cache_ttl_is_saved_and_bounded
+     *
+     * @return void 반환값 없음
      */
     public function test_advanced_sitemap_cache_ttl_accepts_default_value(): void
     {
@@ -578,6 +713,12 @@ class SaveSettingsRequestSeoTest extends TestCase
 
     /**
      * 고급 탭 Sitemap 캐시 기준값의 허용 범위를 벗어나면 422 응답
+     *
+     * @scenario tab=advanced
+     *
+     * @effects advanced_sitemap_cache_ttl_is_saved_and_bounded
+     *
+     * @return void 반환값 없음
      */
     public function test_advanced_sitemap_cache_ttl_out_of_range_fails(): void
     {
@@ -594,6 +735,12 @@ class SaveSettingsRequestSeoTest extends TestCase
      * 신규 키를 보내지 않는 기존 클라이언트의 고급 탭 저장이 계속 동작하는지 확인
      *
      * 형제 키처럼 required 로 두면 이전 화면/외부 클라이언트의 저장이 422 로 깨집니다.
+     *
+     * @scenario tab=advanced
+     *
+     * @effects advanced_sitemap_cache_ttl_is_saved_and_bounded
+     *
+     * @return void 반환값 없음
      */
     public function test_advanced_tab_saves_without_new_sitemap_cache_key(): void
     {
@@ -615,6 +762,12 @@ class SaveSettingsRequestSeoTest extends TestCase
      *
      * 두 탭이 같은 다국어 키를 공유하면 PHP 배열의 나중 정의가 이겨서
      * 한쪽 탭이 반드시 틀린 한도를 안내하게 됩니다(ko/en 이 서로 반대로 틀어졌던 사례).
+     *
+     * @scenario tab=advanced
+     *
+     * @effects seo_cache_ttl_messages_state_each_tabs_own_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_cache_ttl_messages_state_each_tabs_own_limit(): void
     {
@@ -639,6 +792,12 @@ class SaveSettingsRequestSeoTest extends TestCase
      *
      * 폼에서 칸을 비우면 빈 문자열로 전송될 수 있는데, 이것이 null 로 정규화되지 않으면
      * "미설정" 으로 판정되지 않아 고급 설정 값을 따르지 못하고 오버라이드가 계속 발동합니다.
+     *
+     * @scenario tab=seo
+     *
+     * @effects emptied_cache_override_fields_are_normalized_to_null
+     *
+     * @return void 반환값 없음
      */
     public function test_emptied_cache_override_fields_are_normalized_to_null(): void
     {

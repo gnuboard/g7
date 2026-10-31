@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Public\SitemapController;
 use App\Seo\TemplateRouteResolver;
+use App\Support\Custom\CustomRoutes;
 use App\Support\StaticExtensionPattern;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -10,6 +11,11 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+
+// 개발자 라우트(custom 예약 자리, #792) — `routes/custom.php` 가 있으면 맨 앞에서 등록한다.
+// 아래 G7 화면 catch-all(`/admin/{any?}`·`/{any?}`)보다 먼저 등록돼야 라라벨 라우트 순서대로 개발자 화면이 이긴다.
+// 이 파일은 이미 web 그룹이라 미들웨어 묶음 `custom.screen` 만 더 씌운다. 코어 예약 주소를 가리는 라우트는 등록하지 않는다.
+CustomRoutes::load(app('router'));
 
 // 개발용 라우트 - 디버그 모드 + 관리자 인증 필수
 Route::get('/dev', function () {
@@ -29,7 +35,7 @@ Route::get('/dev', function () {
 
 // Admin 라우트 - admin 템플릿 의존성 검증
 Route::prefix('admin')
-    ->middleware('template.dependencies:admin')
+    ->middleware(['canonical.host', 'template.dependencies:admin'])
     ->group(function () {
         Route::get('/{any?}', function (Request $request) {
             // 미등록 경로는 SPA 셸 본문 + HTTP 404 (soft 404 방지 — 공개#47).
@@ -71,8 +77,10 @@ Route::dualSuffixSegment('/sitemap-{n}', 'xml', [SitemapController::class, 'chil
 // audit:allow dynamic-route-static-extension 확장자 없는 짝은 위 줄의 `/sitemap-{n}/xml` 이 소유한다
 Route::get('/sitemap-{n}.xml.gz', [SitemapController::class, 'child'])->withoutMiddleware($sitemapWithoutSession)->whereNumber('n')->name('web.sitemap.child.gz');
 
-// User 라우트 - user 템플릿 의존성 검증 + SEO 봇 감지
-Route::middleware(['template.dependencies:user', 'seo'])
+// User 라우트 - user 템플릿 의존성 검증 + SEO 봇 감지 + 방문자 통계
+// 순서가 계약이다: 봇 기록은 SEO 앞에 둬야 그 봇 판정과 캐시 상태를 함께 읽을 수 있고,
+// 서버 폴백은 SEO 뒤에 둬야 봇으로 판정된 요청을 사람 방문으로 세지 않는다.
+Route::middleware(['canonical.host', 'template.dependencies:user', 'analytics.bots', 'seo', 'analytics.fallback'])
     ->group(function () {
         // `where('any', ...)` 의 예약 프리픽스는 전수 제외한다 — catch-all 이 GET 을 먼저
         // 삼키면 그 뒤에 등록된 라우트가 도달 불가가 되는데, 예외도 404 도 아닌 **SPA 셸 200**

@@ -1,0 +1,27 @@
+feature: 마케팅 동의 채널 이름의 로케일 해석
+
+description: |
+  채널 이름은 시스템 채널의 `label_key` 번역이 SSoT 이고, 저장된 `label` 맵은 언어팩 미설치 환경을 위한 폴백이다.
+  저장 맵은 저장 당시 로케일만 담으므로, 언어팩으로 늘어난 로케일(ja 등)에서는 번역 보강이 있어야 그 언어로 보인다.
+
+  핵심 동작:
+    - 시스템 채널의 기본 정의는 지원 로케일 전체를 덮는 폴백 맵을 갖는다.
+    - 회원 응답(filterResourceData)은 저장 맵보다 label_key 번역을 먼저 쓰고, 번역이 없으면 저장 맵으로 내려간다.
+    - label_key 없이 저장된 구형 시스템 채널은 읽는 시점에 label_key 가 다시 붙는다.
+    - 가입·프로필 수정 화면이 읽는 공개 설정 응답도 같은 규칙으로 label 을 해석하고, label_i18n 에 번역이 있는
+      로케일을 보강한다(번역 없는 로케일은 저장 맵 그대로).
+
+axes:
+  surface: [service, member_resource, public_settings]
+
+exclusions: []
+
+effects:
+  - label_map_covers_supported_locales
+  - label_key_overrides_stored_map
+  - missing_translation_falls_back_to_stored_map
+  - stored_channel_self_healed
+  - public_settings_follow_label_key
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/tests/Unit/Services/ChannelLabelLocaleTest.php

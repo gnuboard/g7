@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
@@ -26,6 +27,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
         'admin_earn',
         'refund_restore',
         'order_cancel_restore',
+        'refund_credit',
     ];
 
     /**
@@ -163,11 +165,17 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
      */
     public function recalculateAll(): void
     {
-        // 원장에 거래가 있는 모든 (user, currency) 조합을 재산출
+        // 원장에 거래가 있는 모든 (user, currency) 조합을 재산출한다. 조합 수는 회원 수에 비례하므로
+        // 한꺼번에 올리지 않고 정렬된 청크로 흘린다 — 재산출은 잔액 캐시만 쓰고 원장은 건드리지 않아
+        // 페이지 경계가 밀리지 않는다.
         $pairs = MileageTransaction::query()
             ->select('user_id', 'currency')
+            // 회원 삭제로 연결이 끊긴 행(user_id NULL)은 잔액 주인이 없다 — 넘기면 recalculateForUser(int) 가 죽는다(E3)
+            ->whereNotNull('user_id')
             ->distinct()
-            ->get();
+            ->orderBy('user_id')
+            ->orderBy('currency')
+            ->lazy(500);
 
         foreach ($pairs as $pair) {
             $this->recalculateForUser($pair->user_id, $pair->currency);
@@ -231,6 +239,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
      * @param  int  $userId  회원 ID
      * @param  string  $currency  통화 코드
      * @param  array  $values  갱신 값
+     * @return void 반환값 없음
      */
     private function upsert(int $userId, string $currency, array $values): void
     {
@@ -253,6 +262,7 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
             return [$currency];
         }
 
+        // audit:allow query-unbounded-get reason: 한 회원의 통화 종류 목록이다 — 크기는 상점이 쓰는 통화 수로 묶인다.
         $fromLedger = MileageTransaction::query()
             ->where('user_id', $userId)
             ->distinct()
@@ -293,5 +303,26 @@ class MileageBalanceRepository implements MileageBalanceRepositoryInterface
             'expiring_soon' => 0.0,
             'expiring_date' => null,
         ];
+    }
+
+    /**
+     * 사용 가능 잔액 조건에 맞는 회원 ID 서브쿼리를 만듭니다 (회원 목록 확장 필터용, #705).
+     *
+     * `(user_id, currency)` 유일 키가 있어 회원당 한 행이다 — 서브쿼리가 회원을 중복해 내지 않는다.
+     *
+     * @param  string  $currency  통화 코드
+     * @param  string  $operator  비교 연산자 ('>=' 또는 '>')
+     * @param  float  $amount  기준 금액
+     * @return Builder user_id 한 열을 고르는 서브쿼리
+     */
+    public function userIdsByAvailableQuery(string $currency, string $operator, float $amount): Builder
+    {
+        $operator = in_array($operator, ['>=', '>'], true) ? $operator : '>=';
+
+        return MileageBalance::query()
+            ->select('user_id')
+            ->where('currency', $currency)
+            ->where('available', $operator, $amount)
+            ->toBase();
     }
 }

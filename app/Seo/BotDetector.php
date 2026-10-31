@@ -10,16 +10,42 @@ use Illuminate\Http\Request;
  *
  * 평가 체인:
  *   1. seo.bot_detection_enabled = false → false
- *   2. _escaped_fragment_ 쿼리 → true (구형 크롤러 호환)
- *   3. UA 빈 문자열 → false
- *   4. core.seo.resolve_is_bot 훅 결과(non-null) → 즉시 결정 (확장 슬롯)
- *   5. seo.bot_detection_library_enabled = true → jaybizzle/crawler-detect
+ *   2. UA 빈 문자열 → false
+ *   3. core.seo.resolve_is_bot 훅 결과(non-null) → 즉시 결정 (확장 슬롯)
+ *   4. seo.bot_detection_library_enabled = true → jaybizzle/crawler-detect
  *      + G7 보강 패턴(미커버 3종) + 운영자 커스텀 패턴
- *   6. 라이브러리 비활성 → 운영자 커스텀 패턴 stripos 매칭만 (레거시 모드)
- *   7. fallthrough → false
+ *   5. 라이브러리 비활성 → 운영자 커스텀 패턴 stripos 매칭만 (레거시 모드)
+ *   6. fallthrough → false
+ *
+ * `?_escaped_fragment_` 쿼리는 봇 신호로 쓰지 않는다. 구글이 2015년에 폐기한 AJAX 크롤링
+ * 스킴이라 현대 크롤러는 보내지 않는데, 쿼리 글자 하나로 UA 와 무관하게 누구나 비싼 봇 렌더
+ * 경로를 태울 수 있는 통로였다.
  */
 class BotDetector
 {
+    /**
+     * 요청이 봇이면 요청 속성 `seo.is_bot` 에 표식을 남깁니다.
+     *
+     * 방문자 통계(봇 기록·서버 폴백)는 이 표식만 읽어 봇을 사람 방문에서 가른다. SEO 렌더를 거치지 않는
+     * 화면(custom 예약 자리의 개발자 화면, #792)도 같은 판정·같은 표식을 쓰도록 한곳에 둔다 —
+     * 판정이 두 벌이면 두 기능의 숫자가 갈린다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool 봇이면 true (표식을 남김)
+     *
+     * @since 7.2.0
+     */
+    public function markBotRequest(Request $request): bool
+    {
+        if (! $this->isBot($request)) {
+            return false;
+        }
+
+        $request->attributes->set('seo.is_bot', true);
+
+        return true;
+    }
+
     /**
      * 요청이 검색 봇인지 판별합니다.
      *
@@ -30,10 +56,6 @@ class BotDetector
     {
         if (! g7_core_settings('seo.bot_detection_enabled', true)) {
             return false;
-        }
-
-        if ($request->has('_escaped_fragment_')) {
-            return true;
         }
 
         $userAgent = $request->userAgent() ?? '';

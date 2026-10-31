@@ -3,7 +3,9 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Enums\PermissionType;
+use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
+use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
@@ -139,14 +141,11 @@ class PublicProductResource extends BaseApiResource
                     ? $this->notice->template?->getLocalizedName()
                     : null,
                 'values' => collect($this->notice->values ?? [])->map(function ($item) {
-                    $locale = app()->getLocale();
-                    $fallback = config('app.fallback_locale', 'ko');
-
                     $name = is_array($item['name'] ?? null)
-                        ? ($item['name'][$locale] ?? $item['name'][$fallback] ?? '')
+                        ? (LocalizedValue::pick($item['name'], anyAsLast: false) ?? '')
                         : ($item['name'] ?? '');
                     $content = is_array($item['content'] ?? null)
-                        ? ($item['content'][$locale] ?? $item['content'][$fallback] ?? '')
+                        ? (LocalizedValue::pick($item['content'], anyAsLast: false) ?? '')
                         : ($item['content'] ?? '');
 
                     return ['label' => $name, 'value' => $content];
@@ -173,6 +172,8 @@ class PublicProductResource extends BaseApiResource
             'abilities' => [
                 'can_update' => Auth::check()
                     && Auth::user()->hasPermission('sirsoft-ecommerce.products.update', PermissionType::Admin),
+                // [바로 구매] 를 잠그는 키 — 주문 생성(`POST user/orders`)의 라우트 권한과 같다(비회원은 guest 역할로 판정).
+                'can_order' => PermissionHelper::check('sirsoft-ecommerce.user-orders.create'),
             ],
         ];
     }
@@ -181,6 +182,7 @@ class PublicProductResource extends BaseApiResource
      * 다국어 JSON 필드에서 현재 로케일 값을 반환합니다.
      *
      * @param  array|null  $field  다국어 JSON 필드
+     * @return string|null 현재 로케일 값 (필드가 비면 null)
      */
     private function resolveLocalizedField(?array $field): ?string
     {
@@ -188,9 +190,7 @@ class PublicProductResource extends BaseApiResource
             return null;
         }
 
-        $locale = app()->getLocale();
-
-        return $field[$locale] ?? $field[config('app.fallback_locale', 'ko')] ?? $field[array_key_first($field)] ?? null;
+        return LocalizedValue::pick($field);
     }
 
     /**

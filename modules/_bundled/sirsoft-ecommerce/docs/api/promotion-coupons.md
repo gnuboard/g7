@@ -422,7 +422,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 관리자가 새 프로모션 쿠폰(정의)을 생성합니다. `permission:sirsoft-ecommerce.promotion-coupon.create` 권한이 필요하며, 다국어 쿠폰명(`name`), 적용대상·혜택유형·혜택값, 발급방법/조건/상태, 유효기간·발급기간, 회원당 한도, 적용 범위(`target_scope`: all·products·categories)와 그에 따른 상품/카테고리 배열을 받아 `CouponService::createCoupon()`이 저장하고 생성된 쿠폰을 201로 반환합니다. `target_scope` 가 products/categories 일 때만 각 배열이 의미를 가지며, 확장은 `sirsoft-ecommerce.coupon.create_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다.
+**설명** 관리자가 새 프로모션 쿠폰(정의)을 생성합니다. `permission:sirsoft-ecommerce.promotion-coupon.create` 권한이 필요하며, 다국어 쿠폰명(`name`), 적용대상·혜택유형·혜택값, 발급방법/조건/상태, 유효기간·발급기간, 회원당 한도, 적용 범위(`target_scope`: all·products·categories)와 그에 따른 상품/카테고리 배열을 받아 `CouponService::createCoupon()`이 저장하고 생성된 쿠폰을 201로 반환합니다. `target_scope` 가 products/categories 일 때만 각 배열이 의미를 가지며, 확장은 `sirsoft-ecommerce.coupon.create_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「쿠폰명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Coupon Name field is required.").
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/admin/promotion-coupons/bulk-status
@@ -608,7 +608,7 @@ _예시는 대표 필드만 발췌한 축약본입니다. 전체 필드는 생�
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.read`)이 없거나, 대상 쿠폰이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -855,7 +855,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 기존 프로모션 쿠폰(정의)의 내용을 수정합니다. `permission:sirsoft-ecommerce.promotion-coupon.update` 권한이 필요하며, 생성과 동일한 필드 집합(쿠폰명·혜택·발급 조건·유효/발급 기간·적용 범위 등)을 받아 `CouponService::updateCoupon()`이 전체 갱신합니다. `target_scope` 변경 시 그에 맞는 상품/카테고리 배열을 함께 보내야 하며, 대상 쿠폰이 없으면 404, 갱신 실패 시 400 을 반환합니다. 확장은 `sirsoft-ecommerce.coupon.update_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다.
+**설명** 관리자가 기존 프로모션 쿠폰(정의)의 내용을 수정합니다. `permission:sirsoft-ecommerce.promotion-coupon.update` 권한이 필요하며, 생성과 동일한 필드 집합(쿠폰명·혜택·발급 조건·유효/발급 기간·적용 범위 등)을 받아 `CouponService::updateCoupon()`이 전체 갱신합니다. `target_scope` 변경 시 그에 맞는 상품/카테고리 배열을 함께 보내야 하며, 대상 쿠폰이 없으면 404, 갱신 실패 시 400 을 반환합니다. 확장은 `sirsoft-ecommerce.coupon.update_validation_rules` 필터로 검증 규칙을 추가할 수 있습니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「쿠폰명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Coupon Name field is required.").
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/promotion-coupons/{id}/issue-direct
@@ -869,7 +869,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | id | path | string | 예 | — | 대상 리소스의 식별자 |
-| user_uuids | body | array | 예 | min 1 | 쿠폰을 직접 발급할 대상 회원 UUID 배열 (내부 회원 ID 로 해석 후 발급) |
+| user_uuids | body | array | 예 | min 1 | 쿠폰을 직접 발급할 대상 회원 UUID 배열 (내부 회원 ID 로 해석 후 발급). 탈퇴 회원이 하나라도 있으면 요청 전체가 422(`user_uuids.{n}`: 「탈퇴한 회원에게는 쿠폰을 발급할 수 없습니다.」) |
 
 **요청 예시**
 
@@ -935,7 +935,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 지정한 회원들에게 특정 쿠폰을 즉시 직접 발급합니다. `permission:sirsoft-ecommerce.promotion-coupon.update` 권한이 필요하고 대상 회원은 `user_uuids`(uuid 배열)로 지정하며, FormRequest 가 uuid 를 내부 회원 ID 로 해석한 뒤 `CouponService::issueDirectly()`가 발급합니다. 응답에는 실제 발급 건수(`issued`)와 이미 보유/한도 초과 등으로 건너뛴 목록(`skipped`)이 포함되고, 건너뛴 건이 있으면 별도 안내 메시지 키가 사용됩니다.
+**설명** 관리자가 지정한 회원들에게 특정 쿠폰을 즉시 직접 발급합니다. `permission:sirsoft-ecommerce.promotion-coupon.update` 권한이 필요하고 대상 회원은 `user_uuids`(uuid 배열)로 지정하며, FormRequest 가 uuid 를 내부 회원 ID 로 해석한 뒤 `CouponService::issueDirectly()`가 발급합니다. 응답에는 실제 발급 건수(`issued`)와 이미 보유/한도 초과 등으로 건너뛴 목록(`skipped`)이 포함되고, 건너뛴 건이 있으면 별도 안내 메시지 키가 사용됩니다. 탈퇴 회원에게는 발급하지 않습니다(7.1.1) — 요청 검증이 422 로 막고, 서비스를 바로 부르는 경로는 `UserCouponService::issueDirectlyToUser()` 가 사유 `user_withdrawn` 으로 거절합니다(배치에서는 `skipped[].reason`).
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/promotion-coupons/{id}/issues
@@ -981,7 +981,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 (`CouponIssueResource`) + 
 | expired_at | string\|null | `2026-07-31 23:59:59` | 만료 일시 (사용자 타임존 포맷, 없으면 null) |
 | used_at | string\|null | `null` | 사용 일시 (미사용 시 null) |
 | order_id | integer\|null | `null` | 쿠폰이 사용된 주문 ID (미사용 시 null) |
-| order_number | string\|null | `20260708-0001` | 사용된 주문의 주문번호 (order 관계 로드 시) |
+| order_number | string\|null | `20260708-1017395602` | 사용된 주문의 주문번호 (order 관계 로드 시) |
 | discount_amount | number\|null | `null` | 실제 적용된 할인 금액 (기본 통화 자릿수로 반올림, 미사용 시 null) |
 | is_used | boolean | `false` | 사용 완료 여부 (`status === 'used'`) |
 | is_expired | boolean | `false` | 만료 여부 |
@@ -1043,7 +1043,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 400 | Bad Request | `{id}` 에 해당하는 쿠폰이 없는 경우 (`sirsoft-ecommerce::exceptions.coupon_not_found`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.read`)이 없거나, 대상 쿠폰이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
@@ -1136,7 +1136,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 400 | Bad Request | 발급 내역 미존재(쿠폰-발급 조합 불일치 포함) 또는 미사용(available) 상태가 아니어서 취소 불가한 경우. `error.detail` 에 사유 원문("쿠폰 발급 내역을 찾을 수 없습니다." / "미사용 상태의 발급 건만 취소할 수 있습니다.")이 담김 |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.update`)이 없거나, 대상 쿠폰이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 

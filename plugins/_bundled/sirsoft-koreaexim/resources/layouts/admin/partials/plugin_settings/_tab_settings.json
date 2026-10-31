@@ -1,0 +1,24 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "환율 상태 및 정책 설정 탭"
+    },
+    "comment": "설정 탭 — 상태 카드, 정책 입력 폼, 실패 알림 발송 수단, 최근 실행 5건 순. 기본 탭이라 query.tab 이 없을 때도 그린다",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_computed.activeTab === 'settings'}}",
+    "children": [
+        {
+            "partial": "_status_card.json"
+        },
+        {
+            "partial": "_settings_form.json"
+        },
+        {
+            "partial": "_notifications_card.json"
+        },
+        {
+            "partial": "_recent_runs.json"
+        }
+    ]
+}

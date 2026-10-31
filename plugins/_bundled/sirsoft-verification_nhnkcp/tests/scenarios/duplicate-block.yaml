@@ -13,7 +13,7 @@ axes:
   gate: [verify, register]
   basis: [di, ci]
   blocking: [enabled, disabled]
-  relation: [duplicate, new_person, self_reverify, missing_hash]
+  relation: [duplicate, new_person, self_reverify, missing_hash, logged_in_other_user]
 
 exclusions:
   # 차단 스위치가 꺼져 있으면 기준 필드 해석·조회 자체에 도달하지 않는다 (호출부가 먼저 단락).
@@ -28,6 +28,8 @@ exclusions:
   # 게이트별 책임 범위.
   - { gate: verify, relation: missing_hash, reason: "인증 시점에는 신원 가드가 식별값 부재를 먼저 차단한다 — 중복 판정에 도달하지 않음" }
   - { gate: register, relation: self_reverify, reason: "가입 직전 게이트는 신규 가입만 다룬다 — 본인 재인증은 verify 조합으로 대표" }
+  - { gate: register, relation: logged_in_other_user, reason: "로그인 회원 본인인증은 가입 게이트를 거치지 않는다 — verify 조합으로 대표" }
+  - { relation: logged_in_other_user, basis: ci, reason: "본인 제외 조회는 기준 필드와 무관 — di 조합으로 대표(#40 R11)" }
 
 effects:
   - verify_blocks_duplicate_signup_with_duplicate_code
@@ -36,6 +38,7 @@ effects:
   - ci_basis_matches_by_ci_hash
   - missing_identifier_hash_passes
   - non_signup_purpose_is_not_blocked
+  - logged_in_verify_blocks_identity_of_other_user
 
 test_files:
   - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/AssertNoDuplicateKcpIdentityTest.php

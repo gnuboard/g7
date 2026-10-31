@@ -1,0 +1,377 @@
+{
+    "description": "7.0.x 정식 배포본(7.0.0~7.0.11)의 번들 디렉토리에 있었고 7.1.0 번들에는 없는 파일과, 각 파일이 7.0.x 배포본에서 가졌던 본문의 sha256(CRLF→LF 정규화) 목록. 09_PruneStaleBundledFiles 가 읽는다. git diff --diff-filter=D <7.0.x 태그> 7.1.0 -- {modules,plugins,templates,lang-packs}/_bundled 로 산출했고 출시 뒤 동결한다.",
+    "source_versions": [
+        "7.0.0",
+        "7.0.1",
+        "7.0.2",
+        "7.0.3",
+        "7.0.4",
+        "7.0.5",
+        "7.0.6",
+        "7.0.7",
+        "7.0.8",
+        "7.0.9",
+        "7.0.10",
+        "7.0.11"
+    ],
+    "hash_algorithm": "sha256-lf",
+    "files": {
+        "lang-packs/_bundled/g7-core-ja/backend/ja/identity_message.php": [
+            "0b6bf5609f90a3ab0aadb80d7684dad9550ef84ffec0cc1990adb0383b033369",
+            "1a7470f957e4d15033b12790b29b6c4e5ca1ded18f79fc99b93900b544c83217"
+        ],
+        "lang-packs/_bundled/g7-core-ja/seed/identity_messages.json": [
+            "91ed808936b9004a14150cdedc227728dd1aa617ca832392474bb78d3a1d576e",
+            "ce539a91e0c0b03ce3beb3ab85a22abd9ff65fb93376b7725cb707516bd32468"
+        ],
+        "lang-packs/_bundled/g7-module-sirsoft-ecommerce-ja/frontend/partial/admin/mileage_deposit_settings.json": [
+            "9fb1f0287a1a9bb3f890b184a126893ea5449e110c2558434f538f577f1f8832"
+        ],
+        "lang-packs/_bundled/g7-module-sirsoft-ecommerce-ja/seed/identity_messages.json": [
+            "ca001a6cf4db8801a8e96aa13d9ad1e1d1bba208953c42239ad71326fb65b65b"
+        ],
+        "modules/_bundled/sirsoft-board/resources/lang/en/activity_log.php": [
+            "5cef3863842bf8f0d725693e7beed49727197a0c10a14b444013284f2ac63abb"
+        ],
+        "modules/_bundled/sirsoft-board/resources/lang/ko/activity_log.php": [
+            "c78e38827f92fb0e3f99eb9d949fc9ab00ff5151ebd7163662589422c24b8336"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/database/seeders/UserAddressSeeder.php": [
+            "000b1a185585816107d35709d932f8ef56ea591bd14ceed445a9c156696b57c0"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/dist/js/module.iife.js.map": [
+            "42c15936f83a73790f4823a6f2877121fc9568ab048940636b70cd3d65967dd7"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/userCancelOrderHandlers.test.ts": [
+            "9edc472f90f541e4fcc96ea3f0aded8c3c052777271ad3d5e773472eeac73049"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/productListHandlers.test.ts": [
+            "f4cfb01c7026075821897462018bcdeaff960c432b3cb99ddbd750fb9b0e2b86"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/js/handlers/productListHandlers.ts": [
+            "36579a9c95905500b4bcdcfa62eac00aab740f2f91b212ebb37f47a044052d62"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/js/handlers/userCancelOrderHandlers.ts": [
+            "7dbb442a2763a4693d306c6b730a1fb87d6e105649cae5d636b8c608c60867cd"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/lang/en/activity_log.php": [
+            "02d3dc2f0336df4153433d3581332b300b7c446b2506708e580395ef49266159"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/lang/en/enums.php": [
+            "df4639c7bc1c1c555659d9c602f92d8f35eb7318d1f7e1a2f7f70fdb8b09796a"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/lang/en/messages.php": [
+            "4d1f04f7f8622107d12b9f06dfba34a4b34f0aa7157ed8effa78a086ce3f2e9a"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/lang/ko/activity_log.php": [
+            "44ea594ac58a808e24b0f714681af4537c12be8b9c3da545752ab3e436542b44"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/lang/ko/enums.php": [
+            "4280bb5f73859cdc90ceff910847704b8ed845d3b9eb1a035f1e56f1e59f44d7"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/lang/ko/messages.php": [
+            "5ce64a45ba3efb4593c35ed04857271bc88ad082f177d851a5c72b36b629c722"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_tab_claim_exchange.json": [
+            "0c9ab3d7d6182df527dd5cad2ef7540524fc0487660a130182bbe01445dad0e2"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_tab_claim_refund.json": [
+            "add80babb842cf33b1f7e20f9a1f76c662126ba9960f2b8e4b1ed7277ba11540"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_detail/_tab_claim_return.json": [
+            "a046406a8c29ce6c3e1112449b5c6f80d6d966a26a8bb71967b741735c7307c8"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_order_list/_partial_preset_section.json": [
+            "726a5625e1f4b86be9a90f91772ce29c035d4e805c43ba9d80c8d72b5693741b",
+            "77dfe471e3b154bb3b3bebca7a22742e31b938d99b9d2799f5badd38d83133a1"
+        ],
+        "modules/_bundled/sirsoft-ecommerce/src/Enums/RefundOptionStatusEnum.php": [
+            "62e5e89255c0effd5d9d38c8c3502c13d9a621f243679e4febcb58aec90cefc5"
+        ],
+        "modules/_bundled/sirsoft-page/resources/lang/en/activity_log.php": [
+            "60ac725b750d5ed746147c9014070a14ceec998e9cb0c611963d3e4a75e3c637"
+        ],
+        "modules/_bundled/sirsoft-page/resources/lang/ko/activity_log.php": [
+            "d7a7373502125202285f1b56aceec8e2e11399983868d1ffe56221cdb6f35252"
+        ],
+        "plugins/_bundled/sirsoft-ckeditor5/dist/js/plugin.iife.js.map": [
+            "fc7c24702cfe53930637614aea025ef35933f2887c5730470652ca95a9293db8"
+        ],
+        "plugins/_bundled/sirsoft-daum_postcode/dist/js/plugin.iife.js.map": [
+            "9e204eb8ec8dfc7123f785b83d6212ad3c40a72ee91c5039a8867e89f81956b9"
+        ],
+        "plugins/_bundled/sirsoft-gdpr/dist/js/plugin.iife.js.map": [
+            "eff60693cce2fc089528016840a038208e2c591d29fdd318d99ad6b01f9a6c86"
+        ],
+        "plugins/_bundled/sirsoft-message_bizppurio/src/Listeners/GuestPhoneExtractListener.php": [
+            "4de9710e208767cb297560e206bbb41dc8a891ac5a272995bc14450fb73938f8"
+        ],
+        "plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Listeners/GuestPhoneExtractListenerTest.php": [
+            "409b14ef7425b88e34427ab59b171d219dd55cea03e1f2915de744570c58eb36"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/dist/js/plugin.iife.js.map": [
+            "90c9b3dd6237ee50a19ac9089c619e9a552dbcd4c7af37a2085637bee2225378"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/extensions/admin_order_list_test_badge.json": [
+            "91a6b4cd4e99bca1b9a96d4fd78ddbcedb0ea4003d48f438e112de12e7c9ee4f",
+            "eefd2adccf43692518cfafc89fbb390e24e0d98e0fd149e1dc5d69f8be46985c"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/adminPaymentMethodBrandInjector.test.ts": [
+            "3c8317c45ad584b2e1f71c918f92b8fe735c59ca71e3843c8c3ff362ef3ad962",
+            "ae74afb65ff93df6eede4e7a5d77fd0195181cb7d0f480bc291f25fbfef39d05"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/checkoutJpyPaymentMethodRestrictor.test.ts": [
+            "2e33d95961b3c253ea1346b46f8a61d4d059ae44017eca1829c3d506d584b71d"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/checkoutNaverpayBrandButton.test.ts": [
+            "869578b04251a10c2a54fb4a16a929c60309af06eeb3d6d6ff8d70d11dfba93b"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/mypageOrderShowInjector.test.ts": [
+            "22f0699b888d8e7975486b27b88295f8627cb7154c5575d156ad83e14b3bf8ef",
+            "ca2df4d76955e7743767d8ddd0708ddb911433ad9e2836e2552453d22347e08a"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/orderPaymentDisplayInjectors.test.ts": [
+            "3ba531a11fb52ae4829bfbfd3d98cf4123652061b822bf490662bc7b9df68843",
+            "b37863870955a04385410346bfbf1685d6fdabd38cc8049f1c811eba28004bf2"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/orderResponseInterceptor.test.ts": [
+            "0aecc2377d5b8cbb26fdf0254be287a4eaf93031be6acf1720e848a80408b58f",
+            "5c6faa429ea1ce1f97cb3a437a41ebfce312ca5e08025475cca352a93bbd768d"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/receiptPopup.test.ts": [
+            "5387b0e1ec91d6e2cc273c3a3438e9a3580129e81b90919c6af7ca04276217b5"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/adminOrderPaymentDisplayInjector.ts": [
+            "e89087360908b5cd28660a302257b5c470de3d9a9e0568d5816ccea7991e39aa"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/adminPaymentMethodBrandInjector.ts": [
+            "710c2af6d268fd7b6499743bb5df88b46421ff1effbc74fa86ca8f9203e7eecb",
+            "7c16f727aad10707553f03f9b909a42a70806e3b000e1c5678d160762f2be610"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/checkoutJpyPaymentMethodRestrictor.ts": [
+            "e4cf9b6afa8cb4c54f2f72602d8548556fcab7395e9bdd7913d3a9b7ebd098ad"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/checkoutNaverpayBrandButton.ts": [
+            "5e95b488b5f412c9e8cf96a8623541e9af8b327bf017974b2d3cbfb3a3d5eb0a"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/mypageOrderShowInjector.ts": [
+            "32c3cea203829f3ae0b98e6b4bc76fe80fc738917fad8dd9de22fba308821981"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/orderCompleteReceiptInjector.ts": [
+            "59c0af25cfbf07640a7201192694002421cdc1f7c2b5824dd19acabcad56fba0",
+            "aa91043bf9b8f0c9176c7f37b20b9ffeb2c446fd66787b9801a33b2f25ebf640"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/orderResponseInterceptor.ts": [
+            "66f604d1aeb8196dab541af08491f55f7130bf807b5ca150a1b16679c22e31c0",
+            "ab82351c6f97220d5efe744bc4b2ba6eb41f6f4545b158ef8981953906153348"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/resources/js/vbankInfoInjector.ts": [
+            "cea6b164c50d05daf41ae66266cfdef0025aa7c3c46982222724c03f5360089b"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/src/Controllers/AdminCashReceiptController.php": [
+            "f202eab166112107e50f31e4e80bfcf5f31ca6638d53f5ed9bbd9ec77ed158fe"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/src/Listeners/EnsureAdminOrderListTestBadgeLayoutListener.php": [
+            "442ca4a111ef79e5cb621cc565c7bbd86be9363773084506a36cc3a7b706f186"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/AdminCashReceiptControllerTest.php": [
+            "7f173278e716731f37d971e57431d34e72a5062e4055372cda331cd3c0726ff2"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Extensions/AdminOrderListColumnSnapshotTest.php": [
+            "d2d353f3ab2ccc1674bd5d8d36abbcee52ead643561febce3aca76c8233e37af"
+        ],
+        "plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderListTestBadgeLayoutListenerTest.php": [
+            "7b385e9169d311e16d8a13359af72319a7fc8bb3174a77a611d0540afd0d0f14",
+            "cc43905a3b94ecf3e76bf9c0c972c5255830ad2f38630e11d4e8914e0030a971"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/resources/extensions/admin_order_list_test_badge.json": [
+            "a24a7c129f8c8907d4da82db2680b51948f35cd25a085f1d6895c2a877c4efe1",
+            "b4f98116ce9e7edfd02256857bedeac03137215aa67c032391ee53f1644b65fd"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/adminApplePayNoticeInjector.test.ts": [
+            "3f4b90bc2dbb8280aca3a14effcf026842e96f56713ca538dc8c69dda8aad68e"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/adminPaymentMethodBrandInjector.test.ts": [
+            "2c9a367319032e0b3a8cd1fb8b77e4ff698ab53b05d31f767908fa632bd2ed06",
+            "361b5b0b610d18f14d0a506fb68185d851d0ddbbb39aa3f3b8ef99acf5cd0ece"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/orderPaymentDisplayInjectors.test.ts": [
+            "d4f9dc7b9f67685f042b2147585ec9c0af45ee0dd666b388396b452a77c0a007"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/orderResponseInterceptor.test.ts": [
+            "17b389adbeebab971ae3b9384249ea2556895fc66f006746e20a60b33410330f"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/adminApplePayNoticeInjector.ts": [
+            "95dd19da9048d86b3e4129f639455da6a76da50ad46ef09860a910e50f98af00"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/adminOrderPaymentDisplayInjector.ts": [
+            "264369689bf1bcd8d915fe5eb1940b115d1a4d1cf250c11e4954afecb0c1ec5c"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/adminPaymentMethodBrandInjector.ts": [
+            "4533992ac0dcd69f732d11642f4131861180af2a762712c9cd3a82018f9a814b",
+            "ef5914240f8d62895992374b881acb239768a11537fb0e0be5af975017f73442"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/mypageOrderShowInjector.ts": [
+            "488d2c93154f5db30fb5bde33663091848fde770024c9a0946d5890f86ee7627",
+            "579cc52cc5eb5b85c60efcff836ef14f2c39a10fc5b66400ce6e373335bba78e"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/orderCompleteReceiptInjector.ts": [
+            "4ffbab216b629f95b0805931d55c335ef4572bea90960f116bb66c72248960f4",
+            "c3a12c05b247ae4ad1a6a77b5597853feff5379711c25cffa1fac6d8fa6bd7aa"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/orderResponseInterceptor.ts": [
+            "bf34dccad65dd276784f8bd63a8973346254e6298b4c50bec59e345ea377c454"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/src/Listeners/EnsureAdminOrderListTestBadgeLayoutListener.php": [
+            "7461ac1aa0174cc7895182422a48c71eb4d6b7bba364692c8e75962d5140fc82"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/AdminOrderListControllerTest.php": [
+            "a78b02784c40e5afbe462ddc9a6fd8afb168de6dfaf6c57d649f758789562c82"
+        ],
+        "plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Extensions/AdminOrderListColumnSnapshotTest.php": [
+            "5a1a94a93a32e3129d66497355c5f712fcfe34e6638bd9d76985399036930eab"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/admin_order_list_test_badge.json": [
+            "cfdf66900abbd5a0df4ec8a4bffa08a38b3800d4a812f8fdba2447f722c53c9e",
+            "fbb6c961df8dbbaf49aa0228561be099b494b14a30440f89744888a95c3175c0"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/resources/extensions/checkout_easy_pay.json": [
+            "bfa17470be08dd5354fee35bda9cdfb82af89a0a7261322089e688c57a832406"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/adminPaymentMethodBrandInjector.test.ts": [
+            "a1c2e354c9213a106dbce55f700d806cb0055540f38a0829e1e5f26795e40ec8",
+            "b24c834e9a9669fa4bf49a60b2a3816835845ca9f89283be4f768c6fec7218df"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/orderPaymentDisplayInjectors.test.ts": [
+            "ea0523f19d5bde08267535fd0bdc67d72f14e271ed05e62012a76e971522f78c"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/orderResponseInterceptor.test.ts": [
+            "6b805d818020001b088f4a1204ceaa541823542eb9e08d15b11f64c56221ddac"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/resources/js/adminOrderPaymentDisplayInjector.ts": [
+            "ab7f20b5824cf3808c9e43653ab393fb1995eaed5881b21fe57b735e2d65cd45"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/resources/js/adminPaymentMethodBrandInjector.ts": [
+            "7b4504dad702ba941021588547733e4b03f4eb50cabb8eb143059b0ec3f8387a",
+            "ef5dedc97f08c7d4683d9976ef96f9c4ebabf878f7522d0026779275998dd091"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/resources/js/mypageOrderShowInjector.ts": [
+            "39b8eabd8b1dbd4b60272ac01175354a08545d75d1279f7624a6783b0a9a5314",
+            "60f571d042152d22bf1d3861ea5884fce6584bf23fc42b3b7665d46dc8d7c14d"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/resources/js/orderCompleteReceiptInjector.ts": [
+            "5ff0d89de4a25e723b01277f49de0476789e0771804c61b38760ef0cc589c7c3",
+            "81eff4decbc185156add639a209125edb295607967591d663752e4c81242a1bf"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/resources/js/orderResponseInterceptor.ts": [
+            "c758fca4e833782d5315f9bc2f44763071fa18ac16f2ae029883279a38b3ee29"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/src/Listeners/EnsureAdminOrderListTestBadgeLayoutListener.php": [
+            "a9890b05d4a36509a389a5046cdc035e06de64ac4333bffafb9d454784f8f78c"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/src/Support/UrlHelper.php": [
+            "4bdd99fc0b338edfacf68588d3a473b4991532d9bdd2504652b61dcdefbf2fc4"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Extensions/AdminOrderListColumnSnapshotTest.php": [
+            "51f8cfe501bed4a392b63a0f5b36bf89dbbab1d92ad829dd82876aad131cf394"
+        ],
+        "plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Support/UrlHelperTest.php": [
+            "22e2121569cd0e39fbc4f1ebe0b14cbb5373983cd9ac6eab35cebb8cd5c68461"
+        ],
+        "plugins/_bundled/sirsoft-tosspayments/resources/js/__tests__/adminPaymentMethodBrandInjector.test.ts": [
+            "e0a3d6c5cb68c3f7cab4b4058c48869f3d02f9c5c5454127afb5b7feaea9c973"
+        ],
+        "plugins/_bundled/sirsoft-tosspayments/resources/js/adminPaymentMethodBrandInjector.ts": [
+            "601b88ba3ae39fec0c268a060973cacef1d7c7b2b75231f0b2a715646764b8b1"
+        ],
+        "plugins/_bundled/sirsoft-verification_kginicis/dist/js/plugin.iife.js.map": [
+            "423aeed71a127010c1a426d6c5826dc46b2c5db94ca3230000abacf6e004ca51"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-identity-message-definition-modals.test.tsx": [
+            "bf9940bca3a4ae46508bcfb892b4ead314bed4c275a50f5ced9981a8776a85c0"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-identity-message-template-form-modal.test.tsx": [
+            "1c503f229ceecc6aeaeb7d2824555e1bae029c0861505b4d1e37e46b7d4afe72"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-identity-message-template-preview-modal.test.tsx": [
+            "4563d1e6a342e20d9c763bba24a4f7da84110e4e00416889b6cb4097bf3829b9"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-identity-messages-tab.test.tsx": [
+            "1aa6f783145e67f1d52010fdf487e0953779b2f244f68e69e19e68e451d1ba3d"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/dist/js/components.iife.js.map": [
+            "3957becda1693f6853f81b594981a304cffb2b124ce80163e5551cce7a333ceb",
+            "62329af275edf480deee03853692d2ad37ed2d5654ee8c60d92b77e3dbda5bbd",
+            "d3ac1d0decca994b9b4911d5b6dcc69b95b08c3af7479d9a3ad86842bb043814"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/dist/src/handlers/setLocaleHandler.d.ts": [
+            "6fb029890eb7cb9c26f3515424d86b76abe507ac30720985fcea5b6e56c1ef7d"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/layouts/admin_language_packs_install_modal.json": [
+            "bdde16bc7fa12295890ee34e987f127608d648435f02cd627abd268fa95437ca"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/layouts/overrides/sirsoft-sample/index.json": [
+            "9820a8b893d96569f884d530419ac590ed42884428976b23898e249c1d87698c"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_message_definition_add.json": [
+            "72d4117755879c74fe04c3730aa6fc6e3654afada103fd854cddbe3694187ad7",
+            "8cefc65a730ccd9f2bd209d4dae339e428ef3f12804710453d00472522c162a7"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_message_definition_delete.json": [
+            "44b3cfd5748e1309a6191a7abeae8331dd93cfd337ca6c2fc6d07f5ae198175f"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_message_definition_reset.json": [
+            "283e9805ab280fbd7ee8330ef00128f9c38b9cfe6e5dcd4d4cf27769e96dfcb3"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_message_template_form.json": [
+            "a8369b62b924b9df1c3b12223804ffb5c607136dc8102c195f6c93bfee5da4ee",
+            "c585a099bbf483abb2aef67278dd698f998be3cc83798e7ba1931bea3c525297"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_identity_message_template_preview.json": [
+            "6d595f6dcedace41b130b67c2adc35e292f156c8f084268c81b3c61f2bb8ccd0"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_mail_template_form.json": [
+            "2cd0faf7995030bafc5f9034ef24b22894e2b8fdc2fb29cf8cfd3db0b9b3f14b",
+            "466376105fc153cde45e6353fee44d05c2787230d6593ad9632e392156d6bef4"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_mail_templates.json": [
+            "3f61cbffd6efa53c1b5adb5532b03ab3d71e2d617ece57bac0cb3149a1177864",
+            "84e62e375e2d323b395720c408747ddc6434889174a0495e6cc503175db9d8c4"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/setLocaleHandler.test.ts": [
+            "206f81083cd049eaeafd3549eae0fb8d3ac87ae6eac3bd0d96f95132668b757b"
+        ],
+        "templates/_bundled/sirsoft-admin_basic/src/handlers/setLocaleHandler.ts": [
+            "4acb8f843f6938a4eef3c93fae3585900b1f0d5711214f7a33755d3ec24ec0a9"
+        ],
+        "templates/_bundled/sirsoft-basic/__tests__/layouts/search-product-item-list-thumbnail.test.tsx": [
+            "4ef4744298ac200c8bc4b092d90873ed5b3278d4891ffb03022abfa91dc1889e"
+        ],
+        "templates/_bundled/sirsoft-basic/dist/js/components.iife.js.map": [
+            "1358c80c060d737252c6bc9b5840cc60850976d3ac1fc9a4b9fc67489ed619ea",
+            "9d7e294a9788612e6d312f81963bc38ff1d87be7df831c3a9fd5bed09a00d0fd",
+            "c52b3b9a241c78ea3322ebdb1930ca182429f69cfc04609cf54c6c0f2f74e84e"
+        ],
+        "templates/_bundled/sirsoft-basic/dist/src/components/composite/PostReactions.d.ts": [
+            "19c812414b2dd3002478da144f5e5b146cdc80190daefe78384b4f054aad4aba"
+        ],
+        "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_modal_cancel.json": [
+            "0f50feffcf01980a2144d1dbb411d09c2e13b92c5a7a895c15fb213be1ba11b2",
+            "799223eb9aec0e5370815c2957083a2329b74e2e0346ab4c37b7d58ce01a9769",
+            "b9f6e48b483b7bfc7ab054b3f3264f8e2dcb6cecbd5fd4a29682533caafb1bc5"
+        ],
+        "templates/_bundled/sirsoft-basic/layouts/partials/search/products/_item_list.json": [
+            "36f736efed7726094c3a4029c979e1a3299de3872100d1f7296810954420fc08",
+            "9dc02193afaa4397a530f94928e98290ee8b1ab78cfa1608dde3814fcbb060c0",
+            "c44fa35122a4a6f90a85a99c907f99693b4ea4490f9fb2de3f1944fe3e45bc92",
+            "c539d673777182858b6bc762bca6b78eaf025ab2ac5dfae9baeb3b7bc2452478"
+        ],
+        "templates/_bundled/sirsoft-basic/layouts/partials/shop/_product_purchase_card.json": [
+            "61f465ac1a59586dc3e93597621108c86d04d487a18c5e77856d02776a7c0f21",
+            "e79c39cf220af4a23b4af244e759fc188900827ec6329429069c5b1aef882145"
+        ],
+        "templates/_bundled/sirsoft-basic/src/components/composite/PostReactions.tsx": [
+            "d89a13f99aa7aebe4ed1bd25dcb755f693d9bfbe1fafe8a50b199216d40c1741"
+        ]
+    }
+}

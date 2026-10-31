@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayNicepayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Support\ExtensionStoragePath;
+use App\Support\SiteUrl;
 
 class RegisterPgProviderListener implements HookListenerInterface
 {
@@ -36,6 +37,7 @@ class RegisterPgProviderListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -100,14 +102,22 @@ class RegisterPgProviderListener implements HookListenerInterface
                 ? ($settings['test_mid'] ?? '')
                 : $liveMid,
             'sdk_url' => 'https://web.nicepay.co.kr/v3/webstd/js/nicepay-3.0.js',
-            'callback_url' => '/plugins/sirsoft-pay_nicepayments/payment/callback',
-            'sign_data_url' => '/plugins/sirsoft-pay_nicepayments/payment/sign-data',
-            'close_report_url' => '/plugins/sirsoft-pay_nicepayments/payment/close-report',
+            // 보안: PG 로 보내는 결과 수신 주소(ReturnURL) — 브라우저 현재 주소가 아니라 사이트 주소로 만든 절대 URL.
+            'callback_url' => SiteUrl::absolute('/plugins/sirsoft-pay_nicepayments/payment/callback'),
+            'sign_data_url' => SiteUrl::absolute('/plugins/sirsoft-pay_nicepayments/payment/sign-data'),
+            // 닫힘 보고는 API 라우트(src/routes/api.php)다 — 웹 경로(/plugins/...)에는 이 라우트가 없다. 프론트는 이 값을
+            // 읽지 않고 자기 API 상대 경로로 부른다(paymentCloseReport.ts) — 이 키는 client-config 응답 형태를 유지하려고 남긴다.
+            'close_report_url' => SiteUrl::absolute('/api/plugins/sirsoft-pay_nicepayments/payment/close-report'),
             'useEscrow' => (bool) ($settings['use_escrow'] ?? false),
             'enabled_easy_pays' => $enabledEasyPays,
         ]);
     }
 
+    /**
+     * 쇼핑몰 주문 설정의 기본 PG 가 나이스페이먼츠인지 판정합니다.
+     *
+     * @return bool 주문 설정 파일의 default_pg_provider 가 nicepayments 이면 true (파일이 없으면 false)
+     */
     private function isNicepayDefaultPg(): bool
     {
         $path = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/order_settings.json';
@@ -121,11 +131,24 @@ class RegisterPgProviderListener implements HookListenerInterface
         return ($data['default_pg_provider'] ?? '') === 'nicepayments';
     }
 
+    /**
+     * 나이스페이먼츠 플러그인 설정을 읽습니다.
+     *
+     * @return array<string, mixed> 플러그인 설정
+     */
     private function getPluginSettings(): array
     {
         return plugin_settings(self::PLUGIN_IDENTIFIER);
     }
 
+    /**
+     * 운영 MID 접두사(`SR`)를 붙여 완전한 운영 MID 를 만듭니다.
+     *
+     * 이미 접두사로 시작하면 그대로 둔다.
+     *
+     * @param  string  $suffix  관리자가 입력한 운영 MID (접두사 포함 여부 무관)
+     * @return string 운영 MID (입력이 비면 빈 문자열)
+     */
     private function buildLiveMid(string $suffix): string
     {
         $suffix = trim($suffix);

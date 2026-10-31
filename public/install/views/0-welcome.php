@@ -45,6 +45,8 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                         echo lang('storage_not_exists');
                     } elseif ($storageResult['error_type'] === 'ownership_mismatch') {
                         echo lang('storage_ownership_mismatch');
+                    } elseif ($storageResult['error_type'] === 'windows_readonly') {
+                        echo lang('storage_windows_readonly');
                     } elseif ($storageResult['error_type'] === 'not_writable') {
                         echo lang('storage_not_writable');
                     } else {
@@ -64,6 +66,8 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                         'web_user' => $storageResult['web_server_user'] ?? 'www-data',
                         'permissions' => $storageResult['permissions'] ?? '?',
                     ]);
+                } elseif ($storageResult['error_type'] === 'windows_readonly') {
+                    echo lang('storage_windows_readonly_message');
                 } elseif ($storageResult['error_type'] === 'not_writable') {
                     echo lang('storage_not_writable_message');
                 } else {
@@ -124,7 +128,7 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                         <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
                     </div>
                     <p class="fix-guide-hint" style="margin-top: 0.75rem;"><?= lang('ownership_mismatch_hint', ['owner' => htmlspecialchars($owner), 'web_user' => htmlspecialchars($webUser)]) ?></p>
-                <?php } elseif (in_array($storageResult['error_type'], ['not_writable', 'not_readable', 'subdirectory_issues'])) { ?>
+                <?php } elseif (in_array($storageResult['error_type'], ['not_writable', 'not_readable', 'subdirectory_issues', 'windows_readonly'])) { ?>
                     <?php
                     // W7 — 이 화면을 보는 사람의 다수는 SSH 를 쓸 수 없다. FTP 조작 절차가
                     // 기본 판본(펼침)이고 명령어는 접힌 보조 판본이다.
@@ -144,6 +148,15 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                     <details class="permission-guide">
                         <summary class="permission-guide-summary"><?= lang('permission_guide_shell_summary') ?></summary>
                     <?php if (isWindows()) { ?>
+                        <?php if ($storageResult['error_type'] === 'windows_readonly') { ?>
+                            <!-- Windows ReadOnly 속성: ACL 이 아니라 파일 속성이라 icacls 로 해소되지 않는다 -->
+                            <p class="fix-guide-label"><?= lang('permission_readonly_fix_guide') ?></p>
+                            <div class="code-box">
+                                <pre class="fix-command"><?= htmlspecialchars(getPermissionFixCommand($storagePath, 'windows_readonly')) ?></pre>
+                                <button class="btn-copy" onclick="copyWelcomeCommand(this)"><?= lang('copy_command') ?></button>
+                            </div>
+                            <p class="fix-guide-hint"><?= lang('permission_readonly_hint') ?></p>
+                        <?php } ?>
                         <!-- Windows: icacls 명령어 안내 -->
                         <p class="fix-guide-label"><?= lang('permission_fix_guide') ?></p>
                         <div class="code-box">

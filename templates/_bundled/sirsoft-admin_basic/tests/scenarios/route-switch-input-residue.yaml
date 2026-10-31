@@ -1,0 +1,63 @@
+feature: 디바운스 폼에서 친 칸이 대기 중일 때 같은 레이아웃의 다른 경로로 옮기면 새 화면 칸에 이전 화면 입력이 남지 않는다 (engine-v1.81.2)
+
+description: |
+  관리자 상품 수정에서 정가를 지우고 「32222」 를 친 뒤 0.06초 안에 등록 화면으로 앱 내 이동(flush 없는 navigate·뒤로·앞으로)하면,
+  등록 폼 상태는 비는데 정가 칸 화면에는 「32222」 가 남았다(7.1.0 에도 있음). 디바운스 대기 중에는 렌더러가 칸을 다시 그리지 않아
+  칸이 받은 value 는 치기 전 값에 멈춰 있고, 글자는 칸 컴포넌트의 지역 표시값이 들고 있다. 엔진은 경로 이동 때 대기 쓰기를
+  버리지만(engine-v1.79.0) 지역 표시값은 남는다 — 새 화면 값이 치기 전 값과 같으면 value 가 안 바뀌어 따라오지 않고, 다르면
+  포커스 중 「내가 보낸 값의 메아리」 판정(비우고 친 빈 값)에 걸린다. 엔진이 대기 값을 버린 칸만, 버린 값이 새 화면 표시 값과
+  다를 때 다시 마운트한다. 시험은 실물 TemplateApp.handleRouteChange·renderTemplate·G7Core.dispatch 와 이 템플릿의 실물
+  Input·Textarea, 이커머스 상품 폼의 구운 JSON 으로 그린다.
+
+# axis 의미:
+#   case — 이동 조합:
+#     cleared_retype_focus_kept_dispatch_navigate  그대로(지우고 침 → 0.06초 → G7Core.dispatch navigate, 포커스 유지)
+#     same_value_before_and_after_blurred          수정 화면 원본이 빈 칸(새 화면 값과 같아 value 가 안 바뀜) · 포커스 해제 · Textarea 함께
+#     timer_drops_before_destination_render        레이아웃 로드가 디바운스보다 늦어 타이머가 먼저 대기 쓰기를 버림
+#     back_forward_after_typing                    등록 화면에서 치고 곧바로 뒤로 → 앞으로
+#     typing_after_remount                         다시 마운트된 칸에 새 화면에서 친 값이 칸·상태에 반영
+#     retype_on_destination_before_late_render     대기 중 이동(타이머가 대기 쓰기를 버림) 뒤 늦은 새 화면 렌더 전에 같은 칸에 다시 침 — 다시 마운트 없음·포커스·친 글자 유지
+#     multilingual_edit_then_create                상품명 다국어 칸(값 {ko}) 고친 직후 0.06초 → 등록 화면 — 칸이 빈다(칸 자신의 내용 비교로도 비는 회귀 잠금)
+#     multilingual_edit_then_copy_create           상품명 다국어 칸 고친 직후 0.06초 → 「복사해서 등록」(새 화면 값이 고치기 전 값과 내용이 같은 객체) — 복사 원본 값
+#     change_action_navigates_after_write          디바운스 쓰기가 끝난 뒤 그 칸의 change 동작이 등록 화면으로 navigate — 다시 마운트 없음·포커스 유지(첫 새 경로 렌더가 쓴 값을 보여 방어 조건 없이도 green 인 회귀 잠금)
+#     change_action_clears_and_navigates_after_write  디바운스 쓰기가 끝난 뒤 그 칸의 change 동작이 칸을 비우고(setState) 등록 화면으로 navigate — 다시 마운트 없음·포커스 유지·칸 빈 칸
+#     flush_click_navigate                         정가 입력 직후 0.06초 → 이동 단추 클릭(비디바운스 액션 직전 flush 가 옛 경로에서 쓰기 실행) — 칸이 빈다
+#     ime_composition_before_late_render           대기 중 이동(타이머가 버림) 뒤 늦은 새 화면 렌더 전에 같은 칸에서 한글 조합 시작 — 다시 마운트 없음·포커스 유지(engine-v1.81.2 G52)
+#     layout_key_prop                              정가 칸에 레이아웃 `key` prop — 그대로 조작에서 칸이 빈다(다시 마운트 key 와 합침, G52)
+#     replace_navigate_path_change                 정가 입력 직후 navigate replace:true 로 주소의 경로만 바뀜(경로 전환 없음) — 칸 요소·친 값 유지·상태에 쓰임(G52)
+#     replace_url_path_change                      정가 입력 직후 replaceUrl 로 주소의 경로만 바뀜 — 칸 요소·친 값 유지·상태에 쓰임(G52)
+#     control_query_only                           같은 경로에서 쿼리만 바뀜 — 다시 마운트 없음·치던 글자 유지
+#     control_no_debounce                          디바운스 없는 폼 — 다시 마운트 없음
+#     control_settled_debounce                     디바운스가 끝난 뒤 이동 — 다시 마운트 없음
+#     control_dropped_equals_destination           버린 대기 값이 새 화면 표시 값과 같음 — 다시 마운트 없음
+axes:
+  case: [cleared_retype_focus_kept_dispatch_navigate, same_value_before_and_after_blurred, timer_drops_before_destination_render, back_forward_after_typing, typing_after_remount, retype_on_destination_before_late_render, multilingual_edit_then_create, multilingual_edit_then_copy_create, change_action_navigates_after_write, change_action_clears_and_navigates_after_write, flush_click_navigate, ime_composition_before_late_render, layout_key_prop, replace_navigate_path_change, replace_url_path_change, control_query_only, control_no_debounce, control_settled_debounce, control_dropped_equals_destination]
+
+effects:
+  - destination_field_shows_destination_value   # 새 화면 칸이 새 화면 상태 값(등록이면 빈 칸)을 보인다
+  - destination_state_empty                     # 등록 폼 상태에 앞 상품의 id·정가가 없다
+  - back_shows_server_value                     # 뒤로 가면 수정 화면 원본(서버 값)이 칸·상태에 있다
+  - forward_shows_destination_value             # 다시 앞으로 가면 등록 칸이 빈다
+  - remounted_field_writes_state                # 다시 마운트된 칸의 자동바인딩이 살아 있다
+  - retyped_field_not_remounted                 # 새 화면에서 다시 친 칸은 늦은 렌더에도 칸 요소·포커스·친 글자가 그대로
+  - written_field_not_remounted                 # 디바운스 쓰기를 마친 칸(타이머 실행 뒤)은 그 칸의 동작이 다른 경로로 옮겨도 칸 요소·포커스가 그대로
+  - same_screen_keeps_typing                    # 주소만 바뀐 같은 화면(navigate replace:true)은 대기 쓰기를 버리지 않고 칸 요소·친 값이 그대로
+  - query_only_keeps_element_and_typing         # 쿼리만 바뀌면 칸 요소·치던 글자 그대로
+  - control_keeps_element                       # 대조군은 칸 요소가 그대로(다시 마운트 없음)
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/productFormRouteSwitchInputResidue.test.tsx
+
+validation:
+  browser_check: 재실측 — 관리자 상품 수정에서 정가 칸을 지우고 「32222」 → 0.06초 → 등록 화면 앱 내 이동(G7Core.dispatch navigate) 뒤 정가 칸이 비는지, 뒤로·앞으로에서 수정 화면은 서버 값·등록 화면은 빈 칸인지, 등록 화면에서 정가를 다시 치면 칸·getLocal 에 반영되는지, 이동 직후 등록 화면 렌더 전에 정가를 다시 치면 포커스·글자가 유지되는지, 상품명(다국어 칸)을 고친 직후 0.06초 안에 등록·「복사해서 등록」 으로 옮기면 상품명이 빈 칸·복사 원본 값인지
+  note: |
+    fail-first: DynamicRenderer 의 다시 마운트 key 를 끄면 앞의 네 사례가 red(칸 「32222」), 대조군·다시 친 값 사례는 green.
+    타이머 쪽 버림 기록만 끄면 timer_drops_before_destination_render 가, 렌더 쪽 버림 기록만 끄면 나머지 세 red 사례가 red.
+    autoOnChange 의 버림 기록 지움(autoBindingDroppedPendingRef = null)을 끄면 retype_on_destination_before_late_render 가 red(칸 요소 바뀜).
+    버린 값·새 화면 값 비교를 JSON 에서 String 으로 되돌리면 multilingual_edit_then_copy_create 가 red(칸 「상품수정」).
+    multilingual_edit_then_create 는 등록 화면 값이 '' 라 다시 마운트 장치를 모두 꺼도 green 인 회귀 잠금이다.
+    렌더 때 다른 경로 대기 값 버림의 다시 마운트 기록 조건(autoBindingDebounceTimerRef.current !== null — 타이머 미실행)을 빼면
+    change_action_clears_and_navigates_after_write 만 red(칸 요소 바뀜). change_action_navigates_after_write·flush_click_navigate 는
+    첫 새 경로 렌더가 방금 쓴 값을 보여(버린 값 = 표시 값) 조건 없이도 green 인 회귀 잠금이다.
+    G52(engine-v1.81.2 보강): 조합 중인 같은 이름 칸 판정·compositionstart 기록 지움을 끄면 ime_composition_before_late_render 가 red(칸 요소 바뀜·포커스 잃음),
+    레이아웃 key 합침을 끄면 layout_key_prop 이 red(칸 「32222」), 주소만 바뀐 경로 별칭(isUrlOnlyPathAlias)을 끄면 replace_navigate_path_change·replace_url_path_change 가 red(칸 요소 바뀜·칸·상태 10000).

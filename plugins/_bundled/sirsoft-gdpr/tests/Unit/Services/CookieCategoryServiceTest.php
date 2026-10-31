@@ -15,7 +15,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 class CookieCategoryServiceTest extends PluginTestCase
 {
     /**
-     * @param array<string, mixed> $values
+     * @param  array<string, mixed>  $values
      * @return void
      */
     private function mockSettings(array $values): void

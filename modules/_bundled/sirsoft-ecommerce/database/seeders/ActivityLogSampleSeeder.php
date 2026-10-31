@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
@@ -16,7 +17,11 @@ use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\ExtraFeeTemplate;
 use Modules\Sirsoft\Ecommerce\Models\Order;
+use Modules\Sirsoft\Ecommerce\Models\OrderCancel;
+use Modules\Sirsoft\Ecommerce\Models\OrderExchange;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
+use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductCommonInfo;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
@@ -38,6 +43,12 @@ class ActivityLogSampleSeeder extends Seeder
     /** @var string 다국어 키 접두사 */
     private const PREFIX = 'sirsoft-ecommerce::activity_log.description.';
 
+    /**
+     * 샘플 로그 표식 (properties.seeded_by) — 재시드 때 이 표식이 있는 행만 지운다.
+     * 실제 운영 중 쌓인 활동 로그는 표식이 없어 지워지지 않는다.
+     */
+    public const SEED_MARK = 'sirsoft-ecommerce:sample';
+
     /** @var array<string> 샘플 IP 목록 */
     private const IPS = ['192.168.1.10', '10.0.0.5', '172.16.0.1', '192.168.0.100', '10.10.10.1'];
 
@@ -50,12 +61,14 @@ class ActivityLogSampleSeeder extends Seeder
 
     /**
      * 시더를 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
         $admins = User::whereHas('roles', fn ($q) => $q->where('identifier', 'admin'))->get();
         if ($admins->isEmpty()) {
-            $this->command->warn('관리자 사용자가 없어 이커머스 활동 로그 시더를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_no_admin'));
 
             return;
         }
@@ -65,10 +78,12 @@ class ActivityLogSampleSeeder extends Seeder
             $users = $admins;
         }
 
-        // 기존 이커머스 활동 로그 삭제
-        $deleted = ActivityLog::where('description_key', 'like', 'sirsoft-ecommerce::%')->delete();
+        // 이전 샘플 로그만 삭제 (표식 행) — 실제 활동 로그는 보존한다
+        $deleted = ActivityLog::where('description_key', 'like', 'sirsoft-ecommerce::%')
+            ->where('properties->seeded_by', self::SEED_MARK)
+            ->delete();
         if ($deleted > 0) {
-            $this->command->info("기존 이커머스 활동 로그 {$deleted}건 삭제.");
+            $this->command->info(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.purged', ['count' => $deleted]));
         }
 
         $count = 0;
@@ -93,8 +108,9 @@ class ActivityLogSampleSeeder extends Seeder
         $count += $this->seedCouponUseLogs($users);
         $count += $this->seedMileageLogs($users);
         $count += $this->seedUserOrderLogs($users);
+        $count += $this->seedClaimLogs($admins);
 
-        $this->command->info("이커머스 활동 로그 {$count}건 생성 완료.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.done', ['count' => $count]));
     }
 
     // ──────────────────────────────────────────────
@@ -111,7 +127,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $products = Product::get();
         if ($products->isEmpty()) {
-            $this->command->warn('상품 데이터가 없어 상품 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_products'));
 
             return 0;
         }
@@ -167,7 +183,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $images = ProductImage::with('product')->get();
         if ($images->isEmpty()) {
-            $this->command->warn('상품 이미지 데이터가 없어 이미지 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_product_images'));
 
             return 0;
         }
@@ -197,7 +213,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $options = ProductOption::with('product')->get();
         if ($options->isEmpty()) {
-            $this->command->warn('상품 옵션 데이터가 없어 옵션 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_product_options'));
 
             return 0;
         }
@@ -233,7 +249,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $orders = Order::with('options')->get();
         if ($orders->isEmpty()) {
-            $this->command->warn('주문 데이터가 없어 주문 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_orders'));
 
             return 0;
         }
@@ -337,7 +353,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $coupons = Coupon::get();
         if ($coupons->isEmpty()) {
-            $this->command->warn('쿠폰 데이터가 없어 쿠폰 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_coupons'));
 
             return 0;
         }
@@ -381,7 +397,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $policies = ShippingPolicy::get();
         if ($policies->isEmpty()) {
-            $this->command->warn('배송정책 데이터가 없어 배송정책 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_shipping_policies'));
 
             return 0;
         }
@@ -425,7 +441,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $categories = Category::get();
         if ($categories->isEmpty()) {
-            $this->command->warn('카테고리 데이터가 없어 카테고리 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_categories'));
 
             return 0;
         }
@@ -466,7 +482,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $brands = Brand::get();
         if ($brands->isEmpty()) {
-            $this->command->warn('브랜드 데이터가 없어 브랜드 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_brands'));
 
             return 0;
         }
@@ -506,7 +522,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $reviews = ProductReview::with('product')->get();
         if ($reviews->isEmpty()) {
-            $this->command->warn('리뷰 데이터가 없어 리뷰 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_reviews'));
 
             return 0;
         }
@@ -738,7 +754,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $products = Product::where('sales_status', ProductSalesStatus::ON_SALE)->get();
         if ($products->isEmpty()) {
-            $this->command->warn('판매중 상품이 없어 장바구니 활동 로그를 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.activity_log_sample.skip_carts'));
 
             return 0;
         }
@@ -959,6 +975,71 @@ class ActivityLogSampleSeeder extends Seeder
     }
 
     /**
+     * 클레임(교환·반품·환불·취소) 활동 로그
+     *
+     * 형식은 ClaimActivityLogListener 와 같다: action `claim_{유형}.request` / `claim_{유형}.status_change`,
+     * description `claim_{유형}_request` / `claim_{유형}_status_change`, 파라미터 claim_number,
+     * properties claim_type·status(·previous_status·new_status). 시각은 신청서 시각을 따른다.
+     *
+     * @param  Collection  $admins  관리자 컬렉션
+     * @return int 생성된 로그 수
+     */
+    private function seedClaimLogs($admins): int
+    {
+        $sources = [
+            [ClaimTypeEnum::EXCHANGE, OrderExchange::query()->get(), 'exchange_number', 'exchange_status'],
+            [ClaimTypeEnum::RETURN, OrderReturn::query()->get(), 'return_number', 'return_status'],
+            [ClaimTypeEnum::REFUND, OrderRefund::query()->get(), 'refund_number', 'refund_status'],
+            [ClaimTypeEnum::CANCEL, OrderCancel::query()->get(), 'cancel_number', 'cancel_status'],
+        ];
+
+        $count = 0;
+        foreach ($sources as [$type, $claims, $numberField, $statusField]) {
+            foreach ($claims as $claim) {
+                $status = $claim->{$statusField};
+                $statusValue = $status instanceof \BackedEnum ? $status->value : (string) $status;
+                $requestedBy = $claim->requested_by ?? $claim->cancelled_by ?? null;
+                $actorId = $requestedBy ?: $admins->random()->id;
+                $isBuyer = $requestedBy && ! $admins->contains('id', $requestedBy);
+                $params = ['claim_number' => (string) $claim->{$numberField}];
+                $createdAt = $claim->created_at instanceof Carbon ? $claim->created_at->copy() : Carbon::parse($claim->created_at ?? 'now');
+
+                $this->createLog(
+                    $isBuyer ? ActivityLogType::User : ActivityLogType::Admin,
+                    $claim->getMorphClass(),
+                    $claim->id,
+                    $actorId,
+                    'claim_'.$type->value.'.request',
+                    self::PREFIX.'claim_'.$type->value.'_request',
+                    $params,
+                    null,
+                    ['claim_type' => $type->value, 'status' => 'requested'],
+                    $createdAt,
+                );
+                $count++;
+
+                if ($statusValue !== '' && $statusValue !== 'requested') {
+                    $this->createLog(
+                        ActivityLogType::Admin,
+                        $claim->getMorphClass(),
+                        $claim->id,
+                        $admins->random()->id,
+                        'claim_'.$type->value.'.status_change',
+                        self::PREFIX.'claim_'.$type->value.'_status_change',
+                        $params,
+                        null,
+                        ['claim_type' => $type->value, 'previous_status' => 'requested', 'new_status' => $statusValue],
+                        ($claim->updated_at instanceof Carbon ? $claim->updated_at->copy() : $createdAt->copy())->max($createdAt),
+                    );
+                    $count++;
+                }
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * ActivityLog 레코드를 생성합니다.
      *
      * @param  ActivityLogType  $logType  로그 유형
@@ -970,6 +1051,7 @@ class ActivityLogSampleSeeder extends Seeder
      * @param  array  $descriptionParams  다국어 파라미터
      * @param  array|null  $changes  변경 이력
      * @param  array|null  $properties  추가 속성
+     * @param  Carbon|null  $at  기록 시각 (생략하면 최근 30일 안 임의 시각)
      */
     private function createLog(
         ActivityLogType $logType,
@@ -981,7 +1063,10 @@ class ActivityLogSampleSeeder extends Seeder
         array $descriptionParams,
         ?array $changes = null,
         ?array $properties = null,
+        ?Carbon $at = null,
     ): ActivityLog {
+        $at ??= Carbon::now()->subDays(rand(1, 30))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
+
         return ActivityLog::create([
             'log_type' => $logType,
             'loggable_type' => $loggableType,
@@ -991,10 +1076,10 @@ class ActivityLogSampleSeeder extends Seeder
             'description_key' => $descriptionKey,
             'description_params' => $descriptionParams,
             'changes' => $changes,
-            'properties' => $properties,
+            'properties' => array_merge($properties ?? [], ['seeded_by' => self::SEED_MARK]),
             'ip_address' => self::IPS[array_rand(self::IPS)],
             'user_agent' => self::USER_AGENTS[array_rand(self::USER_AGENTS)],
-            'created_at' => Carbon::now()->subDays(rand(1, 30))->subHours(rand(0, 23))->subMinutes(rand(0, 59)),
+            'created_at' => $at,
         ]);
     }
 

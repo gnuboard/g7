@@ -153,7 +153,7 @@ async function fetchDetailThumbnail(
 test.describe.configure({ mode: 'serial' });
 
 test.describe('카드형 목록 본문 썸네일 폴백 (공개 #22)', () => {
-    // @scenario image_source=content_internal_only board_type=card
+    // @scenario image_source=content_internal_only,board_type=card
     // @effects content_internal_image_fills_list_thumbnail, detail_and_og_share_same_fallback
     test('첨부 없는 본문이미지 글의 카드에 썸네일이 렌더되고 placeholder 가 없다', async ({ page, contentThumbnailToken }) => {
         await authenticatePage(page, contentThumbnailToken);
@@ -186,7 +186,7 @@ test.describe('카드형 목록 본문 썸네일 폴백 (공개 #22)', () => {
         await expect(card.getByText('이미지 없음')).toHaveCount(0);
     });
 
-    // @scenario image_source=both board_type=card
+    // @scenario image_source=both,board_type=card
     // @effects attachment_takes_precedence_over_content_image
     test('첨부와 본문이미지가 함께 있으면 첨부 preview 가 우선한다', async ({ page, contentThumbnailToken }) => {
         await authenticatePage(page, contentThumbnailToken);
@@ -213,7 +213,7 @@ test.describe('카드형 목록 본문 썸네일 폴백 (공개 #22)', () => {
         await expect(page.locator(`img[src="${thumbnail}"]`).first()).toBeVisible({ timeout: 15_000 });
     });
 
-    // @scenario image_source=none board_type=card
+    // @scenario image_source=none,board_type=card
     // @effects content_internal_image_fills_list_thumbnail
     test('이미지가 전혀 없는 글은 placeholder 가 유지된다 (회귀 없음) — 정리 포함', async ({ page, contentThumbnailToken }) => {
         await authenticatePage(page, contentThumbnailToken);

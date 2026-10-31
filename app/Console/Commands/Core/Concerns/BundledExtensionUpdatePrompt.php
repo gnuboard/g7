@@ -3,7 +3,7 @@
 namespace App\Console\Commands\Core\Concerns;
 
 use App\Console\Commands\Core\ExecuteBundledUpdatesCommand;
-use App\Execution\SubprocessCommandRunner;
+use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -11,7 +11,11 @@ use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
+use App\Support\ConfigCacheHelper;
 use App\Support\ExecutionEnvironment;
+use App\Support\RouteCacheHelper;
+use App\Support\UpdateChildEnv;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -35,6 +39,8 @@ use Illuminate\Support\Str;
  */
 trait BundledExtensionUpdatePrompt
 {
+    use RendersLayoutSyncResult;
+
     /**
      * 자식 프로세스에 넘길 번들 업데이트 매니페스트의 위치 (`storage/` 기준 상대 경로).
      *
@@ -51,6 +57,12 @@ trait BundledExtensionUpdatePrompt
     /**
      * 번들 업데이트 목록 수집.
      *
+     * 감지는 CoreUpdateService·LanguagePackService 로 _bundled 와 DB 버전을 직접 비교하므로
+     * 매니저 인자는 호출 계약 유지를 위해 받기만 하고 사용하지 않는다.
+     *
+     * @param  ModuleManager  $moduleManager  모듈 매니저 (호출 계약 유지용, 미사용)
+     * @param  PluginManager  $pluginManager  플러그인 매니저 (호출 계약 유지용, 미사용)
+     * @param  TemplateManager  $templateManager  템플릿 매니저 (호출 계약 유지용, 미사용)
      * @return array{modules: array, plugins: array, templates: array, lang_packs: array}
      */
     protected function collectBundledUpdates(
@@ -72,6 +84,10 @@ trait BundledExtensionUpdatePrompt
     /**
      * 일괄 업데이트 UX 를 실행하고 결과를 반환한다.
      *
+     * @param  ModuleManager  $moduleManager  모듈 매니저 (in-process fallback 업데이트에 사용)
+     * @param  PluginManager  $pluginManager  플러그인 매니저 (in-process fallback 업데이트에 사용)
+     * @param  TemplateManager  $templateManager  템플릿 매니저 (in-process fallback 업데이트에 사용)
+     * @param  bool  $force  true 면 확인 프롬프트를 건너뛰고 전역 전략 'overwrite' 로 즉시 실행
      * @return array{success: int, failed: int, skipped: int, has_updates: bool}
      */
     protected function runBundledExtensionUpdatePrompt(
@@ -85,29 +101,29 @@ trait BundledExtensionUpdatePrompt
         $total = count($updates['modules']) + count($updates['plugins']) + count($updates['templates']) + count($updates['lang_packs']);
 
         if ($total === 0) {
-            $this->info('활성 확장이 최신 번들과 일치합니다.');
+            $this->info(__('extensions.commands.bundled_update.up_to_date'));
 
             return ['success' => 0, 'failed' => 0, 'skipped' => 0, 'has_updates' => false];
         }
 
         $this->newLine();
-        $this->info('번들에 새 버전이 포함된 확장이 감지되었습니다:');
+        $this->info(__('extensions.commands.bundled_update.detected'));
         foreach ($updates['modules'] as $m) {
-            $this->line("  [모듈]    {$m['identifier']}   {$m['current_version']} → {$m['latest_version']}");
+            $this->line(__('extensions.commands.bundled_update.detected_items.module', ['identifier' => $m['identifier'], 'from' => $m['current_version'], 'to' => $m['latest_version']]));
         }
         foreach ($updates['plugins'] as $p) {
-            $this->line("  [플러그인] {$p['identifier']}   {$p['current_version']} → {$p['latest_version']}");
+            $this->line(__('extensions.commands.bundled_update.detected_items.plugin', ['identifier' => $p['identifier'], 'from' => $p['current_version'], 'to' => $p['latest_version']]));
         }
         foreach ($updates['templates'] as $t) {
-            $this->line("  [템플릿]  {$t['identifier']}   {$t['current_version']} → {$t['latest_version']}");
+            $this->line(__('extensions.commands.bundled_update.detected_items.template', ['identifier' => $t['identifier'], 'from' => $t['current_version'], 'to' => $t['latest_version']]));
         }
         foreach ($updates['lang_packs'] as $lp) {
-            $this->line("  [언어팩]  {$lp['identifier']}   {$lp['current_version']} → {$lp['latest_version']}");
+            $this->line(__('extensions.commands.bundled_update.detected_items.lang_pack', ['identifier' => $lp['identifier'], 'from' => $lp['current_version'], 'to' => $lp['latest_version']]));
         }
         $this->newLine();
 
-        if (! $force && ! $this->unifiedConfirm('일괄 업데이트를 진행하시겠습니까?', true)) {
-            $this->info('일괄 업데이트를 건너뜁니다.');
+        if (! $force && ! $this->unifiedConfirm(__('extensions.commands.bundled_update.confirm_proceed'), true)) {
+            $this->info(__('extensions.commands.bundled_update.skipped'));
 
             return ['success' => 0, 'failed' => 0, 'skipped' => $total, 'has_updates' => true];
         }
@@ -116,8 +132,11 @@ trait BundledExtensionUpdatePrompt
         $globalStrategy = 'overwrite';
         if (! $force) {
             $answer = $this->choice(
-                '전역 레이아웃 전략을 선택하세요',
-                ['overwrite' => '모든 레이아웃을 번들로 덮어쓰기', 'keep' => '사용자가 수정한 레이아웃은 보존'],
+                __('extensions.commands.bundled_update.strategy_question'),
+                [
+                    'overwrite' => __('extensions.commands.bundled_update.strategy_options.overwrite'),
+                    'keep' => __('extensions.commands.bundled_update.strategy_options.keep'),
+                ],
                 'overwrite',
             );
             $globalStrategy = $answer;
@@ -142,9 +161,36 @@ trait BundledExtensionUpdatePrompt
     }
 
     /**
+     * 번들 일괄 업데이트 결과로 종료 코드를 정하고, 실패가 있으면 경고 1줄을 남깁니다.
+     *
+     * 코어는 이미 새 버전이어도 번들 확장 하나가 실패했으면 종료 코드 1 을 돌려준다 — 자동화 스크립트가 성공으로 읽고
+     * 넘어가면 실패한 확장이 옛 버전·옛 레이아웃으로 조용히 남는다(#144). `core:update` 와 단독
+     * `core:execute-upgrade-steps` 가 같은 규칙을 쓰도록 한 곳에 둔다.
+     *
+     * @param  array{failed?: int}  $promptResult  {@see runBundledExtensionUpdatePrompt()} 결과
+     * @param  string  $version  업데이트된 코어 버전 (안내 문구용)
+     * @return int 실패가 없으면 `Command::SUCCESS`, 있으면 `Command::FAILURE`
+     */
+    protected function bundledUpdateExitCode(array $promptResult, string $version): int
+    {
+        $failed = (int) ($promptResult['failed'] ?? 0);
+
+        if ($failed === 0) {
+            return Command::SUCCESS;
+        }
+
+        $this->newLine();
+        $this->warn(__('extensions.commands.bundled_update.exit_failure', ['version' => $version, 'failed' => $failed]));
+
+        return Command::FAILURE;
+    }
+
+    /**
      * 확장별 전략 오버라이드 수집.
      *
      * @param  array  $updates  collectBundledUpdates() 반환값
+     * @param  string  $globalStrategy  모든 확장에 기본 적용할 레이아웃 전략 (overwrite|keep)
+     * @param  bool  $force  true 면 예외 질의 없이 전역 전략만 적용
      * @return array<string, string> key: "{type}:{identifier}", value: strategy
      */
     private function collectPerExtensionStrategies(array $updates, string $globalStrategy, bool $force): array
@@ -162,25 +208,25 @@ trait BundledExtensionUpdatePrompt
             return $strategies;
         }
 
-        if (! $this->unifiedConfirm('전역 전략과 다르게 적용할 확장이 있습니까?', false)) {
+        if (! $this->unifiedConfirm(__('extensions.commands.bundled_update.override_confirm'), false)) {
             return $strategies;
         }
 
         $choices = [];
         foreach ($updates['modules'] as $m) {
-            $choices[] = "[모듈] {$m['identifier']}";
+            $choices[] = __('extensions.commands.bundled_update.choice_items.module', ['identifier' => $m['identifier']]);
         }
         foreach ($updates['plugins'] as $p) {
-            $choices[] = "[플러그인] {$p['identifier']}";
+            $choices[] = __('extensions.commands.bundled_update.choice_items.plugin', ['identifier' => $p['identifier']]);
         }
         foreach ($updates['templates'] as $t) {
-            $choices[] = "[템플릿] {$t['identifier']}";
+            $choices[] = __('extensions.commands.bundled_update.choice_items.template', ['identifier' => $t['identifier']]);
         }
 
         $overrideStrategy = $globalStrategy === 'overwrite' ? 'keep' : 'overwrite';
 
-        $this->info("예외 확장은 '{$overrideStrategy}' 전략이 적용됩니다.");
-        $selected = $this->ask('예외 확장 선택 (쉼표로 구분, 빈 값이면 건너뛰기)', '');
+        $this->info(__('extensions.commands.bundled_update.override_notice', ['strategy' => $overrideStrategy]));
+        $selected = $this->ask(__('extensions.commands.bundled_update.override_ask'), '');
 
         if (trim((string) $selected) === '') {
             return $strategies;
@@ -214,6 +260,12 @@ trait BundledExtensionUpdatePrompt
      *
      * proc_open 미지원 / 실패 환경에서는 in-process fallback 으로 안전하게 전환 (기존 흐름).
      *
+     * @param  ModuleManager  $moduleManager  모듈 매니저 (fallback 시 사용)
+     * @param  PluginManager  $pluginManager  플러그인 매니저 (fallback 시 사용)
+     * @param  TemplateManager  $templateManager  템플릿 매니저 (fallback 시 사용)
+     * @param  array  $updates  collectBundledUpdates() 반환값
+     * @param  array  $strategies  확장별 레이아웃 전략 (key: "{type}:{identifier}")
+     * @param  bool  $rebuildSearchIndex  업데이트 후 검색 인덱스 재생성 여부
      * @return array{success: int, failed: int, skipped: int, has_updates: bool}
      */
     private function executeBulkUpdate(
@@ -232,7 +284,7 @@ trait BundledExtensionUpdatePrompt
         }
 
         $this->newLine();
-        $this->info('── 일괄 업데이트 실행 ──');
+        $this->info(__('extensions.commands.bundled_update.running'));
 
         $spawnResult = $this->spawnBundledUpdates($manifest);
         if ($spawnResult !== null) {
@@ -245,7 +297,7 @@ trait BundledExtensionUpdatePrompt
         }
 
         // proc_open 미지원 / spawn 실패 — in-process fallback
-        $this->warn('별도 프로세스 spawn 실패 — in-process fallback 으로 전환합니다.');
+        $this->warn(__('extensions.commands.bundled_update.spawn_failed'));
 
         return $this->executeBulkUpdateInProcess(
             $moduleManager,
@@ -260,6 +312,8 @@ trait BundledExtensionUpdatePrompt
     /**
      * 사용자 선택을 spawn 자식에 전달할 매니페스트 형식으로 직렬화.
      *
+     * @param  array  $updates  collectBundledUpdates() 반환값
+     * @param  array  $strategies  확장별 레이아웃 전략 (key: "{type}:{identifier}")
      * @return array{modules: array, plugins: array, templates: array, lang_packs: array}
      */
     private function buildBundledUpdateManifest(array $updates, array $strategies): array
@@ -299,6 +353,12 @@ trait BundledExtensionUpdatePrompt
         return $manifest;
     }
 
+    /**
+     * 매니페스트에 업데이트할 확장·언어팩이 하나도 없는지 판정.
+     *
+     * @param  array  $manifest  buildBundledUpdateManifest() 반환값
+     * @return bool 모든 목록이 비어 있으면 true
+     */
     private function bundledManifestIsEmpty(array $manifest): bool
     {
         return empty($manifest['modules'])
@@ -313,6 +373,7 @@ trait BundledExtensionUpdatePrompt
      * 자식 stdout 을 부모 콘솔로 실시간 전달 (단 `[BUNDLED-RESULT]` prefix 라인은
      * 결과 페이로드로 보관 후 부모 콘솔로 노출하지 않음). 종료 후 페이로드 파싱.
      *
+     * @param  array  $manifest  buildBundledUpdateManifest() 반환값 (rebuild_search_index 포함)
      * @return array{success: int, failed: int}|null spawn 성공 시 결과, 실패/미지원 시 null
      */
     private function spawnBundledUpdates(array $manifest): ?array
@@ -347,11 +408,12 @@ trait BundledExtensionUpdatePrompt
                 2 => ['pipe', 'w'],
             ];
 
-            // ENV 합집합 (G7_UPDATE_IN_PROGRESS 등 핵심 플래그 자식에 전달).
-            // `getenv` 판정과 `$_SERVER` 폴백은 형제 러너가 SSoT 로 갖는다 — 이 자리는
-            // `proc_open` 가드 안쪽이라 「proc_open 은 되는데 getenv 만 막힌」 조합에서
-            // 무가드 호출이 치명 종료한다 (7차 G3 라운드 D-8).
-            $env = SubprocessCommandRunner::inheritedEnvironment();
+            // ENV 합집합 + 업데이트 트리면 APP_VERSION·G7_UPDATE_IN_PROGRESS 고정 (#145 F10 — 상속 env 의 옛 버전이
+            // 자식의 config/hooks 캐시에 구워지지 않게 한다).
+            // 상속 env 의 `getenv` 판정과 `$_SERVER` 폴백은 형제 러너(SubprocessCommandRunner::inheritedEnvironment)
+            // 가 SSoT 로 갖는다 — 이 자리는 `proc_open` 가드 안쪽이라 「proc_open 은 되는데 getenv 만 막힌」
+            // 조합에서 무가드 호출이 치명 종료한다. UpdateChildEnv::build() 가 그 러너를 경유한다.
+            $env = UpdateChildEnv::build();
 
             // audit:allow spawn-after-vendor-swap-clears-package-manifest 이 spawn 은 vendor 를 바꾸지 않고,
             // 두 호출처가 모두 clearAllCaches() 뒤다 — CoreUpdateCommand Step 11(패키지 매니페스트 재생성)
@@ -389,10 +451,20 @@ trait BundledExtensionUpdatePrompt
 
             fclose($pipes[1]);
             fclose($pipes[2]);
-            proc_close($process);
+            $exitCode = proc_close($process);
 
             if ($resultPayload === null) {
-                Log::warning('번들 spawn 자식이 결과 페이로드를 출력하지 않음 — 카운트 0 으로 처리');
+                // 결과를 못 남기고 비정상 종료한 자식(치명 오류·메모리 초과 등)은 실패 1건으로 센다 — 0/0 으로 두면
+                // 부모가 성공으로 끝내 자동화 스크립트가 실패를 알 수 없다(#144). 정상 종료인데 결과가 없으면 종전대로 0/0.
+                if ($exitCode !== 0) {
+                    Log::warning('번들 spawn 자식이 결과 페이로드 없이 비정상 종료 — 실패 1건으로 처리', ['exit_code' => $exitCode]);
+                    // 어느 항목까지 갱신됐는지 알 수 없다 — 화면에 실패 항목이 없으므로 무엇을 확인할지 알린다
+                    $this->warn(__('extensions.commands.bundled_update.child_aborted', ['code' => $exitCode]));
+
+                    return ['success' => 0, 'failed' => 1];
+                }
+
+                Log::warning('번들 spawn 자식이 결과 페이로드를 출력하지 않음 — 카운트 0 으로 처리', ['exit_code' => $exitCode]);
 
                 return ['success' => 0, 'failed' => 0];
             }
@@ -414,6 +486,12 @@ trait BundledExtensionUpdatePrompt
      * 기존 (beta.3) 흐름의 직접 호출 패턴 보존. 단 부모 메모리의 stale 코드로 인해
      * sync 메서드 누락 결함이 재현될 수 있으므로 spawn 가능 환경에서는 사용되지 않는다.
      *
+     * @param  ModuleManager  $moduleManager  모듈 업데이트에 사용할 매니저
+     * @param  PluginManager  $pluginManager  플러그인 업데이트에 사용할 매니저
+     * @param  TemplateManager  $templateManager  템플릿 업데이트에 사용할 매니저
+     * @param  array  $updates  collectBundledUpdates() 반환값
+     * @param  array  $strategies  확장별 레이아웃 전략 (key: "{type}:{identifier}")
+     * @param  bool  $rebuildSearchIndex  업데이트 후 검색 인덱스 재생성 여부
      * @return array{success: int, failed: int, skipped: int, has_updates: bool}
      */
     private function executeBulkUpdateInProcess(
@@ -424,19 +502,54 @@ trait BundledExtensionUpdatePrompt
         array $strategies,
         bool $rebuildSearchIndex = false,
     ): array {
+        // proc_open 이 없는 서버: 확장마다 config·라우트 캐시를 다시 굽는 일회용 앱 부팅이 이 프로세스에 쌓이지 않도록
+        // 재굽기를 끝에 한 번으로 모은다(그 사이 캐시를 읽는 새 프로세스는 뜰 수 없다). proc_open 은 있는데 자식을
+        // 못 띄운 경우는 종전대로 항목마다 굽는다 — 그 사이 뜨는 composer 등이 옛 캐시로 부팅하지 않게.
+        if (! function_exists('proc_open')) {
+            return ConfigCacheHelper::deferRebuilds(fn () => RouteCacheHelper::deferRebuilds(fn () => $this->runBulkUpdateItemsInProcess(
+                $moduleManager, $pluginManager, $templateManager, $updates, $strategies, $rebuildSearchIndex,
+            )));
+        }
+
+        return $this->runBulkUpdateItemsInProcess($moduleManager, $pluginManager, $templateManager, $updates, $strategies, $rebuildSearchIndex);
+    }
+
+    /**
+     * {@see executeBulkUpdateInProcess()} 의 항목 반복 — 실패 항목은 이름과 다시 실행할 명령을 끝에 출력한다.
+     *
+     * @param  ModuleManager  $moduleManager  모듈 업데이트에 사용할 매니저
+     * @param  PluginManager  $pluginManager  플러그인 업데이트에 사용할 매니저
+     * @param  TemplateManager  $templateManager  템플릿 업데이트에 사용할 매니저
+     * @param  array  $updates  collectBundledUpdates() 반환값
+     * @param  array  $strategies  확장별 레이아웃 전략 (key: "{type}:{identifier}")
+     * @param  bool  $rebuildSearchIndex  업데이트 후 검색 인덱스 재생성 여부
+     * @return array{success: int, failed: int, skipped: int, has_updates: bool}
+     */
+    private function runBulkUpdateItemsInProcess(
+        ModuleManager $moduleManager,
+        PluginManager $pluginManager,
+        TemplateManager $templateManager,
+        array $updates,
+        array $strategies,
+        bool $rebuildSearchIndex,
+    ): array {
         $success = 0;
         $failed = 0;
+        $failedItems = [];
 
         foreach ($updates['modules'] as $m) {
             $id = $m['identifier'];
             $strategy = $strategies["modules:{$id}"] ?? 'overwrite';
-            $this->line("→ [모듈] {$id} ({$strategy})");
+            $this->line(__('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $result = $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $this->lineLayoutSyncSummary($result);
+                $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
-                $this->warn("  실패: {$e->getMessage()}");
+                $failedItems[] = ['type' => 'module', 'identifier' => $id, 'strategy' => $strategy, 'reason' => $e->getMessage()];
+                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패', ['type' => 'module', 'id' => $id, 'error' => $e->getMessage()]);
             }
         }
@@ -444,13 +557,16 @@ trait BundledExtensionUpdatePrompt
         foreach ($updates['plugins'] as $p) {
             $id = $p['identifier'];
             $strategy = $strategies["plugins:{$id}"] ?? 'overwrite';
-            $this->line("→ [플러그인] {$id} ({$strategy})");
+            $this->line(__('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $result = $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $this->lineLayoutSyncSummary($result);
+                $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
-                $this->warn("  실패: {$e->getMessage()}");
+                $failedItems[] = ['type' => 'plugin', 'identifier' => $id, 'strategy' => $strategy, 'reason' => $e->getMessage()];
+                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패', ['type' => 'plugin', 'id' => $id, 'error' => $e->getMessage()]);
             }
         }
@@ -458,13 +574,16 @@ trait BundledExtensionUpdatePrompt
         foreach ($updates['templates'] as $t) {
             $id = $t['identifier'];
             $strategy = $strategies["templates:{$id}"] ?? 'overwrite';
-            $this->line("→ [템플릿] {$id} ({$strategy})");
+            $this->line(__('extensions.commands.bundled_update.running_items.template', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $templateManager->updateTemplate($id, true, null, $strategy, 'bundled');
+                $result = $templateManager->updateTemplate($id, true, null, $strategy, 'bundled');
+                $this->lineLayoutSyncSummary($result);
+                $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
-                $this->warn("  실패: {$e->getMessage()}");
+                $failedItems[] = ['type' => 'template', 'identifier' => $id, 'strategy' => $strategy, 'reason' => $e->getMessage()];
+                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패', ['type' => 'template', 'id' => $id, 'error' => $e->getMessage()]);
             }
         }
@@ -472,7 +591,7 @@ trait BundledExtensionUpdatePrompt
         $langPackService = app(LanguagePackService::class);
         foreach ($updates['lang_packs'] ?? [] as $lp) {
             $id = $lp['identifier'];
-            $this->line("→ [언어팩] {$id}");
+            $this->line(__('extensions.commands.bundled_update.running_items.lang_pack', ['identifier' => $id]));
             try {
                 $pack = $langPackService->findByIdentifier($id);
                 if (! $pack) {
@@ -482,13 +601,15 @@ trait BundledExtensionUpdatePrompt
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
-                $this->warn("  실패: {$e->getMessage()}");
+                $failedItems[] = ['type' => 'lang_pack', 'identifier' => $id, 'strategy' => null, 'reason' => $e->getMessage()];
+                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패', ['type' => 'lang_pack', 'id' => $id, 'error' => $e->getMessage()]);
             }
         }
 
         $this->newLine();
-        $this->info("업데이트 완료: 성공 {$success}, 실패 {$failed}");
+        $this->info(__('extensions.commands.bundled_update.completed', ['success' => $success, 'failed' => $failed]));
+        ExecuteBundledUpdatesCommand::renderFailedItems($this, $failedItems);
 
         $this->runSearchIndexRebuildIfRequested($rebuildSearchIndex);
 
@@ -539,7 +660,7 @@ trait BundledExtensionUpdatePrompt
      * 요청이 있었으면 검색 인덱스를 재생성합니다.
      *
      * @param  bool  $requested  재생성 요청 여부
-     * @return void
+     * @return void 반환값 없음
      */
     private function runSearchIndexRebuildIfRequested(bool $requested): void
     {
@@ -550,7 +671,7 @@ trait BundledExtensionUpdatePrompt
         $report = app(SearchIndexMaintenanceManager::class)->repairStale();
 
         $this->newLine();
-        $this->info('검색 인덱스: '.$report->summary());
+        $this->info(__('extensions.commands.bundled_update.search_index_result', ['summary' => $report->summary()]));
 
         foreach ($report->failed as $identifier => $message) {
             $this->warn('  '.__('search.index.rebuild_failed_item', ['index' => $identifier, 'error' => $message]));

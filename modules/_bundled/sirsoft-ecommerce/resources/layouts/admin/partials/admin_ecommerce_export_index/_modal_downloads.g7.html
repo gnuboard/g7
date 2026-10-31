@@ -1,0 +1,94 @@
+<!-- 다운로드 이력 창 — 파일 정보·요청 조건·사유·요청 당시 경고와, 누가 언제 어디서 내려받았는지의 표.
+  파일 정보는 표가 `_global.ecommerceExportTarget` 에 담아 준 행에서 읽고(조회 없음), 이력은 창이 열릴 때 받는다 —
+  받는 순간 서버가 「다운로드 이력 조회」 활동 로그를 남긴다. 쪽은 `_global.ecommerceExportDownloadsPage` 로 넘기고
+  같은 데이터 소스를 다시 부른다. -->
+<partial description="Export Download History Modal">
+  <modal data-type="composite" data-ref="export_downloads_modal" title="$t:sirsoft-ecommerce.admin.export.modal_downloads.title" size="large">
+    <!-- 이 작업의 다운로드 이력 — 창 안 쪽 번호(`ecommerceExportDownloadsPage`)가 바뀌면 다시 받는다 -->
+    <data-source id="exportDownloads" label_key="$t:sirsoft-ecommerce.editor.data_source.exportDownloads" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/exports/{{_global.ecommerceExportTarget?.id ?? 0}}/downloads" :auth_required="true" initGlobal="ecommerceExportDownloadHistory">
+      <params page="{{_global.ecommerceExportDownloadsPage ?? 1}}" :per_page="10"/>
+    </data-source>
+    <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-4">
+      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:md:grid-cols-2 ecommerce:gap-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50 ecommerce:rounded-lg ecommerce:p-4 ecommerce:text-sm">
+        <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:min-w-0">
+          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.file</span>
+          <span class="ecommerce-text-primary ecommerce:font-medium ecommerce:break-all ecommerce-break-all">{{_global.ecommerceExportTarget?.file_name ?? '-'}}</span>
+          <span class="ecommerce:text-gray-600 ecommerce:dark:text-gray-400">{{_global.ecommerceExportTarget?.type_label}} · {{_global.ecommerceExportTarget?.status_label}}{{_global.ecommerceExportTarget?.file_size_label ? ' · ' + _global.ecommerceExportTarget.file_size_label : ''}}</span>
+        </div>
+        <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:min-w-0">
+          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.requested</span>
+          <span class="ecommerce-text-primary">{{_global.ecommerceExportTarget?.requester?.name ?? '-'}}</span>
+          <span class="ecommerce:text-gray-600 ecommerce:dark:text-gray-400">{{_global.ecommerceExportTarget?.requested_at ?? '-'}}</span>
+        </div>
+        <div class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:md:col-span-2">
+          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.conditions</span>
+          <span class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300">
+            <span>{{[_global.ecommerceExportTarget?.summary?.scope, _global.ecommerceExportTarget?.summary?.period, _global.ecommerceExportTarget?.summary?.row_unit, _global.ecommerceExportTarget?.summary?.locale_mode].filter(Boolean).join(' · ')}}</span>
+            <span>· $t:sirsoft-ecommerce.admin.export.sub_row.fields $t:defer:sirsoft-ecommerce.admin.export.sub_row.field_count|count={{_global.ecommerceExportTarget?.summary?.field_count ?? 0}}</span>
+            <span>· $t:sirsoft-ecommerce.admin.export.sub_row.totals {{_global.ecommerceExportTarget?.summary?.include_totals ? $t('sirsoft-ecommerce.admin.export.sub_row.yes') : $t('sirsoft-ecommerce.admin.export.sub_row.no')}}</span>
+          </span>
+        </div>
+        <div data-if="{{_global.ecommerceExportTarget?.reason}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:md:col-span-2">
+          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.reason</span>
+          <span class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-pre-line ecommerce:break-all ecommerce-break-all">{{_global.ecommerceExportTarget?.reason}}</span>
+        </div>
+        <div data-if="{{(_global.ecommerceExportTarget?.warnings ?? []).length > 0}}" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap ecommerce:md:col-span-2">
+          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.warnings</span>
+          <span data-each="warning in _global.ecommerceExportTarget?.warnings ?? []" class="ecommerce:inline-flex ecommerce:items-center ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:bg-yellow-100 ecommerce:text-yellow-800 ecommerce:dark:bg-yellow-900/30 ecommerce:dark:text-yellow-300">{{warning.label}}</span>
+        </div>
+      </div>
+      <div class="ecommerce:overflow-x-auto ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg">
+        <table class="ecommerce:min-w-full ecommerce:text-sm">
+          <thead class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800">
+            <tr>
+              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-16">$t:sirsoft-ecommerce.admin.export.modal_downloads.column.sequence</th>
+              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.column.user</th>
+              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.column.downloaded_at</th>
+              <th class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.column.ip</th>
+            </tr>
+          </thead>
+          <tbody class="ecommerce:divide-y ecommerce:divide-gray-200 ecommerce:dark:divide-gray-700">
+            <tr data-each="item in _global.ecommerceExportDownloadHistory?.data ?? []">
+              <td class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{item.sequence}}</td>
+              <td class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{item.user?.name ?? '-'}}</td>
+              <td class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-nowrap">{{item.downloaded_at ?? '-'}}</td>
+              <td class="ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:font-mono">{{item.ip_address ?? '-'}}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div data-if="{{(_global.ecommerceExportDownloadHistory?.data ?? []).length === 0}}" class="ecommerce:px-3 ecommerce:py-6 ecommerce:text-center ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.export.modal_downloads.empty</div>
+      </div>
+      <div data-if="{{(_global.ecommerceExportDownloadHistory?.pagination?.current_page ?? 1) > 1 || _global.ecommerceExportDownloadHistory?.pagination?.has_more_pages === true}}" class="ecommerce-flex-center ecommerce:justify-center ecommerce:gap-3">
+        <button type="button" class="ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{(_global.ecommerceExportDownloadHistory?.pagination?.current_page ?? 1) <= 1}}" aria-label="$t:common.prev_page">
+          <on type="click">
+            <!-- 이전 쪽 — 쪽 번호를 바꾼 뒤 같은 데이터 소스를 다시 부른다 -->
+            <sequence>
+              <set-state target="global" ecommerceExportDownloadsPage="{{(_global.ecommerceExportDownloadHistory?.pagination?.current_page ?? 1) - 1}}"/>
+              <refetch-data-source dataSourceId="exportDownloads"/>
+            </sequence>
+          </on>
+          <icon name="chevron-left" class="ecommerce:text-sm"/>
+        </button>
+        <span class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400">{{_global.ecommerceExportDownloadHistory?.pagination?.current_page ?? 1}}</span>
+        <button type="button" class="ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportDownloadHistory?.pagination?.has_more_pages !== true}}" aria-label="$t:common.next">
+          <on type="click">
+            <!-- 다음 쪽 — 다음 쪽이 있는지는 서버의 has_more_pages 로만 판단한다(마지막 쪽 번호는 오지 않을 수 있다) -->
+            <sequence>
+              <set-state target="global" ecommerceExportDownloadsPage="{{(_global.ecommerceExportDownloadHistory?.pagination?.current_page ?? 1) + 1}}"/>
+              <refetch-data-source dataSourceId="exportDownloads"/>
+            </sequence>
+          </on>
+          <icon name="chevron-right" class="ecommerce:text-sm"/>
+        </button>
+      </div>
+    </div>
+    <div class="ecommerce-modal-footer-buttons">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.export.modal.close
+      </button>
+    </div>
+  </modal>
+</partial>

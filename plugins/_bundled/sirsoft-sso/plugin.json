@@ -1,0 +1,37 @@
+{
+    "identifier": "sirsoft-sso",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "SSO 연동",
+        "en": "Single Sign-On"
+    },
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": {
+        "ko": "회사 계정(SAML 2.0, OpenID Connect, LDAP/Active Directory)으로 로그인하고, SCIM 2.0 으로 회원을 만들고 지우는 기업용 SSO 플러그인. 로그인 관문(잠금, 2단계 인증, 비밀번호 변경, 휴면 해제)은 코어가 맡는다.",
+        "en": "Enterprise single sign-on with company accounts (SAML 2.0, OpenID Connect, LDAP/Active Directory) and SCIM 2.0 provisioning. The core keeps every login gate (lockout, two-factor, password change, dormancy)."
+    },
+    "g7_version": ">=7.2.0",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-sso",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-sso/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "css": {
+            "entry": "resources/css/main.css",
+            "output": "dist/css/plugin.css",
+            "namespace": "sso"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

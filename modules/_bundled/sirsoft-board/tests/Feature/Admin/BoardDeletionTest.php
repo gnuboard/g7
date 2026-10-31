@@ -36,6 +36,8 @@ class BoardDeletionTest extends ModuleTestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -64,6 +66,8 @@ class BoardDeletionTest extends ModuleTestCase
      * @scenario child_type=post
      *
      * @effects post_records_force_deleted,comment_records_force_deleted,attachment_records_force_deleted,board_itself_force_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_board_force_deletes_child_records(): void
     {
@@ -121,6 +125,8 @@ class BoardDeletionTest extends ModuleTestCase
      * @scenario child_type=attachment
      *
      * @effects attachment_physical_files_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_board_removes_attachment_physical_files(): void
     {
@@ -151,6 +157,8 @@ class BoardDeletionTest extends ModuleTestCase
      * @scenario child_type=report
      *
      * @effects reports_preserved_with_null_board_id
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_board_preserves_reports(): void
     {
@@ -179,6 +187,8 @@ class BoardDeletionTest extends ModuleTestCase
      * @scenario child_type=comment
      *
      * @effects other_board_files_not_affected
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_board_does_not_affect_other_board_files(): void
     {
@@ -209,6 +219,12 @@ class BoardDeletionTest extends ModuleTestCase
      * BoardService::deleteBoard 는 posts forceDelete 직전에 withTrashed 전체를
      * 1,000건 chunk 당 1회 발화합니다 — 수집된 ID 합집합이 전체 글 ID 와 일치해야
      * 연동 확장(이커머스 문의 피벗 정리 등)이 누락 없이 통지받습니다.
+     * 셋째 인자는 글 모델 타입으로, 구독 확장이 게시판 클래스 이름을 스스로 적지 않고
+     * 자기 다형 참조를 가려 지우는 데 씁니다.
+     *
+     * @effects force_delete_hook_notifies_all_post_ids_with_post_type
+     *
+     * @return void 반환값 없음
      */
     public function test_fires_posts_before_force_delete_hook_with_all_ids(): void
     {
@@ -234,14 +250,16 @@ class BoardDeletionTest extends ModuleTestCase
 
         $receivedIds = [];
         $receivedBoardIds = [];
+        $receivedTypes = [];
 
         // 훅 스파이 — ModuleTestCase 가 setUp/tearDown 에서 HookManager 상태를
         // 스냅샷/복원하므로 별도 정리는 불필요
         HookManager::addAction(
             'sirsoft-board.board.posts.before_force_delete',
-            function ($hookBoard, $postIds) use (&$receivedIds, &$receivedBoardIds) {
+            function ($hookBoard, $postIds, $postType = null) use (&$receivedIds, &$receivedBoardIds, &$receivedTypes) {
                 $receivedIds = array_merge($receivedIds, $postIds);
                 $receivedBoardIds[] = $hookBoard->id;
+                $receivedTypes[] = $postType;
             }
         );
 
@@ -259,6 +277,11 @@ class BoardDeletionTest extends ModuleTestCase
         $this->assertNotEmpty($receivedBoardIds, '훅이 최소 1회 발화되어야 합니다.');
         foreach (array_unique($receivedBoardIds) as $receivedBoardId) {
             $this->assertSame($board->id, $receivedBoardId, '훅의 첫 인자는 삭제 대상 게시판이어야 합니다.');
+        }
+
+        // 글 모델 타입 전달 검증 — 구독 확장의 다형 참조 type 과 같은 값
+        foreach (array_unique($receivedTypes) as $receivedType) {
+            $this->assertSame(Post::class, $receivedType, '훅의 셋째 인자는 글 모델 타입이어야 합니다.');
         }
     }
 

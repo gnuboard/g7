@@ -44,9 +44,11 @@ describe('환경설정 업데이트 탭 — 배선', () => {
   // @scenario actor=with_permission, run_state=idle
   // @effects update_tab_is_hidden_without_permission
   it('탭 목록·콘텐츠 partial 이 함께 배선된다', () => {
-    const tabs = ((settings as Json).defines as Json)?.settingsTabs as Json[] | undefined;
+    const nav = collect(settings, (obj) => obj.id === 'tab_navigation')[0];
+    const tabs = (nav?.props as Json | undefined)?.tabs as Json[] | undefined;
 
-    expect(tabs, 'settingsTabs 정의가 없으면 탭 목록을 걸러 낼 수 없다').toBeDefined();
+    // 탭 목록은 항목마다 href 를 가진 리터럴 배열이다(새 탭 열기). 업데이트 탭도 그 안에 있어야 한다.
+    expect(Array.isArray(tabs), '탭 네비게이션의 탭 목록을 찾지 못했다').toBe(true);
     expect(tabs!.some((tab) => tab.id === 'update')).toBe(true);
 
     expect(settingsSource).toContain('partials/admin_settings/_tab_update.json');
@@ -59,11 +61,20 @@ describe('환경설정 업데이트 탭 — 배선', () => {
 
     expect(nav, '탭 네비게이션을 찾지 못했다').toBeDefined();
 
-    const tabsProp = (nav.props as Json).tabs;
+    const tabs = (nav.props as Json).tabs as Json[];
+    const updateItem = tabs.find((tab) => tab.id === 'update');
 
-    expect(typeof tabsProp, '탭 목록이 리터럴이면 권한으로 거를 수 없다').toBe('string');
-    expect(tabsProp as string).toContain('can_core_update');
-    expect(tabsProp as string).toContain("t.id !== 'update'");
+    // 항목의 if 가 거짓이면 TabNavigation 이 그 탭을 그리지 않는다(비활성이 아니라 미표시).
+    expect(updateItem, '업데이트 탭 항목이 없다').toBeDefined();
+    expect(typeof updateItem!.if, '항목에 if 가 없으면 권한 없는 관리자에게도 탭이 보인다').toBe('string');
+    expect(updateItem!.if as string).toContain('can_core_update');
+    // 권한 응답이 없을 때 보이는 쪽으로 기울면 안 된다.
+    expect(updateItem!.if as string).toContain('?? false');
+
+    // 다른 탭은 이 권한에 묶이지 않는다.
+    for (const tab of tabs.filter((t) => t.id !== 'update')) {
+      expect(String(tab.if ?? '')).not.toContain('can_core_update');
+    }
   });
 
   // @scenario actor=without_permission, run_state=idle

@@ -1,0 +1,213 @@
+<!-- 상품 폼 — 활동로그 구획(수정 진입에만 선다). 이 상품에 언제 누가 무엇을 바꿨는지 남는다.
+  기록이 많아 쪽 나눔·정렬을 서버에 맡기므로, 화면에서 값을 바꾸면 목록을 다시 받는다.
+  넓은 화면은 표, 좁은 화면은 카드로 같은 내용을 두 벌 세운다. -->
+<partial description="Product Form - Activity Log Section (Edit Mode Only)">
+  <div data-ref="activity_log" class="ecommerce-admin-card-accordion">
+    <button type="button" class="ecommerce:flex ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-card-header" aria-expanded="{{_local.ui.activityLogExpanded !== false}}">
+      <on type="click">
+        <!-- 구획 접기/펼치기 -->
+        <set-state target="local" ui.activityLogExpanded="{{!_local.ui.activityLogExpanded}}"/>
+      </on>
+      <icon name="history" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+      <span class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.product.sections.activity_log</span>
+      <span data-if="{{activity_logs.data?.meta?.total}}" class="ecommerce:ml-2 ecommerce:px-2 ecommerce:py-0.5 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:text-gray-600 ecommerce:dark:text-gray-300 ecommerce:text-xs ecommerce:rounded-full">{{activity_logs.data?.meta?.total}}</span>
+      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.activityLogExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
+    </button>
+    <div data-ref="activity_log_body" data-if="{{_local.ui.activityLogExpanded !== false}}" class="ecommerce-row-stack">
+      <div data-ref="activity_log_filters" class="ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-4 ecommerce:p-4 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+        <responsive on="portable" class="ecommerce-row-stack ecommerce:p-4 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700"/>
+        <div class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.product.activity_log.total_count|count={{activity_logs.data?.meta?.total ?? 0}}</div>
+        <div class="ecommerce-flex-center ecommerce:gap-4">
+          <responsive on="portable" class="ecommerce-row-stack ecommerce:w-full"/>
+          <div class="ecommerce-flex-center ecommerce:gap-2">
+            <responsive on="portable" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:w-full"/>
+            <label class="ecommerce-text-label ecommerce:whitespace-nowrap">$t:sirsoft-ecommerce.admin.product.activity_log.sort_order</label>
+            <select name="activity_log_sort" value="{{_local.ui.activityLogSort ?? 'desc'}}" class="ecommerce:w-32">
+              <responsive on="portable" class="ecommerce:flex-1"/>
+              <options>
+                <option value="desc">$t:sirsoft-ecommerce.admin.product.activity_log.sort.latest</option>
+                <option value="asc">$t:sirsoft-ecommerce.admin.product.activity_log.sort.oldest</option>
+              </options>
+              <on type="change">
+                <!-- 정렬은 화면에서 뒤집지 않고 서버에서 다시 받는다 — 지금 쪽에 실린 것만 뒤집으면 앞뒤 쪽의 기록이 뒤섞인다 -->
+                <sequence>
+                  <set-state target="local" ui.activityLogSort="{{$event.target.value}}"/>
+                  <refetch-data-source dataSourceId="activity_logs"/>
+                </sequence>
+              </on>
+            </select>
+          </div>
+          <div class="ecommerce-flex-center ecommerce:gap-2">
+            <responsive on="portable" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:w-full"/>
+            <label class="ecommerce-text-label ecommerce:whitespace-nowrap">$t:sirsoft-ecommerce.admin.product.activity_log.per_page</label>
+            <select name="activity_log_per_page" value="{{_local.ui.activityLogPerPage ?? 10}}" class="ecommerce:w-20">
+              <responsive on="portable" class="ecommerce:flex-1"/>
+              <options>
+                <option :value="10">10</option>
+                <option :value="20">20</option>
+                <option :value="50">50</option>
+              </options>
+              <on type="change">
+                <!-- 한 쪽에 담을 건수. 쪽 크기가 달라지면 현재 쪽 번호는 뜻을 잃으므로 1쪽으로 되돌린 뒤 다시 받는다 -->
+                <sequence>
+                  <set-state target="local" ui.activityLogPerPage="{{Number($event.target.value)}}" :ui.logsPage="1"/>
+                  <refetch-data-source dataSourceId="activity_logs"/>
+                </sequence>
+              </on>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div data-ref="activity_log_table_pc" class="ecommerce:overflow-x-auto">
+        <responsive on="portable" data-if="{{false}}"/>
+        <table class="ecommerce:w-full">
+          <thead>
+            <tr class="ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+              <th class="ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left ecommerce:w-44">$t:sirsoft-ecommerce.admin.product.activity_log.columns.datetime</th>
+              <th class="ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left ecommerce:w-36">$t:sirsoft-ecommerce.admin.product.activity_log.columns.actor</th>
+              <th class="ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left">$t:sirsoft-ecommerce.admin.product.activity_log.columns.description</th>
+            </tr>
+          </thead>
+          <tbody class="ecommerce-divider-list">
+            <tr data-ref="activity_log_row_{{logIdx}}" data-each="log, logIdx in {{activity_logs?.data?.data ?? []}}" class="ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700/50">
+              <td class="ecommerce:px-4 ecommerce:py-3 ecommerce-text-label-subtle ecommerce:whitespace-nowrap">{{log.created_at}}</td>
+              <td class="ecommerce:px-4 ecommerce:py-3 ecommerce:whitespace-nowrap">
+                <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
+                  <prop name="items">
+                    <item id="view_member" href="/admin/users/{{log.user.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
+                  </prop>
+                  <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:rounded-lg ecommerce:px-1 ecommerce:py-0.5 ecommerce:transition-colors ecommerce:cursor-pointer">
+                    <div class="ecommerce-flex-center ecommerce:w-6 ecommerce:h-6 ecommerce:bg-gray-200 ecommerce:dark:bg-gray-600 ecommerce:rounded-full ecommerce:justify-center">
+                      <span aria-hidden="true" class="ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-600 ecommerce:dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>
+                    </div>
+                    <span class="ecommerce-text-primary ecommerce:text-sm">{{log.actor_name ?? ''}}</span>
+                  </div>
+                </action-menu>
+                <div data-if="{{!log.user?.uuid}}" class="ecommerce-flex-center ecommerce:gap-2">
+                  <div class="ecommerce-flex-center ecommerce:w-6 ecommerce:h-6 ecommerce:bg-gray-200 ecommerce:dark:bg-gray-600 ecommerce:rounded-full ecommerce:justify-center">
+                    <span class="ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-600 ecommerce:dark:text-gray-300">S</span>
+                  </div>
+                  <span class="ecommerce-text-primary ecommerce:text-sm">{{log.actor_name ?? '$t:sirsoft-ecommerce.admin.product.activity_log.system'}}</span>
+                </div>
+              </td>
+              <td class="ecommerce:px-4 ecommerce:py-3 ecommerce-text-body">
+                <span>{{log.localized_description ?? ''}}</span>
+                <div data-if="{{log.changes &amp;&amp; log.changes.length > 0}}" class="ecommerce-toggle-group ecommerce:mt-2">
+                  <div class="ecommerce-text-tertiary ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:px-3 ecommerce:py-1.5 ecommerce:font-medium ecommerce:flex ecommerce:gap-4">
+                    <span class="ecommerce:flex-1">$t:sirsoft-ecommerce.admin.product.activity_log.changes.field</span>
+                    <span class="ecommerce:w-28 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.before</span>
+                    <span class="ecommerce:w-28 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.after</span>
+                  </div>
+                  <div data-each="change, changeIdx in {{log.changes ?? []}}" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:flex ecommerce:gap-4 ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700">
+                    <span class="ecommerce:flex-1 ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{change.label ?? change.field}}</span>
+                    <span class="ecommerce:w-28 ecommerce:text-center ecommerce:text-red-600 ecommerce:dark:text-red-300">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+                    <span class="ecommerce:w-28 ecommerce:text-center ecommerce:text-green-700 ecommerce:dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+                  </div>
+                </div>
+                <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}" class="ecommerce:mt-2 ecommerce:space-y-2">
+                  <div data-each="group, groupIdx in {{log.bulk_changes ?? []}}" class="ecommerce-toggle-group">
+                    <div class="ecommerce-text-tertiary ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:px-3 ecommerce:py-1.5 ecommerce:font-medium ecommerce:flex ecommerce:gap-4">
+                      <span class="ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mr-auto">ID: {{group.model_id}}</span>
+                      <span class="ecommerce:w-28 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.before</span>
+                      <span class="ecommerce:w-28 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.after</span>
+                    </div>
+                    <div data-each="change, changeIdx in {{group.changes ?? []}}" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:flex ecommerce:gap-4 ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700">
+                      <span class="ecommerce:flex-1 ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{change.label ?? change.field}}</span>
+                      <span class="ecommerce:w-28 ecommerce:text-center ecommerce:text-red-600 ecommerce:dark:text-red-300">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+                      <span class="ecommerce:w-28 ecommerce:text-center ecommerce:text-green-700 ecommerce:dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <!-- 받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「처리 이력이 없습니다」를 보이면 기록이 없는 줄 안다 -->
+            <tr data-ref="activity_log_load_failed" data-if="{{activity_logs === null}}">
+              <td :colSpan="3" class="ecommerce:px-4 ecommerce:py-12 ecommerce:text-center">
+                <p role="alert" class="ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
+              </td>
+            </tr>
+            <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
+            <tr data-ref="activity_log_empty" data-if="{{activity_logs !== undefined &amp;&amp; activity_logs !== null &amp;&amp; (activity_logs.data?.data ?? []).length === 0}}">
+              <td :colSpan="3" class="ecommerce:px-4 ecommerce:py-12 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+                <icon name="clipboard-list" class="ecommerce:text-3xl ecommerce:mx-auto ecommerce:mb-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
+                <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div data-ref="activity_log_cards_mobile" class="ecommerce-divider-list">
+        <responsive on="desktop" data-if="{{false}}"/>
+        <div data-ref="activity_log_card_item_{{logIdx}}" data-each="log, logIdx in {{activity_logs?.data?.data ?? []}}" class="ecommerce:p-4">
+          <div class="ecommerce-flex-between ecommerce:mb-2">
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
+                <prop name="items">
+                  <item id="view_member" href="/admin/users/{{log.user.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
+                </prop>
+                <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:rounded-lg ecommerce:px-1 ecommerce:py-0.5 ecommerce:transition-colors ecommerce:cursor-pointer">
+                  <div class="ecommerce-flex-center ecommerce:w-6 ecommerce:h-6 ecommerce:bg-gray-200 ecommerce:dark:bg-gray-600 ecommerce:rounded-full ecommerce:justify-center">
+                    <span aria-hidden="true" class="ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-600 ecommerce:dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>
+                  </div>
+                  <span class="ecommerce-text-heading">{{log.actor_name ?? ''}}</span>
+                </div>
+              </action-menu>
+              <div data-if="{{!log.user?.uuid}}" class="ecommerce-flex-center ecommerce:gap-2">
+                <div class="ecommerce-flex-center ecommerce:w-6 ecommerce:h-6 ecommerce:bg-gray-200 ecommerce:dark:bg-gray-600 ecommerce:rounded-full ecommerce:justify-center">
+                  <span class="ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-600 ecommerce:dark:text-gray-300">S</span>
+                </div>
+                <span class="ecommerce-text-heading">{{log.actor_name ?? '$t:sirsoft-ecommerce.admin.product.activity_log.system'}}</span>
+              </div>
+            </div>
+            <span class="ecommerce-text-tertiary">{{log.created_at}}</span>
+          </div>
+          <p class="ecommerce-text-body ecommerce:mb-2">{{log.localized_description ?? ''}}</p>
+          <div data-if="{{log.changes &amp;&amp; log.changes.length > 0}}" class="ecommerce-toggle-group">
+            <div class="ecommerce-text-tertiary ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:px-3 ecommerce:py-1.5 ecommerce:font-medium ecommerce:flex ecommerce:gap-3">
+              <span class="ecommerce:flex-1">$t:sirsoft-ecommerce.admin.product.activity_log.changes.field</span>
+              <span class="ecommerce:w-20 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.before</span>
+              <span class="ecommerce:w-20 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.after</span>
+            </div>
+            <div data-each="change, changeIdx in {{log.changes ?? []}}" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:flex ecommerce:gap-3 ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700">
+              <span class="ecommerce:flex-1 ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{change.label ?? change.field}}</span>
+              <span class="ecommerce:w-20 ecommerce:text-center ecommerce:text-red-600 ecommerce:dark:text-red-400">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+              <span class="ecommerce:w-20 ecommerce:text-center ecommerce:text-green-700 ecommerce:dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+            </div>
+          </div>
+          <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}">
+            <div data-each="group, groupIdx in {{log.bulk_changes ?? []}}" class="ecommerce-toggle-group">
+              <div class="ecommerce-text-tertiary ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:px-3 ecommerce:py-1.5 ecommerce:font-medium ecommerce:flex ecommerce:gap-3">
+                <span class="ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mr-auto">ID: {{group.model_id}}</span>
+                <span class="ecommerce:w-20 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.before</span>
+                <span class="ecommerce:w-20 ecommerce:text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.after</span>
+              </div>
+              <div data-each="change, changeIdx in {{group.changes ?? []}}" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:flex ecommerce:gap-3 ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700">
+                <span class="ecommerce:flex-1 ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{change.label ?? change.field}}</span>
+                <span class="ecommerce:w-20 ecommerce:text-center ecommerce:text-red-600 ecommerce:dark:text-red-400">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+                <span class="ecommerce:w-20 ecommerce:text-center ecommerce:text-green-700 ecommerce:dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 좁은 화면 카드 쪽 받기 실패 안내 — 위 표와 같은 조건 -->
+        <p data-ref="activity_log_load_failed_mobile" data-if="{{activity_logs === null}}" role="alert" class="ecommerce:p-8 ecommerce:text-center ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
+        <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
+        <div data-ref="activity_log_empty_mobile" data-if="{{activity_logs !== undefined &amp;&amp; activity_logs !== null &amp;&amp; (activity_logs.data?.data ?? []).length === 0}}" class="ecommerce:p-8 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+          <icon name="clipboard-list" class="ecommerce:text-3xl ecommerce:mx-auto ecommerce:mb-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
+          <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
+        </div>
+      </div>
+      <div data-ref="activity_log_pagination" class="ecommerce:flex ecommerce:justify-center ecommerce:p-4">
+        <pagination data-type="composite" currentPage="{{activity_logs.data?.meta?.current_page ?? 1}}" totalPages="{{activity_logs.data?.meta?.last_page ?? null}}" hasMorePages="{{activity_logs.data?.meta?.has_more_pages ?? false}}" :showFirstLast="true">
+          <on event="onPageChange">
+            <!-- 쪽 넘김 — 쪽 번호를 폼 상태에 담으면 데이터소스가 그 값을 읽어 다시 받는다 -->
+            <sequence>
+              <set-state target="local" ui.logsPage="{{$args[0]}}"/>
+              <refetch-data-source dataSourceId="activity_logs"/>
+            </sequence>
+          </on>
+        </pagination>
+      </div>
+    </div>
+  </div>
+</partial>

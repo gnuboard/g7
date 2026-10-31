@@ -243,6 +243,8 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
     setupTestRegistry();
   });
 
+  // @scenario severity=warning
+  // @effects warning_alert_promoted_to_top_banner
   it('경고 등급 알림은 subtype 과 무관하게 상단 배너에 amber + 테두리로 렌더된다', async () => {
     const testUtils = await renderAlerts(ALERTS);
 
@@ -257,7 +259,8 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
       expect(row, 'top_alert_item_' + i + ' 행 배경').toContain('bg-amber-50');
       expect(row, 'top_alert_item_' + i + ' 행 테두리').toContain('border-amber-200');
       expect(row, 'top_alert_item_' + i + ' 는 회색으로 떨어지면 안 된다').not.toContain('bg-gray-50');
-      expect(icon, 'top_alert_icon_' + i + ' 아이콘 색').toContain('text-amber-600');
+      // 경고 아이콘은 amber-700 이다 — 배너 바탕이 갈래(경고·안내·회색)마다 달라 어느 바탕 위에서도 아이콘 기준 3:1 을 넘기는 단계로 맞췄다
+      expect(icon, 'top_alert_icon_' + i + ' 아이콘 색').toContain('text-amber-700');
     }
 
     // 제목 4건이 모두 살아 있다 (덮어쓰기 없음)
@@ -268,6 +271,8 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
     testUtils.cleanup();
   });
 
+  // @scenario severity=info
+  // @effects non_warning_alert_stays_in_bottom_card
   it('경고가 아닌 알림만 하단 카드에 남는다 — 같은 알림이 두 곳에 중복 노출되지 않는다', async () => {
     const testUtils = await renderAlerts(ALERTS);
 
@@ -287,6 +292,8 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
     testUtils.cleanup();
   });
 
+  // @scenario severity=warning
+  // @effects empty_alert_region_not_rendered
   it('경고만 있으면 하단 카드 자체가 뜨지 않는다', async () => {
     const testUtils = await renderAlerts(ALERTS.filter((a) => a.type === 'warning'));
 
@@ -296,6 +303,8 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
     testUtils.cleanup();
   });
 
+  // @scenario severity=info
+  // @effects empty_alert_region_not_rendered
   it('경고가 없으면 상단 배너 영역이 뜨지 않는다', async () => {
     const testUtils = await renderAlerts(ALERTS.filter((a) => a.type !== 'warning'));
 
@@ -305,6 +314,8 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
     testUtils.cleanup();
   });
 
+  // @scenario severity=unspecified
+  // @effects unspecified_severity_falls_to_gray_bottom
   it('심각도가 없는 알림은 하단에 회색으로 떨어진다', async () => {
     const testUtils = await renderAlerts([
       { subtype: 'unknown_thing', icon: 'info-circle', title: '미지정', message: 'm' },
@@ -320,6 +331,8 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
     testUtils.cleanup();
   });
 
+  // @scenario severity=info
+  // @effects recovery_button_follows_subtype
   it('복구 버튼은 subtype 판정을 유지한다 — info 라고 모두 뜨지 않는다', async () => {
     const testUtils = await renderAlerts([
       // recovery_available 이 아닌 info — 복구 버튼이 뜨면 안 된다
@@ -343,6 +356,8 @@ describe('대시보드 알림 심각도별 배치와 색상', () => {
     testUtils.cleanup();
   });
 
+  // @scenario severity=warning
+  // @effects promoted_alert_keeps_dismiss_action
   it('상단으로 올라간 경고도 닫기 버튼을 그대로 갖는다 — 배치가 기능을 빼앗지 않는다', async () => {
     const testUtils = await renderAlerts([
       {

@@ -1,0 +1,18 @@
+feature: 관리자 회원 등록·수정 폼의 게시판 알림 수신 설정 체크박스가 클릭 값을 불리언으로 기록한다
+
+description: |
+  게시판 모듈이 관리자 회원 등록·수정 폼에 덧붙이는 알림 수신 설정 체크박스 4개(게시글 완료·답변글·댓글·대댓글)가
+  기본 Input 을 폼 자동 바인딩에 맡겼다. 엔진은 바인딩 값이 이미 불리언일 때만 checked 로 묶어, 값이 없는
+  회원 등록 화면에서는 클릭해도 빈 문자열이 쓰이고 체크가 켜지지 않았다(7.1.0 실측 K4-D7). 7.1.0 은 관리자가
+  회원을 추가할 때 고른 설정이 큐 워커 사이트에서도 저장되도록 서버를 고쳤는데, 화면에서 값을 고를 수 없었다.
+  마케팅 동의 체크박스와 같이 자동 바인딩을 끄고 change 에서 checked 불리언을 직접 쓴다.
+
+axes:
+  screen: [admin_user_create, admin_user_edit]
+
+effects:
+  - notification_checkbox_click_writes_boolean
+  - notification_checkbox_reflects_saved_value
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/user-notification-settings-checkbox-write.test.ts

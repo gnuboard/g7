@@ -1,0 +1,43 @@
+feature: 주문 저장소 — 조회·목록 필터·정렬·쓰기·일괄 변경·통계·내보내기
+
+description: |
+  주문 저장소(OrderRepository)의 단위 계약. 목록 기간 필터는 보는 사람의 시간대 하루로 자른다(7.1.0 후속 QE-1).
+
+axes:
+  case: [find, list_filter, list_sort, write, bulk, statistics, export, exists, user_statistics, expiry]
+
+effects:
+  - order_repository_finds_order_by_id
+  - order_repository_returns_null_for_missing_id
+  - order_repository_loads_detail_relations
+  - order_repository_finds_order_by_number
+  - order_repository_returns_null_for_missing_number
+  - order_list_paginates
+  - order_list_filters_by_status
+  - order_list_date_range_uses_viewer_day
+  - order_list_filters_by_keyword
+  - order_list_filters_by_amount_range
+  - order_list_filters_by_shipping_type
+  - order_list_filters_by_country
+  - order_list_filters_by_device
+  - order_list_sorts_by_allowed_column
+  - order_repository_creates_order
+  - order_repository_updates_order
+  - order_repository_soft_deletes_order
+  - order_bulk_status_updates_all_targets
+  - order_bulk_option_status_skips_closed_options
+  - order_statistics_counts_by_status
+  - order_export_returns_rows
+  - order_export_limits_to_selected_ids
+  - order_number_existence_check
+  - user_order_existence_check
+  - order_list_filters_by_orderer_uuid
+  - user_statistics_preparing_includes_shipping_ready
+  - user_statistics_has_no_partial_cancelled_key
+  - user_statistics_hides_pending_order
+  - preparing_filter_expands_to_group
+  - plain_status_filter_is_unchanged
+  - expired_pending_payment_matches_vbank_dbank_only
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/OrderRepositoryTest.php

@@ -1,8 +1,606 @@
+/* g7-extension-css:start — convert-layout-classes.mjs 가 생성·갱신하는 블록. 손으로 고치지 않는다. */
+@import "tailwindcss/theme.css" layer(theme) prefix(ecommerce);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(ecommerce) source(none);
+@import "./g7-extension.generated.css";
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@source "../../src";
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+@plugin "@tailwindcss/typography";
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+/* g7-extension-css:end */
+
 /**
- * sirsoft-ecommerce 모듈 스타일
+ * sirsoft-ecommerce 모듈 손 CSS — 위 생성 블록 아래에 둔다.
  *
- * 모듈 전용 CSS 스타일을 정의합니다.
- * 현재는 빈 파일이며, 필요 시 모듈 전용 스타일을 추가합니다.
+ * 이 모듈 화면의 클래스는 모두 자기 앞글자를 쓴다(docs/extension/module-assets.md 「확장 CSS 자기 공급 규약」).
+ * - 레이아웃 유틸리티는 `ecommerce:` 접두 Tailwind 빌드가 만든다(위 블록). 템플릿 CSS 라이브러리에 기대지 않는다.
+ * - 템플릿 의미 클래스는 `ecommerce-*` 이름으로 복사해 가장 낮은 칸(`@layer g7-extension`)에 싣는다(g7-extension.generated.css).
+ *   템플릿에서 층 밖이던 의미 규칙과 아이콘(`<i>`) 줄 높이 보존 규칙도 같은 생성 파일이 층 밖에 낸다 — 여기 다시 쓰지 않는다.
+ * - 다크 모드는 템플릿 클래스(`.dark`)가 아니라 코어가 다는 중립 표식(`data-g7-color-scheme`)을 본다.
  */
 
-/* 모듈 전용 스타일은 여기에 추가 */
+/*
+ * 의미 색 — 이 모듈 화면이 쓰는 접두 의미 색 클래스.
+ *
+ * - 색만 맡는다. 크기·굵기는 레이아웃이 유틸리티로 함께 단다.
+ * - 의미 클래스 칸(`@layer g7-extension`)에 둔다 — 같은 요소의 색 유틸리티(`ecommerce:text-gray-500` 등)가 이기고,
+ *   템플릿이 같은 이름을 덮을 수 있다.
+ * - 색 값은 관리자 템플릿 기본 팔레트와 같다(라이트 / 다크).
+ */
+@layer g7-extension {
+    .ecommerce-tone-error { color: oklch(57.7% 0.245 27.325); } /* red-600 */
+    .ecommerce-tone-error:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { color: oklch(80.8% 0.114 19.571); } /* red-300 */
+    .ecommerce-tone-error-soft { color: oklch(50.5% 0.213 27.518); } /* red-700 */
+    .ecommerce-tone-error-soft:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { color: oklch(80.8% 0.114 19.571); } /* red-300 */
+    .ecommerce-tone-error-strong { color: oklch(44.4% 0.177 26.899); } /* red-800 */
+    .ecommerce-tone-error-strong:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { color: oklch(88.5% 0.062 18.334); } /* red-200 */
+    .ecommerce-tone-info-soft { color: oklch(48.8% 0.243 264.376); } /* blue-700 */
+    .ecommerce-tone-info-soft:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { color: oklch(80.9% 0.105 251.813); } /* blue-300 */
+    .ecommerce-tone-warning-soft { color: oklch(55.4% 0.135 66.442); } /* yellow-700 */
+    .ecommerce-tone-warning-soft:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { color: oklch(90.5% 0.182 98.111); } /* yellow-300 */
+    .ecommerce-tone-border-error { border-color: oklch(88.5% 0.062 18.334); } /* red-200 */
+    .ecommerce-tone-border-error:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { border-color: oklch(44.4% 0.177 26.899); } /* red-800 */
+}
+
+/*
+ * 국기 — 배송 국가·통화·수령 국가 표시.
+ *
+ * 국기 그림은 flag-icons 7.2.3(MIT, Copyright (c) 2013 Panayiotis Lipiridis — 라이선스 전문은
+ * dist/vendor/flag-icons/7.2.3/LICENSE)의 두 글자 국가 코드 SVG 를 이 모듈이 함께 담아 싣는다(dist/vendor 동봉).
+ * 국가 코드는 운영자 배송 국가 설정·주문 수령지·회원 배송지에서 두 글자 아무 값이나 올 수 있어 두 글자 국기 전부를 담는다.
+ *
+ * 쓰는 법: `ecommerce-flag ecommerce-flag-{소문자 국가 코드}`(4:3), 정사각은 `ecommerce-flag--square` 를 더한다.
+ * 크기·비율·배경 위치는 flag-icons 의 `fi`·`fis` 와 같다. 유틸리티(`ecommerce:text-xl` 등)보다 뒤에 둬 줄 높이를 이 규칙이 정한다.
+ * url() 은 산출 파일(dist/css/module.css) 기준 상대 경로다 — 서버가 자산 주소로 바꿔 내보낸다.
+ */
+.ecommerce-flag {
+    background-size: contain;
+    background-position: 50%;
+    background-repeat: no-repeat;
+    position: relative;
+    display: inline-block;
+    width: 1.333333em;
+    line-height: 1em;
+}
+/* 줄 상자를 만드는 글자는 접히지 않는 공백(U+00A0)이다 — 일반 공백은 줄 안에서 접혀 상자 높이가 0 이 되어
+   국기가 보이지 않는다. 눈에 보이지 않는 글자라 편집 중 일반 공백으로 바뀌지 않게 이스케이프로 적는다. */
+.ecommerce-flag::before { content: "\00a0"; }
+.ecommerce-flag.ecommerce-flag--square { width: 1em; }
+.ecommerce-flag-xx { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/xx.svg"); }
+.ecommerce-flag-xx.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/xx.svg"); }
+.ecommerce-flag-ad { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ad.svg"); }
+.ecommerce-flag-ad.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ad.svg"); }
+.ecommerce-flag-ae { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ae.svg"); }
+.ecommerce-flag-ae.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ae.svg"); }
+.ecommerce-flag-af { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/af.svg"); }
+.ecommerce-flag-af.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/af.svg"); }
+.ecommerce-flag-ag { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ag.svg"); }
+.ecommerce-flag-ag.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ag.svg"); }
+.ecommerce-flag-ai { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ai.svg"); }
+.ecommerce-flag-ai.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ai.svg"); }
+.ecommerce-flag-al { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/al.svg"); }
+.ecommerce-flag-al.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/al.svg"); }
+.ecommerce-flag-am { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/am.svg"); }
+.ecommerce-flag-am.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/am.svg"); }
+.ecommerce-flag-ao { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ao.svg"); }
+.ecommerce-flag-ao.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ao.svg"); }
+.ecommerce-flag-aq { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/aq.svg"); }
+.ecommerce-flag-aq.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/aq.svg"); }
+.ecommerce-flag-ar { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ar.svg"); }
+.ecommerce-flag-ar.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ar.svg"); }
+.ecommerce-flag-as { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/as.svg"); }
+.ecommerce-flag-as.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/as.svg"); }
+.ecommerce-flag-at { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/at.svg"); }
+.ecommerce-flag-at.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/at.svg"); }
+.ecommerce-flag-au { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/au.svg"); }
+.ecommerce-flag-au.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/au.svg"); }
+.ecommerce-flag-aw { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/aw.svg"); }
+.ecommerce-flag-aw.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/aw.svg"); }
+.ecommerce-flag-ax { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ax.svg"); }
+.ecommerce-flag-ax.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ax.svg"); }
+.ecommerce-flag-az { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/az.svg"); }
+.ecommerce-flag-az.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/az.svg"); }
+.ecommerce-flag-ba { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ba.svg"); }
+.ecommerce-flag-ba.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ba.svg"); }
+.ecommerce-flag-bb { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bb.svg"); }
+.ecommerce-flag-bb.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bb.svg"); }
+.ecommerce-flag-bd { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bd.svg"); }
+.ecommerce-flag-bd.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bd.svg"); }
+.ecommerce-flag-be { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/be.svg"); }
+.ecommerce-flag-be.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/be.svg"); }
+.ecommerce-flag-bf { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bf.svg"); }
+.ecommerce-flag-bf.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bf.svg"); }
+.ecommerce-flag-bg { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bg.svg"); }
+.ecommerce-flag-bg.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bg.svg"); }
+.ecommerce-flag-bh { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bh.svg"); }
+.ecommerce-flag-bh.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bh.svg"); }
+.ecommerce-flag-bi { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bi.svg"); }
+.ecommerce-flag-bi.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bi.svg"); }
+.ecommerce-flag-bj { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bj.svg"); }
+.ecommerce-flag-bj.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bj.svg"); }
+.ecommerce-flag-bl { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bl.svg"); }
+.ecommerce-flag-bl.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bl.svg"); }
+.ecommerce-flag-bm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bm.svg"); }
+.ecommerce-flag-bm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bm.svg"); }
+.ecommerce-flag-bn { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bn.svg"); }
+.ecommerce-flag-bn.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bn.svg"); }
+.ecommerce-flag-bo { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bo.svg"); }
+.ecommerce-flag-bo.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bo.svg"); }
+.ecommerce-flag-bq { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bq.svg"); }
+.ecommerce-flag-bq.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bq.svg"); }
+.ecommerce-flag-br { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/br.svg"); }
+.ecommerce-flag-br.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/br.svg"); }
+.ecommerce-flag-bs { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bs.svg"); }
+.ecommerce-flag-bs.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bs.svg"); }
+.ecommerce-flag-bt { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bt.svg"); }
+.ecommerce-flag-bt.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bt.svg"); }
+.ecommerce-flag-bv { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bv.svg"); }
+.ecommerce-flag-bv.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bv.svg"); }
+.ecommerce-flag-bw { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bw.svg"); }
+.ecommerce-flag-bw.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bw.svg"); }
+.ecommerce-flag-by { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/by.svg"); }
+.ecommerce-flag-by.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/by.svg"); }
+.ecommerce-flag-bz { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/bz.svg"); }
+.ecommerce-flag-bz.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/bz.svg"); }
+.ecommerce-flag-ca { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ca.svg"); }
+.ecommerce-flag-ca.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ca.svg"); }
+.ecommerce-flag-cc { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cc.svg"); }
+.ecommerce-flag-cc.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cc.svg"); }
+.ecommerce-flag-cd { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cd.svg"); }
+.ecommerce-flag-cd.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cd.svg"); }
+.ecommerce-flag-cf { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cf.svg"); }
+.ecommerce-flag-cf.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cf.svg"); }
+.ecommerce-flag-cg { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cg.svg"); }
+.ecommerce-flag-cg.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cg.svg"); }
+.ecommerce-flag-ch { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ch.svg"); }
+.ecommerce-flag-ch.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ch.svg"); }
+.ecommerce-flag-ci { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ci.svg"); }
+.ecommerce-flag-ci.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ci.svg"); }
+.ecommerce-flag-ck { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ck.svg"); }
+.ecommerce-flag-ck.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ck.svg"); }
+.ecommerce-flag-cl { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cl.svg"); }
+.ecommerce-flag-cl.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cl.svg"); }
+.ecommerce-flag-cm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cm.svg"); }
+.ecommerce-flag-cm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cm.svg"); }
+.ecommerce-flag-cn { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cn.svg"); }
+.ecommerce-flag-cn.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cn.svg"); }
+.ecommerce-flag-co { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/co.svg"); }
+.ecommerce-flag-co.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/co.svg"); }
+.ecommerce-flag-cp { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cp.svg"); }
+.ecommerce-flag-cp.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cp.svg"); }
+.ecommerce-flag-cr { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cr.svg"); }
+.ecommerce-flag-cr.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cr.svg"); }
+.ecommerce-flag-cu { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cu.svg"); }
+.ecommerce-flag-cu.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cu.svg"); }
+.ecommerce-flag-cv { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cv.svg"); }
+.ecommerce-flag-cv.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cv.svg"); }
+.ecommerce-flag-cw { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cw.svg"); }
+.ecommerce-flag-cw.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cw.svg"); }
+.ecommerce-flag-cx { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cx.svg"); }
+.ecommerce-flag-cx.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cx.svg"); }
+.ecommerce-flag-cy { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cy.svg"); }
+.ecommerce-flag-cy.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cy.svg"); }
+.ecommerce-flag-cz { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/cz.svg"); }
+.ecommerce-flag-cz.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/cz.svg"); }
+.ecommerce-flag-de { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/de.svg"); }
+.ecommerce-flag-de.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/de.svg"); }
+.ecommerce-flag-dg { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/dg.svg"); }
+.ecommerce-flag-dg.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/dg.svg"); }
+.ecommerce-flag-dj { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/dj.svg"); }
+.ecommerce-flag-dj.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/dj.svg"); }
+.ecommerce-flag-dk { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/dk.svg"); }
+.ecommerce-flag-dk.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/dk.svg"); }
+.ecommerce-flag-dm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/dm.svg"); }
+.ecommerce-flag-dm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/dm.svg"); }
+.ecommerce-flag-do { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/do.svg"); }
+.ecommerce-flag-do.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/do.svg"); }
+.ecommerce-flag-dz { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/dz.svg"); }
+.ecommerce-flag-dz.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/dz.svg"); }
+.ecommerce-flag-ec { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ec.svg"); }
+.ecommerce-flag-ec.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ec.svg"); }
+.ecommerce-flag-ee { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ee.svg"); }
+.ecommerce-flag-ee.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ee.svg"); }
+.ecommerce-flag-eg { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/eg.svg"); }
+.ecommerce-flag-eg.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/eg.svg"); }
+.ecommerce-flag-eh { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/eh.svg"); }
+.ecommerce-flag-eh.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/eh.svg"); }
+.ecommerce-flag-er { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/er.svg"); }
+.ecommerce-flag-er.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/er.svg"); }
+.ecommerce-flag-es { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/es.svg"); }
+.ecommerce-flag-es.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/es.svg"); }
+.ecommerce-flag-et { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/et.svg"); }
+.ecommerce-flag-et.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/et.svg"); }
+.ecommerce-flag-eu { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/eu.svg"); }
+.ecommerce-flag-eu.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/eu.svg"); }
+.ecommerce-flag-fi { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/fi.svg"); }
+.ecommerce-flag-fi.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/fi.svg"); }
+.ecommerce-flag-fj { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/fj.svg"); }
+.ecommerce-flag-fj.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/fj.svg"); }
+.ecommerce-flag-fk { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/fk.svg"); }
+.ecommerce-flag-fk.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/fk.svg"); }
+.ecommerce-flag-fm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/fm.svg"); }
+.ecommerce-flag-fm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/fm.svg"); }
+.ecommerce-flag-fo { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/fo.svg"); }
+.ecommerce-flag-fo.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/fo.svg"); }
+.ecommerce-flag-fr { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/fr.svg"); }
+.ecommerce-flag-fr.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/fr.svg"); }
+.ecommerce-flag-ga { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ga.svg"); }
+.ecommerce-flag-ga.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ga.svg"); }
+.ecommerce-flag-gb { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gb.svg"); }
+.ecommerce-flag-gb.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gb.svg"); }
+.ecommerce-flag-gd { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gd.svg"); }
+.ecommerce-flag-gd.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gd.svg"); }
+.ecommerce-flag-ge { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ge.svg"); }
+.ecommerce-flag-ge.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ge.svg"); }
+.ecommerce-flag-gf { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gf.svg"); }
+.ecommerce-flag-gf.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gf.svg"); }
+.ecommerce-flag-gg { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gg.svg"); }
+.ecommerce-flag-gg.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gg.svg"); }
+.ecommerce-flag-gh { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gh.svg"); }
+.ecommerce-flag-gh.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gh.svg"); }
+.ecommerce-flag-gi { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gi.svg"); }
+.ecommerce-flag-gi.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gi.svg"); }
+.ecommerce-flag-gl { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gl.svg"); }
+.ecommerce-flag-gl.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gl.svg"); }
+.ecommerce-flag-gm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gm.svg"); }
+.ecommerce-flag-gm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gm.svg"); }
+.ecommerce-flag-gn { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gn.svg"); }
+.ecommerce-flag-gn.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gn.svg"); }
+.ecommerce-flag-gp { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gp.svg"); }
+.ecommerce-flag-gp.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gp.svg"); }
+.ecommerce-flag-gq { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gq.svg"); }
+.ecommerce-flag-gq.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gq.svg"); }
+.ecommerce-flag-gr { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gr.svg"); }
+.ecommerce-flag-gr.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gr.svg"); }
+.ecommerce-flag-gs { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gs.svg"); }
+.ecommerce-flag-gs.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gs.svg"); }
+.ecommerce-flag-gt { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gt.svg"); }
+.ecommerce-flag-gt.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gt.svg"); }
+.ecommerce-flag-gu { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gu.svg"); }
+.ecommerce-flag-gu.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gu.svg"); }
+.ecommerce-flag-gw { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gw.svg"); }
+.ecommerce-flag-gw.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gw.svg"); }
+.ecommerce-flag-gy { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/gy.svg"); }
+.ecommerce-flag-gy.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/gy.svg"); }
+.ecommerce-flag-hk { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/hk.svg"); }
+.ecommerce-flag-hk.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/hk.svg"); }
+.ecommerce-flag-hm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/hm.svg"); }
+.ecommerce-flag-hm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/hm.svg"); }
+.ecommerce-flag-hn { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/hn.svg"); }
+.ecommerce-flag-hn.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/hn.svg"); }
+.ecommerce-flag-hr { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/hr.svg"); }
+.ecommerce-flag-hr.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/hr.svg"); }
+.ecommerce-flag-ht { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ht.svg"); }
+.ecommerce-flag-ht.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ht.svg"); }
+.ecommerce-flag-hu { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/hu.svg"); }
+.ecommerce-flag-hu.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/hu.svg"); }
+.ecommerce-flag-ic { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ic.svg"); }
+.ecommerce-flag-ic.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ic.svg"); }
+.ecommerce-flag-id { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/id.svg"); }
+.ecommerce-flag-id.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/id.svg"); }
+.ecommerce-flag-ie { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ie.svg"); }
+.ecommerce-flag-ie.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ie.svg"); }
+.ecommerce-flag-il { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/il.svg"); }
+.ecommerce-flag-il.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/il.svg"); }
+.ecommerce-flag-im { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/im.svg"); }
+.ecommerce-flag-im.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/im.svg"); }
+.ecommerce-flag-in { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/in.svg"); }
+.ecommerce-flag-in.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/in.svg"); }
+.ecommerce-flag-io { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/io.svg"); }
+.ecommerce-flag-io.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/io.svg"); }
+.ecommerce-flag-iq { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/iq.svg"); }
+.ecommerce-flag-iq.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/iq.svg"); }
+.ecommerce-flag-ir { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ir.svg"); }
+.ecommerce-flag-ir.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ir.svg"); }
+.ecommerce-flag-is { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/is.svg"); }
+.ecommerce-flag-is.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/is.svg"); }
+.ecommerce-flag-it { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/it.svg"); }
+.ecommerce-flag-it.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/it.svg"); }
+.ecommerce-flag-je { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/je.svg"); }
+.ecommerce-flag-je.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/je.svg"); }
+.ecommerce-flag-jm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/jm.svg"); }
+.ecommerce-flag-jm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/jm.svg"); }
+.ecommerce-flag-jo { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/jo.svg"); }
+.ecommerce-flag-jo.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/jo.svg"); }
+.ecommerce-flag-jp { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/jp.svg"); }
+.ecommerce-flag-jp.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/jp.svg"); }
+.ecommerce-flag-ke { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ke.svg"); }
+.ecommerce-flag-ke.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ke.svg"); }
+.ecommerce-flag-kg { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/kg.svg"); }
+.ecommerce-flag-kg.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/kg.svg"); }
+.ecommerce-flag-kh { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/kh.svg"); }
+.ecommerce-flag-kh.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/kh.svg"); }
+.ecommerce-flag-ki { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ki.svg"); }
+.ecommerce-flag-ki.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ki.svg"); }
+.ecommerce-flag-km { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/km.svg"); }
+.ecommerce-flag-km.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/km.svg"); }
+.ecommerce-flag-kn { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/kn.svg"); }
+.ecommerce-flag-kn.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/kn.svg"); }
+.ecommerce-flag-kp { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/kp.svg"); }
+.ecommerce-flag-kp.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/kp.svg"); }
+.ecommerce-flag-kr { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/kr.svg"); }
+.ecommerce-flag-kr.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/kr.svg"); }
+.ecommerce-flag-kw { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/kw.svg"); }
+.ecommerce-flag-kw.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/kw.svg"); }
+.ecommerce-flag-ky { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ky.svg"); }
+.ecommerce-flag-ky.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ky.svg"); }
+.ecommerce-flag-kz { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/kz.svg"); }
+.ecommerce-flag-kz.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/kz.svg"); }
+.ecommerce-flag-la { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/la.svg"); }
+.ecommerce-flag-la.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/la.svg"); }
+.ecommerce-flag-lb { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/lb.svg"); }
+.ecommerce-flag-lb.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/lb.svg"); }
+.ecommerce-flag-lc { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/lc.svg"); }
+.ecommerce-flag-lc.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/lc.svg"); }
+.ecommerce-flag-li { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/li.svg"); }
+.ecommerce-flag-li.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/li.svg"); }
+.ecommerce-flag-lk { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/lk.svg"); }
+.ecommerce-flag-lk.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/lk.svg"); }
+.ecommerce-flag-lr { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/lr.svg"); }
+.ecommerce-flag-lr.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/lr.svg"); }
+.ecommerce-flag-ls { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ls.svg"); }
+.ecommerce-flag-ls.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ls.svg"); }
+.ecommerce-flag-lt { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/lt.svg"); }
+.ecommerce-flag-lt.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/lt.svg"); }
+.ecommerce-flag-lu { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/lu.svg"); }
+.ecommerce-flag-lu.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/lu.svg"); }
+.ecommerce-flag-lv { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/lv.svg"); }
+.ecommerce-flag-lv.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/lv.svg"); }
+.ecommerce-flag-ly { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ly.svg"); }
+.ecommerce-flag-ly.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ly.svg"); }
+.ecommerce-flag-ma { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ma.svg"); }
+.ecommerce-flag-ma.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ma.svg"); }
+.ecommerce-flag-mc { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mc.svg"); }
+.ecommerce-flag-mc.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mc.svg"); }
+.ecommerce-flag-md { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/md.svg"); }
+.ecommerce-flag-md.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/md.svg"); }
+.ecommerce-flag-me { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/me.svg"); }
+.ecommerce-flag-me.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/me.svg"); }
+.ecommerce-flag-mf { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mf.svg"); }
+.ecommerce-flag-mf.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mf.svg"); }
+.ecommerce-flag-mg { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mg.svg"); }
+.ecommerce-flag-mg.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mg.svg"); }
+.ecommerce-flag-mh { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mh.svg"); }
+.ecommerce-flag-mh.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mh.svg"); }
+.ecommerce-flag-mk { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mk.svg"); }
+.ecommerce-flag-mk.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mk.svg"); }
+.ecommerce-flag-ml { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ml.svg"); }
+.ecommerce-flag-ml.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ml.svg"); }
+.ecommerce-flag-mm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mm.svg"); }
+.ecommerce-flag-mm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mm.svg"); }
+.ecommerce-flag-mn { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mn.svg"); }
+.ecommerce-flag-mn.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mn.svg"); }
+.ecommerce-flag-mo { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mo.svg"); }
+.ecommerce-flag-mo.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mo.svg"); }
+.ecommerce-flag-mp { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mp.svg"); }
+.ecommerce-flag-mp.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mp.svg"); }
+.ecommerce-flag-mq { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mq.svg"); }
+.ecommerce-flag-mq.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mq.svg"); }
+.ecommerce-flag-mr { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mr.svg"); }
+.ecommerce-flag-mr.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mr.svg"); }
+.ecommerce-flag-ms { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ms.svg"); }
+.ecommerce-flag-ms.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ms.svg"); }
+.ecommerce-flag-mt { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mt.svg"); }
+.ecommerce-flag-mt.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mt.svg"); }
+.ecommerce-flag-mu { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mu.svg"); }
+.ecommerce-flag-mu.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mu.svg"); }
+.ecommerce-flag-mv { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mv.svg"); }
+.ecommerce-flag-mv.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mv.svg"); }
+.ecommerce-flag-mw { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mw.svg"); }
+.ecommerce-flag-mw.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mw.svg"); }
+.ecommerce-flag-mx { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mx.svg"); }
+.ecommerce-flag-mx.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mx.svg"); }
+.ecommerce-flag-my { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/my.svg"); }
+.ecommerce-flag-my.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/my.svg"); }
+.ecommerce-flag-mz { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/mz.svg"); }
+.ecommerce-flag-mz.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/mz.svg"); }
+.ecommerce-flag-na { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/na.svg"); }
+.ecommerce-flag-na.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/na.svg"); }
+.ecommerce-flag-nc { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/nc.svg"); }
+.ecommerce-flag-nc.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/nc.svg"); }
+.ecommerce-flag-ne { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ne.svg"); }
+.ecommerce-flag-ne.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ne.svg"); }
+.ecommerce-flag-nf { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/nf.svg"); }
+.ecommerce-flag-nf.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/nf.svg"); }
+.ecommerce-flag-ng { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ng.svg"); }
+.ecommerce-flag-ng.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ng.svg"); }
+.ecommerce-flag-ni { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ni.svg"); }
+.ecommerce-flag-ni.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ni.svg"); }
+.ecommerce-flag-nl { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/nl.svg"); }
+.ecommerce-flag-nl.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/nl.svg"); }
+.ecommerce-flag-no { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/no.svg"); }
+.ecommerce-flag-no.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/no.svg"); }
+.ecommerce-flag-np { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/np.svg"); }
+.ecommerce-flag-np.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/np.svg"); }
+.ecommerce-flag-nr { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/nr.svg"); }
+.ecommerce-flag-nr.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/nr.svg"); }
+.ecommerce-flag-nu { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/nu.svg"); }
+.ecommerce-flag-nu.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/nu.svg"); }
+.ecommerce-flag-nz { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/nz.svg"); }
+.ecommerce-flag-nz.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/nz.svg"); }
+.ecommerce-flag-om { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/om.svg"); }
+.ecommerce-flag-om.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/om.svg"); }
+.ecommerce-flag-pa { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pa.svg"); }
+.ecommerce-flag-pa.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pa.svg"); }
+.ecommerce-flag-pc { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pc.svg"); }
+.ecommerce-flag-pc.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pc.svg"); }
+.ecommerce-flag-pe { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pe.svg"); }
+.ecommerce-flag-pe.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pe.svg"); }
+.ecommerce-flag-pf { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pf.svg"); }
+.ecommerce-flag-pf.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pf.svg"); }
+.ecommerce-flag-pg { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pg.svg"); }
+.ecommerce-flag-pg.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pg.svg"); }
+.ecommerce-flag-ph { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ph.svg"); }
+.ecommerce-flag-ph.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ph.svg"); }
+.ecommerce-flag-pk { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pk.svg"); }
+.ecommerce-flag-pk.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pk.svg"); }
+.ecommerce-flag-pl { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pl.svg"); }
+.ecommerce-flag-pl.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pl.svg"); }
+.ecommerce-flag-pm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pm.svg"); }
+.ecommerce-flag-pm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pm.svg"); }
+.ecommerce-flag-pn { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pn.svg"); }
+.ecommerce-flag-pn.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pn.svg"); }
+.ecommerce-flag-pr { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pr.svg"); }
+.ecommerce-flag-pr.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pr.svg"); }
+.ecommerce-flag-ps { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ps.svg"); }
+.ecommerce-flag-ps.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ps.svg"); }
+.ecommerce-flag-pt { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pt.svg"); }
+.ecommerce-flag-pt.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pt.svg"); }
+.ecommerce-flag-pw { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/pw.svg"); }
+.ecommerce-flag-pw.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/pw.svg"); }
+.ecommerce-flag-py { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/py.svg"); }
+.ecommerce-flag-py.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/py.svg"); }
+.ecommerce-flag-qa { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/qa.svg"); }
+.ecommerce-flag-qa.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/qa.svg"); }
+.ecommerce-flag-re { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/re.svg"); }
+.ecommerce-flag-re.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/re.svg"); }
+.ecommerce-flag-ro { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ro.svg"); }
+.ecommerce-flag-ro.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ro.svg"); }
+.ecommerce-flag-rs { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/rs.svg"); }
+.ecommerce-flag-rs.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/rs.svg"); }
+.ecommerce-flag-ru { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ru.svg"); }
+.ecommerce-flag-ru.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ru.svg"); }
+.ecommerce-flag-rw { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/rw.svg"); }
+.ecommerce-flag-rw.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/rw.svg"); }
+.ecommerce-flag-sa { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sa.svg"); }
+.ecommerce-flag-sa.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sa.svg"); }
+.ecommerce-flag-sb { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sb.svg"); }
+.ecommerce-flag-sb.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sb.svg"); }
+.ecommerce-flag-sc { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sc.svg"); }
+.ecommerce-flag-sc.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sc.svg"); }
+.ecommerce-flag-sd { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sd.svg"); }
+.ecommerce-flag-sd.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sd.svg"); }
+.ecommerce-flag-se { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/se.svg"); }
+.ecommerce-flag-se.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/se.svg"); }
+.ecommerce-flag-sg { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sg.svg"); }
+.ecommerce-flag-sg.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sg.svg"); }
+.ecommerce-flag-sh { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sh.svg"); }
+.ecommerce-flag-sh.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sh.svg"); }
+.ecommerce-flag-si { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/si.svg"); }
+.ecommerce-flag-si.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/si.svg"); }
+.ecommerce-flag-sj { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sj.svg"); }
+.ecommerce-flag-sj.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sj.svg"); }
+.ecommerce-flag-sk { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sk.svg"); }
+.ecommerce-flag-sk.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sk.svg"); }
+.ecommerce-flag-sl { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sl.svg"); }
+.ecommerce-flag-sl.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sl.svg"); }
+.ecommerce-flag-sm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sm.svg"); }
+.ecommerce-flag-sm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sm.svg"); }
+.ecommerce-flag-sn { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sn.svg"); }
+.ecommerce-flag-sn.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sn.svg"); }
+.ecommerce-flag-so { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/so.svg"); }
+.ecommerce-flag-so.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/so.svg"); }
+.ecommerce-flag-sr { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sr.svg"); }
+.ecommerce-flag-sr.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sr.svg"); }
+.ecommerce-flag-ss { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ss.svg"); }
+.ecommerce-flag-ss.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ss.svg"); }
+.ecommerce-flag-st { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/st.svg"); }
+.ecommerce-flag-st.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/st.svg"); }
+.ecommerce-flag-sv { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sv.svg"); }
+.ecommerce-flag-sv.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sv.svg"); }
+.ecommerce-flag-sx { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sx.svg"); }
+.ecommerce-flag-sx.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sx.svg"); }
+.ecommerce-flag-sy { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sy.svg"); }
+.ecommerce-flag-sy.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sy.svg"); }
+.ecommerce-flag-sz { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/sz.svg"); }
+.ecommerce-flag-sz.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/sz.svg"); }
+.ecommerce-flag-tc { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tc.svg"); }
+.ecommerce-flag-tc.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tc.svg"); }
+.ecommerce-flag-td { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/td.svg"); }
+.ecommerce-flag-td.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/td.svg"); }
+.ecommerce-flag-tf { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tf.svg"); }
+.ecommerce-flag-tf.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tf.svg"); }
+.ecommerce-flag-tg { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tg.svg"); }
+.ecommerce-flag-tg.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tg.svg"); }
+.ecommerce-flag-th { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/th.svg"); }
+.ecommerce-flag-th.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/th.svg"); }
+.ecommerce-flag-tj { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tj.svg"); }
+.ecommerce-flag-tj.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tj.svg"); }
+.ecommerce-flag-tk { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tk.svg"); }
+.ecommerce-flag-tk.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tk.svg"); }
+.ecommerce-flag-tl { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tl.svg"); }
+.ecommerce-flag-tl.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tl.svg"); }
+.ecommerce-flag-tm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tm.svg"); }
+.ecommerce-flag-tm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tm.svg"); }
+.ecommerce-flag-tn { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tn.svg"); }
+.ecommerce-flag-tn.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tn.svg"); }
+.ecommerce-flag-to { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/to.svg"); }
+.ecommerce-flag-to.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/to.svg"); }
+.ecommerce-flag-tr { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tr.svg"); }
+.ecommerce-flag-tr.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tr.svg"); }
+.ecommerce-flag-tt { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tt.svg"); }
+.ecommerce-flag-tt.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tt.svg"); }
+.ecommerce-flag-tv { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tv.svg"); }
+.ecommerce-flag-tv.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tv.svg"); }
+.ecommerce-flag-tw { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tw.svg"); }
+.ecommerce-flag-tw.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tw.svg"); }
+.ecommerce-flag-tz { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/tz.svg"); }
+.ecommerce-flag-tz.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/tz.svg"); }
+.ecommerce-flag-ua { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ua.svg"); }
+.ecommerce-flag-ua.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ua.svg"); }
+.ecommerce-flag-ug { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ug.svg"); }
+.ecommerce-flag-ug.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ug.svg"); }
+.ecommerce-flag-um { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/um.svg"); }
+.ecommerce-flag-um.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/um.svg"); }
+.ecommerce-flag-un { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/un.svg"); }
+.ecommerce-flag-un.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/un.svg"); }
+.ecommerce-flag-us { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/us.svg"); }
+.ecommerce-flag-us.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/us.svg"); }
+.ecommerce-flag-uy { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/uy.svg"); }
+.ecommerce-flag-uy.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/uy.svg"); }
+.ecommerce-flag-uz { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/uz.svg"); }
+.ecommerce-flag-uz.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/uz.svg"); }
+.ecommerce-flag-va { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/va.svg"); }
+.ecommerce-flag-va.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/va.svg"); }
+.ecommerce-flag-vc { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/vc.svg"); }
+.ecommerce-flag-vc.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/vc.svg"); }
+.ecommerce-flag-ve { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ve.svg"); }
+.ecommerce-flag-ve.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ve.svg"); }
+.ecommerce-flag-vg { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/vg.svg"); }
+.ecommerce-flag-vg.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/vg.svg"); }
+.ecommerce-flag-vi { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/vi.svg"); }
+.ecommerce-flag-vi.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/vi.svg"); }
+.ecommerce-flag-vn { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/vn.svg"); }
+.ecommerce-flag-vn.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/vn.svg"); }
+.ecommerce-flag-vu { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/vu.svg"); }
+.ecommerce-flag-vu.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/vu.svg"); }
+.ecommerce-flag-wf { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/wf.svg"); }
+.ecommerce-flag-wf.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/wf.svg"); }
+.ecommerce-flag-ws { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ws.svg"); }
+.ecommerce-flag-ws.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ws.svg"); }
+.ecommerce-flag-xk { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/xk.svg"); }
+.ecommerce-flag-xk.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/xk.svg"); }
+.ecommerce-flag-ye { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/ye.svg"); }
+.ecommerce-flag-ye.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/ye.svg"); }
+.ecommerce-flag-yt { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/yt.svg"); }
+.ecommerce-flag-yt.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/yt.svg"); }
+.ecommerce-flag-za { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/za.svg"); }
+.ecommerce-flag-za.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/za.svg"); }
+.ecommerce-flag-zm { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/zm.svg"); }
+.ecommerce-flag-zm.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/zm.svg"); }
+.ecommerce-flag-zw { background-image: url("../vendor/flag-icons/7.2.3/flags/4x3/zw.svg"); }
+.ecommerce-flag-zw.ecommerce-flag--square { background-image: url("../vendor/flag-icons/7.2.3/flags/1x1/zw.svg"); }

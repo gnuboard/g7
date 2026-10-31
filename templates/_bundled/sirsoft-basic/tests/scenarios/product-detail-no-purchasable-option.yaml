@@ -1,0 +1,31 @@
+feature: 상품 상세 — 구매할 수 있는 옵션이 없는 상품의 구매 버튼 잠금
+
+description: |
+  옵션 행이 하나도 없거나 모두 판매 중지된 상품은 공개 상품 응답의 `options` 가 빈 배열이다.
+  종전에는 이런 상품에서도 「바로 구매」·「장바구니 담기」가 활성으로 보였고, 바로 구매를 누르면
+  체크아웃이 서버 오류로 끝났다. 서버(이커머스)는 이제 이런 상품의 담기·바로 구매를 422 와
+  번역된 안내로 거절하고, 화면은 두 버튼을 잠근 뒤 이유 안내를 보인다.
+
+  판정 기준은 `options` 가 배열이면서 비어 있을 때다. `options` 키가 아예 없는 응답까지 잠그면,
+  관계를 싣지 않는 다른 응답 경로에서 정상 상품의 구매까지 막힌다.
+
+# axis 의미:
+#   공개 상품 응답의 options 상태 — 빈 배열(구매 불가) / 하나 이상(구매 가능) / 키 없음(판정 보류).
+axes:
+  options_state: [empty_array, present, missing_key]
+
+effects:
+  - purchase_buttons_disabled_without_purchasable_option   # 빈 배열이면 바로 구매·장바구니 버튼 잠금
+  - purchase_buttons_enabled_with_purchasable_option       # 옵션이 있으면 이 가드로 잠기지 않음
+  - missing_options_key_does_not_disable                   # options 키가 없으면 잠그지 않음
+  - no_purchasable_option_notice_shown                     # 같은 조건으로 잠긴 이유 안내 표시
+  - server_rejection_message_toasted                       # 서버 거절(422) 안내를 오류 토스트로 표시
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shop-no-purchasable-option.test.tsx
+
+validation:
+  browser_check: Chrome MCP   # sirsoft-basic Playwright E2E 인프라 미구축 — 실브라우저 확인은 Chrome MCP 로 대체
+  note: |
+    레이아웃 소스(_purchase_card.g7.html)를 구운 산출의 disabled 표현식을 문맥별로 평가해 버튼 잠금을 판정한다.
+    서버 쪽 422 거절은 이커머스 모듈 시나리오(no-purchasable-option-rejection.yaml)가 담당한다.

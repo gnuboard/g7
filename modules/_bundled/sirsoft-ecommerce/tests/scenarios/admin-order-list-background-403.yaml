@@ -1,0 +1,20 @@
+feature: 주문 목록·상세 보조 데이터소스 403 억제 (S3-D6)
+
+description: |
+  주문 조회 전용 운영자에게 분류·설정·택배사·배송정책·프리셋 403 이 「권한 없음」 토스트로 떴다 — 보조 소스는 억제, 본체 403 은 오류 페이지 유지.
+  주문 상세도 택배사·사유 목록 403 이 같은 토스트로 떴다(2026-10-07 실측) — 같은 처리.
+
+axes:
+  source:
+    - background
+    - main
+
+effects:
+  - background_sources_suppress_403_toast # 보조 데이터소스 403 은 토스트 없이 넘어간다
+  - main_list_403_still_shows_error_page # 목록·상세 본체 403 은 억제하지 않는다
+  - detail_setting_sources_suppress_403_toast # 주문 상세의 택배사·환불 사유 목록 403 은 토스트 없이 넘어간다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderListBackgroundSources403.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderDetailSettingSources403.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/order-detail-forbidden-sources-and-failure-reason.spec.ts

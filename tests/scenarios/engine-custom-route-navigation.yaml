@@ -1,0 +1,30 @@
+feature: 엔진 라우터의 custom 주소 전체 페이지 이동 (#792 W6, engine-v1.84.0)
+
+description: |
+  서버 셸이 내리는 G7Config.customRoutes(routes/custom.php 의 GET 주소 패턴, user/admin 범위)와 맞는 주소로
+  엔진 안에서 이동하면 pushState 로 그리지 않고 location.assign 으로 서버에 넘기고, 뒤로·앞으로 가기로
+  그 주소에 오면 location.reload 한다. 패턴이 없거나 맞지 않으면 종전과 완전히 같다.
+  `*` 는 한 구간(1글자 이상), 쿼리·해시·끝 슬래시·퍼센트 인코딩을 정규화하고 범위는 /admin 접두로 고른다.
+
+test_files:
+  - resources/js/core/routing/__tests__/CustomRouteNavigation.test.ts
+  - tests/Playwright/specs/engine-custom-route-navigation.spec.ts
+
+axes:
+  case:
+    - matcher
+    - navigate
+    - popstate
+    - sample_menu
+
+effects:
+  - star_matches_one_segment_scoped
+  - path_normalized
+  - route_constraints_respected
+  - foreign_origin_and_no_patterns_false
+  - custom_navigate_full_page
+  - non_custom_navigate_unchanged
+  - no_patterns_unchanged
+  - custom_popstate_reloads
+  - custom_popstate_respects_leave_guard
+  - menu_click_opens_custom_screen_full_page

@@ -1,0 +1,15 @@
+feature: "[환불하기] 실행 창 금액 표기 (S3-D1)"
+
+description: |
+  실행 창 금액이 「32500 KRW」처럼 날 숫자·코드로 찍혔다(실측: Q3) — 통화 포맷으로 그린다.
+
+axes:
+  currency:
+    - krw
+    - decimal
+
+effects:
+  - refund_execute_amounts_are_currency_formatted # 현금·마일리지·합계를 통화 표기로 그린다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimRefundExecuteAmountFormat.test.ts

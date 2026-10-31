@@ -12,7 +12,7 @@
  */
 import { test as base } from '@playwright/test';
 // 6단계 상위 = 코어 루트의 fixtures/auth.ts
-import { issueToken, authenticatePage } from '../../../../../../tests/Playwright/fixtures/auth';
+import { issueToken, issueScopedToken, authenticatePage } from '../../../../../../tests/Playwright/fixtures/auth';
 
 type EcommerceAuthFixtures = {
   /** 이커머스 환경설정 권한 보유 토큰 */
@@ -25,6 +25,12 @@ type EcommerceAuthFixtures = {
   userToken: string;
   /** 구매자 토큰 (마이페이지 — 주문조회·취소요청 등. 관리자 권한 없음) */
   customerToken: string;
+  /** 클레임 목록 조회 전용 토큰 (일괄 전이 게이팅 검증용 — 전이 권한 없음) */
+  claimsReadToken: string;
+  /** 클레임 목록 조회 + 상태 전이 토큰 */
+  claimsManageToken: string;
+  /** 클레임 조회 + 전이만 가진 토큰 (설정 권한 없음 — 기본 역할 manager 와 같은 폭) */
+  claimsScopedManageToken: string;
   /** 주문 조회 전용 권한 토큰 (읽기만 — 수정 게이팅 검증용) */
   ordersReadToken: string;
   /** 회원 토큰 (마이페이지 주문상세·리뷰 등. 관리자 권한 없음) */
@@ -37,8 +43,6 @@ type EcommerceAuthFixtures = {
   mileageReadOnlyToken: string;
   /** 상품 조회 + 수정 권한 보유 토큰 (상품폼 등록/수정 검증용) */
   productManageToken: string;
-  /** 주문 조회(`orders.read`) 권한 보유 토큰 (주문 상세 표시 검증용) */
-  ordersReadToken: string;
   /** 주문 조회 + 수정 권한 보유 토큰 (입금확인·취소·현금영수증 발급 검증용) */
   orderManageToken: string;
   /** 배송정책 조회+수정 권한 보유 토큰 (배송정책 목록 표시 검증용) */
@@ -47,10 +51,6 @@ type EcommerceAuthFixtures = {
   couponManageToken: string;
   /** 배송정책 + 상품 + 카테고리 권한 토큰 (구간 경계 E2E 픽스처 구성용) */
   shippingBoundaryToken: string;
-  /** 일반 쇼핑 사용자 토큰 (관리자 권한 없음 — 유저 화면 검증용) */
-  userToken: string;
-  /** 구매 고객 토큰 (장바구니/추가옵션 등 쇼핑 플로우 검증용) */
-  customerToken: string;
 };
 
 export const test = base.extend<EcommerceAuthFixtures>({
@@ -72,6 +72,20 @@ export const test = base.extend<EcommerceAuthFixtures>({
     // 마이페이지 이용자 — 자기 주문만 다루므로 관리자 권한이 필요 없다.
     await use(issueToken());
   },
+  claimsReadToken: async ({}, use) => {
+    // 권한 경계 자체를 검증하는 토큰이므로 `issueScopedToken` 이다 — `issueToken` 은 사이트
+    // admin 역할을 함께 붙여 전 권한을 주므로(실측: `can_update_status: true`), 그 토큰으로
+    // "권한이 없으면 잠긴다" 를 단언하면 게이트가 아니라 다른 사정(응답 도착 전 상태)으로
+    // 잠긴 컨트롤을 보고 초록이 된다.
+    await use(issueScopedToken('sirsoft-ecommerce.claims.read'));
+  },
+  claimsManageToken: async ({}, use) => {
+    await use(issueToken('sirsoft-ecommerce.claims.read', 'sirsoft-ecommerce.claims.update-status'));
+  },
+  claimsScopedManageToken: async ({}, use) => {
+    // 기본 역할 `manager` 와 같은 권한 폭 — 클레임은 되고 설정은 안 되는 운영자다.
+    await use(issueScopedToken('sirsoft-ecommerce.claims.read', 'sirsoft-ecommerce.claims.update-status'));
+  },
   ordersReadToken: async ({}, use) => {
     await use(issueToken('sirsoft-ecommerce.orders.read'));
   },
@@ -90,9 +104,6 @@ export const test = base.extend<EcommerceAuthFixtures>({
   },
   productManageToken: async ({}, use) => {
     await use(issueToken('sirsoft-ecommerce.products.read', 'sirsoft-ecommerce.products.update'));
-  },
-  ordersReadToken: async ({}, use) => {
-    await use(issueToken('sirsoft-ecommerce.orders.read'));
   },
   orderManageToken: async ({}, use) => {
     await use(issueToken('sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.orders.update'));
@@ -132,15 +143,6 @@ export const test = base.extend<EcommerceAuthFixtures>({
         'sirsoft-ecommerce.categories.read',
       ),
     );
-  },
-  // userToken / customerToken 은 현재 둘 다 "관리자 권한 없는 인증 사용자" 로 동일하다.
-  // 유저 화면(마이페이지/헤더)과 구매 플로우(장바구니/주문서)는 요구 권한이 갈릴 수 있어
-  // 호출부의 의도를 이름으로 남긴다 — 한쪽에 권한이 붙어도 다른 쪽이 영향받지 않는다.
-  userToken: async ({}, use) => {
-    await use(issueToken());
-  },
-  customerToken: async ({}, use) => {
-    await use(issueToken());
   },
 });
 

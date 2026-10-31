@@ -10,5 +10,11 @@
   },
   "sirsoft-board-reports": {
     "name": "掲示板通報状況"
+  },
+  "sirsoft-board-scraps": {
+    "name": "スクラップ管理"
+  },
+  "sirsoft-board-reactions": {
+    "name": "リアクション管理"
   }
 }

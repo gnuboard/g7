@@ -1,0 +1,9 @@
+/* 확장 손 CSS — 변환 도구는 이 아래를 건드리지 않는다 */
+.pay-demo-tone {
+  color: #b91c1c;
+}
+
+/* 생성 의미 클래스에 상태 값을 덧붙이는 손 규칙 — 재실행해도 생성 정의(.pay-demo-card)는 남아야 한다 */
+.pay-demo-card:focus-within {
+  outline: 2px solid currentColor;
+}

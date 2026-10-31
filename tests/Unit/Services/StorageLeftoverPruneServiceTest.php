@@ -765,7 +765,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * 링크 복구는 백업을 웹 트리 밖으로 옮기지 못하면 `public/storage.broken.<…>` 로
      * 폴백한다 — 그 사본은 **지금 웹에서 열린다**. 형제(`storage/app` 쪽)만 회수 주체를
-     * 얻는 동안 이쪽은 정리 주체가 0 이었다: 7.1.0 이설 마이그레이션은 1회성이라 그 뒤에
+     * 얻는 동안 이쪽은 정리 주체가 0 이었다: 7.2.0 이설 마이그레이션은 1회성이라 그 뒤에
      * 새로 생기는 것을 잡지 못한다 (11차 G3 라운드 E11-1 / F-4).
      *
      * @scenario leftover_target=public_storage_broken_docroot, leftover_mode=real_delete, leftover_guard=latest_kept
@@ -881,7 +881,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
     }
 
     /**
-     * 7.1.0 이설이 만든 **접미사 두 겹** 이름도 정리 모집단에 든다.
+     * 7.2.0 이설이 만든 **접미사 두 겹** 이름도 정리 모집단에 든다.
      *
      * 이설 마이그레이션은 이미 접미사를 가진 이름을 옮기다 충돌하면 그 뒤에 하나를 더
      * 붙인다(`…-a1b2c3d4-e5f6a7b8`). 정리 쪽 정규식이 대시 그룹을 **하나만** 받으면 그
@@ -926,7 +926,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
     public function test_migration_and_pruner_share_the_broken_backup_name_constants(): void
     {
         $source = (string) file_get_contents(
-            base_path('upgrades/data/7.1.0/migrations/01_MovePublicStorageBrokenBackupsOutOfDocroot.php')
+            base_path('upgrades/data/7.2.0/migrations/04_MovePublicStorageBrokenBackupsOutOfDocroot.php')
         );
 
         foreach ([

@@ -1,0 +1,16 @@
+feature: 관리자 회원 상세 — 오류 화면 전환 범위
+
+description: |
+  회원 상세의 403·404 화면 전환은 회원 조회(user) 데이터 소스에만 건다. 레이아웃 단위로 걸면 상속한 화면 틀의
+  알림·메뉴 조회 403 에도 반응해, 회원 읽기 권한만 있는 관리자가 볼 수 있는 상세가 통째로 403 화면이 됐다
+  (#736 S2 P1 실측 · 2026-10-04 결정 「이 브랜치에서 고침」).
+
+axes:
+  failing_source: [shell, user]
+
+effects:
+  - shell_403_does_not_replace_detail
+  - user_source_403_404_still_show_error_page
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-detail-error-scope.test.ts

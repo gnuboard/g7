@@ -1,0 +1,21 @@
+feature: KG이니시스 결제창 진입 핸들러(requestPayment) — 액션 인자 하나로 결제수단을 정하고 PG 매뉴얼대로 폼을 만든다
+
+description: |
+  주문서가 주문 생성 응답의 `pg_payment_handler` 로 부르는 결제창 진입 핸들러. 결제수단은 액션 인자(`pg_payment_data.payment_method`,
+  서버가 주문에 저장한 값) 하나에서만 읽는다(#639). 예전에는 인자 → 응답 → 엔진 내부 화면 상태(window.__templateApp) → 'card'
+  순으로 채워, 화면 상태가 서버와 다르면 다른 결제수단으로 결제창이 열릴 수 있었다. 결제 통화도 인자(서버가 주문 스냅샷 환율로
+  환산한 청구 통화)만 본다. 설정이 모자라거나 통화·결제수단 조합이 맞지 않으면 결제창을 열지 않고 오류 창으로 끝낸다.
+
+axes:
+  flow: [entry_guard, pc_standard, cbt, mobile, sdk_gate]
+
+effects:
+  - payment_method_read_from_action_argument_only
+  - payment_entry_fails_closed
+  - pc_standard_form_follows_manual
+  - cbt_form_follows_manual
+  - mobile_form_follows_manual
+  - sdk_host_allowlisted
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/handlers/requestPayment.test.ts

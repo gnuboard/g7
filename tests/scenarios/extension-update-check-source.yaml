@@ -1,0 +1,23 @@
+feature: extension_update_check_source
+
+description: |
+  확장 업데이트 확인(checkModuleUpdate·checkPluginUpdate·checkTemplateUpdate)이 소스 지정을 존중하고, 지정이 없으면
+  GitHub·번들 중 높은 버전을 후보로 본다(W3 실측 — 번들 1.1.0·공개 1.0.4 에서 plugin:update 가 「업데이트 없음」,
+  --source=bundled 도 확인 단계가 소스를 받지 않아 같은 결과). 갱신 명령 3종은 확인 단계에 --source 를 넘긴다.
+
+coverage_strategy: full
+
+axes:
+  source: [auto, explicit]
+  github: [older_than_bundled, any]
+
+exclusions:
+  - { source: auto, github: any, reason: "자동 모드의 GitHub 가 더 높은 경우는 auto/older_than_bundled 시험이 함께 잰다(1.2.0 분기)" }
+
+effects:
+  - auto_check_offers_higher_of_github_and_bundled
+  - explicit_source_is_respected_by_update_check
+  - update_commands_pass_source_to_check
+
+test_files:
+  - tests/Unit/Extension/ExtensionUpdateCheckSourceTest.php

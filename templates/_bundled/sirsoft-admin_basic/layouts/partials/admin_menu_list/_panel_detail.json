@@ -1,24 +1,33 @@
 {
-  "layout_name": "panel_detail",
-  "id": "detail_panel",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "children": [
-    {
-      "id": "empty_state_panel",
-      "type": "composite",
-      "name": "EmptyState",
-      "if": "{{!_global.selectedMenuId && _global.panelMode !== 'create'}}",
-      "props": {
-        "icon": "bars",
-        "title": "$t:admin.menus.select_menu_hint",
-        "className": "py-16"
-      }
+    "comment": "메뉴 관리 화면 오른쪽 패널의 껍데기. 스스로 그리는 것은 「고른 것이 없다」는 안내뿐이고,\n  보기와 편집 두 조각을 나란히 심어 둔다 — **셋 중 무엇이 보일지는 각 조각이 스스로 정한다**\n  (패널 모드와 고른 항목을 각자 읽는다). 그래서 여기에는 분기가 없다.",
+    "meta": {
+        "is_partial": true
     },
-    { "partial": "_panel_view.json" },
-    { "partial": "_panel_form.json" }
-  ]
+    "layout_name": "panel_detail",
+    "id": "detail_panel",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_global.menuBulkMode !== true}}",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
+        {
+            "id": "empty_state_panel",
+            "type": "composite",
+            "name": "EmptyState",
+            "if": "{{!_global.selectedMenuId && _global.panelMode !== 'create'}}",
+            "props": {
+                "icon": "bars",
+                "title": "$t:admin.menus.select_menu_hint",
+                "className": "py-16"
+            }
+        },
+        {
+            "partial": "_panel_view.json"
+        },
+        {
+            "partial": "_panel_form.json"
+        }
+    ]
 }

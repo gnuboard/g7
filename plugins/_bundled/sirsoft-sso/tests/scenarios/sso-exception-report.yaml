@@ -1,0 +1,19 @@
+feature: sso_exception_report
+
+description: |
+  SSO 정상 거절 예외의 보고 여부. SCIM 정상 거절(`ScimException` — 없는 자원 404, 중복 409, 잘못된 값 400)은 SCIM 오류 응답
+  (RFC 7644 §3.12)으로 나가고 예외 보고기(laravel 로그 ERROR + 스택)에 남지 않는다(`ShouldntReport`). 응답 모양은 그대로다.
+  그 밖의 예외는 계속 보고된다.
+
+axes:
+  rejection:
+    - "not_found|uniqueness"   # HTTP 경로 — 컨트롤러·서비스가 던진 SCIM 오류
+    - handler                  # 예외 처리기 shouldReport 직접 판정
+
+effects:
+  - scim_error_response_unchanged   # 상태 코드·Content-Type·schemas·scimType 그대로
+  - scim_rejection_not_reported     # 보고기 호출 0
+  - other_errors_still_reported     # 대조군 RuntimeException 은 보고 대상
+
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Scim/ScimExceptionReportTest.php

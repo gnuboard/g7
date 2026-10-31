@@ -1,0 +1,21 @@
+feature: Hello 사용자 템플릿 MemoCard 대체본 — 레이아웃 편집기 표식과 요소 ID 패스스루
+
+description: |
+  Hello 모듈 MemoCard 가 편집기 표식(editorAttrs)을 루트에 펼치지 않아 편집기 팔레트에서 꺼낸 카드를 편집기가 찾지
+  못했다(7.1.0 전수 실측). 이 템플릿의 대체본도 같은 마크업 표면을 받으므로 같은 계약을 지킨다. 축 context 는
+  편집 모드 주입 여부다. 0.3.0 부터 대체본 모양은 템플릿 자기 순수 CSS 로 그리고(종전 Tailwind 클래스는 이 템플릿에
+  정의가 없어 빠졌다), Hello 모듈 화면을 덮는 확장 CSS 덮기 파일을 template.json 에 선언한다 — context=style 이 그 축이다.
+
+axes:
+  context: [editor, runtime, style]
+
+effects:
+  - editor_attrs_on_root
+  - element_id_on_root
+  - no_editor_marks_outside_editor
+  - override_uses_template_css_classes
+  - accent_is_css_color
+  - extension_css_override_declared_for_hello_module
+
+test_files:
+  - templates/_bundled/gnuboard7-hello_user_template/__tests__/components/MemoCardOverride.test.tsx

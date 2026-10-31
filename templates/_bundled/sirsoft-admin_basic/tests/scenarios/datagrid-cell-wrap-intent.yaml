@@ -1,0 +1,24 @@
+feature: DataGrid 칸 안의 줄바꿈 클래스가 칸의 nowrap 에 묻히지 않는다
+
+description: |
+  DataGrid 데스크톱 표 칸(td)은 whitespace-nowrap 이라 칸 안 글까지 상속된다. 글에 단 줄바꿈 클래스
+  (wrap-anywhere·break-words·break-all)가 무력해져, 게시판 글 목록에서 띄어쓰기 없는 긴 제목이 한 줄로 늘고
+  표가 컨테이너보다 넓어졌다(7.1.1 출시 전 실측 결함 3 — 게시판 1.2.1 #143 「글 목록 제목은 칸 안에서 줄을 바꿔
+  모두 보입니다」 약속과 다름). 칸에 data-grid-cell 표식을 달고 main.css components 층에서 그 안의 줄바꿈 클래스
+  요소만 white-space: normal 로 되돌린다. 같은 요소의 truncate·whitespace-nowrap(utilities 층)은 그대로 이긴다.
+
+axes:
+  surface: [desktop_cell]
+
+effects:
+  - cell_marked_for_wrap_intent          # 데이터 칸 td 에 data-grid-cell + whitespace-nowrap
+  - wrap_classes_restore_white_space     # components 층 규칙이 줄바꿈 클래스 요소를 normal 로
+  - explicit_nowrap_still_wins           # 규칙이 층 밖에 없음(utilities 의 truncate 가 이김)
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGrid.cellWrapIntent.test.tsx
+
+validation:
+  note: |
+    폭은 jsdom 이 계산하지 않는다. 빌드 CSS 를 입힌 headless Chromium 에서 같은 마크업(1094px 컨테이너, 띄어쓰기 없는 제목)을
+    재면 표 폭이 컨테이너 안으로 들어오는지 확인한다. 화면 재실측은 관리자 › 게시판 › 글 목록 1400px.

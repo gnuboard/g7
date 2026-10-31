@@ -3,9 +3,12 @@
 namespace App\Http\Requests\User;
 
 use App\Extension\HookManager;
+use App\Http\Requests\Concerns\ChecksPasswordReuse;
 use App\Models\User;
 use App\Rules\PasswordPolicy;
+use App\Services\UserLockedFieldsService;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -19,6 +22,8 @@ use Illuminate\Validation\Rules\Password;
  */
 class UpdateProfileRequest extends FormRequest
 {
+    use ChecksPasswordReuse;
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -44,8 +49,11 @@ class UpdateProfileRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'nickname' => ['nullable', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($userId)],
-            'password' => ['nullable', 'confirmed', PasswordPolicy::rule()],
-            'current_password' => ['required_with:password', 'current_password'],
+            'password' => ['nullable', 'confirmed', ...PasswordPolicy::rules($this->user()?->email)],
+            // 비밀번호가 없는 회원(외부 인증 전용)은 처음 정하는 것이라 확인할 현재 비밀번호가 없다.
+            'current_password' => $this->userHasPassword()
+                ? ['required_with:password', 'current_password']
+                : ['prohibited'],
             'language' => ['nullable', 'string', Rule::in($supportedLocales)],
             'country' => ['nullable', 'string', 'size:2', 'alpha'],
             'timezone' => ['nullable', 'string', 'timezone'],
@@ -64,6 +72,10 @@ class UpdateProfileRequest extends FormRequest
             'signature' => ['nullable', 'string', 'max:1000'],
             'bio' => ['nullable', 'string', 'max:5000'],
         ];
+
+        // 외부(회사 계정)가 관리하는 칸은 현재 값과 같아야 한다 — 요청에 그 칸이 없으면 통과(7.2.0)
+        $user = $this->user();
+        $rules = app(UserLockedFieldsService::class)->applyRules($rules, $user instanceof User ? $user : null, UserLockedFieldsService::SURFACE_PROFILE);
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.user.update_profile_validation_rules', $rules, $this);
@@ -91,6 +103,7 @@ class UpdateProfileRequest extends FormRequest
             'password.min' => __('user.validation.password_min'),
             'current_password.required_with' => __('user.validation.current_password_required'),
             'current_password.current_password' => __('user.validation.current_password_invalid'),
+            'current_password.prohibited' => __('user.validation.current_password_not_set'),
             'language.in' => __('user.validation.language_invalid'),
             'country.size' => __('user.validation.country_size'),
             'country.alpha' => __('user.validation.country_alpha'),
@@ -116,7 +129,36 @@ class UpdateProfileRequest extends FormRequest
     }
 
     /**
+     * 요청 회원에게 비밀번호가 있는지 반환합니다 (회원을 알 수 없으면 있다고 본다 — 종전 규칙 유지).
+     *
+     * @return bool 비밀번호가 있으면 true
+     */
+    private function userHasPassword(): bool
+    {
+        $user = $this->user();
+
+        return ! $user instanceof User || $user->hasPassword();
+    }
+
+    /**
+     * 비밀번호를 함께 바꾸면 재사용 금지 검사를 현재 비밀번호 확인 **뒤에만** 붙입니다 (추측 오라클 차단).
+     *
+     * @param  Validator  $validator  검증기
+     * @return void
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $this->appendPasswordReuseCheck(
+            $validator,
+            fn () => $this->user() instanceof User ? $this->user() : null,
+            ['current_password'],
+        );
+    }
+
+    /**
      * Prepare the data for validation.
+     *
+     * @return void 입력을 제자리에서 고친다
      */
     protected function prepareForValidation(): void
     {

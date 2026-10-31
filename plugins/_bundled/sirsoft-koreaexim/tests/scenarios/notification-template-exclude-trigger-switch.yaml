@@ -1,0 +1,20 @@
+feature: 환율 플러그인 설정 알림 템플릿 편집 창 — 「이벤트 유발자 제외」 스위치 접근 이름
+
+description: |
+  수신자 규칙(역할, 특정 회원)의 「이벤트 유발자 제외」 스위치는 옆 글자를 따로 둔 span 으로 그려 스위치와
+  이어지지 않았다. 화면 읽기 프로그램에는 이름 없는 스위치로 읽혔다(7.1.0 실측 P-5). 스위치 label 로 이름을
+  주고 옆 글자도 label 이 함께 그린다.
+
+axes:
+  case: [koreaexim_exclude_trigger_switch]
+
+effects:
+  - exclude_trigger_switch_has_accessible_name
+  - exclude_trigger_switch_text_shown_once
+
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/resources/js/__tests__/layouts/koreaeximNotificationTemplateExcludeTriggerSwitch.test.ts
+
+notes: |
+  브라우저 실측: 알림 템플릿 편집 창 → 수신자 규칙 종류를 역할로 → 스위치 role=switch 의 접근 이름이 ko 「이벤트 유발자 제외」,
+  en 「Exclude trigger user」, 포커스 후 Space 로 aria-checked 가 바뀐다.

@@ -17,16 +17,22 @@ class SafeModulePath implements ValidationRule
 {
     use ValidatesExtensionAssetPath;
 
+    /**
+     * 규칙을 만듭니다.
+     *
+     * @param  string  $basePath  모듈 루트 절대 경로 (이 폴더 밖 경로는 거부)
+     */
     public function __construct(
         private string $basePath
     ) {}
 
     /**
-     * Path Traversal 방지 검증.
+     * Path Traversal 방지 검증
      *
-     * @param  string  $attribute  속성명
-     * @param  mixed  $value  검증 대상 값
+     * @param  string  $attribute  검증 대상 속성 이름
+     * @param  mixed  $value  모듈 루트 기준 상대 경로
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

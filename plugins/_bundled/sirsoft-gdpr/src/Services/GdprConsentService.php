@@ -169,7 +169,9 @@ class GdprConsentService
         $hookName = $value
             ? self::PLUGIN_ID.'.consent.granted'
             : self::PLUGIN_ID.'.consent.revoked';
-        HookManager::doAction($hookName, $consent, $source);
+        // 인자 3~5(동의 키·회원 ID·게스트 식별자)는 뒤에 덧붙인 것이다 — 게스트와 필수 항목은 $consent 가 null 이라
+        // 무엇이 바뀌었는지 알 수 없었다. 앞 두 인자만 받는 기존 구독자는 그대로 동작한다.
+        HookManager::doAction($hookName, $consent, $source, $consentKey, $userId, $sessionId);
     }
 
     /**
@@ -425,7 +427,7 @@ class GdprConsentService
                 'user_agent' => substr((string) request()->userAgent(), 0, 500),
             ]);
 
-            HookManager::doAction(self::PLUGIN_ID.'.consent.granted', $updated, ConsentSource::MypageRenewAll->value);
+            HookManager::doAction(self::PLUGIN_ID.'.consent.granted', $updated, ConsentSource::MypageRenewAll->value, $consentKey, $userId, null);
 
             $renewed++;
         }

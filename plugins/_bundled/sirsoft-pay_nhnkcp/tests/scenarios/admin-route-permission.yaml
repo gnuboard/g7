@@ -1,0 +1,27 @@
+feature: 관리자 연동 경로의 이커머스 세부 권한 (KVE-2026-1893)
+
+description: |
+  `admin` 미들웨어는 관리자 여부만 판정하므로, 업무 권한이 없는 제한 관리자도 플러그인의 관리자
+  경로에 도달한다. 주문 조회·조작 경로와 설정성 경로는 각각 이커머스 세부 권한
+  (`sirsoft-ecommerce.orders.read` / `orders.update` / `settings.read`)을 라우트에 직접 선언해야 한다.
+
+  1.1.0 에서 관리자 주문 목록용 간편결제 표시 맵 경로(`admin/orders/easy-pay-display-map`)를
+  제거했다 — 주문 목록 결제수단 이름은 이커머스 주문 목록 응답이 싣는다. 제거된 경로가 다시
+  등록되지 않는지도 이 시나리오가 고정한다.
+
+# axis 의미:
+#   요청한 관리자가 보유한 이커머스 세부 권한. none 은 관리자 역할만 있고 업무 권한이 없는 경우다.
+axes:
+  permission: [none, orders_read, orders_update, settings_read]
+
+effects:
+  - admin_routes_declare_ecommerce_permission_middleware          # 라우트 선언에 세부 권한 미들웨어 부착
+  - removed_easy_pay_display_map_route_is_not_registered          # 제거한 간편결제 표시 맵 경로 미등록
+  - admin_without_business_permission_is_denied_on_order_routes   # 업무 권한 없는 관리자 → 전 경로 403
+  - denied_escrow_register_leaves_payment_meta_untouched          # 거부된 배송등록은 결제 메타 불변
+  - orders_read_admin_reaches_read_routes                         # 주문 읽기 권한 → 조회 경로 200
+  - orders_update_admin_reaches_escrow_register                   # 주문 수정 권한 → 배송등록 200
+  - settings_read_admin_reaches_settings_routes                   # 설정 읽기 권한 → 설정성 경로 200
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/AdminRoutePermissionTest.php

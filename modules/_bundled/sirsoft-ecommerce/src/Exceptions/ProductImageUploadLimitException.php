@@ -18,7 +18,7 @@ class ProductImageUploadLimitException extends RuntimeException
     public function __construct(public readonly int $maxImages)
     {
         parent::__construct(
-            __('sirsoft-ecommerce::exceptions.product_image_limit_exceeded', ['max' => $maxImages])
+            trans_choice('sirsoft-ecommerce::exceptions.product_image_limit_exceeded', $maxImages, ['max' => $maxImages])
         );
     }
 }

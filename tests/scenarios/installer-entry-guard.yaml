@@ -74,12 +74,15 @@ effects:
   - composer_valid_phar_with_invalid_php_path_is_rejected_before_exec
   - composer_valid_phar_with_default_php_invokes_exec_with_escapeshellarg
   - composer_valid_binary_invokes_exec_with_escapeshellarg
+  # 형태 규칙은 통과하지만 실재하지 않는 경로 — stat 미사용(#361)이라 사전 거부가 아니라 실행 실패로 무효가 된다
+  - composer_nonexistent_path_is_invalid
 
   # validatePhpPath
   - php_default_php_string_invokes_exec
   - php_path_with_shell_metachars_is_rejected_before_exec
   - php_nonexistent_file_path_is_rejected_before_exec
   - php_valid_binary_invokes_exec_with_escapeshellarg
+  - php_nonexistent_path_is_invalid
 
   # 부정 효과 (절대 발생 금지)
   - rce_payload_does_not_create_filesystem_marker

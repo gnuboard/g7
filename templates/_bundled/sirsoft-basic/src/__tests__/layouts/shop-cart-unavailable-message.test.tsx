@@ -9,7 +9,6 @@
 
 import { describe, it, expect } from 'vitest';
 import detailPurchaseCard from '../../../layouts/partials/shop/detail/_purchase_card.json';
-import optionPurchaseCard from '../../../layouts/partials/shop/_product_purchase_card.json';
 
 /**
  * JSON 트리에서 조건을 만족하는 모든 노드를 수집한다.
@@ -47,25 +46,20 @@ function errorToasts(layout: any): any[] {
 
 describe('상품 상세 담기/바로구매 실패 토스트 (U13②/U4/A25)', () => {
     const detailToasts = errorToasts(detailPurchaseCard);
-    const optionToasts = errorToasts(optionPurchaseCard);
 
     it('상세 구매 카드에 error 토스트가 존재한다', () => {
         expect(detailToasts.length).toBeGreaterThan(0);
     });
 
-    it('옵션 상품 카드에 error 토스트가 존재한다', () => {
-        expect(optionToasts.length).toBeGreaterThan(0);
-    });
-
     it('모든 error 토스트가 error.errors?.message 를 우선 사용한다 (구체 안내)', () => {
-        [...detailToasts, ...optionToasts].forEach((toast) => {
+        detailToasts.forEach((toast) => {
             expect(toast.params.message).toContain('error.errors?.message');
             expect(toast.params.message).toContain('error.message');
         });
     });
 
     it('error 토스트가 generic message 만 단독 참조하지 않는다 (회귀 가드)', () => {
-        [...detailToasts, ...optionToasts].forEach((toast) => {
+        detailToasts.forEach((toast) => {
             expect(toast.params.message).not.toBe('{{error.message}}');
         });
     });

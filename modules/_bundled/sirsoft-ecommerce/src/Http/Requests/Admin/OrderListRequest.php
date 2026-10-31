@@ -5,9 +5,14 @@ namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Sirsoft\Ecommerce\Enums\CancelTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonFaultTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ExchangeStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderDateTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 
@@ -42,6 +47,9 @@ class OrderListRequest extends FormRequest
             'date_type' => ['nullable', Rule::in(OrderDateTypeEnum::values())],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            // 날짜를 어느 시간대의 하루로 풀지 — 없으면 보는 사람의 하루. 대시보드 「오늘」 배지 링크만 site 를 실어
+            // 배지가 센 하루(사이트 표준시)와 같은 범위로 연다
+            'date_basis' => ['nullable', Rule::in(['site'])],
 
             // 주문상태 (다중선택)
             'order_status' => ['nullable', 'array'],
@@ -86,6 +94,25 @@ class OrderListRequest extends FormRequest
             // 배송정책
             'shipping_policy_id' => ['nullable', 'integer'],
 
+            // 클레임 기준 필터 (D22) — 이 주문에 접수된 클레임의 유무·유형별 상태·귀책·신청일로 거른다.
+            // 저장소는 유형별 whereExists 서브쿼리로 적용한다 (조인 금지 — 1:N 부풀림 방지).
+            'claim_presence' => ['nullable', 'in:none,any,active'],
+            'claim_exchange_statuses' => ['nullable', 'array'],
+            'claim_exchange_statuses.*' => ['string', Rule::in(ExchangeStatusEnum::values())],
+            'claim_return_statuses' => ['nullable', 'array'],
+            'claim_return_statuses.*' => ['string', Rule::in(ReturnStatusEnum::values())],
+            'claim_refund_statuses' => ['nullable', 'array'],
+            'claim_refund_statuses.*' => ['string', Rule::in(RefundStatusEnum::values())],
+            // 취소 축의 어휘는 상태가 아니라 취소 유형(전체/부분)이다 — 취소는 즉시 파이프라인이라
+            // 전이 상태 2종(신청/완료)이 화면 구분 축이 되지 못하고, 확정 시안(§6-4-2)도
+            // 부분취소/전체취소 칩이다 (CancelTypeEnum 단일 출처).
+            'claim_cancel_types' => ['nullable', 'array'],
+            'claim_cancel_types.*' => ['string', Rule::in(CancelTypeEnum::values())],
+            'claim_fault_types' => ['nullable', 'array'],
+            'claim_fault_types.*' => ['string', Rule::in(ClaimReasonFaultTypeEnum::values())],
+            'claim_requested_from' => ['nullable', 'date'],
+            'claim_requested_to' => ['nullable', 'date', 'after_or_equal:claim_requested_from'],
+
             // 회원 ID
             'user_id' => ['nullable', 'integer'],
 
@@ -125,6 +152,7 @@ class OrderListRequest extends FormRequest
             'start_date.date' => __('sirsoft-ecommerce::validation.orders.start_date.date'),
             'end_date.date' => __('sirsoft-ecommerce::validation.orders.end_date.date'),
             'end_date.after_or_equal' => __('sirsoft-ecommerce::validation.orders.end_date.after_or_equal'),
+            'date_basis.in' => __('sirsoft-ecommerce::validation.orders.date_basis.in'),
             // 주문상태
             'order_status.array' => __('sirsoft-ecommerce::validation.orders.order_status.array'),
             'order_status.*.string' => __('sirsoft-ecommerce::validation.orders.order_status.string'),
@@ -163,6 +191,23 @@ class OrderListRequest extends FormRequest
             'max_shipping_amount.min' => __('sirsoft-ecommerce::validation.orders.max_shipping_amount.min'),
             // 배송정책
             'shipping_policy_id.integer' => __('sirsoft-ecommerce::validation.orders.shipping_policy_id.integer'),
+            // 클레임 기준 필터 (D22)
+            'claim_presence.in' => __('sirsoft-ecommerce::validation.orders.claim_presence.in'),
+            'claim_exchange_statuses.array' => __('sirsoft-ecommerce::validation.orders.claim_statuses.array'),
+            'claim_exchange_statuses.*.in' => __('sirsoft-ecommerce::validation.orders.claim_statuses.in'),
+            'claim_return_statuses.array' => __('sirsoft-ecommerce::validation.orders.claim_statuses.array'),
+            'claim_return_statuses.*.in' => __('sirsoft-ecommerce::validation.orders.claim_statuses.in'),
+            'claim_refund_statuses.array' => __('sirsoft-ecommerce::validation.orders.claim_statuses.array'),
+            'claim_refund_statuses.*.in' => __('sirsoft-ecommerce::validation.orders.claim_statuses.in'),
+            // 취소 축은 상태가 아니라 유형(full/partial)이다 — 상태 문구를 재사용하면
+            // 어휘 단일 출처가 화면 문구에서 다시 흐려진다.
+            'claim_cancel_types.array' => __('sirsoft-ecommerce::validation.orders.claim_cancel_types.array'),
+            'claim_cancel_types.*.in' => __('sirsoft-ecommerce::validation.orders.claim_cancel_types.in'),
+            'claim_fault_types.array' => __('sirsoft-ecommerce::validation.orders.claim_fault_types.array'),
+            'claim_fault_types.*.in' => __('sirsoft-ecommerce::validation.orders.claim_fault_types.in'),
+            'claim_requested_from.date' => __('sirsoft-ecommerce::validation.orders.claim_requested_from.date'),
+            'claim_requested_to.date' => __('sirsoft-ecommerce::validation.orders.claim_requested_to.date'),
+            'claim_requested_to.after_or_equal' => __('sirsoft-ecommerce::validation.orders.claim_requested_to.after_or_equal'),
             // 회원 ID
             'user_id.integer' => __('sirsoft-ecommerce::validation.orders.user_id.integer'),
             // 주문자 UUID
@@ -180,5 +225,29 @@ class OrderListRequest extends FormRequest
 
         // 훅을 통한 validation messages 확장
         return HookManager::applyFilters('sirsoft-ecommerce.order.list_validation_messages', $messages, $this);
+    }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'claim_presence' => __('sirsoft-ecommerce::validation.request_attributes.claim_presence'),
+            'claim_exchange_statuses' => __('sirsoft-ecommerce::validation.request_attributes.claim_exchange_statuses'),
+            'claim_exchange_statuses.*' => __('sirsoft-ecommerce::validation.request_attributes.claim_exchange_status'),
+            'claim_return_statuses' => __('sirsoft-ecommerce::validation.request_attributes.claim_return_statuses'),
+            'claim_return_statuses.*' => __('sirsoft-ecommerce::validation.request_attributes.claim_return_status'),
+            'claim_refund_statuses' => __('sirsoft-ecommerce::validation.request_attributes.claim_refund_statuses'),
+            'claim_refund_statuses.*' => __('sirsoft-ecommerce::validation.request_attributes.claim_refund_status'),
+            'claim_cancel_types' => __('sirsoft-ecommerce::validation.request_attributes.claim_cancel_types'),
+            'claim_cancel_types.*' => __('sirsoft-ecommerce::validation.request_attributes.claim_cancel_type'),
+            'claim_fault_types' => __('sirsoft-ecommerce::validation.request_attributes.fault_types'),
+            'claim_fault_types.*' => __('sirsoft-ecommerce::validation.request_attributes.fault_type'),
+            'claim_requested_from' => __('sirsoft-ecommerce::validation.request_attributes.claim_requested_from'),
+            'claim_requested_to' => __('sirsoft-ecommerce::validation.request_attributes.claim_requested_to'),
+        ];
     }
 }

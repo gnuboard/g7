@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Models\MileageBalance;
 
@@ -28,6 +29,7 @@ interface MileageBalanceRepositoryInterface
      *
      * @param  int  $userId  회원 ID
      * @param  string|null  $currency  통화 코드 (null 시 회원의 모든 통화)
+     * @return void 반환값 없음
      */
     public function recalculateForUser(int $userId, ?string $currency = null): void;
 
@@ -38,6 +40,7 @@ interface MileageBalanceRepositoryInterface
      *
      * @param  int  $userId  회원 ID
      * @param  string|null  $currency  통화 코드 (null 시 회원의 모든 통화)
+     * @return void 반환값 없음
      */
     public function recalculatePending(int $userId, ?string $currency = null): void;
 
@@ -45,11 +48,14 @@ interface MileageBalanceRepositoryInterface
      * 소멸 예정 윈도우(expiring_soon/expiring_date)를 재계산합니다 (일배치용).
      *
      * @param  int  $daysBefore  소멸 전 알림 일수
+     * @return void 반환값 없음
      */
     public function recalculateExpiringWindow(int $daysBefore): void;
 
     /**
      * 전 회원 캐시를 원장/옵션 기준으로 전체 재산출합니다 (drift 교정 일배치용).
+     *
+     * @return void 반환값 없음
      */
     public function recalculateAll(): void;
 
@@ -68,4 +74,17 @@ interface MileageBalanceRepositoryInterface
      * @return int 삭제된 행 수
      */
     public function deleteForUser(int $userId): int;
+
+    /**
+     * 사용 가능 잔액 조건에 맞는 회원 ID 서브쿼리를 만듭니다 (회원 목록 확장 필터용, #705).
+     *
+     * 캐시 행이 있는 회원만 대상이다 — 행이 없는 회원은 잔액 0 으로 보므로, 호출자가
+     * 하한(>0)에는 `whereIn`, 상한 초과 배제에는 `whereNotIn` 으로 이 서브쿼리를 쓴다.
+     *
+     * @param  string  $currency  통화 코드
+     * @param  string  $operator  비교 연산자 ('>=' 또는 '>')
+     * @param  float  $amount  기준 금액
+     * @return Builder user_id 한 열을 고르는 서브쿼리
+     */
+    public function userIdsByAvailableQuery(string $currency, string $operator, float $amount): Builder;
 }

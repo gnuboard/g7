@@ -1,0 +1,16 @@
+feature: 주문 배송지 변경 — 저장된 배송지 미선택 적용 차단 (#703)
+
+description: |
+  마이페이지 주문 상세의 배송지 변경 창이 「저장된 배송지」 탭으로 열린 채 아무것도 고르지 않으면(또는 저장된
+  배송지가 0건이면) 적용이 address_id:null 로 나가 서버가 직접 입력 칸을 요구하는 422 가 났다. 화면은 적용 버튼을
+  잠그고 저장 배송지 0건이면 직접 입력 탭으로 열며, 핸들러도 같은 조건이면 보내지 않고 안내한다.
+
+axes:
+  change_mode: [saved]
+  selection: [none]
+
+effects:
+  - saved_mode_without_selection_is_not_sent
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/userChangeShippingAddressHandlers.test.ts

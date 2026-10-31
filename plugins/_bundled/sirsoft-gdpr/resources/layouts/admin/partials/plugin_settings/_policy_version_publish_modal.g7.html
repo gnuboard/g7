@@ -1,0 +1,58 @@
+<partial description="운영자 수동 정책 버전 발행 모달 — memo 입력 + POST /admin/policy-versions">
+  <!-- 정책 버전 발행 창 — 환경설정에서만 쓴다. 발행 즉시 적용되고 전 회원이 재동의 대상이 되므로 영향 안내를 함께 싣는다 -->
+  <modal data-type="composite" data-ref="policy_version_publish_modal" title="$t:sirsoft-gdpr.settings.policy_version.material_modal.title" size="medium">
+    <div class="gdpr:space-y-3 gdpr:text-sm gdpr:text-gray-700 gdpr:dark:text-gray-200">
+      <!-- 사용자 영향 안내 — amber 좌측 색띠 + circle-exclamation — 「발행 시 즉시 적용 + 전 회원 재동의」 라는 점을 명확히 강조 -->
+      <div class="gdpr:bg-amber-50 gdpr:dark:bg-gray-900 gdpr:border gdpr:border-amber-200 gdpr:dark:border-gray-700 gdpr:border-l-4 gdpr-accent-warning gdpr:rounded-lg gdpr:p-3 gdpr-flex-center gdpr:gap-2">
+        <icon name="circle-exclamation" size="sm" class="gdpr:text-amber-600 gdpr:dark:text-amber-400 gdpr:flex-shrink-0"/>
+        <span class="gdpr:text-sm gdpr:text-gray-800 gdpr:dark:text-gray-100 gdpr:leading-relaxed">$t:sirsoft-gdpr.settings.policy_version.material_modal.body</span>
+      </div>
+      <ul class="gdpr:list-disc gdpr:list-inside gdpr:text-xs gdpr:text-gray-600 gdpr:dark:text-gray-300 gdpr:space-y-1 gdpr:pl-1">
+        <li>$t:sirsoft-gdpr.settings.policy_version.material_modal.effect_bump</li>
+        <li>$t:sirsoft-gdpr.settings.policy_version.material_modal.effect_reconsent</li>
+        <li>$t:sirsoft-gdpr.settings.policy_version.material_modal.effect_history</li>
+      </ul>
+      <div class="gdpr:pt-2">
+        <label class="gdpr:block gdpr:text-xs gdpr:font-medium gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:mb-1">$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_label</label>
+        <textarea name="publish_memo" :rows="3" placeholder="$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_placeholder" value="{{_local.publishMemo ?? ''}}" class="gdpr-text-primary gdpr:w-full gdpr:px-3 gdpr:py-2 gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:rounded-lg gdpr:bg-white gdpr:dark:bg-gray-700 gdpr:text-sm gdpr:focus:ring-2 gdpr:focus:ring-blue-500 gdpr:dark:focus:ring-blue-400 gdpr:focus:border-blue-500 gdpr:dark:focus:border-blue-400" disabled="{{$parent._computed.isPluginReadOnly}}">
+          <on type="change">
+            <!-- 발행 메모 — 무엇이 바뀌어 새 버전을 냈는지 남기는 자리다(이력 표에 그대로 보인다) -->
+            <set-state target="local" publishMemo="{{$event?.target?.value ?? ''}}"/>
+          </on>
+        </textarea>
+      </div>
+      <div class="gdpr:flex gdpr:justify-end gdpr:gap-2 gdpr:pt-3 gdpr:border-t gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:mt-3">
+        <button type="button" disabled="{{_local.isPublishing}}" class="gdpr:px-4 gdpr:py-2 gdpr:bg-gray-100 gdpr:dark:bg-gray-700 gdpr:text-gray-700 gdpr:dark:text-gray-200 gdpr:rounded-lg gdpr:text-sm gdpr:font-medium gdpr:hover:bg-gray-200 gdpr:dark:hover:bg-gray-600 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <!-- 발행 확정 — isPublishing 플래그로 발행 동안 스피너 노출 + 양쪽 버튼 disabled. closeModal 을 sequence 마지막에서 onSuccess 로 이동 (이전: 클릭 즉시 닫혀서 사용자가 발행 진행 상태 파악 불가). 발행 실패 시 모달 유지 → memo 수정 후 재시도 가능. -->
+        <button type="button" disabled="{{$parent._computed.isPluginReadOnly || (!(_local.publishMemo ?? '').trim() || _local.isPublishing)}}" class="gdpr:px-4 gdpr:py-2 gdpr:bg-gray-900 gdpr:dark:bg-white gdpr:text-white gdpr:dark:text-gray-900 gdpr:rounded-lg gdpr:text-sm gdpr:font-medium gdpr:hover:bg-gray-800 gdpr:dark:hover:bg-gray-100 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed gdpr:inline-flex gdpr:items-center">
+          <on type="click">
+            <sequence>
+              <set-state target="local" :isPublishing="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/admin/policy-versions" method="POST" body="{{({memo: _local.publishMemo ?? ''})}}">
+                <success>
+                  <set-state target="local" :isPublishing="false" publishMemo=""/>
+                  <refetch-data-source dataSourceId="gdprPolicyVersionCurrent"/>
+                  <refetch-data-source dataSourceId="gdprPolicyVersionHistory"/>
+                  <close-modal/>
+                  <toast type="success" message="$t:sirsoft-gdpr.settings.policy_version.publish_success"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isPublishing="false"/>
+                  <toast type="error" message="{{Object.values(error.errors ?? {})[0]?.[0] ?? '$t:sirsoft-gdpr.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isPublishing}}" name="spinner" size="sm" :spin="true" class="gdpr:mr-1"/>
+          <span data-if="{{!_local.isPublishing}}">$t:sirsoft-gdpr.settings.policy_version.material_modal.confirm</span>
+          <span data-if="{{_local.isPublishing}}">$t:sirsoft-gdpr.settings.policy_version.publishing</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

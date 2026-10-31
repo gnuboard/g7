@@ -113,20 +113,10 @@ class SeoNodeKeyParityTest extends TestCase
             }
 
             foreach ($this->collectNodeKeys($decoded) as $key) {
+                // `_comment` 로 시작하는 키는 전부 저자 주석이다 — 접두사 판정은 isCommentKey() 가 한다.
                 if (! in_array($key, $known, true) && ! $this->isCommentKey($key)) {
                     $unknown[$key][] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file);
                 }
-
-                // `_comment` 로 시작하는 키는 전부 저자 주석이다. 레이아웃 저자는 한 노드에
-                // 여러 주석을 달려고 `_comment_id`·`_comment_why` 처럼 접미사를 붙이는데,
-                // 정확 일치로만 판정하면 그때마다 이 목록을 손대야 하고 그 사이에는 **무관한
-                // 실패가 상주**한다(실측: `_comment_id` 가 그 상태로 남아 있었다). 주석은
-                // 정의상 봇 화면 콘텐츠에 영향을 주지 않으므로 계열로 흡수한다.
-                if (str_starts_with($key, '_comment')) {
-                    continue;
-                }
-
-                $unknown[$key][] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file);
             }
         }
 
@@ -325,11 +315,116 @@ class SeoNodeKeyParityTest extends TestCase
                     continue;
                 }
 
+                // 확장점(`extension_point`)에 꽂히는 자산은 `target_layout` 이 없다 — 그 확장점을
+                // 여는 화면이 **관리자 레이아웃뿐**이면 같은 이유로 봇 대상이 아니다. 판정은 확장점을
+                // 여는 쪽을 저장소에서 도출해 한다 — 어디서도 찾지 못한 확장점은 봇 대상으로 남긴다.
+                $point = is_array($document) ? ($document['extension_point'] ?? null) : null;
+                if (is_string($point) && in_array($point, $this->adminOnlyExtensionPoints(), true)) {
+                    continue;
+                }
+
                 $files[] = $path;
             }
         }
 
         return $files;
+    }
+
+    /**
+     * 관리자 레이아웃에서만 열리는 확장점 이름 (도출 결과 memo).
+     *
+     * @var list<string>|null
+     */
+    private ?array $adminOnlyExtensionPoints = null;
+
+    /**
+     * 관리자 레이아웃에서만 열리고 봇 대상 레이아웃에서는 열리지 않는 확장점 이름.
+     *
+     * 관리자 쪽은 `type: admin` 템플릿의 레이아웃과 모듈·플러그인 `resources/layouts/admin/` 이고,
+     * 그 밖의 레이아웃·확장 자산(확장점 안에 확장점을 여는 조각 포함)은 봇 쪽이다. 한쪽에서라도
+     * 봇 쪽에서 열리면 관리자 전용이 아니다.
+     *
+     * @return list<string> 확장점 이름 목록
+     */
+    private function adminOnlyExtensionPoints(): array
+    {
+        if ($this->adminOnlyExtensionPoints !== null) {
+            return $this->adminOnlyExtensionPoints;
+        }
+
+        $admin = [];
+        $public = [];
+
+        $roots = [];
+        foreach (['modules', 'plugins'] as $kind) {
+            foreach (scandir(base_path($kind.'/_bundled')) ?: [] as $id) {
+                if ($id === '.' || $id === '..') {
+                    continue;
+                }
+                foreach (['layouts', 'extensions'] as $leaf) {
+                    $roots[] = [base_path($kind.'/_bundled/'.$id.'/resources/'.$leaf), false];
+                }
+            }
+        }
+        foreach (scandir(base_path('templates/_bundled')) ?: [] as $id) {
+            if ($id === '.' || $id === '..') {
+                continue;
+            }
+            $manifest = base_path('templates/_bundled/'.$id.'/template.json');
+            $meta = is_file($manifest) ? json_decode((string) file_get_contents($manifest), true) : null;
+            $isAdminTemplate = is_array($meta) && ($meta['type'] ?? null) === 'admin';
+            foreach (['layouts', 'extensions'] as $leaf) {
+                $roots[] = [base_path('templates/_bundled/'.$id.'/'.$leaf), $isAdminTemplate];
+            }
+        }
+
+        foreach ($roots as [$root, $isAdminRoot]) {
+            if (! is_dir($root)) {
+                continue;
+            }
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+            foreach ($iterator as $entry) {
+                if (! $entry->isFile() || $entry->getExtension() !== 'json') {
+                    continue;
+                }
+                $path = str_replace('\\', '/', $entry->getPathname());
+                $document = json_decode((string) file_get_contents($path), true);
+                if (! is_array($document)) {
+                    continue;
+                }
+                $target = $document['target_layout'] ?? null;
+                $isAdmin = $isAdminRoot
+                    || str_contains($path, '/admin/')
+                    || (is_string($target) && preg_match('/^_?admin(?:_|\/|$)/', $target) === 1);
+
+                if ($isAdmin) {
+                    $this->collectExtensionPointNames($document, $admin);
+                } else {
+                    $this->collectExtensionPointNames($document, $public);
+                }
+            }
+        }
+
+        return $this->adminOnlyExtensionPoints = array_values(array_diff(array_unique($admin), array_unique($public)));
+    }
+
+    /**
+     * 문서 안의 `type: extension_point` 노드 이름을 모읍니다.
+     *
+     * @param  array<mixed>  $node  문서 또는 노드
+     * @param  list<string>  $names  모을 목록 (참조)
+     */
+    private function collectExtensionPointNames(array $node, array &$names): void
+    {
+        if (($node['type'] ?? null) === 'extension_point' && is_string($node['name'] ?? null)) {
+            $names[] = $node['name'];
+        }
+
+        foreach ($node as $value) {
+            if (is_array($value)) {
+                $this->collectExtensionPointNames($value, $names);
+            }
+        }
     }
 
     /**

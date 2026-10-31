@@ -118,6 +118,13 @@ return [
 
     'locale' => env('APP_LOCALE', 'ko'),
 
+    /*
+    | 사이트 기본 언어. `app.locale` 은 요청마다 `SetLocale` 미들웨어가 보는 사람의 언어로 덮으므로,
+    | 「누가 보든 같은 언어」가 필요한 자리(다국어 필드 필수 언어 · 관리자 다국어 입력의 필수 표시)는
+    | 이 값을 읽는다. 부팅 때 환경설정 「기본 언어」(general.language)로 채워진다.
+    */
+    'site_locale' => env('APP_LOCALE', 'ko'),
+
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'ko'),
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'ko_KR'),
@@ -231,7 +238,7 @@ return [
     |
     */
 
-    'version' => env('APP_VERSION', '7.1.0'),
+    'version' => env('APP_VERSION', '7.2.0'),
 
     /*
     |--------------------------------------------------------------------------
@@ -315,7 +322,13 @@ return [
         // targets 에 `{modules,plugins,templates,lang-packs}/_bundled` 가 명시되어 정상 흐름에서는
         // 처리되므로 영향 없음. 자동 발견 폴백이 부모 디렉토리 단위로 base 를 통째로 복사해
         // 활성 서브디렉토리(예: templates/sirsoft-basic) 를 잘못 삭제하는 회귀(#347) 차단용 방어 깊이.
-        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,g7-setup.php,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.codex,.agents,CLAUDE.md,AGENTS.override.md,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs')))),
+        // `custom`: 개발자 전용 composer(custom/composer.json·vendor) — 코어 업데이트가 건드리지 않는다(#792).
+        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,g7-setup.php,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.codex,.agents,CLAUDE.md,AGENTS.override.md,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs,custom')))),
+        // 「custom 예약 자리」(#792, 7.2.0) — 업데이트 대상 폴더 *안쪽*이라도 코어 업데이트가 덮지도 지우지도
+        // 않는 경로. 복사·orphan 정리(prune)·신규 파일 manifest·롤백 prune·자동 발견 폴백이 모두 건너뛴다.
+        // 코어 배포본은 이 자리에 파일을 싣지 않는다 — 실리면 업데이트를 시작하지 않는다(UpdateReservedPaths).
+        // 백업에는 targets 범위대로 포함되어 롤백 시 복원된다.
+        'reserved_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_RESERVED_PATHS', 'routes/custom.php,app/Custom,resources/views/custom,public/custom,lang/custom,config/custom.php,database/migrations/custom,custom')))),
         'backup_only' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_BACKUP_ONLY', 'vendor')))),
         'backup_extra' => ['storage/app/settings'],
         // 업데이트 종료 시 base_path() 소유자/그룹 기준으로 소유권을 재귀 복원할 경로 목록.
@@ -350,10 +363,13 @@ return [
         // fast path 가 영구 꺼진다(사이트는 API 폴백으로 정상). 임시 산출물(사용자 데이터 아님)이므로
         // extension_backups 와 같은 근거로 chown 대상.
         //
+        // `storage/app/core_update`: 미배치 공식 번들 기록(`bundled_sources.json`, #146). sudo 업데이트가 root
+        // 소유로 쓰면 관리자 목록 안내 API(웹 계정)가 읽지 못하므로 업데이트 뒤 원래 소유자로 되돌린다.
+        //
         // 환경변수 `G7_UPDATE_RESTORE_OWNERSHIP` 로 공유 호스팅 등 축소 필요 시 재정의 가능.
         'restore_ownership' => array_filter(array_map('trim', explode(',', env(
             'G7_UPDATE_RESTORE_OWNERSHIP',
-            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending,public/build/ext'
+            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,storage/app/core_update,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending,public/build/ext'
         )))),
         // 7.0.0-beta.3+: 그룹 쓰기 권한 비대칭 정상화 대상.
         // sudo root 로 실행된 업데이트가 umask 022 로 신규 생성한 하위 디렉토리/파일이

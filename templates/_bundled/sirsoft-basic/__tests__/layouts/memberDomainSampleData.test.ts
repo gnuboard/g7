@@ -15,8 +15,8 @@
  *  - stats/myActivityStats: BoardService 통계 (flat counter)
  *  - profile/postStats/recentPosts/userProfile/userPosts: 공개 프로필(users/show, users/posts)
  *
- * 바인딩 SSoT: layouts/mypage/{profile,profile-edit,addresses,notifications,board,inquiries}.json,
- *              layouts/home.json, layouts/shop/show.json, layouts/users/{show,posts}.json (+ partials).
+ * 바인딩 SSoT: layouts/mypage/{profile,profile-edit,addresses,notifications,board,inquiries}.g7.html,
+ *              layouts/home.g7.html, layouts/shop/show.g7.html, layouts/users/{show,posts}.g7.html (+ partials).
  */
 import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';

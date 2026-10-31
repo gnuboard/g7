@@ -1,0 +1,21 @@
+feature: 다국어 태그 입력 — 쉼표 목록 보존과 읽기 이름
+
+description: |
+  상품 옵션값처럼 쉼표로 여러 값을 넣는 다국어 태그 입력에서, 「Red,Blue」 를 붙여 넣으면 첫 값만 다국어 창으로
+  넘어가고 나머지가 조용히 사라졌다. 첫 값은 창으로, 나머지는 입력칸에 남겨 Enter 로 차례로 넘긴다.
+  태그 × 버튼은 「Red 제거」 처럼 그 값으로 읽고, 태그가 있어도 입력칸은 안내 글자를 이름으로 갖는다.
+
+  수정 이력: 이커머스 전수 실측 S5-D36·D37 (2026-10-08) — 상품 등록 변종(en·다크·375).
+
+axes:
+  case: [c01, c02, c03]
+
+effects:
+  - tag_paste_keeps_remainder
+  - tag_controls_named
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/MultilingualTagInputPasteAndNames.test.tsx
+
+validation:
+  browser_check: 상품 등록 옵션값 칸에 「Green,White」 붙여넣기 → 창(Green)·입력칸에 「White」 남음, 태그 × 「Green 제거」

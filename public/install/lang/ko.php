@@ -147,6 +147,8 @@ return [
     'env_hardening_hint_option_strict' => '명령줄 사용자 = 웹 서버 사용자 (단일 사용자 환경)',
     'env_hardening_hint_option_group' => '명령줄 사용자 ≠ 웹 서버 사용자 (자체 구축 서버 등 — 그룹 읽기 허용 절충안)',
     'env_hardening_hint_note' => '명령 실행 전 환경을 확인하세요. 잘못된 권한 적용 시 웹 서버가 .env 를 읽지 못해 사이트가 응답하지 않을 수 있습니다.',
+    'cron_hint_title' => '예약 작업(cron) 등록',
+    'cron_hint_body' => '매분 아래 명령을 실행하도록 cron 에 등록하세요. 등록하지 않으면 방문자 통계는 관리자가 화면을 열 때 집계되지만, 주문 자동취소·오래된 데이터 정리·메일 보고서 같은 예약 작업은 동작하지 않습니다.',
 
     // Step 5: 완료
     'installation_info' => '설치 정보',
@@ -304,6 +306,7 @@ return [
     'task_create_settings_json' => '설정 파일 생성',
     'task_complete_flag' => '설치 완료 처리',
     'task_config_cache' => '설정 캐시 생성',
+    'task_route_cache' => '라우트 캐시 생성',
     'task_static_publish' => '부트스트랩 리소스 정적 게시',
     'task_unknown' => '알 수 없는 작업',
 
@@ -350,6 +353,9 @@ return [
     'log_composer_installing_from_lock' => 'composer.lock 파일을 사용하여 의존성을 설치합니다...',
     'log_composer_fresh_install' => '새로운 Composer 의존성을 설치합니다...',
     'log_composer_cache_cleared' => '이전 패키지 캐시를 삭제했습니다',
+    'log_custom_vendor_in_sync' => '개발자 패키지(custom/vendor)가 이미 맞춰져 있습니다',
+    'log_custom_vendor_installed' => '개발자 패키지(custom/vendor)를 설치했습니다 (:mode)',
+    'error_custom_vendor_failed' => '개발자 패키지(custom/vendor) 설치에 실패했습니다: :error',
     'log_composer_dev_packages_detected' => '기존 vendor 에 개발용 패키지 :count개가 포함되어 있습니다 (:packages)',
     'warning_composer_dev_packages_kept' => '개발용 패키지가 포함된 vendor 를 그대로 사용합니다. 운영 사이트라면 설치 후 "composer install --no-dev --optimize-autoloader" 를 실행하세요 (설치는 계속 진행됩니다)',
 
@@ -429,6 +435,9 @@ return [
     'log_worker_disconnected_abort' => '브라우저 연결이 끊어져 이 요청을 종료합니다.',
     'log_worker_started' => '설치 작업을 시작합니다.',
     'log_finalize_env_generate_failed' => '[finalize-env] .env 기본 내용을 만들지 못했습니다 (.env.example 없음)',
+    'log_finalize_env_waiting_for_worker' => '[finalize-env] 설치 워커 종료를 기다립니다 (설정 캐시 등 마지막 작업 진행 중)',
+    'log_finalize_env_worker_released' => '[finalize-env] 설치 워커 잠금 해제 확인 (:seconds초 대기)',
+    'log_finalize_env_worker_wait_timeout' => '[finalize-env] 설치 워커 잠금이 :seconds초 안에 풀리지 않아 병합을 진행합니다 (워커가 강제 종료됐을 수 있음)',
     'log_finalize_env_backup_kept' => '[finalize-env] 기존 .env 를 보존했습니다: :path',
     'log_finalize_env_write_failed' => '[finalize-env] .env 쓰기 실패: path=:path, last_error=:error',
     'log_finalize_env_merged' => '[finalize-env] .env 머지 완료 (권한 변경 없음, 기존 권한 보존): path=:path, perms=:perms, owner_uid=:owner, group_gid=:group, process_euser=:euser',
@@ -436,6 +445,8 @@ return [
     'log_finalize_env_runtime_removed' => '[finalize-env] runtime.php 삭제 완료',
     'log_finalize_env_config_cache_delete_failed' => '[finalize-env] 설정 캐시 삭제 실패: path=:path, last_error=:error. 설치 이전 값이 남아 있으므로 이 파일을 직접 지우거나 `php artisan config:clear` 를 실행해 주세요.',
     'log_finalize_env_config_cache_removed' => '[finalize-env] 설정 캐시 삭제 완료 (다음 요청이 .env 로 재생성)',
+    'log_finalize_env_config_cache_rebuilt' => '[finalize-env] 설정 캐시 다시 생성 완료',
+    'log_finalize_env_config_cache_rebuild_failed' => '[finalize-env] 설정 캐시 다시 생성 실패 — 캐시 없이 병합된 .env 로 부팅합니다: exit=:exit, output=:output',
     'log_finalize_env_state_delete_failed' => '[finalize-env] 설치 상태 파일 삭제 실패: path=:path, last_error=:error',
     'log_finalize_env_state_removed' => '[finalize-env] 설치 상태 파일 삭제 완료',
     'log_finalize_env_state_redacted' => '[finalize-env] 설치 상태 파일 잔존 — 비밀 필드 제거 완료',
@@ -448,17 +459,22 @@ return [
     'log_reset_probe_sweep_partial' => '[reset] 노출 점검 잔여 파일 :failed개를 지우지 못했습니다 (지움 :removed개) — storage/installer 를 직접 정리해 주세요.',
     'log_worker_client_ip' => '요청 IP: :ip',
     'log_worker_rejected_busy' => '다른 요청이 이미 설치를 진행하고 있어 이 요청은 시작하지 않습니다.',
+    'log_worker_rejected_plan_unverified' => '=== 설치 워커 거부 — 설치 계획을 확인하지 못했습니다 (:reason) ===',
     'log_worker_lock_acquired' => '설치 진행 권한을 확보했습니다.',
+    'log_worker_terminated' => '=== 설치 작업 프로세스가 중간에 종료되었습니다: :error (작업: :task) ===',
+    'log_worker_connection_closed' => '=== 진행 화면과의 연결이 끊겨 설치 워커가 멈췄습니다 (작업: :task) — 설치 화면이 다시 연결해 남은 작업을 이어 갑니다 ===',
     'log_php_binary_path_rejected' => 'PHP 실행 경로 :path 은(는) 허용되지 않는 형태라 사용하지 않고 기본값 php 로 진행합니다. (공백·특수문자가 있는 경로는 쓸 수 없습니다)',
 
     // 에러 메시지 - Worker (Cache)
     'error_cache_clear_failed' => '캐시 클리어에 실패했습니다',
     'error_config_cache_failed' => '설정 캐시 생성에 실패했습니다',
+    'error_route_cache_failed' => '라우트 캐시 생성에 실패했습니다 (사이트는 정상 동작하며, 확장을 설치·변경하면 다시 생성됩니다)',
     'error_static_publish_failed' => '부트스트랩 리소스 정적 게시에 실패했습니다 (사이트는 API 경로로 정상 동작합니다)',
 
     // 로그 메시지 - Worker (Cache)
     'log_cache_clear_success' => '캐시 클리어 완료',
     'log_config_cache_success' => '설정 캐시 생성 완료',
+    'log_route_cache_success' => '라우트 캐시 생성 완료',
     'log_static_publish_success' => '부트스트랩 리소스 정적 게시 완료',
 
     // 에러 메시지 - Worker (Settings JSON)
@@ -484,6 +500,7 @@ return [
     // Worker 로그 메시지 (작업 진행)
     'log_task_in_progress' => ':task 작업 중...',
     'log_task_completed' => ':task 작업 완료',
+    'log_task_completed_with_warnings' => ':task 작업 완료 — 일부 항목이 실패했습니다(위 경고 표 참고)',
     'log_task_skipped' => ':task (이미 존재하여 건너뜀)',
     'manual_commands_guide' => '💡 아래 명령어를 수동으로 실행할 수 있습니다:',
     'log_separator' => '========================================',
@@ -813,7 +830,7 @@ ini_set(\'zlib.output_compression\', \'off\');
     'log_state_file_removed' => '인스톨러 상태 파일이 제거되었습니다.',
     'log_state_file_remove_failed' => '경고: 인스톨러 상태 파일 제거에 실패했습니다.',
     'error_worker_exception' => '설치 작업 중 예외 발생',
-    'error_worker_terminated' => '설치 작업이 서버에서 강제로 종료되었습니다. (메모리 부족·실행 시간 초과 등)',
+    'error_worker_terminated' => '설치 작업 프로세스가 중간에 종료되었습니다(서버 실행 시간 제한 등). 이미 끝난 작업은 보존되어 있으니 [재시도]를 눌러 이어서 설치하세요. 반복되면 storage/logs/installation.log 와 PHP 오류 로그를 확인해주세요.',
 
     // rollback-functions.php 다국어 키
     'log_prefix_rollback' => '[롤백]',
@@ -1151,9 +1168,37 @@ ini_set(\'zlib.output_compression\', \'off\');
 
     // .env 통합 안내
     'required_files_fix_guide_combined' => '.env 파일 생성 및 권한 설정이 필요합니다. 아래 명령어를 실행해주세요:',
+    'storage_windows_readonly' => 'Storage 폴더에 읽기 전용(ReadOnly) 속성이 걸려 있습니다.',
+    'storage_windows_readonly_message' => '이 속성은 ACL(접근 권한)이 아니라 파일 속성이라 icacls 명령으로는 해제되지 않습니다. 아래 attrib 명령으로 읽기 전용 속성을 먼저 해제하세요.',
+    'permission_readonly_fix_guide' => '읽기 전용 속성을 해제하려면 아래 명령을 실행하세요:',
+    'permission_readonly_hint' => '※ 압축 해제·백업 복원·동기화 도구가 ReadOnly 속성을 남기는 경우가 많습니다. 속성 해제 후에도 실패하면 이어서 icacls 로 권한을 부여하세요.',
 
     // 상대경로 병기 안내
     'or_relative_path' => '또는 그누보드7 루트 디렉토리에서:',
+    'error_ownership_conflict' => '다른 브라우저 세션이 이 설치를 진행 중입니다. 설치를 시작한 브라우저에서 계속하거나 복구 토큰으로 소유권을 되찾으세요.',
+    'error_csrf_invalid' => '요청 검증 토큰이 유효하지 않습니다. 페이지를 새로고침한 후 다시 시도해주세요.',
+    'error_state_conflict' => '다른 요청이 먼저 설치 상태를 변경했습니다. 페이지를 새로고침한 후 다시 시도해주세요.',
+    'error_db_config_changed' => '데이터베이스 연결 테스트 후 연결 설정이 변경되었습니다. 현재 설정으로 연결 테스트를 다시 수행해주세요.',
+    'error_install_plan_unverified' => '확인된 설치 계획이 없어 작업을 실행하지 않았습니다. 설치 화면에서 설치를 다시 시작해주세요.',
+    'error_finalize_not_ready' => '설치가 아직 완료되지 않았습니다.',
+    'drop_confirm_rejected' => '기존 테이블 삭제 확인이 유효하지 않아 기존 테이블을 삭제하지 않고 진행합니다. 삭제가 필요하면 Step 3 에서 데이터베이스 연결 테스트와 삭제 동의를 다시 진행해주세요.',
+    'log_drop_confirm_rejected' => '[경고] 기존 테이블 삭제 확인이 유효하지 않아 삭제 없이 진행합니다 (사유: :reason)',
+    'recovery_token_notice_title' => '복구 토큰을 안전한 곳에 보관하세요',
+    'recovery_token_notice_desc' => '브라우저를 닫거나 세션이 만료되면 이 설치는 다른 브라우저에서 이어갈 수 없습니다. 그때 아래 복구 토큰을 입력해야 설치를 계속할 수 있습니다. 토큰은 이 브라우저에만 표시됩니다.',
+    'recovery_token_copy' => '복사',
+    'ownership_locked_title' => '다른 세션에서 진행 중인 설치',
+    'ownership_locked_desc' => '이 설치는 다른 브라우저 세션이 진행하고 있어 이 화면에서는 설치 상태를 바꿀 수 없습니다. 설치를 시작한 본인이라면 설치 중 안내받은 복구 토큰을 입력해 이어서 진행하세요.',
+    'recovery_token_label' => '복구 토큰',
+    'recovery_token_placeholder' => 'xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx',
+    'recovery_submit' => '소유권 되찾기',
+    'recovery_success' => '소유권을 되찾았습니다. 설치 화면으로 이동합니다. 새 복구 토큰이 발급되었으니 다시 보관해주세요.',
+    'error_recovery_token_invalid' => '복구 토큰이 올바르지 않습니다.',
+    'error_recovery_rate_limited' => '복구 토큰 입력 실패가 너무 많습니다. 15분 후 다시 시도해주세요.',
+    'error_recovery_unavailable' => '되찾을 진행 중 설치가 없습니다. 페이지를 새로고침해주세요.',
+    'ownership_reset_hint' => '복구 토큰을 잃어버렸다면 서버에서 storage/installer-state.json 파일을 삭제한 뒤 처음부터 다시 설치하세요.',
+    'log_ownership_claimed' => '[소유권] 설치 소유 세션이 지정되었습니다.',
+    'log_ownership_reclaimed' => '[소유권] 복구 토큰으로 설치 소유권을 되찾았습니다.',
+    'log_ownership_reclaim_failed' => '[소유권] 복구 토큰 불일치로 소유권 되찾기를 거부했습니다.',
 
     // 실행 모드 (Step 3 선택란 · D33 · W2) — 저장되는 것은 "선택", 기본 auto
     'execution_mode_card_title' => '실행 방식',

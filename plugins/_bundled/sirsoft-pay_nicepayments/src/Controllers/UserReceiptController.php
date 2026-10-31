@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
-
+use App\Helpers\ResponseHelper;
+use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,16 +15,21 @@ use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayNicepayments\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayNicepayments\Concerns\ResolvesEasyPayDisplay;
 
-class UserReceiptController
+class UserReceiptController extends PublicBaseController
 {
     use IssuesReceiptCookie;
     use ResolvesEasyPayDisplay;
 
     private const RECEIPT_BASE_URL = 'https://npg.nicepay.co.kr/issue/IssueLoader.do';
 
+    /**
+     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스
+     */
     public function __construct(
         private readonly GuestOrderAuthService $guestOrderAuthService,
-    ) {}
+    ) {
+        parent::__construct();
+    }
 
     /**
      * 사용자 마이페이지 영수증 정보 조회
@@ -35,7 +40,7 @@ class UserReceiptController
      *
      * @param  Request  $request  회원 또는 비회원 영수증 요청
      * @param  string  $orderNumber  주문번호
-     * @return JsonResponse receipt_url / cash_receipt_url / is_test_mode 또는 404
+     * @return JsonResponse receipt_url / payment_receipt_url / cash_receipt_url / is_test_mode 또는 404
      */
     // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user()/비회원 영수증 쿠키만 참조 (검증 대상 필드 없음)
     public function show(Request $request, string $orderNumber): JsonResponse
@@ -60,7 +65,7 @@ class UserReceiptController
                         $sub->select('id')->from((new Order)->getTable())->where('order_number', $orderNumber);
                     });
             } else {
-                return response()->json(['error' => 'Not found'], 404);
+                return ResponseHelper::notFound();
             }
         }
 
@@ -75,7 +80,7 @@ class UserReceiptController
             ->first();
 
         if (! $payment) {
-            return response()->json(['error' => 'Not found'], 404);
+            return ResponseHelper::notFound();
         }
 
         $receiptUrl = $payment->receipt_url;
@@ -95,8 +100,16 @@ class UserReceiptController
             $isTestMode = (bool) ($meta['is_test_mode'] ?? false);
         }
 
-        return response()->json([
+        // 마이페이지 「결제 영수증」 링크가 첫 출시부터 열어 온 주소(type=2). 레이아웃에 결제사 외부 주소를 적으면
+        // 편집기 저장 게이트(외부 URL 금지)가 거절하므로 서버가 내려준다. receipt_url(매출전표, type=0)과는
+        // 다른 화면이 쓰는 다른 값이라 서로 대신하지 않는다.
+        $paymentReceiptUrl = $payment->transaction_id
+            ? self::RECEIPT_BASE_URL.'?type=2&TID='.rawurlencode($payment->transaction_id)
+            : null;
+
+        return ResponseHelper::success('common.success', [
             'receipt_url' => $receiptUrl,
+            'payment_receipt_url' => $paymentReceiptUrl,
             'cash_receipt_url' => $cashReceiptUrl,
             'is_test_mode' => $isTestMode,
             'payment_method_label' => $display['payment_method_label'],

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\EscrowDenyConfirmRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
@@ -25,6 +26,7 @@ use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
  */
 class AdminEscrowDenyConfirmController extends AdminBaseController
 {
+    use GuardsOrderScope;
     use SanitizesPgResponse;
 
     /** 에스크로 구매거절확인 PG 응답 저장 허용 필드 */
@@ -39,6 +41,11 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
         'type',
     ];
 
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  KgInicisApiService  $apiService  KG이니시스 API 서비스
+     */
     public function __construct(
         private readonly KgInicisApiService $apiService,
     ) {
@@ -56,6 +63,10 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
      */
     public function confirm(EscrowDenyConfirmRequest $request, string $orderNumber): JsonResponse
     {
+        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.update')) {
+            return $denied;
+        }
+
         $payment = $this->findEscrowPayment($orderNumber);
 
         if (! $payment) {
@@ -140,6 +151,12 @@ class AdminEscrowDenyConfirmController extends AdminBaseController
         }
     }
 
+    /**
+     * 주문번호의 KG이니시스 에스크로 결제 레코드를 찾습니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @return object|null 결제 레코드 (없으면 null)
+     */
     private function findEscrowPayment(string $orderNumber): ?object
     {
         // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그

@@ -1,3 +1,6 @@
+// e2e:allow 이 파일은 런타임 코드가 아니라 저장소 소스를 훑는 정적 대장이다. 브라우저에서
+// 관측할 동작이 없고(번들에 실리지 않는다), 이 변경도 스캐너가 읽지 못하는 쓰기 지점을
+// 기록한 것뿐이라 E2E 로 재현할 대상이 존재하지 않는다.
 /**
  * strictly necessary 허용목록 커버리지·정합성 테스트
  *
@@ -8,7 +11,8 @@
  * 특정할 수 없다.
  *
  * 이 테스트는 목록을 **손으로 열거하지 않는다.** 저장소의 소스를 훑어 `.setItem()` 이 쓰는
- * 키를 기계 도출하고, 그 전량이 출하 카탈로그(`plugin.php`)에 등재되었거나 의도적 비필수
+ * 키를 기계 도출하고, 그 전량이 출하 카탈로그(`plugin.php`)에 등재되었거나, 그 키를 쓰는 확장이
+ * 계약 훅(`sirsoft-gdpr.necessary_storage.filter_provided_keys`)으로 제공하거나, 의도적 비필수
  * (INTENTIONALLY_NON_NECESSARY)로 선언되었는지 검사한다.
  *
  * 허용목록이 코드 상수에서 운영자 설정으로 옮겨진 뒤로 대조 대상이 **PHP 출하 카탈로그**다.
@@ -26,7 +30,9 @@
  *   8. 카탈로그가 잠금 항목을 담지 않는다 (담기면 API 로 지울 수 있게 된다)
  *   9. 카탈로그 항목이 저장 검증 규칙을 통과한다 (통과 못 하면 시드값을 다시 저장할 수 없다)
  *  10. 와일드카드 매칭 규칙이 PHP·TS 에서 동형이다 (발견 ②)
- *  11. 출하 카탈로그 **전량**이 미동의 상태에서 저장되고 회수(다음 방문 부팅)까지 남는다 —
+ *  11. 확장 제공 키가 저장 검증 규칙을 통과하고 출하 카탈로그와 겹치지 않는다
+ *  12. 제공 리스너가 이 플러그인의 클래스를 참조하지 않는다 (훅 이름·배열 모양만이 계약)
+ *  13. 출하 카탈로그 **전량**이 미동의 상태에서 저장되고 회수(다음 방문 부팅)까지 남는다 —
  *      항목을 손으로 열거하지 않고 카탈로그에서 기계 파생한다. 쓰기 면제(user-initiated)와
  *      회수 면제는 다른 경로라 쓰기만 재면 「저장은 되는데 다음 방문에 사라지는」 원래 증상을
  *      그대로 통과시킨다. (#609 — 리베이스에서 사라졌던 축을 운영자 설정 구조 위에 복원)
@@ -355,7 +361,11 @@ function discoverStorageKeys(): { keys: DiscoveredKey[]; unresolved: string[] } 
 /**
  * PHP 원문에서 `이름 => [ ... ]` 형태의 스코프 그룹을 문자열 배열로 파싱합니다.
  *
- * 대상은 `plugin.php` 의 출하 카탈로그와 `Support/NecessaryAllowlist.php` 의 잠금 집합.
+ * 대상은 둘 다 `plugin.php` — 출하 카탈로그와 잠금 집합이다. 잠금 집합이 진입 파일에 있는 것은
+ * 취향이 아니라 제약이다: 신규 설치에서 `getConfigValues()` 는 이 플러그인의 오토로드가 등록되기
+ * 전에 호출되므로, 진입 파일이 `src/` 클래스를 부르면 "Class not found" 로 설치가 멈춘다.
+ * `NecessaryAllowlist::locked()` 는 그 정의에 위임만 하며, 그 위임은 PHPUnit
+ * (`EntryFileAutoloadIndependenceTest`) 이 잠근다.
  * PHP 를 실행하지 않고 원문을 읽는 이유는, 이 대조가 **두 언어의 목록이 어긋났는지** 를
  * 보는 것이라 한쪽 런타임에 의존하면 안 되기 때문이다.
  *
@@ -426,6 +436,58 @@ const REQUEST_PHP = fs.readFileSync(
     'utf-8',
 );
 
+/**
+ * 계약 훅 이름 — 제공 리스너를 찾는 기준 (plugin.php 상수와 같아야 한다).
+ */
+const PROVIDED_HOOK = 'sirsoft-gdpr.necessary_storage.filter_provided_keys';
+
+interface ProviderListener {
+    file: string;
+    source: string;
+    keys: Record<string, string[]>;
+}
+
+/**
+ * 계약 훅을 구독하는 확장 리스너를 찾아 그 제공 키를 읽습니다.
+ *
+ * 모집단은 손으로 적지 않는다 — 모듈·플러그인 `src/Listeners` 전량을 훑어 훅 이름을 구독하는
+ * 파일을 고른다. 제공 키는 리스너의 `KEYS` 상수에서 읽는다.
+ *
+ * @return 제공 리스너 목록
+ */
+function discoverProviderListeners(): ProviderListener[] {
+    const found: ProviderListener[] = [];
+    for (const group of ['modules', 'plugins']) {
+        const bundled = path.join(REPO_ROOT, group, '_bundled');
+        if (!fs.existsSync(bundled)) {
+            continue;
+        }
+        for (const entry of fs.readdirSync(bundled)) {
+            const dir = path.join(bundled, entry, 'src', 'Listeners');
+            if (!fs.existsSync(dir)) {
+                continue;
+            }
+            for (const name of fs.readdirSync(dir)) {
+                if (!name.endsWith('.php')) {
+                    continue;
+                }
+                const file = path.join(dir, name);
+                const source = fs.readFileSync(file, 'utf-8');
+                if (!source.includes(`'${PROVIDED_HOOK}'`)) {
+                    continue;
+                }
+                found.push({
+                    file: path.relative(REPO_ROOT, file).replace(/\\/g, '/'),
+                    source,
+                    keys: parsePhpScopeMap(sliceBracketBlock(source, 'const KEYS =')),
+                });
+            }
+        }
+    }
+
+    return found;
+}
+
 const SHIPPED_CATALOG = parsePhpScopeMap(
     sliceBracketBlock(PLUGIN_PHP, 'DEFAULT_NECESSARY_ALLOWLIST_CATALOG ='),
 );
@@ -436,6 +498,7 @@ const SHIPPED_CATALOG = parsePhpScopeMap(
 const PHP_LOCKED = parsePhpScopeMap(
     sliceBracketBlock(PLUGIN_PHP, 'public static function lockedNecessaryStorage(): array'),
 );
+const PROVIDER_LISTENERS = discoverProviderListeners();
 
 /**
  * 키가 실행 시점에 정해져 **정적으로 해석할 수 없는** 쓰기 지점.
@@ -444,6 +507,28 @@ const PHP_LOCKED = parsePhpScopeMap(
  * 새 동적 쓰기 지점이 생기면 그 즉시 붉어진다.
  */
 const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string }> = [
+    // 관리자 코드 편집기 — 키가 레이아웃별로 갈리므로 정적 해석이 안 된다. 다만 접두사는
+    // 고정이다: 레이아웃이 `storageKey="g7le.codeEditor.{{route.identifier}}"` 를 넘기고
+    // 편집기 기본값도 `g7le.codeEditor` 다. 허용목록의 `g7le.*` 가 그 전부를 덮으므로
+    // functional 미동의 파기(`cleanupFunctionalArtifacts`)의 대상이 아니다 — 즉 여기 등재는
+    // 「파기돼도 된다」는 판단이 아니라 **스캐너가 못 읽는 지점의 기록**이다.
+    // 정렬된 문자열로 비교하므로 순서는 도출 결과(사전순)를 따른다.
+    {
+        site: '`${namespace}${FONT_SIZE_SUFFIX}` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/CodeWorkspace.tsx',
+        reason: '편집기 글꼴 크기 — `g7le.codeEditor.<레이아웃>.fontSize`. 접두사 `g7le.*` 로 파기 면제.',
+    },
+    {
+        site: '`${namespace}${WORD_WRAP_SUFFIX}` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/CodeWorkspace.tsx',
+        reason: '편집기 줄바꿈 — `g7le.codeEditor.<레이아웃>.wordWrap`. 위와 같은 접두사.',
+    },
+    {
+        site: '`${storageKey}.treeWidth` ← templates/_bundled/sirsoft-admin_basic/src/components/composite/FileTreePicker.tsx',
+        reason: '파일 트리 너비 — `storageKey` 는 레이아웃이 넘기는 `g7le.codeEditor.<레이아웃>`.',
+    },
+    {
+        site: 'key ← modules/_bundled/sirsoft-ecommerce/resources/js/handlers/orderHandlers.ts',
+        reason: '주문 목록 표시 컬럼 — 키 끝에 관리자 회원 uuid 를 붙여 `g7_order_visible_columns_<uuid>` 로 저장한다(관리자별 업무 설정). 이커머스가 계약 훅으로 `g7_order_*` 를 제공하므로 파기 면제(1.1.2 — 출하 카탈로그에서 이관).',
+    },
     {
         site: 'key ← resources/js/core/template-engine/ActionDispatcher.ts',
         reason: '`saveToLocalStorage` 핸들러 — 키를 레이아웃 액션이 넘긴다. 레이아웃이 임의로 정하는 값이라 목록으로 열거할 수 없다.',
@@ -451,6 +536,14 @@ const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string 
     {
         site: 'key ← templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
         reason: '`setLocalStorage` 핸들러 — 위와 같은 이유 (레이아웃이 키를 정한다).',
+    },
+    {
+        site: 'storageKey ← templates/_bundled/sirsoft-admin_basic/src/components/composite/FileTree.tsx',
+        reason: '폴더 접힘 상태 — FileTreePicker 가 `${storageKey}.expanded` 로 넘긴다. 같은 `g7le.*` 계열.',
+    },
+    {
+        site: 'storageKey ← templates/_bundled/sirsoft-admin_basic/src/hooks/useFileDrafts.ts',
+        reason: '미저장 편집분 — `g7le.codeEditor.<레이아웃>.drafts`. 파기되면 저장 안 한 작업이 사라지므로 `g7le.*` 면제가 특히 중요한 자리다.',
     },
 ];
 
@@ -461,11 +554,10 @@ const DECLARED_DYNAMIC_CALL_SITES: ReadonlyArray<{ site: string; reason: string 
  * 새 키를 여기 넣을 때는 사용자에게 그 상실이 수용 가능한지 근거를 함께 남긴다.
  *
  * 표시 통화(`g7_preferred_currency`)는 종전에 여기 있었다 — 「미동의 시 기본 통화로
- * 돌아가는 것이 의도」라는 선언이었는데, 같은 저장소의 출하 카탈로그·업그레이드 스텝은
- * 그 키를 **보관 대상**으로 등재해 서로 반대를 말하고 있었다. 결정(2026-09-08, #609
- * 리베이스 후속): 언어·테마와 같은 「사용자가 화면에서 직접 고른 표시 설정」(WP29 §3.6)으로
- * 보아 **출하 기본값에 넣는다.** 운영자가 원하면 설정 화면에서 뺄 수 있다. 그래서 이 목록은
- * 비어 있고, 비어 있는 것이 정상이다 — 자리는 남겨 둔다.
+ * 돌아가는 것이 의도」라는 선언이었다. 설계 결정(2026-10-31): 언어·테마와 같은 「사용자가
+ * 화면에서 직접 고른 표시 설정」(WP29 §3.6)으로 보아 **보관 대상**으로 한다. 그 키는 이커머스가
+ * 소유하므로 출하 카탈로그가 아니라 이커머스가 계약 훅으로 제공한다(배송 국가도 같다). 그래서
+ * 이 목록은 비어 있고, 비어 있는 것이 정상이다 — 자리는 남겨 둔다.
  */
 const INTENTIONALLY_NON_NECESSARY: ReadonlyArray<{ key: string; reason: string }> = [];
 
@@ -487,12 +579,31 @@ function isInShippedCatalog(discovered: DiscoveredKey): boolean {
     );
 }
 
+/**
+ * 확장이 계약 훅으로 제공하는 키가 도출된 키를 덮는지 검사합니다.
+ *
+ * @param  discovered  도출된 키
+ * @return 제공 여부
+ */
+function isProvidedByExtension(discovered: DiscoveredKey): boolean {
+    return PROVIDER_LISTENERS.some((listener) => Object.values(listener.keys).some((patterns) =>
+        patterns.some((pattern) => (
+            matchesAllowlistPattern(discovered.key, pattern)
+            || (pattern.endsWith('*') && pattern.slice(0, -1) === discovered.key)
+        )),
+    ));
+}
+
 describe('strictly necessary 허용목록 모집단 커버리지', () => {
     const { keys: discovered, unresolved } = discoverStorageKeys();
+
+    /** @effects storage_keys_population_covered_by_allowlist */
 
     it('저장 키 도출이 비어 있지 않다 (모집단 하한 — 스캐너가 죽으면 붉어진다)', () => {
         expect(discovered.length).toBeGreaterThanOrEqual(10);
     });
+
+    /** @effects storage_keys_population_covered_by_allowlist */
 
     it('정적 해석 불가 지점이 선언된 목록과 정확히 일치한다 (부분 누락 방지)', () => {
         // 해석 못 한 표현식을 버리면 그 키는 검사 대상에서 사라지는데, 결과는
@@ -502,12 +613,16 @@ describe('strictly necessary 허용목록 모집단 커버리지', () => {
         expect(unresolved).toEqual(DECLARED_DYNAMIC_CALL_SITES.map((s) => s.site));
     });
 
+    /** @effects storage_keys_population_covered_by_allowlist */
+
     it('출하 카탈로그 파싱이 비어 있지 않다 (파서가 죽으면 3번 축이 공허 통과한다)', () => {
         expect(Object.keys(SHIPPED_CATALOG).sort()).toEqual([...ALLOWLIST_SCOPES].sort());
         expect(SHIPPED_CATALOG.localStorage.length).toBeGreaterThanOrEqual(10);
     });
 
-    it('도출된 모든 저장 키가 출하 카탈로그 등재 또는 의도적 비필수 선언 중 하나에 해당한다', () => {
+    /** @effects storage_keys_population_covered_by_allowlist */
+
+    it('도출된 모든 저장 키가 출하 카탈로그 등재·확장 제공·의도적 비필수 선언 중 하나에 해당한다', () => {
         const exempt = new Set(INTENTIONALLY_NON_NECESSARY.map((e) => e.key));
         const lockedKeys = new Set([...PHP_LOCKED.localStorage, ...PHP_LOCKED.sessionStorage]);
 
@@ -515,10 +630,13 @@ describe('strictly necessary 허용목록 모집단 커버리지', () => {
             .filter((d) => !exempt.has(d.key))
             .filter((d) => !lockedKeys.has(d.key))
             .filter((d) => !isInShippedCatalog(d))
+            .filter((d) => !isProvidedByExtension(d))
             .map((d) => `${d.key} (${d.matchType}) ← ${d.origin}`);
 
         expect(uncovered).toEqual([]);
     });
+
+    /** @effects storage_keys_population_covered_by_allowlist */
 
     it('의도적 비필수 선언은 실제로 존재하는 키만 담는다 (사문화 방지)', () => {
         const discoveredKeys = new Set(discovered.map((d) => d.key));
@@ -534,6 +652,7 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
     // 발견 ①: 서버는 `config('session.cookie')` 를 런타임 해석하는데 클라이언트는
     // 'laravel_session' 을 하드코딩하고 있었다. SESSION_COOKIE 를 지정한 사이트에서는
     // 클라이언트 목록의 그 항목이 죽어 있었고, 두 목록을 대조하는 테스트가 없었다.
+    /** @effects server_cookie_gate_reads_settings_not_hardcoded_list */
     it('서버 쿠키 게이트가 하드코딩 목록이 아니라 공용 해석기를 경유한다', () => {
         const body = MIDDLEWARE_PHP.slice(MIDDLEWARE_PHP.indexOf('function isStrictlyNecessary'));
 
@@ -543,9 +662,13 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
         expect(body).not.toContain("'gdpr_session'");
     });
 
+    /** @effects server_cookie_gate_reads_settings_not_hardcoded_list */
+
     it('공용 해석기가 운영자 설정을 읽는다 (잠금 집합만 보고 끝내지 않는다)', () => {
         expect(ALLOWLIST_PHP).toContain("g7_plugin_settings(self::PLUGIN_ID, 'necessary_storage_allowlist.'");
     });
+
+    /** @effects middleware_session_cookie_name_resolved_at_runtime */
 
     it('세션 쿠키 이름은 런타임 해석 값이다 (하드코딩 금지)', () => {
         // 정의처는 plugin.php 다 (PHP_LOCKED 와 같은 앵커) — 위임 함수 쪽을 읽으면 빈 문자열이라
@@ -557,6 +680,8 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
         expect(locked.match(/'laravel_session'/g)?.length ?? 0).toBe(1);
     });
 
+    /** @effects ts_fallback_matches_php_locked_set */
+
     it('TS 폴백이 PHP 잠금 집합과 정확히 일치한다 (런타임 세션 쿠키 제외)', () => {
         // 세션 쿠키 이름은 파서가 이미 걷어냈다 — TS 폴백에 담을 수 없는 런타임 값이라
         // 이 축의 대조 대상이 아니다 (그 항목의 존재는 바로 위 테스트가 잠근다).
@@ -564,6 +689,8 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
         expect([...LOCKED_FALLBACK.sessionStorage].sort()).toEqual([...PHP_LOCKED.sessionStorage].sort());
         expect([...LOCKED_FALLBACK.cookie].sort()).toEqual([...PHP_LOCKED.cookie].sort());
     });
+
+    /** @effects ts_fallback_is_not_a_catalog_copy */
 
     it('TS 폴백은 카탈로그 전체 사본이 아니다 (드리프트 재발 차단)', () => {
         for (const scope of ALLOWLIST_SCOPES) {
@@ -576,6 +703,8 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
             .reduce((n, scope) => n + LOCKED_FALLBACK[scope].length, 0);
         expect(fallbackTotal).toBeLessThan(5);
     });
+
+    /** @effects locked_set_absent_from_shipped_catalog */
 
     it('출하 카탈로그는 잠금 항목을 담지 않는다 (담기면 API 로 지울 수 있게 된다)', () => {
         const leaked: string[] = [];
@@ -591,8 +720,12 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
         expect(leaked).toEqual([]);
     });
 
+    /** @effects shipped_catalog_items_pass_save_validation */
+
     it('출하 카탈로그 항목이 저장 검증 규칙을 통과한다 (통과 못 하면 시드값을 다시 저장할 수 없다)', () => {
-        const m = /STORAGE_KEY_REGEX = '(.+)';/.exec(REQUEST_PHP);
+        // 형식 규칙의 단일 출처는 plugin.php 상수다 — 저장 요청은 그것을 가리키기만 한다.
+        expect(REQUEST_PHP).toContain('STORAGE_KEY_REGEX = Plugin::NECESSARY_STORAGE_KEY_PATTERN;');
+        const m = /NECESSARY_STORAGE_KEY_PATTERN = '(.+)';/.exec(PLUGIN_PHP);
         expect(m).not.toBeNull();
 
         // PHP 구분자(/.../)를 벗겨 JS 정규식으로 옮긴다.
@@ -613,6 +746,7 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
 
     // 발견 ②: 저장소 목록은 접두사 매칭을 지원했는데 쿠키 목록은 `includes()` 정확 일치
     // 전용이었다. 규칙이 갈라지면 운영자가 쿠키 카드에 적은 와일드카드가 조용히 무시된다.
+    /** @effects wildcard_rule_is_isomorphic_across_php_and_ts */
     it('와일드카드 매칭 규칙이 PHP·TS 에서 동형이다', () => {
         // PHP 는 원문으로 규칙 3요소를 확인한다 (테스트에서 PHP 를 실행할 수 없으므로).
         const phpBody = ALLOWLIST_PHP.slice(ALLOWLIST_PHP.indexOf('function matchesPattern'));
@@ -629,6 +763,8 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
         expect(matchesAllowlistPattern('anything', '*')).toBe(false);
     });
 
+    /** @effects scope_vocabulary_matches_across_php_and_ts */
+
     it('스코프 어휘가 PHP·TS 에서 같다', () => {
         const phpScopes = /public const SCOPES = \[([^\]]+)\]/.exec(ALLOWLIST_PHP);
         expect(phpScopes).not.toBeNull();
@@ -638,8 +774,86 @@ describe('서버·클라이언트 허용목록 출처 정합성', () => {
     });
 });
 
+describe('확장 제공 키 계약', () => {
+    /**
+     * plugin.php 의 형식 규칙을 JS 정규식으로 옮깁니다.
+     *
+     * @return 형식 정규식
+     */
+    function keyPattern(): RegExp {
+        const m = /NECESSARY_STORAGE_KEY_PATTERN = '(.+)';/.exec(PLUGIN_PHP) as RegExpExecArray;
+        // PHP 작은따옴표 문자열의 `\\` 는 역슬래시 하나다.
+        return new RegExp(m[1].replace(/^\//, '').replace(/\/$/, '').replace(/\\\\/g, '\\'));
+    }
+
+    /** @effects provided_keys_collected_from_filter_hook */
+
+    it('제공 리스너를 찾는다 (모집단 하한 — 탐색이 죽으면 붉어진다)', () => {
+        expect(PROVIDER_LISTENERS.length).toBeGreaterThanOrEqual(5);
+        for (const listener of PROVIDER_LISTENERS) {
+            const total = Object.values(listener.keys).reduce((n, items) => n + items.length, 0);
+            expect(total, listener.file).toBeGreaterThan(0);
+        }
+    });
+
+    /** @effects provided_keys_reject_invalid_items */
+
+    it('제공 키는 알려진 저장소 종류만 쓰고 저장 검증 규칙을 통과한다', () => {
+        const re = keyPattern();
+        const rejected: string[] = [];
+        for (const listener of PROVIDER_LISTENERS) {
+            for (const [scope, items] of Object.entries(listener.keys)) {
+                if (!(ALLOWLIST_SCOPES as readonly string[]).includes(scope)) {
+                    rejected.push(`${listener.file} ${scope}`);
+                    continue;
+                }
+                for (const item of items) {
+                    if (!re.test(item) || item.length > 128) {
+                        rejected.push(`${listener.file} ${scope}:${item}`);
+                    }
+                }
+            }
+        }
+
+        expect(rejected).toEqual([]);
+    });
+
+    /** @effects shipped_catalog_contains_no_extension_owned_keys */
+
+    it('출하 카탈로그는 확장이 제공하는 키를 담지 않는다 (이 플러그인은 특정 확장을 모른다)', () => {
+        const leaked: string[] = [];
+        for (const listener of PROVIDER_LISTENERS) {
+            for (const [scope, items] of Object.entries(listener.keys)) {
+                for (const item of items) {
+                    if (ALLOWLIST_SCOPES.some((s) => (SHIPPED_CATALOG[s] ?? []).includes(item))) {
+                        leaked.push(`${scope}:${item} ← ${listener.file}`);
+                    }
+                }
+            }
+        }
+
+        expect(leaked).toEqual([]);
+    });
+
+    /** @effects provided_keys_collected_from_filter_hook */
+
+    it('제공 리스너는 이 플러그인의 클래스를 참조하지 않는다 (미설치여도 제공 확장이 선다)', () => {
+        const coupled = PROVIDER_LISTENERS
+            .filter((listener) => /Plugins\\Sirsoft\\Gdpr\\/.test(listener.source))
+            .map((listener) => listener.file);
+
+        expect(coupled).toEqual([]);
+    });
+
+    /** @effects provided_keys_collected_from_filter_hook */
+
+    it('계약 훅 이름이 plugin.php 상수와 같다', () => {
+        expect(PLUGIN_PHP).toContain(`PROVIDED_NECESSARY_STORAGE_HOOK = '${PROVIDED_HOOK}';`);
+    });
+});
+
 /**
- * 출하 카탈로그 전량 — 미동의 저장·회수 생존 (검사 축 11).
+ * 출하 카탈로그 전량 — 미동의 저장·회수 생존 (검사 축 13).
  *
  * 운영자 설정 구조에서는 판정 목록이 「운영자 설정 ∪ 잠금 집합」이다. 신규 설치는 출하
  * 카탈로그를 그 설정으로 시드하므로, 신규 사이트의 판정 목록은 곧 `카탈로그 ∪ 잠금 집합`이다.

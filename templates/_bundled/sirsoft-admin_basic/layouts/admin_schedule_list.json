@@ -1,276 +1,1001 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_schedule_list",
-  "permissions": [
-    "core.schedules.read"
-  ],
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:admin.schedules.page_title",
-    "description": "$t:admin.schedules.page_description"
-  },
-  "state": {
-    "searchQuery": "",
-    "searchType": ""
-  },
-  "transition_overlay": {
-    "wait_for": [
-      "schedules"
-    ],
-    "target": "schedules_tab_content",
-    "fallback_target": "right_content_area"
-  },
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "global",
-        "_local": {
-          "searchQuery": "{{query.search || ''}}",
-          "searchType": "{{query.search_type || ''}}"
-        }
-      }
-    }
-  ],
-  "data_sources": [
-    {
-      "id": "schedules",
-      "label_key": "$t:editor.data_source.schedules",
-      "type": "api",
-      "endpoint": "/api/admin/schedules",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "page": "{{query.page ?? 1}}",
-        "per_page": "{{query.per_page ?? 20}}",
-        "search": "{{query.search}}",
-        "type": "{{query.type}}",
-        "frequency": "{{query.frequency}}",
-        "status": "{{query.status}}",
-        "last_result": "{{query.last_result}}",
-        "without_overlapping": "{{query.without_overlapping}}",
-        "run_in_maintenance": "{{query.run_in_maintenance}}",
-        "created_from": "{{query.created_from}}",
-        "created_to": "{{query.created_to}}",
-        "sort_by": "{{query.sort_by ?? 'created_at'}}",
-        "sort_order": "{{query.sort_order ?? 'desc'}}"
-      },
-      "fallback": {
-        "data": {
-          "data": [],
-          "current_page": 1,
-          "last_page": 1,
-          "per_page": 20,
-          "total": 0
-        }
-      }
-    }
-  ],
-  "named_actions": {
-    "searchSchedules": {
-      "handler": "navigate",
-      "params": {
-        "path": "/admin/schedules",
-        "mergeQuery": true,
-        "query": {
-          "search": "{{_local.searchQuery || undefined}}",
-          "search_type": "{{_local.searchType || undefined}}",
-          "page": 1
-        },
-        "replace": true,
-        "transition_overlay_target": "schedules_data_grid__body"
-      }
-    }
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "schedule_list_content",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "admin-page-content"
-        },
-        "responsive": {
-          "portable": {
-            "props": {
-              "className": "admin-page-content-compact"
-            }
-          }
-        },
-        "children": [
-          {
-            "id": "page_header",
-            "type": "composite",
-            "name": "PageHeader",
-            "props": {
-              "title": "$t:admin.schedules.title",
-              "description": "$t:admin.schedules.description"
+    "comment": "예약 작업(스케줄)·큐 관리. 탭 둘이 **URL 경로**다 — 스케줄 탭은 `/admin/schedules`, 큐 탭은\n  `/admin/schedules/queue`(하위 탭은 `query.view` = pending|failed|logs). 데이터소스는 탭마다 `if` 로 갈라\n  지금 탭의 것만 부른다 — 판별은 **`query.view` 로만** 한다. 데이터소스 조건 문맥은 `{route: 라우트 파라미터, query,\n  _global}` 이라 `route.path` 가 없다(렌더 문맥에만 붙는다 — 그래서 화면 `data-if` 는 경로로 가른다). 큐 탭으로 가는\n  길은 모두 `view` 를 싣고, `view` 없이 큐 주소를 열면 진입 시 `view=pending` 으로 보정한다.\n\n  스케줄 탭의 필터는 쿠폰·회원 목록과 같은 구조다(기본/상세 + 검색편집) — 입력값은 `_local.filter` 에\n  쌓였다가 검색 버튼·Enter 에서만 URL 로 나간다(`searchSchedules`). 초기화는 `resetSchedules`.\n  등록·수정은 별도 화면이 아니라 **한 폼 창**이다 — 대상과 편집 여부를 전역에 담아 그 창이 겸한다.\n\n  탭을 오갈 때 각 탭의 조건(필터·페이지)은 따로 기억한다 — 떠나는 탭의 query 를 전역에 담아 두고,\n  돌아갈 때 그 값을 다시 싣는다.\n  전환 덮개는 목록과 함께 늦게 받는 progressive 데이터소스(소유 선택지·상태 카드·큐 현황·큐 하위 탭 목록)까지 기다린다 — 하나라도\n  빠지면 덮개가 걷힌 뒤 그 칸이 늦게 바뀐다. 덮개 대상은 두 탭 본문을 함께 감싼 칸 하나다(탭마다 따로 두면 큐 탭에서\n  대상이 사라져 화면 전체가 덮였다).\n  헤더의 「보안 정책」은 서버가 정한 실행 허용·거부 목록을 **읽기 전용**으로 보인다 — 바꾸는 것은 서버 관리자(설정 파일·.env)의 몫이다.\n\n  레이아웃 권한은 스케줄 조회(core.schedules.read) 하나라 큐 작업 조회(core.queue_jobs.read)가 없는 관리자도 이 화면에 들어온다.\n  그 여부는 베이스(`_admin_base`)가 로그인 관리자(current_user)를 받을 때 전역 `adminQueueJobsReadable` 에 올린 판정을 본다(받기 전은\n  판정 전 = 값 없음). 거짓이면 큐 탭 항목을 숨기고, 큐 주소로 직접 들어오면 본문 대신 권한 안내를 보이며, `queue_*` 데이터소스를\n  부르지 않는다(데이터소스 조건 문맥에는 사용자가 없어 전역 판정을 쓴다). 판정 전에는 숨기지 않고 종전대로 받는다 — 새 탭의 첫 화면에서\n  권한 있는 관리자에게 탭이 깜박이지 않게 하고, 그때 권한 없는 관리자에게 나간 요청의 403 은 조용히 넘긴다.",
+    "version": "1.0.0",
+    "layout_name": "admin_schedule_list",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.schedules.page_title",
+        "description": "$t:admin.schedules.page_description"
+    },
+    "data_sources": [
+        {
+            "id": "schedules",
+            "label_key": "$t:editor.data_source.schedules",
+            "type": "api",
+            "endpoint": "/api/admin/schedules",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{!query.view}}",
+            "params": {
+                "page": "{{query.page ?? 1}}",
+                "per_page": "{{query.per_page ?? 20}}",
+                "search_field": "{{query.search_field}}",
+                "search_keyword": "{{query.search_keyword}}",
+                "extension_type": "{{query.extension_type}}",
+                "extension_identifier": "{{query.extension_identifier}}",
+                "type": "{{query.type}}",
+                "status": "{{query.status}}",
+                "last_result": "{{query.last_result}}",
+                "frequency": "{{query.frequency}}",
+                "dispatch_mode": "{{query.dispatch_mode}}",
+                "overlap": "{{query.overlap}}",
+                "history_mode": "{{query.history_mode}}",
+                "created_start_date": "{{query.created_start_date}}",
+                "created_end_date": "{{query.created_end_date}}",
+                "sort_by": "{{query.sort_by ?? 'created_at'}}",
+                "sort_order": "{{query.sort_order ?? 'desc'}}"
             },
-            "children": [
-              {
-                "id": "refresh_button",
-                "type": "composite",
-                "name": "IconButton",
-                "props": {
-                  "iconName": "refresh",
-                  "variant": "outline",
-                  "size": "md"
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0,
+                        "has_more_pages": false
+                    }
+                }
+            },
+            "comment": "예약 작업 목록(스케줄 탭). 조건을 전부 `query.*` 에서 읽는다 — 키 목록은 서버 ScheduleListRequest 와 1:1 이다."
+        },
+        {
+            "id": "schedule_owners",
+            "label_key": "$t:editor.data_source.schedule_owners",
+            "type": "api",
+            "endpoint": "/api/admin/schedules/owners",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "if": "{{!query.view}}",
+            "fallback": {
+                "data": []
+            },
+            "comment": "소유 필터의 확장 선택지(확장 이름·스케줄 수). 목록을 가리지 않도록 늦게 받고, 실패해도 선택 상자만 빈다."
+        },
+        {
+            "id": "schedule_status",
+            "label_key": "$t:editor.data_source.schedule_status",
+            "type": "api",
+            "endpoint": "/api/admin/schedules/status",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "heartbeat": {
+                        "last_tick_at": null,
+                        "minutes_ago": null,
+                        "healthy": false
+                    },
+                    "queue": null
+                }
+            },
+            "comment": "상태 카드 — 스케줄러 하트비트·큐 요약. 두 탭이 함께 쓴다."
+        },
+        {
+            "id": "queue_status",
+            "label_key": "$t:editor.data_source.queue_status",
+            "type": "api",
+            "endpoint": "/api/admin/schedules/queue/status",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "if": "{{_global.adminQueueJobsReadable !== false}}",
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "큐 등록 현황(연결·큐 목록) — 폼 창의 「큐로 보내기」 선택지와 큐 탭(현황 카드·필터 선택지)이 함께 쓴다. 큐 탭 현황 카드가 이 값으로\n       그려지므로 progressive 로 받고 전환 덮개가 기다린다.\n       큐 작업 조회 권한(core.queue_jobs.read)이 없다고 판정됐으면(`_global.adminQueueJobsReadable === false`, 베이스가 current_user 로 정한다)\n       부르지 않는다. 판정 전(새 탭의 첫 화면)에 나간 요청의 403 은 조용히 넘긴다. 폼 창 선택지는 값이 없으면 비고(기본 연결로 보낸다) 창은 그대로 쓴다.\n       fallback 을 두지 않는다 — 두면 받기 실패가 성공으로 처리되어 큐 탭 현황 카드가 「측정 불가 / 0개 / 0/0」 같은 틀린 값을 그렸다.\n       실패는 `_dataSourceErrors.queue_status` 로 남고 큐 탭은 카드 대신 실패 안내를 보인다."
+        },
+        {
+            "id": "queue_pending",
+            "label_key": "$t:editor.data_source.queue_pending",
+            "type": "api",
+            "endpoint": "/api/admin/schedules/queue/pending",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{query.view === 'pending' && _global.adminQueueJobsReadable !== false}}",
+            "params": {
+                "page": "{{query.page ?? 1}}",
+                "per_page": "{{query.per_page ?? 20}}",
+                "search_field": "{{query.search_field}}",
+                "search_keyword": "{{query.search_keyword}}",
+                "queue": "{{query.queue}}",
+                "connection": "{{query.connection}}",
+                "sort_by": "{{query.sort_by ?? 'created_at'}}",
+                "sort_order": "{{query.sort_order ?? 'desc'}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "큐 탭 — 대기 중인 Job. 하위 탭이 「대기」일 때만 부른다. 정렬 기준은 하위 탭마다 받는 값이 달라(서버 허용 목록)\n       기본값도 하위 탭마다 따로 둔다 — 하위 탭을 바꾸면 정렬은 넘기지 않는다. 권한 판정·403 처리는 위 큐 등록 현황과 같다(세 하위 탭 공통)."
+        },
+        {
+            "id": "queue_failed",
+            "label_key": "$t:editor.data_source.queue_failed",
+            "type": "api",
+            "endpoint": "/api/admin/schedules/queue/failed",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{query.view === 'failed' && _global.adminQueueJobsReadable !== false}}",
+            "params": {
+                "page": "{{query.page ?? 1}}",
+                "per_page": "{{query.per_page ?? 20}}",
+                "search_field": "{{query.search_field}}",
+                "search_keyword": "{{query.search_keyword}}",
+                "queue": "{{query.queue}}",
+                "connection": "{{query.connection}}",
+                "failed_start_date": "{{query.failed_start_date}}",
+                "failed_end_date": "{{query.failed_end_date}}",
+                "sort_by": "{{query.sort_by ?? 'failed_at'}}",
+                "sort_order": "{{query.sort_order ?? 'desc'}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "큐 탭 — 실패한 Job."
+        },
+        {
+            "id": "queue_logs",
+            "label_key": "$t:editor.data_source.queue_logs",
+            "type": "api",
+            "endpoint": "/api/admin/schedules/queue/logs",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{query.view === 'logs' && _global.adminQueueJobsReadable !== false}}",
+            "params": {
+                "page": "{{query.page ?? 1}}",
+                "per_page": "{{query.per_page ?? 20}}",
+                "search_field": "{{query.search_field}}",
+                "search_keyword": "{{query.search_keyword}}",
+                "status": "{{query.status}}",
+                "queue": "{{query.queue}}",
+                "connection": "{{query.connection}}",
+                "created_start_date": "{{query.created_start_date}}",
+                "created_end_date": "{{query.created_end_date}}",
+                "sort_by": "{{query.sort_by ?? 'finished_at'}}",
+                "sort_order": "{{query.sort_order ?? 'desc'}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "큐 탭 — 처리 기록(성공·실패)."
+        }
+    ],
+    "initLocal": {
+        "visibleFilters": [
+            "searchField",
+            "searchKeyword",
+            "owner",
+            "type",
+            "status",
+            "lastResult"
+        ],
+        "showDetailFilter": false,
+        "isEditMode": false,
+        "filter": {
+            "searchField": "all",
+            "searchKeyword": "",
+            "ownerType": "all",
+            "ownerIdentifier": "",
+            "type": "all",
+            "status": "all",
+            "lastResult": "all",
+            "frequency": "all",
+            "dispatchMode": "all",
+            "overlap": "all",
+            "historyMode": "",
+            "createdStartDate": "",
+            "createdEndDate": "",
+            "createdDateQuick": ""
+        },
+        "queueVisibleFilters": [
+            "queue",
+            "connection",
+            "date"
+        ],
+        "showQueueDetailFilter": false,
+        "isQueueEditMode": false,
+        "queueFilter": {
+            "searchField": "all",
+            "searchKeyword": "",
+            "queue": "all",
+            "connection": "all",
+            "status": "all",
+            "dateStart": "",
+            "dateEnd": "",
+            "dateQuick": ""
+        }
+    },
+    "permissions": [
+        "core.schedules.read"
+    ],
+    "transition_overlay": {
+        "target": "schedule_tabs_content",
+        "fallback_target": "right_content_area",
+        "wait_for": [
+            "schedules",
+            "schedule_owners",
+            "schedule_status",
+            "queue_status",
+            "queue_pending",
+            "queue_failed",
+            "queue_logs"
+        ]
+    },
+    "named_actions": {
+        "searchSchedules": {
+            "comment": "검색 실행 — 필터 조각의 검색 버튼·Enter 가 이 액션 하나를 공유한다. 열거한 조건만 덮어쓰고 정렬·페이지당 개수는\n       유지한다(`mergeQuery`). 「전체」는 조건이 아니므로 빈 값으로 떨어뜨리고(빈 값은 엔진이 URL 에서 키를 지운다),\n       확장 선택은 소유가 모듈·플러그인일 때만 싣는다. 조건이 바뀌었으니 쪽수는 1로 되돌린다.\n       빠른 기간 표시(`createdDateQuick`)는 URL 에 싣지 않는다 — 새로고침하면 버튼 강조만 꺼진다.",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/schedules",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "schedules_data_grid__body",
+                "query": {
+                    "search_field": "{{_local.filter.searchField !== 'all' ? _local.filter.searchField : ''}}",
+                    "search_keyword": "{{_local.filter.searchKeyword || ''}}",
+                    "extension_type": "{{_local.filter.ownerType !== 'all' ? _local.filter.ownerType : ''}}",
+                    "extension_identifier": "{{['module', 'plugin'].includes(_local.filter.ownerType) ? (_local.filter.ownerIdentifier || '') : ''}}",
+                    "type": "{{_local.filter.type !== 'all' ? _local.filter.type : ''}}",
+                    "status": "{{_local.filter.status !== 'all' ? _local.filter.status : ''}}",
+                    "last_result": "{{_local.filter.lastResult !== 'all' ? _local.filter.lastResult : ''}}",
+                    "frequency": "{{_local.filter.frequency !== 'all' ? _local.filter.frequency : ''}}",
+                    "dispatch_mode": "{{_local.filter.dispatchMode !== 'all' ? _local.filter.dispatchMode : ''}}",
+                    "overlap": "{{_local.filter.overlap !== 'all' ? _local.filter.overlap : ''}}",
+                    "history_mode": "{{_local.filter.historyMode || ''}}",
+                    "created_start_date": "{{_local.filter.createdStartDate || ''}}",
+                    "created_end_date": "{{_local.filter.createdEndDate || ''}}",
+                    "page": 1
+                }
+            }
+        },
+        "resetSchedules": {
+            "comment": "필터 초기화 — 입력값을 처음 값으로 되돌리고 조건 없는 주소로 간다. 넓은·좁은 화면 초기화 버튼이 함께 쓴다.",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "_local",
+                        "filter": {
+                            "searchField": "all",
+                            "searchKeyword": "",
+                            "ownerType": "all",
+                            "ownerIdentifier": "",
+                            "type": "all",
+                            "status": "all",
+                            "lastResult": "all",
+                            "frequency": "all",
+                            "dispatchMode": "all",
+                            "overlap": "all",
+                            "historyMode": "",
+                            "createdStartDate": "",
+                            "createdEndDate": "",
+                            "createdDateQuick": ""
+                        }
+                    }
                 },
-                "actions": [
-                  {
-                    "type": "click",
+                {
+                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건(검색·소유·유형…·정렬·쪽)을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
                     "handler": "navigate",
                     "params": {
-                      "path": "{{route.path}}",
-                      "mergeQuery": true,
-                      "query": {}
+                        "path": "/admin/schedules",
+                        "mergeQuery": false,
+                        "replace": true,
+                        "transition_overlay_target": "schedules_data_grid__body"
                     }
-                  }
-                ]
-              },
-              {
-                "id": "add_schedule_button",
-                "type": "basic",
-                "name": "Button",
-                "props": {
-                  "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "sequence",
-                    "actions": [
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "selectedSchedule": null,
-                          "isEditMode": false,
-                          "scheduleForm": {
-                            "type": "artisan",
-                            "frequency": "daily",
-                            "without_overlapping": true,
-                            "run_in_maintenance": false,
-                            "is_active": true
-                          }
-                        }
-                      },
-                      {
-                        "handler": "openModal",
-                        "target": "schedule_form_modal"
-                      }
-                    ]
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "plus",
-                      "size": "md"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "text": "$t:admin.schedules.register_schedule"
-                  }
-                ]
-              }
+                }
             ]
-          },
-          {
-            "id": "tab_navigation_wrapper",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "sticky-tab-nav"
-            },
-            "children": [
-              {
-                "id": "tab_navigation",
-                "type": "composite",
-                "name": "TabNavigation",
-                "props": {
-                  "tabs": [
-                    {
-                      "id": "schedules",
-                      "label": "$t:admin.schedules.tabs.schedules",
-                      "iconName": "clock"
-                    },
-                    {
-                      "id": "queue",
-                      "label": "$t:admin.schedules.tabs.queue",
-                      "iconName": "bar-chart-2",
-                      "disabled": true
-                    }
-                  ],
-                  "activeTabId": "{{route.path === '/admin/schedules/queue' ? 'queue' : 'schedules'}}",
-                  "variant": "default"
-                },
-                "actions": [
-                  {
-                    "event": "onTabChange",
-                    "type": "change",
-                    "handler": "sequence",
-                    "actions": [
-                      {
+        },
+        "searchQueue": {
+            "comment": "큐 탭 검색 — 필터 조각의 검색 버튼·Enter 가 공유한다. 지금 하위 탭(`view`)을 유지하고, 하위 탭이 받는 조건만 싣는다:\n       대기 = 검색·큐·연결 / 실패 = + 실패 일시 / 처리 기록 = + 결과 상태·처리 일시. 「전체」는 빈 값(엔진이 URL 에서 지운다). 쪽은 1로.\n       대기 표시는 지금 하위 탭의 표 본문에만 건다 — 대상이 하위 탭마다 달라 갈래를 나눈다.",
+            "handler": "conditions",
+            "conditions": [
+                {
+                    "if": "{{query.view === 'failed'}}",
+                    "then": {
                         "handler": "navigate",
                         "params": {
-                          "path": "/admin/schedules{{$args[0] === 'schedules' ? '' : '/' + $args[0]}}"
+                            "path": "/admin/schedules/queue",
+                            "mergeQuery": true,
+                            "replace": true,
+                            "transition_overlay_target": "queue_failed_grid__body",
+                            "query": {
+                                "view": "{{query.view || 'pending'}}",
+                                "search_field": "{{_local.queueFilter.searchField !== 'all' && ((query.view || 'pending') !== 'pending' || _local.queueFilter.searchField !== 'error') ? _local.queueFilter.searchField : ''}}",
+                                "search_keyword": "{{_local.queueFilter.searchKeyword || ''}}",
+                                "queue": "{{_local.queueFilter.queue !== 'all' ? _local.queueFilter.queue : ''}}",
+                                "connection": "{{_local.queueFilter.connection !== 'all' ? _local.queueFilter.connection : ''}}",
+                                "status": "{{query.view === 'logs' && _local.queueFilter.status !== 'all' ? _local.queueFilter.status : ''}}",
+                                "failed_start_date": "{{query.view === 'failed' ? (_local.queueFilter.dateStart || '') : ''}}",
+                                "failed_end_date": "{{query.view === 'failed' ? (_local.queueFilter.dateEnd || '') : ''}}",
+                                "created_start_date": "{{query.view === 'logs' ? (_local.queueFilter.dateStart || '') : ''}}",
+                                "created_end_date": "{{query.view === 'logs' ? (_local.queueFilter.dateEnd || '') : ''}}",
+                                "page": 1
+                            }
                         }
-                      },
-                      {
-                        "handler": "scrollIntoView",
+                    }
+                },
+                {
+                    "if": "{{query.view === 'logs'}}",
+                    "then": {
+                        "handler": "navigate",
                         "params": {
-                          "selector": "#main_content",
-                          "behavior": "instant",
-                          "block": "start",
-                          "waitForElement": true,
-                          "timeout": 1000
+                            "path": "/admin/schedules/queue",
+                            "mergeQuery": true,
+                            "replace": true,
+                            "transition_overlay_target": "queue_logs_grid__body",
+                            "query": {
+                                "view": "{{query.view || 'pending'}}",
+                                "search_field": "{{_local.queueFilter.searchField !== 'all' && ((query.view || 'pending') !== 'pending' || _local.queueFilter.searchField !== 'error') ? _local.queueFilter.searchField : ''}}",
+                                "search_keyword": "{{_local.queueFilter.searchKeyword || ''}}",
+                                "queue": "{{_local.queueFilter.queue !== 'all' ? _local.queueFilter.queue : ''}}",
+                                "connection": "{{_local.queueFilter.connection !== 'all' ? _local.queueFilter.connection : ''}}",
+                                "status": "{{query.view === 'logs' && _local.queueFilter.status !== 'all' ? _local.queueFilter.status : ''}}",
+                                "failed_start_date": "{{query.view === 'failed' ? (_local.queueFilter.dateStart || '') : ''}}",
+                                "failed_end_date": "{{query.view === 'failed' ? (_local.queueFilter.dateEnd || '') : ''}}",
+                                "created_start_date": "{{query.view === 'logs' ? (_local.queueFilter.dateStart || '') : ''}}",
+                                "created_end_date": "{{query.view === 'logs' ? (_local.queueFilter.dateEnd || '') : ''}}",
+                                "page": 1
+                            }
                         }
-                      }
-                    ]
-                  }
-                ]
-              }
+                    }
+                },
+                {
+                    "if": "{{(query.view || 'pending') === 'pending'}}",
+                    "then": {
+                        "handler": "navigate",
+                        "params": {
+                            "path": "/admin/schedules/queue",
+                            "mergeQuery": true,
+                            "replace": true,
+                            "transition_overlay_target": "queue_pending_grid__body",
+                            "query": {
+                                "view": "{{query.view || 'pending'}}",
+                                "search_field": "{{_local.queueFilter.searchField !== 'all' && ((query.view || 'pending') !== 'pending' || _local.queueFilter.searchField !== 'error') ? _local.queueFilter.searchField : ''}}",
+                                "search_keyword": "{{_local.queueFilter.searchKeyword || ''}}",
+                                "queue": "{{_local.queueFilter.queue !== 'all' ? _local.queueFilter.queue : ''}}",
+                                "connection": "{{_local.queueFilter.connection !== 'all' ? _local.queueFilter.connection : ''}}",
+                                "status": "{{query.view === 'logs' && _local.queueFilter.status !== 'all' ? _local.queueFilter.status : ''}}",
+                                "failed_start_date": "{{query.view === 'failed' ? (_local.queueFilter.dateStart || '') : ''}}",
+                                "failed_end_date": "{{query.view === 'failed' ? (_local.queueFilter.dateEnd || '') : ''}}",
+                                "created_start_date": "{{query.view === 'logs' ? (_local.queueFilter.dateStart || '') : ''}}",
+                                "created_end_date": "{{query.view === 'logs' ? (_local.queueFilter.dateEnd || '') : ''}}",
+                                "page": 1
+                            }
+                        }
+                    }
+                }
             ]
-          },
-          {
-            "id": "schedules_tab_content",
-            "type": "basic",
-            "name": "Div",
-            "children": [
-              {
-                "partial": "partials/admin_schedule_list/_tab_schedules.json"
-              }
-            ],
-            "props": {
-              "className": "tab-content"
+        },
+        "resetQueue": {
+            "comment": "큐 탭 필터 초기화 — 입력값을 처음 값으로 되돌리고 지금 하위 탭만 남긴 주소로 간다.",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "_local",
+                        "queueFilter": {
+                            "searchField": "all",
+                            "searchKeyword": "",
+                            "queue": "all",
+                            "connection": "all",
+                            "status": "all",
+                            "dateStart": "",
+                            "dateEnd": "",
+                            "dateQuick": ""
+                        }
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "selectedFailedJobUuids": []
+                    }
+                },
+                {
+                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건(검색·큐·연결·기간·결과·쪽)을 전부 비우고 하위 탭만 남기는 것이 이 버튼의 목적이다.",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "/admin/schedules/queue",
+                        "mergeQuery": false,
+                        "replace": true,
+                        "query": {
+                            "view": "{{query.view || 'pending'}}"
+                        }
+                    }
+                }
+            ]
+        }
+    },
+    "init_actions": [
+        {
+            "comment": "큐 주소를 view 없이 열면(직접 입력·옛 링크) view=pending 으로 보정한다 — 데이터소스가 view 로만 탭을 가르기 때문이다. replace 라 이력에 남지 않는다.",
+            "handler": "navigate",
+            "if": "{{route.path === '/admin/schedules/queue' && !query.view}}",
+            "params": {
+                "path": "/admin/schedules/queue",
+                "mergeQuery": true,
+                "replace": true,
+                "query": {
+                    "view": "pending"
+                }
             }
-          }
+        },
+        {
+            "handler": "loadVisibleFilters",
+            "params": {
+                "id": "admin_schedule_filters",
+                "defaultFilters": [
+                    "searchField",
+                    "searchKeyword",
+                    "owner",
+                    "type",
+                    "status",
+                    "lastResult"
+                ]
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "visibleFilters"
+            }
+        },
+        {
+            "handler": "loadVisibleFilters",
+            "params": {
+                "id": "admin_queue_filters",
+                "defaultFilters": [
+                    "queue",
+                    "connection",
+                    "date"
+                ]
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "queueVisibleFilters"
+            }
+        },
+        {
+            "comment": "메인 탭 표시는 전역 값을 먼저 읽는다(탭을 누르면 이동 전에 바뀐다). 화면에 들어올 때마다 주소로 다시 맞춰\n         뒤로 가기·직접 입력으로 들어와도 지금 탭과 어긋나지 않는다.",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "activeScheduleTab": "{{route.path === '/admin/schedules/queue' ? 'queue' : 'schedules'}}"
+            }
+        },
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "showDetailFilter": "{{!!(query.frequency || query.dispatch_mode || query.overlap || query.history_mode || query.created_start_date || query.created_end_date)}}",
+                    "filter": {
+                        "searchField": "{{query.search_field || 'all'}}",
+                        "searchKeyword": "{{query.search_keyword || ''}}",
+                        "ownerType": "{{query.extension_type || 'all'}}",
+                        "ownerIdentifier": "{{query.extension_identifier || ''}}",
+                        "type": "{{query.type || 'all'}}",
+                        "status": "{{query.status || 'all'}}",
+                        "lastResult": "{{query.last_result || 'all'}}",
+                        "frequency": "{{query.frequency || 'all'}}",
+                        "dispatchMode": "{{query.dispatch_mode || 'all'}}",
+                        "overlap": "{{query.overlap || 'all'}}",
+                        "historyMode": "{{query.history_mode || ''}}",
+                        "createdStartDate": "{{query.created_start_date || ''}}",
+                        "createdEndDate": "{{query.created_end_date || ''}}",
+                        "createdDateQuick": ""
+                    },
+                    "showQueueDetailFilter": "{{route.path === '/admin/schedules/queue' && ((query.view === 'logs' && !!query.status && !(_local.queueVisibleFilters || ['queue', 'connection', 'date']).includes('status')) || (!!query.connection && !(_local.queueVisibleFilters || ['queue', 'connection', 'date']).includes('connection')))}}",
+                    "queueFilter": {
+                        "searchField": "{{route.path === '/admin/schedules/queue' ? (query.search_field || 'all') : 'all'}}",
+                        "searchKeyword": "{{route.path === '/admin/schedules/queue' ? (query.search_keyword || '') : ''}}",
+                        "queue": "{{query.queue || 'all'}}",
+                        "connection": "{{query.connection || 'all'}}",
+                        "status": "{{route.path === '/admin/schedules/queue' ? (query.status || 'all') : 'all'}}",
+                        "dateStart": "{{query.failed_start_date || query.created_start_date || ''}}",
+                        "dateEnd": "{{query.failed_end_date || query.created_end_date || ''}}",
+                        "dateQuick": ""
+                    }
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "schedule_list_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content-responsive-fluid"
+                },
+                "children": [
+                    {
+                        "id": "filter_visibility_selector",
+                        "type": "composite",
+                        "name": "FilterVisibilitySelector",
+                        "actions": [
+                            {
+                                "comment": "화면에 세울 필터 목록만 바꾼다 — 저장은 컴포넌트가 사용자별 키로 직접 처리하므로 여기서 다시 보내지 않는다",
+                                "type": "change",
+                                "event": "onFilterVisibilityChange",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "visibleFilters": "{{$args[0]}}"
+                                }
+                            }
+                        ],
+                        "props": {
+                            "id": "admin_schedule_filters",
+                            "visibleFilters": "{{_local.visibleFilters}}",
+                            "defaultFilters": [
+                                "searchField",
+                                "searchKeyword",
+                                "owner",
+                                "type",
+                                "status",
+                                "lastResult"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:admin.schedules.title",
+                            "description": "$t:admin.schedules.description"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "composite",
+                                "name": "IconButton",
+                                "actions": [
+                                    {
+                                        "comment": "새로고침 — 조건은 그대로 두고 지금 탭의 목록과 상태 카드만 다시 받는다(예전에는 같은 주소로\n                 navigate 해 아무 일도 일어나지 않았다). 큐 탭이면 보고 있는 하위 탭의 목록만 다시 받는다.",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "schedule_status"
+                                                }
+                                            },
+                                            {
+                                                "comment": "큐 쪽은 큐 조회 권한이 있다고(또는 아직 판정 전이라고) 볼 때만 다시 받는다 — 권한이 없으면 소스 자체가 골라지지 않았다.",
+                                                "handler": "refetchDataSource",
+                                                "if": "{{_global.adminQueueJobsReadable !== false}}",
+                                                "params": {
+                                                    "dataSourceId": "queue_status"
+                                                }
+                                            },
+                                            {
+                                                "handler": "conditions",
+                                                "conditions": [
+                                                    {
+                                                        "if": "{{route.path !== '/admin/schedules/queue'}}",
+                                                        "then": {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "schedules"
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "if": "{{_global.adminQueueJobsReadable !== false && (query.view || 'pending') === 'pending'}}",
+                                                        "then": {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "queue_pending"
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "if": "{{_global.adminQueueJobsReadable !== false && query.view === 'failed'}}",
+                                                        "then": {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "queue_failed"
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "if": "{{_global.adminQueueJobsReadable !== false && query.view === 'logs'}}",
+                                                        "then": {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "queue_logs"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "iconName": "refresh",
+                                    "variant": "outline",
+                                    "size": "md",
+                                    "ariaLabel": "$t:common.refresh"
+                                }
+                            },
+                            {
+                                "id": "security_policy_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{route.path !== '/admin/schedules/queue'}}",
+                                "actions": [
+                                    {
+                                        "comment": "보안 정책 보기 — 지난 값을 비우고 창을 연 뒤 정책을 받는다(목록과 함께 받지 않는다 — 자주 보지 않는 값이다).\n                 받는 동안 창은 진행 표시를, 실패하면 사유를 보인다(창 데이터소스는 실패를 알리지 못해 직접 부른다).",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "scheduleSecurity": null,
+                                                    "scheduleSecurityError": ""
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "schedule_security_modal"
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "target": "/api/admin/schedules/security",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "GET"
+                                                },
+                                                "onSuccess": {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "scheduleSecurity": "{{response.data}}"
+                                                    }
+                                                },
+                                                "onError": {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "scheduleSecurityError": "{{error.message ?? '$t:admin.schedules.security.load_failed'}}"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-outline flex-center gap-2 h-10"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "shield-halved",
+                                            "size": "md"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.schedules.action.security_policy"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "add_schedule_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "if": "{{route.path !== '/admin/schedules/queue'}}",
+                                "actions": [
+                                    {
+                                        "comment": "새 예약 — 폼 창을 등록 모드로 연다. 대상을 **비우고** 여는 것이 핵심이다.\n                 그 창은 수정과 겸용이라, 안 비우면 직전에 고친 예약의 값이 새 등록에 실린다.\n                 화면에서 만드는 행은 언제나 직접 등록이라 명령·유형·이름이 잠기지 않는다.",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "selectedSchedule": null,
+                                                    "isEditMode": false,
+                                                    "scheduleFormErrors": null,
+                                                    "scheduleForm": {
+                                                        "label": {},
+                                                        "description": {},
+                                                        "type": "artisan",
+                                                        "frequency": "daily",
+                                                        "overlapEnabled": false,
+                                                        "without_overlapping": 1440,
+                                                        "on_one_server": false,
+                                                        "dispatch_mode": "sync",
+                                                        "queue_connection": "",
+                                                        "queue_name": "",
+                                                        "history_mode": "all",
+                                                        "notify_on_failure": true,
+                                                        "run_in_maintenance": false,
+                                                        "is_active": true
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "schedule_form_modal"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{schedules?.data?.abilities?.can_create !== true}}"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "plus",
+                                            "size": "md"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.schedules.action.register"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "탭 바 — 본문 안쪽 여백을 음수 여백으로 덮어 끝까지 붙인다. 본문 여백이 폭에 따라 p-4·p-6·p-8 로 바뀌므로 탭 바도\n           같은 단계의 -responsive 짝을 쓴다(템플릿 관리·환경설정과 같다 — 고정 -mx-6 은 좁은 화면에서 8px 넘쳤다).",
+                        "id": "tab_navigation_wrapper",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky-tab-nav-responsive"
+                        },
+                        "children": [
+                            {
+                                "id": "tab_navigation",
+                                "type": "composite",
+                                "name": "TabNavigation",
+                                "actions": [
+                                    {
+                                        "comment": "탭 전환 — 탭이 **URL 경로**라 이동이다. 떠나는 탭의 조건(query)을 전역에 담아 두고, 가는 탭은 지난번에\n                 담아 둔 조건으로 연다 — 스케줄 탭의 필터·쪽과 큐 탭의 하위 탭·필터가 서로를 지우지 않는다.\n                 담는 키와 읽는 키가 달라 같은 순서 안에서 방금 쓴 값을 읽지 않는다.\n                 탭 표시는 이동 전에 전역으로 먼저 바꾼다 — 이동이 끝날 때까지 누른 탭이 꺼진 채로 보이지 않게 한다.\n                 마지막 스크롤은 목록 아래쪽에 머문 화면을 위로 되돌린다.",
+                                        "type": "change",
+                                        "event": "onTabChange",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "activeScheduleTab": "{{$args[0]}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "conditions",
+                                                "conditions": [
+                                                    {
+                                                        "if": "{{route.path === '/admin/schedules/queue'}}",
+                                                        "then": {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "queueTabQuery": "{{query}}"
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "if": "{{route.path !== '/admin/schedules/queue'}}",
+                                                        "then": {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "scheduleTabQuery": "{{query}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/schedules{{$args[0] === 'schedules' ? '' : '/' + $args[0]}}",
+                                                    "query": "{{$args[0] === 'queue' ? {view: 'pending', ...(_global.queueTabQuery ?? {})} : (_global.scheduleTabQuery ?? {})}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "scrollIntoView",
+                                                "params": {
+                                                    "selector": "#main_content",
+                                                    "behavior": "instant",
+                                                    "block": "start",
+                                                    "waitForElement": true,
+                                                    "timeout": 1000
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "activeTabId": "{{_global.activeScheduleTab || (route.path === '/admin/schedules/queue' ? 'queue' : 'schedules')}}",
+                                    "variant": "default",
+                                    "tabs": [
+                                        {
+                                            "id": "schedules",
+                                            "href": "/admin/schedules",
+                                            "label": "$t:admin.schedules.tabs.schedules"
+                                        },
+                                        {
+                                            "id": "queue",
+                                            "href": "/admin/schedules/queue",
+                                            "label": "$t:admin.schedules.tabs.queue",
+                                            "if": "{{_global.adminQueueJobsReadable !== false}}"
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "두 탭 본문을 한 칸으로 감싼다 — 전환 덮개가 어느 탭에서든 같은 대상을 덮는다.",
+                        "id": "schedule_tabs_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "tab-content"
+                        },
+                        "children": [
+                            {
+                                "id": "schedules_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{route.path !== '/admin/schedules/queue'}}",
+                                "children": [
+                                    {
+                                        "partial": "partials/admin_schedule_list/_tab_schedules.json"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "큐 탭 본문 — 큐 상태 카드·하위 탭·필터·표는 큐 화면 조각이 그린다. 큐 작업 조회 권한이 없다고 판정됐으면(탭은 숨었지만\n             주소로 직접 들어온 경우) 본문 대신 권한 안내를 보인다 — 받지 못한 값을 「0건」으로 그리지 않는다.",
+                                "id": "queue_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{route.path === '/admin/schedules/queue'}}",
+                                "children": [
+                                    {
+                                        "id": "queue_permission_denied",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_global.adminQueueJobsReadable === false}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "alert-warning"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "lock",
+                                                    "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "text-warning-soft"
+                                                },
+                                                "text": "$t:admin.schedules.queue.notice.no_permission"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "queue_tab_body",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_global.adminQueueJobsReadable !== false}}",
+                                        "children": [
+                                            {
+                                                "partial": "partials/admin_schedule_list/_tab_queue.json"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
         ]
-      }
+    },
+    "modals": [
+        {
+            "comment": "등록·수정 겸용 폼 창. 어느 쪽인지는 전역 `isEditMode` 와 `selectedSchedule` 로 정해진다.",
+            "partial": "partials/admin_schedule_list/_modal_form.json"
+        },
+        {
+            "comment": "일괄 상태 변경 확인 창 — 표 위 일괄 적용(넓은 화면)과 일괄 작업 선택(좁은 화면)이 연다.",
+            "partial": "partials/admin_schedule_list/_modal_bulk_status.json"
+        },
+        {
+            "comment": "삭제 확인 창 — 표 행 메뉴(한 건)와 선택 삭제(여러 건)가 연다(직접 등록 행만).",
+            "partial": "partials/admin_schedule_list/_modal_delete.json"
+        },
+        {
+            "comment": "즉시 실행 확인 창. 바로 실행은 결과를, 큐로 보내기는 접수만 알린다.",
+            "partial": "partials/admin_schedule_list/_modal_run.json"
+        },
+        {
+            "comment": "실행 이력 창(성공·실패와 출력) — 조회 전용이다.",
+            "partial": "partials/admin_schedule_list/_modal_history.json"
+        },
+        {
+            "comment": "복사 창. 복사본은 언제나 직접 등록 행이 된다.",
+            "partial": "partials/admin_schedule_list/_modal_duplicate.json"
+        },
+        {
+            "comment": "큐 Job 상세 창 — 실패 작업(예외 전문 조회)·처리 기록(줄 값 그대로)이 함께 쓴다.",
+            "partial": "partials/admin_schedule_list/_modal_queue_job_detail.json"
+        },
+        {
+            "comment": "실패 작업 재시도·삭제 확인 창 — 한 건·일괄 모두 이 창을 거치고 건별 결과를 보인다.",
+            "partial": "partials/admin_schedule_list/_modal_queue_confirm.json"
+        },
+        {
+            "comment": "스케줄 보안 정책 창(읽기 전용) — 헤더 「보안 정책」 버튼이 연다.",
+            "partial": "partials/admin_schedule_list/_modal_security.json"
+        }
     ]
-  },
-  "modals": [
-    {
-      "partial": "partials/admin_schedule_list/_modal_form.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_delete.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_run.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_history.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_duplicate.json"
-    }
-  ]
 }

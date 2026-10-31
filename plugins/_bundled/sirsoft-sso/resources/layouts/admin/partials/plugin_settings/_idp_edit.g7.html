@@ -1,0 +1,637 @@
+<!-- IdP 편집 보기(?idp={id}) — 하위 탭 ① 기본 ② 연결 정보 ③ 계정과 연결 ④ 속성 ⑤ 역할 매핑 ⑥ 보안 ⑦ 프로비저닝 ⑧ 진단.
+     값은 _local.idpForm(상세 응답 그대로)에 있고 [저장]이 그대로 보낸다. 연결 정보 칸은 드라이버의 칸 정의(idpForm.schema)로 그린다 — 비밀 칸(secret)은
+     idpForm.secrets 에, 나머지는 idpForm.config 에 쓴다. 비밀값은 가린 값 그대로 두면 유지된다.
+     관리자 역할 대상 규칙과, 연결 회원 중 관리자가 있는 IdP 의 역할 동기화 방식, 그룹 출처는 최고관리자가 아니면 잠근다(abilities.role_rules_locked — W14, W35). -->
+<partial name="partials/plugin_settings/_idp_edit" description="IdP 편집">
+  <div data-ref="idp_edit_view" data-if="{{!!query.idp}}" class="sso:mt-6 sso:space-y-4">
+    <div data-ref="idp_edit_header" class="sso:flex sso:flex-wrap sso:items-center sso:justify-between sso:gap-2">
+      <div class="sso:flex sso:items-center sso:gap-3 sso:min-w-0">
+        <button data-ref="idp_back_button" type="button" class="sso-btn-icon" title="$t:sirsoft-sso.admin.settings.idp.back" aria-label="$t:sirsoft-sso.admin.settings.idp.back">
+          <on type="click">
+            <!-- 목록 보기로 돌아간다 — 저장하지 않은 편집은 버린다 -->
+            <navigate path="/admin/plugins/sirsoft-sso/settings">
+              <query tab="idps"/>
+            </navigate>
+          </on>
+          <icon name="fa-solid fa-arrow-left" class="sso:text-lg"/>
+        </button>
+        <div class="sso:min-w-0">
+          <h2 class="sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white sso:truncate">{{_local.idpForm?.display_label ?? ''}}</h2>
+          <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">{{(_local.idpForm?.key ?? '') + ' · ' + (_local.idpForm?.protocol_label ?? '')}}</p>
+        </div>
+      </div>
+      <div class="sso:flex sso:flex-wrap sso:gap-2">
+        <button data-ref="idp_save_button" type="button" class="sso-btn sso-btn-primary sso:text-sm" disabled="{{!_computed.canUpdate || _local.isSavingIdp}}">
+          <on type="click">
+            <action-ref name="saveIdp"/>
+          </on>
+          <span>$t:common.save</span>
+        </button>
+        <button data-ref="idp_delete_button" type="button" class="sso-btn sso-btn-danger sso:text-sm" disabled="{{!_computed.canUpdate || (_local.idpForm?.accounts_total ?? 0) > 0}}" title="$t:sirsoft-sso.admin.settings.idp.delete_hint">
+          <on type="click">
+            <!-- 연결 회원이 없는 IdP 만 지울 수 있다(서버도 409 로 막는다) -->
+            <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}" method="DELETE" confirm="$t:sirsoft-sso.admin.settings.idp.delete_confirm">
+              <success>
+                <toast type="success" message="$t:sirsoft-sso.admin.settings.idp.deleted"/>
+                <navigate path="/admin/plugins/sirsoft-sso/settings">
+                  <query tab="idps"/>
+                </navigate>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </div>
+    <div data-ref="idp_unavailable_alert" data-if="{{!!_local.idpForm &amp;&amp; _local.idpForm?.available === false}}" role="alert" class="sso-alert-warning">
+      <icon name="fa-solid fa-triangle-exclamation" class="sso:text-amber-600 sso:dark:text-amber-400 sso:flex-shrink-0"/>
+      <span class="sso:text-sm sso:text-amber-800 sso:dark:text-amber-200">{{_local.idpForm?.protocol === 'ldap' ? $t('sirsoft-sso.admin.idp.ldap_extension_missing') : $t('sirsoft-sso.admin.settings.idp.unavailable_notice')}}</span>
+    </div>
+    <tab-navigation data-type="composite" data-ref="idp_edit_tabs" activeTabId="{{_local.idpTab ?? 'basic'}}" variant="pills">
+      <prop name="tabs">
+        <item id="basic" label="$t:sirsoft-sso.admin.settings.idp.tabs.basic"/>
+        <item id="connection" label="$t:sirsoft-sso.admin.settings.idp.tabs.connection"/>
+        <item id="accounts" label="$t:sirsoft-sso.admin.settings.idp.tabs.accounts"/>
+        <item id="attributes" label="$t:sirsoft-sso.admin.settings.idp.tabs.attributes"/>
+        <item id="roles" label="$t:sirsoft-sso.admin.settings.idp.tabs.roles"/>
+        <item id="security" label="$t:sirsoft-sso.admin.settings.idp.tabs.security"/>
+        <item id="provisioning" label="$t:sirsoft-sso.admin.settings.idp.tabs.provisioning"/>
+        <item id="diagnostics" label="$t:sirsoft-sso.admin.settings.idp.tabs.diagnostics"/>
+      </prop>
+      <on type="change" event="onTabChange">
+        <!-- 하위 탭은 화면 상태로만 바꾼다(주소는 그대로 ?idp=) -->
+        <set-state target="local" idpTab="{{$args[0]}}"/>
+      </on>
+    </tab-navigation>
+    <div data-ref="idp_edit_form" data-key="idpForm" class="sso-admin-card sso:space-y-6">
+      <!-- ① 기본 -->
+      <div data-ref="idp_tab_basic" data-if="{{(_local.idpTab ?? 'basic') === 'basic'}}" class="sso:space-y-6">
+        <div class="sso-flex-start sso:gap-3">
+          <toggle data-type="composite" name="enabled" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.enabled" size="md" disabled="{{!_computed.canUpdate}}"/>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.enabled</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.enabled</p>
+            <p data-if="{{!!_local.idpErrors?.enabled}}" class="sso-form-error">{{_local.idpErrors?.enabled?.[0] ?? _local.idpErrors?.enabled ?? ''}}</p>
+          </div>
+        </div>
+        <div>
+          <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.label</label>
+          <multilingual-input data-type="composite" name="label" :maxLength="100" disabled="{{!_computed.canUpdate}}"/>
+        </div>
+        <div class="sso-grid-2col-responsive">
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.sort_order</label>
+            <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->
+            <input type="number" name="sort_order" :min="0" :max="9999" class="sso-input" disabled="{{!_computed.canUpdate}}"/>
+          </div>
+          <div class="sso-flex-start sso:gap-3">
+            <toggle data-type="composite" name="button_visible" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.button_visible" size="md" disabled="{{!_computed.canUpdate}}"/>
+            <div>
+              <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.button_visible</label>
+              <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.button_visible</p>
+            </div>
+          </div>
+        </div>
+        <div class="sso:grid sso:grid-cols-1 sso:md:grid-cols-3 sso:gap-4">
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.button_bg</label>
+            <input type="text" name="button_style.bg" class="sso-input" placeholder="#1f2937" disabled="{{!_computed.canUpdate}}"/>
+          </div>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.button_fg</label>
+            <input type="text" name="button_style.fg" class="sso-input" placeholder="#ffffff" disabled="{{!_computed.canUpdate}}"/>
+          </div>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.button_border</label>
+            <input type="text" name="button_style.border" class="sso-input" placeholder="#1f2937" disabled="{{!_computed.canUpdate}}"/>
+          </div>
+        </div>
+      </div>
+      <!-- ② 연결 정보 — 드라이버 칸 정의로 그린다 -->
+      <div data-ref="idp_tab_connection" data-if="{{_local.idpTab === 'connection'}}" class="sso:space-y-5">
+        <div data-each="field in _local.idpForm?.schema ?? []" data-key="{{field.key}}" data-ref="idp_config_field_{{field.key}}" class="sso-grid-3col-responsive">
+          <div class="sso:lg:col-span-1">
+            <label class="sso-form-label">{{field.label + (field.required ? ' *' : '')}}</label>
+            <p data-if="{{!!field.hint}}" class="sso-form-hint">{{field.hint}}</p>
+          </div>
+          <div class="sso:lg:col-span-2">
+            <input data-if="{{field.type === 'string' || field.type === 'url' || field.type === 'number'}}" type="{{field.type === 'number' ? 'number' : 'text'}}" class="sso-input" value="{{_local.idpForm?.config?.[field.key] ?? field.default ?? ''}}" disabled="{{!_computed.canUpdate || field.readonly === true}}" aria-label="{{field.label}}">
+              <on type="change">
+                <!-- 연결 정보 칸 — 그 키 하나만 바꿔 config 에 되쓴다 -->
+                <set-state target="local" idpForm.config="{{Object.assign({}, _local.idpForm?.config ?? {}, Object.fromEntries([[field.key, $event.target.value]]))}}"/>
+              </on>
+            </input>
+            <input data-if="{{field.type === 'secret' || field.secret === true}}" type="password" class="sso-input" value="{{_local.idpForm?.secrets?.[field.key] ?? ''}}" autoComplete="new-password" disabled="{{!_computed.canUpdate || field.readonly === true}}" aria-label="{{field.label}}">
+              <on type="change">
+                <!-- 비밀 칸 — 가린 값 그대로 두면 서버가 기존 값을 유지한다 -->
+                <set-state target="local" idpForm.secrets="{{Object.assign({}, _local.idpForm?.secrets ?? {}, Object.fromEntries([[field.key, $event.target.value]]))}}"/>
+              </on>
+            </input>
+            <textarea data-if="{{field.type === 'textarea' || field.type === 'list'}}" class="sso-input" rows="4" value="{{field.type === 'list' ? ((_local.idpForm?.config?.[field.key] ?? field.default ?? []).join ? (_local.idpForm?.config?.[field.key] ?? field.default ?? []).join('\n') : '') : (_local.idpForm?.config?.[field.key] ?? '')}}" disabled="{{!_computed.canUpdate || field.readonly === true}}" aria-label="{{field.label}}">
+              <on type="change">
+                <!-- 목록 칸은 줄마다 한 값 -->
+                <set-state target="local" idpForm.config="{{Object.assign({}, _local.idpForm?.config ?? {}, Object.fromEntries([[field.key, field.type === 'list' ? $event.target.value.split('\n').map(v => v.trim()).filter(v => v !== '') : $event.target.value]]))}}"/>
+              </on>
+            </textarea>
+            <select data-if="{{field.type === 'select'}}" class="sso:w-full" value="{{_local.idpForm?.config?.[field.key] ?? field.default ?? ''}}" disabled="{{!_computed.canUpdate || field.readonly === true}}" aria-label="{{field.label}}">
+              <option data-if="{{field.options_source === 'ldap_idps'}}" value="">$t:sirsoft-sso.admin.settings.idp.no_lookup_directory</option>
+              <option data-each="option in field.options_source === 'ldap_idps' ? (ssoIdps?.data?.idps ?? []).filter(i => i.protocol === 'ldap').map(i => ({ value: String(i.id), label: i.display_label })) : (field.options ?? [])" value="{{option.value ?? option}}">{{option.label ?? option}}</option>
+              <on type="change">
+                <!-- 프리셋이 있는 칸(LDAP 디렉터리 종류)은 고른 프리셋 값으로 관련 칸을 함께 채운다 -->
+                <set-state target="local" idpForm.config="{{Object.assign({}, _local.idpForm?.config ?? {}, field.presets?.[$event.target.value] ?? {}, Object.fromEntries([[field.key, $event.target.value]]))}}"/>
+              </on>
+            </select>
+            <input data-if="{{field.type === 'boolean'}}" type="checkbox" class="sso:h-4 sso:w-4 sso:rounded sso:text-blue-600" checked="{{(_local.idpForm?.config?.[field.key] ?? field.default) === true}}" disabled="{{!_computed.canUpdate || field.readonly === true}}" aria-label="{{field.label}}">
+              <on type="change">
+                <!-- 켜고 끄는 칸 — 체크 상태를 그대로 불리언으로 담는다 -->
+                <set-state target="local" idpForm.config="{{Object.assign({}, _local.idpForm?.config ?? {}, Object.fromEntries([[field.key, $event.target.checked]]))}}"/>
+              </on>
+            </input>
+            <p data-if="{{!!_local.idpErrors?.[field.key]}}" class="sso-form-error">{{_local.idpErrors?.[field.key]}}</p>
+          </div>
+        </div>
+        <p data-ref="ldap_plaintext_warning" data-if="{{_local.idpForm?.protocol === 'ldap' &amp;&amp; _local.idpForm?.config?.encryption === 'none'}}" role="alert" class="sso-form-error">$t:sirsoft-sso.admin.idp.ldap_plaintext_warning</p>
+        <p data-ref="saml_lookup_none" data-if="{{_local.idpForm?.protocol === 'saml' &amp;&amp; !_local.idpForm?.config?.lookup_directory_idp_id}}" class="sso-form-hint">$t:sirsoft-sso.admin.idp.saml_lookup_directory_none</p>
+        <!-- 운영자가 IdP 콘솔에 넣을 값 -->
+        <div data-ref="sp_info_section" data-if="{{(_local.idpForm?.sp_info ?? []).length > 0}}" class="sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700 sso:space-y-2">
+          <h3 class="sso:text-sm sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.admin.settings.idp.sp_info_title</h3>
+          <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.sp_info_hint</p>
+          <div data-each="row in _local.idpForm?.sp_info ?? []" data-key="{{row.key}}" data-ref="sp_info_row_{{row.key}}" class="sso:flex sso:flex-col sso:sm:flex-row sso:sm:items-center sso:gap-2">
+            <span class="sso:text-xs sso:font-medium sso:text-gray-500 sso:dark:text-gray-400 sso:sm:w-40 sso:flex-shrink-0">{{row.label}}</span>
+            <code class="sso:flex-1 sso:min-w-0 sso:break-all sso-break-all sso:text-xs sso:bg-gray-50 sso:dark:bg-gray-900 sso:text-gray-800 sso:dark:text-gray-200 sso:px-2 sso:py-1.5 sso:rounded">{{row.value}}</code>
+            <button data-ref="copy_sp_info_{{row.key}}" type="button" class="sso-btn sso-btn-secondary sso:text-xs" aria-label="$t:sirsoft-sso.admin.common.copy_named|name={{row.label}}">
+              <on type="click">
+                <!-- 값을 복사한다 — IdP 콘솔에 그대로 붙여 넣는다 -->
+                <action handler="sirsoft-sso.copyToClipboard" text="{{row.value}}"/>
+              </on>
+              <icon name="fa-regular fa-copy" class="sso:text-xs"/>
+              <span class="sso:hidden sso-hidden sso:sm:inline">$t:sirsoft-sso.admin.common.copy</span>
+            </button>
+          </div>
+        </div>
+        <div data-ref="sp_keys_section" data-if="{{_local.idpForm?.protocol === 'saml'}}" class="sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700 sso:flex sso:flex-col sso:sm:flex-row sso:sm:items-center sso:gap-2">
+          <p class="sso:flex-1 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400">$t:sirsoft-sso.admin.idp.saml_generate_sp_keys_confirm</p>
+          <button data-ref="generate_sp_keys" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_computed.canUpdate}}">
+            <on type="click">
+              <!-- SP 서명 키를 새로 만든다 — 이전 키는 30일 함께 둔다. 새 메타데이터를 IdP 에 다시 등록해야 한다 -->
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}/sp-keys" method="POST" confirm="$t:sirsoft-sso.admin.settings.idp.sp_keys_confirm">
+                <success>
+                  <toast type="success" message="$t:sirsoft-sso.admin.settings.idp.sp_keys_done"/>
+                  <refetch-data-source dataSourceId="ssoIdp"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <span>$t:sirsoft-sso.admin.settings.idp.sp_keys</span>
+          </button>
+        </div>
+      </div>
+      <!-- ③ 계정과 연결 -->
+      <div data-ref="idp_tab_accounts" data-if="{{_local.idpTab === 'accounts'}}" class="sso:space-y-6">
+        <div class="sso-grid-3col-responsive">
+          <div class="sso:lg:col-span-1">
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.provisioning_mode</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.provisioning_mode</p>
+          </div>
+          <div class="sso:lg:col-span-2">
+            <select name="provisioning_mode" class="sso:w-full" disabled="{{!_computed.canUpdate}}">
+              <option value="preregistered">$t:sirsoft-sso.admin.settings.idp.options.provisioning_mode.preregistered</option>
+              <option value="jit">$t:sirsoft-sso.admin.settings.idp.options.provisioning_mode.jit</option>
+            </select>
+          </div>
+        </div>
+        <div class="sso-grid-3col-responsive">
+          <div class="sso:lg:col-span-1">
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.owned_domains</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.owned_domains</p>
+          </div>
+          <div class="sso:lg:col-span-2 sso:space-y-2">
+            <tag-input data-type="composite" name="owned_domains" :creatable="true" placeholder="corp.example" class="sso:w-full" defaultVariant="blue" disabled="{{!_computed.canUpdate}}"/>
+            <div class="sso-flex-start sso:gap-3">
+              <toggle data-type="composite" name="enforce_owned_domains" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.enforce_owned_domains" size="md" disabled="{{!_computed.canUpdate}}"/>
+              <div>
+                <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.enforce_owned_domains</label>
+                <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.enforce_owned_domains</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sso:space-y-3">
+          <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.link_methods</label>
+          <div class="sso-flex-start sso:gap-3">
+            <toggle data-type="composite" name="link_methods.domain_auto" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.link_domain_auto" size="md" disabled="{{!_computed.canUpdate}}"/>
+            <div>
+              <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.link_domain_auto</label>
+              <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.link_domain_auto</p>
+              <p data-if="{{_local.idpForm?.link_methods?.domain_auto === true}}" role="alert" class="sso-form-error">$t:sirsoft-sso.admin.settings.idp.warnings.domain_auto</p>
+            </div>
+          </div>
+          <div class="sso-flex-start sso:gap-3">
+            <toggle data-type="composite" name="link_methods.verify" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.link_verify" size="md" disabled="{{!_computed.canUpdate}}"/>
+            <div>
+              <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.link_verify</label>
+              <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.link_verify</p>
+            </div>
+          </div>
+          <div class="sso-flex-start sso:gap-3">
+            <toggle data-type="composite" name="link_methods.admin" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.link_admin" size="md" disabled="{{!_computed.canUpdate}}"/>
+            <div>
+              <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.link_admin</label>
+              <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.link_admin</p>
+            </div>
+          </div>
+        </div>
+        <div class="sso-flex-start sso:gap-3">
+          <toggle data-type="composite" name="require_consent" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.require_consent" size="md" disabled="{{!_computed.canUpdate}}"/>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.require_consent</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.require_consent</p>
+          </div>
+        </div>
+        <div class="sso-grid-3col-responsive">
+          <div class="sso:lg:col-span-1">
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.identity_policy</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.identity_policy</p>
+          </div>
+          <div class="sso:lg:col-span-2">
+            <select name="identity_policy" class="sso:w-full" disabled="{{!_computed.canUpdate}}">
+              <option value="skip">$t:sirsoft-sso.admin.settings.idp.options.identity_policy.skip</option>
+              <option value="apply">$t:sirsoft-sso.admin.settings.idp.options.identity_policy.apply</option>
+            </select>
+          </div>
+        </div>
+        <div class="sso-flex-start sso:gap-3">
+          <toggle data-type="composite" name="allow_local_password" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.allow_local_password" size="md" disabled="{{!_computed.canUpdate}}"/>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.allow_local_password</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.allow_local_password</p>
+          </div>
+        </div>
+      </div>
+      <!-- ④ 속성 동기화 -->
+      <div data-ref="idp_tab_attributes" data-if="{{_local.idpTab === 'attributes'}}" class="sso:space-y-3">
+        <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.attribute_map</p>
+        <div data-each="rule, index in _local.idpForm?.attribute_map ?? []" data-key="{{'attr-' + index}}" data-ref="attribute_rule_{{index}}" class="sso:flex sso:flex-col sso:md:flex-row sso:md:items-center sso:gap-2">
+          <input type="text" class="sso-input sso:md:w-48" value="{{rule.field}}" placeholder="name / attr:department" aria-label="$t:sirsoft-sso.admin.settings.idp.fields.attribute_field" disabled="{{!_computed.canUpdate}}">
+            <on type="change">
+              <!-- 회원 쪽 칸 이름 — 이 줄만 바꾼다 -->
+              <set-state target="local" idpForm.attribute_map="{{(_local.idpForm?.attribute_map ?? []).map((r, i) => i === index ? Object.assign({}, r, { field: $event.target.value }) : r)}}"/>
+            </on>
+          </input>
+          <input type="text" class="sso-input sso:md:w-48" value="{{rule.source}}" placeholder="displayName" aria-label="$t:sirsoft-sso.admin.settings.idp.fields.attribute_source" disabled="{{!_computed.canUpdate}}">
+            <on type="change">
+              <!-- IdP 가 주는 속성 이름 — 이 줄만 바꾼다 -->
+              <set-state target="local" idpForm.attribute_map="{{(_local.idpForm?.attribute_map ?? []).map((r, i) => i === index ? Object.assign({}, r, { source: $event.target.value }) : r)}}"/>
+            </on>
+          </input>
+          <select class="sso:md:w-48" value="{{rule.mode ?? 'sync'}}" aria-label="$t:sirsoft-sso.admin.settings.idp.fields.attribute_mode" disabled="{{!_computed.canUpdate}}">
+            <option value="sync_lock">$t:sirsoft-sso.admin.settings.idp.options.attribute_mode.sync_lock</option>
+            <option value="sync">$t:sirsoft-sso.admin.settings.idp.options.attribute_mode.sync</option>
+            <option value="first_only">$t:sirsoft-sso.admin.settings.idp.options.attribute_mode.first_only</option>
+            <option value="ignore">$t:sirsoft-sso.admin.settings.idp.options.attribute_mode.ignore</option>
+            <on type="change">
+              <!-- 동기화 방식(덮어쓰고 잠금·매 로그인 덮어쓰기·처음만·가져오지 않음) — 이 줄만 바꾼다 -->
+              <set-state target="local" idpForm.attribute_map="{{(_local.idpForm?.attribute_map ?? []).map((r, i) => i === index ? Object.assign({}, r, { mode: $event.target.value }) : r)}}"/>
+            </on>
+          </select>
+          <button type="button" class="sso-btn-icon" title="$t:sirsoft-sso.admin.common.remove_row" aria-label="$t:sirsoft-sso.admin.common.remove_row" disabled="{{!_computed.canUpdate}}">
+            <on type="click">
+              <!-- 이 규칙 줄을 지운다 — 저장해야 반영된다 -->
+              <set-state target="local" idpForm.attribute_map="{{(_local.idpForm?.attribute_map ?? []).filter((r, i) => i !== index)}}"/>
+            </on>
+            <icon name="fa-solid fa-trash" class="sso:text-sm"/>
+          </button>
+        </div>
+        <p data-if="{{(_local.idpForm?.attribute_map ?? []).some(r => r.field === 'email' &amp;&amp; r.mode !== 'ignore')}}" role="status" class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.email_sync</p>
+        <button data-ref="add_attribute_rule" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_computed.canUpdate}}">
+          <on type="click">
+            <!-- 새 규칙 줄은 이름 ← displayName 매번 동기화로 시작한다 -->
+            <set-state target="local" idpForm.attribute_map="{{(_local.idpForm?.attribute_map ?? []).concat([{ field: 'name', source: 'displayName', mode: 'sync' }])}}"/>
+          </on>
+          <icon name="fa-solid fa-plus" class="sso:text-xs"/>
+          <span>$t:sirsoft-sso.admin.settings.idp.add_attribute</span>
+        </button>
+      </div>
+      <!-- ⑤ 역할 매핑 -->
+      <div data-ref="idp_tab_roles" data-if="{{_local.idpTab === 'roles'}}" class="sso:space-y-5">
+        <div data-ref="role_rules_locked_notice" data-if="{{_local.idpForm?.abilities?.role_rules_locked === true}}" role="status" class="sso-alert-warning">
+          <icon name="lock" class="sso:text-amber-600 sso:dark:text-amber-400 sso:flex-shrink-0"/>
+          <span class="sso:text-sm sso:text-amber-800 sso:dark:text-amber-200">$t:sirsoft-sso.admin.settings.idp.role_rules_locked</span>
+        </div>
+        <div class="sso-grid-2col-responsive">
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.role_sync_mode</label>
+            <select name="role_sync_mode" class="sso:w-full" disabled="{{!_computed.canUpdate || _local.idpForm?.abilities?.role_rules_locked === true}}">
+              <option value="managed_only">$t:sirsoft-sso.admin.settings.idp.options.role_sync_mode.managed_only</option>
+              <option value="authoritative">$t:sirsoft-sso.admin.settings.idp.options.role_sync_mode.authoritative</option>
+              <option value="first_only">$t:sirsoft-sso.admin.settings.idp.options.role_sync_mode.first_only</option>
+            </select>
+            <p data-if="{{_local.idpForm?.role_sync_mode === 'authoritative'}}" role="alert" class="sso-form-error">$t:sirsoft-sso.admin.settings.idp.warnings.authoritative</p>
+          </div>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.group_source</label>
+            <select name="group_source" class="sso:w-full" disabled="{{!_computed.canUpdate || _local.idpForm?.abilities?.role_rules_locked === true}}">
+              <option value="assertion">$t:sirsoft-sso.admin.settings.idp.options.group_source.assertion</option>
+              <option value="scim">$t:sirsoft-sso.admin.settings.idp.options.group_source.scim</option>
+              <option value="ldap">$t:sirsoft-sso.admin.settings.idp.options.group_source.ldap</option>
+            </select>
+          </div>
+        </div>
+        <div data-ref="group_compare_options" class="sso:flex sso:flex-col sso:sm:flex-row sso:gap-4">
+          <div class="sso-flex-start sso:gap-3">
+            <toggle data-type="composite" name="config.group_case_sensitive" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.group_case_sensitive" size="md" disabled="{{!_computed.canUpdate}}"/>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.group_case_sensitive</label>
+          </div>
+          <div data-if="{{_local.idpForm?.group_source === 'ldap'}}" class="sso-flex-start sso:gap-3">
+            <toggle data-type="composite" name="config.group_dn_cn" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.group_dn_cn" size="md" disabled="{{!_computed.canUpdate}}"/>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.group_dn_cn</label>
+          </div>
+        </div>
+        <div data-each="rule, index in _local.idpForm?.role_mapping ?? []" data-key="{{'role-' + index}}" data-ref="role_rule_{{index}}" class="sso:flex sso:flex-col sso:md:flex-row sso:md:items-center sso:gap-2">
+          <input type="text" class="sso-input sso:md:flex-1" value="{{rule.group}}" placeholder="$t:sirsoft-sso.admin.settings.idp.placeholders.group" aria-label="$t:sirsoft-sso.admin.settings.idp.fields.role_group" disabled="{{!_computed.canUpdate || (rule.role === 'admin' &amp;&amp; !_computed.isSuper)}}">
+            <on type="change">
+              <!-- IdP 그룹 이름 — 이 줄만 바꾼다 -->
+              <set-state target="local" idpForm.role_mapping="{{(_local.idpForm?.role_mapping ?? []).map((r, i) => i === index ? Object.assign({}, r, { group: $event.target.value }) : r)}}"/>
+            </on>
+          </input>
+          <input type="text" class="sso-input sso:md:w-48" value="{{rule.role}}" placeholder="manager" aria-label="$t:sirsoft-sso.admin.settings.idp.fields.role_role" disabled="{{!_computed.canUpdate || (rule.role === 'admin' &amp;&amp; !_computed.isSuper)}}">
+            <on type="change">
+              <!-- 붙일 역할 식별자 — 관리자 역할 줄은 최고관리자만 고친다 -->
+              <set-state target="local" idpForm.role_mapping="{{(_local.idpForm?.role_mapping ?? []).map((r, i) => i === index ? Object.assign({}, r, { role: $event.target.value }) : r)}}"/>
+            </on>
+          </input>
+          <icon data-if="{{rule.role === 'admin' &amp;&amp; !_computed.isSuper}}" name="lock" class="sso:text-amber-600 sso:dark:text-amber-400" aria-label="$t:sirsoft-sso.admin.settings.idp.super_only"/>
+          <button type="button" class="sso-btn-icon" title="$t:sirsoft-sso.admin.common.remove_row" aria-label="$t:sirsoft-sso.admin.common.remove_row" disabled="{{!_computed.canUpdate || (rule.role === 'admin' &amp;&amp; !_computed.isSuper)}}">
+            <on type="click">
+              <!-- 이 매핑 줄을 지운다 — 관리자 역할 줄은 최고관리자만 지운다 -->
+              <set-state target="local" idpForm.role_mapping="{{(_local.idpForm?.role_mapping ?? []).filter((r, i) => i !== index)}}"/>
+            </on>
+            <icon name="fa-solid fa-trash" class="sso:text-sm"/>
+          </button>
+        </div>
+        <button data-ref="add_role_rule" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_computed.canUpdate}}">
+          <on type="click">
+            <!-- 빈 매핑 줄을 하나 더한다 -->
+            <set-state target="local" idpForm.role_mapping="{{(_local.idpForm?.role_mapping ?? []).concat([{ group: '', role: '' }])}}"/>
+          </on>
+          <icon name="fa-solid fa-plus" class="sso:text-xs"/>
+          <span>$t:sirsoft-sso.admin.settings.idp.add_role_rule</span>
+        </button>
+      </div>
+      <!-- ⑥ 보안 -->
+      <div data-ref="idp_tab_security" data-if="{{_local.idpTab === 'security'}}" class="sso:space-y-6">
+        <div class="sso-grid-3col-responsive">
+          <div class="sso:lg:col-span-1">
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.two_factor_mode</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.two_factor_mode</p>
+          </div>
+          <div class="sso:lg:col-span-2">
+            <select name="two_factor_mode" class="sso:w-full" disabled="{{!_computed.canUpdate}}">
+              <option value="skip_if_mfa">$t:sirsoft-sso.admin.settings.idp.options.two_factor_mode.skip_if_mfa</option>
+              <option value="always_skip">$t:sirsoft-sso.admin.settings.idp.options.two_factor_mode.always_skip</option>
+              <option value="always">$t:sirsoft-sso.admin.settings.idp.options.two_factor_mode.always</option>
+            </select>
+          </div>
+        </div>
+        <div class="sso-grid-3col-responsive">
+          <div class="sso:lg:col-span-1">
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.logout_mode</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.logout_mode</p>
+          </div>
+          <div class="sso:lg:col-span-2">
+            <select name="logout_mode" class="sso:w-full" disabled="{{!_computed.canUpdate}}">
+              <option value="local">$t:sirsoft-sso.admin.settings.idp.options.logout_mode.local</option>
+              <option value="rp" disabled="{{_local.idpForm?.capabilities?.slo !== true}}">$t:sirsoft-sso.admin.settings.idp.options.logout_mode.rp</option>
+              <option value="both" disabled="{{_local.idpForm?.capabilities?.slo !== true}}">$t:sirsoft-sso.admin.settings.idp.options.logout_mode.both</option>
+            </select>
+            <p data-if="{{_local.idpForm?.capabilities?.slo !== true}}" class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.logout_unsupported</p>
+          </div>
+        </div>
+        <div data-if="{{_local.idpForm?.capabilities?.idpInitiated === true}}" class="sso-flex-start sso:gap-3">
+          <toggle data-type="composite" name="idp_initiated" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.idp_initiated" size="md" disabled="{{!_computed.canUpdate}}"/>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.idp_initiated</label>
+            <p role="alert" class="sso-form-error">$t:sirsoft-sso.admin.idp.saml_idp_initiated_warning</p>
+          </div>
+        </div>
+        <div class="sso-grid-3col-responsive">
+          <div class="sso:lg:col-span-1">
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.max_session_minutes</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.max_session_minutes</p>
+          </div>
+          <div class="sso:lg:col-span-2">
+            <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->
+            <input type="number" name="max_session_minutes" :min="1" :max="10080" class="sso-input" placeholder="480" disabled="{{!_computed.canUpdate}}"/>
+          </div>
+        </div>
+      </div>
+      <!-- ⑦ 프로비저닝 -->
+      <div data-ref="idp_tab_provisioning" data-if="{{_local.idpTab === 'provisioning'}}" class="sso:space-y-6">
+        <div class="sso-flex-start sso:gap-3">
+          <toggle data-type="composite" name="deprovision.scim" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.scim" size="md" disabled="{{!_computed.canUpdate}}"/>
+          <div class="sso:flex-1 sso:min-w-0 sso:space-y-2">
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.scim</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.scim</p>
+            <div class="sso:flex sso:flex-col sso:sm:flex-row sso:sm:items-center sso:gap-2">
+              <code data-ref="scim_endpoint" class="sso:flex-1 sso:min-w-0 sso:break-all sso-break-all sso:text-xs sso:bg-gray-50 sso:dark:bg-gray-900 sso:text-gray-800 sso:dark:text-gray-200 sso:px-2 sso:py-1.5 sso:rounded">{{_local.idpForm?.scim?.endpoint ?? ''}}</code>
+              <button data-ref="copy_scim_endpoint" type="button" class="sso-btn sso-btn-secondary sso:text-xs" aria-label="$t:sirsoft-sso.admin.common.copy_named|name=SCIM">
+                <on type="click">
+                  <!-- IdP 쪽에 넣을 SCIM 주소를 복사한다 -->
+                  <action handler="sirsoft-sso.copyToClipboard" text="{{_local.idpForm?.scim?.endpoint ?? ''}}"/>
+                </on>
+                <icon name="fa-regular fa-copy" class="sso:text-xs"/>
+              </button>
+            </div>
+            <div class="sso-grid-2col-responsive">
+              <div>
+                <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.scim_match</label>
+                <select name="deprovision.scim_match" class="sso:w-full" disabled="{{!_computed.canUpdate}}">
+                  <option value="userName">userName</option>
+                  <option value="externalId">externalId</option>
+                </select>
+                <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.scim_match</p>
+              </div>
+              <div class="sso:space-y-2">
+                <p data-if="{{!!_local.idpForm?.scim?.has_token}}" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">{{$t('sirsoft-sso.admin.settings.idp.scim_token_issued_at')}}: {{_local.idpForm?.scim?.token_issued_at | datetime | default('-')}}</p>
+                <p data-if="{{!_local.idpForm?.scim?.has_token}}" class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.scim_token_none</p>
+                <button data-ref="issue_scim_token" data-if="{{!_local.idpForm?.scim?.has_token}}" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_computed.canUpdate}}">
+                  <on type="click">
+                    <!-- SCIM 토큰 첫 발급 — 응답에서 한 번만 보인다. 무효화할 이전 토큰이 없어 확인을 묻지 않는다 -->
+                    <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}/scim-token" method="POST">
+                      <success>
+                        <set-state target="local" scimToken="{{response.data}}"/>
+                        <refetch-data-source dataSourceId="ssoIdp"/>
+                      </success>
+                      <fail>
+                        <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"/>
+                      </fail>
+                    </api-call>
+                  </on>
+                  <span>$t:sirsoft-sso.admin.settings.idp.scim_token_issue</span>
+                </button>
+                <button data-ref="reissue_scim_token" data-if="{{!!_local.idpForm?.scim?.has_token}}" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_computed.canUpdate}}">
+                  <on type="click">
+                    <!-- SCIM 토큰 재발급 — 이전 토큰은 즉시 무효라 확인을 받는다. 확인 문구는 식이 아니라 고정 문구여야 한다(엔진은 원문 유무로 확인창을 띄운다) -->
+                    <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}/scim-token" method="POST" confirm="$t:sirsoft-sso.admin.settings.idp.scim_token_reissue_confirm">
+                      <success>
+                        <set-state target="local" scimToken="{{response.data}}"/>
+                        <refetch-data-source dataSourceId="ssoIdp"/>
+                      </success>
+                      <fail>
+                        <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"/>
+                      </fail>
+                    </api-call>
+                  </on>
+                  <span>$t:sirsoft-sso.admin.settings.idp.scim_token_reissue</span>
+                </button>
+              </div>
+            </div>
+            <div data-ref="scim_token_once" data-if="{{!!_local.scimToken?.token}}" role="status" class="sso-alert-warning sso:flex-col sso:items-start sso:gap-2">
+              <span class="sso:text-sm sso:text-amber-800 sso:dark:text-amber-200">$t:sirsoft-sso.admin.settings.idp.scim_token_once</span>
+              <div class="sso:flex sso:w-full sso:flex-col sso:sm:flex-row sso:sm:items-center sso:gap-2">
+                <code class="sso:flex-1 sso:min-w-0 sso:break-all sso-break-all sso:text-xs sso:bg-white sso:dark:bg-gray-900 sso:text-gray-900 sso:dark:text-gray-100 sso:px-2 sso:py-1.5 sso:rounded">{{_local.scimToken?.token}}</code>
+                <button data-ref="copy_scim_token" type="button" class="sso-btn sso-btn-secondary sso:text-xs" aria-label="$t:sirsoft-sso.admin.common.copy_named|name=SCIM token">
+                  <on type="click">
+                    <!-- 한 번만 보이는 새 토큰을 복사한다 — 이 화면을 벗어나면 다시 볼 수 없다 -->
+                    <action handler="sirsoft-sso.copyToClipboard" text="{{_local.scimToken?.token ?? ''}}"/>
+                  </on>
+                  <icon name="fa-regular fa-copy" class="sso:text-xs"/>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sso-flex-start sso:gap-3">
+          <toggle data-type="composite" name="deprovision.periodic" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.periodic" size="md" disabled="{{!_computed.canUpdate || (_local.idpForm?.protocol === 'saml' &amp;&amp; !_local.idpForm?.config?.lookup_directory_idp_id)}}"/>
+          <div class="sso:flex-1 sso:min-w-0 sso:space-y-2">
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.periodic</label>
+            <p class="sso-form-hint">{{$t('sirsoft-sso.admin.settings.idp.hints.periodic_' + (_local.idpForm?.protocol ?? 'oidc'))}}</p>
+            <p data-if="{{_local.idpForm?.protocol === 'saml' &amp;&amp; !_local.idpForm?.config?.lookup_directory_idp_id}}" role="status" class="sso-form-hint sso:text-amber-700 sso:dark:text-amber-300">$t:sirsoft-sso.admin.settings.idp.hints.periodic_saml_no_directory</p>
+            <div class="sso:sm:w-40">
+              <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.periodic_minutes</label>
+              <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->
+              <input type="number" name="deprovision.periodic_minutes" :min="5" :max="10080" class="sso-input" placeholder="60" disabled="{{!_computed.canUpdate}}"/>
+            </div>
+          </div>
+        </div>
+        <!-- 다음 로그인 차단(D7 ③)은 항상 켜져 있다 — 퇴사로 꺼진 연결은 이 IdP 로그인에서 늘 거절된다. 끌 수 있는 칸으로 두면 꺼도 바뀌는 것이 없어
+             운영자를 속이므로 켬 고정 표시로 둔다. 폼 값으로 보내지 않는다(name 없음). -->
+        <div class="sso-flex-start sso:gap-3" data-ref="deprovision_on_login_fixed">
+          <toggle data-type="composite" ariaLabel="$t:sirsoft-sso.admin.settings.idp.fields.on_login" size="md" :checked="true" :disabled="true"/>
+          <div>
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.on_login</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.on_login</p>
+          </div>
+        </div>
+        <div class="sso-grid-3col-responsive">
+          <div class="sso:lg:col-span-1">
+            <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.withdraw_after_days</label>
+            <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.withdraw_after_days</p>
+          </div>
+          <div class="sso:lg:col-span-2">
+            <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->
+            <input type="number" name="deprovision.withdraw_after_days" :min="1" :max="3650" class="sso-input" placeholder="30" disabled="{{!_computed.canUpdate}}"/>
+          </div>
+        </div>
+      </div>
+      <!-- ⑧ 진단 -->
+      <div data-ref="idp_tab_diagnostics" data-if="{{_local.idpTab === 'diagnostics'}}" class="sso:space-y-5">
+        <div class="sso:flex sso:flex-wrap sso:gap-2">
+          <button data-ref="run_connection_test" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_computed.canUpdate}}">
+            <on type="click">
+              <!-- 서버 쪽 연결 테스트 — 메타데이터, 키, 주소를 확인한다. 회원으로 로그인하지 않는다 -->
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}/test" method="POST">
+                <success>
+                  <set-state target="local" testResult="{{response.data}}"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.idp.test_failed'}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <span>$t:sirsoft-sso.admin.settings.idp.test</span>
+          </button>
+          <button data-ref="run_browser_test" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_computed.canUpdate || _local.idpForm?.capabilities?.redirect !== true}}">
+            <on type="click">
+              <!-- 브라우저로 로그인 테스트 — API 가 1회용 시작 주소를 주면 IdP 로 왕복한다(회원으로 로그인하지 않고 받은 신원 요약만 본다) -->
+              <action handler="sirsoft-sso.startWithTicket" endpoint="/plugins/sirsoft-sso/admin/idps/{{query.idp}}/test" body="{{({ browser: true })}}"/>
+            </on>
+            <span>$t:sirsoft-sso.admin.settings.idp.browser_test</span>
+          </button>
+        </div>
+        <div data-ref="ldap_test_account" data-if="{{_local.idpForm?.protocol === 'ldap'}}" class="sso:space-y-2">
+          <h3 class="sso:text-sm sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.admin.idp.ldap_test_account</h3>
+          <p class="sso-form-hint">$t:sirsoft-sso.admin.idp.ldap_test_account_hint</p>
+          <div class="sso:flex sso:flex-col sso:sm:flex-row sso:gap-2">
+            <input type="text" class="sso-input sso:sm:w-1/3" value="{{_local.ldapTestId ?? ''}}" autoComplete="off" aria-label="$t:sirsoft-sso.admin.idp.ldap_test_identifier">
+              <on type="change">
+                <!-- 시험할 디렉터리 계정 식별자 — 화면 상태에만 둔다 -->
+                <set-state target="local" ldapTestId="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <input type="password" class="sso-input sso:sm:w-1/3" value="{{_local.ldapTestPw ?? ''}}" autoComplete="new-password" aria-label="$t:sirsoft-sso.admin.idp.ldap_test_password">
+              <on type="change">
+                <!-- 시험용 비밀번호 — 화면 상태에만 두고 시험이 끝나면 비운다 -->
+                <set-state target="local" ldapTestPw="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <button data-ref="run_ldap_account_test" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_computed.canUpdate || !_local.ldapTestId || !_local.ldapTestPw}}">
+              <on type="click">
+                <!-- 계정으로 시험 — 입력한 비밀번호는 서버가 저장하지 않는다. 끝나면 칸을 비운다 -->
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}/test" method="POST" body="{{({ account_identifier: _local.ldapTestId, account_password: _local.ldapTestPw })}}">
+                  <success>
+                    <set-state target="local" testResult="{{response.data}}" ldapTestPw=""/>
+                  </success>
+                  <fail>
+                    <set-state target="local" ldapTestPw=""/>
+                    <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.idp.test_failed'}}"/>
+                  </fail>
+                </api-call>
+              </on>
+              <span>$t:sirsoft-sso.admin.idp.ldap_test_account</span>
+            </button>
+          </div>
+        </div>
+        <p data-ref="saml_site_url_invalid" data-if="{{(_local.testResult?.checks ?? []).some(c => c.key === 'site_url' &amp;&amp; !c.ok)}}" role="alert" class="sso-form-error">$t:sirsoft-sso.admin.idp.saml_site_url_invalid</p>
+        <div data-ref="connection_test_result" data-if="{{!!_local.testResult}}" role="status" class="{{_local.testResult?.ok ? 'sso-alert-success' : 'sso-alert-warning'}} sso:flex-col sso:items-start sso:gap-2">
+          <p class="sso:text-sm sso:font-medium">{{_local.testResult?.ok ? $t('sirsoft-sso.admin.settings.idp.test_ok') : $t('sirsoft-sso.admin.settings.idp.test_not_ok')}}</p>
+          <ul class="sso:space-y-1">
+            <li data-each="check in _local.testResult?.checks ?? []" data-key="{{check.key}}" class="sso:text-xs sso:flex sso:items-start sso:gap-2">
+              <icon name="{{check.ok ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'}}" class="{{check.ok ? 'sso:text-green-600 sso:dark:text-green-400' : 'sso:text-red-600 sso:dark:text-red-400'}} sso:flex-shrink-0 sso:mt-0.5"/>
+              <span class="sso:break-all sso-break-all">{{(check.message || check.key) + (check.detail ? ' — ' + check.detail : '')}}</span>
+            </li>
+          </ul>
+        </div>
+        <div class="sso:grid sso:grid-cols-3 sso:gap-x-4 sso:gap-y-1 sso:text-sm">
+          <span class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.last_success</span>
+          <span class="sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200">{{_local.idpForm?.last_success_at | datetime | default('-')}}</span>
+          <span class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.last_error</span>
+          <span class="sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200">{{_local.idpForm?.last_error_at | datetime | default('-')}}{{_local.idpForm?.last_error_at &amp;&amp; _local.idpForm?.last_error_code ? ' (' + _local.idpForm.last_error_code + ')' : ''}}</span>
+          <span class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.periodic_checked_at</span>
+          <span class="sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200">{{_local.idpForm?.periodic_checked_at | datetime | default('-')}}</span>
+          <span data-if="{{!!_local.idpForm?.cert_expires_at}}" class="sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.cert_expires_at</span>
+          <span data-if="{{!!_local.idpForm?.cert_expires_at}}" class="sso:col-span-2 sso:text-gray-800 sso:dark:text-gray-200">{{_local.idpForm?.cert_expires_at | datetime | default('-')}}</span>
+        </div>
+        <div data-ref="recent_attempts">
+          <h3 class="sso:text-sm sso:font-semibold sso:text-gray-900 sso:dark:text-white sso:mb-2">$t:sirsoft-sso.admin.settings.idp.recent_attempts</h3>
+          <p data-if="{{(_local.idpForm?.recent_attempts ?? []).length === 0}}" class="sso-text-hint">$t:sirsoft-sso.admin.logs.empty</p>
+          <ul data-if="{{(_local.idpForm?.recent_attempts ?? []).length > 0}}" class="sso:divide-y sso:divide-gray-100 sso:dark:divide-gray-700">
+            <li data-each="attempt in _local.idpForm?.recent_attempts ?? []" data-key="{{attempt.id}}" class="sso:py-2 sso:flex sso:flex-wrap sso:items-center sso:gap-2 sso:text-xs">
+              <span class="sso:text-gray-500 sso:dark:text-gray-400 sso:whitespace-nowrap">{{attempt.created_at | datetime | default('-')}}</span>
+              <span class="sso:text-gray-800 sso:dark:text-gray-200">{{$t('sirsoft-sso.admin.logs.intents.' + attempt.intent)}}</span>
+              <span class="{{attempt.outcome === 'failed' || attempt.outcome === 'denied' ? 'sso:text-red-700 sso:dark:text-red-300' : 'sso:text-green-700 sso:dark:text-green-300'}}">{{$t('sirsoft-sso.admin.logs.outcomes.' + attempt.outcome)}}</span>
+              <span data-if="{{!!attempt.reason_code}}" class="sso:font-mono sso:text-gray-600 sso:dark:text-gray-300">{{attempt.reason_code}}</span>
+              <!-- 실패한 IdP 응답 요약(§7 L-3) — 서명이 붙었는지, 어설션 유효 시각, 대상. 서명 없음·시계 차이·SP 엔티티 ID 불일치를 가려 본다(원문은 저장하지 않는다) -->
+              <span data-if="{{!!attempt.response_summary}}" data-ref="attempt_response_summary_{{attempt.id}}" class="sso:basis-full sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all">{{[(attempt.response_summary?.signed ? $t('sirsoft-sso.admin.settings.idp.response_summary.signed') : $t('sirsoft-sso.admin.settings.idp.response_summary.unsigned')), $t('sirsoft-sso.admin.settings.idp.response_summary.not_on_or_after') + ' ' + (attempt.response_summary?.not_on_or_after ?? '-'), $t('sirsoft-sso.admin.settings.idp.response_summary.audiences') + ' ' + ((attempt.response_summary?.audiences ?? []).join(', ') || '-')].join(' · ')}}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

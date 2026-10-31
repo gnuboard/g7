@@ -7,12 +7,53 @@ return [
         'inactive' => 'Inactive',
         'blocked' => 'Blocked',
         'withdrawn' => 'Withdrawn',
+        'pending_verification' => 'Pending verification',
+        'dormant' => 'Dormant',
+    ],
+
+    // Password policy (#736) — read by Enum label()
+    'password_expiry_policy' => [
+        'inherit' => 'Follow role and site settings',
+        'apply' => 'Apply',
+        'exempt' => 'Exempt',
+    ],
+    'password_expiry_scope' => [
+        'all' => 'All members',
+        'admin' => 'Administrators only',
+        'selected' => 'Selected roles and members only',
+    ],
+    'password_expiry_action' => [
+        'force' => 'Require change to sign in',
+        'remind' => 'Allow changing later',
+    ],
+    'password_change_reason' => [
+        'expired' => 'Password expired',
+        'admin_assigned' => 'Password set by an administrator',
+    ],
+    'password_change_source' => [
+        'self' => 'Changed by the member',
+        'reset' => 'Password reset',
+        'admin' => 'Set by an administrator',
+        'login_required' => 'Changed at sign-in',
+        'install' => 'Installation',
+        'register' => 'Registration',
+        'admin_create' => 'Created by an administrator',
+    ],
+
+    // Password expiry target list (admin settings > security)
+    'password_expiry_target' => [
+        'admin' => 'Administrator',
+        'member' => 'Member',
+        'column_type' => 'Type',
+        'column_expires_due' => 'Expires on',
+        'column_expires_at' => 'Expired on',
     ],
 
     // Language labels
     'language' => [
         'ko' => '한국어',
         'en' => 'English',
+        'ja' => '日本語',
     ],
 
     // User management messages
@@ -24,6 +65,9 @@ return [
     'create_failed' => 'Failed to create user. Please try again later.',
     'update_success' => 'User information updated successfully.',
     'update_failed' => 'Failed to update user information. Please try again later.',
+    'field_locked' => 'This field is managed by the company account and cannot be changed here.',
+    'sessions_revoked' => 'The member has been signed out of all devices.',
+    'block_super_admin_refused' => 'A super admin cannot be blocked.',
     'delete_success' => 'User deleted successfully.',
     'delete_failed' => 'Failed to delete user. Please try again later.',
     'statistics_success' => 'User statistics retrieved successfully.',
@@ -43,8 +87,12 @@ return [
     'invalid_language' => 'Unsupported language.',
     'activity_log_success' => 'Activity log retrieved successfully.',
     'activity_log_failed' => 'Failed to retrieve activity log.',
-    'bulk_status_updated' => ':count user(s) status updated successfully.',
+    'bulk_status_updated' => 'Status of :count user updated successfully.|Status of :count users updated successfully.',
     'bulk_update_status_failed' => 'Failed to update user status in bulk.',
+    'bulk_roles_updated' => 'Changed roles of :count user. (:skipped skipped)|Changed roles of :count users. (:skipped skipped)',
+    'bulk_roles_updated_with_unchanged' => 'Changed roles of :count user. (:skipped skipped, :unchanged already up to date)|Changed roles of :count users. (:skipped skipped, :unchanged already up to date)',
+    'bulk_roles_failed' => 'Failed to change user roles in bulk.',
+    'bulk_roles_ceiling' => 'Nothing was changed because the selection includes a role with permissions you cannot grant.',
     'last_admin_role_cannot_remove' => 'Cannot remove the admin role because you are the only user with the admin role in the system.',
 
     // Avatar messages
@@ -61,6 +109,8 @@ return [
     // Password verification messages
     'password_verified' => 'Password verified successfully.',
     'password_incorrect' => 'Password is incorrect.',
+    'password_not_set' => 'This account has no password. Verify with an email code or set a password first.',
+    'reauthentication_invalid' => 'Your verification has expired or is invalid. Please request a new code.',
     'password_verify_failed' => 'Failed to verify password.',
 
     // Password change messages
@@ -72,6 +122,9 @@ return [
     'withdraw_failed' => 'Failed to withdraw account. Please try again later.',
     'withdraw_admin_forbidden' => 'Administrator account cannot be withdrawn.',
     'withdraw_failed_unknown' => 'Withdrawal failed due to an unknown error.',
+
+    // Reason for targets excluded from a bulk status change
+    'bulk_status_out_of_scope' => 'Members outside your management scope cannot be changed.',
 
     // Validation messages
     'validation' => [
@@ -99,10 +152,13 @@ return [
         'email_unique' => 'Email is already in use.',
         'email_max' => 'Email must not exceed 255 characters.',
         'password_required' => 'Password is required.',
+        'password_prohibited_without_password' => 'Leave the password empty when "Create without a password" is selected.',
         'password_confirmed' => 'Password confirmation does not match.',
-        'password_min' => 'Password must be at least 8 characters.',
+        'password_min' => 'Password must be at least :min characters.',
         'current_password_required' => 'Current password is required.',
         'current_password_invalid' => 'Current password is incorrect.',
+        'current_password_not_set' => 'This account has no password yet, so set a new password without the current one.',
+        'password_expiry_policy_invalid' => 'Password expiry must be inherit, apply, or exempt.',
         'password_confirmation_required' => 'Password confirmation is required.',
         'language_required' => 'Please select a language.',
         'language_invalid' => 'Unsupported language.',
@@ -142,5 +198,47 @@ return [
         'search_keyword_required' => 'Please enter a keyword to search.',
         'exclude_user_id_uuid' => 'Exclude user ID must be a valid UUID.',
         'exclude_user_id_exists' => 'The specified user does not exist.',
+        // User list filters (#705)
+        'list_status_array' => 'The account status condition must be a list.',
+        'list_status_invalid' => 'Invalid account status.',
+        'list_role_ids_array' => 'The role condition must be a list.',
+        'list_role_ids_invalid' => 'The selected role does not exist.',
+        'list_admin_scope_invalid' => 'Invalid administrator condition.',
+        'list_lock_state_invalid' => 'Invalid account lock condition.',
+        'list_date_invalid' => 'Invalid date format.',
+        'list_never_logged_in_invalid' => 'The never-logged-in condition must be true or false.',
+        'list_status_changed_type_invalid' => 'Invalid status change type.',
+        'list_verified_invalid' => 'Invalid verification condition.',
+        'list_ext_filters_invalid' => 'Invalid extension filter format.',
+        'list_ext_filters_max' => 'Up to 20 extension filter conditions are allowed.',
+    ],
+    // Validation attribute names for the user list filters — read by UserListRequest::attributes() (#705)
+    'list_filter_attributes' => [
+        'status' => 'account status',
+        'role_ids' => 'role',
+        'admin_scope' => 'administrator',
+        'lock_state' => 'account lock',
+        'start_date' => 'sign-up start date',
+        'end_date' => 'sign-up end date',
+        'date_filter' => 'sign-up period',
+        'last_login_start' => 'last login start date',
+        'last_login_end' => 'last login end date',
+        'never_logged_in' => 'never logged in',
+        'dormant_start' => 'dormant start date',
+        'dormant_end' => 'dormant end date',
+        'status_changed_type' => 'status change type',
+        'status_changed_start' => 'status change start date',
+        'status_changed_end' => 'status change end date',
+        'language' => 'language',
+        'country' => 'country',
+        'email_verified' => 'email verification',
+        'identity_verified' => 'identity verification',
+        'ext_filters' => 'extension filter',
+        'filters' => 'search conditions',
+        'filter_field' => 'search field',
+        'filter_value' => 'search keyword',
+        'filter_operator' => 'search operator',
+        'sort_by' => 'sort field',
+        'sort_order' => 'sort order',
     ],
 ];

@@ -1,0 +1,23 @@
+feature: 관리자 마일리지 내역 — 주문번호·회원/처리자 메뉴의 새 창 링크
+
+description: |
+  마일리지 내역의 주문번호와 회원·처리 관리자 이름 메뉴(「회원 정보」·「관리자 정보」)는 다른 화면을 새 창으로 연다.
+  종전에는 클릭 동작(openWindow)이었다. #757 결정으로 실제 주소를 가진 새 창 링크
+  (`target="_blank"` · `rel="noopener noreferrer"`)로 바꿨다 — 가운데 클릭·주소 복사가 같은 곳을 가리키고,
+  보통 클릭도 새 창이라 목록의 검색 조건을 잃지 않는다.
+
+  레이아웃 시험(`admin_ecommerce_mileage_transaction_index.test.tsx`)이 식 글자를, 이 E2E 가 행 값으로 풀린 주소와
+  창 속성을 잰다.
+
+axes:
+  cell:
+    - order_number      # 주문번호 셀
+    - member_menu       # 회원 이름 메뉴
+    - granted_by_menu   # 처리 관리자 이름 메뉴
+
+effects:
+  - mileage_order_number_is_new_window_link       # 주문번호가 그 주문 상세의 새 창 링크다
+  - mileage_member_menus_are_new_window_links     # 회원·관리자 정보 메뉴 항목이 그 사람 상세의 새 창 링크다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/mileage-transactions-new-window-links.spec.ts

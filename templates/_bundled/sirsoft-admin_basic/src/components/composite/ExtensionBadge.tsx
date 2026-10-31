@@ -124,7 +124,7 @@ export const ExtensionBadge: React.FC<ExtensionBadgeProps> = ({
 
   return (
     <Span
-      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium text-gray-400 dark:text-gray-500 ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium text-gray-500 dark:text-gray-400 ${className}`}
       style={style}
       id={id} {...editorAttrs}
     >

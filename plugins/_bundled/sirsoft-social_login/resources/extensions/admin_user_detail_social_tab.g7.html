@@ -1,0 +1,126 @@
+<!-- 관리자 회원 «상세» 화면에 「소셜 로그인」 탭을 얹는다. 형제 확장(TOTP·마케팅·게시판·이커머스)과 같은 짜임으로 주입이 두 군데로 갈린다 — 탭 버튼은
+  `inject_props` 로 탭 목록 끝에 덧붙이고, 본문은 `extension_tab_content` 에 붙인다. 둘을 잇는 것은 `id`(ext_social_login) 하나뿐이다.
+  연결 목록은 회원 연결 열람 권한(`accounts.view`) 라우트에서, 강제 해제 단추는 응답의 `abilities.can_unlink`(해제 권한)로만 보인다 — 화면 조건에
+  관리자 권한 목록을 쓰지 않는다(관리자 셸 전역에 그 목록이 없다). 권한 집행의 정본은 라우트 미들웨어다. 제공자 사용자 ID 는 앞 6자만 보인다. -->
+<extension target-layout="admin_user_detail" priority="340">
+  <!-- 회원의 소셜 연결 — 회원 상세에 들어올 때 받고, 강제 해제 뒤 다시 받는다. 권한이 없으면 403 → 안내만.
+       주소의 회원 식별자가 uuid 길이(36자, 라우트 제약과 같은 길이)일 때만 받는다 — `/admin/users/1` 같은 주소는 화면의 회원 조회가
+       404 화면으로 바꾸므로 이 목록을 부를 까닭이 없다. 없는 회원(404)도 화면이 이미 404 화면이라 조용히 넘긴다(시스템 기본 처리는
+       응답 문구를 오류 토스트로 띄워 404 화면 위에 겹친다). -->
+  <data-source id="socialUserAccounts" label_key="$t:sirsoft-social_login.editor.data_source.user_accounts" type="api" endpoint="/api/plugins/sirsoft-social_login/admin/users/{{route?.id}}/accounts" method="GET" :auto_fetch="true" :auth_required="true" if="{{route?.id?.length === 36}}">
+    <error-handling>
+      <on-code code="403">
+        <set-state target="local" :socialAccountsForbidden="true"/>
+      </on-code>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_social_login" label="$t:sirsoft-social_login.admin.users.tab_label" iconName="right-to-bracket" if="{{!!route?.id}}"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_social_login_content" data-if="{{!!route?.id}}" id="ext_social_login" class="sl:scroll-mt-32">
+      <div data-ref="admin_user_social_card" class="sl-admin-card">
+        <div class="sl:flex sl:items-center sl:justify-between sl:mb-4">
+          <div class="sl:flex sl:items-center sl:gap-2">
+            <icon name="right-to-bracket" class="sl:text-xl sl:leading-none sl:text-gray-600 sl:dark:text-gray-400"/>
+            <h3 data-ref="admin_user_social_title" class="sl:text-lg sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.admin.users.tab_title</h3>
+          </div>
+          <extension-badge data-type="composite" type="plugin" identifier="sirsoft-social_login" installedPlugins="{{_global.installedPlugins}}"/>
+        </div>
+        <p data-ref="admin_user_social_forbidden" data-if="{{_local.socialAccountsForbidden === true}}" class="sl-text-hint">$t:sirsoft-social_login.admin.users.forbidden</p>
+        <p data-ref="admin_user_social_passwordless" data-if="{{socialUserAccounts?.data?.has_password === false}}" class="sl:text-sm sl:text-amber-700 sl:dark:text-amber-300 sl:mb-3">$t:sirsoft-social_login.admin.users.passwordless_notice</p>
+        <p data-ref="admin_user_social_empty" data-if="{{!!socialUserAccounts?.data &amp;&amp; (socialUserAccounts?.data?.accounts ?? []).length === 0}}" class="sl-text-hint">$t:sirsoft-social_login.admin.users.empty</p>
+        <!-- 데스크톱·태블릿은 표, 휴대폰 폭(mobile)은 아래 세로 카드 — 표를 가로로 밀어야 [강제 해제]가 보이던 것을 없앤다 -->
+        <div data-ref="admin_user_social_table_wrap" data-if="{{(socialUserAccounts?.data?.accounts ?? []).length > 0}}" class="sl:overflow-x-auto">
+          <responsive on="mobile" data-if="{{false}}"/>
+          <table data-ref="admin_user_social_table" class="sl:w-full sl:text-sm">
+            <thead>
+              <tr class="sl:text-left sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:border-b sl:border-gray-200 sl:dark:border-gray-700">
+                <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.users.col.provider</th>
+                <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.users.col.provider_user_id</th>
+                <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.users.col.email</th>
+                <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.users.col.linked_at</th>
+                <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.users.col.last_login_at</th>
+                <th class="sl:py-2 sl:pr-3"/>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-each="account in socialUserAccounts?.data?.accounts ?? []" data-key="{{account.provider_key}}" class="sl:border-b sl:border-gray-100 sl:dark:border-gray-700">
+                <td class="sl:py-2 sl:pr-3 sl:whitespace-nowrap">
+                  <div class="sl:flex sl:items-center sl:gap-2">
+                    <sirsoft-social_login.provider-mark brand="{{account.brand}}" label="{{account.label}}"/>
+                    <span class="sl:text-gray-900 sl:dark:text-white">{{account.label}}</span>
+                  </div>
+                </td>
+                <td class="sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:font-mono sl:text-xs sl:text-gray-700 sl:dark:text-gray-300">{{account.provider_user_id_prefix + '…'}}</td>
+                <td class="sl:py-2 sl:pr-3 sl:text-gray-700 sl:dark:text-gray-300 sl:break-all sl-break-all">{{account.email ?? '-'}}</td>
+                <td class="sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-700 sl:dark:text-gray-300">{{account.linked_at ?? '-'}}</td>
+                <td class="sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-700 sl:dark:text-gray-300">{{account.last_login_at ?? '-'}}</td>
+                <td class="sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-right">
+                  <button data-ref="admin_user_social_unlink_{{account.provider_key}}" data-if="{{socialUserAccounts?.data?.abilities?.can_unlink === true}}" type="button" class="sl-btn sl-btn-danger sl:text-xs">
+                    <on type="click">
+                      <!-- 강제 해제 — 마지막 로그인 수단 가드 없이 끊는다(관리자 판단). 회원에게 사이트 알림이 가고 활동 로그에 남는다 -->
+                      <api-call :auth_required="true" method="DELETE" confirm="$t:sirsoft-social_login.admin.users.unlink_confirm" target="/api/plugins/sirsoft-social_login/admin/users/{{route?.id}}/accounts/{{account.provider_key}}">
+                        <success>
+                          <toast type="success" message="{{response.message}}"/>
+                          <refetch-data-source dataSourceId="socialUserAccounts"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message ?? '$t:sirsoft-social_login.admin.users.unlink_failed'}}"/>
+                        </fail>
+                      </api-call>
+                    </on>
+                    <span>$t:sirsoft-social_login.admin.users.unlink</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div data-ref="admin_user_social_cards" data-if="{{false}}" class="sl:space-y-3">
+          <responsive on="mobile" data-if="{{(socialUserAccounts?.data?.accounts ?? []).length > 0}}"/>
+          <div data-each="account in socialUserAccounts?.data?.accounts ?? []" data-key="{{account.provider_key}}" class="sl:rounded-lg sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:p-3 sl:space-y-2">
+            <div class="sl:flex sl:items-center sl:justify-between sl:gap-2">
+              <div class="sl:flex sl:items-center sl:gap-2">
+                <sirsoft-social_login.provider-mark brand="{{account.brand}}" label="{{account.label}}"/>
+                <span class="sl:text-sm sl:font-medium sl:text-gray-900 sl:dark:text-white">{{account.label}}</span>
+              </div>
+              <button data-ref="admin_user_social_card_unlink_{{account.provider_key}}" data-if="{{socialUserAccounts?.data?.abilities?.can_unlink === true}}" type="button" class="sl-btn sl-btn-danger sl:text-xs">
+                <on type="click">
+                  <!-- 표의 강제 해제와 같은 요청 — 둘 중 하나만 화면에 그려진다 -->
+                  <api-call :auth_required="true" method="DELETE" confirm="$t:sirsoft-social_login.admin.users.unlink_confirm" target="/api/plugins/sirsoft-social_login/admin/users/{{route?.id}}/accounts/{{account.provider_key}}">
+                    <success>
+                      <toast type="success" message="{{response.message}}"/>
+                      <refetch-data-source dataSourceId="socialUserAccounts"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message ?? '$t:sirsoft-social_login.admin.users.unlink_failed'}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                <span>$t:sirsoft-social_login.admin.users.unlink</span>
+              </button>
+            </div>
+            <div class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.provider_user_id</div>
+            <div class="sl:font-mono sl:text-xs sl:text-gray-700 sl:dark:text-gray-300">{{account.provider_user_id_prefix + '…'}}</div>
+            <div class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.email</div>
+            <div class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:break-all sl-break-all">{{account.email ?? '-'}}</div>
+            <div class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.linked_at</div>
+            <div class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">{{account.linked_at ?? '-'}}</div>
+            <div class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.admin.users.col.last_login_at</div>
+            <div class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">{{account.last_login_at ?? '-'}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

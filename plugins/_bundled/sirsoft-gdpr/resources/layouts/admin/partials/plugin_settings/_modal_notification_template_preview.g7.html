@@ -1,0 +1,24 @@
+<!-- gdpr 설정 — 알림 템플릿 미리보기 창. 편집 창이 만들어 둔 결과를 보여 주기만 하고
+  입력이 없다 — 그래서 이 조각에는 액션이 하나도 없다. -->
+<partial description="알림 템플릿 치환 결과 미리보기">
+  <modal data-type="composite" data-ref="modal_gdpr_notification_definition_preview" title="$t:sirsoft-gdpr.notification_definitions.preview_modal.title" size="lg">
+    <div data-ref="gdpr_preview_content">
+      <div>
+        <label class="gdpr-form-label">$t:sirsoft-gdpr.notification_definitions.preview_modal.rendered_subject</label>
+        <p class="gdpr-text-primary gdpr:text-sm gdpr:bg-gray-50 gdpr:dark:bg-gray-900 gdpr:rounded-md gdpr:p-3 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700">{{_global.gdpr_notification_template_form_modal?.preview?.subject ?? ''}}</p>
+      </div>
+      <div>
+        <label class="gdpr-form-label">$t:sirsoft-gdpr.notification_definitions.preview_modal.rendered_body</label>
+        <html-content data-type="composite" content="{{_global.gdpr_notification_template_form_modal?.preview?.body ?? ''}}" :isHtml="true" class="gdpr:text-sm gdpr:max-w-none gdpr:bg-white gdpr:dark:bg-gray-900 gdpr:rounded-md gdpr:p-4 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:max-h-[400px] gdpr:overflow-y-auto"/>
+      </div>
+      <div class="gdpr:flex gdpr:justify-end gdpr:border-t gdpr:border-gray-200 gdpr:dark:border-gray-700">
+        <button data-ref="gdpr_btn_close_preview" type="button" class="gdpr-text-body gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors">
+          <on type="click">
+            <close-modal target="modal_gdpr_notification_definition_preview"/>
+          </on>
+          $t:sirsoft-gdpr.notification_definitions.preview_modal.btn_close
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

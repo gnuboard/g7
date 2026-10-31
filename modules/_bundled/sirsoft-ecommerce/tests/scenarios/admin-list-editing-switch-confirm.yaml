@@ -1,0 +1,25 @@
+feature: 관리자 목록·편집 패널 화면 — 편집 중 다른 항목 선택 시 이탈 확인 (7.1.1 출시 전 점검)
+
+description: |
+  왼쪽 목록·오른쪽 편집 패널 화면(상품정보고시·브랜드·분류)에서 편집·등록 중에 목록의 다른 항목을 고르면 곧바로 넘어가지
+  않고, 고른 항목을 대기 자리(_global.pending*)에 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 확인 창이다 — 「취소하고
+  이동」이 대기 항목을 선택으로 옮기고 주소를 바꾼다(replaceUrl). 편집 중이 아니면 바로 선택한다.
+  브랜드 화면은 확인 창이 있었지만 목록 선택이 그 창을 열지 않았고, 분류 화면은 확인 창 자체가 없어 고치던 내용이 확인
+  없이 사라졌다. 공통정보 목록이 이미 지키던 규칙을 세 화면에 맞췄다.
+
+axes:
+  surface:
+    - notice_list     # 상품정보고시 목록(카드 클릭·이름 링크 두 갈래)
+    - brand_list      # 브랜드 목록(onSelect)
+    - category_list   # 분류 목록(onSelect)
+    - common_info_list   # 공통정보 목록 — 확인 창 「취소하고 이동」 주소 갱신만 이 축에서 잰다
+
+effects:
+  - editing_selection_opens_leave_confirm      # 편집 중 선택 → 대기 자리 + editing_confirm_modal, 편집 중 아님 → 바로 선택
+  - leave_confirm_moves_pending_selection      # 확인 창이 대기 항목을 선택으로 옮기고 replaceUrl
+  - category_screen_registers_leave_confirm    # 분류 화면 modals 에 확인 창 등록·다국어 「취소하고 이동」 문구
+  - leave_confirm_updates_url_to_pending_item  # 「취소하고 이동」 단추를 엔진으로 실행하면 선택·panelMode·주소 id/mode 가 대기 항목으로, 검색어는 유지(4창)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/mp11ProductNotice.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEditingConfirmMoveRun.test.ts

@@ -114,11 +114,21 @@ import { registerSirsoftBasicIdentityLauncher } from './handlers/identityLaunche
 // 서버 기기 감지값(appConfig.isIos) 클라이언트 보정 (iPadOS 데스크탑 UA 케이스)
 import { correctIosDeviceState } from './handlers/deviceCorrection';
 
+// 인증 경계 비회원 저장값 정리 (#639 ⑦)
+import { installAuthBoundaryStorageCleanup } from './handlers/authBoundaryStorage';
+
 // 레이아웃 편집기 커스텀 위젯(icon-picker 등) 등록
 import { registerSirsoftBasicEditorWidgets } from './layout-editor/registerEditorWidgets';
 
+// 이 번들이 페이지의 활성 템플릿으로 실렸는지 (레이아웃 편집기는 다른 템플릿 페이지에 이 번들을 싣는다)
+import { isPageTemplate } from './support/pageTemplate';
+
+/** 템플릿 식별자 — 핸들러 등록자 표기 (template.json 의 identifier 와 같다) */
+const TEMPLATE_IDENTIFIER = 'sirsoft-basic';
+
 // handlerMap을 전역으로 노출 (로케일 변경 시 재등록용)
-if (typeof window !== 'undefined') {
+// 다른 템플릿 페이지(편집기)에 실렸으면 노출하지 않는다 — 그 페이지의 로케일 전환이 이 맵을 호스트 핸들러 대신 다시 등록한다.
+if (typeof window !== 'undefined' && isPageTemplate(TEMPLATE_IDENTIFIER)) {
   (window as any).G7TemplateHandlers = handlerMap;
 }
 
@@ -136,6 +146,15 @@ export { templateMetadata };
  * 코어 엔진에 커스텀 핸들러를 등록합니다.
  */
 export function initTemplate(): void {
+  // 다른 템플릿 페이지(레이아웃 편집기)에 실린 번들은 페이지 전역(핸들러·본인인증 launcher·기기 보정·인증 경계 정리)을
+  // 건드리지 않는다. 호스트 템플릿의 같은 이름 핸들러(setTheme 등)를 덮으면 그 페이지 동작이 이 템플릿 것으로 바뀐다.
+  // 편집기 캔버스는 격리 dispatcher 를 쓰므로 여기 등록이 필요 없다.
+  if (!isPageTemplate(TEMPLATE_IDENTIFIER)) {
+    logger.log('Loaded on another template page — skipping page-level handler registration');
+
+    return;
+  }
+
   // ActionDispatcher가 로드될 때까지 대기 후 핸들러 등록
   if (typeof window !== 'undefined') {
     let retryCount = 0;
@@ -145,9 +164,10 @@ export function initTemplate(): void {
       const actionDispatcher = (window as any).G7Core?.getActionDispatcher?.();
 
       if (actionDispatcher) {
-        // handlerMap의 모든 핸들러를 자동으로 등록
+        // handlerMap의 모든 핸들러를 자동으로 등록 — 등록자를 이 템플릿 식별자로 표시한다(코어 재등록과 같은 표기).
+        // 다른 주인의 이름을 덮으면 엔진이 [G7] 경고로 드러낸다 (engine-v1.86.0)
         Object.entries(handlerMap).forEach(([name, handler]) => {
-          actionDispatcher.registerHandler(name, handler);
+          actionDispatcher.registerHandler(name, handler, { category: 'custom', source: TEMPLATE_IDENTIFIER });
         });
 
         logger.log(`${Object.keys(handlerMap).length} custom handler(s) registered:`, Object.keys(handlerMap));
@@ -158,6 +178,9 @@ export function initTemplate(): void {
         // 서버 UA 판정이 놓친 iPadOS(데스크탑 UA) 를 클라 신호로 보정 → appConfig.isIos.
         // 애플페이 iOS 게이팅(체크아웃 레이아웃 iteration 필터)이 이 값을 참조한다.
         correctIosDeviceState();
+
+        // 로그인·로그아웃 경계에서 카트키·비회원 주문 토큰을 정리·재발급한다(#639 ⑦). 다시 불려도 구독은 하나다.
+        installAuthBoundaryStorageCleanup();
       } else {
         retryCount++;
         if (retryCount <= maxRetries) {

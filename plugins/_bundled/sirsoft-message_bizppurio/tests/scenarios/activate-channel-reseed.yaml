@@ -1,0 +1,26 @@
+feature: 활성화 때 알림 채널 template 재시드와 그 실패의 경고
+
+description: |
+  활성화(activate)는 코어·활성 모듈·활성 플러그인의 알림 정의를 다시 시드해 sms·alimtalk 채널 template 을 붙인다.
+  재시드가 실패해도 활성화는 성공을 유지하고, 실패는 코어(7.1.3+) 생명주기 경고로 운영자에게 알린다 — 단계 자체의 예외와,
+  모듈·플러그인 단계가 확장별 실패를 안에서 잡아 반환값(failed)으로만 알리는 경우 모두.
+
+axes:
+  step: [core, modules, plugins]
+  outcome: [seeded, exception, per_extension_failed]
+
+exclusions:
+  - { step: core, outcome: per_extension_failed, reason: "코어 단계는 확장별 결과를 돌려주지 않는다(시더 한 번)" }
+  - { step: core, outcome: exception, reason: "단계 예외 → 경고는 같은 reportReseedFailure 한 경로 — plugins 칸이 덮는다" }
+  - { step: modules, outcome: exception, reason: "같은 catch 경로 — plugins 칸이 덮는다" }
+  - { step: modules, outcome: seeded, reason: "정상 재시드는 core 칸의 채널 template 생성 단언과 같은 흐름" }
+  - { step: plugins, outcome: seeded, reason: "정상 재시드는 core 칸의 채널 template 생성 단언과 같은 흐름" }
+  - { step: plugins, outcome: per_extension_failed, reason: "반환값 처리는 단계 구분 없는 한 루프 — modules 칸이 덮는다" }
+
+effects:
+  - activate_seeds_channel_templates
+  - reseed_step_exception_becomes_lifecycle_warning
+  - per_extension_reseed_failure_becomes_lifecycle_warning
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Installation/ChannelTemplateSeedOnActivateTest.php

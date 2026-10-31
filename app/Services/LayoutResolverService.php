@@ -29,6 +29,10 @@ class LayoutResolverService
 
     /**
      * LayoutRepository, ModuleManager 주입
+     *
+     * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 조회 저장소
+     * @param  ModuleManager  $moduleManager  활성 모듈 조회
+     * @param  CacheInterface  $cache  해석 결과 캐시
      */
     public function __construct(
         private LayoutRepositoryInterface $layoutRepository,
@@ -38,6 +42,8 @@ class LayoutResolverService
 
     /**
      * 레이아웃 해석 결과 캐시 TTL을 반환합니다.
+     *
+     * @return int 캐시 유지 시간(초)
      */
     private function getCacheTtl(): int
     {
@@ -53,6 +59,7 @@ class LayoutResolverService
      *
      * @param  string  $layoutName  예: sirsoft-ecommerce_admin_products_index
      * @param  int  $templateId  현재 활성 템플릿 ID
+     * @return TemplateLayout|null 해석된 레이아웃, 없으면 null
      */
     public function resolve(string $layoutName, int $templateId): ?TemplateLayout
     {
@@ -121,6 +128,10 @@ class LayoutResolverService
 
     /**
      * 레이아웃 해석 내부 로직 (캐싱 없음)
+     *
+     * @param  string  $layoutName  해석할 레이아웃 이름
+     * @param  int  $templateId  대상 템플릿 ID
+     * @return TemplateLayout|null 우선순위를 적용한 레이아웃 (없으면 null)
      */
     private function resolveInternal(string $layoutName, int $templateId): ?TemplateLayout
     {
@@ -170,6 +181,7 @@ class LayoutResolverService
     private function checkOverrideVersionCompatibility(TemplateLayout $override): bool
     {
         $content = is_string($override->content)
+            // layout-assoc-decode-ok: 버전 제약 판정 전용 — 서빙하지 않는다(#758 S9)
             ? json_decode($override->content, true)
             : $override->content;
 
@@ -240,6 +252,10 @@ class LayoutResolverService
      * 레이아웃 해석 캐시 키 생성
      *
      * 소스 해시를 포함하여 오버라이드 정보를 캐시 키에 반영합니다.
+     *
+     * @param  string  $layoutName  레이아웃 이름
+     * @param  int  $templateId  템플릿 ID
+     * @return string 캐시 키
      */
     private function getResolutionCacheKey(string $layoutName, int $templateId): string
     {
@@ -248,6 +264,10 @@ class LayoutResolverService
 
     /**
      * 특정 레이아웃의 해석 캐시를 무효화합니다.
+     *
+     * @param  string  $layoutName  대상 레이아웃 이름
+     * @param  int  $templateId  대상 템플릿 ID
+     * @return void 반환값 없음
      */
     public function clearResolutionCache(string $layoutName, int $templateId): void
     {
@@ -269,6 +289,9 @@ class LayoutResolverService
 
     /**
      * 특정 템플릿의 모든 레이아웃 해석 캐시를 무효화합니다.
+     *
+     * @param  int  $templateId  대상 템플릿 ID
+     * @return void 반환값 없음
      */
     public function clearAllResolutionCacheByTemplate(int $templateId): void
     {
@@ -294,6 +317,9 @@ class LayoutResolverService
 
     /**
      * 특정 모듈의 모든 레이아웃 해석 캐시를 무효화합니다.
+     *
+     * @param  string  $moduleIdentifier  대상 모듈 식별자
+     * @return void 반환값 없음
      */
     public function clearResolutionCacheByModule(string $moduleIdentifier): void
     {
@@ -337,6 +363,8 @@ class LayoutResolverService
 
     /**
      * 캐시 통계 초기화
+     *
+     * @return void 반환값 없음
      */
     public function resetCacheStats(): void
     {
@@ -348,6 +376,10 @@ class LayoutResolverService
 
     /**
      * 특정 레이아웃이 오버라이드되었는지 확인
+     *
+     * @param  string  $layoutName  확인할 레이아웃 이름
+     * @param  int  $templateId  대상 템플릿 ID
+     * @return bool 템플릿 오버라이드가 존재하면 true
      */
     public function isOverridden(string $layoutName, int $templateId): bool
     {
@@ -356,6 +388,9 @@ class LayoutResolverService
 
     /**
      * 특정 템플릿에서 오버라이드된 모든 레이아웃 목록 조회
+     *
+     * @param  int  $templateId  대상 템플릿 ID
+     * @return Collection 오버라이드된 레이아웃 컬렉션
      */
     public function getOverriddenLayouts(int $templateId): Collection
     {
@@ -364,6 +399,10 @@ class LayoutResolverService
 
     /**
      * 특정 모듈의 레이아웃 중 오버라이드된 것들 조회
+     *
+     * @param  string  $moduleIdentifier  대상 모듈 식별자
+     * @param  int  $templateId  대상 템플릿 ID
+     * @return Collection 오버라이드된 레이아웃 컬렉션
      */
     public function getModuleLayoutOverrides(string $moduleIdentifier, int $templateId): Collection
     {

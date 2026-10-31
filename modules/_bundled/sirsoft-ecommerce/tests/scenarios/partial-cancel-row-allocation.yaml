@@ -1,0 +1,58 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축(같은 옵션 라인 × 배송정책 × 계기 × 행 데이터)의 전 조합은 108 개다. 배분은 한 메서드
+#   (OrderAdjustmentService::allocateRecalcToRows)가 하고 배송 행 쓰기는 한 서비스(OrderShippingAmountWriter)가
+#   하므로, 계기마다 대표 조합과 어긋남·레거시·병합 경로를 메서드 하나씩 못박는다. effects 축은 면제하지 않는다.
+# e2e:allow 표시 보정(취소 줄 배송비 숨김)은 레이아웃 구조 테스트가, 실제 화면 값은 07 문서 Chrome MCP 실측(7-8 A·B·C)이 잰다.
+feature: 부분취소·재활성 재계산의 주문 행 단위 배분 (옵션 금액 · 배송 행) — #747 C3b S-Q26-b·c
+
+description: |
+  계산 엔진은 재계산 결과를 상품옵션(product_option_id) 키로 합친다. 같은 상품옵션이 상태가 다른 두 활성 행으로
+  나뉜 주문에서 다른 상품을 부분취소하면, 키로 맞춰 쓰는 종전 코드가 두 행 모두에 키 합계를 써서 금액과 적립
+  예정액이 두 배가 됐다(1521). 배송 행에는 주문 전체 배송비를 모든 행에 같은 값으로 써서 748 의 배송 행 네 개가
+  모두 5,500 이 됐다.
+
+    - 재계산 입력의 라인 → 주문 행 대응(line_order_option_ids)으로 키 합계를 라인 소계 비중으로 나눈다. 마지막
+      라인이 나머지를 받아 합이 정확하다. 키에 라인이 하나면 엔진 결과 그대로다.
+    - 배송 행 금액 = 그 주문 행이 지금 부담하는 배송비 몫. 재계산 입력에 없는 행(취소 등)은 0. 분할이 끝난 뒤
+      배송 행을 다시 읽어 쓴다. 한 행에 배송 행이 여럿이면 id 가 가장 작은 행만 몫을 받는다. mc_* 도 함께 쓴다.
+    - 환불 예상의 배송비 정책별 차액은 원 주문 측을 기준선 재계산에서 구한다(레거시 부풀린 행을 읽지 않는다).
+    - 취소된 줄은 관리자·회원 화면에서 배송비를 표시하지 않는다.
+
+axes:
+  same_option_lines: [single_line, two_lines_different_status]
+  shipping_policy: [fixed, conditional_free, two_policies]
+  trigger: [partial_cancel_split, reactivation]
+  row_data: [fresh, legacy_inflated, merged_two_shipping_rows]
+
+effects:
+  - option_amounts_are_allocated_per_order_row_not_per_option_key
+  - single_line_keys_keep_engine_values
+  - allocation_sums_equal_recalculated_totals
+  - header_earned_points_follow_the_recalculation   # C12 실측: 헤더 적립 예정액이 취소 전 값으로 남던 결함
+  - misaligned_result_falls_back_to_input_quantity_weights
+  - purchase_earn_follows_the_row_share
+  - shipping_rows_receive_their_own_share
+  - closed_rows_shipping_is_zero_after_recalc
+  - new_split_rows_shipping_is_rewritten_after_split
+  - shipping_row_mc_columns_follow_base
+  - merged_row_extra_shipping_rows_are_zero
+  - shipping_details_original_side_uses_prior_recalc
+  - shipping_by_policy_sums_distinct_options
+  - cancelled_lines_hide_shipping_fee_on_admin_and_member_screens
+  - shipping_snapshot_display_follows_remaining_quantity   # 배송정책 스냅샷 표시 칸(단독 배송비)만 남은 수량 기준으로 갱신, 재계산 입력은 주문 시점 값
+  - cancelled_lines_hide_applied_shipping_policy           # 회원·비회원 상세 「적용 배송정책」 줄은 취소 행에서 서지 않음
+  - upgrade_reports_same_option_amount_overlap_without_writing
+  - upgrade_backfills_partial_cancel_earned_points     # 1.3.0 업그레이드가 부분취소 주문 헤더 적립 예정액을 회계 주체 행 합으로 보정(겹침 주문 제외·멱등)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/DTO/OrderCalculationResultTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/OrderOptionResourceShippingAmountTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/PartialCancelShippingRowsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/SameOptionRowsPartialCancelTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/ReportSameOptionRowAmountOverlapTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/BackfillPartialCancelEarnedPointsTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/orderDetailLayouts.test.tsx
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-order-shipping-cancelled-cards.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ShippingSnapshotDisplayAfterCancelTest.php
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-order-applied-shipping-policy.test.ts

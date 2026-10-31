@@ -32,7 +32,10 @@ test.describe('@layout-editor 모달 편집 confine', () => {
     const result = await page.evaluate(async (tpl) => {
       // 가드 엔드포인트(editor/routes.json)는 Bearer 토큰 필요 — 편집기 buildAuthHeaders 와 동일.
       const authToken = localStorage.getItem('auth_token');
-      const res = await fetch(`/api/admin/templates/${tpl}/editor/routes.json`, {
+      // 편집기와 같은 주소 규칙 — 확장자 없는 방식 서버는 `.json` 주소에 404 상태를 돌려준다
+      const raw = `/api/admin/templates/${tpl}/editor/routes.json`;
+      const url = (window as any).G7Core?.asset?.convertToCurrentMode?.(raw) ?? raw;
+      const res = await fetch(url, {
         headers: {
           Accept: 'application/json',
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),

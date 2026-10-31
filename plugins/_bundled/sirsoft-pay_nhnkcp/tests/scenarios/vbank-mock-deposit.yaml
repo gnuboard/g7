@@ -1,0 +1,25 @@
+feature: NHN KCP 테스트 모드 모의입금 도구 — 공통 응답 형식과 글자 번역
+
+description: |
+  테스트 모드에서 입금 대기 가상계좌 주문의 주문 상세에 붙는 모의입금 도구다. 정보 API 는 공통 형식({ success, message, data })으로
+  답하고, 조건(테스트 모드·본인 또는 관리자·입금 대기 가상계좌)이 맞지 않으면 404 가 아니라 data.available=false 를 준다.
+  도구의 제목·입력 이름·버튼·관리자 안내는 번역 키로 그린다(일본어는 언어팩). 도구는 결제 정보 카드 슬롯 조각
+  (user_order_show)이 데이터 소스(nhnkcp_mock_deposit, 로그인 전용·주소에 주문번호가 있는 주문 상세에서만)로 그린다 —
+  주입 스크립트는 지웠다(#639). 다른 결제대행사 주문에는 정보가 와도 그리지 않는다.
+
+axes:
+  case: [owner_test_mode, owner_live_mode, other_member_test_mode, block_available, block_unavailable, guest_order_show]
+
+effects:
+  - mock_info_returned_in_envelope
+  - unavailable_as_data_flag
+  - mock_block_reads_envelope_data
+  - mock_block_text_translated
+  - mock_block_only_for_own_pg
+  - mock_info_requested_by_members_only
+  - guest_order_show_does_not_redirect_to_login   # 비회원 주문 상세에서 건너뛴 요청(401)이 로그인 이동을 부르지 않는다(7.1.0 리허설)
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/UserVbankMockDepositControllerTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/mypageMockDeposit.test.tsx
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/guestOrderShowNoLoginRedirect.test.ts

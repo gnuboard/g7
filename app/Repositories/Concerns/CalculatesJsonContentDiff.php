@@ -21,6 +21,11 @@ namespace App\Repositories\Concerns;
 trait CalculatesJsonContentDiff
 {
     /**
+     * {@see calculateChanges()} 가 계산하는 변경 요약 키 — 재계산 때 이 키만 다시 쓰고 나머지(병합 출처 등)는 보존한다.
+     */
+    public const SUMMARY_COUNT_KEYS = ['added', 'removed', 'char_diff'];
+
+    /**
      * LCS 변경 영역 상한 — 프론트 lineDiff.ts 의 DIFF_MAX_LINES 와 동일.
      *
      * 트리밍 후 변경 영역이 이 값을 넘으면 O(n·m) DP 를 회피하고 라인 집합 차집합으로

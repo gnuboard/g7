@@ -1,0 +1,104 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   이 매니페스트의 축(결제 구성 × 경로 × 환불수단 × 회원 × 실패 지점)의 전 조합은
+#   「돈의 도착」 매트릭스(claim-money-arrival-matrix.yaml · ClaimMoneyArrivalMatrixTest)가 잰다.
+#   여기 적은 테스트는 축마다 대표 조합과 실패·가드 경로를 메서드 하나씩 못박고, effects 축은
+#   면제하지 않는다 — 적은 effect 는 전부 실제 검증 메서드에 매핑한다.
+feature: 「마일리지로 환불」 현금분 지급 · 돈 부수효과 실패 중단 · PG 마지막 실행 (#747 C1)
+
+description: |
+  관리자가 클레임 환불을 「마일리지로 환불」(refund_method=points)로 실행하면, 주문 때 쓴 마일리지를
+  먼저 반환하고 남은 현금 환불액을 회원 마일리지(무기한 lot, `refund_credit`)로 지급한다(D1·Q2).
+  예전에는 지급 코드가 없어 신청서는 완료·장부는 환불로 확정되는데 고객 돈이 어디에도 가지 않았다
+  (refund 274). 함께 고친 것:
+
+    - 돈·권리 부수효과(마일리지 반환·지급, 쿠폰·재고 복원)의 실패를 삼키지 않는다 — PG 앞에서
+      실행하고, 실패하면 PG 를 부르지 않은 채 전체를 롤백한다(D2·F1·F2).
+    - PG 는 트랜잭션의 마지막 단계다. PG 뒤 코어 쓰기는 신청서 행 UPDATE 1회뿐이고, 커밋이
+      실패하면 critical 로그와 신청서 표식을 남겨 재실행이 PG 를 다시 부르지 않게 한다(P-D5).
+    - 결제수단과 다른 수단(마일리지·계좌 송금)으로 돌려준 환불은 결제행 상태를 바꾸지 않고
+      취소 이력에만 수단·금액을 남긴다. 이력 금액은 실제 집행값이다(E1·Q16).
+    - 비회원 주문·마일리지 기능이 꺼진 상점의 현금 환불에는 「마일리지로 환불」을 숨기고
+      서버도 거절한다(S5·Q21). 현금 0 원(쓴 마일리지 반환만)은 기능과 무관하게 동작한다.
+    - 실제로 차감된 적 없는 마일리지는 반환하지 않고 신청서·장부에도 0 원으로 남긴다(Q15).
+
+axes:
+  payment: [card, card_mileage, dbank, guest]
+  path: [direct_refund, return_full]
+  method: [points_override, bank_override, native]
+  mileage_feature: [enabled, disabled]
+  failure: [none, mileage_restore, mileage_credit, coupon_restore, stock_restore, pg, commit_after_pg]
+
+exclusions:
+  - { payment: guest, method: points_override, failure: [mileage_restore, mileage_credit, coupon_restore, stock_restore, pg, commit_after_pg], reason: "비회원 마일리지 환불은 가드에서 422 로 끝나 이후 단계가 없다" }
+
+effects:
+  # D1 — 현금분 마일리지 지급
+  - points_refund_credits_the_cash_amount_as_mileage
+  - points_refund_returns_used_mileage_before_crediting_the_cash
+  - return_sourced_points_refund_credits_the_cash
+  - points_refund_of_cash_needs_no_bank_account_and_credits_mileage
+  - points_refund_credits_cash_share_as_non_expiring_mileage
+  - refund_restore_and_credit_do_not_block_each_other
+  - refund_credit_lot_is_never_expired
+  - refund_credit_is_consumed_after_expiring_lots
+  - refund_credit_expiry_cannot_be_set
+  - refund_credit_row_is_teal_earn_and_expiry_locked
+  - mileage_listener_credits_the_refund_cash_share
+  - mileage_listener_rejects_a_guest_refund_credit
+  # S5·Q21 — 비회원·기능 꺼짐 가드
+  - stored_points_method_is_rejected_for_guest_orders
+  - amounts_rejects_switching_a_guest_order_to_points
+  - refund_method_options_hide_points_for_guest_or_disabled_mileage
+  - guest_or_disabled_points_refund_rejected
+  # D2·F1·F2 — 부수효과 실패는 PG 앞에서 전체 중단
+  - mileage_restore_failure_stops_the_refund_before_pg
+  - mileage_credit_failure_rolls_back_the_restore
+  - pg_failure_rolls_back_the_mileage_restore
+  - coupon_restore_failure_stops_the_refund_before_pg
+  - stock_restore_failure_stops_the_refund_before_pg
+  - coupon_restore_by_ids_failure_is_rethrown
+  - coupon_restore_from_snapshot_failure_is_rethrown
+  - unpaid_cancel_rolls_back_when_mileage_restore_fails
+  - unpaid_cancel_rolls_back_when_coupon_restore_fails
+  - return_completion_rolls_back_when_coupon_restore_fails
+  # 금전 훅은 호출자 트랜잭션 안에서 동기 실행한다
+  - coupon_deduction_is_visible_inside_caller_transaction
+  - taken_coupon_rolls_back_caller_transaction
+  - money_listeners_declare_sync_execution
+  # P-D5 — PG 는 마지막 단계
+  - pg_is_the_last_step_of_the_transaction
+  - only_the_refund_row_is_written_after_pg
+  - orphan_pg_settlement_leaves_a_marker
+  - retry_with_a_marker_does_not_call_pg_again
+  # E1·Q16 — 결제행 취소 이력
+  - return_refund_records_the_executed_amount_in_cancel_history
+  - cancel_history_records_the_operator_edited_amount
+  - cancel_history_records_the_filed_mileage_share
+  - foreign_method_refund_keeps_payment_row_paid
+  - record_cancellation_keeps_the_payment_row_for_a_foreign_method_refund
+  # Q15 — 미차감 마일리지
+  - mileage_never_deducted_refunds_zero_points
+  # Q3 — 화면의 별도 표시
+  - order_detail_exposes_the_refunded_mileage_credit_total
+  - claim_payment_shows_the_mileage_credited_cash_share
+  - claim_refund_execute_explains_points_cash_credit_and_pg_marker
+  - payment_info_shows_mileage_credited_cash_share
+  - member_order_payment_shows_mileage_credited_refund
+  - member_order_payment_label_exists_in_ko_en
+  - member_claim_detail_shows_mileage_credit_with_hint
+  - member_claim_detail_labels_exist_in_ko_en
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimRefundExecutionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/AdminRefundExecuteRequiresBankTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimAdminActionsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimCancellationRecordTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/UserMileageRefundCreditTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/MileageTransactionListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/CouponRestoreListenerFailureTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/MoneyHookTransactionBoundaryTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/MileageTransactionResourceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/OrderResourceFieldsTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetail.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/orderDetailLayouts.test.tsx
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-refund-mileage-credit.test.ts

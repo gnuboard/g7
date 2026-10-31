@@ -1,0 +1,24 @@
+feature: 주문서 결제수단 — 고객이 고를 수 있는 수단만
+
+description: |
+  주문서의 결제수단 칸·「사용 가능한 결제 방법 없음」 안내·[결제하기] 잠금·기본 선택은 공개 결제 설정의 수단 가운데
+  켜져 있고(is_active) 고객이 고를 수 있는(customer_selectable !== false) 것, iOS 전용이면 iOS 에서만을 기준으로 한다.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D14, EC-206 · SB-155):
+    - 네 자리가 모두 is_active 만 봐서, 포인트결제가 켜진 상점(옛 설정·API 저장)에선 주문서에 「포인트결제」 가 나오고
+      기본 선택도 될 수 있었다. 서버는 그 주문을 422(payment_method_not_selectable)로 거절한다 — 고를 수 있는 것처럼
+      보이는 수단으로 결제할 수 없었다. 체크아웃 계산값 `selectablePaymentMethods` 하나를 네 자리가 함께 쓴다.
+
+axes:
+  method_set: [point_active, only_non_selectable]
+
+effects:
+  - non_selectable_hidden                    # 포인트결제·예치금결제·무료는 결제수단 칸에 없음
+  - default_selection_skips_non_selectable   # 기본 선택은 첫 고객 선택 가능 수단
+  - empty_notice_and_pay_locked              # 고를 수단이 없으면 안내 + 결제하기 잠금(SB-155)
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/checkout-payment-method-selectable.test.ts
+
+validation:
+  browser_check: 전용 Chrome 실측 — EXCL 창에서 결제수단을 포인트결제만 켠 상점의 주문서

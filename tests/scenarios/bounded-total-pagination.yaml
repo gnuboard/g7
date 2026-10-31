@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: issue:#609 이슈 #519(공개 #82) 상한 총 건수·정확도 계약 SSoT. axes cross product 는 저장소별 호출처 전수에 걸쳐 있어 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(코어 계약 단위 + 도메인별 소비자 + 화면 소비단 + Playwright E2E)로 커버한다.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: issue:#609 이슈 #519(공개 #82) 상한 총 건수·정확도 계약 SSoT. axes cross product 는 저장소별 호출처 전수에 걸쳐 있어 docblock 전수 @scenario 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(코어 계약 단위 + 도메인별 소비자 + 화면 소비단 + Playwright E2E)로 커버한다.
 # audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 # 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 28건이 미검증으로 드러난다.
 #   그 짝 맞추기는 이 공정(페이지네이션)의 몫이며, 좁히는 시점에 함께 처리한다.

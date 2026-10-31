@@ -106,11 +106,15 @@ const REFS = collectTranslationRefs();
 const LOCALES = ['ko', 'en'];
 
 describe('레이아웃 $t: 키 정의 검사', () => {
+  // @scenario namespace=population
+  // @effects layout_translation_refs_collected
   it('검사 대상 레이아웃과 참조 키가 실제로 수집되어야 함 (모집단 도달 확인)', () => {
     expect(LAYOUT_DIRS.length).toBeGreaterThan(1);
     expect(REFS.get('common')?.size ?? 0).toBeGreaterThan(10);
   });
 
+  // @scenario namespace=common
+  // @effects layout_common_keys_defined
   it.each(LOCALES)('common 네임스페이스의 모든 참조 키가 %s 에 정의되어야 함', (locale) => {
     const defined = loadLangFile(locale, 'common');
     expect(defined, `lang/partial/${locale}/common.json 이 없습니다`).not.toBeNull();
@@ -128,6 +132,29 @@ describe('레이아웃 $t: 키 정의 검사', () => {
     ).toEqual([]);
   });
 
+  // 국가 선택지(회원 폼·회원 목록 국가 필터)는 코드마다 `$t:countries.XX` 를 쓴다.
+  // en 파일에 칠레·콜롬비아·페루가 빠지고 다른 세 나라가 들어가 있어, 영어 화면의
+  // 국가 목록에 키 원문이 노출됐다(#705 국가 표시 복원 후 목록 필터까지 번짐).
+  // @scenario namespace=countries
+  // @effects layout_country_keys_defined
+  it.each(LOCALES)('countries 네임스페이스의 모든 참조 키가 %s 에 정의되어야 함', (locale) => {
+    expect(REFS.get('countries')?.size ?? 0, '국가 키 참조를 하나도 수집하지 못했습니다').toBeGreaterThan(40);
+
+    const defined = loadLangFile(locale, 'countries');
+    expect(defined, `lang/partial/${locale}/countries.json 이 없습니다`).not.toBeNull();
+
+    const missing = [...(REFS.get('countries') ?? [])]
+      .filter(([key]) => !hasPath(defined!, key))
+      .map(([key, files]) => `countries.${key} (참조: ${[...files].slice(0, 3).join(', ')})`);
+
+    expect(
+      missing,
+      `정의되지 않은 키가 화면에 원문으로 노출됩니다:\n  - ${missing.join('\n  - ')}`
+    ).toEqual([]);
+  });
+
+  // @scenario namespace=common
+  // @effects layout_common_keys_defined
   it('D13 회귀: 새로고침·활성화·건너뛰기 키가 ko/en 양쪽에 있어야 함', () => {
     for (const locale of LOCALES) {
       const defined = loadLangFile(locale, 'common')!;

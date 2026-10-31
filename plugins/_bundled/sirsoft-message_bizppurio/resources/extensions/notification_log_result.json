@@ -1,6 +1,7 @@
 {
-    "target_layout": "admin_notification_log_list",
     "comment": "코어 알림 발송 이력 화면에 비즈뿌리오 발송 결과 컬럼을 얹는다(A-2). 코어 화면·코어 앱·코어 테이블은 전혀 건드리지 않는다 — 연결 표식은 우리 dispatch(bizppurio_dispatches.notification_log_id)에만 있고, 현재 페이지의 코어 로그 id 배열로 결과를 배치 조회(dispatchResults)해 row.id 로 매칭한다. 매칭 안 되는 행(메일·DB 등 비-비즈뿌리오)은 빈 셀. 컬럼은 코어 datagrid columns 배열 끝에 _append 로 1개만 추가(전체 컬럼 재정의 안 함).",
+    "target_layout": "admin_notification_log_list",
+    "priority": 330,
     "data_sources": [
         {
             "id": "dispatchResults",
@@ -15,14 +16,14 @@
                 "data": {
                     "results": {}
                 }
-            }
+            },
+            "comment": "최근 발송 결과 맵(로그 id 키) — 코어 발송 이력 목록에 결과 컬럼을 그리기 위해 받는다. 실패하면 빈 맵으로 폴백해 컬럼만 비운다."
         }
     ],
     "injections": [
         {
             "target_id": "notification_log_datagrid",
             "position": "inject_props",
-            "comment": "코어 datagrid columns 끝에 비즈뿌리오 결과 컬럼 1개만 추가. columns 는 정적 배열이라 _append 적용 가능.",
             "props": {
                 "expandChildren": {
                     "_append": [
@@ -32,30 +33,30 @@
                             "name": "Div",
                             "if": "{{!!(dispatchResults?.data?.results ?? {})[row.id]}}",
                             "props": {
-                                "className": "p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 space-y-2"
+                                "className": "bizppurio:p-4 bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700 bizppurio:space-y-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center gap-2"
+                                        "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "fas fa-comment-dots",
+                                                "name": "comment-dots",
                                                 "size": "sm",
-                                                "className": "text-teal-600 dark:text-teal-400"
+                                                "className": "bizppurio:text-teal-600 bizppurio:dark:text-teal-400"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm font-medium text-gray-800 dark:text-gray-100"
+                                                "className": "bizppurio:text-sm bizppurio:font-medium bizppurio:text-gray-800 bizppurio:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.dispatch_result.detail_title"
                                         }
@@ -65,14 +66,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex flex-wrap items-center gap-2"
+                                        "className": "bizppurio:flex bizppurio:flex-wrap bizppurio:items-center bizppurio:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'success' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'failed' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50'}}"
+                                                "className": "{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-yellow-100 bizppurio:text-yellow-800 bizppurio:dark:bg-yellow-600 bizppurio:dark:text-yellow-50' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'success' ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-green-100 bizppurio:text-green-800 bizppurio:dark:bg-green-700 bizppurio:dark:text-green-100' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'failed' ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-red-100 bizppurio:text-red-800 bizppurio:dark:bg-red-700 bizppurio:dark:text-red-100' : 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-yellow-100 bizppurio:text-yellow-800 bizppurio:dark:bg-yellow-600 bizppurio:dark:text-yellow-50'}}"
                                             },
                                             "text": "{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? $t('sirsoft-message_bizppurio.dispatch_result.inspection_label') : (dispatchResults?.data?.results ?? {})[row.id]?.result_label ?? (dispatchResults?.data?.results ?? {})[row.id]?.status_label ?? '-'}}"
                                         },
@@ -81,7 +82,7 @@
                                             "name": "Span",
                                             "if": "{{(dispatchResults?.data?.results ?? {})[row.id]?.is_low_balance === true}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-600 dark:text-orange-50"
+                                                "className": "bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-orange-100 bizppurio:text-orange-800 bizppurio:dark:bg-orange-600 bizppurio:dark:text-orange-50"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.dispatch_result.low_balance"
                                         },
@@ -90,7 +91,7 @@
                                             "name": "Span",
                                             "if": "{{!!(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-700 dark:text-sky-100"
+                                                "className": "bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-sky-100 bizppurio:text-sky-800 bizppurio:dark:bg-sky-700 bizppurio:dark:text-sky-100"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.dispatch_result.fallback|status={{(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}"
                                         }
@@ -102,14 +103,14 @@
                                     "name": "Div",
                                     "if": "{{row.channel === 'alimtalk' && !!(dispatchResults?.data?.results ?? {})[row.id]?.content}}",
                                     "props": {
-                                        "className": "pt-2 border-t border-gray-200 dark:border-gray-700"
+                                        "className": "bizppurio:pt-2 bizppurio:border-t bizppurio:border-gray-200 bizppurio:dark:border-gray-700"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "bizppurio-form-label"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.dispatch_result.sent_content_label"
                                         },
@@ -117,7 +118,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line admin-card"
+                                                "className": "bizppurio:text-sm bizppurio:text-gray-700 bizppurio:dark:text-gray-200 bizppurio:whitespace-pre-line bizppurio-admin-card"
                                             },
                                             "text": "{{(dispatchResults?.data?.results ?? {})[row.id]?.content}}"
                                         },
@@ -125,7 +126,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                                                "className": "bizppurio:text-xs bizppurio:text-gray-400 bizppurio:dark:text-gray-500 bizppurio:mt-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.dispatch_result.sent_content_hint"
                                         }
@@ -145,7 +146,7 @@
                             "required": false,
                             "comment": "컬럼(헤더 포함) 자체를 탭별로 노출 제어. 컬럼 정의는 datagrid props 로 페이지 컨텍스트에서 평가되므로(셀과 달리) query 접근 가능. 메일·사이트내알림(mail/database) 탭이면 hidden=true 로 컬럼 숨김. 전체·sms·lms·알림톡 탭에선 표시.",
                             "hidden": "{{['mail','database'].includes(query.channel ?? '')}}",
-            "cellChildren": [
+                            "cellChildren": [
                                 {
                                     "comment": "비즈뿌리오 발송 행(row.channel 이 sms/lms/alimtalk)에서만 결과 표시. 메일·사이트내알림(mail/database) 행은 셀을 비운다. 셀 렌더 컨텍스트는 row/value 만 있고 query 는 없으므로(코어 DataGrid renderCellChildren 계약) 탭이 아니라 row.channel 로 판별한다.",
                                     "type": "basic",
@@ -157,7 +158,7 @@
                                             "name": "Span",
                                             "if": "{{!(dispatchResults?.data?.results ?? {})[row.id]}}",
                                             "props": {
-                                                "className": "text-gray-300 dark:text-gray-600"
+                                                "className": "bizppurio:text-gray-300 bizppurio:dark:text-gray-600"
                                             },
                                             "text": "-"
                                         },
@@ -166,14 +167,14 @@
                                             "name": "Div",
                                             "if": "{{!!(dispatchResults?.data?.results ?? {})[row.id]}}",
                                             "props": {
-                                                "className": "flex flex-col gap-1 items-start"
+                                                "className": "bizppurio:flex bizppurio:flex-col bizppurio:gap-1 bizppurio:items-start"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'success' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'failed' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-50'}}"
+                                                        "className": "{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-yellow-100 bizppurio:text-yellow-800 bizppurio:dark:bg-yellow-600 bizppurio:dark:text-yellow-50' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'success' ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-green-100 bizppurio:text-green-800 bizppurio:dark:bg-green-700 bizppurio:dark:text-green-100' : (dispatchResults?.data?.results ?? {})[row.id]?.status === 'failed' ? 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-red-100 bizppurio:text-red-800 bizppurio:dark:bg-red-700 bizppurio:dark:text-red-100' : 'bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-yellow-100 bizppurio:text-yellow-800 bizppurio:dark:bg-yellow-600 bizppurio:dark:text-yellow-50'}}"
                                                     },
                                                     "text": "{{(dispatchResults?.data?.results ?? {})[row.id]?.is_test_mode === true ? $t('sirsoft-message_bizppurio.dispatch_result.inspection_label') : (dispatchResults?.data?.results ?? {})[row.id]?.result_label ?? (dispatchResults?.data?.results ?? {})[row.id]?.status_label ?? '-'}}"
                                                 },
@@ -182,7 +183,7 @@
                                                     "name": "Span",
                                                     "if": "{{(dispatchResults?.data?.results ?? {})[row.id]?.is_low_balance === true}}",
                                                     "props": {
-                                                        "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-600 dark:text-orange-50"
+                                                        "className": "bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-orange-100 bizppurio:text-orange-800 bizppurio:dark:bg-orange-600 bizppurio:dark:text-orange-50"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.dispatch_result.low_balance"
                                                 },
@@ -191,7 +192,7 @@
                                                     "name": "Span",
                                                     "if": "{{!!(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}",
                                                     "props": {
-                                                        "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-700 dark:text-sky-100"
+                                                        "className": "bizppurio:inline-flex bizppurio:items-center bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded-full bizppurio:text-xs bizppurio:font-medium bizppurio:bg-sky-100 bizppurio:text-sky-800 bizppurio:dark:bg-sky-700 bizppurio:dark:text-sky-100"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.dispatch_result.fallback|status={{(dispatchResults?.data?.results ?? {})[row.id]?.fallback_status}}"
                                                 }
@@ -205,6 +206,5 @@
                 }
             }
         }
-    ],
-    "priority": 330
+    ]
 }

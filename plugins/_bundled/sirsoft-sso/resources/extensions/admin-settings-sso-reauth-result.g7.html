@@ -1,0 +1,10 @@
+<!-- e2e:allow Playwright 스펙 없음(이 플러그인 tests/Playwright/specs/sso-*.spec.ts 는 로그인 흐름만 덮는다) — 브라우저 실측은 F1 Chrome MCP 계획서 §10 M10(W40) — P4 는 Vitest 로 덮음
+     환경설정 화면(/admin/settings?tab=security&reauth=app_key)의 회사 계정 재확인 결과 안내 — 앱 키 재생성 창이 시작한 회사 계정
+     재확인이 실패하면 이 화면으로 ?sso_error={사유 코드} 를 붙여 돌아온다(성공은 verification_token 이고 코어 화면이 창을 다시 연다).
+     코어 화면은 플러그인 쿼리 이름을 모르므로 이 조각이 사유 문구를 토스트로 띄운다. 문구 키가 없으면(IdP 가 준 낯선 코드) 일반 실패 문구. -->
+<extension target-layout="admin_settings" priority="95">
+  <init>
+    <!-- 재확인 실패 안내 -->
+    <toast if="{{!!query.sso_error}}" type="error" message="{{$t('sirsoft-sso.errors.' + query.sso_error) === 'sirsoft-sso.errors.' + query.sso_error ? $t('sirsoft-sso.errors.generic') : $t('sirsoft-sso.errors.' + query.sso_error)}}"/>
+  </init>
+</extension>

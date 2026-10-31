@@ -147,6 +147,8 @@ return [
     'env_hardening_hint_option_strict' => 'CLI user = web server user (single-user environment)',
     'env_hardening_hint_option_group' => 'CLI user ≠ web server user (self-hosted server, etc. — group-readable compromise)',
     'env_hardening_hint_note' => 'Verify your environment before running. Applying the wrong permission may prevent the web server from reading .env and cause the site to stop responding.',
+    'cron_hint_title' => 'Register scheduled tasks (cron)',
+    'cron_hint_body' => 'Register the command below in cron to run every minute. Without it, visitor statistics are archived only when an administrator opens a statistics screen, and scheduled tasks such as automatic order cancellation, old data cleanup and report mails do not run.',
 
     // Step 5: Complete
     'installation_info' => 'Installation Information',
@@ -304,6 +306,7 @@ return [
     'task_create_settings_json' => 'Creating Settings Files',
     'task_complete_flag' => 'Finalizing Installation',
     'task_config_cache' => 'Building Configuration Cache',
+    'task_route_cache' => 'Building Route Cache',
     'task_static_publish' => 'Publishing Static Bootstrap Resources',
     'task_unknown' => 'Unknown Task',
 
@@ -350,6 +353,9 @@ return [
     'log_composer_installing_from_lock' => 'Installing dependencies from composer.lock...',
     'log_composer_fresh_install' => 'Installing new Composer dependencies...',
     'log_composer_cache_cleared' => 'Cleared previous package cache',
+    'log_custom_vendor_in_sync' => 'Developer packages (custom/vendor) are already in place',
+    'log_custom_vendor_installed' => 'Installed developer packages (custom/vendor) (:mode)',
+    'error_custom_vendor_failed' => 'Failed to install developer packages (custom/vendor): :error',
     'log_composer_dev_packages_detected' => 'Existing vendor contains :count development package(s) (:packages)',
     'warning_composer_dev_packages_kept' => 'Keeping the vendor directory that contains development packages. On a production site, run "composer install --no-dev --optimize-autoloader" after installation (installation continues)',
 
@@ -429,6 +435,9 @@ return [
     'log_worker_disconnected_abort' => 'The browser connection was lost, so this request is stopping.',
     'log_worker_started' => 'Starting the installation tasks.',
     'log_finalize_env_generate_failed' => '[finalize-env] Could not build the base .env content (.env.example missing)',
+    'log_finalize_env_waiting_for_worker' => '[finalize-env] Waiting for the installation worker to finish (config cache and other final tasks are running)',
+    'log_finalize_env_worker_released' => '[finalize-env] Installation worker lock released (waited :seconds s)',
+    'log_finalize_env_worker_wait_timeout' => '[finalize-env] The installation worker lock was not released within :seconds s - merging anyway (the worker may have been killed)',
     'log_finalize_env_backup_kept' => '[finalize-env] Existing .env preserved: :path',
     'log_finalize_env_write_failed' => '[finalize-env] Failed to write .env: path=:path, last_error=:error',
     'log_finalize_env_merged' => '[finalize-env] .env merge complete (permissions untouched): path=:path, perms=:perms, owner_uid=:owner, group_gid=:group, process_euser=:euser',
@@ -436,6 +445,8 @@ return [
     'log_finalize_env_runtime_removed' => '[finalize-env] runtime.php deleted',
     'log_finalize_env_config_cache_delete_failed' => '[finalize-env] Failed to delete the config cache: path=:path, last_error=:error. It still holds pre-install values - delete the file manually or run `php artisan config:clear`.',
     'log_finalize_env_config_cache_removed' => '[finalize-env] Config cache deleted (the next request rebuilds it from .env)',
+    'log_finalize_env_config_cache_rebuilt' => '[finalize-env] Config cache rebuilt',
+    'log_finalize_env_config_cache_rebuild_failed' => '[finalize-env] Config cache rebuild failed - booting from the merged .env without a cache: exit=:exit, output=:output',
     'log_finalize_env_state_delete_failed' => '[finalize-env] Failed to delete the installation state file: path=:path, last_error=:error',
     'log_finalize_env_state_removed' => '[finalize-env] Installation state file deleted',
     'log_finalize_env_state_redacted' => '[finalize-env] Installation state file remains - secret fields redacted',
@@ -448,17 +459,22 @@ return [
     'log_reset_probe_sweep_partial' => '[reset] Could not delete :failed exposure-check leftover file(s) (:removed removed) - please clean up storage/installer manually.',
     'log_worker_client_ip' => 'Request IP: :ip',
     'log_worker_rejected_busy' => 'Another request is already running the installation, so this one will not start.',
+    'log_worker_rejected_plan_unverified' => '=== Installation worker rejected - the install plan could not be verified (:reason) ===',
     'log_worker_lock_acquired' => 'This request now holds the installation.',
+    'log_worker_terminated' => '=== The installation worker process stopped unexpectedly: :error (task: :task) ===',
+    'log_worker_connection_closed' => '=== SSE worker ended: connection closed (task: :task) - the installer page reconnects to continue ===',
     'log_php_binary_path_rejected' => 'The PHP path :path has a form that cannot be used, so the default php is used instead. (Paths with spaces or special characters are not accepted.)',
 
     // Error Messages - Worker (Cache)
     'error_cache_clear_failed' => 'Cache clearing failed',
     'error_config_cache_failed' => 'Configuration cache build failed',
+    'error_route_cache_failed' => 'Route cache build failed (site still works; it is rebuilt when an extension is installed or changed)',
     'error_static_publish_failed' => 'Static bootstrap resource publishing failed (site still works via API fallback)',
 
     // Log Messages - Worker (Cache)
     'log_cache_clear_success' => 'Cache clearing completed',
     'log_config_cache_success' => 'Configuration cache built',
+    'log_route_cache_success' => 'Route cache built',
     'log_static_publish_success' => 'Static bootstrap resources published',
 
     // Error Messages - Worker (Settings JSON)
@@ -484,6 +500,7 @@ return [
     // Worker Log Messages (Task Progress)
     'log_task_in_progress' => ':task in progress...',
     'log_task_completed' => ':task completed',
+    'log_task_completed_with_warnings' => ':task completed — some items failed (see the warning table above)',
     'log_task_skipped' => ':task (already exists, skipped)',
     'manual_commands_guide' => '💡 You can run the following commands manually:',
     'log_separator' => '========================================',
@@ -813,7 +830,7 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'log_state_file_removed' => 'Installer state file removed successfully.',
     'log_state_file_remove_failed' => 'Warning: Failed to remove installer state file.',
     'error_worker_exception' => 'Installation worker exception',
-    'error_worker_terminated' => 'The installation task was terminated by the server (out of memory, execution time limit, and so on).',
+    'error_worker_terminated' => 'The installation worker process stopped unexpectedly (for example, a server execution time limit). Completed steps are kept, so click [Retry] to continue from where it stopped. If this repeats, check storage/logs/installation.log and the PHP error log.',
 
     // rollback-functions.php i18n keys
     'log_prefix_rollback' => '[Rollback]',
@@ -1135,9 +1152,37 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
 
     // Combined .env guidance
     'required_files_fix_guide_combined' => '.env file creation and permission setup required. Run the following command:',
+    'storage_windows_readonly' => 'The storage folder has the ReadOnly attribute set.',
+    'storage_windows_readonly_message' => 'This is a file attribute, not an ACL, so icacls cannot clear it. Remove the ReadOnly attribute with the attrib command below first.',
+    'permission_readonly_fix_guide' => 'Run the command below to clear the ReadOnly attribute:',
+    'permission_readonly_hint' => '* Extracting archives, restoring backups, or sync tools often leave the ReadOnly attribute behind. If it still fails afterwards, follow up with icacls to grant permissions.',
 
     // Relative path alternative
     'or_relative_path' => 'Or from the G7 root directory:',
+    'error_ownership_conflict' => 'Another browser session is running this installation. Continue in the browser that started it, or reclaim ownership with the recovery token.',
+    'error_csrf_invalid' => 'Invalid request token. Please refresh the page and try again.',
+    'error_state_conflict' => 'Another request changed the installation state first. Please refresh the page and try again.',
+    'error_db_config_changed' => 'The connection settings changed after the database connection test. Please test the connection again with the current settings.',
+    'error_install_plan_unverified' => 'No verified installation plan was found, so nothing was executed. Please start the installation again from the installation screen.',
+    'error_finalize_not_ready' => 'The installation has not completed yet.',
+    'drop_confirm_rejected' => 'The confirmation for deleting existing tables is not valid, so the installation continues without deleting them. If deletion is required, run the database connection test and the deletion consent again in Step 3.',
+    'log_drop_confirm_rejected' => '[Warning] Existing-table deletion confirmation is not valid; continuing without deletion (reason: :reason)',
+    'recovery_token_notice_title' => 'Keep your recovery token in a safe place',
+    'recovery_token_notice_desc' => 'If you close the browser or the session expires, this installation cannot be continued from another browser unless you enter the recovery token below. The token is shown only in this browser.',
+    'recovery_token_copy' => 'Copy',
+    'ownership_locked_title' => 'Installation in progress in another session',
+    'ownership_locked_desc' => 'Another browser session is running this installation, so its state cannot be changed from here. If you started this installation, enter the recovery token you were given to continue.',
+    'recovery_token_label' => 'Recovery token',
+    'recovery_token_placeholder' => 'xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx',
+    'recovery_submit' => 'Reclaim ownership',
+    'recovery_success' => 'Ownership reclaimed. Returning to the installation. A new recovery token has been issued, so please store it again.',
+    'error_recovery_token_invalid' => 'The recovery token is not valid.',
+    'error_recovery_rate_limited' => 'Too many failed recovery token attempts. Please try again in 15 minutes.',
+    'error_recovery_unavailable' => 'There is no installation in progress to reclaim. Please refresh the page.',
+    'ownership_reset_hint' => 'If you lost the recovery token, delete storage/installer-state.json on the server and start the installation again.',
+    'log_ownership_claimed' => '[Ownership] The installation owner session has been set.',
+    'log_ownership_reclaimed' => '[Ownership] Installation ownership was reclaimed with the recovery token.',
+    'log_ownership_reclaim_failed' => '[Ownership] Reclaim rejected: recovery token mismatch.',
 
     // Execution mode (Step 3 selector · D33 · W2) — what is saved is a "choice", default auto
     'execution_mode_card_title' => 'Execution Method',

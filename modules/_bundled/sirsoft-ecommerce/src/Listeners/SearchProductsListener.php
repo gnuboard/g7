@@ -11,7 +11,7 @@ use App\Support\Query\BoundedCount;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
-use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
+use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 
 /**
  * 통합 검색에 상품 검색 결과를 제공하는 리스너
@@ -24,6 +24,11 @@ class SearchProductsListener implements HookListenerInterface
 {
     use HasMultiCurrencyPrices;
 
+    /**
+     * 리스너를 생성합니다.
+     *
+     * @param  ProductService  $productService  상품 검색을 수행하는 상품 서비스
+     */
     public function __construct(
         private readonly ProductService $productService,
     ) {}
@@ -277,7 +282,7 @@ class SearchProductsListener implements HookListenerInterface
             'multi_currency_list_price' => $this->buildMultiCurrencyPrices($product->list_price),
             'labels' => $labels,
             // 상점 주소는 운영자 설정 — 기본값 리터럴은 주소를 바꾼 상점에서 죽은 링크가 된다 (공개 #85)
-            'url' => ShopPathResolver::path('products/'.$product->product_code),
+            'url' => EcommerceScreenUrl::product((string) $product->product_code),
             'review_count' => (int) ($product->review_count ?? 0),
             'rating_avg' => $product->rating_avg !== null ? round((float) $product->rating_avg, 1) : 0.0,
         ];

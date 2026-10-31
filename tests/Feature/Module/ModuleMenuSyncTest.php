@@ -33,6 +33,11 @@ class ModuleMenuSyncTest extends TestCase
     /** @var bool 활성 디렉토리가 테스트 전에 이미 존재했는지 (tearDown에서 정리 판단용) */
     private bool $boardExistedBefore = false;
 
+    /**
+     * 테스트 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -74,6 +79,11 @@ class ModuleMenuSyncTest extends TestCase
         User::factory()->create(['email' => 'admin@test.com']);
     }
 
+    /**
+     * 테스트 픽스처를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 확장 디렉토리 보호 해제
@@ -91,10 +101,32 @@ class ModuleMenuSyncTest extends TestCase
     }
 
     /**
+     * 게시판 모듈이 선언한 정적 메뉴(부모 + 자식) 수를 셉니다.
+     *
+     * 개수를 숫자로 박아 두면 모듈이 메뉴를 더할 때마다 테스트가 낡는다(4 → 6 전례).
+     *
+     * @return int 선언된 정적 메뉴 수
+     */
+    private function declaredStaticMenuCount(): int
+    {
+        $count = 0;
+        $walk = function (array $menus) use (&$walk, &$count): void {
+            foreach ($menus as $menu) {
+                $count++;
+                $walk($menu['children'] ?? []);
+            }
+        };
+        $walk($this->moduleManager->getModule('sirsoft-board')->getAdminMenus());
+
+        return $count;
+    }
+
+    /**
      * ModuleManager의 protected 메서드를 호출하는 헬퍼
      *
-     * @param  string  $methodName  메서드명
-     * @param  array  $args  인자
+     * @param  string  $methodName  메서드 이름
+     * @param  array  $args  인자 목록
+     * @return mixed 메서드 반환값
      */
     private function callProtectedMethod(string $methodName, array $args = []): mixed
     {
@@ -105,6 +137,12 @@ class ModuleMenuSyncTest extends TestCase
 
     /**
      * 모듈 설치 시 메뉴가 올바르게 생성되는지 테스트
+     *
+     * @scenario lifecycle_event=install
+     *
+     * @effects module_install_creates_menus
+     *
+     * @return void 반환값 없음
      */
     public function test_module_install_creates_menus(): void
     {
@@ -114,7 +152,7 @@ class ModuleMenuSyncTest extends TestCase
         $menuCount = Menu::where('extension_type', ExtensionOwnerType::Module)
             ->where('extension_identifier', 'sirsoft-board')
             ->count();
-        $this->assertEquals(4, $menuCount);
+        $this->assertEquals($this->declaredStaticMenuCount(), $menuCount);
 
         // 부모 메뉴 확인
         $parentMenu = Menu::where('slug', 'sirsoft-board')
@@ -138,6 +176,12 @@ class ModuleMenuSyncTest extends TestCase
 
     /**
      * 최초 설치 시 메뉴에 user_overrides가 비어있는지 테스트
+     *
+     * @scenario lifecycle_event=install
+     *
+     * @effects no_user_overrides_on_fresh_menu_install
+     *
+     * @return void 반환값 없음
      */
     public function test_no_user_overrides_on_fresh_menu_install(): void
     {
@@ -157,6 +201,12 @@ class ModuleMenuSyncTest extends TestCase
 
     /**
      * user_overrides에 "name"이 있으면 재설치 시 메뉴명이 보존되는지 테스트
+     *
+     * @scenario lifecycle_event=reinstall
+     *
+     * @effects user_menu_name_override_preserved_on_reinstall
+     *
+     * @return void 반환값 없음
      */
     public function test_user_menu_name_override_preserved_on_reinstall(): void
     {
@@ -185,6 +235,12 @@ class ModuleMenuSyncTest extends TestCase
 
     /**
      * user_overrides에 "order"가 있으면 재설치 시 메뉴 순서가 보존되는지 테스트
+     *
+     * @scenario lifecycle_event=reinstall
+     *
+     * @effects user_menu_order_override_preserved_on_reinstall
+     *
+     * @return void 반환값 없음
      */
     public function test_user_menu_order_override_preserved_on_reinstall(): void
     {
@@ -216,6 +272,12 @@ class ModuleMenuSyncTest extends TestCase
 
     /**
      * user_overrides가 없으면 재설치 시 메뉴가 확장 정의값으로 갱신되는지 테스트
+     *
+     * @scenario lifecycle_event=reinstall
+     *
+     * @effects reinstall_updates_unmodified_menus
+     *
+     * @return void 반환값 없음
      */
     public function test_reinstall_updates_unmodified_menus(): void
     {
@@ -246,6 +308,12 @@ class ModuleMenuSyncTest extends TestCase
      *
      * 운영 정책(#716eef99d, 2026-04-20): deleteData=false 시 메뉴/권한/역할은 보존된다.
      * 따라서 uninstall 후에도 메뉴는 DB 에 남아있고, 재설치는 idempotent (user_overrides 비어있음 유지).
+     *
+     * @scenario lifecycle_event=reinstall
+     *
+     * @effects reinstall_after_uninstall_creates_clean_menus
+     *
+     * @return void 반환값 없음
      */
     public function test_reinstall_after_uninstall_creates_clean_menus(): void
     {
@@ -278,6 +346,12 @@ class ModuleMenuSyncTest extends TestCase
 
     /**
      * 복수 필드 user_overrides 보존 테스트 (name + icon 동시 수정)
+     *
+     * @scenario lifecycle_event=reinstall
+     *
+     * @effects multiple_user_overrides_preserved_on_reinstall
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_user_overrides_preserved_on_reinstall(): void
     {
@@ -320,16 +394,22 @@ class ModuleMenuSyncTest extends TestCase
      *
      * 시나리오: 게시판 모듈 설치 후 사용자가 개별 게시판을 관리자 메뉴에 등록.
      * 모듈 업데이트(createModuleMenus 재호출) 시 동적 메뉴가 삭제되지 않아야 함.
+     *
+     * @scenario lifecycle_event=update
+     *
+     * @effects module_update_preserves_dynamic_menus
+     *
+     * @return void 반환값 없음
      */
     public function test_module_update_preserves_dynamic_menus(): void
     {
         $this->moduleManager->installModule('sirsoft-board');
 
-        // 정적 메뉴 수 확인 (부모 1 + 자식 3 = 4)
+        // 정적 메뉴 수 확인 (모듈이 선언한 부모 + 자식)
         $staticMenuCount = Menu::where('extension_type', ExtensionOwnerType::Module)
             ->where('extension_identifier', 'sirsoft-board')
             ->count();
-        $this->assertEquals(4, $staticMenuCount);
+        $this->assertEquals($this->declaredStaticMenuCount(), $staticMenuCount);
 
         // 동적 메뉴 생성 시뮬레이션 (BoardService::addToAdminMenu 동작 재현)
         Menu::create([
@@ -356,11 +436,11 @@ class ModuleMenuSyncTest extends TestCase
             'order' => 51,
         ]);
 
-        // 동적 메뉴 포함 총 6개 확인 (정적 4 + 동적 2)
+        // 동적 메뉴 포함 총 개수 확인 (정적 + 동적 2)
         $totalMenuCount = Menu::where('extension_type', ExtensionOwnerType::Module)
             ->where('extension_identifier', 'sirsoft-board')
             ->count();
-        $this->assertEquals(6, $totalMenuCount);
+        $this->assertEquals($staticMenuCount + 2, $totalMenuCount);
 
         // 모듈 업데이트 시뮬레이션 (createModuleMenus 재호출)
         $module = $this->moduleManager->getModule('sirsoft-board');
@@ -381,11 +461,11 @@ class ModuleMenuSyncTest extends TestCase
             '동적 메뉴 board-free가 모듈 업데이트 후에도 보존되어야 합니다'
         );
 
-        // 전체 메뉴 수 유지 (정적 4 + 동적 2 = 6)
+        // 전체 메뉴 수 유지 (정적 + 동적 2)
         $afterUpdateCount = Menu::where('extension_type', ExtensionOwnerType::Module)
             ->where('extension_identifier', 'sirsoft-board')
             ->count();
-        $this->assertEquals(6, $afterUpdateCount);
+        $this->assertEquals($staticMenuCount + 2, $afterUpdateCount);
     }
 
     /**
@@ -393,6 +473,12 @@ class ModuleMenuSyncTest extends TestCase
      *
      * 시나리오: 게시판 모듈 설치 후 BoardPermissionService가 동적 권한 생성.
      * 모듈 업데이트(createModulePermissions 재호출) 시 동적 권한이 삭제되지 않아야 함.
+     *
+     * @scenario lifecycle_event=update
+     *
+     * @effects module_update_preserves_dynamic_permissions
+     *
+     * @return void 반환값 없음
      */
     public function test_module_update_preserves_dynamic_permissions(): void
     {
@@ -477,6 +563,12 @@ class ModuleMenuSyncTest extends TestCase
      *
      * 운영 정책(#716eef99d, 2026-04-20): deleteData=true 경로에서만 메뉴/권한/역할 전수 삭제.
      * deleteData=false (기본) 경로는 메뉴 보존 → test_module_uninstall_preserves_menus_by_default 참조.
+     *
+     * @scenario lifecycle_event=uninstall
+     *
+     * @effects module_uninstall_removes_all_menus_including_dynamic
+     *
+     * @return void 반환값 없음
      */
     public function test_module_uninstall_removes_all_menus_including_dynamic(): void
     {
@@ -495,8 +587,8 @@ class ModuleMenuSyncTest extends TestCase
             'order' => 50,
         ]);
 
-        // 정적 + 동적 메뉴 존재 확인 (정적 4 + 동적 1 = 5)
-        $this->assertEquals(5, Menu::where('extension_identifier', 'sirsoft-board')->count());
+        // 정적 + 동적 메뉴 존재 확인 (정적 + 동적 1)
+        $this->assertEquals($this->declaredStaticMenuCount() + 1, Menu::where('extension_identifier', 'sirsoft-board')->count());
 
         // 모듈 제거 — deleteData=true 로 메뉴/권한/역할 전수 삭제 경로 사용
         $this->moduleManager->uninstallModule('sirsoft-board', deleteData: true);

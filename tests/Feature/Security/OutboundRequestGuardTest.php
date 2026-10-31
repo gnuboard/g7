@@ -3,17 +3,18 @@
 namespace Tests\Feature\Security;
 
 use App\Enums\ScheduleResultStatus;
+use App\Enums\ScheduleTriggerType;
 use App\Enums\ScheduleType;
 use App\Exceptions\LanguagePackOperationException;
 use App\Models\Schedule;
+use App\Models\ScheduleHistory;
 use App\Rules\PublicOutboundUrl;
 use App\Services\DriverConnectionTester;
 use App\Services\LanguagePackService;
-use App\Services\ScheduleService;
+use App\Services\Schedule\ScheduleDispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -27,10 +28,19 @@ class OutboundRequestGuardTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 테스트 준비
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
         Http::fake(['*' => Http::response('ok', 200)]);
+
+        // 개발 PC 에서 관리자 화면으로 「내부 주소 허용」을 켜 두면(storage/app/settings/security.json) 부팅 때
+        // 설정으로 스며든다 — 기본값(차단)을 전제로 하는 단언이 환경에 따라 뒤집히지 않게 고정한다.
+        Config::set('g7_settings.core.security.allow_internal_outbound_urls', false);
     }
 
     /**
@@ -41,6 +51,8 @@ class OutboundRequestGuardTest extends TestCase
      * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=language_pack_url
      *
      * @effects language_pack_install_from_url_rejects_normalized_internal_host
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('internalUrlProvider')]
     public function test_language_pack_install_from_url_blocks_internal_addresses(string $url): void
@@ -56,6 +68,12 @@ class OutboundRequestGuardTest extends TestCase
 
     /**
      * 언어팩 다운로드는 원격 코드를 가져오므로, 내부 주소 허용 설정을 켜도 계속 차단한다.
+     *
+     * @scenario entry_point=language_pack_url, target=loopback_or_private
+     *
+     * @effects language_pack_install_from_url_rejects_normalized_internal_host
+     *
+     * @return void 반환값 없음
      */
     public function test_language_pack_install_stays_blocked_even_when_internal_is_allowed(): void
     {
@@ -78,6 +96,8 @@ class OutboundRequestGuardTest extends TestCase
      * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=schedule_url
      *
      * @effects schedule_url_rejects_normalized_internal_host
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('internalUrlProvider')]
     public function test_url_schedule_blocks_internal_addresses(string $url): void
@@ -91,12 +111,14 @@ class OutboundRequestGuardTest extends TestCase
      * @scenario host_form=ascii, target=loopback_or_private, entry_point=schedule_url
      *
      * @effects allow_internal_outbound_setting_keeps_structural_check_only
+     *
+     * @return void 반환값 없음
      */
     public function test_url_schedule_allows_internal_address_when_setting_is_enabled(): void
     {
         $this->allowInternalOutboundUrls();
 
-        $history = app(ScheduleService::class)->runSchedule($this->makeUrlSchedule('http://192.168.0.10/cron'));
+        $history = $this->runSchedule($this->makeUrlSchedule('http://192.168.0.10/cron'));
 
         $this->assertSame(ScheduleResultStatus::Success, $history->status);
         Http::assertSentCount(1);
@@ -107,7 +129,9 @@ class OutboundRequestGuardTest extends TestCase
      *
      * @scenario host_form=ascii, target=loopback_or_private, entry_point=schedule_url
      *
-     * @effects userinfo_disguised_host_is_rejected
+     * @effects userinfo_disguised_host_is_rejected, allow_internal_outbound_setting_keeps_structural_check_only
+     *
+     * @return void 반환값 없음
      */
     public function test_url_schedule_blocks_userinfo_disguise_even_when_internal_is_allowed(): void
     {
@@ -127,6 +151,8 @@ class OutboundRequestGuardTest extends TestCase
      * @scenario host_form=ideographic_dot_u3002, target=loopback_or_private, entry_point=form_request_rule
      *
      * @effects form_request_rule_rejects_normalized_internal_host
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('internalUrlProvider')]
     public function test_public_outbound_url_rule_blocks_internal_addresses(string $url): void
@@ -148,7 +174,9 @@ class OutboundRequestGuardTest extends TestCase
      * @scenario host_form=ascii, target=public, entry_point=form_request_rule
      * @scenario host_form=unicode_u_label, target=public, entry_point=form_request_rule
      *
-     * @effects public_ascii_domain_still_allowed, real_internationalized_domain_still_allowed
+     * @effects public_ascii_domain_still_allowed, real_internationalized_domain_still_allowed, punycode_a_label_still_allowed, non_standard_port_public_url_still_allowed
+     *
+     * @return void 반환값 없음
      */
     public function test_public_outbound_url_rule_still_allows_public_urls(): void
     {
@@ -174,22 +202,23 @@ class OutboundRequestGuardTest extends TestCase
     /**
      * URL 스케줄 실행이 차단되고 요청이 전송되지 않았음을 단언합니다.
      *
-     * `runSchedule` 은 실행 실패를 실패 이력으로 기록한 뒤 ValidationException 으로 전파한다
-     * (기존 계약). 차단도 그 경로를 그대로 탄다.
+     * 실행기는 실행 실패를 예외로 전파하지 않고 실패 이력을 돌려준다. 차단도 그 경로를 그대로 탄다.
      *
      * @param  string  $url  호출 대상 URL
+     * @return void 반환값 없음
      */
     private function assertUrlScheduleIsBlocked(string $url): void
     {
         $schedule = $this->makeUrlSchedule($url);
 
-        try {
-            app(ScheduleService::class)->runSchedule($schedule);
-            $this->fail("차단되어야 하는 URL 스케줄이 실행됨: {$url}");
-        } catch (ValidationException $e) {
-            // 실행 실패 경로 — 아래에서 요청 미전송 + 실패 이력을 확인한다
-        }
+        $history = $this->runSchedule($schedule);
 
+        $this->assertNotNull($history, "차단된 URL 스케줄의 실행 이력이 남지 않음: {$url}");
+        $this->assertSame(
+            ScheduleResultStatus::Failed,
+            $history->status,
+            "차단되어야 하는 URL 스케줄이 실행됨: {$url}"
+        );
         Http::assertNothingSent();
         $this->assertSame(
             ScheduleResultStatus::Failed,
@@ -202,6 +231,12 @@ class OutboundRequestGuardTest extends TestCase
      * 웹소켓 연결 테스트는 localhost·사설 IP 를 정상 구성으로 허용한다 (기본 설치 동작).
      *
      * @param  string  $host  드라이버 설정의 websocket_host
+     *
+     * @scenario entry_point=websocket_host, target=loopback_or_private
+     *
+     * @effects websocket_test_allows_local_and_private_hosts
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('legitimateWebsocketHostProvider')]
     public function test_websocket_test_allows_local_and_private_hosts(string $host): void
@@ -219,6 +254,12 @@ class OutboundRequestGuardTest extends TestCase
      * 웹소켓 연결 테스트는 정상 설정에서 나올 수 없는 위조 host 를 거부한다.
      *
      * @param  string  $host  구조적으로 위조된 websocket_host
+     *
+     * @scenario entry_point=websocket_host
+     *
+     * @effects websocket_test_rejects_structurally_forged_hosts
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('forgedWebsocketHostProvider')]
     public function test_websocket_test_rejects_structurally_forged_hosts(string $host): void
@@ -236,7 +277,7 @@ class OutboundRequestGuardTest extends TestCase
     /**
      * 내부망 URL 목록.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 데이터 케이스 (케이스 이름 → 테스트 인자)
      */
     public static function internalUrlProvider(): array
     {
@@ -263,7 +304,7 @@ class OutboundRequestGuardTest extends TestCase
     /**
      * 정상 운영에서 쓰이는 웹소켓 host 목록 (기본값 포함).
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 데이터 케이스 (케이스 이름 → 테스트 인자)
      */
     public static function legitimateWebsocketHostProvider(): array
     {
@@ -278,7 +319,7 @@ class OutboundRequestGuardTest extends TestCase
     /**
      * 구조적으로 위조된 웹소켓 host 목록.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 데이터 케이스 (케이스 이름 → 테스트 인자)
      */
     public static function forgedWebsocketHostProvider(): array
     {
@@ -286,6 +327,17 @@ class OutboundRequestGuardTest extends TestCase
             'userinfo 위장' => ['example.com@169.254.169.254'],
             '제어문자 주입' => ["example.com\r\nX-Injected: 1"],
         ];
+    }
+
+    /**
+     * 수동 실행 진입점(수동 실행 API 와 같은 경로)으로 스케줄을 실행합니다.
+     *
+     * @param  Schedule  $schedule  실행 대상 스케줄
+     * @return ScheduleHistory|null 실행 이력
+     */
+    private function runSchedule(Schedule $schedule): ?ScheduleHistory
+    {
+        return app(ScheduleDispatcher::class)->dispatch($schedule->fresh(), ScheduleTriggerType::Manual);
     }
 
     /**
@@ -307,6 +359,8 @@ class OutboundRequestGuardTest extends TestCase
 
     /**
      * 관리자 환경설정에서 내부 주소 호출 허용을 켭니다.
+     *
+     * @return void 반환값 없음
      */
     private function allowInternalOutboundUrls(): void
     {

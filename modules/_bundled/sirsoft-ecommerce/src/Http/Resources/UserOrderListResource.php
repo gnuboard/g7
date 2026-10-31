@@ -9,6 +9,7 @@ use Illuminate\Http\Resources\MissingValue;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Concerns\LocalizesCountryName;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesAdditionalOptions;
+use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesClaims;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 
 /**
@@ -22,6 +23,7 @@ class UserOrderListResource extends BaseApiResource
     use HasMultiCurrencyPrices;
     use LocalizesCountryName;
     use SummarizesAdditionalOptions;
+    use SummarizesClaims;
 
     /**
      * 리소스를 배열로 변환
@@ -46,6 +48,8 @@ class UserOrderListResource extends BaseApiResource
             'status' => $this->order_status?->value,
             'status_label' => $this->order_status?->label(),
             'status_variant' => $this->order_status?->variant(),
+            // 아이콘 의미 토큰(status-*) — 목록 행 상태 뱃지가 아이콘을 함께 그린다.
+            'status_icon' => $this->order_status?->icon(),
             // 부분취소 파생 플래그 — 일부 옵션만 취소된 주문(별도 order_status 아님). 보조 뱃지 표시용.
             'is_partially_cancelled' => $this->resolveIsPartiallyCancelled(),
 
@@ -71,7 +75,7 @@ class UserOrderListResource extends BaseApiResource
             'total_points_used_amount' => $this->roundToOrderCurrency($this->total_points_used_amount, $orderCurrency),
             'total_points_used_amount_formatted' => $this->formatOrderCurrency($this->total_points_used_amount, $orderCurrency),
             'total_earned_points_amount' => $this->roundToOrderCurrency($this->total_earned_points_amount, $orderCurrency),
-            'total_earned_points_amount_formatted' => $this->formatOrderCurrency($this->total_earned_points_amount, $orderCurrency),
+            'total_earned_points_amount_formatted' => $this->formatEarnedPoints($this->total_earned_points_amount),
 
             // 주문 옵션 (상품 정보)
             //
@@ -80,6 +84,11 @@ class UserOrderListResource extends BaseApiResource
             // 서버가 모두에게 전량을 안기는 쪽이 아니다.
             'items' => $this->resolveItems($orderCurrency),
             'item_count' => $this->resolveItemCount(),
+
+            // 클레임 요약 (D22) — 관리자 목록과 같은 형태다. 주문 목록 조회가 관계·집계를
+            // 항상 싣게 된 뒤로 이 값은 이미 손에 있었는데 직렬화만 하지 않아, 구매자는 자기
+            // 주문에 접수된 교환·반품·환불·취소가 어디까지 갔는지 목록에서 볼 수 없었다.
+            'claim_summary' => $this->resolveClaimSummary(),
 
             // 권한 메타
             'abilities' => [

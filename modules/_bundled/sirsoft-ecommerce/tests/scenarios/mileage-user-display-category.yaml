@@ -1,0 +1,27 @@
+feature: 회원 마일리지 내역의 표시 분류 (적립/사용/소멸/조정)
+
+description: |
+  회원 마이페이지 마일리지 내역(`/mypage/mileage`)의 4분류 필터가 어떤 거래 유형을 어디에
+  세우는지 고정한다.
+
+  S1-D2(#599 세션1 실측): 요약 카드의 '누적 적립' 은 `isEarning()` 으로 세는데 목록 필터는
+  `userDisplayCategory()` 가 관리자 지급·환불 복원·취소 복원을 '조정' 으로 접어, 한 화면이
+  같은 거래를 두 갈래로 분류했다. 관리자가 30,000 을 지급하면 요약은 「누적 적립 30,000」인데
+  [적립] 필터는 비고 [조정] 에만 행이 섰다.
+
+  계약: 잔액이 늘어난 거래는 전부 '적립'(isEarning() 과 같은 기준). '조정' 에는 사용도
+  소멸도 아닌 차감(관리자 차감·기적립 회수)만 남는다. 세부 사유는 description 컬럼이 말한다.
+
+axes:
+  case:
+    - balance_increase_listed_as_earn
+    - category_agrees_with_is_earning
+
+exclusions: []
+
+effects:
+  - balance_increasing_types_listed_under_earn
+  - display_category_agrees_with_is_earning
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/MileageEnumsTest.php

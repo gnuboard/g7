@@ -1,0 +1,31 @@
+feature: 확장 진입 파일(module.php·plugin.php)은 다른 경로 사본에서 이미 선언된 클래스를 다시 선언하지 않는다
+
+description: |
+  모듈·플러그인의 진입 클래스(`Modules\{Vendor}\{Name}\Module`·`Plugins\{Vendor}\{Name}\Plugin`)는 활성 디렉토리와
+  `_bundled`·`_pending` 에 같은 FQN 으로 여러 사본이 있다. 경로가 다르면 `require_once` 의 중복 제거가 통하지 않아,
+  한 사본이 선언된 뒤 다른 사본을 읽으면 "Cannot declare class" 치명 오류로 프로세스가 죽는다(Error 라 catch 불가).
+
+  이 매니페스트가 고정하는 계약:
+    - 미설치 확장 상세 조회(tryLoadModuleInstance·tryLoadPluginInstance)는 활성 사본이 이미 선언돼 있으면 번들 사본을
+      임시 클래스명으로 읽는다.
+    - 런타임 오토로드 재등록(reregisterRuntimeAutoload)은 classmap 의 진입 파일이 선언할 클래스가 이미 있으면 그 파일을
+      읽지 않는다. ZIP·GitHub 설치는 설치 전 중복 확인에서 번들 사본을 선언하므로, 설치 뒤 재등록이 활성 사본을 읽으면
+      설치는 끝났는데 응답이 500 이 됐다(#712 실측).
+    - 아직 선언되지 않은 진입 클래스는 재등록이 그대로 읽는다.
+
+axes:
+  ext_type: [module, plugin]
+  load_order: [active_then_bundled_preview, bundled_preview_then_runtime_autoload, runtime_autoload_fresh_entry]
+
+effects:
+  - bundled_preview_reads_bundled_copy_without_redeclare
+  - runtime_autoload_skips_entry_declared_from_other_copy
+  - runtime_autoload_still_loads_undeclared_entry
+
+test_files:
+  - tests/Unit/Extension/BundledInstanceRedeclarationGuardTest.php
+  - tests/Unit/Extension/RuntimeAutoloadEntryRedeclareTest.php
+
+notes:
+  - 큐 워커 부팅용 사본(CoreServiceProvider::registerExtensionAutoload)도 같은 판정(ExtensionManager::isEntryClassDeclared)을 쓴다. 부팅 시점에는 진입 클래스가 아직 없어 판정이 항상 false 라 별도 테스트를 두지 않는다.
+  - 실제 확장으로 짜면 테스트 부트스트랩이 같은 경로를 먼저 읽어 가드를 지워도 통과한다 — 두 사본을 갖는 임시 확장을 쓴다.

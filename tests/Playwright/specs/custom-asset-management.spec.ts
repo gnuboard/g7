@@ -144,6 +144,46 @@ test.describe('사용자 추가 에셋 화면 관리 @custom-assets', () => {
       .toBe(FIXTURE_COLOR);
   });
 
+  /**
+   * 코드 입력칸의 Tab 은 들여쓰기다 (코드 편집기 개편 계획 §4.7). 브라우저에서만 드러나는 것을 잰다 —
+   * 기본 동작대로면 Tab 이 포커스를 다음 요소로 옮기고 글자는 들어가지 않는다.
+   */
+  // @scenario manage_actor=with_permission, manage_action=save
+  // @effects custom_asset_editor_indents_with_tab_in_browser
+  test('커스텀 자산 창의 본문 입력칸에서 Tab 은 포커스를 옮기지 않고 두 칸을 들여쓴다', async ({
+    page,
+    request,
+    managerToken,
+  }) => {
+    const headers = { Authorization: `Bearer ${managerToken}`, Accept: 'application/json' };
+    const save = await request.put(`${base_(TEMPLATE)}/content`, {
+      headers,
+      data: { path: FIXTURE_PATH, content: 'a {}\nb {}' },
+    });
+    expect(save.status()).toBe(200);
+
+    await authenticatePage(page, managerToken);
+    await page.goto(`/admin/layout-editor/${TEMPLATE}`);
+    await page.getByTestId('g7le-toolbar-custom-assets').click({ timeout: 30_000 });
+
+    const row = page.getByTestId(`g7le-custom-asset-row-${FIXTURE_PATH}`);
+    await row.click({ timeout: 30_000 });
+
+    const textarea = page.getByTestId('g7le-custom-assets-content');
+    await expect(textarea).toHaveValue('a {}\nb {}', { timeout: 30_000 });
+
+    await textarea.focus();
+    await textarea.evaluate((el) => (el as HTMLTextAreaElement).setSelectionRange(5, 5));
+    await page.keyboard.press('Tab');
+
+    await expect(textarea, 'Tab 이 포커스를 옮기면 코드 입력칸으로 쓸 수 없다').toBeFocused();
+    await expect(textarea).toHaveValue('a {}\n  b {}');
+
+    await page.keyboard.press('Shift+Tab');
+    await expect(textarea).toHaveValue('a {}\nb {}');
+    await expect(textarea).toBeFocused();
+  });
+
   // @scenario manage_actor=with_permission, manage_action=delete
   // @effects custom_assets_disabled_by_request_parameter
   test('?custom=off 로 열면 그 자산이 페이지에 도달하지 않는다', async ({

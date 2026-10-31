@@ -1,0 +1,18 @@
+feature: multi_currency_empty_map
+
+description: |
+  저장된 다중 통화 금액(`mc_*`)의 응답 모양 — 비었을 때 `[]` 가 아니라 `{}` 로 낸다 (코어 #758 Q5, 이커머스 1.3.1).
+
+  `mc_*` 는 통화 코드를 이름표로 값을 꺼내는 맵이다. PHP 배열은 비면 `json_encode` 가 `[]` 를 내므로 저장값이
+  없는 신청서·주문의 `mc_*` 가 `[]` 로 나갔다. API 문서(claims.md)는 `{}` 를 약속한다. 값이 있으면 종전처럼
+  통화 코드별 `{amount, formatted}` 맵이다. 번들 화면에서 `mc_*` 에 `.length`·`Array.isArray` 를 쓰는 곳은 없다.
+
+axes:
+  stored: [null, empty, non_numeric, filled]
+
+effects:
+  - stored_multi_currency_empty_is_object
+  - stored_multi_currency_filled_keeps_shape
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/MultiCurrencyEmptyMapTest.php

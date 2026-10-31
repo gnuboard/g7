@@ -1,0 +1,120 @@
+feature: claim_item_tracking
+
+description: |
+  클레임 상품 행 송장 (#599 후속 §3-1·§3-2 R1~R12·§3-6~§3-8·§3-10 · D4·D10·D12·D13)
+
+  송장은 신청서 헤더가 아니라 **상품 행**에 붙는다 — 주문이 주문 상품 행마다 송장을 두는 것과 같은
+  행 쪼개기 방식이다. 새 「상자」 테이블은 없다. 한 상자에 여러 상품이면 같은 운송장을 여러 행에 적고,
+  같은 상품을 나눠 보내면 수량을 지정해 행을 쪼갠 뒤 쪼갠 행에 적는다.
+
+  조용히 갈리는 지점은 넷이다.
+
+  ① **다른 행의 송장을 빌려 쓰지 않는다**(R6·S1). 예전 헤더 한 칸 구조는 송장 없이 두 번째 상품을
+     회수중으로 옮기면 첫 상자 번호를 몰래 물려받았다. 이동 전이는 대상 행 전부가 자기 송장을 가져야 한다.
+
+  ② **송장 수정은 그 행만 바꾼다**(R3·D10). 같은 운송장을 가진 다른 행은 그대로다 — 주문과 같다.
+
+  ③ **수량 지정 = 행 쪼개기**(R4). 지정 수량 행에만 쓰고 잔여 행은 원래 값을 잇는다. 금액 합은 보존된다.
+
+  ④ **한 회수 송장은 한 회수지로 간다**(R8·S4). 회수지가 다른 행을 한 송장으로 묶지 않는다.
+
+  운송장 단위 [도착 처리](R9)는 같은 방향·같은 운송장의 행 전부를 옮긴다 — 선교환 회수 행은 상태를 바꾸지
+  않고 도착 시각만 찍는다. 후속 주문옵션 배송 행은 그 행의 재발송 송장을 싣는다(R11·S9). 택배사 사용 집계는
+  행 송장을 센다(R12). 알림은 발행 시점의 운송장 줄을 스냅샷으로 싣고(S10), 「송장만 저장」 은 송장 등록 알림
+  1통을 내되 같은 요청에서 상태 알림이 나가면 억제한다(§3-10). 부분 처리 알림은 심사 결정에만 나간다(S11).
+
+# axis 의미:
+#   claim_type    — 송장이 있는 두 유형. 환불·취소에는 회수·발송이 없다.
+#   exchange_mode — 교환 진행 방식. 선교환은 쓸 수 있는 상태(R5)와 도착 처리(R9)가 다르다.
+#   direction     — 송장 방향. 반품의 재발송은 거절 계약(R1) 자체가 칸이다.
+axes:
+  claim_type: [exchange, return]
+  exchange_mode: [standard, advance]
+  direction: [collection, redelivery]
+
+exclusions:
+  - { claim_type: return, exchange_mode: advance, reason: "선교환은 교환 전용 진행 방식이다 — 반품에는 진행 방식 축이 없다" }
+
+effects:
+  # R1~R8 — 상품 행 송장 쓰기 규칙 (RecordsClaimTracking)
+  - tracking_direction_is_limited_by_claim_type
+  - tracking_requires_carrier_and_number_together
+  - tracking_write_touches_only_the_chosen_rows
+  - tracking_quantity_splits_the_row_and_the_remainder_keeps_its_value
+  - tracking_write_is_limited_by_row_status
+  - transition_requires_each_rows_own_tracking
+  - tracking_only_save_keeps_status_and_clears_on_empty
+  - tracking_rejects_mixed_return_addresses
+  # R9 — 운송장 단위 도착
+  - tracking_deliver_moves_every_row_of_the_waybill
+  - tracking_deliver_advance_collection_only_stamps_arrival
+  - tracking_deliver_advance_redelivery_recalculates_the_due_date
+  # R11 · R12
+  - successor_shipping_uses_its_rows_redelivery_tracking
+  - successor_shipping_carries_no_shipping_fee   # 재발송 배송 행은 금액을 복제하지 않는다 — 배송비는 원 행에 (S1-D11)
+  - carrier_usage_counts_row_level_tracking
+  # §3-8 API · 상세 봉투
+  - tracking_api_saves_rows_and_reports_the_split
+  - tracking_api_rejects_domain_violations_with_422
+  - tracking_api_validates_the_request_shape
+  - tracking_api_guards_permission_and_foreign_rows
+  - tracking_deliver_api_moves_the_waybill_rows
+  - tracking_deliver_api_validates_and_guards
+  - exchange_mode_api_switches_and_rejects_when_disabled
+  - exchange_mode_abilities_due_days_follow_the_service_bounds
+  - exchange_mode_api_validates_and_guards
+  - detail_envelope_groups_rows_by_waybill
+  - detail_eager_loads_row_carriers
+  - header_tracking_apis_are_removed
+  # §3-1 스키마 잠금 · 백필 마이그레이션
+  - schema_puts_tracking_on_option_rows
+  - schema_has_no_header_tracking_columns
+  - schema_has_item_level_and_mode_columns
+  - schema_has_no_shipment_box_table
+  - backfill_copies_header_tracking_to_open_rows
+  - backfill_copies_header_tracking_to_completed_rows
+  - backfill_is_idempotent_and_keeps_existing_row_values
+  - backfill_rerun_on_applied_schema_is_a_no_op
+  # §3-10 알림 (S10 · S11)
+  - tracking_lines_list_every_waybill_and_prefer_the_snapshot
+  - tracking_registered_notification_fires_once_per_request
+  - tracking_lines_carry_product_names  # 알림 운송장 줄에 상품명이 실린다 (2026-10-07 실측 — 「· S1C1RTNA02 ·  × 2」)
+  - tracking_registered_notification_is_suppressed_by_the_status_notification
+  - partial_processing_notification_is_limited_to_review_decisions
+  - advance_redelivering_notification_carries_the_due_notice
+  # 관리자 화면 실측 (Playwright)
+  - claim_item_tracking_only_opens_inputs_then_quantity_modal
+  - claim_item_tracking_split_writes_only_the_chosen_quantity
+  - claim_item_tracking_group_shows_on_shipping_tab
+  - claim_item_tracking_incomplete_pair_is_blocked_before_request
+  - claim_item_tracking_waybill_deliver_moves_only_that_group
+  - claim_item_tracking_buyer_screens_show_each_rows_waybill
+  # 관리자 화면 구조 (Vitest — adminClaimItemTracking)
+  - claim_item_tracking_only_button_is_wired_to_the_rows
+  - claim_item_tracking_row_opens_for_logistics_status_or_tracking_mode
+  - claim_item_tracking_direction_is_exchange_tracking_mode_only
+  - claim_items_table_tracking_column_reads_row_fields_per_direction
+  - claim_items_table_marks_advance_collection_state_and_unreturned
+  - claim_shipping_tab_renders_waybill_groups_per_direction
+  - claim_shipping_deliver_button_follows_can_deliver
+  - claim_shipping_return_renders_collection_only
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimItemTrackingTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimItemTrackingControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Migrations/ClaimItemTrackingSchemaTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Migrations/MoveClaimTrackingToOptionRowsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/ClaimNotificationDataListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notifications/ClaimStatusNotificationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-claim-item-tracking.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimItemTracking.test.ts
+
+validation:
+  audit_rule: test-scenario-coverage
+
+notes: |
+  백필 마이그레이션(`2026_09_25_000003`)의 `down()` 과 헤더 송장 칸이 남은 스키마에서의 `up()` 은 ALTER TABLE 을
+  내므로(MySQL 암묵 커밋 — 테스트 트랜잭션과 공유 테스트 DB 스키마를 깨뜨린다) PHPUnit 에서 돌리지 않는다.
+  백필 규칙은 마이그레이션의 데이터 이동 함수(`copyDirection`·`copyReturnAddress`)를 직접 불러 재고, 재실행
+  멱등은 적용된 스키마에서 `up()` 이 DDL·쓰기 없이 끝나는 것으로 잰다. 반품 헤더 `refund_id` → 완료 행 복사는
+  헤더 칸이 있어야만 도는 분기라 같은 이유로 PHPUnit 밖(설치본 업그레이드 실측)의 몫이다.

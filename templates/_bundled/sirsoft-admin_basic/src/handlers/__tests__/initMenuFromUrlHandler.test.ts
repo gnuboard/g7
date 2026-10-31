@@ -88,7 +88,7 @@ describe('initMenuFromUrlHandler', () => {
         set: stateSet,
         getDataSource: (id: string) =>
           id === 'menus'
-            ? { success: true, message: 'ok', data: { data: [PARENT_MENU], abilities: {} } }
+            ? { success: true, message: 'ok', data: { data: [PARENT_MENU], abilities: { can_update: true } } }
             : undefined,
       },
       api: { get: apiGet },
@@ -100,6 +100,8 @@ describe('initMenuFromUrlHandler', () => {
     vi.restoreAllMocks();
   });
 
+  // @scenario resource=menu,endpoint=detail,observation=consumer_screen
+  // @effects menu_edit_form_seeds_roles_from_detail
   it('menu 파라미터가 없으면 아무 상태도 건드리지 않는다', async () => {
     setUrl('');
 
@@ -109,6 +111,8 @@ describe('initMenuFromUrlHandler', () => {
     expect(apiGet).not.toHaveBeenCalled();
   });
 
+  // @scenario resource=menu,endpoint=detail,observation=consumer_screen
+  // @effects menu_edit_form_seeds_roles_from_detail
   it('하위 메뉴 선택 시 단건을 조회해 selectedMenu 를 보강한다', async () => {
     setUrl('?menu=child-menu&mode=view');
 
@@ -123,6 +127,8 @@ describe('initMenuFromUrlHandler', () => {
     expect(selection.panelMode).toBe('view');
   });
 
+  // @scenario resource=menu,endpoint=detail,observation=consumer_screen
+  // @effects menu_edit_form_seeds_roles_from_detail
   it('edit 모드에서 formData.roles 가 단건 조회의 역할 ID 로 채워진다 (회귀: 저장 시 역할 전체 해제)', async () => {
     setUrl('?menu=child-menu&mode=edit');
 
@@ -137,6 +143,8 @@ describe('initMenuFromUrlHandler', () => {
     expect(formCall.formData.slug).toBe('child-menu');
   });
 
+  // @scenario resource=menu,endpoint=detail,observation=consumer_screen
+  // @effects menu_edit_form_seeds_roles_from_detail
   it('단건 조회가 실패해도 목록 행으로 선택 상태는 유지한다', async () => {
     apiGet.mockRejectedValueOnce(new Error('network down'));
     setUrl('?menu=child-menu&mode=view');
@@ -148,6 +156,8 @@ describe('initMenuFromUrlHandler', () => {
     expect(selection.selectedMenuId).toBe(11);
   });
 
+  // @scenario resource=menu,endpoint=detail,observation=consumer_screen
+  // @effects menu_edit_form_seeds_roles_from_detail
   it('상위 메뉴도 동일하게 단건 조회로 보강한다', async () => {
     setUrl('?menu=parent-menu&mode=edit');
 
@@ -157,5 +167,21 @@ describe('initMenuFromUrlHandler', () => {
 
     const formCall = stateSet.mock.calls.map((call) => call[0]).find((arg) => 'formData' in arg);
     expect(formCall.formData.roles).toEqual([1]);
+  });
+  /**
+   * @scenario resource=menu,entry=url_mode_edit,permission=read_only
+   * @effects menu_url_edit_mode_requires_update_ability
+   */
+  it('수정 권한(can_update)이 없으면 ?mode=edit 로 들어와도 보기 패널로 열고 편집 폼을 채우지 않는다', async () => {
+    (window as any).G7Core.state.getDataSource = (id: string) =>
+      id === 'menus' ? { success: true, message: 'ok', data: { data: [PARENT_MENU], abilities: { can_update: false } } } : undefined;
+    setUrl('?menu=child-menu&mode=edit');
+
+    await initMenuFromUrlHandler({});
+
+    const selection = stateSet.mock.calls.map((call) => call[0]).find((arg) => 'selectedMenu' in arg);
+    expect(selection).toBeDefined();
+    expect(selection.panelMode).toBe('view');
+    expect(stateSet.mock.calls.map((call) => call[0]).find((arg) => 'formData' in arg)).toBeUndefined();
   });
 });

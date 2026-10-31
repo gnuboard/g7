@@ -1,0 +1,28 @@
+feature: 스케줄 실행 조건 해석 — enabled_condition (이슈 #17, 7.2.0 · 옛 커밋 결함 d)
+
+description: |
+  옛 구현은 실행 조건을 config() 로만 읽어 코어 설정(g7_core_settings)에 있는 사이트맵·GeoIP 토글을
+  못 보고 영구 비활성이었다. ScheduleConditionEvaluator(K2)가 source 별로 해석하고, 카탈로그 순회 검사용
+  isResolvable 은 실행 시점과 같은 원천(코어 defaults.json · 확장 defaults.json 또는 getConfigValues · config)을 본다.
+
+coverage_strategy: pairwise
+
+axes:
+  condition_source: [core_setting, module_setting, plugin_setting, config]
+  condition_operator: [truthy, not_empty, equals]
+  condition_state: [met, unmet, malformed]
+
+exclusions:
+  - { condition_source: module_setting, reason: "plugin_setting 과 같은 코드 경로(소유 확장 식별자 → 설정 서비스)다 — plugin 축이 대표한다. 확장 매니저 해석 차이는 isResolvable(getConfigValues) 테스트가 플러그인으로 고정" }
+
+effects:
+  - condition_operators_evaluate
+  - sitemap_and_geoip_conditions_follow_settings
+  - malformed_condition_is_unmet
+  - is_resolvable_checks_defaults
+  - extension_setting_resolvable_from_config_values
+
+# E2E axis 없음: 화면 표면 없음(미충족 배지 표시는 S5 화면 매니페스트).
+
+test_files:
+  - tests/Unit/Services/Schedule/ScheduleConditionEvaluatorTest.php

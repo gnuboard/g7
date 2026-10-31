@@ -1,0 +1,22 @@
+feature: 게시글 댓글 목록이 상한에서 끊긴 사실을 응답에 알린다
+
+description: |
+  한 게시글의 댓글은 결과 상한(pagination.result_cap)에서 끊긴다. 끊겼으면 상세 응답이 comments_truncated 와
+  하한 건수(comments_total, 정확하지 않음)를 실어 화면이 「댓글이 그만큼뿐」 으로 보이지 않게 한다. 상세 응답은
+  댓글 열람 권한(comments.read)이 있을 때만 댓글을 싣는다.
+
+axis_notes:
+  case: |
+    repository 는 저장소의 목록·건수, post_detail 은 게시글 상세 API 응답이다.
+
+axes:
+  case: [repository, post_detail]
+
+effects:
+  - comments_not_truncated_under_cap            # 상한 미만이면 전량·정확한 건수
+  - comment_count_reports_truncation_over_cap   # 상한을 넘으면 건수가 하한(AtLeast)으로 표시된다
+  - post_detail_discloses_comment_truncation    # 상세 응답이 절단 사실과 하한 건수를 싣는다
+  - post_detail_reports_no_truncation_under_cap # 상한 미만이면 절단 표시가 없다
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/CommentTruncationDisclosureTest.php

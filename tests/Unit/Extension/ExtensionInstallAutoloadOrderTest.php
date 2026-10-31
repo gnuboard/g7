@@ -4,6 +4,7 @@ namespace Tests\Unit\Extension;
 
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -18,7 +19,9 @@ use PHPUnit\Framework\TestCase;
 class ExtensionInstallAutoloadOrderTest extends TestCase
 {
     /**
-     * @return array<string, array{class-string, string, string, string, string}>
+     * 확장 종류별 설치 흐름의 호출 순서 표지를 돌려줍니다.
+     *
+     * @return array<string, array{class-string, string, string, string, string}> 설치 흐름
      */
     public static function installFlows(): array
     {
@@ -28,9 +31,24 @@ class ExtensionInstallAutoloadOrderTest extends TestCase
         ];
     }
 
+    // 이 DataProvider 가 함께 검증하는 플러그인 설치 흐름 (docblock 은 @scenario 를 1건만 인식하므로 라인 주석으로 병기).
+    // @scenario concern=autoload_order, extension_type=plugin
+
     /**
-     * @dataProvider installFlows
+     * 확장 설치는 파일 복사와 진입 파일 적재 사이에 오토로드 경로를 등록한다.
+     *
+     * @scenario concern=autoload_order, extension_type=module
+     *
+     * @effects autoload_paths_are_registered_between_copy_and_entry_file_load
+     *
+     * @param  string  $class  매니저 클래스
+     * @param  string  $method  설치 메서드 이름
+     * @param  string  $copyCall  파일 복사 호출
+     * @param  string  $registerCall  오토로드 등록 호출
+     * @param  string  $reloadCall  진입 파일 재적재 호출
+     * @return void 반환값 없음
      */
+    #[DataProvider('installFlows')]
     public function test_autoload_paths_are_registered_between_copy_and_entry_file_load(
         string $class,
         string $method,

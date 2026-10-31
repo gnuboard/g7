@@ -1,0 +1,27 @@
+feature: 레이아웃 편집기 — 확장이 팔레트에 등재한 자기 컴포넌트가 「요소 추가」 창에 나온다
+
+description: |
+  Hello 모듈은 gnuboard7-hello_module.MemoCard 를 자기 editor-spec 팔레트에 등재했지만 「요소 추가」 창 어디에도 나오지
+  않았다. 팔레트 목록의 원천이 편집 대상 템플릿 components.json 하나라 확장 이름이 매니페스트에 없었고, 놓을 자리(nesting)도
+  템플릿이 자기 이름으로만 써 루트와 컨테이너 필터가 다시 걸렀다. 셸이 등재한 확장의 components.json 을 받아 등록 이름으로
+  매니페스트에 더하고, 스펙 로더가 병합 뒤 확장 컴포넌트에 템플릿이 Div 를 받는 자리를 함께 준다.
+
+axes:
+  case: [collect, root_placement, block_container, other_container, template_declared, no_nesting, manifest_entry, template_override, fetch_kind, fetch_failure, loader_merge, palette_render, bundled_hello]
+
+effects:
+  - extension_palette_names_collected_per_extension
+  - extension_components_placed_where_template_accepts_block
+  - template_declared_extension_placement_kept
+  - extension_palette_components_listed_from_extension_manifest
+  - template_override_metadata_used
+  - bundled_hello_memocard_reaches_palette
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/extensionPaletteComponents.test.tsx
+
+notes: |
+  브라우저 실측: 관리자 기본 템플릿 편집기 */admin/memos 에서 「요소 추가」 → 「Hello 모듈」 묶음에 MemoCard(전체 88, 루트),
+  제목(H1)을 고른 뒤 「요소 추가」 → 머리 Div 안 목록(전체 95)에도 MemoCard, 누르면 H1 다음에 카드가 그려짐.
+  사용자 기본 템플릿 편집기 / 에서도 같은 묶음이 나오고 기본 판본 카드가 그려짐. 저장(PUT 200) 뒤 코드 편집기 마크업에
+  <gnuboard7-hello_module.memo-card data-type="composite" ...> 로 변환됨.

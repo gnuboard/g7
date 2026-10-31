@@ -57,6 +57,7 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
         'cache' => ['cache_clear'],
         'complete_flag' => ['complete_flag'],
         'config_cache' => ['config_cache'],
+        'route_cache' => ['route_cache'],
         'static_publish' => ['static_publish'],
     ];
 
@@ -95,6 +96,9 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
             if (preg_match('/^\s*#/', $line) === 1 || trim($line) === '') {
                 continue;
             }
+            // YAML 꼬리 주석(`- name   # 설명`)은 값이 아니다 — 지우지 않으면 그 줄에서 목록이
+            // 끝난 것으로 읽혀 뒤 항목이 통째로 빠진다(7.2.0 매니페스트가 이 표기를 쓴다).
+            $line = (string) preg_replace('/\s+#.*$/u', '', $line);
             if (preg_match('/^\s*-\s*(\S+)\s*$/', $line, $m) !== 1) {
                 break; // 목록 끝 (다음 최상위 키)
             }
@@ -128,6 +132,9 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
             if (preg_match('/^\s*#/', $line) === 1 || trim($line) === '') {
                 continue;
             }
+            // YAML 꼬리 주석(`- name   # 설명`)은 값이 아니다 — 지우지 않으면 그 줄에서 목록이
+            // 끝난 것으로 읽혀 뒤 항목이 통째로 빠진다(7.2.0 매니페스트가 이 표기를 쓴다).
+            $line = (string) preg_replace('/\s+#.*$/u', '', $line);
             if (preg_match('/^\s*-\s*(\S+)\s*$/', $line, $m) !== 1) {
                 break;
             }

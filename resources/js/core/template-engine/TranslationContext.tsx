@@ -59,9 +59,8 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({
   const t = useMemo(() => {
     return (key: string, params?: Record<string, string | number>): string => {
       if (params) {
-        // 파라미터를 TranslationEngine 형식으로 변환 (|key=value|key2=value2)
-        const paramsStr = '|' + Object.entries(params).map(([k, v]) => `${k}=${v}`).join('|');
-        return translationEngine.translate(key, translationContext, paramsStr);
+        // 인자 객체를 그대로 넘긴다 — `|key=value` 로 이어 붙이면 값의 `|`·`&`·`=` 에서 잘린다(engine-v1.80.1)
+        return translationEngine.translate(key, translationContext, params);
       }
       return translationEngine.translate(key, translationContext);
     };

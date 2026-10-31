@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware\Concerns;
 
+use App\Support\LocaleTag;
 use Illuminate\Http\Request;
 
 /**
@@ -23,17 +24,12 @@ trait DetectsRequestLocale
     {
         $supportedLocales = config('app.supported_locales', ['ko', 'en']);
 
+        // SetLocale 2단계와 같은 협상(정확일치 → 주 언어 → 같은 주 언어의 다른 지역, #148)
         $acceptLanguage = $request->header('Accept-Language');
         if ($acceptLanguage) {
-            $languages = explode(',', $acceptLanguage);
-            foreach ($languages as $language) {
-                $lang = trim(explode(';', $language)[0]);
-                if (strpos($lang, '-') !== false) {
-                    $lang = explode('-', $lang)[0];
-                }
-                if (in_array($lang, $supportedLocales)) {
-                    return $lang;
-                }
+            $locale = LocaleTag::negotiate($acceptLanguage, (array) $supportedLocales);
+            if ($locale !== null) {
+                return $locale;
             }
         }
 

@@ -1,0 +1,44 @@
+feature: 관리자 템플릿이 코어 공개 API 만으로 언어 전환·본인인증 요청·상태 구독을 하는 계약 (#639)
+
+description: |
+  관리자 템플릿 일부가 코어 비공개 내부에 직접 손대고 있었다. 언어 선택은 `window.__templateApp.changeLocale()`
+  로 화면 언어를 바꾸고 `localStorage` 의 로그인 토큰을 읽어 `fetch` 에 Bearer 를 붙였으며, 본인인증
+  launcher 도 challenge 시작 요청을 `fetch` 로 직접 보내며 토큰·화면 언어 헤더를 손으로 붙였다. 엔진이 내부
+  구조(토큰 저장 방식, 401 처리)를 바꾸면 조용히 깨지는 경로다.
+
+  - 언어 선택(LanguageSelector): 저장은 `G7Core.api.patch`, 화면 언어 전환은 `G7Core.locale.change`
+  - 본인인증 launcher: challenge 시작은 `G7Core.api.post` — 토큰·`Accept-Language` 는 코어가 붙인다
+  - 전역 상태 구독(AdminSidebar·launcher): `G7Core.state.subscribe` 가 돌려주는 해제 함수를 언마운트·종료 때
+    부른다. 리렌더마다 새로 구독하지 않고, 해제 함수를 돌려주지 않는 구 코어에서도 오류 없이 끝난다
+
+  로그아웃(UserProfile)과 토큰 첨부 출처는 `extension-token-origin-policy.yaml` 이 잰다.
+
+axes:
+  surface:
+    - language_selector_ui
+    - language_selector_save
+    - language_selector_switch
+    - identity_launcher_challenge
+    - identity_launcher_subscription
+    - admin_sidebar_subscription
+
+effects:
+  - language_selector_ui_contract        # 드롭다운·인라인·표시명·className 등 기존 화면 계약 유지
+  - language_save_via_core_api           # 언어 저장이 G7Core.api.patch 로 나가고 템플릿은 토큰을 읽거나 헤더를 붙이지 않는다
+  - language_save_failure_keeps_ui       # 저장이 실패해도 경고만 남기고 화면 언어는 바뀐다
+  - locale_switch_via_public_api         # 화면 언어 전환이 G7Core.locale.change 로 일어나고 window.__templateApp 을 읽지 않는다
+  - member_language_saved_on_reselect    # 현재 언어를 다시 골라도 G7Core.locale.change 로 넘겨 로그인 회원의 언어를 맞춘다(7.1.0 결정)
+  - identity_challenge_via_core_api      # challenge 시작이 G7Core.api.post 로 나가고 Accept-Language 는 코어가 붙인다
+  - identity_challenge_failure_reported  # 서버 거절 시 응답 message 로 실패 결과와 토스트를 낸다
+  - state_subscription_released          # 구독 해제 함수가 언마운트·종료 때 불려 구독자 수가 0 으로 돌아간다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/LanguageSelector.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/AdminSidebar.subscription.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/identityLauncher.test.ts
+
+validation:
+  note: |
+    정적 검사는 감사 룰 `extension-private-core-internals` 가 맡는다(`__templateApp`·로그인 토큰 직접 읽기·
+    fetch/pushState 덮어쓰기). 이 매니페스트는 바뀐 경로가 실제로 공개 API 를 부르는지와 구독 수명을 잰다.
+    launcher 테스트는 실제 코어 ApiClient 를 `G7Core.api` 로 세우고 전송 직전 요청을 어댑터에서 가로챈다.

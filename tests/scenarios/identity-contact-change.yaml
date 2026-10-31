@@ -1,0 +1,29 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   진입 경로 × 바뀐 항목 × 본인인증 상태 × 행위자 조합 중 성립하는 것만 각 테스트가 메서드 안에서 직접 돌린다
+#   (관리자는 정책 적용 대상이 아니라 본인인증 상태 축이 의미가 없고, 회원 수정 화면은 관리자만 쓴다). effects·test_files 는 계속 검사한다.
+
+feature: 연락처 변경 본인인증 (#736 D21)
+
+description: |
+  기본 켜진 정책 core.profile.contact_change(훅 core.user.before_update, 조건 changed_fields ∋ email·phone·mobile)가
+  실제로 발동하는지. 훅은 모델을 채우기 전에 발행되므로 리스너가 바뀐 항목을 "요청값 vs 저장된 값" 으로 계산한다
+  (종전에는 저장 전 모델의 getDirty() 를 읽어 늘 빈 목록 → 정책이 한 번도 발동하지 않았다).
+  같은 값·공백·빈 문자열은 바뀜이 아니고, 역할 같은 배열 값은 비교하지 않으며, 비밀번호만 바꾸면 연락처 정책은 걸리지 않는다.
+  관리자는 applies_to=self 라 본인·다른 회원 어느 쪽 수정이든 통과한다.
+
+axes:
+  entry_point: [update_profile, admin_update_user]
+  changed: [mobile, phone, email, nickname, same_values, password]
+  idv: [none, recent, retry_token]
+  actor: [member, admin]
+
+effects:
+  - contact_change_requires_identity_verification
+  - non_contact_changes_pass_without_verification
+  - contact_change_honours_grace_and_retry_token
+  - admins_skip_the_self_contact_policy
+
+test_files:
+  - tests/Feature/Identity/ContactChangeIdentityHttpTest.php
+  - tests/Unit/Listeners/Identity/ChangedFieldsExtractionTest.php
+  - tests/Playwright/specs/user/mypage-contact-change-idv.spec.ts

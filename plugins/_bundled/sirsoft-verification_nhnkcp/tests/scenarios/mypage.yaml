@@ -16,6 +16,7 @@ effects:
   - response_excludes_identity_identifiers
   - user_without_record_receives_null_data
   - guest_request_is_rejected
+  - response_message_is_translated
   # 카드 화면 — API 계약이 화면에 그대로 반영되는지 (레이아웃 실렌더)
   - card_renders_masked_fields
   - card_shows_provider_badge

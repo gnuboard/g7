@@ -14,7 +14,6 @@
  * (결함 3 중 100% 폭 리사이즈)은 dnd-kit 무관 포인터 핸들러라 단위 테스트(useElementSelection /
  * EditorCanvasOverlay)로 커버한다.
  *
- * @scenario lock_kind selected_node_state=extension_originated
  * 효과 요약(마커 아님 — 평문): extension_node_context_menu_blocked, extension_node_blackbox_selection_normalized, editor_canvas_single_window_scroll, fullscreen_layout_expanded_in_editor.
  */
 import type { Page } from '@playwright/test';

@@ -5,7 +5,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. VerificationProviderInterface 구현 + IdentityProviderManager 에 등록
+1. IdentityVerificationInterface 구현 + 필터 훅 core.identity.registered_providers 로 등록 (회원마다 쓸 수 있는지 다르면 UserScopedIdentityProviderInterface 도)
 2. verify() 성공 시 IdentityVerificationLog 에 status=Verified + verification_token + target_hash 기록 필수
 3. target_hash = SHA256(lower(이메일 또는 동등한 식별자)) — listener/middleware 가 이 키로 매칭
 4. 외부 SDK 토큰은 metadata/properties 에 저장하고 verification_token 은 우리가 생성 (절대 외부 토큰 그대로 사용 X)
@@ -28,12 +28,12 @@ provider 가 자기 저장소에만 토큰을 두고 `IdentityVerificationLog` �
 ```php
 namespace Plugins\Vendor\IdentitySms;
 
-use App\Contracts\Extension\VerificationProviderInterface;
+use App\Contracts\Extension\IdentityVerificationInterface;
 use App\Enums\IdentityVerificationStatus;
 use App\Models\IdentityVerificationLog;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 
-final class SmsIdentityProvider implements VerificationProviderInterface
+final class SmsIdentityProvider implements IdentityVerificationInterface
 {
     public const ID = 'g7:plugin.sms';
 
@@ -41,7 +41,10 @@ final class SmsIdentityProvider implements VerificationProviderInterface
         protected IdentityVerificationLogRepositoryInterface $logRepository,
     ) {}
 
-    public function startChallenge(mixed $target, array $context = []): VerificationChallenge
+    // getId()·getLabel()·getChannels()·getChannelLabels()·getRenderHint()·supportsPurpose()·isAvailable()·cancel()·
+    // getSettingsSchema()·withConfig() 도 구현한다 — 계약 전문은 app/Contracts/Extension/IdentityVerificationInterface.php
+
+    public function requestChallenge(User|array $target, array $context = []): VerificationChallenge
     {
         // ... 외부 SDK 호출 또는 코드 발급 ...
 
@@ -156,18 +159,51 @@ protected function generateVerificationToken(string $purpose, string $targetHash
 
 ## 5. provider 등록
 
-`IdentityProviderManager` 에 등록되어야 합니다 (모듈/플러그인 부트스트랩 시점):
+코어 레지스트리(`AppExtensionIdentityVerificationIdentityVerificationManager`)는 `all()` 을 부를 때마다 필터 훅
+`core.identity.registered_providers` 를 통과시킨다. 확장은 이 필터를 구독하는 리스너에서 `$providers[$id] = $provider` 로 더해 돌려준다
+(계약 미구현 값은 버려진다). 설정을 매 요청 읽으므로 설정을 바꾸면 다음 요청부터 반영된다.
 
 ```php
-// modules/_bundled/vendor-identity-sms/src/Module.php
-public function boot(): void
+// plugins/_bundled/vendor-identity_sms/src/Listeners/RegisterSmsProviderListener.php
+public static function getSubscribedHooks(): array
 {
-    parent::boot();
+    return [
+        'core.identity.registered_providers' => ['method' => 'register', 'priority' => 20, 'type' => 'filter', 'sync' => true],
+    ];
+}
 
-    app(\App\Services\IdentityProviderManager::class)
-        ->register(new SmsIdentityProvider(app(IdentityVerificationLogRepositoryInterface::class)));
+public function register(array $providers): array
+{
+    $provider = app()->makeWith(SmsIdentityProvider::class, ['config' => (array) app(PluginSettingsService::class)->get(self::IDENTIFIER)]);
+    $providers[$provider->getId()] = $provider;
+
+    return $providers;
 }
 ```
+
+번들 선례: `plugins/_bundled/sirsoft-verification_nhnkcp/src/Listeners/RegisterKcpProviderListener.php`.
+
+### 5.1 회원마다 쓸 수 있는지 다른 수단 (7.2.0)
+
+목적별 제공자를 고를 때(`IdentityVerificationManager::resolveForPurpose($purpose, $providerId, $user)`) 대상 회원을 알면, 고른 제공자가
+`UserScopedIdentityProviderInterface` 이고 `canChallengeUser($user)` 가 거짓일 때 **같은 목적을 지원하고 그 회원에게 쓸 수 있는 다음
+제공자**(등록 순서)로 넘어간다. 코어 메일 제공자는 받을 수 없는 대체 이메일(`.invalid`) 회원에게 거짓을 답한다 — 그래서 화면은
+challenge 요청에 `provider_id` 를 고정하지 않는다. 판정은 조회만 해야 한다(로그를 남기거나 challenge 를 만들지 않는다).
+
+넘어갈 다음 제공자는 `UserScopedIdentityProviderInterface` 를 구현하고 그 회원에게 참을 답하는 제공자뿐이다. 이 계약을 구현하지 않은
+제공자(휴대폰 본인확인처럼 누구의 신원이든 확인해 주는 제공자)는 등록 순서가 앞서도 폴백으로 고르지 않는다 — 그 회원에게 맞는 수단인지
+알 수 없고, 고르면 그 회원과 무관한 사람의 본인확인으로 재확인이 통과할 수 있기 때문이다. 그런 제공자는 운영자가 목적별 제공자·정책·기본
+제공자로 지정했을 때만 쓰인다. 회원의 연결 계정이나 등록한 인증 수단으로 확인하는 제공자라면 이 계약을 구현해 폴백 후보가 된다.
+
+외부 화면을 거치는 수단은 `getRenderHint()` 가 `external_redirect` 를 돌려주고 challenge 응답의 `redirect_url` 로 보낸다.
+
+화면 안내가 「이 회원의 재확인이 어느 수단으로 가는가」를 실제 시작과 같은 판정으로 알아야 하면
+`IdentityVerificationManager::resolveUsableForUser($purpose, $user)` 를 쓴다 — 위와 같은 순서로 고르되, 고른 수단이 그 회원에게 쓸 수
+없으면 null 이다. 코어 마이페이지 응답의 `reauth_provider`(비밀번호가 없고 메일을 받을 수 없는 회원만)가 이 값이며, 확장도 자기 안내
+조건(예: 「연결한 소셜 계정으로 다시 로그인」)을 이 판정과 맞춘다 — 다른 수단이 앞서는 회원에게 자기 안내를 보이면 실제 수단과 어긋난다.
+
+외부 화면을 거치는 수단은 확인 뒤 요청 맥락의 `return_path`(같은 출처 경로만, 코어가 정규화)로 돌려보낸다. 정보 수정 화면과 템플릿의
+본인인증 launcher(428 경로)는 지금 화면 경로를 싣는다.
 
 ## 6. provider 추가 후 검증 매트릭스 (MANDATORY)
 
@@ -195,7 +231,7 @@ public static function providerMatrix(): array
 
 각 provider 는 다음 케이스를 담은 자체 테스트를 작성:
 
-- `startChallenge` 가 `IdentityVerificationLog` 에 올바른 target_hash + provider_id 로 row 생성
+- `requestChallenge` 가 `IdentityVerificationLog` 에 올바른 target_hash + provider_id 로 row 생성
 - `verify` 성공 시 status=Verified + verification_token != null + verified_at != null
 - `verify` 실패 시 status 변화 없음 또는 attempts 증가 + token 미발급
 - challenge expires_at 만료 처리
@@ -211,10 +247,17 @@ public static function providerMatrix(): array
 | `verify()` 성공 시 `consumed_at = now()` 자동 set | 다운스트림 listener (가입/비번리셋 등) 가 사용 시점에 set |
 | provider 가 listener 책임을 가져가서 직접 사용자 생성 | provider 는 verify 만 담당. 사용자 생성/세션은 도메인 service |
 | `purpose` 를 정책 purpose 와 다르게 임의 부여 | 정책-provider purpose 일치 (`signup`, `password_reset`, `sensitive_action`, `self_update`, `login`) |
+| 콜백·브리지·제공자 전송 주소를 `url()`·`route()`·요청 Host 로 생성 | `SiteUrl::absolute()` — 사이트 주소 기준 |
+
+### 콜백·브리지·제공자 전송 주소는 `SiteUrl`
+
+제공자에게 넘기는 복귀·콜백 주소, 결과를 창 밖으로 전달하는 브리지 화면의 대상 출처(`postMessage` targetOrigin), 메일 링크는 모두 `App\Support\SiteUrl` 로 사이트 주소 기준으로 만든다. `url()`·`route()` 는 요청 Host 를 따르므로 Host 를 바꿔 보낸 요청에서 시작한 인증은 결과와 `verification_token` 을 그 호스트로 넘기게 된다. 프런트에 내려주는 출처(`siteOrigin`)도 서버가 `SiteUrl::origin()` 으로 정해 주고, 클라이언트는 받은 메시지의 `origin` 을 그 값과 비교한다. 상세: [routing.md 「절대 URL 은 사이트 주소로 만든다」](routing.md#절대-url-은-사이트-주소로-만든다).
 
 ## 8. 관련 코드 진입점
 
-- **VerificationProviderInterface**: `app/Contracts/Extension/VerificationProviderInterface.php`
+- **IdentityVerificationInterface**: `app/Contracts/Extension/IdentityVerificationInterface.php`
+- **UserScopedIdentityProviderInterface**: `app/Contracts/Extension/UserScopedIdentityProviderInterface.php`
+- **IdentityVerificationManager (레지스트리)**: `app/Extension/IdentityVerification/IdentityVerificationManager.php`
 - **MailIdentityProvider (reference 구현)**: `app/Extension/IdentityVerification/Providers/MailIdentityProvider.php`
 - **IdentityVerificationLog**: `app/Models/IdentityVerificationLog.php`
 - **IdentityVerificationLogRepository**: `app/Repositories/IdentityVerificationLogRepository.php`
@@ -226,6 +269,8 @@ public static function providerMatrix(): array
 ## 9. 관련 문서
 
 - [identity-policies.md](identity-policies.md) — 정책 시스템 전체 흐름
-- [identity-messages.md](identity-messages.md) — 메시지 템플릿 (provider 발송 콘텐츠)
+- [routing.md 「절대 URL 은 사이트 주소로 만든다」](routing.md#절대-url-은-사이트-주소로-만든다) — 콜백·링크 주소 생성 규칙
+- [개발자 화면 가이드 9-2](../custom-development.md#9-2-본인인증) — 엔진 없는 화면·외부 화면의 본인인증 순서, 범용 콜백 `return` 출처(사이트 주소 또는 「사용자 화면 URL」)
+- [identity-messages.md](identity-messages.md) — 본인인증 알림 (메일 provider 발송 문구 — 알림 정의 category=identity)
 - [../frontend/identity-verification-ui.md](../frontend/identity-verification-ui.md) — 프론트엔드 launcher/모달 UI
 - [../extension/module-identity-settings.md](../extension/module-identity-settings.md) — 모듈/플러그인 IDV 정책 등록

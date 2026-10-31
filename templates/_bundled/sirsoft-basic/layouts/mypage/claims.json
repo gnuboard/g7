@@ -1,0 +1,139 @@
+{
+    "comment": "클레임 신청내역 목록 셸 (§6-1). 유형 서브탭은 ?type= 으로 왕복하고 서버는 유형마다 다른 테이블을 페이지네이션한다 — 그래서 목록은 유형 단위이며 한 응답에 네 유형이 섞이지 않는다.\n공유 partial(_list.json / _modal_withdraw.json)은 회원/비회원을 스스로 판단하지 않는다. 셸이 값을 세우고 partial 은 그것만 읽는다 — isGuest / claimWithdrawApiBase / withdrawRefreshDataSourceId + 화면 주소 3종(claimListPath / claimDetailPathBase / claimEmptyCtaPath). 철회 라우트는 회원과 비회원의 모양이 다르다(회원 /user/claims 주문 스코프 없음, 비회원 /guest/orders/{orderNumber}/claims 있음)이므로 앞부분을 통째로 셸이 준다. 주소도 같은 이유다 — 비회원에게는 이 목록을 소유한 화면이 주문 상세이고 신청서 상세 주소도 다르다(S14 shop/guest_order_show · shop/guest_claim_show). 이 화면은 claimDetailLinkMode 를 세우지 않는다 — 신청번호는 글자로 두고 푸터 [상세보기]가 같은 창에서 상세로 간다(주문상세 셸만 번호를 링크로 만든다).\ninitLocal 의 claimListPath / claimDetailPathBase / claimEmptyCtaPath 는 이 목록을 소유한 화면 · 상세·수정 주소의 앞부분 · 빈 목록에서 나갈 곳이다. 공유 partial(_list.json)이 주소를 리터럴로 들지 않게 셸이 준다.",
+    "version": "1.0.0",
+    "layout_name": "mypage/claims",
+    "extends": "_user_base",
+    "meta": {
+        "title": "$t:user.mypage.claims_title",
+        "description": "$t:user.mypage.claims_description"
+    },
+    "data_sources": [
+        {
+            "id": "claims",
+            "label_key": "$t:editor.data_source.claims",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/claims",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "blur_until_loaded": true,
+            "cache": false,
+            "refetchOnMount": true,
+            "params": {
+                "type": "{{_local.claimsType ?? query.type ?? 'exchange'}}",
+                "page": "{{_local.claimsPage ?? query.page ?? 1}}"
+            },
+            "comment": "유형 기본값은 교환이다 — 서버 게이트가 type 을 요구하므로 주소에 없을 때 화면이 정한다. 철회한 신청서도 목록에 남으므로(행이 사라지지 않는다) 페이지네이션은 필수다. 주석은 params 밖에 둔다 — params 의 키는 전부 쿼리스트링으로 전송된다."
+        }
+    ],
+    "initLocal": {
+        "isGuest": false,
+        "claimWithdrawApiBase": "/api/modules/sirsoft-ecommerce/user/claims",
+        "withdrawRefreshDataSourceId": "claims",
+        "claimListPath": "/mypage/claims",
+        "claimDetailPathBase": "/mypage/claims",
+        "claimEmptyCtaPath": "/mypage/orders"
+    },
+    "computed": {
+        "currentTab": "claims"
+    },
+    "permissions": [],
+    "transition_overlay": {
+        "enabled": true,
+        "style": "spinner",
+        "target": "mypage_tab_content",
+        "fallback_target": "main_content_area",
+        "spinner": {
+            "component": "PageLoading"
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "claimsType": "{{query.type ?? 'exchange'}}",
+                "claimsPage": "{{query.page ?? 1}}"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "children": [
+                            {
+                                "comment": "페이지 제목",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:mypage.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "탭 네비게이션",
+                                "partial": "partials/mypage/_tab_navigation.json"
+                            },
+                            {
+                                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
+                                "id": "mypage_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "comment": "신청내역",
+                                        "partial": "partials/mypage/claims/_list.json"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "철회 확인 — 목록과 상세가 같은 파일을 쓴다. 화면마다 확인 절차를 복제하면 한 곳만 고쳤을 때 나머지가 옛 규칙으로 남는다.",
+            "partial": "partials/mypage/claims/_modal_withdraw.json"
+        }
+    ]
+}

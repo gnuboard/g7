@@ -1,0 +1,33 @@
+feature: 인증 앱(TOTP) 관리자 화면 구조 — 등록 단계·운영 설정 카드·회원 상세 카드
+
+description: |
+  화면들의 불변조건은 「평문은 한 번만 보인다」와 「확정 전에는 로그인 수단이 되지 않는다」다. 렌더 조건이 어긋나면
+  두 가지가 조용히 깨지므로 컴파일된 레이아웃 계약(JSON)에서 직접 확인한다.
+
+  - 등록 화면: 안내·등록·확정·백업 코드 단계가 서로 배타로 뜨고, 백업 코드는 발급 직후에만 1회 노출 경고·복사
+    단추와 함께 보인다. QR 은 브라우저 안에서 그리고 수동 입력 키를 함께 둔다. 해제·재발급은 코드 입력을 요구한다.
+  - 운영 설정 카드: 저장된 플러그인 설정을 읽고(GET) 같은 API 로 저장(PUT)한다. 폴백 토글은 접근 가능한 이름을
+    갖고, 끄면 미등록자 로그인이 막힌다는 경고가 붙는다.
+  - 회원 상세 카드: 회원 상세 레이아웃의 탭 슬롯에 탭·본문을 같은 조건으로 붙이고, 되돌릴 수 없는 해제에 확인
+    대화상자를 단 뒤 관리자 해제 API 를 DELETE 로 부른다.
+  - 공통: 다국어 키는 플러그인 네임스페이스만 쓰고, 색 단추의 다크모드 짝은 흰 글자 대비 4.5:1 을 넘는 단계다.
+
+  등록 여부 표시(enrollment 축)는 admin-member-card-enrollment-status.yaml 이 맡는다.
+
+axes:
+  screen: [enrollment_page, operator_settings_card, member_detail_card]
+
+effects:
+  - totp_enrollment_steps_render_exclusively
+  - totp_backup_codes_shown_once_with_warning_and_copy
+  - totp_qr_rendered_locally_with_manual_key
+  - totp_disable_and_regenerate_require_code
+  - totp_layout_keys_use_plugin_namespace
+  - totp_dark_mode_button_variants_meet_contrast
+  - totp_operator_settings_read_and_saved_via_plugin_settings_api
+  - totp_operator_settings_controls_named_and_warned
+  - totp_member_card_attaches_to_detail_tab_slot
+  - totp_member_card_reset_confirmed_and_calls_delete_api
+
+test_files:
+  - plugins/_bundled/sirsoft-totp/resources/js/__tests__/layouts/totp-layouts.test.ts

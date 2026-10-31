@@ -3,8 +3,8 @@
  * @description 템플릿 업데이트 UI 레이아웃 테스트
  *
  * 테스트 대상:
- * - admin_template_list.json: updating 배지, 업데이트 확인 버튼, 행별 업데이트 버튼
- * - partials/admin_template_list/_modal_update.json: 업데이트 확인 모달
+ * - admin_template_list.g7.html: updating 배지, 업데이트 확인 버튼, 행별 업데이트 버튼
+ * - partials/admin_template_list/_modal_update.g7.html: 업데이트 확인 모달
  *
  * 검증 항목:
  * - updating 상태 배지 렌더링
@@ -185,7 +185,9 @@ const translations = {
         layout_strategy_overwrite: '모든 레이아웃 덮어쓰기',
         layout_strategy_overwrite_desc: '새 버전의 레이아웃으로 모두 교체합니다.',
         layout_strategy_keep: '수정된 레이아웃 유지',
-        layout_strategy_keep_desc: '수정하지 않은 레이아웃만 업데이트합니다.',
+        layout_strategy_keep_desc: '고친 부분은 유지하고, 손대지 않은 부분은 새 버전으로 바꿉니다. 같은 곳을 양쪽이 고쳤으면 고친 내용을 남깁니다.',
+        modified_layouts_list_title: '수정한 레이아웃 ({{count}}개)',
+        modified_layouts_keep_notice: '위 레이아웃에서 고친 부분은 유지되고, 고치지 않은 부분에는 새 버전 변경이 들어갑니다. 결과는 업데이트 완료 알림과 활동 로그에서 확인할 수 있습니다.',
       },
     },
   },
@@ -254,6 +256,8 @@ describe('템플릿 업데이트 - 상태 배지', () => {
     if (testUtils) testUtils.cleanup();
   });
 
+  // @scenario kind=template, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('updating 상태일 때 보라색 배지가 표시된다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'updating', update_available: true }),
@@ -268,6 +272,8 @@ describe('템플릿 업데이트 - 상태 배지', () => {
     expect(badge.className).toContain('dark:bg-purple-900');
   });
 
+  // @scenario kind=template, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('update_available일 때 (updating 아닌) 황색 배지가 표시된다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'active', update_available: true }),
@@ -281,6 +287,8 @@ describe('템플릿 업데이트 - 상태 배지', () => {
     expect(badge.className).toContain('bg-amber-100');
   });
 
+  // @scenario kind=template, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('update_available=false일 때 업데이트 배지가 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'active', update_available: false }),
@@ -292,6 +300,8 @@ describe('템플릿 업데이트 - 상태 배지', () => {
     expect(screen.queryByText('업데이트 중')).toBeNull();
   });
 
+  // @scenario kind=template, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('uninstalled 상태에서는 update_available이어도 배지가 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'uninstalled', update_available: true }),
@@ -302,6 +312,8 @@ describe('템플릿 업데이트 - 상태 배지', () => {
     expect(screen.queryByText('업데이트 필요')).toBeNull();
   });
 
+  // @scenario kind=template, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('update_available이고 latest_version이 있으면 버전 정보가 표시된다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'active', update_available: true, latest_version: '2.0.0' }),
@@ -312,6 +324,8 @@ describe('템플릿 업데이트 - 상태 배지', () => {
     expect(screen.getByText('(v2.0.0 사용 가능)')).toBeTruthy();
   });
 
+  // @scenario kind=template, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('update_available이지만 latest_version이 null이면 버전 정보가 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'active', update_available: true, latest_version: null }),
@@ -322,6 +336,8 @@ describe('템플릿 업데이트 - 상태 배지', () => {
     expect(screen.queryByText(/사용 가능/)).toBeNull();
   });
 
+  // @scenario kind=template, area=status_badge
+  // @effects update_status_badge_matches_row_state
   it('update_available이 false이면 버전 정보가 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createBadgeLayout({ status: 'active', update_available: false, latest_version: '2.0.0' }),
@@ -396,6 +412,8 @@ describe('템플릿 업데이트 - 업데이트 확인 버튼', () => {
     if (testUtils) testUtils.cleanup();
   });
 
+  // @scenario kind=template, area=check_button
+  // @effects check_updates_button_calls_and_reloads
   it('업데이트 확인 버튼이 렌더링된다', async () => {
     testUtils = createLayoutTest(checkUpdatesButtonLayout, {
       translations,
@@ -407,6 +425,8 @@ describe('템플릿 업데이트 - 업데이트 확인 버튼', () => {
     expect(screen.getByText('업데이트 확인')).toBeTruthy();
   });
 
+  // @scenario kind=template, area=check_button
+  // @effects check_updates_button_calls_and_reloads
   it('로딩 중이 아닐 때 refresh 아이콘이 표시된다', async () => {
     testUtils = createLayoutTest(checkUpdatesButtonLayout, {
       translations,
@@ -419,6 +439,8 @@ describe('템플릿 업데이트 - 업데이트 확인 버튼', () => {
     expect(screen.queryByTestId('icon-spinner')).toBeNull();
   });
 
+  // @scenario kind=template, area=check_button
+  // @effects check_updates_button_calls_and_reloads
   it('isCheckingUpdates=true일 때 spinner 아이콘이 표시되고 버튼이 disabled된다', async () => {
     const loadingLayout = {
       ...checkUpdatesButtonLayout,
@@ -494,6 +516,8 @@ describe('템플릿 업데이트 - 행별 업데이트 버튼', () => {
     if (testUtils) testUtils.cleanup();
   });
 
+  // @scenario kind=template, area=row_button
+  // @effects row_update_button_shows_only_when_available
   it('update_available && active 상태에서 업데이트 버튼이 표시된다', async () => {
     testUtils = createLayoutTest(
       createRowButtonLayout({ status: 'active', update_available: true }),
@@ -506,6 +530,8 @@ describe('템플릿 업데이트 - 행별 업데이트 버튼', () => {
     expect(screen.getByTestId('icon-arrow-up-circle')).toBeTruthy();
   });
 
+  // @scenario kind=template, area=row_button
+  // @effects row_update_button_shows_only_when_available
   it('update_available=false일 때 업데이트 버튼이 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createRowButtonLayout({ status: 'active', update_available: false }),
@@ -516,6 +542,8 @@ describe('템플릿 업데이트 - 행별 업데이트 버튼', () => {
     expect(screen.queryByTestId('row-update-btn')).toBeNull();
   });
 
+  // @scenario kind=template, area=row_button
+  // @effects row_update_button_shows_only_when_available
   it('updating 상태에서는 업데이트 버튼이 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createRowButtonLayout({ status: 'updating', update_available: true }),
@@ -526,6 +554,8 @@ describe('템플릿 업데이트 - 행별 업데이트 버튼', () => {
     expect(screen.queryByTestId('row-update-btn')).toBeNull();
   });
 
+  // @scenario kind=template, area=row_button
+  // @effects row_update_button_shows_only_when_available
   it('uninstalled 상태에서는 업데이트 버튼이 표시되지 않는다', async () => {
     testUtils = createLayoutTest(
       createRowButtonLayout({ status: 'uninstalled', update_available: true }),
@@ -830,6 +860,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
   });
 
   describe('레이아웃 구조 검증', () => {
+    // @scenario kind=template, area=layout_structure
+    // @effects update_modal_layout_structure_is_declared
     it('레이아웃 정보가 올바르게 로드된다', () => {
       testUtils = createLayoutTest(updateModalLayout, {
         translations,
@@ -842,6 +874,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(info.version).toBe('1.0.0');
     });
 
+    // @scenario kind=template, area=layout_structure
+    // @effects update_modal_layout_structure_is_declared
     it('초기 전역 상태가 올바르게 설정된다', () => {
       testUtils = createLayoutTest(updateModalLayout, {
         translations,
@@ -864,6 +898,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(state._global.modifiedLayoutsCount).toBe(0);
     });
 
+    // @scenario kind=template, area=layout_structure
+    // @effects update_modal_layout_structure_is_declared
     it('모달 크기가 sm 으로 설정되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       expect(modal.props.size).toBe('sm');
@@ -871,6 +907,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
   });
 
   describe('모달 열기/닫기', () => {
+    // @scenario kind=template, area=modal_open_close
+    // @effects update_modal_opens_and_closes
     it('업데이트 모달을 열고 닫을 수 있다', async () => {
       testUtils = createLayoutTest(updateModalLayout, {
         translations,
@@ -889,11 +927,15 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
   });
 
   describe('모달 콘텐츠 구조 검증', () => {
+    // @scenario kind=template, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('모달 타이틀이 업데이트 확인으로 설정되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       expect(modal.props.title).toBe('$t:admin.templates.modals.update_title');
     });
 
+    // @scenario kind=template, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('모달에 업데이트 확인 메시지가 포함되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       const confirmP = modal.children[0].children[0];
@@ -901,6 +943,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(confirmP.text).toContain('_global.selectedTemplate.name');
     });
 
+    // @scenario kind=template, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('모달에 버전 정보가 포함되어 있다 (from → to)', () => {
       const modal = updateModalLayout.modals[0];
       const versionRow = modal.children[0].children[1].children[0];
@@ -912,6 +956,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(versionValue.text).toContain('_global.selectedTemplate.latest_version');
     });
 
+    // @scenario kind=template, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('모달에 update_source 표시가 포함되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       const vendorRow = modal.children[0].children[1].children[1];
@@ -921,6 +967,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(vendorValue.text).toContain('update_source_github');
     });
 
+    // @scenario kind=template, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('모달에 changelog 링크가 조건부로 포함되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       const changelogDiv = modal.children[0].children[2];
@@ -932,6 +980,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(linkA.props.href).toContain('_global.selectedTemplate.github_changelog_url');
     });
 
+    // @scenario kind=template, area=modal_content
+    // @effects update_modal_content_lists_versions
     it('changelog URL이 없으면 조건에 의해 렌더링되지 않는다', () => {
       const noChangelogState = { ...updateModalLayout.initGlobal.selectedTemplate, github_changelog_url: null };
       expect(noChangelogState.github_changelog_url).toBeNull();
@@ -943,12 +993,16 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
   });
 
   describe('레이아웃 전략 선택 UI', () => {
+    // @scenario kind=template, area=layout_strategy
+    // @effects layout_strategy_choice_is_offered
     it('레이아웃 전략 섹션이 모달에 포함되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       const strategySection = modal.children[0].children[3];
       expect(strategySection.children[0].text).toBe('$t:admin.templates.modals.layout_strategy_title');
     });
 
+    // @scenario kind=template, area=layout_strategy
+    // @effects layout_strategy_choice_is_offered
     it('수정된 레이아웃이 없을 때 녹색 메시지가 표시된다 (조건: !hasModifiedLayouts)', () => {
       const modal = updateModalLayout.modals[0];
       const strategySection = modal.children[0].children[3];
@@ -963,6 +1017,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(noModifiedDiv.props.className).toContain('bg-green-50');
     });
 
+    // @scenario kind=template, area=layout_strategy
+    // @effects layout_strategy_choice_is_offered
     it('수정된 레이아웃이 있을 때 경고 메시지가 표시된다 (조건: hasModifiedLayouts)', () => {
       const modal = updateModalLayout.modals[0];
       const strategySection = modal.children[0].children[3];
@@ -973,6 +1029,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(warningDiv.props.className).toContain('bg-amber-50');
     });
 
+    // @scenario kind=template, area=layout_strategy
+    // @effects layout_strategy_choice_is_offered
     it('overwrite 라디오 옵션이 올바르게 구성되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       const strategySection = modal.children[0].children[3];
@@ -989,6 +1047,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(overwriteText.children[1].text).toBe('$t:admin.templates.modals.layout_strategy_overwrite_desc');
     });
 
+    // @scenario kind=template, area=layout_strategy
+    // @effects layout_strategy_choice_is_offered
     it('keep 라디오 옵션이 올바르게 구성되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       const strategySection = modal.children[0].children[3];
@@ -1005,6 +1065,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(keepText.children[1].text).toBe('$t:admin.templates.modals.layout_strategy_keep_desc');
     });
 
+    // @scenario kind=template, area=layout_strategy
+    // @effects layout_strategy_choice_is_offered
     it('templateLayoutStrategy 상태를 변경할 수 있다', async () => {
       testUtils = createLayoutTest(updateModalLayout, {
         translations,
@@ -1026,6 +1088,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(state._global.templateLayoutStrategy).toBe('overwrite');
     });
 
+    // @scenario kind=template, area=layout_strategy
+    // @effects layout_strategy_choice_is_offered
     it('hasModifiedLayouts 상태에 따라 경고/정상 메시지가 전환된다', async () => {
       testUtils = createLayoutTest(updateModalLayout, {
         translations,
@@ -1047,6 +1111,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
   });
 
   describe('버튼 구조 및 상태 검증', () => {
+    // @scenario kind=template, area=button_state
+    // @effects update_modal_buttons_reflect_progress
     it('취소/확인 버튼이 모달에 정의되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       const buttonsDiv = modal.children[1];
@@ -1063,6 +1129,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(confirmBtn.props.disabled).toBe('{{_global.isTemplateUpdating}}');
     });
 
+    // @scenario kind=template, area=button_state
+    // @effects update_modal_buttons_reflect_progress
     it('확인 버튼에 스피너 조건부 렌더링이 설정되어 있다', () => {
       const modal = updateModalLayout.modals[0];
       const confirmBtn = modal.children[1].children[1];
@@ -1078,6 +1146,8 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(textSpan.text).toContain('$t:admin.templates.actions.update');
     });
 
+    // @scenario kind=template, area=button_state
+    // @effects update_modal_buttons_reflect_progress
     it('isTemplateUpdating 상태가 올바르게 변경될 수 있다', async () => {
       testUtils = createLayoutTest(updateModalLayout, {
         translations,
@@ -1106,5 +1176,159 @@ describe('템플릿 업데이트 - 업데이트 모달', () => {
       expect(state._global.hasModifiedLayouts).toBe(false);
       expect(state._global.modifiedLayoutsCount).toBe(0);
     });
+  });
+});
+
+// ==============================
+// 레이아웃 업데이트 전략 (실제 부분 레이아웃 렌더) — #727
+// ==============================
+
+describe('템플릿 업데이트 - 레이아웃 전략 선택 (실제 부분 레이아웃)', () => {
+  let testUtils: ReturnType<typeof createLayoutTest>;
+  let registry: ComponentRegistry;
+  let modalPartial: any;
+  let adminKo: any;
+  let adminEn: any;
+
+  const StrategyLabel: React.FC<{ className?: string; children?: React.ReactNode }> = ({ className, children }) => (
+    <label className={className}>{children}</label>
+  );
+  const StrategyInput: React.FC<{ type?: string; name?: string; value?: string; checked?: boolean; className?: string }> = ({ type, name, value, checked, className }) => (
+    <input type={type} name={name} value={value} checked={checked} className={className} readOnly />
+  );
+  // 레이아웃 테스트 유틸은 openModal 스택을 Modal 의 isOpen 에 잇지 않으므로, 이 describe 는 본문을 늘 그리는 Modal 로
+  // 실제 부분 레이아웃의 전략 영역을 렌더해 본다.
+  const StrategyModal: React.FC<{ id?: string; children?: React.ReactNode }> = ({ id, children }) => (
+    <div data-testid={`modal-${id}`} role="dialog">{children}</div>
+  );
+  const StrategyImg: React.FC<{ src?: string; alt?: string; className?: string }> = ({ src, alt, className }) => (
+    <img src={src} alt={alt} className={className} />
+  );
+
+  /**
+   * 부분 레이아웃 트리에서 조건에 맞는 노드를 모두 모은다.
+   */
+  function collect(node: any, match: (n: any) => boolean, found: any[] = []): any[] {
+    if (Array.isArray(node)) {
+      node.forEach((child) => collect(child, match, found));
+      return found;
+    }
+    if (node && typeof node === 'object') {
+      if (match(node)) found.push(node);
+      Object.values(node).forEach((value) => {
+        if (value && typeof value === 'object') collect(value, match, found);
+      });
+    }
+    return found;
+  }
+
+  /**
+   * 실제 업데이트 모달을 띄운 레이아웃을 만든다.
+   */
+  function buildLayout(strategy: 'overwrite' | 'keep', modified: Array<{ name: string; updated_at: string }>) {
+    return {
+      version: '1.0.0',
+      layout_name: 'template_update_strategy_test',
+      initGlobal: {
+        selectedTemplate: {
+          identifier: 'sirsoft-sample',
+          name: '샘플',
+          version: '1.0.0',
+          latest_version: '1.1.0',
+          update_source: 'bundled',
+        },
+        isTemplateUpdating: false,
+        templateLayoutStrategy: strategy,
+        hasModifiedTemplateLayouts: modified.length > 0,
+        modifiedTemplateLayoutsCount: modified.length,
+        modifiedTemplateLayouts: modified,
+      },
+      modals: [modalPartial],
+      components: [{ id: 'main-content', type: 'basic', name: 'Div', children: [] }],
+    };
+  }
+
+  beforeEach(async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const read = (relative: string) => JSON.parse(fs.readFileSync(path.resolve(__dirname, relative), 'utf-8'));
+    modalPartial = read('../../layouts/partials/admin_template_list/_modal_update.json');
+    adminKo = read('../../lang/partial/ko/admin.json');
+    adminEn = read('../../lang/partial/en/admin.json');
+
+    registry = setupTestRegistry();
+    Object.assign((registry as any).registry, {
+      Label: { component: StrategyLabel, metadata: { name: 'Label', type: 'basic' } },
+      Input: { component: StrategyInput, metadata: { name: 'Input', type: 'basic' } },
+      Img: { component: StrategyImg, metadata: { name: 'Img', type: 'basic' } },
+      Modal: { component: StrategyModal, metadata: { name: 'Modal', type: 'composite' } },
+    });
+  });
+
+  afterEach(() => {
+    if (testUtils) testUtils.cleanup();
+  });
+
+  // @scenario kind=template, area=layout_strategy
+  // @effects layout_strategy_choice_is_offered
+  it('덮어쓰기·유지 두 선택지가 같은 라디오 그룹으로 있고 기본값은 덮어쓰기다', () => {
+    const radios = collect(modalPartial, (n) => n.name === 'Input' && n.props?.name === 'layout_strategy');
+
+    expect(radios.map((r) => r.props.value)).toEqual(['overwrite', 'keep']);
+    expect(radios[0].props.checked).toBe("{{(_global.templateLayoutStrategy ?? 'overwrite') === 'overwrite'}}");
+    expect(radios[1].props.checked).toBe("{{(_global.templateLayoutStrategy ?? 'overwrite') === 'keep'}}");
+  });
+
+  // @scenario kind=template, area=layout_strategy
+  // @effects layout_strategy_choice_is_offered
+  it('업데이트 요청 본문에 고른 전략이 실린다', () => {
+    const calls = collect(modalPartial, (n) => n.handler === 'apiCall' && String(n.target ?? '').endsWith('/update'));
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].params.body.layout_strategy).toBe("{{_global.templateLayoutStrategy ?? 'overwrite'}}");
+  });
+
+  // @scenario kind=template, area=layout_strategy
+  // @effects layout_strategy_keep_notice_explains_merge
+  it('유지를 고르면 수정한 레이아웃 목록과 병합 안내가 보인다', async () => {
+    testUtils = createLayoutTest(buildLayout('keep', [{ name: 'sample_list', updated_at: '2026-09-30 10:00' }]), {
+      translations: { admin: adminKo, common: { cancel: '취소' } },
+      locale: 'ko',
+      componentRegistry: registry,
+      includeModals: true,
+    });
+    await testUtils.render();
+
+    expect(await screen.findByText('sample_list')).toBeTruthy();
+    expect(screen.getByText(adminKo.templates.modals.modified_layouts_keep_notice)).toBeTruthy();
+    expect(screen.getByText(adminKo.templates.modals.layout_strategy_keep_desc)).toBeTruthy();
+  });
+
+  // @scenario kind=template, area=layout_strategy
+  // @effects layout_strategy_keep_notice_explains_merge
+  it('덮어쓰기를 고르면 수정한 레이아웃 목록이 숨는다', async () => {
+    testUtils = createLayoutTest(buildLayout('overwrite', [{ name: 'sample_list', updated_at: '2026-09-30 10:00' }]), {
+      translations: { admin: adminKo, common: { cancel: '취소' } },
+      locale: 'ko',
+      componentRegistry: registry,
+      includeModals: true,
+    });
+    await testUtils.render();
+
+    expect(await screen.findByText(adminKo.templates.modals.layout_strategy_keep_desc)).toBeTruthy();
+    expect(screen.queryByText('sample_list')).toBeNull();
+    expect(screen.queryByText(adminKo.templates.modals.modified_layouts_keep_notice)).toBeNull();
+  });
+
+  // @scenario kind=template, area=layout_strategy
+  // @effects layout_strategy_keep_notice_explains_merge
+  it('유지 안내 문구가 "통째로 유지" 가 아니라 부분 병합을 설명한다 (ko·en)', () => {
+    const ko = adminKo.templates.modals;
+    const en = adminEn.templates.modals;
+
+    expect(ko.layout_strategy_keep_desc).toContain('손대지 않은 부분은 새 버전');
+    expect(ko.modified_layouts_keep_notice).toContain('고치지 않은 부분에는 새 버전');
+    expect(en.layout_strategy_keep_desc).toContain('untouched parts to the new version');
+    expect(en.modified_layouts_keep_notice).toContain('did not change receive the new version');
   });
 });

@@ -1,0 +1,113 @@
+{
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "mileage-filters"
+  },
+  "children": [
+    {
+      "id": "filter_all",
+      "type": "basic",
+      "name": "Button",
+      "classMap": {
+        "base": "px-3 py-1.5 text-sm rounded-lg border",
+        "key": "{{_local.mileageCategory ?? ''}}",
+        "variants": {
+          "earn": "border-gray-900 bg-gray-900 text-white",
+          "use": "border-gray-900 bg-gray-900 text-white"
+        },
+        "default": "border-gray-300 bg-white"
+      },
+      "text": "$t:mypage.mileage.filter_all"
+    },
+    {
+      "id": "new_products",
+      "type": "basic",
+      "name": "Div",
+      "isolatedState": {
+        "scrollIdx": 0,
+        "selectedCategories": [null, null, null, null],
+        "filter": {
+          "keyword": "",
+          "onlyInStock": true
+        }
+      },
+      "isolatedScopeId": "new_products_scroll"
+    },
+    {
+      "id": "dashboard_stats",
+      "type": "basic",
+      "name": "Div",
+      "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "dashboard_stats"
+      }
+    },
+    {
+      "id": "dashboard_multi",
+      "type": "basic",
+      "name": "Div",
+      "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": ["dashboard_stats", "dashboard_activities"]
+      }
+    },
+    {
+      "id": "dashboard_dynamic",
+      "type": "basic",
+      "name": "Div",
+      "blur_until_loaded": "{{_global.saving_modal?.isSaving}}"
+    },
+    {
+      "id": "dashboard_always",
+      "type": "basic",
+      "name": "Div",
+      "blur_until_loaded": true
+    },
+    {
+      "id": "comment_depth",
+      "type": "basic",
+      "name": "Div",
+      "props": {
+        "style": "margin-left: 1rem"
+      }
+    },
+    {
+      "id": "coupon_grid",
+      "type": "composite",
+      "name": "DataGrid",
+      "props": {
+        "data": "{{coupons?.data?.data ?? []}}",
+        "rowActions": [
+          {
+            "id": "edit",
+            "label": "$t:common.edit",
+            "iconName": "pencil"
+          }
+        ],
+        "expandContext": {
+          "rowId": "{{row.id}}",
+          "rowHasReply": "{{row.has_reply}}"
+        }
+      }
+    },
+    {
+      "id": "marketing_modal",
+      "type": "composite",
+      "name": "Modal",
+      "props": {
+        "title": {
+          "$switch": "{{_local.mode}}",
+          "$cases": {
+            "create": "$t:marketing.create",
+            "edit": "$t:marketing.edit"
+          },
+          "$default": "$t:marketing.view"
+        },
+        "style": {
+          "marginLeft": "{{Math.min(comment?.depth ?? 0, 10) * 1}}rem"
+        }
+      }
+    }
+  ]
+}

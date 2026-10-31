@@ -1,0 +1,31 @@
+feature: 관리자 확장 목록의 업데이트 흐름 — 모듈·플러그인·템플릿
+
+description: |
+  관리자 › 확장(모듈·플러그인·템플릿) 목록에서 업데이트를 확인하고, 행별 업데이트 버튼으로 확인 창을 열어
+  업데이트를 실행하는 흐름. 세 목록은 같은 모양이라 한 매니페스트가 확장 종류 × 화면 영역으로 소유한다.
+  (소유 매니페스트가 없던 세 테스트 파일을 #682 실측 후속에서 묶었다.)
+
+axes:
+  kind: [module, plugin, template]
+  area: [auth, status_badge, check_button, row_button, layout_structure, modal_open_close, modal_content, layout_strategy, button_state]
+
+exclusions:
+  - { kind: template, area: auth, reason: "이 종류의 업데이트 화면에는 해당 영역이 없다(테스트 파일에 대응 describe 없음)" }
+
+effects:
+  - check_updates_call_requires_auth
+  - update_status_badge_matches_row_state
+  - check_updates_button_calls_and_reloads
+  - row_update_button_shows_only_when_available
+  - update_modal_layout_structure_is_declared
+  - update_modal_opens_and_closes
+  - update_modal_content_lists_versions
+  - layout_strategy_choice_is_offered
+  # 「수정 유지」 는 통째 보존이 아니라 병합이다 — 안내 문구가 그 뜻을 말하고, 목록은 유지를 골랐을 때만 보인다 (#727)
+  - layout_strategy_keep_notice_explains_merge
+  - update_modal_buttons_reflect_progress
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-module-update.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-plugin-update.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-update.test.tsx

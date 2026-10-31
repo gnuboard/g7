@@ -20,11 +20,29 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  */
 class GdprPolicyVersionMigrationSmokeTest extends PluginTestCase
 {
+    /**
+     * 신규 설치 마이그레이션이 정책 버전 테이블을 만듭니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario surface=installation
+     *
+     * @effects migration_up_seeds_initial_row
+     */
     public function test_gdpr_policy_versions_table_exists(): void
     {
         $this->assertTrue(Schema::hasTable('gdpr_policy_versions'));
     }
 
+    /**
+     * 정책 버전 테이블에 발행 이력 컬럼이 모두 있습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario surface=installation
+     *
+     * @effects migration_up_seeds_initial_row
+     */
     public function test_gdpr_policy_versions_columns_exist(): void
     {
         foreach ([
@@ -43,6 +61,15 @@ class GdprPolicyVersionMigrationSmokeTest extends PluginTestCase
         }
     }
 
+    /**
+     * 신규 설치 시 initial 행(version=1)이 시드됩니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario surface=installation
+     *
+     * @effects migration_up_seeds_initial_row, publish_starts_after_initial_seed
+     */
     public function test_initial_seed_row_is_inserted_with_version_1(): void
     {
         $initial = GdprPolicyVersion::query()->orderBy('version')->first();
@@ -58,8 +85,14 @@ class GdprPolicyVersionMigrationSmokeTest extends PluginTestCase
      * 초기 v1 시드 snapshot 이 plugin.php::getConfigValues() 의 settings 기본값을 포함하는지 검증.
      *
      * GDPR Art.7(1) 입증 책임 — 회원이 v1 에 동의했을 때 그 시점 정책 (cookie_categories /
-     * blocked_domains / privacy_policy_slug) 을 추후 입증할 수 있어야 한다. 빈 snapshot 시드는
+     * blocked_domains / privacy_policy_url) 을 추후 입증할 수 있어야 한다. 빈 snapshot 시드는
      * 입증 결함 (DPO 가 분쟁 시 "v1 시점 어떤 정책에 동의했는지" 답변 불가).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario surface=installation
+     *
+     * @effects migration_up_seeds_initial_row, initial_snapshot_records_privacy_policy_url
      */
     public function test_initial_seed_snapshot_includes_default_settings(): void
     {
@@ -80,9 +113,11 @@ class GdprPolicyVersionMigrationSmokeTest extends PluginTestCase
         $this->assertContains('analytics', $categoryKeys);
         $this->assertContains('marketing', $categoryKeys);
 
-        // privacy_policy_slug — 기본 'privacy'
-        $this->assertArrayHasKey('privacy_policy_slug', $snapshot);
-        $this->assertSame('privacy', $snapshot['privacy_policy_slug']);
+        // privacy_policy_url — 기본값은 빈 주소 (운영자가 직접 입력, 비면 배너 링크 숨김).
+        // 1.0.x 의 privacy_policy_slug 는 더 이상 시드하지 않는다.
+        $this->assertArrayHasKey('privacy_policy_url', $snapshot);
+        $this->assertSame('', $snapshot['privacy_policy_url']);
+        $this->assertArrayNotHasKey('privacy_policy_slug', $snapshot);
 
         // blocked_domains — 카탈로그 기본값 (functional + analytics + marketing 카테고리)
         // Phase 2: functional 카탈로그가 외부 functional 도구 도메인 (Crisp / Intercom / Tawk.to / Weglot / Usercentrics) 으로 채워짐
@@ -95,6 +130,15 @@ class GdprPolicyVersionMigrationSmokeTest extends PluginTestCase
         $this->assertArrayHasKey('marketing', $snapshot['blocked_domains']);
     }
 
+    /**
+     * 마이그레이션을 다시 돌려도 initial 행은 하나만 남습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario surface=installation
+     *
+     * @effects migration_up_after_down_is_idempotent
+     */
     public function test_initial_row_is_idempotent_on_migrate_rerun(): void
     {
         // RefreshDatabase 트레이트가 매 테스트마다 migrate:fresh 를 실행하므로
@@ -104,6 +148,15 @@ class GdprPolicyVersionMigrationSmokeTest extends PluginTestCase
         $this->assertSame(1, $count, 'initial 행이 중복 시드되었습니다');
     }
 
+    /**
+     * 같은 버전 번호를 두 번 넣으면 고유 제약이 막습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario surface=installation
+     *
+     * @effects publish_monotonically_increments_version
+     */
     public function test_version_column_has_unique_constraint(): void
     {
         // version=1 row 가 이미 있으므로 같은 version 으로 INSERT 시도 시 예외
@@ -119,6 +172,15 @@ class GdprPolicyVersionMigrationSmokeTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * 스냅샷 컬럼이 처리방침 주소를 포함한 설정 본문을 JSON 으로 보존합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario surface=installation
+     *
+     * @effects publish_persists_snapshot_and_memo_and_user_id
+     */
     public function test_snapshot_column_stores_json(): void
     {
         $row = GdprPolicyVersion::create([
@@ -130,12 +192,12 @@ class GdprPolicyVersionMigrationSmokeTest extends PluginTestCase
                     ['key' => 'necessary', 'required' => true],
                     ['key' => 'analytics', 'required' => false],
                 ],
-                'privacy_policy_slug' => 'privacy-policy',
+                'privacy_policy_url' => '/page/privacy-policy',
             ],
         ]);
 
         $reloaded = GdprPolicyVersion::find($row->id);
-        $this->assertSame('privacy-policy', $reloaded->snapshot['privacy_policy_slug']);
+        $this->assertSame('/page/privacy-policy', $reloaded->snapshot['privacy_policy_url']);
         $this->assertCount(2, $reloaded->snapshot['cookie_categories']);
     }
 }

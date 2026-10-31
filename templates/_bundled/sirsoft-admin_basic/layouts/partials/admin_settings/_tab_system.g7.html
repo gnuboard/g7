@@ -1,0 +1,195 @@
+<!-- 시스템 탭 — 명령줄(CLI) 없이 운영하는 호스팅을 위한 두 설정이다.
+  ⑴ 실행 방식: 확장 설치·업데이트 같은 긴 작업을 별도 프로세스로 돌릴지 이 요청 안에서 돌릴지.
+     서버가 막아 둔 함수 목록과 PHP 실행 검사 결과(`system_status`)를 보여 주고 「다시 감지」로 새로 잰다.
+  ⑵ 예약 작업: 서버 crontab 대신 외부 호출 주소(웹 크론)로 예약 작업을 돌린다. 주소에는 비밀 번호가 들어
+     있어 처음에는 가려 두고, 「보기」·「복사」를 눌렀을 때만 서버에서 받아 온다.
+  저장은 화면 하단 공용 저장 버튼이 맡는다(입력값은 `_local.form.system.*`). -->
+<partial description="환경설정 시스템 탭 콘텐츠 (실행 방식 + 예약 작업 — W5)">
+  <div data-ref="tab_content_system" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'system'}}">
+    <div data-ref="card_execution_mode" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.system.execution_title</h3>
+      <div class="card-description">$t:admin.settings.system.execution_desc</div>
+      <div data-ref="execution_status_box" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 mb-4">
+        <div data-ref="execution_current_row" class="flex items-start gap-2">
+          <span class="text-label-subtle min-w-[64px]">$t:admin.settings.system.current</span>
+          <span data-ref="execution_current_value" class="text-heading">{{(_local.systemDetection ?? system_status?.data?.execution)?.effective_mode === 'inprocess' ? '$t:admin.settings.system.running_without_cli' : '$t:admin.settings.system.running_with_cli'}}</span>
+        </div>
+        <div data-ref="execution_reason_row" class="flex items-start gap-2 mt-2">
+          <span class="text-label-subtle min-w-[64px]">$t:admin.settings.system.reason</span>
+          <div data-ref="execution_reason_body" class="flex-1 min-w-0">
+            <p data-ref="execution_blocked_functions" data-if="{{((_local.systemDetection?.detection ?? system_status?.data?.execution?.detection)?.blocked_functions ?? []).length > 0}}" class="text-secondary text-xs">{{'$t:admin.settings.system.blocked_functions' + ' ' + (((_local.systemDetection?.detection ?? system_status?.data?.execution?.detection)?.blocked_functions ?? []).join(', '))}}</p>
+            <p data-ref="execution_probe_message" data-if="{{(_local.systemDetection?.detection ?? system_status?.data?.execution?.detection)?.php_probe?.message_localized}}" class="text-secondary text-xs mt-0.5">{{(_local.systemDetection?.detection ?? system_status?.data?.execution?.detection)?.php_probe?.message_localized ?? ''}}</p>
+          </div>
+        </div>
+      </div>
+      <div data-ref="field_execution_mode">
+        <div class="flex flex-wrap gap-3 items-start justify-between">
+          <div class="flex-1 min-w-0">
+            <label class="form-label">$t:admin.settings.system.execution_mode</label>
+            <radio-group data-type="composite" data-ref="execution_mode_radio" name="system.execution_mode" disabled="{{_computed.isReadOnly}}" :inline="false">
+              <prop name="options">
+                <item value="auto" label="$t:admin.settings.system.execution_mode_auto"/>
+                <item value="subprocess" label="$t:admin.settings.system.execution_mode_subprocess"/>
+                <item value="inprocess" label="$t:admin.settings.system.execution_mode_inprocess"/>
+              </prop>
+            </radio-group>
+            <p class="form-hint">$t:admin.settings.system.execution_mode_hint</p>
+          </div>
+          <!-- 다시 감지 — 서버가 막아 둔 함수와 PHP 실행 검사를 지금 다시 잰다. 결과는 _local.systemDetection 에 담아 위 현재 방식과 사유 줄이 화면을 열 때 받은 system_status 보다 앞세워 읽는다. 진행 플래그는 성공과 실패 양쪽에서 되돌린다. -->
+          <button data-ref="execution_detect_button" type="button" class="btn btn-secondary whitespace-nowrap" disabled="{{_local.systemDetecting}}">
+            <on type="click">
+              <set-state target="local" :systemDetecting="true"/>
+              <api-call :auth_required="true" target="/api/admin/settings/system/detect" method="POST">
+                <success>
+                  <set-state target="local" :systemDetecting="false" systemDetection="{{result.data}}"/>
+                  <toast type="success" message="$t:admin.settings.system.detect_done"/>
+                </success>
+                <fail>
+                  <set-state target="local" :systemDetecting="false"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.settings.system.detect_failed'}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <icon data-if="{{_local.systemDetecting}}" name="spinner" class="spinner-sm"/>
+            <span>$t:admin.settings.system.detect_again</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_scheduled_tasks" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.system.cron_title</h3>
+      <div class="card-description">$t:admin.settings.system.cron_desc</div>
+      <div class="row-stack">
+        <div data-ref="field_cron_mode">
+          <label class="form-label">$t:admin.settings.system.cron_mode</label>
+          <radio-group data-type="composite" data-ref="cron_mode_radio" name="system.cron_mode" disabled="{{_computed.isReadOnly}}" :inline="true">
+            <prop name="options">
+              <item value="auto" label="$t:admin.settings.system.cron_mode_auto"/>
+              <item value="web" label="$t:admin.settings.system.cron_mode_web"/>
+              <item value="cron" label="$t:admin.settings.system.cron_mode_cron"/>
+              <item value="both" label="$t:admin.settings.system.cron_mode_both"/>
+            </prop>
+          </radio-group>
+        </div>
+        <div data-ref="field_cron_url">
+          <label class="form-label">$t:admin.settings.system.cron_url</label>
+          <div class="flex flex-wrap gap-2 items-center">
+            <input data-ref="cron_url_value" type="text" :readOnly="true" :autoBinding="false" class="flex-1 min-w-[240px] font-mono text-xs" value="{{_local.cronUrl ?? '$t:admin.settings.system.cron_url_masked'}}"/>
+            <!-- 버튼 셋을 한 묶음으로 둔다 — 낱개로 두면 좁은 폭에서 「보기」만 주소칸 옆에 남고 나머지 둘이 다음 줄로 떨어져 한 벌의 조작이 두 줄로 찢어진다. -->
+            <div data-ref="cron_url_actions" class="flex flex-wrap gap-2 items-center">
+              <!-- 보기 — 주소에는 비밀 호출 번호가 들어 있어 화면을 열 때는 받지 않고 누른 때에만 서버에서 받아 주소칸에 채운다. 채운 뒤에는 이 버튼이 사라진다. -->
+              <button data-ref="cron_url_reveal_button" data-if="{{!_computed.isReadOnly &amp;&amp; !_local.cronUrl}}" type="button" class="btn btn-secondary whitespace-nowrap" disabled="{{_local.cronUrlRevealing}}">
+                <on type="click">
+                  <set-state target="local" :cronUrlRevealing="true"/>
+                  <api-call :auth_required="true" target="/api/admin/settings/system/cron-token" method="GET">
+                    <success>
+                      <set-state target="local" :cronUrlRevealing="false" cronUrl="{{result.data.url}}"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :cronUrlRevealing="false"/>
+                      <toast type="error" message="{{error.message ?? '$t:admin.settings.system.cron_url_failed'}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                <icon data-if="{{_local.cronUrlRevealing}}" name="spinner" class="spinner-sm"/>
+                <span>$t:admin.settings.system.cron_url_reveal</span>
+              </button>
+              <!-- 복사 — 주소칸을 가린 채로도 복사되도록 누를 때마다 서버에서 주소를 받아 클립보드에 넣는다. 주소칸은 가린 상태 그대로 둔다. -->
+              <button data-ref="cron_url_copy_button" data-if="{{!_computed.isReadOnly}}" type="button" class="btn btn-secondary whitespace-nowrap" disabled="{{_local.cronUrlCopying}}">
+                <on type="click">
+                  <set-state target="local" :cronUrlCopying="true"/>
+                  <api-call :auth_required="true" target="/api/admin/settings/system/cron-token" method="GET">
+                    <success>
+                      <set-state target="local" :cronUrlCopying="false"/>
+                      <action handler="copyToClipboard" text="{{result.data.url}}"/>
+                      <toast type="success" message="$t:admin.settings.system.cron_url_copied"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :cronUrlCopying="false"/>
+                      <toast type="error" message="{{error.message ?? '$t:admin.settings.system.cron_url_failed'}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                <icon data-if="{{_local.cronUrlCopying}}" name="spinner" class="spinner-sm"/>
+                <span>$t:common.copy</span>
+              </button>
+              <button data-ref="cron_token_rotate_button" data-if="{{!_computed.isReadOnly}}" type="button" class="btn btn-secondary whitespace-nowrap">
+                <on type="click">
+                  <open-modal target="cron_token_rotate_modal"/>
+                </on>
+                <span>$t:admin.settings.system.cron_token_rotate</span>
+              </button>
+            </div>
+          </div>
+          <p class="form-hint">$t:admin.settings.system.cron_url_hint</p>
+        </div>
+        <div data-ref="field_cron_allowed_ips">
+          <label class="form-label">$t:admin.settings.system.cron_allowed_ips</label>
+          <textarea name="system.cron_allowed_ips" :rows="2" placeholder="203.0.113.10
+2001:db8::/32" disabled="{{_computed.isReadOnly}}" class="resize-none font-mono text-xs"/>
+          <p class="form-hint">$t:admin.settings.system.cron_allowed_ips_hint</p>
+        </div>
+        <div data-ref="field_cron_min_interval">
+          <label class="form-label">$t:admin.settings.system.cron_min_interval</label>
+          <input type="number" name="system.cron_min_interval" min="{{settings?.data?._meta?.limits?.system_cron_min_interval_min ?? 0}}" max="{{settings?.data?._meta?.limits?.system_cron_min_interval_max ?? 1440}}" disabled="{{_computed.isReadOnly}}" class="max-w-[160px]"/>
+          <p class="form-hint">$t:admin.settings.system.cron_min_interval_hint</p>
+        </div>
+        <div data-ref="toggle_cron_visit_fallback" class="flex-between">
+          <div>
+            <span class="text-heading">$t:admin.settings.system.cron_visit_fallback</span>
+            <p class="text-label-subtle">$t:admin.settings.system.cron_visit_fallback_desc</p>
+          </div>
+          <toggle data-type="composite" name="system.cron_visit_fallback" size="md" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+        <div data-ref="cron_last_run_box" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
+          <div class="flex flex-wrap gap-3 items-center justify-between">
+            <div class="flex-1 min-w-0">
+              <span class="text-label-subtle">$t:admin.settings.system.cron_last_run</span>
+              <!-- 서버는 ISO 8601(`2026-09-12T21:52:21+09:00`)을 준다. 화면에는 사이트 시간대의 날짜·시각만 남긴다 — `T` 와 오프셋이 그대로 보이면 운영자가 읽을 수 없는 문자열이 된다. -->
+              <p data-ref="cron_last_run_value" data-if="{{_local.cronLastRun ?? system_status?.data?.cron?.last_run}}" class="text-heading">{{(function () { const r = _local.cronLastRun ?? system_status?.data?.cron?.last_run; return String(r?.finished_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + (r?.duration_ms ?? 0) + 'ms · ' + (r?.executed ?? 0) + ' / ' + (r?.failed ?? 0); })()}}</p>
+              <p data-ref="cron_last_run_empty" data-if="{{!(_local.cronLastRun ?? system_status?.data?.cron?.last_run)}}" class="text-secondary text-xs">$t:admin.settings.system.cron_last_run_none</p>
+              <p data-ref="cron_last_run_legend" class="form-hint">$t:admin.settings.system.cron_last_run_legend</p>
+              <!-- 상태 파일을 쓰지 못하면 점검 시각이 남지 않아 다음 호출의 소급 창이 상한까지 열리고 창 안의 예약이 매번 전부 다시 실행된다. 오류가 아니라 부하로만 나타나므로 여기서 사유를 알린다. -->
+              <p data-ref="cron_state_persist_failed" data-if="{{system_status?.data?.cron?.state_persist_failed}}" class="text-xs text-red-600 dark:text-red-400 mt-1">$t:admin.settings.system.cron_state_persist_failed</p>
+            </div>
+            <!-- 지금 실행 — 외부 호출을 기다리지 않고 예약 작업을 한 번 돌린다. 응답으로 받은 실행 결과를 마지막 실행 줄에 바로 그리고, 실행 이력은 상태 소스를 다시 받아 갱신한다. -->
+            <button data-ref="cron_run_now_button" data-if="{{!_computed.isReadOnly}}" type="button" class="btn btn-secondary whitespace-nowrap" disabled="{{_local.cronRunning}}">
+              <on type="click">
+                <set-state target="local" :cronRunning="true"/>
+                <api-call :auth_required="true" target="/api/admin/settings/system/cron/run" method="POST">
+                  <success>
+                    <set-state target="local" :cronRunning="false" cronLastRun="{{result.data}}"/>
+                    <toast type="success" message="$t:admin.settings.system.cron_run_done"/>
+                    <refetch-data-source dataSourceId="system_status"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :cronRunning="false"/>
+                    <toast type="error" message="{{error.message ?? '$t:admin.settings.system.cron_run_failed'}}"/>
+                  </fail>
+                </api-call>
+              </on>
+              <icon data-if="{{_local.cronRunning}}" name="spinner" class="spinner-sm"/>
+              <span>$t:admin.settings.system.cron_run_now</span>
+            </button>
+            <!-- 실행 이력 (A-5). 위의 '마지막 실행'은 직전 1회만 담고 다음 호출에 덮이므로, 지난 실행을 되짚으려면 누적 목록이 따로 있어야 한다. 서버가 코드 예약 이력을 시각 역순으로 내려보낸다. -->
+            <div data-ref="cron_history_block" class="w-full mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <span class="text-label-subtle">$t:admin.settings.system.cron_history</span>
+              <p data-ref="cron_history_empty" data-if="{{!(system_status?.data?.cron?.recent_history?.length)}}" class="text-secondary text-xs mt-1">$t:admin.settings.system.cron_history_none</p>
+              <div data-ref="cron_history_list" data-if="{{system_status?.data?.cron?.recent_history?.length}}" class="mt-2 max-h-[400px] overflow-y-auto">
+                <!-- 좁은 폭에서는 이름 줄이 한 줄을 다 쓰고 시각·결과가 다음 줄로 내려간다 — 세 칸을 한 줄에 우겨 넣으면 이름이 두세 글자만 남는다. -->
+                <div data-ref="cron_history_row_{{$hidx}}" data-each="entry, $hidx in {{system_status?.data?.cron?.recent_history ?? []}}" class="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5 py-1 border-b border-gray-100 dark:border-gray-700">
+                  <div class="w-full sm:w-auto sm:flex-1 min-w-0">
+                    <p class="text-xs text-gray-900 dark:text-gray-100 truncate">{{entry.name ?? ''}}</p>
+                    <p data-if="{{entry.error_output}}" class="text-xs text-red-600 dark:text-red-400 truncate">{{entry.error_output ?? ''}}</p>
+                  </div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{String(entry.started_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + (entry.duration ?? 0) + 's'}}</span>
+                  <span class="{{entry.status === 'failed' ? 'text-xs text-red-600 dark:text-red-400 whitespace-nowrap' : 'text-xs text-green-600 dark:text-green-400 whitespace-nowrap'}}">{{entry.status === 'failed' ? '$t:admin.settings.system.cron_history_failed' : '$t:admin.settings.system.cron_history_success'}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

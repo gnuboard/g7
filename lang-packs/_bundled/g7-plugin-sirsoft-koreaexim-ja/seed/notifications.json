@@ -1,0 +1,18 @@
+{
+  "koreaexim_update_failed": {
+    "definition": {
+      "name": "為替レート更新失敗",
+      "description": "為替レート更新失敗を管理者に通知します。"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 為替レート更新失敗 — {status_label}",
+        "body": "{name}様,\n\n{search_date} の為替レート更新が失敗しました。\n理由: {message}\n\n設定確認: {settings_url}"
+      },
+      "database": {
+        "subject": "為替レート更新失敗 — {status_label}",
+        "body": "{search_date} 更新失敗: {message}"
+      }
+    }
+  }
+}

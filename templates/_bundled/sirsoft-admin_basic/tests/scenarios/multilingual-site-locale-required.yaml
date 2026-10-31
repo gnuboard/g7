@@ -1,0 +1,24 @@
+feature: 관리자 다국어 입력의 필수 표시 = 사이트 기본 언어
+
+description: |
+  MultilingualInput·HtmlEditor·MultilingualTagInput 의 기본(필수 *) 언어는 보는 사람의 언어가 아니라 사이트 기본 언어
+  (`src/support/siteLocale.ts` 의 `getSiteLocale()` — 전역 appConfig.siteLocale → G7Config.appConfig.siteLocale →
+  첫 지원 언어). 서버 다국어 필수 규칙(LocaleRequiredTranslatable → app.site_locale)과 같은 값이라, 표시된 칸만
+  채우고 저장하면 통과한다. 읽기 이름(태그 제거 버튼)은 보는 언어 그대로다.
+
+  수정 이력: 제품 결정 2026-10-08 (필수 언어 통일), 후속 B 세션 B3.
+
+axes:
+  case: [en_viewer_ko_site, ko_viewer_en_site, en_viewer_no_site]
+
+effects:
+  - site_locale_resolved_from_app_config
+  - site_locale_falls_back_to_first_supported
+  - multilingual_required_mark_on_site_locale
+  - html_editor_required_mark_on_site_locale
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/MultilingualSiteLocaleRequired.test.tsx
+
+validation:
+  browser_check: 사이트 기본 언어 한국어 · 관리자 언어 English 로 상품 등록 → 상품명 입력의 * 가 KO 칸에 붙는다

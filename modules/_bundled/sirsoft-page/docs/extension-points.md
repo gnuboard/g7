@@ -9,13 +9,13 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-page.attachment.after_delete` | action | — | `src/Services/PageAttachmentService.php:246` |
-| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:373` |
-| `sirsoft-page.attachment.after_upload` | action | — | `src/Services/PageAttachmentService.php:148` |
-| `sirsoft-page.attachment.before_delete` | action | — | `src/Services/PageAttachmentService.php:233` |
-| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:369` |
-| `sirsoft-page.attachment.before_upload` | action | — | `src/Services/PageAttachmentService.php:90` |
-| `sirsoft-page.attachment.filter_upload_file` | filter | — | `src/Services/PageAttachmentService.php:92` |
+| `sirsoft-page.attachment.after_delete` | action | — | `src/Services/PageAttachmentService.php:347` |
+| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:475` |
+| `sirsoft-page.attachment.after_upload` | action | — | `src/Services/PageAttachmentService.php:231` |
+| `sirsoft-page.attachment.before_delete` | action | — | `src/Services/PageAttachmentService.php:334` |
+| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:471` |
+| `sirsoft-page.attachment.before_upload` | action | — | `src/Services/PageAttachmentService.php:173` |
+| `sirsoft-page.attachment.filter_upload_file` | filter | — | `src/Services/PageAttachmentService.php:175` |
 | `sirsoft-page.page.after_create` | action | — | `src/Services/PageService.php:106` |
 | `sirsoft-page.page.after_delete` | action | — | `src/Services/PageService.php:190` |
 | `sirsoft-page.page.after_publish` | action | — | `src/Services/PageService.php:223` 외 1곳 |
@@ -25,11 +25,11 @@
 | `sirsoft-page.page.before_delete` | action | — | `src/Services/PageService.php:179` |
 | `sirsoft-page.page.before_publish` | action | — | `src/Services/PageService.php:209` 외 1곳 |
 | `sirsoft-page.page.before_update` | action | — | `src/Services/PageService.php:127` |
-| `sirsoft-page.page.filter_content_thumbnail` | filter | — | `src/Models/Page.php:128` |
+| `sirsoft-page.page.filter_content_thumbnail` | filter | — | `src/Models/Page.php:133` |
 | `sirsoft-page.page.filter_create_data` | filter | — | `src/Services/PageService.php:77` |
 | `sirsoft-page.page.filter_list_query` | filter | — | `src/Services/PageService.php:60` |
 | `sirsoft-page.page.filter_update_data` | filter | — | `src/Services/PageService.php:131` |
-| `sirsoft-page.search.page.index_should_update` | filter | — | `src/Models/Page.php:270` |
+| `sirsoft-page.search.page.index_should_update` | filter | — | `src/Models/Page.php:275` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -172,7 +172,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `sirsoft-page:prune-temp-attachments` | `daily` | 미연결 임시 페이지 첨부 자동 삭제 |
+| `prune-temp-attachments` | `0 0 * * *` | 임시 페이지 첨부 삭제 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->

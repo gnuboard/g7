@@ -47,7 +47,6 @@
   "modal": {
     "download_history": {
       "title": "ダウンロード履歴",
-      "description": "ファイルのダウンロード記録を確認できます",
       "file_content": "ファイル内容",
       "category": "区分",
       "status": "ステータス",

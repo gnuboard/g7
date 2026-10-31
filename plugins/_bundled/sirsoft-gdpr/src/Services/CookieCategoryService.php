@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Gdpr\Services;
 
 use App\Services\PluginSettingsService;
+use App\Support\LocalizedValue;
 use Plugins\Sirsoft\Gdpr\Enums\CookieCategory;
 
 /**
@@ -21,7 +22,7 @@ class CookieCategoryService
     /**
      * CookieCategoryService 생성자
      *
-     * @param PluginSettingsService $pluginSettings 플러그인 설정 서비스
+     * @param  PluginSettingsService  $pluginSettings  플러그인 설정 서비스
      */
     public function __construct(
         private readonly PluginSettingsService $pluginSettings,
@@ -73,7 +74,7 @@ class CookieCategoryService
     /**
      * 카테고리 키가 필수 항목인지 확인합니다.
      *
-     * @param string $consentKey 동의 항목 키 (예: cookie_necessary)
+     * @param  string  $consentKey  동의 항목 키 (예: cookie_necessary)
      * @return bool
      */
     public function isRequired(string $consentKey): bool
@@ -102,7 +103,7 @@ class CookieCategoryService
     public function getAllConsentKeys(): array
     {
         return array_map(
-            fn (array $c) => 'cookie_' . ($c['key'] ?? ''),
+            fn (array $c) => 'cookie_'.($c['key'] ?? ''),
             $this->getCategories()
         );
     }
@@ -110,7 +111,7 @@ class CookieCategoryService
     /**
      * cookie_ 접두사를 제거합니다.
      *
-     * @param string $consentKey 동의 항목 키
+     * @param  string  $consentKey  동의 항목 키
      * @return string
      */
     private function stripCookiePrefix(string $consentKey): string
@@ -129,15 +130,12 @@ class CookieCategoryService
      * 운영자가 카탈로그에 등록한 다국어 라벨을 표시하기 위함. 카탈로그에 매칭되는
      * 카테고리가 없으면 null 반환 — 호출 측이 fallback 으로 raw key 표시.
      *
-     * @param string $consentKey 동의 항목 키 (예: cookie_analytics)
+     * @param  string  $consentKey  동의 항목 키 (예: cookie_analytics)
      * @return string|null
      */
     public function getLabelForKey(string $consentKey): ?string
     {
         $bareKey = $this->stripCookiePrefix($consentKey);
-        $locale = (string) app()->getLocale();
-        $fallbackLocale = (string) config('app.fallback_locale', 'en');
-
         foreach ($this->getCategories() as $cat) {
             if (($cat['key'] ?? null) !== $bareKey) {
                 continue;
@@ -145,7 +143,7 @@ class CookieCategoryService
 
             $label = $cat['label'] ?? null;
             if (is_array($label)) {
-                return $label[$locale] ?? $label[$fallbackLocale] ?? reset($label) ?: null;
+                return LocalizedValue::pick($label);
             }
 
             return is_string($label) && $label !== '' ? $label : null;
@@ -162,15 +160,12 @@ class CookieCategoryService
      * 아니라 항상 코드 기본값(getDefaultCategories)에서 가져온다 — 운영자 라벨 커스텀과
      * 무관하게 마이페이지·배너에 일관된 설명이 노출된다 (이슈 #430). 기본값에도 없으면 null.
      *
-     * @param string $consentKey 동의 항목 키 (예: cookie_analytics)
+     * @param  string  $consentKey  동의 항목 키 (예: cookie_analytics)
      * @return string|null
      */
     public function getDescriptionForKey(string $consentKey): ?string
     {
         $bareKey = $this->stripCookiePrefix($consentKey);
-        $locale = (string) app()->getLocale();
-        $fallbackLocale = (string) config('app.fallback_locale', 'en');
-
         foreach ($this->getDefaultCategories() as $cat) {
             if (($cat['key'] ?? null) !== $bareKey) {
                 continue;
@@ -178,7 +173,7 @@ class CookieCategoryService
 
             $description = $cat['description'] ?? null;
             if (is_array($description)) {
-                $resolved = $description[$locale] ?? $description[$fallbackLocale] ?? reset($description);
+                $resolved = LocalizedValue::pick($description);
 
                 return is_string($resolved) && $resolved !== '' ? $resolved : null;
             }

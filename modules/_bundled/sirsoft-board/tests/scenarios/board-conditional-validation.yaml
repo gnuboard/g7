@@ -5,7 +5,7 @@ description: |
   422 로 거부되던 문제를 해소한다.
 
   근본 원인: 관리자 폼이 조회 응답 전체를 _local.form 에 통째로 담아 그대로 PUT 한다
-  (admin_board_form.json: initLocal="form" → body="{{_local.form}}"). 요청에는 항상 모든 키가
+  (admin_board_form.g7.html: initLocal="form" → body="{{_local.form}}"). 요청에는 항상 모든 키가
   존재하므로 `sometimes` 는 아무 보호도 하지 못하고, 첨부 미사용 게시판의 빈 allowed_extensions
   까지 min:1 검증을 타서 저장이 막혔다. 작성자들이 `sometimes` 를 "부분 수정 지원"으로 오해했고
   그 오해가 담긴 주석까지 파일 간에 복제되어 있었다.
@@ -25,9 +25,25 @@ description: |
   재발 방지: audit 룰 formrequest-store-update-conditional-symmetry(error) /
   formrequest-sometimes-array-min-inert(warning) 가 같은 실수를 자동 차단한다.
 
+  ── 흡수 이력 (2026-08-07, issue476 ← develop 병합) ──
+  같은 결함 쌍을 issue476 쪽에서 독립 발견해 `board-save-rule-round-trip.yaml` 로 따로 적어 두었던
+  것을 이 매니페스트에 합집합으로 흡수하고 그 파일은 삭제했다. 흡수한 관점:
+
+    76차 g7.dev 실측 — `archive`·`notice` 두 게시판이 422 로 막혔다. 저장 규칙이 **시스템 자신이
+    만들어 둔 값**을 거부한 것이다.
+      ① 허용 확장자 — `StoreBoardRequest` 에는 `exclude_if:use_file_upload,false` 가 있는데
+         `UpdateBoardRequest` 에만 빠져 있었다(생성은 되는데 수정만 막히는 비대칭).
+      ② 신규 표시 시간 — `BoardSampleSeeder` 가 아카이브 게시판에 **의도적으로 0** 을 넣는데
+         규칙이 그 0 을 거부했다. 데이터가 아니라 규칙이 틀렸다.
+
+    완화가 규칙을 없앤 것이 아님을 함께 못박는다 — 파일 업로드를 켠 게시판은 빈 확장자를 여전히
+    거부하고, 음수·상한 초과도 그대로 거부한다.
+
 # axis 의미:
 #   case 는 (첨부 사용 여부 + 확장자 값 + 저장 결과) 의 의미 있는 조합을 한 축으로 열거한다.
 #   전체 객체 PUT 계약이 전제이므로 "키 부재" 도 별도 케이스로 둔다.
+#   new_display_hours 는 경계값 전량(0·1·720·-1·721)을 한 케이스 안의 DataProvider 로 태운다 —
+#   통과/거부가 갈리지만 규칙이 하나라 축을 쪼갤 근거가 없다(효과는 zero/out_of_range 로 나뉜다).
 axes:
   case: [upload_disabled_extensions_empty, upload_disabled_extensions_null, upload_enabled_extensions_empty, upload_enabled_extensions_nonempty, extensions_key_absent, new_display_hours_zero, zero_lower_bound_length_fields]
 
@@ -44,6 +60,18 @@ effects:
   - unchanged_form_data_round_trip_saves
   - empty_extensions_upload_falls_back_to_defaults
   - specified_extensions_still_reject_other_types
+  # ── board-save-rule-round-trip.yaml 에서 흡수 ──
+  - extensions_excluded_when_upload_disabled
+  - board_stays_editable
+  - extensions_still_required_when_upload_enabled
+  - zero_accepted_on_store
+  - zero_accepted_on_update
+  - zero_accepted_on_settings
+  - negative_rejected
+  - over_max_rejected
+  # 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재 — 시험별 표지
+  - empty_allowed_extensions_does_not_produce_empty_mimes_rule
+  - null_allowed_extensions_does_not_produce_empty_mimes_rule
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/BoardRequestTest.php

@@ -1,0 +1,95 @@
+feature: 확장 조각 적용 규칙 — 등록된 조각이 호스트 레이아웃에 어떻게 얹히는가
+
+description: |
+  모듈·플러그인이 등록한 조각을 서빙 시점에 호스트 레이아웃과 합치는 규칙을 잠근다.
+  **위지윅 편집기 쪽 동작**(`layout-extension-visual-editing.yaml`)과는 다른 축이다 — 저쪽은
+  "편집기에서 어떻게 보이고 어디에 저장되는가", 이쪽은 "서빙되는 문서가 어떻게 조립되는가" 다.
+
+  조각은 세 종류로 붙는다:
+    - `extension_point` — 레이아웃이 열어 둔 자리에 컴포넌트를 끼운다(기본/앞/뒤/치환 모드).
+    - `overlay` — 대상 레이아웃의 지정 위치에 트리를 통째로 얹는다(앞/뒤/치환).
+    - `template_override` — 템플릿이 모듈·플러그인 조각을 자기 것으로 가린다.
+
+  합쳐지는 자리는 컴포넌트만이 아니다 — `modals`·`data_sources`·`props`·`computed`·`state`·
+  `init_actions` 가 각자 병합 규칙을 갖는다. 그중 여러 개는 **조용히 틀리는** 부류다:
+  모달이 병합되지 않으면 그 조각은 모달을 열어야만 보이므로 목록 화면에서는 알 수 없고,
+  `init_actions` 가 호스트보다 먼저 돌면 조각이 호스트가 세운 값을 덮는다.
+
+  효과 이름은 **테스트 메서드명과 1:1** 이다(접두사 `test_` 만 뗀 것) — 이름을 새로 지으면
+  대조가 사람 눈에 의존하게 되고, 그 순간 목록과 실제가 갈리기 시작한다.
+
+axes:
+  kind: [extension_point, overlay, template_override]
+  merge_target: [components, modals, props, sections]
+
+exclusions:
+  - { kind: template_override, merge_target: modals, reason: "override 는 다른 조각을 **가리는 등록 규칙**이라 병합 자리를 갖지 않는다 — 등록·해제만 검증한다" }
+  - { kind: template_override, merge_target: props, reason: "같음 — 가리기만 하므로 호스트 노드에 거는 규칙이 없다" }
+  - { kind: template_override, merge_target: sections, reason: "같음 — 문서 절을 더하지 않는다" }
+  - { kind: extension_point, merge_target: sections, reason: "`computed`·`state` 병합은 overlay 가 소유한다 — 확장점은 열린 자리에 노드를 끼울 뿐 문서 절을 더하지 않는다" }
+  - { kind: overlay, merge_target: props, reason: "prop 주입은 **확장점 조각이 호스트 노드에 거는** 규칙이라 overlay 축에 존재하지 않는다" }
+
+# `data_sources` 는 축에서 뺐다 — 병합 규칙이 종류와 무관하게 한 벌이라 조합을 만들지 않는다.
+# 그 규칙은 `merges_data_sources_from_extensions` 효과가 직접 덮는다(축 없이 효과로만 관측하는 자리).
+
+effects:
+  - applies_extension_point_components
+  # 셀 템플릿(DataGrid columns[].cellChildren·cardColumns·expandChildren) 안의 확장점 — children 만 따라가면 빈 자리로 남는다
+  - applies_extension_points_inside_datagrid_cell_templates
+  - marks_extension_source_with_type_and_identifier_in_edit_mode
+  - marks_extension_source_on_injected_data_sources_in_edit_mode
+  - marks_injected_props_on_host_node_in_edit_mode
+  - get_extension_host_layouts_overlay_and_extension_point
+  - get_extension_host_layouts_extension_point_requires_components
+  - get_extension_host_layouts_overlay_requires_existing_target_id
+  - applies_overlay_at_correct_position
+  - merges_overlay_init_actions_after_host
+  - overlay_snake_init_actions_merge_into_standard_camel_key
+  - merges_overlay_init_actions_when_host_has_none
+  - registers_extension_point
+  - registers_overlay
+  - unregisters_by_source
+  - restores_by_source
+  - registers_template_override
+  - extensions_ordered_by_priority
+  - inactive_extensions_not_applied
+  - overlay_prepend_position
+  - overlay_replace_position
+  - merges_data_sources_from_extensions
+  - registers_all_active_extensions_to_template
+  - registers_all_active_extensions_returns_empty_when_no_active_extensions
+  - registers_all_active_extensions_skips_extensions_without_files
+  - merges_modals_from_extension_point
+  - merges_modals_with_existing_host_modals
+  - extension_without_modals_does_not_add_modals_key
+  - merges_modals_from_multiple_extensions
+  - inject_props_append_adds_items_to_array_prop
+  - inject_props_prepend_adds_items_before_array_prop
+  - inject_props_merge_merges_object_prop
+  - inject_props_scalar_overwrites_value
+  - inject_props_creates_new_prop_when_not_exists
+  - inject_props_creates_props_when_component_has_no_props
+  - inject_props_append_on_expression_string_logs_warning
+  - inject_props_logs_warning_when_target_not_found
+  - inject_props_works_on_deeply_nested_component
+  - inject_props_append_takes_precedence_over_merge_in_same_prop
+  - overlay_merges_computed_into_layout
+  - overlay_merges_state_into_layout
+  - overlay_merges_modals_into_layout
+  - overlay_creates_computed_when_layout_has_none
+  - overlay_without_sections_does_not_affect_layout
+  - overlay_multiple_overlays_merge_computed_sequentially
+  - overlay_later_priority_overwrites_same_computed_key
+  - applies_extension_points_inside_modals
+  - passes_extension_point_props_inside_modals
+  - passes_extension_point_callbacks_to_injected_components
+  - no_callbacks_key_when_extension_point_has_no_callbacks
+  - injects_into_both_components_and_modals_extension_points
+  - extension_point_mode_replace_removes_default
+  - extension_point_mode_prepend_inserts_before_default
+  - extension_point_default_mode_appends_after_default
+  - resolve_source_label_reads_ja_from_db_name
+  - resolve_source_label_falls_back_to_manifest_when_no_db_row
+
+test_files:
+  - tests/Unit/Services/LayoutExtensionServiceTest.php

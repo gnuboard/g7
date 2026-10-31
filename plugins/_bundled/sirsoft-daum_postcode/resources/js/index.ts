@@ -6,6 +6,8 @@
 
 // 핸들러 맵 임포트
 import { handlerMap } from './handlers';
+// 플러그인 화면 스타일(daumpostcode-*·daumpostcode:*) — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
 
 // 플러그인 식별자
 const PLUGIN_IDENTIFIER = 'sirsoft-daum_postcode';

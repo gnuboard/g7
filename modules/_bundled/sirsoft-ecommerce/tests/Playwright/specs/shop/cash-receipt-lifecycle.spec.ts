@@ -155,13 +155,13 @@ async function placeDbankOrderWithCashReceipt(
         { headers }
       ).then((r) => r.json());
       const options = (detail?.data?.options ?? []) as Array<{
-        option_values_localized?: Record<string, string>;
+        id?: number;
         stock_quantity?: number;
       }>;
 
       // 부분취소를 만들려면 수량 2 가 필요하다. 재고가 모자란 옵션을 고르면
       // 주문 생성이 422(재고 부족)로 실패하고, 그 실패가 "현금영수증 결함" 으로 오해된다.
-      const usable = options.find((o) => (o.stock_quantity ?? 0) >= 2);
+      const usable = options.find((o) => typeof o.id === 'number' && (o.stock_quantity ?? 0) >= 2);
       if (!usable) continue;
 
       const added = await fetch('/api/modules/sirsoft-ecommerce/cart', {
@@ -169,7 +169,8 @@ async function placeDbankOrderWithCashReceipt(
         headers,
         body: JSON.stringify({
           product_id: candidate.id,
-          items: [{ option_values: usable.option_values_localized ?? {}, quantity: 2 }],
+          // 담기 계약은 옵션 ID 다 — 옵션 값 맵은 무시돼 상품의 첫 옵션(재고 무관)이 담긴다.
+          items: [{ product_option_id: usable.id, quantity: 2 }],
         }),
       });
       if (!added.ok) continue;
@@ -285,6 +286,13 @@ test.describe('현금영수증 전주기 (신청 → 입금확인 → 자동발�
   // PG 왕복이 여러 번이라 기본 30초로는 부족하다 (초과 시 모달 대기 실패로 위장된다).
   test.setTimeout(180_000);
 
+  /**
+   * 무통장 신청 주문이 입금확인과 함께 자동발급되고 발급번호·영수증 링크가 남는다.
+   *
+   * @scenario provider_state=live
+   *
+   * @effects live_cash_receipt_provider_resolved, issue_response_mapped_to_receipt_key_and_issue_number
+   */
   test('무통장 신청 → 입금확인 → 자동발급 → 영수증 링크 노출', async ({
     page,
     orderManageToken,
@@ -332,6 +340,14 @@ test.describe('현금영수증 전주기 (신청 → 입금확인 → 자동발�
     });
   });
 
+  /**
+   * 부분환불이 실행되면 기존 영수증을 전액취소하고 줄어든 금액으로 다음 회차를 재발급한다.
+   *
+   * @scenario issue_sequence=reissued, refund_scope=partial, payment_method=dbank
+   *
+   * @effects amount_change_triggers_cancel_then_reissue, cancel_delegated_as_full_cancel_without_amount,
+   *          order_id_suffixed_with_issue_sequence
+   */
   test('자동발급 → 부분환불 → 전액취소 후 재발급 (발급 회차 증가)', async ({
     page,
     orderManageToken,
@@ -392,36 +408,12 @@ test.describe('현금영수증 전주기 (신청 → 입금확인 → 자동발�
       )
       .toBeGreaterThan(0);
 
-    // 주문상태 Select 는 네이티브 <select> 가 아니라 커스텀 listbox 다 (Select.tsx).
-    // 옵션 클릭이 합성 change 이벤트를 만들어 _local.batchOrderStatus 를 커밋한다.
-    await page.getByRole('button', { name: '주문상태 변경' }).click();
-    const statusListbox = page.getByRole('listbox').last();
-    await statusListbox.waitFor({ state: 'visible', timeout: 10_000 });
-    await statusListbox.getByRole('option', { name: '주문취소', exact: true }).click();
-
-    await expect(statusListbox).toBeHidden({ timeout: 10_000 });
-
-    // 핸들러(buildOrderDetailBulkConfirmData)는 _local.batchOrderStatus 를 읽는다.
-    // 화면상 드롭다운 라벨이 바뀌어도 이 상태가 커밋되지 않으면 핸들러는 경고 토스트만
-    // 띄우고 조용히 반환한다 — 증상은 "모달이 안 열림" 이라 원인을 오해하기 쉽다.
-    await expect
-      .poll(
-        async () =>
-          page.evaluate(() => {
-            const g = (
-              window as unknown as {
-                G7Core?: { state?: { getLocal?(): Record<string, unknown> } };
-              }
-            ).G7Core;
-            return (g?.state?.getLocal?.()?.batchOrderStatus ?? null) as string | null;
-          }),
-        { timeout: 10_000 }
-      )
-      .toBe('cancelled');
-
-    const applyButton = page.getByRole('button', { name: '일괄변경' });
-    await expect(applyButton).toBeEnabled({ timeout: 10_000 });
-    await applyButton.click();
+    // 관리자 취소의 입구는 상품 표 선택 바의 [취소·환불 접수] 하나다. 주문상태 드롭다운에는 더 이상
+    // '주문취소' 가 없다 — 드롭다운으로 취소하면 환불신청서 없이 상품만 cancelled 로 옮겨 장부에 근거
+    // 없는 취소가 남았기 때문이다(#599). 이 버튼이 여는 창은 종전 취소 모달과 같은 창이다.
+    const cancelRefundButton = page.getByRole('button', { name: '취소·환불 접수' });
+    await expect(cancelRefundButton).toBeEnabled({ timeout: 15_000 });
+    await cancelRefundButton.click();
 
     const cancelModal = page.getByRole('dialog');
     await cancelModal.waitFor({ state: 'visible', timeout: 30_000 });
@@ -431,9 +423,73 @@ test.describe('현금영수증 전주기 (신청 → 입금확인 → 자동발�
     const qty = cancelModal.locator('input[type=number]').first();
     await qty.fill('1');
 
-    await cancelModal.locator('select').first().selectOption({ label: '관리자 취소' });
+    // 사유는 환불 사유 설정에서 오는 목록이다 — 이름을 박지 않고 첫 선택지를 고른다.
+    const reasonSelect = cancelModal.locator('select').first();
+    const reasonValue = await reasonSelect.locator('option').nth(1).getAttribute('value');
+    expect(reasonValue, '취소 사유 선택지가 없다 — 환불 사유 설정이 비었다').toBeTruthy();
+    await reasonSelect.selectOption(reasonValue as string);
+
+    // 무통장은 사람이 송금하는 수단이라 돌려줄 돈이 있으면 환불계좌가 필수다(P9).
+    // 은행 선택은 커스텀 컨트롤이라 이 spec 의 검증 대상이 아닌 입력으로 보고, 앱 핸들러가 읽는
+    // 상태(_local.refundBank*)를 채운다. 설정에 등록된 환불 은행이 있으면 그 첫 코드를, 없으면
+    // 표준 은행코드를 쓴다 — 서버는 코드를 설정 목록과 대조하지 않는다(CancelOrderRequest: string·max 10).
+    const bankFilled = await page.evaluate(async () => {
+      const settings = await fetch('/api/modules/sirsoft-ecommerce/settings/payment', {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+      }).then((r) => r.json());
+      const banks = (settings?.data?.order_settings?.banks ?? []) as Array<{ code?: string }>;
+      const code = banks.find((b) => typeof b.code === 'string' && b.code !== '')?.code ?? '004';
+
+      (
+        window as unknown as {
+          G7Core: { state: { setLocal(v: Record<string, unknown>): void } };
+        }
+      ).G7Core.state.setLocal({
+        refundBankCode: code,
+        refundBankAccount: '1002123456789',
+        refundBankHolder: '테스트환불',
+      });
+      return true;
+    });
+    expect(bankFilled, '취소 모달의 앱 상태를 채우지 못했다').toBe(true);
+
+    const cancelPost = page.waitForResponse(
+      (r) => r.url().includes('/cancel-refund') && r.request().method() === 'POST',
+      { timeout: 60_000 }
+    );
     await cancelModal.getByRole('button', { name: '주문 취소' }).click();
+
+    const cancelled = await cancelPost;
+    const cancelBody = await cancelled.text();
+    expect(cancelled.status(), `취소·환불 접수 실패: ${cancelBody}`).toBeLessThan(300);
     await expect(cancelModal).toBeHidden({ timeout: 60_000 });
+
+    // 무통장은 「환불까지 한 번에 처리」 대상이 아니다(수단이 자동 환불을 선언하지 않는다 — 사람이
+    // 송금한다). 그래서 신청서는 '환불신청' 으로 남고, 운영자가 승인한 뒤 [환불하기]로 송금 완료를
+    // 선언한다. 영수증 재발급은 접수 시점이 아니라 **환불이 실행되는 순간** 일어난다(RefundExecutionService).
+    const refundNumber = JSON.parse(cancelBody)?.data?.claim_number as string | undefined;
+    expect(refundNumber, `접수 응답에 신청서 번호가 없다: ${cancelBody}`).toBeTruthy();
+
+    const claim = await api(page, `/api/modules/sirsoft-ecommerce/admin/claims/${refundNumber}`);
+    expect(claim.status, `환불신청서 조회 실패: ${claim.body}`).toBe(200);
+    const claimData = JSON.parse(claim.body)?.data ?? {};
+    const refundId = (claimData?.claim?.id ?? claimData?.id) as number | undefined;
+    expect(refundId, `환불신청서 ID 를 찾지 못했다: ${claim.body.slice(0, 300)}`).toBeTruthy();
+
+    const approved = await api(page, `/api/modules/sirsoft-ecommerce/admin/refunds/${refundId}/status`, {
+      method: 'PATCH',
+      body: { status: 'approved' },
+    });
+    expect(approved.status, `환불신청서 승인 실패: ${approved.body}`).toBe(200);
+
+    const executed = await api(page, `/api/modules/sirsoft-ecommerce/admin/refunds/${refundId}/execute`, {
+      method: 'POST',
+      body: {},
+    });
+    expect(executed.status, `환불 실행 실패: ${executed.body}`).toBe(200);
 
     // 금액이 줄었으면 기존 영수증은 전액취소되고 새 금액으로 재발급되어야 한다 (D7).
     // receipt_key 는 API 가 노출하지 않으므로(자격증명성 식별자) 영수증 행 id 로 판별한다.
@@ -465,6 +521,13 @@ test.describe('현금영수증 전주기 (신청 → 입금확인 → 자동발�
     expect(reissued.history.length).toBe(3);
   });
 
+  /**
+   * 입금 전(무통장 ready) 주문은 발급 버튼이 없고 서버도 PAYMENT_NOT_PAID 로 거부한다.
+   *
+   * @scenario payment_status=ready, card_state=awaiting_deposit
+   *
+   * @effects card_awaiting_deposit_matches_ready_status
+   */
   test('입금 전에는 발급 버튼이 비활성 — 발급 시도가 불가능하다', async ({
     page,
     orderManageToken,
@@ -509,6 +572,13 @@ test.describe('현금영수증 전주기 (신청 → 입금확인 → 자동발�
     expect(state.active, '입금 전인데 영수증이 발급되었다').toBeNull();
   });
 
+  /**
+   * 신청하지 않은 주문은 입금완료 뒤 회원이 직접 발급할 수 있고 중복 발급은 409 다.
+   *
+   * @scenario card_state=issuable, actor=member
+   *
+   * @effects mypage_issue_uses_member_or_guest_endpoint
+   */
   test('미신청 주문 → 입금완료 후 사후 발급 (유저가 직접 발급)', async ({
     page,
     orderManageToken,
@@ -578,6 +648,13 @@ test.describe('현금영수증 전주기 (신청 → 입금확인 → 자동발�
     expect(JSON.parse(again.body)?.errors?.error_code).toBe('ALREADY_ISSUED');
   });
 
+  /**
+   * 자진발급이 켜져 있으면 미신청 주문도 입금완료 시 국세청 지정번호로 소득공제 발급된다.
+   *
+   * @scenario identifier_type=self_issue, receipt_type=income
+   *
+   * @effects self_issue_on_auto_issues_income_receipt_with_nts_number
+   */
   test('자진발급 ON + 미신청 주문 → 국세청 지정번호로 소득공제 자동발급', async ({
     page,
     orderManageToken,
@@ -620,6 +697,13 @@ test.describe('현금영수증 전주기 (신청 → 입금확인 → 자동발�
     ).toContain('1234');
   });
 
+  /**
+   * 관리자 발급도 용도×식별번호 조합을 검증한다 — 지출증빙+자진발급번호·소득공제+사업자번호는 422.
+   *
+   * @scenario identifier_type=self_issue, receipt_type=expense
+   *
+   * @effects admin_issue_rejects_invalid_purpose_identifier_combination_422
+   */
   test('지출증빙 + 자진발급 지정번호(0100001234) 조합은 거부된다 (422)', async ({
     page,
     orderManageToken,

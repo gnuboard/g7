@@ -1,0 +1,34 @@
+feature: 관리자 페이지 상세 — 첨부 내려받기 핸들러를 모듈이 소유
+
+description: |
+  관리자 페이지 상세의 첨부 카드는 로그인 토큰을 실어 첨부를 받아야 한다(미발행 페이지 첨부는 읽기 권한이 있는
+  운영자에게만 나가므로 `<a href>` 로는 받을 수 없다). 종전에는 이 카드가 접두어 없는 `downloadAttachment` 를
+  불렀는데, 그 이름은 관리자 템플릿(sirsoft-admin_basic)이 등록한 템플릿 핸들러라 다른 관리자 템플릿으로
+  그리면 카드를 눌러도 아무 일도 일어나지 않았다(레이아웃 검사 「미등록 핸들러」 경고). 코어에는 내려받기
+  핸들러가 없다.
+
+  계약: 모듈이 `sirsoft-page.downloadAttachment` 를 등록하고(window.__SirsoftPage.initModule 재등록 진입점 포함)
+  레이아웃은 그 이름으로 부른다. 핸들러는 코어 ApiClient(G7Core.api.get, blob)로 받아 원본 파일명으로 저장하고,
+  실패하면 예외를 던져 레이아웃의 onError 가 「첨부파일을 내려받지 못했습니다」를 띄운다.
+
+# axis 의미:
+#   내려받기 결과 — 성공(파일 저장) / 실패(요청 거부·ApiClient 없음 → 오류 안내) / 주소 없음(요청하지 않음).
+axes:
+  outcome: [success, failure, missing_url]
+
+effects:
+  - admin_card_calls_module_owned_download_handler   # 레이아웃이 sirsoft-page.downloadAttachment 를 부르고 그 핸들러가 모듈 맵에 있다
+  - handler_fetches_blob_with_token_and_saves_original_filename
+  - handler_skips_request_without_url
+  - handler_throws_on_failure
+  - download_failure_shows_error_toast               # 레이아웃 onError 가 실패 안내를 띄운다
+
+test_files:
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/handlers/downloadAttachment.test.ts
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/admin-page-detail-attachment-download.test.tsx
+
+validation:
+  browser_check: Chrome MCP   # 페이지 모듈 Playwright 인프라 보강 전 — 실브라우저 확인은 Chrome MCP 로 대체
+  note: |
+    관리자 템플릿을 바꿔 가며 보는 실브라우저 확인은 Chrome MCP 로 한다. 첨부 서빙 게이트(발행 상태 × 열람자)는
+    page-attachment-serving.yaml 이 담당한다.

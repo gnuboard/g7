@@ -9,6 +9,8 @@ return [
 
     // 게시판 작업 메시지
     'boards' => [
+        'reorder_success' => '게시판 순서를 저장했습니다.',
+        'reorder_failed' => '게시판 순서를 저장하지 못했습니다.',
         'not_found' => '게시판을 찾을 수 없습니다.',
         'already_exists' => '이미 존재하는 게시판 슬러그입니다.',
         'has_posts' => '게시글이 있는 게시판은 삭제할 수 없습니다.',
@@ -18,6 +20,8 @@ return [
         'update_success' => '게시판이 수정되었습니다.',
         'delete_success' => '게시판이 삭제되었습니다.',
         'copy_success' => '게시판이 복사되었습니다.',
+        'bulk_members_success' => '게시판 :count개의 명단을 변경했습니다. (제외 :skipped개, 변화 없음 :unchanged개)',
+        'bulk_members_failed' => '게시판 관리자·스텝 일괄 지정에 실패했습니다.',
         'config_retrieved' => '게시판 설정을 조회했습니다.',
         'types_retrieved' => '게시판 타입 목록을 조회했습니다.',
         'form_data_retrieved' => '게시판 폼 데이터를 조회했습니다.',
@@ -75,6 +79,7 @@ return [
         'delete_failed' => '게시글 삭제에 실패했습니다.',
         'blind_success' => '게시글이 블라인드 처리되었습니다.',
         'blind_failed' => '게시글 블라인드 처리에 실패했습니다.',
+        'blind_deleted_not_allowed' => '삭제된 게시글은 블라인드할 수 없습니다. 먼저 복구한 뒤 블라인드해 주세요.',
         'restore_success' => '게시글이 복원되었습니다.',
         'restore_failed' => '게시글 복원에 실패했습니다.',
         'blinded_post_access_denied' => '블라인드 처리된 게시글입니다.',
@@ -95,6 +100,8 @@ return [
         'password_incorrect' => '비밀번호가 일치하지 않습니다.',
         'password_verify_not_allowed' => '회원 게시글은 비밀번호 검증을 사용할 수 없습니다.',
         'no_password_set' => '비밀번호가 설정되지 않은 게시글입니다.',
+        'thread_password_verified' => '원글 비밀번호가 확인되었습니다.',
+        'thread_password_not_applicable' => '원글 비밀번호로 열 수 있는 답변이 아닙니다.',
     ],
 
     // 댓글 작업 메시지
@@ -111,6 +118,8 @@ return [
         'delete_forbidden' => '댓글 삭제 권한이 없습니다.',
         'blind_success' => '댓글이 블라인드 처리되었습니다.',
         'blind_failed' => '댓글 블라인드 처리에 실패했습니다.',
+        'blind_deleted_not_allowed' => '삭제된 댓글은 블라인드할 수 없습니다. 먼저 복구한 뒤 블라인드해 주세요.',
+        'restore_parent_deleted' => '원글이 삭제된 상태라 댓글만 복구할 수 없습니다. 원글을 먼저 복구해 주세요.',
         'restore_success' => '댓글이 복원되었습니다.',
         'restore_failed' => '댓글 복원에 실패했습니다.',
         'blinded_comment_content' => '운영원칙에 따라 숨김 처리된 댓글입니다.',
@@ -124,6 +133,55 @@ return [
         'post_blinded' => '블라인드 처리된 게시글에는 댓글을 작성할 수 없습니다.',
         'post_deleted' => '삭제된 게시글에는 댓글을 작성할 수 없습니다.',
         'post_secret' => '열람 권한이 없는 비밀글에는 댓글을 작성할 수 없습니다.',
+    ],
+
+    // 반응(추천/비추천) 관련 메시지
+    'reaction' => [
+        'list_success' => '반응 유형 목록을 조회했습니다.',
+        'add_success' => '반응을 남겼습니다.',
+        'change_success' => '반응을 변경했습니다.',
+        'remove_success' => '반응을 취소했습니다.',
+        'failed' => '반응 처리에 실패했습니다.',
+        'disabled' => '이 게시판은 반응 기능이 비활성화되어 있습니다.',
+        'inactive_type' => '이 게시판에서 사용할 수 없는 반응 유형입니다.',
+        'self_post' => '본인 글에는 반응할 수 없습니다.',
+        'secret_denied' => '열람 권한이 없는 비밀글에는 반응할 수 없습니다.',
+        'login_required' => '로그인이 필요한 기능입니다.',
+        'target_unavailable' => '삭제되었거나 숨김 처리된 대상에는 반응할 수 없습니다.',
+        'self_comment' => '본인 댓글에는 반응할 수 없습니다.',
+        'retrieved' => '반응 목록을 조회했습니다.',
+        'retrieve_failed' => '반응 목록 조회에 실패했습니다.',
+        'removed' => '반응을 해제했습니다.',
+        'bulk_removed' => ':count개의 반응을 해제했습니다.',
+        'not_found' => '반응을 찾을 수 없습니다.',
+        'delete_failed' => '반응 해제에 실패했습니다.',
+        'admin' => [
+            'retrieved' => '반응 목록을 조회했습니다.',
+            'retrieve_failed' => '반응 목록 조회에 실패했습니다.',
+            'removed' => '반응을 삭제했습니다.',
+            'bulk_removed' => ':count개의 반응을 삭제했습니다.',
+            'bulk_delete_failed' => '반응 일괄 삭제에 실패했습니다.',
+            'permission_denied' => '반응 관리 권한이 없습니다.',
+        ],
+    ],
+
+    'reaction_type' => [
+        'in_use' => '이 유형에 :count건의 반응이 있어 삭제할 수 없습니다 (:name). 비활성화만 가능합니다.',
+        'code_taken' => '이미 사용 중인 코드입니다.',
+        'icon_upload_success' => '아이콘을 업로드했습니다.',
+        'icon_upload_failed' => '아이콘 업로드에 실패했습니다.',
+        'icon_deleted' => '아이콘을 삭제했습니다.',
+        'icon_delete_failed' => '아이콘 삭제에 실패했습니다.',
+        'icon_not_found' => '아이콘을 찾을 수 없습니다.',
+    ],
+
+    'report' => [
+        'my_retrieved' => '신고 내역을 조회했습니다.',
+        'my_retrieve_failed' => '신고 내역 조회에 실패했습니다.',
+        'cancelled' => '신고를 취소했습니다.',
+        'cancel_failed' => '신고 취소에 실패했습니다.',
+        'cancel_not_allowed' => '접수 상태에서만 취소할 수 있습니다 (현재: :status).',
+        'log_not_found' => '신고 내역을 찾을 수 없습니다.',
     ],
 
     // 댓글 관련 추가 메시지
@@ -168,6 +226,7 @@ return [
         'posts_delete_denied' => '게시글 삭제 권한이 없습니다.',
         'posts_manage_others_denied' => '타인의 게시글을 관리할 권한이 없습니다.',
         'posts_secret_read_denied' => '비밀글 조회 권한이 없습니다.',
+        'notice_denied' => '게시글을 공지로 지정할 권한이 없습니다.',
 
         // 댓글 권한
         'comments_read_denied' => '댓글 조회 권한이 없습니다.',
@@ -249,7 +308,7 @@ return [
         'status_updated' => '신고 상태가 변경되었습니다.',
         'status_update_failed' => '신고 상태 변경에 실패했습니다.',
         'bulk_status_updated' => '선택한 신고의 상태가 변경되었습니다.',
-        'bulk_status_updated_with_count' => ':count개 신고를 :status(으)로 변경했습니다.',
+        'bulk_status_updated_with_count' => ':count개 신고를 「:status」 상태로 변경했습니다.',
         'manual_blind_restored_notice' => '수동 블라인드 처리된 :count건이 함께 복구되었습니다.',
         'bulk_status_update_failed' => '대량 상태 변경에 실패했습니다.',
         'bulk_status_change_blocked' => '일부 신고는 상태 변경이 불가능합니다.',
@@ -283,6 +342,46 @@ return [
         // 모달 안내 메시지
         'blinded_will_be_public' => '블라인드 처리된 게시물 {count}건이 공개로 전환됩니다.',
         'already_reported' => '이미 신고한 게시물입니다.',
+    ],
+
+    // 스크랩(북마크) 작업 메시지
+    'scrap' => [
+        'added' => '게시글을 스크랩했습니다.',
+        'removed' => '스크랩을 해제했습니다.',
+        'toggle_failed' => '스크랩 처리에 실패했습니다.',
+        'retrieved' => '스크랩 목록을 조회했습니다.',
+        'retrieve_failed' => '스크랩 목록 조회에 실패했습니다.',
+        'delete_failed' => '스크랩 삭제에 실패했습니다.',
+        'not_found' => '스크랩을 찾을 수 없습니다.',
+        'scrap_disabled' => '이 게시판은 스크랩 기능이 비활성화되어 있습니다.',
+        'post_not_found' => '게시글을 찾을 수 없습니다.',
+        'bulk_removed' => ':count개의 스크랩을 해제했습니다.',
+        'admin' => [
+            'retrieved' => '스크랩 목록을 조회했습니다.',
+            'retrieve_failed' => '스크랩 목록 조회에 실패했습니다.',
+            'removed' => '스크랩을 삭제했습니다.',
+            'bulk_removed' => ':count개의 스크랩을 삭제했습니다.',
+            'bulk_delete_failed' => '스크랩 일괄 삭제에 실패했습니다.',
+            'permission_denied' => '스크랩 관리 권한이 없습니다.',
+        ],
+    ],
+
+    // 게시글 일괄 처리 메시지
+    'posts_bulk' => [
+        'delete_success' => ':count개의 게시글을 삭제했습니다. (건너뜀 :skipped개)',
+        'blind_success' => ':count개의 게시글을 블라인드 처리했습니다. (건너뜀 :skipped개)',
+        'restore_success' => ':count개의 게시글을 복구했습니다. (건너뜀 :skipped개)',
+        'action_failed' => '게시글 일괄 처리에 실패했습니다.',
+        // 건너뛴 항목의 사유 — 일괄 처리 결과 창이 글마다 그대로 보인다
+        'skip_reasons' => [
+            'already_deleted' => '이미 삭제된 글',
+            'has_replies' => '답글이 달린 글 (답글 삭제 정책상 삭제할 수 없음)',
+            'already_blinded' => '이미 블라인드된 글',
+            'already_published' => '이미 게시 상태인 글',
+            'not_found' => '이 게시판에서 찾을 수 없는 글',
+            'unknown_action' => '알 수 없는 처리',
+            'error' => '처리 중 오류',
+        ],
     ],
 
     // 게시판 유형 작업 메시지
@@ -357,8 +456,205 @@ return [
     ],
     'inquiry' => [
         'default_title' => '상품 문의',
+        // 이커머스 문의 연동 훅(sirsoft-ecommerce.inquiry.*)에 답할 때 게시판이 던지는 실패 사유
+        'board_changed' => '게시판 설정이 변경되어 해당 게시글을 찾을 수 없습니다. 관리자에게 문의하세요.',
+        'update_failed' => '문의 수정에 실패했습니다.',
+        'delete_failed' => '문의 삭제에 실패했습니다.',
+        'reply_not_found' => '답변을 찾을 수 없습니다.',
+        'reply_update_failed' => '답변 수정에 실패했습니다.',
+        'reply_delete_failed' => '답변 삭제에 실패했습니다.',
+    ],
+    // 개인정보 보유기간 처리 (이슈 #636) — 코어 보유기간 커맨드·미리보기가 핸들러 이름으로 쓴다
+    'privacy_retention' => [
+        'target_columns' => [
+            'title' => '제목',
+            'author' => '작성자',
+            'board' => '게시판 · 구분',
+            'created_at' => '작성일',
+        ],
+        'target_kinds' => [
+            'post' => '글',
+            'comment' => '댓글',
+        ],
+        'handlers' => [
+            'ip' => '게시판 작성 IP',
+            'guest' => '게시판 비회원 작성자 정보',
+        ],
     ],
     'dashboard' => [
         'fetch_success' => '대시보드 데이터를 조회했습니다.',
+    ],
+    // 알림 수신자 규칙 「관련 사용자」의 관계 이름 — 알림 설정 화면이 관계 키 대신 보인다.
+    'notification_relations' => [
+        'post_author' => '게시글 작성자',
+        'parent_comment_author' => '원 댓글 작성자',
+        'original_post_author' => '원글 작성자',
+        'board_managers' => '게시판 관리자',
+    ],
+    // 알림 템플릿 편집 창 「사용 가능한 변수」 설명 — common 은 변수 키별 기본, by_type 은 그 알림에서만 뜻이 다른 변수. 없는 키는 선언 문자열을 그대로 쓴다.
+    'notification_variables' => [
+        'common' => [
+            'name' => '수신자 이름',
+            'app_name' => '사이트명',
+            'board_name' => '게시판 이름',
+            'post_title' => '게시글 제목',
+            'comment_author' => '댓글 작성자',
+            'comment_content' => '댓글 내용 (200자)',
+            'post_url' => '게시글 URL',
+            'site_url' => '사이트 URL',
+            'action_type' => '처리 유형 (블라인드/삭제/복원)',
+            'target_type' => '처리 대상 (게시글/댓글)',
+            'post_author' => '게시글 작성자',
+            'reason_type' => '신고 사유',
+            'report_url' => '신고 관리 페이지 URL',
+        ],
+        'by_type' => [
+            'reply_comment' => [
+                'comment_author' => '답글 작성자',
+                'comment_content' => '답글 내용 (200자)',
+            ],
+            'new_post_admin' => [
+                'name' => '수신자 이름 (관리자)',
+            ],
+            'report_received_admin' => [
+                'post_title' => '신고 대상 게시글 제목',
+                'target_type' => '신고 대상 유형 (게시글/댓글)',
+            ],
+        ],
+    ],
+    // 콘솔 명령 출력
+    'console' => [
+        'playwright_seed' => [
+            'cli_only' => 'CLI 전용 커맨드입니다.',
+            'bypass_required' => 'G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다.',
+        ],
+        'seed_board_posts' => [
+            'invalid_tag' => '--tag 는 영문 소문자·숫자·하이픈 1~40자여야 합니다(시드에는 필수).',
+        ],
+        'aggregate_stats' => [
+            'done' => '게시판 현황 집계 완료: 최근 :days일치 :rows개 행 갱신',
+            'dry_run_header' => '집계 대상 최근 :days일 (저장하지 않음):',
+            'headers' => [
+                'date' => '날짜',
+                'posts' => '게시글',
+                'comments' => '댓글',
+            ],
+        ],
+        'prune_attachments' => [
+            'temp_retention_disabled' => '임시 첨부 보존기간이 1일 미만이어서 임시 첨부 정리를 수행하지 않았습니다.',
+            'temp_dry_run' => '보존기간(:days일) 경과 미연결 임시 첨부: :count건',
+            'temp_done' => '보존기간(:days일) 경과 임시 첨부 :scanned건 중 :deleted건을 삭제했습니다. (실패 :failed건)',
+            'purge_disabled' => '삭제 첨부 영구 정리가 꺼져 있어 실행하지 않았습니다. (attachment_settings.purge_enabled = false)',
+            'purge_retention_disabled' => '삭제 첨부 보존기간이 1일 미만이어서 영구 정리를 수행하지 않았습니다.',
+            'purge_dry_run' => '보존기간(:days일) 경과 삭제 첨부: :count건',
+            'purge_done' => '보존기간(:days일) 경과 삭제 첨부 :scanned건 중 :deleted건을 영구 삭제했습니다. (실패 :failed건)',
+        ],
+    ],
+    // 게시판 모듈 시더 콘솔 출력
+    'seeders' => [
+        'activity_log_sample' => [
+            'skip_no_admin' => '관리자 사용자가 없어 게시판 활동 로그 시더를 건너뜁니다.',
+            'skip_no_boards' => '샘플 게시판이 없어 게시판 활동 로그를 건너뜁니다.',
+            'done' => '게시판 활동 로그 :count건 생성 완료.',
+            'cleaned' => '이전 샘플 신고 활동 로그 :count건 정리 (표식 있는 행만).',
+            'unmarked_kept' => '표식 없는 게시판 활동 로그 :count건은 운영 로그로 보고 남깁니다 (이전 버전 시더가 만든 샘플도 표식이 없어 정리되지 않습니다).',
+        ],
+        'board_reaction_type' => [
+            'synced' => '반응 유형 \':code\' 동기화 (사용자 수정 보존).',
+            'created' => '반응 유형 \':code\' 생성 완료.',
+        ],
+        'board_type' => [
+            'synced' => '게시판 유형 \':slug\' 동기화 (사용자 수정 보존).',
+            'created' => '게시판 유형 \':slug\' 생성 완료.',
+        ],
+        'database' => [
+            'start' => '게시판 모듈 시더 시작',
+            'install_types' => '[설치] 게시판 타입 / 반응 유형 생성',
+            'sample_start' => '게시판 샘플 시더 실행',
+            'steps' => [
+                'boards' => '게시판 샘플 생성',
+                'posts' => '게시글/댓글 샘플 생성',
+                'reactions_scraps' => '반응·스크랩 샘플 생성',
+                'reports' => '신고 샘플 생성',
+                'notification_logs' => '알림 발송 이력 샘플 생성',
+                'identity_logs' => '본인인증 이력 샘플 생성',
+                'activity_logs' => '활동 로그 샘플 생성',
+            ],
+            'done' => '게시판 모듈 시더 완료!',
+        ],
+        'board_sample' => [
+            'start' => '게시판 샘플 데이터 생성 중...',
+            'no_admin_role_user' => 'admin 역할 사용자가 없습니다. board_manager_ids가 비어있게 됩니다.',
+            'exists_skip' => ':slug 게시판이 이미 존재합니다. 스킵합니다.',
+            'created' => ':slug 게시판 생성 완료 (테이블 + 권한 포함)',
+            'failed' => ':slug 게시판 생성 실패: :error',
+            'done' => '게시판 샘플 데이터 생성 완료: :count개',
+        ],
+        'identity_verification_log' => [
+            'scope_label' => '게시판',
+        ],
+        'notification_log' => [
+            'scope_label' => '게시판',
+        ],
+        'post_sample' => [
+            'start' => '게시글/댓글 샘플 데이터 생성 중...',
+            'stats_aggregated' => '대시보드 집계(board_stats) 최근 :days일 갱신 완료',
+            'stats_failed' => '대시보드 집계 실패(시드는 계속): :error',
+            'no_active_users' => '활성 회원이 없습니다. DummyUserSeeder를 먼저 실행하세요.',
+            'users_count' => ':count명의 사용자로 게시글/댓글 생성',
+            'admin_user' => '관리자: :name (ID: :id)',
+            'step_user' => '스텝: :name (ID: :id)',
+            'scaling' => '게시글 수 스케일링: 기본 :base개 → 요청 :requested개 (비율: :ratio)',
+            'board_start' => ':slug 게시판 처리 시작',
+            'board_done' => ':slug 게시판 처리 완료 (게시글 :posts, 답변글 :replies, 댓글 :comments)',
+            'board_error' => ':slug 게시판 처리 중 오류: :error',
+            'done' => '게시글/댓글 샘플 데이터 생성 완료 — 총 게시글 :posts개, 답변글 :replies개, 댓글 :comments개',
+            'counts_syncing' => '비정규화 카운트 컬럼 동기화 중...',
+            'counts_synced' => '게시글·댓글·게시판 카운트 컬럼 갱신 완료',
+            'images_creating' => '샘플 이미지 파일 생성 중...',
+            'image_created' => '샘플 이미지 #:index: :path',
+            'posts_exist_skip' => ':slug 게시판에 이미 게시글 :count개가 있습니다. 스킵합니다.',
+            'board_summary' => ':slug: 게시글 :posts개, 답변글 :replies개, 댓글 :comments개 생성',
+            'badge_creating' => ':slug: 배지 케이스 보장 게시글 생성 중...',
+            'badge_done' => ':slug: 배지 케이스 보장 게시글 :posts개, 답글 :replies개 생성 완료',
+            'attachment_failed' => '첨부파일 레코드 생성 실패 (Post :post_id): :error',
+        ],
+        'reaction_scrap_sample' => [
+            'start' => '반응·스크랩 샘플 데이터 생성 중...',
+            'skip_no_boards' => '샘플 게시판이 없어 반응·스크랩 샘플을 건너뜁니다.',
+            'skip_exists' => '샘플 게시판에 이미 반응·스크랩이 있습니다. 건너뜁니다.',
+            'skip_few_users' => '활성 회원이 2명 이상 필요합니다. 반응·스크랩 샘플을 건너뜁니다.',
+            'done' => '반응 :reactions건, 스크랩 :scraps건 생성 완료 (reaction_counts·scrap_count 재집계)',
+        ],
+        'report_sample' => [
+            'start' => '신고 샘플 데이터 생성 중...',
+            'skip_no_posts' => '이번 실행에서 만든 샘플 글이 없어 신고 샘플을 건너뜁니다 (이전 샘플 신고는 그대로 둡니다).',
+            'no_boards' => '신고 기능이 활성화된 샘플 게시판이 없습니다.',
+            'few_users' => '활성 회원이 2명 이상 필요합니다. DummyUserSeeder를 먼저 실행하세요.',
+            'done' => '신고 케이스 생성 완료: :count건',
+            'status_distribution' => '상태별 분포 (샘플):',
+            'status_count' => ':status: :count건',
+            'cleaned' => '이전 샘플 신고 :count건 정리 (표식 있는 케이스만)',
+            'unmarked_kept' => '표식 없는 신고 :count건은 운영 데이터로 보고 남깁니다 (이전 버전 시더가 만든 샘플도 표식이 없어 정리되지 않습니다).',
+            'guest_start' => '비회원 작성 콘텐츠 신고 데이터 생성 중...',
+            'guest_done' => '비회원 작성 콘텐츠 신고 케이스 생성 완료: :count건',
+            'multi_start' => '다중 신고자 케이스 생성 중...',
+            'target_reporters' => '[:slug] :type #:id: :count명 신고',
+            'multi_done' => '다중 신고자 케이스 생성 완료: :count건',
+            'bulk_start' => '대량 신고자 케이스 생성 중...',
+            'bulk_no_targets' => '대량 신고자 케이스를 만들 대상 글·댓글이 남아 있지 않습니다.',
+            'bulk_done' => '대량 신고자 케이스 생성 완료: :count건 (자동 블라인드 기준 :threshold명)',
+            'resubmit_start' => '재접수 케이스 생성 중...',
+            'scenario_labels' => [
+                'a' => '반려 후 재접수 (현재: 접수)',
+                'b' => '반려 후 재접수 후 재반려',
+                'c' => '중단 후 재접수 (현재: 접수)',
+                'd' => '재접수 후 중단 처리',
+            ],
+            'scenario_no_target' => '시나리오 :key: 대상 없음 (건너뜀)',
+            'scenario_created' => '시나리오 :key [:slug] :type #:id: :label',
+            'scenario_e' => '시나리오 E: 게시판 삭제 후 남은 신고 케이스 생성',
+            'resubmit_done' => '재접수/특수 케이스 생성 완료: :count건',
+        ],
     ],
 ];

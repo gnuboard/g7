@@ -15,7 +15,7 @@ import 'yet-another-react-lightbox/plugins/thumbnails.css';
 
 import { Button } from '../basic/Button';
 import { I } from '../basic/I';
-import { isCrossOriginAssetUrl } from './assetOrigin';
+import { isDirectAssetUrl } from './assetOrigin';
 import { Div } from '../basic/Div';
 import { Img } from '../basic/Img';
 import type { EditorAttrs } from '../../types';
@@ -140,7 +140,7 @@ export const executeImageDownload = async (image: GalleryImage): Promise<void> =
 
   // 공개 자산 디스크(S3/CDN)의 교차 출처 URL 은 인증이 필요 없는 공개 자산이다.
   // 인증 XHR 로 가져오면 CORS 미설정 CDN 에서 실패하므로 일반 링크 다운로드를 쓴다.
-  if (image.downloadRequiresAuth && !isCrossOriginAssetUrl(downloadUrl)) {
+  if (image.downloadRequiresAuth && !isDirectAssetUrl(downloadUrl)) {
     await downloadAuthenticatedFile(downloadUrl, filename);
   } else {
     downloadFile(downloadUrl, filename);
@@ -214,6 +214,17 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   // 최신 인덱스를 ref로 추적 (클로저 문제 방지)
   const currentIndexRef = useRef(startIndex);
 
+  // 닫힌 채 마운트된 뒤 열리면 startIndex 만 바뀐다(useState 초기값은 재평가되지 않음).
+  // Lightbox 는 열리는 렌더의 index 만 읽으므로 effect 가 아니라 열림 전환 렌더 중에 맞춘다(#821).
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    if (isOpen) {
+      currentIndexRef.current = startIndex;
+      setCurrentIndex(startIndex);
+    }
+  }
+
   // 이미지를 라이트박스 슬라이드 형식으로 변환 (썸네일 포함)
   const slides: Slide[] = images.map((image) => ({
     src: image.src,
@@ -259,7 +270,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
             />
           ))
         ) : (
-          <Div className="col-span-2 flex items-center justify-center py-6 text-sm text-gray-400 dark:text-gray-500">
+          <Div className="col-span-2 flex items-center justify-center py-6 text-sm text-gray-500 dark:text-gray-400">
             <I className="fa-regular fa-images mr-2" />
             {t('editor.component.image_gallery')}
           </Div>

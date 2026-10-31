@@ -26,7 +26,7 @@
 | volume | number\|null | cm³ (세제곱센티미터) | 옵션 1개의 부피. 미입력이면 `null` |
 
 단위는 저장 단위 그대로입니다. 배송정책의 구간·단위값은 kg / L 로 입력받으며, 환산은
-배송비를 계산하는 시점에 한 번만 수행됩니다 (`docs/api/shipping-policies.md` 참고).
+배송비를 계산하는 시점에 한 번만 수행됩니다 (`modules/_bundled/sirsoft-ecommerce/docs/api/shipping-policies.md` 참고).
 
 `null` 과 `0` 은 구분됩니다 — `null` 은 미입력, `0` 은 "무게 없음"입니다. 수정 요청은
 전달된 필드만 반영하므로, 편집 화면이 이 값을 받지 못한 채 저장하면 기존 값이 그대로
@@ -236,6 +236,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+- **권한 메모(1.4.0)**: 목록 응답 `abilities.can_export`(= `sirsoft-ecommerce.exports.create`) — 목록 머리 줄 [내보내기] 버튼을 보일지 정하는 키. 실제 요청은 [exports.md](exports.md) 가 받는다.
+
 **설명** 관리자 상품 목록을 페이지네이션으로 조회합니다. `auth:sanctum` + `sirsoft-ecommerce.products.read` 권한이 필요하며, `ProductService::getList()`가 검색어/카테고리/판매·전시상태/가격·재고 범위 등 다양한 필터를 적용해 목록을 반환하고 `getStatistics()`로 집계 통계를 함께 제공합니다. 응답은 `ProductCollection`으로 감싸져 `withStatistics()`로 통계가 병합됩니다. 확장은 `sirsoft-ecommerce.product.list_validation_rules` 훅으로 추가 필터 파라미터를 주입할 수 있습니다.
 
 
@@ -250,7 +252,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | name | body | array | 예 | — | 대상의 이름/명칭 |
-| product_code | body | string | 예 | max 50 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가) |
+| product_code | body | string | 예 | max 50, 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 |
 | sales_product_code | body | string | 아니오 | max 50 | 판매자 상품코드 (판매자가 직접 입력하는 관리용 코드) |
 | sku | body | string | 아니오 | max 100 | 재고관리코드(SKU) |
 | category_ids | body | array | 예 | min 1, max 5 | category 식별자 배열 |
@@ -269,7 +271,7 @@ HTTP/1.1 200
 | description | body | array | 아니오 | — | 설명 |
 | description_mode | body | string | 아니오 | `text`, `html` | 상세 설명 편집 모드 (text 일반 텍스트 / html HTML 에디터) |
 | thumbnail_hash | body | string | 아니오 | max 64 | 대표 이미지로 지정할 이미지 해시 (업로드된 이미지 중 썸네일 선택) |
-| image_temp_key | body | string | 아니오 | max 64 | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
+| image_temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
 | images | body | array | 아니오 | max 20 | 상품 이미지 목록 (각 항목: id/hash/url/alt_text/is_thumbnail/sort_order) |
 | meta_title | body | array | 아니오 | — | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | meta_description | body | array | 아니오 | — | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
@@ -328,7 +330,7 @@ Content-Type: application/json
     ],
     "description_mode": "text",
     "thumbnail_hash": "예시값",
-    "image_temp_key": "예시값",
+    "image_temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6",
     "images": [
         "예시값"
     ],
@@ -507,7 +509,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 새 상품을 생성합니다. `auth:sanctum` + `sirsoft-ecommerce.products.create` 권한이 필요하며, `StoreProductRequest`로 검증된 데이터를 `ProductService::create()`에 넘겨 상품·옵션·카테고리·이미지·SEO 메타를 함께 저장하고 성공 시 201과 `ProductResource`를 반환합니다. 이미지는 사전에 `POST .../products/images`로 임시 업로드한 뒤 `image_temp_key`(또는 `images`/`thumbnail_hash`)로 연결하며, `options`는 최소 1건 필수입니다. 검증 실패는 422, 그 외 오류는 500으로 응답합니다.
+**설명** 새 상품을 생성합니다. `auth:sanctum` + `sirsoft-ecommerce.products.create` 권한이 필요하며, `StoreProductRequest`로 검증된 데이터를 `ProductService::create()`에 넘겨 상품·옵션·카테고리·이미지·SEO 메타를 함께 저장하고 성공 시 201과 `ProductResource`를 반환합니다. 이미지는 사전에 `POST .../products/images`로 임시 업로드한 뒤 `image_temp_key`(또는 `images`/`thumbnail_hash`)로 연결하며, `options`는 최소 1건 필수입니다. 검증 실패는 422, 그 외 오류는 500으로 응답합니다. 다국어 `option_groups.*.name`·`additional_options.*.name`·`additional_options.*.values.*.name`·`notice_items.*.name`·`notice_items.*.content` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「옵션그룹명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the option group name field is required."). 칸 이름은 차례로 「옵션그룹명」·「추가옵션 그룹명」·「추가옵션 선택지명」·「상품정보제공고시 항목명」·「상품정보제공고시 내용」입니다.
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/admin/products/bulk-price
@@ -754,7 +756,7 @@ HTTP/1.1 200
 | items | body | array | 아니오 | — | 처리 대상 항목 배열 (각 항목: id + 개별 수정할 상품 필드 — name/list_price/selling_price/sales_status/display_status. bulk_changes 로 지정된 필드는 제외됨) |
 | option_bulk_changes | body | array | 아니오 | — | 옵션 조건 기반 일괄 변경값 (price_adjustment/stock_quantity 를 method+value 로 일괄 조정) |
 | option_bulk_changes.price_adjustment | body | array | 아니오 | — | 대상 상품들의 모든 옵션에 적용할 옵션 추가금 일괄 변경 블록 (method + value 쌍) |
-| option_bulk_changes.price_adjustment.method | body | string | 아니오 | `set`, `add`, `percent` | 옵션 추가금 변경 방식 (set 지정값으로 설정 / add 기존값에 가산 / percent 비율 적용) |
+| option_bulk_changes.price_adjustment.method | body | string | 아니오 | `set`, `add`, `percent` | 옵션 추가금 변경 방식 (set 지정값으로 설정 / add 기존값에 가산 / percent 옵션 판매가(상품 판매가 + 추가금)에 비율을 적용한 뒤 추가금으로 저장 — 판매가 하한 0) |
 | option_bulk_changes.price_adjustment.value | body | number | 아니오 | — | 옵션 추가금 변경 값 (method 에 따라 설정값·가산값·비율로 해석) |
 | option_bulk_changes.stock_quantity | body | array | 아니오 | — | 대상 상품들의 모든 옵션에 적용할 옵션 재고 일괄 변경 블록 (method + value 쌍) |
 | option_bulk_changes.stock_quantity.method | body | string | 아니오 | `set`, `add`, `subtract` | 옵션 재고 변경 방식 (set 지정값으로 설정 / add 증가 / subtract 감소) |
@@ -901,7 +903,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없거나, 대상 상품이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -921,7 +923,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | code | path | string | 예 | — | 대상 리소스의 코드 |
 | name | body | array | 아니오 | — | 대상의 이름/명칭 |
-| product_code | body | string | 예 | max 50 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가) |
+| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능) |
 | sales_product_code | body | string | 아니오 | max 50 | 판매자 상품코드 (판매자가 직접 입력하는 관리용 코드) |
 | sku | body | string | 아니오 | max 100 | 재고관리코드(SKU) |
 | category_ids | body | array | 아니오 | min 1, max 5 | category 식별자 배열 |
@@ -940,7 +942,7 @@ HTTP/1.1 200
 | description | body | array | 아니오 | — | 설명 |
 | description_mode | body | string | 아니오 | `text`, `html` | 상세 설명 편집 모드 (text 일반 텍스트 / html HTML 에디터) |
 | thumbnail_hash | body | string | 아니오 | max 64 | 대표 이미지로 지정할 이미지 해시 (업로드된 이미지 중 썸네일 선택) |
-| image_temp_key | body | string | 아니오 | max 64 | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
+| image_temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
 | images | body | array | 아니오 | max 20 | 상품 이미지 목록 (각 항목: id/hash/url/alt_text/is_thumbnail/sort_order) |
 | meta_title | body | array | 아니오 | — | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | meta_description | body | array | 아니오 | — | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
@@ -999,7 +1001,7 @@ Content-Type: application/json
     ],
     "description_mode": "text",
     "thumbnail_hash": "예시값",
-    "image_temp_key": "예시값",
+    "image_temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6",
     "images": [
         "예시값"
     ],
@@ -1175,6 +1177,9 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+> **다국어 이름 필수 언어(수정)**: 이름류(`option_groups.*.name`·`options.*.option_name`·`additional_options.*.name`·`additional_options.*.values.*.name`·`notice_items.*.name`/`content`)는 사이트 기본 언어(`app.site_locale`) 값이 필수지만, **같은 상품에 이미 저장된 값과 같은 이름**은 길이·형식만 검사한다(필수 언어 기준이 바뀌기 전에 다른 언어로만 저장된 이름이 수정 화면에 고칠 칸이 없어도 저장을 막지 않게 — 제품 결정 2026-10-08). 바꾸거나 새로 넣은 이름은 종전대로 필수다.
+
+
 **설명** 상품코드로 기존 상품을 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.products.update` 권한이 필요하며, `ProductService::findByCode()`로 `code` 대상 상품을 찾은 뒤 `UpdateProductRequest`로 검증된 값을 `ProductService::update()`에 넘겨 상품·옵션·이미지·SEO 등을 갱신하고 `ProductResource`를 반환합니다. `{product}` ID 경로 대신 상품코드 기반으로 수정할 때 사용하며, 대상 상품이 없으면 404, 검증 실패는 422로 응답합니다.
 
 
@@ -1237,14 +1242,15 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.products.images.upload-temp -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.products.images.upload-temp`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ProductController@uploadImage`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.products.update`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.products.create|sirsoft-ecommerce.products.update`
+- **권한 메모(1.3.0)**: 임시 업로드는 등록 화면도 쓰므로 `products.create` 또는 `products.update`(OR) 로 판정한다.
 
 **요청 파라미터**
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
-| temp_key | body | string | 아니오 | max 64 | 임시 업로드 세션 키 (같은 상품의 여러 이미지를 한 세션으로 묶음, 생략 시 서버가 UUID 자동 발급) |
+| temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (같은 상품의 여러 이미지를 한 세션으로 묶음, 생략 시 서버가 UUID 자동 발급) |
 | collection | body | string | 아니오 | — | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
 | alt_text | body | array | 아니오 | — | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) |
 | alt_text.ko | body | string | 아니오 | max 255 | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) — `ko` 로케일 값 |
@@ -1269,7 +1275,7 @@ Content-Type: application/octet-stream
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="collection"
 
@@ -1403,7 +1409,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 400 | Bad Request | 순서 갱신 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 이미지가 속한 상품(하나라도)이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
@@ -1457,7 +1463,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 400 | Bad Request | 삭제 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 이미지가 속한 상품이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | `id` 에 해당하는 이미지가 없는 경우 (`messages.product_images.not_found`) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
@@ -1539,7 +1545,7 @@ HTTP/1.1 200
 
 이 엔드포인트는 **부분 성공**을 계약으로 합니다. 존재하지 않거나 권한 스코프 밖인 상품 ID 는 404 를 만들지 않고 응답의 `product_ids` 에서 빠집니다 — 하나가 없다고 나머지의 정상 조회를 버릴 이유가 없고, 배치에서 "무엇이 없었는지" 는 상태코드로 표현할 수 없기 때문입니다. 단건 404 semantics 가 필요하면 `GET /admin/products/{identifier}` 를 사용합니다. 권한 스코프는 옵션 테이블이 아니라 상품 쿼리에서 먼저 적용되므로, `scope=self` 사용자가 타인 상품 ID 를 실어 보내도 옵션이 노출되지 않습니다.
 
-라우트는 `/{identifier}` 보다 위에 등록해야 합니다 — identifier 제약이 `[0-9a-zA-Z]+` 라 리터럴 `options` 를 삼켜 상품 상세로 잘못 라우팅됩니다.
+라우트는 `/{identifier}` 보다 위에 등록해야 합니다 — identifier 제약이 `[0-9a-zA-Z_-]+`(상품코드 허용 문자 — 영숫자·하이픈·밑줄) 라 리터럴 `options` 를 삼켜 상품 상세로 잘못 라우팅됩니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/products/{identifier}
@@ -1599,10 +1605,12 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없거나, 대상 상품이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
+
+`identifier` 는 숫자 ID 또는 상품코드다. 상품코드는 등록 규칙과 같은 문자(영문·숫자·하이픈 `-`·밑줄 `_`)를 받는다 — `/{product}/form`·`/copy`·`/can-delete`·`/logs` 와 공개 `GET /products/{product}`(·`/downloadable-coupons`·`/reviews`·`/inquiries`)도 같다. 종전에는 영숫자만 받아 하이픈·밑줄 코드의 상품이 405/404 로 열리지 않았다.
 
 **설명** 관리자 화면용 단일 상품 상세를 조회합니다. `auth:sanctum` + `sirsoft-ecommerce.products.read` 권한이 필요하며, `ProductService::findByIdOrCode()`로 숫자 ID 우선, 없으면 상품코드로 상품을 찾은 뒤 `getDetail($id, includeInactive: true)`로 비활성(숨김/판매중지) 상품까지 포함해 상세를 로드하고 `ProductResource`로 반환합니다. 공개 상세와 달리 전시상태에 관계없이 조회되므로 관리자 편집/열람에 사용하며, 대상이 없으면 404를 반환합니다.
 
@@ -1619,7 +1627,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | productId | path | string | 예 | — | 대상 product의 식별자 |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
-| temp_key | body | string | 아니오 | max 64 | 임시 업로드 세션 키 (같은 상품의 여러 이미지를 한 세션으로 묶음, 생략 시 서버가 UUID 자동 발급) |
+| temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (같은 상품의 여러 이미지를 한 세션으로 묶음, 생략 시 서버가 UUID 자동 발급) |
 | collection | body | string | 아니오 | — | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
 | alt_text | body | array | 아니오 | — | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) |
 | alt_text.ko | body | string | 아니오 | max 255 | 이미지 대체 텍스트 (접근성/이미지 미표시 시 대체 문구) — `ko` 로케일 값 |
@@ -1644,7 +1652,7 @@ Content-Type: application/octet-stream
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="temp_key"
 
-예시값
+5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6
 ------G7ExampleBoundary
 Content-Disposition: form-data; name="collection"
 
@@ -1715,7 +1723,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 400 | Bad Request | 파일 저장 등 업로드 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 상품이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 상품 이미지 개수 상한 초과 (`ProductImageUploadLimitException`) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
@@ -1771,7 +1779,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 400 | Bad Request | 대표 이미지 설정 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 상품이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
@@ -1848,7 +1856,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | product | path | string | 예 | — | 대상 product의 식별자 |
 | name | body | array | 아니오 | — | 대상의 이름/명칭 |
-| product_code | body | string | 예 | max 50 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가) |
+| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능) |
 | sales_product_code | body | string | 아니오 | max 50 | 판매자 상품코드 (판매자가 직접 입력하는 관리용 코드) |
 | sku | body | string | 아니오 | max 100 | 재고관리코드(SKU) |
 | category_ids | body | array | 아니오 | min 1, max 5 | category 식별자 배열 |
@@ -1867,7 +1875,7 @@ HTTP/1.1 200
 | description | body | array | 아니오 | — | 설명 |
 | description_mode | body | string | 아니오 | `text`, `html` | 상세 설명 편집 모드 (text 일반 텍스트 / html HTML 에디터) |
 | thumbnail_hash | body | string | 아니오 | max 64 | 대표 이미지로 지정할 이미지 해시 (업로드된 이미지 중 썸네일 선택) |
-| image_temp_key | body | string | 아니오 | max 64 | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
+| image_temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (사전 업로드한 이미지를 이 상품에 연결) |
 | images | body | array | 아니오 | max 20 | 상품 이미지 목록 (각 항목: id/hash/url/alt_text/is_thumbnail/sort_order) |
 | meta_title | body | array | 아니오 | — | SEO 메타 제목 (검색엔진/소셜 공유 표시 제목) |
 | meta_description | body | array | 아니오 | — | SEO 메타 설명 (검색엔진/소셜 공유 표시 요약) |
@@ -1926,7 +1934,7 @@ Content-Type: application/json
     ],
     "description_mode": "text",
     "thumbnail_hash": "예시값",
-    "image_temp_key": "예시값",
+    "image_temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6",
     "images": [
         "예시값"
     ],
@@ -2102,7 +2110,10 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** ID 경로로 지정한 상품을 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.products.update` 권한이 필요하며, 라우트 모델 바인딩된 `Product`에 `UpdateProductRequest`로 검증된 값을 `ProductService::update()`로 반영해 상품 기본정보·옵션·이미지·SEO 메타를 갱신하고 `ProductResource`를 반환합니다. `by-code` 변형과 동일 서비스 메서드를 쓰지만 상품코드 조회 단계 없이 바로 대상 모델을 받습니다. 검증 실패는 422, 대상이 없으면 404로 응답합니다.
+> **다국어 이름 필수 언어(수정)**: 이름류(`option_groups.*.name`·`options.*.option_name`·`additional_options.*.name`·`additional_options.*.values.*.name`·`notice_items.*.name`/`content`)는 사이트 기본 언어(`app.site_locale`) 값이 필수지만, **같은 상품에 이미 저장된 값과 같은 이름**은 길이·형식만 검사한다(필수 언어 기준이 바뀌기 전에 다른 언어로만 저장된 이름이 수정 화면에 고칠 칸이 없어도 저장을 막지 않게 — 제품 결정 2026-10-08). 바꾸거나 새로 넣은 이름은 종전대로 필수다.
+
+
+**설명** ID 경로로 지정한 상품을 수정합니다. `auth:sanctum` + `sirsoft-ecommerce.products.update` 권한이 필요하며, 라우트 모델 바인딩된 `Product`에 `UpdateProductRequest`로 검증된 값을 `ProductService::update()`로 반영해 상품 기본정보·옵션·이미지·SEO 메타를 갱신하고 `ProductResource`를 반환합니다. `by-code` 변형과 동일 서비스 메서드를 쓰지만 상품코드 조회 단계 없이 바로 대상 모델을 받습니다. 검증 실패는 422, 대상이 없으면 404로 응답합니다. 다국어 `option_groups.*.name`·`additional_options.*.name`·`additional_options.*.values.*.name`·`notice_items.*.name`·`notice_items.*.content` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 오류가 칸 이름과 언어 이름을 함께 알립니다(「옵션그룹명의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the option group name field is required."). 칸 이름은 생성과 같습니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/products/{product}/can-delete
@@ -3130,6 +3141,7 @@ HTTP/1.1 200
 - **라우트명**: `api.modules.sirsoft-ecommerce.products.show`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductController@show`
 - **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:sirsoft-ecommerce.user-products.read`
+- **권한 메모(1.3.0)**: 응답 `abilities.can_order`(= `sirsoft-ecommerce.user-orders.create`) — [바로 구매] 잠금 키.
 
 **요청 파라미터**
 
@@ -3539,7 +3551,7 @@ HTTP/1.1 200
 | category | body | string | 아니오 | — | 문의 분류 (게시판 설정에 정의된 카테고리, 미지정 시 기본값) |
 | content | body | string | 예 | min 10, max 10000 | 본문 내용 |
 | is_secret | body | boolean | 아니오 | — | secret 여부 |
-| temp_key | body | string | 아니오 | — | 첨부파일 임시 업로드 키 (사전 업로드한 첨부를 이 문의에 연결) |
+| temp_key | body | string | 아니오 | UUID | 첨부파일 임시 업로드 키 (사전 업로드한 첨부를 이 문의에 연결) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.inquiry.store_validation_rules`, `sirsoft-ecommerce.inquiry.store_validation_messages`).
 
@@ -3557,7 +3569,7 @@ Content-Type: application/json
     "category": "예시값",
     "content": "예시 내용입니다.",
     "is_secret": true,
-    "temp_key": "예시값"
+    "temp_key": "5f0c3a3e-1b2c-4d5e-8f90-a1b2c3d4e5f6"
 }
 ```
 
@@ -3633,7 +3645,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| reviews | object | `{"data":[],"links":{"first":"https:\/\/g7_2.dev\/api\/mod…` | 리뷰 목록 (data 배열 + 페이지네이션 메타, 공개 상태 리뷰만 정렬/필터 적용해 반환) |
+| reviews | object | `{"data":[],"links":{"first":"https:\/\/api.example.com\/api\/mod…` | 리뷰 목록 (data 배열 + 페이지네이션 메타, 공개 상태 리뷰만 정렬/필터 적용해 반환) |
 | rating_stats | object | `{"5":{"count":0,"percent":0},"4":{"count":0,"percent":0},…` | 별점 분포 통계 (별점(1~5)별 count·percent 맵 + avg 평균 별점, 공개 리뷰 기준) |
 | option_filters | array | `[{"key":"색상","values":[{"value":"화이트","count":0},{"value"…` | 옵션 조건 필터 후보 (구매 옵션 키·값별 리뷰 건수 집계, 옵션별 리뷰 필터 UI용) |
 | total_count | integer | `0` | total 개수 (집계) |

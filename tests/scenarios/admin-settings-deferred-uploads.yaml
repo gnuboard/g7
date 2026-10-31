@@ -1,0 +1,21 @@
+feature: 환경설정 저장 — 지연 업로더 신호 짝 (#639 ⑨)
+
+description: |
+  환경설정의 일부 업로더는 파일을 고를 때 올리지 않고 저장 버튼이 보내는 신호를 기다린다
+  (`autoUpload=false` + `uploadTriggerEvent`). 저장 시퀀스가 그 신호를 빠뜨리면 고른 파일이
+  올라가지 않고 설정값도 그대로이며 오류도 뜨지 않는다.
+
+  배경(실측 2026-10-05): SEO 탭 「기본 공유 이미지」는 `upload:og_image_default` 를 기다렸지만 저장 버튼은
+  `upload:site_logo` 만 보냈다 — 업로드 요청 0건, `seo.og_image_default` 는 빈 배열 그대로.
+
+axes:
+  surface: [admin_settings_save]
+  uploader: [deferred]
+
+effects:
+  - every_deferred_uploader_receives_its_trigger_on_save
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-upload-trigger-pairs.test.ts
+
+# E2E axis 없음: 업로드 왕복은 Chrome MCP 매트릭스 T6(선택 → 저장 → 새로고침 → 사용자 메타)이 덮는다.

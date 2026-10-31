@@ -1,0 +1,47 @@
+feature: 이커머스 관리자 화면 결함 3건 수정 (분류 삭제 · 상품평 상태 라벨 · 배송정책 실패 갈래)
+
+description: |
+  주석 주입 단락(S21.1~S21.3)이 화면을 한 줄씩 읽어 내려가며 발견한 관리자 화면 결함 중
+  설계 검토가 이번에 수정하도록 지시한 셋. 나머지는 미구현 기능이라 후속으로 남는다.
+
+  세 자리 모두 **화면에서 조용한** 종류다 — 예외도 빨간 줄도 나지 않아 사람이 쓰다가
+  알아채기 어렵고, 그래서 구조 단언으로 잠근다.
+
+  ⓐ 분류 삭제 — 보기 패널의 삭제 버튼이 확인 창에 넘길 값 4개를 `_global.modal_data` 에
+     써 넣는데 그 창은 그 칸을 읽지 않는다(선택된 분류를 직접 본다). `modal_data` 는 여러
+     화면이 나눠 쓰는 자리라 아무도 읽지 않을 값이 다음 화면까지 남는다. 넘기던 값 중
+     `hasChildren` 는 관계 배열 길이를 세는 대용품이라 응답이 관계를 안 실으면 어긋나고,
+     창이 쓰는 `children_count` 가 더 정확하다 — 그래서 창을 고치지 않고 죽은 쓰기를 뺐다.
+
+  ⓑ 상품평 상태변경 — 확인 문구의 상태 이름이 `'전시중'`/`'숨김'` 한국어 글자로 박혀 있어
+     어느 언어로 접속해도 그 자리만 한국어였다. 목록의 일괄작업 선택칸이 이미 같은 두 낱말을
+     키로 그리고 있으므로 **같은 키**를 쓴다 — 여기에 키를 새로 두면 고른 낱말과 확인 문구가
+     갈릴 수 있다.
+
+  ⓒ 배송정책 — 사용여부 스위치는 확인 없이 바로 서버로 가는데, 실패 갈래가 목록을 다시
+     부르지 않아 서버는 그대로인 채 화면만 넘어간 상태로 남았다. 같은 갈래의 오류 알림은
+     엔진 컨텍스트에 없는 이름(`$error`)을 읽고 있어 **내용 없이 빈 토스트**가 떴다.
+     빈 토스트는 이 화면의 다른 창 4개(삭제·복사 일괄·기본값 지정)에도 같은 형태로 있었다.
+
+axes:
+  defect: [category_dead_modal_data, review_hardcoded_status_label, shipping_toggle_failure_desync, shipping_error_toast_empty]
+
+effects:
+  - category_delete_opener_only_opens_the_modal
+  - category_delete_modal_reads_selected_category_counts
+  - review_status_label_uses_the_same_key_as_the_batch_select
+  - shipping_toggle_failure_refetches_the_list
+  - shipping_error_toast_reads_the_engine_error_context
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminScreenDefectFixes.test.ts
+
+notes: |
+  단언 대상은 소스가 아니라 **구워진 짝 `.json`** — 런타임이 실제로 먹는 값이다.
+  문자열 단언에서는 개발자 주석을 먼저 걷어낸다. 주석은 계약을 설명하느라 바로 그 이름을
+  담기 마련이라(`_global.modal_data` 등) 걷어내지 않으면 설명글이 단언을 깨뜨린다.
+  공개 서빙도 같은 두 키를 재귀 제거하므로 이 형태가 브라우저가 보는 값과 같다.
+
+  브라우저 실행(E2E)을 두지 않은 이유: 셋 중 둘이 **실패 경로**(서버 오류 응답)라 실 환경에서
+  재현하려면 API 를 의도적으로 깨뜨려야 하고, 나머지 하나는 죽은 쓰기 제거라 화면에 보이는
+  변화가 없다. 잠글 것은 렌더 결과가 아니라 **레이아웃 계약**이므로 구조 단언이 맞는 도구다.

@@ -1,0 +1,168 @@
+<!-- 정책 탭 — 강제(사이트 전체, 역할, SSO 연결 회원 전원), 비상 계정, 자동 이동 IdP, 사이트 세션 상한, 이메일 먼저 입력.
+     값은 _local.policyForm.policy 에 있고 [저장]이 그대로 보낸다(savePolicy). 최고관리자 전용 칸은 최고관리자가 아니면 잠근다(D26 — 서버도 403).
+     저장 전 [영향 미리보기]가 「비밀번호로만 로그인하던 회원 N명이 비밀번호 로그인을 못 합니다」「지금 로그인해 있는 N명이 로그아웃됩니다」를 보인다(W34).
+     비상 계정 0명, 활성 IdP 없는 사이트 전체 강제는 서버가 422 로 거절한다(W5). -->
+<partial name="partials/plugin_settings/_policy_tab" description="정책 탭">
+  <div data-ref="policy_tab" data-if="{{_computed.activeTab === 'policy'}}" data-key="policyForm" class="sso:mt-6 sso:space-y-6">
+    <div data-ref="policy_super_only_notice" data-if="{{!!_local.policyForm &amp;&amp; _local.policyForm?.abilities?.is_super !== true}}" role="status" class="sso-alert-info">
+      <icon name="lock" class="sso:text-blue-600 sso:dark:text-blue-400 sso:flex-shrink-0"/>
+      <span class="sso:text-sm sso:text-blue-800 sso:dark:text-blue-200">$t:sirsoft-sso.admin.settings.policy.super_only_notice</span>
+    </div>
+    <!-- 플러그인을 비활성화·삭제하면 강제가 사라진다(W6 — 실패 시 열림) — 운영자가 강제를 켜기 전에 알도록 늘 보인다(§7 L-13) -->
+    <div data-ref="policy_deactivate_notice" role="note" class="sso-alert-warning">
+      <icon name="triangle-exclamation" class="sso:text-yellow-600 sso:dark:text-yellow-400 sso:flex-shrink-0"/>
+      <span class="sso:text-sm sso:text-yellow-800 sso:dark:text-yellow-200">$t:sirsoft-sso.admin.settings.policy.deactivate_notice</span>
+    </div>
+    <div data-ref="enforcement_section" class="sso-admin-card sso:space-y-6">
+      <h2 class="sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.admin.settings.policy.enforcement</h2>
+      <div class="sso-flex-start sso:gap-3">
+        <toggle data-type="composite" name="policy.enforce_site" ariaLabel="$t:sirsoft-sso.admin.settings.policy.fields.enforce_site" size="md" disabled="{{!_computed.canUpdate || _local.policyForm?.abilities?.is_super !== true}}"/>
+        <div>
+          <label class="sso-form-label">$t:sirsoft-sso.admin.settings.policy.fields.enforce_site</label>
+          <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.policy.hints.enforce_site</p>
+          <p data-if="{{_local.policyForm?.policy?.enforce_site === true}}" role="alert" class="sso-form-error">$t:sirsoft-sso.admin.settings.policy.warnings.enforce_site</p>
+        </div>
+      </div>
+      <div class="sso-grid-3col-responsive">
+        <div class="sso:lg:col-span-1">
+          <label class="sso-form-label">$t:sirsoft-sso.admin.settings.policy.fields.enforce_roles</label>
+          <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.policy.hints.enforce_roles</p>
+        </div>
+        <div class="sso:lg:col-span-2">
+          <tag-input data-type="composite" name="policy.enforce_roles" :creatable="true" placeholder="manager" class="sso:w-full" defaultVariant="blue" disabled="{{!_computed.canUpdate || _local.policyForm?.abilities?.is_super !== true}}"/>
+          <p data-if="{{!!_local.policyErrors &amp;&amp; Object.keys(_local.policyErrors).some(k => k.startsWith('enforce_roles'))}}" class="sso-form-error">$t:sirsoft-sso.admin.settings.policy.errors.enforce_roles</p>
+        </div>
+      </div>
+      <div class="sso-flex-start sso:gap-3">
+        <toggle data-type="composite" name="policy.enforce_linked" ariaLabel="$t:sirsoft-sso.admin.settings.policy.fields.enforce_linked" size="md" disabled="{{!_computed.canUpdate}}"/>
+        <div>
+          <label class="sso-form-label">$t:sirsoft-sso.admin.settings.policy.fields.enforce_linked</label>
+          <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.policy.hints.enforce_linked</p>
+        </div>
+      </div>
+      <div class="sso-grid-3col-responsive">
+        <div class="sso:lg:col-span-1">
+          <label class="sso-form-label">$t:sirsoft-sso.admin.settings.policy.fields.auto_redirect_idp</label>
+          <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.policy.hints.auto_redirect_idp</p>
+        </div>
+        <div class="sso:lg:col-span-2">
+          <select name="policy.auto_redirect_idp" class="sso:w-full" disabled="{{!_computed.canUpdate}}">
+            <option value="">$t:sirsoft-sso.admin.settings.policy.no_auto_redirect</option>
+            <option data-each="idp in (ssoIdps?.data?.idps ?? []).filter(i => i.protocol !== 'ldap')" value="{{idp.key}}">{{idp.display_label}}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <!-- 비상 계정 -->
+    <div data-ref="emergency_section" class="sso-admin-card sso:space-y-4">
+      <h2 class="sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.admin.settings.policy.emergency</h2>
+      <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.policy.hints.emergency</p>
+      <ul data-ref="emergency_users" class="sso:divide-y sso:divide-gray-100 sso:dark:divide-gray-700">
+        <li data-each="emergency in _local.policyForm?.emergency_users ?? []" data-key="{{emergency.id}}" class="sso:py-2 sso:flex sso:items-center sso:gap-3" data-if="{{(_local.policyForm?.policy?.emergency_user_ids ?? []).includes(emergency.id)}}">
+          <div class="sso:flex-1 sso:min-w-0">
+            <p class="sso:text-sm sso:text-gray-900 sso:dark:text-white">{{emergency.name}}</p>
+            <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all">{{emergency.email ?? ''}}</p>
+            <p data-if="{{emergency.has_password === false}}" class="sso:text-xs sso:text-red-600 sso:dark:text-red-400">$t:sirsoft-sso.admin.settings.policy.emergency_no_password</p>
+          </div>
+          <button data-ref="remove_emergency_{{emergency.id}}" type="button" class="sso-btn-icon" title="$t:sirsoft-sso.admin.common.remove_row" aria-label="$t:sirsoft-sso.admin.settings.policy.remove_emergency|name={{emergency.name}}" disabled="{{!_computed.canUpdate || _local.policyForm?.abilities?.is_super !== true || (_local.policyForm?.policy?.emergency_user_ids ?? []).length &lt;= 1}}">
+            <on type="click">
+              <!-- 비상 계정에서 뺀다 — 마지막 한 명은 뺄 수 없다(서버도 422) -->
+              <set-state target="local" policyForm.policy.emergency_user_ids="{{(_local.policyForm?.policy?.emergency_user_ids ?? []).filter(id => id !== emergency.id)}}"/>
+            </on>
+            <icon name="fa-solid fa-trash" class="sso:text-sm"/>
+          </button>
+        </li>
+      </ul>
+      <div data-ref="emergency_search" data-if="{{_local.policyForm?.abilities?.is_super === true}}" class="sso:flex sso:flex-col sso:sm:flex-row sso:gap-2">
+        <input type="text" name="emergencySearchBox" class="sso-input sso:flex-1 sso:min-w-0" value="{{_local.emergencySearch}}" placeholder="$t:sirsoft-sso.admin.settings.policy.emergency_search_placeholder" aria-label="$t:sirsoft-sso.admin.settings.policy.emergency_search_placeholder">
+          <on type="change">
+            <!-- 검색어만 담아 둔다 — 실제 검색은 옆 [검색] 버튼이 한다 -->
+            <set-state target="local" emergencySearch="{{$event.target.value}}"/>
+          </on>
+        </input>
+        <button data-ref="emergency_search_button" type="button" class="sso-btn sso-btn-secondary sso:text-sm" disabled="{{!_local.emergencySearch}}">
+          <on type="click">
+            <!-- 회원 검색 — 코어 관리자 회원 목록 검색을 쓴다 -->
+            <api-call :auth_required="true" target="/api/admin/users" method="GET">
+              <query search="{{_local.emergencySearch}}" :per_page="5"/>
+              <success>
+                <set-state target="local" emergencyCandidates="{{response.data?.data ?? []}}"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <span>$t:sirsoft-sso.admin.common.search</span>
+        </button>
+      </div>
+      <ul data-ref="emergency_candidates" data-if="{{(_local.emergencyCandidates ?? []).length > 0}}" class="sso:divide-y sso:divide-gray-100 sso:dark:divide-gray-700">
+        <li data-each="candidate in _local.emergencyCandidates ?? []" data-key="{{candidate.uuid}}" class="sso:py-2 sso:flex sso:items-center sso:gap-3">
+          <div class="sso:flex-1 sso:min-w-0">
+            <p class="sso:text-sm sso:text-gray-900 sso:dark:text-white">{{candidate.name}}</p>
+            <p class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all">{{candidate.email ?? ''}}</p>
+          </div>
+          <button type="button" class="sso-btn sso-btn-secondary sso:text-xs" disabled="{{(_local.policyForm?.policy?.emergency_user_ids ?? []).includes(candidate.id)}}">
+            <on type="click">
+              <!-- 비상 계정에 넣는다 — 저장해야 반영된다 -->
+              <set-state target="local" policyForm.policy.emergency_user_ids="{{(_local.policyForm?.policy?.emergency_user_ids ?? []).concat([candidate.id])}}" policyForm.emergency_users="{{(_local.policyForm?.emergency_users ?? []).concat([{ id: candidate.id, name: candidate.name, email: candidate.email, has_password: candidate.has_password !== false }])}}"/>
+            </on>
+            <span>$t:sirsoft-sso.admin.settings.policy.add_emergency</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+    <!-- 세션과 진입 -->
+    <div data-ref="session_section" class="sso-admin-card sso:space-y-6">
+      <h2 class="sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.admin.settings.policy.session</h2>
+      <div class="sso-grid-3col-responsive">
+        <div class="sso:lg:col-span-1">
+          <label class="sso-form-label">$t:sirsoft-sso.admin.settings.policy.fields.session_max_minutes</label>
+          <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.policy.hints.session_max_minutes</p>
+        </div>
+        <div class="sso:lg:col-span-2">
+          <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->
+          <input type="number" name="policy.session_max_minutes" :min="0" :max="10080" class="sso-input" disabled="{{!_computed.canUpdate}}"/>
+        </div>
+      </div>
+      <div class="sso-flex-start sso:gap-3">
+        <toggle data-type="composite" name="policy.discovery_enabled" ariaLabel="$t:sirsoft-sso.admin.settings.policy.fields.discovery_enabled" size="md" disabled="{{!_computed.canUpdate}}"/>
+        <div>
+          <label class="sso-form-label">$t:sirsoft-sso.admin.settings.policy.fields.discovery_enabled</label>
+          <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.policy.hints.discovery_enabled</p>
+        </div>
+      </div>
+    </div>
+    <!-- 영향 미리보기와 저장 -->
+    <div data-ref="policy_impact" data-if="{{!!_local.policyImpact}}" role="status" class="{{(_local.policyImpact?.password_users ?? 0) > 0 ? 'sso-alert-warning' : 'sso-alert-info'}} sso:flex-col sso:items-start sso:gap-1">
+      <p class="sso:text-sm">$t:sirsoft-sso.admin.settings.policy.impact_users|count={{_local.policyImpact?.password_users ?? 0}}</p>
+      <p class="sso:text-sm">$t:sirsoft-sso.admin.settings.policy.impact_sessions|count={{_local.policyImpact?.password_sessions ?? 0}}</p>
+    </div>
+    <div data-ref="policy_errors" data-if="{{!!_local.policyErrors?.code}}" role="alert" class="sso-alert-error">
+      <span class="sso:text-sm sso:text-red-800 sso:dark:text-red-200">{{$t('sirsoft-sso.admin.settings.policy.errors.' + _local.policyErrors.code)}}</span>
+    </div>
+    <div data-ref="policy_actions" class="sso:flex sso:flex-wrap sso:gap-2">
+      <button data-ref="policy_impact_button" type="button" class="sso-btn sso-btn-secondary sso:text-sm">
+        <on type="click">
+          <!-- 영향 미리보기 — 저장하지 않고 바꿀 값으로 센다 -->
+          <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/policy/impact" method="GET">
+            <query enforce_site="{{_local.policyForm?.policy?.enforce_site ? 1 : 0}}" enforce_linked="{{_local.policyForm?.policy?.enforce_linked ? 1 : 0}}" enforce_roles[]="{{(_local.policyForm?.policy?.enforce_roles ?? []).length > 0 ? _local.policyForm.policy.enforce_roles : undefined}}" emergency_user_ids[]="{{_local.policyForm?.policy?.emergency_user_ids ?? []}}"/>
+            <success>
+              <set-state target="local" policyImpact="{{response.data}}"/>
+            </success>
+            <fail>
+              <toast type="error" message="{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <span>$t:sirsoft-sso.admin.settings.policy.preview_impact</span>
+      </button>
+      <button data-ref="policy_save_button" type="button" class="sso-btn sso-btn-primary sso:text-sm" disabled="{{!_computed.canUpdate || _local.isSavingPolicy}}">
+        <on type="click">
+          <action-ref name="savePolicy"/>
+        </on>
+        <span>$t:common.save</span>
+      </button>
+    </div>
+  </div>
+</partial>

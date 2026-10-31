@@ -3,18 +3,20 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
+use App\Enums\ScheduleResultStatus;
 use App\Models\ScheduleHistory;
 use App\Repositories\Concerns\DeletesInBatches;
+use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
 use App\Support\Query\PaginationLimits;
-use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
 class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
 {
     use DeletesInBatches;
+    use FiltersByDateRange;
     use PaginatesWithDeferredJoin;
     use ResolvesSortSpec;
 
@@ -38,6 +40,36 @@ class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
     public function create(array $data): ScheduleHistory
     {
         return ScheduleHistory::create($data);
+    }
+
+    /**
+     * 저장하지 않은 실행 이력 인스턴스를 만듭니다.
+     *
+     * 「실패만 기록」 스케줄이 성공하면 이력 행을 남기지 않지만, 실행 후 훅은 이력 인자를 받으므로
+     * 같은 값을 담은 미저장 인스턴스를 넘긴다.
+     *
+     * @param  array  $data  이력 데이터
+     * @return ScheduleHistory 저장되지 않은 이력 모델
+     */
+    public function make(array $data): ScheduleHistory
+    {
+        return new ScheduleHistory($data);
+    }
+
+    /**
+     * 스케줄의 가장 최근 「실행 중」 이력을 찾습니다.
+     *
+     * @param  int  $scheduleId  스케줄 ID
+     * @return ScheduleHistory|null 실행 중 이력 또는 null
+     */
+    public function findLatestRunning(int $scheduleId): ?ScheduleHistory
+    {
+        return ScheduleHistory::query()
+            ->where('schedule_id', $scheduleId)
+            ->where('status', ScheduleResultStatus::Running)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->first();
     }
 
     /**
@@ -90,15 +122,14 @@ class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
         }
 
         // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
-        // 같은 결과를 내는 범위 조건으로 바꿔 started_at 인덱스를 살린다
-        // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
-        if (! empty($filters['started_from'])) {
-            $query->where('started_at', '>=', Carbon::parse($filters['started_from'])->startOfDay());
-        }
-
-        if (! empty($filters['started_to'])) {
-            $query->where('started_at', '<=', Carbon::parse($filters['started_to'])->endOfDay());
-        }
+        // 같은 결과를 내는 범위 조건으로 바꿔 started_at 인덱스를 살린다. 목록은 시작 시각을
+        // 보는 사람의 시간대로 그리므로 그 시간대의 하루로 자른다.
+        $this->applyViewerDateRangeFilter(
+            $query,
+            'started_at',
+            $filters['started_from'] ?? null,
+            $filters['started_to'] ?? null
+        );
 
         // 정렬 — 요청 값은 허용 목록으로만 해석한다.
         // 허용 집합은 ScheduleHistoryListRequest 의 `in:` 규칙과 동일해야 한다. 저장소 목록이

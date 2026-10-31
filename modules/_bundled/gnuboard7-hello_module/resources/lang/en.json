@@ -2,14 +2,25 @@
     "editor": {
         "data_source": {
             "memoData": "Memo Data",
-            "memos": "Memos"
+            "memos": "Memos",
+            "memoCreateAbility": "Memo create permission"
+        },
+        "palette": {
+            "group": "Hello Module",
+            "memo_card": {
+                "label": "Memo Card",
+                "sample_title": "Memo title",
+                "sample_body": "The memo body appears here."
+            }
         }
     },
     "admin": {
         "memos": {
             "index": {
                 "title": "Hello Memos",
-                "description": "Learning memo list"
+                "description": "Learning memo list",
+                "empty": "No memos have been written yet.",
+                "create_no_permission": "You do not have permission to create memos."
             },
             "form": {
                 "title_create": "Create Memo",
@@ -21,14 +32,16 @@
                 "actions": {
                     "save": "Save",
                     "cancel": "Cancel"
-                }
+                },
+                "read_only": "You do not have permission to save this memo, so it is shown read-only."
             }
         }
     },
     "user": {
         "memos": {
             "index": {
-                "title": "Memo List"
+                "title": "Memo List",
+                "empty": "There are no memos yet."
             }
         }
     }

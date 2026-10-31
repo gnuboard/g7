@@ -1,0 +1,43 @@
+feature: 식 안 번역 인자 — `$t(키, 인자)` 와 번역 값 글자 그대로 치환
+
+description: |
+  레이아웃 반복 행에서 「{N}번째 행」처럼 언어마다 어순이 다른 문구를 식 안에서 만들 수 없었다(#757). 식 도우미
+  `$t` 는 키 하나만 받아 `{{$t('common.row_n', {n: 3})}}` 가 오류 없이 평가되면서 인자를 버렸다(「{{n}}번째 행」).
+  engine-v1.80.1 에서 `$t(키, 인자)` 가 인자 객체를 번역 엔진에 그대로 넘기고, 같은 자리에서 인자를 `|키=값` 문자열로
+  이어 붙이던 `G7Core.t`·`useTranslation().t` 도 같은 경로를 쓴다. 치환 단계(replaceParams)는 값을 글자 그대로 넣는다.
+
+  축 arg_shape 는 인자 모양이다 — 키만(key_only), 인자 객체(object), `|키=값` 문자열(pipe_string).
+  축 value_chars 는 인자 값에 든 글자다 — 보통 글자(plain), 문자열 경로의 구분자(separators: `|`·`&`·`=`·끝 ` /`),
+  치환 문법과 겹치는 글자(replacement_tokens: `$&`·`$'`·`{{x}}`·다른 인자 자리표시자).
+
+axes:
+  arg_shape: [key_only, object, pipe_string]
+  value_chars: [plain, separators, replacement_tokens]
+
+exclusions:
+  - { arg_shape: key_only, value_chars: separators, reason: "인자가 없어 값 글자가 없다" }
+  - { arg_shape: key_only, value_chars: replacement_tokens, reason: "동일" }
+  - { arg_shape: pipe_string, value_chars: separators, reason: "`|`·`&` 는 문자열 경로의 인자 구분 문법이다(값이 {{식}} 이면 이미 보호된다)" }
+
+effects:
+  - single_argument_unchanged
+  - params_substituted_per_locale
+  - nested_in_pipe_param
+  - separator_chars_in_value_kept
+  - value_inserted_literally
+  - missing_key_falls_back
+  - plural_count_from_object
+  - component_t_shares_object_path
+  - editor_preview_t_prefers_edit_target
+  - editor_preview_t_restored_on_unmount
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DataBindingEngine.translateParams.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/PreviewCanvas.gCoreTFallback.test.tsx
+
+notes: |
+  pipe_string × separators 는 그 경로의 문법이라(`|`·`&` 가 인자 구분자) 대상이 아니다 — 값이 `{{식}}` 이면 식 결과에 든
+  구분자는 이미 보호된다. 봇(SEO) 화면 평가기(ExpressionEvaluator `$t()`·`translateKey`)의 같은 규칙은
+  seo-expression-evaluator 매니페스트가 잠근다(`test_t_function_substitutes_object_params`·
+  `test_translation_params_are_inserted_literally`). 레이아웃 편집기 미리보기의 `G7Core.t` 래퍼는
+  `PreviewCanvas.gCoreTFallback.test.tsx` 가 잠근다.

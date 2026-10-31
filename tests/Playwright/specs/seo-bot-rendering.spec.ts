@@ -10,24 +10,26 @@
  * 실제 HTTP 응답으로도 잠근다.
  *
  * 브라우저 렌더링이 아니라 봇이 받는 원본 HTML 을 검사해야 하므로 `request` 픽스처로
- * 직접 요청한다(React 가 실행되면 결함이 가려진다).
+ * 직접 요청한다(React 가 실행되면 결함이 가려진다). 봇 경로는 검색엔진 User-Agent 로만
+ * 진입한다 — `?_escaped_fragment_=` 쿼리는 더 이상 봇 신호가 아니다(KVE-2026-2333/2334/2335).
  *
  * @scenario ep_site=board_post, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode
  * @effects ep_props_resolved_into_context, subtree_inherits_ep_props
  */
 import { test, expect, type APIRequestContext } from '@playwright/test';
 
-/** 봇 렌더링을 강제하는 쿼리 파라미터 (검색엔진 escaped fragment 규약). */
-const BOT_QUERY = '_escaped_fragment_=';
-
 /**
  * 봇 User-Agent (BotDetector 라이브러리 매칭 경로).
  *
- * 봇 판정은 escaped fragment 쿼리와 UA 두 경로로 진입한다. 한쪽만 검증하면 다른 경로에서
- * 본문이 비어도 드러나지 않으므로 두 경로를 모두 잠근다.
+ * 설정의 기본 UA 는 실제 브라우저 값이라(playwright.config.ts) 봇 화면을 재는 요청은 이 UA 를
+ * 요청마다 지정한다.
  */
 const BOT_USER_AGENT =
   'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
+
+/** 일반 브라우저 User-Agent — 봇 판정에 걸리지 않아야 하는 요청에 쓴다. */
+const BROWSER_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
 
 /** 확장 주입 본문이 비어 있을 때 나오던 회귀 시그니처. */
 const EMPTY_INJECTED_BODY = '<div></div><div class="hidden"></div>';
@@ -40,21 +42,19 @@ const REPLY_CONTENT_MARKER = 'prose-sm dark:prose-invert';
  *
  * @param request Playwright 요청 컨텍스트
  * @param path 대상 경로 (쿼리 포함 가능)
+ * @param extraHeaders 추가 요청 헤더 (위조 Host 재현 등)
  * @returns 응답 본문 HTML 과 X-SEO-Cache 헤더 값
  */
 async function fetchBotResponse(
   request: APIRequestContext,
   path: string,
-  transport: 'escaped_fragment' | 'bot_user_agent' = 'escaped_fragment'
+  extraHeaders: Record<string, string> = {}
 ): Promise<{ html: string; cache: string | undefined }> {
-  const separator = path.includes('?') ? '&' : '?';
-  const url = transport === 'escaped_fragment' ? `${path}${separator}${BOT_QUERY}` : path;
-  const response = await request.get(
-    url,
-    transport === 'bot_user_agent' ? { headers: { 'User-Agent': BOT_USER_AGENT } } : undefined
-  );
+  const response = await request.get(path, {
+    headers: { 'User-Agent': BOT_USER_AGENT, ...extraHeaders },
+  });
 
-  expect(response.status(), `${path} 봇 렌더링 응답 코드 (${transport})`).toBe(200);
+  expect(response.status(), `${path} 봇 렌더링 응답 코드`).toBe(200);
 
   const headers = response.headers();
 
@@ -75,12 +75,8 @@ async function fetchBotResponse(
  * @param path 대상 경로 (쿼리 포함 가능)
  * @returns 응답 본문 HTML
  */
-async function fetchBotHtml(
-  request: APIRequestContext,
-  path: string,
-  transport: 'escaped_fragment' | 'bot_user_agent' = 'escaped_fragment'
-): Promise<string> {
-  const { html, cache } = await fetchBotResponse(request, path, transport);
+async function fetchBotHtml(request: APIRequestContext, path: string): Promise<string> {
+  const { html, cache } = await fetchBotResponse(request, path);
 
   expect(cache, `${path} 응답이 봇 렌더러를 거치지 않았습니다 (X-SEO-Cache 헤더 없음)`).toBeDefined();
   expect(['HIT', 'MISS']).toContain(cache);
@@ -105,7 +101,7 @@ function bodyOf(html: string): string {
 test.describe('봇 렌더링 본문 노출', () => {
   /**
    * @scenario ep_site=board_post, injection=extension_active, nesting=direct_child, host_gate=if_true, content_kind=html_mode
-   * @effects ep_props_resolved_into_context, subtree_inherits_ep_props, escaped_fragment_request_renders_content
+   * @effects ep_props_resolved_into_context, subtree_inherits_ep_props, bot_user_agent_request_renders_content
    */
   test('게시글 본문이 메타뿐 아니라 봇 화면 본문 영역에도 출력된다 @smoke', async ({ request }) => {
     // 목록에서 실제 게시글 경로를 얻는다 — 고정 ID 하드코딩 회피(환경별 데이터 상이).
@@ -124,6 +120,12 @@ test.describe('봇 렌더링 본문 노출', () => {
       }
 
       const body = bodyOf(postHtml);
+
+      // 가려진 글(블라인드/비밀)은 본문 자리에 안내만 나가고 description 은 사이트 기본 설명으로
+      // 채워진다 — "description 이 있다" 만으로는 걸러지지 않으므로 본문 안내로 판정해 건너뛴다.
+      if (/블라인드 처리된|비밀글|삭제된 게시글/.test(body)) {
+        continue;
+      }
 
       // 본문 영역이 빈 껍데기로 나가던 회귀 시그니처
       expect(body, `${path} 의 본문 영역이 비어 있습니다`).not.toContain(EMPTY_INJECTED_BODY);
@@ -223,7 +225,7 @@ test.describe('봇 렌더링 본문 노출', () => {
   });
 
   /**
-   * @effects every_used_data_source_is_declared, escaped_fragment_request_renders_content
+   * @effects every_used_data_source_is_declared, bot_user_agent_request_renders_content
    */
   test('검색 결과 목록이 봇 화면에 출력된다', async ({ request }) => {
     // 결과가 존재하는 검색어를 목록 화면에서 얻는다 — 고정 키워드 하드코딩 회피.
@@ -241,7 +243,7 @@ test.describe('봇 렌더링 본문 노출', () => {
   });
 
   /**
-   * @effects escaped_fragment_request_renders_content
+   * @effects bot_user_agent_request_renders_content
    */
   test('봇 응답에 미해석 표현식이 남지 않는다', async ({ request }) => {
     for (const path of ['/', '/board/notice', '/page/about']) {
@@ -270,15 +272,12 @@ test.describe('봇 렌더링 본문 노출', () => {
   });
 
   /**
-   * 봇 User-Agent 로만 진입해도 동일한 본문이 나와야 한다.
-   *
-   * escaped fragment 쿼리만 검증하면, 실제 검색엔진이 쓰는 UA 경로에서 본문이 비어도
-   * 드러나지 않는다 — 판정 경로가 둘인데 잠금은 하나였던 상태.
+   * 실제 검색엔진이 쓰는 봇 User-Agent 로 진입하면 본문이 출력된다.
    *
    * @effects bot_user_agent_request_renders_content
    */
-  test('봇 User-Agent 요청에도 본문이 출력된다', async ({ request }) => {
-    const body = bodyOf(await fetchBotHtml(request, '/page/about', 'bot_user_agent'));
+  test('봇 User-Agent 요청에 본문이 출력된다', async ({ request }) => {
+    const body = bodyOf(await fetchBotHtml(request, '/page/about'));
 
     expect(body, '봇 UA 응답의 본문 영역이 비어 있습니다').not.toContain(EMPTY_INJECTED_BODY);
     expect(body).toMatch(/<h1[^>]*>[^<]+<\/h1>/);
@@ -286,15 +285,48 @@ test.describe('봇 렌더링 본문 노출', () => {
   });
 
   /**
-   * 두 봇 판정 경로가 같은 본문을 낸다.
+   * `?_escaped_fragment_=` 쿼리만으로는 봇 화면을 받지 않는다.
    *
-   * @effects both_transports_render_same_content
+   * 회귀(KVE-2026-2333/2334/2335 공통 진입점): 이 쿼리가 있으면 User-Agent 와 무관하게 봇으로
+   * 판정해, 누구나 주소 뒤에 글자 하나를 붙여 비싼 봇 렌더 경로를 태울 수 있었다.
+   *
+   * @effects escaped_fragment_query_is_not_a_bot_signal
    */
-  test('escaped fragment 경로와 봇 User-Agent 경로의 본문이 동일하다', async ({ request }) => {
-    const viaQuery = bodyOf(await fetchBotHtml(request, '/page/about', 'escaped_fragment'));
-    const viaAgent = bodyOf(await fetchBotHtml(request, '/page/about', 'bot_user_agent'));
+  test('escaped fragment 쿼리만으로는 봇 화면이 나가지 않는다', async ({ request }) => {
+    const response = await request.get(`/page/about?_escaped_fragment_=&pv=${Date.now()}`, {
+      headers: { 'User-Agent': BROWSER_USER_AGENT },
+    });
 
-    expect(viaAgent, '봇 판정 경로에 따라 본문이 달라집니다').toBe(viaQuery);
+    expect(response.status()).toBe(200);
+    expect(response.headers()['x-seo-cache'], '일반 브라우저 요청이 봇 렌더러를 거쳤습니다').toBeUndefined();
+  });
+
+  /**
+   * 위조 Host 로 그린 봇 화면이 캐시를 거쳐 정상 방문자에게 나가지 않는다.
+   *
+   * 회귀(KVE-2026-2333): canonical·og:url 을 요청 Host 로 만들고 캐시 키에는 Host 가 없어,
+   * `Host: <사이트>:6666` 으로 한 번 렌더하면 이후 정상 요청이 그 주소가 박힌 화면을 적중했다.
+   *
+   * @effects forged_host_render_does_not_poison_cached_page, rendered_urls_use_site_origin
+   */
+  test('위조 Host 로 렌더한 봇 화면이 정상 요청의 canonical 을 오염시키지 않는다', async ({ request, baseURL }) => {
+    const site = new URL(baseURL ?? 'https://localhost');
+    const path = `/page/about?pv=host${Date.now()}`;
+
+    // 개발 환경의 디버그 도구(Laravel Boost 브라우저 로그)는 응답 직전에 요청 Host 로 스크립트를
+    // 덧붙인다 — 봇 화면(캐시 대상) 산출물이 아니므로 스크립트 블록을 빼고 본다.
+    const withoutScripts = (html: string): string => html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+
+    const forged = await fetchBotResponse(request, path, { Host: `${site.hostname}:6666` });
+    expect(withoutScripts(forged.html), '위조 Host 가 봇 화면 주소에 반영됐습니다').not.toContain(':6666');
+
+    const genuine = await fetchBotResponse(request, path);
+    expect(genuine.cache, '같은 주소 두 번째 요청이 캐시에 적중하지 않았습니다').toBe('HIT');
+    expect(withoutScripts(genuine.html), '정상 요청이 위조 Host 가 박힌 캐시를 받았습니다').not.toContain(':6666');
+
+    const canonical = genuine.html.match(/<link rel="canonical" href="([^"]+)"/);
+    expect(canonical, 'canonical 이 없습니다').not.toBeNull();
+    expect(new URL(canonical![1]).host, 'canonical 이 사이트 주소가 아닙니다').toBe(site.host);
   });
 
   /**

@@ -56,7 +56,7 @@ function writeGlobalCurrency(currencyCode: string): void {
  * @returns 로드된 통화 코드
  *
  * @example
- * // _user_base.json의 init_actions에서 사용
+ * // _user_base.g7.html의 init_actions에서 사용
  * {
  *   "init_actions": [
  *     {

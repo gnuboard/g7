@@ -99,8 +99,27 @@
 | `getGithubUrl()` | `?string` | `github_url` | `null` |
 | `getAssets()` | `array` | `assets` | `[]` |
 | `getAssetLoadingConfig()` | `array` | `loading` | strategy: global, priority: 100 |
+| `getIcon()` | `?string` | `icon` | `null` |
 
 > **`license` 필드**: `module.json`에 `"license": "MIT"` 등의 라이선스 정보를 포함합니다. 이 값은 API 리소스의 `license` 필드로 노출됩니다. 또한 각 모듈 루트에 `LICENSE` 파일을 포함하여 라이선스 전문을 제공해야 합니다.
+
+### icon 필드 (선택)
+
+패키지에 아이콘을 담으면 관리자 확장 관리 화면과 설치 마법사에 그 그림이 나옵니다.
+보통은 파일만 두면 되고(`assets/icon.svg`), 다른 경로를 쓸 때만 `icon` 을 적습니다.
+
+```json
+{
+  "icon": "assets/brand/mark.svg"
+}
+```
+
+`getIcon()` 은 **적힌 값만** 돌려줍니다 — 경로가 올바른지, 그림이 규격에 맞는지는 코어가
+따로 판정합니다. 선언이 없으면 `null` 이고 파일 관례로 해석됩니다.
+
+규격(정사각·100KB 이하·스크립트 없는 SVG)과 언어팩 합성 규칙은
+[확장 아이콘](extension-icons.md)에 있습니다. 아이콘을 넣지 않아도 되며, 그때는 종류별
+기본 그림으로 표시됩니다.
 
 ### hidden 필드 (선택)
 
@@ -111,6 +130,14 @@
 - 슈퍼관리자는 "숨김 포함" 토글로 일시 조회 가능 (`?include_hidden=1`)
 - artisan CLI 에서도 기본 목록에서는 숨기고, `php artisan module:list --hidden` 으로 숨김 포함 목록을 조회할 수 있습니다
 - 사용 사례: 학습용 샘플 모듈(예: `gnuboard7-hello_module`), 내부 전용 통합 모듈
+
+### state_contracts · integrations 필드 (선택)
+
+`module.json` 의 `state_contracts` 는 다른 확장이 읽으라고 내놓는 전역 상태(`_global.{이름}`)의 이름·모양·쓰기 허용 주체이고,
+`integrations` 는 「있으면 연동되고 없어도 동작하는」 확장 목록입니다(`dependencies` 와 달리 설치를 막지 않음). 각각
+`getStateContracts()`·`getIntegrations()` 로 자동 파싱됩니다. 형식과 규칙은
+[전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts)과
+[선택 연동](plugin-development.md#2-의존성-dependency)을 따릅니다.
 
 ### 자동 추론 메서드 (final - 오버라이드 불가)
 
@@ -137,12 +164,15 @@
 | `getDynamicRoleIdentifiers()` | `[]` | 런타임 생성 역할 식별자 — stale cleanup 보존 대상 |
 | `getDynamicMenuSlugs()` | `[]` | 런타임 생성 메뉴 slug — stale cleanup 보존 대상 |
 | `getConfig()` | `[]` | 설정 |
+| `getComputedSettingKeys()` | `[]` | 매번 계산하는 설정 키(도트 표기 가능) — 설치 때 설정 파일에 쓰지 않고, 저장 요청·기존 파일에서 빼고, 읽을 때 늘 `getConfigValues()` 의 실시간 값을 쓴다 (7.1.3+, [plugin-development — 계산값 키](plugin-development.md#계산값-키-getcomputedsettingkeys-713)) |
 | `getAdminMenus()` | `[]` | 관리자 메뉴 |
 | `getHookListeners()` | `[]` | 훅 리스너 |
 | `getDependencies()` | `[]` | 의존성 |
 | `getMetadata()` | `[]` | 메타데이터 |
 | `getMiddleware()` | `[]` | 확장 미들웨어 선언 (self-gate targets) — `{class, groups, timing?, targets}` ([middleware.md](../backend/middleware.md)) |
 | `getBenchmarkProfiles()` | `[]` | 성능 계측 대상 선언 (`g7:bench` 가 수집) — 목록/화면/쓰기/배치 4축 ([benchmark.md](../backend/benchmark.md)) |
+| `getAnalyticsGoals()` | `[]` | 방문자 통계 전환(목표) 선언 — 선언된 목표만 기록된다 ([analytics-extension-points.md](analytics-extension-points.md)) |
+| `getAnalyticsDimensions()` | `[]` | 방문자 통계 분류 기준(dimension) 선언 — 선언된 분류 기준의 값만 원장·집계에 남는다 ([analytics-extension-points.md](analytics-extension-points.md)) |
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 모듈은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `ModuleManager::runUpgradeSteps` 가 `RuntimeException` throw |
 
 #### 수명주기 훅이 실패를 알리는 방법
@@ -166,6 +196,57 @@ public function activate(): bool
 - 사유는 **이미 번역된 문장**이어야 한다 — 확장의 언어 파일 키는 코어가 해석할 수 없다.
 - 사유를 남기지 않고 `false` 만 돌려주면 코어가 일반 문구로 대체한다(동작은 그대로).
 - 같은 규칙이 플러그인(`AbstractPlugin`)에도 동일하게 적용된다.
+
+#### 부분 실패를 경고로 알리는 방법 (LifecycleWarnings, 7.1.3+)
+
+작업 전체를 실패시킬 정도는 아니지만 운영자가 알아야 하는 부분 실패(재시드 한 단계 실패, 선택 연동 실패 등)는
+로그만 남기지 말고 코어의 생명주기 경고 목록 `App\Extension\Support\LifecycleWarnings` 에 추가한다. 작업은 성공으로 끝나고,
+경고는 같은 요청(또는 명령) 안에서 모여 아래로 전달된다.
+
+| 경로 | 전달 형태 |
+|------|----------|
+| 관리자 API (설치·활성화·업데이트·레이아웃 갱신 등) | 성공 응답의 `data.warnings` — `[{step, target, message}]`, 경고가 없으면 키 자체가 없다 |
+| 관리자 화면 | 작업 결과 창에 노란 경고 목록 |
+| artisan 생명주기 명령(설치·활성화·비활성화·제거·업데이트·레이아웃 갱신) | 경고 표 + `[g7-lifecycle-warnings] count=N` 표지 + 종료코드 1 (표지 없는 1 은 실패 — 명령 자체가 실패로 끝나면 경고 표만 보이고 표지는 찍지 않는다) |
+| 코어 업데이트 명령(`core:update` 와 그 자식 명령) | 경고 표만 — 종료코드는 바꾸지 않는다(끝난 업데이트를 부모 명령·자동화 스크립트가 실패로 보지 않게) |
+
+```php
+use App\Extension\Support\LifecycleWarnings;
+
+public function activate(): bool
+{
+    try {
+        $this->reseedDefaults();
+    } catch (\Throwable $e) {
+        Log::warning('기본값 재시드 실패', ['error' => $e->getMessage()]);
+
+        // 7.1.3 미만 코어에는 클래스가 없다 — 가드해서 옛 코어에서는 로그만 남긴다
+        if (class_exists(LifecycleWarnings::class)) {
+            LifecycleWarnings::current()->add('reseed', $this->getIdentifier(), $e->getMessage());
+        }
+    }
+
+    return true;
+}
+```
+
+- `add(string $step, string $target, string $message)` — `step` 은 실패한 단계, `target` 은 대상(확장 식별자·파일명 등), `message` 는 **이미 번역된** 사유.
+- 확장의 `g7_version` 하한이 7.1.3 미만이면 `class_exists` 가드를 반드시 둔다(없으면 옛 코어에서 치명 오류).
+- 작업 자체를 거부해야 하면 경고가 아니라 `failWith()`(위 절)로 실패를 반환한다.
+
+#### 설치 시더 규칙 (7.1.3+)
+
+설치·활성화·언어팩 시더 재실행 직전에 코어가 **확장의 서비스 프로바이더를 부팅 때와 같은 규칙으로 먼저 등록**한다. 그래서 설치 시더에서 확장 자신의 저장소 인터페이스·서비스를 해석할 수 있다(예전에는 같은 요청에서 새로 복사된 확장의 프로바이더가 등록되지 않아 `BindingResolutionException` 이 났다). 반대로 업데이트의 업그레이드 단계에는 옛 버전 프로바이더만 있으므로 새 바인딩을 해석하지 않는다 — [업그레이드 스텝 작성 가이드](upgrade-step-guide.md) 원칙 5.
+
+| 상황 | 결과 |
+|------|------|
+| 시더가 예외를 던지거나 0 이 아닌 종료 코드 | **설치 실패** (`ExtensionSeederFailedException`, 메시지에 시더 클래스·원인) |
+| `getSeeders()` 에 선언한 시더 클래스가 없음 | **설치 실패** (원인: 클래스를 찾을 수 없음) |
+| `getSeeders()` 가 비어 glob 으로 찾은 `*Seeder.php` 의 추론 클래스명이 다름 | 그 파일만 건너뛰고 생명주기 경고 |
+
+- **새 설치가 실패하면** 이번 호출이 만든 것을 되돌린다 — 확장 행, 마이그레이션(이번에 실행한 것만), 권한·메뉴, 본인인증 정책, 알림 정의, 스토리지, 새로 만든 활성 디렉토리. 데이터 보존 제거 뒤 남아 있던 운영 데이터(이전 마이그레이션 기록·권한 등)는 지우지 않는다.
+- **`--force` 재설치가 실패하면** 이미 운영 데이터가 있으므로 아무것도 지우지 않는다.
+- 시더는 멱등으로 작성한다 — 실패 뒤 원인을 고쳐 다시 설치하면 처음부터 다시 돈다.
 
 #### 동적 권한/역할/메뉴 보존 규칙
 
@@ -498,6 +579,14 @@ php artisan extension:update-autoload
 
 ---
 
+## 화면 컴포넌트 제공
+
+모듈은 자기 화면 컴포넌트를 제공할 수 있다. 소스는 `resources/js/components/{basic,composite,layout}/` 에 두고, 이름은 `{모듈식별자}.{이름}` 으로 등록하며(마크업 태그는 `<sirsoft-ecommerce-product-card>` 처럼 식별자 프리픽스가 붙는다), 등록은 모듈 번들이 스스로 한다.
+
+모듈은 **다른 확장의 컴포넌트를 대체할 수 없다** — 그 권한은 템플릿 전용이다. 자기 컴포넌트를 특정 템플릿에서만 다르게 내려면 `resources/js/components/for/{템플릿식별자}/` 를 쓴다. `resources/js/components/overrides/` 를 두면 audit 이 차단한다.
+
+규약 전문(디렉토리·이름·등록 API·판본 선택·오버라이드 폴백): **[extension-components.md](extension-components.md)**
+
 ## 모듈 디렉토리 구조
 
 ```
@@ -544,7 +633,7 @@ modules/_bundled/sirsoft-ecommerce/
 │   ├── lang/                    # 프론트엔드 다국어 (JSON)
 │   │   ├── ko.json             # 한국어 프론트엔드 다국어
 │   │   └── en.json             # 영어 프론트엔드 다국어
-│   ├── layouts/                 # 레이아웃 JSON
+│   ├── layouts/                 # 레이아웃 소스 SSoT = .g7.html 마크업 (짝 .json 은 런타임 계약)
 │   │   ├── admin/               # admin 템플릿 레이아웃
 │   │   └── user/                # user 템플릿 레이아웃 (선택)
 │   ├── routes/                  # 프론트엔드 라우트 정의
@@ -593,7 +682,7 @@ modules/_bundled/sirsoft-ecommerce/
 | `resources/js/` | 프론트엔드 JS/TS 소스 — 핸들러 정의 등 (에셋 모듈만 해당) |
 | `resources/css/` | CSS 소스 (에셋 모듈만 해당) |
 | `resources/lang/` | 프론트엔드 다국어 (JSON) |
-| `resources/layouts/` | 레이아웃 JSON (admin/, user/ 하위) |
+| `resources/layouts/` | 레이아웃 소스 SSoT `.g7.html` + 짝 런타임 계약 `.json` (admin/, user/ 하위) |
 | `resources/routes/admin.json` | admin 템플릿 전용 프론트엔드 라우트 |
 | `resources/routes/user.json` | user 템플릿 전용 프론트엔드 라우트 (선택) |
 | `src/Http/Controllers/` | 컨트롤러 |
@@ -826,6 +915,19 @@ public function seoVariables(): array
 ### 레이아웃에서 사용
 
 레이아웃 JSON의 `meta.seo.extensions`에 모듈을 선언하면 `seoVariables()`가 자동 호출됩니다.
+
+```html
+<meta>
+  <seo page_type="product">
+    <extensions>
+      <item type="module" id="sirsoft-ecommerce"/>
+    </extensions>
+    <vars product_name="{{product.data.name ?? ''}}" product_description="{{product.data.short_description ?? ''}}"/>
+  </seo>
+</meta>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

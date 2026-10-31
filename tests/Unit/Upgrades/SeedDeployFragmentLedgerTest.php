@@ -5,12 +5,12 @@ namespace Tests\Unit\Upgrades;
 use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\UpgradeContext;
 use App\Services\CoreUpdateService;
-use App\Upgrades\Data\V7_1_0\Migrations\SeedDeployFragmentLedger;
+use App\Upgrades\Data\V7_2_0\Migrations\SeedDeployFragmentLedger;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * 7.1.0 스텝 — `deploy/**` 해시 원장 씨앗 (G3 회차 16 W2 A2 ③).
+ * 7.2.0 스텝 — `deploy/**` 해시 원장 씨앗 (G3 회차 16 W2 A2 ③).
  *
  * 원장이 없는 설치본(이 규칙 이전에 설치됐거나, 구버전 부모 프로세스가 적용을 수행한 사이트)은
  * 다음 업데이트에서 전 조각이 「판정 불가 → 보존 + `.dist`」 로 떨어진다. 업그레이드 스텝이 도는
@@ -34,7 +34,7 @@ class SeedDeployFragmentLedgerTest extends TestCase
 
         // 업그레이드 스텝 데이터 마이그레이션은 오토로드 밖이다 — 스텝 러너가 `require_once` 로
         // 읽으므로 테스트도 같은 방식으로 읽는다 (형제 01_ 테스트와 같다).
-        require_once base_path('upgrades/data/7.1.0/migrations/02_SeedDeployFragmentLedger.php');
+        require_once base_path('upgrades/data/7.2.0/migrations/05_SeedDeployFragmentLedger.php');
 
         $this->sandbox = storage_path('test_seed_step_'.uniqid());
         File::ensureDirectoryExists($this->sandbox.DIRECTORY_SEPARATOR.'deploy'.DIRECTORY_SEPARATOR.'nginx');
@@ -71,7 +71,7 @@ class SeedDeployFragmentLedgerTest extends TestCase
 
         $ledger = storage_path('app'.DIRECTORY_SEPARATOR.'core-update'.DIRECTORY_SEPARATOR.CoreUpdateService::DEPLOY_FRAGMENT_LEDGER);
 
-        (new SeedDeployFragmentLedger)->run(new UpgradeContext('7.0.8', '7.1.0', '7.1.0'));
+        (new SeedDeployFragmentLedger)->run(new UpgradeContext('7.1.3', '7.2.0', '7.2.0'));
 
         $this->assertFileExists($ledger, '스텝이 원장을 씨앗하지 않았다 — 다음 업데이트가 전 조각을 「판정 불가」로 본다');
         $fromStep = json_decode((string) File::get($ledger), true);
@@ -85,7 +85,7 @@ class SeedDeployFragmentLedgerTest extends TestCase
 
         // 멱등 — 원장이 있으면 손대지 않는다.
         File::put($nginx, "# nginx changed\n");
-        (new SeedDeployFragmentLedger)->run(new UpgradeContext('7.0.8', '7.1.0', '7.1.0'));
+        (new SeedDeployFragmentLedger)->run(new UpgradeContext('7.1.3', '7.2.0', '7.2.0'));
         $this->assertSame($fromStep, json_decode((string) File::get($ledger), true), '원장이 있는데 스텝이 덮어썼다');
     }
 
@@ -124,7 +124,7 @@ class SeedDeployFragmentLedgerTest extends TestCase
 
         // 스텝 — 같은 병합. 부분 원장을 다시 만들고 스텝을 돌린다.
         File::put($ledgerPath, (string) json_encode(['nginx/g7-layout2.conf' => 'operator-reference-hash'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-        (new SeedDeployFragmentLedger)->run(new UpgradeContext('7.0.8', '7.1.0', '7.1.0'));
+        (new SeedDeployFragmentLedger)->run(new UpgradeContext('7.1.3', '7.2.0', '7.2.0'));
 
         $fromStep = json_decode((string) File::get($ledgerPath), true);
         $this->assertSame('operator-reference-hash', $fromStep['nginx/g7-layout2.conf'], '스텝이 이미 있던 키를 덮었다');
@@ -154,7 +154,7 @@ class SeedDeployFragmentLedgerTest extends TestCase
         $this->assertSame(['nginx/g7-layout2.conf'], $added, '점 파일이 서비스 씨앗기 모집단에 들었다');
 
         File::delete($ledgerPath);
-        (new SeedDeployFragmentLedger)->run(new UpgradeContext('7.0.8', '7.1.0', '7.1.0'));
+        (new SeedDeployFragmentLedger)->run(new UpgradeContext('7.1.3', '7.2.0', '7.2.0'));
 
         $fromStep = json_decode((string) File::get($ledgerPath), true);
         $this->assertArrayNotHasKey('.hidden', $fromStep, '스텝이 점 파일을 원장에 넣었다 — 서비스와 모집단이 갈린다');
@@ -206,7 +206,7 @@ class SeedDeployFragmentLedgerTest extends TestCase
 
         StorageLinkHelper::takeDocrootExposureWarnings();
 
-        (new SeedDeployFragmentLedger)->run(new UpgradeContext('7.0.8', '7.1.0', '7.1.0'));
+        (new SeedDeployFragmentLedger)->run(new UpgradeContext('7.1.3', '7.2.0', '7.2.0'));
 
         $warnings = StorageLinkHelper::takeDocrootExposureWarnings();
 

@@ -20,7 +20,7 @@ class CartQuantityLimitException extends Exception
         private int $limit,
         private int $attempted,
     ) {
-        parent::__construct(__('sirsoft-ecommerce::validation.cart.quantity_limit_exceeded', [
+        parent::__construct(trans_choice('sirsoft-ecommerce::validation.cart.quantity_limit_exceeded', $limit, [
             'limit' => $limit,
             'attempted' => $attempted,
         ]));

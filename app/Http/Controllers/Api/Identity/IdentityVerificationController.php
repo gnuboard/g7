@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\Identity;
 
 use App\Enums\IdentityOriginType;
 use App\Enums\IdentityVerificationPurpose;
+use App\Enums\IdentityVerificationStatus;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Identity\CancelChallengeRequest;
+use App\Http\Requests\Identity\ClaimChallengeRequest;
 use App\Http\Requests\Identity\IdentityCallbackRequest;
 use App\Http\Requests\Identity\ProvidersIndexRequest;
 use App\Http\Requests\Identity\PurposesIndexRequest;
@@ -20,6 +22,10 @@ use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\IdentityPolicyService;
 use App\Services\IdentityVerificationService;
+use App\Support\LocalizedValue;
+use App\Support\SameOriginPath;
+use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 
@@ -65,6 +71,12 @@ class IdentityVerificationController extends PublicBaseController
             $providerId = null;
         }
 
+        // 428 이 알려 준 정책 — 메일 발송부가 그 정책별 문구를 고르고 이력에 출처 정책을 남긴다.
+        $originPolicy = $this->policyService->findUsableForChallenge(
+            $validated['policy_key'] ?? null,
+            (string) $validated['purpose'],
+        );
+
         $challenge = $this->service->start(
             purpose: (string) $validated['purpose'],
             target: $target,
@@ -73,15 +85,63 @@ class IdentityVerificationController extends PublicBaseController
                 'user_agent' => substr((string) $request->userAgent(), 0, 512),
                 'origin_type' => IdentityOriginType::Api->value,
                 'origin_identifier' => '/api/identity/challenges',
+                'origin_policy_key' => $originPolicy?->key,
+                // 외부 화면을 거치는 수단이 확인 뒤 돌려보낼 경로 — 같은 출처 경로만(그 밖은 null)
+                'return_path' => SameOriginPath::normalize($validated['return_path'] ?? null),
+                // 인증을 시작한 화면의 범위 — 메일 확인 링크·사이트 링크가 그 화면 쪽 주소를 따른다
+                'screen_scope' => ($validated['scope'] ?? null) === ScreenUrl::SCOPE_ADMIN ? ScreenUrl::SCOPE_ADMIN : ScreenUrl::SCOPE_USER,
             ],
             providerId: $providerId,
         );
 
+        // 발송이 실패로 끝났으면 성공으로 포장하지 않는다.
+        //
+        // 코드 전달이 실패해도 챌린지 자체는 만들어진다. 그 상태로 201 을 돌려주면 화면은
+        // 「전송된 6자리 코드를 입력해주세요」와 카운트다운을 띄우고, 사용자는 **영영 오지 않을
+        // 코드**를 기다린다(#599 세션A 실측 2026-09-22 · 회원 탈퇴 경로 — 챌린지가 생성 2초 뒤
+        // `failed` 인데 API 는 201 을 냈다. 코드는 해시로만 남아 복구할 수 없어 그 환경에서는
+        // 회원이 스스로 탈퇴할 방법이 없었다).
+        //
+        // 상태는 공개 폴링과 같은 판정을 쓴다 — 두 곳에서 따로 재면 갈린다.
+        $status = $this->service->getStatus($challenge->id);
+        if (($status['status'] ?? null) === IdentityVerificationStatus::Failed->value) {
+            return $this->error('identity.errors.challenge_dispatch_failed', 502);
+        }
+
+        // 링크 방식은 확인을 메일 링크가 하므로, 시작한 화면이 결과를 받아 갈 일회용 비밀값을 이 응답에만 싣는다.
+        $claimSecret = $this->service->issueClaimSecret($challenge->id);
+
         return $this->success(
             'identity.messages.challenge_requested',
-            (new ChallengeResource($challenge))->toArray($request),
+            (new ChallengeResource($challenge))->toArray($request) + array_filter(['claim_secret' => $claimSecret], fn ($v) => $v !== null),
             201,
         );
+    }
+
+    /**
+     * 링크 방식 challenge 의 확인 결과를 시작한 화면이 받아 갑니다. POST /api/identity/challenges/{challenge}/claim
+     *
+     * 확인이 끝났고 비밀값이 맞으면 verification_token 을 한 번만 돌려준다(200). 아직이면 202(pending),
+     * 비밀값이 틀리면 403, 이미 받아 갔으면 409, 만료·실패·취소면 422.
+     *
+     * @param  ClaimChallengeRequest  $request  검증된 요청 (claim_secret)
+     * @param  IdentityVerificationLog  $challenge  라우트 모델 바인딩으로 resolve 된 challenge 로그
+     * @return JsonResponse 결과
+     */
+    public function claim(ClaimChallengeRequest $request, IdentityVerificationLog $challenge): JsonResponse
+    {
+        $result = $this->service->claim($challenge->id, (string) $request->validated()['claim_secret']);
+
+        return match ($result['status']) {
+            IdentityVerificationStatus::Verified->value => $this->success('identity.messages.challenge_verified', [
+                'status' => 'verified',
+                'verification_token' => $result['verification_token'],
+            ]),
+            'pending' => $this->success('identity.messages.challenge_pending', ['status' => 'pending'], 202),
+            'denied' => $this->error('identity.errors.claim_denied', 403),
+            'claimed' => $this->error('identity.errors.claim_already_used', 409),
+            default => $this->error('identity.errors.claim_unavailable', 422, ['status' => $result['status']]),
+        };
     }
 
     /**
@@ -209,7 +269,7 @@ class IdentityVerificationController extends PublicBaseController
      *
      * @param  IdentityCallbackRequest  $request  검증된 요청
      * @param  string  $providerId  콜백을 보낸 provider 식별자
-     * @return JsonResponse|RedirectResponse
+     * @return JsonResponse|RedirectResponse 실패·return 없음은 JSON, return 이 있으면 그 화면으로 리다이렉트
      *
      * @since engine-v1.46.0
      */
@@ -231,10 +291,11 @@ class IdentityVerificationController extends PublicBaseController
 
         if (! $result->success) {
             if ($returnUrl !== '' && $this->isSafeReturnUrl($returnUrl)) {
-                $sep = str_contains($returnUrl, '?') ? '&' : '?';
+                $target = $this->absoluteReturnUrl($returnUrl);
+                $sep = str_contains($target, '?') ? '&' : '?';
 
                 return redirect()->away(
-                    $returnUrl.$sep.'identity_error='.urlencode($result->failureCode ?? 'UNKNOWN'),
+                    $target.$sep.'identity_error='.urlencode($result->failureCode ?? 'UNKNOWN'),
                 );
             }
 
@@ -248,10 +309,11 @@ class IdentityVerificationController extends PublicBaseController
         $token = $result->claims['verification_token'] ?? '';
 
         if ($returnUrl !== '' && $this->isSafeReturnUrl($returnUrl)) {
-            $sep = str_contains($returnUrl, '?') ? '&' : '?';
+            $target = $this->absoluteReturnUrl($returnUrl);
+            $sep = str_contains($target, '?') ? '&' : '?';
 
             return redirect()->away(
-                $returnUrl.$sep.'verification_token='.urlencode((string) $token).'&challenge_id='.urlencode($challengeId),
+                $target.$sep.'verification_token='.urlencode((string) $token).'&challenge_id='.urlencode($challengeId),
             );
         }
 
@@ -264,20 +326,40 @@ class IdentityVerificationController extends PublicBaseController
     }
 
     /**
-     * `return` 쿼리 URL 이 같은 origin 인지 검증 — open redirect 차단.
+     * `return` 쿼리 URL 이 사이트 주소 또는 「사용자 화면 URL」과 같은 출처인지 검증 — open redirect 차단.
      *
-     * 절대 URL 이면 host 가 현재 앱 host 와 일치해야 통과, 상대 경로(`/...`) 는 통과.
+     * 보안: 브라우저와 PHP 가 다르게 해석하는 입력(`/\evil.com`·제어 문자·`https://evil.com\@site/`)과
+     * scheme·port·userinfo 가 다른 절대 URL 을 모두 거부한다. 판정은 `SiteUrl::isSameOrigin()` 과
+     * `ScreenUrl::isUserScreenOrigin()` 이 소유한다 — 외부 화면(다른 주소의 Next.js 등)으로 돌아가는 복귀를 허용한다(#792).
+     *
+     * @param  string  $url  검사할 복귀 URL
+     * @return bool 허용 출처면 true
      */
     private function isSafeReturnUrl(string $url): bool
     {
-        if ($url === '' || $url[0] === '/') {
-            return ! str_starts_with($url, '//'); // protocol-relative 차단
+        return SiteUrl::isSameOrigin($url) || ScreenUrl::isUserScreenOrigin($url);
+    }
+
+    /**
+     * 같은 출처로 판정된 복귀 주소를 사이트 주소 기준 절대 URL 로 만듭니다.
+     *
+     * 보안: 상대 경로를 그대로 Location 에 실으면 브라우저가 요청 Host 기준으로 해석한다 — 위조 Host 로
+     * 시작한 콜백이면 토큰이 그 Host 로 간다.
+     *
+     * @param  string  $url  같은 출처로 판정된 복귀 주소(상대 경로 또는 사이트 주소 절대 URL)
+     * @return string 사이트 주소 기준 절대 URL
+     */
+    private function absoluteReturnUrl(string $url): string
+    {
+        if (! str_starts_with($url, '/')) {
+            return $url;
         }
 
-        $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
-        $urlHost = parse_url($url, PHP_URL_HOST);
+        // 관리자 화면 경로(`/admin`, `/admin/…`)는 사이트 주소로 — 관리자 화면은 「사용자 화면 URL」 쪽에 없다.
+        // 그 밖의 상대 경로는 사용자 화면 베이스(「사용자 화면 URL」, 비면 사이트 주소)로 절대화한다(#792).
+        $scope = preg_match('#^/admin(?:[/?\#]|$)#', $url) === 1 ? ScreenUrl::SCOPE_ADMIN : ScreenUrl::SCOPE_USER;
 
-        return $appHost !== null && $urlHost !== null && $appHost === $urlHost;
+        return ScreenUrl::toAbsolute($url, $scope);
     }
 
     /**
@@ -331,17 +413,17 @@ class IdentityVerificationController extends PublicBaseController
      *
      * 입력 형태 3가지 지원:
      * - i18n 키 문자열 (예: `identity.purposes.signup.label`) → `__()` 로 풀이
-     * - 다국어 배열 (`['ko' => ..., 'en' => ...]`) → 현재 로케일 우선, en 폴백
+     * - 다국어 배열 (`['ko' => ..., 'en' => ...]`) → 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값
      * - 일반 문자열 → 그대로 반환
      *
-     * @param  mixed  $value
+     * @param  mixed  $value  i18n 키 문자열 · 다국어 배열 · 일반 문자열
+     * @return string 현재 로케일로 풀이한 문구
      */
     private function resolvePurposeText($value): string
     {
         if (is_array($value)) {
-            $locale = app()->getLocale();
-
-            return (string) ($value[$locale] ?? $value['en'] ?? reset($value) ?: '');
+            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+            return LocalizedValue::pick($value) ?? '';
         }
 
         if (! is_string($value) || $value === '') {

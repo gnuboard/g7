@@ -1,0 +1,92 @@
+<!-- 메인 배너 목록 — 탭(전체·노출·중지)과 배너 행들.
+  **아직 시안이다** — 데이터소스도 API 호출도 없고, 탭 옆 숫자(7·4·3)와 두 배너의 제목·기간은
+  마크업에 박힌 글자다. 그래서 탭을 눌러도 목록이 걸러지지 않는다(탭 상태만 바뀐다).
+  다만 상호작용 뼈대는 정본이다 — 행을 누르면 오른쪽이 상세로 바뀌고(`viewMode`), 오른쪽 스위치는
+  배너별 상태 맵(`_local.bannerStatus.배너키`)을 뒤집는다. 배선할 때 이 형태를 반복 렌더로 바꾸고
+  하드코딩된 배너 키를 실제 id 로 갈면 된다.
+  드래그 손잡이는 모양만 있고 정렬 이벤트가 붙어 있지 않다. -->
+<partial description="Main Banner List Partial">
+  <div data-ref="banner_list_section" class="ecommerce-admin-card">
+    <div data-ref="list_header" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4">
+      <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.main_banner.list.title</h3>
+      <span class="ecommerce-badge">7</span>
+    </div>
+    <div data-ref="list_tabs" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4">
+      <button type="button" class="{{_local.activeTab === 'all' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm'}}">
+        <on type="click">
+          <!-- 탭 선택은 활성 표시만 바꾼다 — 아래 목록이 하드코딩이라 아직 걸러지지 않는다(시안). -->
+          <set-state target="_local" activeTab="all"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.main_banner.list.tabs.all</span>
+        <span class="ecommerce:ml-1">7</span>
+      </button>
+      <button type="button" class="{{_local.activeTab === 'active' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm'}}">
+        <on type="click">
+          <!-- 노출 중 탭. 위 '전체' 와 같은 자리를 다투므로 세 탭 중 하나만 활성으로 보인다. -->
+          <set-state target="_local" activeTab="active"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.main_banner.list.tabs.active</span>
+        <span class="ecommerce:ml-1">4</span>
+      </button>
+      <button type="button" class="{{_local.activeTab === 'inactive' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm'}}">
+        <on type="click">
+          <!-- 중지 탭. 배선 후에는 이 값이 목록 조회 조건으로 넘어갈 자리다. -->
+          <set-state target="_local" activeTab="inactive"/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.main_banner.list.tabs.inactive</span>
+        <span class="ecommerce:ml-1">3</span>
+      </button>
+    </div>
+    <div data-ref="banner_list_items">
+      <div data-ref="banner_item_1" class="{{_local.selectedBannerId === 'banner_1' ? 'ecommerce-drag-item ecommerce:ring-2 ecommerce:ring-blue-500' : 'ecommerce-drag-item'}}">
+        <span class="ecommerce-drag-handle ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+          <icon name="grip-vertical" class="ecommerce:text-base"/>
+        </span>
+        <div class="ecommerce:w-16 ecommerce:h-10 ecommerce:rounded ecommerce:bg-gradient-to-r ecommerce:from-orange-400 ecommerce:to-red-400 ecommerce:flex-shrink-0"/>
+        <button type="button" class="ecommerce:block ecommerce:text-left ecommerce:flex-1 ecommerce:min-w-0 ecommerce:cursor-pointer" aria-pressed="{{_local.selectedBannerId === 'banner_1'}}">
+          <on type="click">
+            <!-- 행 선택 — 오른쪽을 이 배너의 상세로 바꾼다. 배너 키가 글자로 박혀 있어(`banner_1`) 배선 시 실제 id 로 바뀔 자리다. -->
+            <set-state target="_local" selectedBannerId="banner_1" viewMode="detail"/>
+          </on>
+          <span class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce-text-primary ecommerce:truncate">$t:sirsoft-ecommerce.admin.sample.banners.winter_sale</span>
+          <span class="ecommerce:block ecommerce:text-xs ecommerce-text-secondary">2025-01-01 ~ 2025-12-31</span>
+        </button>
+        <button type="button" class="ecommerce-toggle ecommerce-active" role="switch" aria-checked="{{!!_local.bannerStatus?.banner_1}}" aria-label="$t:sirsoft-ecommerce.admin.main_banner.detail.field.status">
+          <on type="click">
+            <!-- 노출 스위치 — 배너별 상태 맵의 한 칸을 뒤집는다. 확인 창(`modal_status_change`)을 거치지 않고 곧바로 바뀌며, 서버로도 나가지 않는다(시안). -->
+            <set-state target="_local" bannerStatus.banner_1="{{!_local.bannerStatus.banner_1}}"/>
+          </on>
+          <span class="ecommerce-toggle-track"/>
+          <span class="ecommerce-toggle-handle"/>
+        </button>
+      </div>
+      <div data-ref="banner_item_2" class="{{_local.selectedBannerId === 'banner_2' ? 'ecommerce-drag-item ecommerce:ring-2 ecommerce:ring-blue-500' : 'ecommerce-drag-item'}}">
+        <span class="ecommerce-drag-handle ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+          <icon name="grip-vertical" class="ecommerce:text-base"/>
+        </span>
+        <div class="ecommerce-flex-center ecommerce:w-16 ecommerce:h-10 ecommerce:rounded ecommerce:bg-gray-200 ecommerce:dark:bg-gray-700 ecommerce:justify-center ecommerce:flex-shrink-0">
+          <span class="ecommerce-text-secondary ecommerce:text-xl ecommerce:font-bold">SALE</span>
+        </div>
+        <button type="button" class="ecommerce:block ecommerce:text-left ecommerce:flex-1 ecommerce:min-w-0 ecommerce:cursor-pointer" aria-pressed="{{_local.selectedBannerId === 'banner_2'}}">
+          <on type="click">
+            <!-- 두 번째 배너 행 — 위와 같은 동작이고 키만 다르다. 반복 렌더로 바뀌면 이 중복은 사라진다. -->
+            <set-state target="_local" selectedBannerId="banner_2" viewMode="detail"/>
+          </on>
+          <span class="ecommerce-flex-center ecommerce:gap-2">
+            <span class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce-text-primary ecommerce:truncate">$t:sirsoft-ecommerce.admin.sample.banners.spring_semester</span>
+            <span class="ecommerce-badge ecommerce-badge-gray ecommerce:text-xs ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.main_banner.list.status_ended</span>
+          </span>
+          <span class="ecommerce:block ecommerce:text-xs ecommerce-text-secondary">2025-03-01 ~ 2025-03-31</span>
+        </button>
+        <button type="button" class="ecommerce-toggle" role="switch" aria-checked="{{!!_local.bannerStatus?.banner_2}}" aria-label="$t:sirsoft-ecommerce.admin.main_banner.detail.field.status">
+          <on type="click">
+            <!-- 두 번째 배너의 노출 스위치. 이 행은 기간이 끝난 배너라 목록에 '종료' 배지가 함께 붙는데, 스위치는 그와 무관하게 눌린다. -->
+            <set-state target="_local" bannerStatus.banner_2="{{!_local.bannerStatus.banner_2}}"/>
+          </on>
+          <span class="ecommerce-toggle-track"/>
+          <span class="ecommerce-toggle-handle"/>
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

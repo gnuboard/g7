@@ -1,0 +1,15 @@
+feature: 페이지 서버 영어 메시지의 단·복수
+
+description: |
+  페이지 일괄 공개·비공개 결과와 첨부 상한 안내를 `(s)` 대신 `단수|복수` 로 적고 수로 고른다. 규칙이 1 로 고정된 최소 선택 문구는 단수 한 문장. 한국어는 그대로.
+
+axes:
+  surface: [response_message, exception_response, fixed_minimum]
+
+effects:
+  - response_message_follows_count
+  - exception_and_response_message_follow_number
+  - fixed_minimum_message_is_singular
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Unit/Lang/BackendPluralMessagesTest.php

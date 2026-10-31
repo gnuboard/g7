@@ -1,0 +1,231 @@
+<!-- 개인결제 요청 등록 (운영자) — 전화·메신저로 받은 주문처럼 장바구니를 거치지 않는 건에 대해
+  결제 링크를 만들어 보내는 화면이다. 구매자는 회원을 찾아 고르거나 비회원 정보를 직접 넣는 두
+  갈래이고, 기존 주문에 이어 붙일 수도 있어 주문 찾기 창을 함께 둔다. -->
+<layout name="admin_ecommerce_personal_payment_create" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.personal_payment_create.title" description="$t:sirsoft-ecommerce.admin.personal_payment_create.description"/>
+  <init-local>
+    <field name="buyerType" value="guest"/>
+    <field name="showMemberSearchModal" :value="false"/>
+    <field name="showOrderSearchModal" :value="false"/>
+    <field name="form">
+      <field name="buyer_name" value=""/>
+      <field name="buyer_phone" value=""/>
+      <field name="buyer_email" value=""/>
+      <field name="product_name" value=""/>
+      <field name="amount" value=""/>
+      <field name="expired_at" value=""/>
+      <field name="order_id" :value="null"/>
+      <field name="memo" value=""/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="personal_payment_create_content" class="ecommerce-admin-page-content">
+      <responsive on="portable" class="ecommerce-admin-page-content-compact"/>
+      <div data-ref="page_header" class="ecommerce-flex-start ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-6">
+        <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-6"/>
+        <div data-ref="page_header_left">
+          <h1 class="ecommerce-page-title ecommerce:mb-1">$t:sirsoft-ecommerce.admin.personal_payment_create.title</h1>
+          <p class="ecommerce-text-secondary ecommerce:text-sm">$t:sirsoft-ecommerce.admin.personal_payment_create.description</p>
+        </div>
+        <div data-ref="page_header_actions" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0"/>
+      </div>
+      <div data-ref="buyer_info_card" class="ecommerce-admin-card ecommerce:mb-6">
+        <div data-ref="buyer_info_header" class="ecommerce-flex-between ecommerce:mb-4">
+          <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.title</h3>
+          <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.required_notice</span>
+        </div>
+        <div data-ref="buyer_type_selection" class="ecommerce:mb-4">
+          <label class="ecommerce-form-label">
+            <span>$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.buyer_type</span>
+            <span class="ecommerce-text-required">*</span>
+          </label>
+          <div class="ecommerce-flex-center ecommerce:gap-6 ecommerce:mt-2">
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer">
+              <on type="click">
+                <!-- 회원 선택으로 갈아타면서 곧바로 찾기 창을 연다 — 고르지 않은 채로 두면 구매자 정보가 빈 상태로 남기 때문이다 -->
+                <sequence>
+                  <set-state target="_local" buyerType="member"/>
+                  <open-modal target="modal_member_search"/>
+                </sequence>
+              </on>
+              <input type="radio" name="buyerType" value="member" class="ecommerce-radio"/>
+              <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.member_select</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer">
+              <input type="radio" name="buyerType" value="guest" class="ecommerce-radio" :checked="true"/>
+              <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.guest_input</span>
+            </label>
+          </div>
+        </div>
+        <div data-ref="selected_member_card" class="ecommerce:mb-4">
+          <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.selected_member</label>
+          <div class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4">
+            <div class="ecommerce-flex-between">
+              <div class="ecommerce-flex-center ecommerce:gap-3">
+                <div class="ecommerce-flex-center ecommerce:w-10 ecommerce:h-10 ecommerce:bg-gray-200 ecommerce:dark:bg-gray-600 ecommerce:rounded-full ecommerce:justify-center">
+                  <icon name="user" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-300"/>
+                </div>
+                <div>
+                  <div class="ecommerce-flex-center ecommerce:gap-2">
+                    <span class="ecommerce:font-medium ecommerce-text-heading">$t:sirsoft-ecommerce.admin.sample.people.jung_sujin</span>
+                    <span class="ecommerce-text-secondary ecommerce:text-sm">user005</span>
+                  </div>
+                  <div class="ecommerce-text-secondary ecommerce:text-sm">jung@example.com</div>
+                  <div class="ecommerce-text-secondary ecommerce:text-sm">010-5678-9012</div>
+                </div>
+              </div>
+              <div class="ecommerce-flex-center ecommerce:gap-1">
+                <button type="button" class="ecommerce-btn ecommerce-btn-icon" title="$t:sirsoft-ecommerce.common.remove">
+                  <icon name="x" class="ecommerce:text-base"/>
+                </button>
+                <button type="button" class="ecommerce-btn ecommerce-btn-icon" title="$t:sirsoft-ecommerce.common.refresh">
+                  <icon name="arrows-rotate" class="ecommerce:text-base"/>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="field_buyer_name" class="ecommerce-form-group ecommerce:mb-4">
+          <label class="ecommerce-form-label">
+            <span>$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.name</span>
+            <span class="ecommerce-text-required">*</span>
+          </label>
+          <input type="text" name="buyer_name" class="ecommerce-input ecommerce:md:w-80" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.name_placeholder"/>
+        </div>
+        <div data-ref="buyer_contact_grid" class="ecommerce-grid-2col-responsive">
+          <div data-ref="field_buyer_phone" class="ecommerce-form-group">
+            <label class="ecommerce-form-label">
+              <span>$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.phone</span>
+              <span class="ecommerce-text-required">*</span>
+            </label>
+            <input type="text" name="buyer_phone" class="ecommerce-input" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.phone_placeholder"/>
+            <p class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.phone_hint</p>
+          </div>
+          <div data-ref="field_buyer_email" class="ecommerce-form-group">
+            <label class="ecommerce-form-label">
+              <span>$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.email</span>
+              <span class="ecommerce-text-required">*</span>
+            </label>
+            <input type="email" name="buyer_email" class="ecommerce-input" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.buyer_info.email_placeholder"/>
+          </div>
+        </div>
+      </div>
+      <div data-ref="payment_detail_card" class="ecommerce-admin-card">
+        <div data-ref="payment_detail_header" class="ecommerce:mb-4">
+          <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.title</h3>
+        </div>
+        <div data-ref="field_product_name" class="ecommerce-form-group ecommerce:mb-4">
+          <label class="ecommerce-form-label">
+            <span>$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.product_name</span>
+            <span class="ecommerce-text-required">*</span>
+          </label>
+          <input type="text" name="product_name" class="ecommerce-input" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.product_name_placeholder"/>
+        </div>
+        <div data-ref="amount_expiry_grid" class="ecommerce-grid-2col-responsive ecommerce:mb-4">
+          <div data-ref="field_amount" class="ecommerce-form-group">
+            <label class="ecommerce-form-label">
+              <span>$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.amount</span>
+              <span class="ecommerce-text-required">*</span>
+            </label>
+            <div class="ecommerce:relative">
+              <span class="ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-gray-600 ecommerce:dark:text-gray-300">₩</span>
+              <input type="text" name="amount" class="ecommerce-input ecommerce:pl-8" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.amount_placeholder"/>
+            </div>
+            <p class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.amount_hint</p>
+          </div>
+          <div data-ref="field_expired_at" class="ecommerce-form-group">
+            <label class="ecommerce-form-label">
+              <span>$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.expired_at</span>
+              <span class="ecommerce-text-required">*</span>
+            </label>
+            <div class="ecommerce:relative">
+              <span class="ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+                <icon name="calendar" class="ecommerce:text-base"/>
+              </span>
+              <input type="text" name="expired_at" class="ecommerce-input ecommerce:pl-10" placeholder="2025. 11. 5."/>
+            </div>
+            <p class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.expired_at_hint</p>
+          </div>
+        </div>
+        <div data-ref="order_link_section" class="ecommerce:mb-4">
+          <label class="ecommerce-form-label">
+            <span>$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.order_link</span>
+            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.order_link_optional</span>
+          </label>
+          <button type="button" class="ecommerce:block ecommerce:w-full ecommerce:text-left ecommerce:border ecommerce:border-dashed ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mt-2 ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors">
+            <on type="click">
+              <open-modal target="modal_order_search"/>
+            </on>
+            <span class="ecommerce-flex-center ecommerce:gap-3">
+              <icon name="search" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <span class="ecommerce:block">
+                <span class="ecommerce:block ecommerce:font-medium ecommerce-text-heading">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order</span>
+                <span class="ecommerce:block ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order_hint</span>
+              </span>
+            </span>
+          </button>
+        </div>
+        <div data-ref="linked_order_section" class="ecommerce:mb-4">
+          <label class="ecommerce-form-label">
+            <span>$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.linked_order</span>
+            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.linked_order_optional</span>
+          </label>
+          <div class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mt-2">
+            <div class="ecommerce-flex-between">
+              <div class="ecommerce-flex-center ecommerce:gap-3">
+                <div class="ecommerce-flex-center ecommerce:w-10 ecommerce:h-10 ecommerce:bg-gray-200 ecommerce:dark:bg-gray-600 ecommerce:rounded-lg ecommerce:justify-center">
+                  <icon name="file-text" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-300"/>
+                </div>
+                <div>
+                  <div class="ecommerce-flex-center ecommerce:gap-2">
+                    <span class="ecommerce:font-medium ecommerce-text-heading">ORD20251028-567E</span>
+                    <span class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+                  </div>
+                  <div class="ecommerce-text-secondary ecommerce:text-sm">$t:sirsoft-ecommerce.admin.sample.fmt.dot_name|name=$t:sirsoft-ecommerce.admin.sample.people.jung_sujin</div>
+                  <div class="ecommerce-text-secondary ecommerce:text-sm">$t:sirsoft-ecommerce.admin.sample.products.standard_membership_6m</div>
+                  <div class="ecommerce-text-secondary ecommerce:text-sm">₩60,000</div>
+                </div>
+              </div>
+              <div class="ecommerce-flex-center ecommerce:gap-1">
+                <button type="button" class="ecommerce-btn ecommerce-btn-icon" title="$t:sirsoft-ecommerce.common.remove">
+                  <icon name="x" class="ecommerce:text-base"/>
+                </button>
+                <button type="button" class="ecommerce-btn ecommerce-btn-icon" title="$t:sirsoft-ecommerce.common.refresh">
+                  <icon name="arrows-rotate" class="ecommerce:text-base"/>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="field_memo" class="ecommerce-form-group">
+          <label class="ecommerce-form-label">
+            <span>$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.memo</span>
+            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:ml-1">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.memo_optional</span>
+          </label>
+          <textarea name="memo" class="ecommerce-textarea ecommerce:w-full" :rows="4" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.memo_placeholder"/>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="ecommerce-sticky-footer-buttons-between">
+        <div class=""/>
+        <div class="ecommerce-flex-center ecommerce:gap-3">
+          <a href="/admin/ecommerce/personal-payment" data-ref="cancel_button" class="ecommerce-btn ecommerce-btn-secondary">
+            <on type="click">
+              <navigate/>
+            </on>
+            <span>$t:sirsoft-ecommerce.common.cancel</span>
+          </a>
+          <button data-ref="save_button" type="button" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors">
+            <span>$t:sirsoft-ecommerce.common.save</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 회원 찾기 — 구매자를 회원으로 고를 때 연다 -->
+  <modal src="partials/admin_ecommerce_personal_payment_create/_modal_member_search.g7.html"/>
+  <!-- 주문 찾기 — 이 결제요청을 기존 주문에 이어 붙일 때 그 주문을 고른다 -->
+  <modal src="partials/admin_ecommerce_personal_payment_create/_modal_order_search.g7.html"/>
+</layout>

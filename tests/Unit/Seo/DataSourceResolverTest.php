@@ -3,6 +3,7 @@
 namespace Tests\Unit\Seo;
 
 use App\Seo\DataSourceResolver;
+use App\Seo\SeoRenderRequest;
 use App\Support\AssetUrl;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
@@ -21,6 +22,8 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 테스트 초기화 - DataSourceResolver 인스턴스를 준비합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -31,6 +34,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 정상 API 호출 시 데이터 소스 ID에 응답 데이터가 매핑됩니다.
+     *
+     * @scenario aspect=response_mapping
+     *
+     * @effects response_mapped_to_ds_id
+     *
+     * @return void 반환값 없음
      */
     public function test_normal_api_call_maps_data_to_ds_id(): void
     {
@@ -84,6 +93,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * API 타임아웃 발생 시 fallback 데이터를 반환합니다.
+     *
+     * @scenario aspect=failure_fallback
+     *
+     * @effects failure_returns_fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_api_timeout_returns_fallback_data(): void
     {
@@ -105,6 +120,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * API 404 응답 시 fallback 데이터를 반환합니다.
+     *
+     * @scenario aspect=failure_fallback
+     *
+     * @effects failure_returns_fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_api_404_returns_fallback_data(): void
     {
@@ -124,6 +145,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * API 500 응답 시 fallback 데이터를 반환합니다.
+     *
+     * @scenario aspect=failure_fallback
+     *
+     * @effects failure_returns_fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_api_500_returns_fallback_data(): void
     {
@@ -143,6 +170,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 라우트 파라미터 {{route.id}} 패턴이 실제 값으로 치환됩니다.
+     *
+     * @scenario aspect=endpoint_resolution
+     *
+     * @effects route_params_substituted
+     *
+     * @return void 반환값 없음
      */
     public function test_route_params_substitution(): void
     {
@@ -168,6 +201,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * seoDataSourceIds에 포함되지 않은 데이터 소스는 호출하지 않습니다.
+     *
+     * @scenario aspect=response_mapping
+     *
+     * @effects non_seo_source_not_called
+     *
+     * @return void 반환값 없음
      */
     public function test_ds_id_not_in_seo_data_source_ids_is_not_called(): void
     {
@@ -190,6 +229,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * Accept-Language 헤더가 로케일 값으로 전달됩니다.
+     *
+     * @scenario aspect=request_headers
+     *
+     * @effects locale_header_sent
+     *
+     * @return void 반환값 없음
      */
     public function test_accept_language_header_passed(): void
     {
@@ -211,6 +256,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 쿼리 파라미터가 포함된 엔드포인트를 정상 호출합니다.
+     *
+     * @scenario aspect=endpoint_resolution
+     *
+     * @effects endpoint_expressions_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_query_params_in_endpoint(): void
     {
@@ -236,6 +287,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 빈 엔드포인트는 건너뜁니다.
+     *
+     * @scenario aspect=response_mapping
+     *
+     * @effects non_seo_source_not_called
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_endpoint_skipped(): void
     {
@@ -255,6 +312,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 여러 라우트 파라미터가 동시에 치환됩니다.
+     *
+     * @scenario aspect=endpoint_resolution
+     *
+     * @effects route_params_substituted
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_route_params_substituted(): void
     {
@@ -279,6 +342,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * fallback이 정의되지 않은 경우 빈 배열을 반환합니다.
+     *
+     * @scenario aspect=failure_fallback
+     *
+     * @effects failure_returns_fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_no_fallback_defined_returns_empty_array(): void
     {
@@ -297,6 +366,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * optional chaining {{route?.slug}} 패턴이 정상 치환됩니다.
+     *
+     * @scenario aspect=endpoint_resolution
+     *
+     * @effects route_params_substituted
+     *
+     * @return void 반환값 없음
      */
     public function test_optional_chaining_route_params_substitution(): void
     {
@@ -322,6 +397,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * POST 메서드 데이터 소스를 호출합니다.
+     *
+     * @scenario aspect=response_mapping
+     *
+     * @effects response_mapped_to_ds_id
+     *
+     * @return void 반환값 없음
      */
     public function test_post_method_data_source(): void
     {
@@ -346,6 +427,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * params의 {{query.xxx}} 표현식이 쿼리 파라미터에서 해석됩니다.
+     *
+     * @scenario aspect=params_resolution
+     *
+     * @effects params_sent_as_query
+     *
+     * @return void 반환값 없음
      */
     public function test_params_resolve_query_expressions(): void
     {
@@ -385,6 +472,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * params의 {{route.xxx}} 표현식이 라우트 파라미터에서 해석됩니다.
+     *
+     * @scenario aspect=params_resolution
+     *
+     * @effects params_sent_as_query
+     *
+     * @return void 반환값 없음
      */
     public function test_params_resolve_route_expressions(): void
     {
@@ -412,6 +505,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * params에서 빈 문자열로 해석된 선택적 파라미터는 전달되지 않습니다.
+     *
+     * @scenario aspect=params_resolution
+     *
+     * @effects empty_params_omitted
+     *
+     * @return void 반환값 없음
      */
     public function test_params_empty_optional_param_not_sent(): void
     {
@@ -444,6 +543,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * params가 비어있으면 쿼리 파라미터 없이 호출합니다.
+     *
+     * @scenario aspect=params_resolution
+     *
+     * @effects empty_params_omitted
+     *
+     * @return void 반환값 없음
      */
     public function test_params_empty_no_query_string(): void
     {
@@ -470,6 +575,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 숫자 리터럴 params는 그대로 전달됩니다.
+     *
+     * @scenario aspect=params_resolution
+     *
+     * @effects params_sent_as_query
+     *
+     * @return void 반환값 없음
      */
     public function test_params_numeric_literal_passed_as_is(): void
     {
@@ -503,6 +614,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 엔드포인트 안의 {{query.xxx}} 표현식이 쿼리 파라미터로 치환됩니다.
+     *
+     * @scenario aspect=endpoint_resolution
+     *
+     * @effects endpoint_expressions_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_endpoint_resolves_query_expression(): void
     {
@@ -521,6 +638,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 엔드포인트 안의 {{_global.xxx}} 표현식이 전달된 컨텍스트로 치환됩니다.
+     *
+     * @scenario aspect=endpoint_resolution
+     *
+     * @effects endpoint_expressions_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_endpoint_resolves_global_expression(): void
     {
@@ -551,6 +674,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 전역 컨텍스트가 없으면 엔드포인트의 ?? 기본값이 적용됩니다.
+     *
+     * @scenario aspect=endpoint_resolution
+     *
+     * @effects endpoint_expressions_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_endpoint_global_expression_falls_back_to_default(): void
     {
@@ -571,6 +700,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * 엔드포인트에 표현식이 없으면 원본 그대로 사용됩니다 (회귀 방지).
+     *
+     * @scenario aspect=endpoint_resolution
+     *
+     * @effects endpoint_expressions_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_endpoint_without_expression_is_unchanged(): void
     {
@@ -587,6 +722,12 @@ class DataSourceResolverTest extends TestCase
 
     /**
      * params 표현식에서도 _global 컨텍스트를 참조할 수 있습니다.
+     *
+     * @scenario aspect=params_resolution
+     *
+     * @effects params_sent_as_query
+     *
+     * @return void 반환값 없음
      */
     public function test_params_resolve_global_expression(): void
     {
@@ -611,5 +752,93 @@ class DataSourceResolverTest extends TestCase
         );
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'currency=USD'));
+    }
+
+    /**
+     * 내부 API 호출에 앱 키로 서명한 SEO 렌더 표식 헤더를 붙인다 — 받는 쪽(게시판 조회수 등)이
+     * 서버 자신의 렌더 호출을 사람의 열람과 구분할 수 있어야 한다(7.1.0 실측).
+     *
+     * @scenario aspect=request_headers
+     *
+     * @effects seo_render_marker_header_sent
+     *
+     * @return void 반환값 없음
+     */
+    public function test_internal_call_carries_signed_seo_render_header(): void
+    {
+        Http::fake(['*' => Http::response(['data' => []], 200)]);
+
+        $dataSources = [
+            ['id' => 'post', 'endpoint' => '/api/modules/sirsoft-board/boards/notice/posts/1', 'method' => 'GET'],
+        ];
+
+        $this->resolver->resolve($dataSources, ['post'], [], 'ko');
+
+        Http::assertSent(function ($request) {
+            $value = $request->header(SeoRenderRequest::HEADER)[0] ?? null;
+
+            return $value !== null && hash_equals(SeoRenderRequest::signature(), $value);
+        });
+    }
+
+    /**
+     * 같은 id 의 조건부 판이 여럿이면 조건을 만족하는 첫 판만 부릅니다 — 엔진 `DataSourceManager.filterByCondition` 과 같은 규칙
+     * (7.1.1 출시 전 실측). 종전에는 조건을 보지 않고 두 판을 다 불러 뒤 판 결과가 앞 판을 덮었다.
+     *
+     * @scenario aspect=condition_selection
+     *
+     * @effects same_id_conditional_first_match_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_same_id_conditional_variants_call_only_the_first_matching_one(): void
+    {
+        Http::fake([
+            '*/api/users/7' => Http::response(['data' => ['who' => 'one']], 200),
+            '*/api/users/me' => Http::response(['data' => ['who' => 'me']], 200),
+        ]);
+
+        $dataSources = [
+            ['id' => 'user', 'if' => '{{route.id}}', 'endpoint' => '/api/users/{{route.id}}', 'method' => 'GET'],
+            ['id' => 'user', 'if' => '{{!route.id}}', 'endpoint' => '/api/users/me', 'method' => 'GET'],
+        ];
+
+        $withId = $this->resolver->resolve($dataSources, ['user'], ['id' => '7'], 'ko');
+        $this->assertSame(['data' => ['who' => 'one']], $withId['user']);
+        Http::assertSentCount(1);
+
+        $withoutId = $this->resolver->resolve($dataSources, ['user'], [], 'ko');
+        $this->assertSame(['data' => ['who' => 'me']], $withoutId['user']);
+        Http::assertSentCount(2);
+        Http::assertNotSent(fn ($request) => str_ends_with($request->url(), '/api/users/'));
+    }
+
+    /**
+     * 조건이 거짓인 판은 부르지 않고(`conditions` 그룹 포함), 조건 없는 판은 종전대로 부릅니다.
+     *
+     * @scenario aspect=condition_selection
+     *
+     * @effects false_condition_source_not_called
+     *
+     * @return void 반환값 없음
+     */
+    public function test_false_condition_source_is_not_called(): void
+    {
+        Http::fake([
+            '*/api/a' => Http::response(['a' => 1], 200),
+            '*/api/b' => Http::response(['b' => 1], 200),
+            '*/api/c' => Http::response(['c' => 1], 200),
+        ]);
+
+        $dataSources = [
+            ['id' => 'a', 'conditions' => ['and' => ["{{query.mode == 'x'}}"]], 'endpoint' => '/api/a'],
+            ['id' => 'b', 'if' => '{{false}}', 'endpoint' => '/api/b'],
+            ['id' => 'c', 'endpoint' => '/api/c'],
+        ];
+
+        $result = $this->resolver->resolve($dataSources, ['a', 'b', 'c'], [], 'ko', ['mode' => 'y']);
+
+        $this->assertSame(['c'], array_keys($result));
+        Http::assertSentCount(1);
     }
 }

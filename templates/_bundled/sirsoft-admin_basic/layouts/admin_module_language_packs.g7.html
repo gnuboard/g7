@@ -1,0 +1,11 @@
+<!-- 언어팩 목록의 **모듈 범위** 진입점. `admin_language_packs` 와 같은 뼈대이고 `scopeContext` 만 다르다 —
+  목록 본체는 상속원(`admin_language_pack_list`)이 그 값으로 범위를 좁힌다. -->
+<layout name="admin_module_language_packs" version="1.0.0" extends="admin_language_pack_list">
+  <meta title="$t:admin.language_packs.page_title" description="$t:admin.language_packs.page_description"/>
+  <init-local>
+    <field name="scopeContext" value="module"/>
+  </init-local>
+  <permissions>
+    <permission>core.language_packs.read</permission>
+  </permissions>
+</layout>

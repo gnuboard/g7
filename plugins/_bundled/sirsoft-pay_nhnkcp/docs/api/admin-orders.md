@@ -23,13 +23,14 @@
 | 메서드/URI | 라우트명 | 요구 권한 |
 | --- | --- | --- |
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/test-mode-map` | `...admin.orders.test-mode-map` | `sirsoft-ecommerce.orders.read` |
-| `GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/easy-pay-display-map` | `...admin.orders.easy-pay-display-map` | `sirsoft-ecommerce.orders.read` |
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/{orderNumber}/transaction-status` | `...admin.orders.transaction-status` | `sirsoft-ecommerce.orders.read` |
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/{orderNumber}/escrow-delivery` | `...admin.orders.escrow-delivery.form` | `sirsoft-ecommerce.orders.read` |
 | `POST /api/plugins/sirsoft-pay_nhnkcp/admin/orders/{orderNumber}/escrow-delivery` | `...admin.orders.escrow-delivery.register` | `sirsoft-ecommerce.orders.update` |
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/settings/test-mode-status` | `...admin.settings.test-mode-status` | `sirsoft-ecommerce.settings.read` |
 | `GET /api/plugins/sirsoft-pay_nhnkcp/admin/vbank-notify-url` | `...admin.vbank.notify.url` | `sirsoft-ecommerce.settings.read` |
-| `GET /api/plugins/sirsoft-pay_nhnkcp/admin/health` | `...admin.health` | `sirsoft-ecommerce.settings.read` |
+| `GET /api/plugins/sirsoft-pay_nhnkcp/admin/health` | `...admin.health` | `sirsoft-ecommerce.settings.read` 또는 `core.plugins.update` (OR) |
+
+`admin/vbank-notify-url` 이 돌려주는 `url`(가상계좌 입금통보)·`escrow_common_notify_url`(에스크로 공통통보)은 운영자가 KCP 상점관리자에 등록할 주소라, 관리자가 접속한 주소(요청 Host)가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 만든다.
 
 ### 에러 응답
 
@@ -51,11 +52,9 @@
 
 관리자 주문 목록에서 어떤 주문이 테스트 결제인지 배지로 표시하기 위한 맵을 반환한다. 응답 `data` 는 주문번호를 키로 하는 객체다.
 
-### 간편결제 표시 맵
+### 간편결제 표시 라벨 (별도 경로 없음)
 
-`GET .../admin/orders/easy-pay-display-map`
-
-간편결제(PAYCO 등)로 결제된 주문의 원 결제수단 표시 라벨을 반환한다. 응답 `data` 는 주문번호를 키로 하며, 각 항목은 `embedded_pg_provider_label`·`payment_method_label`·`payment_method_display_label` 을 포함한다.
+간편결제(PAYCO 등)로 결제된 주문의 원 결제수단 표시 라벨은 이커머스 주문 목록 응답의 `payment.payment_method_display_label` 로 전달된다 — 이 플러그인은 필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 을 구독해 라벨을 채운다. 종전의 `GET .../admin/orders/easy-pay-display-map` 은 1.1.0 에서 제거됐다.
 
 ### 거래 상태 조회
 
@@ -68,6 +67,17 @@
 `GET .../admin/orders/{orderNumber}/escrow-delivery`
 
 배송등록 화면의 초기값(주문 정보·기본 배송지·기등록 배송 이력)을 반환한다. 이 주문에 에스크로 결제가 없으면 `data` 는 `null` 이다(오류 아님).
+
+### 시스템 점검
+
+`GET .../admin/health`
+
+설정 화면의 시스템 점검 카드가 부르는 경로다(7.1.0 부터 플러그인 설정 수정 권한으로도 읽는다). CLI 실행 권한 자동 복구(chmod)는 플러그인 설정 수정 권한(`core.plugins.update`)이 있을 때만 하고, 그 밖에는 진단과 조치 안내만 돌려준다. CLI 바이너리·`pub.key`·WSDL 등 결제에 필요한 파일이 플러그인 `bin` 디렉토리에 있고 실행 가능한지 확인한다. 응답은 공통 성공 형식이며 `message` 에 점검 완료 안내(`sirsoft-pay_nhnkcp::messages.health.checked`, 요청 언어로 번역)가 실린다.
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `data.summary` | object | PC·모바일 결제 가능 여부와 상태별 건수(`error`·`warning`·`fixed`) |
+| `data.checks` | array | 점검 항목별 결과 목록 |
 
 ---
 

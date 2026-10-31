@@ -58,11 +58,14 @@ return [
         'alimtalk_sender_key_missing' => '알림톡 발신프로필 키를 설정하세요.',
     ],
 
-    // 설정 검증 — 운영(live) 환경 필수 자격증명 항목 라벨 (validation.attributes 병합용)
+    // 설정 검증 — 설정 항목 이름 (검증 오류 문구의 validation.attributes 병합용, 스키마 전 항목)
     'settings' => [
+        'is_test_mode_attribute' => '검수 모드',
         'bizppurio_id_attribute' => '비즈뿌리오 아이디',
         'password_attribute' => '비밀번호',
+        'api_key_attribute' => 'API 키',
         'sender_number_attribute' => '발신번호',
+        'sender_key_attribute' => '알림톡 발신프로필 키',
     ],
 
     // webhook(URL PUSH) 리포트 수신
@@ -85,12 +88,12 @@ return [
         'image_unreadable' => '업로드한 이미지 파일을 읽을 수 없습니다.',
     ],
 
-    // 발송 건너뜀 (채널 드라이버 send() 사전 조건 미충족 — 코어 발송 이력에 "실패"로 기록됨)
+    // 발송 불가 (채널 드라이버 send() 사전 조건 미충족 — 코어 발송 이력에 "실패"로 기록되므로 문구도 「발송하지 못했습니다」, 7.1.1 출시 전)
     'send_skipped' => [
-        'alimtalk_template_not_approved' => '승인된 알림톡 템플릿이 없거나 알림톡 발송이 꺼져 있어 발송을 건너뛰었습니다. (알림 유형: :type)',
-        'sms_template_missing' => 'SMS 본문이 설정되지 않아 발송을 건너뛰었습니다. (알림 유형: :type)',
-        'recipient_phone_missing' => '수신자 전화번호가 없어 발송을 건너뛰었습니다. (알림 유형: :type)',
-        'message_body_empty' => '발송 본문이 비어 있어 발송을 건너뛰었습니다. (알림 유형: :type)',
+        'alimtalk_template_not_approved' => '승인된 알림톡 템플릿이 없거나 알림톡 발송이 꺼져 있어 발송하지 못했습니다. (알림 유형: :type)',
+        'sms_template_missing' => 'SMS 본문이 설정되지 않아 발송하지 못했습니다. (알림 유형: :type)',
+        'recipient_phone_missing' => '수신자 전화번호가 없어 발송하지 못했습니다. (알림 유형: :type)',
+        'message_body_empty' => '발송 본문이 비어 있어 발송하지 못했습니다. (알림 유형: :type)',
     ],
 
     // 알림 템플릿 라이프사이클 (#597 — BizppurioTemplateController 응답·상태 가드)
@@ -111,6 +114,11 @@ return [
         'cancel_approval_not_allowed' => '승인 상태가 아니어서 승인을 취소할 수 없습니다. (현재: :status)',
         'release_not_allowed' => '휴면 상태가 아니어서 해제할 수 없습니다. (현재: :status)',
         'code_generation_failed' => '템플릿 코드를 채번하지 못했습니다. 잠시 후 다시 시도하세요.',
+        // 조회 응답 안내 (목록·요약·상세, 알림톡 분류·발신 프로필, 없는 행)
+        'loaded' => '알림 템플릿을 불러왔습니다.',
+        'not_found' => '알림 템플릿을 찾을 수 없습니다.',
+        'categories_loaded' => '알림톡 카테고리를 불러왔습니다.',
+        'profiles_loaded' => '알림톡 발신 프로필을 불러왔습니다.',
     ],
 
     // 알림 템플릿 검증 (FormRequest — 문서 수치 명시 제약만, 그 외는 kapi 최종 게이트)
@@ -179,9 +187,32 @@ return [
         ],
     ],
 
+    // 발송 결과 조회 응답 (DispatchResultController — 알림 발송 이력 화면의 결과 칸)
+    'dispatch_result' => [
+        'loaded' => '발송 결과를 불러왔습니다.',
+    ],
+
     // 연결 확인 (TokenCheckController 응답)
     'token_check' => [
         'success' => '인증이 정상적으로 확인되었습니다. 아이디와 비밀번호가 올바릅니다.',
         'failed' => '인증 확인에 실패했습니다. 상세 사유를 확인해 주세요.',
+    ],
+    // 알림 템플릿 편집 창 「사용 가능한 변수」 설명 — common 은 변수 키별 기본, by_type 은 그 알림에서만 뜻이 다른 변수. 없는 키는 선언 문자열을 그대로 쓴다.
+    'notification_variables' => [
+        'common' => [
+            'name' => '수신자(관리자) 이름',
+            'app_name' => '사이트 이름',
+            'result_code' => '결과 코드(9070 문자 / 7436 알림톡)',
+            'channel_label' => '발송 채널(문자/알림톡)',
+            'settings_url' => '메시징 환경설정 URL',
+            'site_url' => '사이트 URL',
+        ],
+    ],
+    // 콘솔 명령 출력
+    'console' => [
+        'sync_template_status' => [
+            'no_requested' => '검수중(requested) 템플릿이 없어 카카오 조회를 건너뜁니다.',
+            'done' => '검수중 템플릿 :checked건 점검, :transitioned건 상태 전이.',
+        ],
     ],
 ];

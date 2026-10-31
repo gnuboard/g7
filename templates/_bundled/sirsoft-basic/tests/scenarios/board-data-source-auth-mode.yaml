@@ -1,0 +1,18 @@
+feature: board_data_source_auth_mode
+
+description: |
+  게시판 공개 API 는 보는 사람의 열람 권한으로 결과를 거른다(게시판 1.2.1 에서 메뉴도 포함, #142).
+  데이터소스가 로그인 토큰을 보내지 않으면 회원도 비회원 기준 결과를 받는다 — 실측에서 헤더·모바일 메뉴·
+  마이페이지 게시판 선택칸이 회원에게 비회원 메뉴(7건)를 보였다. 게시판 API 를 부르는 모든 데이터소스는 토큰을 보낸다.
+
+axes:
+  case: [board_menu_sends_token, all_board_sources_send_token, e2e_board_menu_token_by_login_state]
+
+effects:
+  - board_menu_request_carries_login_token
+  - board_public_sources_carry_login_token
+  - e2e_board_menu_request_carries_token_when_logged_in
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-data-source-auth-mode.test.ts
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/board-menu-auth.spec.ts

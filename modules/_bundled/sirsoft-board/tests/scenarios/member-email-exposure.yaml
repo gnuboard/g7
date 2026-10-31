@@ -1,0 +1,28 @@
+feature: 게시판 공개 응답의 회원 이메일 노출 게이트
+
+description: |
+  게시판의 공개 경로(게시글 목록·상세·댓글·게시판 상세·인기글)는 인증 없이 열람된다.
+  그 응답에 회원 이메일이 실리면 화면이 그 값을 그리지 않더라도 응답 본문에서 회원 주소록을
+  그대로 수집할 수 있다. 이메일은 관리자 화면 응답과 본인 열람에만 실린다.
+
+  인기글 목록은 Resource 를 거치지 않고 Repository 가 조립한 배열을 캐시에 저장해 내보낸다.
+  캐시는 호출자 권한과 무관하게 채워지므로 응답 시점 게이트가 닿지 않는다 — 그래서 이메일을
+  캐시에 애초에 넣지 않는다(키는 유지하고 값 `null`).
+
+axes:
+  case: [post_detail_guest, post_list_guest, comment_list_guest, board_detail_guest, post_detail_admin, post_detail_owner, popular_guest, popular_admin_then_guest, report_detail_admin, author_search_guest, author_search_admin]
+
+effects:
+  - author_email_absent_for_guest
+  - author_email_visible_to_admin
+  - author_email_visible_to_owner
+  - popular_email_absent_for_guest
+  - popular_other_fields_intact
+  - popular_cache_never_holds_email
+  - report_comment_author_email_admin_only
+  # 작성자 검색도 공개 경로에서는 이메일로 찾지 않는다(2026-10-07 실측 K4-D2) — 관리자 목록은 종전대로.
+  - author_search_ignores_email_for_guest
+  - author_search_matches_email_for_admin
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/MemberEmailExposureTest.php

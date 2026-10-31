@@ -1,0 +1,30 @@
+feature: 결제창 닫힘 보고·재결제 준비는 G7Core.api 와 공개 상태의 비회원 조회 토큰으로만 보낸다
+
+description: |
+  결제창 닫힘 보고(close-report)·재결제 준비(retry)는 결제대기 주문을 실패·취소로 바꾸므로 서버가 주문 소유자만 받아 준다
+  (KVE-2026-2434). 요청은 G7Core.api 로만 보낸다 — 회원 Bearer 와 401 처리는 코어가 맡고, 플러그인은 로그인 토큰을
+  저장소에서 읽지 않으며 fetch 로 따로 보내지 않는다. 비회원 조회 토큰은 공개 상태 계약 `_global.guestOrderToken` 으로만
+  읽는다(세션 저장소 키를 직접 보지 않는다). 서버가 주는 보고 주소는 사이트 절대 URL(`/api` 없음)이므로 경로만 꺼내
+  같은 사이트 API 로 보낸다 — 출처를 버려 조회 토큰이 밖으로 새지 않는다. 결제 실패로 돌아온 화면에서는 템플릿이 토큰을
+  되살릴 때까지 잠시 기다린 뒤 보고한다.
+
+axes:
+  case: [site_absolute_url, other_origin_url, member_report, guest_report, server_rejects, no_core_api, return_report, return_ignored, token_public_state, token_storage_only, token_absent, token_wait]
+
+effects:
+  - report_reaches_api_route
+  - token_never_leaves_site
+  - member_bearer_left_to_core
+  - guest_token_header_sent
+  - report_failure_swallowed
+  - retry_failure_blocks_payment
+  - no_raw_fetch_fallback
+  - failure_reported_on_return
+  - waits_until_template_restores_token
+  - stale_pending_ignored
+  - guest_token_from_public_state_only
+  - no_header_without_token
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/paymentCloseReport.test.ts
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/guestOrderToken.test.ts

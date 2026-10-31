@@ -2,6 +2,8 @@
 
 namespace App\Extension\Vendor;
 
+use App\Extension\Exceptions\UnsafeArchiveException;
+use App\Extension\Helpers\SafeArchiveExtractor;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +22,12 @@ use Illuminate\Support\Facades\Log;
  */
 class VendorBundleInstaller
 {
+    /**
+     * 무결성 검사기를 주입받습니다.
+     *
+     * @param  VendorIntegrityChecker  $integrityChecker  번들 zip·매니페스트 무결성 검사기
+     * @return void 반환값 없음
+     */
     public function __construct(
         private readonly VendorIntegrityChecker $integrityChecker,
     ) {}
@@ -29,6 +37,7 @@ class VendorBundleInstaller
      *
      * @param  string  $sourceDir  vendor-bundle.zip 이 위치한 디렉토리
      * @param  string  $targetDir  vendor/가 배치될 디렉토리 (일반적으로 sourceDir과 동일)
+     * @return VendorInstallResult 추출 결과 (패키지 수·소요 시간·zip 크기)
      *
      * @throws VendorInstallException
      */
@@ -78,22 +87,18 @@ class VendorBundleInstaller
 
         // 6. 추출
         try {
-            $zip = new \ZipArchive;
-            $openResult = $zip->open($zipPath);
-            if ($openResult !== true) {
+            try {
+                // 역슬래시 경로 정규화 + 압축 밖 경로·심볼릭 링크 거부
+                SafeArchiveExtractor::extractZip($zipPath, $targetDir);
+            } catch (UnsafeArchiveException $e) {
                 throw new VendorInstallException(
-                    errorKey: 'extraction_failed',
-                    context: ['message' => 'ZipArchive::open failed (code: '.$openResult.')'],
+                    errorKey: 'bundle_contains_unsafe_path',
+                    context: ['path' => $e->entry],
                 );
-            }
-
-            $extracted = $zip->extractTo($targetDir);
-            $zip->close();
-
-            if (! $extracted) {
+            } catch (\RuntimeException $e) {
                 throw new VendorInstallException(
                     errorKey: 'extraction_failed',
-                    context: ['message' => 'ZipArchive::extractTo returned false'],
+                    context: ['message' => $e->getMessage()],
                 );
             }
 
@@ -148,6 +153,10 @@ class VendorBundleInstaller
      * 공유 호스팅 환경에서 targetDir (프로젝트 루트) 에는 쓰기 권한이 없고
      * vendor/ 에만 권한이 부여된 케이스를 지원한다.
      *
+     * @param  string  $targetDir  vendor/ 가 배치될 디렉토리
+     * @param  string  $vendorDir  vendor/ 디렉토리 경로
+     * @return void 반환값 없음
+     *
      * @throws VendorInstallException
      */
     private function validateTargetWritable(string $targetDir, string $vendorDir): void
@@ -177,6 +186,9 @@ class VendorBundleInstaller
      *
      * 공유 호스팅에서 FTP 사용자와 PHP 실행 사용자가 다른 경우 진단을 돕기 위해
      * 현재 실행 사용자, 디렉토리 소유자, 권장 조치를 함께 반환합니다.
+     *
+     * @param  string  $path  쓰기 권한이 없는 경로
+     * @return array<string, mixed> 예외 컨텍스트 (경로·실행 사용자·소유자·권장 조치)
      */
     private function buildPermissionContext(string $path): array
     {
@@ -214,6 +226,9 @@ class VendorBundleInstaller
      *
      * vendor/ 디렉토리 자체는 유지하므로 targetDir 쓰기 권한이 필요하지 않습니다.
      *
+     * @param  string  $vendorDir  vendor/ 디렉토리 경로
+     * @param  string  $backupDir  백업 디렉토리 경로
+     * @param  string  $backupDirName  백업 디렉토리 이름 (이동 대상에서 제외)
      * @return bool 백업 성공 여부 (false 시 in-place overwrite 로 추출 진행)
      */
     private function moveVendorContentsToBackup(string $vendorDir, string $backupDir, string $backupDirName): bool
@@ -245,6 +260,11 @@ class VendorBundleInstaller
      * 백업 디렉토리에서 vendor/ 로 내용을 복원합니다.
      *
      * 추출 중 실패한 경우 기존 상태로 되돌리기 위해 호출됩니다.
+     *
+     * @param  string  $vendorDir  vendor/ 디렉토리 경로
+     * @param  string  $backupDir  백업 디렉토리 경로
+     * @param  string  $backupDirName  백업 디렉토리 이름 (정리 대상에서 제외)
+     * @return void 반환값 없음
      */
     private function restoreVendorFromBackup(string $vendorDir, string $backupDir, string $backupDirName): void
     {
@@ -282,39 +302,26 @@ class VendorBundleInstaller
     /**
      * zip 내부 파일 경로의 안전성을 검증합니다 (zip slip 방지).
      *
+     * @param  string  $zipPath  vendor-bundle.zip 경로
+     * @return void 반환값 없음
+     *
      * @throws VendorInstallException
      */
     private function validateZipContents(string $zipPath): void
     {
-        $zip = new \ZipArchive;
-        if ($zip->open($zipPath) !== true) {
+        // 경로 탈출(`..` 조각·절대경로·드라이브·UNC)·널 문자·심볼릭 링크 항목 거부
+        try {
+            SafeArchiveExtractor::assertZipSafe($zipPath);
+        } catch (UnsafeArchiveException $e) {
+            throw new VendorInstallException(
+                errorKey: 'bundle_contains_unsafe_path',
+                context: ['path' => $e->entry],
+            );
+        } catch (\RuntimeException $e) {
             throw new VendorInstallException(
                 errorKey: 'extraction_failed',
                 context: ['message' => 'cannot open zip for validation'],
             );
         }
-
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $name = $zip->getNameIndex($i);
-            if ($name === false) {
-                continue;
-            }
-
-            // 경로 탈출 방지
-            $normalized = str_replace('\\', '/', $name);
-            if (
-                str_contains($normalized, '../')
-                || str_starts_with($normalized, '/')
-                || preg_match('#^[A-Za-z]:/#', $normalized)
-            ) {
-                $zip->close();
-                throw new VendorInstallException(
-                    errorKey: 'bundle_contains_unsafe_path',
-                    context: ['path' => $name],
-                );
-            }
-        }
-
-        $zip->close();
     }
 }

@@ -1,0 +1,207 @@
+/* g7-extension-css:start — convert-layout-classes.mjs 가 생성·갱신하는 블록. 손으로 고치지 않는다. */
+@import "tailwindcss/theme.css" layer(theme) prefix(gdpr);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(gdpr) source(none);
+@import "./g7-extension.generated.css";
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@source "../../src";
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+/* g7-extension-css:end */
+
+/**
+ * sirsoft-gdpr 손 CSS — 쿠키 배너·자동 차단 자리표시·관리자 환경설정 화면의 자기 클래스
+ *
+ * 화면 모양의 대부분은 위 진입 블록이 만드는 접두 유틸리티(`gdpr:flex` 등)와 생성 파일
+ * `g7-extension.generated.css` 의 의미 클래스(`gdpr-btn` 등)가 맡는다. 이 아래는 이 플러그인이 손으로 쓴 규칙이다.
+ *
+ * - 칸: 의미 글자색(`gdpr-tone-*`)은 템플릿이 덮을 수 있는 가장 낮은 칸 `@layer g7-extension` 에 둔다.
+ *   토글·자리표시·다크 짝·강조선처럼 접두 유틸리티를 보완하는 규칙은 일반 칸(층 없음)에 둔다
+ * - 다크 모드: 템플릿 종류와 무관한 중립 표식(`<html data-g7-color-scheme="dark">`)으로 짝을 둔다.
+ *   「다크 안의 라이트」(관리자 다크 화면 속 라이트 미리보기)는 제외하는 규격이고, 특이도는 템플릿의 `.dark .x` 와 같다
+ * - 색값은 Tailwind 4 기본 팔레트(oklch)와 같다
+ */
+
+/* 배너/모달 숨김 토글 — JS 가 add/remove */
+.gdpr-hidden {
+    display: none !important;
+}
+
+/* 자동 차단된 임베드의 플레이스홀더
+   blocker.ts 가 script/iframe 을 div.gdpr-blocked-embed 로 치환할 때 사용.
+   기본은 숨김(사용자에게 안 보이도록). 카테고리별 플레이스홀더 UI 가 필요한 경우 사이트 측에서 오버라이드 가능. */
+.gdpr-blocked-embed {
+    display: none;
+}
+
+.gdpr-blocked-embed[data-gdpr-blocked-category]:not([aria-hidden='true']) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.5rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    color: #6b7280; /* gray-500 */
+    background-color: #f9fafb; /* gray-50 */
+    border: 1px dashed #d1d5db; /* gray-300 */
+    border-radius: 0.25rem;
+}
+
+/* 운영체제 다크 설정 — 다크 방식을 선언하지 않은 템플릿에서도 자리표시가 어둡게 보이도록 둔다 */
+@media (prefers-color-scheme: dark) {
+    .gdpr-blocked-embed[data-gdpr-blocked-category]:not([aria-hidden='true']) {
+        color: #9ca3af; /* gray-400 */
+        background-color: rgba(31, 41, 55, 0.5); /* gray-800/50 */
+        border-color: #4b5563; /* gray-600 */
+    }
+}
+
+/* 템플릿이 다크로 표시 중일 때(중립 표식) */
+.gdpr-blocked-embed[data-gdpr-blocked-category]:not([aria-hidden='true']):is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: #9ca3af;
+    background-color: rgba(31, 41, 55, 0.5);
+    border-color: #4b5563;
+}
+
+/*
+ * 관리자 환경설정 화면 — 접두 유틸리티로 표현하던 다크 짝·왼쪽 강조선 색 등 보완 규칙.
+ * 레이아웃은 접두 유틸리티를 그대로 쓰고, 빠진 짝만 이 클래스가 맡는다.
+ */
+
+/* 오류 입력칸 — 다크 모드 포커스 테두리 */
+.gdpr-input-error-focus:focus:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(70.4% 0.191 22.216); /* red-400 */
+}
+
+/* 표 줄 구분선 — 다크 모드 */
+.gdpr-row-divider:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: color-mix(in oklab, oklch(37.3% 0.034 259.733) 60%, transparent); /* gray-700/60 */
+}
+
+/* 안내 카드의 왼쪽 강조선 — 파랑(안내)·주황(경고) */
+.gdpr-accent-info {
+    border-left-color: oklch(62.3% 0.214 259.815); /* blue-500 */
+}
+
+.gdpr-accent-info:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-left-color: oklch(70.7% 0.165 254.624); /* blue-400 */
+}
+
+.gdpr-accent-warning {
+    border-left-color: oklch(76.9% 0.188 70.08); /* amber-500 */
+}
+
+.gdpr-accent-warning:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-left-color: oklch(82.8% 0.189 84.429); /* amber-400 */
+}
+
+/* 검증 오류가 있는 묶음 상자 — 라이트·다크 배경 */
+.gdpr-error-panel {
+    background-color: color-mix(in oklab, oklch(97.1% 0.013 17.38) 30%, transparent); /* red-50/30 */
+}
+
+.gdpr-error-panel:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: color-mix(in oklab, oklch(39.6% 0.141 25.723) 10%, transparent); /* red-900/10 */
+}
+
+/* 고정(잠금) 항목 상자 — 하늘색 아이콘·상자·라벨·칩의 다크 모드 짝 */
+.gdpr-locked-icon:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(74.6% 0.16 232.661); /* sky-400 */
+}
+
+.gdpr-locked-box:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(44.3% 0.11 240.79); /* sky-800 */
+    background-color: color-mix(in oklab, oklch(39.1% 0.09 240.876) 20%, transparent); /* sky-900/20 */
+}
+
+.gdpr-locked-label:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(82.8% 0.111 230.318); /* sky-300 */
+}
+
+.gdpr-locked-chip:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(82.8% 0.111 230.318); /* sky-300 */
+    background-color: color-mix(in oklab, oklch(39.1% 0.09 240.876) 40%, transparent); /* sky-900/40 */
+}
+
+/* 의미 글자색 — 템플릿이 덮을 수 있는 가장 낮은 칸. 글자 크기는 레이아웃의 gdpr:text-xs */
+@layer g7-extension {
+    /* 경고 */
+    .gdpr-tone-warning {
+        color: oklch(55.4% 0.135 66.442); /* yellow-700 */
+    }
+
+    .gdpr-tone-warning:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(90.5% 0.182 98.111); /* yellow-300 */
+    }
+
+    /* 진한 경고 — 연한 노랑·호박색 바탕 위의 작은 배지 글자. 기본 경고색(yellow-700)은 그 바탕에서 4.5:1 에 못 미친다 */
+    .gdpr-tone-warning-strong {
+        color: oklch(47.6% 0.114 61.907); /* yellow-800 */
+    }
+
+    .gdpr-tone-warning-strong:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(94.5% 0.129 101.54); /* yellow-200 */
+    }
+
+    /* 성공 */
+    .gdpr-tone-success {
+        color: oklch(52.7% 0.154 150.069); /* green-700 */
+    }
+
+    .gdpr-tone-success:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(87.1% 0.15 154.449); /* green-300 */
+    }
+
+    /* 위험 */
+    .gdpr-tone-danger {
+        color: oklch(50.5% 0.213 27.518); /* red-700 */
+    }
+
+    .gdpr-tone-danger:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(80.8% 0.114 19.571); /* red-300 */
+    }
+
+    /* 안내 */
+    .gdpr-tone-info {
+        color: oklch(48.8% 0.243 264.376); /* blue-700 */
+    }
+
+    .gdpr-tone-info:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(80.9% 0.105 251.813); /* blue-300 */
+    }
+}
+
+/*
+ * 층 밖 의미 규칙 — 관리자 템플릿이 층 없이 둔 배치 규칙(dashboard.css 의 flex-between)의 이 플러그인 사본.
+ * 생성 파일(g7-extension.generated.css)은 의미 클래스를 모두 가장 낮은 칸에 담지만, 템플릿에서 이 규칙은 층 밖이라
+ * 같은 요소의 유틸리티를 이겼다. 이 플러그인 유틸리티는 층 없이 실리므로 같은 우선순위를 지키려고 이 규칙만
+ * 층 밖(유틸리티 뒤)에 한 번 더 둔다. 값은 템플릿 정의와 같다.
+ */
+.gdpr-flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

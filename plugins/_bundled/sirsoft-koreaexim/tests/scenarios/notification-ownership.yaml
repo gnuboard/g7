@@ -1,0 +1,13 @@
+feature: koreaexim_notification_ownership
+description: 플러그인 카드와 코어 목록이 사용하는 공통 API에서 동기화·사용자 수정·비활성 상태의 토글·편집·복원을 검증한다. 다른 확장 필터에서는 자기 정의를 편집 대상으로 노출하지 않는다. 실제 화면 왕복은 Playwright와 브라우저 실측에서 별도 검증한다.
+axes:
+  definition_state: [synced, user_overridden, toggled_off]
+  screen: [plugin_tab, core_settings_tab]
+  action: [toggle, edit_template, reset]
+  extension_filter: [own, other]
+effects:
+  - notification_owner_filter
+  - notification_override_preserved
+test_files:
+  - plugins/_bundled/sirsoft-koreaexim/tests/Feature/NotificationOwnershipTest.php
+  - plugins/_bundled/sirsoft-koreaexim/tests/fixtures/OwnershipCases.php

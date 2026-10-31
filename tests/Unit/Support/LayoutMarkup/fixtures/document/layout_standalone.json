@@ -1,0 +1,92 @@
+{
+    "version": "1.0.0",
+    "layout_name": "_admin_base",
+    "meta": {
+        "title": "$t:admin.base_layout_title",
+        "is_base": true,
+        "seo": {
+            "enabled": true,
+            "page_type": "article",
+            "priority": 0.8,
+            "og": {
+                "type": "website",
+                "site_name": "G7"
+            },
+            "data_sources": [
+                "users"
+            ]
+        }
+    },
+    "data_sources": [
+        {
+            "id": "countries",
+            "type": "static",
+            "data": [
+                {
+                    "code": "KR"
+                },
+                {
+                    "code": "US"
+                }
+            ]
+        },
+        {
+            "id": "users",
+            "endpoint": "/api/admin/users",
+            "method": "GET",
+            "auto_fetch": true,
+            "initLocal": {
+                "userList": "usersData"
+            },
+            "initGlobal": {
+                "counters": {
+                    "userCount": 0,
+                    "_merge": "deep"
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "toast",
+                    "params": {
+                        "message": "loaded"
+                    }
+                }
+            ],
+            "conditions": {
+                "and": [
+                    "{{isReady}}",
+                    "{{hasPermission}}"
+                ]
+            }
+        }
+    ],
+    "components": [
+        {
+            "id": "admin_shell",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-shell"
+            },
+            "children": [
+                {
+                    "type": "slot",
+                    "name": "sidebar"
+                },
+                {
+                    "type": "slot",
+                    "name": "content",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "text": "기본 콘텐츠"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

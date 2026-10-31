@@ -44,16 +44,15 @@ class SyncTemplateStatusCommand extends Command
         $result = $service->syncRequested();
 
         if ($result['checked'] === 0) {
-            $this->info('검수중(requested) 템플릿이 없어 카카오 조회를 건너뜁니다.');
+            $this->info(__('sirsoft-message_bizppurio::messages.console.sync_template_status.no_requested'));
 
             return self::SUCCESS;
         }
 
-        $this->info(sprintf(
-            '검수중 템플릿 %d건 점검, %d건 상태 전이.',
-            $result['checked'],
-            $result['transitioned'],
-        ));
+        $this->info(__('sirsoft-message_bizppurio::messages.console.sync_template_status.done', [
+            'checked' => $result['checked'],
+            'transitioned' => $result['transitioned'],
+        ]));
 
         return self::SUCCESS;
     }

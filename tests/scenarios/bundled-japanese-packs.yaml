@@ -1,0 +1,29 @@
+feature: 번들 일본어 언어팩 무결성 (매니페스트·파일·코어 백엔드 키 대조)
+
+description: |
+  번들 일본어 언어팩(`lang-packs/_bundled/g7-*-ja`)의 매니페스트가 검증기를 통과하고, 패키지에 파일이 있으며,
+  코어 언어팩(`g7-core-ja`)의 백엔드 번역 파일이 대조 기준의 키를 빠짐없이 덮는지 본다.
+
+  대조 기준은 둘이다. 보통 파일은 코어 `lang/ko/{파일}` 이 원본이다. 국가 이름(`countries.php`)처럼 코어
+  내장 로케일(ko·en)이 설정(`config/countries.php` 의 `localized_names`)을 정본으로 쓰고 그 밖의 로케일만
+  언어팩이 채우는 언어팩 전용 파일은 `lang/ko` 에 짝이 없다 — 그 설정의 키 목록과 대조한다.
+
+# axis 의미:
+#   check  — 무엇을 보는가. manifest(매니페스트 검증기) · files(패키지 파일 존재) · backend_keys(백엔드 키 대조)
+#   origin — 키 대조 기준. lang_ko(코어 lang/ko 원본) · config(언어팩 전용 파일의 설정 정본)
+axes:
+  check: [manifest, files, backend_keys]
+  origin: [lang_ko, config]
+
+exclusions:
+  - { check: manifest, origin: config, reason: "매니페스트 검증은 키 대조 기준과 무관하다 — lang_ko 1건으로 충분" }
+  - { check: files, origin: config, reason: "파일 존재 검사는 키 대조 기준과 무관하다 — lang_ko 1건으로 충분" }
+
+effects:
+  - bundled_ja_manifests_pass_validator
+  - bundled_ja_packs_ship_files
+  - bundled_core_ja_backend_keys_match_korean_origin
+  - bundled_core_ja_pack_only_file_matches_config_keys
+
+test_files:
+  - tests/Unit/Services/LanguagePack/BundledJapanesePacksTest.php

@@ -11,6 +11,11 @@
  * 실패 시: runtime.php 보존 → InstallerRuntimeServiceProvider 가 계속 동작
  *          → 앱은 정상 (관리자 재호출 또는 다음 부팅 시 재시도 경로 확보).
  *
+ * 설치 워커와의 순서: 워커는 상태를 completed 로 기록하는 complete_flag 뒤에도 설정 캐시·라우트 캐시·
+ * 정적 게시를 이어서 돈다. 완료 화면은 completed 를 보는 즉시 이 엔드포인트를 부르므로, 병합은 워커가
+ * lock 을 풀 때까지 기다린 뒤 한다(상한 INSTALLER_FINALIZE_WORKER_WAIT_SECONDS). 워커의 설정 캐시는
+ * 병합 전 .env 로 만들어졌으므로 병합 직전에 지우고, 병합·runtime.php 삭제 뒤 다시 만든다.
+ *
  * @see https://github.com/gnuboard/g7/issues/23
  */
 
@@ -31,10 +36,14 @@ error_reporting(E_ALL);
 
 require_once __DIR__.'/../includes/config.php';
 require_once __DIR__.'/../includes/functions.php';
+require_once __DIR__.'/../includes/binary-path-policy.php';
 require_once __DIR__.'/../includes/installer-runtime.php';
 require_once __DIR__.'/../includes/installer-state.php';
 // 노출 점검 sentinel 정리 헬퍼 (B-4) — 아래 정리 구간에서 호출
 require_once __DIR__.'/../includes/exposure-check.php';
+// 설치 소유 세션 판정용 — session.php 는 installer-state.php 를 require 하므로 그 뒤에 둔다.
+require_once __DIR__.'/../includes/session.php';
+require_once __DIR__.'/../includes/installer-ownership.php';
 require_once __DIR__.'/_guard.php';
 // finalize 전용 가드 — `.env` 의 INSTALLER_COMPLETED=true 단독으로만 차단한다.
 // 일반 인스톨러 엔드포인트의 `installer_guard_or_410()` 은 `g7_installed` 락 파일도
@@ -78,14 +87,23 @@ if ($finalizeRejection !== null) {
     exit;
 }
 
+// state 가 남아 있으면(아직 finalize 전) 설치 소유 세션만 머지를 요청할 수 있다 — 위 판정은 「끝난 설치가
+// 맞는가」와 단계별 실행 토큰을 보고, 이 판정은 「설치 마법사를 통과한 그 브라우저인가」를 본다.
+// 진행 중 호출 차단(설치 완료 전 머지 → INSTALLER_COMPLETED 기록 → 모든 엔드포인트 410)은 위
+// installerFinalizeRejection() 의 complete_flag 판정이 맡는다.
+$finalizeStateFile = installerReadStateFile();
+if ($finalizeStateFile !== null && installer_state_is_claimed($finalizeStateFile)) {
+    installer_require_owner($finalizeStateFile);
+    installer_require_csrf();
+}
+
 // ---------------------------------------------------------------------------
 // 1. 응답을 즉시 송출하여 브라우저가 완료 UI 를 유지할 수 있게 한다.
 // ---------------------------------------------------------------------------
 
-// 이 엔드포인트는 `session.php` 를 require 하지 않고 include 체인에도 `session_start()` 가
-// 없으므로 이 분기는 현재 도달하지 않는다 (17차 #B8). 지우지 않는 이유는 둘이다 — 세션이
-// 생기면 곧바로 필요한 방어이고, 제거 자체가 동작 변경이기 때문이다(저장소 선례).
-// 다음 라운드가 「finalize 는 세션 잠금을 푼다」로 오독하지 않도록 사실을 여기 남긴다.
+// 설치 소유 세션 판정 때문에 이 엔드포인트도 `session.php` 를 싣는다 — 응답 뒤 단계(워커 대기·
+// 병합·설정 캐시 다시 만들기)가 세션 잠금을 쥔 채 돌면 같은 브라우저의 다른 요청이 그동안 멈추므로
+// 응답 전에 세션을 닫는다 (17차 #B8 이 「세션이 생기면 곧바로 필요한 방어」로 남겨 둔 분기다).
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }
@@ -131,6 +149,43 @@ if (function_exists('fastcgi_finish_request')) {
 // ---------------------------------------------------------------------------
 // 2. 응답 송출 후 .env 머지
 // ---------------------------------------------------------------------------
+
+// 응답 뒤 단계는 워커 대기와 설정 캐시 다시 만들기(artisan)를 포함한다 — 실행 시간을 그만큼 확보한다.
+// 막힌 호스팅에서는 부르지 않는다 — `@` 는 차단 함수의 Error 를 삼키지 않는다 (13차 환경#1).
+if (installerHasFunction('set_time_limit')) {
+    @set_time_limit((int) INSTALLER_FINALIZE_WORKER_WAIT_SECONDS + (int) INSTALLER_TASK_TIME_LIMIT);
+}
+
+// 2-1. 설치 워커가 마지막 작업(설정 캐시·라우트 캐시·정적 게시)을 끝내고 lock 을 풀 때까지 기다린다.
+// 워커의 config:cache 도중에 병합하면 병합 전 .env 값이 설정 캐시에 굳고(사이트 503), 상태 파일이
+// 지워진 워커는 lock 을 잃어 남은 작업을 건너뛴다.
+$stateBeforeWait = installerReadStateFile();
+if ($stateBeforeWait !== null && installerHasActiveWorker($stateBeforeWait)) {
+    addLog(lang('log_finalize_env_waiting_for_worker'));
+
+    $workerWait = installerWaitForWorkerRelease((int) INSTALLER_FINALIZE_WORKER_WAIT_SECONDS);
+    if ($workerWait['released']) {
+        addLog(lang('log_finalize_env_worker_released', [
+            'seconds' => sprintf('%.1f', $workerWait['waited_seconds']),
+        ]));
+    } else {
+        addLog(lang('log_finalize_env_worker_wait_timeout', [
+            'seconds' => (string) (int) INSTALLER_FINALIZE_WORKER_WAIT_SECONDS,
+        ]));
+    }
+}
+
+// 2-2. 병합은 한 번만 — 완료 화면이 두 번 떠(새로고침, 다른 탭) 동시에 불려도 뒤 요청은 앞 요청이 끝난 뒤
+// runtime.php 부재로 바로 끝난다.
+$finalizeLockPath = BASE_PATH.'/storage/installer/finalize.lock';
+if (! is_dir(dirname($finalizeLockPath))) {
+    @mkdir(dirname($finalizeLockPath), 0755, true);
+}
+$finalizeLock = @fopen($finalizeLockPath, 'c');
+if ($finalizeLock !== false && ! @flock($finalizeLock, LOCK_EX)) {
+    @fclose($finalizeLock);
+    $finalizeLock = false;
+}
 
 try {
     $runtime = readInstallerRuntime();
@@ -178,6 +233,16 @@ try {
         addLog(lang('log_finalize_env_backup_kept', ['path' => $envBackupPath]));
     }
 
+    // 설치 워커가 병합 전 .env(와 runtime.php 주입 값)로 만든 설정 캐시를 쓰기 전에 지운다 — 쓰기 직후 이
+    // 프로세스가 끊겨도(php artisan serve 는 .env 변경을 보고 서버를 다시 띄운다) 병합 전 값의 캐시가
+    // 남지 않는다. 캐시는 아래 runtime.php 삭제 뒤 다시 만든다.
+    if (! installerClearConfigCache()) {
+        addLog(lang('log_finalize_env_config_cache_delete_failed', [
+            'path' => installerConfigCachePath(),
+            'error' => (error_get_last()['message'] ?? 'unknown'),
+        ]));
+    }
+
     // 부분 쓰기(디스크 full·quota)는 `false` 가 아니라 **쓴 바이트 수**를 돌려준다. 그것을
     // 성공으로 통과시키면 잘린 `.env` 가 「머지 완료」로 보고되고, 바로 아래에서 유일한
     // 비밀 사본(`runtime.php`)이 삭제되어 `APP_KEY`·DB 자격증명을 되찾을 수 없다.
@@ -222,7 +287,7 @@ try {
         addLog(lang('log_finalize_env_runtime_removed'));
     }
 
-    // 설정 캐시 무효화 — 제품 결정(13차 D7/E2).
+    // 설정 캐시 무효화와 다시 만들기 — 제품 결정(13차 D7/E2) + 설치 워커와의 경합 차단.
     //
     // 마지막 태스크 `config_cache` 는 `.env` 머지 **이전**에 돈다. 그 시점의 config 는
     // `InstallerRuntimeServiceProvider` 가 runtime.php 에서 주입한 값이고, Laravel 의
@@ -231,18 +296,18 @@ try {
     // 캐시에는 `app.installer_completed=false` 가 박혀 모듈·플러그인 라우트 프로바이더가
     // 매 요청 조기 return 한다. 그런데 그 캐시를 갱신하는 지점이 어디에도 없었다.
     //
-    // 선택은 「굽지 않는다」가 아니라 「끝날 때 지운다」다 — 태스크를 목록에서 빼면 진행
-    // 화면·매니페스트의 계약이 함께 바뀐다. 굽는 것은 그대로 두고, 여기서 지운다.
-    //
-    // Artisan 을 부르지 않는다. `config:clear` 의 실질이 이 파일 삭제이므로, 명령을 실행할
-    // 수 없는 무CLI 환경에서도 파일 삭제만으로 같은 효과가 난다. 재생성도 하지 않는다 —
-    // 다음 요청이 머지된 `.env` 를 읽어 스스로 만든다.
+    // 선택은 「굽지 않는다」가 아니라 「끝날 때 지우고 병합된 값으로 다시 굽는다」다 — 태스크를
+    // 목록에서 빼면 진행 화면·매니페스트의 계약이 함께 바뀐다. 다시 굽는 것은 설치가 config 캐시
+    // 켜진 상태로 시작하게 하려는 것이고, 굽지 못하면(무CLI 환경처럼 `exec` 가 막혔거나 artisan
+    // 실패) 캐시를 지운 채 둔다 — `config:clear` 의 실질이 이 파일 삭제이므로 다음 요청이 머지된
+    // `.env` 로 부팅한다.
     //
     // 위치는 `.env` 쓰기 성공 **뒤**, runtime.php 를 지우는 이 정리 구간이다. 앞에 두면
-    // 그 뒤의 부팅이 다시 캐시를 만들 여지가 있다.
+    // 그 뒤의 부팅이 다시 캐시를 만들 여지가 있다. 쓰기 직전에도 한 번 지운다(위) — 이 사이에
+    // 남이 다시 구웠을 수 있어(워커 대기 상한 초과 등) 여기서도 지운다.
     //
-    // 삭제 실패는 설치를 중단시키지 않는다 — 기록만 남긴다.
-    $configCachePath = BASE_PATH.'/bootstrap/cache/config.php';
+    // 삭제·다시 만들기 실패는 설치를 중단시키지 않는다 — 기록만 남긴다.
+    $configCachePath = installerConfigCachePath();
 
     if (file_exists($configCachePath)) {
         if (@unlink($configCachePath) === false) {
@@ -253,6 +318,29 @@ try {
         } else {
             addLog(lang('log_finalize_env_config_cache_removed'));
         }
+    }
+
+    // PHP 경로는 상태 파일에 있으므로 상태 삭제 전에 읽는다. 후보 순서는 워커의 getPhpBinary() 와
+    // 같다 — 운영자 명시(config.php_binary) > 설치 시작 시 자동 탐색된 경로(php_binary_resolved) > php.
+    $finalizePhpState = getInstallationState();
+    $finalizePhpBinary = installer_php_binary_from_state($finalizePhpState);
+    if ($finalizePhpBinary === 'php' && (string) ($finalizePhpState['php_binary_resolved'] ?? '') !== '') {
+        $finalizePhpBinary = installer_php_binary_from_state([
+            'config' => ['php_binary' => (string) $finalizePhpState['php_binary_resolved']],
+        ]);
+    }
+
+    $configCacheRebuild = installerRebuildConfigCache($finalizePhpBinary);
+    if ($configCacheRebuild['rebuilt']) {
+        addLog(lang('log_finalize_env_config_cache_rebuilt'));
+    } else {
+        addLog(lang('log_finalize_env_config_cache_rebuild_failed', [
+            'exit' => $configCacheRebuild['exit_code'] === null ? 'n/a' : (string) $configCacheRebuild['exit_code'],
+            // mbstring 이 없는 호스팅도 있다 — 없으면 바이트 단위로 자른다.
+            'output' => function_exists('mb_substr')
+                ? mb_substr($configCacheRebuild['output'], 0, 500)
+                : substr($configCacheRebuild['output'], 0, 500),
+        ]));
     }
 
     // state.json 삭제 — setInstallationCompleteSSE 가 본 단계로 위임함
@@ -295,6 +383,10 @@ try {
             addLog(lang('log_finalize_env_state_redact_failed', ['path' => $stateFilePath]));
         }
     }
+
+    // 설치 소유권 부속 파일 정리 — 복구 토큰 실패 집계. 상태 쓰기 직렬화 잠금 파일은 위 상태 파일
+    // 삭제 구간이 생산자 상수(INSTALLER_STATE_LOCK_SUFFIX)로 함께 치운다.
+    installer_reclaim_reset_throttle();
 } catch (Throwable $e) {
     // 예외 시 runtime.php 보존 → Provider 가 계속 config 주입 → 앱 정상 동작.
     addLog(lang('log_finalize_env_unexpected_exception', [
@@ -322,5 +414,13 @@ try {
         ]));
     } else {
         addLog(lang('log_finalize_env_probe_sweep_done', ['removed' => (string) $probeCleanup['removed']]));
+    }
+
+    // 병합 직렬화 잠금을 푼다 — 잠금 파일도 치운다(남기면 설치를 마친 사이트의 storage/installer 에
+    // 영구 잔존한다). 뒤 요청이 같은 파일을 기다리고 있었다면 그 요청은 runtime.php 부재로 바로 끝난다.
+    if ($finalizeLock !== false) {
+        @flock($finalizeLock, LOCK_UN);
+        @fclose($finalizeLock);
+        @unlink($finalizeLockPath);
     }
 }

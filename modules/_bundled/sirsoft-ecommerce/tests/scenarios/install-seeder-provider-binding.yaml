@@ -1,0 +1,17 @@
+feature: 이커머스 설치 시더 3종이 코어 프로바이더 선등록 뒤 저장소 바인딩을 해석한다 (코어 7.1.3)
+
+description: |
+  ShippingTypeSeeder 정리 단계(OrderShippingRepositoryInterface)·ShippingCarrierSeeder·ClaimReasonSeeder(서비스의 저장소
+  인터페이스 주입)는 프로바이더 `$repositories` 바인딩이 있어야 돈다. 새 설치 시점에는 프로바이더가 등록된 적이 없어
+  시더가 실패했다. 코어 ExtensionProviderRegistrar 가 설치 직전 선등록한다 — 모듈 코드는 바꾸지 않는다.
+
+axes:
+  provider_state: [preregistered, already_registered]
+
+effects:
+  - install_time_without_provider_fails_resolution
+  - install_seeders_resolve_repositories_after_preregistration
+  - already_registered_provider_not_reregistered
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Seeders/InstallSeederProviderBindingTest.php

@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Enums;
 
-use App\Enums\IdentityMessageScopeType;
 use App\Enums\IdentityOriginType;
 use App\Enums\IdentityPolicyAppliesTo;
 use App\Enums\IdentityPolicyFailMode;
@@ -23,21 +22,49 @@ class IdentityDomainEnumsTest extends TestCase
     // IdentityVerificationPurpose
     // ========================================================================
 
-    public function test_verification_purpose_has_four_core_cases(): void
+    /**
+     * 본인인증 목적 Enum 은 login 을 포함한 코어 목적 5종을 정해진 순서로 가진다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects verification_purpose_lists_five_core_cases
+     *
+     * @return void 반환값 없음
+     */
+    public function test_verification_purpose_has_five_core_cases(): void
     {
-        $this->assertCount(4, IdentityVerificationPurpose::cases());
+        // login(2단계 인증)은 7.1.0 에서 코어 목적이 됐다 — 본인인증 알림 정의 identity.purpose.login 과 짝이다.
+        $this->assertCount(5, IdentityVerificationPurpose::cases());
         $this->assertSame(
-            ['signup', 'password_reset', 'self_update', 'sensitive_action'],
+            ['signup', 'password_reset', 'self_update', 'sensitive_action', 'login'],
             IdentityVerificationPurpose::values(),
         );
     }
 
+    /**
+     * isCore 는 코어 목적(signup)에 true, 확장이 선언한 목적에 false 를 돌려준다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects verification_purpose_is_core_rejects_extension_purpose
+     *
+     * @return void 반환값 없음
+     */
     public function test_verification_purpose_is_core_check(): void
     {
         $this->assertTrue(IdentityVerificationPurpose::isCore('signup'));
         $this->assertFalse(IdentityVerificationPurpose::isCore('module_declared'));
     }
 
+    /**
+     * 본인인증 목적 Enum 의 tryFrom 은 알려진 값을 케이스로, 모르는 값을 null 로 돌려준다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects enum_try_from_returns_null_for_unknown_value
+     *
+     * @return void 반환값 없음
+     */
     public function test_verification_purpose_try_from_safety(): void
     {
         $this->assertSame(IdentityVerificationPurpose::Signup, IdentityVerificationPurpose::tryFrom('signup'));
@@ -48,12 +75,30 @@ class IdentityDomainEnumsTest extends TestCase
     // IdentityVerificationChannel
     // ========================================================================
 
+    /**
+     * 본인인증 채널 Enum 에 값이 email 인 Email 케이스가 있다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects verification_channel_includes_email
+     *
+     * @return void 반환값 없음
+     */
     public function test_verification_channel_has_email(): void
     {
         $this->assertContains(IdentityVerificationChannel::Email, IdentityVerificationChannel::cases());
         $this->assertSame('email', IdentityVerificationChannel::Email->value);
     }
 
+    /**
+     * 채널 isCore 는 email 에 true, 코어가 아닌 sms 에 false 를 돌려준다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects verification_channel_is_core_rejects_non_core_channel
+     *
+     * @return void 반환값 없음
+     */
     public function test_verification_channel_is_core(): void
     {
         $this->assertTrue(IdentityVerificationChannel::isCore('email'));
@@ -64,6 +109,15 @@ class IdentityDomainEnumsTest extends TestCase
     // IdentityOriginType
     // ========================================================================
 
+    /**
+     * 발생 출처 Enum 은 route·hook·policy·middleware·api·custom·system 7종을 가진다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects origin_type_lists_seven_cases
+     *
+     * @return void 반환값 없음
+     */
     public function test_origin_type_has_seven_cases(): void
     {
         $this->assertCount(7, IdentityOriginType::cases());
@@ -73,6 +127,15 @@ class IdentityDomainEnumsTest extends TestCase
         );
     }
 
+    /**
+     * 발생 출처 Enum 의 tryFrom 은 알려진 값을 케이스로, 모르는 값을 null 로 돌려준다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects enum_try_from_returns_null_for_unknown_value
+     *
+     * @return void 반환값 없음
+     */
     public function test_origin_type_try_from_safety(): void
     {
         $this->assertSame(IdentityOriginType::Route, IdentityOriginType::tryFrom('route'));
@@ -83,6 +146,15 @@ class IdentityDomainEnumsTest extends TestCase
     // IdentityPolicyScope
     // ========================================================================
 
+    /**
+     * 정책 범위 Enum 은 route·hook·custom 3종을 가진다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects policy_scope_lists_three_cases
+     *
+     * @return void 반환값 없음
+     */
     public function test_policy_scope_has_three_cases(): void
     {
         $this->assertCount(3, IdentityPolicyScope::cases());
@@ -93,6 +165,15 @@ class IdentityDomainEnumsTest extends TestCase
     // IdentityPolicyFailMode
     // ========================================================================
 
+    /**
+     * 정책 실패 모드 Enum 은 block·log_only 2종을 가진다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects policy_fail_mode_lists_two_cases
+     *
+     * @return void 반환값 없음
+     */
     public function test_policy_fail_mode_has_two_cases(): void
     {
         $this->assertCount(2, IdentityPolicyFailMode::cases());
@@ -103,6 +184,15 @@ class IdentityDomainEnumsTest extends TestCase
     // IdentityPolicyAppliesTo
     // ========================================================================
 
+    /**
+     * 정책 적용 대상 Enum 은 self·admin·both 3종이며 예약어 회피 케이스 Self_ 의 값은 self 다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects policy_applies_to_lists_three_cases_with_self_value
+     *
+     * @return void 반환값 없음
+     */
     public function test_policy_applies_to_has_three_cases(): void
     {
         $this->assertCount(3, IdentityPolicyAppliesTo::cases());
@@ -115,29 +205,36 @@ class IdentityDomainEnumsTest extends TestCase
     // IdentityPolicySourceType
     // ========================================================================
 
+    /**
+     * 정책 출처 Enum 은 core·module·plugin·admin 4종을 가진다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects policy_source_type_lists_four_cases
+     *
+     * @return void 반환값 없음
+     */
     public function test_policy_source_type_has_four_cases(): void
     {
         $this->assertCount(4, IdentityPolicySourceType::cases());
         $this->assertSame(['core', 'module', 'plugin', 'admin'], IdentityPolicySourceType::values());
     }
 
-    // ========================================================================
-    // IdentityMessageScopeType
-    // ========================================================================
-
-    public function test_message_scope_type_has_three_cases(): void
-    {
-        $this->assertCount(3, IdentityMessageScopeType::cases());
-        $this->assertSame(
-            ['provider_default', 'purpose', 'policy'],
-            IdentityMessageScopeType::values(),
-        );
-    }
+    // IdentityMessageScopeType 은 7.1.0 에서 없어졌다 — 본인인증 메시지는 알림 정의 type 규칙(IdentityNotificationType)을 쓴다(#699).
 
     // ========================================================================
     // 다국어 라벨 — 모든 enum 의 label() 이 다국어 키로부터 비어있지 않은 문자열을 반환해야 함
     // ========================================================================
 
+    /**
+     * ko 로케일에서 IDV Enum 7종의 label() 이 비어 있지 않고 identity. 키를 그대로 노출하지 않는 번역 문자열이다.
+     *
+     * @scenario surface=domain_catalog
+     *
+     * @effects enum_labels_resolve_translated_text
+     *
+     * @return void 반환값 없음
+     */
     public function test_all_enum_labels_are_translated(): void
     {
         app()->setLocale('ko');
@@ -150,7 +247,6 @@ class IdentityDomainEnumsTest extends TestCase
             IdentityPolicyFailMode::Block,
             IdentityPolicyAppliesTo::Self_,
             IdentityPolicySourceType::Core,
-            IdentityMessageScopeType::Purpose,
         ];
 
         foreach ($samples as $case) {

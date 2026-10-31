@@ -1,0 +1,69 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 관리자 화면 계약 시험은 화면(surface)마다 따로 재는 축(탭·방향·변경·기간·값)을 가진다 — 화면 축과 곱하면 그 화면에 없는 조합만 늘어난다. 회귀 가드는 effects.
+feature: social_login_admin_screens
+coverage_strategy: pairwise
+description: |
+  관리자 화면의 구운 레이아웃 계약과 화면 도구 핸들러. 설정 화면은 제공자 탭(카드마다 Redirect URI 복사·연결 테스트·브라우저 로그인 테스트·
+  영향 보기·편집 칸, 화살표 정렬, 일반 OIDC 추가)과 정책 탭(위험 선택 경고)으로 나뉘고 탭은 주소의 tab 으로 연다. 화면은 쓰는 두 GET 과 같은 열람 권한(settings.view + core.plugins.read)으로 열리고 변경 권한이 없으면 읽기 전용이다. 진단·통계 화면은 필터·기간을
+  주소에 담는다. 관리자 회원 상세에 「소셜 로그인」 탭, 회원 목록에 가입경로 필터와 「소셜 연결」 열(기본 숨김)을 주입한다. 복사는 클립보드가
+  없으면 선택 복사로 물러서고, 로그인 테스트 창은 클릭 순간 빈 창으로 연 뒤 받은 https 주소로 보낸다.
+axes:
+  surface: [settings, expressions, components, provider_card, reorder, editor, warnings, add_custom, diagnostics, stats, user_detail_tab, user_list_filter, user_list_column, data_sources]
+  tab: [providers, policy, notifications]
+  direction: [up, down]
+  change: [disable_enabled, credentials, other]
+  days: ['7', '30', '90']
+  value: [kakao, empty]
+  locale: [ko, en, site_locales]
+  clipboard: [available, unavailable]
+  response: [https, http_external, error]
+  role: [settings_view_only]
+  route_id: [uuid, non_uuid, missing_uuid]
+effects:
+  - provider_notes_translated_and_complete
+  - kakao_notes_current_console_path_and_reconsent_limit
+  - settings_sources_and_tabs
+  - notifications_tab_sources_and_modals
+  - remount_targets_static_box_outside_iteration
+  - settings_opens_read_only_for_view_permission
+  - card_copy_test_impact_actions
+  - reorder_swaps_neighbour
+  - save_confirms_impact_first
+  - save_sends_scopes_array
+  - secret_hint_shown
+  - editor_state_replaced_not_merged
+  - no_regex_literal_in_expressions
+  - risk_warnings_conditions
+  - add_custom_posts_and_limits
+  - add_form_cleared_on_close
+  - impact_confirm_closed_when_editor_changes
+  - diagnostics_sources_and_filters
+  - diagnostics_values_wait_for_response
+  - stats_values_wait_for_response
+  - settings_limit_waits_for_providers
+  - stats_period_in_query
+  - stats_period_pressed_state
+  - detail_tab_and_content_linked
+  - unlink_button_by_ability
+  - filter_row_permission
+  - filter_element_replaced
+  - column_appended_hidden_by_default
+  - column_cell_names_providers
+  - admin_lang_keys_exist
+  - admin_nodes_exist_in_admin_template
+  - admin_lang_params_use_braces
+  - data_source_condition_uses_if
+  - provider_label_follows_site_locales
+  - copy_writes_and_toasts
+  - copy_falls_back_to_selection
+  - test_login_opens_blank_then_navigates
+  - test_login_refuses_unsafe_url
+  - test_login_closes_on_failure
+  - editor_save_disabled_until_changed
+  - editor_policy_fields_present
+  - detail_source_skipped_for_non_uuid_route
+  - detail_not_found_without_toast
+  - detail_forbidden_notice_kept
+test_files:
+  - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/layouts/admin.test.ts
+  - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/adminTools.test.ts
+  - plugins/_bundled/sirsoft-social_login/resources/js/__tests__/layouts/admin-user-detail-route-id.test.ts

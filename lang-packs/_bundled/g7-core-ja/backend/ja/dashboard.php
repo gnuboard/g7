@@ -18,4 +18,10 @@ return [
     'activities' => [
         'user_registered' => ':name さんが会員登録しました。',
     ],
+    // `dashboard:*` コマンド出力
+    'console' => [
+        'broadcast_resources' => [
+            'done' => 'システムリソース情報をブロードキャストしました。',
+        ],
+    ],
 ];

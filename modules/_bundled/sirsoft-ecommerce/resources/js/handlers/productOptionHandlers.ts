@@ -17,11 +17,12 @@ const logger = ((window as any).G7Core?.createLogger?.('Ecom:ProductOption')) ??
 };
 
 /**
- * 지원 로케일 목록을 반환합니다.
+ * 지원 로케일 목록을 반환합니다(코어 공개 API `G7Core.locale.supported()`).
  */
 function getSupportedLocales(): string[] {
     const G7Core = (window as any).G7Core;
-    return G7Core?.config?.('app.supported_locales') ?? ['ko', 'en'];
+    const supported = G7Core?.locale?.supported?.();
+    return Array.isArray(supported) && supported.length > 0 ? supported : ['ko', 'en'];
 }
 
 /**

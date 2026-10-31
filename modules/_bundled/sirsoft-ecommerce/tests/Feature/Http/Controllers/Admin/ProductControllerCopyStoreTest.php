@@ -8,6 +8,10 @@ use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductImage;
 use Modules\Sirsoft\Ecommerce\Models\Sequence;
+use Modules\Sirsoft\Ecommerce\Services\CategoryImageService;
+use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
+use Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService;
+use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -26,6 +30,11 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
 
     private string $sourceProductCode;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,10 +50,10 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
         $storageMock->shouldReceive('exists')->andReturn(true);
 
         $storageServices = [
-            \Modules\Sirsoft\Ecommerce\Services\ProductImageService::class,
-            \Modules\Sirsoft\Ecommerce\Services\CategoryImageService::class,
-            \Modules\Sirsoft\Ecommerce\Services\ProductReviewService::class,
-            \Modules\Sirsoft\Ecommerce\Services\ProductReviewImageService::class,
+            ProductImageService::class,
+            CategoryImageService::class,
+            ProductReviewService::class,
+            ProductReviewImageService::class,
         ];
         $this->app->when($storageServices)
             ->needs(StorageInterface::class)
@@ -110,6 +119,9 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
 
     /**
      * 기본 상품 등록 데이터 생성
+     *
+     * @param  string  $productCode  새 상품 코드
+     * @return array 상품 저장 요청 본문
      */
     private function baseProductData(string $productCode = 'COPY-001'): array
     {
@@ -140,6 +152,8 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
 
     /**
      * 원본 이미지 hash 목록 반환
+     *
+     * @return array 원본 상품 이미지 해시 목록
      */
     private function getSourceImageHashes(): array
     {
@@ -153,6 +167,13 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
     // 1. 복사 모드 그대로 등록 (이미지 3개 모두 유지)
     // ========================================
 
+    /**
+     * 원본 이미지를 모두 유지한 복사 저장은 모든 이미지를 새 상품으로 옮긴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects copy_store_keeps_selected_source_images
+     */
     public function test_copy_store_keeps_all_images(): void
     {
         $hashes = $this->getSourceImageHashes();
@@ -178,6 +199,13 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
     // 2. 파일 하나 삭제 후 등록
     // ========================================
 
+    /**
+     * 복사 저장에서 뺀 이미지 하나는 새 상품에 복사되지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects copy_store_keeps_selected_source_images
+     */
     public function test_copy_store_removes_one_image(): void
     {
         $hashes = $this->getSourceImageHashes();
@@ -201,6 +229,13 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
     // 3. 파일 하나 이상 삭제 후 등록
     // ========================================
 
+    /**
+     * 복사 저장에서 뺀 이미지 여러 개는 새 상품에 복사되지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects copy_store_keeps_selected_source_images
+     */
     public function test_copy_store_removes_multiple_images(): void
     {
         $hashes = $this->getSourceImageHashes();
@@ -223,6 +258,13 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
     // 4. 파일 하나 삭제 + 새 파일 추가 (temp_key 기반)
     // ========================================
 
+    /**
+     * 이미지 하나를 빼고 UUID 임시 키로 새 이미지를 더하면 둘 다 반영된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects copy_store_links_new_temp_images
+     */
     public function test_copy_store_removes_one_and_adds_new(): void
     {
         $hashes = $this->getSourceImageHashes();
@@ -233,17 +275,17 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
             ['hash' => $hashes[2], 'is_thumbnail' => false, 'sort_order' => 1],
         ];
         // 새 이미지는 temp_key로 업로드된 것을 linkTempImages로 연결
-        $data['image_temp_key'] = 'temp-copy-004';
+        $data['image_temp_key'] = '00000000-0000-4000-8000-000000000004';
 
         // temp_key에 해당하는 임시 이미지를 미리 생성
         // 실제 uploadImage() 엔드포인트 동작 재현: sort_order=1(자동배정), is_thumbnail=true(첫 번째 temp)
         ProductImage::create([
             'product_id' => null,
-            'temp_key' => 'temp-copy-004',
+            'temp_key' => '00000000-0000-4000-8000-000000000004',
             'original_filename' => 'new_image.jpg',
             'stored_filename' => 'new_uuid.jpg',
             'disk' => 'local',
-            'path' => 'products/temp/temp-copy-004/new_uuid.jpg',
+            'path' => 'products/temp/00000000-0000-4000-8000-000000000004/new_uuid.jpg',
             'mime_type' => 'image/jpeg',
             'file_size' => 2048,
             'width' => 1024,
@@ -275,6 +317,13 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
     // 5. 파일 하나 이상 삭제 + 새 파일 하나 이상 추가
     // ========================================
 
+    /**
+     * 여러 이미지를 빼고 UUID 임시 키로 여러 이미지를 더하면 모두 반영된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects copy_store_links_new_temp_images
+     */
     public function test_copy_store_removes_multiple_and_adds_multiple(): void
     {
         $hashes = $this->getSourceImageHashes();
@@ -283,17 +332,17 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
         $data['images'] = [
             ['hash' => $hashes[0], 'is_thumbnail' => true, 'sort_order' => 0],
         ];
-        $data['image_temp_key'] = 'temp-copy-005';
+        $data['image_temp_key'] = '00000000-0000-4000-8000-000000000005';
 
         // 새 이미지 2개 — 실제 uploadImage() 동작 재현: 첫 번째만 is_thumbnail=true
         for ($i = 0; $i < 2; $i++) {
             ProductImage::create([
                 'product_id' => null,
-                'temp_key' => 'temp-copy-005',
+                'temp_key' => '00000000-0000-4000-8000-000000000005',
                 'original_filename' => "new_{$i}.jpg",
                 'stored_filename' => "new_uuid_{$i}.jpg",
                 'disk' => 'local',
-                'path' => "products/temp/temp-copy-005/new_uuid_{$i}.jpg",
+                'path' => "products/temp/00000000-0000-4000-8000-000000000005/new_uuid_{$i}.jpg",
                 'mime_type' => 'image/jpeg',
                 'file_size' => 1024,
                 'width' => 640,
@@ -330,6 +379,13 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
     // 6. 파일 삭제 + 순서 변경 후 등록 — 순서 검증
     // ========================================
 
+    /**
+     * 이미지를 빼고 순서를 바꾼 복사 저장은 새 순서를 따른다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects copy_store_keeps_selected_source_images
+     */
     public function test_copy_store_removes_and_reorders(): void
     {
         $hashes = $this->getSourceImageHashes();
@@ -361,6 +417,13 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
     // 7. 파일 삭제 + 새 파일 추가 + 순서 뒤섞기 — 순서 검증
     // ========================================
 
+    /**
+     * 빼기·더하기·순서 섞기를 함께 한 복사 저장은 최종 순서대로 반영된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects copy_store_links_new_temp_images
+     */
     public function test_copy_store_removes_adds_and_shuffles_order(): void
     {
         $hashes = $this->getSourceImageHashes();
@@ -370,16 +433,16 @@ class ProductControllerCopyStoreTest extends ModuleTestCase
             ['hash' => $hashes[2], 'is_thumbnail' => true, 'sort_order' => 0],
             ['hash' => $hashes[0], 'is_thumbnail' => false, 'sort_order' => 2],
         ];
-        $data['image_temp_key'] = 'temp-copy-007';
+        $data['image_temp_key'] = '00000000-0000-4000-8000-000000000007';
 
         // 새 이미지 — 실제 uploadImage() 동작 재현: sort_order=1, is_thumbnail=true(첫 번째 temp)
         ProductImage::create([
             'product_id' => null,
-            'temp_key' => 'temp-copy-007',
+            'temp_key' => '00000000-0000-4000-8000-000000000007',
             'original_filename' => 'new_appended.jpg',
             'stored_filename' => 'new_appended_uuid.jpg',
             'disk' => 'local',
-            'path' => 'products/temp/temp-copy-007/new_appended_uuid.jpg',
+            'path' => 'products/temp/00000000-0000-4000-8000-000000000007/new_appended_uuid.jpg',
             'mime_type' => 'image/jpeg',
             'file_size' => 3072,
             'width' => 1200,

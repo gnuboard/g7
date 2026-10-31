@@ -1,0 +1,16 @@
+feature: 쇼핑몰 서버 영어 메시지의 단·복수
+
+description: |
+  쇼핑몰이 내는 영어 메시지(활동 로그 항목 수·상품 삭제 차단·옵션 일괄 수정·쿠폰 발급·관리자 일괄 삭제·주문 상태 일괄 변경 불가·장바구니 수량 상한·클레임 수량 잠금)를 `(s)` 대신 `단수|복수` 로 적고 수로 고른다. 한국어는 그대로.
+
+axes:
+  surface: [dictionary, activity_log, exception_response]
+
+effects:
+  - english_message_singular_for_one_plural_otherwise
+  - korean_message_unchanged
+  - activity_log_description_follows_stored_count
+  - exception_and_response_message_follow_number
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Lang/BackendPluralMessagesTest.php

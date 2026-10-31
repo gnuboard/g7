@@ -28,7 +28,8 @@ export function initTemplate(): void {
     const actionDispatcher = (window as any).G7Core?.getActionDispatcher?.();
     if (actionDispatcher) {
       Object.entries(handlerMap).forEach(([name, handler]) => {
-        actionDispatcher.registerHandler(name, handler);
+        // 등록자를 템플릿 식별자로 밝힌다 (engine-v1.86.0 소유권 경고)
+        actionDispatcher.registerHandler(name, handler, { category: 'custom', source: 'my-template' });
       });
 
       // IDV launcher 는 핸들러 등록 직후 호출 — G7Core.identity 가 준비된 시점
@@ -112,7 +113,14 @@ type VerificationResult =
 
 ## Base 레이아웃 마운트 의무
 
-`_user_base.json` / `_admin_base.json` 의 `modals` 배열에 모달 파셜을 추가해야 launcher 가 호출하는 `openModal` 이 동작합니다.
+`_user_base.g7.html` / `_admin_base.g7.html` 의 `modals` 배열에 모달 파셜을 추가해야 launcher 가 호출하는 `openModal` 이 동작합니다.
+
+```html
+<modal src="partials/_identity_challenge_modal.g7.html"/>
+<modal src="partials/_modal_other.g7.html"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -185,6 +193,13 @@ KCP / PortOne / 토스인증 / Stripe Identity 등 외부 SDK 를 추가할 때 
 | `extension_point` + scripts 병합 | `LayoutExtensionService` | 슬롯에 컴포넌트 + scripts 동시 주입 |
 | `callExternalEmbed` 핸들러 | `ActionDispatcher.handleCallExternalEmbed` | SDK 인스턴스 layer/popup + callbackAction/callbackSetState |
 
+`scripts[].src` 의 외부 호스트는 그 레이아웃을 가진 확장·템플릿이 매니페스트의 `trusted_script_hosts` 로 선언합니다([module-assets.md](module-assets.md) 「`trusted_script_hosts`」). 런타임·저장·점검 커맨드는 활성 확장·템플릿의 선언 집계(개발 커맨드는 문서 소유 확장의 선언, 운영자 설정 `config/template.php` 의 `layout_markup.script_src_allowlist` 도 더함)에 없는 호스트를 거부합니다(`script_src_not_allowed`). 코어 설정 기본값은 비어 있고, 설치 경로의 컴파일은 JSON 설치처럼 호스트를 대조하지 않습니다. 아래 예시의 `sdk.example.com` 은 자리표시자이므로, 실제 SDK 도입 시 그 호스트를 플러그인 매니페스트에 먼저 선언합니다.
+
+아래는 그 자리표시자 때문에 **마크업을 병기하지 않는 유일한 예외**입니다 — `<extension>` 으로
+적으면 컴파일러가 `sdk.example.com` 을 `script_src_not_allowed` 로 거부해, 문서에 실을 수 없는
+마크업이 됩니다. 실제 도입 시에는 호스트를 매니페스트 `trusted_script_hosts` 에 선언한 뒤 [layout-extensions.md §확장 주입](layout-extensions.md)
+의 `<extension extension-point>` 형태로 작성합니다.
+
 플러그인 extension JSON 예시:
 
 ```json
@@ -197,29 +212,33 @@ KCP / PortOne / 토스인증 / Stripe Identity 등 외부 SDK 를 추가할 때 
     {
       "name": "Button",
       "if": "{{_global.identityChallenge?.provider_id === 'vendor.method'}}",
-      "events": {
-        "onClick": {
-          "actions": [
-            {
-              "handler": "callExternalEmbed",
-              "params": {
-                "constructor": "VendorSdk.IdentityVerification",
-                "config": { "channelKey": "..." },
-                "callbackAction": [
-                  {
-                    "handler": "resolveIdentityChallenge",
-                    "params": { "result": "verified", "token": "{{result.verification_token}}" }
-                  }
-                ]
+      "actions": [
+        {
+          "type": "click",
+          "handler": "callExternalEmbed",
+          "params": {
+            "constructor": "VendorSdk.IdentityVerification",
+            "config": { "channelKey": "..." },
+            "callbackAction": [
+              {
+                "handler": "resolveIdentityChallenge",
+                "params": { "result": "verified", "token": "{{result.verification_token}}" }
               }
-            }
-          ]
+            ]
+          }
         }
-      }
+      ]
     }
   ]
 }
 ```
+
+## 외부 수단의 이동 주소 규칙 (7.2.0)
+
+`render_hint=external_redirect` 인 challenge 의 `redirect_url` 은 **같은 출처 경로**(`/` 로 시작, 예 `/plugins/{식별자}/reauth/start?...`)만 준다.
+외부 공급자(회사 계정 로그인 화면 등)로 나가는 이동은 수단(확장)의 같은 출처 시작 라우트가 서버에서 302 한다. 레이아웃의 `redirect`
+동작은 다른 출처 주소를 따르지 않으므로(열린 이동 차단), 절대 외부 주소를 주면 화면이 진행 표시를 켠 채 멈춘다. 확인을 마친 뒤
+돌아올 화면은 challenge 요청 본문 `return_path`(같은 출처 경로)로 넘기고, 수단은 그 경로에 `verification_token` 을 붙여 돌려보낸다.
 
 ## launcher 미등록 시 코어 폴백 동작
 
@@ -232,7 +251,7 @@ KCP / PortOne / 토스인증 / Stripe Identity 등 외부 SDK 를 추가할 때 
 
 폴백을 의도적으로 사용하려는 외부 템플릿은:
 
-- `auth/identity_challenge.json` 풀페이지 레이아웃을 만들거나 다른 번들 템플릿(예: sirsoft-basic)에서 복사
+- `auth/identity_challenge.g7.html` 풀페이지 레이아웃을 만들거나 다른 번들 템플릿(예: sirsoft-basic)에서 복사
 - `routes.json` 에 `/identity/challenge` 라우트 등록 (`auth_required: false`)
 
 ## 검증 체크리스트

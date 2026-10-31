@@ -6,7 +6,7 @@ description: |
   표시되지 않고, ON(또는 미설정)이면 표시된다.
 
   배경 (이슈 #413 item 19-4b):
-    - 갤러리형 목록(types/gallery/index.json) 의 조회수 Span 에 show_view_count 조건이
+    - 갤러리형 목록(types/gallery/index.g7.html) 의 조회수 Span 에 show_view_count 조건이
       없어, 토글 OFF 후에도 갤러리형에서만 조회수가 항상 노출되던 회귀.
     - basic/card 형 목록은 동일 조건("{{posts?.data?.board?.settings?.show_view_count !== false}}")
       으로 정상 동작 → 갤러리 조회수 Span 에 동일 if 조건을 추가하여 정합.
@@ -14,17 +14,20 @@ description: |
 
 axes:
   show_view_count: [true, false, unset]
-  board_type: [gallery]
+  board_type: [gallery, admin_list]
 
 effects:
   - gallery_shows_view_count_when_true
   - gallery_shows_view_count_when_unset
   - gallery_hides_view_count_when_false
   - gallery_matches_basic_and_card_condition
+  - admin_list_view_count_column_follows_show_view_count
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/__tests__/layouts/board-gallery-view-count-toggle.test.tsx
   - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-gallery-view-count.spec.ts
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminPostListViewCountSettingTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-posts-view-count-column.test.ts
 
 validation:
   audit_rule: frontend-change-requires-e2e

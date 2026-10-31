@@ -173,8 +173,6 @@
     "product_coupon_2": "商品クーポン2",
     "order_coupon": "注文割引クーポン",
     "shipping_coupon": "配送料割引クーポン",
-    "exclusive_coupon_title": "重複割引不可クーポン",
-    "exclusive_coupon_message": "重複割引不可クーポンを使用すると、他のクーポンは自動的に解除されます。続行しますか？",
     "coupon_disabled_exclusive": "他のクーポンとの重複使用不可",
     "coupon_disabled_already_applied": "既に適用済み",
     "coupon_min_amount_not_met": "最小注文金額の条件を満たしていません",

@@ -1,0 +1,41 @@
+<!-- 웹 크론 호출 주소 재발급 확인 창 — 시스템 탭 「호출 번호 재발급」 버튼이 연다.
+  재발급하면 호스팅에 등록해 둔 옛 주소는 그 즉시 무효가 되므로 한 번 묻는다.
+  성공하면 부모 화면의 주소칸(`$parent._local.cronUrl`)을 새 주소로 바꾸고 상태 소스를 다시 받는다. -->
+<partial editor_label="$t:admin.modal_label.admin_settings.cron_token_rotate_modal" description="웹 크론 호출 번호 재발급 확인 모달 (W5)">
+  <modal data-type="composite" data-ref="cron_token_rotate_modal" title="$t:admin.settings.system.cron_token_rotate_title" size="sm">
+    <div class="py-2">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.settings.system.cron_token_rotate_confirm</p>
+      <p class="mt-2 text-label-subtle">$t:admin.settings.system.cron_token_rotate_warning</p>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <!-- 재발급은 왕복이 있는 조작이라 진행 표시가 필요하다 — 없으면 운영자가 같은 버튼을 다시 눌러 번호를 연달아 갈아 치운다. 이 모달은 포털이라 _local 은 모달 자신의 것이고, 성공 시 닫히므로 플래그를 되돌릴 자리는 onError 뿐이다. -->
+      <button type="button" class="btn btn-danger" disabled="{{_local.cronTokenRotating}}">
+        <on type="click">
+          <set-state target="local" :cronTokenRotating="true"/>
+          <api-call :auth_required="true" target="/api/admin/settings/system/cron-token/rotate" method="POST">
+            <success>
+              <set-state target="local" :cronTokenRotating="false"/>
+              <!-- 부모 화면의 주소칸을 갱신한다. 이 모달은 modals 섹션(포털) 소속이라 target:'local' 은 모달 자신의 _local 로 가고, 부모의 _local.cronUrl 은 그대로 남는다 — 그러면 재발급 뒤에도 무효가 된 옛 주소가 화면에 남아 운영자가 그것을 복사해 호스팅에 등록한다. -->
+              <set-state target="$parent._local" cronUrl="{{result.data.url}}"/>
+              <close-modal/>
+              <toast type="success" message="$t:admin.settings.system.cron_token_rotated"/>
+              <refetch-data-source dataSourceId="system_status"/>
+            </success>
+            <fail>
+              <set-state target="local" :cronTokenRotating="false"/>
+              <toast type="error" message="{{error.message ?? '$t:admin.settings.system.cron_token_rotate_failed'}}"/>
+            </fail>
+          </api-call>
+        </on>
+        <icon data-if="{{_local.cronTokenRotating}}" name="spinner" class="spinner-sm"/>
+        <span>$t:admin.settings.system.cron_token_rotate</span>
+      </button>
+    </div>
+  </modal>
+</partial>

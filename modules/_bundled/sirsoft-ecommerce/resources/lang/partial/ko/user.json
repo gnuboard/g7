@@ -31,5 +31,36 @@
     "image_upload_partial_fail": "일부 이미지 업로드에 실패했습니다.",
     "submit_success": "리뷰가 등록되었습니다.",
     "submit_failed": "리뷰 등록에 실패했습니다."
+  },
+  "claim": {
+    "image": {
+      "size_exceeded": "사진 1장은 {{size}}KB 를 넘을 수 없습니다.",
+      "limit_exceeded": "사진은 최대 {{max}}장까지 첨부할 수 있습니다.",
+      "upload_partial_failed": "사진 {{total}}장 중 {{failed}}장을 올리지 못했습니다. 신청서에서 다시 첨부해 주세요.",
+      "remove_failed": "첨부 삭제에 실패했습니다."
+    },
+    "withdraw": {
+      "success": "신청이 철회되었습니다.",
+      "failed": "신청 철회에 실패했습니다."
+    },
+    "pay": {
+      "success": "결제가 완료되었습니다.",
+      "failed": "결제를 시작하지 못했습니다."
+    }
+  },
+  "claim_apply": {
+    "edit_not_editable": "승인 이후에는 신청 내용을 수정할 수 없습니다. 변경이 필요하면 고객센터로 문의해 주세요.",
+    "refund_branch_mixed_blocked": "자동으로 처리되는 상품과 판매자 확인이 필요한 상품은 나누어 신청해 주세요.",
+    "change_product_load_failed": "교환 가능한 옵션을 불러오지 못했습니다.",
+    "change_product_select_option_required": "교환받을 옵션을 선택해 주세요.",
+    "estimate_failed": "예상 금액을 계산하지 못했습니다.",
+    "select_items_first": "신청할 상품을 선택해 주세요.",
+    "reason_required": "신청 사유를 선택해 주세요.",
+    "cancel_blocked": "이 조합은 환불액이 0원 아래로 내려가 신청할 수 없습니다 — 상품·수량을 다시 확인해 주세요",
+    "submit_success": "신청이 접수되었습니다.",
+    "submit_failed": "신청 접수에 실패했습니다.",
+    "edit_save_success": "신청 내용이 수정되었습니다.",
+    "edit_save_failed": "신청 내용 수정에 실패했습니다.",
+    "refund_account_masked_mixed": "가려진 계좌 정보는 일부만 고칠 수 없습니다. 은행·계좌번호·예금주를 모두 새로 입력해 주세요."
   }
 }

@@ -94,27 +94,47 @@ describe('체크아웃 결제수단 회귀 테스트', () => {
             _global: { currentUser: { uuid: 'u-1' } },
         });
 
+        /**
+         * @scenario case=order_body
+         * @effects order_body_carries_selected_payment_method
+         */
         it('주문 생성 apiCall 이 존재한다', () => {
             expect(orderCall).not.toBeNull();
             expect(typeof orderCall.params.body).toBe('string');
         });
 
+        /**
+         * @scenario case=order_body
+         * @effects order_body_carries_selected_payment_method
+         */
         it('payment_method 는 _computed.selectedPaymentMethod 를 그대로 싣는다', () => {
             expect(evalBody(context('dbank')).payment_method).toBe('dbank');
             expect(evalBody(context('card')).payment_method).toBe('card');
         });
 
+        /**
+         * @scenario case=order_body
+         * @effects order_body_carries_selected_payment_method
+         */
         it('_local.paymentMethod 가 비어 있어도 computed 값이 실린다 (기본값 card 로 새지 않는다)', () => {
             // 회귀 원인: 사용자가 결제수단 버튼을 누르기 전에는 _local.paymentMethod 가 undefined 다.
             // body 가 그것을 직접 참조하면 무통장을 골라도 card 가 전송됐다.
             expect(evalBody(context('dbank', undefined)).payment_method).toBe('dbank');
         });
 
+        /**
+         * @scenario case=order_body
+         * @effects order_body_carries_selected_payment_method
+         */
         it('dbank 블록은 무통장일 때만 채워지고 그 외에는 null 이다', () => {
             expect(evalBody(context('dbank')).dbank).toMatchObject({ bank_code: '088' });
             expect(evalBody(context('card')).dbank).toBeNull();
         });
 
+        /**
+         * @scenario case=order_body
+         * @effects order_body_carries_selected_payment_method
+         */
         it('_local.paymentMethod 가 computed 와 어긋나도 computed 가 우선한다', () => {
             const body = evalBody(context('dbank', 'card'));
             expect(body.payment_method).toBe('dbank');
@@ -123,17 +143,31 @@ describe('체크아웃 결제수단 회귀 테스트', () => {
     });
 
     describe('checkout.json computed 정의', () => {
+        /**
+         * @scenario case=computed_definition
+         * @effects computed_selects_first_selectable_method
+         */
         it('selectedPaymentMethod computed가 정의되어 있다', () => {
             expect(checkoutJson.computed?.selectedPaymentMethod).toBeDefined();
         });
 
+        /**
+         * @scenario case=computed_definition
+         * @effects computed_selects_first_selectable_method
+         */
         it('computed가 _local.paymentMethod를 우선 사용하되 fallback을 제공한다', () => {
             const computed = checkoutJson.computed.selectedPaymentMethod;
-            // _local.paymentMethod ?? (첫 번째 활성 결제수단) 패턴
+            // _local.paymentMethod ?? (고객이 고를 수 있는 첫 결제수단) 패턴 — 활성·고객 선택·iOS 판정은
+            // 계산값 selectablePaymentMethods 한 곳에 두고 여기서는 그 계산값을 참조한다(같은 식 4벌 중복 제거).
             expect(computed).toContain('_local.paymentMethod');
-            expect(computed).toContain('is_active');
+            expect(computed).toContain('_computed.selectablePaymentMethods');
+            expect(checkoutJson.computed.selectablePaymentMethods).toContain('is_active');
         });
 
+        /**
+         * @scenario case=computed_definition
+         * @effects computed_selects_first_selectable_method
+         */
         it('initLocal에 paymentMethod가 없다 (computed로 대체됨)', () => {
             // paymentMethod를 initLocal에 넣으면 computed와 충돌할 수 있음
             expect(checkoutJson.initLocal?.checkout?.paymentMethod).toBeUndefined();
@@ -142,6 +176,10 @@ describe('체크아웃 결제수단 회귀 테스트', () => {
     });
 
     describe('checkout.json에 죽은 submitOrder 액션이 없다', () => {
+        /**
+         * @scenario case=dead_action
+         * @effects no_dead_submit_order_action
+         */
         it('actions 배열에 submitOrder가 없다', () => {
             const actions = checkoutJson.actions ?? [];
             const submitOrder = actions.find((a: any) => a.id === 'submitOrder');

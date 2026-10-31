@@ -5,6 +5,9 @@ namespace Tests\Feature\Console;
 use App\Models\Schedule as ScheduleModel;
 use App\Providers\SettingsServiceProvider;
 use App\Repositories\JsonConfigRepository;
+use App\Services\Schedule\ScheduleRegistrar;
+use App\Support\ScheduleCommandValidator;
+use Database\Seeders\CoreScheduleSeeder;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernelContract;
@@ -20,6 +23,9 @@ use Tests\TestCase;
  *
  * 이 축의 테스트가 0건이었던 것이 "커맨드는 있는데 스케줄만 없다" 는 결함군이
  * 무가드로 통과된 구조적 원인입니다. 등록 전수와 실행 시각 기준을 함께 고정합니다.
+ *
+ * 7.2.0 부터 예약은 DB 행을 거친다 — 카탈로그(`config/core.php` schedules, group gc) → CoreScheduleSeeder →
+ * ScheduleRegistrar → `schedule:{id}` 이벤트. 아래 단언은 그 경로 끝의 이벤트(주기·onOneServer·시간대)를 본다.
  *
  * 서머타임 주의: 서머타임이 있는 시간대에서는 전환일에 특정 시각이 건너뛰거나
  * 두 번 발생할 수 있습니다. 아래 정리 배치는 모두 멱등이라 이중 실행이 데이터를
@@ -38,14 +44,18 @@ class CoreScheduleRegistrationTest extends TestCase
      * B1: 코어 GC 스케줄 전수가 등록되어 있고 주기/onOneServer 가 의도대로다.
      *
      * @effects all_gc_commands_are_registered_in_schedule, gc_commands_run_on_one_server_only
+     *
+     * @return void 반환값 없음
      */
     public function test_core_gc_schedules_are_registered(): void
     {
+        // 현행(7.1.x) console.php 의 시각을 그대로 옮겼는지 고정한다. queue:prune-failed 는
+        // 처리 기록과 실패 Job 을 함께 정리하는 queue:prune-records 로 대체됐다(D8).
         $expected = [
             'layout-previews:cleanup' => '*/30 * * * *',
             'sanctum:prune-expired' => '0 4 * * *',
             'auth:clear-resets' => '5 4 * * *',
-            'queue:prune-failed' => '10 4 * * *',
+            'queue:prune-records' => '10 4 * * *',
             'queue:prune-batches' => '15 4 * * *',
             'notification:cleanup' => '20 4 * * *',
             'ext-bundles:cleanup' => '25 4 * * *',
@@ -55,13 +65,26 @@ class CoreScheduleRegistrationTest extends TestCase
             'identity:prune-logs' => '40 4 * * *',
             'activity-log:prune' => '45 4 * * *',
             'notification-log:prune' => '50 4 * * *',
+            'notification-delivery:prune' => '52 4 * * *',
             'attachments:prune-orphans' => '55 4 * * *',
             'storage:prune-leftovers' => '0 5 * * *',
+            // 같은 블록의 개인정보·통계 정리도 주기를 고정한다(이 표에서 빠져 있던 행 — #736 에서 함께 채움)
+            'privacy:process-retention' => '5 5 * * *',
+            'privacy:process-dormant' => '10 5 * * *',
+            'analytics:prune' => '10 5 * * *',
+            'auth:process-password-expiry' => '15 5 * * *',
             'identity:expire-challenges' => '0 * * * *',
         ];
 
+        $this->assertEqualsCanonicalizing(array_keys($expected), $this->gcCommandNames(), '카탈로그의 정리 예약 목록이 기대 표와 다릅니다.');
+
+        $events = $this->registerSeededCoreSchedules();
+
         foreach ($expected as $command => $expression) {
-            $event = $this->findScheduledEvent($command);
+            $row = $this->seededCoreRowByCommand($command);
+            $this->assertNotNull($row, "{$command} 코어 스케줄 행이 시딩되어야 합니다.");
+
+            $event = $events["schedule:{$row->id}"] ?? null;
 
             $this->assertNotNull($event, "{$command} 스케줄이 등록되어야 합니다.");
             $this->assertSame($expression, $event->expression, "{$command} 실행 주기");
@@ -70,23 +93,58 @@ class CoreScheduleRegistrationTest extends TestCase
     }
 
     /**
-     * B1: sanctum 정리는 --hours=24 로 실행된다.
+     * B1: sanctum 정리는 --hours=24 로 실행된다(실행기가 넘기는 인자까지).
      *
      * @effects sanctum_prune_uses_hours_option
+     *
+     * @return void 반환값 없음
      */
     public function test_sanctum_prune_uses_expected_hours_option(): void
     {
-        $event = $this->findScheduledEvent('sanctum:prune-expired');
+        (new CoreScheduleSeeder)->run();
+        $row = $this->seededCoreRowByCommand('sanctum:prune-expired');
 
-        $this->assertNotNull($event);
-        $this->assertStringContainsString('--hours', (string) $event->command);
-        $this->assertStringContainsString('24', (string) $event->command);
+        $this->assertNotNull($row);
+        $verdict = ScheduleCommandValidator::inspectArtisanCommand((string) $row->command);
+
+        $this->assertTrue($verdict['allowed']);
+        $this->assertSame('sanctum:prune-expired', $verdict['name']);
+        $this->assertSame(['--hours' => '24'], $verdict['parameters']);
+    }
+
+    /**
+     * 카탈로그의 artisan 명령은 전부 실행 시점 허용목록(옵션 포함)을 통과한다.
+     *
+     * 실행기가 실행 직전에 허용목록을 다시 적용하므로, 카탈로그에 허용목록 밖 명령·옵션이
+     * 하나라도 있으면 그 예약은 등록돼도 매번 「거부」로 실패한다(`--scheduled` 옵션 포함 — #720).
+     *
+     * @effects new_commands_are_in_schedule_security_allowlist
+     *
+     * @return void 반환값 없음
+     */
+    public function test_every_catalog_artisan_command_passes_runtime_allowlist(): void
+    {
+        $checked = 0;
+
+        foreach ((array) config('core.schedules') as $key => $entry) {
+            if (($entry['type'] ?? 'artisan') !== 'artisan') {
+                continue;
+            }
+
+            $verdict = ScheduleCommandValidator::inspectArtisanCommand((string) $entry['command']);
+            $this->assertTrue($verdict['allowed'], "카탈로그 {$key} 의 명령이 실행 시점에 거부됩니다: {$entry['command']} ({$verdict['reason']})");
+            $checked++;
+        }
+
+        $this->assertGreaterThan(20, $checked);
     }
 
     /**
      * B1-t: 예약 시각 기준은 사이트 설정 시간대(general.timezone)를 따른다.
      *
      * @effects schedule_timezone_follows_site_general_timezone, app_timezone_stays_utc
+     *
+     * @return void 반환값 없음
      */
     public function test_schedule_timezone_follows_site_general_timezone(): void
     {
@@ -111,6 +169,10 @@ class CoreScheduleRegistrationTest extends TestCase
 
     /**
      * B1-t: 사이트 설정에 시간대가 없으면 파생 키 자체를 만들지 않는다.
+     *
+     * @effects schedule_timezone_falls_back_to_app_timezone_when_unset
+     *
+     * @return void 반환값 없음
      */
     public function test_schedule_timezone_is_not_derived_when_setting_is_empty(): void
     {
@@ -131,6 +193,8 @@ class CoreScheduleRegistrationTest extends TestCase
      * 등록 시점의 거부로만 드러난다.
      *
      * @effects new_commands_are_in_schedule_security_allowlist
+     *
+     * @return void 반환값 없음
      */
     public function test_gc_commands_are_registerable_through_the_admin_allowlist(): void
     {
@@ -156,6 +220,8 @@ class CoreScheduleRegistrationTest extends TestCase
      * 소유 커맨드(`app/Console/Commands`)로 한정한다 — 노출 정합 검사와 같은 범위다.
      *
      * @effects new_commands_are_exposed_in_dev_dashboard
+     *
+     * @return void 반환값 없음
      */
     public function test_owned_gc_commands_are_exposed_in_the_dev_dashboard(): void
     {
@@ -202,60 +268,104 @@ class CoreScheduleRegistrationTest extends TestCase
     }
 
     /**
-     * 정리 예약 커맨드 이름을 예약 정의 소스에서 도출합니다.
+     * 정리 예약 커맨드 이름을 코어 스케줄 카탈로그에서 도출합니다.
      *
      * 손으로 적은 목록은 예약이 늘어도 그대로라 전수를 증명하지 못합니다 —
-     * 다중 서버 1대 실행(`onOneServer`)으로 선언된 artisan 예약을 그대로 읽습니다.
-     * 예약 문자열의 옵션은 런타임 validator(`parseArtisanCommand`)와 동일하게 명령명만 남깁니다.
+     * 카탈로그(`config/core.php` schedules)에서 `group` 이 gc 인 항목을 그대로 읽습니다.
+     * 명령 문자열의 옵션은 런타임 validator 와 동일하게 명령명만 남깁니다.
      *
      * @return array<int, string> 커맨드 이름 목록
      */
     private function gcCommandNames(): array
     {
-        $source = (string) file_get_contents(base_path('routes/console.php'));
+        $catalog = (array) config('core.schedules');
 
-        $begin = strpos($source, '// gc-schedules:begin');
-        $end = strpos($source, '// gc-schedules:end');
+        $this->assertNotEmpty($catalog, '코어 스케줄 카탈로그가 없습니다.');
 
-        $this->assertNotFalse($begin, '정리 예약 구간 시작 표식이 없습니다.');
-        $this->assertNotFalse($end, '정리 예약 구간 종료 표식이 없습니다.');
+        // gc 그룹 밖의 예약(geoip 갱신·sitemap 생성·통계 집계 등)은 정리 배치가 아니다.
+        $commands = [];
+        foreach ($catalog as $entry) {
+            if (($entry['group'] ?? null) === 'gc' && ($entry['type'] ?? 'artisan') === 'artisan') {
+                $commands[] = (string) strtok((string) $entry['command'], ' ');
+            }
+        }
 
-        // 표식 밖의 예약(geoip 갱신·sitemap 생성 등)은 정리 배치가 아니다 —
-        // `onOneServer()` 만으로 거르면 그런 예약까지 대상이 되어 오탐이 난다.
-        $region = substr($source, $begin, $end - $begin);
-
-        preg_match_all("/Schedule::command\(\s*'([^']+)'/", $region, $matches);
-
-        return array_values(array_unique(array_map(
-            static fn (string $command): string => (string) strtok($command, ' '),
-            $matches[1] ?? []
-        )));
+        return array_values(array_unique($commands));
     }
 
     /**
-     * B1-t: 등록된 예약 이벤트 전부가 같은 시각 기준을 공유한다.
+     * B1-t: 시간대를 따로 정하지 않은 예약 이벤트 전부가 같은 시각 기준을 공유한다.
+     *
+     * 행에 시간대를 지정한 예약(예: 환율 갱신 Asia/Seoul)만 자기 시간대를 쓴다.
+     *
+     * @effects schedule_timezone_follows_site_general_timezone
+     *
+     * @return void 반환값 없음
      */
     public function test_every_scheduled_event_shares_the_same_timezone(): void
     {
-        $events = app(Schedule::class)->events();
+        // 기대값을 특정 시간대로 박으면 사이트 설정이 다른 환경·CI 에서 실패한다.
+        // Schedule 인스턴스가 부팅 시점에 해석한 값과 대조한다.
+        $events = $this->registerSeededCoreSchedules(new Schedule($this->bootScheduleTimezone));
 
         $this->assertNotEmpty($events);
 
-        // 기대값을 특정 시간대로 박으면 사이트 설정이 다른 환경·CI 에서 실패한다.
-        // Schedule 인스턴스가 부팅 시점에 해석한 값과 대조한다.
-        foreach ($events as $event) {
+        $rowTimezones = ScheduleModel::query()->pluck('timezone', 'id');
+
+        foreach ($events as $name => $event) {
+            $id = (int) substr($name, strlen('schedule:'));
+            $expected = $rowTimezones[$id] ?? null ?: $this->bootScheduleTimezone;
+
             $this->assertSame(
-                $this->bootScheduleTimezone,
+                $expected,
                 (string) $event->timezone,
-                '예약 이벤트가 서로 다른 시각 기준을 씁니다: '.$event->command
+                '예약 이벤트가 서로 다른 시각 기준을 씁니다: '.$name
             );
         }
+    }
+
+    /**
+     * 코어 카탈로그를 시딩하고 새 스케줄러에 등록해 이벤트를 이름으로 모읍니다.
+     *
+     * @param  Schedule|null  $schedule  스케줄러 (null 이면 부팅 시각 기준으로 새로 만든다)
+     * @return array<string, Event> 이벤트 이름(`schedule:{id}`·`schedule:heartbeat`) → 이벤트
+     */
+    private function registerSeededCoreSchedules(?Schedule $schedule = null): array
+    {
+        (new CoreScheduleSeeder)->run();
+
+        $schedule ??= new Schedule($this->bootScheduleTimezone);
+        app(ScheduleRegistrar::class)->register($schedule);
+
+        $events = [];
+        foreach ($schedule->events() as $event) {
+            $events[(string) $event->description] = $event;
+        }
+
+        return $events;
+    }
+
+    /**
+     * 시딩된 코어 스케줄 행을 명령명으로 찾습니다.
+     *
+     * @param  string  $command  artisan 명령명 (옵션 제외)
+     * @return ScheduleModel|null 코어 소유 행
+     */
+    private function seededCoreRowByCommand(string $command): ?ScheduleModel
+    {
+        return ScheduleModel::query()
+            ->where('extension_type', 'core')
+            ->where(function ($query) use ($command) {
+                $query->where('command', $command)->orWhere('command', 'like', $command.' %');
+            })
+            ->first();
     }
 
     /**
      * 사이트 general 설정을 주고 Provider 의 파생 로직을 실행합니다.
      *
      * @param  array<string, mixed>  $general  general 카테고리 설정값
+     * @return void 반환값 없음
      */
     private function applyGeneralSettings(array $general): void
     {
@@ -272,7 +382,9 @@ class CoreScheduleRegistrationTest extends TestCase
     /**
      * B1-t: 사이트 설정 시간대가 비어 있으면 종전대로 app.timezone 으로 폴백한다.
      *
-     * @effects schedule_timezone_falls_back_to_app_timezone_when_unset
+     * @effects schedule_timezone_falls_back_to_app_timezone_when_unset, app_timezone_stays_utc
+     *
+     * @return void 반환값 없음
      */
     public function test_schedule_timezone_falls_back_to_app_timezone(): void
     {
@@ -293,6 +405,8 @@ class CoreScheduleRegistrationTest extends TestCase
      * B1-a: 관리자 등록 예약의 다음 실행 시각도 같은 기준으로 계산된다.
      *
      * @effects admin_registered_schedule_next_run_uses_same_basis
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_registered_schedule_next_run_uses_site_timezone(): void
     {
@@ -314,6 +428,8 @@ class CoreScheduleRegistrationTest extends TestCase
 
     /**
      * 테스트 시간대 고정 — 사이트 설정 시간대를 Asia/Seoul 로 두고 앱을 부팅한다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -327,24 +443,5 @@ class CoreScheduleRegistrationTest extends TestCase
 
         // 아래 계산 시점 해석(관리자 등록 예약)을 고정하기 위한 주입.
         Config::set('app.schedule_timezone', 'Asia/Seoul');
-    }
-
-    /**
-     * 부팅된 앱의 스케줄러에서 커맨드 이름으로 이벤트를 찾습니다.
-     *
-     * @param  string  $command  artisan 커맨드 이름
-     * @return Event|null 등록된 스케줄 이벤트
-     */
-    private function findScheduledEvent(string $command): ?Event
-    {
-        foreach (app(Schedule::class)->events() as $event) {
-            if (str_contains((string) $event->command, "'{$command}'")
-                || str_contains((string) $event->command, " {$command} ")
-                || str_ends_with((string) $event->command, " {$command}")) {
-                return $event;
-            }
-        }
-
-        return null;
     }
 }

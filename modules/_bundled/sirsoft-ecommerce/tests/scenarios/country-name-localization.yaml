@@ -1,0 +1,24 @@
+feature: 배송 국가 이름의 언어별 표기
+
+description: |
+  주문 목록·주문 상세·배송지 리소스(LocalizesCountryName)와 주문 알림 데이터는 국가 코드를 언어별 이름으로 바꾼다.
+  코어 국가 사전(config countries.localized_names)에 있는 언어는 사전 이름을, 없는 언어는 상점 배송국가 설정
+  (shipping.available_countries[].name)의 이름을 쓴다(Support\CountryNames).
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D17):
+    - 코어 사전에는 ko·en 만 있어 일본어 화면의 주문 목록 국가 칩이 「미국」「한국」 으로 보였다(실측: m1·m3 ja 화면).
+      헤더 배송국가 선택은 상점 설정의 일본어 이름(「アメリカ」)을 쓰고 있었다.
+
+axes:
+  case: [resources_ja, resources_ko_en, notification_ja, notification_missing_locale]
+
+effects:
+  - missing_locale_filled_from_shop_settings   # 사전에 없는 언어는 상점 설정 이름(배송 불가로 내린 국가 포함)
+  - dictionary_locales_unchanged               # ko·en 은 종전 사전 이름 그대로
+  - missing_locale_falls_back_to_app_fallback_locale  # 어느 사전에도 없는 언어는 app.fallback_locale 이름(영어 고정 아님)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/CountryNameLocalizationTest.php
+
+validation:
+  browser_check: 전용 Chrome 실측 — m3 ja 화면 주문 목록 국가 칩 「アメリカ」, 주문 상세 配送国 「アメリカ」

@@ -1,0 +1,31 @@
+feature: 게시글 작성 폼 — 공지 옵션 노출을 서버의 공지 지정 판정과 맞춘다
+
+description: |
+  게시판 모듈은 사용자 글 작성·수정에서 공지 지정을 게시판 관리 권한(manager / admin.manage)
+  또는 공지 등록 권한(posts.write-notice) 보유자에게만 허용한다(커뮤니티 제보 대응). 폼 메타는
+  두 권한을 user_abilities.can_manage / can_write_notice 로 내려 준다.
+
+  화면이 can_manage 만 보면 공지 등록 권한만 받은 역할(게시판 스텝 등)은 서버가 허용하는데도
+  옵션을 볼 수 없다. 옵션 노출 조건을 두 권한의 OR 로 맞추고, 답글에서는 종전대로 숨긴다.
+  권한 없는 회원에게 옵션이 보이지 않는 것은 UI 은닉일 뿐이며 차단은 서버가 한다.
+
+axes:
+  viewer: [board_manager, notice_holder, no_permission, reply_writer]
+
+effects:
+  - notice_option_visible_for_manage_or_notice_permission
+  - notice_option_hidden_without_permission
+  - notice_option_hidden_on_reply
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-notice-option-visibility.test.tsx
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Chrome MCP   # 게시판 글쓰기 화면 E2E 인프라 없음 — Chrome MCP 실측으로 브라우저 검증
+  note: |
+    2026-09-27 실측(#698): 권한 없는 회원 글쓰기 화면에 공지 체크박스 0개, 게시판 관리자 1개,
+    공지 등록 권한만 가진 스텝 1개. 관리자가 체크박스를 실제 클릭해 등록하면 요청 본문
+    is_notice:true → 201 이고 다른 회원의 새 목록 최상단에 공지로 보인다. 수정 폼은 기존 값
+    is_notice:true 를 그대로 되돌려 보내며 서버가 200 으로 통과시킨다(값이 바뀔 때만 판정).
+    판정표는 해당 작업 이력 문서의 Chrome MCP 정밀 점검 매트릭스.

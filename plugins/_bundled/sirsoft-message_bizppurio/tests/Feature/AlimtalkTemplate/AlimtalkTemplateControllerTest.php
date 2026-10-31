@@ -29,6 +29,8 @@ class AlimtalkTemplateControllerTest extends PluginTestCase
 
     /**
      * AlimtalkTemplateService mock 을 컨테이너에 바인딩하고 반환한다.
+     *
+     * @return MockInterface 컨테이너에 바인딩된 서비스 mock
      */
     private function mockService(): MockInterface
     {
@@ -41,7 +43,8 @@ class AlimtalkTemplateControllerTest extends PluginTestCase
     /**
      * 지정 권한을 가진 admin 사용자를 생성한다.
      *
-     * @param  array<int, string>  $permissionIdentifiers
+     * @param  array<int, string>  $permissionIdentifiers  부여할 권한 식별자
+     * @return User 권한이 부여된 관리자
      */
     private function adminWith(array $permissionIdentifiers): User
     {
@@ -74,8 +77,10 @@ class AlimtalkTemplateControllerTest extends PluginTestCase
     }
 
     /**
-     * @param  array<int, string>  $permissions
-     * @return array<string, string>
+     * 지정 권한을 가진 관리자의 토큰 헤더를 만든다.
+     *
+     * @param  array<int, string>  $permissions  부여할 권한 식별자
+     * @return array<string, string> 인증 헤더
      */
     private function authHeaders(array $permissions): array
     {
@@ -90,6 +95,12 @@ class AlimtalkTemplateControllerTest extends PluginTestCase
 
     /**
      * view 권한으로 카테고리 전체를 조회한다 (data.categories 봉투).
+     *
+     * @scenario endpoint=categories, outcome=success
+     *
+     * @effects reference_lookup_returns_envelope_for_view_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_view권한으로_카테고리를_조회한다(): void
     {
@@ -107,6 +118,12 @@ class AlimtalkTemplateControllerTest extends PluginTestCase
 
     /**
      * view 권한으로 발신프로필 목록을 조회한다 (data.profiles 봉투).
+     *
+     * @scenario endpoint=profiles, outcome=success
+     *
+     * @effects reference_lookup_returns_envelope_for_view_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_view권한으로_발신프로필을_조회한다(): void
     {
@@ -124,6 +141,12 @@ class AlimtalkTemplateControllerTest extends PluginTestCase
 
     /**
      * 비인증 요청은 401 이다.
+     *
+     * @scenario endpoint=categories, outcome=unauthenticated
+     *
+     * @effects reference_lookup_requires_authentication
+     *
+     * @return void 반환값 없음
      */
     public function test_비인증은_401(): void
     {
@@ -133,6 +156,12 @@ class AlimtalkTemplateControllerTest extends PluginTestCase
 
     /**
      * view 권한이 없으면 두 라우트 모두 403 이다.
+     *
+     * @scenario endpoint=categories, outcome=forbidden
+     *
+     * @effects reference_lookup_requires_view_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_view권한_없으면_403(): void
     {
@@ -144,6 +173,12 @@ class AlimtalkTemplateControllerTest extends PluginTestCase
 
     /**
      * kapi 실패는 카카오 사유(message)·결과코드가 담긴 422 로 전파된다 (GuardsKakaoRequests 규약).
+     *
+     * @scenario endpoint=categories, outcome=kapi_failure
+     *
+     * @effects kapi_failure_reason_surfaced_as_422
+     *
+     * @return void 반환값 없음
      */
     public function test_kapi_실패는_422로_전파된다(): void
     {
@@ -160,6 +195,12 @@ class AlimtalkTemplateControllerTest extends PluginTestCase
 
     /**
      * 발신프로필 조회의 kapi 실패도 동일한 422 규약으로 전파된다.
+     *
+     * @scenario endpoint=profiles, outcome=kapi_failure
+     *
+     * @effects kapi_failure_reason_surfaced_as_422
+     *
+     * @return void 반환값 없음
      */
     public function test_발신프로필_kapi_실패도_422로_전파된다(): void
     {
@@ -174,6 +215,11 @@ class AlimtalkTemplateControllerTest extends PluginTestCase
         $response->assertJsonPath('errors.result_code', '7204');
     }
 
+    /**
+     * Mockery 기대값을 닫는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();

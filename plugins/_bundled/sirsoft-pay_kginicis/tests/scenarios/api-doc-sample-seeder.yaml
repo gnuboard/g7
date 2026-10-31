@@ -1,0 +1,20 @@
+feature: KG이니시스 API 문서 실측용 완전 샘플 시더
+
+description: |
+  api:docgen 실측을 위해 KG이니시스 결제 도메인 대표 샘플(에스크로 + CBT 편의점 메타 결제 주문 + 배송지)을 만들고,
+  orders/{orderNumber} 계열 GET 실측용 path_params 맵을 도메인별로 돌려준다. 배송지는 이커머스 모델·팩토리 계약으로
+  만들고(표에 직접 insert 하지 않는다 — D2-4), 팩토리가 무작위로 채우는 칸은 비워 문서 샘플이 실행마다 같게 한다.
+
+axes:
+  case: [contract, seed, rerun, no_user]
+
+effects:
+  - sample_seeder_implements_contract          # 코어 샘플 시더 계약 구현
+  - sample_order_payment_and_address_created   # 주문·kginicis 결제·배송지 생성
+  - sample_address_is_deterministic            # 배송지의 무작위 칸(언어·배송 메모·국가)이 비어 있음
+  - path_params_map_returned_per_domain        # 도메인별 path_params 맵
+  - sample_seed_is_idempotent                  # 재실행 시 중복 없음
+  - empty_map_without_user                     # 사용자 없으면 빈 맵
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Support/ApiDocSampleServiceTest.php

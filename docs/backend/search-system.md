@@ -490,6 +490,9 @@ HookManager::addFilter(SearchIndexMaintenanceManager::MAINTAINERS_FILTER, functi
 대상은 하드코딩하지 않고 `INFORMATION_SCHEMA` 에서 전수 수집하므로, 확장이 나중에 추가하는
 FULLTEXT 인덱스도 커맨드 수정 없이 포함됩니다.
 
+점검 결과의 측정값은 「찾은 행/점검한 행」 이며, 영어 문구는 점검한 행 수로 단·복수를 고릅니다
+(`1/1 row found itself` · `3/5 rows found themselves`).
+
 ```bash
 php artisan search:index                        # 활성 엔진의 인덱스 점검 (읽기 전용)
 php artisan search:index --repair               # 색인 누락 인덱스 재생성

@@ -1,0 +1,36 @@
+feature: 확장 문서 생성기의 재등록 진입점 판정 (#639 ④)
+
+description: |
+  로케일을 바꾸면 코어가 ActionDispatcher 를 새로 만들고 `window.__{확장}.initPlugin()` 으로 핸들러를
+  다시 꽂는다. 핸들러를 등록하면서 그 전역을 두지 않은 확장은 언어 전환 뒤 액션이 조용히 사라진다.
+
+  배경(실측 2026-10-05): TOTP `copyToClipboard` 가 ko→en 전환 뒤 디스패처에서 빠졌는데, 생성기는 그
+  확장을 「엔트리 없음」으로 적었다. TOTP 는 `registerHandler` 를 변수로 떼어 별칭으로 부른다.
+
+axes:
+  entry: [plugin, template]
+  register: [alias, direct, handler_map, none]
+  global: [absent, present, template_handlers]
+
+exclusions:
+  - { entry: template, register: alias, reason: "템플릿은 G7TemplateHandlers 맵으로만 핸들러를 낸다" }
+  - { entry: template, register: direct, reason: "템플릿은 G7TemplateHandlers 맵으로만 핸들러를 낸다" }
+  - { entry: template, register: none, reason: "템플릿 진입 파일은 핸들러 맵을 항상 노출한다" }
+  - { entry: plugin, register: handler_map, reason: "확장은 디스패처에 직접 등록한다" }
+  - { entry: plugin, global: template_handlers, reason: "G7TemplateHandlers 는 템플릿 전용 전역" }
+  - { entry: template, global: absent, reason: "템플릿 진입 파일은 핸들러 맵을 항상 노출한다" }
+  - { entry: template, global: present, reason: "템플릿은 __ 접두 전역을 두지 않는다" }
+  - { register: none, global: present, reason: "핸들러가 없으면 재등록 전역을 둘 이유가 없다" }
+  - { register: alias, global: present, reason: "별칭 등록 + 전역 보유는 direct 와 판정이 같다 — direct 행이 덮는다" }
+  - { register: direct, global: absent, reason: "등록 방식만 다른 누락 — alias 행이 같은 판정을 덮는다" }
+
+effects:
+  - reinit_global_missing_is_reported
+  - arrow_init_function_is_recognized
+  - template_handler_global_is_recognized
+  - non_registering_entry_is_not_flagged
+
+test_files:
+  - tests/Unit/Support/ExtensionDoc/FrontendInventoryTest.php
+
+# E2E axis 없음: 생성기 판정(정적 분석). 언어 전환 뒤 핸들러 유지는 Chrome MCP T7 이 덮는다.

@@ -6,7 +6,9 @@ use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Support\AssetUrl;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -23,14 +25,44 @@ use Tests\TestCase;
  * 이 분기가 산다). 그래서 모델 속성으로 직접 세우고 관계는 비운다 — 저장하지 않은 모델의
  * `avatarAttachment` 는 부모 키가 없어 조회 없이 null 이다.
  *
+ * 레거시 아바타 주소는 요청 Host 를 따르지 않는다 — 위조 Host 변종에서도 사이트 주소를 쓴다.
+ * 첨부 관계는 미리 비워 두어(setRelation) DB 를 읽지 않는다.
+ *
  * @scenario storage_link=usable, disk_url=default, hook=unregistered
  */
 class UserAvatarUrlTest extends TestCase
 {
+    /** 테스트 사이트 주소 */
+    private const SITE = 'https://shop.example.test';
+
+    /**
+     * 사이트 주소와 public 디스크 주소를 고정합니다.
+     *
+     * public 디스크의 기본 주소는 부팅 시 `APP_URL` 에서 파생된다(`{APP_URL}/storage`). 실행 중에
+     * `app.url` 만 바꾸면 두 값이 갈리므로 같은 사이트 주소로 함께 고정한다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config([
+            'app.url' => self::SITE,
+            'filesystems.disks.public.url' => self::SITE.'/storage',
+        ]);
+    }
+
+    /**
+     * 훅·자산 URL 모드·신뢰 프록시 상태를 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::resetAll();
         AssetUrl::forceMode(null);
+        Request::setTrustedProxies([], Request::HEADER_X_FORWARDED_FOR);
 
         parent::tearDown();
     }
@@ -128,5 +160,55 @@ class UserAvatarUrlTest extends TestCase
     public function it_returns_null_without_an_attachment_or_legacy_value(): void
     {
         $this->assertNull((new User)->getAvatarUrl());
+    }
+
+    /**
+     * 위조 Host 변종.
+     *
+     * 사이트 주소 Host(canonical) 행이 함께 들어 있다 — 정상 Host 에서도 같은 값을 내는지 본다.
+     *
+     * @scenario host_header=canonical, sink=avatar_url
+     *
+     * @effects legacy_avatar_url_uses_site_origin
+     *
+     * @return array<string, array{0: string, 1: array<string, string>}> 요청 주소와 추가 서버 변수
+     */
+    public static function forgedHosts(): array
+    {
+        return [
+            'canonical' => ['https://shop.example.test/', []],
+            'external' => ['https://attacker.example/', []],
+            'subdomain' => ['https://attacker.shop.example.test/', []],
+            'port' => ['https://shop.example.test:6666/', []],
+            'forwarded' => ['http://10.0.0.5/', ['REMOTE_ADDR' => '10.0.0.5', 'HTTP_X_FORWARDED_HOST' => 'attacker.example', 'HTTP_X_FORWARDED_PROTO' => 'https']],
+        ];
+    }
+
+    /**
+     * 레거시 avatar 필드 주소는 사이트 주소를 쓴다.
+     *
+     * @scenario host_header=forged, sink=avatar_url
+     *
+     * @effects legacy_avatar_url_uses_site_origin
+     *
+     * @param  string  $url  요청 주소
+     * @param  array<string, string>  $server  추가 서버 변수
+     * @return void 반환값 없음
+     */
+    #[DataProvider('forgedHosts')]
+    public function test_legacy_avatar_url_ignores_forged_host(string $url, array $server): void
+    {
+        if ($server !== []) {
+            Request::setTrustedProxies(['10.0.0.5'], Request::HEADER_X_FORWARDED_HOST | Request::HEADER_X_FORWARDED_PROTO);
+        }
+        $request = Request::create($url, 'GET', [], [], [], $server);
+        app()->instance('request', $request);
+        app('url')->setRequest($request);
+
+        $user = new User;
+        $user->avatar = 'a1.png';
+        $user->setRelation('avatarAttachment', null);
+
+        $this->assertSame(self::SITE.'/storage/attachments/avatars/a1.png', $user->getAvatarUrl());
     }
 }

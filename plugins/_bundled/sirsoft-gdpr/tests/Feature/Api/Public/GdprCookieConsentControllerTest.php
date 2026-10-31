@@ -4,6 +4,9 @@ namespace Plugins\Sirsoft\Gdpr\Tests\Feature\Api\Public;
 
 use App\Models\User;
 use App\Services\PluginSettingsService;
+use Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType;
+use Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion;
+use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 
 /**
@@ -15,7 +18,7 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
 class GdprCookieConsentControllerTest extends PluginTestCase
 {
     /**
-     * @param array<string, mixed> $values
+     * @param  array<string, mixed>  $values
      * @return void
      */
     private function mockSettings(array $values): void
@@ -126,7 +129,7 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         // 회귀 가드: 회원 (sanctum 토큰) 호출 시 is_member=true. 본 필드가 없어 layout 의 옛
         // auth?.user?.id 패턴이 영구 undefined 로 평가되던 회귀 회피.
         $this->mockSettings(['cookie_policy_version' => '1.0']);
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
 
         $this->actingAs($user)->getJson('/api/plugins/sirsoft-gdpr/consent/cookie/status')
             ->assertOk()
@@ -201,7 +204,7 @@ class GdprCookieConsentControllerTest extends PluginTestCase
             'consent_key' => 'cookie_analytics',
         ]);
 
-        $service = $this->app->make(\Plugins\Sirsoft\Gdpr\Services\GdprConsentService::class);
+        $service = $this->app->make(GdprConsentService::class);
         $this->assertTrue(
             $service->hasCurrentCookieConsent(null, $sessionId),
             'Service.hasCurrentCookieConsent 가 게스트 sessionId 로 조회 시 true 여야 함'
@@ -237,9 +240,9 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         ])->assertOk();
 
         // 정책 버전이 v2 로 bump 되면 has_consented:false (재동의 필요)
-        \Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion::create([
+        GdprPolicyVersion::create([
             'version' => 2,
-            'change_type' => \Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType::Material->value,
+            'change_type' => GdprPolicyChangeType::Material->value,
             'snapshot' => [],
         ]);
 
@@ -387,9 +390,9 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         ])->assertOk();
 
         // 2) 정책 v2 발행 → 회원의 v1 동의가 옛 버전이 됨
-        \Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion::create([
+        GdprPolicyVersion::create([
             'version' => 2,
-            'change_type' => \Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType::Material->value,
+            'change_type' => GdprPolicyChangeType::Material->value,
             'snapshot' => [],
         ]);
 
@@ -420,9 +423,9 @@ class GdprCookieConsentControllerTest extends PluginTestCase
         ])->assertOk();
 
         // 2) 정책 v2 발행
-        \Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion::create([
+        GdprPolicyVersion::create([
             'version' => 2,
-            'change_type' => \Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType::Material->value,
+            'change_type' => GdprPolicyChangeType::Material->value,
             'snapshot' => [],
         ]);
 
@@ -482,6 +485,7 @@ class GdprCookieConsentControllerTest extends PluginTestCase
 
     /**
      * @scenario entry=reject, subject=member, category=optional
+     *
      * @effects member_rejection_intent_marks_optional_as_rejected, required_category_excluded_from_status, reject_controller_response_uses_rejected_saved_message
      */
     public function test_member_rejection_intent_marks_optional_as_rejected(): void
@@ -525,6 +529,7 @@ class GdprCookieConsentControllerTest extends PluginTestCase
 
     /**
      * @scenario entry=reject, subject=guest, category=optional
+     *
      * @effects guest_rejection_intent_records_history_as_rejected
      */
     public function test_guest_rejection_intent_records_history_as_rejected(): void
@@ -549,6 +554,7 @@ class GdprCookieConsentControllerTest extends PluginTestCase
 
     /**
      * @scenario entry=reject, subject=guest, category=required
+     *
      * @effects rejection_intent_invalid_value_is_rejected_by_validation
      */
     public function test_rejection_intent_invalid_value_is_rejected_by_validation(): void
@@ -565,6 +571,7 @@ class GdprCookieConsentControllerTest extends PluginTestCase
 
     /**
      * @scenario entry=save_selection, subject=member, category=optional
+     *
      * @effects without_intent_regression_stores_revoked_not_rejected
      */
     public function test_without_intent_regression_stores_revoked_not_rejected(): void
@@ -599,6 +606,7 @@ class GdprCookieConsentControllerTest extends PluginTestCase
      * has_consented=true 가 되어 배너가 다시 뜨지 않는다 (이슈 요구: 쿠키 배너 띄우지 않음).
      *
      * @scenario entry=reject, subject=member, category=required
+     *
      * @effects rejection_makes_banner_not_reappear_for_member
      */
     public function test_rejection_makes_banner_not_reappear_for_member(): void

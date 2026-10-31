@@ -5,7 +5,7 @@ description: |
   (?permission=)으로 인가 판정 대상 권한명을 받던 죽은 분기를 제거. 인가는 서버 라우트
   게이트(auth:sanctum + admin, AdminBaseController)가 전담하고, 클라이언트가 보내는
   권한 파라미터는 어떤 값이든 판정에 영향을 주지 않는다. 프론트(initEditor.ts /
-  html-editor.json)의 uploadPermission 전달·조립 코드도 제거(dist 재빌드 동반).
+  html-editor.g7.html)의 uploadPermission 전달·조립 코드도 제거(dist 재빌드 동반).
 
 axes:
   case: [guest_upload, non_admin_upload, admin_upload, permission_param_ignored]

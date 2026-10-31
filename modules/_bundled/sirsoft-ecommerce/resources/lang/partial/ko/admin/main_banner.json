@@ -41,6 +41,8 @@
       "hide": "숨김",
       "color": "색상",
       "position": "위치",
+      "title_position": "제목 위치",
+      "content_position": "내용 위치",
       "position_left": "왼쪽",
       "position_center": "중앙",
       "position_right": "오른쪽",

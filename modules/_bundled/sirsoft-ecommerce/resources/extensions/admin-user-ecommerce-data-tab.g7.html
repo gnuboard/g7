@@ -1,0 +1,136 @@
+<!-- e2e:allow 2026-09-30 develop-7.1.0 리베이스 후속 — 마크업 146곳에 data-type 표기만 보충했다(굽기 산출 JSON 은 표기 전과 동일, layout:decompile --all --check 짝 792 전건 최신). 동작 변화는 회원 배송지 필터의 빈 검색어 가드 1곳과 추이 창 편집기 라벨 1곳이다.
+  회원 상세 화면에 「쇼핑 데이터」 탭을 하나 더 얹는 조각. 마일리지 탭과 같은 짜임으로 주입이
+  **두 군데**로 갈린다 — 탭 버튼은 `inject_props` 로 기존 탭 목록 배열에 항목을 덧붙이고(`append`),
+  그 탭이 펼칠 본문은 별도 앵커(`extension_tab_content`)에 자식으로 붙인다. 둘을 잇는 것은
+  `id`(`ext_ecommerce_data`) 하나뿐이라 한쪽만 고치면 탭은 있고 내용은 빈 화면이 된다.
+
+  이 탭은 **건수 요약과 목록 링크만** 낸다 — 찜·장바구니·배송지·문의는 각자 관리 화면이
+  검색·필터·일괄 삭제까지 갖추고 있으므로, 같은 표를 회원 상세 안에 네 벌 더 두지 않고
+  그 화면들로 회원 uuid 를 실어 보낸다.
+  배송지만 예외로 앞 몇 건의 «주소 자체» 를 편다(2026-09-21 검수 지적) — 상담 중에 「어디로
+  보내는 회원인가」 를 확인하려고 배송지 관리로 나갔다 돌아오면 그 화면의 조회 조건을 잃는다.
+  줄은 서버가 접어 보낸 `ecommerce_data.addresses` 를 그대로 읽는다(국내/해외 주소 합치는
+  규칙을 화면이 다시 쓰면 한쪽만 고쳐져 어긋난다). 전부 보는 것은 여전히 그 화면의 몫이다.
+
+  `ecommerce_data` 는 UserEcommerceDataInfoListener 가 **관리자 응답에만** 넣으므로,
+  프로필(/api/me)에서는 이 조각 전체가 조건에서 걸러진다. -->
+<extension target-layout="admin_user_detail" priority="330">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_ecommerce_data" label="$t:sirsoft-ecommerce.admin.user_ecommerce_data.tab_label" iconName="bag-shopping" if="{{!!user?.data?.ecommerce_data}}"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_ecommerce_data_content" data-if="{{!!user?.data?.ecommerce_data}}" id="ext_ecommerce_data" class="ecommerce:scroll-mt-32">
+      <div data-ref="section_ecommerce_data" class="ecommerce-admin-card">
+        <div class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-4">
+          <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2">
+            <icon name="bag-shopping" class="ecommerce:text-xl ecommerce:text-gray-600 ecommerce:dark:text-gray-400"/>
+            <h3 class="ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.title</h3>
+          </div>
+          <extension-badge data-type="composite" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
+        </div>
+        <div class="ecommerce:grid ecommerce:grid-cols-4 ecommerce:gap-4 ecommerce:mb-4">
+          <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4 ecommerce:mb-4"/>
+          <div data-ref="field_wishlist_count" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
+            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.wishlist</span>
+            <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.wishlist_count ?? 0}}</span>
+          </div>
+          <div data-ref="field_cart_count" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
+            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.cart</span>
+            <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.cart_count ?? 0}}</span>
+          </div>
+          <div data-ref="field_address_count" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
+            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address</span>
+            <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.address_count ?? 0}}</span>
+          </div>
+          <div data-ref="field_inquiry_count" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
+            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.inquiry</span>
+            <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.inquiry_count ?? 0}}</span>
+            <!-- 미답변만 따로 — 전체 건수는 «지금 답해야 할 것이 있는가» 를 말해 주지 않는다 -->
+            <span data-ref="field_inquiry_pending_count" data-if="{{(user?.data?.ecommerce_data?.inquiry_pending_count ?? 0) > 0}}" class="ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:mt-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.inquiry_pending|count={{user?.data?.ecommerce_data?.inquiry_pending_count ?? 0}}</span>
+          </div>
+        </div>
+        <div data-ref="ecommerce_saved_addresses" class="ecommerce:mb-4">
+          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-2">$t:sirsoft-ecommerce.admin.user_ecommerce_data.saved_addresses</span>
+          <!-- 0건이어도 자리를 비우지 않는다 — 통째로 감추면 「이 회원은 배송지가 없다」 와 「이 기능이 없다」 가
+               화면에서 같아 보인다(2026-09-21 검수 지적: 배송지 0건 회원을 열었더니 버튼만 남아 미구현으로 읽혔다). -->
+          <span data-ref="ecommerce_saved_addresses_empty" data-if="{{(user?.data?.ecommerce_data?.addresses ?? []).length === 0}}" class="ecommerce:block ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_empty</span>
+          <div data-if="{{(user?.data?.ecommerce_data?.addresses ?? []).length > 0}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+            <div data-each="address, addressIndex in {{user?.data?.ecommerce_data?.addresses ?? []}}" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
+              <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap">
+                <span class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">{{address.recipient_name}}</span>
+                <badge data-type="composite" data-if="{{address.is_default}}" color="blue" size="sm">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_default</badge>
+                <span data-if="{{address.label}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{address.label}}</span>
+              </div>
+              <span class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mt-1">{{address.address_summary}}</span>
+              <span data-if="{{address.recipient_phone}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">{{address.recipient_phone}}</span>
+            </div>
+          </div>
+          <span data-if="{{(user?.data?.ecommerce_data?.address_count ?? 0) > (user?.data?.ecommerce_data?.addresses ?? []).length}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-2">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_more|count={{(user?.data?.ecommerce_data?.address_count ?? 0) - (user?.data?.ecommerce_data?.addresses ?? []).length}}</span>
+        </div>
+        <!-- 결제 통화 · 배송 국가 — 종전에는 회원 **수정** 화면에만 있었다. 그래서 「이 회원이
+             어느 통화로 결제하나」 를 보려면 고치는 화면을 열어야 했고, 볼 생각만 있던 운영자가
+             저장 버튼 앞까지 갔다(요구사항 2026-09-21 — 상세와 수정은 같은 항목을 같은 자리·같은
+             양식으로 갖는다). **읽기만 한다** — 고치는 자리는 수정 화면 하나로 남긴다. 이 둘은
+             회원정보 본문과 달리 각자의 PATCH 로 나가므로(수정 화면 저장 onSuccess 체인),
+             상세에 저장을 얹으면 그 체인을 상세가 한 벌 더 들고 있어야 한다.
+             별도 확장 파일이 아니라 이 조각 안에 두는 이유는, 바깥에서 주입하려면 이 카드
+             (`section_ecommerce_data`)를 앵커로 잡아야 하는데 그 앵커 자체가 확장이 만든
+             노드라 주입 시점에 아직 없기 때문이다(실측에서 통째로 서지 않았다). -->
+  <div data-ref="ext_user_preferences_detail" data-if="{{user?.data?.ecommerce_preferred_currency !== undefined || user?.data?.ecommerce_preferred_shipping_country !== undefined}}" class="ecommerce:mt-4 ecommerce:pt-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+    <div class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4">
+      <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"/>
+      <div data-ref="ext_user_preferences_currency" data-if="{{user?.data?.ecommerce_preferred_currency !== undefined}}">
+        <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_currency.title</span>
+        <span class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{user?.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? '-'}}</span>
+      </div>
+      <div data-ref="ext_user_preferences_shipping_country" data-if="{{user?.data?.ecommerce_preferred_shipping_country !== undefined}}">
+        <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_shipping_country.title</span>
+        <span class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.code === (user?.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR')).map(c => ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code))[0] ?? (user?.data?.ecommerce_preferred_shipping_country ?? '-')}}</span>
+      </div>
+    </div>
+  </div>
+        <div data-ref="ecommerce_data_links" class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2">
+          <a href="/admin/ecommerce/wishlists?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_wishlists" data-testid="user-wishlists-link" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer">
+            <on type="click">
+              <!-- 이 회원으로 한정한 찜 목록으로 — user_uuid 를 실어 보내면 목록 화면이 회원 배너를 띄운다 -->
+              <navigate/>
+            </on>
+            <icon name="heart" class="ecommerce:text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_wishlists</span>
+          </a>
+          <a href="/admin/ecommerce/carts?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_carts" data-testid="user-carts-link" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer">
+            <on type="click">
+              <!-- 이 회원으로 한정한 장바구니 목록으로 — user_uuid 를 실어 보낸다 -->
+              <navigate/>
+            </on>
+            <icon name="cart-shopping" class="ecommerce:text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_carts</span>
+          </a>
+          <a href="/admin/ecommerce/user-addresses?user_uuids[]={{user?.data?.uuid ?? ''}}" data-ref="view_member_addresses" data-testid="user-addresses-link" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer">
+            <on type="click">
+              <!-- 이 회원으로 한정한 배송지 목록으로 — 그 화면의 전용 회원 필터가 읽는 키로 보낸다.
+                   레거시 단건 키(user_uuid)도 흡수되지만, 링크가 화면의 현재 계약을 가리키는 편이 낫다 -->
+              <navigate/>
+            </on>
+            <icon name="map-pin" class="ecommerce:text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_addresses</span>
+          </a>
+          <a href="/admin/ecommerce/inquiries?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_inquiries" data-testid="user-inquiries-link" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer">
+            <on type="click">
+              <!-- 이 회원으로 한정한 상품문의 목록으로 — user_uuid 를 실어 보낸다 -->
+              <navigate/>
+            </on>
+            <icon name="comments" class="ecommerce:text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_inquiries</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

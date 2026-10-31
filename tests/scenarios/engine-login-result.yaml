@@ -1,0 +1,43 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   엔진 단위 테스트는 응답 형태(form)마다 AuthManager·ActionDispatcher 두 계층을 따로 단언한다. 축의 곱(핸들러 × 형태 × 경로)은
+#   핸들러별로 의미 있는 형태가 다르다(연기 핸들러는 변경 단계 응답을 받지 않는다)라 개별 케이스에 매핑할 실체가 없고,
+#   회귀 가드는 effects 이며 전부 test_files 의 테스트에 @effects 로 귀속되어 있다. 화면 단위 조합은 템플릿 매니페스트
+#   (admin-login-password-change-step·login-password-change-step)와 Playwright spec 이 덮는다.
+
+feature: 엔진 로그인 결과 — 2단계 인증·비밀번호 변경 단계·휴면 해제 안내 (engine-v1.77.0, #736)
+
+description: |
+  서버는 로그인·2단계 인증 확인에 세 가지 형태의 200 을 돌려준다 — 토큰 발급, 2단계 인증 challenge,
+  비밀번호 변경 단계 challenge. AuthManager 는 이를 판별 유니온(LoginResult)으로 해석하고 토큰과 사용자가 모두 있을
+  때만 세션을 연다. ActionDispatcher 의 로그인 핸들러 네 종(login·loginTwoFactor·loginPasswordChange·
+  loginPasswordChangePostpone)은 같은 변환을 거쳐 레이아웃 response 를 만든다 — 변환이 갈라지면 한 경로에서만
+  dormancy_restored(휴면 해제 안내)나 변경 단계 필드가 빠진다(D20 결함).
+  편집기 핵심 카탈로그와 매니페스트(ActionHandlerManifest)는 새 핸들러를 같은 이름으로 등록한다.
+
+axes:
+  handler: [login, loginTwoFactor, loginPasswordChange, loginPasswordChangePostpone]
+  form: [authenticated, two_factor_required, password_change_required, error_422]
+  guard: [admin, user]
+  dormancy: [restored, not_restored]
+
+effects:
+  - auth_manager_session_lifecycle
+  - auth_manager_token_refresh
+  - auth_manager_redirect_urls
+  - auth_manager_redirect_skips_guest_only_pages   # 로그인·가입·비밀번호 찾기·재설정 화면은 복귀 경로로 싣지 않는다(engine-v1.78.1, 실측 O-1)
+  - login_result_discriminates_response_forms
+  - two_factor_completion_returns_login_result
+  - two_factor_resend_replaces_challenge
+  - password_change_step_returned_without_token
+  - login_handlers_expose_password_change_step
+  - password_change_handler_completes_login
+  - password_change_postpone_handler_completes_login
+  - dormancy_restored_reaches_layout_response
+  - editor_core_catalog_lists_every_core_handler
+  - editor_core_recipe_seed_builds
+
+test_files:
+  - resources/js/core/auth/__tests__/AuthManager.test.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.loginTwoFactor.test.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.loginPasswordChange.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/coreActionRecipes.test.ts

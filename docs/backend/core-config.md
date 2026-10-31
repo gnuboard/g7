@@ -22,6 +22,7 @@
 - [permissions — 권한 정의](#permissions--권한-정의)
 - [roles — 역할 정의](#roles--역할-정의)
 - [menus — 메뉴 정의](#menus--메뉴-정의)
+- [schedules — 코어 스케줄 카탈로그 (7.2.0)](#schedules--코어-스케줄-카탈로그-720)
 - [사용처](#사용처)
 - [관련 문서](#관련-문서)
 
@@ -43,9 +44,9 @@ return [
     'settings_limits' => [...],        // 관리자 환경설정 입력 한계값
     'pagination' => [...],             // 목록 한계값 기본값 → pagination.md
     'search' => [...],                 // DBMS 별 부분일치 연산자 → search-system.md
-    'notification_definitions' => [...], // 알림 정의 → notification-system.md
+    'schedules' => [...],              // 코어 스케줄 카탈로그 (7.2.0) → 아래 「schedules」 절, scheduling.md
+    'notification_definitions' => [...], // 알림 정의 (본인인증 알림 identity.* 포함) → notification-system.md, identity-messages.md
     'identity_policies' => [...],      // 본인인증 정책 → identity-policies.md
-    'identity_messages' => [...],      // 본인인증 메시지 → identity-messages.md
     'identity_purposes' => [...],      // 본인인증 목적 → identity-policies.md
 ];
 ```
@@ -53,7 +54,9 @@ return [
 키를 새로 추가할 때는 그 키를 설명하는 규정 문서를 함께 지정하고 이 목록에 한 줄을 더합니다.
 목록이 실제 구조와 어긋나면 "여기 없으니 없는 값" 으로 읽혀 중복 키가 생깁니다.
 
-> **변경 이력 (7.0.0-beta.2)**: `mail_templates` 키는 알림 시스템 통합(#146)으로 제거되었습니다. 코어 메일 템플릿은 `notification_definitions` + `notification_templates` 로 이전되었으며, `database/seeders/NotificationDefinitionSeeder` 가 시드 데이터를 직접 보유합니다.
+> **변경 이력 (7.0.0-beta.2)**: `mail_templates` 키는 알림 시스템 통합(#146)으로 제거되었습니다. 코어 메일 템플릿은 `notification_definitions` + `notification_templates` 로 이전되었으며, `database/seeders/NotificationDefinitionSeeder` 가 `notification_definitions` 키를 읽어 시드합니다.
+>
+> **변경 이력 (7.1.0)**: `identity_messages` 키는 본인인증 메시지의 알림 시스템 통합(#699)으로 제거되었습니다. 본인인증 메일 문구는 `notification_definitions` 의 `identity.default` / `identity.purpose.{purpose}` 항목(`category => 'identity'`)으로 선언합니다.
 
 ---
 
@@ -89,7 +92,7 @@ permissions
         'name' => ['ko' => '사용자 관리', 'en' => 'User Management'],
         'description' => [...],
         'category' => 'users',     // 카테고리 슬러그
-        'order' => 1,
+        'order' => 100,            // 정수(소수는 반올림돼 동순위). 코어 카테고리는 100 단위로 두어 사이에 끼울 자리를 남김
         'type' => 'admin',         // 카테고리 타입 (선택, 미지정 시 하위 권한에서 추론)
         'permissions' => [
             [
@@ -219,6 +222,83 @@ permissions
 
 ---
 
+## schedules — 코어 스케줄 카탈로그 (7.2.0)
+
+코어의 모든 예약 작업 목록입니다. `CoreScheduleSeeder` 가 `schedules` 표(`extension_type=core`, `extension_identifier=core`)로 동기화하고, 스케줄러는 그 행을 읽어 실행합니다. `routes/console.php` 에는 개별 예약이 없으므로 **코어 예약을 더하거나 바꾸는 곳은 여기뿐**입니다. 실행 구조는 [scheduling.md](scheduling.md) 를 봅니다.
+
+```php
+'schedules' => [
+    // 키 = 행의 name (기계 식별자)
+    'geoip-update' => [
+        'group' => 'system',
+        'label' => ['ko' => 'GeoIP 데이터베이스 갱신', 'en' => 'Update GeoIP database'],
+        'description' => ['ko' => '…', 'en' => '…'],
+        'command' => 'geoip:update',
+        'expression' => '0 3 * * 3',
+        'without_overlapping' => 60,
+        'enabled_condition' => [
+            ['source' => 'core_setting', 'key' => 'geoip.feature_enabled', 'operator' => 'truthy', 'default' => false],
+            ['source' => 'core_setting', 'key' => 'geoip.auto_update_enabled', 'operator' => 'truthy', 'default' => true],
+            ['source' => 'core_setting', 'key' => 'geoip.license_key', 'operator' => 'not_empty', 'default' => ''],
+        ],
+    ],
+    'sitemap-generate' => [
+        'group' => 'seo',
+        'label' => ['ko' => '사이트맵 생성', 'en' => 'Generate sitemap'],
+        'type' => 'job',
+        'command' => \App\Jobs\GenerateSitemapJob::class,
+        'expression' => '0 2 * * *',
+        'without_overlapping' => 30,
+        'dispatch_mode' => 'queue',
+        'enabled_condition' => [
+            ['source' => 'core_setting', 'key' => 'seo.sitemap_enabled', 'operator' => 'truthy', 'default' => true],
+        ],
+    ],
+],
+```
+
+### 항목 필드
+
+| 필드 | 기본값 | 설명 |
+| --- | --- | --- |
+| (배열 키) | — | 행의 `name`. 바꾸면 다른 행으로 보아 옛 행(운영자 수정 포함)이 지워진다 |
+| `group` | — | 카탈로그 전용 분류(DB 에 저장하지 않음). `gc` = 만료 데이터 정리 |
+| `label` · `description` | — | `{ko, en}` 다국어. ja 등은 언어팩 `lang-packs/_bundled/g7-core-ja/seed/schedules.json` 이 `core.schedules.config` 필터로 더한다 |
+| `type` | `artisan` | `artisan` · `job` |
+| `command` | — | artisan 명령(옵션 포함) 또는 Job 클래스 FQCN. artisan 은 `config/schedule_security.php` 허용목록에 있어야 하고, job 은 `job.allowed_classes` 에 있어야 실행된다 |
+| `expression` | — | cron 식 (사이트 설정 시간대 기준) |
+| `frequency` | `custom` | `everyThirtySeconds` 면 30초 주기 (`expression` 은 `* * * * *`) |
+| `timezone` | `null` | 시간대 고정이 필요할 때만 |
+| `without_overlapping` | `0` | 중복 실행 방지 잠금 유지 분 (0=끔, 최대 10080) |
+| `on_one_server` | `true` | 다중 서버에서 한 서버만 |
+| `dispatch_mode` | `sync` | `sync`(바로 실행) · `queue`(큐로 보내기) |
+| `history_mode` | `all` | `all` · `failures_only` |
+| `notify_on_failure` | `true` | 예약 실행 실패 시 관리자 알림 |
+| `timeout` | `null` | 초 |
+| `enabled_condition` | `null` | 실행 조건 `[{source, key, operator, value?, default}]` (AND) — 키는 설정 defaults 나 config 에 실제로 있어야 한다 |
+
+검증에 실패한 항목은 그 항목만 건너뛰고 시더가 경고를 출력합니다. 전체 목록과 현재 값은 [scheduling.md 「코어 스케줄 카탈로그 목록」](scheduling.md#13-코어-스케줄-카탈로그-목록) 에 있습니다.
+
+### 동기화 규칙
+
+- **시점**: 설치(`DatabaseSeeder` → `CoreScheduleSeeder`), 코어 업데이트(`CoreUpdateService::reloadCoreConfigAndResync()`).
+- **필드 값**: 운영자가 스케줄 관리에서 바꾼 필드(`user_overrides`)는 보존하고 나머지는 카탈로그 값으로 갱신합니다. 기본 시각을 바꾸면 운영자가 손대지 않은 사이트에만 반영됩니다.
+- **행 존재**: 카탈로그에서 뺀 코어 행은 다음 동기화 때 실행 이력과 함께 지워집니다. 운영자가 직접 등록한 행(`extension_type` NULL)과 확장 행은 범위 밖입니다.
+- **잠금**: 코어 행의 `command`·`type`·`name`·`enabled_condition`·`timezone` 은 관리자 화면에서 바꿀 수 없습니다.
+
+### 함께 추가된 코어 선언 (7.2.0)
+
+스케줄 관리 화면과 큐 관리를 위해 같은 파일의 다른 블록에도 항목이 더해졌습니다.
+
+| 블록 | 항목 | 내용 |
+| --- | --- | --- |
+| `permissions` | 카테고리 `core.queue_jobs` | `core.queue_jobs.read`(큐 대기·실패 작업과 처리 기록 조회) · `.retry`(실패 작업 재시도) · `.delete`(실패 작업 삭제) — 모두 `type=admin` |
+| `menus` | `admin-schedules` | 관리자 메뉴 「스케줄 관리」(`/admin/schedules`)를 활성(`is_active=true`)으로 노출 |
+| `settings_limits` | `drivers_queue_record_retention_days_min` · `_max` | 환경설정 > 드라이버 「처리 기록 보관 기간」 입력 한계(1·90일). 설정 API 의 `limits` 메타로 화면에 전달 |
+| `notification_definitions` | `schedule_failed` | 예약 작업 실패 알림(관리자, 메일+사이트, 같은 스케줄 하루 1회) — [notification-system.md](notification-system.md) |
+
+---
+
 ## 사용처
 
 | 사용처 | 시점 | 설명 |
@@ -227,6 +307,7 @@ permissions
 | `CoreAdminMenuSeeder` | 초기 설치 | menus 데이터 시딩 |
 | `CoreUpdateService::syncCoreRolesAndPermissions()` | 코어 업데이트 | 권한/역할 동기화 |
 | `CoreUpdateService::syncCoreMenus()` | 코어 업데이트 | 메뉴 동기화 |
+| `CoreScheduleSeeder` | 초기 설치 · 코어 업데이트(`reloadCoreConfigAndResync()`) | schedules 카탈로그 동기화 (7.2.0) |
 
 **핵심 원칙**: 새 권한/역할/메뉴 추가 시 이 파일에 추가하면 설치/업데이트 모두 자동 반영됩니다.
 
@@ -259,6 +340,7 @@ permissions
 | `CoreUpdateService::syncCoreMenus` | 말미에 `cleanupStaleMenus(Core, 'core', $currentSlugs)` |
 | `CoreUpdateService::syncCoreRolesAndPermissions` | 말미에 `cleanupStalePermissions` 및 role identifier 기준 `cleanupStaleRoles` |
 | `CoreUpdateService::syncAllRoleAssignments` | `core/core` 소유 권한 **전체** 를 diff 기준으로 사용 (이관된 구 식별자도 detach) |
+| `CoreScheduleSeeder` → `ExtensionScheduleSyncHelper::syncSchedules(Core, 'core', …)` | 같은 메서드가 카탈로그에 없는 `core/core` 스케줄 행을 이력과 함께 삭제 |
 | 확장 `ModuleManager::updateModule` / `PluginManager::updatePlugin` | 동일 4단계 (확장별 식별자 범위) |
 
 ### 예외 안전장치
@@ -286,4 +368,5 @@ $menuSyncHelper->cleanupStaleMenus(ExtensionOwnerType::Core, 'core', $currentSlu
 - [service-provider.md](service-provider.md) - 서비스 프로바이더에서 config 로드
 - [data-sync-helpers.md](data-sync-helpers.md) - 데이터 동기화 Helper 5종
 - [user-overrides.md](user-overrides.md) - 사용자 수정 보존 (HasUserOverrides)
+- [scheduling.md](scheduling.md) - 스케줄 등록부·실행 구조 (schedules 카탈로그)
 - [upgrade-step-guide.md](../extension/upgrade-step-guide.md) - 업그레이드 스텝 작성

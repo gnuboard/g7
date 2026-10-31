@@ -1,0 +1,32 @@
+<!-- 관리자 회원 목록 상세검색에 덧붙이는 「가입경로(소셜 연결)」 행. 관리자 템플릿이 연 확장점(`admin_user_list_filters`)에 붙는다.
+  값은 URL 에 직접 싣지 않고 `_local.userFilterExtraQuery` 배열에 `sirsoft-social_login.provider={키}` 원소 하나로 넣고 뺀다 — 템플릿의 검색 버튼이
+  그 배열을 `ext_filters[]` 로 보낸다(새로고침·뒤로 가기에는 템플릿이 URL 에서 배열을 되살린다). 서버 쪽 규칙·조건은 `UserListSocialProviderFilter`.
+  회원 연결 열람 권한이 없으면 행을 내지 않는다(서버도 조건을 무시한다). 선택지는 「연결이 있는 제공자」다 — 꺼진 제공자로 가입한 회원도 찾을 수 있어야 한다. -->
+<extension extension-point="admin_user_list_filters" mode="append" priority="210">
+  <!-- 연결이 있는 제공자(꺼진 것 포함) — 선택지. 회원 연결 열람 권한이 없으면 403 이고 행도 숨는다 -->
+  <data-source id="socialFilterProviders" label_key="$t:sirsoft-social_login.editor.data_source.providers" type="api" endpoint="/api/plugins/sirsoft-social_login/admin/linked-providers" method="GET" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <set-state target="local" :socialFilterForbidden="true"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <div data-ref="ext_social_login_provider_filter_row" class="sl:flex sl:flex-col sl:gap-2 sl:md:flex-row sl:md:items-center">
+    <permissions>
+      <permission>sirsoft-social_login.accounts.view</permission>
+    </permissions>
+    <responsive on="portable" class="sl:flex sl:flex-col sl:gap-2 sl:items-start"/>
+    <span class="sl:block sl:mb-2 sl:w-32 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:md:mb-0 sl:shrink-0 sl:md:flex sl:md:items-center">$t:sirsoft-social_login.admin.users.filter_label</span>
+    <div class="sl:flex sl:items-center sl:flex-wrap sl:gap-2">
+      <select data-ref="social_login_provider_filter" name="socialLoginProvider" class="sl:w-48" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-social_login.provider=')) || '').slice('sirsoft-social_login.provider='.length)}}" aria-label="$t:sirsoft-social_login.admin.users.filter_label">
+        <option value="">$t:sirsoft-social_login.admin.users.filter_all</option>
+        <option data-each="item in socialFilterProviders?.data ?? []" value="{{item.key}}">{{item.label}}</option>
+        <on type="change">
+          <!-- 가입경로 선택 — 같은 키의 원소를 빼고 새 값을 넣는다(전체를 고르면 빼기만). 검색 버튼을 눌러야 목록에 반영된다 -->
+          <set-state target="_local" userFilterExtraQuery="{{(_local.userFilterExtraQuery || []).filter(e => !e.startsWith('sirsoft-social_login.provider=')).concat($event.target.value ? ['sirsoft-social_login.provider=' + $event.target.value] : [])}}"/>
+        </on>
+      </select>
+      <extension-badge data-type="composite" type="plugin" identifier="sirsoft-social_login" installedPlugins="{{_global.installedPlugins}}"/>
+    </div>
+  </div>
+</extension>

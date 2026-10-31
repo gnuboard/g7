@@ -30,10 +30,11 @@
 | sender_user_id | query | integer | 아니오 | — | sender user 식별자 |
 | recipient_user_id | query | integer | 아니오 | — | recipient user 식별자 |
 | search | query | string | 아니오 | max 255 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
+| search_type | query | string | 아니오 | `all`, `recipient`, `subject` | 검색 대상 (all: 수신자명·수신자 식별자·제목·알림 타입 / recipient: 수신자명·수신자 식별자 / subject: 제목, 생략 시 all) |
 | channel | query | string | 아니오 | max 50 | 발송 채널 필터 (해당 채널로 발송된 이력만 조회 — mail, database, fcm 등) |
 | notification_type | query | string | 아니오 | max 100 | 알림 타입 필터 (해당 타입의 이력만 조회 — welcome, order_confirmed 등) |
-| extension_type | query | string | 아니오 | `core`, `module`, `plugin` | 확장 유형 (core/module/plugin/template) |
-| status | query | string | 아니오 | — | 상태 필터 (해당 상태의 항목만 조회) |
+| extension_type | query | array | 아니오 | 각 항목 `core`, `module`, `plugin` | 확장 유형 다중 선택 (`extension_type[]=core&extension_type[]=module` — 고른 유형 중 하나에 해당하는 이력, 스칼라 한 값도 받는다) |
+| status | query | array | 아니오 | 각 항목 `sent`, `failed`, `skipped` | 상태 다중 선택 (`status[]=sent&status[]=failed` — 고른 상태 중 하나에 해당하는 이력, 스칼라 한 값도 받는다) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 | sort_by | query | string | 아니오 | `id`, `channel`, `notification_type`, `status`, `sent_at`, `created_at`, `recipient_name`, `subject` | 정렬 기준 필드명 (`recipient_name`·`subject` 는 관리자 화면의 "수신자명순"·"제목순" 정렬에 대응) |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
@@ -176,9 +177,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-
-
-**설명** 알림 발송 이력을 페이지네이션으로 조회합니다. 인증(`auth:sanctum`)과 `core.notification-logs.read` 권한이 필요합니다. 발송자/수신자 ID, `search`, `channel`, `notification_type`, `extension_type`, `status` 로 필터링하고 `sort_by`/`sort_order` 로 정렬하며, 확장이 `core.notification_log.index_validation_rules` 훅으로 필터를 추가할 수 있습니다. 요청 사용자(`request->user()`)를 Service 에 전달해 열람 범위를 결정하며, 관리자 알림 발송 이력 화면을 렌더링할 때 사용합니다.
+**설명** 알림 발송 이력을 페이지네이션으로 조회합니다. 인증(`auth:sanctum`)과 `core.notification-logs.read` 권한이 필요합니다. 발송자/수신자 ID, `search`(+ 검색 대상 `search_type`), `channel`, `notification_type`, `extension_type`(다중), `status`(다중) 로 필터링하고 `sort_by`/`sort_order` 로 정렬하며, 확장이 `core.notification_log.index_validation_rules` 훅으로 필터를 추가할 수 있습니다. 요청 사용자(`request->user()`)를 Service 에 전달해 열람 범위를 결정하며, 관리자 알림 발송 이력 화면을 렌더링할 때 사용합니다.
 
 
 ### POST /api/admin/notification-logs/bulk-delete

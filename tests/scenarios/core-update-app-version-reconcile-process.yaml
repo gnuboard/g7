@@ -1,0 +1,18 @@
+feature: core_update_app_version_reconcile_process
+
+description: |
+  실제 별도 PHP 프로세스가 새 bootstrap/app.php 를 require 할 때 업데이트 트리 플래그가 있으면 상속 APP_VERSION 이 디스크
+  값으로 바로잡히고, 플래그가 없거나 상속 값이 더 높으면 그대로 두는지 확인한다(공개 #145, #137).
+
+coverage_strategy: full
+
+axes:
+  case: [flagged_stale_child, unflagged_child, upgrade_step_child_higher]
+
+effects:
+  - new_bootstrap_reconciles_inherited_app_version
+  - reconcile_runs_only_inside_update_tree
+  - reconcile_never_lowers_upgrade_step_child_version
+
+test_files:
+  - tests/Feature/Bootstrap/UpdateAppVersionReconcileProcessTest.php

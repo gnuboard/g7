@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
+use Modules\Sirsoft\Ecommerce\Exceptions\OrderCancellationException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterface;
 
@@ -14,6 +15,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponIssueRepositoryInterf
  * 주문 취소 시 사용된 쿠폰의 상태를 복원하여 재사용 가능하게 합니다.
  * promotions_applied_snapshot에서 coupon_issue_id를 추출하고
  * 해당 쿠폰 발급 레코드의 상태를 used → available로 변경합니다.
+ *
+ * 복원 실패는 삼키지 않는다 — 취소·환불 전체를 롤백한다(D2). 삼키면 환불은 끝났는데 쿠폰은
+ * 사용됨으로 남는다. 대상 없음·이미 복원됨·경합 패배는 실패가 아니라 멱등 skip 이다(restoreIssues).
  */
 class CouponRestoreListener implements HookListenerInterface
 {
@@ -83,12 +87,14 @@ class CouponRestoreListener implements HookListenerInterface
                 'total_coupons' => count($couponIssueIds),
                 'restored_count' => $restoredCount,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('CouponRestoreListener: 쿠폰 복원 실패', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
                 'error' => $e->getMessage(),
             ]);
+
+            throw $this->restoreFailure($e);
         }
     }
 
@@ -119,13 +125,34 @@ class CouponRestoreListener implements HookListenerInterface
                 'total_coupons' => count($couponIssueIds),
                 'restored_count' => $restoredCount,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('CouponRestoreListener: 부분취소 쿠폰 복원 실패', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
                 'error' => $e->getMessage(),
             ]);
+
+            throw $this->restoreFailure($e);
         }
+    }
+
+    /**
+     * 복원 실패를 취소·환불을 중단시키는 예외로 바꿉니다. (D2)
+     *
+     * 이미 취소 예외면 그대로 둔다 — 키가 두 겹으로 감싸이면 화면 안내가 원인을 잃는다.
+     *
+     * @param  \Throwable  $e  원인 예외
+     * @return OrderCancellationException 호출부 트랜잭션을 롤백시킬 예외
+     */
+    protected function restoreFailure(\Throwable $e): OrderCancellationException
+    {
+        if ($e instanceof OrderCancellationException) {
+            return $e;
+        }
+
+        $key = 'sirsoft-ecommerce::exceptions.coupon_restore_failed';
+
+        return new OrderCancellationException(__($key), $key);
     }
 
     /**

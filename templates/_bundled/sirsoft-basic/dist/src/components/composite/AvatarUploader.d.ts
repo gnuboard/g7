@@ -6,9 +6,9 @@ export interface AvatarUploaderProps {
     fallbackText?: string;
     /** 아바타 크기 */
     size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-    /** 업로드 API 엔드포인트 (기본: /api/me/avatar) */
+    /** 업로드 API 엔드포인트 (기본: /api/me/avatar). G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다 */
     uploadEndpoint?: string;
-    /** 삭제 API 엔드포인트 (기본: /api/me/avatar) */
+    /** 삭제 API 엔드포인트 (기본: /api/me/avatar). G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다 */
     deleteEndpoint?: string;
     /** 업로드 성공 콜백 */
     onUploadSuccess?: (data: {

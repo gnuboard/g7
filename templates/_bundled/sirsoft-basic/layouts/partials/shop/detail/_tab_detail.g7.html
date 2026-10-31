@@ -1,0 +1,41 @@
+<!-- 상세정보 탭 — 운영자가 위지윅으로 쓴 본문에 «상품정보 제공고시»(법정 고지)와 공통 안내를 이어 붙인다.
+     본문은 서버가 준 HTML 을 그대로 그리므로 이 조각에는 액션이 없다. -->
+<partial description="상품 상세정보 탭 (HTML 콘텐츠, 상품정보제공고시, 공통정보)">
+  <div data-if="{{(_local.activeTab ?? 'info') === 'info'}}" class="py-6 space-y-8">
+    <!-- === 상세 설명 HTML (펼치기/접기) === -->
+    <expandable-content data-type="composite" :maxHeight="500" expandText="$t:shop.product.expand_detail" collapseText="$t:shop.product.collapse_detail">
+      <extension-point name="html_content" data-ref="product_description_html" content="{{product.data?.description_localized ?? ''}}" isHtml="{{(product.data?.description_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none">
+        <default>
+          <html-content data-type="composite" content="{{product.data?.description_localized ?? ''}}" isHtml="{{(product.data?.description_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none"/>
+        </default>
+      </extension-point>
+    </expandable-content>
+    <!-- === 상품정보제공고시 === -->
+    <div data-if="{{product.data?.notice &amp;&amp; product.data?.notice?.values &amp;&amp; product.data?.notice?.values.length > 0}}" class="border-t border-gray-200 dark:border-gray-700 pt-6">
+      <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4">$t:shop.product.product_notice</h3>
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div data-if="{{product.data?.notice?.template_name}}" class="bg-gray-50 dark:bg-gray-700/50 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{product.data?.notice?.template_name}}</span>
+        </div>
+        <div data-each="noticeItem in {{product.data?.notice?.values ?? []}}" class="divide-y divide-gray-200 dark:divide-gray-700">
+          <div class="flex">
+            <div class="w-1/3 bg-gray-100 dark:bg-gray-700/50 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300">{{noticeItem.label ?? noticeItem.key ?? ''}}</div>
+            <div class="w-2/3 px-3 py-2 text-xs text-gray-900 dark:text-white">{{noticeItem.value ?? ''}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- === 공통정보 === -->
+    <div data-if="{{product.data?.common_info &amp;&amp; product.data?.common_info?.content}}" class="border-t border-gray-200 dark:border-gray-700 pt-6">
+      <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-4">{{product.data?.common_info?.name ?? '$t:shop.product.common_info'}}</h3>
+      <!-- 공통정보 - HTML 모드 -->
+      <extension-point name="html_content" data-ref="product_common_info_html" data-if="{{product.data?.common_info?.content_mode === 'html'}}" content="{{product.data?.common_info?.content ?? ''}}" :isHtml="true" class="prose prose-sm dark:prose-invert max-w-none">
+        <default>
+          <html-content data-type="composite" content="{{product.data?.common_info?.content ?? ''}}" :isHtml="true" class="prose prose-sm dark:prose-invert max-w-none"/>
+        </default>
+      </extension-point>
+      <!-- 공통정보 - Text 모드 (줄바꿈 유지) -->
+      <div data-if="{{product.data?.common_info?.content_mode !== 'html'}}" class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{product.data?.common_info?.content ?? ''}}</div>
+    </div>
+  </div>
+</partial>

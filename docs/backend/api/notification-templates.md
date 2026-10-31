@@ -104,7 +104,7 @@ _단건 응답: `data` 객체의 필드._
 | subject | body | array | 아니오 | — | 다국어 제목. 컬럼이 nullable 이므로 미전송·`null` 이 허용된다(제목 개념이 없는 채널 대응). 전송하는 경우 로케일별 문자열 배열이어야 하며 각 값은 500자 이하 |
 | body | body | array | 예 | — | 본문 |
 | click_url | body | string | 아니오 | max 500 | 알림 클릭 시 이동할 대상 URL (미설정 시 이동 없음) |
-| recipients | body | array | 아니오 | — | 수신자 규칙 목록. 각 원소는 type(trigger_user: 이벤트 유발 사용자, related_user: 연관 사용자, role: 역할 대상, specific_users: 지정 사용자), value(대상 식별값), relation(연관 사용자 관계명), exclude_trigger_user(유발 사용자 제외 여부)로 구성 |
+| recipients | body | array | 아니오 | — | 수신자 규칙 목록. 각 원소는 type(trigger_user: 이벤트 유발 사용자, related_user: 연관 사용자, role: 역할 대상, specific_users: 지정 사용자), value(대상 식별값), relation(연관 사용자 관계명), exclude_trigger_user(유발 사용자 제외 여부)로 구성. `related_user` 의 relation 은 그 알림 정의가 선언한 관계 목록(`relations`) 안이어야 한다 — 목록이 비어 있으면(`[]`) 어떤 관계도 422, 목록이 아직 없으면(`NULL` — 코어 업그레이드 직후 확장이 재동기화되기 전) 목록으로 막지 않는다. `role` 의 value 는 식별자 문자열 또는 문자열 **목록**, `specific_users` 의 value 는 UUID **목록**이어야 한다 — 키가 붙은 묶음(`{"x":"admin"}`)은 422. 검증 안내는 `recipients.0.value` 같은 내부 키 대신 항목 이름(수신자 값·관련 사용자 관계 등)으로 나온다 |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification_template.update_validation_rules`).
@@ -208,9 +208,11 @@ _단건 응답: `data` 객체의 필드 (`NotificationTemplateResource`)._
 
 <!-- @generated:end -->
 
+**설명** 단일 채널 알림 템플릿의 다국어 제목(`subject`)·본문(`body`)과 클릭 URL, 수신자(`recipients`), 활성 상태를 수정합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. `template` 경로 파라미터로 대상을 지정하며, 확장이 `core.notification_template.update_validation_rules` 훅으로 추가 파라미터를 검증에 넣을 수 있습니다. 관리자가 특정 채널의 알림 문구를 편집해 저장할 때 사용합니다. 다국어 `subject`·`body` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.subject`·`errors.body` 가 칸 이름과 언어 이름을 함께 알린다(「알림 제목의 한국어(ko) 값은 필수입니다.」·「알림 본문의 한국어(ko) 값은 필수입니다.」).
 
+**본문을 확장이 받는 채널(7.2.0)** 채널 메타 `template_editor` 가 `none` 인 채널은 코어 편집 칸이 화면에 없고 그 확장이 본문을 자기 저장소에서 받는다. 이 채널의 템플릿은 `body` 를 생략하거나 빈 배열로 보내도 된다 — 그 확장의 저장 버튼이 받는 사람만 저장하려고 이 API 를 부를 때, 운영자가 만든 빈 템플릿이면 코어 본문이 비어 있다.
 
-**설명** 단일 채널 알림 템플릿의 다국어 제목(`subject`)·본문(`body`)과 클릭 URL, 수신자(`recipients`), 활성 상태를 수정합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. `template` 경로 파라미터로 대상을 지정하며, 확장이 `core.notification_template.update_validation_rules` 훅으로 추가 파라미터를 검증에 넣을 수 있습니다. 관리자가 특정 채널의 알림 문구를 편집해 저장할 때 사용합니다.
+**수신자 순서** `recipients` 는 보낸 규칙 순서 그대로 JSON 배열로 저장되고, 조회 응답(알림 정의 상세의 `templates[].recipients`)도 같은 순서의 배열로 나온다. 값 칸이 없는 규칙(`trigger_user`) 뒤에 값이 있는 규칙(`role` 등)을 보내도 순서가 바뀌지 않으며, 예전에 줄 번호 객체(`{"1":…,"0":…}`)로 저장된 행도 응답에서는 줄 번호 순서의 배열로 나온다.
 
 
 ### POST /api/admin/notification-templates/{template}/reset
@@ -417,5 +419,9 @@ HTTP/1.1 200
 
 
 **설명** 단일 채널 알림 템플릿의 활성 상태(`is_active`)를 현재 값의 반대로 토글합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. 비활성 템플릿은 해당 채널로의 발송이 중단되므로, 정의는 유지한 채 특정 채널만 켜거나 끌 때 사용합니다.
+
+**운영자가 만든 빈 템플릿(7.2.0)** 발송 수단을 켜서 코어가 만든 템플릿(`is_user_created=true`)은 내용을 채우기 전에 켜지 못한다. 꺼진 상태에서 켜려 할 때 받는 사람 규칙이 없으면 422 `errors.recipients`(「받는 사람을 먼저 정해 저장한 뒤에 켤 수 있습니다…」), 코어 편집 칸을 쓰는 채널에서 본문이 모든 언어에서 비어 있으면 422 `errors.body`(「본문을 먼저 써서 저장한 뒤에 켤 수 있습니다…」)다. 본문을 확장이 자기 저장소에서 받는 채널(채널 메타 `template_editor: none`, 예: 알림톡)은 받는 사람만 본다. 확장이 선언한 템플릿과 끄는 요청은 이 검사를 받지 않는다. 응답과 목록의 템플릿에는 `is_user_created`(boolean) 가 실린다.
+
+**되돌리기** 운영자가 만든 템플릿은 선언된 기본값이 없다. `POST /api/admin/notification-templates/{template}/reset` 과 정의의 `reset` 은 이 행을 만들었을 때의 빈 상태(제목 `null`, 본문 `[]`, 받는 사람 `[]`, 꺼짐)로 되돌리고 행은 남긴다. 확장 업데이트의 stale 템플릿 정리는 이 행을 지우지 않으며, 확장이 나중에 그 수단을 선언하면 선언 행(`is_user_created=false`)이 된다.
 
 

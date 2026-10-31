@@ -17,6 +17,11 @@ use Modules\Sirsoft\Ecommerce\Services\SearchPresetService;
  */
 class SearchPresetController extends AdminBaseController
 {
+    /**
+     * 컨트롤러를 생성합니다.
+     *
+     * @param  SearchPresetService  $presetService  검색 프리셋 서비스
+     */
     public function __construct(
         protected SearchPresetService $presetService
     ) {}
@@ -24,7 +29,7 @@ class SearchPresetController extends AdminBaseController
     /**
      * 프리셋 목록 조회
      *
-     * @param SearchPresetListRequest $request 요청
+     * @param  SearchPresetListRequest  $request  요청
      * @return JsonResponse
      */
     public function index(SearchPresetListRequest $request): JsonResponse
@@ -44,7 +49,7 @@ class SearchPresetController extends AdminBaseController
     /**
      * 프리셋 저장
      *
-     * @param StoreSearchPresetRequest $request 요청
+     * @param  StoreSearchPresetRequest  $request  요청
      * @return JsonResponse
      */
     public function store(StoreSearchPresetRequest $request): JsonResponse
@@ -68,8 +73,8 @@ class SearchPresetController extends AdminBaseController
     /**
      * 프리셋 수정
      *
-     * @param UpdateSearchPresetRequest $request 요청
-     * @param SearchPreset $preset 프리셋 모델
+     * @param  UpdateSearchPresetRequest  $request  요청
+     * @param  SearchPreset  $preset  프리셋 모델
      * @return JsonResponse
      */
     public function update(UpdateSearchPresetRequest $request, SearchPreset $preset): JsonResponse
@@ -86,7 +91,7 @@ class SearchPresetController extends AdminBaseController
     /**
      * 프리셋 삭제
      *
-     * @param SearchPreset $preset 프리셋 모델
+     * @param  SearchPreset  $preset  프리셋 모델
      * @return JsonResponse
      */
     public function destroy(SearchPreset $preset): JsonResponse

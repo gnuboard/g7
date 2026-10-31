@@ -476,6 +476,11 @@ class TemplateCacheManagementTest extends TestCase
 
     /**
      * 테스트용 레이아웃 JSON 파일 생성
+     *
+     * 소스 SSoT 는 `.g7.html` 이고 짝 `.json` 은 설치 시 컴파일되는 런타임 계약이다.
+     * 이 헬퍼가 `.json` 을 직접 쓰는 것은 작성 흐름을 흉내 내는 것이 아니라,
+     * **컴파일 이후 상태**(캐시·등록이 보는 형태)를 곧바로 심어 캐시 동작만 격리해
+     * 검증하기 위함이다. 마크업 형식을 다루는 테스트는 `LayoutMarkup` 스위트가 맡는다.
      */
     protected function createTestLayoutFiles(): void
     {

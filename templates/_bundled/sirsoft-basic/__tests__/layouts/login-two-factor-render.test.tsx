@@ -18,9 +18,11 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createLayoutTest } from '@/core/template-engine/__tests__/utils/layoutTestUtils';
+import { asArray, actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 import { ComponentRegistry } from '@/core/template-engine/ComponentRegistry';
 
 import loginForm from '../../layouts/partials/auth/_login_form.json';
+import loginPage from '../../layouts/auth/login.json';
 
 // 공개 #133 의 원인은 레이아웃이 아니라 **응답 형태를 하나로 가정한 코어**였다. 상태를 직접
 // 주입해 그린 화면만 단언하면 그 경로를 한 번도 태우지 않으므로, 코어가 다시 challenge 응답에서
@@ -142,6 +144,8 @@ function setupRegistry(): ComponentRegistry {
 const layout = {
   version: '1.0.0',
   layout_name: 'auth/login',
+  // 로그인 응답 분기는 로그인 화면의 명명 액션(`applyLoginResult`)에 있다 — 파셜의 `login` 성공이 그것을 부른다(#40).
+  named_actions: (loginPage as any).named_actions,
   components: [loginForm as any],
 };
 
@@ -289,8 +293,8 @@ describe('sirsoft-basic 로그인 폼 렌더링 — 2단계 인증', () => {
     await t.render();
 
     // 이 레이아웃이 실제로 선언한 login 액션 — 자격 증명만 리터럴로 채운다.
-    const submitSequence = (loginForm as any).actions[0];
-    const loginAction = submitSequence.actions.find(
+    const submitSequence = asArray((loginForm as any).actions)[0];
+    const loginAction = actionsOf(submitSequence).find(
       (a: any) => a.handler === 'login'
     );
     expect(loginAction, 'login 액션이 제출 시퀀스에서 사라졌습니다').toBeDefined();
@@ -337,7 +341,7 @@ describe('sirsoft-basic 로그인 폼 렌더링 — 2단계 인증', () => {
     const t = createLayoutTest(layout, { componentRegistry: setupRegistry() });
     await t.render();
 
-    const loginAction = (loginForm as any).actions[0].actions.find(
+    const loginAction = actionsOf(asArray((loginForm as any).actions)[0]).find(
       (a: any) => a.handler === 'login'
     );
 

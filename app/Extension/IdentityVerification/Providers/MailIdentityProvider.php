@@ -3,18 +3,22 @@
 namespace App\Extension\IdentityVerification\Providers;
 
 use App\Contracts\Extension\IdentityVerificationInterface;
+use App\Contracts\Extension\UserScopedIdentityProviderInterface;
+use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
+use App\Enums\IdentityPolicyAppliesTo;
 use App\Enums\IdentityVerificationStatus;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\User;
 use App\Services\IdentityMessageDispatcher;
-use App\Support\AssetUrl;
+use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
+use App\Support\UndeliverableEmail;
 use Carbon\CarbonInterval;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 /**
@@ -28,7 +32,7 @@ use Illuminate\Support\Str;
  *
  * @since 7.0.0-beta.4
  */
-class MailIdentityProvider implements IdentityVerificationInterface
+class MailIdentityProvider implements IdentityVerificationInterface, UserScopedIdentityProviderInterface
 {
     /** @var int 인증코드 최소 길이 */
     public const MIN_CODE_LENGTH = 4;
@@ -42,6 +46,9 @@ class MailIdentityProvider implements IdentityVerificationInterface
     public const ID = 'g7:core.mail';
 
     /**
+     * 메일 본인인증 프로바이더를 생성합니다.
+     *
+     * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인인증 challenge 로그 저장소
      * @param  array  $config  withConfig() 로 전달되는 런타임 설정 (code_length, code_ttl_minutes, link_ttl_minutes 등)
      */
     public function __construct(
@@ -127,6 +134,20 @@ class MailIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
+     * 이 회원에게 메일 인증번호를 보낼 수 있는지 돌려줍니다 — 받을 수 있는 이메일이 있어야 한다.
+     *
+     * 대체 주소(`…@….invalid`)나 빈 이메일 회원에게는 닿지 않는 인증번호를 보내지 않는다. 목적별 수단 해석이 이 판정으로 다음
+     * 수단(외부 인증 재로그인 등)으로 넘어간다(7.2.0). 판정은 부작용이 없다.
+     *
+     * @param  User  $user  대상 회원
+     * @return bool 보낼 수 있으면 true
+     */
+    public function canChallengeUser(User $user): bool
+    {
+        return ! UndeliverableEmail::is($user->email);
+    }
+
+    /**
      * 인증 챌린지를 발급하고 메일을 발송합니다.
      *
      * @param  User|array  $target  대상 사용자 또는 식별 정보
@@ -199,6 +220,8 @@ class MailIdentityProvider implements IdentityVerificationInterface
             linkToken: $linkToken,
             ttlMinutes: $ttlMinutes,
             expiresAt: $expiresAt,
+            userId: $target instanceof User ? $target->id : null,
+            screenScope: ($context['screen_scope'] ?? null) === ScreenUrl::SCOPE_ADMIN ? ScreenUrl::SCOPE_ADMIN : ScreenUrl::SCOPE_USER,
         );
 
         $this->logRepository->updateById($log->id, [
@@ -354,6 +377,14 @@ class MailIdentityProvider implements IdentityVerificationInterface
         return $clone;
     }
 
+    /**
+     * 인증 목적에 맞는 메일 렌더링 방식을 결정합니다.
+     *
+     * 비밀번호 재설정은 검증 링크, 그 외 목적은 숫자 인증코드로 보낸다.
+     *
+     * @param  string  $purpose  인증 목적 (signup, password_reset 등)
+     * @return string 렌더링 방식 (`link` 또는 `text_code`)
+     */
     protected function resolveRenderHint(string $purpose): string
     {
         return $purpose === 'password_reset' ? 'link' : 'text_code';
@@ -391,6 +422,15 @@ class MailIdentityProvider implements IdentityVerificationInterface
         return $code;
     }
 
+    /**
+     * 검증 완료 후 후속 요청에 제출할 본인인증 토큰을 생성합니다.
+     *
+     * 목적·대상 해시·무작위 UUID 를 앱 키로 HMAC-SHA256 서명해 추측할 수 없는 값을 만든다.
+     *
+     * @param  string  $purpose  인증 목적
+     * @param  string  $targetHash  인증 대상 이메일의 SHA-256 해시
+     * @return string 64자 16진수 본인인증 토큰
+     */
     protected function generateVerificationToken(string $purpose, string $targetHash): string
     {
         return hash_hmac(
@@ -401,11 +441,19 @@ class MailIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
-     * IDV 전용 메시지 디스패처를 통해 메일을 발송합니다.
+     * 본인인증 메시지 디스패처(알림 시스템 경유)를 통해 메일을 발송합니다.
      *
+     * @param  string  $email  수신자 이메일 주소
+     * @param  string  $purpose  인증 목적
      * @param  string  $renderHint  text_code | link
+     * @param  string  $challengeId  challenge ID
+     * @param  string|null  $policyKey  challenge 를 발생시킨 정책 키 (없으면 null)
      * @param  string|null  $code  text_code 흐름 시 평문 인증 코드
      * @param  string|null  $linkToken  link 흐름 시 서명 링크용 raw 토큰
+     * @param  int  $ttlMinutes  인증 유효 시간(분) — 메일 본문 안내용
+     * @param  Carbon  $expiresAt  challenge 만료 시각
+     * @param  int|null  $userId  챌린지 사용자 ID (비회원이면 null) — 수신 주소가 그 회원의 이메일이면 회원으로 보낸다
+     * @param  string  $screenScope  인증을 시작한 화면의 범위 (`user`|`admin`) — 확인 링크·사이트 링크의 기준 주소
      * @return bool 발송 성공 여부
      */
     protected function dispatchMessage(
@@ -418,10 +466,12 @@ class MailIdentityProvider implements IdentityVerificationInterface
         ?string $linkToken,
         int $ttlMinutes,
         Carbon $expiresAt,
+        ?int $userId = null,
+        string $screenScope = ScreenUrl::SCOPE_USER,
     ): bool {
         try {
             $actionUrl = $linkToken !== null
-                ? $this->buildSignedLink($challengeId, $linkToken, $expiresAt)
+                ? $this->buildSignedLink($challengeId, $linkToken, $expiresAt, $screenScope)
                 : null;
 
             return app(IdentityMessageDispatcher::class)->dispatch(
@@ -437,12 +487,13 @@ class MailIdentityProvider implements IdentityVerificationInterface
                     'expire_minutes' => $ttlMinutes,
                     'purpose_label' => $this->resolvePurposeLabel($purpose),
                     'app_name' => (string) config('app.name'),
-                    'site_url' => AssetUrl::siteRoot(),
+                    'site_url' => $this->resolveSiteUrl($policyKey, $screenScope),
                     'recipient_email' => $email,
                 ],
                 context: [
                     'challenge_id' => $challengeId,
                     'render_hint' => $renderHint,
+                    'user_id' => $userId,
                 ],
             );
         } catch (\Throwable $e) {
@@ -458,26 +509,66 @@ class MailIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
-     * link 흐름용 서명 링크를 생성합니다.
+     * link 흐름용 검증 링크를 생성합니다.
+     *
+     * 보안: 메일 링크는 다른 사람(수신자)에게 가는 절대 URL 이다 — 요청 Host 로 만들어지는 서명 라우트
+     * URL 대신 언제나 사이트 주소로 만든다. 링크 토큰 자체가 검증 수단이고 만료는 challenge 가 소유한다.
+     *
+     * @param  string  $challengeId  challenge ID
+     * @param  string  $linkToken  링크 검증 토큰
+     * @param  Carbon  $expiresAt  만료 시각 (만료 판정은 challenge 가 소유 — 링크에는 싣지 않는다)
+     * @param  string  $screenScope  인증을 시작한 화면의 범위 (`user`|`admin`)
+     * @return string 사이트 주소 기준 검증 링크
      */
-    protected function buildSignedLink(string $challengeId, string $linkToken, Carbon $expiresAt): string
+    protected function buildSignedLink(string $challengeId, string $linkToken, Carbon $expiresAt, string $screenScope = ScreenUrl::SCOPE_USER): string
     {
-        try {
-            return URL::temporarySignedRoute(
-                'api.identity.challenges.verify',
-                $expiresAt,
-                ['challenge_id' => $challengeId, 'token' => $linkToken],
-            );
-        } catch (\Throwable) {
-            // 라우트 미존재 환경(테스트 등)에서는 경로 + query 로 fallback.
-            // 오리진·마운트 접두사는 AssetUrl 이 SSoT — config('app.url') 직접 결합은
-            // 하위 폴더 배치에서 사이트 밖을 가리키고, 큐·콘솔 문맥에서 접두사를 잃는다.
-            return AssetUrl::siteAbsolute('/identity/verify?challenge='.$challengeId.'&token='.$linkToken);
+        // 사람이 여는 확인 화면이므로 화면 주소 헬퍼를 거친다(#792) — 주소 필터를 따른다. 회원 화면에서 시작했으면
+        // 「사용자 화면 URL」 기준, 관리자 화면에서 시작했으면 사이트 주소 기준(사이트 자체의 확인 화면 — 관리자 화면은
+        // 「사용자 화면 URL」 쪽에 없다).
+        return ScreenUrl::absolute('identity.verify', '/identity/verify?challenge={challenge}&token={token}', [
+            'challenge' => $challengeId,
+            'token' => $linkToken,
+        ], $screenScope === ScreenUrl::SCOPE_ADMIN ? ScreenUrl::SCOPE_ADMIN : ScreenUrl::SCOPE_USER);
+    }
+
+    /**
+     * 메일 아래쪽 사이트 링크(`{site_url}`) 주소를 정합니다.
+     *
+     * 관리자 화면에서 시작한 인증(`screen_scope=admin`)과 관리자에게만 적용되는 정책(`applies_to=admin`, 예: 관리자 화면의
+     * 민감 작업)이 낸 인증 메일은 사이트 주소다. 그 밖(회원 화면에서 시작한 회원 전용·공통 정책, 정책 없는 인증)은
+     * 「사용자 화면 URL」(비우면 사이트 주소) — 확인 링크(`identity.verify`)와 같은 쪽이다.
+     *
+     * @param  string|null  $policyKey  challenge 를 발생시킨 정책 키 (없으면 null)
+     * @param  string  $screenScope  인증을 시작한 화면의 범위 (`user`|`admin`)
+     * @return string 사이트 링크 주소
+     */
+    protected function resolveSiteUrl(?string $policyKey, string $screenScope = ScreenUrl::SCOPE_USER): string
+    {
+        if ($screenScope === ScreenUrl::SCOPE_ADMIN) {
+            return SiteUrl::base();
         }
+
+        if ($policyKey === null || $policyKey === '') {
+            return ScreenUrl::userBase();
+        }
+
+        try {
+            $policy = app(IdentityPolicyRepositoryInterface::class)->findByKey($policyKey);
+        } catch (\Throwable $e) {
+            // 정책 조회 실패가 인증 메일 발송을 막지 않게 한다 — 종전 기준(사용자 화면 URL)으로 둔다
+            $policy = null;
+        }
+
+        return $policy?->applies_to === IdentityPolicyAppliesTo::Admin
+            ? SiteUrl::base()
+            : ScreenUrl::userBase();
     }
 
     /**
      * purpose 라벨(다국어)을 현재 로케일 문자열로 해석합니다.
+     *
+     * @param  string  $purpose  인증 목적
+     * @return string 번역된 목적 라벨 (번역 키가 없으면 목적 문자열 그대로)
      */
     protected function resolvePurposeLabel(string $purpose): string
     {

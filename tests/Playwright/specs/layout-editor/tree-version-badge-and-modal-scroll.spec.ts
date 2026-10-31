@@ -148,6 +148,21 @@ test.describe('@layout-editor 트리 버전 배지 + 모달 편집 스크롤 유
     const targetId = extensions[0].id;
     await page.goto(`${EDITOR_URL}?edit=__extension__/${targetId}`);
     await page.waitForSelector('[data-testid="g7le-toolbar"]', { timeout: 30_000 });
+
+    // 여러 화면에 주입되는 확장은 "대표 호스트 레이아웃 선택" 모달을 먼저 띄운다(설계 동작).
+    // 그 배경이 툴바를 덮으므로, 사용자가 하듯 호스트를 하나 고른 뒤 툴바를 쓴다.
+    // (`host=` 쿼리로는 건너뛰지 않는다 — 확장 편집 모드는 항상 선택을 요구한다.)
+    const hostPicker = page.locator('[data-testid="g7le-host-picker"]');
+    const pickerShown = await hostPicker
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (pickerShown) {
+      await page.locator('[data-testid="g7le-host-picker-item"]').first().click();
+      await expect(hostPicker).toBeHidden({ timeout: 15_000 });
+    }
+
     const versionsBtn = page.locator('[data-testid="g7le-toolbar-versions"]');
     await expect(versionsBtn).toBeEnabled({ timeout: 30_000 });
     await versionsBtn.click();

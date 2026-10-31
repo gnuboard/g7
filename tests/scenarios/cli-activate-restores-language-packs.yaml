@@ -1,0 +1,19 @@
+feature: cli_activate_restores_language_packs
+
+description: |
+  module:activate·plugin:activate·template:activate 가 호스트를 끌 때 함께 꺼진 언어팩(host_deactivated)을 기본으로 함께 켜고 개수와
+  로케일을 알린다. --without-language-packs 는 켜지 않고 남긴 목록만 알리며 표시를 유지해 관리자 화면이 다시 물을 수 있게 한다
+  (공개 #145 F7, #137 CLI 복구 경로). 운영자가 직접 끈 팩은 건드리지 않는다.
+
+coverage_strategy: full
+
+axes:
+  case: [module_default, module_without_option, plugin_default, template_default, option_description]
+
+effects:
+  - cli_activate_restores_host_language_packs
+  - cli_activate_without_language_packs_keeps_marks
+  - cli_activate_option_description_is_localized
+
+test_files:
+  - tests/Feature/Console/Commands/ActivateRestoresLanguagePacksTest.php

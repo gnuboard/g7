@@ -1,54 +1,58 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_dashboard",
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:admin.dashboard.title",
-    "auth_required": true
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "dashboard_content",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "p-8"
-        },
-        "children": [
-          {
-            "id": "welcome_card",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 max-w-2xl",
-              "data-testid": "welcome-card"
-            },
-            "children": [
-              {
-                "id": "welcome_title",
+    "comment": "학습용 관리자 첫 화면 — 베이스의 content 슬롯을 채우는 가장 단순한 예다",
+    "version": "1.0.0",
+    "layout_name": "admin_dashboard",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.dashboard.title",
+        "auth_required": true
+    },
+    "permissions": [
+        "core.dashboard.read"
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "dashboard_content",
                 "type": "basic",
-                "name": "H1",
+                "name": "Div",
                 "props": {
-                  "className": "text-page-heading mb-2",
-                  "data-testid": "welcome-title"
+                    "className": "p-8"
                 },
-                "text": "$t:admin.dashboard.welcome_title"
-              },
-              {
-                "id": "welcome_message",
-                "type": "basic",
-                "name": "Span",
-                "props": {
-                  "className": "text-secondary text-sm",
-                  "data-testid": "welcome-message"
-                },
-                "text": "$t:admin.dashboard.welcome_message"
-              }
-            ]
-          }
+                "children": [
+                    {
+                        "id": "welcome_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 max-w-2xl",
+                            "data-testid": "welcome-card"
+                        },
+                        "children": [
+                            {
+                                "id": "welcome_title",
+                                "type": "basic",
+                                "name": "H1",
+                                "props": {
+                                    "className": "text-page-heading mb-2",
+                                    "data-testid": "welcome-title"
+                                },
+                                "text": "$t:admin.dashboard.welcome_title"
+                            },
+                            {
+                                "id": "welcome_message",
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-secondary text-sm",
+                                    "data-testid": "welcome-message"
+                                },
+                                "text": "$t:admin.dashboard.welcome_message"
+                            }
+                        ]
+                    }
+                ]
+            }
         ]
-      }
-    ]
-  }
+    }
 }

@@ -43,12 +43,32 @@ class ScheduleRunnerContractTest extends TestCase
     }
 
     /**
+     * 설명 없는 shell 형태 예약 하나를 스케줄러에 더합니다.
+     *
+     * 코어·번들 확장의 예약은 DB 등록기(`ScheduleRegistrar`)가 전부 `Schedule::call` 콜백 이벤트로
+     * 등록하므로(7.2.0), 실제 등록분에는 shell 이벤트가 없다. 그래도 `routes/console.php`·확장
+     * 공급자가 `$schedule->command()` 로 직접 등록하는 길은 열려 있고, 러너는 그 형태를 되뽑아
+     * 실행한다. 그 계약이 공허하지 않게 프레임워크가 만드는 그대로의 shell 이벤트를 하나 세운다 —
+     * 콘솔 커널을 먼저 부팅해 러너의 부팅(`registeredEvents()`)이 이 이벤트를 덮지 않게 한다.
+     *
+     * @return void 반환값 없음
+     */
+    private function registerProbeShellEvent(): void
+    {
+        $this->app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
+        app(Schedule::class)->command('inspire')->daily();
+    }
+
+    /**
      * 등록된 shell 이벤트 전수가 Artisan 커맨드로 되뽑힌다 (실패 0).
      *
      * @effects every_registered_shell_event_is_recoverable
      */
     public function test_every_registered_shell_event_is_recoverable(): void
     {
+        $this->registerProbeShellEvent();
+
         $extractor = new ArtisanCommandExtractor;
         $events = app(ScheduleRunner::class)->registeredEvents($this->app);
 
@@ -162,6 +182,9 @@ class ScheduleRunnerContractTest extends TestCase
      */
     public function test_history_display_name_never_carries_the_php_binary_path(): void
     {
+        // 설명 없는 shell 예약이 바로 경로가 새던 갈래다 — 실제 등록분은 전부 콜백이라 하나 세운다.
+        $this->registerProbeShellEvent();
+
         $runner = app(ScheduleRunner::class);
         $events = $runner->registeredEvents($this->app);
 

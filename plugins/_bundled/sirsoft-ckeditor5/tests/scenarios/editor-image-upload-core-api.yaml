@@ -1,0 +1,20 @@
+feature: 에디터 이미지 업로드는 코어 API 클라이언트로 보낸다
+
+description: |
+  종전에는 CKEditor CDN 의 SimpleUploadAdapter 에 브라우저 저장소의 로그인 토큰으로 만든 Authorization
+  헤더를 넘겼다. 코어 클라이언트를 우회해 토큰 저장 방식 변경·토큰 갱신·401 처리를 놓치는 결함군이라
+  (#639 ⑤), 이 플러그인의 업로드 어댑터가 `G7Core.api.post(url, formData)` 로 보내고 Bearer 는 코어가 싣는다.
+  서버 응답 규격(성공 `{ url }`, 실패 `{ error: { message } }`)은 그대로다.
+
+axes:
+  outcome: [uploaded, rejected, aborted]
+
+effects:
+  - upload_sent_through_core_api_client
+  - no_login_token_read
+  - upload_progress_reported
+  - server_error_message_shown
+  - upload_abortable
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/uploadAdapter.test.ts

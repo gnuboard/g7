@@ -21,6 +21,9 @@ namespace Plugins\Sirsoft\MessageBizppurio\Services;
  *
  * 컨테이너에 싱글턴으로 바인딩되어 한 HTTP 요청/큐 잡 안에서만 상태를 공유한다.
  * remember() 로 refkey 를 넣고 consume() 로 꺼낸다(꺼내면 비운다 — 다음 사이클로 새지 않게).
+ *
+ * 발송·이력·연결 세 단계(드라이버 send, 코어 NotificationLogListener, LinkNotificationLogListener)가 모두
+ * 동기여야 한다 — 하나라도 큐로 가면 작업 경계에서 이 표식이 사라져 연결이 한 건도 되지 않는다(#724).
  */
 class DispatchLinkContext
 {
@@ -31,6 +34,7 @@ class DispatchLinkContext
      * 드라이버가 dispatch pending 을 만든 직후 그 refkey 를 기록합니다.
      *
      * @param  string  $refkey  방금 부여한 refkey
+     * @return void 반환값 없음
      */
     public function remember(string $refkey): void
     {

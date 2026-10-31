@@ -29,6 +29,8 @@ exclusions:
   - { sms_only: on, recipient: guest, reason: "동일 — sms_only 스킵도 수신자 해석 이전 지점이다" }
 
 effects:
+  # 언어별 알림 변수 (#798 — GenericNotification::getDataFor)
+  - alimtalk_resolves_localized_variables_for_recipient   # {ko,en} 값 변수를 승인 스냅샷·대체 SMS 본문에서 수신자 언어로 치환
   # 알림톡 게이트
   - alimtalk_skipped_when_row_missing
   - alimtalk_skipped_when_not_approved
@@ -56,6 +58,12 @@ effects:
   - pending_dispatch_row_created_with_channel_and_user
   - guest_phone_resolved_from_data_recipient_phone
   - skip_exception_uses_human_readable_type_label
+  - alimtalk_skipped_when_substituted_body_empty
+  - actual_payload_saved_on_dispatch_row
+  - alimtalk_skipped_when_no_phone
+  - non_generic_notifications_are_ignored
+  - test_mode_flag_is_snapshotted_on_the_dispatch_row
+  - live_mode_flag_is_snapshotted_on_the_dispatch_row
 
 test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Services/AlimtalkChannelDriverTest.php

@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Services\PostService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 삭제된 게시글 상세에서 cascade 하위 데이터 노출 검증 (#413-69-②)
@@ -25,10 +26,9 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *   - 첨부: 관리 권한자에게는 댓글과 동일하게 cascade 삭제분도 노출
  *   - cascade 댓글: 관리 권한자에게는 마스킹 없이 원문 노출 (is_cascade_deleted 신호 제공)
  *   - user 선삭제분: 기존대로 마스킹 유지
- *
- * @group board
- * @group admin
  */
+#[Group('board')]
+#[Group('admin')]
 class DeletedPostDetailVisibilityTest extends BoardTestCase
 {
     private PostService $postService;
@@ -37,11 +37,22 @@ class DeletedPostDetailVisibilityTest extends BoardTestCase
 
     private User $userManager;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'deleted-post-detail-visibility';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -55,6 +66,11 @@ class DeletedPostDetailVisibilityTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -75,6 +91,9 @@ class DeletedPostDetailVisibilityTest extends BoardTestCase
 
     /**
      * 유저(프론트) 화면 상세 조회 API 경로.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return string API 경로
      */
     private function userShowUrl(int $postId): string
     {
@@ -115,6 +134,9 @@ class DeletedPostDetailVisibilityTest extends BoardTestCase
 
     /**
      * 관리자 상세 조회 API 경로.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return string API 경로
      */
     private function showUrl(int $postId): string
     {
@@ -125,6 +147,8 @@ class DeletedPostDetailVisibilityTest extends BoardTestCase
      * 증상1: 관리 권한자가 삭제된 게시글 상세를 조회하면 cascade 첨부가 응답에 포함된다.
      *
      * @effects cascade_attachment_visible_to_manager
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_sees_only_cascaded_attachments_on_deleted_post(): void
     {
@@ -161,6 +185,8 @@ class DeletedPostDetailVisibilityTest extends BoardTestCase
      * @scenario comment_trigger=cascade
      *
      * @effects cascade_comment_content_visible,cascade_comment_flag_exposed
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_sees_cascaded_comment_content_with_flag(): void
     {
@@ -191,6 +217,8 @@ class DeletedPostDetailVisibilityTest extends BoardTestCase
      * @scenario comment_trigger=user
      *
      * @effects user_deleted_comment_not_flagged_cascade
+     *
+     * @return void 반환값 없음
      */
     public function test_user_deleted_comment_is_not_flagged_as_cascade(): void
     {
@@ -219,6 +247,8 @@ class DeletedPostDetailVisibilityTest extends BoardTestCase
      * @scenario comment_trigger=cascade
      *
      * @effects cascade_comment_content_visible,cascade_comment_flag_exposed,cascade_attachment_visible_to_manager
+     *
+     * @return void 반환값 없음
      */
     public function test_user_manager_sees_cascaded_comment_and_attachment_on_deleted_post(): void
     {

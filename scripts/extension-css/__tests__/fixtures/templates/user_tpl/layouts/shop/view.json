@@ -1,0 +1,11 @@
+{
+    "layout_name": "shop/view",
+    "components": [
+        {
+            "name": "ExtensionPoint",
+            "props": {
+                "name": "user_slot"
+            }
+        }
+    ]
+}

@@ -10,14 +10,14 @@
  * e2e:allow 본 변경의 사용자측 표면은 리뷰작성 진입을 데드라우트 navigate 제거 후 항목별 인라인
  *           모달(openModal modal_write_review)로 통일한 것(F1/D4)으로, 신규 화면이 아닌 기존
  *           항목 모달 단일화다. 레이아웃 렌더링 테스트(orderReviewButton.test.tsx 7건 green)가
- *           show.json 데드라우트 부재 + _items 항목별 can_write_review 게이트 + openModal +
+ *           show.g7.html 데드라우트 부재 + _items 항목별 can_write_review 게이트 + openModal +
  *           reviewTarget setState 를 구조적으로 회귀 차단한다. option_status 전이 자체는
  *           백엔드 회귀(OrderProcessingServiceTest/OrderServiceTest/OrderOptionServiceTest,
  *           전부 green)가 라이브 검증한다. 본 placeholder spec 은 아래 사전작업 후 활성화한다.
  *
  * 활성화 전 사전 작업 (data-testid 보강):
- *   1. _items.json 리뷰 버튼에 data-testid="order-item-review-btn-{optionId}"
- *   2. _modal_write_review.json 에 data-testid="review-modal"
+ *   1. _items.g7.html 리뷰 버튼에 data-testid="order-item-review-btn-{optionId}"
+ *   2. _modal_write_review.g7.html 에 data-testid="review-modal"
  *   3. CONFIRMED 옵션을 가진 주문을 시드하는 fixture (memberConfirmedOrder)
  *   4. 회원 토큰 fixture (memberToken)
  *   5. test.describe.skip → test.describe

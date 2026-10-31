@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 상세설명 구획. 편집기는 플러그인이 갈아 끼울 수 있는 자리(`extension-point`)로 두고,\n  설치된 플러그인이 없으면 기본 편집기가 선다. 본문은 언어별로 나뉘고, 글/HTML 중 어느 모드로\n  저장할지도 함께 기억한다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Description Section"
@@ -7,14 +8,27 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card-accordion"
+        "className": "ecommerce-admin-card-accordion"
     },
     "children": [
         {
             "type": "basic",
-            "name": "Div",
+            "name": "Button",
+            "actions": [
+                {
+                    "comment": "구획 접기/펼치기. 편 상태를 폼 상태에 두어 다른 구획과 함께 기억한다",
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.descriptionExpanded": "{{!_local.ui.descriptionExpanded}}"
+                    }
+                }
+            ],
             "props": {
-                "className": "card-header"
+                "type": "button",
+                "className": "ecommerce:flex ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-card-header",
+                "aria-expanded": "{{_local.ui.descriptionExpanded !== false}}"
             },
             "children": [
                 {
@@ -22,14 +36,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "file-lines",
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.sections.description"
                 },
@@ -38,17 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.descriptionExpanded !== false ? 'rotate-180' : ''}}"
-                    }
-                }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.descriptionExpanded": "{{!_local.ui.descriptionExpanded}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.descriptionExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -59,7 +63,7 @@
             "name": "Div",
             "if": "{{_local.ui.descriptionExpanded !== false}}",
             "props": {
-                "className": "row-stack"
+                "className": "ecommerce-row-stack"
             },
             "children": [
                 {
@@ -67,7 +71,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "{{_local.errors?.description ? 'border border-red-500 dark:border-red-500 rounded-lg overflow-hidden' : ''}}"
+                        "className": "{{_local.errors?.description ? 'ecommerce:border ecommerce:border-red-500 ecommerce:dark:border-red-500 ecommerce:rounded-lg ecommerce:overflow-hidden' : ''}}"
                     },
                     "children": [
                         {
@@ -75,35 +79,25 @@
                             "type": "extension_point",
                             "name": "html_editor",
                             "props": {
-                                "name": "description",
                                 "multilingual": true,
                                 "value": "{{_local.form?.description ?? ''}}",
                                 "rows": 15,
                                 "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
                                 "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
+                                "disabled": "{{_computed.isReadOnly}}",
                                 "showHtmlModeToggle": true,
-                                "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
+                                "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}",
+                                "name": "description"
                             },
                             "default": [
                                 {
                                     "type": "composite",
                                     "name": "HtmlEditor",
-                                    "props": {
-                                        "name": "description",
-                                        "multilingual": true,
-                                        "value": "{{_local.form?.description ?? ''}}",
-                                        "rows": 15,
-                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
-                                        "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}",
-                                        "showHtmlModeToggle": true,
-                                        "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
-                                    },
                                     "actions": [
                                         {
-                                            "event": "onChange",
+                                            "comment": "본문이 바뀌면 변경 표시를 세운다 — 저장 버튼이 이 표시를 보고 열린다",
                                             "type": "change",
+                                            "event": "onChange",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
@@ -112,8 +106,9 @@
                                             }
                                         },
                                         {
-                                            "event": "onIsHtmlChange",
+                                            "comment": "글/HTML 모드 전환도 저장 대상이다 — 앞단이 이 값을 보고 본문을 그대로 뿌릴지 escape 할지 가른다",
                                             "type": "change",
+                                            "event": "onIsHtmlChange",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
@@ -121,7 +116,18 @@
                                                 "hasChanges": true
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "name": "description",
+                                        "multilingual": true,
+                                        "value": "{{_local.form?.description ?? ''}}",
+                                        "rows": 15,
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.description",
+                                        "label": "$t:sirsoft-ecommerce.admin.product.fields.description",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "showHtmlModeToggle": true,
+                                        "isHtml": "{{(_local.form?.description_mode ?? 'text') === 'html'}}"
+                                    }
                                 }
                             ]
                         }
@@ -132,7 +138,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.description || _local.errors?.['description.ko']}}",
                     "props": {
-                        "className": "form-error-xs mt-1"
+                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                     },
                     "text": "{{_local.errors?.description?.[0] ?? _local.errors?.['description.ko']?.[0]}}"
                 }

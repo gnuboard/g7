@@ -5,6 +5,7 @@
     "title": "Common Info",
     "add": "Add",
     "languages_count": "{count} languages",
+    "languages_count_one": "{count} language",
     "default": "Default",
     "empty": "No common info registered.",
     "search_placeholder": "Search by name"
@@ -59,7 +60,7 @@
     "editing": {
       "title": "Editing in Progress",
       "message": "Changes will not be saved.",
-      "confirm_message": "Are you sure you want to cancel and select another item?",
+      "confirm_message": "Are you sure you want to cancel and select another common info?",
       "continue": "Continue Editing",
       "discard": "Discard and Move"
     },

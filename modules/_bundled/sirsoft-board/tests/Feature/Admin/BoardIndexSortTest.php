@@ -11,6 +11,7 @@ use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\BoardType;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 관리자 게시판 목록 정렬/페이지 크기 게이트 테스트
@@ -21,10 +22,9 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  * - 화이트리스트 컬럼 정렬은 정상 동작 (sort_by=slug&sort_order=asc)
  * - BoardService::getBoards 직접 호출(게이트 우회 내부 호출)도 미허용 컬럼을
  *   기본 정렬로 fallback — 예외 없이 동작 (ResolvesSortSpec 이중 방어)
- *
- * @group board
- * @group admin
  */
+#[Group('board')]
+#[Group('admin')]
 class BoardIndexSortTest extends ModuleTestCase
 {
     protected User $adminUser;
@@ -33,6 +33,8 @@ class BoardIndexSortTest extends ModuleTestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -50,6 +52,10 @@ class BoardIndexSortTest extends ModuleTestCase
 
     /**
      * 화이트리스트 밖 정렬 컬럼(sort_by=settings) → 422.
+     *
+     * @effects rejects_unknown_sort_column
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_unknown_sort_column(): void
     {
@@ -60,6 +66,10 @@ class BoardIndexSortTest extends ModuleTestCase
 
     /**
      * per_page 상한(999) 초과(per_page=1000) → 422.
+     *
+     * @effects rejects_out_of_range_per_page
+     *
+     * @return void 반환값 없음
      */
     public function test_rejects_out_of_range_per_page(): void
     {
@@ -75,6 +85,10 @@ class BoardIndexSortTest extends ModuleTestCase
      * - 게시판 설정 화면(admin_board_settings.json): per_page=999
      * - 쇼핑몰 환경설정 문의 카드(admin-ecommerce-inquiry-settings.json): per_page=200
      * 게이트를 100 으로 조였을 때 두 화면 진입이 422 토스트로 깨졌다 (#573 회귀).
+     *
+     * @effects accepts_full_list_consumer_per_page
+     *
+     * @return void 반환값 없음
      */
     public function test_accepts_full_list_consumer_per_page(): void
     {
@@ -87,6 +101,10 @@ class BoardIndexSortTest extends ModuleTestCase
 
     /**
      * 화이트리스트 컬럼 정렬(sort_by=slug&sort_order=asc)은 200 + 순서 보장.
+     *
+     * @effects sorts_by_whitelisted_column
+     *
+     * @return void 반환값 없음
      */
     public function test_sorts_by_whitelisted_column(): void
     {
@@ -119,6 +137,10 @@ class BoardIndexSortTest extends ModuleTestCase
     /**
      * BoardService::getBoards 직접 호출(게이트 우회 내부 호출)에 미허용 정렬 컬럼을
      * 넘겨도 예외 없이 기본 정렬로 fallback 한다 (ResolvesSortSpec 이중 방어).
+     *
+     * @effects service_ignores_unlisted_sort_column
+     *
+     * @return void 반환값 없음
      */
     public function test_service_ignores_unlisted_sort_column(): void
     {

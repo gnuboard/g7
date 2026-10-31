@@ -1,0 +1,80 @@
+<!-- 인증 기록 한 건의 상세 창. 표의 펼친 자리에서 「상세」를 눌러 열고, **내용은 그때 전역에
+  실려 온 그 줄 하나가 전부**다 — 창이 따로 서버를 부르지 않으므로 목록이 준 것 이상은 볼 수 없다.
+  제공자·용도·수단 이름은 목록과 같은 방식으로 설정에서 찾아 붙이고, 못 찾으면 원래 식별자를
+  그대로 보여 준다(확장을 지운 뒤에도 지난 기록이 읽히게 하려는 것이다). -->
+<partial description="Identity Log Detail Modal" editor_label="$t:admin.modal_label.admin_identity_logs.identity_log_detail_modal">
+  <modal data-type="composite" data-ref="identity_log_detail_modal" title="$t:admin.identity.logs.detail_title" size="lg">
+    <div class="p-2 space-y-4">
+      <div class="grid-2col-responsive text-sm">
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.provider_id</span>
+          <span class="text-primary block font-mono text-xs mt-0.5">{{_global.identity_log_modal_data?.provider_id ? ((identityProviders?.data ?? []).find(p => p.id === _global.identity_log_modal_data.provider_id)?.label ?? _global.identity_log_modal_data.provider_id) : '-'}}</span>
+        </div>
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.purpose</span>
+          <span class="text-primary block mt-0.5">{{(identityPurposes?.data ?? []).find(p => p.id === _global.identity_log_modal_data?.purpose)?.label ?? _global.identity_log_modal_data?.purpose ?? '-'}}</span>
+        </div>
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.status</span>
+          <span class="text-primary block mt-0.5">{{$t('admin.identity.logs.status.' + (_global.identity_log_modal_data?.status ?? 'requested'))}}</span>
+        </div>
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.channel</span>
+          <span class="text-primary block mt-0.5">{{_global.identity_log_modal_data?.channel ? (((identityProviders?.data ?? []).reduce((acc, p) => Object.assign(acc, p.channel_labels || {}), {}))[_global.identity_log_modal_data.channel] ?? _global.identity_log_modal_data.channel) : '-'}}</span>
+        </div>
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.user_id</span>
+          <span class="text-primary block mt-0.5">{{_global.identity_log_modal_data?.user_id ?? '-'}}</span>
+        </div>
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.ip_address</span>
+          <span class="text-primary block font-mono text-xs mt-0.5">{{_global.identity_log_modal_data?.ip_address ?? '-'}}</span>
+        </div>
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.created_at</span>
+          <span class="text-primary block mt-0.5">{{_global.identity_log_modal_data?.created_at ?? '-'}}</span>
+        </div>
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.verified_at</span>
+          <span class="text-primary block mt-0.5">{{_global.identity_log_modal_data?.verified_at ?? '-'}}</span>
+        </div>
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.expires_at</span>
+          <span class="text-primary block mt-0.5">{{_global.identity_log_modal_data?.expires_at ?? '-'}}</span>
+        </div>
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.attempts</span>
+          <span class="text-primary block mt-0.5">{{(_global.identity_log_modal_data?.attempts ?? 0) + ' / ' + (_global.identity_log_modal_data?.max_attempts ?? 5)}}</span>
+        </div>
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.origin_type</span>
+          <span class="text-primary block mt-0.5">{{_global.identity_log_modal_data?.origin_type ?? '-'}}</span>
+        </div>
+        <div>
+          <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.col.origin_identifier</span>
+          <span class="text-primary block font-mono text-xs mt-0.5 break-all">{{_global.identity_log_modal_data?.origin_identifier ?? '-'}}</span>
+        </div>
+      </div>
+      <div>
+        <span class="text-tertiary block font-semibold uppercase tracking-wide">$t:admin.identity.logs.detail.expanded.target_hash_label</span>
+        <span class="text-primary block font-mono text-xs mt-0.5 break-all">{{_global.identity_log_modal_data?.target_hash ?? '-'}}</span>
+      </div>
+      <div data-if="{{_global.identity_log_modal_data?.properties}}">
+        <span class="text-tertiary block font-semibold uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.properties_label</span>
+        <pre class="p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto">{{JSON.stringify(_global.identity_log_modal_data?.properties ?? {}, null, 2)}}</pre>
+      </div>
+      <div data-if="{{_global.identity_log_modal_data?.metadata}}">
+        <span class="text-tertiary block font-semibold uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.metadata_label</span>
+        <pre class="p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto">{{JSON.stringify(_global.identity_log_modal_data?.metadata ?? {}, null, 2)}}</pre>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal target="identity_log_detail_modal"/>
+        </on>
+        <span>$t:common.close</span>
+      </button>
+    </div>
+  </modal>
+</partial>

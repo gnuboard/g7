@@ -1,135 +1,161 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Notice Template Editing Discard Confirmation Modal"
-  },
-  "id": "editing_confirm_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.title",
-    "size": "medium"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-shrink-0 mt-0.5"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "triangle-exclamation",
-                    "className": "w-5 h-5 text-amber-600 dark:text-amber-400"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-primary text-base mb-2"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.message"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.confirm_message"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "공지 템플릿 편집 중 다른 항목을 고르려 할 때 뜨는 이탈 확인 창(공통정보 화면의 같은 창과 같은 규칙).\n  가려던 항목은 목록이 `_global.pendingTemplate*` 에 잡아 두고, 이 창의 \"취소하고 이동\" 이 그 값을 실제\n  선택으로 옮긴다 — 이 창이 이동을 완결하는 자리이고, 여기서 옮기지 않으면 클릭이 사라진다. 입력을 버리는\n  유일한 경로이기도 하다. \"계속 수정\" 은 창만 닫는다.\n  이동 쪽은 폼 입력(`_local`)도 비우므로 창 닫기를 맨 뒤에 둔다 — 모달이 먼저 사라지면 그 뒤의 `_local`\n  쓰기가 닿을 자리가 흔들린다(공통정보 창과 같은 순서).",
+    "meta": {
+        "is_partial": true,
+        "description": "Product Notice Template Editing Discard Confirmation Modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "editing_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.title",
+        "size": "medium"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.continue"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce-flex-start ecommerce:gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ecommerce:flex-shrink-0 ecommerce:mt-0.5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "className": "ecommerce:text-xl ecommerce:text-amber-600 ecommerce:dark:text-amber-400"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ecommerce:flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "ecommerce-text-primary ecommerce:text-base ecommerce:mb-2"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.message"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "ecommerce-text-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.confirm_message"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "ecommerce-modal-footer-buttons"
+            },
+            "children": [
                 {
-                  "handler": "closeModal"
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.continue"
+                        }
+                    ]
                 },
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "panelMode": "view",
-                    "selectedTemplateId": null,
-                    "selectedTemplate": null
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "입력을 버리고 대기 중이던 항목으로 이동 — 목록이 잡아 둔 대기 값(_global.pendingTemplate*)을 실제 선택으로\n            옮기고 주소도 그 항목으로 갈아끼운 뒤, 폼 입력·오류를 비우고 창을 닫는다. 주소 갈아끼우기는 대기 값을 비우기 전에\n            한다(비운 뒤에는 갈 곳을 모른다). 대기 값이 없으면(목록 밖에서 창이 열린 경우) 종전처럼 선택을 비운다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "replaceUrl",
+                                    "if": "{{!!_global.pendingTemplateId}}",
+                                    "params": {
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "id": "{{_global.pendingTemplateId}}",
+                                            "mode": "view"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedTemplateId": "{{_global.pendingTemplateId}}",
+                                        "selectedTemplate": "{{_global.pendingTemplate}}",
+                                        "panelMode": "view",
+                                        "pendingTemplateId": null,
+                                        "pendingTemplate": null
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form": null,
+                                        "errors": null,
+                                        "isSaving": false
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.discard"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.discard"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

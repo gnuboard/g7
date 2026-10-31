@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Contracts\Repositories\PasswordResetTokenRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
@@ -10,6 +11,9 @@ use App\Extension\HookManager;
 use App\Models\User;
 use App\Services\AuthService;
 use App\Services\IdentityPolicyService;
+use App\Services\PasswordChangeChallengeService;
+use App\Services\PasswordChangeService;
+use App\Services\PasswordExpiryService;
 use App\Support\AssetUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
@@ -17,7 +21,8 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * 비밀번호 재설정 링크는 `AssetUrl::siteAbsolute()` 가 만든다.
+ * 비밀번호 재설정 링크는 사이트 주소 헬퍼가 만든다 — 7.2.0 부터 화면 주소 헬퍼(`ScreenUrl::absolute()`)가
+ * 그 자리를 맡고, 절대 주소의 본체는 `SiteUrl`(`AssetUrl::siteAbsolute()` 의 위임 대상)이다.
  *
  * `config('app.url').$path` 는 `APP_URL` 의 후행 슬래시를 그대로 실어 `…/g7//reset-password` 를
  * 만든다 — 메일의 링크가 조용히 깨지고, 사용자는 재설정을 마칠 수 없다 (16차 G3 라운드 B-4).
@@ -64,6 +69,10 @@ class AuthServicePasswordResetLinkTest extends TestCase
             Mockery::mock(UserConsentRepositoryInterface::class),
             $tokens,
             Mockery::mock(IdentityPolicyService::class),
+            Mockery::mock(IdentityVerificationLogRepositoryInterface::class),
+            Mockery::mock(PasswordChangeService::class),
+            Mockery::mock(PasswordExpiryService::class),
+            Mockery::mock(PasswordChangeChallengeService::class),
         );
 
         $captured = [];

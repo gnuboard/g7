@@ -78,7 +78,7 @@ FcgidOutputBufferSize 0
 | 필수 | `session` | 세션 관리 |
 | 필수 | `tokenizer` | PHP 토큰 파싱 |
 | 필수 | `xml` | XML 파서 |
-| 필수 | `zip` | 확장·언어팩·코어 업데이트 패키지의 압축 해제 |
+| 필수 | `zip` | 확장·언어팩·코어 업데이트 패키지의 압축 해제 — `unzip` 명령 폴백 없음(7.1.3) |
 | 선택 | `gd` | 이미지 처리 (썸네일, 리사이징) — `imagick` 과 택일 |
 | 선택 | `imagick` | 고급 이미지 처리 (ImageMagick) — `gd` 와 택일 |
 | 선택 | `exif` | 이미지 메타데이터 읽기 |
@@ -344,7 +344,9 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 
 | 프로세스 | 명령어 | 관리 도구 |
 |---------|--------|----------|
-| 큐 워커 | `php artisan queue:work` | Supervisor 등 |
+| 큐 워커 | `php artisan queue:work {연결} --queue={큐,…}` (환경설정 → 드라이버 → 「큐 워커」 등록대로. 큐 드라이버가 `sync` 면 등록·워커 모두 필요 없음) | Supervisor 등 |
+| 긴 작업 워커(등록 시) | `php artisan queue:work database-long --queue=long --timeout=3600` | Supervisor 등 (`numprocs=1`) |
+| 사이트맵 워커 | `php artisan queue:work {연결} --queue=sitemap --timeout=1800` (사이트맵 생성 전용 큐 — 등록과 무관하게 늘 필요, 큐 드라이버가 `sync` 면 불필요) | Supervisor 등 (`numprocs=1`) |
 | 스케줄러 | `php artisan schedule:run` | cron (매분 실행) |
 | WebSocket | `php artisan reverb:start` | Supervisor 등 |
 
@@ -425,7 +427,7 @@ Daum 이 운영하는 서비스 SDK 를 쓰므로, 자체 호스팅해도 동작
 | 데몬 프로세스 (Supervisor) | 큐 워커 상시 실행 불가 | `QUEUE_CONNECTION=sync` (동기 처리) — 명령 실행이 막힌 환경은 설치 프로그램이 이 값을 자동으로 설정한다 |
 | 명령줄 PHP (CLI) 자체 부재 | 설치·코어 업데이트·예약 작업 | 동봉 묶음 설치 + 관리자 화면 업데이트 + §6.1 웹 크론 |
 | cron 최소 간격 | 스케줄러 분 단위 실행 제한 | 호스팅 cPanel cron (지원 간격 확인) 또는 §6.1 웹 크론 (놓친 시각을 따라잡아 실행) |
-| cron 자체 불가 · CLI 부재 | 예약 작업이 오류 없이 실행되지 않음 | §6.1 웹 크론 — 주소 호출로 대체 |
+| cron 자체 불가 · CLI 부재 | 예약 작업(정리·메일 보고서·주문 자동취소 등)이 오류 없이 실행되지 않음 — 방문자 통계는 관리자가 화면을 열 때 집계로 동작 | §6.1 웹 크론 — 주소 호출로 대체 |
 | PHP 확장 제한 (`pcntl`, `posix`, `redis`, `imagick` 등) | 큐 워커, 프로세스 관리, Redis 캐시, 이미지 처리 | 파일/DB 캐시, GD 라이브러리 |
 | PHP 설정 변경 (`memory_limit`, `max_execution_time` 등) | 대용량 파일 업로드, 이미지 처리 | 호스팅 관리자에게 변경 요청 |
 | 커스텀 포트 (80/443 외) | Reverb WebSocket (기본 8080 포트) | Pusher 등 외부 WebSocket 서비스 |

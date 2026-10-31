@@ -24,7 +24,7 @@ Filter 리스너 하나.
 않습니다** — 그것이 훅 시스템이 존재하는 이유입니다.
 
 **모듈과 플러그인의 경계**도 함께 보여줍니다. 플러그인은 완전한 페이지 레이아웃을 등록할 수
-없고, 설정 화면(`plugin_settings.json`)과 `layout_extensions`(다른 화면에 끼워 넣는 조각)만
+없고, 설정 화면(`plugin_settings.g7.html`)과 `layout_extensions`(다른 화면에 끼워 넣는 조각)만
 허용됩니다. 이 샘플에는 설정 화면 하나가 있습니다.
 
 `manifest.hidden = true` 라 관리자 UI 의 플러그인 목록에 나타나지 않습니다. artisan CLI 로는
@@ -44,10 +44,14 @@ Filter 리스너 하나.
 | `src/Services/` | 비즈니스 로직 | Repository 인터페이스 주입 (구체 클래스 금지) |
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update gnuboard7-hello_plugin --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update gnuboard7-hello_plugin --force` (빌드 불필요) |
+| `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update gnuboard7-hello_plugin --force` |
+| `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update gnuboard7-hello_plugin --force` |
+| `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update gnuboard7-hello_plugin --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->
 
@@ -63,14 +67,17 @@ Filter 리스너 하나.
 로그 기록 여부는 설정(`log_enabled`)이 정합니다. **설정으로 끌 수 있게 만드는 것**이 부가
 동작의 규약입니다 — 리스너가 무조건 동작하면 그 확장을 설치한 사이트는 끌 방법이 없습니다.
 
+설정 화면(`plugin_settings.g7.html`)의 `settings` 데이터소스는 받기 실패를 `error-handling` 으로 나눕니다 — 처음
+받기 실패는 실제 상태 코드의 본문 오류 화면을 띄워 빈 폼·기본값이 저장되지 않게 하고, 다시 받기 실패(`error.refetch`)는
+받아 둔 값을 그대로 둔 채 오류 토스트만 띄웁니다.
+
 **Filter 구독** — 값 가공: `gnuboard7-hello_module.memo.title.filter` 가 발행되면
 `FilterMemoTitleListener::prependHelloPrefix()` 가 그 값을 받아 접두사를 붙여 **반환**합니다.
 Action 과 달리 Filter 는 **반환값이 흐름에 다시 들어갑니다.**
 
-이 훅은 **학습용 모듈이 실제로 발행하지 않습니다.** 리스너 docblock 이 "발행한다고 가정하고"
-라고 밝히고 있으며, 그 자체가 학습 포인트입니다 — **훅이 발행되지 않아도 리스너 등록은
-유효하고**, 나중에 발행 지점이 생기면 그때부터 자동으로 호출됩니다. 구독은 발행자에게 아무런
-부담을 주지 않으므로 확장이 서로를 몰라도 됩니다.
+이 훅은 Hello 모듈이 메모를 저장하기 전에 제목에 대해 발행합니다(`MemoService::createMemo()`). 종전에는
+발행 지점이 없어 이 구독이 한 번도 실행되지 않았습니다 — **발행처가 없는 훅을 구독하면 코어가 등록 시점에
+경고를 남깁니다.** 구독은 발행자에게 아무런 부담을 주지 않으므로 확장이 서로를 몰라도 됩니다.
 
 Filter 구독에는 `'type' => 'filter'` 선언이 반드시 필요합니다. 빠뜨리면 코어가 그것을 Action
 으로 취급해 **반환값을 버립니다** — 리스너는 정상 실행되고 오류도 없는데 가공만 반영되지
@@ -118,7 +125,7 @@ Filter 구독에는 `'type' => 'filter'` 선언이 반드시 필요합니다. �
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:gnuboard7-hello_plugin` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`helloplugin-*`)로 쓰고 새 클래스는 `resources/css/main.css`(순수 CSS)에 정의한 뒤 `php artisan plugin:build gnuboard7-hello_plugin --production` 으로 `dist/css/plugin.css` 를 다시 만든다
 - [ ] Filter 훅을 구독한다면 `'type' => 'filter'` 를 선언했는지 확인 — 누락 시 반환값이 조용히 버려진다
 - [ ] 부가 동작은 설정 토글 뒤에 둔다 (`log_enabled` 가 그 본보기)
 - [ ] `manifest.hidden = true` 를 유지 (복제본에서만 제거)
@@ -136,7 +143,7 @@ Filter 구독에는 `'type' => 'filter'` 선언이 반드시 필요합니다. �
 | 대상 모듈의 코드를 직접 고쳐 부가 동작을 넣기 | 훅 구독 | 모듈이 업그레이드될 때마다 충돌하고, 플러그인을 꺼도 그 동작이 남는다 |
 | 부가 동작을 설정 없이 무조건 수행 | 설정 토글(`log_enabled`) 뒤에 둔다 | 설치한 사이트가 끌 방법이 없다 |
 | 리스너에서 `Model::query()` · `DB::table()` · `$row->save()` 직접 호출 | Repository 인터페이스 주입 | 리스너가 데이터 접근 규약의 예외가 되면 그 예외가 번진다 |
-| 플러그인에 완전한 페이지 레이아웃을 등록 | 설정 화면(`plugin_settings.json`)과 `layout_extensions` 만 | 페이지 소유권은 모듈·템플릿에 있다 — 경로를 다투면 설치 순서에 따라 화면이 바뀐다 |
+| 플러그인에 완전한 페이지 레이아웃을 등록 | 설정 화면(`plugin_settings.g7.html`)과 `layout_extensions` 만 | 페이지 소유권은 모듈·템플릿에 있다 — 경로를 다투면 설치 순서에 따라 화면이 바뀐다 |
 | 이 샘플에 기능을 더해 "쓸모 있게" 만들기 | 짧게 유지하고, 필요한 기능은 별도 확장으로 | 샘플의 가치는 한눈에 읽히는 것이다 |
 | `manifest.hidden` 을 제거 | 그대로 둔다 (복제본에서만 제거) | 학습용 플러그인이 운영 사이트의 목록에 섞인다 |
 | 금전이 오가는 훅을 기본 설정(큐)으로 구독 | `'sync' => true` | 커밋 뒤 실행이라 예외를 던져도 롤백되지 않는다 (이 샘플에는 해당 없으나 실제 플러그인에서 자주 걸린다) |
@@ -148,15 +155,18 @@ Filter 구독에는 `'type' => 'filter'` 선언이 반드시 필요합니다. �
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 2개 | `plugins/_bundled/gnuboard7-hello_plugin/tests` |
-| Vitest | 0개 | — |
+| Vitest | 2개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 0개 | — |
+| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
 ```bash
 # PHPUnit (변경 범위만) (Bash)
 php vendor/bin/phpunit plugins/_bundled/gnuboard7-hello_plugin/tests --filter='<대상클래스>'
+
+# Vitest (저장소 루트에서) (PowerShell)
+powershell -Command "npm run test:run -- plugins/_bundled/gnuboard7-hello_plugin/<대상>"
 
 ```
 

@@ -80,7 +80,8 @@ class BulkUpdateProductsRequest extends FormRequest
             // 옵션 일괄 변경 조건 (선택)
             'option_bulk_changes' => ['nullable', 'array'],
             'option_bulk_changes.price_adjustment' => ['nullable', 'array'],
-            'option_bulk_changes.price_adjustment.method' => ['required_with:option_bulk_changes.price_adjustment', 'string', 'in:set,add,percent'],
+            // subtract = 금액 인하(판매가 일괄 변경 창의 「인하 + 금액」). 인하 결과는 서비스가 옵션 판매가 0 을 하한으로 둔다.
+            'option_bulk_changes.price_adjustment.method' => ['required_with:option_bulk_changes.price_adjustment', 'string', 'in:set,add,subtract,percent'],
             'option_bulk_changes.price_adjustment.value' => ['required_with:option_bulk_changes.price_adjustment', 'numeric'],
             'option_bulk_changes.stock_quantity' => ['nullable', 'array'],
             'option_bulk_changes.stock_quantity.method' => ['required_with:option_bulk_changes.stock_quantity', 'string', 'in:set,add,subtract'],
@@ -127,6 +128,7 @@ class BulkUpdateProductsRequest extends FormRequest
      * 비교합니다. 한쪽만 온 경우의 정합성은 Service 가 DB 기존값과 대조해 판정합니다.
      *
      * @param  Validator  $validator  검증기
+     * @return void
      */
     public function withValidator(Validator $validator): void
     {

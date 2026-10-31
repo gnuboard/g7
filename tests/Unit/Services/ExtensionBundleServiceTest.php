@@ -13,7 +13,7 @@ use Mockery;
 use Tests\TestCase;
 
 /**
- * [case:backend-30] ExtensionBundleService 단위 테스트
+ * [case:backend-31] ExtensionBundleService 단위 테스트
  *
  * 활성 확장 IIFE/CSS 의 priority 정렬, `\n;\n` 구분자 병합, sourceMappingURL
  * 처리, 확장별 fault tolerance, 캐시 파일 생성/정리를 검증한다.
@@ -26,6 +26,11 @@ class ExtensionBundleServiceTest extends TestCase
 
     private PluginManager $pluginManager;
 
+    /**
+     * fixture 디렉터리와 모듈·플러그인 관리자 목을 준비하고 번들 캐시 파일을 비운다(테스트 격리).
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +50,11 @@ class ExtensionBundleServiceTest extends TestCase
         }
     }
 
+    /**
+     * fixture 파일·디렉터리와 번들 캐시 파일을 지우고 목을 닫는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (is_dir($this->fixtureDir)) {
@@ -67,6 +77,10 @@ class ExtensionBundleServiceTest extends TestCase
 
     /**
      * 지정 내용으로 fixture 에셋 파일을 만들고 절대 경로를 반환한다.
+     *
+     * @param  string  $name  fixture 디렉터리 안 파일 이름
+     * @param  string  $content  파일 내용
+     * @return string 만든 파일의 절대 경로
      */
     private function writeFixture(string $name, string $content): string
     {
@@ -79,11 +93,22 @@ class ExtensionBundleServiceTest extends TestCase
     /**
      * hasAssets/getAssetLoadingConfig/getBuiltAssetAbsolutePaths/getIdentifier 를
      * 노출하는 가짜 확장 인스턴스를 만든다.
+     *
+     * @param  string  $identifier  확장 식별자
+     * @param  int  $priority  로딩 우선순위
+     * @param  string|null  $jsPath  빌드된 JS 절대 경로(없으면 null)
+     * @param  string|null  $cssPath  빌드된 CSS 절대 경로(없으면 null)
+     * @param  string  $strategy  로딩 전략
+     * @param  string|null  $cssRelPath  확장 루트 기준 CSS 상대 경로(상대 참조 해석 기준점)
+     * @param  string|null  $cssNamespace  매니페스트 assets.css.namespace(선언한 확장만 층 평탄화 대상)
+     * @return object 가짜 확장 목 객체
      */
-    private function fakeExtension(string $identifier, int $priority, ?string $jsPath, ?string $cssPath, string $strategy = 'global', ?string $cssRelPath = null): object
+    private function fakeExtension(string $identifier, int $priority, ?string $jsPath, ?string $cssPath, string $strategy = 'global', ?string $cssRelPath = null, ?string $cssNamespace = null): object
     {
         $ext = Mockery::mock();
         $ext->shouldReceive('hasAssets')->andReturn(true);
+        // 매니페스트 assets 선언 — CSS 앞글자(namespace)를 선언한 확장만 서빙 층 평탄화 대상이다
+        $ext->shouldReceive('getAssets')->andReturn($cssNamespace === null ? [] : ['css' => ['namespace' => $cssNamespace]]);
         $ext->shouldReceive('getIdentifier')->andReturn($identifier);
         $ext->shouldReceive('getAssetLoadingConfig')->andReturn([
             'strategy' => $strategy,
@@ -125,6 +150,8 @@ class ExtensionBundleServiceTest extends TestCase
      * @param  array<string, mixed>  $assets  매니페스트 assets 선언
      * @param  string  $strategy  로딩 전략
      * @param  array<string, string>|null  $declaredPaths  kind => 절대 경로 (미지정 시 fixtureDir 의 부재 경로)
+     * @param  array<string, string>|null  $builtPaths  kind => 존재하는 산출물 절대 경로 (미지정 시 산출물 없음)
+     * @return object 가짜 확장 목 객체
      */
     private function fakeExtensionWithAssets(
         string $identifier,
@@ -161,6 +188,11 @@ class ExtensionBundleServiceTest extends TestCase
         return $ext;
     }
 
+    /**
+     * 목 관리자를 주입한 번들 서비스 인스턴스를 만든다.
+     *
+     * @return ExtensionBundleService 테스트 대상 서비스
+     */
     private function service(): ExtensionBundleService
     {
         return new ExtensionBundleService($this->moduleManager, $this->pluginManager);
@@ -174,6 +206,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 비우면 수정 전 `modules/bundle/js` 가 빈 200, 수정 후 503 이다.
      *
      * @effects asset_declaration_count_reads_manifest_not_built_files
+     *
+     * @return void 반환값 없음
      */
     public function test_counts_asset_declaring_extensions_from_manifest_not_built_output(): void
     {
@@ -206,6 +240,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 분기를 두지 않는다.
      *
      * @effects ordered_by_priority_ascending_only_no_name_hardcode
+     *
+     * @return void 반환값 없음
      */
     public function test_orders_global_assets_by_priority_ascending(): void
     {
@@ -228,6 +264,8 @@ class ExtensionBundleServiceTest extends TestCase
      * global 전략이 아닌 확장은 번들 모집단이 아니다 (레이아웃/지연 로딩이 따로 처리한다).
      *
      * @effects non_global_strategy_excluded_from_bundle
+     *
+     * @return void 반환값 없음
      */
     public function test_skips_non_global_strategy(): void
     {
@@ -249,6 +287,8 @@ class ExtensionBundleServiceTest extends TestCase
      * IIFE 사이는 `\n;\n` 로 잇는다 — 구분자가 없으면 ASI 경계가 깨져 번들 전체가 죽는다.
      *
      * @effects js_iife_joined_with_semicolon_newline_separator
+     *
+     * @return void 반환값 없음
      */
     public function test_js_bundle_joins_iife_with_semicolon_newline_separator(): void
     {
@@ -272,7 +312,11 @@ class ExtensionBundleServiceTest extends TestCase
     }
 
     /**
+     * 운영 환경 JS 번들은 각 확장 파일의 sourceMappingURL 주석을 지운다.
+     *
      * @effects prod_strips_source_mapping_url
+     *
+     * @return void 반환값 없음
      */
     public function test_prod_strips_source_mapping_url(): void
     {
@@ -291,7 +335,11 @@ class ExtensionBundleServiceTest extends TestCase
     }
 
     /**
+     * 개발 환경 JS 번들은 sourceMappingURL 을 확장 자산 서빙 경로로 바꿔 소스맵을 그대로 쓸 수 있게 한다.
+     *
      * @effects dev_rewrites_source_mapping_url_to_asset_serving_path
+     *
+     * @return void 반환값 없음
      */
     public function test_dev_rewrites_source_mapping_url_to_asset_serving_path(): void
     {
@@ -312,6 +360,15 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertStringContainsString('sourceMappingURL=/api/modules/assets/ext-a/dist/js/a.js.map', $js);
     }
 
+    /**
+     * 운영 환경 CSS 번들은 각 확장 파일의 sourceMappingURL 주석을 지운다.
+     *
+     * @scenario case=bundle_service_c01
+     *
+     * @effects extension_bundle_service_contract
+     *
+     * @return void 반환값 없음
+     */
     public function test_prod_strips_css_source_mapping_url(): void
     {
         $this->app['env'] = 'production';
@@ -331,6 +388,62 @@ class ExtensionBundleServiceTest extends TestCase
         $this->assertStringContainsString('.a{color:red}', $bundle);
     }
 
+    /**
+     * 앞글자(`assets.css.namespace`)를 선언한 확장 CSS 는 병합 번들에서 층 래퍼가 벗겨진다 —
+     * `g7-extension`(의미 클래스)·`properties`(Tailwind 폴백) 층만 남고 순서 선언도 정리된다.
+     *
+     * @effects extension_css_bundle_flattens_layers_for_namespaced_extensions
+     *
+     * @return void 반환값 없음
+     */
+    public function test_css_bundle_flattens_layers_of_namespaced_extension(): void
+    {
+        $css = $this->writeFixture('ns.css', '@layer properties;@layer theme, utilities;@layer theme{:root{--p-color:red}}'
+            .'@layer utilities{.p\:flex{display:flex}}@layer g7-extension{.p-card{padding:1rem}}');
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-ns' => $this->fakeExtension('ext-ns', 10, null, $css, cssNamespace: 'p'),
+        ]);
+
+        $bundle = $this->service()->buildCssBundle('module');
+
+        $this->assertStringNotContainsString('@layer utilities', $bundle);
+        $this->assertStringNotContainsString('@layer theme', $bundle);
+        $this->assertStringContainsString('.p\:flex{display:flex}', $bundle);
+        $this->assertStringContainsString('@layer g7-extension{.p-card{padding:1rem}}', $bundle);
+        $this->assertStringContainsString('@layer properties;', $bundle);
+    }
+
+    /**
+     * 앞글자를 선언하지 않은(전환 전) 확장 CSS 는 층을 그대로 둔다 — 템플릿과 같은 이름을 `@layer utilities`
+     * 로 재정의한 규칙을 벗기면 층 없는 규칙이 템플릿 화면 전체를 이기기 때문이다.
+     *
+     * @effects extension_css_bundle_keeps_layers_for_undeclared_extensions
+     *
+     * @return void 반환값 없음
+     */
+    public function test_css_bundle_keeps_layers_of_undeclared_extension(): void
+    {
+        $css = $this->writeFixture('legacy.css', '@layer utilities{.hidden{display:none}}');
+
+        $this->moduleManager->shouldReceive('getActiveModules')->andReturn([
+            'ext-legacy' => $this->fakeExtension('ext-legacy', 10, null, $css),
+        ]);
+
+        $bundle = $this->service()->buildCssBundle('module');
+
+        $this->assertStringContainsString('@layer utilities{.hidden{display:none}}', $bundle);
+    }
+
+    /**
+     * 개발 환경 CSS 번들은 sourceMappingURL 주석을 남긴다.
+     *
+     * @scenario case=bundle_service_c02
+     *
+     * @effects extension_bundle_service_contract
+     *
+     * @return void 반환값 없음
+     */
     public function test_dev_keeps_css_source_mapping_url(): void
     {
         // 기본 testing 환경 = 비프로덕션 → 개발 디버깅을 위해 원본 유지
@@ -349,6 +462,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 한 확장의 읽기 실패가 번들 전체를 소실시키지 않는다 — 그 확장만 빠지고 나머지는 병합된다.
      *
      * @effects per_extension_fault_tolerance_skips_missing_file_keeps_rest
+     *
+     * @return void 반환값 없음
      */
     public function test_per_extension_fault_tolerance_skips_missing_file(): void
     {
@@ -375,6 +490,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 이었고, 오류도 로그 흔적도 화면 경고도 남지 않았다.
      *
      * @effects css_with_relative_url_rewritten_not_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_css_with_relative_url_is_rewritten_not_excluded(): void
     {
@@ -402,6 +519,12 @@ class ExtensionBundleServiceTest extends TestCase
 
     /**
      * 절대·루트상대·data URI 참조는 병합에서도 손대지 않는다.
+     *
+     * @scenario case=bundle_service_c03
+     *
+     * @effects extension_bundle_service_contract
+     *
+     * @return void 반환값 없음
      */
     public function test_css_bundle_leaves_absolute_references_untouched(): void
     {
@@ -423,7 +546,11 @@ class ExtensionBundleServiceTest extends TestCase
     }
 
     /**
+     * 번들할 확장이 없으면 빈 경로를 돌려준다.
+     *
      * @effects empty_bundle_returns_empty_path_and_empty_ok_response
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_bundle_returns_empty_path(): void
     {
@@ -435,7 +562,11 @@ class ExtensionBundleServiceTest extends TestCase
     }
 
     /**
+     * 운영 환경은 판 번호가 붙은 캐시 파일을 쓰고 같은 판에서는 다시 만들지 않고 재사용한다.
+     *
      * @effects prod_writes_versioned_cache_file_and_reuses_on_same_version
+     *
+     * @return void 반환값 없음
      */
     public function test_prod_writes_versioned_cache_file_and_reuses_it(): void
     {
@@ -471,6 +602,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 로그도 남지 않아 원인을 짚을 수 없다.
      *
      * @effects non_production_rebuilds_every_request_no_disk_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_non_production_rebuilds_every_request_without_cache_reuse(): void
     {
@@ -497,7 +630,11 @@ class ExtensionBundleServiceTest extends TestCase
     }
 
     /**
+     * 정리는 현재 판이 아닌 번들 파일만 지운다.
+     *
      * @effects cleanup_removes_stale_version_bundles_only
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_removes_stale_version_bundles_only(): void
     {
@@ -559,7 +696,11 @@ class ExtensionBundleServiceTest extends TestCase
     }
 
     /**
+     * 유형별 비우기는 그 유형 접두어의 번들 파일만 지운다.
+     *
      * @effects clear_bundles_by_type_scopes_to_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_bundles_by_type(): void
     {
@@ -583,6 +724,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 정책이 갈라져 있던 것이 원인이었다.
      *
      * @effects clear_bundles_preserves_current_version
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_bundles_preserves_current_version(): void
     {
@@ -610,6 +753,8 @@ class ExtensionBundleServiceTest extends TestCase
      * rename 이 실패한 만큼 영구 잔존했다(실측 560개).
      *
      * @effects cleanup_removes_stale_atomic_write_temp_files
+     *
+     * @return void 반환값 없음
      */
     public function test_cleanup_removes_stale_temp_bundle_files_only(): void
     {
@@ -643,7 +788,11 @@ class ExtensionBundleServiceTest extends TestCase
     }
 
     /**
+     * 플러그인 번들은 우선순위 오름차순이라 우선순위가 가장 낮은 값인 GDPR 이 맨 앞에 온다.
+     *
      * @effects plugin_bundle_gdpr_first_when_priority_lowest
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_bundle_orders_by_priority_gdpr_first_when_lowest(): void
     {
@@ -671,6 +820,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 이것을 소실로 세면 그 확장만 설치된 기본 구성이 통째로 503 이 된다.
      *
      * @effects empty_result_with_present_empty_artifacts_returns_200
+     *
+     * @return void 반환값 없음
      */
     public function test_find_missing_declared_assets_ignores_present_zero_byte_files(): void
     {
@@ -703,6 +854,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 두 판정이 같은 모집단을 써야 한쪽만 장애로 보는 어긋남이 생기지 않는다.
      *
      * @effects empty_result_with_missing_declared_artifact_returns_503
+     *
+     * @return void 반환값 없음
      */
     public function test_find_missing_declared_assets_lists_absent_files(): void
     {
@@ -738,6 +891,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 플러그인 축도 같은 판정을 쓴다 — 모집단만 다르다.
      *
      * @effects bundle_decision_is_shared_across_extension_types
+     *
+     * @return void 반환값 없음
      */
     public function test_find_missing_declared_assets_covers_plugins(): void
     {
@@ -773,6 +928,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 없고, 원본이 사라진 순간에는 캐시가 멀쩡한데도 빈 경로가 반환되어 503 이 된다.
      *
      * @effects prod_cache_hit_skips_build_and_source_reads
+     *
+     * @return void 반환값 없음
      */
     public function test_prod_cache_hit_returns_cached_path_without_enumerating_or_reading_sources(): void
     {
@@ -814,6 +971,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 짝을 이룬다 — 원본 교체는 version bump 로만 반영된다.
      *
      * @effects prod_cache_hit_skips_build_and_source_reads
+     *
+     * @return void 반환값 없음
      */
     public function test_prod_cache_hit_does_not_rebuild_when_source_changes_on_same_version(): void
     {
@@ -845,6 +1004,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 다른 프로세스가 대기 중에 캐시를 완성했다면 이쪽은 빌드하지 않아야 한다.
      *
      * @effects prod_cache_miss_builds_once_under_lock_and_rechecks
+     *
+     * @return void 반환값 없음
      */
     public function test_prod_cache_miss_serializes_concurrent_builds_and_rechecks_cache_inside_lock(): void
     {
@@ -887,6 +1048,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 잠금 대기가 초과되어도 실패로 바꾸지 않는다 — 잠금 없이 각자 빌드한다.
      *
      * @effects prod_build_lock_failure_falls_back_to_unlocked_build
+     *
+     * @return void 반환값 없음
      */
     public function test_prod_cache_miss_builds_without_lock_when_lock_times_out(): void
     {
@@ -915,6 +1078,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 캐시 저장소가 잠금을 제공하지 못해도(드라이버 미지원·권한 등) 빌드는 계속한다.
      *
      * @effects prod_build_lock_failure_falls_back_to_unlocked_build
+     *
+     * @return void 반환값 없음
      */
     public function test_prod_cache_miss_builds_without_lock_when_store_cannot_lock(): void
     {
@@ -943,6 +1108,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 반복한다(경로 조회 → 재빌드 → 소실 판정).
      *
      * @effects prod_empty_result_with_present_artifacts_is_cached_as_zero_byte_file
+     *
+     * @return void 반환값 없음
      */
     public function test_prod_caches_zero_byte_bundle_when_declared_artifacts_exist_but_empty(): void
     {
@@ -987,6 +1154,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 위장된다.
      *
      * @effects prod_empty_result_with_missing_artifact_is_not_cached
+     *
+     * @return void 반환값 없음
      */
     public function test_prod_does_not_cache_when_declared_artifact_missing(): void
     {
@@ -1016,6 +1185,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 선언한 확장이 **하나도 없어도** 0바이트 캐시를 만든다(정적 게시 가능).
      *
      * @effects prod_empty_result_with_present_artifacts_is_cached_as_zero_byte_file
+     *
+     * @return void 반환값 없음
      */
     public function test_prod_caches_zero_byte_bundle_when_nothing_declared(): void
     {
@@ -1037,6 +1208,8 @@ class ExtensionBundleServiceTest extends TestCase
      * 확장 스타일이 사라진 채 고정된다. 종전처럼 매 요청 재시도해 원인이 사라지면 회복한다.
      *
      * @effects prod_build_with_skipped_extension_is_not_cached
+     *
+     * @return void 반환값 없음
      */
     public function test_prod_does_not_cache_when_an_extension_was_skipped_during_merge(): void
     {
@@ -1053,6 +1226,12 @@ class ExtensionBundleServiceTest extends TestCase
         {
             public string $failOn = '';
 
+            /**
+             * 지정한 경로만 읽기 실패(false)로 돌려 파일 하나가 깨진 상황을 흉내 낸다.
+             *
+             * @param  string  $path  읽을 자산 절대 경로
+             * @return string|false 파일 내용 또는 실패 시 false
+             */
             protected function readAssetSource(string $path): string|false
             {
                 return $path === $this->failOn ? false : parent::readAssetSource($path);

@@ -42,9 +42,9 @@ class DashboardController extends AdminBaseController
     }
 
     /**
-     * 오늘 주문 상태별 판매 수량(배지)을 조회합니다.
+     * 「오늘」 상태 배지 7개의 주문 수를 조회합니다 (각 값 = 그 배지 링크로 연 주문 목록의 총 건수).
      *
-     * @return JsonResponse 오늘 상태별 집계
+     * @return JsonResponse 배지 키별 주문 수
      */
     public function overview(): JsonResponse
     {

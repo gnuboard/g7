@@ -15,7 +15,8 @@
 6. .js/.css/.json/.map 로 끝나는 라우트 = dualSuffix/dualSuffixSegment/dualAsset 매크로 필수
 7. catch-all 은 예약 프리픽스를 전수 제외 (가려진 라우트는 200 SPA 셸이라 단서가 없다)
 8. 조건부로만 열리는 라우트군의 게이트 = 그룹 미들웨어 단일 지점 (핸들러 개별 게이트 금지)
-9. 라우트는 언제나 마운트 접두사 없이 등록 — 접두사는 AssetUrl(서버)·G7Core.url(브라우저)이 붙이고 벗긴다
+9. 리다이렉트·콜백·제3자 전송·메일 링크의 절대 URL = SiteUrl::absolute() (url()·redirect('/x') 는 요청 Host 를 따른다)
+10. 라우트는 언제나 마운트 접두사 없이 등록 — 접두사는 AssetUrl(서버)·G7Core.url(브라우저)이 붙이고 벗긴다
 ```
 
 ---
@@ -26,7 +27,9 @@
 2. [URL 경로 규칙](#url-경로-규칙)
 3. [권한 체크](#권한-체크)
 4. [라우트 정의 예시](#라우트-정의-예시)
-5. [개발 체크리스트](#개발-체크리스트)
+5. [절대 URL 은 사이트 주소로 만든다](#절대-url-은-사이트-주소로-만든다)
+6. [라우트 캐시](#라우트-캐시)
+7. [개발 체크리스트](#개발-체크리스트)
 
 ---
 
@@ -246,7 +249,7 @@ Route::delete('clear', function () {
 
 | 방향 | 서버 | 브라우저 |
 |------|------|----------|
-| 붙인다 — 요청·이동 주소를 만들 때 | `App\Support\AssetUrl::basePrefix()` 가 접두사를 돌려주고, `sitePath()`(사이트 안 경로) · `siteAbsolute()`(크롤러·메일에 주는 절대 주소) 가 그것을 붙인다 | 코어: `withBasePrefix()` 와 `resources/js/core/support/assetUrl.ts` 의 생성기 / 확장: `G7Core.url.api()` · `sitePath()` |
+| 붙인다 — 요청·이동 주소를 만들 때 | `App\Support\AssetUrl::basePrefix()` 가 접두사를 돌려주고 `sitePath()`(같은 사이트 안 상대 경로)가 그것을 붙인다. 크롤러·메일·제3자에 주는 절대 주소는 `SiteUrl`·`ScreenUrl`([절대 URL](#절대-url-은-사이트-주소로-만든다)) — 이미 접두사가 붙은 경로에 다시 붙이지 않는다 | 코어: `withBasePrefix()` 와 `resources/js/core/support/assetUrl.ts` 의 생성기 / 확장: `G7Core.url.api()` · `sitePath()` |
 | 벗긴다 — 브라우저 주소를 라우트 패턴과 대조할 때 | 프레임워크가 요청의 base URL 을 벗긴 경로로 라우팅한다 — 라우트 정의가 접두사를 모르는 이유 | 코어: `stripBasePrefix()` / 확장: `routePath()` |
 
 서버 쪽 `basePrefix()` 는 현재 요청의 base URL(프레임워크가 진입 스크립트 위치에서 도출)을 우선하고,
@@ -264,8 +267,11 @@ Route::delete('clear', function () {
 - 붙이는 쪽과 벗기는 쪽은 다른 방향이다. 한쪽만 재는 회귀 테스트는 다른 쪽이 통째로 빠져도 통과하므로
   양방향을 함께 잰다.
 - 서버가 만드는 **절대** 주소(알림·메일·비밀번호 재설정 링크 · 결제·본인인증의 복귀·통보 주소 · 사이트맵 ·
-  봇 화면)는 `AssetUrl::siteAbsolute('/path')` 하나로 만든다. `url()` 은 요청의 호스트·접두사를 실어 앞단
-  프록시 배치에서 사이트 밖을 가리키고 접두사를 품은 값에는 접두사를 한 번 더 싣는다. `config('app.url').'/path'`
+  봇 화면)는 [「절대 URL 은 사이트 주소로 만든다」](#절대-url-은-사이트-주소로-만든다)를 따른다 — 다른 사람·시스템에
+  닿는 주소는 `SiteUrl`(사이트 주소 기준, 요청 Host 로 폴백하지 않음), 회원이 여는 사용자 화면 주소는 `ScreenUrl`.
+  하위 폴더 설치에서 이미 접두사가 붙은 경로(`/g7/…`)를 넘겨도 `SiteUrl` 은 접두사를 다시 붙이지 않는다.
+  `AssetUrl::siteAbsolute()` 는 `SiteUrl::absolute()` 에 위임하는 호환용 이름이다. `url()` 은 요청의 호스트·접두사를
+  실어 앞단 프록시 배치에서 사이트 밖을 가리키고 접두사를 품은 값에는 접두사를 한 번 더 싣는다. `config('app.url').'/path'`
   는 `APP_URL` 의 후행 슬래시를 그대로 실어 `https://host/g7//path` 를 만든다 — 둘 다 오류 없이 깨진 링크로만
   드러난다.
 
@@ -447,6 +453,59 @@ Route::prefix('products')->group(function () {
 });
 ```
 
+### 요청 제한은 라우트마다 자기 키를 쓴다
+
+Laravel 의 `throttle:N,M` 은 비로그인 요청의 제한 키를 `sha1(domain|ip)` 하나로 만든다. 경로는 키에 들어가지 않으므로, 접두사 없는 `throttle:` 을 단 라우트는 **같은 형식의 다른 모든 라우트와 횟수를 공유**한다. 상한이 작은 엔드포인트(본인인증 확인 10/분)는 상한이 큰 라우트(`api/user/*` 600/분)를 치는 화면 로드 몇 번만으로 먼저 막힌다 — 예외도 로그도 없이 그 엔드포인트만 429 를 돌려주는 것이 유일한 증상이다.
+
+| ❌ 금지 | ✅ 올바른 사용 |
+|--------|---------------|
+| `'throttle:10,1'` (접두사 없음) | `'throttle:10,1,identity_verify'` — 세 번째 인자가 키 접두사 |
+| 여러 라우트가 같은 접두사를 공유 | 라우트마다 고유 접두사 (요청·확인·취소·상태 조회·콜백 각자) |
+| 응답 문구·상한 계산이 필요한데 접두사 인자로 해결 | `RateLimiter::for()` 명명 리미터 (`throttle:auth-login` 이 그 예) |
+
+상한과 접두사의 SSoT 는 라우트 정의 한 곳이고, API 레퍼런스는 그 값을 서술한다. 회귀 가드: `tests/Feature/Identity/IdentityVerifyThrottleIsolationTest.php` (공유 키를 상한 이상 선점해도 확인 요청이 429 가 아님 + 자기 상한은 그대로 걸림). 재현 경위와 리미터 카운터를 찾는 법은 [API 레퍼런스의 요청 제한 절](api/identity.md#공개-본인인증-엔드포인트의-요청-제한)에 정리돼 있다.
+
+---
+
+## 절대 URL 은 사이트 주소로 만든다
+
+Laravel 의 `url()`·`route()`·`redirect('/x')`·`redirect()->back()` 과 FormRequest 의 기본 `failedValidation`(직전 화면으로 되돌림)은 절대 주소의 호스트를 **요청의 Host 헤더**(신뢰 프록시 뒤라면 `X-Forwarded-Host`)에서 가져온다. 화면 안 링크처럼 같은 요청에 되돌려 주는 주소라면 문제가 없지만, 그 주소가 사이트 밖으로 나가거나 나중에 다시 쓰이면 Host 를 바꿔 보낸 사람이 목적지를 정하게 된다 — 결제·본인인증 결과와 검증 토큰이 그 호스트로 전달된다.
+
+운영 환경의 신뢰 호스트 검사(`config/trustedhosts.php`)는 마지막 겹일 뿐이다. 사이트 주소의 **하위 도메인·www 쌍(`www.` 를 붙이거나 뗀 주소)·다른 포트**는 그 검사를 통과하므로, 그것만으로 이 경로를 막지 못한다.
+
+| ❌ 금지 (리다이렉트·콜백·제3자 전송·메일/알림 링크) | ✅ 올바른 사용 |
+|--------|---------------|
+| `redirect('/shop/orders')`, `redirect()->to('/x')` | `redirect(SiteUrl::absolute('/shop/orders'))` |
+| `redirect(ShopRedirectUrl::resolve($setting))` (설정값은 상대 경로일 수 있음) | `redirect(SiteUrl::absolute(ShopRedirectUrl::resolve($setting)))` |
+| PG·본인인증 제공자에 넘기는 `url('/plugins/x/callback')`·`route('x.callback')` | `SiteUrl::absolute('/plugins/x/callback')` |
+| 큐·메일·알림에서 `url('/mypage')` (큐 작업자는 `http://localhost` 로 만든다) | `SiteUrl::absolute('/mypage')` |
+| 웹 라우트(결제·본인인증 콜백, 결과 브리지, PG 서버 통보·웹훅)의 FormRequest 가 기본 `failedValidation` 을 그대로 씀 | 브라우저가 오는 주소면 `failedValidation` 에서 `HttpResponseException(redirect(SiteUrl::absolute($failUrl)))` 로 명시 이동, PG 서버가 부르는 주소면 `HttpResponseException(ResponseHelper::validationError($validator->errors()))` 로 422 (규칙이 빈 배열이라 검증이 실패할 수 없는 요청은 해당 없음) |
+| `return_url` 같은 입력 주소를 요청 Host 와 비교해 허용 | `SiteUrl::isSameOrigin($url)` 로 사이트 주소와 비교 |
+
+`App\Support\SiteUrl` 이 사이트 주소(`config('app.url')` — 환경설정에 사이트 주소가 있으면 그 값) 기준 절대 URL 의 단일 출처다. 하위 폴더 설치(`APP_URL=https://host/g7`)에서도 같다 — 사이트 주소의 경로가 곧 마운트 접두사이고, 이미 접두사가 붙은 경로(`/g7/…`)를 넘겨도 다시 붙이지 않는다. 종전 이름 `AssetUrl::siteAbsolute()` 는 `SiteUrl::absolute()` 에 위임한다(호환). 같은 사이트 안의 상대 경로는 `AssetUrl::sitePath()`([마운트 접두사](#마운트-접두사--라우트는-언제나-접두사-없이-등록된다)).
+
+| 메서드 | 용도 |
+| --- | --- |
+| `SiteUrl::absolute($pathOrUrl)` | 상대 경로를 사이트 주소 기준 절대 URL 로. 이미 절대 URL 이면 그대로 |
+| `SiteUrl::forPath($pathAndQuery)` | 요청에서 꺼낸 경로·쿼리(`$request->getRequestUri()`)를 사이트 주소에 붙인 URL |
+| `SiteUrl::base()` · `SiteUrl::origin()` · `SiteUrl::hostWithPort()` | 사이트 주소(끝 `/` 제거)·출처(`scheme://host[:port]`)·호스트[:포트] |
+| `SiteUrl::isSameOrigin($url)` | 주어진 URL 이 사이트 주소와 같은 출처인지 |
+
+**사람이 여는 화면 주소는 화면 주소 헬퍼로 (7.2.0)** — 알림·메일 링크, 비밀번호 재설정, 결제·클레임 결제 뒤 성공·실패 복귀, 본인인증 복귀처럼 **회원이 브라우저로 여는 사용자 화면**은 `SiteUrl` 대신 `App\Support\ScreenUrl` 로 만든다. 기본은 사이트 주소와 같고, 환경설정 「사용자 화면 URL」(`general.user_screen_url`)을 정하면 그 주소가 베이스가 되며, 필터 훅 `core.screen_url.filter_path` 로 경로를 바꿀 수 있다. PG·본인인증 제공자에 넘기는 **콜백·웹훅 주소와 관리자 화면 주소**는 이 서버가 받아야 하므로 계속 `SiteUrl` 이다.
+
+| 용도 | 사용 |
+| --- | --- |
+| 화면 키로 경로·절대 URL 만들기 | `ScreenUrl::path('auth.login', '/login')` · `ScreenUrl::absolute('board.post', '/board/{slug}/{id}', [...])` |
+| 이미 만든 상대 경로(설정값 등)를 사용자 화면 베이스로 | `redirect(ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($setting)))` (브라우저 복귀용 `failedValidation` 포함) |
+| 관리자 링크 | 범위 `ScreenUrl::SCOPE_ADMIN` — 베이스는 사이트 주소 |
+| 입력 복귀 주소 출처 허용 | `SiteUrl::isSameOrigin($url) \|\| ScreenUrl::isUserScreenOrigin($url)` |
+
+화면 키 목록과 필터 예제는 [개발자 화면 가이드](../custom-development.md#5-화면-주소-키와-주소-필터).
+
+API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON 으로 응답한다(`bootstrap/app.php` 의 `shouldRenderJsonWhen`) — 직전 화면으로 되돌아가는 응답이 생기지 않는다. 사이트 주소가 아닌 Host(하위 도메인·www 쌍·다른 포트·별칭)로 들어온 화면 요청은 사이트 주소로 이동한다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐).
+
+요청 Host 를 의도적으로 쓰는 코드(예: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단)는 해당 줄 위에 `// audit:allow request-host-absolute-url reason: …` 를 단다. 회귀 가드: audit 룰 `request-host-absolute-url`, 계약 테스트 `tests/Feature/Http/TrustedProxyContractTest.php`, 단위 테스트 `tests/Unit/Support/SiteUrlTest.php`.
+
 ---
 
 ## 라우트 캐시
@@ -482,6 +541,16 @@ Route::prefix('products')->group(function () {
 |------|------|
 | 확장 설치 / 활성화 / 비활성화 / 삭제 / 업데이트 | 확장 라우트 등록이 활성 목록에 게이트되어 있다 |
 | 코어 업데이트 · 업그레이드 스텝 | 코어 라우트 파일과 vendor 가 교체된다 |
+| **코어 설치 완료** | 인스톨러 `complete_flag` 직후 `route_cache` task (config 캐시와 나란히) |
+
+**코어 설치 완료가 별도 지점인 이유** — 설치 중의 확장 install·activate 도 `rebuild()` 를
+부르지만, 그 시점에는 `installer_completed` 가 아직 서지 않아 **clear 까지만** 수행된다
+(불완전한 부팅을 캐시에 박제하지 않으려는 정책). 완료 플래그 이후에는 재생성 트리거가
+확장 라이프사이클에만 묶여 있으므로, 인스톨러가 마무리 단계에서 직접 굽지 않으면
+**갓 설치한 사이트는 라우트 캐시가 빈 채로 시작한다.** 웹은 정상 동작하지만(매 요청
+라우트 파일 스캔 — 느릴 뿐) `php artisan test` 는 부모 부팅에서 확장 라우트 파일을
+실행하다 죽는다. 확장을 하나라도 설치·변경하면 그때 구워져 그 뒤로는 드러나지 않으므로
+노출 창이 좁다. 회귀 가드: `tests/Unit/Installer/InstallerFinalizeCacheTasksTest`.
 
 코어 업데이트처럼 파일 교체가 진행 중인 흐름에서는 **중간에 비우고 끝에서 재생성**한다.
 교체 중 상태를 캐시에 구우면 안 되기 때문이며, config 캐시가 같은 형태로 처리된다.

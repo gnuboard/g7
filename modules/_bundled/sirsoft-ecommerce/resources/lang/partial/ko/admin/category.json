@@ -73,6 +73,13 @@
     "image_preview": {
       "title": "이미지 미리보기",
       "close": "닫기"
+    },
+    "editing": {
+      "title": "수정 중입니다",
+      "message": "수정 중인 내용이 저장되지 않습니다.",
+      "confirm_message": "정말로 취소하고 다른 분류를 선택하시겠습니까?",
+      "continue": "계속 수정",
+      "discard": "취소하고 이동"
     }
   },
   "messages": {

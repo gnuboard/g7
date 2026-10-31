@@ -132,6 +132,7 @@ class AssetUrl
      * 모드를 강제로 지정합니다 (테스트 전용).
      *
      * @param  string|null  $mode  강제할 모드. null 이면 오버라이드 해제
+     * @return void 반환값 없음
      */
     public static function forceMode(?string $mode): void
     {
@@ -193,6 +194,8 @@ class AssetUrl
 
     /**
      * 정적 게시 베이스 메모를 초기화합니다 (테스트 전용).
+     *
+     * @return void 반환값 없음
      */
     public static function resetStaticExtBaseMemo(): void
     {
@@ -367,28 +370,28 @@ class AssetUrl
      */
     public static function hasBasePrefix(string $path, string $prefix): bool
     {
-        if (! str_starts_with($path, $prefix)) {
-            return false;
-        }
-
-        $next = substr($path, strlen($prefix), 1);
-
-        return $next === '' || $next === '/' || $next === '?' || $next === '#';
+        // 판정 본체는 SiteUrl 이 가진다 — 절대 주소의 멱등(SiteUrl::absolute())과 같은 사본 하나.
+        return SiteUrl::hasPathPrefix($path, $prefix);
     }
 
     /**
      * 사이트 내부 경로를 **접두사를 한 번만 실은** 절대 URL 로 만듭니다.
      *
-     * `url()` 을 쓰면 안 된다 — 그 헬퍼는 요청 루트(오리진 **+ 마운트 접두사**)를 앞에
-     * 붙이는데 이 자리에 오는 값 상당수가 접두사를 이미 품고 있어 `/g7/g7/…` 가 된다.
-     * 그렇다고 `absolute()` 만 쓰면 리터럴 사이트 경로에 접두사를 붙일 주체가 사라진다.
-     * 그래서 `sitePath()` 로 보정한 뒤 오리진만 붙인다.
+     * 본체는 {@see SiteUrl::absolute()} 다 — 절대 URL 은 사이트 주소(`APP_URL`, 오리진 + 마운트
+     * 접두사)만으로 만들고 요청 Host 로 되돌아가지 않는다(위조 Host 가 메일·크롤러·제3자에게 닿는
+     * 주소에 실리지 않게). 이미 접두사를 실은 값(`/g7/api/…`)은 SiteUrl 이 멱등으로 다룬다.
+     * `APP_URL` 이 비면 경로 그대로(상대)다.
+     *
+     * 이 래퍼가 더하는 것은 두 가지다. 사이트 경로가 아닌 값(빈 문자열·프로토콜 상대·`data:`·
+     * 상대 경로)은 손대지 않고 돌려준다 — 붙이면 `https://hostdata:image/…` 같은 값이 조용히
+     * 만들어진다. 오리진의 스킴·호스트는 소문자로 정규화한다(RFC 3986 §6.2.2.1) — `APP_URL` 표기에
+     * 따라 같은 자산의 정본 주소가 갈리지 않게.
      *
      * 크롤러·메일처럼 **화면에 아무 표시가 남지 않는** 소비처가 이 값을 받으므로,
      * 어긋나도 증상은 「미리보기 이미지가 안 나온다」뿐이다.
      *
      * @param  string  $path  사이트 경로 후보
-     * @return string 절대 URL (판정 대상이 아니면 원본 그대로)
+     * @return string 절대 URL (판정 대상이 아니면 원본 그대로, `APP_URL` 이 비면 경로 그대로)
      */
     public static function siteAbsolute(string $path): string
     {
@@ -398,7 +401,22 @@ class AssetUrl
             return $path;
         }
 
-        return self::absolute(self::sitePath($path));
+        return self::lowercaseOrigin(SiteUrl::absolute($path));
+    }
+
+    /**
+     * 절대 URL 의 스킴·호스트를 소문자로 바꿉니다 (경로는 대소문자를 구분하므로 그대로).
+     *
+     * @param  string  $url  URL (오리진이 없으면 그대로 돌려준다)
+     * @return string 정규화된 URL
+     */
+    private static function lowercaseOrigin(string $url): string
+    {
+        return (string) preg_replace_callback(
+            '#^([A-Za-z][A-Za-z0-9+.\-]*://)([^/?\#]*)#',
+            static fn (array $m): string => strtolower($m[1]).strtolower($m[2]),
+            $url
+        );
     }
 
     /**
@@ -406,9 +424,9 @@ class AssetUrl
      *
      * 알림·메일이 「사이트로 가기」 링크로 싣는 값이다. 종전에는 `config('app.url')` 원문을 실어
      * 운영자가 `APP_URL` 에 후행 슬래시를 붙이면 그 형태가 그대로 메일에 나갔고, 요청이 접두사를
-     * 실은 배치와 설정만 아는 배치(큐)가 다른 값을 냈다. `siteAbsolute('/')` 와 같은 규칙에서
-     * 후행 슬래시만 걷어낸 값이라 형제 링크(`siteAbsolute('/login')`)와 언제나 같은 앞부분을 갖는다
-     * (16차 G3 라운드 B-4).
+     * 실은 배치와 설정만 아는 배치(큐)가 다른 값을 냈다. `rtrim(SiteUrl::absolute('/'), '/')` 에
+     * `siteAbsolute()` 의 오리진 소문자 정규화를 더한 값이라 형제 링크(`siteAbsolute('/login')`)와
+     * 언제나 같은 앞부분을 갖는다 (16차 G3 라운드 B-4). `APP_URL` 이 비면 빈 문자열이다.
      *
      * @return string 예: `https://example.com/g7` (루트 설치면 `https://example.com`)
      */
@@ -564,15 +582,8 @@ class AssetUrl
      */
     public static function configuredBasePath(): string
     {
-        $path = parse_url((string) config('app.url'), PHP_URL_PATH);
-
-        if (! is_string($path)) {
-            return '';
-        }
-
-        $path = rtrim($path, '/');
-
-        return str_starts_with($path, '/') ? $path : '';
+        // 사이트 주소의 경로 부분 — SiteUrl 이 절대 주소의 멱등 판정에 쓰는 값과 같은 출처.
+        return SiteUrl::basePath();
     }
 
     /**
@@ -627,6 +638,7 @@ class AssetUrl
      * @param  string  $identifier  모듈 식별자
      * @param  string  $path  모듈 루트 기준 파일 경로 (예: `dist/js/x.iife.js`)
      * @param  int|string|null  $version  캐시 무효화 버전 (null 이면 미부착)
+     * @param  bool  $allowStatic  정적 게시 URL(`/build/ext/…`)을 허용할지 — 확장 CSS 자기 공급 자산처럼 정적 게시본이 있는 경우만 true
      * @return string 생성된 URL
      */
     public static function moduleAsset(
@@ -644,6 +656,7 @@ class AssetUrl
      * @param  string  $identifier  플러그인 식별자
      * @param  string  $path  플러그인 루트 기준 파일 경로 (예: `dist/js/x.iife.js`)
      * @param  int|string|null  $version  캐시 무효화 버전 (null 이면 미부착)
+     * @param  bool  $allowStatic  정적 게시 URL(`/build/ext/…`)을 허용할지 — 확장 CSS 자기 공급 자산처럼 정적 게시본이 있는 경우만 true
      * @return string 생성된 URL
      */
     public static function pluginAsset(
@@ -720,13 +733,14 @@ class AssetUrl
      * @param  string  $type  `modules` 또는 `plugins`
      * @param  string  $kind  `js` 또는 `css`
      * @param  int|string|null  $version  캐시 무효화 버전 (null 이면 미부착)
+     * @param  bool  $allowStatic  정적 게시본 경로 허용 여부 — 캐시 수명이 게시 GC 보다 긴 HTML(SEO)에 박을 때 false
      * @return string 생성된 URL
      */
-    public static function extensionBundle(string $type, string $kind, int|string|null $version = null): string
+    public static function extensionBundle(string $type, string $kind, int|string|null $version = null, bool $allowStatic = true): string
     {
         // 정적 게시본(bake) 우선 (#122) — `bundles/{modules|plugins}.{js|css}` 사본.
         // `$version` 명시 호출이 현재 게시 버전과 다르면 건너뛴다 (templateAsset 과 동일 계약)
-        $base = self::staticExtBase();
+        $base = $allowStatic ? self::staticExtBase() : null;
         $static = $base !== null && ($version === null || $base === '/build/ext/'.$version)
             ? self::staticTagUrl("bundles/{$type}.{$kind}")
             : null;

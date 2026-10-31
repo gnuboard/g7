@@ -75,7 +75,9 @@ class FileServingHelperSourceContractTest extends TestCase
      * 사라진다. 서빙 메서드를 정당하게 줄였다면 이 값을 함께 내리고 근거를 남긴다
      * (22차 G3 라운드 B4).
      */
-    private const MIN_FILE_SERVING_METHODS = 28;
+    // 28 → 44: develop-7.2.0 병합으로 방문자 통계 내보내기(코어 8)·이커머스 내보내기와 클레임 이미지·
+    // SSO 로그인 페이지와 메타데이터 등 서빙 메서드가 모집단에 들어왔다(병합 결과 실측).
+    private const MIN_FILE_SERVING_METHODS = 44;
 
     /**
      * 컨트롤러 소스 파일 전수 (코어 + 번들 확장).

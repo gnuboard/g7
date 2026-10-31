@@ -4,6 +4,7 @@ namespace App\Seo;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Support\AssetUrl;
+use App\Support\SiteUrl;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -80,8 +81,8 @@ class SitemapFileStore
      * manifest 가 정하므로 그 모드에서는 두 형태가 같은 주소로 모인다
      * (컨트롤러가 URL 접미사를 보지 않는다 — 7차 G3 라운드 B-6).
      *
-     * 오리진·접두사는 자식 항목의 `<loc>` 과 같은 단일 지점(`AssetUrl::siteAbsolute()`)이
-     * 만든다 — 설정(`app.url`)이 우선이고 요청은 폴백이다. 여기만 `url()` 이면 색인의 자식
+     * 오리진·접두사는 사이트 주소(`app.url`) 기준 단일 지점(`SiteUrl::absolute()`)이 만든다 —
+     * 요청 Host 로 폴백하지 않고, 접두사는 멱등으로 실린다. 여기만 `url()` 이면 색인의 자식
      * 주소는 요청 호스트(콘솔이면 `http://localhost`)를 싣고 자식 안의 항목은 설정 오리진을
      * 실어, 한 사이트맵 안에서 부모와 자식의 오리진이 갈린다 (16차 G3 라운드 B-1).
      *
@@ -91,11 +92,12 @@ class SitemapFileStore
      */
     public static function childUrl(int $n, bool $gzip = false): string
     {
+        // 보안: 요청 Host 가 아니라 사이트 주소 기준 — sitemapindex 가 위조 Host 로 굳지 않게 한다.
         if (AssetUrl::isExtensionless()) {
-            return AssetUrl::siteAbsolute('/sitemap-'.$n.'/xml');
+            return SiteUrl::absolute('/sitemap-'.$n.'/xml');
         }
 
-        return AssetUrl::siteAbsolute('/'.self::childFilename($n, $gzip));
+        return SiteUrl::absolute('/'.self::childFilename($n, $gzip));
     }
 
     /**

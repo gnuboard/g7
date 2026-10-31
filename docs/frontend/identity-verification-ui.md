@@ -53,7 +53,7 @@
 
 ## Extension Point 슬롯 명명 규칙
 
-코어 모달 파셜(`_identity_challenge_modal.json`)에 외부 IDV provider 플러그인이 자기 UI 와 SDK 를 주입할 수 있는 **단일 슬롯**이 박혀 있습니다:
+코어 모달 파셜(`_identity_challenge_modal.g7.html`)에 외부 IDV provider 플러그인이 자기 UI 와 SDK 를 주입할 수 있는 **단일 슬롯**이 박혀 있습니다:
 
 | 슬롯 이름 | 용도 | if 가드 |
 | --- | --- | --- |
@@ -64,6 +64,8 @@
 ### 외부 plugin 가 슬롯에 콘텐츠 주입
 
 플러그인은 다음 우편번호 / CKEditor5 와 동일한 G7 표준 패턴(`scripts` + `extension_point` + `callExternalEmbed`)으로 자기 콘텐츠를 주입합니다. **반드시 `mode: append`** 를 사용하여 다른 IDV plugin 과 공존 가능하게 합니다.
+
+`scripts[].src` 의 외부 호스트는 그 레이아웃을 가진 확장·템플릿이 매니페스트의 `trusted_script_hosts` 로 선언합니다([module-assets.md](../extension/module-assets.md) 「`trusted_script_hosts`」). 런타임·저장·점검 커맨드는 활성 확장·템플릿의 선언 집계(개발 커맨드는 문서 소유 확장의 선언, 운영자 설정 `config/template.php` 의 `layout_markup.script_src_allowlist` 도 더함)에 없는 호스트를 거부합니다(`script_src_not_allowed`). 코어 설정 기본값은 비어 있고, 설치 경로의 컴파일은 JSON 설치처럼 호스트를 대조하지 않습니다. 아래 예시의 `kcp-cdn.example.com` 은 자리표시자이므로, 실제 provider 도입 시 그 호스트를 provider 플러그인 매니페스트에 먼저 선언합니다.
 
 ```json
 {
@@ -77,22 +79,19 @@
     {
       "name": "Button",
       "if": "{{_global.identityChallenge?.provider_id === 'plugin.kcp'}}",
-      "events": {
-        "onClick": {
-          "actions": [
-            {
-              "handler": "callExternalEmbed",
-              "params": {
-                "constructor": "KCP.IdentitySDK",
-                "config": { "siteCode": "...", "purpose": "{{_global.identityChallenge.purpose}}" },
-                "callbackAction": [
-                  { "handler": "resolveIdentityChallenge", "params": { "result": "verified", "token": "{{result.token}}" } }
-                ]
-              }
-            }
-          ]
+      "actions": [
+        {
+          "type": "click",
+          "handler": "callExternalEmbed",
+          "params": {
+            "constructor": "KCP.IdentitySDK",
+            "config": { "siteCode": "...", "purpose": "{{_global.identityChallenge.purpose}}" },
+            "callbackAction": [
+              { "handler": "resolveIdentityChallenge", "params": { "result": "verified", "token": "{{result.token}}" } }
+            ]
+          }
         }
-      }
+      ]
     }
   ]
 }
@@ -215,6 +214,26 @@ if: "(!_global.identityChallenge?.provider_id || _global.identityChallenge?.prov
 
 코어가 등록한 표준 핸들러 — 모달 / 풀페이지 / 외부 SDK callback 모두 동일 이름으로 호출.
 
+순서대로 verify 성공 · 사용자 취소 · verify 실패(422 `onError` 에서) ·
+비동기 검증(Stripe Identity / 토스인증 push 등 — 인터페이스 예약) 이다.
+
+```html
+<on type="click">
+  <resolve-identity-challenge result="verified" token="{{response.data.verification_token}}"/>
+</on>
+<on type="click">
+  <resolve-identity-challenge result="cancelled"/>
+</on>
+<on type="click">
+  <resolve-identity-challenge result="failed" failureCode="INVALID_CODE"/>
+</on>
+<on type="click">
+  <resolve-identity-challenge result="pending" pollUrl="/api/identity/challenges/{{id}}" :pollIntervalMs="2000" expiresAt="{{}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 // verify 성공
 { "handler": "resolveIdentityChallenge", "params": { "result": "verified", "token": "{{response.data.verification_token}}" } }
@@ -249,7 +268,7 @@ type VerificationResult =
 
 ## 모달 파셜 작성 시 필수 규칙 (회귀 방지)
 
-IDV 모달 파셜 (`_identity_challenge_modal.json`) 및 동일 패턴을 따르는 OTP/코드 입력 모달 작성 시 아래 규칙을 위반하면 **확인 버튼이 영구 비활성** 또는 **재전송 시 입력값이 초기화되지 않는** 회귀가 발생합니다.
+IDV 모달 파셜 (`_identity_challenge_modal.g7.html`) 및 동일 패턴을 따르는 OTP/코드 입력 모달 작성 시 아래 규칙을 위반하면 **확인 버튼이 영구 비활성** 또는 **재전송 시 입력값이 초기화되지 않는** 회귀가 발생합니다.
 
 ### 1. Input 이벤트는 표준 actions 패턴만 사용
 
@@ -263,6 +282,16 @@ IDV 모달 파셜 (`_identity_challenge_modal.json`) 및 동일 패턴을 따르
 ### 2. controlled Input 은 `value` + `onChange` 한 쌍을 반드시 함께 정의
 
 `name="code"` 만으로는 `_global.identityChallenge.code` 같은 외부 네임스페이스에 자동 바인딩되지 않습니다. 모달 내부 (`_global` 사용 강제 컨텍스트)에서는 다음을 모두 명시해야 합니다.
+
+```html
+<input name="code" value="{{_global.identityChallenge?.code ?? ''}}">
+  <on event="onChange">
+    <set-state target="global" identityChallenge.code="{{$event.target.value}}"/>
+  </on>
+</input>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -287,6 +316,15 @@ IDV 모달 파셜 (`_identity_challenge_modal.json`) 및 동일 패턴을 따르
 ### 3. 재전송 등 재발급 액션은 즉시 입력값 초기화 (apiCall 응답 대기 금지)
 
 재전송 클릭 시 `code` 초기화를 `apiCall.onSuccess` 안에만 넣으면, 네트워크 지연 동안 사용자가 이전 코드를 그대로 보면서 재입력 상황을 인지하지 못합니다. sequence 의 첫 setState (resendCooldown 30 설정과 함께) 에서 `identityChallenge.code: ""` 도 같이 넣어야 합니다.
+
+```html
+<sequence>
+  <set-state target="global" :identityChallenge.resendCooldown="30" :identityChallenge.error="null" identityChallenge.code=""/>
+  …
+</sequence>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

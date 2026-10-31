@@ -1,0 +1,4 @@
+<partial description="환율 상태 및 정책 설정 탭">
+<!-- 설정 탭 — 상태 카드, 정책 입력 폼, 실패 알림 발송 수단, 최근 실행 5건 순. 기본 탭이라 query.tab 이 없을 때도 그린다 -->
+<div data-if="{{_computed.activeTab === 'settings'}}"><include src="_status_card.g7.html"/><include src="_settings_form.g7.html"/><include src="_notifications_card.g7.html"/><include src="_recent_runs.g7.html"/></div>
+</partial>

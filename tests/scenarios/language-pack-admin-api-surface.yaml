@@ -1,0 +1,104 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 본 매니페스트는 언어팩 관리 API 8개 엔드포인트의 표면 계약을 소유한다. endpoint × outcome 전개는 40셀이지만 각 엔드포인트가 내는 결과 종류가 서로 달라(조회는 부재 404 를, 설치는 검증 422 를, 제거는 보호 거부를 낸다) 빈 셀이 대부분이다. 실재하는 셀만 effects 로 열거하고 회귀 가드는 test_files 의 메서드 전수로 커버한다.
+
+feature: 언어팩 관리 API 표면 계약 (Language Pack Admin API Surface)
+
+description: |
+  언어팩 관리 화면이 부르는 8개 엔드포인트가 **무엇을 돌려주고 언제 거절하는지**를 고정한다.
+
+  이 파일이 이미 소유된 세 매니페스트와 갈리는 지점은 축이다.
+   - `language-pack-php-whitelist-and-activation-boundary` 는 **설치 내용물의 안전성과
+     활성화 권한 경계**를 본다 — PHP 구문 화이트리스트와 `auto_activate` 게이트다.
+   - `exception-response-exposure` 는 **실패 응답이 예외 원문을 싣는가**만 본다.
+   - `admin-list-pagination-envelope` 는 **쪽 정보가 어느 자리에 실리는가**만 본다.
+
+  그 셋 어디에도 속하지 않는 것이 남는다 — 목록 필터가 걸리는가, 미설치 번들 행이 가상
+  행으로 끼는가, 상세가 없는 id 에 404 를 주는가, 활성 슬롯이 찼을 때 409 인가, 보호된
+  팩 제거를 막는가, 읽기 권한자가 설치·활성화를 못 하는가. 이것이 **표면 계약**이고
+  본 매니페스트가 소유한다.
+
+  설계상 눈여겨볼 점 셋:
+   - **미설치 번들 팩은 DB 행이 없는 가상 행으로 목록에 낀다**(`id` 가 null,
+     `bundled_identifier` 가 채워지고 `abilities.can_install` 이 참). 설치를 결정하기 전에
+     보여야 하므로 DB 존재를 전제하지 않는다.
+   - **활성 슬롯은 로케일·범위당 하나다.** 이미 찬 슬롯에 활성화를 걸면 409 이고,
+     `force` 를 줘야 교체된다 — 조용히 덮어쓰면 어느 팩이 배선됐는지 알 수 없게 된다.
+   - **보호된 팩(`is_protected`)은 제거되지 않는다.** 코어 한국어팩이 사라지면 관리 화면
+     자체가 뜨지 않으므로 서비스 계층에서 막는다.
+
+axes:
+  endpoint: [index, show, install, activate, deactivate, uninstall, check_updates, refresh_cache, changelog]
+  outcome: [success, validation_rejected, not_found, permission_denied, conflict]
+
+exclusions:
+  - { endpoint: index, outcome: validation_rejected, reason: "필터는 전부 선택 파라미터라 잘못된 값이 와도 무시하고 전체를 준다 — 거절 경로가 존재하지 않는다" }
+  - { endpoint: index, outcome: not_found, reason: "목록은 비어 있어도 200 + 빈 배열이다" }
+  - { endpoint: index, outcome: conflict, reason: "조회는 상태를 바꾸지 않아 충돌 개념이 없다" }
+  - { endpoint: show, outcome: validation_rejected, reason: "경로 파라미터가 id 하나라 형식 위반은 라우트에서 갈린다" }
+  - { endpoint: show, outcome: conflict, reason: "조회는 상태를 바꾸지 않는다" }
+  - { endpoint: install, outcome: conflict, reason: "같은 식별자 재설치는 충돌이 아니라 덮어쓰기다 — 그 경로는 activation-boundary 매니페스트가 소유한다(overwriting_an_active_pack_does_not_inherit_active_status)" }
+  - { endpoint: activate, outcome: not_found, reason: "부재 id 판정은 show 가 대표한다 — 라우트 모델 바인딩이 같은 지점이라 엔드포인트마다 반복하지 않는다" }
+  - { endpoint: deactivate, outcome: validation_rejected, reason: "본문이 없는 요청이다" }
+  - { endpoint: deactivate, outcome: not_found, reason: "동일 — show 가 대표" }
+  - { endpoint: deactivate, outcome: conflict, reason: "이미 비활성인 팩을 내려도 멱등이다" }
+  - { endpoint: uninstall, outcome: validation_rejected, reason: "본문이 없는 요청이다" }
+  - { endpoint: uninstall, outcome: not_found, reason: "동일 — show 가 대표" }
+  - { endpoint: uninstall, outcome: conflict, reason: "보호 팩 거부는 권한이 아니라 서비스 불변식이라 permission_denied 셀이 아닌 protected_pack_cannot_be_uninstalled 로 표현한다" }
+  - { endpoint: check_updates, outcome: not_found, reason: "요약 전체를 돌려주므로 대상 부재 개념이 없다" }
+  - { endpoint: check_updates, outcome: conflict, reason: "읽기 전용 집계다" }
+  - { endpoint: check_updates, outcome: validation_rejected, reason: "본문이 없는 요청이다" }
+  - { endpoint: refresh_cache, outcome: not_found, reason: "캐시 전체를 다시 세우므로 대상 부재 개념이 없다" }
+  - { endpoint: refresh_cache, outcome: conflict, reason: "멱등 작업이다" }
+  - { endpoint: refresh_cache, outcome: validation_rejected, reason: "본문이 없는 요청이다" }
+  - { endpoint: refresh_cache, outcome: permission_denied, reason: "manage 권한 경계는 activate·install 셀이 대표한다 — 같은 미들웨어 한 지점이라 반복하지 않는다" }
+  - { endpoint: changelog, outcome: validation_rejected, reason: "경로 파라미터가 id 하나다" }
+  - { endpoint: changelog, outcome: not_found, reason: "동일 — show 가 대표" }
+  - { endpoint: changelog, outcome: conflict, reason: "읽기 전용이다" }
+  - { endpoint: changelog, outcome: permission_denied, reason: "manage 권한 경계는 activate·install 셀이 대표한다" }
+  - { endpoint: activate, outcome: validation_rejected, reason: "force 는 불리언 하나라 형식 위반 경로가 없다" }
+  - { endpoint: install, outcome: not_found, reason: "설치 대상은 업로드·URL·번들 식별자로 오므로 부재는 검증 실패(422)로 표현된다" }
+
+effects:
+  # ── 목록 (index) ──
+  - index_returns_paginated_rows
+  - index_filters_by_scope_and_status
+  - index_filters_by_search_term
+  - uninstalled_bundled_packs_appear_as_virtual_rows_with_install_ability
+  - installing_a_bundled_pack_promotes_the_virtual_row_to_a_real_one
+  # ── 상세·부가 조회 ──
+  - show_returns_pack_details_with_manifest
+  - show_returns_not_found_for_missing_id
+  - changelog_reports_absence_instead_of_failing
+  # ── 설치 입력 검증 ──
+  - oversize_upload_is_rejected
+  - non_github_url_is_rejected
+  - invalid_checksum_is_rejected
+  # ── 활성 슬롯 ──
+  - activate_promotes_an_inactive_pack
+  - activate_conflicts_when_the_locale_slot_is_taken
+  - force_activate_replaces_the_occupying_pack
+  - deactivate_returns_the_pack_to_inactive
+  # ── 제거 ──
+  - uninstall_removes_an_unprotected_pack
+  - protected_pack_cannot_be_uninstalled
+  # ── 갱신·캐시 ──
+  - check_updates_returns_a_summary
+  - refresh_cache_reports_status_per_registry
+  # ── 권한 경계 ──
+  - user_without_language_pack_permission_is_denied
+  - reader_cannot_install
+  - reader_cannot_activate
+  - check_updates_requires_update_permission
+  - perform_update_rejects_non_github_source
+
+test_files:
+  - tests/Feature/Api/Admin/LanguagePackControllerTest.php
+
+notes: |
+  이 매니페스트는 2026-09-16 에 신설됐다. 대상 25개 테스트는 이 파일이 만들어질 때부터
+  있던 골든 패스·권한 경계 테스트인데, 나중에 도입된 `test-scenario-reverse-mapping`
+  룰(테스트 **메서드마다** 매핑을 요구한다)의 기준으로는 전부 미매핑이었다.
+
+  같은 파일을 이미 세 매니페스트가 소유하고 있으나 그 축은 각각 설치 내용물 안전성 ·
+  예외 원문 비노출 · 쪽 정보 봉투 위치라, 표면 계약을 그중 하나에 얹으면 축이 섞여
+  "어느 매니페스트가 무엇을 잠그는가" 가 흐려진다. effect 이름을 재사용해 형식만 맞추는
+  대신 소유자를 새로 세운 이유다.

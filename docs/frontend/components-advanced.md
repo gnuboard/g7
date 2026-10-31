@@ -35,8 +35,11 @@
 |--------|------|--------|
 | `on(eventName, callback)` | 이벤트 구독 | 구독 해제 함수 |
 | `emit(eventName, data?)` | 이벤트 발생 | `Promise<any[]>` |
-| `off(eventName)` | 특정 이벤트 리스너 제거 | `void` |
-| `clear()` | 모든 리스너 제거 | `void` |
+| `off(eventName, callback)` | 그 콜백의 구독만 해제 (engine-v1.86.0) | `void` |
+| `off(eventName)` | 그 이벤트의 구독 전부 제거 — 폐지 예정, 구독이 있으면 경고 | `void` |
+| `clear()` | 모든 구독 제거 — 폐지 예정, 구독이 있으면 경고 | `void` |
+
+콜백 없는 `off`·`clear` 는 다른 컴포넌트·확장의 구독까지 끊습니다. 자기 구독은 `on()` 이 돌려준 해제 함수나 `off(eventName, callback)` 으로 지우세요 — [G7Core.componentEvent](g7core-api-advanced.md#컴포넌트-이벤트-g7corecomponentevent).
 
 ### 사용 예시: FileUploader 트리거
 
@@ -346,6 +349,12 @@ bindingType 미등록 시: boolean 값이 checked로 바인딩되지 않음
 ```
 
 **components.json 등록 형식**:
+
+```html
+<json key="components">[{"name":"ComponentName","type":"composite","description":"컴포넌트 설명","path":"src/components/composite/ComponentName.tsx","bindingType":"checked | checkable | 미지정","props":{"propName":{"type":"string","required":true,"description":"prop 설명"}}}]</json>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

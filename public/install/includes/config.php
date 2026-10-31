@@ -382,6 +382,23 @@ if (! defined('RECOMMENDED_DISK_SPACE_MB')) {
     define('RECOMMENDED_DISK_SPACE_MB', 700);
 }
 
+// 설치 작업(task) 하나에 허용하는 PHP 실행 시간(초).
+// 설치 워커는 모든 작업을 한 요청 안에서 차례로 실행한다. 제한을 요청 전체에 한 번만 걸면
+// 확장을 많이 고른 설치가 작업 수에 비례해 길어져 중간에 끊긴다 — 특히 Windows 의 PHP 는
+// max_execution_time 을 실제 경과 시간(명령 대기·파일 복사 포함)으로 잰다.
+// 그래서 작업을 시작할 때마다 set_time_limit() 으로 카운터를 다시 건다(작업 하나가 이 값을 넘을 때만 끊긴다).
+if (! defined('INSTALLER_TASK_TIME_LIMIT')) {
+    define('INSTALLER_TASK_TIME_LIMIT', 600);
+}
+
+// 설치 완료 직후 .env 최종 병합(finalize-env.php)이 설치 워커가 끝나기를 기다리는 최대 시간(초).
+// 워커는 「설치 완료 처리」 뒤에도 설정 캐시·라우트 캐시·정적 게시를 이어서 돈다. 완료 화면이 그
+// 사이에 병합을 부르면 워커의 설정 캐시가 병합 전 .env 값으로 굳으므로, 워커 잠금이 풀릴 때까지
+// 기다린다. 잠금이 끝내 풀리지 않으면(워커 강제 종료) 이 시간 뒤 병합을 진행한다.
+if (! defined('INSTALLER_FINALIZE_WORKER_WAIT_SECONDS')) {
+    define('INSTALLER_FINALIZE_WORKER_WAIT_SECONDS', 600);
+}
+
 // DB 테이블 접두사 최대 길이.
 // MySQL identifier 한도(64자) 안에서 자동 생성 인덱스명이 안전하도록 제한한다.
 // 가장 긴 자동 생성 인덱스명(접두사 제외)이 58자이므로 58 + 6 = 64 로 정확히 한도에 맞는다.
@@ -530,6 +547,8 @@ if (! defined('DEFAULT_INSTALLATION_STATE')) {
             'language_packs' => [],
         ],
         'extension_names' => [], // 확장 이름 매핑 (identifier → {ko: '...', en: '...'})
+        // 상태변경 요청의 compare-and-swap 세대 — saveInstallationStateCas 만 올린다
+        'generation' => 0,
     ]);
 }
 

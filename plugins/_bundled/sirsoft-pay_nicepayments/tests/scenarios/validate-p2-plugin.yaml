@@ -1,0 +1,44 @@
+# 시나리오 매니페스트 — 나이스페이먼츠 클레임 결제 경로의 #599 validate P2 결함 (07-core-plugins)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: nicepayments_validate_p2_claim_payment_hardening
+
+description: |
+  #599 브랜치 검증 07-core-plugins 가 찾은 결제 플러그인 결함 중 나이스페이먼츠 몫.
+
+  - #8 클라이언트 승인 API 경로(`claim-payments/{no}/approve` → `respondApprove`)는 서버 콜백과 같은
+    `claim_payment.approve` 필터를 타지만, 승인 뒤 거절의 보상(망취소)은 서버 콜백의 클로저에만 있었다.
+    리스너가 ① 서명 금액(Amt)을 승인 **전에** 청구액과 대조하고(낡은 결제창 거절, PG 호출 없음)
+    ② 콜백·응답의 주문번호(Moid)가 이 결제 건인지 확인하며 ③ 응답 금액이 서명 금액과 다르면
+    망취소한 뒤 거절한다 — 어느 경로로 들어와도 같다.
+  - CP 콜백에 결제번호 단위 직렬화 락을 건다(형제 kginicis·nhnkcp·tosspayments 와 같은 규약).
+    락 획득은 try 안이라 대기 초과는 500 이 아니라 신청서 상세 복귀다.
+  - 콜백 컨트롤러의 `app()` Repository 로케이터를 생성자 주입으로 바꿨다.
+  - 모듈이 승인 **뒤**에 따로 거절한 건(승인 금액 대조 실패·승인액 미보고)은 모듈의
+    `claim_payment.void_approval` 필터로 되돌린다 — 승인 리스너가 그 필터도 구현하고, 콜백 컨트롤러는
+    보상 클로저를 넘기지 않아 서버 콜백·API 승인 두 경로의 보상이 한 구현이다.
+  - 결제 확정의 금액 근거는 PG 승인 응답의 금액이다. 응답에 금액이 없거나 숫자가 아니면 불일치로 보고
+    망취소한 뒤 거절하며, 모듈에 넘기는 `paid_amount` 도 브라우저 콜백 금액이 아니라 응답 금액이다.
+
+axes:
+  concern:
+    - approve_path_independence
+    - pre_approval_amount
+    - order_binding
+    - callback_serialization
+    - repository_injection
+    - void_approval
+    - approved_amount_source
+
+effects:
+  - nice_claim_approval_is_reverted_on_either_path_when_the_response_disagrees  # 응답 금액이 다르면 망취소 + 거절 (API 경로 포함)
+  - nice_claim_stale_window_amount_is_refused_before_authorization              # 서명 금액 ≠ 청구액이면 PG 호출 전 거절
+  - nice_claim_approval_is_bound_to_the_payment_number                          # 콜백·응답 Moid 가 다른 결제 건이면 거절(승인 뒤면 망취소)
+  - nice_claim_callback_is_serialized_per_payment_number                        # CP 콜백 락, 대기 초과는 정상 리다이렉트
+  - nice_repositories_are_constructor_injected                                  # Repository 생성자 주입
+  - nice_claim_void_approval_cancels_the_authorization                           # void_approval 필터 → 거래번호 취소 API
+  - nice_claim_approval_without_a_pg_amount_is_net_cancelled                     # 승인 응답에 금액이 없거나 숫자가 아니면 망취소 + 거절 (API 경로 포함)
+  - nice_claim_paid_amount_comes_from_the_pg_response                            # 모듈에 넘기는 결제 금액은 승인 응답 금액
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/ValidateP2ClaimPaymentHardeningTest.php

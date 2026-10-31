@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Helpers\InlineMediaPolicy;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -13,6 +14,7 @@ use Illuminate\Support\Str;
 use Modules\Sirsoft\Ecommerce\Models\CategoryImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ServesImageWithRowValidators;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -24,6 +26,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class CategoryImageService
 {
     use ResolvesRowStorage;
+    use ResolvesStoredExtension;
     use ServesImageWithRowValidators;
 
     /**
@@ -69,7 +72,7 @@ class CategoryImageService
         $file = HookManager::applyFilters('sirsoft-ecommerce.category-image.filter_upload_file', $file);
 
         // 저장 경로 생성 (category + 날짜별 디렉토리)
-        $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $storedFilename = Str::uuid().'.'.$this->storedExtension($file);
         $datePath = date('Y/m/d');
         $path = "category/{$datePath}/{$storedFilename}";
 
@@ -224,6 +227,11 @@ class CategoryImageService
             return null;
         }
 
+        // 인라인 표시는 래스터 이미지만, 그 외(SVG 등)는 다운로드로 — 모든 응답에 nosniff (KVE-2026-2366).
+        // 서빙 정보의 스트림에 굳혀 두면 코어 지점(`streamedFileResponseFromMeta()`)이 같은 응답 객체에
+        // 캐시 계약을 더해 내보낸다.
+        InlineMediaPolicy::harden($info['response'], $image->mime_type, $image->original_filename);
+
         return $info;
     }
 
@@ -342,6 +350,7 @@ class CategoryImageService
      *
      * @param  int  $categoryId  카테고리 ID
      * @param  string  $collection  컬렉션명
+     * @return void
      */
     protected function reorderAfterDelete(int $categoryId, string $collection): void
     {
@@ -375,6 +384,7 @@ class CategoryImageService
      * 카테고리 저장 실패 시 업로드된 이미지들을 정리하기 위해 사용됩니다.
      *
      * @param  array<int>  $imageIds  이미지 ID 배열
+     * @return void
      */
     public function rollbackUploadedImages(array $imageIds): void
     {

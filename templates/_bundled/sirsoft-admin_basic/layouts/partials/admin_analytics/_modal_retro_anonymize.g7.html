@@ -1,0 +1,55 @@
+<!-- 소급 익명화 확인 창. 개인정보 설정을 더 엄격한 쪽으로 저장했을 때 서버가 `retro_anonymize_available`
+  을 주면 열린다 — 과거 기록에는 옛 설정대로 모은 값이 남아 있기 때문이다. 되돌릴 수 없으므로
+  체크 없이는 실행 버튼이 잠긴다. 실행은 워커에게 넘어가고(202) 진행률은 진단 화면 이력에서 본다.
+  「건너뛰기」는 아무것도 하지 않는다 — 새 설정은 이미 저장돼 있다. -->
+<partial description="방문자 통계 — 소급 익명화 확인 창" editor_label="$t:admin.modal_label.analytics.retro_anonymize_modal">
+  <modal data-type="composite" data-ref="analytics_retro_anonymize_modal" title="$t:admin.analytics.modals.retro.title" size="md">
+    <div class="py-2 space-y-3">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.analytics.modals.retro.body|visits={{(_global.analyticsRetro?.visits ?? 0) | number}}|actions={{(_global.analyticsRetro?.actions ?? 0) | number}}</p>
+      <p class="text-label-subtle">$t:admin.analytics.modals.retro.hint</p>
+      <label class="inline-clickable">
+        <input type="checkbox" class="checkbox" checked="{{_global.analyticsRetroConfirm === true}}">
+          <on type="change">
+            <!-- 확인 체크 — 소급은 되돌릴 수 없어 켜야 적용 버튼이 풀린다. -->
+            <set-state target="global" analyticsRetroConfirm="{{$event.target.checked}}"/>
+          </on>
+        </input>
+        <span class="text-label">$t:admin.analytics.modals.retro.confirm_label</span>
+      </label>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.analyticsRetroRunning}}">
+        <on type="click">
+          <!-- 건너뛰기 — 소급 없이 닫는다. 새 설정은 이미 저장돼 앞으로 모이는 값에만 적용되고, 체크는 걷어 둔다. -->
+          <sequence>
+            <set-state target="global" :analyticsRetroConfirm="false"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        <span>$t:admin.analytics.modals.retro.skip</span>
+      </button>
+      <button data-ref="retro_apply_button" type="button" class="btn btn-primary flex-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.analyticsRetroConfirm !== true || _global.analyticsRetroRunning}}">
+        <on type="click">
+          <!-- 저장한 설정의 마스킹 폭·해시 여부를 그대로 소급한다. 둘 중 하나는 반드시 실려야 서버가 받는다(422). -->
+          <sequence>
+            <set-state target="global" :analyticsRetroRunning="true"/>
+            <api-call :auth_required="true" target="/api/admin/analytics/privacy/anonymize" method="POST">
+              <body :confirm="true" mask_octets="{{_global.analyticsRetro?.hash ? undefined : (_global.analyticsRetro?.maskOctets ?? 0)}}" hash="{{_global.analyticsRetro?.hash ? true : undefined}}"/>
+              <success>
+                <set-state target="global" :analyticsRetroRunning="false" :analyticsRetroConfirm="false"/>
+                <close-modal/>
+                <toast type="success" message="$t:admin.analytics.modals.retro.queued"/>
+              </success>
+              <fail>
+                <set-state target="global" :analyticsRetroRunning="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.analyticsRetroRunning}}" name="spinner" :spin="true" class="text-sm"/>
+        <span>$t:admin.analytics.modals.retro.apply</span>
+      </button>
+    </div>
+  </modal>
+</partial>

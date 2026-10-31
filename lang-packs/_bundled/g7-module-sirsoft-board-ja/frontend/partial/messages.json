@@ -54,7 +54,7 @@
     "default_set": "デフォルト掲示板タイプが設定されました。",
     "not_found": "掲示板タイプが見つかりません。",
     "in_use": "使用中の掲示板タイプは削除できません。",
-    "delete_in_use": "{{count}}個の掲示板で使用中のタイプは削除できません。"
+    "delete_in_use": "{count}個の掲示板で使用中のタイプは削除できません。"
   },
   "settings": {
     "fetch_success": "設定を閲覧しました。",
@@ -62,7 +62,7 @@
     "save_success": "設定が保存されました。",
     "save_failed": "設定保存に失敗しました。",
     "save_error": "設定保存中にエラーが発生しました。",
-    "bulk_apply_success": "{{count}}個の掲示板に設定が一括適用されました。",
+    "bulk_apply_success": "{count}個の掲示板に設定が一括適用されました。",
     "bulk_apply_failed": "設定一括適用に失敗しました。",
     "clear_cache_success": "設定キャッシュが初期化されました。",
     "clear_cache_error": "設定キャッシュ初期化中にエラーが発生しました。"

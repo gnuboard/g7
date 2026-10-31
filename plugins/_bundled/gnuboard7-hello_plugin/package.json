@@ -1,0 +1,12 @@
+{
+    "name": "@gnuboard7/hello-plugin",
+    "version": "0.2.2",
+    "description": "Gnuboard7 Hello Plugin - 학습용 최소 샘플 플러그인 (화면 스타일 순수 CSS)",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite build --watch"
+    },
+    "license": "MIT"
+}

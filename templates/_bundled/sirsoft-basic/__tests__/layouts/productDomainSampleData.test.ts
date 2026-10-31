@@ -17,7 +17,7 @@
  *  - searchResults      : 통합검색 (상품 highlight + posts/pages)
  *
  * 바인딩 SSoT: templates/_bundled/sirsoft-basic/layouts/shop/{show,index,category}.json,
- *              search/index.json, mypage/wishlist.json (+ 관련 partials)
+ *              search/index.g7.html, mypage/wishlist.g7.html (+ 관련 partials)
  */
 import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';

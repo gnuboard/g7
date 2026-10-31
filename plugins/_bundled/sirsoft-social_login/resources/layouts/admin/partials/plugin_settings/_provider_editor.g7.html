@@ -1,0 +1,195 @@
+<!-- 제공자 카드의 편집 칸 — [설정 편집]을 누른 카드 하나만 열린다. 값은 _local.providerForm 에 있고, 비밀값은 마스크 그대로 두면 유지·비우면 삭제다.
+     제공자 반복(provider) 안에 인라인된다. -->
+<partial name="partials/plugin_settings/_provider_editor" description="제공자 편집 칸">
+  <div data-ref="provider_editor_{{provider.key}}" data-if="{{_local.editingKey === provider.key}}" data-key="providerForm" class="sl:mt-2 sl:pt-4 sl:border-t sl:border-gray-200 sl:dark:border-gray-700 sl:space-y-4">
+    <div data-ref="editor_enabled_row_{{provider.key}}" class="sl-flex-start sl:gap-3">
+      <input type="checkbox" name="enabled" class="sl:mt-1 sl:h-4 sl:w-4 sl:rounded sl:text-blue-600"/>
+      <div>
+        <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.enabled</label>
+        <p class="sl-form-hint">$t:sirsoft-social_login.admin.providers.hints.enabled</p>
+        <p data-if="{{!!_local.providerErrors?.enabled}}" class="sl-form-error">{{_local.providerErrors?.enabled?.[0] ?? ''}}</p>
+      </div>
+    </div>
+    <div data-ref="editor_label_row_{{provider.key}}">
+      <!-- 표시 이름 — 사이트가 쓰는 언어마다 칸이 나온다. 값은 _local.providerForm.label 객체 -->
+      <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.label</label>
+      <multilingual-input data-type="composite" name="label" :maxLength="100"/>
+      <p data-if="{{!!_local.providerErrors &amp;&amp; Object.keys(_local.providerErrors).some((k) => k === 'label' || k.startsWith('label.'))}}" class="sl-form-error">{{_local.providerErrors ? Object.entries(_local.providerErrors).find(([k]) => k === 'label' || k.startsWith('label.'))?.[1]?.[0] : ''}}</p>
+    </div>
+    <div data-ref="editor_credentials_{{provider.key}}" class="sl-grid-2col-responsive">
+      <div>
+        <label class="sl-form-label">{{$t('sirsoft-social_login.admin.providers.fields.client_id_' + provider.driver)}}</label>
+        <input type="text" name="client_id" class="sl-input" autoComplete="off"/>
+        <p data-if="{{!!_local.providerErrors?.client_id}}" class="sl-form-error">{{_local.providerErrors?.client_id?.[0] ?? ''}}</p>
+      </div>
+      <div>
+        <label class="sl-form-label">{{$t('sirsoft-social_login.admin.providers.fields.client_secret_' + provider.driver)}}</label>
+        <input type="password" name="client_secret" class="sl-input" autoComplete="new-password"/>
+        <p class="sl-form-hint">$t:sirsoft-social_login.admin.providers.hints.secret</p>
+        <p data-if="{{!!_local.providerErrors?.client_secret}}" class="sl-form-error">{{_local.providerErrors?.client_secret?.[0] ?? ''}}</p>
+      </div>
+      <div data-if="{{provider.driver === 'kakao'}}">
+        <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.admin_key</label>
+        <input type="password" name="admin_key" class="sl-input" autoComplete="new-password"/>
+        <p class="sl-form-hint">$t:sirsoft-social_login.admin.providers.hints.admin_key</p>
+      </div>
+      <div data-if="{{provider.driver === 'facebook'}}">
+        <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.graph_api_version</label>
+        <input type="text" name="graph_api_version" class="sl-input" placeholder="v26.0"/>
+        <p data-if="{{!!_local.providerErrors?.graph_api_version}}" class="sl-form-error">{{_local.providerErrors?.graph_api_version?.[0] ?? ''}}</p>
+      </div>
+      <div>
+        <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.scopes</label>
+        <input type="text" name="scopes_text" class="sl-input" placeholder="$t:sirsoft-social_login.admin.providers.hints.scopes_placeholder"/>
+        <p class="sl-form-hint">$t:sirsoft-social_login.admin.providers.hints.scopes</p>
+      </div>
+    </div>
+    <div data-ref="editor_custom_endpoints_{{provider.key}}" data-if="{{provider.type === 'custom'}}" class="sl:space-y-3">
+      <div class="sl:flex sl:flex-col sl:sm:flex-row sl:sm:items-end sl:gap-2">
+        <div class="sl:flex-1">
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.discovery_url</label>
+          <input type="url" name="discovery_url" class="sl-input" placeholder="https://"/>
+          <p data-if="{{!!_local.providerErrors?.discovery_url}}" class="sl-form-error">{{_local.providerErrors?.discovery_url?.[0] ?? ''}}</p>
+        </div>
+        <button data-ref="editor_discover_button_{{provider.key}}" type="button" class="sl-btn sl-btn-secondary sl:text-sm">
+          <on type="click">
+            <!-- discovery 문서를 읽어 아래 주소 칸을 채운다(저장은 [저장] 으로) -->
+            <api-call :auth_required="true" target="/api/plugins/sirsoft-social_login/admin/providers/discover" method="POST">
+              <body discovery_url="{{_local.providerForm?.discovery_url ?? ''}}"/>
+              <success>
+                <set-state target="local" providerForm="{{Object.assign({}, _local.providerForm, response.data)}}"/>
+                <toast type="success" message="$t:sirsoft-social_login.admin.providers.discovered"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <span>$t:sirsoft-social_login.admin.providers.discover</span>
+        </button>
+      </div>
+      <div class="sl-grid-2col-responsive">
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.issuer</label>
+          <input type="text" name="issuer" class="sl-input"/>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.authorize_url</label>
+          <input type="url" name="authorize_url" class="sl-input"/>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.token_url</label>
+          <input type="url" name="token_url" class="sl-input"/>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.userinfo_url</label>
+          <input type="url" name="userinfo_url" class="sl-input"/>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.jwks_url</label>
+          <input type="url" name="jwks_url" class="sl-input"/>
+        </div>
+      </div>
+      <div class="sl:grid sl:grid-cols-3 sl:gap-3">
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.button_bg</label>
+          <input type="text" class="sl-input" placeholder="#1F2937" value="{{_local.providerForm?.button_style?.bg ?? ''}}" :autoBinding="false">
+            <on type="change">
+              <!-- 버튼 배경색 입력을 편집 폼에 담는다(자동바인딩을 끈 칸) -->
+              <set-state target="local" providerForm.button_style.bg="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.button_fg</label>
+          <input type="text" class="sl-input" placeholder="#FFFFFF" value="{{_local.providerForm?.button_style?.fg ?? ''}}" :autoBinding="false">
+            <on type="change">
+              <!-- 버튼 글자색 입력을 편집 폼에 담는다(자동바인딩을 끈 칸) -->
+              <set-state target="local" providerForm.button_style.fg="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.button_border</label>
+          <input type="text" class="sl-input" placeholder="#1F2937" value="{{_local.providerForm?.button_style?.border ?? ''}}" :autoBinding="false">
+            <on type="change">
+              <!-- 버튼 테두리색 입력을 편집 폼에 담는다(자동바인딩을 끈 칸) -->
+              <set-state target="local" providerForm.button_style.border="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <div data-ref="editor_signup_policy_{{provider.key}}" class="sl-grid-2col-responsive">
+      <div class="sl-flex-start sl:gap-3">
+        <input type="checkbox" name="signup_allowed" class="sl:mt-1 sl:h-4 sl:w-4 sl:rounded sl:text-blue-600"/>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.signup_allowed</label>
+          <p class="sl-form-hint">$t:sirsoft-social_login.admin.providers.hints.signup_allowed</p>
+        </div>
+      </div>
+      <div data-if="{{provider.driver === 'kakao'}}" class="sl-flex-start sl:gap-3">
+        <input type="checkbox" name="webhook_ip_allowlist_enabled" class="sl:mt-1 sl:h-4 sl:w-4 sl:rounded sl:text-blue-600"/>
+        <div>
+          <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.webhook_ip_allowlist_enabled</label>
+          <p class="sl-form-hint">$t:sirsoft-social_login.admin.providers.hints.webhook_ip_allowlist_enabled</p>
+        </div>
+      </div>
+      <div data-if="{{provider.driver === 'kakao'}}">
+        <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.webhook_app_id</label>
+        <input type="text" name="webhook_app_id" class="sl-input" inputMode="numeric" autoComplete="off"/>
+        <p class="sl-form-hint">$t:sirsoft-social_login.admin.providers.hints.webhook_app_id</p>
+        <p data-if="{{!!_local.providerErrors?.webhook_app_id}}" class="sl-form-error">{{_local.providerErrors?.webhook_app_id?.[0] ?? ''}}</p>
+      </div>
+      <div>
+        <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.email_missing_policy</label>
+        <select name="email_missing_policy" class="sl:focus:border-transparent">
+          <option value="ask">$t:sirsoft-social_login.admin.providers.email_missing.ask</option>
+          <option value="deny">$t:sirsoft-social_login.admin.providers.email_missing.deny</option>
+          <option value="placeholder">$t:sirsoft-social_login.admin.providers.email_missing.placeholder</option>
+        </select>
+        <p data-ref="placeholder_warning_{{provider.key}}" data-if="{{_local.providerForm?.email_missing_policy === 'placeholder'}}" role="alert" class="sl-form-error">$t:sirsoft-social_login.admin.providers.hints.placeholder_warning</p>
+      </div>
+      <div>
+        <label class="sl-form-label">$t:sirsoft-social_login.admin.providers.fields.email_trust</label>
+        <select name="email_trust" class="sl:focus:border-transparent">
+          <option value="flag">$t:sirsoft-social_login.admin.providers.email_trust.flag</option>
+          <option value="trust">$t:sirsoft-social_login.admin.providers.email_trust.trust</option>
+          <option value="verify">$t:sirsoft-social_login.admin.providers.email_trust.verify</option>
+        </select>
+        <p class="sl-form-hint">$t:sirsoft-social_login.admin.providers.hints.email_trust</p>
+      </div>
+    </div>
+    <div data-ref="editor_buttons_{{provider.key}}" class="sl:flex sl:flex-wrap sl:justify-end sl:gap-2">
+      <button data-ref="editor_cancel_button_{{provider.key}}" type="button" class="sl-btn sl-btn-secondary sl:text-sm">
+        <on type="click">
+          <!-- [저장]이 띄운 영향 확인(계속 저장 있음)도 닫는다 — 편집 칸 없이 남으면 [계속 저장]이 갈 곳이 없다 -->
+          <set-state target="local" merge="shallow" :editingKey="null" :providerForm="{}" :providerFormOrigin="{}" :providerErrors="null" impact="{{_local.impact?.confirm === true ? null : _local.impact}}"/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button data-ref="editor_save_button_{{provider.key}}" type="button" class="sl-btn sl-btn-primary sl:text-sm" disabled="{{_local.isSavingProvider || !_computed.canEditProviders || JSON.stringify(_local.providerForm) === JSON.stringify(_local.providerFormOrigin)}}">
+        <on type="click">
+          <!-- 켜진 제공자를 끄거나 자격증명을 바꾸면 먼저 영향(이 제공자로만 로그인하는 회원 수)을 보여 주고 확인을 받는다. 그 밖에는 바로 저장한다 -->
+          <conditions>
+            <when if="{{provider.enabled &amp;&amp; (!_local.providerForm?.enabled || (_local.providerForm?.client_id ?? '') !== (provider.client_id ?? '') || (_local.providerForm?.client_secret ?? null) !== (provider.client_secret ?? null))}}">
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-social_login/admin/providers/{{provider.key}}/impact" method="GET">
+                <success>
+                  <set-state target="local" impact="{{Object.assign({ key: provider.key, label: provider.display_label, confirm: true }, response.data)}}"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"/>
+                </fail>
+              </api-call>
+            </when>
+            <else>
+              <action-ref name="saveProvider"/>
+            </else>
+          </conditions>
+        </on>
+        <span data-if="{{!_local.isSavingProvider}}">$t:common.save</span>
+        <span data-if="{{_local.isSavingProvider}}">$t:common.saving</span>
+      </button>
+    </div>
+  </div>
+</partial>

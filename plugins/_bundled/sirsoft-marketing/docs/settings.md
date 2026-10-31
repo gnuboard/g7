@@ -15,7 +15,7 @@
 | `info_disclosure_enabled` | `boolean` | `true` | 정보 공개 동의 사용 |
 | `info_disclosure_terms_slug` | `string` | - | 정보 공개 동의 약관 페이지 Slug |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->
@@ -69,7 +69,7 @@ _등록하는 메뉴가 없습니다._
 안에서** 조각으로 보입니다.
 
 설정은 코어의 플러그인 목록에서 이 플러그인의 설정으로 들어가는 공통 경로를 씁니다 — 코어가
-`resources/layouts/admin/plugin_settings.json` 을 찾아 그리므로 자체 메뉴가 필요 없습니다.
+`resources/layouts/admin/plugin_settings.g7.html` 을 찾아 그리므로 자체 메뉴가 필요 없습니다.
 
 동의 현황을 회원과 분리해 따로 보는 화면(예: 채널별 동의자 목록)이 필요해지면 그때 메뉴가
 생길 자리입니다.

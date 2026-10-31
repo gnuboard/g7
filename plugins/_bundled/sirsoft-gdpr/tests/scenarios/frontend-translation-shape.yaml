@@ -1,0 +1,22 @@
+feature: GDPR 화면 문구 자리표시자와 동의 기록 셀 지연 번역
+
+description: |
+  화면 번역 엔진은 `{key}`·`{{key}}` 만 치환한다 — `necessary_storage_allowlist.invalid_scope` 의 `:scope` 를 `{scope}` 로(번들 ko·en, ja 팩).
+  동의 기록 표 셀의 「스냅샷 보기」 버튼 title 은 행 값(`row.policy_version`)을 넘기므로 `$t:defer:` 로 쓴다 —
+  `$t:` 는 셀 문맥이 생기기 전에 번역돼 버전 자리가 빈다(#798).
+
+axes:
+  source: ["bundled|ja_pack", consent_log_cell]
+
+effects:
+  - no_colon_placeholder
+  - cell_row_args_deferred
+  - snapshot_title_deferred
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/frontend-placeholder-shape.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/consentLogCellDefer.test.ts
+
+validation:
+  note: |
+    수정 전(HEAD) 자리표시자 번들 2·ja 1 → 0, 셀 즉시 번역 1 → 0(HEAD 판 레이아웃에 같은 검사 함수를 돌려 1건 확인).

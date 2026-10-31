@@ -13,8 +13,8 @@
  *           본 placeholder spec 은 아래 사전작업 후 활성화한다.
  *
  * 활성화 전 사전 작업 (data-testid 보강):
- *   1. _partial_payment_info.json 입금확인 버튼에 data-testid="confirm-deposit-btn"
- *   2. _modal_confirm_deposit.json 에 data-testid="confirm-deposit-modal"
+ *   1. _partial_payment_info.g7.html 입금확인 버튼에 data-testid="confirm-deposit-btn"
+ *   2. _modal_confirm_deposit.g7.html 에 data-testid="confirm-deposit-modal"
  *      + 입금액/입금자명 입력 data-testid
  *   3. dbank+미결제 주문을 시드하는 fixture (adminDbankOrder)
  *   4. notification_logs 조회 또는 사용자 알림함 노출 검증 헬퍼

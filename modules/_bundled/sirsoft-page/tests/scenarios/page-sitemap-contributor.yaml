@@ -1,0 +1,23 @@
+feature: 페이지 사이트맵 기여자
+
+description: |
+  페이지 모듈이 사이트맵에 넣는 주소의 범위와 형태를 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 entry_condition 은 페이지 주소가 사이트맵에 담기거나 빠지는 조건이다(공개 페이지, 비공개 페이지, 주소 수 상한 도달, 공개 페이지 없음).
+
+axes:
+  entry_condition: [listed, unpublished, over_url_limit, no_published_pages]
+
+effects:
+  - implements_sitemap_contributor_interface
+  - get_identifier_returns_sirsoft_page
+  - get_urls_includes_published_page
+  - get_urls_excludes_unpublished_page
+  - url_entries_have_correct_structure
+  - get_urls_returns_empty_array_when_no_published_pages
+  - get_urls_truncates_at_max_urls_per_contributor
+  - get_urls_lazy_streams_entries
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Unit/Seo/PageSitemapContributorTest.php

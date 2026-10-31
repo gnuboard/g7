@@ -1,0 +1,18 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 슬롯 등록 환경 유무(2)×컨테이너 환경 유무(2)의 우선순위는 세 단계(등록 > 컨테이너 > 호스트)라 effects 로 단계마다 잠근다. effects·test_files 축은 계속 검사한다.
+feature: 레이아웃 편집기 미리보기 렌더 환경 — 기본 사용자 템플릿 SlotContainer (공개 이슈 #141)
+
+description: |
+  슬롯 내용은 소비 위치(SlotContainer)에서 DynamicRenderer 로 다시 그려진다. 종전에는 호스트 레지스트리·엔진·
+  dispatcher 를 쓰고 `isEditMode`·편집 경로를 넘기지 않아, 레이아웃 편집기 캔버스에서 슬롯 내용에 편집 마커가
+  없고 액션이 바인딩됐다. 등록 렌더러의 렌더 환경(`getRenderEnv`)과 원본 편집 경로(`componentPath`)를 쓴다.
+
+axes:
+  registration_env: [present, absent]
+  container_env: [present, absent]
+
+effects:
+  - preview_slot_and_footer_use_render_env                 # 등록 항목 환경 > 컨테이너 환경 > 호스트
+  - preview_render_env_falls_back_to_host_outside_preview  # 환경이 없으면 호스트 값(편집기 밖 무변화)
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/SlotContainer.renderEnvironment.test.tsx

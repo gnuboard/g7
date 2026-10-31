@@ -1,0 +1,25 @@
+feature: 클릭만 받던 영역의 키보드 조작 브라우저 회귀 (7.1.1)
+
+description: |
+  비회원 화면에서 Tab 만으로 닿고 Enter·Space 로 동작하는지 본다.
+  게시글 첨부 머리(접기·펴기)·첨부 카드(내려받기 — 응답에 가짜 첨부를 덧붙이고 내려받기 주소를 가짜로 답함),
+  장바구니 「상품 금액」 줄(과세 내역 펼침 — 장바구니 모의), 머리글 통화 선택(항목·트리거 Esc 닫기와 초점 복귀).
+
+axes:
+  case:
+    - board_post_attachments
+    - cart_amount_line
+    - header_currency_escape
+
+effects:
+  - reachable_by_tab
+  - enter_space_toggle_expanded
+  - enter_activates_card
+  - escape_closes_currency_list
+  - focus_returns_to_trigger
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/keyboard-click-only-areas.spec.ts
+
+notes: |
+  통화 선택 초점 복귀는 이커머스 확장 조각의 `focusElement closest` 가 실제 상자를 찾아야 통과한다(슬롯이 상자 id 에 접미를 붙인다).

@@ -5,9 +5,9 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.0-0066FF?style=flat-square" alt="version 1.1.0">
+  <img src="https://img.shields.io/badge/version-1.2.0-0066FF?style=flat-square" alt="version 1.2.0">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.0">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.2.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.2.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -98,7 +98,7 @@ flowchart LR
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.1.0` |
+| 그누보드7 코어 | `>=7.2.0` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 
@@ -188,7 +188,7 @@ https://your-domain.com/api/plugins/sirsoft-message_bizppurio/webhook
 
 메시지 유형(기본형·부가정보형·채널추가형·복합형)과 강조 유형(없음·강조표기·이미지·아이템
 리스트), 버튼(최대 5개)·바로연결(최대 10개)을 지원합니다. 본문에는 `#{변수}` 형식으로 알림
-변수를 넣을 수 있습니다.
+변수를 넣을 수 있습니다. 알림 변수가 언어별로 주어지면 받는 사람 언어의 값으로 바뀌어 나갑니다.
 
 이미지 강조 유형에 쓸 이미지는 화면에서 직접 업로드하며, 카카오 규격에 따라 **jpg/png ·
 500KB 이하 · 가로 500px 이상 · 가로:세로 2:1** 비율이어야 합니다. 규격에 맞지 않으면 업로드
@@ -246,6 +246,13 @@ https://your-domain.com/api/plugins/sirsoft-message_bizppurio/webhook
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
 없음.
+
+**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
+
+| 확장 | 유형 | 번들 |
+|---|---|---|
+| `sirsoft-board` | 모듈 | ✅ |
+| `sirsoft-ecommerce` | 모듈 | ✅ |
 <!-- @generated:integrations END -->
 
 ## 문서

@@ -75,6 +75,10 @@ export interface HtmlEditorProps {
      */
     readOnly?: boolean;
     /**
+     * 비활성 — readOnly 와 같이 다룬다(관리자 템플릿 HtmlEditor 와 같은 계약)
+     */
+    disabled?: boolean;
+    /**
    * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
    */
     id?: string;

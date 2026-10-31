@@ -7,6 +7,8 @@
 import { initEditorHandler } from './handlers/initEditor';
 import { destroyEditorHandler } from './handlers/destroyEditor';
 import { ckeditorCssUrl } from './handlers/ckeditorAssets';
+// 다국어 탭·아이콘 등 플러그인 자기 클래스(ckeditor-*) 스타일 — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-ckeditor5';
 
@@ -15,7 +17,7 @@ const CKEDITOR5_CSS_OVERRIDE_ID = 'ckeditor5-content-styles-override';
 
 /**
  * CKEditor5 content styles CSS를 동적으로 주입하는 핸들러
- * html-content.json extension_point의 onMount에서 호출됩니다.
+ * html-content.g7.html extension_point의 onMount에서 호출됩니다.
  *
  * HtmlContent 컴포넌트에 ck-content 클래스가 적용되어 동봉 CSS가 직접 동작합니다.
  * 다크모드(원본 미지원)와 col 너비 처리만 override로 추가합니다.
@@ -59,13 +61,13 @@ function injectContentCssHandler(): void {
         // 다크모드(CDN 미지원)와 col 너비 처리만 override로 유지
         style.textContent = `
             /* 이미지 캡션 - 다크모드 */
-            html.dark .ck-content .image > figcaption { color: hsl(0, 0%, 80%); background-color: hsl(0, 0%, 15%); }
+            html[data-g7-color-scheme="dark"] .ck-content .image > figcaption { color: hsl(0, 0%, 80%); background-color: hsl(0, 0%, 15%); }
 
             /* CKEditor5 표 스타일 - 다크모드 */
-            html.dark .ck-content figure.table table { border-color: hsl(0, 0%, 35%); }
-            html.dark .ck-content figure.table table tr { background-color: unset; }
-            html.dark .ck-content figure.table table td, html.dark .ck-content figure.table table th { border-color: hsl(0, 0%, 30%); color: hsl(0, 0%, 90%); background-color: unset; }
-            html.dark .ck-content figure.table table th { background-color: hsl(215, 20%, 25%); }
+            html[data-g7-color-scheme="dark"] .ck-content figure.table table { border-color: hsl(0, 0%, 35%); }
+            html[data-g7-color-scheme="dark"] .ck-content figure.table table tr { background-color: unset; }
+            html[data-g7-color-scheme="dark"] .ck-content figure.table table td, html[data-g7-color-scheme="dark"] .ck-content figure.table table th { border-color: hsl(0, 0%, 30%); color: hsl(0, 0%, 90%); background-color: unset; }
+            html[data-g7-color-scheme="dark"] .ck-content figure.table table th { background-color: hsl(215, 20%, 25%); }
 
             /* figure.table 전체 너비 - prose와의 충돌 방지 */
             .ck-content figure.table { display: table; width: 100%; margin: 1em 0; }

@@ -15,8 +15,12 @@ class UserAddressResource extends BaseApiResource
 
     /**
      * 비즈니스 로직 기반 abilities를 반환합니다.
-     * user-addresses 권한 식별자가 모듈 매니페스트에 없으므로, abilityMap()은 빈 배열.
+     * 회원 본인 주소록 응답이라 관리자 권한(`user-addresses.read`·`user-addresses.manage` — 관리자 배송지 목록 전용)이 아니라
+     * 소유·기본 배송지 여부로 판정하므로 abilityMap()은 빈 배열이다.
      * 인증된 사용자는 자신의 주소를 수정 가능하며, 기본 배송지는 삭제/변경 불가.
+     *
+     * @param  Request  $request  HTTP 요청 객체
+     * @return array<string, bool> 능력 불리언 맵
      */
     protected function resolveAbilities(Request $request): array
     {

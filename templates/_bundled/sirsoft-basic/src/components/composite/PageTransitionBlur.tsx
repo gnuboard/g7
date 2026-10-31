@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Div } from '../basic/Div';
 
+// G7Core.t() 번역 함수 참조
+const t = (key: string, params?: Record<string, string | number>) =>
+  (window as any).G7Core?.t?.(key, params) ?? key;
+
 const logger = ((window as any).G7Core?.createLogger?.('Comp:PageTransitionBlur')) ?? {
     log: (...args: unknown[]) => console.log('[Comp:PageTransitionBlur]', ...args),
     warn: (...args: unknown[]) => console.warn('[Comp:PageTransitionBlur]', ...args),
@@ -57,7 +61,7 @@ export const PageTransitionBlur: React.FC<PageTransitionBlurProps> = ({
       className={`fixed inset-0 z-40 bg-white/30 dark:bg-gray-900/30 backdrop-blur-sm transition-opacity duration-150 pointer-events-none ${className}`}
       style={style}
       role="status"
-      aria-label="페이지 전환 중"
+      aria-label={t('common.page_transitioning')}
       data-testid="page-transition-blur"
     />
   );

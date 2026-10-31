@@ -12,6 +12,7 @@ use Mockery;
 use Mockery\MockInterface;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
+use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
 use Modules\Sirsoft\Page\Services\PageAttachmentService;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -68,7 +69,8 @@ class PageAttachmentServeContractTest extends ModuleTestCase
         // mock 의 기대는 하나도 불리지 않은 채 「응답이 null」로만 드러난다.
         $this->service = new PageAttachmentService(
             app(PageAttachmentRepositoryInterface::class),
-            $this->storage
+            $this->storage,
+            app(PageRepositoryInterface::class),
         );
     }
 

@@ -8,6 +8,7 @@ use App\Models\IdentityPolicy;
 use App\Models\Module;
 use App\Models\Plugin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -17,16 +18,20 @@ use Tests\TestCase;
  * 그대로 남아 계속 강제되던 결함. enforce 두 경로(resolveByScopeTarget=hook,
  * getRouteScopeIndex=route)가 source_type/source_identifier 기준으로 비활성 확장
  * 정책을 제외하는지, 그리고 재활성화 시 다시 포함되는지(3-state)를 검증한다.
- *
- * @group identity
- * @group unit
  */
+#[Group('identity')]
+#[Group('unit')]
 class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 {
     use RefreshDatabase;
 
     private IdentityPolicyRepositoryInterface $repository;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,6 +40,10 @@ class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 
     /**
      * 모듈 레코드를 생성합니다.
+     *
+     * @param  string  $identifier  모듈 식별자
+     * @param  string  $status  모듈 상태
+     * @return Module 만든 모듈 레코드
      */
     private function makeModule(string $identifier, string $status): Module
     {
@@ -49,6 +58,10 @@ class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 
     /**
      * 플러그인 레코드를 생성합니다.
+     *
+     * @param  string  $identifier  플러그인 식별자
+     * @param  string  $status  플러그인 상태
+     * @return Plugin 만든 플러그인 레코드
      */
     private function makePlugin(string $identifier, string $status): Plugin
     {
@@ -63,6 +76,9 @@ class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 
     /**
      * 정책을 생성합니다.
+     *
+     * @param  array<string, mixed>  $overrides  덮어쓸 속성
+     * @return IdentityPolicy 만든 정책
      */
     private function makePolicy(array $overrides = []): IdentityPolicy
     {
@@ -83,6 +99,12 @@ class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 
     /**
      * hook scope: 활성 모듈의 정책은 enforce 대상에 포함된다
+     *
+     * @scenario lookup=scope_target, record_condition=active_extension
+     *
+     * @effects hook_scope_includes_active_module_policy
+     *
+     * @return void 반환값 없음
      */
     public function test_hook_scope_includes_active_module_policy(): void
     {
@@ -101,6 +123,12 @@ class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 
     /**
      * hook scope: 비활성 모듈의 정책은 enforce 대상에서 제외된다 (회귀)
+     *
+     * @scenario lookup=scope_target, record_condition=inactive_extension
+     *
+     * @effects hook_scope_excludes_inactive_module_policy
+     *
+     * @return void 반환값 없음
      */
     public function test_hook_scope_excludes_inactive_module_policy(): void
     {
@@ -119,6 +147,12 @@ class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 
     /**
      * hook scope: 모듈 재활성화 시 정책이 다시 enforce 대상에 포함된다 (3-state)
+     *
+     * @scenario lookup=scope_target, record_condition=reactivated_extension
+     *
+     * @effects hook_scope_reincludes_policy_after_reactivation
+     *
+     * @return void 반환값 없음
      */
     public function test_hook_scope_reincludes_policy_after_reactivation(): void
     {
@@ -140,6 +174,12 @@ class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 
     /**
      * hook scope: 비활성 플러그인의 정책도 제외된다
+     *
+     * @scenario lookup=scope_target, record_condition=inactive_extension
+     *
+     * @effects hook_scope_excludes_inactive_plugin_policy
+     *
+     * @return void 반환값 없음
      */
     public function test_hook_scope_excludes_inactive_plugin_policy(): void
     {
@@ -158,6 +198,12 @@ class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 
     /**
      * core/admin 정책은 확장 상태와 무관하게 항상 포함된다 (비파괴)
+     *
+     * @scenario lookup=scope_target, record_condition=core_or_admin_source
+     *
+     * @effects hook_scope_always_includes_core_and_admin_policies
+     *
+     * @return void 반환값 없음
      */
     public function test_hook_scope_always_includes_core_and_admin_policies(): void
     {
@@ -180,6 +226,12 @@ class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 
     /**
      * route scope: 활성 모듈의 정책은 라우트 인덱스에 포함된다
+     *
+     * @scenario lookup=route_index, record_condition=active_extension
+     *
+     * @effects route_scope_includes_active_module_policy
+     *
+     * @return void 반환값 없음
      */
     public function test_route_scope_includes_active_module_policy(): void
     {
@@ -200,6 +252,12 @@ class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 
     /**
      * route scope: 비활성 모듈의 정책은 라우트 인덱스에서 제외된다 (회귀)
+     *
+     * @scenario lookup=route_index, record_condition=inactive_extension
+     *
+     * @effects route_scope_excludes_inactive_module_policy
+     *
+     * @return void 반환값 없음
      */
     public function test_route_scope_excludes_inactive_module_policy(): void
     {
@@ -219,6 +277,12 @@ class IdentityPolicyRepositoryActiveExtensionScopeTest extends TestCase
 
     /**
      * route scope: 모듈 재활성화 시 라우트 인덱스에 다시 포함된다 (3-state, 캐시 무효화 동반)
+     *
+     * @scenario lookup=route_index, record_condition=reactivated_extension
+     *
+     * @effects route_scope_reincludes_policy_after_reactivation
+     *
+     * @return void 반환값 없음
      */
     public function test_route_scope_reincludes_policy_after_reactivation(): void
     {

@@ -19,16 +19,23 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * Post 객체는 리스너가 get_class($post) 로 inquirable_type 을 매칭하므로,
  * stdClass 스텁을 쓰는 테스트는 피벗의 inquirable_type 도 'stdClass' 로 맞춘다.
- * (벌크 훅은 FQCN 리터럴 'Modules\Sirsoft\Board\Models\Post' 고정 — 스텁 무관)
+ * 벌크 훅은 게시판이 셋째 인자로 실어 보내는 글 모델 타입으로 피벗을 가린다 — 이커머스는
+ * 게시판 클래스 이름을 스스로 적지 않으므로 테스트도 임의의 타입 문자열을 쓴다.
  */
 class ProductInquiryBoardListenerTest extends ModuleTestCase
 {
-    private const POST_MODEL = 'Modules\\Sirsoft\\Board\\Models\\Post';
+    /** 게시판이 훅으로 실어 보내는 글 모델 타입(임의 값 — 이커머스는 그 값만 신뢰한다) */
+    private const POST_MODEL = 'Tests\\Stub\\BoardPost';
 
     protected ProductInquiryBoardListener $listener;
 
     protected Product $product;
 
+    /**
+     * 리스너·상품을 준비하고 다른 모듈이 남긴 답변 수 필터를 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,7 +50,7 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
     /**
      * stdClass 기반 Post 스텁을 생성합니다.
      *
-     * @param  int  $id  Post ID
+     * @param  int  $id  글 ID
      * @param  int|null  $parentId  부모 Post ID (답변 글이면 지정)
      * @return object Post 스텁
      */
@@ -59,6 +66,10 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
      * getSubscribedHooks 는 3개 액션 훅을 sync=true 로 선언한다.
      *
      * sync 미선언 시 큐 워커 미가동 환경에서 피벗 정리가 조용히 누락된다(N3).
+     *
+     * @effects pivot_cleanup_runs_sync
+     *
+     * @return void 반환값 없음
      */
     public function test_subscribed_hooks_declare_three_sync_action_hooks(): void
     {
@@ -84,6 +95,10 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
 
     /**
      * 질문 글 삭제 → 연결된 피벗이 소프트 삭제된다 (복원 대칭 확보).
+     *
+     * @effects pivot_soft_delete_and_restore
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_post_deleted_soft_deletes_pivot_for_question_post(): void
     {
@@ -104,6 +119,10 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
 
     /**
      * 답변 글 삭제 + 잔여 답변 0 → 부모 피벗의 답변완료가 해제된다 (피벗은 삭제하지 않음).
+     *
+     * @effects reply_delete_recomputes_answered
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_post_deleted_unmarks_answered_when_no_replies_remain(): void
     {
@@ -133,6 +152,10 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
 
     /**
      * 답변 글 삭제 + 잔여 답변 1 → 답변완료 표기가 유지된다 (#106 다중 답변 잔재 대응).
+     *
+     * @effects reply_delete_recomputes_answered
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_post_deleted_keeps_answered_when_replies_remain(): void
     {
@@ -159,6 +182,10 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
 
     /**
      * 질문 글 복원 → 소프트 삭제됐던 피벗이 복원된다.
+     *
+     * @effects pivot_soft_delete_and_restore
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_post_restored_restores_pivot_for_question_post(): void
     {
@@ -181,6 +208,10 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
 
     /**
      * 답변 글 복원 → 부모 피벗이 답변완료로 재마킹되고 answered_at 은 기존값이 보존된다.
+     *
+     * @effects answered_at_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_post_restored_remarks_answered_preserving_answered_at(): void
     {
@@ -211,6 +242,13 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
      * 게시판 삭제 벌크 훅 → 삭제될 글 ID 의 피벗을 일괄 소프트 삭제하며, 재호출은 멱등이다.
      *
      * chunk 당 1회 다회 발화되는 훅이므로 이미 삭제된 피벗은 0건 처리여야 한다.
+     * 피벗 타입은 훅 셋째 인자(게시판이 실어 보낸 글 모델 타입)로 가린다.
+     *
+     * @scenario action=board_delete_question, path=board_direct
+     *
+     * @effects pivot_type_comes_from_hook_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_board_posts_force_deleting_bulk_soft_deletes_and_is_idempotent(): void
     {
@@ -234,7 +272,7 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
         $board = (object) ['id' => 7];
 
         // When: 벌크 삭제 통지
-        $this->listener->handleBoardPostsForceDeleting($board, [601, 602]);
+        $this->listener->handleBoardPostsForceDeleting($board, [601, 602], self::POST_MODEL);
 
         // Then: 대상 피벗만 소프트 삭제
         $this->assertSoftDeleted('ecommerce_product_inquiries', ['id' => $pivot1->id]);
@@ -243,7 +281,7 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
 
         // When: 동일 payload 재호출 (chunk 다회 발화 시뮬레이션) — 예외 없이 0건 처리
         $firstDeletedAt = ProductInquiry::withTrashed()->find($pivot1->id)->deleted_at;
-        $this->listener->handleBoardPostsForceDeleting($board, [601, 602]);
+        $this->listener->handleBoardPostsForceDeleting($board, [601, 602], self::POST_MODEL);
 
         // Then: 멱등 — deleted_at 이 갱신되지 않고 그대로 유지된다
         $this->assertSame(
@@ -253,7 +291,32 @@ class ProductInquiryBoardListenerTest extends ModuleTestCase
         $this->assertSoftDeleted('ecommerce_product_inquiries', ['id' => $pivot2->id]);
 
         // And: 빈 배열 호출은 no-op
-        $this->listener->handleBoardPostsForceDeleting($board, []);
+        $this->listener->handleBoardPostsForceDeleting($board, [], self::POST_MODEL);
         $this->assertNull(ProductInquiry::withTrashed()->find($untouched->id)->deleted_at);
+    }
+
+    /**
+     * 글 모델 타입을 싣지 않은 벌크 훅(이전 판 게시판)은 어느 피벗인지 확정할 수 없어 지우지 않는다.
+     *
+     * 이커머스가 게시판 클래스 이름을 스스로 채워 넣던 종전 방식으로 돌아가지 않는지 고정한다 —
+     * 남은 고아는 업그레이드 스텝 백필이 정리한다.
+     *
+     * @scenario action=board_delete_question, path=board_direct
+     *
+     * @effects pivot_untouched_when_hook_type_missing
+     *
+     * @return void 반환값 없음
+     */
+    public function test_handle_board_posts_force_deleting_skips_without_post_type(): void
+    {
+        $pivot = ProductInquiry::factory()->create([
+            'product_id' => $this->product->id,
+            'inquirable_type' => self::POST_MODEL,
+            'inquirable_id' => 701,
+        ]);
+
+        $this->listener->handleBoardPostsForceDeleting((object) ['id' => 8], [701]);
+
+        $this->assertNull(ProductInquiry::withTrashed()->find($pivot->id)->deleted_at);
     }
 }

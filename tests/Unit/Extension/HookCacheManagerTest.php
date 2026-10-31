@@ -3,6 +3,7 @@
 namespace Tests\Unit\Extension;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Extension\CoreVersionChecker;
 use App\Extension\HookCacheManager;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
@@ -30,6 +31,11 @@ class HookCacheManagerTest extends TestCase
 
     private string $tmpCachePath;
 
+    /**
+     * 훅 등록기·메모리 캐시를 비우고 임시 캐시 경로를 정합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +51,11 @@ class HookCacheManagerTest extends TestCase
         $this->tmpCachePath = storage_path('framework/testing/hooks_test_'.uniqid().'.php');
     }
 
+    /**
+     * 임시 캐시 파일을 지우고 훅 등록기를 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::exists($this->tmpCachePath)) {
@@ -60,7 +71,7 @@ class HookCacheManagerTest extends TestCase
      *
      * 클로저는 직접 비교할 수 없으므로 구조(훅명·우선순위·콜백 수)만 비교한다.
      *
-     * @return array{actions: array, filters: array}
+     * @return array{actions: array, filters: array} 액션·필터별 [훅명 => [우선순위 => 콜백 수]] 지문
      */
     private function fingerprint(): array
     {
@@ -92,6 +103,8 @@ class HookCacheManagerTest extends TestCase
      * @scenario cache_state=present_valid, listener_type=filter, regeneration_trigger=extension_update, registration_source=core
      *
      * @effects cache_path_registration_byte_identical_to_scan_path, cache_registered_filter_executes_synchronously_and_returns_value
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_path_registration_is_identical_to_scan_path(): void
     {
@@ -132,6 +145,47 @@ class HookCacheManagerTest extends TestCase
     }
 
     /**
+     * 리스너의 'queue' 옵션이 훅 캐시를 거쳐도 스캔 경로와 같은 잡 프로퍼티를 만든다 (#139).
+     *
+     * 캐시는 getSubscribedHooks() 배열을 통째로 var_export 해 저장한다 — 같은 형식으로 왕복시켜 비교한다.
+     *
+     * @scenario cache_state=present_valid, listener_type=action_queued, regeneration_trigger=extension_update, registration_source=core
+     *
+     * @effects queue_options_survive_cache_round_trip
+     *
+     * @return void 반환값 없음
+     */
+    public function test_queue_options_round_trip_through_cache(): void
+    {
+        Queue::fake();
+        config([
+            'queue.default' => 'database',
+            'g7_settings.core.drivers.queue_connections' => ['database'],
+            'g7_settings.core.drivers.queue_names' => ['database' => ['default', 'notifications']],
+        ]);
+
+        $props = fn (DispatchHookListenerJob $job): array => [
+            $job->connection, $job->queue, $job->tries, $job->timeout, $job->backoff, $job->maxExceptions, $job->failOnTimeout, $job->afterCommit,
+        ];
+
+        HookManager::resetAll();
+        HookListenerRegistrar::clear();
+        HookListenerRegistrar::register(HookCacheStubQueued::class, 'stub-source');
+        HookManager::doAction('test.hookcache.queued');
+
+        $hooks = eval('return '.var_export(HookCacheStubQueued::getSubscribedHooks(), true).';');
+        HookManager::resetAll();
+        HookListenerRegistrar::clear();
+        HookListenerRegistrar::registerFromCache(HookCacheStubQueued::class, $hooks, 'stub-source');
+        HookManager::doAction('test.hookcache.queued');
+
+        $pushed = Queue::pushed(DispatchHookListenerJob::class)->values();
+        $this->assertCount(2, $pushed);
+        $this->assertSame($props($pushed[0]), $props($pushed[1]));
+        $this->assertSame(['database', 'notifications', 4, 30, [5, 15], 1, true, true], $props($pushed[1]));
+    }
+
+    /**
      * registerFromCache 로 등록한 action 리스너가 큐 디스패치되는지 검증합니다.
      *
      * 캐시 경로도 register 와 동일한 큐 정책(DispatchHookListenerJob)을 따라야 한다.
@@ -139,6 +193,8 @@ class HookCacheManagerTest extends TestCase
      * @scenario cache_state=present_valid, listener_type=action_queued, regeneration_trigger=hooks_clear_command, registration_source=plugin
      *
      * @effects cache_registered_action_dispatches_queue_job, listener_class_not_autoloaded_at_boot_when_registered_from_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_registered_action_dispatches_job(): void
     {
@@ -160,6 +216,8 @@ class HookCacheManagerTest extends TestCase
      * @scenario cache_state=corrupted_broken_structure, listener_type=filter, regeneration_trigger=hooks_cache_command, registration_source=plugin
      *
      * @effects cache_registered_sync_action_executes_immediately
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_registered_filter_executes_synchronously(): void
     {
@@ -179,6 +237,8 @@ class HookCacheManagerTest extends TestCase
      * @scenario cache_state=absent, listener_type=action_queued, regeneration_trigger=extension_update, registration_source=core
      *
      * @effects absent_cache_falls_back_to_scan_registration
+     *
+     * @return void 반환값 없음
      */
     public function test_read_returns_null_when_cache_absent(): void
     {
@@ -194,6 +254,8 @@ class HookCacheManagerTest extends TestCase
      * @scenario cache_state=corrupted_broken_structure, listener_type=action_sync, regeneration_trigger=hooks_clear_command, registration_source=core
      *
      * @effects corrupted_cache_returns_null_and_falls_back_to_scan, hooks_clear_is_safe_when_cache_absent
+     *
+     * @return void 반환값 없음
      */
     public function test_read_returns_null_when_cache_corrupted(): void
     {
@@ -214,6 +276,8 @@ class HookCacheManagerTest extends TestCase
      * @scenario cache_state=present_valid, listener_type=action_sync, regeneration_trigger=core_update, registration_source=module
      *
      * @effects generate_produces_three_bucket_cache_core_modules_plugins, each_cache_entry_has_listener_hooks_and_dynamic_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_produces_readable_three_bucket_cache(): void
     {
@@ -256,6 +320,8 @@ class HookCacheManagerTest extends TestCase
      * @scenario cache_state=present_valid, listener_type=dynamic, regeneration_trigger=hooks_cache_command, registration_source=core
      *
      * @effects dynamic_listener_flagged_in_core_cache, dynamic_flagged_listener_deferred_to_boot_tail_like_scan_path
+     *
+     * @return void 반환값 없음
      */
     public function test_dynamic_listener_is_flagged_in_cache(): void
     {
@@ -282,11 +348,13 @@ class HookCacheManagerTest extends TestCase
      * @scenario cache_state=present_but_testing_env, listener_type=action_sync, regeneration_trigger=extension_update, registration_source=plugin
      *
      * @effects testing_env_always_scans_ignoring_cache_file
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_removes_cache_file(): void
     {
         File::ensureDirectoryExists(dirname($this->tmpCachePath));
-        File::put($this->tmpCachePath, "<?php return ['core'=>[],'modules'=>[],'plugins'=>[]];");
+        File::put($this->tmpCachePath, $this->markedCacheFile('[]'));
 
         $manager = new HookCacheManagerWithPath($this->tmpCachePath);
         $this->assertTrue($manager->isCached());
@@ -304,14 +372,17 @@ class HookCacheManagerTest extends TestCase
      *
      * 검증: memo 가 채워진 뒤 캐시 파일을 삭제해도 read() 가 여전히 데이터를 반환하면
      * (파일을 재접근하지 않는다는 증거), 요청당 1회 로드가 성립한다.
+     *
+     * @scenario cache_state=present_valid, listener_type=action_sync, regeneration_trigger=hooks_cache_command, registration_source=module
+     *
+     * @effects cache_path_registration_byte_identical_to_scan_path
+     *
+     * @return void 반환값 없음
      */
     public function test_read_memoizes_file_load_within_request(): void
     {
         File::ensureDirectoryExists(dirname($this->tmpCachePath));
-        File::put(
-            $this->tmpCachePath,
-            "<?php return ['core'=>[['listener'=>'X','hooks'=>[]]],'modules'=>[],'plugins'=>[]];"
-        );
+        File::put($this->tmpCachePath, $this->markedCacheFile("[['listener'=>'X','hooks'=>[]]]"));
 
         $manager = new HookCacheManagerWithPath($this->tmpCachePath);
         $first = $manager->read();
@@ -338,11 +409,17 @@ class HookCacheManagerTest extends TestCase
      *
      * 확장 install/update 로 캐시가 재생성되면 이후 read() 는 새 매핑을 반환해야 한다.
      * memo 가 무효화되지 않으면 옛 매핑이 요청 내내 잔존하는 회귀가 발생한다.
+     *
+     * @scenario cache_state=present_valid, listener_type=filter, regeneration_trigger=hooks_clear_command, registration_source=core
+     *
+     * @effects hooks_clear_command_removes_cache_file
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_invalidates_memo(): void
     {
         File::ensureDirectoryExists(dirname($this->tmpCachePath));
-        File::put($this->tmpCachePath, "<?php return ['core'=>[['listener'=>'A','hooks'=>[]]],'modules'=>[],'plugins'=>[]];");
+        File::put($this->tmpCachePath, $this->markedCacheFile("[['listener'=>'A','hooks'=>[]]]"));
 
         $manager = new HookCacheManagerWithPath($this->tmpCachePath);
         $this->assertIsArray($manager->read()); // memo 채움
@@ -353,12 +430,133 @@ class HookCacheManagerTest extends TestCase
         // 파일이 없으므로 read() 는 null (memo 가 무효화되지 않았다면 옛 데이터를 반환했을 것).
         $this->assertNull($manager->read(), 'clear() 후 read() 는 memo 를 버리고 null 폴백해야 합니다.');
     }
+
+    /**
+     * 형식 표지가 없는 캐시(7.0.x 가 만든 파일)는 쓰지 않고 스캔으로 폴백한다 (7.1.0 출시 점검).
+     *
+     * 7.0.x 의 코어 업데이트는 새 파일을 깐 같은 프로세스에서 훅 캐시를 다시 만든다. 그 프로세스에는 옛 코어 리스너가
+     * 이미 로드돼 있어 옛 구독(가입·비밀번호 찾기 훅 이름 등)이 캐시에 박히고, 번들 일괄 업데이트를 건너뛰면 그대로
+     * 남아 활동 로그가 빠진다. 표지가 없으면 옛 판이 만든 것이므로 버린다.
+     *
+     * @scenario cache_state=corrupted_broken_structure, listener_type=action_sync, regeneration_trigger=hooks_clear_command, registration_source=plugin
+     *
+     * @effects unmarked_legacy_cache_falls_back_to_scan
+     *
+     * @return void 반환값 없음
+     */
+    public function test_read_returns_null_when_format_marker_missing(): void
+    {
+        File::ensureDirectoryExists(dirname($this->tmpCachePath));
+        File::put($this->tmpCachePath, "<?php return ['core'=>[['listener'=>'X','hooks'=>[]]],'modules'=>[],'plugins'=>[]];");
+
+        $manager = new HookCacheManagerWithPath($this->tmpCachePath);
+
+        $this->assertTrue($manager->isCached());
+        $this->assertNull($manager->read(), '형식 표지가 없는 옛 캐시는 스캔 폴백해야 합니다.');
+    }
+
+    /**
+     * 다른 코어 버전이 만든 캐시는 쓰지 않고 스캔으로 폴백한다 — 코어가 바뀌었는데 재생성이 빠진 경우의 안전망.
+     *
+     * @scenario cache_state=corrupted_broken_structure, listener_type=action_queued, regeneration_trigger=extension_update, registration_source=core
+     *
+     * @effects cache_from_other_core_version_falls_back_to_scan
+     *
+     * @return void 반환값 없음
+     */
+    public function test_read_returns_null_when_core_version_differs(): void
+    {
+        File::ensureDirectoryExists(dirname($this->tmpCachePath));
+        File::put($this->tmpCachePath, $this->markedCacheFile("[['listener'=>'X','hooks'=>[]]]", '0.0.1-other'));
+
+        $manager = new HookCacheManagerWithPath($this->tmpCachePath);
+
+        $this->assertNull($manager->read(), '다른 코어 버전이 만든 캐시는 스캔 폴백해야 합니다.');
+    }
+
+    /**
+     * generate() 는 형식 표지와 만든 코어 버전을 함께 기록하고, 그 파일은 read() 로 되읽힌다.
+     *
+     * @scenario cache_state=present_valid, listener_type=action_queued, regeneration_trigger=hooks_cache_command, registration_source=plugin
+     *
+     * @effects generate_records_format_and_core_version_markers
+     *
+     * @return void 반환값 없음
+     */
+    public function test_generate_records_format_and_core_version(): void
+    {
+        $manager = new HookCacheManagerWithPath($this->tmpCachePath);
+
+        $moduleManager = app(ModuleManager::class);
+        $moduleManager->loadModules();
+        $pluginManager = app(PluginManager::class);
+        $pluginManager->loadPlugins();
+
+        $manager->generate($moduleManager, $pluginManager);
+
+        $raw = require $this->tmpCachePath;
+        $this->assertSame(HookCacheManager::FORMAT, $raw['format'] ?? null, '형식 표지가 기록되지 않았습니다.');
+        $this->assertSame(CoreVersionChecker::getCoreVersion(), $raw['core_version'] ?? null, '만든 코어 버전이 기록되지 않았습니다.');
+        $this->assertIsArray($manager->read(), '표지를 단 캐시는 되읽혀야 합니다.');
+    }
+
+    /**
+     * 현재 형식 표지와 코어 버전을 단 캐시 파일 본문을 만듭니다.
+     *
+     * @param  string  $coreExport  core 버킷의 PHP 배열 리터럴
+     * @param  string|null  $coreVersion  기록할 코어 버전 (null 이면 현재 코어 버전)
+     * @return string 캐시 파일 본문
+     */
+    private function markedCacheFile(string $coreExport, ?string $coreVersion = null): string
+    {
+        $format = HookCacheManager::FORMAT;
+        $version = var_export($coreVersion ?? CoreVersionChecker::getCoreVersion(), true);
+
+        return "<?php return ['format'=>{$format},'core_version'=>{$version},'core'=>{$coreExport},'modules'=>[],'plugins'=>[]];";
+    }
 }
 
 // --- 테스트용 스텁 ---
 
+/**
+ * 큐 디스패치 액션 리스너 스텁.
+ */
+class HookCacheStubQueued implements HookListenerInterface
+{
+    /**
+     * 큐 옵션을 선언한 구독 훅을 돌려줍니다 (#139).
+     *
+     * @return array<string, array<string, mixed>> 훅 이름 => 구독 설정
+     */
+    public static function getSubscribedHooks(): array
+    {
+        return [
+            'test.hookcache.queued' => [
+                'method' => 'handle',
+                'queue' => ['connection' => 'database', 'queue' => 'notifications', 'tries' => 4, 'timeout' => 30, 'backoff' => [5, 15], 'max_exceptions' => 1, 'fail_on_timeout' => true],
+            ],
+        ];
+    }
+
+    /**
+     * 인터페이스 기본 처리 — 스텁은 아무것도 하지 않습니다.
+     *
+     * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
+     */
+    public function handle(...$args): void {}
+}
+
+/**
+ * 액션 리스너 스텁.
+ */
 class HookCacheStubAction implements HookListenerInterface
 {
+    /**
+     * 구독 훅을 돌려줍니다.
+     *
+     * @return array<string, array<string, mixed>> 훅 이름 => 구독 설정
+     */
     public static function getSubscribedHooks(): array
     {
         return [
@@ -366,13 +564,33 @@ class HookCacheStubAction implements HookListenerInterface
         ];
     }
 
+    /**
+     * 인터페이스 기본 처리 — 스텁은 아무것도 하지 않습니다.
+     *
+     * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
+     */
     public function handle(...$args): void {}
 
+    /**
+     * 액션 처리 — 스텁은 아무것도 하지 않습니다.
+     *
+     * @param  string  $value  훅 인자
+     * @return void 반환값 없음
+     */
     public function handleAction(string $value): void {}
 }
 
+/**
+ * 필터 리스너 스텁.
+ */
 class HookCacheStubFilter implements HookListenerInterface
 {
+    /**
+     * 구독 훅을 돌려줍니다.
+     *
+     * @return array<string, array<string, mixed>> 훅 이름 => 구독 설정
+     */
     public static function getSubscribedHooks(): array
     {
         return [
@@ -380,16 +598,36 @@ class HookCacheStubFilter implements HookListenerInterface
         ];
     }
 
+    /**
+     * 인터페이스 기본 처리 — 스텁은 아무것도 하지 않습니다.
+     *
+     * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
+     */
     public function handle(...$args): void {}
 
+    /**
+     * 필터 처리 — 값 끝에 `_cached` 를 붙입니다.
+     *
+     * @param  string  $value  필터 값
+     * @return string 접미사를 붙인 값
+     */
     public function handleFilter(string $value): string
     {
         return $value.'_cached';
     }
 }
 
+/**
+ * 동기 액션 리스너 스텁.
+ */
 class HookCacheStubSync implements HookListenerInterface
 {
+    /**
+     * 구독 훅을 돌려줍니다.
+     *
+     * @return array<string, array<string, mixed>> 훅 이름 => 구독 설정
+     */
     public static function getSubscribedHooks(): array
     {
         return [
@@ -397,8 +635,19 @@ class HookCacheStubSync implements HookListenerInterface
         ];
     }
 
+    /**
+     * 인터페이스 기본 처리 — 스텁은 아무것도 하지 않습니다.
+     *
+     * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
+     */
     public function handle(...$args): void {}
 
+    /**
+     * 동기 처리 — 스텁은 아무것도 하지 않습니다.
+     *
+     * @return void 반환값 없음
+     */
     public function handleSync(): void {}
 }
 
@@ -407,6 +656,11 @@ class HookCacheStubSync implements HookListenerInterface
  */
 class HookCacheManagerWithPath extends HookCacheManager
 {
+    /**
+     * 임시 캐시 경로를 주입합니다.
+     *
+     * @param  string  $path  캐시 파일 경로
+     */
     public function __construct(string $path)
     {
         $this->cacheFilePath = $path;

@@ -3,10 +3,15 @@
 namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
+use App\Console\Commands\Core\Concerns\BundledSourcePlacementPrompt;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Exceptions\UpgradeHandoffException;
 use App\Execution\SubprocessCommandRunner;
 use App\Extension\CoreVersionChecker;
+use App\Extension\Custom\CustomPackageConflictChecker;
+use App\Extension\Custom\CustomUpdatePreflight;
+use App\Extension\Custom\CustomVendorService;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\StorageLinkHelper;
@@ -16,10 +21,12 @@ use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorMode;
+use App\Services\Core\BundledSourcePlanner;
 use App\Services\CoreUpdateService;
 use App\Support\ComposerInstallInfo;
 use App\Support\ConfigCacheHelper;
 use App\Support\ExecutionEnvironment;
+use App\Support\HookCacheFreshProcess;
 use App\Support\PackageManifestCacheHelper;
 use App\Support\RouteCacheHelper;
 use Illuminate\Console\Command;
@@ -28,8 +35,10 @@ use Illuminate\Support\Facades\Log;
 class CoreUpdateCommand extends Command
 {
     use BundledExtensionUpdatePrompt;
+    use BundledSourcePlacementPrompt;
     use ClearsTemplateCaches;
     use HasUnifiedConfirm;
+    use ReportsLifecycleWarnings;
 
     protected $signature = 'core:update
         {--force : 버전 비교 없이 강제 업데이트}
@@ -40,11 +49,22 @@ class CoreUpdateCommand extends Command
         {--source= : 수동 업데이트용 소스 디렉토리 경로 (GitHub 다운로드 대신 지정 디렉토리 사용)}
         {--zip= : 수동 업데이트용 ZIP 파일 경로 (GitHub 다운로드 대신 지정 ZIP 추출 사용)}
         {--vendor-mode=auto : vendor 설치 모드 (auto|composer|bundled)}
+        {--bundled-sources= : 설치되지 않았고 이 프로젝트에도 없는 공식 번들 소스 처리 (none|all|식별자 목록, 쉼표 구분, type:id 허용). 미지정 시 대화형은 묻고 비대화형은 none}
         {--rebuild-search-index : 번들 확장 일괄 업데이트 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
 
     protected $description = '그누보드7 코어를 최신 버전으로 업데이트합니다';
 
     private const TOTAL_STEPS = 11;
+
+    /**
+     * 재동기화 등 부분 실패 경고는 표로만 보이고 종료코드는 바꾸지 않습니다 — 끝난 업데이트를 자동화 스크립트가 실패로 보지 않게.
+     *
+     * @return bool 늘 false
+     */
+    protected function lifecycleWarningsChangeExitCode(): bool
+    {
+        return false;
+    }
 
     /**
      * 커맨드를 실행합니다.
@@ -109,6 +129,12 @@ class CoreUpdateCommand extends Command
         $secret = null;
         $logEntries = [];
         $ownershipSnapshot = [];
+        // 공식 번들 배치 판정(#146) — 설치·디스크에 있는 번들과 그 의존만 갱신, 나머지는 운영자 선택
+        $bundledPlan = null;
+        $bundledRecordBackup = null;
+        $bundledRecordWritten = false;
+        $planner = app(BundledSourcePlanner::class);
+        $bundledOption = is_string($this->option('bundled-sources')) ? $this->option('bundled-sources') : null;
 
         $log = function (string $message) use (&$logEntries) {
             $logEntries[] = '['.date('H:i:s').'] '.$message;
@@ -122,12 +148,12 @@ class CoreUpdateCommand extends Command
         try {
             // --source 와 --zip 동시 지정 금지
             if ($sourceDir && $zipPath) {
-                $this->error('--source 와 --zip 은 동시에 지정할 수 없습니다. 하나만 선택하세요.');
+                $this->error(__('settings.core_update.console.source_zip_conflict'));
 
                 return Command::FAILURE;
             }
             if (($sourceDir || $zipPath) && $this->option('local')) {
-                $this->error('--local 은 --source / --zip 과 동시에 사용할 수 없습니다.');
+                $this->error(__('settings.core_update.console.local_source_conflict'));
 
                 return Command::FAILURE;
             }
@@ -136,11 +162,20 @@ class CoreUpdateCommand extends Command
             if ($zipPath) {
                 $resolvedZip = realpath($zipPath);
                 if (! $resolvedZip || ! is_file($resolvedZip)) {
-                    $this->error('지정된 ZIP 파일이 존재하지 않습니다: '.$zipPath);
+                    $this->error(__('settings.core_update.console.zip_not_found', ['path' => $zipPath]));
 
                     return Command::FAILURE;
                 }
                 $zipPath = $resolvedZip;
+            }
+
+            // --bundled-sources 문법(유형명) 검사 — 유지보수 모드 전에 실패시킨다
+            try {
+                $planner->resolveSelection(null, $bundledOption);
+            } catch (\InvalidArgumentException $selectionError) {
+                $this->error($selectionError->getMessage());
+
+                return Command::FAILURE;
             }
 
             // ── 시스템 요구사항 검증 (--source / --local 모드에서는 스킵, --zip 은 필요) ──
@@ -164,7 +199,7 @@ class CoreUpdateCommand extends Command
             if ($sourceDir) {
                 $sourceDir = realpath($sourceDir);
                 if (! $sourceDir || ! is_dir($sourceDir)) {
-                    $this->error('지정된 소스 디렉토리가 존재하지 않습니다: '.($this->option('source')));
+                    $this->error(__('settings.core_update.console.source_not_found', ['path' => $this->option('source')]));
 
                     return Command::FAILURE;
                 }
@@ -212,13 +247,13 @@ class CoreUpdateCommand extends Command
                 $toVersion = $updateInfo['latest_version'];
 
                 if (! empty($updateInfo['check_failed'])) {
-                    $this->error('업데이트 확인 실패: '.($updateInfo['error'] ?? __('settings.core_update.unknown_error')));
+                    $this->error(__('settings.core_update.console.check_failed', ['error' => $updateInfo['error'] ?? __('settings.core_update.unknown_error')]));
 
                     return Command::FAILURE;
                 }
 
                 if (! $updateInfo['update_available'] && ! $this->option('force')) {
-                    $this->info("현재 최신 버전입니다: {$fromVersion}");
+                    $this->info(__('settings.core_update.console.already_latest', ['version' => $fromVersion]));
 
                     return Command::SUCCESS;
                 }
@@ -226,16 +261,66 @@ class CoreUpdateCommand extends Command
 
             // 사용자 확인
             $this->newLine();
-            $this->info("현재 버전: {$fromVersion}");
+            $this->info(__('settings.core_update.console.current_version', ['version' => $fromVersion]));
             if ($zipPath) {
-                $this->info('업데이트 버전: (ZIP 추출 후 판별)');
+                $this->info(__('settings.core_update.console.target_version_pending'));
             } else {
-                $this->info("업데이트 버전: {$toVersion}");
+                $this->info(__('settings.core_update.console.target_version', ['version' => $toVersion]));
             }
             $this->newLine();
 
-            if (! $this->unifiedConfirm('코어를 업데이트하시겠습니까?', false)) {
+            if (! $this->unifiedConfirm(__('settings.core_update.console.confirm_update'), false)) {
                 return Command::SUCCESS;
+            }
+
+            // ── 공식 번들 배치 판정 (#146 D6) ──
+            // --source/--local 은 디렉토리, --zip 은 풀지 않고 목록만 읽어 유지보수 모드 전에 묻는다.
+            // GitHub 다운로드 경로와 zip 목록을 못 읽은 경우는 Step 4 직후(유지보수 중)에 묻는다.
+            $earlyInventory = null;
+            if ($sourceDir) {
+                $earlyInventory = $planner->readInventoryFromDirectory($sourceDir);
+            } elseif ($this->option('local')) {
+                $earlyInventory = $planner->readInventoryFromDirectory(base_path());
+            } elseif ($zipPath) {
+                $earlyInventory = $planner->readInventoryFromZip($zipPath);
+                if ($earlyInventory === null) {
+                    $this->line(__('settings.bundled_sources.inventory_deferred'));
+                }
+            }
+
+            if ($earlyInventory !== null) {
+                try {
+                    $bundledPlan = $this->decideBundledPlacement($planner, $earlyInventory, $bundledOption, false, $log);
+                } catch (\InvalidArgumentException $selectionError) {
+                    $this->error($selectionError->getMessage());
+
+                    return Command::FAILURE;
+                }
+            }
+
+            // ── custom 자리 사전 검사 (#792) ──
+            // 배포본이 custom 예약 자리에 파일을 싣거나 개발자 패키지(custom/composer.lock)가 새 코어와 맞지 않으면
+            // 유지보수 모드·백업·파일 적용 전에 멈춘다. --source 는 디렉터리, --zip 은 풀지 않고 읽는다.
+            // GitHub 다운로드·zip 을 못 읽은 경우는 Step 4 직후에 같은 검사를 한다. --local 은 배포본이 아니라
+            // 현재 작업본(개발자 custom 파일 포함)을 복제하므로 예약 자리 검사 대상이 아니다.
+            $customPreflightDone = (bool) $this->option('local');
+            if ($sourceDir || $zipPath) {
+                $preflight = app(CustomUpdatePreflight::class);
+                $preflightResult = $sourceDir ? $preflight->inspectDirectory($sourceDir) : $preflight->inspectZip($zipPath);
+                if ($preflightResult !== null) {
+                    $customPreflightDone = true;
+                    if (CustomUpdatePreflight::blocks($preflightResult)) {
+                        // --zip 은 아직 풀지 않아 $toVersion 이 현재 버전이다 — zip 안 버전으로 알려야 관리자 확인 창이
+                        // 같은 새 버전의 중단 기록으로 알아본다.
+                        if ($zipPath) {
+                            $toVersion = CustomUpdatePreflight::readVersionFromZip($zipPath) ?? $toVersion;
+                        }
+                        $this->reportCustomPreflightBlock($preflightResult, $toVersion, $log);
+                        $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                        return Command::FAILURE;
+                    }
+                }
             }
 
             // Step 2~10 프로그레스바 (9단계)
@@ -260,12 +345,16 @@ class CoreUpdateCommand extends Command
             if (! $validation['valid']) {
                 $bar->finish();
                 $this->newLine(2);
-                $this->error('_pending 디렉토리 문제:');
+                $this->error(__('settings.core_update.console.pending_invalid'));
                 foreach ($validation['errors'] as $error) {
                     $this->error("  - {$error}");
                 }
-                $this->info("경로: {$validation['path']}");
-                $this->info("소유자: {$validation['owner']}, 그룹: {$validation['group']}, 퍼미션: {$validation['permissions']}");
+                $this->info(__('settings.core_update.console.pending_path', ['path' => $validation['path']]));
+                $this->info(__('settings.core_update.console.pending_owner', [
+                    'owner' => $validation['owner'],
+                    'group' => $validation['group'],
+                    'permissions' => $validation['permissions'],
+                ]));
 
                 return Command::FAILURE;
             }
@@ -282,11 +371,11 @@ class CoreUpdateCommand extends Command
 
             // ── Step 4: 다운로드 ──
             if ($sourceDir) {
-                $bar->setMessage('소스 디렉토리 검증 중...');
+                $bar->setMessage(__('settings.core_update.console.progress.validate_source'));
             } elseif ($zipPath) {
-                $bar->setMessage('ZIP 파일 추출 중...');
+                $bar->setMessage(__('settings.core_update.console.progress.extract_zip'));
             } elseif ($this->option('local')) {
-                $bar->setMessage('로컬 소스 복제 중...');
+                $bar->setMessage(__('settings.core_update.console.progress.copy_local'));
             } else {
                 $bar->setMessage(__('settings.core_update.step_download'));
             }
@@ -322,6 +411,55 @@ class CoreUpdateCommand extends Command
                 $pendingPath = $service->downloadUpdate($toVersion, $onProgress);
                 $log('다운로드 및 검증 완료');
             }
+
+            // custom 자리 사전 검사를 아직 못 한 경우(GitHub 다운로드·읽지 못한 zip): 받은 배포본으로 지금 한다.
+            // 아직 백업·파일 적용 전 — 받은 배포본만 지우고 유지보수를 풀어 아무것도 바꾸지 않고 끝낸다.
+            if (! $customPreflightDone) {
+                $preflightResult = app(CustomUpdatePreflight::class)->inspectDirectory($pendingPath);
+                if (CustomUpdatePreflight::blocks($preflightResult)) {
+                    $bar->clear();
+                    $service->cleanupPending($pendingPath);
+                    if ($maintenanceEnabled) {
+                        $service->disableMaintenanceMode();
+                        $maintenanceEnabled = false;
+                    }
+                    $this->reportCustomPreflightBlock($preflightResult, $toVersion, $log);
+                    $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                    return Command::FAILURE;
+                }
+            }
+            CustomUpdatePreflight::clearRecord();
+
+            // GitHub 다운로드 경로·zip 목록을 미리 못 읽은 경우: 받은 배포본으로 지금 판정한다(유지보수 중).
+            if ($bundledPlan === null) {
+                $bar->clear();
+                try {
+                    $bundledPlan = $this->decideBundledPlacement(
+                        $planner,
+                        $planner->readInventoryFromDirectory($pendingPath),
+                        $bundledOption,
+                        $maintenanceEnabled,
+                        $log,
+                    );
+                } catch (\InvalidArgumentException $selectionError) {
+                    // 아직 백업·파일 적용 전 — 받은 배포본만 지우고 유지보수를 풀어 깨끗이 끝낸다
+                    $this->newLine();
+                    $this->error($selectionError->getMessage());
+                    $log('공식 번들 선택 오류로 중단: '.$selectionError->getMessage());
+                    $service->cleanupPending($pendingPath);
+                    if ($maintenanceEnabled) {
+                        $service->disableMaintenanceMode();
+                        $maintenanceEnabled = false;
+                    }
+                    $this->warn(__('settings.bundled_sources.summary_selection_aborted'));
+                    $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                    return Command::FAILURE;
+                }
+                $bar->display();
+            }
+            $bundledSkipPaths = $bundledPlan->skipPaths();
 
             // ── Step 5: 백업 ──
             $bar->setMessage(__('settings.core_update.step_backup'));
@@ -372,16 +510,16 @@ class CoreUpdateCommand extends Command
                 $devCount = count($devPackages);
                 $devSample = implode(', ', array_slice($devPackages, 0, 5)).($devCount > 5 ? ' …' : '');
                 if ($composerSkipped) {
-                    $this->warn("운영 vendor 에 개발용 패키지 {$devCount}개 감지 — composer.json/lock 변경이 없어 vendor 를 재설치하지 않으므로 그대로 남습니다. 업데이트 후 'composer install --no-dev --optimize-autoloader' 실행을 권장합니다.");
+                    $this->warn(__('settings.core_update.console.dev_packages_kept', ['count' => $devCount]));
                     $log("운영 vendor 개발용 패키지 {$devCount}개 잔존 (composer 스킵): {$devSample}");
                 } else {
-                    $this->line("운영 vendor 에 개발용 패키지 {$devCount}개 감지 — 이번 업데이트가 --no-dev vendor 로 교체합니다.");
+                    $this->line(__('settings.core_update.console.dev_packages_replaced', ['count' => $devCount]));
                     $log("운영 vendor 개발용 패키지 {$devCount}개 감지 — --no-dev vendor 로 교체: {$devSample}");
                 }
             }
 
             if ($composerSkipped) {
-                $bar->setMessage('Composer 의존성 변경 없음 — 스킵');
+                $bar->setMessage(__('settings.core_update.console.progress.composer_skipped'));
                 $bar->advance();
                 $log('composer.json/lock 변경 없음, vendor 재설치 스킵');
                 $vendorResult = null;
@@ -398,7 +536,7 @@ class CoreUpdateCommand extends Command
                         $vendorResult->packageCount,
                     ));
                 } catch (VendorInstallException $e) {
-                    $this->error('Vendor 설치 실패: '.$e->getMessage());
+                    $this->error(__('settings.core_update.console.vendor_install_failed', ['error' => $e->getMessage()]));
                     throw $e;
                 }
             }
@@ -421,7 +559,7 @@ class CoreUpdateCommand extends Command
             $prune = (bool) $this->option('prune');
 
             if ($backupPath !== null) {
-                $bar->setMessage('신규 파일 manifest 생성 중...');
+                $bar->setMessage(__('settings.core_update.console.progress.manifest'));
                 $log('신규 파일 manifest 생성 시작');
                 try {
                     $manifestStats = CoreBackupHelper::writeNewFilesManifest(
@@ -432,6 +570,7 @@ class CoreUpdateCommand extends Command
                         (array) config('app.update.excludes', []),
                         $fromVersion,
                         $toVersion,
+                        $bundledSkipPaths,
                     );
                     $log(sprintf(
                         '신규 파일 manifest 작성 완료 (files=%d, dirs=%d)',
@@ -456,6 +595,7 @@ class CoreUpdateCommand extends Command
                             (array) config('app.update.targets', []),
                             (array) config('app.update.protected_paths', []),
                             (array) config('app.update.excludes', []),
+                            $bundledSkipPaths,
                         );
                         $applyList = $applyStats['apply'];
                         $log(sprintf(
@@ -490,13 +630,19 @@ class CoreUpdateCommand extends Command
 
             // 반환값이 계약이다 — 게터(`getLastRootFileWarnings()`)는 예외 경로(아래 catch)처럼
             // 반환값을 손에 쥘 수 없는 자리의 편의다 (G3 회차 16 W2 C-6).
-            $applyResult = $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList);
-            $log('코어 파일 적용 완료');
+            $applyResult = $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList, skipPaths: $bundledSkipPaths);
+            $log(sprintf('코어 파일 적용 완료 (미배치 공식 번들 %d개 건너뜀)', count($bundledSkipPaths)));
             $this->surfaceWarnings($applyResult['root_file_warnings'], $log);
+
+            // 미배치 공식 번들 기록 — 관리자 목록 안내와 core:bundled-sources 의 근거. 롤백 시 이전 기록으로 되돌린다.
+            $bundledRecordBackup = is_file($planner->recordPath()) ? (string) file_get_contents($planner->recordPath()) : null;
+            $planner->writeRecord($bundledPlan, $toVersion, 'core:update');
+            $bundledRecordWritten = true;
+            $log(sprintf('공식 번들 배치 기록 저장 (미배치 %d개)', count($bundledPlan->unplaced)));
 
             // ── Step 8: vendor 디렉토리 복사 (_pending → 운영) ──
             if ($composerSkipped) {
-                $bar->setMessage('vendor 복사 스킵');
+                $bar->setMessage(__('settings.core_update.console.progress.vendor_copy_skipped'));
                 $bar->advance();
                 $log('composer 스킵 → vendor 디렉토리 복사 불필요');
             } else {
@@ -507,6 +653,16 @@ class CoreUpdateCommand extends Command
                 // composer/bundled 모드 모두 _pending/vendor/ 가 구성되어 있으므로 공통 복사
                 $service->copyVendorFromPending($pendingPath, $onProgress);
                 $log('vendor 디렉토리 복사 완료');
+            }
+
+            // 개발자 전용 composer(custom/, #792) — 코어 vendor 와 별개라 코어가 건드리지 않는다. 설치본이
+            // custom/composer.lock 과 어긋나 있을 때만(첫 배포·묶음 교체 등) 같은 vendor 모드로 맞춘다.
+            $customVendorResult = app(CustomVendorService::class)->ensureInstalled($vendorMode);
+            if ($customVendorResult !== 'skipped:no-composer') {
+                $log('개발자 vendor(custom): '.$customVendorResult);
+            }
+            if (str_starts_with($customVendorResult, 'failed:')) {
+                $this->warn(__('settings.custom_reserved.vendor.install_failed', ['reason' => substr($customVendorResult, 7)]));
             }
 
             // ── Step 9: Migration + 역할/메뉴 동기화 ──
@@ -544,7 +700,7 @@ class CoreUpdateCommand extends Command
             // bar 를 잠시 지우고, 상세 로그를 별도 줄로 출력한 뒤 다시 표시한다.
             $bar->clear();
             $this->newLine();
-            $this->info('── 업그레이드 스텝 실행 ──');
+            $this->info(__('settings.core_update.console.upgrade_steps_title'));
 
             $spawned = $this->spawnUpgradeStepsProcess(
                 $fromVersion,
@@ -556,7 +712,7 @@ class CoreUpdateCommand extends Command
             if (! $spawned) {
                 $log('별도 프로세스 실행 실패 — in-process fallback');
                 $service->runUpgradeSteps($fromVersion, $toVersion, function (string $version) use ($log) {
-                    $this->line("  • upgrade step 실행: {$version}");
+                    $this->line('  • '.__('settings.core_update.console.upgrade_step_running', ['version' => $version]));
                     $log("업그레이드 스텝 실행: {$version}");
                 }, (bool) $this->option('force'));
                 $service->reloadCoreConfigAndResync();
@@ -622,6 +778,10 @@ class CoreUpdateCommand extends Command
             // 라우트를 다시 등록한다. 재생성은 파일이 전부 안착한 이 지점에서만 안전하다.
             RouteCacheHelper::rebuild();
 
+            // 훅 캐시는 새 프로세스에서 한 번 더 굽는다 — 이 프로세스는 이전 코드로 부팅해, 업데이트 시작 때
+            // 훅 캐시가 없던 사이트에서는 이전 리스너 구독으로 구워졌을 수 있다(#138 후속).
+            $this->rebuildHookCacheInFreshProcess($log);
+
             $log('정리 완료');
 
             $bar->finish();
@@ -630,7 +790,7 @@ class CoreUpdateCommand extends Command
             // 설치 로그 저장
             $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, true);
 
-            $this->info("그누보드7 코어가 {$toVersion} 버전으로 업데이트되었습니다!");
+            $this->info(__('settings.core_update.console.updated', ['version' => $toVersion]));
             $this->newLine();
 
             // ── 파일 적용 방식 요약 (부수의무: 설명의무) ──
@@ -650,9 +810,19 @@ class CoreUpdateCommand extends Command
                 (bool) $this->option('force'),
             );
 
-            if (($promptResult['success'] ?? 0) > 0) {
+            // 공식 번들 처리 결과 4구분 요약 (#146 제안 5)
+            $this->summarizeBundledPlacement($bundledPlan, $promptResult);
+
+            $bundledFailed = (int) ($promptResult['failed'] ?? 0);
+
+            // 실패한 확장도 롤백 전까지 파일을 썼을 수 있다 — 시도한 업데이트가 하나라도 있으면 후처리를 한다.
+            if (($promptResult['success'] ?? 0) > 0 || $bundledFailed > 0) {
+                // 일괄 업데이트는 이 (이전 코드) 프로세스에서 확장마다 훅 캐시를 재생성해, 위에서 새 프로세스로
+                // 구운 캐시를 이전 리스너 구독으로 덮어쓸 수 있다 — 소유권 복원 전에 새 프로세스로 다시 굽는다.
+                $this->rebuildHookCacheInFreshProcess($log);
+
                 $this->newLine();
-                $this->info('일괄 업데이트로 생성된 파일의 소유권을 복원하는 중...');
+                $this->info(__('settings.core_update.console.restoring_ownership'));
                 // 일괄 확장 update 가 sudo 컨텍스트에서 root 로 만들 수 있는 PHP-FPM 쓰기
                 // 영역의 owner/group/perms 를 항목별 정확 복원 (Stage 4).
                 $service->restoreOwnership($ownershipSnapshot, $onProgress, $detailedOwnershipSnapshot);
@@ -671,7 +841,8 @@ class CoreUpdateCommand extends Command
             // 전면 500 차단 (7.0.9→7.0.10 실사례)
             app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
-            return Command::SUCCESS;
+            // 번들 확장 일괄 업데이트가 하나라도 실패하면 종료 코드 1 (후처리는 위에서 모두 끝냈다).
+            return $this->bundledUpdateExitCode($promptResult, $toVersion);
 
         } catch (UpgradeHandoffException $e) {
             // 업그레이드 스텝이 새 PHP 프로세스 재진입을 요청한 경우.
@@ -705,6 +876,9 @@ class CoreUpdateCommand extends Command
             try {
                 $service->updateVersionInEnv($toVersion);
                 $service->clearAllCaches();
+                // 핸드오프는 정상 종료 경로의 훅 캐시 재굽기를 지나지 않는다 — 파일은 이미 toVersion 이므로
+                // 새 코드로 부팅하는 새 프로세스에서 굽는다(#138 후속).
+                $this->rebuildHookCacheInFreshProcess($log);
                 // 핸드오프로 멈춰도 파일은 이미 toVersion 이므로 워커는 새 코드로 재기동해야 한다.
                 $service->signalQueueRestart();
                 $log('큐 워커 재시작 신호 전송 (queue:restart)');
@@ -733,7 +907,7 @@ class CoreUpdateCommand extends Command
                 }
             } catch (\Throwable $cleanupError) {
                 $log("핸드오프 cleanup 중 오류: {$cleanupError->getMessage()}");
-                $this->warn("핸드오프 cleanup 중 오류 발생 — 수동 점검 필요: {$cleanupError->getMessage()}");
+                $this->warn(__('settings.core_update.console.handoff_cleanup_failed', ['error' => $cleanupError->getMessage()]));
             } finally {
                 // 배수는 **cleanup 성패와 무관**해야 한다. 이 시점의 버퍼에는 spawn 자식이
                 // `[DOCROOT_EXPOSURE]` 라인으로 실어 보낸 통보가 이미 담겨 있는데, 배수를
@@ -748,20 +922,20 @@ class CoreUpdateCommand extends Command
             $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, true);
 
             $this->newLine();
-            $this->warn('업그레이드 파일 반영은 완료되었으나, 일부 업그레이드 스텝이 현재 프로세스에서 실행될 수 없어 중단되었습니다.');
+            $this->warn(__('settings.core_update.console.handoff_incomplete'));
             $this->newLine();
-            $this->line("  완료 스텝 지점: {$e->afterVersion}");
-            $this->line("  파일·설정 버전: {$toVersion} (이미 반영됨)");
-            $this->line("  사유: {$e->reason}");
+            $this->line('  '.__('settings.core_update.console.handoff_after_version', ['version' => $e->afterVersion]));
+            $this->line('  '.__('settings.core_update.console.handoff_file_version', ['version' => $toVersion]));
+            $this->line('  '.__('settings.core_update.console.handoff_reason', ['reason' => $e->reason]));
             $this->newLine();
-            $this->info('나머지 스텝을 적용하려면 아래 명령을 실행하세요 (재다운로드 없이 스텝만 실행):');
+            $this->info(__('settings.core_update.console.handoff_resume_intro'));
             $this->surfaceResumeCommandWithPermissionGuidance($resumeCommand);
             $this->newLine();
-            $this->warn('⚠ 위 명령을 실행하지 않으면 버전 표시는 최신이지만 일부 스텝이 미실행 상태로 남습니다.');
+            $this->warn('⚠ '.__('settings.core_update.console.handoff_resume_warning'));
             $this->newLine();
 
             if ($backupPath) {
-                $this->line("백업이 유지되었습니다: {$backupPath}");
+                $this->line(__('settings.core_update.console.backup_kept', ['path' => $backupPath]));
                 $this->newLine();
             }
 
@@ -798,7 +972,7 @@ class CoreUpdateCommand extends Command
             $failedTargets = [];
 
             if ($backupPath) {
-                $this->warn('백업에서 복원 중...');
+                $this->warn(__('settings.core_update.console.restoring_backup'));
                 $log('백업 복원 시작');
 
                 // 반환값이 계약이다 — 게터(`getLastRootFileWarnings()`)는 커맨드의 편의이고, 커맨드마저
@@ -811,16 +985,16 @@ class CoreUpdateCommand extends Command
 
                     if (empty($failedTargets)) {
                         $log('백업 복원 완료');
-                        $this->info('백업에서 복원되었습니다.');
+                        $this->info(__('settings.core_update.console.restored'));
                         $restoreSuccess = true;
                     } else {
                         $log('백업 부분 복원 완료 (실패: '.implode(', ', $failedTargets).')');
-                        $this->warn('백업에서 부분 복원되었습니다.');
-                        $this->error('복원 실패 항목: '.implode(', ', $failedTargets));
+                        $this->warn(__('settings.core_update.console.restored_partial'));
+                        $this->error(__('settings.core_update.console.restore_failed_targets', ['targets' => implode(', ', $failedTargets)]));
                     }
                 } catch (\Throwable $restoreError) {
                     $log("백업 복원 실패: {$restoreError->getMessage()}");
-                    $this->error("백업 복원 실패: {$restoreError->getMessage()}");
+                    $this->error(__('settings.core_update.console.restore_failed', ['error' => $restoreError->getMessage()]));
                 }
 
                 // 되돌린 뒤 루트 진입·보호 파일이 사라졌다면 그 사실도 같은 통로로 출력한다.
@@ -836,7 +1010,7 @@ class CoreUpdateCommand extends Command
                     $log('롤백 후 캐시 정리 완료');
                 } catch (\Throwable $cacheError) {
                     $log("롤백 후 캐시 정리 실패 (계속 진행): {$cacheError->getMessage()}");
-                    $this->warn("캐시 정리 실패 — 부팅 후 'php artisan optimize:clear' 수동 실행 필요: {$cacheError->getMessage()}");
+                    $this->warn(__('settings.core_update.console.cache_clear_failed', ['error' => $cacheError->getMessage()]));
                 }
             }
 
@@ -845,14 +1019,19 @@ class CoreUpdateCommand extends Command
                 $service->cleanupPending($pendingPath);
             }
 
+            // 공식 번들 배치 기록도 업데이트 전 상태로 되돌린다 (파일이 롤백됐으므로)
+            if ($bundledRecordWritten) {
+                $this->restoreBundledRecord($planner, $bundledRecordBackup, $log);
+            }
+
             // 실패 리포트
             $reportPath = $service->generateFailureReport($e, $fromVersion, $toVersion);
 
             // 설치 로그 저장
             $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
 
-            $this->error("코어 업데이트 실패: {$e->getMessage()}");
-            $this->info("실패 리포트: {$reportPath}");
+            $this->error(__('settings.core_update.console.update_failed', ['error' => $e->getMessage()]));
+            $this->info(__('settings.core_update.console.failure_report', ['path' => $reportPath]));
 
             if ($maintenanceEnabled) {
                 $this->newLine();
@@ -862,28 +1041,28 @@ class CoreUpdateCommand extends Command
                     try {
                         $service->disableMaintenanceMode();
                         $maintenanceEnabled = false;
-                        $this->info('복원 완료: 유지보수 모드가 해제되었습니다.');
+                        $this->info(__('settings.core_update.console.maintenance_disabled'));
                     } catch (\Throwable) {
-                        $this->warn('유지보수 모드 해제 실패. 수동으로 해제하세요: php artisan up');
+                        $this->warn(__('settings.core_update.console.maintenance_disable_failed'));
                     }
                 } else {
                     // 복원 실패 또는 부분 복원 → 수동 복구 안내
-                    $this->warn('유지보수 모드가 유지됩니다.');
+                    $this->warn(__('settings.core_update.console.maintenance_kept'));
 
                     if (! empty($failedTargets) || ! $backupPath) {
                         $this->newLine();
-                        $this->error('수동 복구가 필요합니다:');
+                        $this->error(__('settings.core_update.console.manual_recovery_required'));
                         if ($backupPath) {
-                            $this->line("  1. 백업에서 수동 복원: cp -r {$backupPath}/* ".base_path().'/');
+                            $this->line('  1. '.__('settings.core_update.console.manual_restore_backup', ['command' => "cp -r {$backupPath}/* ".base_path().'/']));
                         }
-                        $this->line('  '.($backupPath ? '2' : '1').'. Composer 재설치: composer install --no-dev --optimize-autoloader');
-                        $this->line('  '.($backupPath ? '3' : '2').'. 유지보수 해제: php artisan up');
+                        $this->line('  '.($backupPath ? '2' : '1').'. '.__('settings.core_update.console.manual_reinstall_composer'));
+                        $this->line('  '.($backupPath ? '3' : '2').'. '.__('settings.core_update.console.manual_disable_maintenance'));
                     } else {
-                        $this->info('이전 버전으로 사이트를 운영하려면: php artisan up');
+                        $this->info(__('settings.core_update.console.run_previous_version'));
                     }
 
                     if ($secret) {
-                        $this->info("관리자 접근: {$secret}");
+                        $this->info(__('settings.core_update.console.admin_access', ['secret' => $secret]));
                     }
                 }
             }
@@ -927,7 +1106,7 @@ class CoreUpdateCommand extends Command
         // 로 이름만 남겨 둔 호스팅을 구분하지 못한다 (#609 D34 이관 완료).
         if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return $this->failSpawnWithMode(
-                'proc_open 비활성',
+                __('settings.core_update.console.spawn.proc_open_disabled'),
                 $log,
                 $fromVersion,
                 $toVersion,
@@ -1010,8 +1189,9 @@ class CoreUpdateCommand extends Command
         // 권한이 원인이라는 유일한 흔적이다.
         $remainingManifests = PackageManifestCacheHelper::clear();
         if ($remainingManifests !== []) {
-            $manifestWarning = 'spawn 직전 패키지 매니페스트 삭제 실패 — 자식이 이전 설치본의 provider 목록으로 부팅할 수 있습니다 (권한·소유권 확인): '
-                .implode(', ', $remainingManifests);
+            $manifestWarning = __('settings.core_update.console.manifest_clear_failed', [
+                'paths' => implode(', ', $remainingManifests),
+            ]);
             $log($manifestWarning);
             $this->warn($manifestWarning);
         }
@@ -1019,7 +1199,7 @@ class CoreUpdateCommand extends Command
         $process = proc_open($commandLine, $descriptors, $pipes, base_path(), $env);
         if (! is_resource($process)) {
             return $this->failSpawnWithMode(
-                'proc_open 자원 생성 실패',
+                __('settings.core_update.console.spawn.proc_open_failed'),
                 $log,
                 $fromVersion,
                 $toVersion,
@@ -1167,7 +1347,7 @@ class CoreUpdateCommand extends Command
             // 신호 미수신 — 이전 버전 자식 (신호 미발행) 또는 silent skip 의심. fail-fast.
             if ($stepsExecuted === null) {
                 return $this->failSpawnWithMode(
-                    'spawn 자식이 [STEPS_EXECUTED] 신호 미발행 — 이전 버전 자식 또는 silent skip 의심',
+                    __('settings.core_update.console.spawn.steps_signal_missing'),
                     $log,
                     $fromVersion,
                     $toVersion,
@@ -1189,12 +1369,9 @@ class CoreUpdateCommand extends Command
                 && $stepsDiscovered !== 0
                 && version_compare($fromVersion, $toVersion, '<')) {
                 return $this->failSpawnWithMode(
-                    sprintf(
-                        'spawn 자식 exit=0 이지만 step 0건 실행 — 의도된 동작이 아님 (from=%s to=%s%s)',
-                        $fromVersion,
-                        $toVersion,
-                        $stepsDiscovered !== null ? ", 발견 {$stepsDiscovered}건" : '',
-                    ),
+                    $stepsDiscovered !== null
+                        ? __('settings.core_update.console.spawn.zero_steps_discovered', ['from' => $fromVersion, 'to' => $toVersion, 'count' => $stepsDiscovered])
+                        : __('settings.core_update.console.spawn.zero_steps', ['from' => $fromVersion, 'to' => $toVersion]),
                     $log,
                     $fromVersion,
                     $toVersion,
@@ -1207,7 +1384,7 @@ class CoreUpdateCommand extends Command
         }
 
         return $this->failSpawnWithMode(
-            "spawn 비정상 종료 (exit={$exitCode})",
+            __('settings.core_update.console.spawn.abnormal_exit', ['code' => $exitCode]),
             $log,
             $fromVersion,
             $toVersion,
@@ -1246,7 +1423,7 @@ class CoreUpdateCommand extends Command
 
             throw new UpgradeHandoffException(
                 afterVersion: $fromVersion,
-                reason: "spawn 자식 실패 — {$reason}. fail-fast 모드. 수동 재개로 진행하세요.",
+                reason: __('settings.core_update.console.spawn.abort_reason', ['reason' => $reason]),
                 resumeCommand: $resumeCommand,
             );
         }
@@ -1268,6 +1445,7 @@ class CoreUpdateCommand extends Command
      *  - `resumeCommand`: null 허용. string 일 때 길이 < 1000 + shell metacharacter(`;&|`$()<>`) 부재
      *
      * @param  mixed  $payload  json_decode 결과
+     * @return bool 네 키가 모두 규격에 맞으면 true
      */
     private function isValidHandoffPayload($payload): bool
     {
@@ -1308,11 +1486,35 @@ class CoreUpdateCommand extends Command
     }
 
     /**
+     * 롤백 시 공식 번들 배치 기록을 업데이트 전 내용으로 되돌립니다(없었으면 지웁니다).
+     *
+     * @param  BundledSourcePlanner  $planner  판정 서비스 (기록 경로 제공)
+     * @param  string|null  $previous  업데이트 전 기록 내용 (없었으면 null)
+     * @param  \Closure  $log  업데이트 로그 수집 콜백
+     * @return void 반환값 없음
+     */
+    private function restoreBundledRecord(BundledSourcePlanner $planner, ?string $previous, \Closure $log): void
+    {
+        try {
+            $path = $planner->recordPath();
+            if ($previous === null) {
+                @unlink($path);
+            } else {
+                file_put_contents($path, $previous);
+            }
+            $log('공식 번들 배치 기록 복원');
+        } catch (\Throwable $e) {
+            $log('공식 번들 배치 기록 복원 실패 (계속 진행): '.$e->getMessage());
+        }
+    }
+
+    /**
      * 파일 적용 방식(증분/prune/fallback)과 통계를 사용자에게 요약 출력합니다.
      *
      * @param  bool  $prune  --prune 지정 여부
      * @param  array<int, string>|null  $applyList  증분 적용 대상 목록 (null 이면 전체 덮어쓰기)
      * @param  array{apply:array<int,string>, added_count:int, changed_count:int, has_symlink:bool}|null  $applyStats  computeApplyList 산출 통계
+     * @return void 반환값 없음
      */
     private function summarizeApplyMode(bool $prune, ?array $applyList, ?array $applyStats): void
     {
@@ -1343,12 +1545,53 @@ class CoreUpdateCommand extends Command
     }
 
     /**
+     * custom 자리 사전 검사로 업데이트를 멈춘 이유를 출력하고 관리자 화면용 기록을 남깁니다.
+     *
+     * @param  array{reserved_files: array<int, string>, conflicts: array<int, array<string, string>>}  $result  검사 결과
+     * @param  string  $toVersion  시도한 새 코어 버전
+     * @param  \Closure  $log  업데이트 로그 기록 함수
+     * @return void 반환값 없음
+     */
+    private function reportCustomPreflightBlock(array $result, string $toVersion, \Closure $log): void
+    {
+        CustomUpdatePreflight::record($toVersion, $result);
+
+        $this->newLine();
+        $this->error(__('settings.core_update.custom_preflight_blocked', ['version' => $toVersion]));
+
+        if ($result['reserved_files'] !== []) {
+            $this->line(__('settings.core_update.reserved_paths_in_release', ['paths' => implode(', ', $result['reserved_files'])]));
+            $log('custom 예약 자리에 배포본 파일 — 업데이트 중단: '.implode(', ', $result['reserved_files']));
+        }
+
+        if ($result['conflicts'] !== []) {
+            $this->table(
+                [
+                    __('settings.core_update.custom_conflict_package'),
+                    __('settings.core_update.custom_conflict_reason'),
+                    __('settings.core_update.custom_conflict_core'),
+                ],
+                array_map(fn (array $c) => [
+                    $c['package'].' ('.$c['installed'].')',
+                    $c['type'] === CustomPackageConflictChecker::TYPE_DUPLICATE
+                        ? __('settings.core_update.custom_conflict_duplicate')
+                        : __('settings.core_update.custom_conflict_constraint', ['requires' => $c['requires'], 'constraint' => $c['constraint']]),
+                    $c['core_package'].' '.$c['core_version'],
+                ], $result['conflicts']),
+            );
+            $this->line(__('settings.core_update.custom_conflict_fix'));
+            $log('개발자 패키지 충돌 — 업데이트 중단: '.implode(', ', array_map(fn (array $c) => $c['package'].'→'.$c['core_package'], $result['conflicts'])));
+        }
+    }
+
+    /**
      * 업데이트 로그를 파일로 저장합니다.
      *
      * @param  array  $entries  로그 엔트리 목록
      * @param  string  $fromVersion  시작 버전
      * @param  string  $toVersion  종료 버전
      * @param  bool  $success  성공 여부
+     * @return void 반환값 없음
      */
     private function saveUpdateLog(array $entries, string $fromVersion, string $toVersion, bool $success): void
     {
@@ -1377,6 +1620,29 @@ class CoreUpdateCommand extends Command
     }
 
     /**
+     * 훅 캐시를 새 프로세스에서 다시 굽고, 실패하면 운영자에게 수동 명령을 안내합니다.
+     *
+     * 이 프로세스는 이전 코드로 부팅했으므로 여기서 구운 훅 캐시는 이전 리스너 구독을 담을 수 있다.
+     * 새 프로세스는 디스크의 새 코드로 부팅한다. 실패해도 업데이트는 되돌리지 않는다(#138 후속).
+     *
+     * @param  \Closure  $log  업데이트 로그 기록 콜백
+     * @return void 반환값 없음
+     */
+    private function rebuildHookCacheInFreshProcess(\Closure $log): void
+    {
+        $hookCache = HookCacheFreshProcess::run(['hooks:cache']);
+        if ($hookCache['ok']) {
+            $log('훅 캐시 재생성 완료 (새 프로세스)');
+
+            return;
+        }
+
+        $message = __('settings.core_update.console.hook_cache_failed', ['output' => $hookCache['output']]);
+        $log($message);
+        $this->warn($message);
+    }
+
+    /**
      * 코어 업데이트(부모 프로세스)가 생성한 upgrade 로그 파일의 소유권을 부모(storage/logs)
      * 로 정합합니다 — **spawn 실패로 부모가 upgrade step 을 in-process 로 직접 실행한 경우** 대비.
      *
@@ -1389,6 +1655,8 @@ class CoreUpdateCommand extends Command
      * module:update upgrade step 이 같은 날짜 로그에 append 하지 못해 Permission denied 로
      * 실패한다. 본 메서드를 코어 업데이트의 모든 로그 쓰기가 끝난 종료 시점(각 return 직전)에
      * 호출한다. **본 메서드 자체는 로그를 쓰지 않는다**(쓰면 다시 root 가 됨). silent no-op 멱등.
+     *
+     * @return void 반환값 없음
      */
     private function restoreUpgradeLogOwnership(): void
     {
@@ -1422,6 +1690,9 @@ class CoreUpdateCommand extends Command
      * 공유 호스팅에서 FTP 사용자(파일 소유자)와 SSH 사용자, 또는 SSH 사용자와
      * www-data 가 다른 경우 권한 거부가 발생할 수 있습니다. 차단하지는 않고
      * 사용자가 직접 판단하도록 경고만 출력합니다.
+     *
+     * @param  \Closure  $log  내부 로그 누적 콜백
+     * @return void 반환값 없음
      */
     private function warnIfFileOwnerMismatch(\Closure $log): void
     {
@@ -1445,12 +1716,10 @@ class CoreUpdateCommand extends Command
         $ownerUser = posix_getpwuid($ownerUid)['name'] ?? (string) $ownerUid;
 
         $this->newLine();
-        $this->warn('⚠ 실행 사용자와 코어 파일 소유자가 다릅니다.');
-        $this->warn("  실행 사용자: {$currentUser} (uid={$currentUid})");
-        $this->warn("  코어 소유자: {$ownerUser} (uid={$ownerUid})");
-        $this->warn('  → 권한 거부가 발생할 수 있습니다. 일반적으로 코어 파일 소유자로');
-        $this->warn('    SSH 로그인 후 실행해야 합니다. vendor/ 가 다른 사용자 소유인 경우');
-        $this->warn("    'chown -R \$(whoami) vendor/' 후 재시도하세요.");
+        $this->warn('⚠ '.__('settings.core_update.console.owner_mismatch'));
+        $this->warn('  '.__('settings.core_update.console.owner_mismatch_current', ['user' => $currentUser, 'uid' => $currentUid]));
+        $this->warn('  '.__('settings.core_update.console.owner_mismatch_owner', ['user' => $ownerUser, 'uid' => $ownerUid]));
+        $this->warn('  → '.__('settings.core_update.console.owner_mismatch_hint'));
         $this->newLine();
 
         $log("권한 경고: 실행자={$currentUser}({$currentUid}) vs 소유자={$ownerUser}({$ownerUid})");
@@ -1483,6 +1752,7 @@ class CoreUpdateCommand extends Command
      *     → 명령 그대로 안내하되 "웹서버 계정으로 실행" 일반 경고 (계정명 미상).
      *
      * @param  string  $resumeCommand  재실행할 `core:execute-upgrade-steps` 명령
+     * @return void 반환값 없음
      */
     private function surfaceResumeCommandWithPermissionGuidance(string $resumeCommand): void
     {
@@ -1500,6 +1770,7 @@ class CoreUpdateCommand extends Command
      * @param  string  $resumeCommand  재실행할 `core:execute-upgrade-steps` 명령
      * @param  string  $mode  `classifyResumeExecutionContext()` 가 반환한 실행 환경 모드
      * @param  string|null  $webUser  웹서버 계정명 (`root_web_known` 일 때만 유효)
+     * @return void 반환값 없음
      */
     private function renderResumeGuidance(string $resumeCommand, string $mode, ?string $webUser): void
     {
@@ -1516,20 +1787,16 @@ class CoreUpdateCommand extends Command
         if ($mode === 'root_web_known' && $webUser !== null) {
             $this->line("  sudo -u {$webUser} {$resumeCommand}");
             $this->newLine();
-            $this->warn('⚠ 현재 sudo(root) 로 실행 중입니다. 위 명령을 root 로 그대로 실행하면 업그레이드');
-            $this->warn("  스텝이 생성하는 파일이 root 소유가 되어 이후 웹서버({$webUser}) 요청이 쓰기 실패할 수");
-            $this->warn("  있습니다. 반드시 웹서버 계정({$webUser})으로 재실행하세요.");
+            $this->warn('⚠ '.__('settings.core_update.console.resume_root_known_warning', ['user' => $webUser]));
 
             return;
         }
 
         // 케이스 4: root 실행 + 웹서버 계정 식별 불가 — 계정명 미상 상태의 일반 경고.
-        $this->line("  sudo -u <웹서버계정> {$resumeCommand}");
+        $this->line('  '.__('settings.core_update.console.resume_command_unknown_user', ['command' => $resumeCommand]));
         $this->newLine();
-        $this->warn('⚠ 현재 sudo(root) 로 실행 중입니다. 웹서버 계정을 자동으로 식별하지 못했습니다.');
-        $this->warn('  위 명령을 root 로 그대로 실행하면 업그레이드 스텝이 생성하는 파일이 root 소유가 되어');
-        $this->warn('  이후 웹서버(php-fpm) 요청이 쓰기 실패할 수 있습니다. 웹서버 계정(예: www-data,');
-        $this->warn('  nginx, apache)을 확인해 그 계정으로 재실행하세요.');
+        $this->warn('⚠ '.__('settings.core_update.console.resume_root_unknown_warning'));
+        $this->warn('  '.__('settings.core_update.console.resume_root_unknown_hint'));
     }
 
     /**
@@ -1638,7 +1905,9 @@ class CoreUpdateCommand extends Command
      * 본 메서드 호출 후 service 의 `lastPermissionWarnings` 가 다음 호출 시 초기화되므로
      * 매 `restoreOwnership` 직후 1회 호출 패턴이 정합.
      *
+     * @param  CoreUpdateService  $service  코어 업데이트 서비스 (누적된 권한 경고 보유)
      * @param  callable  $log  내부 로그 누적 콜백 (`saveUpdateLog` 입력용)
+     * @return void 반환값 없음
      */
     private function surfacePermissionWarnings(CoreUpdateService $service, callable $log): void
     {
@@ -1648,19 +1917,25 @@ class CoreUpdateCommand extends Command
         }
 
         $this->newLine();
-        $this->warn('⚠ 권한 정상화 실패 — 일부 경로의 소유권/그룹 쓰기 권한을 복원하지 못했습니다.');
+        $this->warn('⚠ '.__('settings.core_update.console.permission_failed'));
         foreach ($warnings as $w) {
-            $kind = $w['kind'] === 'chown' ? '소유권' : '그룹 쓰기';
-            $this->warn(sprintf('  - %s [%s]: %d 건 실패', $w['target'], $kind, $w['failed']));
+            $kind = $w['kind'] === 'chown'
+                ? __('settings.core_update.console.permission_kinds.chown')
+                : __('settings.core_update.console.permission_kinds.group_write');
+            $this->warn('  - '.__('settings.core_update.console.permission_failed_item', [
+                'target' => $w['target'],
+                'kind' => $kind,
+                'count' => (int) $w['failed'],
+            ]));
             foreach (array_slice($w['failed_paths'], 0, 5) as $p) {
                 $this->line("      · {$p}");
             }
             if (count($w['failed_paths']) > 5) {
-                $this->line(sprintf('      · … (총 %d건, 상위 5건만 표시)', $w['failed']));
+                $this->line('      · '.__('settings.core_update.console.permission_more_paths', ['count' => (int) $w['failed']]));
             }
         }
         $this->newLine();
-        $this->line('  복구 예시:');
+        $this->line('  '.__('settings.core_update.console.permission_recovery_example'));
         $this->line('    sudo chown -R <owner>:<group> <path>');
         $this->line('    sudo chmod -R g+w <path>');
         $this->newLine();

@@ -9,10 +9,12 @@ class BrandSeeder extends Seeder
 {
     /**
      * 브랜드 시더를 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
-        $this->command->info('브랜드 더미 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.brand.start'));
 
         $this->deleteExistingBrands();
 
@@ -69,7 +71,7 @@ class BrandSeeder extends Seeder
             ],
             [
                 'name' => ['ko' => '에잇세컨즈', 'en' => '8SECONDS'],
-                'slug' => '8seconds',
+                'slug' => 'eight-seconds', // 슬러그 규칙(영문 소문자로 시작)을 지켜야 관리자 수정 화면에서 그대로 저장된다
                 'website' => 'https://www.8seconds.co.kr',
                 'sort_order' => 8,
                 'is_active' => true,
@@ -328,15 +330,17 @@ class BrandSeeder extends Seeder
 
         foreach ($brands as $brand) {
             Brand::create($brand);
-            $this->command->line("  - 브랜드 생성: {$brand['name']['ko']} ({$brand['name']['en']})");
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.brand.created', ['name' => $brand['name']['ko'], 'name_en' => $brand['name']['en']]));
         }
 
         $count = Brand::count();
-        $this->command->info("브랜드 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.brand.done', ['count' => $count]));
     }
 
     /**
      * 기존 브랜드 데이터를 삭제합니다.
+     *
+     * @return void 반환값 없음
      */
     private function deleteExistingBrands(): void
     {
@@ -344,7 +348,7 @@ class BrandSeeder extends Seeder
 
         if ($deletedCount > 0) {
             Brand::withTrashed()->forceDelete();
-            $this->command->warn("기존 브랜드 {$deletedCount}건을 삭제했습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.brand.purged', ['count' => $deletedCount]));
         }
     }
 }

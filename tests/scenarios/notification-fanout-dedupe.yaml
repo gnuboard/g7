@@ -1,0 +1,50 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 이슈 #139 알림 분할 발송·중복 방지. 수신자 규모 × 재실행 유형 조합 중 의미 있는 대표 조합만 테스트별 @scenario 로 매핑하고, 나머지 조합은 같은 가드(리스 선점 + 보낸 뒤 표시)를 타므로 면제한다.
+
+feature: notification_fanout_dedupe
+
+description: |
+  알림 수신자가 많을 때(운영자가 「역할 기반 → 전 회원」을 고른 경우 등) 발송을 훅 잡 1개 안의 동기 루프로 돌리면,
+  잡이 retry_after 를 넘겨 다시 예약되거나 재시도될 때 처음부터 다시 돌아 같은 회원에게 같은 알림이 또 간다.
+
+  핵심 동작:
+    - 부모 잡(DispatchHookListenerJob → NotificationHookListener::dispatchForDefinition)은 수신자 id 만 뽑아(resolveRefs)
+      묶음(기본 100명)으로 나누고 묶음마다 자식 잡(dispatchChunk)을 띄운다. 수신자 ≤ 묶음 크기면 종전처럼 인라인.
+    - 중복 기준은 누락 방지 우선(at-least-once): 보내기 전 리스(임대) 선점 → 보낸 뒤 「보냈음」 표시.
+      다른 사본이 처리 중인 수신자는 보류했다가 RetryHookListenerLaterException 으로 잡을 미룬다.
+    - 채널 실패는 표시를 지워 재시도가 다시 보낸다. 탈퇴 회원 건너뜀은 한 번만 기록된다.
+    - 발송 로그(after_channel_send·channel_send_failed)는 발송 프로세스 안에서 동기로 기록된다.
+
+axes:
+  recipients: [within_chunk, over_chunk]
+  rerun: [none, rereserved_copy, duplicate_child, channel_failure_retry, withdrawn_rerun]
+
+effects:
+  - rereserved_hook_job_does_not_resend
+  - fanout_children_deliver_once
+  - inline_send_within_chunk
+  - deterministic_child_chunks
+  - child_payload_carries_refs
+  - refs_match_models
+  - failed_channel_releases_claim
+  - withdrawn_skip_recorded_once
+  - delivery_claim_states
+  - delivery_guard_fails_open
+  - stale_deliveries_pruned
+  - channel_logs_written_in_sending_process
+  # 발송 로그 리스너 종전 계약(같은 파일의 기존 테스트)
+  - channel_send_logged
+  - channel_failure_logged
+  - mail_skip_logged
+  - channel_hooks_subscribed
+
+# scale: 전 회원 역할 수신자 — 부모 잡은 id 만 뽑고 자식 잡 payload 는 참조 배열만 싣는다 (DispatchHookListenerJob 경유)
+scale:
+  - { n: 100000, dataset: role_users, assert: [fanout_children_deliver_once] }
+
+test_files:
+  - tests/Feature/Notifications/NotificationQueuedWorkerDedupeTest.php
+  - tests/Unit/Listeners/NotificationFanoutTest.php
+  - tests/Unit/Services/NotificationDeliveryGuardTest.php
+  - tests/Unit/Services/NotificationRecipientResolverRefsTest.php
+  - tests/Unit/Listeners/NotificationLogListenerTest.php
+  - tests/Feature/Console/PruneNotificationDeliveriesCommandTest.php

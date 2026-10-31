@@ -1,0 +1,39 @@
+<!-- 본인인증 창의 제공자 영역에 KG이니시스 안내·시작 버튼을 덧붙이는 조각 — 다른 제공자와 함께 실리므로 자기 provider_id 일 때만 그려진다 -->
+<extension extension-point="identity_provider_ui:provider" mode="append" priority="100">
+  <!-- 초기 상태 — provider_id=inicis && !providerInProgress -->
+  <div data-if="{{_global.identityChallenge?.provider_id === 'inicis' &amp;&amp; !(_global.identityChallenge?.providerInProgress)}}" class="verificationkginicis:space-y-4">
+    <!-- 헤더 — 아이콘 + 제목 -->
+    <div class="verificationkginicis:flex verificationkginicis:items-center verificationkginicis:flex-col verificationkginicis:text-center verificationkginicis:space-y-2 verificationkginicis:pt-2">
+      <div class="verificationkginicis:inline-flex verificationkginicis:items-center verificationkginicis:justify-center verificationkginicis:w-14 verificationkginicis:h-14 verificationkginicis:bg-blue-100 verificationkginicis:dark:bg-blue-900/40 verificationkginicis:rounded-full">
+        <icon name="fas fa-mobile-screen" class="verificationkginicis:text-2xl verificationkginicis:leading-none verificationkginicis:text-blue-600 verificationkginicis:dark:text-blue-400"/>
+      </div>
+      <!-- 성인인증 purpose 전용 제목 -->
+      <h3 data-if="{{_global.identityChallenge?.purpose === 'inicis.adult_verification'}}" class="verificationkginicis:text-base verificationkginicis:font-semibold verificationkginicis:text-gray-900 verificationkginicis:dark:text-white">$t:sirsoft-verification_kginicis.modal.adult_title</h3>
+      <!-- 기본 본인인증 제목 (signup/password_reset/self_update/sensitive_action 등) -->
+      <h3 data-if="{{_global.identityChallenge?.purpose !== 'inicis.adult_verification'}}" class="verificationkginicis:text-base verificationkginicis:font-semibold verificationkginicis:text-gray-900 verificationkginicis:dark:text-white">$t:sirsoft-verification_kginicis.modal.title</h3>
+      <!-- 성인인증 purpose 전용 설명 -->
+      <p data-if="{{_global.identityChallenge?.purpose === 'inicis.adult_verification'}}" class="verificationkginicis:text-sm verificationkginicis:text-gray-600 verificationkginicis:dark:text-gray-400">$t:sirsoft-verification_kginicis.modal.adult_description</p>
+      <!-- 기본 본인인증 설명 -->
+      <p data-if="{{_global.identityChallenge?.purpose !== 'inicis.adult_verification'}}" class="verificationkginicis:text-sm verificationkginicis:text-gray-600 verificationkginicis:dark:text-gray-400">$t:sirsoft-verification_kginicis.modal.description</p>
+    </div>
+    <!-- 본인인증 시작 버튼 — 사용자 제스처 컨텍스트에서 window.open 호출 (popup blocker 회피) -->
+    <button type="button" class="verificationkginicis:w-full verificationkginicis:inline-flex verificationkginicis:items-center verificationkginicis:justify-center verificationkginicis:gap-2 verificationkginicis:px-4 verificationkginicis:py-3 verificationkginicis:bg-blue-600 verificationkginicis:dark:bg-blue-600 verificationkginicis:text-white verificationkginicis:rounded-lg verificationkginicis:hover:bg-blue-700 verificationkginicis:dark:hover:bg-blue-700 verificationkginicis:font-semibold verificationkginicis:transition-colors">
+      <on type="click">
+        <action handler="sirsoft-verification_kginicis.startAuth"/>
+      </on>
+      <span>$t:sirsoft-verification_kginicis.modal.start_button</span>
+      <icon name="fas fa-arrow-right" class="verificationkginicis:text-sm verificationkginicis:leading-none"/>
+    </button>
+  </div>
+  <!-- 진행 중 상태 — provider_id=inicis && providerInProgress. 팝업 열린 후 결과 대기 중 -->
+  <div data-if="{{_global.identityChallenge?.provider_id === 'inicis' &amp;&amp; (_global.identityChallenge?.providerInProgress)}}" class="verificationkginicis:flex verificationkginicis:items-center verificationkginicis:flex-col verificationkginicis:text-center verificationkginicis:space-y-4 verificationkginicis:py-6" role="status" aria-live="polite">
+    <icon name="fas fa-spinner fa-spin" class="verificationkginicis:text-3xl verificationkginicis:leading-none verificationkginicis:text-blue-600 verificationkginicis:dark:text-blue-400"/>
+    <p class="verificationkginicis:text-sm verificationkginicis:font-medium verificationkginicis:text-gray-900 verificationkginicis:dark:text-white">$t:sirsoft-verification_kginicis.modal.in_progress.title</p>
+    <div class="verificationkginicis:p-3 verificationkginicis:bg-amber-50 verificationkginicis:dark:bg-amber-900/20 verificationkginicis:border verificationkginicis:border-amber-200 verificationkginicis:dark:border-amber-800 verificationkginicis:rounded verificationkginicis:text-xs verificationkginicis:text-yellow-700 verificationkginicis:dark:text-yellow-300">
+      <span class="verificationkginicis:inline-flex verificationkginicis:items-start verificationkginicis:gap-1.5">
+        <icon name="fas fa-circle-info" class="verificationkginicis:mt-0.5"/>
+        <span>$t:sirsoft-verification_kginicis.modal.in_progress.hint</span>
+      </span>
+    </div>
+  </div>
+</extension>

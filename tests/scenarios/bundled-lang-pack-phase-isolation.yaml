@@ -1,0 +1,21 @@
+feature: bundled_lang_pack_phase_isolation
+
+description: |
+  번들 일괄 업데이트 자식은 확장 갱신 전에 부팅해 모듈 서비스 프로바이더(바인딩)를 옛 판으로 등록한다. 같은 프로세스에서
+  모듈을 갱신한 뒤 언어팩을 갱신하면 팩 활성화가 부르는 모듈 시더 재실행이 새 판 클래스의 새 바인딩을 못 찾아 실패해
+  엔티티 번역(예: 새 클레임 사유의 일본어 이름)이 비었다(W3 리허설 실측). 확장을 같은 프로세스에서 갱신했으면 언어팩 단계를
+  새 PHP 프로세스(언어팩만 담은 매니페스트)로 돌리고, 새 프로세스를 띄울 수 없으면 종전처럼 같은 프로세스에서 돈다.
+
+coverage_strategy: full
+
+axes:
+  phase: [lang_packs]
+  preceding: [extensions_updated, none]
+
+effects:
+  - lang_pack_phase_runs_in_fresh_process_after_extension_updates
+  - lang_pack_only_manifest_runs_in_process_without_recursion
+  - lang_pack_phase_falls_back_in_process_when_spawn_unavailable
+
+test_files:
+  - tests/Feature/Console/BundledLangPackPhaseIsolationTest.php

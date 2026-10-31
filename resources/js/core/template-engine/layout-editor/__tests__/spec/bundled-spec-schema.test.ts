@@ -139,17 +139,27 @@ function findUncovered(target: BundledSpecTarget): DataSourceRef[] {
   return uncovered;
 }
 
+/** 레이아웃 전수 정적 검사의 시험 한도 — 동시 실행 부하 대비. 전역 한도는 그대로 두고 이 시험에만 명시한다. */
+const STATIC_SCAN_TIMEOUT_MS = 60_000;
+
 describe('번들 editor-spec.json 스키마 계약', () => {
   for (const target of TARGETS) {
     describe(target.id, () => {
+      /** 레이아웃 전수 읽기는 수집 단계에서 한 번 한다(시험 한도 밖) — 시험은 판정만 한다 */
+      const UNCOVERED = findUncovered(target);
+
+      // @scenario contract=sample_data_keys
+      // @effects bundled_spec_declares_sample_data_by_data_source_id
       it('sampleData.byDataSourceId 계약을 갖춘다 (캔버스 프리뷰 폴백 SSoT)', () => {
         const spec = readSpec(target.specPath);
         expect(spec.sampleData).toBeTruthy();
         expect(spec.sampleData.byDataSourceId).toBeTruthy();
       });
 
+      // @scenario contract=data_source_coverage
+      // @effects every_layout_data_source_covered_by_sample_data
       it('레이아웃의 모든 data_source 가 sampleData 로 커버된다', () => {
-        const uncovered = findUncovered(target);
+        const uncovered = UNCOVERED;
         // 미커버가 있으면 id/endpoint 를 메시지로 노출해 어떤 키를 추가해야 하는지 드러낸다.
         expect(
           uncovered,
@@ -158,7 +168,7 @@ describe('번들 editor-spec.json 스키마 계약', () => {
                 uncovered.map((d) => `  - ${d.id} (${d.method} ${d.endpoint ?? '(WS)'})`).join('\n')
             : undefined,
         ).toHaveLength(0);
-      });
+      }, STATIC_SCAN_TIMEOUT_MS);
     });
   }
 });

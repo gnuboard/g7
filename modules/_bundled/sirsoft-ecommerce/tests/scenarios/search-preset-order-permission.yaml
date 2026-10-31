@@ -1,0 +1,14 @@
+feature: 주문 목록 검색 프리셋 — 주문 읽기 권한으로 허용 (S3-D6)
+
+description: |
+  주문 조회 전용 운영자가 주문 목록을 열면 프리셋 403 토스트가 떴다 — 프리셋 라우트가 주문 읽기 권한도 받는다.
+
+axes:
+  case:
+    - presets_permission
+
+effects:
+  - orders_presets_follow_orders_permission # 주문 화면 프리셋은 orders.read 로 열리고, 어떤 화면 권한도 없으면 403
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/SearchPreset/SearchPresetOrderPermissionTest.php

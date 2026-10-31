@@ -1,0 +1,23 @@
+feature: 시험의 설치 언어팩 폴더 격리
+
+description: |
+  RefreshDatabase 는 DB 만 되돌리고 파일 시스템은 개발 클론을 그대로 쓴다. 2026-10-18 11:26 필터 실행 한 번 뒤
+  ManagerSyncFilterTest·LanguagePackSeedInjectorTest 가 실제 설치 팩과 같은 이름(lang-packs/g7-{scope}-{target}-ja)에
+  시험 파일을 쓰고 finally 에서 그 폴더를 통째로 지워, 개발 서버의 설치 ja 팩 4개가 「파일 없음」이 됐다.
+  시험은 공식 팩 이름과 겹치지 않는 가짜 식별자(g7test-…)를 쓰고, 실제 이름이 꼭 필요한 시험은 설치본을
+  옮겨 두었다가 되돌린다. 정적 가드가 시험 PHP 전 파일에서 공식 팩 폴더 삭제·실번들 설치를 잡는다.
+  네 폴더 가운데 nicepayments-ja 는 시험이 아니라 2026-10-14 번들 재설치의 폴더 교체 실패로 이미 없었다(
+  tests/scenarios/lang-pack-install-directory-replace.yaml). 가드는 lang-packs 아래를 나열해 이름 확인 없이 지우는 동적
+  모양(LanguagePackSecurityTest tearDown 이 _pending 하위를 통째로 지움)도 잡는다.
+
+axes:
+  target: [repository_tests, exemption_registry, synthetic_samples]
+
+effects:
+  - tests_never_delete_installed_official_lang_pack_dirs
+  - lang_pack_deletion_exemptions_require_backup_restore
+  - detector_flags_f59_incident_shapes
+  - detector_flags_lang_pack_enumeration_deletes
+
+test_files:
+  - tests/Unit/Testing/InstalledLanguagePackDeletionGuardTest.php

@@ -24,6 +24,7 @@ import productOptionsPartial from '../../../layouts/admin/partials/admin_ecommer
 import productForm from '../../../layouts/admin/admin_ecommerce_product_form.json';
 import clearModal from '../../../layouts/admin/partials/admin_ecommerce_product_form/_modal_additional_options_clear.json';
 import saveTemplateModal from '../../../layouts/admin/partials/admin_ecommerce_product_form/_modal_save_template.json';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const serialize = (obj: unknown) => JSON.stringify(obj);
 
@@ -85,7 +86,7 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
     it('"미사용" 버튼은 행이 있을 때 openModal(additional_options_clear_modal) 을 호출', () => {
         const btn = findNotUseButton();
         expect(btn).not.toBeNull();
-        const openAction = btn.actions.find((a: any) => a.handler === 'openModal');
+        const openAction = asArray(btn?.actions).find((a: any) => a.handler === 'openModal');
         expect(openAction).toBeDefined();
         expect(openAction.target).toBe('additional_options_clear_modal');
         // 행이 있을 때만.
@@ -113,7 +114,7 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
             (n) => n.name === 'Div' && typeof n.props?.className === 'string' && /flex/.test(n.props.className) && /justify-end/.test(n.props.className),
         );
         expect(footerDiv).not.toBeNull();
-        const btnTexts = (footerDiv.children ?? []).filter((c: any) => c.name === 'Button').map((b: any) => b.text);
+        const btnTexts = asArray(footerDiv?.children).filter((c: any) => c.name === 'Button').map((b: any) => b.text);
         expect(btnTexts).toContain('$t:sirsoft-ecommerce.common.cancel');
         expect(btnTexts).toContain('$t:sirsoft-ecommerce.common.confirm');
     });
@@ -121,7 +122,7 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
     it('확인 모달 취소 버튼은 closeModal 로 닫는다 (children 트리)', () => {
         const cancelBtn = findButtonByText(clearModal, '$t:sirsoft-ecommerce.common.cancel');
         expect(cancelBtn).not.toBeNull();
-        const handlers = cancelBtn.actions.map((a: any) => a.handler);
+        const handlers = asArray(cancelBtn?.actions).map((a: any) => a.handler);
         expect(handlers).toContain('closeModal');
         expect(handlers).not.toContain('setState');
     });
@@ -129,7 +130,7 @@ describe('A23/§B-FAIL-1 — 추가옵션 확인 모달은 openModal/closeModal 
     it('확인 모달 확정 버튼은 clearAdditionalOptions 핸들러로 비우고 closeModal 로 닫는다 (children 트리)', () => {
         const confirmBtn = findButtonByText(clearModal, '$t:sirsoft-ecommerce.common.confirm');
         expect(confirmBtn).not.toBeNull();
-        const handlers = confirmBtn.actions.map((a: any) => a.handler);
+        const handlers = asArray(confirmBtn?.actions).map((a: any) => a.handler);
         // dot-path 인라인 setState 는 form 참조를 안 바꿔 토글 className 리렌더 누락 → 전용 핸들러 사용
         expect(handlers).toContain('sirsoft-ecommerce.clearAdditionalOptions');
         expect(handlers).not.toContain('setState');
@@ -177,7 +178,7 @@ describe('추가옵션명 입력 디바운스 + 필수 토글 UI', () => {
             (n) => n.name === 'MultilingualInput' && typeof n.props?.name === 'string' && n.props.name.includes('_name') && /additional_options/.test(n.props.name),
         );
         expect(nameInput).not.toBeNull();
-        const changeAction = (nameInput.actions ?? []).find(
+        const changeAction = asArray(nameInput?.actions).find(
             (a: any) => a.type === 'change' && a.handler === 'sirsoft-ecommerce.updateAdditionalOption' && a.params?.field === 'name',
         );
         expect(changeAction).toBeDefined();
@@ -188,8 +189,8 @@ describe('추가옵션명 입력 디바운스 + 필수 토글 UI', () => {
         // is_required 를 다루는 change 액션을 가진 노드
         const requiredControl = findAdditionalOptionNode(
             (n) =>
-                Array.isArray(n.actions) &&
-                n.actions.some(
+                asArray(n?.actions).length > 0 &&
+                asArray(n?.actions).some(
                     (a: any) => a.handler === 'sirsoft-ecommerce.updateAdditionalOption' && a.params?.field === 'is_required',
                 ),
         );
@@ -198,7 +199,7 @@ describe('추가옵션명 입력 디바운스 + 필수 토글 UI', () => {
         expect(requiredControl.name).toBe('Toggle');
         expect(requiredControl.props?.type).not.toBe('checkbox');
         // $event.target.checked 로 boolean 전달
-        const changeAction = requiredControl.actions.find(
+        const changeAction = asArray(requiredControl?.actions).find(
             (a: any) => a.params?.field === 'is_required',
         );
         expect(changeAction.params.value).toContain('$event.target.checked');
@@ -262,7 +263,7 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
             n.props.name.includes('_values_') && n.props.name.includes('_name'),
         );
         expect(nameInputs.length).toBeGreaterThan(0);
-        const changeAction = (nameInputs[0].actions ?? []).find(
+        const changeAction = asArray(nameInputs[0]?.actions).find(
             (a: any) => a.handler === 'sirsoft-ecommerce.updateAdditionalOptionValue' && a.params?.field === 'name',
         );
         expect(changeAction).toBeDefined();
@@ -274,8 +275,8 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
     it('추가금 입력은 number Input + min:0 + updateAdditionalOptionValue(field=price_adjustment)', () => {
         const priceInputs = findAll(productOptionsPartial, (n) =>
             n.name === 'Input' && n.props?.type === 'number' &&
-            Array.isArray(n.actions) &&
-            n.actions.some((a: any) => a.handler === 'sirsoft-ecommerce.updateAdditionalOptionValue' && a.params?.field === 'price_adjustment'),
+            asArray(n?.actions).length > 0 &&
+            asArray(n?.actions).some((a: any) => a.handler === 'sirsoft-ecommerce.updateAdditionalOptionValue' && a.params?.field === 'price_adjustment'),
         );
         expect(priceInputs.length).toBeGreaterThan(0);
         expect(priceInputs[0].props.min).toBe('0');
@@ -284,8 +285,8 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
     it('기본 선택지는 radio Input (그룹당 1개) — field=is_default', () => {
         const radios = findAll(productOptionsPartial, (n) =>
             n.name === 'Input' && n.props?.type === 'radio' &&
-            Array.isArray(n.actions) &&
-            n.actions.some((a: any) => a.handler === 'sirsoft-ecommerce.updateAdditionalOptionValue' && a.params?.field === 'is_default'),
+            asArray(n?.actions).length > 0 &&
+            asArray(n?.actions).some((a: any) => a.handler === 'sirsoft-ecommerce.updateAdditionalOptionValue' && a.params?.field === 'is_default'),
         );
         expect(radios.length).toBeGreaterThan(0);
         // 그룹 단위 radio name (그룹당 1개 선택 보장)
@@ -295,8 +296,8 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
     it('활성 토글은 Toggle 컴포넌트 — field=is_active', () => {
         const toggles = findAll(productOptionsPartial, (n) =>
             n.name === 'Toggle' &&
-            Array.isArray(n.actions) &&
-            n.actions.some((a: any) => a.handler === 'sirsoft-ecommerce.updateAdditionalOptionValue' && a.params?.field === 'is_active'),
+            asArray(n?.actions).length > 0 &&
+            asArray(n?.actions).some((a: any) => a.handler === 'sirsoft-ecommerce.updateAdditionalOptionValue' && a.params?.field === 'is_active'),
         );
         expect(toggles.length).toBeGreaterThan(0);
     });
@@ -305,8 +306,8 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         expect(flat).toContain('sirsoft-ecommerce.addAdditionalOptionValue');
         const addBtns = findAll(productOptionsPartial, (n) =>
             n.name === 'Button' &&
-            Array.isArray(n.actions) &&
-            n.actions.some((a: any) => a.handler === 'sirsoft-ecommerce.addAdditionalOptionValue'),
+            asArray(n?.actions).length > 0 &&
+            asArray(n?.actions).some((a: any) => a.handler === 'sirsoft-ecommerce.addAdditionalOptionValue'),
         );
         expect(addBtns.length).toBeGreaterThan(0);
         expect(addBtns[0].if).toContain('< 20');
@@ -315,11 +316,11 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
     it('선택지 삭제 버튼은 removeAdditionalOptionValue(groupIndex, valueIndex)', () => {
         const delBtns = findAll(productOptionsPartial, (n) =>
             n.name === 'Button' &&
-            Array.isArray(n.actions) &&
-            n.actions.some((a: any) => a.handler === 'sirsoft-ecommerce.removeAdditionalOptionValue'),
+            asArray(n?.actions).length > 0 &&
+            asArray(n?.actions).some((a: any) => a.handler === 'sirsoft-ecommerce.removeAdditionalOptionValue'),
         );
         expect(delBtns.length).toBeGreaterThan(0);
-        const action = delBtns[0].actions.find((a: any) => a.handler === 'sirsoft-ecommerce.removeAdditionalOptionValue');
+        const action = asArray(delBtns[0]?.actions).find((a: any) => a.handler === 'sirsoft-ecommerce.removeAdditionalOptionValue');
         expect(action.params.groupIndex).toBe('{{addIdx}}');
         expect(action.params.valueIndex).toBe('{{addValIdx}}');
     });
@@ -378,8 +379,8 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         // 활성 Toggle 래퍼에 sm:mt-6
         const activeToggle = findAll(valueRow, (n) =>
             n.name === 'Toggle' &&
-            Array.isArray(n.actions) &&
-            n.actions.some((a: any) => a.params?.field === 'is_active'),
+            asArray(n?.actions).length > 0 &&
+            asArray(n?.actions).some((a: any) => a.params?.field === 'is_active'),
         )[0];
         const activeWrapper = findAll(valueRow, (n) =>
             Array.isArray(n.children) && n.children.includes(activeToggle),
@@ -388,8 +389,8 @@ describe('추가옵션 선택지(values) 리스트 UI — 세션 B', () => {
         // 삭제 버튼에 sm:mt-6
         const delBtn = findAll(valueRow, (n) =>
             n.name === 'Button' &&
-            Array.isArray(n.actions) &&
-            n.actions.some((a: any) => a.handler === 'sirsoft-ecommerce.removeAdditionalOptionValue'),
+            asArray(n?.actions).length > 0 &&
+            asArray(n?.actions).some((a: any) => a.handler === 'sirsoft-ecommerce.removeAdditionalOptionValue'),
         )[0];
         expect(delBtn.props.className).toContain('sm:mt-6');
     });
@@ -414,9 +415,9 @@ describe('저장 sequence — emitEvent 후 form.images 갱신', () => {
     it('저장 sequence 가 emitEvent → setState(form.images) → apiCall 순서를 갖는다', () => {
         const saveBtn = findSaveButton();
         expect(saveBtn).not.toBeNull();
-        const seq = saveBtn.actions.find((a: any) => a.handler === 'sequence');
+        const seq = asArray(saveBtn?.actions).find((a: any) => a.handler === 'sequence');
         expect(seq).toBeDefined();
-        const actions = seq.params.actions;
+        const actions = callbacksOf(seq, 'actions');
         const emitIdx = actions.findIndex((a: any) => a.handler === 'emitEvent' && a.params?.event === 'upload:product_images');
         const apiIdx = actions.findIndex((a: any) => a.handler === 'apiCall');
         const imgSetStateIdx = actions.findIndex(
@@ -429,8 +430,8 @@ describe('저장 sequence — emitEvent 후 form.images 갱신', () => {
 
     it('form.images setState 는 수정 모드에서만(if route.itemCode) allFiles 를 반영한다', () => {
         const saveBtn = findSaveButton();
-        const seq = saveBtn.actions.find((a: any) => a.handler === 'sequence');
-        const imgSetState = seq.params.actions.find(
+        const seq = asArray(saveBtn?.actions).find((a: any) => a.handler === 'sequence');
+        const imgSetState = callbacksOf(seq, 'actions').find(
             (a: any) => a.handler === 'setState' && typeof a.params?.['form.images'] === 'string' && a.params['form.images'].includes('_eventResult'),
         );
         expect(imgSetState.if).toContain('route.itemCode');
@@ -449,7 +450,7 @@ describe('§13-D-FAIL — save_template 모달도 slots.footer 미사용 (childr
             (n) => n.name === 'Div' && typeof n.props?.className === 'string' && /flex/.test(n.props.className) && /justify-end/.test(n.props.className),
         );
         expect(footerDiv).not.toBeNull();
-        const btnTexts = (footerDiv.children ?? []).filter((c: any) => c.name === 'Button').map((b: any) => b.text);
+        const btnTexts = asArray(footerDiv?.children).filter((c: any) => c.name === 'Button').map((b: any) => b.text);
         expect(btnTexts).toContain('$t:sirsoft-ecommerce.common.cancel');
         expect(btnTexts).toContain('$t:sirsoft-ecommerce.admin.product.modal.save_template.save_button');
     });
@@ -459,8 +460,8 @@ describe('§13-D-FAIL — save_template 모달도 slots.footer 미사용 (childr
         const saveBtn = findButtonByText(saveTemplateModal, '$t:sirsoft-ecommerce.admin.product.modal.save_template.save_button');
         expect(cancelBtn).not.toBeNull();
         expect(saveBtn).not.toBeNull();
-        expect(cancelBtn.actions.map((a: any) => a.handler)).toContain('closeModal');
-        expect(saveBtn.actions.map((a: any) => a.handler)).toContain('sirsoft-ecommerce.confirmSaveNoticeTemplate');
+        expect(asArray(cancelBtn?.actions).map((a: any) => a.handler)).toContain('closeModal');
+        expect(asArray(saveBtn?.actions).map((a: any) => a.handler)).toContain('sirsoft-ecommerce.confirmSaveNoticeTemplate');
     });
 });
 
@@ -524,7 +525,7 @@ describe('직접입력(allow_custom_text) 토글 — 선택지 단위', () => {
         // checked 바인딩이 addVal.allow_custom_text 파생식
         expect(toggle.props.checked).toContain('allow_custom_text');
 
-        const changeAction = (toggle.actions ?? []).find((a: any) => a.type === 'change');
+        const changeAction = asArray(toggle?.actions).find((a: any) => a.type === 'change');
         expect(changeAction).toBeTruthy();
         expect(changeAction.handler).toBe('sirsoft-ecommerce.updateAdditionalOptionValue');
         expect(changeAction.params.field).toBe('allow_custom_text');

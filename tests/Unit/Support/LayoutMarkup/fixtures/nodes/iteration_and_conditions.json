@@ -1,0 +1,78 @@
+{
+  "comment": "사용자 목록 카드",
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "admin-card"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Span",
+      "if": "{{!row.email}}",
+      "props": {
+        "className": "text-muted"
+      },
+      "text": "-"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "iteration": {
+        "source": "{{users?.data?.data ?? []}}",
+        "item_var": "user",
+        "index_var": "idx"
+      },
+      "props": {
+        "className": "row"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "if": "{{user.active}}",
+          "text": "{{user.name}}"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "iteration": {
+        "source": "coupons?.data?.data || []",
+        "item_var": "coupon"
+      },
+      "children": [
+        {
+          "type": "basic",
+          "name": "Span",
+          "text": "{{coupon.code}}"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "name": "Button",
+      "if": false,
+      "props": {
+        "className": "hidden-feature"
+      },
+      "text": "$t:common.excel_download"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "conditions": {
+        "or": [
+          {
+            "and": [
+              "{{_local.form?.drivers?.storage_driver === 's3'}}",
+              "{{!_local.driverTestResults?.s3?.success}}"
+            ]
+          },
+          "{{_local.form?.drivers?.forced}}"
+        ]
+      }
+    }
+  ]
+}

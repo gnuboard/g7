@@ -48,15 +48,14 @@ class AlimtalkChannelDriver
     /** 플러그인 식별자 (manifest 와 일치) */
     private const PLUGIN_IDENTIFIER = 'sirsoft-message_bizppurio';
 
-    /** 알림 data 에서 비회원 전화번호를 싣는 표준 키 (SmsChannelDriver 와 동일 계약) */
-    public const RECIPIENT_PHONE_KEY = '_recipient_phone';
+    /** 알림 data 의 수신 전화번호 키 — 코어 표준 키의 별칭(SmsChannelDriver 와 동일) */
+    public const RECIPIENT_PHONE_KEY = GenericNotification::RECIPIENT_PHONE_KEY;
 
     /**
      * @param  NotificationDefinitionService  $definitionService  알림 유형의 사람이 읽는 이름 조회(스킵 예외 메시지용)
      * @param  BizppurioTemplateRepositoryInterface  $templates  알림 템플릿 행 조회(발송 게이트·본문 소스)
      * @param  MessagePayloadBuilder  $payloadBuilder  발송 payload 조립
      * @param  BizppurioDispatchRepositoryInterface  $dispatches  발송 이력 영속화
-     * @param  DispatchLinkContext  $linkContext  발송 사이클 refkey↔코어 로그 연결 컨텍스트(A-2)
      * @param  AlimtalkPayloadMapper  $payloadMapper  승인 스냅샷 → 발송 형식 변환·치환
      * @param  PluginSettingsService  $pluginSettings  검수 모드 여부 조회(이력 스냅샷용)
      */
@@ -65,7 +64,6 @@ class AlimtalkChannelDriver
         private readonly BizppurioTemplateRepositoryInterface $templates,
         private readonly MessagePayloadBuilder $payloadBuilder,
         private readonly BizppurioDispatchRepositoryInterface $dispatches,
-        private readonly DispatchLinkContext $linkContext,
         private readonly AlimtalkPayloadMapper $payloadMapper,
         private readonly PluginSettingsService $pluginSettings,
     ) {}
@@ -97,6 +95,7 @@ class AlimtalkChannelDriver
      *
      * @param  object  $notifiable  수신자 (User 또는 GuestNotifiable)
      * @param  Notification  $notification  발송 대상 알림
+     * @return void 반환값 없음
      */
     public function send(object $notifiable, Notification $notification): void
     {
@@ -116,8 +115,12 @@ class AlimtalkChannelDriver
             );
         }
 
+        // 알림 변수는 받는 사람 언어로 해석해 쓴다 — 언어별 값({ko: …, en: …})이 그대로 배열로 남으면 치환되지 않는다(#798).
+        //    전화번호 같은 문자열 변수는 그대로 남는다.
+        $data = $notification->getDataFor($notifiable);
+
         // 2. 전화번호 해석 (회원=mobile, 비회원=data 의 _recipient_phone)
-        $to = $this->resolvePhone($notifiable, $notification->getData());
+        $to = $this->resolvePhone($notifiable, $data);
         if ($to === null) {
             throw new NotificationSendSkippedException(
                 __('sirsoft-message_bizppurio::messages.send_skipped.recipient_phone_missing', ['type' => $this->resolveTypeLabel($type)])
@@ -125,7 +128,7 @@ class AlimtalkChannelDriver
         }
 
         // 3. 승인 스냅샷 → 발송 형식 변환 + 변수(#{var}) 치환. 본문이 비면 발송 불가라 skip.
-        $mapped = $this->payloadMapper->map((array) $template->approved_content, $notification->getData());
+        $mapped = $this->payloadMapper->map((array) $template->approved_content, $data);
         $message = (string) ($mapped['message'] ?? '');
         if (trim($message) === '') {
             throw new NotificationSendSkippedException(
@@ -146,7 +149,7 @@ class AlimtalkChannelDriver
         if ($template->fallback_sms_enabled) {
             $payload = $this->withSmsFallback($payload, $this->smsFallbackBody(
                 $template,
-                $notification,
+                $data,
                 BaseNotification::resolveNotifiableLocale($notifiable),
             ));
         }
@@ -169,7 +172,9 @@ class AlimtalkChannelDriver
 
         // A-2: 이 발송 사이클 직후 발화할 코어 알림 로그(after_log_sent)에 이 dispatch 를 잇도록
         // refkey 를 컨텍스트에 남긴다. LinkNotificationLogListener 가 그 로그 id 를 여기에 연결한다.
-        $this->linkContext->remember($refkey);
+        // 컨텍스트는 발송할 때마다 컨테이너에서 꺼낸다(#139) — 채널 매니저가 이 드라이버를 프로세스 동안 재사용하는데
+        // 큐 워커는 잡마다 scoped 인스턴스를 비우므로, 생성자에서 받아 두면 두 번째 잡부터 옛 컨텍스트에 남아 연결이 빈다.
+        app(DispatchLinkContext::class)->remember($refkey);
 
         SendMessageJob::dispatch($payload, $refkey);
     }
@@ -185,18 +190,18 @@ class AlimtalkChannelDriver
      * 같은 알림의 SMS 단독 발송과 대체발송이 서로 다른 언어로 나가면 안 된다(§14.3).
      *
      * @param  BizppurioTemplate  $template  템플릿 행
-     * @param  GenericNotification  $notification  발송 대상 알림
+     * @param  array<string, mixed>  $data  받는 사람 언어로 해석한 알림 변수 (GenericNotification::getDataFor)
      * @param  string|null  $locale  수신자 로케일 (null 이면 현재 앱 로케일)
      * @return string 치환 완료된 대체 SMS 본문 (없으면 빈 문자열)
      */
-    private function smsFallbackBody(object $template, GenericNotification $notification, ?string $locale = null): string
+    private function smsFallbackBody(object $template, array $data, ?string $locale = null): string
     {
         $body = trim($template->getLocalizedSmsBody($locale));
         if ($body === '') {
             return '';
         }
 
-        return $this->payloadMapper->substituteText($body, $notification->getData());
+        return $this->payloadMapper->substituteText($body, $data);
     }
 
     /**

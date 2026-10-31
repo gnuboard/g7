@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 식별코드 구획. 상품코드·SKU·바코드·HS코드처럼 상품을 가리키는 값들을 모았다.\n  상품코드는 등록 때만 넣을 수 있고 수정에서는 잠긴다 — 이미 나간 주문·정산이 그 값을 가리키기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Identification Codes Section"
@@ -7,14 +8,27 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card-accordion"
+        "className": "ecommerce-admin-card-accordion"
     },
     "children": [
         {
             "type": "basic",
-            "name": "Div",
+            "name": "Button",
+            "actions": [
+                {
+                    "comment": "구획 접기/펼치기",
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.identificationExpanded": "{{!_local.ui.identificationExpanded}}"
+                    }
+                }
+            ],
             "props": {
-                "className": "card-header"
+                "type": "button",
+                "className": "ecommerce:flex ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-card-header",
+                "aria-expanded": "{{_local.ui.identificationExpanded !== false}}"
             },
             "children": [
                 {
@@ -22,14 +36,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "barcode",
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.sections.identification"
                 },
@@ -38,17 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.identificationExpanded !== false ? 'rotate-180' : ''}}"
-                    }
-                }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.identificationExpanded": "{{!_local.ui.identificationExpanded}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.identificationExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -59,22 +63,22 @@
             "name": "Div",
             "if": "{{_local.ui.identificationExpanded !== false}}",
             "props": {
-                "className": "row-stack"
+                "className": "ecommerce-row-stack"
             },
             "children": [
                 {
                     "id": "identification_grid",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "grid grid-cols-2 gap-6"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "grid grid-cols-1 gap-4"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             }
                         }
+                    },
+                    "props": {
+                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-6"
                     },
                     "children": [
                         {
@@ -82,14 +86,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "children": [
                                         {
@@ -101,32 +105,33 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-required"
+                                                "className": "ecommerce-text-required"
                                             },
                                             "text": "*"
                                         }
                                     ]
                                 },
                                 {
+                                    "comment": "상품코드 — 운영자가 정하는 대표 코드. 등록에서만 열려 있다",
                                     "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "type": "text",
-                                        "name": "product_code",
-                                        "className": "input",
-                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.product_code.placeholder",
-                                        "disabled": "{{!!route?.itemCode || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": "{{!!route?.itemCode}}"
+                                                "hasChanges": true
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "name": "product_code",
+                                        "className": "ecommerce-input",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.product_code.placeholder",
+                                        "disabled": "{{!!route?.itemCode || _computed.isReadOnly}}"
+                                    }
                                 }
                             ]
                         },
@@ -135,44 +140,45 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.fields.sku"
                                 },
                                 {
+                                    "comment": "SKU — 창고·물류에서 쓰는 재고 단위 코드",
                                     "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "type": "text",
-                                        "name": "sku",
-                                        "className": "{{_local.errors?.sku ? 'input input-error' : 'input'}}",
-                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.sku",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": "{{!!route?.itemCode}}"
+                                                "hasChanges": true
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "name": "sku",
+                                        "className": "{{_local.errors?.sku ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.sku",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{_local.errors?.sku}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.sku?.[0]}}"
                                 }
@@ -183,44 +189,45 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.label"
                                 },
                                 {
+                                    "comment": "바코드 — 매장 스캔용. 상품마다 고유해야 해서 복사 시 따라오지 않는다",
                                     "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "type": "text",
-                                        "name": "barcode",
-                                        "className": "{{_local.errors?.barcode ? 'input input-error' : 'input'}}",
-                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.placeholder",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": "{{!!route?.itemCode}}"
+                                                "hasChanges": true
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "name": "barcode",
+                                        "className": "{{_local.errors?.barcode ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.placeholder",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{_local.errors?.barcode}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.barcode?.[0]}}"
                                 }
@@ -231,44 +238,45 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.label"
                                 },
                                 {
+                                    "comment": "HS코드 — 해외배송 통관 신고에 쓴다",
                                     "type": "basic",
                                     "name": "Input",
-                                    "props": {
-                                        "type": "text",
-                                        "name": "hs_code",
-                                        "className": "{{_local.errors?.hs_code ? 'input input-error' : 'input'}}",
-                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.placeholder",
-                                        "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                                    },
                                     "actions": [
                                         {
                                             "type": "change",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": "{{!!route?.itemCode}}"
+                                                "hasChanges": true
                                             }
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "name": "hs_code",
+                                        "className": "{{_local.errors?.hs_code ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.placeholder",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{_local.errors?.hs_code}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.hs_code?.[0]}}"
                                 }

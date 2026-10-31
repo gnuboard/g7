@@ -1,67 +1,57 @@
 {
   "comment": "sirsoft-basic 템플릿 직속 데이터소스(실제 layout data_sources ID 기준 — user/userNotifications/searchResults/profile/userProfile). 게시판/이커머스/페이지 도메인 데이터는 각 모듈 editor-spec 이 SSoT, 본 블록은 모듈 미설치 시 폴백.",
   "byDataSourceId": {
-    "mileage_balance": {
-      "comment": "마이페이지 마일리지 잔액 (mypage/mileage.json — {{mileage_balance.data.mileage.available}}).",
+    "scrap": {
       "data": {
-        "mileage": {
-          "available": 50000,
-          "total": 75000,
-          "used": 25000
-        }
-      }
-    },
-    "mileage_history": {
-      "comment": "마이페이지 마일리지 내역 (partials/mypage/mileage/_list.json — {{mileage_history?.data?.transactions?.data}} 반복).",
-      "data": {
-        "transactions": {
-          "data": [
-            {
-              "id": 1,
-              "user_id": 1,
-              "currency": "KRW",
-              "type": "purchase_earn",
-              "type_label": "구매적립",
-              "amount": 1000,
-              "amount_formatted": "1,000",
-              "remaining_amount": 800,
-              "balance_after": 50800,
-              "expires_at": "2027-06-03",
-              "expires_at_formatted": "2027-06-03",
-              "created_at": "2026-06-03T10:30:00Z",
-              "is_earning": true,
-              "expiry_state": "active",
-              "abilities": {
-                "can_manage": false
-              }
-            },
-            {
-              "id": 2,
-              "user_id": 1,
-              "currency": "KRW",
-              "type": "purchase_use",
-              "type_label": "구매사용",
-              "amount": -200,
-              "amount_formatted": "-200",
-              "remaining_amount": 0,
-              "balance_after": 50000,
-              "expires_at": null,
-              "expires_at_formatted": null,
-              "created_at": "2026-06-04T11:00:00Z",
-              "is_earning": false,
-              "expiry_state": "none",
-              "abilities": {
-                "can_manage": false
-              }
-            }
-          ],
-          "pagination": {
-            "current_page": 1,
-            "last_page": 1,
-            "per_page": 20,
-            "total": 2
+        "data": [
+          {
+            "id": 501,
+            "post_id": 1201,
+            "board_slug": "free",
+            "board_name": "자유게시판",
+            "is_deleted": false,
+            "scrap_enabled": true,
+            "board_deleted": false,
+            "title": "맛집 추천해요",
+            "author_name": "이도현",
+            "comments_count": 7,
+            "scrapped_at": "2026-09-12 10:22"
           },
-          "currencies": ["KRW"]
+          {
+            "id": 502,
+            "post_id": 1202,
+            "board_slug": "notice",
+            "board_name": "공지사항",
+            "is_deleted": false,
+            "scrap_enabled": false,
+            "board_deleted": false,
+            "title": "[필독] 게시판 이용 규칙 안내",
+            "author_name": "운영자",
+            "comments_count": 0,
+            "scrapped_at": "2026-09-11 18:05"
+          },
+          {
+            "id": 503,
+            "post_id": 1203,
+            "board_slug": null,
+            "board_name": null,
+            "is_deleted": true,
+            "scrap_enabled": false,
+            "board_deleted": true,
+            "title": null,
+            "author_name": null,
+            "comments_count": null,
+            "scrapped_at": "2026-09-03 09:47"
+          }
+        ],
+        "pagination": {
+          "current_page": 1,
+          "last_page": 1,
+          "per_page": 20,
+          "total": 3,
+          "from": 1,
+          "to": 3,
+          "has_more_pages": false
         }
       }
     },
@@ -71,7 +61,7 @@
         "name": "김민준",
         "nickname": "민준이",
         "email": "minjun.kim@example.com",
-        "avatar": "/images/placeholder.png",
+        "avatar": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
         "language": "ko",
         "language_label": "한국어",
         "country": "KR",
@@ -164,7 +154,11 @@
             "read_at": "2026-05-28 10:02:00",
             "created_at": "2026-05-28 09:00:00"
           }
-        ]
+        ],
+        "abilities": {
+          "can_update": true,
+          "can_delete": true
+        }
       }
     },
     "searchResults": {
@@ -182,7 +176,7 @@
             "name_localized": "베이직 오버핏 코튼 티셔츠",
             "product_code": "TS-1001",
             "sku": "TS-1001",
-            "thumbnail_url": "/images/placeholder.png",
+            "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "list_price": 29000,
             "list_price_formatted": "29,000원",
             "selling_price": 23200,
@@ -268,7 +262,7 @@
             "name_localized": "스트라이프 긴팔 티셔츠",
             "product_code": "TS-1102",
             "sku": "TS-1102",
-            "thumbnail_url": "/images/placeholder.png",
+            "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "list_price": 32000,
             "list_price_formatted": "32,000원",
             "selling_price": 32000,
@@ -348,7 +342,7 @@
             "name_localized": "프린팅 그래픽 티셔츠",
             "product_code": "TS-1203",
             "sku": "TS-1203",
-            "thumbnail_url": "/images/placeholder.png",
+            "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "list_price": 27000,
             "list_price_formatted": "27,000원",
             "selling_price": 21600,
@@ -516,7 +510,7 @@
         "uuid": "00000000-0000-4000-8000-000000000018",
         "name": "김민준",
         "nickname": "민준이",
-        "avatar": "/images/placeholder.png",
+        "avatar": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
         "bio": "프론트엔드 개발과 사진을 좋아하는 평범한 회원입니다.",
         "status": "active",
         "status_label": "활성",
@@ -529,7 +523,7 @@
         "uuid": "00000000-0000-4000-8000-000000000018",
         "name": "김민준",
         "nickname": "민준이",
-        "avatar": "/images/placeholder.png",
+        "avatar": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
         "bio": "프론트엔드 개발과 사진을 좋아하는 평범한 회원입니다.",
         "status": "active",
         "created_at": "2025-09-14"
@@ -1321,7 +1315,7 @@
         "images": [
           {
             "id": 7701,
-            "download_url": "/images/placeholder.png",
+            "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "alt_text": "상의 카테고리 배너"
           }
         ],
@@ -1652,7 +1646,7 @@
         "name": "샘플 사용자",
         "nick_name": "샘플유저",
         "email": "sample@example.com",
-        "avatar": "/images/placeholder.png",
+        "avatar": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
         "roles": [
           "user"
         ]
@@ -1690,7 +1684,7 @@
             "collection": "attachments",
             "order": 0,
             "download_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/download",
-            "preview_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+            "preview_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "is_image": true,
             "meta": null
           }
@@ -1804,7 +1798,7 @@
             "product": {
               "id": 31,
               "name": "베이직 코튼 티셔츠",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "url": "/shop/products/31"
             },
             "product_name": "베이직 코튼 티셔츠",
@@ -1829,7 +1823,7 @@
             "product": {
               "id": 48,
               "name": "클래식 가죽 스니커즈",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "url": "/shop/products/48"
             },
             "product_name": "클래식 가죽 스니커즈",
@@ -1850,7 +1844,7 @@
             "product": {
               "id": 12,
               "name": "핸드메이드 머그컵 세트",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "url": "/shop/products/12"
             },
             "product_name": "핸드메이드 머그컵 세트",
@@ -1987,7 +1981,7 @@
           "name_localized": "베이직 오버핏 코튼 티셔츠",
           "product_code": "TS-1001",
           "sku": "TS-1001",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 29000,
           "list_price_formatted": "29,000원",
           "selling_price": 23200,
@@ -2075,7 +2069,7 @@
           "name_localized": "데일리 와이드 슬랙스",
           "product_code": "PT-2042",
           "sku": "PT-2042",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 39000,
           "list_price_formatted": "39,000원",
           "selling_price": 39000,
@@ -2159,7 +2153,7 @@
           "name_localized": "구스다운 경량 패딩 점퍼",
           "product_code": "OW-3310",
           "sku": "OW-3310",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 189000,
           "list_price_formatted": "189,000원",
           "selling_price": 132300,
@@ -2243,7 +2237,7 @@
           "name_localized": "캔버스 백팩 20L",
           "product_code": "BG-5521",
           "sku": "BG-5521",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 59000,
           "list_price_formatted": "59,000원",
           "selling_price": 53100,
@@ -2357,6 +2351,10 @@
           "current_page": 1,
           "last_page": 1,
           "has_more_pages": false
+        },
+        "abilities": {
+          "can_update": true,
+          "can_delete": true
         }
       }
     },
@@ -3504,7 +3502,7 @@
             "order": 1,
             "is_image": true,
             "download_url": "/storage/pages/b7e2d4/오시는길_약도.png",
-            "preview_url": "/storage/pages/b7e2d4/thumb_오시는길_약도.png",
+            "preview_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "created_at": "2026-05-20 14:33:02"
           },
           {
@@ -3631,7 +3629,7 @@
           "name": "자유게시판",
           "title": "자유게시판",
           "post_count": 230,
-          "thumbnail": "/images/placeholder.png"
+          "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
         },
         {
           "id": 3,
@@ -3639,7 +3637,7 @@
           "name": "질문답변",
           "title": "질문답변",
           "post_count": 88,
-          "thumbnail": "/images/placeholder.png"
+          "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
         },
         {
           "id": 1,
@@ -3647,7 +3645,7 @@
           "name": "공지사항",
           "title": "공지사항",
           "post_count": 15,
-          "thumbnail": "/images/placeholder.png"
+          "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
         }
       ]
     },
@@ -3729,7 +3727,7 @@
           "name_localized": "베이직 오버핏 코튼 티셔츠",
           "product_code": "TS-1001",
           "sku": "TS-1001",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 29000,
           "list_price_formatted": "29,000원",
           "selling_price": 23200,
@@ -3817,7 +3815,7 @@
           "name_localized": "데일리 와이드 슬랙스",
           "product_code": "PT-2042",
           "sku": "PT-2042",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 39000,
           "list_price_formatted": "39,000원",
           "selling_price": 39000,
@@ -3901,7 +3899,7 @@
           "name_localized": "구스다운 경량 패딩 점퍼",
           "product_code": "OW-3310",
           "sku": "OW-3310",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 189000,
           "list_price_formatted": "189,000원",
           "selling_price": 132300,
@@ -3985,7 +3983,7 @@
           "name_localized": "캔버스 백팩 20L",
           "product_code": "BG-5521",
           "sku": "BG-5521",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 59000,
           "list_price_formatted": "59,000원",
           "selling_price": 53100,
@@ -4087,7 +4085,7 @@
         "reply_count": 2,
         "attachment_count": 3,
         "has_attachment": true,
-        "thumbnail": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+        "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
         "parent_id": null,
         "depth": 0,
         "is_reply": false,
@@ -4157,7 +4155,7 @@
             "collection": "attachments",
             "order": 0,
             "download_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/download",
-            "preview_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+            "preview_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "is_image": true,
             "meta": null
           },
@@ -4171,7 +4169,7 @@
             "collection": "attachments",
             "order": 1,
             "download_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-2/download",
-            "preview_url": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-2/preview",
+            "preview_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "is_image": true,
             "meta": null
           },
@@ -4334,7 +4332,8 @@
           "can_write_comments": true,
           "can_upload": true,
           "can_download": true,
-          "can_manage": false
+          "can_manage": false,
+          "can_access_admin": false
         }
       }
     },
@@ -4343,7 +4342,7 @@
         "board": {
           "slug": "free",
           "name": "자유게시판",
-          "description": "<p>회원들이 자유롭게 소통하는 공간입니다.</p>",
+          "description": "회원들이 자유롭게 소통하는 공간입니다.",
           "type": "normal",
           "categories": [
             "일상",
@@ -4433,7 +4432,7 @@
             "reply_count": 0,
             "attachment_count": 3,
             "has_attachment": true,
-            "thumbnail": "/api/modules/sirsoft-board/boards/free/attachment/img-hash-1/preview",
+            "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "parent_id": null,
             "depth": 0,
             "is_reply": false,
@@ -4617,7 +4616,8 @@
           "can_upload": true,
           "can_download": true,
           "can_manage": false,
-          "can_view_deleted": false
+          "can_view_deleted": false,
+          "can_access_admin": false
         }
       }
     },
@@ -4744,14 +4744,14 @@
         "description": {
           "ko": "<p>부드러운 30수 코튼 소재로 제작된 데일리 오버핏 티셔츠입니다.</p>"
         },
-        "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"/images/placeholder.png\" alt=\"상세 이미지\" /></p>",
+        "description_localized": "<h3>제품 특징</h3><p>부드러운 30수 코튼 100% 소재로 제작되어 사계절 내내 편안하게 착용할 수 있습니다. 오버핏 실루엣으로 체형 커버에 탁월하며, 어떤 하의와도 자연스럽게 매치됩니다.</p><ul><li>소재: 코튼 100%</li><li>핏: 오버핏</li><li>제조국: 대한민국</li></ul><p><img src=\"data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E\" alt=\"상세 이미지\" /></p>",
         "description_mode": "html",
         "images": [
           {
             "id": 5001,
             "hash": "img5001",
             "original_filename": "tshirt_main.jpg",
-            "download_url": "/images/placeholder.png",
+            "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "alt_text": "정면",
             "alt_text_current": "베이직 오버핏 티셔츠 정면",
             "is_thumbnail": true,
@@ -4769,7 +4769,7 @@
             "id": 5002,
             "hash": "img5002",
             "original_filename": "tshirt_back.jpg",
-            "download_url": "/images/placeholder.png",
+            "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "alt_text": "후면",
             "alt_text_current": "베이직 오버핏 티셔츠 후면",
             "is_thumbnail": false,
@@ -4787,7 +4787,7 @@
             "id": 5003,
             "hash": "img5003",
             "original_filename": "tshirt_detail.jpg",
-            "download_url": "/images/placeholder.png",
+            "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "alt_text": "디테일",
             "alt_text_current": "소매 디테일 컷",
             "is_thumbnail": false,
@@ -4802,7 +4802,7 @@
             "is_image": true
           }
         ],
-        "thumbnail_url": "/images/placeholder.png",
+        "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
         "meta_title": "베이직 오버핏 코튼 티셔츠 | 코지홈",
         "meta_description": "사계절 입기 좋은 오버핏 기본 티셔츠",
         "meta_keywords": [
@@ -5207,7 +5207,7 @@
             "name_localized": "베이직 오버핏 코튼 티셔츠",
             "product_code": "TS-1001",
             "sku": "TS-1001",
-            "thumbnail_url": "/images/placeholder.png",
+            "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "list_price": 29000,
             "list_price_formatted": "29,000원",
             "selling_price": 23200,
@@ -5295,7 +5295,7 @@
             "name_localized": "데일리 와이드 슬랙스",
             "product_code": "PT-2042",
             "sku": "PT-2042",
-            "thumbnail_url": "/images/placeholder.png",
+            "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "list_price": 39000,
             "list_price_formatted": "39,000원",
             "selling_price": 39000,
@@ -5379,7 +5379,7 @@
             "name_localized": "구스다운 경량 패딩 점퍼",
             "product_code": "OW-3310",
             "sku": "OW-3310",
-            "thumbnail_url": "/images/placeholder.png",
+            "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "list_price": 189000,
             "list_price_formatted": "189,000원",
             "selling_price": 132300,
@@ -5463,7 +5463,7 @@
             "name_localized": "캔버스 백팩 20L",
             "product_code": "BG-5521",
             "sku": "BG-5521",
-            "thumbnail_url": "/images/placeholder.png",
+            "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
             "list_price": 59000,
             "list_price_formatted": "59,000원",
             "selling_price": 53100,
@@ -5719,7 +5719,7 @@
           "name_localized": "베이직 오버핏 코튼 티셔츠",
           "product_code": "TS-1001",
           "sku": "TS-1001",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 29000,
           "list_price_formatted": "29,000원",
           "selling_price": 23200,
@@ -5807,7 +5807,7 @@
           "name_localized": "데일리 와이드 슬랙스",
           "product_code": "PT-2042",
           "sku": "PT-2042",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 39000,
           "list_price_formatted": "39,000원",
           "selling_price": 39000,
@@ -5891,7 +5891,7 @@
           "name_localized": "구스다운 경량 패딩 점퍼",
           "product_code": "OW-3310",
           "sku": "OW-3310",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 189000,
           "list_price_formatted": "189,000원",
           "selling_price": 132300,
@@ -5975,7 +5975,7 @@
           "name_localized": "캔버스 백팩 20L",
           "product_code": "BG-5521",
           "sku": "BG-5521",
-          "thumbnail_url": "/images/placeholder.png",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
           "list_price": 59000,
           "list_price_formatted": "59,000원",
           "selling_price": 53100,
@@ -6119,7 +6119,7 @@
                   "review_id": 9101,
                   "hash": "rev6001",
                   "original_filename": "review1.jpg",
-                  "download_url": "/images/placeholder.png",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                   "mime_type": "image/jpeg",
                   "file_size": 142000,
                   "width": 800,
@@ -6134,7 +6134,7 @@
                   "review_id": 9101,
                   "hash": "rev6002",
                   "original_filename": "review2.jpg",
-                  "download_url": "/images/placeholder.png",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
                   "mime_type": "image/jpeg",
                   "file_size": 138000,
                   "width": 800,
@@ -6437,7 +6437,7 @@
               "name_localized": "베이직 오버핏 코튼 티셔츠",
               "product_code": "TS-1001",
               "sku": "TS-1001",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "list_price": 29000,
               "list_price_formatted": "29,000원",
               "selling_price": 23200,
@@ -6528,7 +6528,7 @@
               "name_localized": "구스다운 경량 패딩 점퍼",
               "product_code": "OW-3310",
               "sku": "OW-3310",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "list_price": 189000,
               "list_price_formatted": "189,000원",
               "selling_price": 132300,
@@ -6615,7 +6615,7 @@
               "name_localized": "캔버스 백팩 20L",
               "product_code": "BG-5521",
               "sku": "BG-5521",
-              "thumbnail_url": "/images/placeholder.png",
+              "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
               "list_price": 59000,
               "list_price_formatted": "59,000원",
               "selling_price": 53100,
@@ -6720,11 +6720,11 @@
             "type_label": "적립",
             "admin_badge_group": null,
             "user_display_category": "주문 완료",
-            "amount": 5000.0,
+            "amount": 5000,
             "amount_formatted": "5,000",
-            "remaining_amount": 5000.0,
+            "remaining_amount": 5000,
             "remaining_amount_formatted": "5,000",
-            "balance_after": 55000.0,
+            "balance_after": 55000,
             "order_id": null,
             "order_option_id": null,
             "order_cancel_id": null,
@@ -6747,7 +6747,7 @@
             "created_at_date": "2026-06-01",
             "is_earning": true,
             "can_edit_expiry": true,
-            "expired_amount": 0.0,
+            "expired_amount": 0,
             "expired_amount_formatted": "0",
             "expiry_state": "active",
             "abilities": {
@@ -6762,11 +6762,11 @@
             "type_label": "사용",
             "admin_badge_group": null,
             "user_display_category": "주문",
-            "amount": -3000.0,
+            "amount": -3000,
             "amount_formatted": "-3,000",
-            "remaining_amount": 0.0,
+            "remaining_amount": 0,
             "remaining_amount_formatted": "0",
-            "balance_after": 52000.0,
+            "balance_after": 52000,
             "order_id": null,
             "order_option_id": null,
             "order_cancel_id": null,
@@ -6789,7 +6789,7 @@
             "created_at_date": "2026-05-30",
             "is_earning": false,
             "can_edit_expiry": false,
-            "expired_amount": 0.0,
+            "expired_amount": 0,
             "expired_amount_formatted": "0",
             "expiry_state": "active",
             "abilities": {
@@ -6820,6 +6820,511 @@
           "max_images": 5,
           "max_image_size_mb": 10,
           "write_deadline_days": 30
+        }
+      }
+    },
+    "visitor_summary": {
+      "data": {
+        "today": 128,
+        "yesterday": 96,
+        "max": 391,
+        "total": 21455
+      }
+    },
+    "myReactions": {
+      "data": {
+        "data": [
+          {
+            "id": 801,
+            "target_type": "post",
+            "target_id": 1201,
+            "post_id": 1201,
+            "comment_id": null,
+            "title": "맛집 추천해요",
+            "excerpt": null,
+            "board": {
+              "slug": "free",
+              "name": "자유게시판",
+              "is_active": true,
+              "use_reaction": true,
+              "use_comment_reaction": true
+            },
+            "board_slug": "free",
+            "board_name": "자유게시판",
+            "board_deleted": false,
+            "reaction_type": {
+              "id": 1,
+              "code": "like",
+              "name": "추천",
+              "icon_name": "fa-thumbs-up",
+              "icon_url": null
+            },
+            "author_name": "이도현",
+            "target_deleted": false,
+            "reaction_enabled": true,
+            "reacted_at": "2026-09-14 09:31"
+          },
+          {
+            "id": 802,
+            "target_type": "comment",
+            "target_id": 3301,
+            "post_id": 1202,
+            "comment_id": 3301,
+            "title": "[필독] 게시판 이용 규칙 안내",
+            "excerpt": "규칙 잘 봤습니다. 감사합니다.",
+            "board": {
+              "slug": "notice",
+              "name": "공지사항",
+              "is_active": true,
+              "use_reaction": true,
+              "use_comment_reaction": false
+            },
+            "board_slug": "notice",
+            "board_name": "공지사항",
+            "board_deleted": false,
+            "reaction_type": {
+              "id": 2,
+              "code": "dislike",
+              "name": "비추천",
+              "icon_name": "fa-thumbs-down",
+              "icon_url": null
+            },
+            "author_name": "운영자",
+            "target_deleted": false,
+            "reaction_enabled": false,
+            "reacted_at": "2026-09-13 20:04"
+          }
+        ],
+        "query": {
+          "search": "",
+          "search_field": "title_content",
+          "board_slug": "",
+          "reaction_type_id": null,
+          "target_type": "",
+          "sort": "latest"
+        },
+        "reaction_types": [
+          {
+            "id": 1,
+            "code": "like",
+            "name": "추천",
+            "icon_name": "fa-thumbs-up",
+            "icon_url": null
+          },
+          {
+            "id": 2,
+            "code": "dislike",
+            "name": "비추천",
+            "icon_name": "fa-thumbs-down",
+            "icon_url": null
+          }
+        ],
+        "pagination": {
+          "total": 2,
+          "count": 2,
+          "per_page": 10,
+          "current_page": 1,
+          "last_page": 1,
+          "from": 1,
+          "to": 2,
+          "has_more_pages": false
+        }
+      }
+    },
+    "myReports": {
+      "data": {
+        "data": [
+          {
+            "id": 901,
+            "report_id": 401,
+            "board": {
+              "slug": "free",
+              "name": "자유게시판"
+            },
+            "board_slug": "free",
+            "board_name": "자유게시판",
+            "target_type": "post",
+            "target_type_label": "게시글",
+            "target_id": 1203,
+            "post_id": 1203,
+            "comment_id": null,
+            "title": "광고성 게시글입니다",
+            "excerpt": "지금 가입하면 무료…",
+            "reason_type": "spam",
+            "reason_type_label": "스팸/광고",
+            "reason_detail": "같은 글을 여러 게시판에 반복해서 올립니다.",
+            "status": "pending",
+            "status_label": "접수",
+            "reported_at": "2026-09-14 11:02",
+            "can_cancel": true,
+            "target_deleted": false
+          },
+          {
+            "id": 902,
+            "report_id": 402,
+            "board": {
+              "slug": "notice",
+              "name": "공지사항"
+            },
+            "board_slug": "notice",
+            "board_name": "공지사항",
+            "target_type": "comment",
+            "target_type_label": "댓글",
+            "target_id": 3302,
+            "post_id": 1202,
+            "comment_id": 3302,
+            "title": "[필독] 게시판 이용 규칙 안내",
+            "excerpt": "욕설이 섞인 댓글입니다",
+            "reason_type": "abuse",
+            "reason_type_label": "욕설/비방",
+            "reason_detail": null,
+            "status": "resolved",
+            "status_label": "처리 완료",
+            "reported_at": "2026-09-10 08:47",
+            "can_cancel": false,
+            "target_deleted": false
+          }
+        ],
+        "query": {
+          "search": "",
+          "status": "",
+          "board_slug": "",
+          "target_type": "",
+          "sort": "latest"
+        },
+        "pagination": {
+          "total": 2,
+          "count": 2,
+          "per_page": 10,
+          "current_page": 1,
+          "last_page": 1,
+          "from": 1,
+          "to": 2,
+          "has_more_pages": false
+        }
+      }
+    },
+    "claims": {
+      "data": {
+        "data": [
+          {
+            "id": 1,
+            "claim_number": "RF-20260601-0001",
+            "claim_type": "refund",
+            "claim_type_label": "환불",
+            "claim_path_segment": "refunds",
+            "order_number": "20260601-0042",
+            "status": "requested",
+            "status_label": "접수",
+            "status_variant": "info",
+            "requester_name": "홍길동",
+            "requested_at_formatted": "2026-06-01 19:40",
+            "reason_label": "단순 변심",
+            "fault_type_label": "고객 귀책",
+            "charge_method_label": "환불금에서 차감",
+            "refund_total_formatted": "34,000원",
+            "outstanding_amount_formatted": "0원",
+            "items": [
+              {
+                "id": 1,
+                "order_option_id": 9001,
+                "product_name": "샘플 상품 1",
+                "option_name": "기본 옵션",
+                "product_code": "SAMPLE-001",
+                "thumbnail_url": null,
+                "quantity": 1,
+                "original_quantity": 2,
+                "unit_price": 33000,
+                "unit_price_formatted": "33,000원",
+                "amount": 33000,
+                "amount_formatted": "33,000원",
+                "amount_type": "refund",
+                "subtotal_amount": 33000,
+                "subtotal_amount_formatted": "33,000원",
+                "option_status": "requested",
+                "option_status_label": "접수",
+                "option_status_variant": "info"
+              }
+            ]
+          }
+        ],
+        "claim_type": "refund",
+        "counts": {
+          "exchange": 0,
+          "return": 1,
+          "refund": 2,
+          "cancel": 1
+        },
+        "pagination": {
+          "current_page": 1,
+          "last_page": 1,
+          "total": 2,
+          "per_page": 20,
+          "has_more_pages": false
+        }
+      }
+    },
+    "claim": {
+      "data": {
+        "claim": {
+          "id": 1,
+          "claim_number": "RF-20260601-0001",
+          "claim_type": "refund",
+          "claim_type_label": "환불",
+          "claim_path_segment": "refunds",
+          "order_number": "20260601-0042",
+          "status": "requested",
+          "status_label": "접수",
+          "status_variant": "info",
+          "status_icon": "file-lines",
+          "is_final": false,
+          "is_editable": true,
+          "is_withdrawable": true,
+          "is_guest_request": false,
+          "requester_name": "홍길동",
+          "requested_at_formatted": "2026-06-01 19:40",
+          "approved_at_formatted": null,
+          "rejected_at_formatted": null,
+          "withdrawn_at_formatted": null,
+          "cancelled_at_formatted": null,
+          "refunded_at_formatted": null,
+          "reject_reason": null,
+          "reason_label": "단순 변심",
+          "reason_detail": "색상이 생각과 달라 환불을 신청합니다.",
+          "fault_type_label": "고객 귀책",
+          "cancel_type_label": "부분 취소",
+          "charge_method_label": "환불금에서 차감",
+          "refund_method_label": "PG 환불",
+          "refund_status_label": "접수",
+          "currency_code": "KRW",
+          "refund_product_amount": 33000,
+          "refund_product_amount_formatted": "33,000원",
+          "refund_shipping_amount": 0,
+          "refund_shipping_amount_formatted": "0원",
+          "refund_points_amount": 1000,
+          "refund_points_amount_formatted": "1,000P",
+          "refund_amount_formatted": "33,000원",
+          "refund_total_formatted": "34,000원",
+          "claim_shipping_fee_formatted": "0원",
+          "additional_product_amount_formatted": "0원",
+          "total_charge_amount": 0,
+          "total_charge_amount_formatted": "0원",
+          "outstanding_amount": 0,
+          "outstanding_amount_formatted": "0원",
+          "pending_payment": null,
+          "payments": [],
+          "images": [],
+          "items": [
+            {
+              "id": 1,
+              "order_option_id": 9001,
+              "product_name": "샘플 상품 1",
+              "option_name": "기본 옵션",
+              "product_code": "SAMPLE-001",
+              "thumbnail_url": null,
+              "quantity": 1,
+              "original_quantity": 2,
+              "unit_price": 33000,
+              "unit_price_formatted": "33,000원",
+              "amount": 33000,
+              "amount_formatted": "33,000원",
+              "amount_type": "refund",
+              "subtotal_amount": 33000,
+              "subtotal_amount_formatted": "33,000원",
+              "option_status": "requested",
+              "option_status_label": "접수",
+              "option_status_variant": "info",
+              "collection_carrier_name": null,
+              "collection_tracking_number": null,
+              "collection_tracking_url": null,
+              "collection_state": null,
+              "collection_state_label": null,
+              "is_unreturned": false
+            }
+          ],
+          "refund_bank_code": null,
+          "refund_bank_name": null,
+          "refund_bank_account": null,
+          "refund_bank_holder": null,
+          "tracking_groups": {
+            "collection": [],
+            "redelivery": []
+          },
+          "return_addresses": [],
+          "exchange_mode": null,
+          "exchange_mode_label": null,
+          "is_advance_exchange": false,
+          "collection_due_date_formatted": null,
+          "is_collection_overdue": false,
+          "collection_overdue_days": 0,
+          "collection_completed_at_formatted": null,
+          "redelivered_at_formatted": null,
+          "redelivery_address_snapshot": null,
+          "return_address_snapshot": null,
+          "shipping_fee_snapshot": null,
+          "mc_claim_shipping_fee": null,
+          "mc_refund_amount": null,
+          "mc_refund_shipping_amount": null,
+          "mc_refund_total": null,
+          "mc_total_charge_amount": null,
+          "calculation_comparison": {
+            "original": {
+              "item_count": 2,
+              "base_currency": "KRW",
+              "total_list_price_amount": 78000,
+              "subtotal_amount": 69000,
+              "total_product_coupon_discount_amount": 3000,
+              "total_order_coupon_discount_amount": 2000,
+              "total_code_discount_amount": 0,
+              "base_shipping_amount": 3000,
+              "extra_shipping_amount": 0,
+              "shipping_discount_amount": 0,
+              "total_points_used_amount": 1000,
+              "total_paid_amount": 66000,
+              "total_tax_amount": 60000,
+              "total_vat_amount": 6000,
+              "total_earned_points_amount": 660,
+              "formatted": {
+                "total_list_price_amount": "78,000원",
+                "subtotal_amount": "69,000원",
+                "total_product_coupon_discount_amount": "3,000원",
+                "total_order_coupon_discount_amount": "2,000원",
+                "total_code_discount_amount": "0원",
+                "base_shipping_amount": "3,000원",
+                "extra_shipping_amount": "0원",
+                "shipping_discount_amount": "0원",
+                "total_points_used_amount": "1,000원",
+                "total_paid_amount": "66,000원",
+                "total_tax_amount": "60,000원",
+                "total_vat_amount": "6,000원",
+                "total_earned_points_amount": "660P"
+              }
+            },
+            "recalculated": {
+              "item_count": 1,
+              "base_currency": "KRW",
+              "total_list_price_amount": 39000,
+              "subtotal_amount": 35000,
+              "total_product_coupon_discount_amount": 3000,
+              "total_order_coupon_discount_amount": 2000,
+              "total_code_discount_amount": 0,
+              "base_shipping_amount": 3000,
+              "extra_shipping_amount": 0,
+              "shipping_discount_amount": 0,
+              "total_points_used_amount": 1000,
+              "total_paid_amount": 33000,
+              "total_tax_amount": 60000,
+              "total_vat_amount": 6000,
+              "total_earned_points_amount": 660,
+              "formatted": {
+                "total_list_price_amount": "39,000원",
+                "subtotal_amount": "35,000원",
+                "total_product_coupon_discount_amount": "3,000원",
+                "total_order_coupon_discount_amount": "2,000원",
+                "total_code_discount_amount": "0원",
+                "base_shipping_amount": "3,000원",
+                "extra_shipping_amount": "0원",
+                "shipping_discount_amount": "0원",
+                "total_points_used_amount": "1,000원",
+                "total_paid_amount": "33,000원",
+                "total_tax_amount": "60,000원",
+                "total_vat_amount": "6,000원",
+                "total_earned_points_amount": "660P"
+              }
+            },
+            "mc_original": null,
+            "mc_recalculated": null
+          }
+        },
+        "progress_steps": [
+          {
+            "value": "requested",
+            "label": "접수",
+            "state": "current",
+            "variant": "info",
+            "icon": "file-lines"
+          },
+          {
+            "value": "approved",
+            "label": "승인",
+            "state": "upcoming",
+            "variant": "primary",
+            "icon": "circle-check"
+          },
+          {
+            "value": "completed",
+            "label": "환불완료",
+            "state": "upcoming",
+            "variant": "success",
+            "icon": "flag-checkered"
+          }
+        ],
+        "linked_claims": {
+          "source": null,
+          "refunds": [
+            {
+              "claim_type": "refund",
+              "claim_type_label": "환불",
+              "claim_number": "RF-20260601-0002",
+              "status": "completed",
+              "status_label": "환불완료",
+              "status_variant": "success",
+              "status_icon": "status-completed",
+              "is_live": true,
+              "requested_at_formatted": "2026-06-02 10:00",
+              "detail_url": "/mypage/claims/RF-20260601-0002",
+              "refund_method": "pg",
+              "refund_method_label": "PG사 환불",
+              "refund_total": 26000,
+              "refund_total_formatted": "26,000원",
+              "mc_refund_total": {},
+              "refunded_at_formatted": "2026-06-02 11:00"
+            }
+          ],
+          "result_cancel": null,
+          "latest_refund": {
+            "claim_type": "refund",
+            "claim_type_label": "환불",
+            "claim_number": "RF-20260601-0002",
+            "status": "completed",
+            "status_label": "환불완료",
+            "status_variant": "success",
+            "status_icon": "status-completed",
+            "is_live": true,
+            "requested_at_formatted": "2026-06-02 10:00",
+            "detail_url": "/mypage/claims/RF-20260601-0002",
+            "refund_method": "pg",
+            "refund_method_label": "PG사 환불",
+            "refund_total": 26000,
+            "refund_total_formatted": "26,000원",
+            "mc_refund_total": {},
+            "refunded_at_formatted": "2026-06-02 11:00"
+          }
+        }
+      }
+    },
+    "claimable": {
+      "data": {
+        "options": [
+          {
+            "order_option_id": 9001,
+            "product_name": "샘플 상품 1",
+            "option_name": "기본 옵션",
+            "thumbnail_url": null,
+            "quantity": 2,
+            "claimable_quantity": 2,
+            "unit_price_formatted": "33,000원",
+            "option_status": "payment_complete",
+            "option_status_label": "결제완료",
+            "claimable_types": [
+              "refund"
+            ],
+            "refund_branch": "auto"
+          }
+        ],
+        "abilities": {
+          "can_request": true,
+          "can_cancel": true
         }
       }
     }

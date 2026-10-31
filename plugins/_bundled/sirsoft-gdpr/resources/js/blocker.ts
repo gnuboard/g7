@@ -14,9 +14,9 @@
  * GDPR Art.6 — 합법적 처리 근거. 동의 없는 추적 스크립트 차단으로 분석/마케팅
  * 카테고리 동의 전 GA·Meta Pixel 등이 작동하지 않도록 합니다.
  *
- * 동의 상태 SSoT: 서버 응답 (/api/plugins/sirsoft-gdpr/consent/cookie/status).
- * 부트스트랩에서 setCurrentConsent() 로 캐시 주입 + 레이아웃 JSON 의 동의 저장
- * onSuccess 시점에 `gdpr:consent-changed` 커스텀 이벤트로 캐시 갱신 + rescan.
+ * 동의 상태 SSoT: 서버 DB. 브라우저에서는 코어 동의 런타임(`_global.consent`)이 보관하고,
+ * 진입점(index.ts)이 부팅 때와 코어 이벤트 `consent:changed` 때 setCurrentConsent() 로
+ * 캐시를 갱신해 rescan 한다(#639 — 이 모듈은 window 이벤트를 듣지 않는다).
  *
  * @module sirsoft-gdpr/blocker
  */
@@ -97,7 +97,7 @@ function normalizeConsent(input: ConsentSnapshot): NormalizedConsent {
 /**
  * 차단 엔진의 동의 캐시를 갱신합니다.
  *
- * 부트스트랩(/consent/cookie/status 응답) 또는 동의 저장 직후 호출.
+ * 진입점이 코어 동의 스냅샷을 받을 때(부팅·`consent:changed`) 호출.
  * 캐시 갱신 후 자동으로 rescan 하여 차단/복원 상태를 즉시 반영합니다.
  *
  * @param consent 카테고리별 동의 상태 스냅샷 (plain Record 또는 DetailedConsentSnapshot)
@@ -145,9 +145,6 @@ export function startBlocker(): void {
         childList: true,
         subtree: true,
     });
-
-    // 동의 변경 이벤트 — 레이아웃 JSON 동의 저장 onSuccess 또는 setCurrentConsent 호출 시 발화
-    window.addEventListener('gdpr:consent-changed', handleConsentChanged as EventListener);
 }
 
 /**
@@ -158,20 +155,6 @@ export function stopBlocker(): void {
         observer.disconnect();
         observer = null;
     }
-    window.removeEventListener('gdpr:consent-changed', handleConsentChanged as EventListener);
-}
-
-/**
- * gdpr:consent-changed 이벤트 핸들러 — detail 에 카테고리별 동의 스냅샷 기대.
- *
- * detail 은 plain Record (BC) 또는 DetailedConsentSnapshot 양쪽 호환.
- */
-function handleConsentChanged(event: Event): void {
-    const detail = (event as CustomEvent).detail;
-    if (detail !== null && typeof detail === 'object') {
-        currentConsent = normalizeConsent(detail as ConsentSnapshot);
-    }
-    rescanBlocked();
 }
 
 /**

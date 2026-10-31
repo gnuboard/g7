@@ -1,0 +1,25 @@
+feature: 게시판 환경설정 저장 잠금(설정 본체를 받기 전)
+
+description: |
+  게시판 환경설정 화면은 입력칸을 먼저 그리고 설정 본체(`settings` 데이터소스)를 나중에 받는다.
+  받기 전에 칸 하나를 고치면 [저장] 이 눌렸고, 저장 본문이 고친 칸 하나만 실은 채
+  (`{ basic_defaults: { max_file_size: '10' }, notifications: {} }`) 나갔다. 서버는 그 구획을 통째로
+  갈아 쓰고 빠진 스위치를 false 로 채우므로 게시판 기본 권한·금지어·댓글/답글 사용 같은 기본값이 지워졌다.
+
+  배경 (7.1.0 브라우저 실측 K3 재실행, 2026-10-07): 설정 응답을 10초 늦춘 상태에서 「최대 파일 용량」 칸에
+  10 을 넣자 저장 버튼 disabled=false, 저장 본문이 위와 같았다. 저장 버튼에 설정 본체 도착 조건을 더한다.
+
+  후속(O-K3T-5): 저장 잠금만으로는 받기 전에 고친 값이 도착한 설정(initLocal)에 말없이 덮이는 것을 막지
+  못했다(77 입력 → 도착 뒤 칸 값 10). 설정 본체를 blocking 으로 받아 입력칸을 도착 뒤에 그린다 —
+  게시판 생성·수정 화면과 같은 방식이다.
+
+axes:
+  settings_loaded: [false, true]
+  has_changes: [false, true]
+
+effects:
+  - settings_save_locked_until_loaded
+  - settings_inputs_wait_for_loaded_settings
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-settings-save-guard.test.ts

@@ -28,6 +28,10 @@
  *                                                  값 없는 heartbeat 는 「살아 있다」의 신호일 뿐
  *                                                  진행이 아니므로 화면 표시를 0/0 으로 덮으면 안 된다
  *   onConnectionTimeout()                        — SSE 5초 내 연결 실패 (SSE 전용)
+ *
+ * SSE 모드에서 연결 수립 뒤 스트림이 끊기면 서버 상태를 조회해, 워커 없이 설치가 남았으면
+ * 새 워커로 다시 연결해 이어 받고, 아니면 onError / onAbort / onComplete 중 하나로 결말을 알린다
+ * — 화면이 「진행 중」에 멈추지 않는다.
  */
 (function (global) {
     'use strict';
@@ -214,13 +218,36 @@
 
     /**
      * SSE 기반 모니터 (EventSource)
+     *
+     * 연결 수립 뒤 스트림이 끊기면 브라우저 자동 재연결에 맡기지 않고(EventSource 를 닫는다)
+     * 서버 상태(state-management.php)로 다음을 정한다.
+     *  - failed / aborted / completed: 해당 콜백으로 결말을 알린다.
+     *  - running 이고 워커 잠금이 비어 있음(worker_active=false): 앞 워커가 끝났는데 설치가 남았다.
+     *    새 워커로 다시 연결해 남은 작업을 이어 받는다(끝난 작업은 서버가 건너뛴다).
+     *  - running 이고 잠금이 남아 있음: 앞 워커가 아직 작업을 돌리고 있을 수 있다. 같은 작업을 두 워커가
+     *    동시에 돌리지 않도록 잠금이 풀릴 때까지 기다린다.
+     *  - running 인 채 last_updated 가 stuckThresholdMs 동안 그대로면(조회 실패 포함) error_installation_stuck.
+     * 다시 연결은 진척(새로 끝난 작업) 없이 maxReconnects 번까지만 한다.
+     *
+     * 스트림이 열려 있는 동안의 침묵 감지(베이스 클래스의 정지 타이머)와, 다른 요청이 진행을 쥐었을 때의
+     * 진행 조회 갈아타기(`worker_superseded`·첫 연결의 `aborted{busy}`)는 그대로 둔다 — 끊김 뒤 상태 감시로
+     * 넘어가면 침묵 타이머는 멈추고(감시가 자기 기준으로 판정한다), 다시 연결한 스트림이 이벤트를 받으면
+     * 다시 걸린다.
      */
     class SseMonitor extends InstallationMonitor {
+        /**
+         * 진척 없이 다시 연결할 수 있는 횟수.
+         *
+         * 한 번 끊긴 스트림을 이어 받기에는 충분하고, 연결할 때마다 바로 끊기는 서버에서
+         * 워커 요청을 끝없이 보내지 않을 만큼 작다.
+         */
+        static MAX_RECONNECTS_WITHOUT_PROGRESS = 3;
+
         constructor(callbacks, options = {}) {
             super(callbacks, options);
             this.workerUrl = options.workerUrl;
-            // 승자 요청에게 진행을 넘겨받을 때 갈아탈 주소 (13차 E5). 없으면 갈아탈 곳이
-            // 없으므로 종전 동작(EventSource 재연결)을 그대로 둔다.
+            // 끊김 뒤 결말 판정·이어 받기와, 승자 요청에게 진행을 넘겨받을 때 갈아탈 주소 (13차 E5).
+            // 없으면 갈아탈 곳이 없으므로 끊김은 곧바로 멈춤으로 판정한다.
             this.stateUrl = options.stateUrl || null;
             this.connectionTimeoutMs = options.connectionTimeoutMs || 5000;
             this.eventSource = null;
@@ -232,19 +259,52 @@
             // 연결 뒤 침묵 감지 — 폴링 모니터와 같은 기준(기본 90초). 이것이 없으면 워커가
             // 죽거나 프록시가 스트림을 끊었을 때 EventSource 가 조용히 재연결만 시도하고
             // (그 재연결은 워커 lock 에 막혀 아무것도 못 한다) 화면은 마지막 진행률에서
-            // 영구 정지한다 — 오류도 안내도 없다. onerror 는 `connected === false` 일 때만
-            // 발화하므로 「연결 전 실패」만 덮고 「연결 후 정지」는 세 모니터 중 여기만 사각이었다.
+            // 영구 정지한다 — 오류도 안내도 없다.
             // 정지 감지 필드·메서드는 베이스 클래스가 소유한다 (세 모니터 공용)
+
+            // 끊김 뒤 상태 감시 — 조회 주기와 진척 없는 다시 연결 상한.
+            this.watchIntervalMs = options.watchIntervalMs || 2000;
+            this.maxReconnects = Number.isInteger(options.maxReconnects)
+                ? options.maxReconnects
+                : SseMonitor.MAX_RECONNECTS_WITHOUT_PROGRESS;
+            this.watchTimer = null;
+            this.watchFinished = false;
+            this.watchLastUpdated = undefined;
+            this.watchLastChangeMs = 0;
+            this.watchLastTask = null;
+            this.reconnectAttempts = 0;
+            // 진척 판정용 — 이 화면이 끝났다고 받은 작업 키(task 또는 task:target)
+            this.completedSeen = new Set();
         }
 
         start() {
-            this.eventSource = new EventSource(this.workerUrl);
+            this._openStream(false);
+        }
+
+        /**
+         * 워커 스트림을 연다.
+         *
+         * 닫힌 스트림의 늦은 이벤트는 무시한다(isCurrent) — 이어 받기 스트림과 겹쳐 화면에 두 번 그려지지 않게.
+         *
+         * @param {boolean} isReconnect 끊긴 뒤 이어 받기 위한 연결이면 true
+         */
+        _openStream(isReconnect) {
+            const es = new EventSource(this.workerUrl);
+            this.eventSource = es;
+            let streamConnected = false;
+            const isCurrent = () => !this.stopped && this.eventSource === es;
 
             this.connectionTimer = setTimeout(() => {
-                if (!this.connected && !this.stopped) {
-                    this.stop();
-                    this._invoke('onConnectionTimeout');
+                if (!isCurrent() || streamConnected) {
+                    return;
                 }
+                if (isReconnect) {
+                    // 이어 받기 연결이 수립되지 않았다 — 다시 상태를 보고 정한다
+                    this._handleDisconnect(false);
+                    return;
+                }
+                this.stop();
+                this._invoke('onConnectionTimeout');
             }, this.connectionTimeoutMs);
 
             // 어떤 이벤트가 와도 「살아 있다」의 증거다 — EventSource 는 이벤트 이름별 리스너만
@@ -255,38 +315,57 @@
             // 세어진다 — 번들 추출 구간은 `heartbeat` 말고는 아무것도 내보내지 않으므로
             // 추출이 임계(기본 90초)를 넘기면 정상 설치가 정지 화면으로 뒤집힌다 (12차 #B27).
             // 이름 있는 이벤트는 `message` 리스너로 오지 않아 위의 캡처도 이를 대신하지 못한다.
-            this.eventSource.addEventListener('message', () => this._armStuckTimer());
+            es.addEventListener('message', () => {
+                if (isCurrent()) this._armStuckTimer();
+            });
             SSE_LIVENESS_EVENTS.forEach((name) => {
-                this.eventSource.addEventListener(name, () => this._armStuckTimer());
+                es.addEventListener(name, () => {
+                    if (isCurrent()) this._armStuckTimer();
+                });
             });
 
-            this.eventSource.addEventListener('connected', () => {
+            es.addEventListener('connected', () => {
+                if (!isCurrent()) return;
                 clearTimeout(this.connectionTimer);
-                this.connected = true;
-                this._invoke('onConnected');
+                this.connectionTimer = null;
+                streamConnected = true;
+                if (!this.connected) {
+                    this.connected = true;
+                    this._invoke('onConnected');
+                }
             });
 
-            this.eventSource.addEventListener('task_start', (e) => {
+            es.addEventListener('task_start', (e) => {
+                if (!isCurrent()) return;
                 const data = safeParseEventData(e);
                 this._invoke('onTaskStart', data.task, data.name, data.target || null);
             });
 
-            this.eventSource.addEventListener('task_complete', (e) => {
+            es.addEventListener('task_complete', (e) => {
+                if (!isCurrent()) return;
                 const data = safeParseEventData(e);
+                const key = data.target ? `${data.task}:${data.target}` : data.task;
+                if (key && !this.completedSeen.has(key)) {
+                    // 새로 끝난 작업 — 이어 받기가 진척을 냈다
+                    this.completedSeen.add(key);
+                    this.reconnectAttempts = 0;
+                }
                 // skipped: 운영자가 건너뛴 작업 + best_effort 실패로 지나간 작업 — 세 진행 모드가
                 // 같은 runSingleInstallationTask() 를 쓰므로 이 플래그는 SSE 에도 실려 온다.
                 // 떨어뜨리면 실패한 best-effort 단계가 초록 "완료" 로 보인다.
                 this._invoke('onTaskComplete', data.task, data.message, data.target || null, !!data.skipped);
             });
 
-            this.eventSource.addEventListener('log', (e) => {
+            es.addEventListener('log', (e) => {
+                if (!isCurrent()) return;
                 const data = safeParseEventData(e);
                 if (data.message) {
                     this._invoke('onLog', data.message);
                 }
             });
 
-            this.eventSource.addEventListener('heartbeat', (e) => {
+            es.addEventListener('heartbeat', (e) => {
+                if (!isCurrent()) return;
                 // 한 태스크 **안**의 부분 진행이다 (번들 추출 묶음 수). 태스크 단위 진행률은
                 // 이 값으로 움직이지 않는다 — 최장 태스크가 도는 동안 화면이 정지한 스피너로만
                 // 남지 않도록 현재 작업 줄에 덧붙이는 용도다 (12차 #B35).
@@ -297,7 +376,8 @@
                 }
             });
 
-            this.eventSource.addEventListener('completed', (e) => {
+            es.addEventListener('completed', (e) => {
+                if (!isCurrent()) return;
                 // 스트림이 프록시에 잘려 본문이 깨져도 「완료했다」는 사실은 유효하다 —
                 // 예외를 그대로 흘리면 onComplete 가 발화하지 않아, 성공한 설치가 잠시 뒤
                 // 「응답이 없습니다」 로 뒤집힌다.
@@ -306,20 +386,23 @@
                 this._invoke('onComplete', data);
             });
 
-            this.eventSource.addEventListener('aborted', (e) => {
+            es.addEventListener('aborted', (e) => {
+                if (!isCurrent()) return;
                 const data = safeParseEventData(e);
 
                 // `busy` 는 중단이 아니라 **이어받기 실패**다 (19차 J1).
-                //
-                // 스트림이 연결된 **뒤** 끊기면(프록시·LB 의 idle 타임아웃) EventSource 가
-                // 스스로 재연결하는데, 그 재연결은 살아 있는 워커의 lock 에 막혀 이 이벤트를
-                // `reason:'busy'` 로 받는다. 종전에는 `reason` 을 보지 않고 곧장 중단 화면을
-                // 그려서, **돌고 있는 설치 위에** 「설치가 중단되었습니다」가 떴다.
-                //
-                // 바로 아래 `_handOffToPolling()` 의 docblock 이 이 상황을 이미 정확히 적어
-                // 두었고(`worker_superseded` 를 위해 만들어진 기계다), 성질도 같다 —
-                // 다른 요청이 진행을 쥐고 있으니 조회로 갈아타면 된다.
                 if (data && data.reason === 'busy') {
+                    if (isReconnect) {
+                        // 끊긴 뒤 이어 받으려던 연결이 「다른 워커 진행 중」 으로 거절됐다 — 앞 워커가
+                        // 잠금을 풀 때까지 상태를 보며 기다렸다가 다시 연결한다.
+                        this._handleDisconnect(false);
+
+                        return;
+                    }
+
+                    // 첫 연결이 거절됐다 — 다른 요청이 진행을 쥐고 있다. 그 진행을 조회로 따라간다.
+                    // 종전에는 `reason` 을 보지 않고 곧장 중단 화면을 그려서, **돌고 있는 설치 위에**
+                    // 「설치가 중단되었습니다」가 떴다. 바로 아래 `_handOffToPolling()` 이 그 계약이다.
                     this._handOffToPolling(data.message || null);
 
                     return;
@@ -329,21 +412,23 @@
                 this._invoke('onAbort', data);
             });
 
-            this.eventSource.addEventListener('rollback_failed', (e) => {
+            es.addEventListener('rollback_failed', (e) => {
+                if (!isCurrent()) return;
                 this._invoke('onRollbackFailed', safeParseEventData(e));
             });
 
             // 다른 요청이 워커 lock 을 가져갔다 — 이 워커는 물러나기 전에 그 사실을 한 프레임
             // 보내고 끝낸다 (서버: progress-emitter.php::exitIfNotOwner). 이어받기는 실패가
             // 아니므로 onError 로 올리지 않는다.
-            this.eventSource.addEventListener('worker_superseded', (e) => {
+            es.addEventListener('worker_superseded', (e) => {
+                if (!isCurrent()) return;
                 const data = safeParseEventData(e);
                 this._handOffToPolling(data.message || null);
             });
 
-            this.eventSource.addEventListener('error', (e) => {
+            es.addEventListener('error', (e) => {
                 // 서버에서 보낸 명시적 error 이벤트 (e.data 있음)
-                if (!e.data) {
+                if (!e.data || !isCurrent()) {
                     return;
                 }
                 let data = safeParseEventData(e);
@@ -357,12 +442,21 @@
             });
 
             // 연결 오류 (네이티브 onerror) — e.data 없음
-            this.eventSource.onerror = () => {
+            es.onerror = () => {
+                if (!isCurrent()) {
+                    return;
+                }
                 clearTimeout(this.connectionTimer);
-                if (!this.connected && !this.stopped) {
+                this.connectionTimer = null;
+                if (!isReconnect && !this.connected) {
                     this.stop();
                     this._invoke('onConnectionTimeout');
+                    return;
                 }
+                // 연결 수립 뒤 끊김 — 워커가 끝났거나(연결 끊김을 감지한 PHP 가 스크립트를 끝냄,
+                // 실행 시간 제한, 프로세스 종료) 망이 끊겼다. 브라우저 자동 재연결은 실패해도 아무 콜백이
+                // 불리지 않고, 앞 워커가 살아 있을 때 새 워커를 띄울 수도 있다 — 닫고 상태로 정한다.
+                this._handleDisconnect(streamConnected);
             };
         }
 
@@ -402,6 +496,160 @@
             this.successor.start();
         }
 
+        /**
+         * 스트림을 닫고 상태 감시로 넘어간다.
+         *
+         * @param {boolean} streamWasConnected 닫힌 스트림이 연결까지 됐었는지 — 그랬다면 멈춤 판정 기준
+         *   시각을 지금으로 다시 잡는다. 연결되지 못한 이어 받기 시도는 기준 시각을 그대로 둬,
+         *   거듭 실패해도 임계 시간 안에 결말이 난다.
+         */
+        _handleDisconnect(streamWasConnected) {
+            if (this.stopped) return;
+            if (this.connectionTimer) {
+                clearTimeout(this.connectionTimer);
+                this.connectionTimer = null;
+            }
+            // 스트림 침묵 타이머는 멈춘다 — 끊긴 뒤에는 상태 감시가 자기 기준(last_updated)으로 판정한다.
+            if (this.stuckTimer) {
+                clearTimeout(this.stuckTimer);
+                this.stuckTimer = null;
+            }
+            this._closeEventSource();
+            if (streamWasConnected || this.watchLastChangeMs === 0) {
+                this.watchLastChangeMs = Date.now();
+                this.watchLastUpdated = undefined;
+            }
+            this._watchStateAfterDisconnect();
+        }
+
+        /**
+         * 스트림이 끊긴 뒤 state-management.php 로 다음 할 일을 정한다(클래스 설명 참고).
+         */
+        _watchStateAfterDisconnect() {
+            if (this.watchTimer || this.watchFinished) {
+                return;
+            }
+
+            if (!this.stateUrl) {
+                this._finishWatch('onError', this._stuckErrorData());
+                return;
+            }
+
+            this._pollStateOnce();
+            this.watchTimer = setInterval(() => this._pollStateOnce(), this.watchIntervalMs);
+        }
+
+        async _pollStateOnce() {
+            if (this.watchFinished || this.stopped || this.eventSource) return;
+
+            let state = null;
+            try {
+                // 로그는 필요 없다 — 큰 offset 으로 본문을 줄인다.
+                const url = `${this.stateUrl}${this.stateUrl.includes('?') ? '&' : '?'}log_offset=2147483647`;
+                const res = await fetch(url, { cache: 'no-store' });
+                if (res && res.ok) {
+                    state = JSON.parse(await res.text());
+                }
+            } catch (_) {
+                state = null;
+            }
+            // 기다리는 사이 판정이 끝났거나 이어 받기 스트림이 열렸으면 이 응답은 버린다
+            if (this.watchFinished || this.stopped || this.eventSource) return;
+
+            if (state && typeof state === 'object') {
+                if (state.current_task) {
+                    this.watchLastTask = state.current_task;
+                }
+                switch (state.status) {
+                    case 'failed': {
+                        // 실패 사유·건너뛰기 가능 여부·치환값은 공용 폴백 사슬(failurePayload)이 정한다.
+                        // 끊긴 작업은 「작업:대상」 키로 오므로 화면 계약(task, target)으로 나눈다.
+                        const payload = failurePayload(state);
+                        const failedKey = state.failed_task || null;
+                        const colonIdx = failedKey ? failedKey.indexOf(':') : -1;
+                        payload.task = colonIdx !== -1 ? failedKey.substring(0, colonIdx) : failedKey;
+                        payload.target = colonIdx !== -1 ? failedKey.substring(colonIdx + 1) : null;
+                        this._finishWatch('onError', payload);
+                        return;
+                    }
+                    case 'aborted':
+                        this._finishWatch('onAbort', state);
+                        return;
+                    case 'completed':
+                        // 완료 이동 주소는 형제 모니터와 같은 규칙(마운트 접두사 포함 기준 주소)을 쓴다.
+                        this._finishWatch('onComplete', { message: null, redirect: (window.INSTALLER_BASE_URL || '/install') + '/' });
+                        return;
+                    default:
+                        if (state.last_updated !== this.watchLastUpdated) {
+                            // 첫 응답은 기준값만 잡는다 (끊긴 시각부터 잰다).
+                            if (this.watchLastUpdated !== undefined) {
+                                this.watchLastChangeMs = Date.now();
+                            }
+                            this.watchLastUpdated = state.last_updated;
+                        }
+                        // 설치는 남았는데 워커 잠금이 비었다 — 새 워커로 이어 받는다.
+                        // 잠금이 남아 있으면(worker_active=true) 앞 워커가 끝날 때까지 기다린다.
+                        if (
+                            state.status === 'running' &&
+                            state.worker_active === false &&
+                            this.reconnectAttempts < this.maxReconnects
+                        ) {
+                            this._reconnect();
+                            return;
+                        }
+                }
+            }
+
+            if (Date.now() - this.watchLastChangeMs >= this.stuckThresholdMs) {
+                this._finishWatch('onError', this._stuckErrorData());
+            }
+        }
+
+        _reconnect() {
+            if (this.stopped || this.eventSource) return;
+            this.reconnectAttempts += 1;
+            this._stopWatchTimer();
+            this._openStream(true);
+        }
+
+        _stuckErrorData() {
+            const idleSeconds = Math.floor((Date.now() - this.watchLastChangeMs) / 1000);
+
+            return {
+                message: null,
+                message_key: 'error_installation_stuck',
+                // 문구의 자리표시자(:seconds) 치환값 — 빠지면 토큰이 그대로 그려진다.
+                message_params: { seconds: Math.max(idleSeconds, Math.floor(this.stuckThresholdMs / 1000)) },
+                error: null,
+                task: this.watchLastTask,
+                target: null,
+                manual_commands: null,
+                stuck: true,
+                idle_seconds: idleSeconds,
+            };
+        }
+
+        _finishWatch(callbackName, data) {
+            if (this.watchFinished || this.stopped) return;
+            this.watchFinished = true;
+            this.stop();
+            this._invoke(callbackName, data);
+        }
+
+        _stopWatchTimer() {
+            if (this.watchTimer) {
+                clearInterval(this.watchTimer);
+                this.watchTimer = null;
+            }
+        }
+
+        _closeEventSource() {
+            if (this.eventSource) {
+                this.eventSource.close();
+                this.eventSource = null;
+            }
+        }
+
         stop() {
             super.stop();
             if (this.connectionTimer) {
@@ -412,10 +660,8 @@
                 clearTimeout(this.stuckTimer);
                 this.stuckTimer = null;
             }
-            if (this.eventSource) {
-                this.eventSource.close();
-                this.eventSource = null;
-            }
+            this._stopWatchTimer();
+            this._closeEventSource();
             // 이어받은 폴링도 함께 멈춘다 — [중단] 은 이 객체 하나만 붙잡고 있다.
             if (this.successor) {
                 this.successor.stop();

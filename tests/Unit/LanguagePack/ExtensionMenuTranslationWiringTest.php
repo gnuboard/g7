@@ -37,7 +37,13 @@ class ExtensionMenuTranslationWiringTest extends TestCase
                 if (! is_file($file)) {
                     continue;
                 }
-                if (! str_contains((string) file_get_contents($file), 'function getAdminMenus')) {
+                $source = (string) file_get_contents($file);
+                if (! str_contains($source, 'function getAdminMenus')) {
+                    continue;
+                }
+                // 빈 배열만 돌려주는 선언은 번역할 메뉴가 없다 — 그 팩은 seed/menus.json 을 두지 않는다
+                // (sirsoft-totp: 등록 화면은 코어「플러그인 관리 → 설정」 자동 경로, 생성기도 추출기를 두지 않는다).
+                if (preg_match('/function getAdminMenus\(\)\s*:\s*array\s*\{\s*return\s*\[\s*\]\s*;\s*\}/', $source) === 1) {
                     continue;
                 }
                 $found[basename($extDir)] = "{$dir}/_bundled/".basename($extDir)."/{$entry}";
@@ -85,7 +91,9 @@ class ExtensionMenuTranslationWiringTest extends TestCase
         $source = (string) file_get_contents($path);
 
         $this->assertMatchesRegularExpression(
-            '/function injectExtensionMenus\(array \$menus, string \$targetIdentifier, string \$scope\)/',
+            // 스코프 인자의 기본값 `'module'` 은 종전 2인자 호출 호환이다(7.2.0) — 기본값이 있어도 조회는
+            // 아래 대칭 검사대로 그 인자(`getActivePacks($scope)`)로 한다.
+            '/function injectExtensionMenus\(array \$menus, string \$targetIdentifier, string \$scope(?:\s*=\s*\'module\')?\)/',
             $source,
             'injectExtensionMenus 가 스코프를 받지 않는다 — 형제 주입기(roles·permissions·manifest)와 어긋난다.'
         );

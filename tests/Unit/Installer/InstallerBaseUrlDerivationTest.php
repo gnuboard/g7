@@ -598,10 +598,12 @@ class InstallerBaseUrlDerivationTest extends TestCase
             $monitor,
             '모니터 완료 폴백 2곳은 window.INSTALLER_BASE_URL 파생이어야 한다 (G3 입력 ②)'
         );
+        // SSE 끊김 뒤 상태 감시(_finishWatch)·Polling·Stepwise 세 곳. 감시 경로는 7.2.0 이
+        // 들여온 것이라 그쪽 원본의 '/install/' 고정값을 기준 URL 로 바꿔 합류했다.
         $this->assertSame(
-            2,
+            3,
             substr_count($monitor, "(window.INSTALLER_BASE_URL || '/install') + '/'"),
-            'Polling·Stepwise 완료 폴백 두 곳 모두 페이지가 심은 기준 URL 을 써야 한다'
+            'SSE 감시·Polling·Stepwise 완료 폴백 세 곳 모두 페이지가 심은 기준 URL 을 써야 한다'
         );
     }
 

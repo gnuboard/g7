@@ -63,14 +63,27 @@ class CoreAlertListenerRegistrationTest extends TestCase
      *
      * 목록을 리터럴로 적지 않는다 — 리스너가 늘면 이 검사도 함께 커져야 한다.
      *
+     * 하위 디렉토리까지 재귀로 본다. 등록 경로인 `HookCacheManager::collectCoreListeners()` 가
+     * `app/Listeners/` 를 재귀 스캔하므로(`Analytics/AnalyticsAlertListener` 등), 모집단이 한
+     * 겹이면 하위 폴더 리스너의 정상 등록 1회가 「중복」으로 잡힌다.
+     *
      * @return list<class-string>
      */
     private function coreListenerClassesSubscribingToHook(): array
     {
         $found = [];
+        $root = app_path('Listeners');
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)
+        );
 
-        foreach (glob(app_path('Listeners').DIRECTORY_SEPARATOR.'*.php') ?: [] as $file) {
-            $class = 'App\\Listeners\\'.basename($file, '.php');
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $relative = substr($file->getPathname(), strlen($root) + 1, -4);
+            $class = 'App\\Listeners\\'.str_replace(['/', '\\'], '\\', $relative);
 
             if (! class_exists($class) || ! method_exists($class, 'getSubscribedHooks')) {
                 continue;

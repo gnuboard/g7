@@ -23,6 +23,11 @@ use Tests\TestCase;
  * 되고 TTL(기본 하루) 이 지나기 전까지 스스로 회복되지 않았습니다. 확장 작업 도중 상태가
  * 잠시 active 가 아닌 창이 존재하는 한, 그 순간의 읽기를 막을 방법은 없습니다.
  * 따라서 명시적 무효화는 그대로 두되, **빈 결과는 애초에 캐시하지 않습니다**.
+ *
+ * @scenario extension_kind=module, active_state=has_active
+ *
+ * @effects non_empty_active_list_is_cached, status_change_invalidates_active_list_cache,
+ *          empty_active_list_is_not_cached_and_recovers_immediately
  */
 class ModuleCacheTest extends TestCase
 {
@@ -34,6 +39,11 @@ class ModuleCacheTest extends TestCase
 
     private const TEMP_PLUGIN = 'vendor-status_window_plugin';
 
+    /**
+     * 확장 상태 캐시를 메모리 저장소로 격리하고 비운 뒤 테스트를 시작합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,6 +58,11 @@ class ModuleCacheTest extends TestCase
         PluginManager::invalidatePluginStatusCache();
     }
 
+    /**
+     * 메모리 캐시 저장소를 비우고 테스트를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Cache::store('array')->flush();
@@ -56,63 +71,123 @@ class ModuleCacheTest extends TestCase
 
     /**
      * 활성 모듈이 있을 때 정상적으로 캐시되어야 합니다.
+     *
+     * 활성 모듈은 테스트가 직접 심는다. 테스트 DB 에 설치된 확장이 없으면 예전에는 건너뛰어
+     * (skip) 이 캐시를 아무 테스트도 재지 않았다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario extension_kind=module, active_state=has_active
+     *
+     * @effects non_empty_active_list_is_cached
      */
     #[Test]
     public function it_caches_non_empty_active_modules(): void
     {
-        $activeModule = Module::where('status', ExtensionStatus::Active->value)->first();
-        if (! $activeModule) {
-            $this->markTestSkipped('활성 모듈이 없습니다.');
-        }
+        $this->withTemporaryActiveModule(function () {
+            ModuleManager::invalidateModuleStatusCache();
+            $result = ModuleManager::getActiveModuleIdentifiers();
 
-        ModuleManager::invalidateModuleStatusCache();
-        $result = ModuleManager::getActiveModuleIdentifiers();
+            $this->assertContains(self::TEMP_MODULE, $result, '활성 모듈 목록에 방금 활성화한 모듈이 있어야 합니다');
 
-        $this->assertNotEmpty($result, '활성 모듈 목록이 비어있으면 안됩니다');
-
-        $cached = Cache::get(self::MODULE_ACTIVE_KEY);
-        $this->assertNotNull($cached, '활성 모듈 목록이 캐시되어야 합니다');
-        $this->assertEquals($result, $cached);
+            $cached = Cache::get(self::MODULE_ACTIVE_KEY);
+            $this->assertNotNull($cached, '활성 모듈 목록이 캐시되어야 합니다');
+            $this->assertEquals($result, $cached);
+        });
     }
 
     /**
      * 모듈 상태 변경 후 캐시 무효화가 정상 동작해야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario extension_kind=module, active_state=has_active
+     *
+     * @effects status_change_invalidates_active_list_cache
      */
     #[Test]
     public function it_invalidates_cache_on_status_change(): void
     {
-        $initialResult = ModuleManager::getActiveModuleIdentifiers();
+        $this->withTemporaryActiveModule(function () {
+            $this->assertContains(self::TEMP_MODULE, ModuleManager::getActiveModuleIdentifiers());
+            $this->assertNotNull(Cache::get(self::MODULE_ACTIVE_KEY), '초기 캐시가 생성되어야 합니다');
 
-        if (empty($initialResult)) {
-            $this->markTestSkipped('활성 모듈이 없습니다.');
-        }
+            ModuleManager::invalidateModuleStatusCache();
 
-        $this->assertNotNull(Cache::get(self::MODULE_ACTIVE_KEY), '초기 캐시가 생성되어야 합니다');
-
-        ModuleManager::invalidateModuleStatusCache();
-
-        $this->assertNull(Cache::get(self::MODULE_ACTIVE_KEY), '캐시가 무효화되어야 합니다');
+            $this->assertNull(Cache::get(self::MODULE_ACTIVE_KEY), '캐시가 무효화되어야 합니다');
+        });
     }
 
     /**
      * 활성 플러그인이 있을 때 정상적으로 캐시되어야 합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario extension_kind=plugin, active_state=has_active
+     *
+     * @effects non_empty_active_list_is_cached
      */
     #[Test]
     public function it_caches_non_empty_active_plugins(): void
     {
-        $activePlugin = Plugin::where('status', ExtensionStatus::Active->value)->first();
-        if (! $activePlugin) {
-            $this->markTestSkipped('활성 플러그인이 없습니다.');
+        $this->withTemporaryActivePlugin(function () {
+            PluginManager::invalidatePluginStatusCache();
+            $result = PluginManager::getActivePluginIdentifiers();
+
+            $this->assertContains(self::TEMP_PLUGIN, $result, '활성 플러그인 목록에 방금 활성화한 플러그인이 있어야 합니다');
+
+            $cached = Cache::get(self::PLUGIN_ACTIVE_KEY);
+            $this->assertNotNull($cached, '활성 플러그인 목록이 캐시되어야 합니다');
+            $this->assertEquals($result, $cached);
+        });
+    }
+
+    /**
+     * 임시 활성 모듈 행을 심고 콜백을 실행한 뒤 제거합니다.
+     *
+     * 이 클래스는 RefreshDatabase 를 쓰지 않으므로 심은 행은 반드시 지운다.
+     *
+     * @param  callable  $callback  활성 모듈이 있는 상태에서 실행할 검사
+     * @return void 반환값 없음
+     */
+    private function withTemporaryActiveModule(callable $callback): void
+    {
+        Module::where('identifier', self::TEMP_MODULE)->delete();
+
+        try {
+            Module::factory()->create([
+                'identifier' => self::TEMP_MODULE,
+                'status' => ExtensionStatus::Active->value,
+            ]);
+
+            $callback();
+        } finally {
+            Module::where('identifier', self::TEMP_MODULE)->delete();
+            ModuleManager::invalidateModuleStatusCache();
         }
+    }
 
-        PluginManager::invalidatePluginStatusCache();
-        $result = PluginManager::getActivePluginIdentifiers();
+    /**
+     * 임시 활성 플러그인 행을 심고 콜백을 실행한 뒤 제거합니다.
+     *
+     * @param  callable  $callback  활성 플러그인이 있는 상태에서 실행할 검사
+     * @return void 반환값 없음
+     */
+    private function withTemporaryActivePlugin(callable $callback): void
+    {
+        Plugin::where('identifier', self::TEMP_PLUGIN)->delete();
 
-        $this->assertNotEmpty($result, '활성 플러그인 목록이 비어있으면 안됩니다');
+        try {
+            Plugin::factory()->create([
+                'identifier' => self::TEMP_PLUGIN,
+                'status' => ExtensionStatus::Active->value,
+            ]);
 
-        $cached = Cache::get(self::PLUGIN_ACTIVE_KEY);
-        $this->assertNotNull($cached, '활성 플러그인 목록이 캐시되어야 합니다');
-        $this->assertEquals($result, $cached);
+            $callback();
+        } finally {
+            Plugin::where('identifier', self::TEMP_PLUGIN)->delete();
+            PluginManager::invalidatePluginStatusCache();
+        }
     }
 
     /**
@@ -120,6 +195,12 @@ class ModuleCacheTest extends TestCase
      *
      * 확장 작업 중 상태가 잠시 active 가 아닌 창에서 이 목록을 읽으면 빈 배열이 하루 동안
      * 굳는다. 그 뒤 상태가 정상으로 돌아와도 모든 모듈이 꺼진 것처럼 동작한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario extension_kind=module, active_state=none_active
+     *
+     * @effects empty_active_list_is_not_cached_and_recovers_immediately
      */
     #[Test]
     public function it_does_not_cache_empty_active_modules(): void
@@ -164,6 +245,12 @@ class ModuleCacheTest extends TestCase
 
     /**
      * 빈 결과는 캐시에 남지 않아야 합니다 (플러그인).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario extension_kind=plugin, active_state=none_active
+     *
+     * @effects empty_active_list_is_not_cached_and_recovers_immediately
      */
     #[Test]
     public function it_does_not_cache_empty_active_plugins(): void

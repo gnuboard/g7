@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 댓글 수정 mass-assignment 방어 테스트
@@ -17,22 +18,32 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *   author_name, trigger_type, action_logs, depth, ip_address, replies_count)를 요청에
  *   동봉해도 저장되지 않는다 — Comment::$fillable 의 초과 10개 전수
  * - 정의된 필드(content, is_secret, status)는 정상 반영된다
- *
- * @group board
- * @group comment
- * @group security
  */
+#[Group('board')]
+#[Group('comment')]
+#[Group('security')]
 class CommentMassAssignmentTest extends BoardTestCase
 {
     private User $memberUser;
 
     private User $otherUser;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'comment-mass-assignment';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -44,6 +55,11 @@ class CommentMassAssignmentTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,6 +83,8 @@ class CommentMassAssignmentTest extends BoardTestCase
      * @scenario resource=board_comment_user, parent_scope=matching, actor=member
      *
      * @effects unvalidated_fields_not_persisted, sibling_resource_state_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_update_ignores_fields_outside_form_request(): void
     {

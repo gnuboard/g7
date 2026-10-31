@@ -6,54 +6,82 @@ import { Toggle } from '../Toggle';
 // G7Core 전역 객체는 test-setup.ts에서 전역으로 모킹됨
 
 describe('Toggle', () => {
+  /**
+   * @scenario component=toggle
+   * @effects toggle_reflects_checked_value_and_changes_on_click
+   */
   it('컴포넌트가 렌더링됨', () => {
     render(<Toggle />);
 
     // checkbox가 렌더링되는지 확인
-    const checkbox = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox', { hidden: true });
     expect(checkbox).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_reflects_checked_value_and_changes_on_click
+   */
   it('라벨이 표시됨', () => {
     render(<Toggle label="알림 활성화" />);
 
     expect(screen.getByText('알림 활성화')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_reflects_checked_value_and_changes_on_click
+   */
   it('설명이 표시됨', () => {
     render(<Toggle description="이 옵션을 활성화하면 알림을 받습니다" />);
 
     expect(screen.getByText('이 옵션을 활성화하면 알림을 받습니다')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_reflects_checked_value_and_changes_on_click
+   */
   it('checked prop으로 초기 상태 설정됨', () => {
     render(<Toggle checked={true} />);
 
-    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
+    const checkbox = screen.getByRole('checkbox', { hidden: true }) as HTMLInputElement;
     expect(checkbox.checked).toBe(true);
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_reflects_checked_value_and_changes_on_click
+   */
   it('value prop으로 초기 상태 설정됨', () => {
     render(<Toggle value={true} />);
 
-    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
+    const checkbox = screen.getByRole('checkbox', { hidden: true }) as HTMLInputElement;
     expect(checkbox.checked).toBe(true);
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_reflects_checked_value_and_changes_on_click
+   */
   it('checked prop이 value prop보다 우선됨', () => {
     render(<Toggle checked={true} value={false} />);
 
-    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
+    const checkbox = screen.getByRole('checkbox', { hidden: true }) as HTMLInputElement;
     expect(checkbox.checked).toBe(true);
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_reflects_checked_value_and_changes_on_click
+   */
   it('onChange 핸들러가 이벤트 객체와 함께 호출됨', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
     render(<Toggle onChange={onChange} />);
 
-    const checkbox = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox', { hidden: true });
     await user.click(checkbox);
 
     // jsdom: sr-only input 의 native onChange + 부모 div onClick 양쪽이 발동.
@@ -64,13 +92,17 @@ describe('Toggle', () => {
     expect(callArg.target).toHaveProperty('checked');
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_reflects_checked_value_and_changes_on_click
+   */
   it('클릭 시 체크 상태가 변경됨', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
     render(<Toggle onChange={onChange} />);
 
-    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
+    const checkbox = screen.getByRole('checkbox', { hidden: true }) as HTMLInputElement;
 
     // 초기 상태는 false
     expect(checkbox.checked).toBe(false);
@@ -83,19 +115,27 @@ describe('Toggle', () => {
     expect(event.target.checked).toBe(true);
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_reflects_checked_value_and_changes_on_click
+   */
   it('disabled일 때 클릭되지 않음', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
     render(<Toggle onChange={onChange} disabled={true} />);
 
-    const checkbox = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox', { hidden: true });
     expect(checkbox).toBeDisabled();
 
     await user.click(checkbox);
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_applies_size_disabled_and_dark_styles
+   */
   it('size="sm" 스타일이 적용됨', () => {
     const { container } = render(<Toggle size="sm" />);
 
@@ -103,6 +143,10 @@ describe('Toggle', () => {
     expect(track).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_applies_size_disabled_and_dark_styles
+   */
   it('size="md" 스타일이 적용됨 (기본값)', () => {
     const { container } = render(<Toggle />);
 
@@ -110,6 +154,10 @@ describe('Toggle', () => {
     expect(track).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_applies_size_disabled_and_dark_styles
+   */
   it('size="lg" 스타일이 적용됨', () => {
     const { container } = render(<Toggle size="lg" />);
 
@@ -117,13 +165,21 @@ describe('Toggle', () => {
     expect(track).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_reflects_checked_value_and_changes_on_click
+   */
   it('name prop이 적용됨', () => {
     render(<Toggle name="notifications" />);
 
-    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
+    const checkbox = screen.getByRole('checkbox', { hidden: true }) as HTMLInputElement;
     expect(checkbox.name).toBe('notifications');
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_applies_size_disabled_and_dark_styles
+   */
   it('className prop이 적용됨', () => {
     const { container } = render(<Toggle className="custom-toggle" />);
 
@@ -131,6 +187,10 @@ describe('Toggle', () => {
     expect(wrapper).toHaveClass('custom-toggle');
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_reflects_checked_value_and_changes_on_click
+   */
   it('라벨 클릭 시에도 토글됨', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -143,6 +203,10 @@ describe('Toggle', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_applies_size_disabled_and_dark_styles
+   */
   it('disabled 상태에서 라벨에 적절한 스타일이 적용됨', () => {
     render(<Toggle label="알림 활성화" disabled={true} />);
 
@@ -150,6 +214,10 @@ describe('Toggle', () => {
     expect(label).toHaveClass('opacity-50', 'cursor-not-allowed');
   });
 
+  /**
+   * @scenario component=toggle
+   * @effects toggle_applies_size_disabled_and_dark_styles
+   */
   it('다크 모드 스타일이 포함됨', () => {
     const { container } = render(<Toggle />);
 
@@ -160,6 +228,10 @@ describe('Toggle', () => {
   });
 
   describe('접근성 — 실제 checkbox 가 sr-only 이므로 보이는 트랙이 스위치 역할을 해야 한다', () => {
+    /**
+     * @scenario component=toggle
+     * @effects toggle_exposes_switch_role_name_and_keyboard
+     */
     it('스위치로 노출되고 상태와 이름을 함께 알린다', () => {
       render(<Toggle checked={true} label="알림 활성화" />);
 
@@ -167,18 +239,30 @@ describe('Toggle', () => {
       expect(switchEl).toHaveAttribute('aria-checked', 'true');
     });
 
+    /**
+     * @scenario component=toggle
+     * @effects toggle_exposes_switch_role_name_and_keyboard
+     */
     it('라벨이 없으면 name 으로 이름을 부여한다', () => {
       render(<Toggle name="use_file_upload" />);
 
       expect(screen.getByRole('switch', { name: 'use_file_upload' })).toBeInTheDocument();
     });
 
+    /**
+     * @scenario component=toggle
+     * @effects toggle_exposes_switch_role_name_and_keyboard
+     */
     it('Tab 키 초점을 받는다 (마우스 없이 도달 가능)', () => {
       render(<Toggle label="알림 활성화" />);
 
       expect(screen.getByRole('switch')).toHaveAttribute('tabindex', '0');
     });
 
+    /**
+     * @scenario component=toggle
+     * @effects toggle_exposes_switch_role_name_and_keyboard
+     */
     it('Space 키로 전환된다', async () => {
       const onChange = vi.fn();
       render(<Toggle label="알림 활성화" onChange={onChange} />);
@@ -191,6 +275,10 @@ describe('Toggle', () => {
       expect(switchEl).toHaveAttribute('aria-checked', 'true');
     });
 
+    /**
+     * @scenario component=toggle
+     * @effects toggle_exposes_switch_role_name_and_keyboard
+     */
     it('Enter 키로 전환된다', async () => {
       const onChange = vi.fn();
       render(<Toggle label="알림 활성화" onChange={onChange} />);
@@ -203,6 +291,10 @@ describe('Toggle', () => {
       expect(switchEl).toHaveAttribute('aria-checked', 'true');
     });
 
+    /**
+     * @scenario component=toggle
+     * @effects toggle_exposes_switch_role_name_and_keyboard
+     */
     it('disabled 면 초점을 받지 않고 키 입력도 무시한다', async () => {
       const onChange = vi.fn();
       render(<Toggle label="알림 활성화" disabled={true} onChange={onChange} />);

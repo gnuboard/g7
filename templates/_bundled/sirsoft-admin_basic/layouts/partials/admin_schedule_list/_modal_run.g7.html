@@ -1,0 +1,97 @@
+<!-- 예약을 기다리지 않고 **지금 한 번 돌려 보는** 창. 결과가 오기 전에는 [취소][실행] 이고,
+  결과가 오면 실행 버튼이 사라지고 결과가 창 안에 실리며 남은 버튼은 [닫기] 가 된다 — 창을 닫지 않고 결과를 읽게 하려는
+  구성이라, 다시 돌리려면 닫았다 열어야 한다.
+
+  서버 응답은 세 갈래다.
+  - 200 + 이력: 바로 실행(job 유형은 큐 모드여도 Job 을 큐에 넣은 성공 이력이 온다) — 성공/실패·소요 시간·출력을 보인다.
+    실행이 실패해도 오류가 아니라 실패 이력으로 온다.
+  - 200 + 이력 없음: 「실패만 기록」 작업이 성공했다 — 성공만 알린다.
+  - 202: 큐로 보냈다 — 워커가 처리하면 실행 이력에 남는다는 안내만 보인다.
+  소유 확장이 꺼져 있거나 앞선 실행이 아직 도는 중이면 422 로 실행 자체를 하지 않는다(토스트로 사유).
+  실행 조건이 충족되지 않은 작업도 즉시 실행은 된다 — 그래서 실행 전에 그 사실을 경고한다.
+  출력은 큐 작업 상세 창과 같은 상자다 — 줄을 접어 가로 스크롤 없이 읽고, 길면 상자 안에서 세로로 스크롤한다. -->
+<partial description="스케줄 즉시 실행 확인 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_run_modal">
+  <modal data-type="composite" data-ref="schedule_run_modal" title="$t:admin.schedules.modals.run_title" size="md">
+    <p data-if="{{!_global.runResult}}" class="text-gray-700 dark:text-gray-300">$t:admin.schedules.modals.run_confirm</p>
+    <div data-ref="run_summary" class="kv-list gap-y-2 text-sm mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <div class="kv-row">
+        <span class="text-label-subtle">$t:admin.schedules.form.label</span>
+        <span class="text-primary font-medium break-all">{{_global.selectedSchedule?.label_localized ?? _global.selectedSchedule?.name}}</span>
+      </div>
+      <div class="kv-row">
+        <span class="text-label-subtle">$t:admin.schedules.form.command</span>
+        <code class="text-xs bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded font-mono text-gray-700 dark:text-gray-300 break-all">{{_global.selectedSchedule?.command}}</code>
+      </div>
+    </div>
+    <div data-ref="run_unmet_condition_warning" data-if="{{!_global.runResult &amp;&amp; (_global.selectedSchedule?.unmet_conditions ?? []).length &gt; 0}}" class="alert-warning mt-3">
+      <icon name="triangle-exclamation" class="text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+      <div class="min-w-0">
+        <p class="text-sm font-medium">$t:admin.schedules.modals.run_unmet_warning</p>
+        <p class="mt-1 text-xs font-mono text-yellow-700 dark:text-yellow-300 break-all">{{(_global.selectedSchedule?.unmet_conditions ?? []).map(c => c.key).join(', ')}}</p>
+      </div>
+    </div>
+    <p data-ref="run_queue_hint" data-if="{{!_global.runResult &amp;&amp; _global.selectedSchedule?.dispatch_mode === 'queue' &amp;&amp; _global.selectedSchedule?.type !== 'job'}}" class="mt-3 text-tertiary">$t:admin.schedules.modals.run_queue_hint</p>
+    <div data-ref="run_queued_result" data-if="{{_global.runResult?.queued === true}}" class="alert-info mt-4">
+      <icon name="layer-group" class="text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+      <span class="font-medium">$t:admin.schedules.modals.run_queued</span>
+    </div>
+    <div data-ref="run_result" data-if="{{_global.runResult &amp;&amp; _global.runResult?.queued !== true}}" class="mt-4 p-3 rounded-lg {{_global.runResult?.status === 'success' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'}}">
+      <div class="flex-center gap-2 mb-2">
+        <icon data-if="{{_global.runResult?.status === 'success'}}" name="check-circle" class="text-xl text-green-700 dark:text-green-400"/>
+        <icon data-if="{{_global.runResult?.status !== 'success'}}" name="circle-xmark" class="text-xl text-red-600 dark:text-red-400"/>
+        <span class="font-medium {{_global.runResult?.status === 'success' ? 'text-success-soft' : 'text-danger-soft'}}">{{_global.runResult?.status === 'success' ? '$t:admin.schedules.result.success' : '$t:admin.schedules.result.failed'}}</span>
+      </div>
+      <p data-if="{{_global.runResult?.recorded === false}}" class="text-label">$t:admin.schedules.modals.run_not_recorded</p>
+      <div data-if="{{_global.runResult?.duration}}" class="kv-list gap-y-2 text-sm">
+        <div class="kv-row">
+          <span class="text-label-subtle">$t:admin.schedules.modals.duration</span>
+          <span class="text-primary">{{_global.runResult?.duration_formatted}}</span>
+        </div>
+      </div>
+      <div data-if="{{_global.runResult?.output}}" class="mt-2">
+        <span class="text-tertiary">$t:admin.schedules.modals.output</span>
+        <pre data-ref="run_output" class="mt-1 max-h-72 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-lg">{{_global.runResult?.output}}</pre>
+      </div>
+      <div data-if="{{_global.runResult?.error_output}}" class="mt-2">
+        <span class="text-tertiary">$t:admin.schedules.modals.error_output</span>
+        <pre data-ref="run_error_output" class="mt-1 max-h-72 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 p-3 rounded-lg">{{_global.runResult?.error_output}}</pre>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button data-ref="run_cancel_button" type="button" class="btn btn-secondary" disabled="{{_global.isRunning}}">
+        <on type="click">
+          <!-- 닫으면서 결과를 비운다 — 남겨 두면 다음에 다른 작업으로 이 창을 열었을 때 지난 실행 결과가 그 작업의 것처럼 보인다.
+               실행 전에는 「취소」, 결과가 온 뒤에는 「닫기」다(같은 버튼). -->
+          <sequence>
+            <set-state target="global" :runResult="null"/>
+            <close-modal target="schedule_run_modal"/>
+          </sequence>
+        </on>
+        {{_global.runResult ? '$t:common.close' : '$t:common.cancel'}}
+      </button>
+      <button data-ref="run_execute_button" data-if="{{!_global.runResult}}" type="button" :lockRepeatClick="true" class="btn btn-primary flex-center gap-2" disabled="{{_global.isRunning}}">
+        <on type="click">
+          <!-- 성공해도 창을 닫지 않는다 — 결과를 담아 두면 위 영역이 펼쳐지고 이 버튼은 조건에서 빠져 사라진다.
+               연타는 버튼이 첫 클릭 즉시 스스로 잠그고(lockRepeatClick) 300ms 로도 모은다 — 실행 중 잠금(disabled)은 다시 그려진 뒤에야 걸린다.
+               목록은 다시 받아 최근 실행 시각·결과를 갱신한다. 422(확장 꺼짐·앞선 실행 중)는 사유를 토스트로 보인다. -->
+          <sequence :debounce="300">
+            <set-state target="global" :isRunning="true"/>
+            <api-call :auth_required="true" target="/api/admin/schedules/{{_global.selectedSchedule?.id}}/run" method="POST">
+              <success>
+                <set-state target="global" :isRunning="false" runResult="{{response.data}}"/>
+                <refetch-data-source dataSourceId="schedules"/>
+              </success>
+              <fail>
+                <set-state target="global" :isRunning="false"/>
+                <toast type="error" message="{{error.errors?.general?.[0] ?? error.message ?? '$t:admin.schedules.errors.run_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isRunning}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{!_global.isRunning}}" name="play" class="text-base"/>
+        <span>{{_global.isRunning ? '$t:admin.schedules.modals.running' : '$t:admin.schedules.action.run'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

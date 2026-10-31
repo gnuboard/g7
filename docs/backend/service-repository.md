@@ -363,29 +363,30 @@ class ProductService
     }
 
     /**
-     * 상품 목록 조회
+     * 사용자(공개) 상품 목록 조회
      *
      * @param array $filters 검색 필터
-     * @return Collection
+     * @param int $perPage 페이지당 개수
+     * @return LengthAwarePaginator
      */
-    public function getProducts(array $filters = []): Collection
+    public function getPublicList(array $filters, int $perPage = 20): LengthAwarePaginator
     {
         // Before 훅 - 검색 조건 전처리
-        HookManager::doAction('sirsoft-ecommerce.product.before_list', $filters);
+        HookManager::doAction('sirsoft-ecommerce.product.before_public_list', $filters);
 
-        // 필터 훅 - 검색 조건 변형
-        $filters = HookManager::applyFilters('sirsoft-ecommerce.product.filter_list_query', $filters);
+        // 필터 훅 - 검색 조건 배열 변형 (쿼리 빌더가 아니다)
+        $filters = HookManager::applyFilters('sirsoft-ecommerce.product.filter_public_list_params', $filters);
 
-        $products = $this->productRepository->getAll($filters);
-
-        // 필터 훅 - 결과 데이터 변형
-        $products = HookManager::applyFilters('sirsoft-ecommerce.product.filter_list_result', $products, $filters);
+        $result = $this->repository->getPublicList($filters, $perPage);
 
         // After 훅 - 조회 후처리 (로깅, 캐싱 등)
-        HookManager::doAction('sirsoft-ecommerce.product.after_list', $products, $filters);
+        HookManager::doAction('sirsoft-ecommerce.product.after_public_list', $result);
 
-        return $products;
+        return $result;
     }
+
+    // 목록 쿼리 자체에 확장 조건을 더하는 표준은 조건 함수 등록 훅(`*.list_query_extensions`)이다 —
+    // docs/extension/hooks.md §목록 쿼리 확장 훅 표준
 
     /**
      * 상품 상세 조회
@@ -421,6 +422,9 @@ class ProductService
 3. Repository 호출     →  실제 데이터 작업
 4. After Action Hook   →  후처리, 알림, 캐시
 ```
+
+조회 결과 훅(`filter_*_result`)은 캐시를 읽은 뒤·사용자별 권한 후처리 뒤에 발행한다 — `remember()` 콜백 안에서 부르면 첫 요청의 결과가 공용 캐시에 남는다.
+리스너는 같은 타입의 새 값을 돌려주고, 캐시에서 꺼낸 모델은 복제본을 넘긴다. 상세: [훅 시스템 — 조회 결과 훅과 캐시](../extension/hooks.md#조회-결과-훅과-캐시)
 
 ### 훅 네이밍 규칙
 
@@ -609,7 +613,7 @@ public function bulkUpdateStatus(array $ids, string $status): int
 
 ### 상태 변경 타임스탬프 자동 설정
 
-상태 변경 시 관련 타임스탬프를 `match` 표현식으로 자동 설정합니다:
+상태에 딸린 타임스탬프의 짝은 **Enum 한 곳**(`UserStatus::transitionTimestamps()`)이 소유합니다. 호출부에서 `match` 를 펼치지 마십시오 — 상태를 하나 더할 때 그 `match` 를 쓴 자리를 전부 찾아 고쳐야 하고, 한 곳이라도 빠지면 새 상태의 시각 칸이 채워지지 않거나 낡은 칸이 남습니다:
 
 ```php
 // 상태 변경 감지 및 타임스탬프 자동 설정
@@ -617,17 +621,14 @@ $oldStatus = $user->status;
 $newStatus = $data['status'] ?? null;
 
 if ($newStatus && $newStatus !== $oldStatus) {
-    $newStatusEnum = UserStatus::from($newStatus);
-    $data = match ($newStatusEnum) {
-        UserStatus::Blocked => array_merge($data, ['blocked_at' => now()]),
-        UserStatus::Withdrawn => array_merge($data, ['withdrawn_at' => now()]),
-        UserStatus::Active => array_merge($data, ['blocked_at' => null, 'withdrawn_at' => null]),
-        UserStatus::Inactive => $data,  // 타임스탬프 변경 없음
-    };
+    // 채울 칸과 비울 칸을 Enum 이 함께 돌려준다 (없는 상태는 빈 배열).
+    $data = array_merge($data, UserStatus::from($newStatus)->transitionTimestamps());
 }
 
 $this->userRepository->update($user, $data);
 ```
+
+같은 표를 읽는 쓰기 경로는 다음과 같습니다 — 관리자 생성(`UserService::createUser()`), 수정(`updateUser()`), 일괄 상태 변경(`bulkUpdateStatus()`), 휴면 회원의 로그인 해제(`AuthService::restoreDormantAccount()`), 본인인증 완료 시 활성화(`ActivateUserOnIdentityVerified`). 짝 표를 바꿀 때는 이 경로 전부가 영향 범위입니다. 상태를 신설할 때는 `transitionTimestamps()` 의 `match` 에 갈래를 더하는 것으로 끝나고, **`default` 갈래가 있어 빠뜨린 상태가 500 을 내지 않습니다.**
 
 ### 상태 변경 시 토큰 자동 삭제
 
@@ -693,30 +694,28 @@ $query->orderBy("name->{$locale}", $sortOrder);
 
 #### 다국어 필드 fallback chain
 
-Model 의 `getLocalizedX()` / Resource 의 다국어 컬럼 출력 / Service 의 다국어 매핑 등에서 현재 locale 값을 반환할 때는 `config('app.fallback_locale', 'ko')` 기반 fallback chain 을 사용합니다.
+Model 의 `getLocalizedX()` / Resource 의 다국어 컬럼 출력 / Service 의 다국어 매핑 등에서 현재 locale 값을 반환할 때는 `App\Support\LocalizedValue::pick()` 을 사용합니다. 대체 순서는 요청 언어 → 사이트 기본 언어(환경설정 「기본 언어」, `app.site_locale`) → 영어 → (기본) 첫 값이고, 빈 문자열·공백만 있는 값은 건너뜁니다.
 
 ```php
-// ✅ DO: app.fallback_locale config 기반
+use App\Support\LocalizedValue;
+
+// ✅ DO: LocalizedValue::pick — 요청 언어 → 사이트 기본 언어 → en → 첫 값
 public function getLocalizedName(?string $locale = null): string
 {
-    $locale = $locale ?? app()->getLocale();
-    if (! is_array($this->name)) {
-        return (string) $this->name;
-    }
-    return $this->name[$locale]
-        ?? $this->name[config('app.fallback_locale', 'ko')]
-        ?? (! empty($this->name) ? array_values($this->name)[0] : '')
-        ?? '';
+    return LocalizedValue::pick($this->name, $locale ?? app()->getLocale()) ?? '';
 }
 
-// ❌ DON'T: ko / en 하드코딩
+// ✅ 첫 값까지 내려가지 않아야 하는 자리(메일 제목·본문 등)는 anyAsLast: false
+return LocalizedValue::pick($this->subject, $locale, anyAsLast: false) ?? '';
+
+// ❌ DON'T: fallback_locale 색인 · ko / en 하드코딩
 return $this->name[$locale]
+    ?? $this->name[config('app.fallback_locale', 'ko')]
     ?? $this->name['ko']
-    ?? $this->name['en']
     ?? '';
 ```
 
-운영자가 `APP_FALLBACK_LOCALE` 환경변수로 폴백 locale 을 변경할 수 있도록 보장하는 정합성 정책입니다.
+`app.fallback_locale`(env `APP_FALLBACK_LOCALE`)은 번역 키(`__()`)의 대체 언어 전용이고 다국어 **값** 대체에는 쓰지 않습니다 — 한국어가 기본이 아닌 사이트에서 빈 값이 한국어로 채워지던 문제(#148)의 원인이었습니다. 화면 코드는 `G7Core.locale.pick(값)`·`$localized(값)` 를 씁니다. 새 직접 색인은 `tests/Unit/I18n/MultilingualValueFallbackGuardTest.php` 가 막습니다(값 표시가 아닌 동등 비교·필수 언어 검증·로케일별 생성은 허용 목록에 사유와 함께).
 
 #### 다국어 라벨이 들어간 비즈니스 로직 (copy 접미사 등)
 

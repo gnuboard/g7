@@ -1,14 +1,19 @@
 {
+    "comment": "사이트 첫 화면 — 통계·최근글·인기게시판·게시판 소개를 각각 따로 받아 카드로 늘어놓는다. 넷 다 게시판 모듈에서 오므로 그 모듈이 없으면 카드들이 빈 채로 남고 화면 자체는 선다. 검색봇에게도 서버가 직접 그려 준다.",
     "version": "1.0.0",
     "layout_name": "home",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "seo": {
             "enabled": true,
-            "data_sources": ["stats", "recent_posts", "popular_boards", "home_boards"],
-            "priority": 1.0,
+            "priority": 1,
             "changefreq": "daily",
+            "data_sources": [
+                "stats",
+                "recent_posts",
+                "popular_boards",
+                "home_boards"
+            ],
             "og": {
                 "type": "website"
             },
@@ -27,6 +32,7 @@
             "endpoint": "/api/modules/sirsoft-board/boards/stats",
             "method": "GET",
             "auto_fetch": true,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
             "fallback": {
                 "data": {
@@ -35,7 +41,24 @@
                     "comments": 0,
                     "boards": 0
                 }
-            }
+            },
+            "comment": "사이트 규모 숫자 — 게시판·글·댓글·회원 수 네 카드가 이 한 응답을 나눠 쓴다."
+        },
+        {
+            "id": "visitor_summary",
+            "label_key": "$t:editor.data_source.visitor_summary",
+            "type": "api",
+            "endpoint": "/api/analytics/summary",
+            "method": "GET",
+            "auto_fetch": true,
+            "loading_strategy": "background",
+            "if": "{{_global.settings?.analytics?.public_summary_enabled === true}}",
+            "errorHandling": {
+                "404": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "방문자 카운터용 공개 요약 — 네 숫자뿐이고 로그인이 필요 없다. 운영자가 카운터를 끄면 404 라 소스 자체를 설정으로 가른다.\n       실패하면 카운터를 그리지 않는다(0 을 그리면 아무도 오지 않은 것처럼 읽힌다)."
         },
         {
             "id": "recent_posts",
@@ -44,10 +67,12 @@
             "endpoint": "/api/modules/sirsoft-board/boards/posts/recent?limit=5",
             "method": "GET",
             "auto_fetch": true,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "최근 글 5건 — 게시판을 가리지 않고 새로 올라온 순서다(인기순인 아래 목록과 다르다)."
         },
         {
             "id": "popular_boards",
@@ -56,10 +81,12 @@
             "endpoint": "/api/modules/sirsoft-board/boards/popular-boards?limit=4",
             "method": "GET",
             "auto_fetch": true,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "활발한 게시판 4개 — 게시판 자체의 순위다(개별 인기글을 모으는 인기글 화면과 다르다)."
         },
         {
             "id": "home_boards",
@@ -68,20 +95,20 @@
             "endpoint": "/api/modules/sirsoft-board/boards?limit=3",
             "method": "GET",
             "auto_fetch": true,
+            "auth_mode": "optional",
             "loading_strategy": "progressive",
             "fallback": {
                 "data": []
-            }
+            },
+            "comment": "게시판 소개 3개 — 헤더 메뉴가 쓰는 boards 와 같은 곳에서 오지만 첫 화면 카드용으로 개수를 줄여 따로 받는다(상속원의 그 데이터소스는 개수 제한이 없다)."
         }
     ],
+    "permissions": [],
     "slots": {
         "content": [
             {
                 "type": "layout",
                 "name": "Container",
-                "props": {
-                    "className": "py-6 px-4"
-                },
                 "responsive": {
                     "tablet": {
                         "props": {
@@ -94,20 +121,23 @@
                         }
                     }
                 },
+                "props": {
+                    "className": "py-6 px-4"
+                },
                 "children": [
                     {
                         "comment": "=== 1행: Welcome + 통계 카드 4개 (PC: 3컬럼, 모바일: 1컬럼) ===",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "grid grid-cols-3 grid-rows-2 gap-4 mb-4"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
                                     "className": "grid grid-cols-1 gap-4 mb-4"
                                 }
                             }
+                        },
+                        "props": {
+                            "className": "grid grid-cols-3 grid-rows-2 gap-4 mb-4"
                         },
                         "children": [
                             {
@@ -127,15 +157,15 @@
                                 "comment": "=== 통계 카드 4개 (PC: 개별 배치, 모바일: 2x2 그리드) ===",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": {
-                                    "className": "contents"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "col-span-1 grid grid-cols-2 gap-4"
                                         }
                                     }
+                                },
+                                "props": {
+                                    "className": "contents"
                                 },
                                 "children": [
                                     {
@@ -162,15 +192,15 @@
                         "comment": "=== 2행: 최근 게시글 + 인기 게시판 + 쇼핑몰/가이드 (PC: 3컬럼) ===",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "grid grid-cols-3 gap-4 mb-4"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
                                     "className": "grid grid-cols-1 gap-4 mb-4"
                                 }
                             }
+                        },
+                        "props": {
+                            "className": "grid grid-cols-3 gap-4 mb-4"
                         },
                         "children": [
                             {
@@ -203,15 +233,15 @@
                         "comment": "=== 하단: 게시판 요약 카드 (PC: 3컬럼, 모바일: 2컬럼) ===",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "grid grid-cols-3 gap-4"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
                                     "className": "grid grid-cols-1 gap-4"
                                 }
                             }
+                        },
+                        "props": {
+                            "className": "grid grid-cols-3 gap-4"
                         },
                         "children": [
                             {
@@ -228,6 +258,10 @@
                                 ]
                             }
                         ]
+                    },
+                    {
+                        "comment": "=== 맨 아래: 방문자 카운터 (설정으로 켜고 끈다) ===",
+                        "partial": "partials/_visitor_counter.json"
                     }
                 ]
             }

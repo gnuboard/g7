@@ -23,10 +23,21 @@
         @if(!empty($activeAdminTemplate))
         {{-- onerror: 정적 최적화 서버에서 확장자 붙은 CSS 가 가로채였을 때
              확장자 없는 형태로 1회 교체한다(무스타일 화면 방지). 링크당 1회. --}}
+        {{-- 템플릿이 선언하고(template.json assets.css) 산출물이 있는 CSS 만 링크한다(Composer 가 고름).
+             CSS 를 선언하지 않은 템플릿에 없는 파일 링크를 넣으면 화면마다 요청 실패가 남는다. --}}
+        @foreach($templateStylesheets ?? [] as $templateStylesheet)
         <link rel="stylesheet"
-              href="{{ \App\Support\AssetUrl::templateAsset($activeAdminTemplate, 'css/components.css', $extensionCacheVersion) }}"
+              href="{{ \App\Support\AssetUrl::templateAsset($activeAdminTemplate, $templateStylesheet, $extensionCacheVersion) }}"
               onerror="window.__g7AssetUrl && window.__g7AssetUrl.recoverStylesheet(this);">
+        @endforeach
         @endif
+
+        {{-- 확장 CSS 의미 클래스 칸 — 템플릿 CSS 링크 **뒤**에 선언한다. 템플릿의 층 규칙(예: Tailwind 초기화)보다
+             위, 층 없는 규칙(확장 유틸리티·템플릿 층 없는 CSS·템플릿 확장 CSS 덮기 파일)보다 아래에 놓인다.
+             앞에 두면 템플릿 초기화(`*{margin:0}` 등)가 확장 의미 클래스를 이긴다.
+             `g7-preview` 는 레이아웃 편집기 프리뷰 CSS(사용자 템플릿 CSS 를 평탄화해 이 층에 담아 서빙)의 자리다 —
+             관리자 템플릿 층 위·확장 의미 칸 아래라서 프리뷰에서도 「템플릿 층 < 확장 의미 칸」 관계가 사용자 화면과 같다. --}}
+        <style>@layer g7-preview, g7-extension;</style>
     </head>
     <body>
         <!-- React 렌더링 루트 -->
@@ -47,20 +58,30 @@
                 // R33 자가 복구가 그 URL 을 몰라보고 통째로 무력해진다. 종전에는 같은 식을
                 // 여기 손으로 한 벌 더 적어 두고 주석으로만 「같은 값이어야 한다」고 선언했다.
                 basePath: @json(\App\Support\AssetUrl::basePrefix()),
-                settings: @json($frontendSettings ?? []),
-                plugins: @json($pluginSettings ?? []),
-                modules: @json($moduleSettings ?? []),
+                settings: @json((object) ($frontendSettings ?? [])),
+                plugins: @json((object) ($pluginSettings ?? [])),
+                modules: @json((object) ($moduleSettings ?? [])),
                 moduleAssets: @json($moduleAssets ?? []),
                 pluginAssets: @json($pluginAssets ?? []),
                 bundleUrls: @json($bundleUrls ?? null),
                 customAssets: @json($customAssets ?? []),
+                // 템플릿 다크 방식 선언 — 엔진이 `<html data-g7-color-scheme>` 중립 표식으로 옮긴다(확장 CSS 는 표식만 본다)
+                colorScheme: @json($colorScheme ?? ['strategy' => 'none']),
+                // 템플릿이 선언한 확장 CSS 덮기 파일 중 대상이 활성이고 버전이 맞는 것 — 확장 번들 CSS 뒤에 붙는다
+                extensionCssOverrides: @json($extensionCssOverrides ?? []),
+                // 활성 확장의 CSS 접두 빌드 앞글자 — className 을 해석하는 코드가 앞글자와 변형(md: 등)을 가른다
+                extensionClassPrefixes: @json($extensionClassPrefixes ?? []),
                 {{-- 이번 렌더가 `?custom=off` 로 자산을 껐는지. URL 은 SPA 부팅이 다시 쓰면서
                      쿼리를 잃을 수 있으므로, 화면은 URL 이 아니라 **서버가 실제로 한 일**을 본다. --}}
                 customAssetsDisabled: @json($customAssetsDisabled ?? false),
                 activeModules: @json($activeModulesMeta ?? []),
                 activePlugins: @json($activePluginsMeta ?? []),
                 trustedScriptHosts: @json($trustedScriptHosts ?? []),
-                appConfig: @json($appConfig ?? []),
+                // 전역 상태 공개 계약 (코어 예약 + 활성 확장 선언) — G7Core.stateContracts 가 읽는다
+                stateContracts: @json((object) ($stateContracts ?? [])),
+                appConfig: @json((object) ($appConfig ?? [])),
+                // routes/custom.php 로 등록된 개발자 화면 GET 주소(#792) — 엔진 라우터가 이 주소로는 전체 페이지 이동한다
+                customRoutes: @json($customRoutes ?? ['user' => [], 'admin' => []]),
                 // 레이아웃 편집기 lazy 번들 URL — `/admin/layout-editor/*` 진입 시에만 런타임
                 // <script> 주입으로 로드된다(초기 접속 payload 에 미포함). filemtime 캐시버스팅,
                 // 미빌드 상태 대비 file_exists 가드.
@@ -109,14 +130,10 @@
             'initConfig' => array_filter([
                 'templateId' => $activeAdminTemplate,
                 'templateType' => 'admin',
-                'locale' => app()->getLocale(),
+                'locale' => $frontendLocale ?? app()->getLocale(),
                 'debug' => (bool) config('app.debug'),
-                'websocket' => config('broadcasting.connections.reverb.key') ? [
-                    'appKey' => config('broadcasting.connections.reverb.key'),
-                    'host' => config('g7.websocket.client.host', config('broadcasting.connections.reverb.options.host', 'localhost')),
-                    'port' => (int) config('g7.websocket.client.port', config('broadcasting.connections.reverb.options.port', 80)),
-                    'scheme' => config('g7.websocket.client.scheme', config('broadcasting.connections.reverb.options.scheme', 'https')),
-                ] : null,
+                {{-- 공개 설정 API 와 같은 함수(FrontendConfigService::websocket)로 만든다 --}}
+                'websocket' => $websocketConfig ?? null,
             ], fn ($value) => $value !== null),
         ])
 

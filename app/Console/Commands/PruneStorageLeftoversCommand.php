@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\StorageLeftoverPruneService;
 use Illuminate\Console\Command;
 
@@ -15,6 +16,8 @@ use Illuminate\Console\Command;
  */
 class PruneStorageLeftoversCommand extends Command
 {
+    use ParsesDaysOption;
+
     /**
      * The name and signature of the console command.
      */
@@ -34,24 +37,24 @@ class PruneStorageLeftoversCommand extends Command
      * @var array<string, string>
      */
     private const GROUP_LABELS = [
-        'staging' => '업데이트 스테이징 잔존',
-        'temp' => '코어 임시 산출물',
-        'storage_temp' => 'composer 폴백 임시 디렉토리',
-        'core_pending' => '번들 업데이트 매니페스트 잔존',
-        'core_pending_staging' => '코어 업데이트 전개 디렉토리 잔존',
-        'core_update_preserved' => '코어 업데이트 교체 전 사본',
-        'core_update_reports' => '코어 업데이트 리포트 로그',
-        'public_storage_broken' => '손상된 공개 스토리지 링크 백업',
-        'public_storage_broken_docroot' => '손상된 공개 스토리지 링크 백업 (문서 루트 안)',
-        'installer_probes' => '인스톨러 점검·설치 잔여물',
-        'installer_state_corrupt' => '인스톨러 파손 상태 사본',
-        'vendor_bundle_staging' => 'vendor 번들 스테이징',
-        'extension_backups' => '확장 백업',
-        'core_backups' => '코어 백업',
-        'root_entry_temp' => '루트 진입·보호 파일 임시 산출물',
-        'stale_swap_files' => '확장 동기화 잠금 잔해',
-        'env_backups' => 'finalize 가 남긴 .env 보존 사본',
-        'legacy_browser_log' => '레거시 브라우저 로그',
+        'staging' => 'common.console.storage_prune_leftovers.groups.staging',
+        'temp' => 'common.console.storage_prune_leftovers.groups.temp',
+        'storage_temp' => 'common.console.storage_prune_leftovers.groups.storage_temp',
+        'core_pending' => 'common.console.storage_prune_leftovers.groups.core_pending',
+        'core_pending_staging' => 'common.console.storage_prune_leftovers.groups.core_pending_staging',
+        'core_update_preserved' => 'common.console.storage_prune_leftovers.groups.core_update_preserved',
+        'core_update_reports' => 'common.console.storage_prune_leftovers.groups.core_update_reports',
+        'public_storage_broken' => 'common.console.storage_prune_leftovers.groups.public_storage_broken',
+        'public_storage_broken_docroot' => 'common.console.storage_prune_leftovers.groups.public_storage_broken_docroot',
+        'installer_probes' => 'common.console.storage_prune_leftovers.groups.installer_probes',
+        'installer_state_corrupt' => 'common.console.storage_prune_leftovers.groups.installer_state_corrupt',
+        'vendor_bundle_staging' => 'common.console.storage_prune_leftovers.groups.vendor_bundle_staging',
+        'extension_backups' => 'common.console.storage_prune_leftovers.groups.extension_backups',
+        'core_backups' => 'common.console.storage_prune_leftovers.groups.core_backups',
+        'root_entry_temp' => 'common.console.storage_prune_leftovers.groups.root_entry_temp',
+        'stale_swap_files' => 'common.console.storage_prune_leftovers.groups.stale_swap_files',
+        'env_backups' => 'common.console.storage_prune_leftovers.groups.env_backups',
+        'legacy_browser_log' => 'common.console.storage_prune_leftovers.groups.legacy_browser_log',
     ];
 
     /**
@@ -62,8 +65,15 @@ class PruneStorageLeftoversCommand extends Command
      */
     public function handle(StorageLeftoverPruneService $service): int
     {
-        $days = max(0, (int) $this->option('days'));
-        $backupDays = max(0, (int) $this->option('backup-days'));
+        $days = $this->parseDaysOption();
+        $backupDays = $days === false ? false : $this->parseDaysOption('backup-days');
+
+        if ($days === false || $backupDays === false) {
+            return self::FAILURE;
+        }
+
+        $days ??= 3;
+        $backupDays ??= 30;
         $dryRun = (bool) $this->option('dry-run');
 
         $result = $service->prune($days, $backupDays, $dryRun);
@@ -75,7 +85,7 @@ class PruneStorageLeftoversCommand extends Command
             $count = count($paths);
             $total += $count;
 
-            $this->line("{$label}: {$count}건");
+            $this->line(__('common.console.storage_prune_leftovers.group_count', ['label' => __($label), 'count' => $count]));
 
             if ($dryRun) {
                 foreach ($paths as $path) {
@@ -85,8 +95,8 @@ class PruneStorageLeftoversCommand extends Command
         }
 
         $this->info($dryRun
-            ? "삭제 대상 합계 {$total}건 (dry-run — 실제 삭제 없음)"
-            : "합계 {$total}건이 삭제되었습니다. (임시 보존일: {$days}일, 백업 보존일: {$backupDays}일)");
+            ? __('common.console.storage_prune_leftovers.dry_run_total', ['count' => $total])
+            : __('common.console.storage_prune_leftovers.done', ['count' => $total, 'days' => $days, 'backup_days' => $backupDays]));
 
         return self::SUCCESS;
     }

@@ -42,7 +42,9 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| preferred_shipping_country | null | `null` | 회원이 저장한 선호 배송국가 코드 (2자리 대문자, 미설정 시 `null`) |
+| preferred_shipping_country | string\|null | `JP` | 회원이 저장한 선호 배송국가 코드 (2자리 대문자, 미설정 시 `null`) |
+| effective_shipping_country | string | `KR` | 이 요청에 **실제로 적용되는** 배송국가. 저장값이 활성 배송가능 국가가 아니면(운영자가 그 국가를 내린 경우) 서버 해석은 기본 국가로 떨어진다 |
+| is_preference_effective | boolean | `false` | 저장값이 지금 그대로 적용되고 있는지. `false` 면 저장값과 실제 적용 국가가 다르다 |
 
 **응답 예시**
 
@@ -55,7 +57,9 @@ HTTP/1.1 200
     "success": true,
     "message": "배송국가를 조회했습니다.",
     "data": {
-        "preferred_shipping_country": null
+        "preferred_shipping_country": "JP",
+        "effective_shipping_country": "KR",
+        "is_preference_effective": false
     }
 }
 ```
@@ -69,6 +73,8 @@ HTTP/1.1 200
 <!-- @generated:end -->
 
 **설명** 로그인한 회원이 마이페이지에 저장해 둔 선호 배송국가 코드를 조회합니다. `auth:sanctum` 인증이 필요하며, `UserShippingCountryService::getPreferredShippingCountry()`가 인증 사용자 ID로 영속된 값을 반환하고 미설정 시 `preferred_shipping_country: null`을 내려줍니다. 마이페이지 배송국가 설정·회원정보 수정 화면이 초기 선택값을 채우는 데 사용합니다.
+
+저장값과 함께 **실제로 적용되는 국가**(`effective_shipping_country`)와 그 일치 여부(`is_preference_effective`)를 싣습니다. 운영자가 그 국가를 배송 가능 목록에서 내리면 저장값은 남아 있지만 서버 해석(`ShippingCountryResolver`)은 기본 국가로 떨어집니다 — 저장값만 내려보내면 화면은 그 국가로 배송비를 묻는데 서버는 다른 국가로 계산해, 예외도 로그도 없이 "배송 불가"만 표시됩니다.
 
 
 ### PUT /api/modules/sirsoft-ecommerce/user/shipping-country

@@ -50,7 +50,8 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 성공 시 `R
 | ETag | string | `"9f2c…"` | 행 메타(디스크·경로·수정 시각·크기) 기반 검증자 — 따옴표를 포함한 entity-tag |
 | Last-Modified | string | `Tue, 14 Nov 2023 22:13:20 GMT` | 업로드 레코드의 수정 시각 |
 | Expires | string | `Wed, 13 Nov 2024 22:13:20 GMT` | 캐시 만료 시각 (`max-age` 와 같은 근거) |
-| Content-Disposition | string | `inline; filename="photo.jpg"` | 업로드 시 원본 파일명(`original_name`)을 파일명으로 사용 |
+| Content-Disposition | string | `inline; filename="photo.jpg"` | 원본 파일명(`original_name`). 래스터 이미지(JPEG·PNG·GIF·WebP 등)만 `inline`, 그 밖(SVG 포함)은 `attachment` + CSP sandbox. 모든 응답에 `X-Content-Type-Options: nosniff` (KVE-2026-2366) |
+| X-Content-Type-Options | string | `nosniff` | 브라우저의 형식 추측 차단 |
 
 **응답 예시**
 
@@ -64,6 +65,7 @@ ETag: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
 Last-Modified: Tue, 14 Nov 2023 22:13:20 GMT
 Expires: Wed, 13 Nov 2024 22:13:20 GMT
 Content-Disposition: inline; filename="photo.jpg"
+X-Content-Type-Options: nosniff
 
 <binary image data>
 ```

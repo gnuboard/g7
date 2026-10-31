@@ -1,0 +1,23 @@
+feature: manifest 선택 연동 선언 (integrations) — 정규화·표시·정적 검사 (#639 ⑥)
+
+description: |
+  `dependencies` 는 「없으면 설치·활성화 불가」, `integrations` 는 「있으면 연동, 없어도 동작」이다. 설치를 막지 않고
+  관리자 확장 상세에 「함께 쓰면 연동되는 확장」으로 보이며, 정적 룰 extension-undeclared-extension-reference 는
+  dependencies 에도 integrations 에도 없는 확장 참조(레이아웃 조각의 target-layout 소유자 포함)를 오류로 본다.
+
+axes:
+  shape: [list_and_object, malformed, enriched, doc_graph]
+
+effects:
+  - integrations_are_normalized_by_type
+  - malformed_integrations_are_ignored
+  - integrations_are_enriched_for_display
+  - extension_resources_expose_integrations
+  - extension_docs_list_integrations_both_ways
+
+test_files:
+  - tests/Unit/Extension/ManifestIntegrationsTest.php
+  - tests/Feature/Extension/ExtensionIntegrationsEnrichmentTest.php
+  - tests/Unit/Support/ExtensionDoc/DependencyGraphCollectorIntegrationsTest.php
+
+# E2E axis 없음: 확장 상세 화면 행은 Chrome MCP 매트릭스와 레이아웃 렌더 테스트가 덮는다(WP5·WP7).

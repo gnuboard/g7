@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * JSON 컬럼의 \uXXXX 유니코드 이스케이프를 실제 UTF-8 문자로 변환합니다.
@@ -11,6 +12,12 @@ use Illuminate\Support\Facades\DB;
  * PHP json_encode() 기본 동작은 멀티바이트 문자를 \uXXXX로 인코딩합니다.
  * MySQL FULLTEXT(ngram)은 실제 UTF-8 바이트만 토큰화하므로,
  * 기존 데이터를 JSON_UNESCAPED_UNICODE 형식으로 변환해야 합니다.
+ *
+ * 대상은 DB 스키마에서 찾는다 — FULLTEXT 인덱스에 든 컬럼 전부(`id` 키가 있는 테이블). 이 변환이 필요한
+ * 까닭이 FULLTEXT 토큰화이므로 그 인덱스가 곧 대상이다. 다국어 값은 JSON 타입이 아니라 TEXT 컬럼에 JSON
+ * 문자열로 담기므로 컬럼 타입으로는 찾을 수 없다. JSON 이 아닌 값(일반 본문)은 디코드되지 않아 건너뛴다.
+ * 코어가 확장 테이블 이름을 적어 두지 않으므로 확장이 설치·삭제돼도 대상 목록이 저절로 맞는다
+ * (2026-09-28 결정).
  *
  * 사용 예:
  *   php artisan json:convert-unicode --dry-run   # 변환 대상 건수 확인
@@ -25,7 +32,7 @@ class ConvertJsonUnicodeEscapes extends Command
      */
     protected $signature = 'json:convert-unicode
                             {--dry-run : 실제 변환 없이 대상 건수만 표시}
-                            {--table= : 특정 테이블만 변환 (예: ecommerce_products)}
+                            {--table= : 특정 테이블만 변환 (프리픽스 제외 이름, 예: boards)}
                             {--chunk=500 : 청크 크기}';
 
     /**
@@ -34,22 +41,6 @@ class ConvertJsonUnicodeEscapes extends Command
      * @var string
      */
     protected $description = 'JSON 컬럼의 \\uXXXX 유니코드 이스케이프를 실제 UTF-8 문자로 변환합니다.';
-
-    /**
-     * 변환 대상 테이블 및 컬럼 정의
-     *
-     * @var array<string, string[]>
-     */
-    private const TARGETS = [
-        'ecommerce_products' => ['name', 'description'],
-        'ecommerce_categories' => ['name', 'description'],
-        'ecommerce_brands' => ['name'],
-        'ecommerce_promotion_coupons' => ['name', 'description'],
-        'ecommerce_product_common_infos' => ['name', 'content'],
-        'boards' => ['name', 'description'],
-        'boards_report_logs' => ['snapshot'],
-        'pages' => ['title', 'content'],
-    ];
 
     /**
      * 커맨드를 실행합니다.
@@ -63,14 +54,14 @@ class ConvertJsonUnicodeEscapes extends Command
         $chunkSize = (int) $this->option('chunk');
 
         if ($dryRun) {
-            $this->components->info('Dry-run 모드: 실제 변환 없이 대상 건수만 표시합니다.');
+            $this->components->info(__('common.console.json_convert_unicode.dry_run_mode'));
         }
 
-        $targets = self::TARGETS;
+        $targets = $this->discoverTargets();
         if ($targetTable) {
             if (! isset($targets[$targetTable])) {
-                $this->components->error("알 수 없는 테이블: {$targetTable}");
-                $this->components->info('사용 가능한 테이블: '.implode(', ', array_keys($targets)));
+                $this->components->error(__('common.console.json_convert_unicode.unknown_table', ['table' => $targetTable]));
+                $this->components->info(__('common.console.json_convert_unicode.available_tables', ['tables' => implode(', ', array_keys($targets))]));
 
                 return self::FAILURE;
             }
@@ -80,15 +71,11 @@ class ConvertJsonUnicodeEscapes extends Command
         $totalConverted = 0;
         $totalSkipped = 0;
 
+        if ($targets === []) {
+            $this->components->info(__('common.console.json_convert_unicode.no_json_tables'));
+        }
+
         foreach ($targets as $table => $columns) {
-            $prefix = DB::getTablePrefix();
-
-            if (! $this->tableExists($prefix.$table)) {
-                $this->components->warn("{$table} 테이블이 존재하지 않습니다. 스킵합니다.");
-
-                continue;
-            }
-
             foreach ($columns as $column) {
                 [$converted, $skipped] = $this->processColumn($table, $column, $chunkSize, $dryRun);
                 $totalConverted += $converted;
@@ -98,29 +85,55 @@ class ConvertJsonUnicodeEscapes extends Command
 
         $this->newLine();
         if ($dryRun) {
-            $this->components->info("변환 대상: {$totalConverted}건, 스킵(이미 UTF-8): {$totalSkipped}건");
+            $this->components->info(__('common.console.json_convert_unicode.dry_run_summary', ['converted' => $totalConverted, 'skipped' => $totalSkipped]));
         } else {
-            $this->components->info("변환 완료: {$totalConverted}건, 스킵(이미 UTF-8): {$totalSkipped}건");
+            $this->components->info(__('common.console.json_convert_unicode.done_summary', ['converted' => $totalConverted, 'skipped' => $totalSkipped]));
         }
 
         return self::SUCCESS;
     }
 
     /**
-     * 테이블 존재 여부를 확인합니다.
+     * DB 스키마에서 변환 대상(FULLTEXT 인덱스 컬럼)을 찾습니다.
      *
-     * @param  string  $table  테이블명 (프리픽스 포함)
-     * @return bool 존재 여부
+     * 현재 연결의 데이터베이스에서 프리픽스가 맞는 테이블만 보고, 키셋 순회(`chunkById`)에 쓸 `id` 컬럼이
+     * 없는 테이블은 건너뛴다.
+     *
+     * @return array<string, array<int, string>> 프리픽스 제외 테이블명 → 컬럼명 목록 (이름순)
      */
-    private function tableExists(string $table): bool
+    private function discoverTargets(): array
     {
-        try {
-            DB::select("SELECT 1 FROM `{$table}` LIMIT 1");
+        $prefix = DB::getTablePrefix();
+        $targets = [];
 
-            return true;
-        } catch (\Exception) {
-            return false;
+        foreach (Schema::getTables(DB::connection()->getDatabaseName()) as $table) {
+            $name = (string) $table['name'];
+
+            if ($prefix !== '' && ! str_starts_with($name, $prefix)) {
+                continue;
+            }
+
+            $logical = substr($name, strlen($prefix));
+
+            $indexed = [];
+            foreach (Schema::getIndexes($logical) as $index) {
+                if (strtolower((string) $index['type']) === 'fulltext') {
+                    $indexed = array_merge($indexed, $index['columns']);
+                }
+            }
+
+            if ($indexed === [] || ! Schema::hasColumn($logical, 'id')) {
+                continue;
+            }
+
+            $indexed = array_values(array_unique($indexed));
+            sort($indexed);
+            $targets[$logical] = $indexed;
         }
+
+        ksort($targets);
+
+        return $targets;
     }
 
     /**
@@ -145,16 +158,16 @@ class ConvertJsonUnicodeEscapes extends Command
         $total = $query->count();
 
         if ($total === 0) {
-            $this->components->twoColumnDetail("{$table}.{$column}", '<fg=green>변환 대상 없음</>');
+            $this->components->twoColumnDetail("{$table}.{$column}", '<fg=green>'.__('common.console.json_convert_unicode.nothing_to_convert').'</>');
 
             return [0, 0];
         }
 
-        $this->components->twoColumnDetail("{$table}.{$column}", "대상 {$total}건 처리 중...");
+        $this->components->twoColumnDetail("{$table}.{$column}", __('common.console.json_convert_unicode.processing', ['count' => $total]));
 
         // chunkById(키셋 순회) 필수 — 콜백이 필터 조건 컬럼을 UTF-8 로 다시 써서 처리된
         // 행이 `LIKE '%\u%'` 결과에서 이탈한다. OFFSET 기반 chunk() 는 그만큼 앞으로 밀려
-        // 아직 변환되지 않은 행을 건너뛴다. (대상 테이블 8종 모두 `id` auto-increment PK)
+        // 아직 변환되지 않은 행을 건너뛴다. (`id` 가 없는 테이블은 탐색 단계에서 이미 뺐다)
         DB::table($table)
             ->whereNotNull($column)
             ->where($column, 'LIKE', '%\\\\u%')
@@ -188,10 +201,13 @@ class ConvertJsonUnicodeEscapes extends Command
                 }
             });
 
-        $label = $dryRun ? '변환 대상' : '변환 완료';
+        $label = $dryRun ? __('common.console.json_convert_unicode.label_target') : __('common.console.json_convert_unicode.label_converted');
         $this->components->twoColumnDetail(
             "  └ {$label}",
-            "<fg=yellow>{$converted}건</> (스킵: {$skipped}건)"
+            __('common.console.json_convert_unicode.column_result', [
+                'converted' => '<fg=yellow>'.__('common.console.json_convert_unicode.converted_count', ['count' => $converted]).'</>',
+                'skipped' => $skipped,
+            ])
         );
 
         return [$converted, $skipped];

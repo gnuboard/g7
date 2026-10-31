@@ -1,0 +1,21 @@
+feature: 프론트 원화 금액 표기 — 언어별 문형 (S3-D23)
+
+description: |
+  서버는 ko 「5,000원」·en 「₩5,000」·ja 「5,000ウォン」으로 적는데 프론트 `formatCurrency` 는 언어와 무관하게 「5,000원」이라,
+  영어 화면에서 화면 계산 금액만 「원」으로 섞였다(실측: 관리자 English · 취소 창 「Subtotal 5,000원」).
+
+axes:
+  locale_pattern:
+    - en
+    - ko
+    - ja
+    - missing
+    - other_currency
+
+effects:
+  - krw_amount_follows_locale_pattern # 원화는 번역 키 krw_prefix·krw_suffix(서버 prefix·suffix 와 같은 구성)를 따른다
+  - krw_amount_falls_back_without_translation # 번역을 못 읽으면 종전 「원」 표기
+  - other_currencies_unchanged # 다른 통화 표기는 그대로
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/formatCurrencyLocale.test.ts

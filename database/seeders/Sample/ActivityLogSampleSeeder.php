@@ -5,10 +5,13 @@ namespace Database\Seeders\Sample;
 use App\Enums\ActivityLogType;
 use App\Models\ActivityLog;
 use App\Models\Attachment;
-use App\Models\NotificationTemplate;
 use App\Models\Menu;
+use App\Models\Module;
+use App\Models\NotificationTemplate;
+use App\Models\Plugin;
 use App\Models\Role;
 use App\Models\Schedule;
+use App\Models\Template;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -22,32 +25,41 @@ use Illuminate\Support\Collection;
  *
  * 리소스 중심 접근: 각 리소스마다 rand(1,50)개의 랜덤 로그를 생성합니다.
  *
+ * 이 시더는 **코어 로그만** 다룬다. 확장 도메인 로그(`{확장}::` 로 시작하는 설명 키)는 그 확장의 샘플
+ * 시더 몫이라 지우지도 만들지도 않는다. 확장 설치·활성화·설정 같은 코어 로그의 대상도 특정 식별자를
+ * 적어 두지 않고 실제로 설치된 모듈·플러그인·템플릿에서 고른다(2026-09-28 결정).
+ *
+ * 만든 로그에는 `properties.seeded_by='core:sample'` 표식을 달고, 다시 실행할 때는 그 표식 행만 지운다 — 표식 없는
+ * 실제 활동 로그(보관 대상)는 건드리지 않는다(게시판·이커머스 샘플 로그와 같은 방식).
+ *
  * 수동 실행: php artisan db:seed --class="Database\Seeders\Sample\ActivityLogSampleSeeder"
  */
 class ActivityLogSampleSeeder extends Seeder
 {
+    /** @var string 이 시더가 만든 로그의 표식 (properties.seeded_by) — 게시판·이커머스 샘플 로그와 같은 형식 */
+    public const SAMPLE_MARKER = 'core:sample';
+
     /**
      * 시더 실행
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
         $admins = User::whereHas('roles', fn ($q) => $q->where('identifier', 'admin'))->get();
         if ($admins->isEmpty()) {
-            $this->command->warn('관리자 사용자가 없어 시더를 건너뜁니다.');
+            $this->command->warn(__('common.console.seeders.activity_log_sample.skip_no_admin'));
 
             return;
         }
 
-        $this->command->info('활동 로그 샘플 시딩 시작...');
+        $this->command->info(__('common.console.seeders.activity_log_sample.start'));
 
-        // 기존 코어 활동 로그 삭제 (모듈 로그 제외)
-        $deleted = ActivityLog::where(function ($q) {
-            $q->where('description_key', 'not like', 'sirsoft-ecommerce::%')
-                ->where('description_key', 'not like', 'sirsoft-board::%')
-                ->where('description_key', 'not like', 'sirsoft-page::%');
-        })->delete();
+        // 이전에 이 시더가 만든 샘플 로그만 지운다 — 표식 없는 실제 활동 로그(보관 대상)는 그대로 둔다. 종전에는 코어 활동 로그
+        // 전체를 지워, 설치가 끝난 사이트에서 --sample 을 돌리면 운영 기록이 사라졌다.
+        $deleted = ActivityLog::where('properties->seeded_by', self::SAMPLE_MARKER)->delete();
         if ($deleted > 0) {
-            $this->command->info("기존 코어 활동 로그 {$deleted}건 삭제.");
+            $this->command->info(__('common.console.seeders.activity_log_sample.cleaned', ['count' => $deleted]));
         }
 
         $count = 0;
@@ -95,7 +107,7 @@ class ActivityLogSampleSeeder extends Seeder
         // 코어 업데이트 로그
         $count += $this->seedCoreUpdateLogs($admins);
 
-        $this->command->info("활동 로그 샘플 시딩 완료 (총 {$count}건)");
+        $this->command->info(__('common.console.seeders.activity_log_sample.done', ['count' => $count]));
     }
 
     /**
@@ -108,7 +120,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $users = User::get();
         if ($users->isEmpty()) {
-            $this->command->info('  - 사용자 데이터 없음 - 사용자 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.users'));
 
             return 0;
         }
@@ -190,7 +202,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 사용자 관리 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.user_management', ['count' => $count]));
 
         return $count;
     }
@@ -291,7 +303,7 @@ class ActivityLogSampleSeeder extends Seeder
             }
         }
 
-        $this->command->info("  - 인증 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.auth', ['count' => $count]));
 
         return $count;
     }
@@ -306,7 +318,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $roles = Role::all();
         if ($roles->isEmpty()) {
-            $this->command->info('  - 역할 데이터 없음 - 역할 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.roles'));
 
             return 0;
         }
@@ -355,7 +367,7 @@ class ActivityLogSampleSeeder extends Seeder
 
         $count = $this->generateResourceLogs($roles, $admins, ActivityLogType::Admin, $morphType, $actions);
 
-        $this->command->info("  - 역할 관리 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.role_management', ['count' => $count]));
 
         return $count;
     }
@@ -370,7 +382,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $menus = Menu::get();
         if ($menus->isEmpty()) {
-            $this->command->info('  - 메뉴 데이터 없음 - 메뉴 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.menus'));
 
             return 0;
         }
@@ -426,7 +438,7 @@ class ActivityLogSampleSeeder extends Seeder
 
         $count = $this->generateResourceLogs($menus, $admins, ActivityLogType::Admin, $morphType, $actions);
 
-        $this->command->info("  - 메뉴 관리 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.menu_management', ['count' => $count]));
 
         return $count;
     }
@@ -476,7 +488,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 환경설정 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.settings', ['count' => $count]));
 
         return $count;
     }
@@ -491,7 +503,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $schedules = Schedule::get();
         if ($schedules->isEmpty()) {
-            $this->command->info('  - 스케줄 데이터 없음 - 스케줄 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.schedules'));
 
             return 0;
         }
@@ -576,7 +588,7 @@ class ActivityLogSampleSeeder extends Seeder
             }
         }
 
-        $this->command->info("  - 스케줄 관리 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.schedule_management', ['count' => $count]));
 
         return $count;
     }
@@ -591,13 +603,13 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $count = 0;
 
-        $extensions = [
-            ['type' => 'module', 'identifier' => 'sirsoft-ecommerce', 'name' => 'E-Commerce'],
-            ['type' => 'module', 'identifier' => 'sirsoft-board', 'name' => 'Board'],
-            ['type' => 'plugin', 'identifier' => 'sirsoft-payment', 'name' => 'Payment'],
-            ['type' => 'template', 'identifier' => 'sirsoft-admin_basic', 'name' => 'Admin Basic'],
-            ['type' => 'template', 'identifier' => 'sirsoft-basic', 'name' => 'Basic'],
-        ];
+        $extensions = $this->installedExtensions();
+
+        if ($extensions === []) {
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.extensions'));
+
+            return 0;
+        }
 
         $extensionActions = ['install', 'activate', 'deactivate', 'uninstall'];
 
@@ -670,9 +682,39 @@ class ActivityLogSampleSeeder extends Seeder
             }
         }
 
-        $this->command->info("  - 확장 시스템 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.extension_system', ['count' => $count]));
 
         return $count;
+    }
+
+    /**
+     * 실제로 설치된 모듈·플러그인·템플릿을 로그 대상 목록으로 돌려줍니다.
+     *
+     * 이름은 현재 로케일 값, 없으면 첫 값을 쓴다.
+     *
+     * @return array<int, array{type: string, identifier: string, name: string}> 확장 목록
+     */
+    private function installedExtensions(): array
+    {
+        $extensions = [];
+
+        foreach (['module' => Module::class, 'plugin' => Plugin::class, 'template' => Template::class] as $type => $model) {
+            foreach ($model::query()->get(['identifier', 'name']) as $row) {
+                $name = $row->name;
+
+                if (is_array($name)) {
+                    $name = $name[app()->getLocale()] ?? (reset($name) ?: $row->identifier);
+                }
+
+                $extensions[] = [
+                    'type' => $type,
+                    'identifier' => (string) $row->identifier,
+                    'name' => (string) ($name ?: $row->identifier),
+                ];
+            }
+        }
+
+        return $extensions;
     }
 
     /**
@@ -685,7 +727,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $attachments = Attachment::get();
         if ($attachments->isEmpty()) {
-            $this->command->info('  - 첨부파일 데이터 없음 - 첨부파일 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.attachments'));
 
             return 0;
         }
@@ -715,7 +757,7 @@ class ActivityLogSampleSeeder extends Seeder
 
         $count = $this->generateResourceLogs($attachments, $admins, ActivityLogType::Admin, $morphType, $actions);
 
-        $this->command->info("  - 첨부파일 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.attachment', ['count' => $count]));
 
         return $count;
     }
@@ -730,14 +772,23 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $count = 0;
 
-        $settingsEntries = [
-            ['action' => 'module_settings.save', 'type' => 'module', 'identifier' => 'sirsoft-ecommerce', 'name' => 'E-Commerce'],
-            ['action' => 'module_settings.save', 'type' => 'module', 'identifier' => 'sirsoft-board', 'name' => 'Board'],
-            ['action' => 'module_settings.reset', 'type' => 'module', 'identifier' => 'sirsoft-ecommerce', 'name' => 'E-Commerce'],
-            ['action' => 'module_settings.reset', 'type' => 'module', 'identifier' => 'sirsoft-board', 'name' => 'Board'],
-            ['action' => 'plugin_settings.save', 'type' => 'plugin', 'identifier' => 'sirsoft-payment', 'name' => 'Payment'],
-            ['action' => 'plugin_settings.reset', 'type' => 'plugin', 'identifier' => 'sirsoft-payment', 'name' => 'Payment'],
-        ];
+        // 설정 화면은 모듈·플러그인에만 있다 — 설치된 것마다 저장·초기화 두 동작을 후보로 둔다.
+        $settingsEntries = [];
+        foreach ($this->installedExtensions() as $ext) {
+            if ($ext['type'] === 'template') {
+                continue;
+            }
+
+            foreach (['save', 'reset'] as $verb) {
+                $settingsEntries[] = ['action' => $ext['type'].'_settings.'.$verb] + $ext;
+            }
+        }
+
+        if ($settingsEntries === []) {
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.extension_settings'));
+
+            return 0;
+        }
 
         $logCount = rand(1, 5);
         for ($i = 0; $i < $logCount; $i++) {
@@ -756,7 +807,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 확장 설정 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.extension_settings', ['count' => $count]));
 
         return $count;
     }
@@ -799,7 +850,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 레이아웃 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.layout', ['count' => $count]));
 
         return $count;
     }
@@ -814,7 +865,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $templates = NotificationTemplate::with('definition')->get();
         if ($templates->isEmpty()) {
-            $this->command->info('  - 알림 템플릿 데이터 없음 - 알림 템플릿 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.notification_templates'));
 
             return 0;
         }
@@ -838,7 +889,7 @@ class ActivityLogSampleSeeder extends Seeder
 
         $count = $this->generateResourceLogs($templates, $admins, ActivityLogType::Admin, $morphType, $actions);
 
-        $this->command->info("  - 알림 템플릿 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.notification_template', ['count' => $count]));
 
         return $count;
     }
@@ -874,7 +925,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 대시보드 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.dashboard', ['count' => $count]));
 
         return $count;
     }
@@ -907,7 +958,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 활동 로그 조회 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.activity_log_view', ['count' => $count]));
 
         return $count;
     }
@@ -953,7 +1004,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 활동 로그 삭제 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.activity_log_delete', ['count' => $count]));
 
         return $count;
     }
@@ -1004,7 +1055,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 코어 업데이트 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.core_update', ['count' => $count]));
 
         return $count;
     }
@@ -1087,7 +1138,7 @@ class ActivityLogSampleSeeder extends Seeder
             'user_id' => $admin->id,
             'loggable_type' => $loggableType,
             'loggable_id' => $loggableId,
-            'properties' => $properties,
+            'properties' => ($properties ?? []) + ['seeded_by' => self::SAMPLE_MARKER],
             'changes' => $changes,
             'ip_address' => fake()->ipv4(),
             'user_agent' => fake()->userAgent(),

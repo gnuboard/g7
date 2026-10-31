@@ -1,0 +1,19 @@
+feature: GDPR 플러그인 테스트의 설정 저장소 격리
+
+description: |
+  설정 저장 테스트(관리자 설정 API, 연간 통지 명령)는 PluginSettingsService::save 로 plugins 디스크의
+  sirsoft-gdpr/settings/setting.json 에 실제로 쓴다. 2026-10-07 실측(O-M1F-A)에서 설정 저장 테스트 실행 시각에 개발 사이트
+  설정 파일이 테스트 값(「필수」/Necessary)으로 바뀌었다(원인: 테스트 도중 다른 프로세스가 구운 config 캐시 — 코어
+  tests/bootstrap.php 가 config 캐시 경로를 테스트 전용으로 돌려 막는다). 이 플러그인 테스트 베이스는 그와 별개로 plugins 디스크를
+  테스트마다 따로 둔 임시 루트로 돌려, 앞 테스트·앞 실행의 설정이 새지 않고 개발 사이트 파일을 건드리지 않게 한다.
+
+axes:
+  writer: [plugin_settings_save, previous_test]
+
+effects:
+  - settings_write_lands_in_isolated_root
+  - site_settings_file_untouched
+  - settings_do_not_leak_between_tests
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/PluginStorageIsolationTest.php

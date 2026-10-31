@@ -257,6 +257,36 @@ class ProductReviewService
     }
 
     /**
+     * 주문 옵션들에 연결된 리뷰를 이미지 파일째 영구 삭제합니다 (개인정보 보유기간 삭제 모드, 이슈 #636).
+     *
+     * 리뷰는 주문 옵션에 NOT NULL 로 묶여 있어 주문을 삭제하면 남을 수 없다. DB CASCADE 에
+     * 기대지 않고 명시 삭제하며, 이미지 파일도 함께 지운다(행만 지우면 파일이 고아로 남는다).
+     * 무인 배치가 부르는 시스템 삭제라 관리자 스코프 판정을 두지 않는다.
+     *
+     * @param  array<int, int>  $orderOptionIds  주문 옵션 ID 목록
+     * @return int 삭제한 리뷰 수
+     */
+    public function purgeForOrderOptions(array $orderOptionIds): int
+    {
+        $deleted = 0;
+
+        foreach ($this->repository->getWithTrashedByOrderOptionIds($orderOptionIds) as $review) {
+            foreach ($review->images as $image) {
+                $rowStorage = $this->storageForRow($image->disk);
+                if ($rowStorage->exists('images', $image->path)) {
+                    $rowStorage->delete('images', $image->path);
+                }
+            }
+
+            if ($this->repository->forceDeleteWithImages($review)) {
+                $deleted++;
+            }
+        }
+
+        return $deleted;
+    }
+
+    /**
      * 리뷰 일괄 상태 변경
      *
      * @param  array  $ids  리뷰 ID 배열

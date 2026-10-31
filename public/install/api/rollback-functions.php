@@ -57,6 +57,7 @@ function rollbackTask(string $taskId, array $state): array
             case 'dependency_precheck': // 검증만 한다 — 만든 것이 없다
             case 'db_cleanup':          // 재시도가 다시 비우고 migrate 가 다시 만든다
             case 'config_cache':        // bootstrap/cache 는 다음 부팅에 재생성된다
+            case 'route_cache':         // 라우트 캐시는 확장 설치·변경 때 다시 굽는다
             case 'static_publish':      // 정적 게시물은 첫 방문의 자가 치유로 재생성된다
                 return [
                     'success' => true,
@@ -903,6 +904,10 @@ function getManualCommands(string $taskId, ?string $target = null): array
 
         case 'config_cache':
             $commands[] = "{$php} artisan config:cache";
+            break;
+
+        case 'route_cache':
+            $commands[] = "{$php} artisan route:cache";
             break;
 
         case 'static_publish':

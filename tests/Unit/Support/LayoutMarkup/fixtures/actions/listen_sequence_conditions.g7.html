@@ -1,0 +1,5 @@
+<div data-ref="probe_listen">
+  <on listen="probe:seq"><set-state target="local" a="1"/><set-state target="local" b="2"/></on>
+  <on listen="probe:cond"><conditions><when if="{{_eventData.kind === 'a'}}"><set-state target="local" k="a"/></when><else><set-state target="local" k="b"/></else></conditions></on>
+  <on listen="probe:switch"><switch on="{{_eventData.kind}}"><case when="a"><toast message="a"/></case><default><toast message="d"/></default></switch></on>
+</div>

@@ -2,6 +2,10 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
+use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
+use App\Console\Commands\Traits\RestoresHostLanguagePacks;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\PluginManager;
@@ -10,6 +14,11 @@ use Illuminate\Support\Facades\Log;
 
 class ActivatePluginCommand extends Command
 {
+    use RendersLayoutSyncResult;
+    use ReportsLifecycleWarnings;
+    use ReportsStuckUpdateRecovery;
+    use RestoresHostLanguagePacks;
+
     /**
      * The name and signature of the console command.
      */
@@ -22,16 +31,23 @@ class ActivatePluginCommand extends Command
 
     /**
      * 플러그인 관리자 및 리포지토리
+     *
+     * @param  PluginManager  $pluginManager  플러그인 활성화를 수행하는 매니저
+     * @param  PluginRepositoryInterface  $pluginRepository  설치 기록 조회 리포지토리
      */
     public function __construct(
         private PluginManager $pluginManager,
         private PluginRepositoryInterface $pluginRepository
     ) {
         parent::__construct();
+
+        $this->addLanguagePackRestoreOption('plugins');
     }
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드
      */
     public function handle(): int
     {
@@ -59,6 +75,7 @@ class ActivatePluginCommand extends Command
             // 플러그인 활성화
             $force = $this->option('force');
             $result = $this->pluginManager->activatePlugin($identifier, $force);
+            $this->reportStuckUpdateRecovery();
 
             // 경고 응답인 경우 (의존성 미충족)
             if (isset($result['warning']) && $result['warning'] === true) {
@@ -66,30 +83,36 @@ class ActivatePluginCommand extends Command
                 $this->line('');
 
                 if (! empty($result['missing_modules'])) {
-                    $this->info('필요한 모듈:');
+                    $this->info(__('plugins.commands.activate.required_modules'));
                     foreach ($result['missing_modules'] as $module) {
-                        $statusLabel = $module['status'] === 'not_installed' ? '미설치' : '비활성';
+                        $statusLabel = $module['status'] === 'not_installed'
+                            ? __('plugins.commands.activate.missing_status.not_installed')
+                            : __('plugins.commands.activate.missing_status.inactive');
                         $this->line("   - {$module['identifier']} ({$module['name']}) [{$statusLabel}]");
                     }
                 }
 
                 if (! empty($result['missing_plugins'])) {
-                    $this->info('필요한 플러그인:');
+                    $this->info(__('plugins.commands.activate.required_plugins'));
                     foreach ($result['missing_plugins'] as $plugin) {
-                        $statusLabel = $plugin['status'] === 'not_installed' ? '미설치' : '비활성';
+                        $statusLabel = $plugin['status'] === 'not_installed'
+                            ? __('plugins.commands.activate.missing_status.not_installed')
+                            : __('plugins.commands.activate.missing_status.inactive');
                         $this->line("   - {$plugin['identifier']} ({$plugin['name']}) [{$statusLabel}]");
                     }
                 }
 
                 $this->line('');
-                $this->info('강제로 활성화하려면 --force 옵션을 사용하세요.');
+                $this->info(__('plugins.commands.activate.force_hint'));
 
                 return Command::FAILURE;
             }
 
             if ($result['success']) {
-                $this->info('✅ '.__('plugins.commands.activate.success', ['plugin' => $identifier]));
-                $this->info('   - '.__('plugins.commands.activate.layouts_registered', ['count' => $result['layouts_registered']]));
+                $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.activate.success', ['plugin' => $identifier]));
+                $this->info('   - '.trans_choice('plugins.commands.activate.layouts_registered', (int) ($result['layouts_registered'] ?? 0)));
+                $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
+                $this->restoreHostLanguagePacks('plugin', $identifier, 'plugins');
                 Log::info(__('plugins.commands.activate.success', ['plugin' => $identifier]));
 
                 return Command::SUCCESS;
@@ -97,6 +120,7 @@ class ActivatePluginCommand extends Command
 
             return Command::FAILURE;
         } catch (\Exception $e) {
+            $this->reportStuckUpdateRecovery();
             $this->error('❌ '.$e->getMessage());
             Log::error('플러그인 활성화 실패', [
                 'plugin' => $identifier,

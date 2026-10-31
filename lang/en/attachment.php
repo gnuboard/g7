@@ -28,6 +28,8 @@ return [
         'file_invalid' => 'The file is not valid.',
         'file_max' => 'The file size cannot exceed :max MB.',
         'file_extension_invalid' => 'This file type is not allowed. Allowed types: :extensions',
+        'file_mimetype_invalid' => 'The file content does not match an allowed type. Allowed types: :extensions',
+        'file_empty' => 'Empty (0-byte) files cannot be uploaded.',
         'files_required' => 'Please select files.',
         'files_array' => 'The files format is invalid.',
         'files_min' => 'Please select at least one file.',
@@ -64,4 +66,13 @@ return [
     'access_denied' => 'You do not have permission to access this attachment.',
     'update_denied' => 'You do not have permission to update this attachment.',
     'delete_denied' => 'You do not have permission to delete this attachment.',
+    // `attachments:prune-orphans` command output
+    'console' => [
+        'prune_orphans' => [
+            'disabled' => 'Skipped because automatic orphan attachment cleanup is turned off. (upload.orphan_cleanup_enabled = false)',
+            'retention_below_minimum' => 'Skipped cleanup because the orphan attachment retention period is less than 1 day.',
+            'dry_run' => 'Orphan attachments past retention (:days days): :count',
+            'done' => 'Deleted :deleted of :scanned orphan attachments past retention (:days days). (:failed failed)',
+        ],
+    ],
 ];

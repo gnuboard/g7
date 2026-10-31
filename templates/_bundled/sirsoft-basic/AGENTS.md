@@ -39,6 +39,10 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 데이터는 전부 모듈·코어의 공개 API 에서 옵니다. 그래서 이 템플릿을 다른 것으로 바꿔도 데이터는
 그대로이고, 반대로 이 템플릿만으로는 아무 기능도 동작하지 않습니다 — manifest 가 게시판·
 이커머스·페이지 모듈과 주소 검색 플러그인을 의존으로 선언하는 이유입니다.
+
+1.1.3 부터 마이페이지에 '취소·반품·교환'(클레임) 화면이 있습니다 — 목록·상세·신청서 작성/수정과,
+비회원 주문 조회의 같은 화면 세트. 회원과 비회원이 **같은 partial** 을 쓰고, 인증 차이는
+셸(데이터소스 endpoint 와 헤더)이 흡수합니다.
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도
@@ -48,7 +52,7 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update sirsoft-basic --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
 | `extensions/` | 다른 확장 화면에 주입하는 레이아웃 조각 | `php artisan template:update sirsoft-basic --force` (빌드 불필요) |
 | `seo-config.json` | SEO 렌더 설정 | `php artisan template:update sirsoft-basic --force` |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update sirsoft-basic --force` |
@@ -58,7 +62,8 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | `editor-spec/` | 분할 편집기 스펙 | `php artisan template:update sirsoft-basic --force` |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan template:update sirsoft-basic --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan template:update sirsoft-basic --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan template:update sirsoft-basic --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -84,9 +89,27 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 확인합니다. **토큰이 곧 신원**이므로 `clearGuestTokenOnEntry` 가 진입 시점에 남은 토큰을
 정리합니다 — 공용 PC 에서 다음 사용자가 남의 주문을 열지 못하게 하는 방어입니다.
 
+PG 결제는 결제창을 **열기 전에** 토큰을 확보해 둡니다(체크아웃 `_checkout_summary`). 결제창을 닫으면
+PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유자를 증명하기 때문입니다 — 주문자
+연락처는 제3자도 알 수 있어 증명이 되지 못합니다(KVE-2026-2434). 1순위는 주문 생성 응답의
+`guest_order_token` 을 그대로 저장, 응답에 토큰이 없을 때(이전 이커머스 모듈)만 전화번호+조회 비밀번호로
+`guest/orders/verify` 를 부릅니다. 이 순서를 뒤집거나 verify 만 남기면, 전화번호 형식이 달라 verify 가
+실패한 비회원은 결제창을 닫아도 취소가 기록되지 않습니다.
+
 **본인인증(IDV)**: 어떤 API 가 428 을 돌려주면 코어 인터셉터가 그것을 잡아, 부트스트랩에서
 등록한 launcher 로 인증 화면을 엽니다. 인증을 마치면 원래 액션이 재개됩니다 — 각 화면이
 428 을 개별 처리하지 않습니다.
+
+**클레임(취소·반품·교환·환불)**: 주문 상세의 신청 버튼 → `mypage/claims/apply`(`:type` 이 교환·
+반품·환불을 가르고, 취소·환불의 자동 분기는 서버 `claimable-options` 응답의 `resolved_type` 이
+정합니다) → 품목·수량·사유·첨부·재발송지·환불 계좌를 입력하면 `POST claims/preview` 가 배송비·
+차액·청구/환불액을 계산해 요약을 그립니다(화면은 계산하지 않습니다) → 접수. 청구가 있으면 주문
+결제와 같은 4키 응답(`requires_pg_payment` 등)으로 결제창에 넘어가고, 돌아오는 곳은 주문 상세가
+아니라 **그 신청서 상세**입니다. 목록·상세·수정·철회는 `mypage/claims` 클러스터이고, 비회원은
+`shop/guest_claim_*` 셸이 같은 partial 을 주문 조회 토큰으로 엽니다. 첨부는 작성 중인(아직 신청서에
+붙지 않은) 사진만 바로 지우고, 수정 화면의 기존 사진은 **고객이 올린 것만**(`removable`) 삭제 목록에
+담아 저장 때 `remove_image_ids` 로 넘깁니다 — 운영자가 올린 사진은 삭제 버튼 대신 업로더 표시만
+그립니다(서버도 `claim_image_not_removable` 로 거절).
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -94,9 +117,9 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 제공 컴포넌트 | 79개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 166개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
-| 전용 핸들러 | 32개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
+| 제공 컴포넌트 | 78개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
+| 레이아웃 | 194개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 전용 핸들러 | 37개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 1개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
 
@@ -107,8 +130,9 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 확장점 | 어떻게 쓰는가 |
 |---|---|
 | 레이아웃 166개 | 다른 확장이 `layout_extensions` 로 자기 조각을 끼워 넣습니다 — 이커머스의 헤더 통화 선택기·마이페이지 마일리지 카드, 마케팅의 회원가입 동의 항목이 그 예입니다 |
+| 게시판 확장 자리 5종 | 글 목록 행·글 상세 제목·댓글·글쓰기 맨 위/아래에 연 이름 고정 확장점(`board_post_row_badges` 등, 1.2.1+)입니다. 같은 조각이 유형별 갈래 세 곳에 include 되는 화면이라 overlay 는 basic 에만 닿으므로 이 자리를 씁니다 — [게시판 확장 자리](docs/layouts.md#게시판-확장-자리-121) |
 | 제공 컴포넌트 79개 | 조각을 만드는 확장이 이 컴포넌트로 화면을 구성합니다. **여기 없는 컴포넌트를 쓰면 그 조각은 이 템플릿에서 렌더되지 않습니다** |
-| 전용 핸들러 32개 | 조각의 액션에서 부를 수 있습니다. 네임스페이스가 붙은 10개(`sirsoft-basic.*`)는 전체 이름으로, 나머지는 이름만으로 부릅니다 |
+| 전용 핸들러 33개 | 조각의 액션에서 부를 수 있습니다. 네임스페이스가 붙은 11개(`sirsoft-basic.*`)는 전체 이름으로, 나머지는 이름만으로 부릅니다 |
 | 확장 오버라이드 | `extensions/{확장}/` 에 같은 이름의 조각을 두면 그 확장이 제공한 원본을 대체합니다 |
 
 **다른 확장이 이 템플릿에 화면을 얹는 방향이 정상**입니다. 반대로 이 템플릿이 모듈의 관리자
@@ -117,31 +141,41 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 `seo-config.json` 도 확장점입니다 — 봇 요청에 서버가 화면을 렌더할 때 어떤 속성을 HTML 로
 내보낼지 이 파일이 정합니다. 새 컴포넌트가 텍스트를 담는 새 prop 을 쓰면 `text_props` 에
 추가해야 봇 화면에 그 글자가 나타납니다.
+
+`template.json` 의 `necessary_storage`(코어 7.1.3+)는 이 템플릿 화면이 쿠키 동의와 무관하게 쓰는 브라우저 저장
+키(`g7_color_scheme`)를 선언합니다 — 개인정보 동의 플러그인이 이 선언을 「확장 제공 항목」에 합쳐 동의 전에도
+지우지 않습니다. 화면이 새 필수 키를 쓰게 되면 여기에 추가합니다(선언하지 않은 키는 동의 전에 지워질 수 있다).
 <!-- @intent END -->
 
 ## 5. 수정 시 동반 의무
 
 - [ ] `_bundled` 에서만 수정하고 `php artisan template:update sirsoft-basic --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` 동기화 + CHANGELOG 기재
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 새 화면을 추가했다면 `_user_base` 를 상속하는지, `routes.json` 에 경로가 등록됐는지 확인
 - [ ] 상점 관련 경로·링크는 표현식(`route_path` · `no_route`)을 유지 — 문자열로 굳히지 않는다
 - [ ] 목록 클러스터(목록 → 상세 → 형제 상세 → 폼 → 복귀) 이동 전 leg 에 `mergeQuery: true`
 - [ ] 텍스트를 담는 새 컴포넌트 prop 을 도입했다면 `seo-config.json` 의 `text_props` 에 추가 (봇 화면에서만 글자가 사라진다)
 - [ ] 의존 모듈(게시판·이커머스·페이지)의 공개 API 응답 형태가 바뀌면 이 템플릿의 화면이 조용히 빈다 — 그 모듈을 올릴 때 함께 확인
 - [ ] `extensions/sirsoft-daum_postcode/` 오버라이드는 원본이 바뀌어도 따라가지 않는다 — 그 플러그인 업그레이드 후 확인
+- [ ] 모듈·플러그인 화면 클래스는 `safelist.txt` 에 넣지 않는다 — 확장은 자기 CSS(`{letters}:`·`{namespace}-`)로 모양을 싣는다(공개 문서 「확장 CSS 자기 공급 규약」). 다크 방식을 바꾸면 `template.json` 의 `features.color_scheme` 도 함께 바꾼다(확장 CSS 가 보는 중립 다크 표식의 근거). className 을 Tailwind 이름으로 해석하는 컴포넌트(`PageSkeleton` 등)는 `G7Core.style.splitExtensionClassPrefix` 로 확장 앞글자를 떼고 읽는다
 - [ ] TSX/TS 를 고쳤다면 `template:build --production` 후 `dist/` 동반 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 프론트엔드 변경은 Playwright spec 동반 — 단위 테스트만으로는 화면 회귀가 드러나지 않는다
+- [ ] 사용자·운영자가 입력한 글(사이트·게시판·상품·회원 이름, 제목·본문·댓글, 알림)을 그리는 노드는 넘침 규칙을 따른다 — 상단 바 이름은 감싼 칸 `min-w-0 flex-1` + `truncate` + 옆 단추 `shrink-0`, 블록 글은 `break-words`, 단추·배지와 같은 flex 줄의 글은 `min-w-0 wrap-anywhere`(`break-words` 는 flex 최소 폭을 줄이지 못한다), 배지·메뉴 라벨 같은 좁은 칸은 `truncate` + 폭 상한(줄지 않는 배지 `max-w-32`), 표의 긴 칸은 `w-full max-w-0` + `block truncate`(자동 표 배치는 칸을 글 폭만큼 늘린다). 공백 없는 긴 글(`https://example.com/aaaa…`)로 297px·1280px 를 재고, 레이아웃 클래스는 `@source` 로 스캔되지 않으므로 새 클래스는 `safelist.txt` 에 있어야 한다 (#143)
+- [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-17 마이페이지 반응·신고·스크랩 13건이 미등재·앵커 40 으로 red)
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-basic --force` (편집기는 활성 디렉토리만 읽는다)
-- [ ] 로그인 화면의 2단계 인증 단계를 고쳤다면 1단계·2단계 `if` 의 상보성과 `login`/`loginTwoFactor` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호 단계에서 Enter 가 새 challenge 를 발급한다
+- [ ] 로그인 화면의 2단계 인증·비밀번호 변경 단계를 고쳤다면 세 단계 `if` 의 상보성과 `login`/`loginTwoFactor`/`loginPasswordChange` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호·변경 단계에서 Enter 가 새 challenge 를 발급한다
 
 ## 6. 금지 패턴
 
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 링크 컴포넌트에 주소 구독 훅·내부 링크 판정·새 창 rel 규칙을 따로 구현 | `G7Core.navigation.useLocationSearch`·`resolveInternalHref`·`mergeRelForTarget` 를 부르고(engine-v1.83.0), 그 API 가 없는 옛 코어에만 짧은 대체를 둔다(내부 링크는 `/` 경로와 경로가 `//` 로 시작하지 않는 같은 출처 `http(s)://` 주소 — 7.1.2 템플릿과 같은 결과라 알림·메뉴의 전체 주소가 새 탭으로 열리지 않는다) | 템플릿마다 사본이 갈라져 엔진 수정을 템플릿마다 옮겨야 했고, 같은 출처 `//다른호스트` 주소를 내부 링크로 본 사본이 생겼다(7.1.3) |
+| 첨부 그림·다운로드 주소를 `isCrossOriginAssetUrl` 로만 판정 | `isDirectAssetUrl`(교차 출처 + `data:`·`blob:`) | `data:`·`blob:` 미리보기 주소를 인증 XHR 로 보내 `/api/data:…` 404 가 난다(7.1.3, sirsoft-admin_basic 판정 이식) |
 | `extends` 없는 독립 레이아웃에서 `toast`·`openModal` 사용 | `_user_base` 를 상속하거나, 독립 레이아웃이라면 `Toast`·모달 호스트 컴포넌트를 직접 마운트 | 호스트가 없으면 핸들러는 성공으로 기록되는데 화면에는 아무것도 나타나지 않는다 |
 | 상점 경로를 `/shop/...` 로 하드코딩 | `routes.json` 의 표현식 유지 (`route_path` · `no_route` 반영) | 운영자가 경로를 바꾸거나 루트에 두면 하드코딩한 링크만 조용히 깨진다 |
 | 목록 → 상세 → 목록 이동에서 `mergeQuery` 누락 | 목록 클러스터 내 모든 이동에 `"mergeQuery": true` | 검색어·페이지·필터가 사라져 사용자가 처음부터 다시 찾아야 한다 |
@@ -151,7 +185,18 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 새 컴포넌트가 텍스트를 담는 prop 을 추가하면서 `seo-config.json` 을 그대로 두기 | `text_props` 에 그 prop 추가 | 봇 화면에서만 그 글자가 사라진다 — 사람 눈에는 정상이라 검색 노출이 줄어든 뒤에야 드러난다 |
 | 레이아웃 JSON 에 빌드된 CSS 에 없는 Tailwind 클래스 사용 | 기존 레이아웃에 쓰인 클래스이거나 빌드 산출물에 존재하는지 확인 | 그 스타일만 조용히 빠져 화면이 어긋난다 |
 | `dist/` 재빌드 없이 `src/` 만 고치고 커밋 | `template:build --production` 후 `dist/` 동반 커밋 | 브라우저가 받는 것은 커밋된 `dist/` 다 — 소스 수정이 사문화된다 |
+| 클레임 공유 partial 에서 `_global.currentUser` 참조 | 인증 차이는 셸(데이터소스 endpoint·헤더)이 흡수하고, partial 은 `claim`·`claims`·`claimable`·`estimate` 컨텍스트만 읽는다 | 회원·비회원이 같은 조각을 쓰므로 한쪽에서만 값이 비어 조용히 깨진다 |
+| 신청서 요약 금액을 화면에서 계산 | 서버 `POST claims/preview` 응답(`estimate`)을 표시만 | 배송비·차액·청구 방식 규칙은 서버가 소유한다 — 화면 계산은 접수 시 서버 값과 어긋난다 |
 | `onSuccess`·시퀀스 안에서 방금 저장한 상태(`_global.*`/`_local.*`)를 형제 액션의 `if`·값으로 재독 | 그 자리에서는 `{{response.*}}` 만 읽는다 | 그 시점 컨텍스트는 아직 갱신 전이라 stale 값으로 조용히 분기한다 |
+| 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣기 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣는다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 회원 토큰을 외부로 보낼 수 있다(KVE-2026-2350) |
+| 첨부 임시 키(`tempKey`)를 `'temp_' + Date.now() + …` 같은 임의 문자열로 만들기 | `{{$uuid()}}` 로 발급 | 게시판·페이지·이커머스 모듈은 UUID 형식의 임시 키만 받는다 — 그 밖의 값은 422 로 거부되어 첨부 업로드와 글 저장이 실패한다 (임시 키가 저장 경로에 들어가 경로 조작에 쓰였던 결함의 재발 방지) |
+| 사용자 화면에서 변환표(`IconTypes.ts` 의 `iconNameMap`)에 없는 Lucide 식 이름(`log-out`·`alert-circle`·`loader-2` 등) | Font Awesome 6.4.0 이름(`right-from-bracket`·`circle-exclamation`·`spinner`) 또는 변환표에 있는 별칭 | 변환표에 없는 이름은 `fa-{이름}` 로 그대로 붙어 **빈칸**으로 그려진다. 관리자 화면에 들어가는 조각은 변환표가 없다. 가드: `tests/Unit/Extension/FontIconNameTest.php` |
+| `extension_point` 의 콜백 액션을 `props` 에 선언 | 형제 키 `callbacks` 에 둔다 (`"callbacks": { "onAddressSelect": { … } }`) | 엔진은 `props` 를 **평가해** `extensionPointProps` 로, `callbacks` 를 **그대로** `extensionPointCallbacks` 로 넘기는데 주입된 컴포넌트가 읽는 자리는 후자다. `props` 에 두면 액션이 도달하지 않고, 도달해도 `{{$event.*}}` 가 `$event` 이전에 평가돼 빈 값으로 굳는다 — 확장점 버튼은 정상으로 보이고 자기 일까지 하는데 고른 값만 폼에 안 돌아와, 그 필드가 필수면 저장에 영영 도달하지 못한다 |
+| 색 배경 유틸(`bg-blue-500` 등)을 `dark:` 짝 없이 쓰기 | 한 단계 밝은 짝을 함께 둔다(`bg-blue-600 dark:bg-blue-500`, `bg-blue-500 dark:bg-blue-400`) | 다크 모드에서 밝은 화면 색이 그대로 떠 배지·아바타 원만 튄다. 가드: audit `darkmode-class-pair` |
+| 동시에 여럿 그려질 수 있는 컴포넌트(`Modal` 등)에 고정 id(`id="modal-title"`)를 두고 `aria-labelledby` 로 잇기 | `useId()` 로 만든 id 를 쓴다(스타일·E2E 선택자는 클래스 `.modal-title`) | 창 위에 창이 열리면 id 가 겹쳐 위 창이 아래 창 제목으로 읽힌다(#736). 가드: `Modal.nestedEscape.test.tsx` |
+| 메뉴·목록·제목 단추(`<button>`)에 `w-full`·`flex-1` 로 폭을 주면서 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다(`text-left` 만으로는 부족) | 기본 `Button` 이 `inline-flex items-center justify-center` 를 병합해 넣어, 넓어진 단추의 글·아이콘이 가운데로 간다 — 모바일 헤더 이름·서랍 로그아웃·댓글 메뉴가 이렇게 가운데로 갔다 |
+| 창 안에서 고르는 카드·행(저장 배송지 등)을 클릭만 받는 `<div>` 로 그리기 | 카드를 `<button type="button" aria-pressed="{{고른 조건}}">` 로 그리고 안 블록은 `<span class="block">` 으로 — 카드 안에 다른 단추(수정·삭제)가 있으면 정보 영역만 자기 동작 없는 단추로 두어 클릭이 카드의 고르기 동작으로 올라가게 한다 | Tab 이 닿지 않아 키보드 사용자는 고를 수 없고, 고르지 않으면 잠기는 확인 단추 때문에 진행이 막힌다(배송지 변경·배송지 관리 창). 가드: `address-select-keyboard.test.tsx` |
+| 누르면 무언가 하는 자리(접기 머리·내려받기 카드·사진 썸네일)를 `<on type="click">` 만 단 `<div>`·`<span>`·`<img>` 로 그리기 | `<button type="button">` 으로 그린다 — 펼침은 `aria-expanded`, 사진·아이콘만 있으면 다국어 `aria-label`, 제목이면 `<h3><button>…</button></h3>`, 화면 이동이면 `<a href>`(비회원 조회 토큰처럼 새 탭에서 깨지는 이동은 단추). 마우스 전용 덮개(`fixed inset-0`)는 같은 상태를 닫는 단추·Esc 가 따로 있을 때만 둔다 | Tab 이 닿지 않아 키보드로 열거나 받을 수 없다(7.1.1 — 게시글 첨부·금액 줄 펼침·후기 사진·클레임 번호). 가드: `click-only-keyboard.test.tsx`(basic 레이아웃 전체) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -160,9 +205,9 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 149개 | `vitest.config.ts` |
-| Playwright | 8개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 4개 | `tests/scenarios` |
+| Vitest | 329개 | `vitest.config.ts` |
+| Playwright | 34개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 136개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

@@ -1,0 +1,30 @@
+feature: 목록 캐시 확장 축 훅 sirsoft-board.post.filter_list_cache_variant (#147)
+
+description: |
+  목록 쿼리 확장 훅으로 결과를 사람·언어마다 다르게 좁히는 확장이, 같은 축을 목록 캐시 키에 넣을 수 있게 하는
+  필터 훅이다. 리스너가 돌려준 스칼라 목록을 `_ev{md5}` 접미사로 붙이고, 목록이 비면 키를 바꾸지 않는다
+  (업데이트 직후 캐시를 버리지 않게). 태그는 그대로라 무효화는 지금과 같다.
+
+axis_notes:
+  cache: |
+    확장 축을 받는 목록 캐시 7개. 케이스마다 변형 없음(리스너 없음)·변형 a·변형 b 세 가지와 태그 비우기를
+    한 번에 단언한다 — 변형은 축이 아니라 효과(effects)로 둔다.
+
+axes:
+  cache:
+    - normal_count
+    - adjacent
+    - user_activities_total
+    - user_activity_stats
+    - user_public_stats
+    - recent
+    - popular
+
+effects:
+  - key_unchanged_without_variant      # 리스너가 없으면 키 문자열이 지금과 같다(normal_count 는 맥락·범위 반영 형식)
+  - variants_do_not_overwrite          # variant a/b 값이 서로 덮이지 않는다
+  - tag_flush_clears_all_variants      # board-stats / board-posts 플러시로 모든 변형이 비워진다
+  - non_scalar_parts_dropped           # 스칼라가 아닌 원소는 버린다
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/PostListCacheVariantTest.php

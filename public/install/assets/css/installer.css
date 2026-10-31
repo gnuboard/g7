@@ -796,6 +796,21 @@ hr {
   margin-bottom: var(--spacing-lg);
 }
 
+/* 설치 소유권 잠금 화면 — 복구 토큰 입력 아래의 「처음부터 다시」 안내.
+   본문 설명(.installer-description)과 같은 단계의 글자이고, 입력 폼과 떨어뜨리기만 한다. */
+.recovery-reset-hint {
+  margin-top: var(--spacing-lg);
+}
+
+/* 복구 토큰 안내 (Step 4·5 공용) — 경고 알림 상자 안에 복사 가능한 토큰 상자를 둔다. */
+.recovery-token-notice {
+  margin-bottom: var(--spacing-lg);
+}
+
+.recovery-token-notice .code-box {
+  margin-top: var(--spacing-sm);
+}
+
 /* 에러 아이콘 */
 .error-icon {
   display: inline-flex;
@@ -3929,6 +3944,16 @@ body {
   color: var(--text-muted);
   font-size: 1.25rem;
   transition: all 0.2s ease;
+}
+
+/* 확장이 동봉한 아이콘 — 박스를 채우되 비율은 지킨다.
+   선택/다크 규칙은 박스 배경만 바꾸므로 이 규칙과 충돌하지 않는다. */
+.extension-card-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+  border-radius: inherit;
 }
 
 /* 선택된 카드의 아이콘 칩 — 흰 글리프를 얹으므로 단색 버튼과 같은 --primary-solid 를 쓴다.

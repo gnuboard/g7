@@ -1,11 +1,10 @@
 {
+    "comment": "다음 우편번호 플러그인 환경설정 화면 — 코어 플러그인 설정 규약을 따른다\ne2e:allow 표시 방식 선택지 번역·의미 클래스 위치 교정 — 구조 Vitest(pluginSettingsDisplay.test.ts) + Playwright 격리 브라우저 ko/en·1440·375px 재실측",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
-    "permissions": [
-        "core.plugins.update"
-    ],
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "$t:sirsoft-daum_postcode.settings.title",
         "description": "$t:sirsoft-daum_postcode.settings.description"
     },
@@ -19,8 +18,42 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         }
+    ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "core.plugins.update"
     ],
     "slots": {
         "content": [
@@ -31,7 +64,7 @@
                 "dataKey": "form",
                 "trackChanges": true,
                 "props": {
-                    "className": "admin-page-content-responsive"
+                    "className": "daumpostcode-admin-page-content-responsive"
                 },
                 "children": [
                     {
@@ -46,18 +79,46 @@
                         }
                     },
                     {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "daumpostcode-alert-warning daumpostcode:mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "daumpostcode:text-xl daumpostcode:leading-none daumpostcode:text-amber-600 daumpostcode:dark:text-amber-400 daumpostcode:flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "daumpostcode:text-xs daumpostcode:text-yellow-700 daumpostcode:dark:text-yellow-300"
+                                },
+                                "text": "$t:sirsoft-daum_postcode.plugin_read_only"
+                            }
+                        ]
+                    },
+                    {
                         "id": "notice_banner",
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "alert-info"
+                            "className": "daumpostcode-alert-info"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex gap-3"
+                                    "className": "daumpostcode:flex daumpostcode:gap-3"
                                 },
                                 "children": [
                                     {
@@ -65,14 +126,14 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "circle-info",
-                                            "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                            "className": "daumpostcode:text-xl daumpostcode:leading-none daumpostcode:text-blue-600 daumpostcode:dark:text-blue-400 daumpostcode:flex-shrink-0 daumpostcode:mt-0.5"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-info-soft"
+                                            "className": "daumpostcode:text-xs daumpostcode:text-blue-700 daumpostcode:dark:text-blue-300"
                                         },
                                         "text": "$t:sirsoft-daum_postcode.settings.notice"
                                     }
@@ -86,14 +147,14 @@
                         "name": "Div",
                         "if": "{{_local.errors}}",
                         "props": {
-                            "className": "alert-danger"
+                            "className": "daumpostcode-alert-danger"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex gap-3"
+                                    "className": "daumpostcode:flex daumpostcode:gap-3"
                                 },
                                 "children": [
                                     {
@@ -101,7 +162,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "daumpostcode:text-xl daumpostcode:leading-none daumpostcode:text-red-600 daumpostcode:dark:text-red-400 daumpostcode:flex-shrink-0 daumpostcode:mt-0.5"
                                         }
                                     },
                                     {
@@ -112,7 +173,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-error-strong"
+                                                    "className": "daumpostcode-text-error-strong"
                                                 },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
@@ -120,19 +181,19 @@
                                                 "type": "basic",
                                                 "name": "Ul",
                                                 "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                "props": {
-                                                    "className": "mt-2 list-disc list-inside space-y-1"
-                                                },
                                                 "iteration": {
                                                     "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                     "item_var": "message"
+                                                },
+                                                "props": {
+                                                    "className": "daumpostcode:mt-2 daumpostcode:list-disc daumpostcode:list-inside daumpostcode:space-y-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "grid-3col-responsive"
+                                                            "className": "daumpostcode-text-error-soft"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -149,7 +210,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                            "className": "daumpostcode:mt-6 daumpostcode:bg-white daumpostcode:dark:bg-gray-800 daumpostcode:rounded-lg daumpostcode:shadow-sm daumpostcode:border daumpostcode:border-gray-200 daumpostcode:dark:border-gray-700"
                         },
                         "children": [
                             {
@@ -157,7 +218,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "p-6 space-y-6"
+                                    "className": "daumpostcode:p-6 daumpostcode:space-y-6"
                                 },
                                 "children": [
                                     {
@@ -165,21 +226,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "text-error-soft"
+                                            "className": "daumpostcode-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "daumpostcode:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "daumpostcode-form-label"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.label"
                                                     },
@@ -187,7 +248,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "daumpostcode-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.hint"
                                                     }
@@ -197,7 +258,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "daumpostcode:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
@@ -205,7 +266,8 @@
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "display_mode",
-                                                            "className": "focus:border-transparent"
+                                                            "className": "daumpostcode:focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         },
                                                         "children": [
                                                             {
@@ -214,7 +276,7 @@
                                                                 "props": {
                                                                     "value": "popup"
                                                                 },
-                                                                "text": "popup"
+                                                                "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.popup"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -222,9 +284,19 @@
                                                                 "props": {
                                                                     "value": "layer"
                                                                 },
-                                                                "text": "layer"
+                                                                "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.layer"
                                                             }
                                                         ]
+                                                    },
+                                                    {
+                                                        "comment": "저장 오류는 상단 상자와 함께 그 칸 아래에도 보인다(어느 칸을 고쳐야 하는지, 7.1.0 실측 M1-O11)",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.display_mode}}",
+                                                        "props": {
+                                                            "className": "daumpostcode-form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.display_mode?.[0]}}"
                                                     }
                                                 ]
                                             }
@@ -235,21 +307,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "text-error-soft"
+                                            "className": "daumpostcode-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "daumpostcode:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "daumpostcode-form-label"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.popup_width.label"
                                                     },
@@ -257,7 +329,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "daumpostcode-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.popup_width.hint"
                                                     }
@@ -267,17 +339,30 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "daumpostcode:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
+                                                        "comment": "범위는 플러그인 설정 스키마(min 100 · max 2000)와 같다 — 서버 검증이 같은 값으로 422 를 낸다",
                                                         "type": "basic",
                                                         "name": "Input",
                                                         "props": {
                                                             "type": "number",
                                                             "name": "popup_width",
-                                                            "className": "focus:border-transparent"
+                                                            "min": "100",
+                                                            "max": "2000",
+                                                            "className": "daumpostcode:focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.popup_width}}",
+                                                        "props": {
+                                                            "className": "daumpostcode-form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.popup_width?.[0]}}"
                                                     }
                                                 ]
                                             }
@@ -288,21 +373,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "text-error-soft"
+                                            "className": "daumpostcode-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "daumpostcode:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "daumpostcode-form-label"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.popup_height.label"
                                                     },
@@ -310,7 +395,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "daumpostcode-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.popup_height.hint"
                                                     }
@@ -320,7 +405,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "daumpostcode:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
@@ -329,8 +414,20 @@
                                                         "props": {
                                                             "type": "number",
                                                             "name": "popup_height",
-                                                            "className": "focus:border-transparent"
+                                                            "min": "100",
+                                                            "max": "2000",
+                                                            "className": "daumpostcode:focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.popup_height}}",
+                                                        "props": {
+                                                            "className": "daumpostcode-form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.popup_height?.[0]}}"
                                                     }
                                                 ]
                                             }
@@ -341,21 +438,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "text-error-soft"
+                                            "className": "daumpostcode-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "daumpostcode:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "daumpostcode-form-label"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.theme_color.label"
                                                     },
@@ -363,7 +460,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "daumpostcode-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-daum_postcode.settings.fields.theme_color.hint"
                                                     }
@@ -373,7 +470,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "daumpostcode:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
@@ -383,8 +480,18 @@
                                                             "type": "text",
                                                             "name": "theme_color",
                                                             "placeholder": "#1D4ED8",
-                                                            "className": "focus:border-transparent"
+                                                            "className": "daumpostcode:focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{_local.errors?.theme_color}}",
+                                                        "props": {
+                                                            "className": "daumpostcode-form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.theme_color?.[0]}}"
                                                     }
                                                 ]
                                             }
@@ -399,14 +506,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+                            "className": "daumpostcode:mt-6 daumpostcode:bg-gray-50 daumpostcode:dark:bg-gray-800/50 daumpostcode:rounded-lg daumpostcode:border daumpostcode:border-gray-200 daumpostcode:dark:border-gray-700 daumpostcode:p-6"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "H3",
                                 "props": {
-                                    "className": "section-heading mb-4"
+                                    "className": "daumpostcode-section-heading daumpostcode:mb-4"
                                 },
                                 "text": "$t:sirsoft-daum_postcode.settings.guide.title"
                             },
@@ -414,14 +521,14 @@
                                 "type": "basic",
                                 "name": "Ol",
                                 "props": {
-                                    "className": "list-decimal list-inside space-y-3"
+                                    "className": "daumpostcode:list-decimal daumpostcode:list-inside daumpostcode:space-y-3"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Li",
                                         "props": {
-                                            "className": "text-label"
+                                            "className": "daumpostcode-text-label"
                                         },
                                         "text": "$t:sirsoft-daum_postcode.settings.guide.step1"
                                     },
@@ -429,7 +536,7 @@
                                         "type": "basic",
                                         "name": "Li",
                                         "props": {
-                                            "className": "text-label"
+                                            "className": "daumpostcode-text-label"
                                         },
                                         "text": "$t:sirsoft-daum_postcode.settings.guide.step2"
                                     },
@@ -437,7 +544,7 @@
                                         "type": "basic",
                                         "name": "Li",
                                         "props": {
-                                            "className": "text-label"
+                                            "className": "daumpostcode-text-label"
                                         },
                                         "text": "$t:sirsoft-daum_postcode.settings.guide.step3"
                                     }
@@ -450,25 +557,26 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "sticky-footer-buttons"
+                            "className": "daumpostcode-sticky-footer-buttons"
                         },
                         "children": [
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
-                                "props": {
-                                    "className": "btn btn-secondary"
-                                },
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/plugins"
+                                            "bypassLeaveGuard": true
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "href": "/admin/plugins",
+                                    "className": "daumpostcode-button daumpostcode-btn daumpostcode-btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -481,12 +589,9 @@
                                 "id": "save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "btn btn-primary flex-center gap-1.5"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -500,8 +605,8 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": "{{_local.form}}"
@@ -550,6 +655,11 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
+                                    "className": "daumpostcode-btn daumpostcode-btn-primary daumpostcode-flex-center daumpostcode:gap-1.5"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -557,7 +667,7 @@
                                         "if": "{{_local.isSaving}}",
                                         "props": {
                                             "name": "spinner",
-                                            "className": "spinner-sm"
+                                            "className": "daumpostcode-spinner-sm"
                                         }
                                     },
                                     {
@@ -579,46 +689,5 @@
                 ]
             }
         ]
-    },
-    "pageConfig": {
-        "notice": "$t:sirsoft-daum_postcode.settings.notice",
-        "guide": {
-            "title": "$t:sirsoft-daum_postcode.settings.guide.title",
-            "steps": [
-                "$t:sirsoft-daum_postcode.settings.guide.step1",
-                "$t:sirsoft-daum_postcode.settings.guide.step2",
-                "$t:sirsoft-daum_postcode.settings.guide.step3"
-            ]
-        }
-    },
-    "schema": {
-        "display_mode": {
-            "type": "enum",
-            "options": [
-                "popup",
-                "layer"
-            ],
-            "default": "layer",
-            "label": "$t:sirsoft-daum_postcode.settings.fields.display_mode.label",
-            "hint": "$t:sirsoft-daum_postcode.settings.fields.display_mode.hint"
-        },
-        "popup_width": {
-            "type": "integer",
-            "default": 500,
-            "label": "$t:sirsoft-daum_postcode.settings.fields.popup_width.label",
-            "hint": "$t:sirsoft-daum_postcode.settings.fields.popup_width.hint"
-        },
-        "popup_height": {
-            "type": "integer",
-            "default": 600,
-            "label": "$t:sirsoft-daum_postcode.settings.fields.popup_height.label",
-            "hint": "$t:sirsoft-daum_postcode.settings.fields.popup_height.hint"
-        },
-        "theme_color": {
-            "type": "string",
-            "default": "#1D4ED8",
-            "label": "$t:sirsoft-daum_postcode.settings.fields.theme_color.label",
-            "hint": "$t:sirsoft-daum_postcode.settings.fields.theme_color.hint"
-        }
     }
 }

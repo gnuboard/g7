@@ -1,0 +1,27 @@
+# 시나리오 매니페스트 — NHN KCP 카드 승인 콜백의 주문 후속 처리
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: nhnkcp_payment_callback_order_side_effects
+
+description: |
+  KCP 카드 승인 콜백이 주문을 결제완료로 확정할 때 이커머스 모듈의 결제완료 후속 처리가 함께 돈다.
+  플러그인 경로로 들어와도 모듈이 직접 확정할 때와 같은 결과여야 한다.
+
+  - 주문·결제 건이 승인 금액 기준으로 결제완료가 되고 거래번호·승인번호가 기록된다.
+  - 옵션·상품 재고가 주문 수량만큼 차감된다.
+  - 주문에 쓴 쿠폰 발급 건이 그 주문에 사용 확정된다.
+  - 주문한 장바구니 항목이 지워진다.
+  - 주문에 쓴 마일리지가 차감 거래로 기록되고 적립 잔액이 소진된다.
+
+axes:
+  path: [card_auth_callback]
+
+effects:
+  - kcp_card_approval_completes_the_order_with_the_paid_amount   # 결제완료 + 승인 금액·거래번호 기록
+  - kcp_card_approval_deducts_option_and_product_stock           # 옵션·상품 재고 차감
+  - kcp_card_approval_confirms_the_used_coupon_on_the_order      # 쿠폰 발급 건 사용 확정
+  - kcp_card_approval_removes_the_ordered_cart_items             # 장바구니 항목 삭제
+  - kcp_card_approval_deducts_the_used_mileage                   # 마일리지 차감 거래 기록
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/PaymentCallbackOrderSideEffectsTest.php

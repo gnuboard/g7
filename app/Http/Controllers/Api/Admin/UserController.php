@@ -4,10 +4,13 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
+use App\Exceptions\CannotDeleteSelfException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\PermissionEscalationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Requests\User\BulkUpdateUserRolesRequest;
 use App\Http\Requests\User\BulkUpdateUserStatusRequest;
 use App\Http\Requests\User\CheckEmailRequest;
 use App\Http\Requests\User\CreateUserRequest;
@@ -31,6 +34,11 @@ use Illuminate\Validation\ValidationException;
  */
 class UserController extends AdminBaseController
 {
+    /**
+     * 회원 도메인 서비스를 주입받습니다.
+     *
+     * @param  UserService  $userService  회원 조회·생성·수정·검색을 담당하는 서비스
+     */
     public function __construct(
         private UserService $userService
     ) {
@@ -103,9 +111,13 @@ class UserController extends AdminBaseController
             // withAdminInfo()를 호출하여 관리자용 상세 정보 및 모듈 훅 데이터 포함
             $resource = new UserResource($user);
 
+            // 비밀번호 상태(만료 판정)·잠긴 칸은 상세에서만 덧붙인다 — withAdminInfo() 는 목록도 행마다 부른다(A13, 7.2.0).
             return $this->success(
                 'user.fetch_success',
-                $resource->withAdminInfo()
+                array_merge($resource->withAdminInfo(), [
+                    'password_status' => $resource->passwordStatusArray(),
+                    'locked_fields' => $resource->adminLockedFields(),
+                ])
             );
         } catch (Exception $e) {
             return $this->error('user.fetch_failed', 500, $e->getMessage());
@@ -134,6 +146,9 @@ class UserController extends AdminBaseController
             return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ValidationException $e) {
             return $this->error('user.update_failed', 422, $e->errors());
+        } catch (PasswordAuthDisallowedException $e) {
+            // 비밀번호 인증 정책 거절(회사 계정 전용 회원에게 비밀번호 지정) — 전역 렌더러가 403 + 안내 데이터로 답한다
+            throw $e;
         } catch (Exception $e) {
             return $this->error('user.update_failed', 500, $e);
         }
@@ -166,6 +181,30 @@ class UserController extends AdminBaseController
     }
 
     /**
+     * 회원을 모든 기기에서 로그아웃시킵니다 (강제 로그아웃).
+     *
+     * 그 회원의 인증 토큰을 전부 지운다 — 다음 API 요청부터 401 이다. 하위 관리자는 최고관리자를 대상으로 하지 못한다.
+     *
+     * @param  User  $user  대상 회원
+     * @return JsonResponse 지운 토큰 수 (`data.revoked_count`)
+     *
+     * @since 7.2.0
+     */
+    public function revokeSessions(User $user): JsonResponse
+    {
+        try {
+            $actor = request()->user();
+            $count = $this->userService->revokeAllSessions($user, $actor instanceof User ? $actor : null);
+
+            return $this->success('user.sessions_revoked', ['revoked_count' => $count]);
+        } catch (CannotModifySuperAdminException $e) {
+            return $this->error('exceptions.cannot_modify_super_admin', 403);
+        } catch (Exception $e) {
+            return $this->error('user.update_failed', 500, $e);
+        }
+    }
+
+    /**
      * 사용자를 삭제합니다.
      *
      * @param  DeleteUserRequest  $request  사용자 삭제 요청 데이터
@@ -184,6 +223,8 @@ class UserController extends AdminBaseController
             }
         } catch (CannotDeleteSuperAdminException $e) {
             return $this->error('exceptions.cannot_delete_super_admin', 422);
+        } catch (CannotDeleteSelfException $e) {
+            return $this->error('exceptions.cannot_delete_self', 422);
         } catch (ValidationException $e) {
             // UserService 가 던진 ValidationException 의 general[0] 에는 이미 `:error` 가
             // 치환된 완성 메시지(예: "사용자 삭제에 실패했습니다: <상세 사유>")가 들어있다.
@@ -255,12 +296,30 @@ class UserController extends AdminBaseController
                 $user = $this->userService->getUserById($validated['id']);
                 $users = $user ? collect([$user]) : collect();
             } else {
-                $users = $this->userService->searchByKeyword($validated['keyword']);
+                // 알림 수신자처럼 회원을 「고르는」 창은 탈퇴 회원을 뺀다(exclude_withdrawn) — 탈퇴 회원은 연락처가 익명화되고
+                // 바깥 채널 발송이 막혀 골라도 받지 못한다. 기록을 찾는 목록 필터(활동 로그·주문 등)는 옵션 없이 부른다.
+                $users = $this->userService->searchByKeyword(
+                    $validated['keyword'],
+                    (bool) ($validated['exclude_withdrawn'] ?? false),
+                );
             }
 
+            // **이 목록을 만든 키워드를 함께 싣는다** (#599 실측).
+            //
+            // 회원 자동완성은 글자마다 요청을 내고 응답의 도착 순서는 보장되지 않는다. 화면이
+            // 「지금 입력값」으로 도착한 목록에 도장을 찍으면, 가장 큰 옛 응답(한 글자가 부른
+            // 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다 — 2026-09-22 실측에서
+            // `MEAS599T-S2` 를 친 화면에 전체 회원 83행이 떴다. 화면이 요청 시점의 값을 되읽을
+            // 방법은 없으므로(`<success>` 안의 `$event.target.value` 는 응답 도착 순간의 DOM 을
+            // 읽는다), 응답이 스스로 자기 키워드를 말하게 한다.
+            //
+            // uuid·id 로 한 건을 집은 조회는 키워드가 없어 `null` 이다 — 빈 문자열로 내려보내면
+            // 「검색어가 비었을 때」와 구분되지 않는다.
             return $this->successWithResource(
                 'user.search_success',
-                UserResource::collection($users)
+                UserResource::collection($users)->additional([
+                    'meta' => ['keyword' => $validated['keyword'] ?? null],
+                ])
             );
         } catch (Exception $e) {
             return $this->error('user.search_failed', 500, $e->getMessage());
@@ -341,6 +400,41 @@ class UserController extends AdminBaseController
             return $this->error('user.bulk_update_status_failed', 422, $e->errors());
         } catch (Exception $e) {
             return $this->error('user.bulk_update_status_failed', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * 여러 회원에게 역할을 한꺼번에 더하거나 뺍니다.
+     *
+     * @param  BulkUpdateUserRolesRequest  $request  회원 UUID·역할 ID·작업(add|remove) 요청
+     * @return JsonResponse 변경 수·제외 수·제외 사유
+     */
+    public function bulkUpdateRoles(BulkUpdateUserRolesRequest $request): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+            $result = $this->userService->bulkUpdateRoles($validated['uuids'], $validated['role_ids'], $validated['mode']);
+
+            // 이미 원하는 상태라 바뀌지 않은 회원이 있으면 그 수까지 말한다 — 없으면 종전 문구.
+            $hasUnchanged = ($result['unchanged_count'] ?? 0) > 0;
+
+            return $this->success(
+                $hasUnchanged ? 'user.bulk_roles_updated_with_unchanged' : 'user.bulk_roles_updated',
+                $result,
+                200,
+                [
+                    'count' => $result['updated_count'],
+                    'skipped' => $result['skipped_count'],
+                    'unchanged' => $result['unchanged_count'] ?? 0,
+                ]
+            );
+        } catch (PermissionEscalationException $e) {
+            // 상한 밖 역할 — 요청 전체 거부 (단건 수정과 같은 403)
+            return $this->error('user.bulk_roles_ceiling', 403);
+        } catch (ValidationException $e) {
+            return $this->error('user.bulk_roles_failed', 422, $e->errors());
+        } catch (Exception $e) {
+            return $this->error('user.bulk_roles_failed', 500, $e->getMessage());
         }
     }
 }

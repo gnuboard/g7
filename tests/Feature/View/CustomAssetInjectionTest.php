@@ -27,6 +27,11 @@ class CustomAssetInjectionTest extends TestCase
     /** 테스트용 가짜 플러그인 식별자 */
     private const FAKE_PLUGIN = 'g7test-injection';
 
+    /**
+     * 시험마다 수집 캐시를 비우고 가짜 플러그인의 custom CSS 하나를 놓는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +42,11 @@ class CustomAssetInjectionTest extends TestCase
         File::put(base_path('plugins/'.self::FAKE_PLUGIN.'/custom/custom.css'), '/* operator */');
     }
 
+    /**
+     * 가짜 플러그인 폴더째 지우고 수집 캐시를 비운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory(base_path('plugins/'.self::FAKE_PLUGIN));
@@ -55,6 +65,8 @@ class CustomAssetInjectionTest extends TestCase
      * @scenario custom_source=convention_scan, custom_asset=css
      *
      * @effects custom_assets_disabled_by_request_parameter
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function custom_off_요청은_수집_결과를_비운다(): void
@@ -87,6 +99,8 @@ class CustomAssetInjectionTest extends TestCase
      * 서버가 자기가 한 일을 그대로 심어야 한다.
      *
      * @effects custom_assets_disabled_by_request_parameter
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 서버가_custom_off_상태를_화면에_알린다(): void
@@ -109,6 +123,8 @@ class CustomAssetInjectionTest extends TestCase
      * 돈다.
      *
      * @effects custom_assets_disabled_by_request_parameter
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function custom_off_요청은_캐시_버전을_건드리지_않는다(): void
@@ -135,9 +151,13 @@ class CustomAssetInjectionTest extends TestCase
     }
 
     /**
+     * 필터 훅으로 다른 출처(템플릿 환경설정 입력 CSS 등)의 항목을 목록 끝에 더할 수 있다.
+     *
      * @scenario custom_source=assets_json, custom_asset=css
      *
      * @effects custom_asset_loaded_after_extension_bundles
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 필터_훅으로_다른_출처의_항목을_더할_수_있다(): void
@@ -178,9 +198,13 @@ class CustomAssetInjectionTest extends TestCase
     }
 
     /**
+     * 수집한 항목 서술자가 프론트 로더가 읽는 형태(id·type·url)를 그대로 갖춘다.
+     *
      * @scenario custom_source=convention_scan, custom_asset=css
      *
      * @effects custom_asset_loaded_after_extension_bundles
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 서술자는_프론트가_읽는_형태를_그대로_갖춘다(): void
@@ -205,6 +229,8 @@ class CustomAssetInjectionTest extends TestCase
      * @scenario custom_source=convention_scan, custom_asset=css
      *
      * @effects custom_asset_loaded_after_extension_bundles
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 확장_간_순서는_모듈_플러그인_템플릿이다(): void
@@ -262,8 +288,9 @@ class CustomAssetInjectionTest extends TestCase
                 .'CSS 는 나중에 온 규칙이 이기므로 템플릿 재정의가 가장 뒤여야 합니다.'
             );
         } finally {
+            // 가짜 확장 루트(g7test-order-*)째 지운다 — custom 만 지우면 빈 확장 폴더가 저장소에 남는다
             foreach ($created as $dir) {
-                File::deleteDirectory($dir);
+                File::deleteDirectory(dirname($dir));
             }
 
             CustomAssets::flushCache();
@@ -289,6 +316,8 @@ class CustomAssetInjectionTest extends TestCase
      * @scenario custom_source=convention_scan, custom_asset=css, custom_change_detection=top_level_asset
      *
      * @effects custom_asset_signature_is_scoped_per_render, custom_signature_scoped_per_host
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 관리자_사용자_렌더가_서명_키를_서로_덮어쓰지_않는다(): void
@@ -365,12 +394,14 @@ class CustomAssetInjectionTest extends TestCase
      *
      * 종전 서명은 로드 목록(최상위 css/js)의 mtime 만 봤다. 게시는 `custom/**` 를 재귀로
      * 복사하므로, 문서가 권장하는 `url('./img/marker.svg')` 의 대상 파일만 교체하면 게시본이
-     * 영영 갱신되지 않았다 — 실측(g7_2.dev): svg 62B→78B 교체 뒤 버전 불변, 게시본 62B.
+     * 영영 갱신되지 않았다 — 실측(개발 사이트): svg 62B→78B 교체 뒤 버전 불변, 게시본 62B.
      * mtime 이 같은 재작성도 크기로 잡는다.
      *
      * @scenario custom_source=convention_scan, custom_asset=static_file, custom_change_detection=nested_static_file
      *
      * @effects custom_signature_covers_publishable_tree
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function custom_하위_파일_크기_변경은_버전을_올린다(): void
@@ -412,11 +443,13 @@ class CustomAssetInjectionTest extends TestCase
     }
 
     /**
-     * 서명 키는 만료되지 않는다 — 기본 TTL 로 만료되면 그 경계의 첫 관측이 "기록만" 이라 변경 1회를 놓친다 (#651 F11).
+     * 서명 키는 만료되지 않는다 — 기본 TTL 로 만료되면 그 경계의 첫 관측이 "기록만" 이라 변경 1회를 놓친다 (#651).
      *
      * @scenario custom_source=convention_scan, custom_asset=css, custom_change_detection=no_change
      *
      * @effects cache_version_key_does_not_expire
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 서명_키는_이틀_뒤에도_남아_있다(): void

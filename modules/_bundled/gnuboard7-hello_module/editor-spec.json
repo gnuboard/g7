@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "moduleId": "gnuboard7-hello_module",
+  "version": "0.2.0",
+  "description": "레이아웃 편집기 스펙 — Hello 모듈이 제공하는 컴포넌트의 팔레트 등재 예시. 확장이 자기 컴포넌트를 편집기에 노출하는 최소 사례이며, 등재하지 않으면 작성자가 편집기에서 그 컴포넌트를 꺼낼 수 없다. 팔레트/능력 선언은 모듈 → 플러그인 → 템플릿 순으로 병합된다.",
+  "componentPalette": {
+    "comment": "확장 컴포넌트는 레지스트리 등록 이름(`{모듈식별자}.{이름}`)을 그대로 키로 쓴다 — 마크업 태그의 프리픽스와 같은 좌표다. 라벨은 이 모듈의 언어팩 네임스페이스를 쓴다(코어 `editor.*` 네임스페이스를 침범하지 않는다).",
+    "groups": [
+      {
+        "label": "$t:gnuboard7-hello_module.editor.palette.group",
+        "kind": "content",
+        "components": [
+          "gnuboard7-hello_module.MemoCard"
+        ]
+      }
+    ],
+    "entries": {
+      "gnuboard7-hello_module.MemoCard": {
+        "label": "$t:gnuboard7-hello_module.editor.palette.memo_card.label",
+        "requiresDefaultNode": true,
+        "defaultNode": {
+          "type": "composite",
+          "name": "gnuboard7-hello_module.MemoCard",
+          "props": {
+            "title": "$t:gnuboard7-hello_module.editor.palette.memo_card.sample_title",
+            "body": "$t:gnuboard7-hello_module.editor.palette.memo_card.sample_body"
+          }
+        }
+      }
+    }
+  },
+  "componentCapabilities": {
+    "gnuboard7-hello_module.MemoCard": {
+      "label": "$t:gnuboard7-hello_module.editor.palette.memo_card.label",
+      "coreProps": [
+        "id"
+      ],
+      "styleControls": [
+        "marginAll",
+        "width"
+      ]
+    }
+  },
+  "sampleData": {
+    "comment": "편집기 캔버스용 프리뷰 응답. 목록은 MemoCollection(data/meta/abilities), 단건은 MemoResource 형태 그대로다 — 형태가 어긋나면 캔버스만 조용히 빈다.",
+    "byDataSourceId": {
+      "memos": {
+        "data": {
+          "data": [
+            {
+              "id": 12,
+              "uuid": "00000000-0000-4000-8000-000000000012",
+              "title": "첫 번째 메모",
+              "content": "샘플 모듈이 보여 주는 최소 CRUD 메모입니다.",
+              "created_at": "2026-05-12 10:24:00",
+              "updated_at": "2026-05-12 10:24:00",
+              "abilities": {
+                "can_create": true,
+                "can_update": true,
+                "can_delete": true
+              }
+            },
+            {
+              "id": 11,
+              "uuid": "00000000-0000-4000-8000-000000000011",
+              "title": "공지 메모",
+              "content": "관리자 목록과 사용자 목록이 같은 데이터를 다른 엔드포인트로 받습니다.",
+              "created_at": "2026-05-11 09:05:00",
+              "updated_at": "2026-05-11 09:05:00",
+              "abilities": {
+                "can_create": true,
+                "can_update": true,
+                "can_delete": true
+              }
+            }
+          ],
+          "meta": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 10,
+            "total": 2
+          },
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
+      },
+      "memoData": {
+        "data": {
+          "id": 12,
+          "uuid": "00000000-0000-4000-8000-000000000012",
+          "title": "첫 번째 메모",
+          "content": "샘플 모듈이 보여 주는 최소 CRUD 메모입니다.",
+          "created_at": "2026-05-12 10:24:00",
+          "updated_at": "2026-05-12 10:24:00",
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
+      }
+    }
+  }
+}

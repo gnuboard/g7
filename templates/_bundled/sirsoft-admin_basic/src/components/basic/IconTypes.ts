@@ -6,8 +6,15 @@ export type IconStyle = 'solid' | 'regular' | 'light' | 'duotone' | 'brands';
 
 /**
  * Font Awesome 아이콘 크기
+ *
+ * `Icon` 이 `fa-{size}` 로 그대로 방출하므로 값 집합은 Font Awesome 어휘다(Tailwind 아님).
+ * 상대 스케일 `xs`~`2xl` 과 배수 스케일 `2x`~`5x` 가 함께 있다.
+ *
+ * 이 타입이 레이아웃 작성 `<icon size>` 의 SSoT 이며 audit 레지스트리
+ * (`layout-schema/component-registry.cjs` 의 `Icon.enums.size`)가 이 목록과 대조된다 —
+ * 값을 늘리거나 줄이면 `icon-size-registry-sync` 가드가 두 하네스에서 실패한다.
  */
-export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2x' | '3x' | '4x' | '5x';
+export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '2x' | '3x' | '4x' | '5x';
 
 /**
  * 자주 사용되는 Font Awesome 아이콘 이름
@@ -149,6 +156,27 @@ export enum IconName {
   Plug = 'fa-plug',
   PuzzlePiece = 'fa-puzzle-piece',
   Palette = 'fa-palette',
+
+  // 상태 의미 토큰(status-*)이 가리키는 글리프 — 클레임·주문 진행단계
+  FileLines = 'fa-file-lines',
+  MoneyBill = 'fa-money-bill',
+  Pause = 'fa-pause',
+  Ban = 'fa-ban',
+  BoxOpen = 'fa-box-open',
+  Truck = 'fa-truck',
+  Warehouse = 'fa-warehouse',
+  Box = 'fa-box',
+  TruckFast = 'fa-truck-fast',
+  House = 'fa-house',
+  CircleCheck = 'fa-circle-check',
+  RotateLeft = 'fa-rotate-left',
+  HourglassHalf = 'fa-hourglass-half',
+  BoxesPacking = 'fa-boxes-packing',
+  RightLeft = 'fa-right-left',
+  Reply = 'fa-reply',
+  ArrowsRotate = 'fa-arrows-rotate',
+  BoxArchive = 'fa-box-archive',
+  CircleXmark = 'fa-circle-xmark',
 }
 
 /**
@@ -289,4 +317,30 @@ export const iconNameMap: Record<string, IconName> = {
   'plug': IconName.Plug,
   'puzzle-piece': IconName.PuzzlePiece,
   'palette': IconName.Palette,
+
+  // ─── 상태 의미 토큰 (status-*) ───
+  // 백엔드(상태 Enum)는 아이콘 라이브러리를 모른다 — 라이브러리 중립 토큰만 내보내고,
+  // 그 토큰을 이 템플릿의 글리프로 바꾸는 표는 여기 한 곳이다. 어휘가 늘면 여기에 더한다.
+  'status-request': IconName.FileLines,
+  'status-payment-pending': IconName.CreditCard,
+  'status-paid': IconName.MoneyBill,
+  'status-approved': IconName.ThumbsUp,
+  'status-on-hold': IconName.Pause,
+  'status-rejected': IconName.Ban,
+  'status-pickup-ready': IconName.BoxOpen,
+  'status-pickup': IconName.Truck,
+  'status-received': IconName.Warehouse,
+  'status-dispatch-ready': IconName.Box,
+  'status-dispatch': IconName.TruckFast,
+  'status-delivered': IconName.House,
+  'status-completed': IconName.CircleCheck,
+  'status-withdrawn': IconName.RotateLeft,
+  'status-processing': IconName.HourglassHalf,
+  // 주문 상태 전용 토큰 — OrderStatusEnum::icon()
+  'status-preparing': IconName.BoxesPacking,
+  'status-cancelled': IconName.CircleXmark,
+  'status-exchange': IconName.RightLeft,
+  'status-return': IconName.Reply,
+  'status-exchanged': IconName.ArrowsRotate,
+  'status-returned': IconName.BoxArchive,
 };

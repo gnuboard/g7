@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Http\Resources;
 
+use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiCollection;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -67,6 +68,11 @@ class BoardCollection extends BaseApiCollection
                 'can_create' => $this->checkModulePermission('boards', 'create'),
                 'can_update' => $this->checkModulePermission('boards', 'update'),
                 'can_delete' => $this->checkModulePermission('boards', 'delete'),
+                // 표시 순서는 게시판 전체에 걸친 값이라 게시판 조회·수정 권한을 모두 범위 제한 없이 가진 사람만 바꾼다
+                // (조회 범위가 좁으면 모달 목록이 전체 게시판이 아니어서 저장이 늘 거부된다)
+                'can_reorder' => $this->checkModulePermission('boards', 'update')
+                    && PermissionHelper::getEffectiveScope('sirsoft-board.boards.update') === null
+                    && PermissionHelper::getEffectiveScope('sirsoft-board.boards.read') === null,
             ],
         ];
     }

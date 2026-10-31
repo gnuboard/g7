@@ -23,6 +23,11 @@ class PaymentSettingsOrphanedMethodTest extends ModuleTestCase
 
     private string $storagePath;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,9 +50,18 @@ class PaymentSettingsOrphanedMethodTest extends ModuleTestCase
                     '_cached_source' => 'plugin:sirsoft-tosspayments',
                 ],
             ],
+            // 무통장입금은 사용 중인 입금 계좌가 있어야 공개 목록에 남는다(#703) — 고아 판정과 무관한 전제
+            'bank_accounts' => [
+                ['bank_code' => '004', 'account_number' => '123-456', 'account_holder' => '테스트상점', 'is_active' => true, 'is_default' => true],
+            ],
         ]);
     }
 
+    /**
+     * 테스트 환경을 정리합니다.
+     *
+     * @return void 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->storagePath)) {
@@ -57,6 +71,15 @@ class PaymentSettingsOrphanedMethodTest extends ModuleTestCase
         parent::tearDown();
     }
 
+    /**
+     * 공개 결제 설정 API 가 고아 결제수단을 빼고 정상 수단은 남기는지 검증합니다.
+     *
+     * @scenario settings_source=saved, catalog_origin=plugin
+     *
+     * @effects orphaned_payment_method_excluded_from_public_payment_and_checkout
+     *
+     * @return void 없음
+     */
     public function test_payment_endpoint_excludes_orphaned_method(): void
     {
         $response = $this->getJson(self::PAYMENT_ENDPOINT);
@@ -69,6 +92,15 @@ class PaymentSettingsOrphanedMethodTest extends ModuleTestCase
         $this->assertContains('dbank', $ids);
     }
 
+    /**
+     * 주문서 설정 API 도 고아 결제수단을 빼는지 검증합니다.
+     *
+     * @scenario settings_source=saved, catalog_origin=plugin
+     *
+     * @effects orphaned_payment_method_excluded_from_public_payment_and_checkout
+     *
+     * @return void 없음
+     */
     public function test_checkout_endpoint_excludes_orphaned_method(): void
     {
         $response = $this->getJson(self::CHECKOUT_ENDPOINT);
@@ -84,6 +116,7 @@ class PaymentSettingsOrphanedMethodTest extends ModuleTestCase
      * order_settings.json 을 테스트 격리 경로에 기록합니다.
      *
      * @param  array  $settings  저장할 주문설정 배열
+     * @return void 없음
      */
     private function saveOrderSettings(array $settings): void
     {

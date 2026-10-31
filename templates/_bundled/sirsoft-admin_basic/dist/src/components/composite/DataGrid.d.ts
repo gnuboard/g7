@@ -105,6 +105,11 @@ export interface DataGridProps {
     onSelectionChange?: (ids: (string | number)[]) => void;
     idField?: string;
     /**
+     * 행 이름으로 쓸 필드(점 경로, 다국어 객체면 현재 언어 값). 셀 렌더 문맥 `$rowLabel` 과 행 선택 체크박스 이름에 쓰인다.
+     * 없으면 첫 표시 열의 글자 값, 그것도 없으면 「N번째 행」(#757).
+     */
+    rowLabelField?: string;
+    /**
      * 선택의 유효 범위.
      *
      * - `'page'`: 선택은 지금 그려진 행에서만 유효하다. 검색·필터·페이지 이동으로
@@ -116,8 +121,25 @@ export interface DataGridProps {
      *   하는 화면용.
      */
     selectionScope?: 'page' | 'free';
+    /**
+     * 선택할 수 없는 행의 id 목록 (`idField` 값).
+     *
+     * 이 행들은 체크박스가 비활성으로 그려지고 전체 선택·전체 선택 여부 판정에서 빠진다.
+     * 서버가 일괄 요청 전체를 거절하는 대상(예: 회원 일괄 상태 변경의 로그인한 본인)을
+     * 화면이 고를 수 없게 할 때 쓴다. `selectionScope: 'page'` 면 선택 목록에 남아 있던
+     * 이 행들의 선택도 함께 버린다.
+     */
+    nonSelectableIds?: (string | number)[];
     showColumnSelector?: boolean;
     visibleColumns?: string[];
+    /**
+     * 표시 컬럼이 바뀌었을 때 호출됩니다.
+     *
+     * 같은 이름의 이벤트를 ColumnSelector 도 방출하는데 그쪽은 두 번째 인자로 발화 출처
+     * (`{ source: 'user' | 'init' | 'dynamic' }`)를 함께 싣습니다. 여기서는 싣지 않으므로,
+     * ColumnSelector 용으로 쓴 `$args[1].source` 가드를 이 이벤트에 그대로 옮기면 항상
+     * undefined 가 되어 그 액션이 조용히 죽습니다.
+     */
     onColumnVisibilityChange?: (fields: string[]) => void;
     responsiveBreakpoint?: number;
     cardRenderer?: (row: any, columns: DataGridColumn[]) => React.ReactNode;
@@ -126,6 +148,12 @@ export interface DataGridProps {
     alwaysShowPagination?: boolean;
     serverSidePagination?: boolean;
     serverCurrentPage?: number;
+    /**
+     * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/users?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
+     */
+    pageHref?: string;
+    /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
+    pageHrefMergeQuery?: boolean;
     /**
      * 서버가 알려준 마지막 페이지 번호
      *
@@ -254,6 +282,18 @@ export interface DataGridProps {
      * "{{row.fee_summary}}"               // fee_summary가 있을 때만 표시
      */
     subRowCondition?: string;
+    /**
+     * 데이터 행에 덧붙일 CSS 클래스 (선택적)
+     *
+     * 행 유형을 배경색으로 구분할 때 쓴다. 마크업에서 행 표현식으로 넘기면
+     * 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) DataGrid 가 행마다 푼다.
+     * 예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`
+     *
+     * 선택 행 강조보다 먼저 놓여 선택 상태가 덮어쓴다. 다만 확장 앞글자가 붙은 배경 클래스는 층 밖이라
+     * 선택 강조를 늘 이기므로, 식 안의 `$selected`(그 행이 선택됐는지)로 선택 색을 직접 고른다
+     * (예: `{{row.row_type === 'notice' ? ($selected ? '<선택 배경>' : '<기본 배경>') : ''}}`, 실제 예는 docs/frontend/component-props.md).
+     */
+    rowClassName?: string;
     /**
      * 서브 행 셀의 CSS 클래스 (선택적)
      *

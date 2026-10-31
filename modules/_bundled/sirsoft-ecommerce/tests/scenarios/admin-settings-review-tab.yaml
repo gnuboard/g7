@@ -1,0 +1,24 @@
+feature: 이커머스 환경설정 리뷰 설정 탭 레이아웃 계약
+
+description: |
+  리뷰 설정 탭(_tab_review_settings)의 구조, 입력 범위, 기본값, 변경 처리, 다국어 키를 잠근다.
+
+  항목 사이 구분선은 카드 본문 row-stack 이 그린다. 예전에는 항목 사이에 구분선 전용 div 를 따로 두어
+  row-stack 의 선과 겹쳐 두 줄로 보이고 그 div 의 패딩만큼 빈 줄이 생겼다(7.1.0 출시 전 점검에서 걷어냄).
+  그래서 카드 본문의 자식은 설정 3개뿐이어야 한다.
+
+axes:
+  setting: [tab_structure, write_deadline_days, max_images, max_image_size_mb]
+
+effects:
+  - review_tab_structure_and_card_locked
+  - review_settings_items_separated_by_row_stack_only
+  - review_setting_input_binds_server_limits
+  - review_setting_default_value_bound
+  - review_setting_change_writes_form_and_marks_dirty
+  - review_setting_texts_use_review_namespace_keys
+  - review_tab_renders_without_validation_errors
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceSettingsReview.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin_ecommerce_settings_review_tab.test.tsx

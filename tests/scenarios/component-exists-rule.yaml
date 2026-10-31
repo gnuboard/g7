@@ -1,0 +1,28 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 기존 규칙 단위 테스트의 소유권을 사후 등재한 매니페스트. 축은 컴포넌트 출처(템플릿/확장) 하나이고 나머지 효과는 이미 통과 중인 회귀 테스트다.
+
+feature: 레이아웃 저장 검증 — 컴포넌트 존재 규칙 (ComponentExists)
+
+description: |
+  레이아웃 저장 API(StoreLayoutRequest·UpdateLayoutRequest)가 쓰는 `App\Rules\ComponentExists` 의 계약.
+  레이아웃 JSON 의 컴포넌트 `name` 을 템플릿 `components.json` 의 basic·composite·layout 목록과 대조한다.
+
+  2026-09-28 결정(C3): 확장 컴포넌트(`확장식별자.이름`)는 템플릿 목록에 없는 것이 정상이라 이 규칙이
+  거부하지 않는다. 설치된 확장 선언과의 대조는 편집기 컴파일 검사가 맡고, 목록에 없으면 경고만 내고 저장은
+  허용한다 — 이 규칙이 거부하면 같은 레이아웃이 저장 경로에서만 막힌다.
+
+axes:
+  component_origin: [template, extension]
+
+effects:
+  - registered_components_pass_validation
+  - unregistered_component_fails_validation
+  - validates_nested_children_components
+  - fails_with_unregistered_component_in_nested_children
+  - empty_component_name_fails_validation
+  - missing_template_id_fails_validation
+  - missing_manifest_fails_validation
+  - caching_works_correctly
+  - extension_component_names_are_not_rejected_by_template_list
+
+test_files:
+  - tests/Feature/Rules/ComponentExistsTest.php

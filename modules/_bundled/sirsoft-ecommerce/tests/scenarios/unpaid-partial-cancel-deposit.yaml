@@ -1,0 +1,33 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   결제수단(무통장·가상계좌) × 취소 범위(부분·전체) × 이후 행동(입금확인·내역만·원금액·두 번 취소) 중 의미 있는
+#   조합은 결제수단마다 정해진다 — 가상계좌 부분취소는 접수 단계에서 막히므로 이후 행동 축이 없다.
+# e2e:allow 취소 창 안내 문구의 노출 조건은 레이아웃 구조 테스트가, 실제 화면은 07 문서 Chrome MCP 실측이 잰다.
+feature: 입금 전 주문의 부분취소와 [입금확인] (E2 · Q17) — #747 C4
+
+description: |
+  입금 전 무통장 주문을 일부만 취소하면 재계산된 남은 결제액이 받은 돈(total_paid_amount)에 들어가고 받을 돈
+  (total_due_amount)은 취소 전 금액으로 남았다. 결제행은 부분취소로 바뀌어 [입금확인] 버튼이 사라졌고, API 로
+  불러도 금액 검증(구성요소 합 = due)이 어떤 금액으로도 통과하지 못했다.
+
+    - 입금 전 취소의 재계산 결제액은 받을 돈(due)으로 옮긴다. 받은 돈은 0 으로 둔다.
+    - 입금 전 부분취소는 결제행을 입금 대기로 둔다(전체취소는 종전처럼 취소). 결제행에 정산할 취소액도 없다.
+    - 가상계좌는 PG 가 발급한 입금액이 고정이라 일부 취소 뒤에는 입금을 확인할 수 없다 — 입금 전 가상계좌는
+      전액취소만 허용한다(Q17). 판정은 PaymentMethodResolver::supportsPartialCancel() 하나이고, 취소 창 안내·
+      서버 거절·결제 리소스가 같은 판정을 쓴다. PG 가 입금액 변경을 지원하면 플러그인 필터가 되돌릴 수 있다.
+
+axes:
+  payment_method: [dbank, vbank]
+  cancel_scope: [partial, full]
+  follow_up: [deposit_confirm, record_only, original_amount, second_partial_cancel]
+
+effects:
+  - unpaid_partial_cancel_moves_remaining_total_to_due
+  - deposit_confirm_after_unpaid_partial_cancel_completes_order
+  - deposit_of_original_amount_rejected_after_partial_cancel
+  - vbank_awaiting_deposit_rejects_partial_cancel
+  - vbank_awaiting_deposit_allows_full_cancel
+  - payment_resource_reports_vbank_partial_cancel_block_reason
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/UnpaidPartialCancelDepositTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/cancelOrderModalPartialUnsupported.test.ts

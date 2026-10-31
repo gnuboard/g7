@@ -3,14 +3,12 @@
 namespace Tests\Unit\Repositories;
 
 use App\Http\Requests\ActivityLog\ActivityLogIndexRequest;
-use App\Http\Requests\Admin\Identity\AdminIdentityMessageDefinitionIndexRequest;
 use App\Http\Requests\Menu\MenuListRequest;
 use App\Http\Requests\NotificationDefinition\NotificationDefinitionIndexRequest;
 use App\Http\Requests\NotificationLog\NotificationLogIndexRequest;
 use App\Http\Requests\Schedule\ScheduleListRequest;
 use App\Http\Requests\User\UserListRequest;
 use App\Repositories\ActivityLogRepository;
-use App\Repositories\IdentityMessageDefinitionRepository;
 use App\Repositories\MenuRepository;
 use App\Repositories\NotificationDefinitionRepository;
 use App\Repositories\NotificationLogRepository;
@@ -45,7 +43,7 @@ class SortWhitelistGateParityTest extends TestCase
     /**
      * Repository 상수 ↔ FormRequest 규칙 쌍 목록.
      *
-     * @return array<string, array{0: string, 1: string}>
+     * @return array<string, array{0: string, 1: string}> 화면명 => [Repository 클래스, FormRequest 클래스]
      */
     public static function surfaceProvider(): array
     {
@@ -74,15 +72,22 @@ class SortWhitelistGateParityTest extends TestCase
                 NotificationDefinitionRepository::class,
                 NotificationDefinitionIndexRequest::class,
             ],
-            '본인인증 메시지 정의' => [
-                IdentityMessageDefinitionRepository::class,
-                AdminIdentityMessageDefinitionIndexRequest::class,
-            ],
         ];
     }
 
     /**
      * 게이트가 허용하는 정렬 컬럼은 모두 저장소에서도 허용돼야 한다 (게이트 ⊆ 저장소).
+     *
+     * 화면마다 FormRequest 의 sort_by 허용 목록과 Repository 의 SORT 상수를 소스에서 읽어,
+     * 게이트에만 있는 컬럼이 하나도 없는지 확인한다.
+     *
+     * @scenario contract_check=whitelist_covers_gate
+     *
+     * @effects repo_whitelist_covers_gate
+     *
+     * @param  string  $repositoryClass  정렬 상수를 가진 Repository 클래스
+     * @param  string  $requestClass  sort_by 규칙을 가진 FormRequest 클래스
+     * @return void 반환값 없음
      */
     #[DataProvider('surfaceProvider')]
     public function test_게이트가_허용한_정렬은_저장소도_허용한다(string $repositoryClass, string $requestClass): void
@@ -113,6 +118,7 @@ class SortWhitelistGateParityTest extends TestCase
     /**
      * Repository 소스에서 SORTABLE 상수 값을 읽습니다.
      *
+     * @param  string  $class  Repository 클래스
      * @return array<int, string> 정렬 허용 컬럼 목록
      */
     private function readSortableConstant(string $class): array
@@ -136,6 +142,7 @@ class SortWhitelistGateParityTest extends TestCase
      * rules() 를 실행하지 않는 이유: 훅 필터와 라우트 바인딩에 의존하는 규칙이 있어
      * 단위 테스트 환경에서 부작용이 생긴다. 선언 자체를 읽는 편이 안정적이다.
      *
+     * @param  string  $class  FormRequest 클래스
      * @return array<int, string> 정렬 허용 컬럼 목록
      */
     private function readGateSortColumns(string $class): array
@@ -163,6 +170,7 @@ class SortWhitelistGateParityTest extends TestCase
     /**
      * 쉼표 구분 컬럼 문자열을 배열로 변환합니다.
      *
+     * @param  string  $raw  쉼표로 구분된 컬럼 문자열
      * @return array<int, string> 정리된 컬럼 목록
      */
     private function splitColumns(string $raw): array

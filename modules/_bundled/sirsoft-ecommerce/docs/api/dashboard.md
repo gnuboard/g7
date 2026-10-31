@@ -42,13 +42,13 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| pending_payment | integer | `0` | 오늘 결제대기 상태 주문상품 수량 |
-| payment_complete | integer | `0` | 오늘 결제완료 상태 주문상품 수량 |
-| preparing | integer | `0` | 오늘 상품준비중 상태 주문상품 수량 |
-| shipping_ready | integer | `0` | 오늘 배송준비 상태 주문상품 수량 |
-| shipping | integer | `0` | 오늘 배송중 상태 주문상품 수량 |
-| cancellations | integer | `0` | 오늘 취소 상태 주문상품 수량 (전체취소 기준, 부분취소 포함) |
-| returns | integer | `0` | 오늘 반품 상태 주문상품 수량 (환불 도메인 미반영으로 현재 항상 0) |
+| pending_payment | integer | `0` | 오늘(사이트 하루) 결제대기 주문 수 |
+| payment_complete | integer | `0` | 오늘 결제완료 주문 수 |
+| preparing | integer | `0` | 오늘 상품준비중 주문 수 (주문 목록 상태 필터처럼 배송준비중 주문 포함) |
+| shipping_ready | integer | `0` | 오늘 배송준비중 주문 수 |
+| shipping | integer | `0` | 오늘 배송중 주문 수 |
+| cancellations | integer | `0` | 오늘 주문취소 주문 수 (주문 전체가 취소된 주문 — 일부 취소 주문은 진행 단계 칸에 남는다) |
+| returns | integer | `0` | 오늘 반품 완료 신청서가 있는 주문 수 |
 
 **응답 예시**
 
@@ -81,7 +81,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자 대시보드 상단의 "오늘 주문 현황" 배지를 채우는 조회 엔드포인트입니다. `auth:sanctum` + admin + `sirsoft-ecommerce.dashboard.view` 권한이 필요하며, `EcommerceDashboardService::getOverview()`가 오늘자 주문을 상태별(결제대기/결제완료/상품준비중/배송준비/배송중/취소/반품)로 집계해 각 건수를 반환합니다. 모든 값은 오늘 하루 범위의 집계이며, 관리자가 처리해야 할 주문 흐름을 한눈에 파악하는 용도입니다.
+**설명** 관리자 대시보드 상단의 "오늘 주문 현황" 배지를 채우는 조회 엔드포인트입니다. `auth:sanctum` + admin + `sirsoft-ecommerce.dashboard.view` 권한이 필요하며, `EcommerceDashboardService::getOverview()`가 오늘자 주문을 상태별(결제대기/결제완료/상품준비중/배송준비/배송중/취소/반품)로 세어 각 **주문 수**를 반환합니다(옵션 수량이 아닙니다). 「오늘」은 사이트 기본 시간대의 하루이고, 각 값은 그 배지를 눌러 여는 관리자 주문 목록(`GET /admin/orders` 에 같은 상태 조건 + `date_type=ordered_at` + `date_basis=site` + 시작·종료일 = 사이트 오늘)의 총 건수와 같습니다 — 목록과 같은 필터로 주문 표에서 바로 세므로 매시 집계를 기다리지 않습니다. 목록과 같은 조회 범위도 겁니다 — 주문 조회 권한(`sirsoft-ecommerce.orders.read`)이 본인·역할 범위로 좁혀진 관리자는 그 범위 안의 주문만 셉니다(전체 권한이면 전체). 반품은 `claim_return_statuses[]=completed` 조건입니다. 관리자가 처리해야 할 주문 흐름을 한눈에 파악하는 용도입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/dashboard/pending-inquiries

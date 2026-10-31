@@ -1,11 +1,10 @@
 {
+    "comment": "NHN KCP 결제 플러그인 환경설정 화면 — 상점 인증정보와 결제수단별 사용 여부를 정하고, 연동 상태를 함께 확인한다",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
-    "permissions": [
-        "core.plugins.update"
-    ],
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "$t:sirsoft-pay_nhnkcp.settings.title",
         "description": "$t:sirsoft-pay_nhnkcp.settings.description"
     },
@@ -19,7 +18,35 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         },
         {
             "id": "vbank_info",
@@ -29,7 +56,8 @@
             "method": "GET",
             "auto_fetch": true,
             "auth_required": true,
-            "initLocal": "vbankInfo"
+            "initLocal": "vbankInfo",
+            "comment": "가상계좌 입금통보 URL — 상점에 등록해야 하는 값이라 설정과 별도로 서버에서 받아 보여 준다"
         },
         {
             "id": "health",
@@ -38,8 +66,24 @@
             "endpoint": "/api/plugins/sirsoft-pay_nhnkcp/admin/health",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "healthForbidden": true
+                    }
+                }
+            },
+            "comment": "연동 상태 점검 결과 — 설정이 실제로 동작하는지 저장 전에 확인시켜 준다"
         }
+    ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "core.plugins.update"
     ],
     "slots": {
         "content": [
@@ -50,7 +94,7 @@
                 "dataKey": "form",
                 "trackChanges": true,
                 "props": {
-                    "className": "p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50 dark:bg-gray-900"
+                    "className": "paynhnkcp:p-4 paynhnkcp:sm:p-6 paynhnkcp:lg:p-8 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -65,13 +109,51 @@
                         }
                     },
                     {
-                        "id": "health_check_card",
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "pay-nhnkcp-alert-warning paynhnkcp:mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "paynhnkcp:text-xl paynhnkcp:leading-none paynhnkcp:text-amber-600 paynhnkcp:dark:text-amber-400 paynhnkcp:flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "pay-nhnkcp-tone-warning"
+                                },
+                                "text": "$t:sirsoft-pay_nhnkcp.plugin_read_only"
+                            }
+                        ]
+                    },
+                    {
                         "comment": "시스템 점검 — PC 결제(CLI 바이너리)와 모바일 결제(SOAP 확장) 사전조건 진단",
+                        "id": "health_check_forbidden",
+                        "type": "basic",
+                        "name": "P",
+                        "if": "{{_local.healthForbidden === true}}",
+                        "props": {
+                            "className": "paynhnkcp:mt-6 pay-nhnkcp-form-hint"
+                        },
+                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.forbidden"
+                    },
+                    {
+                        "id": "health_check_card",
                         "type": "basic",
                         "name": "Div",
                         "if": "{{health.data}}",
                         "props": {
-                            "className": "mt-6 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700"
+                            "className": "paynhnkcp:mt-6 paynhnkcp:rounded-lg paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
                         },
                         "children": [
                             {
@@ -79,73 +161,99 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700"
+                                    "className": "paynhnkcp:flex paynhnkcp:items-center paynhnkcp:justify-between paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "flex-center gap-3" },
+                                        "props": {
+                                            "className": "pay-nhnkcp-flex-center paynhnkcp:gap-3"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "{{health.data.summary.error_count > 0 ? 'triangle-exclamation' : (health.data.summary.warning_count > 0 ? 'circle-info' : 'circle-check')}}",
-                                                    "className": "{{health.data.summary.error_count > 0 ? 'text-xl text-red-600 dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'text-xl text-amber-500 dark:text-amber-400' : 'text-xl text-green-600 dark:text-green-400')}}"
+                                                    "className": "paynhnkcp:leading-none {{health.data.summary.error_count > 0 ? 'paynhnkcp:text-xl paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'paynhnkcp:text-xl paynhnkcp:text-amber-600 paynhnkcp:dark:text-amber-400' : 'paynhnkcp:text-xl paynhnkcp:text-green-600 paynhnkcp:dark:text-green-400')}}"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "H2",
-                                                "props": { "className": "text-base font-semibold text-gray-900 dark:text-gray-100" },
-                                                "text": "시스템 점검"
+                                                "props": {
+                                                    "className": "paynhnkcp:text-base paynhnkcp:font-semibold paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100"
+                                                },
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.title"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "if": "{{health.data.summary.error_count > 0}}",
-                                                "props": { "className": "ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" },
-                                                "text": "오류 {{health.data.summary.error_count}}건"
+                                                "props": {
+                                                    "className": "paynhnkcp:ml-2 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:px-2 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:bg-red-100 paynhnkcp:text-red-800 paynhnkcp:dark:bg-red-900/30 paynhnkcp:dark:text-red-300"
+                                                },
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.error_count|count={{health.data.summary.error_count}}"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "if": "{{health.data.summary.warning_count > 0}}",
-                                                "props": { "className": "ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" },
-                                                "text": "경고 {{health.data.summary.warning_count}}건"
+                                                "props": {
+                                                    "className": "paynhnkcp:ml-2 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:px-2 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:bg-amber-100 paynhnkcp:text-amber-800 paynhnkcp:dark:bg-amber-900/30 paynhnkcp:dark:text-amber-300"
+                                                },
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.warning_count|count={{health.data.summary.warning_count}}"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "if": "{{health.data.summary.fixed_count > 0}}",
-                                                "props": { "className": "ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" },
-                                                "text": "자동 복구 {{health.data.summary.fixed_count}}건"
+                                                "props": {
+                                                    "className": "paynhnkcp:ml-2 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:px-2 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:bg-blue-100 paynhnkcp:text-blue-800 paynhnkcp:dark:bg-blue-900/30 paynhnkcp:dark:text-blue-300"
+                                                },
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.fixed_count|count={{health.data.summary.fixed_count}}"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "if": "{{health.data.summary.error_count === 0 && health.data.summary.warning_count === 0 && health.data.summary.fixed_count === 0}}",
-                                                "props": { "className": "ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
-                                                "text": "모두 정상"
+                                                "props": {
+                                                    "className": "paynhnkcp:ml-2 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:px-2 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:bg-green-100 paynhnkcp:text-green-800 paynhnkcp:dark:bg-green-900/30 paynhnkcp:dark:text-green-300"
+                                                },
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.all_ok"
                                             }
                                         ]
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "className": "px-3 py-1.5 text-sm border rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-200 inline-flex items-center gap-1.5"
-                                        },
-                                        "children": [
-                                            { "type": "basic", "name": "Icon", "props": { "name": "arrows-rotate", "className": "text-base" } },
-                                            { "type": "basic", "name": "Span", "text": "다시 검사" }
-                                        ],
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "refetchDataSource",
-                                                "params": { "dataSourceId": "health" }
+                                                "params": {
+                                                    "dataSourceId": "health"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "paynhnkcp:px-3 paynhnkcp:py-1.5 paynhnkcp:text-sm paynhnkcp:border paynhnkcp:rounded paynhnkcp:hover:bg-gray-50 paynhnkcp:dark:hover:bg-gray-700 paynhnkcp:dark:border-gray-600 paynhnkcp:dark:text-gray-200 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:gap-1.5"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "arrows-rotate",
+                                                    "className": "paynhnkcp:text-base paynhnkcp:leading-none"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.recheck"
                                             }
                                         ]
                                     }
@@ -155,49 +263,57 @@
                                 "comment": "PC/모바일 카드/모바일 가상계좌 결제 가능 여부 요약 배지",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 border-b border-gray-200 dark:border-gray-700" },
+                                "props": {
+                                    "className": "paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:sm:grid-cols-3 paynhnkcp:gap-3 paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "{{health.data.summary.pc_payment_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}"
+                                            "className": "{{health.data.summary.pc_payment_ready ? 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-green-200 paynhnkcp:bg-green-50 paynhnkcp:dark:bg-green-900/20 paynhnkcp:dark:border-green-800' : 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-red-200 paynhnkcp:bg-red-50 paynhnkcp:dark:bg-red-900/20 paynhnkcp:dark:border-red-800'}}"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "flex-center gap-2" },
+                                                "props": {
+                                                    "className": "pay-nhnkcp-flex-center paynhnkcp:gap-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}",
-                                                            "className": "{{health.data.summary.pc_payment_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"
+                                                            "className": "paynhnkcp:leading-none {{health.data.summary.pc_payment_ready ? 'paynhnkcp:text-base paynhnkcp:text-green-700 paynhnkcp:dark:text-green-400' : 'paynhnkcp:text-base paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400'}}"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "props": { "className": "font-medium text-sm text-gray-900 dark:text-gray-100" },
-                                                        "text": "PC 결제 (Standard Pay)"
+                                                        "props": {
+                                                            "className": "paynhnkcp:font-medium paynhnkcp:text-sm paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100"
+                                                        },
+                                                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.pc_payment"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "{{health.data.summary.pc_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}"
+                                                            "className": "{{health.data.summary.pc_payment_ready ? 'paynhnkcp:text-xs pay-nhnkcp-tone-success' : 'paynhnkcp:text-xs pay-nhnkcp-tone-danger'}}"
                                                         },
-                                                        "text": "{{health.data.summary.pc_payment_ready ? '동작 가능' : '동작 불가'}}"
+                                                        "text": "{{health.data.summary.pc_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}"
                                                     }
                                                 ]
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "props": { "className": "text-secondary text-xs mt-1 ml-6" },
-                                                "text": "CLI 바이너리 필요"
+                                                "props": {
+                                                    "className": "pay-nhnkcp-text-secondary paynhnkcp:text-xs paynhnkcp:mt-1 paynhnkcp:ml-6"
+                                                },
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.pc_payment_requires"
                                             }
                                         ]
                                     },
@@ -206,43 +322,49 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "{{health.data.summary.mobile_payment_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}"
+                                            "className": "{{health.data.summary.mobile_payment_ready ? 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-green-200 paynhnkcp:bg-green-50 paynhnkcp:dark:bg-green-900/20 paynhnkcp:dark:border-green-800' : 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-red-200 paynhnkcp:bg-red-50 paynhnkcp:dark:bg-red-900/20 paynhnkcp:dark:border-red-800'}}"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "flex-center gap-2" },
+                                                "props": {
+                                                    "className": "pay-nhnkcp-flex-center paynhnkcp:gap-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{health.data.summary.mobile_payment_ready ? 'circle-check' : 'circle-xmark'}}",
-                                                            "className": "{{health.data.summary.mobile_payment_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"
+                                                            "className": "paynhnkcp:leading-none {{health.data.summary.mobile_payment_ready ? 'paynhnkcp:text-base paynhnkcp:text-green-700 paynhnkcp:dark:text-green-400' : 'paynhnkcp:text-base paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400'}}"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "props": { "className": "font-medium text-sm text-gray-900 dark:text-gray-100" },
-                                                        "text": "모바일 카드/일반결제"
+                                                        "props": {
+                                                            "className": "paynhnkcp:font-medium paynhnkcp:text-sm paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100"
+                                                        },
+                                                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.mobile_payment"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "{{health.data.summary.mobile_payment_ready ? 'text-success-soft' : 'text-danger-soft'}}"
+                                                            "className": "{{health.data.summary.mobile_payment_ready ? 'paynhnkcp:text-xs pay-nhnkcp-tone-success' : 'paynhnkcp:text-xs pay-nhnkcp-tone-danger'}}"
                                                         },
-                                                        "text": "{{health.data.summary.mobile_payment_ready ? '동작 가능' : '동작 불가'}}"
+                                                        "text": "{{health.data.summary.mobile_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}"
                                                     }
                                                 ]
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "props": { "className": "text-secondary text-xs mt-1 ml-6" },
-                                                "text": "SmartPhone Pay (SOAP) + CLI 바이너리 모두 필요"
+                                                "props": {
+                                                    "className": "pay-nhnkcp-text-secondary paynhnkcp:text-xs paynhnkcp:mt-1 paynhnkcp:ml-6"
+                                                },
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.mobile_payment_requires"
                                             }
                                         ]
                                     },
@@ -251,43 +373,49 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "{{health.data.summary.mobile_vbank_only_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}"
+                                            "className": "{{health.data.summary.mobile_vbank_only_ready ? 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-green-200 paynhnkcp:bg-green-50 paynhnkcp:dark:bg-green-900/20 paynhnkcp:dark:border-green-800' : 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-red-200 paynhnkcp:bg-red-50 paynhnkcp:dark:bg-red-900/20 paynhnkcp:dark:border-red-800'}}"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "flex-center gap-2" },
+                                                "props": {
+                                                    "className": "pay-nhnkcp-flex-center paynhnkcp:gap-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{health.data.summary.mobile_vbank_only_ready ? 'circle-check' : 'circle-xmark'}}",
-                                                            "className": "{{health.data.summary.mobile_vbank_only_ready ? 'text-base text-green-600 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"
+                                                            "className": "paynhnkcp:leading-none {{health.data.summary.mobile_vbank_only_ready ? 'paynhnkcp:text-base paynhnkcp:text-green-700 paynhnkcp:dark:text-green-400' : 'paynhnkcp:text-base paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400'}}"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "props": { "className": "font-medium text-sm text-gray-900 dark:text-gray-100" },
-                                                        "text": "모바일 가상계좌"
+                                                        "props": {
+                                                            "className": "paynhnkcp:font-medium paynhnkcp:text-sm paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100"
+                                                        },
+                                                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.mobile_vbank"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "{{health.data.summary.mobile_vbank_only_ready ? 'text-success-soft' : 'text-danger-soft'}}"
+                                                            "className": "{{health.data.summary.mobile_vbank_only_ready ? 'paynhnkcp:text-xs pay-nhnkcp-tone-success' : 'paynhnkcp:text-xs pay-nhnkcp-tone-danger'}}"
                                                         },
-                                                        "text": "{{health.data.summary.mobile_vbank_only_ready ? '동작 가능' : '동작 불가'}}"
+                                                        "text": "{{health.data.summary.mobile_vbank_only_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}"
                                                     }
                                                 ]
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "props": { "className": "text-secondary text-xs mt-1 ml-6" },
-                                                "text": "SmartPhone Pay (SOAP) 만 필요 (평문 콜백)"
+                                                "props": {
+                                                    "className": "pay-nhnkcp-text-secondary paynhnkcp:text-xs paynhnkcp:mt-1 paynhnkcp:ml-6"
+                                                },
+                                                "text": "$t:sirsoft-pay_nhnkcp.settings.health.mobile_vbank_requires"
                                             }
                                         ]
                                     }
@@ -297,67 +425,83 @@
                                 "comment": "개별 점검 항목 리스트",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "divide-y dark:divide-gray-700" },
                                 "iteration": {
                                     "source": "{{health.data.checks ?? []}}",
                                     "item_var": "check"
+                                },
+                                "props": {
+                                    "className": "paynhnkcp:divide-y paynhnkcp:dark:divide-gray-700"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "p-4" },
+                                        "props": {
+                                            "className": "paynhnkcp:p-4"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "panel-header-row" },
+                                                "props": {
+                                                    "className": "pay-nhnkcp-panel-header-row"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{check.status === 'ok' ? 'circle-check' : (check.status === 'fixed' ? 'wrench' : (check.status === 'warning' ? 'circle-info' : 'circle-xmark'))}}",
-                                                            "className": "{{check.status === 'ok' ? 'text-xl text-green-600 dark:text-green-400 mt-0.5' : (check.status === 'fixed' ? 'text-xl text-blue-600 dark:text-blue-400 mt-0.5' : (check.status === 'warning' ? 'text-xl text-amber-500 dark:text-amber-400 mt-0.5' : 'text-xl text-red-600 dark:text-red-400 mt-0.5'))}}"
+                                                            "className": "paynhnkcp:leading-none {{check.status === 'ok' ? 'paynhnkcp:text-xl paynhnkcp:text-green-600 paynhnkcp:dark:text-green-400 paynhnkcp:mt-0.5' : (check.status === 'fixed' ? 'paynhnkcp:text-xl paynhnkcp:text-blue-600 paynhnkcp:dark:text-blue-400 paynhnkcp:mt-0.5' : (check.status === 'warning' ? 'paynhnkcp:text-xl paynhnkcp:text-amber-600 paynhnkcp:dark:text-amber-400 paynhnkcp:mt-0.5' : 'paynhnkcp:text-xl paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400 paynhnkcp:mt-0.5'))}}"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
-                                                        "props": { "className": "flex-1 min-w-0" },
+                                                        "props": {
+                                                            "className": "paynhnkcp:flex-1 paynhnkcp:min-w-0"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
-                                                                "props": { "className": "flex-center gap-2 flex-wrap" },
+                                                                "props": {
+                                                                    "className": "pay-nhnkcp-flex-center paynhnkcp:gap-2 paynhnkcp:flex-wrap"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
-                                                                        "props": { "className": "text-sm font-medium text-gray-900 dark:text-gray-100" },
+                                                                        "props": {
+                                                                            "className": "paynhnkcp:text-sm paynhnkcp:font-medium paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100"
+                                                                        },
                                                                         "text": "{{check.label}}"
                                                                     },
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "{{check.category === 'pc' ? 'text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300' : 'text-xs px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'}}"
+                                                                            "className": "{{check.category === 'pc' ? 'paynhnkcp:text-xs paynhnkcp:px-1.5 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:bg-gray-100 paynhnkcp:dark:bg-gray-700 paynhnkcp:text-gray-600 paynhnkcp:dark:text-gray-300' : 'paynhnkcp:text-xs paynhnkcp:px-1.5 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:bg-indigo-100 paynhnkcp:dark:bg-indigo-900/30 paynhnkcp:text-indigo-700 paynhnkcp:dark:text-indigo-300'}}"
                                                                         },
-                                                                        "text": "{{check.category === 'pc' ? 'PC' : '모바일'}}"
+                                                                        "text": "{{check.category === 'pc' ? '$t:sirsoft-pay_nhnkcp.settings.health.category_pc' : '$t:sirsoft-pay_nhnkcp.settings.health.category_mobile'}}"
                                                                     },
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "if": "{{check.status === 'fixed'}}",
-                                                                        "props": { "className": "text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" },
-                                                                        "text": "자동 복구됨"
+                                                                        "props": {
+                                                                            "className": "paynhnkcp:text-xs paynhnkcp:px-1.5 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:bg-blue-100 paynhnkcp:text-blue-800 paynhnkcp:dark:bg-blue-900/30 paynhnkcp:dark:text-blue-300"
+                                                                        },
+                                                                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.auto_fixed"
                                                                     }
                                                                 ]
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "P",
-                                                                "props": { "className": "text-secondary text-xs mt-1" },
+                                                                "props": {
+                                                                    "className": "pay-nhnkcp-text-secondary paynhnkcp:text-xs paynhnkcp:mt-1"
+                                                                },
                                                                 "text": "{{check.detail}}"
                                                             },
                                                             {
@@ -365,18 +509,24 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "if": "{{check.remediation}}",
-                                                                "props": { "className": "mt-2 p-2.5 rounded bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800" },
+                                                                "props": {
+                                                                    "className": "paynhnkcp:mt-2 pay-nhnkcp-remediation-box paynhnkcp:rounded paynhnkcp:bg-amber-50 paynhnkcp:border paynhnkcp:border-amber-200 paynhnkcp:dark:bg-amber-900/20 paynhnkcp:dark:border-amber-800"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "P",
-                                                                        "props": { "className": "text-xs font-medium text-amber-900 dark:text-amber-200 mb-1" },
-                                                                        "text": "↓ 사용자 조치 필요"
+                                                                        "props": {
+                                                                            "className": "paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:text-amber-900 paynhnkcp:dark:text-amber-200 paynhnkcp:mb-1"
+                                                                        },
+                                                                        "text": "$t:sirsoft-pay_nhnkcp.settings.health.action_required"
                                                                     },
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Pre",
-                                                                        "props": { "className": "text-xs text-amber-900 dark:text-amber-100 whitespace-pre-wrap font-mono leading-relaxed" },
+                                                                        "props": {
+                                                                            "className": "paynhnkcp:text-xs paynhnkcp:text-amber-900 paynhnkcp:dark:text-amber-100 paynhnkcp:whitespace-pre-wrap paynhnkcp:font-mono paynhnkcp:leading-relaxed"
+                                                                        },
                                                                         "text": "{{check.remediation}}"
                                                                     }
                                                                 ]
@@ -397,14 +547,14 @@
                         "name": "Div",
                         "if": "{{_local.errors}}",
                         "props": {
-                            "className": "alert-danger"
+                            "className": "pay-nhnkcp-alert-danger"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex gap-3"
+                                    "className": "paynhnkcp:flex paynhnkcp:gap-3"
                                 },
                                 "children": [
                                     {
@@ -412,7 +562,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-red-600 dark:text-red-400 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "paynhnkcp:text-xl paynhnkcp:leading-none paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400 paynhnkcp:flex-shrink-0 paynhnkcp:mt-0.5"
                                         }
                                     },
                                     {
@@ -423,7 +573,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-error-soft"
+                                                    "className": "pay-nhnkcp-text-error-strong"
                                                 },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
@@ -431,19 +581,19 @@
                                                 "type": "basic",
                                                 "name": "Ul",
                                                 "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                "props": {
-                                                    "className": "mt-2 list-disc list-inside space-y-1"
-                                                },
                                                 "iteration": {
                                                     "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                     "item_var": "message"
+                                                },
+                                                "props": {
+                                                    "className": "paynhnkcp:mt-2 paynhnkcp:list-disc paynhnkcp:list-inside paynhnkcp:space-y-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "grid-3col-responsive"
+                                                            "className": "pay-nhnkcp-text-error-soft"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -460,21 +610,21 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                            "className": "paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "p-6"
+                                    "className": "paynhnkcp:p-6"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center justify-between"
+                                            "className": "paynhnkcp:flex paynhnkcp:items-center paynhnkcp:justify-between"
                                         },
                                         "children": [
                                             {
@@ -485,7 +635,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "pay-nhnkcp-form-label"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.test_mode"
                                                     },
@@ -493,7 +643,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "pay-nhnkcp-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.test_mode_hint"
                                                     }
@@ -503,7 +653,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "is_test_mode"
+                                                    "name": "is_test_mode",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -518,14 +669,14 @@
                         "name": "Div",
                         "if": "{{_local.form && !_local.form.is_test_mode}}",
                         "props": {
-                            "className": "mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4"
+                            "className": "paynhnkcp:mt-6 paynhnkcp:bg-amber-50 paynhnkcp:dark:bg-amber-900/20 paynhnkcp:border paynhnkcp:border-amber-200 paynhnkcp:dark:border-amber-700 paynhnkcp:rounded-lg paynhnkcp:p-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex gap-3"
+                                    "className": "paynhnkcp:flex paynhnkcp:gap-3"
                                 },
                                 "children": [
                                     {
@@ -533,7 +684,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                            "className": "paynhnkcp:text-xl paynhnkcp:leading-none paynhnkcp:text-amber-600 paynhnkcp:dark:text-amber-400 paynhnkcp:flex-shrink-0 paynhnkcp:mt-0.5"
                                         }
                                     },
                                     {
@@ -544,7 +695,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-semibold text-warning-soft"
+                                                    "className": "paynhnkcp:text-sm paynhnkcp:font-semibold pay-nhnkcp-tone-warning-strong"
                                                 },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_title"
                                             },
@@ -552,7 +703,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "mt-1 text-warning-soft"
+                                                    "className": "paynhnkcp:mt-1 paynhnkcp:text-sm pay-nhnkcp-tone-warning"
                                                 },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_body"
                                             }
@@ -567,21 +718,21 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                            "className": "paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-start justify-between px-6 py-4"
+                                    "className": "pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "pay-nhnkcp-section-heading-md"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.section_live_keys"
                                     }
@@ -591,7 +742,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "p-6 space-y-6"
+                                    "className": "paynhnkcp:p-6 paynhnkcp:space-y-6"
                                 },
                                 "children": [
                                     {
@@ -599,21 +750,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "pay-nhnkcp-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "paynhnkcp:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "pay-nhnkcp-form-label"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.live_site_cd"
                                                     },
@@ -621,7 +772,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "pay-nhnkcp-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.live_site_cd_hint"
                                                     }
@@ -631,21 +782,21 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "paynhnkcp:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-blue-400 focus-within:border-transparent"
+                                                            "className": "paynhnkcp:flex paynhnkcp:rounded-lg paynhnkcp:border paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 paynhnkcp:overflow-hidden paynhnkcp:focus-within:ring-2 paynhnkcp:focus-within:ring-blue-500 pay-nhnkcp-focus-group"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none"
+                                                                    "className": "paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:px-3 paynhnkcp:bg-gray-100 paynhnkcp:dark:bg-gray-600 paynhnkcp:border-r paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 pay-nhnkcp-text-body paynhnkcp:font-mono paynhnkcp:font-bold paynhnkcp:select-none"
                                                                 },
                                                                 "text": "SR"
                                                             },
@@ -656,7 +807,8 @@
                                                                     "type": "text",
                                                                     "name": "live_site_cd",
                                                                     "placeholder": "xxxxxx",
-                                                                    "className": "flex-1 font-mono outline-none border-0"
+                                                                    "className": "paynhnkcp:flex-1 paynhnkcp:font-mono paynhnkcp:outline-none paynhnkcp:border-0",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             }
                                                         ]
@@ -665,7 +817,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1.5 text-tertiary"
+                                                            "className": "paynhnkcp:mt-1.5 pay-nhnkcp-text-tertiary"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.live_site_cd_example"
                                                     }
@@ -678,21 +830,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "pay-nhnkcp-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "paynhnkcp:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "pay-nhnkcp-form-label"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.live_site_key"
                                                     },
@@ -700,7 +852,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "pay-nhnkcp-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.live_site_key_hint"
                                                     }
@@ -710,7 +862,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "paynhnkcp:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
@@ -720,7 +872,8 @@
                                                             "type": "password",
                                                             "name": "live_site_key",
                                                             "placeholder": "••••••••••••••••",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent font-mono"
+                                                            "className": "paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent paynhnkcp:font-mono",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -733,26 +886,25 @@
                     },
                     {
                         "id": "easy_pay_section",
-                        "_comment_hidden": "간편결제는 차후 오픈 예정 — 현재는 렌더링 차단. 오픈 시 if 키 제거하면 복원됨.",
-                        "if": "{{false}}",
                         "type": "basic",
                         "name": "Div",
+                        "if": "{{false}}",
                         "props": {
-                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                            "className": "paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-start justify-between px-6 py-4"
+                                    "className": "pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "pay-nhnkcp-section-heading-md"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.section_easy_pay"
                                     },
@@ -760,7 +912,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "form-hint"
+                                            "className": "pay-nhnkcp-form-hint"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.section_easy_pay_hint"
                                     }
@@ -770,14 +922,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "divide-y divide-gray-100 dark:divide-gray-700"
+                                    "className": "paynhnkcp:divide-y paynhnkcp:divide-gray-100 paynhnkcp:dark:divide-gray-700"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center justify-between px-6 py-4 bg-blue-50 dark:bg-blue-900/20"
+                                            "className": "paynhnkcp:flex paynhnkcp:items-center paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4 paynhnkcp:bg-blue-50 paynhnkcp:dark:bg-blue-900/20"
                                         },
                                         "children": [
                                             {
@@ -788,7 +940,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "pay-nhnkcp-form-label"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.easy_pay_allow_with_other_pg"
                                                     },
@@ -796,7 +948,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "pay-nhnkcp-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.easy_pay_allow_with_other_pg_hint"
                                                     }
@@ -806,7 +958,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_allow_with_other_pg"
+                                                    "name": "easy_pay_allow_with_other_pg",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -815,14 +968,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center justify-between px-6 py-4"
+                                            "className": "paynhnkcp:flex paynhnkcp:items-center paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "form-label"
+                                                    "className": "pay-nhnkcp-form-label"
                                                 },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.easy_pay_payco"
                                             },
@@ -830,7 +983,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_payco"
+                                                    "name": "easy_pay_payco",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -839,7 +993,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-start justify-between px-6 py-4"
+                                            "className": "pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4"
                                         },
                                         "children": [
                                             {
@@ -850,7 +1004,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "pay-nhnkcp-form-label"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay"
                                                     },
@@ -858,7 +1012,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-amber-600 dark:text-amber-400"
+                                                            "className": "paynhnkcp:mt-1 paynhnkcp:text-xs paynhnkcp:text-amber-700 paynhnkcp:dark:text-amber-400"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_hint"
                                                     }
@@ -868,7 +1022,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_naverpay"
+                                                    "name": "easy_pay_naverpay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -877,7 +1032,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-start justify-between px-6 py-4"
+                                            "className": "pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4"
                                         },
                                         "children": [
                                             {
@@ -888,7 +1043,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "pay-nhnkcp-form-label"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_point"
                                                     },
@@ -896,7 +1051,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-amber-600 dark:text-amber-400"
+                                                            "className": "paynhnkcp:mt-1 paynhnkcp:text-xs paynhnkcp:text-amber-700 paynhnkcp:dark:text-amber-400"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_point_hint"
                                                     }
@@ -906,7 +1061,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_naverpay_point"
+                                                    "name": "easy_pay_naverpay_point",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -915,7 +1071,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-start justify-between px-6 py-4"
+                                            "className": "pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4"
                                         },
                                         "children": [
                                             {
@@ -926,7 +1082,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "pay-nhnkcp-form-label"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.easy_pay_kakaopay"
                                                     },
@@ -934,7 +1090,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-amber-600 dark:text-amber-400"
+                                                            "className": "paynhnkcp:mt-1 paynhnkcp:text-xs paynhnkcp:text-amber-700 paynhnkcp:dark:text-amber-400"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.easy_pay_kakaopay_hint"
                                                     }
@@ -944,7 +1100,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_kakaopay"
+                                                    "name": "easy_pay_kakaopay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -953,7 +1110,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-start justify-between px-6 py-4"
+                                            "className": "pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4"
                                         },
                                         "children": [
                                             {
@@ -964,7 +1121,7 @@
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "pay-nhnkcp-form-label"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.easy_pay_applepay"
                                                     },
@@ -972,7 +1129,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "pay-nhnkcp-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.easy_pay_applepay_hint"
                                                     }
@@ -982,7 +1139,8 @@
                                                 "type": "composite",
                                                 "name": "Toggle",
                                                 "props": {
-                                                    "name": "easy_pay_applepay"
+                                                    "name": "easy_pay_applepay",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -996,21 +1154,21 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                            "className": "paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-start justify-between px-6 py-4"
+                                    "className": "pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "pay-nhnkcp-section-heading-md"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.section_redirect"
                                     }
@@ -1020,7 +1178,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "p-6 space-y-6"
+                                    "className": "paynhnkcp:p-6 paynhnkcp:space-y-6"
                                 },
                                 "children": [
                                     {
@@ -1028,21 +1186,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "pay-nhnkcp-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "paynhnkcp:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "pay-nhnkcp-form-label"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.redirect_success_url"
                                                     },
@@ -1050,7 +1208,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "pay-nhnkcp-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.redirect_success_url_hint"
                                                     }
@@ -1060,7 +1218,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "paynhnkcp:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1070,7 +1228,8 @@
                                                             "type": "text",
                                                             "name": "redirect_success_url",
                                                             "placeholder": "/shop/orders/{orderId}/complete",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
+                                                            "className": "paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -1082,21 +1241,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "pay-nhnkcp-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "paynhnkcp:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "pay-nhnkcp-form-label"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.redirect_fail_url"
                                                     },
@@ -1104,7 +1263,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "pay-nhnkcp-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.redirect_fail_url_hint"
                                                     }
@@ -1114,7 +1273,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "paynhnkcp:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
@@ -1124,7 +1283,8 @@
                                                             "type": "text",
                                                             "name": "redirect_fail_url",
                                                             "placeholder": "/shop/checkout",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
+                                                            "className": "paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -1140,21 +1300,21 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                            "className": "paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-start justify-between px-6 py-4"
+                                    "className": "pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "pay-nhnkcp-section-heading-md"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.section_vbank"
                                     },
@@ -1162,7 +1322,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "form-hint"
+                                            "className": "pay-nhnkcp-form-hint"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.section_vbank_hint"
                                     }
@@ -1172,7 +1332,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "p-6"
+                                    "className": "paynhnkcp:p-6"
                                 },
                                 "children": [
                                     {
@@ -1180,21 +1340,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "pay-nhnkcp-grid-3col-responsive"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "paynhnkcp:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "pay-nhnkcp-form-label"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days"
                                                     },
@@ -1202,7 +1362,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "pay-nhnkcp-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days_hint"
                                                     }
@@ -1212,14 +1372,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "paynhnkcp:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-2"
+                                                            "className": "pay-nhnkcp-flex-center paynhnkcp:gap-2"
                                                         },
                                                         "children": [
                                                             {
@@ -1231,14 +1391,15 @@
                                                                     "min": "1",
                                                                     "max": "7",
                                                                     "placeholder": "3",
-                                                                    "className": "w-24 dark:focus:ring-blue-400 focus:border-transparent"
+                                                                    "className": "paynhnkcp:w-24 paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-label-subtle"
+                                                                    "className": "pay-nhnkcp-text-label-subtle"
                                                                 },
                                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days_unit"
                                                             }
@@ -1257,14 +1418,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4"
+                            "className": "paynhnkcp:mt-6 paynhnkcp:bg-amber-50 paynhnkcp:dark:bg-amber-900/20 paynhnkcp:border paynhnkcp:border-amber-200 paynhnkcp:dark:border-amber-700 paynhnkcp:rounded-lg paynhnkcp:p-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex gap-3"
+                                    "className": "paynhnkcp:flex paynhnkcp:gap-3"
                                 },
                                 "children": [
                                     {
@@ -1272,21 +1433,21 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                            "className": "paynhnkcp:text-xl paynhnkcp:leading-none paynhnkcp:text-amber-600 paynhnkcp:dark:text-amber-400 paynhnkcp:flex-shrink-0 paynhnkcp:mt-0.5"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-1 min-w-0"
+                                            "className": "paynhnkcp:flex-1 paynhnkcp:min-w-0"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-semibold text-warning-soft"
+                                                    "className": "paynhnkcp:text-sm paynhnkcp:font-semibold pay-nhnkcp-tone-warning-strong"
                                                 },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_title"
                                             },
@@ -1294,7 +1455,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "mt-1 text-warning-soft"
+                                                    "className": "paynhnkcp:mt-1 paynhnkcp:text-sm pay-nhnkcp-tone-warning"
                                                 },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_body"
                                             },
@@ -1302,14 +1463,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "mt-3 rounded border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-gray-900/30 px-3 py-2"
+                                                    "className": "paynhnkcp:mt-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-amber-200 paynhnkcp:dark:border-amber-800 paynhnkcp:bg-white/70 paynhnkcp:dark:bg-gray-900/30 paynhnkcp:px-3 paynhnkcp:py-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "text-xs font-medium text-amber-900 dark:text-amber-200"
+                                                            "className": "paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:text-amber-900 paynhnkcp:dark:text-amber-200"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_path"
                                                     },
@@ -1317,7 +1478,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-xs text-amber-800 dark:text-amber-100"
+                                                            "className": "paynhnkcp:mt-1 paynhnkcp:text-xs paynhnkcp:text-amber-800 paynhnkcp:dark:text-amber-100"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_effect"
                                                     }
@@ -1327,14 +1488,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "mt-3"
+                                                    "className": "paynhnkcp:mt-3"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "text-xs font-medium text-amber-900 dark:text-amber-200 mb-1.5"
+                                                            "className": "paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:text-amber-900 paynhnkcp:dark:text-amber-200 paynhnkcp:mb-1.5"
                                                         },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_value_label"
                                                     },
@@ -1342,7 +1503,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-2"
+                                                            "className": "pay-nhnkcp-flex-center paynhnkcp:gap-2"
                                                         },
                                                         "children": [
                                                             {
@@ -1351,20 +1512,20 @@
                                                                 "props": {
                                                                     "type": "text",
                                                                     "readOnly": true,
+                                                                    "aria-label": "$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_value_label",
                                                                     "value": "{{health.data.summary.cancel_server_ip.address ?? ''}}",
                                                                     "placeholder": "$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_unavailable",
-                                                                    "className": "input-readonly flex-1 font-mono"
+                                                                    "className": "pay-nhnkcp-input-readonly paynhnkcp:flex-1 paynhnkcp:font-mono",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                                 }
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Button",
                                                                 "if": "{{!!health.data.summary.cancel_server_ip.address}}",
-                                                                "props": {
-                                                                    "className": "flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap"
-                                                                },
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "취소 요청 서버 IP 복사 — KCP 상점 관리자에 등록해야 하는 값이다",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -1384,13 +1545,17 @@
                                                                         ]
                                                                     }
                                                                 ],
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "pay-nhnkcp-flex-center paynhnkcp:gap-1.5 paynhnkcp:px-3 paynhnkcp:py-2 paynhnkcp:bg-gray-100 paynhnkcp:dark:bg-gray-700 paynhnkcp:hover:bg-gray-200 paynhnkcp:dark:hover:bg-gray-600 pay-nhnkcp-text-body paynhnkcp:border paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 paynhnkcp:rounded-lg paynhnkcp:font-medium paynhnkcp:transition-colors paynhnkcp:whitespace-nowrap"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "copy",
-                                                                            "className": "text-base"
+                                                                            "className": "paynhnkcp:text-base paynhnkcp:leading-none"
                                                                         }
                                                                     },
                                                                     {
@@ -1406,7 +1571,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1.5 text-xs text-amber-800 dark:text-amber-100"
+                                                            "className": "paynhnkcp:mt-1.5 paynhnkcp:text-xs paynhnkcp:text-amber-800 paynhnkcp:dark:text-amber-100"
                                                         },
                                                         "text": "{{health.data.summary.cancel_server_ip.source_label ?? ''}}"
                                                     }
@@ -1419,7 +1584,7 @@
                                                     "href": "https://partner.kcp.co.kr/",
                                                     "target": "_blank",
                                                     "rel": "noopener noreferrer",
-                                                    "className": "mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-amber-800 hover:text-amber-950 dark:text-amber-200 dark:hover:text-amber-100"
+                                                    "className": "paynhnkcp:mt-3 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:gap-1.5 paynhnkcp:text-sm paynhnkcp:font-medium paynhnkcp:text-amber-800 paynhnkcp:dark:text-amber-200 pay-nhnkcp-link-warning"
                                                 },
                                                 "children": [
                                                     {
@@ -1427,7 +1592,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "external-link",
-                                                            "className": "text-base"
+                                                            "className": "paynhnkcp:text-base paynhnkcp:leading-none"
                                                         }
                                                     },
                                                     {
@@ -1448,21 +1613,21 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-blue-200 dark:border-blue-800"
+                            "className": "paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-blue-200 paynhnkcp:dark:border-blue-800"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "px-6 py-4 border-b border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg"
+                                    "className": "paynhnkcp:px-6 paynhnkcp:py-4 paynhnkcp:border-b paynhnkcp:border-blue-200 paynhnkcp:dark:border-blue-800 paynhnkcp:bg-blue-50 paynhnkcp:dark:bg-blue-900/20 paynhnkcp:rounded-t-lg"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2"
+                                            "className": "pay-nhnkcp-flex-center paynhnkcp:gap-2"
                                         },
                                         "children": [
                                             {
@@ -1470,14 +1635,14 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "bell",
-                                                    "className": "text-base text-blue-600 dark:text-blue-400"
+                                                    "className": "paynhnkcp:text-base paynhnkcp:leading-none paynhnkcp:text-blue-600 paynhnkcp:dark:text-blue-400"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-base font-semibold text-blue-900 dark:text-blue-100"
+                                                    "className": "paynhnkcp:text-base paynhnkcp:font-semibold paynhnkcp:text-blue-900 paynhnkcp:dark:text-blue-100"
                                                 },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.section_vbank_notify"
                                             }
@@ -1489,14 +1654,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "p-6"
+                                    "className": "paynhnkcp:p-6"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-label mb-3"
+                                            "className": "pay-nhnkcp-text-label paynhnkcp:mb-3"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.vbank_notify_hint"
                                     },
@@ -1504,7 +1669,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-xs text-gray-600 dark:text-gray-400 mb-4"
+                                            "className": "paynhnkcp:text-xs paynhnkcp:text-gray-600 paynhnkcp:dark:text-gray-400 paynhnkcp:mb-4"
                                         },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.vbank_notify_path"
                                     },
@@ -1512,7 +1677,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2"
+                                            "className": "pay-nhnkcp-flex-center paynhnkcp:gap-2"
                                         },
                                         "children": [
                                             {
@@ -1521,18 +1686,18 @@
                                                 "props": {
                                                     "type": "text",
                                                     "readOnly": true,
+                                                    "aria-label": "$t:sirsoft-pay_nhnkcp.settings.section_vbank_notify",
                                                     "value": "{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'}}",
-                                                    "className": "input-readonly flex-1 font-mono"
+                                                    "className": "pay-nhnkcp-input-readonly paynhnkcp:flex-1 paynhnkcp:font-mono",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "className": "flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap"
-                                                },
                                                 "actions": [
                                                     {
+                                                        "comment": "가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [
@@ -1552,13 +1717,17 @@
                                                         ]
                                                     }
                                                 ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "pay-nhnkcp-flex-center paynhnkcp:gap-1.5 paynhnkcp:px-3 paynhnkcp:py-2 paynhnkcp:bg-gray-100 paynhnkcp:dark:bg-gray-700 paynhnkcp:hover:bg-gray-200 paynhnkcp:dark:hover:bg-gray-600 pay-nhnkcp-text-body paynhnkcp:border paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 paynhnkcp:rounded-lg paynhnkcp:font-medium paynhnkcp:transition-colors paynhnkcp:whitespace-nowrap"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "copy",
-                                                            "className": "text-base"
+                                                            "className": "paynhnkcp:text-base paynhnkcp:leading-none"
                                                         }
                                                     },
                                                     {
@@ -1579,30 +1748,37 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                            "className": "paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-start justify-between px-6 py-4"
+                                    "className": "pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "flex-center gap-2" },
+                                        "props": {
+                                            "className": "pay-nhnkcp-flex-center paynhnkcp:gap-2"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Icon",
-                                                "props": { "name": "shield-check", "className": "text-secondary text-base" }
+                                                "props": {
+                                                    "name": "shield-halved",
+                                                    "className": "pay-nhnkcp-text-secondary paynhnkcp:text-base paynhnkcp:leading-none"
+                                                }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
-                                                "props": { "className": "text-base font-semibold text-gray-900 dark:text-gray-100" },
+                                                "props": {
+                                                    "className": "paynhnkcp:text-base paynhnkcp:font-semibold paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100"
+                                                },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.section_escrow"
                                             }
                                         ]
@@ -1610,7 +1786,9 @@
                                     {
                                         "type": "basic",
                                         "name": "P",
-                                        "props": { "className": "mt-1 text-label-subtle" },
+                                        "props": {
+                                            "className": "paynhnkcp:mt-1 pay-nhnkcp-text-label-subtle"
+                                        },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.section_escrow_hint"
                                     }
                                 ]
@@ -1618,12 +1796,16 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "p-6 space-y-4" },
+                                "props": {
+                                    "className": "paynhnkcp:p-6 paynhnkcp:space-y-4"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "flex items-center justify-between" },
+                                        "props": {
+                                            "className": "paynhnkcp:flex paynhnkcp:items-center paynhnkcp:justify-between"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -1632,13 +1814,17 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "pay-nhnkcp-form-label"
+                                                        },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.use_escrow"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "pay-nhnkcp-form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.use_escrow_hint"
                                                     }
                                                 ]
@@ -1646,7 +1832,10 @@
                                             {
                                                 "type": "composite",
                                                 "name": "Toggle",
-                                                "props": { "name": "use_escrow" }
+                                                "props": {
+                                                    "name": "use_escrow",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                }
                                             }
                                         ]
                                     },
@@ -1654,23 +1843,31 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "if": "{{_local.form.use_escrow && _local.form.is_test_mode}}",
-                                        "props": { "className": "section-heading-md" },
+                                        "props": {
+                                            "className": "pay-nhnkcp-grid-3col-responsive"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-1" },
+                                                "props": {
+                                                    "className": "paynhnkcp:lg:col-span-1"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "pay-nhnkcp-form-label"
+                                                        },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.escrow_test_site_cd"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "pay-nhnkcp-form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-pay_nhnkcp.settings.escrow_test_site_cd_hint"
                                                     }
                                                 ]
@@ -1678,7 +1875,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-2" },
+                                                "props": {
+                                                    "className": "paynhnkcp:lg:col-span-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -1687,7 +1886,8 @@
                                                             "type": "text",
                                                             "name": "escrow_test_site_cd",
                                                             "placeholder": "T0007",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent"
+                                                            "className": "paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -1704,30 +1904,37 @@
                         "name": "Div",
                         "if": "{{_local.form.use_escrow}}",
                         "props": {
-                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-purple-200 dark:border-purple-800"
+                            "className": "paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-purple-200 paynhnkcp:dark:border-purple-800"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "px-6 py-4 border-b border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 rounded-t-lg"
+                                    "className": "paynhnkcp:px-6 paynhnkcp:py-4 paynhnkcp:border-b paynhnkcp:border-purple-200 paynhnkcp:dark:border-purple-800 paynhnkcp:bg-purple-50 paynhnkcp:dark:bg-purple-900/20 paynhnkcp:rounded-t-lg"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "flex-center gap-2" },
+                                        "props": {
+                                            "className": "pay-nhnkcp-flex-center paynhnkcp:gap-2"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Icon",
-                                                "props": { "name": "bell", "className": "text-base text-purple-600 dark:text-purple-400" }
+                                                "props": {
+                                                    "name": "bell",
+                                                    "className": "paynhnkcp:text-base paynhnkcp:leading-none paynhnkcp:text-purple-600 paynhnkcp:dark:text-purple-400"
+                                                }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
-                                                "props": { "className": "text-base font-semibold text-purple-900 dark:text-purple-100" },
+                                                "props": {
+                                                    "className": "paynhnkcp:text-base paynhnkcp:font-semibold paynhnkcp:text-purple-900 paynhnkcp:dark:text-purple-100"
+                                                },
                                                 "text": "$t:sirsoft-pay_nhnkcp.settings.section_escrow_notify"
                                             }
                                         ]
@@ -1737,18 +1944,24 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "p-6" },
+                                "props": {
+                                    "className": "paynhnkcp:p-6"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "P",
-                                        "props": { "className": "text-label mb-3" },
+                                        "props": {
+                                            "className": "pay-nhnkcp-text-label paynhnkcp:mb-3"
+                                        },
                                         "text": "$t:sirsoft-pay_nhnkcp.settings.escrow_common_notify_hint"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "flex-center gap-2" },
+                                        "props": {
+                                            "className": "pay-nhnkcp-flex-center paynhnkcp:gap-2"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
@@ -1756,18 +1969,18 @@
                                                 "props": {
                                                     "type": "text",
                                                     "readOnly": true,
+                                                    "aria-label": "$t:sirsoft-pay_nhnkcp.settings.section_escrow_notify",
                                                     "value": "{{_local.vbankInfo?.escrow_common_notify_url ?? '/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify'}}",
-                                                    "className": "input-readonly flex-1 font-mono"
+                                                    "className": "pay-nhnkcp-input-readonly paynhnkcp:flex-1 paynhnkcp:font-mono",
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "className": "flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap"
-                                                },
                                                 "actions": [
                                                     {
+                                                        "comment": "에스크로 공통 통보 URL 복사",
                                                         "type": "click",
                                                         "handler": "sequence",
                                                         "actions": [
@@ -1787,11 +2000,18 @@
                                                         ]
                                                     }
                                                 ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "pay-nhnkcp-flex-center paynhnkcp:gap-1.5 paynhnkcp:px-3 paynhnkcp:py-2 paynhnkcp:bg-gray-100 paynhnkcp:dark:bg-gray-700 paynhnkcp:hover:bg-gray-200 paynhnkcp:dark:hover:bg-gray-600 pay-nhnkcp-text-body paynhnkcp:border paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 paynhnkcp:rounded-lg paynhnkcp:font-medium paynhnkcp:transition-colors paynhnkcp:whitespace-nowrap"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
-                                                        "props": { "name": "copy", "className": "text-base" }
+                                                        "props": {
+                                                            "name": "copy",
+                                                            "className": "paynhnkcp:text-base paynhnkcp:leading-none"
+                                                        }
                                                     },
                                                     {
                                                         "type": "basic",
@@ -1811,25 +2031,26 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "sticky bottom-0 z-10 flex justify-end items-center gap-3 mt-6 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-700"
+                            "className": "paynhnkcp:sticky paynhnkcp:bottom-0 paynhnkcp:z-10 paynhnkcp:flex paynhnkcp:justify-end paynhnkcp:items-center paynhnkcp:gap-3 paynhnkcp:mt-6 paynhnkcp:px-4 paynhnkcp:py-3 paynhnkcp:bg-gray-50 paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:rounded-lg paynhnkcp:dark:bg-gray-800 paynhnkcp:dark:border-gray-700"
                         },
                         "children": [
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
-                                "props": {
-                                    "className": "btn btn-secondary"
-                                },
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/plugins"
+                                            "bypassLeaveGuard": true
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "href": "/admin/plugins",
+                                    "className": "pay-nhnkcp-button pay-nhnkcp-btn pay-nhnkcp-btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -1842,12 +2063,9 @@
                                 "id": "save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "btn btn-primary flex-center gap-1.5"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 — 서버가 비밀키를 마스크해 돌려주므로 다시 싣지 않으면 화면 값과 저장값이 어긋난다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -1861,8 +2079,8 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": "{{_local.form}}"
@@ -1911,6 +2129,11 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
+                                    "className": "pay-nhnkcp-btn pay-nhnkcp-btn-primary pay-nhnkcp-flex-center paynhnkcp:gap-1.5"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -1918,7 +2141,7 @@
                                         "if": "{{_local.isSaving}}",
                                         "props": {
                                             "name": "spinner",
-                                            "className": "spinner-sm"
+                                            "className": "pay-nhnkcp-spinner-sm"
                                         }
                                     },
                                     {

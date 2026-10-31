@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
+use App\Enums\IdentityVerificationStatus;
+use App\Extension\HookManager;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * IDV 인증 이력 조회/파기 Service.
@@ -25,7 +28,7 @@ class IdentityLogService
      *
      * @param  array<string, mixed>  $filters  필터 (provider_id/purpose/status/user_id/date_from/date_to 등)
      * @param  int  $perPage  페이지 크기
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @return LengthAwarePaginator
      */
     public function search(array $filters, int $perPage = 20)
     {
@@ -44,12 +47,30 @@ class IdentityLogService
     }
 
     /**
-     * 만료 상태로 전환할 pending challenge 를 일괄 expire 처리합니다.
+     * 만료 시각이 지난 진행 중 challenge 를 만료 처리하고, 만료된 건마다 만료 훅을 발화합니다.
      *
-     * @return int 처리된 행 수
+     * 예전에는 상태만 일괄로 바꿔 `core.identity.challenge_expired` 구독자(활동 로그 등)가 한 번도 불리지 않았다.
+     * 만료된 요청 1건 = 발화 1회 = 활동 로그 1줄이다. 조회와 변경 사이에 인증이 끝난 건은 만료로 덮지 않고
+     * 발화도 하지 않는다.
+     *
+     * @return int 이번 실행에서 만료로 바뀐 건수
      */
     public function expirePastDue(): int
     {
-        return $this->logRepository->expirePastDue();
+        $expired = 0;
+
+        $this->logRepository->chunkPendingPastDue(500, function ($logs) use (&$expired) {
+            foreach ($logs as $log) {
+                if (! $this->logRepository->expireIfPending($log)) {
+                    continue;
+                }
+
+                $log->status = IdentityVerificationStatus::Expired;
+                HookManager::doAction('core.identity.challenge_expired', $log);
+                $expired++;
+            }
+        });
+
+        return $expired;
     }
 }

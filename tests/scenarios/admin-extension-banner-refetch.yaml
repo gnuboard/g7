@@ -1,0 +1,20 @@
+feature: admin_extension_banner_refetch
+
+description: |
+  관리자 모듈·플러그인·템플릿 목록에서 확장을 켜도 「코어 호환성 문제로 자동 비활성화된 확장」 배너가 새로 고치기 전까지 남았다
+  (공개 #145 F8). 토글·강제 활성 창·활성 확인 창의 활성화 성공 분기가 auto_deactivated_banner 데이터 소스를 다시 받는다.
+  배너 렌더 조건(항목 있음/없음, 가이드 링크)도 함께 잠근다.
+
+coverage_strategy: full
+
+axes:
+  case: [banner_shown, banner_hidden, guide_link, plugin_toggle, plugin_force_activate, module_toggle, module_force_activate, template_activate, template_force_activate]
+
+effects:
+  - banner_renders_from_auto_deactivated_items
+  - activation_success_refetches_compatibility_banner
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_plugin_list.banner.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_module_list.banner.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_template_list.banner.test.tsx

@@ -11,6 +11,11 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryRepositoryInterface
  */
 class CategoryRepository implements CategoryRepositoryInterface
 {
+    /**
+     * 카테고리 저장소를 생성합니다.
+     *
+     * @param  Category  $model  카테고리 모델
+     */
     public function __construct(
         protected Category $model
     ) {}
@@ -213,6 +218,32 @@ class CategoryRepository implements CategoryRepositoryInterface
         }
 
         return $query->where('slug', $slug)->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findPublicBySlug(string $slug): ?Category
+    {
+        // 상품 수는 공개 상품 목록과 같은 기준(전시 상품)으로 센다 — 숨긴 상품이 메뉴 숫자에 남지 않게(자신·자식 모두)
+        $visibleProducts = ['products' => fn ($products) => $products->visible()];
+
+        return $this->model->newQuery()
+            ->with([
+                'activeChildren' => fn ($query) => $query->withCount($visibleProducts)->orderBy('sort_order'),
+                'images',
+            ])
+            ->withCount([...$visibleProducts, 'children'])
+            ->where('slug', $slug)
+            ->first();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getTree(?int $parentId = null, bool $onlyActive = false, bool $visibleProductsOnly = false): Collection
+    {
+        return Category::getTree($parentId, $onlyActive, $visibleProductsOnly);
     }
 
     /**

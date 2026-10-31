@@ -4,7 +4,9 @@
       "page": "페이지",
       "pageData": "페이지 데이터",
       "pages": "페이지 목록",
-      "versions": "버전 이력"
+      "versions": "버전 이력",
+      "attachmentSettings": "첨부 설정",
+      "createAbility": "등록 권한 확인"
     }
   },
   "admin": {

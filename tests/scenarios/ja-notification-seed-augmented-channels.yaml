@@ -1,0 +1,24 @@
+feature: ja 알림 시드가 문자 플러그인이 덧붙이는 sms·alimtalk 채널도 번역한다 (7.1.0 출시 리허설)
+
+description: |
+  sms·alimtalk 템플릿은 원본 알림 정의에 없고 문자 플러그인이 시딩 직전 mail·database 본문을 복제해 덧붙인다.
+  업데이트·설치 때 모듈 동기화가 언어팩보다 먼저 돌면 복제본은 ko·en 만 갖고, 언어팩을 켤 때의 번역 병합은
+  시드에 적힌 채널의 행만 고친다. 시드에 sms·alimtalk 가 없어 일본어 사이트의 문자·알림톡 제목·본문이 일본어 없이
+  남았다(결제 본인 확인 identity.purpose.checkout_verification 실측). 번들 ja 팩 4종(코어·게시판·이커머스·GDPR)의
+  증강 대상 79정의에 sms·alimtalk 번역을 채웠다.
+
+  모집단은 ja 언어팩 시드의 알림 정의(`lang-packs/_bundled/*-ja/seed/` 아래) 전량과 원본 정의에서 파생하고, 증강 대상·기대값은
+  문자 플러그인 증강기를 그대로 돌려 정한다. 비교 칸 수 하한으로 공동화를 막는다.
+
+axes:
+  locale: [ja]
+  surface: [notification_seed]
+
+effects:
+  - ja_notification_seed_covers_augmented_channels
+
+test_files:
+  - tests/Unit/LanguagePack/JaNotificationSeedAugmentedChannelsTest.php
+
+validation:
+  browser_check: 기본 언어 ja · 문자 플러그인 사용 사이트에서 7.0.11→7.1.0 업데이트 → 관리자 알림 설정 > 결제 시 본인 확인 > 문자·알림톡 탭의 제목·본문이 일본어로 보인다

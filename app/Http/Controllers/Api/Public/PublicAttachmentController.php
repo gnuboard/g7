@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Public;
 
+use App\Helpers\InlineMediaPolicy;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Public\Attachment\DownloadAttachmentRequest;
 use App\Http\Responses\FileServingMeta;
@@ -41,6 +42,9 @@ class PublicAttachmentController extends PublicBaseController
      * (`streamedFileResponse()`)이 소유한다. 종전에는 비이미지 다운로드가 그 지점을 지나지
      * 않아 검증자가 하나도 없었고, 같은 첨부가 유형에 따라 재검증 가능 여부가 갈렸다
      * (14차 G3 라운드).
+     *
+     * 인라인은 래스터 이미지(jpeg/png/gif/webp 등)만이고 그 외 파일(SVG 포함)은 다운로드 방식이다.
+     * 파일 응답에는 모두 nosniff 를 붙인다 (KVE-2026-2366).
      *
      * @param  DownloadAttachmentRequest  $request  다운로드 요청
      * @param  string  $hash  첨부파일 해시 (12자)
@@ -85,17 +89,20 @@ class PublicAttachmentController extends PublicBaseController
             // `immutable` 은 `false` 고정 — 이 URL 에는 `?v=` 가 없다(코어 파일 서빙 계약).
             // 압축 제외를 **선언**한다 — 사용자 업로드물은 크기·건수가 유계가 아니라 압축 경로의
             // 전체 적재가 동시 요청 수만큼 증폭된다(형제 `PublicStorageController` 와 같은 선언).
-            if (str_starts_with($fileInfo['mime_type'], 'image/')) {
-                return $this->streamedFileResponseFromMeta(
+            // `image/` 접두사로 판정하면 image/svg+xml 이 인라인으로 열려 앱 오리진에서 스크립트가 돈다 (KVE-2026-2366).
+            if (InlineMediaPolicy::isInlineImage($fileInfo['mime_type'])) {
+                $response = $this->streamedFileResponseFromMeta(
                     $fileInfo,
                     (int) g7_core_settings('cache.layout_ttl', 86400),
                     immutable: false,
                     skipCompression: true,
                     logContext: ['hash' => $hash]
                 );
+
+                return $response instanceof JsonResponse ? $response : InlineMediaPolicy::harden($response, $fileInfo['mime_type']);
             }
 
-            // 이미지가 아닌 파일은 다운로드 방식(attachment) — 단, 캐시 계약은 이미지와 같다.
+            // 래스터 이미지가 아닌 파일(SVG 포함)은 다운로드 방식(attachment) — 단, 캐시 계약은 이미지와 같다.
             // 액션 훅(IDV 가드)·다운로드 카운트 필터는 이 경로가 발화한다(종전 `download()` 와 같다).
             $downloadInfo = $this->attachmentService->getDownloadInfo($hash, $user);
 
@@ -103,13 +110,18 @@ class PublicAttachmentController extends PublicBaseController
                 return $this->forbidden('attachment.access_denied');
             }
 
-            return $this->streamedFileResponseFromMeta(
+            $response = $this->streamedFileResponseFromMeta(
                 $downloadInfo,
                 (int) g7_core_settings('cache.layout_ttl', 86400),
                 immutable: false,
                 skipCompression: true,
                 logContext: ['hash' => $hash]
             );
+
+            // 메타 누락 500(JSON)은 그대로 — 파일 응답에만 다운로드 강제·nosniff 를 붙인다
+            return $response instanceof JsonResponse
+                ? $response
+                : InlineMediaPolicy::harden($response, $downloadInfo['mime_type'], $downloadInfo['filename'] ?? null);
         } catch (AuthorizationException) {
             return $this->forbidden('attachment.access_denied');
         }

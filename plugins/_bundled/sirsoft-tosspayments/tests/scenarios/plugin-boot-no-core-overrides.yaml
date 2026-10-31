@@ -1,0 +1,17 @@
+feature: 토스페이먼츠 플러그인 부팅은 코어의 화면 이동 API 와 남의 화면 DOM 을 건드리지 않는다
+
+description: |
+  관리자 쇼핑몰 설정의 결제수단 목록에 브랜드 배지를 붙이려고 `history.pushState`·`replaceState` 를
+  덮어쓰고 이커머스 화면의 아이콘을 DOM 에서 바꿔 끼우던 주입기를 지웠다(#639 ⑤). 브랜드 배지는 이
+  플러그인의 결제수단 카탈로그 선언(`brand_mark` → 이커머스 `_cached_brand_mark`)이 단일 출처이고,
+  그 값을 그리는 일은 화면을 소유한 쪽이 한다. 카탈로그 선언 값은 리스너 테스트가 잠근다.
+
+axes:
+  surface: [history_api, admin_payment_method_dom]
+
+effects:
+  - history_api_not_overridden
+  - admin_payment_method_dom_untouched
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/resources/js/__tests__/pluginBoot.test.ts

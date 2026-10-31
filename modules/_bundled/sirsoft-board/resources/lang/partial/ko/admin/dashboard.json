@@ -20,6 +20,8 @@
     "no_reports": "신고된 콘텐츠가 없습니다",
     "updated_at": "최근 갱신: {{time}}",
     "go_to_boards": "모든 게시판",
-    "go_to_reports": "전체 보기"
+    "go_to_reports": "전체 보기",
+    "untitled": "(제목 없음)",
+    "anonymous": "익명"
   }
 }

@@ -1,0 +1,27 @@
+feature: 이커머스 마일리지 샘플 시더가 실주문 기반으로 시각 순서대로 원장을 만든다
+
+description: |
+  마일리지 샘플은 OrderSeeder 가 만든 실제 주문에서 적립·사용·취소 복원을 발생시키고 관리자 지급/차감·소멸을 더한다.
+  사용은 주문 시각, 적립은 설정의 적립 시점(구매확정/배송완료)+지연일, 복원은 취소 시각에 처리하며 사용한 만큼
+  주문·결제·환불 금액을 줄인다. 잔액 캐시는 원장에서 다시 계산한다.
+
+axes:
+  seeder: [mileage]
+
+effects:
+  - transactions_and_cache_created
+  - earn_links_real_order
+  - use_updates_order_columns
+  - restore_links_cancel_record
+  - cache_matches_ledger
+  - no_negative_balance
+  - usage_within_payment
+  - idempotent_rerun
+  - expiry_after_earn
+  - expiry_skips_not_due
+  - admin_grant_has_actor
+  - cache_recalculation_stable
+  - no_orders_no_transactions
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Database/Seeders/Sample/MileageSeederTest.php

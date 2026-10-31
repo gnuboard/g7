@@ -12,8 +12,6 @@
  *   (3) D-37 상품 상세 「+N」 배지는 상품 적용 쿠폰 수로 계산되는데 모달은 전체 쿠폰을
  *       조회해, 이 상품에 적용되지 않는 쿠폰이 섞여 배지 수와 모달 건수가 어긋난다
  *
- * @scenario case=list_reachability_matches_response
- *
  * @effects pager_reaches_last_page, filter_vocabulary_covers_written_values, badge_count_matches_modal
  */
 import type { Page } from '@playwright/test';
@@ -35,8 +33,10 @@ async function gotoAndSettle(page: Page, path: string): Promise<void> {
 }
 
 test.describe('목록 도달 가능성', () => {
+  // @scenario case=policy_version_history
+  // @effects pager_reaches_last_page
   test('정책 버전 이력이 마지막 페이지까지 도달한다', async ({ page }) => {
-    await authenticatePage(page, issueToken('core.plugins.manage'));
+    await authenticatePage(page, issueToken('core.plugins.read', 'core.plugins.update'));
 
     await gotoAndSettle(page, '/admin/plugins/sirsoft-gdpr/settings');
 
@@ -75,8 +75,10 @@ test.describe('목록 도달 가능성', () => {
     await expect(page.locator('#policy_history_prev')).toBeEnabled();
   });
 
+  // @scenario case=consent_log_source_filter
+  // @effects filter_vocabulary_covers_written_values
   test('동의 이력 출처 필터가 실제 기록 어휘를 모두 덮고 원시 키를 노출하지 않는다', async ({ page }) => {
-    await authenticatePage(page, issueToken('sirsoft-gdpr.consent-log.read'));
+    await authenticatePage(page, issueToken('sirsoft-gdpr.privacy.view'));
 
     await gotoAndSettle(page, '/admin/plugins/sirsoft-gdpr/consent-log');
 
@@ -105,6 +107,8 @@ test.describe('목록 도달 가능성', () => {
     expect(layoutSources).toBeGreaterThanOrEqual(written.length);
   });
 
+  // @scenario case=product_coupon_badge
+  // @effects badge_count_matches_modal
   test('상품 상세 쿠폰 「+N」 배지 수와 모달 건수가 일치한다', async ({ page }) => {
     const token = issueToken();
     await authenticatePage(page, token);

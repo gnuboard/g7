@@ -4,6 +4,8 @@ namespace Plugins\Sirsoft\VerificationKginicis\Http\Controllers;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Support\AssetUrl;
+use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
 use Illuminate\Http\Response;
 use Plugins\Sirsoft\VerificationKginicis\Http\Requests\InicisPopupBridgeRequest;
 
@@ -32,7 +34,7 @@ class InicisPopupBridgeController extends PublicBaseController
      * Bridge 페이지를 렌더링한다.
      *
      * @param  InicisPopupBridgeRequest  $request  callback 컨트롤러가 전달한 query (verification_token / challenge_id / identity_error)
-     * @return Response
+     * @return Response 부모창으로 결과를 전달하는 브리지 HTML
      */
     public function show(InicisPopupBridgeRequest $request): Response
     {
@@ -47,15 +49,21 @@ class InicisPopupBridgeController extends PublicBaseController
     /**
      * UTF-8 HTML 응답 헬퍼.
      *
-     * @param  string  $html
-     * @return Response
+     * 보안: 이 페이지 주소에는 검증 토큰이 실린다 — 다른 곳으로 Referer 를 남기지 않고 캐시하지 않는다.
+     *
+     * @param  string  $html  본문 HTML
+     * @return Response UTF-8 로 인코딩된 HTML 응답
      */
     protected function htmlResponse(string $html): Response
     {
         // file-serving:allow 파일이 아니라 이 자리에서 만든 중계 문서를 돌려준다 — 서빙 계약
         // (nosniff·ETag·304) 의 대상이 아니다. 표식이 없으면 소스 계약 검사가 이 메서드를
         // 파일 서빙으로 읽는다 (22차 G3 라운드 B2).
-        return response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']);
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Referrer-Policy' => 'no-referrer',
+            'Cache-Control' => 'no-store, private',
+        ]);
     }
 
     /**
@@ -65,7 +73,7 @@ class InicisPopupBridgeController extends PublicBaseController
      * stash 한 redirectStash 를 정상적으로 복원할 수 있다.
      *
      * @param  string  $payloadJson  json_encode 결과 (script 컨텍스트 안전 — JSON_HEX_* 적용됨)
-     * @return string
+     * @return string 인증 결과를 부모 창/복귀 주소로 전달하는 브리지 페이지 HTML
      */
     protected function renderBridgeHtml(string $payloadJson): string
     {
@@ -73,13 +81,12 @@ class InicisPopupBridgeController extends PublicBaseController
         // 문서 언어와 제목을 현재 로케일에 맞춘다.
         $locale = e(app()->getLocale());
         $title = e(__('sirsoft-verification_kginicis::messages.bridge_page_title'));
-
-        // 복귀 정보가 없을 때의 기본 목적지는 **이 사이트의 루트**다.
-        // 리터럴 '/' 는 하위 폴더 배치(https://host/g7/)에서 문서 루트를 가리켜
-        // 사이트 밖(다른 사이트 또는 404)으로 나간다 — 본인인증을 마친 사용자가
-        // 엉뚱한 곳에 떨어지고, 오류는 남지 않는다 (14차 G3 라운드).
-        $prefix = AssetUrl::basePrefix();
-        $siteRoot = $prefix === '' ? '/' : $prefix.'/';
+        // 보안: 부모창 전달 대상은 브리지 자신의 주소(요청 Host 를 따른다)가 아니라 사이트 주소의 origin.
+        $siteOrigin = json_encode(SiteUrl::origin(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+        // 복귀 주소가 없을 때 갈 홈 — 화면 주소 헬퍼(home)를 거친다(#792 F1-17, 주소 필터·사용자 화면 URL).
+        // 경로로 돌아오면 마운트 접두사를 채운다 — 리터럴 '/' 는 하위 폴더 배치(https://host/g7/)에서
+        // 문서 루트를 가리켜 본인인증을 마친 사용자가 사이트 밖에 떨어진다. 절대 URL·접두사 보유 값은 그대로 둔다.
+        $homeUrl = json_encode(AssetUrl::sitePath(ScreenUrl::path('home', '/')), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
         return <<<HTML
 <!DOCTYPE html>
@@ -93,7 +100,19 @@ class InicisPopupBridgeController extends PublicBaseController
 <script>
 (function () {
     var REDIRECT_STASH_KEY = 'g7.identity.redirectStash';
+    var SITE_ORIGIN = {$siteOrigin} || '/';
+    var HOME_URL = {$homeUrl} || '/';
     var payload = {$payloadJson};
+
+    // 복귀 주소는 같은 출처 경로만 — 사이트 origin 절대 주소는 경로로 바꾸고, 그 밖(다른 출처·//·역슬래시·제어 문자)은 버린다.
+    function toSafeReturnPath(u) {
+        if (typeof u !== 'string' || u === '') { return null; }
+        if (u.indexOf(SITE_ORIGIN + '/') === 0) { u = u.slice(SITE_ORIGIN.length); }
+        else if (u === SITE_ORIGIN) { u = '/'; }
+        if (u.charAt(0) !== '/' || u.charAt(1) === '/' || u.indexOf(String.fromCharCode(92)) >= 0) { return null; }
+        for (var i = 0; i < u.length; i++) { var c = u.charCodeAt(i); if (c < 32 || c === 127) { return null; } }
+        return u;
+    }
 
     // 데스크톱: 부모창 postMessage + 자기 창 닫기
     if (window.opener && !window.opener.closed) {
@@ -103,7 +122,7 @@ class InicisPopupBridgeController extends PublicBaseController
                 verification_token: payload.verification_token,
                 challenge_id: payload.challenge_id,
                 identity_error: payload.identity_error
-            }, window.location.origin);
+            }, SITE_ORIGIN);
         } catch (e) { /* opener cross-origin — 무시 */ }
         window.close();
         return;
@@ -118,7 +137,7 @@ class InicisPopupBridgeController extends PublicBaseController
     }
     try { window.sessionStorage.removeItem(REDIRECT_STASH_KEY); } catch (e) {}
 
-    var dest = (stash && stash.return_url) ? stash.return_url : '{$siteRoot}';
+    var dest = (stash && toSafeReturnPath(stash.return_url)) || HOME_URL;
     var sep = dest.indexOf('?') >= 0 ? '&' : '?';
     if (payload.verification_token) {
         dest += sep + 'verification_token=' + encodeURIComponent(payload.verification_token);

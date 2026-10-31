@@ -1,32 +1,34 @@
 {
-  "extension_point": "html_content",
-  "mode": "replace",
-  "components": [
-    {
-      "type": "composite",
-      "name": "HtmlContent",
-      "props": {
-        "content": "{{extensionPointProps.content ?? ''}}",
-        "isHtml": "{{extensionPointProps.isHtml ?? true}}",
-        "className": "{{(extensionPointProps.className ?? '') + ' ck-content'}}",
-        "purifyConfig": "{{extensionPointProps.purifyConfig ?? undefined}}"
-      }
-    },
-    {
-      "id": "ckeditor5_content_css_injector",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "hidden"
-      },
-      "lifecycle": {
-        "onMount": [
-          {
-            "handler": "sirsoft-ckeditor5.injectContentCss"
-          }
-        ]
-      }
-    }
-  ],
-  "priority": 100
+    "comment": "본문 표시 자리를 CKEditor 산출물에 맞춰 대체하는 조각 — 편집기가 만든 마크업을 그대로 읽히게 ck-content 클래스를 함께 얹는다",
+    "extension_point": "html_content",
+    "mode": "replace",
+    "priority": 100,
+    "components": [
+        {
+            "comment": "audit:allow extension-class-self-contained ck-content 는 CKEditor 라이브러리 본문 CSS 가 거는 이름이다 — 라이브러리 DOM 규약이라 확장이 이름을 정하지 않는다",
+            "type": "composite",
+            "name": "HtmlContent",
+            "props": {
+                "content": "{{extensionPointProps.content ?? ''}}",
+                "isHtml": "{{extensionPointProps.isHtml ?? true}}",
+                "className": "{{(extensionPointProps.className ?? '') + ' ck-content'}}",
+                "purifyConfig": "{{extensionPointProps.purifyConfig ?? undefined}}"
+            }
+        },
+        {
+            "id": "ckeditor5_content_css_injector",
+            "type": "basic",
+            "name": "Div",
+            "lifecycle": {
+                "onMount": [
+                    {
+                        "handler": "sirsoft-ckeditor5.injectContentCss"
+                    }
+                ]
+            },
+            "props": {
+                "className": "ckeditor:hidden ckeditor-hidden"
+            }
+        }
+    ]
 }

@@ -93,4 +93,23 @@ describe('Badge', () => {
       expect(container.querySelector('span')?.className).toContain('text-[10px]');
     });
   });
+
+  describe('icon prop (상태 의미 토큰)', () => {
+    it('icon 이 있으면 텍스트 앞에 아이콘을 그리고 토큰을 글리프로 해석한다', () => {
+      const { container } = render(<Badge variant="primary" icon="status-dispatch" text="배송중" />);
+      const icon = container.querySelector('i');
+
+      expect(icon).not.toBeNull();
+      expect(icon?.className).toContain('fa-truck-fast');
+      expect(icon?.className).not.toContain('fa-status-');
+      expect(container.querySelector('span')?.className).toContain('gap-1');
+      expect(container.querySelector('span')?.textContent).toContain('배송중');
+    });
+
+    it('icon 이 비어 있으면 아이콘을 그리지 않는다', () => {
+      const { container } = render(<Badge variant="primary" icon="" text="배송중" />);
+
+      expect(container.querySelector('i')).toBeNull();
+    });
+  });
 });

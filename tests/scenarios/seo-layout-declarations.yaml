@@ -1,0 +1,22 @@
+feature: 사용자 템플릿 레이아웃의 meta.seo 선언 정합성
+
+description: |
+  sirsoft-basic 레이아웃 JSON 의 meta.seo 선언(활성, priority, changefreq, structured_data)이
+  사이트맵·봇 렌더가 기대하는 값인지 정적으로 확인하고, SEO 활성 레이아웃 전부가 다국어 배열
+  코어 설정 아래에서 메타 해석기를 예외 없이 통과하는지 본다.
+  `:priority="1"` 마크업은 JSON 정수 1 로 구워지므로 priority 는 형이 아니라 값으로 비교한다.
+
+axes:
+  layout_scope: [single_layout, all_enabled_layouts]
+
+effects:
+  - layout_seo_home_layout_has_seo_meta
+  - layout_seo_shop_show_layout_has_product_structured_data
+  - layout_seo_board_show_layout_has_article_structured_data
+  - layout_seo_search_layout_has_seo_with_minimal_priority
+  - layout_seo_all_layouts_have_valid_seo_priority_range
+  - layout_seo_all_layouts_have_valid_seo_changefreq
+  - layout_seo_all_enabled_layouts_resolve_without_throw_under_multilingual_settings
+
+test_files:
+  - tests/Feature/Seo/SeoPageRenderingTest.php

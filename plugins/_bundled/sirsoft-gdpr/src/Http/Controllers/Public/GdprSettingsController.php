@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Services\CookieCategoryService;
 use Plugins\Sirsoft\Gdpr\Services\GdprPolicyVersionService;
+use Plugins\Sirsoft\Gdpr\Support\PrivacyPolicyUrl;
 
 /**
  * GDPR 공개 설정 컨트롤러
@@ -47,14 +48,20 @@ class GdprSettingsController extends PublicBaseController
      */
     public function show(): JsonResponse
     {
-        $privacySlug = (string) $this->pluginSettings->get(self::PLUGIN_ID, 'privacy_policy_slug', 'privacy');
+        // 처리방침 주소는 운영자가 직접 입력한 값만 내보낸다. 허용 형식(사이트 경로 또는 https 주소)이
+        // 아닌 저장값(설정 파일 직접 수정 등)은 빈 값으로 보아 링크를 숨긴다 — 배너가 이 값을 그대로
+        // href 로 쓰므로 여기서 걸러야 한다. 처리방침 페이지가 실제로 있는지는 확인하지 않는다
+        // (그 페이지를 어느 확장이 게시하는지 이 플러그인은 모른다).
+        $privacyPolicyUrl = PrivacyPolicyUrl::normalize(
+            $this->pluginSettings->get(self::PLUGIN_ID, PrivacyPolicyUrl::SETTING_KEY, '')
+        );
 
         $data = [
             // 정책 버전은 gdpr_policy_versions 테이블이 SSoT — 최신 row 의 version 정수를 string 으로 노출.
             // 회원/게스트 동의 시점 비교 (배너 재노출 판정) + 마이페이지의 자신의 동의 버전 vs 현재 비교에 사용.
             'cookie_policy_version' => (string) $this->policyVersionService->getCurrentVersion(),
-            'privacy_policy_slug' => $privacySlug !== '' ? $privacySlug : null,
-            'privacy_policy_available' => $privacySlug !== '',
+            'privacy_policy_url' => $privacyPolicyUrl !== '' ? $privacyPolicyUrl : null,
+            'privacy_policy_available' => $privacyPolicyUrl !== '',
             'legal_entity_name' => (string) $this->pluginSettings->get(self::PLUGIN_ID, 'legal_entity_name', ''),
             'data_storage_location' => (string) $this->pluginSettings->get(self::PLUGIN_ID, 'data_storage_location', ''),
 

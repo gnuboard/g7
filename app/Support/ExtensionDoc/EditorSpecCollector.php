@@ -368,7 +368,11 @@ class EditorSpecCollector
         $uncovered = [];
 
         foreach ($layoutRelFiles as $rel) {
-            $abs = $record['path'].DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $rel);
+            // 목록은 **저작 경로**다 — 짝 `.g7.html` 이 있으면 FrontendInventory 가 그 경로를 준다.
+            // 마크업은 JSON 이 아니므로 그대로 읽으면 전 파일이 파싱 실패로 조용히 접히고, 미커버
+            // 집합이 **항상 빈 배열**이 된다(= "전부 커버" 가 무조건 출력). `.g7.html` 저작으로
+            // 옮긴 확장에서 편집기 샘플 누락이 영영 안 잡히던 원인이라, 여기서 짝 `.json` 으로 되돌린다.
+            $abs = $record['path'].DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $this->compiledPath($rel));
             $layout = $this->decodeJson($abs);
 
             if ($layout === null) {
@@ -386,6 +390,22 @@ class EditorSpecCollector
         sort($ids);
 
         return $ids;
+    }
+
+    /**
+     * 저작 경로를 짝 `.json`(런타임 계약) 경로로 되돌립니다.
+     *
+     * `.g7.html` 은 소스이고 짝 `.json` 이 런타임이 읽는 산출물입니다 — 둘은 디스크에 함께 있습니다.
+     * `data_sources` 판정은 산출물 쪽을 봐야 합니다.
+     *
+     * @param  string  $rel  확장 루트 기준 상대 경로
+     * @return string 짝 `.json` 상대 경로 (이미 `.json` 이면 그대로)
+     */
+    private function compiledPath(string $rel): string
+    {
+        return str_ends_with($rel, '.g7.html')
+            ? substr($rel, 0, -strlen('.g7.html')).'.json'
+            : $rel;
     }
 
     /**

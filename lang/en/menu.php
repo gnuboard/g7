@@ -20,6 +20,10 @@ return [
     'parent_menu_not_found' => 'Parent menu does not exist.',
     'cannot_set_self_as_parent' => 'Cannot set itself as parent.',
     'cannot_delete_menu_with_children' => 'Cannot delete menu with children.',
+    'admin_role_required' => 'The administrator role always has access to every menu and cannot be removed.',
+    'bulk_roles_success' => 'Updated the roles of :count menu.|Updated the roles of :count menus.',
+    'bulk_roles_failed' => 'Failed to update menu roles in bulk.',
+    'bulk_roles_unmanageable' => 'The selection includes menus you cannot manage.',
 
     // Validation messages
     'validation' => [

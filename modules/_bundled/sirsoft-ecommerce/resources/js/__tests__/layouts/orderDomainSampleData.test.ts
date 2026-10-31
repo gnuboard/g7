@@ -13,7 +13,7 @@
  *  - extra_fee_templates : 배송정책 추가비용 템플릿 (data[])
  *
  * 바인딩 SSoT: resources/layouts/admin/admin_ecommerce_order_{list,detail}.json,
- *              admin_ecommerce_shipping_policy_form.json (+ partials).
+ *              admin_ecommerce_shipping_policy_form.g7.html (+ partials).
  *
  * 비소비(SSoT 비대상): cartItems/orderData/checkoutData/category/qna 는 유저(basic)
  * 화면 데이터소스라 모듈 레이아웃이 선언하지 않음 → 본 spec 에서 채우지 않음.

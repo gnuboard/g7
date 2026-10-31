@@ -8,7 +8,7 @@ use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyResolver;
 /**
  * 배송정책 변경 시 해석기 캐시 무효화 리스너
  *
- * `ShippingPolicyResolver` 는 싱글톤이라 기본 배송정책을 요청 내 1회만 조회한다.
+ * `ShippingPolicyResolver` 는 요청 단위(scoped)로 공유되어 기본 배송정책을 요청 내 1회만 조회한다.
  * 그래서 한 요청이 배송정책을 바꾼 뒤에도 그 요청 안에서는 변경 전 정책이 계속 쓰인다.
  *
  * 무효화 호출을 서비스 메서드마다 흩어 놓지 않고 이 리스너 한 곳에 모은다 — 배송정책을
@@ -35,9 +35,12 @@ class ShippingPolicyCacheListener implements HookListenerInterface
             'after_bulk_toggle_active',
             'after_set_default',
         ] as $event) {
+            // sync: 요청 안 메모리를 비우는 리스너는 그 요청 안에서 돌아야 의미가 있다 —
+            // 큐로 가면 워커의 사본만 비우고 웹 요청의 해석기는 옛 기본 배송정책을 계속 돌려준다(#724).
             $hooks['sirsoft-ecommerce.shipping_policy.'.$event] = [
                 'method' => 'onShippingPolicyChanged',
                 'priority' => 5,
+                'sync' => true,
             ];
         }
 
@@ -48,6 +51,7 @@ class ShippingPolicyCacheListener implements HookListenerInterface
      * 기본 훅 핸들러 (HookListenerInterface 필수 메서드)
      *
      * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -61,6 +65,7 @@ class ShippingPolicyCacheListener implements HookListenerInterface
      * 이미 변경 후 값을 읽는다.
      *
      * @param  mixed  ...$args  훅 인자 (배송정책 또는 ID 목록 — 무효화는 대상과 무관)
+     * @return void 반환값 없음
      */
     public function onShippingPolicyChanged(...$args): void
     {

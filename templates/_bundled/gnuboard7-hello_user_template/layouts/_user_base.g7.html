@@ -1,0 +1,23 @@
+<!-- 학습용 사용자 베이스 레이아웃 — 헤더 + 콘텐츠 슬롯만 있는 최소 골격이다 -->
+<layout name="_user_base" version="1.0.0">
+  <meta title="$t:user.base_layout_title" description="$t:user.base_layout_description" :is_base="true"/>
+  <div data-ref="user_layout_root" class="min-h-screen flex flex-col bg-white text-gray-900">
+    <!-- === 간단한 헤더 (홈 링크 1개) === -->
+    <div data-ref="site_header" class="border-b border-gray-200 px-4 py-3 flex-between">
+      <a href="/" class="text-lg font-bold text-gray-900 hover:text-blue-600">$t:user.header.home_link</a>
+      <span class="text-sm text-gray-500">$t:user.header.tagline</span>
+    </div>
+    <!-- === 메인 콘텐츠 슬롯 === -->
+    <div data-ref="main_content_area" class="flex-1 max-w-3xl w-full mx-auto px-4 py-6">
+      <div data-ref="main_content" data-slot="content"/>
+    </div>
+    <!-- === 최소 푸터 === -->
+    <div data-ref="site_footer" class="empty-state-cell border-t border-gray-200 text-sm text-gray-500">
+      <span>$t:user.footer.copyright</span>
+    </div>
+    <!-- === 최소 모바일 네비 (홈 링크만) === -->
+    <div data-ref="mobile_nav" class="fixed bottom-0 inset-x-0 border-t border-gray-200 bg-white px-4 py-2 flex justify-center md:hidden">
+      <a href="/" class="text-sm text-gray-700 hover:text-blue-600">$t:user.nav.home</a>
+    </div>
+  </div>
+</layout>

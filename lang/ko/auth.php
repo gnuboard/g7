@@ -4,10 +4,22 @@ return [
     // 인증 관련 메시지
     'login_success' => '로그인이 성공했습니다.',
     'login_failed' => '인증에 실패했습니다.',
+    'login_handoff_invalid' => '로그인 정보가 만료되었거나 올바르지 않습니다. 다시 로그인해 주세요.',
     'two_factor_required' => '인증번호를 보냈습니다. 받은 번호를 입력해 로그인을 완료해주세요.',
+    'two_factor_required_app' => '인증 앱의 6자리 코드를 입력해 로그인을 완료해주세요.',
+    'two_factor_enrollment_required' => '로그인하려면 인증 앱 등록이 필요합니다. 관리자에게 문의해주세요.',
     'two_factor_failed' => '인증번호가 올바르지 않거나 유효시간이 지났습니다.',
     'two_factor_invalid_challenge' => '인증 요청을 찾을 수 없습니다. 처음부터 다시 로그인해주세요.',
     'two_factor_delivery_failed' => '인증번호를 보내지 못했습니다. 관리자에게 문의해주세요.',
+    // 비밀번호 변경 단계 (#736) — 비밀번호·2단계 인증을 통과했지만 비밀번호를 바꿔야 로그인이 끝난다
+    'password_change_required' => '비밀번호 사용 기간이 지났습니다. 새 비밀번호를 설정해 주세요.',
+    'password_change_required_admin_assigned' => '관리자가 정해 준 비밀번호입니다. 새 비밀번호를 설정해 주세요.',
+    'password_change_success' => '비밀번호를 바꾸고 로그인했습니다.',
+    'password_change_postponed' => '비밀번호 변경을 미뤘습니다. 기한 안에 비밀번호를 바꿔 주세요.',
+    'password_change_postpone_not_allowed' => '지금은 비밀번호 변경을 미룰 수 없습니다. 새 비밀번호를 설정해 주세요.',
+    'password_change_invalid_challenge' => '비밀번호 변경 단계가 만료되었거나 올바르지 않습니다. 처음부터 다시 로그인해 주세요.',
+    'password_change_in_progress' => '비밀번호 변경을 처리하고 있습니다. 잠시 후 다시 시도해 주세요.',
+    'password_change_unavailable' => '지금은 비밀번호 변경 단계를 열 수 없습니다. 잠시 후 다시 시도하거나 관리자에게 문의해 주세요.',
     'register_success' => '회원가입이 성공했습니다.',
     'register_failed' => '회원가입에 실패했습니다.',
     'logout_success' => '로그아웃이 성공했습니다.',
@@ -17,6 +29,10 @@ return [
     'invalid_credentials' => '잘못된 인증 정보입니다.',
     'admin_login_success' => '관리자 로그인이 성공했습니다.',
     'admin_required' => '관리자 권한이 필요합니다.',
+    'super_admin_required' => '최고관리자만 할 수 있는 작업입니다.',
+    // 휴면이었던 비관리자 회원이 관리자 로그인으로 들어온 경우 — 비밀번호 확인은 성공해
+    // 휴면은 이미 해제됐다. 그 사실을 알리지 않으면 회원은 로그인이 실패한 줄로만 안다.
+    'admin_required_dormancy_restored' => '관리자 권한이 필요합니다. 휴면 상태였던 계정은 해제되었으니 일반 로그인 화면을 이용해 주세요.',
     'unauthenticated' => '인증이 필요합니다.',
     'permission_denied' => '해당 권한이 없습니다.',
     'layout_permission_denied' => '레이아웃 접근 권한이 없습니다. (필요 권한: :required_permissions)',
@@ -36,8 +52,9 @@ return [
     'account_blocked' => '차단된 계정입니다. 관리자에게 문의해주세요.',
     'account_withdrawn' => '탈퇴한 계정입니다.',
     'account_pending_verification' => '본인인증이 완료되지 않은 계정입니다. 이메일 인증을 완료해주세요.',
-    'account_locked' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. :minutes분 후 다시 시도해주세요.',
-    'account_locked_permanently' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. 관리자에게 문의해주세요.',
+    'account_dormant' => '장기 미접속으로 휴면 상태인 계정입니다. 본인확인 후 이용하실 수 있습니다.',
+    'account_locked' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. :minutes분 후 다시 시도하거나, 비밀번호를 재설정하면 바로 풀립니다.',
+    'account_locked_permanently' => '로그인 시도 횟수 초과로 계정이 잠겼습니다. 비밀번호를 재설정하거나 관리자에게 문의해주세요.',
     'too_many_attempts' => '요청이 너무 잦습니다. :seconds초 후에 다시 시도해주세요.',
     'account_unlocked' => '계정 잠금이 해제되었습니다.',
 
@@ -46,4 +63,30 @@ return [
     'reset_token_expired' => '비밀번호 재설정 토큰이 만료되었습니다. 다시 요청해주세요.',
     'password_reset_email_sent' => '비밀번호 재설정 이메일이 발송되었습니다.',
     'email_send_failed' => '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
+    // 외부 인증 확장점 (7.2.0)
+    'identifier' => '이메일 또는 아이디',
+    'login_discovery_success' => '로그인 방법을 확인했습니다.',
+    'password_auth_disabled' => '이 계정은 비밀번호로 로그인할 수 없습니다. 회사 계정으로 로그인하세요.',
+    'password_auth_disabled_with_method' => '이 계정은 비밀번호로 로그인할 수 없습니다. :method(으)로 로그인하세요.',
+    'external_step_required' => '로그인을 마치려면 다음 단계가 필요합니다.',
+    'two_factor_means_required' => '이 계정은 2단계 인증을 거쳐야 하지만 사용할 수 있는 인증 수단이 없습니다. 관리자에게 문의하세요.',
+    'session_cap_reached' => '로그인 유지 시간이 끝났습니다. 다시 로그인해 주세요.',
+    'registration_disabled' => '이 사이트는 회원가입을 받지 않습니다.',
+    // `auth:handoff-issue` 명령 출력
+    'handoff_issue_command' => [
+        'production_refused' => '운영 환경(APP_ENV=production)에서는 브라우저에 묶지 않은 로그인 인계 코드를 만들 수 없습니다.',
+        'invalid_guard' => '로그인 경로는 user 또는 admin 이어야 합니다. (입력: :guard)',
+        'user_not_found' => '그 이메일의 회원이 없습니다.',
+        'issued' => '로그인 인계 주소를 만들었습니다. :seconds초 안에 브라우저로 여세요.',
+    ],
+    // `auth:process-password-expiry` 명령 출력
+    'console' => [
+        'process_password_expiry' => [
+            'disabled' => '비밀번호 만료 기능이 꺼져 있어 실행하지 않았습니다. (security.password_expiry_enabled = false)',
+            'locked' => '관리자 직권 실행이 비밀번호 만료 처리를 하고 있어 이번 주기는 건너뛰었습니다.',
+            'notice' => '만료 사전 안내: :count건 (남은 대상 :remaining건)',
+            'expire' => '만료일 처리: :count건 (남은 대상 :remaining건)',
+            'stage_failed' => '단계 실패 — :stage: :error',
+        ],
+    ],
 ];

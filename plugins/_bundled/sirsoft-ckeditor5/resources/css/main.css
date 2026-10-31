@@ -1,0 +1,198 @@
+/* g7-extension-css:start — convert-layout-classes.mjs 가 생성·갱신하는 블록. 손으로 고치지 않는다. */
+@import "tailwindcss/theme.css" layer(theme) prefix(ckeditor);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(ckeditor) source(none);
+@import "./g7-extension.generated.css";
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@source "../../src";
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+/* g7-extension-css:end */
+
+/**
+ * sirsoft-ckeditor5 손 CSS — 다국어 편집기 탭(편집기 위 언어 단추 줄)
+ *
+ * 탭은 핸들러(initEditor.ts·localeLabel.ts)가 DOM 으로 만든다. 예전에는 스타일을 JS 가 `<style>` 로 주입했지만,
+ * 이 플러그인이 이름을 정하는 클래스이므로 자기 CSS(이 파일 → dist/css/plugin.css)로 옮겼다.
+ * CKEditor 라이브러리 DOM(`.ck-*`·`.ck-content`)을 꾸미는 규칙은 라이브러리 CSS 범위라 계속 JS 가 주입한다
+ * (라이브러리가 정한 이름이라 이 플러그인 앞글자를 붙일 수 없다).
+ *
+ * - 다크 모드: 템플릿 종류와 무관한 중립 표식(`<html data-g7-color-scheme="dark">`)으로 짝을 둔다.
+ *   「다크 안의 라이트」(관리자 다크 화면 속 라이트 미리보기)는 제외하는 규격이다
+ * - 아이콘(지구본·확인 표시)은 템플릿 아이콘 글꼴에 기대지 않도록 CSS 마스크로 그린다 — 글자색(currentColor)을 따른다
+ */
+
+/* 다국어 탭 컨테이너 */
+.ckeditor-locale-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: center;
+}
+
+/* 다국어 탭 단추 */
+.ckeditor-locale-tabs .ckeditor-locale-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 9999px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+/* 비활성 - 기본언어 (blue) — 글자는 hover 바탕(#dbeafe)에서도 4.5 이상인 단계 */
+.ckeditor-locale-tabs .ckeditor-locale-tab.ckeditor-locale-tab--default {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.ckeditor-locale-tabs .ckeditor-locale-tab.ckeditor-locale-tab--default:hover {
+    background: #dbeafe;
+}
+
+/* 비활성 - 비기본언어 (gray) */
+.ckeditor-locale-tabs .ckeditor-locale-tab:not(.ckeditor-locale-tab--default) {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.ckeditor-locale-tabs .ckeditor-locale-tab:not(.ckeditor-locale-tab--default):hover {
+    background: #e5e7eb;
+}
+
+/* 활성 - 기본언어 — 흰 글자가 4.5 이상인 바탕 */
+.ckeditor-locale-tabs .ckeditor-locale-tab.ckeditor-locale-tab--active.ckeditor-locale-tab--default {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transform: scale(1.05);
+}
+
+/* 활성 - 비기본언어 */
+.ckeditor-locale-tabs .ckeditor-locale-tab.ckeditor-locale-tab--active:not(.ckeditor-locale-tab--default) {
+    background: #6b7280;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transform: scale(1.05);
+}
+
+.ckeditor-locale-tabs .ckeditor-locale-tab .ckeditor-lang-icon {
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+/* 필수 표시 — 비활성(연한 바탕)은 진한 빨강, 활성(진한 바탕)은 탭 글자색(흰색)을 따른다 */
+.ckeditor-locale-tabs .ckeditor-locale-tab .ckeditor-required {
+    color: #b91c1c;
+}
+
+.ckeditor-locale-tabs .ckeditor-locale-tab.ckeditor-locale-tab--active .ckeditor-required {
+    color: currentColor;
+}
+
+/* 입력 완료 표시(아이콘 3:1) — 회색 hover 바탕(#e5e7eb)에서도 3 이상 */
+.ckeditor-locale-tabs .ckeditor-locale-tab .ckeditor-check {
+    color: #15803d;
+}
+
+/* 다크 모드 - 비활성 기본언어 */
+.ckeditor-locale-tabs .ckeditor-locale-tab.ckeditor-locale-tab--default:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background: rgba(59, 130, 246, 0.15);
+    color: #93c5fd;
+}
+
+.ckeditor-locale-tabs .ckeditor-locale-tab.ckeditor-locale-tab--default:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background: rgba(59, 130, 246, 0.25);
+}
+
+/* 다크 모드 - 비활성 비기본언어 */
+.ckeditor-locale-tabs .ckeditor-locale-tab:not(.ckeditor-locale-tab--default):is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background: #374151;
+    color: #d1d5db;
+}
+
+.ckeditor-locale-tabs .ckeditor-locale-tab:not(.ckeditor-locale-tab--default):hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background: #4b5563;
+}
+
+/* 다크 모드 - 활성 기본언어 */
+.ckeditor-locale-tabs .ckeditor-locale-tab.ckeditor-locale-tab--active.ckeditor-locale-tab--default:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+/* 다크 모드 - 활성 비기본언어 */
+.ckeditor-locale-tabs .ckeditor-locale-tab.ckeditor-locale-tab--active:not(.ckeditor-locale-tab--default):is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background: #4b5563;
+    color: #ffffff;
+}
+
+.ckeditor-locale-tabs .ckeditor-locale-tab .ckeditor-check:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: #4ade80;
+}
+
+.ckeditor-locale-tabs .ckeditor-locale-tab .ckeditor-required:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: #fca5a5;
+}
+
+.ckeditor-locale-tabs .ckeditor-locale-tab.ckeditor-locale-tab--active .ckeditor-required:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: currentColor;
+}
+
+/* 아이콘 — 한 글자 크기 정사각, 글자색을 칠한다(아이콘 글꼴의 줄 높이 1·기준선 아래 살짝 내림과 같게).
+   요소 자신은 종전 아이콘 글꼴 `<i>` 와 같은 글꼴 굵기·기울임·배경을 갖고, 그림은 ::before 가 그린다. */
+.ckeditor-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    font-style: normal;
+    font-weight: 900;
+    line-height: 1;
+    vertical-align: -0.125em;
+}
+
+.ckeditor-icon::before {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: currentColor;
+    -webkit-mask: var(--ckeditor-icon) center / contain no-repeat;
+    mask: var(--ckeditor-icon) center / contain no-repeat;
+}
+
+.ckeditor-icon--globe {
+    --ckeditor-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9.5'/%3E%3Cellipse cx='12' cy='12' rx='4' ry='9.5'/%3E%3Cpath d='M2.5 12h19M4 7h16M4 17h16'/%3E%3C/svg%3E");
+}
+
+.ckeditor-icon--check {
+    --ckeditor-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5l5.5 5.5L20 6.5'/%3E%3C/svg%3E");
+}

@@ -1,0 +1,135 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지
+#   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit Feature 테스트가 커버하고
+#   green 이다.
+
+feature: 방문자 통계 집계 — 원장을 시간·일·차원 표로 (이슈 #682 S2)
+
+description: |
+  쌓인 방문·액션·봇 기록을 읽어 화면이 보는 집계 표 셋(시간·일·차원)을 만든다.
+
+  배경:
+    - 화면은 원장을 직접 읽지 않는다. 몇 달치 방문을 화면을 열 때마다 훑으면 느리고,
+      보존기간이 지나 원장을 지워도 과거 숫자는 남아야 한다.
+    - 집계는 「지우고 넣기」다. 갱신(upsert)으로 하면 다시 계산했을 때 순위에서 빠진
+      라벨이 남아 합계가 실제보다 커진다.
+    - 원장은 UTC 로 적히고 집계는 사이트 표준시로 묶인다. 두 기준이 섞이면 한국 새벽
+      방문이 어제로 가고, 운영자는 「오늘 방문자」가 왜 적은지 알 수 없다.
+    - 집계가 조용히 실패하면 화면 숫자가 그 시점에 멈춘 채 그럴듯하게 남는다. 그래서
+      실행마다 이력 행을 남기고 실패를 알림으로 밀어 올린다.
+
+  적용 지점:
+    - `app/Services/Analytics/ArchiveService` 가 하루치를 훑어 세 표를 한 트랜잭션으로 바꾼다.
+    - 누적기 둘(`DailyAccumulator`·`HourlyAccumulator`)이 원장을 한 번만 읽고 지표를 쌓는다.
+    - `ArchiveCollector` 가 확장이 만든 차원 행을 받아 같은 트랜잭션에 넣는다.
+    - `analytics:archive` 가 스케줄러·수동 실행 버튼의 입구다.
+
+coverage_strategy: pairwise
+
+axes:
+  period: [hour, day, range]
+  trigger: [scheduled, manual]
+  lock: [free, held]
+  data: [empty, single_type, all_types, bot_only, extension_rows, conversions]
+  timezone: [Asia/Seoul, America/New_York, UTC]
+  final: [true, false]
+
+exclusions:
+  - { period: hour, final: true, reason: "오늘 숫자는 계속 변하므로 매시 집계는 확정하지 않는다 — 계약이다" }
+  - { lock: held, data: extension_rows, reason: "락에 걸린 실행은 집계 자체를 시작하지 않아 확장 훅도 부르지 않는다" }
+  - { period: range, trigger: scheduled, reason: "기간 재집계는 운영자가 화면·커맨드로 부르는 길이다" }
+
+effects:
+  # 화면 열 때 집계 · 밀린 날 따라잡기 · 스케줄러 판정 (방문자 통계 신선도 작업)
+  - on_view_disabled_does_nothing
+  - on_view_runs_once_per_minute
+  - recent_archive_is_not_repeated
+  - on_view_skips_when_today_visits_exceed_limit
+  - on_view_too_many_status_persists_across_requests
+  - on_view_lock_miss_leaves_no_skipped_row
+  - missed_days_are_finalized_by_catch_up
+  - catch_up_respects_visit_budget
+  - stale_running_rows_are_closed
+  - on_view_failure_never_breaks_response
+  - on_view_leaves_no_activity_log
+  - cli_without_scheduled_flag_is_recorded_as_manual
+  - scheduler_alive_is_judged_by_scheduled_runs_within_120_minutes
+  - manual_runs_do_not_count_as_scheduler
+  - fresh_install_does_not_warn
+  - freshness_block_reports_last_run_and_staleness
+  - freshness_is_today_uses_site_timezone
+  # 새 리포트 차원 다섯
+  - new_report_dimensions_get_rows
+  - bucket_bounds_setting_changes_labels
+  - legacy_url_event_rows_are_excluded
+  - free_text_dimensions_are_capped
+  - duration_bucket_boundaries
+  - pages_bucket_boundaries
+  - bucket_labels_parse_back
+  - broken_bounds_fall_back_to_default
+  - every_stats_dimension_gets_rows_from_its_source
+  # 일 집계
+  - daily_rows_are_written_per_visitor_type
+  - daily_metrics_match_hand_checked_ledger
+  - unique_visitors_are_counted_by_key_not_summed
+  - bounce_counts_only_single_pageview_visits
+  - visit_dimension_hits_are_the_visits_pageviews
+  - page_dimensions_count_single_page_visits_as_bounces
+  - new_and_returning_are_null_without_cookie_mode
+  - server_only_visits_are_counted_separately
+  - reaggregation_never_erases_days_past_ledger_retention
+  - actions_after_midnight_land_in_the_next_days_hours
+  # 시간 집계
+  - hourly_rows_use_site_local_hours
+  - visit_count_lands_only_in_the_hour_the_visit_started
+  - hourly_visitors_are_counted_from_actions_not_visit_start
+  - hour_slots_with_no_activity_are_cleared
+  # 차원 집계
+  - visit_dimensions_are_recorded_for_every_stored_attribute
+  - action_dimensions_are_split_by_action_type
+  - page_title_is_recorded_alongside_page_url
+  - entry_and_exit_pages_become_their_own_dimensions
+  - region_and_city_labels_carry_their_country
+  - repeat_views_of_one_label_count_one_visit_many_hits
+  - zero_result_searches_are_counted_in_extra
+  - goal_revenue_is_attributed_per_goal_key
+  # 멱등·재실행
+  - rerun_produces_the_same_rows
+  - labels_that_disappeared_are_removed_on_rerun
+  - finalized_days_are_skipped_without_force
+  - forced_rerun_recomputes_a_finalized_day
+  - running_twice_on_a_dst_transition_day_is_idempotent
+  # 실행 제어
+  - chunked_reads_cover_every_visit
+  - progress_percent_advances_and_ends_at_full
+  - concurrent_run_on_the_same_period_is_skipped
+  - failure_records_the_run_and_fires_the_alert_hook
+  # 진행률 방송 — 소켓이 있는 사이트의 진단 화면이 이 방송으로 진행률 바를 움직인다
+  - archive_progress_is_broadcast_to_the_admin_channel
+  - the_archive_failure_alert_is_sent_once_a_day
+  - dry_run_touches_no_table
+  - command_reports_failure_by_exit_code_not_exception
+  - command_rejects_invalid_period_and_inverted_range
+  - range_job_reports_failed_days
+  - range_job_passes_requester_and_force_to_the_service
+  # 봇·확장
+  - bot_hits_become_bot_typed_rows
+  - bot_visits_are_counted_by_name_and_address_pair
+  - bot_visits_agree_between_daily_and_hourly
+  - bot_visit_counted_once_at_its_first_hour
+  - extension_collector_rows_are_stored_with_the_batch
+  - extension_cannot_write_into_core_dimensions
+  # 표준시
+  - site_timezone_decides_which_day_a_visit_belongs_to
+  - two_timezones_bucket_the_same_utc_action_differently
+
+test_files:
+  - tests/Feature/Analytics/ArchiveOnViewServiceTest.php
+  - tests/Feature/Analytics/ArchiveFreshnessServiceTest.php
+  - tests/Unit/Analytics/BucketLabelerTest.php
+  - tests/Feature/Analytics/ArchiveServiceTest.php
+  - tests/Feature/Analytics/ArchiveRangeJobTest.php
+  - tests/Feature/Analytics/ArchiveTimezoneTest.php
+  - tests/Feature/Console/Analytics/ArchiveCommandTest.php
+
+# 집계에는 사용자 화면이 없다 — 관리자 화면에서 이 숫자를 보는 E2E 는 S3 이 소유한다.

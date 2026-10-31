@@ -1,0 +1,274 @@
+<!-- 개인결제 상세 (운영자) — 결제요청 한 건의 진행 상태와 처리 이력을 본다. 아직 데이터소스를 붙이지
+  않아 화면 값이 예시로 박혀 있는 골격 단계이고, 배선은 개인결제 목록 화면과 같은 API 를 쓴다. -->
+<layout name="admin_ecommerce_personal_payment_detail" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.personal_payment_detail.title" description="$t:sirsoft-ecommerce.admin.personal_payment_detail.title"/>
+  <init-local>
+    <field name="logSortBy" value="latest"/>
+    <field name="logPerPage" :value="10"/>
+    <field name="logExpanded" :value="true"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="personal_payment_detail_content" class="ecommerce-admin-page-content">
+      <responsive on="portable" class="ecommerce-admin-page-content-compact"/>
+      <div data-ref="page_header" class="ecommerce-flex-start ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-6">
+        <div data-ref="page_header_left">
+          <h1 class="ecommerce-page-title ecommerce:mb-2">$t:sirsoft-ecommerce.admin.personal_payment_detail.title</h1>
+          <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary">
+            <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.meta.payment_number:</span>
+            <span class="ecommerce:font-medium ecommerce-text-primary">PP20251028-005</span>
+            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">|</span>
+            <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.meta.created_at:</span>
+            <span class="ecommerce:font-medium ecommerce-text-primary">2025-10-28 09:15:30</span>
+            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">|</span>
+            <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.meta.status:</span>
+            <span class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+          </div>
+        </div>
+        <div data-ref="page_header_actions" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0">
+          <button type="button" class="ecommerce-btn ecommerce-btn-outline">$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.list</button>
+          <button type="button" class="ecommerce-btn ecommerce-btn-outline">$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.edit</button>
+          <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:bg-red-600 ecommerce:dark:bg-red-700 ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-800 ecommerce:text-white ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.delete</button>
+        </div>
+      </div>
+      <div data-ref="product_info_card" class="ecommerce-admin-card ecommerce:mb-6">
+        <div data-ref="product_header" class="ecommerce-flex-start ecommerce:justify-between ecommerce:mb-4">
+          <div>
+            <div class="ecommerce:text-lg ecommerce:font-semibold ecommerce-text-heading">$t:sirsoft-ecommerce.admin.sample.products.standard_membership_6m</div>
+            <div class="ecommerce:text-xl ecommerce:font-bold ecommerce-text-heading ecommerce:mt-1">₩60,000</div>
+          </div>
+          <span class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+        </div>
+        <div data-ref="payment_info_grid" class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4">
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-8 ecommerce:gap-y-2 ecommerce:text-sm ecommerce:mb-2">
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.paid_at</span>
+              <span class="ecommerce-tone-error ecommerce:font-medium">2025-10-27 16:50:10</span>
+            </div>
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.payment_method</span>
+              <span class="ecommerce-text-heading">$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay</span>
+            </div>
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.payer_name</span>
+              <span class="ecommerce-text-heading">$t:sirsoft-ecommerce.admin.sample.people.kim_jiyoung</span>
+            </div>
+          </div>
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-8 ecommerce:gap-y-2 ecommerce:text-sm ecommerce:mb-3">
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.approval_number</span>
+              <span class="ecommerce-text-heading">45678912</span>
+            </div>
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.transaction_id</span>
+              <span class="ecommerce-text-heading">TID20251027165234567</span>
+            </div>
+          </div>
+          <span class="ecommerce-flex-center ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:gap-1">
+            <icon name="file-text" class="ecommerce:text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.view_receipt</span>
+          </span>
+        </div>
+        <div data-ref="status_alert" class="ecommerce-alert-warning">
+          <icon name="clock" class="ecommerce:text-xl ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400 ecommerce:flex-shrink-0"/>
+          <span class="ecommerce-tone-warning-soft ecommerce:text-xs">$t:sirsoft-ecommerce.admin.personal_payment_detail.status_message.pending</span>
+        </div>
+      </div>
+      <div data-ref="info_cards_grid" class="ecommerce-grid-2col-responsive ecommerce:mb-6">
+        <div data-ref="member_info_card" class="ecommerce-admin-card">
+          <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4">
+            <icon name="user" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.title</h3>
+          </div>
+          <div class="ecommerce-grid-2col">
+            <div>
+              <div class="ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.name</div>
+              <div class="ecommerce-text-heading">$t:sirsoft-ecommerce.admin.sample.people.jung_sujin</div>
+            </div>
+            <div>
+              <div class="ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.member_id</div>
+              <div class="ecommerce-flex-center ecommerce:gap-1">
+                <span class="ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline">user005</span>
+                <icon name="external-link" class="ecommerce:text-xs ecommerce:text-blue-600 ecommerce:dark:text-blue-400"/>
+              </div>
+            </div>
+            <div>
+              <div class="ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.email</div>
+              <div class="ecommerce-text-heading">jung@example.com</div>
+            </div>
+            <div>
+              <div class="ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.phone</div>
+              <div class="ecommerce-text-heading">010-5678-9012</div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="payment_detail_card" class="ecommerce-admin-card">
+          <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4">
+            <icon name="globe" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.title</h3>
+          </div>
+          <div class="ecommerce-grid-2col">
+            <div>
+              <div class="ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.payment_number</div>
+              <div class="ecommerce-text-heading">PP20251028-005</div>
+            </div>
+            <div>
+              <div class="ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.order_number</div>
+              <div class="ecommerce-flex-center ecommerce:gap-1">
+                <span class="ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline">ORD20251028-5678</span>
+                <icon name="external-link" class="ecommerce:text-xs ecommerce:text-blue-600 ecommerce:dark:text-blue-400"/>
+              </div>
+            </div>
+            <div>
+              <div class="ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.created_at</div>
+              <div class="ecommerce-text-heading">2025-10-28 09:15:30</div>
+            </div>
+            <div>
+              <div class="ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.expired_at</div>
+              <div class="ecommerce-text-heading">2025-11-04 09:15:30</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="link_memo_cards_grid" class="ecommerce-grid-2col-responsive ecommerce:mb-6">
+        <div data-ref="payment_link_card" class="ecommerce-admin-card">
+          <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4">
+            <icon name="link" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.title</h3>
+          </div>
+          <div class="ecommerce-flex-center ecommerce:gap-2">
+            <input type="text" class="ecommerce-input-readonly ecommerce:flex-1" value="https://pay.example.com/pp-jk1789mno123pqr456" aria-label="$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.title" :readOnly="true"/>
+            <button type="button" class="ecommerce-btn ecommerce-btn-icon" title="$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.copy">
+              <icon name="copy" class="ecommerce:text-xl"/>
+            </button>
+            <button aria-label="$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open" title="$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open" type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce-btn-icon ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100">
+              <icon name="external-link" class="ecommerce:text-xl"/>
+            </button>
+          </div>
+        </div>
+        <div data-ref="memo_card" class="ecommerce-admin-card">
+          <div class="ecommerce-flex-between ecommerce:mb-4">
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <icon name="file-text" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.memo.title</h3>
+            </div>
+            <button type="button" class="ecommerce-flex-center ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:gap-1">
+              <icon name="pen" class="ecommerce:text-base"/>
+              <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.memo.edit</span>
+            </button>
+          </div>
+          <div class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:rounded-lg ecommerce:p-3 ecommerce:text-sm ecommerce-text-secondary ecommerce:min-h-[60px]">$t:sirsoft-ecommerce.admin.sample.misc.vbank_issued_waiting</div>
+        </div>
+      </div>
+      <div data-ref="log_section" class="ecommerce-admin-card">
+        <div data-ref="log_header" class="ecommerce-flex-between ecommerce:cursor-pointer">
+          <div class="ecommerce-flex-center ecommerce:gap-3">
+            <icon name="calendar" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.title</h3>
+            <span class="ecommerce-badge ecommerce-badge-gray">$t:sirsoft-ecommerce.admin.sample.fmt.items|count=5</span>
+          </div>
+          <icon name="chevron-down" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
+        </div>
+        <div data-ref="log_content" class="ecommerce:mt-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4">
+          <div data-ref="log_controls" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:justify-end ecommerce:gap-3 ecommerce:mb-4">
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <span class="ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort:</span>
+              <select class="ecommerce:w-40" value="{{_local.logSortBy}}" aria-label="$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort">
+                <options>
+                  <option value="latest">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort_options.latest</option>
+                  <option value="oldest">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort_options.oldest</option>
+                </options>
+              </select>
+            </div>
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <span class="ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.per_page:</span>
+              <select class="ecommerce:w-20" value="{{_local.logPerPage}}" aria-label="$t:sirsoft-ecommerce.admin.personal_payment_detail.log.per_page">
+                <options>
+                  <option :value="10">$t:sirsoft-ecommerce.admin.sample.fmt.items|count=10</option>
+                  <option :value="20">$t:sirsoft-ecommerce.admin.sample.fmt.items|count=20</option>
+                  <option :value="50">$t:sirsoft-ecommerce.admin.sample.fmt.items|count=50</option>
+                </options>
+              </select>
+            </div>
+          </div>
+          <div data-ref="log_table_desktop" class="ecommerce-table-container ecommerce-table-desktop ecommerce:overflow-x-auto">
+            <responsive on="portable" class="ecommerce:hidden ecommerce-hidden"/>
+            <table class="ecommerce-log-table">
+              <thead>
+                <tr>
+                  <th class="ecommerce:w-44">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.columns.processed_at</th>
+                  <th class="ecommerce:w-36">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.columns.processor</th>
+                  <th>$t:sirsoft-ecommerce.admin.personal_payment_detail.log.columns.event</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>2025-10-28 10:30:25</td>
+                  <td>
+                    <span class="ecommerce-log-table-actor">$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin</span>
+                  </td>
+                  <td>$t:sirsoft-ecommerce.admin.sample.misc.resend_payment_link</td>
+                </tr>
+                <tr>
+                  <td>2025-10-28 09:15:30</td>
+                  <td>
+                    <span class="ecommerce-log-table-actor">$t:sirsoft-ecommerce.admin.sample.people.system</span>
+                  </td>
+                  <td>$t:sirsoft-ecommerce.admin.sample.misc.create_payment_link</td>
+                </tr>
+                <tr>
+                  <td>2025-10-28 09:15:00</td>
+                  <td>
+                    <span class="ecommerce-log-table-actor">$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin</span>
+                  </td>
+                  <td>$t:sirsoft-ecommerce.admin.sample.misc.register_payment_request</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div data-ref="log_cards_mobile" class="ecommerce:hidden ecommerce-hidden">
+            <responsive on="portable" class="ecommerce-row-stack"/>
+            <div class="ecommerce-log-card">
+              <div class="ecommerce-log-card-header">
+                <span class="ecommerce-log-table-actor">$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin</span>
+                <span class="ecommerce-text-tertiary ecommerce:text-sm">2025-10-28 10:30:25</span>
+              </div>
+              <div class="ecommerce-log-card-body">$t:sirsoft-ecommerce.admin.sample.misc.resend_payment_link</div>
+            </div>
+            <div class="ecommerce-log-card">
+              <div class="ecommerce-log-card-header">
+                <span class="ecommerce-log-table-actor">$t:sirsoft-ecommerce.admin.sample.people.system</span>
+                <span class="ecommerce-text-tertiary ecommerce:text-sm">2025-10-28 09:15:30</span>
+              </div>
+              <div class="ecommerce-log-card-body">$t:sirsoft-ecommerce.admin.sample.misc.create_payment_link</div>
+            </div>
+            <div class="ecommerce-log-card">
+              <div class="ecommerce-log-card-header">
+                <span class="ecommerce-log-table-actor">$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin</span>
+                <span class="ecommerce-text-tertiary ecommerce:text-sm">2025-10-28 09:15:00</span>
+              </div>
+              <div class="ecommerce-log-card-body">$t:sirsoft-ecommerce.admin.sample.misc.register_payment_request</div>
+            </div>
+          </div>
+          <div data-ref="pagination" class="ecommerce-flex-center ecommerce:justify-center ecommerce:gap-1 ecommerce:mt-4 ecommerce:pt-4">
+            <button aria-label="$t:common.first_page" type="button" class="ecommerce-btn ecommerce-btn-icon" :disabled="true">
+              <icon name="angles-left" class="ecommerce:text-base"/>
+            </button>
+            <button aria-label="$t:common.prev_page" type="button" class="ecommerce-btn ecommerce-btn-icon" :disabled="true">
+              <icon name="chevron-left" class="ecommerce:text-base"/>
+            </button>
+            <button type="button" class="ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:justify-center ecommerce:rounded-md ecommerce:text-sm ecommerce:font-medium ecommerce:bg-gray-900 ecommerce:text-white ecommerce:dark:bg-white ecommerce:dark:text-gray-900">1</button>
+            <button aria-label="$t:common.next_page" type="button" class="ecommerce-btn ecommerce-btn-icon">
+              <icon name="chevron-right" class="ecommerce:text-base"/>
+            </button>
+            <button aria-label="$t:common.last_page" type="button" class="ecommerce-btn ecommerce-btn-icon">
+              <icon name="angles-right" class="ecommerce:text-base"/>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+</layout>

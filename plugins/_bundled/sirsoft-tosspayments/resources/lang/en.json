@@ -1,7 +1,8 @@
 {
     "editor": {
         "data_source": {
-            "settings": "Payment Settings"
+            "settings": "Payment Settings",
+            "webhook_info": "Deposit Webhook URL"
         }
     },
     "plugin_name": "TossPayments",
@@ -58,9 +59,9 @@
         "escrow_shipping_info_notice": "Register shipping information in the TossPayments merchant console.",
         "escrow_shipping_info_link": "Open ↗",
         "webhook_secret_verify": "Webhook Secret Verification",
-        "webhook_secret_verify_hint": "Verifies the deposit webhook secret against the payment confirmation response to block forged requests.",
+        "webhook_secret_verify_hint": "Verifies the deposit webhook secret against the payment confirmation response to block forged requests. If turned off, anyone who knows an order number can mark the order as paid without depositing, and the operator is responsible for any security incident while it is off.",
         "webhook_url_label": "Deposit Webhook URL",
-        "webhook_url_hint": "Prefix this path with your store's full domain (https://your-domain) and register it as a DEPOSIT_CALLBACK event in the TossPayments Developer Center > Webhook menu.",
+        "webhook_url_hint": "Copy the URL above as is and register it as a DEPOSIT_CALLBACK event in the TossPayments Developer Center > Webhook menu.",
         "webhook_url_copy": "Copy",
         "webhook_url_copied": "Webhook URL copied."
     },
@@ -80,7 +81,14 @@
         "receipt_label": "Receipt",
         "receipt_view": "View receipt",
         "cash_receipt_label": "Cash receipt",
-        "cash_receipt_view": "View cash receipt"
+        "cash_receipt_view": "View cash receipt",
+        "vbank_title": "Virtual Account Deposit Guide",
+        "vbank_bank": "Bank",
+        "vbank_account": "Account Number",
+        "vbank_holder": "Account Holder",
+        "vbank_amount": "Deposit Amount",
+        "vbank_due": "Deposit Deadline",
+        "vbank_notice": "Your order will be automatically cancelled if payment is not received by the deadline."
     },
     "admin": {
         "payment_panel_title": "TossPayments payment info",
@@ -95,5 +103,6 @@
         "error": {
             "sdk_url_untrusted": "The payment module address is not valid, so the payment cannot proceed. Please contact the administrator."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

@@ -8,9 +8,15 @@ use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\ModuleCacheDriver;
+use App\Extension\Exceptions\UpgradeStepClassMissingException;
+use App\Extension\Helpers\ExtensionScheduleSyncHelper;
 use App\Extension\Storage\ModuleStorageDriver;
+use App\Extension\Support\UnusableUpgradeStep;
+use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ReportsLifecycleFailure;
+use App\Support\ExtensionIntegrations;
 use App\Support\PublicAssetDisk;
+use App\Support\StateContracts;
 use Illuminate\Database\Seeder;
 use ReflectionClass;
 
@@ -108,6 +114,8 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
 
     /**
      * 모듈 디렉토리 경로 반환
+     *
+     * @return string 모듈 디렉토리 절대 경로
      */
     protected function getModulePath(): string
     {
@@ -123,6 +131,8 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * 모듈 식별자 반환 (디렉토리명에서 자동 추론)
      *
      * 디렉토리명이 'sirsoft-sample'이면 식별자도 'sirsoft-sample'
+     *
+     * @return string 모듈 식별자
      */
     final public function getIdentifier(): string
     {
@@ -275,9 +285,16 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
             $namespacePart = ExtensionManager::directoryToNamespace($this->getIdentifier());
             $namespace = 'Modules\\'.$namespacePart.'\\Upgrades\\'.$filename;
 
-            if (class_exists($namespace) && is_subclass_of($namespace, UpgradeStepInterface::class)) {
-                $steps[$version] = new $namespace;
+            // 파일이 있는데 클래스가 없거나 인터페이스 미구현이면 자리 표시를 둔다 — 업데이트가 이번 범위로 고른 단계에
+            // 있을 때만 실패한다(7.1.3, 코어와 같은 규칙 — 예전엔 조용히 건너뜀)
+            try {
+                UpgradeStepClassMissingException::assertUsable($file, $namespace, UpgradeStepInterface::class);
+            } catch (UpgradeStepClassMissingException $e) {
+                $steps[$version] = new UnusableUpgradeStep($e);
+
+                continue;
             }
+            $steps[$version] = new $namespace;
         }
 
         ksort($steps, SORT_NATURAL);
@@ -530,27 +547,42 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
-     * 스케줄 작업 목록 반환
+     * 스케줄 작업 선언 목록을 반환합니다.
      *
-     * 모듈에서 등록하는 스케줄 작업 목록입니다.
-     * 코어에서 이 메서드를 호출하여 모듈 스케줄러를 등록합니다.
+     * 7.2.0 부터 코어는 이 선언을 설치·업데이트·활성화 때 schedules 테이블로 동기화하고
+     * (`ModuleManager::syncDeclarativeArtifacts()` → `ExtensionScheduleSyncHelper`), 스케줄러는 DB 행을 읽어 실행한다.
+     * 운영자가 관리 화면(스케줄 관리)에서 바꾼 주기·활성 여부 등은 업데이트 때 보존된다(user_overrides).
+     * 선언에서 뺀 항목의 행은 다음 동기화 때 지워지고(선언이 0건이면 실수로 비운 것일 수 있어 정리를 건너뛴다),
+     * "데이터도 함께 삭제" 로 제거하면 모든 행이 지워진다.
+     * 비활성 모듈의 행은 남지만 실행되지 않는다.
      *
-     * 기본적으로 빈 배열 반환
-     * 모듈 개발자가 스케줄 작업이 필요한 경우 오버라이드
+     * 기본적으로 빈 배열을 반환한다. 스케줄이 필요한 모듈만 오버라이드한다.
      *
-     * @return array 스케줄 작업 배열
-     *               [
-     *               [
-     *               'command' => 'artisan:command',
-     *               'schedule' => 'daily' | 'hourly' | 'everyMinute' | 'weekly' | cron expression,
-     *               'description' => '작업 설명 (선택)',
-     *               'enabled_config' => 'setting.key' (선택, module_setting()으로 조회하여 활성화 여부 결정),
-     *               ],
-     *               ]
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록. 항목 형식(코어 `config/core.php` 의 `schedules` 카탈로그와 같은 키):
+     *                                          [
+     *                                          'name' => 'prune-temp-files',              // 필수 권장 — 모듈 안에서 고유한 기계 식별자(소문자·숫자·-_.)
+     *                                          'type' => 'artisan',                        // artisan(기본) | job (shell·url 은 선언 불가)
+     *                                          'label' => ['ko' => '…', 'en' => '…'],     // 표시 명칭 (ja 는 언어팩 seed/schedules.json)
+     *                                          'description' => ['ko' => '…', 'en' => '…'],
+     *                                          'command' => 'vendor-module:prune-temp-files',                   // artisan 명령(옵션 포함) 또는 job 클래스 FQCN
+     *                                          'expression' => '0 4 * * *',                // cron 식 (사이트 시간대 기준)
+     *                                          'frequency' => 'custom',                    // custom(기본) | everyThirtySeconds
+     *                                          'timezone' => null,                         // 시간대 고정이 필요할 때만 (예: Asia/Seoul)
+     *                                          'without_overlapping' => 0,                 // 중복 실행 방지 잠금 분 (0=끔, 최대 10080)
+     *                                          'on_one_server' => true,                    // 다중 서버에서 한 서버만
+     *                                          'dispatch_mode' => 'sync',                  // sync(스케줄러에서 바로) | queue(큐 Job)
+     *                                          'history_mode' => 'all',                    // all | failures_only (잦은 작업용)
+     *                                          'notify_on_failure' => true,                // 실패 시 관리자 알림 (하루 1회)
+     *                                          'timeout' => null,                          // 초
+     *                                          'enabled_condition' => [                    // 실행 조건 (AND) — 미충족이면 그 틱에 실행하지 않음
+     *                                          ['source' => 'module_setting', 'key' => 'cleanup.enabled', 'operator' => 'truthy', 'default' => true],
+     *                                          ],
+     *                                          ]
      *
-     * enabled_config 형식:
-     *   - 'order_settings.auto_cancel_expired' → module_setting($identifier, 'order_settings.auto_cancel_expired')
-     *   - 'sirsoft-ecommerce.order_settings.auto_cancel_expired' → identifier 접두사 자동 제거 후 동일하게 조회
+     * 옛 형식(`command`·`schedule`(메서드명|cron)·`description` 문자열·`enabled_config`)도 계속 받는다 —
+     * 동기화 때 name 을 명령에서 만들고 `enabled_config` 를 `module_setting` 조건으로 바꾼다(identifier 접두사 자동 제거).
+     *
+     * @see ExtensionScheduleSyncHelper
      */
     public function getSchedules(): array
     {
@@ -589,7 +621,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
-     * Declarative i18n getter family — 모듈이 선언하는 다국어/SSoT 데이터 4종.
+     * Declarative i18n getter family — 모듈이 선언하는 다국어/SSoT 데이터 5종.
      *
      * 모두 default `[]` 반환 (override 미선택 시 무영향). 각 메서드 결과는 `ModuleManager` 가
      * activate/update 시 자동 동기화하며, lang pack 활성 시 다국어 키 보강 필터를 통해 ja/en 등 추가
@@ -598,9 +630,10 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * | 메서드                          | 도메인         | 동기화 위치                      | lang pack 필터                                    |
      * |--------------------------------|---------------|---------------------------------|--------------------------------------------------|
      * | `getNotificationDefinitions()` | 알림 정의      | `notification_definitions`     | `seed.{id}.notifications.translations`           |
-     * | `getIdentityMessages()`        | IDV 메일       | `identity_message_definitions` | `seed.{id}.identity_messages.translations`       |
+     * | `getIdentityMessages()`        | (deprecated) | 위 알림 정의로 변환·합류 (7.1.0) | `seed.{id}.notifications.translations` (type 키)  |
      * | `getIdentityPolicies()`        | IDV 정책       | `identity_policies`            | (lang pack seed 대상 외 — 다국어 필드 부재)        |
      * | `getIdentityPurposes()`        | IDV 목적       | 메모리 레지스트리 (DB 없음)      | (lang pack seed 대상 외 — `label_key` 참조)        |
+     * | `getSchedules()`               | 예약 작업      | `schedules` (7.2.0)            | `seed.{id}.schedules.translations` (name 키)      |
      *
      * 신규 i18n SSoT 도메인 추가 시 동일 패턴(meta 4-요소: declarative getter + Manager sync +
      * applyFilters + Injector 메서드) 을 따라야 하며, audit 룰 `core-config-lang-pack-seed-coverage`
@@ -610,6 +643,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      * @see getIdentityPurposes()
      * @see getIdentityMessages()
      * @see getNotificationDefinitions()
+     * @see getSchedules()
      */
 
     /**
@@ -665,46 +699,29 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
-     * 이 모듈이 등록할 IDV(본인인증) 메시지 정의/템플릿 선언을 반환합니다.
+     * (deprecated) 이 모듈이 등록할 본인인증 메시지 선언을 반환합니다 — 7.0.x 계약.
      *
-     * `getIdentityPolicies()` / `getIdentityPurposes()` 와 동일한 패턴으로
-     * `ModuleManager` 가 activate/update 시 `IdentityMessageSyncHelper` 를 통해
-     * `identity_message_definitions` / `identity_message_templates` 테이블에 동기화하며,
-     * uninstall(deleteData=true) 시 자동 정리됩니다.
-     *
-     * 운영자가 관리자 UI 에서 수정한 필드(name/description/subject/body 등) 는
-     * `user_overrides` JSON 으로 보존됩니다.
-     *
-     * `extension_type='module'`, `extension_identifier=$this->getIdentifier()` 는
-     * Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다.
-     *
-     * 반환 형식 예:
+     * 7.1.0 부터 본인인증 메시지는 알림 정의(`notification_definitions`, category=identity)다.
+     * 새 선언은 `getNotificationDefinitions()` 에 `category => 'identity'` 로 적는다:
      * ```php
-     * return [
-     *     [
-     *         'provider_id' => 'g7:core.mail',
-     *         'scope_type' => IdentityMessageDefinition::SCOPE_PURPOSE,
-     *         'scope_value' => 'checkout_verification',
-     *         'name' => ['ko' => '결제 시 본인 확인', 'en' => 'Checkout Verification'],
-     *         'description' => ['ko' => '...', 'en' => '...'],
-     *         'channels' => ['mail'],
-     *         'variables' => [['key' => 'code', 'description' => '인증 코드']],
-     *         'templates' => [
-     *             [
-     *                 'channel' => 'mail',
-     *                 'subject' => ['ko' => '...', 'en' => '...'],
-     *                 'body' => ['ko' => '...', 'en' => '...'],
-     *             ],
-     *         ],
-     *     ],
-     * ];
+     * 'identity.purpose.checkout_verification' => [ // type 규칙: identity.purpose.{목적} / identity.policy.{정책 키}
+     *     'category' => 'identity',
+     *     'hook_prefix' => '{확장 식별자}',
+     *     'hooks' => [],
+     *     'channels' => ['mail'],
+     *     'name' => ['ko' => '...', 'en' => '...'],
+     *     'variables' => IdentityNotificationType::commonVariables(),
+     *     'templates' => [['channel' => 'mail', 'subject' => [...], 'body' => [...]]],
+     * ],
      * ```
      *
-     * scope_type 권장:
-     * - `IdentityMessageDefinition::SCOPE_PURPOSE` — purpose 단위 메시지 (해당 purpose 트리거 시 우선)
-     * - `IdentityMessageDefinition::SCOPE_POLICY` — 특정 policy_key 전용 메시지 (가장 구체적, purpose 보다 우선)
+     * 이 메서드가 비어 있지 않으면 ModuleManager 가 알림 정의 동기화 때 변환해 합류시킨다
+     * (scope_type/scope_value → type, 메일 외 provider 는 메일 채널로 흡수, 다른 소유자와 type 이 겹치면
+     * 건너뜀). 옛 표(`identity_message_definitions/templates`)는 7.1.0 업그레이드에서 없어졌다.
      *
-     * @return array<int, array<string, mixed>>
+     * @deprecated 7.1.0 — 8.0 에서 제거. `getNotificationDefinitions()` 에 category=identity 로 선언한다.
+     *
+     * @return array<int, array<string, mixed>> 옛 형식 선언 (provider_id, scope_type, scope_value, name, templates …)
      */
     public function getIdentityMessages(): array
     {
@@ -714,7 +731,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     /**
      * 이 모듈이 등록할 알림 정의/템플릿 선언을 반환합니다.
      *
-     * `getIdentityMessages()` 와 동일한 패턴으로 `ModuleManager` 가 activate/update 시
+     * `getIdentityPolicies()` 와 같은 선언형 패턴으로 `ModuleManager` 가 activate/update 시
      * `NotificationSyncHelper::syncDefinition()` + `syncTemplate()` 으로 upsert 하고,
      * 현재 선언에 없는 기존 정의는 `cleanupStaleDefinitions()` 로 정리합니다.
      * uninstall(deleteData=true) 시에도 자동 정리됩니다.
@@ -783,6 +800,58 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
      *                                             ]
      */
     public function getBenchmarkProfiles(): array
+    {
+        return [];
+    }
+
+    /**
+     * 방문자 통계 전환(목표) 선언을 반환합니다.
+     *
+     * 이 모듈이 방문자 통계에 공급하는 전환 지점을 미리 선언합니다. 코어는 선언된 목표만
+     * 기록하고(`G7Core.analytics.trackGoal()`·`ConversionRecorderInterface::record()`),
+     * 선언되지 않은 키는 수집 실패 목록에 `unknown_goal` 로 남깁니다. 기록 키는
+     * `{식별자}.{key}` 로 정규화됩니다. 모듈이 비활성화되면 목표는 등록부에서 빠지고
+     * 이미 쌓인 전환은 남습니다.
+     *
+     * @return array<int, array<string, mixed>> 목표 선언 목록
+     *                                          [[
+     *                                          'key' => 'order_completed',                // 영소문자·숫자·밑줄
+     *                                          'label' => ['ko' => '주문 완료', 'en' => 'Order completed'],
+     *                                          'category' => 'purchase',                  // purchase|signup|engagement|custom
+     *                                          'dedupe' => 'once_per_visit',              // every_time|once_per_visit|once_per_visitor
+     *                                          'attributes' => [
+     *                                          'revenue' => ['type' => 'decimal', 'required' => true, 'min' => 0],
+     *                                          'currency' => ['type' => 'enum', 'required' => true, 'values' => ['KRW', 'USD']],
+     *                                          ],
+     *                                          'attribution_window_days' => 30,
+     *                                          'dimensions' => ['board_id'],              // 이 모듈이 선언한 차원 키
+     *                                          ]]
+     */
+    public function getAnalyticsGoals(): array
+    {
+        return [];
+    }
+
+    /**
+     * 방문자 통계 분류 기준(dimension) 선언을 반환합니다.
+     *
+     * 브라우저의 `G7Core.analytics.setDimension()` 이나 서버 필터
+     * `core.analytics.resolve_dimensions` 로 넣는 차원 값은 여기 선언된 것만 원장에 남고,
+     * 집계는 `ext:{식별자}:{key}` 차원 행으로 만들어집니다. `pii` 가 참인 차원은 익명
+     * 모드에서 적재하지 않고 소급 익명화 때 지웁니다.
+     *
+     * @return array<int, array<string, mixed>> 차원 선언 목록
+     *                                          [[
+     *                                          'key' => 'board_id',
+     *                                          'scope' => 'action',                       // action|visit
+     *                                          'label' => ['ko' => '게시판', 'en' => 'Board'],
+     *                                          'value_type' => 'int',                     // int|string|enum
+     *                                          'max_cardinality' => 500,                  // 하루 집계 라벨 수 상한
+     *                                          'label_resolver' => 'resolveBoardLabels',  // (array $values): array<값, 이름>
+     *                                          'pii' => false,
+     *                                          ]]
+     */
+    public function getAnalyticsDimensions(): array
     {
         return [];
     }
@@ -869,6 +938,19 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 매번 계산하는 값이라 설정 파일에 저장하지 않는 설정 키 목록 (7.1.3)
+     *
+     * `getConfigValues()` 가 요청마다 계산해 돌려주는 값은 여기에 선언한다. 코어는 이 키를 설치 때 설정 파일에
+     * 쓰지 않고, 저장 요청·기존 파일에서 빼고, 읽을 때 늘 실시간 값을 쓴다.
+     *
+     * @return array<int, string> 계산값 키 (도트 표기 가능)
+     */
+    public function getComputedSettingKeys(): array
+    {
+        return [];
+    }
+
+    /**
      * 모듈 설정 스키마 반환
      *
      * 민감한 필드(sensitive: true) 정보 등을 포함합니다.
@@ -921,6 +1003,23 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 매니페스트에 선언된 아이콘 상대경로 반환
+     *
+     * module.json 의 icon 필드 값을 그대로 돌려줍니다. 경로 규칙(확장 루트 기준 상대경로)과
+     * 규격(정사각·100KB 이하·안전한 SVG) 검증은 ExtensionIconResolver·
+     * ExtensionIconValidator 의 몫이며, 여기서는 선언값만 봅니다.
+     * 선언이 없으면 파일 관례(assets/icon.svg → png → webp)로 해석됩니다.
+     *
+     * @return string|null 아이콘 상대경로 (선언이 없으면 null)
+     */
+    public function getIcon(): ?string
+    {
+        $icon = $this->loadManifest()['icon'] ?? null;
+
+        return is_string($icon) && trim($icon) !== '' ? $icon : null;
+    }
+
+    /**
      * 모듈 메타데이터 반환
      *
      * 기본적으로 빈 배열 반환
@@ -931,6 +1030,38 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function getMetadata(): array
     {
         return [];
+    }
+
+    /**
+     * 이 모듈이 소유하는 전역 상태 공개 계약을 반환합니다.
+     *
+     * module.json 의 `state_contracts` 에서 읽습니다. 다른 확장이 **읽는** 전역 상태만 선언합니다(화면 전용 임시 값은
+     * 선언하지 않는다). 설치·활성화 때 다른 활성 확장이나 코어가 같은 이름을 소유하면 막히고, 프론트에는
+     * `G7Core.stateContracts` 로 공개됩니다({@see StateContracts}).
+     *
+     * @return array<string, array{description: array<string, string>, schema: array<string, mixed>, writers: array<int, string>}>
+     *                                                                                                                             이름 → 계약
+     *
+     * @since 7.1.0
+     */
+    public function getStateContracts(): array
+    {
+        return StateContracts::normalize($this->loadManifest()['state_contracts'] ?? []);
+    }
+
+    /**
+     * 함께 쓰면 연동되는(선택) 확장을 반환합니다.
+     *
+     * module.json 의 `integrations` 에서 읽습니다. `dependencies` 와 달리 설치·활성화를 막지 않습니다
+     * ({@see ExtensionIntegrations}).
+     *
+     * @return array{modules: array<int, string>, plugins: array<int, string>, templates: array<int, string>} 유형별 확장 식별자
+     *
+     * @since 7.1.0
+     */
+    public function getIntegrations(): array
+    {
+        return ExtensionIntegrations::normalize($this->loadManifest()['integrations'] ?? []);
     }
 
     /**
@@ -970,6 +1101,12 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
 
     /**
      * 레이아웃 확장 파일 목록 반환
+     *
+     * **`.json` 만 돌려주는 것이 계약이다** — 소스(`.g7.html`) 판별은 여기가 아니라 **호출처**
+     * ({@see CollectsFragmentSources::collectFragmentSources()}) 소관이다.
+     * 호출처가 이 목록 위에 같은 디렉토리의 `.g7.html` 을 얹어 소스 SSoT 를 우선하고, 짝 마크업이
+     * 없는 `.json` 만 남긴다. 여기서 `.g7.html` 까지 반환하도록 바꾸면 확장 공개 표면이 바뀌어
+     * 번들 확장의 `g7_version` 상향 대상이 되고, 호출처의 짝 판별과 이중으로 겹친다.
      *
      * @return array<string> JSON 파일 경로 목록
      */

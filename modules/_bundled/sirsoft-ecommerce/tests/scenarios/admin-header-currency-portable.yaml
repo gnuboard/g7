@@ -1,0 +1,23 @@
+feature: 관리자 헤더 통화·배송국가 조각 — 모바일·태블릿 칩 전환
+
+description: |
+  관리자 모바일 헤더에서 통화 셀렉터가 잘리던 문제로, 조각이 드로어 안에서 접기/펼치기 아코디언(트리거 행 + 가로 칩 목록)으로 그려진다.
+  데스크톱은 기존 드롭다운을 유지한다. 시험 하나가 시나리오 하나다.
+
+axes:
+  case:
+    # modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminHeaderCurrencySelectorPortable.test.tsx — 모바일·태블릿에서 칩 아코디언, 데스크톱 드롭다운 유지
+    - currency_portable_c01
+    - currency_portable_c02
+    - currency_portable_c03
+    - currency_portable_c04
+    - currency_portable_c05
+    - currency_portable_c06
+    - currency_portable_c07
+    - currency_portable_c08
+
+effects:
+  - admin_currency_fragment_portable_chips   # 모바일·태블릿에서 칩 아코디언, 데스크톱 드롭다운 유지
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminHeaderCurrencySelectorPortable.test.tsx

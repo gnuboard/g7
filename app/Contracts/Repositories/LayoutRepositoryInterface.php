@@ -30,11 +30,59 @@ interface LayoutRepositoryInterface
     public function getListByTemplateId(int $templateId): SupportCollection;
 
     /**
-     * 특정 레이아웃 조회 (템플릿 ID와 이름으로)
+     * 본문을 포함해 레이아웃을 청크 단위로 흘려 읽습니다 (내용 검색·참조 스캔용).
+     *
+     * {@see getByTemplateId()} 는 `content` 를 select 하지 않으므로 본문이 필요한 경로는
+     * 반드시 이 메서드를 쓴다. 콜백이 `false` 를 돌려주면 순회를 멈춘다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  callable(TemplateLayout): (bool|null)  $callback  행마다 호출
+     * @return void 반환값 없음
+     */
+    public function eachWithContent(int $templateId, callable $callback): void;
+
+    /**
+     * 지워진(soft delete) 행까지 포함해 이름으로 레이아웃 1건을 찾습니다.
+     *
+     * 유니크 키 `(template_id, name, source_type)` 는 지워진 행도 차지하므로, 생성·이름변경 전에
+     * 이 메서드로 자리를 확인해야 중복 키로 터지지 않는다.
      *
      * @param  int  $templateId  템플릿 ID
      * @param  string  $name  레이아웃 이름
-     * @return TemplateLayout|null 찾은 레이아웃 모델 또는 null
+     * @return TemplateLayout|null 없으면 null (지워진 행이면 `trashed()` 가 true)
+     */
+    public function findWithTrashedByName(int $templateId, string $name): ?TemplateLayout;
+
+    /**
+     * 지워진 레이아웃 행을 되살립니다.
+     *
+     * @param  TemplateLayout  $layout  지워진 행
+     * @return TemplateLayout 되살린 행
+     */
+    public function restoreTrashed(TemplateLayout $layout): TemplateLayout;
+
+    /**
+     * 레이아웃을 soft delete 합니다 (행은 남고 조회에서 빠진다 — {@see deleteByName()} 은 영구 삭제).
+     *
+     * @param  TemplateLayout  $layout  지울 행
+     * @return void 반환값 없음
+     */
+    public function softDelete(TemplateLayout $layout): void;
+
+    /**
+     * 레이아웃 행을 영구 삭제합니다 (이미 읽어 둔 행 — 지워진 행이어도 된다).
+     *
+     * @param  TemplateLayout  $layout  지울 행
+     * @return void 반환값 없음
+     */
+    public function forceDelete(TemplateLayout $layout): void;
+
+    /**
+     * 템플릿 안에서 이름으로 레이아웃 1건을 찾습니다.
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $name  레이아웃 이름 (확장자 없는 경로 모양 문자열)
+     * @return TemplateLayout|null 없으면 null
      */
     public function findByName(int $templateId, string $name): ?TemplateLayout;
 
@@ -67,6 +115,15 @@ interface LayoutRepositoryInterface
      * @return bool 존재 여부
      */
     public function exists(int $templateId, string $name): bool;
+
+    /**
+     * overlay 대상(`target_layout`)이 이 템플릿에 실재하는지 확인 — 모듈 레이아웃의 논리 이름(`{모듈}.{name}`) 포함
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @param  string  $name  overlay 대상 레이아웃 이름 (논리 이름)
+     * @return bool 존재 여부
+     */
+    public function existsForOverlay(int $templateId, string $name): bool;
 
     /**
      * 특정 템플릿의 레이아웃 중 지정한 확장점(extension_point)을 정의한 것이 있는지 확인
@@ -180,9 +237,9 @@ interface LayoutRepositoryInterface
      * 특정 템플릿의 모든 레이아웃 이름 조회
      *
      * @param  int  $templateId  템플릿 ID
-     * @return \Illuminate\Support\Collection<int, string> 레이아웃 이름 컬렉션
+     * @return SupportCollection<int, string> 레이아웃 이름 컬렉션
      */
-    public function getLayoutNamesByTemplateId(int $templateId): \Illuminate\Support\Collection;
+    public function getLayoutNamesByTemplateId(int $templateId): SupportCollection;
 
     /**
      * 특정 모듈의 모든 레이아웃 조회
@@ -259,6 +316,19 @@ interface LayoutRepositoryInterface
     public function findPluginLayouts(int $templateId, ?string $pluginIdentifier = null): Collection;
 
     /**
+     * 레이아웃 1건의 속성을 그대로 적어 넣습니다.
+     *
+     * `update()` 는 인자를 **본문(content)** 으로 취급하므로 `name`·`lock_version` 같은 열을
+     * 바꿀 수 없다. 이름변경·휴지통 복구처럼 본문 밖 열을 함께 옮기는 연산이 모델을 직접
+     * 저장하지 않도록 이 자리를 둔다.
+     *
+     * @param  int  $id  레이아웃 ID
+     * @param  array<string, mixed>  $attributes  적용할 속성 (열 이름 => 값)
+     * @return TemplateLayout 저장 후 다시 읽은 모델
+     */
+    public function saveAttributes(int $id, array $attributes): TemplateLayout;
+
+    /**
      * 레이아웃을 생성하거나 업데이트합니다.
      *
      * @param  array  $attributes  조회 조건
@@ -323,6 +393,51 @@ interface LayoutRepositoryInterface
      * @return Collection 레이아웃 컬렉션
      */
     public function getBySourceIdentifier(string $sourceIdentifier, LayoutSourceType $sourceType): Collection;
+
+    /**
+     * 출처(모듈·플러그인)의 soft delete 된 레이아웃을 조회합니다.
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입 — 같은 식별자의 다른 출처 행을 건드리지 않도록 반드시 가른다
+     * @return Collection soft delete 된 레이아웃 컬렉션
+     */
+    public function getTrashedBySource(string $identifier, LayoutSourceType $sourceType): Collection;
+
+    /**
+     * 출처의 레이아웃을 soft delete 합니다 (확장 비활성화).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return int soft delete 된 레코드 수
+     */
+    public function softDeleteBySource(string $identifier, LayoutSourceType $sourceType): int;
+
+    /**
+     * 출처의 soft delete 된 레이아웃을 복원합니다 (확장 재활성화).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return int 복원된 레코드 수
+     */
+    public function restoreBySource(string $identifier, LayoutSourceType $sourceType): int;
+
+    /**
+     * 출처의 레이아웃을 영구 삭제합니다 (soft delete 포함, 확장 삭제).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return int 삭제된 레코드 수
+     */
+    public function forceDeleteBySource(string $identifier, LayoutSourceType $sourceType): int;
+
+    /**
+     * 출처의 레이아웃 개수를 반환합니다 (soft delete 포함).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return int 레이아웃 개수
+     */
+    public function countBySource(string $identifier, LayoutSourceType $sourceType): int;
 
     /**
      * 특정 템플릿의 모든 레이아웃을 삭제합니다.

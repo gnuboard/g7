@@ -1,0 +1,169 @@
+<!-- 쇼핑몰 설정 — 배송유형 목록, 넓은 화면용 표 + 추가 폼. 좁은 화면용 카드
+  (`_shipping_type_cards`)와 같은 배열을 편집한다.
+  
+  추가는 임시 폼(`shippingTypeForm`)에 담았다가 확인할 때 배열에 붙이고, 필수값 판정은
+  `<conditions>` 로 갈라 통과하면 반영·아니면 오류 표시만 세운다. 새 줄의 정렬 순서는
+  붙이기 직전 배열 길이를 그대로 준다 — 드래그 재정렬이 매번 0부터 다시 매기므로 그 값이
+  곧 맨 끝자리다. -->
+<partial>
+  <div class="ecommerce-admin-card">
+    <div class="ecommerce-card-header">
+      <!-- `card-header` 는 justify 를 걸지 않는 가로 flex 라, 이 줄이 w-full 없이는
+        내용 폭으로 줄어 「추가」 버튼이 제목에 달라붙는다. -->
+      <div class="ecommerce-flex-between ecommerce:w-full">
+        <div>
+          <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.settings.shipping.types.section_title</h3>
+        </div>
+        <button data-if="{{!_local.isAddingShippingType}}" type="button" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <on type="click">
+            <!-- 신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[사이트 기본 언어]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 사이트 기본 언어 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다. -->
+            <set-state target="local" :isAddingShippingType="true" shippingTypeForm="{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), category: 'domestic', is_active: true, sort_order: 0 } }}" :shippingTypeFormErrors="null"/>
+          </on>
+          <icon name="plus" class="ecommerce:text-xs"/>
+          <span>$t:sirsoft-ecommerce.admin.settings.shipping.types.add_button</span>
+        </button>
+      </div>
+    </div>
+    <div data-if="{{_local.isAddingShippingType}}" class="ecommerce:p-4 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800/50">
+      <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:lg:grid-cols-3 ecommerce:gap-3">
+        <div>
+          <label class="ecommerce-text-secondary ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:mb-1">$t:sirsoft-ecommerce.admin.settings.shipping.types.form.code</label>
+          <input type="text" value="{{_local.shippingTypeForm?.code ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.code_placeholder" class="{{_local.shippingTypeFormErrors?.code ? 'ecommerce-input ecommerce-input-error ecommerce:font-mono' : 'ecommerce-input ecommerce:font-mono'}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 유형 코드. 상품·주문이 이 코드로 유형을 참조하므로 만든 뒤 바꾸면 이어지지 않는다. -->
+              <set-state target="local" shippingTypeForm.code="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span data-if="{{_local.shippingTypeFormErrors?.code}}" class="ecommerce-form-error">$t:sirsoft-ecommerce.admin.settings.shipping.types.validation.code_required</span>
+        </div>
+        <div>
+          <label class="ecommerce-text-secondary ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:mb-1">$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name</label>
+          <multilingual-input data-type="composite" value="{{_local.shippingTypeForm?.name ?? {}}}" ariaLabel="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.shippingTypeFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 유형 이름(언어별). -->
+              <set-state target="local" shippingTypeForm.name="{{$event.target.value}}"/>
+            </on>
+          </multilingual-input>
+        </div>
+        <div>
+          <label class="ecommerce-text-secondary ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:mb-1">$t:sirsoft-ecommerce.admin.settings.shipping.types.form.category</label>
+          <select value="{{_local.shippingTypeForm?.category ?? 'domestic'}}" class="ecommerce:w-full" disabled="{{_computed.isReadOnly}}">
+            <options>
+              <option value="domestic">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic</option>
+              <option value="international">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international</option>
+              <option value="other">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.other</option>
+            </options>
+            <on type="change">
+              <!-- 구분(국내/해외/기타). 새 줄은 국내로 시작한다. -->
+              <set-state target="local" shippingTypeForm.category="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-3">
+        <button type="button" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce-text-body ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <on type="click">
+            <!-- 추가 취소. 임시 폼만 비우면 원본 배열은 그대로다. -->
+            <set-state target="local" :isAddingShippingType="false" :shippingTypeForm="null" :shippingTypeFormErrors="null"/>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.settings.shipping.types.form.cancel</span>
+        </button>
+        <button type="button" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <on type="click">
+            <!-- 추가 확인. 코드와 기본 언어 이름이 있어야 통과하고, 없으면 오류 표시만 세운다. -->
+            <conditions>
+              <when if="{{(_local.shippingTypeForm?.code ?? '').trim() &amp;&amp; (_local.shippingTypeForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim()}}">
+                <set-state target="local" form.shipping.types="{{[...(_local.form?.shipping?.types ?? []), {..._local.shippingTypeForm, sort_order: (_local.form?.shipping?.types ?? []).length}]}}" :isAddingShippingType="false" :shippingTypeForm="null" :shippingTypeFormErrors="null" :hasChanges="true"/>
+              </when>
+              <else>
+                <set-state target="local">
+                  <field name="shippingTypeFormErrors">
+                    <field name="code" value="{{!(_local.shippingTypeForm?.code ?? '').trim() ? true : null}}"/>
+                    <field name="name_ko" value="{{!(_local.shippingTypeForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim() ? true : null}}"/>
+                  </field>
+                </set-state>
+              </else>
+            </conditions>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.settings.shipping.types.form.save</span>
+        </button>
+      </div>
+    </div>
+    <div data-if="{{settings !== undefined &amp;&amp; ((_local.form?.shipping?.types ?? []).length === 0 &amp;&amp; !_local.isAddingShippingType)}}" class="ecommerce:p-8 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.shipping.types.empty</div>
+    <div data-ref="shipping_type_list" data-if="{{(_local.form?.shipping?.types ?? []).length > 0}}" class="ecommerce:overflow-x-clip">
+      <responsive on="portable" class="">
+        <include src="_shipping_type_cards.g7.html"/>
+      </responsive>
+      <table class="ecommerce:w-full">
+        <thead>
+          <tr>
+            <th class="ecommerce-text-tertiary ecommerce:text-center ecommerce:font-medium ecommerce:px-2 ecommerce:py-2 ecommerce:w-10"/>
+            <th class="ecommerce-text-tertiary ecommerce:text-left ecommerce:font-medium ecommerce:px-4 ecommerce:py-2 ecommerce:w-32">$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.code</th>
+            <th class="ecommerce-text-tertiary ecommerce:text-left ecommerce:font-medium ecommerce:px-4 ecommerce:py-2 ecommerce:w-56">$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.name</th>
+            <th class="ecommerce-text-tertiary ecommerce:text-left ecommerce:font-medium ecommerce:px-4 ecommerce:py-2 ecommerce:w-32">$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.category</th>
+            <th class="ecommerce-text-tertiary ecommerce:text-center ecommerce:font-medium ecommerce:px-4 ecommerce:py-2 ecommerce:w-16">$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.is_active</th>
+            <th class="ecommerce-text-tertiary ecommerce:text-center ecommerce:font-medium ecommerce:px-4 ecommerce:py-2 ecommerce:w-16">$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sortable source="{{(_local.form?.shipping?.types ?? []).map((t, i) => ({...t, _idx: i}))}}" item-var="$type" item-key="code" index-var="$tIdx" strategy="verticalList" handle="[data-drag-handle]" wrapper-element="tr"/>
+          <item-template>
+            <div class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:contents">
+              <td class="ecommerce:px-2 ecommerce:py-2 ecommerce:text-center">
+                <!-- 드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다). -->
+                <div data-ref="shipping_type_drag_handle" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="ecommerce:cursor-grab ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-500 ecommerce:dark:hover:text-gray-300">
+                  <icon name="fa-solid fa-grip-vertical" class="ecommerce:text-sm"/>
+                </div>
+              </td>
+              <td class="ecommerce:px-4 ecommerce:py-2">
+                <span class="ecommerce:font-mono ecommerce-text-body">{{$type.code}}</span>
+              </td>
+              <td class="ecommerce:px-4 ecommerce:py-2">
+                <multilingual-input data-type="composite" value="{{$type.name ?? {}}}" ariaLabel="$t:common.row_cell|row={{$type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.name')}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder" error="{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <!-- 기존 줄 — 이름(언어별). -->
+                    <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, name: $event.target.value} : t)}}" :hasChanges="true"/>
+                  </on>
+                </multilingual-input>
+              </td>
+              <td class="ecommerce:px-4 ecommerce:py-2">
+                <select value="{{$type.category ?? 'domestic'}}" aria-label="$t:common.row_cell|row={{$type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.category')}}" class="ecommerce:w-full" disabled="{{_computed.isReadOnly}}">
+                  <options>
+                    <option value="domestic">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic</option>
+                    <option value="international">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international</option>
+                    <option value="other">$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.other</option>
+                  </options>
+                  <on type="change">
+                    <!-- 기존 줄 — 구분. -->
+                    <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, category: $event.target.value} : t)}}" :hasChanges="true"/>
+                  </on>
+                </select>
+              </td>
+              <td class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-center">
+                <toggle data-type="composite" checked="{{$type.is_active ?? false}}" ariaLabel="$t:common.row_cell|row={{$type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.is_active')}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <!-- 기존 줄 — 사용 여부. -->
+                    <set-state target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, is_active: !(t.is_active)} : t)}}" :hasChanges="true"/>
+                  </on>
+                </toggle>
+              </td>
+              <td class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-center">
+                <button type="button" class="ecommerce:p-1.5 ecommerce:text-gray-500 ecommerce:hover:text-red-700 ecommerce:dark:text-gray-500 ecommerce:dark:hover:text-red-400 ecommerce:hover:bg-red-50 ecommerce:dark:hover:bg-red-900/20 ecommerce:rounded ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
+                  <on type="click">
+                    <!-- 기존 줄 — 삭제. -->
+                    <set-state confirm="$t:sirsoft-ecommerce.admin.settings.shipping.types.confirm_delete" target="local" form.shipping.types="{{(_local.form?.shipping?.types ?? []).filter((_, i) => i !== $type._idx)}}" :hasChanges="true"/>
+                  </on>
+                  <icon name="fa-solid fa-trash" class="ecommerce:text-sm"/>
+                </button>
+              </td>
+            </div>
+          </item-template>
+          <on event="onSortEnd">
+            <!-- 순서 바꾸기. 끌어 놓은 결과를 배열 순서로 반영한다. -->
+            <set-state target="local" form.shipping.types="{{$sortedItems.map((t, i) => ({...t, sort_order: i}))}}" :hasChanges="true"/>
+          </on>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</partial>

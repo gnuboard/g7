@@ -2,7 +2,11 @@
 
 namespace Tests\Feature\Installer;
 
+use App\Models\User;
 use Database\Seeders\AdminUserSeeder;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
@@ -15,10 +19,15 @@ use Tests\TestCase;
  * 대개 함께 막기 때문이다. 즉 무CLI 환경에서 `$_ENV`/`$_SERVER` 는 **유일한 통로**이고
  * `getenv()` 는 `false` 를 돌려준다.
  *
- * 소비처가 `getenv()` 만 보면 이 시더는 「환경변수가 설정되지 않았습니다」로 죽고
+ * 소비처가 `getenv()` 만 보면 이 시더는 환경변수가 없다고 판정하고
  * **관리자 계정이 만들어지지 않는다** — in-process 설치의 마지막 단계에서, 그때까지
- * 전부 성공한 채로. 오류 화면에는 시더 예외만 남아 원인이 `putenv` 차단이라는 것이
- * 어디에도 드러나지 않는다.
+ * 전부 성공한 채로. 원인이 `putenv` 차단이라는 것이 어디에도 드러나지 않는다.
+ *
+ * ## 판정 방식
+ *
+ * 시더는 환경변수를 `run()` 안에서 읽고, 값이 없으면 예외 대신 안내만 남기고 건너뛴다
+ * (설치가 끝난 사이트의 `db:seed --sample` 이 멈추지 않게 한 변경). 그래서 이 검사는
+ * 빈 회원 테이블에서 시더를 실제로 돌려 **만들어진 최고관리자 계정**으로 통로를 판정한다.
  *
  * ## 왜 18차에 신설했는가
  *
@@ -33,7 +42,9 @@ use Tests\TestCase;
  */
 class AdminSeederEnvChannelTest extends TestCase
 {
-    /** @var array<string, string|false> 원래 값 복원용 */
+    use DatabaseTransactions;
+
+    /** @var array<string, array{env: string|null, server: string|null}> 원래 값 복원용 */
     private array $originalEnv = [];
 
     /** @var array<int, string> 이 검사가 다루는 키 */
@@ -49,7 +60,10 @@ class AdminSeederEnvChannelTest extends TestCase
         parent::setUp();
 
         foreach (self::KEYS as $key) {
-            $this->originalEnv[$key] = $_ENV[$key] ?? null;
+            $this->originalEnv[$key] = [
+                'env' => $_ENV[$key] ?? null,
+                'server' => $_SERVER[$key] ?? null,
+            ];
             unset($_ENV[$key], $_SERVER[$key]);
 
             // `putenv` 가 막힌 환경을 재현한다 — 그 환경에서 `getenv()` 는 값을 못 준다.
@@ -58,6 +72,9 @@ class AdminSeederEnvChannelTest extends TestCase
                 putenv($key);
             }
         }
+
+        // 설치 경로 재현 — 최고관리자가 이미 있으면 시더는 통로와 무관하게 건너뛴다.
+        DB::table('users')->delete();
     }
 
     protected function tearDown(): void
@@ -65,8 +82,11 @@ class AdminSeederEnvChannelTest extends TestCase
         foreach (self::KEYS as $key) {
             unset($_ENV[$key], $_SERVER[$key]);
 
-            if ($this->originalEnv[$key] !== null) {
-                $_ENV[$key] = $this->originalEnv[$key];
+            if ($this->originalEnv[$key]['env'] !== null) {
+                $_ENV[$key] = $this->originalEnv[$key]['env'];
+            }
+            if ($this->originalEnv[$key]['server'] !== null) {
+                $_SERVER[$key] = $this->originalEnv[$key]['server'];
             }
         }
 
@@ -89,13 +109,14 @@ class AdminSeederEnvChannelTest extends TestCase
             '전제 조건 실패 — 프로세스 환경에 값이 남아 있으면 이 검사는 아무것도 증명하지 못한다'
         );
 
-        $seeder = new AdminUserSeeder;
-        $resolved = $this->resolvedAdminUser($seeder);
+        $this->seed(AdminUserSeeder::class);
 
-        $this->assertSame('관리자', $resolved['name']);
-        $this->assertSame('admin@example.test', $resolved['email'], 'putenv 없이 전달된 이메일을 읽지 못했다 — 관리자 계정이 만들어지지 않는다');
-        $this->assertSame('S3cret!Passw0rd', $resolved['password']);
-        $this->assertSame('en', $resolved['language'], '관리자 언어가 조용히 기본값으로 떨어졌다 (§7 R2)');
+        $admin = User::query()->where('email', 'admin@example.test')->first();
+        $this->assertNotNull($admin, 'putenv 없이 전달된 이메일을 읽지 못했다 — 관리자 계정이 만들어지지 않는다');
+        $this->assertTrue((bool) $admin->is_super);
+        $this->assertSame('관리자', $admin->name);
+        $this->assertTrue(Hash::check('S3cret!Passw0rd', $admin->password));
+        $this->assertSame('en', $admin->language, '관리자 언어가 조용히 기본값으로 떨어졌다 (§7 R2)');
     }
 
     /**
@@ -108,36 +129,22 @@ class AdminSeederEnvChannelTest extends TestCase
         $_SERVER['INSTALLER_ADMIN_EMAIL'] = 'ops@example.test';
         $_SERVER['INSTALLER_ADMIN_PASSWORD'] = 'An0ther!Secret';
 
-        $seeder = new AdminUserSeeder;
-        $resolved = $this->resolvedAdminUser($seeder);
+        $this->seed(AdminUserSeeder::class);
 
-        $this->assertSame('ops@example.test', $resolved['email']);
-        $this->assertSame('An0ther!Secret', $resolved['password']);
+        $admin = User::query()->where('email', 'ops@example.test')->first();
+        $this->assertNotNull($admin, '$_SERVER 로만 전달된 이메일을 읽지 못했다');
+        $this->assertTrue(Hash::check('An0ther!Secret', $admin->password));
 
         // 이름·언어는 미지정이므로 문서화된 기본값으로 떨어진다.
-        $this->assertSame('Administrator', $resolved['name']);
-        $this->assertSame('ko', $resolved['language']);
+        $this->assertSame('Administrator', $admin->name);
+        $this->assertSame('ko', $admin->language);
     }
 
-    public function test_seeder_still_fails_loudly_when_no_channel_carries_the_credentials(): void
+    public function test_seeder_creates_no_account_when_no_channel_carries_the_credentials(): void
     {
         // 폴백을 넓히는 변경이 「아무 값 없이도 계정을 만든다」로 새지 않아야 한다.
-        $this->expectException(\RuntimeException::class);
+        $this->seed(AdminUserSeeder::class);
 
-        new AdminUserSeeder;
-    }
-
-    /**
-     * 생성자가 확정한 관리자 정보를 꺼낸다 (private 속성).
-     *
-     * @param  AdminUserSeeder  $seeder  대상 시더
-     * @return array<string, mixed> 확정된 관리자 정보
-     */
-    private function resolvedAdminUser(AdminUserSeeder $seeder): array
-    {
-        $property = (new \ReflectionClass($seeder))->getProperty('defaultAdminUser');
-        $property->setAccessible(true);
-
-        return $property->getValue($seeder);
+        $this->assertSame(0, User::query()->count(), '어느 통로에도 값이 없는데 계정이 만들어졌다');
     }
 }

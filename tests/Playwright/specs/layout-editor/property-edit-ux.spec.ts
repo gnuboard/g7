@@ -216,7 +216,10 @@ test.describe('@layout-editor 속성 편집 UX', () => {
     // admin 가드 엔드포인트라 Sanctum Bearer 토큰(localStorage.auth_token) 첨부 필요.
     const permCount = await page.evaluate(async () => {
       const token = localStorage.getItem('auth_token');
-      const r = await fetch('/api/admin/templates/sirsoft-basic/editor/permission-candidates.json', {
+      // 편집기와 같은 주소 규칙 — 확장자 없는 방식 서버는 `.json` 주소에 404 상태를 돌려준다
+      const raw = '/api/admin/templates/sirsoft-basic/editor/permission-candidates.json';
+      const url = (window as any).G7Core?.asset?.convertToCurrentMode?.(raw) ?? raw;
+      const r = await fetch(url, {
         credentials: 'same-origin',
         headers: { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       });

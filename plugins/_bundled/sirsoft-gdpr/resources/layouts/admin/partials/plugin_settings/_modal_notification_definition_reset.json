@@ -1,0 +1,185 @@
+{
+    "comment": "gdpr 설정 — 알림 정의 초기화 확인 창. 손으로 고친 알림 설정을 플러그인이 제공하는 기본값으로\n  되돌린다. 되돌리면 그동안의 수정이 사라지므로 되묻는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "알림 정의 기본값 복원 확인"
+    },
+    "id": "modal_gdpr_notification_definition_reset",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-gdpr.notification_definitions.reset_modal.title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "gdpr:text-gray-700 gdpr:dark:text-gray-300"
+            },
+            "text": "$t:sirsoft-gdpr.notification_definitions.reset_modal.confirm_message"
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "gdpr:mt-4 gdpr:p-3 gdpr:bg-gray-100 gdpr:dark:bg-gray-700 gdpr:rounded-lg"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "gdpr-form-sub-label"
+                    },
+                    "text": "$t:sirsoft-gdpr.notification_definitions.reset_modal.target_label"
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "gdpr-text-primary gdpr:font-medium"
+                    },
+                    "text": "{{_global.resetTargetName ?? ''}}"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "gdpr-alert-danger"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "gdpr-text-error-soft"
+                    },
+                    "text": "$t:sirsoft-gdpr.notification_definitions.reset_modal.warning_message"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "gdpr-modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal",
+                            "target": "modal_gdpr_notification_definition_reset"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "gdpr:px-4 gdpr:py-2 gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:rounded-lg gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isResettingNotification}}"
+                    },
+                    "text": "$t:common.cancel"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "초기화. 성공하면 알림 목록을 다시 불러 되돌아간 값을 보여 준다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isResettingNotification": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/notification-definitions/{{_global.resetTargetId}}/reset",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isResettingNotification": false,
+                                                "resetTargetId": null,
+                                                "resetTargetName": ""
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "gdprNotificationDefinitions"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-gdpr.notification_definitions.reset_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "modal_gdpr_notification_definition_reset"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isResettingNotification": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:sirsoft-gdpr.notification_definitions.reset_failed'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "gdpr-flex-center gdpr:gap-2 gdpr:px-4 gdpr:py-2 gdpr:bg-orange-700 gdpr:dark:bg-orange-700 gdpr:text-white gdpr:dark:text-white gdpr:rounded-lg gdpr:hover:bg-orange-800 gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isResettingNotification}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isResettingNotification}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "gdpr-spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isResettingNotification ? '$t:sirsoft-gdpr.notification_definitions.reset_modal.btn_confirming' : '$t:sirsoft-gdpr.notification_definitions.reset_modal.btn_confirm'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

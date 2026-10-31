@@ -26,4 +26,18 @@ return [
         'retention_disabled' => '보존기간이 1일 미만으로 설정되어 정리를 수행하지 않았습니다.',
         'sources_incomplete' => '비활성 상태의 모듈이 있어 참조 판정이 불완전할 수 있으므로 미참조 이미지 정리를 건너뛰었습니다. 모듈을 활성화하거나 삭제한 뒤 다시 실행해 주세요.',
     ],
+    // 콘솔 명령 출력
+    'console' => [
+        'prune_unused_images' => [
+            'auto_cleanup_disabled' => '미사용 이미지 자동 정리가 꺼져 있어 실행하지 않았습니다. (unusedImageCleanup = false)',
+            'done' => '보존기간(:days일) 경과 후보 :scanned건 중 참조됨 :referenced건, 삭제 :deleted건, 실패 :failed건.',
+            'delete_failed' => ':count건은 파일 삭제에 실패해 기록을 보존했습니다. 다음 회차에 재시도합니다.',
+            'dry_run' => '보존기간(:days일) 경과 후보 :scanned건 중 참조됨 :referenced건, 삭제 대상 :count건.',
+            'headers' => [
+                'original_name' => '원본명',
+                'file_size' => '크기(bytes)',
+                'uploaded_at' => '업로드 시각',
+            ],
+        ],
+    ],
 ];

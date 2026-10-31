@@ -1,0 +1,25 @@
+<!-- 알림 템플릿 미리보기 창 — 편집 창이 받아 온 치환 결과(제목·본문)를 그대로 보여 준다.
+  같은 상태 객체의 `preview` 자리를 읽으므로, 편집 창을 닫지 않은 채 그 위에 겹쳐 뜬다. -->
+<partial description="메일 템플릿 미리보기 모달" editor_label="$t:admin.modal_label.admin_settings.modal_notification_template_preview">
+  <modal data-type="composite" data-ref="modal_notification_template_preview" title="$t:admin.settings.notification_definitions.preview_modal.title" size="lg">
+    <div data-ref="preview_content">
+      <div>
+        <span class="text-table-header">$t:admin.settings.notification_definitions.preview_modal.subject_label</span>
+        <p class="text-primary text-base font-medium bg-gray-50 dark:bg-gray-900 rounded-md px-3 py-2">{{_global.notification_template_form_modal?.preview?.subject ?? ''}}</p>
+      </div>
+      <div>
+        <span class="text-table-header">$t:admin.settings.notification_definitions.preview_modal.body_label</span>
+        <!-- 미리보기의 HTML 해석 여부는 **그 채널의 편집기 종류**를 따른다. 사이트내 알림은 알림센터가 평문으로 그리는데 여기서만 HTML 로 해석하면, 운영자가 본 문구와 사용자가 받는 문구가 다르다 — 태그가 글자 그대로 보이는 쪽은 사용자다. 채널은 지금 편집 중인 템플릿의 것을 먼저 보고, 없으면 목록 탭과 같은 기준(주소의 channel)으로 떨어진다. -->
+        <html-content data-type="composite" content="{{_global.notification_template_form_modal?.preview?.body ?? ''}}" isHtml="{{((availableChannels?.data?.channels ?? []).find(c => c.id === (_global.notification_template_form_modal?.template?.channel ?? query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}" class="prose dark:prose-invert prose-sm max-w-none border border-gray-200 dark:border-gray-700 rounded-md p-4 max-h-[400px] overflow-y-auto bg-white dark:bg-gray-900"/>
+      </div>
+      <div class="flex justify-end pt-3 border-t border-gray-200 dark:border-gray-700">
+        <button data-ref="btn_close_preview" type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <close-modal target="modal_notification_template_preview"/>
+          </on>
+          $t:common.close
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

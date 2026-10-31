@@ -1,0 +1,35 @@
+feature: 레이아웃 밖 키-값 응답 — 비어 있는 맵을 `[]` 가 아니라 `{}` 로 낸다 (#758 Q4)
+
+description: |
+  PHP 연관 배열은 비면 `json_encode` 가 `[]` 를 낸다. 화면이 이름표로 값을 꺼내는 맵(`window.G7Config` 의
+  settings·plugins·modules·appConfig, 템플릿 설정 `dependencies.modules`, 환경설정 `_meta.env_locked`, 분석 리포트
+  행 `extra`, 첨부파일 `meta`, 이커머스 `mc_*` 다통화 금액)이 비었을 때 `[]` 로 나가면 화면의 `?? {}` 기본값이
+  동작하지 않고 API 문서가 약속한 모양과 어긋난다. 비면 `{}` 로 내고, 같은 값을 PHP 가 키로 읽는 곳(분석 CSV
+  내보내기)은 `(array)` 로 읽는다.
+
+test_files:
+  - tests/Feature/EmptyMapResponseShapeTest.php
+  - tests/Feature/Analytics/Api/EmptyMapFieldsTest.php   # 7.1.1 출시 전 — 서비스가 만든 빈 배열(방문 분석)
+
+axes:
+  surface:
+    - g7config
+    - template_config
+    - settings_meta
+    - analytics_row
+    - attachment_meta
+    - analytics_realtime_visitor   # 실시간·개요의 visitors[].extensions
+    - analytics_diagnostics        # 진단 extensions·collection.excluded_reason_labels
+    - analytics_registered_goal    # 등록 목록 goals[].attributes
+    - analytics_privacy_subject    # 정보주체 열람 파일 extensions·삭제 응답 deleted.extensions
+
+effects:
+  - g7config_empty_maps_render_as_objects
+  - template_config_keeps_empty_maps
+  - settings_env_locked_empty_is_object
+  - analytics_extra_empty_is_object
+  - attachment_meta_empty_is_object
+  - analytics_visitor_extensions_empty_is_object
+  - analytics_diagnostics_maps_empty_are_objects
+  - analytics_goal_attributes_empty_is_object
+  - analytics_privacy_extension_maps_empty_are_objects

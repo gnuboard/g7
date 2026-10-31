@@ -13,9 +13,13 @@ description: |
     게이트(OrderOptionNotConfirmableException) + 비회원/회원 컨트롤러 typed catch 422.
   - N-6: 관리자 검색 프리셋 라우트의 permission 게이트 부재 — products.read/update 부착.
   - ⑧/N-8: 검색 하이라이트 이스케이프 + 프리뷰 decode→strip 순서(코어 SearchHighlighter 위임).
+  - S1-D1(#599 세션1 실측): 같은 발급 관문(assertIssuable)이 거절했을 때, 사용자 다운로드
+    경로는 400 + 사유를 돌려주는데 관리자 직접 발급만 500 「작업 처리 중 오류가 발생했습니다」로
+    뭉개져 운영자가 원인을 알 수 없던 문제 — CouponNotIssuableException 을 도메인 실패로
+    구분해 400 + `messages.coupon.{reason}` 으로 통일.
 
 axes:
-  case: [review_product_scope, coupon_method_gate, coupon_condition_gate, coupon_expired_gate, coupon_valid_download, guest_refund_estimate_validation, guest_cancel_validation, confirm_service_gate, confirm_guest_http, confirm_member_http, presets_permission, search_highlight_escape, preview_entity_no_resurrect]
+  case: [review_product_scope, coupon_method_gate, coupon_condition_gate, coupon_expired_gate, coupon_valid_download, admin_direct_issue_expired_period, admin_direct_issue_stopped_coupon, guest_refund_estimate_validation, guest_cancel_validation, confirm_service_gate, confirm_guest_http, confirm_member_http, presets_permission, search_highlight_escape, preview_entity_no_resurrect]
 
 exclusions: []
 
@@ -24,12 +28,15 @@ effects:
   - non_downloadable_coupon_rejected
   - expired_coupon_rejected
   - valid_manual_download_coupon_succeeds
+  - admin_direct_issue_surfaces_gate_reason_as_400
   - guest_refund_items_validated_per_item
   - guest_cancel_items_validated_per_item
   - confirm_rejected_unless_confirmable_status
   - double_confirm_rejected
   - confirm_hook_fires_once
   - presets_require_product_permission
+  # 클레임 목록 화면 프리셋은 클레임 조회 권한으로 다룬다 (2026-10-07 실측 — 클레임 권한만 가진 운영자 진입 시 403 알림)
+  - claims_presets_follow_claims_permission
   - highlighted_fields_escaped
   - preview_does_not_resurrect_entities
 

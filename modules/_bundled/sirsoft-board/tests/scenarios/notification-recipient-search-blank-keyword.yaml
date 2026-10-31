@@ -1,0 +1,21 @@
+feature: 게시판 알림 템플릿 편집 창 — 수신자 회원 검색의 빈 검색어 요청 차단 (#703)
+
+description: |
+  게시판 환경설정 > 알림 설정의 알림 템플릿 편집 창에서 「특정 회원」 수신자 드롭다운은 입력이 바뀔 때마다
+  코어 회원 검색 API(`/api/admin/users/search`)를 부른다. 이 API 는 keyword 가 비면 422 로 거절하는데
+  (공백만 있어도 서버 요청 정리 뒤 빈 값이 된다), 검색칸을 지우면 드롭다운이 빈 문자열로 검색을 부르므로
+  요청마다 422 가 나고 실패 처리로 결과 목록까지 비워졌다. 검색어가 비거나 공백뿐이면 요청하지 않는다.
+  역할 검색(`/api/admin/roles`)은 search 가 비어도 전체 목록을 돌려주므로 대상이 아니다.
+  게시판 폼 「권한」 탭의 운영자·단계 승인자 태그 입력은 회원 목록 API(`/api/admin/users`)에 검색어를
+  필터 값으로 보낸다. 이 API 는 빈 필터 값을 지우고 전체 회원을 돌려주므로, 검색어 없는 조회를 보내지
+  않도록 같은 차단 조건을 둔다.
+
+axes:
+  search_term: [empty, blank, filled]
+
+effects:
+  - user_search_skips_empty_keyword
+  - user_search_sends_filled_keyword
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/boardNotificationRecipientSearch.test.ts

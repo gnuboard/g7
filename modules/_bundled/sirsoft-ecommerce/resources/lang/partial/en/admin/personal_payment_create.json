@@ -38,12 +38,10 @@
   "modal": {
     "member_search": {
       "title": "Member Search",
-      "description": "Search by name, ID, or email to select a member",
       "search_placeholder": "Search by name, ID, or email"
     },
     "order_search": {
       "title": "Search and Link Order",
-      "description": "Search by order number, customer name, or product name to select",
       "search_field": "Search Field",
       "search_field_all": "All",
       "search_field_order_number": "Order Number",
@@ -55,7 +53,8 @@
       "order_date_last_7_days": "Last 7 days",
       "order_date_last_30_days": "Last 30 days",
       "order_date_last_90_days": "Last 90 days",
-      "result_count": "{{count}} orders found"
+      "result_count": "{{count}} orders found",
+      "result_count_one": "{{count}} order found"
     }
   }
 }

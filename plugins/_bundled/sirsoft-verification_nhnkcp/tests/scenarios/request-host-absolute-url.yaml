@@ -1,0 +1,32 @@
+feature: 본인확인 결과 전달 주소의 사이트 주소 고정 (요청 Host 비신뢰)
+
+description: |
+  KCP 거래등록 복귀 주소(Ret_URL)·콜백 뒤 브리지 이동·브리지의 부모창 postMessage 대상이 요청 Host 를
+  따랐다 — 위조 Host 로 거래를 등록하면 KCP 가 피해자의 인증 결과를 공격자 Ret_URL 로 보냈고, 위조 Host
+  콜백은 검증 토큰을 그 도메인 브리지로 보냈다. 모두 사이트 주소(코어 SiteUrl)로 고정한다.
+
+  - 거래등록 Ret_URL: SiteUrl::absolute() / 챌린지 payload 에 siteOrigin
+  - 콜백 → 브리지: SiteUrl::absolute()
+  - 브리지: postMessage 대상 = 사이트 origin 리터럴, 모바일 복귀는 같은 출처 경로만, no-referrer·no-store
+
+axes:
+  # forged = 위조 Host 변종 4종(외부 도메인·사이트 하위 도메인·포트만 바꾼 Host·신뢰 프록시 X-Forwarded-Host).
+  host_header: [canonical, forged]
+  sink: [bridge_redirect, bridge_page, provider_ret_url, front_form_action, front_message]
+
+exclusions:
+  - { sink: provider_ret_url, host_header: canonical, reason: "forged 데이터 제공자가 사이트 주소(canonical) 행을 함께 돈다 — 같은 테스트가 두 축을 덮는다" }
+
+effects:
+  - callback_redirects_to_site_bridge
+  - ret_url_and_site_origin_use_site_address
+  - bridge_posts_to_site_origin_without_referrer_or_cache
+  - bridge_mobile_return_accepts_same_origin_path_only
+  - invalid_bridge_request_ends_as_failure_on_site_bridge
+  - front_submits_only_to_kcp_cert_host
+  - front_accepts_only_popup_site_origin_current_challenge
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Controllers/KcpHostTrustTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/resources/js/__tests__/hostTrust.test.ts
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Playwright/specs/user/bridge-mobile-return-path.spec.ts

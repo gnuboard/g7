@@ -6,7 +6,7 @@ use App\Enums\SitemapChangeFreq;
 use App\Extension\TemplateManager;
 use App\Seo\Contracts\SitemapContributorInterface;
 use App\Services\TemplateService;
-use App\Support\AssetUrl;
+use App\Support\ScreenUrl;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -36,6 +36,7 @@ class SitemapGenerator
      * Sitemap 기여자를 등록합니다.
      *
      * @param  SitemapContributorInterface  $contributor  Sitemap 기여자
+     * @return void 반환값 없음
      */
     public function registerContributor(SitemapContributorInterface $contributor): void
     {
@@ -161,8 +162,9 @@ class SitemapGenerator
     /**
      * URL 항목의 절대 주소(`loc`)를 해석합니다 — 전체 재생성과 증분 색인이 공유하는 단일 지점.
      *
-     * `loc`(절대 URL)이 있으면 그대로, 없으면 `url`(사이트 경로)을 `AssetUrl::siteAbsolute()` 로
-     * 절대화한다 — 설정(`app.url`)의 오리진이 우선이고 접두사는 **멱등**으로 실린다. 종전에는
+     * `loc`(절대 URL)이 있으면 그대로, 없으면 `url`(사이트 경로)을 `ScreenUrl::toAbsolute()` 로
+     * 절대화한다 — 설정 주소(「사용자 화면 URL」, 비면 사이트 주소) 기준이고 요청 Host 는 쓰지 않으며,
+     * 접두사는 **멱등**으로 실린다(`SiteUrl::join()`). 종전에는
      * 증분 색인(`SitemapIndexer`)이 같은 규칙을 `url()` 사본으로 갖고 있어, 같은 리소스의
      * `<loc>` 이 생성 경로(전체 재생성 vs 리스너 경유 증분)에 따라 오리진·접두사가 갈렸다
      * (16차 G3 라운드 B-3).
@@ -177,7 +179,9 @@ class SitemapGenerator
         }
 
         if (isset($entry['url']) && is_string($entry['url']) && $entry['url'] !== '') {
-            return AssetUrl::siteAbsolute($entry['url']);
+            // 보안: 요청 Host 가 아니라 설정 주소 기준 (익명 sitemap 요청 안에서 생성될 수 있다).
+            // 검색엔진에 알릴 주소는 사람이 여는 주소라 「사용자 화면 URL」(비면 사이트 주소) 기준이다(#792 W17).
+            return ScreenUrl::toAbsolute($entry['url']);
         }
 
         return null;
@@ -316,7 +320,7 @@ class SitemapGenerator
                 }
 
                 $urls[] = [
-                    'loc' => AssetUrl::siteAbsolute($routePath),
+                    'loc' => ScreenUrl::toAbsolute($routePath),
                     'changefreq' => SitemapChangeFreq::Weekly->value,
                     'priority' => 0.5,
                 ];

@@ -56,13 +56,16 @@
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-marketing --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-marketing --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-marketing --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-marketing --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-marketing --force` |
+| `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-marketing --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-marketing --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -70,9 +73,9 @@
 ## 3. 핵심 흐름
 
 <!-- @intent START -->
-**회원가입 시 동의 수집**: 템플릿의 가입 폼이 `user-marketing-register.json` 조각을 그 자리에
+**회원가입 시 동의 수집**: 템플릿의 가입 폼이 `user-marketing-register.g7.html` 조각을 그 자리에
 받아 동의 체크박스를 그림 → 제출 → 코어 가입 흐름에서 `core.auth.register_validation_rules`
-필터가 동의 항목의 검증 규칙을 더함 → 가입 완료 후 `core.auth.register` 액션에서
+필터가 동의 항목의 검증 규칙을 더함 → 가입 완료 후 `core.auth.after_register` 액션에서(동의 값은 훅 인자 `registration_data` 에서 읽음)
 `MarketingConsentListener::afterRegister()` 가 동의 값을 `user_marketing_consents` 에 기록하고
 이력을 남깁니다. **코어 가입 코드는 이 플러그인을 알지 못합니다.**
 
@@ -136,8 +139,9 @@
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-marketing` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`marketing:` 접두 유틸리티 · `marketing-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-marketing --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] 동의 상태를 바꾸는 경로를 추가했다면 이력 적재(`user_marketing_consent_histories`)가 같은 트랜잭션에 있는지 확인
 - [ ] 코어 회원·가입 훅 11종 중 하나라도 이름·페이로드가 바뀌면 이 플러그인이 조용히 끊기므로, 코어 회원 흐름 변경 시 함께 확인
 - [ ] 레이아웃 조각 5개는 대상 화면의 슬롯이 사라지면 오류 없이 빠진다 — 템플릿·코어 회원 화면 업그레이드 후 노출 확인
@@ -164,10 +168,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 5개 | `plugins/_bundled/sirsoft-marketing/tests` |
-| Vitest | 2개 | `vitest.config.ts` |
-| Playwright | 0개 | — |
-| 시나리오 매니페스트 | 0개 | — |
+| PHPUnit | 11개 | `plugins/_bundled/sirsoft-marketing/tests` |
+| Vitest | 15개 | `vitest.config.ts` |
+| Playwright | 1개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 20개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -177,6 +181,9 @@ php vendor/bin/phpunit plugins/_bundled/sirsoft-marketing/tests --filter='<대�
 
 # Vitest (확장 디렉토리에서) (PowerShell)
 cd plugins/_bundled/sirsoft-marketing && powershell -Command "npm run test:run -- <대상>"
+
+# Playwright E2E (확장 디렉토리에서) (Bash)
+cd plugins/_bundled/sirsoft-marketing && npm run test:e2e -- specs/<대상>.spec.ts
 
 ```
 
@@ -198,3 +205,23 @@ cd plugins/_bundled/sirsoft-marketing && powershell -Command "npm run test:run -
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
+
+## 화면 클래스 규약 — 플러그인 자기 CSS
+
+레이아웃·확장 조각·핸들러가 쓰는 클래스는 모두 이 플러그인 CSS(`resources/css/main.css` → `dist/css/plugin.css`)에
+정의된 **자기 앞글자** 이름이다(`plugin.json` 의 `assets.css.namespace` = `marketing`). 조각이 관리자·사용자 어느 템플릿
+화면에 들어가든, 템플릿이 Tailwind 를 쓰든 안 쓰든 같은 모양으로 보인다.
+
+1. **유틸리티는 접두 유틸리티로 쓴다** — `marketing:flex`, `marketing:dark:bg-gray-800` 처럼. 이 플러그인이 Tailwind 를 자기
+   작성 도구로 빌드한다(접두 빌드, 페이지 초기화 규칙 없음). 템플릿 CSS 에 그 규칙이 있는지와 무관하다.
+2. **템플릿 의미 클래스에 해당하는 이름은 `marketing-` 판본을 쓴다** — `marketing-section-heading-md`·`marketing-form-error` 등.
+   정의는 생성 파일 `resources/css/g7-extension.generated.css` 의 가장 낮은 칸(`@layer g7-extension`)에 있어 템플릿이
+   덮을 수 있다. 템플릿에 없던 의미 클래스를 새로 쓰려면 변환 도구(`node scripts/extension-css/convert-layout-classes.mjs
+   plugins/_bundled/sirsoft-marketing`)를 다시 돌린다.
+3. **다크 모드는 `marketing:dark:` 변형 또는 중립 표식 규격**(`data-g7-color-scheme`)으로 쓴다. `.dark` 선택자는 쓰지 않는다.
+4. **아이콘은 `<icon name="…">` 에 라이브러리 중립 이름**(`circle-info`)을 준다. `fas fa-*` 같은 아이콘 글꼴 클래스를
+   직접 쓰지 않는다.
+5. **새 클래스를 쓰면 다시 빌드한다** — `php artisan plugin:build sirsoft-marketing --production` 후 `dist/` 를 함께 올린다.
+
+앞글자 없는 클래스는 정적 검사(`extension-class-self-contained`)가, 이 플러그인 CSS 의 앞글자 위반·`.dark` 는
+`extension-css-namespace` 가 막는다.

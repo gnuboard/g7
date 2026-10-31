@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\Auth;
 
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
+use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\IdentityVerificationStatus;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
@@ -11,6 +12,7 @@ use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
 use App\Models\Role;
 use App\Models\User;
+use App\Repositories\UserRepository;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,6 +33,11 @@ class RegisterPolicyDrivenSignupTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 역할·권한과 기본 본인인증 정책(모두 꺼짐)을 시드하고 알림·큐를 막습니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,6 +55,12 @@ class RegisterPolicyDrivenSignupTest extends TestCase
 
     /**
      * 정책 미활성 상태 — 일반 가입 흐름. Active 사용자 생성, IDV challenge 미발행.
+     *
+     * @scenario case=no_policy
+     *
+     * @effects signup_without_policy_active_email_unverified
+     *
+     * @return void 반환값 없음
      */
     public function test_no_signup_policy_creates_active_user(): void
     {
@@ -66,11 +79,18 @@ class RegisterPolicyDrivenSignupTest extends TestCase
             'status' => UserStatus::Active->value,
         ]);
         $this->assertDatabaseMissing('identity_verification_logs', ['purpose' => 'signup']);
+        $this->assertNull(User::where('email', 'a@example.com')->value('email_verified_at'), '이메일을 확인하지 않은 가입은 인증으로 기록하지 않는다');
     }
 
     /**
      * signup_before_submit 정책 enabled — 토큰 미제출 시 EnforceIdentityPolicy 미들웨어가
      * 428 (IdentityVerificationRequiredException) 으로 차단합니다.
+     *
+     * @scenario case=before_submit_no_token
+     *
+     * @effects signup_before_submit_requires_token
+     *
+     * @return void 반환값 없음
      */
     public function test_signup_before_submit_policy_blocks_without_token(): void
     {
@@ -91,6 +111,12 @@ class RegisterPolicyDrivenSignupTest extends TestCase
 
     /**
      * signup_before_submit 정책 enabled + 유효한 verification_token — Active 가입 성공.
+     *
+     * @scenario case=before_submit_mail_token
+     *
+     * @effects signup_before_submit_mail_token_activates_and_marks_email
+     *
+     * @return void 반환값 없음
      */
     public function test_signup_before_submit_policy_succeeds_with_valid_token(): void
     {
@@ -126,6 +152,91 @@ class RegisterPolicyDrivenSignupTest extends TestCase
             'email' => 'b2@example.com',
             'status' => UserStatus::Active->value,
         ]);
+        $this->assertNotNull(User::where('email', 'b2@example.com')->value('email_verified_at'), '가입 전 메일 인증번호로 확인한 이메일은 인증으로 기록한다');
+    }
+
+    /**
+     * 이메일 인증 기록이 실패해도 가입은 그대로 끝난다 — 기록은 가입의 부가 작업이다.
+     *
+     * @scenario case=before_submit_mark_fails
+     *
+     * @effects signup_survives_email_mark_failure
+     *
+     * @return void 반환값 없음
+     */
+    public function test_signup_survives_when_email_mark_fails(): void
+    {
+        $this->enablePolicy('core.auth.signup_before_submit');
+
+        $token = 'test-idv-token-'.bin2hex(random_bytes(8));
+        IdentityVerificationLog::create([
+            'id' => (string) Str::uuid(),
+            'provider_id' => 'g7:core.mail',
+            'purpose' => 'signup',
+            'channel' => 'email',
+            'user_id' => null,
+            'target_hash' => hash('sha256', 'b6@example.com'),
+            'status' => IdentityVerificationStatus::Verified->value,
+            'verification_token' => $token,
+            'verified_at' => now(),
+            'expires_at' => now()->addMinutes(15),
+        ]);
+
+        $failing = \Mockery::mock(UserRepository::class)->makePartial();
+        $failing->shouldReceive('markEmailVerified')->andThrow(new \RuntimeException('기록 실패 주입'));
+        $this->app->instance(UserRepositoryInterface::class, $failing);
+
+        $this->postJson('/api/auth/register', [
+            'name' => '테스트',
+            'email' => 'b6@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'agree_terms' => true,
+            'agree_privacy' => true,
+            'verification_token' => $token,
+        ])->assertStatus(201);
+
+        $this->assertDatabaseHas('users', ['email' => 'b6@example.com', 'status' => UserStatus::Active->value]);
+    }
+
+    /**
+     * 가입 전 본인확인을 메일이 아닌 수단으로 마쳤으면 이메일 인증으로 기록하지 않는다.
+     *
+     * @effects signup_email_marked_verified_only_for_mail_channel
+     *
+     * @scenario case=before_submit_non_mail_token
+     *
+     * @return void 반환값 없음
+     */
+    public function test_signup_before_submit_non_mail_verification_does_not_mark_email(): void
+    {
+        $this->enablePolicy('core.auth.signup_before_submit');
+
+        $token = 'test-idv-token-'.bin2hex(random_bytes(8));
+        IdentityVerificationLog::create([
+            'id' => (string) Str::uuid(),
+            'provider_id' => 'g7:test.phone',
+            'purpose' => 'signup',
+            'channel' => 'sms',
+            'user_id' => null,
+            'target_hash' => hash('sha256', 'b5@example.com'),
+            'status' => IdentityVerificationStatus::Verified->value,
+            'verification_token' => $token,
+            'verified_at' => now(),
+            'expires_at' => now()->addMinutes(15),
+        ]);
+
+        $this->postJson('/api/auth/register', [
+            'name' => '테스트',
+            'email' => 'b5@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'agree_terms' => true,
+            'agree_privacy' => true,
+            'verification_token' => $token,
+        ])->assertStatus(201);
+
+        $this->assertNull(User::where('email', 'b5@example.com')->value('email_verified_at'));
     }
 
     /**
@@ -135,6 +246,12 @@ class RegisterPolicyDrivenSignupTest extends TestCase
      * 검사했기 때문에, grace_minutes=0 (signup 정책 기본값) + verified_at < now() 인 일반적인 retry 에서는
      * 무한 428 루프가 발생했음. 이 테스트는 verified_at 을 의도적으로 2초 전으로 두어 second-boundary 우연
      * 일치를 회피하고, 미들웨어가 token 을 직접 인식하는지 검증한다.
+     *
+     * @scenario case=before_submit_token_past_grace
+     *
+     * @effects signup_token_bypasses_grace_window
+     *
+     * @return void 반환값 없음
      */
     public function test_signup_before_submit_token_bypasses_middleware_after_grace_window(): void
     {
@@ -180,6 +297,12 @@ class RegisterPolicyDrivenSignupTest extends TestCase
      * 가입 시도하면 미들웨어가 target_hash 불일치를 감지하여 428 로 차단해야 함.
      * 다운스트림 listener (AssertIdentityVerifiedBeforeRegister) 도 같은 검사를 하지만,
      * listener 가 없는 다른 정책 라우트에 대비한 안전망이 미들웨어에 함께 있어야 함.
+     *
+     * @scenario case=before_submit_target_mismatch
+     *
+     * @effects signup_token_target_mismatch_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_token_with_mismatched_target_hash_is_blocked_by_middleware(): void
     {
@@ -218,6 +341,12 @@ class RegisterPolicyDrivenSignupTest extends TestCase
 
     /**
      * signup_after_create 정책 enabled — PendingVerification 생성 + challenge 발행.
+     *
+     * @scenario case=after_create_pending
+     *
+     * @effects signup_after_create_pending_with_challenge
+     *
+     * @return void 반환값 없음
      */
     public function test_signup_after_create_policy_creates_pending_user(): void
     {
@@ -246,6 +375,12 @@ class RegisterPolicyDrivenSignupTest extends TestCase
 
     /**
      * signup_after_create 정책 enabled — verify 후 Active 전환.
+     *
+     * @scenario case=after_create_mail_verify
+     *
+     * @effects signup_after_create_verify_activates_and_marks_email
+     *
+     * @return void 반환값 없음
      */
     public function test_signup_after_create_policy_verify_activates_user(): void
     {
@@ -263,6 +398,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
 
         $user = User::where('email', 'c2@example.com')->first();
         $this->assertSame(UserStatus::PendingVerification->value, $user->status);
+        $this->assertNull($user->email_verified_at, '확인 전에는 인증으로 기록하지 않는다');
 
         /** @var IdentityVerificationLogRepositoryInterface $repo */
         $repo = $this->app->make(IdentityVerificationLogRepositoryInterface::class);
@@ -281,6 +417,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
 
         $user->refresh();
         $this->assertSame(UserStatus::Active->value, $user->status);
+        $this->assertNotNull($user->email_verified_at, '가입 후 메일 인증번호로 확인하면 인증으로 기록한다');
     }
 
     /**
@@ -290,6 +427,12 @@ class RegisterPolicyDrivenSignupTest extends TestCase
      * 강제 리스너까지 이 훅을 구독하면, challenge 를 발행한 직후 428 이 던져져 가입 자체가
      * 막힌다 — '가입 후 본인확인' 정책이 '가입 전' 정책과 구분되지 않고, 켜는 순간 아무도
      * 가입할 수 없게 된다. 동작(위 두 테스트)과 별개로 구독 상태를 직접 고정한다.
+     *
+     * @scenario case=after_create_generic_enforcer
+     *
+     * @effects after_register_not_enforced_by_generic_listener
+     *
+     * @return void 반환값 없음
      */
     public function test_after_register_hook_is_not_subscribed_by_the_generic_enforcer(): void
     {
@@ -313,6 +456,9 @@ class RegisterPolicyDrivenSignupTest extends TestCase
 
     /**
      * 시드된 정책의 enabled 를 true 로 토글합니다.
+     *
+     * @param  string  $key  정책 키
+     * @return void 반환값 없음
      */
     private function enablePolicy(string $key): void
     {

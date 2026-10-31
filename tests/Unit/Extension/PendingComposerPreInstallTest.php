@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Extension;
 
+use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
@@ -11,6 +12,7 @@ use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\ExtensionManager;
 use App\Extension\Helpers\ExtensionPendingHelper;
+use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Services\LayoutExtensionService;
@@ -36,6 +38,11 @@ class PendingComposerPreInstallTest extends TestCase
 
     private PluginRepositoryInterface|Mockery\MockInterface $pluginRepository;
 
+    /**
+     * 테스트 대상 경로와 확장 관리자·저장소 목을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,6 +55,11 @@ class PendingComposerPreInstallTest extends TestCase
         $this->pluginRepository = Mockery::mock(PluginRepositoryInterface::class);
     }
 
+    /**
+     * _pending·활성 디렉토리에 만든 테스트 확장을 지우고 목을 닫습니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트 디렉토리 정리
@@ -70,6 +82,8 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * ModuleManager 인스턴스를 생성합니다.
+     *
+     * @return ModuleManager 목 의존성을 주입한 모듈 관리자
      */
     private function createModuleManager(): ModuleManager
     {
@@ -83,11 +97,15 @@ class PendingComposerPreInstallTest extends TestCase
             pluginRepository: Mockery::mock(PluginRepositoryInterface::class),
             layoutRepository: Mockery::mock(LayoutRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
+            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
+            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
     }
 
     /**
      * PluginManager 인스턴스를 생성합니다.
+     *
+     * @return PluginManager 목 의존성을 주입한 플러그인 관리자
      */
     private function createPluginManager(): PluginManager
     {
@@ -100,13 +118,17 @@ class PendingComposerPreInstallTest extends TestCase
             moduleRepository: Mockery::mock(ModuleRepositoryInterface::class),
             layoutRepository: Mockery::mock(LayoutRepositoryInterface::class),
             layoutExtensionService: Mockery::mock(LayoutExtensionService::class),
+            layoutRowSynchronizer: app(LayoutRowSynchronizer::class),
+            layoutExtensionRepository: app(LayoutExtensionRepositoryInterface::class),
         );
     }
 
     /**
      * _pending에 테스트 모듈을 생성합니다.
      *
+     * @param  string  $identifier  모듈 식별자
      * @param  bool  $withComposerDeps  외부 Composer 의존성 포함 여부
+     * @return string 생성한 _pending 모듈 경로
      */
     private function createPendingModule(string $identifier, bool $withComposerDeps = false): string
     {
@@ -138,7 +160,9 @@ class PendingComposerPreInstallTest extends TestCase
     /**
      * _pending에 테스트 플러그인을 생성합니다.
      *
+     * @param  string  $identifier  플러그인 식별자
      * @param  bool  $withComposerDeps  외부 Composer 의존성 포함 여부
+     * @return string 생성한 _pending 플러그인 경로
      */
     private function createPendingPlugin(string $identifier, bool $withComposerDeps = false): string
     {
@@ -173,6 +197,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * _pending에 모듈이 있으면 isPending이 true를 반환하는지 확인
+     *
+     * @scenario ext_type=module, stage=pending_detection
+     *
+     * @effects pending_extension_detected
+     *
+     * @return void 반환값 없음
      */
     public function test_pending_module_is_detected(): void
     {
@@ -185,6 +215,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * _pending에 플러그인이 있으면 isPending이 true를 반환하는지 확인
+     *
+     * @scenario ext_type=plugin, stage=pending_detection
+     *
+     * @effects pending_extension_detected
+     *
+     * @return void 반환값 없음
      */
     public function test_pending_plugin_is_detected(): void
     {
@@ -197,6 +233,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * _pending에 모듈이 없으면 isPending이 false를 반환하는지 확인
+     *
+     * @scenario ext_type=module, stage=pending_detection
+     *
+     * @effects missing_pending_not_detected
+     *
+     * @return void 반환값 없음
      */
     public function test_non_pending_module_returns_false(): void
     {
@@ -211,6 +253,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * _pending 경로에서 외부 Composer 의존성을 올바르게 감지하는지 확인
+     *
+     * @scenario ext_type=module, stage=dependency_check
+     *
+     * @effects external_dependencies_detected_at_pending_path
+     *
+     * @return void 반환값 없음
      */
     public function test_has_composer_dependencies_at_pending_module_path(): void
     {
@@ -222,6 +270,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * _pending 경로에 composer.json이 없으면 false 반환
+     *
+     * @scenario ext_type=module, stage=dependency_check
+     *
+     * @effects no_composer_json_means_no_dependencies
+     *
+     * @return void 반환값 없음
      */
     public function test_has_composer_dependencies_at_pending_without_composer_json(): void
     {
@@ -233,6 +287,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * _pending 경로에 php/ext-* 의존성만 있으면 false 반환
+     *
+     * @scenario ext_type=module, stage=dependency_check
+     *
+     * @effects platform_only_requirements_are_not_dependencies
+     *
+     * @return void 반환값 없음
      */
     public function test_has_composer_dependencies_at_pending_with_php_only(): void
     {
@@ -255,6 +315,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * 활성 디렉토리 부재 + _pending 존재 + Composer 의존성 있음 → 선행 설치 조건 충족
+     *
+     * @scenario ext_type=module, stage=preinstall_precondition
+     *
+     * @effects preinstall_required_when_active_absent_and_pending_has_deps
+     *
+     * @return void 반환값 없음
      */
     public function test_module_pending_composer_precondition_active_absent_pending_exists_with_deps(): void
     {
@@ -275,6 +341,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * 활성 디렉토리 존재 시 _pending composer 선행 설치 조건 불충족
+     *
+     * @scenario ext_type=module, stage=preinstall_precondition
+     *
+     * @effects preinstall_skipped_when_active_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_module_pending_composer_precondition_fails_when_active_exists(): void
     {
@@ -293,6 +365,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * _pending 없을 시 composer 선행 설치 조건 불충족
+     *
+     * @scenario ext_type=module, stage=preinstall_precondition
+     *
+     * @effects preinstall_skipped_when_pending_absent
+     *
+     * @return void 반환값 없음
      */
     public function test_module_pending_composer_precondition_fails_when_no_pending(): void
     {
@@ -307,6 +385,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * Composer 의존성 없으면 선행 설치 불필요 확인
+     *
+     * @scenario ext_type=module, stage=preinstall_precondition
+     *
+     * @effects preinstall_skipped_without_external_dependencies
+     *
+     * @return void 반환값 없음
      */
     public function test_module_pending_composer_skipped_without_deps(): void
     {
@@ -328,6 +412,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * 플러그인: 활성 디렉토리 부재 + _pending 존재 + Composer 의존성 있음 → 선행 설치 조건 충족
+     *
+     * @scenario ext_type=plugin, stage=preinstall_precondition
+     *
+     * @effects preinstall_required_when_active_absent_and_pending_has_deps
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_pending_composer_precondition_active_absent_pending_exists_with_deps(): void
     {
@@ -344,6 +434,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * 플러그인: 활성 디렉토리 존재 시 _pending composer 선행 설치 조건 불충족
+     *
+     * @scenario ext_type=plugin, stage=preinstall_precondition
+     *
+     * @effects preinstall_skipped_when_active_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_pending_composer_precondition_fails_when_active_exists(): void
     {
@@ -360,6 +456,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * 플러그인: Composer 의존성 없으면 선행 설치 불필요
+     *
+     * @scenario ext_type=plugin, stage=preinstall_precondition
+     *
+     * @effects preinstall_skipped_without_external_dependencies
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_pending_composer_skipped_without_deps(): void
     {
@@ -382,6 +484,12 @@ class PendingComposerPreInstallTest extends TestCase
      * _pending에서 composer 설치 완료 시 Phase 4.5 스킵 확인 (모듈)
      *
      * 실제 installModule을 호출하지 않고, 플래그 로직만 단위 테스트합니다.
+     *
+     * @scenario ext_type=module, stage=phase_skip_flag
+     *
+     * @effects phase_4_5_skipped_after_pending_composer
+     *
+     * @return void 반환값 없음
      */
     public function test_module_composer_done_in_pending_flag_skips_phase_4_5(): void
     {
@@ -397,6 +505,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * _pending composer 미실행 시 Phase 4.5 정상 진입 확인 (모듈)
+     *
+     * @scenario ext_type=module, stage=phase_skip_flag
+     *
+     * @effects phase_4_5_runs_without_pending_composer
+     *
+     * @return void 반환값 없음
      */
     public function test_module_composer_not_done_in_pending_enters_phase_4_5(): void
     {
@@ -412,6 +526,12 @@ class PendingComposerPreInstallTest extends TestCase
      *
      * 코드에서 runComposerInstallAt() 실패 시에도 $composerDoneInPending = true로 설정됩니다.
      * 이는 _pending에서 실패한 composer를 활성 디렉토리에서 다시 시도하지 않기 위함입니다.
+     *
+     * @scenario ext_type=module, stage=phase_skip_flag
+     *
+     * @effects failed_pending_composer_still_marks_done
+     *
+     * @return void 반환값 없음
      */
     public function test_composer_done_flag_set_true_even_on_failure(): void
     {
@@ -441,6 +561,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * _pending에서 활성 디렉토리로 복사 시 copyFromPendingOrBundled가 _pending을 우선함
+     *
+     * @scenario ext_type=module, stage=pending_detection
+     *
+     * @effects pending_detected_alongside_bundled
+     *
+     * @return void 반환값 없음
      */
     public function test_copy_from_pending_prioritizes_pending_over_bundled(): void
     {
@@ -470,6 +596,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * _pending의 getPendingPath가 올바른 경로를 반환하는지 확인
+     *
+     * @scenario ext_type=module, stage=pending_path
+     *
+     * @effects pending_path_resolves_under_pending_dir
+     *
+     * @return void 반환값 없음
      */
     public function test_get_pending_path_returns_correct_path(): void
     {
@@ -487,6 +619,12 @@ class PendingComposerPreInstallTest extends TestCase
 
     /**
      * 플러그인 _pending의 getPendingPath가 올바른 경로를 반환하는지 확인
+     *
+     * @scenario ext_type=plugin, stage=pending_path
+     *
+     * @effects pending_path_resolves_under_pending_dir
+     *
+     * @return void 반환값 없음
      */
     public function test_get_pending_path_returns_correct_path_for_plugin(): void
     {

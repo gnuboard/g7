@@ -13,9 +13,12 @@ use Illuminate\Support\Facades\Log;
  */
 abstract class PublicBaseController extends BaseApiController
 {
+    /**
+     * PublicBaseController 생성자
+     */
     public function __construct()
     {
-        // 공개 API는 속도 제한 없음 (무제한 접근 허용)
+        // 공개 API 속도 제한은 라우트 그룹의 throttle(config auth.throttle.public)이 담당한다
     }
 
     /**

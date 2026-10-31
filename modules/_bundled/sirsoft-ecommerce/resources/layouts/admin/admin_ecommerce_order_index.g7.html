@@ -1,0 +1,702 @@
+<!-- 주문 목록 — 화면 시안. 실제로 쓰이는 주문 목록은 `admin_ecommerce_order_list` 이고(라우트도
+  그쪽에 걸려 있다), 이 레이아웃은 필터 구성과 표 얼개를 잡아 둔 시안이라 표·집계가 예시 값이다.
+  살아 있는 배선은 일괄 운송장 입력에 쓰는 택배사 목록 하나뿐이다. -->
+<layout name="admin_ecommerce_order_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.order.title" description="$t:sirsoft-ecommerce.admin.order.description"/>
+  <!-- 일괄 운송장 입력에서 고를 택배사 — 사용 중인 것만 받는다 -->
+  <data-source id="active_carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.active_carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active" method="GET" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="searchField" value="all"/>
+    <field name="searchKeyword" value=""/>
+    <field name="dateType" value="order_date"/>
+    <field name="startDate" value=""/>
+    <field name="endDate" value=""/>
+    <field name="orderStatusFilters">
+      <item>payment_complete</item>
+      <item>preparing</item>
+      <item>shipping_ready</item>
+      <item>shipping</item>
+      <item>delivered</item>
+      <item>confirmed</item>
+    </field>
+    <field name="claimRefundFilters">
+      <item>requested</item>
+      <item>approved</item>
+      <item>completed</item>
+    </field>
+    <field name="claimReturnFilters">
+      <item>requested</item>
+      <item>approved</item>
+      <item>pickup_in_progress</item>
+      <item>pickup_completed</item>
+      <item>completed</item>
+    </field>
+    <field name="claimExchangeFilters">
+      <item>requested</item>
+      <item>approved</item>
+      <item>pickup_in_progress</item>
+      <item>pickup_completed</item>
+      <item>reshipping</item>
+      <item>reshipping_completed</item>
+      <item>completed</item>
+    </field>
+    <field name="deliveryMethods" :value="[]"/>
+    <field name="paymentMethods" :value="[]"/>
+    <field name="categories" :value='["","","","",""]'/>
+    <field name="minPrice" value=""/>
+    <field name="maxPrice" value=""/>
+    <field name="countries">
+      <item>kr</item>
+    </field>
+    <field name="devices" :value="[]"/>
+    <field name="sortBy" value="latest"/>
+    <field name="perPage" :value="10"/>
+    <field name="selectedOrders" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+    <field name="batchAction" value=""/>
+    <field name="carrier_id" value=""/>
+    <field name="trackingNumber" value=""/>
+    <field name="selectedColumns" :value="9"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>active_carriers</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="order_content" class="ecommerce-admin-page-content">
+      <div data-ref="page_header" class="ecommerce-page-header">
+        <div class="ecommerce-flex-center ecommerce:gap-3">
+          <icon name="shopping-cart" class="ecommerce:text-2xl ecommerce:text-gray-700 ecommerce:dark:text-gray-300"/>
+          <div>
+            <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.order.title</h1>
+            <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.order.description</p>
+          </div>
+        </div>
+        <div class="ecommerce-page-actions">
+          <a href="/admin/ecommerce/orders" :mergeQuery="true" aria-label="$t:common.refresh" title="$t:common.refresh" class="ecommerce-btn ecommerce-btn-icon">
+            <on type="click">
+              <!-- 지금 검색 조건 그대로 목록을 다시 불러온다 -->
+              <navigate :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <icon name="arrows-rotate" class="ecommerce:text-xl"/>
+          </a>
+        </div>
+      </div>
+      <div data-ref="mobile_top_actions" class="ecommerce:hidden ecommerce-hidden">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:mb-4"/>
+        <button type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1">
+          <icon name="gear" class="ecommerce:text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.order.search.edit_search</span>
+        </button>
+        <button type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1">
+          <on type="click">
+            <open-modal target="modal_preset_manage"/>
+          </on>
+          <icon name="list" class="ecommerce:text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.order.search.preset_manage</span>
+        </button>
+      </div>
+      <div data-ref="filter_card" class="ecommerce-admin-card ecommerce:mb-6">
+        <div data-ref="preset_row" class="ecommerce-flex-center ecommerce:gap-3 ecommerce:pb-4 ecommerce:mb-4 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+          <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:hover:opacity-70">
+            <on type="click">
+              <open-modal target="modal_preset_manage"/>
+            </on>
+            <icon name="list" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <span class="ecommerce-text-secondary ecommerce:text-sm">$t:sirsoft-ecommerce.admin.order.preset.label</span>
+          </button>
+          <button type="button" class="ecommerce-text-primary ecommerce:px-4 ecommerce:py-1.5 ecommerce:rounded-full ecommerce:text-sm ecommerce:font-bold ecommerce:border ecommerce:border-gray-900 ecommerce:dark:border-white">$t:sirsoft-ecommerce.admin.order.preset.today_payment</button>
+          <button type="button" class="ecommerce-text-secondary ecommerce:px-4 ecommerce:py-1.5 ecommerce:rounded-full ecommerce:text-sm ecommerce:font-medium ecommerce:bg-gray-100 ecommerce:dark:bg-gray-800">$t:sirsoft-ecommerce.admin.order.preset.bank_pending</button>
+        </div>
+        <div data-ref="search_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-6">
+          <select name="searchField" aria-label="$t:common.search_field" class="ecommerce:w-32" value="{{_local.searchField}}">
+            <options>
+              <option value="all">$t:sirsoft-ecommerce.admin.order.search.field.all</option>
+              <option value="order_number">$t:sirsoft-ecommerce.admin.order.search.field.order_number</option>
+              <option value="orderer_name">$t:sirsoft-ecommerce.admin.order.search.field.orderer_name</option>
+              <option value="product_name">$t:sirsoft-ecommerce.admin.order.search.field.product_name</option>
+              <option value="receiver_name">$t:sirsoft-ecommerce.admin.order.search.field.receiver_name</option>
+              <option value="phone">$t:sirsoft-ecommerce.admin.order.search.field.phone</option>
+            </options>
+            <on type="change">
+              <!-- 검색 대상만 바꾼다 — 조회는 옆 입력칸의 검색어와 함께 이뤄진다 -->
+              <set-state target="_local" searchField="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <div class="ecommerce:flex-1 ecommerce:min-w-64 ecommerce:relative">
+            <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.search.placeholder" class="ecommerce-input ecommerce:pr-10" value="{{_local.searchKeyword}}">
+              <on type="change">
+                <!-- 입력을 마칠 때 담는다 -->
+                <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"/>
+          </div>
+          <button type="button" class="ecommerce-btn ecommerce-btn-outline">
+            <icon name="gear" class="ecommerce:text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.order.search.column_select</span>
+            <span class="ecommerce-text-secondary ecommerce:dark:text-gray-300">({{_local.selectedColumns}})</span>
+          </button>
+          <button type="button" class="ecommerce-btn ecommerce-btn-primary">
+            <icon name="filter" class="ecommerce:text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.order.search.detail_search</span>
+          </button>
+        </div>
+        <div data-ref="filter_date_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-4"/>
+          <span class="ecommerce-text-label ecommerce:w-20 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.date</span>
+          <select name="dateType" aria-label="$t:sirsoft-ecommerce.admin.order.filter.date" class="ecommerce:w-32" value="{{_local.dateType}}">
+            <options>
+              <option value="order_date">$t:sirsoft-ecommerce.admin.order.filter.date_type.order_date</option>
+              <option value="payment_date">$t:sirsoft-ecommerce.admin.order.filter.date_type.payment_date</option>
+              <option value="shipping_date">$t:sirsoft-ecommerce.admin.order.filter.date_type.shipping_date</option>
+            </options>
+            <on type="change">
+              <!-- 기간을 어느 날짜에 걸지 고른다 — 주문일·결제일·출고일은 서로 며칠씩 벌어지므로 같은 기간이라도 결과가 달라진다 -->
+              <set-state target="_local" dateType="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <div class="ecommerce-flex-center ecommerce:gap-2">
+            <button type="button" class="ecommerce-btn ecommerce-btn-outline">
+              <icon name="calendar" class="ecommerce:text-base"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.start_date</span>
+            </button>
+            <button type="button" class="ecommerce-btn ecommerce-btn-outline">
+              <icon name="calendar" class="ecommerce:text-base"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.end_date</span>
+            </button>
+          </div>
+          <div class="ecommerce:flex ecommerce:gap-1 ecommerce:ml-2">
+            <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline">$t:sirsoft-ecommerce.admin.order.filter.date_quick.today</button>
+            <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline">$t:sirsoft-ecommerce.admin.order.filter.date_quick.week</button>
+            <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline">$t:sirsoft-ecommerce.admin.order.filter.date_quick.1_month</button>
+            <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline">$t:sirsoft-ecommerce.admin.order.filter.date_quick.3_months</button>
+            <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline">$t:sirsoft-ecommerce.admin.order.filter.date_quick.6_months</button>
+            <button type="button" class="ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline">$t:sirsoft-ecommerce.admin.order.filter.date_quick.1_year</button>
+          </div>
+        </div>
+        <div data-ref="filter_order_status_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-4"/>
+          <span class="ecommerce-text-label ecommerce:w-20 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.order_status</span>
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2">
+            <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+              <span class="ecommerce:w-2 ecommerce:h-2 ecommerce:rounded-full ecommerce:border ecommerce:border-current"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.waiting</span>
+            </div>
+            <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+              <span class="ecommerce:w-2 ecommerce:h-2 ecommerce:rounded-full ecommerce:border ecommerce:border-current"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.payment_pending</span>
+            </div>
+            <div class="ecommerce-badge-status ecommerce-badge-status-success ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500">
+              <span class="ecommerce:w-2 ecommerce:h-2 ecommerce:rounded-full ecommerce:bg-current"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.payment_complete</span>
+            </div>
+            <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+              <span class="ecommerce:w-2 ecommerce:h-2 ecommerce:rounded-full ecommerce:border ecommerce:border-current"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping_hold</span>
+            </div>
+            <div class="ecommerce-badge-status ecommerce-badge-status-success ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500">
+              <span class="ecommerce:w-2 ecommerce:h-2 ecommerce:rounded-full ecommerce:bg-current"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.preparing</span>
+            </div>
+            <div class="ecommerce-badge-status ecommerce-badge-status-success ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500">
+              <span class="ecommerce:w-2 ecommerce:h-2 ecommerce:rounded-full ecommerce:bg-current"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping_ready</span>
+            </div>
+            <div class="ecommerce-badge-status ecommerce-badge-status-success ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500">
+              <span class="ecommerce:w-2 ecommerce:h-2 ecommerce:rounded-full ecommerce:bg-current"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping</span>
+            </div>
+            <div class="ecommerce-badge-status ecommerce-badge-status-success ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500">
+              <span class="ecommerce:w-2 ecommerce:h-2 ecommerce:rounded-full ecommerce:bg-current"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.delivered</span>
+            </div>
+            <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+              <span class="ecommerce:w-2 ecommerce:h-2 ecommerce:rounded-full ecommerce:border ecommerce:border-current"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.cancelled</span>
+            </div>
+            <div class="ecommerce-badge-status ecommerce-badge-status-processing ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-blue-400 ecommerce:dark:ring-blue-500">
+              <span class="ecommerce:w-2 ecommerce:h-2 ecommerce:rounded-full ecommerce:bg-current"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.order_status_options.confirmed</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="filter_claim_status_section" class="ecommerce-flex-start ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-4"/>
+          <div class="ecommerce:w-20 ecommerce:flex-shrink-0 ecommerce-flex-between">
+            <span class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.order.filter.claim_status</span>
+          </div>
+          <div class="ecommerce:flex-1">
+            <div class="ecommerce-flex-start ecommerce:gap-4 ecommerce:mb-3">
+              <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-3"/>
+              <span class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:w-12 ecommerce:pt-1.5 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.claim_refund</span>
+              <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2">
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-orange-50 ecommerce:dark:bg-orange-900/30 ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:border ecommerce:border-orange-300 ecommerce:dark:border-orange-600 ecommerce:ring-1 ecommerce:ring-orange-400 ecommerce:dark:ring-orange-500">
+                  <icon name="clock" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.requested</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+                  <icon name="circle-xmark" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.hold</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce-badge-status-processing ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-blue-400 ecommerce:dark:ring-blue-500">
+                  <icon name="check-circle" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.approved</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+                  <icon name="x" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.rejected</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce-badge-status-success ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500">
+                  <icon name="check-circle" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_refund_options.completed</span>
+                </div>
+              </div>
+            </div>
+            <div class="ecommerce-flex-start ecommerce:gap-4 ecommerce:mb-3">
+              <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-3"/>
+              <span class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:w-12 ecommerce:pt-1.5 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.claim_return</span>
+              <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2">
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-orange-50 ecommerce:dark:bg-orange-900/30 ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:border ecommerce:border-orange-300 ecommerce:dark:border-orange-600 ecommerce:ring-1 ecommerce:ring-orange-400 ecommerce:dark:ring-orange-500">
+                  <icon name="clock" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.requested</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+                  <icon name="clock" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.payment_pending</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+                  <icon name="circle-xmark" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.hold</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce-badge-status-processing ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-blue-400 ecommerce:dark:ring-blue-500">
+                  <icon name="check-circle" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.approved</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-orange-50 ecommerce:dark:bg-orange-900/30 ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:border ecommerce:border-orange-300 ecommerce:dark:border-orange-600 ecommerce:ring-1 ecommerce:ring-orange-400 ecommerce:dark:ring-orange-500">
+                  <icon name="truck" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.pickup_in_progress</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-orange-50 ecommerce:dark:bg-orange-900/30 ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:border ecommerce:border-orange-300 ecommerce:dark:border-orange-600 ecommerce:ring-1 ecommerce:ring-orange-400 ecommerce:dark:ring-orange-500">
+                  <icon name="box" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.pickup_completed</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+                  <icon name="x" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.rejected</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce-badge-status-success ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500">
+                  <icon name="check-circle" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_return_options.completed</span>
+                </div>
+              </div>
+            </div>
+            <div class="ecommerce-flex-start ecommerce:gap-4">
+              <responsive on="portable" class="ecommerce-row-stack"/>
+              <span class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:w-12 ecommerce:pt-1.5 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.claim_exchange</span>
+              <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2">
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-orange-50 ecommerce:dark:bg-orange-900/30 ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:border ecommerce:border-orange-300 ecommerce:dark:border-orange-600 ecommerce:ring-1 ecommerce:ring-orange-400 ecommerce:dark:ring-orange-500">
+                  <icon name="clock" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.requested</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+                  <icon name="clock" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.payment_pending</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+                  <icon name="circle-xmark" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.hold</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce-badge-status-processing ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-blue-400 ecommerce:dark:ring-blue-500">
+                  <icon name="check-circle" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.approved</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-orange-50 ecommerce:dark:bg-orange-900/30 ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:border ecommerce:border-orange-300 ecommerce:dark:border-orange-600 ecommerce:ring-1 ecommerce:ring-orange-400 ecommerce:dark:ring-orange-500">
+                  <icon name="truck" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.pickup_in_progress</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-orange-50 ecommerce:dark:bg-orange-900/30 ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:border ecommerce:border-orange-300 ecommerce:dark:border-orange-600 ecommerce:ring-1 ecommerce:ring-orange-400 ecommerce:dark:ring-orange-500">
+                  <icon name="box" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.pickup_completed</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-400">
+                  <icon name="x" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.rejected</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-orange-50 ecommerce:dark:bg-orange-900/30 ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:border ecommerce:border-orange-300 ecommerce:dark:border-orange-600 ecommerce:ring-1 ecommerce:ring-orange-400 ecommerce:dark:ring-orange-500">
+                  <icon name="truck" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.reshipping</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-orange-50 ecommerce:dark:bg-orange-900/30 ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:border ecommerce:border-orange-300 ecommerce:dark:border-orange-600 ecommerce:ring-1 ecommerce:ring-orange-400 ecommerce:dark:ring-orange-500">
+                  <icon name="clock" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.reshipping_completed</span>
+                </div>
+                <div class="ecommerce-badge-status ecommerce-badge-status-success ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500">
+                  <icon name="check-circle" class="ecommerce:text-xs"/>
+                  <span>$t:sirsoft-ecommerce.admin.order.filter.claim_exchange_options.completed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ecommerce-flex-center ecommerce:gap-1 ecommerce-text-tertiary ecommerce:text-xs ecommerce:cursor-pointer ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300">
+            <icon name="gear" class="ecommerce:text-xs"/>
+            <span class="ecommerce:border-b ecommerce:border-current">$t:sirsoft-ecommerce.admin.order.filter.claim_mode</span>
+          </div>
+        </div>
+        <div data-ref="filter_delivery_method_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-4"/>
+          <span class="ecommerce-text-label ecommerce:w-20 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.delivery_method</span>
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-6">
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.delivery_options.parcel</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.delivery_options.direct</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.delivery_options.mail</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.delivery_options.pickup</span>
+            </label>
+          </div>
+        </div>
+        <div data-ref="filter_payment_method_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-4"/>
+          <span class="ecommerce-text-label ecommerce:w-20 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.payment_method</span>
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-6">
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.payment_options.bank</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.payment_options.card</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.payment_options.virtual</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.payment_options.naver</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.payment_options.kakao</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.payment_options.toss</span>
+            </label>
+          </div>
+        </div>
+        <div data-ref="filter_category_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-4"/>
+          <span class="ecommerce-text-label ecommerce:w-20 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.category</span>
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2">
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1" name="category1" class="ecommerce:w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1">
+              <prop name="options">[]</prop>
+            </select>
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2" name="category2" class="ecommerce:w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2">
+              <prop name="options">[]</prop>
+            </select>
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3" name="category3" class="ecommerce:w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3">
+              <prop name="options">[]</prop>
+            </select>
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4" name="category4" class="ecommerce:w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4">
+              <prop name="options">[]</prop>
+            </select>
+          </div>
+        </div>
+        <div data-ref="filter_price_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-4"/>
+          <span class="ecommerce-text-label ecommerce:w-20 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.price</span>
+          <div class="ecommerce-flex-center ecommerce:gap-2">
+            <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.filter.min_price" class="ecommerce-input ecommerce:w-28" value="{{_local.minPrice}}">
+              <on type="change">
+                <!-- 주문금액 하한 — 오른쪽 통화 선택칸의 기준으로 읽는다 -->
+                <set-state target="_local" minPrice="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span class="ecommerce-text-muted">~</span>
+            <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.filter.max_price" class="ecommerce-input ecommerce:w-28" value="{{_local.maxPrice}}">
+              <on type="change">
+                <!-- 주문금액 상한 -->
+                <set-state target="_local" maxPrice="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <select name="currency" aria-label="$t:sirsoft-ecommerce.admin.order.filter.currency" class="ecommerce:w-20" value="krw">
+              <options>
+                <option value="krw">$t:sirsoft-ecommerce.admin.order.filter.currency</option>
+              </options>
+            </select>
+          </div>
+        </div>
+        <div data-ref="filter_country_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-4"/>
+          <span class="ecommerce-text-label ecommerce:w-20 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.country</span>
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-5">
+            <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-3"/>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4" :checked="true"/>
+              <span>🇰🇷 $t:sirsoft-ecommerce.admin.order.filter.country_options.kr</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>🇺🇸 $t:sirsoft-ecommerce.admin.order.filter.country_options.us</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>🇯🇵 $t:sirsoft-ecommerce.admin.order.filter.country_options.jp</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>🇨🇳 $t:sirsoft-ecommerce.admin.order.filter.country_options.cn</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>🇷🇺 $t:sirsoft-ecommerce.admin.order.filter.country_options.ru</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>🇹🇼 $t:sirsoft-ecommerce.admin.order.filter.country_options.tw</span>
+            </label>
+          </div>
+        </div>
+        <div data-ref="filter_device_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-6">
+          <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-6"/>
+          <span class="ecommerce-text-label ecommerce:w-20 ecommerce:flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.device</span>
+          <div class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-6">
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.device_options.pc</span>
+            </label>
+            <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary ecommerce:cursor-pointer">
+              <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+              <span>$t:sirsoft-ecommerce.admin.order.filter.device_options.mobile</span>
+            </label>
+          </div>
+        </div>
+        <div data-ref="search_action_buttons" class="ecommerce:flex ecommerce:justify-center ecommerce:gap-2 ecommerce:pt-6 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+          <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:px-10">$t:sirsoft-ecommerce.admin.order.action.search</button>
+          <button type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:px-6">$t:sirsoft-ecommerce.admin.order.action.reset</button>
+          <button type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:px-6">
+            <on type="click">
+              <open-modal target="modal_preset_save"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.order.action.save_preset
+          </button>
+        </div>
+      </div>
+      <div data-ref="batch_bar" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:rounded-xl ecommerce:mb-6 ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-4">
+        <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
+          <span class="ecommerce:font-bold ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.order.batch.selected_count|count=0</span>
+          <select aria-label="$t:sirsoft-ecommerce.admin.order.batch.status_change" name="batchAction" class="ecommerce:w-40" placeholder="$t:sirsoft-ecommerce.admin.order.batch.status_change" value="{{_local.batchAction}}">
+            <options>
+              <option value="preparing">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.preparing</option>
+              <option value="shipping_ready">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping_ready</option>
+              <option value="shipping">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping</option>
+              <option value="delivered">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.delivered</option>
+            </options>
+            <on type="change">
+              <!-- 선택한 주문들을 어떤 상태로 옮길지 — 실제 반영은 오른쪽 「일괄변경」 버튼이 한다 -->
+              <set-state target="_local" batchAction="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <span class="ecommerce:text-gray-600 ecommerce:dark:text-gray-400">|</span>
+          <span class="ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.order.batch.shipping_process:</span>
+          <select aria-label="$t:sirsoft-ecommerce.admin.order.batch.carrier" name="carrier_id" class="ecommerce:w-32" placeholder="$t:sirsoft-ecommerce.admin.order.batch.carrier" value="{{_local.carrier_id}}" options="{{active_carriers?.data ?? []}}">
+            <on type="change">
+              <!-- 일괄 출고에 쓸 택배사 — 옆 운송장번호와 짝을 이룬다 -->
+              <set-state target="_local" carrier_id="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.batch.tracking_number" class="ecommerce-input ecommerce:w-48" value="{{_local.trackingNumber}}">
+            <on type="change">
+              <!-- 운송장번호 — 선택한 주문 전체에 같은 번호가 붙으므로 합포장 건에만 쓴다 -->
+              <set-state target="_local" trackingNumber="{{$event.target.value}}"/>
+            </on>
+          </input>
+        </div>
+        <!-- 시안 화면(라우트 미연결)의 [일괄 변경]은 처리기가 없다 — 나중에 연결될 때 권한 게이트 없이 열리지 않도록 잠가 둔다(실제 화면은 주문 목록 admin_ecommerce_order_list 의 일괄 처리 바). -->
+        <button data-ref="mockup_batch_change_button" type="button" class="ecommerce-btn ecommerce-btn-info ecommerce:font-bold ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" :disabled="true">$t:sirsoft-ecommerce.admin.order.batch.batch_change</button>
+      </div>
+      <div data-ref="table_card" class="ecommerce-admin-card">
+        <div data-ref="table_header" class="ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-4 ecommerce:mb-6">
+          <span class="ecommerce-text-primary ecommerce:font-bold">$t:sirsoft-ecommerce.admin.order.table.total_count|count=12</span>
+          <div class="ecommerce-flex-center ecommerce:gap-3">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="ecommerce:w-36" value="{{_local.sortBy}}">
+              <options>
+                <option value="latest">$t:sirsoft-ecommerce.admin.order.table.sort.latest</option>
+                <option value="oldest">$t:sirsoft-ecommerce.admin.order.table.sort.oldest</option>
+                <option value="amount_high">$t:sirsoft-ecommerce.admin.order.table.sort.amount_high</option>
+                <option value="amount_low">$t:sirsoft-ecommerce.admin.order.table.sort.amount_low</option>
+              </options>
+              <on type="change">
+                <!-- 정렬 기준 -->
+                <set-state target="_local" sortBy="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <select name="perPage" aria-label="$t:common.per_page" class="ecommerce:w-24" value="{{_local.perPage}}">
+              <options>
+                <option :value="10">$t:sirsoft-ecommerce.admin.order.table.per_page|count=10</option>
+                <option :value="20">$t:sirsoft-ecommerce.admin.order.table.per_page|count=20</option>
+                <option :value="50">$t:sirsoft-ecommerce.admin.order.table.per_page|count=50</option>
+                <option :value="100">$t:sirsoft-ecommerce.admin.order.table.per_page|count=100</option>
+              </options>
+              <on type="change">
+                <!-- 선택값은 문자열로 오므로 수로 바꿔 담는다 -->
+                <set-state target="_local" perPage="{{parseInt($event.target.value)}}"/>
+              </on>
+            </select>
+            <!-- 엑셀 다운로드 미제공 - 숨김 처리 -->
+            <button :data-if="false" type="button" class="ecommerce-btn ecommerce-btn-outline">
+              <on type="click">
+                <open-modal target="modal_excel_download"/>
+              </on>
+              <icon name="file-excel" class="ecommerce:text-base"/>
+              <span>$t:sirsoft-ecommerce.admin.order.table.excel_download</span>
+            </button>
+          </div>
+        </div>
+        <div data-ref="table_container" class="ecommerce:overflow-x-auto">
+          <responsive on="portable">
+            <div class="ecommerce-row-stack">
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce-flex-between ecommerce:mb-2">
+                  <label class="ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer">
+                    <input type="checkbox" class="ecommerce:w-4 ecommerce:h-4"/>
+                    <span class="ecommerce:text-sm ecommerce:font-bold ecommerce-text-primary">ord251010567890</span>
+                  </label>
+                  <button type="button" class="ecommerce-text-tertiary ecommerce:text-lg">⋮</button>
+                </div>
+                <div class="ecommerce:text-xs ecommerce-text-tertiary ecommerce:mb-4">2024-10-10 18:25:00</div>
+                <div class="ecommerce:flex ecommerce:gap-3 ecommerce:mb-4">
+                  <div class="ecommerce:w-16 ecommerce:h-16 ecommerce:bg-gray-800 ecommerce:dark:bg-gray-700 ecommerce:rounded ecommerce:flex-shrink-0"/>
+                  <div class="ecommerce:flex-1">
+                    <div class="ecommerce:text-sm ecommerce:font-bold ecommerce-text-primary ecommerce:mb-1">$t:sirsoft-ecommerce.admin.sample.products.cleaning_stopper</div>
+                    <div class="ecommerce:text-xs ecommerce-text-tertiary ecommerce:mb-2">0.9kg / 0.0065m³</div>
+                    <span class="ecommerce:px-2 ecommerce:py-1 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:text-gray-600 ecommerce:dark:text-gray-300 ecommerce:text-xs ecommerce:font-medium ecommerce:rounded">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.preparing</span>
+                  </div>
+                  <div class="ecommerce:text-right">
+                    <div class="ecommerce:text-sm ecommerce:font-bold ecommerce-text-primary">₩55,000</div>
+                    <div class="ecommerce:text-xs ecommerce:text-green-700 ecommerce:dark:text-green-400">+₩55,000</div>
+                  </div>
+                </div>
+                <div class="ecommerce:pt-3 ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:space-y-2 ecommerce:text-sm">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-tertiary">$t:sirsoft-ecommerce.admin.order.mobile.orderer:</span>
+                    <span class="ecommerce-text-primary ecommerce:font-medium">🤖 $t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.han_jimin|id=USR009</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-tertiary">$t:sirsoft-ecommerce.admin.order.mobile.payment_delivery:</span>
+                    <span class="ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.fmt.payment_shipping|payment=$t:sirsoft-ecommerce.admin.sample.misc.toss_pay|shipping=$t:sirsoft-ecommerce.admin.sample.misc.parcel</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span class="ecommerce-text-tertiary">$t:sirsoft-ecommerce.admin.order.mobile.country:</span>
+                    <span class="ecommerce-text-primary">🇰🇷 $t:sirsoft-ecommerce.admin.sample.misc.korea</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </responsive>
+          <table class="ecommerce:w-full">
+            <thead>
+              <tr class="ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-left ecommerce:w-10">
+                  <input type="checkbox" aria-label="$t:common.select_all" class="ecommerce:w-4 ecommerce:h-4"/>
+                </th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center">$t:sirsoft-ecommerce.admin.order.table.columns.order_date</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center">$t:sirsoft-ecommerce.admin.order.table.columns.order_number</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center">$t:sirsoft-ecommerce.admin.order.table.columns.order_status</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center">$t:sirsoft-ecommerce.admin.order.table.columns.order_amount</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-left">$t:sirsoft-ecommerce.admin.order.table.columns.product</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center">$t:sirsoft-ecommerce.admin.order.table.columns.orderer</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center">$t:sirsoft-ecommerce.admin.order.table.columns.payment_method</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center">$t:sirsoft-ecommerce.admin.order.table.columns.country</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center">$t:sirsoft-ecommerce.admin.order.table.columns.delivery_method</th>
+                <th class="ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-16">$t:sirsoft-ecommerce.admin.order.table.columns.actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <input type="checkbox" aria-label="$t:common.select_item|name=ord251010567890" class="ecommerce:w-4 ecommerce:h-4"/>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary ecommerce:whitespace-nowrap">2024-10-10
+18:25:00</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-primary">ord251010567890</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce:px-2.5 ecommerce:py-1 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:text-gray-600 ecommerce:dark:text-gray-300 ecommerce:text-xs ecommerce:font-medium ecommerce:rounded">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.preparing</span>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <div class="ecommerce:text-sm ecommerce:font-bold ecommerce-text-primary">₩55,000</div>
+                  <div class="ecommerce:text-xs ecommerce:text-green-700 ecommerce:dark:text-green-400">+₩55,000</div>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <div class="ecommerce-flex-center ecommerce:gap-3">
+                    <div class="ecommerce:w-12 ecommerce:h-12 ecommerce:bg-gray-800 ecommerce:dark:bg-gray-700 ecommerce:rounded ecommerce:overflow-hidden ecommerce:flex-shrink-0"/>
+                    <div>
+                      <div class="ecommerce:text-sm ecommerce:font-bold ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.products.cleaning_stopper</div>
+                      <div class="ecommerce:text-xs ecommerce-text-tertiary">0.9kg / 0.0065m³</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <div class="ecommerce:text-sm ecommerce:font-bold ecommerce-text-primary">🤖 $t:sirsoft-ecommerce.admin.sample.people.han_jimin</div>
+                  <div class="ecommerce:text-xs ecommerce-text-tertiary">(USR009)</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.sample.misc.toss_pay</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">🇰🇷 $t:sirsoft-ecommerce.admin.sample.misc.korea</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.sample.misc.parcel</td>
+                <td class="ecommerce-empty-state-cell">
+                  <button type="button" class="ecommerce-text-tertiary ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300">•••</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div data-ref="pagination" class="ecommerce-flex-center ecommerce:justify-center ecommerce:gap-2 ecommerce:mt-8">
+          <button type="button" class="ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:justify-center ecommerce-text-tertiary ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300">«</button>
+          <button type="button" class="ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:justify-center ecommerce-text-tertiary ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300">‹</button>
+          <button type="button" class="ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:justify-center ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded ecommerce-text-primary ecommerce:font-bold">1</button>
+          <button type="button" class="ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:justify-center ecommerce-text-tertiary ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300">2</button>
+          <button type="button" class="ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:justify-center ecommerce-text-tertiary ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300">›</button>
+          <button type="button" class="ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:justify-center ecommerce-text-tertiary ecommerce:hover:text-gray-700 ecommerce:dark:hover:text-gray-300">»</button>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 엑셀 내려받기 — 무엇을 뽑을지 고른다(이 시안에서는 여는 버튼이 숨겨져 있다) -->
+  <modal src="partials/admin_ecommerce_order_index/_modal_excel_download.g7.html"/>
+  <!-- 검색 프리셋 관리 -->
+  <modal src="partials/admin_ecommerce_order_index/_modal_preset_manage.g7.html"/>
+  <!-- 지금 걸린 조건을 새 프리셋으로 저장 -->
+  <modal src="partials/admin_ecommerce_order_index/_modal_preset_save.g7.html"/>
+</layout>

@@ -1,411 +1,662 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_ecommerce_mileage_transaction_index",
-  "permissions": [
-    "sirsoft-ecommerce.mileage.read"
-  ],
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:sirsoft-ecommerce.admin.mileage_transactions.title",
-    "description": "$t:sirsoft-ecommerce.admin.mileage_transactions.description"
-  },
-  "state": {
-    "filter": {
-      "searchField": "member",
-      "searchKeyword": "",
-      "type": "",
-      "currency": "",
-      "startDate": "",
-      "endDate": "",
-      "dateQuick": ""
+    "comment": "마일리지 거래 내역 (운영자) — 적립·차감 내역을 조회하고, 여기서 직접 지급/회수하거나 만료일을\n  연장한다. 조회 조건은 전부 URL 쿼리에 실려 재진입 시 그대로 재현되고, 진입 시 `<init>` 이 그\n  쿼리를 필터 입력값으로 되돌려 담는다. 창에 넘길 값은 _local 이 아니라 _global 에 싣는다 —\n  모달은 별도 컨텍스트라 부모의 _local 을 보지 못한다.",
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_mileage_transaction_index",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.mileage_transactions.title",
+        "description": "$t:sirsoft-ecommerce.admin.mileage_transactions.description"
     },
-    "selectedItems": [],
-    "expandedRows": [],
-    "linkedTransactions": {},
-    "batchAction": "",
-    "manualModalOpen": false,
-    "extendModalOpen": false,
-    "manual": {
-      "action": "earn",
-      "amount": "",
-      "_comment_currency": "모달 진입 시 설정의 기본 통화로 채운다 — 특정 통화를 박으면 그 통화 원장이 없는 상점에서 잘못된 통화로 적립된다",
-      "currency": "",
-      "reason": "",
-      "useDefaultExpiry": true,
-      "expiresAt": ""
-    },
-    "extendDays": 30,
-    "memberSearchKeyword": "",
-    "memberSearchResults": [],
-    "selectedMember": null
-  },
-  "transition_overlay": {
-    "wait_for": [
-      "transactions"
-    ]
-  },
-  "data_sources": [
-    {
-      "id": "transactions",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/admin/mileage-transactions",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "loading_strategy": "progressive",
-      "params": {
-        "page": "{{query.page || 1}}",
-        "per_page": "{{query.per_page || 20}}",
-        "sort": "{{query.sort || 'created_at_desc'}}",
-        "search_field": "{{query.search_field || 'member'}}",
-        "search_keyword": "{{query.search_keyword || ''}}",
-        "type": "{{query.type || ''}}",
-        "currency": "{{query.currency || ''}}",
-        "start_date": "{{query.start_date || ''}}",
-        "end_date": "{{query.end_date || ''}}"
-      },
-      "errorHandling": {
-        "403": {
-          "handler": "showErrorPage",
-          "params": {
-            "target": "content"
-          }
+    "data_sources": [
+        {
+            "id": "transactions",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/mileage-transactions",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "sort": "{{query.sort || 'created_at_desc'}}",
+                "search_field": "{{query.search_field || 'member'}}",
+                "search_keyword": "{{query.search_keyword || ''}}",
+                "type": "{{query.type || ''}}",
+                "currency": "{{query.currency || ''}}",
+                "start_date": "{{query.start_date || ''}}",
+                "end_date": "{{query.end_date || ''}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0
+                    }
+                }
+            },
+            "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 조회가 실패해도 표 골격은 서도록 빈 페이지네이션을 fallback 으로 둔다"
         },
-        "default": {
-          "handler": "showErrorPage",
-          "params": {
-            "target": "content"
-          }
+        {
+            "id": "ecommerceExportCatalog",
+            "auto_fetch": false,
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceExportCatalog",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/exports/catalog",
+            "auth_required": true,
+            "initGlobal": "ecommerceExportCatalog",
+            "params": {
+                "type": "{{_global.ecommerceExportContext?.type ?? ''}}",
+                "start_date": "{{_global.ecommerceExportContext?.filters?.start_date ?? ''}}",
+                "end_date": "{{_global.ecommerceExportContext?.filters?.end_date ?? ''}}"
+            },
+            "onSuccess": [
+                {
+                    "comment": "기본값 채우기 — 형식은 첫 형식, 행 단위는 서버 기본, 화면 컬럼은 목록에 보이던 컬럼(카탈로그에 있는 것만)이고 없으면 전부, 언어는 서버 기본.\n           기간이 필수인데 목록의 조회 기간을 쓸 수 없으면(없거나 1년 초과) 서버가 준 「오늘 포함 최근 1개월」을 채우고 안내를 켠다",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "ecommerceExportForm.format": "{{response?.data?.data?.formats?.[0]?.key ?? 'csv'}}",
+                        "ecommerceExportForm.row_unit": "{{response?.data?.data?.default_row_unit}}",
+                        "ecommerceExportForm.screen_columns": "{{(_global.ecommerceExportContext?.screen_columns ?? []).filter(k => (response?.data?.data?.screen_columns ?? []).some(c => c.key === k)).length > 0 ? (_global.ecommerceExportContext?.screen_columns ?? []).filter(k => (response?.data?.data?.screen_columns ?? []).some(c => c.key === k)) : (response?.data?.data?.screen_columns ?? []).map(c => c.key)}}",
+                        "ecommerceExportForm.locale": "{{response?.data?.data?.default_locale}}",
+                        "ecommerceExportForm.period": "{{(response?.data?.data?.list_period_usable === false && response?.data?.data?.default_period) ? response.data.data.default_period : (_global.ecommerceExportForm?.period ?? { mode: 'current' })}}",
+                        "ecommerceExportPeriodDefaulted": "{{(response?.data?.data?.list_period_usable === false && response?.data?.data?.default_period) ? true : false}}",
+                        "ecommerceExportIsEstimating": true
+                    }
+                },
+                {
+                    "comment": "첫 예상 건수 — 위에서 채운 기본값으로 예상 건수 데이터 소스를 부른다",
+                    "handler": "refetchDataSource",
+                    "params": {
+                        "dataSourceId": "ecommerceExportEstimateSource"
+                    }
+                }
+            ],
+            "comment": "창 카탈로그 — 목록 화면이 열릴 때는 받지 않고, [내보내기] 버튼이 유형을 깔고 창을 연 뒤 다시 받는다(데이터 소스는 레이아웃 최상위에만 둘 수 있어 세 목록 레이아웃이 같은 선언을 갖는다)"
+        },
+        {
+            "id": "ecommerceExportEstimateSource",
+            "auto_fetch": false,
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerceExportEstimateSource",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/exports/estimate",
+            "method": "POST",
+            "auth_required": true,
+            "params": {
+                "type": "{{_global.ecommerceExportContext?.type}}",
+                "format": "{{_global.ecommerceExportForm?.format}}",
+                "column_mode": "{{_global.ecommerceExportForm?.column_mode ?? 'current'}}",
+                "screen_columns": "{{_global.ecommerceExportForm?.screen_columns ?? []}}",
+                "fields": "{{_global.ecommerceExportForm?.fields ?? []}}",
+                "row_unit": "{{_global.ecommerceExportForm?.row_unit}}",
+                "scope": "{{_global.ecommerceExportForm?.scope ?? 'filter'}}",
+                "filters": "{{_global.ecommerceExportForm?.scope === 'selected' ? {} : (_global.ecommerceExportContext?.filters ?? {}) }}",
+                "selected_ids": "{{_global.ecommerceExportForm?.scope === 'selected' ? (_global.ecommerceExportContext?.selected_ids ?? []) : []}}",
+                "period": "{{_global.ecommerceExportForm?.scope === 'selected' ? null : (_global.ecommerceExportForm?.period ?? { mode: 'current' })}}",
+                "locale_mode": "{{_global.ecommerceExportForm?.locale_mode ?? 'locale'}}",
+                "locale": "{{_global.ecommerceExportForm?.locale}}"
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "merge": "shallow",
+                        "ecommerceExportEstimate": "{{response?.data?.data?.count ?? null}}",
+                        "ecommerceExportIsEstimating": false,
+                        "ecommerceExportEstimateFailed": false,
+                        "ecommerceExportErrors": "{{Object.fromEntries(Object.entries(_global.ecommerceExportErrors || []).filter(e => e[0] === 'reason'))}}"
+                    }
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "merge": "shallow",
+                        "ecommerceExportEstimate": null,
+                        "ecommerceExportIsEstimating": false,
+                        "ecommerceExportEstimateFailed": true,
+                        "ecommerceExportErrors": "{{Object.fromEntries([...Object.entries(_global.ecommerceExportErrors || []).filter(e => e[0] === 'reason'), ...(error.errors ? Object.entries(error.errors) : [['_general', [error.message]]])])}}"
+                    }
+                }
+            ],
+            "comment": "예상 건수 — 요청 창이 조건을 바꿀 때마다 다시 부른다(본문은 이 한 곳에만 둔다 — 데이터 소스는 부르는 순간의 전역 값을 읽는다).\n       사유 오류(요청 때만 나온다)는 그대로 두고 나머지 오류는 이번 결과로 바꾼다. 첫 계산이 검증에서 걸리면(예: 목록 조건이 목록 검증을\n       통과하지 못한다) 그 사유를 보여 준다 — 「0」만 보이면 왜 비었는지 알 수 없다"
         }
-      },
-      "fallback": {
-        "data": {
-          "data": [],
-          "pagination": {
-            "current_page": 1,
-            "last_page": 1,
-            "per_page": 20,
-            "total": 0
-          }
-        }
-      }
-    }
-  ],
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "local",
+    ],
+    "initLocal": {
         "filter": {
-          "searchField": "{{query.search_field || 'member'}}",
-          "searchKeyword": "{{query.search_keyword || ''}}",
-          "type": "{{query.type || ''}}",
-          "currency": "{{query.currency || ''}}",
-          "startDate": "{{query.start_date || ''}}",
-          "endDate": "{{query.end_date || ''}}",
-          "dateQuick": ""
-        }
-      }
-    }
-  ],
-  "slots": {
-    "content": [
-      {
-        "id": "mileage_transactions_content",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+            "searchField": "member",
+            "searchKeyword": "",
+            "type": "",
+            "currency": "",
+            "startDate": "",
+            "endDate": "",
+            "dateQuick": ""
         },
-        "children": [
-          {
-            "id": "page_header",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "page-header"
-            },
-            "children": [
-              {
-                "id": "page_header_left",
-                "type": "basic",
-                "name": "Div",
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "H1",
-                    "props": {
-                      "className": "page-title"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.title"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                      "className": "page-description"
-                    },
-                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.description"
-                  }
-                ]
-              },
-              {
-                "id": "page_header_actions",
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "page-actions"
-                },
-                "children": [
-              {
-                "id": "manual_action_button",
-                "type": "basic",
-                "name": "Button",
-                "props": {
-                  "type": "button",
-                  "disabled": "{{transactions?.data?.abilities?.can_manage !== true}}",
-                  "className": "btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "sequence",
-                    "params": {
-                      "actions": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "mileageManual": {
-                              "selectedMember": null,
-                              "memberSearchKeyword": "",
-                              "memberSearchResults": [],
-                              "action": "earn",
-                              "amount": "",
-                              "currency": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? ''}}",
-                              "reason": "",
-                              "useDefaultExpiry": true,
-                              "expiresAt": ""
-                            }
-                          }
-                        },
-                        {
-                          "handler": "openModal",
-                          "target": "modal_manual_transaction"
-                        }
-                      ]
-                    }
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "plus",
-                      "size": "sm"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.manual_action"
-                  }
-                ]
-              }
-                ]
-              }
-            ]
-          },
-          {
-            "partial": "partials/admin_ecommerce_mileage_transaction_index/_filters.json"
-          },
-          {
-            "id": "bulk_action_bar",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Span",
-                "props": {
-                  "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                },
-                "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}"
-              },
-              {
-                "id": "bulk_extend_button",
-                "type": "basic",
-                "name": "Button",
-                "props": {
-                  "type": "button",
-                  "disabled": "{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}",
-                  "className": "px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "sequence",
-                    "params": {
-                      "actions": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "mileageExtend": {
-                              "days": 30,
-                              "lotIds": "{{_local.selectedItems ?? []}}",
-                              "userId": "{{((transactions?.data?.data ?? []).find(t => (_local.selectedItems ?? []).includes(t.id)) ?? {}).user_uuid}}"
-                            }
-                          }
-                        },
-                        {
-                          "handler": "openModal",
-                          "target": "modal_extend_expiry"
-                        }
-                      ]
-                    }
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.extend_expiry"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "table_header",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "flex flex-wrap items-center justify-between gap-4 mb-4"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Span",
-                "props": {
-                  "className": "text-primary font-bold"
-                },
-                "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.table.total_count|count={{transactions?.data?.pagination?.total ?? 0}}"
-              },
-              {
-                "id": "table_header_controls",
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex items-center gap-3"
-                },
-                "children": [
-              {
-                "id": "sort_select",
-                "type": "composite",
-                "name": "Select",
-                "props": {
-                  "className": "w-40 text-sm",
-                  "value": "{{query.sort || 'created_at_desc'}}",
-                  "options": [
-                    {
-                      "value": "created_at_desc",
-                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_desc"
-                    },
-                    {
-                      "value": "amount_desc",
-                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_desc"
-                    },
-                    {
-                      "value": "amount_asc",
-                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_asc"
-                    }
-                  ]
-                },
-                "actions": [
-                  {
-                    "type": "change",
-                    "handler": "navigate",
-                    "params": {
-                      "path": "/admin/ecommerce/mileage-transactions",
-                      "replace": true,
-                      "mergeQuery": true,
-                      "query": {
-                        "sort": "{{$event.target.value}}",
-                        "page": 1
-                      },
-                      "transition_overlay_target": "mileage_transactions_datagrid__body"
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "per_page_select",
-                "type": "composite",
-                "name": "Select",
-                "props": {
-                  "className": "w-32 text-sm",
-                  "value": "{{query.per_page || '20'}}",
-                  "options": [
-                    {
-                      "value": "10",
-                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.10"
-                    },
-                    {
-                      "value": "20",
-                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.20"
-                    },
-                    {
-                      "value": "50",
-                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.50"
-                    },
-                    {
-                      "value": "100",
-                      "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.100"
-                    }
-                  ]
-                },
-                "actions": [
-                  {
-                    "type": "change",
-                    "handler": "navigate",
-                    "params": {
-                      "path": "/admin/ecommerce/mileage-transactions",
-                      "replace": true,
-                      "mergeQuery": true,
-                      "query": {
-                        "per_page": "{{$event.target.value}}",
-                        "page": 1
-                      },
-                      "transition_overlay_target": "mileage_transactions_datagrid__body"
-                    }
-                  }
-                ]
-              }
-                ]
-              }
-            ]
-          },
-          {
-            "partial": "partials/admin_ecommerce_mileage_transaction_index/_transactions_table.json"
-          }
+        "selectedItems": [],
+        "expandedRows": [],
+        "linkedTransactions": {},
+        "batchAction": "",
+        "manualModalOpen": false,
+        "extendModalOpen": false,
+        "manual": {
+            "action": "earn",
+            "amount": "",
+            "currency": "",
+            "reason": "",
+            "useDefaultExpiry": true,
+            "expiresAt": ""
+        },
+        "extendDays": 30,
+        "memberSearchKeyword": "",
+        "memberSearchResults": [],
+        "memberSearchResultsKeyword": null,
+        "selectedMember": null
+    },
+    "permissions": [
+        "sirsoft-ecommerce.mileage.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "transactions"
         ]
-      }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "filter": {
+                    "searchField": "{{query.search_field || 'member'}}",
+                    "searchKeyword": "{{query.search_keyword || ''}}",
+                    "type": "{{query.type || ''}}",
+                    "currency": "{{query.currency || ''}}",
+                    "startDate": "{{query.start_date || ''}}",
+                    "endDate": "{{query.end_date || ''}}",
+                    "dateQuick": ""
+                }
+            }
+        },
+        {
+            "comment": "내보내기(#787) — 목록에 들어올 때 다른 화면에서 따라가던 진행 표시를 비운다(반복은 페이지가 바뀔 때 코어가 멈춘다)",
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "ecommerceExportTracking": null,
+                "ecommerceExportTrackingDownloading": false
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "mileage_transactions_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "ecommerce:p-6 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:min-h-screen"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "ecommerce-page-header"
+                        },
+                        "children": [
+                            {
+                                "id": "page_header_left",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "ecommerce-page-title"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "ecommerce-page-description"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "page_header_actions",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "ecommerce-page-actions"
+                                },
+                                "children": [
+                                    {
+                                        "id": "manual_action_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "수동 지급/회수 창을 연다. 창이 지난번 입력을 물고 뜨지 않도록 열기 전에 입력값 전체를 처음 상태로 깔아 둔다(창은 별도 컨텍스트라 이 값들이 _global 이어야 한다).\n                   모달 진입 시 설정의 기본 통화로 채운다 — 특정 통화를 박으면 그 통화 원장이 없는 상점에서 잘못된 통화로 적립된다",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "comment": "지난 실패의 오류 표시·저장 중 표시가 남지 않게 먼저 null 로 비운다(기본 deep 병합은 이번 객체에 없는 키를 남긴다, 7.1.1)",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "mileageManual": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "mileageManual": {
+                                                                "selectedMember": null,
+                                                                "memberSearchKeyword": "",
+                                                                "memberSearchResults": [],
+                                                                "memberSearchResultsKeyword": null,
+                                                                "action": "earn",
+                                                                "amount": "",
+                                                                "currency": "{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? ''}}",
+                                                                "reason": "",
+                                                                "useDefaultExpiry": true,
+                                                                "expiresAt": ""
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "modal_manual_transaction"
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "disabled": "{{transactions?.data?.abilities?.can_manage !== true}}",
+                                            "className": "ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "plus",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.manual_action"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_ecommerce_mileage_transaction_index/_filters.json"
+                    },
+                    {
+                        "id": "bulk_action_bar",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700/50 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mb-4 ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-between ecommerce:gap-3"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-nowrap"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}"
+                            },
+                            {
+                                "id": "bulk_extend_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "선택한 적립 건들의 만료일 연장 창을 연다. 적립건만 넘기고 회원은 지정하지 않는다 — 여러 회원의 적립건을 함께 골라도 서버가 전부 연장한다(첫 건의 회원만 보내면 나머지 회원 적립건이 조용히 빠졌다)",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "comment": "지난 실패의 오류 표시·저장 중 표시가 남지 않게 먼저 null 로 비운다(기본 deep 병합은 이번 객체에 없는 키를 남긴다, 7.1.1)",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "mileageExtend": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "mileageExtend": {
+                                                        "days": 30,
+                                                        "lotIds": "{{_local.selectedItems ?? []}}"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "modal_extend_expiry"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}",
+                                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.extend_expiry"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "table_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "ecommerce-text-primary ecommerce:font-bold"
+                                },
+                                "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.table.total_count|count={{transactions?.data?.pagination?.total ?? 0}}"
+                            },
+                            {
+                                "id": "table_header_controls",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-end ecommerce:gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "id": "sort_select",
+                                        "type": "basic",
+                                        "name": "Select",
+                                        "actions": [
+                                            {
+                                                "comment": "정렬이 바뀌면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다",
+                                                "type": "change",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/mileage-transactions",
+                                                    "replace": true,
+                                                    "mergeQuery": true,
+                                                    "transition_overlay_target": "mileage_transactions_datagrid__body",
+                                                    "query": {
+                                                        "sort": "{{$event.target.value}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "aria-label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.label",
+                                            "className": "ecommerce:w-40 ecommerce:text-sm",
+                                            "value": "{{query.sort || 'created_at_desc'}}",
+                                            "options": [
+                                                {
+                                                    "value": "created_at_desc",
+                                                    "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_desc"
+                                                },
+                                                {
+                                                    "value": "created_at_asc",
+                                                    "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_asc"
+                                                },
+                                                {
+                                                    "value": "amount_desc",
+                                                    "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_desc"
+                                                },
+                                                {
+                                                    "value": "amount_asc",
+                                                    "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_asc"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "id": "per_page_select",
+                                        "type": "basic",
+                                        "name": "Select",
+                                        "actions": [
+                                            {
+                                                "comment": "한 쪽에 담는 수가 달라지면 현재 쪽 번호도 뜻을 잃으므로 함께 되돌린다",
+                                                "type": "change",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/ecommerce/mileage-transactions",
+                                                    "replace": true,
+                                                    "mergeQuery": true,
+                                                    "transition_overlay_target": "mileage_transactions_datagrid__body",
+                                                    "query": {
+                                                        "per_page": "{{$event.target.value}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "aria-label": "$t:common.per_page",
+                                            "className": "ecommerce:w-32 ecommerce:text-sm",
+                                            "value": "{{query.per_page || '20'}}",
+                                            "options": [
+                                                {
+                                                    "value": "10",
+                                                    "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.10"
+                                                },
+                                                {
+                                                    "value": "20",
+                                                    "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.20"
+                                                },
+                                                {
+                                                    "value": "50",
+                                                    "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.50"
+                                                },
+                                                {
+                                                    "value": "100",
+                                                    "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.100"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "comment": "내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인\n               운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다",
+                                        "id": "ecommerce_export_mileage_actions",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-end ecommerce:gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "partial": "partials/admin_ecommerce_export/_partial_tracking_status.json"
+                                            },
+                                            {
+                                                "comment": "내보내기 — 마일리지 내역의 지금 조건으로 파일을 만든다. 창은 별도 컨텍스트라 지금 검색 조건(데이터 소스와 같은 매개변수)·선택 id·보이는 컬럼을 전역에 실어 건넨다. 중복 방지 키는 열 때마다 새로 만든다.\n                 조건은 통째로 바꾼다(merge=\"shallow\") — 깊은 병합이면 지운 검색어·다른 목록의 조건이 남아 화면과 다른 파일이 된다",
+                                                "id": "ecommerce_export_mileage_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "if": "{{transactions?.data?.abilities?.can_export === true}}",
+                                                "actions": [
+                                                    {
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "merge": "shallow",
+                                                                    "ecommerceExportContext": "{{ { type: 'mileage', label: $t('sirsoft-ecommerce.enums.export_type.mileage'), filters: Object.fromEntries(Object.entries({ search_field: query.search_field || 'member', search_keyword: query.search_keyword, type: query.type, currency: query.currency, start_date: query.start_date, end_date: query.end_date }).filter(([k, v]) => v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0))), selected_ids: (_local.selectedItems ?? []), total: (transactions?.data?.pagination?.total ?? 0), screen_columns: null } }}",
+                                                                    "ecommerceExportIdempotencyKey": "{{$uuid()}}",
+                                                                    "ecommerceExportCatalog": null,
+                                                                    "ecommerceExportEstimate": null,
+                                                                    "ecommerceExportErrors": null,
+                                                                    "ecommerceExportIsRequesting": false,
+                                                                    "ecommerceExportIsEstimating": false,
+                                                                    "ecommerceExportEstimateFailed": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "ecommerceExportForm": {
+                                                                        "format": null,
+                                                                        "column_mode": "current",
+                                                                        "screen_columns": null,
+                                                                        "fields": [],
+                                                                        "row_unit": null,
+                                                                        "scope": "{{(_local.selectedItems ?? []).length > 0 ? 'selected' : 'filter'}}",
+                                                                        "period": {
+                                                                            "mode": "current",
+                                                                            "date_type": null,
+                                                                            "start_date": "",
+                                                                            "end_date": ""
+                                                                        },
+                                                                        "locale_mode": "locale",
+                                                                        "locale": null,
+                                                                        "include_totals": false,
+                                                                        "reason": ""
+                                                                    }
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "ecommerceExportPeriodDefaulted": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "ecommerce_export_request_modal"
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "ecommerceExportCatalog"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "ecommerce-btn ecommerce-btn-outline ecommerce:whitespace-nowrap"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "file-export",
+                                                            "className": "ecommerce:text-base"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-ecommerce.admin.export.button"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_ecommerce_mileage_transaction_index/_transactions_table.json"
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "수동 지급/회수 — 회원을 찾아 고르고 금액·사유·만료일을 직접 넣는다",
+            "partial": "partials/admin_ecommerce_mileage_transaction_index/_modal_manual_transaction.json"
+        },
+        {
+            "comment": "만료일 연장 — 목록에서 고른 적립 건들에 일수를 더한다",
+            "partial": "partials/admin_ecommerce_mileage_transaction_index/_modal_extend_expiry.json"
+        },
+        {
+            "comment": "기록 수정 — 표 행에서 열며 사유·만료일 같은 부수 항목만 고친다",
+            "partial": "partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.json"
+        },
+        {
+            "comment": "내보내기 요청 창 — 상품·주문·마일리지 목록이 함께 쓰는 공용 창(#787)",
+            "partial": "partials/admin_ecommerce_export/_modal_export_request.json"
+        }
     ]
-  },
-  "modals": [
-    {
-      "partial": "partials/admin_ecommerce_mileage_transaction_index/_modal_manual_transaction.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_mileage_transaction_index/_modal_extend_expiry.json"
-    },
-    {
-      "partial": "partials/admin_ecommerce_mileage_transaction_index/_modal_edit_transaction.json"
-    }
-  ]
 }

@@ -43,6 +43,54 @@
 | 플러그인 | vendor-plugin | Plugins\Vendor\Plugin\ | sirsoft-payment |
 | 템플릿 | vendor-template | - | sirsoft-admin_basic |
 
+## 버전 동기화 의무
+
+코어 또는 번들 확장의 공개 표면을 수정할 때, 그 변경의 영향 범위에 있는 다른 확장의 버전 제약(`g7_version`, `dependencies.{modules|plugins}`)을 함께 갱신한다.
+
+### ① 코어 → 확장 동기화 (`g7_version`)
+
+- 트리거: 코어 공개 확장 표면(`app/Extension/Abstract*`, `HookManager`, `ExtensionManager`, `ModuleManager`, `PluginManager`, `TemplateManager`, `app/Contracts/Extension/**`, `app/Extension/Helpers/**`, `app/Repositories/Concerns/**`, `app/Seo/Contracts/**`, `app/ActivityLog/**` 공개 API, 아래 [확장이 쓰는 코어 지원 클래스](#확장이-쓰는-코어-지원-클래스), 루트 `CHANGELOG.md` 의 Added/Changed/Removed) 수정
+- 조치: 영향 받는 번들 확장의 `g7_version` 상향 + 각 확장 CHANGELOG 에 변경 기재
+
+#### 확장이 쓰는 코어 지원 클래스
+
+확장이 직접 `use` 하는 코어 클래스는 위 디렉터리 밖에 있어도 공개 표면이다. 시그니처·반환 형식·동작을 바꾸면 위와 같이 `g7_version` 을 올리고 CHANGELOG 에 적는다. 확장이 새 코어 클래스를 쓰기 시작하면 이 표에 함께 올린다.
+
+| 영역 | 클래스(경로) | 쓰는 번들 확장 |
+| --- | --- | --- |
+| 개인정보 보존·휴면 | `app/Privacy/**`(`Contracts\PrivacyRetentionHandlerInterface`·`PrivacyManualRunnerInterface`, `DTO\PrivacyRetentionTarget`, `PrivacyRetentionManager`), `app/Http/Requests/Admin/PrivacyTargetListRequest.php`, `app/Http/Resources/PrivacyTargetCollection.php` | 게시판, 이커머스, gdpr |
+| 동의 | `app/Extension/Consent/**`(`ConsentManager`·`ConsentSnapshot`·`ConsentSubject`) | gdpr |
+| 알림 | `app/Services/NotificationRecipientCapability.php`, `app/Services/NotificationTemplateService.php`, `app/Notifications/DeliveryReport.php`, `app/Notifications/GuestNotifiable.php`, `app/Notifications/Identity/IdentityNotificationType.php`, `app/Contracts/Notifications/ChannelReadinessCheckerInterface.php` | 게시판, 이커머스, gdpr |
+| 회원 연락처 노출 | `app/Http/Resources/Traits/ExposesMemberContact.php` | 게시판, 이커머스 |
+| 사이트 주소·외부 출처 | `app/Support/SiteUrl.php`, `app/Support/TrustedScriptHosts.php` | 게시판, 이커머스, gdpr, koreaexim, 결제 4종, 본인인증 2종 |
+| 권한 | `app/Support/PermissionEscalationGuard.php`, `app/Exceptions/PermissionEscalationException.php`, `app/Support/GuestRoleResolver.php`, `app/Contracts/Repositories/PermissionRepositoryInterface.php` | 게시판 |
+| 첨부·본문 미디어 | `app/Helpers/InlineMediaPolicy.php`, `app/Rules/AttachmentFileContent.php`, `app/Services/AttachmentService.php`, `app/Contracts/Repositories/AttachmentRepositoryInterface.php`, `app/Enums/AttachmentSourceType.php`, `app/Exceptions/UnsafeStoragePathException.php` | 게시판, 이커머스, 페이지, ckeditor5 |
+| 본인인증 | `app/Enums/IdentityVerificationChannel.php`, `app/Enums/IdentityVerificationPurpose.php` | totp |
+| SEO | `app/Seo/SeoRenderRequest.php` | 게시판 |
+| 설정 응답 | `app/Traits/FiltersFrontendSchema.php` | 페이지 |
+| 화면 주소 | `app/Support/ScreenUrl.php` (필터 `core.screen_url.filter_path`) | 게시판, 페이지, 이커머스, gdpr, 결제 4종, 본인인증 2종 |
+| 개발자 화면(custom) | `app/Services/Screen/ScreenAuth.php`, `app/Services/Screen/InternalApiClient.php`, `app/Services/Screen/InternalApiResponse.php`, `app/Http/Middleware/Custom/RequireScreenUser.php`(`custom.auth`), `app/Http/Middleware/Custom/RequireScreenAdmin.php`(`custom.admin`) | 번들 확장 없음 — routes/custom.php 와 app/Custom 의 개발자 코드, custom:example 견본이 쓴다 |
+| 언어 코드·다국어 값 | `app/Support/LocaleTag.php`(BCP 47 판정·정규화·협상), `app/Support/LocalizedValue.php`(다국어 값 대체 순서) | 게시판, 이커머스, 페이지, 마케팅, gdpr, 결제 2종, 비즈뿌리오 |
+
+### ② 확장 → 확장 동기화 (`dependencies.{modules|plugins}`)
+
+- 트리거: 번들 모듈/플러그인의 공개 Service/Contract/Repository/Model/Route, 발행 훅·이벤트, CHANGELOG 수정
+- 조치: 그 확장에 의존하는 다른 번들 확장 전수 스캔 → 최소 버전 제약 상향 여부 판정
+
+### ③ manifest ↔ 패키지 파일 동기화
+
+- 트리거: `module.json`·`plugin.json`·`template.json` 의 `version` 변경
+- 조치: 같은 확장 디렉토리의 `package.json` → `composer.json` 순으로 같은 버전으로 갱신하고, 버전 섹션을 CHANGELOG 에 기록한다. 번들 확장의 `composer.json` 버전을 올리면 같은 디렉토리의 `composer.lock` 도 `composer update --lock` 으로 맞춘다
+
+### 판정 순서
+
+1. 기존 소비자 API 시그니처/동작을 건드렸는가 → 소비 확장 최소 버전 상향
+2. 새 공개 API 가 도입되었는가 → 후보 확장 전수 스캔 후 검토
+3. 의존 관계 B 의 공개 API 가 변경되었는가 → A 의 `dependencies.B` 상향
+4. 동기화 대상이 없다면 그 근거("순수 내부 리팩토링" 등)를 변경 이력에 기록
+
+> 표기 규칙·재검토 트리거·CHANGELOG 기재 형식: [changelog-rules.md "코어 버전 제약 정책"](../extension/changelog-rules.md#8-코어-버전-제약-정책)
+
 ## 확장·템플릿 구동 에셋은 자체 제공한다
 
 브라우저가 화면을 그리기 위해 제3자 CDN 에 도달해야 하면, 그 도달 실패는 **예외도 로그도 남기지 않고 화면 기능만 조용히 사라진다.** 폐쇄망·방화벽·광고차단기에서 재현되며 자체 서버 로그에 흔적이 없어 운영자가 원인을 특정할 수 없다.
@@ -52,12 +100,13 @@
 | 구동 자산(js/css/웹폰트)을 외부 CDN 에서 실시간 로드 | 확장이 `dist/vendor/{lib}/{version}/` 에 동봉하고 same-origin 서빙 |
 | `trusted_script_hosts` 만 선언하고 사유는 생략 | `trusted_script_hosts_reason` 에 호스트별 사유 동반 — 자체 제공이 원칙이고 예외는 근거가 코드에 남는다 |
 | 자산 URL 을 문자열로 조립 (`'/api/plugins/assets/'+id+'/…'`) | `G7Core.asset.{template,module,plugin}` — 확장자를 정적 location 이 가로채는 서버에서 조립 URL 만 404 가 된다 |
-| AMD 로더·워커에 `G7Core.asset.template()` 결과를 base 로 전달 | `G7Core.asset.templateDir()` — 쿼리 형태(`?file=`)는 뒤에 파일명을 이어 붙일 수 없다. 확장자 없는 모드에서 404 일 수 있으므로 **소비자가 폴백을 갖춘다** |
+| AMD 로더·워커에 `G7Core.asset.template()` 결과를 base 로 전달 | `G7Core.asset.templateDir()` — `template()` 의 쿼리 형태는 경로를 인코딩해 뒤에 파일명을 이어 붙일 수 없다. 확장자 없는 모드의 `templateDir()` 은 인코딩하지 않은 `?file=` 디렉토리이고 서빙이 `.js` 없는 AMD 모듈 id 를 메운다. 그래도 받지 못하는 환경이 있으므로 **소비자가 폴백을 갖춘다** |
 | CSS 로드에 `onerror` 미설치 또는 `resolve()` 로 삼킴 | `loadStylesheetWithRetry` — 아이콘만으로 조작하는 버튼이 있는 화면에서 스타일 소실은 곧 조작 불능이다 |
 | 자산 실패를 `console.error` 한 줄로 끝냄 | `G7Core.assets.notifyFailure({id,label,retry})` — 사용자가 사실을 알고 조치할 수 있어야 한다 |
 | 편집기·코드편집기 확보 실패 시 빈 컨테이너를 남김 | 평문 입력(textarea) 폴백 + 저장 계약 유지(`{name}_mode='text'`) + 재시도 시 입력 내용 승계 |
+| CSS `@import` 를 `@plugin`·`@config` **뒤**에 둠 | `@import` 를 전부 위로 — 명세상 다른 at-rule 뒤의 `@import` 는 무시되어 **그 파일이 통째로 빌드에서 사라진다**. 빌드 성공·경고 0·테스트 초록이라 화면을 열기 전엔 드러나지 않는다 |
 | 확장 `dist/`·`src/` 에 운영자 CSS 를 둠 | 확장 디렉토리 안의 **`custom/`** — 빌드 불필요, 확장 교체가 보존 |
-| 번들 확장이 `custom/` 을 담아 배포 | `dist/vendor/` 에 담는다. `custom/` 은 운영자 소유라 보존 계층이 덮어쓰지 않아 **저작자 파일이 영영 반영되지 않는다** |
+| 번들 확장이 `custom/` 을 담아 배포 | `dist/vendor/` 에 담는다. `custom/` 은 운영자 소유라 보존 계층이 덮어쓰지 않아 **작성자 파일이 영영 반영되지 않는다** |
 | 사용자 추가 에셋 URL 을 `ext.cache_version` 으로 무효화 | 파일 서명(수정 시각) — 확장 캐시 버전은 운영자가 파일을 고쳤다고 오르지 않는다 |
 | `custom/` 보존을 rename 경로에만 적용 | 교체 **두 경로 모두**(rename · 제자리 동기화 폴백) — 한쪽만 고치면 Windows 잠금 상황에서만 조용히 사라진다 |
 
@@ -88,7 +137,7 @@
 | 확장이 훅을 추가할 때 코어 문서를 고침 | 훅 집계는 그 확장의 `docs/extension-points.md` 소유 — 코어에는 총계와 링크만 |
 | 레이아웃에 `data_source` 를 추가하고 `editor-spec.json` 의 `sampleData` 를 그대로 둠 | 같은 ID 로 프리뷰 샘플 추가 — 없으면 **편집기 캔버스에서만** 그 영역이 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다 |
 | 컴포넌트를 추가하고 팔레트에만 등록 | 템플릿 스펙은 `componentPalette.entries` · `componentPalette.groups` · `nesting` · `componentCapabilities` **넷 다** — 하나만 빠지면 편집기에서 절반만 동작하고, 어느 단계가 빠졌는지는 증상으로만 구분된다 |
-| 모듈·플러그인 스펙에 `componentPalette` 선언 | 컴포넌트는 템플릿 소유 — 모듈·플러그인 스펙은 도메인 데이터(`sampleData`·`states`)만 담는다. 같은 자리를 두고 다투면 어느 쪽이 이기는지가 병합 순서에 좌우된다 |
+| 모듈·플러그인 스펙에 템플릿 컴포넌트의 어휘 선언 (`controls`·`nesting`, 또는 자기 식별자 접두가 아닌 이름의 `componentPalette`·`componentCapabilities`) | 템플릿 컴포넌트의 어휘는 템플릿 소유 — 모듈·플러그인 스펙은 도메인 데이터(`sampleData`·`states`)와 **자기 컴포넌트(`{확장식별자}.{이름}`)의 팔레트·역량**만 담는다. 같은 자리를 두고 다투면 어느 쪽이 이기는지가 병합 순서에 좌우되는데, 자기 식별자가 앞에 붙은 이름은 템플릿 선언과 겹칠 수 없다 |
 | 공용 ID(`settings`·`roles`·`me`)를 확장마다 각자 선언 | 템플릿 스펙 한 곳 — 사본이 갈라져도 오류가 나지 않는다 |
 | 편집기 스펙 `description` 에 작업 단계·심사 판정·작업 방법을 적음 (`Phase 4/5 에서 추가`·`— 정당`·`전수 스캔 기반`) | **무엇을 담았는가**만 적는다 — 확장만 내려받은 제3자에게 내부 맥락은 해석 불가이고, "다음에 추가" 는 그 항목이 실제로 들어온 뒤에도 남아 **거짓이 된다**. 문서의 한 줄 요약은 이 필드를 옮기지 않고 실측에서 생성한다 |
 | 편집기 스펙을 고치고 update 커맨드 생략 | 서빙은 **활성 디렉토리만** 읽는다(`_bundled` 폴백 없음) — 파일은 고쳤는데 편집기에 직전 내용이 그대로 보인다 |
@@ -167,6 +216,7 @@ Laravel 은 `bootstrap/cache/packages.php` 가 있으면 stale 여부를 검사�
 | vendor 교체 뒤 `proc_open`·`config:cache`·`route:cache` 등 새 부팅을 `bootstrap/cache/{packages,services}.php` 정리 없이 실행 | 부팅 직전 `PackageManifestCacheHelper::clear()`(재생성까지 필요하면 `rebuild()`) — `ConfigCacheHelper::clear()` 와 짝으로 |
 | 정리 로직을 호출부마다 `@unlink` 로 복제 | 헬퍼 단일 지점 — `clearAllCaches()` 도 같은 헬퍼를 쓴다 |
 | 자식 프로세스 보호를 부모 코드에만 두기 | 부모는 이미 배포된 옛 코드일 수 있다 — 새 버전의 `bootstrap/app.php` 가 `G7_UPDATE_IN_PROGRESS` 를 보고 스스로 비운다(App\ 클래스 미참조·실패 무시) |
+| 업데이트 중 자식 env·`config:cache` 의 `APP_VERSION` 을 부모가 물려준 값에만 맡기기 | 새 `bootstrap/app.php` 의 업데이트 트리 블록이 `g7_reconcile_update_app_version()` 으로 디스크 `.env` 값까지 올리고(낮추지 않는다), 새 코드가 띄우는 자식 env 는 `UpdateChildEnv::build()` 로 `APP_VERSION`·업데이트 플래그를 명시한다 — 옛 부모(7.0.0~7.0.10)는 `.env` 만 바꾸고 자기 env 는 옛 버전으로 둔다 |
 | 코어 버전 판정에서 프로세스 env `APP_VERSION` 을 무조건 우선 | env 우선은 `CoreUpdateContext::isInProgress()` 인 프로세스 트리 안에서만 — 업데이트 전에 뜬 `artisan serve`·큐 워커는 옛 값을 물고 있다 |
 | 업데이트 커맨드 argv 판정을 SAPI 게이트 없이 두기 | argv 는 명령줄 SAPI(`cli`·`phpdbg`)에서만 읽는다 — CGI/FPM 은 `register_argc_argv=On` 이면 `$_SERVER['argv']` 를 쿼리스트링에서 채워(`?x+core:update`) 비인증 웹 요청이 업데이트 트리로 판정되고, 자가 치유가 요청마다 매니페스트를 지운다. env 플래그 채널은 웹에서 주입할 수 없으므로 그대로 둔다 |
 | 매니페스트 삭제 실패를 `@unlink` 로 삼키기 | `clear()` 가 지우지 못한 경로를 돌려주고 spawn 직전 호출부가 업그레이드 로그에 경고로 남긴다 — 권한·소유권 불일치면 자식도 같은 이유로 실패해 증상은 제보와 같고, 이 경고가 원인을 가리키는 유일한 흔적이다 |
@@ -181,13 +231,16 @@ Laravel 은 `bootstrap/cache/packages.php` 가 있으면 stale 여부를 검사�
 
 ## 확장 결제수단은 자기 능력을 선언한다
 
-코어 `PaymentMethodEnum` 은 확장 결제수단 ID(`kginicis_naverpay`, `toss_tosspay` 등)를 모른다. 그래서 능력(PG 필요 여부 / PG 고정 / 환불수단)은 **등록하는 확장이 카탈로그에 선언**하고, 관리자 화면과 서버는 그 선언만 읽는다. 미선언 시 안전 기본값(`needs_pg=true`, `pg_locked=false`, `pg_provider=null`)으로 떨어지는데, 그 조합은 "PG 가 필요한데 어느 PG 인지 모른다" 를 뜻해 화면과 실제 결제 경로가 어긋난다.
+코어 `PaymentMethodEnum` 은 확장 결제수단 ID(`kginicis_naverpay`, `toss_tosspay` 등)를 모른다. 그래서 능력(PG 필요 여부 / PG 고정 / 환불수단 / 환불 자동 승인 여부)은 **등록하는 확장이 카탈로그에 선언**하고, 관리자 화면과 서버는 그 선언만 읽는다. 미선언 시 안전 기본값(`needs_pg=true`, `pg_locked=false`, `pg_provider=null`, `auto_approve_refund=false`)으로 떨어지는데, 앞 세 개의 조합은 "PG 가 필요한데 어느 PG 인지 모른다" 를 뜻해 화면과 실제 결제 경로가 어긋난다.
+
+`auto_approve_refund` 는 "사람의 개입 없이 환불이 집행되는가" 이고, 다른 키와 달리 **미선언이 안전한 쪽**이다 — 자동으로 잘못 완료하면 이중 환불이지만 멈추면 운영자가 한 번 더 누르면 된다. 대신 선언을 빠뜨리면 반대 방향의 조용한 손해가 난다: PG 결제취소 API 가 그 자리에서 환불하는 수단(카드·간편결제)의 환불신청서가 전부 운영자 승인 대기로 쌓이고, 운영자에게는 고칠 곳이 보이지 않는다.
 
 | 금지 | 올바른 사용 |
 |--------|---------------|
 | entry `defaults` 에 `pg_provider` 만 두고 능력 키 생략 | `needs_pg` 명시 선언 (PG 결제창을 거치는가) |
 | 자기 PG 전용 수단인데 `pg_provider: null` | `pg_provider: '{자기 provider id}'` + `pg_locked: true` (PG 제공자 등록 리스너의 id 와 동일해야 배지가 이름을 찾는다) |
 | 표시를 고치려고 코어 레이아웃 표현식을 정규식 치환 | 카탈로그 선언만 바꾼다 — 레이아웃이 `pg_locked`/`needs_pg` 로 직접 3분기한다 |
-| 선언을 바꾸고 기설치본은 그대로 | 저장된 `order_settings.json` 을 정정하는 업그레이드 스텝 동반 (자기 접두사만, 멱등) |
+| PG 가 즉시 환불하는 수단인데 `auto_approve_refund` 생략 | `auto_approve_refund: true` 선언 (현금으로 받아 사람이 송금해야 끝나는 수단 — 편의점·가상계좌·계좌이체 — 은 선언하지 않는다) |
+| 선언을 바꾸고 기설치본은 그대로 | 저장된 `order_settings.json` 을 정정하는 업그레이드 스텝 동반 (자기 접두사만, 멱등) — 단 코어가 정의값으로 덮어쓰는 능력 키(`needs_pg`·`pg_locked`·`refund_method`·`auto_approve_refund`)는 저장값이 이기지 않으므로 스텝이 필요 없다 |
 
 레이아웃 치환 방식은 코어가 그 리터럴을 버리는 순간 조용히 사문화된다 — 합성 입력으로만 검증한 테스트는 계속 통과하므로 사문화가 드러나지 않는다. 자동 검증이 능력 선언 누락을 차단한다.

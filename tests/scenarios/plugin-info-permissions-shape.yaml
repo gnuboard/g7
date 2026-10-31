@@ -1,0 +1,17 @@
+feature: 플러그인 정보의 권한은 모듈과 같은 권한 분류 목록이다
+
+description: |
+  플러그인 상세·설치·활성화 응답과 생명주기 훅 $info 의 permissions 는 모듈 정보와 같은 권한 분류 목록
+  (분류마다 identifier·name·permissions[])이다. 서버가 선언 계층({name, description, categories})을 그대로 보내던 동안
+  관리자 플러그인 정보 창의 「권한」 구획이 통째로 비었다. 정보 3갈래(활성, 번들 임시 로드, 메타데이터 폴백)가 같은 모양이다.
+
+axes:
+  screen: [plugins]
+
+exclusions: []
+
+effects:
+  - plugin_info_permissions_are_category_list
+
+test_files:
+  - tests/Unit/Extension/PluginInfoPermissionsShapeTest.php

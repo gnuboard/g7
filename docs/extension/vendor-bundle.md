@@ -342,6 +342,17 @@ CI 통합 예시:
 | `bundle_build_promote_failed` | 빌드 산출물을 최종 경로로 원자적 교체 실패 | 디스크 공간/권한 확인 후 재빌드 (원본 번들은 promoteAtomic 으로 보존됨) |
 | 빌드가 `Generating optimized autoload files` 직후 무한 대기 (Windows) | composer autoload dump 의 async 손자 프로세스가 부모 파이프 핸들을 상속·점유 | 코어 반영됨 — stdout/stderr 를 파이프가 아닌 파일 descriptor 로 실행 (`VendorBundler::composerOutputDescriptors`). 최신 코어에서는 재발하지 않음 |
 
+## 10-1. 개발자 전용 묶음 (custom, 7.2.0)
+
+개발자 패키지는 `custom/composer.json` 에 둔다(코어 업데이트가 건드리지 않는다). Composer 가 없는 서버용 묶음은 확장과 같은 형식이다.
+
+| 명령 | 동작 |
+| --- | --- |
+| `php artisan custom:vendor-bundle` | `custom/vendor` 를 `custom/vendor-bundle.zip`(+ manifest)으로 만든다 |
+| `php artisan custom:vendor-verify` | 묶음 SHA256 무결성 확인 |
+
+설치기와 코어 업데이트는 `custom/vendor-bundle.zip` 이 있고 `custom/vendor` 가 없거나 묶음과 다르면(`custom/vendor/.g7-custom-lock.sha256` 표식) 풀어 준다. `custom/composer.json` 이 없으면 아무 일도 하지 않는다. 자세한 것은 [개발자 화면 가이드](../custom-development.md#4-개발자-패키지custom-composer).
+
 ## 11. 참고
 
 - 본 문서는 vendor 번들 시스템의 사용자 가이드입니다.

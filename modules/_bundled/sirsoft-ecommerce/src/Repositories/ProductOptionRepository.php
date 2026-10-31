@@ -12,6 +12,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInte
  */
 class ProductOptionRepository implements ProductOptionRepositoryInterface
 {
+    /**
+     * @param  ProductOption  $model  상품 옵션 모델
+     */
     public function __construct(
         protected ProductOption $model
     ) {}
@@ -80,7 +83,7 @@ class ProductOptionRepository implements ProductOptionRepositoryInterface
      * @param  array  $optionIds  옵션 ID 배열
      * @param  string  $method  변경 방식 (increase, decrease, fixed)
      * @param  float  $value  변경 값 (소수 통화 대응)
-     * @param  string  $unit  단위 (won, percent) - percent는 현재 조정액 기준 비율
+     * @param  string  $unit  단위 (won, percent) - percent는 옵션 판매가(상품 판매가 + 조정액) 기준 비율
      * @return int 업데이트된 레코드 수
      */
     public function bulkUpdatePrice(array $optionIds, string $method, float $value, string $unit): int
@@ -101,19 +104,22 @@ class ProductOptionRepository implements ProductOptionRepositoryInterface
         }
 
         // 개별 레코드 업데이트 (증가/감소)
-        $options = $this->model->whereIn('id', $optionIds)->get();
+        $options = $this->model->with('product:id,selling_price')->whereIn('id', $optionIds)->get();
         $updatedCount = 0;
 
         foreach ($options as $option) {
             $currentValue = $option->price_adjustment ?? 0;
 
             if ($unit === 'percent') {
-                // 퍼센트 계산 (현재 조정액 기준)
+                // 퍼센트 계산 — 옵션 판매가(상품 판매가 + 조정액) 기준으로 바꾼 뒤 조정액으로 되돌린다.
+                // 조정액에만 곱하면 조정액 0 인 옵션은 비율 변경이 효과가 없다(EC-699).
+                $productSellingPrice = (float) ($option->product?->selling_price ?? 0);
                 $multiplier = $method === 'increase'
                     ? (1 + $value / 100)
                     : (1 - $value / 100);
-                // 소수 통화 대응: 절사 대신 소수 2자리 반올림 보존
-                $newValue = round((float) $currentValue * $multiplier, 2);
+                // 소수 통화 대응: 절사 대신 소수 2자리 반올림 보존. 옵션 판매가는 0 아래로 내려가지 않는다.
+                $newSellingPrice = max(0.0, ($productSellingPrice + (float) $currentValue) * $multiplier);
+                $newValue = round($newSellingPrice - $productSellingPrice, 2);
             } else {
                 // 원 단위 계산
                 $newValue = $method === 'increase'

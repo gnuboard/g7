@@ -7,38 +7,44 @@ import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import type { EditorAttrs } from '../../types';
+import { getSiteLocale } from '../../support/siteLocale';
+import { getLocaleDisplayName } from '../../support/localeName';
+import { findAdjacentLabel } from '../../hooks/useAdjacentLabel';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
+
+/**
+ * 라벨 요소의 글자를 접근 이름으로 쓸 모양으로 다듬습니다 — 공백을 하나로 줄이고 끝의 필수 표시(`*`)를 뗀다.
+ * 필수 여부는 기본 언어 칸의 `required` 가 따로 알린다.
+ *
+ * @param label 라벨 요소
+ * @returns 다듬은 글자 (비면 undefined)
+ */
+const labelTextOf = (label: HTMLElement): string | undefined => {
+  const text = (label.textContent ?? '').replace(/\s+/g, ' ').trim().replace(/\s*\*+$/, '').trim();
+  return text === '' ? undefined : text;
+};
 
 // G7Core에서 지원 언어 목록 가져오기
 const getSupportedLocales = (): string[] => {
   return (window as any).G7Core?.locale?.supported?.() ?? ['ko', 'en'];
 };
 
-// G7Core에서 현재 언어 가져오기
-const getCurrentLocale = (): string => {
-  return (window as any).G7Core?.locale?.current?.() ?? 'ko';
+// 언어 코드로 언어명 가져오기 — 언어팩 이름 → 번역 → 내장 표 → 코드 (#148)
+const getLocaleNameByCode = (code: string): string => getLocaleDisplayName(code);
+
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
 };
 
-// 언어 코드로 언어명 가져오기 (다국어 키 사용)
-const getLocaleNameByCode = (code: string): string => {
-  // 다국어 키에서 언어명 가져오기 (common.language_ko, common.language_en 등)
-  const translatedName = t(`common.language_${code}`);
-
-  // 번역이 키 그대로 반환되면 (번역 없음) fallback 맵 사용
-  if (translatedName === `common.language_${code}`) {
-    const fallbackNames: Record<string, string> = {
-      ko: '한국어',
-      en: 'English',
-      ja: '日本語',
-      zh: '中文',
-    };
-    return fallbackNames[code] || code.toUpperCase();
-  }
-
-  return translatedName;
+// 언어 지우기 단추 이름 — 단추 안 아이콘은 꾸밈이라 이름을 단추에 직접 단다(7.1.0)
+const removeLanguageLabel = (code: string): string => {
+  const language = getLocaleNameByCode(code);
+  return tOr('common.remove_language', `Remove ${language}`, { language });
 };
 
 // 시스템 언어 목록을 LocaleOption[]으로 변환
@@ -101,6 +107,13 @@ export interface MultilingualInputProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
+  /**
+   * 입력칸 접근 가능한 이름. 켜진 언어가 둘 이상이면 각 칸이 「{이름} ({언어명})」으로 읽힌다.
+   * 없으면 바깥 상자 곁의 라벨(`form-label` 등) 글자를 이름으로 삼는다 — 그때도 언어명을 붙인다(#757).
+   */
+  ariaLabel?: string;
+  /** ariaLabel 과 같은 뜻 — 레이아웃이 `aria-label` 로 줘도 된다 */
+  'aria-label'?: string;
 }
 
 /**
@@ -128,7 +141,18 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   error,
   id,
   editorAttrs,
+  ariaLabel,
+  'aria-label': ariaLabelAttr,
 }) => {
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // 이름 prop 이 없으면 바깥 상자 곁의 라벨 글자를 이름으로 삼는다. 종전에는 그 라벨을 `aria-labelledby` 로만 이어
+  // 언어명이 붙지 않았다 — 역할명 칸의 한국어·English 칸이 둘 다 「역할명*」으로 읽혔다(admin_basic 1.1.1 의 「{칸 이름} ({언어})」 약속).
+  // 입력칸이 바깥 라벨에서 3단계 넘게 떨어져 칸 자신의 훅은 못 닿으므로 부품 루트에서 찾는다.
+  const adjacentLabelRef = useRef<HTMLElement | null>(null);
+  const adjacentLabelTriesRef = useRef(0);
+  const [adjacentName, setAdjacentName] = useState<string | undefined>(undefined);
+  const nameBase = ariaLabel ?? ariaLabelAttr ?? adjacentName;
 
   // 에러 상태 여부
   const hasError = !!error;
@@ -137,8 +161,10 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
     return availableLocales ?? getSystemLocaleOptions();
   }, [availableLocales]);
 
+  // 기본(필수) 언어 칸 — 보는 언어가 아니라 사이트 기본 언어다. 서버 필수 규칙(LocaleRequiredTranslatable)이
+  // 같은 값을 보므로, 다른 언어로 보는 관리자도 같은 칸을 채워야 저장된다.
   const actualDefaultLocale = useMemo(() => {
-    return defaultLocale ?? getCurrentLocale();
+    return defaultLocale ?? getSiteLocale();
   }, [defaultLocale]);
 
   // ── 로컬 상태 버퍼 (debounce 대기 중 사용자 입력값 보존) ──
@@ -193,15 +219,11 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
       return [actualDefaultLocale];
     }
 
-    // 기본 언어를 맨 앞에 배치
-    const locales: string[] = [];
+    // 기본 언어는 값에 키가 없어도 맨 앞에 둔다 — 꺼진 언어팩의 번역만 남은 값이면 기본 언어 칸과
+    // 그 옆의 「언어 추가」 버튼이 함께 사라져 기본 언어를 다시 입력할 수 없게 된다.
+    const locales: string[] = [actualDefaultLocale];
 
-    // 1. 기본 언어가 있으면 맨 앞에 추가
-    if (valueKeys.includes(actualDefaultLocale)) {
-      locales.push(actualDefaultLocale);
-    }
-
-    // 2. 나머지 언어들 추가 (기본 언어 제외)
+    // 나머지 언어들 추가 (기본 언어 제외)
     valueKeys.forEach(key => {
       if (key !== actualDefaultLocale) {
         locales.push(key);
@@ -213,6 +235,36 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
 
   // 현재 선택된 언어 탭 (tabs 레이아웃용)
   const [currentLocale, setCurrentLocale] = useState<string>(actualDefaultLocale);
+
+  // ── 비어 있는 필수 언어 탭 열기 (#17 P10) ──
+  // tabs 배치는 지금 탭이 아닌 언어 칸을 hidden 으로 숨긴다. 필수 칸이 빈 채 다른 탭에서 저장하면 브라우저 검증이
+  // 숨은 칸에서 「포커스할 수 없음」으로 멈춰 안내 없이 제출이 끝났다. invalid 가 오면 그 탭을 열고, 칸이 보인 뒤
+  // 포커스·검증 말풍선을 띄운다(다시 오는 invalid 는 이미 그 탭이라 되풀이되지 않는다).
+  const pendingRevealRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
+  const handleHiddenInvalid = useCallback((localeCode: string, target: HTMLInputElement | HTMLTextAreaElement) => {
+    if (localeCode === currentLocale) return;
+    pendingRevealRef.current = target;
+    setCurrentLocale(localeCode);
+  }, [currentLocale]);
+
+  useEffect(() => {
+    const target = pendingRevealRef.current;
+    if (!target) return;
+    pendingRevealRef.current = null;
+    target.focus();
+    target.reportValidity?.();
+  }, [currentLocale]);
+
+  // 서버 검증 오류(noValidate 폼)는 칸 아래 문구로 오는데, 필수 언어 칸이 숨은 탭이면 문구도 가려진다.
+  // 오류가 새로 왔고 필수 언어 칸이 비어 있으면 그 탭으로 옮긴다 — 채워져 있으면 다른 이유의 오류라 지금 탭을 둔다.
+  useEffect(() => {
+    if (!error || !required) return;
+    if (layout !== 'tabs' && layout !== 'compact') return;
+    if (localValueRef.current[actualDefaultLocale]?.trim()) return;
+    setCurrentLocale(actualDefaultLocale);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
 
   // 추가 가능한 언어 목록 (이미 활성화된 언어 제외)
   const addableLocales = useMemo(() => {
@@ -245,15 +297,10 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
     }
 
     // value에 있는 언어들로 activeLocales 구성
-    // 기본 언어를 맨 앞에 배치
-    const newLocales: string[] = [];
+    // 기본 언어는 값에 키가 없어도 맨 앞에 둔다 (초기 상태 계산과 같은 이유)
+    const newLocales: string[] = [actualDefaultLocale];
 
-    // 1. 기본 언어가 있으면 맨 앞에 추가
-    if (valueKeys.includes(actualDefaultLocale)) {
-      newLocales.push(actualDefaultLocale);
-    }
-
-    // 2. 나머지 언어들 추가 (기본 언어 제외)
+    // 나머지 언어들 추가 (기본 언어 제외)
     valueKeys.forEach(key => {
       if (key !== actualDefaultLocale) {
         newLocales.push(key);
@@ -321,8 +368,40 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   // 언어명 표시
   const getLocaleName = useCallback((localeCode: string) => {
     const locale = actualAvailableLocales.find(l => l.code === localeCode);
-    return locale?.nativeName || locale?.name || localeCode.toUpperCase();
+    return locale?.nativeName || locale?.name || getLocaleDisplayName(localeCode);
   }, [actualAvailableLocales]);
+
+  // 입력칸 이름 — 언어가 둘 이상 켜져 있으면 언어명을 붙인다(D7). 종전에는 이름 prop 이 없어 placeholder 로만 읽혔다(#757)
+  const fieldName = useCallback((localeCode: string): string | undefined => {
+    if (!nameBase) return undefined;
+    if (actualAvailableLocales.length < 2) return nameBase;
+    const language = getLocaleName(localeCode);
+    return tOr('common.field_in_language', `${nameBase} (${language})`, { label: nameBase, language });
+  }, [nameBase, actualAvailableLocales, getLocaleName]);
+
+  // 이름 prop 이 없으면 바깥 상자 곁의 라벨 글자를 이름으로 삼는다. 라벨은 몇 번만 찾고(입력마다 다시 그려질 때 문서를
+  // 거듭 훑지 않게), 찾은 뒤에는 그 글자만 다시 읽는다 — 화면 언어를 바꾸면 라벨 글자가 바뀌므로 이름도 따라간다.
+  useEffect(() => {
+    if (ariaLabel ?? ariaLabelAttr) return;
+    const root = rootRef.current;
+    if (!root) return;
+    if (!adjacentLabelRef.current?.isConnected) {
+      adjacentLabelRef.current = null;
+      if (adjacentLabelTriesRef.current >= 3) return;
+      adjacentLabelTriesRef.current += 1;
+      adjacentLabelRef.current = findAdjacentLabel(root);
+    }
+    const text = adjacentLabelRef.current ? labelTextOf(adjacentLabelRef.current) : undefined;
+    if (text !== adjacentName) setAdjacentName(text);
+    if (!text) return;
+    // 칸 자신의 훅이 먼저 이은 이름(aria-labelledby)이 있으면 걷는다 — aria-labelledby 가 aria-label 을 이긴다
+    root.querySelectorAll<HTMLElement>('input:not([type="hidden"]), textarea').forEach((el) => {
+      if (el.dataset.g7AutoLabel === '1') {
+        el.removeAttribute('aria-labelledby');
+        delete el.dataset.g7AutoLabel;
+      }
+    });
+  });
 
   // 입력 필드가 채워져 있는지 확인
   const hasValue = useCallback((localeCode: string) => {
@@ -337,7 +416,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
       <Div className="relative">
         <Button
           type="button"
-          className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full border border-dashed border-blue-300 dark:border-blue-600 transition-colors"
+          className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full border border-dashed border-blue-300 dark:border-blue-600 transition-colors"
           onClick={() => setShowAddMenu(!showAddMenu)}
           disabled={disabled}
         >
@@ -351,10 +430,10 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
               <Button
                 key={locale.code}
                 type="button"
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors"
+                className="justify-start w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors"
                 onClick={() => handleAddLocale(locale.code)}
               >
-                <Icon name="globe" className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                <Icon name="globe" className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                 <Span>{locale.nativeName || locale.name}</Span>
               </Button>
             ))}
@@ -385,7 +464,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             {/* 다국어 아이콘 */}
             <Icon name="globe" className="w-3 h-3" />
             {getLocaleName(localeCode)}
-            {isDefault && <Span className="text-red-500 dark:text-red-400">*</Span>}
+            {isDefault && <Span className="text-red-700 dark:text-red-300">*</Span>}
             {/* 비기본 언어 삭제 버튼 - 배지 안에 */}
             {!isDefault && (
               <Button
@@ -393,6 +472,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 className="ml-0.5 p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 onClick={() => handleRemoveLocale(localeCode)}
                 disabled={disabled}
+                aria-label={removeLanguageLabel(localeCode)}
               >
                 <Icon name="xmark" className="w-3 h-3" />
               </Button>
@@ -409,6 +489,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
             placeholder={localizedPlaceholder}
+            aria-label={fieldName(localeCode)}
             required={required && isDefault}
             disabled={disabled}
             maxLength={maxLength}
@@ -422,6 +503,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
             placeholder={localizedPlaceholder}
+            aria-label={fieldName(localeCode)}
             required={required && isDefault}
             disabled={disabled}
             maxLength={maxLength}
@@ -430,7 +512,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
         )}
       </Div>
     );
-  }, [name, localValue, handleInputChange, placeholder, required, disabled, maxLength, rows, inputType, getLocaleName, actualDefaultLocale, handleRemoveLocale, renderAddLocaleButtonCompact, hasError]);
+  }, [name, localValue, handleInputChange, placeholder, required, disabled, maxLength, rows, inputType, getLocaleName, actualDefaultLocale, handleRemoveLocale, renderAddLocaleButtonCompact, hasError, fieldName]);
 
   // 입력 필드 렌더링 (라벨 없음 버전 - tabs용)
   const renderInputField = useCallback((localeCode: string) => {
@@ -445,7 +527,9 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             name={`${name}[${localeCode}]`}
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
+            onInvalid={(e) => handleHiddenInvalid(localeCode, e.currentTarget)}
             placeholder={localizedPlaceholder}
+            aria-label={fieldName(localeCode)}
             required={required && localeCode === actualDefaultLocale}
             disabled={disabled}
             maxLength={maxLength}
@@ -458,7 +542,9 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             name={`${name}[${localeCode}]`}
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
+            onInvalid={(e) => handleHiddenInvalid(localeCode, e.currentTarget)}
             placeholder={localizedPlaceholder}
+            aria-label={fieldName(localeCode)}
             required={required && localeCode === actualDefaultLocale}
             disabled={disabled}
             maxLength={maxLength}
@@ -467,7 +553,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
         )}
       </Div>
     );
-  }, [name, localValue, handleInputChange, placeholder, required, disabled, maxLength, rows, inputType, actualDefaultLocale, getLocaleName, hasError]);
+  }, [name, localValue, handleInputChange, handleHiddenInvalid, placeholder, required, disabled, maxLength, rows, inputType, actualDefaultLocale, getLocaleName, hasError, fieldName]);
 
   // Inline 레이아웃 렌더링
   const renderInlineLayout = () => (
@@ -487,51 +573,55 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
       {/* 언어 탭들 + 추가 버튼 (Pill Badge 스타일) */}
       {/* flex-wrap: 로케일이 3개 이상이면 md 미만 뷰포트에서 탭 행이 컨테이너를 넘친다. */}
       <Div className="flex flex-wrap items-center gap-2 mb-3">
+        {/* 탭 한 칸 = 선택 버튼 + 삭제 버튼. 버튼 안에 버튼을 두면 HTML 규격 위반이라 둘을 나란히 둔다. */}
         {activeLocales.map(localeCode => (
-          <Button
+          <Span
             key={localeCode}
-            type="button"
             className={`
-              inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+              inline-flex items-center gap-0.5 rounded-full text-xs font-semibold transition-all
               ${currentLocale === localeCode
                 ? localeCode === actualDefaultLocale
-                  ? 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white shadow-md scale-105'
+                  ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white shadow-md scale-105'
                   : 'bg-gray-500 text-white dark:bg-gray-600 dark:text-white shadow-md scale-105'
                 : localeCode === actualDefaultLocale
-                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                   : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }
             `}
-            onClick={() => setCurrentLocale(localeCode)}
           >
-            {/* 다국어 아이콘 */}
-            <Icon name="globe" className="w-3 h-3" />
-            {/* showCodeOnMobile: 모바일에서는 언어 코드, 데스크탑에서는 전체 언어명 표시 */}
-            {showCodeOnMobile ? (
-              <>
-                <Span className="hidden md:inline">{getLocaleName(localeCode)}</Span>
-                <Span className="inline md:hidden">{localeCode.toUpperCase()}</Span>
-              </>
-            ) : (
-              getLocaleName(localeCode)
-            )}
-            {localeCode === actualDefaultLocale && (
-              <Span className="text-red-500 dark:text-red-400">*</Span>
-            )}
-            {/* 입력 완료 표시 */}
-            {hasValue(localeCode) && currentLocale !== localeCode && (
-              <Icon name="check" className="w-3 h-3 text-green-500 dark:text-green-400" />
-            )}
-            {/* 삭제 버튼 (기본 언어 제외) - 배지 안에 */}
+            <Button
+              type="button"
+              className={`inline-flex items-center gap-1.5 py-1.5 pl-3 ${localeCode === actualDefaultLocale ? 'pr-3' : 'pr-0.5'}`}
+              onClick={() => setCurrentLocale(localeCode)}
+            >
+              {/* 다국어 아이콘 */}
+              <Icon name="globe" className="w-3 h-3" />
+              {/* showCodeOnMobile: 모바일에서는 언어 코드, 데스크탑에서는 전체 언어명 표시 */}
+              {showCodeOnMobile ? (
+                <>
+                  <Span className="hidden md:inline">{getLocaleName(localeCode)}</Span>
+                  <Span className="inline md:hidden">{localeCode.toUpperCase()}</Span>
+                </>
+              ) : (
+                getLocaleName(localeCode)
+              )}
+              {/* 필수 표시 — 활성 탭(진한 바탕)에서는 탭 글자색을 따르고, 비활성 탭(연한 바탕)에서만 빨강을 쓴다 */}
+              {localeCode === actualDefaultLocale && (
+                <Span className={currentLocale === localeCode ? 'text-current' : 'text-red-700 dark:text-red-300'}>*</Span>
+              )}
+              {/* 입력 완료 표시 */}
+              {hasValue(localeCode) && currentLocale !== localeCode && (
+                <Icon name="check" className="w-3 h-3 text-green-700 dark:text-green-400" />
+              )}
+            </Button>
+            {/* 삭제 버튼 (기본 언어 제외) */}
             {localeCode !== actualDefaultLocale && (
               <Button
                 type="button"
-                className="ml-0.5 p-0.5 rounded-full hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveLocale(localeCode);
-                }}
+                className="mr-2 p-0.5 rounded-full hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                onClick={() => handleRemoveLocale(localeCode)}
                 disabled={disabled}
+                aria-label={removeLanguageLabel(localeCode)}
               >
                 <Icon
                   name="xmark"
@@ -539,7 +629,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 />
               </Button>
             )}
-          </Button>
+          </Span>
         ))}
 
         {/* 언어 추가 버튼 */}
@@ -575,7 +665,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 className={`
                   px-2 py-1.5 text-xs font-medium border-y border-l first:rounded-l last:rounded-r last:border-r transition-colors
                   ${currentLocale === localeCode
-                    ? 'bg-blue-500 text-white border-blue-500 dark:bg-blue-600 dark:border-blue-600'
+                    ? 'bg-blue-600 text-white border-blue-500 dark:bg-blue-600 dark:border-blue-600'
                     : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'
                   }
                 `}
@@ -584,7 +674,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
               >
                 {localeCode.toUpperCase()}
                 {localeCode === actualDefaultLocale && (
-                  <Span className="text-red-400 ml-0.5">*</Span>
+                  <Span className={`ml-0.5 ${currentLocale === localeCode ? 'text-current' : 'text-red-700 dark:text-red-300'}`}>*</Span>
                 )}
               </Button>
             ))}
@@ -598,6 +688,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 value={localValue[currentLocale] || ''}
                 onChange={(e) => handleInputChange(currentLocale, e.target.value)}
                 placeholder={placeholder}
+                aria-label={fieldName(currentLocale)}
                 required={required && currentLocale === actualDefaultLocale}
                 disabled={disabled}
                 maxLength={maxLength}
@@ -611,6 +702,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 value={localValue[currentLocale] || ''}
                 onChange={(e) => handleInputChange(currentLocale, e.target.value)}
                 placeholder={placeholder}
+                aria-label={fieldName(currentLocale)}
                 required={required && currentLocale === actualDefaultLocale}
                 disabled={disabled}
                 maxLength={maxLength}
@@ -625,11 +717,11 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
 
   // 레이아웃에 따라 렌더링
   return (
-    <Div className={disabled ? 'opacity-50 cursor-not-allowed' : undefined} id={id} {...editorAttrs}>
+    <Div ref={rootRef} className={disabled ? 'opacity-50 cursor-not-allowed' : undefined} id={id} {...editorAttrs}>
       {layout === 'compact' ? renderCompactLayout() : layout === 'tabs' ? renderTabsLayout() : renderInlineLayout()}
       {/* 에러 메시지 표시 */}
       {hasError && error && (
-        <Span className="text-xs text-red-500 dark:text-red-400 mt-1 block">
+        <Span className="text-xs text-red-600 dark:text-red-400 mt-1 block">
           {error}
         </Span>
       )}

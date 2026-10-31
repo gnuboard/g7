@@ -1,0 +1,39 @@
+feature: 활동 로그 API 리소스 변환
+
+description: |
+  활동 로그 응답의 다국어 설명·액션 라벨·변경 이력(단일/일괄, enum·boolean·다국어 JSON 라벨)·행위자 정보 변환.
+  회원이 없는 로그의 user 폴백은 uuid 를 null 로 명시한다(#138 — 화면의 회원 메뉴 노출 근거).
+
+axes:
+  actor: [member, system]
+
+effects:
+  - resource_includes_standard_fields
+  - resource_uses_localized_description_not_description
+  - resource_returns_translated_description
+  - resource_returns_raw_description_key
+  - resource_returns_action_label
+  - resource_includes_changes_with_translated_label
+  - resource_translates_enum_labels_in_changes
+  - resource_translates_boolean_labels_in_changes
+  - resource_extracts_locale_value_from_json_changes
+  - resource_extracts_korean_locale_value_from_json_changes
+  - resource_handles_null_json_change_values
+  - resource_extracts_locale_value_from_bulk_json_changes
+  - resource_returns_null_changes_when_empty
+  - resource_returns_single_changes_in_changes_field
+  - resource_returns_bulk_changes_in_bulk_changes_field
+  - resource_resolves_enum_labels_from_legacy_text_type
+  - resource_does_not_alter_genuine_text_type_fields
+  - resource_resolves_unreplaced_count_from_bulk_changes
+  - resource_does_not_double_replace_count
+  - resource_includes_user_info_when_user_exists
+  - resource_includes_user_email_on_admin_request
+  - resource_masks_user_email_outside_admin_request
+  - resource_returns_system_user_when_no_user
+  - resource_returns_log_type_as_string_value
+  - resource_returns_ip_address
+  - resource_includes_actor_name
+
+test_files:
+  - tests/Unit/Http/Resources/ActivityLogResourceTest.php

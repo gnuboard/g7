@@ -6,16 +6,21 @@ use App\Extension\UpgradeContext;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Page\Tests\ModuleTestCase;
 use Modules\Sirsoft\Page\Upgrades\Upgrade_1_1_0;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
  * 1.1.0 페이지 본문 썸네일 백필 업그레이드 스텝 테스트 (공개 이슈 #22 동종)
- *
- * @group page
- * @group upgrade
  */
+#[Group('page')]
+#[Group('upgrade')]
 class PageContentThumbnailBackfillTest extends ModuleTestCase
 {
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -23,6 +28,11 @@ class PageContentThumbnailBackfillTest extends ModuleTestCase
         config(['app.locale' => 'ko']);
     }
 
+    /**
+     * 테스트가 남긴 상태를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         DB::table('pages')->where('slug', 'like', 'backfill-%')->delete();
@@ -51,6 +61,11 @@ class PageContentThumbnailBackfillTest extends ModuleTestCase
         ], $attributes));
     }
 
+    /**
+     * 페이지 1.1.0 업그레이드(본문 썸네일 채우기)를 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function runBackfill(): void
     {
         $context = new UpgradeContext('1.0.3', '1.1.0', '1.1.0', 'extension-upgrade');
@@ -59,7 +74,11 @@ class PageContentThumbnailBackfillTest extends ModuleTestCase
     }
 
     /**
+     * 썸네일이 비어 있던 HTML 페이지는 첫 내부 이미지로 채우고, 텍스트 모드와 이미 채워진 페이지는 건드리지 않는다.
+     *
      * @effects backfill_fills_legacy_pages
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function legacy_rows_are_backfilled_and_gated(): void
@@ -86,7 +105,11 @@ class PageContentThumbnailBackfillTest extends ModuleTestCase
     }
 
     /**
+     * 두 번 실행해도 결과가 같다.
+     *
      * @effects backfill_idempotent_second_run
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function second_run_is_idempotent(): void
@@ -108,6 +131,8 @@ class PageContentThumbnailBackfillTest extends ModuleTestCase
     }
 
     /**
+     * 페이지의 (id, 본문 썸네일) 스냅샷을 반환합니다.
+     *
      * @return array<int, array{id: int, content_thumbnail_url: string|null}> 스냅샷
      */
     private function snapshot(): array

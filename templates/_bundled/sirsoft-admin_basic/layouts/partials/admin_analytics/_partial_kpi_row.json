@@ -1,0 +1,58 @@
+{
+    "comment": "개요 KPI 카드 네 장(오늘·어제·최대·전체). 「오늘」만 원장에서 바로 세어 오고(집계는 한 시간에 한 번)\n  나머지는 일 집계 합이다. 「전체」는 일별 순방문자의 합이라 카드 아래 그 뜻을 적는다 — 방문자 키가\n  날마다 바뀔 수 있어 여러 날을 아우르는 진짜 순방문자는 셀 수 없다. 어제 대비 증감은 어제가 0 이면\n  서버가 null 을 주므로 그때는 화살표를 그리지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "방문자 통계 개요 KPI 카드 4장"
+    },
+    "id": "analytics_kpi_row",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4"
+    },
+    "children": [
+        {
+            "id": "kpi_today",
+            "type": "composite",
+            "name": "StatCard",
+            "props": {
+                "value": "{{(analytics_overview?.data?.kpi?.today ?? 0) | number}}",
+                "label": "$t:admin.analytics.overview.kpi.today",
+                "change": "{{analytics_overview?.data?.kpi?.change_pct ?? undefined}}",
+                "changeLabel": "$t:admin.analytics.overview.kpi.change_label",
+                "trend": "{{(analytics_overview?.data?.kpi?.change_pct ?? 0) > 0 ? 'up' : ((analytics_overview?.data?.kpi?.change_pct ?? 0) < 0 ? 'down' : 'neutral')}}",
+                "iconName": "users"
+            }
+        },
+        {
+            "id": "kpi_yesterday",
+            "type": "composite",
+            "name": "StatCard",
+            "props": {
+                "value": "{{(analytics_overview?.data?.kpi?.yesterday ?? 0) | number}}",
+                "label": "$t:admin.analytics.overview.kpi.yesterday",
+                "iconName": "calendar-day"
+            }
+        },
+        {
+            "id": "kpi_max",
+            "type": "composite",
+            "name": "StatCard",
+            "props": {
+                "value": "{{(analytics_overview?.data?.kpi?.max?.value ?? 0) | number}}",
+                "label": "{{$t('admin.analytics.overview.kpi.max') + (analytics_overview?.data?.kpi?.max?.date ? ' (' + analytics_overview.data.kpi.max.date + ')' : '')}}",
+                "iconName": "arrow-trend-up"
+            }
+        },
+        {
+            "id": "kpi_total",
+            "type": "composite",
+            "name": "StatCard",
+            "props": {
+                "value": "{{(analytics_overview?.data?.kpi?.total ?? 0) | number}}",
+                "label": "$t:admin.analytics.overview.kpi.total",
+                "iconName": "chart-line"
+            }
+        }
+    ]
+}

@@ -2,11 +2,14 @@
 
 namespace App\Extension\Helpers;
 
+use App\Contracts\Extension\UpgradeStepInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\MenuPermissionType;
+use App\Extension\Support\LifecycleWarnings;
 use App\Models\Menu;
+use App\Models\Role;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -101,9 +104,13 @@ class ExtensionMenuSyncHelper
             return false;
         };
 
-        $updateData = [
-            'parent_id' => $parentId,
-        ];
+        $updateData = [];
+
+        // parent_id 도 운영자가 옮겼으면(user_overrides 에 기록) 보존한다 — 종전엔 무조건 정의값으로 덮어
+        // 옮긴 메뉴가 업데이트마다 원위치됐다(#727 D5-③).
+        if (! $isFieldOverridden('parent_id')) {
+            $updateData['parent_id'] = $parentId;
+        }
 
         // is_active 는 운영자가 user_overrides 로 마킹한 경우 보존, 아니면 정의값으로 갱신
         if (! $isFieldOverridden('is_active')) {
@@ -202,6 +209,7 @@ class ExtensionMenuSyncHelper
      * 신규 메뉴에 관리자 역할과 현재 사용자(설치자) 역할을 자동 부여합니다.
      *
      * @param  Menu  $menu  생성된 메뉴
+     * @return void 반환값 없음
      */
     private function grantDefaultRoles(Menu $menu): void
     {
@@ -236,7 +244,151 @@ class ExtensionMenuSyncHelper
                 'menu_id' => $menu->id ?? null,
                 'error' => $e->getMessage(),
             ]);
+            LifecycleWarnings::current()->add('menu_role', (string) ($menu->slug ?? $menu->id ?? ''), $e->getMessage());
         }
+    }
+
+    /**
+     * 확장이 선언한 역할에 그 확장 메뉴 중 역할이 가진 권한으로 열 수 있는 메뉴를 붙입니다.
+     *
+     * 새 메뉴는 관리자 역할과 설치한 사람의 역할에만 자동으로 붙는다(`grantDefaultRoles()`). 그래서 확장이
+     * 선언한 역할(예: 이커머스 관리자)만 가진 운영자는 그 확장 권한을 갖고도 관리자 사이드바가 비었다.
+     * 이 메서드는 선언 역할마다 메뉴 정의를 훑어 다음 규칙으로 읽기 권한을 붙인다.
+     *
+     *  - 메뉴의 필요 권한은 정의의 `permission` 키다. 역할이 그 권한을 가지면(범위 제한 권한 포함) 붙인다.
+     *  - 필요 권한이 없는 상위 메뉴는 붙는 하위 메뉴가 하나라도 있을 때 붙인다(하위 메뉴는 상위를 거쳐서만 보인다).
+     *  - 필요 권한을 선언하지 않은 단독 메뉴는 판정할 근거가 없으므로 붙이지 않는다.
+     *  - 운영자가 역할 관리·메뉴 관리에서 이 역할을 넣거나 뺀 메뉴(메뉴 `user_overrides` 에 역할 식별자)는 건드리지 않는다.
+     *    그 상위 메뉴에서 역할을 뺀 상태면 하위 메뉴도 붙이지 않는다.
+     *  - 붙이기만 하고 떼지 않는다. 이미 붙어 있으면 그대로 둔다(멱등).
+     *
+     * 설치·업데이트·활성 확장 재동기화가 모두 메뉴 동기화 뒤에 이 메서드를 부르므로, 기존 사이트도 다음 동기화 때 채워진다.
+     *
+     * @param  array  $menuDataArray  메뉴 정의 배열 (`getAdminMenus()` 형식)
+     * @param  ExtensionOwnerType  $extensionType  확장 타입
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @param  array<int, string>  $roleIdentifiers  확장이 선언한 역할 식별자 목록
+     * @return int 새로 붙인 역할-메뉴 연결 수
+     */
+    public function grantMenusToDeclaredRoles(
+        array $menuDataArray,
+        ExtensionOwnerType $extensionType,
+        string $extensionIdentifier,
+        array $roleIdentifiers,
+    ): int {
+        $granted = 0;
+
+        foreach (array_unique(array_filter($roleIdentifiers, 'is_string')) as $roleIdentifier) {
+            // 관리자 역할은 새 메뉴마다 이미 붙는다
+            if ($roleIdentifier === 'admin') {
+                continue;
+            }
+
+            try {
+                $role = $this->roleRepository->findByIdentifier($roleIdentifier);
+                if ($role === null) {
+                    continue;
+                }
+
+                $heldPermissions = $role->permissions()->pluck('permissions.identifier')->all();
+
+                foreach ($menuDataArray as $menuData) {
+                    if (is_array($menuData)) {
+                        $this->grantOpenableMenuTree($menuData, $extensionType, $extensionIdentifier, $role, $heldPermissions, $granted);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('확장 선언 역할 메뉴 부여 실패', [
+                    'extension_type' => $extensionType->value,
+                    'extension_identifier' => $extensionIdentifier,
+                    'role' => $roleIdentifier,
+                    'error' => $e->getMessage(),
+                ]);
+                LifecycleWarnings::current()->add('menu_role', $roleIdentifier, $e->getMessage());
+            }
+        }
+
+        return $granted;
+    }
+
+    /**
+     * 메뉴 정의 하나(와 하위)를 훑어 역할이 열 수 있으면 붙이고, 그 역할에게 이 메뉴가 보이는지 돌려줍니다.
+     *
+     * @param  array  $menuData  메뉴 정의
+     * @param  ExtensionOwnerType  $extensionType  확장 타입
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @param  Role  $role  대상 역할
+     * @param  array<int, string>  $heldPermissions  역할이 가진 권한 식별자
+     * @param  int  $granted  새로 붙인 연결 수 (누적)
+     * @return bool 이 메뉴가 그 역할에 붙어 있으면(이번에 붙였거나 이미 있었으면) true
+     */
+    private function grantOpenableMenuTree(
+        array $menuData,
+        ExtensionOwnerType $extensionType,
+        string $extensionIdentifier,
+        Role $role,
+        array $heldPermissions,
+        int &$granted,
+    ): bool {
+        $menu = $this->menuRepository->findBySlugAndExtension($this->resolveSlug($menuData), $extensionType, $extensionIdentifier);
+        if ($menu === null) {
+            return false;
+        }
+
+        $isAttached = static fn (Menu $target): bool => $target->roles()
+            ->wherePivot('permission_type', MenuPermissionType::Read->value)
+            ->whereKey($role->id)
+            ->exists();
+
+        // 운영자가 이 메뉴에서 이 역할을 넣거나 뺐다 — 그 결정을 따른다. 뺀 상태면 하위도 보이지 않으므로 손대지 않는다.
+        $operatorDecided = in_array($role->identifier, (array) ($menu->user_overrides ?? []), true);
+        if ($operatorDecided && ! $isAttached($menu)) {
+            return false;
+        }
+
+        $hasOpenableChild = false;
+        foreach ($menuData['children'] ?? [] as $childData) {
+            if (is_array($childData)
+                && $this->grantOpenableMenuTree($childData, $extensionType, $extensionIdentifier, $role, $heldPermissions, $granted)) {
+                $hasOpenableChild = true;
+            }
+        }
+
+        if ($operatorDecided) {
+            return true;
+        }
+
+        $requiredPermission = $menuData['permission'] ?? null;
+        $openable = (is_string($requiredPermission) && $requiredPermission !== '' && in_array($requiredPermission, $heldPermissions, true))
+            || $hasOpenableChild;
+
+        if (! $openable) {
+            return $isAttached($menu);
+        }
+
+        if (! $isAttached($menu)) {
+            $menu->roles()->attach($role->id, ['permission_type' => MenuPermissionType::Read->value]);
+            $granted++;
+        }
+
+        return true;
+    }
+
+    /**
+     * 메뉴 정의의 슬러그를 구합니다 (`syncMenuRecursive()` 와 같은 규칙 — slug 가 없으면 첫 언어 이름).
+     *
+     * @param  array  $menuData  메뉴 정의
+     * @return string 슬러그
+     */
+    private function resolveSlug(array $menuData): string
+    {
+        if (isset($menuData['slug'])) {
+            return (string) $menuData['slug'];
+        }
+
+        $name = $menuData['name'] ?? '';
+
+        return (string) (is_array($name) ? (array_values($name)[0] ?? '') : $name);
     }
 
     /**
@@ -259,7 +411,7 @@ class ExtensionMenuSyncHelper
      * @param  array  $currentSlugs  현재 유효한 메뉴 슬러그 목록
      * @return int 삭제된 메뉴 수
      *
-     * @see \App\Contracts\Extension\UpgradeStepInterface
+     * @see UpgradeStepInterface
      */
     public function cleanupStaleMenus(
         ExtensionOwnerType $extensionType,

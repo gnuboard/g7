@@ -1,0 +1,72 @@
+<!-- 메뉴 관리 화면 오른쪽 판의 「여러 개 선택」 모드. 왼쪽 목록에서 체크한 메뉴들에 역할을 한꺼번에 더하거나 뺀다.
+  상세 판(_panel_detail)과 같은 자리에 놓이고, 둘 중 하나만 보인다 — 모드 값 하나로 갈린다.
+  「적용」 은 바로 보내지 않고 확인 창을 연다: 부모·자식이 자동으로 함께 처리되는 수를 먼저 보여 주기 위해서다. -->
+<partial name="panel_bulk_roles">
+  <div data-ref="bulk_roles_panel" data-if="{{_global.menuBulkMode === true}}" class="admin-card">
+    <div class="px-4 panel-header">
+      <h3 class="text-heading">$t:admin.menus.bulk.panel_title</h3>
+    </div>
+    <div class="p-4 space-y-5">
+      <div data-ref="bulk_selected_section">
+        <p data-ref="bulk_selected_count" class="text-sm font-medium text-gray-900 dark:text-white mb-2">$t:admin.menus.bulk.selected_count|count={{(_global.menuBulkSelectedIds ?? []).length}}</p>
+        <p data-if="{{(_global.menuBulkSelectedIds ?? []).length === 0}}" class="text-tertiary">$t:admin.menus.bulk.empty_selection</p>
+        <div data-if="{{(_global.menuBulkSelectedIds ?? []).length > 0}}" class="flex flex-wrap gap-1">
+          <span data-each="picked in {{(menus?.data?.data ?? []).flatMap(m => [m, ...(m.children ?? [])]).filter(m => (_global.menuBulkSelectedIds ?? []).includes(m.id)).slice(0, 10)}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">{{$localized(picked.name)}}</span>
+          <span data-if="{{(_global.menuBulkSelectedIds ?? []).length > 10}}" class="px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">$t:admin.menus.bulk.more_count|count={{(_global.menuBulkSelectedIds ?? []).length - 10}}</span>
+        </div>
+      </div>
+      <div data-ref="bulk_roles_field">
+        <label class="form-label">$t:admin.menus.bulk.roles_label</label>
+        <tag-input data-type="composite" data-ref="bulk_roles_input" value="{{_global.menuBulkRoleIds ?? []}}" options="{{(roles?.data?.data ?? []).filter(r => _global.menuBulkAction !== 'remove' || r.identifier !== 'admin').map(r => ({ value: r.id, label: $localized(r.name) }))}}" placeholder="$t:admin.menus.bulk.roles_placeholder" noOptionsMessage="$t:admin.menus.form.roles_no_options" class="w-full" defaultVariant="blue">
+          <on type="change">
+            <!-- 적용할 역할 — 태그 입력이 준 배열을 통째로 담는다 -->
+            <set-state target="global" menuBulkRoleIds="{{$event.target.value}}"/>
+          </on>
+        </tag-input>
+      </div>
+      <div data-ref="bulk_action_field">
+        <label class="form-label">$t:admin.menus.bulk.action_label</label>
+        <radio-group data-type="composite" name="menu_bulk_action" value="{{_global.menuBulkAction ?? 'add'}}" :inline="true">
+          <prop name="options">
+            <item label="$t:admin.menus.bulk.action_add" value="add"/>
+            <item label="$t:admin.menus.bulk.action_remove" value="remove"/>
+          </prop>
+          <on type="change">
+            <!-- 추가/제거 고르기. 제거로 바꾸면 관리자 역할은 고를 수 없으므로(서버가 거부) 이미 골라 둔 것에서도 뺀다. -->
+            <set-state target="global" menuBulkAction="{{$event.target.value}}" menuBulkRoleIds="{{$event.target.value === 'remove' ? (_global.menuBulkRoleIds ?? []).filter(id => (roles?.data?.data ?? []).find(r => r.id === id)?.identifier !== 'admin') : (_global.menuBulkRoleIds ?? [])}}"/>
+          </on>
+        </radio-group>
+      </div>
+      <div data-ref="bulk_rule_hint" class="flex gap-2 text-tertiary">
+        <icon name="info-circle" size="sm" class="mt-0.5 flex-shrink-0"/>
+        <span>$t:admin.menus.bulk.rule_hint</span>
+      </div>
+      <div data-ref="bulk_buttons" class="flex flex-wrap justify-end gap-2">
+        <button data-ref="bulk_clear_button" type="button" disabled="{{(_global.menuBulkSelectedIds ?? []).length === 0}}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 선택만 비운다 — 모드와 고른 역할은 그대로 둔다 -->
+            <set-state target="global" :menuBulkSelectedIds="[]"/>
+          </on>
+          $t:admin.menus.bulk.clear
+        </button>
+        <button data-ref="bulk_exit_button" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <!-- 선택 모드 끝내기 — 상단 토글을 끈 것과 같다. 고른 것과 역할을 비워 다음에 켤 때 남지 않게 한다. -->
+            <set-state target="global" :menuBulkMode="false" :menuBulkSelectedIds="[]" :menuBulkRoleIds="[]" menuBulkAction="add" :menuBulkError="null"/>
+          </on>
+          $t:admin.menus.bulk.exit
+        </button>
+        <button data-ref="bulk_apply_button" type="button" disabled="{{(_global.menuBulkSelectedIds ?? []).length === 0 || (_global.menuBulkRoleIds ?? []).length === 0}}" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 적용 — 확인 창을 연다. 지난 실패 문구는 비운다. -->
+            <sequence>
+              <set-state target="global" :menuBulkError="null"/>
+              <open-modal target="bulk_roles_confirm_modal"/>
+            </sequence>
+          </on>
+          $t:admin.menus.bulk.apply
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

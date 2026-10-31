@@ -1,9 +1,18 @@
 <?php
 
+use App\Jobs\GenerateSitemapJob;
+
 // 스케줄러 Shell/Artisan 실행 보안 정책.
 // 관리자 환경설정에 노출하지 않는 코드 소유 정책 — command 실행 능력은 신뢰 경계 안에서만 넓힌다.
 // (스케줄 권한만 위임받은 관리자가 화이트리스트를 넓혀 임의 명령 실행을 복구하는 것을 막는다.)
 return [
+    // 서버 관리자 덮어쓰기 파일 — 있으면 아래 정책에 「더하기만」 한다(App\Services\Schedule\ScheduleSecurityPolicy).
+    // Artisan 허용목록(명령 → 옵션·위치 인자 상한)·거부목록·거부 접두사·Job 허용 클래스를 더할 수 있고,
+    // 코어 거부 항목은 풀 수 없다(허용·거부가 겹치면 거부가 이긴다). Shell 은 아래 .env 값만 따른다.
+    // 형식이 하나라도 어긋나면 파일 전체를 무시하고 경고 로그를 남긴다. 코어 업데이트가 덮어쓰지 않는 위치이며
+    // 관리자 환경설정 저장소(storage/app/settings/)와 분리된다. 형식: docs/backend/scheduling.md 「보안 정책 덮어쓰기」.
+    'override_file' => storage_path('app/schedule_security.json'),
+
     'shell' => [
         // Shell 타입 스케줄 실행 자체를 켜는 opt-in 게이트 (기본 차단).
         'enabled' => env('SCHEDULE_SHELL_ENABLED', false),
@@ -69,6 +78,9 @@ return [
             'queue:restart' => ['options' => []],
             'queue:prune-failed' => ['options' => ['hours']],
             'queue:prune-batches' => ['options' => ['hours', 'unfinished', 'cancelled']],
+            // 처리 기록(queue_job_logs) + 실패 Job 을 보관 기간 설정 기준으로 정리 (7.2.0 — 코어 정리 예약은
+            // queue:prune-failed 대신 이 명령을 쓴다. queue:prune-failed 는 운영자 직접 등록 행 호환을 위해 남긴다)
+            'queue:prune-records' => ['options' => ['days']],
             'queue:work' => ['options' => [
                 'queue', 'once', 'stop-when-empty', 'stop-when-empty-for',
                 'delay', 'backoff', 'max-jobs', 'max-time',
@@ -89,15 +101,37 @@ return [
             'identity:prune-logs' => ['options' => ['days']],
             'activity-log:prune' => ['options' => ['days']],
             'notification-log:prune' => ['options' => ['days']],
+            'notification-delivery:prune' => ['options' => ['days']],
             // 실삭제가 기본이나 사용자 파일 파기는 커맨드 자체가 설정 토글·보존기간으로 이중 확인한다.
             'attachments:prune-orphans' => ['options' => ['dry-run', 'limit', 'days', 'scheduled']],
             // 잔존물 정리 — 최신 백업 1개 상시 보존 가드는 커맨드 내부 소유(옵션으로 무력화 불가).
             'storage:prune-leftovers' => ['options' => ['days', 'backup-days', 'dry-run']],
+            // 개인정보 보유기간·휴면 — 파기 여부는 각 도메인 설정(기본 꺼짐)이 결정하며
+            // 옵션으로 켤 수 없다. `--handler=` 는 대상을 좁히기만 하므로 안전장치를 무력화하지 않는다.
+            'privacy:process-retention' => ['options' => ['dry-run', 'handler', 'scheduled']],
+            'privacy:process-dormant' => ['options' => ['dry-run', 'scheduled']],
+            // 비밀번호 만료(#736) — 토글은 커맨드가 재확인하고, 옵션은 건수 확인·기록용뿐이다.
+            'auth:process-password-expiry' => ['options' => ['dry-run', 'scheduled']],
+
+            // 방문자 통계 — 집계·정리·점검은 비파괴이거나 서비스가 하한을 소유한다.
+            // 전체 삭제(analytics:purge)·소급 익명화(analytics:anonymize)·확장 통계 정리
+            // (analytics:purge-extension)는 되돌릴 수 없어
+            // 예약 대상에서 뺀다 — 무인 실행으로 지워질 값이 아니다.
+            'analytics:archive' => ['options' => ['period', 'from', 'to', 'force', 'dry-run', 'scheduled']],
+            'analytics:prune' => ['options' => ['days', 'dry-run']],
+            'analytics:check-volume' => ['options' => []],
+            'analytics:report' => ['options' => ['period']],
+            'analytics:update-cloud-ranges' => ['options' => []],
+            'analytics:broadcast-realtime' => ['options' => []],
 
             // SEO
             'seo:warmup' => ['options' => ['layout']],
             'seo:clear' => ['options' => ['layout']],
             'seo:generate-sitemap' => ['options' => ['sync', 'rebuild', 'mode']],
+
+            // 대시보드·언어팩 — 코어 카탈로그(config/core.php schedules)의 예약 명령 (7.2.0 DB 등록 전환)
+            'dashboard:broadcast-resources' => ['options' => []],
+            'language-pack:check-updates' => ['options' => ['identifier']],
 
             // 기타 유지보수
             'geoip:update' => ['options' => ['dry-run']],
@@ -164,5 +198,13 @@ return [
 
         // 접두사 단위 거부권. `make:*` 41개를 일일이 나열하지 않는다.
         'denylist_prefixes' => ['make:'],
+    ],
+
+    'job' => [
+        // job 유형 스케줄이 실행할 수 있는 Job 클래스 허용목록 (FQCN, 여기 없으면 거부).
+        // 확장은 훅 `core.schedule.filter_allowed_job_classes` 로 자기 Job 을 더할 수 있다.
+        'allowed_classes' => [
+            GenerateSitemapJob::class,
+        ],
     ],
 ];

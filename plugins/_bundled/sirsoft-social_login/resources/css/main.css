@@ -1,0 +1,211 @@
+/* g7-extension-css:start — convert-layout-classes.mjs 가 생성·갱신하는 블록. 손으로 고치지 않는다. */
+@import "tailwindcss/theme.css" layer(theme) prefix(sl);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(sl) source(none);
+@import "./g7-extension.generated.css";
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@source "../../src";
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+/* g7-extension-css:end */
+
+/*
+ * 소셜 로그인 버튼 — 자체 접두(.sl-*)만 쓴다. 템플릿의 의미 색 클래스에 기대지 않는다(템플릿을 바꿔도 각 사 버튼 색이 유지되게).
+ * 색은 각 제공자 버튼 가이드의 값이다(카카오 #FEE500, 네이버 #03A94D, 구글 라이트 #FFFFFF·#747775·#1F1F1F / 다크 #131314·#8E918F·#E3E3E3,
+ * 페이스북 #1877F2). 다크 모드는 사이트 다크만 따른다 — 운영체제 설정은 따르지 않는다(사이트 테마와 어긋나지 않게).
+ * 사이트 다크는 템플릿 종류와 무관한 중립 표식(`<html data-g7-color-scheme="dark">`)으로 읽는다. 「다크 안의 라이트」
+ * (관리자 다크 화면 속 라이트 미리보기)는 제외하는 규격이고, 특이도는 템플릿의 `.dark .x` 와 같다.
+ * 버튼 모양은 제공자 가이드 값이라 템플릿이 덮을 의미 클래스가 아니다 — 일반 칸(층 없음)에 둔다.
+ */
+
+.sl-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.sl-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 1rem;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: filter 0.15s ease-in-out;
+}
+
+/* 단추 글자 — 단추(제공자 색)의 글자색을 그대로 따른다. 글자 자리를 가리키는 이름표이기도 하다(시험·자동 점검이 이 이름으로 찾는다) */
+.sl-button__text {
+    color: inherit;
+}
+
+.sl-buttons--sm .sl-button {
+    min-height: 36px;
+    font-size: 0.875rem;
+}
+
+.sl-button:hover {
+    filter: brightness(0.96);
+}
+
+.sl-button:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.sl-button--disabled,
+.sl-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.sl-symbol {
+    flex: none;
+    width: 18px;
+    height: 18px;
+}
+
+.sl-symbol--initial {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    border: 1px solid currentColor;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.sl-button--kakao {
+    background-color: #fee500;
+    color: rgba(0, 0, 0, 0.85);
+}
+
+.sl-button--naver {
+    background-color: #03a94d;
+    color: #ffffff;
+}
+
+.sl-button--google {
+    background-color: #ffffff;
+    border-color: #747775;
+    color: #1f1f1f;
+}
+
+.sl-button--facebook {
+    background-color: #1877f2;
+    color: #ffffff;
+}
+
+.sl-button--custom {
+    background-color: #ffffff;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.sl-button--google:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: #131314;
+    border-color: #8e918f;
+    color: #e3e3e3;
+}
+
+.sl-button--custom:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: #1f2937;
+    border-color: #4b5563;
+    color: #f3f4f6;
+}
+
+/* 마이페이지 연결 목록의 제공자 표시 — 버튼과 같은 공식 심볼을 버튼 색 원 안에 그린다 */
+.sl-mark {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    box-sizing: border-box;
+}
+
+.sl-mark .sl-symbol {
+    width: 16px;
+    height: 16px;
+}
+
+.sl-mark--kakao {
+    background-color: #fee500;
+}
+
+.sl-mark--naver {
+    background-color: #03a94d;
+}
+
+.sl-mark--google {
+    background-color: #ffffff;
+    border-color: #747775;
+}
+
+.sl-mark--facebook {
+    background-color: #1877f2;
+}
+
+.sl-mark--custom {
+    color: #374151;
+}
+
+.sl-mark--google:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: #131314;
+    border-color: #8e918f;
+}
+
+.sl-mark--custom:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: #f3f4f6;
+}
+
+/*
+ * 층 밖 의미 규칙 — 관리자 템플릿이 층 없이 둔 배치 규칙(dashboard.css 의 flex-between)의 이 플러그인 사본.
+ * 생성 파일(g7-extension.generated.css)은 의미 클래스를 모두 가장 낮은 칸에 담지만, 템플릿에서 이 규칙은 층 밖이라
+ * 같은 요소의 유틸리티를 이겼다. 이 플러그인 유틸리티는 층 없이 실리므로 같은 우선순위를 지키려고 이 규칙만
+ * 층 밖(유틸리티 뒤)에 한 번 더 둔다. 값은 템플릿 정의와 같다.
+ */
+.sl-flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

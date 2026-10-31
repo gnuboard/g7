@@ -3,6 +3,7 @@
 namespace Modules\Gnuboard7\HelloModule\Services;
 
 use App\Extension\HookManager;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Modules\Gnuboard7\HelloModule\Models\Memo;
 use Modules\Gnuboard7\HelloModule\Repositories\Contracts\MemoRepositoryInterface;
@@ -40,7 +41,7 @@ class MemoService
      * @param  int  $id  메모 ID
      * @return Memo 메모 모델
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function getMemo(int $id): Memo
     {
@@ -50,6 +51,7 @@ class MemoService
     /**
      * 메모를 생성합니다.
      *
+     * 저장 전에 제목을 `gnuboard7-hello_module.memo.title.filter` 필터에 통과시키고,
      * 생성 성공 시 `gnuboard7-hello_module.memo.created` 훅을 발행합니다.
      *
      * @param  array  $data  메모 생성 데이터 (title, content)
@@ -57,6 +59,11 @@ class MemoService
      */
     public function createMemo(array $data): Memo
     {
+        // Filter 훅 시연 — 다른 확장(예: Hello 플러그인)이 제목을 가공할 수 있다
+        if (array_key_exists('title', $data)) {
+            $data['title'] = HookManager::applyFilters('gnuboard7-hello_module.memo.title.filter', $data['title']);
+        }
+
         $memo = $this->memoRepository->create($data);
 
         HookManager::doAction('gnuboard7-hello_module.memo.created', $memo);

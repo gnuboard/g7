@@ -16,6 +16,76 @@
 
 ---
 
+## 관리자 통합 목록 (이슈 #524)
+
+상품 상세 안에서만 다루던 문의를 **전 회원·전 상품 한 화면**에서 보고 정리합니다.
+화면은 `/admin/ecommerce/inquiries`.
+
+**전제 — 문의 게시판 지정**: 상품문의는 `inquiry.board_slug` 설정이 가리키는 게시판 위에서
+돕니다. 미지정이면 작성·수정·삭제·답변이 전부 422 `board_not_configured` 로 막히고, 상품 상세의
+문의 목록은 빈 목록이 되며 마이페이지 문의 탭은 숨습니다. **아래 관리자 목록은 그 게이트 밖입니다** —
+과거에 쌓인 행을 그대로 보여 주어 운영자가 정리할 수 있게 합니다. 삭제도 이때는 질문 글 정리를
+생략하고 피벗만 지웁니다(지울 글 자체가 없으므로 — 상품 삭제 경로와 같은 판단).
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/admin/inquiries
+
+- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-ecommerce.inquiries.read`
+- **권한 메모(1.3.0)**: 컬렉션 `abilities.can_reply`(= `inquiries.update`)와 행 `abilities.can_reply`·`abilities.can_delete` — 「답변」·「삭제」 행 동작 잠금 키.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| page / per_page | query | integer | 아니오 | per_page max 100 | 페이지네이션 |
+| sort | query | string | 아니오 | `created_at_desc`(기본), `created_at_asc` | 정렬 |
+| search_field | query | string | 아니오 | `member`, `member_id`, `email`, `product`, `content` | 검색 대상 |
+| search_keyword | query | string | 아니오 | max 100 | 검색어 |
+| is_answered | query | boolean | 아니오 | `1`/`0` | 답변 여부. `false` 가 「미답변만」이라 비어 있음과 구분됩니다 |
+| user_id / user_uuid | query | integer / string(uuid) | 아니오 | — | 회원 한정. 없는 uuid 면 빈 결과 |
+| start_date / end_date | query | date | 아니오 | `Y-m-d` | 등록일 범위 |
+
+**응답 필드** (`data.data[]` + `data.abilities` + `data.pagination`)
+
+| 필드 | 타입 | 용도 |
+| --- | --- | --- |
+| id | integer | 식별자 (삭제·답변이 받는 값) |
+| member | object\|null | 회원. 비회원 문의거나 회원이 지워졌으면 `null` |
+| member.uuid / name | string | 회원 식별자·이름 (탈퇴면 익명 표기) |
+| member.email | string\|null | 관리자 응답에만 실립니다 |
+| product | object\|null | 문의 대상 상품 (id · 이름 · 노출/판매 상태 라벨) |
+| content_excerpt | string\|null | 본문 요약 100자. 질문 글 타입을 해석할 수 없으면 `null` |
+| is_answered | boolean | 답변 여부 — 행 배지가 이 값으로 갈립니다 |
+| created_at | string | 등록 시각 (뷰어 시간대) |
+| abilities.can_manage | boolean | 삭제 권한 — 체크 칸·일괄 버튼이 이 값으로 열립니다 |
+
+> **`inquirable` 은 eager load 하지 않습니다.** `inquirable_type` 이 `'board_post'` 별칭인데
+> 게시판 모듈 밖 컨텍스트에서는 morph map 에 없어, 관계를 푸는 순간 목록 전체가 500 이 됩니다.
+> 본문 요약은 Resource 가 `Relation::getMorphedModel()` 로 해석 가능성을 확인한 뒤에만 읽습니다.
+
+---
+
+### DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/bulk
+
+- **권한**: `sirsoft-ecommerce.inquiries.delete`
+- 라우트는 `{inquiryId}` 보다 **먼저** 선언되어 있습니다 — 그러지 않으면 `bulk` 가 id 로 잡힙니다.
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| ids | body | array | 예 | 1~100개 | 삭제할 식별자 |
+| ids.* | body | integer | 예 | 존재하는 행 | 식별자 |
+
+**응답**: `data.deleted_count` — 실제로 지워진 건수. 한 건이 실패해도 나머지는 계속 지우고
+실패분은 건수에서 빠집니다.
+
+> **피벗만 지우지 않습니다.** 항목마다 단건 삭제 경로를 그대로 태워 게시판의 질문 글을 먼저
+> 지웁니다. 피벗만 지우면 관리 목록에서만 사라지고 회원에게는 질문 글이 계속 보입니다 — 단건
+> 삭제와 일괄 삭제의 결과가 달라지는 자리입니다. 훅(`…product_inquiry.before/after_bulk_delete`)은
+> 루프 앞뒤로 한 번씩만 발화해 활동 로그가 폭주하지 않습니다.
+
+---
+
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.inquiries.destroy -->
@@ -294,7 +364,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| items | array | `[{"id":19,"product_id":1732,"product":{"id":1732,"product…` | 내 문의 항목 배열 (각 항목: id, product 요약, product_name, is_answered, 게시판 연동 시 title/category/content/is_secret/reply/attachments) |
+| items | array | `[{"id":19,"product_id":1732,"product":{"id":1732,"product…` | 내 문의 항목 배열 (각 항목: id, product 요약, product_name(`product_name_snapshot` 의 현재 로케일 값 — 그 언어 값이 비어 있으면(null·빈 문자열) 대체 언어, 그다음 저장된 다른 언어 중 비어 있지 않은 첫 값을 쓴다), is_answered, 게시판 연동 시 title/category/content/is_secret/reply/attachments) |
 | meta | object | `{"current_page":1,"per_page":25,"total":39,"last_page":2,…` | 페이지네이션 메타 (current_page/per_page/total/last_page/from/to, 문의 게시판 연동 여부 inquiry_available, abilities 답변·삭제 권한, board_settings) |
 
 **응답 예시**

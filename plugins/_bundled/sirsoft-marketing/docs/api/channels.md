@@ -102,8 +102,9 @@ _단건 응답: `data` 객체의 필드. `data.channels` 는 저장 후 확정�
 | channels.*.is_system | body | boolean | 예 | — | 시스템 채널 플래그 |
 
 - **시스템 채널 보호**: `is_system=true` 채널은 제출 목록에서 빠져도 서버가 기본 정의를 다시 앞에 끼워 넣어 항상 유지된다. `is_system` 을 true→false 로 위변조하거나 시스템 채널을 누락시키면 검증 오류(422).
-- **동의 이력 보호**: 이미 사용자 동의가 존재하는 채널을 목록에서 제거하려 하면 `MarketingConsentService::countConsentedByKey()` 가 0 이 아니어서 422 로 거부된다(개인정보 이력 보존).
+- **동의 이력 보호**: 이미 사용자 동의가 존재하는 채널을 목록에서 제거하려 하면 `MarketingConsentService::countConsentedByKey()` 가 0 이 아니어서 422 로 거부된다(개인정보 이력 보존). 이때 응답의 `errors.blocked_channel_keys` 에 삭제가 막힌 채널 키 배열이 실린다(예: `["sms_subscription"]`). 화면은 이 필드가 있을 때만 「비활성으로 전환」 창을 열고 그 키의 채널을 꺼진 채로 되살린다 — 안내 문장(`errors.channels`)은 언어마다 달라 채널을 가리키는 값으로 쓸 수 없다. 형식·필수값 오류만 있는 422 에는 이 필드가 없다. 시스템 채널은 동의 이력이 있어도 이 판정에 들지 않는다 — 「시스템 채널 보호」 사유(`channel_system_cannot_delete`) 하나로만 거절하고 `blocked_channel_keys` 를 싣지 않는다(되살리기 창의 대상이 아니다).
 - **key 중복 금지**: 같은 `key` 가 둘 이상이면 422.
+- **오류 문구의 칸 이름**: 검증 오류는 `channels.1.label` 같은 위치가 아니라 채널 키로 칸을 가리킨다(`attributes()` — 예: 「채널 「test」 항목명의 English(en) 값은 필수입니다.」). 키 형식 위반은 쓸 수 있는 문자를 알린다(「채널 「Bad-Key」 키에는 영문 소문자, 숫자, 밑줄(_)만 쓸 수 있습니다.」). 설정 화면은 이 문구를 오류 목록에 그대로 보여 준다.
 - 성공 시 저장된 최종 `channels` 배열(시스템 채널 병합 포함)을 `data.channels` 로 되돌려준다.
 
 **응답 예시** (성공)

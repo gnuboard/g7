@@ -68,7 +68,7 @@ class ApiDocSampleService implements ApiDocSampleSeeder
                 'change_type' => GdprPolicyChangeType::Initial,
                 'memo' => 'API 문서 실측용 샘플 정책 버전',
                 'snapshot' => [
-                    'privacy_policy_slug' => 'privacy',
+                    'privacy_policy_url' => '/page/privacy',
                     'banner_enabled' => true,
                     'banner_position' => 'bottom_bar',
                 ],

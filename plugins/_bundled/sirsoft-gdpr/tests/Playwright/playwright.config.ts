@@ -66,10 +66,18 @@ function resolveBaseUrl(): string {
 export default defineConfig({
   testDir: './specs',
   outputDir: resolve(CORE_ROOT, 'test-results', ARTIFACT_SLUG),
+  // 통지 설정 spec 한 건이 저장·새로고침을 네 번 왕복하고 시험 발송 뒤 이력까지 확인한다.
+  // Playwright 기본 30초로는 이력 표본이 쌓인 환경에서 그 한 건이 먼저 끊기고, serial 이라
+  // 뒤 두 건이 아예 실행되지 않아 **설정 원복까지 건너뛴다**. 형제 확장(koreaexim)도 같은
+  // 이유로 config 에 시간을 명시한다.
+  timeout: 90_000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // 워커는 항상 1 — 코어 config 와 같은 이유다. 이 스위트는 한 대의 서버와 한 개 DB 를 공유하므로,
+  // 로컬 기본값(CPU 절반)으로 돌면 관리자 spec 이 설정을 저장하는 사이 공개 화면 spec(쿠키 배너)이
+  // 배너를 보지 못해 실패했다(5 워커 3/5, 1 워커 5/5 실측).
+  workers: 1,
   reporter: [
     ['html', { outputFolder: resolve(CORE_ROOT, 'playwright-report', ARTIFACT_SLUG), open: 'never' }],
     ['list'],
@@ -83,8 +91,8 @@ export default defineConfig({
     // 심은 글꼴·아이콘은 정상이라 "페이지가 잘 뜬다" 로 보이고, 정작 재려던 SPA 동작
     // (테마 적용·핸들러·확장 번들 로드)은 한 번도 실행되지 않은 채 통과한다.
     //
-    // 봇 경로를 의도적으로 재는 spec 은 UA 가 아니라 `?_escaped_fragment_=` 로 유발하므로
-    // 여기서 실제 UA 를 고정해도 그 검증은 그대로 동작한다.
+    // 봇 경로를 의도적으로 재는 spec 은 요청마다 검색엔진 UA 를 지정하므로(`?_escaped_fragment_=`
+    // 쿼리는 더 이상 봇 신호가 아니다) 여기서 실제 UA 를 고정해도 그 검증은 그대로 동작한다.
     userAgent:
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
     baseURL: resolveBaseUrl(),

@@ -9,7 +9,7 @@ use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
-use App\Support\AssetUrl;
+use App\Support\SiteUrl;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -268,6 +268,8 @@ class KcpIdentityProvider implements IdentityVerificationInterface
                 'call_url' => $registration['call_url'],
                 'reg_cert_key' => $registration['reg_cert_key'],
                 'is_test_mode' => $this->isTestMode(),
+                // 결과 창(postMessage)의 출처 검증 기준 — 요청 Host 가 아니라 사이트 주소의 origin.
+                'siteOrigin' => SiteUrl::origin(),
             ],
             metadata: ['ordr_idxx' => $ordrIdxx],
         );
@@ -440,7 +442,8 @@ class KcpIdentityProvider implements IdentityVerificationInterface
             );
         }
 
-        // [중복 가입 조기 차단] 가입 목적의 비로그인 challenge 는 이 시점에 동일인 여부를 판정한다.
+        // [동일인 충돌 차단] 가입 목적의 비로그인 challenge 와 로그인 회원의 본인인증은 이 시점에 다른 회원과의
+        // 동일인 충돌을 판정한다(로그인 회원은 본인 기록을 빼고 본다).
         // 실제 가입 차단은 AssertNoDuplicateKcpIdentity listener 가 담당하며(권위 게이트),
         // 판정 로직은 KcpDuplicateIdentityChecker 한 곳을 공유해 두 지점이 어긋나지 않는다.
         if ($this->shouldBlockDuplicate($log)) {
@@ -774,6 +777,7 @@ class KcpIdentityProvider implements IdentityVerificationInterface
      * @param  IdentityVerificationLog  $log  대상 로그
      * @param  string  $failureCode  실패 사유 코드
      * @param  array<string, mixed>  $extra  사유별 부가 정보 (PII 제외)
+     * @return void 반환값 없음
      */
     protected function markFailed(IdentityVerificationLog $log, string $failureCode, array $extra = []): void
     {
@@ -784,19 +788,26 @@ class KcpIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
-     * 이 challenge 가 중복 가입 차단 대상인지 판정한다.
+     * 이 challenge 가 동일인 충돌 판정 대상인지 판정한다.
      *
-     * 가입(signup) 목적 + 비로그인 challenge 에만 적용한다 — 로그인 사용자의 재인증이나
-     * 비밀번호 재설정은 동일인이 존재하는 것이 정상이다.
+     * - 가입(signup) 목적 + 비로그인 challenge — 같은 사람이 다른 계정으로 또 가입하는 것을 막는다.
+     * - 로그인 회원의 본인인증(대상 회원이 있는 challenge) — **다른 회원**에 이미 묶인 DI/CI 를 자기 계정에 붙이지
+     *   못하게 막는다. 판정은 본인을 뺀 다른 회원과의 충돌만 보므로(`findConflictColumn(..., exceptUserId: 본인)`)
+     *   같은 회원의 재인증은 그대로 통과한다. 가입만 막으면 다른 정보로 가입한 뒤 마이페이지 본인인증으로 남의
+     *   본인인증 결과를 붙여 「본인인증 회원」이 될 수 있었다(#40 R11).
+     * - 그 밖(비로그인 비밀번호 재설정 등)은 동일인이 존재하는 것이 정상이라 대상이 아니다.
      *
      * @param  IdentityVerificationLog  $log  대상 로그
      * @return bool 차단 판정 수행 여부
      */
     protected function shouldBlockDuplicate(IdentityVerificationLog $log): bool
     {
-        return (bool) ($this->config['duplicate_block_enabled'] ?? true)
-            && $log->purpose === 'signup'
-            && $log->user_id === null;
+        if (! (bool) ($this->config['duplicate_block_enabled'] ?? true)) {
+            return false;
+        }
+
+        return $log->user_id !== null
+            || ($log->purpose === 'signup' && $log->user_id === null);
     }
 
     /**
@@ -806,7 +817,9 @@ class KcpIdentityProvider implements IdentityVerificationInterface
      */
     protected function callbackUrl(): string
     {
-        return AssetUrl::siteAbsolute('/plugins/sirsoft-verification_nhnkcp/plugin/nhnkcp/callback');
+        // 보안: 거래등록 복귀 주소는 KCP 에 등록되어 인증 결과가 그대로 실려 가는 주소다 — 요청 Host 로
+        // 만들면 위조 Host 로 시작한 거래의 결과·토큰이 공격자 도메인으로 간다. 언제나 사이트 주소.
+        return SiteUrl::absolute('/plugins/sirsoft-verification_nhnkcp/plugin/nhnkcp/callback');
     }
 
     /**

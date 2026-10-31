@@ -1,0 +1,101 @@
+<!-- 쇼핑몰 설정 — 스케줄 탭. 이 모듈이 선언한 예약 작업(주문 자동 확정·통계 집계 등)만 보고 켜고 끈다.
+  e2e:allow 화면 축(실제 토글 왕복·안내 상자 표시)은 라이브 매트릭스 M20 이 덮는다 — 이 조각의 바뀐 것은 정적 구조·문구다.
+
+  다른 설정 탭과 달리 폼에 담겼다가 저장되는 값이 없다 — 켜고 끄기는 **그 자리에서** 코어 스케줄 API 로 나간다
+  (`PATCH /api/admin/schedules/bulk-status` 에 이 줄 하나만 담아 보낸다 — 확장 전용 창구를 새로 두지 않는다).
+  목록도 코어 목록 API 를 소유 필터로 부른다(`extension_type=module&extension_identifier=sirsoft-ecommerce`) — 권한·응답 형식이
+  스케줄 관리 화면과 같다. 실행 주기·실행 방식 등 나머지 수정은 스케줄 관리 화면에서 하므로 그쪽으로 가는 링크를
+  설정 화면 공통 안내 상자(「스케줄 관리에서 변경」)로 둔다(같은 소유 쿼리를 실어 그 화면이 이 모듈 작업만 걸러 연다).
+  코어 스케줄 수정 권한이 없으면 스위치가 잠기므로 카드 머리에 읽기 전용 안내를 띄운다(목록 응답 abilities.can_update).
+  코어 스케줄 조회 권한(`core.schedules.read`)이 없으면 목록이 403 이다 — 탭 내용 대신 이유를 보인다.
+  넓은 화면은 표, 좁은 화면은 표가 카드로 바뀐다(`responsiveBreakpoint`). -->
+<partial description="쇼핑몰 설정 스케줄 탭 콘텐츠">
+  <div data-ref="tab_content_schedules" data-if="{{(_global.activeEcommerceSettingsTab || query.tab) === 'schedules'}}">
+    <div data-ref="ecommerce_schedules_no_permission" data-if="{{_local.ecommerceSchedulesLoadError === 'forbidden'}}" class="ecommerce-admin-card">
+      <div class="ecommerce:flex ecommerce:gap-2 ecommerce-text-tertiary">
+        <icon name="lock" size="sm" class="ecommerce:mt-0.5 ecommerce:flex-shrink-0"/>
+        <span>$t:sirsoft-ecommerce.admin.settings.schedules.no_read_permission</span>
+      </div>
+    </div>
+    <div data-ref="ecommerce_schedules_card" data-if="{{_local.ecommerceSchedulesLoadError !== 'forbidden'}}" class="ecommerce-admin-card">
+      <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.settings.schedules.title</h3>
+      <div class="ecommerce-card-description">$t:sirsoft-ecommerce.admin.settings.schedules.description</div>
+      <!-- 코어 스케줄 수정 권한(`core.schedules.update`)이 없으면 스위치가 잠긴다 — 왜 잠겼는지 알린다(목록 응답 abilities). 응답을 받기 전에는 띄우지 않는다 -->
+      <div data-ref="ecommerce_schedules_read_only_notice" data-if="{{ecommerceSchedules?.data?.abilities?.can_update === false}}" class="ecommerce-alert-warning ecommerce:mb-4">
+        <icon name="lock" size="lg" class="ecommerce:text-yellow-600 ecommerce:dark:text-yellow-400 ecommerce:flex-shrink-0"/>
+        <span>$t:sirsoft-ecommerce.admin.settings.schedules.read_only_notice</span>
+      </div>
+      <!-- 「스케줄 관리에서 변경」 안내 — 설정 화면 공통 모양(파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크). 링크는 같은 소유 쿼리를 실어 그 화면이 이 모듈 작업만 걸러 연다 -->
+      <div data-ref="ecommerce_schedules_manage_notice" class="ecommerce-alert-info ecommerce:mb-4">
+        <div class="ecommerce:flex ecommerce:gap-3">
+          <icon name="circle-info" class="ecommerce:text-xl ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
+          <div>
+            <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.settings.schedules.manage_notice</p>
+            <a data-ref="ecommerce_schedules_manage_link" href="/admin/schedules?extension_type=module&amp;extension_identifier=sirsoft-ecommerce" class="ecommerce-text-link">$t:sirsoft-ecommerce.admin.settings.schedules.manage_link</a>
+          </div>
+        </div>
+      </div>
+      <data-grid data-type="composite" data-ref="ecommerce_schedules_grid" data="{{ecommerceSchedules?.data?.data}}" :pagination="false" idField="id" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="{{ecommerceSchedules === undefined ? '' : $t('sirsoft-ecommerce.admin.settings.schedules.empty')}}">
+        <blur-until-loaded sources="ecommerceSchedules"/>
+        <column field="name" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.name" :sortable="false" :required="true">
+          <cell>
+            <div class="ecommerce:min-w-0">
+              <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">{{row.label_localized}}</span>
+              <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:font-mono ecommerce:mt-0.5">{{row.name}}</span>
+              <span data-if="{{row.description_localized}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">{{row.description_localized}}</span>
+              <!-- 실행 조건 미충족 — 그 설정이 꺼져 있어 예약 실행이 건너뛰어진다. 마우스를 올리면 조건 키가 보인다. -->
+              <span data-if="{{(row.unmet_conditions ?? []).length &gt; 0}}" title="{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}" class="ecommerce:block ecommerce:mt-1">
+                <badge data-type="composite" color="yellow" icon="triangle-exclamation" text="$t:sirsoft-ecommerce.admin.settings.schedules.condition_unmet" size="sm"/>
+              </span>
+            </div>
+          </cell>
+        </column>
+        <column field="frequency" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.frequency" :sortable="false">
+          <cell>
+            <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{row.frequency_label}}</span>
+            <span data-if="{{row.frequency !== 'everyThirtySeconds'}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:font-mono ecommerce:mt-0.5">{{row.expression}}</span>
+          </cell>
+        </column>
+        <column field="next_run_at" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.next_run" :sortable="false">
+          <cell>
+            <span data-if="{{row.is_active &amp;&amp; row.next_run_at}}" class="ecommerce-text-label">{{row.next_run_at | datetime}}</span>
+            <span data-if="{{!(row.is_active &amp;&amp; row.next_run_at)}}" class="ecommerce:text-sm ecommerce:text-gray-400 ecommerce:dark:text-gray-500">-</span>
+          </cell>
+        </column>
+        <column field="last_result" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.last_result" :sortable="false">
+          <cell>
+            <badge data-type="composite" data-if="{{row.last_result === 'success'}}" color="green" text="$t:sirsoft-ecommerce.admin.settings.schedules.result.success" size="sm"/>
+            <badge data-type="composite" data-if="{{row.last_result === 'failed'}}" color="red" text="$t:sirsoft-ecommerce.admin.settings.schedules.result.failed" size="sm"/>
+            <badge data-type="composite" data-if="{{row.last_result === 'running'}}" color="yellow" text="$t:sirsoft-ecommerce.admin.settings.schedules.result.running" size="sm"/>
+            <badge data-type="composite" data-if="{{row.last_result === 'never' || !row.last_result}}" color="gray" text="$t:sirsoft-ecommerce.admin.settings.schedules.result.never" size="sm"/>
+          </cell>
+        </column>
+        <column field="is_active" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.status" :sortable="false" :required="true">
+          <cell>
+            <toggle data-type="composite" checked="{{row.is_active}}" disabled="{{row.abilities?.can_update !== true}}" size="sm" ariaLabel="{{row.label_localized}}">
+              <on type="change">
+                <!-- 줄 하나 켜고 끄기 — 코어 일괄 변경 창구에 이 줄 하나만 담아 보낸다(스케줄 관리 화면의 표와 같은 창구). 성공·실패 모두 목록을 다시 받아 스위치를 서버 값에 맞춘다. -->
+                <api-call :auth_required="true" target="/api/admin/schedules/bulk-status" method="PATCH">
+                  <success>
+                    <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.schedules.toggle_success"/>
+                    <refetch-data-source dataSourceId="ecommerceSchedules"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.settings.schedules.toggle_failed'}}"/>
+                    <refetch-data-source dataSourceId="ecommerceSchedules"/>
+                  </fail>
+                  <field name="body">
+                    <field name="ids">
+                      <item>{{row.id}}</item>
+                    </field>
+                    <field name="is_active" value="{{$event.target.checked}}"/>
+                  </field>
+                </api-call>
+              </on>
+            </toggle>
+          </cell>
+        </column>
+      </data-grid>
+    </div>
+  </div>
+</partial>

@@ -13,6 +13,7 @@ description: >
 
 test_files:
   - resources/js/core/template-engine/__tests__/troubleshooting-state-global.test.ts
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.localInitPruneHasChanges.test.tsx
   - tests/Playwright/specs/admin/localinit-tab-roundtrip-store-sync.spec.ts
 
 axes:
@@ -27,6 +28,12 @@ effects:
   - prune_never_reintroduces_values             # 제거는 값을 도입하지 않는다 (저장소 B 불가침)
   - readonly_permission_disables_inputs         # 쓰기 권한 없으면 오염 경로 자체가 없다
   - tab_roundtrip_emits_no_console_errors       # 조용한 실패였음을 고정 (콘솔로는 안 잡혔다)
+  - tab_roundtrip_clears_has_changes            # engine-v1.77.2 — prune 이 hasChanges 도 정리
+  - unrelated_refetch_keeps_has_changes         # engine-v1.77.2 — 폼과 무관한 initLocal 은 hasChanges 를 건드리지 않는다
+  - refetch_resets_has_changes_in_every_renderer   # engine-v1.77.2 — 적용·정리 어느 렌더러든 화면의 변경 표시가 해제된다
+  - unrelated_init_local_keeps_has_changes         # engine-v1.77.2 — 단위: 무관 payload 재적용 뒤 B·화면 모두 dirty
+  - input_without_refetch_keeps_has_changes        # 대조군 — 재조회가 없으면 변경 표시는 남는다
+  - has_changes_reset_scoped_to_tracked_form_roots # engine-v1.77.2 — 등록부 판정(폼 없음=초기화, 겹침=초기화, 무관=유지, _global 제외·해제)
 
 sub_flows:
   - id: readonly_permission

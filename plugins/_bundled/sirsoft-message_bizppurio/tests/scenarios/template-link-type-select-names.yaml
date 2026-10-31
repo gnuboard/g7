@@ -1,0 +1,18 @@
+feature: 알림톡 템플릿 편집 모달의 링크 유형 선택칸 이름
+
+description: |
+  버튼, 바로연결 행은 한 줄에 링크 유형 선택칸, 이름 입력칸, 삭제 버튼이 나란히 놓이고 그 위 라벨 하나가 여러 행을 묶는다.
+  곁 라벨 이름을 칸에 자동으로 잇는 동작은 라벨 하나 뒤에 칸이 둘 이상이면 잇지 않으므로, 링크 유형 선택칸은 칸마다
+  몇 번째 버튼, 바로연결인지 구분되는 이름(aria-label)을 직접 단다. 플러그인 설정 화면과 확장점 조각 두 곳의 모달 본문을
+  모두 보고, 이름 키가 ko, en 언어 파일에 있는지도 함께 잠근다.
+
+axes:
+  surface: [plugin_settings_modal, extension_section]
+
+exclusions: []
+
+effects:
+  - template_link_type_selects_have_names
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/template_link_type_select_names.test.ts

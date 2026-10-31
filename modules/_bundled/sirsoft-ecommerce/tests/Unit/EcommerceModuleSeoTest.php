@@ -3,6 +3,8 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit;
 
 use App\Extension\ModuleManager;
+use App\Support\AssetUrl;
+use Illuminate\Support\Facades\URL;
 use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
@@ -84,6 +86,8 @@ class EcommerceModuleSeoTest extends ModuleTestCase
         // 마운트를 **실제로** 재현한다. `AssetUrl::forceBasePrefix()` 만으로는 부족하다 —
         // 이중 부착을 만드는 것은 `url()` 이고 그 헬퍼는 요청 루트를 보기 때문에,
         // 루트를 함께 옮기지 않으면 이 결함은 재현되지 않고 검사는 조용히 초록이 된다.
+        // 절대 주소의 접두사 출처는 사이트 주소(SiteUrl)다 — 하위 폴더 설치의 사이트 주소는 접두사를 품는다.
+        config(['app.url' => 'http://localhost/g7']);
         AssetUrl::forceBasePrefix('/g7');
         URL::forceRootUrl('http://localhost/g7');
 
@@ -175,6 +179,8 @@ class EcommerceModuleSeoTest extends ModuleTestCase
      */
     public function test_seo_image_leaves_non_site_paths_alone_and_fills_the_prefix(): void
     {
+        // 절대 주소의 접두사 출처는 사이트 주소(SiteUrl)다 — 하위 폴더 설치의 사이트 주소는 접두사를 품는다.
+        config(['app.url' => 'http://localhost/g7']);
         AssetUrl::forceBasePrefix('/g7');
         URL::forceRootUrl('http://localhost/g7');
 

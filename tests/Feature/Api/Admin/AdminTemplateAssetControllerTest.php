@@ -39,6 +39,11 @@ class AdminTemplateAssetControllerTest extends TestCase
 
     private string $adminToken;
 
+    /**
+     * 레이아웃 편집 권한(`core.templates.layouts.edit`)을 가진 관리자 토큰을 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,10 +69,17 @@ class AdminTemplateAssetControllerTest extends TestCase
         $this->adminToken = $this->adminUser->createToken('admin')->plainTextToken;
     }
 
+    /**
+     * 편집기 자산 매니페스트 엔드포인트가 치명 오류 없이 200 과 매니페스트 구조를 돌려준다.
+     *
+     * @effects editor_endpoints_respond_200_for_installed_template
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_editor_assets_returns_200_without_fatal_error(): void
     {
-        // sirsoft-basic 템플릿이 활성 디렉토리 또는 _bundled 디렉토리에 존재해야 한다
-        // (본 저장소에는 _bundled/sirsoft-basic 이 들어 있으므로 항상 통과)
+        // 편집기는 sirsoft-basic 설치본(templates/sirsoft-basic)만 읽는다 — 배포 원본 폴백 없음.
+        // 설치본 빌드가 없어도 200 + manifest_present=false 로 흘러야 한다.
         $response = $this->withHeaders([
             'Authorization' => "Bearer {$this->adminToken}",
             'Accept' => 'application/json',
@@ -80,7 +92,7 @@ class AdminTemplateAssetControllerTest extends TestCase
             'data' => ['identifier', 'js', 'css', 'manifest_present'],
         ]);
 
-        // 빌드된 IIFE 파일이 _bundled 또는 활성 디렉토리에 존재하면 manifest_present=true
+        // 빌드된 IIFE 파일이 설치본에 존재하면 manifest_present=true
         // 빌드되지 않았으면 false (빌드 누락 케이스도 200 으로 흘러야 함)
         $data = $response->json('data');
         $this->assertIsArray($data['js']);
@@ -94,6 +106,13 @@ class AdminTemplateAssetControllerTest extends TestCase
         }
     }
 
+    /**
+     * 편집기 components.json 엔드포인트가 설치본을 읽어 200 을 돌려준다.
+     *
+     * @effects editor_endpoints_respond_200_for_installed_template
+     *
+     * @return void 반환값 없음
+     */
     public function test_serve_components_returns_200_without_fatal_error(): void
     {
         $response = $this->withHeaders([
@@ -105,6 +124,13 @@ class AdminTemplateAssetControllerTest extends TestCase
         $response->assertJsonStructure(['success', 'message', 'data']);
     }
 
+    /**
+     * 편집기 routes.json 엔드포인트가 설치본을 읽어 200 을 돌려준다.
+     *
+     * @effects editor_endpoints_respond_200_for_installed_template
+     *
+     * @return void 반환값 없음
+     */
     public function test_serve_routes_returns_200_without_fatal_error(): void
     {
         $response = $this->withHeaders([
@@ -125,6 +151,10 @@ class AdminTemplateAssetControllerTest extends TestCase
      * 없으면 클라이언트가 `undefined.kind` 접근에서 throw → 라우트 트리 전체가 network
      * 에러로 무너졌다(유효한 토큰으로도 편집기 진입 불가). public getRoutes 와 동일하게
      * 모든 라우트에 source 를 태깅해야 한다.
+     *
+     * @effects editor_routes_tag_every_route_with_source
+     *
+     * @return void 반환값 없음
      */
     public function test_serve_routes_tags_every_route_with_source(): void
     {
@@ -158,6 +188,10 @@ class AdminTemplateAssetControllerTest extends TestCase
      * 만 반환해 두 그룹이 영구히 미표시였다(클라이언트가 `baseLayouts:[], modals:[]` 하드
      * 코딩으로 디그레이드). 백엔드가 레이아웃 파일에서 `meta.is_base` base 레이아웃과
      * 인라인 `modals[]` 를 수집해 응답에 실어야 두 그룹이 트리에 표시된다.
+     *
+     * @effects editor_routes_collect_base_layouts_and_modals
+     *
+     * @return void 반환값 없음
      */
     public function test_serve_routes_includes_base_layouts_and_modals(): void
     {
@@ -222,6 +256,10 @@ class AdminTemplateAssetControllerTest extends TestCase
      *
      * host_layout 은 라우트 트리 layout 규약(`{moduleId}.admin/...`)과 일치해야
      * 트리에서 호스트 화면 노드와 매칭된다.
+     *
+     * @effects editor_routes_collect_base_layouts_and_modals
+     *
+     * @return void 반환값 없음
      */
     public function test_serve_routes_includes_module_layout_modals(): void
     {
@@ -308,6 +346,12 @@ class AdminTemplateAssetControllerTest extends TestCase
      *
      * 라우트 트리 버전 배지의 데이터 소스 — 버전 이력이 있는 레이아웃만 최신 버전
      * 번호로 포함되고, 이력이 없는(원본) 레이아웃은 맵에 없어야 한다(배지 미표시).
+     *
+     * @scenario edit_mode=route, version_domain=layout, layout_history=has_versions, backend_response_shape=with_layout_versions
+     *
+     * @effects editor_routes_response_includes_layout_versions_map, layout_versions_map_only_contains_layouts_with_history
+     *
+     * @return void 반환값 없음
      */
     public function test_serve_routes_includes_layout_versions_map(): void
     {
@@ -341,6 +385,10 @@ class AdminTemplateAssetControllerTest extends TestCase
      *
      * 종전엔 편집기가 공개 routes.json 을 호출해 세션 만료 상태에서도
      * 200 을 받아 편집기 접근이 허용됐다. 가드 엔드포인트는 auth:sanctum 으로 차단.
+     *
+     * @effects editor_endpoints_reject_unauthenticated_or_unpermitted
+     *
+     * @return void 반환값 없음
      */
     public function test_serve_routes_requires_authentication(): void
     {
@@ -351,6 +399,13 @@ class AdminTemplateAssetControllerTest extends TestCase
         $response->assertStatus(401);
     }
 
+    /**
+     * 편집기 editor-spec 엔드포인트가 설치본 스펙을 읽어 200 과 `{identifier, spec}` 구조를 돌려준다.
+     *
+     * @effects editor_endpoints_respond_200_for_installed_template
+     *
+     * @return void 반환값 없음
+     */
     public function test_serve_editor_spec_returns_200_without_fatal_error(): void
     {
         $response = $this->withHeaders([
@@ -362,6 +417,13 @@ class AdminTemplateAssetControllerTest extends TestCase
         $response->assertJsonStructure(['success', 'message', 'data' => ['identifier', 'spec']]);
     }
 
+    /**
+     * 편집기 다국어 엔드포인트가 설치본 lang 파일을 읽어 200 을 돌려준다.
+     *
+     * @effects editor_endpoints_respond_200_for_installed_template
+     *
+     * @return void 반환값 없음
+     */
     public function test_serve_language_returns_200_without_fatal_error(): void
     {
         $response = $this->withHeaders([
@@ -378,6 +440,10 @@ class AdminTemplateAssetControllerTest extends TestCase
      *
      * 속성 모달 표시 권한 TagInput 후보 주입. 종전 G7Config 상시 노출에서
      * 편집 권한 가드된 편집기 전용 엔드포인트로 전환(노출 범위 한정).
+     *
+     * @effects permission_candidates_returned_as_key_name
+     *
+     * @return void 반환값 없음
      */
     public function test_serve_permission_candidates_returns_key_name_list(): void
     {
@@ -413,6 +479,10 @@ class AdminTemplateAssetControllerTest extends TestCase
     /**
      * 표시 권한 후보 엔드포인트는 편집 권한(core.templates.layouts.edit) 가드 하에만 접근 가능.
      * 권한 없는 사용자는 403 — 권한 카탈로그 노출이 편집 권한자에게만 한정됨을 보장.
+     *
+     * @effects editor_endpoints_reject_unauthenticated_or_unpermitted
+     *
+     * @return void 반환값 없음
      */
     public function test_serve_permission_candidates_requires_edit_permission(): void
     {
@@ -433,10 +503,17 @@ class AdminTemplateAssetControllerTest extends TestCase
      * sirsoft-basic 의 darkMode.previewIsolation 선언(.dark → .g7le-preview-dark)에 따라,
      * 빌드 CSS 의 다크 조상 셀렉터(`.dark .foo`)가 프리뷰 마커로 치환돼야 한다. 동시에
      * 유틸리티 클래스(`.dark\:bg-x` — 이스케이프 콜론)는 보존돼야 한다(사용자 토큰 무손실).
+     * 편집기는 설치본 CSS 만 서빙하므로 비교 기준도 설치본(`templates/sirsoft-basic`) 빌드다.
+     *
+     * @scenario read_site=template_editor_css, file_state=installed_present
+     *
+     * @effects installed_file_served
+     *
+     * @return void 반환값 없음
      */
     public function test_serve_editor_css_isolates_dark_ancestor_selector(): void
     {
-        $cssPath = base_path('templates/_bundled/sirsoft-basic/dist/css/components.css');
+        $cssPath = base_path('templates/sirsoft-basic/dist/css/components.css');
         if (! file_exists($cssPath)) {
             $this->markTestSkipped('sirsoft-basic dist CSS 미빌드 — 빌드 후 검증');
         }
@@ -463,15 +540,20 @@ class AdminTemplateAssetControllerTest extends TestCase
         }
 
         // @layer 평탄화 — 편집기 CSS 는 어드민 호스트 CSS 와의 cross-build 레이어 우선순위
-        // 충돌을 피하려 unlayered 로 평탄화돼야 한다(결함). 원본에 @layer {} 블록이
-        // 있었다면 서빙된 CSS 에는 블록 오프너가 남지 않아야 한다.
+        // 충돌을 피하려 템플릿 층 이름을 프리뷰 층(`g7-preview`) 하나로 모은다.
+        // 원본에 @layer {} 블록이 있었다면 서빙된 CSS 의 층 블록은 모두 프리뷰 층이어야 한다.
         if (preg_match('/@layer\s+[^;{]*\{/', $original)) {
-            $this->assertSame(0, preg_match('/@layer\s+[^;{]*\{/', $css), '서빙 CSS 에 @layer 블록 래퍼가 남으면 cross-build 우선순위 충돌');
+            $this->assertSame(0, preg_match('/@layer\s+(?!g7-preview\{)[^;{]*\{/', $css), '서빙 CSS 에 템플릿 층 이름이 남으면 cross-build 우선순위 충돌');
+            $this->assertStringContainsString('@layer g7-preview{', $css, '층 안 규칙은 프리뷰 층에 담긴다');
         }
     }
 
     /**
      * 편집기 CSS 엔드포인트는 편집 권한 가드 하에만 접근 가능 (403 경계).
+     *
+     * @effects editor_endpoints_reject_unauthenticated_or_unpermitted
+     *
+     * @return void 반환값 없음
      */
     public function test_serve_editor_css_requires_edit_permission(): void
     {
@@ -489,6 +571,10 @@ class AdminTemplateAssetControllerTest extends TestCase
     /**
      * editor-assets 매니페스트의 css URL 은 편집기 전용 CSS 엔드포인트를 가리켜야 한다
      * 일반 자산 서빙(public)이 아님.
+     *
+     * @effects editor_assets_css_points_to_editor_endpoint
+     *
+     * @return void 반환값 없음
      */
     public function test_editor_assets_css_points_to_editor_endpoint(): void
     {
@@ -526,43 +612,85 @@ class AdminTemplateAssetControllerTest extends TestCase
     }
 
     /**
-     * flattenCssLayers — `@layer NAME { ... }` 블록 래퍼를 제거해 내부 규칙을 unlayered 로
-     * 평탄화한다. cross-build 레이어 우선순위 충돌 방지의 핵심 로직(결함). 중첩 레이어·
-     * 짝 불일치 폴백·@layer 선언만(블록 없음) 보존을 함께 가드.
+     * 프리뷰 CSS 의 층 블록은 프리뷰 층(`g7-preview`)으로 모이고, 층 밖 규칙·`@property` 는 층 밖에 남으며 순서 선언은
+     * 지워진다. 관리자 화면 머리는 템플릿 CSS 뒤에 `@layer g7-preview, g7-extension;` 을 선언해, 프리뷰 템플릿
+     * 초기화(`*{border:0 solid}`)가 확장 의미 칸을 이기지 않게 한다(issue816 실측: 프리뷰 메모 카드 테두리 1px→0,
+     * 제목 24px→13px). 트러블슈팅 `[case:backend-61]` 의 회귀 그물이다.
+     *
+     * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
+     *
+     * @return void 반환값 없음
+     */
+    public function test_flatten_css_layers_merges_into_preview_layer(): void
+    {
+        $css = '@layer theme, base, utilities;@property --tw-x{syntax:"*";inherits:false}@layer base{*{border:0 solid}}@layer utilities{.p-4{padding:1rem}@layer inner{.q{top:0}}}.own{color:red}';
+        $out = $this->invokePrivate('flattenCssLayers', [$css]);
+
+        $this->assertSame('@property --tw-x{syntax:"*";inherits:false}@layer g7-preview{*{border:0 solid}}@layer g7-preview{.p-4{padding:1rem}.q{top:0}}.own{color:red}', $out);
+
+        $blade = (string) file_get_contents(resource_path('views/admin.blade.php'));
+        $links = strpos($blade, '@foreach($templateStylesheets');
+        $order = strpos($blade, '<style>@layer g7-preview, g7-extension;</style>');
+        $this->assertNotFalse($order, '관리자 화면 머리가 프리뷰 층을 확장 의미 칸 앞에 선언한다');
+        $this->assertGreaterThan($links, $order, '층 순서 선언은 관리자 템플릿 CSS 링크 뒤에 온다');
+    }
+
+    /**
+     * flattenCssLayers — 템플릿의 `@layer NAME { ... }` 층 이름을 프리뷰 층 하나로 모은다. cross-build 레이어
+     * 우선순위 충돌 방지의 핵심 로직(결함). 중첩 레이어·짝 불일치 폴백·순서 선언 제거를 함께 가드.
+     *
+     * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
+     *
+     * @return void 반환값 없음
      */
     public function test_flatten_css_layers_unwraps_blocks_preserves_rules(): void
     {
         $css = '@layer base{a{color:red}}@layer utilities{.x{top:0}.y{left:0}}';
         $out = $this->invokePrivate('flattenCssLayers', [$css]);
 
-        $this->assertSame(0, preg_match('/@layer\s+[^;{]*\{/', $out), '@layer 블록 래퍼가 모두 제거되어야 한다');
+        $this->assertSame(0, preg_match('/@layer\s+(?!g7-preview\{)[^;{]*\{/', $out), '템플릿 층 이름은 모두 프리뷰 층으로 바뀐다');
         $this->assertStringContainsString('a{color:red}', $out, '내부 규칙은 보존');
         $this->assertStringContainsString('.x{top:0}', $out);
         $this->assertStringContainsString('.y{left:0}', $out);
     }
 
+    /**
+     * 중첩된 `@layer` 블록은 안쪽을 벗겨 프리뷰 층 안에 그대로 둔다.
+     *
+     * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
+     *
+     * @return void 반환값 없음
+     */
     public function test_flatten_css_layers_handles_nested_layers(): void
     {
         $css = '@layer outer{.a{top:0}@layer inner{.b{left:0}}.c{right:0}}';
         $out = $this->invokePrivate('flattenCssLayers', [$css]);
 
-        $this->assertSame(0, preg_match('/@layer\s+[^;{]*\{/', $out), '중첩 @layer 도 전부 평탄화');
-        $this->assertStringContainsString('.a{top:0}', $out);
-        $this->assertStringContainsString('.b{left:0}', $out);
-        $this->assertStringContainsString('.c{right:0}', $out);
+        $this->assertSame('@layer g7-preview{.a{top:0}.b{left:0}.c{right:0}}', $out, '중첩 층은 벗기고 바깥만 프리뷰 층');
     }
 
+    /**
+     * 블록 없는 `@layer a, b;` 순서 선언은 지운다 — 관리자 화면에서 그 이름이 확장 의미 칸 뒤에 새 층으로 생기지 않게.
+     *
+     * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
+     *
+     * @return void 반환값 없음
+     */
     public function test_flatten_css_layers_preserves_bare_layer_declaration(): void
     {
-        // 블록 없는 선언(`@layer a, b;`)은 레이어 순서 선언이므로 그대로 보존.
         $css = '@layer base, utilities;@layer base{.a{top:0}}';
         $out = $this->invokePrivate('flattenCssLayers', [$css]);
 
-        $this->assertStringContainsString('@layer base, utilities;', $out, '블록 없는 @layer 선언은 보존');
-        $this->assertStringContainsString('.a{top:0}', $out);
-        $this->assertSame(0, preg_match('/@layer\s+[^;{]*\{/', $out), '블록 래퍼만 제거');
+        $this->assertSame('@layer g7-preview{.a{top:0}}', $out, '순서 선언은 지우고 층 블록만 프리뷰 층으로');
     }
 
+    /**
+     * 중괄호 짝이 맞지 않는 CSS 는 평탄화를 포기하고 원문을 그대로 돌려준다(안전 폴백).
+     *
+     * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
+     *
+     * @return void 반환값 없음
+     */
     public function test_flatten_css_layers_unbalanced_brace_falls_back_safely(): void
     {
         // 짝 불일치(`}` 부족) — 평탄화 포기하고 원문 보존(프리뷰가 깨지지 않도록 안전 폴백).
@@ -572,6 +700,13 @@ class AdminTemplateAssetControllerTest extends TestCase
         $this->assertStringContainsString('.a{top:0}', $out, '폴백 시 내용 보존');
     }
 
+    /**
+     * `@layer` 가 없는 CSS 는 평탄화가 아무것도 바꾸지 않는다.
+     *
+     * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
+     *
+     * @return void 반환값 없음
+     */
     public function test_flatten_css_layers_noop_when_no_layers(): void
     {
         // @layer 비사용 CSS(예 Bootstrap)는 변형 없이 그대로(no-op).
@@ -584,6 +719,10 @@ class AdminTemplateAssetControllerTest extends TestCase
     /**
      * rewriteDarkSelectors — 다크 조상 셀렉터(`.dark` 후손 결합자/그룹 경계 앞)만 치환하고,
      * 유틸리티 클래스(`.dark\:bg-x` — 이스케이프 콜론)는 보존(라이브러리 중립 치환).
+     *
+     * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
+     *
+     * @return void 반환값 없음
      */
     public function test_rewrite_dark_selectors_only_ancestor_not_utility(): void
     {
@@ -605,6 +744,10 @@ class AdminTemplateAssetControllerTest extends TestCase
      * resolveDarkPreviewIsolation 가 `flattenLayers` 를 반환하고, false 면 serveEditorCss 가
      * flattenCssLayers 를 호출하지 않아 @layer 가 보존됨을 검증. 디스크 fixture 대신 isolation
      * 분기 로직을 직접 호출해 가드(라이브러리 중립 핵심 분기).
+     *
+     * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_dark_preview_isolation_includes_flatten_flag(): void
     {
@@ -616,5 +759,62 @@ class AdminTemplateAssetControllerTest extends TestCase
         $this->assertTrue($iso['flattenLayers'], 'sirsoft-basic 은 flattenLayers:true 옵트인');
         $this->assertSame('.dark', $iso['rewrite']);
         $this->assertSame('.g7le-preview-dark', $iso['replace']);
+    }
+
+    /**
+     * **짝 `.json` 이 없는 소스만 있어도 편집기 트리에 나타난다** (S19 ⑦ · R16).
+     *
+     * 이 단언이 왜 필요한가 — 종전 트리 스캔은 `getExtension() !== 'json'` 으로 걸러
+     * 마크업 전용 레이아웃을 **구조적으로 보지 못했다**. 그런데 현 코퍼스는 소스 전건이
+     * 짝을 가지므로 **코퍼스만으로는 그 결손이 드러나지 않는다** — 짝이 대표해 화면이 멀쩡해
+     * 보이고, 규약이 지켜져서가 아니라 가려져 있었을 뿐이다.
+     *
+     * 그래서 짝 없는 소스를 **일부러 만들어** 관측한다. 이것이 없으면 이 회차의 수정이
+     * 실제로 무엇을 고쳤는지 아무 테스트도 증명하지 못한다.
+     *
+     * @effects editor_routes_collect_base_layouts_and_modals
+     *
+     * @return void 반환값 없음
+     */
+    public function test_serve_routes_includes_markup_only_layout_without_json_twin(): void
+    {
+        $layoutDir = base_path('templates/sirsoft-basic/layouts');
+        $this->assertDirectoryExists($layoutDir, '활성 템플릿 레이아웃 디렉토리가 있어야 한다');
+
+        $markupOnly = $layoutDir.DIRECTORY_SEPARATOR.'_s19_markup_only_probe.g7.html';
+        $this->assertFileDoesNotExist(
+            str_replace('.g7.html', '.json', $markupOnly),
+            '탐침 소스의 짝이 미리 있으면 이 테스트가 증명하려는 상태가 아니다'
+        );
+
+        // `version` 은 필수이고 `is_base` 는 타입 리터럴(`:attr`)이라야 불리언으로 컴파일된다
+        // — 무접두 `is_base="true"` 는 문자열이라 `=== true` 판정에 걸리지 않는다.
+        file_put_contents($markupOnly, <<<'MARKUP'
+        <layout name="_s19_markup_only_probe" version="1.0.0">
+          <meta :is_base="true" editor_label="S19 마크업 전용 탐침"/>
+          <div class="p-4">
+            <span>probe</span>
+          </div>
+        </layout>
+        MARKUP);
+
+        try {
+            $response = $this->withHeaders([
+                'Authorization' => "Bearer {$this->adminToken}",
+                'Accept' => 'application/json',
+            ])->getJson('/api/admin/templates/sirsoft-basic/editor/routes.json');
+
+            $response->assertStatus(200);
+
+            $baseNames = array_column($response->json('data.base_layouts') ?? [], 'layout_name');
+            $this->assertContains(
+                '_s19_markup_only_probe',
+                $baseNames,
+                '짝 `.json` 없이 소스만 있는 레이아웃이 편집기 트리에 나타나야 한다 '
+                .'(트리 스캔이 소스 SSoT 를 모집단으로 삼는가)'
+            );
+        } finally {
+            @unlink($markupOnly);
+        }
     }
 }

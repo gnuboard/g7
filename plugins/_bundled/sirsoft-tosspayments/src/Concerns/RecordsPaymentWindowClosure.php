@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\Tosspayments\Concerns;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
@@ -18,8 +16,9 @@ use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
  * 결제창 닫힘·결제 실패를 소유권 검증 후 기록하는 공통 절차.
  *
  * 브라우저 리턴 콜백(`/payment/success`·`/payment/fail`)은 인증도 서명도 없고 주문번호가
- * 쿼리스트링으로 오므로 주문 상태를 바꾸지 않는다. 주문을 실패로 전이시키는 것은 구매자
- * 정보를 대조한 이 경로뿐이며, 다른 결제사 플러그인(KCP·KG이니시스·나이스페이)과 같은 계약이다.
+ * 쿼리스트링으로 오므로 주문 상태를 바꾸지 않는다. 주문을 실패로 전이시키는 것은 주문
+ * 소유자(회원 본인 로그인 / 비회원 조회 토큰)를 확인한 close-report 경로뿐이며(VerifiesOrderOwnership),
+ * 다른 결제사 플러그인(KCP·KG이니시스·나이스페이)과 같은 계약이다.
  */
 trait RecordsPaymentWindowClosure
 {
@@ -62,43 +61,6 @@ trait RecordsPaymentWindowClosure
 
             return null;
         }
-    }
-
-    /**
-     * 요청이 주문의 구매자 본인에게서 온 것인지 대조합니다.
-     *
-     * 이 대조가 주문 상태를 바꿀 자격의 근거다. 배송지가 없으면 대조할 기준이 없으므로 통과시킨다
-     * (다른 결제사 플러그인과 동일 계약).
-     *
-     * @param  Request  $request  검증 대상 요청
-     * @param  Order  $order  대상 주문
-     * @return bool 구매자 정보가 일치하면 true
-     */
-    protected function requestMatchesOrderBuyer(Request $request, Order $order): bool
-    {
-        /** @var OrderAddress|null $address */
-        $address = $order->shippingAddress;
-        if (! $address) {
-            return true;
-        }
-
-        $expectedEmail = strtolower(trim((string) $address->orderer_email));
-        if ($expectedEmail !== '') {
-            $receivedEmail = strtolower(trim((string) $request->input('buyer_email', '')));
-            if ($receivedEmail === '' || $receivedEmail !== $expectedEmail) {
-                return false;
-            }
-        }
-
-        $expectedPhone = $this->digitsOnly((string) $address->orderer_phone);
-        if ($expectedPhone !== '') {
-            $receivedPhone = $this->digitsOnly((string) $request->input('buyer_phone', ''));
-            if ($receivedPhone === '' || $receivedPhone !== $expectedPhone) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
@@ -189,16 +151,5 @@ trait RecordsPaymentWindowClosure
         ]);
 
         return $order->fresh('payment') ?? $order;
-    }
-
-    /**
-     * 문자열에서 숫자만 남깁니다 (전화번호 대조용).
-     *
-     * @param  string  $value  원본 문자열
-     * @return string 숫자만 남은 문자열
-     */
-    protected function digitsOnly(string $value): string
-    {
-        return preg_replace('/[^0-9]/', '', $value) ?? '';
     }
 }

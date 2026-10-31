@@ -25,7 +25,7 @@ routes.json (URL → 레이아웃 이름 매핑)
 layouts/*.json (extends: _admin_base)
         │
         ▼
-_admin_base.json (사이드바·헤더·Toast·PageTransitionIndicator·콘텐츠 슬롯·푸터)
+_admin_base.g7.html (사이드바·헤더·Toast·PageTransitionIndicator·콘텐츠 슬롯·푸터)
         │
         ▼
 src/components/{basic,composite,layout}/*.tsx (필수 컴포넌트 35개 포함 125개)
@@ -37,6 +37,12 @@ src/handlers/*.ts (이 템플릿 전용 핸들러 17개 — 범용 핸들러는 
 이 트리는 코어 화면에만 적용되는 것이 아닙니다 — 모듈/플러그인의 관리자 레이아웃도 같은
 `_admin_base` → 컴포넌트 경로를 그대로 타므로, 이 템플릿을 고치면 그 확장들의 화면도 같은
 방향으로 바뀝니다(§AGENTS.md "수정 시 동반 의무" 참고).
+
+로그인 화면(`admin_login`)과 비밀번호 재설정 화면(`admin_reset_password`)은 `_admin_base` 를 상속하지 않고 Toast 를 따로
+둡니다. 그래서 로그인 화면에서 띄운 알림(비밀번호 변경 완료·휴면 해제 등)은 관리자 화면으로 넘어가며 다른 Toast 인스턴스가 이어
+그립니다. `Toast` 는 항목의 만든 시각(`createdAt`, 엔진 toast 핸들러가 넣음)부터 표시 시간을 세므로, 이어 그리는 Toast 는 남은
+시간만 보이고 이미 지난 항목은 그리지 않고 `_global.toasts` 에서 지웁니다. 떠나는 Toast 는 타이머를 거둡니다. 회귀 테스트:
+`src/components/composite/__tests__/Toast.lifetime.test.tsx`.
 <!-- @intent END -->
 
 ## 디렉토리
@@ -46,7 +52,7 @@ src/handlers/*.ts (이 템플릿 전용 핸들러 17개 — 범용 핸들러는 
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update sirsoft-admin_basic --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `src/handlers/` | 템플릿 전용 액션 핸들러 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
@@ -54,7 +60,8 @@ src/handlers/*.ts (이 템플릿 전용 핸들러 17개 — 범용 핸들러는 
 | `editor-spec/` | 분할 편집기 스펙 | `php artisan template:update sirsoft-admin_basic --force` |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan template:update sirsoft-admin_basic --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan template:update sirsoft-admin_basic --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan template:update sirsoft-admin_basic --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->

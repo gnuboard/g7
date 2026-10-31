@@ -6,6 +6,7 @@ use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
+use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Models\Template;
 use App\Repositories\TemplateRepository;
@@ -29,6 +30,11 @@ class TemplateServiceInstallationTest extends TestCase
 
     private PluginManagerInterface $pluginManager;
 
+    /**
+     * 테스트 픽스처를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -63,6 +69,11 @@ class TemplateServiceInstallationTest extends TestCase
         );
     }
 
+    /**
+     * 테스트 픽스처를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -71,6 +82,12 @@ class TemplateServiceInstallationTest extends TestCase
 
     /**
      * getAllTemplates 메서드가 설치된 템플릿과 미설치 템플릿을 모두 반환하는지 테스트
+     *
+     * @scenario operation=list
+     *
+     * @effects get_all_templates_returns_installed_and_uninstalled
+     *
+     * @return void 반환값 없음
      */
     public function test_get_all_templates_returns_installed_and_uninstalled(): void
     {
@@ -121,6 +138,12 @@ class TemplateServiceInstallationTest extends TestCase
 
     /**
      * getAllTemplates 메서드가 타입별로 필터링하는지 테스트
+     *
+     * @scenario operation=list
+     *
+     * @effects get_all_templates_filters_by_type
+     *
+     * @return void 반환값 없음
      */
     public function test_get_all_templates_filters_by_type(): void
     {
@@ -156,6 +179,12 @@ class TemplateServiceInstallationTest extends TestCase
 
     /**
      * getInstalledTemplatesOnly 메서드가 설치된 템플릿만 반환하는지 테스트
+     *
+     * @scenario operation=list
+     *
+     * @effects get_installed_templates_only
+     *
+     * @return void 반환값 없음
      */
     public function test_get_installed_templates_only(): void
     {
@@ -180,6 +209,12 @@ class TemplateServiceInstallationTest extends TestCase
 
     /**
      * getUninstalledTemplatesOnly 메서드가 미설치 템플릿만 반환하는지 테스트
+     *
+     * @scenario operation=list
+     *
+     * @effects get_uninstalled_templates_only
+     *
+     * @return void 반환값 없음
      */
     public function test_get_uninstalled_templates_only(): void
     {
@@ -203,6 +238,12 @@ class TemplateServiceInstallationTest extends TestCase
 
     /**
      * getTemplateInfo 메서드가 특정 템플릿 정보를 반환하는지 테스트
+     *
+     * @scenario operation=list
+     *
+     * @effects get_template_info
+     *
+     * @return void 반환값 없음
      */
     public function test_get_template_info(): void
     {
@@ -232,6 +273,12 @@ class TemplateServiceInstallationTest extends TestCase
 
     /**
      * installTemplate 메서드가 템플릿을 설치하는지 테스트
+     *
+     * @scenario operation=install
+     *
+     * @effects install_template_successfully
+     *
+     * @return void 반환값 없음
      */
     public function test_install_template_successfully(): void
     {
@@ -257,16 +304,30 @@ class TemplateServiceInstallationTest extends TestCase
             ->with($identifier)
             ->andReturn($templateInfo);
 
+        // 설치가 빈 자리로 등록한 조각 참조 경고를 꺼내 결과에 싣는다 (#712)
+        $warning = ['file' => 'templates/test-template/layouts/home.json', 'partial' => 'partials/x.json', 'reason' => 'include_file_not_found', 'message' => 'm'];
+        $this->templateManager
+            ->shouldReceive('takeLastLayoutWarnings')
+            ->once()
+            ->andReturn([$warning]);
+
         // Act
         $result = $this->templateService->installTemplate($identifier);
 
-        // Assert: installTemplate은 배열을 반환함 (templateInfo)
+        // Assert: installTemplate은 배열을 반환함 (templateInfo + layout_warnings)
         $this->assertIsArray($result);
         $this->assertEquals($identifier, $result['identifier']);
+        $this->assertSame([$warning], $result['layout_warnings']);
     }
 
     /**
      * installTemplate 메서드가 실패 시 예외를 발생시키는지 테스트
+     *
+     * @scenario operation=install
+     *
+     * @effects install_template_throws_exception_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_install_template_throws_exception_on_failure(): void
     {
@@ -286,6 +347,12 @@ class TemplateServiceInstallationTest extends TestCase
 
     /**
      * uninstallTemplate 메서드가 템플릿을 제거하는지 테스트
+     *
+     * @scenario operation=uninstall
+     *
+     * @effects uninstall_template_successfully
+     *
+     * @return void 반환값 없음
      */
     public function test_uninstall_template_successfully(): void
     {
@@ -308,7 +375,7 @@ class TemplateServiceInstallationTest extends TestCase
         $this->templateManager
             ->shouldReceive('uninstallTemplate')
             ->once()
-            ->with($identifier)
+            ->with($identifier, null, Mockery::any(), false)
             ->andReturn(true);
 
         // Act
@@ -321,6 +388,12 @@ class TemplateServiceInstallationTest extends TestCase
 
     /**
      * uninstallTemplate 메서드가 실패 시 예외를 발생시키는지 테스트
+     *
+     * @scenario operation=uninstall
+     *
+     * @effects uninstall_template_throws_exception_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_uninstall_template_throws_exception_on_failure(): void
     {
@@ -343,7 +416,7 @@ class TemplateServiceInstallationTest extends TestCase
         $this->templateManager
             ->shouldReceive('uninstallTemplate')
             ->once()
-            ->with($identifier)
+            ->with($identifier, null, Mockery::any(), false)
             ->andThrow(new \Exception('Uninstallation failed'));
 
         // Act & Assert
@@ -356,6 +429,12 @@ class TemplateServiceInstallationTest extends TestCase
      *
      * 참고: 실제 deactivate 로직은 TemplateServiceActivationTest에서 테스트됨
      * 이 테스트는 Mock 기반으로 Manager 호출이 올바르게 이루어지는지 확인
+     *
+     * @scenario operation=deactivate
+     *
+     * @effects deactivate_template_successfully
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivate_template_successfully(): void
     {
@@ -369,6 +448,7 @@ class TemplateServiceInstallationTest extends TestCase
             'version' => '1.0.0',
             'status' => ExtensionStatus::Active->value,
         ]);
+        $this->createPeerActiveAdminTemplate();
 
         $templateInfo = [
             'identifier' => $identifier,
@@ -381,7 +461,7 @@ class TemplateServiceInstallationTest extends TestCase
         $this->templateManager
             ->shouldReceive('deactivateTemplate')
             ->once()
-            ->with($identifier)
+            ->with($identifier, DeactivationReason::Manual->value, null, null)
             ->andReturnUsing(function () use ($template) {
                 $template->update(['status' => ExtensionStatus::Inactive->value]);
 
@@ -407,6 +487,12 @@ class TemplateServiceInstallationTest extends TestCase
 
     /**
      * deactivateTemplate 메서드가 실패 시 예외를 발생시키는지 테스트
+     *
+     * @scenario operation=deactivate
+     *
+     * @effects deactivate_template_throws_exception_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivate_template_throws_exception_on_failure(): void
     {
@@ -421,15 +507,35 @@ class TemplateServiceInstallationTest extends TestCase
             'version' => '1.0.0',
             'status' => ExtensionStatus::Active->value,
         ]);
+        $this->createPeerActiveAdminTemplate();
 
         $this->templateManager
             ->shouldReceive('deactivateTemplate')
             ->once()
-            ->with($identifier)
+            ->with($identifier, DeactivationReason::Manual->value, null, null)
             ->andThrow(new \Exception('Deactivation failed'));
 
         // Act & Assert
         $this->expectException(ValidationException::class);
         $this->templateService->deactivateTemplate($identifier);
+    }
+
+    /**
+     * 같은 유형(admin)의 다른 활성 템플릿을 만듭니다.
+     *
+     * 유형의 마지막 활성 템플릿은 끌 수 없으므로(#703) 비활성화 경로를 보는 테스트는 이 짝을 남긴다.
+     *
+     * @return Template 짝 활성 템플릿
+     */
+    private function createPeerActiveAdminTemplate(): Template
+    {
+        return Template::create([
+            'identifier' => 'test-template-peer',
+            'vendor' => 'test-vendor',
+            'name' => 'Peer Template',
+            'type' => 'admin',
+            'version' => '1.0.0',
+            'status' => ExtensionStatus::Active->value,
+        ]);
     }
 }

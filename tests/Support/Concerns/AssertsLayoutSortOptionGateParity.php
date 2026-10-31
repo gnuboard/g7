@@ -2,11 +2,7 @@
 
 namespace Tests\Support\Concerns;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Route;
 use ReflectionClass;
-use ReflectionMethod;
-use ReflectionNamedType;
 
 /**
  * 화면 정렬 옵션 ↔ 게이트 허용 집합 회귀 가드 (#492 D-19).
@@ -24,16 +20,12 @@ use ReflectionNamedType;
  *
  * 대상 쌍을 손으로 나열하지 않는다. 레이아웃에서 정렬 셀렉트를 찾고, 같은 레이아웃이
  * 조회하는 엔드포인트를 라우트에서 역추적해 그 FormRequest 를 읽는다. 새 목록 화면이
- * 추가돼도 자동으로 검사된다.
+ * 추가돼도 자동으로 검사된다. 레이아웃 → 라우트 → FormRequest 역추적은
+ * `ResolvesLayoutEndpointFormRequest` 가 맡는다(쿼리 키 가드와 공용).
  */
 trait AssertsLayoutSortOptionGateParity
 {
-    /**
-     * 세그먼트 수 → 라우트 목록 인덱스. 엔드포인트마다 전체 라우트를 재순회하지 않기 위한 것.
-     *
-     * @var array<int, array<int, array{parts: array<int, string>, action: string}>>|null
-     */
-    private ?array $routeIndex = null;
+    use ResolvesLayoutEndpointFormRequest;
 
     /**
      * FormRequest 클래스 → 허용 정렬 컬럼 메모. 같은 게이트를 여러 화면이 공유한다.
@@ -51,6 +43,9 @@ trait AssertsLayoutSortOptionGateParity
 
     /**
      * 레이아웃이 제공하는 정렬 컬럼은 그 화면이 호출하는 엔드포인트의 게이트가 허용해야 한다.
+     *
+     * @param  array<int, string>  $roots  레이아웃 탐색 루트
+     * @return void 반환값 없음
      */
     protected function assertLayoutSortOptionsWithinGate(array $roots): void
     {
@@ -123,7 +118,8 @@ trait AssertsLayoutSortOptionGateParity
     /**
      * 정렬 셀렉트를 가진 레이아웃을 수집합니다.
      *
-     * @return array<int, array{file: string, columns: array<int, string>, endpoints: array<int, string>}>
+     * @param  array<int, string>  $roots  레이아웃 탐색 루트
+     * @return array<int, array{file: string, columns: array<int, string>, endpoints: array<int, string>}> 화면별 정렬 컬럼과 엔드포인트
      */
     private function collectSortSurfaces(array $roots): array
     {
@@ -163,73 +159,6 @@ trait AssertsLayoutSortOptionGateParity
     }
 
     /**
-     * Partial 레이아웃의 부모 레이아웃에서 엔드포인트를 가져옵니다.
-     *
-     * 관례상 partial 은 `layouts/**\/partials/{부모레이아웃명}/_partial_*.json` 에 놓인다.
-     *
-     * @param  string  $partialFile  partial 절대 경로
-     * @return array<int, string> 부모 레이아웃의 엔드포인트 (부모를 찾지 못하면 빈 배열)
-     */
-    private function parentLayoutEndpoints(string $partialFile): array
-    {
-        $path = str_replace('\\', '/', $partialFile);
-
-        if (! preg_match('#^(.*)/partials/([^/]+)/[^/]+\.json$#', $path, $m)) {
-            return [];
-        }
-
-        $parent = $m[1].'/'.$m[2].'.json';
-
-        if (! is_file($parent)) {
-            return [];
-        }
-
-        $json = json_decode(file_get_contents($parent), true);
-
-        if (! is_array($json)) {
-            return [];
-        }
-
-        $endpoints = [];
-        $this->walkForEndpoints($json, $endpoints);
-
-        return array_values(array_unique($endpoints));
-    }
-
-    /**
-     * 레이아웃 JSON 파일 목록을 반환합니다.
-     *
-     * @return array<int, string> 절대 경로 목록
-     */
-    private function layoutFiles(array $roots): array
-    {
-        $files = [];
-
-        foreach ($roots as $root) {
-            if (! is_dir($root)) {
-                continue;
-            }
-
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveCallbackFilterIterator(
-                    new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
-                    fn ($current) => ! in_array($current->getFilename(), ['node_modules', 'dist', 'vendor', '.git'], true)
-                )
-            );
-
-            foreach ($iterator as $entry) {
-                $path = str_replace('\\', '/', $entry->getPathname());
-
-                if ($entry->isFile() && str_ends_with($path, '.json') && str_contains($path, '/layouts/')) {
-                    $files[] = $entry->getPathname();
-                }
-            }
-        }
-
-        return $files;
-    }
-
-    /**
      * 정렬 셀렉트가 방출할 수 있는 정렬 컬럼을 재귀적으로 수집합니다.
      *
      * `{col}_{asc|desc}` 형태의 옵션 값에서 컬럼을 뽑고, 액션이 `sort_by` 에 리터럴을
@@ -237,6 +166,7 @@ trait AssertsLayoutSortOptionGateParity
      *
      * @param  mixed  $node  탐색 노드
      * @param  array<int, string>  $columns  수집 결과 (참조)
+     * @return void 반환값 없음
      */
     private function walkForSortColumns(mixed $node, array &$columns): void
     {
@@ -303,27 +233,6 @@ trait AssertsLayoutSortOptionGateParity
     }
 
     /**
-     * 레이아웃의 데이터소스 엔드포인트를 재귀적으로 수집합니다.
-     *
-     * @param  mixed  $node  탐색 노드
-     * @param  array<int, string>  $endpoints  수집 결과 (참조)
-     */
-    private function walkForEndpoints(mixed $node, array &$endpoints): void
-    {
-        if (! is_array($node)) {
-            return;
-        }
-
-        if (isset($node['endpoint']) && is_string($node['endpoint'])) {
-            $endpoints[] = $node['endpoint'];
-        }
-
-        foreach ($node as $child) {
-            $this->walkForEndpoints($child, $endpoints);
-        }
-    }
-
-    /**
      * 엔드포인트에 대응하는 라우트의 FormRequest 가 허용하는 정렬 컬럼을 반환합니다.
      *
      * @param  string  $endpoint  레이아웃에 선언된 엔드포인트
@@ -335,83 +244,18 @@ trait AssertsLayoutSortOptionGateParity
             return $this->endpointCache[$endpoint];
         }
 
-        $uri = trim(preg_replace('/\{\{.*?\}\}/', '{param}', parse_url($endpoint, PHP_URL_PATH) ?? ''), '/');
-        $endpointParts = $uri === '' ? [] : explode('/', $uri);
-
-        // 세그먼트 수가 같은 라우트만 후보다 — 전체 라우트 재순회를 피한다
-        $candidates = $this->routeIndex()[count($endpointParts)] ?? [];
+        $actions = $this->matchingRouteActions($endpoint);
         $columns = [];
-        $routeMatched = false;
 
-        foreach ($candidates as $candidate) {
-            if (! $this->partsMatch($candidate['parts'], $endpointParts)) {
-                continue;
-            }
-
-            $routeMatched = true;
-            $columns = $this->gateColumnsForAction($candidate['action']);
+        foreach ($actions as $action) {
+            $columns = $this->gateColumnsForAction($action);
 
             if ($columns !== []) {
                 break;
             }
         }
 
-        return $this->endpointCache[$endpoint] = ['route_matched' => $routeMatched, 'columns' => $columns];
-    }
-
-    /**
-     * GET 라우트를 세그먼트 수로 색인해 반환합니다 (최초 1회만 구성).
-     *
-     * @return array<int, array<int, array{parts: array<int, string>, action: string}>>
-     */
-    private function routeIndex(): array
-    {
-        if ($this->routeIndex !== null) {
-            return $this->routeIndex;
-        }
-
-        $index = [];
-
-        foreach (Route::getRoutes()->getRoutes() as $route) {
-            if (! in_array('GET', $route->methods(), true)) {
-                continue;
-            }
-
-            $action = $route->getActionName();
-
-            if (! str_contains($action, '@')) {
-                continue;
-            }
-
-            $uri = trim($route->uri(), '/');
-            $parts = $uri === '' ? [] : explode('/', $uri);
-
-            $index[count($parts)][] = ['parts' => $parts, 'action' => $action];
-        }
-
-        return $this->routeIndex = $index;
-    }
-
-    /**
-     * 라우트 세그먼트와 엔드포인트 세그먼트가 같은 자리를 가리키는지 판정합니다.
-     *
-     * @param  array<int, string>  $routeParts  라우트 세그먼트 (`{user}` 는 임의 값과 일치)
-     * @param  array<int, string>  $endpointParts  엔드포인트 세그먼트
-     * @return bool 일치 여부
-     */
-    private function partsMatch(array $routeParts, array $endpointParts): bool
-    {
-        foreach ($routeParts as $index => $part) {
-            if (str_starts_with($part, '{')) {
-                continue;
-            }
-
-            if ($part !== ($endpointParts[$index] ?? null)) {
-                return false;
-            }
-        }
-
-        return true;
+        return $this->endpointCache[$endpoint] = ['route_matched' => $actions !== [], 'columns' => $columns];
     }
 
     /**
@@ -425,29 +269,7 @@ trait AssertsLayoutSortOptionGateParity
      */
     private function gateColumnsForAction(string $actionName): array
     {
-        if (! str_contains($actionName, '@')) {
-            return [];
-        }
-
-        [$class, $method] = explode('@', $actionName, 2);
-
-        if (! class_exists($class) || ! method_exists($class, $method)) {
-            return [];
-        }
-
-        foreach ((new ReflectionMethod($class, $method))->getParameters() as $parameter) {
-            $type = $parameter->getType();
-
-            if (! $type instanceof ReflectionNamedType || $type->isBuiltin()) {
-                continue;
-            }
-
-            $requestClass = $type->getName();
-
-            if (! is_subclass_of($requestClass, FormRequest::class)) {
-                continue;
-            }
-
+        foreach ($this->formRequestClassesForAction($actionName) as $requestClass) {
             $columns = $this->readGateSortColumns($requestClass);
 
             if ($columns !== []) {

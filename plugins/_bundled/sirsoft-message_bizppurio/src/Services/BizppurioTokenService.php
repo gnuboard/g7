@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\MessageBizppurio\Services;
 use App\Contracts\Extension\CacheInterface;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Plugins\Sirsoft\MessageBizppurio\Exceptions\BizppurioApiException;
 
@@ -167,10 +168,10 @@ class BizppurioTokenService
      * 비밀번호 오류인지 서버 오류인지 즉시 구분할 수 있게 한다(고정 문구만으로는
      * 원인 추적이 불가능했던 문제 대응).
      *
-     * @param  \Illuminate\Http\Client\Response  $response  실패한 HTTP 응답
+     * @param  Response  $response  실패한 HTTP 응답
      * @return string 사용자에게 보여줄 실패 메시지
      */
-    private function describeFailure(\Illuminate\Http\Client\Response $response): string
+    private function describeFailure(Response $response): string
     {
         $description = (string) ($response->json('description') ?? '');
 

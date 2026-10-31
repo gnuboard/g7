@@ -1,0 +1,45 @@
+feature: 주문 설정 저장소와 결제수단 카탈로그 병합
+
+description: |
+  환경설정 > 주문설정 탭이 읽고 쓰는 주문 설정(order_settings) 카테고리의 서비스 계약을 소유한다.
+  기본값·저장값·구 payment 설정 세 출처를 합쳐 하나의 주문 설정을 만들고, 결제수단 목록은
+  내장 수단과 플러그인이 필터로 등록한 수단을 병합한다.
+
+  핵심 동작:
+    - 기본값: 주문 설정 카테고리·은행·입금 계좌·내장 결제수단이 설치 기본값에서 로드된다
+    - 저장: 주문 설정·입금 계좌·은행 목록이 저장 후 같은 값으로 다시 읽히고, 은행만 저장해도 나머지가 보존된다
+    - 격리: 테스트 환경의 저장 경로는 운영 설정 경로와 분리된다
+    - 이관: 구 payment 설정은 주문 설정이 없을 때 한 번만 이관된다
+    - 병합: 플러그인 결제수단과 그 core_payment_method·표시 메타데이터가 병합·저장 뒤에도 남는다
+    - 고아: 공급 확장이 사라진 결제수단은 관리자 응답에만 표시되고, 공개 결제 설정·주문서 설정에서는
+      빠지며, 저장 시 정리된다(관리자 화면이 막아도 주문서가 is_active 만 보면 선택 가능했던 회귀)
+
+axes:
+  settings_source: [defaults, saved, legacy_payment]
+  catalog_origin: [builtin, plugin]
+
+exclusions:
+  - { settings_source: legacy_payment, catalog_origin: plugin, reason: "구 payment 설정에는 플러그인 결제수단 카탈로그가 없어 이관 대상은 내장 수단뿐이다" }
+
+effects:
+  - order_settings_defaults_loaded
+  - settings_storage_isolated_from_production_in_tests
+  - get_setting_reads_dot_notation_with_default_fallback
+  - payment_method_display_metadata_cached
+  - plugin_payment_method_merged_via_filter
+  - plugin_core_payment_method_preserved_through_merge_and_save
+  - saved_settings_override_payment_method_defaults
+  - orphaned_payment_method_flagged_in_admin_settings
+  - orphaned_payment_method_excluded_from_public_payment_and_checkout
+  - orphaned_payment_method_removed_on_save
+  - legacy_payment_settings_migrated_once
+  - order_settings_and_bank_accounts_persist_round_trip
+  - all_settings_expose_order_fields_and_bank_accounts
+  - public_payment_settings_resolve_bank_name
+  - frontend_settings_exclude_order_settings
+  - stock_deduction_timing_resolved_per_method_with_default
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/EcommerceSettingsOrderSettingsTest.php
+  # 공개 결제 설정·주문서 설정 API 가 고아 결제수단을 빼는지 (HTTP 경계)
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PaymentSettingsOrphanedMethodTest.php

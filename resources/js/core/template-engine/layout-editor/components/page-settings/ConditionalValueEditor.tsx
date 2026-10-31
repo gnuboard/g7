@@ -522,7 +522,7 @@ function ConditionBuilder({
  * (직렬화→재파싱→리마운트로 인한 커서 소실·불완전 경로 잠금을 피한다), blur/Enter 에서만 커밋한다.
  * 외부 value 가 바뀌면(다른 노드/연산자 전환) 버퍼를 동기화한다.
  *
- * @since engine-v1.74.x
+ * @since engine-v1.50.0 (#383 §11 후속 — 조건 입력 타이핑 잠금 결함 B5)
  */
 function BufferedCondInput({
   testid,

@@ -1,0 +1,22 @@
+feature: 모듈 설치·제거 시 권한과 역할 연결
+
+description: |
+  모듈이 getPermissions() 로 선언한 권한은 설치 때 모듈 노드 → 카테고리 노드 → 개별 권한의 3단 계층으로 생기고,
+  개별 권한만 선언된 역할(roles)에 연결된다. 제거 때는 역할 연결을 끊고 권한을 지우되 시스템 역할은 남긴다.
+  기준 모듈은 sirsoft-board(카테고리 7 · 개별 권한 15 — 7.1.0 에서 대시보드·스크랩·반응 카테고리가 더해짐).
+
+axes:
+  lifecycle: [install, uninstall, declaration]
+
+effects:
+  - module_install_creates_hierarchical_permissions
+  - module_install_assigns_permissions_to_declared_roles
+  - existing_role_permissions_are_preserved_on_install
+  - module_uninstall_detaches_permissions_from_roles
+  - module_uninstall_deletes_permissions
+  - system_roles_survive_module_uninstall
+  - permission_definitions_declare_roles
+  - only_leaf_permissions_are_assigned_to_roles
+
+test_files:
+  - tests/Feature/Module/ModuleRolePermissionTest.php

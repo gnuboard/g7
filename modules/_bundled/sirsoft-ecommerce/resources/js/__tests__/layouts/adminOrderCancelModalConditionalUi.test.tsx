@@ -66,18 +66,41 @@ describe('주문 취소 모달 조건부 UI', () => {
         }
     });
 
-    it("'PG 함께 취소' 체크박스 컨테이너의 if 가 requires_pg_cancellation 을 판정한다", () => {
-        // batch_cancel_pg_checkbox Input 을 자식으로 둔 컨테이너
-        const hasPgCheckbox = (n: any): boolean =>
-            Array.isArray(n.children) &&
-            n.children.some((c: any) => c?.props?.id === 'batch_cancel_pg_checkbox');
+    /**
+     * "PG 함께 취소" 체크박스는 없앴다 — 취소의 입구는 하나다.
+     *
+     * 그 체크박스를 끄면 환불신청서도 취소신청서도 없이 상품만 `cancelled` 로 옮겨졌다.
+     * 재고는 돌아오는데 돈·결제행·주문 합계는 그대로라, 원장 어디에도 근거 없는 취소가
+     * 남았다(결제행을 정리하지 않으므로 그 주문은 이후 입금확인·입금통보로 되살아난다).
+     *
+     * 검사 대상을 "그 체크박스가 없다" 로 잡으면 레이아웃을 통째로 비워도 통과한다. 그래서
+     * 같은 바의 형제 컨트롤이 살아 있는지를 함께 단언한다.
+     *
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     * @effects cancel_pg_control_is_gone_from_the_bulk_bar
+     */
+    it("'PG 함께 취소' 체크박스가 일괄변경 바에 없다", () => {
+        const pgCheckboxes = collect(
+            partialOrderInfo,
+            (n: any) => n?.props?.id === 'batch_cancel_pg_checkbox'
+        );
 
-        const containers = collect(partialOrderInfo, (n) => hasPgCheckbox(n) && typeof n.if === 'string');
+        expect(pgCheckboxes.length).toBe(0);
 
-        expect(containers.length).toBe(1);
-        const condition = containers[0].if as string;
-        expect(condition).toContain('requires_pg_cancellation');
-        // 기존 batch 취소 게이트도 유지되어야 한다
-        expect(condition).toContain('batchOrderStatus');
+        // 모집단이 비어 통과하는 거짓 green 방지 — 같은 바의 상태 Select 는 남아 있어야 한다.
+        const statusSelects = collect(
+            partialOrderInfo,
+            (n: any) => n?.name === 'Select' && n?.props?.name === 'batchOrderStatus'
+        );
+
+        expect(statusSelects.length).toBe(1);
+    });
+
+    /**
+     * @scenario claim_type=refund, charge_method=none, refund_branch=auto
+     * @effects cancel_pg_control_is_gone_from_the_bulk_bar
+     */
+    it('일괄변경 바가 더는 cancelPg 를 핸들러로 넘기지 않는다', () => {
+        expect(JSON.stringify(partialOrderInfo)).not.toContain('cancelPg');
     });
 });

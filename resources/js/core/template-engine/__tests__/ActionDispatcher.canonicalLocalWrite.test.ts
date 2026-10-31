@@ -4,7 +4,7 @@
  * 커스텀 핸들러가 `context.setState`(저장소 A) 로만 쓰던 경로를 저장소 B(`_global._local`)에도
  * 함께 쓰도록 만든 미러 계약을 잠근다 (engine-v1.63.5).
  *
- * ## 무엇이 깨져 있었나 (브라우저 실측 2026-09-02, `https://g7_2.dev/shop/products/{code}`)
+ * ## 무엇이 깨져 있었나 (브라우저 실측 2026-09-02, `/shop/products/{code}`)
  *
  *   1) `show.json` 의 `init_actions` 가 B 에 `selectedOptionItems: []` 를 심는다
  *   2) 옵션을 고르면 템플릿 커스텀 핸들러가 `context.setState({ selectedOptionItems: [item] })`
@@ -158,6 +158,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
 
   const ITEM = { id: '화이트', optionId: 11, quantity: 1, unitPrice: 19000 };
 
+  // @scenario gate=mirrored
+  // @effects handler_write_reaches_store_b
   it('T1 — 핸들러 쓰기 후 후속 액션이 보는 _local 에 실제 값이 담긴다 (주 회귀 핀)', async () => {
     seedB({ selectedOptionItems: [], currentSelection: {} });
 
@@ -184,6 +186,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     ).toEqual([ITEM]);
   });
 
+  // @scenario gate=mirrored
+  // @effects handler_write_reaches_store_b
   it('T2 — globalStateUpdater 가 받은 마지막 _local 에 값이 도달한다', async () => {
     seedB({ selectedOptionItems: [] });
     dispatcher.registerHandler('addItem', (_a: any, ctx: any) => {
@@ -195,6 +199,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect(liveB().selectedOptionItems).toEqual([ITEM]);
   });
 
+  // @scenario gate=mirrored
+  // @effects handler_write_reaches_store_b
   it('T3 — __g7SequenceLocalSync 가 갱신되어 sequence 전파 장치가 살아난다', async () => {
     seedB({ selectedOptionItems: [] });
     dispatcher.registerHandler('addItem', (_a: any, ctx: any) => {
@@ -206,6 +212,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect((window as any).__g7SequenceLocalSync?.selectedOptionItems).toEqual([ITEM]);
   });
 
+  // @scenario gate=mirrored
+  // @effects store_a_written_once_without_recursion
   it('T4 — __g7ActionContext.setState 와 참조가 같으면 저장소 A 를 한 번만 쓴다', async () => {
     seedB({ n: 0 });
     dispatcher.registerHandler('bump', (_a: any, ctx: any) => {
@@ -220,6 +228,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect(liveB().n).toBe(1);
   });
 
+  // @scenario gate=mirrored
+  // @effects store_a_written_once_without_recursion
   it('T5 — __g7ActionContext 가 없으면 원본 writer 와 setLocal 이 각각 한 번씩 동작한다', () => {
     seedB({ n: 0 });
     const ctx: any = { state: storeA, setState: setStateA, data: { _local: liveB() } };
@@ -231,6 +241,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect(liveB().n).toBe(7);
   });
 
+  // @scenario gate=mirrored
+  // @effects store_a_written_once_without_recursion
   it('T6 — 미러 writer 로 재진입해도 무한 재귀가 없다', () => {
     seedB({ n: 0 });
     const ctx: any = { state: storeA, setState: setStateA };
@@ -241,6 +253,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect(storeA.n).toBe(1);
   });
 
+  // @scenario gate=excluded
+  // @effects mirror_skipped_for_unsafe_writes
   it('T7 — 모달 컨텍스트 스택이 있으면 미러하지 않는다 (사례 29)', () => {
     seedB({ pageKey: 'page' });
     (window as any).__g7LayoutContextStack = [{ state: {}, setState: () => {} }];
@@ -252,6 +266,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect(storeA.pageKey).toBe('modal');
   });
 
+  // @scenario gate=excluded
+  // @effects mirror_skipped_for_unsafe_writes
   it('T8 — merge:"replace" 는 미러하지 않는다 (사례 17)', () => {
     seedB({ a: 1, b: 2 });
     const ctx: any = { state: storeA, setState: setStateA };
@@ -262,6 +278,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect(storeA.a).toBe(9);
   });
 
+  // @scenario gate=mirrored
+  // @effects handler_write_reaches_store_b
   it('T9 — dot-notation 키는 양쪽 모두 중첩으로 기록되고 리터럴 키가 남지 않는다', () => {
     seedB({ form: { general: { asset_url_mode: 'extension' } } });
     const ctx: any = { state: storeA, setState: setStateA };
@@ -272,6 +290,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect(Object.keys(liveB())).not.toContain('form.general.asset_url_mode');
   });
 
+  // @scenario gate=mirrored
+  // @effects handler_write_reaches_store_b
   it('T10 — 배열을 비우는 쓰기가 양쪽 모두 빈 배열이 된다', () => {
     seedB({ selectedOptionItems: [ITEM] });
     const ctx: any = { state: storeA, setState: setStateA };
@@ -281,6 +301,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect(liveB().selectedOptionItems).toEqual([]);
   });
 
+  // @scenario gate=mirrored
+  // @effects handler_write_reaches_store_b
   it('T11 — __mergeMode 명시 시 forcedFields 가 얕게 재보정된다 (사례 19 2차)', () => {
     seedB({ currentSelection: { 색상: '화이트' } });
     (window as any).__g7ForcedLocalFields = { currentSelection: { 색상: '화이트' } };
@@ -294,6 +316,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     ).toEqual({});
   });
 
+  // @scenario gate=excluded
+  // @effects mirror_skipped_for_unsafe_writes
   it('T12 — payload 에 errors 키가 있으면 미러하지 않는다', () => {
     seedB({ errors: { title: ['필수'] } });
     const ctx: any = { state: storeA, setState: setStateA };
@@ -304,6 +328,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect(storeA.errors).toEqual({});
   });
 
+  // @scenario gate=excluded
+  // @effects mirror_skipped_for_unsafe_writes
   it('T13 — payload 에 File 등 non-plain 객체가 있으면 미러하지 않는다', () => {
     seedB({ upload: null });
     const ctx: any = { state: storeA, setState: setStateA };
@@ -315,6 +341,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect(storeA.upload).toBe(file);
   });
 
+  // @scenario gate=excluded
+  // @effects mirror_skipped_for_unsafe_writes
   it('T14 — 함수형 업데이터는 원본 writer 로 폴백한다', () => {
     seedB({ n: 1 });
     const ctx: any = { state: storeA, setState: setStateA };
@@ -325,6 +353,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     expect(liveB().n, '함수형은 payload 를 꺼낼 수 없어 미러하지 않는다').toBe(1);
   });
 
+  // @scenario gate=mirrored
+  // @effects mirror_proxy_does_not_leak_to_parent_scope
   it('T15 — 커스텀 핸들러는 미러 프록시를 받고, 그 프록시가 부모 스코프 스택으로 새지 않는다', async () => {
     seedB({ n: 0 });
     let sawProxy = false;
@@ -344,6 +374,8 @@ describe('[case:state-setstate-42] 커스텀 핸들러 setState 미러 — 저�
     }
   });
 
+  // @scenario gate=excluded
+  // @effects mirror_skipped_for_unsafe_writes
   it('T16 — scope:"parent" 로 넘긴 쓰기는 미러하지 않는다', () => {
     seedB({ pageKey: 'page' });
     const ctx: any = { state: storeA, setState: setStateA };

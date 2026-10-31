@@ -10,6 +10,11 @@
  * - POST ?action=reset  : 설치 상태 초기화 (Step 3로 이동)
  * - POST ?action=abort  : 설치 중단 (현재 작업만 롤백)
  * - POST ?action=skip_task : 실패한 선택 확장 태스크를 건너뛰고 재개 가능 상태로 (W3)
+ * - POST ?action=reclaim: 복구 토큰으로 설치 소유권 되찾기 (세션 유실 후 재개)
+ *
+ * reset/abort/reclaim 은 상태변경이라 CSRF 토큰을, reset/abort 는 설치 소유 세션을 요구한다.
+ * get 은 폴링 경로라 게이트를 두지 않는다 — 완료 직전까지 1초 간격으로 불리며, 여기에 게이트를
+ * 두면 정상 설치가 "진행 중"에 고착되는 자가 차단 회귀가 난다 (KVE-2026-1056).
  */
 
 /**
@@ -58,6 +63,7 @@ class StateManagementApi
                 'reset' => $this->resetState(),
                 'abort' => $this->abortInstallation(),
                 'skip_task' => $this->skipFailedTask(),
+                'reclaim' => $this->reclaimOwnership(),
                 default => $this->error400('Invalid action parameter'),
             };
         } catch (Throwable $e) {
@@ -161,6 +167,9 @@ class StateManagementApi
                 // 설치 시작 시 확정된 실행 모드 (subprocess|inprocess). 화면은 서버 렌더 값으로
                 // 분기하므로 이 필드를 읽지 않는다 — 진단·실측용이다.
                 'execution_mode' => $state['execution_mode_resolved'] ?? null,
+                // 워커 lock 보유 여부 — SSE 스트림이 끊긴 뒤 화면이 새 워커로 이어 받을지 정한다.
+                // 워커 ID 자체는 내보내지 않는다.
+                'worker_active' => installerHasActiveWorker($state),
             ]);
 
         // JSON 응답 반환
@@ -241,16 +250,27 @@ class StateManagementApi
             exit;
         }
 
-        // 현재 상태 조회
+        // 현재 상태 조회 + 요청 검증
         $state = getInstallationState();
+        installer_require_csrf();
 
         // 파손된 상태에서는 이 뒤의 저장이 거부되어(13차 #D13) 초기화가 500 으로 끝난다 —
         // 그러면 운영자에게 남는 조작이 없다. 초기화는 진행분을 **의도적으로 버리는** 유일한
         // 조작이므로 여기서만 파손 원본을 치운다(사본은 남는다). 다른 경로는 종전대로 거부된다.
+        $discardedCorrupt = false;
         if (installerStateIsCorrupt() && installerDiscardCorruptState()) {
             addLog(lang('state_reset_discarded_corrupt'));
             $state = getInstallationState();
+            $discardedCorrupt = true;
         }
+
+        // 설치 소유권 — 소유 세션만 초기화할 수 있다. 파손 원본을 치운 경우는 예외다: 읽을 수 없는
+        // 상태에는 소유자 기록도 없어 어떤 세션도 소유자로 판정되지 않고, 초기화가 유일한 탈출구다
+        // (요청 검증·출처 확인은 그대로 거친다).
+        if (! $discardedCorrupt) {
+            installer_require_owner($state);
+        }
+        $generation = (int) ($state['generation'] ?? 0);
 
         $this->requireStepwiseTokenOrReject($state);
 
@@ -265,7 +285,7 @@ class StateManagementApi
         // 사이 워커가 갱신한 설정(예: composer 가용성 판정)이 조용히 사라진다. 구간 안에서
         // 다시 읽어 최신 config 위에 초기화를 얹는다. 이 구간에는 SSE flush 가 없어
         // installerWithStateLock 의 경계 규칙(짧은 상태 조작만)에 부합한다.
-        $saved = (bool) installerWithStateLock(static function () use ($state, $targetStep): bool {
+        $saved = installerWithStateLock(static function () use ($state, $targetStep, $generation): ?bool {
             $fresh = getInstallationState();
             $state = (is_array($fresh) && $fresh !== []) ? $fresh : $state;
 
@@ -311,9 +331,28 @@ class StateManagementApi
             // 재입력 또는 runtime 폴백으로 복원된다.
             $state = redactInstallationStateSecrets($state);
 
-            // 상태 저장
-            return installerSaveStateOrReport($state, 'state_reset');
+            // 상태 저장 — 읽은 뒤 다른 상태변경(세대를 올리는 쓰기 — 소유권 회수·설치 시작·다른 탭의
+            // 초기화)이 먼저 커밋됐으면 덮어쓰지 않는다 (CAS). 세대를 올리지 않는 워커·heartbeat 쓰기는
+            // 위 재조회가 반영한다. 세대가 올라가므로 이전 설치 계획의 서명도 함께 무효가 된다.
+            if ((int) ($state['generation'] ?? 0) !== $generation) {
+                return null;
+            }
+
+            if (saveInstallationStateCas($state, $generation)) {
+                return true;
+            }
+
+            // 세대는 위에서 같음을 확인했다 — 여기의 실패는 쓰기 실패다 (installerSaveStateOrReport 와 같은 기록).
+            $msg = '[installer-state] Failed to persist state at: state_reset';
+            installerErrorLog($msg);
+            addLog($msg);
+
+            return false;
         });
+
+        if ($saved === null) {
+            installer_json_error(409, 'state_conflict', lang('error_state_conflict'));
+        }
 
         if (! $saved) {
             throw new Exception(lang('state_save_failed'));
@@ -367,8 +406,11 @@ class StateManagementApi
             exit;
         }
 
-        // 설치 상태 가져오기 — 게이트가 먼저다. 로그를 앞에 두면 거부된 요청도 진행 기록을 남긴다.
+        // 설치 상태 가져오기 + 설치 소유권·요청 검증 (pagehide sendBeacon 은 본문 csrf_token 으로 온다).
+        // 게이트가 먼저다. 로그를 앞에 두면 거부된 요청도 진행 기록을 남긴다.
         $state = getInstallationState();
+        installer_require_owner($state);
+        installer_require_csrf();
 
         $this->requireStepwiseTokenOrReject($state);
 
@@ -552,6 +594,69 @@ class StateManagementApi
     }
 
     /**
+     * POST ?action=reclaim
+     * 복구 토큰으로 설치 소유권 되찾기
+     *
+     * 브라우저 재시작 등으로 소유 세션이 사라졌을 때, Step 3 통과 시 소유자 화면에 노출된 복구 토큰으로
+     * 현재 세션에 소유권을 재발급한다. 사용한 토큰은 즉시 회전하고, 실패는 집계해 잠근다.
+     */
+    private function reclaimOwnership(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo installer_json_encode([
+                'success' => false,
+                'message' => lang('api_method_not_allowed'),
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        installer_require_csrf();
+
+        $state = getInstallationState();
+
+        if (! installer_state_is_claimed($state) || isInstallationCompleted()) {
+            installer_json_error(400, 'recovery_unavailable', lang('error_recovery_unavailable'));
+        }
+
+        if (! installer_session_is_owner($state)) {
+            if (installer_reclaim_is_locked()) {
+                installer_json_error(429, 'recovery_rate_limited', lang('error_recovery_rate_limited'));
+            }
+
+            $input = installer_request_json_body();
+            if (! installer_recovery_token_matches($state, (string) ($input['recovery_token'] ?? $_POST['recovery_token'] ?? ''))) {
+                installer_reclaim_record_failure();
+                addLog(lang('log_ownership_reclaim_failed'));
+                installer_json_error(403, 'recovery_token_invalid', lang('error_recovery_token_invalid'));
+            }
+
+            // 세션 고정 방지 — 소유권을 얹기 전에 세션 ID 를 새로 발급한다.
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
+
+            $generation = (int) ($state['generation'] ?? 0);
+            $state = installer_reclaim_owner($state);
+
+            if (! saveInstallationStateCas($state, $generation)) {
+                installer_json_error(409, 'state_conflict', lang('error_state_conflict'));
+            }
+
+            installer_reclaim_reset_throttle();
+            addLog(lang('log_ownership_reclaimed'));
+        }
+
+        // 재개 화면으로 — 세션 step 을 state 의 진행 단계로 맞춘다.
+        $_SESSION['installer_current_step'] = (int) ($state['current_step'] ?? 0);
+
+        echo installer_json_encode([
+            'success' => true,
+            'message' => lang('recovery_success'),
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
      * 400 Bad Request 응답
      */
     private function error400(string $message): void
@@ -618,6 +723,7 @@ require_once __DIR__.'/../includes/installer-state.php';
 require_once __DIR__.'/../includes/installer-runtime.php';
 // 노출 점검 sentinel 정리 헬퍼 (B-4) — abort/reset 정리 구간에서 호출
 require_once __DIR__.'/../includes/exposure-check.php';
+require_once __DIR__.'/../includes/installer-ownership.php';
 
 // 롤백 함수 로드 (reset, abort 액션에서 필요)
 require_once __DIR__.'/rollback-functions.php';

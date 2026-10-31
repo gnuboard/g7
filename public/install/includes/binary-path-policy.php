@@ -271,3 +271,26 @@ if (! function_exists('installer_binary_path_tokenize')) {
         return $tokens;
     }
 }
+
+if (! function_exists('installer_php_binary_from_state')) {
+    /**
+     * 설치 상태에 저장된 PHP 실행 경로를 돌려준다 (artisan 을 띄울 실행 파일).
+     *
+     * 설치 워커의 artisan 호출과 설치 완료 직후 .env 병합의 설정 캐시 다시 만들기가 같은 규칙을 쓴다.
+     * 형태 규칙을 통과하지 못하면 시스템 기본값(php)으로 폴백한다 — 설치 흐름은 유지하되
+     * 사용자 입력이 인자 자리로 흘러가지 않도록 한다.
+     *
+     * @param  array<string, mixed>  $state  인스톨러 state
+     * @return string PHP 실행 경로
+     */
+    function installer_php_binary_from_state(array $state): string
+    {
+        $phpBinary = (string) ($state['config']['php_binary'] ?? '');
+
+        if ($phpBinary === '' || $phpBinary === 'php') {
+            return 'php';
+        }
+
+        return installer_binary_path_shape_ok($phpBinary) ? $phpBinary : 'php';
+    }
+}

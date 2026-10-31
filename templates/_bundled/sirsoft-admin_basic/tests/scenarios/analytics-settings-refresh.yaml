@@ -1,0 +1,19 @@
+feature: analytics_settings_refresh
+
+description: >
+  방문자 통계 › 설정 머리글 「새로고침」이 고친 값을 버리지 못하던 결함(트러블슈팅 state-global 사례 11).
+  같은 응답은 initLocal 적용을 건너뛰고, 입력칸이 폼 감싸개 상태에 고친 값을 들고 있었다. 데이터 소스에
+  refetchOnMount 를 다는 방법은 탭 왕복마다 다시 받아 「여러 탭을 고쳐 두고 한 번에 저장」 흐름을 깨므로,
+  새로고침 버튼만 서버 설정을 받아 폼을 채우고 감싸개를 remount 한다. 탭 왕복의 편집 보존도 함께 잠근다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-analytics-settings-refresh.test.ts
+  - tests/Playwright/specs/admin/analytics-settings-refresh.spec.ts
+
+axes:
+  action: [refresh, tab_roundtrip]
+
+effects:
+  - refresh_restores_server_values   # 새로고침 → 칸이 서버 값
+  - refresh_disables_save            # 새로고침 → 저장 버튼 꺼짐·hasChanges false
+  - tab_roundtrip_keeps_edits        # 탭 왕복 → 고친 값·저장 버튼 활성 유지 (refetchOnMount 미사용)

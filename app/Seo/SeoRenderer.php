@@ -13,6 +13,8 @@ use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
+use App\Support\LayoutEmptyObjects;
+use App\Support\Template\ExtensionCssOverrideResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -22,6 +24,22 @@ class SeoRenderer implements SeoRendererInterface
     use LocalizesSeoValues;
     use SubstitutesSeoVariables;
 
+    /**
+     * SEO 렌더러를 생성합니다.
+     *
+     * @param  TemplateRouteResolver  $routeResolver  템플릿 라우트 해석기
+     * @param  LayoutService  $layoutService  레이아웃 서비스
+     * @param  TemplateService  $templateService  템플릿 서비스
+     * @param  DataSourceResolver  $dataSourceResolver  데이터소스 해석기
+     * @param  SeoMetaResolver  $metaResolver  SEO 메타 해석기
+     * @param  ComponentHtmlMapper  $htmlMapper  컴포넌트 HTML 매퍼
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @param  SeoConfigMerger  $seoConfigMerger  SEO 설정 병합기
+     * @param  SettingsService  $settingsService  코어 설정 서비스
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
+     * @param  ModuleManagerInterface  $moduleManager  모듈 관리자
+     * @param  PluginManagerInterface  $pluginManager  플러그인 관리자
+     */
     public function __construct(
         private readonly TemplateRouteResolver $routeResolver,
         private readonly LayoutService $layoutService,
@@ -61,10 +79,13 @@ class SeoRenderer implements SeoRendererInterface
         $routeParams = $routeInfo['routeParams'];
         $moduleIdentifier = $routeInfo['moduleIdentifier'];
         $pluginIdentifier = $routeInfo['pluginIdentifier'] ?? null;
+        // 사이트 첫 화면은 사이트 이름 자체가 제목이다 — 라우트 제목(「홈」)을 붙이지 않는다
+        $routeTitle = $url === '/' ? null : ($routeInfo['routeMeta']['title'] ?? null);
 
         // 2. 병합된 레이아웃 JSON 로드
         try {
-            $mergedLayout = $this->layoutService->getLayout($templateIdentifier, $layoutName);
+            // 화면 응답용으로 보존한 빈 객체를 배열로 되돌린다 — SEO 평가기는 배열만 다룬다
+            $mergedLayout = LayoutEmptyObjects::toArrays($this->layoutService->getLayout($templateIdentifier, $layoutName));
         } catch (\Throwable $e) {
             Log::warning('[SEO] Layout load failed', [
                 'layout' => $layoutName,
@@ -203,6 +224,8 @@ class SeoRenderer implements SeoRendererInterface
             $pluginIdentifier,
             $context,
             $defaultLocale,
+            false,
+            $routeTitle,
         );
     }
 
@@ -225,6 +248,7 @@ class SeoRenderer implements SeoRendererInterface
      * @param  array  $context  해석된 데이터 컨텍스트 (route/query/_global/_local/_computed 포함)
      * @param  string|null  $defaultLocale  canonical 기본 로케일 (null 이면 config('app.locale'))
      * @param  bool  $seoOnly  true 면 SEO 메타 HTML 만 렌더(bodyHtml 생략 — 편집기 미리보기용)
+     * @param  mixed  $routeTitle  라우트 meta.title — 다른 제목 단계가 모두 빌 때 쓰는 마지막 대체(null 이면 쓰지 않음)
      * @return string|null 렌더링된 HTML
      */
     public function renderFromResolved(
@@ -239,6 +263,7 @@ class SeoRenderer implements SeoRendererInterface
         array $context,
         ?string $defaultLocale = null,
         bool $seoOnly = false,
+        mixed $routeTitle = null,
     ): ?string {
         $moduleIdentifier = $moduleId;
         $pluginIdentifier = $pluginId;
@@ -331,7 +356,7 @@ class SeoRenderer implements SeoRendererInterface
         $this->resolveSeoContext($seoConfig, $context, $routeParams, $resolvedVars ?? []);
 
         // 6. SeoMetaResolver로 3계층 캐스케이드 메타 해석 (배열 형태)
-        $meta = $this->metaResolver->resolve($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams);
+        $meta = $this->metaResolver->resolve($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams, $routeTitle);
 
         // 6.05. $meta 가 신구 양식 모두 처리 가능하도록 og/twitter/structured_data 키 정규화
         // (구버전 Mock/Stub 호환 — 키 없으면 빈 배열로 보강)
@@ -475,9 +500,11 @@ class SeoRenderer implements SeoRendererInterface
         // render(Request) 가 seo_default_locale request attribute 에서 추출해 전달(편집기
         // 미리보기는 null → config('app.locale') 폴백).
         $defaultLocale = $defaultLocale ?? config('app.locale');
+        // 요청 Host 가 아니라 사이트 주소 기준 — 위조 Host 로 그린 canonical 이 캐시에 남아
+        // 정상 방문자에게 나가던 경로를 막는다(SeoUrl 참고).
         $canonicalUrl = $locale === $defaultLocale
-            ? AssetUrl::siteAbsolute($url)
-            : AssetUrl::siteAbsolute($url).'?locale='.$locale;
+            ? SeoUrl::absolute($url)
+            : SeoUrl::absolute($url).'?locale='.$locale;
         $ogUrl = '<meta property="og:url" content="'.e($canonicalUrl).'">'."\n";
 
         // hreflang 태그 생성 (다국어 SEO)
@@ -490,6 +517,9 @@ class SeoRenderer implements SeoRendererInterface
             $templateIdentifier
         );
         $allStylesheets = array_merge($templateCssUrls, $configStylesheets);
+        // 확장 CSS — 확장 화면 스타일은 확장이 자기 CSS 로 공급한다. 템플릿 CSS 뒤(의미 클래스 층 선언 뒤)에
+        // 모듈 번들 → 플러그인 번들 → 템플릿의 확장 CSS 덮기 파일 순서로 싣는다(사용자 화면과 같은 순서).
+        $extensionStylesheets = $this->getExtensionCssUrls($templateIdentifier);
 
         $viewData = [
             'locale' => $locale,
@@ -509,6 +539,9 @@ class SeoRenderer implements SeoRendererInterface
             'googleVerification' => $meta['googleVerification'],
             'naverVerification' => $meta['naverVerification'],
             'stylesheets' => $allStylesheets,
+            'extensionStylesheets' => $extensionStylesheets,
+            // 봇 화면은 라이트로 그린다 — 확장 CSS 는 이 중립 표식만 본다
+            'colorScheme' => 'light',
             'extraHeadTags' => '',
             'extraBodyEnd' => '',
             'generatorTag' => g7_meta_generator_tag(),
@@ -685,6 +718,7 @@ class SeoRenderer implements SeoRendererInterface
      *
      * @param  string  $templateIdentifier  템플릿 식별자
      * @param  string  $locale  로케일
+     * @return void
      */
     private function loadTemplateTranslations(string $templateIdentifier, string $locale): void
     {
@@ -750,6 +784,46 @@ class SeoRenderer implements SeoRendererInterface
     protected function templateRootPath(string $identifier): string
     {
         return base_path("templates/{$identifier}");
+    }
+
+    /**
+     * 확장 CSS URL 목록을 반환합니다 — 모듈 번들 → 플러그인 번들 → 템플릿 확장 CSS 덮기 파일.
+     *
+     * 정적 게시본 경로는 쓰지 않는다 — 이 URL 은 캐시 버전이 키에 없는 SEO 캐시 HTML 에 박제되고,
+     * 정적 디렉토리는 GC 로 사라질 수 있다(`getTemplateCssUrls` 와 같은 이유). 버전 쿼리도 붙이지 않는다.
+     *
+     * @param  string  $templateIdentifier  템플릿 식별자
+     * @return array<int, string> URL 목록
+     */
+    private function getExtensionCssUrls(string $templateIdentifier): array
+    {
+        $urls = [];
+        $versions = [];
+
+        try {
+            foreach ([['modules', $this->moduleManager->getActiveModules()], ['plugins', $this->pluginManager->getActivePlugins()]] as [$type, $extensions]) {
+                $hasCss = false;
+                foreach ($extensions as $extension) {
+                    $versions[$extension->getIdentifier()] = (string) $extension->getVersion();
+                    $hasCss = $hasCss || ! empty($extension->getAssets()['css'] ?? null);
+                }
+                if ($hasCss) {
+                    $urls[] = AssetUrl::extensionBundle($type, 'css', allowStatic: false);
+                }
+            }
+
+            $root = $this->templateRootPath($templateIdentifier);
+            $manifest = is_file($root.'/template.json') ? json_decode((string) file_get_contents($root.'/template.json'), true) : null;
+            if (is_array($manifest)) {
+                foreach ((new ExtensionCssOverrideResolver)->resolve($templateIdentifier, $manifest, $root, $versions) as $override) {
+                    $urls[] = AssetUrl::templateAsset($templateIdentifier, $override['path'], allowStatic: false);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('SEO extension CSS collection failed: '.$e->getMessage());
+        }
+
+        return $urls;
     }
 
     /**
@@ -824,7 +898,7 @@ class SeoRenderer implements SeoRendererInterface
             return '';
         }
 
-        $baseUrl = AssetUrl::siteAbsolute($url);
+        $baseUrl = SeoUrl::absolute($url);
         $tags = '';
 
         foreach ($supportedLocales as $loc) {
@@ -865,9 +939,7 @@ class SeoRenderer implements SeoRendererInterface
         // string 을 추출한다 (공개#49 — OG 경로와 동일 처리. JSON-LD WebSite.name·모듈 title 의
         // {{_global.site_name}}/{site_name} 치환이 array 로 깨지던 비일관성 해소).
         $global['site_name'] = $this->resolveLocalizedValue(g7_core_settings('general.site_name', ''));
-        // 폴백은 요청 호스트(`url('/')`)가 아니라 설정된 사이트 주소다 — 같은 화면의
-        // canonical·og:url 과 오리진이 갈리지 않게 한다 (16차 G3 라운드 B-6).
-        $global['site_url'] = g7_core_settings('general.site_url', AssetUrl::siteRoot());
+        $global['site_url'] = g7_core_settings('general.site_url', SeoUrl::absolute('/'));
 
         // modules: 모듈별 설정 (config에서 로드)
         $global['modules'] = config('g7_settings.modules', []);
@@ -895,6 +967,7 @@ class SeoRenderer implements SeoRendererInterface
      *
      * @param  array  $allDataSources  전체 data_source 정의 배열
      * @param  array  &$context  현재 컨텍스트 (참조 전달)
+     * @return void
      */
     private function applyInitGlobalMapping(array $allDataSources, array &$context): void
     {
@@ -1059,15 +1132,20 @@ class SeoRenderer implements SeoRendererInterface
      * - params 내 {{}} 표현식을 ExpressionEvaluator로 평가
      * - 배열 리터럴, 객체 리터럴 등 정적 값은 그대로 사용
      *
+     * - handler 가 sequence·parallel 이면 `actions`(없으면 `params.actions`) 안으로 내려가 같은 규칙으로 읽는다
+     *   (엔진이 `<init>` 의 sequence 를 실행하게 된 engine-v1.80.0 짝 — 깊이 상한 10)
+     *
      * 스킵 대상:
      * - handler가 setState가 아닌 항목 (loadFromLocalStorage, closeModal 등)
+     * - conditions·switch 분기 안의 setState (봇 렌더러는 분기를 평가하지 않는다 — `if` 도 지금처럼 무시)
      *
      * @param  array  $initActions  레이아웃의 init_actions 배열
      * @param  string  $target  대상 상태 (`local` 또는 `global`)
      * @param  array  $context  현재 컨텍스트 (route, query 등 포함)
+     * @param  int  $depth  sequence·parallel 중첩 깊이
      * @return array 평가된 초기값
      */
-    private function resolveInitActionState(array $initActions, string $target, array $context): array
+    private function resolveInitActionState(array $initActions, string $target, array $context, int $depth = 0): array
     {
         $state = [];
 
@@ -1076,6 +1154,16 @@ class SeoRenderer implements SeoRendererInterface
 
         foreach ($initActions as $action) {
             $handler = $action['handler'] ?? '';
+
+            if (($handler === 'sequence' || $handler === 'parallel') && $depth < 10) {
+                $children = $action['actions'] ?? ($action['params']['actions'] ?? []);
+                if (is_array($children)) {
+                    $state = array_merge($state, $this->resolveInitActionState($children, $target, $context, $depth + 1));
+                }
+
+                continue;
+            }
+
             if ($handler !== 'setState') {
                 continue;
             }
@@ -1143,6 +1231,7 @@ class SeoRenderer implements SeoRendererInterface
      * @param  array  &$context  데이터 컨텍스트 (참조 전달 — _seo 주입)
      * @param  array  $routeParams  라우트 파라미터
      * @param  array  $resolvedVars  이미 해석된 vars (resolveSeoVars 결과)
+     * @return void
      */
     private function resolveSeoContext(array $seoConfig, array &$context, array $routeParams, array $resolvedVars): void
     {
@@ -1222,6 +1311,7 @@ class SeoRenderer implements SeoRendererInterface
      * @param  string  $pageType  페이지 타입
      * @param  array  $vars  해석된 변수 맵
      * @param  array  &$context  데이터 컨텍스트 (참조)
+     * @return void
      */
     private function applySettingsTemplate(string $extType, string $extId, string $pageType, array $vars, array &$context): void
     {
@@ -1316,6 +1406,10 @@ class SeoRenderer implements SeoRendererInterface
 
     /**
      * 두 Twitter 데이터 배열을 병합합니다.
+     *
+     * @param  array  $base  기준 데이터
+     * @param  array  $additions  덮어쓸 데이터 (빈 값은 무시)
+     * @return array 병합 결과
      */
     private function mergeTwitterData(array $base, array $additions): array
     {
@@ -1330,6 +1424,7 @@ class SeoRenderer implements SeoRendererInterface
      *
      * @param  array  $target  채울 대상 (레이아웃 결과)
      * @param  array  $source  fallback 소스 (모듈 declaration)
+     * @return array 빈 키가 채워진 target
      */
     private function fillEmptyKeys(array $target, array $source): array
     {

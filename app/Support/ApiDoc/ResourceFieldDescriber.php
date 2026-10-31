@@ -44,6 +44,8 @@ class ResourceFieldDescriber
         'slug' => 'URL 친화 식별자 (slug)',
         'label' => '표시용 라벨',
         'icon' => '아이콘 식별자 (아이콘 클래스/이름)',
+        'icon_url' => '확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체)',
+        'icon_source' => "아이콘을 어디서 얻었는지 ('manifest' 선언 · 'convention' 관례 파일 · 'target' 대상 확장 · 'core' 코어 · 'none' 없음)",
         'thumbnail' => '썸네일 이미지 URL/경로',
         'ip_address' => '요청/행위가 발생한 IP 주소',
 
@@ -62,6 +64,7 @@ class ResourceFieldDescriber
         'update_source' => '업데이트 감지 출처 (github, bundled 등)',
         'latest_version' => '감지된 최신 배포 버전',
         'file_version' => '설치된 파일의 manifest 버전',
+        'stuck_update' => '업데이트가 도중에 멈춰 「업데이트 중」에 남아 있는지 (10분 경과·진행 프로세스 없음)',
         'incompatible_required_version' => '요구 코어 버전 미충족 시 필요한 버전 (호환되면 null)',
         'status_variant_label' => '상태 표시용 라벨/변형',
         'dependencies' => '의존하는 확장 맵 (manifest 파생 — {modules, plugins})',
@@ -163,7 +166,6 @@ class ResourceFieldDescriber
         //       ExtensionBundleService 에셋 매니페스트)
         'g7_version' => '요구하는 코어 최소 버전 (manifest requires.g7_version)',
         'required_version' => '요구되는 최소 버전',
-        'manifest_source' => 'manifest 를 읽어온 출처 경로 (활성/_bundled 구분)',
         'manifest_present' => 'manifest 파일 존재 여부',
         'license' => '라이선스 식별자 (manifest license)',
         'release_date' => '배포일',

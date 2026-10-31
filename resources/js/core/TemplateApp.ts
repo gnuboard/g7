@@ -12,15 +12,17 @@ import { LayoutLoader, LayoutLoaderError } from './template-engine/LayoutLoader'
 import type { InitActionDefinition, LayoutScript, ComputedSwitchDefinition } from './template-engine/LayoutLoader';
 import { DataBindingEngine } from './template-engine/DataBindingEngine';
 import { evaluateSafeExpression } from './template-engine/SafeExpressionEvaluator';
+import { evaluateComputedDefinitions } from './template-engine/helpers/ComputedEvaluator';
 import { extractSingleBinding } from './template-engine/BindingShape';
 import { hasPipes } from './template-engine/PipeRegistry';
 import { evaluateRenderCondition } from './template-engine/helpers/RenderHelpers';
 import { ComponentRegistry } from './template-engine/ComponentRegistry';
 import { DataSourceManager } from './template-engine/DataSourceManager';
-import { initTemplateEngine, renderTemplate, destroyTemplate, getState, updateTemplateData } from './template-engine';
+import { initTemplateEngine, renderTemplate, destroyTemplate, releaseTemplateRoot, getState, updateTemplateData } from './template-engine';
 import { checkLayoutEditorMode } from './template-engine/layout-editor/hooks/useEditorMode';
 import { ErrorDisplay } from './template-engine/ErrorDisplay';
-import { toTemplateEngineError } from './template-engine/TemplateEngineError';
+import { notifyLocationReplaced } from './template-engine/navigationLinks';
+import { toTemplateEngineError, TemplateEngineError } from './template-engine/TemplateEngineError';
 import { ErrorPageHandler } from './template-engine/ErrorPageHandler';
 import { AuthManager, type AuthType } from './auth/AuthManager';
 import { getApiClient } from './api/ApiClient';
@@ -30,14 +32,16 @@ import type { ErrorHandlingMap } from './types/ErrorHandling';
 import { createLogger, Logger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFromConfig, parseBundleUrlsFromConfig } from './modules';
+import { getColorSchemeSignal } from './theme/ColorSchemeSignal';
 import { SystemBannerManager } from './template-engine/SystemBannerManager';
 import {
     fetchWithRetry,
     installUnloadGuard,
     isDocumentUnloading,
     loadScriptWithRetry,
+    markDocumentLeaving,
 } from './template-engine/networkResilience';
-import { notifyAssetFailure, clearAssetFailure } from './assets/AssetFailureNotice';
+import { notifyAssetFailure, clearAssetFailure, assetText } from './assets/AssetFailureNotice';
 import {
     convertToCurrentMode,
     extStaticUrl,
@@ -46,6 +50,7 @@ import {
     withBasePrefix,
 } from './support/assetUrl';
 import { fetchStaticFirst } from './support/fetchStaticFirst';
+import { resolveUsableLocale } from './support/localeTag';
 import {
     normalizeScriptSrcForOriginCheck as normalizeScriptSrcForOriginCheckImpl,
     extractScriptHost as extractScriptHostImpl,
@@ -53,6 +58,10 @@ import {
     isAllowedScriptSrc as isAllowedScriptSrcImpl,
 } from './support/scriptSrcPolicy';
 import { resetLocalInitTracking } from './template-engine/localInitSlot';
+import { buildProgressiveDataInit, isSameScreen, type RenderedScreen } from './template-engine/helpers/dataContextCarryOver';
+import { beginLocaleSwitchHandoff, closeLocaleSwitchHandoff, clearLocaleSwitchHandoff } from './template-engine/localeSwitchHandoff';
+import { createPublicApi, createTracker, type TrackerHandle } from './analytics';
+import { defaultConsentRuntimeDeps, getConsentRuntime, installConsentRuntime } from './consent';
 /**
  * DevTools 추적 - G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
  */
@@ -254,15 +263,38 @@ declare global {
 
 export class TemplateApp {
     private router: Router | null = null;
+
+    /**
+     * 방문자 통계 트래커
+     *
+     * 사용자 템플릿에서만 만들어집니다 — 관리자 화면까지 세면 인기 페이지 1위가
+     * 관리자 대시보드가 되어 통계가 쓸모없어집니다.
+     *
+     * @since engine-v1.72.0
+     */
+    private analytics: TrackerHandle | null = null;
     private layoutLoader: LayoutLoader | null = null;
     private errorPageHandler: ErrorPageHandler | null = null;
     private config: TemplateAppConfig;
     private static readonly LOCALE_STORAGE_KEY = 'g7_locale';
+    /** 레이아웃을 받는 동안 덮개를 띄우기까지 기다리는 시간(ms) — 캐시된 레이아웃처럼 빠른 전환에서는 띄우지 않는다 @since engine-v1.81.2 */
+    private static readonly EARLY_SPINNER_DELAY_MS = 150;
+    /** 렌더 뒤 스피너가 새 대상에 붙어 있는지 다시 확인하는 횟수(프레임 단위) @since engine-v1.81.2 */
+    private static readonly SPINNER_REATTACH_CHECKS = 3;
     private static readonly CACHE_VERSION_STORAGE_KEY = 'g7_cache_version';
     private globalState: GlobalState;
     private globalStateListeners: Set<(state: GlobalState) => void> = new Set();
     /** 현재 진행 중인 라우트 변경 요청 ID (새 요청 시 이전 요청 무시용) */
     private currentRouteChangeId: number = 0;
+    /**
+     * 렌더 전 init_actions 실행 깊이 — 0 보다 크면 이 경로의 첫 렌더가 아직 시작되지 않았다 (engine-v1.80.1)
+     */
+    private preRenderInitDepth: number = 0;
+    /**
+     * 이 경로의 첫 렌더 뒤로 미룬 동작 — init 단계의 showErrorPage 처럼 렌더가 만들 컨테이너를 기다리는 동작이
+     * init 체인(=렌더 시작)을 막지 않게 한다. 경로가 바뀌면 버린다 (engine-v1.80.1)
+     */
+    private afterRenderTasks: Array<{ routeChangeId: number; run: () => Promise<void> | void; drop: () => void }> = [];
     /**
      * 재시도까지 실패한 레이아웃 스크립트 id 집합.
      *
@@ -282,6 +314,23 @@ export class TemplateApp {
      * 잘못 선택되는 회귀가 발생한다. 원본을 보존해 재평가 가능하게 한다.
      */
     private currentRawDataSources: any[] = [];
+    /** updateQueryParams 호출 번호 발급기 @since engine-v1.79.0 */
+    private queryUpdateSeq: number = 0;
+    /**
+     * 데이터 소스별로 가장 최근에 재조회를 시작한 updateQueryParams 호출 번호.
+     * 응답은 이 번호의 호출만 화면에 적용한다 — 탭을 빠르게 오가 호출이 겹칠 때, 늦게 끝난 옛 호출이
+     * 새 쿼리 화면의 폼(initLocal)을 옛 응답으로 되돌리지 않게 한다. @since engine-v1.79.0
+     */
+    private queryUpdateLatestBySource: Map<string, number> = new Map();
+    /** 진행 중인 updateQueryParams 호출 번호 → 재조회 중인 데이터 소스 id 목록 @since engine-v1.79.0 */
+    private queryUpdateInFlight: Map<number, string[]> = new Map();
+    /** 마지막으로 시작한 화면 전환(handleRouteChange)이 끝나면 풀리는 약속 @since engine-v1.79.0 */
+    private routeChangeSettled: Promise<void> = Promise.resolve();
+    /**
+     * 언어 전환이 엔진을 내렸다 올리는 동안만 있는 대기 — 그 사이 시작한 화면 전환은 새 엔진·핸들러가
+     * 준비될 때까지 기다린다 (로그인 직후 언어 전환과 홈 이동의 경쟁) @since engine-v1.79.0
+     */
+    private localeSwitchEngineReady: Promise<void> | null = null;
     /** 현재 라우트 파라미터 (refetch용) */
     private currentRouteParams: Record<string, string> = {};
     /** 현재 쿼리 파라미터 (refetch용) */
@@ -290,6 +339,64 @@ export class TemplateApp {
     private currentFetchedData: Record<string, any> = {};
     /** 현재 레이아웃 이름 (레이아웃 전환 감지용) */
     private currentLayoutName: string = '';
+    /**
+     * 지금 데이터 컨텍스트를 그린 화면(경로·레이아웃 이름·파라미터·쿼리·데이터소스 정의) — 다음 화면 전환이
+     * 앞 화면 값을 이어 쓸지 가리는 기준. 렌더 직전에 기록한다 — `currentRoutePath`·`currentDataSources` 는
+     * blocking fetch 전에 바뀌어, 중간에 취소된 전환이면 그려진 화면과 어긋난다 (@since engine-v1.81.2)
+     */
+    private renderedScreen: RenderedScreen | null = null;
+    /**
+     * `currentFetchedData` 를 마지막으로 새로 시작한 화면(경로·레이아웃 이름). init 을 기다리다 취소된 전환은
+     * `renderedScreen` 을 바꾸지 않지만 받아 둔 데이터는 이미 그 화면 것으로 바꿔 두므로, 그린 화면 판정만으로
+     * 이어 쓰면 취소된 화면의 같은 id 값이 돌아온 화면 첫 렌더에 심긴다 (@since engine-v1.82.0)
+     */
+    private fetchedDataScreen: { path: string; layoutName: string } | null = null;
+    /**
+     * 지금 화면의 데이터소스 오류 기록(`_dataSourceErrors` 의 원본) — 화면 전환마다 새 객체. 처음 받기(blocking·progressive)와
+     * 다시 받기가 같은 객체에 써서 서로의 기록을 덮지 않는다 (@since engine-v1.81.2)
+     */
+    private routeDataSourceErrors: Record<string, { message: string; status?: number }> = {};
+    /** 지금 화면 레이아웃의 transition_overlay 설정 — 다음 전환의 레이아웃을 받는 동안 덮개를 앞당겨 띄울 때 쓴다 (@since engine-v1.81.2) */
+    private renderedTransitionOverlay: any = null;
+    /** 레이아웃을 받는 동안 덮개를 띄우는 예약 (@since engine-v1.81.2) */
+    private earlySpinnerTimer: ReturnType<typeof setTimeout> | null = null;
+    /** 앞당겨 띄운 덮개가 보이는 중인지 (@since engine-v1.81.2) */
+    private earlySpinnerVisible = false;
+    /**
+     * 다시 받기로 받은 값의 요청 주소 경로(데이터 소스 id 별) — 다른 경로로 다시 받기를 시작하면 앞 값을 받기 전으로
+     * 돌리는 기준. 화면 전환마다 비운다 (@since engine-v1.81.2)
+     */
+    private refetchPathBySource: Map<string, string> = new Map();
+    /** 데이터 소스별 마지막으로 시작한 다시 받기 번호 — 겹친 다시 받기는 마지막 것만 화면에 적용한다 (@since engine-v1.81.2) */
+    private refetchSeqBySource: Map<string, number> = new Map();
+    /** 다시 받기 번호 발급기 (@since engine-v1.81.2) */
+    private refetchSeq = 0;
+    /**
+     * 진행 중인 화면 처리(handleRouteChange)가 더 새 이동에 밀렸음을 알리는 약속 — Router 가 대기열에 새 이동을 넣으면 푼다.
+     * 화면 처리는 오래 기다리는 자리(blocking·progressive 응답)에서 이것과 경주해 곧바로 물러난다 (@since engine-v1.82.0)
+     */
+    private routeSupersede: { routeChangeId: number; promise: Promise<'superseded'>; resolve: () => void } | null = null;
+    /** 화면을 옮기는 동안 입력을 막으려고 `inert` 를 건 요소 (@since engine-v1.82.0) */
+    private routeInertElements: HTMLElement[] = [];
+    /**
+     * 같은 화면 쿼리 갱신이 다시 받는 중인 데이터 소스 id(값은 그대로 둔 채) — 흐림 판정이 「받는 중」으로 보게
+     * 전환 상태에 알린다 (@since engine-v1.82.0)
+     */
+    private queryRefetchingSources: Set<string> = new Set();
+    /**
+     * 화면 처리가 시작돼 새 화면을 아직 그리지 않았는지 — 그동안 끝난 다시 받기가 전환 상태(흐림)를 끄지 않게 한다 (@since engine-v1.82.0)
+     */
+    private routeChangeInFlight = false;
+    /**
+     * 언어 전환으로 같은 화면을 다시 그릴 때 이어 쓸 화면 상태 (@since engine-v1.79.0)
+     * - path: 전환을 시작한 경로 (다른 경로로 가면 쓰지 않는다)
+     * - local: 전환 직전 `_local` — 재진입의 init·initLocal 대신 이 값으로 그린다
+     */
+    private pendingLocaleSwitch: { path: string; local: Record<string, any> } | null = null;
+    /** 데이터 소스 정의(currentDataSources)를 마지막으로 채운 라우트 경로 — 오류 화면 등 다른 화면에서 쓰지 않게 대조 (@since engine-v1.79.0) */
+    private currentRoutePath: string | null = null;
+    /** 이번 언어 전환 재진입이 전환 직전 상태를 실제로 소비했는지 — 재진입이 중간에 실패하면 수동 소스를 다시 받지 않는다 (@since engine-v1.79.0) */
+    private localeSwitchConsumed = false;
     /** 템플릿 레벨 에러 핸들링 설정 */
     private templateErrorHandling: ErrorHandlingMap | null = null;
     /** 현재 WebSocket 구독 키 (라우트 변경 시 해제용) */
@@ -323,6 +430,13 @@ export class TemplateApp {
      */
     private modalDataSources: Map<string, any[]> = new Map();
 
+    /**
+     * 서버가 이 요청에 정한 로케일 — 저장된 언어가 꺼진 언어일 때 사이트 기본 언어 다음 후보.
+     *
+     * @since engine-v1.81.0
+     */
+    private serverLocale: string | undefined;
+
     constructor(config: TemplateAppConfig) {
         // 전역 상태 초기화
         this.globalState = {
@@ -339,18 +453,32 @@ export class TemplateApp {
         // 1. localStorage g7_locale 값 (사용자가 명시적으로 선택한 언어)
         // 2. 서버에서 전달한 로케일 (로그인 사용자의 users.language 값)
         // 3. 기본값 ('ko')
+        // 로그인 상태면 init() 이 인증 프리로드 뒤 첫 렌더 전에 회원 언어(users.language)로 다시 맞춘다
+        // — alignLocaleWithMemberLanguage (engine-v1.79.0)
         //
         // SetLocale 미들웨어 우선순위:
         // - 로그인 사용자: users.language (최우선)
         // - 비로그인 사용자: Accept-Language 헤더
         // - 기본값: config('app.locale')
+        //
+        // 저장된 언어가 꺼진 언어(언어팩 비활성 등)면 주 언어가 같은 지원 언어 → 사이트 기본 언어 → 서버 언어 순으로
+        // 연다 — 종전에는 꺼진 언어로 부팅해 화면이 영어로 떨어졌다 (engine-v1.81.0, #148 D8). 저장값(g7_locale)은
+        // 고쳐 쓰지 않는다: 언어팩 업데이트·잠깐 끄기 동안 들어온 비회원의 선택이 지워지지 않고, 팩이 다시 켜지면
+        // 다음 방문부터 그 언어로 돌아온다(설계 확정 2026-10-19). 지원 목록을 모르면 종전대로.
+        this.serverLocale = config.locale;
         const savedLocale = this.loadLocaleFromStorage();
-        const finalLocale = savedLocale || config.locale || 'ko';
+        const finalLocale = savedLocale
+            ? resolveUsableLocale(savedLocale, this.globalState.appConfig, config.locale ?? null) || config.locale || 'ko'
+            : config.locale || 'ko';
 
         this.config = {
             ...config,
             locale: finalLocale,
         };
+
+        if (savedLocale && savedLocale !== finalLocale) {
+            logger.log('Saved locale is not an active locale, opening with:', savedLocale, '→', finalLocale);
+        }
 
         // localStorage 값이 없을 때만 서버 설정을 저장
         // (사용자가 선택한 언어를 보존)
@@ -358,33 +486,8 @@ export class TemplateApp {
             this.saveLocaleToStorage(config.locale);
         }
 
-        this.applyDocumentLanguage(finalLocale);
-    }
-
-    /**
-     * 문서의 언어 표시(`<html lang>`)를 실제 렌더 로케일에 맞춥니다.
-     *
-     * blade 는 **서버가 아는 로케일**로 이 속성을 찍는데, 사용자가 화면에서 고른 언어는
-     * `g7_locale` 에만 있어 서버가 모를 수 있다. 그러면 일본어로 그려진 화면이
-     * `lang="en"` 을 달고 나간다 — 화면 읽기 프로그램은 일본어를 영어로 읽으려 하고,
-     * 브라우저의 번역 제안·하이픈 처리도 잘못된 언어를 기준으로 동작한다.
-     *
-     * 초기 확정과 언어 전환 **양쪽**이 이 지점을 지난다 — 한쪽만 두면 전환한 뒤에만,
-     * 또는 첫 진입에만 맞는 상태가 된다.
-     *
-     * @param locale 적용할 로케일 (예: `ja`, `ko`)
-     */
-    private applyDocumentLanguage(locale: string): void {
-        if (typeof document === 'undefined' || !locale) {
-            return;
-        }
-
-        try {
-            // BCP 47 은 하이픈을 쓴다 (`ko_KR` → `ko-KR`).
-            document.documentElement.lang = locale.replace(/_/g, '-');
-        } catch (error) {
-            logger.warn('Failed to apply document language:', error);
-        }
+        // 서버가 찍은 <html lang> 은 요청 언어 기준이라 사용자가 고른 언어와 다를 수 있다
+        this.syncDocumentLang(finalLocale);
     }
 
     /**
@@ -507,6 +610,10 @@ export class TemplateApp {
             // 에러 화면을 그리지 않기 위함 (@since engine-v1.53.0)
             installUnloadGuard();
 
+            // 색상 테마 중립 표식 — 확장 CSS 가 템플릿 다크 방식과 무관하게 `<html data-g7-color-scheme>` 만
+            // 보도록, 확장 자산을 싣기 전에 관찰을 시작한다 (@since engine-v1.86.0)
+            this.startColorSchemeSignal();
+
             // 1. 템플릿 엔진 초기화, ComponentRegistry, routes.json, 사용자 정보를 병렬 로딩
             const componentRegistry = ComponentRegistry.getInstance();
             const authManager = AuthManager.getInstance();
@@ -588,6 +695,11 @@ export class TemplateApp {
             logger.log('ComponentRegistry loaded');
             logger.log('Routes data loaded');
             logger.log('User info preloaded');
+
+            // 로그인 상태면 화면 언어를 회원이 설정한 언어(users.language)에 맞춘다 (@since engine-v1.79.0).
+            // 이 브라우저에 남은 언어(g7_locale)가 회원 언어와 다르면(다른 기기에서 언어를 바꾼 경우 등) 화면은 브라우저 언어,
+            // 서버(필수 언어 검증·확장 목록 이름)는 회원 언어로 섞였다. 첫 렌더 전에 맞춰 다시 그리지 않게 한다.
+            await this.alignLocaleWithMemberLanguage(authManager, storedCacheVersion);
             logger.log('Template config loaded:', templateConfig);
 
             // 확장 기능 캐시 버전 저장 (모듈/플러그인 활성화 시 갱신됨)
@@ -669,6 +781,23 @@ export class TemplateApp {
 
             logger.log('AuthManager event handlers registered');
 
+            // 2.1 방문자 동의 런타임 (사용자 템플릿 전용, engine-v1.78.0 #639)
+            //
+            // `preloadAuth` 가 끝난 뒤에 시작한다 — 인증 여부가 정해져야 조회 방식을 고를 수 있다. 비인증이면 토큰
+            // 없이 부른다(서버에서 폐기된 토큰이 남은 방문자가 그 토큰으로 부르면 401 → 공개 페이지에서 로그인 화면으로
+            // 튕긴다 — 방어는 defaultConsentRuntimeDeps.fetchSnapshot). 확장 에셋보다 먼저 세워 확장이 부팅 때
+            // `_global.consent` 와 `G7Core.consent` 를 바로 읽을 수 있게 한다. 첫 조회는 기다리지 않는다.
+            if (this.config.templateType === 'user') {
+                installConsentRuntime(
+                    defaultConsentRuntimeDeps(
+                        (snapshot) => this.setGlobalState({ consent: snapshot }),
+                        // `_global` 사본 전체를 되쓰는 쓰기가 consent 를 옛 값으로 되돌리면 런타임이 되싣는다
+                        (listener) => this.onGlobalStateChange((state) => listener((state as any).consent)),
+                    ),
+                    (window as any).G7Config?.consentInitial,
+                );
+            }
+
             // 2.5 ApiClient에 onUnauthorized 콜백 설정
             // 토큰 갱신 실패 시 로그인 페이지로 리다이렉트
             const apiClient = getApiClient();
@@ -693,6 +822,9 @@ export class TemplateApp {
                     'session_expired'
                 );
                 // base-path:allow getLoginRedirectUrl() 가 접두사를 붙인 값이다.
+                // 이동 응답이 오기 전(수백 ms)에 같은 401 로 실패한 데이터소스·액션이 떠날 화면에 오류 토스트를
+                // 그리지 않도록 이탈 가드를 미리 켠다(engine-v1.78.2).
+                markDocumentLeaving();
                 window.location.href = loginUrl;
             });
 
@@ -707,21 +839,7 @@ export class TemplateApp {
             logger.log('LayoutLoader initialized:', this.layoutLoader);
 
             // 3.5 ErrorPageHandler 초기화 (DataSourceManager 의존성 주입)
-            const errorDataSourceManager = new DataSourceManager({
-                onUnauthorized: () => {
-                    logger.warn('Unauthorized request in error page');
-                },
-            });
-
-            this.errorPageHandler = new ErrorPageHandler({
-                templateId: this.config.templateId,
-                layoutLoader: this.layoutLoader,
-                locale: this.config.locale,
-                debug: this.config.debug,
-                renderFunction: renderTemplate,
-                dataSourceManager: errorDataSourceManager,
-                globalState: this.globalState,
-            });
+            this.errorPageHandler = this.createErrorPageHandler();
 
             logger.log('ErrorPageHandler initialized with DataSourceManager');
 
@@ -753,6 +871,7 @@ export class TemplateApp {
                 actionDispatcher.setDefaultContext({
                     navigate: (path: string) => this.router?.navigate(path),
                 });
+                this.bindLoginPathResolver(actionDispatcher);
 
                 // setGlobalState 함수 주입
                 actionDispatcher.setGlobalStateUpdater((updates: any, opts?: { render?: boolean }) => this.setGlobalState(updates, opts));
@@ -770,7 +889,24 @@ export class TemplateApp {
             this.reinitializeTemplateHandlers();
 
             // 8. 라우트 변경 이벤트 핸들러 등록
-            this.router.on('routeChange', (route: Route) => this.handleRouteChange(route));
+            // 진행 중 화면 전환의 끝을 기록한다 — 언어 전환이 엔진을 내리기 전에 기다린다 (engine-v1.79.0)
+            this.router.on('routeChange', (route: Route) => {
+                const run = this.handleRouteChange(route);
+                this.routeChangeSettled = run.then(() => undefined, () => undefined);
+                return run;
+            });
+
+            // 진행 중인 이동 뒤에 새 이동이 대기열에 들어왔다 — 진행 중인 화면 처리는 낡았다 (@since engine-v1.82.0).
+            // 세대를 올려 그 화면의 늦은 응답(성공 처리·오류 처리·initLocal·렌더)을 모두 버리게 하고, 기다리는 자리에서
+            // 곧바로 물러나게 해 Router 가 새 이동을 바로 시작하게 한다.
+            this.router.on('navigationSuperseded', () => this.supersedeRouteChange());
+
+            // 8.1 방문자 통계 트래커
+            //
+            // 라우터가 핸들러들을 Promise.all 로 기다리므로 이 구독은 **동기로 반환**한다.
+            // 트래커 내부가 전송을 다음 틱으로 미루기 때문에 화면 전환이 비콘만큼
+            // 늦어지지 않는다.
+            this.setupAnalytics();
 
             // 8.5 routeNotFound 이벤트 핸들러 등록 (404 에러 페이지 처리)
             this.router.on('routeNotFound', (path: string) => this.handleRouteNotFound(path));
@@ -833,6 +969,7 @@ export class TemplateApp {
             // bundleUrls 부재 시 개별 로딩 폴백 (회귀 안전)
             if (!bundleUrls) {
                 await this.loadExtensionAssetsIndividually();
+                await moduleAssetLoader.loadExtensionCssOverrides();
                 await moduleAssetLoader.loadCustomAssets();
 
                 return;
@@ -842,6 +979,10 @@ export class TemplateApp {
             await moduleAssetLoader.loadBundle('module', bundleUrls.moduleJs, bundleUrls.moduleCss);
             await moduleAssetLoader.loadBundle('plugin', bundleUrls.pluginJs, bundleUrls.pluginCss);
 
+            // 템플릿의 확장 CSS 덮기 파일은 확장 번들 뒤에 붙인다 — 같은 특이도의 확장 규칙을
+            // 나중에 와서 덮는다(engine-v1.86.0). 운영자 자산보다는 앞이다.
+            await moduleAssetLoader.loadExtensionCssOverrides();
+
             // 운영자가 덧붙인 자산은 **마지막**에 붙인다 — CSS 는 나중에 온 규칙이 이기므로,
             // 확장 번들보다 뒤에 와야 재정의가 성립한다.
             await moduleAssetLoader.loadCustomAssets();
@@ -850,6 +991,30 @@ export class TemplateApp {
         } catch (error) {
             // 에셋 로드 실패는 경고만 출력하고 앱 계속 진행
             logger.warn('Failed to load extension assets:', error);
+        }
+    }
+
+    /**
+     * 색상 테마 중립 표식 관찰을 시작하고 `G7Core.colorScheme` 을 노출한다.
+     *
+     * 선언은 서버가 활성 템플릿 `template.json` 의 `features.color_scheme` 을 `G7Config.colorScheme` 으로
+     * 넣어 준다. 실패해도 부팅을 막지 않는다 — 표식이 없으면 확장 CSS 는 라이트 모양으로 남을 뿐이다.
+     *
+     * @returns 없음
+     * @since engine-v1.86.0
+     */
+    private startColorSchemeSignal(): void {
+        try {
+            const signal = getColorSchemeSignal();
+            signal.start();
+
+            (window as any).G7Core = (window as any).G7Core || {};
+            (window as any).G7Core.colorScheme = {
+                get: () => signal.get(),
+                getDeclaration: () => signal.getDeclaration(),
+            };
+        } catch (error) {
+            logger.warn('Failed to start color scheme signal:', error);
         }
     }
 
@@ -877,11 +1042,117 @@ export class TemplateApp {
     }
 
     /**
+     * 방문자 통계 트래커를 켭니다.
+     *
+     * 관리자 템플릿에서는 만들지 않습니다 — 관리자가 사용자 사이트를 볼 때의 방문은
+     * 사용자 템플릿에서 잡히고, 관리자 화면 자체는 통계 대상이 아닙니다.
+     *
+     * @returns 없음
+     *
+     * @since engine-v1.72.0
+     */
+    private setupAnalytics(): void {
+        try {
+            if (this.config.templateType !== 'user') return;
+
+            const config = (window as any).G7Config ?? {};
+            const settings = config.settings?.analytics;
+
+            if (!settings || settings.enabled === false) return;
+
+            this.analytics = createTracker({
+                settings,
+                // 동의 관리 제공자가 있는지는 서버가 계산해 싣는다(동의 제공자 선택 상태가 none 이 아님) —
+                // 코어는 동의를 관리하는 확장이 무엇인지 모른다.
+                consentPluginActive: settings.consent_provider === true,
+                // 판정 출처는 코어 동의 런타임이다 — 방문자 통계는 범용 방문자 동의 계약의 소비자다.
+                consentSource: getConsentRuntime(),
+                locale: this.config.locale,
+                getAuthToken: () => {
+                    try {
+                        return localStorage.getItem('auth_token');
+                    } catch {
+                        return null;
+                    }
+                },
+                translate: (key: string) => (window as any).G7Core?.t?.(key) ?? key,
+            });
+
+            if (!this.analytics) return;
+
+            (window as any).G7Core = (window as any).G7Core || {};
+            (window as any).G7Core.analytics = createPublicApi(this.analytics);
+
+            // 첫 화면도 라우터가 `navigateToCurrentPath()` 로 routeChange 를 한 번 낸다. 아래에서
+            // 직접 알린 그 한 번을 거르지 않으면 모든 첫 로드가 페이지뷰 2건이 되고, 한 쪽만
+            // 보고 떠난 방문이 이탈로 잡히지 않는다. 그 뒤의 이동은 전부 그대로 센다.
+            const initialPath = window.location.pathname;
+            let initialRouteChangeSeen = false;
+
+            // 라우트 구독은 동기로 반환한다 — 라우터가 핸들러를 기다리기 때문이다.
+            this.router?.on('routeChange', (route: Route) => {
+                if (!initialRouteChangeSeen) {
+                    initialRouteChangeSeen = true;
+
+                    if ((route as any)?.path === initialPath) return;
+                }
+
+                this.analytics?.tracker.trackPageview(route);
+            });
+
+            // 404 등 라우터가 routeChange 를 내지 않는 경우까지 첫 화면을 세려면 여기서 한 번
+            // 알려야 한다. 매칭이 안 되면 라우트 없이 보낸다 — 제목은 경로로 떨어진다.
+            const initialMatch = this.router?.match(window.location.pathname);
+            this.analytics.tracker.trackPageview(initialMatch?.route ?? null);
+        } catch (error) {
+            // 통계 초기화 실패가 사이트 부팅을 막지 않는다.
+            logger.warn('Analytics tracker initialization skipped:', error);
+        }
+    }
+
+    /**
      * 라우트 변경 핸들러
      */
     private async handleRouteChange(route: Route): Promise<void> {
+        // 언어 전환이 엔진을 다시 올리는 중이면 새 엔진·핸들러 준비를 기다린다 (engine-v1.79.0) —
+        // 기다리지 않으면 내려간 엔진에 데이터 갱신과 init_actions 가 닿는다
+        if (this.localeSwitchEngineReady) {
+            await this.localeSwitchEngineReady;
+        }
+
         // 새 요청 ID 생성 (이전 요청 무시용)
         const routeChangeId = ++this.currentRouteChangeId;
+
+        // 이 화면 처리가 대기열의 새 이동에 밀렸음을 알릴 약속 (@since engine-v1.82.0)
+        {
+            let resolveSupersede: () => void = () => undefined;
+            const supersedePromise = new Promise<'superseded'>((resolve) => {
+                resolveSupersede = () => resolve('superseded');
+            });
+            this.routeSupersede = { routeChangeId, promise: supersedePromise, resolve: resolveSupersede };
+        }
+        // 앞 화면 처리가 걸어 둔 입력 잠금·쿼리 갱신 대기 표시·폼 시딩 요청 기록을 걷는다 (@since engine-v1.82.0)
+        this.releaseRouteInert();
+        this.setQueryRefetchingSources([], true);
+
+        // 화면을 옮기기 시작한 순간부터 「받는 중」이다 (@since engine-v1.82.0) — 종전에는 레이아웃·blocking 응답을 다 받은 뒤
+        // (렌더 직전)에야 전환 상태를 켜, 그동안 앞 화면이 흐림 없이 그대로 조작됐다(글 수정 → 새 글에서 응답 전까지 앞 글 폼).
+        // 첫 진입(그린 화면 없음)은 종전대로 렌더 직전에 켠다.
+        if (this.renderedScreen) {
+            transitionManager.setPending(true);
+            this.routeChangeInFlight = true;
+        }
+
+        // 앞 경로가 렌더 전에 미뤄 둔 동작(init 의 showErrorPage 등)은 새 화면에 쓰지 않는다 (engine-v1.80.1)
+        this.dropAfterRenderTasks();
+
+        // 진행 중인 쿼리 갱신(updateQueryParams)의 기록을 비운다 — 늦게 끝난 그 호출의 응답이 새 화면의
+        // 같은 id 소스에 적용되거나 덮개·대기 표시를 붙잡지 않게 한다 (engine-v1.79.0)
+        this.queryUpdateLatestBySource.clear();
+        this.queryUpdateInFlight.clear();
+        // 앞 화면의 다시 받기 기록도 비운다 — 늦게 끝난 앞 화면 다시 받기를 버리고, 새 화면의 같은 id 와 대상 비교를 하지 않는다 (engine-v1.81.2)
+        this.refetchPathBySource.clear();
+        this.refetchSeqBySource.clear();
 
         // engine-v1.17.4: 페이지 전환 시 전역 상태 컨텍스트 초기화
         // - __g7ForcedLocalFields: 비동기 setLocal fallback에서 설정된 강제 필드
@@ -909,6 +1180,10 @@ export class TemplateApp {
                 throw new Error('LayoutLoader is not initialized');
             }
 
+            // 0. 레이아웃을 받는 동안의 덮개 — 앞 화면의 덮개 설정(베이스 레이아웃 공통)으로 잠시 뒤 띄운다 (@since engine-v1.81.2).
+            // 종전에는 덮개를 새 레이아웃을 받은 뒤에야 띄워, 서버가 느리면 주소만 바뀐 채 앞 화면이 표시도 없이 수 초 남았다.
+            this.scheduleEarlySpinner(routeChangeId);
+
             // 1. 레이아웃 JSON 로드
             if (!route.layout) {
                 throw new Error('Route layout is not defined');
@@ -933,6 +1208,9 @@ export class TemplateApp {
             }
 
             logger.log('Layout loaded:', layoutData);
+
+            // 1.4 확장 컴포넌트 등록 누락 관측 (렌더 전에 원인을 가리킨다)
+            this.reportMissingExtensionComponents(layoutData);
 
             // 1.5 레이아웃 레벨 에러 핸들링 설정을 ErrorHandlingResolver에 등록
             const errorHandlingResolver = getErrorHandlingResolver();
@@ -978,6 +1256,13 @@ export class TemplateApp {
 
             // DataSourceManager를 사용하여 조건부 필터링
             const { DataSourceManager, getActionDispatcher } = await import('./template-engine');
+
+            // 스크립트·모듈을 기다리는 동안 새 요청이 들어왔으면 이 화면의 상태(데이터 소스 정의·경로·named_actions)를
+            // 심지 않는다 — 늦게 깨어난 앞 요청이 새 화면의 값을 덮었다 (@since engine-v1.82.0)
+            if (routeChangeId !== this.currentRouteChangeId) {
+                logger.log('Route change cancelled after layout scripts (newer request exists):', routeChangeId);
+                return;
+            }
             const dataSourceManager = new DataSourceManager();
 
             // 프리뷰 모드 설정: ActionDispatcher에 억제 모드 적용 + 전역 상태 플래그 + 배너 표시
@@ -1068,6 +1353,15 @@ export class TemplateApp {
                 && source.type !== 'websocket'
                 && (source.loading_strategy || 'progressive') !== 'background'
             );
+            // 앞당겨 띄운 덮개 예약은 여기서 끝낸다. 새 레이아웃에 덮개 설정이 없으면 걷고, 있으면 아래 표시나 렌더 직전 표시가 이어받는다
+            this.cancelEarlySpinnerTimer();
+            if (this.earlySpinnerVisible) {
+                this.earlySpinnerVisible = false;
+                const nextOverlay: any = layoutData.transition_overlay;
+                if (!nextOverlay || (typeof nextOverlay === 'object' && !nextOverlay.enabled)) {
+                    this.hideTransitionOverlay();
+                }
+            }
             if ((blockingSources.length > 0 || waitForActive) && layoutData.transition_overlay) {
                 const overlayConfig: any = typeof layoutData.transition_overlay === 'boolean'
                     ? { enabled: layoutData.transition_overlay, style: 'opaque' }
@@ -1081,7 +1375,9 @@ export class TemplateApp {
 
             // 3. blocking 데이터 소스 먼저 fetch (렌더링 전에 완료 필요)
             let blockingData: Record<string, any> = {};
-            let dataSourceErrors: Record<string, { message: string; status?: number }> = {};
+            // 이 화면의 데이터소스 오류 기록 — 다시 받기(refetchDataSource)도 같은 객체에 쓴다 (@since engine-v1.81.2)
+            const dataSourceErrors: Record<string, { message: string; status?: number }> = {};
+            this.routeDataSourceErrors = dataSourceErrors;
             // initLocal 옵션으로 초기화할 로컬 상태
             let localInit: Record<string, any> = {};
             // initIsolated 옵션으로 초기화할 격리된 상태
@@ -1099,21 +1395,49 @@ export class TemplateApp {
             // 원본(if 필터링 전) 보존 — updateQueryParams(replace:true) 의 if 재평가용
             this.currentRawDataSources = rawDataSources;
             this.currentRouteParams = route.params || {};
+            const previousRoutePath = this.currentRoutePath;
+            this.currentRoutePath = route.path;
             this.currentQueryParams = queryParams;
+
+            // 새 레이아웃 이름 — 아래 같은 화면 판정·레이아웃 전환 감지(`_local` 초기화)가 함께 쓴다
+            const newLayoutName = layoutData.layout_name || route.layout;
+            // 같은 화면(경로·레이아웃 이름이 같고 쿼리만 다름)인지 — 앞 화면 값 이어 쓰기 기준 (@since engine-v1.81.2)
+            const sameScreen = isSameScreen(this.renderedScreen, route.path, newLayoutName);
+            // 다른 화면(다른 레이아웃 또는 같은 레이아웃의 다른 경로)으로 옮기는지 — 첫 진입은 아님 (@since engine-v1.81.2)
+            const screenChanged = this.currentLayoutName !== '' && (this.currentLayoutName !== newLayoutName || !sameScreen);
 
             // DEBUG: queryParams 로깅
             logger.log(`handleRouteChange #${routeChangeId} - queryObject:`, queryObject);
             logger.log(`handleRouteChange #${routeChangeId} - queryParams:`, queryParams.toString());
 
+            // 새 화면의 폼을 blocking 응답의 initLocal 로 통째로 채우는 이동이면, 받는 동안 앞 화면 입력을 막는다 (@since engine-v1.82.0).
+            // 그 응답이 폼을 갈아 끼우므로 그사이 앞 화면(앞 대상 값)에 친 글자는 어차피 남지 않고, 남아 있는 앞 대상 값(id 등)으로
+            // Enter 제출·단축키 저장이 나가면 앞 대상이 바뀐다. 덮개 대상(transition_overlay.target)의 내용만 잠근다 — 머리글·메뉴는
+            // 그대로 눌린다. blocking initLocal 이 없는 이동(같은 레이아웃 등록 화면 등)은 종전대로 친 글자·포커스를 지킨다.
+            const replacesForm = screenChanged && blockingSources.some((source: any) => !!source.initLocal);
+            if (replacesForm) {
+                this.applyRouteInert();
+            }
+
             if (blockingSources.length > 0) {
                 logger.log('Fetching blocking data sources:', blockingSources.map((s: any) => s.id));
 
                 // fetchDataSourcesWithResults를 사용하여 에러 상태도 추적
-                const results = await dataSourceManager.fetchDataSourcesWithResults(
+                // 대기열에 새 이동이 들어오면 응답을 기다리지 않고 물러난다 — 늦게 온 응답은 세대 판정으로 버려진다 (@since engine-v1.82.0)
+                const blockingOutcome = await this.awaitUnlessSuperseded(routeChangeId, dataSourceManager.fetchDataSourcesWithResults(
                     blockingSources,
                     route.params || {},
                     queryParams
-                );
+                ));
+
+                // 새 요청이 들어왔으면 응답을 이 화면에 심지 않는다 — 종전에는 이 판정이 initLocal 계산·받은 데이터 기록 뒤에 있어
+                // 앞 요청의 응답이 새 화면의 받은 데이터(currentFetchedData)를 덮었다 (@since engine-v1.82.0)
+                if (blockingOutcome === 'superseded' || routeChangeId !== this.currentRouteChangeId) {
+                    logger.log('Route change cancelled during blocking data (newer request exists):', routeChangeId);
+                    this.releaseRouteInert();
+                    return;
+                }
+                const results = blockingOutcome;
 
                 // 결과를 데이터와 에러로 분리
                 results.forEach((result) => {
@@ -1131,10 +1455,13 @@ export class TemplateApp {
                 });
 
                 // initLocal/initGlobal/initIsolated 처리 (blocking 데이터 소스)
-                this.processInitOptions(blockingSources, blockingData, localInit, isolatedInit);
+                // 다른 화면이면 앞 화면 _local 과 병합하지 않는다 — 이 시점에는 아직 _local 을 비우기 전이라, 종전에는
+                // 앞 화면 폼(같은 키 form 등)이 새 화면 blocking 응답에 깊게 섞였다 (@since engine-v1.81.2)
+                this.processInitOptions(blockingSources, blockingData, localInit, isolatedInit, screenChanged ? {} : undefined);
 
                 // fetch된 데이터 저장 (refetch 및 get용)
                 this.currentFetchedData = { ...blockingData };
+                this.fetchedDataScreen = { path: route.path, layoutName: newLayoutName };
 
                 logger.log('Blocking data loaded:', Object.keys(blockingData));
                 if (Object.keys(dataSourceErrors).length > 0) {
@@ -1174,17 +1501,22 @@ export class TemplateApp {
             // progressive 데이터 소스 초기화 (blur_until_loaded가 개별 위젯에서 작동하도록)
             // 각 데이터 소스 키를 undefined로 초기화하여 dataContext에 존재하게 함
             // 이렇게 해야 blur_until_loaded가 자신의 data_sources만 체크할 수 있음
-            const progressiveDataInit: Record<string, any> = {};
+            //
+            // 앞 화면 값은 같은 화면(쿼리만 다름)이거나 같은 요청(같은 정의·같은 경로 파라미터·쿼리 — 베이스
+            // 레이아웃의 메뉴·현재 사용자 등)일 때만 이어 쓴다 (@since engine-v1.81.2). 종전에는 id 만 같으면
+            // 다른 화면 값도 이어 써서, 새 화면이 받기 전부터 앞 화면 목록을 「받음」으로 보고 흐림·빈 문구
+            // 조건이 풀렸다(모양이 다르면 0행·「없음」 문구, 같으면 앞 화면 행이 먼저 그려짐).
+            let progressiveDataInit: Record<string, any> = {};
             if (hasProgressiveData) {
-                progressiveDataSourceIds.forEach((id: string) => {
-                    // 이전 데이터 컨텍스트에 값이 있으면 유지, 없으면 undefined로 초기화
-                    if (previousDataContext[id] !== undefined) {
-                        progressiveDataInit[id] = previousDataContext[id];
-                    } else {
-                        // undefined로 명시적 초기화 (키가 존재해야 blur_until_loaded가 체크 가능)
-                        progressiveDataInit[id] = undefined;
-                    }
-                });
+                progressiveDataInit = buildProgressiveDataInit({
+                    previous: this.renderedScreen,
+                    previousContext: previousDataContext,
+                    sources: progressiveAndBackgroundSources,
+                    path: route.path,
+                    layoutName: newLayoutName,
+                    routeParams: route.params || {},
+                    query: queryObject,
+                }).init;
 
                 const preservedKeys = Object.keys(progressiveDataInit).filter(
                     id => progressiveDataInit[id] !== undefined
@@ -1193,6 +1525,21 @@ export class TemplateApp {
                     logger.log('Preserving previous progressive data:', preservedKeys);
                 }
                 logger.log('Progressive data sources initialized:', progressiveDataSourceIds);
+            }
+
+            // 다른 화면이면 blocking 이 없어도 받아 둔 데이터를 새로 시작한다 (@since engine-v1.81.2).
+            // 종전에는 `currentFetchedData` 를 blocking 화면에서만 새로 만들어, blocking 없는 화면을 거치는 동안 앞 화면들이
+            // 받은 값이 쌓였고 init_actions 뒤 병합(아래)이 그 값을 새 화면 첫 렌더에 심었다 — 위 초기값이 `undefined` 여도
+            // 덮였다(상품 목록 → 쿠폰 목록 → 배송정책 목록에서 상품 목록의 `shipping_policies` 로 받기 전 「없음」 문구).
+            // 같은 화면(쿼리만 다름)은 종전 그대로다. 단 받아 둔 데이터가 다른 화면 것이면(init 을 기다리다 취소된 전환이
+            // 바꿔 둠) 같은 화면이어도 새로 시작한다 (@since engine-v1.82.0)
+            if (blockingSources.length === 0) {
+                const fetchedDataIsThisScreen = this.fetchedDataScreen?.path === route.path
+                    && this.fetchedDataScreen?.layoutName === newLayoutName;
+                if (!sameScreen || !fetchedDataIsThisScreen) {
+                    this.currentFetchedData = {};
+                }
+                this.fetchedDataScreen = { path: route.path, layoutName: newLayoutName };
             }
 
             // 주의: initialDataContext 생성 시점에 this.globalState를 참조
@@ -1237,18 +1584,29 @@ export class TemplateApp {
             }
 
             // 레이아웃 전환 감지: 다른 레이아웃이면 _local 완전 초기화
-            // (initLocal 유무와 무관하게 항상 실행되어야 함)
-            const newLayoutName = layoutData.layout_name || route.layout;
-            const isLayoutChanged = this.currentLayoutName !== '' && this.currentLayoutName !== newLayoutName;
+            // (initLocal 유무와 무관하게 항상 실행되어야 함) — newLayoutName 은 위(같은 화면 판정)에서 구했다
+            // @since engine-v1.81.2: 레이아웃 이름이 같아도 라우트의 레이아웃 키가 다르면 다른 레이아웃이다 — 플러그인 설정은
+            // 모두 layout_name 이 plugin_settings 라, 플러그인 A 설정의 폼(_local)이 B 설정 화면에 남았다. 같은 레이아웃 키의
+            // 다른 경로(글 수정 → 새 글)는 종전 계약대로 _local 을 유지한다(레이아웃이 init 으로 정리, 보기 방식 등 유지).
+            const previousRouteLayout = this.renderedScreen?.routeLayout;
+            const isLayoutChanged = this.currentLayoutName !== ''
+                && (this.currentLayoutName !== newLayoutName
+                    || (previousRouteLayout !== undefined && previousRouteLayout !== route.layout));
 
             if (isLayoutChanged) {
                 // 다른 레이아웃으로 전환 → _local 완전 초기화 (이전 레이아웃 잔존값 제거)
-                logger.log('_local reset due to layout change:', { from: this.currentLayoutName, to: newLayoutName });
+                logger.log('_local reset due to layout change:', { from: this.currentLayoutName, to: newLayoutName, routeLayout: route.layout });
                 this.globalState._local = {};
 
                 // @since engine-v1.52.2: _localInit 추적 레지스트리도 함께 초기화.
                 // _local 을 비웠는데 추적 해시가 남아 있으면, 새 레이아웃의 _localInit payload 가
                 // 이전 레이아웃과 우연히 동일할 때 "이미 적용됨"으로 오판되어 건너뛴다.
+                resetLocalInitTracking();
+            } else if (previousRoutePath !== null && previousRoutePath !== route.path) {
+                // @since engine-v1.79.0: 같은 레이아웃의 다른 경로도 `_localInit` 추적을 초기화한다.
+                // 경로가 바뀌면 상태 소유 루트의 저장소 A 를 비우는데(DynamicRenderer storeResetKey), 추적이 남아 있으면
+                // 「수정 → 등록 → 뒤로 가기」처럼 같은 payload 로 돌아왔을 때 「이미 적용됨」으로 건너뛰어 빈 A 를
+                // 다시 채우지 못한다(트러블슈팅 cache 사례 8 의 같은 레이아웃 판).
                 resetLocalInitTracking();
             }
 
@@ -1319,6 +1677,14 @@ export class TemplateApp {
                 await this.executeInitActions(initActionsToExecute, initialDataContext);
                 logger.log('initActions executed before render');
 
+                // init 을 기다리는 동안 새 요청이 들어왔으면 이 화면을 그리지 않는다 — 종전에는 그대로 렌더해 새 화면 처리
+                // 사이에 낡은 화면이 한 번 그려졌다 (@since engine-v1.82.0)
+                if (routeChangeId !== this.currentRouteChangeId) {
+                    logger.log('Route change cancelled after initActions (newer request exists):', routeChangeId);
+                    this.releaseRouteInert();
+                    return;
+                }
+
                 // initActions에서 설정한 상태를 dataContext에 반영
                 const globalState = this.globalState;
 
@@ -1369,6 +1735,51 @@ export class TemplateApp {
                     }
                     logger.log('Fetched data sources merged into dataContext after initActions:', Object.keys(this.currentFetchedData));
                 }
+
+                // initActions 안 다시 받기가 실패해 남긴 오류 기록도 첫 렌더에 싣는다 — 렌더 전 갱신은 렌더가 컨텍스트를
+                // 새로 세우며 사라진다 (@since engine-v1.81.2)
+                if (Object.keys(this.routeDataSourceErrors).length > 0) {
+                    (initialDataContext as any)._dataSourceErrors = { ...this.routeDataSourceErrors };
+                }
+            }
+
+            // 언어 전환 재진입 — 같은 화면의 표시 언어만 바뀐다 (@since engine-v1.79.0)
+            // 언어 전환은 엔진을 다시 띄우고 같은 경로로 재진입한다. 그대로 두면 레이아웃 init(생성 모드의
+            // form 초기화 등)과 데이터소스 initLocal 이 다시 돌아 저장하지 않은 입력(제목·본문·고른 첨부 등)이
+            // 사라진다. 데이터소스는 새 언어로 다시 받되(위 blocking·아래 progressive 경로 그대로), `_local` 은
+            // 전환 직전 값으로 그리고 initLocal 은 적용하지 않는다.
+            const localeSwitchState = this.consumeLocaleSwitchState(route.path);
+            if (localeSwitchState) {
+                this.localeSwitchConsumed = true;
+                // `_local` 을 통째로 바꾸므로, 그사이 늦게 도착한 setLocal 이 남긴 내부 캐시도 함께 비운다(교체 값과 어긋남 방지)
+                (window as any).__g7ForcedLocalFields = undefined;
+                (window as any).__g7SetLocalOverrideKeys = undefined;
+                (window as any).__g7PendingLocalState = undefined;
+                (window as any).__g7LastSetLocalSnapshot = undefined;
+                this.globalState._local = localeSwitchState.local;
+                (initialDataContext as any)._local = this.globalState._local;
+                (initialDataContext as any)._localInit = undefined;
+                initialDataContext._global = {
+                    ...this.globalState,
+                    layoutWarnings: layoutData.warnings || [],
+                };
+                if (layoutData.computed && Object.keys(layoutData.computed).length > 0) {
+                    const computedData = this.calculateComputed(layoutData.computed, initialDataContext);
+                    if (Object.keys(computedData).length > 0) {
+                        (initialDataContext as any)._computed = computedData;
+                        this.globalState._computed = computedData;
+                    }
+                }
+                logger.log('Locale switch: _local restored, initLocal skipped for', route.path);
+            }
+
+            // 같은 레이아웃 재진입에서 레이아웃이 `_local` 을 선언하지 않았어도(initLocal·state·init_actions 없음)
+            // 렌더 컨텍스트에 저장소 B 를 싣는다 (@since engine-v1.79.0).
+            // 경로가 바뀌면 상태 소유 루트의 저장소 A 를 비우는데(DynamicRenderer storeResetKey), 컨텍스트에 `_local` 이
+            // 없으면 화면의 `_local` 이 A 하나뿐이라 B 에 남은 값(목록 보기 방식 등)이 다음 갱신까지 보이지 않고
+            // A/B 가 어긋난다. 다른 레이아웃 전환은 위에서 B 를 비웠으므로 그대로다.
+            if ((initialDataContext as any)._local === undefined && !isLayoutChanged && this.globalState._local) {
+                (initialDataContext as any)._local = this.globalState._local;
             }
 
             // transition_overlay: 레이아웃 전환 시 stale DOM 방지 오버레이 (@since engine-v1.23.0)
@@ -1377,6 +1788,24 @@ export class TemplateApp {
             if (layoutData.transition_overlay && !this.skeletonOverlayContainer) {
                 this.showTransitionOverlay(layoutData.transition_overlay, layoutData);
             }
+
+            // 이 화면이 데이터 컨텍스트를 그린다 — 다음 화면 전환의 이어 쓰기 판정 기준 (@since engine-v1.81.2)
+            this.renderedScreen = {
+                path: route.path,
+                layoutName: newLayoutName,
+                routeLayout: route.layout,
+                routeParams: route.params || {},
+                query: queryObject,
+                sources: dataSources,
+            };
+            this.renderedTransitionOverlay = layoutData.transition_overlay ?? null;
+
+            // 바인딩 값 캐시는 경로 글자가 키라 컨텍스트가 바뀌어도 그대로 맞는다 — 새 화면을 그리기 직전에 비운다.
+            // 종전에는 같은 레이아웃의 다른 대상(클레임 A → B)으로 가면 props 의 `{{claim.data.order_number}}` 가
+            // 30초 동안 앞 대상 값이었다. 받는 동안(blocking·init_actions 대기) 떠나는 화면이 전환 상태로 다시 그려지며
+            // 앞 값을 다시 채울 수 있어 대기 뒤인 이 자리에서 비우고, 렌더 사이클 캐시도 함께 비운다 (engine-v1.82.1)
+            getState().bindingEngine?.clearCache();
+            getState().bindingEngine?.startRenderCycle();
 
             await renderTemplate({
                 containerId: 'app',
@@ -1390,9 +1819,34 @@ export class TemplateApp {
 
             logger.log('Initial render complete with blocking data');
 
+            // 새 화면이 그려졌다 — 받는 동안 걸어 둔 앞 화면 입력 잠금은 커밋 뒤에 푼다(renderTemplate 은 커밋 전에 돌아온다 — 바로
+            // 풀면 커밋 전 앞 화면이 잠깐 다시 조작된다) (@since engine-v1.82.0)
+            this.releaseRouteInertAfterCommit(routeChangeId);
+            this.routeChangeInFlight = false;
+
+            // init 단계에서 렌더 뒤로 미룬 동작(showErrorPage 등)을 실행한다 — 기다리지 않는다(컨테이너 대기는
+            // 동작 자신이 한다). 그사이 경로가 바뀌었으면 버린다 (engine-v1.80.1)
+            void this.flushAfterRenderTasks(routeChangeId);
+
             // renderTemplate이 #app DOM을 교체하면 타겟 내부의 spinner도 사라짐
             // 새 DOM의 타겟에 spinner를 재생성 (@since engine-v1.29.0)
             this.reattachSpinnerOverlay();
+
+            // 덮개는 새 화면이 커밋되고, 레이아웃이 기다리라고 선언한 소스(transition_overlay.wait_for)가 오면 걷는다 (@since engine-v1.82.0).
+            // 종전에는 progressive·background 소스를 모두 받을 때까지 남아, 이미 그려진 목록 위에 보조 소스(프리셋·브랜드 등)를
+            // 기다리는 덮개가 수백 ms~수 초 더 남아 조작을 막았다. 각 progressive 소스의 받는 중 표시는 그 소스의
+            // blur_until_loaded·`=== undefined` 조건이 맡는다.
+            const overlayWaitIds = new Set(
+                progressiveAndBackgroundSources
+                    .filter((source: any) => waitForIds.includes(source.id) && (source.loading_strategy || 'progressive') !== 'background')
+                    .map((source: any) => source.id as string)
+            );
+            if (overlayWaitIds.size === 0) {
+                this.hideTransitionOverlayAfterCommit(routeChangeId);
+            }
+            if (!hasProgressiveData) {
+                transitionManager.setPending(false);
+            }
 
             // 6. progressive + background 데이터 소스 fetch (렌더링 후)
             if (progressiveAndBackgroundSources.length > 0) {
@@ -1413,6 +1867,16 @@ export class TemplateApp {
                 try {
                     // progressive/background 데이터를 개별적으로 fetch하고 완료될 때마다 업데이트
                     // 각 데이터 소스가 완료되면 해당 위젯의 blur만 해제됨
+                    // 같은 화면(쿼리만 바뀜 — 쪽 넘김·검색)에서 앞 값을 이어 둔 소스는 받는 동안 「다시 받는 중」으로 알린다 — 값이 있어
+                    // `data_sources` 를 지정한 흐림이 서지 않던 것을 세운다 (@since engine-v1.82.0). 다른 화면으로 옮기며 이어 쓴 베이스
+                    // 소스(메뉴·현재 사용자 등 같은 요청)는 알리지 않는다 — 소스마다 해제가 전환 문맥을 바꿔 트리 전체를 다시 그려 렌더
+                    // 주기가 늘었다(최종 번들 실측 +60~100%, 잠금 「렌더 주기」)
+                    const carriedIds = sameScreen
+                        ? Object.keys(progressiveDataInit).filter((id) => progressiveDataInit[id] !== undefined)
+                        : [];
+                    if (carriedIds.length > 0) {
+                        this.markRefreshingSources(carriedIds, true);
+                    }
                     const fetchPromises = progressiveAndBackgroundSources.map(async (source: any) => {
                         try {
                             const results = await dataSourceManager.fetchDataSourcesWithResults(
@@ -1467,8 +1931,8 @@ export class TemplateApp {
                                     [source.id]: result.data,
                                 };
 
-                                // initLocal이 있으면 추가
-                                if (Object.keys(singleLocalInit).length > 0) {
+                                // initLocal이 있으면 추가 — 언어 전환 재진입은 전환 직전 `_local` 을 유지한다 (@since engine-v1.79.0)
+                                if (Object.keys(singleLocalInit).length > 0 && !localeSwitchState) {
                                     singleUpdateData._localInit = singleLocalInit;
                                     Object.assign(localInit, singleLocalInit);
                                 }
@@ -1490,6 +1954,10 @@ export class TemplateApp {
                                 };
                                 logger.log(`Progressive data source error: ${source.id}`, dataSourceErrors[source.id]);
 
+                                // 성공 분기와 같이 이 소스·오류 기록의 영구 바인딩 캐시를 비운다 (@since engine-v1.83.0) — 같은 화면 쿼리 이동은
+                                // 앞 쪽 값을 이어 그려 그 값이 캐시에 남고, 실패해 null 이 돼도 단순 경로가 앞 쪽 값으로 그려졌다
+                                getState().bindingEngine?.invalidateCacheByKeys([source.id, '_dataSourceErrors']);
+
                                 // 에러가 발생해도 undefined가 아닌 에러 상태로 표시하여 blur 해제
                                 // _dataSourceErrors를 업데이트하여 컴포넌트에서 에러 상태 확인 가능
                                 updateTemplateData({
@@ -1499,23 +1967,38 @@ export class TemplateApp {
                             }
                         } catch (error) {
                             logger.error(`Failed to fetch data source: ${source.id}`, error);
+                        } finally {
+                            if (routeChangeId === this.currentRouteChangeId) {
+                                this.markRefreshingSources([source.id], false);
+                            }
                         }
                     });
 
-                    // 모든 fetch 완료 대기
-                    await Promise.all(fetchPromises);
+                    // 덮개가 기다리는 소스(wait_for)가 다 오면 덮개를 걷는다 — 나머지 소스는 각자의 받는 중 표시로 (@since engine-v1.82.0)
+                    if (overlayWaitIds.size > 0) {
+                        const waitPromises = progressiveAndBackgroundSources
+                            .map((source: any, index: number) => overlayWaitIds.has(source.id) ? fetchPromises[index] : null)
+                            .filter((promise: Promise<void> | null): promise is Promise<void> => promise !== null);
+                        void Promise.all(waitPromises).then(() => this.hideTransitionOverlayAfterCommit(routeChangeId));
+                    }
+
+                    // 모든 fetch 완료 대기 — 대기열에 새 이동이 들어오면 기다리지 않고 물러난다 (@since engine-v1.82.0)
+                    const progressiveOutcome = await this.awaitUnlessSuperseded(routeChangeId, Promise.all(fetchPromises));
 
                     // 새 요청이 들어왔으면 현재 요청 무시 (progressive fetch 후)
-                    if (routeChangeId !== this.currentRouteChangeId) {
+                    if (progressiveOutcome === 'superseded' || routeChangeId !== this.currentRouteChangeId) {
                         logger.log('Route change cancelled after progressive fetch (newer request exists):', routeChangeId);
                         return;
                     }
 
                     logger.log('All progressive data sources loaded');
                 } finally {
-                    // Transition 종료 (isPending = false)
-                    transitionManager.setPending(false);
-                    this.hideTransitionOverlay();
+                    // Transition 종료 (isPending = false) — 밀렸거나 새 화면 처리가 시작됐으면 전환 상태·덮개는 다음 화면 처리(또는 경로 없음
+                    // 처리)가 정리한다. 밀린 처리가 여기서 끄면 다음 처리가 다시 켤 때까지 흐림이 한 번 깜빡인다 (@since engine-v1.82.0)
+                    if (routeChangeId === this.currentRouteChangeId) {
+                        transitionManager.setPending(false);
+                        this.hideTransitionOverlay();
+                    }
                 }
             } else {
                 // progressive 데이터가 없으면 즉시 오버레이 제거
@@ -1544,7 +2027,7 @@ export class TemplateApp {
                 // 표현식 평가 실패 시 어떤 키가 누락되었는지 확인용
                 logger.log('WebSocket binding context keys:', Object.keys(wsBindingContext));
 
-                this.currentWebSocketSubscriptions = dataSourceManager.subscribeWebSockets(
+                const webSocketSubscriptions = dataSourceManager.subscribeWebSockets(
                     dataSources,
                     (sourceId: string, data: unknown) => {
                         // WebSocket에서 데이터 수신 시 템플릿 업데이트
@@ -1580,50 +2063,179 @@ export class TemplateApp {
                         const websocketSource = dataSources.find(
                             (s: any) => s.type === 'websocket' && (s.target_source || s.id) === sourceId
                         );
-                        const onReceiveActions = websocketSource?.onReceive;
-                        if (Array.isArray(onReceiveActions) && onReceiveActions.length > 0) {
-                            const G7Core = (window as any).G7Core;
-                            if (G7Core?.dispatch) {
-                                // 각 액션을 순차 실행, $args[0]로 페이로드 접근 가능
-                                (async () => {
-                                    for (const action of onReceiveActions) {
-                                        try {
-                                            // dispatchAction에 직접 호출하여 $args 컨텍스트 주입
-                                            const actionDispatcher = this.getActionDispatcher?.();
-                                            if (actionDispatcher) {
-                                                await actionDispatcher.dispatchAction(action, {
-                                                    navigate: this.getRouter?.() ? (path: string, opts?: any) =>
-                                                        this.getRouter().navigate(path, opts) : undefined,
-                                                    setState: (updates: any) => this.setGlobalState(updates),
-                                                    state: this.globalState,
-                                                    data: { ...this.globalState, $args: [data], $event: data },
-                                                    _isDispatchFallbackContext: true,
-                                                });
-                                            }
-                                        } catch (err) {
-                                            logger.error(
-                                                `WebSocket onReceive action failed for ${sourceId}:`,
-                                                err
-                                            );
-                                        }
-                                    }
-                                })();
-                            }
-                        }
+                        void this.runWebSocketOnReceive(sourceId, websocketSource?.onReceive, data);
                     },
                     wsBindingContext
                 );
 
-                logger.log('WebSocket subscriptions established:', this.currentWebSocketSubscriptions);
+                // 구독을 준비하는 사이(모듈 import 대기) 새 화면 전환이 시작됐으면, 새 전환은 이미 해제 목록을 비운
+                // 뒤라 이 구독은 아무도 해제하지 않는다. 같은 channel:event 다중 구독이 각각 수신되는 지금은(engine-v1.86.0)
+                // 그대로 두면 새 화면 구독과 겹쳐 같은 이벤트를 두 번 받는다 — 바로 해제하고 목록에 싣지 않는다.
+                if (routeChangeId !== this.currentRouteChangeId) {
+                    logger.log('Route changed while subscribing WebSocket sources — releasing stale subscriptions:', webSocketSubscriptions);
+                    dataSourceManager.unsubscribeWebSockets(webSocketSubscriptions);
+                } else {
+                    this.currentWebSocketSubscriptions = webSocketSubscriptions;
+                    logger.log('WebSocket subscriptions established:', this.currentWebSocketSubscriptions);
+                }
             }
 
             logger.log('Layout rendered successfully');
         } catch (error) {
             logger.error('Route change handling failed:', error);
+            // 경로 처리가 실패하면 미뤄 둔 동작은 실행하지 않는다 — 경로 오류 화면이 대신 뜬다 (engine-v1.80.1)
+            this.dropAfterRenderTasks();
+            this.cancelEarlySpinnerTimer();
+            this.earlySpinnerVisible = false;
             this.hideTransitionOverlay();
+            // 화면 처리 시작부터 켠 전환 상태·입력 잠금을 푼다 (@since engine-v1.82.0)
+            this.releaseRouteInert();
+            if (routeChangeId === this.currentRouteChangeId) {
+                this.routeChangeInFlight = false;
+                transitionManager.setPending(false);
+            }
             this.showRouteError(error as Error);
         }
     }
+
+    /**
+     * 화면을 옮기는 동안 앞 화면 입력을 막습니다 — 덮개 대상(지금 화면 transition_overlay 의 target → fallback_target) 안의
+     * 내용에 `inert` 를 건다. 덮개 컨테이너(`#g7-skeleton-overlay`)는 빼서 받는 중 안내는 보조기기에 남긴다.
+     * 대상이 없으면(덮개 설정 없는 템플릿) 아무것도 하지 않는다 — 머리글·메뉴까지 막지 않는다.
+     *
+     * @return void
+     * @since engine-v1.82.0
+     */
+    private applyRouteInert(): void {
+        if (typeof document === 'undefined') return;
+        this.releaseRouteInert();
+        const config: any = this.renderedTransitionOverlay;
+        if (!config || typeof config !== 'object' || !config.target) return;
+        const target = document.getElementById(config.target)
+            ?? (config.fallback_target ? document.getElementById(config.fallback_target) : null);
+        if (!target) return;
+        const locked: HTMLElement[] = [];
+        for (const child of Array.from(target.children)) {
+            if (!(child instanceof HTMLElement)) continue;
+            if (child.id === 'g7-skeleton-overlay' || child.hasAttribute('inert')) continue;
+            child.setAttribute('inert', '');
+            child.setAttribute('data-g7-route-inert', '');
+            locked.push(child);
+        }
+        this.routeInertElements = locked;
+    }
+
+    /**
+     * 새 화면 커밋 뒤(두 프레임) 입력 잠금을 풉니다 — 그사이 다른 화면 처리가 시작됐으면 그쪽이 맡는다.
+     *
+     * @param routeChangeId 잠금을 건 화면 처리의 세대
+     * @return void
+     * @since engine-v1.82.0
+     */
+    private releaseRouteInertAfterCommit(routeChangeId: number): void {
+        if (this.routeInertElements.length === 0) return;
+        const release = (): void => {
+            if (routeChangeId !== this.currentRouteChangeId) return;
+            this.releaseRouteInert();
+        };
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(() => requestAnimationFrame(release));
+        } else {
+            setTimeout(release, 32);
+        }
+    }
+
+    /**
+     * {@link applyRouteInert} 가 건 입력 잠금을 풉니다(이미 DOM 에서 빠진 요소는 건너뛴다).
+     *
+     * @return void
+     * @since engine-v1.82.0
+     */
+    private releaseRouteInert(): void {
+        if (this.routeInertElements.length === 0) return;
+        for (const element of this.routeInertElements) {
+            if (element.hasAttribute('data-g7-route-inert')) {
+                element.removeAttribute('inert');
+                element.removeAttribute('data-g7-route-inert');
+            }
+        }
+        this.routeInertElements = [];
+    }
+
+    /**
+     * 새 화면이 커밋된 뒤 덮개를 걷습니다 — 그사이 다른 화면 처리가 시작됐으면 건드리지 않는다.
+     *
+     * `renderTemplate` 은 React 커밋 전에 돌아오므로 다음 두 프레임 뒤에 걷는다(커밋 전에 걷으면 앞 화면이 비친다).
+     *
+     * @param routeChangeId 덮개를 띄운 화면 처리의 세대
+     * @return void
+     * @since engine-v1.82.0
+     */
+    private hideTransitionOverlayAfterCommit(routeChangeId: number): void {
+        const hide = (): void => {
+            if (routeChangeId !== this.currentRouteChangeId) return;
+            this.cancelEarlySpinnerTimer();
+            this.earlySpinnerVisible = false;
+            this.hideTransitionOverlay();
+        };
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(() => requestAnimationFrame(hide));
+        } else {
+            setTimeout(hide, 32);
+        }
+    }
+
+    /**
+     * 값을 그대로 둔 채 다시 받는 중인 데이터 소스를 전환 상태에 알립니다 — 흐림(`blur_until_loaded` 의 `data_sources`)이
+     * 앞 값이 있어도 「받는 중」으로 서게 한다.
+     *
+     * @param ids 데이터 소스 id
+     * @param refreshing 받는 중이면 true, 끝났으면 false
+     * @return void
+     * @since engine-v1.82.0
+     */
+    private markRefreshingSources(ids: string[], refreshing: boolean): void {
+        let changed = false;
+        for (const id of ids) {
+            if (refreshing && !this.queryRefetchingSources.has(id)) {
+                this.queryRefetchingSources.add(id);
+                changed = true;
+            } else if (!refreshing && this.queryRefetchingSources.delete(id)) {
+                changed = true;
+            }
+        }
+        if (changed) {
+            const ids = Array.from(this.queryRefetchingSources);
+            if (refreshing) {
+                transitionManager.setRefreshingSources?.(ids);
+            } else {
+                // 해제는 받은 값의 화면 갱신(updateTemplateData — startTransition 갱신)과 같은 갈래로 묶는다 — 따로 내면 소스마다
+                // 렌더 주기가 한 번 더 돌았다(잠금 「렌더 주기」) (@since engine-v1.82.0)
+                React.startTransition(() => {
+                    transitionManager.setRefreshingSources?.(ids);
+                });
+            }
+        }
+    }
+
+    /**
+     * 다시 받는 중 소스 목록을 통째로 바꿉니다(화면 전환 때 비움).
+     *
+     * @param ids 데이터 소스 id
+     * @param reset 기존 목록을 버리면 true
+     * @return void
+     * @since engine-v1.82.0
+     */
+    private setQueryRefetchingSources(ids: string[], reset: boolean): void {
+        if (reset) {
+            if (this.queryRefetchingSources.size === 0 && ids.length === 0) return;
+            this.queryRefetchingSources = new Set(ids);
+            transitionManager.setRefreshingSources?.(ids);
+            return;
+        }
+        this.markRefreshingSources(ids, true);
+    }
+
 
     /**
      * initLocal/initGlobal/initIsolated 옵션 처리
@@ -1643,13 +2255,18 @@ export class TemplateApp {
      * @param fetchedData fetch된 데이터 (sourceId -> data)
      * @param localInit 로컬 상태 초기화 객체 (mutate됨)
      * @param isolatedInit 격리된 상태 초기화 객체 (선택적, mutate됨)
+     * @param baseLocal 병합 기준 _local (생략하면 현재 _local)
      */
     private processInitOptions(
         dataSources: any[],
         fetchedData: Record<string, any>,
         localInit: Record<string, any>,
-        isolatedInit?: Record<string, any>
+        isolatedInit?: Record<string, any>,
+        baseLocal?: Record<string, any>
     ): void {
+        // 병합 기준 _local — 다른 화면의 blocking 응답은 앞 화면 _local 과 섞지 않는다(호출부가 빈 객체를 넘김) (@since engine-v1.81.2)
+        const currentLocal = baseLocal ?? this.globalState._local;
+
         // refetchOnMount: true인 데이터 소스가 있는지 확인
         const hasRefetchOnMount = dataSources.some(
             (source: any) => source.refetchOnMount === true && source.initLocal
@@ -1690,7 +2307,7 @@ export class TemplateApp {
 
                     // 레이아웃 레벨 initLocal 기본값과 깊은 병합
                     // 기존 _local[key] 값이 있으면 기본값으로 유지, API 응답 값과 병합
-                    const existingValue = this.globalState._local?.[source.initLocal];
+                    const existingValue = currentLocal?.[source.initLocal];
                     if (existingValue !== undefined && typeof existingValue === 'object' && typeof mergedData === 'object') {
                         localInit[source.initLocal] = this.deepMerge(existingValue, mergedData);
                         logger.log(`initLocal (merged): ${source.id}.data -> _local.${source.initLocal}`);
@@ -1713,7 +2330,7 @@ export class TemplateApp {
                     }
 
                     // 레이아웃 레벨 initLocal 기본값과 깊은 병합
-                    const existingValue = this.globalState._local?.[key];
+                    const existingValue = currentLocal?.[key];
                     if (existingValue !== undefined && typeof existingValue === 'object' && typeof targetData === 'object') {
                         localInit[key] = this.deepMerge(existingValue, targetData);
                         logger.log(`initLocal (merged): ${source.id}.data${path ? '.' + path : ''} -> _local.${key}`);
@@ -1744,9 +2361,9 @@ export class TemplateApp {
                             const rootKey = targetPath.split('.')[0];
 
                             // localInit에 rootKey가 없으면 기존 _local 값 복사
-                            if (localInit[rootKey] === undefined && this.globalState._local?.[rootKey] !== undefined) {
+                            if (localInit[rootKey] === undefined && currentLocal?.[rootKey] !== undefined) {
                                 // 기존 _local 값을 깊은 복사하여 localInit에 설정
-                                localInit[rootKey] = JSON.parse(JSON.stringify(this.globalState._local[rootKey]));
+                                localInit[rootKey] = JSON.parse(JSON.stringify(currentLocal[rootKey]));
                             }
 
                             // 이제 setValueAtPath로 중첩 경로에 값 설정
@@ -1754,7 +2371,7 @@ export class TemplateApp {
                             logger.log(`initLocal map (${mergeStrategy}): ${source.id} ${sourcePath} -> _local.${targetPath}`);
                         } else {
                             // 단일 키: 기존 로직 (레이아웃 레벨 기본값과 병합)
-                            const existingValue = this.globalState._local?.[targetPath];
+                            const existingValue = currentLocal?.[targetPath];
                             if (mergeStrategy === 'replace') {
                                 localInit[targetPath] = targetData;
                                 logger.log(`initLocal map (replace): ${source.id} ${sourcePath} -> _local.${targetPath}`);
@@ -2081,6 +2698,60 @@ export class TemplateApp {
     }
 
     /**
+     * 레이아웃이 쓰는 확장 컴포넌트 중 등록되지 않은 것을 보고합니다.
+     *
+     * 확장 번들 로드는 초기 라우트 처리 **전에** await 되므로(init 7 → 8) 등록이 첫 렌더보다
+     * 늦는 일은 구조적으로 없다. 그러나 번들 로드 자체가 실패하면 등록은 영영 오지 않고,
+     * 그때 DynamicRenderer 는 노드마다 null 을 반환해 화면에서 조용히 사라진다.
+     *
+     * 노드별 에러는 "이 컴포넌트가 없다" 까지만 말하고 원인(번들 실패)을 가리키지 못하므로,
+     * 레이아웃 단위로 모아 한 번에 보고한다 — 확장 컴포넌트가 통째로 빠졌다는 사실 자체가
+     * 곧 원인을 지목한다.
+     *
+     * @param layout 로드된 레이아웃 JSON
+     */
+    private reportMissingExtensionComponents(layout: any): void {
+        const COMPONENT_NODE_TYPES = new Set(['basic', 'composite', 'layout']);
+        const usedNames = new Set<string>();
+
+        // 자식 운반 키(children/slots/cellChildren…)를 열거하지 않고 전 구조를 훑는다.
+        // 열거하면 새 키가 생길 때 그 가지가 조용히 검사에서 빠진다.
+        const walk = (value: any): void => {
+            if (Array.isArray(value)) {
+                value.forEach(walk);
+
+                return;
+            }
+
+            if (value === null || typeof value !== 'object') {
+                return;
+            }
+
+            // 컴포넌트 노드는 name + 컴포넌트 타입을 함께 갖는다. `type` 만 보면 폼 필드 props
+            // (`{ name: "mail.host", type: "text" }`)가 같은 모양이라 대량 오검출된다.
+            if (typeof value.name === 'string' && COMPONENT_NODE_TYPES.has(value.type)) {
+                usedNames.add(value.name);
+            }
+
+            Object.values(value).forEach(walk);
+        };
+
+        walk(layout);
+
+        const missing = ComponentRegistry.getInstance().getMissingExtensionComponents([...usedNames]);
+
+        if (missing.length === 0) {
+            return;
+        }
+
+        logger.error(
+            '확장 컴포넌트가 등록되지 않았습니다 — 해당 확장의 번들 로드가 실패했을 수 있습니다. '
+            + '이 컴포넌트들은 화면에서 렌더되지 않습니다:',
+            missing
+        );
+    }
+
+    /**
      * 레이아웃의 외부 스크립트 로드
      *
      * scripts 속성에 정의된 외부 스크립트를 동적으로 로드합니다.
@@ -2177,7 +2848,7 @@ export class TemplateApp {
 
             notifyAssetFailure({
                 id: `layout-script:${script.id}`,
-                label: script.id,
+                label: this.layoutScriptLabel(script),
                 retry: async () => {
                     document.getElementById(script.id)?.remove();
                     await loadScriptWithRetry(
@@ -2189,6 +2860,35 @@ export class TemplateApp {
                 },
             });
         }
+    }
+
+    /**
+     * 레이아웃 스크립트 실패 안내에 쓸 사람이 읽는 이름을 고릅니다.
+     *
+     * 레이아웃·확장이 `label` 로 선언한 이름(`$t:키` 면 번역)을 쓰고, 없거나 번역이 풀리지 않으면
+     * 일반 이름(「화면 기능 스크립트」)을 쓴다. 종전에는 스크립트 id 를 그대로 넘겨
+     * 「daum_postcode_script을(를) 불러오지 못했습니다.」처럼 내부 식별자가 보였다(7.1.0 실측 M1F-10).
+     *
+     * @param script 스크립트 정의
+     * @returns 안내에 쓸 이름
+     * @since engine-v1.79.0
+     */
+    private layoutScriptLabel(script: LayoutScript): string {
+        const generic = assetText('core.assets.layout_script', '화면 기능 스크립트');
+        const declared = typeof script.label === 'string' ? script.label.trim() : '';
+
+        if (declared === '') {
+            return generic;
+        }
+
+        if (declared.startsWith('$t:')) {
+            const key = declared.slice(3);
+            const translated = assetText(key, '');
+
+            return translated !== '' && translated !== key ? translated : generic;
+        }
+
+        return declared;
     }
 
     /**
@@ -2316,12 +3016,16 @@ export class TemplateApp {
         // Error를 TemplateEngineError로 변환
         const templateError = toTemplateEngineError(error);
 
+        // 오류 화면이 #app 을 덮기 전에 React 루트를 내려놓는다 — 그대로 두면 지워진 노드에 토스트 등이
+        // 다시 그려지며 NotFoundError 가 수백 건 쌓인다 (engine-v1.79.0)
+        releaseTemplateRoot();
+
         // ErrorDisplay를 사용하여 렌더링
         // 원본 에러도 전달하여 상세 메시지 추출 가능하도록 함
         ErrorDisplay.renderFromError(
             'app',
             templateError,
-            '초기화 실패',
+            ErrorDisplay.text('core.errors.init_failed'),
             this.config.debug,
             {
                 templateId: this.config.templateId,
@@ -2523,7 +3227,9 @@ export class TemplateApp {
         container.id = 'g7-skeleton-overlay';
         container.setAttribute('role', 'status');
         container.setAttribute('aria-busy', 'true');
-        container.setAttribute('aria-label', 'Loading...');
+        // 화면 언어 문구로 읽힌다 — 템플릿 번역 nav.loading(스피너 덮개와 같은 키), 없으면 영문 (engine-v1.79.0)
+        const translatedLoading = (window as any).G7Core?.t?.('nav.loading');
+        container.setAttribute('aria-label', typeof translatedLoading === 'string' && translatedLoading !== '' && translatedLoading !== 'nav.loading' ? translatedLoading : 'Loading...');
 
         if (skeletonScope === 'fullpage') {
             // 초기 로드: #app이 비어있어 getBoundingClientRect() height=0
@@ -2588,6 +3294,13 @@ export class TemplateApp {
             );
         });
 
+        // 스켈레톤 컴포넌트가 자체 상태 영역(role="status")을 그리면 바깥 컨테이너의 역할·이름을 걷어
+        // 화면 읽기 프로그램이 상태 영역을 두 번 읽지 않게 한다 (engine-v1.79.0)
+        if (container.querySelector('[role="status"]')) {
+            container.removeAttribute('role');
+            container.removeAttribute('aria-label');
+        }
+
         const scopeLabel = skeletonScope === 'fullpage' ? 'fullpage (#app)'
             : skeletonScope === 'fallback' ? `fallback (#${fallbackTarget})`
             : `target (#${target})`;
@@ -2617,6 +3330,45 @@ export class TemplateApp {
         };
         // 미발견 시 전체 트리 반환 (폴백)
         return search(components) || components;
+    }
+
+    /**
+     * 레이아웃을 받는 동안 덮개를 띄우도록 예약합니다.
+     *
+     * 앞 화면 레이아웃의 transition_overlay 가 spinner 이고 대상이 있으면, 잠시(빠른 전환에서 깜빡이지 않을 만큼) 뒤
+     * 그 설정으로 스피너를 띄운다. 새 레이아웃을 받으면 2.5 단계가 이어받거나 걷는다.
+     *
+     * @param routeChangeId 이 화면 전환의 요청 ID
+     * @return void
+     * @since engine-v1.81.2
+     */
+    private scheduleEarlySpinner(routeChangeId: number): void {
+        this.cancelEarlySpinnerTimer();
+        const config: any = this.renderedTransitionOverlay;
+        if (!config || typeof config !== 'object' || !config.enabled || config.style !== 'spinner' || !config.target) {
+            return;
+        }
+        this.earlySpinnerTimer = setTimeout(() => {
+            this.earlySpinnerTimer = null;
+            if (routeChangeId !== this.currentRouteChangeId) {
+                return;
+            }
+            this.renderSpinnerOverlay(config.target, config.spinner, config.fallback_target);
+            this.earlySpinnerVisible = true;
+        }, TemplateApp.EARLY_SPINNER_DELAY_MS);
+    }
+
+    /**
+     * 덮개 예약을 취소합니다(이미 띄운 덮개는 그대로).
+     *
+     * @return void
+     * @since engine-v1.81.2
+     */
+    private cancelEarlySpinnerTimer(): void {
+        if (this.earlySpinnerTimer !== null) {
+            clearTimeout(this.earlySpinnerTimer);
+            this.earlySpinnerTimer = null;
+        }
     }
 
     /**
@@ -2766,23 +3518,43 @@ export class TemplateApp {
      *
      * @since engine-v1.29.0
      */
-    private reattachSpinnerOverlay(): void {
+    private reattachSpinnerOverlay(attempt: number = 0): void {
         if (!this._spinnerState) return;
 
-        const { target, fallbackTarget } = this._spinnerState;
-
-        // 새 DOM에서 타겟 찾기 (동일한 3단계 fallback)
-        let newTarget = document.getElementById(target);
-        if (!newTarget && fallbackTarget) {
-            newTarget = document.getElementById(fallbackTarget);
-        }
-        if (!newTarget) {
-            newTarget = document.getElementById('app');
-        }
+        const newTarget = this.findSpinnerTarget();
         if (!newTarget) return;
 
-        this._mountSpinnerInTarget(newTarget);
-        logger.log(`Spinner overlay reattached to new DOM target`);
+        // 이미 지금 대상에 붙어 있으면 그대로 둔다(커밋 뒤 확인에서 다시 마운트해 깜빡이지 않게)
+        if (attempt === 0 || !(this.skeletonOverlayContainer?.isConnected && this.skeletonOverlayContainer.parentElement === newTarget)) {
+            this._mountSpinnerInTarget(newTarget);
+            logger.log(`Spinner overlay reattached to new DOM target`);
+        }
+
+        // renderTemplate 은 React 커밋 전에 돌아온다 — 대상이 새 화면에서 다시 만들어지면 여기서 붙인 스피너가 앞 화면 DOM 과
+        // 함께 사라진다(데이터를 받는 동안 덮개 0). 커밋 뒤 대상을 다시 찾아, 떨어져 있으면 다시 붙인다 (@since engine-v1.81.2)
+        if (attempt < TemplateApp.SPINNER_REATTACH_CHECKS) {
+            const next = (): void => this.reattachSpinnerOverlay(attempt + 1);
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(next);
+            } else {
+                setTimeout(next, 16);
+            }
+        }
+    }
+
+    /**
+     * 스피너를 붙일 대상을 찾습니다(target → fallback_target → #app).
+     *
+     * @return 대상 요소 또는 null
+     * @since engine-v1.81.2
+     */
+    private findSpinnerTarget(): HTMLElement | null {
+        if (!this._spinnerState) return null;
+        const { target, fallbackTarget } = this._spinnerState;
+
+        return document.getElementById(target)
+            ?? (fallbackTarget ? document.getElementById(fallbackTarget) : null)
+            ?? document.getElementById('app');
     }
 
     /**
@@ -2857,14 +3629,32 @@ export class TemplateApp {
         }
 
         // Error를 TemplateEngineError로 변환
-        const templateError = toTemplateEngineError(error);
+        // 레이아웃 403·404 는 개발자용 원문(「Failed to fetch layout: 403 Forbidden」) 대신 사람이 읽는 문구를
+        // 화면 언어로 싣는다 — 서버가 준 사유(필요 권한 등)는 아래 상세 줄에 그대로 남는다(engine-v1.78.5).
+        const layoutStatus = error instanceof LayoutLoaderError ? error.details?.status : undefined;
+        const templateError =
+            layoutStatus === 403 || layoutStatus === 404
+                ? new TemplateEngineError(
+                      'LAYOUT_LOAD_ERROR',
+                      ErrorDisplay.text(layoutStatus === 403 ? 'core.errors.layout_forbidden' : 'core.errors.layout_not_found'),
+                      {
+                          showStack: false,
+                          icon: layoutStatus === 403 ? 'fa-lock' : 'fa-circle-question',
+                          recoverable: true,
+                      }
+                  )
+                : toTemplateEngineError(error);
+
+        // 오류 화면이 #app 을 덮기 전에 React 루트를 내려놓는다 — 그대로 두면 지워진 노드에 토스트 등이
+        // 다시 그려지며 NotFoundError 가 수백 건 쌓인다 (engine-v1.79.0)
+        releaseTemplateRoot();
 
         // ErrorDisplay를 사용하여 렌더링
         // 원본 에러도 전달하여 상세 메시지 추출 가능하도록 함
         ErrorDisplay.renderFromError(
             'app',
             templateError,
-            '페이지 로딩 실패',
+            ErrorDisplay.text('core.errors.page_load_failed'),
             this.config.debug,
             {
                 templateId: this.config.templateId,
@@ -2872,6 +3662,26 @@ export class TemplateApp {
             },
             undefined, // translationEngine
             error // originalError
+        );
+    }
+
+    /**
+     * 시스템 기본 401 처리(`navigate {{auth.loginPath}}`)가 쓸 로그인 주소를 ActionDispatcher 에 알려 줍니다.
+     *
+     * 이 템플릿의 인증 종류(관리자/사용자) 로그인 화면으로, 현재 주소를 복귀 경로로 싣는다. 주입하지 않으면 경로가
+     * 빈 값으로 풀려 이동이 실패하고 그 실패가 「네트워크 실패」 토스트로 보였다(engine-v1.78.2).
+     *
+     * @param actionDispatcher 대상 ActionDispatcher
+     * @return void
+     */
+    private bindLoginPathResolver(actionDispatcher: { setLoginPathResolver?: (resolver: () => string) => void }): void {
+        const authType: AuthType = this.config.templateType === 'admin' ? 'admin' : 'user';
+
+        actionDispatcher.setLoginPathResolver?.(() =>
+            AuthManager.getInstance().getLoginRedirectUrl(
+                authType,
+                window.location.pathname + window.location.search
+            )
         );
     }
 
@@ -2938,6 +3748,17 @@ export class TemplateApp {
      */
     private async handleRouteNotFound(path: string): Promise<void> {
         logger.warn('Route not found:', path);
+
+        // 밀린 화면 처리(대기열의 새 이동이 경로 없음으로 끝남)가 켜 둔 전환 상태·입력 잠금·덮개를 걷는다 — 이 경로는 화면 처리
+        // (handleRouteChange)를 거치지 않아, 걷지 않으면 흐림이 남고 뒤이은 다시 받기도 끄지 못한다 (@since engine-v1.82.0)
+        this.releaseRouteInert();
+        if (this.routeChangeInFlight) {
+            this.routeChangeInFlight = false;
+            transitionManager.setPending(false);
+            this.cancelEarlySpinnerTimer();
+            this.earlySpinnerVisible = false;
+            this.hideTransitionOverlay();
+        }
 
         try {
             // ErrorPageHandler를 통해 404 에러 페이지 렌더링 시도
@@ -3086,6 +3907,8 @@ export class TemplateApp {
                 const locales = localesResult?.data?.locales;
                 if (Array.isArray(locales) && locales.length > 0) {
                     const currentAppConfig = this.globalState.appConfig ?? {};
+                    // `$locales` 는 `$` 루트라 단순 경로(`{{$locales.length}}`)가 영구 캐시에 남는다 — 새 목록으로 그리기 전에 비운다 (@since engine-v1.83.0)
+                    getState().bindingEngine?.invalidateCacheByKeys(['$locales', '$templateLocales']);
                     this.setGlobalState({
                         appConfig: { ...currentAppConfig, supportedLocales: locales },
                     });
@@ -3114,26 +3937,52 @@ export class TemplateApp {
      * 로케일 변경
      *
      * @param locale 새로운 로케일 (예: 'ko', 'en')
+     * @param options persist: false 면 로그인 회원의 언어를 저장하지 않는다 — 호출자(관리자 헤더 언어 선택 등)가
+     *   이미 저장한 경우 저장 요청이 두 번 나가지 않게 한다 (@since engine-v1.79.0)
      */
-    async changeLocale(locale: string): Promise<void> {
+    async changeLocale(locale: string, options?: { persist?: boolean }): Promise<void> {
+        const persist = options?.persist !== false;
+        let releaseEngineReady: (() => void) | null = null;
         try {
             logger.log('Changing locale to:', locale);
 
-            // 로케일이 동일하면 무시
+            // 로케일이 동일하면 화면은 그대로 두되, 로그인 회원의 언어는 저장한다 (@since engine-v1.79.0).
+            // 회원 언어가 세션 중 다른 기기에서 바뀌어 화면 언어와 갈렸어도(이 화면은 그 사실을 모른다) 같은 언어를
+            // 다시 고르면 회원 언어가 이 언어로 맞춰진다(결정 2026-10-08). 비로그인은 saveLocaleToDatabase 가 건너뛴다.
             if (this.config.locale === locale) {
                 logger.log('Locale is already', locale);
+                if (persist) {
+                    await this.saveLocaleToDatabase(locale);
+                }
                 return;
             }
 
             // 로케일 업데이트
             this.config.locale = locale;
-            this.applyDocumentLanguage(locale);
+
+            // 같은 화면을 다시 그릴 때 이어 쓸 상태 (@since engine-v1.79.0)
+            // - `_local`: 저장하지 않은 입력(제목·본문 등) — 재진입의 init·initLocal 대신 이 값으로 그린다
+            // - 수동으로 받은 데이터소스(auto_fetch=false — 탭을 열 때 받은 목록 등): 재진입이 다시 받지 않으므로
+            //   아래에서 새 언어로 다시 받는다
+            // - 인계 저장소: 컴포넌트 안에만 있는 저장 전 상태(업로더의 대기 파일 등)를 재마운트 너머로 넘긴다
+            // 대기 중인 디바운스 쓰기(CKEditor 본문 등)를 먼저 실행해 스냅샷에 담는다 — 엔진을 내린 뒤 옛 디스패처의
+            // 타이머가 늦게 실행되면 재진입의 `_local` 교체와 어긋난다
+            getState().actionDispatcher?.flushPendingDebounceTimers?.();
+            this.pendingLocaleSwitch = { path: window.location.pathname, local: this.snapshotLocalForLocaleSwitch() };
+            const loadedManualSourceIds = this.collectLoadedManualDataSourceIds();
+            beginLocaleSwitchHandoff();
+            this.localeSwitchConsumed = false;
 
             // localStorage에 저장
             this.saveLocaleToStorage(locale);
 
-            // 로그인한 사용자인 경우 DB에 저장 (실패해도 UI는 변경)
-            await this.saveLocaleToDatabase(locale);
+            // 문서 언어(<html lang>)도 맞춘다 — 페이지를 다시 받지 않으므로 서버 값이 그대로 남는다
+            this.syncDocumentLang(locale);
+
+            // 로그인한 사용자인 경우 DB에 저장 (실패해도 UI는 변경) — 호출자가 이미 저장했으면 건너뛴다 (engine-v1.79.0)
+            if (persist) {
+                await this.saveLocaleToDatabase(locale);
+            }
 
             // 레이아웃 캐시 클리어 (새 로케일로 레이아웃 재로드 필요)
             if (this.layoutLoader) {
@@ -3147,8 +3996,15 @@ export class TemplateApp {
                 logger.log('ErrorPageHandler locale updated');
             }
 
-            // 기존 템플릿 엔진 정리
+            // 진행 중인 화면 전환(로그인 직후 홈으로 이동 등)이 끝난 뒤에 엔진을 내린다 — 내려간 엔진에 그 전환의
+            // 데이터 갱신·init_actions 가 닿아 「템플릿 엔진이 초기화되지 않았습니다」·Unknown action handler 가 났다 (engine-v1.79.0)
+            await this.routeChangeSettled;
+            // 엔진이 내려가 있는 동안 시작된 화면 전환은 새 엔진·핸들러가 준비될 때까지 기다린다
+            this.localeSwitchEngineReady = new Promise<void>((resolve) => { releaseEngineReady = resolve; });
+
+            // 기존 템플릿 엔진 정리 — 언마운트되는 컴포넌트가 인계 저장소에 맡긴 뒤 맡기기를 닫는다
             destroyTemplate();
+            closeLocaleSwitchHandoff();
 
             // 템플릿 엔진 재초기화 (캐시 버전 유지)
             await initTemplateEngine({
@@ -3170,37 +4026,152 @@ export class TemplateApp {
                 actionDispatcher.setDefaultContext({
                     navigate: (path: string) => this.router?.navigate(path),
                 });
+                this.bindLoginPathResolver(actionDispatcher);
 
                 actionDispatcher.setGlobalStateUpdater((updates: any, opts?: { render?: boolean }) => this.setGlobalState(updates, opts));
 
                 logger.log('Navigate function and setGlobalState re-injected to ActionDispatcher');
             }
 
-            // 모듈 핸들러 재등록
-            // ActionDispatcher가 새로 생성되었으므로 모듈들이 핸들러를 다시 등록해야 함
+            // 핸들러 재등록 — ActionDispatcher 가 새로 생성되었으므로 모두 다시 등록해야 한다.
+            // 순서는 부트와 같게 모듈 → 플러그인 → 템플릿이다(부트: loadExtensionAssets → reinitializeTemplateHandlers).
+            // 종전에는 모듈 → 템플릿 → 플러그인이라 같은 이름이면 전환 전에는 템플릿, 전환 뒤에는 플러그인이 이겼다 (engine-v1.86.0)
             this.reinitializeModuleHandlers();
             logger.log('Module handlers re-initialized');
 
-            // 템플릿 핸들러 재등록
-            // 모듈 핸들러와 마찬가지로 템플릿 커스텀 핸들러도 재등록해야 함
-            this.reinitializeTemplateHandlers();
-            logger.log('Template handlers re-initialized');
-
-            // 플러그인 핸들러 재등록
-            // 모듈 핸들러와 마찬가지로 플러그인 핸들러도 재등록해야 함
             this.reinitializePluginHandlers();
             logger.log('Plugin handlers re-initialized');
 
-            // 현재 라우트 재렌더링
+            this.reinitializeTemplateHandlers();
+            logger.log('Template handlers re-initialized');
+
+            // 새 엔진·핸들러 준비 완료 — 기다리던 화면 전환을 놓아준다 (engine-v1.79.0)
+            this.releaseLocaleSwitchEngineReady(releaseEngineReady);
+            releaseEngineReady = null;
+
+            // 현재 라우트 재렌더링 — 재진입이 끝나야 수동 데이터소스를 다시 받을 수 있다 (@since engine-v1.79.0 await)
             if (this.router) {
-                this.router.navigateToCurrentPath();
+                await this.router.navigateToCurrentPath();
+            }
+
+            // 수동으로 받아 둔 데이터소스를 새 언어로 다시 받는다 — 사용자 입력(`_local`)은 덮지 않는다
+            // 재진입이 레이아웃 로드 실패 등으로 전환 상태를 소비하지 못했으면 옛 정의로 다시 받지 않는다
+            if (this.localeSwitchConsumed) {
+                await this.refetchManualDataSourcesAfterLocaleSwitch(loadedManualSourceIds);
             }
 
             logger.log('Locale changed successfully to', locale);
         } catch (error) {
             logger.error('Failed to change locale:', error);
             throw error;
+        } finally {
+            // 재진입이 소비하지 못한 상태(경로가 바뀐 경우 등)는 버린다
+            this.pendingLocaleSwitch = null;
+            closeLocaleSwitchHandoff();
+            // 실패로 끝나도 기다리던 화면 전환을 묶어 두지 않는다 (engine-v1.79.0)
+            this.releaseLocaleSwitchEngineReady(releaseEngineReady);
         }
+    }
+
+    /**
+     * 문서 언어(`<html lang>`)를 앱 로케일에 맞춥니다.
+     *
+     * 서버 템플릿과 같은 변환(밑줄 → 하이픈)을 쓴다. 화면 읽기 프로그램·번역 제안·하이픈 처리가
+     * 이 값을 기준으로 언어를 판단한다.
+     *
+     * @param locale 앱 로케일 (예: 'ko', 'en', 'zh_CN')
+     */
+    private syncDocumentLang(locale: string): void {
+        if (typeof document === 'undefined' || !document.documentElement || !locale) {
+            return;
+        }
+        document.documentElement.lang = locale.replace(/_/g, '-');
+    }
+
+    /**
+     * 언어 전환 중 엔진 준비 대기를 풀어 기다리던 화면 전환을 진행시킵니다.
+     *
+     * @param release 대기를 푸는 함수 (이미 풀었으면 null)
+     * @since engine-v1.79.0
+     */
+    private releaseLocaleSwitchEngineReady(release: (() => void) | null): void {
+        if (release) {
+            release();
+            this.localeSwitchEngineReady = null;
+        }
+    }
+
+    /**
+     * 언어 전환 직전 `_local` 의 사본을 만듭니다.
+     *
+     * 같은 이벤트 루프의 최신 값(자동 바인딩 대기분)까지 담는 `G7Core.state.getLocal()` 을 우선 쓴다.
+     * 깊은 사본을 만들 수 없는 값(함수 등)이 있으면 최상위만 복사한다.
+     *
+     * @returns `_local` 사본
+     * @since engine-v1.79.0
+     */
+    private snapshotLocalForLocaleSwitch(): Record<string, any> {
+        const current = (window as any).G7Core?.state?.getLocal?.() ?? this.globalState._local ?? {};
+        try {
+            return structuredClone(current);
+        } catch {
+            return { ...current };
+        }
+    }
+
+    /**
+     * 수동으로 받아 둔 데이터소스(auto_fetch=false) 중 이미 데이터가 있는 것의 ID 를 모읍니다.
+     *
+     * auto_fetch 소스는 같은 경로 재진입이 다시 받으므로 제외한다.
+     *
+     * @returns 데이터소스 ID 목록
+     * @since engine-v1.79.0
+     */
+    private collectLoadedManualDataSourceIds(): string[] {
+        // 지금 화면이 그 데이터 소스 정의를 채운 경로가 아니면(없는 주소의 오류 화면 등) 모으지 않는다
+        if (this.currentRoutePath !== window.location.pathname) {
+            return [];
+        }
+        return (this.currentDataSources || [])
+            .filter((ds: any) => ds && ds.auto_fetch === false
+                && (ds.type === undefined || ds.type === 'api')
+                && this.currentFetchedData[ds.id] !== undefined)
+            .map((ds: any) => ds.id);
+    }
+
+    /**
+     * 언어 전환 뒤 수동 데이터소스를 다시 받습니다 (initLocal 미적용).
+     *
+     * @param sourceIds 전환 직전에 데이터가 있던 수동 데이터소스 ID
+     * @since engine-v1.79.0
+     */
+    private async refetchManualDataSourcesAfterLocaleSwitch(sourceIds: string[]): Promise<void> {
+        const targets = sourceIds.filter(id => (this.currentDataSources || []).some((ds: any) => ds.id === id));
+        if (targets.length === 0) {
+            return;
+        }
+        logger.log('Locale switch: refetching manual data sources', targets);
+        await Promise.allSettled(targets.map(id => this.refetchDataSource(id, { skipInitLocal: true })));
+    }
+
+    /**
+     * 언어 전환 재진입이면 전환 직전 상태를 꺼냅니다 (한 번만).
+     *
+     * 언어 전환이 아닌 화면 이동이면 남은 인계 값을 버린다.
+     *
+     * @param path 재진입하는 경로
+     * @returns 전환 직전 상태 (언어 전환 재진입이 아니면 null)
+     * @since engine-v1.79.0
+     */
+    private consumeLocaleSwitchState(path: string): { path: string; local: Record<string, any> } | null {
+        const pending = this.pendingLocaleSwitch;
+        this.pendingLocaleSwitch = null;
+        if (pending && pending.path === path) {
+            return pending;
+        }
+        clearLocaleSwitchHandoff();
+
+        return null;
     }
 
     /**
@@ -3226,6 +4197,52 @@ export class TemplateApp {
         } catch (error) {
             logger.warn('Failed to save locale to storage:', error);
         }
+    }
+
+    /**
+     * 로그인 상태면 화면 언어를 회원이 설정한 언어(users.language)에 맞춥니다.
+     *
+     * 부팅 때 화면 언어는 이 브라우저에 남은 `g7_locale` 이 정하는데, 서버는 로그인 회원의 요청 언어로
+     * users.language 를 쓴다. 둘이 갈리면(다른 기기에서 언어를 바꾼 경우 등) 화면 문구는 브라우저 언어,
+     * 필수 언어 검증 문구와 확장 목록 이름은 회원 언어로 섞였다(결정 2026-10-08: 회원이 설정한 언어 기준).
+     * 첫 렌더 전(디스패처 문맥·핸들러 등록 전)에 엔진을 회원 언어로 다시 초기화해 다시 그리지 않는다.
+     * 비로그인, 회원 언어 없음이면 종전대로 둔다. 회원 언어가 꺼진 언어면 사이트 기본 언어로 맞춘다 —
+     * 회원 정보(users.language)는 다시 쓰지 않는다(언어팩을 잠깐 껐다 켜도 회원 선택이 남도록, engine-v1.81.0).
+     *
+     * @param authManager 인증 관리자 (프리로드가 끝난 상태)
+     * @param cacheVersion 다국어 파일 캐시 버전
+     * @since engine-v1.79.0
+     */
+    private async alignLocaleWithMemberLanguage(authManager: AuthManager, cacheVersion: number): Promise<void> {
+        const authState = authManager.getState();
+        const memberLocale = authState.isAuthenticated ? authState.user?.language : undefined;
+        if (typeof memberLocale !== 'string' || memberLocale === '') {
+            return;
+        }
+
+        const target = resolveUsableLocale(memberLocale, this.globalState?.appConfig, this.serverLocale ?? null);
+        if (target === this.config.locale) {
+            return;
+        }
+        if (target !== memberLocale) {
+            logger.log('Member language is not an active locale, switching to site default:', memberLocale, '→', target);
+        }
+
+        logger.log('Aligning locale with member language:', this.config.locale, '→', target);
+        this.config.locale = target;
+        this.saveLocaleToStorage(target);
+        // 문서 언어도 회원 언어로 — 생성자가 맞춘 값은 브라우저 저장 언어 기준이라 그대로 두면 화면은 회원 언어,
+        // <html lang> 은 저장 언어로 갈린다(셸 요청에는 토큰이 없어 서버도 회원 언어를 모른다, 7.1.1)
+        this.syncDocumentLang(target);
+
+        destroyTemplate();
+        await initTemplateEngine({
+            templateId: this.config.templateId,
+            templateType: this.config.templateType,
+            locale: target,
+            debug: this.config.debug,
+            cacheVersion,
+        });
     }
 
     /**
@@ -3386,8 +4403,12 @@ export class TemplateApp {
             return;
         }
 
+        // 등록자를 활성 템플릿 식별자로 표시한다 — 다른 주인의 이름을 덮으면 엔진이 경고로 드러낸다 (engine-v1.86.0)
+        const source = this.config.templateId
+            || document.getElementById('app')?.getAttribute('data-template-id')
+            || 'unknown';
         Object.entries(templateHandlers).forEach(([name, handler]) => {
-            actionDispatcher.registerHandler(name, handler as any);
+            actionDispatcher.registerHandler(name, handler as any, { category: 'custom', source });
         });
 
         logger.log(`${Object.keys(templateHandlers).length} template handler(s) re-registered:`, Object.keys(templateHandlers));
@@ -3438,6 +4459,44 @@ export class TemplateApp {
      */
     getErrorPageHandler(): ErrorPageHandler | null {
         return this.errorPageHandler;
+    }
+
+    /**
+     * 오류 화면 핸들러를 만든다.
+     *
+     * 상태를 생성 때 넘기지 않고 그릴 때마다 읽는 함수를 넘긴다 (@since engine-v1.83.0) — 전역 상태는 바꿀 때마다 새 객체라
+     * 생성 때 넘긴 참조는 곧 옛 값이 됐고(오류 화면의 `{{_global.*}}`), route·query·전역 헤더도 오류 화면에 닿지 않았다.
+     * 같은 화면에서 오류 화면을 연속으로 그릴 때 앞 오류 코드가 남지 않게 그리기 직전에 바인딩 캐시를 비운다.
+     *
+     * @returns 오류 화면 핸들러
+     */
+    private createErrorPageHandler(): ErrorPageHandler {
+        const errorDataSourceManager = new DataSourceManager({
+            onUnauthorized: () => {
+                logger.warn('Unauthorized request in error page');
+            },
+        });
+
+        return new ErrorPageHandler({
+            templateId: this.config.templateId,
+            layoutLoader: this.layoutLoader!,
+            locale: this.config.locale,
+            debug: this.config.debug,
+            renderFunction: renderTemplate,
+            dataSourceManager: errorDataSourceManager,
+            globalState: this.globalState,
+            getGlobalState: () => this.globalState,
+            getRouteContext: () => ({
+                route: { ...(this.currentRouteParams || {}), ...(this.currentRoutePath ? { path: this.currentRoutePath } : {}) },
+                query: parseQueryParams(this.currentQueryParams ?? new URLSearchParams()),
+            }),
+            getGlobalHeaders: () => this.currentGlobalHeaders,
+            clearBindingCache: () => {
+                const bindingEngine = getState().bindingEngine;
+                bindingEngine?.clearCache();
+                bindingEngine?.startRenderCycle();
+            },
+        });
     }
 
     /**
@@ -3508,10 +4567,17 @@ export class TemplateApp {
     /**
      * 전역 상태 변경 리스너 등록
      *
+     * 해제 함수를 돌려줍니다. 화면 컴포넌트는 언마운트 때 이 함수를 불러야 리스너가 쌓이지 않습니다 —
+     * 종전에는 `undefined` 를 돌려줘, 반환값을 해제 함수로 쓰던 호출부(상품 카드·관리자 사이드바·본인인증
+     * 실행기)가 화면을 떠날 때마다 리스너를 남겼습니다(실측: 상품 목록 왕복 20회에 29 → 281, #639).
+     *
      * @param listener 상태 변경 시 호출될 콜백 함수
+     * @returns 구독 해제 함수
      */
-    onGlobalStateChange(listener: (state: GlobalState) => void): void {
+    onGlobalStateChange(listener: (state: GlobalState) => void): () => void {
         this.globalStateListeners.add(listener);
+
+        return () => this.offGlobalStateChange(listener);
     }
 
     /**
@@ -3533,7 +4599,7 @@ export class TemplateApp {
      * @param options refetch 옵션 (sync: true면 startTransition 없이 즉시 렌더링)
      * @returns fetch된 데이터 또는 undefined
      */
-    async refetchDataSource(dataSourceId: string, options?: { sync?: boolean; globalStateOverride?: Record<string, any>; localStateOverride?: Record<string, any> }): Promise<any> {
+    async refetchDataSource(dataSourceId: string, options?: { sync?: boolean; globalStateOverride?: Record<string, any>; localStateOverride?: Record<string, any>; isolatedStateOverride?: Record<string, any>; skipInitLocal?: boolean }): Promise<any> {
         // 데이터 소스 정의 찾기 (페이지 레벨 → 모달 레벨 순서로 검색)
         let dataSourceDef = this.currentDataSources.find((ds: any) => ds.id === dataSourceId);
 
@@ -3582,6 +4648,33 @@ export class TemplateApp {
                 ? { ...currentLocalState, ...options.localStateOverride }
                 : currentLocalState;
 
+            // 다른 대상으로 다시 받기를 시작하면 앞 값을 받기 전(undefined)으로 돌린다 (@since engine-v1.81.2).
+            // 같은 id 를 대상(주소 경로)만 바꿔 다시 받는 창(쿠폰 A → B 발급 내역, 보유기간 대상 작성 IP → 비회원)은 응답 전까지
+            // 앞 대상의 행이 「받은 값」으로 보였다 — 레이아웃이 받는 중(`=== undefined`)을 가를 수 없었다. 같은 경로(쪽 이동·
+            // 같은 대상 재조회·폴링)는 종전대로 앞 값을 두고 받는 동안 흐림으로 보인다.
+            const refetchSeq = ++this.refetchSeq;
+            this.refetchSeqBySource.set(dataSourceId, refetchSeq);
+            // 격리 상태 안에서 부른 다시 받기는 그 상태를 `{{_isolated.*}}` 로 요청 식에 싣는다 (@since engine-v1.83.0) — refetchDataSource
+            // 핸들러가 넘기던 값을 종전에는 받지 않아 버렸다
+            const isolatedState = options?.isolatedStateOverride;
+            const requestPath = dataSourceManager.resolveRequestPath(
+                dataSourceDef, this.currentRouteParams, this.currentQueryParams, globalState, localState, isolatedState
+            );
+            const previousPath = this.refetchPathBySource.get(dataSourceId);
+            if (previousPath !== undefined && previousPath !== requestPath) {
+                delete this.currentFetchedData[dataSourceId];
+                const clearData: Record<string, any> = { [dataSourceId]: undefined };
+                if (this.routeDataSourceErrors[dataSourceId] !== undefined) {
+                    delete this.routeDataSourceErrors[dataSourceId];
+                    clearData._dataSourceErrors = Object.keys(this.routeDataSourceErrors).length > 0
+                        ? { ...this.routeDataSourceErrors }
+                        : undefined;
+                }
+                getState().bindingEngine?.invalidateCacheByKeys([dataSourceId, '_dataSourceErrors']);
+                updateTemplateData(clearData, options?.sync ? { sync: true } : undefined);
+            }
+            this.refetchPathBySource.set(dataSourceId, requestPath);
+
             // 단일 데이터 소스 fetch
             // ignoreAutoFetch: true - auto_fetch: false인 데이터 소스도 강제 fetch
             // localState: sequence 내 setState local 후 {{_local.xxx}} 표현식 지원
@@ -3591,10 +4684,19 @@ export class TemplateApp {
                 this.currentQueryParams,
                 globalState,
                 localState,
-                { ignoreAutoFetch: true }
+                // refetch: 오류 처리기가 「다시 받기 실패」를 가를 수 있게 문맥에 `error.refetch` 를 싣는다 (@since engine-v1.82.0) —
+                // 이 화면에서 이미 값을 받은 소스만 「다시 받기」다. 다시 받기로만 받는 소스(auto_fetch:false — 편집기 확장 본문·창 목록)의
+                // 첫 받기 실패는 처음 받기와 같이 다룬다(오류 화면으로 빈 폼 저장을 막는 레이아웃 계약을 지킨다)
+                { ignoreAutoFetch: true, refetch: (source: any) => this.hasReceivedOnScreen(source.id), ...(isolatedState ? { isolatedState } : {}) }
             );
 
             const result = results[0];
+
+            // 그사이 같은 소스의 다시 받기가 새로 시작됐으면(다른 대상을 빠르게 연 경우) 이 응답은 버린다 (@since engine-v1.81.2)
+            if (this.refetchSeqBySource.get(dataSourceId) !== refetchSeq) {
+                logger.log(`Refetch result discarded (newer refetch started): ${dataSourceId}`);
+                return undefined;
+            }
 
             if (result.state === 'success' && result.data !== undefined) {
                 // 캐시 업데이트
@@ -3602,8 +4704,12 @@ export class TemplateApp {
 
                 // initGlobal/initLocal 처리
                 // processInitOptions에서 this.globalState가 업데이트됨
+                // 받기에 실패해 같은 요청의 마지막 값을 돌려받은 경우는 다시 심지 않는다 (@since engine-v1.82.0) — 새 값이 아니라,
+                // 다시 심으면 사용자가 방금 바꾼 선택·입력이 그 값으로 되돌아간다(장바구니 선택 해제 → 다시 받기 500 → 선택 복귀).
                 const localInit: Record<string, any> = {};
-                this.processInitOptions([dataSourceDef], { [dataSourceId]: result.data }, localInit);
+                if (result.kept !== 'last') {
+                    this.processInitOptions([dataSourceDef], { [dataSourceId]: result.data }, localInit);
+                }
 
                 // BindingEngine 캐시 무효화
                 const state = getState();
@@ -3625,15 +4731,24 @@ export class TemplateApp {
                     [dataSourceId]: result.data,
                 };
 
-                // initLocal이 있으면 추가
-                if (Object.keys(localInit).length > 0) {
+                // initLocal이 있으면 추가 — skipInitLocal(언어 전환 재조회)은 사용자 입력을 덮지 않는다 (@since engine-v1.79.0)
+                if (Object.keys(localInit).length > 0 && !options?.skipInitLocal) {
                     updateData._localInit = localInit;
                 }
 
                 // initGlobal이 있으면 _global도 업데이트
                 // processInitOptions에서 this.globalState가 업데이트되었으므로 React 상태에도 반영
-                if (dataSourceDef.initGlobal) {
+                if (dataSourceDef.initGlobal && result.kept !== 'last') {
                     updateData._global = { ...this.globalState };
+                }
+
+                // 앞서 실패해 남은 이 소스의 오류 기록을 지운다 (@since engine-v1.81.2) — 마지막 값으로 버틴 실패는 새 성공이 아니므로 그대로 둔다
+                if (result.kept !== 'last' && this.routeDataSourceErrors[dataSourceId] !== undefined) {
+                    delete this.routeDataSourceErrors[dataSourceId];
+                    updateData._dataSourceErrors = Object.keys(this.routeDataSourceErrors).length > 0
+                        ? { ...this.routeDataSourceErrors }
+                        : undefined;
+                    state.bindingEngine?.invalidateCacheByKeys(['_dataSourceErrors']);
                 }
 
                 updateTemplateData(updateData, options?.sync ? { sync: true } : undefined);
@@ -3643,14 +4758,37 @@ export class TemplateApp {
                 return result.data;
             } else if (result.state === 'error') {
                 logger.error(`Failed to refetch data source: ${dataSourceId}`, result.error);
+
+                // 처음 받기 실패와 같은 계약으로 둔다 (@since engine-v1.81.2) — 값은 null(받기 끝 · 실패),
+                // `_dataSourceErrors` 에 기록. 같은 요청의 마지막 값·fallback 이 있으면 DataSourceManager 가
+                // 이미 성공으로 돌려주므로 여기 오는 것은 「다른 요청」(다른 대상·쿼리)이거나 처음 받기·권한 오류다.
+                // 종전에는 값을 그대로 두어, 다른 대상을 연 창에 앞 대상의 값이 남거나(쿠폰 A → B 발급 내역)
+                // 처음 여는 창이 받는 중(undefined)에 머물렀다.
+                // 받아 둔 값에도 null 을 둔다 — 렌더 전 init_actions 안 다시 받기의 실패도 init 뒤 병합으로 첫 렌더에 닿는다.
+                // 오류 기록은 화면의 공유 기록(처음 받기와 같은 객체)에 쓴다 — 렌더 전이면 init 뒤 병합이 첫 렌더에 싣는다.
+                const failure = result.error as any;
+                this.currentFetchedData[dataSourceId] = null;
+                this.routeDataSourceErrors[dataSourceId] = {
+                    message: failure?.response?.data?.message || failure?.message || 'Unknown error',
+                    status: failure?.response?.status || failure?.status || result.errorCode,
+                };
+                getState().bindingEngine?.invalidateCacheByKeys([dataSourceId, '_dataSourceErrors']);
+                updateTemplateData({
+                    [dataSourceId]: null,
+                    _dataSourceErrors: { ...this.routeDataSourceErrors },
+                }, options?.sync ? { sync: true } : undefined);
+
                 return undefined;
             }
         } catch (error) {
             logger.error(`Error refetching data source: ${dataSourceId}`, error);
             return undefined;
         } finally {
-            // blur_until_loaded 지원: refetch 완료 후 transition 상태 해제
-            transitionManager.setPending(false);
+            // blur_until_loaded 지원: refetch 완료 후 transition 상태 해제 — 화면을 옮기는 중이면(새 화면 init 안 다시 받기 등)
+            // 새 화면 렌더가 끈다 (@since engine-v1.82.0)
+            if (!this.routeChangeInFlight) {
+                transitionManager.setPending(false);
+            }
         }
     }
 
@@ -3734,6 +4872,10 @@ export class TemplateApp {
             // 교체 모드: 전체 교체
             this.currentFetchedData[dataSourceId] = data;
         }
+
+        // 이 소스의 영구 바인딩 캐시를 비운다 (@since engine-v1.83.0) — 단순 경로(`{{x.data.total}}`)는 경로 글자를 키로
+        // 30초 캐시에 남아, 화면 전환 없이 값만 바꾸면(글 보기 비밀번호 확인 → updateDataSource·appendDataSource) 옛 값으로 그려졌다
+        getState().bindingEngine?.invalidateCacheByKeys([dataSourceId]);
 
         // UI 리렌더링 트리거
         import('./template-engine').then(({ updateTemplateData }) => {
@@ -3828,6 +4970,10 @@ export class TemplateApp {
                 timestamp: Date.now(),
             });
         }
+
+        // 항목을 제자리에서 고쳤으므로 이 소스의 영구 바인딩 캐시를 비운다 — `{{x.data.0.name}}` 같은 스칼라 경로가 옛 값으로
+        // 남는다. 렌더를 건너뛰어도 다음 렌더가 새 값을 읽도록 비운다 (@since engine-v1.83.0)
+        getState().bindingEngine?.invalidateCacheByKeys([dataSourceId]);
 
         // 6. 변경 알림 (선택적 렌더링)
         if (!skipRender) {
@@ -3991,15 +5137,25 @@ export class TemplateApp {
      *   - transitionOverlayTarget: 이 호출에 한해 transition_overlay.target 을 동적으로 override
      *     (탭 안의 서브 탭, 목록 페이지네이션 등 부분 영역만 spinner 가 표시되어야 할 때 사용)
      *     @since engine-v1.36.0
+     *   - refetchDataSourceIds: 이 호출에서 다시 받을 데이터 소스 id 목록. 주면 그 소스만 다시 받는다
+     *     (같은 탭 안 목록의 검색·필터·쪽 넘김이 같은 화면의 설정 폼 소스를 다시 받아 고친 값을 덮지 않게).
+     *     생략하면 종전대로 auto_fetch 소스 전부 @since engine-v1.79.0
      * @returns refetch 완료 후 resolve되는 Promise
+     *
+     * 호출이 겹치면(탭을 빠르게 오감) 소스마다 가장 최근에 재조회를 시작한 호출의 응답만 적용하고,
+     * 덮개·대기 표시는 현재 화면 소스의 최신 재조회를 가진 호출이 모두 끝난 뒤 걷는다 (engine-v1.79.0).
      *
      * @example
      * // ActionDispatcher에서 호출
      * G7Core.updateQueryParams('/admin/products?status=active&page=2');
      * G7Core.updateQueryParams('/admin/settings?tab=notification&channel=email', { transitionOverlayTarget: 'notif_channel_content' });
+     * G7Core.updateQueryParams('/admin/settings?tab=identity&page=2', { refetchDataSourceIds: ['policies'] });
      */
-    async updateQueryParams(newPath: string, options?: { transitionOverlayTarget?: string }): Promise<void> {
+    async updateQueryParams(newPath: string, options?: { transitionOverlayTarget?: string; refetchDataSourceIds?: string[] }): Promise<void> {
         logger.log('updateQueryParams:', newPath);
+
+        // 호출 번호 (engine-v1.79.0) — 겹친 호출 사이의 응답 적용·덮개 해제 판정에 쓴다
+        const queryUpdateId = ++this.queryUpdateSeq;
 
         // URL 파싱
         const url = new URL(newPath, window.location.origin);
@@ -4015,6 +5171,8 @@ export class TemplateApp {
         // 열린다). `withBasePrefix` 는 멱등이라 이미 붙은 값이 와도 안전하다
         // (14차 G3 라운드).
         window.history.replaceState(null, '', withBasePrefix(newPath));
+        // 주소를 읽어 href 를 만드는 `:mergeQuery` 링크가 props 변화 없이도 다시 그려지게 알린다 (engine-v1.82.1)
+        notifyLocationReplaced();
         logger.log('URL updated via replaceState');
 
         // 2. 내부 쿼리 컨텍스트 업데이트
@@ -4038,46 +5196,76 @@ export class TemplateApp {
             : this.currentDataSources;
         // 재평가 결과를 현재 데이터소스로 갱신 (이후 wait_for 판정/refetchDataSource 가 참조)
         this.currentDataSources = reevaluatedSources;
+        // 그린 화면 기록의 쿼리·정의도 맞춘다 — 다음 화면 전환의 「같은 요청」 판정이 바뀐 쿼리로 받은 값을
+        // 옛 쿼리 값으로 오인하지 않게 (@since engine-v1.81.2)
+        if (this.renderedScreen && this.renderedScreen.path === url.pathname) {
+            this.renderedScreen = {
+                ...this.renderedScreen,
+                query: parseQueryParams(newQueryParams),
+                sources: reevaluatedSources,
+            };
+        }
 
         // 4. auto_fetch: true인 데이터 소스들 refetch
         // WebSocket 소스는 이벤트 리스너(실시간 알림)이지 fetch 대상이 아님 (engine-v1.32.2 정책)
         // handleRouteChange progressive 경로와 동일하게 호출 전에 필터링하여 계약 일관성 확보
+        // refetchDataSourceIds 를 주면 그 소스만 다시 받는다 (engine-v1.79.0)
+        const onlyIds = Array.isArray(options?.refetchDataSourceIds) && options!.refetchDataSourceIds.length > 0
+            ? new Set(options!.refetchDataSourceIds)
+            : null;
         const autoFetchDataSources = reevaluatedSources.filter(
-            (ds: any) => ds.auto_fetch !== false && ds.type !== 'websocket'
+            (ds: any) => ds.auto_fetch !== false && ds.type !== 'websocket' && (!onlyIds || onlyIds.has(ds.id))
         );
 
         if (autoFetchDataSources.length === 0) {
             logger.log('No auto_fetch data sources to refetch');
+            // 다시 받을 소스가 없어도 화면의 `query` 는 새 주소 값이어야 한다 — 종전에는 여기서 돌아가
+            // `{{query.*}}`·query 에서 나온 `_computed` 가 옛 쿼리로 남았다 (engine-v1.82.1)
+            this.applyQueryContextToScreen({});
             return;
         }
 
         logger.log(`Refetching ${autoFetchDataSources.length} auto_fetch data sources`);
 
-        // blur_until_loaded 지원: transition 상태를 pending으로 설정
-        transitionManager.setPending(true);
-
-        // transition_overlay spinner: wait_for 에 명시된 progressive 데이터소스가 refetch 대상이면 오버레이 표시
-        // navigate replace:true(탭 전환 등)로 이 경로에 진입했을 때 handleRouteChange step 2.5 와 동일 동작 (@since engine-v1.35.0)
-        // options.transitionOverlayTarget 으로 호출별 target 동적 override 지원 (탭 안의 서브 탭/페이지네이션 등) (@since engine-v1.36.0)
-        const layoutJson = getState().currentLayoutJson as any;
-        const overlayConfig = layoutJson?.transition_overlay;
-        const waitForIds: string[] = Array.isArray(overlayConfig?.wait_for) ? overlayConfig.wait_for : [];
-        const blockingRefetch = autoFetchDataSources.some((s: any) => (s.loading_strategy || 'progressive') === 'blocking');
-        const waitForActive = waitForIds.length > 0 && autoFetchDataSources.some((s: any) =>
-            waitForIds.includes(s.id)
-            && s.type !== 'websocket'
-            && (s.loading_strategy || 'progressive') !== 'background'
-        );
-        if ((blockingRefetch || waitForActive) && overlayConfig && typeof overlayConfig === 'object') {
-            const effectiveTarget = options?.transitionOverlayTarget || overlayConfig.target;
-            if (overlayConfig.enabled && overlayConfig.style === 'skeleton' && overlayConfig.skeleton?.component && effectiveTarget) {
-                this.renderSkeletonOverlay(effectiveTarget, overlayConfig.skeleton, layoutJson, overlayConfig.fallback_target);
-            } else if (overlayConfig.enabled && overlayConfig.style === 'spinner' && effectiveTarget) {
-                this.renderSpinnerOverlay(effectiveTarget, overlayConfig.spinner, overlayConfig.fallback_target);
-            }
+        // 이 호출이 다시 받는 소스의 최신 재조회 권한을 가진다 — 겹친 옛 호출의 같은 소스 응답은 버려진다 (engine-v1.79.0)
+        const refetchIds = autoFetchDataSources.map((ds: any) => ds.id as string);
+        // 받는 동안 「다시 받는 중」 — 값은 그대로 두고 흐림(`data_sources` 를 지정한 blur_until_loaded)이 서게 한다 (@since engine-v1.82.0)
+        this.markRefreshingSources(refetchIds, true);
+        for (const id of refetchIds) {
+            this.queryUpdateLatestBySource.set(id, queryUpdateId);
         }
+        // 다른 진행 중 호출이 현재 화면 소스를 아직 받고 있으면 그 호출의 덮개를 유지한다(더 좁은 대상으로 바꾸지 않음)
+        const othersStillLoading = this.isQueryUpdateLoadingCurrentSources();
 
         try {
+            // 진행 중 등록은 try 안에서 — 덮개 렌더가 예외를 던져도 finally 가 등록을 지운다 (engine-v1.79.0)
+            this.queryUpdateInFlight.set(queryUpdateId, refetchIds);
+
+            // blur_until_loaded 지원: transition 상태를 pending으로 설정
+            transitionManager.setPending(true);
+
+            // transition_overlay spinner: wait_for 에 명시된 progressive 데이터소스가 refetch 대상이면 오버레이 표시
+            // navigate replace:true(탭 전환 등)로 이 경로에 진입했을 때 handleRouteChange step 2.5 와 동일 동작 (@since engine-v1.35.0)
+            // options.transitionOverlayTarget 으로 호출별 target 동적 override 지원 (탭 안의 서브 탭/페이지네이션 등) (@since engine-v1.36.0)
+            const layoutJson = getState().currentLayoutJson as any;
+            const overlayConfig = layoutJson?.transition_overlay;
+            const waitForIds: string[] = Array.isArray(overlayConfig?.wait_for) ? overlayConfig.wait_for : [];
+            const blockingRefetch = autoFetchDataSources.some((s: any) => (s.loading_strategy || 'progressive') === 'blocking');
+            const waitForActive = waitForIds.length > 0 && autoFetchDataSources.some((s: any) =>
+                waitForIds.includes(s.id)
+                && s.type !== 'websocket'
+                && (s.loading_strategy || 'progressive') !== 'background'
+            );
+            if ((blockingRefetch || waitForActive) && overlayConfig && typeof overlayConfig === 'object'
+                && !(othersStillLoading && this.transitionOverlayEl)) {
+                const effectiveTarget = options?.transitionOverlayTarget || overlayConfig.target;
+                if (overlayConfig.enabled && overlayConfig.style === 'skeleton' && overlayConfig.skeleton?.component && effectiveTarget) {
+                    this.renderSkeletonOverlay(effectiveTarget, overlayConfig.skeleton, layoutJson, overlayConfig.fallback_target);
+                } else if (overlayConfig.enabled && overlayConfig.style === 'spinner' && effectiveTarget) {
+                    this.renderSpinnerOverlay(effectiveTarget, overlayConfig.spinner, overlayConfig.fallback_target);
+                }
+            }
+
             const dataSourceManager = new DataSourceManager();
 
             // globalHeaders 설정 (레이아웃에서 정의한 전역 헤더)
@@ -4096,8 +5284,17 @@ export class TemplateApp {
                 this.currentQueryParams,
                 globalState,
                 undefined,  // localState: 초기 fetch에서는 _local 불필요
-                { ignoreAutoFetch: false }
+                { ignoreAutoFetch: false, refetch: (source: any) => this.hasReceivedOnScreen(source.id) }
             );
+
+            // 기다리는 동안 새 호출(다른 탭·필터)이 같은 소스를 다시 받기 시작했으면 이 호출의 그 응답은 낡았다.
+            // 적용하면 새 쿼리 화면의 initLocal 폼을 옛 응답으로 되돌리므로 버린다 (engine-v1.79.0)
+            // 지금 쿼리에서 고르지 않은 소스(옛 탭 전용)의 응답도 버린다 — 그 initLocal 이 새 탭 폼을 덮지 않게
+            const currentSourceIds = new Set((this.currentDataSources || []).map((ds: any) => ds.id));
+            const freshResults = results.filter((r) => this.queryUpdateLatestBySource.get(r.id) === queryUpdateId && currentSourceIds.has(r.id));
+            if (freshResults.length < results.length) {
+                logger.log('updateQueryParams stale results discarded (newer query update exists):', results.filter((r) => !freshResults.includes(r)).map((r) => r.id));
+            }
 
             // 결과 처리 및 UI 업데이트
             // result.id 기반 조회로 매핑 (handleRouteChange blocking 경로와 동일 패턴)
@@ -4106,8 +5303,10 @@ export class TemplateApp {
             const updateData: Record<string, any> = {};
             const localInit: Record<string, any> = {};
             const sourceById = new Map(autoFetchDataSources.map((ds: any) => [ds.id, ds]));
+            // 이 호출로 오류 기록(`_dataSourceErrors`)이 바뀌었는지 — 다시 받기 실패·성공 분기와 같은 계약 (@since engine-v1.83.0)
+            let errorsChanged = false;
 
-            for (const result of results) {
+            for (const result of freshResults) {
                 const dataSourceDef = sourceById.get(result.id);
                 if (!dataSourceDef) {
                     logger.warn(`Refetch result id not found in autoFetchDataSources: ${result.id}`);
@@ -4120,13 +5319,40 @@ export class TemplateApp {
                     this.currentFetchedData[dataSourceId] = result.data;
                     updateData[dataSourceId] = result.data;
 
-                    // initGlobal/initLocal 처리
+                    // initGlobal/initLocal 처리 — 쿼리 갱신(탭 전환) 재조회는 편집 중이어도 서버 값으로 되돌린다(계약 — 저장은 지금 탭 구획만
+                    // 보내므로 다른 탭의 미저장 편집을 남기지 않는다, TemplateApp.updateQueryParams.dirtyForm 잠금). 실패해 마지막 값으로 버틴
+                    // 결과도 같은 계약으로 그 값을 심는다
                     this.processInitOptions([dataSourceDef], { [dataSourceId]: result.data }, localInit);
+
+                    // 앞서 실패해 남은 이 소스의 오류 기록을 지운다 — 마지막 값으로 버틴 실패는 새 성공이 아니므로 그대로 둔다
+                    if (result.kept !== 'last' && this.routeDataSourceErrors[dataSourceId] !== undefined) {
+                        delete this.routeDataSourceErrors[dataSourceId];
+                        errorsChanged = true;
+                    }
 
                     logger.log(`Data source refetched: ${dataSourceId}`);
                 } else if (result.state === 'error') {
                     logger.error(`Failed to refetch data source: ${dataSourceId}`, result.error);
+
+                    // refetchDataSource 실패 분기와 같은 계약으로 둔다 (@since engine-v1.83.0) — 값은 null(받기 끝 · 실패), 오류는
+                    // `_dataSourceErrors` 에 기록한다. 종전에는 로그만 남겨 옛 쿼리의 결과가 새 쿼리의 결과처럼 남았고 오류 표시도 없었다.
+                    // 같은 요청의 마지막 값·fallback 이 있으면 DataSourceManager 가 이미 성공으로 돌려주므로 여기 오는 것은 다른 요청이다.
+                    // 데이터 소스 errorHandling·onError 는 DataSourceManager 가 이미 실행했다.
+                    const failure = result.error as any;
+                    this.currentFetchedData[dataSourceId] = null;
+                    updateData[dataSourceId] = null;
+                    this.routeDataSourceErrors[dataSourceId] = {
+                        message: failure?.response?.data?.message || failure?.message || 'Unknown error',
+                        status: failure?.response?.status || failure?.status || result.errorCode,
+                    };
+                    errorsChanged = true;
                 }
+            }
+
+            if (errorsChanged) {
+                updateData._dataSourceErrors = Object.keys(this.routeDataSourceErrors).length > 0
+                    ? { ...this.routeDataSourceErrors }
+                    : undefined;
             }
 
             // BindingEngine 캐시 무효화
@@ -4142,39 +5368,92 @@ export class TemplateApp {
                 updateData._localInit = localInit;
             }
 
-            // UI 업데이트
-            if (Object.keys(updateData).length > 0) {
-                // query 컨텍스트도 업데이트 (배열 쿼리 파라미터 지원)
-                updateData.query = parseQueryParams(this.currentQueryParams);
-
-                // computed 재계산: 현재 레이아웃에 computed 정의가 있으면 재계산
-                // (navigate replace: true 시 _local 상태가 변경되면 $computed도 갱신되어야 함)
-                if (state.currentLayoutJson?.computed && Object.keys(state.currentLayoutJson.computed).length > 0) {
-                    // 재계산에 필요한 컨텍스트 구성
-                    const computeContext = {
-                        ...state.currentDataContext,
-                        ...updateData,
-                        query: updateData.query,
-                    };
-                    const computedData = this.calculateComputed(state.currentLayoutJson.computed, computeContext);
-                    if (Object.keys(computedData).length > 0) {
-                        updateData._computed = computedData;
-                        this.globalState._computed = computedData;
-                        logger.log('Computed values recalculated in updateQueryParams:', Object.keys(computedData));
-                    }
-                }
-
-                updateTemplateData(updateData, { sync: true });
-                logger.log('Template data updated with new query params');
+            // UI 업데이트 — 다시 받기가 모두 실패해 바뀐 값이 없어도 `query` 는 새 주소 값으로 그린다.
+            // 종전에는 `updateData` 가 비면 건너뛰어 화면의 `query` 가 옛 쿼리로 남았다. 겹친 뒤 호출에 밀려 적용할
+            // 값이 없는 앞 호출은 그리지 않는다 — 뒤 호출이 새 쿼리를 그린다 (engine-v1.82.1)
+            if (Object.keys(updateData).length > 0 || queryUpdateId === this.queryUpdateSeq) {
+                this.applyQueryContextToScreen(updateData);
             }
         } catch (error) {
             logger.error('Error in updateQueryParams:', error);
         } finally {
-            // transition 상태 해제
-            transitionManager.setPending(false);
-            // transition_overlay spinner 해제 (@since engine-v1.35.0)
-            this.hideTransitionOverlay();
+            this.queryUpdateInFlight.delete(queryUpdateId);
+            for (const id of refetchIds) {
+                if (this.queryUpdateLatestBySource.get(id) === queryUpdateId) {
+                    this.queryUpdateLatestBySource.delete(id);
+                    // 이 소스를 다시 받는 최신 호출이 끝났다 — 「다시 받는 중」 해제 (@since engine-v1.82.0)
+                    this.markRefreshingSources([id], false);
+                }
+            }
+            // 덮개·대기 표시는 현재 화면 소스를 아직 받고 있는 호출이 없을 때만 걷는다 (engine-v1.79.0).
+            // 겹친 새 호출이 설정(blocking·initLocal) 등을 받는 중이면 그 호출이 끝날 때 걷는다.
+            if (!this.isQueryUpdateLoadingCurrentSources() && !this.routeChangeInFlight) {
+                // transition 상태 해제
+                transitionManager.setPending(false);
+                // transition_overlay spinner 해제 (@since engine-v1.35.0)
+                this.hideTransitionOverlay();
+            }
         }
+    }
+
+    /**
+     * 같은 화면 쿼리 갱신(`navigate replace`)의 결과를 화면에 반영한다 — 새 `query` 와 그로부터 다시 계산한
+     * `_computed` 를 다시 받은 값(`updateData`)과 함께 그린다.
+     *
+     * `route`·`query` 는 렌더 사이클 캐시만 쓰므로(engine-v1.82.1) 앞 커밋 뒤 자식만 다시 그려지며 채운 옛 쿼리
+     * 값이 남지 않게 렌더 사이클을 새로 시작한다.
+     *
+     * @param updateData 다시 받은 데이터 소스 값(`_localInit` 포함 가능). 이 함수가 `query`·`_computed` 를 채운다
+     * @since engine-v1.82.1
+     */
+    private applyQueryContextToScreen(updateData: Record<string, any>): void {
+        const state = getState();
+        // query 컨텍스트도 업데이트 (배열 쿼리 파라미터 지원)
+        updateData.query = parseQueryParams(this.currentQueryParams);
+
+        // computed 재계산: 현재 레이아웃에 computed 정의가 있으면 재계산
+        // (navigate replace: true 시 _local 상태가 변경되면 $computed도 갱신되어야 함)
+        if (state.currentLayoutJson?.computed && Object.keys(state.currentLayoutJson.computed).length > 0) {
+            // 재계산에 필요한 컨텍스트 구성
+            const computeContext = {
+                ...state.currentDataContext,
+                ...updateData,
+                query: updateData.query,
+            };
+            const computedData = this.calculateComputed(state.currentLayoutJson.computed, computeContext);
+            if (Object.keys(computedData).length > 0) {
+                updateData._computed = computedData;
+                this.globalState._computed = computedData;
+                logger.log('Computed values recalculated in updateQueryParams:', Object.keys(computedData));
+            }
+        }
+
+        state.bindingEngine?.startRenderCycle();
+        updateTemplateData(updateData, { sync: true });
+        logger.log('Template data updated with new query params');
+    }
+
+    /**
+     * 진행 중인 updateQueryParams 호출 가운데 현재 화면(현재 쿼리로 고른 데이터 소스)의 소스를
+     * 가장 최근에 다시 받기 시작한 호출이 남아 있는지 판정한다.
+     *
+     * 남아 있으면 그 응답이 아직 화면(폼 initLocal 포함)에 적용되지 않았으므로 덮개·대기 표시를 유지한다.
+     * 옛 쿼리에만 있던 소스나 새 호출이 가져간 소스만 받는 옛 호출은 판정에서 빠진다.
+     *
+     * @returns 현재 화면 소스를 받는 중인 호출이 있으면 true
+     * @since engine-v1.79.0
+     */
+    private isQueryUpdateLoadingCurrentSources(): boolean {
+        if (this.queryUpdateInFlight.size === 0) {
+            return false;
+        }
+        const currentIds = new Set((this.currentDataSources || []).map((ds: any) => ds.id));
+        for (const [callId, ids] of this.queryUpdateInFlight) {
+            if (ids.some((id) => currentIds.has(id) && this.queryUpdateLatestBySource.get(id) === callId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -4206,50 +5485,14 @@ export class TemplateApp {
         computed: Record<string, string | ComputedSwitchDefinition>,
         dataContext: Record<string, any>
     ): Record<string, any> {
-        const result: Record<string, any> = {};
-        const bindingEngine = new DataBindingEngine();
-
-        for (const [key, expression] of Object.entries(computed)) {
-            try {
-                let value: any;
-
-                // $switch 형태의 computed 정의 처리
-                if (this.isComputedSwitchDefinition(expression)) {
-                    value = bindingEngine.resolveSwitch(expression, dataContext, { skipCache: true });
-                } else if (typeof expression === 'string') {
-                    // 문자열 표현식 처리
-                    if (expression.startsWith('{{') && expression.endsWith('}}')) {
-                        // {{...}} 형태의 표현식 평가
-                        const innerExpression = expression.slice(2, -2).trim();
-                        value = this.evaluateComputedExpression(innerExpression, dataContext);
-                    } else {
-                        // 순수 문자열은 그대로 사용
-                        value = expression;
-                    }
-                }
-
-                result[key] = value;
-                logger.log(`Computed ${key}:`, value);
-            } catch (error) {
-                logger.warn(`Failed to calculate computed value: ${key}`, error);
-                result[key] = undefined;
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * $switch 형태의 computed 정의인지 확인
-     */
-    private isComputedSwitchDefinition(obj: any): obj is ComputedSwitchDefinition {
-        return (
-            obj !== null &&
-            typeof obj === 'object' &&
-            !Array.isArray(obj) &&
-            '$switch' in obj &&
-            '$cases' in obj
-        );
+        // 렌더·액션 경로와 같은 공용 평가기를 쓴다 — 파이프·$t·$localized·정의 순서 참조가 진입 시점에도
+        // 동작하고, $switch 는 $cases 없이도($default) 평가한다. 실패 키는 undefined(종전 정책 유지).
+        // @since engine-v1.74.0
+        return evaluateComputedDefinitions(computed, dataContext, new DataBindingEngine(), {
+            previous: dataContext._computed ?? {},
+            onError: 'undefined',
+            failureLog: (key, error) => logger.warn(`Failed to calculate computed value: ${key}`, error),
+        });
     }
 
     /**
@@ -4257,6 +5500,10 @@ export class TemplateApp {
      *
      * JavaScript 표현식을 안전하게 평가합니다.
      * dataContext의 값들을 컨텍스트로 사용합니다.
+     *
+     * engine-v1.74.0 부터 computed 계산은 공용 평가기(`calculateComputed` → `evaluateComputedDefinitions`)
+     * 를 거친다. 이 메서드는 샌드박스 탈출 보안 회귀선(`TemplateApp.safeComputed.test.ts`)이 직접
+     * 호출하므로 남겨 둔다.
      *
      * @param expression 평가할 표현식
      * @param context 평가 컨텍스트
@@ -4298,63 +5545,360 @@ export class TemplateApp {
             return;
         }
 
-        logger.log('Executing init_actions:', initActions.map(a => a.handler));
+        logger.log('Executing init_actions:', initActions.map(a => a.handler ?? a.actionRef));
         logger.log('Init actions dataContext:', dataContext);
         logger.log('Init actions dataContext._global:', dataContext._global);
 
-        // 모듈/플러그인 핸들러(네임스페이스가 있는 핸들러) 목록 추출
-        const moduleHandlers = initActions
-            .map(a => a.handler)
-            .filter(h => h.includes('.'));
-
-        // 모듈 핸들러가 있으면 등록될 때까지 대기
-        if (moduleHandlers.length > 0) {
-            await this.waitForHandlers(actionDispatcher, moduleHandlers);
+        // 모듈/플러그인 핸들러(네임스페이스가 있는 핸들러)가 등록될 때까지 대기.
+        // conditions·sequence·switch·onSuccess·actionRef 안에 있는 것까지 모은다 — 최상위만 보면 중첩된 확장
+        // 핸들러가 등록 전에 실행돼 미등록 핸들러로 조용히 건너뛰어졌다. handler 없는 항목(actionRef 만)이
+        // 하나라도 있으면 `a.handler.includes` 가 TypeError 로 화면 진입 자체를 실패시켰다(engine-v1.80.0).
+        try {
+            const moduleHandlers = this.dropInactiveExtensionHandlers(
+                TemplateApp.collectNamespacedHandlers(initActions, actionDispatcher.getNamedActions?.() ?? {})
+            );
+            if (moduleHandlers.length > 0) {
+                await this.waitForHandlers(actionDispatcher, moduleHandlers);
+            }
+        } catch (error) {
+            logger.warn('Failed to wait for extension handlers before init_actions:', error);
         }
 
         // 현재 데이터 컨텍스트 (각 액션 실행 후 갱신됨)
         let currentDataContext = { ...dataContext };
 
-        for (const initAction of initActions) {
+        // 렌더 전 단계 표시 — 이 안에서 부른 showErrorPage 는 렌더 뒤로 미뤄진다 (isRunningPreRenderInit)
+        this.preRenderInitDepth++;
+        try {
+            for (const initAction of initActions) {
+                const label = initAction.handler ?? initAction.actionRef;
+                try {
+                    // init 항목을 통째로 넘긴다 — 키를 골라 담으면 sequence(actions)·switch(cases)·actionRef·
+                    // errorHandling·identity_target 이 탈락했다(engine-v1.80.0). type 은 형식 값이다.
+                    const actionDef = { ...initAction, type: 'click' as const } as any;
+
+                    // 핸들러 직접 호출 (최신 데이터 컨텍스트 전달)
+                    const handler = actionDispatcher.createHandler(actionDef, currentDataContext);
+
+                    // 더미 이벤트 생성하여 핸들러 실행
+                    const dummyEvent = new Event('init');
+                    await handler(dummyEvent);
+
+                    logger.log(`Init action executed: ${label}`);
+
+                    // 액션 실행 후 데이터 컨텍스트 갱신 (다음 액션에서 최신 상태 사용)
+                    // 이전 핸들러가 G7Core.state.set()으로 설정한 _global 값을 다음 핸들러가 참조할 수 있도록 함
+                    const updatedGlobalState = this.globalState;
+                    currentDataContext = {
+                        ...currentDataContext,
+                        _global: { ...updatedGlobalState },
+                        _local: updatedGlobalState._local || currentDataContext._local || {},
+                    };
+                    logger.log(`Data context refreshed after ${label}:`, {
+                        cartKey: currentDataContext._global?.cartKey,
+                    });
+                } catch (error) {
+                    logger.error(`Failed to execute init action: ${label}`, error);
+                }
+            }
+        } finally {
+            this.preRenderInitDepth--;
+        }
+    }
+
+    /**
+     * 렌더 전 init_actions 실행 중인지 반환합니다.
+     *
+     * 이 동안에는 이 경로의 화면(`#main_content` 등)이 아직 없다. 앞 화면의 컨테이너가 DOM 에 남아 있어도 곧
+     * 새 화면 렌더가 덮는다. 렌더가 만든 컨테이너를 기다리는 동작은 {@see deferUntilRendered} 로 미룬다.
+     *
+     * @returns 렌더 전 init 단계면 true
+     * @since engine-v1.80.1
+     */
+    isRunningPreRenderInit(): boolean {
+        return this.preRenderInitDepth > 0;
+    }
+
+    /**
+     * 현재 경로 전환 세대를 반환합니다 — 경로 전환이 시작될 때마다 1 씩 늘어난다.
+     *
+     * 늦게 끝나는 동작(showErrorPage 의 컨테이너 대기·오류 레이아웃 적재, 앞 화면 데이터 소스의 오류 처리)이 부른 시점의
+     * 세대와 지금 세대를 비교해, 이미 다른 화면으로 옮겼으면 그 화면을 덮지 않게 한다 (7.1.1).
+     *
+     * @returns 경로 전환 세대
+     * @since engine-v1.80.1
+     */
+    getRouteChangeId(): number {
+        return this.currentRouteChangeId;
+    }
+
+    /**
+     * 이 화면에서 그 데이터 소스 값을 이미 받았는지 — 오류 처리기 문맥 `error.refetch`(다시 받기 실패) 판정 기준.
+     *
+     * 받은 값(성공·fallback·마지막 값)이 있으면 참. 아직 받지 않았거나(`undefined`) 받기에 실패한 상태(`null`)면 거짓 —
+     * 그때의 실패는 「처음 받기 실패」다.
+     *
+     * @param dataSourceId 데이터 소스 id
+     * @returns 이미 받았으면 true
+     * @since engine-v1.82.0
+     */
+    private hasReceivedOnScreen(dataSourceId: string): boolean {
+        const value = this.currentFetchedData?.[dataSourceId];
+
+        return value !== undefined && value !== null;
+    }
+
+    /**
+     * 진행 중인 화면 처리를 낡은 것으로 만듭니다 — Router 가 진행 중인 이동 뒤에 새 이동을 대기열에 넣었을 때.
+     *
+     * 세대를 올려(다음 화면 처리 전이라도) 진행 중인 화면의 늦은 응답·성공 처리·오류 처리·렌더를 모두 버리게 하고,
+     * 그 화면 처리가 기다리는 자리에서 곧바로 물러나게 한다. 다음 화면 처리가 세대를 다시 올린다.
+     *
+     * @return void
+     * @since engine-v1.82.0
+     */
+    private supersedeRouteChange(): void {
+        const pending = this.routeSupersede;
+        if (!pending || pending.routeChangeId !== this.currentRouteChangeId) {
+            return;
+        }
+        logger.log('Route change superseded by a queued navigation:', pending.routeChangeId);
+        this.currentRouteChangeId++;
+        this.routeSupersede = null;
+        pending.resolve();
+    }
+
+    /**
+     * 화면 처리의 긴 기다림을 새 이동과 경주시킵니다 — 새 이동에 밀리면 `'superseded'` 로 곧바로 끝난다.
+     *
+     * 밀린 뒤에도 원래 작업(응답 받기)은 뒤에서 끝까지 돈다. 그 결과는 세대 판정으로 버려진다.
+     *
+     * @param routeChangeId 이 화면 처리의 세대
+     * @param work 기다릴 작업
+     * @returns 작업 결과 또는 `'superseded'`
+     * @since engine-v1.82.0
+     */
+    private async awaitUnlessSuperseded<T>(routeChangeId: number, work: Promise<T>): Promise<T | 'superseded'> {
+        const pending = this.routeSupersede;
+        if (!pending || pending.routeChangeId !== routeChangeId) {
+            // 이미 밀렸거나 경주할 약속이 없다 — 밀렸으면 곧바로 물러난다
+            if (routeChangeId !== this.currentRouteChangeId) {
+                work.catch(() => undefined);
+                return 'superseded';
+            }
+            return work;
+        }
+        work.catch(() => undefined);
+
+        return Promise.race([work, pending.promise]);
+    }
+
+    /**
+     * 동작을 현재 경로의 첫 렌더 뒤로 미룹니다.
+     *
+     * init 체인은 이 동작을 기다리지 않는다. 렌더 전에 다른 경로로 바뀌거나 경로 처리가 실패하면 실행하지 않고
+     * `drop` 을 부른다(호출자가 잡아 둔 상태를 풀 수 있게).
+     *
+     * @param run 렌더 뒤 실행할 동작
+     * @param drop 실행하지 않고 버릴 때 부를 정리 함수
+     * @returns 없음
+     * @since engine-v1.80.1
+     */
+    deferUntilRendered(run: () => Promise<void> | void, drop: () => void = () => {}): void {
+        this.afterRenderTasks.push({ routeChangeId: this.currentRouteChangeId, run, drop });
+    }
+
+    /**
+     * 그 경로의 렌더가 끝난 뒤 미뤄 둔 동작을 실행합니다. 다른 경로의 동작은 버립니다.
+     *
+     * 동작의 실패는 경로 처리로 번지지 않는다(로그만).
+     *
+     * @param routeChangeId 렌더를 마친 경로 요청 ID
+     * @returns 미룬 동작이 모두 끝나면 이행되는 약속
+     * @since engine-v1.80.1
+     */
+    private async flushAfterRenderTasks(routeChangeId: number): Promise<void> {
+        const tasks = this.afterRenderTasks;
+        this.afterRenderTasks = [];
+        await Promise.all(tasks.map(async (task) => {
+            if (task.routeChangeId !== routeChangeId || routeChangeId !== this.currentRouteChangeId) {
+                task.drop();
+                return;
+            }
             try {
-                // ActionDefinition 형태로 변환하여 핸들러 실행
-                // resultTo, onSuccess, onError, auth_mode 등 전체 액션 체인 지원
-                const actionDef = {
-                    type: 'click' as const, // init_actions는 이벤트 타입이 필요 없지만 형식상 필요
-                    handler: initAction.handler,
-                    target: initAction.target,
-                    params: initAction.params,
-                    resultTo: initAction.resultTo,
-                    onSuccess: initAction.onSuccess, // onSuccess 콜백 전달
-                    onError: initAction.onError,     // onError 콜백 전달
-                    if: initAction.if,                 // 조건부 실행 지원
-                    conditions: initAction.conditions, // conditions 핸들러용 조건 분기 배열
-                    auth_mode: (initAction as any).auth_mode, // 인증 모드 전달
-                    auth_required: (initAction as any).auth_required, // 하위 호환
-                } as any;
-
-                // 핸들러 직접 호출 (최신 데이터 컨텍스트 전달)
-                const handler = actionDispatcher.createHandler(actionDef, currentDataContext);
-
-                // 더미 이벤트 생성하여 핸들러 실행
-                const dummyEvent = new Event('init');
-                await handler(dummyEvent);
-
-                logger.log(`Init action executed: ${initAction.handler}`);
-
-                // 액션 실행 후 데이터 컨텍스트 갱신 (다음 액션에서 최신 상태 사용)
-                // 이전 핸들러가 G7Core.state.set()으로 설정한 _global 값을 다음 핸들러가 참조할 수 있도록 함
-                const updatedGlobalState = this.globalState;
-                currentDataContext = {
-                    ...currentDataContext,
-                    _global: { ...updatedGlobalState },
-                    _local: updatedGlobalState._local || currentDataContext._local || {},
-                };
-                logger.log(`Data context refreshed after ${initAction.handler}:`, {
-                    cartKey: currentDataContext._global?.cartKey,
-                });
+                await task.run();
             } catch (error) {
-                logger.error(`Failed to execute init action: ${initAction.handler}`, error);
+                logger.error('Deferred after-render action failed:', error);
+            }
+        }));
+    }
+
+    /**
+     * 미뤄 둔 동작을 실행하지 않고 모두 버립니다 (새 경로 전환 시작·경로 처리 실패).
+     *
+     * @returns 없음
+     * @since engine-v1.80.1
+     */
+    private dropAfterRenderTasks(): void {
+        const tasks = this.afterRenderTasks;
+        this.afterRenderTasks = [];
+        tasks.forEach((task) => task.drop());
+    }
+
+    /**
+     * init 항목에서 등록을 기다릴 확장 핸들러 이름을 모은다.
+     *
+     * 최상위 `handler` 뿐 아니라 `actions`·`params.actions`·`conditions[].then`·`cases` 값·`onSuccess`·
+     * `onError`·`errorHandling` 값·`onLoad`(loadScript)·`params.callbackAction`(callExternal, @since engine-v1.83.0) 안까지,
+     * `actionRef` 는 레이아웃 `named_actions` 를 따라 내려간다
+     * (순환 참조는 한 번만 본다). 이름은 문자열이고 `.` 이 있으며 `{{` 가 없는 것만 — 동적 핸들러 이름은
+     * 실행 시점에야 정해지므로 기다릴 수 없다. `handler` 가 없거나 문자열이 아닌 항목은 건너뛴다.
+     *
+     * @param actions init 항목(들)
+     * @param namedActions 레이아웃 named_actions
+     * @returns 중복 없는 확장 핸들러 이름 목록
+     * @since engine-v1.80.0
+     */
+    private static collectNamespacedHandlers(
+        actions: unknown,
+        namedActions: Record<string, unknown>
+    ): string[] {
+        const found = new Set<string>();
+        const visitedRefs = new Set<string>();
+
+        const visit = (node: unknown): void => {
+            if (Array.isArray(node)) {
+                node.forEach(visit);
+                return;
+            }
+            if (!node || typeof node !== 'object') {
+                return;
+            }
+            const action = node as Record<string, any>;
+
+            if (typeof action.handler === 'string' && action.handler.includes('.') && !action.handler.includes('{{')) {
+                found.add(action.handler);
+            }
+            if (typeof action.actionRef === 'string' && !visitedRefs.has(action.actionRef)) {
+                visitedRefs.add(action.actionRef);
+                visit(namedActions[action.actionRef]);
+            }
+
+            visit(action.actions);
+            visit(action.params?.actions);
+            if (Array.isArray(action.conditions)) {
+                action.conditions.forEach((branch: any) => visit(branch?.then));
+            }
+            if (action.cases && typeof action.cases === 'object') {
+                Object.values(action.cases).forEach(visit);
+            }
+            visit(action.onSuccess);
+            visit(action.onError);
+            if (action.errorHandling && typeof action.errorHandling === 'object') {
+                Object.values(action.errorHandling).forEach(visit);
+            }
+            // 엔진이 실행하는 나머지 중첩 키 — loadScript 의 onLoad, callExternal·callExternalEmbed 의 콜백 액션 (@since engine-v1.83.0)
+            visit(action.onLoad);
+            if (action.params?.callbackAction && typeof action.params.callbackAction === 'object') {
+                visit(action.params.callbackAction);
+            }
+            // navigate 의 미등록 경로 대체 동작 — 객체는 통째로, 문자열은 그 이름의 핸들러로 실행된다(resolveNavigateFallback)
+            const fallback = action.handler === 'navigate' ? action.params?.fallback : undefined;
+            if (typeof fallback === 'string') {
+                visit({ handler: fallback });
+            } else if (fallback && typeof fallback === 'object') {
+                visit(fallback);
+            }
+        };
+
+        visit(actions);
+
+        return [...found];
+    }
+
+    /**
+     * 활성 확장도 현재 템플릿도 아닌 네임스페이스의 핸들러를 대기 목록에서 뺀다.
+     *
+     * 비활성·미설치 확장의 핸들러는 영원히 등록되지 않는다 — 기다리면 `waitForHandlers` 가 최대 5초를
+     * 폴링하고 그동안 화면이 비어 있다(트러블슈팅 network 사례 3). 대기 대상을 분기(conditions·switch·
+     * onError 등) 안까지 모으면서 실행되지 않을 분기에 적힌 선택 확장의 핸들러도 대상이 됐다(engine-v1.80.0).
+     * 활성 목록(`G7Config.activeModules`·`activePlugins`)을 모르면(비었거나 없음) 걸러내지 않는다.
+     *
+     * @param handlerNames 기다릴 핸들러 이름 목록
+     * @returns 활성 확장·현재 템플릿 네임스페이스의 핸들러만 남긴 목록
+     * @since engine-v1.80.0
+     */
+    private dropInactiveExtensionHandlers(handlerNames: string[]): string[] {
+        const config = typeof window !== 'undefined' ? (window as any).G7Config : undefined;
+        const identifiers = [config?.activeModules, config?.activePlugins]
+            .flatMap((list) => (Array.isArray(list) ? list : []))
+            .map((meta: any) => meta?.identifier)
+            .filter((identifier: unknown): identifier is string => typeof identifier === 'string');
+
+        if (identifiers.length === 0) {
+            return handlerNames;
+        }
+
+        const known = new Set([...identifiers, this.config.templateId]);
+        const kept = handlerNames.filter((name) => known.has(name.slice(0, name.indexOf('.'))));
+
+        if (kept.length !== handlerNames.length) {
+            logger.log('Not waiting for handlers of inactive extensions:', handlerNames.filter((name) => !kept.includes(name)));
+        }
+
+        return kept;
+    }
+
+    /**
+     * 액션 목록 자리에 온 값을 목록으로 맞춘다 — 배열은 그대로, 액션 객체 하나는 한 개짜리 목록, 그 밖은 빈 목록.
+     *
+     * 웹소켓 `onReceive` 는 배열일 때만 실행해 단일 객체로 적은 수신 동작이 조용히 무시됐다(engine-v1.80.0).
+     *
+     * @param value 액션 목록 자리의 값
+     * @returns 액션 목록
+     * @since engine-v1.80.0
+     */
+    private static toActionList(value: unknown): any[] {
+        if (Array.isArray(value)) {
+            return value;
+        }
+
+        return value && typeof value === 'object' ? [value] : [];
+    }
+
+    /**
+     * 웹소켓 데이터 소스의 `onReceive` 동작을 순서대로 실행한다(engine-v1.33.0).
+     *
+     * 단일 객체도 한 개짜리 목록으로 실행한다(engine-v1.80.0). 각 동작은 `$args[0]`·`$event` 로 수신 페이로드를 읽는다.
+     * 한 동작이 실패해도 다음 동작은 이어서 실행한다.
+     *
+     * @param sourceId 갱신 대상 데이터 소스 id (로그용)
+     * @param onReceive 웹소켓 소스의 `onReceive` 원본 값(배열·객체·없음)
+     * @param data 수신 페이로드
+     * @returns 모든 동작 실행이 끝나면 resolve
+     */
+    private async runWebSocketOnReceive(sourceId: string, onReceive: unknown, data: unknown): Promise<void> {
+        const onReceiveActions = TemplateApp.toActionList(onReceive);
+        if (onReceiveActions.length === 0 || !(window as any).G7Core?.dispatch) {
+            return;
+        }
+
+        for (const action of onReceiveActions) {
+            try {
+                // dispatchAction에 직접 호출하여 $args 컨텍스트 주입
+                const actionDispatcher = this.getActionDispatcher?.();
+                if (actionDispatcher) {
+                    await actionDispatcher.dispatchAction(action, {
+                        navigate: this.getRouter?.() ? (path: string, opts?: any) =>
+                            this.getRouter().navigate(path, opts) : undefined,
+                        setState: (updates: any) => this.setGlobalState(updates),
+                        state: this.globalState,
+                        data: { ...this.globalState, $args: [data], $event: data },
+                        _isDispatchFallbackContext: true,
+                    });
+                }
+            } catch (err) {
+                logger.error(`WebSocket onReceive action failed for ${sourceId}:`, err);
             }
         }
     }

@@ -2,8 +2,10 @@
 
 namespace App\Extension\Storage\Concerns;
 
+use App\Exceptions\UnsafeStoragePathException;
 use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\HookManager;
+use App\Services\PublicStorageService;
 use App\Support\AssetUrl;
 use Illuminate\Support\Facades\Storage;
 
@@ -26,11 +28,17 @@ trait ResolvesPublicUrl
      *
      * @param  string  $category  카테고리
      * @param  string  $path  파일 경로 (카테고리 하위 상대 경로)
-     * @return string|null 파일 URL (직접 URL 불가 디스크이고 훅 공급도 없으면 null)
+     * @return string|null 파일 URL (직접 URL 불가 디스크이고 훅 공급도 없거나, 경로 가드가 거부하면 null)
      */
     public function url(string $category, string $path): ?string
     {
-        $fullPath = $this->resolvePath($category, $path);
+        // 목록 직렬화 중에 불리는 조회 경로라, 가드가 거부한 행 하나가 목록 전체를 500 으로
+        // 만들지 않도록 URL 없음으로 처리한다 (거부 사실은 가드가 이미 보안 로그에 남겼다)
+        try {
+            $fullPath = $this->resolvePath($category, $path);
+        } catch (UnsafeStoragePathException) {
+            return null;
+        }
 
         $url = null;
         if ($this->diskSupportsDirectUrl()) {
@@ -107,9 +115,7 @@ trait ResolvesPublicUrl
         // URL 은 `/storage` 로 나가는, 두 독블록이 각각 「막으려 한다」고 적어 둔 바로
         // 그 반쪽 상태다. 미설정은 Laravel 기본값(로컬)이므로 로컬로 읽는다
         // (15차 G3 라운드).
-        $driver = config('filesystems.disks.public.driver');
-
-        if ($driver !== null && $driver !== 'local') {
+        if (! PublicStorageService::isLocalDriver(config('filesystems.disks.public.driver'))) {
             return false;
         }
 

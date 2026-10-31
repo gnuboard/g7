@@ -1,0 +1,80 @@
+feature: 요청 Host·Referer 비신뢰 — 다른 사람·다른 시스템에 닿는 절대 URL 은 사이트 주소로 만든다
+
+description: |
+  Laravel url()·route()(절대)·상대 경로 redirect()·redirect()->back()·FormRequest 기본
+  failedValidation(→ previous()) 은 요청 Host(또는 Referer)로 절대 URL 을 만든다. 허용 도메인
+  (TrustHosts)은 외부 도메인만 막고 사이트 주소의 하위 도메인·포트만 바꾼 Host·별칭·신뢰 프록시
+  전달 헤더는 통과시킨다. 그래서 리다이렉트·콜백·제3자 전송·메일/알림 링크·저장 주소는 코어 공용
+  SiteUrl 로 사이트 주소(APP_URL) 기준으로 만든다.
+
+  조치(코어):
+    - SiteUrl: base/absolute/forPath/origin/hostWithPort/isSameOrigin — 요청 Host 로 폴백하지 않음
+    - SeoUrl: SiteUrl 위임
+    - RedirectToCanonicalHost: 사이트 주소가 아닌 Host 의 화면 요청(GET·HEAD)을 같은 경로의 사이트
+      주소로 301 (API·확장 라우트·사이트맵 제외, CANONICAL_HOST_REDIRECT 로 끔)
+    - 본인인증 표준 콜백 복귀 주소 같은 출처 판정, 메일 본인인증 링크, 사이트맵 loc, SEO 기본 로케일
+      301, 아바타 레거시 주소, 큐 훅 컨텍스트 복원, 통계 페이지 URL·리퍼러 판정, API 검증 오류 JSON,
+      본인인증 재요청 주소(경로만), 통계에서 토큰·이메일 쿼리 제거
+
+axes:
+  # forged = 위조 Host 변종 4종(외부 도메인·사이트 하위 도메인·포트만 바꾼 Host·신뢰 프록시 X-Forwarded-Host)을
+  #          테스트의 데이터 제공자가 모두 돈다(변종별 데이터셋 이름: external·subdomain·port·forwarded).
+  host_header: [canonical, forged]
+  sink: [site_url_helper, return_url_check, canonical_redirect, identity_callback, mail_link, sitemap, avatar_url, hook_context, analytics, api_validation, identity_retry, front_open_window, front_global_headers, front_identity_retry, front_identity_challenge_return]
+
+exclusions:
+  - { sink: front_identity_challenge_return, host_header: forged, reason: "이동 경로는 현재 문서의 경로만 쓴다 — 요청 Host 가 개입하지 않는다" }
+  - { sink: return_url_check, host_header: forged, reason: "같은 출처 판정은 요청 Host 를 읽지 않는다 — 입력 주소만 본다" }
+  - { sink: api_validation, host_header: forged, reason: "검증 실패 렌더링은 Host 와 무관 — JSON 으로 고정됐는지만 본다" }
+  - { sink: hook_context, host_header: forged, reason: "큐 워커 복원에는 요청 Host 가 없다 — 사이트 주소로 재바인딩하는지만 본다" }
+  - { sink: sitemap, host_header: canonical, reason: "사이트 주소 Host 에서는 url() 과 사이트 주소가 같은 값이라 구분되지 않는다 — 위조 변종만 의미가 있다(기존 sitemap-generation 매니페스트가 정상 생성을 소유)" }
+
+effects:
+  - site_url_ignores_request_host
+  - site_url_absolute_shape
+  - site_url_empty_base_stays_relative
+  - site_url_for_path_stays_inside_site
+  - return_url_must_be_same_origin
+  - site_url_host_with_port
+  - seo_url_delegates_to_site_url
+  - foreign_host_page_request_redirects_to_site
+  - www_pair_host_page_request_redirects_to_site
+  - canonical_host_passes_without_loop
+  - canonical_redirect_skipped_when_not_applicable
+  - canonical_redirect_only_on_page_shells
+  - page_shell_not_rendered_for_foreign_host
+  - identity_callback_refuses_foreign_return_url
+  - identity_callback_redirects_on_site_origin
+  - identity_callback_existing_flow_preserved
+  - mail_identity_link_uses_site_origin
+  - mail_identity_existing_flow_preserved
+  - sitemap_loc_uses_site_origin
+  - legacy_avatar_url_uses_site_origin
+  - analytics_page_url_uses_site_origin
+  - analytics_referer_self_check_uses_site_host
+  - analytics_strips_credential_query
+  - hook_context_restore_binds_site_origin
+  - api_validation_failure_is_json_without_accept_header
+  - identity_retry_url_is_path_only
+  - external_window_has_no_opener_and_https_only
+  - same_origin_window_unchanged
+  - global_headers_only_for_same_origin
+  - identity_retry_only_same_origin
+  - identity_challenge_receives_return_url_path
+  - identity_guard_existing_flow_preserved
+
+test_files:
+  - tests/Unit/Support/SiteUrlTest.php
+  - tests/Feature/Http/CanonicalHostRedirectTest.php
+  - tests/Feature/Api/Identity/IdentityCallbackTest.php
+  - tests/Feature/Identity/MailIdentityProviderDispatchTest.php
+  - tests/Feature/Seo/SitemapHostTrustTest.php
+  - tests/Unit/Models/UserAvatarUrlTest.php
+  - tests/Feature/Analytics/AnalyticsHostTrustTest.php
+  - tests/Unit/Extension/HookContextRestoreSiteUrlTest.php
+  - tests/Feature/Http/ApiValidationJsonRenderingTest.php
+  - tests/Feature/Identity/IdentityReturnRequestUrlTest.php
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.hostTrust.test.ts
+  - resources/js/core/template-engine/__tests__/IdentityGuardInterceptor.hostTrust.test.ts
+  - resources/js/core/template-engine/__tests__/IdentityGuardInterceptor.test.ts
+  - tests/Playwright/specs/request-host-trust.spec.ts

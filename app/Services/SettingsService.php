@@ -8,13 +8,17 @@ use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\Resources\AttachmentResource;
+use App\Models\User;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use App\Services\Auth\ReauthenticationService;
+use App\Services\Queue\QueueWorkerRegistry;
 use App\Support\ConfigCacheHelper;
 use App\Support\EnvPriority;
 use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
 use App\Support\ProcessOutputEncoding;
+use App\Support\SettingsVersion;
 use App\Support\TrustedProxyDiagnostic;
 use App\Support\TrustedProxySetting;
 use Illuminate\Support\Facades\Artisan;
@@ -39,10 +43,10 @@ class SettingsService
     /**
      * 설정 서비스를 생성합니다.
      *
-     * @param  ConfigRepositoryInterface  $configRepository  설정 저장소
-     * @param  AttachmentRepositoryInterface  $attachmentRepository  첨부 저장소
-     * @param  CacheInterface  $cache  확장 캐시
-     * @param  AttachmentService  $attachmentService  첨부 서비스
+     * @param  ConfigRepositoryInterface  $configRepository  설정 카테고리 저장소
+     * @param  AttachmentRepositoryInterface  $attachmentRepository  설정 첨부 저장소
+     * @param  CacheInterface  $cache  설정 캐시
+     * @param  AttachmentService  $attachmentService  첨부 파기·정리 서비스
      */
     public function __construct(
         private ConfigRepositoryInterface $configRepository,
@@ -59,7 +63,7 @@ class SettingsService
      * 하면 config:cache 가 비워진 채 재생성되지 않아 이후 모든 요청이 config 파일을
      * 재파싱하는 성능 손실이 발생하기 때문이다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function invalidateSettingsCache(): void
     {
@@ -70,6 +74,10 @@ class SettingsService
         // 이 호출이 없으면 상주 프로세스(큐 워커·schedule:work·Reverb)는 저장 후에도
         // 부팅 시점의 옛 값을 영원히 읽는다 — FPM 에서만 드러나지 않는 결함이다.
         app(ExtensionSettingsMirror::class)->refreshCore();
+
+        // 다른 상주 프로세스(큐 워커)가 바뀐 것을 알 수 있도록 설정 버전을 올린다 — 워커는 작업 시작 전에
+        // 비교해 다시 읽는다(#724).
+        SettingsVersion::bump();
     }
 
     /**
@@ -81,7 +89,7 @@ class SettingsService
      *
      * 신호 전송 실패가 설정 저장을 되돌리지는 않는다 (경고 로깅 후 계속).
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function restartQueueWorkers(): void
     {
@@ -104,7 +112,7 @@ class SettingsService
      * 캐시 삭제 실패가 설정 저장 자체를 되돌리지는 않는다 — 설정은 이미 저장됐고,
      * 캐시는 TTL 만료나 `seo:clear` 로도 회복 가능한 부수 상태다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function clearSeoCacheForAssetUrlMode(): void
     {
@@ -733,6 +741,12 @@ class SettingsService
                 );
             }
 
+            // 큐 워커 등록(#139) — 빈 연결 목록은 현재 드라이버 연결 하나로, 큐 목록이 없는 연결은 기본 큐로 채우고,
+            // 등록하지 않은 연결의 큐 목록은 버린다. 검증(V1~V9)은 FormRequest 가 이미 끝냈다.
+            if ($tab === 'drivers') {
+                $tabSettings = app(QueueWorkerRegistry::class)->normalizeForSave($tabSettings);
+            }
+
             // 기존 설정과 병합 (탭별로 일부 필드만 전송되어도 기존 설정 유지)
             $existingSettings = $this->configRepository->getCategory($tab);
             $mergedSettings = array_merge($existingSettings, $tabSettings);
@@ -980,7 +994,7 @@ class SettingsService
      *
      * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
      * @param  string  $label  로그 표기용 설정 이름
-     * @return void
+     * @return void 반환값 없음
      */
     private function purgeRemovedAttachments(array $removedIds, string $label): void
     {
@@ -1044,7 +1058,7 @@ class SettingsService
      * 이미 없는 첨부 id 가 남아 로고가 깨집니다.
      *
      * @param  array<int, int>  $removedIds  파기 대상 첨부 ID 목록
-     * @return void
+     * @return void 반환값 없음
      */
     private function purgeSiteLogoAttachments(array $removedIds): void
     {
@@ -1214,7 +1228,7 @@ class SettingsService
      * URL 이 남고 그 참조(글꼴·이미지)가 서버에서 404 가 된다(#651 F5). bump 단일 지점이
      * 번들 재병합과 정적 재게시를 함께 예약한다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function bumpExtensionCacheForAssetUrlMode(): void
     {
@@ -1233,6 +1247,15 @@ class SettingsService
         try {
             $savedSettings = $this->configRepository->getCategory('mail');
             $mailSettings = array_merge($savedSettings, $overrideSettings);
+
+            // `.env` 로 잠긴 키는 저장값·요청값이 아니라 `.env` 유효값으로 보낸다 — 잠긴 민감 키는
+            // 화면에 값이 실리지 않아 요청이 빈 칸으로 오고, 저장값은 적용되지 않는 옛 값이다.
+            // 아래에서 config 를 덮기 **전에** 읽어야 런타임 유효값(=`.env`)을 얻는다.
+            foreach (array_keys(EnvPriority::lockedKeys()) as $storageKey) {
+                if (str_starts_with($storageKey, 'mail.')) {
+                    $mailSettings[substr($storageKey, 5)] = EnvPriority::effectiveValue($storageKey);
+                }
+            }
 
             // 메일 설정 임시 적용 (드라이버별)
             $mailer = $mailSettings['mailer'] ?? 'smtp';
@@ -1269,6 +1292,7 @@ class SettingsService
             $subject = __('settings.test_mail_subject', ['app_name' => config('app.name')]);
             $body = __('settings.test_mail_body');
 
+            // audit:allow mail-send-must-go-through-notification-dispatcher reason: 입력 중인 SMTP 설정 자체를 시험하는 메일 — 알림 채널이 꺼져 있어도, 저장 전 설정으로도 보내야 의미가 있다(notification-system.md 「예외」 표)
             Mail::raw($body, function ($message) use ($toEmail, $subject) {
                 $message->to($toEmail)
                     ->subject($subject);
@@ -1505,14 +1529,29 @@ class SettingsService
     /**
      * 어플리케이션 키를 재생성합니다.
      *
-     * @param  string  $password  최고 관리자 비밀번호
-     * @return array 결과 (success, app_key 또는 error)
+     * 실행 직전에 요청 관리자 본인을 다시 확인한다 — 비밀번호가 있으면 비밀번호, 없으면(외부 인증 전용) 이메일 인증번호로
+     * 받은 `verification_token`.
+     *
+     * @param  array{password?: string|null, verification_token?: string|null}  $credentials  재확인 입력
+     * @return array 결과 (success, app_key 또는 error·status)
      */
-    public function regenerateAppKey(string $password): array
+    public function regenerateAppKey(array $credentials): array
     {
         $admin = Auth::user();
-        if (! $admin || ! Hash::check($password, $admin->password)) {
-            return ['success' => false, 'error' => __('settings.invalid_password')];
+        $check = $admin instanceof User
+            ? app(ReauthenticationService::class)->verify($admin, $credentials)
+            : ReauthenticationService::MISSING;
+
+        if ($check === ReauthenticationService::PASSWORD_NOT_SET) {
+            return ['success' => false, 'error' => __('user.password_not_set'), 'status' => 422];
+        }
+
+        if ($check === ReauthenticationService::TOKEN_INVALID) {
+            return ['success' => false, 'error' => __('user.reauthentication_invalid'), 'status' => 422];
+        }
+
+        if ($check !== ReauthenticationService::PASSED) {
+            return ['success' => false, 'error' => __('settings.invalid_password'), 'status' => 401];
         }
 
         try {

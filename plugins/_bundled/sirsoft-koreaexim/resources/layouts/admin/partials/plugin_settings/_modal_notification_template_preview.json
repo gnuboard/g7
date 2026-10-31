@@ -1,0 +1,94 @@
+{
+    "comment": "쇼핑몰 설정 — 알림 템플릿 미리보기 창. 편집 창이 만들어 둔 결과를 보여 주기만 하고\n  입력이 없다 — 그래서 이 조각에는 액션이 하나도 없다.",
+    "meta": {
+        "is_partial": true,
+        "description": "환율 실패 알림 치환 결과 미리보기"
+    },
+    "id": "modal_koreaexim_notification_definition_preview",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-koreaexim.notification_definitions.preview_modal.title",
+        "size": "lg"
+    },
+    "children": [
+        {
+            "id": "koreaexim_preview_content",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "koreaexim-form-label"
+                            },
+                            "text": "$t:sirsoft-koreaexim.notification_definitions.preview_modal.rendered_subject"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "koreaexim-text-primary koreaexim:text-sm koreaexim:bg-gray-50 koreaexim:dark:bg-gray-900 koreaexim:rounded-md koreaexim:p-3 koreaexim:border koreaexim:border-gray-200 koreaexim:dark:border-gray-700"
+                            },
+                            "text": "{{_global.koreaexim_notification_template_form_modal?.preview?.subject ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "koreaexim-form-label"
+                            },
+                            "text": "$t:sirsoft-koreaexim.notification_definitions.preview_modal.rendered_body"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "HtmlContent",
+                            "props": {
+                                "content": "{{_global.koreaexim_notification_template_form_modal?.preview?.body ?? ''}}",
+                                "isHtml": true,
+                                "className": "koreaexim:text-sm koreaexim:max-w-none koreaexim:bg-white koreaexim:dark:bg-gray-900 koreaexim:rounded-md koreaexim:p-4 koreaexim:border koreaexim:border-gray-200 koreaexim:dark:border-gray-700 koreaexim:max-h-[400px] koreaexim:overflow-y-auto"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "koreaexim:flex koreaexim:justify-end koreaexim:border-t koreaexim:border-gray-200 koreaexim:dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "id": "koreaexim_btn_close_preview",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal",
+                                    "target": "modal_koreaexim_notification_definition_preview"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "koreaexim-text-body koreaexim:px-4 koreaexim:py-2 koreaexim:rounded-md koreaexim:border koreaexim:border-gray-300 koreaexim:dark:border-gray-600 koreaexim:hover:bg-gray-50 koreaexim:dark:hover:bg-gray-700 koreaexim:transition-colors"
+                            },
+                            "text": "$t:sirsoft-koreaexim.notification_definitions.preview_modal.btn_close"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

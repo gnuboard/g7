@@ -46,7 +46,8 @@ class BulkUpdateOptionsRequest extends FormRequest
             // 옵션 일괄 변경 조건 (선택)
             'bulk_changes' => ['nullable', 'array'],
             'bulk_changes.price_adjustment' => ['nullable', 'array'],
-            'bulk_changes.price_adjustment.method' => ['required_with:bulk_changes.price_adjustment', 'string', 'in:set,add,percent'],
+            // subtract = 금액 인하(판매가 일괄 변경 창의 「인하 + 금액」). 인하 결과는 서비스가 옵션 판매가 0 을 하한으로 둔다.
+            'bulk_changes.price_adjustment.method' => ['required_with:bulk_changes.price_adjustment', 'string', 'in:set,add,subtract,percent'],
             'bulk_changes.price_adjustment.value' => ['required_with:bulk_changes.price_adjustment', 'numeric'],
             'bulk_changes.stock_quantity' => ['nullable', 'array'],
             'bulk_changes.stock_quantity.method' => ['required_with:bulk_changes.stock_quantity', 'string', 'in:set,add,subtract'],

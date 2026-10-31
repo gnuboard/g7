@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 비밀글 전수 시나리오 테스트
@@ -19,21 +20,31 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - posts.read-secret 권한 유무에 따른 비밀글 내용 노출 여부
  * - secret_mode=always에서 비회원 접근 동작
  * - 비밀번호 기반 비회원 비밀글 접근
- *
- * @group board
- * @group secret
  */
+#[Group('board')]
+#[Group('secret')]
 class SecretPostScenarioTest extends BoardTestCase
 {
     private User $authorUser;
 
     private User $otherUser;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'secret-scenario';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -44,6 +55,11 @@ class SecretPostScenarioTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,6 +83,12 @@ class SecretPostScenarioTest extends BoardTestCase
 
     /**
      * secret_mode=disabled이면 비밀글 생성을 거부한다 (403)
+     *
+     * @scenario concern=secret_post, condition=secret_mode_setting
+     *
+     * @effects secret_mode_disabled_rejects_is_secret_true
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_mode_disabled_rejects_is_secret_true(): void
     {
@@ -85,6 +107,12 @@ class SecretPostScenarioTest extends BoardTestCase
 
     /**
      * secret_mode=enabled이면 사용자가 비밀글 여부를 선택할 수 있다
+     *
+     * @scenario concern=secret_post, condition=secret_mode_setting
+     *
+     * @effects secret_mode_enabled_allows_user_to_choose
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_mode_enabled_allows_user_to_choose(): void
     {
@@ -113,6 +141,12 @@ class SecretPostScenarioTest extends BoardTestCase
 
     /**
      * secret_mode=always이면 모든 게시글이 비밀글로 강제된다
+     *
+     * @scenario concern=secret_post, condition=secret_mode_setting
+     *
+     * @effects secret_mode_always_forces_all_posts_secret
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_mode_always_forces_all_posts_secret(): void
     {
@@ -132,6 +166,12 @@ class SecretPostScenarioTest extends BoardTestCase
 
     /**
      * secret_mode=always이면 비회원도 게시글을 작성하면 자동으로 비밀글이 된다
+     *
+     * @scenario concern=secret_post, condition=secret_mode_setting
+     *
+     * @effects secret_mode_always_guest_post_becomes_secret
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_mode_always_guest_post_becomes_secret(): void
     {
@@ -155,6 +195,12 @@ class SecretPostScenarioTest extends BoardTestCase
 
     /**
      * posts.read-secret 권한이 있는 사용자는 비밀글 내용을 볼 수 있다
+     *
+     * @scenario concern=secret_post, condition=viewer_with_access
+     *
+     * @effects user_with_read_secret_permission_can_view_secret_content
+     *
+     * @return void 반환값 없음
      */
     public function test_user_with_read_secret_permission_can_view_secret_content(): void
     {
@@ -183,6 +229,12 @@ class SecretPostScenarioTest extends BoardTestCase
 
     /**
      * posts.read-secret 권한이 없는 타인은 비밀글 내용이 마스킹된다
+     *
+     * @scenario concern=secret_post, condition=viewer_without_access
+     *
+     * @effects user_without_read_secret_sees_masked_content
+     *
+     * @return void 반환값 없음
      */
     public function test_user_without_read_secret_sees_masked_content(): void
     {
@@ -206,6 +258,12 @@ class SecretPostScenarioTest extends BoardTestCase
 
     /**
      * 비밀글 작성자 본인은 항상 내용을 볼 수 있다
+     *
+     * @scenario concern=secret_post, condition=viewer_with_access
+     *
+     * @effects secret_post_author_can_always_view_own_content
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_post_author_can_always_view_own_content(): void
     {
@@ -225,6 +283,12 @@ class SecretPostScenarioTest extends BoardTestCase
 
     /**
      * 비회원 비밀글은 올바른 비밀번호로 verify-password API가 content를 반환한다
+     *
+     * @scenario concern=secret_post, condition=viewer_with_access
+     *
+     * @effects guest_secret_post_accessible_with_correct_password
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_secret_post_accessible_with_correct_password(): void
     {
@@ -249,6 +313,12 @@ class SecretPostScenarioTest extends BoardTestCase
 
     /**
      * 비회원 비밀글은 틀린 비밀번호로 접근이 거부된다 (403)
+     *
+     * @scenario concern=secret_post, condition=viewer_without_access
+     *
+     * @effects guest_secret_post_denied_with_wrong_password
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_secret_post_denied_with_wrong_password(): void
     {
@@ -274,6 +344,12 @@ class SecretPostScenarioTest extends BoardTestCase
 
     /**
      * 비밀글은 목록에 포함되며 is_secret 플래그가 표시된다
+     *
+     * @scenario concern=secret_post, condition=viewer_without_access
+     *
+     * @effects secret_posts_appear_in_list_with_masked_content
+     *
+     * @return void 반환값 없음
      */
     public function test_secret_posts_appear_in_list_with_masked_content(): void
     {
@@ -293,6 +369,12 @@ class SecretPostScenarioTest extends BoardTestCase
 
     /**
      * secret_mode=always 게시판에서 navigation API는 500을 반환하지 않는다
+     *
+     * @scenario concern=secret_post, condition=secret_mode_setting
+     *
+     * @effects navigation_does_not_500_on_always_secret_board
+     *
+     * @return void 반환값 없음
      */
     public function test_navigation_does_not_500_on_always_secret_board(): void
     {
@@ -306,5 +388,83 @@ class SecretPostScenarioTest extends BoardTestCase
 
         // 500이 아닌 200 또는 404여야 함
         $this->assertNotEquals(500, $response->status());
+    }
+
+    /**
+     * 역할에 비밀글 조회 권한을 범위와 함께 줍니다 (권한 행에 게시글 스코프 메타를 싣는다).
+     *
+     * @param  User  $user  대상 회원
+     * @param  string  $scope  권한 범위 (self·role)
+     * @return void 반환값 없음
+     */
+    private function grantScopedReadSecret(User $user, string $scope): void
+    {
+        $perm = Permission::firstOrCreate(
+            ['identifier' => "sirsoft-board.{$this->board->slug}.posts.read-secret"],
+            ['name' => ['ko' => '비밀글 조회', 'en' => 'Read Secret'], 'type' => 'user']
+        );
+        $perm->forceFill(['resource_route_key' => 'post', 'owner_key' => 'user_id'])->save();
+        $role = Role::create(['identifier' => "secret-scenario-{$scope}", 'name' => ['ko' => $scope, 'en' => $scope]]);
+        $role->permissions()->attach($perm->id, ['scope_type' => $scope, 'granted_at' => now()]);
+        $user->roles()->attach($role->id);
+    }
+
+    /**
+     * 비밀글 조회 「본인만」은 남의 비밀글 본문을 열지 않는다 (#789 제보 B · D9).
+     *
+     * 수정 전에는 스코프가 게시판 라우트에서 적용되지 않아 「본인만」을 준 역할이 남의 비밀글을 전부 열었다.
+     *
+     * @scenario concern=secret_post, condition=viewer_without_access
+     *
+     * @effects self_scoped_read_secret_masks_others_secret_post
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_read_secret_does_not_open_others_secret_post(): void
+    {
+        $postId = $this->createTestPost([
+            'user_id' => $this->authorUser->id,
+            'is_secret' => true,
+            'content' => '남의 비밀 내용',
+        ]);
+        $this->grantScopedReadSecret($this->otherUser, 'self');
+
+        $this->actingAs($this->otherUser)
+            ->getJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}")
+            ->assertOk()
+            ->assertJsonPath('data.content', null);
+    }
+
+    /**
+     * 비밀글 조회 「소유역할」은 역할을 공유하는 회원 글만 열고 비회원 글은 열지 않는다 (D9·D18).
+     *
+     * @scenario concern=secret_post, condition=viewer_with_access
+     *
+     * @effects role_scoped_read_secret_opens_member_posts_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_role_scoped_read_secret_opens_role_sharing_member_posts_only(): void
+    {
+        $memberPostId = $this->createTestPost([
+            'user_id' => $this->authorUser->id,
+            'is_secret' => true,
+            'content' => '회원 비밀 내용',
+        ]);
+        $guestPostId = $this->createTestPost([
+            'user_id' => null,
+            'password' => bcrypt('guest-pass'),
+            'is_secret' => true,
+            'content' => '비회원 비밀 내용',
+        ]);
+        $this->grantScopedReadSecret($this->otherUser, 'role');
+        $base = "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts";
+
+        // 기본 user 역할을 함께 가진 회원의 글 → 열림
+        $this->actingAs($this->otherUser)->getJson("{$base}/{$memberPostId}")
+            ->assertOk()->assertJsonPath('data.content', '회원 비밀 내용');
+        // 비회원 글 → 닫힘
+        $this->actingAs($this->otherUser)->getJson("{$base}/{$guestPostId}")
+            ->assertOk()->assertJsonPath('data.content', null);
     }
 }

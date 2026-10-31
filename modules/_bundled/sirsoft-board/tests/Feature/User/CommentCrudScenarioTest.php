@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 댓글/대댓글 CRUD 전수 시나리오 테스트
@@ -18,21 +19,31 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - 대댓글(parent_id) 생성 및 depth 경계
  * - 삭제된/블라인드 댓글 처리
  * - 비밀번호 기반 비회원 댓글 수정/삭제
- *
- * @group board
- * @group comment
  */
+#[Group('board')]
+#[Group('comment')]
 class CommentCrudScenarioTest extends BoardTestCase
 {
     private User $memberUser;
 
     private User $otherUser;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'comment-crud';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -43,6 +54,11 @@ class CommentCrudScenarioTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,6 +83,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 회원이 댓글을 생성할 수 있다
+     *
+     * @effects member_can_create_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_member_can_create_comment(): void
     {
@@ -90,6 +110,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 비회원이 댓글을 생성할 수 있다
+     *
+     * @effects guest_can_create_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_can_create_comment(): void
     {
@@ -113,6 +137,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 댓글 쓰기 권한 없는 사용자는 댓글을 생성할 수 없다
+     *
+     * @effects user_without_permission_cannot_create_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_user_without_permission_cannot_create_comment(): void
     {
@@ -129,6 +157,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 블라인드 게시글에는 댓글을 생성할 수 없다
+     *
+     * @effects cannot_create_comment_on_blinded_post
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_create_comment_on_blinded_post(): void
     {
@@ -144,6 +176,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 삭제된 게시글에는 댓글을 생성할 수 없다
+     *
+     * @effects cannot_create_comment_on_deleted_post
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_create_comment_on_deleted_post(): void
     {
@@ -163,6 +199,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 댓글에 대댓글을 생성할 수 있다
+     *
+     * @effects can_create_reply_to_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_can_create_reply_to_comment(): void
     {
@@ -187,6 +227,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * max_comment_depth 초과 depth의 대댓글은 생성할 수 없다
+     *
+     * @effects cannot_create_comment_beyond_max_depth
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_create_comment_beyond_max_depth(): void
     {
@@ -207,6 +251,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 존재하지 않는 parent_id로 대댓글 생성 시 422 반환
+     *
+     * @effects cannot_create_reply_with_invalid_parent_id
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_create_reply_with_invalid_parent_id(): void
     {
@@ -227,6 +275,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 작성자 회원은 자신의 댓글을 수정할 수 있다
+     *
+     * @effects comment_author_can_update_own_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_author_can_update_own_comment(): void
     {
@@ -244,6 +296,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 타인의 댓글은 수정할 수 없다
+     *
+     * @effects cannot_update_other_users_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_update_other_users_comment(): void
     {
@@ -260,6 +316,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 비회원은 올바른 비밀번호로 자신의 댓글을 수정할 수 있다
+     *
+     * @effects guest_can_update_comment_with_correct_password
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_can_update_comment_with_correct_password(): void
     {
@@ -280,6 +340,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 비회원은 틀린 비밀번호로 댓글을 수정할 수 없다
+     *
+     * @effects guest_cannot_update_comment_with_wrong_password
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_cannot_update_comment_with_wrong_password(): void
     {
@@ -303,6 +367,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 작성자 회원은 자신의 댓글을 삭제할 수 있다
+     *
+     * @effects comment_author_can_delete_own_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_author_can_delete_own_comment(): void
     {
@@ -320,6 +388,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 타인의 댓글은 삭제할 수 없다
+     *
+     * @effects cannot_delete_other_users_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_delete_other_users_comment(): void
     {
@@ -337,6 +409,10 @@ class CommentCrudScenarioTest extends BoardTestCase
      * 게시판 관리(manager) 권한자는 타인 댓글을 수정할 수 있다
      *
      * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 댓글 수정 200 (이슈 #413-20)
+     *
+     * @effects manager_can_update_other_users_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_can_update_other_users_comment(): void
     {
@@ -360,6 +436,10 @@ class CommentCrudScenarioTest extends BoardTestCase
      * 게시판 관리(manager) 권한자는 타인 댓글을 삭제할 수 있다
      *
      * 회귀: 사용자 페이지 manager 권한자가 admin.manage 없이도 댓글 삭제 200 (이슈 #413-20)
+     *
+     * @effects manager_can_delete_other_users_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_manager_can_delete_other_users_comment(): void
     {
@@ -379,6 +459,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 비회원은 올바른 비밀번호로 자신의 댓글을 삭제할 수 있다
+     *
+     * @effects guest_can_delete_comment_with_correct_password
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_can_delete_comment_with_correct_password(): void
     {
@@ -399,6 +483,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 댓글 삭제 후 comments_count가 감소한다
+     *
+     * @effects deleting_comment_decrements_post_comments_count
+     *
+     * @return void 반환값 없음
      */
     public function test_deleting_comment_decrements_post_comments_count(): void
     {
@@ -417,6 +505,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 댓글 블라인드 처리 시 comments_count는 변동 없다
+     *
+     * @effects blinding_comment_does_not_change_comments_count
+     *
+     * @return void 반환값 없음
      */
     public function test_blinding_comment_does_not_change_comments_count(): void
     {
@@ -440,6 +532,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * 댓글 목록을 조회할 수 있다
+     *
+     * @effects can_list_comments_for_post
+     *
+     * @return void 반환값 없음
      */
     public function test_can_list_comments_for_post(): void
     {
@@ -456,6 +552,10 @@ class CommentCrudScenarioTest extends BoardTestCase
 
     /**
      * soft-delete된 댓글은 목록에 표시되지 않는다
+     *
+     * @effects deleted_comments_are_not_shown_in_list
+     *
+     * @return void 반환값 없음
      */
     public function test_deleted_comments_are_not_shown_in_list(): void
     {
@@ -479,6 +579,8 @@ class CommentCrudScenarioTest extends BoardTestCase
      * 회귀: 게시글은 차단되나 댓글 content 에 BlockedKeywordsRule 누락으로 통과하던 결함 (#413-24)
      *
      * @effects store_comment_blocks_matching_keyword
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_create_comment_with_blocked_keyword(): void
     {
@@ -504,6 +606,8 @@ class CommentCrudScenarioTest extends BoardTestCase
      * 제한 키워드가 없는 댓글은 정상 생성된다 (회귀 방지)
      *
      * @effects store_comment_allows_clean_content
+     *
+     * @return void 반환값 없음
      */
     public function test_can_create_comment_without_blocked_keyword(): void
     {
@@ -526,6 +630,8 @@ class CommentCrudScenarioTest extends BoardTestCase
      * 회귀: 댓글 수정 경로(UpdateCommentRequest)에도 키워드 검증 적용 (#413-24)
      *
      * @effects update_comment_blocks_matching_keyword
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_update_comment_to_contain_blocked_keyword(): void
     {

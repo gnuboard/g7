@@ -6,6 +6,7 @@ use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Services\ExtensionStaticCacheService;
 use App\Services\SettingsService;
 use App\Support\AssetUrl;
+use App\Support\SiteUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
@@ -556,6 +557,48 @@ class AssetUrlTest extends TestCase
         $this->assertSame('data:image/png;base64,AAAA', AssetUrl::siteAbsolute('data:image/png;base64,AAAA'));
         $this->assertSame('img.png', AssetUrl::siteAbsolute('img.png'));
         $this->assertSame('', AssetUrl::siteAbsolute(''));
+    }
+
+    /**
+     * `siteAbsolute()`·`siteRoot()` 는 `SiteUrl::absolute()` 에 위임한다 — `APP_URL` 이 비면 요청 Host 로 가지 않는다.
+     *
+     * 절대 URL 의 단일 출처는 사이트 주소(`APP_URL`)다. 요청 Host 는 방문자가 위조할 수 있어, 이 값이
+     * 실리는 메일·크롤러·제3자 주소에 위조 호스트가 새어 나가면 안 된다. 사이트 주소가 비면 경로 그대로
+     * (상대)이고 `siteRoot()` 는 빈 문자열이다. 요청이 실은 마운트 접두사(`basePrefix()`)가 아니라 사이트
+     * 주소의 경로가 접두사의 출처다.
+     *
+     * @scenario base_path=subpath, navigation_direction=navigation
+     *
+     * @effects notification_links_are_built_by_the_site_absolute_helper
+     */
+    public function test_site_absolute_는_site_url_에_위임해_요청_host_로_가지_않는다(): void
+    {
+        $request = Request::create('https://attacker.example/g7/products/1', 'GET', [], [], [], [
+            'SCRIPT_FILENAME' => '/var/www/g7/public/index.php',
+            'SCRIPT_NAME' => '/g7/index.php',
+            'PHP_SELF' => '/g7/index.php',
+        ]);
+        app()->instance('request', $request);
+
+        try {
+            config(['app.url' => '']);
+            $this->assertSame('/login', AssetUrl::siteAbsolute('/login'));
+            $this->assertSame('/g7/api/x', AssetUrl::siteAbsolute('/g7/api/x'));
+            $this->assertSame('', AssetUrl::siteRoot());
+
+            config(['app.url' => 'https://example.com/g7']);
+            $this->assertSame(SiteUrl::absolute('/login'), AssetUrl::siteAbsolute('/login'));
+            $this->assertSame('https://example.com/g7/login', AssetUrl::siteAbsolute('/login'));
+            $this->assertSame('https://example.com/g7/api/x', AssetUrl::siteAbsolute('/g7/api/x'));
+            $this->assertSame('https://example.com/g7', AssetUrl::siteRoot());
+
+            // 루트 설치 — 요청이 접두사를 실어 와도 사이트 주소에 경로가 없으면 접두사를 붙이지 않는다
+            config(['app.url' => 'https://example.com']);
+            $this->assertSame('https://example.com/login', AssetUrl::siteAbsolute('/login'));
+            $this->assertSame('https://example.com', AssetUrl::siteRoot());
+        } finally {
+            app()->forgetInstance('request');
+        }
     }
 
     /**

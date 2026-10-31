@@ -1,0 +1,109 @@
+feature: 관리자 회원관리 목록 필터 전면 개편 (#705)
+
+description: |
+  회원관리 목록(/admin/users)의 조회 조건이 검색어 한 줄뿐이던 것을 쿠폰·상품·주문 목록과 같은
+  슬롯 기반 필터(기본/상세 + 검색편집 + 빠른 기간 + 초기화)로 바꿨다. 필터 12축(계정 상태·권한 그룹·
+  관리자 여부·계정 잠금·가입일·최근 로그인·휴면 전환일·상태 변경일·언어·국가·이메일 인증·본인인증),
+  검색 대상 7종, 상태·언어·국가 정렬, 확장 필터 채널(ext_filters[] + 훅 2종), 필터 인덱스 6종,
+  국가 표시 복원을 한 묶음으로 낸다.
+
+  축 설계 — 계획서 §8-3 은 필터축(12)×시작상태(2)×조작위치(3)×로케일(3)×검증단계(4) pairwise 를
+  적었지만, 커버리지 룰은 조합을 **정확 일치**로만 인정하고 12값 축이 끼면 pairwise 도 최소 48
+  조합이 된다. 조작 위치·로케일·검증 단계는 브라우저 실측 매트릭스(T3·T6·T8)와 E2E 흐름 효과로
+  덮고, 매니페스트 축은 서버 판정이 갈리는 두 축(필터축 × 결과)으로 좁혔다(계획서 조정 J9).
+  필터축에는 같은 목록 요청이 판정하는 검색 대상(keyword)·정렬(sort)·권한 스코프(permission_scope)·
+  확장 채널(extension)을 함께 둔다.
+
+  - narrows: 그 축의 조건이 결과를 실제로 좁힌다(단독·조합·경계 포함)
+  - rejected: 허용값 밖·형식 오류·역전 구간이 422 로 거절되고 문구가 번역돼 있다
+
+  후속 효과 체인:
+  - 검색 대상 확장·LIKE 이스케이프·정렬 화이트리스트·통계 스코프(D11)·확장 훅·인덱스 왕복
+  - 프론트: 슬롯 구조·검색편집 배치 영속·빠른 기간 날짜 형식·확장 값 채널
+  - 서버 레이아웃 defines 이름 보존은 tests/scenarios/layout-permission-filter.yaml 이 소유한다
+  - 국가 이름 노출(상세·프로필 응답)
+
+regression_baseline:
+  server:
+    multiple_search: UserControllerMultipleSearchTest → 19 PASS (기존 filters[*] 계약 불변)
+    scope_bypass: UserScopeBypassTest → 9 PASS
+  client:
+    named_actions: namedActionsAdminFilters → searchUsers 기존 filters[0][operator]=like 유지
+
+test_files:
+  - tests/Feature/Api/Admin/UserControllerListFilterTest.php
+  - tests/Feature/Api/Admin/UserListSearchFieldTest.php
+  - tests/Feature/Api/Admin/UserListSortTest.php
+  - tests/Feature/Api/Admin/UserStatisticsScopeTest.php
+  - tests/Feature/Api/Admin/UserCountryDisplayTest.php
+  - tests/Feature/Database/UsersFilterIndexesMigrationTest.php
+  - tests/Unit/Services/UserListQueryExtensionHookTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/adminUserListFilterSection.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/adminUserListSortSelect.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/namedActionsAdminFilters.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/loadVisibleFiltersHandler.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/setDateRangeHandler.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/handlers/__tests__/setUserFilterExtHandler.test.ts
+  - tests/Playwright/specs/admin/user-list-filters.spec.ts
+
+axes:
+  filter_axis:
+    - status
+    - role
+    - admin_scope
+    - lock_state
+    - created_at
+    - last_login
+    - dormant_at
+    - status_changed
+    - language
+    - country
+    - email_verified
+    - identity_verified
+    # 필터 영역 밖이지만 같은 요청이 판정하는 축 — 검색 대상·정렬·권한 스코프·확장 채널
+    - keyword
+    - sort
+    - permission_scope
+    - extension
+  outcome:
+    - narrows
+    - rejected
+
+effects:
+  # 서버 — 필터축
+  - admin_user_list_filter_axes_narrow_results
+  - admin_user_list_filter_invalid_values_rejected
+  # 서버 — 검색·정렬·통계·확장·인덱스·표시
+  - admin_user_list_search_fields_expanded
+  - admin_user_list_like_wildcards_escaped
+  - admin_user_list_zero_keyword_is_searched
+  - admin_user_list_date_filters_use_indexable_ranges
+  - admin_user_list_rows_fire_no_resource_hook
+  - admin_user_list_sort_status_language_country
+  - admin_user_list_sort_select_mirrors_header_sort
+  - admin_user_list_statistics_follow_list_scope
+  - user_list_filter_params_hook_fires
+  - user_list_query_extension_closures_applied
+  - user_list_ext_filters_parsed
+  - users_filter_indexes_idempotent_up
+  - user_country_name_exposed_on_detail_and_profile
+  # 프론트
+  - filter_section_slot_structure
+  # 열 선택기의 선택지·기본 열은 표가 실제로 그리는 열과 같다(표에 없는 「ID」 가 「필수」 로 켜져 있던 결함)
+  - column_selector_matches_grid_columns
+  - date_quick_uses_date_format
+  - date_quick_uses_account_timezone
+  - visible_filters_restored_from_storage
+  - ext_filter_channel_assembled
+  - search_users_query_contract
+  - admin_list_named_actions_wired
+  # E2E
+  - admin_user_list_filters_restored_after_reload
+  - admin_user_list_edit_mode_layout_persists
+  - admin_user_list_reset_clears_url
+  - admin_user_list_context_preserved
+  - admin_user_list_restored_after_back_navigation
+  - admin_user_list_row_actions_unchanged
+  - admin_user_list_extension_filters_sent
+  # 내 정보 응답도 언어 코드 대신 언어 이름(language_label)을 싣는다(7.1.0 잔여 관측 R-17)
+  - user_language_label_exposed_on_profile

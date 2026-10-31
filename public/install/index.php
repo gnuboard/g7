@@ -77,8 +77,14 @@ $errors = [];
 $formData = [];
 $error = null;
 
+// 설치 소유권 잠금 — 다른 브라우저 세션이 소유한 설치에는 어떤 단계 화면·POST 처리도 열지 않고
+// 복구 토큰 입력 화면만 보여준다. 같은 세션은 토큰 없이 그대로 재개한다.
+$ownershipLocked = installer_state_is_claimed($state)
+    && ! installer_session_is_owner($state)
+    && ! isInstallationCompleted();
+
 // Step 3 기본값 설정
-if ($currentStep === 3) {
+if (! $ownershipLocked && $currentStep === 3) {
     $defaults = DEFAULT_INSTALL_CONFIG;
     // `APP_URL` 에는 **마운트 접두사까지** 담는다.
     //
@@ -112,6 +118,9 @@ if ($currentStep === 3) {
     // — 가드 없이 읽으면 경고와 함께 빈 호스트가 `APP_URL=http://` 로 `.env` 에 영구 저장된다 (16차 G3 D-8).
     $defaults['app_url'] = (installerRequestIsHttps($_SERVER) ? 'https' : 'http')
         .'://'.((string) ($_SERVER['HTTP_HOST'] ?? '') ?: (string) ($_SERVER['SERVER_NAME'] ?? '')).$mountPrefix;
+    // 서버가 아는 Host 는 프록시 뒤에서 내부 주소일 수 있다 — 저장된 값이 없으면 화면 스크립트가
+    // 운영자가 실제로 보고 있는 주소(앱 루트 = origin + 마운트 접두사)로 채운다(data-autofill).
+    $defaults['app_url_autofill'] = ! isset($state['config']['app_url']);
     $defaults['admin_language'] = getCurrentLanguage();
     // state.json에서 비밀번호 제외된 config 복원 (폼에 비밀번호를 사전 입력하지 않음).
     // state 에는 이미 비밀이 기록되지 않지만(이슈 #465), 레거시 state.json 이 남아 있는
@@ -126,12 +135,14 @@ if ($currentStep === 3) {
     $formData = array_merge($defaults, $savedConfig);
 }
 
-// 설치 흐름 검증
-validateInstallationFlow($currentStep, $state);
+if (! $ownershipLocked) {
+    // 설치 흐름 검증
+    validateInstallationFlow($currentStep, $state);
 
-// POST 요청 처리
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    handlePostRequest($currentStep, $currentLang, $formData, $errors, $error);
+    // POST 요청 처리
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        handlePostRequest($currentStep, $currentLang, $formData, $errors, $error);
+    }
 }
 
 // 번역 로드
@@ -144,7 +155,9 @@ if ($currentStep < 0 || $currentStep > 6) {
     $currentStep = 0;
 }
 
-$stepFile = __DIR__.'/views/'.$currentStep.'-'.(STEP_FILE_MAP[$currentStep] ?? 'welcome').'.php';
+$stepFile = $ownershipLocked
+    ? __DIR__.'/views/ownership-recovery.php'
+    : __DIR__.'/views/'.$currentStep.'-'.(STEP_FILE_MAP[$currentStep] ?? 'welcome').'.php';
 
 // 표시할 단계는 세션에서 파생된다 — 캐시되면 뒤로가기·프록시 재생에서 **옛 단계**가 그려지고,
 // 그 화면의 버튼은 이미 지난 단계를 향한다 (17차 #B10). API 응답과 같은 강도로 막는다.
@@ -186,6 +199,8 @@ if (! headers_sent()) {
     <?php /* 헤더 바는 첫 화면(환영)에도 나온다 — 테마 토글이 그 안에 있어, 종전처럼 1단계부터
              띄우면 시스템과 반대로 보고 싶은 사용자는 다음 단계로 넘어가야만 전환 수단을 만난다
              (10차, 제품 결정). 단계 표시만 첫 화면에서 생략한다 — 아직 시작하지 않았기 때문이다. */ ?>
+    <?php /* 다른 브라우저 세션이 소유한 설치의 복구 토큰 화면에는 헤더 바를 띄우지 않는다 — 단계 화면이 아니다. */ ?>
+    <?php if (! $ownershipLocked) { ?>
     <!-- Installer Header Bar -->
     <div class="installer-header-bar">
         <div class="installer-header-content">
@@ -210,6 +225,7 @@ if (! headers_sent()) {
             </div>
         </div>
     </div>
+    <?php } ?>
 
     <!-- Main Content -->
     <?php
@@ -235,6 +251,9 @@ if (! headers_sent()) {
         // 이고, 계정명·경로의 invalid UTF-8 이 섞이면 빈 본문이 나가는 것을 막는다 (#62).
         window.INSTALLER_BASE_URL = <?= installer_json_encode(INSTALLER_BASE_URL, $jsonInlineFlags) ?>;
         window.CURRENT_STEP = <?= installer_json_encode($currentStep, $jsonInlineFlags) ?>;
+        // 상태변경 API 요청 검증 토큰 (세션 CSRF) — 소유 토큰 원문은 페이지에 싣지 않는다
+        window.INSTALLER_CSRF = <?= installer_json_encode(installer_csrf_token(), $jsonInlineFlags) ?>;
+        window.INSTALLER_OWNERSHIP_LOCKED = <?= $ownershipLocked ? 'true' : 'false' ?>;
         window.INSTALLER_LANG = <?= installer_json_encode($translations ?? [], $jsonInlineFlags) ?>;
         window.INSTALLER_STATE_LOCALE = <?= installer_json_encode($state['g7_locale'] ?? null, $jsonInlineFlags) ?>;
         // 화면이 **실제로 렌더된** 로케일 — 문구(INSTALLER_LANG)와 같은 출처다.

@@ -27,6 +27,7 @@
     "unanswered_inquiries": "미답변 문의",
     "go_to_inquiries": "전체 보기",
     "no_inquiries": "미답변 문의가 없습니다",
-    "updated_at": "최근 갱신: {{time}}"
+    "updated_at": "최근 갱신: {{time}}",
+    "anonymous": "익명"
   }
 }

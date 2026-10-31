@@ -1,0 +1,24 @@
+feature: 관리자 상품 폼 입력 직후 같은 화면틀 다른 주소 이동 뒤 칸 표시 잔존 브라우저 회귀 (7.1.1)
+
+description: |
+  `data-key="form" data-debounce="300"` 관리자 상품 폼에서 정가 칸을 비우고 값을 40ms 간격으로 친 뒤 디바운스 안에 같은 레이아웃의
+  다른 경로로 옮긴다 — 수정 → 등록(`G7Core.dispatch` navigate, flush 없음) / 등록 → 수정 → 브라우저 뒤로. 도착 화면 정가 칸 표시가
+  상태(`getLocal().form.list_price`)와 같은지(앞 화면 입력이 남지 않는지), 이어 친 값만 등록 본문에 실리는지 본다.
+  상품은 관리자 목록 API(GET)의 첫 수정 가능 항목이고, GET·HEAD 가 아닌 `/api/` 요청은 모두 abort 한다(서버 값 불변).
+
+axes:
+  case:
+    - edit_to_create_within_debounce
+    - edit_then_browser_back_within_debounce
+
+effects:
+  - destination_field_shows_state           # 도착 화면 칸 표시 = 상태 값(앞 화면 입력 잔존 없음)
+  - retyped_value_not_mixed_with_previous   # 도착 화면에서 이어 친 값만 본문에 실림(앞 입력과 섞이지 않음)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-route-switch-input-residue.spec.ts
+
+notes: |
+  관리자 토큰 필요(G7_E2E_TOKEN) — 없으면 건너뛴다. 수정 전 대조는 G7_E2E_ENGINE_BUNDLE 로 엔진 수정 전 번들(44903535)을
+  이 브라우저에만 끼운다 — 두 시험 모두 red(실측: 등록 칸 「32222」·이어 친 본문 「322227700」, 뒤로 간 등록 칸 「39999」).
+  엔진 잠금 시험은 admin_basic `productFormRouteSwitchInputResidue.test.tsx`(jsdom 실물 렌더러).

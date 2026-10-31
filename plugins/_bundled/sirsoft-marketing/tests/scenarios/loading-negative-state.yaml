@@ -1,0 +1,29 @@
+# 시나리오 매니페스트 — 마케팅 동의 이력 안내: 받는 중 「없음」류 안내
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: loading_negative_state
+
+description: >-
+  화면이 먼저 그려진 뒤 받는 데이터소스는 받기 전 값이 비어 있다. 「없음」류 안내의 조건이 빈 값을 0건으로
+  메우면 받는 중에도 참이 되어, 데이터가 있는데도 「없습니다」가 먼저 보였다가 바뀐다. 안내는 데이터소스를
+  받은 뒤에만 보인다. 대상: 관리자 회원 상세 동의 이력. 이 확장의 레이아웃에서 받는 중에 참이 되는 「없음」류 안내가 새로
+  들어오면 전수 검사가 잡는다.
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/resources/js/__tests__/layouts/loading-negative-state.test.tsx
+
+coverage_strategy: full
+
+# axis 의미:
+#   load_state — 데이터소스 상태. loading 은 엔진이 화면을 먼저 그릴 때 넣는 undefined, loaded_empty 는 받은
+#                결과가 「없음」, loaded_rows 는 「있음」, error 는 받기 실패(엔진이 넣는 null — 처음 받기, 그리고 다른 요청으로 다시 받기). 화면은 같은 규칙을 쓰므로 축으로 곱하지 않고 각 시험이
+#                화면 전부를 돈다(it.each).
+axes:
+  load_state: [loading, loaded_empty, loaded_rows, error]
+
+effects:
+  - loading_hides_negative_state   # 받는 중에는 「없음」류 안내가 없다
+  - loaded_empty_shows_negative_state   # 받은 뒤 없으면 안내가 보인다
+  - loaded_rows_hide_negative_state   # 받은 뒤 있으면 안내가 없다
+  - error_hides_negative_state   # 받기에 실패하면(null — 처음 받기·다른 요청으로 다시 받기) 「없음」 안내가 없다
+  - every_negative_state_gated   # 이 확장에서 받는 중에 참이 되는 「없음」류 안내·빈 문구가 없다(전수)

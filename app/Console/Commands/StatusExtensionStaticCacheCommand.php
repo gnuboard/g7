@@ -50,63 +50,59 @@ class StatusExtensionStaticCacheCommand extends Command
         $publishHint = self::publishCommandHint();
 
         $this->line('');
-        $this->line('<options=bold>부트스트랩 리소스 정적 게시 상태</>');
+        $this->line('<options=bold>'.__('extensions.commands.ext_static_status.title').'</>');
         $this->line('');
 
-        $this->line('  실행 계정      : '.$report['process_user']);
+        $this->line('  '.__('extensions.commands.ext_static_status.labels.process_user').' '.$report['process_user']);
 
         // root 로 실행 중이면 여기서 게시하지 말라고 먼저 알린다 — 캐시 락 샤드·병합 번들이 root
         // 소유로 남아 이후 웹 요청의 캐시 쓰기가 Permission denied 로 죽는다(전면 500 실사례).
         // 중단하지는 않는다 — 상태 점검은 읽기 전용이다. (#651 C1)
         if (self::isRootProcess()) {
-            $this->line('  <comment>root 로 실행 중 — 이 계정으로 게시하면 캐시 폴더가 root 소유가 될 수 있습니다. '
-                .'웹 계정으로 실행하세요: '.$publishHint.'</comment>');
+            $this->line('  <comment>'.__('extensions.commands.ext_static_status.root_warning', ['command' => $publishHint]).'</comment>');
         }
 
-        $this->line('  kill-switch    : '.($report['enabled'] ? '활성 (게시함)' : '<comment>비활성 (게시 안 함)</comment>'));
-        $this->line('  현재 캐시 버전 : '.$report['version']);
-        $this->line('  게시 루트      : '.$base);
+        $this->line('  kill-switch    : '.($report['enabled']
+            ? __('extensions.commands.ext_static_status.values.enabled_on')
+            : '<comment>'.__('extensions.commands.ext_static_status.values.enabled_off').'</comment>'));
+        $this->line('  '.__('extensions.commands.ext_static_status.labels.version').' '.$report['version']);
+        $this->line('  '.__('extensions.commands.ext_static_status.labels.base').' '.$base);
 
         // kill-switch 가 꺼져 있으면 미게시는 정상이다 — 이상으로 세지 않는다.
         if (! $report['enabled']) {
             $this->line('');
-            $this->comment('kill-switch 가 꺼져 있어 게시 상태는 점검하지 않습니다 (core.static_cache.enabled).');
+            $this->comment(__('extensions.commands.ext_static_status.kill_switch_off'));
 
             return self::SUCCESS;
         }
 
         // 1) 게시 트리 쓰기 가능성 — 제보 본건(P1/P2)의 직접 지표
         if ($report['tree_writable']) {
-            $this->line('  트리 쓰기      : 가능');
+            $this->line('  '.__('extensions.commands.ext_static_status.labels.tree_write').' '.__('extensions.commands.ext_static_status.values.writable_yes'));
         } else {
-            $this->line('  트리 쓰기      : <error>불가</error>');
-            $problems[] = sprintf(
-                '게시 트리에 쓸 수 없습니다 (%s, owner=%s, perms=%s). 웹 계정이 재게시할 수 없어 '
-                .'모든 요청이 API 폴백으로 동작합니다.',
-                $base,
-                (string) (@fileowner($base) ?: 'unknown'),
-                File::exists($base) ? substr(sprintf('%o', @fileperms($base)), -4) : 'absent'
-            );
+            $this->line('  '.__('extensions.commands.ext_static_status.labels.tree_write').' <error>'.__('extensions.commands.ext_static_status.values.writable_no').'</error>');
+            $problems[] = __('extensions.commands.ext_static_status.problems.tree_not_writable', [
+                'path' => $base,
+                'owner' => (string) (@fileowner($base) ?: 'unknown'),
+                'perms' => File::exists($base) ? substr(sprintf('%o', @fileperms($base)), -4) : 'absent',
+            ]);
         }
 
         // 2) 현재 버전 게시 여부
         if ($report['published']) {
-            $this->line('  게시 상태      : 완료');
-            $this->line('  manifest 파일  : '.$report['files'].'건');
-            $this->line('  게시 시각      : '.($report['published_at'] ?? '?'));
+            $this->line('  '.__('extensions.commands.ext_static_status.labels.publish_state').' '.__('extensions.commands.ext_static_status.values.published'));
+            $this->line('  '.__('extensions.commands.ext_static_status.labels.manifest_files').' '.__('extensions.commands.ext_static_status.values.files_count', ['count' => $report['files']]));
+            $this->line('  '.__('extensions.commands.ext_static_status.labels.published_at').' '.($report['published_at'] ?? '?'));
 
             if ($report['files'] === 0) {
-                $problems[] = 'manifest 에 기록된 파일이 0건입니다 — 게시가 비어 있습니다.';
+                $problems[] = __('extensions.commands.ext_static_status.problems.manifest_empty');
             }
         } else {
-            $this->line('  게시 상태      : <comment>미게시</comment>');
-            $problems[] = sprintf(
-                '현재 버전(%d)이 게시되지 않았습니다. 다음 웹 렌더의 자가 치유가 시도하며, '
-                .'즉시 게시하려면 웹 계정으로 `%s` 를 실행하거나 관리자 > 환경설정 > 일반 의 '
-                .'「지금 다시 만들기」를 사용하세요.',
-                $report['version'],
-                $publishHint
-            );
+            $this->line('  '.__('extensions.commands.ext_static_status.labels.publish_state').' <comment>'.__('extensions.commands.ext_static_status.values.not_published').'</comment>');
+            $problems[] = __('extensions.commands.ext_static_status.problems.not_published', [
+                'version' => (int) $report['version'],
+                'command' => $publishHint,
+            ]);
         }
 
         // 3) 최근 실패 마커 — 원인별로 조치가 다르다
@@ -114,34 +110,30 @@ class StatusExtensionStaticCacheCommand extends Command
 
         if ($marker !== null) {
             $this->line('');
-            $this->line('  <error>최근 게시 실패</error>');
-            $this->line('    사유       : '.($marker['reason'] ?? '?').' — '.$this->reasonHint($marker['reason'] ?? ''));
-            $this->line('    버전       : '.($marker['version'] ?? '?'));
-            $this->line('    시각       : '.($marker['at'] ?? '?'));
-            $this->line('    연속 실패  : '.($marker['count'] ?? '?').'회');
-            $this->line('    상세       : '.($marker['message'] ?? ''));
+            $this->line('  <error>'.__('extensions.commands.ext_static_status.failure_title').'</error>');
+            $this->line('    '.__('extensions.commands.ext_static_status.labels.failure_reason').' '.($marker['reason'] ?? '?').' — '.$this->reasonHint($marker['reason'] ?? ''));
+            $this->line('    '.__('extensions.commands.ext_static_status.labels.failure_version').' '.($marker['version'] ?? '?'));
+            $this->line('    '.__('extensions.commands.ext_static_status.labels.failure_at').' '.($marker['at'] ?? '?'));
+            $this->line('    '.__('extensions.commands.ext_static_status.labels.failure_count').' '.__('extensions.commands.ext_static_status.values.failure_count', ['count' => $marker['count'] ?? '?']));
+            $this->line('    '.__('extensions.commands.ext_static_status.labels.failure_message').' '.($marker['message'] ?? ''));
 
-            $problems[] = '게시 실패 마커가 남아 있습니다 (사유: '.($marker['reason'] ?? '?').').';
+            $problems[] = __('extensions.commands.ext_static_status.problems.failure_marker', ['reason' => $marker['reason'] ?? '?']);
         }
 
         // 4) 잔존 버전 목록 — 누적은 삭제 실패(소유권 불일치)의 지표다
         $versions = $report['retained_versions'];
 
         $this->line('');
-        $this->line('  잔존 버전      : '.($versions === [] ? '(없음)' : implode(', ', $versions)));
+        $this->line('  '.__('extensions.commands.ext_static_status.labels.retained_versions').' '.($versions === [] ? __('extensions.commands.ext_static_status.values.none') : implode(', ', $versions)));
 
         if (count($versions) > 3) {
-            $problems[] = sprintf(
-                '게시 버전이 %d개 누적됐습니다 (정상은 현재+직전 2개). 삭제가 실패하고 있을 수 '
-                .'있습니다 — 소유권/권한을 확인하세요.',
-                count($versions)
-            );
+            $problems[] = __('extensions.commands.ext_static_status.problems.versions_accumulated', ['count' => count($versions)]);
         }
 
         $this->line('');
 
         if ($problems === []) {
-            $this->info('이상 없음.');
+            $this->info(__('extensions.commands.ext_static_status.ok'));
 
             return self::SUCCESS;
         }
@@ -172,7 +164,7 @@ class StatusExtensionStaticCacheCommand extends Command
 
         return match ($account['mode']) {
             'root_web_known' => 'sudo -u '.$account['name'].' '.$command,
-            'root_web_unknown' => 'sudo -u <웹서버계정> '.$command.' (웹서버 계정은 storage 디렉토리 소유자로 확인)',
+            'root_web_unknown' => __('extensions.commands.ext_static_status.publish_hint_unknown_web', ['command' => $command]),
             default => $command,
         };
     }
@@ -198,12 +190,10 @@ class StatusExtensionStaticCacheCommand extends Command
     private function reasonHint(string $reason): string
     {
         return match ($reason) {
-            'parent_not_writable' => '게시 트리 권한 문제입니다. CLI 계정과 웹 계정이 그룹을 공유하고 '
-                .'`public/build` 가 그룹 쓰기(g+w)인지 확인하세요. 수동 게시는 웹 계정으로: '
-                .self::publishCommandHint(),
-            'write_failed' => '쓰기 도중 실패했습니다. 디스크 여유 공간과 quota 를 확인하세요.',
-            'lock_unavailable' => '캐시 락을 얻지 못했습니다. 캐시 저장소(파일 캐시 디렉토리 권한 등)를 확인하세요.',
-            default => '상세 메시지를 확인하세요.',
+            'parent_not_writable' => __('extensions.commands.ext_static_status.hints.parent_not_writable', ['command' => self::publishCommandHint()]),
+            'write_failed' => __('extensions.commands.ext_static_status.hints.write_failed'),
+            'lock_unavailable' => __('extensions.commands.ext_static_status.hints.lock_unavailable'),
+            default => __('extensions.commands.ext_static_status.hints.default'),
         };
     }
 }

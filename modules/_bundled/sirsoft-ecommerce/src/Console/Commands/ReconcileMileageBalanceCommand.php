@@ -42,16 +42,16 @@ class ReconcileMileageBalanceCommand extends Command
     public function handle(): int
     {
         if (! module_setting('sirsoft-ecommerce', 'mileage.enabled', false)) {
-            $this->info('마일리지 기능이 비활성화되어 있습니다.');
+            $this->info(__('sirsoft-ecommerce::messages.console.mileage.disabled'));
 
             return Command::SUCCESS;
         }
 
-        $this->info('마일리지 잔액 캐시 재산출 시작...');
+        $this->info(__('sirsoft-ecommerce::messages.console.reconcile_mileage_balance.start'));
 
         $this->cache->recalculateAll();
 
-        $this->info('마일리지 잔액 캐시 재산출 완료.');
+        $this->info(__('sirsoft-ecommerce::messages.console.reconcile_mileage_balance.done'));
 
         return Command::SUCCESS;
     }

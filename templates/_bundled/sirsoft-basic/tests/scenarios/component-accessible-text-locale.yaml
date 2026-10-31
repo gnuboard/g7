@@ -1,0 +1,24 @@
+feature: 사용자 컴포넌트 읽기 이름 언어
+
+description: |
+  컴포넌트가 읽기 이름·안내 글자(aria-label·title·placeholder·alt)를 한국어로 박아 두지 않는지
+  
+  영어 화면 장바구니에서 수량 칸·버튼의 읽기 이름이 「수량」·「수량 감소」·「수량 증가」 로 남아 있었다
+  (이커머스 전수 실측 S5, 2026-10-07). 같은 꼴이 모바일 메뉴 「메뉴 닫기」, 페이지 전환 표시
+  「페이지 전환 중」·「페이지 로딩 중」 에도 있었다. 화면 낭독기가 다른 언어 화면에서 한국어를 읽으므로
+  이런 글자는 `G7Core.t()` 번역 키로 내야 한다.
+  
+  컴포넌트 원본(.tsx, 시험 제외)에서 주석을 걷어 낸 뒤 이 네 속성의 글자 값에 한글이 있는지 본다.
+
+  수정 이력: 이커머스 전수 실측 S5-D17 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02]
+  # c01: 검사할 컴포넌트가 있다
+  # c02: %s 에 한국어로 박힌 aria-label·title·placeholder·alt 가 없다
+
+effects:
+  - accessible_text_follows_locale
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/components/componentAccessibleTextLocale.test.ts

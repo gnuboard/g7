@@ -438,7 +438,9 @@ describe('shippingPolicyFormHandlers', () => {
 
             const updates = mockContext.setLocalState.mock.calls[0][0];
             expect(updates.showApiSettings).toBe(true);
-            expect(updates.showBaseFee).toBe(false);
+            // 계산 API 정책의 base_fee 는 외부 API 장애 시 폴백 배송비다 — 서버
+            // (ChargePolicyEnum::requiresBaseFee)가 0 을 거절하므로 입력칸이 서야 한다(S17 B4).
+            expect(updates.showBaseFee).toBe(true);
             expect(updates.showRanges).toBe(false);
         });
 
@@ -518,7 +520,7 @@ describe('shippingPolicyFormHandlers', () => {
 
             const updates = mockContext.setLocalState.mock.calls[0][0];
             expect(updates.showApiSettings).toBe(true);
-            expect(updates.showBaseFee).toBe(false);
+            expect(updates.showBaseFee).toBe(true);
             expect(updates.showRanges).toBe(false);
         });
 
@@ -1315,7 +1317,7 @@ describe('shippingPolicyFormHandlers', () => {
             { policy: 'range_weight', baseFee: false, threshold: false, ranges: true, api: false, unit: false },
             { policy: 'range_volume', baseFee: false, threshold: false, ranges: true, api: false, unit: false },
             { policy: 'range_volume_weight', baseFee: false, threshold: false, ranges: true, api: false, unit: false },
-            { policy: 'api', baseFee: false, threshold: false, ranges: false, api: true, unit: false },
+            { policy: 'api', baseFee: true, threshold: false, ranges: false, api: true, unit: false },
             { policy: 'per_quantity', baseFee: true, threshold: false, ranges: false, api: false, unit: true },
             { policy: 'per_weight', baseFee: true, threshold: false, ranges: false, api: false, unit: true },
             { policy: 'per_volume', baseFee: true, threshold: false, ranges: false, api: false, unit: true },

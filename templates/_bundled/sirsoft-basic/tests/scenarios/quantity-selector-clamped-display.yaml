@@ -1,0 +1,32 @@
+feature: 수량 칸 직접 입력 보정값 표시 (QuantitySelector)
+
+description: |
+  수량 칸에 범위 밖 수를 직접 치면 컴포넌트가 min~max 로 고쳐 잡아 onChange 로 올린다. 칸에 보이는
+  숫자는 언제나 실제로 담길 수량(상태값)과 같아야 한다.
+
+  수정 이력 (이커머스 전수 실측 S4 — S4-D8):
+    - 재고 1개 옵션 칸(값 1·상한 1)에 2를 치면 보정값 1 이 지금 값 1 과 같아 상태가 바뀌지 않는다.
+      칸을 그리는 기본 `Input` 은 바깥 value 가 바뀔 때만 화면 값을 맞추므로 칸에 2가 남은 채
+      1개가 담기고 「담겼습니다」 가 떴다. 구매 한도 5 상품에 6을 치면 5 로 바뀌었던 것은 값이
+      실제로 바뀌는 경우라서였다.
+    - 보정값이 지금 값과 같으면 Input 을 다시 그려 지금 값을 보이게 하고, 입력 중이었으면 포커스를
+      되돌린다. 기본 `Input` 은 IME 처리 때문에 로컬 값을 들고 있어야 하므로 고치지 않는다.
+
+axes:
+  case: [typed_above_max_same_value, blur_empty_at_min, typed_in_range, typed_above_max_different_value, mock_render, mock_buttons, mock_typed, mock_disabled, labels_follow_locale, icon_size]   # mock_* 는 이 파일의 기존 계약 모의 테스트
+
+effects:
+  - input_shows_clamped_value   # 칸 표시 = 보정된 상태값
+  - focus_kept_while_typing     # 입력 중 보정으로 칸을 다시 그려도 포커스가 남는다
+  - renders_value               # 지금 값을 칸에 그린다
+  - buttons_respect_bounds      # +/- 는 min·max 에서 잠기고 한 칸씩 올린다
+  - emits_clamped_onchange      # 직접 입력은 min~max 로 고쳐 onChange
+  - disabled_blocks_input       # disabled 면 버튼·칸이 잠기고 onChange 없음
+  - labels_follow_locale        # 칸·+/- 버튼 읽기 이름(aria-label)이 화면 언어를 따른다(S5-D17)
+  - icon_sized_by_font_size     # +/- 아이콘 크기를 글자 크기(text-base)로 정한다 — w-4 h-4 금지(규정 등가표)
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/QuantitySelector.test.tsx
+
+validation:
+  browser_check: 전용 Chrome 실측 — 상품 A 블루(재고 1) 2 입력 → 칸 1·담기 본문 quantity 1, 상품 L(한도 5) 6 입력 → 5

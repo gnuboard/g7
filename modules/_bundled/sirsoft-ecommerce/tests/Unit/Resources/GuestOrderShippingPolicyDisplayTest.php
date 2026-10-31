@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Resources;
 
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Http\Resources\GuestOrderResource;
+use Modules\Sirsoft\Ecommerce\Http\Resources\OrderResource;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -33,7 +34,10 @@ class GuestOrderShippingPolicyDisplayTest extends ModuleTestCase
      */
     private function makeOrderWithSnapshot(): Order
     {
-        return OrderFactory::new()->make([
+        // 저장된 주문으로 만든다 — 상세 응답은 클레임 추가결제 실수납 합계를 주문 id 로 집계하므로
+        // (`GuestOrderResource:51` → `ClaimPaymentService::paidTotalForOrder`) 미저장 모델은
+        // id 가 null 이라 TypeError 로 죽는다. 상세 응답에 미저장 주문이 실릴 일은 없다.
+        return OrderFactory::new()->create([
             'shipping_policy_applied_snapshot' => ShippingPolicySnapshot::make(
                 [[
                     'product_option_id' => 481,
@@ -72,6 +76,30 @@ class GuestOrderShippingPolicyDisplayTest extends ModuleTestCase
     }
 
     /**
+     * 비회원 응답도 기준 통화 코드를 내보내는지 확인 (S17 트랙 A F-5)
+     *
+     * 공유 partial 과 공유 핸들러는 `dataSource('order').data.base_currency` 로 기준 통화를
+     * 판정한다(`claimApplyHandlers.ts::orderCurrencyCode`). 그 값이 없으면 보조 통화 목록에서
+     * 기준 통화를 걸러 내지 못해, 비회원 신청서에서만 같은 금액이 `28,000원 / 28,000원 / $23.80…`
+     * 처럼 **두 번** 나열된다. 오류도 경고도 없이 줄만 하나 늘어나므로 나란히 보지 않으면 드러나지
+     * 않는다 — 회원 응답(`OrderResource`)은 이 키를 내보내고 있었다.
+     */
+    public function test_guest_resource_exposes_the_base_currency_like_the_member_resource(): void
+    {
+        // Given: 통화 스냅샷을 가진 비회원 주문
+        $order = $this->makeOrderWithSnapshot();
+
+        // When: 두 리소스로 각각 직렬화
+        $guest = (new GuestOrderResource($order))->toArray(request());
+        $member = (new OrderResource($order))->toArray(request());
+
+        // Then: 비회원도 회원과 같은 키로 같은 통화를 말한다
+        $this->assertArrayHasKey('base_currency', $guest, '비회원 응답에도 기준 통화 코드가 있어야 한다');
+        $this->assertNotNull($guest['base_currency']);
+        $this->assertSame($member['base_currency'], $guest['base_currency']);
+    }
+
+    /**
      * 표시에 쓰이지 않는 내부 계산 값은 비회원에게 노출되지 않는지 확인
      */
     public function test_guest_resource_hides_internal_calculation_fields(): void
@@ -97,7 +125,7 @@ class GuestOrderShippingPolicyDisplayTest extends ModuleTestCase
     public function test_guest_resource_returns_empty_items_when_snapshot_missing(): void
     {
         // Given: 스냅샷이 비어 있는 주문
-        $order = OrderFactory::new()->make(['shipping_policy_applied_snapshot' => null]);
+        $order = OrderFactory::new()->create(['shipping_policy_applied_snapshot' => null]);
 
         // When: 비회원 리소스로 직렬화
         $result = (new GuestOrderResource($order))->toArray(request());

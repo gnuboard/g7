@@ -1,0 +1,30 @@
+feature: 결제 통화별 결제수단 제한 — 서버 판정 (#639 ⑤, 결정 D17)
+
+description: |
+  어떤 결제수단은 특정 결제 통화에서 쓸 수 없다(예: 이니시스 엔화 결제는 카드·PayPay·편의점만).
+  예전에는 결제 플러그인이 브라우저에서 주문서 응답을 `window.fetch` 덮어쓰기로 고쳐 버튼만 지웠고,
+  서버는 그 판정을 몰라 직접 POST 하면 그대로 주문이 만들어졌다.
+
+  처치: 쇼핑몰 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency(array $methodIds, string $currency)`
+  를 두고, 주문 생성 검증(`CreateOrderRequest`)과 주문서 표시가 같은 판정(`CheckoutPaymentMethodFilter`)을 쓴다.
+  결제 통화는 주문 생성 경로와 같은 해석기(회원 영속 통화 → X-Currency → 기본 통화)로 구한다.
+  확장은 목록을 줄일 수만 있다 — 원래 목록에 없는 수단은 끼워 넣지 못한다.
+
+axes:
+  currency: [JPY, KRW]
+  method: [disallowed, allowed, injected]
+
+exclusions:
+  - { currency: KRW, method: disallowed, reason: "흉내 확장은 원화에서 아무것도 막지 않는다" }
+  - { currency: KRW, method: injected, reason: "끼워 넣기 차단은 통화와 무관 — JPY 한 행이 덮는다" }
+  - { currency: JPY, method: allowed, reason: "허용 수단 표시는 display 테스트의 JPY 목록이 덮는다" }
+
+effects:
+  - disallowed_method_for_currency_rejected_422
+  - allowed_method_for_currency_accepted
+  - checkout_display_and_validation_share_currency_filter
+  - filter_cannot_add_unknown_methods
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Checkout/PaymentMethodsForCurrencyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/checkout-plugin-payment-method.spec.ts

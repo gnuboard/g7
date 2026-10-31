@@ -77,6 +77,7 @@ import { findNodeByPath, patchNode, resolveBaseEditTarget } from '../utils/layou
 import { trackEditorPropertyPatch, trackEditorDocument } from '../devtools/editorTrackers';
 import { saveInjectedPropsToExtension } from '../utils/injectedPropsCrossSave';
 import { getControl, getComponentCapability } from '../spec/editorSpecLoader';
+import { propertyModalAriaLabel } from '../utils/propertyModalAriaLabel';
 import { getCanvasOverlay } from '../spec/canvasOverlayRegistry';
 import {
   type BindingCandidate,
@@ -1367,6 +1368,8 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       // "구성" 이 중복되지 않도록 디바이스명만 — breakpointKeyLabel("모바일 구성")과 구분).
       const branchSeg = path.find(isResponsiveSegment) as { responsive: string } | undefined;
       const modalBranchLabel = branchSeg ? deviceLabelOf(branchSeg.responsive) : null;
+      // 창의 접근 가능한 이름 — 제목과 같은 요소 이름을 끼운다(인자 없이 풀면 「{name}」 원문, engine-v1.78.3).
+      const modalAriaLabel = propertyModalAriaLabel(editorAwareT, spec, node);
 
       // 반복 목록 안의 노드면 iteration 조상의 인덱스/행 변수를 데이터 칩 후보로 보강한다.
       // id 등 식별자 칸에서 `{{$idx}}`/`{{row.id}}` 를 골라 항목별 고유 식별자를 만들 수 있게 한다.
@@ -1453,7 +1456,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
             if (id) {
               modal.open({
                 id,
-                ariaLabel: editorAwareT('layout_editor.property_modal.title'),
+                ariaLabel: modalAriaLabel,
                 width: 420,
                 draggable: true,
                 avoidRect,
@@ -1487,7 +1490,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
             if (id) {
               modal.open({
                 id,
-                ariaLabel: editorAwareT('layout_editor.property_modal.title'),
+                ariaLabel: modalAriaLabel,
                 width: 420,
                 draggable: true,
                 avoidRect,
@@ -1514,7 +1517,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       // 올바른 노드 정체성을 갖게 한다(이전 노드 path 로 keying 되어 remount 누락되는 것 방지).
       propertyModalPathRef.current = path;
       const id = modal.open({
-        ariaLabel: editorAwareT('layout_editor.property_modal.title'),
+        ariaLabel: modalAriaLabel,
         width: 420,
         draggable: true,
         avoidRect,
@@ -1530,7 +1533,7 @@ export function EditorCanvasOverlay(props: EditorCanvasOverlayProps): React.Reac
       reopenPropertyModalRef.current = (latestNode: EditorNode) => {
         modal.open({
           id,
-          ariaLabel: editorAwareT('layout_editor.property_modal.title'),
+          ariaLabel: modalAriaLabel,
           width: 420,
           draggable: true,
           avoidRect,

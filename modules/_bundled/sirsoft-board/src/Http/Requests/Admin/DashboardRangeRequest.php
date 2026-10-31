@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 대시보드 조회 파라미터 검증
@@ -12,6 +13,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class DashboardRangeRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 요청 권한 확인 (권한은 미들웨어에서 처리).
      *

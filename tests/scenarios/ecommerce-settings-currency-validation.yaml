@@ -1,0 +1,34 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변종이다. input 값은 각각 한 규칙(통화 코드 중복, 통화명 필수, 검증 생략)에만 속하므로 rule 과 input 을 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
+feature: 이커머스 환경설정 통화 커스텀 검증 (StoreEcommerceSettingsRequest withValidator)
+
+description: |
+  이커머스 환경설정 저장 요청의 withValidator 커스텀 검증. 통화 코드는 대소문자를 무시하고 중복되면 뒤쪽 항목의
+  code 에 오류를 단다. 통화명은 최소 한 로케일에 공백이 아닌 값이 있어야 하며, 빈 배열, name 누락, 모든 로케일 빈 값,
+  공백만 있는 값은 실패하고 한 로케일만 채워도 통과한다. 여러 통화 중 문제 있는 항목에만 오류가 달린다. 통화 목록이
+  비었거나 없으면 커스텀 검증을 건너뛴다. 오류 메시지는 모듈 번역(sirsoft-ecommerce)으로 나온다.
+
+axes:
+  rule: [duplicate_code, currency_name_required, skip]
+  input: [exact_duplicate, case_insensitive_duplicate, unique_codes, empty_name_array, missing_name, all_locales_empty, whitespace_only, single_locale, partial_locales, mixed_currencies, empty_currencies, missing_currencies]
+  message: [localized]
+
+exclusions: []
+
+effects:
+  - duplicate_currency_code_rejected
+  - duplicate_currency_code_case_insensitive
+  - unique_currency_codes_pass
+  - empty_currency_name_rejected
+  - missing_currency_name_rejected
+  - all_empty_locale_names_rejected
+  - whitespace_only_locale_names_rejected
+  - single_locale_name_passes
+  - partial_locale_names_pass
+  - only_invalid_currencies_flagged
+  - empty_currencies_skip_custom_validation
+  - missing_currencies_skip_custom_validation
+  - name_required_message_localized
+  - duplicate_code_message_localized
+
+test_files:
+  - tests/Unit/Requests/Ecommerce/StoreEcommerceSettingsRequestCustomValidationTest.php

@@ -39,6 +39,8 @@ return [
         'permissions_required' => '権限情報が必要です。',
         'permissions_invalid' => '権限形式が正しくありません。',
         'permission_roles_invalid' => '権限別ロール形式が正しくありません。',
+        'file_mimetype_invalid' => 'ファイルの内容が許可されたフォーマットと一致しません。許可フォーマット: :extensions',
+        'file_empty' => '空のファイル(0バイト)はアップロードできません。',
     ],
     'upload_success' => 'ファイルがアップロードされました。',
     'upload_batch_success' => 'ファイルが一括アップロードされました。',
@@ -55,4 +57,13 @@ return [
     'access_denied' => 'この添付ファイルへのアクセス権限がありません。',
     'update_denied' => 'この添付ファイルへの編集権限がありません。',
     'delete_denied' => 'この添付ファイルへの削除権限がありません。',
+    // `attachments:prune-orphans` コマンド出力
+    'console' => [
+        'prune_orphans' => [
+            'disabled' => '孤立した添付ファイルの自動クリーンアップが無効のため実行しませんでした。(upload.orphan_cleanup_enabled = false)',
+            'retention_below_minimum' => '孤立した添付ファイルの保持期間が 1 日未満のため、クリーンアップを実行しませんでした。',
+            'dry_run' => '保持期間(:days 日)経過の孤立した添付ファイル: :count 件',
+            'done' => '保持期間(:days 日)経過の孤立した添付ファイル :scanned 件のうち :deleted 件を削除しました。(失敗 :failed 件)',
+        ],
+    ],
 ];

@@ -1,0 +1,23 @@
+feature: 템플릿 복귀 주소·메뉴 이동 폴백의 출처 고정
+
+description: |
+  본인인증 모달을 열지 못해 인증 화면으로 넘어갈 때 복귀 주소를 `?return=<절대 주소>` 로 넘겨, 인증 화면
+  (`query.return_url`)이 읽지 못하고 기본 화면으로 돌아갔다 — `return_url=<경로+쿼리>` 로 넘긴다.
+  메뉴 이동 폴백(엔진 navigate·dispatch 부재)은 같은 출처 경로로만 이동한다. 소셜 로그인 복귀 주소는
+  경로만 넘긴다(sirsoft-basic).
+
+axes:
+  # forged = 외부 주소·접속 Host 가 섞인 입력, canonical = 같은 출처 경로
+  host_header: [canonical, forged]
+  sink: [template_return_path, template_nav_fallback]
+
+exclusions:
+  - { sink: template_return_path, host_header: forged, reason: "복귀 주소는 현재 문서의 경로·쿼리만 쓴다 — forged 변종은 소셜 로그인(sirsoft-basic)만 해당하며 같은 테스트 파일이 덮는다" }
+  - { sink: template_nav_fallback, host_header: canonical, reason: "같은 테스트가 외부 주소 차단과 같은 출처 경로 이동을 함께 단언한다" }
+
+effects:
+  - template_nav_fallback_same_origin_only
+  - template_identity_fallback_passes_return_url_path
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/hostTrust.test.tsx

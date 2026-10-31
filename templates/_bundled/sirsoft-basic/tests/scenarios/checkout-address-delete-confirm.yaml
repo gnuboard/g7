@@ -1,0 +1,32 @@
+feature: 주문서 배송지 관리 창 — 배송지 삭제 확인과 실제 삭제
+
+description: |
+  주문서의 배송지 관리 창에서 기본 배송지가 아닌 배송지의 「삭제」는 확인 창을 거쳐 회원 배송지를 지운다.
+  종전에는 삭제 버튼이 `handler: "confirm"` 을 불렀는데 confirm 은 핸들러가 아니라 액션 속성이라
+  코어·템플릿·확장 어디에도 그런 핸들러가 없었다 — 버튼을 눌러도 확인 창도 뜨지 않고 삭제 요청도 나가지
+  않았다(레이아웃 검사 「미등록 핸들러」 경고). 안쪽 삭제 요청은 토큰도 싣지 않아 회원 API 가 거부했을 것이다.
+
+  계약: 삭제 요청(apiCall DELETE) 자체에 `confirm` 속성을 달아 확인을 받고, `auth_required` 로 토큰을 싣는다.
+  카드 클릭(배송지 고르기)으로 번지지 않게 `stopPropagation` 을 유지한다. 취소하면 요청이 나가지 않는다
+  (ActionDispatcher 의 confirm 속성 동작 — 코어가 보장).
+
+# axis 의미:
+#   사용자가 확인 창에서 고른 답 — 확인(삭제 진행) / 취소(아무것도 바뀌지 않음).
+axes:
+  confirm_answer: [accept, dismiss]
+
+effects:
+  - no_unregistered_confirm_handler            # 존재하지 않는 confirm 핸들러를 부르지 않는다
+  - delete_request_guarded_by_confirm_attribute # 삭제 요청 자체가 확인 창(confirm 속성)을 거친다 — 취소하면 요청 없음
+  - delete_request_carries_auth_token          # 회원 배송지 API 라 토큰을 싣는다
+  - delete_click_does_not_select_card          # 삭제 클릭이 카드 선택으로 번지지 않는다
+  - address_list_refetched_and_toasted         # 지운 뒤 목록 재조회 + 완료 안내, 실패 시 오류 안내
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/checkout-address-delete-confirm.test.ts
+
+validation:
+  browser_check: Chrome MCP   # sirsoft-basic Playwright E2E 인프라 미구축 — 실브라우저 확인은 Chrome MCP 로 대체
+  note: |
+    레이아웃 소스(_modal_address_manage.g7.html)를 구운 산출의 삭제 액션 구조를 검증한다. 확인 창 취소 시 요청이 나가지 않는
+    동작은 코어 ActionDispatcher 의 confirm 속성 처리이며, 브라우저 실측으로 확인·취소 두 갈래를 본다.

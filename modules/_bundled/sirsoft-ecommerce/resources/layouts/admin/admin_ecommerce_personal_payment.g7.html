@@ -1,0 +1,964 @@
+<!-- 개인결제 목록 (운영자) — 전화·메신저로 받은 주문처럼 장바구니를 거치지 않는 건에 대해 만든
+  결제 링크가 여기에 쌓인다. 링크에는 기한이 있어 대기·완료·만료의 흐름을 갖는다.
+  아직 데이터소스가 없어 표가 예시 값으로 박혀 있는 골격 단계이고, 필터 입력만 _local 에 살아 있다. -->
+<layout name="admin_ecommerce_personal_payment" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.personal_payment.title" description="$t:sirsoft-ecommerce.admin.personal_payment.description"/>
+  <init-local>
+    <field name="statusFilter" value=""/>
+    <field name="paymentMethodFilter" value=""/>
+    <field name="dateType" value="created_at"/>
+    <field name="startDate" value=""/>
+    <field name="endDate" value=""/>
+    <field name="minAmount" value=""/>
+    <field name="maxAmount" value=""/>
+    <field name="searchField" value="payment_number"/>
+    <field name="searchKeyword" value=""/>
+    <field name="sortBy" value="created_at_desc"/>
+    <field name="perPage" :value="10"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="personal_payment_content" class="ecommerce-admin-page-content">
+      <div data-ref="page_header" class="ecommerce-flex-start ecommerce:justify-between ecommerce:mb-6">
+        <div>
+          <div class="ecommerce-flex-center ecommerce:gap-3 ecommerce:mb-1">
+            <icon name="credit-card" class="ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+            <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.personal_payment.title</h1>
+          </div>
+          <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.personal_payment.description</p>
+        </div>
+        <div class="ecommerce-flex-center ecommerce:gap-2">
+          <button aria-label="$t:common.refresh" title="$t:common.refresh" type="button" class="ecommerce-btn ecommerce-btn-icon">
+            <icon name="arrows-rotate" class="ecommerce:text-xl"/>
+          </button>
+          <button type="button" class="ecommerce-btn ecommerce-btn-primary">
+            <icon name="plus" class="ecommerce:text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.personal_payment.add</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="filter_card" class="ecommerce-admin-card ecommerce:mb-6 ecommerce-filter-grid">
+        <div data-ref="search_row" class="ecommerce-search-bar ecommerce:mb-4">
+          <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="ecommerce:h-9 ecommerce:md:shrink-0" value="{{_local.searchField}}">
+            <options>
+              <option value="payment_number">$t:sirsoft-ecommerce.admin.personal_payment.search.field.payment_number</option>
+              <option value="member_name">$t:sirsoft-ecommerce.admin.personal_payment.search.field.member_name</option>
+              <option value="member_id">$t:sirsoft-ecommerce.admin.personal_payment.search.field.member_id</option>
+              <option value="product_name">$t:sirsoft-ecommerce.admin.personal_payment.search.field.product_name</option>
+            </options>
+            <on type="change">
+              <!-- 검색 대상만 바꾼다 — 조회는 옆 입력칸의 검색어와 함께 이뤄진다 -->
+              <set-state target="_local" searchField="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.search.placeholder" class="ecommerce-search-bar-input" value="{{_local.searchKeyword}}">
+            <on type="change">
+              <!-- 입력을 마칠 때 담는다 -->
+              <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <button data-ref="reset_button" type="button" class="ecommerce-search-bar-reset">
+            <on type="click">
+              <!-- 검색 초기화 — 아래 상태·결제수단·기간·금액 필터까지 함께 되돌린다 -->
+              <set-state target="_local" statusFilter="" paymentMethodFilter="" dateType="created_at" startDate="" endDate="" minAmount="" maxAmount="" searchField="payment_number" searchKeyword=""/>
+            </on>
+            <icon name="arrows-rotate" class="ecommerce:text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.personal_payment.search.reset</span>
+          </button>
+        </div>
+        <div data-ref="status_filter_row" class="ecommerce-filter-row">
+          <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.personal_payment.filter.status</span>
+          <div class="ecommerce-filter-buttons">
+            <!-- 진행 상태를 가리지 않고 모두 -->
+            <button type="button" class="{{_local.statusFilter === '' ? 'ecommerce-btn-badge ecommerce:cursor-pointer ecommerce:bg-gray-200 ecommerce:text-gray-700 ecommerce:ring-1 ecommerce:ring-gray-400 ecommerce:dark:ring-gray-500 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.statusFilter === ''}}">
+              <on type="click">
+                <set-state target="_local" statusFilter=""/>
+              </on>
+              $t:sirsoft-ecommerce.admin.personal_payment.filter.all
+            </button>
+            <!-- 결제대기 — 링크는 보냈고 아직 안 낸 건. 기한이 지나면 만료로 넘어간다 -->
+            <button type="button" class="{{_local.statusFilter === 'pending' ? 'ecommerce-btn-badge ecommerce-btn-badge-yellow ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-yellow-400 ecommerce:dark:ring-yellow-500' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.statusFilter === 'pending'}}">
+              <on type="click">
+                <set-state target="_local" statusFilter="pending"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.personal_payment.filter.pending
+            </button>
+            <!-- 결제완료 -->
+            <button type="button" class="{{_local.statusFilter === 'completed' ? 'ecommerce-btn-badge ecommerce-btn-badge-green ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.statusFilter === 'completed'}}">
+              <on type="click">
+                <set-state target="_local" statusFilter="completed"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.personal_payment.filter.completed
+            </button>
+            <!-- 만료 — 기한이 지나 링크가 죽은 건. 다시 보내려면 새로 만들어야 한다 -->
+            <button type="button" class="{{_local.statusFilter === 'expired' ? 'ecommerce-btn-badge ecommerce-btn-badge-gray ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-gray-400 ecommerce:dark:ring-gray-500' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.statusFilter === 'expired'}}">
+              <on type="click">
+                <set-state target="_local" statusFilter="expired"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.personal_payment.filter.expired
+            </button>
+          </div>
+        </div>
+        <div data-ref="payment_method_filter_row" class="ecommerce-filter-row">
+          <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.personal_payment.filter.payment_method</span>
+          <div class="ecommerce-filter-buttons">
+            <button type="button" class="{{_local.paymentMethodFilter === '' ? 'ecommerce-btn-badge ecommerce:cursor-pointer ecommerce:bg-gray-200 ecommerce:text-gray-700 ecommerce:ring-1 ecommerce:ring-gray-400 ecommerce:dark:ring-gray-500 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.paymentMethodFilter === ''}}">
+              <on type="click">
+                <!-- 결제수단을 가리지 않고 모두 -->
+                <set-state target="_local" paymentMethodFilter=""/>
+              </on>
+              <icon name="list" class="ecommerce:text-xs"/>
+              <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.all</span>
+            </button>
+            <button type="button" class="{{_local.paymentMethodFilter === 'card' ? 'ecommerce-btn-badge ecommerce-btn-badge-blue ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-blue-400 ecommerce:dark:ring-blue-500' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.paymentMethodFilter === 'card'}}">
+              <on type="click">
+                <!-- 신용카드 -->
+                <set-state target="_local" paymentMethodFilter="card"/>
+              </on>
+              <icon name="credit-card" class="ecommerce:text-xs"/>
+              <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.card</span>
+            </button>
+            <button type="button" class="{{_local.paymentMethodFilter === 'bank_transfer' ? 'ecommerce-btn-badge ecommerce-btn-badge-cyan ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-cyan-400 ecommerce:dark:ring-cyan-500' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.paymentMethodFilter === 'bank_transfer'}}">
+              <on type="click">
+                <!-- 계좌이체 — 입금 확인이 따로 붙으므로 대기 상태가 길어질 수 있다 -->
+                <set-state target="_local" paymentMethodFilter="bank_transfer"/>
+              </on>
+              <icon name="landmark" class="ecommerce:text-xs"/>
+              <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.bank_transfer</span>
+            </button>
+            <button type="button" class="{{_local.paymentMethodFilter === 'kakao_pay' ? 'ecommerce-btn-badge ecommerce-btn-badge-yellow ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-yellow-400 ecommerce:dark:ring-yellow-500' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.paymentMethodFilter === 'kakao_pay'}}">
+              <on type="click">
+                <!-- 카카오페이 -->
+                <set-state target="_local" paymentMethodFilter="kakao_pay"/>
+              </on>
+              <icon name="wallet" class="ecommerce:text-xs"/>
+              <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay</span>
+            </button>
+            <button type="button" class="{{_local.paymentMethodFilter === 'naver_pay' ? 'ecommerce-btn-badge ecommerce-btn-badge-green ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500' : 'ecommerce-btn-badge ecommerce:cursor-pointer'}}" aria-pressed="{{_local.paymentMethodFilter === 'naver_pay'}}">
+              <on type="click">
+                <!-- 네이버페이 -->
+                <set-state target="_local" paymentMethodFilter="naver_pay"/>
+              </on>
+              <icon name="wallet" class="ecommerce:text-xs"/>
+              <span>$t:sirsoft-ecommerce.admin.personal_payment.filter.naver_pay</span>
+            </button>
+          </div>
+        </div>
+        <div data-ref="date_filter_row" class="ecommerce-filter-row">
+          <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.personal_payment.filter.date_search</span>
+          <div class="ecommerce:md:flex-row ecommerce:md:items-center">
+            <select name="dateType" aria-label="$t:sirsoft-ecommerce.admin.personal_payment.filter.date_type" class="ecommerce:h-9 ecommerce:w-full ecommerce:md:w-24" value="{{_local.dateType}}">
+              <options>
+                <option value="created_at">$t:sirsoft-ecommerce.admin.personal_payment.filter.created_at</option>
+                <option value="expired_at">$t:sirsoft-ecommerce.admin.personal_payment.filter.expired_at</option>
+              </options>
+              <on type="change">
+                <!-- 기간을 요청일에 걸지 만료일에 걸지 고른다 — 곧 만료될 건을 찾을 때 만료일 기준이 쓰인다 -->
+                <set-state target="_local" dateType="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}" class="ecommerce-input ecommerce:md:w-36" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.start_date" value="{{_local.startDate}}">
+                <on type="change">
+                  <!-- 기간 시작일 -->
+                  <set-state target="_local" startDate="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+            <span class="ecommerce:hidden ecommerce-hidden ecommerce:md:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <icon name="calendar" class="ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+              <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}" class="ecommerce-input ecommerce:md:w-36" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.end_date" value="{{_local.endDate}}">
+                <on type="change">
+                  <!-- 기간 종료일 -->
+                  <set-state target="_local" endDate="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+          </div>
+        </div>
+        <div data-ref="amount_filter_row" class="ecommerce-filter-row">
+          <span class="ecommerce-filter-label">$t:sirsoft-ecommerce.admin.personal_payment.filter.amount</span>
+          <div class="ecommerce:md:flex-row ecommerce:md:items-center">
+            <input type="text" class="ecommerce-input ecommerce:md:w-28" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.min_amount" value="{{_local.minAmount}}">
+              <on type="change">
+                <!-- 결제금액 하한 -->
+                <set-state target="_local" minAmount="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span class="ecommerce:hidden ecommerce-hidden ecommerce:md:block ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+            <input type="text" class="ecommerce-input ecommerce:md:w-28" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.max_amount" value="{{_local.maxAmount}}">
+              <on type="change">
+                <!-- 결제금액 상한 -->
+                <set-state target="_local" maxAmount="{{$event.target.value}}"/>
+              </on>
+            </input>
+          </div>
+        </div>
+      </div>
+      <div data-ref="table_card" class="ecommerce-admin-card">
+        <div data-ref="table_header" class="ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-4 ecommerce:mb-6">
+          <span class="ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.personal_payment.table.total_count|count=9</span>
+          <div class="ecommerce-flex-center ecommerce:gap-3">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="ecommerce:w-44" value="{{_local.sortBy}}">
+              <options>
+                <option value="created_at_desc">$t:sirsoft-ecommerce.admin.personal_payment.table.sort.created_at_desc</option>
+                <option value="created_at_asc">$t:sirsoft-ecommerce.admin.personal_payment.table.sort.created_at_asc</option>
+                <option value="amount_desc">$t:sirsoft-ecommerce.admin.personal_payment.table.sort.amount_desc</option>
+                <option value="amount_asc">$t:sirsoft-ecommerce.admin.personal_payment.table.sort.amount_asc</option>
+              </options>
+            </select>
+            <select name="perPage" aria-label="$t:common.per_page" class="ecommerce:w-32" value="{{_local.perPage}}">
+              <options>
+                <option :value="10">$t:sirsoft-ecommerce.admin.personal_payment.table.per_page|count=10</option>
+                <option :value="20">$t:sirsoft-ecommerce.admin.personal_payment.table.per_page|count=20</option>
+                <option :value="50">$t:sirsoft-ecommerce.admin.personal_payment.table.per_page|count=50</option>
+                <option :value="100">$t:sirsoft-ecommerce.admin.personal_payment.table.per_page|count=100</option>
+              </options>
+              <on type="change">
+                <!-- 선택값은 문자열로 오므로 수로 바꿔 담는다 -->
+                <set-state target="_local" perPage="{{parseInt($event.target.value)}}"/>
+              </on>
+            </select>
+          </div>
+        </div>
+        <div data-ref="table_container" class="ecommerce:overflow-x-auto">
+          <responsive on="portable">
+            <div data-ref="mobile_cards_container">
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:justify-between ecommerce:items-start ecommerce:mb-3">
+                  <div class="ecommerce-flex-center ecommerce:gap-2">
+                    <span class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+                    <span class="ecommerce-text-primary ecommerce:font-medium">PP20251028-007</span>
+                  </div>
+                  <button type="button" aria-label="$t:common.more_actions" class="ecommerce-btn-icon">
+                    <icon name="ellipsis" class="ecommerce:text-xl"/>
+                  </button>
+                </div>
+                <div class="ecommerce:mb-3">
+                  <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce-text-secondary">
+                    <icon name="user" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.sample.fmt.member_guest|name=$t:sirsoft-ecommerce.admin.sample.people.song_haneul</span>
+                  </div>
+                  <div class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:ml-4">song@example.com</div>
+                </div>
+                <div class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:my-3"/>
+                <div class="ecommerce:text-sm ecommerce-text-primary ecommerce:mb-2">$t:sirsoft-ecommerce.admin.sample.products.basic_gift_card</div>
+                <div class="ecommerce:text-xl ecommerce:font-semibold ecommerce-text-primary ecommerce:mb-3">₩20,000</div>
+                <div class="ecommerce:text-xs ecommerce-text-secondary ecommerce:space-y-1">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.created_at</span>
+                    <span>2025-10-28 15:25:10</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.expired_at</span>
+                    <span>2025-11-04 15:25:10</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:justify-between ecommerce:items-start ecommerce:mb-3">
+                  <div class="ecommerce-flex-center ecommerce:gap-2">
+                    <span class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+                    <span class="ecommerce-text-primary ecommerce:font-medium">PP20251028-006</span>
+                  </div>
+                  <button type="button" aria-label="$t:common.more_actions" class="ecommerce-btn-icon">
+                    <icon name="ellipsis" class="ecommerce:text-xl"/>
+                  </button>
+                </div>
+                <div class="ecommerce:mb-3">
+                  <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce-text-secondary">
+                    <icon name="user" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.kang_hyunwoo|id=user006</span>
+                  </div>
+                  <div class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:ml-4">kang@example.com</div>
+                </div>
+                <div class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:my-3"/>
+                <div class="ecommerce:text-sm ecommerce-text-primary ecommerce:mb-2">$t:sirsoft-ecommerce.admin.sample.products.premium_content_pack</div>
+                <div class="ecommerce:text-xl ecommerce:font-semibold ecommerce-text-primary ecommerce:mb-3">₩35,000</div>
+                <div class="ecommerce:text-xs ecommerce-text-secondary ecommerce:space-y-1">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.created_at</span>
+                    <span>2025-10-28 13:40:20</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.expired_at</span>
+                    <span>2025-11-04 13:40:20</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:justify-between ecommerce:items-start ecommerce:mb-3">
+                  <div class="ecommerce-flex-center ecommerce:gap-2">
+                    <span class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+                    <span class="ecommerce-text-primary ecommerce:font-medium">PP20251028-005</span>
+                  </div>
+                  <button type="button" aria-label="$t:common.more_actions" class="ecommerce-btn-icon">
+                    <icon name="ellipsis" class="ecommerce:text-xl"/>
+                  </button>
+                </div>
+                <div class="ecommerce:mb-3">
+                  <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce-text-secondary">
+                    <icon name="user" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.jung_sujin|id=user005</span>
+                  </div>
+                  <div class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:ml-4">ssss@sirsoft.com</div>
+                </div>
+                <div class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:my-3"/>
+                <div class="ecommerce:text-sm ecommerce-text-primary ecommerce:mb-2">$t:sirsoft-ecommerce.admin.sample.products.standard_membership_6m</div>
+                <div class="ecommerce:text-xl ecommerce:font-semibold ecommerce-text-primary ecommerce:mb-3">₩60,000</div>
+                <div class="ecommerce:text-xs ecommerce-text-secondary ecommerce:space-y-1">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.created_at</span>
+                    <span>2025-10-28 09:15:30</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.expired_at</span>
+                    <span>2025-11-04 09:15:30</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:justify-between ecommerce:items-start ecommerce:mb-3">
+                  <div class="ecommerce-flex-center ecommerce:gap-2">
+                    <span class="ecommerce-badge ecommerce-badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
+                    <span class="ecommerce-text-primary ecommerce:font-medium">PP20251027-004</span>
+                  </div>
+                  <button type="button" aria-label="$t:common.more_actions" class="ecommerce-btn-icon">
+                    <icon name="ellipsis" class="ecommerce:text-xl"/>
+                  </button>
+                </div>
+                <div class="ecommerce:mb-3">
+                  <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce-text-secondary">
+                    <icon name="user" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.sample.fmt.member_guest|name=$t:sirsoft-ecommerce.admin.sample.people.choi_jihoon</span>
+                  </div>
+                  <div class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:ml-4">choi@example.com</div>
+                </div>
+                <div class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:my-3"/>
+                <div class="ecommerce:text-sm ecommerce-text-primary ecommerce:mb-2">$t:sirsoft-ecommerce.admin.sample.products.one_time_service_pass</div>
+                <div class="ecommerce:text-xl ecommerce:font-semibold ecommerce-text-primary ecommerce:mb-3">₩25,000</div>
+                <div class="ecommerce:text-xs ecommerce-text-secondary ecommerce:space-y-1">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.created_at</span>
+                    <span>2025-10-27 18:20:45</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.expired_at</span>
+                    <span>2025-11-03 18:20:45</span>
+                  </div>
+                </div>
+                <div class="ecommerce:mt-3 ecommerce:pt-3 ecommerce-flex-center ecommerce:gap-2">
+                  <span class="ecommerce-btn-badge ecommerce-btn-badge-green ecommerce:text-xs">$t:sirsoft-ecommerce.admin.personal_payment.filter.naver_pay</span>
+                  <span class="ecommerce:text-xs ecommerce-text-secondary">2025-10-27 18:25:30</span>
+                </div>
+              </div>
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:justify-between ecommerce:items-start ecommerce:mb-3">
+                  <div class="ecommerce-flex-center ecommerce:gap-2">
+                    <span class="ecommerce-badge ecommerce-badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
+                    <span class="ecommerce-text-primary ecommerce:font-medium">PP20251027-003</span>
+                  </div>
+                  <button type="button" aria-label="$t:common.more_actions" class="ecommerce-btn-icon">
+                    <icon name="ellipsis" class="ecommerce:text-xl"/>
+                  </button>
+                </div>
+                <div class="ecommerce:mb-3">
+                  <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce-text-secondary">
+                    <icon name="user" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.sample.fmt.member_guest|name=$t:sirsoft-ecommerce.admin.sample.people.park_minsu</span>
+                  </div>
+                  <div class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:ml-4">park@example.com</div>
+                </div>
+                <div class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:my-3"/>
+                <div class="ecommerce:text-sm ecommerce-text-primary ecommerce:mb-2">$t:sirsoft-ecommerce.admin.sample.products.standard_gift_card</div>
+                <div class="ecommerce:text-xl ecommerce:font-semibold ecommerce-text-primary ecommerce:mb-3">₩50,000</div>
+                <div class="ecommerce:text-xs ecommerce-text-secondary ecommerce:space-y-1">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.created_at</span>
+                    <span>2025-10-27 16:45:20</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.expired_at</span>
+                    <span>2025-11-03 16:45:20</span>
+                  </div>
+                </div>
+                <div class="ecommerce:mt-3 ecommerce:pt-3 ecommerce-flex-center ecommerce:gap-2">
+                  <span class="ecommerce-btn-badge ecommerce-btn-badge-yellow ecommerce:text-xs">$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay</span>
+                  <span class="ecommerce:text-xs ecommerce-text-secondary">2025-10-27 16:50:10</span>
+                </div>
+              </div>
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:justify-between ecommerce:items-start ecommerce:mb-3">
+                  <div class="ecommerce-flex-center ecommerce:gap-2">
+                    <span class="ecommerce-badge ecommerce-badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
+                    <span class="ecommerce-text-primary ecommerce:font-medium">PP20251027-001</span>
+                  </div>
+                  <button type="button" aria-label="$t:common.more_actions" class="ecommerce-btn-icon">
+                    <icon name="ellipsis" class="ecommerce:text-xl"/>
+                  </button>
+                </div>
+                <div class="ecommerce:mb-3">
+                  <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce-text-secondary">
+                    <icon name="user" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu|id=user001</span>
+                  </div>
+                  <div class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:ml-4">kim@sirsoft.com</div>
+                </div>
+                <div class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:my-3"/>
+                <div class="ecommerce:text-sm ecommerce-text-primary ecommerce:mb-2">$t:sirsoft-ecommerce.admin.sample.products.premium_membership_1y</div>
+                <div class="ecommerce:text-xl ecommerce:font-semibold ecommerce-text-primary ecommerce:mb-3">₩120,000</div>
+                <div class="ecommerce:text-xs ecommerce-text-secondary ecommerce:space-y-1">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.created_at</span>
+                    <span>2025-10-27 14:32:15</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.expired_at</span>
+                    <span>2025-11-03 14:32:15</span>
+                  </div>
+                </div>
+                <div class="ecommerce:mt-3 ecommerce:pt-3 ecommerce-flex-center ecommerce:gap-2">
+                  <span class="ecommerce-btn-badge ecommerce-btn-badge-blue ecommerce:text-xs">$t:sirsoft-ecommerce.admin.personal_payment.filter.card</span>
+                  <span class="ecommerce:text-xs ecommerce-text-secondary">2025-10-27 14:45:20</span>
+                </div>
+              </div>
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:justify-between ecommerce:items-start ecommerce:mb-3">
+                  <div class="ecommerce-flex-center ecommerce:gap-2">
+                    <span class="ecommerce-badge ecommerce-badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
+                    <span class="ecommerce-text-primary ecommerce:font-medium">PP20251027-002</span>
+                  </div>
+                  <button type="button" aria-label="$t:common.more_actions" class="ecommerce-btn-icon">
+                    <icon name="ellipsis" class="ecommerce:text-xl"/>
+                  </button>
+                </div>
+                <div class="ecommerce:mb-3">
+                  <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce-text-secondary">
+                    <icon name="user" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.lee_younghee|id=user002</span>
+                  </div>
+                  <div class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:ml-4">lee@example.com</div>
+                </div>
+                <div class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:my-3"/>
+                <div class="ecommerce:text-sm ecommerce-text-primary ecommerce:mb-2">$t:sirsoft-ecommerce.admin.sample.products.single_content_purchase</div>
+                <div class="ecommerce:text-xl ecommerce:font-semibold ecommerce-text-primary ecommerce:mb-3">₩15,000</div>
+                <div class="ecommerce:text-xs ecommerce-text-secondary ecommerce:space-y-1">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.created_at</span>
+                    <span>2025-10-27 11:20:30</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.expired_at</span>
+                    <span>2025-11-03 11:20:30</span>
+                  </div>
+                </div>
+                <div class="ecommerce:mt-3 ecommerce:pt-3 ecommerce-flex-center ecommerce:gap-2">
+                  <span class="ecommerce-btn-badge ecommerce-btn-badge-cyan ecommerce:text-xs">$t:sirsoft-ecommerce.admin.personal_payment.filter.bank_transfer</span>
+                  <span class="ecommerce:text-xs ecommerce-text-secondary">2025-10-27 11:35:15</span>
+                </div>
+              </div>
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:justify-between ecommerce:items-start ecommerce:mb-3">
+                  <div class="ecommerce-flex-center ecommerce:gap-2">
+                    <span class="ecommerce-badge ecommerce-badge-gray">$t:sirsoft-ecommerce.admin.personal_payment.status.expired</span>
+                    <span class="ecommerce-text-primary ecommerce:font-medium">PP20251025-008</span>
+                  </div>
+                  <button type="button" aria-label="$t:common.more_actions" class="ecommerce-btn-icon">
+                    <icon name="ellipsis" class="ecommerce:text-xl"/>
+                  </button>
+                </div>
+                <div class="ecommerce:mb-3">
+                  <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce-text-secondary">
+                    <icon name="user" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.yoon_seoyeon|id=user008</span>
+                  </div>
+                  <div class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:ml-4">yoon@sirsoft.com</div>
+                </div>
+                <div class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:my-3"/>
+                <div class="ecommerce:text-sm ecommerce-text-primary ecommerce:mb-2">$t:sirsoft-ecommerce.admin.sample.products.basic_membership_3m</div>
+                <div class="ecommerce:text-xl ecommerce:font-semibold ecommerce-text-primary ecommerce:mb-3">₩30,000</div>
+                <div class="ecommerce:text-xs ecommerce-text-secondary ecommerce:space-y-1">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.created_at</span>
+                    <span>2025-10-25 16:20:45</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.expired_at</span>
+                    <span>2025-11-01 16:20:45</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ecommerce-admin-card">
+                <div class="ecommerce:flex ecommerce:justify-between ecommerce:items-start ecommerce:mb-3">
+                  <div class="ecommerce-flex-center ecommerce:gap-2">
+                    <span class="ecommerce-badge ecommerce-badge-gray">$t:sirsoft-ecommerce.admin.personal_payment.status.expired</span>
+                    <span class="ecommerce-text-primary ecommerce:font-medium">PP20251025-009</span>
+                  </div>
+                  <button type="button" aria-label="$t:common.more_actions" class="ecommerce-btn-icon">
+                    <icon name="ellipsis" class="ecommerce:text-xl"/>
+                  </button>
+                </div>
+                <div class="ecommerce:mb-3">
+                  <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce-text-secondary">
+                    <icon name="user" class="ecommerce:text-xs"/>
+                    <span>$t:sirsoft-ecommerce.admin.sample.fmt.member_guest|name=$t:sirsoft-ecommerce.admin.sample.people.lim_bada</span>
+                  </div>
+                  <div class="ecommerce-text-tertiary ecommerce:text-xs ecommerce:ml-4">lim@example.com</div>
+                </div>
+                <div class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:my-3"/>
+                <div class="ecommerce:text-sm ecommerce-text-primary ecommerce:mb-2">$t:sirsoft-ecommerce.admin.sample.products.one_time_event_ticket</div>
+                <div class="ecommerce:text-xl ecommerce:font-semibold ecommerce-text-primary ecommerce:mb-3">₩18,000</div>
+                <div class="ecommerce:text-xs ecommerce-text-secondary ecommerce:space-y-1">
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.created_at</span>
+                    <span>2025-10-25 10:30:20</span>
+                  </div>
+                  <div class="ecommerce:flex ecommerce:justify-between">
+                    <span>$t:sirsoft-ecommerce.admin.personal_payment.mobile.expired_at</span>
+                    <span>2025-11-01 10:30:20</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </responsive>
+          <table class="ecommerce:table ecommerce-table">
+            <thead>
+              <tr>
+                <th class="ecommerce:w-12 ecommerce:text-center">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.no</th>
+                <th class="ecommerce:min-w-[140px]">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.payment_number</th>
+                <th class="ecommerce:w-20 ecommerce:text-center">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.status</th>
+                <th class="ecommerce:min-w-[100px]">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.member_info</th>
+                <th class="ecommerce:min-w-[160px]">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.product_name</th>
+                <th class="ecommerce:w-24 ecommerce:text-right">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.amount</th>
+                <th class="ecommerce:min-w-[130px]">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.order_number</th>
+                <th class="ecommerce:min-w-[100px] ecommerce:text-center">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.created_at</th>
+                <th class="ecommerce:min-w-[100px] ecommerce:text-center">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.expired_at</th>
+                <th class="ecommerce:w-24 ecommerce:text-center">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.payment_method</th>
+                <th class="ecommerce:min-w-[100px] ecommerce:text-center">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.paid_at</th>
+                <th class="ecommerce:w-16 ecommerce:text-center">$t:sirsoft-ecommerce.admin.personal_payment.table.columns.actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">1</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">PP20251028-007</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="$t:sirsoft-ecommerce.admin.sample.people.song_haneul" subLabel="$t:sirsoft-ecommerce.admin.sample.misc.guest" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.search_by_member" value="search"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_member_info" value="view"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.products.basic_gift_card</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-right ecommerce:text-sm ecommerce-text-primary ecommerce:font-medium">₩20,000</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-28</div>
+                  <div>15:25:10</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-11-04</div>
+                  <div>15:25:10</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell">
+                  <dropdown data-type="composite" trigger="icon" iconName="ellipsis" position="bottom-right">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.copy_link" value="copy"/>
+                      <item type="divider"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.delete" value="delete" variant="danger"/>
+                    </prop>
+                  </dropdown>
+                </td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">2</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">PP20251028-006</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="$t:sirsoft-ecommerce.admin.sample.people.kang_hyunwoo" subLabel="user006" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.search_by_member" value="search"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_member_info" value="view"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.products.premium_content_pack</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-right ecommerce:text-sm ecommerce-text-primary ecommerce:font-medium">₩35,000</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-28</div>
+                  <div>13:40:20</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-11-04</div>
+                  <div>13:40:20</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell">
+                  <dropdown data-type="composite" trigger="icon" iconName="ellipsis" position="bottom-right">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.copy_link" value="copy"/>
+                      <item type="divider"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.delete" value="delete" variant="danger"/>
+                    </prop>
+                  </dropdown>
+                </td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">3</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">PP20251028-005</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge ecommerce-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="$t:sirsoft-ecommerce.admin.sample.people.jung_sujin" subLabel="user005" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.search_by_member" value="search"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_member_info" value="view"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.products.standard_membership_6m</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-right ecommerce:text-sm ecommerce-text-primary ecommerce:font-medium">₩60,000</td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="ORD20251028-5678" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_order_detail" value="view_order"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-28</div>
+                  <div>09:15:30</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-11-04</div>
+                  <div>09:15:30</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell">
+                  <dropdown data-type="composite" trigger="icon" iconName="ellipsis" position="bottom-right">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.copy_link" value="copy"/>
+                      <item type="divider"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.delete" value="delete" variant="danger"/>
+                    </prop>
+                  </dropdown>
+                </td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">4</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">PP20251027-004</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge ecommerce-badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="$t:sirsoft-ecommerce.admin.sample.people.choi_jihoon" subLabel="$t:sirsoft-ecommerce.admin.sample.misc.guest" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.search_by_member" value="search"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_member_info" value="view"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.products.one_time_service_pass</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-right ecommerce:text-sm ecommerce-text-primary ecommerce:font-medium">₩25,000</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-27</div>
+                  <div>18:20:45</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-11-03</div>
+                  <div>18:20:45</div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-btn-badge ecommerce-btn-badge-green">$t:sirsoft-ecommerce.admin.personal_payment.filter.naver_pay</span>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-27</div>
+                  <div>18:25:30</div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <dropdown data-type="composite" trigger="icon" iconName="ellipsis" position="bottom-right">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.copy_link" value="copy"/>
+                      <item type="divider"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.delete" value="delete" variant="danger"/>
+                    </prop>
+                  </dropdown>
+                </td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">5</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">PP20251027-003</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge ecommerce-badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="$t:sirsoft-ecommerce.admin.sample.people.park_minsu" subLabel="$t:sirsoft-ecommerce.admin.sample.misc.guest" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.search_by_member" value="search"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_member_info" value="view"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.products.standard_gift_card</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-right ecommerce:text-sm ecommerce-text-primary ecommerce:font-medium">₩50,000</td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="ORD20251027-9999" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_order_detail" value="view_order"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-27</div>
+                  <div>16:45:20</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-11-03</div>
+                  <div>16:45:20</div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-btn-badge ecommerce-btn-badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay</span>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-27</div>
+                  <div>16:50:10</div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <dropdown data-type="composite" trigger="icon" iconName="ellipsis" position="bottom-right">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.copy_link" value="copy"/>
+                      <item type="divider"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.delete" value="delete" variant="danger"/>
+                    </prop>
+                  </dropdown>
+                </td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">6</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">PP20251027-001</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge ecommerce-badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu" subLabel="user001" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.search_by_member" value="search"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_member_info" value="view"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.products.premium_membership_1y</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-right ecommerce:text-sm ecommerce-text-primary ecommerce:font-medium">₩120,000</td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="ORD20251027-1234" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_order_detail" value="view_order"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-27</div>
+                  <div>14:32:15</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-11-03</div>
+                  <div>14:32:15</div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-btn-badge ecommerce-btn-badge-blue">$t:sirsoft-ecommerce.admin.personal_payment.filter.card</span>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-27</div>
+                  <div>14:45:20</div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <dropdown data-type="composite" trigger="icon" iconName="ellipsis" position="bottom-right">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.copy_link" value="copy"/>
+                      <item type="divider"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.delete" value="delete" variant="danger"/>
+                    </prop>
+                  </dropdown>
+                </td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">7</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">PP20251027-002</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge ecommerce-badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="$t:sirsoft-ecommerce.admin.sample.people.lee_younghee" subLabel="user002" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.search_by_member" value="search"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_member_info" value="view"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.products.single_content_purchase</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-right ecommerce:text-sm ecommerce-text-primary ecommerce:font-medium">₩15,000</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-27</div>
+                  <div>11:20:30</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-11-03</div>
+                  <div>11:20:30</div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-btn-badge ecommerce-btn-badge-cyan">$t:sirsoft-ecommerce.admin.personal_payment.filter.bank_transfer</span>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-27</div>
+                  <div>11:35:15</div>
+                </td>
+                <td class="ecommerce-empty-state-cell">
+                  <dropdown data-type="composite" trigger="icon" iconName="ellipsis" position="bottom-right">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.copy_link" value="copy"/>
+                      <item type="divider"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.delete" value="delete" variant="danger"/>
+                    </prop>
+                  </dropdown>
+                </td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">8</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">PP20251025-008</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge ecommerce-badge-gray">$t:sirsoft-ecommerce.admin.personal_payment.status.expired</span>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="$t:sirsoft-ecommerce.admin.sample.people.yoon_seoyeon" subLabel="user008" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.search_by_member" value="search"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_member_info" value="view"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.products.basic_membership_3m</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-right ecommerce:text-sm ecommerce-text-primary ecommerce:font-medium">₩30,000</td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="ORD20251025-9012" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_order_detail" value="view_order"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-25</div>
+                  <div>16:20:45</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-11-01</div>
+                  <div>16:20:45</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell">
+                  <dropdown data-type="composite" trigger="icon" iconName="ellipsis" position="bottom-right">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.copy_link" value="copy"/>
+                      <item type="divider"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.delete" value="delete" variant="danger"/>
+                    </prop>
+                  </dropdown>
+                </td>
+              </tr>
+              <tr class="ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">9</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">PP20251025-009</td>
+                <td class="ecommerce-empty-state-cell">
+                  <span class="ecommerce-badge ecommerce-badge-gray">$t:sirsoft-ecommerce.admin.personal_payment.status.expired</span>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4">
+                  <dropdown data-type="composite" label="$t:sirsoft-ecommerce.admin.sample.people.lim_bada" subLabel="$t:sirsoft-ecommerce.admin.sample.misc.guest" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.search_by_member" value="search"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_member_info" value="view"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary">$t:sirsoft-ecommerce.admin.sample.products.one_time_event_ticket</td>
+                <td class="ecommerce:py-4 ecommerce:px-4 ecommerce:text-right ecommerce:text-sm ecommerce-text-primary ecommerce:font-medium">₩18,000</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-10-25</div>
+                  <div>10:30:20</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">
+                  <div>2025-11-01</div>
+                  <div>10:30:20</div>
+                </td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary">-</td>
+                <td class="ecommerce-empty-state-cell">
+                  <dropdown data-type="composite" trigger="icon" iconName="ellipsis" position="bottom-right">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.view_detail" value="view"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.edit" value="edit"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.copy_link" value="copy"/>
+                      <item type="divider"/>
+                      <item label="$t:sirsoft-ecommerce.admin.personal_payment.dropdown.delete" value="delete" variant="danger"/>
+                    </prop>
+                  </dropdown>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div data-ref="pagination_container" class="ecommerce:flex ecommerce:justify-center ecommerce:mt-6">
+          <div class="ecommerce-flex-center ecommerce:gap-1">
+            <button type="button" aria-label="$t:common.first_page" class="ecommerce-btn ecommerce-btn-icon" :disabled="true">
+              <icon name="angles-left" class="ecommerce:text-base"/>
+            </button>
+            <button type="button" aria-label="$t:common.prev_page" class="ecommerce-btn ecommerce-btn-icon" :disabled="true">
+              <icon name="chevron-left" class="ecommerce:text-base"/>
+            </button>
+            <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:w-10 ecommerce:h-10">1</button>
+            <button type="button" aria-label="$t:common.next_page" class="ecommerce-btn ecommerce-btn-icon">
+              <icon name="chevron-right" class="ecommerce:text-base"/>
+            </button>
+            <button type="button" aria-label="$t:common.last_page" class="ecommerce-btn ecommerce-btn-icon">
+              <icon name="angles-right" class="ecommerce:text-base"/>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+</layout>

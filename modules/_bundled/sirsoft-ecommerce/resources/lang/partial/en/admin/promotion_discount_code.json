@@ -22,6 +22,7 @@
     "benefit_type": "Benefit Type",
     "code_type": "Code Type",
     "benefit_amount": "Benefit Amount",
+    "benefit_amount_unit": "Benefit amount unit",
     "created_at": "Created Date",
     "start_date": "Start Date",
     "end_date": "End Date",
@@ -35,7 +36,9 @@
       "1_month": "1 Month",
       "3_months": "3 Months",
       "all": "All"
-    }
+    },
+    "benefit_amount_min": "Minimum benefit amount",
+    "benefit_amount_max": "Maximum benefit amount"
   },
   "benefit_type": {
     "all": "All",
@@ -68,6 +71,7 @@
       "discount_code_name_desc": "Discount Code Name (Z-A)"
     },
     "per_page": "{{count}} items",
+    "per_page_one": "{{count}} item",
     "columns": {
       "checkbox": "Select",
       "no": "No.",
@@ -97,6 +101,7 @@
     "status_change": {
       "title": "Change Status?",
       "description": "The status of {{count}} selected discount codes will be changed to {{status}}.",
+      "description_one": "The status of {{count}} selected discount code will be changed to {{status}}.",
       "cancel": "Cancel",
       "confirm": "Confirm"
     },
@@ -125,6 +130,8 @@
       "discount_code_name": "Discount Code Name",
       "discount_code_description": "Discount Code Description",
       "benefit": "Benefit",
+      "benefit_unit_fixed": "Fixed discount unit",
+      "benefit_unit_rate": "Percentage discount unit",
       "min_order_amount": "Minimum Order Amount",
       "validity_period": "Validity Period",
       "code_generation_method": "Code Generation Method",

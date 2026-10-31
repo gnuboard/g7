@@ -109,7 +109,7 @@ describe('classifyInlineText', () => {
   });
 
   it('D-44: 구분자(:) 붙은 lang 키 + 보간("발행일: {{date}}") → 편집 허용 + 평문 시작값 ("발행일:") — raw 키 노출 0', () => {
-    // 재현: _modal_terms.json 발행일 span. 종전 구분자(:) 때문에 stripBindingTokens 결과가
+    // 재현: _modal_terms.g7.html 발행일 span. 종전 구분자(:) 때문에 stripBindingTokens 결과가
     // "$t:policy.published_at:" 가 되어 T_KEY_RE 불일치 → raw 키가 시작값으로 노출 + 잘못된 평문 키화로
     // 재귀 키 폭증. 수정 후: lang 키 평문화로 "발행일:" 시작값, raw $t: 미노출.
     const node: EditorNode = {

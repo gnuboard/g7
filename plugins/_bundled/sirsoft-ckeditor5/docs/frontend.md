@@ -5,7 +5,7 @@
 ## 레이아웃
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 2개 (루트: `resources/layouts`).
+레이아웃 2개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -22,10 +22,10 @@
 (`plugin_settings`).
 
 **이 플러그인의 실제 UI 는 여기 없습니다.** 편집기는 레이아웃이 아니라 확장점 조각
-(`resources/extensions/html-editor.json` · `html-content.json`)으로 다른 화면 안에 들어가므로,
+(`resources/extensions/html-editor.g7.html` · `html-content.g7.html`)으로 다른 화면 안에 들어가므로,
 편집기 모양을 바꾸는 작업은 이 두 레이아웃이 아니라 그 조각과 핸들러 쪽입니다.
 
-`plugin_settings.json` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정
+`plugin_settings.g7.html` 은 **파일 이름이 계약**입니다. 코어가 플러그인 디렉토리의 이 고정
 경로를 찾아 설정 화면을 그리므로, 이름을 바꾸면 설정 화면이 사라집니다.
 
 레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan plugin:update sirsoft-ckeditor5 --force`
@@ -59,6 +59,19 @@
 `'html'` 로 되돌리면서 **그 사이에 쓴 내용을 승계**해야 합니다. 이 셋 중 하나라도 빠지면 사용자
 입력이 사라집니다.
 
+같은 레이아웃 안에서 편집 대상이 바뀌는 이동(글 수정 → 새 글 쓰기, 글 A 수정 → 글 B 수정, 뒤로·앞으로)은
+조각을 다시 마운트하지 않으므로 `initEditor` 가 다시 돌지 않습니다. 그래서 편집기와 평문 입력칸은 주소(경로)가
+바뀐 것을 보고 폼의 새 값으로 다시 서고(`externalContentSync`), 새 값이 오기 전에는 폼으로 값을 내보내지
+않습니다. 「폼이 아직 이전 글 값인가」는 편집기에 보이는 값만으로 판정하지 않습니다 — 편집기는 받은 본문을
+다듬어 돌려주므로(평문 → 문단 HTML) 폼에 남은 이전 글 원문과 글자가 다릅니다. 이전 경로에서 마지막으로 본 폼
+값과 마지막으로 내보낸 값도 이전 값으로 봅니다. 같은 화면에서 입력하는 동안에는 폼이 디바운스로 뒤처져도
+되돌리지 않습니다(글자 손실 금지).
+
+편집기는 마운트 뒤 자산 확보·생성을 기다린 다음에 섭니다(본체를 못 불러와 평문 입력칸으로 내려앉을 때는 몇 초).
+그 사이 같은 레이아웃의 다른 경로로 옮기면 마운트 때 받은 본문은 앞 화면 것이므로, `initEditor` 는 주소가 바뀌었으면
+지금 폼 값으로 세우고, 그 값이 아직 앞 화면 값과 같으면(새 폼을 받는 중) 재동기화를 앞 화면 경로에 붙여 새 값이
+오면 다시 서게 합니다(`seedPath`·`seedValue`).
+
 핸들러 TS 를 고치면 빌드가 필요합니다 — `php artisan plugin:build` 후
 `plugin:update --force`. 그리고 프론트엔드 변경은 Playwright 위지윅 spec 을 함께 갱신·실행
 합니다. 편집기 장착 회귀는 단위 테스트가 초록인 상태에서도 브라우저에서만 드러납니다.
@@ -90,14 +103,22 @@
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
 | `dist/vendor/ckeditor5/43.3.1` | 동봉 제3자 자산 (자체 제공) |
+| `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
 로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-두 항목의 성격이 다릅니다.
+화면 스타일 `dist/css/plugin.css`(앞글자 `ckeditor`)는 설정·업로드 관리 화면의 클래스(`ckeditor:` 접두 유틸리티,
+`ckeditor-*` 의미 클래스)와 다국어 편집기 탭(`ckeditor-locale-tab*`)·아이콘(`ckeditor-icon--globe`·`--check`, CSS 마스크)을
+싣습니다. CKEditor 라이브러리 DOM(`.ck-*`·`.ck-content`)을 보정하는 규칙은 라이브러리가 정한 이름이라 앞글자를 붙일 수
+없으므로 계속 핸들러가 `<style>` 로 주입합니다. 다크 모드는 템플릿의 `.dark` 가 아니라 코어가 다는
+`<html data-g7-color-scheme="dark">` 표식을 봅니다.
+
+아래 두 항목의 성격이 다릅니다.
 
 | 경로 | 성격 |
 |---|---|
@@ -110,7 +131,7 @@
 확인**합니다.
 
 버전을 올릴 때 기재가 여러 곳에 흩어져 있습니다 — 디렉토리명 · `resources/extensions/
-html-editor.json` 의 `scripts.src` · 소스 상수 · 테스트 단언. 하나만 어긋나도 그 자산이
+html-editor.g7.html` 의 `scripts.src` · 소스 상수 · 테스트 단언. 하나만 어긋나도 그 자산이
 404 가 되는데 빌드와 테스트는 통과하므로, 한 벌로 함께 고칩니다.
 
 배포 산출물이므로 `sourceMappingURL` 참조를 남기지 않습니다(`.map` 은 커밋 대상이 아니라

@@ -37,11 +37,21 @@ Repositories (RepositoryInterface 경유, 정렬 화이트리스트·컬럼 프�
 Models (SoftDeletes 적용 — Post/Comment/Attachment/Report)
 ```
 
+첨부 URL 은 `AttachmentService::getUrl()` 이 비밀글·삭제글 게이트가 걸린 다운로드 서빙 URL(리소스의
+`download_url`)을 돌려줍니다 — 공개 자산 디스크(CDN 직접 URL)를 켜도 게시판 첨부는 직접 URL 로 바뀌지
+않습니다. 직접 URL 로 내보내면 그 게이트가 통째로 우회되기 때문입니다(7.0.11).
+
 Listeners(`src/Listeners/`)는 이 흐름과 별도 레인입니다 — Service 가 발행한 훅을 받아 카운트
 동기화(`*CountSyncListener`)·활동 로그·SEO 캐시·검색 색인·알림 데이터 추출을 수행하며, Service
 자신은 이 부가효과를 알지 못합니다. 이 분리 덕분에 새 부가효과(예: 신규 카운트 컬럼 동기화)는
-Service 를 건드리지 않고 리스너 추가만으로 끝납니다.
+Service 를 건드리지 않고 리스너 추가만으로 끝납니다. 큐로 도는 **일괄** 활동 로그 핸들러(신고 일괄 처리)는
+항목별 기록 루프를 `DB::transaction` 으로 감쌉니다 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을
+막는다(코어 `docs/backend/activity-log.md` 「일괄 핸들러 트랜잭션 패턴」).
 <!-- @intent END -->
+
+## 화면 주소 (7.2.0)
+
+서버가 만드는 게시판 화면 주소(알림 링크·통합 검색 결과·사이트맵)는 `Support/BoardScreenUrl` 이 만든다. 화면 키 `board.index`·`board.list`·`board.post` 로 코어 `ScreenUrl` 을 거치므로 환경설정 「사용자 화면 URL」과 필터 훅 `core.screen_url.filter_path` 를 따른다 — 개발자 화면이나 외부 프론트가 주소를 바꾸면 링크가 따라간다. SEO 캐시 무효화·재생성은 그누보드7 화면이 봇에게 내는 캐시라 필터를 거치지 않은 `BoardScreenUrl::defaultPath()` 를 쓴다(경로 문자열을 리스너에 직접 적지 않는다).
 
 ## 디렉토리
 
@@ -63,13 +73,16 @@ Service 를 건드리지 않고 리스너 추가만으로 끝납니다.
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `database/seeders/` | 시더 | composer autoload 등록 + `extension:update-autoload` |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan module:update sirsoft-board --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan module:update sirsoft-board --force` (빌드 불필요) |
 | `resources/routes/` | 라우트 → 레이아웃 매핑 (분할) | `php artisan module:update sirsoft-board --force` |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan module:build` → `php artisan module:update sirsoft-board --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan module:update sirsoft-board --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan module:update sirsoft-board --force` |
+| `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan module:update sirsoft-board --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan module:update sirsoft-board --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->

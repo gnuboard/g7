@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 대댓글 부모-자식 무결성 테스트
@@ -15,20 +16,30 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 검증 목적:
  * - 다른 게시글의 댓글을 parent_id 로 지정할 수 없다 (HTTP 경로 422)
  * - Service 직접 호출 경로에서도 타 게시글 부모로 depth 가 계산되지 않는다
- *
- * @group board
- * @group comment
- * @group integrity
  */
+#[Group('board')]
+#[Group('comment')]
+#[Group('integrity')]
 class CommentParentIntegrityTest extends BoardTestCase
 {
     private User $memberUser;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'comment-parent-integrity';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -40,6 +51,11 @@ class CommentParentIntegrityTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -61,6 +77,8 @@ class CommentParentIntegrityTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=foreign
      *
      * @effects foreign_parent_rejected_422, parent_unchanged_on_rejection
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_reply_to_comment_of_other_post(): void
     {
@@ -89,6 +107,8 @@ class CommentParentIntegrityTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=unrelated
      *
      * @effects unrelated_parent_move_succeeds, depth_equals_parent_depth_plus_one
+     *
+     * @return void 반환값 없음
      */
     public function test_can_reply_to_comment_of_same_post(): void
     {
@@ -117,6 +137,8 @@ class CommentParentIntegrityTest extends BoardTestCase
      * @scenario entity=board_comment, parent_target=foreign
      *
      * @effects foreign_parent_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_service_does_not_inherit_depth_from_other_post_parent(): void
     {

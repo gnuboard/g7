@@ -1,0 +1,23 @@
+feature: 목록 필터 — 따옴표 키 인덱싱 바인딩(`{{query['xxx[]']}}`)이 서버 요청까지 도달한다
+
+description: |
+  판정 통일(engine-v1.55.0) 이전에는 단일 바인딩 판정기가 여러 벌로 갈라져 있었고, 그중 일부가
+  `query['sales_status[]']` 같은 따옴표 대괄호 인덱싱을 단일 바인딩으로 인정하지 않았다. 데이터소스 params
+  자리에서 그 값이 `undefined` 가 되면 URL 로 필터를 걸고 들어와도 필터가 서버로 전달되지 않고, 예외·경고 없이
+  「필터가 안 걸린 전체 목록」이 보인다.
+
+  판정이 갈리는 식 중 동작이 실제로 바뀌는 따옴표 대괄호 22건이 13개 목록 필터 화면에 걸려 있고, 이 spec 은
+  소유 확장이 서로 다른 대표 4개 화면(상품 판매상태 · 주문 결제수단 · 신고 처리상태 · 본인인증 로그 상태)을
+  한 테스트 본문으로 돌며 잠근다. 검증은 화면 모양이 아니라 나가는 목록 API 요청에 필터 값이 실렸는가로 한다.
+
+# axis 의미:
+#   case — 대표 화면 4개는 같은 테스트 본문을 반복하므로 하나의 케이스로 묶는다(화면별 차이는 데이터뿐이다).
+axes:
+  case: [list_filter_quoted_key_reaches_api]
+
+effects:
+  # URL 의 다중값 쿼리(`xxx[]`)로 건 필터 값이 목록 API 요청 파라미터에 실린다.
+  - filter_param_sent_to_server
+
+test_files:
+  - tests/Playwright/specs/list-filter-quoted-key-binding.spec.ts

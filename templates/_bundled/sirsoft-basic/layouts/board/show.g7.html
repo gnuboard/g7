@@ -1,0 +1,49 @@
+<!-- 글 상세 — 본문·댓글·첨부·이전다음글을 한 화면에 담는다. 목록과 마찬가지로 생김새는 게시판 유형에 따라 갈리므로 유형 렌더러 조각이 고른다. 삭제·신고·비밀번호 확인 창 셋을 여기서 세워 조각들이 이름으로 연다. -->
+<layout name="board/show" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" page_type="post" toggle_setting="$module_settings:sirsoft-board:seo.seo_post_detail" :priority="0.5" changefreq="monthly">
+      <extensions>
+        <item type="module" id="sirsoft-board"/>
+      </extensions>
+      <data-sources>
+        <item>post</item>
+        <item>navigation</item>
+      </data-sources>
+      <vars site_name="$core_settings:general.site_name" board_name="{{post.data.board.name ?? ''}}" post_title="{{post.data.title ?? ''}}"/>
+      <og type="article" title="{{_seo.post.title ?? post.data.title ?? ''}}" description="{{_seo.post.description ?? post.data.content ?? ''}}"/>
+    </seo>
+  </meta>
+  <!-- 글 본문과 댓글 — 한 응답에 함께 실려 온다(댓글용 별도 데이터소스가 없는 이유). 삭제된 댓글까지 볼지는 URL 질의(del_cmt)가 정한다. 없는 글·못 보는 글은 404/403 으로 본문 자리에 오류 화면을 세운다. -->
+  <data-source id="post" label_key="$t:editor.data_source.post" type="api" endpoint="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}" method="GET" :auto_fetch="true" auth_mode="optional" :refetchOnMount="true">
+    <params del_cmt="{{query.del_cmt ?? ''}}"/>
+    <error-handling>
+      <on-code code="401">
+        <toast type="info" message="$t:board.login_required"/>
+        <action handler="redirectToLoginWithReturn"/>
+      </on-code>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 이전글·다음글 — 본문과 따로 받는다. 목록에서 삭제글을 보고 있었다면(del) 그 조건이 이어져야 앞뒤 순서가 목록과 어긋나지 않는다. -->
+  <data-source id="navigation" label_key="$t:editor.data_source.navigation" type="api" endpoint="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/navigation" method="GET" :auto_fetch="true" auth_mode="optional" :refetchOnMount="true">
+    <params del="{{query.del ?? ''}}"/>
+  </data-source>
+  <computed name="commentRootMap">{{(post?.data?.comments ?? []).reduce((map, c) => ({...map, [c.id]: c.depth === 0 ? c.id : (map[c.parent_id] ?? c.parent_id)}), {})}}</computed>
+  <permissions/>
+  <slot name="content">
+    <container data-type="layout" class="py-8 max-w-4xl mx-auto">
+      <include src="partials/board/show/_type_renderer.g7.html"/>
+    </container>
+  </slot>
+  <!-- 삭제 확인 창 — 글과 댓글이 같은 창을 쓰고, 무엇을 지우는지는 창을 열 때 넘긴 대상이 정한다. -->
+  <modal src="partials/board/show/modals/_modal_delete.g7.html"/>
+  <!-- 신고 창 — 글과 댓글 모두 여기서 사유를 고른다. -->
+  <modal src="partials/board/show/modals/_modal_report.g7.html"/>
+  <!-- 비회원 글 비밀번호 확인 창 — 비회원이 자기 글을 지우거나 고칠 때 뜬다. 글쓰기 화면에도 같은 이름의 조각이 따로 있고 그쪽은 수정 진입용이다. -->
+  <modal src="partials/board/show/modals/_password_verify_modal.g7.html"/>
+</layout>

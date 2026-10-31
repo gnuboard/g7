@@ -1,0 +1,46 @@
+feature: shipping_policy_service_unit
+
+description: |
+  배송정책 서비스(ShippingPolicyService)의 조회·생성·수정·삭제·활성 토글·통화 강제 계약을
+  리포지토리 목과 실제 DB 로 고정하는 Unit 테스트의 시나리오 소유 매니페스트.
+
+  핵심 동작:
+    - 조회는 필터·per_page(기본 20)를 리포지토리에 그대로 넘기고 결과를 가공 없이 돌려준다.
+    - 기본 정책으로 생성·수정하면 clearDefault 로 다른 정책의 기본 지정을 해제하고,
+      비기본 생성은 기존 기본 정책을 건드리지 않는다.
+    - 수정은 국가별 설정을 요청값으로 교체한다.
+    - 일괄 삭제는 훅 스냅샷을 잡은 뒤 국가별 설정을 명시적으로 지우고 정책을 삭제한다.
+    - 국가별 설정 통화는 관리자 입력과 무관하게 상점 기본 통화로 강제된다
+      (그 효과 이름은 mp08-shipping-policy-currency.yaml 이 선언한다).
+
+axes:
+  area:
+    - read
+    - create
+    - update
+    - delete
+    - toggle
+    - currency
+
+effects:
+  - shipping_policy_list_passes_filters_and_per_page
+  - shipping_policy_list_defaults_per_page_to_20
+  - shipping_policy_statistics_passthrough
+  - shipping_policy_detail_returns_found_policy
+  - shipping_policy_detail_returns_null_when_missing
+  - shipping_policy_create_returns_created_policy
+  - create_as_default_clears_other_defaults
+  - create_non_default_keeps_existing_default
+  - shipping_policy_update_replaces_country_settings
+  - update_to_default_clears_other_defaults
+  - shipping_policy_delete_delegates_to_repository
+  - toggle_active_returns_flipped_policy
+  - bulk_delete_removes_country_settings_then_policies
+  - bulk_toggle_active_returns_changed_count
+  - active_list_returns_repository_collection
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ShippingPolicyServiceTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

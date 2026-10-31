@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ResolvesSiteLocale;
 
 /**
  * 은행 목록 저장 요청 검증
@@ -11,10 +12,14 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class StoreBanksRequest extends FormRequest
 {
+    use ResolvesSiteLocale;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 항상 true (권한은 라우트 미들웨어가 판정)
      */
     public function authorize(): bool
     {
@@ -24,13 +29,13 @@ class StoreBanksRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * 현재 로케일의 은행명만 필수이며, 나머지 로케일은 선택입니다.
+     * 사이트 기본 언어(요청 언어가 아님)의 은행명만 필수이며, 나머지 로케일은 선택입니다.
      *
      * @return array<string, mixed>
      */
     public function rules(): array
     {
-        $locale = app()->getLocale();
+        $locale = $this->requiredNameLocale();
 
         return [
             'banks' => ['nullable', 'array'],
@@ -58,7 +63,7 @@ class StoreBanksRequest extends FormRequest
      */
     public function messages(): array
     {
-        $locale = app()->getLocale();
+        $locale = $this->requiredNameLocale();
 
         return [
             'banks.*.code.required_with' => __('sirsoft-ecommerce::validation.custom.banks.code.required_with'),

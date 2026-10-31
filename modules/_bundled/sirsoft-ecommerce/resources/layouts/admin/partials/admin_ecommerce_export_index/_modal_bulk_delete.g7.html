@@ -1,0 +1,48 @@
+<!-- 내보내기 작업 여러 건을 한꺼번에 지우는 확인 창. 대상은 표에서 체크한 것(`_global.ecommerceExportBulkSelectedItems`)이다.
+  진행중인 작업·삭제 권한 범위 밖 작업·이미 없는 작업은 서버가 거절하지 않고 **건너뛴 뒤 그 수를 알린다** —
+  목록을 연 뒤 상태가 바뀐 행이 섞여도 나머지는 지워져야 하기 때문이다. 경고 문장이 그 사실을 미리 적고,
+  성공 안내는 서버 문장(삭제·건너뜀 건수)을 그대로 띄운다. 성공하면 체크 목록을 비운다. -->
+<partial description="Export Bulk Delete Confirmation Modal">
+  <modal data-type="composite" data-ref="export_bulk_delete_modal" title="$t:sirsoft-ecommerce.admin.export.modal_bulk_delete.title" size="medium">
+    <div>
+      <p class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">$t:sirsoft-ecommerce.admin.export.modal_bulk_delete.message|count={{(_global.ecommerceExportBulkSelectedItems || []).length}}</p>
+      <div class="ecommerce-alert-warning">
+        <icon name="triangle-exclamation" class="ecommerce:text-xl ecommerce:text-amber-600 ecommerce:dark:text-amber-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
+        <div class="ecommerce:text-xs ecommerce:text-yellow-700 ecommerce:dark:text-yellow-300">
+          <p>$t:sirsoft-ecommerce.admin.export.modal_bulk_delete.warning</p>
+        </div>
+      </div>
+    </div>
+    <div class="ecommerce-modal-footer-buttons">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsBulkDeleting}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.export.common.cancel
+      </button>
+      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-500 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsBulkDeleting}}">
+        <on type="click">
+          <!-- 선택 삭제 실행. 성공 갈래가 체크 목록을 비운 뒤 목록을 다시 부르고, 서버가 준 문장(삭제·건너뜀 건수)을 그대로 띄운다. -->
+          <sequence>
+            <set-state target="global" :ecommerceExportIsBulkDeleting="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/exports/bulk" method="DELETE">
+              <success>
+                <set-state target="global" :ecommerceExportIsBulkDeleting="false" :ecommerceExportBulkSelectedItems="[]"/>
+                <refetch-data-source dataSourceId="exports"/>
+                <toast type="success" message="{{response?.message}}"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :ecommerceExportIsBulkDeleting="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body ids="{{_global.ecommerceExportBulkSelectedItems}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.ecommerceExportIsBulkDeleting}}" name="spinner" class="ecommerce-spinner-sm"/>
+        <span>{{_global.ecommerceExportIsBulkDeleting ? '$t:sirsoft-ecommerce.admin.export.common.deleting' : '$t:sirsoft-ecommerce.admin.export.common.delete'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

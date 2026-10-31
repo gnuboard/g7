@@ -1,0 +1,21 @@
+feature: 주문하기 알 수 없는 실패의 원인 기록
+
+description: |
+  주문 생성(HandlesOrderCreation::store)은 알려진 실패(재고·금액 불일치·쿠폰·마일리지·계산 검증)를 각각 안내하고,
+  그 밖의 예외는 500 「주문 생성에 실패했습니다.」 와 함께 원인(예외 종류·메시지·위치)을 오류 로그로 남긴다.
+
+  확인 이력 (이커머스 전수 실측 S4 — EC-420):
+    - 브라우저에서 알 수 없는 예외를 일으킬 방법이 없어 장애 주입 테스트로 잰다. 저장소에 이 테스트가 없어 새로 둔다.
+
+axes:
+  failure: [unexpected_exception]
+  stage: [create_from_temp_order]
+
+effects:
+  - unexpected_failure_logged_with_cause   # 500 + 'Order create: unexpected failure' {exception, message, file}
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/OrderCreateUnexpectedFailureLogTest.php
+
+validation:
+  browser_check: 해당 없음 — 장애 주입은 테스트로만

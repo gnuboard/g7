@@ -63,6 +63,17 @@ interface ShippingTypeRepositoryInterface
     public function existsByCode(string $code, ?int $excludeId = null): bool;
 
     /**
+     * 코드 목록으로 배송유형 조회
+     *
+     * 설정 저장 검증(코드 맞바꾸기 판정)에서 "지금 그 코드를 쥔 행" 을 찾는 데 사용합니다.
+     * 결과 크기는 요청 페이로드의 서로 다른 코드 수에 묶입니다.
+     *
+     * @param  array<int, string>  $codes  배송유형 코드 목록
+     * @return Collection<int, ShippingType>
+     */
+    public function findByCodes(array $codes): Collection;
+
+    /**
      * 활성 배송유형 목록 조회
      *
      * @param  string|null  $category  카테고리 필터 (domestic, international, other, null=전체)

@@ -23,14 +23,14 @@ class CleanupLayoutPreviewsCommand extends Command
     /**
      * Execute the console command.
      *
-     * @param LayoutPreviewService $service 미리보기 서비스
+     * @param  LayoutPreviewService  $service  미리보기 서비스
      * @return int 명령 실행 결과 코드
      */
     public function handle(LayoutPreviewService $service): int
     {
         $deleted = $service->cleanupExpired();
 
-        $this->info("만료된 미리보기 {$deleted}건이 삭제되었습니다.");
+        $this->info(__('layouts.console.previews_cleanup.done', ['count' => $deleted]));
 
         return self::SUCCESS;
     }

@@ -82,10 +82,16 @@ function manifestType(name: string): string {
 const card = findNode(uploadTab, (n) => n.id === 'card_orphan_cleanup');
 
 describe('고아 첨부 정리 설정 — 계약', () => {
+    /**
+     * @effects core_settings_orphan_keys_declared
+     */
     it('업로드 탭에 고아 첨부 정리 카드가 있다', () => {
         expect(card).not.toBeNull();
     });
 
+    /**
+     * @effects core_settings_orphan_keys_declared
+     */
     it('토글과 보존기간이 upload 카테고리 키를 바인딩한다', () => {
         const toggle = findNode(card, (n) => n.name === 'Toggle');
         const input = findNode(card, (n) => n.name === 'Input');
@@ -96,6 +102,9 @@ describe('고아 첨부 정리 설정 — 계약', () => {
         expect(input.props.max).toContain('upload_orphan_retention_days_max');
     });
 
+    /**
+     * @effects core_settings_orphan_keys_declared
+     */
     it('토글 노드의 type 이 매니페스트 선언과 같다', () => {
         const toggle = findNode(card, (n) => n.name === 'Toggle');
 
@@ -103,6 +112,9 @@ describe('고아 첨부 정리 설정 — 계약', () => {
         expect(toggle.type).toBe(manifestType('Toggle'));
     });
 
+    /**
+     * @effects core_settings_orphan_keys_declared
+     */
     it('읽기 전용 권한에서는 두 입력이 비활성화된다', () => {
         const toggle = findNode(card, (n) => n.name === 'Toggle');
         const input = findNode(card, (n) => n.name === 'Input');
@@ -111,6 +123,9 @@ describe('고아 첨부 정리 설정 — 계약', () => {
         expect(input.props.disabled).toBe('{{_computed.isReadOnly}}');
     });
 
+    /**
+     * @effects core_settings_orphan_toggle_default_off
+     */
     it('기본값이 꺼짐이고 보존기간 기본이 30일이다 (코어 defaults.json)', () => {
         const defaults = JSON.parse(
             fs.readFileSync(path.join(repoRoot(), 'config/settings/defaults.json'), 'utf-8'),
@@ -121,6 +136,9 @@ describe('고아 첨부 정리 설정 — 계약', () => {
         expect(defaults.frontend_schema.upload.fields.orphan_cleanup_enabled.expose).toBe(false);
     });
 
+    /**
+     * @effects core_settings_orphan_keys_declared
+     */
     it('서버 검증이 같은 키를 받고 화면과 같은 한계값 출처를 쓴다', () => {
         const request = fs.readFileSync(
             path.join(repoRoot(), 'app/Http/Requests/Settings/SaveSettingsRequest.php'),
@@ -136,14 +154,21 @@ describe('고아 첨부 정리 설정 — 계약', () => {
         expect(coreConfig).toContain("'upload_orphan_retention_days_max' => 3650");
     });
 
+    /**
+     * @effects core_orphan_prune_gate_off_by_default
+     */
     it('스케줄이 등록되고 커맨드가 같은 설정을 false 폴백으로 재확인한다', () => {
-        const console = fs.readFileSync(path.join(repoRoot(), 'routes/console.php'), 'utf-8');
+        // 7.2.0 부터 예약은 코어 스케줄 카탈로그(config/core.php `schedules`)가 DB 행으로 동기화되어 등록된다
+        // (routes/console.php 는 등록기 한 줄) — 카탈로그 항목의 명령과 정리 묶음(gc)을 본다.
+        const coreConfig = fs.readFileSync(path.join(repoRoot(), 'config/core.php'), 'utf-8');
+        const entry = coreConfig.match(/'attachments-prune-orphans'\s*=>\s*\[([\s\S]*?)\n\s{8}\],/);
         const command = fs.readFileSync(
             path.join(repoRoot(), 'app/Console/Commands/PruneOrphanAttachmentsCommand.php'),
             'utf-8',
         );
 
-        expect(console).toContain("attachments:prune-orphans --scheduled");
+        expect(entry?.[1] ?? '').toContain("'command' => 'attachments:prune-orphans --scheduled'");
+        expect(entry?.[1] ?? '').toContain("'group' => 'gc'");
         expect(command).toContain("g7_core_settings('upload.orphan_cleanup_enabled', false)");
     });
 });

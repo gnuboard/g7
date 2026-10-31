@@ -1,0 +1,48 @@
+feature: 회원 목록 역할 일괄 추가·제거
+
+description: |
+  회원에게 역할을 주려면 회원 폼을 한 명씩 저장해야 했다. 회원 목록의 선택 일괄 작업에
+  「역할 추가」「역할 제거」를 더한다.
+
+  경로: PATCH /api/admin/users/bulk-roles {uuids, role_ids, mode} → UserService::bulkUpdateRoles()
+
+  규칙(일괄 상태 변경과 같은 두 축):
+    - 권한 상승 상한: 액터 상한을 넘는 역할이 하나라도 있으면 요청 전체 403
+    - 대상 필터: 등급 가드(최고관리자 등) → 범위(scope) 가드, 걸러진 회원은 skipped 로 사유와 함께 돌려준다
+    - 자기 잠금: 마지막 admin 인 액터가 자신에게서 admin 을 빼는 것은 skipped(last_admin)
+    - 추가 시 assigned_by 에 액터를 남기고, 바뀐 회원마다 권한 캐시를 비운다
+    - 활동 로그는 회원마다 user.bulk_roles 로 남는다
+    - 이미 원하는 상태인 회원은 unchanged(already_assigned/not_assigned)로 돌려주고, 하나라도 있으면 결과 창을 닫지 않는다
+    - 제거 창은 적용 전에 「역할이 하나도 남지 않는 회원·마지막 관리자(본인)는 건너뜀」 을 안내한다
+
+axes:
+  mode: [add, remove]
+  target: [normal, super_admin, out_of_scope, self_last_admin]
+  role: [within_ceiling, above_ceiling]
+
+exclusions:
+  - { role: above_ceiling, target: [super_admin, out_of_scope, self_last_admin], reason: "상한 위반은 대상 판정 전에 요청 전체를 403 으로 막는다 — 대상 모양과 무관" }
+  - { mode: add, target: self_last_admin, reason: "마지막 admin 자기 잠금은 역할을 빼는 경우에만 생긴다" }
+
+effects:
+  - ceiling_violation_rejects_request
+  - grade_filtered
+  - scope_filtered
+  - last_admin_self_skipped
+  - assigned_by_recorded
+  - permission_cache_flushed
+  - activity_log_per_user
+  - bulk_role_entry_from_pc_and_mobile
+  - bulk_role_entry_locked_without_selection
+  - last_role_skipped
+  # 역할 칸에서 검색어를 치거나 화살표로 옮긴 옵션을 Enter 로 고른다(태그 입력 Enter 가드가 막던 결함)
+  - bulk_role_keyboard_enter_selects_role
+  # 적용 직후 창 머리의 「선택한 회원 0명에게…」 가 비치지 않는다(결과 화면은 안내를 숨기고, 제외 0명이면 재요청 전에 닫는다)
+  - bulk_role_result_hides_zero_count_desc
+  # 이미 원하는 상태라 바뀌지 않은 회원(추가: 이미 가짐·제거: 가지지 않음)을 unchanged 로 따로 세어 결과 창·문구에 보인다 — 고른 수 = 변경 + 제외 + 변경 없음
+  - unchanged_reported
+
+test_files:
+  - tests/Feature/Api/Admin/UserBulkRolesTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-list-bulk-roles.test.tsx
+  - tests/Playwright/specs/admin/user-bulk-roles.spec.ts

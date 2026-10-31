@@ -30,9 +30,10 @@
 
 | 문서 | 제목 | 핵심 내용 |
 |------|------|----------|
-| [activity-log-hooks.md](activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 66훅 + 확장 132훅 = 총 198훅 (확장별 목록은 그 확장이 소유) |
+| [activity-log-hooks.md](activity-log-hooks.md) | 활동 로그 훅 레퍼런스 (Activity Log Hooks Reference) | 코어 74훅 + 확장 167훅 = 총 241훅 (확장별 목록은 그 확장이 소유) |
 | [activity-log.md](activity-log.md) | 활동 로그 시스템 (Activity Log System) | Monolog 기반: Service 훅 → Listener → Log::channel... |
 | [admin-settings-access.md](admin-settings-access.md) | Admin 환경설정 값 접근 (`g7_core_settings` vs `config()`) | 동기화 SSoT: storage/app/settings/*.json → Setting... |
+| [analytics.md](analytics.md) | 방문자 통계 | 세 경로(브라우저 비콘·서버 폴백·내부 검색 훅)가 하나의 적재 파이프라인으로 모인다 |
 | [api-documentation.md](api-documentation.md) | API 레퍼런스 문서 규정 (API Documentation) | 모든 API 엔드포인트는 레퍼런스 문서 필수 — 메서드/URI/파라미터/응답 필드 +... |
 | [api-resources.md](api-resources.md) | API 리소스 | Resource: BaseApiResource 상속 필수 / Collection: B... |
 | [authentication.md](authentication.md) | 인증 및 세션 처리 | Laravel Sanctum 토큰 전용 인증 (Bearer 토큰만 사용) |
@@ -48,16 +49,20 @@
 | [exceptions.md](exceptions.md) | Custom Exception 다국어 처리 | 예외 메시지 하드코딩 금지 → __() 함수 필수 |
 | [execution-mode.md](execution-mode.md) | 실행 모드 (Execution Mode) — 웹 요청 안의 커맨드 실행 | 웹 도달 코드가 Artisan 을 실행할 때는 App\Execution\Command... |
 | [geoip.md](geoip.md) | GeoIP 시스템 (MaxMind GeoLite2) | MaxMind GeoLite2-City DB 기반 IP → 타임존 감지 (SetTim... |
-| [identity-messages.md](identity-messages.md) | 본인인증 메시지 템플릿 시스템 (Identity Messages) | 알림 시스템(notification_*)과 완전 분리된 IDV 전용 템플릿 인프라 |
+| [identity-messages.md](identity-messages.md) | 본인인증 알림 (Identity Notifications) | 본인인증 메일 문구 = 알림 정의(notification_definitions) 중 ... |
 | [identity-policies.md](identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) | - |
-| [identity-providers.md](identity-providers.md) | IDV Provider 작성 가이드 (Identity Verification Providers) | VerificationProviderInterface 구현 + IdentityProv... |
+| [identity-providers.md](identity-providers.md) | IDV Provider 작성 가이드 (Identity Verification Providers) | IdentityVerificationInterface 구현 + 필터 훅 core.id... |
 | [language-pack-service.md](language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) | LanguagePackService 가 install/activate/deactiva... |
 | [middleware.md](middleware.md) | 미들웨어 등록 규칙 | 인증 필요 미들웨어 → 전역 등록 금지! |
 | [notification-system.md](notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스... |
 | [pagination.md](pagination.md) | 대용량 목록 페이지네이션 (Pagination) | 총 건수만 상한을 받는다 — 상한 이하면 정확, 초과면 "이상"(total_relat... |
+| [password-policy.md](password-policy.md) | 비밀번호 정책 (작성 규칙·재사용 금지·만료) | 작성 규칙(길이·특수문자·조합·아이디 포함·반복·연속)은 PasswordPolicy:... |
+| [privacy-retention.md](privacy-retention.md) | 개인정보 보유기간 처리 (Privacy Retention) | 확장은 PrivacyRetentionHandlerInterface 를 구현한 백엔드 ... |
+| [queue-management.md](queue-management.md) | 큐 관리 (Queue Management) | 큐 탭은 세 목록(대기·실패·처리 기록)과 워커 상태 요약을 보여 준다 — 대기 작업... |
 | [response-helper.md](response-helper.md) | API 응답 규칙 (ResponseHelper) | 모든 API 응답은 ResponseHelper 사용 |
 | [reverse-proxy.md](reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) | 프록시 뒤에서는 요청이 스스로 스킴·IP 를 증명하지 못한다 — 신뢰할 프록시를 지정... |
 | [routing.md](routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
+| [scheduling.md](scheduling.md) | 스케줄 관리 (DB 스케줄 등록부) | 예약 작업은 전부 schedules 행이다 — 코어는 config/core.php 의... |
 | [search-system.md](search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL F... |
 | [seo-system.md](seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) | SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → Seo... |
 | [service-provider.md](service-provider.md) | 서비스 프로바이더 안전성 | DB 접근 전 .env 파일 존재 확인 필수 |

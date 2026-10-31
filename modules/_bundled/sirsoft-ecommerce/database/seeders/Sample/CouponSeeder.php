@@ -21,10 +21,12 @@ class CouponSeeder extends Seeder
 {
     /**
      * 쿠폰 시더를 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
-        $this->command->info('쿠폰 더미 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.coupon.start'));
 
         $this->deleteExistingData();
         $coupons = $this->createCoupons();
@@ -33,24 +35,26 @@ class CouponSeeder extends Seeder
 
         $couponCount = Coupon::count();
         $issueCount = CouponIssue::count();
-        $this->command->info("쿠폰 더미 데이터 {$couponCount}건, 발급 내역 {$issueCount}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.coupon.done', ['coupons' => $couponCount, 'issues' => $issueCount]));
     }
 
     /**
      * 기존 쿠폰 데이터를 삭제합니다.
+     *
+     * @return void 반환값 없음
      */
     private function deleteExistingData(): void
     {
         $issueCount = CouponIssue::count();
         if ($issueCount > 0) {
             CouponIssue::query()->delete();
-            $this->command->warn("기존 쿠폰 발급 내역 {$issueCount}건을 삭제했습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.coupon.purged_issues', ['count' => $issueCount]));
         }
 
         $couponCount = Coupon::withTrashed()->count();
         if ($couponCount > 0) {
             Coupon::withTrashed()->forceDelete();
-            $this->command->warn("기존 쿠폰 {$couponCount}건을 삭제했습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.coupon.purged_coupons', ['count' => $couponCount]));
         }
     }
 
@@ -1336,11 +1340,11 @@ class CouponSeeder extends Seeder
 
             $count = $index + 1;
             if ($count % 10 === 0) {
-                $this->command->line("  - 쿠폰 {$count}개 생성 완료");
+                $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.progress_created', ['count' => $count]));
             }
         }
 
-        $this->command->line('  - 쿠폰 총 '.count($createdCoupons).'개 생성 완료');
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.created_total', ['count' => count($createdCoupons)]));
 
         return $createdCoupons;
     }
@@ -1349,6 +1353,7 @@ class CouponSeeder extends Seeder
      * target_scope에 따라 상품/카테고리 피벗 테이블을 연결합니다.
      *
      * @param  array<int, Coupon>  $coupons  생성된 쿠폰 배열
+     * @return void 반환값 없음
      */
     private function attachTargetScopes(array $coupons): void
     {
@@ -1356,7 +1361,7 @@ class CouponSeeder extends Seeder
         $categoryIds = Category::pluck('id')->toArray();
 
         if (empty($productIds) && empty($categoryIds)) {
-            $this->command->warn('상품/카테고리 데이터가 없어 피벗 연결을 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.coupon.skip_pivots'));
 
             return;
         }
@@ -1396,19 +1401,20 @@ class CouponSeeder extends Seeder
             }
         }
 
-        $this->command->line("  - 상품 피벗 {$attachedProducts}건, 카테고리 피벗 {$attachedCategories}건 연결 완료");
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.pivots_attached', ['products' => $attachedProducts, 'categories' => $attachedCategories]));
     }
 
     /**
      * 모든 쿠폰을 모든 사용자에게 사용 가능한 상태로 발급합니다.
      *
      * @param  array<int, Coupon>  $coupons  생성된 쿠폰 배열
+     * @return void 반환값 없음
      */
     private function createIssueRecords(array $coupons): void
     {
         $userIds = User::pluck('id')->toArray();
         if (empty($userIds)) {
-            $this->command->warn('사용자 데이터가 없어 발급 내역 생성을 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.coupon.skip_issues'));
 
             return;
         }
@@ -1417,7 +1423,7 @@ class CouponSeeder extends Seeder
         $totalIssues = 0;
         $userCount = count($userIds);
 
-        $this->command->line("  - 쿠폰을 사용자({$userCount}명)에게 발급 시작...");
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.issue_start', ['count' => $userCount]));
 
         foreach ($coupons as $index => $coupon) {
             $couponIssueCount = 0;
@@ -1429,23 +1435,25 @@ class CouponSeeder extends Seeder
                     continue;
                 }
             }
+            // 발급 수는 총 발급 수량을 넘지 않는다 (발급 이력이 「총 수량」보다 많은 쿠폰을 만들지 않음)
             $targetUserIds = $userIds;
+            shuffle($targetUserIds);
+            if ($coupon->total_quantity !== null) {
+                $targetUserIds = array_slice($targetUserIds, 0, max(0, (int) $coupon->total_quantity));
+            }
 
             foreach ($targetUserIds as $userId) {
-                $issuedAt = $now->copy()->subDays(rand(1, 7));
+                // 발급 시각은 쿠폰의 발급 기간 안 (중지·만료 쿠폰도 그 기간에 발급된 것으로)
+                $issuedAt = $this->issuedAtWithinWindow($coupon, $now);
 
-                // 만료일 계산 (충분히 긴 유효기간 설정)
+                // 만료일: 발급일 기준 일수 또는 쿠폰 유효기간 종료일 — 연장하지 않는다
                 $expiredAt = null;
                 if ($coupon->valid_type === 'days_from_issue' && $coupon->valid_days) {
                     $expiredAt = $issuedAt->copy()->addDays($coupon->valid_days);
                 } elseif ($coupon->valid_to) {
                     $expiredAt = $coupon->valid_to;
                 }
-
-                // 만료일이 이미 지났으면 미래로 연장
-                if ($expiredAt && $expiredAt->lt($now)) {
-                    $expiredAt = $now->copy()->addDays(30);
-                }
+                $isExpired = $expiredAt !== null && $expiredAt->lt($now);
 
                 // 쿠폰 코드 (download 방식만)
                 $couponCode = null;
@@ -1457,7 +1465,8 @@ class CouponSeeder extends Seeder
                     'coupon_id' => $coupon->id,
                     'user_id' => $userId,
                     'coupon_code' => $couponCode,
-                    'status' => 'available', // 모두 사용 가능한 상태로 발급
+                    // 유효기간이 지난 발급분은 만료 상태 (사용 가능으로 남기면 지난 쿠폰이 주문서에 뜬다)
+                    'status' => $isExpired ? 'expired' : 'available',
                     'issued_at' => $issuedAt,
                     'expired_at' => $expiredAt,
                     'used_at' => null,
@@ -1474,10 +1483,29 @@ class CouponSeeder extends Seeder
 
             $count = $index + 1;
             if ($count % 10 === 0) {
-                $this->command->line("  - 쿠폰 {$count}개 발급 완료");
+                $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.progress_issued', ['count' => $count]));
             }
         }
 
-        $this->command->line("  - 발급 내역 {$totalIssues}건 생성 완료 (다운로드 쿠폰은 약 1/3만 발급)");
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.issues_done', ['count' => $totalIssues]));
+    }
+
+    /**
+     * 쿠폰의 발급 기간 안에서 발급 시각을 고릅니다 (기간이 없으면 최근 1~7일).
+     *
+     * @param  Coupon  $coupon  쿠폰
+     * @param  Carbon  $now  현재 시각
+     * @return Carbon 발급 시각
+     */
+    private function issuedAtWithinWindow(Coupon $coupon, Carbon $now): Carbon
+    {
+        $from = $coupon->issue_from instanceof Carbon ? $coupon->issue_from->copy() : null;
+        $to = $coupon->issue_to instanceof Carbon ? $coupon->issue_to->copy()->min($now) : $now->copy();
+
+        if ($from === null || $from->greaterThanOrEqualTo($to)) {
+            return $to->copy()->subDays(rand(1, 7));
+        }
+
+        return Carbon::createFromTimestamp(rand($from->getTimestamp(), $to->getTimestamp()));
     }
 }

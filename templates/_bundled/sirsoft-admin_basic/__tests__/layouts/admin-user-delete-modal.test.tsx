@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file admin-user-delete-modal.test.tsx
  * @description 사용자 삭제 모달 레이아웃 테스트
@@ -14,6 +15,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 // ==============================
 // 테스트
@@ -127,10 +129,10 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const deleteButton = footerDiv.children[1];
 
       // sequence > apiCall 추출
-      const sequenceAction = deleteButton.actions[0];
+      const sequenceAction = actionsOf(deleteButton)[0];
       expect(sequenceAction.handler).toBe('sequence');
 
-      const apiCallAction = sequenceAction.actions.find((a: any) => a.handler === 'apiCall');
+      const apiCallAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'apiCall');
       expect(apiCallAction).toBeDefined();
 
       // onSuccess 핸들러 순서 검증 (setState → refetchDataSource → toast → closeModal)
@@ -151,8 +153,8 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1];
 
-      const sequenceAction = deleteButton.actions[0];
-      const apiCallAction = sequenceAction.actions.find((a: any) => a.handler === 'apiCall');
+      const sequenceAction = actionsOf(deleteButton)[0];
+      const apiCallAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'apiCall');
 
       // onError 핸들러 검증
       const onError = apiCallAction.onError;
@@ -171,8 +173,8 @@ describe('사용자 삭제 모달 레이아웃 테스트', () => {
       const footerDiv = deleteModal.children[deleteModal.children.length - 1];
       const deleteButton = footerDiv.children[1];
 
-      const sequenceAction = deleteButton.actions[0];
-      const apiCallAction = sequenceAction.actions.find((a: any) => a.handler === 'apiCall');
+      const sequenceAction = actionsOf(deleteButton)[0];
+      const apiCallAction = actionsOf(sequenceAction).find((a: any) => a.handler === 'apiCall');
 
       const onError = apiCallAction.onError;
       const toastAction = onError.find((a: any) => a.handler === 'toast');

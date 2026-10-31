@@ -20,7 +20,6 @@ use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioTemplate;
 use Plugins\Sirsoft\MessageBizppurio\Repositories\BizppurioDispatchRepository;
 use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioTemplateRepositoryInterface;
 use Plugins\Sirsoft\MessageBizppurio\Services\AlimtalkPayloadMapper;
-use Plugins\Sirsoft\MessageBizppurio\Services\DispatchLinkContext;
 use Plugins\Sirsoft\MessageBizppurio\Services\MessagePayloadBuilder;
 use Plugins\Sirsoft\MessageBizppurio\Services\SmsChannelDriver;
 use Plugins\Sirsoft\MessageBizppurio\Services\SmsTypeResolver;
@@ -41,6 +40,9 @@ class SmsChannelDriverTest extends PluginTestCase
      * 로케일 축과 무관한 기존 케이스가 맵 표기를 반복하지 않게 하기 위한 편의다.
      *
      * @param  string|array<string, string>|null  $smsBody  로케일 맵 또는 ko 본문
+     * @param  bool  $isActive  행 활성 여부
+     * @param  bool  $smsOnly  SMS 단독 발송(알림톡 끔) 여부
+     * @return BizppurioTemplate 조립한 템플릿 행
      */
     private function templateRow(
         string|array|null $smsBody = '주문이 완료되었습니다.',
@@ -59,6 +61,12 @@ class SmsChannelDriverTest extends PluginTestCase
 
     /**
      * findByType 반환값을 지정한 driver 를 만듭니다.
+     *
+     * @param  BizppurioTemplate|null  $row  findByType 이 돌려줄 템플릿 행
+     * @param  MessagePayloadBuilder|null  $builder  payload 빌더, null 이면 스파이 빌더
+     * @param  bool  $isTestMode  검수 모드 설정값
+     * @param  NotificationDefinition|null  $definition  알림 유형 라벨 조회에 쓸 정의, null 이면 코드값 폴백
+     * @return SmsChannelDriver 조립한 드라이버
      */
     private function makeDriver(
         ?BizppurioTemplate $row,
@@ -85,13 +93,14 @@ class SmsChannelDriverTest extends PluginTestCase
             new SmsTypeResolver,
             $builder ?? $this->spyBuilder(),
             new BizppurioDispatchRepository,
-            new DispatchLinkContext,
             $pluginSettings,
         );
     }
 
     /**
      * build* 호출 인자를 기록하는 payload 빌더 스파이를 만듭니다.
+     *
+     * @return MessagePayloadBuilder 반환값
      */
     private function spyBuilder(): MessagePayloadBuilder
     {
@@ -99,8 +108,19 @@ class SmsChannelDriverTest extends PluginTestCase
         {
             public array $calls = [];
 
+            /**
+             * 부모 생성자 의존성 없이 스파이를 만듭니다.
+             */
             public function __construct() {}
 
+            /**
+             * buildSms 을(를) 검증합니다.
+             *
+             * @param  string  $to  수신 번호
+             * @param  string  $message  치환된 본문
+             * @param  string  $refkey  발송 참조 키
+             * @return array 반환값
+             */
             public function buildSms(string $to, string $message, string $refkey): array
             {
                 $this->calls[] = ['type' => 'sms', 'to' => $to, 'message' => $message, 'refkey' => $refkey];
@@ -108,6 +128,15 @@ class SmsChannelDriverTest extends PluginTestCase
                 return ['type' => 'sms', 'to' => $to, 'refkey' => $refkey];
             }
 
+            /**
+             * buildLms 을(를) 검증합니다.
+             *
+             * @param  string  $to  수신 번호
+             * @param  string  $message  치환된 본문
+             * @param  string  $refkey  발송 참조 키
+             * @param  string|null  $subject  LMS 제목
+             * @return array 반환값
+             */
             public function buildLms(string $to, string $message, string $refkey, ?string $subject = null): array
             {
                 $this->calls[] = ['type' => 'lms', 'to' => $to, 'message' => $message, 'refkey' => $refkey, 'subject' => $subject];
@@ -117,13 +146,23 @@ class SmsChannelDriverTest extends PluginTestCase
         };
     }
 
+    /**
+     * notification 을(를) 검증합니다.
+     *
+     * @param  array<string, mixed>  $data  알림 data
+     * @return GenericNotification 반환값
+     */
     private function notification(array $data = []): GenericNotification
     {
         return new GenericNotification('order_confirmed', 'sirsoft-ecommerce', $data, 'module', 'sirsoft-ecommerce');
     }
 
     /**
+     * 템플릿 행이 없으면 예외를 던지고 발송하지 않는다.
+     *
      * @effects sms_skipped_when_body_empty_or_row_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_템플릿_행이_없으면_예외를_던지고_발송하지_않는다(): void
     {
@@ -141,7 +180,11 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * sms body가 비어있으면 예외를 던지고 발송하지 않는다.
+     *
      * @effects sms_skipped_when_body_empty_or_row_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_sms_body가_비어있으면_예외를_던지고_발송하지_않는다(): void
     {
@@ -157,6 +200,13 @@ class SmsChannelDriverTest extends PluginTestCase
         }
     }
 
+    /**
+     * 비활성 행이면 발송하지 않는다.
+     *
+     * @effects sms_skipped_when_template_row_inactive
+     *
+     * @return void 반환값 없음
+     */
     public function test_비활성_행이면_발송하지_않는다(): void
     {
         Bus::fake();
@@ -178,6 +228,9 @@ class SmsChannelDriverTest extends PluginTestCase
      * 이후 누군가 SmsChannelDriver 에 sms_only 분기를 넣어도 이 테스트는 green 으로 남는다.
      *
      * @effects sms_dispatches_regardless_of_sms_only_flag
+     *
+     * @param  bool  $smsOnly  SMS 단독 발송 플래그 값
+     * @return void 반환값 없음
      */
     #[DataProvider('smsOnlyProvider')]
     public function test_sms_body가_있으면_sms_only_값과_무관하게_발송한다(bool $smsOnly): void
@@ -191,7 +244,9 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
-     * @return array<string, array{bool}>
+     * sms_only 플래그의 두 값을 공급합니다.
+     *
+     * @return array<string, array{bool}> 케이스명별 sms_only 값
      */
     public static function smsOnlyProvider(): array
     {
@@ -201,6 +256,13 @@ class SmsChannelDriverTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 회원은 mobile로 발송한다.
+     *
+     * @effects member_sms_uses_the_member_mobile
+     *
+     * @return void 반환값 없음
+     */
     public function test_회원은_mobile로_발송한다(): void
     {
         Bus::fake();
@@ -213,6 +275,13 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertSame('01012345678', $builder->calls[0]['to']);
     }
 
+    /**
+     * 비회원은 data의 전화번호로 발송한다.
+     *
+     * @effects guest_sms_uses_the_phone_carried_in_the_payload
+     *
+     * @return void 반환값 없음
+     */
     public function test_비회원은_data의_전화번호로_발송한다(): void
     {
         Bus::fake();
@@ -227,7 +296,40 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 휴대폰을 등록하지 않은 회원이 수신자면 **발송하지 않는다.**
+     *
+     * 종전에는 `$notifiable->mobile ?? $data[번호]` 라, 그 알림이 나르는 **고객 번호로**
+     * 문자가 나갈 수 있었다. 지금은 주문 6종 화이트리스트가 우연히 막고 있을 뿐이고,
+     * 관리자 수신 알림이 늘면 그 우연이 깨진다.
+     *
+     * @effects member_without_mobile_never_borrows_the_customer_number
+     *
+     * @return void 반환값 없음
+     */
+    public function test_휴대폰_미등록_회원에게는_고객_번호를_빌려_쓰지_않는다(): void
+    {
+        Bus::fake();
+        $staff = User::factory()->create(['mobile' => null]);
+        $data = [SmsChannelDriver::RECIPIENT_PHONE_KEY => '010-9999-0000'];
+        $builder = $this->spyBuilder();
+
+        // 번호를 못 찾은 것으로 취급되어 기존 계약(건너뜀 예외)을 그대로 탄다.
+        $this->expectException(NotificationSendSkippedException::class);
+
+        try {
+            $this->makeDriver($this->templateRow(), $builder)->send($staff, $this->notification($data));
+        } finally {
+            Bus::assertNotDispatched(SendMessageJob::class);
+            $this->assertSame([], $builder->calls, '고객 번호가 발송 대상으로 넘어가면 안 됩니다.');
+        }
+    }
+
+    /**
+     * sms body의 변수를 알림 data로 치환해 발송한다.
+     *
      * @effects sms_body_is_dispatch_source_not_core_template
+     *
+     * @return void 반환값 없음
      */
     public function test_sms_body의_변수를_알림_data로_치환해_발송한다(): void
     {
@@ -243,6 +345,49 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 알림 변수가 언어별 값(`{ko: …, en: …}`)이면 수신자 언어의 값으로 치환한다 (#798).
+     *
+     * 코어가 알림 변수에 언어별 값을 허용한 뒤(GenericNotification::getDataFor) 이 드라이버가 getData() 를 그대로 읽으면
+     * 배열이라 치환되지 않고 `#{name}` 이 본문에 남는다.
+     *
+     * @effects sms_body_resolves_localized_variables_for_recipient
+     *
+     * @param  string  $locale  수신자 로케일
+     * @param  string  $expected  기대하는 발송 본문
+     * @return void 반환값 없음
+     */
+    #[DataProvider('localizedVariableProvider')]
+    public function test_언어별_알림_변수는_수신자_언어로_치환된다(string $locale, string $expected): void
+    {
+        Bus::fake();
+        $guest = new GuestNotifiable('guest@example.com', '홍길동', $locale);
+        $builder = $this->spyBuilder();
+
+        $this->makeDriver($this->templateRow(smsBody: [
+            'ko' => '[샵] #{idp_label} 연결 실패',
+            'en' => '[Shop] #{idp_label} connection failed',
+        ]), $builder)->send($guest, $this->notification([
+            'idp_label' => ['ko' => '사내 계정', 'en' => 'Company account'],
+            SmsChannelDriver::RECIPIENT_PHONE_KEY => '010-9999-0000',
+        ]));
+
+        $this->assertSame($expected, $builder->calls[0]['message']);
+    }
+
+    /**
+     * 언어별 변수 치환의 수신자 로케일과 기대 본문 쌍을 공급합니다.
+     *
+     * @return array<string, array{0: string, 1: string}> 케이스명별 [로케일, 기대 본문]
+     */
+    public static function localizedVariableProvider(): array
+    {
+        return [
+            'ko 수신자' => ['ko', '[샵] 사내 계정 연결 실패'],
+            'en 수신자' => ['en', '[Shop] Company account connection failed'],
+        ];
+    }
+
+    /**
      * 수신자 로케일별 본문 선택 (#597 §14.3).
      *
      * 개편 과정에서 sms_body 가 단일 문자열이 되며 이 축이 사라진 적이 있다 — 코드에서
@@ -250,6 +395,10 @@ class SmsChannelDriverTest extends PluginTestCase
      * ko 본문을 받는 것이 유일한 증상이었다. 이 테스트가 그 축을 고정한다.
      *
      * @effects sms_body_rendered_in_recipient_locale
+     *
+     * @param  string  $locale  수신자 로케일
+     * @param  string  $expected  기대하는 발송 본문
+     * @return void 반환값 없음
      */
     #[DataProvider('recipientLocaleProvider')]
     public function test_sms_body는_수신자_로케일로_렌더된다(string $locale, string $expected): void
@@ -269,7 +418,9 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: string}>
+     * 수신자 로케일과 기대 본문 쌍을 공급합니다.
+     *
+     * @return array<string, array{0: string, 1: string}> 케이스명별 [로케일, 기대 본문]
      */
     public static function recipientLocaleProvider(): array
     {
@@ -289,6 +440,8 @@ class SmsChannelDriverTest extends PluginTestCase
      * 테스트도 subject 를 읽지 않아, resolveTypeLabel 의 $locale 인자를 지워도 green 이었다.
      *
      * @effects sms_lms_split_by_body_bytes_with_definition_label_subject, sms_body_rendered_in_recipient_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_lms_제목도_수신자_로케일로_렌더된다(): void
     {
@@ -324,16 +477,21 @@ class SmsChannelDriverTest extends PluginTestCase
      * 게이트만 통과시키고 끝내면 그 수신자의 로케일에 본문이 없을 때 빈 SMS 가 나간다.
      *
      * 로케일 해석은 코어 NotificationContentBehavior 와 동일한 체인이다 —
-     * `수신자 로케일 → fallback_locale → ''`. fallback_locale(ko) 이 비어 있으면
+     * `수신자 로케일 → 사이트 기본 언어 → 영어 → ''`(#148). 대체 언어에도 본문이 없으면
      * 발송하지 않는다(개편 전 코어 템플릿 경로와 같은 결과).
+     *
+     * @effects sms_skipped_when_fallback_locale_body_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_fallback_locale에_본문이_없으면_발송하지_않는다(): void
     {
         Bus::fake();
+        config(['app.site_locale' => 'ko']);
         $member = User::factory()->create(['mobile' => '01011112222']);
 
-        // en 만 채운 행 — 행 게이트(hasSmsBody)는 통과하지만 ko 수신자용 본문이 없다.
-        $row = $this->templateRow(smsBody: ['en' => '[Shop] Done']);
+        // ja 만 채운 행 — 행 게이트(hasSmsBody)는 통과하지만 ko 수신자의 대체 언어(ko·en)에 본문이 없다.
+        $row = $this->templateRow(smsBody: ['ja' => '[Shop] 完了']);
         $this->assertTrue($row->hasSmsBody(), '행 게이트는 어느 로케일에든 본문이 있으면 통과한다.');
 
         $this->expectException(NotificationSendSkippedException::class);
@@ -349,6 +507,10 @@ class SmsChannelDriverTest extends PluginTestCase
      * 모든 로케일이 빈 문자열이면 발송하지 않는다 (#597 §14.3).
      *
      * 맵이 존재한다는 사실만으로 게이트를 통과하면 빈 SMS 가 나간다.
+     *
+     * @effects sms_skipped_when_every_locale_body_is_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_모든_로케일이_비어있으면_발송하지_않는다(): void
     {
@@ -365,6 +527,13 @@ class SmsChannelDriverTest extends PluginTestCase
         }
     }
 
+    /**
+     * 회원 발송 시 pending 이력을 생성하고 회원id를 기록한다.
+     *
+     * @effects member_dispatch_row_records_the_member_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_회원_발송_시_pending_이력을_생성하고_회원id를_기록한다(): void
     {
         Bus::fake();
@@ -379,6 +548,13 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertSame('order_confirmed', $dispatch->notification_type);
     }
 
+    /**
+     * 비회원 발송 이력은 회원id가 null이다.
+     *
+     * @effects guest_dispatch_row_has_no_member_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_비회원_발송_이력은_회원id가_null이다(): void
     {
         Bus::fake();
@@ -390,6 +566,13 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertNull(BizppurioDispatch::first()->to_user_id);
     }
 
+    /**
+     * 발송하지 않으면 이력도 생성하지 않는다.
+     *
+     * @effects no_dispatch_row_when_nothing_is_sent
+     *
+     * @return void 반환값 없음
+     */
     public function test_발송하지_않으면_이력도_생성하지_않는다(): void
     {
         Bus::fake();
@@ -404,6 +587,13 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertDatabaseCount('bizppurio_dispatches', 0);
     }
 
+    /**
+     * 전화번호가 없으면 예외를 던지고 발송하지 않는다.
+     *
+     * @effects sms_skipped_when_no_phone_number_resolves
+     *
+     * @return void 반환값 없음
+     */
     public function test_전화번호가_없으면_예외를_던지고_발송하지_않는다(): void
     {
         Bus::fake();
@@ -419,7 +609,11 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 짧은 본문은 sms로 긴 본문은 lms로 보낸다.
+     *
      * @effects sms_lms_split_by_body_bytes_with_definition_label_subject
+     *
+     * @return void 반환값 없음
      */
     public function test_짧은_본문은_sms로_긴_본문은_lms로_보낸다(): void
     {
@@ -437,6 +631,13 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertSame('lms', $longBuilder->calls[0]['type']);
     }
 
+    /**
+     * generic notification이 아니면 무시한다.
+     *
+     * @effects non_generic_notifications_are_ignored
+     *
+     * @return void 반환값 없음
+     */
     public function test_generic_notification이_아니면_무시한다(): void
     {
         Bus::fake();
@@ -447,6 +648,13 @@ class SmsChannelDriverTest extends PluginTestCase
         Bus::assertNotDispatched(SendMessageJob::class);
     }
 
+    /**
+     * 검수 모드 설정값이 이력에 스냅샷으로 기록된다.
+     *
+     * @effects test_mode_flag_is_snapshotted_on_the_dispatch_row
+     *
+     * @return void 반환값 없음
+     */
     public function test_검수_모드_설정값이_이력에_스냅샷으로_기록된다(): void
     {
         Bus::fake();
@@ -457,6 +665,13 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->assertTrue(BizppurioDispatch::first()->is_test_mode);
     }
 
+    /**
+     * 운영 모드 설정값도 이력에 스냅샷으로 기록된다.
+     *
+     * @effects live_mode_flag_is_snapshotted_on_the_dispatch_row
+     *
+     * @return void 반환값 없음
+     */
     public function test_운영_모드_설정값도_이력에_스냅샷으로_기록된다(): void
     {
         Bus::fake();
@@ -465,5 +680,33 @@ class SmsChannelDriverTest extends PluginTestCase
         $this->makeDriver($this->templateRow(), isTestMode: false)->send($member, $this->notification());
 
         $this->assertFalse(BizppurioDispatch::first()->is_test_mode);
+    }
+
+    /**
+     * 발송하지 못한 사유 문구는 발송 이력 상태(「실패」)와 같은 말을 쓴다 — 「건너뛰었습니다」가 아니다 (7.1.1 출시 전).
+     *
+     * 이 사유(`send_skipped.*` — 본문 미설정·수신 번호 없음·승인 템플릿 없음)는 드라이버가
+     * NotificationSendSkippedException 으로 던져 코어 발송 이력에 `failed` 로 남는다(운영자가 고쳐야 할 설정 미비).
+     * 채널을 끈 경우의 `skipped` 와 같은 말을 쓰면 상태와 문구가 어긋난다.
+     *
+     * 번역은 설치본(활성 디렉토리)에서 읽히므로 번들 원본의 언어 파일을 직접 대조한다.
+     *
+     * @effects sms_skipped_when_body_empty_or_row_missing, sms_skipped_when_no_phone_number_resolves
+     *
+     * @return void 반환값 없음
+     */
+    public function test_발송하지_못한_사유_문구는_실패_상태와_맞는다(): void
+    {
+        $root = dirname(__DIR__, 3);
+
+        foreach (['ko' => ['발송하지 못했습니다', '건너뛰'], 'en' => ['Could not send', 'Skipped']] as $locale => [$must, $mustNot]) {
+            $messages = require $root.'/lang/'.$locale.'/messages.php';
+
+            $this->assertNotEmpty($messages['send_skipped'] ?? []);
+            foreach ($messages['send_skipped'] as $key => $text) {
+                $this->assertStringContainsString($must, $text, "{$locale}.send_skipped.{$key}");
+                $this->assertStringNotContainsString($mustNot, $text, "{$locale}.send_skipped.{$key}");
+            }
+        }
     }
 }

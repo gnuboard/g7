@@ -1,0 +1,180 @@
+{
+    "comment": "내보내기 작업 여러 건을 한꺼번에 지우는 확인 창. 대상은 표에서 체크한 것(`_global.ecommerceExportBulkSelectedItems`)이다.\n  진행중인 작업·삭제 권한 범위 밖 작업·이미 없는 작업은 서버가 거절하지 않고 **건너뛴 뒤 그 수를 알린다** —\n  목록을 연 뒤 상태가 바뀐 행이 섞여도 나머지는 지워져야 하기 때문이다. 경고 문장이 그 사실을 미리 적고,\n  성공 안내는 서버 문장(삭제·건너뜀 건수)을 그대로 띄운다. 성공하면 체크 목록을 비운다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Export Bulk Delete Confirmation Modal"
+    },
+    "id": "export_bulk_delete_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.export.modal_bulk_delete.title",
+        "size": "medium"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.export.modal_bulk_delete.message|count={{(_global.ecommerceExportBulkSelectedItems || []).length}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "ecommerce-alert-warning"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "ecommerce:text-xl ecommerce:text-amber-600 ecommerce:dark:text-amber-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ecommerce:text-xs ecommerce:text-yellow-700 ecommerce:dark:text-yellow-300"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "text": "$t:sirsoft-ecommerce.admin.export.modal_bulk_delete.warning"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "ecommerce-modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                        "disabled": "{{_global.ecommerceExportIsBulkDeleting}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.export.common.cancel"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "선택 삭제 실행. 성공 갈래가 체크 목록을 비운 뒤 목록을 다시 부르고, 서버가 준 문장(삭제·건너뜀 건수)을 그대로 띄운다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "ecommerceExportIsBulkDeleting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/exports/bulk",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE",
+                                        "body": {
+                                            "ids": "{{_global.ecommerceExportBulkSelectedItems}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "ecommerceExportIsBulkDeleting": false,
+                                                "ecommerceExportBulkSelectedItems": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "exports"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{response?.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "ecommerceExportIsBulkDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-500 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
+                        "disabled": "{{_global.ecommerceExportIsBulkDeleting}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.ecommerceExportIsBulkDeleting}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "ecommerce-spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.ecommerceExportIsBulkDeleting ? '$t:sirsoft-ecommerce.admin.export.common.deleting' : '$t:sirsoft-ecommerce.admin.export.common.delete'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Template;
 
 use App\Extension\HookManager;
+use App\Http\Requests\Concerns\RestrictsHiddenExtensionsToSuperAdmin;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -15,6 +17,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class IndexTemplateRequest extends FormRequest
 {
+    use RestrictsHiddenExtensionsToSuperAdmin;
+
     /**
      * 검색 가능한 필드 목록
      */
@@ -24,6 +28,8 @@ class IndexTemplateRequest extends FormRequest
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
      * 권한 체크는 라우트의 permission 미들웨어에서 수행됩니다.
+     *
+     * @return bool 항상 true
      */
     public function authorize(): bool
     {
@@ -33,7 +39,7 @@ class IndexTemplateRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

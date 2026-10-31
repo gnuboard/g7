@@ -1,0 +1,24 @@
+feature: 확장 GitHub 내려받기 — 그 버전의 배포본(태그)이 없을 때 「찾지 못함」 으로 알린다 (7.1.1 출시 전)
+
+description: |
+  `ExtensionManager::downloadAndExtractFromGitHub` 는 태그가 없으면 `GithubHelper::resolveArchiveUrl` 이 null 이라 모든 전략이 건너뛰고
+  한 번도 내려받지 않는데, 마지막에 「모든 아카이브 추출 방법이 실패했습니다」(`all_extract_methods_failed`)로 끝나 원인(배포본 없음)을
+  추출 도구 문제로 잘못 짚게 했다. 어느 전략도 아카이브 주소를 얻지 못하면 저장소·버전을 밝힌 「배포본을 찾지 못했습니다」
+  (`settings.core_update.extension_release_not_found`)로 던진다.
+
+  축 github_response 는 GitHub API 가 그 버전에 대해 돌려준 응답이다. 이 매니페스트는 태그 없음(404) 갈래만 소유한다.
+
+axes:
+  github_response: [tag_not_found]
+
+effects:
+  - release_not_found_message_names_repository_and_version
+  - extract_failure_message_not_used
+  - no_archive_download_attempted
+
+test_files:
+  - tests/Unit/Extension/ExtensionManagerGithubReleaseNotFoundTest.php
+
+notes: |
+  코어 쪽 같은 결함(`CoreUpdateService::downloadUpdate`, `core:bundled-sources`)은 core-update-bundled-sources 매니페스트의
+  `github_missing_release_is_reported_as_not_found` 효과(`CoreBundledSourcesCommandTest`)가 잠근다.

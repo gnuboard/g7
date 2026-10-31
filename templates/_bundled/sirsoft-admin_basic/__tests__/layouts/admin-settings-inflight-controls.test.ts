@@ -209,7 +209,12 @@ describe('환경설정 — 레이아웃이 소유한 진행 플래그', () => {
 
         // 되돌림은 성공·실패 **양쪽**에 있어야 한다. 한쪽만 있으면 그 경로에서
         // 버튼이 잠긴 채 남는다.
-        const call = collect(button.actions ?? [], (obj) => Array.isArray(obj.onSuccess))[0];
+        // 원본 마크업을 구운 JSON 은 갈래에 액션이 하나뿐이면 배열 대신 객체 하나로 쓴다.
+        // 엔진은 둘을 같게 다루므로(ActionDispatcher 가 객체를 [객체] 로 편다) 여기서도 둘 다 읽는다.
+        const call = collect(
+            button.actions ?? [],
+            (obj) => obj.onSuccess !== null && typeof obj.onSuccess === 'object',
+        )[0];
 
         expect(call, `${flag} 를 쓰는 왕복 액션을 찾지 못했습니다.`).toBeDefined();
 

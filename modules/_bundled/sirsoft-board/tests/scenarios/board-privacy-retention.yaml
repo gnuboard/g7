@@ -1,0 +1,87 @@
+feature: 게시판 개인정보 보유기간 파기 (이슈 #636 트랙4 확장 — 게시판)
+
+description: |
+  코어 보유기간 계약(`core.privacy.retention_handlers`)에 게시판이 두 축을 기여한다.
+  코어 매니페스트 `tests/scenarios/privacy-retention.yaml` 이 계약(수집·꺼짐 보고·실패 격리)을
+  소유하고, 이 매니페스트는 게시판 도메인의 처리 결과만 소유한다.
+
+    - **작성 IP 축**(`sirsoft-board.ip`): 회원 글을 포함한 모든 게시글·댓글의 작성 IP 를 작성 후
+      N일(기본 365)이 지나면 NULL 로 지운다. IP 는 접속기록이라 보관 의무 기간이 지나면 남길
+      근거가 없다. 그래서 비회원 축과 **기간을 따로** 둔다.
+    - **비회원 작성자 정보 축**(`sirsoft-board.guest`): 비회원 글·댓글을 작성 후 N일이 지나면
+      익명화(작성자명 치환) 또는 삭제(게시판 삭제 경로 + 행에 남은 개인정보·본문·첨부 파기).
+      기간 0 은 「이 축을 쓰지 않음」이라 켜 두어도 꺼짐으로 보고한다.
+
+  설계에서 못박은 것:
+    - **기본 꺼짐**, `process()` 는 자기 토글을 다시 본다.
+    - **미리보기 = 실제 처리 건수**, 두 번째 실행은 0건(멱등 표지는 방식별로 다르다 — 익명화
+      표지 하나로 두면 익명화만 된 글이 삭제 모드에서 영구히 빠진다).
+    - **휴지통 행도 대상**이다 — 목록에서 사라졌을 뿐 행에 개인정보가 남는다.
+    - **신고 스냅샷 사본도 덮는다** — 원본만 지우면 「지웠다」가 거짓이 된다.
+    - **수정 시각을 바꾸지 않는다** — 파기는 글 수정이 아니다.
+    - 삭제 모드는 게시판 삭제 경로를 지나되 **항목별 before_delete(본인인증 정책이 걸리는 훅)를
+      건너뛴다** — 무인 배치에는 인증할 사람이 없다(일괄 처리 경로와 같은 판단).
+
+  결정 사항 (#51): `tags: [batch]` 를 붙이지 않는다. 10만 건 시드는 로컬 DB 제약과 충돌하고,
+  `chunkById` 유계성은 코드와 멱등 회귀(두 번째 실행 0건)로 고정한다.
+
+# axes 는 「한 행이 어떻게 처리되는가」를 가르는 입력만 둔다. 실행 흐름(dry-run)은 모든 케이스에서
+# 같은 쿼리를 지나므로 축이 아니라 효과(preview_equals_processed)로 고정한다.
+axes:
+  axis: [ip, guest]
+  toggle: [off, on]
+  guest_mode: [anonymize, delete]
+
+exclusions:
+  - { axis: ip, guest_mode: delete, reason: "IP 축에는 처리 방식이 없다(값만 지운다) — anonymize 칸이 그 축을 대표한다" }
+  - { toggle: off, guest_mode: delete, reason: "꺼져 있으면 방식 판정에 닿지 않는다 — anonymize 칸 1건으로 충분" }
+
+sub_flows:
+  - id: settings_surface
+    description: |
+      설정 저장 경로(FormRequest 의 캐스팅·규칙·카테고리 화이트리스트)와 화면 바인딩·저장 payload·
+      미리보기 API 가 같은 키를 보는지. 한 곳만 어긋나도 저장은 200 인데 값이 조용히 버려진다.
+    effects:
+      - board_retention_settings_are_saved
+      - board_retention_settings_are_validated
+      - board_retention_preview_api_counts_while_off
+      - board_settings_retention_section_binds_saved_keys
+      - board_settings_delete_warning_is_mode_conditional
+  - id: schema
+    description: |
+      board_posts.ip_address 를 nullable 로 바꾸는 마이그레이션 왕복과, 기존 행에 남은 자리표시값
+      0.0.0.0 을 NULL 로 되돌리는 1.2.0 업그레이드 스텝(스키마 변경과 데이터 변환을 나눈다).
+    effects:
+      - board_post_ip_is_nullable
+      - board_placeholder_post_ip_is_normalized
+
+effects:
+  - board_retention_is_off_by_default
+  - board_retention_handlers_are_registered_with_core
+  - board_ip_is_erased_after_retention
+  - board_retention_preview_equals_processed
+  - board_retention_is_idempotent
+  - board_guest_author_is_anonymized
+  - board_report_snapshot_is_scrubbed
+  - board_guest_post_is_deleted_and_scrubbed
+  - board_guest_attachments_are_purged
+  - board_retention_targets_match_the_population
+  - board_manual_run_processes_while_off
+  - board_manual_run_requires_settings_and_board_update
+  - board_manual_run_buttons_open_the_confirm_modal
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Privacy/BoardRetentionHandlerTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Privacy/BoardPrivacyRetentionSettingsTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Migrations/PostIpAddressNullableMigrationTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Upgrade/PlaceholderPostIpNormalizeTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-privacy-retention-settings.test.ts
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-settings-privacy-retention.spec.ts
+
+rules_layer_coverage:
+  - rule: offset-chunk-mutates-filter
+    coverage: |
+      두 축 모두 `chunkById` 로 순회한다 — 처리하면서 조건에서 빠지는 행(IP 가 NULL 이 된 행,
+      작성자명이 치환된 행)을 다루므로 OFFSET 순회는 커서가 밀려 건을 건너뛴다.
+  - rule: console-confirm
+    coverage: 핸들러는 코어 무인 커맨드(`privacy:process-retention`)가 실행한다 — 안전장치는 설정 토글과 보존기간이다.

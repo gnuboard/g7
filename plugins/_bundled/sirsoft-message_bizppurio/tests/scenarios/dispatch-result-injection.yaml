@@ -75,6 +75,16 @@ effects:
   - non_low_balance_cell_omits_low_balance_badge
   - fallback_cell_renders_fallback_badge
   - unmatched_row_renders_empty_cell
+  # overlay 결과 컬럼 — 조회 방식·채널 가드·표시 갈래 (프론트, notification_log_result.test.tsx)
+  - result_column_fetches_recent_result_map_without_params  # 다른 데이터소스를 params 로 참조하면 응답 전 평가돼 빈 배열 전송
+  - result_cell_shown_only_for_bizppurio_channel_rows
+  - result_column_hidden_on_mail_and_database_tabs
+  - row_expand_appends_result_block_for_matched_rows
+  - result_badges_use_solid_dark_mode_colors
+  - inspection_mode_dispatch_shows_inspection_label
+  - live_mode_dispatch_keeps_status_label
+  - alimtalk_row_expand_renders_sent_content
+  - sent_content_omitted_for_sms_or_missing_content
   # e2e (실연동 단계 도입 예정 — 브라우저 왕복 커버 대상)
   - e2e_open_history_shows_result_column
   - e2e_result_cell_shows_status_reason_and_badges

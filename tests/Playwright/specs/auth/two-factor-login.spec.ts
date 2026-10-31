@@ -32,7 +32,7 @@ let memberEmail: string;
 let adminEmail: string;
 let nonAdminEmail: string;
 
-test.beforeAll(async ({ playwright }) => {
+test.beforeAll(async ({ playwright }, testInfo) => {
   adminToken = issueToken('core.settings.read', 'core.settings.update');
 
   memberEmail = ensureTwoFactorUser('user', { password: PASSWORD });
@@ -40,12 +40,17 @@ test.beforeAll(async ({ playwright }) => {
   nonAdminEmail = ensureTwoFactorUser('nonadmin', { password: PASSWORD });
 
   // worker 범위 request 컨텍스트 — baseURL·ignoreHTTPSErrors 는 설정에서 온다.
+  // env 를 직접 읽지 않는다: `playwright.config.ts` 의 resolveBaseUrl() 이 PLAYWRIGHT_BASE_URL → `.env` APP_URL
+  // 순으로 해석한 값을 프로젝트 설정에서 받는다. env 만 읽으면 문서가 약속한 APP_URL 폴백이 없어
+  // 환경변수 없이 실행할 때 상대 경로 요청이 "Invalid URL" 로 죽는다.
   fixtureRequest = await playwright.request.newContext({
-    baseURL: process.env.PLAYWRIGHT_BASE_URL,
+    baseURL: testInfo.project.use.baseURL,
     ignoreHTTPSErrors: true,
   });
 
-  fixtureState = await enableTwoFactorFixture(fixtureRequest, adminToken);
+  // 이 spec 은 일반 회원 로그인도 재므로 적용 범위를 「전체 회원」으로 고정한다 — 사이트가 「관리자만」 이면
+  // 회원 로그인은 챌린지 없이 끝나 회원 축이 통째로 잴 수 없게 된다. 보안 탭 전체가 스냅샷되므로 함께 되돌아간다.
+  fixtureState = await enableTwoFactorFixture(fixtureRequest, adminToken, { two_factor_scope: 'all' });
 });
 
 test.afterAll(async () => {
@@ -73,7 +78,8 @@ async function submitAndReadChallenge(
   submit: () => Promise<void>
 ): Promise<string> {
   const [response] = await Promise.all([
-    page.waitForResponse((r) => r.url().includes(urlPart) && r.request().method() === 'POST'),
+    // 경로 정확 비교 — 이메일 칸 onBlur 의 `POST /api/auth/login/discover` 응답이 먼저 오면 포함 판정이 그것을 잡는다.
+    page.waitForResponse((r) => new URL(r.url()).pathname === urlPart && r.request().method() === 'POST'),
     submit(),
   ]);
 
@@ -87,8 +93,8 @@ async function submitAndReadChallenge(
 }
 
 /**
- * // @scenario controller=user, two_factor=on, code=invalid, code=valid
- * // @effects challenge_response_has_no_token, code_step_rendered_on_challenge, credential_step_hidden_on_challenge, no_raw_typeerror_text
+ * @scenario controller=user, two_factor=on, delivery=sent, code=valid
+ * @effects challenge_response_has_no_token
  */
 test('사용자 로그인 — 인증번호 단계로 전환되고 코드 확인 후 로그인된다', async ({ page }) => {
   await page.goto('/login');
@@ -128,8 +134,8 @@ test('사용자 로그인 — 인증번호 단계로 전환되고 코드 확인 
 });
 
 /**
- * // @scenario controller=user, two_factor=on, code=valid, resend=active
- * // @effects resend_cancels_previous_challenge, resend_clears_code_and_replaces_challenge
+ * @scenario controller=user, two_factor=on, delivery=sent, resend=active
+ * @effects resend_cancels_previous_challenge
  */
 test('사용자 로그인 — 인증번호 다시 받기는 새 challenge 를 발급하고 입력을 비운다', async ({ page }) => {
   await page.goto('/login');
@@ -221,8 +227,8 @@ test('인증번호 단계 — 처음부터·새로고침·재진입 모두 1단�
 });
 
 /**
- * // @scenario controller=admin, two_factor=on, code=valid, actor=admin
- * // @effects admin_login_returns_challenge_not_500, no_raw_typeerror_text, admin_two_factor_issues_token_for_admin
+ * @scenario controller=admin, two_factor=on, delivery=sent, code=valid, actor=admin
+ * @effects admin_login_returns_challenge_not_500, admin_two_factor_issues_token_for_admin
  */
 test('관리자 로그인 — 챌린지 응답이 서버 오류가 아니고 코드 확인 후 관리자 화면으로 간다', async ({ page }) => {
   await page.goto('/admin/login');
@@ -247,39 +253,37 @@ test('관리자 로그인 — 챌린지 응답이 서버 오류가 아니고 코
 });
 
 /**
- * // @scenario controller=admin, two_factor=on, code=valid, actor=non_admin
- * // @effects non_admin_two_factor_revokes_token
+ * 관리자 로그인은 관리자가 아닌 계정을 인증번호 발급 전에 거절한다(#40 R12 — 인증번호 메일도 보내지 않는다).
+ * 코드 확인 단계까지 가서 거절하던 이전 순서에서는 그 사이 발급된 토큰을 회수해야 했다 — 지금은 토큰도 challenge 도 없다.
+ *
+ * @scenario controller=admin, two_factor=on, actor=non_admin
+ * @effects non_admin_admin_login_revokes_token
  */
-test('관리자 로그인 — 관리자가 아닌 계정은 코드 확인에 성공해도 거부되고 토큰이 남지 않는다', async ({ page }) => {
+test('관리자 로그인 — 관리자가 아닌 계정은 인증번호 단계 전에 거부되고 토큰이 남지 않는다', async ({ page }) => {
   await page.goto('/admin/login');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
-  const challengeId = await submitAndReadChallenge(page, '/api/auth/admin/login', async () => {
-    await page.fill('input[name="email"]', nonAdminEmail);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.click('#login_submit_button');
-  });
-
-  const codeInput = page.locator('#two_factor_code');
-  await expect(codeInput).toBeVisible({ timeout: 10_000 });
-  await codeInput.fill(plantTwoFactorCode(challengeId));
-
-  const [verifyResponse] = await Promise.all([
-    page.waitForResponse((r) => r.url().includes('/admin/login/two-factor') && r.request().method() === 'POST'),
-    page.locator('#login_two_factor_submit').click(),
+  await page.fill('input[name="email"]', nonAdminEmail);
+  await page.fill('input[name="password"]', PASSWORD);
+  const [response] = await Promise.all([
+    page.waitForResponse((r) => new URL(r.url()).pathname === '/api/auth/admin/login' && r.request().method() === 'POST'),
+    page.click('#login_submit_button'),
   ]);
 
-  expect(verifyResponse.status()).toBe(403);
+  expect(response.status()).toBe(403);
+  const body = await response.json();
+  expect(body?.data?.challenge_id, '거부된 관리자 로그인이 인증 요청을 발급했습니다').toBeFalsy();
+  expect(body?.data?.token, '거부된 관리자 로그인이 토큰을 발급했습니다').toBeFalsy();
 
-  // 코드 확인 시점에 발급된 토큰이 회수되지 않으면 유효한 세션이 남는다.
+  await expect(page.locator('#two_factor_code')).toHaveCount(0);
   const token = await page.evaluate(() => localStorage.getItem('auth_token'));
   expect(token, '거부된 로그인이 토큰을 남겼습니다').toBeFalsy();
   expect(page.url()).toContain('/admin/login');
 });
 
 /**
- * // @scenario controller=user, two_factor=on, code=valid
- * // @effects enter_key_submits_verify_without_issuing_new_challenge
+ * @scenario controller=user, two_factor=on, delivery=sent, code=valid
+ * @effects enter_key_on_code_step_sends_verify_only
  */
 test('인증번호 단계 — Enter 키는 확인만 보내고 새 challenge 를 발급하지 않는다', async ({ page }) => {
   await page.goto('/login');
@@ -321,8 +325,8 @@ test('인증번호 단계 — Enter 키는 확인만 보내고 새 challenge 를
 });
 
 /**
- * // @scenario controller=user, two_factor=on, code=valid
- * // @effects code_step_layout_holds_on_mobile_width_and_japanese_locale
+ * @scenario controller=user, two_factor=on, delivery=sent
+ * @effects code_step_intact_on_mobile_width_and_ja_locale
  */
 test('인증번호 단계 — 모바일 폭과 일본어 로케일에서 문구·배치가 깨지지 않는다', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
@@ -358,8 +362,8 @@ test('인증번호 단계 — 모바일 폭과 일본어 로케일에서 문구�
 });
 
 /**
- * // @scenario controller=user, two_factor=on, code=consumed_by_public_verify
- * // @effects public_verify_rejects_login_purpose, public_cancel_rejects_login_purpose, login_completes_after_public_endpoints_refuse
+ * @scenario controller=user, two_factor=on, delivery=sent, code=consumed_by_public_verify
+ * @effects public_verify_rejects_login_purpose, login_completes_after_public_endpoints_refuse
  */
 test('공개 본인인증 화면으로는 로그인 challenge 를 소진할 수 없다', async ({ page }) => {
   await page.goto('/login');

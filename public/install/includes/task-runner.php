@@ -14,6 +14,7 @@ require_once __DIR__.'/config.php';
 require_once __DIR__.'/functions.php';
 require_once __DIR__.'/installer-state.php';
 require_once __DIR__.'/installer-runtime.php';
+require_once __DIR__.'/installer-ownership.php';
 require_once __DIR__.'/progress-emitter.php';
 require_once __DIR__.'/execution-mode.php';
 require_once __DIR__.'/artisan-executor.php';
@@ -190,7 +191,9 @@ if (! function_exists('getPhpBinary')) {
      *
      * 이 값은 실제 명령의 실행 바이너리가 되므로(설치 워커의 artisan 호출 등),
      * 형태 규칙을 통과하지 못하면 시스템 기본값으로 폴백한다 — 설치 흐름은 유지하되
-     * 사용자 입력이 인자 자리로 흘러가지 않도록 한다.
+     * 사용자 입력이 인자 자리로 흘러가지 않도록 한다. 형태 규칙은 installer_binary_path_shape_ok() 가
+     * 소유한다 — 설치 완료 직후 .env 병합의 설정 캐시 다시 만들기(finalize-env.php)도 같은 규칙
+     * (installer_php_binary_from_state())과 같은 후보 순서를 쓴다.
      */
     function getPhpBinary(): string
     {
@@ -459,6 +462,97 @@ if (! function_exists('checkComposerSSE')) {
     }
 }
 
+if (! function_exists('runCustomVendorStepSSE')) {
+    /**
+     * 개발자 전용 composer(`custom/`, 7.2.0)의 vendor 를 코어 vendor 단계 끝에서 맞춥니다.
+     *
+     * custom/composer.json 이 없으면 아무 일도 하지 않는다(일반 설치). 실패하면 설치를 멈춘다 —
+     * 개발자 화면이 쓰는 패키지가 없으면 그 화면이 500 이 되기 때문이다.
+     *
+     * @param  bool  $useBundle  코어와 같은 판정으로 묶음(vendor-bundle.zip)을 쓸지 여부
+     * @return array|null 실패 결과(설치 중단), 성공·건너뜀이면 null
+     */
+    function runCustomVendorStepSSE(bool $useBundle): ?array
+    {
+        require_once __DIR__.'/vendor-bundle-installer.php';
+
+        $composerRunner = function (string $workingDir): bool {
+            // composer 실행은 proc_open 을 요구한다 — 막힌 호스팅에서 호출하면 fatal 이므로 실패로 돌려준다
+            // (코어 vendor 단계 installComposerDependenciesSSE 와 같은 가드).
+            if (! ExecutionEnvironment::hasFunction('proc_open')) {
+                return false;
+            }
+
+            $composerHome = BASE_PATH.'/storage/composer';
+            if (! is_dir($composerHome)) {
+                @mkdir($composerHome, 0755, true);
+            }
+            $env = [];
+            foreach (['PATH', 'SystemRoot', 'TEMP', 'TMP', 'APPDATA', 'LOCALAPPDATA', 'USERPROFILE'] as $key) {
+                // getenv 가 막힌 호스팅에서도 $_ENV/$_SERVER 로 읽는다 (코어 vendor 단계와 같은 규칙).
+                $value = installerReadEnv($key);
+                if ($value !== null) {
+                    $env[$key] = $value;
+                }
+            }
+            $env['COMPOSER_HOME'] = $composerHome;
+            $env['HOME'] = $composerHome;
+            $env = array_merge($env, buildInstallerComposerEnv());
+
+            $process = proc_open(
+                getComposerCommand().' install --no-interaction --no-dev --optimize-autoloader --no-ansi 2>&1',
+                [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+                $pipes,
+                $workingDir,
+                $env
+            );
+            if (! is_resource($process)) {
+                return false;
+            }
+            fclose($pipes[0]);
+            while (($line = fgets($pipes[1])) !== false) {
+                $line = trim($line);
+                if ($line !== '') {
+                    sendSSEEvent('log', ['message' => '[custom] '.$line]);
+                }
+            }
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+
+            return proc_close($process) === 0;
+        };
+
+        // 코어가 composer 로 설치됐어도 auto 모드에서 composer 를 못 쓰는 서버면 custom 묶음으로 푼다.
+        // 방식은 코어 단계와 같은 지점(vendorModeFromState — 실행 모드 보정 포함)에서 읽는다.
+        $state = getInstallationState();
+        $vendorMode = vendorModeFromState() ?? 'auto';
+        if (! $useBundle && $vendorMode === 'auto'
+            && file_exists(BASE_PATH.'/custom/vendor-bundle.zip')
+            && ! canExecuteComposerForInstall($state['config']['composer_binary'] ?? '', $state['config']['php_binary'] ?? 'php')) {
+            $useBundle = true;
+        }
+
+        $result = installCustomVendorIfNeeded(BASE_PATH, $useBundle, $composerRunner);
+        if (! empty($result['skipped'])) {
+            if (($result['mode'] ?? '') === 'in-sync') {
+                sendSSEEvent('log', ['message' => lang('log_custom_vendor_in_sync')]);
+            }
+
+            return null;
+        }
+        if (! $result['success']) {
+            $error = $result['error'] ?? 'unknown';
+            sendSSEEvent('log', ['message' => lang('error_custom_vendor_failed', ['error' => $error])]);
+            logInstallationError('custom vendor: '.$error);
+
+            return ['success' => false, 'message' => lang('error_custom_vendor_failed', ['error' => $error])];
+        }
+        sendSSEEvent('log', ['message' => lang('log_custom_vendor_installed', ['mode' => $result['mode'] ?? ''])]);
+
+        return null;
+    }
+}
+
 if (! function_exists('installVendorBundleSSE')) {
     /**
      * vendor-bundle.zip 을 추출하여 vendor/ 를 구성합니다 (bundled 모드용).
@@ -526,6 +620,10 @@ if (! function_exists('installVendorBundleSSE')) {
         }
 
         sendSSEEvent('log', ['message' => lang('log_separator')]);
+
+        if (($customFailure = runCustomVendorStepSSE(true)) !== null) {
+            return $customFailure;
+        }
 
         markTaskCompleted('composer_install');
         sendSSEEvent('task_complete', ['task' => 'composer_install', 'message' => lang('log_vendor_bundle_extract_complete')]);
@@ -615,6 +713,10 @@ if (! function_exists('installComposerDependenciesSSE')) {
 
             sendSSEEvent('log', ['message' => lang('log_task_completed', ['task' => $taskName])]);
             sendSSEEvent('log', ['message' => lang('log_separator')]);
+
+            if (($customFailure = runCustomVendorStepSSE(false)) !== null) {
+                return $customFailure;
+            }
 
             markTaskCompleted('composer_install');
             sendSSEEvent('task_complete', ['task' => 'composer_install', 'message' => lang('log_composer_already_installed')]);
@@ -759,6 +861,10 @@ if (! function_exists('installComposerDependenciesSSE')) {
 
         sendSSEEvent('log', ['message' => lang('log_task_completed', ['task' => $taskName])]);
         sendSSEEvent('log', ['message' => lang('log_separator')]);
+
+        if (($customFailure = runCustomVendorStepSSE(false)) !== null) {
+            return $customFailure;
+        }
 
         markTaskCompleted('composer_install');
         sendSSEEvent('task_complete', ['task' => 'composer_install', 'message' => lang('log_composer_install_success')]);
@@ -1163,6 +1269,24 @@ if (! function_exists('cleanupExistingTablesSSE')) {
             sendSSEEvent('task_complete', ['task' => 'db_cleanup', 'message' => lang('log_db_cleanup_skipped')]);
 
             return ['success' => true];
+        }
+
+        // 파괴 작업 직전 재검증 — 이 함수는 세션이 없는 워커에서도 돈다. 소유 게이트를 통과한
+        // install-process 가 서명한 계획이고, 그 요청이 삭제 확인 토큰을 소비했을 때만 DROP 한다.
+        // 조건이 깨졌으면 조용히 건너뛰지 않고 실패시킨다 — 건너뛰면 migrate 가 1050(테이블 존재)로
+        // 실패해 원인이 가려진다. 재시도는 install-process 재서명을 거친다.
+        $planVerdict = installer_plan_verify($state, readInstallerRuntime());
+        $dropConfirmed = is_array($state['drop_confirm'] ?? null) && ! empty($state['drop_confirm']['consumed']);
+        if ($planVerdict !== 'ok' || ! $dropConfirmed) {
+            $reason = $planVerdict !== 'ok' ? $planVerdict : 'drop_not_confirmed';
+            addLog('[db_cleanup] 설치 계획 검증 실패 — DROP 미실행: '.$reason);
+
+            return [
+                'success' => false,
+                'message' => lang('error_install_plan_unverified'),
+                'message_key' => 'error_install_plan_unverified',
+                'detail' => $reason,
+            ];
         }
 
         // state.config 에는 DB 비밀번호가 기록되지 않으므로(이슈 #465) runtime.php 에서
@@ -1775,7 +1899,11 @@ if (! function_exists('executeExtensionCommandSSE')) {
         // 확장은 어디에도 없는 상태를 만들었다.
         $isAlreadyExists = installerOutputConfirmsAlreadyApplied($outputText);
 
-        if ($returnCode !== 0 && ! $isAlreadyExists) {
+        // 생명주기 명령은 항목 일부가 실패해도 작업을 끝내고 종료코드 1 + 경고 표지를 낸다(코어 7.1.3).
+        // 표지가 있는 1 은 「완료(경고 포함)」 — 경고 표는 위 로그로 이미 보였다. 표지 없는 1 은 실패다.
+        $completedWithWarnings = $returnCode === 1 && str_contains($outputText, '[g7-lifecycle-warnings]');
+
+        if ($returnCode !== 0 && ! $isAlreadyExists && ! $completedWithWarnings) {
             $errorMessage = $outputText;
             logInstallationError(lang($errorMsgKey), new Exception($errorMessage));
 
@@ -1790,6 +1918,8 @@ if (! function_exists('executeExtensionCommandSSE')) {
 
         if ($isAlreadyExists) {
             sendSSEEvent('log', ['message' => lang('log_task_skipped', ['task' => $displayName])]);
+        } elseif ($completedWithWarnings) {
+            sendSSEEvent('log', ['message' => lang('log_task_completed_with_warnings', ['task' => $displayName])]);
         } else {
             sendSSEEvent('log', ['message' => lang('log_task_completed', ['task' => $displayName])]);
         }
@@ -1971,12 +2101,14 @@ if (! function_exists('optimizeConfigCacheSSE')) {
     /**
      * 설치 완료 직후 config 캐시를 최초 생성한다.
      *
+     * complete_flag(g7_installed) 이후에 실행되어 설치 완료 판정 상태에서 캐시를 만들며,
      * 이 지점이 없으면 설치는 config:cache 가 꺼진(매 요청 config 재파싱) 상태로 종료된다.
      * best_effort — 실패해도 설치 자체는 완료 처리한다(비캐시 부팅은 정상 동작).
      *
-     * 주의 (13차 #D7/E2): 이 태스크는 finalize 의 `.env` 머지 **앞**에서 돈다. 따라서 여기서
-     * 구운 캐시에는 `installer_completed=false` 가 박히며, 그것을 무효화하는 지점이 없다.
-     * 종전 주석의 「installer_completed=true 상태에서 캐시를 만든다」는 사실이 아니었다.
+     * 주의 (13차 #D7/E2): 이 태스크는 finalize 의 `.env` 머지 **앞**에서 돈다. 이 캐시는 병합 전 값
+     * (병합 전 .env + runtime.php 주입)으로 만들어져 `installer_completed=false` 와 평문 DB 비밀번호가
+     * 박힌다. 완료 화면이 부르는 finalize-env.php 가 이 워커의 lock 해제를 기다린 뒤 병합하고, 이 캐시를
+     * 지운 뒤 병합된 .env 로 다시 만든다(다시 만들 수 없는 환경이면 지운 채 둔다).
      *
      * @return array 태스크 실행 결과
      */
@@ -1989,6 +2121,40 @@ if (! function_exists('optimizeConfigCacheSSE')) {
             taskNameKey: 'task_config_cache',
             successMsgKey: 'log_config_cache_success',
             errorMsgKey: 'error_config_cache_failed'
+        );
+    }
+}
+
+if (! function_exists('optimizeRouteCacheSSE')) {
+    /**
+     * 설치 완료 직후 라우트 캐시를 최초 생성한다 (#599).
+     *
+     * complete_flag 이후에 실행되어야 한다 — `RouteCacheHelper::rebuild()` 는
+     * `installer_completed` 가 서기 전이면 `route:clear` 만 하고 재생성을 건너뛰므로
+     * (불완전한 부팅을 캐시에 박제하지 않으려는 의도된 설계), 설치 도중의 확장
+     * install·activate 가 부른 rebuild 는 전부 clear 로 끝난다. 그리고 완료 플래그
+     * 이후에는 재생성 트리거가 확장 라이프사이클에만 묶여 있어 이 지점이 없으면
+     * **아무도 굽지 않는다** — 설치가 라우트 캐시 꺼진 상태로 종료된다.
+     *
+     * 웹은 캐시가 없어도 정상 동작하지만(매 요청 라우트 파일 스캔 — 느릴 뿐),
+     * `php artisan test` 는 죽는다: artisan 은 `test` 명령일 때 확장 오토로드 등록을
+     * 건너뛰면서 중복 방지 상수는 정의하므로 CoreServiceProvider 의 등록까지 막히는데,
+     * 캐시가 있으면 부모 부팅이 라우트 파일을 아예 실행하지 않아 무해하고 비어 있으면
+     * 라우트 파일이 실행되며 확장 클래스를 만나 "Class ... not found" 로 터진다.
+     *
+     * best_effort — 실패해도 설치 자체는 완료 처리한다(비캐시 부팅은 정상 동작).
+     *
+     * @return array 태스크 실행 결과
+     */
+    function optimizeRouteCacheSSE(): array
+    {
+        return executeArtisanCommandSSE(
+            command: 'route:cache',
+            parameters: [],
+            taskId: 'route_cache',
+            taskNameKey: 'task_route_cache',
+            successMsgKey: 'log_route_cache_success',
+            errorMsgKey: 'error_route_cache_failed'
         );
     }
 }
@@ -2424,9 +2590,17 @@ if (! function_exists('buildInstallationTaskList')) {
         //
         // 제품 결정(13차): 굽는 것 자체는 그대로 두고, **finalize 가 마지막에 그 캐시 파일을
         // 지운다** (`finalize-env.php` 의 runtime.php 정리 구간). 목록에서 빼는 것은 계약
-        // 변경(매니페스트 `task` 축·뷰 파리티)이라 선택하지 않았다. 그러므로 여기서 구운
-        // 캐시는 설치가 끝나는 시점에 사라지고, 다음 요청이 머지된 `.env` 로 재생성한다.
+        // 변경(매니페스트 `task` 축·뷰 파리티)이라 선택하지 않았다. finalize 는 이 워커가 lock 을
+        // 풀 때까지 기다린 뒤 병합하고, 지운 캐시를 병합된 `.env` 로 다시 만든다(다시 만들 수
+        // 없는 환경이면 지운 채 두어 다음 요청이 병합된 `.env` 로 부팅한다).
         $tasks[] = ['id' => 'config_cache', 'function' => 'optimizeConfigCacheSSE', 'best_effort' => true];
+
+        // 라우트 캐시도 complete_flag 이후에 최초 생성한다 — 설치 도중 확장 install·
+        // activate 가 부른 RouteCacheHelper::rebuild() 는 installer_completed 가 서기
+        // 전이라 clear 만 하고 재생성을 건너뛰고, 완료 후에는 재생성 트리거가 확장
+        // 라이프사이클에만 묶여 있어 이 지점이 없으면 아무도 굽지 않는다.
+        // best_effort — 실패해도 설치는 완료(비캐시 부팅은 느릴 뿐 정상).
+        $tasks[] = ['id' => 'route_cache', 'function' => 'optimizeRouteCacheSSE', 'best_effort' => true];
 
         // 부트스트랩 리소스 정적 게시(bake) 최초 수행 — 없으면 첫 방문자가 자가 치유(1회 API
         // 폴백)를 겪는다. best_effort — 실패해도 설치는 완료.
@@ -2641,6 +2815,9 @@ if (! function_exists('runSingleInstallationTask')) {
             return ['outcome' => 'already_completed', 'task' => $taskId, 'target' => $target];
         }
 
+        // 워커가 fatal 로 끊기면 shutdown 처리기가 어느 작업(대상 포함)에서 끊겼는지 기록한다.
+        $GLOBALS['g7_installer_running_task'] = ['id' => $taskId, 'target' => $target];
+
         $result = empty($args) ? $functionName() : $functionName(...$args);
 
         if (isset($result['aborted']) && $result['aborted']) {
@@ -2832,6 +3009,28 @@ if (! function_exists('recordInstallationRunException')) {
     }
 }
 
+if (! function_exists('installerResetTaskTimeLimit')) {
+    /**
+     * 설치 작업 하나를 시작하기 전에 PHP 실행 시간 카운터를 다시 건다.
+     *
+     * set_time_limit() 은 호출 시점부터 다시 센다. 워커 진입 시 한 번만 걸면 전체 설치 시간이
+     * 제한이 되어, 확장을 많이 고른 설치가 중간 작업에서 "Maximum execution time" 으로 죽는다
+     * (Windows 의 PHP 는 명령 대기·파일 복사 시간까지 경과 시간으로 잰다).
+     *
+     * 막힌 호스팅에서는 부르지 않는다 — `@` 는 차단 함수의 Error 를 삼키지 않는다 (13차 환경#1).
+     *
+     * @return bool set_time_limit 성공 여부 (disable_functions 등으로 막히면 false)
+     */
+    function installerResetTaskTimeLimit(): bool
+    {
+        if (! installerHasFunction('set_time_limit')) {
+            return false;
+        }
+
+        return @set_time_limit((int) INSTALLER_TASK_TIME_LIMIT);
+    }
+}
+
 if (! function_exists('runInstallationTasks')) {
     /**
      * 설치 작업 전체 실행 (SSE · 폴링 모드 — 한 요청 안에서 끝까지).
@@ -2874,6 +3073,12 @@ if (! function_exists('runInstallationTasks')) {
 
                     return;
                 }
+
+                // 작업마다 실행 시간 카운터를 다시 건다 — 전체 설치가 아니라 작업 하나가
+                // INSTALLER_TASK_TIME_LIMIT 를 넘을 때만 끊긴다. SSE·폴링은 한 요청이 모든 작업을
+                // 도는 이 루프에서만 건다 — 단계별 실행(runNextInstallationTask)은 요청 1개 = 작업 1개이고
+                // 요청 수명을 lock 선언과 함께 run-task.php 가 정하므로 여기서 늘리지 않는다.
+                installerResetTaskTimeLimit();
 
                 $run = runSingleInstallationTask($task, $completedTasks, $skippedTasks, $bestEffortTasks);
 

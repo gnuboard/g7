@@ -6,6 +6,7 @@ use App\Enums\SitemapChangeFreq;
 use App\Seo\AbstractSitemapContributor;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
+use Modules\Sirsoft\Page\Support\PageScreenUrl;
 
 /**
  * Page 모듈 Sitemap 기여자
@@ -59,7 +60,7 @@ class PageSitemapContributor extends AbstractSitemapContributor
             }
 
             yield [
-                'url' => "/page/{$page->slug}",
+                'url' => PageScreenUrl::show($page->slug),
                 'lastmod' => $page->updated_at?->toW3cString(),
                 'changefreq' => SitemapChangeFreq::Monthly->value,
                 'priority' => 0.5,

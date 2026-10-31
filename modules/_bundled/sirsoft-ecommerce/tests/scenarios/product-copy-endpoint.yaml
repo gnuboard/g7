@@ -1,0 +1,31 @@
+feature: 상품 복사용 데이터 조회(showForCopy)
+
+description: |
+  상품 복사 화면이 부르는 복사용 데이터 조회가 복사 항목 선택(copy_options)대로 칸을 걸러 돌려주고,
+  권한·없는 상품·잘못된 플래그를 막으며, 가격은 기준 통화 자릿수로 돌려준다.
+
+  수정 이력: 이커머스 전수 실측 S5 (2026-10-07) — 기준 통화 자릿수 시험을 보탰다.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15]
+  # c01: test_show_for_copy_returns_product_data
+  # c02: test_show_for_copy_filters_seo_when_disabled
+  # c03: test_show_for_copy_includes_seo_when_enabled
+  # c04: test_show_for_copy_filters_images_when_disabled
+  # c05: test_show_for_copy_filters_categories_when_disabled
+  # c06: test_show_for_copy_filters_description_when_disabled
+  # c07: test_show_for_copy_filters_shipping_when_disabled
+  # c08: test_show_for_copy_filters_identification_when_disabled
+  # c09: test_show_for_copy_filters_common_info_when_disabled
+  # c10: test_show_for_copy_filters_sales_info_when_disabled
+  # c11: test_show_for_copy_returns_prices_in_base_currency_precision
+  # c12: test_show_for_copy_returns_404_for_nonexistent_product
+  # c13: test_show_for_copy_returns_403_without_permission
+  # c14: test_show_for_copy_excludes_date_fields
+  # c15: test_show_for_copy_rejects_non_boolean_flag
+
+effects:
+  - product_copy_data_filtered_by_options
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductControllerCopyTest.php

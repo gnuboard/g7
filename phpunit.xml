@@ -14,9 +14,28 @@
         </testsuite>
         <testsuite name="Module">
             <directory>modules/_bundled/*/tests</directory>
+            <!--
+                코어의 Feature ↔ Installation 분리와 대칭. 인스톨러/업그레이드 테스트는 개발
+                `.env` 를 파괴할 수 있어 평상시 스위트에서 격리해야 하는데, 모듈 축에는 이 제외가
+                없어 모듈이 설치 테스트를 만들면 평상시 실행에 함께 딸려 들어갔다(현재 실물 0개라
+                영향은 없었다). Installation 스위트가 그 경로를 이미 선언하고 있으므로 여기서
+                빼는 것으로 두 스위트의 역할이 코어와 같은 모양이 된다.
+            -->
+            <exclude>modules/_bundled/*/tests/Feature/Installation</exclude>
         </testsuite>
         <testsuite name="Plugin">
             <directory>plugins/_bundled/*/tests</directory>
+        </testsuite>
+        <!--
+            템플릿 축 (32차 신설). 디스크에 `templates/_bundled/*/tests` 가 실재하는데 선언이
+            없어, 게이트 모집단을 `phpunit.xml` 에서 도출하는 장치들이 이 축을 **구조적으로**
+            보지 못했다. 도출은 선언에 없는 것을 복구하지 못하므로, 템플릿이 게이트 대상 테스트를
+            만들어도 수집되지 않고 소속 가드도 침묵한다. 현재 실물 0건이라 `GateMembershipGuardTest`
+            의 FORWARD_DECLARED_PATTERNS 에 사유와 함께 등재돼 있고, 테스트가 생기는 순간 그
+            등재가 red 로 "목록에서 빼라" 를 알린다.
+        -->
+        <testsuite name="Template">
+            <directory>templates/_bundled/*/tests</directory>
         </testsuite>
         <testsuite name="Installation">
             <directory>tests/Feature/Installation</directory>
@@ -28,8 +47,31 @@
             <directory>app</directory>
         </include>
     </source>
+    <!--
+        메모리 진단 확장 — `PROFILE_MEMORY=1` 일 때만 켜진다(평상시 실행 무영향).
+        전량 스위트가 memory_limit 을 소진해 중간에 죽으면 그 뒤 결과 전부가 신호로 못 쓰이므로,
+        클래스별 잔존 증가분을 계측해 누수원을 추측이 아니라 실측으로 특정하기 위한 것.
+    -->
+    <extensions>
+        <bootstrap class="Tests\Support\MemoryProfilerExtension"/>
+    </extensions>
     <php>
-        <ini name="memory_limit" value="1G"/>
+        <!--
+            전량 스위트 실측 peak = 1,852MB (13,383 테스트 / 1,2xx 클래스, 2026-07-22).
+
+            종전 1G 는 스위트가 그 규모가 되기 전에 정해진 값이라 완주 자체가 불가능했고,
+            OOM 이후 결과가 전부 무의미해져 **실패 목록조차 만들지 못했다**. 사망 지점을 뒤로
+            미는 개별 수정(대용량 슬러프 제거·훅 정적 상태 정리)을 반복했으나 지점만 밀렸다.
+
+            원인은 특정 클래스의 누수가 아니다. `MemoryProfilerExtension` 으로 클래스별 live
+            잔존을 계측한 결과 **테스트 1건당 약 0.1MB 가 일정하게 남고**(DB 를 쓰지 않는 순수
+            Unit 도 동일: 건당 0.093~0.106MB) 5MB 초과 클래스는 24개뿐이다. 즉 프레임워크가
+            테스트마다 남기는 공통 비용이며, 12,000+ 테스트 × 0.1MB ≈ 1.2GB 가 관측 곡선과 맞는다.
+
+            그래서 스위트 규모에 맞춰 한도를 올린다(peak 대비 여유 ~10%).
+            재계측: PROFILE_MEMORY=1 php artisan test → storage/logs/memory-profile.csv
+        -->
+        <ini name="memory_limit" value="2G"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

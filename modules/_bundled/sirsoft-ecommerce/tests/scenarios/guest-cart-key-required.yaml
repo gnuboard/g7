@@ -1,0 +1,23 @@
+feature: 비회원 쓰기 요청 장바구니 키 필수 — 주인 없는 장바구니 행·임시 주문 방지
+
+description: |
+  담기·수량 변경·옵션 변경·여러 개 삭제·임시 주문 생성·갱신 요청도 조회·연장·삭제 요청처럼
+  비회원이면 X-Cart-Key(ck_ + 32자)를 요구한다. 키 없는 비회원 요청이 user_id·cart_key 모두 null 인
+  행을 만들거나(누구도 조회·삭제 못 함), 소유 판정 null === null 로 그런 행을 고치던 결함을 막는다.
+  장바구니 조회·개수(읽기)는 키가 없으면 빈 결과라 대상이 아니다. 회원은 키가 없어도 된다.
+
+axes:
+  case:
+    - add_without_key                 # 담기
+    - checkout_store_without_key      # 바로 구매 임시 주문 생성
+    - checkout_update_without_key     # 임시 주문 갱신
+    - orphan_row_write_without_key    # 주인 없는 행 수량·옵션·삭제
+    - valid_key_and_member_unchanged  # 틀린 키 422 · 올바른 키 비회원·회원 201
+
+effects:
+  - guest_write_without_cart_key_rejected      # 422 cart_key, 주인 없는 행 0
+  - orphan_cart_row_untouched_without_key      # 주인 없는 행 그대로
+  - guest_with_valid_key_and_member_unaffected # 종전 동작 유지
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/GuestCartKeyRequiredTest.php

@@ -1,0 +1,29 @@
+# 시나리오 매니페스트 — 게시판 신고·반응·스크랩 관리 목록의 표 머리 정렬이 서버가 정렬하는 기준과 맞는다 (7.1.1)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: board_admin_list_sort_query_matches_server
+
+description: >-
+  세 목록의 서버는 정렬 기준 열을 받지 않는다 — 신고(IndexReportRequest)는 sort_by 를 받지 않고 저장소가 last_reported_at 고정,
+  반응(IndexReactionRequest)·스크랩(IndexScrapRequest)은 sort_order 만 받고 created_at 고정. 그런데 표는 모든 열을 정렬 가능하게
+  그려 어느 머리를 눌러도 날짜 방향만 뒤집혔다(화살표만 그 열로 옮겨 감). 날짜 열 하나만 정렬 가능하게 남기고 나머지는
+  `:sortable="false"`, 신고 목록은 서버가 받지 않는 sort_by 를 보내지 않고 sort_order 만 보낸다(서버 무변경).
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-list-sort-query-matches-server.test.tsx
+
+axes:
+  screen:
+    - reports     # 신고 관리 목록
+    - reactions   # 반응 관리 목록
+    - scraps      # 스크랩 관리 목록
+  direction: [asc, desc]
+
+effects:
+  - board_admin_list_only_server_sort_column_sortable   # 정렬 가능한 열이 서버가 정렬하는 날짜 열 하나뿐이다(나머지 머리엔 정렬 단추 없음)
+  - admin_list_sort_query_matches_server   # 날짜 머리의 두 방향이 sort_order={방향}·page=1 로 이동하고 sort_by 는 보내지 않는다
+  - board_report_date_column_shows_server_sort_key   # 신고 목록 날짜 열 큰 글자가 서버 정렬 기준(마지막 신고 시각)이고, 여러 번 신고된 건만 처음 신고 시각을 「최초」 보조 줄로 보인다
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: 7.1.1 출시 전 캠페인 재실측(게시판 신고·반응·스크랩 목록 머리 정렬 뒤 목록 요청·순서)

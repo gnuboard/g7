@@ -1,0 +1,13 @@
+feature: CKEditor5 서버 영어 메시지의 단·복수
+
+description: |
+  이미지 일괄 삭제 결과를 `(s)` 대신 `단수|복수` 로 적고 삭제 수로 고른다. 한국어는 그대로.
+
+axes:
+  surface: [response_message]
+
+effects:
+  - response_message_follows_count
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/Lang/BackendPluralMessagesTest.php

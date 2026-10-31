@@ -1,0 +1,27 @@
+feature: 결제 플러그인을 껐다 켠 카드 주문의 환불 수단 — 화면 경로 (S3-D25·D26·D27)
+
+description: |
+  플러그인이 꺼진 동안 PG 로 접수된 건은 이유(플러그인 꺼짐)와 해결책을 알리고, 계좌로 폴백 접수된 건은
+  플러그인이 돌아오면 화면을 거쳐 실행해도 PG 로 진행한다. 실행 창은 날 값 대신 수단 이름을, [금액 수정]
+  칸은 통화 표기 합계를 보인다.
+
+axes:
+  case:
+    - fallback_after_plugin_returns # 꺼진 동안 계좌로 폴백 접수 → 다시 켬
+    - plugin_still_off              # 폴백 건, 아직 꺼짐
+    - pg_accepted_plugin_off        # PG 로 접수된 뒤 플러그인 꺼짐
+    - amount_edit_total             # 금액 수정 칸 합계 표기
+
+effects:
+  - detail_reports_the_method_execution_will_use # 상세가 실행 때 쓰일 수단(실효 수단)을 보인다
+  - untouched_screen_execution_goes_to_pg        # 화면이 보인 수단 그대로 실행하면 PG 로 진행
+  - unchanged_method_is_not_an_operator_choice   # 바뀌지 않은 수단은 운영자 선택으로 박지 않는다
+  - inactive_plugin_reason_on_save               # 저장 거절이 플러그인 꺼짐 이유·해결책을 말한다
+  - inactive_plugin_reason_on_execute            # 실행 거절이 플러그인 꺼짐 이유·해결책을 말한다
+  - input_total_is_currency_formatted            # 금액 수정 칸 첫 합계가 통화 표기
+  - execute_dialog_shows_method_name             # 실행 창이 선택지 밖 수단도 이름으로 보인다
+  - input_total_reformats_on_change              # 금액을 바꾸면 합계를 통화 표기로 다시 적는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/RefundMethodPluginToggleTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimRefundInputTotalFormat.test.ts

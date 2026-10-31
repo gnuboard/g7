@@ -17,6 +17,9 @@ use Illuminate\Database\Seeder;
  *
  * 운영자가 관리자 UI 에서 수정한 값은 user_overrides 로 보존되어 재시딩 시 덮어써지지 않습니다.
  *
+ * 저장 직전 정의 목록은 언어팩 필터(`seed.notifications.translations`) 다음에 공통 시딩 훅
+ * (`NotificationSyncHelper::SEED_DEFINITIONS_FILTER`)을 거친다 — 모듈·플러그인 동기화와 같은 훅이다.
+ *
  * @since 7.0.0-beta.4
  */
 class NotificationDefinitionSeeder extends Seeder
@@ -26,11 +29,11 @@ class NotificationDefinitionSeeder extends Seeder
     /**
      * 코어 알림 정의 시딩 실행.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function run(): void
     {
-        $this->command?->info('코어 알림 정의 시딩 시작...');
+        $this->command?->info(__('common.console.seeders.notification_definition.start'));
 
         $helper = app(NotificationSyncHelper::class);
         // config/core.php::notification_definitions + 언어팩 seed/notifications.json 병합
@@ -39,17 +42,29 @@ class NotificationDefinitionSeeder extends Seeder
         $definedTypes = [];
 
         if (empty($definitions)) {
-            $this->command?->warn('config/core.php 에 notification_definitions 선언이 없습니다.');
+            $this->command?->warn(__('common.console.seeders.notification_definition.no_definitions'));
 
             return;
         }
 
+        // config 원형은 type 을 키로 쓰는 연관 배열이다 — 공통 시딩 훅 계약(각 정의에 type)에 맞춰 편다.
+        $list = [];
         foreach ($definitions as $type => $data) {
-            $data = array_merge($data, [
-                'type' => $type,
-                'extension_type' => 'core',
-                'extension_identifier' => 'core',
-            ]);
+            $list[] = array_merge($data, ['type' => $type]);
+        }
+
+        // 공통 시딩 훅 — 채널 제공 확장이 소유자와 무관하게 자기 채널 template 을 더한다.
+        $list = $helper->applySeedDefinitionsFilter($list, 'core', 'core');
+
+        foreach ($list as $data) {
+            $type = $data['type'] ?? null;
+            if (! is_string($type) || $type === '') {
+                continue;
+            }
+
+            // 소유자는 시딩 주체가 정한다 — 리스너가 바꾼 값은 쓰지 않는다(모듈·플러그인 동기화와 동일).
+            $data['extension_type'] = 'core';
+            $data['extension_identifier'] = 'core';
 
             $definition = $helper->syncDefinition($data);
             $definedTypes[] = $definition->type;
@@ -63,15 +78,15 @@ class NotificationDefinitionSeeder extends Seeder
             // 완전 동기화: config 에서 제거된 channel 의 template 삭제
             $helper->cleanupStaleTemplates($definition->id, $definedChannels);
 
-            $this->command?->info("  - {$type} 알림 정의 등록 완료");
+            $this->command?->info('  - '.__('common.console.seeders.notification_definition.type_registered', ['type' => $type]));
         }
 
         // 완전 동기화: config 에서 제거된 코어 definition 삭제 (cascade 로 template 도 정리)
         $removed = $helper->cleanupStaleDefinitions('core', 'core', $definedTypes);
         if ($removed > 0) {
-            $this->command?->line("  - stale 정의 {$removed}개 정리");
+            $this->command?->line('  - '.__('common.console.seeders.notification_definition.stale_removed', ['count' => $removed]));
         }
 
-        $this->command?->info('코어 알림 정의 시딩 완료 ('.count($definedTypes).'종)');
+        $this->command?->info(__('common.console.seeders.notification_definition.done', ['count' => count($definedTypes)]));
     }
 }

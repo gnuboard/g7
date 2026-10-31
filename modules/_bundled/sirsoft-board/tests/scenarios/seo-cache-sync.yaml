@@ -1,0 +1,28 @@
+feature: 게시판 SEO 캐시 비우기의 동기 실행과 무거운 작업의 큐 분리
+
+description: |
+  훅 리스너는 sync 를 선언하지 않으면 큐로 간다. 검색엔진용 캐시 비우기가 큐로 가면 워커가 돌 때까지
+  (워커가 없으면 TTL 까지) 봇이 고치기 전 글·블라인드한 글을 받는다.
+
+  비우기와 게시판 행 하나의 색인 갱신은 sync 로 돌리고 본문은 DB::afterCommit 으로 감싼다. 상세 페이지를
+  미리 다시 그리는 일과 게시판 재활성화 때의 게시글 대량 재색인은 SeoBoardRegenerateListener(큐)가 맡는다.
+
+axis_notes:
+  listener: 대상 리스너 묶음.
+  queue: |
+    sync 는 테스트 기본값이라 결함을 가린다. database 는 워커를 돌리지 않은 상태로 운영의 「웹 요청과 워커가
+    다른 프로세스」 를 재현한다.
+
+axes:
+  listener: [seo_board]
+  queue: [sync, database]
+
+effects:
+  - shared_cache_invalidated_without_worker   # 워커 없이 저장 직후 SEO 캐시가 비워진다
+  - invalidation_deferred_until_commit        # 트랜잭션 안 발화는 커밋 뒤에 비운다
+  - heavy_work_stays_queued                   # 상세 재렌더·재활성 재색인은 새 큐 리스너로 push 된다
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Seo/BoardSeoCacheQueuedTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/SeoBoardRegenerateListenerTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/SeoBoardCacheListenerTest.php

@@ -1,0 +1,28 @@
+feature: upgrade_710_prune_stale_bundled_files
+
+description: |
+  코어 7.1.0 데이터 스텝 `09_PruneStaleBundledFiles` (R1).
+  7.0.x 부모의 증분 파일 적용은 번들 확장 디렉토리 내부의 지워진 파일을 남긴다. 뒤이은 확장 갱신이 `_bundled` 를
+  활성 디렉토리로 통째 복사해 옛 조각(결제 3종 `admin_order_list_test_badge.json` 등)이 다시 등록됐다.
+  동결 목록에 있고 본문이 7.0.x 배포본과 같은 `_bundled` 파일만 지우고, 활성 디렉토리·고친 파일·목록 밖 파일은 둔다.
+
+coverage_strategy: full
+
+axes:
+  case: [payment_fragments_7_0_11, guarded_files, line_endings, empty_dirs_and_rerun, frozen_manifest]
+
+effects:
+  - stale_bundled_fragment_removed               # 7.0.11 판 옛 조각이 _bundled 에서 지워진다
+  - update_copies_only_head_fragments            # 그 뒤 확장 갱신이 만든 활성 디렉토리에는 HEAD 조각만 남는다
+  - active_dir_untouched_by_core_step            # 갱신 전 활성 디렉토리는 코어 스텝이 건드리지 않는다
+  - modified_file_kept_with_warning              # 본문이 바뀐 파일은 보존하고 경고를 남긴다
+  - unlisted_and_custom_files_kept               # 목록 밖 파일·사용자 커스텀 확장은 보존한다
+  - crlf_checkout_recognized                     # CRLF 체크아웃도 배포본으로 인식한다(LF 정규화 해시)
+  - emptied_subdirectories_pruned                # 비게 된 하위 디렉토리를 정리한다
+  - extension_root_kept                          # 확장 루트 디렉토리는 남긴다
+  - prune_is_idempotent                          # 두 번 실행해도 같다
+  - manifest_paths_inside_bundled_extensions     # 동결 목록은 번들 확장 내부 경로만 담는다
+  - manifest_paths_absent_from_current_bundle    # 동결 목록의 경로는 현재 번들에 실재하지 않는다
+
+test_files:
+  - tests/Feature/Upgrades/Upgrade710PruneStaleBundledFilesTest.php

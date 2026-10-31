@@ -155,6 +155,14 @@ templates/_bundled/vendor-template/CHANGELOG.md # 템플릿 (예: sirsoft-admin_
 ]
 ```
 
+### 이어 쓴 줄
+
+항목(`- `) 밑에 들여써 이어 쓴 줄은 앞 항목에 공백 하나로 이어 붙인다. 들여쓴 `- ` 는 중첩 항목으로 따로 두고 그 밑 이어 쓴 줄은
+중첩 항목에 붙인다. 빈 줄 뒤 들여쓴 문단은 같은 항목(느슨한 목록)으로, 들여쓰지 않은 문단·`####` 소제목은 항목을 끝낸다.
+항목 안 코드 블록은 울타리 줄을 빼고 내용을 붙이고, 항목 밖 코드 블록 안의 `- `·`##` 줄은 무시한다. CRLF 파일도 같다.
+종전에는 둘째 줄부터 버려져 확장 상세 「변경 내역」의 문장이 잘렸다(7.1.0 에서 수정). 회귀 고정: `tests/Unit/Extension/ChangelogParserTest.php`
+(번들 CHANGELOG 전수 포함), 시나리오 `tests/scenarios/changelog-parser.yaml`.
+
 ---
 
 ## 5. API 엔드포인트
@@ -348,11 +356,26 @@ setState(selectedX) → apiCall(changelog)
 
 | 포함 (엔진 코드) | 제외 (비엔진 코드) |
 |------------------|---------------------|
-| `resources/js/core/template-engine/**` | `templates/**/src/components/**` (템플릿 컴포넌트) |
-| `resources/js/core/TemplateApp.ts` | `modules/**/resources/layouts/**` (모듈 레이아웃) |
-| `resources/js/core/G7CoreGlobals.ts` | `resources/layouts/**` (코어 레이아웃 JSON) |
-| `resources/js/core/template-engine.ts` | `docs/**` (규정 문서) |
-| `resources/js/core/types/` (엔진 타입) | 백엔드 PHP 코드 |
+| `resources/js/core/**` (프론트엔드 코어 런타임 **전체**) | `templates/**/src/components/**` (템플릿 컴포넌트) |
+| ├ `template-engine/**` (편집기·DevTools 포함) | `modules/**/resources/layouts/**` (모듈 레이아웃) |
+| ├ `TemplateApp.ts` · `G7CoreGlobals.ts` · `template-engine.ts` | `resources/layouts/**` (코어 레이아웃) |
+| ├ `modules/**` · `auth/**` · `api/**` · `routing/**` | `docs/**` (규정 문서) |
+| ├ `websocket/**` · `devtools/**` · `utils/**` · `error/**` | 백엔드 PHP 코드 (blade 포함 → 루트 CHANGELOG) |
+| └ `types/**` (엔진 타입) | `resources/js/core/**/__tests__/**` (테스트 코드) |
+
+`resources/js/core/**` **전체**가 대상입니다. 종전 표는 `template-engine/`·`TemplateApp.ts` 등
+5개 경로만 열거했으나, 실제 관행은 코어 런타임 전 영역을 기록해 왔습니다 —
+`modules/`(engine-v1.52.0 `loadBundle`, v1.39.0 에셋 병렬화), `auth/`(v1.47.0),
+`api/`(v1.50.0 IDV 428), `routing/`(v1.38.0), `websocket/`(v1.33.1), `devtools/`(v1.51.0).
+열거식 표는 새 디렉토리가 생길 때마다 판단 공백을 만들므로 경로 전체로 규정합니다.
+
+**blade(`resources/views/**`)는 PHP 파일이므로 엔진 CHANGELOG 대상이 아닙니다** —
+루트 `CHANGELOG.md` 에 기록합니다(선례: `[7.0.0-alpha.14]` 의 `seo.blade.php` 항목).
+
+**`__tests__/**` 단독 변경도 대상이 아닙니다.** CHANGELOG 는 런타임 동작의 변화를 알리는 문서인데,
+테스트만 바뀐 변경은 동작을 바꾸지 않습니다. 같은 커밋에서 런타임 코드가 함께 바뀌었다면
+그 런타임 변경을 기준으로 판정합니다. 런타임 파일의 주석·JSDoc 단독 변경도 같습니다 —
+판정 기준은 파일 경로가 아니라 **동작 변화**입니다.
 
 ### 엔진 CHANGELOG 작성 형식
 
@@ -386,7 +409,7 @@ Keep a Changelog 표준:
 - (engine-v1.17.5) dataKey 자동 바인딩 컴포넌트에서 setState 호출 시 stale 값 방지
 ```
 
-**버전 결정 기준**:
+#### 버전 결정 기준
 
 | 상황 | 버전 처리 |
 |------|----------|
@@ -395,7 +418,9 @@ Keep a Changelog 표준:
 | 특정 버전에 귀속 불가한 수정 | `[Unreleased]` 섹션에 기록 |
 | 릴리스 시 | `[Unreleased]` → `[engine-v1.X.0]`으로 이동 |
 
-**대규모 Fixed 섹션 카테고리 분류** (항목 10개 초과 시):
+#### 대규모 Fixed 섹션 카테고리 분류
+
+항목이 10개를 넘으면 `####` 서브 헤딩으로 그룹핑합니다.
 
 ```markdown
 ### Fixed
@@ -408,6 +433,11 @@ Keep a Changelog 표준:
 - 항목 3
 ```
 
+#### 트러블슈팅 연동
+
+- 엔진 버그를 고치면 트러블슈팅 가이드에 사례를 추가하고 CHANGELOG `### Fixed` 에도 같은 변경으로 기록합니다
+- 트러블슈팅 사례에 적는 엔진 버전 태그는 그 수정이 기록된 CHANGELOG 버전과 같아야 합니다
+
 ## 공개 CHANGELOG 작성 규칙
 코어(`CHANGELOG.md`) 및 확장(`modules/*/CHANGELOG.md`, `plugins/*/CHANGELOG.md`, `templates/*/CHANGELOG.md`)의 릴리즈 CHANGELOG 작성 규칙입니다.
 
@@ -415,9 +445,14 @@ Keep a Changelog 표준:
 
 - 사용자/개발자가 읽는 문서이므로 **사용자 관점**으로 작성
 - "~할 수 있도록 개선", "~하도록 변경", "~문제 수정" 톤 사용
-- 각 불릿은 **1~2줄**로 간결하게
 - 내부 구현 상세(클래스명, 파일 경로, 테스트 건수, 훅 체인, DI 패턴)는 포함하지 않음
-- 이슈 번호(`#123`)는 포함하지 않음
+- 내부 작업 이슈 번호(`#123`, `refs #347`)는 포함하지 않음 — 단 아래 **공개 제보자 attribution** 은 예외
+
+### 항목 길이
+
+- 각 불릿은 **1~2줄**로 간결하게 작성
+- 한 기능의 세부 구현을 여러 줄에 나열하지 않음
+- 관련 항목이 많으면 **기능 단위 서브 헤딩**(`####`)으로 그룹핑
 
 ### 포함/제외 대상
 
@@ -439,7 +474,13 @@ Keep a Changelog 표준:
 - 형식: `- (본문) (#N @login 님께서 제보해주셨습니다.)` 또는 `... 건의해주셨습니다.`
 - 톤: 버그 리포트는 "제보", 제안형 개선 요청은 "건의"
 - 다중 매칭: `(#A @x, #B @y 님께서 제보해주셨습니다.)` / 혼재: `(#A @x 님께서 제보해주시고, #B @y 님께서 건의해주셨습니다.)`
-- KISA 등 공식 보안 채널: GitHub 멘션 없이 텍스트 "KISA 측에서" + 공개 가능한 식별자만
+- KISA 등 공식 보안 채널: GitHub 멘션 없이 텍스트 "KISA 측에서" + 공개 가능한 식별자만 — `(KISA 측에서 제보해주셨습니다 — KVE-XXXX-XXXXX)`
+- sir.kr 커뮤니티 제보·문의: GitHub 이슈가 없어도 표기합니다 — `(sir.kr 커뮤니티의 {닉네임} 님께서 제보해주셨습니다.)`, 닉네임을 밝히지 않은 제보는 `(sir.kr 커뮤니티에서 제보해주신 내용입니다.)`, 문의·건의는 `제보` 대신 `문의`·`건의`
+- 공개 PR 코드 기여: `(#N @login 님께서 수정해주셨습니다.)`(동작 결함을 고친 PR) 또는 `(#N @login 님께서 기여해주셨습니다.)`(기능 추가·개선 PR). N 은 공개 PR 번호이며 제보·건의와 섞이면 위 혼재 문장 규칙을 따릅니다
+- `(#N @login` 형식을 유지합니다 — 전체 URL 로 바꾸지 않습니다
+- 표기는 **선택이 아니라 해당 항목의 의무**입니다. 공개 이슈·공개 PR·공식 보안 채널·sir.kr 커뮤니티의 신고를 반영한 항목이면 그 항목 끝에 붙입니다
+- 내부 작업 이슈 번호와의 구분: 같은 줄에 `@login` 멘션 또는 `님께서 (제보|건의|수정|기여)해주셨습니다`·`KISA 측에서` 표현이 함께 있으면 공개 attribution, 그 밖의 `#숫자` 는 내부 번호라 쓰지 않습니다
+- README(`README.md`·`README.ko.md`)의 **커뮤니티 기여자** 목록은 공개 CHANGELOG 의 attribution 전체에서 모읍니다. 새 `@login` 을 적었다면 같은 변경에서 두 README 목록도 갱신합니다
 
 ### 신규 기능의 버그 수정 제외 규칙
 
@@ -450,6 +491,21 @@ Keep a Changelog 표준:
 ### 기능 그룹핑
 
 Added/Changed/Fixed 내 항목이 10개를 초과하면 `####` 서브 헤딩으로 기능 단위 분류합니다.
+
+### 신규 확장의 최초 출시 항목
+
+새 확장(또는 새 번들 언어팩)의 첫 공개 버전은 **그 확장 전체를 처음 소개하는 항목**입니다. 개발 과정의 변경 이력이 아니라 완성된 기능의 소개로 씁니다.
+
+| 항목 | 규격 |
+|------|------|
+| 카테고리 | `### Added` 단독 — 출시 전에 고친 것은 Fixed 가 아니다 |
+| 첫 불릿 | "… 플러그인(모듈/템플릿) 최초 릴리즈." 로 시작해 무엇이 처음 제공되는지 밝힌다 |
+| 분류 | 항목이 10개를 넘으면 `####` 서브 헤딩으로 기능 영역별 분류 |
+| 불릿 길이 | 다른 릴리즈와 동일하게 1~2줄 |
+| 다국어 | 기본 제공 언어와 번들 언어팩으로 제공되는 언어를 밝힌다 |
+| 코어 요구 버전 | manifest `g7_version` 의 최소 버전을 밝힌다 |
+
+출시일자는 **그 확장이 실제로 공개되는 날**입니다. 개발 중 적어 둔 날짜가 남아 있으면 코어 릴리즈일에 맞춰 정정합니다.
 
 ### Keep a Changelog 형식
 

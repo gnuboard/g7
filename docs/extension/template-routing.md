@@ -23,6 +23,8 @@
 
 **위치**: `/templates/[vendor-template]/routes.json`
 
+> 같은 주소가 `routes/custom.php`(개발자 화면, 7.2.0+)에도 등록되어 있으면 서버가 개발자 화면을 먼저 내보내므로 routes.json 의 그 경로는 열리지 않는다. 엔진 화면 안의 이동도 그 주소로는 전체 페이지 이동이 된다. [개발자 화면 가이드](../custom-development.md#2-라우트컨트롤러뷰)
+
 ### 구조
 
 ```json
@@ -33,7 +35,7 @@
       "layout_name": "admin_dashboard",
       "permissions": ["core.dashboard.view"],
       "meta": {
-        "title": "대시보드",
+        "title": "$t:admin.dashboard.title",
         "icon": "dashboard"
       }
     },
@@ -42,7 +44,7 @@
       "layout_name": "admin_users_list",
       "permissions": ["core.users.view"],
       "meta": {
-        "title": "사용자 관리",
+        "title": "$t:admin.users.page_title",
         "icon": "users"
       }
     }
@@ -57,7 +59,7 @@
 | `path` | 라우트 경로 (Laravel 라우트와 일치) |
 | `layout_name` | `template_layouts` 테이블의 레이아웃명 |
 | `permissions` | 필요한 권한 배열 (빈 배열 시 인증만 필요) |
-| `meta` | 메타 정보 (제목, 아이콘 등) |
+| `meta` | 메타 정보 (제목, 아이콘 등). `title` 은 번역 키(`$t:키`)로 적는다 — 화면 편집기의 라우트 목록과 방문 통계의 페이지 제목에 그대로 보이므로 한국어를 박으면 다른 언어 사이트에서도 한국어로 나온다 |
 
 ---
 
@@ -73,7 +75,7 @@
 | 항목 | 규칙 |
 |------|------|
 | **파일 위치** | `/templates/{vendor-template}/lang/{locale}.json` |
-| **로케일 형식** | ISO 639-1 (2자리 소문자, 예: `ko`, `en`, `ja`) |
+| **로케일 형식** | BCP 47 — 언어팩 설치 규칙과 같다 (예: `ko`, `ja`, `fil`, `zh-Hant`, `fil-PH`, `es-419`, 20자 이하). 판정 기준 클래스는 `App\Support\LocaleTag` |
 | **제공 방식** | API 엔드포인트 (`/api/templates/{identifier}/lang/{locale}`) |
 | **검증** | supported_locales 확인, 경로 탈출 방지 |
 
@@ -144,9 +146,9 @@ class TemplateService
             return ['success' => false, 'error' => 'Template not active'];
         }
 
-        // 2. 로케일 형식 검증 (ISO 639-1: 2자리 소문자)
-        if (!preg_match('/^[a-z]{2}$/', $locale)) {
-            return ['success' => false, 'error' => 'Invalid locale format'];
+        // 2. 로케일 형식 검증 — 언어팩 설치 규칙(BCP 47, 20자 이하)과 같은 기준
+        if (! LocaleTag::isValid($locale)) {
+            return ['success' => false, 'error' => 'invalid_locale'];
         }
 
         // 3. supported_locales 확인
@@ -246,12 +248,12 @@ class TemplateLanguageController extends PublicBaseController
 ```php
 // routes/api.php
 Route::get('/templates/{identifier}/lang/{locale}', [TemplateLanguageController::class, 'getLanguageFile'])
-    ->where('locale', '[a-z]{2}')
+    ->where('locale', LocaleTag::PATTERN_BODY)
     ->name('api.templates.language');
 ```
 
 **주요 포인트**:
-- `where('locale', '[a-z]{2}')`: ISO 639-1 형식만 허용
+- `where('locale', LocaleTag::PATTERN_BODY)`: 언어팩 설치 규칙(BCP 47)의 정규형만 허용 — `fil-ph`·`ZH-HANT`·`fil_PH` 는 404
 - 라우트 레벨에서 잘못된 형식 차단
 
 ---
@@ -323,7 +325,7 @@ console.log(translations.dashboard.title); // "대시보드"
 ### 허용 (✅)
 
 - 활성화된 템플릿만 접근 가능
-- ISO 639-1 형식 검증 (정규표현식: `/^[a-z]{2}$/`)
+- BCP 47 형식 검증 (`App\Support\LocaleTag::isValid()` — 문자 집합이 `[A-Za-z0-9-]` 뿐이라 경로 문자가 들어갈 수 없다)
 - supported_locales 화이트리스트 확인
 - 경로 트래버설 방지 (`realpath()`, `str_starts_with()`)
 - 파일 확장자 검증 (`.json`만 허용)
@@ -390,3 +392,4 @@ console.log(translations.dashboard.title); // "대시보드"
 - [template-basics.md](template-basics.md) - 템플릿 기초
 - [template-security.md](template-security.md) - 템플릿 보안 정책
 - [template-caching.md](template-caching.md) - 템플릿 캐싱 전략
+- [custom-development.md](../custom-development.md) - 개발자 화면(`routes/custom.php`)과 템플릿 라우트의 우선순위

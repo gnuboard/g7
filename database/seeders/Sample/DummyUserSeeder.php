@@ -6,6 +6,8 @@ use App\Models\Role;
 use App\Models\User;
 use App\Traits\HasSeederCounts;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class DummyUserSeeder extends Seeder
@@ -44,13 +46,13 @@ class DummyUserSeeder extends Seeder
     public function run(): void
     {
         $count = $this->getSeederCount('users', 100);
-        $this->command->info("더미 사용자 {$count}개 생성을 시작합니다.");
+        $this->command->info(__('common.console.seeders.dummy_user.start', ['count' => $count]));
 
         // 역할 조회
         $roles = Role::whereIn('identifier', ['admin', 'manager', 'user'])->get()->keyBy('identifier');
 
         if ($roles->isEmpty()) {
-            $this->command->error('역할이 존재하지 않습니다. RolePermissionSeeder를 먼저 실행해주세요.');
+            $this->command->error(__('common.console.seeders.dummy_user.roles_missing'));
 
             return;
         }
@@ -149,7 +151,7 @@ class DummyUserSeeder extends Seeder
 
         $progressBar->finish();
         $this->command->newLine();
-        $this->command->info("더미 사용자 {$createdCount}개가 성공적으로 생성되었습니다.");
+        $this->command->info(__('common.console.seeders.dummy_user.done', ['count' => $createdCount]));
     }
 
     /**
@@ -157,7 +159,7 @@ class DummyUserSeeder extends Seeder
      *
      * @param  array  $batch  사용자 데이터 배열
      * @param  array  $roleBatch  역할 식별자 배열
-     * @param  \Illuminate\Support\Collection  $roles  역할 컬렉션
+     * @param  Collection  $roles  역할 컬렉션
      * @return void
      */
     private function insertBatch(array $batch, array $roleBatch, $roles): void
@@ -188,7 +190,7 @@ class DummyUserSeeder extends Seeder
         }
 
         if (! empty($roleAttachments)) {
-            \Illuminate\Support\Facades\DB::table('user_roles')->insert($roleAttachments);
+            DB::table('user_roles')->insert($roleAttachments);
         }
     }
 

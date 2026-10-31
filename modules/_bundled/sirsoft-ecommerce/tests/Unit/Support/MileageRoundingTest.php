@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Support;
 
 use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -63,7 +64,7 @@ class MileageRoundingTest extends ModuleTestCase
     }
 
     #[Test]
-    #[\PHPUnit\Framework\Attributes\DataProvider('절사_조합')]
+    #[DataProvider('절사_조합')]
     public function 단위와_방식_조합이_그대로_적용된다(string $unit, string $method, float $raw, int $expected): void
     {
         $result = MileageRounding::applyRule($raw, [

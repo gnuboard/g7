@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Extension;
 
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Extension\ExtensionManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -9,6 +10,8 @@ use Illuminate\Console\Command;
 
 class UpdateAutoloadCommand extends Command
 {
+    use ReportsLifecycleWarnings;
+
     /**
      * The name and signature of the console command.
      *
@@ -24,19 +27,24 @@ class UpdateAutoloadCommand extends Command
     protected $description = '모듈과 플러그인의 오토로드 캐시 파일을 생성합니다 (bootstrap/cache/autoload-extensions.php)';
 
     /**
-     * Execute the console command.
+     * 확장 오토로드 캐시와 정적 확장 캐시(훅 매핑·예약 커맨드 매핑)를 다시 생성합니다.
+     *
+     * @param  ExtensionManager  $extensionManager  오토로드 파일 생성·런타임 재등록을 맡는 확장 관리자
+     * @param  ModuleManager  $moduleManager  정적 캐시 생성을 위해 모듈을 적재하는 관리자
+     * @param  PluginManager  $pluginManager  정적 캐시 생성을 위해 플러그인을 적재하는 관리자
+     * @return int 종료 코드
      */
     public function handle(
         ExtensionManager $extensionManager,
         ModuleManager $moduleManager,
         PluginManager $pluginManager,
     ): int {
-        $this->info('확장 오토로드 파일을 생성합니다...');
+        $this->info(__('extensions.commands.update_autoload.generating'));
 
         try {
             $extensionManager->generateAutoloadFile();
 
-            $this->info('오토로드 파일이 성공적으로 생성되었습니다.');
+            $this->info(__('extensions.commands.update_autoload.generated'));
             $this->line('  → bootstrap/cache/autoload-extensions.php');
 
             // 방금 생성한 PSR-4 매핑을 현재 프로세스의 ClassLoader 에 즉시 반영.
@@ -56,13 +64,13 @@ class UpdateAutoloadCommand extends Command
             $pluginManager->loadPlugins();
             $extensionManager->regenerateExtensionStaticCaches($moduleManager, $pluginManager);
 
-            $this->info('정적 확장 캐시가 재생성되었습니다.');
+            $this->info(__('extensions.commands.update_autoload.hooks_cache_regenerated'));
             $this->line('  → bootstrap/cache/hooks.php');
             $this->line('  → bootstrap/cache/extension-schedule-commands.php');
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $this->error('오토로드 파일 생성 중 오류가 발생했습니다: '.$e->getMessage());
+            $this->error(__('extensions.commands.update_autoload.failed', ['error' => $e->getMessage()]));
 
             return Command::FAILURE;
         }

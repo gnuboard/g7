@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\User;
+
 return [
 
     /*
@@ -62,7 +64,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            'model' => env('AUTH_MODEL', User::class),
         ],
 
         // 'users' => [
@@ -122,12 +124,18 @@ return [
     |
     | admin: 관리자 API 속도 제한
     | user: 일반 사용자 API 속도 제한
+    | public: 공개(무인증) 데이터 응답(템플릿 라우트·설정·다국어·컴포넌트, 레이아웃) 속도 제한 —
+    |         비로그인은 IP 단위로 센다. JS/CSS 번들·정적 자산은 대상이 아니다. 정상 페이지 첫
+    |         방문 1회가 이 제한을 6~7회 쓴다. 리버스 프록시 뒤에서는 TRUSTED_PROXIES 를 지정해야
+    |         방문자별로 세고, 한 IP 뒤에 사용자가 많은 환경(사내망·통신사 공유 IP)에서는 값을 올린다.
+    |         값을 바꾼 뒤 라우트 캐시를 쓰는 서버는 route:cache 를 다시 실행한다.
     |
     */
 
     'throttle' => [
         'admin' => env('THROTTLE_ADMIN', '600,1'),
         'user' => env('THROTTLE_USER', '600,1'),
+        'public' => env('THROTTLE_PUBLIC', '600,1'),
     ],
 
 ];

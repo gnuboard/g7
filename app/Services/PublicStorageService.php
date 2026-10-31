@@ -92,6 +92,33 @@ class PublicStorageService
     ];
 
     /**
+     * 로컬 파일시스템에 쓰는 디스크 드라이버 이름.
+     *
+     * `local-safe` 는 `local` 과 같은 어댑터에 상대경로 순회 거부만 더한 드라이버다
+     * (`AppServiceProvider::createTraversalSafeLocalDisk`). 공개 디스크가 그 드라이버로
+     * 결선된 뒤에도 「로컬인가」 판정이 `=== 'local'` 리터럴로 남으면, 링크 없는 호스팅의
+     * 대체 서빙(URL 전환·서빙 루트)이 통째로 꺼진다.
+     *
+     * @var list<string>
+     */
+    public const LOCAL_DRIVERS = ['local', 'local-safe'];
+
+    /**
+     * 디스크 드라이버 설정값이 로컬 파일시스템을 가리키는지 판정합니다.
+     *
+     * 미설정(`null`)은 Laravel 기본값(로컬)으로 읽는다. URL 생성 쪽
+     * (`ResolvesPublicUrl::pointsAtLocalPublicStorage()`)과 서빙 루트 쪽(`rootPath()`)이
+     * 이 술어 하나를 함께 쓴다 — 갈리면 「URL 은 로컬로, 서빙 루트는 폴백으로」 반쪽 상태가 된다.
+     *
+     * @param  mixed  $driver  `filesystems.disks.{disk}.driver` 값
+     * @return bool 로컬 드라이버이면 true
+     */
+    public static function isLocalDriver(mixed $driver): bool
+    {
+        return $driver === null || in_array($driver, self::LOCAL_DRIVERS, true);
+    }
+
+    /**
      * 이 통로가 서빙하는 루트 디렉토리를 돌려줍니다.
      *
      * 운영자가 `filesystems.disks.public.root` 를 옮긴 배치가 있고, 파일을 **쓰는** 쪽
@@ -124,7 +151,7 @@ class PublicStorageService
 
         $driver = config('filesystems.disks.public.driver');
 
-        if ($driver !== null && $driver !== 'local') {
+        if (! static::isLocalDriver($driver)) {
             static::warnRootPathOnce('공개 디스크가 로컬 드라이버가 아니어서 설정된 root 를 서빙 루트로 쓰지 않습니다', [
                 'driver' => $driver,
                 'configured_root' => $configured,
