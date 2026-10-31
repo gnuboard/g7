@@ -5,11 +5,11 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 196개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 197개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `(root)` | 41개 |
+| `(root)` | 42개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
 | `partials` | 148개 |
@@ -34,6 +34,7 @@
 | `admin_analytics_visitors` | `(root)` | 화면 | `_admin_base` |
 | `admin_dashboard` | `(root)` | 화면 | `_admin_base` |
 | `admin_forgot_password` | `(root)` | 화면 | - |
+| `admin_home` | `(root)` | 화면 | `_admin_base` |
 | `admin_identity_logs` | `(root)` | 화면 | `_admin_base` |
 | `admin_language_pack_list` | `(root)` | 화면 | `_admin_base` |
 | `admin_language_packs` | `(root)` | 화면 | `admin_language_pack_list` |
@@ -300,11 +301,17 @@ auto·접힘으로 되돌립니다 — 한 곳이라도 빠지면 직전에 고�
 - 확장점 `admin_login_extensions` — 로그인 폼 아래 빈 슬롯. 다른 관리자 로그인 수단(회사 계정 버튼 등)을 확장이 붙입니다.
 - `admin_user_form` — 등록 화면 「비밀번호 없이 만들기」(`create_without_password`, 켜면 비밀번호 두 칸을 숨기고 이미 적은 값도 비운다).
   수정 화면은 응답 `locked_fields` 에 든 칸을 `disabled` 로 두고 안내를 붙입니다(서버도 다른 값이면 422 `user.field_locked`).
+  회원 상세의 `password_status.can_set` 이 false 면(비밀번호 인증 정책이 막는 회원 — 회사 계정 로그인 강제 등) 비밀번호 칸·규칙·본인 확인 자리 대신
+  `password_status.set_blocked_message` 안내(`password_unsettable_notice`)를 보입니다. 저장 403 은 서버 문구를, 없을 때만 「권한이 없습니다」 를 보입니다(7.2.0).
 - `admin_user_detail` — 상단 「모든 기기에서 로그아웃」 + 확인 모달 → `POST /api/admin/users/{uuid}/sessions/revoke`.
 - 보안 탭 첫 카드 「회원가입」 — 「일반 회원가입 받기」(`security.registration_enabled`).
 - 재확인 관문(회원 수정 화면의 본인 비밀번호 첫 설정, 앱 키 재생성 모달)은 수단을 고정하지 않습니다 — 응답이 `render_hint=external_redirect`
   면 그 주소로 갔다가 `?verification_token=` 을 들고 돌아옵니다(`admin_user_form` 의 `<init>` 이 폼 값으로 옮긴다).
+  428 을 받은 본인인증 launcher 도 challenge 요청에 지금 화면 경로(`return_path`)를 실어, 외부 수단을 거친 뒤 같은 관리자 화면으로 돌아옵니다.
 - `admin_forgot_password`·`admin_reset_password` — 비밀번호 인증이 막힌 계정은 오류 아래 그 수단으로 가는 버튼(`forgotAlternate*`·`resetAlternate*`).
+  재설정 화면의 막힘 안내는 일반 오류 상자와 나뉜 상자(`reset_blocked_notice`, 문구 `resetBlockedMessage`)입니다 — 링크 검증(blocking)의
+  오류 처리기는 화면 `<init>` 보다 먼저 돌아서, `<init>` 이 비우는 일반 오류 키(`resetError`)에 담으면 화면에 닿기 전에 지워집니다.
+  두 화면 모두 요청에 `redirect_prefix=admin` 을 실어 다른 수단 주소가 관리자 로그인(`guard=admin`)으로 옵니다.
 - 회원 목록 열은 확장이 오버레이 `inject_props` `_append` 로 늘립니다 — 대상은 표 `users_data_grid` 의 `columns` 와 열 선택기
   **`column_selector`**(`id="admin_user_list_columns"` 는 저장 키 prop 이라 대상이 아니다)의 `columns`·`defaultColumns`.
 
@@ -397,7 +404,7 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 <!-- @generated:layout-map START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 레이아웃 | 이름 |
 |---|---|---|
-| `*/admin` | `-` | - |
+| `*/admin` | `admin_home` | - |
 | `*/admin/login` | `admin_login` | - |
 | `*/admin/forgot-password` | `admin_forgot_password` | - |
 | `*/admin/reset-password` | `admin_reset_password` | - |
@@ -445,9 +452,11 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 <!-- @generated:layout-map END -->
 
 <!-- @intent START -->
-`레이아웃` 열이 `-` 인 두 행(`*/admin`, `*/admin/settings/language-packs`)은 레이아웃이
-없다는 뜻이 아니라 **다른 라우트로 리다이렉트되는 진입점**입니다 — 예를 들어 `/admin` 은
-로그인 여부에 따라 `/admin/login` 또는 `/admin/dashboard` 로 넘어가는 게이트 라우트입니다.
+`레이아웃` 열이 `-` 인 행(`*/admin/settings/language-packs` 등)은 레이아웃이 없다는 뜻이 아니라
+**다른 라우트로 리다이렉트되는 진입점**입니다. `*/admin` 은 리다이렉트가 아니라 첫 화면 레이아웃
+`admin_home` 을 그립니다 — 로그인하지 않았으면 `/admin/login` 으로 가고, 로그인했으면 대시보드 권한이
+있을 때 `/admin/dashboard`, 없을 때 사이드바 메뉴의 첫 화면으로 넘깁니다(확장이 준 역할만 가진 관리자가
+대시보드 403 화면에 갇히지 않게). 로그인 화면은 복귀 주소가 없으면 이 첫 화면으로 보냅니다.
 새 화면을 추가할 때 이 표에 라우트를 등록하는 것만으로 끝나지 않습니다 — 사이드바 메뉴에서
 그 화면으로 이동하는 진입점도 함께 추가해야 실제로 도달 가능해집니다(라우트만 있고 메뉴
 항목이 없으면 URL을 직접 입력해야만 닿는 화면이 됩니다).
@@ -494,6 +503,8 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 `_tab_notification_definitions` 은 분류 칩(전체 · 일반 알림 · 본인인증)을 `?category=` 쿼리로 들고, 목록 데이터 소스
 `notificationDefinitions` 에 그대로 넘깁니다(`extension_type="core"` — 코어 선언과 운영자가 추가한 정책별 문구가 함께
 옵니다). 본인인증 카드(`category === 'identity'`)는 일반 알림과 세 가지가 다릅니다.
+
+**템플릿이 없는 수단(7.2.0)** 수단 하위 탭에서 그 수단 template 이 없는 정의는 「이 채널에 대한 템플릿이 없습니다」 옆에 꺼진 「템플릿 만들기」 스위치가 선다. 켜면 그 수단을 정의 `channels` 에 더해 바로 `PUT` 하고 코어가 빈 template(꺼짐, `is_user_created`)을 만든다(코어 `docs/backend/notification-system.md` 「운영자가 켠 발송 수단의 빈 템플릿」). 다시 받은 목록에는 template 스위치와 [편집], 「빈 템플릿이 만들어졌습니다…」 안내(`admin.settings.notification_definitions.user_template_inactive`)가 선다. template 켜기가 422 로 거절되면 `notif_definitions_list` 를 `remount` 해 눌린 스위치를 되돌린다.
 
 | 축 | 본인인증 카드 | 이유 |
 |---|---|---|
@@ -564,6 +575,7 @@ GDPR 배너)을 코어 대시보드 위젯 형태로만 받고, 이 템플릿이
 ```text
 _admin_base.g7.html (베이스 레이아웃)
 │
+├── admin_home.g7.html (첫 화면 `/admin` — 본문 없이 볼 수 있는 화면으로 넘김: 대시보드 권한이 있으면 대시보드, 없으면 사이드바 메뉴의 첫 화면, 열 화면이 없으면 안내)
 ├── admin_dashboard.g7.html (대시보드)
 ├── admin_login.g7.html (로그인 — _admin_base 미상속)
 │
@@ -623,7 +635,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           └── _modal_delete.g7.html
 │
 ├── 환경 설정
-│   └── admin_settings.g7.html (탭 네비게이션)
+│   └── admin_settings.g7.html (탭 네비게이션 · 설정 조회 외 권한이 필요한 목록·링크는 계산값 canReadLanguagePacks·canReadIdentityProviders·canReadIdentityPolicies·canReadSchedules 로 가리고, 그 데이터소스의 403 은 조용히 넘김)
 │       └── partials/admin_settings/
 │           ├── _tab_general.g7.html (일반)
 │           ├── _tab_mail.g7.html (메일 발송 SMTP 설정)
@@ -654,9 +666,9 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_identity.g7.html (2단계 인증 — 하위 탭 허브)
 │           ├── _tab_identity_basic.g7.html (기본 정책)
 │           ├── _tab_identity_messages.g7.html (인증 메시지 — 알림 설정으로 옮겨졌다는 안내와 이동 링크)
-│           ├── _tab_identity_policies.g7.html (인증 정책)
-│           ├── _tab_identity_providers.g7.html (인증 수단)
-│           ├── _tab_language_packs.g7.html (언어팩)
+│           ├── _tab_identity_policies.g7.html (인증 정책 — 정책 조회 권한이 없으면 목록 대신 권한 안내)
+│           ├── _tab_identity_providers.g7.html (인증 수단 — 프로바이더 설정 조회 권한이 없으면 목록 대신 권한 안내)
+│           ├── _tab_language_packs.g7.html (언어팩 — 언어팩 조회 권한이 없으면 탭 항목 숨김, 직접 진입은 권한 안내)
 │           ├── _modal_notification_identity_definition_add.g7.html (알림 설정 > 본인인증 — 정책별 문구 추가)
 │           ├── _modal_notification_identity_definition_delete.g7.html (알림 설정 > 본인인증 — 정책별 문구 삭제)
 │           ├── _modal_notification_channel_off_confirm.g7.html (알림 설정 [저장] — 메일 채널 끄기 확인)
@@ -709,7 +721,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           └── _modal_file_form.g7.html
 │
 ├── 스케줄 관리 (스케줄·큐 경로 탭 — `/admin/schedules`, `/admin/schedules/queue?view=pending|failed|logs`)
-│   └── admin_schedule_list.g7.html (탭별 데이터소스 조건 · 명명 액션 searchSchedules/resetSchedules · 큐 검색)
+│   └── admin_schedule_list.g7.html (탭별 데이터소스 조건 · 명명 액션 searchSchedules/resetSchedules · 큐 검색 · 큐 작업 조회 권한이 없으면 큐 탭 숨김·직접 진입 권한 안내·큐 요청 생략 — 판정은 베이스가 current_user 로 올린 `_global.adminQueueJobsReadable`)
 │       └── partials/admin_schedule_list/
 │           ├── _status_card.g7.html (스케줄러 하트비트·큐 요약 — 좁은 화면은 한 줄 요약 + 자세히)
 │           ├── _tab_schedules.g7.html (스케줄 탭 — 필터·표 partial 을 담는 틀)
@@ -722,8 +734,8 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_run.g7.html
 │           ├── _modal_bulk_status.g7.html (일괄 활성·비활성 확인)
 │           ├── _modal_security.g7.html (보안 정책 — 읽기 전용, 서버 관리자 덮어쓰기 파일 상태 포함)
-│           ├── _tab_queue.g7.html (큐 탭 — 대기/실패/처리 기록 하위 탭·비 database 드라이버 안내)
-│           ├── _queue_pending_grid.g7.html
+│           ├── _tab_queue.g7.html (큐 탭 — 대기/실패/처리 기록 하위 탭·비 database 드라이버 안내·현황을 받지 못하면 카드 대신 실패 안내)
+│           ├── _queue_pending_grid.g7.html (세 하위 탭 표 공통: 목록을 받지 못하면 「0건·없습니다」 대신 권한 없음·불러오지 못함 안내)
 │           ├── _queue_failed_grid.g7.html (단건·일괄 재시도·삭제)
 │           ├── _queue_logs_grid.g7.html
 │           ├── _modal_queue_job_detail.g7.html
@@ -1055,6 +1067,11 @@ _admin_base.g7.html
 
 **슬롯**:
 - `content` — 각 페이지의 메인 콘텐츠가 삽입되는 위치
+
+**머리 알림과 알림 조회 권한**: 로그인 관리자(`current_user`)를 받으면 알림 조회 권한(`core.notifications.read`) 보유 여부를
+전역 `adminNotificationsReadable` 에 올리고, 거짓이면 알림 목록·안 읽은 수 데이터소스와 종 아이콘(데스크톱·모바일)을 두지 않습니다.
+판정은 로그인 관리자 응답이 와야 서므로, 새로 연 탭·새로고침·주소 직접 진입·로그인 직후의 첫 화면에서는 두 요청이 한 번 나갑니다.
+그때 권한이 없어 나는 403 은 두 데이터소스가 조용히 넘기고(`errorHandling` 403 `suppress`), 401·500 같은 다른 오류는 종전 처리 그대로입니다.
 
 ---
 

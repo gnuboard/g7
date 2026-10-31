@@ -4,6 +4,7 @@
         "description": "환율 실패 알림의 발송 수단 복수 지정과 채널별 템플릿 활성화"
     },
     "comment": "실패 알림 카드 — 이 플러그인 소유 알림 정의마다 발송 채널(복수)을 고르고, 켠 채널의 템플릿을 활성화·편집한다. 채널 선택은 저장 버튼으로, 템플릿 활성화는 토글 즉시 서버에 반영한다",
+    "id": "koreaexim_notifications_card",
     "type": "basic",
     "name": "Div",
     "props": {
@@ -113,6 +114,16 @@
                                                 "className": "koreaexim-text-hint koreaexim:block koreaexim:text-amber-700 koreaexim:dark:text-amber-400"
                                             },
                                             "text": "$t:sirsoft-koreaexim.channel_template_missing"
+                                        },
+                                        {
+                                            "comment": "저장으로 코어가 만든 빈 템플릿(운영자 생성)이 꺼져 있으면 아직 발송되지 않는다 — 채우고 켜도록 안내",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) && (def.templates ?? []).some(t => t.channel === ch.id && t.is_user_created && !t.is_active)}}",
+                                            "props": {
+                                                "className": "koreaexim-text-hint koreaexim:block koreaexim:text-amber-700 koreaexim:dark:text-amber-400"
+                                            },
+                                            "text": "$t:admin.settings.notification_definitions.user_template_inactive"
                                         }
                                     ]
                                 }
@@ -327,13 +338,21 @@
                                             "dataSourceId": "koreaeximNotificationDefinitions"
                                         }
                                     },
-                                    "onError": {
-                                        "handler": "toast",
-                                        "params": {
-                                            "type": "error",
-                                            "message": "{{error.message}}"
+                                    "onError": [
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "remount",
+                                            "params": {
+                                                "componentId": "koreaexim_notifications_card"
+                                            }
                                         }
-                                    }
+                                    ]
                                 }
                             ],
                             "props": {

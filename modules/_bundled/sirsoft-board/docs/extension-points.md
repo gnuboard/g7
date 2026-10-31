@@ -562,6 +562,14 @@ Post CRUD 를 재사용하는 위임 지점입니다 — 이커머스가 훅을 
 레이아웃을 코드로 알지 못한 채(레이아웃 확장 시스템을 통해서만) UI 를 주입한다는 뜻입니다.
 나머지 2개(`user-notification-*`)는 코어 회원 알림 설정 화면에 board 알림 수신 옵션을
 끼워 넣는 자리입니다.
+
+남의 화면에 붙는 조각은 그 화면의 권한만 있고 게시판 권한은 없는 운영자에게도 그려집니다. 예를 들어
+쇼핑몰 환경설정은 쇼핑몰 설정 권한만으로 열리므로, 「문의 게시판」 조각의 게시판 목록(`board_list_for_inquiry`)은
+게시판 조회 권한이 없는 운영자에게 403 이 됩니다. 그래서 이 데이터소스는 403 을 알림 없이 넘기고(`errorHandling`),
+받기에 실패하면 `load_failed` 표시가 있는 빈 목록(`fallback`)을 둡니다. 칸은 그 표시를 보고 저장된 게시판을
+보인 채 잠기며, 바꿀 수 없다는 안내를 냅니다 — 칸을 열어 두면 선택지가 안내(빈 값) 하나뿐이라 그것을 고르고
+저장하는 순간 저장된 문의 게시판이 지워집니다. 남의 화면에 조각을 새로 붙일 때도 그 화면에 올 수 있는 역할이
+게시판 API 권한을 갖는지 먼저 확인합니다.
 <!-- @intent END -->
 
 ### 사용자 화면 자리 (sirsoft-basic)
@@ -647,6 +655,8 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `report_received_admin` | `mail`, `database` |
 | `report_action` | `mail`, `database` |
 <!-- @generated:notifications END -->
+
+**템플릿이 없는 수단(7.2.0)** 게시판 환경설정 알림 탭의 수단 하위 탭에서 그 수단 template 이 없는 정의에는 「템플릿 만들기」 스위치가 선다. 켜면 수단을 정의에 더해 저장하고 코어가 빈 template(꺼짐)을 만든다(코어 `docs/backend/notification-system.md` 「운영자가 켠 발송 수단의 빈 템플릿」). 안내 문구와 거절 시 되돌림(`board_notif_definitions_list` remount)은 코어 화면과 같다.
 
 <!-- @intent START -->
 7종 중 `new_comment`/`reply_comment`/`post_reply` 는 회원이 끌 수 있습니다

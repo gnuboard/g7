@@ -129,6 +129,8 @@
 
 <!-- @intent START -->
 사용자 화면 8조각과 관리자 화면 3조각입니다. 사용자 쪽은 확장점 주입 4개(로그인 버튼 `auth_login_extensions`, 가입 버튼 `auth_register_extensions`, 재확인 수단 `mypage_reauth_methods`, 비밀번호 첫 설정 재확인 `mypage_change_password_reauth`)와 대상 레이아웃 overlay 4개(로그인 안내 토스트 `auth/login`, 가입 모달 `auth/register`, 정보 수정 관문 수령 `mypage/profile-edit`, 마이페이지 연결 카드 `mypage/profile` 의 `profile_view_bio_card` 뒤)입니다. 관리자 쪽은 회원 상세 overlay(`admin_user_detail`, 탭 버튼은 `user_detail_tabs` 속성 주입, 본문은 `extension_tab_content`), 회원 목록 상세검색 확장점 `admin_user_list_filters` 의 가입경로 행, 회원 목록 표 `users_data_grid` 와 열 선택기에 「소셜 연결」 열을 덧붙이는 속성 주입(기본 열에는 없다)입니다. 플러그인이 꺼지면 주입이 0 이 되어 각 화면은 기본 모습으로 돌아갑니다.
+
+재확인 두 조각(`mypage_reauth_methods`, `mypage_change_password_reauth`)은 템플릿 기본 안내를 통째로 바꾸므로(`replace`) 소셜 계정이 없는 회원(회사 계정으로만 가입한 회원 등)에게도 그려집니다. 그래서 내 연결 목록의 `reauth_via_social` 이 참일 때만 소셜 안내와 제공자 버튼을 보이고, 아니면 템플릿 기본 안내와 같은 문구(템플릿 키 `mypage.profile.reauth_unavailable`, 비밀번호 첫 설정은 코어 회원 응답의 `reauth_provider` 가 있으면 `mypage.profile.change_password_reauth_other`, 없으면 `mypage.profile.change_password_reauth_unavailable`)를 보입니다. `reauth_via_social` 은 코어가 이 회원의 민감 작업 재확인에 실제로 소셜 재확인을 고를 때만 참입니다(`IdentityVerificationManager::resolveUsableForUser`) — 회사 계정과 소셜을 둘 다 연결한 회원은 「본인 확인 계속하기」가 회사 계정으로 가므로 거짓입니다.
 <!-- @intent END -->
 
 ## 미들웨어
@@ -158,7 +160,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `sirsoft-social_login:prune` | `daily` | 소셜 로그인 보존 기간 정리 (원본 프로필 · 시도 기록 · 웹훅 수신 이력 · 모의 제공자 표지) |
+| `prune` | `0 0 * * *` | 소셜 로그인 보존 기간 정리 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->

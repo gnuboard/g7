@@ -1,0 +1,23 @@
+feature: 시험의 사이트맵 파일 저장소 격리
+
+description: |
+  시험 큐는 sync 라서 게시판·게시글·상품·페이지를 만드는 시험이 리스너를 거쳐 사이트맵 재생성 잡을 즉시 실행한다.
+  격리가 없으면 그 잡이 시험 DB 의 색인(시험 주소)으로 실제 사이트맵 파일(storage/app/private/cache/sitemap)을
+  덮어써, 같은 폴더에서 띄운 개발 서버가 검색 로봇에 시험 주소를 내보낸다. RefreshDatabase 는 DB 만 되돌리므로 이
+  오염은 남고 시험은 계속 green 이라 드러나지 않는다.
+
+  TestCase 는 사이트맵 저장 디스크를 시험 전용 경로(IsolatedSitemapStorage::FALLBACK_DISK)로 돌린다. 격리가 기능을
+  끊으면 안 되므로 생성은 시험 전용 디스크에서 정상 동작하고 서빙 쪽도 같은 디스크를 본다. 시험이 local 디스크를
+  페이크로 바꾸면 사이트맵은 그 페이크 local 에 쓰인다(기존 사이트맵 시험의 단언 경로 유지).
+
+axes:
+  entry: [core_job_dispatch, board_update_hook, faked_local_disk, fallback_disk_config]
+
+effects:
+  - sitemap_regeneration_never_writes_real_storage
+  - isolated_sitemap_disk_points_to_testing_path
+  - faked_local_disk_receives_sitemap
+
+test_files:
+  - tests/Feature/Seo/SitemapStorageIsolationTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Seo/BoardSitemapStorageIsolationTest.php

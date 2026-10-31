@@ -2302,6 +2302,7 @@ return [
         'types' => '作業タイプ',
         'personal' => '個人情報を含む',
         'mine' => '自分のリクエストのみ',
+        'requester_uuid' => 'リクエスト者',
         'sort_by' => '並べ替え基準',
         'sort_order' => '並べ替え方向',
         'per_page' => 'ページあたりの件数',

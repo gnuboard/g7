@@ -1,10 +1,12 @@
 # audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 거절된 시작의 콜백 단계)이 대부분이라 명목상이다.
 feature: sso_reauth_provider
 description: |
-  「회사 계정으로 재확인」 본인인증 수단 — 코어 레지스트리 등록, 활성 연결 회원만 대상, IdP 왕복 증명 뒤에만 코어 확인 통과, 다른 회원 신원 거절. 코어의 회원별 수단 폴백(K17)은 코어 몫.
+  「회사 계정으로 재확인」 본인인증 수단 — 코어 레지스트리 등록, 활성 연결 회원만 대상, IdP 왕복 증명 뒤에만 코어 확인 통과, 다른 회원 신원 거절. 메일을 받을 수 없는 연결 회원은 회원별 판정이 없는 수단이 앞에 등록돼 있어도 코어 폴백이 이 수단을 고른다(폴백 규칙 자체는 코어 시험 몫).
 axes:
   provider: [registered]
-  member: ["linked|unlinked", linked, unlinked]
+  member: ["linked|unlinked", linked, unlinked, "undeliverable_linked|undeliverable_unlinked|deliverable_linked", undeliverable_linked, undeliverable_unlinked, deliverable_linked, undeliverable_linked_with_social]
+  registry: [unscoped_provider_first, plugin_load_order]
+  entry: ["resolve|api", resolve, api]
   reauth: [roundtrip, "verify_without_roundtrip|other_member_identity", verify_without_roundtrip, other_member_identity]
   return_path: ["plain|with_screen_query", plain, with_screen_query]
 effects:
@@ -14,5 +16,9 @@ effects:
   - verify_succeeds_after_roundtrip
   - return_url_carries_verification_token
   - verify_fails
+  - core_fallback_picks_reauth_over_unscoped
+  - api_challenge_redirects_to_idp
+  - unlinked_or_deliverable_keeps_mail
+  - reauth_registered_ahead_of_social_reauth
 test_files:
   - plugins/_bundled/sirsoft-sso/tests/Feature/Identity/ReauthProviderTest.php

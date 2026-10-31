@@ -120,11 +120,15 @@ import { installAuthBoundaryStorageCleanup } from './handlers/authBoundaryStorag
 // 레이아웃 편집기 커스텀 위젯(icon-picker 등) 등록
 import { registerSirsoftBasicEditorWidgets } from './layout-editor/registerEditorWidgets';
 
+// 이 번들이 페이지의 활성 템플릿으로 실렸는지 (레이아웃 편집기는 다른 템플릿 페이지에 이 번들을 싣는다)
+import { isPageTemplate } from './support/pageTemplate';
+
 /** 템플릿 식별자 — 핸들러 등록자 표기 (template.json 의 identifier 와 같다) */
 const TEMPLATE_IDENTIFIER = 'sirsoft-basic';
 
 // handlerMap을 전역으로 노출 (로케일 변경 시 재등록용)
-if (typeof window !== 'undefined') {
+// 다른 템플릿 페이지(편집기)에 실렸으면 노출하지 않는다 — 그 페이지의 로케일 전환이 이 맵을 호스트 핸들러 대신 다시 등록한다.
+if (typeof window !== 'undefined' && isPageTemplate(TEMPLATE_IDENTIFIER)) {
   (window as any).G7TemplateHandlers = handlerMap;
 }
 
@@ -142,6 +146,15 @@ export { templateMetadata };
  * 코어 엔진에 커스텀 핸들러를 등록합니다.
  */
 export function initTemplate(): void {
+  // 다른 템플릿 페이지(레이아웃 편집기)에 실린 번들은 페이지 전역(핸들러·본인인증 launcher·기기 보정·인증 경계 정리)을
+  // 건드리지 않는다. 호스트 템플릿의 같은 이름 핸들러(setTheme 등)를 덮으면 그 페이지 동작이 이 템플릿 것으로 바뀐다.
+  // 편집기 캔버스는 격리 dispatcher 를 쓰므로 여기 등록이 필요 없다.
+  if (!isPageTemplate(TEMPLATE_IDENTIFIER)) {
+    logger.log('Loaded on another template page — skipping page-level handler registration');
+
+    return;
+  }
+
   // ActionDispatcher가 로드될 때까지 대기 후 핸들러 등록
   if (typeof window !== 'undefined') {
     let retryCount = 0;

@@ -8,6 +8,7 @@ use App\Extension\HookManager;
 use App\Models\User;
 use App\Services\UserService;
 use App\Support\Auth\SystemOperation;
+use Plugins\Sirsoft\Sso\Drivers\Ldap\LdapDriver;
 use Plugins\Sirsoft\Sso\DTO\ExternalIdentity;
 use Plugins\Sirsoft\Sso\Models\IdentityProvider;
 use Plugins\Sirsoft\Sso\Models\SsoAccount;
@@ -20,7 +21,8 @@ use Plugins\Sirsoft\Sso\Repositories\Contracts\SsoUserAttributeRepositoryInterfa
  *
  * 규칙(`attribute_map`)은 `[{field, source, mode}]`:
  *  - `field`: 코어 칸(`name`, `nickname`, `mobile`, `phone`, `language`, `email`) 또는 `attr:{key}`(`sso_user_attributes`)
- *  - `source`: IdP 속성 이름 (특수값 `email`, `display_name` — 신원의 이메일, 표시 이름)
+ *  - `source`: IdP 속성 이름 (특수값 `email`, `display_name` — 신원의 이메일, 표시 이름). LDAP 속성 이름은 디렉터리처럼 대소문자를
+ *    가리지 않고, OIDC 클레임과 SAML 속성 이름은 IdP 가 보낸 그대로 가린다.
  *  - `mode`: `sync_lock`(매 로그인 덮어쓰기 + 회원 수정 잠금) / `sync`(매 로그인 덮어쓰기) / `first_only`(처음 만들 때만) / `ignore`
  *
  * 코어 칸은 `UserService::updateUser()` 를 직접 불러 쓴다 — 요청을 거치지 않으므로 코어 칸 잠금과 무관하다(의도). IdP 가 값을 주지
@@ -43,6 +45,9 @@ class AttributeSyncService
 
     /** @var array<int, string> 모드 */
     public const MODES = ['sync_lock', 'sync', 'first_only', 'ignore'];
+
+    /** @var array<int, string> 신원의 고정 칸을 가리키는 출처 (IdP 속성 이름이 아니다) */
+    public const SPECIAL_SOURCES = ['email', 'display_name'];
 
     /** 추가 속성 칸 접두 */
     public const ATTR_PREFIX = 'attr:';
@@ -82,13 +87,14 @@ class AttributeSyncService
     {
         $result = ['fields' => [], 'attributes' => [], 'email' => null];
         $coreUpdates = [];
+        $caseInsensitive = self::caseInsensitiveSources($idp);
 
         foreach (self::rules($idp) as $rule) {
             if ($rule['mode'] === 'ignore' || ($rule['mode'] === 'first_only' && ! $created)) {
                 continue;
             }
 
-            $value = self::sourceValue($identity, $rule['source']);
+            $value = self::sourceValue($identity, $rule['source'], $caseInsensitive);
             if ($value === null) {
                 continue;
             }
@@ -195,18 +201,49 @@ class AttributeSyncService
     }
 
     /**
+     * 규칙이 IdP 에게 받아야 하는 속성 이름 — 가져오지 않음 규칙과 특수 출처(`email`, `display_name`)는 뺀다(드라이버의 요청 목록용).
+     *
+     * @param  IdentityProvider  $idp  IdP
+     * @return array<int, string> 출처 이름 (규칙에 적은 그대로)
+     */
+    public static function requestedSources(IdentityProvider $idp): array
+    {
+        $sources = [];
+        foreach (self::rules($idp) as $rule) {
+            if ($rule['mode'] !== 'ignore' && ! in_array($rule['source'], self::SPECIAL_SOURCES, true)) {
+                $sources[] = $rule['source'];
+            }
+        }
+
+        return array_values(array_unique($sources));
+    }
+
+    /**
+     * 이 IdP 의 출처 이름을 대소문자 없이 찾는지 — LDAP 속성 이름은 대소문자를 가리지 않는다(RFC 4512). OIDC 클레임과 SAML 속성
+     * 이름은 가린다.
+     *
+     * @param  IdentityProvider  $idp  IdP
+     * @return bool 대소문자를 가리지 않으면 true
+     */
+    public static function caseInsensitiveSources(IdentityProvider $idp): bool
+    {
+        return $idp->protocol === LdapDriver::KEY;
+    }
+
+    /**
      * 신원에서 출처 값을 꺼냅니다 (배열 값은 쉼표로 잇는다, 빈 값은 null).
      *
      * @param  ExternalIdentity  $identity  신원
      * @param  string  $source  출처 이름
+     * @param  bool  $caseInsensitive  같은 이름이 없을 때 대소문자 없이 다시 찾을지 (LDAP)
      * @return string|null 값
      */
-    public static function sourceValue(ExternalIdentity $identity, string $source): ?string
+    public static function sourceValue(ExternalIdentity $identity, string $source, bool $caseInsensitive = false): ?string
     {
         $raw = match ($source) {
             'email' => $identity->email, // audit:allow resource-member-email-ungated 동기화 출처 값 고르기(응답·캐시 아님)
-            'display_name', 'displayName' => $identity->displayName ?? ($identity->attributes[$source] ?? null),
-            default => $identity->attributes[$source] ?? null,
+            'display_name', 'displayName' => $identity->displayName ?? self::attributeValue($identity->attributes, $source, $caseInsensitive),
+            default => self::attributeValue($identity->attributes, $source, $caseInsensitive),
         };
 
         if (is_array($raw)) {
@@ -220,6 +257,30 @@ class AttributeSyncService
         $value = trim((string) $raw);
 
         return $value === '' ? null : mb_substr($value, 0, 1000);
+    }
+
+    /**
+     * 속성 표에서 이름으로 값을 찾습니다 — 같은 이름이 먼저, 없고 대소문자를 가리지 않으면 이름을 소문자로 맞춰 다시 찾는다.
+     *
+     * @param  array<string, mixed>  $attributes  신원의 속성
+     * @param  string  $source  출처 이름
+     * @param  bool  $caseInsensitive  대소문자 없이 다시 찾을지
+     * @return mixed 값, 없으면 null
+     */
+    private static function attributeValue(array $attributes, string $source, bool $caseInsensitive): mixed
+    {
+        if (array_key_exists($source, $attributes) || ! $caseInsensitive) {
+            return $attributes[$source] ?? null;
+        }
+
+        $wanted = mb_strtolower($source);
+        foreach ($attributes as $name => $value) {
+            if (mb_strtolower((string) $name) === $wanted) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -291,7 +352,7 @@ class AttributeSyncService
      * @param  SsoAccount  $account  연결
      * @param  IdentityProvider  $idp  IdP
      * @param  string  $email  IdP 이메일
-     * @return void
+     * @return void 반환값 없음
      */
     private function noticeConflict(User $user, SsoAccount $account, IdentityProvider $idp, string $email): void
     {

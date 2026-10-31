@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Ecommerce\Benchmark\OrderCreationBenchmark;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ClaimReasonSeeder;
+use Modules\Sirsoft\Ecommerce\Database\Seeders\ManagerNotificationPermissionSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\SequenceSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingCarrierSeeder;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ShippingTypeSeeder;
@@ -1574,6 +1575,8 @@ class Module extends AbstractModule
             ShippingTypeSeeder::class,
             ShippingCarrierSeeder::class,
             ClaimReasonSeeder::class,
+            // 기본 역할 「이커머스 관리자」가 이 모듈이 보내는 사이트 알림을 볼 수 있게 코어 알림 조회·읽음 처리 권한을 붙인다
+            ManagerNotificationPermissionSeeder::class,
         ];
     }
 

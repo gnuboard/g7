@@ -3,6 +3,7 @@
 namespace Tests\Feature\Identity;
 
 use App\Contracts\Extension\UserScopedIdentityProviderInterface;
+use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
@@ -61,6 +62,97 @@ class IdentityPerUserFallbackTest extends TestCase
     }
 
     /**
+     * 회원별 판정 계약을 구현한 시험 수단을 만듭니다 — 연결 계정으로 다시 로그인하는 수단(민감 작업 재확인만, 외부 화면 이동)을 흉내 낸다.
+     *
+     * @param  string  $id  수단 식별자
+     * @param  \Closure(User): bool  $eligible  이 회원에게 쓸 수 있는지 답하는 판정
+     * @return TestIdentityProvider&UserScopedIdentityProviderInterface 시험 수단
+     */
+    private function scopedProvider(string $id, \Closure $eligible): TestIdentityProvider
+    {
+        return new class(app(IdentityVerificationLogRepositoryInterface::class), $id, $eligible) extends TestIdentityProvider implements UserScopedIdentityProviderInterface
+        {
+            /**
+             * 이력 저장소·식별자·회원 판정을 받아 시험 수단을 만듭니다.
+             *
+             * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인인증 이력 저장소
+             * @param  string  $scopedId  수단 식별자
+             * @param  \Closure(User): bool  $eligible  회원 판정
+             */
+            public function __construct(IdentityVerificationLogRepositoryInterface $logRepository, private string $scopedId, private \Closure $eligible)
+            {
+                parent::__construct($logRepository);
+            }
+
+            /**
+             * 수단 식별자를 돌려줍니다.
+             *
+             * @return string 식별자
+             */
+            public function getId(): string
+            {
+                return $this->scopedId;
+            }
+
+            /**
+             * 외부 화면으로 이동하는 수단입니다.
+             *
+             * @return string 렌더 힌트
+             */
+            public function getRenderHint(): string
+            {
+                return 'external_redirect';
+            }
+
+            /**
+             * 민감 작업 재확인만 지원합니다.
+             *
+             * @param  string  $purpose  목적
+             * @return bool 지원하면 true
+             */
+            public function supportsPurpose(string $purpose): bool
+            {
+                return $purpose === 'sensitive_action';
+            }
+
+            /**
+             * 이 회원에게 쓸 수 있는지 판정합니다.
+             *
+             * @param  User  $user  회원
+             * @return bool 쓸 수 있으면 true
+             */
+            public function canChallengeUser(User $user): bool
+            {
+                return ($this->eligible)($user);
+            }
+
+            /**
+             * 기본 시험 요청을 만들고 이 수단의 식별자·외부 이동 주소로 돌려줍니다.
+             *
+             * @param  User|array  $target  인증 대상
+             * @param  array  $context  수단 맥락
+             * @return VerificationChallenge 요청
+             */
+            public function requestChallenge(User|array $target, array $context = []): VerificationChallenge
+            {
+                $base = parent::requestChallenge($target, $context);
+
+                return new VerificationChallenge(
+                    id: $base->id,
+                    providerId: $this->scopedId,
+                    purpose: $base->purpose,
+                    channel: 'linked',
+                    targetHash: $base->targetHash,
+                    expiresAt: $base->expiresAt,
+                    renderHint: 'external_redirect',
+                    redirectUrl: '/reauth/'.$this->scopedId,
+                    publicPayload: ['delivery' => 'none'],
+                );
+            }
+        };
+    }
+
+    /**
      * 메일 수단은 회원 단위 판정 계약을 구현한다 (받을 메일이 있으면 참).
      *
      * @scenario provider=mail
@@ -91,15 +183,94 @@ class IdentityPerUserFallbackTest extends TestCase
     #[Test]
     public function 대체_주소_회원은_다음_수단으로(): void
     {
-        $this->registerTestProvider();
+        app(IdentityVerificationManager::class)->register($this->scopedProvider('test:linked_reauth', fn (User $user): bool => true));
         $manager = app(IdentityVerificationManager::class);
 
         $normal = $this->makeMember(['email' => 'idv.'.Str::lower(Str::random(6)).'@example.test']);
         $this->assertSame('g7:core.mail', $manager->resolveForPurpose('sensitive_action', null, $normal)->getId());
-        $this->assertSame(TestIdentityProvider::ID, $manager->resolveForPurpose('sensitive_action', null, $this->undeliverable())->getId());
+        $this->assertSame('test:linked_reauth', $manager->resolveForPurpose('sensitive_action', null, $this->undeliverable())->getId());
 
         $challenge = app(IdentityVerificationService::class)->start('sensitive_action', $this->undeliverable());
-        $this->assertSame(TestIdentityProvider::ID, $challenge->providerId);
+        $this->assertSame('test:linked_reauth', $challenge->providerId);
+    }
+
+    /**
+     * 회원별 판정이 없는 수단(휴대폰 본인확인처럼 누구의 신원이든 확인해 주는 수단)은 등록 순서가 앞서도 폴백으로 고르지 않는다 —
+     * 메일을 받을 수 없는 회원은 그 회원에게 쓸 수 있다고 답한 수단(연결 계정으로 다시 로그인 등)으로 간다. 화면이 보내는 재확인 요청
+     * (`POST /api/identity/challenges`, 수단 비움)의 응답도 그 수단이다.
+     *
+     * @scenario providers=unscoped_first_then_scoped, user=undeliverable, entry=resolve|api
+     *
+     * @effects unscoped_provider_not_auto_fallback, scoped_provider_chosen_for_undeliverable
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function 회원_판정이_없는_수단은_폴백으로_고르지_않는다(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $manager = app(IdentityVerificationManager::class);
+        $manager->register(app(TestIdentityProvider::class));
+        $manager->register($this->scopedProvider('test:linked_reauth', fn (User $user): bool => true));
+
+        $member = $this->undeliverable();
+        $this->assertSame('test:linked_reauth', $manager->resolveForPurpose('sensitive_action', null, $member)->getId());
+
+        $this->actingAs($member)->postJson('/api/identity/challenges', ['purpose' => 'sensitive_action', 'return_path' => '/mypage/profile/edit'])
+            ->assertCreated()
+            ->assertJsonPath('data.provider_id', 'test:linked_reauth')
+            ->assertJsonPath('data.render_hint', 'external_redirect')
+            ->assertJsonPath('data.redirect_url', '/reauth/test:linked_reauth');
+    }
+
+    /**
+     * 회원별 판정 수단이 여럿이면 그 회원에게 참을 답하는 첫 수단(등록 순서)을 고른다 — 이 회원에게 쓸 수 없다고 답한 수단은 건너뛴다.
+     * 쓸 수 있는 수단이 하나도 없으면 회원별 판정이 없는 수단이 등록돼 있어도 해석된 수단(메일)을 그대로 돌려준다(기존 오류 경로).
+     *
+     * @scenario providers=scoped_ineligible_then_eligible|unscoped_only, user=undeliverable
+     *
+     * @effects ineligible_scoped_skipped, no_eligible_scoped_keeps_resolved
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function 쓸_수_있다고_답한_수단만_고른다(): void
+    {
+        $manager = app(IdentityVerificationManager::class);
+        $manager->register(app(TestIdentityProvider::class));
+
+        $member = $this->undeliverable();
+        $this->assertSame('g7:core.mail', $manager->resolveForPurpose('sensitive_action', null, $member)->getId());
+
+        $manager->register($this->scopedProvider('test:social_reauth', fn (User $user): bool => false));
+        $manager->register($this->scopedProvider('test:company_reauth', fn (User $user): bool => (int) $user->getKey() === (int) $member->getKey()));
+
+        $this->assertSame('test:company_reauth', $manager->resolveForPurpose('sensitive_action', null, $member)->getId());
+        $this->assertSame('g7:core.mail', $manager->resolveForPurpose('sensitive_action', null, $this->undeliverable())->getId());
+    }
+
+    /**
+     * 운영자가 목적에 회원별 판정이 없는 수단을 지정했으면(목적별 수단·정책·요청 지정) 메일을 받을 수 없는 회원에게도 그 수단을 쓴다 —
+     * 지정한 수단은 회원별 폴백 대상이 아니다.
+     *
+     * @scenario designation=purpose_providers|explicit_provider_id, user=undeliverable
+     *
+     * @effects designated_unscoped_provider_kept
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function 운영자가_지정한_본인확인_수단은_그대로_쓴다(): void
+    {
+        $manager = app(IdentityVerificationManager::class);
+        $manager->register(app(TestIdentityProvider::class));
+        $manager->register($this->scopedProvider('test:linked_reauth', fn (User $user): bool => true));
+        $member = $this->undeliverable();
+
+        $this->assertSame(TestIdentityProvider::ID, $manager->resolveForPurpose('sensitive_action', TestIdentityProvider::ID, $member)->getId());
+
+        config(['settings.identity.purpose_providers.sensitive_action' => TestIdentityProvider::ID]);
+        $this->assertSame(TestIdentityProvider::ID, $manager->resolveForPurpose('sensitive_action', null, $member)->getId());
     }
 
     /**
@@ -148,7 +319,7 @@ class IdentityPerUserFallbackTest extends TestCase
     public function 복귀_경로가_수단_맥락으로_간다(): void
     {
         $captured = new \ArrayObject;
-        $provider = new class(app(TestIdentityProvider::class), $captured) extends TestIdentityProvider
+        $provider = new class(app(TestIdentityProvider::class), $captured) extends TestIdentityProvider implements UserScopedIdentityProviderInterface
         {
             /**
              * 기본 시험 제공자의 상태를 옮겨 받고, 받은 복귀 경로를 담을 그릇을 둡니다.
@@ -161,6 +332,17 @@ class IdentityPerUserFallbackTest extends TestCase
                 foreach (get_object_vars($base) as $name => $value) {
                     $this->{$name} = $value;
                 }
+            }
+
+            /**
+             * 메일을 받을 수 없는 회원도 쓸 수 있는 수단입니다(회원별 폴백 대상).
+             *
+             * @param  User  $user  회원
+             * @return bool 항상 true
+             */
+            public function canChallengeUser(User $user): bool
+            {
+                return true;
             }
 
             /**

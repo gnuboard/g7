@@ -75,6 +75,26 @@ class NotificationChannelService
     }
 
     /**
+     * 채널의 템플릿 편집기 종류를 반환합니다. (`rich` | `plain` | `none`)
+     *
+     * `none` 은 그 채널을 가진 확장이 본문을 자기 저장소에서 받는다는 뜻이라, 코어 템플릿의 제목·본문이 비어 있어도
+     * 정상이다. 지금 등록되지 않은 채널(제공 확장이 꺼짐)은 `plain` 으로 본다.
+     *
+     * @param  string  $channelId  채널 식별자
+     * @return string 편집기 종류
+     */
+    public function templateEditorFor(string $channelId): string
+    {
+        foreach ($this->getAvailableChannels() as $channel) {
+            if (($channel['id'] ?? null) === $channelId) {
+                return (string) ($channel['template_editor'] ?? 'plain');
+            }
+        }
+
+        return 'plain';
+    }
+
+    /**
      * 특정 채널이 사용 가능한지 확인합니다.
      *
      * @param  string  $channelId  채널 식별자

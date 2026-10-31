@@ -70,6 +70,7 @@ export function sso(...args: string[]): string {
 /** 회원·연결·동의 상태 */
 export type MemberState = {
   exists: boolean;
+  uuid?: string;
   has_password?: boolean;
   links?: { idp: string; linked_via: string }[];
   consents?: number;

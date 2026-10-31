@@ -1022,6 +1022,35 @@
                                                 "className": "sl-form-hint"
                                             },
                                             "text": "$t:sirsoft-social_login.settings.fields.signup_surge_threshold_per_hour.hint"
+                                        },
+                                        {
+                                            "id": "notification_link_signup_surge_threshold_per_hour",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "actions": [
+                                                {
+                                                    "comment": "받는 사람·문구·채널은 이 기준값이 아니라 알림 탭에서 바꾼다 — 기준 0 은 감시 자체를 멈추고, 알림 탭의 끄기는 감시는 두고 발송만 멈춘다",
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/plugins/sirsoft-social_login/settings",
+                                                        "query": {
+                                                            "tab": "notifications"
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "/admin/plugins/sirsoft-social_login/settings?tab=notifications",
+                                                "className": "sl:inline-block sl:mt-1 sl:text-xs sl:font-medium sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-social_login.settings.fields.notification_link"
+                                                }
+                                            ]
                                         }
                                     ]
                                 },
@@ -1088,6 +1117,35 @@
                                                 "className": "sl-form-hint"
                                             },
                                             "text": "$t:sirsoft-social_login.settings.fields.provider_failure_streak_threshold.hint"
+                                        },
+                                        {
+                                            "id": "notification_link_provider_failure_streak_threshold",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "actions": [
+                                                {
+                                                    "comment": "받는 사람·문구·채널은 이 기준값이 아니라 알림 탭에서 바꾼다 — 기준 0 은 감시 자체를 멈추고, 알림 탭의 끄기는 감시는 두고 발송만 멈춘다",
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/plugins/sirsoft-social_login/settings",
+                                                        "query": {
+                                                            "tab": "notifications"
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "/admin/plugins/sirsoft-social_login/settings?tab=notifications",
+                                                "className": "sl:inline-block sl:mt-1 sl:text-xs sl:font-medium sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-social_login.settings.fields.notification_link"
+                                                }
+                                            ]
                                         }
                                     ]
                                 },

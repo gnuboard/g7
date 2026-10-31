@@ -1,5 +1,5 @@
 {
-    "comment": "큐 탭 — 대기 하위 탭의 표. 아직 처리되지 않은 Job(jobs 표)이다.\n\n  상태는 대기(바로 집을 수 있음)·지연(available_at 이 미래)·실행 중(워커가 집음) 셋이다. 대기 작업은 재시도·삭제\n  대상이 아니라(워커가 곧 집는다) 고르는 칸과 행 메뉴가 없다. 대기 목록은 database 드라이버만 셀 수 있다 —\n  다른 드라이버면 표 대신 안내 상자 하나를 띄운다(`meta.measurable=false` — 큐 탭에서 이 안내가 나오는 유일한 자리다).\n  표 머리 줄은 스케줄 목록과 같다 — 왼쪽 「총 N개」(상한에 걸리면 「총 N개 이상」), 오른쪽 정렬·쪽당 개수.\n  날짜는 날짜 파이프로, 빈 값은 회색 「-」로 보인다. 시도 횟수는 「시도 / 최대」(최대를 모르면 시도만)로 세 하위 탭이 같다.",
+    "comment": "큐 탭 — 대기 하위 탭의 표. 아직 처리되지 않은 Job(jobs 표)이다.\n\n  상태는 대기(바로 집을 수 있음)·지연(available_at 이 미래)·실행 중(워커가 집음) 셋이다. 대기 작업은 재시도·삭제\n  대상이 아니라(워커가 곧 집는다) 고르는 칸과 행 메뉴가 없다. 대기 목록은 database 드라이버만 셀 수 있다 —\n  다른 드라이버면 표 대신 안내 상자 하나를 띄운다(`meta.measurable=false` — 큐 탭에서 이 안내가 나오는 유일한 자리다).\n  표 머리 줄은 스케줄 목록과 같다 — 왼쪽 「총 N개」(상한에 걸리면 「총 N개 이상」), 오른쪽 정렬·쪽당 개수.\n  날짜는 날짜 파이프로, 빈 값은 회색 「-」로 보인다. 시도 횟수는 「시도 / 최대」(최대를 모르면 시도만)로 세 하위 탭이 같다.\n  목록을 받지 못했으면(`_dataSourceErrors`) 「총 0개」를 숨기고 빈 문구 자리에 「권한 없음」(403)·「불러오지 못함」을 보인다 — 받지 못한 목록을\n  「대기 중인 작업이 없습니다」로 말하지 않는다(세 하위 탭 공통).",
     "meta": {
         "is_partial": true
     },
@@ -52,7 +52,7 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{queue_pending?.data?.pagination?.total_is_exact !== false}}",
+                            "if": "{{!_dataSourceErrors?.queue_pending && queue_pending?.data?.pagination?.total_is_exact !== false}}",
                             "props": {
                                 "className": "text-label"
                             },
@@ -61,7 +61,7 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{queue_pending?.data?.pagination?.total_is_exact === false}}",
+                            "if": "{{!_dataSourceErrors?.queue_pending && queue_pending?.data?.pagination?.total_is_exact === false}}",
                             "props": {
                                 "className": "text-label"
                             },
@@ -217,7 +217,7 @@
                         "selectable": false,
                         "showColumnSelector": false,
                         "responsiveBreakpoint": 768,
-                        "emptyMessage": "{{queue_pending === undefined ? '' : $t('admin.schedules.queue.empty.pending')}}",
+                        "emptyMessage": "{{queue_pending === undefined ? '' : (_dataSourceErrors?.queue_pending ? (_dataSourceErrors.queue_pending.status === 403 ? $t('admin.schedules.queue.notice.no_permission') : $t('admin.schedules.queue.errors.list_load_failed')) : $t('admin.schedules.queue.empty.pending'))}}",
                         "columns": [
                             {
                                 "field": "display_name",

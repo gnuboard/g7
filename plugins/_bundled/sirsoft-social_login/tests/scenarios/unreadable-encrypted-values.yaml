@@ -1,0 +1,16 @@
+feature: social_login_unreadable_encrypted_values
+description: |
+  사이트 앱 키가 바뀌어 저장된 암호문(제공자 비밀값, 연결의 토큰과 원본 프로필)을 지금 키로 풀 수 없을 때도 저장이 멈추지 않는다.
+  관리자 화면 안내대로 비밀값을 다시 입력하면 풀 수 없는 옛 값을 덮어 저장하고 「다시 입력」 안내가 사라진다. 다른 칸만 바꾸거나
+  마스크를 그대로 돌려보내면 저장되고 옛 암호문과 안내는 남는다. 비밀값을 비우면 종전처럼 지운다. 연결된 회원이 다시 로그인하면
+  풀 수 없는 옛 토큰과 원본 프로필을 새 값으로 덮어 저장하고 로그인 인계로 이어진다.
+axes:
+  case: [reentered_secret, other_field_mask_or_empty, returning_member_login]
+effects:
+  - reentered_secret_overwrites_unreadable
+  - unreadable_notice_cleared
+  - other_field_saved_keeps_unreadable
+  - unreadable_secret_cleared_by_empty
+  - returning_member_login_overwrites_unreadable_tokens
+test_files:
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/AppKeyRotation/UnreadableEncryptedValuesTest.php

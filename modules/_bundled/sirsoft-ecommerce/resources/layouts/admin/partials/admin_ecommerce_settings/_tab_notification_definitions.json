@@ -427,6 +427,16 @@
                                                                     "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.no_template_for_channel"
                                                                 },
                                                                 {
+                                                                    "comment": "운영자가 발송 수단을 켜서 코어가 만든 빈 템플릿 — 내용과 받는 사람을 채우고 켜야 이 수단으로 발송된다",
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_user_created && !(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active}}",
+                                                                    "props": {
+                                                                        "className": "ecommerce:text-sm ecommerce:text-amber-700 ecommerce:dark:text-amber-400"
+                                                                    },
+                                                                    "text": "$t:admin.settings.notification_definitions.user_template_inactive"
+                                                                },
+                                                                {
                                                                     "comment": "본인인증 알림은 수신자가 「인증을 요청한 대상」으로 고정이다(수신자 규칙이 없다) — 편집 대신 고정 문구.",
                                                                     "type": "basic",
                                                                     "name": "P",
@@ -567,18 +577,82 @@
                                                                                     }
                                                                                 }
                                                                             ],
-                                                                            "onError": {
-                                                                                "handler": "toast",
-                                                                                "params": {
-                                                                                    "type": "error",
-                                                                                    "message": "{{error.message}}"
+                                                                            "onError": [
+                                                                                {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "{{error.message}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "comment": "서버가 거절하면(예: 운영자가 만든 빈 템플릿을 내용 없이 켬) 스위치는 눌린 모양으로 남는다 — 목록 상자를 다시 마운트해 저장된 값으로 돌린다(엔진은 반복 안 동적 id 로는 다시 마운트하지 못한다)",
+                                                                                    "handler": "remount",
+                                                                                    "params": {
+                                                                                        "componentId": "ecommerce_notif_definitions_list"
+                                                                                    }
                                                                                 }
-                                                                            }
+                                                                            ]
                                                                         }
                                                                     ],
                                                                     "props": {
                                                                         "ariaLabel": "$t:common.row_cell|row={{$localized(def.name) || def.type}}|column={{$t('sirsoft-ecommerce.admin.settings.notification_definitions.active')}}",
                                                                         "checked": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}",
+                                                                        "disabled": "{{_computed.isNotificationReadOnly}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "이 수단의 템플릿이 없는 정의 — 켜면 이 수단을 정의의 발송 수단에 더해 바로 저장하고, 코어가 빈 템플릿(꺼짐·운영자 생성)을\n                       만든다. 다시 받은 목록에는 위 스위치와 [편집]·「채우고 켜야 발송」 안내가 선다(이 화면은 스위치마다 즉시 반영한다).",
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "if": "{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "type": "change",
+                                                                            "handler": "apiCall",
+                                                                            "target": "{{'/api/admin/notification-definitions/' + def.id}}",
+                                                                            "auth_required": true,
+                                                                            "params": {
+                                                                                "method": "PUT",
+                                                                                "body": {
+                                                                                    "channels": "{{[...new Set([...(def.channels ?? []), (query.channel ?? 'mail')])]}}"
+                                                                                }
+                                                                            },
+                                                                            "onSuccess": [
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "ecommerceNotificationDefinitions"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "success",
+                                                                                        "message": "$t:admin.settings.notification_definitions.user_template_created"
+                                                                                    }
+                                                                                }
+                                                                            ],
+                                                                            "onError": [
+                                                                                {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "{{error.message}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "remount",
+                                                                                    "params": {
+                                                                                        "componentId": "ecommerce_notif_definitions_list"
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "ariaLabel": "$t:common.row_cell|row={{$localized(def.name) || def.type}}|column={{$t('sirsoft-ecommerce.admin.settings.notification_definitions.active')}}",
+                                                                        "checked": false,
                                                                         "disabled": "{{_computed.isNotificationReadOnly}}"
                                                                     }
                                                                 },

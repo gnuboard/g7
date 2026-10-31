@@ -101,6 +101,26 @@ class JobPayloadParserTest extends TestCase
     }
 
     /**
+     * payload 에 시도 수가 없으면(database 드라이버의 jobs·failed_jobs payload) 0 이 아니라 미상(null)이다.
+     *
+     * @scenario payload=regular
+     *
+     * @effects failed_attempts_from_log_or_unknown
+     *
+     * @return void 반환값 없음
+     */
+    public function test_시도_수가_없는_payload_는_미상이다(): void
+    {
+        $parsed = JobPayloadParser::parse(json_encode([
+            'uuid' => 'u-db', 'displayName' => 'App\Jobs\Foo',
+            'data' => ['commandName' => 'App\Jobs\Foo', 'command' => 'O:12:"App\Jobs\Foo":0:{}'],
+        ]));
+
+        $this->assertNull($parsed['attempts']);
+        $this->assertNull(JobPayloadParser::parse(null)['attempts']);
+    }
+
+    /**
      * 해석할 수 없는 payload 는 기본값을 돌려준다.
      *
      * @scenario payload=null|empty|broken_json

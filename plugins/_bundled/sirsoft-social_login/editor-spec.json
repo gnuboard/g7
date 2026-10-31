@@ -49,7 +49,7 @@
       "socialAccounts": {
         "data": {
           "accounts": [
-            { "provider_key": "kakao", "label": "Kakao", "brand": "kakao", "email": "us**@example.test", "linked_at": "2026-10-20T09:30:00+09:00", "last_login_at": "2026-10-20T09:30:00+09:00" }
+            { "provider_key": "kakao", "label": "Kakao", "brand": "kakao", "email": "us**@example.test", "linked_at": "2026-10-20 09:30:00", "last_login_at": "2026-10-20 09:30:00" }
           ],
           "available": [
             { "provider_key": "naver", "label": "Naver", "brand": "naver", "style": null },
@@ -63,12 +63,121 @@
       "socialReauthAccounts": {
         "data": {
           "accounts": [
-            { "provider_key": "kakao", "label": "Kakao", "brand": "kakao", "email": null, "linked_at": "2026-10-20T09:30:00+09:00", "last_login_at": null }
+            { "provider_key": "kakao", "label": "Kakao", "brand": "kakao", "email": null, "linked_at": "2026-10-20 09:30:00", "last_login_at": null }
           ],
           "available": [],
           "has_password": false,
           "can_unlink": { "kakao": { "allowed": false, "reason": "last_method" } },
           "reauth_via_social": true
+        }
+      },
+      "slNotificationChannels": {
+        "data": {
+          "channels": [
+            {
+              "id": "mail",
+              "name": "메일",
+              "icon": "envelope",
+              "source": "core",
+              "source_label": "코어 기본"
+            },
+            {
+              "id": "database",
+              "name": "사이트내 알림",
+              "icon": "bell",
+              "source": "core",
+              "source_label": "코어 기본"
+            }
+          ]
+        }
+      },
+      "slNotificationDefinitions": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "type": "social_login_signup_surge",
+              "hook_prefix": "sirsoft-social_login",
+              "name": {
+                "ko": "소셜 가입 급증",
+                "en": "Social Signup Surge"
+              },
+              "description": {
+                "ko": "한 제공자의 시간당 소셜 가입이 기준에 닿으면 관리자에게 하루 한 번 알립니다.",
+                "en": "Notifies administrators once a day when hourly social signups for a provider reach the threshold."
+              },
+              "is_active": true,
+              "is_default": true,
+              "channels": [
+                "mail",
+                "database"
+              ],
+              "relations": [],
+              "variables": [
+                {
+                  "key": "provider_label",
+                  "description": "제공자 이름"
+                },
+                {
+                  "key": "count",
+                  "description": "이번 시간 가입 수"
+                },
+                {
+                  "key": "threshold",
+                  "description": "알림 기준"
+                }
+              ],
+              "templates": [
+                {
+                  "id": 1,
+                  "channel": "mail",
+                  "is_active": true,
+                  "is_default": true,
+                  "subject": {
+                    "ko": "[{app_name}] {provider_label} 소셜 가입이 급증했습니다",
+                    "en": "[{app_name}] {provider_label} social signups surged"
+                  },
+                  "body": {
+                    "ko": "<p>지난 한 시간 동안 {provider_label} 가입이 {count}건으로 기준({threshold}건)에 닿았습니다.</p>",
+                    "en": "<p>{provider_label} signups reached {count} in the last hour (threshold {threshold}).</p>"
+                  },
+                  "recipients": [
+                    {
+                      "type": "role",
+                      "value": [
+                        "admin"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": 2,
+                  "channel": "database",
+                  "is_active": true,
+                  "is_default": true,
+                  "subject": {
+                    "ko": "{provider_label} 가입 급증",
+                    "en": "{provider_label} signup surge"
+                  },
+                  "body": {
+                    "ko": "시간당 {count}건 (기준 {threshold}건)",
+                    "en": "{count} per hour (threshold {threshold})"
+                  },
+                  "recipients": [
+                    {
+                      "type": "role",
+                      "value": [
+                        "admin"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "abilities": {
+            "can_update": true
+          }
         }
       }
     }

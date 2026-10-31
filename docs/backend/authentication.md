@@ -103,6 +103,9 @@ Route::post('logout', ...)->middleware('start.api.session');
 - 토큰 갱신은 짝을 새 토큰으로 바꾼다. 회원가입 직후에도 개발자 화면에서 로그인으로 보인다.
 - 짝이 없는 세션(7.2.0 이전 로그인)은 비회원이다 — 다시 로그인하면 된다. 그누보드7 화면(Bearer 토큰)은 영향이 없다.
 - 개발자 화면 요청도 토큰 만료를 연장한다(`TokenExpirySlider` — API 의 `RefreshTokenExpiration` 과 같은 규칙).
+- 로그인 화면에서 로그인과 거의 동시에 나가는 공개 API(로그인 수단 묻기 `/api/auth/login/discover`·`/api/auth/admin/login/discover` 등)에는
+  `start.api.session` 을 걸지 않는다. 브라우저 쿠키는 마지막에 도착한 응답의 것이 남으므로, 로그인 전 세션을 실은 응답이 로그인 응답보다
+  늦게 오면 짝지은 세션 쿠키를 덮어 개발자 화면이 비회원이 된다. 세션을 여는 라우트는 로그인을 완료하거나 짝을 바꾸는 라우트로 한정한다.
 
 사용법은 [개발자 화면 가이드](../custom-development.md#3-로그인-판정과-내부-api-도구).
 
@@ -153,7 +156,7 @@ Route::post('logout', ...)->middleware('start.api.session');
 | 확장점 | 무엇을 | 코어 동작 |
 | --- | --- | --- |
 | 로그인 인계 | 본인 확인을 마친 회원을 로그인시킨다 | 위 「외부 인증 로그인 · 로그인 인계」(사용자·관리자, 브라우저 묶기) |
-| 비밀번호 인증 정책 `core.auth.password_auth_decision` | 회사 계정 회원의 비밀번호 로그인·재설정·설정을 막는다 | 식별자만으로 1차 판정(계정 잠금 판정·비밀번호 확인 전 — 막힌 시도는 실패 횟수에 들지 않는다), 비밀번호가 맞은 뒤 회원 기준 2차 판정(그 전에 세션을 닫는다). 막히면 로그인 **403**·재설정 **422** `errors.code = auth.password_auth_disabled` + `errors.method_label`·`errors.redirect_url`(같은 내용이 `data` 에도). 재설정 요청이 회원 기준으로 막히면 계정 열거를 막으려고 일반 성공 응답 + 액션 `core.auth.password_reset_blocked`. 허용 판정에 `requireTwoFactor` 를 주면 사이트 설정과 무관하게 2단계 인증을 탄다(수단이 없으면 422 `auth.two_factor_means_required`). 막힌 회원은 비밀번호 만료 요구에서도 빠진다 |
+| 비밀번호 인증 정책 `core.auth.password_auth_decision` | 회사 계정 회원의 비밀번호 로그인·재설정·설정을 막는다 | 식별자만으로 1차 판정(계정 잠금 판정·비밀번호 확인 전 — 막힌 시도는 실패 횟수에 들지 않는다), 비밀번호가 맞은 뒤 회원 기준 2차 판정(그 전에 세션을 닫는다). 막히면 로그인 **403**·재설정 **422** `errors.code = auth.password_auth_disabled` + `errors.method_label`·`errors.redirect_url`(같은 내용이 `data` 에도). 재설정 요청이 회원 기준으로 막히면 계정 열거를 막으려고 일반 성공 응답 + 액션 `core.auth.password_reset_blocked`. 허용 판정에 `requireTwoFactor` 를 주면 사이트 설정과 무관하게 2단계 인증을 탄다(수단이 없으면 422 `auth.two_factor_means_required`). 막힌 회원은 비밀번호 만료 요구에서도 빠진다. 비밀번호 설정 판정(`PasswordAuthPolicyService::decideSetPassword()` — 본인 `set_password`, 관리자가 남의 비밀번호를 정하면 `admin_set_password`)은 회원 응답에도 미리 실린다(마이페이지 `can_set_password`·`password_set_blocked_message`, 관리자 회원 상세 `password_status.can_set`·`set_blocked_message`) — 화면이 칸 대신 안내를 보인다 |
 | 외부 자격 증명 검증자 `ExternalCredentialVerifierInterface` | 로그인 폼의 아이디·비밀번호를 사이트 밖(디렉터리 등)에서 검증한다 | 필터 `core.auth.registered_credential_verifiers` 로 등록. `login()` 맨 앞에서 등록 순서대로 `match()` → 잠긴 회원이면 `verify()` 를 부르지 않고 423 → `ExternalCredentialResult::authenticated()` 면 `loginVerifiedUser()` / `rejected($reasonKey, $countsAsFailure)` 면 비밀번호 실패와 같은 401(실패 횟수는 `countsAsFailure` 일 때, 비밀번호 없는 회원도 센다) / `stepRequired($path)` 면 409 `errors.code = auth.external_step_required` + `errors.redirect_url`(동의·연결 확인 화면). 일치하는 검증자가 없으면 비밀번호 경로. 아이디를 받는 검증자가 있으면 로그인 요청의 `email` 칸이 이메일 형식을 강제하지 않고, 화면에는 `appConfig.auth.login_identifier.{user,admin} = email_or_username` 으로 알린다 |
 | 진입 판정 `core.auth.login_discovery` | 이메일 칸을 벗어날 때 「이 주소는 회사 계정으로」 안내 | `POST /api/auth/login/discover`·`/api/auth/admin/login/discover` `{identifier}` → `{method: password\|external, label, redirect_url}`. 회원 유무와 상관없이 같은 모양이 나가야 한다(식별자 모양으로만 판정) |
 | 자동 이동 `core.auth.login_auto_redirect` | 로그인 화면에 오면 바로 회사 계정 로그인으로 | `appConfig.auth.auto_redirect.{user,admin}`. 화면은 `?local=1`(비상 계정 진입로)·`login_handoff`·`sso_error`·`sso_pending`·`sso_link` 쿼리가 있으면 이동하지 않는다(오류로 돌아온 화면이 다시 떠나면 무한 왕복) |
@@ -246,6 +249,7 @@ public static function passwordAuthDecision(?PasswordAuthDecision $decision, arr
   받은 토큰을 관문 요청에 싣는다. 토큰은 그 회원 본인 것·그 목적·미소비·미만료여야 하고, 관문을 통과하면 소비된다.
 - 수단은 서버가 회원별로 고른다(7.2.0). 목적에 정해진 제공자가 그 회원에게 쓸 수 없으면(예: 메일 제공자인데 받을 수 없는 대체 이메일 회원)
   같은 목적을 지원하는 다음 제공자로 넘어간다 — 제공자가 `UserScopedIdentityProviderInterface::canChallengeUser(User)` 로 답한다.
+  이 계약을 구현하지 않은 제공자(휴대폰 본인확인 등)는 폴백으로 고르지 않고, 운영자가 그 목적에 지정했을 때만 쓴다.
   응답 `render_hint=external_redirect` 면 화면은 `redirect_url`(회사 계정 다시 로그인 등)로 갔다가 `?verification_token=` 을 들고 돌아와 원래 요청을 다시 보낸다.
 - 비밀번호 없는 회원이 `password` 를 보내면 **422** `user.password_not_set`, 토큰이 무효면 **422** `user.reauthentication_invalid`.
 

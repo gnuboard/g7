@@ -103,6 +103,9 @@ return [
         // 역할 수신자는 다중 선택이 되면서 값이 배열일 수 있다. 객체·숫자가 섞이면
         // 저장은 되고 발송 시점에 수신자 0명으로만 드러나므로 여기서 세운다.
         'role_value_shape' => 'A role recipient value must be an identifier string or an array of identifier strings.',
+        // 운영자가 발송 수단을 켜서 만든 빈 템플릿은 내용을 채우기 전에 켜지 못한다(빈 제목·본문, 받는 사람 0명 발송 방지).
+        'user_template_needs_recipients' => 'Set and save the recipients before turning this on. Add a recipient rule in [Edit template].',
+        'user_template_needs_body' => 'Write and save the body before turning this on. Fill in the content in [Edit template].',
         'attributes' => [
             'recipients' => 'recipient rules',
             'recipient_type' => 'recipient type',

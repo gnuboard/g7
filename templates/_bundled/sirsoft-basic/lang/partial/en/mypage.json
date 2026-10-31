@@ -165,6 +165,7 @@
         "change_password_subtitle": "Enter your new password",
         "change_password_first_time_notice": "You are setting a password for the first time. Enter only the new password.",
         "change_password_reauth_unavailable": "This account cannot receive the verification email at its sign-up address, so a password cannot be set. Please contact the administrator.",
+        "change_password_reauth_other": "This account cannot receive the verification email at its sign-up address. When you save the new password, you will verify your identity with another method available to this account (such as signing in again with your company account).",
         "change_password_section": "Enter New Password",
         "change_password_button": "Change Password",
         "change_password_submit": "Change Password",

@@ -1508,6 +1508,7 @@ return [
         'registration_enabled' => 'accept public registration',
         // Identity challenge — screen to return to after an external method finishes (7.2.0)
         'return_path' => 'return path',
+        'scope' => 'starting screen scope',
         'auth_token_lifetime' => 'auth token lifetime',
         'max_login_attempts' => 'max login attempts',
         'login_lockout_time' => 'login lockout time',

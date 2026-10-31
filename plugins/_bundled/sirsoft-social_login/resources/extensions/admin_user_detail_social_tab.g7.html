@@ -3,11 +3,17 @@
   연결 목록은 회원 연결 열람 권한(`accounts.view`) 라우트에서, 강제 해제 단추는 응답의 `abilities.can_unlink`(해제 권한)로만 보인다 — 화면 조건에
   관리자 권한 목록을 쓰지 않는다(관리자 셸 전역에 그 목록이 없다). 권한 집행의 정본은 라우트 미들웨어다. 제공자 사용자 ID 는 앞 6자만 보인다. -->
 <extension target-layout="admin_user_detail" priority="340">
-  <!-- 회원의 소셜 연결 — 회원 상세에 들어올 때 받고, 강제 해제 뒤 다시 받는다. 권한이 없으면 403 → 안내만 -->
-  <data-source id="socialUserAccounts" label_key="$t:sirsoft-social_login.editor.data_source.user_accounts" type="api" endpoint="/api/plugins/sirsoft-social_login/admin/users/{{route?.id}}/accounts" method="GET" :auto_fetch="true" :auth_required="true" if="{{!!route?.id}}">
+  <!-- 회원의 소셜 연결 — 회원 상세에 들어올 때 받고, 강제 해제 뒤 다시 받는다. 권한이 없으면 403 → 안내만.
+       주소의 회원 식별자가 uuid 길이(36자, 라우트 제약과 같은 길이)일 때만 받는다 — `/admin/users/1` 같은 주소는 화면의 회원 조회가
+       404 화면으로 바꾸므로 이 목록을 부를 까닭이 없다. 없는 회원(404)도 화면이 이미 404 화면이라 조용히 넘긴다(시스템 기본 처리는
+       응답 문구를 오류 토스트로 띄워 404 화면 위에 겹친다). -->
+  <data-source id="socialUserAccounts" label_key="$t:sirsoft-social_login.editor.data_source.user_accounts" type="api" endpoint="/api/plugins/sirsoft-social_login/admin/users/{{route?.id}}/accounts" method="GET" :auto_fetch="true" :auth_required="true" if="{{route?.id?.length === 36}}">
     <error-handling>
       <on-code code="403">
         <set-state target="local" :socialAccountsForbidden="true"/>
+      </on-code>
+      <on-code code="404">
+        <suppress/>
       </on-code>
     </error-handling>
   </data-source>

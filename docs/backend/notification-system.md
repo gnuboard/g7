@@ -681,9 +681,20 @@ $helper->cleanupStaleDefinitions('module', $module->getIdentifier(), $definedTyp
 | 상황 | 동작 |
 |---|---|
 | 정의 신규 추가 | 생성 |
-| 정의 유지 + 사용자가 `name`/`is_active` 수정 | user_overrides 에 등록된 필드 보존, 나머지 갱신 |
+| 정의 유지 + 사용자가 `name`/`is_active`/`channels` 수정 | user_overrides 에 등록된 필드 보존, 나머지 갱신 (`channels` 는 7.2.0 부터, 순서만 바뀐 저장은 수정으로 치지 않는다) |
 | 정의 제거 (seeder 에 없음) | 삭제 + FK cascade 로 연결된 모든 template 자동 정리 |
-| 템플릿 채널 재구성 | 제거된 채널의 template 만 삭제, 유지된 채널은 user_overrides 보존 |
+| 템플릿 채널 재구성 | 제거된 채널의 template 만 삭제, 유지된 채널은 user_overrides 보존. 운영자가 만든 template(`is_user_created`)은 선언에 없어도 삭제하지 않는다 |
+| 운영자가 만든 채널을 확장이 나중에 선언 | 그 template 이 선언 행(`is_user_created=false`)이 된다. 운영자가 고친 칸은 user_overrides 로 보존 |
+
+### 운영자가 켠 발송 수단의 빈 템플릿 (7.2.0)
+
+발송은 템플릿 행이 있는 채널로만 나간다(`NotificationHookListener` 가 정의의 활성 template 을 순회). 그래서 확장이 어떤 채널의 template 을 선언하지 않았으면 운영자가 그 수단을 켜도 편집할 곳도 발송도 없었다 — 예: 관리자 알림(받는 사람 `role=admin` 뿐)은 비즈뿌리오가 문자·알림톡 template 을 덧붙이지 않는다.
+
+- **생성** — 정의 수정 API(`PUT /api/admin/notification-definitions/{id}`)가 `channels` 를 저장할 때, template 이 없는 채널마다 빈 행을 만든다: 제목 `null`, 본문 `[]`, 받는 사람 `[]`, `is_active=false`, `is_user_created=true`. 저장 버튼으로 모아 보내는 화면(gdpr·환율·소셜 로그인 알림 카드)과 스위치마다 즉시 보내는 화면(코어·게시판·이커머스 알림 탭의 「템플릿 만들기」 스위치)이 모두 이 API 를 지난다.
+- **켜기 검사** — `ToggleNotificationTemplateActiveRequest` 가 운영자가 만든 꺼진 template 을 켜는 요청에서 받는 사람 규칙이 없거나, 코어 편집 칸을 쓰는 채널인데 본문이 모든 언어에서 비면 422 로 거절한다. 채널 메타 `template_editor: none` 채널(본문을 확장이 자기 저장소에서 받음)은 받는 사람만 본다. 확장이 선언한 template 은 받는 사람 없이 쓰는 선언이 있어 검사하지 않는다.
+- **저장** — `template_editor: none` 채널의 template 은 `body` 를 생략하거나 빈 배열로 저장할 수 있다(그 확장의 저장 버튼이 받는 사람만 저장하려고 코어 저장 API 를 부를 때).
+- **끄기와 되돌리기** — 수단을 다시 빼도 행은 남는다. 정의·template 의 [기본값으로 되돌리기]는 선언된 기본값이 없으므로 만들었을 때의 빈 상태(꺼짐)로 되돌린다.
+- **화면** — template 응답에 `is_user_created` 가 실리고, 화면은 그 행이 꺼져 있으면 「빈 템플릿이 만들어졌습니다. 내용과 받는 사람을 채운 뒤 켜야 이 수단으로 발송됩니다.」 를 보인다. 켜기가 거절되면 스위치가 눌린 모양으로 남지 않도록 목록 상자를 `remount` 한다(엔진의 remount 키는 치환 전 원본 id 와 맞추므로 반복 안 동적 id 로는 다시 마운트되지 않는다 — 반복 밖 고정 id 상자를 대상으로 한다).
 
 ### 호출처
 

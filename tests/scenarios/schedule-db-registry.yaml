@@ -61,6 +61,8 @@ effects:
   - unregistered_queue_connection_falls_back
   - queue_job_timeout_clamped_below_retry_after
   - queued_run_rechecks_state_before_running
+  - queued_manual_run_logs_the_admin_who_pressed_it
+  - queued_run_does_not_inherit_or_leave_worker_context
   # 실행
   - history_all_records_every_run
   - row_state_updated_without_model_events

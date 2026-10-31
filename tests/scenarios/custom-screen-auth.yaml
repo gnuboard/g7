@@ -7,10 +7,12 @@ description: |
   custom.auth 는 비회원을 로그인 화면으로, custom.admin 은 비회원을 관리자 로그인으로·일반 회원을 403 으로 보낸다.
   InternalApiClient 는 같은 프로세스에서 그 회원 자격(비회원이면 손님)으로 /api/ 를 부르고 상태를 그대로 돌려주며,
   세션을 여는 인증 API·재호출·비 API 경로를 거부하고 가드·로케일·request()·현재 라우트를 되돌린다.
+  로그인 화면의 로그인 수단 묻기(사용자·관리자)는 세션 쿠키를 내리지 않아, 로그인 응답보다 늦게 도착해도 짝지은 세션을 덮지 않는다.
 
 test_files:
   - tests/Feature/Screen/ScreenAuthTest.php
   - tests/Feature/Screen/InternalApiClientTest.php
+  - tests/Playwright/specs/auth/login-discover-session-race.spec.ts
 
 axes:
   case:
@@ -29,6 +31,7 @@ axes:
     - rejected
     - password_change
     - cookies
+    - discover_race
 
 effects:
   - login_pairs_session_with_token
@@ -56,3 +59,5 @@ effects:
   - nested_call_rejected
   - password_change_keeps_paired_token
   - only_maintenance_cookie_forwarded
+  - discover_issues_no_session_cookie
+  - discover_keeps_paired_session

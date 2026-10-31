@@ -6,12 +6,16 @@ description: |
   목적별 본인인증 수단의 회원별 폴백 (#798 K17 · W17)
   받을 메일이 없는 회원(대체 주소 `…@….invalid`)에게는 메일 인증번호를 보낼 수 없다. 대상 회원을 아는 경로에서 해석된 수단이 그 회원에게
   쓸 수 없으면(`UserScopedIdentityProviderInterface::canChallengeUser()` 거짓) 같은 목적을 지원하는 다음 수단으로 넘어간다.
+  넘어갈 수단은 회원별 판정 계약을 구현하고 그 회원에게 참을 답하는 수단만이다. 회원별 판정이 없는 수단(휴대폰 본인확인 등)은
+  등록 순서가 앞서도 폴백으로 고르지 않고, 운영자가 목적·정책·요청으로 지정했을 때만 쓴다.
 
 axes:
   return_path: [same_origin, external, absent]
   provider: [mail]
   user: [deliverable, undeliverable, unspecified]
-  providers: [mail_only]
+  providers: [mail_only, unscoped_first_then_scoped, scoped_ineligible_then_eligible, unscoped_only]
+  entry: [resolve, api]
+  designation: [purpose_providers, explicit_provider_id]
 
 effects:
   - challenge_return_path_reaches_provider
@@ -21,6 +25,11 @@ effects:
   - undeliverable_falls_back
   - no_alternative_keeps_existing
   - no_user_keeps_existing
+  - unscoped_provider_not_auto_fallback
+  - scoped_provider_chosen_for_undeliverable
+  - ineligible_scoped_skipped
+  - no_eligible_scoped_keeps_resolved
+  - designated_unscoped_provider_kept
 
 test_files:
   - tests/Feature/Identity/IdentityPerUserFallbackTest.php

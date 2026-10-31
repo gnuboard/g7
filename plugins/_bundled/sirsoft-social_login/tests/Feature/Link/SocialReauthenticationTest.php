@@ -2,12 +2,17 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Tests\Feature\Link;
 
+use App\Contracts\Extension\UserScopedIdentityProviderInterface;
+use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Enums\IdentityVerificationStatus;
+use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\IdentityVerificationService;
 use Database\Seeders\IdentityPolicySeeder;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
@@ -17,6 +22,7 @@ use Plugins\Sirsoft\SocialLogin\Models\SocialLoginProvider;
 use Plugins\Sirsoft\SocialLogin\Services\ProviderRegistry;
 use Plugins\Sirsoft\SocialLogin\Services\SocialReauthService;
 use Plugins\Sirsoft\SocialLogin\Tests\PluginTestCase;
+use Tests\Support\Identity\TestIdentityProvider;
 
 /**
  * 대체 이메일 회원의 본인 재확인(R16) — 비밀번호도, 받을 수 있는 메일도 없는 회원은 연결된 제공자로 다시 로그인해 민감 작업
@@ -210,5 +216,149 @@ class SocialReauthenticationTest extends PluginTestCase
 
         $result = app(IdentityVerificationService::class)->verify($challenge->id, ['code' => '000000']);
         $this->assertFalse($result->success);
+    }
+
+    /**
+     * 정보 수정 화면의 「본인 확인 계속하기」(수단을 비운 코어 재확인 요청)가 소셜 재확인 수단으로 정해지면, 응답에 같은 출처 시작 주소
+     * (`redirect_url`)가 실려 그 주소가 연결한 제공자(연결 순서 첫째) 인가 화면으로 보낸다. 다시 로그인하고 돌아오면 수령 코드로
+     * 토큰을 받아 정보 수정 관문을 통과한다. 시작 주소는 한 번만 쓴다.
+     *
+     * @scenario member=placeholder_passwordless, entry=core_challenge_continue, links='2'
+     *
+     * @effects continue_challenge_carries_start_path, continue_start_path_redirects_to_first_linked_provider, continue_roundtrip_passes_profile_gate, continue_start_path_single_use
+     *
+     * @return void 반환값 없음
+     */
+    public function test_continue_challenge_redirects_to_linked_provider(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $user = $this->placeholderMember('k-re7');
+        $user->roles()->syncWithoutDetaching([Role::query()->where('identifier', 'user')->value('id') => ['assigned_at' => now(), 'assigned_by' => null]]);
+        SocialLoginProvider::query()->where('key', 'naver')->firstOrFail()
+            ->forceFill(['enabled' => true, 'client_id' => 'naver-client', 'client_secret' => 'naver-secret'])->save();
+        app(ProviderRegistry::class)->flush();
+        SocialAccount::query()->create(['user_id' => $user->id, 'provider_key' => 'naver', 'provider_user_id' => 'n-re7', 'linked_at' => now()->addMinute()]);
+        Sanctum::actingAs($user);
+
+        $challenge = $this->postJson('/api/identity/challenges', ['purpose' => 'sensitive_action', 'return_path' => '/mypage/profile/edit'])
+            ->assertCreated()
+            ->assertJsonPath('data.provider_id', SocialReauthService::PROVIDER_ID)
+            ->assertJsonPath('data.render_hint', 'external_redirect');
+        $startPath = (string) $challenge->json('data.redirect_url');
+        $this->assertMatchesRegularExpression('#^/plugins/sirsoft-social_login/reauth/[A-Za-z0-9]{40}$#', $startPath);
+
+        $start = $this->get($startPath);
+        $start->assertStatus(302);
+        $authorize = (string) $start->headers->get('Location');
+        $this->assertStringContainsString('kakao', parse_url($authorize, PHP_URL_HOST) ?? $authorize, '연결 순서 첫째(카카오)로 보낸다');
+        parse_str((string) parse_url($authorize, PHP_URL_QUERY), $q);
+
+        $this->fakeKakaoProfile($this->kakaoProfile('k-re7', null));
+        $callback = $this->get('/plugins/sirsoft-social_login/oauth/kakao/callback?code=c&state='.$q['state']);
+        $this->assertSame('/mypage/profile/edit', $this->redirectPath($callback));
+        $code = $this->redirectQuery($callback)['social_reauth'];
+
+        $token = (string) $this->postJson('/api/plugins/sirsoft-social_login/me/reauth/claim', ['code' => $code])->assertOk()->json('data.verification_token');
+        $this->postJson('/api/me/verify-password', ['verification_token' => $token])->assertOk();
+
+        $again = $this->get($startPath);
+        $this->assertSame(['social_error' => 'reauth_failed'], $this->redirectQuery($again), '시작 주소는 한 번만 쓴다');
+    }
+
+    /**
+     * 대체 이메일 회원의 수단을 비운 재확인 요청은, 회원별 판정이 없는 수단(휴대폰 본인확인처럼 누구의 신원이든 확인해 주는 수단)이
+     * 앞에 등록돼 있어도 「소셜 계정으로 다시 확인」으로 간다. 소셜 연결이 없는 대체 이메일 회원은 이 수단의 대상이 아니다.
+     *
+     * @scenario member=placeholder_passwordless|placeholder_unlinked, registry=unscoped_provider_first
+     *
+     * @effects core_fallback_picks_social_over_unscoped
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_fallback_picks_social_reauth_over_unscoped_provider(): void
+    {
+        $manager = app(IdentityVerificationManager::class);
+        $manager->register(app(TestIdentityProvider::class));
+
+        $this->assertSame(SocialReauthService::PROVIDER_ID, $manager->resolveForPurpose('sensitive_action', null, $this->placeholderMember('k-re5'))->getId());
+
+        $unlinked = User::factory()->passwordless()->create(['email' => 'kakao_'.substr(sha1('k-re6'), 0, 12).'@social.invalid']);
+        $this->assertSame('g7:core.mail', $manager->resolveForPurpose('sensitive_action', null, $unlinked)->getId());
+    }
+
+    /**
+     * 내 연결 목록의 「소셜 계정으로 다시 확인」 대상 표시(`reauth_via_social`)는 코어가 이 회원의 민감 작업 재확인에 실제로 고르는 수단과
+     * 같은 판정이다. 회사 계정(회원별 판정 수단, 소셜보다 앞 순서)과 소셜을 둘 다 연결한 회원은 「본인 확인 계속하기」가 회사 계정으로
+     * 가므로 소셜 안내·버튼 대상이 아니다. 소셜만 연결한 회원은 그대로 대상이다.
+     *
+     * @scenario member=placeholder_social_only|placeholder_company_and_social, registry=company_reauth_before_social
+     *
+     * @effects accounts_reauth_via_social_matches_core_choice
+     *
+     * @return void 반환값 없음
+     */
+    public function test_reauth_via_social_matches_core_choice_when_company_account_is_linked(): void
+    {
+        $socialOnly = $this->placeholderMember('k-re7');
+        $both = $this->placeholderMember('k-re8');
+
+        // 사이트 적재 순서처럼 회사 계정 재확인 수단을 소셜 재확인 수단보다 앞에 둔다 — 회사 계정은 $both 에게만 쓸 수 있다
+        $manager = app(IdentityVerificationManager::class);
+        $social = $manager->get(SocialReauthService::PROVIDER_ID);
+        $manager->unregister(SocialReauthService::PROVIDER_ID);
+        $manager->register(new class(app(IdentityVerificationLogRepositoryInterface::class), (int) $both->id) extends TestIdentityProvider implements UserScopedIdentityProviderInterface
+        {
+            /**
+             * 이력 저장소와 회원 판정 값을 받아 시험 수단을 만듭니다.
+             *
+             * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인인증 이력 저장소
+             * @param  int  $linkedUserId  회사 계정을 연결한 회원 ID
+             */
+            public function __construct(IdentityVerificationLogRepositoryInterface $logRepository, private int $linkedUserId)
+            {
+                parent::__construct($logRepository);
+            }
+
+            /**
+             * 수단 식별자를 돌려줍니다.
+             *
+             * @return string 식별자
+             */
+            public function getId(): string
+            {
+                return 'test:company_reauth';
+            }
+
+            /**
+             * 민감 작업 재확인만 지원합니다.
+             *
+             * @param  string  $purpose  목적
+             * @return bool 지원하면 true
+             */
+            public function supportsPurpose(string $purpose): bool
+            {
+                return $purpose === 'sensitive_action';
+            }
+
+            /**
+             * 회사 계정을 연결한 회원에게만 쓸 수 있습니다.
+             *
+             * @param  User  $user  회원
+             * @return bool 쓸 수 있으면 true
+             */
+            public function canChallengeUser(User $user): bool
+            {
+                return (int) $user->id === $this->linkedUserId;
+            }
+        });
+        $manager->register($social);
+
+        $this->assertSame('test:company_reauth', $manager->resolveForPurpose('sensitive_action', null, $both)->getId());
+        Sanctum::actingAs($both);
+        $this->getJson('/api/plugins/sirsoft-social_login/me/accounts')->assertOk()->assertJsonPath('data.reauth_via_social', false);
+
+        $this->assertSame(SocialReauthService::PROVIDER_ID, $manager->resolveForPurpose('sensitive_action', null, $socialOnly)->getId());
+        Sanctum::actingAs($socialOnly);
+        $this->getJson('/api/plugins/sirsoft-social_login/me/accounts')->assertOk()->assertJsonPath('data.reauth_via_social', true);
     }
 }

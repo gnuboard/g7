@@ -99,6 +99,9 @@ class PruneCommandTest extends PluginTestCase
     {
         $schedules = (new Plugin)->getSchedules();
 
-        $this->assertSame([['sirsoft-social_login:prune', 'daily']], array_map(fn ($s) => [$s['command'], $s['schedule']], $schedules));
+        $this->assertSame(
+            [['sirsoft-social_login:prune', 'daily', '0 0 * * *']],
+            array_map(fn ($s) => [$s['command'], $s['frequency'], $s['expression']], $schedules),
+        );
     }
 }

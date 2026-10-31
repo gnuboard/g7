@@ -101,7 +101,7 @@ class IdentityVerificationManager
      * 프로바이더를 등록합니다.
      *
      * @param  IdentityVerificationInterface  $provider  IDV 프로바이더 인스턴스
-     * @return void
+     * @return void 반환값 없음
      */
     public function register(IdentityVerificationInterface $provider): void
     {
@@ -112,7 +112,7 @@ class IdentityVerificationManager
      * 프로바이더 등록을 해제합니다.
      *
      * @param  string  $id  프로바이더 식별자 (예: g7:core.mail)
-     * @return void
+     * @return void 반환값 없음
      */
     public function unregister(string $id): void
     {
@@ -220,6 +220,11 @@ class IdentityVerificationManager
      * 예: 받을 메일이 없는 회원의 메일 수단) 같은 목적을 지원하고 그 회원에게 쓸 수 있는 다음 수단(등록 순서)으로 넘어간다. 그런
      * 수단이 없으면 해석된 수단을 그대로 돌려준다(기존 동작·기존 오류 경로).
      *
+     * 넘어갈 수단은 회원별 판정 계약을 구현하고 그 회원에게 참을 답하는 수단뿐이다(회원의 연결 계정으로 다시 로그인, 그 회원이 등록한
+     * 인증 앱 등). 회원별 판정이 없는 수단(휴대폰 본인확인처럼 누구의 신원이든 확인해 주는 수단)은 이 회원에게 맞는 수단인지 알 수 없어
+     * 자동으로 고르지 않는다 — 고르면 그 회원과 무관한 사람의 본인확인으로 재확인이 통과할 수 있다. 그런 수단은 운영자가 목적별 수단·
+     * 정책·기본 수단으로 지정해 위 해석 단계에서 고른 경우에만 쓴다.
+     *
      * @param  string  $purpose  IDV 목적 (signup, password_reset, sensitive_action 등)
      * @param  string|null  $providerId  호출자 명시 provider id (Mode A controller 요청 / Mode B 정책)
      * @param  User|null  $user  대상 회원 (모르면 null — 회원별 폴백을 하지 않는다)
@@ -234,11 +239,12 @@ class IdentityVerificationManager
         }
 
         foreach ($this->all() as $provider) {
-            if ($provider === $resolved || ! $provider->supportsPurpose($purpose) || ! $provider->isAvailable()) {
+            // 회원별 판정이 없는 수단은 폴백 대상이 아니다(운영자가 지정했을 때만 위 해석 단계에서 쓰인다)
+            if ($provider === $resolved || ! $provider instanceof UserScopedIdentityProviderInterface) {
                 continue;
             }
 
-            if ($this->canChallenge($provider, $user)) {
+            if ($provider->supportsPurpose($purpose) && $provider->isAvailable() && $provider->canChallengeUser($user)) {
                 return $provider;
             }
         }
@@ -247,7 +253,32 @@ class IdentityVerificationManager
     }
 
     /**
-     * 수단이 이 회원에게 challenge 를 낼 수 있는지 판정합니다 — 보조 계약을 구현하지 않은 수단은 가능으로 본다.
+     * 이 회원에게 실제로 challenge 를 낼 수 있는 수단을 해석합니다 — 없으면 null.
+     *
+     * `resolveForPurpose()` 와 같은 순서로 고른 뒤, 고른 수단이 그 회원에게 쓸 수 없으면(폴백할 수단도 없어 해석된 수단이 그대로 남은 경우)
+     * null 을 돌려준다. 화면 안내가 「이 회원의 재확인이 어느 수단으로 가는가」를 실제 시작과 같은 판정으로 알아야 할 때 쓴다
+     * (예: 받을 메일이 없는 회원에게 소셜 다시 로그인 안내를 보일지, 다른 수단으로 확인한다고 안내할지).
+     *
+     * @param  string  $purpose  IDV 목적
+     * @param  User  $user  대상 회원
+     * @param  string|null  $providerId  호출자 명시 provider id
+     * @return IdentityVerificationInterface|null 그 회원에게 쓸 수 있는 수단, 없으면 null
+     *
+     * @since 7.2.0
+     */
+    public function resolveUsableForUser(string $purpose, User $user, ?string $providerId = null): ?IdentityVerificationInterface
+    {
+        try {
+            $provider = $this->resolveForPurpose($purpose, $providerId, $user);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
+
+        return $this->canChallenge($provider, $user) ? $provider : null;
+    }
+
+    /**
+     * 해석된 수단이 이 회원에게 challenge 를 낼 수 있는지 판정합니다 — 보조 계약을 구현하지 않은 수단은 가능으로 본다(운영자 지정 존중).
      *
      * @param  IdentityVerificationInterface  $provider  수단
      * @param  User  $user  대상 회원
@@ -310,7 +341,7 @@ class IdentityVerificationManager
      * @param  array<string, array<string, mixed>>  $purposes  key => metadata 매핑
      * @param  string|null  $sourceType  'module' | 'plugin' | 'admin' (미명시 시 'admin' 으로 마킹)
      * @param  string|null  $sourceIdentifier  source 식별자 (module/plugin id; 미명시 시 'admin')
-     * @return void
+     * @return void 반환값 없음
      */
     public function registerDeclaredPurposes(array $purposes, ?string $sourceType = null, ?string $sourceIdentifier = null): void
     {
@@ -345,7 +376,7 @@ class IdentityVerificationManager
      * @param  array<string, mixed>  $meta  label/description/allowed_channels 등 메타데이터
      * @param  string|null  $sourceType  'module' | 'plugin' | 'admin' (미명시 시 'admin')
      * @param  string|null  $sourceIdentifier  source 식별자 (미명시 시 'admin')
-     * @return void
+     * @return void 반환값 없음
      */
     public function registerPurpose(string $key, array $meta, ?string $sourceType = null, ?string $sourceIdentifier = null): void
     {

@@ -8,7 +8,7 @@
        참이면 5초 주기 재조회를 걸고 거짓이면 푼다 — 판정을 응답값으로만 하는 까닭은 직전에 넣은 전역 값이 이 성공
        핸들러에서 낡은 값으로 읽히기 때문이다(이커머스 환경설정 개인정보 직권 실행과 같은 방식). -->
   <data-source id="exports" label_key="$t:sirsoft-ecommerce.editor.data_source.exports" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/exports" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
-    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" statuses="{{query['statuses[]']}}" types="{{query['types[]']}}" personal="{{query.personal}}" start_date="{{query.start_date}}" end_date="{{query.end_date}}" mine="{{query.mine}}" sort_by="{{query.sort_by || 'requested_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search_field="{{query.search_field}}" search_keyword="{{query.search_keyword}}" requester_uuid="{{query.requester_uuid}}" statuses="{{query['statuses[]']}}" types="{{query['types[]']}}" personal="{{query.personal}}" start_date="{{query.start_date}}" end_date="{{query.end_date}}" mine="{{query.mine}}" sort_by="{{query.sort_by || 'requested_at'}}" sort_order="{{query.sort_order || 'desc'}}"/>
     <success>
       <start-interval if="{{response?.data?.data?.has_active === true}}" id="export_list_poll" :intervalMs="5000">
         <actions>
@@ -54,10 +54,11 @@
     <wait-for>exports</wait-for>
   </transition-overlay>
   <!-- 필터 적용 — 입력칸이 여럿이라 필터 조각·엔터·초기화가 이 액션 하나를 공유한다. 빈 값은 undefined 로 떨어뜨려
-       주소에 남기지 않고, 조건이 바뀌었으니 쪽수는 1로 되돌린다 -->
+       주소에 남기지 않고, 조건이 바뀌었으니 쪽수는 1로 되돌린다. 요청자 메뉴가 건 요청자 한정(`requester_uuid`)은 필터 칸의
+       「요청자」 검색어가 그때 그대로일 때만 이어 간다 — 검색어를 바꾸면 그 이름이 아닌 사람으로 몰래 걸러지지 않게 푼다 -->
   <action name="searchExports">
     <navigate path="/admin/ecommerce/exports" :mergeQuery="true" :replace="true" transition_overlay_target="export_datagrid__body">
-      <query :page="1" search_field="{{_local.filter.search ? (_local.filter.searchField || 'all') : undefined}}" search_keyword="{{_local.filter.search || undefined}}" statuses[]="{{_local.filter.statuses?.length > 0 ? _local.filter.statuses : undefined}}" types[]="{{_local.filter.types?.length > 0 ? _local.filter.types : undefined}}" personal="{{_local.filter.personal || undefined}}" start_date="{{_local.filter.startDate || undefined}}" end_date="{{_local.filter.endDate || undefined}}" mine="{{_local.filter.mine ? 'true' : undefined}}"/>
+      <query :page="1" search_field="{{_local.filter.search ? (_local.filter.searchField || 'all') : undefined}}" search_keyword="{{_local.filter.search || undefined}}" requester_uuid="{{query.requester_uuid &amp;&amp; _local.filter.searchField === 'requester' &amp;&amp; _local.filter.search === query.search_keyword ? query.requester_uuid : undefined}}" statuses[]="{{_local.filter.statuses?.length > 0 ? _local.filter.statuses : undefined}}" types[]="{{_local.filter.types?.length > 0 ? _local.filter.types : undefined}}" personal="{{_local.filter.personal || undefined}}" start_date="{{_local.filter.startDate || undefined}}" end_date="{{_local.filter.endDate || undefined}}" mine="{{_local.filter.mine ? 'true' : undefined}}"/>
     </navigate>
   </action>
   <init>

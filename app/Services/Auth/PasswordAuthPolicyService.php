@@ -32,7 +32,7 @@ class PasswordAuthPolicyService
      * 판정합니다.
      *
      * @param  array{identifier: string, user?: User|null, guard?: string, purpose: string}  $subject  판정 대상
-     *                                                                                                  (`user` 가 없으면 식별자 기준 판정)
+     *                                                                                                 (`user` 가 없으면 식별자 기준 판정)
      * @return PasswordAuthDecision 판정 결과
      */
     public function decide(array $subject): PasswordAuthDecision
@@ -79,5 +79,56 @@ class PasswordAuthPolicyService
         }
 
         return $decision;
+    }
+
+    /**
+     * 이 회원의 비밀번호를 정해도 되는지 판정합니다 — 저장 경로와 미리 알리는 회원 응답이 같은 판정을 쓴다.
+     *
+     * 본인이 정하면 `set_password`(guard `user`), 관리자가 남의 비밀번호를 정하면 `admin_set_password`(guard `admin`).
+     *
+     * @param  User  $user  비밀번호를 정할 회원
+     * @param  User|null  $actor  정하는 사람 (null 이면 본인)
+     * @return PasswordAuthDecision 판정 결과
+     *
+     * @since 7.2.0
+     */
+    public function decideSetPassword(User $user, ?User $actor = null): PasswordAuthDecision
+    {
+        return $this->decide($this->setPasswordSubject($user, $actor));
+    }
+
+    /**
+     * 이 회원의 비밀번호를 정해도 되는지 판정해 거절이면 예외를 던집니다.
+     *
+     * @param  User  $user  비밀번호를 정할 회원
+     * @param  User|null  $actor  정하는 사람 (null 이면 본인)
+     * @return PasswordAuthDecision 허용 판정
+     *
+     * @throws PasswordAuthDisallowedException 거절일 때
+     *
+     * @since 7.2.0
+     */
+    public function assertCanSetPassword(User $user, ?User $actor = null): PasswordAuthDecision
+    {
+        return $this->assertAllowed($this->setPasswordSubject($user, $actor));
+    }
+
+    /**
+     * 비밀번호 설정 판정 대상을 만듭니다.
+     *
+     * @param  User  $user  비밀번호를 정할 회원
+     * @param  User|null  $actor  정하는 사람 (null 이면 본인)
+     * @return array{identifier: string, user: User, guard: string, purpose: string} 판정 대상
+     */
+    private function setPasswordSubject(User $user, ?User $actor): array
+    {
+        $byOther = $actor instanceof User && (int) $actor->getKey() !== (int) $user->getKey();
+
+        return [
+            'identifier' => (string) $user->email,
+            'user' => $user,
+            'guard' => $byOther ? 'admin' : 'user',
+            'purpose' => $byOther ? 'admin_set_password' : 'set_password',
+        ];
     }
 }

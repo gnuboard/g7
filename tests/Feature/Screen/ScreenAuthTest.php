@@ -364,6 +364,97 @@ PHP);
     }
 
     /**
+     * 로그인 수단 묻기(이메일 칸을 벗어날 때)는 세션 쿠키를 내리지 않습니다 — 세션이 필요 없는 공개 API 다.
+     *
+     * @scenario case=discover_race
+     *
+     * @effects discover_issues_no_session_cookie
+     *
+     * @param  string  $guard  로그인 경로 (user | admin)
+     * @return void 반환값 없음
+     */
+    #[DataProvider('discoverGuardProvider')]
+    public function test_login_discover_issues_no_session_cookie(string $guard): void
+    {
+        $response = $this->postJson($this->discoverPath($guard), ['identifier' => 'someone@example.com'])->assertOk();
+
+        $response->assertCookieMissing(config('session.cookie'));
+    }
+
+    /**
+     * 로그인 응답보다 늦게 도착한 로그인 수단 묻기 응답이 로그인과 짝지은 세션을 덮지 않습니다.
+     *
+     * 브라우저 순서: 로그인 전 세션 쿠키(S0)를 실은 로그인 요청과 묻기 요청이 함께 나가고, 로그인 응답이 짝지은 세션(S1)을
+     * 먼저 심은 뒤 묻기 응답이 도착한다. 묻기 응답이 세션 쿠키를 내리면 브라우저 쿠키가 S0 로 되돌아가 개발자 화면이 비회원이 된다.
+     *
+     * @scenario case=discover_race
+     *
+     * @effects discover_keeps_paired_session
+     *
+     * @param  string  $guard  로그인 경로 (user | admin)
+     * @return void 반환값 없음
+     */
+    #[DataProvider('discoverGuardProvider')]
+    public function test_late_discover_response_keeps_paired_session(string $guard): void
+    {
+        $cookieName = config('session.cookie');
+        $user = $this->member($guard === 'admin' ? ['admin'] : ['user']);
+
+        // 로그인 화면이 연 로그인 전 세션(S0)
+        $s0 = $this->get('/sanctum/csrf-cookie')->getCookie($cookieName)?->getValue();
+        $this->assertNotNull($s0, '로그인 전 세션 쿠키가 있어야 경합을 재현한다');
+        $this->withCookie($cookieName, $s0);
+        $this->freshRequestState();
+
+        // 로그인 응답 — 짝지은 세션(S1)이 브라우저 쿠키가 된다
+        $loginPath = $guard === 'admin' ? '/api/auth/admin/login' : '/api/auth/login';
+        $s1 = $this->postJson($loginPath, ['email' => $user->email, 'password' => self::PASSWORD])
+            ->assertOk()
+            ->getCookie($cookieName)?->getValue();
+        $this->assertNotNull($s1);
+        $this->assertNotSame($s0, $s1, '로그인은 세션 ID 를 바꾼다');
+        $jar = $s1;
+        $this->freshRequestState();
+
+        // 로그인 전에 S0 를 싣고 나간 묻기 요청의 응답이 뒤늦게 도착한다 — 세션 쿠키를 내리면 브라우저가 그것으로 바꾼다
+        $late = $this->withCookie($cookieName, $s0)
+            ->postJson($this->discoverPath($guard), ['identifier' => $user->email])
+            ->assertOk()
+            ->getCookie($cookieName)?->getValue();
+        if ($late !== null) {
+            $jar = $late;
+        }
+        $this->withCookie($cookieName, $jar);
+        $this->freshRequestState();
+
+        $this->assertSame($user->id, $this->probe());
+    }
+
+    /**
+     * 로그인 수단 묻기 경로 — 사용자·관리자 로그인 화면.
+     *
+     * @return array<string, array{0: string}> 데이터셋
+     */
+    public static function discoverGuardProvider(): array
+    {
+        return [
+            'user' => ['user'],
+            'admin' => ['admin'],
+        ];
+    }
+
+    /**
+     * 로그인 수단 묻기 API 경로.
+     *
+     * @param  string  $guard  로그인 경로 (user | admin)
+     * @return string API 경로
+     */
+    private function discoverPath(string $guard): string
+    {
+        return $guard === 'admin' ? '/api/auth/admin/login/discover' : '/api/auth/login/discover';
+    }
+
+    /**
      * 로그인 API 로 로그인하고 평문 토큰을 돌려줍니다.
      *
      * @param  User  $user  회원

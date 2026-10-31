@@ -65,7 +65,8 @@ class BundledLangPackPhaseIsolationTest extends TestCase
      */
     public function test_handle_delegates_lang_pack_phase_before_in_process_loop(): void
     {
-        $ref = new ReflectionMethod(ExecuteBundledUpdatesCommand::class, 'handle');
+        // 같은 프로세스 처리(항목 프로세스 자신·새 프로세스를 띄울 수 없는 서버)의 반복은 runItemsInProcess 에 있다
+        $ref = new ReflectionMethod(ExecuteBundledUpdatesCommand::class, 'runItemsInProcess');
         $lines = file($ref->getFileName());
         $source = implode('', array_slice($lines, $ref->getStartLine() - 1, $ref->getEndLine() - $ref->getStartLine() + 1));
 

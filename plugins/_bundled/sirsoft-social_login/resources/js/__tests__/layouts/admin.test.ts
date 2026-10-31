@@ -20,6 +20,10 @@ const SETTINGS = [
   'resources/layouts/admin/partials/plugin_settings/_provider_impact.json',
   'resources/layouts/admin/partials/plugin_settings/_provider_add.json',
   'resources/layouts/admin/partials/plugin_settings/_policy_tab.json',
+  'resources/layouts/admin/partials/plugin_settings/_notifications_tab.json',
+  'resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.json',
+  'resources/layouts/admin/partials/plugin_settings/_modal_notification_template_preview.json',
+  'resources/layouts/admin/partials/plugin_settings/_modal_notification_definition_reset.json',
 ];
 const DIAGNOSTICS = 'resources/layouts/admin/social_login_diagnostics.json';
 const STATS = 'resources/layouts/admin/social_login_stats.json';
@@ -142,7 +146,7 @@ describe('관리자 설정 화면', () => {
   });
 
   /**
-   * @scenario surface=settings, tab=providers|policy
+   * @scenario surface=settings, tab=providers|policy|notifications
    * @effects settings_sources_and_tabs
    */
   it('정책·제공자 데이터소스를 받고, 탭은 주소의 tab 으로 열리며 바꾸면 tab 만 바꾼다', () => {
@@ -152,7 +156,7 @@ describe('관리자 설정 화면', () => {
 
     const tabs = byId(nodes, 'settings_tabs');
     expect(tabs.props.activeTabId).toBe("{{query.tab || 'providers'}}");
-    expect(tabs.props.tabs.map((t: any) => t.id)).toEqual(['providers', 'policy']);
+    expect(tabs.props.tabs.map((t: any) => t.id)).toEqual(['providers', 'policy', 'notifications']);
     const nav = flatten(tabs.actions).find((a) => a.handler === 'navigate');
     // 탭마다 다른 화면이라 이전 탭 주소 조건을 물려받지 않는다(병합하지 않음).
     expect(nav.params.mergeQuery).toBeUndefined();
@@ -160,6 +164,55 @@ describe('관리자 설정 화면', () => {
 
     expect(byId(nodes, 'providers_tab').if).toContain("(query.tab || 'providers') === 'providers'");
     expect(byId(nodes, 'policy_tab').if).toContain("query.tab === 'policy'");
+    expect(byId(nodes, 'notifications_tab').if).toContain("query.tab === 'notifications'");
+  });
+
+  /**
+   * 알림 탭은 이 플러그인 소유 정의만(코어 「알림 설정」 탭은 코어 정의만 받는다) 켠 채널 템플릿을 모두 실어 받고, 403 과 그 밖 실패를
+   * 빈 목록과 구분한다. 편집·미리보기·되돌리기 창 셋이 등록되고, 쓰기 조작은 정의 응답의 수정 권한으로 잠긴다. 정책 탭의 두 알림 기준 칸은
+   * 알림 탭으로 가는 링크를 단다.
+   *
+   * @scenario surface=settings, tab=notifications
+   * @effects notifications_tab_sources_and_modals
+   */
+  it('알림 탭은 이 플러그인 정의만 받고, 실패 종류를 가르며, 편집 창 셋과 정책 탭 링크를 둔다', () => {
+    const sources = Object.fromEntries((root.data_sources ?? []).map((d: any) => [d.id, d]));
+    const defs = sources.slNotificationDefinitions;
+    expect(defs.endpoint).toBe('/api/admin/notification-definitions?extension_type=plugin&extension_identifier=sirsoft-social_login');
+    expect(defs.params.template_channel).toBe('all');
+    expect(defs.if).toBe("{{query.tab === 'notifications'}}");
+    expect(sources.slNotificationChannels.endpoint).toBe('/api/admin/notification-channels');
+    expect(sources.slNotificationChannels.if).toBe("{{query.tab === 'notifications'}}");
+    const onError = flatten(defs.errorHandling);
+    expect(onError.some((a) => a.params?.slNotificationDefinitionsError === 'forbidden')).toBe(true);
+    expect(onError.some((a) => a.params?.slNotificationDefinitionsError === 'failed')).toBe(true);
+    expect(root.computed.isNotificationReadOnly).toBe('{{slNotificationDefinitions?.data?.abilities?.can_update !== true}}');
+
+    const modalIds = (root.modals ?? []).map((m: any) => read(`resources/layouts/admin/${m.partial}`).id).sort();
+    expect(modalIds).toEqual([
+      'modal_sl_notification_definition_preview',
+      'modal_sl_notification_definition_reset',
+      'modal_sl_notification_template_edit',
+    ]);
+    // 여는 쪽과 닫는 쪽이 같은 창 id 를 가리킨다 — 어긋나면 단추를 눌러도 창이 뜨지 않는다
+    const opened = new Set(nodes.filter((a) => a.handler === 'openModal').map((a) => a.target));
+    expect([...opened].sort()).toEqual(modalIds);
+    const toggles = flatten(byId(nodes, 'sl_definition_active')).filter((a) => a.handler === 'apiCall');
+    expect(toggles.map((a) => a.target)).toEqual(['/api/admin/notification-definitions/{{def.id}}/toggle-active']);
+    expect(byId(nodes, 'sl_definition_active').props.disabled).toBe('{{_computed.isNotificationReadOnly}}');
+    expect(byId(nodes, 'sl_notification_forbidden').if).toBe("{{_local.slNotificationDefinitionsError === 'forbidden'}}");
+
+    // 템플릿 켜기가 거절되면(운영자가 만든 빈 템플릿) 반복 밖 고정 id 상자를 다시 마운트해 눌린 스위치를 저장값으로 돌린다
+    const templateToggle = flatten(nodes).find((a) => a.handler === 'apiCall' && String(a.target).includes('notification-templates/{{template.id}}/toggle-active'));
+    const remount = flatten(templateToggle?.onError ?? templateToggle?.fail ?? templateToggle).find((a: any) => a.handler === 'remount');
+    expect(remount?.params?.componentId).toBe('card_sl_notifications_fields');
+    expect(byId(nodes, 'card_sl_notifications_fields')).toBeTruthy();
+
+    for (const field of ['signup_surge_threshold_per_hour', 'provider_failure_streak_threshold']) {
+      const link = byId(nodes, `notification_link_${field}`);
+      const nav = flatten(link.actions).find((a) => a.handler === 'navigate');
+      expect(nav.params.query).toEqual({ tab: 'notifications' });
+    }
   });
 
   /**
@@ -350,6 +403,26 @@ describe('관리자 설정 화면', () => {
   });
 });
 
+describe('[case:components-misc-remount-iteration-dynamic-id] 반복 안 스위치를 되돌리는 remount', () => {
+  const nodes = all(SETTINGS);
+
+  /**
+   * 엔진은 data-each 반복 노드의 remount 키를 치환 전 원본 id 로 대조한다 — 동적 id 를 대상으로 걸면 맞지 않아
+   * 거절된 스위치가 눌린 모양으로 남는다. 대상은 반복 밖 고정 id 상자여야 한다.
+   *
+   * @scenario surface=settings, tab=notifications
+   * @effects remount_targets_static_box_outside_iteration
+   */
+  it('remount 대상은 표현식 없는 고정 id 이고, 그 id 를 가진 상자가 화면에 있다', () => {
+    const targets = nodes.filter((a) => a.handler === 'remount').map((a) => String(a.params?.componentId));
+    expect(targets.length).toBeGreaterThan(0);
+    for (const id of targets) {
+      expect(id).not.toContain('{{');
+      expect(nodes.some((n) => n.id === id && !n.iteration)).toBe(true);
+    }
+  });
+});
+
 describe('진단·통계 화면', () => {
   const diag = read(DIAGNOSTICS);
   const stats = read(STATS);
@@ -404,6 +477,137 @@ describe('진단·통계 화면', () => {
     expect(pressed({})).toEqual([false, true, false]);
     expect(pressed({ days: '7' })).toEqual([true, false, false]);
     expect(pressed({ days: '90' })).toEqual([false, false, true]);
+  });
+
+  /**
+   * 조건(`if`)이 참인 노드만 따라 내려가며 화면에 그려질 노드를 모읍니다 (반복 노드는 목록이 비면 그리지 않으므로 뺀다).
+   *
+   * @param node 노드
+   * @param scope 변수
+   * @returns 그려질 노드 목록
+   */
+  function shown(node: any, scope: Record<string, unknown>): any[] {
+    if (!node || typeof node !== 'object') return [];
+    if (Array.isArray(node)) return node.flatMap((n) => shown(n, scope));
+    if (node.slots) return Object.values(node.slots).flatMap((n) => shown(n, scope));
+    if (node.iteration) return [];
+    if (typeof node.if === 'string' && !evaluate(node.if, scope)) return [];
+    return [node, ...shown(node.children ?? [], scope)];
+  }
+
+  /**
+   * 그려질 노드 가운데 문구나 색이 데이터소스 응답 값(`{id}?.data`)에 기대는 노드의 id(없으면 문구)를 돌려줍니다.
+   *
+   * @param layout 구운 레이아웃
+   * @param id 데이터소스 id
+   * @param scope 변수
+   * @returns 노드 표지 목록
+   */
+  function drawnFromData(layout: any, id: string, scope: Record<string, unknown>): string[] {
+    const needle = `${id}?.data`;
+    return shown(layout, scope)
+      .filter((n) => String(n.text ?? '').includes(needle) || String(n.props?.className ?? '').includes(needle))
+      .map((n) => n.id ?? n.text);
+  }
+
+  const t = (key: string): string => key;
+
+  /**
+   * 응답 전(받기 전 `undefined`)에는 메일 칸이 「보내지 않는 수단」 빨간 경고를, 회원 칸이 「연결 회원 0명」을 먼저 그리면
+   * 운영자가 메일이 안 나가는 사이트·연결 회원이 없는 사이트로 오해한다 — 값 자리는 응답이 올 때까지 비우고 불러오는 중을 알린다.
+   *
+   * @scenario surface=diagnostics
+   * @effects diagnostics_values_wait_for_response
+   */
+  it('진단 요약 카드는 응답 전·실패 때 값을 그리지 않고 불러오는 중·오류를 알린다', () => {
+    const nodes = flatten(diag);
+    const before = { diagnostics: undefined, query: {}, $t: t };
+    expect(drawnFromData(diag, 'diagnostics', before)).toEqual([]);
+    expect(shown(diag, before).map((n) => n.id)).toContain('diagnostics_loading');
+    expect(shown(diag, before).map((n) => n.id)).not.toContain('diagnostics_load_failed');
+
+    const failed = { diagnostics: null, query: {}, $t: t };
+    expect(drawnFromData(diag, 'diagnostics', failed)).toEqual([]);
+    expect(shown(diag, failed).map((n) => n.id)).toContain('diagnostics_load_failed');
+    expect(shown(diag, failed).map((n) => n.id)).not.toContain('diagnostics_loading');
+
+    // 응답이 오면 값이 그려지고, 실제로 보내지 않는 수단일 때는 경고가 그대로 보인다.
+    const data = {
+      queue: { connection: 'database', pending: 0, failed_jobs: 0 },
+      mail: { mailer: 'log', delivering: false, recent_code_failures: 2 },
+      mock: { enabled: false },
+      members: { linked_users: 5, passwordless_users: 3 },
+      webhooks: { days: 7, received: 1, ignored: 0, failed: 0 },
+      providers: [],
+    };
+    const after = { diagnostics: { data }, query: {}, $t: t };
+    const ids = shown(diag, after).map((n) => n.id);
+    for (const id of ['queue_pending_value', 'queue_failed_value', 'mail_status_value', 'mail_failures_value', 'mock_badge_off', 'members_linked_value', 'members_passwordless_value', 'webhook_summary_value']) {
+      expect(ids, id).toContain(id);
+    }
+    expect(ids).not.toContain('diagnostics_loading');
+    expect(ids).not.toContain('diagnostics_load_failed');
+    expect(evaluate(byId(nodes, 'mail_status_value').text, after)).toBe('sirsoft-social_login.admin.diagnostics.mail.not_delivering');
+  });
+
+  /**
+   * 시도·웹훅 기록 표는 응답 전에 「기록이 없습니다」를 보이지 않는다 — 실패 기록이 있는데도 없다고 읽힌다.
+   *
+   * @scenario surface=diagnostics
+   * @effects diagnostics_values_wait_for_response
+   */
+  it('진단 기록 표의 빈 목록 문구는 응답이 온 뒤에만 보인다', () => {
+    const nodes = flatten(diag);
+    for (const [grid, source, key] of [
+      ['attempts_datagrid', 'attempts', 'sirsoft-social_login.admin.diagnostics.attempts.empty'],
+      ['webhooks_datagrid', 'webhookEvents', 'sirsoft-social_login.admin.diagnostics.webhooks.empty'],
+    ]) {
+      const message = String(byId(nodes, grid).props.emptyMessage);
+      expect(evaluate(message, { [source]: undefined, $t: t }), grid).toBe('');
+      expect(evaluate(message, { [source]: { data: { data: [] } }, $t: t }), grid).toBe(key);
+    }
+  });
+
+  /**
+   * 통계도 응답 전에 「가입 0 · 로그인 0 · 실패 0」, 「데이터가 없습니다」를 먼저 그리지 않는다.
+   *
+   * @scenario surface=stats, days=30
+   * @effects stats_values_wait_for_response
+   */
+  it('통계 합계·기준 시각·빈 목록 문구는 응답이 온 뒤에만 보이고 그 전에는 불러오는 중을 알린다', () => {
+    const nodes = flatten(stats);
+    const before = { stats: undefined, query: {}, String, $t: t };
+    expect(drawnFromData(stats, 'stats', before)).toEqual([]);
+    expect(shown(stats, before).map((n) => n.id)).toContain('stats_loading');
+    expect(evaluate(String(byId(nodes, 'stats_datagrid').props.emptyMessage), before)).toBe('');
+
+    const failed = { stats: null, query: {}, String, $t: t };
+    expect(drawnFromData(stats, 'stats', failed)).toEqual([]);
+    expect(shown(stats, failed).map((n) => n.id)).toContain('stats_load_failed');
+    expect(evaluate(String(byId(nodes, 'stats_datagrid').props.emptyMessage), failed)).toBe('');
+
+    const after = { stats: { data: { since: '2026-10-01', rows: [], totals: { signups: 0, logins: 0, failures: 0 } } }, query: {}, String, $t: t };
+    const ids = shown(stats, after).map((n) => n.id);
+    expect(ids).toEqual(expect.arrayContaining(['stats_since', 'stats_totals']));
+    expect(ids).not.toContain('stats_loading');
+    expect(evaluate(String(byId(nodes, 'stats_datagrid').props.emptyMessage), after)).toBe('sirsoft-social_login.admin.stats.empty');
+  });
+});
+
+describe('설정 화면 응답 전', () => {
+  /**
+   * 제공자 목록 응답 전에 「추가한 제공자 0 / 최대 0」을 그리면 더 추가할 수 없는 사이트로 읽힌다.
+   *
+   * @scenario surface=add_custom
+   * @effects settings_limit_waits_for_providers
+   */
+  it('추가 한도 문구는 제공자 목록 응답이 온 뒤에만 보인다', () => {
+    const add = read(SETTINGS[3]);
+    const limit = byId(flatten(add), 'custom_limit_text');
+    expect(typeof limit.if).toBe('string');
+    expect(evaluate(limit.if, { providers: undefined })).toBeFalsy();
+    expect(evaluate(limit.if, { providers: null })).toBeFalsy();
+    expect(evaluate(limit.if, { providers: { data: { limits: { custom_count: 1, custom_limit: 5 } } } })).toBeTruthy();
   });
 });
 
@@ -534,7 +738,7 @@ describe('렌더 가능성', () => {
     const sources = files.flatMap((f) => read(f).data_sources ?? []);
     expect(sources.length).toBeGreaterThan(0);
     expect(sources.filter((s: any) => 'data-if' in s).map((s: any) => s.id)).toEqual([]);
-    expect(read(DETAIL_TAB).data_sources[0].if).toBe('{{!!route?.id}}');
+    expect(read(DETAIL_TAB).data_sources[0].if).toBe('{{route?.id?.length === 36}}');
   });
 
   /**

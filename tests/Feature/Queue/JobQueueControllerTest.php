@@ -317,6 +317,55 @@ class JobQueueControllerTest extends TestCase
     }
 
     /**
+     * 실패 작업의 시도 횟수 — database 드라이버는 시도 수를 payload 가 아니라 jobs.attempts 열에 둬서 실패 기록의 payload 에
+     * 값이 없다. 같은 UUID 의 처리 기록 시도 수로 채우고, 그것도 없으면 0 이 아니라 미상(null)이다. payload 에 시도 수를 싣는
+     * 드라이버(redis)는 그 값을 쓴다. 목록과 상세가 같은 값이다.
+     *
+     * @scenario list=failed, driver=database
+     *
+     * @effects failed_attempts_from_log_or_unknown
+     *
+     * @return void 반환값 없음
+     */
+    public function test_실패_작업_시도_횟수는_처리기록으로_채우고_모르면_미상이다(): void
+    {
+        $logged = $this->makeFailedJob('attempt-logged');
+        $unknown = $this->makeFailedJob('attempt-unknown');
+        $this->assertArrayNotHasKey('attempts', json_decode((string) DB::table('failed_jobs')->where('uuid', $logged)->value('payload'), true));
+
+        $logRow = fn (int $attempts, string $status) => [
+            'uuid' => $logged, 'connection' => 'database', 'queue' => 'default',
+            'job_class' => QueueProbeJob::class, 'display_name' => QueueProbeJob::class, 'status' => $status,
+            'attempts' => $attempts, 'created_at' => Carbon::now()->format('Y-m-d H:i:s'),
+        ];
+        // 앞선 회차 기록(재시도 전)과 마지막 실패 기록 — 마지막 기록의 시도 수를 쓴다
+        QueueJobLog::query()->insert([$logRow(3, 'failed'), $logRow(1, 'failed')]);
+
+        // payload 에 시도 수를 싣는 드라이버(redis) — 처리 기록이 없어도 payload 값을 쓴다
+        $redisPayload = json_decode((string) DB::table('failed_jobs')->where('uuid', $unknown)->value('payload'), true);
+        $redisUuid = (string) Str::uuid();
+        $redisPayload['uuid'] = $redisUuid;
+        $redisPayload['attempts'] = 2;
+        app('queue.failer')->log('redis', 'default', json_encode($redisPayload), new RuntimeException('boom redis'));
+
+        $api = $this->asQueueAdmin();
+        $listed = function (string $uuid) use ($api) {
+            $rows = $api->getJson(self::BASE.'/failed?search_field=uuid&search_keyword='.$uuid)->assertOk()->json('data.data');
+            $this->assertCount(1, $rows, $uuid);
+
+            return $rows[0]['attempts'];
+        };
+
+        $this->assertSame(1, $listed($logged));
+        $this->assertNull($listed($unknown));
+        $this->assertSame(2, $listed($redisUuid));
+
+        $api->getJson(self::BASE.'/failed/'.$logged)->assertOk()->assertJsonPath('data.attempts', 1);
+        $this->assertNull($api->getJson(self::BASE.'/failed/'.$unknown)->assertOk()->json('data.attempts'));
+        $api->getJson(self::BASE.'/failed/'.$redisUuid)->assertOk()->assertJsonPath('data.attempts', 2);
+    }
+
+    /**
      * 재시도는 원래 연결·큐로 되넣고 실패 기록을 지우며 JobRetryRequested 를 발화한다.
      *
      * @scenario action=retry, placement=registered

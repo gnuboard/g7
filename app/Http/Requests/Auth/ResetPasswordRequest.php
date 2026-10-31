@@ -19,7 +19,7 @@ class ResetPasswordRequest extends FormRequest
     use ChecksPasswordReuse;
 
     /**
-     * Determine if the user is authorized to make this request.
+     * 요청 권한을 판정합니다 (권한은 미들웨어가 담당하므로 true 고정).
      *
      * @return bool 항상 true (권한은 미들웨어에서 검증)
      */
@@ -29,9 +29,9 @@ class ResetPasswordRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * 비밀번호 재설정 요청의 검증 규칙을 반환합니다.
      *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string> 필드별 검증 규칙
      */
     public function rules(): array
     {
@@ -39,6 +39,8 @@ class ResetPasswordRequest extends FormRequest
             'token' => 'required|string',
             'email' => ['required', 'email', Rule::exists(User::class, 'email')],
             'password' => ['required', 'string', 'confirmed', ...PasswordPolicy::rules($this->identifierEmail())],
+            // 재설정 화면 구분값 — `admin` 이면 관리자 재설정 화면(거절 응답의 다른 로그인 수단 주소가 관리자 로그인)
+            'redirect_prefix' => ['nullable', 'string', 'in:admin'],
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
@@ -53,7 +55,7 @@ class ResetPasswordRequest extends FormRequest
      * 있다 — 그래서 서비스와 같은 조건(기록 존재·해시 일치·유효시간)으로 토큰을 먼저 확인한다.
      *
      * @param  Validator  $validator  검증기
-     * @return void
+     * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
     {
@@ -104,9 +106,9 @@ class ResetPasswordRequest extends FormRequest
     }
 
     /**
-     * Get custom messages for validator errors.
+     * 검증 오류 메시지를 반환합니다.
      *
-     * @return array<string, string>
+     * @return array<string, string> 규칙 키 => 메시지
      */
     public function messages(): array
     {

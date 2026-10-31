@@ -778,6 +778,8 @@
                   <!-- 켰는데 그 채널 템플릿이 없으면 발송 때 조용히 건너뛴다(코어가 로그에만 남긴다).
                        화면이 그 사실을 말해 주지 않으면 "켰는데 안 온다" 로만 보인다. -->
                   <span data-if="{{(_local.gdprChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; !(def.templates ?? []).some(t => t.channel === ch.id)}}" class="gdpr-text-hint gdpr:block gdpr:text-amber-700 gdpr:dark:text-amber-400">$t:sirsoft-gdpr.channel_template_missing</span>
+                  <!-- 저장으로 코어가 만든 빈 템플릿(운영자 생성)이 꺼져 있으면 아직 발송되지 않는다 — 채우고 켜도록 안내 -->
+                  <span data-if="{{(_local.gdprChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; (def.templates ?? []).some(t => t.channel === ch.id &amp;&amp; t.is_user_created &amp;&amp; !t.is_active)}}" class="gdpr-text-hint gdpr:block gdpr:text-amber-700 gdpr:dark:text-amber-400">$t:admin.settings.notification_definitions.user_template_inactive</span>
                 </div>
               </div>
               <toggle data-type="composite" label="{{(ch.name ?? ch.id)}}" checked="{{(_local.gdprChannels?.[def.id] ?? def.channels ?? []).includes(ch.id)}}" disabled="{{_computed.isNotificationReadOnly}}">
@@ -841,7 +843,7 @@
                   <!-- 채널 템플릿 켜고 끄기 — 저장 버튼과 무관하게 즉시 서버에 반영하고 정의 목록을 다시 받는다 -->
                   <api-call target="/api/admin/notification-templates/{{template.id}}/toggle-active" method="PATCH" :auth_required="true">
                     <success><refetch-data-source dataSourceId="gdprNotificationDefinitions"/></success>
-                    <fail><toast type="error" message="{{error.message}}"/></fail>
+                    <fail><toast type="error" message="{{error.message}}"/><remount componentId="card_gdpr_notifications_fields"/></fail>
                   </api-call>
                 </on>
               </toggle>

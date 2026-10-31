@@ -55,6 +55,12 @@ return [
     ],
     'notification' => [
         'company_account' => '회사 계정',
+        'login_guide' => [
+            'redirect' => '로그인 화면에서 「:label(으)로 로그인」을 눌러 주세요.',
+            'directory_username' => '로그인 화면의 아이디 칸에 사내 아이디를, 비밀번호 칸에 회사 비밀번호를 넣어 로그인해 주세요.',
+            'directory_email' => '로그인 화면의 아이디 칸에 회사 이메일을, 비밀번호 칸에 회사 비밀번호를 넣어 로그인해 주세요.',
+            'contact' => '로그인 방법은 사이트 관리자에게 문의해 주세요.',
+        ],
         'sources' => [
             'scim' => 'SCIM 알림',
             'periodic' => '주기 점검',

@@ -28,7 +28,17 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
-            "comment": "로그인한 관리자 본인. 헤더 아바타·이름뿐 아니라 아래 웹소켓 채널명이 이 응답의 uuid 를 쓴다."
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "adminNotificationsReadable": "{{(response?.data?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.notifications.read')}}",
+                        "adminQueueJobsReadable": "{{(response?.data?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.queue_jobs.read')}}"
+                    }
+                }
+            ],
+            "comment": "로그인한 관리자 본인. 헤더 아바타·이름뿐 아니라 아래 웹소켓 채널명이 이 응답의 uuid 를 쓴다.\n       받으면 알림 조회 권한(`core.notifications.read`) 보유 여부를 전역 `adminNotificationsReadable` 에 올린다 — 알림 두 소스·\n       종 아이콘·실시간 수신이 이 판정을 본다. 권한이 없는 관리자(확장 역할만 가진 SSO 운영자 등)에게 화면마다 알림 403 두 건을\n       내지 않기 위해서다. 판정 전(새로 연 탭·새로고침·주소 직접 진입의 첫 화면)은 미정이라 종전대로 받고, 권한이 없으면 나는 403 은\n       두 소스가 조용히 넘긴다(아래).\n       같은 응답으로 큐 작업 조회 권한(`core.queue_jobs.read`) 보유 여부도 전역 `adminQueueJobsReadable` 에 올린다 — 스케줄 관리 화면의\n       큐 탭 항목·큐 데이터소스가 이 판정을 본다(그 화면의 레이아웃 권한은 스케줄 조회뿐이라 큐 권한이 없는 관리자도 들어온다).\n       베이스에서 정하는 까닭은 데이터소스 조건이 화면 진입 때 골라지기 때문이다 — 다른 관리자 화면을 거쳐 들어오면 큐 요청을 아예 보내지 않는다."
         },
         {
             "id": "notifications",
@@ -39,11 +49,17 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
+            "if": "{{_global.adminNotificationsReadable !== false}}",
             "params": {
                 "per_page": 15,
                 "read": "{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"
             },
-            "comment": "알림 목록. `read` 파라미터가 전역 토글을 그대로 읽으므로, 토글을 바꾼 뒤 이 소스를 다시 부르면\n       조건이 함께 따라간다(액션 쪽에서 파라미터를 다시 조립하지 않는 이유). 기본은 안 읽은 것만."
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "알림 목록. `read` 파라미터가 전역 토글을 그대로 읽으므로, 토글을 바꾼 뒤 이 소스를 다시 부르면\n       조건이 함께 따라간다(액션 쪽에서 파라미터를 다시 조립하지 않는 이유). 기본은 안 읽은 것만.\n       알림 조회 권한이 없다고 판정됐으면 소스 자체를 두지 않는다(`if`) — `auto_fetch:false` 로 미루면 값이 끝내 받기 전(undefined)으로\n       남아 소스를 지정하지 않은 `blur_until_loaded` 화면이 흐린 채 멈춘다.\n       판정 전 첫 화면에 나간 요청이 403 이면 조용히 넘긴다 — 판정은 로그인 관리자 응답이 와야 서므로 그 전에는 요청을 막을 수 없고,\n       그대로 두면 권한 없는 관리자가 관리자 화면을 새로 열 때마다 시스템 기본 처리(빨간 「해당 권한이 없습니다.」 토스트)가 떴다.\n       403 이 아닌 오류(401 로그인 만료·500 등)는 종전 처리 그대로다."
         },
         {
             "id": "notification_unread_count",
@@ -54,11 +70,17 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
+            "if": "{{_global.adminNotificationsReadable !== false}}",
             "initGlobal": {
                 "key": "adminNotificationCount",
                 "path": "unread_count"
             },
-            "comment": "안 읽은 알림 수. 응답의 `unread_count` 를 전역 `adminNotificationCount` 로 올려 두므로\n       배지는 이 소스를 직접 보지 않고 전역값을 본다 — 목록을 안 연 화면에서도 숫자가 산다."
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "안 읽은 알림 수. 응답의 `unread_count` 를 전역 `adminNotificationCount` 로 올려 두므로\n       배지는 이 소스를 직접 보지 않고 전역값을 본다 — 목록을 안 연 화면에서도 숫자가 산다. 권한 판정·403 처리는 위 알림 목록과 같다."
         },
         {
             "id": "installed_modules",
@@ -101,12 +123,14 @@
             "onReceive": [
                 {
                     "handler": "refetchDataSource",
+                    "if": "{{_global.adminNotificationsReadable !== false}}",
                     "params": {
                         "dataSourceId": "notification_unread_count"
                     }
                 },
                 {
                     "handler": "refetchDataSource",
+                    "if": "{{_global.adminNotificationsReadable !== false}}",
                     "params": {
                         "dataSourceId": "notifications"
                     }
@@ -120,7 +144,7 @@
                     }
                 }
             ],
-            "comment": "실시간 알림 수신(개인 채널). 새 알림이 오면 배지와 목록을 함께 다시 부른다 —\n       배지만 갱신하면 드롭다운을 열었을 때 숫자와 내용이 어긋난다. 채널은 본인 uuid 로 좁힌\n       private 이라 `current_user` 응답이 온 뒤에 성립한다."
+            "comment": "실시간 알림 수신(개인 채널). 새 알림이 오면 배지와 목록을 함께 다시 부른다 —\n       배지만 갱신하면 드롭다운을 열었을 때 숫자와 내용이 어긋난다. 채널은 본인 uuid 로 좁힌\n       private 이라 `current_user` 응답이 온 뒤에 성립한다. 알림 조회 권한이 없다고 판정된 관리자는 다시 받지 않는다(403)."
         }
     ],
     "transition_overlay": {
@@ -624,6 +648,7 @@
                                             "id": "notification_center_desktop",
                                             "type": "composite",
                                             "name": "NotificationCenter",
+                                            "if": "{{_global.adminNotificationsReadable !== false}}",
                                             "actions": [
                                                 {
                                                     "comment": "드롭다운을 닫는 순간, 열려 있는 동안 화면에 보인 알림들을 한 번에 읽음 처리한다\n                   (컴포넌트가 그 id 목록을 넘겨준다). 더보기로 쌓인 페이지 상태는 여기서 초기화한다 —\n                   다음에 열 때 1페이지부터 다시 받아야 읽음 반영된 목록이 나온다.",
@@ -1148,6 +1173,7 @@
                                             "id": "notification_center_mobile",
                                             "type": "composite",
                                             "name": "NotificationCenter",
+                                            "if": "{{_global.adminNotificationsReadable !== false}}",
                                             "actions": [
                                                 {
                                                     "comment": "드롭다운을 닫는 순간, 열려 있는 동안 화면에 보인 알림들을 한 번에 읽음 처리한다\n                   (컴포넌트가 그 id 목록을 넘겨준다). 더보기로 쌓인 페이지 상태는 여기서 초기화한다 —\n                   다음에 열 때 1페이지부터 다시 받아야 읽음 반영된 목록이 나온다.",

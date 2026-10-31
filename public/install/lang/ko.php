@@ -713,6 +713,7 @@ ini_set(\'zlib.output_compression\', \'off\');
 
     // 설치 진행 중단 감지
     'error_installation_stuck' => '설치가 응답하지 않습니다. 서버 워커가 명령 실행 중 멈췄을 수 있습니다. 새로고침하거나 재시도하세요. 문제가 반복되면 storage/logs/installation.log 를 확인해주세요.',
+    'error_worker_terminated' => '설치 작업 프로세스가 중간에 종료되었습니다(서버 실행 시간 제한 등). 이미 끝난 작업은 보존되어 있으니 [재시도]를 눌러 이어서 설치하세요. 반복되면 storage/logs/installation.log 와 PHP 오류 로그를 확인해주세요.',
     // 서버가 본문 없는 응답을 돌려준 경우 (gnuboard/g7#62)
     'error_empty_server_response' => '서버가 빈 응답을 반환했습니다. 서버 설정이나 계정 이름·경로에 사용된 문자로 인해 응답이 만들어지지 못했을 수 있습니다. storage/logs/installation.log 를 확인해주세요.',
     'error_invalid_server_response' => '서버 응답을 해석할 수 없습니다. 응답에 오류 메시지나 경고문이 섞였을 수 있습니다. storage/logs/installation.log 를 확인해주세요.',

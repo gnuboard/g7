@@ -844,4 +844,170 @@ class ScheduleControllerRegistryTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.type_label', 'Artisan');
     }
+
+    /**
+     * 편집 창이 보내는 폼 전체(손대지 않은 칸은 저장값 그대로)를 받은 수정은, 실제로 바뀐 칸만 「운영자 수정됨」으로 남긴다.
+     *
+     * 확장이 등록한 작업(제한 시간 비어 있음)의 주기만 바꿔 저장한다 — 제한 시간·큐 연결·중복 방지·스위치 값은 저장값과 같다.
+     *
+     * @scenario case=form_untouched
+     *
+     * @effects schedule_form_edit_keeps_untouched_fields
+     *
+     * @return void 반환값 없음
+     */
+    public function test_full_form_update_records_only_changed_fields(): void
+    {
+        $row = $this->makeSchedule('owned-form', [
+            'extension_type' => 'module',
+            'extension_identifier' => 'sirsoft-page',
+            'frequency' => 'daily',
+            'expression' => '0 0 * * *',
+            'timeout' => null,
+        ]);
+
+        $this->authRequest()->putJson('/api/admin/schedules/'.$row->id, $this->editFormPayload($row, [
+            'frequency' => 'weekly',
+            'expression' => '0 0 * * 0',
+        ]))->assertOk();
+
+        $saved = $row->fresh();
+        $this->assertNull($saved->timeout);
+        $this->assertSame('0 0 * * 0', $saved->expression);
+        $overrides = $saved->user_overrides ?? [];
+        sort($overrides);
+        $this->assertSame(['expression', 'frequency'], $overrides);
+    }
+
+    /**
+     * 제한 시간을 비운 채 저장하면 null 로 저장된다(빈 문자열도, null 도) — 실행기가 유형별 기본을 쓴다.
+     *
+     * @scenario case=form_untouched
+     *
+     * @effects schedule_form_edit_keeps_untouched_fields
+     *
+     * @return void 반환값 없음
+     */
+    public function test_blank_timeout_is_stored_as_null(): void
+    {
+        foreach (['', null] as $blank) {
+            $row = $this->makeSchedule('timeout-'.var_export($blank, true), [
+                'extension_type' => 'module',
+                'extension_identifier' => 'sirsoft-page',
+                'timeout' => 120,
+            ]);
+
+            $this->authRequest()
+                ->putJson('/api/admin/schedules/'.$row->id, $this->editFormPayload($row, ['timeout' => $blank]))
+                ->assertOk();
+
+            $saved = $row->fresh();
+            $this->assertNull($saved->timeout);
+            $this->assertSame(['timeout'], $saved->user_overrides);
+        }
+    }
+
+    /**
+     * 주기 「매일」에 선언 시각(04:10)이 있는 작업은, 주기를 그대로 두고 다른 칸만 바꾸면 실행 시각이 그대로다.
+     *
+     * @scenario case=form_untouched
+     *
+     * @effects schedule_form_edit_keeps_untouched_fields
+     *
+     * @return void 반환값 없음
+     */
+    public function test_unchanged_frequency_keeps_declared_expression(): void
+    {
+        $row = $this->makeSchedule('declared-time', [
+            'extension_type' => 'plugin',
+            'extension_identifier' => 'sirsoft-sso',
+            'frequency' => 'daily',
+            'expression' => '10 4 * * *',
+        ]);
+
+        $this->authRequest()
+            ->putJson('/api/admin/schedules/'.$row->id, $this->editFormPayload($row, ['notify_on_failure' => false]))
+            ->assertOk();
+
+        $saved = $row->fresh();
+        $this->assertSame('10 4 * * *', $saved->expression);
+        $this->assertSame(['notify_on_failure'], $saved->user_overrides);
+    }
+
+    /**
+     * 직접 등록 작업은 값 전부가 운영자 것이라 수정해도 「운영자 수정」을 남기지 않고, 예전 판이 남긴 기록도 응답에 싣지 않는다.
+     * 코어·확장 작업은 바꾼 칸을 그대로 남기고 응답에 싣는다(편집 창 「운영자 수정됨」 배지).
+     *
+     * @scenario case=form_untouched
+     *
+     * @effects schedule_overrides_only_for_owned_rows
+     *
+     * @return void 반환값 없음
+     */
+    public function test_direct_rows_do_not_record_overrides(): void
+    {
+        $custom = $this->makeSchedule('custom-edit');
+
+        $this->authRequest()->putJson('/api/admin/schedules/'.$custom->id, $this->editFormPayload($custom, [
+            'dispatch_mode' => 'queue',
+            'history_mode' => 'failures_only',
+        ]))->assertOk()->assertJsonPath('data.overridden_fields', []);
+        $this->assertNull($custom->fresh()->user_overrides);
+
+        // 예전 판이 직접 등록 행에 남긴 기록은 화면으로 내보내지 않는다
+        Schedule::whereKey($custom->id)->toBase()->update(['user_overrides' => json_encode(['frequency'])]);
+        $this->authRequest()->getJson('/api/admin/schedules/'.$custom->id)
+            ->assertOk()
+            ->assertJsonPath('data.overridden_fields', []);
+
+        $owned = $this->makeSchedule('owned-edit', ['extension_type' => 'core', 'extension_identifier' => 'core']);
+        $this->authRequest()->putJson('/api/admin/schedules/'.$owned->id, $this->editFormPayload($owned, [
+            'history_mode' => 'failures_only',
+        ]))->assertOk()->assertJsonPath('data.overridden_fields', ['history_mode']);
+        $this->assertSame(['history_mode'], $owned->fresh()->user_overrides);
+
+        // 일괄 켜기·끄기(한 번의 일괄 갱신)도 같은 규칙 — 소유 행만 기록한다
+        $this->authRequest()->patchJson('/api/admin/schedules/bulk-status', [
+            'ids' => [$custom->id, $owned->id],
+            'is_active' => false,
+        ])->assertOk();
+        $this->assertEqualsCanonicalizing(['history_mode', 'is_active'], $owned->fresh()->user_overrides);
+        $this->assertFalse($custom->fresh()->is_active);
+        $this->assertSame(['frequency'], $custom->fresh()->user_overrides, '직접 등록 행에는 새 기록이 더해지지 않는다');
+    }
+
+    /**
+     * 편집 창이 저장 단추에서 보내는 본문 — 잠긴 칸(이름·유형·명령)은 비활성이라 폼 값에 없고, 나머지는 저장값 그대로다.
+     *
+     * @param  Schedule  $row  수정 대상
+     * @param  array<string, mixed>  $changes  운영자가 바꾼 칸
+     * @return array<string, mixed> 요청 본문
+     */
+    private function editFormPayload(Schedule $row, array $changes = []): array
+    {
+        $row = $row->fresh();
+
+        $payload = [
+            'label' => $row->label ?? [],
+            'description' => $row->description ?? [],
+            'frequency' => $row->frequency->value,
+            'expression' => $row->expression,
+            'timeout' => $row->timeout,
+            'without_overlapping' => $row->without_overlapping,
+            'on_one_server' => (bool) $row->on_one_server,
+            'dispatch_mode' => $row->dispatch_mode->value,
+            'queue_connection' => $row->queue_connection,
+            'queue_name' => $row->queue_name,
+            'history_mode' => $row->history_mode->value,
+            'notify_on_failure' => (bool) $row->notify_on_failure,
+            'run_in_maintenance' => (bool) $row->run_in_maintenance,
+            'is_active' => (bool) $row->is_active,
+        ];
+
+        if (! $row->isOwned()) {
+            $payload += ['name' => $row->name, 'type' => $row->type->value, 'command' => $row->command];
+        }
+
+        return array_merge($payload, $changes);
+    }
 }

@@ -10,6 +10,7 @@ use Plugins\Sirsoft\Sso\Models\IdentityProvider;
 use Plugins\Sirsoft\Sso\Models\SsoAccount;
 use Plugins\Sirsoft\Sso\Plugin;
 use Plugins\Sirsoft\Sso\Repositories\Policy\Contracts\SitePolicyRepositoryInterface;
+use Plugins\Sirsoft\Sso\Services\Policy\EnforcementPolicy;
 
 /**
  * 이 플러그인 알림 7종의 치환 값과 수신 문맥을 만듭니다.
@@ -115,6 +116,7 @@ class NotificationDataListener implements HookListenerInterface
                 'idp_label' => ($args[1] ?? null) instanceof IdentityProvider
                     ? $this->idpLabel($args[1])
                     : $this->translations('sirsoft-sso::admin.notification.company_account', 'sirsoft-sso::admin.notification.company_account'),
+                'login_guide' => $this->loginGuide($args[1] ?? null),
                 'login_url' => ScreenUrl::absolute('auth.login', '/login'),
             ]),
             default => $default,
@@ -213,17 +215,46 @@ class NotificationDataListener implements HookListenerInterface
     }
 
     /**
+     * 비밀번호 찾기 안내 메일의 로그인 방법 문장 (언어별 값).
+     *
+     * OIDC, SAML 은 로그인 화면의 「○○(으)로 로그인」 버튼을 누른다. LDAP 은 버튼이 없고 같은 로그인 폼에 사내 아이디(또는 회사 이메일)와
+     * 회사 비밀번호를 넣는다. 안내할 IdP 가 없거나 LDAP 인데 폼으로 들어갈 길이 없으면 관리자 문의로 안내한다.
+     *
+     * @param  mixed  $idp  안내할 IdP
+     * @return array<string, string>|string 언어별 문장
+     */
+    private function loginGuide(mixed $idp): array|string
+    {
+        $base = 'sirsoft-sso::admin.notification.login_guide.';
+
+        if (! $idp instanceof IdentityProvider) {
+            return $this->translations($base.'contact', '');
+        }
+
+        if ($idp->protocol !== 'ldap') {
+            return $this->translations($base.'redirect', '', fn (string $locale) => ['label' => $idp->localizedLabel($locale)]);
+        }
+
+        return match (EnforcementPolicy::directoryLoginField($idp)) {
+            'username' => $this->translations($base.'directory_username', ''),
+            'email' => $this->translations($base.'directory_email', ''),
+            default => $this->translations($base.'contact', ''),
+        };
+    }
+
+    /**
      * 문구 키를 지원 언어마다 번역한 언어별 값을 만듭니다 (받는 사람 언어로 고르는 알림 변수).
      *
      * @param  string  $key  문구 키
      * @param  string  $fallback  어느 언어에도 문구가 없을 때 값
+     * @param  (callable(string): array<string, string>)|null  $replace  언어별 치환값
      * @return array<string, string>|string 언어별 값
      */
-    private function translations(string $key, string $fallback): array|string
+    private function translations(string $key, string $fallback, ?callable $replace = null): array|string
     {
         $values = [];
         foreach ((array) config('app.supported_locales', ['ko', 'en']) as $locale) {
-            $text = __($key, [], (string) $locale);
+            $text = __($key, $replace !== null ? $replace((string) $locale) : [], (string) $locale);
             if (is_string($text) && $text !== $key) {
                 $values[(string) $locale] = $text;
             }

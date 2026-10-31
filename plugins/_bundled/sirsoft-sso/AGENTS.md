@@ -83,7 +83,7 @@
 
 **정책 저장과 판정** — `PolicyController@update`(`PolicyUpdateRequest`) → `PolicyService::update`(최고관리자 전용 칸, 비상 계정 0명, 활성 IdP 없는 사이트 강제를 거절) → `SitePolicyRepository::save` → 새 강제 대상의 비밀번호 토큰 회수. 판정은 코어 필터 `core.auth.password_auth_decision` → `EnforcePasswordPolicyListener` → `EnforcementPolicy::decide`.
 
-**관리자 IdP 설정** — `IdpController`(`IdpStoreRequest`, `IdpUpdateRequest`, `IdpTestRequest`) → `IdpAdminService`(비밀값 마스크 규칙, 드라이버 `validateConfig`, `isAvailable` 확인 뒤 활성화) → `AdminIdpRepository`, `IdentityProviderRepository` → `IdentityProvider` 모델(`driver()`).
+**관리자 IdP 설정** — `IdpController`(`IdpStoreRequest`, `IdpUpdateRequest`, `IdpTestRequest`) → `IdpAdminService`(비밀값 마스크 규칙, 드라이버 `validateConfig`, `isAvailable` 확인 뒤 활성화) → `AdminIdpRepository`, `IdentityProviderRepository` → `IdentityProvider` 모델(`driver()`). 앱 키가 바뀌어 `secrets` 를 풀 수 없으면 관리 경로는 `readableSecrets()`(빈 배열)로 읽어 편집 화면이 비밀값 미설정으로 열리고, 다시 입력한 값이 옛 암호문을 덮는다(새 값 없이 저장하면 옛 암호문은 그대로 둔다). 두 모델(`IdentityProvider`, `SsoAccount`)은 `Concerns\SavesOverUnreadableEncryptedValues` 로 풀 수 없는 원본을 「바뀐 값」으로 본다 — 저장 때 Eloquent 가 옛 암호문을 풀다 멈추지 않게.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -168,10 +168,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 89개 | `plugins/_bundled/sirsoft-sso/tests` |
+| PHPUnit | 93개 | `plugins/_bundled/sirsoft-sso/tests` |
 | Vitest | 9개 | `vitest.config.ts` |
-| Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 27개 | `tests/scenarios` |
+| Playwright | 5개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 31개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

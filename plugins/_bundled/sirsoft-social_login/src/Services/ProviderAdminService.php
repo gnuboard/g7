@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\SocialLogin\Services;
 
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use App\Support\SensitiveSettingMask;
 use App\Support\SiteUrl;
 use Illuminate\Support\Facades\DB;
@@ -382,8 +383,8 @@ class ProviderAdminService
             'notes' => $this->notes($row->driver),
             'redirect_uri' => OAuthFlowService::callbackUrl($row->key),
             'webhook_urls' => $this->webhookUrls($row->key, $row->isBuiltin()),
-            'last_success_at' => $row->last_success_at?->toIso8601String(),
-            'last_error_at' => $row->last_error_at?->toIso8601String(),
+            'last_success_at' => TimezoneHelper::toUserDateTimeString($row->last_success_at),
+            'last_error_at' => TimezoneHelper::toUserDateTimeString($row->last_error_at),
             'last_error_code' => $row->last_error_code,
         ];
     }

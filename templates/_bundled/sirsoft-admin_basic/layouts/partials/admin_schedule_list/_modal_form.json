@@ -1,5 +1,5 @@
 {
-    "comment": "예약 작업을 새로 만들거나 고치는 창(「스케줄 등록」/「스케줄 수정」). **한 창이 두 몫을 한다** — 목록이 「수정 중인가」를 먼저\n  정해 주면 제목·보낼 곳·방식이 그 값 하나로 갈린다.\n\n  - 칸 순서는 작업명 / 설명 / 작업 유형 + 식별자 / 명령 / 실행 주기 + 제한 시간 / (사용자 정의면) Cron 표현식 / 실행 방식 + 실행 이력 /\n    (큐로 보내기면) 큐 연결 + 큐 / 켜고 끄는 설정이다 — 빈 칸이 생기지 않게 조건부 칸은 자기 줄을 갖는다.\n  - 작업명·설명은 다국어 입력(언어 탭)이다. 직접 등록은 작업명이 필수다. 식별자는 비우면 서버가 작업명으로 채운다 —\n    작업명이 비어 있으면 서버는 작업명 오류만 낸다(식별자 필수 오류는 내지 않는다).\n  - 명령은 전체 폭 여러 줄 칸이다. 줄바꿈·앞뒤 공백은 서버가 저장 전에 공백 하나로 접는다 — 긴 옵션을 나눠 적어도 한 줄로 저장된다.\n    자리 표시는 일반 글꼴, 입력값은 고정폭 글꼴이다. 안내와 자리 표시는 작업 유형마다 다르다.\n  - 서버가 Shell 실행을 꺼 두면(`schedule_status.data.shell_enabled === false`) Shell 유형을 고를 수 없고 그 이유를 유형 칸 아래에 적는다.\n    값을 아직 모르면(응답에 키가 없음) 막지 않는다 — 서버 검증이 마지막 관문이다.\n  - 코어·확장이 등록한 작업은 이름·유형·명령이 잠긴다(`locked_fields`) — 잠긴 칸은 필수 표시(*)를 숨기고 「바꿀 수 없음」 안내를 단다.\n    바꿀 수 있는 것은 주기·실행 방식 같은 운영 값뿐이고, 바꾼 값은 확장을 업데이트해도 보존된다(「운영자 수정됨」 배지).\n    실행 조건·시간대는 선언이 정하는 값이라 읽기 전용 배지로만 보인다.\n  - 중복 실행 방지는 켜고 끄는 스위치 + 잠금 유지 시간(분, 1 ~ 10080, 켜면 기본 1440)이다.\n  선택 상자·스위치 값은 폼 밖 전역(`scheduleForm`)에 담는다 — 커스텀 선택 상자·스위치는 폼 값에 실리지 않거나 \"on\" 으로 실린다.\n  글자 입력칸(식별자·명령·식·제한 시간)은 폼 값에서 읽는다. 잠긴 칸은 비활성이라 폼 값에서 빠지고, 서버는 보내지 않은 칸을 그대로 둔다.\n  브라우저 검증은 끈다(`noValidate`) — 언어 탭이 숨긴 기본 언어 칸의 필수 표시를 브라우저가 잡으면 「포커스할 수 없음」으로\n  제출이 조용히 멈춘다. 필수·범위 검증은 서버 422 가 맡고, 오류는 맨 위 요약 상자(숨은 언어 탭의 오류까지)와 각 칸 아래에 보인다.",
+    "comment": "예약 작업을 새로 만들거나 고치는 창(「스케줄 등록」/「스케줄 수정」). **한 창이 두 몫을 한다** — 목록이 「수정 중인가」를 먼저\n  정해 주면 제목·보낼 곳·방식이 그 값 하나로 갈린다.\n\n  - 칸 순서는 작업명 / 설명 / 작업 유형 + 식별자 / 명령 / 실행 주기 + 제한 시간 / (사용자 정의면) Cron 표현식 / 실행 방식 + 실행 이력 /\n    (큐로 보내기면) 큐 연결 + 큐 / 켜고 끄는 설정이다 — 빈 칸이 생기지 않게 조건부 칸은 자기 줄을 갖는다.\n  - 작업명·설명은 다국어 입력(언어 탭)이다. 직접 등록은 작업명이 필수다. 식별자는 비우면 서버가 작업명으로 채운다 —\n    작업명이 비어 있으면 서버는 작업명 오류만 낸다(식별자 필수 오류는 내지 않는다).\n  - 명령은 전체 폭 여러 줄 칸이다. 줄바꿈·앞뒤 공백은 서버가 저장 전에 공백 하나로 접는다 — 긴 옵션을 나눠 적어도 한 줄로 저장된다.\n    자리 표시는 일반 글꼴, 입력값은 고정폭 글꼴이다. 안내와 자리 표시는 작업 유형마다 다르다.\n  - 서버가 Shell 실행을 꺼 두면(`schedule_status.data.shell_enabled === false`) Shell 유형을 고를 수 없고 그 이유를 유형 칸 아래에 적는다.\n    값을 아직 모르면(응답에 키가 없음) 막지 않는다 — 서버 검증이 마지막 관문이다.\n  - 코어·확장이 등록한 작업은 이름·유형·명령이 잠긴다(`locked_fields`) — 잠긴 칸은 필수 표시(*)를 숨기고 「바꿀 수 없음」 안내를 단다.\n    바꿀 수 있는 것은 주기·실행 방식 같은 운영 값뿐이고, 바꾼 값은 확장을 업데이트해도 보존된다(「운영자 수정됨」 배지).\n    실행 조건·시간대는 선언이 정하는 값이라 읽기 전용 배지로만 보인다.\n  - 중복 실행 방지는 켜고 끄는 스위치 + 잠금 유지 시간(분, 1 ~ 10080, 켜면 기본 1440)이다.\n  - 수정 저장은 손대지 않은 칸을 저장값 그대로 보낸다 — 서버는 저장값과 달라진 칸만 「운영자 수정됨」으로 남기므로, 창이 값을\n    지어내면 확장 업데이트가 그 칸을 다시 못 고친다. 제한 시간은 비어 있으면 빈 칸으로 보이고 비운 채 저장하면 null 이다(실행기가\n    유형별 기본을 쓴다 — 그 기본을 칸 아래에 안내한다). 주기를 그대로 두면 저장된 cron 식을 보낸다(「매일 04:10」 같은 선언 시각 보존).\n    바로 실행이면 저장된 큐 연결·큐를 그대로 보낸다.\n  선택 상자·스위치 값은 폼 밖 전역(`scheduleForm`)에 담는다 — 커스텀 선택 상자·스위치는 폼 값에 실리지 않거나 \"on\" 으로 실린다.\n  글자 입력칸(식별자·명령·식·제한 시간)은 폼 값에서 읽는다. 잠긴 칸은 비활성이라 폼 값에서 빠지고, 서버는 보내지 않은 칸을 그대로 둔다.\n  브라우저 검증은 끈다(`noValidate`) — 언어 탭이 숨긴 기본 언어 칸의 필수 표시를 브라우저가 잡으면 「포커스할 수 없음」으로\n  제출이 조용히 멈춘다. 필수·범위 검증은 서버 422 가 맡고, 오류는 맨 위 요약 상자(숨은 언어 탭의 오류까지)와 각 칸 아래에 보인다.",
     "meta": {
         "is_partial": true,
         "description": "스케줄 등록/수정 폼 모달",
@@ -45,13 +45,13 @@
                                     "type": "{{_global.scheduleForm?.type ?? 'artisan'}}",
                                     "command": "{{form.command}}",
                                     "frequency": "{{_global.scheduleForm?.frequency ?? 'daily'}}",
-                                    "expression": "{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom' ? form.expression : ({everyThirtySeconds: '* * * * *', everyMinute: '* * * * *', hourly: '0 * * * *', daily: '0 0 * * *', weekly: '0 0 * * 0', monthly: '0 0 1 * *'})[_global.scheduleForm?.frequency ?? 'daily'] ?? '0 0 * * *'}}",
-                                    "timeout": "{{form.timeout}}",
+                                    "expression": "{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom' ? form.expression : (_global.isEditMode && _global.selectedSchedule?.expression && _global.scheduleForm?.frequency === _global.selectedSchedule?.frequency ? _global.selectedSchedule.expression : (({everyThirtySeconds: '* * * * *', everyMinute: '* * * * *', hourly: '0 * * * *', daily: '0 0 * * *', weekly: '0 0 * * 0', monthly: '0 0 1 * *'})[_global.scheduleForm?.frequency ?? 'daily'] ?? '0 0 * * *'))}}",
+                                    "timeout": "{{form.timeout || null}}",
                                     "without_overlapping": "{{_global.scheduleForm?.overlapEnabled ? +(_global.scheduleForm?.without_overlapping ?? 1440) : 0}}",
                                     "on_one_server": "{{_global.scheduleForm?.on_one_server ?? false}}",
                                     "dispatch_mode": "{{_global.scheduleForm?.dispatch_mode ?? 'sync'}}",
-                                    "queue_connection": "{{(_global.scheduleForm?.dispatch_mode === 'queue' && _global.scheduleForm?.queue_connection) || null}}",
-                                    "queue_name": "{{(_global.scheduleForm?.dispatch_mode === 'queue' && _global.scheduleForm?.queue_name) || null}}",
+                                    "queue_connection": "{{_global.scheduleForm?.dispatch_mode === 'queue' ? (_global.scheduleForm?.queue_connection || null) : (_global.isEditMode ? (_global.selectedSchedule?.queue_connection ?? null) : null)}}",
+                                    "queue_name": "{{_global.scheduleForm?.dispatch_mode === 'queue' ? (_global.scheduleForm?.queue_name || null) : (_global.isEditMode ? (_global.selectedSchedule?.queue_name ?? null) : null)}}",
                                     "history_mode": "{{_global.scheduleForm?.history_mode ?? 'all'}}",
                                     "notify_on_failure": "{{_global.scheduleForm?.notify_on_failure ?? true}}",
                                     "run_in_maintenance": "{{_global.scheduleForm?.run_in_maintenance ?? false}}",
@@ -203,7 +203,7 @@
                         {
                             "type": "composite",
                             "name": "Badge",
-                            "if": "{{(_global.selectedSchedule?.overridden_fields ?? []).length > 0}}",
+                            "if": "{{!!_global.selectedSchedule?.is_owned && (_global.selectedSchedule?.overridden_fields ?? []).length > 0}}",
                             "props": {
                                 "color": "yellow",
                                 "size": "md",
@@ -701,7 +701,8 @@
                                             "props": {
                                                 "type": "number",
                                                 "name": "timeout",
-                                                "defaultValue": "{{_global.selectedSchedule?.timeout ?? 60}}",
+                                                "defaultValue": "{{_global.selectedSchedule?.timeout ?? ''}}",
+                                                "placeholder": "$t:admin.schedules.form.timeout_placeholder",
                                                 "min": 1,
                                                 "max": 86400,
                                                 "className": "{{_global.scheduleFormErrors?.timeout ? 'input input-w-md input-error' : 'input input-w-md'}}"
@@ -733,6 +734,15 @@
                                         "className": "form-hint"
                                     },
                                     "text": "$t:admin.schedules.form.timeout_help"
+                                },
+                                {
+                                    "id": "schedule_form_timeout_default_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "{{$t('admin.schedules.form.timeout_default.' + ((_global.scheduleForm?.type ?? 'artisan') === 'artisan' ? ((_global.scheduleForm?.dispatch_mode ?? 'sync') === 'queue' ? 'artisan_queue' : 'artisan_sync') : (_global.scheduleForm?.type ?? 'artisan')))}}"
                                 }
                             ]
                         }

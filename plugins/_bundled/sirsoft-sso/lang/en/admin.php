@@ -55,6 +55,12 @@ return [
     ],
     'notification' => [
         'company_account' => 'your company account',
+        'login_guide' => [
+            'redirect' => 'On the sign-in screen, choose "Sign in with :label".',
+            'directory_username' => 'On the sign-in screen, enter your company username and company password in the sign-in form.',
+            'directory_email' => 'On the sign-in screen, enter your company email and company password in the sign-in form.',
+            'contact' => 'Please ask the site administrator how to sign in.',
+        ],
         'sources' => [
             'scim' => 'SCIM notice',
             'periodic' => 'periodic check',

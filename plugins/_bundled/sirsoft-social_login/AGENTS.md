@@ -78,7 +78,7 @@
 
 **제공자 목록** (`ProviderRegistry::all`) → `ProviderRepository::all` 행을 `driver` 로 드라이버 인스턴스화 → 필터 `provider.filter_registered`(모의 제공자 리스너 포함) → 요청당 한 번 캐시.
 
-**관리자 제공자 설정** (`Admin\ProviderController`, `UpdateProviderRequest` · `CreateProviderRequest`) → `ProviderAdminService` 가 비밀값 규칙(없음·마스크는 유지, `null` 은 삭제, 그 밖은 교체)으로 행을 고치고 `provider.after_update` 훅에 바뀐 칸 이름만 넘긴다. 자격증명 없이 켜면 422 `credentials_required`. 연결 테스트(`ProviderTestService::run`)는 없는 인가 코드로 토큰 주소를 불러 거절 사유를 정상·클라이언트 오류·콜백 주소 불일치·도달 불가로 나눈다(OIDC 는 서명 키 목록 도달을 먼저 본다). 앱 키가 바뀌어 비밀값을 풀 수 없으면 드라이버는 그 칸을 비운 채 만들어져(목록과 화면은 그대로 열리고 카드에 「다시 입력」 안내), 비밀값이 필요한 순간 `clientSecret()` 이 `credentials_unreadable` 로 멈춘다 — 비밀값 없이 토큰을 요청하지 않는다. 연결 테스트도 같은 코드로 알린다.
+**관리자 제공자 설정** (`Admin\ProviderController`, `UpdateProviderRequest` · `CreateProviderRequest`) → `ProviderAdminService` 가 비밀값 규칙(없음·마스크는 유지, `null` 은 삭제, 그 밖은 교체)으로 행을 고치고 `provider.after_update` 훅에 바뀐 칸 이름만 넘긴다. 자격증명 없이 켜면 422 `credentials_required`. 연결 테스트(`ProviderTestService::run`)는 없는 인가 코드로 토큰 주소를 불러 거절 사유를 정상·클라이언트 오류·콜백 주소 불일치·도달 불가로 나눈다(OIDC 는 서명 키 목록 도달을 먼저 본다). 앱 키가 바뀌어 비밀값을 풀 수 없으면 드라이버는 그 칸을 비운 채 만들어져(목록과 화면은 그대로 열리고 카드에 「다시 입력」 안내), 비밀값이 필요한 순간 `clientSecret()` 이 `credentials_unreadable` 로 멈춘다 — 비밀값 없이 토큰을 요청하지 않는다. 연결 테스트도 같은 코드로 알린다. 안내대로 비밀값을 다시 입력하면 풀 수 없는 옛 암호문을 덮어 저장한다 — 두 모델(`SocialLoginProvider`, `SocialAccount`)은 `Concerns\SavesOverUnreadableEncryptedValues` 로 풀 수 없는 원본을 「바뀐 값」으로 본다(Eloquent 가 바뀐 칸을 가리려고 옛 암호문을 풀다 멈추지 않게). 같은 이유로 연결된 회원이 다시 로그인할 때 토큰·원본 프로필 갱신도 멈추지 않는다.
 
 **제공자 웹훅** (`WebhookController` → 제공자별 FormRequest → 드라이버 `verifyWebhook`) → `WebhookReceiver::receive` 가 `event_key` 로 중복을 걸러 `social_login_webhook_events` 에 남기고(검증 실패는 `ignored`) `ProcessWebhookEventJob` 을 커밋 뒤에 보낸다 → `WebhookProcessor::process` 가 연결을 `UnlinkReason::Webhook` 으로 끊고(권한 회수는 하지 않는다 — 제공자가 이미 끊었다), 정책이 `withdraw_user` 면 탈퇴, 마지막 로그인 수단을 잃은 회원에게 알림 훅. 제공자에는 정해진 응답(카카오 200, 네이버 204, 페이스북 400 또는 확인 코드)을 준다.
 
@@ -137,10 +137,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 40개 | `plugins/_bundled/sirsoft-social_login/tests` |
-| Vitest | 6개 | `vitest.config.ts` |
-| Playwright | 6개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
+| PHPUnit | 43개 | `plugins/_bundled/sirsoft-social_login/tests` |
+| Vitest | 8개 | `vitest.config.ts` |
+| Playwright | 8개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 15개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

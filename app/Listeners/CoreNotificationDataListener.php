@@ -20,7 +20,7 @@ class CoreNotificationDataListener implements HookListenerInterface
     /**
      * 구독할 훅 목록을 반환합니다.
      *
-     * @return array
+     * @return array 훅 이름 => 구독 설정
      */
     public static function getSubscribedHooks(): array
     {
@@ -37,7 +37,7 @@ class CoreNotificationDataListener implements HookListenerInterface
      * 훅 이벤트를 처리합니다.
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
-     * @return void
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -65,7 +65,7 @@ class CoreNotificationDataListener implements HookListenerInterface
      * 회원가입 환영 알림 데이터를 추출합니다.
      *
      * @param  array  $args  훅 인수 [$user, $extra]
-     * @return array
+     * @return array 알림 데이터 (notifiable·notifiables·data·context)
      */
     private function extractWelcome(array $args): array
     {
@@ -93,8 +93,11 @@ class CoreNotificationDataListener implements HookListenerInterface
     /**
      * 비밀번호 재설정 요청 알림 데이터를 추출합니다.
      *
-     * @param  array  $args  훅 인수 [$user, $extra]
-     * @return array
+     * 관리자 로그인 화면에서 요청한 재설정(`redirect_prefix` 있음)은 재설정 화면이 관리자 쪽이므로 메일의 사이트 링크도
+     * 사이트 주소다. 회원 재설정은 「사용자 화면 URL」(비우면 사이트 주소).
+     *
+     * @param  array  $args  훅 인수 [$user, {reset_url, redirect_prefix}]
+     * @return array 알림 데이터 (notifiable·notifiables·data·context)
      */
     private function extractResetPassword(array $args): array
     {
@@ -103,7 +106,8 @@ class CoreNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $extra = $args[1] ?? [];
+        $extra = is_array($args[1] ?? null) ? $args[1] : [];
+        $isAdmin = ! empty($extra['redirect_prefix']);
 
         return [
             'notifiable' => null,
@@ -111,9 +115,11 @@ class CoreNotificationDataListener implements HookListenerInterface
             'data' => [
                 'name' => $user->name ?? '',
                 'app_name' => config('app.name'),
-                'action_url' => $extra['reset_url'] ?? ScreenUrl::absolute('auth.reset_password', '/reset-password'),
+                'action_url' => $extra['reset_url'] ?? ($isAdmin
+                    ? ScreenUrl::absolute('admin.reset_password', '/admin/reset-password', [], ScreenUrl::SCOPE_ADMIN)
+                    : ScreenUrl::absolute('auth.reset_password', '/reset-password')),
                 'expire_minutes' => (string) config('auth.passwords.users.expire', 60),
-                'site_url' => ScreenUrl::userBase(),
+                'site_url' => $isAdmin ? SiteUrl::base() : ScreenUrl::userBase(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,
@@ -125,8 +131,11 @@ class CoreNotificationDataListener implements HookListenerInterface
     /**
      * 비밀번호 변경 완료 알림 데이터를 추출합니다.
      *
+     * 수신자에 따라 로그인 링크와 사이트 링크가 다르다 — 관리자는 관리자 로그인 화면과 사이트 주소
+     * (비밀번호 만료 안내·만료 메일과 같은 판정), 회원은 로그인 화면과 「사용자 화면 URL」.
+     *
      * @param  array  $args  훅 인수 [$user]
-     * @return array
+     * @return array 알림 데이터 (notifiable·notifiables·data·context)
      */
     private function extractPasswordChanged(array $args): array
     {
@@ -135,14 +144,18 @@ class CoreNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
+        $isAdmin = $user->isAdmin();
+
         return [
             'notifiable' => null,
             'notifiables' => null,
             'data' => [
                 'name' => $user->name ?? '',
                 'app_name' => config('app.name'),
-                'action_url' => ScreenUrl::absolute('auth.login', '/login'),
-                'site_url' => ScreenUrl::userBase(),
+                'action_url' => $isAdmin
+                    ? ScreenUrl::absolute('admin.login', '/admin/login', [], ScreenUrl::SCOPE_ADMIN)
+                    : ScreenUrl::absolute('auth.login', '/login'),
+                'site_url' => $isAdmin ? SiteUrl::base() : ScreenUrl::userBase(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,
@@ -158,7 +171,7 @@ class CoreNotificationDataListener implements HookListenerInterface
      * 자기 비밀번호를 바꾼다. 날짜는 배치가 수신자 시간대로 계산해 넘긴 값을 그대로 쓴다.
      *
      * @param  array  $args  훅 인수 [$user, {expires_at, days_left}]
-     * @return array
+     * @return array 알림 데이터 (notifiable·notifiables·data·context)
      */
     private function extractPasswordExpiryNotice(array $args): array
     {
@@ -196,7 +209,7 @@ class CoreNotificationDataListener implements HookListenerInterface
      * 다음 로그인 때 변경 단계가 나오므로 로그인 화면으로 안내한다 — 관리자는 관리자 로그인 화면.
      *
      * @param  array  $args  훅 인수 [$user, {expired_at, sessions_revoked}]
-     * @return array
+     * @return array 알림 데이터 (notifiable·notifiables·data·context)
      */
     private function extractPasswordExpired(array $args): array
     {
@@ -230,7 +243,7 @@ class CoreNotificationDataListener implements HookListenerInterface
     /**
      * 빈 결과를 반환합니다.
      *
-     * @return array
+     * @return array 데이터가 비어 있는 알림 결과
      */
     private function emptyResult(): array
     {

@@ -83,6 +83,8 @@
                   </div>
                   <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="board-text-label-subtle board:truncate">{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}</p>
                   <p data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="board:text-sm board:text-gray-500 board:dark:text-gray-400 board:italic">$t:sirsoft-board.admin.settings.notification_definitions.no_template_for_channel</p>
+                  <!-- 운영자가 발송 수단을 켜서 코어가 만든 빈 템플릿 — 내용과 받는 사람을 채우고 켜야 이 수단으로 발송된다 -->
+                  <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_user_created &amp;&amp; !(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active}}" class="board:text-sm board:text-amber-700 board:dark:text-amber-400">$t:admin.settings.notification_definitions.user_template_inactive</p>
                   <div data-ref="board_recipients_badge_{{defIdx}}" data-if="{{((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}" class="board-flex-center board:flex-wrap board:gap-1.5 board:mt-2">
                     <span class="board-text-tertiary board:font-medium">$t:admin.settings.notification_definitions.recipients_label</span>
                     <span data-each="rcpt in {{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []}}" class="board:inline-flex board:items-center board:gap-1 board:text-xs board:px-2 board:py-0.5 board:bg-purple-50 board:dark:bg-purple-900/30 board:border board:border-purple-200 board:dark:border-purple-700 board:text-purple-700 board:dark:text-purple-300 board:rounded-full">
@@ -110,6 +112,25 @@
                         </success>
                         <fail>
                           <toast type="error" message="{{error.message}}"/>
+                          <!-- 서버가 거절하면(예: 운영자가 만든 빈 템플릿을 내용 없이 켬) 스위치는 눌린 모양으로 남는다 — 목록 상자를 다시 마운트해 저장된 값으로 돌린다(엔진은 반복 안 동적 id 로는 다시 마운트하지 못한다) -->
+                          <remount componentId="board_notif_definitions_list"/>
+                        </fail>
+                      </api-call>
+                    </on>
+                  </toggle>
+                  <!-- 이 수단의 템플릿이 없는 정의 — 켜면 이 수단을 정의의 발송 수단에 더해 바로 저장하고, 코어가 빈 템플릿(꺼짐·운영자 생성)을
+                       만든다. 다시 받은 목록에는 위 스위치와 [편집]·「채우고 켜야 발송」 안내가 선다(이 화면은 스위치마다 즉시 반영한다). -->
+                  <toggle data-type="composite" data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" ariaLabel="$t:common.item_enabled|name={{$t('sirsoft-board.admin.settings.notification_definitions.types.' + def.type)}}" :checked="false" disabled="{{_computed.isNotificationReadOnly}}">
+                    <on type="change">
+                      <api-call :auth_required="true" target="{{'/api/admin/notification-definitions/' + def.id}}" method="PUT">
+                        <body channels="{{[...new Set([...(def.channels ?? []), (query.channel ?? 'mail')])]}}"/>
+                        <success>
+                          <refetch-data-source dataSourceId="boardNotificationDefinitions"/>
+                          <toast type="success" message="$t:admin.settings.notification_definitions.user_template_created"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                          <remount componentId="board_notif_definitions_list"/>
                         </fail>
                       </api-call>
                     </on>

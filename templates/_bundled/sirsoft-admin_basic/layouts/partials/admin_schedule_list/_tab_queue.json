@@ -1,5 +1,5 @@
 {
-    "comment": "큐 탭의 본문 — 큐 현황 카드 · 하위 탭(대기/실패/처리 기록) · 검색 필터 · 지금 하위 탭의 표.\n\n  ⓐ 하위 탭은 `query.view`(pending|failed|logs, 없으면 pending)다. 데이터소스도 같은 값으로 갈라져 있어\n     보고 있는 하위 탭의 목록만 부른다. 하위 탭을 바꾸면 **세 하위 탭이 함께 받는 조건(검색어·큐·연결)은 이어 가고**\n     그 하위 탭만 받는 조건(처리 결과·기간·정렬·쪽)은 버린다 — 앞 탭의 기간·결과를 들고 가면 서버가 모르는 값이 된다.\n     검색 대상 「오류 내용」은 대기 목록이 받지 않아 대기로 갈 때만 버린다.\n  ⓑ 필터는 스케줄 탭·쿠폰 목록과 같은 틀이다(검색줄 · 기본/상세 슬롯 · 검색편집 · 검색/초기화). 입력값은\n     `_local.queueFilter` 에 쌓였다가 검색 버튼·Enter 에서만 URL 로 나간다(`searchQueue`). 기본/상세 배치는\n     필터 표시 선택기(`admin_queue_filters`)가 브라우저에 남긴다. 큐·연결은 행을 따로 둔다.\n     지금 하위 탭에서 상세로 옮긴 행이 하나도 없으면 상세검색 버튼을 숨긴다(눌러도 빈 칸만 열렸다).\n  ⓒ 큐 현황은 스케줄 탭 상태 카드와 같은 4칸 카드다(드라이버 · 대기 · 실패 · 워커). 대기 건수·대기 목록은 database 드라이버에서만\n     셀 수 있다 — 다른 드라이버면 대기 칸에 「측정 불가」를, 대기 하위 탭에 안내 상자 하나를 띄운다.\n     기본 드라이버가 sync·null 이면 실패 작업을 다시 넣을 워커가 없어 재시도가 거절된다(경고만, 버튼은 그대로).",
+    "comment": "큐 탭의 본문 — 큐 현황 카드 · 하위 탭(대기/실패/처리 기록) · 검색 필터 · 지금 하위 탭의 표.\n\n  ⓐ 하위 탭은 `query.view`(pending|failed|logs, 없으면 pending)다. 데이터소스도 같은 값으로 갈라져 있어\n     보고 있는 하위 탭의 목록만 부른다. 하위 탭을 바꾸면 **세 하위 탭이 함께 받는 조건(검색어·큐·연결)은 이어 가고**\n     그 하위 탭만 받는 조건(처리 결과·기간·정렬·쪽)은 버린다 — 앞 탭의 기간·결과를 들고 가면 서버가 모르는 값이 된다.\n     검색 대상 「오류 내용」은 대기 목록이 받지 않아 대기로 갈 때만 버린다.\n  ⓑ 필터는 스케줄 탭·쿠폰 목록과 같은 틀이다(검색줄 · 기본/상세 슬롯 · 검색편집 · 검색/초기화). 입력값은\n     `_local.queueFilter` 에 쌓였다가 검색 버튼·Enter 에서만 URL 로 나간다(`searchQueue`). 기본/상세 배치는\n     필터 표시 선택기(`admin_queue_filters`)가 브라우저에 남긴다. 큐·연결은 행을 따로 둔다.\n     지금 하위 탭에서 상세로 옮긴 행이 하나도 없으면 상세검색 버튼을 숨긴다(눌러도 빈 칸만 열렸다).\n  ⓒ 큐 현황은 스케줄 탭 상태 카드와 같은 4칸 카드다(드라이버 · 대기 · 실패 · 워커). 대기 건수·대기 목록은 database 드라이버에서만\n     셀 수 있다 — 다른 드라이버면 대기 칸에 「측정 불가」를, 대기 하위 탭에 안내 상자 하나를 띄운다.\n     기본 드라이버가 sync·null 이면 실패 작업을 다시 넣을 워커가 없어 재시도가 거절된다(경고만, 버튼은 그대로).\n     현황을 받지 못했으면(`_dataSourceErrors.queue_status`) 카드 대신 실패 안내 하나를 띄운다 — 받지 못한 값을 「측정 불가 / 0개 / 0/0」으로\n     그리면 실제 대기·실패와 다른 숫자를 보이게 된다. 「측정 불가」는 서버가 셀 수 없다고 답했을 때(`measurable === false`)만 쓴다.",
     "meta": {
         "is_partial": true
     },
@@ -36,9 +36,38 @@
             }
         },
         {
+            "id": "queue_status_load_failed",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!!_dataSourceErrors?.queue_status}}",
+            "props": {
+                "role": "alert",
+                "className": "alert-danger mb-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "circle-exclamation",
+                        "className": "text-red-600 dark:text-red-400 flex-shrink-0"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-error-soft"
+                    },
+                    "text": "{{_dataSourceErrors?.queue_status?.status === 403 ? $t('admin.schedules.queue.notice.no_permission') : $t('admin.schedules.queue.errors.status_load_failed')}}"
+                }
+            ]
+        },
+        {
             "id": "queue_status_cards",
             "type": "basic",
             "name": "Div",
+            "if": "{{!_dataSourceErrors?.queue_status}}",
             "responsive": {
                 "portable": {
                     "props": {
@@ -146,11 +175,20 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!queue_status?.data?.measurable}}",
+                            "if": "{{queue_status?.data?.measurable === false}}",
                             "props": {
                                 "className": "mt-2 text-lg font-semibold text-gray-500 dark:text-gray-400"
                             },
                             "text": "$t:admin.schedules.queue.status.unmeasurable"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{queue_status?.data?.measurable === undefined}}",
+                            "props": {
+                                "className": "text-page-heading mt-2"
+                            },
+                            "text": "-"
                         }
                     ]
                 },

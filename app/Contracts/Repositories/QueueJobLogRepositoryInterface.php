@@ -36,6 +36,16 @@ interface QueueJobLogRepositoryInterface
     public function find(int $id): ?QueueJobLog;
 
     /**
+     * UUID 마다 가장 최근 처리 기록의 시도 횟수를 돌려줍니다.
+     *
+     * 실패 작업 목록·상세가 payload 에 시도 수가 없는 드라이버(database)의 시도 수를 채울 때 쓴다.
+     *
+     * @param  array<int, string>  $uuids  작업 UUID 목록
+     * @return array<string, int> UUID => 시도 횟수 (기록이 없는 UUID 는 빠진다)
+     */
+    public function latestAttemptsByUuid(array $uuids): array;
+
+    /**
      * 처리 기록 여러 건을 한 번에 넣습니다.
      *
      * @param  list<array<string, mixed>>  $rows  행 목록 (컬럼 => 값)

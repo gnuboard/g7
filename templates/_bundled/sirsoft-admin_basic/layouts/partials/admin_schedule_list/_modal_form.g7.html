@@ -13,6 +13,10 @@
     바꿀 수 있는 것은 주기·실행 방식 같은 운영 값뿐이고, 바꾼 값은 확장을 업데이트해도 보존된다(「운영자 수정됨」 배지).
     실행 조건·시간대는 선언이 정하는 값이라 읽기 전용 배지로만 보인다.
   - 중복 실행 방지는 켜고 끄는 스위치 + 잠금 유지 시간(분, 1 ~ 10080, 켜면 기본 1440)이다.
+  - 수정 저장은 손대지 않은 칸을 저장값 그대로 보낸다 — 서버는 저장값과 달라진 칸만 「운영자 수정됨」으로 남기므로, 창이 값을
+    지어내면 확장 업데이트가 그 칸을 다시 못 고친다. 제한 시간은 비어 있으면 빈 칸으로 보이고 비운 채 저장하면 null 이다(실행기가
+    유형별 기본을 쓴다 — 그 기본을 칸 아래에 안내한다). 주기를 그대로 두면 저장된 cron 식을 보낸다(「매일 04:10」 같은 선언 시각 보존).
+    바로 실행이면 저장된 큐 연결·큐를 그대로 보낸다.
   선택 상자·스위치 값은 폼 밖 전역(`scheduleForm`)에 담는다 — 커스텀 선택 상자·스위치는 폼 값에 실리지 않거나 "on" 으로 실린다.
   글자 입력칸(식별자·명령·식·제한 시간)은 폼 값에서 읽는다. 잠긴 칸은 비활성이라 폼 값에서 빠지고, 서버는 보내지 않은 칸을 그대로 둔다.
   브라우저 검증은 끈다(`noValidate`) — 언어 탭이 숨긴 기본 언어 칸의 필수 표시를 브라우저가 잡으면 「포커스할 수 없음」으로
@@ -37,7 +41,7 @@
               <set-state target="global" :isSubmitting="false" scheduleFormErrors="{{error.errors ?? null}}" scheduleFormErrorMessage="{{error.message ?? ''}}"/>
               <toast if="{{!error.errors}}" type="error" message="{{error.message ?? '$t:admin.schedules.errors.save_failed'}}"/>
             </fail>
-            <body name="{{form.name}}" label="{{_global.scheduleForm?.label ?? {} }}" description="{{_global.scheduleForm?.description ?? {} }}" type="{{_global.scheduleForm?.type ?? 'artisan'}}" command="{{form.command}}" frequency="{{_global.scheduleForm?.frequency ?? 'daily'}}" expression="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom' ? form.expression : ({everyThirtySeconds: '* * * * *', everyMinute: '* * * * *', hourly: '0 * * * *', daily: '0 0 * * *', weekly: '0 0 * * 0', monthly: '0 0 1 * *'})[_global.scheduleForm?.frequency ?? 'daily'] ?? '0 0 * * *'}}" timeout="{{form.timeout}}" without_overlapping="{{_global.scheduleForm?.overlapEnabled ? +(_global.scheduleForm?.without_overlapping ?? 1440) : 0}}" on_one_server="{{_global.scheduleForm?.on_one_server ?? false}}" dispatch_mode="{{_global.scheduleForm?.dispatch_mode ?? 'sync'}}" queue_connection="{{(_global.scheduleForm?.dispatch_mode === 'queue' &amp;&amp; _global.scheduleForm?.queue_connection) || null}}" queue_name="{{(_global.scheduleForm?.dispatch_mode === 'queue' &amp;&amp; _global.scheduleForm?.queue_name) || null}}" history_mode="{{_global.scheduleForm?.history_mode ?? 'all'}}" notify_on_failure="{{_global.scheduleForm?.notify_on_failure ?? true}}" run_in_maintenance="{{_global.scheduleForm?.run_in_maintenance ?? false}}" is_active="{{_global.scheduleForm?.is_active ?? true}}"/>
+            <body name="{{form.name}}" label="{{_global.scheduleForm?.label ?? {} }}" description="{{_global.scheduleForm?.description ?? {} }}" type="{{_global.scheduleForm?.type ?? 'artisan'}}" command="{{form.command}}" frequency="{{_global.scheduleForm?.frequency ?? 'daily'}}" expression="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom' ? form.expression : (_global.isEditMode &amp;&amp; _global.selectedSchedule?.expression &amp;&amp; _global.scheduleForm?.frequency === _global.selectedSchedule?.frequency ? _global.selectedSchedule.expression : (({everyThirtySeconds: '* * * * *', everyMinute: '* * * * *', hourly: '0 * * * *', daily: '0 0 * * *', weekly: '0 0 * * 0', monthly: '0 0 1 * *'})[_global.scheduleForm?.frequency ?? 'daily'] ?? '0 0 * * *'))}}" timeout="{{form.timeout || null}}" without_overlapping="{{_global.scheduleForm?.overlapEnabled ? +(_global.scheduleForm?.without_overlapping ?? 1440) : 0}}" on_one_server="{{_global.scheduleForm?.on_one_server ?? false}}" dispatch_mode="{{_global.scheduleForm?.dispatch_mode ?? 'sync'}}" queue_connection="{{_global.scheduleForm?.dispatch_mode === 'queue' ? (_global.scheduleForm?.queue_connection || null) : (_global.isEditMode ? (_global.selectedSchedule?.queue_connection ?? null) : null)}}" queue_name="{{_global.scheduleForm?.dispatch_mode === 'queue' ? (_global.scheduleForm?.queue_name || null) : (_global.isEditMode ? (_global.selectedSchedule?.queue_name ?? null) : null)}}" history_mode="{{_global.scheduleForm?.history_mode ?? 'all'}}" notify_on_failure="{{_global.scheduleForm?.notify_on_failure ?? true}}" run_in_maintenance="{{_global.scheduleForm?.run_in_maintenance ?? false}}" is_active="{{_global.scheduleForm?.is_active ?? true}}"/>
           </api-call>
         </sequence>
       </on>
@@ -54,7 +58,7 @@
       </div>
       <div data-ref="schedule_form_owner_badges" data-if="{{_global.isEditMode}}" class="flex-center flex-wrap gap-2">
         <badge data-type="composite" data-if="{{_global.selectedSchedule?.is_owned}}" color="gray" size="md" icon="lock" text="$t:admin.schedules.form.owned_badge|owner={{_global.selectedSchedule?.owner?.name ?? ''}}"/>
-        <badge data-type="composite" data-if="{{(_global.selectedSchedule?.overridden_fields ?? []).length &gt; 0}}" color="yellow" size="md" text="$t:admin.schedules.form.overridden_badge"/>
+        <badge data-type="composite" data-if="{{!!_global.selectedSchedule?.is_owned &amp;&amp; (_global.selectedSchedule?.overridden_fields ?? []).length &gt; 0}}" color="yellow" size="md" text="$t:admin.schedules.form.overridden_badge"/>
         <badge data-type="composite" data-if="{{!!_global.selectedSchedule?.timezone}}" color="gray" size="md" text="$t:admin.schedules.form.timezone_badge|timezone={{_global.selectedSchedule?.timezone ?? ''}}"/>
       </div>
       <div data-ref="schedule_form_conditions" data-if="{{(_global.selectedSchedule?.enabled_condition ?? []).length &gt; 0}}" class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -146,11 +150,12 @@
         <div data-ref="schedule_form_timeout_field">
           <label class="form-label">$t:admin.schedules.form.timeout</label>
           <div class="flex-center gap-2">
-            <input type="number" name="timeout" defaultValue="{{_global.selectedSchedule?.timeout ?? 60}}" :min="1" :max="86400" class="{{_global.scheduleFormErrors?.timeout ? 'input input-w-md input-error' : 'input input-w-md'}}"/>
+            <input type="number" name="timeout" defaultValue="{{_global.selectedSchedule?.timeout ?? ''}}" placeholder="$t:admin.schedules.form.timeout_placeholder" :min="1" :max="86400" class="{{_global.scheduleFormErrors?.timeout ? 'input input-w-md input-error' : 'input input-w-md'}}"/>
             <span class="text-sm text-gray-700 dark:text-gray-300">$t:admin.schedules.form.seconds_suffix</span>
           </div>
           <span data-if="{{_global.scheduleFormErrors?.timeout}}" class="form-error">{{_global.scheduleFormErrors?.timeout?.[0] ?? ''}}</span>
           <p class="form-hint">$t:admin.schedules.form.timeout_help</p>
+          <p data-ref="schedule_form_timeout_default_hint" class="form-hint">{{$t('admin.schedules.form.timeout_default.' + ((_global.scheduleForm?.type ?? 'artisan') === 'artisan' ? ((_global.scheduleForm?.dispatch_mode ?? 'sync') === 'queue' ? 'artisan_queue' : 'artisan_sync') : (_global.scheduleForm?.type ?? 'artisan')))}}</p>
         </div>
       </div>
       <div data-ref="schedule_form_expression_field" data-if="{{(_global.scheduleForm?.frequency ?? 'daily') === 'custom'}}">

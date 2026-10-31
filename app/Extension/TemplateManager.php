@@ -3456,7 +3456,7 @@ class TemplateManager implements TemplateManagerInterface
             $backupPath = ExtensionBackupHelper::createBackup('templates', $identifier, $onProgress);
 
             // 진행 기록 — 파일을 바꾼 뒤 DB 판을 적기 전에 프로세스가 죽으면 파일은 새 판·DB 판은 옛 판으로 남는다. 정리가 그 사실을
-            // 알고 알리게 한다. 템플릿은 업그레이드 스텝이 없어 판 기록까지가 판 전환이다.
+            // 알고 알리게 한다. 템플릿은 업그레이드 스텝이 없어 판 기록(레이아웃 갱신 뒤)까지가 판 전환이다.
             $journal = ExtensionUpdateJournal::begin('template', $identifier, (string) $fromVersion, (string) $toVersion, $updateSource);
 
             // 2. 상태 → updating
@@ -3520,7 +3520,44 @@ class TemplateManager implements TemplateManagerInterface
             // SEO 설정 검증 (업데이트 후 seo-config.json 유효성 검사)
             $this->validateSeoConfig($identifier);
 
-            // 5. 트랜잭션: DB 정보 갱신
+            // 5. 상태 복원 (refreshTemplateLayouts()가 active 상태를 요구하므로 먼저 복원)
+            $onProgress?->__invoke('restore_status', __('extensions.progress.restore_status'));
+            $this->templateRepository->updateByIdentifier($identifier, [
+                'status' => $previousStatus,
+                'updated_at' => now(),
+            ]);
+
+            // 6. 레이아웃 갱신 (이전 상태가 active이고 overwrite 전략이면)
+            // refreshTemplateLayouts()는 캐시 초기화 + 캐시 버전 증가를 포함
+            $onProgress?->__invoke('layout', __('extensions.progress.layout_update'));
+            if ($previousStatus === ExtensionStatus::Active->value) {
+                $preserveModified = ($layoutStrategy === 'keep');
+                $refreshed = $this->refreshTemplateLayouts($identifier, $preserveModified, $backupPath);
+                $layoutSync = $refreshed['layout_sync'] ?? null;
+                $layoutWarnings = $refreshed['layout_warnings'] ?? [];
+
+                // 활성 모듈·플러그인의 조각을 새 판 템플릿에 다시 등록한다(keep — 운영자가 고친 조각은 보존).
+                // 번들 일괄 업데이트는 모듈 → 플러그인 → 템플릿 순서라, 플러그인이 조각을 등록할 때는 템플릿이 아직 옛 판이어서
+                // 새 확장점(예: 결제 플러그인의 주문 상세 슬롯)에 붙는 조각이 붙을 자리가 없어 건너뛰어졌다. 템플릿을 갱신한
+                // 지금 다시 등록해야 그 조각이 들어온다. 실패해도 파일·레이아웃은 이미 새 판이라 업데이트는 되돌리지 않는다 —
+                // 다른 확장을 켜거나 갱신할 때 같은 재등록이 다시 돈다.
+                try {
+                    $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($record->id);
+                } catch (\Throwable $e) {
+                    Log::error('템플릿 업데이트 뒤 확장 조각 재등록 실패', ['template' => $identifier, 'error' => $e->getMessage()]);
+                    LifecycleWarnings::current()->add('layout_extension_reregister', $identifier, $e->getMessage());
+                }
+            } elseif ($backupPath !== null) {
+                // 꺼 둔 채 업데이트(D11) — 켤 때(activateTemplate) 병합할 수 있게 이전 판 원본을 미리 저장한다.
+                $this->layoutSynchronizer()->stashBaseForInactiveUpdate($backupPath, 'templates', $identifier);
+            }
+
+            // 7. 트랜잭션: DB 정보 갱신 — 새 판 기록은 레이아웃 갱신을 마친 **뒤**에 한다.
+            // 판을 먼저 적으면 레이아웃 갱신 도중 프로세스가 죽을 때(메모리 고갈·시간 초과·강제 종료 — catch 가 돌지 않는다)
+            // 판은 새 판인데 레이아웃은 옛 판으로 남고, 상태도 이미 되돌린 뒤라 멈춘 업데이트 정리 대상이 아니며, 「업데이트
+            // 확인」은 같은 판이라 업데이트 없음으로 판정해 다시 시도할 길이 없었다. 여기서 적으면 그 경우 판이 옛 판으로 남아
+            // 다음 업데이트 확인이 같은 업데이트를 다시 잡는다(진행 기록도 남아 이어받는다). 템플릿은 업그레이드 스텝이 없어
+            // 레이아웃 갱신이 새 판 기록에 기대는 것이 없다.
             $onProgress?->__invoke('db', __('extensions.progress.db_update'));
             DB::beginTransaction();
             try {
@@ -3558,38 +3595,6 @@ class TemplateManager implements TemplateManagerInterface
             } catch (\Throwable $e) {
                 DB::rollBack();
                 throw $e;
-            }
-
-            // 6. 상태 복원 (refreshTemplateLayouts()가 active 상태를 요구하므로 먼저 복원)
-            $onProgress?->__invoke('restore_status', __('extensions.progress.restore_status'));
-            $this->templateRepository->updateByIdentifier($identifier, [
-                'status' => $previousStatus,
-                'updated_at' => now(),
-            ]);
-
-            // 7. 레이아웃 갱신 (이전 상태가 active이고 overwrite 전략이면)
-            // refreshTemplateLayouts()는 캐시 초기화 + 캐시 버전 증가를 포함
-            $onProgress?->__invoke('layout', __('extensions.progress.layout_update'));
-            if ($previousStatus === ExtensionStatus::Active->value) {
-                $preserveModified = ($layoutStrategy === 'keep');
-                $refreshed = $this->refreshTemplateLayouts($identifier, $preserveModified, $backupPath);
-                $layoutSync = $refreshed['layout_sync'] ?? null;
-                $layoutWarnings = $refreshed['layout_warnings'] ?? [];
-
-                // 활성 모듈·플러그인의 조각을 새 판 템플릿에 다시 등록한다(keep — 운영자가 고친 조각은 보존).
-                // 번들 일괄 업데이트는 모듈 → 플러그인 → 템플릿 순서라, 플러그인이 조각을 등록할 때는 템플릿이 아직 옛 판이어서
-                // 새 확장점(예: 결제 플러그인의 주문 상세 슬롯)에 붙는 조각이 붙을 자리가 없어 건너뛰어졌다. 템플릿을 갱신한
-                // 지금 다시 등록해야 그 조각이 들어온다. 실패해도 파일·버전은 이미 새 판이라 업데이트는 되돌리지 않는다 —
-                // 다른 확장을 켜거나 갱신할 때 같은 재등록이 다시 돈다.
-                try {
-                    $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($record->id);
-                } catch (\Throwable $e) {
-                    Log::error('템플릿 업데이트 뒤 확장 조각 재등록 실패', ['template' => $identifier, 'error' => $e->getMessage()]);
-                    LifecycleWarnings::current()->add('layout_extension_reregister', $identifier, $e->getMessage());
-                }
-            } elseif ($backupPath !== null) {
-                // 꺼 둔 채 업데이트(D11) — 켤 때(activateTemplate) 병합할 수 있게 이전 판 원본을 미리 저장한다.
-                $this->layoutSynchronizer()->stashBaseForInactiveUpdate($backupPath, 'templates', $identifier);
             }
 
             // 8. 백업 삭제 + 캐시 삭제

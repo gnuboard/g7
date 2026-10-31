@@ -173,6 +173,9 @@ class NotificationSyncHelper
                 'recipients' => $data['recipients'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
                 'is_default' => $data['is_default'] ?? true,
+                // 운영자가 먼저 켜서 만든 행이라도 확장이 그 수단을 선언하면 선언 행이 된다 — 운영자가 고친 칸은
+                // user_overrides 로 보존되고, 이후 stale 정리도 선언 기준으로 다룬다.
+                'is_user_created' => false,
             ]
         );
 
@@ -225,6 +228,8 @@ class NotificationSyncHelper
      * 정책: `user_overrides` 무관 — seeder 에 없는 (definition_id, channel)
      * 조합은 삭제. definition 삭제 시 FK cascade 로 자동 정리되는 경로와 별개로,
      * definition 은 유지되지만 channel 이 재구성된 경우에 사용됩니다.
+     * 운영자가 발송 수단을 켜서 만든 행(`is_user_created`)은 처음부터 선언에 없으므로 대상이 아니다 —
+     * 지우면 확장을 업데이트할 때마다 운영자가 써 둔 템플릿이 사라진다. 정의가 지워지면 FK cascade 로 함께 지워진다.
      *
      * @param  int  $definitionId  대상 definition id
      * @param  array<int, string>  $currentChannels  현재 유효한 channel 목록
@@ -235,6 +240,7 @@ class NotificationSyncHelper
         // audit:allow service-direct-data-access reason: 위 `cleanupStaleDefinitions` 와 같은 축 — 선언에서 사라진 (definition, channel) 조합만 지우는 동기화 정리 쿼리다
         $query = NotificationTemplate::query()
             ->where('definition_id', $definitionId)
+            ->where('is_user_created', false)
             ->whereNotIn('channel', $currentChannels);
 
         $targets = $query->get(['id', 'channel']);

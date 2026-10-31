@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\NotificationTemplate\PreviewNotificationTemplateRequest;
+use App\Http\Requests\NotificationTemplate\ToggleNotificationTemplateActiveRequest;
 use App\Http\Requests\NotificationTemplate\UpdateNotificationTemplateRequest;
 use App\Http\Resources\NotificationTemplateResource;
 use App\Models\NotificationTemplate;
@@ -58,10 +59,13 @@ class NotificationTemplateController extends AdminBaseController
     /**
      * 알림 템플릿 활성/비활성을 토글합니다.
      *
+     * 운영자가 만든 빈 템플릿을 내용 없이 켜는 요청은 요청 클래스가 422 로 거절한다.
+     *
+     * @param  ToggleNotificationTemplateActiveRequest  $request  토글 요청
      * @param  NotificationTemplate  $template
      * @return JsonResponse
      */
-    public function toggleActive(NotificationTemplate $template)
+    public function toggleActive(ToggleNotificationTemplateActiveRequest $request, NotificationTemplate $template)
     {
         try {
             $updated = $this->templateService->toggleActive($template);
@@ -114,6 +118,15 @@ class NotificationTemplateController extends AdminBaseController
             }
 
             $defaultData = $this->templateService->getDefaultTemplateData($definition->type, $template->channel);
+            if (empty($defaultData) && $template->is_user_created) {
+                // 운영자가 수단을 켜서 만든 템플릿은 선언된 기본값이 없다 — 만들었을 때의 빈 상태로 되돌린다
+                $updated = $this->templateService->resetUserCreated($template);
+
+                return $this->success(
+                    __('notification.template_reset'),
+                    new NotificationTemplateResource($updated)
+                );
+            }
             if (empty($defaultData)) {
                 $this->templateService->notifyLegacyResetWithoutDefault($template);
 

@@ -23,7 +23,7 @@
 | --- | --- | --- |
 | 상태 요약 | 기본 큐 연결의 드라이버, 대기·실패 건수, 「큐 워커」 상태 보고서 | 워커 등록 수·살아 있는 수·경고 수·하트비트 만료 기준(분)·긴 작업 워커 상태 |
 | 대기 작업 | 큐 연결의 `jobs` 표(연결 설정의 `table`) | `state` = `waiting`(대기)·`delayed`(지연 실행 예정)·`running`(워커가 집음). 재시도·삭제 동작 없음 |
-| 실패 작업 | `failed_jobs` 표 | 목록은 예외 첫 줄만(`exception_summary`), 상세에서 예외 전문 |
+| 실패 작업 | `failed_jobs` 표 | 목록은 예외 첫 줄만(`exception_summary`), 상세에서 예외 전문. `attempts` 는 payload 에 시도 수가 있으면(redis) 그 값, 없으면(database — 시도 수를 `jobs.attempts` 열에만 둔다) 같은 UUID 의 마지막 처리 기록 값, 둘 다 없으면 `null`(화면 「-」) |
 | 처리 기록 | `queue_job_logs` 표 | 성공·최종 실패를 작업마다 1행 |
 
 **대기 작업은 database 드라이버만 셀 수 있습니다.** redis·sqs 등은 표를 직접 읽을 수 없어 목록이 비고 `meta.measurable = false` 가 내려가며, 화면은 안내 문구를 띄웁니다. 상태 요약의 `pending_count` 도 이때 `null` 입니다. 실패 작업과 처리 기록은 드라이버와 무관하게 DB 표라 항상 보입니다.

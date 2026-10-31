@@ -300,6 +300,7 @@ return [
     ],
     'summary' => [
         'period_current' => '一覧の現在期間',
+        'period_none' => '適用しない',
         'scope' => [
             'filter' => '現在の検索条件',
             'selected' => '選択した項目',

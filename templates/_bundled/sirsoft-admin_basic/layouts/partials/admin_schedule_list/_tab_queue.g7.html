@@ -10,7 +10,9 @@
      지금 하위 탭에서 상세로 옮긴 행이 하나도 없으면 상세검색 버튼을 숨긴다(눌러도 빈 칸만 열렸다).
   ⓒ 큐 현황은 스케줄 탭 상태 카드와 같은 4칸 카드다(드라이버 · 대기 · 실패 · 워커). 대기 건수·대기 목록은 database 드라이버에서만
      셀 수 있다 — 다른 드라이버면 대기 칸에 「측정 불가」를, 대기 하위 탭에 안내 상자 하나를 띄운다.
-     기본 드라이버가 sync·null 이면 실패 작업을 다시 넣을 워커가 없어 재시도가 거절된다(경고만, 버튼은 그대로). -->
+     기본 드라이버가 sync·null 이면 실패 작업을 다시 넣을 워커가 없어 재시도가 거절된다(경고만, 버튼은 그대로).
+     현황을 받지 못했으면(`_dataSourceErrors.queue_status`) 카드 대신 실패 안내 하나를 띄운다 — 받지 못한 값을 「측정 불가 / 0개 / 0/0」으로
+     그리면 실제 대기·실패와 다른 숫자를 보이게 된다. 「측정 불가」는 서버가 셀 수 없다고 답했을 때(`measurable === false`)만 쓴다. -->
 <partial name="tab_queue">
   <div data-ref="tab_queue">
     <!-- 큐 필터 표시 선택기 — 본체(스케줄 탭)와 별도 id 로 기본/상세 배치를 저장한다. 큐 탭에서만 그려지므로 이 조각에 둔다. -->
@@ -25,7 +27,11 @@
         <set-state target="_local" queueVisibleFilters="{{$args[0]}}"/>
       </on>
     </filter-visibility-selector>
-    <div data-ref="queue_status_cards" class="grid-2col md:grid-cols-4 mb-6">
+    <div data-ref="queue_status_load_failed" data-if="{{!!_dataSourceErrors?.queue_status}}" role="alert" class="alert-danger mb-6">
+      <icon name="circle-exclamation" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
+      <p class="text-error-soft">{{_dataSourceErrors?.queue_status?.status === 403 ? $t('admin.schedules.queue.notice.no_permission') : $t('admin.schedules.queue.errors.status_load_failed')}}</p>
+    </div>
+    <div data-ref="queue_status_cards" data-if="{{!_dataSourceErrors?.queue_status}}" class="grid-2col md:grid-cols-4 mb-6">
       <responsive on="portable" class="grid grid-cols-2 gap-3 mb-4"/>
       <div data-ref="queue_status_driver" class="admin-card">
         <div class="flex-between">
@@ -41,7 +47,8 @@
           <icon name="hourglass-half" class="text-xl text-blue-500"/>
         </div>
         <div data-if="{{queue_status?.data?.measurable}}" class="text-page-heading mt-2">$t:admin.schedules.queue.status.count|count={{queue_status?.data?.pending_count ?? 0}}</div>
-        <div data-if="{{!queue_status?.data?.measurable}}" class="mt-2 text-lg font-semibold text-gray-500 dark:text-gray-400">$t:admin.schedules.queue.status.unmeasurable</div>
+        <div data-if="{{queue_status?.data?.measurable === false}}" class="mt-2 text-lg font-semibold text-gray-500 dark:text-gray-400">$t:admin.schedules.queue.status.unmeasurable</div>
+        <div data-if="{{queue_status?.data?.measurable === undefined}}" class="text-page-heading mt-2">-</div>
       </div>
       <div data-ref="queue_status_failed" class="admin-card">
         <div class="flex-between">

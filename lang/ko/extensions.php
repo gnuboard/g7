@@ -164,6 +164,15 @@ return [
             'manifest_required' => '--manifest 옵션이 필수이며 존재하는 파일이어야 합니다.',
             'manifest_parse_failed' => '매니페스트 JSON 파싱 실패: :path',
             'lang_pack_phase_in_process' => '언어팩 단계를 새 프로세스로 분리하지 못해 이 프로세스에서 진행합니다 — 확장 데이터의 번역이 비면 끝난 뒤 php artisan language-pack:update <팩> --force 를 실행하세요.',
+            'item_process_aborted' => '이 항목을 처리하던 프로세스가 결과 없이 끝났습니다 (종료 코드 :code). 메모리가 모자랐다면 PHP 오류 로그에 "Allowed memory size" 가 남습니다.',
+            'failed_items_header' => '업데이트하지 못한 항목 :count개 — 아래 명령으로 하나씩 다시 업데이트하세요:',
+            'failed_item_labels' => [
+                'module' => '[모듈] :identifier',
+                'plugin' => '[플러그인] :identifier',
+                'template' => '[템플릿] :identifier',
+                'lang_pack' => '[언어팩] :identifier',
+            ],
+            'child_aborted' => '번들 일괄 업데이트 프로세스가 결과를 남기지 못하고 끝났습니다 (종료 코드 :code). 어느 항목까지 갱신됐는지 알 수 없습니다 — 관리자 화면의 모듈, 플러그인, 템플릿, 언어팩 목록에서 「업데이트 확인」을 누른 뒤 남은 항목을 다시 업데이트하세요.',
         ],
         // `extension:composer-install`·`extension:update-autoload`·vendor 번들 명령 공통 출력
         'composer_install' => [
@@ -194,6 +203,15 @@ return [
             'check_skipped_no_composer' => ':label: SKIPPED (composer.json 없음)',
             'check_skipped_no_dependencies' => ':label: SKIPPED (외부 composer 의존성 없음)',
             'stale' => ':label: STALE — 재빌드 필요',
+            'title_build' => 'Vendor 번들 빌드',
+            'title_check' => 'Vendor 번들 상태 확인',
+            'title_verify' => 'Vendor 번들 무결성 검증',
+            'built' => ':label: :size, 패키지 :count개',
+            'skipped_up_to_date' => ':label: 스킵 (최신 상태, :size, 패키지 :count개)',
+            'up_to_date' => ':label: 최신 상태',
+            'verify_ok' => ':label: 정상 (:size, 패키지 :count개)',
+            'verify_failed_target' => ':label: 검증 실패',
+            'summary' => '요약: 빌드 :built개, 스킵 :skipped개, 전체 :size',
         ],
         // `ext-static:*`·`ext-bundles:cleanup` 명령 출력
         'ext_static_status' => [

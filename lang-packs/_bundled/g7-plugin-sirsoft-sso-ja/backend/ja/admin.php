@@ -55,6 +55,12 @@ return [
     ],
     'notification' => [
         'company_account' => '会社アカウント',
+        'login_guide' => [
+            'redirect' => 'ログイン画面で「:label でログイン」を押してください。',
+            'directory_username' => 'ログイン画面の ID 欄に社内 ID を、パスワード欄に会社のパスワードを入力してログインしてください。',
+            'directory_email' => 'ログイン画面の ID 欄に会社のメールアドレスを、パスワード欄に会社のパスワードを入力してログインしてください。',
+            'contact' => 'ログイン方法はサイト管理者にお問い合わせください。',
+        ],
         'sources' => [
             'scim' => 'SCIM 通知',
             'periodic' => '定期点検',

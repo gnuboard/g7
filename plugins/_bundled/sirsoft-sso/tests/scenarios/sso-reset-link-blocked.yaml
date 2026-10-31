@@ -1,0 +1,20 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 화면(관리자·사용자 재설정)과 강제 여부는 시험마다 성립하는 조합만 있다 — 강제를 끈 경우는 관리자 화면 하나로 종전 폼을 잠근다.
+feature: sso_reset_link_blocked_e2e
+description: |
+  비밀번호 재설정 링크를 받은 뒤 회사 계정 로그인이 강제된 회원(소유 도메인 강제)이 그 링크를 열 때의 종단. 관리자 재설정 화면은
+  링크 검증 422 `auth.password_auth_disabled` 뒤에 서버 안내 문구와 「…(으)로 로그인」 버튼을 보이고(화면 init 뒤에도 남는다) 비밀번호 칸은 없다.
+  관리자 화면 요청은 redirect_prefix=admin 을 실어 버튼이 관리자 쪽 회사 계정 로그인(guard=admin)으로 간다. 사용자 재설정 화면은 같은 안내와
+  사용자 쪽(guard=user) 버튼이다. 강제를 끄면 같은 링크가 새 비밀번호 입력 폼이다. 상태 키 분리·요청 값은 Vitest(admin_basic
+  admin-reset-password-blocked-render), 판정 경로는 PHPUnit(코어 auth-password-policy)이 덮는다.
+axes:
+  screen: [admin_reset_password, user_reset_password]
+  enforce_owned_domains: ['on', 'off']
+effects:
+  - e2e_admin_reset_blocked_notice_and_button   # 관리자 재설정 화면에 안내 문구·버튼, 비밀번호 칸 0, 링크 무효 안내 0
+  - e2e_admin_reset_button_goes_admin_guard     # 버튼이 관리자 쪽 회사 계정 로그인으로 간다(guard=admin)
+  - e2e_user_reset_blocked_notice_user_guard    # 사용자 재설정 화면은 같은 안내·버튼, 사용자 쪽(guard=user)
+  - e2e_reset_form_when_not_enforced            # 강제를 끄면 새 비밀번호 입력 폼
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Playwright/specs/sso-reset-link-blocked.spec.ts
+limitations:
+  - "실서버 한 대·DB 하나를 쓰는 종단 시험이라 직렬(워커 1)로만 돈다. 회원은 e2e798. 접두어로만 만들고 끝에 지운다."

@@ -245,6 +245,60 @@ class PasswordAuthPolicyTest extends TestCase
     }
 
     /**
+     * 관리자 재설정 화면(`redirect_prefix=admin`)의 토큰 확인·재설정 완료는 관리자 경로로 판정해, 거절 응답의 다른 로그인 수단 주소가
+     * 관리자 로그인으로 온다(비밀번호 찾기의 `redirect_prefix` 와 같다). 값이 없으면 종전대로 사용자 경로이고, 다른 값은 받지 않는다.
+     *
+     * @scenario purpose=reset_complete, guard=user|admin
+     *
+     * @effects reset_complete_guard_follows_screen
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function 재설정_완료_판정은_재설정_화면의_경로를_따른다(): void
+    {
+        $user = $this->corpMember(true);
+        $token = Str::random(64);
+        DB::table('password_reset_tokens')->updateOrInsert(['email' => $user->email], ['token' => Hash::make($token), 'created_at' => now()]);
+        $before = $user->getRawOriginal('password');
+
+        // 실제 확장처럼 판정 경로(guard)로 그 수단 시작 주소를 만든다
+        HookManager::addFilter('core.auth.password_auth_decision', function ($decision, array $subject) {
+            $this->subjects[] = $subject;
+
+            return $subject['purpose'] === 'reset_complete'
+                ? PasswordAuthDecision::deny('user', ['ko' => '회사 계정', 'en' => 'Company account'], '/plugins/test/login/corp?guard='.$subject['guard'])
+                : $decision;
+        });
+
+        $this->postJson('/api/auth/validate-reset-token', ['token' => $token, 'email' => $user->email, 'redirect_prefix' => 'admin'])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.code', 'auth.password_auth_disabled')
+            ->assertJsonPath('errors.redirect_url', '/plugins/test/login/corp?guard=admin');
+        $this->postJson('/api/auth/reset-password', [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'Passw0rd!new9',
+            'password_confirmation' => 'Passw0rd!new9',
+            'redirect_prefix' => 'admin',
+        ])->assertStatus(422)->assertJsonPath('errors.redirect_url', '/plugins/test/login/corp?guard=admin');
+        $this->postJson('/api/auth/validate-reset-token', ['token' => $token, 'email' => $user->email])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.redirect_url', '/plugins/test/login/corp?guard=user');
+
+        $guards = array_values(array_map(
+            fn (array $subject) => $subject['guard'],
+            array_filter($this->subjects, fn (array $subject) => $subject['purpose'] === 'reset_complete'),
+        ));
+        $this->assertSame(['admin', 'admin', 'user'], $guards);
+        $this->assertSame($before, $user->fresh()->getRawOriginal('password'));
+
+        $this->postJson('/api/auth/validate-reset-token', ['token' => $token, 'email' => $user->email, 'redirect_prefix' => 'other'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('redirect_prefix');
+    }
+
+    /**
      * 유효한 재설정 링크가 없으면 회원 기준 거절을 드러내지 않는다 — 이메일과 아무 토큰으로 그 회원이 회사 계정 전용인지
      * 알아낼 수 없어야 한다(로그인의 「비밀번호가 맞은 뒤에만」 과 같은 열거 방지).
      *

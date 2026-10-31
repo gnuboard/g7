@@ -49,6 +49,14 @@
 
 ---
 
+## 다른 템플릿 페이지에 실렸을 때
+
+레이아웃 편집기는 편집 대상 템플릿의 번들을 그 페이지의 활성 템플릿 번들과 함께 싣습니다(예: 다른 관리자 템플릿이 활성인 사이트에서 이 템플릿을 편집할 때). 이때 번들이 핸들러 등록, 본인인증 launcher, 사이드바 복원, `window.G7TemplateHandlers` 노출을 그대로 돌리면 활성 템플릿의 같은 이름 핸들러와 launcher 를 덮고, 그 탭의 언어 전환도 활성 템플릿 대신 이 번들의 핸들러를 다시 등록합니다.
+
+그래서 템플릿 번들은 `initTemplate()` 과 핸들러 맵 노출을 **페이지 루트 `#app[data-template-id]` 가 자기 식별자일 때만** 실행합니다. 표식이 없으면 종전대로 실행합니다. 편집기 위젯 등록처럼 편집기를 위한 등록은 표식과 무관하게 합니다. 번들 템플릿 두 종은 `templates/_bundled/sirsoft-admin_basic/src/support/pageTemplate.ts`(sirsoft-basic 도 같은 자리)의 `isPageTemplate()` 으로 이 판정을 합니다.
+
+---
+
 ## 관련 문서
 
 - [액션 핸들러 개요](actions-handlers.md)

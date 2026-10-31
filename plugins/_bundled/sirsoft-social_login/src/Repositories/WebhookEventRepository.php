@@ -103,7 +103,7 @@ class WebhookEventRepository implements WebhookEventRepositoryInterface
     /**
      * 제공자별 마지막 수신 시각을 반환합니다.
      *
-     * @return array<string, string|null> 제공자 키 => 시각(ISO 8601)
+     * @return array<string, Carbon|null> 제공자 키 => 시각
      */
     public function lastReceivedByProvider(): array
     {
@@ -111,7 +111,7 @@ class WebhookEventRepository implements WebhookEventRepositoryInterface
             ->selectRaw('provider_key, MAX(received_at) as last_received')
             ->groupBy('provider_key')
             ->pluck('last_received', 'provider_key')
-            ->map(fn ($at) => $at !== null ? Carbon::parse($at)->toIso8601String() : null)
+            ->map(fn ($at) => $at !== null ? Carbon::parse($at) : null)
             ->all();
     }
 

@@ -581,7 +581,7 @@
                         "iconName": "trash",
                         "variant": "danger",
                         "disabledField": "abilities.can_delete",
-                        "disabledReason": "$t:admin.schedules.action.delete_disabled_reason"
+                        "disabledReason": "{{row.delete_blocked_reason === 'owned' ? $t('admin.schedules.action.delete_disabled_reason') : $t('auth.permission_denied')}}"
                     }
                 ],
                 "columns": [

@@ -15,8 +15,11 @@ use Plugins\Sirsoft\Sso\Repositories\Policy\Contracts\SitePolicyRepositoryInterf
  * 판정은 진입 경로가 아니라 회원 기준이다(W1 — 관리자가 사용자 로그인 화면으로 받은 토큰도 관리자 API 에서 통하므로).
  *  - 1차(식별자 기준, 시도 전 — `user` 가 null): 비상 계정 이메일 → 허용(강제 중 2단계 필수) / 사이트 전체 강제 → 거절 /
  *    식별자 도메인이 「비밀번호 로그인 막기」를 켠 OIDC, SAML IdP 소유 → 거절 + 그 IdP 로 가는 경로 / 같은 조건의 LDAP IdP 소유 →
- *    거절(경로 없음 — 여기 왔다는 것은 디렉터리 검증자가 일치하지 않았다는 뜻, W27).
+ *    로그인은 거절(경로 없음 — 여기 왔다는 것은 디렉터리 검증자가 일치하지 않았다는 뜻, W27), 비밀번호 찾기는 회사 이메일 로그인 안내.
  *  - 2차(회원 기준, 비밀번호가 맞은 뒤): 비상 계정 → 허용(같은 2단계 필수) / 역할 강제 또는 「연결 회원 전원」 + 활성 연결 → 거절.
+ *
+ * 안내할 IdP 가 LDAP 이면 버튼 경로가 없다. LDAP 은 같은 로그인 폼에 사내 아이디(또는 회사 이메일)와 회사 비밀번호를 넣는 방식이라
+ * 거절 사유를 그 폼 로그인 안내(`REASON_DIRECTORY_*`)로 준다. 회원이 리디렉션 IdP 와 LDAP 에 함께 연결돼 있으면 버튼이 있는 쪽을 안내한다.
  *  - 비밀번호를 만드는 목적(`set_password`, `admin_set_password`, 비밀번호 없는 회원의 `reset_request`, `reset_complete`):
  *    활성 연결 IdP 중 하나라도 「G7 비밀번호 설정 허용」이 꺼져 있거나(D22 기본) 강제 대상이면 거절.
  *
@@ -40,6 +43,15 @@ class EnforcementPolicy
 
     /** 사이트 전체 강제인데 안내할 IdP 가 없을 때의 사유 */
     public const REASON_SITE = 'sirsoft-sso::policy.site_enforced';
+
+    /** 회원 기준 강제(역할, 연결 회원)인데 안내할 로그인 수단이 없을 때의 사유 */
+    public const REASON_ACCOUNT = 'sirsoft-sso::policy.account_enforced';
+
+    /** LDAP IdP 로 로그인 — 로그인 폼에 사내 아이디와 회사 비밀번호 */
+    public const REASON_DIRECTORY_USERNAME = 'sirsoft-sso::policy.directory_login_username';
+
+    /** LDAP IdP 로 로그인 — 로그인 폼에 회사 이메일과 회사 비밀번호 */
+    public const REASON_DIRECTORY_EMAIL = 'sirsoft-sso::policy.directory_login_email';
 
     /** D22 비밀번호 설정 거절 사유 */
     public const REASON_SET_PASSWORD = 'sirsoft-sso::policy.password_set_disabled';
@@ -84,7 +96,7 @@ class EnforcementPolicy
         }
 
         return $user === null
-            ? $this->decideByIdentifier($identifier, $guard)
+            ? $this->decideByIdentifier($identifier, $guard, $purpose)
             : $this->decideByUser($user, $guard);
     }
 
@@ -114,7 +126,7 @@ class EnforcementPolicy
     }
 
     /**
-     * 강제 대상 회원에게 안내할 IdP 를 고릅니다 (도메인 IdP → 활성 연결 IdP 순).
+     * 강제 대상 회원에게 안내할 IdP 를 고릅니다 (도메인 IdP → 활성 연결 IdP(리디렉션 IdP 먼저, 다음 LDAP) → 리디렉션 IdP 순).
      *
      * @param  User  $user  회원
      * @return IdentityProvider|null IdP
@@ -122,8 +134,31 @@ class EnforcementPolicy
     public function guidanceIdpFor(User $user): ?IdentityProvider
     {
         return $this->enforcingIdpForDomain($this->domainOf((string) $user->email))
-            ?? $this->repository->activeLinkedIdps((int) $user->getKey())->first(fn (IdentityProvider $idp) => $idp->enabled)
+            ?? $this->preferredLinkedIdp($this->repository->activeLinkedIdps((int) $user->getKey()))
             ?? $this->firstRedirectIdp();
+    }
+
+    /**
+     * LDAP IdP 로 로그인할 때 로그인 폼의 아이디 칸에 넣는 값을 알려 줍니다.
+     *
+     * 디렉터리 검증자는 사내 아이디면 `accept_username` 이 켜진 LDAP IdP 로, 이메일이면 그 도메인을 소유한 LDAP IdP 로 보낸다.
+     *
+     * @param  IdentityProvider  $idp  IdP
+     * @return string|null `username`(사내 아이디), `email`(회사 이메일). 리디렉션 IdP 이거나 폼으로 들어갈 길이 없으면 null
+     */
+    public static function directoryLoginField(IdentityProvider $idp): ?string
+    {
+        if ($idp->protocol !== 'ldap') {
+            return null;
+        }
+
+        if ((bool) $idp->configValue('accept_username', false)) {
+            return 'username';
+        }
+
+        $domains = array_filter(is_array($idp->owned_domains) ? $idp->owned_domains : [], fn ($domain) => is_string($domain) && trim($domain) !== '');
+
+        return $domains !== [] ? 'email' : null;
     }
 
     /**
@@ -131,9 +166,10 @@ class EnforcementPolicy
      *
      * @param  string  $identifier  로그인 칸 입력
      * @param  string  $guard  로그인 경로
+     * @param  string  $purpose  판정 목적
      * @return PasswordAuthDecision|null 판정
      */
-    private function decideByIdentifier(string $identifier, string $guard): ?PasswordAuthDecision
+    private function decideByIdentifier(string $identifier, string $guard, string $purpose): ?PasswordAuthDecision
     {
         if ($this->emergency->isEmergencyIdentifier($identifier)) {
             return $this->policy->anyEnforcementOn() ? PasswordAuthDecision::allow(requireTwoFactor: true) : null;
@@ -142,10 +178,10 @@ class EnforcementPolicy
         $policy = $this->policy->current();
 
         if ($policy['enforce_site']) {
-            $idp = $this->siteRedirectIdp($policy);
+            $idp = $this->siteRedirectIdp($policy) ?? $this->firstDirectoryIdp();
 
             return $idp !== null
-                ? $this->denyTo($idp, PasswordAuthDecision::BASIS_IDENTIFIER, $guard)
+                ? $this->denyFor($idp, PasswordAuthDecision::BASIS_IDENTIFIER, $guard, self::REASON_SITE)
                 : PasswordAuthDecision::deny(PasswordAuthDecision::BASIS_IDENTIFIER, reasonKey: self::REASON_SITE);
         }
 
@@ -156,7 +192,13 @@ class EnforcementPolicy
         }
 
         if ($idp->protocol === 'ldap') {
-            return PasswordAuthDecision::deny(PasswordAuthDecision::BASIS_IDENTIFIER, reasonKey: self::REASON_LDAP_UNAVAILABLE);
+            // 로그인이 여기 왔으면 디렉터리 검증자가 일치하지 않은 것(서버 확장 없음 등)이다. 비밀번호 찾기는 검증자를 거치지 않으므로
+            // 그 이메일과 회사 비밀번호로 로그인하라고 안내한다.
+            return PasswordAuthDecision::deny(
+                PasswordAuthDecision::BASIS_IDENTIFIER,
+                methodLabel: $this->labelOf($idp),
+                reasonKey: in_array($purpose, self::RESET_PURPOSES, true) ? self::REASON_DIRECTORY_EMAIL : self::REASON_LDAP_UNAVAILABLE,
+            );
         }
 
         return $this->denyTo($idp, PasswordAuthDecision::BASIS_IDENTIFIER, $guard);
@@ -178,10 +220,12 @@ class EnforcementPolicy
         $policy = $this->policy->current();
 
         if ($policy['enforce_site']) {
-            $idp = $this->siteRedirectIdp($policy);
+            $idp = $this->siteRedirectIdp($policy)
+                ?? $this->preferredLinkedIdp($this->repository->activeLinkedIdps((int) $user->getKey()))
+                ?? $this->firstDirectoryIdp();
 
             return $idp !== null
-                ? $this->denyTo($idp, PasswordAuthDecision::BASIS_USER, $guard)
+                ? $this->denyFor($idp, PasswordAuthDecision::BASIS_USER, $guard, self::REASON_SITE)
                 : PasswordAuthDecision::deny(PasswordAuthDecision::BASIS_USER, reasonKey: self::REASON_SITE);
         }
 
@@ -197,8 +241,8 @@ class EnforcementPolicy
         }
 
         return $ruleIdp !== null
-            ? $this->denyTo($ruleIdp, PasswordAuthDecision::BASIS_USER, $guard)
-            : PasswordAuthDecision::deny(PasswordAuthDecision::BASIS_USER, reasonKey: self::REASON_SITE);
+            ? $this->denyFor($ruleIdp, PasswordAuthDecision::BASIS_USER, $guard, self::REASON_ACCOUNT)
+            : PasswordAuthDecision::deny(PasswordAuthDecision::BASIS_USER, reasonKey: self::REASON_ACCOUNT);
     }
 
     /**
@@ -216,10 +260,11 @@ class EnforcementPolicy
 
         if ($this->isEnforcedUser($user)) {
             $idp = $this->guidanceIdpFor($user);
+            $fallback = $this->policy->current()['enforce_site'] ? self::REASON_SITE : self::REASON_ACCOUNT;
 
-            return $idp !== null && $idp->protocol !== 'ldap'
-                ? $this->denyTo($idp, PasswordAuthDecision::BASIS_USER, $guard)
-                : PasswordAuthDecision::deny(PasswordAuthDecision::BASIS_USER, reasonKey: self::REASON_SITE);
+            return $idp !== null
+                ? $this->denyFor($idp, PasswordAuthDecision::BASIS_USER, $guard, $fallback)
+                : PasswordAuthDecision::deny(PasswordAuthDecision::BASIS_USER, reasonKey: $fallback);
         }
 
         $blocking = $this->repository->activeLinkedIdps((int) $user->getKey())
@@ -252,17 +297,31 @@ class EnforcementPolicy
             $linked = $this->repository->activeLinkedIdps((int) $user->getKey());
 
             if ($linked->isNotEmpty()) {
-                return $linked->first(fn (IdentityProvider $idp) => $idp->enabled && $idp->protocol !== 'ldap');
+                return $this->preferredLinkedIdp($linked);
             }
         }
 
         if ($policy['enforce_roles'] !== [] && $this->repository->userHasAnyRole($user, $policy['enforce_roles'])) {
             $linked ??= $this->repository->activeLinkedIdps((int) $user->getKey());
 
-            return $linked->first(fn (IdentityProvider $idp) => $idp->enabled && $idp->protocol !== 'ldap') ?? $this->firstRedirectIdp();
+            return $this->preferredLinkedIdp($linked) ?? $this->firstRedirectIdp();
         }
 
         return false;
+    }
+
+    /**
+     * 회원의 활성 연결 IdP 중 안내할 것 — 버튼으로 시작하는 리디렉션 IdP 먼저, 없으면 로그인 폼으로 들어가는 LDAP.
+     *
+     * @param  Collection<int, IdentityProvider>  $linked  활성 연결 IdP (정렬 순서)
+     * @return IdentityProvider|null IdP (안내할 수 있는 연결이 없으면 null)
+     */
+    private function preferredLinkedIdp(Collection $linked): ?IdentityProvider
+    {
+        $enabled = $linked->filter(fn (IdentityProvider $idp) => $idp->enabled);
+
+        return $enabled->first(fn (IdentityProvider $idp) => $idp->protocol !== 'ldap')
+            ?? $enabled->first(fn (IdentityProvider $idp) => self::directoryLoginField($idp) !== null);
     }
 
     /**
@@ -309,6 +368,16 @@ class EnforcementPolicy
     }
 
     /**
+     * 로그인 폼으로 들어갈 수 있는 첫 활성 LDAP IdP (사이트 전체 강제인데 버튼으로 시작할 IdP 가 없을 때의 안내).
+     *
+     * @return IdentityProvider|null IdP
+     */
+    private function firstDirectoryIdp(): ?IdentityProvider
+    {
+        return $this->enabledIdps()->first(fn (IdentityProvider $idp) => self::directoryLoginField($idp) !== null);
+    }
+
+    /**
      * 활성 IdP 목록 (IdP 상한 20 — 판정마다 읽어도 가볍다. 저장 직후 판정이 낡은 목록을 보지 않게 캐시하지 않는다).
      *
      * @return Collection<int, IdentityProvider> IdP
@@ -316,6 +385,30 @@ class EnforcementPolicy
     private function enabledIdps(): Collection
     {
         return $this->idps->enabled();
+    }
+
+    /**
+     * 안내할 IdP 에 맞는 거절 판정 — 리디렉션 IdP 는 그 IdP 로 가는 경로, LDAP 은 경로 없이 로그인 폼 안내 사유.
+     *
+     * @param  IdentityProvider  $idp  안내할 IdP
+     * @param  string  $basis  판정 기준
+     * @param  string  $guard  경로
+     * @param  string  $fallbackReason  LDAP 인데 폼으로 들어갈 길이 없을 때의 사유
+     * @return PasswordAuthDecision 거절
+     */
+    private function denyFor(IdentityProvider $idp, string $basis, string $guard, string $fallbackReason): PasswordAuthDecision
+    {
+        if ($idp->protocol !== 'ldap') {
+            return $this->denyTo($idp, $basis, $guard);
+        }
+
+        $reason = match (self::directoryLoginField($idp)) {
+            'username' => self::REASON_DIRECTORY_USERNAME,
+            'email' => self::REASON_DIRECTORY_EMAIL,
+            default => $fallbackReason,
+        };
+
+        return PasswordAuthDecision::deny($basis, $this->labelOf($idp), reasonKey: $reason);
     }
 
     /**

@@ -2476,6 +2476,7 @@ return [
         'types' => '작업 유형',
         'personal' => '개인정보 포함',
         'mine' => '내 요청만',
+        'requester_uuid' => '요청자',
         'sort_by' => '정렬 기준',
         'sort_order' => '정렬 방향',
         'per_page' => '페이지당 개수',

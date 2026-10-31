@@ -108,7 +108,8 @@
             "provider_failure_streak_threshold": {
                 "label": "プロバイダー連続失敗通知の基準",
                 "hint": "1つのプロバイダーで10分以内にこの回数以上失敗すると、管理者に1日1回通知します。間に成功があっても数えます。0 の場合は通知しません。"
-            }
+            },
+            "notification_link": "受信者と文面は通知タブで変更します"
         },
         "warnings": {
             "auto_link_verified": "危険: プロバイダーが検証したという表示だけを信頼して、同じメールアドレスの既存アカウントにすぐ連携します。他人が先にそのメールアドレスで登録していたり、プロバイダーの検証が誤っていたりすると、アカウントを乗っ取られるおそれがあります。",
@@ -219,7 +220,8 @@
     "admin": {
         "tabs": {
             "providers": "プロバイダー",
-            "policy": "ポリシー"
+            "policy": "ポリシー",
+            "notifications": "通知"
         },
         "providers": {
             "read_only": "設定を変更する権限がないため、閲覧のみ可能です。",
@@ -512,6 +514,49 @@
                 "email": "プロバイダーのメールアドレス",
                 "linked_at": "連携日",
                 "last_login_at": "最近のログイン"
+            }
+        },
+        "notifications": {
+            "title": "通知",
+            "description": "このプラグインが送る通知ごとに使用有無と配信手段を決め、手段別にタイトル、本文、受信者を編集します。これらの通知は環境設定の「通知設定」タブには表示されません。",
+            "definition_active": "この通知を使用",
+            "channels": "配信手段",
+            "channel_template_missing": "この手段のテンプレートがないため配信されません",
+            "save_channels": "配信手段を保存",
+            "templates": "手段別テンプレート",
+            "edit_template": "テンプレート編集",
+            "template_active": "{{name}} / {{channel}} テンプレートを使用",
+            "reset": "デフォルト値に戻す",
+            "empty_message": "登録された通知がありません。",
+            "forbidden_message": "通知を表示する権限がありません。通知設定を変更する必要がある場合は、通知管理権限を持つ管理者に依頼してください。",
+            "load_failed_message": "通知一覧を読み込めませんでした。しばらくしてからページを再読み込みしてもう一度お試しください。",
+            "reset_success": "通知設定がデフォルト値に復元されました。",
+            "reset_failed": "通知設定の復元に失敗しました。",
+            "reset_modal": {
+                "title": "デフォルト値に復元",
+                "confirm_message": "この通知のすべてのチャネル テンプレートをデフォルト値に復元します。",
+                "warning_message": "保存されたタイトル/本文/受信者設定がすべて削除され、復旧できません。",
+                "target_label": "復元対象:",
+                "btn_confirm": "復元",
+                "btn_confirming": "復元中..."
+            },
+            "save_success": "通知設定が保存されました。",
+            "save_error": "通知設定の保存に失敗しました。",
+            "edit_modal": {
+                "title": "通知テンプレート編集",
+                "type_label": "タイプ:",
+                "channel_label": "チャネル:",
+                "subject": "タイトル",
+                "body": "本文",
+                "variables_title": "使用可能な変数",
+                "btn_preview": "プレビュー",
+                "validation_error": "入力情報を確認してください。"
+            },
+            "preview_modal": {
+                "title": "通知プレビュー",
+                "rendered_subject": "レンダリング済みタイトル",
+                "rendered_body": "レンダリング済み本文",
+                "btn_close": "閉じる"
             }
         }
     }

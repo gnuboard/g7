@@ -63,8 +63,9 @@
         <field name="password" value=""/>
       </field>
     </set-state>
-    <!-- 로그인 수단 판정(7.2.0)은 폼 저장소 밖(_global)에 둔다 — 전역이라 화면에 들어올 때마다 지난 판정을 비운다 -->
-    <set-state target="global" :adminLoginDiscovery="null" :adminLoginDiscoveryFor="null"/>
+    <!-- 로그인 수단 판정(7.2.0)은 폼 저장소 밖(_global)에 둔다 — 전역이라 화면에 들어올 때마다 지난 판정을 비운다.
+         지난 관리자의 알림·큐 작업 조회 권한 판정(`adminNotificationsReadable`·`adminQueueJobsReadable`, `_admin_base`)도 비운다 — 다른 관리자가 로그인하면 다시 판정한다 -->
+    <set-state target="global" :adminLoginDiscovery="null" :adminLoginDiscoveryFor="null" :adminNotificationsReadable="null" :adminQueueJobsReadable="null"/>
     <!-- 관리자 로그인 화면 자동 이동(7.2.0) — 사이트가 회사 계정 로그인으로 바로 보내도록 정했으면 이동한다. `?local=1`(비상 계정 진입로)이거나
          인계 교환·외부 인증 오류·동의 대기·연결 확인 대기로 돌아온 화면이면 이동하지 않는다(무한 왕복 방지). -->
     <action if="{{!!_global.appConfig?.auth?.auto_redirect?.admin &amp;&amp; !query?.local &amp;&amp; !query?.login_handoff &amp;&amp; !query?.sso_error &amp;&amp; !query?.sso_pending &amp;&amp; !query?.sso_link}}" handler="redirect" :replace="true" url="{{_global.appConfig.auth.auto_redirect.admin + (query?.redirect ? (_global.appConfig.auth.auto_redirect.admin.includes('?') ? '&amp;' : '?') + 'redirect=' + encodeURIComponent(query.redirect) : '')}}"/>

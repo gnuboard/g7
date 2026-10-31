@@ -35,6 +35,7 @@
                             "id": "custom_limit_text",
                             "type": "basic",
                             "name": "P",
+                            "if": "{{!!providers?.data}}",
                             "props": {
                                 "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
                             },

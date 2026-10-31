@@ -404,7 +404,7 @@ class AuthService
      * 이름이 없으면 로그인 완료 훅·활동 로그가 그 로그인을 비밀번호 로그인(`password`)으로 기록하게 되므로 받지 않는다.
      *
      * @param  array<string, mixed>  $context  호출자 컨텍스트
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws LoginMethodRequiredException 로그인 수단 이름(`login_method`)이 비었거나 문자열이 아닐 때
      */
@@ -451,7 +451,7 @@ class AuthService
      *
      * @param  string  $challengeId  단계 식별자
      * @param  array<string, mixed>  $context  컨텍스트
-     * @return void
+     * @return void 반환값 없음
      */
     private function rememberLoginContext(string $challengeId, array $context): void
     {
@@ -491,7 +491,7 @@ class AuthService
      * 비밀번호 로그인과 외부 인증 로그인이 같은 판정·같은 문구를 쓴다. 휴면은 통과한다(세션을 여는 자리에서 해제).
      *
      * @param  User  $user  로그인하는 회원
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws ValidationException 로그인을 허용하지 않는 상태일 때 (`email` 오류)
      */
@@ -522,7 +522,7 @@ class AuthService
      *
      * @param  User  $user  로그인하는 회원
      * @param  string  $guard  로그인 경로 (user | admin)
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws AuthorizationException 관리자 경로에 관리자가 아닌 회원일 때
      */
@@ -768,7 +768,7 @@ class AuthService
      * 초기화해 흔적도 남지 않습니다.
      *
      * @param  User|null  $user  검사 대상 사용자 (없으면 검사 대상 아님)
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws AccountLockedException 계정이 잠겨 있을 때
      */
@@ -1158,7 +1158,7 @@ class AuthService
      *
      * @param  User  $user  대상 사용자
      * @param  string  $plainTextToken  방금 발급한 평문 토큰 ({id}|{token} 형식)
-     * @return void
+     * @return void 반환값 없음
      */
     public function revokeIssuedSession(User $user, string $plainTextToken): void
     {
@@ -1608,7 +1608,7 @@ class AuthService
      * 모든 디바이스에서 사용자를 로그아웃시킵니다.
      *
      * @param  User  $user  로그아웃할 사용자
-     * @return void
+     * @return void 반환값 없음
      */
     public function logoutFromAllDevices(User $user): void
     {
@@ -1624,7 +1624,7 @@ class AuthService
      *
      * @param  string  $email  사용자 이메일
      * @param  string|null  $redirectPrefix  리다이렉트 경로 접두사 (예: 'admin')
-     * @return void
+     * @return void 반환값 없음
      *
      * @throws ValidationException 등록되지 않은 이메일일 때
      */
@@ -1681,9 +1681,11 @@ class AuthService
             $resetUrl .= (str_contains($resetUrl, '?') ? '&' : '?').http_build_query($resetQuery);
         }
 
-        // Hook 발생 (비밀번호 재설정 요청) — 알림 발송은 NotificationHookListener가 처리
+        // Hook 발생 (비밀번호 재설정 요청) — 알림 발송은 NotificationHookListener가 처리.
+        // `redirect_prefix` 는 재설정 화면이 관리자 쪽인지 알린다 — 메일의 사이트 링크도 같은 쪽 주소로 만든다.
         HookManager::doAction('core.auth.after_reset_password_request', $user, [
             'reset_url' => $resetUrl,
+            'redirect_prefix' => $redirectPrefix,
         ]);
     }
 
@@ -1692,9 +1694,10 @@ class AuthService
      *
      * @param  string  $token  비밀번호 재설정 토큰
      * @param  string  $email  사용자 이메일
+     * @param  string|null  $redirectPrefix  재설정 화면 구분값 (`admin` 이면 관리자 재설정 화면 — 비밀번호 인증 정책을 관리자 경로로 판정)
      * @return array{valid: bool, error?: string}
      */
-    public function validateResetToken(string $token, string $email): array
+    public function validateResetToken(string $token, string $email, ?string $redirectPrefix = null): array
     {
         // 1. 사용자 존재 확인
         $user = $this->userRepository->findByEmail($email);
@@ -1736,7 +1739,8 @@ class AuthService
 
         // 비밀번호 인증 정책 — 정책이 바뀌기 전에 받은 재설정 링크로 비밀번호를 만들지 못하게 한다. 유효한 링크를
         // 확인한 뒤에만 묻는다 — 앞에서 물으면 이메일과 아무 토큰으로 그 회원이 회사 계정 전용인지 드러난다(열거 방지).
-        app(PasswordAuthPolicyService::class)->assertAllowed(['identifier' => $email, 'user' => $user, 'guard' => 'user', 'purpose' => 'reset_complete']);
+        // 경로는 재설정 화면을 따른다 — 관리자 재설정 화면이면 거절 응답의 다른 로그인 수단 주소가 관리자 로그인으로 온다.
+        app(PasswordAuthPolicyService::class)->assertAllowed(['identifier' => $email, 'user' => $user, 'guard' => $redirectPrefix ? 'admin' : 'user', 'purpose' => 'reset_complete']);
 
         return ['valid' => true];
     }
@@ -1747,11 +1751,12 @@ class AuthService
      * @param  string  $token  비밀번호 재설정 토큰
      * @param  string  $email  사용자 이메일
      * @param  string  $password  새로운 비밀번호
-     * @return void
+     * @param  string|null  $redirectPrefix  재설정 화면 구분값 (`admin` 이면 관리자 재설정 화면 — 비밀번호 인증 정책을 관리자 경로로 판정)
+     * @return void 반환값 없음
      *
      * @throws ValidationException 등록되지 않은 이메일이거나 토큰이 유효하지 않을 때
      */
-    public function resetPassword(string $token, string $email, string $password): void
+    public function resetPassword(string $token, string $email, string $password, ?string $redirectPrefix = null): void
     {
         $user = $this->userRepository->findByEmail($email);
 
@@ -1792,7 +1797,7 @@ class AuthService
 
         // 비밀번호 인증 정책 — 정책이 바뀌기 전에 받은 재설정 링크로 비밀번호를 만들지 못하게 한다. 유효한 링크를
         // 확인한 뒤에만 묻는다 — 앞에서 물으면 이메일과 아무 토큰으로 그 회원이 회사 계정 전용인지 드러난다(열거 방지).
-        app(PasswordAuthPolicyService::class)->assertAllowed(['identifier' => $email, 'user' => $user, 'guard' => 'user', 'purpose' => 'reset_complete']);
+        app(PasswordAuthPolicyService::class)->assertAllowed(['identifier' => $email, 'user' => $user, 'guard' => $redirectPrefix ? 'admin' : 'user', 'purpose' => 'reset_complete']);
 
         // 재설정 메일을 받아 링크를 연 것 자체가 본인 확인이므로 로그인 잠금도 함께 푼다.
         // 잠금은 이메일만 알면 남이 걸 수 있어, 이 경로가 없으면 피해자는 차단 시간이 끝나기를
@@ -1846,7 +1851,7 @@ class AuthService
      * @param  User  $user  가입 완료된 사용자
      * @param  array  $data  요청 데이터
      * @param  Carbon  $agreedAt  동의 일시
-     * @return void
+     * @return void 반환값 없음
      */
     private function recordConsents(User $user, array $data, Carbon $agreedAt): void
     {

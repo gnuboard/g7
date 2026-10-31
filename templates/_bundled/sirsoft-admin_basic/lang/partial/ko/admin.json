@@ -1544,6 +1544,14 @@
       "expression_help": "예: * * * * * (매분), 0 0 * * * (매일 자정)",
       "timeout": "제한 시간",
       "timeout_help": "이 시간을 넘기면 실행을 멈춥니다. (1 ~ 86400초)",
+      "timeout_placeholder": "기본값",
+      "timeout_default": {
+        "artisan_sync": "비워 두면 시간 제한 없이 실행합니다.",
+        "artisan_queue": "비워 두면 600초입니다. 큐 연결의 재시도 대기 시간보다 길면 그보다 짧게 줄입니다.",
+        "shell": "비워 두면 60초입니다.",
+        "url": "비워 두면 30초입니다.",
+        "job": "Job 유형은 이 값을 쓰지 않고 Job 클래스에 정해진 제한 시간을 따릅니다."
+      },
       "seconds_suffix": "초",
       "minutes_suffix": "분",
       "without_overlapping": "중복 실행 방지",
@@ -1705,7 +1713,8 @@
       },
       "notice": {
         "unmeasurable": "현재 큐 드라이버({{driver}})는 대기 목록을 셀 수 없습니다. 대기 목록은 database 드라이버에서만 보입니다.",
-        "no_worker": "기본 큐 드라이버가 {{driver}}라 실패한 작업을 다시 넣어도 처리할 워커가 없습니다. 재시도는 거절됩니다."
+        "no_worker": "기본 큐 드라이버가 {{driver}}라 실패한 작업을 다시 넣어도 처리할 워커가 없습니다. 재시도는 거절됩니다.",
+        "no_permission": "큐 모니터링을 볼 권한이 없습니다. 「큐 작업 조회」 권한이 필요합니다."
       },
       "filter": {
         "queue": "큐",
@@ -1794,7 +1803,9 @@
       "errors": {
         "retry_failed": "재시도하지 못했습니다.",
         "delete_failed": "삭제하지 못했습니다.",
-        "detail_failed": "작업 상세를 불러오지 못했습니다."
+        "detail_failed": "작업 상세를 불러오지 못했습니다.",
+        "list_load_failed": "목록을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.",
+        "status_load_failed": "큐 현황을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요."
       }
     }
   },
@@ -2539,6 +2550,8 @@
         "btn_confirming": "복원 중..."
       },
       "no_template_for_channel": "이 채널에 대한 템플릿이 없습니다.",
+      "user_template_inactive": "빈 템플릿이 만들어졌습니다. 내용과 받는 사람을 채운 뒤 켜야 이 수단으로 발송됩니다.",
+      "user_template_created": "빈 템플릿을 만들었습니다. [편집]에서 내용과 받는 사람을 채운 뒤 켜세요.",
       "body_preview": "본문 미리보기",
       "save_success": "알림 설정이 저장되었습니다.",
       "save_error": "알림 설정 저장에 실패했습니다.",
@@ -2881,6 +2894,11 @@
       "next_run": "다음 실행",
       "inactive": "이 스케줄이 비활성이라 지금은 실행되지 않습니다.",
       "change": "스케줄 관리에서 변경"
+    },
+    "permission_required": {
+      "language_packs": "언어팩을 볼 권한이 없습니다. 「언어팩 조회」 권한이 필요합니다.",
+      "identity_providers": "본인인증 프로바이더를 볼 권한이 없습니다. 「프로바이더 설정 조회」 권한이 필요합니다.",
+      "identity_policies": "본인인증 정책을 볼 권한이 없습니다. 「정책 조회」 권한이 필요합니다."
     }
   },
   "templates": {

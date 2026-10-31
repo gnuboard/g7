@@ -1059,10 +1059,31 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "비밀번호를 만들 수 없는 회원(7.2.0) — 비밀번호 인증 정책(회사 계정 로그인 강제, IdP 가 이 사이트 비밀번호를 허용하지 않음 등)이 막으면\n                 회원 상세의 `password_status.can_set=false` 와 저장 때와 같은 문구가 온다. 칸·규칙·본인 확인 자리 대신 그 문구를 보인다\n                 (저장하면 본인 확인 왕복 뒤 403 으로 거절되므로 미리 알린다). 판정이 없는 응답(이전 서버)은 지금처럼 칸을 보인다.",
+                                                "id": "password_unsettable_notice",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!route?.id && user?.data?.password_status?.can_set === false}}",
+                                                "props": {
+                                                    "className": "alert-warning",
+                                                    "role": "status"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "text-warning-soft"
+                                                        },
+                                                        "text": "{{user?.data?.password_status?.set_blocked_message ?? ''}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
                                                 "id": "field_password_group",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{!!route?.id || !_local.form?.create_without_password}}",
+                                                "if": "{{!!route?.id ? user?.data?.password_status?.can_set !== false : !_local.form?.create_without_password}}",
                                                 "props": {
                                                     "className": "grid-2col-responsive"
                                                 },
@@ -1163,7 +1184,7 @@
                                                 "id": "password_rules_hint",
                                                 "type": "basic",
                                                 "name": "P",
-                                                "if": "{{!!route?.id || !_local.form?.create_without_password}}",
+                                                "if": "{{!!route?.id ? user?.data?.password_status?.can_set !== false : !_local.form?.create_without_password}}",
                                                 "props": {
                                                     "className": "flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2"
                                                 },
@@ -1216,7 +1237,7 @@
                                                 "id": "password_admin_assigned_notice",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{!!_local.form?.password && !(!!route?.id && route?.id === current_user?.data?.uuid)}}",
+                                                "if": "{{!!_local.form?.password && !(!!route?.id && route?.id === current_user?.data?.uuid) && !(!!route?.id && user?.data?.password_status?.can_set === false)}}",
                                                 "props": {
                                                     "className": "alert-info"
                                                 },
@@ -1236,7 +1257,7 @@
                                                 "id": "field_current_password",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{!!route?.id && route?.id === current_user?.data?.uuid && !!_local.form?.password && user?.data?.has_password !== false}}",
+                                                "if": "{{!!route?.id && route?.id === current_user?.data?.uuid && !!_local.form?.password && user?.data?.has_password !== false && user?.data?.password_status?.can_set !== false}}",
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -1295,7 +1316,7 @@
                                                 "id": "password_reauth_verification",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{!!route?.id && route?.id === current_user?.data?.uuid && !!_local.form?.password && user?.data?.has_password === false}}",
+                                                "if": "{{!!route?.id && route?.id === current_user?.data?.uuid && !!_local.form?.password && user?.data?.has_password === false && user?.data?.password_status?.can_set !== false}}",
                                                 "props": {
                                                     "className": "space-y-2"
                                                 },
@@ -1362,7 +1383,8 @@
                                                                                     "method": "POST",
                                                                                     "body": {
                                                                                         "purpose": "sensitive_action",
-                                                                                        "return_path": "{{'/admin/users/' + route.id + '/edit'}}"
+                                                                                        "return_path": "{{'/admin/users/' + route.id + '/edit'}}",
+                                                                                        "scope": "admin"
                                                                                     }
                                                                                 },
                                                                                 "onSuccess": [
@@ -2876,10 +2898,11 @@
                                                                             }
                                                                         },
                                                                         {
+                                                                            "comment": "서버 문구(비밀번호 인증 정책 거절 등)를 보인다 — 없을 때만 공통 「권한이 없습니다」",
                                                                             "handler": "toast",
                                                                             "params": {
                                                                                 "type": "error",
-                                                                                "message": "$t:auth.permission_denied"
+                                                                                "message": "{{error.message ?? '$t:auth.permission_denied'}}"
                                                                             }
                                                                         }
                                                                     ]
@@ -3146,10 +3169,11 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "서버 문구(비밀번호 인증 정책 거절 등)를 보인다 — 없을 때만 공통 「권한이 없습니다」",
                                                                 "handler": "toast",
                                                                 "params": {
                                                                     "type": "error",
-                                                                    "message": "$t:auth.permission_denied"
+                                                                    "message": "{{error.message ?? '$t:auth.permission_denied'}}"
                                                                 }
                                                             }
                                                         ]

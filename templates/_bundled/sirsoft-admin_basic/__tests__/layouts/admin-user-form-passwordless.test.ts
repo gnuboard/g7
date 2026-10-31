@@ -133,7 +133,8 @@ describe('sirsoft-admin_basic 회원 추가 「비밀번호 없이 만들기」 
   ])('%s 모드, 체크=%s — 비밀번호 두 칸·규칙 안내 보임=%s', (_mode, route, checked, visible) => {
     const group = byId('field_password_group');
     const rules = byId('password_rules_hint');
-    const scope = { route, _local: { form: { create_without_password: checked } } };
+    // 수정 모드는 회원 상세가 비밀번호를 만들 수 있다고 할 때(판정 없음 포함) 칸을 보인다 — 막힌 회원은 admin-user-form-password-unsettable 이 잰다
+    const scope = { route, user: { data: { password_status: {} } }, _local: { form: { create_without_password: checked } } };
 
     const inGroup = flatten(group).map((n) => n.id);
     expect(inGroup).toContain('field_password');

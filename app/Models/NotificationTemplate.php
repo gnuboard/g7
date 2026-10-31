@@ -89,6 +89,7 @@ class NotificationTemplate extends Model
         'recipients',
         'is_active',
         'is_default',
+        'is_user_created',
         'user_overrides',
         'updated_by',
     ];
@@ -103,6 +104,8 @@ class NotificationTemplate extends Model
         return [
             'recipients' => 'array',
             'user_overrides' => 'array',
+            // 운영자가 발송 수단을 켜서 만든 행 — 확장 선언에 없어 동기화 stale 정리에서 빠진다
+            'is_user_created' => 'boolean',
         ];
     }
 

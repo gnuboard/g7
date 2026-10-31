@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookListenerRegistrar;
@@ -9,6 +10,8 @@ use App\Extension\HookManager;
 use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Helpers\PermissionHelper;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
+use App\Seo\SitemapFileStore;
+use App\Seo\SitemapManager;
 use App\Support\AssetUrl;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Application;
@@ -19,6 +22,7 @@ use Illuminate\Foundation\Testing\WithCachedConfig;
 use Illuminate\Foundation\Testing\WithCachedRoutes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\IsolatedSitemapStorage;
 use Tests\Support\TestingDatabaseGuard;
 
 abstract class TestCase extends BaseTestCase
@@ -55,6 +59,7 @@ abstract class TestCase extends BaseTestCase
      * provider 자동 등록 가드가 올바른 시점에 적용됩니다.
      *
      * settings 디스크는 앱 부팅 직후 페이크로 대체합니다 (아래 fakeSettingsDisk).
+     * 사이트맵 저장소도 같은 시점에 테스트 전용 디스크로 돌립니다 (아래 isolateSitemapStorage).
      *
      * @return void 반환값 없음
      */
@@ -65,6 +70,7 @@ abstract class TestCase extends BaseTestCase
 
         $this->afterApplicationCreated(function () {
             $this->fakeSettingsDisk();
+            $this->isolateSitemapStorage();
             $this->pinEnvironmentDependentSettings();
 
             // 권한 스코프 캐시는 정적이라 프로세스 전체에 남는다 — 케이스마다 DB 는
@@ -143,6 +149,32 @@ abstract class TestCase extends BaseTestCase
     private function fakeSettingsDisk(): void
     {
         Storage::fake('settings');
+    }
+
+    /**
+     * 사이트맵 파일이 실제 storage 경로(storage/app/private/cache/sitemap)에 쓰이지 않게 합니다.
+     *
+     * 테스트 큐는 `sync` 라서 게시판·게시글·상품·페이지를 만들기만 해도 리스너가 사이트맵 재생성 잡을
+     * 즉시 실행하고, 그 잡이 테스트 DB 의 색인(테스트 주소)으로 실제 사이트맵 파일을 덮어씁니다.
+     * 같은 폴더에서 개발 서버를 띄우고 있으면 검색 로봇이 테스트 주소를 받아 갑니다.
+     *
+     * 제품의 사이트맵 소비자 바인딩(`local` 디스크)을 테스트용 저장소로 바꿉니다. 테스트가
+     * `Storage::fake('local')` 을 쓰면 그 페이크 `local` 을, 아니면 페이크 전용 디스크를 씁니다
+     * ({@see IsolatedSitemapStorage}). 부팅 중에 이미 만들어진 싱글톤은 버려 새 바인딩으로 다시 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
+    private function isolateSitemapStorage(): void
+    {
+        IsolatedSitemapStorage::prepareFallbackDisk();
+
+        foreach ([SitemapManager::class, SitemapFileStore::class] as $sitemapConsumer) {
+            $this->app->when($sitemapConsumer)
+                ->needs(StorageInterface::class)
+                ->give(fn () => new IsolatedSitemapStorage);
+
+            $this->app->forgetInstance($sitemapConsumer);
+        }
     }
 
     /**

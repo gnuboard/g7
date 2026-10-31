@@ -156,7 +156,7 @@ class Schedule extends Model
     /**
      * 모델 부팅 시 이벤트 등록
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected static function boot(): void
     {
@@ -176,7 +176,7 @@ class Schedule extends Model
     /**
      * 다음 실행 시간을 계산합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function calculateNextRunAt(): void
     {
@@ -236,6 +236,23 @@ class Schedule extends Model
     public function isOwned(): bool
     {
         return $this->extension_type instanceof ExtensionOwnerType;
+    }
+
+    /**
+     * 「운영자 수정」 기록 대상 필드를 반환합니다 — 소유 행만 기록합니다.
+     *
+     * 그 기록은 재동기화가 운영자 값을 덮지 않게 하는 표식이다. 직접 등록 행은 값 전부가 운영자 것이고
+     * 재동기화 대상도 아니라서 기록할 것이 없다(남기면 편집 창에 「운영자 수정됨」 배지만 붙는다).
+     *
+     * 저장되지 않은 빈 인스턴스는 전체 목록을 돌려준다 — 일괄 갱신(`Schedule::whereIn(...)->update()`)은 쿼리의 빈 모델로
+     * 「추적할 칸이 있는가」를 먼저 묻고, 행마다의 판정은 각 행 인스턴스가 다시 한다. 빈 모델이 빈 목록을 주면 소유 행의
+     * 일괄 켜기·끄기까지 기록되지 않는다.
+     *
+     * @return array<int, string> 기록 대상 필드 (저장된 직접 등록 행이면 빈 배열)
+     */
+    public function getTrackableFields(): array
+    {
+        return $this->exists && ! $this->isOwned() ? [] : $this->trackableFields;
     }
 
     /**

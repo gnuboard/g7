@@ -1233,7 +1233,7 @@
         "type": "composite",
         "description": "Data grid with sorting, filtering, and pagination",
         "path": "src/components/composite/DataGrid.tsx",
-        "skipBindingKeys": ["cellChildren", "expandChildren", "expandContext", "render", "subRowChildren", "subRowCondition", "footerCells", "footerCardChildren", "rowClassName", "href"],
+        "skipBindingKeys": ["cellChildren", "expandChildren", "expandContext", "render", "subRowChildren", "subRowCondition", "footerCells", "footerCardChildren", "rowClassName", "href", "disabledReason"],
         "props": {
           "pageHref": {
             "type": "string",
@@ -5054,7 +5054,7 @@
           "rowActions": {
             "type": "array",
             "required": false,
-            "description": "행별 커스텀 액션 버튼 (RowAction[])"
+            "description": "행별 커스텀 액션 버튼 (RowAction[]). 항목의 disabledField 는 행 값 경로(falsy 면 잠금), disabledReason 은 잠긴 항목 아래 안내 — 고정 문구 또는 행 표현식(예: {{row.delete_blocked_reason === 'owned' ? $t('…') : $t('…')}}). 엔진은 href·disabledReason 원문을 넘기고(skipBindingKeys) 행마다 푼다"
           },
           "emptyMessage": {
             "type": "string",

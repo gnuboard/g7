@@ -646,6 +646,37 @@ const resolveRowHref = (href: unknown, row: any): string | undefined => {
 };
 
 /**
+ * 행 메뉴 항목의 잠김 안내(`disabledReason`)를 그 행 문맥으로 평가합니다.
+ *
+ * 같은 「삭제」 항목이라도 행마다 막힌 까닭(권한 없음·코어/확장 소유 등)이 다를 수 있다 — 고정 문구 하나로는
+ * 사실과 다른 안내가 나온다. `href` 와 같이 `skipBindingKeys` 로 원문을 받아 행마다 푼다
+ * (예: `{{row.delete_blocked_reason === 'owned' ? $t('…owned') : $t('…permission')}}`). 식이 없는 고정 문구는
+ * 엔진이 이미 번역해 넘기므로 그대로 쓴다.
+ *
+ * @param reason 안내 문구 또는 행 표현식
+ * @param row 행 데이터
+ * @returns 그 행의 안내 (없거나 풀 수 없으면 undefined)
+ */
+const resolveRowDisabledReason = (reason: unknown, row: any): string | undefined => {
+  if (typeof reason !== 'string' || reason.trim() === '') return undefined;
+  if (!reason.includes('{{')) return reason;
+
+  const engine = (window as any).G7Core?.getDataBindingEngine?.();
+  if (!engine?.resolveBindings) {
+    logger.warn('G7Core.getDataBindingEngine 미노출 — 행 메뉴 안내를 풀 수 없습니다:', reason);
+    return undefined;
+  }
+
+  try {
+    const resolved = engine.resolveBindings(reason, { row, item: row, $item: row }, { skipCache: true });
+    return typeof resolved === 'string' && resolved !== '' ? resolved : undefined;
+  } catch (error) {
+    logger.warn('행 메뉴 안내 해석 실패:', error);
+    return undefined;
+  }
+};
+
+/**
  * cellChildren 배열을 React 요소로 렌더링합니다.
  *
  * G7Core.renderItemChildren을 사용하여 템플릿 엔진의 모든 표현식 처리 기능을 활용합니다.
@@ -1320,6 +1351,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
           // 해석을 마쳤으므로 지운다 — ActionMenu 는 남아 있는 disabledField 를 「해석 안 됨」으로 보고 잠근다
           disabledField: undefined,
           disabled: isDisabled,
+          // 잠김 안내는 행마다 다를 수 있다 — 잠긴 행만 푼다
+          disabledReason: isDisabled ? resolveRowDisabledReason(action.disabledReason, row) : undefined,
           // 주소가 있는 항목(보기·수정)은 행 메뉴에서 링크로 그려진다 — 행마다 평가(가운데 클릭·Ctrl+클릭 새 탭)
           href: resolveRowHref((action as ActionMenuItem).href, row),
           onClick: () => handleRowAction(action.id, row),

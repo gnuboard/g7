@@ -91,7 +91,7 @@
                         <fail>
                           <toast type="error" message="{{error.message}}"/>
                         </fail>
-                        <body purpose="{{_local.purpose ?? 'sensitive_action'}}"/>
+                        <body purpose="{{_local.purpose ?? 'sensitive_action'}}" scope="admin"/>
                       </api-call>
                     </sequence>
                   </on>

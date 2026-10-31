@@ -252,16 +252,26 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 예약 작업 — 보존 기간 정리(매일).
+     * 예약 작업 — 보존 기간 정리(매일 0시, 사이트 시간대).
      *
-     * @return array<int, array<string, string>> 예약 작업
+     * 이름과 설명은 ko, en 으로 적고 그 밖의 언어는 언어팩 seed 가 `name` 으로 채운다. 명령 문자열은 바꾸지 않는다 — 앞서 옛 형식이
+     * 명령에서 만든 자동 이름 행(`sirsoft-social-login-prune`)을 동기화가 이 `name` 으로 이어받는 기준이다.
+     *
+     * @return array<int, array<string, mixed>> 예약 작업
      */
     public function getSchedules(): array
     {
         return [[
+            'name' => 'prune',
+            'type' => 'artisan',
+            'label' => ['ko' => '소셜 로그인 보존 기간 정리', 'en' => 'Social login retention cleanup'],
+            'description' => [
+                'ko' => '보존 기간이 지난 원본 프로필 사본, 로그인 시도 기록, 웹훅 수신 이력과 만료된 모의 제공자 표지를 정리합니다.',
+                'en' => 'Cleans up raw profile copies, sign-in attempts and webhook history past their retention period, and expired mock provider flags.',
+            ],
             'command' => 'sirsoft-social_login:prune',
-            'schedule' => 'daily',
-            'description' => '소셜 로그인 보존 기간 정리 (원본 프로필 · 시도 기록 · 웹훅 수신 이력 · 모의 제공자 표지)',
+            'frequency' => 'daily',
+            'expression' => '0 0 * * *',
         ]];
     }
 

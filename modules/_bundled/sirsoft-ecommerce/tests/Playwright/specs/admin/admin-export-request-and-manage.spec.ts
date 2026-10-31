@@ -472,12 +472,19 @@ test.describe('내보내기 요청·관리', () => {
     await expect(popup).toHaveURL(new RegExp(`/admin/users/${requester.uuid}$`), { timeout: 10_000 });
     await popup.close();
 
-    // 이 요청자의 내보내기만 보기 — 같은 화면에서 검색 조건만 바뀌고 필터 칸에도 그대로 담긴다
+    // 이 요청자의 내보내기만 보기 — 같은 화면에서 검색 조건만 바뀌고 필터 칸에도 그대로 담긴다.
+    // 실제 거르기는 회원 고유ID 로 한다(이름 포함 검색이면 이름이 겹치는 다른 요청자의 작업이 섞인다)
     await nameCell.click();
+    const filtered = page.waitForResponse((res) => res.url().includes(EXPORT_API) && res.url().includes('requester_uuid='));
     await page.getByText('이 요청자의 내보내기만 보기', { exact: true }).click();
     await expect(page).toHaveURL(/search_field=requester/, { timeout: 10_000 });
     expect(decodeURIComponent(new URL(page.url()).searchParams.get('search_keyword') ?? '')).toBe(name);
+    expect(new URL(page.url()).searchParams.get('requester_uuid')).toBe(requester.uuid);
     await expect(page.locator('input[name="search"]:visible').first()).toHaveValue(name);
+    const listed = await (await filtered).json();
+    const rows: Array<{ requester?: { uuid?: string } }> = listed?.data?.data ?? [];
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((row) => row.requester?.uuid === requester.uuid), '다른 요청자의 작업이 섞였다').toBe(true);
   });
 
   // @scenario type=orders, scope=filter

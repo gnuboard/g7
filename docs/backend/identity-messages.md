@@ -52,11 +52,11 @@ type 은 `App\Notifications\Identity\IdentityNotificationType` 으로 만듭니�
 | 변수 | 설명 |
 |------|------|
 | `{code}` | 인증 코드 (코드 입력 흐름) — 로그에서 가림 |
-| `{action_url}` | 검증 링크 URL (링크 흐름, 예: 비밀번호 재설정) — 로그에서 가림 |
+| `{action_url}` | 검증 링크 URL (링크 흐름, 예: 비밀번호 재설정) — 로그에서 가림. 「사용자 화면 URL」 기준이고, 관리자 화면에서 시작한 인증(`scope=admin`)은 사이트 주소 기준(사이트 자체의 확인 화면, 7.2.0+) |
 | `{expire_minutes}` | 만료까지 남은 분 |
 | `{purpose_label}` | 인증 목적 라벨 (다국어) |
 | `{app_name}` | 사이트명 |
-| `{site_url}` | 사이트 URL |
+| `{site_url}` | 사이트 링크 — 「사용자 화면 URL」(비면 사이트 주소). 관리자 화면에서 시작한 인증(challenge 요청 `scope=admin`)과 관리자에게만 적용되는 정책(`applies_to=admin`)의 인증 메일은 사이트 주소 (7.2.0+) |
 | `{recipient_email}` | 받는 사람 이메일 |
 
 평문 코드는 메일 본문 밖에 저장되지 않습니다 — 인증 이력(`identity_verification_logs.metadata`)은 `code_hash` 만, 발송 로그는 가린 본문만 남깁니다.

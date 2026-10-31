@@ -113,7 +113,8 @@
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | search_field | query | string | 아니오 | `all` · `file_name` · `requester` | 검색 대상 |
-| search_keyword | query | string | 아니오 | max 200 | 검색어 (요청자는 이름·이메일) |
+| search_keyword | query | string | 아니오 | max 200 | 검색어 (요청자는 요청 때 이름·지금 이름·이메일, 부분 일치). `%`·`_` 는 글자 그대로 찾는다 |
+| requester_uuid | query | string | 아니오 | 회원 UUID | 요청자 한정 — 그 회원 한 사람의 작업만 (요청자 메뉴 「이 요청자의 내보내기만 보기」) |
 | statuses[] | query | string[] | 아니오 | `pending` · `processing` · `completed` · `failed` · `expired` | 진행 상황 |
 | types[] | query | string[] | 아니오 | 유형 키 | 작업 유형 |
 | personal | query | string | 아니오 | `all` · `with` · `without` | 개인정보 포함 여부 |
@@ -146,7 +147,7 @@
 | contains_personal_data · reason | boolean · string | 개인정보 포함 여부와 사유 |
 | warnings[] | array | 요청 당시 경고 `{code, label}` |
 | error_code · error_message | string | 실패 사유 키와 문장 |
-| summary | object | `{scope, period, row_unit, locale_mode, include_totals, field_count, selected_count}` 요청 조건 요약 |
+| summary | object | `{scope, period, row_unit, locale_mode, include_totals, field_count, selected_count}` 요청 조건 요약. `period` 는 실제로 걸린 기간 — 직접 지정은 `시작일 ~ 종료일`, 목록의 조회 기간이 걸렸으면 「목록의 현재 기간」, 「선택한 항목」이거나 걸린 기간이 없으면 「적용 안 함」 |
 | requested_at · cutoff_at · started_at · completed_at · expires_at | string | 보는 사람 시간대 일시. `cutoff_at` 뒤에 생긴 행은 파일에 없다 |
 | abilities | object | `can_view_downloads` · `can_download`(완료+권한+범위+원본 조회 권한, 남의 파일이면 원본 조회 범위 「전체」) · `can_delete`(진행중 제외) · `can_retry`(실패만) · `retry_needs_reason`(남의 개인정보 작업) |
 
@@ -156,6 +157,7 @@
 
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.exports.show` · **권한**: `exports.read` (범위 검사 — 범위 밖 403 `scope_denied`)
 - 응답: 「작업 필드」 한 건
+- 없거나 이미 지운 작업 번호는 이 절의 모든 `{export}` 경로에서 404 `{"success":false,"message":"내보내기 작업을 찾을 수 없습니다."}`(요청 언어)
 
 ### GET /api/modules/sirsoft-ecommerce/admin/exports/{export}/download
 

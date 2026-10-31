@@ -30,6 +30,7 @@ axes:
     - css_override_c05
     - css_override_c06
     - css_override_c07
+    - css_override_c08
     # tests/Unit/Support/Template/ColorSchemeDeclarationTest.php — features.color_scheme 세 전략 선언 검증·정규화
     - color_decl_c01
     - color_decl_c02

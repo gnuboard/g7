@@ -163,6 +163,7 @@
     "change_password_subtitle": "新しいパスワードを入力してください",
     "change_password_first_time_notice": "パスワードを初めて設定します。現在のパスワードなしで、新しいパスワードだけを入力してください。",
     "change_password_reauth_unavailable": "このアカウントは登録したメールアドレスで本人確認メールを受け取れないため、パスワードを設定できません。管理者にお問い合わせください。",
+    "change_password_reauth_other": "このアカウントは登録したメールアドレスで本人確認メールを受け取れません。新しいパスワードを保存すると、このアカウントで使える別の方法（会社アカウントでの再ログインなど）で本人確認を行います。",
     "change_password_section": "新しいパスワード入力",
     "change_password_button": "パスワード変更",
     "change_password_submit": "パスワード変更",
@@ -179,7 +180,7 @@
       "changed_toast": "パスワードが変更されました。他の端末ではログアウトされました。"
     },
     "verify_identity_title": "本人確認",
-    "verify_identity_message": "自分の情報を修正するには本人確認が必要です",
+    "verify_identity_message": "自分の情報を修正するには本人確認が必要です。",
     "locked_by_company": "会社アカウントで管理している項目です"
   },
   "orders": {

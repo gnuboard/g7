@@ -119,7 +119,7 @@
                                     "props": {
                                         "className": "text-body"
                                     },
-                                    "text": "{{_global.queueJobDetail?.attempts ?? 0}}{{_global.queueJobDetail?.max_tries ? ' / ' + _global.queueJobDetail.max_tries : ''}}"
+                                    "text": "{{_global.queueJobDetail?.attempts ?? '-'}}{{_global.queueJobDetail?.max_tries ? ' / ' + _global.queueJobDetail.max_tries : ''}}"
                                 }
                             ]
                         },

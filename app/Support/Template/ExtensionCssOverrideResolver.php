@@ -53,7 +53,8 @@ final class ExtensionCssOverrideResolver
             $constraint = is_array($entry) ? ($entry['targetVersion'] ?? null) : null;
 
             if (! is_string($target) || $target === '' || ! is_string($path) || ! str_starts_with($path, self::PATH_PREFIX) || str_contains($path, '..')) {
-                $errors[] = __('templates.errors.extension_css_override_invalid', ['index' => $index]);
+                // 문구는 「N 번째 항목」 서수다 — 배열 키(0부터)가 아니라 사람이 세는 순번(1부터)을 넘긴다.
+                $errors[] = __('templates.errors.extension_css_override_invalid', ['index' => $index + 1]);
 
                 continue;
             }

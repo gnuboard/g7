@@ -211,6 +211,10 @@ class NotificationDefinitionController extends AdminBaseController
                 if (! empty($defaultData)) {
                     $this->templateService->resetToDefault($template, $defaultData);
                     $resetCount++;
+                } elseif ($template->is_user_created) {
+                    // 운영자가 수단을 켜서 만든 템플릿은 선언된 기본값이 없다 — 만들었을 때의 빈 상태(꺼짐)로 되돌린다
+                    $this->templateService->resetUserCreated($template);
+                    $resetCount++;
                 } else {
                     $this->templateService->notifyLegacyResetWithoutDefault($template);
                 }

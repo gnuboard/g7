@@ -1866,6 +1866,7 @@ return [
         'downloads_retrieved' => 'Download history loaded.',
         'deleted' => 'Export file deleted.',
         'bulk_deleted' => 'Deleted :count. (Skipped :skipped)',
+        'not_found' => 'Export job not found.',
     ],
     'lifecycle' => [
         'purge_failed' => 'Removal stopped because the exported files could not be deleted. Check the storage permissions and status, then remove the module again (files that may hold personal data are not left behind).',

@@ -166,6 +166,12 @@ class SocialReauthIdentityProvider implements IdentityVerificationInterface, Use
             'expires_at' => $expiresAt,
         ]);
 
+        // 화면의 「본인 확인 계속하기」(수단을 비운 코어 요청)는 응답의 이동 주소로 간다 — 연결한 제공자 인가 화면으로 보내는 같은 출처
+        // 시작 주소를 싣는다. 이 플러그인의 제공자 버튼이 시작한 요청은 버튼이 고른 제공자로 직접 가므로 싣지 않는다.
+        $redirectUrl = ($context['origin_identifier'] ?? null) === SocialReauthService::ORIGIN_IDENTIFIER
+            ? null
+            : $this->reauth->prepareContinue($target, (string) $log->id, is_string($context['return_path'] ?? null) ? $context['return_path'] : null);
+
         return new VerificationChallenge(
             id: $log->id,
             providerId: $this->getId(),
@@ -174,7 +180,8 @@ class SocialReauthIdentityProvider implements IdentityVerificationInterface, Use
             targetHash: $targetHash,
             expiresAt: $expiresAt,
             renderHint: 'external_redirect',
-            publicPayload: ['delivery' => 'none'],
+            redirectUrl: $redirectUrl,
+            publicPayload: $redirectUrl !== null ? ['delivery' => 'none', 'redirect_url' => $redirectUrl] : ['delivery' => 'none'],
             maxAttempts: 1,
         );
     }

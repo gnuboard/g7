@@ -8,6 +8,7 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Helpers\TimezoneHelper;
 use App\Services\NotificationRecipientCapability;
 use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTrackingDirectionEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\Concerns\ResolvesClaimIdentity;
@@ -127,7 +128,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
      * 훅 이벤트를 처리합니다. (필터 매핑을 사용하므로 미사용)
      *
      * @param  mixed  ...$args  훅 인수
-     * @return void
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -210,7 +211,7 @@ class ClaimNotificationDataListener implements HookListenerInterface
     }
 
     /**
-     * 수신자가 운영자면 클레임 링크를 관리자 화면 주소로 올립니다.
+     * 수신자가 운영자면 클레임 링크를 관리자 화면 주소로, 사이트 링크를 사이트 주소로 올립니다.
      *
      * **유형 이름으로 관리자 여부를 판정하지 않습니다.** 운영자는 관리자 화면에서 어떤
      * 알림의 수신자든 바꿀 수 있어(`claim_withdrawn` 을 `trigger_user` 로 바꾸는 등),
@@ -241,6 +242,9 @@ class ClaimNotificationDataListener implements HookListenerInterface
         if (! app(NotificationRecipientCapability::class)->can($notifiable, self::ADMIN_CLAIM_PERMISSION)) {
             return $data;
         }
+
+        // 운영자에게 가는 알림의 사이트 주소는 관리자 화면 기준(사이트 주소)이다 — 회원 기본값은 사용자 화면 URL(주문 알림과 같다).
+        $data['site_url'] = SiteUrl::base();
 
         $claimNumber = (string) ($context['claim_number'] ?? '');
         $data['claim_url'] = $claimNumber === ''

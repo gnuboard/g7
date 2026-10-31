@@ -1273,6 +1273,7 @@ return [
         'login_attempt_enabled' => 'ログイン試行制限',
         'registration_enabled' => '一般会員登録を受け付ける',
         'return_path' => '戻り先の画面パス',
+        'scope' => '開始した画面の範囲',
         'auth_token_lifetime' => '認証トークン有効期限',
         'max_login_attempts' => '最大ログイン試行回数',
         'login_lockout_time' => 'ログインブロック時間',

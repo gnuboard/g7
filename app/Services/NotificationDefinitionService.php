@@ -115,7 +115,15 @@ class NotificationDefinitionService
             $data = HookManager::applyFilters('core.identity.message_definition.filter_update_data', $data, $definition);
         }
 
-        $updated = $this->repository->update($definition, $data);
+        $updated = DB::transaction(function () use ($definition, $data) {
+            $updated = $this->repository->update($definition, $data);
+
+            if (array_key_exists('channels', $data) && is_array($data['channels'])) {
+                $this->ensureTemplatesForChannels($updated, $data['channels']);
+            }
+
+            return $updated;
+        });
 
         $this->invalidateCache($definition->type);
 
@@ -125,6 +133,42 @@ class NotificationDefinitionService
         }
 
         return $updated;
+    }
+
+    /**
+     * 켠 발송 수단 가운데 템플릿이 없는 수단에 빈 템플릿을 만듭니다.
+     *
+     * 발송은 템플릿 행이 있는 채널로만 나가므로, 어느 확장도 그 수단의 템플릿을 선언하지 않았으면 운영자가 수단을 켜도
+     * 편집할 곳도 발송도 없다. 저장 버튼으로 모아 보내는 화면과 스위치마다 즉시 보내는 화면이 모두 이 경로를 지난다.
+     * 빈 행은 꺼진 상태·받는 사람 없음으로 만들고(내용을 채우기 전에 발송되지 않게), 확장 업데이트의 stale 정리에서
+     * 빠지도록 운영자 생성 표식을 단다. 수단을 다시 꺼도 행은 남긴다 — 다시 켜면 써 둔 내용이 그대로다.
+     *
+     * @param  NotificationDefinition  $definition  저장된 알림 정의
+     * @param  array<int, mixed>  $channels  저장한 발송 수단 목록
+     * @return void 반환값 없음
+     */
+    private function ensureTemplatesForChannels(NotificationDefinition $definition, array $channels): void
+    {
+        foreach (array_unique(array_filter($channels, 'is_string')) as $channel) {
+            if ($this->templateRepository->findByDefinitionAndChannel((int) $definition->id, $channel) !== null) {
+                continue;
+            }
+
+            $this->templateRepository->updateOrCreate(
+                ['definition_id' => $definition->id, 'channel' => $channel],
+                [
+                    // 제목은 비워 둔다(null) — 빈 배열이면 「값이 있는데 기본 언어가 비었다」로 읽혀 편집 창 저장이 거절된다.
+                    // 제목이 없는 채널(문자 등)도 있어 제목은 선택 칸이다
+                    'subject' => null,
+                    'body' => [],
+                    'click_url' => null,
+                    'recipients' => [],
+                    'is_active' => false,
+                    'is_default' => true,
+                    'is_user_created' => true,
+                ]
+            );
+        }
     }
 
     /**

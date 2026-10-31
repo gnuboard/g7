@@ -372,3 +372,32 @@ describe('렌더 — 확인 창 결과 단계가 줄마다 성공·실패와 서
         expect(container.textContent).toContain('성공 1건, 실패 1건');
     });
 });
+
+describe('시도 횟수 — 모르면 0 이 아니라 「-」', () => {
+    /** 「{{a}}{{b}}」 꼴 글을 칸마다 평가해 이어 붙입니다. */
+    function renderText(text: string, scope: Record<string, any>): string {
+        return text.replace(/\{\{([\s\S]+?)\}\}/g, (_m, body) => String(evalExpr(`{{${body}}}`, scope) ?? ''));
+    }
+
+    const attemptTexts = (node: any) =>
+        collect(node, (n) => typeof n.text === 'string' && n.text.includes('attempts') && n.text.includes('{{')).map((n) => n.text);
+
+    // @scenario e2e=queue_tab_failed_retry
+    // @effects failed_attempts_from_log_or_unknown
+    it('실패 목록 칸은 시도 수를 모르면(null) 「-」, 알면 그 값을 보인다', () => {
+        const [text] = attemptTexts(failedGrid);
+        expect(text).toBeTruthy();
+        expect(renderText(text, { row: { attempts: null, max_tries: 3 } })).toBe('- / 3');
+        expect(renderText(text, { row: { attempts: 1, max_tries: null } })).toBe('1');
+        expect(renderText(text, { row: { attempts: 0, max_tries: null } })).toBe('0');
+    });
+
+    // @scenario e2e=queue_tab_failed_retry
+    // @effects failed_attempts_from_log_or_unknown
+    it('상세 창도 시도 수를 모르면 「-」 다', () => {
+        const [text] = attemptTexts(detailModal);
+        expect(text).toBeTruthy();
+        expect(renderText(text, { _global: { queueJobDetail: { attempts: null, max_tries: null } } })).toBe('-');
+        expect(renderText(text, { _global: { queueJobDetail: { attempts: 2, max_tries: 3 } } })).toBe('2 / 3');
+    });
+});

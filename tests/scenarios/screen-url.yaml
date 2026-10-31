@@ -23,6 +23,7 @@ axes:
     - core_notifications
     - reset_password
     - mail_identity
+    - mail_identity_scope
     - identity_return
     - sitemap
 
@@ -43,5 +44,7 @@ effects:
   - mail_identity_site_url_user_screen
   - identity_return_allows_user_screen_origin
   - third_party_return_still_rejected
+  - mail_identity_admin_scope_uses_site_url
+  - identity_return_admin_path_uses_site_url
   - admin_links_keep_site_url
   - sitemap_loc_uses_user_screen_url

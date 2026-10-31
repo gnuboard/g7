@@ -554,6 +554,7 @@
                                                             "id": "orphan_cleanup_schedule_notice_link",
                                                             "type": "basic",
                                                             "name": "A",
+                                                            "if": "{{_computed.canReadSchedules !== false}}",
                                                             "props": {
                                                                 "href": "/admin/schedules?extension_type=core&search_field=identifier&search_keyword=attachments-prune-orphans",
                                                                 "className": "text-link"

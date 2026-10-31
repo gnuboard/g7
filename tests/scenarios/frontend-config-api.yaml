@@ -17,6 +17,7 @@ axes:
     - no_template
     - admin_auth
     - shell_bytes
+    - filter_throws
 
 effects:
   - user_api_equals_shell
@@ -25,3 +26,4 @@ effects:
   - api_works_without_template
   - admin_api_requires_admin
   - shell_output_unchanged_except_custom_routes
+  - filter_exception_falls_back

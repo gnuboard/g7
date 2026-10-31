@@ -5,6 +5,8 @@ namespace Plugins\Sirsoft\SocialLogin\Models;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+use Plugins\Sirsoft\SocialLogin\Concerns\SavesOverUnreadableEncryptedValues;
 
 /**
  * 회원과 제공자 계정의 연결 1행.
@@ -22,16 +24,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $avatar_url
  * @property string|null $access_token
  * @property string|null $refresh_token
- * @property \Illuminate\Support\Carbon|null $token_expires_at
+ * @property Carbon|null $token_expires_at
  * @property array<string, mixed>|null $profile_raw
- * @property \Illuminate\Support\Carbon|null $profile_raw_expires_at
- * @property \Illuminate\Support\Carbon $linked_at
- * @property \Illuminate\Support\Carbon|null $last_login_at
+ * @property Carbon|null $profile_raw_expires_at
+ * @property Carbon $linked_at
+ * @property Carbon|null $last_login_at
  *
  * @since 1.0.0
  */
 class SocialAccount extends Model
 {
+    use SavesOverUnreadableEncryptedValues;
+
     /** @var string 테이블명 */
     protected $table = 'social_accounts';
 

@@ -3,10 +3,14 @@
 namespace App\Http\Resources;
 
 use App\Enums\ConsentType;
+use App\Enums\IdentityVerificationPurpose;
 use App\Enums\UserStatus;
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Extension\HookManager;
+use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\User;
+use App\Services\Auth\PasswordAuthPolicyService;
 use App\Services\MemberNotificationService;
 use App\Services\PasswordExpiryService;
 use App\Services\UserLockedFieldsService;
@@ -466,6 +470,11 @@ class UserResource extends BaseApiResource
             // 외부(회사 계정)가 관리해 화면에서 바꿀 수 없는 칸 — 마이페이지가 읽기 전용으로 그린다(7.2.0)
             'locked_fields' => app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE),
             'email_deliverable' => ! UndeliverableEmail::is($this->resource->email),
+            // 비밀번호를 만들 수 있는지(7.2.0) — 비밀번호 인증 정책(회사 계정 로그인 강제 등)이 막으면 false 와 저장 때와 같은 안내 문구.
+            // 비밀번호 변경 화면이 칸과 본인 확인 대신 안내를 미리 보인다.
+            ...$this->passwordSettableFields(),
+            // 메일·비밀번호를 쓸 수 없는 회원의 민감 작업 재확인에 코어가 실제로 고를 수단(7.2.0) — 화면 안내가 실제 수단과 같은 판정을 쓴다.
+            'reauth_provider' => $this->reauthProviderId(),
             'withdrawn_at' => $this->getValue('withdrawn_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('withdrawn_at'))
                 : null,
@@ -507,7 +516,7 @@ class UserResource extends BaseApiResource
      *
      * 비밀번호가 없는 회원은 만료 정책 비대상이라 `applies=false`·예정일 null·`change_required=false` 로 「해당 없음」 이 된다.
      *
-     * @return array{has_password: bool, changed_at: string|null, expires_at: string|null, expired: bool, applies: bool, policy: string, change_required: bool, postponed_until: string|null, days_left: int|null} 비밀번호 상태
+     * @return array{has_password: bool, can_set: bool, set_blocked_message: string|null, changed_at: string|null, expires_at: string|null, expired: bool, applies: bool, policy: string, change_required: bool, postponed_until: string|null, days_left: int|null} 비밀번호 상태
      */
     public function passwordStatusArray(): array
     {
@@ -517,8 +526,13 @@ class UserResource extends BaseApiResource
         $expiresAt = $applies ? $expiry->expiresAt($this->resource) : null;
         $postponedUntil = $this->getValue('password_change_postponed_until');
 
+        $settable = $this->passwordSettableFields(request()->user());
+
         return [
             'has_password' => $hasPassword,
+            // 이 화면을 보는 사람이 이 회원의 비밀번호를 정할 수 있는지(7.2.0) — 저장 때와 같은 판정(본인 `set_password`, 남 `admin_set_password`)
+            'can_set' => $settable['can_set_password'],
+            'set_blocked_message' => $settable['password_set_blocked_message'],
             'changed_at' => $this->getValue('password_changed_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('password_changed_at'))
                 : null,
@@ -532,6 +546,44 @@ class UserResource extends BaseApiResource
                 : null,
             'days_left' => $expiresAt !== null ? $expiry->daysLeft($this->resource) : null,
         ];
+    }
+
+    /**
+     * 비밀번호를 정할 수 있는지와, 막혔으면 그 안내 문구를 반환합니다 (7.2.0).
+     *
+     * 저장 경로(`UserService::updateUser`)와 같은 판정(`PasswordAuthPolicyService::decideSetPassword`)이라 화면이 미리 알린 결과와
+     * 저장 결과가 갈리지 않는다. 문구는 저장 403(`auth.password_auth_disabled`)의 문구와 같다.
+     *
+     * @param  User|null  $actor  정하는 사람 (null 이면 본인)
+     * @return array{can_set_password: bool, password_set_blocked_message: string|null} 판정 필드
+     */
+    private function passwordSettableFields(?User $actor = null): array
+    {
+        $decision = app(PasswordAuthPolicyService::class)->decideSetPassword($this->resource, $actor instanceof User ? $actor : null);
+
+        return [
+            'can_set_password' => $decision->allowed,
+            'password_set_blocked_message' => $decision->allowed ? null : PasswordAuthDisallowedException::localizedMessage($decision),
+        ];
+    }
+
+    /**
+     * 메일·비밀번호를 쓸 수 없는 회원의 민감 작업 재확인에 코어가 실제로 고를 수단 ID 를 반환합니다 (7.2.0).
+     *
+     * 비밀번호가 있거나 가입 이메일로 메일을 받을 수 있는 회원은 그 수단(비밀번호·인증번호 메일)을 쓰므로 null. 그 밖의 회원은 코어 재확인
+     * 시작(`IdentityVerificationService::start`)과 같은 해석으로 고른 수단의 ID, 그 회원에게 쓸 수 있는 수단이 없으면 null.
+     *
+     * @return string|null 수단 ID
+     */
+    private function reauthProviderId(): ?string
+    {
+        if ($this->resource->hasPassword() || ! UndeliverableEmail::is($this->resource->email)) {
+            return null;
+        }
+
+        return app(IdentityVerificationManager::class)
+            ->resolveUsableForUser(IdentityVerificationPurpose::SensitiveAction->value, $this->resource)
+            ?->getId();
     }
 
     /**

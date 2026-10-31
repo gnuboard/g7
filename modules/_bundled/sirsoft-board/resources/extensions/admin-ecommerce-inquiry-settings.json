@@ -16,8 +16,18 @@
             "params": {
                 "per_page": "200"
             },
-            "fallback": null,
-            "comment": "문의로 쓸 수 있는 게시판 후보 — 셀렉트 하나를 채우는 용도라 200건까지만 받고, 이 확장이 붙는 기본정보 탭이 열렸을 때만 읽는다"
+            "errorHandling": {
+                "403": {
+                    "handler": "suppress"
+                }
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "load_failed": true
+                }
+            },
+            "comment": "문의로 쓸 수 있는 게시판 후보 — 셀렉트 하나를 채우는 용도라 200건까지만 받고, 이 확장이 붙는 기본정보 탭이 열렸을 때만 읽는다. 쇼핑몰 설정 권한만 있고 게시판 조회 권한은 없는 운영자도 이 화면을 열 수 있으므로 권한 없음(403)은 알림 없이 넘기고, 서버 오류 같은 다른 실패는 평소대로 알린다. 어느 쪽이든 목록 자리는 `load_failed` 표시가 있는 빈 목록이 되어 칸이 저장값을 보인 채 잠긴다"
         }
     ],
     "components": [
@@ -60,18 +70,29 @@
                                     "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_label"
                                 },
                                 {
+                                    "comment": "게시판 목록을 못 받으면(게시판 조회 권한이 없는 운영자 등) 칸을 잠그고 저장된 값 하나만 선택지로 둔다 — 열어 두면 안내(빈 값)만 고를 수 있어 저장된 문의 게시판이 지워진다",
                                     "id": "inquiry_board_select",
                                     "type": "basic",
                                     "name": "Select",
                                     "props": {
                                         "name": "inquiry.board_slug",
                                         "value": "{{_local.form?.inquiry?.board_slug ?? ''}}",
-                                        "options": "{{[{value: '', label: $t('sirsoft-board.admin.ecommerce_settings.inquiry.board_placeholder')}].concat((board_list_for_inquiry?.data?.data ?? []).map(b => ({value: b.slug, label: b.name})))}}",
+                                        "options": "{{board_list_for_inquiry?.data?.load_failed ? [{value: _local.form?.inquiry?.board_slug ?? '', label: _local.form?.inquiry?.board_slug || $t('sirsoft-board.admin.ecommerce_settings.inquiry.board_placeholder')}] : [{value: '', label: $t('sirsoft-board.admin.ecommerce_settings.inquiry.board_placeholder')}].concat((board_list_for_inquiry?.data?.data ?? []).map(b => ({value: b.slug, label: b.name})))}}",
                                         "className": "{{_local.errors?.['inquiry.board_slug'] ? 'board:h-9 board-input-error' : 'board:h-9'}}",
-                                        "disabled": "{{_computed.isReadOnly}}"
+                                        "disabled": "{{_computed.isReadOnly || !!board_list_for_inquiry?.data?.load_failed}}"
                                     }
                                 }
                             ]
+                        },
+                        {
+                            "id": "inquiry_board_list_unavailable",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!board_list_for_inquiry?.data?.load_failed}}",
+                            "props": {
+                                "className": "board:text-xs board:text-gray-500 board:dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_list_unavailable"
                         },
                         {
                             "id": "inquiry_board_select_error",

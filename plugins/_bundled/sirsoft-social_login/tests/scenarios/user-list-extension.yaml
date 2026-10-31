@@ -14,6 +14,7 @@ axes:
   filter: [kakao, unknown, too_long, disabled_linked]
   member: [passwordless_single_link]
   viewport: [desktop, mobile]
+  route_id: [non_uuid, missing_uuid]
 effects:
   - provider_filter_narrows
   - column_rows_have_providers
@@ -30,6 +31,7 @@ effects:
   - mobile_cards_replace_table
   - card_unlink_in_viewport
   - card_unlink_same_call
+  - admin_detail_bad_route_without_toast
 test_files:
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Listeners/UserListSocialTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Playwright/specs/admin/social-user-surface.spec.ts

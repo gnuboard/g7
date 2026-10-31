@@ -289,7 +289,8 @@
                                                                                 "params": {
                                                                                     "method": "POST",
                                                                                     "body": {
-                                                                                        "purpose": "{{_local.purpose ?? 'sensitive_action'}}"
+                                                                                        "purpose": "{{_local.purpose ?? 'sensitive_action'}}",
+                                                                                        "scope": "admin"
                                                                                     }
                                                                                 },
                                                                                 "onSuccess": {

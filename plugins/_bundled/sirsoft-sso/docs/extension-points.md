@@ -57,7 +57,7 @@
 | `core.auth.password_auth_decision` | filter | `EnforcePasswordPolicyListener` | `decide` | 20 |
 | `core.auth.password_reset_blocked` | action (미선언) | `PasswordResetBlockedNotifyListener` | `onBlocked` | 20 |
 | `core.auth.self_registration_open` | filter | `SelfRegistrationListener` | `open` | 20 |
-| `core.identity.registered_providers` | filter | `RegisterSsoReauthProviderListener` | `register` | 30 |
+| `core.identity.registered_providers` | filter | `RegisterSsoReauthProviderListener` | `register` | 25 |
 | `core.notification.filter_default_definitions` | filter | `NotificationDataListener` | `defaults` | 20 |
 | `core.user.after_withdraw` | action (미선언) | `CleanSsoAccountsOnUserLeave` | `onWithdraw` | - |
 | `core.user.after_withdraw` | action (미선언) | `CleanProvisioningDataOnUserLeave` | `handle` | - |

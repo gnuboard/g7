@@ -11,6 +11,11 @@
  * 실패 시: runtime.php 보존 → InstallerRuntimeServiceProvider 가 계속 동작
  *          → 앱은 정상 (관리자 재호출 또는 다음 부팅 시 재시도 경로 확보).
  *
+ * 설치 워커와의 순서: 워커는 상태를 completed 로 기록하는 complete_flag 뒤에도 설정 캐시·라우트 캐시·
+ * 정적 게시를 이어서 돈다. 완료 화면은 completed 를 보는 즉시 이 엔드포인트를 부르므로, 병합은 워커가
+ * lock 을 풀 때까지 기다린 뒤 한다(상한 INSTALLER_FINALIZE_WORKER_WAIT_SECONDS). 워커의 설정 캐시는
+ * 병합 전 .env 로 만들어졌으므로 병합 직전에 지우고, 병합·runtime.php 삭제 뒤 다시 만든다.
+ *
  * @see https://github.com/gnuboard/g7/issues/23
  */
 
@@ -18,6 +23,7 @@ declare(strict_types=1);
 
 require_once __DIR__.'/../includes/config.php';
 require_once __DIR__.'/../includes/functions.php';
+require_once __DIR__.'/../includes/binary-path-policy.php';
 require_once __DIR__.'/../includes/installer-runtime.php';
 require_once __DIR__.'/../includes/installer-state.php';
 // 설치 소유 세션 판정용 — session.php 는 installer-state.php 를 require 하므로 그 뒤에 둔다.
@@ -78,6 +84,39 @@ if (function_exists('fastcgi_finish_request')) {
 // 2. 응답 송출 후 .env 머지
 // ---------------------------------------------------------------------------
 
+// 응답 뒤 단계는 워커 대기와 설정 캐시 다시 만들기(artisan)를 포함한다 — 실행 시간을 그만큼 확보한다.
+@set_time_limit((int) INSTALLER_FINALIZE_WORKER_WAIT_SECONDS + (int) INSTALLER_TASK_TIME_LIMIT);
+
+// 2-1. 설치 워커가 마지막 작업(설정 캐시·라우트 캐시·정적 게시)을 끝내고 lock 을 풀 때까지 기다린다.
+// 워커의 config:cache 도중에 병합하면 병합 전 .env 값이 설정 캐시에 굳고(사이트 503), 상태 파일이
+// 지워진 워커는 lock 을 잃어 남은 작업을 건너뛴다.
+$stateBeforeWait = installerReadStateFile();
+if ($stateBeforeWait !== null && installerHasActiveWorker($stateBeforeWait)) {
+    addLog('[finalize-env] 설치 워커 종료를 기다립니다 (설정 캐시 등 마지막 작업 진행 중)');
+
+    $workerWait = installerWaitForWorkerRelease((int) INSTALLER_FINALIZE_WORKER_WAIT_SECONDS);
+    if ($workerWait['released']) {
+        addLog(sprintf('[finalize-env] 설치 워커 잠금 해제 확인 (%.1f초 대기)', $workerWait['waited_seconds']));
+    } else {
+        addLog(sprintf(
+            '[finalize-env] 설치 워커 잠금이 %d초 안에 풀리지 않아 병합을 진행합니다 (워커가 강제 종료됐을 수 있음)',
+            (int) INSTALLER_FINALIZE_WORKER_WAIT_SECONDS,
+        ));
+    }
+}
+
+// 2-2. 병합은 한 번만 — 완료 화면이 두 번 떠(새로고침, 다른 탭) 동시에 불려도 뒤 요청은 앞 요청이 끝난 뒤
+// runtime.php 부재로 바로 끝난다.
+$finalizeLockPath = BASE_PATH.'/storage/installer/finalize.lock';
+if (! is_dir(dirname($finalizeLockPath))) {
+    @mkdir(dirname($finalizeLockPath), 0755, true);
+}
+$finalizeLock = @fopen($finalizeLockPath, 'c');
+if ($finalizeLock !== false && ! @flock($finalizeLock, LOCK_EX)) {
+    @fclose($finalizeLock);
+    $finalizeLock = false;
+}
+
 try {
     $runtime = readInstallerRuntime();
 
@@ -110,6 +149,14 @@ try {
     // 변경하지 않으므로, 인스톨러 안내 단계의 권한 (chgrp www-data + chmod 664) 이
     // 그대로 유지된다. 추가 보안 강화는 Step 6 완료 화면 안내 + INSTALL.md 운영
     // 가이드에 위임.
+    //
+    // 설치 워커가 병합 전 .env(와 runtime.php 주입 값)로 만든 설정 캐시를 쓰기 전에 지운다 — 쓰기 직후 이
+    // 프로세스가 끊겨도(php artisan serve 는 .env 변경을 보고 서버를 다시 띄운다) 병합 전 값의 캐시가
+    // 남지 않는다. 캐시는 아래 runtime.php 삭제 뒤 다시 만든다.
+    if (! installerClearConfigCache()) {
+        addLog('[finalize-env] 설정 캐시 삭제 FAILED: path='.installerConfigCachePath());
+    }
+
     if (@file_put_contents($envPath, $envContent, LOCK_EX) === false) {
         $lastError = error_get_last();
         addLog(sprintf(
@@ -150,6 +197,19 @@ try {
         ));
     } else {
         addLog('[finalize-env] runtime.php 삭제 완료');
+    }
+
+    // 설정 캐시를 병합된 .env 로 다시 만든다 (설치를 config 캐시 켜진 상태로 시작). 실패하면 캐시 없이 둔다 —
+    // 다음 요청이 병합된 .env 로 부팅한다. PHP 경로는 상태 파일에 있으므로 상태 삭제 전에 읽는다.
+    $configCacheRebuild = installerRebuildConfigCache(installer_php_binary_from_state(getInstallationState()));
+    if ($configCacheRebuild['rebuilt']) {
+        addLog('[finalize-env] 설정 캐시 다시 생성 완료');
+    } else {
+        addLog(sprintf(
+            '[finalize-env] 설정 캐시 다시 생성 실패 — 캐시 없이 병합된 .env 로 부팅한다: exit=%s, output=%s',
+            $configCacheRebuild['exit_code'] === null ? 'n/a' : (string) $configCacheRebuild['exit_code'],
+            mb_substr($configCacheRebuild['output'], 0, 500),
+        ));
     }
 
     // state.json 삭제 — setInstallationCompleteSSE 가 본 단계로 위임함
@@ -194,4 +254,9 @@ try {
 } catch (Throwable $e) {
     // 예외 시 runtime.php 보존 → Provider 가 계속 config 주입 → 앱 정상 동작.
     addLog('[finalize-env] unexpected exception: '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine());
+} finally {
+    if ($finalizeLock !== false) {
+        @flock($finalizeLock, LOCK_UN);
+        @fclose($finalizeLock);
+    }
 }

@@ -141,6 +141,9 @@ class StateManagementApi
 
             // SSE/폴링 듀얼 모드 지원
             'installation_mode' => $state['installation_mode'] ?? 'sse',
+
+            // 워커 lock 보유 여부 — SSE 스트림이 끊긴 뒤 화면이 새 워커로 이어 받을지 정한다
+            'worker_active' => installerHasActiveWorker($state),
         ];
 
         // JSON 응답 반환

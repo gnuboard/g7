@@ -133,6 +133,41 @@ test('detail tab lists the link and force unlink removes the last one', async ({
 });
 
 /**
+ * 회원 주소가 잘못된 상세(uuid 꼴이 아닌 `/admin/users/1`, 없는 회원 uuid) — 화면은 404 화면으로 바뀌고, 소셜 연결 목록은
+ * uuid 꼴이 아니면 요청하지 않으며 없는 회원의 404 도 오류 토스트로 겹쳐 띄우지 않는다.
+ *
+ * @scenario surface=admin_user_detail, actor=accounts_unlinker, route_id=non_uuid|missing_uuid
+ * @effects admin_detail_bad_route_without_toast
+ */
+test('a detail address that is not a member uuid shows the not-found screen without a social toast', async ({ page }) => {
+  await authenticatePage(page, admin);
+  await page.addInitScript(() => localStorage.setItem('g7_locale', 'ko'));
+  const socialCalls: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().includes('/api/plugins/sirsoft-social_login/admin/users/')) socialCalls.push(r.url());
+  });
+  const toast = page.getByRole('alert').filter({ hasText: /could not be found|사용자를 찾을 수 없습니다/ });
+
+  const numeric = page.waitForResponse((r) => r.url().endsWith('/api/admin/users/1') && r.request().method() === 'GET', { timeout: 60_000 });
+  await page.goto('/admin/users/1');
+  expect((await numeric).status()).toBe(404);
+  await page.waitForTimeout(1500);
+  expect(socialCalls).toEqual([]);
+  await expect(toast).toHaveCount(0);
+
+  const missing = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
+  const [missingUser, missingAccounts] = await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith(`/api/admin/users/${missing}`) && r.request().method() === 'GET', { timeout: 60_000 }),
+    page.waitForResponse((r) => r.url().includes(`/admin/users/${missing}/accounts`) && r.request().method() === 'GET', { timeout: 60_000 }),
+    page.goto(`/admin/users/${missing}`),
+  ]);
+  expect(missingUser.status()).toBe(404);
+  expect(missingAccounts.status()).toBe(404);
+  await page.waitForTimeout(1500);
+  await expect(toast).toHaveCount(0);
+});
+
+/**
  * 회원 열람 권한만 있고 연결 열람 권한이 없는 관리자 — 목록에 가입경로 행이 없고, 상세 탭은 권한 안내만 보인다.
  *
  * @scenario surface=admin_user_list|admin_user_detail, actor=users_reader_only

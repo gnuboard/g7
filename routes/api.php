@@ -352,11 +352,15 @@ Route::prefix('auth')->group(function () {
         // 응답은 `login` 과 같은 모양(인증 완료·2단계 인증·비밀번호 변경)이고, 로그인과 같은 제한을 적용한다.
         Route::post('login/handoff', [UserAuthController::class, 'loginHandoff'])
             ->name('api.auth.login.handoff');
-        // 로그인 진입 판정 — 이메일 칸을 벗어날 때 그 식별자의 로그인 수단(비밀번호 / 외부 수단)을 묻는다.
-        // 응답은 회원 유무와 무관하게 같은 모양이고(확장이 도메인으로만 답한다), 로그인과 같은 제한을 적용한다.
-        Route::post('login/discover', [UserAuthController::class, 'discover'])
-            ->name('api.auth.login.discover');
     });
+
+    // 로그인 진입 판정 — 이메일 칸을 벗어날 때 그 식별자의 로그인 수단(비밀번호 / 외부 수단)을 묻는다.
+    // 응답은 회원 유무와 무관하게 같은 모양이고(확장이 도메인으로만 답한다), 로그인과 같은 제한을 적용한다.
+    // 세션을 열지 않는다(관리자 경로도 같다) — 로그인과 거의 동시에 나가는 요청이라, 로그인 전 세션 쿠키를 실은 이 응답이
+    // 로그인 응답보다 늦게 도착하면 로그인이 심은 세션 쿠키를 덮어 개발자 화면이 비회원으로 보인다.
+    Route::post('login/discover', [UserAuthController::class, 'discover'])
+        ->middleware('throttle:auth-login')
+        ->name('api.auth.login.discover');
 
     // 공개 인증 라우트 (세션 불필요)
     // IDV 정책은 bootstrap/app.php 의 자동 매핑 미들웨어가 라우트 이름 기반으로 enforce.
@@ -404,7 +408,7 @@ Route::prefix('auth')->group(function () {
         Route::post('login/handoff', [AdminAuthController::class, 'loginHandoff'])
             ->middleware(['throttle:auth-login', 'start.api.session'])
             ->name('api.auth.admin.login.handoff');
-        // 관리자 로그인 진입 판정 — 사용자 경로와 같은 응답 모양
+        // 관리자 로그인 진입 판정 — 사용자 경로와 같은 응답 모양, 같은 이유로 세션을 열지 않는다
         Route::post('login/discover', [AdminAuthController::class, 'discover'])
             ->middleware('throttle:auth-login')
             ->name('api.auth.admin.login.discover');

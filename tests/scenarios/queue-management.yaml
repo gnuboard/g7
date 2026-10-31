@@ -27,7 +27,9 @@ axes:
   result: [processed, failed, released]
   switch: [enabled, disabled, excluded]
   retention_source: [default, setting, days_option]
-  e2e: [queue_tab_failed_retry]
+  e2e: [queue_tab_failed_retry, queue_tab_without_queue_permission]
+  # 큐 작업 조회 권한이 없는 관리자(스케줄 조회만)의 큐 탭 — 탭 숨김·직접 진입 권한 안내·요청 생략·받기 실패 안내
+  case: [queue_permission]
   sort: [default, created_at, available_at, attempts, failed_at, id, finished_at, duration_ms]
 
 effects:
@@ -75,6 +77,16 @@ effects:
   - list_sort_whitelist
   # 대기·실패·처리 기록 목록이 sort_by·sort_order 로 정렬되고(동점은 id), 지정이 없으면 기존 최근순이다
   - list_sort_orders_rows
+  # 실패 작업의 시도 횟수는 payload 값(redis) → 같은 UUID 의 마지막 처리 기록 → 미상(null, 화면 「-」) 순으로 채운다
+  - failed_attempts_from_log_or_unknown
+  # 큐 작업 조회 권한이 없다고 판정되면(베이스가 current_user 로 정함) 스케줄 관리의 큐 탭 항목이 숨는다
+  - queue_tab_hidden_without_queue_permission
+  # 탭이 숨어도 큐 주소로 직접 들어오면 본문 대신 권한 안내가 보이고 「없습니다」·「측정 불가」를 그리지 않는다
+  - queue_tab_direct_entry_shows_permission_notice
+  # 판정이 거짓이면 queue/status·pending·failed·logs 를 부르지 않고, 판정 전에 나간 요청의 403 은 조용히 넘긴다
+  - queue_sources_not_requested_without_queue_permission
+  # 큐 목록·현황을 받지 못하면 「0건·없습니다」 대신 권한 없음(403)·불러오지 못함 안내를 보인다
+  - queue_load_failure_not_shown_as_empty
 
 test_files:
   - tests/Feature/Queue/JobQueueControllerTest.php
@@ -84,4 +96,6 @@ test_files:
   - tests/Unit/Http/Requests/Queue/QueueRequestTest.php
   - tests/Unit/Services/JobPayloadParserTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_schedule_list-queue-tab.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_schedule_list-queue-permission.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/queue-tab-permission.spec.ts
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/queue-failed-retry.spec.ts

@@ -14,6 +14,7 @@ use Plugins\Sirsoft\Sso\DTO\LogoutResult;
 use Plugins\Sirsoft\Sso\Exceptions\SsoException;
 use Plugins\Sirsoft\Sso\Models\IdentityProvider;
 use Plugins\Sirsoft\Sso\Models\SsoSession;
+use Plugins\Sirsoft\Sso\Services\AttributeSyncService;
 use Plugins\Sirsoft\Sso\Services\Ldap\DirectoryClientInterface;
 use Plugins\Sirsoft\Sso\Services\Ldap\LdapExtension;
 use Symfony\Component\HttpFoundation\Response;
@@ -61,8 +62,17 @@ class LdapDriver implements CredentialDriverInterface, ProtocolDriverInterface
         ],
     ];
 
-    /** @var array<int, string> 신원 속성으로 함께 가져오는 디렉터리 속성 */
+    /** @var array<int, string> 신원 속성으로 함께 가져오는 디렉터리 속성 (그 밖의 속성은 IdP 속성 규칙에 적은 것을 더 가져온다) */
     private const EXTRA_ATTRIBUTES = ['uid', 'samaccountname', 'userprincipalname', 'department', 'title', 'employeenumber', 'telephonenumber', 'mobile', 'cn'];
+
+    /** @var array<int, string> 속성 규칙에 적어도 가져오지 않는 비밀번호류 속성 (소문자) */
+    private const SECRET_ATTRIBUTES = ['userpassword', 'unicodepwd', 'dbcspwd', 'lmpwdhistory', 'ntpwdhistory', 'supplementalcredentials', 'sambantpassword', 'sambalmpassword', 'authpassword'];
+
+    /** 속성 이름 형식 (RFC 4512 descr) */
+    private const ATTRIBUTE_NAME = '/^[A-Za-z][A-Za-z0-9\-]{0,63}$/';
+
+    /** 여러 값 속성에서 받는 최대 값 수 */
+    private const MAX_VALUES = 50;
 
     /** 입력 아이디 최대 길이 */
     private const MAX_IDENTIFIER = 255;
@@ -437,12 +447,35 @@ class LdapDriver implements CredentialDriverInterface, ProtocolDriverInterface
     {
         try {
             $identity = $this->authenticate($idp, $identifier, $password);
-            $detail = 'subject='.self::mask($identity->subject).($identity->email !== null ? ', email='.self::mask($identity->email) : '').', groups='.count($identity->groups);
+            $detail = 'subject='.self::mask($identity->subject).($identity->email !== null ? ', email='.self::mask($identity->email) : '').', groups='.count($identity->groups)
+                .$this->attributeSummary($idp, $identity);
 
             return ConnectionTestResult::fromChecks([['key' => 'account', 'ok' => true, 'message_key' => 'sirsoft-sso::ldap.test.account_ok', 'detail' => $detail]]);
         } catch (SsoException $e) {
             return ConnectionTestResult::fromChecks([['key' => 'account', 'ok' => false, 'message_key' => 'sirsoft-sso::messages.error.'.$e->errorCode, 'detail' => $e->errorCode]]);
         }
+    }
+
+    /**
+     * 「계정으로 시험」에 덧붙일 속성 요약 — 받은 속성 이름과, 속성 규칙에 적었는데 디렉터리가 주지 않은 출처 이름(값은 싣지 않는다).
+     *
+     * @param  IdentityProvider  $idp  IdP
+     * @param  ExternalIdentity  $identity  받은 신원
+     * @return string 요약 (`, attributes=…, missing=…`)
+     */
+    private function attributeSummary(IdentityProvider $idp, ExternalIdentity $identity): string
+    {
+        $received = array_keys($identity->attributes);
+        sort($received);
+        $summary = ', attributes='.implode(',', $received);
+
+        $missing = array_values(array_filter(
+            AttributeSyncService::requestedSources($idp),
+            static fn (string $source) => ! array_key_exists(mb_strtolower($source), $identity->attributes)
+                && ! (strcasecmp($source, 'displayName') === 0 && $identity->displayName !== null),
+        ));
+
+        return $missing !== [] ? $summary.', missing='.implode(',', $missing) : $summary;
     }
 
     /**
@@ -625,7 +658,35 @@ class LdapDriver implements CredentialDriverInterface, ProtocolDriverInterface
             $attributes[] = (string) $idp->configValue('disabled_attribute', '');
         }
 
-        return array_values(array_unique(array_filter(array_merge($attributes, self::EXTRA_ATTRIBUTES))));
+        $requested = [];
+        foreach (array_merge($attributes, self::EXTRA_ATTRIBUTES, $this->ruleAttributes($idp)) as $attribute) {
+            if ($attribute !== '') {
+                $requested[mb_strtolower($attribute)] ??= $attribute;
+            }
+        }
+
+        return array_values($requested);
+    }
+
+    /**
+     * IdP 속성 규칙에 적은 출처 중 디렉터리에 요청할 속성 (소문자) — 속성 이름 형식이 아니거나 비밀번호류 속성이면 뺀다.
+     *
+     * LDAP 속성 이름은 대소문자를 가리지 않으므로 규칙에 `employeeNumber` 로 적든 `employeenumber` 로 적든 같은 속성이다.
+     *
+     * @param  IdentityProvider  $idp  IdP
+     * @return array<int, string> 속성
+     */
+    private function ruleAttributes(IdentityProvider $idp): array
+    {
+        $attributes = [];
+        foreach (AttributeSyncService::requestedSources($idp) as $source) {
+            $name = mb_strtolower($source);
+            if (preg_match(self::ATTRIBUTE_NAME, $source) === 1 && ! in_array($name, self::SECRET_ATTRIBUTES, true)) {
+                $attributes[] = $name;
+            }
+        }
+
+        return array_values(array_unique($attributes));
     }
 
     /**
@@ -652,11 +713,17 @@ class LdapDriver implements CredentialDriverInterface, ProtocolDriverInterface
         $email = is_string($email) && filter_var($email, FILTER_VALIDATE_EMAIL) !== false ? mb_strtolower($email) : null;
         $name = $values[mb_strtolower((string) $idp->configValue('name_attribute', 'displayName'))][0] ?? ($values['cn'][0] ?? null);
 
+        // 속성 이름은 디렉터리 연결이 소문자로 돌려준다 — 기본 목록과 속성 규칙의 출처를 소문자 이름으로 담는다. 여러 값이면 목록으로.
         $attributes = [];
-        foreach (self::EXTRA_ATTRIBUTES as $key) {
-            $value = $values[$key][0] ?? null;
-            if (is_string($value) && $value !== '' && mb_check_encoding($value, 'UTF-8')) {
-                $attributes[$key] = mb_substr($value, 0, 1000);
+        foreach (array_unique(array_merge(self::EXTRA_ATTRIBUTES, $this->ruleAttributes($idp))) as $key) {
+            $list = [];
+            foreach (array_slice($values[$key] ?? [], 0, self::MAX_VALUES) as $value) {
+                if (is_string($value) && $value !== '' && mb_check_encoding($value, 'UTF-8')) {
+                    $list[] = mb_substr($value, 0, 1000);
+                }
+            }
+            if ($list !== []) {
+                $attributes[$key] = count($list) === 1 ? $list[0] : $list;
             }
         }
 

@@ -4,7 +4,9 @@
  *
  * 회사 계정 로그인이 강제된 관리자(422 `auth.password_auth_disabled`)는 재설정 메일을 받을 수 없다. 칸 오류가 아니라 일반 안내로 보이고,
  * 서버가 준 수단 주소가 있으면 그리로 가는 버튼(`forgotAlternate*`·`resetAlternate*`)을 단다.
- * 재설정 화면은 링크 검증(422)에서 같은 사유가 오면 「링크 무효」가 아니라 같은 안내로 보인다.
+ * 재설정 화면은 링크 검증(422)에서 같은 사유가 오면 「링크 무효」가 아니라 같은 안내로 보인다. 재설정 화면의 안내는 일반 오류 상자와
+ * 나뉜 막힘 안내 상자(`reset_blocked_notice`, 문구 `resetBlockedMessage`)다 — 일반 오류(`resetError`)는 화면 init 이 비우는데 링크 검증
+ * 처리기는 init 보다 먼저 돌기 때문이다(렌더 회귀는 admin-reset-password-blocked-render.test.tsx).
  * 안내 데이터는 오류 문맥의 `error.errors.*` 로만 읽는다(`error.data` 는 바인딩 경로가 아니다).
  *
  * @since 1.2.0
@@ -105,9 +107,9 @@ const surfaces = [
     layout: resetLayout as Json,
     form: 'reset_form',
     target: '/api/auth/reset-password',
-    message: 'reset_error_message',
+    message: 'reset_blocked_notice',
     button: 'reset_alternate_button',
-    keys: { error: 'resetError', errors: 'resetErrors', url: 'resetAlternateUrl', label: 'resetAlternateLabel' },
+    keys: { error: 'resetBlockedMessage', errors: 'resetErrors', url: 'resetAlternateUrl', label: 'resetAlternateLabel' },
   },
 ];
 
@@ -181,13 +183,14 @@ describe('sirsoft-admin_basic 관리자 비밀번호 찾기·재설정 — 비�
     const local = applyFailure([handler], error);
 
     expect(local.tokenError).toBe(tokenError);
-    expect(local.resetError).toBe(tokenError ? null : DISABLED.message);
+    expect(local.resetBlockedMessage).toBe(tokenError ? null : DISABLED.message);
+    expect(local.resetError).toBeUndefined();
     expect(local.resetAlternateUrl).toBe(tokenError ? null : '/plugins/sirsoft-sso/login/corp');
     expect(local.resetAlternateLabel).toBe(tokenError ? null : '사내 계정');
 
     const nodes = flatten(resetLayout.components);
     expect(Boolean(evaluate(nodes.find((n) => n.id === 'reset_token_error')?.if, { _local: local }))).toBe(tokenError);
-    expect(Boolean(evaluate(nodes.find((n) => n.id === 'reset_error_message')?.if, { _local: local }))).toBe(!tokenError);
+    expect(Boolean(evaluate(nodes.find((n) => n.id === 'reset_blocked_notice')?.if, { _local: local }))).toBe(!tokenError);
   });
 
   /**
