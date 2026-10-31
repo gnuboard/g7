@@ -8,6 +8,7 @@ use App\Services\LanguagePackService;
 use App\Services\ModuleService;
 use App\Services\PluginService;
 use App\Services\TemplateService;
+use App\Support\LocalizedValue;
 use Illuminate\Support\Facades\File;
 use RuntimeException;
 
@@ -325,13 +326,10 @@ class ExtensionInstallPreviewBuilder
     private function dependencyName(string $type, string $identifier): string
     {
         $info = $type === 'module' ? $this->moduleService->getModuleInfo($identifier) : $this->pluginService->getPluginInfo($identifier);
-        $name = $info['name'] ?? null;
+        // 다국어 이름은 사이트 언어 대체 체인으로 고른다 — 'ko' 고정 대체는 다른 기본 언어 사이트에서 틀린다
+        $name = LocalizedValue::pick($info['name'] ?? null);
 
-        if (is_array($name)) {
-            return (string) ($name[app()->getLocale()] ?? $name['ko'] ?? $name['en'] ?? $identifier);
-        }
-
-        return is_string($name) && $name !== '' ? $name : $identifier;
+        return $name !== null && $name !== '' ? $name : $identifier;
     }
 
     /**

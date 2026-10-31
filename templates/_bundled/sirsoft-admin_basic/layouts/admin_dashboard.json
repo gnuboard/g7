@@ -1377,6 +1377,7 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "모듈 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
                                                                 "id": "module_icon_img_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "Img",
@@ -1581,6 +1582,7 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "플러그인 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
                                                                 "id": "plugin_icon_img_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "Img",
@@ -1785,6 +1787,7 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "템플릿 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
                                                                 "id": "template_icon_img_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "Img",

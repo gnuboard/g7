@@ -400,6 +400,7 @@
             <div data-ref="module_item_{{$idx}}" data-each="module, $idx in {{(dashboard_modules?.data?.data ?? []).slice(0, 6)}}" class="flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700">
               <div data-ref="module_icon_{{$idx}}" class="relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600">
                 <icon name="cube" class="text-slate-500 dark:text-slate-300" aria-hidden="true"/>
+                <!-- 모듈 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다 -->
                 <img data-ref="module_icon_img_{{$idx}}" data-if="{{module.icon_url &amp;&amp; !(_local.dashboardIconBroken ?? []).includes('module:' + module.identifier)}}" src="{{module.icon_url}}" alt="" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600">
                   <on event="onError">
                     <set-state target="local" dashboardIconBroken="{{[...(_local.dashboardIconBroken ?? []), 'module:' + module.identifier]}}"/>
@@ -441,6 +442,7 @@
             <div data-ref="plugin_item_{{$idx}}" data-each="plugin, $idx in {{(dashboard_plugins?.data?.data ?? []).slice(0, 6)}}" class="flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700">
               <div data-ref="plugin_icon_{{$idx}}" class="relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600">
                 <icon name="puzzle-piece" class="text-slate-500 dark:text-slate-300" aria-hidden="true"/>
+                <!-- 플러그인 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다 -->
                 <img data-ref="plugin_icon_img_{{$idx}}" data-if="{{plugin.icon_url &amp;&amp; !(_local.dashboardIconBroken ?? []).includes('plugin:' + plugin.identifier)}}" src="{{plugin.icon_url}}" alt="" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600">
                   <on event="onError">
                     <set-state target="local" dashboardIconBroken="{{[...(_local.dashboardIconBroken ?? []), 'plugin:' + plugin.identifier]}}"/>
@@ -483,6 +485,7 @@
             <div data-ref="template_item_{{$idx}}" data-each="template, $idx in {{(dashboard_templates?.data?.data ?? []).slice(0, 6)}}" class="flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700">
               <div data-ref="template_icon_{{$idx}}" class="relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600">
                 <icon name="palette" class="text-slate-500 dark:text-slate-300" aria-hidden="true"/>
+                <!-- 템플릿 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다 -->
                 <img data-ref="template_icon_img_{{$idx}}" data-if="{{template.icon_url &amp;&amp; !(_local.dashboardIconBroken ?? []).includes('template:' + template.identifier)}}" src="{{template.icon_url}}" alt="" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600">
                   <on event="onError">
                     <set-state target="local" dashboardIconBroken="{{[...(_local.dashboardIconBroken ?? []), 'template:' + template.identifier]}}"/>

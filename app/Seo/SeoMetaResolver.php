@@ -15,9 +15,11 @@ class SeoMetaResolver
      * SEO 메타 해석기를 생성합니다.
      *
      * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @param  SeoToggleEvaluator  $toggleEvaluator  확장 설정 키 해석기 (SeoRenderer 와 공용)
      */
     public function __construct(
         private readonly ExpressionEvaluator $evaluator,
+        private readonly SeoToggleEvaluator $toggleEvaluator = new SeoToggleEvaluator,
     ) {}
 
     /**
@@ -387,7 +389,7 @@ class SeoMetaResolver
         // 다국어 JSON 배열 설정값도 안전 처리 (resolveLocalizedValue)
         if (str_starts_with($expr, '$module_settings:')) {
             $rest = substr($expr, strlen('$module_settings:'));
-            [$effectiveId, $key] = $this->parseExtensionSettingsKey($rest, $moduleIdentifier);
+            [$effectiveId, $key] = $this->toggleEvaluator->parseExtensionSettingsKey($rest, $moduleIdentifier);
             if ($effectiveId) {
                 return $this->resolveLocalizedValue(g7_module_settings($effectiveId, $key, ''));
             }
@@ -396,7 +398,7 @@ class SeoMetaResolver
         // $plugin_settings:key 또는 $plugin_settings:plugin-id:key
         if (str_starts_with($expr, '$plugin_settings:')) {
             $rest = substr($expr, strlen('$plugin_settings:'));
-            [$effectiveId, $key] = $this->parseExtensionSettingsKey($rest, $pluginIdentifier);
+            [$effectiveId, $key] = $this->toggleEvaluator->parseExtensionSettingsKey($rest, $pluginIdentifier);
             if ($effectiveId) {
                 return $this->resolveLocalizedValue(g7_plugin_settings($effectiveId, $key, ''));
             }
@@ -420,29 +422,6 @@ class SeoMetaResolver
         $evaluated = $this->evaluator->evaluate($expr, $context);
 
         return $this->resolveLocalizedValue($evaluated);
-    }
-
-    /**
-     * 확장 설정 키를 파싱합니다.
-     *
-     * 'key.path' 형식이면 컨텍스트 식별자를 사용하고,
-     * 'extension-id:key.path' 형식이면 명시된 확장 식별자를 사용합니다.
-     *
-     * @param  string  $rest  접두사 제거 후 나머지 문자열
-     * @param  string|null  $contextIdentifier  라우트 컨텍스트에서 추출한 식별자
-     * @return array{0: string|null, 1: string} [식별자, 설정 키]
-     */
-    private function parseExtensionSettingsKey(string $rest, ?string $contextIdentifier): array
-    {
-        // 'extension-id:key.path' 형식 — 명시적 확장 ID 포함
-        if (str_contains($rest, ':')) {
-            [$explicitId, $key] = explode(':', $rest, 2);
-
-            return [$explicitId, $key];
-        }
-
-        // 'key.path' 형식 — 컨텍스트 식별자 사용
-        return [$contextIdentifier, $rest];
     }
 
     /**

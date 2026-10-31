@@ -237,20 +237,27 @@
           <span class="text-heading block">$t:admin.settings.seo.sitemap_last_updated_at</span>
           <div class="flex flex-col gap-2 md:flex-row md:items-center md:">
             <input type="text" :disabled="true" value="{{(sitemap_status?.data?.last_updated_at ?? _local.form?.seo?.sitemap_last_updated_at) | datetime | default('-')}}" class="md:flex-1 dark:bg-gray-900 text-gray-700 dark:text-gray-300"/>
-            <!-- 사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다 -->
-            <button type="button" disabled="{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+            <!-- 사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다.
+                 즉시 실행(sync) 큐는 요청 안에서 생성을 끝내므로 응답까지 몇 초~수십 초가 걸린다 — 요청 중에도 잠그고 스피너를 보인다 -->
+            <button type="button" disabled="{{_computed.isReadOnly || !!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" class="w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2">
               <on type="click">
-                <api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST">
-                  <success>
-                    <refetch-data-source dataSourceId="sitemap_status"/>
-                    <toast type="success" message="{{$t('admin.settings.seo.sitemap_update_success')}}"/>
-                  </success>
-                  <fail>
-                    <toast type="error" message="{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"/>
-                  </fail>
-                </api-call>
+                <sequence>
+                  <set-state target="local" :isRegeneratingSitemap="true"/>
+                  <api-call :auth_required="true" target="/api/admin/seo/sitemap/regenerate" method="POST">
+                    <success>
+                      <set-state target="local" :isRegeneratingSitemap="false"/>
+                      <refetch-data-source dataSourceId="sitemap_status"/>
+                      <toast type="success" message="{{response?.message ?? $t('admin.settings.seo.sitemap_update_success')}}"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :isRegeneratingSitemap="false"/>
+                      <toast type="error" message="{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"/>
+                    </fail>
+                  </api-call>
+                </sequence>
               </on>
-              {{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}
+              <icon data-if="{{!!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}" name="spinner" class="spinner-sm"/>
+              <span>{{(!!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')) ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}</span>
             </button>
           </div>
         </div>

@@ -40,6 +40,7 @@ class SeoRenderer implements SeoRendererInterface
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
      * @param  ModuleManagerInterface  $moduleManager  모듈 관리자
      * @param  PluginManagerInterface  $pluginManager  플러그인 관리자
+     * @param  SeoToggleEvaluator  $toggleEvaluator  레이아웃 SEO 토글 판정기 (사이트맵 정적 화면과 공용)
      */
     public function __construct(
         private readonly TemplateRouteResolver $routeResolver,
@@ -54,6 +55,7 @@ class SeoRenderer implements SeoRendererInterface
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly ModuleManagerInterface $moduleManager,
         private readonly PluginManagerInterface $pluginManager,
+        private readonly SeoToggleEvaluator $toggleEvaluator = new SeoToggleEvaluator,
     ) {}
 
     /**
@@ -108,7 +110,7 @@ class SeoRenderer implements SeoRendererInterface
         }
 
         // 4. 확장(모듈/플러그인) 페이지별 SEO 활성화 확인 (레이아웃 toggle_setting 기반)
-        if (! $this->isExtensionSeoEnabled($moduleIdentifier, $pluginIdentifier, $seoConfig)) {
+        if (! $this->toggleEvaluator->isEnabled($moduleIdentifier, $pluginIdentifier, $seoConfig)) {
             return null;
         }
 
@@ -601,7 +603,7 @@ class SeoRenderer implements SeoRendererInterface
             // 설정값이 다국어 JSON 배열일 수 있으므로 resolveLocalizedValue 헬퍼 통과
             if (str_starts_with($expr, '$module_settings:')) {
                 $rest = substr($expr, strlen('$module_settings:'));
-                [$effectiveModuleId, $key] = $this->parseExtensionSettingsKey($rest, $moduleIdentifier);
+                [$effectiveModuleId, $key] = $this->toggleEvaluator->parseExtensionSettingsKey($rest, $moduleIdentifier);
                 if ($effectiveModuleId) {
                     $resolved[$name] = $this->resolveLocalizedValue(g7_module_settings($effectiveModuleId, $key, ''));
                 } else {
@@ -609,7 +611,7 @@ class SeoRenderer implements SeoRendererInterface
                 }
             } elseif (str_starts_with($expr, '$plugin_settings:')) {
                 $rest = substr($expr, strlen('$plugin_settings:'));
-                [$effectivePluginId, $key] = $this->parseExtensionSettingsKey($rest, $pluginIdentifier);
+                [$effectivePluginId, $key] = $this->toggleEvaluator->parseExtensionSettingsKey($rest, $pluginIdentifier);
                 if ($effectivePluginId) {
                     $resolved[$name] = $this->resolveLocalizedValue(g7_plugin_settings($effectivePluginId, $key, ''));
                 } else {
@@ -627,81 +629,6 @@ class SeoRenderer implements SeoRendererInterface
         }
 
         return $resolved;
-    }
-
-    /**
-     * 확장(모듈/플러그인) SEO가 활성화되어 있는지 확인합니다.
-     *
-     * 레이아웃 meta.seo.toggle_setting 선언 기반으로 판단합니다.
-     * $module_settings:MODULE_ID:key 형식으로 명시적 모듈 지정도 지원합니다.
-     * toggle_setting 미선언 시 무조건 활성화됩니다.
-     *
-     * @param  string|null  $moduleIdentifier  모듈 식별자
-     * @param  string|null  $pluginIdentifier  플러그인 식별자
-     * @param  array  $seoConfig  레이아웃 meta.seo 설정
-     * @return bool 활성화 여부
-     */
-    private function isExtensionSeoEnabled(?string $moduleIdentifier, ?string $pluginIdentifier, array $seoConfig): bool
-    {
-        $toggleSetting = $seoConfig['toggle_setting'] ?? null;
-        if (! $toggleSetting) {
-            return true;
-        }
-
-        // $module_settings:key 또는 $module_settings:module-id:key 접두사 해석
-        if (str_starts_with($toggleSetting, '$module_settings:')) {
-            $rest = substr($toggleSetting, strlen('$module_settings:'));
-            [$effectiveModuleId, $key] = $this->parseExtensionSettingsKey($rest, $moduleIdentifier);
-            if ($effectiveModuleId) {
-                return (bool) g7_module_settings($effectiveModuleId, $key, true);
-            }
-
-            return true;
-        }
-
-        // $plugin_settings:key 또는 $plugin_settings:plugin-id:key 접두사 해석
-        if (str_starts_with($toggleSetting, '$plugin_settings:')) {
-            $rest = substr($toggleSetting, strlen('$plugin_settings:'));
-            [$effectivePluginId, $key] = $this->parseExtensionSettingsKey($rest, $pluginIdentifier);
-            if ($effectivePluginId) {
-                return (bool) g7_plugin_settings($effectivePluginId, $key, true);
-            }
-
-            return true;
-        }
-
-        // $core_settings:key 접두사 해석
-        if (str_starts_with($toggleSetting, '$core_settings:')) {
-            $key = substr($toggleSetting, strlen('$core_settings:'));
-
-            return (bool) g7_core_settings($key, true);
-        }
-
-        return true;
-    }
-
-    /**
-     * 확장 설정 키를 파싱합니다.
-     *
-     * 'key.path' 형식이면 컨텍스트 식별자를 사용하고,
-     * 'extension-id:key.path' 형식이면 명시된 확장 식별자를 사용합니다.
-     * 템플릿 레벨 레이아웃에서 모듈/플러그인 설정을 참조할 때 명시적 ID가 필요합니다.
-     *
-     * @param  string  $rest  접두사 제거 후 나머지 문자열
-     * @param  string|null  $contextIdentifier  라우트 컨텍스트에서 추출한 식별자
-     * @return array{0: string|null, 1: string} [식별자, 설정 키]
-     */
-    private function parseExtensionSettingsKey(string $rest, ?string $contextIdentifier): array
-    {
-        // 'extension-id:key.path' 형식 — 명시적 확장 ID 포함
-        if (str_contains($rest, ':')) {
-            [$explicitId, $key] = explode(':', $rest, 2);
-
-            return [$explicitId, $key];
-        }
-
-        // 'key.path' 형식 — 컨텍스트 식별자 사용
-        return [$contextIdentifier, $rest];
     }
 
     /**

@@ -8,6 +8,8 @@ use App\Contracts\Repositories\SitemapUrlRepositoryInterface;
 use App\Enums\SitemapGenerationMode;
 use App\Extension\Storage\CoreStorageDriver;
 use App\Seo\AbstractSitemapContributor;
+use App\Seo\SeoDeclarationCollector;
+use App\Seo\SeoToggleEvaluator;
 use App\Seo\SitemapFileStore;
 use App\Seo\SitemapGenerator;
 use App\Seo\SitemapManager;
@@ -68,7 +70,7 @@ class SitemapInactiveExtensionContributorTest extends TestCase
     }
 
     /**
-     * 꺼진 확장 목록을 고정한 생성기를 만듭니다(정적 라우트 수집은 비움).
+     * 꺼진 확장 목록을 고정한 생성기를 만듭니다(정적 화면 선언은 비움).
      *
      * @param  array<int, string>  $inactive  꺼진 확장 식별자 목록
      * @return SitemapGenerator 생성기
@@ -78,18 +80,23 @@ class SitemapInactiveExtensionContributorTest extends TestCase
         $resolver = Mockery::mock(TemplateRouteResolver::class);
         $service = Mockery::mock(TemplateService::class);
 
-        return new class($resolver, $service, $inactive) extends SitemapGenerator
+        // 정적 화면은 이 시험의 관심사가 아니므로 선언 수집기가 빈 목록을 돌려준다
+        $collector = Mockery::mock(SeoDeclarationCollector::class);
+        $collector->shouldReceive('collect')->andReturn([]);
+
+        return new class($resolver, $service, $collector, $inactive) extends SitemapGenerator
         {
             /**
              * 꺼진 확장 목록을 받아 둡니다.
              *
              * @param  TemplateRouteResolver  $resolver  라우트 해석기
              * @param  TemplateService  $service  템플릿 서비스
+             * @param  SeoDeclarationCollector  $collector  SEO 선언 수집기
              * @param  array<int, string>  $inactive  꺼진 확장 식별자 목록
              */
-            public function __construct(TemplateRouteResolver $resolver, TemplateService $service, private array $inactive)
+            public function __construct(TemplateRouteResolver $resolver, TemplateService $service, SeoDeclarationCollector $collector, private array $inactive)
             {
-                parent::__construct($resolver, $service);
+                parent::__construct($resolver, $service, $collector, new SeoToggleEvaluator);
             }
 
             /**
@@ -100,16 +107,6 @@ class SitemapInactiveExtensionContributorTest extends TestCase
             public function inactiveExtensionIdentifiers(): array
             {
                 return $this->inactive;
-            }
-
-            /**
-             * 정적 라우트는 이 시험의 관심사가 아니므로 비웁니다.
-             *
-             * @return array<int, array<string, mixed>> 빈 목록
-             */
-            public function collectStaticRoutesForTest(): array
-            {
-                return [];
             }
         };
     }
