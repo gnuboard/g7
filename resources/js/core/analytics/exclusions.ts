@@ -52,8 +52,8 @@ export function pathMatchesAny(path: string, patterns: string[] | undefined): bo
     // 글자 그대로의 `/admin/*` 로 남아 브라우저는 보내고 서버는 버린다.
     if (pattern.endsWith('*')) return path.startsWith(pattern.replace(/\*+$/, ''));
 
-    // 정확 일치는 끝 슬래시를 따지지 않는다 — 서버와 같은 규칙(서버 폴백은 요청 주소의 끝 슬래시를
-    // 떼고 비콘은 브라우저 주소 그대로라, 따지면 같은 화면이 한 경로에서만 제외된다).
+    // 정확 일치는 끝 슬래시를 따지지 않는다 — 서버와 같은 규칙(끝·연속 슬래시 주소는 `canonical.path` 가
+    // 301 로 보내므로 정규형만 도달하지만, 운영자가 적은 제외 패턴은 끝 슬래시를 가질 수 있다).
     return withoutTrailingSlash(path) === withoutTrailingSlash(pattern);
   });
 }

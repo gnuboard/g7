@@ -250,14 +250,16 @@ class SeoCacheManager implements SeoCacheManagerInterface
     /**
      * URL이 패턴에 매칭되는지 확인합니다.
      *
+     * 와일드카드는 `*` 하나뿐이고 나머지(`?`·`.`·`+`·`(` 등)는 글자 그대로 비교한다. `?` 를 정규식
+     * 수량자로 두면 `/boards?*` 가 모든 `/board*` 키를 지운다 (공개#156).
+     *
      * @param  string  $url  URL
      * @param  string  $pattern  패턴 (와일드카드 * 지원)
      * @return bool 매칭 여부
      */
     private function matchesPattern(string $url, string $pattern): bool
     {
-        // 와일드카드를 정규식으로 변환
-        $regex = str_replace(['*', '/'], ['.*', '\/'], $pattern);
+        $regex = str_replace('\*', '.*', preg_quote($pattern, '/'));
 
         return (bool) preg_match('/^'.$regex.'$/', $url);
     }

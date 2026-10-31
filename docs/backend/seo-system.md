@@ -665,8 +665,14 @@ if (app()->bound(\App\Seo\SitemapGenerator::class)) {
 | 훅 | 무효화 대상 |
 |----|-----------|
 | `[module].product.after_create/update/delete` | 해당 URL + 목록/카테고리 |
-| `[module].post.after_create/update/delete` | 게시글 + 게시판 |
+| `[module].post.after_create/update/delete` | 게시글 상세 + 그 게시판 목록과 쪽 변종(`/board/{slug}?*`) |
+| `[module].board.after_update` | 그 게시판 목록·쪽 변종·글 상세(`/board/{slug}/*` — 게시판 이름을 렌더) + 게시판 인덱스·홈·검색. 다른 게시판은 유지 |
 | `[module].page.after_create/update/delete` | 페이지 + 홈 |
+
+`invalidateByUrl()` 패턴은 캐시 URL 전체와 일치해야 한다. **와일드카드는 `*` 하나뿐이고 `?`·`.` 은 글자 그대로**다 —
+쿼리 변종은 `/board/free?*`, 하위 경로는 `/board/free/*` 처럼 따로 적는다(정규식으로 해석하던 동안 `/boards?*` 가
+모든 `/board*` 캐시를 지웠다). 캐시 키의 경로는 끝·연속 슬래시를 정리한 정규형이므로(`/x` 와 `/x/` 는 같은 키)
+패턴도 정규형으로 적는다.
 
 #### 확장 라이프사이클 리스너 (코어)
 

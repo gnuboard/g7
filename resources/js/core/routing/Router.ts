@@ -2,6 +2,7 @@ import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
 import { suffixed } from '../support/assetUrl';
 import { notifyLocationReplaced } from '../template-engine/navigationLinks';
+import { normalizePathname } from './normalizePathname';
 import {
   consumeArmedLeaveGuardBypass,
   endLeaveApproval,
@@ -271,7 +272,7 @@ export class Router {
   }
 
   /**
-   * URL 경로의 끝 슬래시를 정규화합니다.
+   * URL 경로의 끝·연속 슬래시를 정규화합니다.
    *
    * 브라우저가 `/admin/` 처럼 끝 슬래시가 붙은 경로로 진입해도 끝 슬래시 없는
    * 라우트 패턴(언어 prefix 형태 포함)에 매칭되도록, 루트(`/`)를 제외한 나머지
@@ -279,16 +280,15 @@ export class Router {
    * (routes.json 규약), 미정규화 시 `/admin/` 이 어떤 라우트에도 매칭되지 않아
    * 404 로 떨어지고 — 미인증 진입 시 로그인 리다이렉트 대신 404 가 노출된다.
    *
+   * engine-v1.84.0 부터 중간의 연속 슬래시(`/board//free`)도 하나로 줄인다 — 규칙은
+   * {@link normalizePathname}(서버 `RequestPath::normalize()` 와 같음, 공개#156).
+   *
    * @param pathname 원본 URL 경로
-   * @returns 끝 슬래시가 정규화된 경로 (루트는 `/` 유지)
+   * @returns 끝·연속 슬래시가 정규화된 경로 (루트는 `/` 유지)
    * @since engine-v1.54.1
    */
   private normalizePathname(pathname: string): string {
-    if (pathname.length > 1 && pathname.endsWith('/')) {
-      return pathname.replace(/\/+$/, '') || '/';
-    }
-
-    return pathname;
+    return normalizePathname(pathname);
   }
 
   /**
@@ -371,9 +371,20 @@ export class Router {
 
   /**
    * 현재 URL 경로를 처리하여 매칭되는 라우트를 찾고 이벤트를 발생시킵니다.
+   *
+   * 첫 진입·뒤로/앞으로·`navigate()` 가 모두 지나가는 단일 지점이다. 끝·연속 슬래시 주소면 먼저 주소창을
+   * 정규형으로 바꾸고(`replaceState` — 히스토리 항목 수는 그대로, 쿼리·해시 보존) 이후 매칭·로그인 복귀 주소·
+   * `routeChange.path` 에 정규형만 쓴다. 원본(`/x/`)이 남으면 화면 동일성 판정이 `/x` 와 다른 화면으로 본다 (engine-v1.84.0, 공개#156)
    */
   async navigateToCurrentPath(): Promise<void> {
-    const pathname = window.location.pathname;
+    const rawPathname = window.location.pathname;
+    const pathname = this.normalizePathname(rawPathname);
+    if (pathname !== rawPathname) {
+      // 정규형은 늘 `/` 하나로 시작하므로 교차 출처 주소(`//host`)가 될 수 없다
+      window.history.replaceState(window.history.state, '', pathname + window.location.search + window.location.hash);
+      notifyLocationReplaced();
+      this.committedUrl = currentUrl();
+    }
     const search = window.location.search;
     const matchResult = this.match(pathname);
 

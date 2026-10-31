@@ -4,6 +4,7 @@ namespace App\Seo;
 
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\Contracts\SeoRendererInterface;
+use App\Support\RequestPath;
 use App\Support\SiteUrl;
 use Closure;
 use Illuminate\Http\Request;
@@ -256,7 +257,8 @@ class SeoMiddleware
      */
     private function buildCacheUrl(Request $request, array $normalizedQuery): string
     {
-        $path = $request->getPathInfo();
+        // 끝·연속 슬래시를 정규형으로 — `/x` 와 `/x/` 가 캐시 키·저장 상한·통계를 따로 쓰지 않게 한다 (공개#156)
+        $path = RequestPath::normalize($request->getPathInfo());
 
         if ($normalizedQuery === []) {
             return $path;

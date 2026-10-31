@@ -6,6 +6,7 @@ use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Services\TemplateService;
+use App\Support\RequestPath;
 
 class TemplateRouteResolver
 {
@@ -22,6 +23,14 @@ class TemplateRouteResolver
         '/admin/layout-editor',
     ];
 
+    /**
+     * 라우트 판정에 필요한 템플릿·확장 의존성을 주입받습니다.
+     *
+     * @param  TemplateService  $templateService  병합 routes 조회
+     * @param  TemplateManagerInterface  $templateManager  활성 템플릿 조회
+     * @param  ModuleManagerInterface  $moduleManager  레이아웃 접두 확장의 모듈 판별
+     * @param  PluginManagerInterface  $pluginManager  레이아웃 접두 확장의 플러그인 판별
+     */
     public function __construct(
         private readonly TemplateService $templateService,
         private readonly TemplateManagerInterface $templateManager,
@@ -37,6 +46,9 @@ class TemplateRouteResolver
      */
     public function resolve(string $url): ?array
     {
+        // 끝·연속 슬래시는 정규형으로 판정한다 — `/about/` 과 `/about` 은 같은 화면 (공개#156)
+        $url = RequestPath::normalize($url);
+
         $loaded = $this->loadActiveRoutes('user');
         if ($loaded === null) {
             return null;
@@ -105,6 +117,9 @@ class TemplateRouteResolver
      */
     public function routeExists(string $url, string $type = 'user'): bool
     {
+        // 끝·연속 슬래시는 정규형으로 판정한다 — nginx 에서 `/admin/` 이 404 이던 원인 (공개#156)
+        $url = RequestPath::normalize($url);
+
         // 코어 소유 admin 경로는 템플릿 routes.json 에 없어도 존재하는 경로다.
         if ($type === 'admin' && $this->isCoreAdminRoute($url)) {
             return true;
@@ -141,7 +156,7 @@ class TemplateRouteResolver
      */
     private function isCoreAdminRoute(string $url): bool
     {
-        $path = '/'.trim(parse_url($url, PHP_URL_PATH) ?? $url, '/');
+        $path = RequestPath::normalize(parse_url($url, PHP_URL_PATH) ?? $url);
 
         foreach (self::CORE_ADMIN_ROUTE_PREFIXES as $prefix) {
             if ($path === $prefix || str_starts_with($path, $prefix.'/')) {

@@ -22,6 +22,7 @@ use App\Http\Middleware\MaintenanceModePage;
 use App\Http\Middleware\OptionalSanctumMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RedirectToCanonicalHost;
+use App\Http\Middleware\RedirectToCanonicalPath;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Http\Middleware\RestrictIpAccess;
 use App\Http\Middleware\RoleMiddleware;
@@ -200,6 +201,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'seo' => SeoMiddleware::class,
             // 사이트 주소가 아닌 Host 의 화면 요청 → 사이트 주소로 301 (화면 셸 라우트에만 붙인다)
             'canonical.host' => RedirectToCanonicalHost::class,
+            // 끝·연속 슬래시 화면 요청 → 정규형 경로로 301 (canonical.host 바로 뒤, 화면 셸 라우트에만 붙인다)
+            'canonical.path' => RedirectToCanonicalPath::class,
             'identity.policy' => EnforceIdentityPolicy::class,
             'extension.middleware' => ExtensionMiddlewareGate::class,
             'debug.gate' => EnsureDebugMode::class,
