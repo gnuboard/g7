@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\HeroSection\Support;
 
 use App\Support\LocalizedValue;
+use Plugins\Sirsoft\HeroSection\Enums\BannerMediaType;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 
@@ -42,10 +43,17 @@ class PublicBannerPresenter
             'description_align' => $banner->description_align,
             'link_url' => $banner->link_url,
             'link_new_window' => (bool) $banner->link_new_window,
+            'media_type' => $banner->media_type ?? BannerMediaType::Image->value,
+            'youtube_id' => $banner->media_type === BannerMediaType::Youtube->value ? $banner->youtube_id : null,
             'images' => [
                 'pc' => self::image($banner->pcImage),
                 'mobile' => self::image($banner->mobileImage),
             ],
+            // 영상 파일은 미디어 종류가 영상일 때만 싣는다 — 종류를 바꿔도 남은 파일이 사이트에 나오지 않게
+            'videos' => $banner->media_type === BannerMediaType::Video->value ? [
+                'pc' => self::video($banner->pcVideo),
+                'mobile' => self::video($banner->mobileVideo),
+            ] : null,
             '_period' => [
                 'is_active' => (bool) $banner->is_active,
                 'display_period' => (string) $banner->display_period,
@@ -84,5 +92,20 @@ class PublicBannerPresenter
         }
 
         return ['url' => $image->publicUrl(), 'width' => $image->width, 'height' => $image->height];
+    }
+
+    /**
+     * 공개 영상 정보를 만듭니다.
+     *
+     * @param  BannerImage|null  $video  영상
+     * @return array{url: string, mime: string}|null 영상 정보
+     */
+    private static function video(?BannerImage $video): ?array
+    {
+        if ($video === null) {
+            return null;
+        }
+
+        return ['url' => $video->publicUrl(), 'mime' => $video->mime];
     }
 }

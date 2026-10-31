@@ -7,13 +7,15 @@
 <!-- @generated:models START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
-| `Banner` | `hero_section_banners` | 21 | images→BannerImage, pcImage→BannerImage, mobileImage→BannerImage | - |
-| `BannerImage` | `hero_section_banner_images` | 12 | banner→Banner | - |
+| `Banner` | `hero_section_banners` | 23 | images→BannerImage | - |
+| `BannerImage` | `hero_section_banner_images` | 13 | banner→Banner | - |
 | `PositionSetting` | `hero_section_position_settings` | 6 | - | - |
 <!-- @generated:models END -->
 
 <!-- @intent START -->
-`Banner`(배너)·`BannerImage`(PC·모바일 이미지)·`PositionSetting`(위치별 슬라이더 설정)을 둔다. 노출 상태는 컬럼이 아니라 `Banner::status` 접근자(조회 시점 계산)다.
+`Banner`(배너)·`BannerImage`(PC·모바일 이미지와 영상 파일)·`PositionSetting`(위치별 슬라이더 설정)을 둔다. 노출 상태는 컬럼이 아니라 `Banner::status` 접근자(조회 시점 계산)다.
+
+배너 미디어 종류는 `media_type`(`image` 기본·`youtube`·`video`, Enum `BannerMediaType`)이고, 유튜브는 영상 ID 만 `youtube_id`(11자)에 둔다(주소는 저장하지 않는다 — 사이트가 ID 로 `youtube-nocookie.com/embed/<ID>` 를 만든다). 파일 행은 `kind`(`image`·`video`, Enum `MediaKind`)와 `device`(`pc`·`mobile`)로 배너당 기기·종류마다 하나다. 등록·수정 요청의 선택 키는 이미지 `pc_image_id`·`mobile_image_id`, 영상 `pc_video_id`·`mobile_video_id` 다. 어느 미디어 종류든 PC 이미지(대표 이미지)는 필수다.
 <!-- @intent END -->
 
 ## 소유 테이블
@@ -33,7 +35,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 5개.
+마이그레이션 6개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -42,6 +44,7 @@
 | `2026_10_24_000003_create_hero_section_position_settings_table.php` | `hero_section_position_settings` | - | ✅ |
 | `2026_10_27_000004_add_presentation_and_lock_version_to_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
 | `2026_10_30_000005_add_width_to_hero_section_position_settings.php` | - | `hero_section_position_settings` | ✅ |
+| `2026_10_30_000006_add_media_to_hero_section_banners.php` | - | `hero_section_banners`, `hero_section_banner_images` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -54,9 +57,11 @@
 | Enum | backing | case 수 | case |
 |---|---|---|---|
 | `BannerDevice` | `string` | 2 | `pc`, `mobile` |
+| `BannerMediaType` | `string` | 3 | `image`, `youtube`, `video` |
 | `BannerStatus` | `string` | 4 | `active`, `scheduled`, `ended`, `inactive` |
 | `DisplayPeriod` | `string` | 2 | `always`, `range` |
 | `HeroPosition` | `string` | 2 | `home_hero`, `shop_hero` |
+| `MediaKind` | `string` | 2 | `image`, `video` |
 | `SlideEffect` | `string` | 7 | `slide`, `fade`, `cube`, `flip`, `coverflow`, `creative`, `none` |
 | `SlideWidth` | `string` | 2 | `content`, `full` |
 | `TextAlign` | `string` | 3 | `left`, `center`, `right` |

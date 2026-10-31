@@ -175,7 +175,10 @@ class BannerActivityLogListener implements HookListenerInterface
      */
     public function handleImageChanged(Banner $banner, string $device, string $change = 'replaced'): void
     {
-        $action = $change === 'removed' ? 'image_remove' : 'image_update';
+        // 선택 키가 영상(`pc_video`·`mobile_video`)이면 영상 교체·삭제로 남기고 기기 이름만 적는다
+        $video = str_ends_with($device, '_video');
+        $device = $video ? substr($device, 0, -strlen('_video')) : $device;
+        $action = ($video ? 'video_' : 'image_').($change === 'removed' ? 'remove' : 'update');
 
         $this->logActivity('hero_banner.'.$action, [
             'loggable' => $banner,

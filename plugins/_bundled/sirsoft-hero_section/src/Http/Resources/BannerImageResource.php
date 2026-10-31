@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\HeroSection\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Plugins\Sirsoft\HeroSection\Enums\MediaKind;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 
 /**
@@ -30,6 +31,7 @@ class BannerImageResource extends BaseApiResource
             'id' => $this->id,
             'hash' => $this->hash,
             'device' => $this->device,
+            'kind' => $this->kind ?? MediaKind::Image->value,
             'url' => $url,
             'download_url' => $url,
             'original_filename' => $this->original_name,
@@ -39,7 +41,7 @@ class BannerImageResource extends BaseApiResource
             'width' => $this->width,
             'height' => $this->height,
             'order' => 0,
-            'is_image' => true,
+            'is_image' => ($this->kind ?? MediaKind::Image->value) === MediaKind::Image->value,
         ];
     }
 }

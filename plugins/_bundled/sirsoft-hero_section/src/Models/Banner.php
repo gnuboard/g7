@@ -11,6 +11,7 @@ use Plugins\Sirsoft\HeroSection\Database\Factories\BannerFactory;
 use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
 use Plugins\Sirsoft\HeroSection\Enums\BannerStatus;
 use Plugins\Sirsoft\HeroSection\Enums\DisplayPeriod;
+use Plugins\Sirsoft\HeroSection\Enums\MediaKind;
 
 /**
  * 히어로섹션 배너
@@ -43,7 +44,7 @@ class Banner extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'position', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at',
+        'position', 'media_type', 'youtube_id', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at',
         'title', 'description', 'button_text', 'image_alt',
         'title_visible', 'title_color', 'title_align',
         'description_visible', 'description_color', 'description_align',
@@ -57,6 +58,8 @@ class Banner extends Model
      */
     public static array $activityLogFields = [
         'position' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.position', 'type' => 'text'],
+        'media_type' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.media_type', 'type' => 'text'],
+        'youtube_id' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.youtube_id', 'type' => 'text'],
         'is_active' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.is_active', 'type' => 'boolean'],
         'display_period' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.display_period', 'type' => 'text'],
         'starts_at' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.starts_at', 'type' => 'datetime'],
@@ -116,7 +119,7 @@ class Banner extends Model
      */
     public function pcImage(): HasOne
     {
-        return $this->hasOne(BannerImage::class, 'banner_id')->where('device', BannerDevice::Pc->value);
+        return $this->media(BannerDevice::Pc, MediaKind::Image);
     }
 
     /**
@@ -126,7 +129,39 @@ class Banner extends Model
      */
     public function mobileImage(): HasOne
     {
-        return $this->hasOne(BannerImage::class, 'banner_id')->where('device', BannerDevice::Mobile->value);
+        return $this->media(BannerDevice::Mobile, MediaKind::Image);
+    }
+
+    /**
+     * PC 영상 파일을 반환합니다(미디어 종류가 영상 파일일 때).
+     *
+     * @return HasOne PC 영상 관계
+     */
+    public function pcVideo(): HasOne
+    {
+        return $this->media(BannerDevice::Pc, MediaKind::Video);
+    }
+
+    /**
+     * 모바일 영상 파일을 반환합니다(없으면 사이트는 PC 영상을 쓴다).
+     *
+     * @return HasOne 모바일 영상 관계
+     */
+    public function mobileVideo(): HasOne
+    {
+        return $this->media(BannerDevice::Mobile, MediaKind::Video);
+    }
+
+    /**
+     * 기기·종류별 파일 관계를 만듭니다.
+     *
+     * @param  BannerDevice  $device  기기
+     * @param  MediaKind  $kind  파일 종류
+     * @return HasOne 파일 관계
+     */
+    private function media(BannerDevice $device, MediaKind $kind): HasOne
+    {
+        return $this->hasOne(BannerImage::class, 'banner_id')->where('device', $device->value)->where('kind', $kind->value);
     }
 
     /**

@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HeroSlider, type HeroBanner, type HeroSliderSettings } from './HeroSlider';
+import { youtubeIdFromUrl } from '../../support/media';
 import { basic, estimateContrast, frameClass, isLightText, localized, sampleImage, translate, type FrameBox, type PreviewFrame, type Rgb } from '../../support/editor';
 
 export type HeroDraft = Partial<Omit<HeroBanner, 'title' | 'description' | 'button_text' | 'image_alt'>> & {
@@ -8,6 +9,8 @@ export type HeroDraft = Partial<Omit<HeroBanner, 'title' | 'description' | 'butt
   description?: Record<string, string>;
   button_text?: Record<string, string>;
   image_alt?: Record<string, string>;
+  /** 운영자가 넣은 유튜브 주소 — 미리보기는 여기서 영상 ID 를 꺼낸다 */
+  youtube_url?: string | null;
 };
 
 export interface HeroBannerPreviewProps {
@@ -202,6 +205,9 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
     button_text: localized(draft.button_text, locale, defaultLocale),
     image_alt: localized(draft.image_alt, locale, defaultLocale) || localized(draft.title, locale, defaultLocale),
     link_url: draft.link_url ? '#preview' : null, link_new_window: false,
+    // 미디어는 고른 종류의 것만 — 종류를 바꿔도 화면에 남은 영상·주소가 미리보기에 섞이지 않게
+    youtube_id: draft.media_type === 'youtube' ? youtubeIdFromUrl(draft.youtube_url) : null,
+    videos: draft.media_type === 'video' ? draft.videos ?? null : null,
   } as HeroBanner] : []) : banners;
   const fallback = draft && ['title', 'description', 'button_text', 'image_alt'].some((key) => {
     const value = draft[key as 'title'];

@@ -233,9 +233,9 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_section_order_image_first
-  it('입력 순서는 기본 정보 → 이미지 → 이미지 표시 → 문구 → 링크 → 기간이다 — 사진을 먼저 올려 미리보기를 보며 문구를 쓴다', () => {
+  it('입력 순서는 기본 정보 → 미디어 → 이미지 → 이미지 표시 → 문구 → 링크 → 기간이다 — 미디어 종류를 고르고 사진·영상을 먼저 올려 미리보기를 보며 문구를 쓴다', () => {
     const sections = asArray<any>(findById(form, 'form_sections')!.children).map((n) => n.id).filter((id) => String(id).endsWith('_card'));
-    expect(sections).toEqual(['basic_card', 'image_card', 'presentation_card', 'text_card', 'link_card', 'period_card']);
+    expect(sections).toEqual(['basic_card', 'media_card', 'image_card', 'presentation_card', 'text_card', 'link_card', 'period_card']);
   });
 
   // @scenario surface=form_preview_first_on_mobile
@@ -249,15 +249,28 @@ describe('배너 등록·수정 화면', () => {
   // @effects accessible_names_present
   it('저장 단추가 잠기면 그 옆에 이유를 보인다 — 저장 중이 아닐 때 잠긴 경우와 이유가 늘 짝이다', () => {
     const disabledExpr = findById(form, 'footer_save_button')!.props.disabled.slice(2, -2);
-    const isDisabled = (state: any) => Function('_local', `return (${disabledExpr})`)(state);
-    const reasonIds = ['save_reason_uploading', 'save_reason_pc_image'];
-    const shown = (state: any) => reasonIds.filter((id) => Function('_local', `return (${findById(form, id)!.if.slice(2, -2)})`)(state));
+    // 레이아웃 계산값(_computed)을 선언 순서대로 구해 식에 넘긴다
+    const computedOf = (state: any) => Object.entries((form as any).computed as Record<string, string>).reduce((acc: Record<string, unknown>, [name, expr]) => {
+      acc[name] = Function('_local', '_computed', 'position_settings', 'query', `return (${expr.slice(2, -2)})`)(state, acc, null, {});
+      return acc;
+    }, {});
+    const evaluate = (expr: string, state: any) => Function('_local', '_computed', `return (${expr})`)(state, computedOf(state));
+    const isDisabled = (state: any) => evaluate(disabledExpr, state);
+    const reasonIds = ['save_reason_uploading', 'save_reason_pc_image', 'save_reason_pc_video', 'save_reason_youtube'];
+    const shown = (state: any) => reasonIds.filter((id) => evaluate(findById(form, id)!.if.slice(2, -2), state));
     const states = [
       { form: { images: { pc: null } } },
       { form: { images: { pc: { id: 1 } } }, pcUploadBlocked: true },
       { form: { images: { pc: null } }, mobileUploadBlocked: true },
       { form: { images: { pc: { id: 1 } } } },
       { form: { images: { pc: { id: 1 } } }, isSaving: true },
+      { form: { images: { pc: { id: 1 } }, media_type: 'video', videos: { pc: null } } },
+      { form: { images: { pc: { id: 1 } }, media_type: 'video', videos: { pc: null } }, pcVideoUploadBlocked: true },
+      { form: { images: { pc: { id: 1 } }, media_type: 'video', videos: { pc: { id: 2 } } } },
+      { form: { images: { pc: { id: 1 } }, media_type: 'youtube', youtube_url: '  ' } },
+      { form: { images: { pc: { id: 1 } }, media_type: 'youtube', youtube_url: 'https://youtu.be/abcdefghijk' } },
+      // 종류를 이미지로 돌리면 화면에 남은 영상·주소 유무는 저장을 막지 않는다
+      { form: { images: { pc: { id: 1 } }, media_type: 'image', videos: { pc: null }, youtube_url: '' }, pcVideoUploadBlocked: true },
     ];
     for (const state of states) {
       const reasons = shown(state);
@@ -267,6 +280,12 @@ describe('배너 등록·수정 화면', () => {
     }
     expect(shown(states[0])).toEqual(['save_reason_pc_image']);
     expect(shown(states[2])).toEqual(['save_reason_uploading']);
+    expect(shown(states[5])).toEqual(['save_reason_pc_video']);
+    expect(shown(states[6])).toEqual(['save_reason_uploading']);
+    expect(isDisabled(states[7])).toBe(false);
+    expect(shown(states[8])).toEqual(['save_reason_youtube']);
+    expect(isDisabled(states[9])).toBe(false);
+    expect(isDisabled(states[10])).toBe(false);
     // 이유는 저장 단추의 설명으로 읽히고, PC 이미지 칸으로 가는 단추가 함께 있다
     const save = findById(form, 'footer_save_button')!;
     expect(save.props['aria-describedby']).toBe('hero_save_reason');

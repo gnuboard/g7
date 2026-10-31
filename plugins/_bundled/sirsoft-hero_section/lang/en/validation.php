@@ -10,6 +10,12 @@ return [
     'pc_image' => [
         'required' => 'Please upload a PC image.',
     ],
+    'pc_video' => [
+        'required' => 'Upload a video file (PC). Without a mobile video, the PC video is used on phones.',
+    ],
+    'youtube_url' => [
+        'invalid' => 'Check the YouTube video address. Example: https://www.youtube.com/watch?v=… or https://youtu.be/…',
+    ],
     'image_selection' => [
         'invalid' => 'The selected image could not be found. Upload the image again and save.',
     ],
@@ -17,9 +23,16 @@ return [
         'server_limit' => 'The file exceeds the server upload limit (:mbMB). Upload a smaller file or ask your server administrator to raise the PHP upload limit.',
         'max' => 'The image must be :mbMB or smaller.',
         'mimes' => 'Only JPG, PNG and WEBP images can be uploaded.',
+        'video_max' => 'Videos must be :mbMB or smaller.',
+        'video_mimes' => 'Only MP4 and WEBM videos can be uploaded.',
         'dimensions' => 'Image width and height must be 4000 pixels or less.',
     ],
     'attributes' => [
+        'media_type' => 'media type',
+        'youtube_url' => 'YouTube address',
+        'pc_video' => 'PC video',
+        'mobile_video' => 'mobile video',
+        'kind' => 'file type',
         'revision' => 'edit revision',
         'presentation' => 'image presentation',
         'pc_image' => 'PC image',

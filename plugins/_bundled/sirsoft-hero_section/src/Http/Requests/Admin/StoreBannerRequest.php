@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\HeroSection\Http\Requests\Admin;
 
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
 use Plugins\Sirsoft\HeroSection\Http\Requests\Concerns\BannerFieldRules;
 use Plugins\Sirsoft\HeroSection\Rules\PcImagePresent;
@@ -50,13 +51,25 @@ class StoreBannerRequest extends FormRequest
             'temp_key' => ['required', 'string', 'max:64', new PcImagePresent],
             'pc_image_id' => ['sometimes', 'required', 'integer', new SelectableBannerImage(BannerDevice::Pc, null, $tempKey)],
             'mobile_image_id' => ['sometimes', 'nullable', 'integer', new SelectableBannerImage(BannerDevice::Mobile, null, $tempKey)],
-        ];
+        ] + $this->videoSelectionRules(null, $tempKey);
 
         return HookManager::applyFilters('sirsoft-hero_section.banner.store_validation_rules', $rules, $this);
     }
 
     /**
-     * 검증된 값(기간 UTC 변환)을 반환합니다.
+     * 규칙 뒤 검사 — 미디어 종류가 영상 파일이면 PC 영상이 있어야 합니다.
+     *
+     * @return array<int, callable> 뒤 검사 목록
+     */
+    public function after(): array
+    {
+        return [
+            fn (Validator $validator) => $this->checkVideoPresent($validator, null, null),
+        ];
+    }
+
+    /**
+     * 검증된 값(기간 UTC 변환, 유튜브 주소 → 영상 ID)을 반환합니다.
      *
      * @param  string|null  $key  특정 키만 반환
      * @param  mixed  $default  기본값
@@ -99,6 +112,11 @@ class StoreBannerRequest extends FormRequest
             'temp_key' => __('sirsoft-hero_section::validation.attributes.temp_key'),
             'pc_image_id' => __('sirsoft-hero_section::validation.attributes.pc_image'),
             'mobile_image_id' => __('sirsoft-hero_section::validation.attributes.mobile_image'),
+            'media_type' => __('sirsoft-hero_section::validation.attributes.media_type'),
+            'youtube_url' => __('sirsoft-hero_section::validation.attributes.youtube_url'),
+            'pc_video' => __('sirsoft-hero_section::validation.attributes.pc_video'),
+            'pc_video_id' => __('sirsoft-hero_section::validation.attributes.pc_video'),
+            'mobile_video_id' => __('sirsoft-hero_section::validation.attributes.mobile_video'),
         ];
     }
 }

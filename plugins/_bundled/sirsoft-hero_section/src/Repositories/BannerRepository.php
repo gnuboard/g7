@@ -28,7 +28,7 @@ class BannerRepository implements BannerRepositoryInterface
      * @var array<int, string>
      */
     private const LIST_COLUMNS = [
-        'id', 'position', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at', 'title', 'button_text', 'link_url',
+        'id', 'position', 'media_type', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at', 'title', 'button_text', 'link_url',
         'created_at', 'updated_at',
     ];
 
@@ -109,7 +109,7 @@ class BannerRepository implements BannerRepositoryInterface
      */
     public function findOrFail(int $id): Banner
     {
-        return Banner::query()->with(['pcImage', 'mobileImage'])->findOrFail($id);
+        return Banner::query()->with(['pcImage', 'mobileImage', 'pcVideo', 'mobileVideo'])->findOrFail($id);
     }
 
     /**
@@ -120,7 +120,7 @@ class BannerRepository implements BannerRepositoryInterface
      */
     public function findMany(array $ids): Collection
     {
-        return Banner::query()->with(['pcImage', 'mobileImage'])->whereIn('id', $ids)->orderBy('id')->get();
+        return Banner::query()->with(['pcImage', 'mobileImage', 'pcVideo', 'mobileVideo'])->whereIn('id', $ids)->orderBy('id')->get();
     }
 
     /**
@@ -155,7 +155,7 @@ class BannerRepository implements BannerRepositoryInterface
      */
     public function findForUpdate(int $id): Banner
     {
-        return Banner::query()->lockForUpdate()->findOrFail($id)->load(['pcImage', 'mobileImage']);
+        return Banner::query()->lockForUpdate()->findOrFail($id)->load(['pcImage', 'mobileImage', 'pcVideo', 'mobileVideo']);
     }
 
     /**
@@ -169,7 +169,7 @@ class BannerRepository implements BannerRepositoryInterface
     {
         $banner->fill($data)->forceFill(['lock_version' => $banner->lock_version + 1])->save();
 
-        return $banner->fresh(['pcImage', 'mobileImage']);
+        return $banner->fresh(['pcImage', 'mobileImage', 'pcVideo', 'mobileVideo']);
     }
 
     /**
@@ -267,7 +267,7 @@ class BannerRepository implements BannerRepositoryInterface
      */
     public function exposedForPosition(string $position, CarbonInterface $now): Collection
     {
-        $query = Banner::query()->with(['pcImage', 'mobileImage'])->where('position', $position);
+        $query = Banner::query()->with(['pcImage', 'mobileImage', 'pcVideo', 'mobileVideo'])->where('position', $position);
 
         // audit:allow query-unbounded-get reason: 슬라이더는 노출 중인 배너를 모두 돌려야 한다 — 위치당 노출 배너는 운영상 수 건~수십 건
         return $this->applyStatusFilter($query, BannerStatus::Active, $now)
@@ -286,7 +286,7 @@ class BannerRepository implements BannerRepositoryInterface
     public function exposureCandidatesForPosition(string $position, CarbonInterface $now): Collection
     {
         return Banner::query()
-            ->with(['pcImage', 'mobileImage'])
+            ->with(['pcImage', 'mobileImage', 'pcVideo', 'mobileVideo'])
             ->where('position', $position)
             ->where('is_active', true)
             ->where(function (Builder $q) use ($now) {

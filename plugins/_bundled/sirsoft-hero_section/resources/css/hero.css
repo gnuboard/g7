@@ -158,6 +158,98 @@
   .hs__image { object-position: var(--hs-focus-mobile, 50% 50%); }
 }
 
+/*
+ * 영상 배너 — 영상·유튜브는 대표 이미지 위에 겹친다(받는 동안·멈춘 동안은 대표 이미지가 보인다). 영상은 object-fit 으로, 유튜브
+ * 플레이어는 구좌를 덮도록 16:9 를 늘려(컨테이너 단위) 가운데 맞춘다 — 비율이 달라도 검은 띠가 생기지 않는다. 손가락 넘기기·
+ * 전체 링크가 플레이어에 먹히지 않게 플레이어는 누르기를 받지 않는다(재생·멈춤은 슬라이더 단추가 맡는다).
+ */
+.hs__video,
+.hs__youtube {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hs__video {
+  object-fit: cover;
+  object-position: var(--hs-focus-pc, 50% 50%);
+}
+
+@media (max-width: 767px) {
+  .hs__video { object-position: var(--hs-focus-mobile, 50% 50%); }
+}
+
+.hs__youtube {
+  overflow: hidden;
+  container-type: size;
+}
+
+.hs__youtube-host {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.hs__youtube--ready .hs__youtube-host { opacity: 1; }
+
+.hs__youtube-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100cqw, 177.78cqh);
+  height: max(100cqh, 56.25cqw);
+  border: 0;
+  transform: translate(-50%, -50%);
+}
+
+/* 동의 전 — 대표 이미지 위 가운데 재생 단추와 안내. 단추는 전체 링크·문구 층 위에서 누르기를 받는다 */
+.hs__youtube-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.hs__youtube-play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(17, 24, 39, 0.65);
+  color: #ffffff;
+  font-size: 24px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.hs__youtube-play:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.hs__youtube-notice {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(17, 24, 39, 0.55);
+  color: #ffffff;
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs__youtube-host { transition: none; }
+}
+
 .hs__text {
   position: absolute;
   inset: auto 0 0 0;

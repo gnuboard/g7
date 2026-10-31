@@ -11,6 +11,8 @@ return [
             'reorder' => '히어로섹션 배너 순서 변경',
             'image_update' => '히어로섹션 배너 이미지 교체',
             'image_remove' => '히어로섹션 배너 이미지 삭제',
+            'video_update' => '히어로섹션 배너 영상 교체',
+            'video_remove' => '히어로섹션 배너 영상 삭제',
         ],
         'hero_position' => [
             'update' => '히어로섹션 슬라이더 설정 변경',
@@ -25,10 +27,14 @@ return [
         'hero_banner_reorder' => '히어로섹션 :position 위치의 배너 :count개 순서를 바꿨습니다.',
         'hero_banner_image_update' => '히어로섹션 배너 「:banner_title」의 :device 이미지를 교체했습니다.',
         'hero_banner_image_remove' => '히어로섹션 배너 「:banner_title」의 :device 이미지를 뺐습니다.',
+        'hero_banner_video_update' => '히어로섹션 배너 「:banner_title」의 :device 영상을 교체했습니다.',
+        'hero_banner_video_remove' => '히어로섹션 배너 「:banner_title」의 :device 영상을 뺐습니다.',
         'hero_position_update' => '히어로섹션 :position 위치의 슬라이더 설정을 바꿨습니다.',
     ],
     'fields' => [
         'position' => '노출 위치',
+        'media_type' => '미디어 종류',
+        'youtube_id' => '유튜브 영상 ID',
         'is_active' => '사용 여부',
         'display_period' => '노출 기간 방식',
         'starts_at' => '노출 시작',

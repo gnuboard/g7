@@ -10,6 +10,12 @@ return [
     'pc_image' => [
         'required' => 'PC 이미지를 올려 주세요.',
     ],
+    'pc_video' => [
+        'required' => '영상 파일(PC)을 올려 주세요. 휴대폰용 영상은 없으면 PC 영상을 씁니다.',
+    ],
+    'youtube_url' => [
+        'invalid' => '유튜브 영상 주소를 확인해 주세요. 예: https://www.youtube.com/watch?v=… 또는 https://youtu.be/…',
+    ],
     'image_selection' => [
         'invalid' => '고른 이미지를 찾을 수 없습니다. 이미지를 다시 올린 뒤 저장하세요.',
     ],
@@ -17,9 +23,16 @@ return [
         'server_limit' => '서버 업로드 한도(:mbMB)를 넘었습니다. 더 작은 파일을 올리거나 서버 관리자에게 PHP 업로드 한도를 올려 달라고 하세요.',
         'max' => '이미지는 :mbMB 이하여야 합니다.',
         'mimes' => 'JPG·PNG·WEBP 이미지만 올릴 수 있습니다.',
+        'video_max' => '영상은 :mbMB 이하여야 합니다.',
+        'video_mimes' => 'MP4·WEBM 영상만 올릴 수 있습니다.',
         'dimensions' => '이미지 가로·세로는 4000픽셀 이하여야 합니다.',
     ],
     'attributes' => [
+        'media_type' => '미디어 종류',
+        'youtube_url' => '유튜브 주소',
+        'pc_video' => 'PC 영상',
+        'mobile_video' => '모바일 영상',
+        'kind' => '파일 종류',
         'revision' => '수정 세대',
         'presentation' => '이미지 표시 설정',
         'pc_image' => 'PC 이미지',

@@ -47,14 +47,15 @@ interface BannerImageRepositoryInterface
     public function findByHash(string $hash): ?BannerImage;
 
     /**
-     * 배너 또는 임시 묶음의 기기별 이미지를 찾습니다.
+     * 배너 또는 임시 묶음의 기기·종류별 파일을 찾습니다.
      *
      * @param  int|null  $bannerId  배너 ID
      * @param  string|null  $tempKey  임시 업로드 묶음 키
      * @param  string  $device  기기 (pc, mobile)
-     * @return BannerImage|null 이미지
+     * @param  string  $kind  파일 종류 (image 기본, video)
+     * @return BannerImage|null 파일
      */
-    public function findByOwnerAndDevice(?int $bannerId, ?string $tempKey, string $device): ?BannerImage;
+    public function findByOwnerAndDevice(?int $bannerId, ?string $tempKey, string $device, string $kind = 'image'): ?BannerImage;
 
     /**
      * 이미지 한 장을 배너에 붙입니다(임시 묶음에서 뺀다).

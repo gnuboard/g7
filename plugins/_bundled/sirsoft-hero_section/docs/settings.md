@@ -8,6 +8,7 @@
 | 키 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
 | `max_upload_mb` | `integer` | `5` | 이미지 최대 용량(MB) |
+| `max_video_upload_mb` | `integer` | `30` | 영상 최대 용량(MB) |
 | `public_cache_minutes` | `integer` | `10` | 사용자 화면 배너 캐시 시간(분) |
 
 기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`

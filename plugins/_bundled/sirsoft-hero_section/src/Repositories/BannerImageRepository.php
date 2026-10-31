@@ -62,11 +62,12 @@ class BannerImageRepository implements BannerImageRepositoryInterface
      * @param  int|null  $bannerId  배너 ID
      * @param  string|null  $tempKey  임시 업로드 묶음 키
      * @param  string  $device  기기
-     * @return BannerImage|null 이미지
+     * @param  string  $kind  파일 종류
+     * @return BannerImage|null 파일
      */
-    public function findByOwnerAndDevice(?int $bannerId, ?string $tempKey, string $device): ?BannerImage
+    public function findByOwnerAndDevice(?int $bannerId, ?string $tempKey, string $device, string $kind = 'image'): ?BannerImage
     {
-        $query = BannerImage::query()->where('device', $device);
+        $query = BannerImage::query()->where('device', $device)->where('kind', $kind);
 
         if ($bannerId !== null) {
             $query->where('banner_id', $bannerId);

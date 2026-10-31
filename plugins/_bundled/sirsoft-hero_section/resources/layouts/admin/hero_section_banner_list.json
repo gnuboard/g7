@@ -1649,6 +1649,16 @@
                                                             "text": "$t:defer:sirsoft-hero_section.admin.list.badge.locale_missing|lang={{locale.toUpperCase()}}"
                                                         },
                                                         {
+                                                            "id": "media_badge",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{row.media_type === 'youtube' || row.media_type === 'video'}}",
+                                                            "props": {
+                                                                "className": "px-1.5 py-0.5 text-[11px] rounded bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+                                                            },
+                                                            "text": "{{row.media_type === 'youtube' ? '$t:sirsoft-hero_section.admin.list.badge.youtube' : '$t:sirsoft-hero_section.admin.list.badge.video'}}"
+                                                        },
+                                                        {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "if": "{{row.has_mobile_image === false}}",

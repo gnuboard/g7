@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Plugins\Sirsoft\HeroSection\Database\Factories\BannerImageFactory;
 
 /**
- * 배너 이미지 (PC·모바일 각 1장)
+ * 배너 파일 — 기기(PC·모바일)·종류(이미지·영상)마다 1개. 테이블 이름은 이미지만 받던 때 그대로다.
  *
  * 공개 주소는 무작위 해시(`hash`)로 만들고 원본 경로는 응답에 싣지 않는다.
  */
@@ -29,7 +29,7 @@ class BannerImage extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'banner_id', 'temp_key', 'device', 'hash', 'disk', 'path',
+        'banner_id', 'temp_key', 'device', 'kind', 'hash', 'disk', 'path',
         'original_name', 'mime', 'size', 'width', 'height', 'created_by',
     ];
 

@@ -3,7 +3,7 @@
 namespace Plugins\Sirsoft\HeroSection\Support;
 
 /**
- * 배너 이미지 업로드 한도 — 실제로 받을 수 있는 크기는 플러그인 설정과 서버 PHP 두 값 중 가장 작은 값이다.
+ * 배너 이미지·영상 업로드 한도 — 실제로 받을 수 있는 크기는 플러그인 설정과 서버 PHP 두 값 중 가장 작은 값이다.
  *
  * PHP 한도(`upload_max_filesize`·`post_max_size`)를 넘는 파일은 라라벨 검증 전에 잘려 빈 파일로 들어오므로,
  * 화면 안내와 업로더 한도는 `effectiveMb()` 를 쓰고 검증은 PHP 한도 초과를 따로 알린다.
@@ -25,6 +25,31 @@ class UploadLimit
         $value = (int) (plugin_setting(self::PLUGIN, 'max_upload_mb', 5) ?? 5);
 
         return max(1, min(10, $value));
+    }
+
+    /**
+     * 플러그인 설정의 영상 최대 용량(MB)을 반환합니다(1~100 으로 고정, 기본 30).
+     *
+     * @return int 설정 영상 최대 용량(MB)
+     */
+    public static function videoSettingMb(): int
+    {
+        $value = (int) (plugin_setting(self::PLUGIN, 'max_video_upload_mb', 30) ?? 30);
+
+        return max(1, min(100, $value));
+    }
+
+    /**
+     * 실제 영상 업로드 한도(MB)를 반환합니다.
+     *
+     * @return float 실제 영상 한도(MB)
+     */
+    public static function effectiveVideoMb(): float
+    {
+        $server = self::serverLimitMb();
+        $setting = (float) self::videoSettingMb();
+
+        return $server > 0 ? min($setting, $server) : $setting;
     }
 
     /**
@@ -58,7 +83,7 @@ class UploadLimit
     /**
      * 화면 안내용 세 값을 반환합니다.
      *
-     * @return array{max_mb: int, server_limit_mb: float, effective_mb: float} 업로드 한도
+     * @return array{max_mb: int, server_limit_mb: float, effective_mb: float, video_max_mb: int, video_effective_mb: float} 업로드 한도
      */
     public static function describe(): array
     {
@@ -66,6 +91,8 @@ class UploadLimit
             'max_mb' => self::settingMb(),
             'server_limit_mb' => self::serverLimitMb(),
             'effective_mb' => self::effectiveMb(),
+            'video_max_mb' => self::videoSettingMb(),
+            'video_effective_mb' => self::effectiveVideoMb(),
         ];
     }
 

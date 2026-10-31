@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
+use Plugins\Sirsoft\HeroSection\Enums\MediaKind;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 
 /**
@@ -34,6 +35,7 @@ class BannerImageFactory extends Factory
             'banner_id' => null,
             'temp_key' => null,
             'device' => BannerDevice::Pc->value,
+            'kind' => MediaKind::Image->value,
             'hash' => $hash,
             'disk' => null,
             'path' => 'images/test/'.$hash.'.jpg',
@@ -63,6 +65,23 @@ class BannerImageFactory extends Factory
     public function mobile(): static
     {
         return $this->state(fn () => ['device' => BannerDevice::Mobile->value, 'width' => 750, 'height' => 1000]);
+    }
+
+    /**
+     * 영상 파일(MP4)로 만듭니다 — 기기는 그대로 두고 pc()·mobile() 과 함께 쓴다.
+     *
+     * @return static 영상 팩토리
+     */
+    public function video(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'kind' => MediaKind::Video->value,
+            'path' => 'images/test/'.$attributes['hash'].'.mp4',
+            'original_name' => 'banner.mp4',
+            'mime' => 'video/mp4',
+            'width' => null,
+            'height' => null,
+        ]);
     }
 
     /**

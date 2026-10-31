@@ -103,10 +103,18 @@
             "images": {
                 "pc": null,
                 "mobile": null
+            },
+            "media_type": "image",
+            "youtube_url": "",
+            "videos": {
+                "pc": null,
+                "mobile": null
             }
         },
         "pcUploadBlocked": false,
         "mobileUploadBlocked": false,
+        "pcVideoUploadBlocked": false,
+        "mobileVideoUploadBlocked": false,
         "previewLocale": "",
         "conflict": false,
         "conflictLatest": null,
@@ -119,6 +127,11 @@
     },
     "computed": {
         "uploadMb": "{{position_settings?.data?.upload?.effective_mb ?? 5}}",
+        "videoUploadMb": "{{position_settings?.data?.upload?.video_effective_mb ?? 30}}",
+        "mediaType": "{{['youtube', 'video'].includes(_local.form?.media_type) ? _local.form.media_type : 'image'}}",
+        "videoUploading": "{{_computed.mediaType === 'video' && (_local.pcVideoUploadBlocked || _local.mobileVideoUploadBlocked)}}",
+        "videoMissing": "{{_computed.mediaType === 'video' && !_local.form?.videos?.pc}}",
+        "youtubeMissing": "{{_computed.mediaType === 'youtube' && !(_local.form?.youtube_url ?? '').trim()}}",
         "listPosition": "{{_local.form?.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}",
         "pcSizeMismatch": "{{!!_local.form?.images?.pc?.width && (_local.form.images.pc.width !== 1920 || _local.form.images.pc.height !== 640)}}",
         "mobileSizeMismatch": "{{!!_local.form?.images?.mobile?.width && (_local.form.images.mobile.width !== 750 || _local.form.images.mobile.height !== 1000)}}"
@@ -137,6 +150,8 @@
                 "isSaving": false,
                 "pcUploadBlocked": false,
                 "mobileUploadBlocked": false,
+                "pcVideoUploadBlocked": false,
+                "mobileVideoUploadBlocked": false,
                 "conflict": false,
                 "conflictLatest": null,
                 "conflictBase": null,
@@ -179,6 +194,12 @@
                     "link_url": "",
                     "link_new_window": false,
                     "images": {
+                        "pc": null,
+                        "mobile": null
+                    },
+                    "media_type": "image",
+                    "youtube_url": "",
+                    "videos": {
                         "pc": null,
                         "mobile": null
                     }
@@ -437,6 +458,396 @@
                                         ]
                                     },
                                     {
+                                        "comment": "미디어 종류 — 이미지(기본)·유튜브 영상·영상 파일. 어느 종류든 아래 PC 이미지는 대표 이미지로 필수다(유튜브는 방문자 동의 전,\n            영상은 받는 동안·움직임 줄이기에서 대신 보인다). 영상 파일은 이미지처럼 임시 키로 먼저 올라가고 「저장」 때 붙는다",
+                                        "id": "media_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "card-title"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.form.section.media"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_media_type",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "RadioGroup",
+                                                                "responsive": {
+                                                                    "portable": {
+                                                                        "props": {
+                                                                            "inline": false
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "props": {
+                                                                    "name": "media_type",
+                                                                    "inline": true,
+                                                                    "label": "$t:sirsoft-hero_section.admin.form.media.type",
+                                                                    "options": [
+                                                                        {
+                                                                            "label": "$t:sirsoft-hero_section.admin.form.media.image",
+                                                                            "value": "image"
+                                                                        },
+                                                                        {
+                                                                            "label": "$t:sirsoft-hero_section.admin.form.media.youtube",
+                                                                            "value": "youtube"
+                                                                        },
+                                                                        {
+                                                                            "label": "$t:sirsoft-hero_section.admin.form.media.video",
+                                                                            "value": "video"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.media_type}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.media_type?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_computed.mediaType === 'image'}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.media.image_hint"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_computed.mediaType === 'youtube'}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.media.youtube_hint"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_computed.mediaType === 'video'}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.media.video_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_youtube_url",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{_computed.mediaType === 'youtube'}}",
+                                                        "props": {
+                                                            "id": "hero_field_youtube_url"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label",
+                                                                    "htmlFor": "hero_youtube_url"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.media.youtube_url"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-required"
+                                                                        },
+                                                                        "text": "*"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "id": "hero_youtube_url",
+                                                                    "name": "youtube_url",
+                                                                    "maxLength": 2048,
+                                                                    "placeholder": "https://www.youtube.com/watch?v=...",
+                                                                    "className": "input w-full min-w-[200px]"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.youtube_url}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.youtube_url?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!_local.errors?.youtube_url}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.media.youtube_url_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_pc_video",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{_computed.mediaType === 'video'}}",
+                                                        "props": {
+                                                            "id": "hero_field_pc_video"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.media.pc_video"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-required"
+                                                                        },
+                                                                        "text": "*"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "form-hint mb-2"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.media.pc_video_hint|mb={{_computed.videoUploadMb}}"
+                                                            },
+                                                            {
+                                                                "id": "pc_video_uploader",
+                                                                "type": "composite",
+                                                                "name": "FileUploader",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onFilesChange",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "pcVideoUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "if": "{{!_local.hasChanges}}",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "hasChanges": false
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onUploadComplete",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.videos.pc": "{{$args[0]?.[0] ?? null}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onUploadError",
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{$args[0]}}",
+                                                                            "icon": "triangle-exclamation"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onRemove",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.videos.pc": null
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "maxFiles": 1,
+                                                                    "disabled": "{{_local.isSaving}}",
+                                                                    "maxSize": "{{_computed.videoUploadMb}}",
+                                                                    "accept": ".mp4,.webm",
+                                                                    "autoUpload": true,
+                                                                    "size": "sm",
+                                                                    "initialFiles": "{{_local.form?.videos?.pc ? [_local.form.videos.pc] : []}}",
+                                                                    "uploadParams": "{{({ device: 'pc', kind: 'video', temp_key: _global.tempKey ?? '' })}}",
+                                                                    "apiEndpoints": {
+                                                                        "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
+                                                                        "delete": ""
+                                                                    }
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.pc_video || _local.errors?.pc_video_id}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.pc_video?.[0] ?? _local.errors?.pc_video_id?.[0] ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_mobile_video",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{_computed.mediaType === 'video'}}",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.media.mobile_video"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "form-hint mb-2"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.media.mobile_video_hint|mb={{_computed.videoUploadMb}}"
+                                                            },
+                                                            {
+                                                                "id": "mobile_video_uploader",
+                                                                "type": "composite",
+                                                                "name": "FileUploader",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onFilesChange",
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "mobileVideoUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "if": "{{!_local.hasChanges}}",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "hasChanges": false
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onUploadComplete",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.videos.mobile": "{{$args[0]?.[0] ?? null}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onUploadError",
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{$args[0]}}",
+                                                                            "icon": "triangle-exclamation"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onRemove",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.videos.mobile": null
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "maxFiles": 1,
+                                                                    "disabled": "{{_local.isSaving}}",
+                                                                    "maxSize": "{{_computed.videoUploadMb}}",
+                                                                    "accept": ".mp4,.webm",
+                                                                    "autoUpload": true,
+                                                                    "size": "sm",
+                                                                    "initialFiles": "{{_local.form?.videos?.mobile ? [_local.form.videos.mobile] : []}}",
+                                                                    "uploadParams": "{{({ device: 'mobile', kind: 'video', temp_key: _global.tempKey ?? '' })}}",
+                                                                    "apiEndpoints": {
+                                                                        "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
+                                                                        "delete": ""
+                                                                    }
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.mobile_video_id}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.mobile_video_id?.[0] ?? ''}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
                                         "comment": "이미지 — 등록 화면은 임시 키로, 수정 화면은 그 배너로 바로 올라간다(갈래는 폼에 심긴 배너 id 로 판정 — 렌더 값에 주소 매개변수를 직접 쓰지 않는다). 같은 기기 이미지를 다시 올리면 서버가 앞 이미지를 바꾼다",
                                         "id": "image_card",
                                         "type": "basic",
@@ -497,6 +908,16 @@
                                                                     "className": "form-hint mb-2"
                                                                 },
                                                                 "text": "$t:sirsoft-hero_section.admin.form.image.pc_hint|mb={{_computed.uploadMb}}"
+                                                            },
+                                                            {
+                                                                "id": "pc_image_poster_hint",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_computed.mediaType !== 'image'}}",
+                                                                "props": {
+                                                                    "className": "form-hint mb-2"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.media.poster_hint"
                                                             },
                                                             {
                                                                 "comment": "업로드는 임시 묶음에만 들어가고, 빼기는 삭제 주소를 비워 화면에서만 뺀다 — 배너 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다",
@@ -1651,14 +2072,14 @@
                                                                 "id": "save_reason_uploading",
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{!_local.isSaving && (_local.pcUploadBlocked || _local.mobileUploadBlocked)}}",
+                                                                "if": "{{!_local.isSaving && (_local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading)}}",
                                                                 "text": "$t:sirsoft-hero_section.admin.form.upload_pending"
                                                             },
                                                             {
                                                                 "id": "save_reason_pc_image",
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_local.form?.images?.pc}}",
+                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && !_local.form?.images?.pc}}",
                                                                 "props": {
                                                                     "className": "inline-flex flex-wrap items-center gap-x-2"
                                                                 },
@@ -1690,6 +2111,80 @@
                                                                         "text": "$t:sirsoft-hero_section.admin.form.save_blocked.go_pc_image"
                                                                     }
                                                                 ]
+                                                            },
+                                                            {
+                                                                "id": "save_reason_pc_video",
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !_computed.videoUploading && !!_local.form?.images?.pc && _computed.videoMissing}}",
+                                                                "props": {
+                                                                    "className": "inline-flex flex-wrap items-center gap-x-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.save_blocked.pc_video"
+                                                                    },
+                                                                    {
+                                                                        "id": "save_reason_pc_video_jump",
+                                                                        "type": "basic",
+                                                                        "name": "Button",
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "click",
+                                                                                "handler": "scrollIntoView",
+                                                                                "params": {
+                                                                                    "selector": "#hero_field_pc_video",
+                                                                                    "behavior": "smooth",
+                                                                                    "block": "center"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "underline text-blue-700 dark:text-blue-300"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.save_blocked.go_pc_video"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "id": "save_reason_youtube",
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!_local.isSaving && !_local.pcUploadBlocked && !_local.mobileUploadBlocked && !!_local.form?.images?.pc && _computed.youtubeMissing}}",
+                                                                "props": {
+                                                                    "className": "inline-flex flex-wrap items-center gap-x-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.save_blocked.youtube"
+                                                                    },
+                                                                    {
+                                                                        "id": "save_reason_youtube_jump",
+                                                                        "type": "basic",
+                                                                        "name": "Button",
+                                                                        "actions": [
+                                                                            {
+                                                                                "type": "click",
+                                                                                "handler": "scrollIntoView",
+                                                                                "params": {
+                                                                                    "selector": "#hero_field_youtube_url",
+                                                                                    "behavior": "smooth",
+                                                                                    "block": "center"
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "type": "button",
+                                                                            "className": "underline text-blue-700 dark:text-blue-300"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.save_blocked.go_youtube"
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
                                                     },
@@ -1717,7 +2212,7 @@
                                                                         "auth_required": true,
                                                                         "params": {
                                                                             "method": "{{route.id ? 'PUT' : 'POST'}}",
-                                                                            "body": "{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null })}}"
+                                                                            "body": "{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, youtube_url: _computed.mediaType === 'youtube' ? (_local.form?.youtube_url ?? '').trim() : undefined, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}"
                                                                         },
                                                                         "onSuccess": [
                                                                             {
@@ -1785,7 +2280,7 @@
                                                         "props": {
                                                             "type": "button",
                                                             "aria-describedby": "hero_save_reason",
-                                                            "disabled": "{{_local.isSaving || _local.pcUploadBlocked || _local.mobileUploadBlocked || !_local.form?.images?.pc}}",
+                                                            "disabled": "{{_local.isSaving || _local.pcUploadBlocked || _local.mobileUploadBlocked || _computed.videoUploading || !_local.form?.images?.pc || _computed.videoMissing || _computed.youtubeMissing}}",
                                                             "className": "btn btn-primary flex-center gap-1.5"
                                                         },
                                                         "children": [

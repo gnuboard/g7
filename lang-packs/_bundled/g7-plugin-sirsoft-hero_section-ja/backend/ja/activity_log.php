@@ -11,6 +11,8 @@ return [
             'reorder' => 'ヒーローセクションバナー順序変更',
             'image_update' => 'ヒーローセクションバナー画像置換',
             'image_remove' => 'ヒーローセクションバナー画像削除',
+            'video_update' => 'ヒーローセクションバナー動画の置き換え',
+            'video_remove' => 'ヒーローセクションバナー動画の削除',
         ],
         'hero_position' => [
             'update' => 'ヒーローセクションスライダー設定変更',
@@ -26,6 +28,8 @@ return [
         'hero_banner_image_update' => 'ヒーローセクションバナー「:banner_title」の:device画像を置換しました。',
         'hero_banner_image_remove' => 'ヒーローセクションバナー「:banner_title」の:device画像を削除しました。',
         'hero_position_update' => 'ヒーローセクション:position位置のスライダー設定を変更しました。',
+        'hero_banner_video_update' => 'ヒーローセクションバナー「:banner_title」の:device動画を置き換えました。',
+        'hero_banner_video_remove' => 'ヒーローセクションバナー「:banner_title」の:device動画を削除しました。',
     ],
     'fields' => [
         'position' => '表示位置',
@@ -39,5 +43,7 @@ return [
         'interval_seconds' => '転換間隔(秒)',
         'effect' => '転換効果',
         'width' => '表示幅',
+        'media_type' => 'メディアの種類',
+        'youtube_id' => 'YouTube動画ID',
     ],
 ];

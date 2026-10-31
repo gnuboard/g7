@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Http\Controllers\Public;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
 use Plugins\Sirsoft\HeroSection\Services\BannerImageService;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -23,9 +24,9 @@ class BannerImageController extends PublicBaseController
      * 이미지를 내보냅니다.
      *
      * @param  string  $hash  공개 해시
-     * @return StreamedResponse|JsonResponse 이미지 또는 404
+     * @return StreamedResponse|BinaryFileResponse|JsonResponse 이미지·영상(영상은 범위 요청 지원) 또는 404
      */
-    public function show(string $hash): StreamedResponse|JsonResponse
+    public function show(string $hash): StreamedResponse|BinaryFileResponse|JsonResponse
     {
         $response = $this->images->publicResponse($hash);
 

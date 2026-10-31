@@ -6,10 +6,13 @@ use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
+use Plugins\Sirsoft\HeroSection\Enums\MediaKind;
 use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
 
 /**
- * 배너 이미지 업로드 요청 — 형식 JPG·PNG·WEBP, 최대 용량은 설정과 서버 PHP 한도 중 작은 값.
+ * 배너 파일 업로드 요청 — 이미지(`kind=image`, 기본)는 JPG·PNG·WEBP, 영상(`kind=video`)은 MP4·WEBM.
+ * 최대 용량은 종류별 설정(이미지 `max_upload_mb`, 영상 `max_video_upload_mb`)과 서버 PHP 한도 중 작은 값.
+ * 형식은 확장자와 파일 내용(MIME) 둘 다로 본다 — 확장자만 바꾼 HTML·SVG 는 내용 판정에서 걸린다.
  *
  * 업로드는 언제나 임시 묶음(temp_key)에 들어가고 배너에는 등록·수정 저장 때 붙는다 — 저장 전에는 사이트 화면이 바뀌지 않는다.
  * 권장 크기(PC 1920×640, 모바일 750×1000)는 강제하지 않는다 — 화면이 응답 크기로 안내만 한다.
@@ -42,13 +45,21 @@ class BannerImageUploadRequest extends FormRequest
             ];
         }
 
-        $maxKb = (int) floor(UploadLimit::effectiveMb() * 1024);
-
-        return [
-            'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:'.$maxKb, 'dimensions:max_width=4000,max_height=4000'],
+        $base = [
+            'kind' => ['sometimes', Rule::enum(MediaKind::class)],
             'device' => ['required', Rule::enum(BannerDevice::class)],
             'temp_key' => ['required', 'string', 'max:64'],
         ];
+
+        if ($this->isVideo()) {
+            $maxKb = (int) floor(UploadLimit::effectiveVideoMb() * 1024);
+
+            return $base + ['file' => ['required', 'file', 'mimes:mp4,webm', 'mimetypes:video/mp4,video/webm', 'max:'.$maxKb]];
+        }
+
+        $maxKb = (int) floor(UploadLimit::effectiveMb() * 1024);
+
+        return $base + ['file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:'.$maxKb, 'dimensions:max_width=4000,max_height=4000']];
     }
 
     /**
@@ -58,12 +69,30 @@ class BannerImageUploadRequest extends FormRequest
      */
     public function messages(): array
     {
+        if ($this->isVideo()) {
+            return [
+                'file.max' => __('sirsoft-hero_section::validation.file.video_max', ['mb' => UploadLimit::effectiveVideoMb()]),
+                'file.mimes' => __('sirsoft-hero_section::validation.file.video_mimes'),
+                'file.mimetypes' => __('sirsoft-hero_section::validation.file.video_mimes'),
+            ];
+        }
+
         return [
             'file.max' => __('sirsoft-hero_section::validation.file.max', ['mb' => UploadLimit::effectiveMb()]),
             'file.mimes' => __('sirsoft-hero_section::validation.file.mimes'),
             'file.mimetypes' => __('sirsoft-hero_section::validation.file.mimes'),
             'file.dimensions' => __('sirsoft-hero_section::validation.file.dimensions'),
         ];
+    }
+
+    /**
+     * 영상 업로드 요청인지 판정합니다.
+     *
+     * @return bool 영상이면 true
+     */
+    public function isVideo(): bool
+    {
+        return $this->input('kind') === MediaKind::Video->value;
     }
 
     /**
@@ -94,6 +123,7 @@ class BannerImageUploadRequest extends FormRequest
     {
         return [
             'file' => __('sirsoft-hero_section::validation.attributes.file'),
+            'kind' => __('sirsoft-hero_section::validation.attributes.kind'),
             'device' => __('sirsoft-hero_section::validation.attributes.device'),
             'temp_key' => __('sirsoft-hero_section::validation.attributes.temp_key'),
         ];

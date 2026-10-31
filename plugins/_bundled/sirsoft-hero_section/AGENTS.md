@@ -21,6 +21,7 @@
 - **위치 목록**: 플러그인이 고정 목록으로 갖고(위치 키 = 확장점 이름), 템플릿이 선언하는 방식은 쓰지 않는다.
 - **노출 상태**(노출중·예약·종료·비활성)는 저장하지 않는다. 조회 시점에 기간·사용 여부로 계산하고(cron 없음), 목록 필터·정렬과 공개 노출은 같은 SQL 조건을 쓴다. 시간은 UTC 로 저장·비교하고 사이트 시간대 변환은 입력·표시에서만 한다.
 - **다국어**: 제목·설명·버튼 문구·대체 텍스트를 언어별로 저장하고, 비운 언어는 사이트 기본 언어로 대체한다.
+- **미디어**: 배너마다 이미지·유튜브·영상 파일(`media_type`). PC 이미지는 어느 종류든 대표 이미지로 필수다. 유튜브는 영상 ID 만 저장하고 사이트는 `youtube-nocookie.com` 을 방문자 마케팅 동의(코어 `G7Core.consent`) 뒤에만 부른다. 영상 파일은 이미지 테이블의 `kind=video` 행이고 공개 응답은 범위 요청을 받는다.
 - **의도적으로 하지 않는 것**: 노출수·클릭수 통계(2차), 관리자별 소유 범위, 휴지통(삭제는 영구), 이커머스 「메인배너 관리」 시안 정리(별도 이슈).
 <!-- @intent END -->
 
@@ -113,10 +114,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 18개 | `plugins/_bundled/sirsoft-hero_section/tests` |
-| Vitest | 10개 | `vitest.config.ts` |
-| Playwright | 11개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 14개 | `tests/scenarios` |
+| PHPUnit | 19개 | `plugins/_bundled/sirsoft-hero_section/tests` |
+| Vitest | 11개 | `vitest.config.ts` |
+| Playwright | 12개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 15개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -224,6 +224,84 @@
                                         ]
                                     },
                                     {
+                                        "id": "field_max_video_upload_mb",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "props": {
+                                                            "className": "form-label",
+                                                            "htmlFor": "hero_section_max_video_upload_mb"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.max_video_upload_mb.label"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.max_video_upload_mb.hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Input",
+                                                        "props": {
+                                                            "type": "number",
+                                                            "id": "hero_section_max_video_upload_mb",
+                                                            "name": "max_video_upload_mb",
+                                                            "min": 1,
+                                                            "max": 100,
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.errors?.max_video_upload_mb}}",
+                                                        "props": {
+                                                            "className": "form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.max_video_upload_mb?.[0]}}"
+                                                    },
+                                                    {
+                                                        "id": "server_video_upload_limit_warning",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!!upload_limit?.data?.upload?.server_limit_mb && Number(_local.form?.max_video_upload_mb ?? 0) > upload_limit.data.upload.server_limit_mb}}",
+                                                        "props": {
+                                                            "role": "status",
+                                                            "className": "text-sm text-amber-700 dark:text-amber-300"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
                                         "id": "field_public_cache_minutes",
                                         "type": "basic",
                                         "name": "Div",

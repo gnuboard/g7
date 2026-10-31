@@ -237,6 +237,18 @@ class Plugin extends AbstractPlugin
                 ],
                 'required' => true,
             ],
+            'max_video_upload_mb' => [
+                'type' => 'integer',
+                'default' => 30,
+                'min' => 1,
+                'max' => 100,
+                'label' => ['ko' => '영상 최대 용량(MB)', 'en' => 'Maximum video size (MB)'],
+                'hint' => [
+                    'ko' => '배너 영상 파일(MP4·WEBM) 한 개의 최대 용량입니다. 서버 PHP 의 upload_max_filesize·post_max_size 보다 크게 잡아도 그 값을 넘는 파일은 올라가지 않습니다.',
+                    'en' => 'Maximum size of one banner video file (MP4, WEBM). Files larger than the server PHP upload_max_filesize or post_max_size are still rejected even if this value is higher.',
+                ],
+                'required' => true,
+            ],
             'public_cache_minutes' => [
                 'type' => 'integer',
                 'default' => 10,
@@ -261,6 +273,7 @@ class Plugin extends AbstractPlugin
     {
         return [
             'max_upload_mb' => 5,
+            'max_video_upload_mb' => 30,
             'public_cache_minutes' => 10,
         ];
     }

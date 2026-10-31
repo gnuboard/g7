@@ -4,13 +4,14 @@ namespace Plugins\Sirsoft\HeroSection\Http\Controllers\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
+use Plugins\Sirsoft\HeroSection\Enums\MediaKind;
 use Plugins\Sirsoft\HeroSection\Http\Requests\Admin\BannerImageUploadRequest;
 use Plugins\Sirsoft\HeroSection\Http\Resources\BannerImageResource;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Services\BannerImageService;
 
 /**
- * 관리자 배너 이미지 컨트롤러 — 임시 묶음 업로드(같은 기기 교체)·임시 이미지 삭제.
+ * 관리자 배너 파일 컨트롤러 — 임시 묶음 업로드(같은 기기·종류 교체, 이미지·영상)·임시 파일 삭제.
  *
  * 배너에 붙은 이미지는 여기서 바꾸거나 지우지 않는다 — 배너 등록·수정 저장(`BannerService`)만 바꾼다.
  */
@@ -28,7 +29,7 @@ class BannerImageController extends AdminBaseController
     }
 
     /**
-     * 이미지를 올립니다.
+     * 이미지·영상을 올립니다.
      *
      * @param  BannerImageUploadRequest  $request  업로드 요청
      * @return JsonResponse 올린 이미지 응답
@@ -42,6 +43,7 @@ class BannerImageController extends AdminBaseController
             $data['device'],
             $data['temp_key'],
             $request->user()?->id,
+            $data['kind'] ?? MediaKind::Image->value,
         );
 
         return $this->successWithResource('sirsoft-hero_section::messages.image.uploaded', new BannerImageResource($image), 201);

@@ -269,20 +269,20 @@ class BannerService
     }
 
     /**
-     * 검증된 값에서 이미지 선택(pc_image_id·mobile_image_id)과 temp_key 를 빼냅니다 — 배너 행에 저장할 값이 아니다.
+     * 검증된 값에서 파일 선택(pc_image_id·mobile_image_id·pc_video_id·mobile_video_id)과 temp_key 를 빼냅니다 — 배너 행에 저장할 값이 아니다.
      *
-     * @param  array<string, mixed>  $data  검증된 값 (참조로 받아 세 키를 지운다)
-     * @return array<string, int|null> 보낸 기기 => 이미지 ID (보내지 않은 기기는 키가 없다)
+     * @param  array<string, mixed>  $data  검증된 값 (참조로 받아 선택 키와 temp_key 를 지운다)
+     * @return array<string, int|null> 보낸 선택 키(pc·mobile·pc_video·mobile_video) => 파일 ID (보내지 않은 키는 없다)
      */
     private function takeImageSelection(array &$data): array
     {
         $selection = [];
-        foreach (['pc' => 'pc_image_id', 'mobile' => 'mobile_image_id'] as $device => $field) {
+        foreach (['pc' => 'pc_image_id', 'mobile' => 'mobile_image_id', 'pc_video' => 'pc_video_id', 'mobile_video' => 'mobile_video_id'] as $slot => $field) {
             if (array_key_exists($field, $data)) {
-                $selection[$device] = $data[$field] !== null ? (int) $data[$field] : null;
+                $selection[$slot] = $data[$field] !== null ? (int) $data[$field] : null;
             }
         }
-        unset($data['temp_key'], $data['pc_image_id'], $data['mobile_image_id']);
+        unset($data['temp_key'], $data['pc_image_id'], $data['mobile_image_id'], $data['pc_video_id'], $data['mobile_video_id']);
 
         return $selection;
     }

@@ -37,6 +37,10 @@
       "public_cache_minutes": {
         "label": "ユーザー画面バナーキャッシュ時間(分)",
         "hint": "0の場合、キャッシュを使用しません(0~60)。バナーを保存·削除、または順序を変更するとすぐに反映され、予約開始·終了時刻にもキャッシュが先に有効期限切れになります。"
+      },
+      "max_video_upload_mb": {
+        "label": "動画最大容量(MB)",
+        "hint": "バナー動画ファイル(MP4·WEBM)1つの最大容量です(1~100)。サーバーPHPのupload_max_filesize·post_max_sizeより大きく設定しても、その値を超えるファイルはアップロードされません。"
       }
     }
   },
@@ -47,7 +51,12 @@
     "next": "次のバナー",
     "pause": "自動送信一時停止",
     "play": "自動送信再開",
-    "go_to": "{{n}}番目のバナーに移動"
+    "go_to": "{{n}}番目のバナーに移動",
+    "youtube_play": "YouTube動画再生",
+    "youtube_title": "YouTube動画:{{title}}",
+    "youtube_notice": "再生するとYouTubeから動画を読み込みます。",
+    "media_play": "バナーを再度再生",
+    "media_pause": "バナーを一時停止"
   },
   "admin": {
     "title": "ヒーローセクション管理",
@@ -139,7 +148,9 @@
       "badge": {
         "locale_missing": "{{lang}} タイトル未入力",
         "mobile_fallback": "モバイル: PC 画像を使用",
-        "button_without_link": "ボタン非表示: リンク未設定"
+        "button_without_link": "ボタン非表示: リンク未設定",
+        "youtube": "YouTube",
+        "video": "動画"
       }
     },
     "reorder": {
@@ -168,7 +179,8 @@
         "text": "文言",
         "image": "画像",
         "link": "リンク",
-        "period": "表示期間"
+        "period": "表示期間",
+        "media": "メディア"
       },
       "position": "表示位置",
       "position_hint": "現在のユーザーテンプレートが提供するヒーローセクションの位置です。",
@@ -298,7 +310,27 @@
       },
       "save_blocked": {
         "pc_image": "PC 画像をアップロードすると保存できます。",
-        "go_pc_image": "PC 画像欄に移動"
+        "go_pc_image": "PC 画像欄に移動",
+        "pc_video": "PC動画をアップロードする必要があります。",
+        "go_pc_video": "PC動画欄に移動",
+        "youtube": "YouTubeアドレスを入力する必要があります。",
+        "go_youtube": "YouTubeアドレス欄に移動"
+      },
+      "media": {
+        "type": "メディアの種類",
+        "image": "画像",
+        "youtube": "YouTube動画",
+        "video": "動画ファイル",
+        "image_hint": "下にアップロードした画像をバナーとして表示します。",
+        "youtube_hint": "YouTube動画を音なしで自動再生し、動画が終わると次のバナーに移ります。訪問者がクッキー(マーケティング)に同意する前は、代表画像と再生ボタンのみが表示されます。",
+        "video_hint": "アップロードした動画を音なしで自動再生し、動画が終わると次のバナーに移ります(バナーが1つの場合は繰り返し再生)。",
+        "youtube_url": "YouTubeアドレス",
+        "youtube_url_hint": "動画ページアドレスまたは共有アドレスをそのまま貼り付けてください。例:https://www.youtube.com/watch?v=…·https://youtu.be/…·ショーツアドレス",
+        "pc_video": "PC動画",
+        "pc_video_hint": "最大{{mb}}MB·MP4·WEBM·横向き動画(16:9など)を推奨します。",
+        "mobile_video": "モバイル動画",
+        "mobile_video_hint": "選択·最大{{mb}}MB·MP4·WEBM·アップロードしない場合は携帯電話でもPC動画が再生されます。",
+        "poster_hint": "動画バナーではこの画像が代表画像です。動画を受信している間、動きを減らす機能をオンにした訪問者、(YouTube)クッキー同意前に動画の代わりに表示されます。"
       }
     }
   }

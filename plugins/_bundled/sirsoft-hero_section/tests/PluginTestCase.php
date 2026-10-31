@@ -12,6 +12,7 @@ use App\Services\PluginSettingsService;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -99,12 +100,23 @@ abstract class PluginTestCase extends TestCase
             return;
         }
 
+        // MySQL 은 DDL 이 열린 트랜잭션을 암묵 커밋한다 — 시험 트랜잭션을 잠시 닫고 돌린 뒤 같은 깊이로 다시 연다.
+        // 닫지 않으면 마이그레이션이 실제로 돈 첫 시험의 데이터가 커밋돼 시험 DB 에 남는다
+        $connection = DB::connection();
+        $level = $connection->transactionLevel();
+        while ($connection->transactionLevel() > 0) {
+            $connection->rollBack();
+        }
+
         if (! Schema::hasTable('users')) {
             $this->artisan('migrate', ['--path' => ['database/migrations']]);
         }
 
-        if (! Schema::hasTable('hero_section_banners')) {
-            $this->artisan('migrate', ['--path' => ['plugins/_bundled/sirsoft-hero_section/database/migrations']]);
+        // 테이블이 있어도 뒤에 더한 마이그레이션(컬럼 추가)은 돌린다 — 이미 돈 것은 migrate 가 건너뛴다
+        $this->artisan('migrate', ['--path' => ['plugins/_bundled/sirsoft-hero_section/database/migrations']]);
+
+        for ($i = 0; $i < $level; $i++) {
+            $connection->beginTransaction();
         }
 
         static::$migrated = true;
