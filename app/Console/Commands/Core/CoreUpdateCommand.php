@@ -1830,6 +1830,7 @@ class CoreUpdateCommand extends Command
      * 뜨고 운영자는 노출을 알 수 없었다.
      *
      * @param  callable  $log  업데이트 기록 기록기
+     * @return void 반환값 없음
      */
     private function surfaceDocrootExposureWarnings(callable $log): void
     {
@@ -1845,7 +1846,7 @@ class CoreUpdateCommand extends Command
         // 단정하면 문서 루트가 `public/` 인 표준 배치(절대다수)에서 노출이 아닌 상태에
         // 노출 경보가 뜬다. 형제 축(`surfaceRootFileWarnings`)이 같은 이유로 단정 대신
         // 완화 표현을 쓴다 — 등급은 각 문구가 스스로 말한다.
-        $this->warn('⚠ 공개 파일 사본 — 아래를 확인해야 합니다.');
+        $this->warn(__('settings.core_update.console.docroot_exposure_header'));
         foreach ($warnings as $warning) {
             $this->warn('  - '.$warning);
             $log('[storage-link] '.$warning);
@@ -1864,6 +1865,7 @@ class CoreUpdateCommand extends Command
      *
      * @param  CoreUpdateService  $service  경고를 누적한 서비스
      * @param  callable  $log  업데이트 기록 기록기
+     * @return void 반환값 없음
      */
     private function surfaceRootFileWarnings(CoreUpdateService $service, callable $log): void
     {
@@ -1878,6 +1880,7 @@ class CoreUpdateCommand extends Command
      *
      * @param  list<string>  $warnings  `applyUpdate()`/`restoreFromBackup()` 반환값의 `root_file_warnings`
      * @param  callable  $log  업데이트 기록 기록기
+     * @return void 반환값 없음
      */
     private function surfaceWarnings(array $warnings, callable $log): void
     {
@@ -1889,7 +1892,7 @@ class CoreUpdateCommand extends Command
         // 이 통로가 나르는 것은 실패만이 아니다 — 「마커가 없어 갱신하지 않았다」(코어 보호
         // 규칙 미적용)와 「되돌린 뒤 파일이 없다」도 여기로 온다. 헤더가 실패만 말하면 그 둘이
         // 실패로 읽히거나, 반대로 실패가 아니라는 이유로 이 통로에서 빠진다.
-        $this->warn('⚠ 루트 진입·보호 파일 — 진행은 계속되었지만 아래를 직접 확인해야 합니다.');
+        $this->warn(__('settings.core_update.console.root_files_header'));
         foreach ($warnings as $warning) {
             $this->warn('  - '.$warning);
             $log('[root-files] '.$warning);

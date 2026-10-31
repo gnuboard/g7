@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage 609 후속 — 검증 오류 문구에 쓰는 항목 이름(attributes)만 더했다. 라우트, 요청 키, 검증 규칙, 응답 모양은 그대로이고 API 문서는 오류 문구 원문을 싣지 않아 반영할 표면이 없다.
+
 namespace App\Http\Requests\CoreUpdate;
 
 use App\CoreUpdate\CoreUpdateOptions;
@@ -55,6 +57,8 @@ class StartCoreUpdateRequest extends FormRequest
 
     /**
      * 검증 전 값 정규화 — 체크박스가 문자열로 도착하는 경우를 흡수합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {
@@ -77,6 +81,21 @@ class StartCoreUpdateRequest extends FormRequest
         if ($normalized !== []) {
             $this->merge($normalized);
         }
+    }
+
+    /**
+     * 검증 오류 문구에 쓰는 항목 이름.
+     *
+     * @return array<string, string> 필드 이름 → 번역된 항목 이름
+     */
+    public function attributes(): array
+    {
+        return [
+            'update_bundled_extensions' => (string) __('settings.core_update.web.attributes.update_bundled_extensions'),
+            'rebuild_search_index' => (string) __('settings.core_update.web.attributes.rebuild_search_index'),
+            'layout_strategy' => (string) __('settings.core_update.web.attributes.layout_strategy'),
+            'zip_file' => (string) __('settings.core_update.web.attributes.zip_file'),
+        ];
     }
 
     /**

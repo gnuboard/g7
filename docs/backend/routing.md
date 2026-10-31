@@ -504,7 +504,7 @@ Laravel 의 `url()`·`route()`·`redirect('/x')`·`redirect()->back()` 과 FormR
 
 API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON 으로 응답한다(`bootstrap/app.php` 의 `shouldRenderJsonWhen`) — 직전 화면으로 되돌아가는 응답이 생기지 않는다. 사이트 주소가 아닌 Host(하위 도메인·www 쌍·다른 포트·별칭)로 들어온 화면 요청은 사이트 주소로 이동한다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐).
 
-요청 Host 를 의도적으로 쓰는 코드(예: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단)는 해당 줄 위에 `// audit:allow request-host-absolute-url reason: …` 를 단다. 회귀 가드: audit 룰 `request-host-absolute-url`, 계약 테스트 `tests/Feature/Http/TrustedProxyContractTest.php`, 단위 테스트 `tests/Unit/Support/SiteUrlTest.php`.
+요청 Host 를 의도적으로 쓰는 코드(예: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단)는 해당 줄 위에 그렇게 쓰는 이유를 주석으로 남긴다. 회귀 가드: 계약 테스트 `tests/Feature/Http/TrustedProxyContractTest.php`, 단위 테스트 `tests/Unit/Support/SiteUrlTest.php`.
 
 ---
 

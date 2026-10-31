@@ -421,6 +421,9 @@ class ExecuteUpgradeStepsCommand extends Command
      * 이 접두사를 모르므로 그대로 콘솔에 중계된다 — 기록에는 못 닿아도 **사라지지는 않는다**.
      *
      * 단독 실행(부모 없음)이면 이 프로세스가 소비자이므로 콘솔에 직접 낸다.
+     *
+     * @param  bool  $isSpawnChild  부모 프로세스가 띄운 자식 실행인지 (true 면 라인 프로토콜로 부모에게 넘기고, 아니면 콘솔에 직접 낸다)
+     * @return void 반환값 없음
      */
     private function surfaceDocrootExposureWarnings(bool $isSpawnChild): void
     {
@@ -454,7 +457,7 @@ class ExecuteUpgradeStepsCommand extends Command
         // 단정하면 문서 루트가 `public/` 인 표준 배치(절대다수)에서 노출이 아닌 상태에
         // 노출 경보가 뜬다. 형제 축(`surfaceRootFileWarnings`)이 같은 이유로 단정 대신
         // 완화 표현을 쓴다 — 등급은 각 문구가 스스로 말한다.
-        $this->warn('⚠ 공개 파일 사본 — 아래를 확인해야 합니다.');
+        $this->warn(__('settings.core_update.console.docroot_exposure_header'));
         foreach ($warnings as $warning) {
             $this->warn('  - '.$warning);
         }

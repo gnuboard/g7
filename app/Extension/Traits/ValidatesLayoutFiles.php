@@ -737,7 +737,7 @@ trait ValidatesLayoutFiles
         $relativePath = str_replace($basePath.DIRECTORY_SEPARATOR, '', $filePath);
 
         // .g7.html / .json 확장자 제거 (소스·산출 어느 쪽이든 같은 논리 이름)
-        $relativePath = preg_replace('/\.(g7\.html|json)$/i', '', $relativePath);
+        $relativePath = preg_replace('/\.(g7\.html|json)$/iu', '', $relativePath);
 
         // 디렉토리 구분자를 언더스코어로 변환
         $layoutPath = str_replace([DIRECTORY_SEPARATOR, '/'], '_', $relativePath);

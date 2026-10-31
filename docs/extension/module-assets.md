@@ -233,7 +233,6 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 | 우선순위 | 세 칸 — ① `@layer g7-extension`(의미) ② 층 없는 규칙(배치·유틸리티) ③ 템플릿의 확장 CSS 덮기 파일 |
 | 다크 모드 | `<html data-g7-color-scheme>` 중립 표식(`dark`·`light`)만 본다. `.dark` 선택자는 쓰지 않는다 |
 | 서빙 | 코어가 층을 평탄화한다(`g7-extension`·`properties` 만 남김) |
-| 정적 검사 | `extension-css-namespace`, `extension-class-self-contained` |
 
 ### 앞글자 선언 — `assets.css.namespace`
 

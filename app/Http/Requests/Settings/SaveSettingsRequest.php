@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage 609 후속 — 검증 오류 문구에 쓰는 항목 이름(attributes)만 더했다. 라우트, 요청 키, 검증 규칙, 응답 모양은 그대로이고 API 문서는 오류 문구 원문을 싣지 않아 반영할 표면이 없다.
+
 namespace App\Http\Requests\Settings;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
@@ -1750,12 +1752,21 @@ class SaveSettingsRequest extends FormRequest
             'identity' => __('validation.attributes.settings_tab_identity'),
             'analytics' => __('validation.attributes.settings_tab_analytics'),
             'privacy' => __('validation.attributes.settings_tab_privacy'),
+            'system' => __('common.system'),
             // 배열 항목 — 인덱스가 붙은 원시 키(seo.bot_user_agents.0 …)가 문구에 실리지 않도록
             // 와일드카드 한 줄로 전 인덱스를 덮는다.
             'general.site_logo.*' => __('validation.attributes.site_logo'),
             'seo.bot_user_agents.*' => __('validation.attributes.bot_user_agents'),
             'seo.og_image_default.*' => __('validation.attributes.og_image_default'),
             'advanced.outbound_proxy_bypass.*' => __('validation.attributes.outbound_proxy_bypass'),
+            'advanced.trusted_proxies.*' => __('validation.attributes.trusted_proxies'),
+            // 시스템 탭(#609) — 라벨 문구는 lang 의 점 표기 키(`validation.attributes` 안 `'system.execution_mode'` 등)에 있다.
+            // 규칙 키와 같은 이름으로 여기서도 이어 둔다(라벨 누락 검사가 이 표를 단일 근거로 본다).
+            'system.execution_mode' => $this->dottedAttributeLabel('system.execution_mode'),
+            'system.cron_mode' => $this->dottedAttributeLabel('system.cron_mode'),
+            'system.cron_allowed_ips' => $this->dottedAttributeLabel('system.cron_allowed_ips'),
+            'system.cron_min_interval' => $this->dottedAttributeLabel('system.cron_min_interval'),
+            'system.cron_visit_fallback' => $this->dottedAttributeLabel('system.cron_visit_fallback'),
             'security.ip_restriction_rules.*' => __('validation.attributes.ip_restriction_rules'),
             'security.admin_allowed_ips.*' => __('validation.attributes.admin_allowed_ips'),
             'security.ip_restriction_rules.*.ips.*' => __('validation.attributes.ip_restriction_rule_ips'),
@@ -1925,5 +1936,21 @@ class SaveSettingsRequest extends FormRequest
         $attributes = array_merge($attributes, $this->analyticsSettingsAttributes('analytics'));
 
         return HookManager::applyFilters('core.settings.save_validation_attributes', $attributes, $this);
+    }
+
+    /**
+     * `validation.attributes` 안의 점 표기 키 라벨을 읽습니다.
+     *
+     * 번역 파일은 시스템 탭 라벨을 `'system.execution_mode' => '실행 방식'` 처럼 점이 든 한 키로 둔다. `__()` 는 점을
+     * 경로로 읽어 그 키에 닿지 못하므로 배열을 받아 그대로 찾는다.
+     *
+     * @param  string  $key  점 표기 키
+     * @return string 라벨 (없으면 키 그대로)
+     */
+    private function dottedAttributeLabel(string $key): string
+    {
+        $labels = (array) __('validation.attributes');
+
+        return (string) ($labels[$key] ?? $key);
     }
 }

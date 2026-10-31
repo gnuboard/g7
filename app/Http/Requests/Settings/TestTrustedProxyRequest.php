@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage 609 후속 — 검증 오류 문구에 쓰는 항목 이름(attributes)만 더했다. 라우트, 요청 키, 검증 규칙, 응답 모양은 그대로이고 API 문서는 오류 문구 원문을 싣지 않아 반영할 표면이 없다.
+
 namespace App\Http\Requests\Settings;
 
 use App\Extension\HookManager;
@@ -71,6 +73,7 @@ class TestTrustedProxyRequest extends FormRequest
     {
         return [
             'trusted_proxies' => __('validation.attributes.trusted_proxies'),
+            'trusted_proxies.*' => __('validation.attributes.trusted_proxies'),
         ];
     }
 }
