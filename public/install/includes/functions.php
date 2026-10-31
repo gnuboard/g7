@@ -1887,7 +1887,9 @@ function hasWindowsReadOnlyAttribute(string $path): bool
     // 폴백: attrib 로 속성 문자열을 조회한다. 첫 필드에 R 이 있으면 ReadOnly.
     // ACL 문제를 ReadOnly 로 오진하면 엉뚱한 명령을 안내하게 되므로, 확인되지
     // 않으면 false 를 반환해 기존 icacls 안내를 유지한다.
-    if (! function_exists('exec')) {
+    // 가용성은 설치기 판정 SSoT(installerHasFunction — disable_functions 포함)로 본다. 판정기가 아직 실리지 않은
+    // 진입점이면 확인할 수 없는 것으로 보고 false — 위 문단과 같은 이유로 기존 안내를 유지한다.
+    if (! function_exists('installerHasFunction') || ! installerHasFunction('exec')) {
         return false;
     }
 

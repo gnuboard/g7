@@ -12,7 +12,7 @@
  * - POST ?action=skip_task : 실패한 선택 확장 태스크를 건너뛰고 재개 가능 상태로 (W3)
  * - POST ?action=reclaim: 복구 토큰으로 설치 소유권 되찾기 (세션 유실 후 재개)
  *
- * reset/abort/reclaim 은 상태변경이라 CSRF 토큰을, reset/abort 는 설치 소유 세션을 요구한다.
+ * reset/abort/skip_task/reclaim 은 상태변경이라 CSRF 토큰을, reset/abort/skip_task 는 설치 소유 세션을 요구한다.
  * get 은 폴링 경로라 게이트를 두지 않는다 — 완료 직전까지 1초 간격으로 불리며, 여기에 게이트를
  * 두면 정상 설치가 "진행 중"에 고착되는 자가 차단 회귀가 난다 (KVE-2026-1056).
  */
@@ -38,7 +38,7 @@ class StateManagementApi
         // 없고(헬퍼는 정의만 있었다) 세션 쿠키는 SameSite=Lax 라, 다른 사이트의 자동 제출 폼
         // 하나로 [중단](진행 중 태스크 롤백)·[초기화](완료 기록 전소거)를 부를 수 있었다.
         // 커스텀 헤더 요구는 방어가 아니다 — 단순 폼 제출에는 헤더가 필요 없다.
-        if (in_array($action, ['reset', 'abort', 'skip_task'], true)) {
+        if (in_array($action, ['reset', 'abort', 'skip_task', 'reclaim'], true)) {
             // 끝난 설치의 중단·초기화·건너뛰기는 성립하지 않는다 (13차 보안#8).
             // `action=get` 은 대상이 아니다 — 완료 화면 전환이 그 폴링 한 번에 달려 있다.
             installer_guard_post_complete_or_410();
@@ -579,7 +579,10 @@ class StateManagementApi
             exit;
         }
 
+        // 설치 소유권·요청 검증 — 건너뛰기도 진행분을 바꾸는 상태변경이다(형제 reset/abort 와 같은 게이트).
         $state = getInstallationState();
+        installer_require_owner($state);
+        installer_require_csrf();
 
         $this->requireStepwiseTokenOrReject($state);
 

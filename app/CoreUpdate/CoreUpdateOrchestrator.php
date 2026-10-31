@@ -8,6 +8,7 @@ use App\Execution\CommandRunResult;
 use App\Execution\Exceptions\CommandExecutionException;
 use App\Execution\InProcessCommandRunner;
 use App\Extension\CoreVersionChecker;
+use App\Extension\Custom\CustomUpdatePreflight;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\HookManager;
@@ -15,6 +16,8 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Extension\Vendor\VendorMode;
+use App\Services\Core\BundledPlacementPlan;
+use App\Services\Core\BundledSourcePlanner;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
 use App\Support\ConfigCacheHelper;
@@ -474,6 +477,8 @@ class CoreUpdateOrchestrator
                 'version' => $toVersion,
             ]));
 
+            $this->guardCustomPreflight($pendingPath, $toVersion);
+
             return;
         }
 
@@ -482,6 +487,66 @@ class CoreUpdateOrchestrator
 
         $this->state->mergeContext(['pending_path' => $pendingPath]);
         $this->state->appendLog((string) __('settings.core_update.web.log_downloaded', ['version' => $toVersion]));
+
+        $this->guardCustomPreflight($pendingPath, $toVersion);
+    }
+
+    /**
+     * custom 자리 사전 검사 — 받은 배포본이 custom 예약 자리에 파일을 싣거나 개발자 패키지(custom/composer.lock)가
+     * 새 코어와 맞지 않으면 백업과 파일 적용 전에 멈춘다 (#792, CLI `core:update` 와 같은 판정).
+     *
+     * 멈춘 사실은 기록 파일에 남겨 관리자 업데이트 화면이 같은 새 버전의 중단 사유를 보여 준다. 아직 아무 파일도 바꾸지
+     * 않았으므로 되돌리기는 받은 배포본 정리와 유지보수 해제뿐이다(`performRollback` 의 백업 없음 분기).
+     *
+     * @param  string  $pendingPath  받은 배포본 경로
+     * @param  string  $toVersion  새 코어 버전
+     * @return void 반환값 없음
+     *
+     * @throws CoreUpdateOperationException 검사가 업데이트를 막을 때
+     */
+    private function guardCustomPreflight(string $pendingPath, string $toVersion): void
+    {
+        $result = app(CustomUpdatePreflight::class)->inspectDirectory($pendingPath);
+
+        if (CustomUpdatePreflight::blocks($result)) {
+            CustomUpdatePreflight::record($toVersion, $result);
+
+            if ($result['reserved_files'] !== []) {
+                $this->state->appendLog((string) __('settings.core_update.reserved_paths_in_release', [
+                    'paths' => implode(', ', $result['reserved_files']),
+                ]));
+            }
+            foreach ($result['conflicts'] as $conflict) {
+                $this->state->appendLog(sprintf(
+                    '%s (%s): %s',
+                    (string) ($conflict['package'] ?? ''),
+                    (string) ($conflict['installed'] ?? ''),
+                    (string) ($conflict['reason'] ?? ''),
+                ));
+            }
+
+            throw new CoreUpdateOperationException('settings.core_update.custom_preflight_blocked', ['version' => $toVersion]);
+        }
+
+        CustomUpdatePreflight::clearRecord();
+    }
+
+    /**
+     * 공식 번들 배치 판정 (#146) — 받은 배포본의 `_bundled` 중 이 사이트가 설치했거나 디스크에 둔 번들과 그 의존만
+     * 배치하고, 나머지(미배치)는 파일 적용, 신규 파일 기록, 증분 목록에서 건너뛴다.
+     *
+     * 웹에는 운영자에게 물을 자리가 없으므로 CLI 의 비대화 기본값(`--bundled-sources` 없음)과 같은 판정이다. 미배치 번들은
+     * 관리자 확장 목록 안내와 `core:bundled-sources` 로 나중에 배치한다. 계획 단계와 적용 단계가 따로 부르지만 그 사이
+     * 설치 상태가 바뀌지 않으므로 같은 결과다.
+     *
+     * @param  string  $pendingPath  받은 배포본 경로
+     * @return BundledPlacementPlan 판정 결과
+     */
+    private function planBundledPlacement(string $pendingPath): BundledPlacementPlan
+    {
+        $planner = app(BundledSourcePlanner::class);
+
+        return $planner->plan($planner->readInventoryFromDirectory($pendingPath));
     }
 
     /**
@@ -566,6 +631,13 @@ class CoreUpdateOrchestrator
         $protected = (array) config('app.update.protected_paths', []);
         $excludes = (array) config('app.update.excludes', []);
 
+        $bundledPlan = $this->planBundledPlacement($pendingPath);
+        $skipPaths = $bundledPlan->skipPaths();
+        $this->state->appendLog((string) __('settings.core_update.web.log_bundled_placement', [
+            'placed' => (string) count($bundledPlan->placed),
+            'unplaced' => (string) count($bundledPlan->unplaced),
+        ]));
+
         try {
             $manifestStats = CoreBackupHelper::writeNewFilesManifest(
                 $backupPath,
@@ -575,6 +647,7 @@ class CoreUpdateOrchestrator
                 $excludes,
                 (string) ($raw['from_version'] ?? ''),
                 (string) ($raw['to_version'] ?? ''),
+                $skipPaths,
             );
 
             $this->state->appendLog((string) __('settings.core_update.web.log_manifest', [
@@ -591,7 +664,7 @@ class CoreUpdateOrchestrator
         }
 
         try {
-            $applyStats = CoreBackupHelper::computeApplyList($backupPath, $pendingPath, $targets, $protected, $excludes);
+            $applyStats = CoreBackupHelper::computeApplyList($backupPath, $pendingPath, $targets, $protected, $excludes, $skipPaths);
 
             $this->state->storeApplyList($applyStats['apply']);
             $this->state->mergeContext(['apply_stats' => [
@@ -628,16 +701,28 @@ class CoreUpdateOrchestrator
             throw new CoreUpdateOperationException('settings.core_update.web.missing_pending_path');
         }
 
+        $bundledPlan = $this->planBundledPlacement($pendingPath);
+
         // 반환값이 계약이다 — 게터는 반환값을 손에 쥘 수 없는 자리의 편의일 뿐이다.
         $result = $this->service->applyUpdate(
             $pendingPath,
             null,
             prune: false,
             applyList: $this->state->loadApplyList(),
+            skipPaths: $bundledPlan->skipPaths(),
         );
 
         $this->state->appendWarnings((array) ($result['root_file_warnings'] ?? []));
         $this->state->appendLog((string) __('settings.core_update.web.log_applied'));
+
+        // 미배치 공식 번들 기록 — 관리자 목록 안내와 `core:bundled-sources` 의 근거. 되돌리기는 이전 기록으로 돌려놓는다.
+        $planner = app(BundledSourcePlanner::class);
+        $recordPath = $planner->recordPath();
+        $this->state->mergeContext([
+            'bundled_record_written' => true,
+            'bundled_record_backup' => is_file($recordPath) ? (string) file_get_contents($recordPath) : null,
+        ]);
+        $planner->writeRecord($bundledPlan, (string) ($this->state->all()['to_version'] ?? ''), 'core:update');
 
         // 컴파일 캐시를 **파일 삭제만으로** 비운다. 여기서 `clearAllCaches()` 를 부르면
         // `package:discover`·`extension:update-autoload` 가 방금 교체된 파일을 이 구버전
@@ -990,6 +1075,8 @@ class CoreUpdateOrchestrator
             $restored = ! $applied;
         }
 
+        $this->restoreBundledRecord();
+
         $pendingPath = (string) $this->state->context('pending_path', '');
 
         if ($pendingPath !== '') {
@@ -1027,6 +1114,35 @@ class CoreUpdateOrchestrator
             (array) ($raw['error'] ?? []),
             (array) ($raw['rollback'] ?? []),
         );
+    }
+
+    /**
+     * 파일 적용 단계가 쓴 공식 번들 배치 기록을 이전 내용으로 되돌립니다 (CLI `restoreBundledRecord` 와 같은 규칙).
+     *
+     * 이전 기록이 없었으면 기록 파일을 지운다. 되돌린 사이트의 확장 목록이 새 버전 배포본 기준의 미배치 안내를
+     * 보여 주지 않게 하기 위해서다.
+     *
+     * @return void 반환값 없음
+     */
+    private function restoreBundledRecord(): void
+    {
+        if ($this->state->context('bundled_record_written') !== true) {
+            return;
+        }
+
+        $path = app(BundledSourcePlanner::class)->recordPath();
+        $previous = $this->state->context('bundled_record_backup');
+
+        try {
+            if (is_string($previous)) {
+                File::put($path, $previous);
+            } elseif (is_file($path)) {
+                File::delete($path);
+            }
+            $this->state->appendLog((string) __('settings.core_update.web.log_bundled_record_restored'));
+        } catch (\Throwable $e) {
+            Log::warning('웹 코어 업데이트: 공식 번들 배치 기록 되돌리기 실패', ['error' => $e->getMessage()]);
+        }
     }
 
     /**

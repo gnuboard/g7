@@ -3327,7 +3327,7 @@ class ModuleManager implements ModuleManagerInterface
         $identifier = $module->getIdentifier();
         $migrationNames = [];
         foreach ($module->getMigrations() as $migrationPath) {
-            foreach (glob($migrationPath.'/*.php') ?: [] as $file) {
+            foreach (ExtensionManager::listDirectoryFiles($migrationPath, '.php') as $file) {
                 $migrationNames[] = pathinfo($file, PATHINFO_FILENAME);
             }
         }
@@ -3377,7 +3377,7 @@ class ModuleManager implements ModuleManagerInterface
                     $this->cleanupDynamicModuleData($module);
                 }
                 foreach ($module->getMigrations() as $migrationPath) {
-                    $files = glob($migrationPath.'/*.php') ?: [];
+                    $files = ExtensionManager::listDirectoryFiles($migrationPath, '.php');
                     rsort($files);
                     foreach ($files as $file) {
                         if (in_array(pathinfo($file, PATHINFO_FILENAME), $snapshot['migrations'], true)) {

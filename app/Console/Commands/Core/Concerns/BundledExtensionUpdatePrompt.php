@@ -505,7 +505,7 @@ trait BundledExtensionUpdatePrompt
         // proc_open 이 없는 서버: 확장마다 config·라우트 캐시를 다시 굽는 일회용 앱 부팅이 이 프로세스에 쌓이지 않도록
         // 재굽기를 끝에 한 번으로 모은다(그 사이 캐시를 읽는 새 프로세스는 뜰 수 없다). proc_open 은 있는데 자식을
         // 못 띄운 경우는 종전대로 항목마다 굽는다 — 그 사이 뜨는 composer 등이 옛 캐시로 부팅하지 않게.
-        if (! function_exists('proc_open')) {
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return ConfigCacheHelper::deferRebuilds(fn () => RouteCacheHelper::deferRebuilds(fn () => $this->runBulkUpdateItemsInProcess(
                 $moduleManager, $pluginManager, $templateManager, $updates, $strategies, $rebuildSearchIndex,
             )));

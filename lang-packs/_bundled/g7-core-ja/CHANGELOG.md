@@ -8,6 +8,9 @@
 
 ### Added
 
+- 관리자 화면 코어 업데이트 진행 기록의 공식 번들 배치 판정과 배치 기록 복원 안내(`settings.core_update.web.log_bundled_placement`, `log_bundled_record_restored`)의 일본어 번역을 추가했습니다.
+- 코어 업데이트 명령이 공개 파일 사본과 루트 진입 보호 파일 확인 목록 앞에 내는 머리말(`settings.core_update.console.docroot_exposure_header`, `root_files_header`)의 일본어 번역을 추가했습니다.
+- 관리자 화면 코어 업데이트 착수 요청의 검증 오류 문구에 쓰는 항목 이름(`settings.core_update.web.attributes.*` 4건)의 일본어 번역을 추가했습니다.
 - 운영자가 발송 수단을 켜서 만든 빈 알림 템플릿을 내용 없이 켤 때의 거절 안내(받는 사람 먼저, 본문 먼저) 일본어 번역을 추가했습니다.
 - 본인 확인 시작 요청의 「시작한 화면 범위」 항목 이름 일본어 번역을 추가했습니다(`validation.attributes.scope`).
 - 번들 일괄 업데이트에서 처리하지 못한 항목 목록과 다시 실행 안내(`extensions.commands.bundled_update.item_process_aborted`·`failed_items_header`·`failed_item_labels.*`·`child_aborted`)의 일본어 번역을 추가했습니다.

@@ -692,13 +692,13 @@ if (! function_exists('installerRebuildConfigCache')) {
      */
     function installerRebuildConfigCache(string $phpBinary): array
     {
-        // 가용성 판정은 저장소 SSoT(installerHasFunction)를 쓴다 — 무CLI 호스팅은 exec 를 막는다.
-        $canExec = function_exists('installerHasFunction')
-            ? installerHasFunction('exec') && installerHasFunction('escapeshellarg')
-            : function_exists('exec') && function_exists('escapeshellarg');
+        // 가용성 판정은 저장소 SSoT(installerHasFunction)를 쓴다 — 무CLI 호스팅은 exec 를 막는다. 이 파일은 머리에서
+        // execution-mode.php 를 불러오므로 그 판정기는 언제나 있다(직접 function_exists 로 갈라 판정하지 않는다).
+        $canExec = installerHasFunction('exec') && installerHasFunction('escapeshellarg');
         if (! $canExec || ! is_file(BASE_PATH.'/artisan')) {
             installerClearConfigCache();
 
+            // audit:allow web-artisan-spawn-requires-runner 아래 문자열은 실행하지 못한 사유 표시다(스폰이 아니다).
             return ['rebuilt' => false, 'exit_code' => null, 'output' => 'exec() unavailable or artisan missing'];
         }
 
@@ -707,12 +707,13 @@ if (! function_exists('installerRebuildConfigCache')) {
         // 지우므로 Error 다. 임시 디렉터리는 가용할 때만 폴백으로 쓰고, 이름은 저장소 공용 난수원으로 만든다.
         $outputDir = BASE_PATH.'/storage/logs';
         if ((! is_dir($outputDir) || ! is_writable($outputDir))
-            && (function_exists('installerHasFunction') ? installerHasFunction('sys_get_temp_dir') : function_exists('sys_get_temp_dir'))) {
+            && installerHasFunction('sys_get_temp_dir')) {
             $outputDir = sys_get_temp_dir();
         }
         $uniqueSuffix = function_exists('installerUniqueSuffix') ? installerUniqueSuffix(8) : bin2hex(random_bytes(8));
         $outputFile = $outputDir.DIRECTORY_SEPARATOR.'installer-finalize-config-cache-'.$uniqueSuffix.'.log';
 
+        // audit:allow web-artisan-spawn-requires-runner 설치 마무리(finalize-env)는 응답을 먼저 끝낸 뒤 도는 요청이라 설치기 러너(artisan-executor.php)를 싣지 않는다. 이 자리의 일은 병합된 .env 로 설정 캐시를 새 프로세스에서 다시 굽는 것 하나이고(in-process 로 구우면 이 요청이 부팅한 병합 전 값이 섞인다), exec 가 막힌 무CLI 호스팅은 위 판정에서 캐시를 지우는 쪽으로 빠진다(다음 요청이 병합된 .env 로 부팅).
         $command = escapeshellarg($phpBinary).' -d memory_limit=512M artisan config:cache > '
             .escapeshellarg($outputFile).' 2>&1';
 

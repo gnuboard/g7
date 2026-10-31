@@ -149,6 +149,7 @@ return [
     'env_hardening_hint_note' => 'Verify your environment before running. Applying the wrong permission may prevent the web server from reading .env and cause the site to stop responding.',
     'cron_hint_title' => 'Register scheduled tasks (cron)',
     'cron_hint_body' => 'Register the command below in cron to run every minute. Without it, visitor statistics are archived only when an administrator opens a statistics screen, and scheduled tasks such as automatic order cancellation, old data cleanup and report mails do not run.',
+    'cron_hint_web_cron' => 'If your hosting does not let you register cron, open Admin > Settings > System, choose "URL call" under Scheduled tasks, and register the shown call URL with your hosting scheduler or an external cron service to be called every minute.',
 
     // Step 5: Complete
     'installation_info' => 'Installation Information',

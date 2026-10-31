@@ -3023,7 +3023,7 @@ class PluginManager implements PluginManagerInterface
         $identifier = $plugin->getIdentifier();
         $migrationNames = [];
         foreach ($plugin->getMigrations() as $migrationPath) {
-            foreach (glob($migrationPath.'/*.php') ?: [] as $file) {
+            foreach (ExtensionManager::listDirectoryFiles($migrationPath, '.php') as $file) {
                 $migrationNames[] = pathinfo($file, PATHINFO_FILENAME);
             }
         }
@@ -3077,7 +3077,7 @@ class PluginManager implements PluginManagerInterface
                     $this->cleanupDynamicPluginData($plugin);
                 }
                 foreach ($plugin->getMigrations() as $migrationPath) {
-                    $files = glob($migrationPath.'/*.php') ?: [];
+                    $files = ExtensionManager::listDirectoryFiles($migrationPath, '.php');
                     rsort($files);
                     foreach ($files as $file) {
                         if (in_array(pathinfo($file, PATHINFO_FILENAME), $snapshot['migrations'], true)) {

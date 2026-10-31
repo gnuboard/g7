@@ -253,6 +253,9 @@ $completionExtra .= '<div class="env-hardening-hint cron-hint">'
     .'<p class="env-hardening-hint-title">'.htmlspecialchars(lang('cron_hint_title')).'</p>'
     .'<p class="env-hardening-hint-status">'.htmlspecialchars(lang('cron_hint_body')).'</p>'
     .'<div class="code-box"><pre>'.$cronCommand.'</pre></div>'
+    // 명령줄(crontab)을 쓸 수 없는 호스팅은 위 명령을 따라 할 수 없다 — 같은 예약 작업을 주소 호출(웹 크론)로
+    // 돌리는 관리자 화면을 함께 알린다. 호출 주소에는 비밀값이 들어가므로 여기서 주소를 그리지 않고 화면만 가리킨다.
+    .'<p class="env-hardening-hint-status">'.htmlspecialchars(lang('cron_hint_web_cron')).'</p>'
     .'</div>';
 
 echo renderInstallResultSection('completion', 'success', 'installation_completed', 'installation_complete_message', $completionButtons, $completionExtra);

@@ -308,6 +308,14 @@ return [
             // Manual ZIP source (D18)
             'version_from_zip' => '(determined after extraction)',
             'zip_file_invalid' => 'Only a ZIP file name may be given (no path, ending in `.zip`).',
+
+            // Start request field names (validation messages)
+            'attributes' => [
+                'update_bundled_extensions' => 'update bundled extensions and language packs',
+                'rebuild_search_index' => 'rebuild the search index',
+                'layout_strategy' => 'layout handling',
+                'zip_file' => 'uploaded ZIP file',
+            ],
             'zip_not_newer' => 'The version in the selected ZIP (:to) is not newer than the current version (:from). Web updates do not support forced re-application.',
 
             // Failure and rollback (D10)
@@ -341,6 +349,8 @@ return [
             'log_handoff' => 'The upgrade steps requested a fresh process (completed through :after, target :to) - the next step request continues from there. Reason: :reason',
             'log_bundled_skipped' => 'Bundled extensions and language packs were not selected',
             'log_bundled_none' => 'No bundled extension or language pack has a newer version',
+            'log_bundled_placement' => 'Official bundle placement — :placed placed, :unplaced not placed (bundles this site has not installed are skipped in this update)',
+            'log_bundled_record_restored' => 'Restored the official bundle placement record to its pre-update state',
             'log_bundled' => 'Bundled extensions and language packs updated (:success succeeded, :failed failed)',
             'log_spawn_fallback' => 'A separate process could not be started - running inside this request instead (:reason)',
             'log_finalized' => 'Finalized - current version :version',
@@ -394,6 +404,8 @@ return [
             'local_source_conflict' => '--local cannot be used together with --source / --zip.',
             'zip_not_found' => 'The specified ZIP file does not exist: :path',
             'source_not_found' => 'The specified source directory does not exist: :path',
+            'docroot_exposure_header' => '⚠ Public file copies. Review the items below.',
+            'root_files_header' => '⚠ Root entry and protection files. The update continued, but review the items below yourself.',
             'check_failed' => 'Update check failed: :error',
             'already_latest' => 'You are on the latest version: :version',
             'current_version' => 'Current version: :version',

@@ -100,6 +100,7 @@ class LoginController extends Controller
      */
     private function page(string $title, string $body, int $status = 200): Response
     {
+        // file-serving:allow 파일이 아니라 이 자리에서 만든 결과 화면(HTML)이다 — 본문은 전부 이스케이프한 값이고 `no-store` 로 남기지 않는다.
         $html = '<!doctype html><html lang="'.e(app()->getLocale()).'"><head><meta charset="utf-8">'
             .'<meta name="viewport" content="width=device-width,initial-scale=1"><title>'.$title.'</title>'
             .'<style>:root{color-scheme:light dark}body{font-family:system-ui,sans-serif;max-width:40rem;margin:2rem auto;padding:0 1rem}'

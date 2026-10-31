@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (645)
+- [코어](#코어) (651)
 - [기본 제공 확장](#기본-제공-확장) (17)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -142,6 +142,10 @@
 | `core.consent.allowed_types` | filter | 1 |  |
 | `core.consent.changed` | action | 3 |  |
 | `core.consent.registered_providers` | filter | 1 |  |
+| `core.core_update.completed` | action | 4 |  |
+| `core.core_update.failed` | action | 5 |  |
+| `core.core_update.start_validation_rules` | filter | 2 |  |
+| `core.core_update.started` | action | 4 |  |
 | `core.custom_assets.after_change` | action | 4 |  |
 | `core.custom_translation.bulk_destroy_validation_rules` | filter | 2 |  |
 | `core.custom_translation.index_validation_rules` | filter | 2 |  |
@@ -568,6 +572,7 @@
 | `core.settings.test_driver_connection_validation_rules` | filter | 2 |  |
 | `core.settings.test_mail_validation_rules` | filter | 2 |  |
 | `core.settings.test_outbound_proxy_validation_rules` | filter | 2 |  |
+| `core.settings.test_trusted_proxy_validation_rules` | filter | 2 |  |
 | `core.settings.update_validation_rules` | filter | 2 |  |
 | `core.storage.filter_url` | filter | 2 |  |
 | `core.template.activate_validation_rules` | filter | 2 |  |
@@ -657,6 +662,7 @@
 | `core.user.update_validation_rules` | filter | 2 |  |
 | `core.user.upload_avatar_rules` | filter | 1 | 호환용 옛 이름 → `core.user.upload_avatar_validation_rules` |
 | `core.user.upload_avatar_validation_rules` | filter | 1 |  |
+| `core.web_cron.run_validation_rules` | filter | 2 |  |
 | `hook.context.capture` | filter | 1 |  |
 | `hook.context.restore` | action | 1 |  |
 | `sirsoft-core.user.after_bulk_update` | action | 3 |  |

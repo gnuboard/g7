@@ -308,6 +308,14 @@ return [
             // 수동 ZIP (㉯ — D18)
             'version_from_zip' => '(ZIP 추출 후 판별)',
             'zip_file_invalid' => 'ZIP 파일 이름만 지정할 수 있습니다 (경로 없이 `.zip` 으로 끝나는 이름).',
+
+            // 착수 요청 항목 이름 (검증 오류 문구)
+            'attributes' => [
+                'update_bundled_extensions' => '번들 확장·언어팩 함께 업데이트',
+                'rebuild_search_index' => '검색 인덱스 다시 만들기',
+                'layout_strategy' => '레이아웃 처리 방식',
+                'zip_file' => '직접 올린 ZIP 파일',
+            ],
             'zip_not_newer' => '지정한 ZIP 의 버전(:to)이 현재 버전(:from)보다 새롭지 않습니다. 웹 업데이트는 강제 재적용을 지원하지 않습니다.',
 
             // 실패·되돌리기 (D10)
@@ -341,6 +349,8 @@ return [
             'log_handoff' => '업그레이드 스텝이 새 프로세스를 요청 (:after 까지 완료, 대상 :to) — 다음 단계 요청에서 이어서 실행합니다. 사유: :reason',
             'log_bundled_skipped' => '번들 확장·언어팩 함께 업데이트를 선택하지 않았습니다',
             'log_bundled_none' => '번들에 새 버전이 있는 확장·언어팩이 없습니다',
+            'log_bundled_placement' => '공식 번들 배치 판정 — 배치 :placed개, 미배치 :unplaced개(설치하지 않은 번들은 이번 업데이트에서 건너뜁니다)',
+            'log_bundled_record_restored' => '공식 번들 배치 기록을 업데이트 전 내용으로 되돌렸습니다',
             'log_bundled' => '번들 확장·언어팩 업데이트 완료 (성공 :success, 실패 :failed)',
             'log_spawn_fallback' => '별도 프로세스 실행 불가 — 같은 요청 안에서 실행합니다 (:reason)',
             'log_finalized' => '마무리 완료 — 현재 버전 :version',
@@ -394,6 +404,8 @@ return [
             'local_source_conflict' => '--local 은 --source / --zip 과 동시에 사용할 수 없습니다.',
             'zip_not_found' => '지정된 ZIP 파일이 존재하지 않습니다: :path',
             'source_not_found' => '지정된 소스 디렉토리가 존재하지 않습니다: :path',
+            'docroot_exposure_header' => '⚠ 공개 파일 사본 — 아래를 확인해야 합니다.',
+            'root_files_header' => '⚠ 루트 진입·보호 파일 — 진행은 계속되었지만 아래를 직접 확인해야 합니다.',
             'check_failed' => '업데이트 확인 실패: :error',
             'already_latest' => '현재 최신 버전입니다: :version',
             'current_version' => '현재 버전: :version',

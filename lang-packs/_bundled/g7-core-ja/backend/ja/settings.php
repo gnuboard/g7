@@ -197,6 +197,14 @@ return [
             'preflight_low_disk' => '空き容量が不足しています（空き :free / 必要見込み :required）。バックアップと新バージョンが同時に置かれる区間があるため、現在のサイズの数倍が必要です。',
             'version_from_zip' => '（ZIP 展開後に判定）',
             'zip_file_invalid' => 'ZIP ファイル名のみ指定できます（パスなし、`.zip` で終わる名前）。',
+
+            // 開始リクエストの項目名（検証エラー文言）
+            'attributes' => [
+                'update_bundled_extensions' => 'バンドル拡張・言語パックも更新',
+                'rebuild_search_index' => '検索インデックスの再作成',
+                'layout_strategy' => 'レイアウトの扱い',
+                'zip_file' => 'アップロードした ZIP ファイル',
+            ],
             'zip_not_newer' => '指定した ZIP のバージョン（:to）が現在のバージョン（:from）より新しくありません。Web アップデートは強制的な再適用に対応していません。',
             'upgrade_steps_failed' => 'アップグレードステップの実行に失敗しました: :output',
             'handoff_exhausted' => 'アップグレードステップが新しいプロセスでの再実行を繰り返し要求したため中断しました（最後の完了地点 :after / 理由 :reason）。',
@@ -226,6 +234,8 @@ return [
             'log_handoff' => 'アップグレードステップが新しいプロセスを要求（:after まで完了、対象 :to）— 次のステップ要求で続行します。理由: :reason',
             'log_bundled_skipped' => 'バンドル拡張・言語パックの同時更新は選択されていません',
             'log_bundled_none' => 'バンドルに新しいバージョンがある拡張・言語パックはありません',
+            'log_bundled_placement' => '公式バンドルの配置判定 — 配置 :placed 件、未配置 :unplaced 件(このサイトにインストールしていないバンドルは今回の更新でスキップします)',
+            'log_bundled_record_restored' => '公式バンドルの配置記録を更新前の内容に戻しました',
             'log_bundled' => 'バンドル拡張・言語パックの更新完了（成功 :success、失敗 :failed）',
             'log_spawn_fallback' => '別プロセスを起動できません — 同じリクエスト内で実行します（:reason）',
             'log_finalized' => '仕上げ完了 — 現在のバージョン :version',
@@ -306,6 +316,8 @@ return [
             'local_source_conflict' => '--local は --source / --zip と同時に使用できません。',
             'zip_not_found' => '指定された ZIP ファイルが存在しません: :path',
             'source_not_found' => '指定されたソースディレクトリが存在しません: :path',
+            'docroot_exposure_header' => '⚠ 公開ファイルのコピー — 以下を確認してください。',
+            'root_files_header' => '⚠ ルートのエントリ・保護ファイル — 処理は続行されましたが、以下を直接確認してください。',
             'check_failed' => 'アップデート確認失敗: :error',
             'already_latest' => '現在、最新バージョンです: :version',
             'current_version' => '現在のバージョン: :version',

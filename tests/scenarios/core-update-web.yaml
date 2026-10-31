@@ -137,6 +137,19 @@ effects:
   # 초록이었다. 그래서 **계산된 값**(padding·모서리·굵기)을 재는 케이스로 잠근다.
   - update_tab_buttons_carry_the_button_base_class
 
+  # 609 후속(7.2.0 병합 뒤) — 7.2.0 이 CLI 에 더한 배포본 판정 두 가지(공식 번들 배치 #146, custom 사전 검사 #792)를
+  # 웹 단계도 거친다. 웹만 미설치 번들을 통째로 받거나 custom 충돌 배포본을 그대로 적용하던 갈림을 잰다.
+  - the_web_run_skips_unplaced_bundles_like_the_cli
+  - the_web_run_stops_before_backup_when_the_release_hits_a_custom_reserved_path
+  - the_web_run_restores_the_bundled_placement_record_on_rollback
+  - shared_core_update_message_population_is_derived_and_non_empty
+  - shared_message_cli_exemptions_are_still_needed
+  - shared_core_update_messages_name_no_command_line_only_action
+  - recovery_guidance_locale_channels_each_yield_files
+  - no_message_claims_the_command_line_is_the_only_way
+  - recovery_guidance_exemptions_are_still_needed
+  - recovery_guidance_never_points_only_at_ssh
+
 pending_effects:
   # 아래는 **아직 재는 테스트가 없다**. 무CLI(P0) 프로필에서만 재현되는 축이라 PHPUnit·
   # Playwright 어느 쪽으로도 자동화할 수 없다 — `disable_functions` 는 실행 프로세스의
@@ -161,6 +174,7 @@ pending_effects:
 
 test_files:
   - tests/Unit/CoreUpdate/CoreUpdateStepContractTest.php
+  - tests/Unit/CoreUpdate/CoreUpdateWebBundledAndCustomPreflightTest.php
   - tests/Unit/CoreUpdate/CoreUpdateRunStateTest.php
   - tests/Unit/CoreUpdate/CoreUpdateSafeDefaultsTest.php
   - tests/Unit/CoreUpdate/CoreUpdatePipelineParityTest.php
@@ -170,6 +184,8 @@ test_files:
   # 화면 배선·권한 게이트·안전 기본값 (W6)
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-core-update-tab.test.tsx
   - tests/Playwright/specs/admin/settings-core-update-tab.spec.ts
+  - tests/Unit/CoreUpdate/CoreUpdateSharedMessageChannelTest.php
+  - tests/Unit/CoreUpdate/NoCliRecoveryGuidanceTest.php
 
 coverage_strategy: pairwise
 
