@@ -361,6 +361,7 @@ export async function sirsoftBasicIdentityLauncher(payload: VerificationPayload)
       // 인증을 마친 사용자가 사이트 밖으로 돌아온다(`return_url` 의 pathname 은 이미 접두사를 갖고 있고, 복귀 이동이 그대로 받는다).
       redirect_url: sitePath(
         `/identity/challenge?challenge_id=${encodeURIComponent(challenge.id)}&return_url=${encodeURIComponent(
+          // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다(위 주석).
           `${window.location.pathname}${window.location.search}`,
         )}`,
       ),

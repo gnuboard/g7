@@ -387,6 +387,7 @@ export const defaultLauncher: ModalLauncher = async (payload) => {
 
   // 챌린지 화면은 `query.return_url` 을 읽는다 — 같은 출처 경로+쿼리만 넘긴다(절대 주소 아님). 해시는
   // 빼는데, 챌린지 화면의 복귀 이동(mergeQuery)이 쿼리를 덧붙일 때 해시 안으로 들어가지 않게 하기 위해서다.
+  // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다(아래 withBasePrefix 는 멱등).
   const returnPath = `${window.location.pathname}${window.location.search}`;
   // 마운트 접두사를 붙인다 — `navigate` 는 라우터가 붙여 주지만 아래 폴백은 브라우저가
   // 그대로 여는 주소라, 하위 폴더 배치에서 접두사가 없으면 사이트 밖으로 나간다.

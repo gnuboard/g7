@@ -155,6 +155,7 @@
 - [ ] 편집기 폴백 경로를 고쳤다면 저장 계약(`{name}_mode`)과 재시도 시 내용 승계가 유지되는지 확인
 - [ ] 프론트엔드를 고쳤다면 Playwright 위지윅 spec 을 함께 갱신·실행한다 (단위 테스트만으로는 편집기 장착 회귀가 드러나지 않는다)
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 편집기 스펙이 없어 `ckeditor5Uploads` 가 편집기 캔버스에서 빈 화면으로 보인다. `data_source` 를 더 늘리면 그 자리도 같은 상태가 된다
+- [ ] 브라우저가 만드는 주소는 `resources/js/apiUrl.ts` 의 `apiUrl()`, `sitePath()`, `routePath()` 만 쓴다 — 이동, 링크, 요청 주소는 `sitePath()`/`apiUrl()` 로 접두사를 붙이고, `location.pathname` 을 화면 판정에 쓸 때는 `routePath()` 로 벗긴다. 이 파일은 번들 확장 전체가 바이트 동일한 사본으로 갖는다. 어기면 하위 폴더 설치(`https://host/g7/`)에서만 오류 없이 다른 글로 옮겼는지 가르는 경로 판정이 어긋나 앞 글 본문이 남는다
 
 ## 6. 금지 패턴
 

@@ -821,10 +821,10 @@ export class TemplateApp {
                     returnUrl,
                     'session_expired'
                 );
-                // base-path:allow getLoginRedirectUrl() 가 접두사를 붙인 값이다.
                 // 이동 응답이 오기 전(수백 ms)에 같은 401 로 실패한 데이터소스·액션이 떠날 화면에 오류 토스트를
                 // 그리지 않도록 이탈 가드를 미리 켠다(engine-v1.78.2).
                 markDocumentLeaving();
+                // base-path:allow getLoginRedirectUrl() 가 접두사를 붙인 값이다.
                 window.location.href = loginUrl;
             });
 
@@ -1086,7 +1086,9 @@ export class TemplateApp {
             // 첫 화면도 라우터가 `navigateToCurrentPath()` 로 routeChange 를 한 번 낸다. 아래에서
             // 직접 알린 그 한 번을 거르지 않으면 모든 첫 로드가 페이지뷰 2건이 되고, 한 쪽만
             // 보고 떠난 방문이 이탈로 잡히지 않는다. 그 뒤의 이동은 전부 그대로 센다.
-            const initialPath = window.location.pathname;
+            // 라우터가 알리는 `route.path` 는 접두사를 벗긴 앱 기준 경로다 — 같은 기준으로 맞춘다. 맞추지 않으면 하위
+            // 폴더 배치에서 첫 알림을 거르지 못해 첫 화면 페이지뷰가 2건이 된다.
+            const initialPath = stripBasePrefix(window.location.pathname);
             let initialRouteChangeSeen = false;
 
             // 라우트 구독은 동기로 반환한다 — 라우터가 핸들러를 기다리기 때문이다.
@@ -1102,7 +1104,7 @@ export class TemplateApp {
 
             // 404 등 라우터가 routeChange 를 내지 않는 경우까지 첫 화면을 세려면 여기서 한 번
             // 알려야 한다. 매칭이 안 되면 라우트 없이 보낸다 — 제목은 경로로 떨어진다.
-            const initialMatch = this.router?.match(window.location.pathname);
+            const initialMatch = this.router?.match(stripBasePrefix(window.location.pathname));
             this.analytics.tracker.trackPageview(initialMatch?.route ?? null);
         } catch (error) {
             // 통계 초기화 실패가 사이트 부팅을 막지 않는다.
@@ -3680,6 +3682,7 @@ export class TemplateApp {
         actionDispatcher.setLoginPathResolver?.(() =>
             AuthManager.getInstance().getLoginRedirectUrl(
                 authType,
+                // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다
                 window.location.pathname + window.location.search
             )
         );
@@ -3968,7 +3971,8 @@ export class TemplateApp {
             // 대기 중인 디바운스 쓰기(CKEditor 본문 등)를 먼저 실행해 스냅샷에 담는다 — 엔진을 내린 뒤 옛 디스패처의
             // 타이머가 늦게 실행되면 재진입의 `_local` 교체와 어긋난다
             getState().actionDispatcher?.flushPendingDebounceTimers?.();
-            this.pendingLocaleSwitch = { path: window.location.pathname, local: this.snapshotLocalForLocaleSwitch() };
+            // 재진입 대조(`consumeLocaleSwitchState(route.path)`)의 상대는 접두사를 벗긴 앱 기준 경로다 — 같은 기준으로 남긴다.
+            this.pendingLocaleSwitch = { path: stripBasePrefix(window.location.pathname), local: this.snapshotLocalForLocaleSwitch() };
             const loadedManualSourceIds = this.collectLoadedManualDataSourceIds();
             beginLocaleSwitchHandoff();
             this.localeSwitchConsumed = false;
@@ -4128,8 +4132,9 @@ export class TemplateApp {
      * @since engine-v1.79.0
      */
     private collectLoadedManualDataSourceIds(): string[] {
-        // 지금 화면이 그 데이터 소스 정의를 채운 경로가 아니면(없는 주소의 오류 화면 등) 모으지 않는다
-        if (this.currentRoutePath !== window.location.pathname) {
+        // 지금 화면이 그 데이터 소스 정의를 채운 경로가 아니면(없는 주소의 오류 화면 등) 모으지 않는다.
+        // `currentRoutePath` 는 앱 기준 경로(`route.path`)라 브라우저 주소의 접두사를 벗겨 대조한다.
+        if (this.currentRoutePath !== stripBasePrefix(window.location.pathname)) {
             return [];
         }
         return (this.currentDataSources || [])

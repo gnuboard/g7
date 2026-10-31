@@ -3549,7 +3549,10 @@ function initCoreAPIs(G7Core: any, deps: G7CoreDependencies): void {
   ) => {
     const templateApp = (window as any).__templateApp;
     if (templateApp?.updateQueryParams) {
-      registerUrlOnlyPathChange(newPath, templateApp);
+      // 별칭 기록은 브라우저 주소(`location.pathname`)와 대조된다 — `TemplateApp.updateQueryParams` 가 주소창에 쓰는
+      // 값과 같게 접두사를 붙여 남긴다(형제 replaceUrl 과 같은 규칙). 앱 기준 경로를 남기면 하위 폴더 배치에서 별칭
+      // 판정이 늘 거짓이 되어 디바운스 칸의 경로 가드가 같은 화면 입력을 버린다.
+      registerUrlOnlyPathChange(withBasePrefix(newPath), templateApp);
       return templateApp.updateQueryParams(newPath, options);
     }
     logger.warn('G7Core.updateQueryParams: TemplateApp이 초기화되지 않았습니다.');

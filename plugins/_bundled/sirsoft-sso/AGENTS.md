@@ -125,6 +125,7 @@
 - [ ] 행위자 없는 경로(SCIM, 스케줄, 로그인 중 동기화)에서 회원 수정, 차단, 탈퇴, 역할 변경을 부르면 `SystemOperation::run()` 안에서
 - [ ] 회원을 가리키는 새 표를 더하면 `core.user.after_withdraw`, `core.user.before_delete` 를 우선순위 50 보다 작은 수로 구독해 먼저 지우고 `Bootstrap\Tables` 에 자식 표부터 등록
 - [ ] 훅 인자와 API 응답에 비밀값, 토큰, 어설션 XML, id_token 원문이 실리지 않는지 확인(`secrets` 는 마스크만)
+- [ ] 브라우저가 만드는 주소는 `resources/js/apiUrl.ts` 의 `apiUrl()`, `sitePath()`, `routePath()` 만 쓴다 — 이동, 링크, 요청 주소는 `sitePath()`/`apiUrl()` 로 접두사를 붙이고, `location.pathname` 을 화면 판정에 쓸 때는 `routePath()` 로 벗긴다. 이 파일은 번들 확장 전체가 바이트 동일한 사본으로 갖는다. 어기면 하위 폴더 설치(`https://host/g7/`)에서만 오류 없이 회사 계정 로그인과 계정 연결 시작이 사이트 밖으로 나간다. 서버가 주는 시작 주소는 앱 기준 경로이고, 같은 출처 절대 주소로 오면 `routePath()` 로 벗긴 뒤 허용 접두와 대조한다
 
 ## 6. 금지 패턴
 

@@ -36,8 +36,12 @@ function currentHistoryEntryIndex(): number | null {
 
 /**
  * 지금 주소(경로+쿼리+해시)
+ *
+ * 브라우저가 보는 주소 그대로다(하위 폴더 배치면 마운트 접두사 포함). 확정 주소 기록·popstate 복구(`pushState`)가
+ * 이 값을 다시 브라우저에 넘기고, 이탈 가드는 비교 전에 양쪽 접두사를 벗긴다.
  */
 function currentUrl(): string {
+  // base-path:allow 브라우저 주소를 기록·복구용으로 그대로 읽는다(라우트 대조가 아니다).
   return window.location.pathname + window.location.search + window.location.hash;
 }
 
@@ -133,8 +137,10 @@ export class Router {
       return;
     }
 
-    if (isCustomRoutePath(window.location.pathname)) {
-      logger.log(`popstate to custom route — reloading: ${window.location.pathname}`);
+    // 개발자 화면 패턴은 서버 라우트 URI 라 접두사가 없다 — 브라우저 주소의 접두사를 벗겨 대조한다.
+    const poppedPath = stripBasePrefix(window.location.pathname);
+    if (isCustomRoutePath(poppedPath)) {
+      logger.log(`popstate to custom route — reloading: ${poppedPath}`);
       window.location.reload();
       return;
     }
@@ -155,6 +161,7 @@ export class Router {
    * @param _targetIndex popstate 가 내려앉은 항목 위치 (진단용)
    */
   private restoreBlockedPopState(_targetIndex: number | null): void {
+    // base-path:allow 확정 주소는 브라우저에서 읽은 값이라 접두사를 이미 품고 있다(currentUrl·Navigation API).
     window.history.pushState({}, '', this.getCommittedUrl());
     this.committedHistoryIndex = currentHistoryEntryIndex();
   }
@@ -514,7 +521,8 @@ export class Router {
     if (isCustomRoutePath(path)) {
       logger.log(`navigate to custom route — full page load: ${path}`);
       this.pendingNavigation = null;
-      window.location.assign(path);
+      // 이동 경로는 앱 기준(접두사 없음)이다 — 브라우저가 그대로 여는 주소라 마운트 접두사를 붙인다.
+      window.location.assign(withBasePrefix(path));
       return;
     }
 

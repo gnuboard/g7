@@ -1,4 +1,4 @@
-import { routePath } from './apiUrl';
+import { routePath, sitePath } from './apiUrl';
 import {
     clearMobilePaymentReturnPending,
     hasMobilePaymentReturnPending,
@@ -75,7 +75,9 @@ function returnToClaimDetailIfClaimPayment(): boolean {
     clearStandardPaymentCloseReportContext();
     removeKoreanPaymentForms();
     markStandardPaySdkForReload();
-    window.location.href = url;
+    // 서버가 주는 신청서 상세 주소는 앱 내 경로(`/mypage/...`)라 사이트 마운트 접두사를 붙여 이동한다
+    // (절대 URL·이미 접두사가 붙은 값은 그대로 — 멱등).
+    window.location.href = sitePath(url);
 
     return true;
 }

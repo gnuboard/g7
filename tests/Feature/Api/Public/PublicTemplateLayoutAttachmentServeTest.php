@@ -23,11 +23,7 @@ use Tests\TestCase;
  *  - `mimeType` 생략 → 스토리지 어댑터가 세운 헤더에 기댄다(추정은 사본이다).
  *  - `skipCompression` 생략 → 압축을 피하는 것이 응답 **클래스**를 보고 건너뛰는 우연이 된다.
  *
- * @scenario response_kind=streamed, conditional=none
- *
- * @effects conditional_response_carries_the_full_cache_axis_of_200,
- *          public_storage_response_revalidates_instead_of_immutable,
- *          file_serving_response_declares_nosniff
+ * @scenario response_kind=streamed, conditional_request=none
  */
 class PublicTemplateLayoutAttachmentServeTest extends TestCase
 {
@@ -46,6 +42,11 @@ class PublicTemplateLayoutAttachmentServeTest extends TestCase
 
     private TemplateLayoutAttachment $attachment;
 
+    /**
+     * 사용자 템플릿 행과 SVG 레이아웃 첨부 한 건을 가짜 디스크에 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -78,6 +79,12 @@ class PublicTemplateLayoutAttachmentServeTest extends TestCase
         ]);
     }
 
+    /**
+     * 준비한 첨부의 무인증 서빙 주소를 만듭니다.
+     *
+     * @param  string  $query  주소 끝에 붙일 쿼리(`?v=1` 등)
+     * @return string 서빙 주소
+     */
     private function serveUrl(string $query = ''): string
     {
         return route('api.public.templates.layout-attachment-file', [
@@ -92,6 +99,10 @@ class PublicTemplateLayoutAttachmentServeTest extends TestCase
      * 이 주소의 버전은 서버가 발급하지 않는다 — 파생 규칙(`?v=` 가 있으면 immutable)은 서버가
      * 버전을 실어 보내는 자산 URL 에만 의미가 있고, 사용자 업로드물 통로는 명시 `false` 다
      * (공개 스토리지·첨부·확장 이미지와 같은 선언).
+     *
+     * @effects public_storage_response_revalidates_instead_of_immutable
+     *
+     * @return void 반환값 없음
      */
     public function test_request_supplied_version_does_not_make_the_response_immutable(): void
     {
@@ -107,6 +118,10 @@ class PublicTemplateLayoutAttachmentServeTest extends TestCase
 
     /**
      * `Content-Type` 은 행 메타(`mime_type`)가 근거다 — 스토리지 어댑터의 추정이 아니다.
+     *
+     * @effects public_layout_attachment_content_type_is_the_row_mime_type
+     *
+     * @return void 반환값 없음
      */
     public function test_content_type_is_the_row_mime_type(): void
     {
@@ -117,6 +132,10 @@ class PublicTemplateLayoutAttachmentServeTest extends TestCase
 
     /**
      * 압축 제외는 **선언**된다 — 응답 클래스에 기대지 않는다.
+     *
+     * @effects public_storage_response_is_not_buffered_for_compression
+     *
+     * @return void 반환값 없음
      */
     public function test_compression_exclusion_is_declared_on_the_request(): void
     {
@@ -134,6 +153,13 @@ class PublicTemplateLayoutAttachmentServeTest extends TestCase
      * SVG 는 스크립트를 실을 수 있고 이 통로는 무인증이다. `nosniff` 가 없으면 브라우저가
      * 선언 유형을 무시하고 내용으로 판정할 여지가 남는다 — 정적 서빙 설정이 붙이는 헤더를
      * 이 통로만 빠뜨리면 링크 유무로 위험이 갈린다.
+     *
+     * @scenario response_kind=streamed, conditional_request=if_none_match
+     *
+     * @effects file_serving_response_declares_nosniff,
+     *          conditional_response_carries_the_full_cache_axis_of_200
+     *
+     * @return void 반환값 없음
      */
     public function test_full_and_not_modified_responses_declare_nosniff(): void
     {

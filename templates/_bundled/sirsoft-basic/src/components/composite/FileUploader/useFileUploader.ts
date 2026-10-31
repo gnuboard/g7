@@ -16,6 +16,7 @@ import imageCompression from 'browser-image-compression';
 import type { Attachment, PendingFile, FileUploaderProps, ApiEndpoints } from './types';
 import { formatFileSize, extractErrorMessage, t } from './utils';
 import { isDirectAssetUrl } from '../assetOrigin';
+import { routePath } from '../../../support/apiUrl';
 import { secretContentHeaders } from '../../../support/secretContentHeaders';
 
 /** 동봉한 browser-image-compression 버전 */
@@ -148,7 +149,8 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
   const [existingFiles, setExistingFiles] = useState<Attachment[]>(initialFiles);
   // 언어 전환은 화면을 새로 마운트한다 — 저장 전에 고른 대기 파일은 엔진의 언어 전환 인계 저장소에 맡겼다가
   // 새 인스턴스가 되찾는다(G7Core.locale.handoff, engine-v1.79.0). 키는 화면 경로 + 컬렉션 + 업로드 트리거.
-  const localeHandoffKey = `FileUploader:${typeof window !== 'undefined' ? window.location.pathname : ''}:${collection ?? ''}:${uploadTriggerEvent ?? ''}`;
+  // 경로는 앱 기준(마운트 접두사를 벗긴 값) — 엔진의 언어 전환 재진입 대조와 같은 기준이다.
+  const localeHandoffKey = `FileUploader:${typeof window !== 'undefined' ? routePath(window.location.pathname) : ''}:${collection ?? ''}:${uploadTriggerEvent ?? ''}`;
   // 맡긴 값은 { pending, order, reordered } — 드래그로 정한 순서도 함께 넘긴다. 올리던 중(압축·업로드)에 넘어온
   // 항목은 옛 인스턴스의 요청 결과를 받을 수 없으므로 대기로 되돌려 저장 때 다시 올린다.
   const [localeHandoff] = useState<{ pending: PendingFile[]; order: (string | number)[]; reordered: boolean } | null>(() => {

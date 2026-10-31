@@ -331,6 +331,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 클레임 금액 표시를 추가할 때 보조 통화 줄(`mc_*`)은 바로 위 기준 통화 줄과 같은 필드·같은 게이트로 — 서버가 만든 맵을 나열만 하고 화면에서 더하거나 곱하지 않는다
 - [ ] 응답에 통화 코드 맵(`mc_*`)을 새로 실을 때 비면 `[]` 가 아니라 빈 객체 `{}` 로 낸다(1.3.1~, claims.md 「모든 `mc_*` 가 같다」) — `formatStoredMultiCurrency()` 를 거치거나 `ClaimResource::emptyMultiCurrencyMapsAsObjects()` 처럼 **응답 경계에서만** 바꾼다. 같은 맵을 서비스가 PHP 배열로 읽는 표시기(`CalculationSnapshotPresenter`)·서비스 반환값은 바꾸지 않는다
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_ecommerce_product_form`·`admin_ecommerce_shipping_policy_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비운 뒤 기본값을 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비운다. 생성 모드에서도 폼을 채우는 `initLocal` 데이터소스(복사 `copy_source` 등)는 문자열형이 아니라 `{"_merge":"replace","form":"{{data}}"}` 맵으로 둔다 — 문자열형은 엔진이 기존 form 과 깊은 병합해 잔존을 페이로드에 섞는다(트러블슈팅 state-global 사례 7)
+- [ ] 브라우저가 만드는 주소는 `resources/js/apiUrl.ts` 의 `apiUrl()`, `sitePath()`, `routePath()` 만 쓴다 — 이동, 링크, 요청 주소는 `sitePath()`/`apiUrl()` 로 접두사를 붙이고, `location.pathname` 을 화면 판정에 쓸 때는 `routePath()` 로 벗긴다. 이 파일은 번들 확장 전체가 바이트 동일한 사본으로 갖는다. 어기면 하위 폴더 설치(`https://host/g7/`)에서만 오류 없이 교환/반품 신청 화면이 주소에서 신청 종류와 신청서 번호를 읽지 못한다
 ## 6. 금지 패턴
 
 <!-- @intent START -->
@@ -391,7 +392,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | PHPUnit | 731개 | `modules/_bundled/sirsoft-ecommerce/tests` |
 | Vitest | 299개 | `vitest.config.ts` |
 | Playwright | 82개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 414개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 417개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

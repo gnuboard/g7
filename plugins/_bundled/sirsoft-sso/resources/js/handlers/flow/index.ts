@@ -7,6 +7,8 @@
  * 출처 시작 경로뿐이다(외부 주소로 내보내는 열린 리디렉션을 만들지 않는다).
  */
 
+import { routePath, sitePath } from '../../apiUrl';
+
 /** 이동을 허용하는 같은 출처 경로 접두 */
 const START_PREFIX = '/plugins/sirsoft-sso/login/';
 
@@ -39,6 +41,9 @@ function core(): CoreGlobal {
 /**
  * 시작 주소가 이 플러그인의 같은 출처 시작 경로인지 확인하고 경로로 돌려줍니다.
  *
+ * 판정은 앱 기준 경로(접두사 없음)로 한다 — 같은 출처 절대 주소로 오면 하위 폴더 배치의 마운트 접두사가 실려 있으므로
+ * 벗긴 뒤 대조한다. 돌려주는 값도 앱 기준이고, 이동하는 쪽이 `sitePath()` 로 접두사를 붙인다.
+ *
  * @param url - 시작 주소 (상대 경로 또는 같은 출처 절대 주소)
  * @returns 경로+쿼리, 허용되지 않으면 null
  */
@@ -49,11 +54,12 @@ export function safeStartPath(url: unknown): string | null {
 
   try {
     const parsed = new URL(url, window.location.origin);
-    if (parsed.origin !== window.location.origin || !parsed.pathname.startsWith(START_PREFIX)) {
+    const pathname = routePath(parsed.pathname);
+    if (parsed.origin !== window.location.origin || !pathname.startsWith(START_PREFIX)) {
       return null;
     }
 
-    return parsed.pathname + parsed.search;
+    return pathname + parsed.search;
   } catch {
     return null;
   }
@@ -87,7 +93,8 @@ export function startLoginHandler(action: StartLoginAction): boolean {
     return false;
   }
 
-  window.location.assign(path);
+  // 시작 주소는 앱 기준 경로다 — 브라우저가 그대로 여는 주소라 사이트 마운트 접두사를 붙인다(하위 폴더 배치).
+  window.location.assign(sitePath(path));
 
   return true;
 }
@@ -119,7 +126,8 @@ export async function startWithTicketHandler(action: StartWithTicketAction): Pro
       return false;
     }
 
-    window.location.assign(path);
+    // 시작 주소는 앱 기준 경로다 — 브라우저가 그대로 여는 주소라 사이트 마운트 접두사를 붙인다(하위 폴더 배치).
+    window.location.assign(sitePath(path));
 
     return true;
   } catch (error) {

@@ -146,6 +146,7 @@
 - [ ] 브라우저가 만드는 주소는 `resources/js/apiUrl.ts` 의 `apiUrl()` · `sitePath()` · `routePath()` 만 쓴다 — 이 파일은 번들 확장 전체가 **바이트 동일한 사본**으로 갖는다. 한 곳을 고치면 전부 같이 고친다. 루트 상대(`/api/…`)로 직접 조립하면 하위 폴더 설치(`https://host/g7/`)에서 요청·복귀 주소가 사이트 밖을 가리키고, 오류 없이 결제만 완료되지 않는다
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 자기 전용 `data_source`(`settings`, 입금통보 웹훅 전체 URL 을 받는 `webhook_info`)를 쓰므로 `editor-spec.json` 의 `sampleData.byDataSourceId` 와 화면 상태(`initialState.local`)에 같은 ID·키로 샘플을 함께 추가한다
 - [ ] 토스페이먼츠가 SDK 호스트를 바꾸면 `plugin.json` 의 `trusted_script_hosts`(+`trusted_script_hosts_reason`)와 `resources/js/handlers/requestPayment.ts` 의 `KNOWN_SDK_HOSTS` 를 **함께** 갱신 — 두 목록이 어긋나면 테스트가 실패하며, 코드 상수에 없는 호스트는 주입 직전 확인에서 거부되어 결제가 진행되지 않는다(fail-closed). 변경 후 `php artisan ext:docgen --scope=plugin:sirsoft-tosspayments` 재실행
+- [ ] 서버가 주는 앱 내 복귀 경로(`claim_cancel_return_url` 등, 접두사 없음)로 전체 이동할 때도 `sitePath()` 를 거친다 — 그대로 `location.href` 에 넣으면 하위 폴더 설치에서 교환/반품 신청서로 돌아오지 못하고 사이트 밖으로 나간다
 
 ## 6. 금지 패턴
 

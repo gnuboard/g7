@@ -367,6 +367,7 @@ export function useCustomAssets(target: CustomAssetTarget): UseCustomAssetsResul
 
       try {
         const url = `${baseUrl(target)}/search?q=${encodeURIComponent(keyword.trim())}`;
+        // base-path:allow 주소는 `baseUrl()` 산출물이라 접두사가 이미 붙어 있다 (그 한 곳이 이 hook 의 단일 지점).
         const response = await fetch(url, { credentials: 'same-origin', headers: buildAuthHeaders() });
         const body = await response.json().catch(() => null);
 

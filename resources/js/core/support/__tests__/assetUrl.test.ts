@@ -199,6 +199,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
     });
 
     describe('모드 판정', () => {
+        // @scenario asset_url_mode=extension
+        // @effects frontend_asset_url_mode_resolves_runtime_key_then_setting_then_default
         it('G7Config 부재 시 기본 모드는 확장자 유지', () => {
             delete (globalThis as any).G7Config;
 
@@ -206,6 +208,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(isExtensionless()).toBe(false);
         });
 
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_resolves_runtime_key_then_setting_then_default
         it('런타임 키가 설정값보다 우선한다', () => {
             (globalThis as any).G7Config = {
                 assetUrlMode: MODE_EXTENSIONLESS,
@@ -215,6 +219,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(getAssetUrlMode()).toBe(MODE_EXTENSIONLESS);
         });
 
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_resolves_runtime_key_then_setting_then_default
         it('런타임 키가 없으면 설정값을 따른다', () => {
             (globalThis as any).G7Config = {
                 settings: { general: { asset_url_mode: MODE_EXTENSIONLESS } },
@@ -223,6 +229,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(getAssetUrlMode()).toBe(MODE_EXTENSIONLESS);
         });
 
+        // @scenario asset_url_mode=extension
+        // @effects frontend_asset_url_mode_resolves_runtime_key_then_setting_then_default
         it('알 수 없는 값은 기본 모드로 폴백한다', () => {
             (globalThis as any).G7Config = { assetUrlMode: 'nonsense' };
 
@@ -231,6 +239,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
     });
 
     describe('확장자 모드 — 치환 이전 문자열과 바이트 동일', () => {
+        // @scenario asset_url_mode=extension, base_path=root, fetch_origin=core_bundle
+        // @effects frontend_extension_mode_urls_match_pre_builder_strings
         it('Router.ts:113 routes.json (버전 있음/없음)', () => {
             expect(suffixed('/api/templates/sirsoft-basic/routes', 'json', 7)).toBe(
                 '/api/templates/sirsoft-basic/routes.json?v=7',
@@ -240,6 +250,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             );
         });
 
+        // @scenario asset_url_mode=extension, base_path=root, fetch_origin=core_bundle
+        // @effects frontend_extension_mode_urls_match_pre_builder_strings
         it('ComponentRegistry loadManifest components.json (버전 있음/없음 — #122 작업 B)', () => {
             // 편집기 경로(버전 미전달)는 무버전 URL 유지 (서버가 현재 버전 폴백 — #588)
             expect(suffixed('/api/templates/sirsoft-basic/components', 'json')).toBe(
@@ -251,23 +263,31 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             );
         });
 
+        // @scenario asset_url_mode=extension, base_path=root, fetch_origin=core_bundle
+        // @effects frontend_extension_mode_urls_match_pre_builder_strings
         it('TemplateApp config.json + 캐시버스트 쿼리', () => {
             expect(suffixed('/api/templates/sirsoft-basic/config', 'json', null, '_=1699999999')).toBe(
                 '/api/templates/sirsoft-basic/config.json?_=1699999999',
             );
         });
 
+        // @scenario asset_url_mode=extension, base_path=root, fetch_origin=core_bundle
+        // @effects frontend_extension_mode_urls_match_pre_builder_strings
         it('LayoutLoader 레이아웃 / 미리보기', () => {
             expect(layoutUrl('sirsoft-basic', 'home', 7)).toBe('/api/layouts/sirsoft-basic/home.json?v=7');
             expect(layoutPreviewUrl('abc-def')).toBe('/api/layouts/preview/abc-def.json');
         });
 
+        // @scenario asset_url_mode=extension, base_path=root, fetch_origin=core_bundle
+        // @effects frontend_extension_mode_urls_match_pre_builder_strings
         it('편집기 문서 로드 — with_source_meta 가 v 보다 앞 (캐시 키 보존)', () => {
             expect(
                 suffixed('/api/layouts/sirsoft-basic/home', 'json', '7.3', 'with_source_meta=1'),
             ).toBe('/api/layouts/sirsoft-basic/home.json?with_source_meta=1&v=7.3');
         });
 
+        // @scenario asset_url_mode=extension, base_path=root, fetch_origin=core_bundle
+        // @effects frontend_extension_mode_urls_match_pre_builder_strings
         it('자산 URL — 템플릿/모듈/플러그인', () => {
             expect(templateAsset('sirsoft-basic', 'js/components.iife.js', 7)).toBe(
                 '/api/templates/assets/sirsoft-basic/js/components.iife.js?v=7',
@@ -280,6 +300,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             );
         });
 
+        // @scenario asset_url_mode=extension
+        // @effects frontend_file_query_encoder_matches_server_rawurlencode
         it('확장 식별자는 양쪽 모드에서 인코딩된다 (서버 `rawurlencode` 와 동형)', () => {
             // 식별자는 슬러그라 발현은 없지만, 서버(`AssetUrl::asset()`)가 미인코딩이던
             // 시절 규칙 사본이 갈려 있었다 — 어느 쪽이 맞는가를 여기서 고정한다.
@@ -289,6 +311,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(moduleAsset('a b', 'dist/x.js')).toBe('/api/modules/assets/a%20b?file=dist%2Fx.js');
         });
 
+        // @scenario asset_url_mode=extension, base_path=root, fetch_origin=core_bundle
+        // @effects frontend_extension_mode_urls_match_pre_builder_strings
         it('병합 번들', () => {
             expect(extensionBundle('modules', 'js', 7)).toBe('/api/modules/bundle.js?v=7');
             expect(extensionBundle('plugins', 'css', 7)).toBe('/api/plugins/bundle.css?v=7');
@@ -298,6 +322,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
     describe('확장자 없는 모드', () => {
         beforeEach(() => setConfig(MODE_EXTENSIONLESS));
 
+        // @scenario asset_url_mode=extensionless, base_path=root, fetch_origin=core_bundle
+        // @effects frontend_extensionless_mode_urls_carry_no_static_extension
         it('고정 접미사를 제거한다', () => {
             expect(suffixed('/api/templates/sirsoft-basic/routes', 'json', 7)).toBe(
                 '/api/templates/sirsoft-basic/routes?v=7',
@@ -305,17 +331,23 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(layoutUrl('sirsoft-basic', 'home', 7)).toBe('/api/layouts/sirsoft-basic/home?v=7');
         });
 
+        // @scenario asset_url_mode=extensionless, base_path=root, fetch_origin=core_bundle
+        // @effects frontend_extensionless_mode_urls_carry_no_static_extension
         it('자산 경로를 file 쿼리로 옮긴다', () => {
             expect(templateAsset('sirsoft-basic', 'js/components.iife.js', 7)).toBe(
                 '/api/templates/assets/sirsoft-basic?file=js%2Fcomponents.iife.js&v=7',
             );
         });
 
+        // @scenario asset_url_mode=extensionless, base_path=root, fetch_origin=core_bundle
+        // @effects frontend_extensionless_mode_urls_carry_no_static_extension
         it('번들 접미사를 경로 세그먼트로 내린다', () => {
             expect(extensionBundle('modules', 'js', 7)).toBe('/api/modules/bundle/js?v=7');
             expect(extensionBundle('plugins', 'css')).toBe('/api/plugins/bundle/css');
         });
 
+        // @scenario asset_url_mode=extensionless, base_path=root, fetch_origin=core_bundle
+        // @effects frontend_extensionless_mode_urls_carry_no_static_extension
         it('생성된 모든 URL 의 경로에 정적 확장자가 남지 않는다', () => {
             const urls = [
                 suffixed('/api/templates/t/routes', 'json', 7),
@@ -335,11 +367,15 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
     });
 
     describe('런타임 전환 (§12 L1 — 단방향 1회)', () => {
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_switch_is_one_way_and_once
         it('extension → extensionless 전환은 허용된다', () => {
             expect(setAssetUrlMode(MODE_EXTENSIONLESS)).toBe(true);
             expect(getAssetUrlMode()).toBe(MODE_EXTENSIONLESS);
         });
 
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_switch_is_one_way_and_once
         it('역방향 전환은 거부된다 (무한 왕복 차단)', () => {
             setAssetUrlMode(MODE_EXTENSIONLESS);
 
@@ -347,6 +383,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(getAssetUrlMode()).toBe(MODE_EXTENSIONLESS);
         });
 
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_switch_is_one_way_and_once
         it('이미 전환된 상태에서 재전환은 false 를 반환한다 (1회 제한)', () => {
             expect(setAssetUrlMode(MODE_EXTENSIONLESS)).toBe(true);
             expect(setAssetUrlMode(MODE_EXTENSIONLESS)).toBe(false);
@@ -354,6 +392,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
     });
 
     describe('localStorage 캐시 (§12 L7)', () => {
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_cache_is_scoped_by_cache_version_and_ttl
         it('전환 결과가 캐시되어 재방문 시 복원된다', () => {
             setAssetUrlMode(MODE_EXTENSIONLESS);
 
@@ -362,6 +402,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(getAssetUrlMode()).toBe(MODE_EXTENSIONLESS);
         });
 
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_cache_is_scoped_by_cache_version_and_ttl
         it('cache_version 이 바뀌면 옛 캐시가 무시된다', () => {
             setAssetUrlMode(MODE_EXTENSIONLESS);
 
@@ -370,6 +412,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(getAssetUrlMode()).toBe(MODE_EXTENSION);
         });
 
+        // @scenario asset_url_mode=extensionless
+        // @effects frontend_asset_url_mode_cache_is_scoped_by_cache_version_and_ttl
         it('TTL 을 넘긴 캐시는 무시되고 제거된다', () => {
             const stale = JSON.stringify({ mode: MODE_EXTENSIONLESS, at: Date.now() - 25 * 60 * 60 * 1000 });
             globalThis.localStorage.setItem('g7_asset_url_mode:7', stale);
@@ -391,6 +435,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             }
         });
 
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=request
+        // @effects asset_urls_follow_the_site_base_path
         it('자산·번들·접미사 생성기 전부가 마운트 접두사를 붙인다', () => {
             // 서버가 렌더한 URL 은 `AssetUrl::basePrefix()` 로 접두사를 갖는데 브라우저가
             // 만드는 URL 은 루트 상대였다 — 같은 화면에서 두 규칙이 공존했고, 하위 폴더
@@ -402,6 +448,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(suffixed('/api/templates/t/routes', 'json')).toBe('/g7/api/templates/t/routes.json');
         });
 
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=request
+        // @effects asset_urls_follow_the_site_base_path
         it('이미 접두사를 가진 경로에 다시 붙이지 않는다', () => {
             // 이중 접두(`/g7/g7/api/…`)는 오류 없이 404 가 되는 형태다.
             expect(suffixed('/g7/api/templates/t/routes', 'json')).toBe('/g7/api/templates/t/routes.json');
@@ -429,6 +477,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             };
         };
 
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=request
+        // @effects base_prefix_boundary_table_is_shared_with_the_server
         it('붙이는 쪽·벗기는 쪽이 공유 기대표의 전 행을 만족한다 (서버 `sitePath()`/`hasBasePrefix()` 와 같은 표)', async () => {
             const fixture = await readBoundaryFixture();
             expect(fixture.boundary.length).toBeGreaterThan(1);
@@ -458,6 +508,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(rows).toBeGreaterThanOrEqual(28);
         });
 
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=request
+        // @effects base_prefix_boundary_table_is_shared_with_the_server
         it('접두사 자체의 정규화도 공유 기대표를 따른다 (`G7Config.basePath` ↔ 서버 `app.url` 경로)', async () => {
             const fixture = await readBoundaryFixture();
             let rows = 0;
@@ -473,6 +525,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(rows).toBeGreaterThanOrEqual(10);
         });
 
+        // @scenario base_path=root, fetch_origin=core_bundle, navigation_direction=request
+        // @effects asset_urls_follow_the_site_base_path
         it('루트 설치에서는 아무것도 붙지 않는다 (종전 동작 불변)', () => {
             delete (globalThis as any).G7Config.basePath;
 
@@ -1213,6 +1267,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             }
         });
 
+        // @scenario base_path=subpath, fetch_origin=extension_bundle, navigation_direction=request
+        // @effects base_path_gate_fetch_wrapper_list_stays_current
         it('열거한 fetch 래퍼가 실재하고, 저장소에 다른 래퍼가 생기지 않았다', async () => {
             const fs = await import('node:fs');
             const path = await import('node:path');
@@ -1303,10 +1359,6 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                 // 인자가 없다. 주소는 내부에서 `getJson('/plugins/…')` → `G7Core.api`
                 // (또는 확장 `apiUrl()` 폴백)로 만들어지므로 그 축은 이미 재고 있다.
                 fetchPublicSettings: 'sirsoft-gdpr — 무인자, 주소는 내부에서 apiUrl 경유',
-                fetchConsentSnapshot: 'sirsoft-gdpr — 무인자, 주소는 내부에서 apiUrl 경유',
-                // 첫 인자가 주문번호다(주소가 아니다).
-                fetchKginicisReceiptInfoDetailed: 'sirsoft-pay_kginicis — 첫 인자는 orderNumber',
-                fetchKginicisReceiptInfo: 'sirsoft-pay_kginicis — 첫 인자는 orderNumber (위 함수에 위임)',
             };
 
             const unlisted = [...defined].filter(
@@ -1323,6 +1375,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             }
         });
 
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=request
+        // @effects base_path_gate_collectors_catch_planted_violations
         it('그 검사 자신이 위반을 실제로 잡는다 (음성 대조)', () => {
             // 게이트가 아무것도 잡지 못하는 상태로 굳는 것을 막는다 — 정규식을 무력화해도
             // 위 검사는 초록이므로, 심어 둔 위반이 검출되는지 여기서 확인한다.
@@ -1338,6 +1392,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(PREFIXING_HELPERS.some((h) => args[0].arg.startsWith(h))).toBe(false);
         });
 
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=request
+        // @effects base_path_gate_collectors_catch_planted_violations
         it('전송 통로 수집기가 XHR·EventSource·WebSocket·Worker 의 루트 상대 리터럴을 잡는다 (음성 대조)', () => {
             // 실물이 0 인 축은 수집기가 죽어도 초록이다 — 심어 둔 네 형태가 검출되는지 여기서 본다.
             const sample = [
@@ -1358,6 +1414,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(args.filter((a) => /^['"`]\//.test(a) && !/^['"`]\/\//.test(a))).toHaveLength(4);
         });
 
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=request
+        // @effects base_path_gate_alias_derivation_blind_spots_are_declared
         it('이행 도출이 닿지 않는 형태를 명시한다 (사각 선언)', () => {
             // 이 검사는 **결함을 잡지 않는다.** 도출이 어디까지 닿는지를 코드로 적어
             // 두는 것이 목적이다.
@@ -1408,6 +1466,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(args.every((a) => !PREFIXING_HELPERS.some((h) => a.startsWith(h)))).toBe(true);
         });
 
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=navigation
+        // @effects base_path_gate_collectors_ignore_reads_and_comments
         it('읽기·비교는 이동이 아니다 (오탐 대조)', () => {
             // `new URL(x, window.location.href)` · `location.href === y` 는 주소를 **읽는**
             // 자리다. 이것까지 잡으면 게이트가 오탐으로 덮여 실제 위반이 묻힌다.
@@ -1421,6 +1481,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(collectNavigationTargets(stripComments(sample))).toEqual([]);
         });
 
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=request
+        // @effects base_path_gate_collectors_ignore_reads_and_comments
         it('주석 안의 fetch( 는 위반이 아니다 (오탐 대조)', () => {
             const sample = ['// fetch(/api/x) 를 설명하는 주석', 'const a = 1;'].join('\n');
 
@@ -1569,6 +1631,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             return found;
         };
 
+        // @scenario base_path=subpath, fetch_origin=extension_bundle, navigation_direction=request
+        // @effects frontend_has_no_naive_origin_join_absolute_judgement
         it('코어·확장 JS 에 절대/상대 판정을 흉내 내는 오리진 조립이 없다 (서버 룰의 프론트 짝)', async () => {
             const fs = await import('node:fs');
             const path = await import('node:path');
@@ -1614,6 +1678,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             ).toEqual([]);
         });
 
+        // @scenario base_path=subpath, fetch_origin=core_bundle, navigation_direction=request
+        // @effects frontend_has_no_naive_origin_join_absolute_judgement
         it('그 검사 자신이 오리진 조립 3항식·조기 return 을 잡고 접두사 경유는 통과시킨다 (음성·오탐 대조)', () => {
             const sample = [
                 "const a = url.startsWith('http') ? url : window.location.origin + url;",
@@ -1691,6 +1757,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
         };
 
         for (const basePath of ['', '/g7', '/my/public/site']) {
+            // @scenario base_path=subpath, fetch_origin=extension_bundle, navigation_direction=navigation
+            // @effects extension_base_path_helper_copies_match_core_behaviour
             it(`접두사 \`${basePath || '(없음)'}\` 에서 붙이는 쪽·벗기는 쪽이 코어와 일치한다`, async () => {
                 (globalThis as any).G7Config = { ...(globalThis as any).G7Config, basePath };
 
@@ -1723,20 +1791,21 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
          * 정상인 만큼 원인이 더 숨는다 (16차 G3 라운드 A10).
          */
         const collectCopiesOf = async (
-            spec: ReadonlyArray<{ base: string; helper: readonly string[] }>,
+            spec: ReadonlyArray<{ base: string; helper: readonly string[]; only?: readonly string[] }>,
         ): Promise<HelperCopy[]> => {
             const fs = await import('node:fs');
             const path = await import('node:path');
             const repoRoot = path.resolve(__dirname, '..', '..', '..', '..', '..');
             const copies: HelperCopy[] = [];
 
-            for (const { base, helper } of spec) {
+            for (const { base, helper, only } of spec) {
                 const sub = path.join(...helper);
                 const container = path.join(repoRoot, base);
                 if (!fs.existsSync(container)) continue;
 
                 for (const extension of fs.readdirSync(container, { withFileTypes: true })) {
                     if (!extension.isDirectory()) continue;
+                    if (only && !only.includes(extension.name)) continue;
                     const full = path.join(container, extension.name, sub);
                     if (!fs.existsSync(full)) continue;
                     copies.push({
@@ -1765,18 +1834,27 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             },
             // 링크의 소유자. 이 군만 **논리 동형**(주석 제외)으로 잰다 — 위 `withoutBlockComments`
             // 의 주석이 그 근거다.
+            //
+            // 동형 대상은 **샘플 템플릿 짝**이다. 7.2.0 링크 개편(#757)에서 실사용 템플릿 둘은 템플릿 지원 모듈
+            // (`support/navigationLink`)을 부르는 판으로, 샘플 둘은 코어 `G7Core.navigation` 을 부르는 판으로 갈렸고,
+            // 실사용 사용자 템플릿은 대체 주소(`fallbackHref`, 7.1.1)를 따로 가진다 — 네 벌 동형은 더 이상 성립하지 않는다.
+            // 접두사를 붙이는 그 한 줄은 군과 무관하게 아래 「A 컴포넌트가 접두사를 붙인다」 검사가 네 벌 모두를 잰다.
             {
                 name: 'A.tsx',
                 normalize: true,
-                spec: [{ base: 'templates/_bundled', sub: 'src', helper: ['src', 'components', 'basic', 'A.tsx'] }],
+                spec: [{
+                    base: 'templates/_bundled',
+                    sub: 'src',
+                    helper: ['src', 'components', 'basic', 'A.tsx'],
+                    only: ['gnuboard7-hello_admin_template', 'gnuboard7-hello_user_template'],
+                }],
             },
         ] as const;
 
         /**
          * 블록 주석을 걷어낸 본문 — **논리만** 비교하는 군에 쓴다.
          *
-         * `A.tsx` 는 네 벌의 코드가 완전히 같은데 머리말 산문만 다르다(샘플 템플릿 둘은
-         * 짧은 판본, 실사용 템플릿 둘은 회귀 경위를 담은 긴 판본). 그 군까지 바이트 동일을
+         * `A.tsx` 의 샘플 템플릿 짝은 코드가 같고 머리말 산문만 다를 수 있다. 그 군까지 바이트 동일을
          * 요구하면 샘플 확장에 다른 템플릿의 레이아웃 사정을 적어 넣게 되므로, 이 군의
          * 계약은 「논리가 같다」로 둔다 — 종전에는 그래서 이 군이 **동형성 검사 밖**에
          * 있었고, 접두사를 붙이는 그 한 줄이 한 템플릿에서만 사라져도 아무것도 울지
@@ -1949,6 +2027,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect(offenders).toEqual([]);
         });
 
+        // @scenario base_path=subpath, fetch_origin=extension_bundle, navigation_direction=request
+        // @effects extension_base_path_helper_copies_stay_identical
         it('사본 모집단이 비어 있지 않다 (빈 모집단 대조 — 컨테이너별)', async () => {
             // 위 검사는 사본이 0벌이어도 초록이다. 경로 규칙을 바꿔 모집단이 통째로
             // 빠지는 것을 막는다. 하한은 리터럴 8 이 아니라 **도출**한다 — 컨테이너마다
@@ -1966,6 +2046,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             expect((await collectCopiesOf(COPY_FAMILIES[2].spec)).length).toBeGreaterThanOrEqual(Math.floor(2 * 0.8));
         });
 
+        // @scenario base_path=subpath, fetch_origin=extension_bundle, navigation_direction=navigation
+        // @effects extension_bundles_have_an_official_base_path_helper
         it('사본은 셋 다 내보낸다 — 서버 호출용·화면 이동용·라우트 대조용', async () => {
             // 게이트가 인정하는 이름이 사본에 실제로 있는지를 재다 — 이름만 바뀌어도
             // 위 동형성 검사는 그대로 초록이다.
@@ -2435,26 +2517,36 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
  * (7차 G3 라운드 E11).
  */
 describe('base-path:allow 면제 표식은 사유를 갖춘 주석만 인정한다', () => {
+    // @scenario base_path=subpath, navigation_direction=request
+    // @effects base_path_allow_marker_requires_a_reason_in_a_comment
     it('사유가 있는 주석 표식을 인정한다', () => {
         expect(hasBasePathAllowMarker(['// base-path:allow 외부 PG 가 준 절대 주소', 'fetch(url);'], 2)).toBe(true);
         expect(hasBasePathAllowMarker(['fetch(url); // base-path:allow 외부 PG 절대 주소'], 1)).toBe(true);
     });
 
+    // @scenario base_path=subpath, navigation_direction=request
+    // @effects base_path_allow_marker_requires_a_reason_in_a_comment
     it('사유 없는 맨 표식은 인정하지 않는다', () => {
         expect(hasBasePathAllowMarker(['// base-path:allow', 'fetch(url);'], 2)).toBe(false);
         expect(hasBasePathAllowMarker(['// base-path:allow   ', 'fetch(url);'], 2)).toBe(false);
     });
 
+    // @scenario base_path=subpath, navigation_direction=request
+    // @effects base_path_allow_marker_requires_a_reason_in_a_comment
     it('문자열 리터럴 안의 같은 글자는 면제가 아니다', () => {
         expect(hasBasePathAllowMarker(["const s = 'base-path:allow 사유';", 'fetch(url);'], 2)).toBe(false);
         expect(hasBasePathAllowMarker(["log('// base-path:allow 사유');", 'fetch(url);'], 2)).toBe(false);
     });
 
+    // @scenario base_path=subpath, navigation_direction=request
+    // @effects base_path_allow_marker_requires_a_reason_in_a_comment
     it('두 줄을 이어 붙여 성립하는 형태는 인정하지 않는다', () => {
         // 종전 판정은 앞줄의 `//` 와 뒷줄의 글자가 이어 붙어 면제가 됐다.
         expect(hasBasePathAllowMarker(['// 설명만 있는 주석', "const s = 'base-path:allow 사유';"], 2)).toBe(false);
     });
 
+    // @scenario base_path=subpath, navigation_direction=request
+    // @effects base_path_allow_marker_requires_a_reason_in_a_comment
     it('세 줄 이상 떨어진 표식은 덮지 않는다', () => {
         expect(hasBasePathAllowMarker(['// base-path:allow 사유', '', '', 'fetch(url);'], 4)).toBe(false);
     });
@@ -2472,6 +2564,8 @@ describe('assetUrl — `?file=` 인코더는 서버 rawurlencode 와 동형이�
         delete (globalThis as any).__g7AssetUrlMode;
     });
 
+    // @scenario asset_url_mode=extensionless
+    // @effects frontend_file_query_encoder_matches_server_rawurlencode
     it('공유 기대표의 모든 경계 문자에서 서버와 같은 문자열을 만든다', async () => {
         const fs = await import('node:fs');
         const path = await import('node:path');
@@ -2492,6 +2586,8 @@ describe('assetUrl — `?file=` 인코더는 서버 rawurlencode 와 동형이�
         }
     });
 
+    // @scenario asset_url_mode=extensionless
+    // @effects frontend_file_query_encoder_matches_server_rawurlencode
     it('확장 식별자도 같은 인코더를 지난다 — `! \' ( ) *` 가 서버와 같은 문자열이 된다', async () => {
         // 서버 `AssetUrl::asset()` 독블록은 「프론트 `extensionAsset()` 과 같이 rawurlencode」
         // 라 적었는데, 프론트는 `encodeURIComponent` 였다 — 그 다섯 글자에서 두 URL 이
@@ -2524,12 +2620,16 @@ describe('assetUrl — `?file=` 인코더는 서버 rawurlencode 와 동형이�
         }
     });
 
+    // @scenario asset_url_mode=extensionless
+    // @effects frontend_file_query_encoder_matches_server_rawurlencode
     it('버전이 붙어도 인코딩 규칙은 같다', () => {
         expect(extensionAsset('modules', 'sirsoft-board', "dist/js/a(1)'s.js", 7)).toBe(
             '/api/modules/assets/sirsoft-board?file=dist%2Fjs%2Fa%281%29%27s.js&v=7',
         );
     });
 
+    // @scenario asset_url_mode=extension
+    // @effects frontend_file_query_encoder_matches_server_rawurlencode
     it('확장자 모드에서는 경로를 인코딩하지 않는다 (서버와 동형 — 정적 서빙도 그렇다)', () => {
         (globalThis as any).G7Config = { cache_version: 7, assetUrlMode: MODE_EXTENSION };
 
@@ -2576,6 +2676,8 @@ describe('코어 3번들이 assetUrl.ts 의 현재 판정을 싣고 있다 (dist
         return names.map((name) => ({ name, body: fs.readFileSync(path.join(dir, name), 'utf8') }));
     };
 
+    // @scenario base_path=subpath, fetch_origin=core_bundle
+    // @effects core_bundles_carry_the_current_asset_url_judgement
     it('소스가 지표 판정을 아직 갖고 있다 (지표가 소스에서 사라지면 이 게이트가 공허해진다)', async () => {
         const fs = await import('node:fs');
         const path = await import('node:path');
@@ -2586,6 +2688,8 @@ describe('코어 3번들이 assetUrl.ts 의 현재 판정을 싣고 있다 (dist
         expect(source).toMatch(/typeof path === 'string' \? path\.trim\(\) : path/);
     });
 
+    // @scenario base_path=subpath, fetch_origin=core_bundle
+    // @effects core_bundles_carry_the_current_asset_url_judgement
     it('assetUrl.ts 를 포함하는 번들마다 경계 판정과 trim 전처리가 실려 있다 (3벌 전부 측정)', async () => {
         const bundles = await readBundles();
         // 도달 판정을 마커 **하나**에 두면 그 마커를 트리셰이킹으로 잃은 번들이 단언 밖으로
@@ -2612,6 +2716,8 @@ describe('코어 3번들이 assetUrl.ts 의 현재 판정을 싣고 있다 (dist
         }
     });
 
+    // @scenario fetch_origin=core_bundle
+    // @effects core_production_bundles_carry_no_source_map_reference
     it('배포 번들에 소스맵 참조가 남아 있지 않다 (--production 빌드 지표)', async () => {
         for (const bundle of await readBundles()) {
             expect(bundle.body.includes('//# sourceMappingURL='), `${bundle.name} 에 sourceMappingURL 잔존`).toBe(false);

@@ -9,6 +9,21 @@ import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
+/**
+ * 메뉴 링크에 그릴 href — 내부 주소면 사이트 마운트 접두사를 붙인다.
+ *
+ * 가운데 클릭·「새 탭에서 열기」는 이 값을 그대로 연다. 접두사가 없으면 하위 폴더 배치(`https://host/g7/`)에서
+ * 새 탭이 사이트 밖 주소로 열린다. 보통 클릭의 SPA 이동(`handleNavigate`)은 접두사 없는 경로를 쓴다.
+ *
+ * @param url 메뉴 데이터의 주소
+ * @return href 값, 링크로 그릴 수 없으면 undefined
+ */
+const menuLinkHref = (url: string | undefined): string | undefined => {
+  const href = resolveLinkHref(url)?.href;
+
+  return href === undefined ? undefined : sitePath(href);
+};
+
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
 // 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -348,7 +363,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             `}
           >
             <a
-              href={resolveLinkHref(item.url)?.href}
+              href={menuLinkHref(item.url)}
               {...(resolveLinkHref(item.url)?.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               aria-current={isActive ? 'page' : undefined}
               onClick={(event) => handleNavigate(event, item.url!)}
@@ -410,7 +425,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         ) : item.url ? (
           // 하위 메뉴가 없고 URL이 있는 경우: 링크(가운데 클릭·Ctrl+클릭 새 탭)
           <a
-            href={resolveLinkHref(item.url)?.href}
+            href={menuLinkHref(item.url)}
             {...(resolveLinkHref(item.url)?.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
             aria-current={isActive ? 'page' : undefined}
             onClick={(event) => handleNavigate(event, item.url!)}

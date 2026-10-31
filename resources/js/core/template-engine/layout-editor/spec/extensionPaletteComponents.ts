@@ -276,6 +276,7 @@ export async function loadExtensionPaletteManifestEntries(
       const kind = modules.has(identifier) ? 'modules' : plugins.has(identifier) ? 'plugins' : null;
       if (!kind) return [];
       try {
+        // base-path:allow 주소는 호출부의 `urlFor` 가 만든다 — 편집기 크롬은 `suffixed()`(접두사 포함)로 조립한다.
         const response = await fetcher(options.urlFor(kind, identifier), {
           credentials: 'same-origin',
           headers: { Accept: 'application/json' },

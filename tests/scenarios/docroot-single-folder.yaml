@@ -334,6 +334,7 @@ effects:
   - unknown_mime_is_served_as_octet_stream_download
   #   · 파일 서빙 응답 전부(200·304, 문자열 자산 포함)가 nosniff 를 싣는다 — 헬퍼 단일 지점
   - file_serving_response_declares_nosniff
+  - public_layout_attachment_content_type_is_the_row_mime_type
   #   · 파일을 내보내는 컨트롤러 메서드 전수가 코어 헬퍼를 지난다 — 모집단은 반환 타입 ∪ 본문 신호
   - file_serving_controllers_go_through_core_helper
   #   · 서빙 메타 키 부재는 이름으로 보고된다(값 객체 단일 지점) — `?? null` 폴백 금지
@@ -492,6 +493,134 @@ effects:
   # 24차 라운드 등재 — 무CLI 동선의 운영자는 로그 파일을 열 수단이 없다. 원장 쓰기 실패가
   # 로그에만 남으면 그 손실을 영영 모른다(23차 D23-13 의 조치를 재는 자리).
   - deploy_fragment_ledger_write_failure_reaches_the_operator
+  # 609 후속(7.2.0 병합 뒤) — 7.2.0 이 새로 만든 엔진 지점의 하위 폴더 규칙. 붙이는 쪽(redirect·개발자 화면 전체 이동·
+  # 로그아웃 서버 이동)과 대조하는 쪽(로그인 전용 화면·같은 경로·이탈 가드·같은 출처 전체 주소·뒤로 가기·언어 전환·
+  # 주소만 바꾼 경로 별칭)이 모두 같은 기준을 쓰는지 잰다.
+  - redirect_handler_stays_inside_the_site
+  - same_origin_full_url_navigates_in_app
+  - same_path_target_ignores_base_prefix
+  - leave_guard_same_path_ignores_base_prefix
+  - custom_route_full_load_stays_inside_the_site
+  - custom_route_popstate_matches_under_subpath
+  - guest_only_return_path_matches_under_subpath
+  - logout_server_redirect_stays_inside_the_site
+  - manual_data_sources_refetch_after_locale_switch_under_subpath
+  - url_only_path_alias_matches_browser_address
+  - docroot_exposure_warning_buffer_is_consumed_exactly_once
+  - extension_directory_listing_matches_glob_onlydir
+  - public_storage_link_recovery_keeps_a_healthy_link
+  - public_storage_link_recovery_recreates_a_missing_link
+  - public_storage_link_recovery_backs_up_a_plain_directory_and_relinks
+  - public_storage_link_recovery_skips_when_source_is_absent
+  - public_storage_link_recovery_runs_without_an_injected_logger
+  - public_storage_link_recovery_inherits_parent_ownership
+  - public_storage_link_recovery_targets_the_configured_public_root
+  # 609 테스트 매핑 부채 정리: 프론트 assetUrl.test.ts, assetUrlRecovery.test.ts, basePathNavigation.test.ts 의 it 단위 효과
+  - base_prefix_helpers_are_inverse_and_idempotent   # withBasePrefix/stripBasePrefix 가 서로 역이고 이미 붙은 값에 다시 붙지 않으며 경계 없는 이어짐은 벗기지 않는다
+  - frontend_asset_url_mode_resolves_runtime_key_then_setting_then_default   # 모드 판정은 런타임 키, 설정값, 기본값(확장자 유지) 순이고 모르는 값은 기본으로 폴백
+  - frontend_extension_mode_urls_match_pre_builder_strings   # 확장자 모드 URL 이 빌더 도입 전 하드코딩 문자열과 바이트 동일하다
+  - frontend_file_query_encoder_matches_server_rawurlencode   # ?file= 값과 확장 식별자 인코딩이 서버 rawurlencode 와 같고 확장자 모드 경로는 인코딩하지 않는다
+  - frontend_extensionless_mode_urls_carry_no_static_extension   # 확장자 없는 모드의 생성, 변환 결과 경로에 정적 확장자가 남지 않는다
+  - frontend_asset_url_mode_switch_is_one_way_and_once   # 런타임 모드 전환은 extension 에서 extensionless 로 한 번만, 역방향 없음, G7Config 재대입에도 유지
+  - frontend_asset_url_mode_cache_is_scoped_by_cache_version_and_ttl   # 전환 결과 캐시는 cache_version 키를 갖고 버전 변경, TTL 경과 시 무시된다
+  - asset_url_mode_switch_leaves_server_settings_untouched   # 클라이언트 전환이 G7Config.settings 원본을 바꾸지 않는다
+  - base_prefix_boundary_table_is_shared_with_the_server   # 접두사 경계 판정과 basePath 정규화가 서버와 같은 공유 기대표를 만족한다
+  - base_path_gate_fetch_wrapper_list_stays_current   # 접두사 게이트가 열거한 fetch 래퍼가 실재하고 열거 밖 래퍼가 새로 생기지 않았다
+  - base_path_gate_collectors_catch_planted_violations   # 게이트 수집기가 심어 둔 fetch, 전송 통로 위반을 실제로 잡는다 (음성 대조)
+  - base_path_gate_alias_derivation_blind_spots_are_declared   # fetch 별칭 이행 도출이 닿지 않는 형태를 코드로 선언해 둔다
+  - base_path_gate_collectors_ignore_reads_and_comments   # 주소 읽기, 비교, 주석 속 fetch( 를 위반으로 잡지 않는다 (오탐 대조)
+  - frontend_has_no_naive_origin_join_absolute_judgement   # 코어, 확장 JS 에 절대/상대 판정을 흉내 낸 오리진 조립이 없고 그 검사 자신이 위반을 잡는다
+  - extension_base_path_helper_copies_match_core_behaviour   # 확장 접두사 헬퍼 사본의 sitePath/routePath 가 접두사마다 코어 헬퍼와 같은 답을 낸다
+  - base_path_allow_marker_requires_a_reason_in_a_comment   # base-path:allow 면제 표식은 사유를 갖춘 주석만 인정한다
+  - core_bundles_carry_the_current_asset_url_judgement   # 코어 3번들이 현재 assetUrl.ts 의 경계 판정과 trim 전처리를 싣고 있다
+  - core_production_bundles_carry_no_source_map_reference   # 배포 코어 번들에 sourceMappingURL 이 남지 않는다
+  - blade_inline_recovery_converter_matches_ts_builder   # blade 인라인 복구 변환기와 TS 빌더가 대표 URL 과 리터럴 % 경로에서 같은 결과를 낸다
+  - core_engine_bundle_is_never_converted_by_recovery   # 코어 엔진 정적 번들은 두 구현 모두 변환하지 않는다
+  - extension_mode_recovery_conversion_is_identity   # 확장자 모드에서 변환기는 원본 URL 을 그대로 돌려준다
+  - installer_asset_url_probe_checks_body_token_and_content_type   # 인스톨러 자산 URL 프로브가 Content-Type, 스크립트 MIME, 본문 토큰을 모두 검사한다
+  - engine_layers_never_call_the_asset_url_probe   # 엔진 레이어 소스가 프로브 엔드포인트를 직접 부르지 않는다 (감지 주체는 부트스트랩 하나)
+  - recovery_conversion_leaves_external_origin_urls_untouched   # 외부 오리진 URL 은 변환하지 않는다
+  - recovery_conversion_handles_same_origin_absolute_urls   # same-origin 절대 URL(DOM 프로퍼티 형태)도 두 구현이 변환한다
+  - root_htaccess_every_failure_result_has_an_operator_message
+  - root_htaccess_missing_destination_is_created_and_announced
+  - root_htaccess_symlinked_destination_is_written_through
+  - root_htaccess_identical_block_skips_write
+  - root_htaccess_markerless_source_is_not_applied
+  - root_htaccess_marker_is_recognized_only_as_a_whole_line
+  - junction_detection_matches_storage_link_helper_ssot
+  - public_disk_url_keeps_operator_configured_location_without_a_link
+  - exposure_probe_targets_include_repository_and_dependency_families   # 저장소 폴더와 의존성 폴더가 있으면 그 두 계열도 프로브 대상이 된다
+  - requirements_response_carries_the_web_exposure_item   # 요구사항 응답이 웹 노출 항목(대상, 재지 못한 계열, 대조, 서버 종류)을 싣는다
+  - probe_rate_limit_counts_calls_within_the_window   # 프로브 상한이 창 안의 호출을 세어 상한을 넘으면 거부하고 버킷끼리는 섞이지 않는다 (InstallerEnvironmentJudgmentTest)
+  # 609 docblock 정리 (g1 묶음3) — 기준 URL 파생 테스트(InstallerBaseUrlDerivationTest)의 메서드별 마킹이 쓰는 효과.
+  - installer_base_url_follows_the_browser_address   # 기준 URL 이 브라우저가 친 주소와 프록시가 넘긴 접두사 헤더를 따른다
+  - installer_base_url_never_leaves_the_mount_or_origin   # 위험한 접두사, dot-segment, 역슬래시 프로토콜 상대 경로는 기준 URL 을 마운트나 오리진 밖으로 밀지 못한다
+  - installer_rejected_forwarded_prefix_is_observable   # 버린 접두사가 사유와 길이로 기록되고 노출 점검의 재지 못한 사유로 화면에 닿는다
+  - installer_base_url_attribute_outputs_are_escaped   # 기준 URL 이 HTML 속성에 실리는 자리는 전부 이스케이프 헬퍼를 지난다
+  # 609 docblock 정리 (g4 서빙 묶음) — 파일 서빙, 조건부 요청, 압축 미들웨어 테스트의 메서드별 마킹이 쓰는 효과.
+  - streamed_file_response_declares_last_modified   # 스트림 서빙 응답이 행 updated_at 을 Last-Modified 로 광고한다
+  - if_none_match_takes_precedence_over_if_modified_since   # 두 조건부 헤더가 함께 오면 If-None-Match 가 판정을 정한다
+  - not_modified_echoes_the_validator_of_the_representation_the_client_holds   # 304 의 ETag 는 매치를 성립시킨 후보의 표현(gzip 접미사, 강한 검증자)을 따른다
+  - sitemap_validators_come_from_the_committed_manifest   # sitemap 검증자는 커밋 manifest(시각, 파일 이름)에서 만들어지고 재생성 때 바뀐다
+  - non_matching_validator_returns_the_full_representation   # 어긋난 검증자로 재요청하면 전문 200 이 나간다
+  - serving_paths_declare_compression_skip_on_the_request   # 업로드물, sitemap 서빙 통로가 요청 속성으로 압축 제외를 선언한다
+  - attachment_disposition_survives_the_streaming_helper   # 다운로드 Content-Disposition 이 스트림 헬퍼를 지나도 유지된다
+  - gzip_compresses_compressible_responses_for_accepting_clients   # gzip 을 받는 클라이언트에게 압축 대상 응답이 압축되어 나간다
+  - gzip_leaves_responses_uncompressed_without_gzip_acceptance   # gzip 을 받지 않는 클라이언트에게는 압축하지 않는다
+  - gzip_skips_responses_below_the_size_threshold   # 1KB 미만 응답은 압축하지 않는다
+  - gzip_does_not_double_compress_encoded_responses   # 이미 Content-Encoding 이 있는 응답은 다시 압축하지 않는다
+  - gzip_varies_on_accept_encoding_for_compressible_responses   # 압축 대상 유형 응답은 압축 여부와 무관하게 Vary: Accept-Encoding 을 싣는다
+  - gzip_declares_the_encoded_content_length   # 압축본의 Content-Length 가 압축 바이트 길이다
+  - gzip_skips_not_modified_responses   # 304 응답은 압축하지 않는다
+  - gzip_skips_file_responses_above_the_size_cap   # 상한을 넘는 파일 응답은 적재하지 않고 스트리밍 그대로 나간다
+  - declared_compression_skip_blocks_gzip_regardless_of_response_shape   # 요청 속성으로 선언한 압축 제외가 응답 유형, 크기 조건보다 앞선다
+  - public_storage_route_returns_404_for_missing_files   # 공개 스토리지에 없는 파일은 404 다
+  - file_serving_etag_is_a_quoted_entity_tag   # 서빙 응답의 ETag 가 큰따옴표 entity-tag 문법을 따른다
+  - public_storage_mime_table_matches_static_serving   # 표에 있는 확장자는 정적 서빙(nginx mime.types)과 같은 유형으로 나간다
+  - public_storage_unreadable_file_is_forbidden_like_static_serving   # 실재하지만 읽을 수 없는 파일은 500 이 아니라 403 이다
+  - detect_button_styled   # 관리자 설정 자산 URL 방식 자동 감지 버튼이 전용 카드에 btn 박스 스타일로 렌더된다 (E2E)
+  - detect_result_inline   # 자동 감지 결과가 토스트가 아니라 필드 하단 인라인 안내로 뜬다 (E2E)
+  - asset_recovery_attempts_are_capped_and_end_in_fallback_ui   # 두 형태가 모두 실패하면 자산당 3회, 페이지당 9회에서 멈추고 폴백 UI 로 끝난다 (E2E)
+  - asset_recovery_initializes_template_app_exactly_once   # 자가 복구로 전환에 성공해도 초기화는 1회이고 번들 스크립트가 중복 삽입되지 않는다 (E2E)
+  - legacy_avatar_url_stays_on_static_storage_when_link_usable
+  - legacy_avatar_url_passes_through_the_storage_url_filter_hook
+  - avatar_url_is_null_without_attachment_or_legacy_value
+  - public_path_seam_is_reachable_without_an_entry_file
+  - delegation_normalization_survives_a_missing_script_name
+  - deploy_fragment_dist_sidecars_are_blocked_on_every_server
+  - hidden_file_guard_keeps_the_acme_exception_on_every_server
+  - run_lock_warning_buffer_is_drained_once
+  - rollback_removes_deploy_dist_sidecars_and_returns_warnings
+  - preserved_root_index_directory_name_comes_from_the_backup_name_ssot
+  - rollback_reports_missing_root_protection_files_to_the_console
+  - rollback_reports_public_file_copies_restored_inside_the_document_root
+  - extension_asset_services_share_one_type_resolution
+  - every_asset_serving_service_gates_the_file_extension
+  - containment_check_rejects_paths_resolving_outside_the_base
+  - public_storage_route_resolves_plain_files_under_the_root
+  - prune_command_labels_cover_every_prune_group
+  - prune_name_rules_come_from_producer_constants
+  - installer_state_tmp_sweep_shares_the_sibling_judgement
+  - leftover_producing_call_sites_guard_blockable_functions
+  - accumulated_backup_notice_is_translated_and_format_gated
+  - pruner_mtime_reads_are_failure_guarded
+  - aged_leftovers_are_pruned_after_retention
+  - write_probe_listing_survives_disabled_glob
+  - write_probe_roots_match_the_installer_required_directories
+  - mtime_lookup_failure_keeps_the_leftover
+  - transitive_directory_listers_guard_scandir
+  - absolute_asset_urls_take_the_configured_origin
+  - blade_entrypoints_wire_the_server_base_prefix
+  - asset_url_mode_defaults_to_extension
+  - extension_mode_output_matches_the_legacy_literals
+  - extensionless_mode_urls_carry_no_static_extension
+  - asset_url_mode_falls_back_to_default_when_settings_fail
+  - asset_url_encoders_match_the_frontend
+  - static_branch_is_skipped_for_a_different_requested_version
+  - site_path_helpers_satisfy_the_shared_boundary_table
+  - site_absolute_adds_the_prefix_then_a_normalized_origin
+  - asset_url_mode_command_prints_prefix_and_app_url_path
+  - every_upload_service_applies_the_configured_image_bounds
 
 test_files:
   # 8차 라운드 등재 — 이 파일들은 `@effects` 마커를 달고도 어느 매니페스트의
@@ -514,6 +643,7 @@ test_files:
   # 종단(실제 `/g7/` 마운트에서 화면이 열리는지)은 P0 격리 환경 실측 몫이다 — 이 축도
   # 위 `audit:allow` 가 적은 것과 같은 이유로 jsdom·PHPUnit 런타임 밖이다.
   - resources/js/core/routing/__tests__/basePathNavigation.test.ts
+  - resources/js/core/routing/__tests__/basePathEngineSinks.test.ts
   - resources/js/core/support/__tests__/assetUrl.test.ts
   - tests/Unit/Extension/ExtensionDirectoryListingTest.php
   - tests/Unit/RootEntrypointContractTest.php
@@ -638,6 +768,7 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Form.test.tsx
   - templates/_bundled/gnuboard7-hello_user_template/__tests__/components/Img.test.tsx
   - templates/_bundled/gnuboard7-hello_admin_template/__tests__/components/Img.test.tsx
+  - tests/Unit/Support/ImageResizeCoverageTest.php
 
 # deployment_layout·protection 축의 종단 조합(레이아웃 ② + .htaccess 유/무 + 노출 차단)은
 # Apache rewrite 실물이 필요해 P0 격리 환경 실측이 판정한다 — §9 S4(노출 차단·T10)·S11

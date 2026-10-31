@@ -1,4 +1,5 @@
 // e2e:allow 가상계좌 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기)
+import { sitePath } from '../apiUrl';
 import { buildGuestOrderTokenHeaders } from '../guestOrderToken';
 import { reportPaymentWindowClosed } from '../paymentCloseReport';
 import { translateNicepay as t } from '../translate';
@@ -535,7 +536,9 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             // (신청서 화면의 진행 표시는 결제창이 열린 동안 일부러 끄지 않는다 — 돌아온 화면이 다시 읽는다).
             const claimReturnUrl = pgPaymentData.claim_cancel_return_url;
             if (typeof claimReturnUrl === 'string' && claimReturnUrl !== '') {
-                window.location.href = claimReturnUrl;
+                // 서버가 주는 신청서 상세 주소는 앱 내 경로(`/mypage/...`)라 사이트 마운트 접두사를 붙여 이동한다
+                // (절대 URL·이미 접두사가 붙은 값은 그대로 — 멱등).
+                window.location.href = sitePath(claimReturnUrl);
                 return;
             }
 

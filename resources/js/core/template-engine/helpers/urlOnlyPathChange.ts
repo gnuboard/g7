@@ -30,7 +30,7 @@ const readGeneration = (source: RouteGenerationSource | undefined | null): numbe
 /**
  * 주소만 바꾸는 이동 직전에 부른다 — 지금 경로와 새 경로가 다르면 같은 화면의 별칭으로 기록한다.
  *
- * @param newPath 새 주소(경로·쿼리)
+ * @param newPath 새 주소(경로·쿼리) — 브라우저가 볼 주소다(하위 폴더 배치면 마운트 접두사를 붙인 값)
  * @param templateApp 경로 전환 세대를 줄 TemplateApp
  */
 export const registerUrlOnlyPathChange = (newPath: string, templateApp: RouteGenerationSource | undefined | null): void => {
@@ -41,6 +41,7 @@ export const registerUrlOnlyPathChange = (newPath: string, templateApp: RouteGen
     } catch {
         return;
     }
+    // base-path:allow 기록은 브라우저 주소끼리 대조된다(소비처가 `location.pathname` 을 그대로 넘긴다) — 벗기지 않는다.
     const from = window.location.pathname;
     if (to === from) return;
     const generation = readGeneration(templateApp);

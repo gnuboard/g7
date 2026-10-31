@@ -126,6 +126,7 @@ export async function openTestLoginHandler(action: AdminToolAction): Promise<boo
     }
 
     if (popup) {
+      // base-path:allow 서버가 주는 값은 제공자의 인가 주소(https 절대 주소)다 — 사이트 경로가 아니다.
       popup.location.href = url;
     } else {
       // 팝업이 막힌 브라우저 — 관리 화면을 떠나지 않도록 이동하지 않고, 팝업을 허용한 뒤 다시 누르라고 알린다.

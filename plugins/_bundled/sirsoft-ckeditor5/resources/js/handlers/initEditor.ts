@@ -24,8 +24,7 @@ import {
     removeTextareaFallback,
     renderTextareaFallback,
 } from './textareaFallback';
-import { apiUrl } from '../apiUrl';
-import { editorInstances, isSyncSuppressed } from './editorInstances';
+import { apiUrl, routePath } from '../apiUrl';
 
 /** CKEditor5 다크 모드 CSS 엘리먼트 ID */
 const CKEDITOR5_DARK_CSS_ID = 'ckeditor5-dark-override';
@@ -1143,7 +1142,8 @@ export async function initEditorHandler(
 
     // 마운트한 화면의 경로와 그 화면의 본문 — 아래 await(이전 인스턴스 정리·번역·본체 확보·생성) 동안 같은 레이아웃의
     // 다른 경로로 옮기면, 편집기(평문 입력칸)는 앞 화면 값으로 서면 안 된다. {@link planSeed} 참조.
-    const seedPath = location.pathname;
+    // 경로는 앱 기준(마운트 접두사를 벗긴 값)으로 잰다 — 이 파일과 externalContentSync 의 경로 대조가 모두 같은 기준을 쓴다.
+    const seedPath = routePath(location.pathname);
     const mountMultilingual = params.multilingual === true || params.multilingual === 'true';
     const mountSingle = mountMultilingual ? '' : resolveSingleContent(params, editorName);
     const mountMap = mountMultilingual ? resolveContentMap(params, editorName) : {};
@@ -1272,14 +1272,14 @@ export async function initEditorHandler(
         resolveNow: () => string,
         mountValue: string
     ): { value: string; path: string } => {
-        if (location.pathname === seedPath) {
+        if (routePath(location.pathname) === seedPath) {
             return { value: resolveNow(), path: seedPath };
         }
 
         const current = readCurrent(locale, multilingual) ?? '';
 
         return current !== mountValue
-            ? { value: current, path: location.pathname }
+            ? { value: current, path: routePath(location.pathname) }
             : { value: current, path: seedPath };
     };
 
@@ -1333,7 +1333,7 @@ export async function initEditorHandler(
                 : undefined,
             initialContent: isMultilingual ? undefined : fallbackPlans[0].value,
             // 한 칸이라도 앞 화면 값이면 앞 화면 경로로 붙인다(다국어 입력칸은 칸을 묶어 보낸다)
-            seedPath: fallbackPlans.find((plan) => plan.path !== location.pathname)?.path,
+            seedPath: fallbackPlans.find((plan) => plan.path !== routePath(location.pathname))?.path,
         };
 
         renderTextareaFallback(fallbackOptions);

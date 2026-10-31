@@ -285,7 +285,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
           {/* 사용자 정보 — 주소가 있으면 링크(가운데 클릭·Ctrl+클릭 새 탭, #757). 보통 클릭은 종전처럼 SPA 이동 */}
           {userDetailLink ? (
             <a
-              href={userDetailLink.href}
+              href={sitePath(userDetailLink.href)}
               className="block px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               onClick={(event) => handleLinkClick(event, openUserDetail)}
             >
@@ -309,7 +309,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             {/* 프로필 설정 — 주소가 있으면 링크(#757). 보통 클릭은 종전처럼 onProfileClick 또는 SPA 이동 */}
             {profileEditLink ? (
               <a
-                href={profileEditLink.href}
+                href={sitePath(profileEditLink.href)}
                 onClick={(event) => handleLinkClick(event, openProfileSettings)}
                 className={buttonLikeClass(PROFILE_ITEM_CLASS)}
               >

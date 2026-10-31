@@ -12,6 +12,7 @@
 
 import { getApiClient } from '../api/ApiClient';
 import { AuthManager } from '../auth/AuthManager';
+import { withBasePrefix } from '../support/assetUrl';
 import {
     CONSENT_CHANGED_EVENT,
     ConsentRuntime,
@@ -66,7 +67,8 @@ export function defaultConsentRuntimeDeps(
                 return getApiClient().get(CONSENT_ENDPOINT);
             }
 
-            const response = await fetch(`/api${CONSENT_ENDPOINT}`, {
+            // ApiClient 를 거치지 않으므로 사이트 마운트 접두사를 여기서 붙인다(하위 폴더 배치).
+            const response = await fetch(withBasePrefix(`/api${CONSENT_ENDPOINT}`), {
                 credentials: 'same-origin',
                 headers: { Accept: 'application/json' },
             });

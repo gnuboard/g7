@@ -40,7 +40,7 @@ import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
 import { isAbortError, isDocumentUnloading, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
-import { withBasePrefix } from '../support/assetUrl';
+import { stripBasePrefix, withBasePrefix } from '../support/assetUrl';
 import { resolveSameTabNavPath, isDangerousScheme, isSameOriginRequestUrl, toSameOriginNavPath, resolveNavigatePathWithFallback } from '../support/navPolicy';
 import { armLeaveGuardBypass, runWithLeaveGuardBypass } from '../routing/LeaveGuard';
 import {
@@ -3476,13 +3476,17 @@ export class ActionDispatcher {
   /**
    * navigate 목적지가 지금 화면과 같은 경로(쿼리·해시만 다름)인지 판정합니다 (engine-v1.83.0).
    *
+   * 목적지는 앱 기준 경로(접두사 없음)이고 지금 주소는 브라우저 주소(하위 폴더 배치면 접두사 포함)라, 양쪽 접두사를
+   * 벗겨 대조한다. 벗기지 않으면 하위 폴더 배치에서 같은 경로의 쿼리만 바꾸는 이동도 다른 경로로 읽혀 대기 입력을
+   * 반영해 버리고, 다시 받은 데이터가 치던 입력을 덮는다.
+   *
    * @param target navigate 목적지(경로·쿼리·해시 또는 같은 출처 주소)
    * @return 같은 경로면 true
    */
   private isSamePathTarget(target: string): boolean {
     if (typeof window === 'undefined' || typeof target !== 'string' || target === '') return false;
     try {
-      return new URL(target, window.location.href).pathname === window.location.pathname;
+      return stripBasePrefix(new URL(target, window.location.href).pathname) === stripBasePrefix(window.location.pathname);
     } catch {
       return false;
     }
@@ -3505,7 +3509,12 @@ export class ActionDispatcher {
     // 같은 출처 전체 주소(`https://이 사이트/board/free/14` — 알림 이동 주소 등)는 경로로 바꿔 SPA 이동한다.
     // 종전에는 라우트 매칭이 전체 주소를 몰라 미매칭 폴백 → 같은 탭 sink 가 스킴을 거부해 첫 화면 `/` 로 갔다.
     // 다른 출처·실행 스킴은 바꾸지 않아 종전 판정(폴백 sink 의 거부)을 그대로 받는다 (engine-v1.80.1)
-    target = toSameOriginNavPath(target) ?? target;
+    // 전체 주소에서 꺼낸 경로는 브라우저 주소라 하위 폴더 배치면 마운트 접두사를 품는다 — 라우트 패턴(접두사 없음)과
+    // 맞도록 벗긴다. 벗기지 않으면 매칭이 늘 빗나가 SPA 이동 대신 미매칭 폴백의 전체 페이지 이동이 된다.
+    const sameOriginPath = toSameOriginNavPath(target);
+    if (sameOriginPath !== null) {
+      target = stripBasePrefix(sameOriginPath);
+    }
     // 다른 화면으로 가기 전에 대기 중인 디바운스 입력을 반영한다 — 이벤트 액션 경로는 이미 그렇게 하지만
     // `G7Core.dispatch(navigate)`(관리자 사이드바·링크 `navigateTo`)는 그대로 이탈 가드 판정에 들어가, 폼 변경이
     // 없는 화면(`leave_guard`)에서도 검색창·목록 스크롤 디바운스 대기만으로 확인 창이 떠 이동이 막혔다(engine-v1.82.0).
@@ -4073,6 +4082,7 @@ export class ActionDispatcher {
       const opened = window.open('', '_blank');
       if (opened) {
         opened.opener = null;
+        // base-path:allow 여기까지 온 값은 다른 출처의 https 절대 주소다(같은 출처는 위에서 접두사를 붙여 열었다).
         opened.location.href = finalPath;
       }
     }
@@ -4122,10 +4132,12 @@ export class ActionDispatcher {
       armLeaveGuardBypass();
     }
 
+    // 판정을 통과한 값은 앱 기준 같은 출처 경로다 — 브라우저가 그대로 여는 주소라 마운트 접두사를 붙인다
+    // (형제 openWindow `_self` 와 같은 sink 규칙, 이미 붙은 값은 그대로 — 멱등).
     if (params.replace === true) {
-      window.location.replace(safeTarget);
+      window.location.replace(withBasePrefix(safeTarget));
     } else {
-      window.location.assign(safeTarget);
+      window.location.assign(withBasePrefix(safeTarget));
     }
   }
 
@@ -4207,6 +4219,7 @@ export class ActionDispatcher {
     const browserPath = withBasePrefix(finalPath);
     // 경로가 바뀌어도 같은 화면이다 — 디바운스 칸의 경로 가드가 다른 화면으로 보지 않게 기록한다 (engine-v1.81.2)
     registerUrlOnlyPathChange(browserPath, (window as any).__templateApp);
+    // base-path:allow 바로 위에서 withBasePrefix() 로 만든 값이다.
     window.history.replaceState(null, '', browserPath);
     // 주소만 바꾸고 다시 그리지 않으므로 `:mergeQuery` 링크에 알린다 (engine-v1.82.1)
     notifyLocationReplaced();
