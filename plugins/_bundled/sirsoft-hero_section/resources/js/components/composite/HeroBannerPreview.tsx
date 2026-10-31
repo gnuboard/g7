@@ -1,11 +1,12 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { HeroSlider, type HeroBanner, type HeroSliderSettings } from './HeroSlider';
+import { HeroSlider, type HeroBanner, type HeroSliderSettings, type TextSpot } from './HeroSlider';
 import { youtubeIdFromUrl } from '../../support/media';
 import { basic, estimateContrast, frameClass, isLightText, localized, sampleImage, translate, type FrameBox, type PreviewFrame, type Rgb } from '../../support/editor';
 
-export type HeroDraft = Partial<Omit<HeroBanner, 'title' | 'description' | 'button_text' | 'image_alt'>> & {
+export type HeroDraft = Partial<Omit<HeroBanner, 'title' | 'eyebrow' | 'description' | 'button_text' | 'image_alt'>> & {
   title?: Record<string, string>;
+  eyebrow?: Record<string, string>;
   description?: Record<string, string>;
   button_text?: Record<string, string>;
   image_alt?: Record<string, string>;
@@ -38,6 +39,11 @@ export interface HeroBannerPreviewProps {
   frame?: PreviewFrame | null;
   /** 틀에서 고를 위치 키(`home_hero`·`shop_hero`) */
   position?: string;
+  /**
+   * 편집 화면 전용 — 미리보기의 문구 상자를 끌거나 화살표 키로 옮기면 지금 기기의 새 자리를 표현값 조각으로 알린다
+   * (`{ text_pc_x, text_pc_y }` 또는 `{ text_mobile_x, text_mobile_y }`). 주지 않으면 문구는 옮길 수 없다(목록 미리보기).
+   */
+  onTextPositionChange?: (patch: Record<string, number>) => void;
 }
 
 /** 문구 넘침 — 배너 1장일 때도 넘침(`alone`), 넘김 단추 자리를 비우면 넘침(`controls`), 넘치지 않음(false) */
@@ -50,7 +56,7 @@ type Overflow = 'alone' | 'controls' | false;
  * 슬라이더 폭은 템플릿 본문 상자(여백·최대 폭) 안이어야 줄바꿈이 같다. 그래서 viewport 는 그대로 두고 그 안에 템플릿의
  * 상자 사슬을 템플릿 CSS 로 그린 뒤, 슬라이더 위아래만 보이게 잘라 보인다.
  */
-function Viewport({ banners, settings, device, chain, content, stylesheets, onOverflow }: { banners: HeroBanner[]; settings?: HeroSliderSettings; device: 'pc' | 'mobile'; chain?: FrameBox[]; content?: FrameBox | null; stylesheets?: string[]; onOverflow?: (overflow: Overflow) => void }) {
+function Viewport({ banners, settings, device, chain, content, stylesheets, onOverflow, onTextMove, replay }: { banners: HeroBanner[]; settings?: HeroSliderSettings; device: 'pc' | 'mobile'; chain?: FrameBox[]; content?: FrameBox | null; stylesheets?: string[]; onOverflow?: (overflow: Overflow) => void; onTextMove?: (spot: TextSpot, device: 'pc' | 'mobile') => void; replay?: number }) {
   const host = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
   const [body, setBody] = useState<HTMLElement | null>(null);
@@ -168,13 +174,13 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
       'data-preview-width': viewport,
     })}
     {body && framed && createPortal(<Div style={{ transform: box ? `translateY(${-box.top}px)` : undefined }}>{nest(0)}</Div>, body)}
-    {body && framed && slot && createPortal(<HeroSlider banners={banners} settings={settings} forceDevice={device} contentClass={contentClass} />, slot)}
-    {body && !framed && createPortal(<HeroSlider banners={banners} settings={settings} forceDevice={device} />, body)}
+    {body && framed && slot && createPortal(<HeroSlider banners={banners} settings={settings} forceDevice={device} contentClass={contentClass} onTextMove={onTextMove} replay={replay} />, slot)}
+    {body && !framed && createPortal(<HeroSlider banners={banners} settings={settings} forceDevice={device} onTextMove={onTextMove} replay={replay} />, body)}
   </Div>;
 }
 
 /** 실제 PC 1366px·모바일 390px 미리보기. 확대 창은 Escape로 닫히고 포커스를 돌려줍니다. */
-export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = [], draft, locale = '', defaultLocale = '', onContentLocaleChange, settings, device = 'pc', emptyText = '', className = '', frame = null, position = '' }) => {
+export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = [], draft, locale = '', defaultLocale = '', onContentLocaleChange, settings, device = 'pc', emptyText = '', className = '', frame = null, position = '', onTextPositionChange }) => {
   const slotFrame = position ? frame?.positions?.[position] ?? null : null;
   const chain = slotFrame?.chain;
   const contentBox = slotFrame?.content ?? null;
@@ -182,7 +188,7 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
   const [expanded, setExpanded] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
-  const content = JSON.stringify([draft?.title, draft?.description, draft?.button_text, draft?.image_alt]);
+  const content = JSON.stringify([draft?.title, draft?.description, draft?.button_text, draft?.image_alt, draft?.eyebrow]);
   const previousContent = useRef<{ id?: number; content: string } | null>(null);
   useEffect(() => {
     const previous = previousContent.current;
@@ -201,6 +207,7 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
   const items = draft ? (draft.images?.pc ? [{
     ...draft, id: draft.id ?? 0,
     title: localized(draft.title, locale, defaultLocale),
+    eyebrow: localized(draft.eyebrow, locale, defaultLocale),
     description: localized(draft.description, locale, defaultLocale),
     button_text: localized(draft.button_text, locale, defaultLocale),
     image_alt: localized(draft.image_alt, locale, defaultLocale) || localized(draft.title, locale, defaultLocale),
@@ -209,7 +216,7 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
     youtube_id: draft.media_type === 'youtube' ? youtubeIdFromUrl(draft.youtube_url) : null,
     videos: draft.media_type === 'video' ? draft.videos ?? null : null,
   } as HeroBanner] : []) : banners;
-  const fallback = draft && ['title', 'description', 'button_text', 'image_alt'].some((key) => {
+  const fallback = draft && ['title', 'eyebrow', 'description', 'button_text', 'image_alt'].some((key) => {
     const value = draft[key as 'title'];
     return !value?.[locale]?.trim() && !!localized(value, locale, defaultLocale);
   });
@@ -231,13 +238,22 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
     return ratio !== null && ratio < minimum ? [{ part, ratio: Math.round(ratio * 10) / 10, color }] : [];
   }) : [];
   useEffect(() => { if (expanded) dialog.current?.showModal(); }, [expanded]);
+  // 문구 끌기 — 편집 화면만. 놓은 기기의 키로 표현값 조각을 알린다
+  const onTextMove = draft && onTextPositionChange
+    ? (spot: TextSpot, moved: 'pc' | 'mobile') => onTextPositionChange({ [`text_${moved}_x`]: spot.x, [`text_${moved}_y`]: spot.y })
+    : undefined;
+  // 효과 다시 보기 — 값이 바뀌면 슬라이더가 문구 등장 효과를 처음부터 다시 재생한다
+  const [replay, setReplay] = useState(0);
+  const animated = !!draft && !!draft.presentation?.animation && draft.presentation.animation !== 'none';
   const close = () => { if (dialog.current?.open) dialog.current.close(); setExpanded(false); opener.current?.focus(); };
   const Div = basic('Div', 'div');
   const P = basic('P', 'p');
   const Button = basic('Button', 'button');
   return <Div className={`hs-preview hs-preview--${device} ${className}`.trim()} data-device={device}>
     {items.length === 0 ? <P className="hs-preview__empty">{emptyText}</P> : <>
-      <Viewport banners={items} settings={settings} device={device} chain={chain} content={contentBox} stylesheets={stylesheets} onOverflow={draft ? setOverflow : undefined} />
+      <Viewport banners={items} settings={settings} device={device} chain={chain} content={contentBox} stylesheets={stylesheets} onOverflow={draft ? setOverflow : undefined} onTextMove={onTextMove} replay={replay} />
+      {onTextMove && <P className="form-hint hs-preview__hint" data-hint="text-drag">{translate('admin.form.text_layout.drag_hint')}</P>}
+      {animated && <Button type="button" className="hs-preview__expand" data-hs-action="replay" onClick={() => setReplay((value) => value + 1)}>{translate('admin.form.text_layout.replay')}</Button>}
       {draft && overflow && <P className="form-hint hs-preview__hint" data-hint="text-overflow" role="status">{translate(overflow === 'alone' ? 'admin.form.preview.text_overflow' : 'admin.form.preview.text_overflow_controls', { device: device.toUpperCase() })}</P>}
       {lowContrast.length > 0 && <P className="form-hint hs-preview__hint" data-hint="contrast" role="status">
         {translate('admin.form.preview.contrast_low', { parts: lowContrast.map((c) => translate(`admin.form.preview.contrast_${c.part}`, { ratio: String(c.ratio) })).join(' · ') })}
@@ -252,7 +268,7 @@ export const HeroBannerPreview: React.FC<HeroBannerPreviewProps> = ({ banners = 
         ref: dialog, className: 'hs-preview__dialog', 'aria-label': translate('admin.form.preview.expand'),
         onCancel: (event: Event) => { event.preventDefault(); close(); }, onClose: close,
         onKeyDownCapture: (event: React.KeyboardEvent) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); } },
-      }, <><Button type="button" className="hs-preview__expand" onClick={close}>{translate('admin.form.preview.close')}</Button><Viewport banners={items} settings={settings} device={device} chain={chain} content={contentBox} stylesheets={stylesheets} /></>)}
+      }, <><Button type="button" className="hs-preview__expand" onClick={close}>{translate('admin.form.preview.close')}</Button><Viewport banners={items} settings={settings} device={device} chain={chain} content={contentBox} stylesheets={stylesheets} onTextMove={onTextMove} replay={replay} /></>)}
     </>}
   </Div>;
 };

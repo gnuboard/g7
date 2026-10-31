@@ -111,7 +111,7 @@
     "computed": {
         "currentPosition": "{{query.position || 'home_hero'}}",
         "sitePath": "{{position_settings?.data?.editor?.preview_frame?.positions?.[query.position || 'home_hero']?.path ?? ''}}",
-        "currentSettings": "{{(position_settings?.data?.positions ?? []).find(p => p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content'} }}"
+        "currentSettings": "{{(position_settings?.data?.positions ?? []).find(p => p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide', width: 'content', header_overlay: false} }}"
     },
     "permissions": [
         "sirsoft-hero_section.banners.read"
@@ -758,6 +758,63 @@
                                         ]
                                     },
                                     {
+                                        "comment": "메뉴 겹치기 — 화면 전체 폭일 때만 사이트에 적용된다(본문 폭이면 메뉴 양옆이 배너 밖이라 글자가 묻힌다). 본문 폭에서도 켜 둘 수는 있고 안내만 한다",
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "flex-between gap-3 text-sm text-gray-700 dark:text-gray-300",
+                                            "htmlFor": "hero_slider_header_overlay"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-hero_section.admin.slider.header_overlay"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "sliderForm": "{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, header_overlay: $event.target.checked})}}"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "checkbox",
+                                                    "id": "hero_slider_header_overlay",
+                                                    "className": "h-4 w-4 rounded text-blue-600",
+                                                    "checked": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true}}",
+                                                    "disabled": "{{banners?.data?.abilities?.can_update !== true}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "header_overlay_hint",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                        },
+                                        "text": "$t:sirsoft-hero_section.admin.slider.header_overlay_hint"
+                                    },
+                                    {
+                                        "id": "header_overlay_needs_full",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).header_overlay === true && ((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).width ?? 'content') !== 'full'}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "text-xs text-amber-700 dark:text-amber-300"
+                                        },
+                                        "text": "$t:sirsoft-hero_section.admin.slider.header_overlay_needs_full"
+                                    },
+                                    {
                                         "id": "slider_save_button",
                                         "type": "basic",
                                         "name": "Button",
@@ -785,7 +842,8 @@
                                                                 "autoplay": "{{_local.sliderForm.autoplay}}",
                                                                 "interval_seconds": "{{Number(_local.sliderForm.interval_seconds)}}",
                                                                 "effect": "{{_local.sliderForm.effect}}",
-                                                                "width": "{{_local.sliderForm.width ?? 'content'}}"
+                                                                "width": "{{_local.sliderForm.width ?? 'content'}}",
+                                                                "header_overlay": "{{_local.sliderForm.header_overlay === true}}"
                                                             }
                                                         },
                                                         "onSuccess": [
@@ -833,7 +891,7 @@
                                         "props": {
                                             "type": "button",
                                             "className": "btn btn-primary flex-center gap-1.5",
-                                            "disabled": "{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay && Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) && _local.sliderForm.effect === _computed.currentSettings.effect && (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content'))}}"
+                                            "disabled": "{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay && Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) && _local.sliderForm.effect === _computed.currentSettings.effect && (_local.sliderForm.width ?? 'content') === (_computed.currentSettings.width ?? 'content') && (_local.sliderForm.header_overlay === true) === (_computed.currentSettings.header_overlay === true))}}"
                                         },
                                         "children": [
                                             {
@@ -1654,7 +1712,7 @@
                                                             "name": "Span",
                                                             "if": "{{row.media_type === 'youtube' || row.media_type === 'video'}}",
                                                             "props": {
-                                                                "className": "px-1.5 py-0.5 text-[11px] rounded bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+                                                                "className": "px-1.5 py-0.5 text-[11px] rounded bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                                             },
                                                             "text": "{{row.media_type === 'youtube' ? '$t:sirsoft-hero_section.admin.list.badge.youtube' : '$t:sirsoft-hero_section.admin.list.badge.video'}}"
                                                         },

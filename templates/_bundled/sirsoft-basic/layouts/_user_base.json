@@ -367,14 +367,14 @@
                     }
                 },
                 {
-                    "comment": "=== 모바일 헤더 (툴바) - 데스크톱에서 숨김 ===",
+                    "comment": "=== 모바일 헤더 (툴바) - 데스크톱에서 숨김 ===\n      g7-site-header — 맨 위 배너가 메뉴 겹침을 알리면 데스크톱 헤더와 같이 투명해진다(main.css, support/headerOverlay.ts)",
                     "id": "mobile_header",
                     "type": "basic",
                     "name": "Div",
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30"
+                                "className": "g7-site-header flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30"
                             }
                         }
                     },
@@ -2362,13 +2362,13 @@
                     },
                     "children": [
                         {
-                            "comment": "본문 상자 앞 전폭 자리 — 페이지가 슬롯 「page_top」 을 채우면 본문 상자(여백·최대 폭) 밖에서 화면 끝까지 쓴다(홈·쇼핑몰 메인의 히어로 배너 자리). 채우지 않으면 높이 없는 빈 상자다",
+                            "comment": "본문 상자 앞 전폭 자리 — 페이지가 슬롯 「page_top」 을 채우면 본문 상자(여백·최대 폭) 밖에서 화면 끝까지 쓴다(홈·쇼핑몰 메인의 히어로 배너 자리). 채우지 않으면 높이 없는 빈 상자다. 배너가 메뉴 겹침을 알리면 헤더 높이만큼 위로 당겨진다(g7-page-top)",
                             "id": "page_top",
                             "type": "layout",
                             "name": "Container",
                             "slot": "page_top",
                             "props": {
-                                "className": "w-full"
+                                "className": "g7-page-top w-full"
                             }
                         },
                         {

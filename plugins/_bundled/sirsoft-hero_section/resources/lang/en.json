@@ -105,6 +105,9 @@
                 "full": "Full screen width"
             },
             "width_hint": "Full screen width stretches the image edge to edge and keeps the title and button aligned with the page content. On screens wider than 1920px the height stops at 640px and the image is cropped top and bottom around its focus point.",
+            "header_overlay": "Menu overlay",
+            "header_overlay_hint": "Lays the site menu transparently over the banner. The menu gets its background back when visitors scroll down, and its text color follows the background set for each banner.",
+            "header_overlay_needs_full": "Menu overlay only applies on the site when the width is \"Full screen width\".",
             "save": "Save settings"
         },
         "list": {
@@ -187,6 +190,11 @@
             "is_active": "Active",
             "is_active_hint": "When off, the banner is hidden on the user page regardless of its period (inactive).",
             "locale_hint": "You can enter text for each language enabled on the site. Empty languages show the site default language text.",
+            "eyebrow": "Eyebrow",
+            "eyebrow_placeholder": "e.g. New fall arrivals",
+            "eyebrow_color": "Eyebrow color",
+            "eyebrow_color_code": "Eyebrow color code",
+            "eyebrow_hint": "A short line shown small above the title (optional). It follows the title alignment.",
             "title": "Title",
             "title_placeholder": "Banner title",
             "visible": "Show",
@@ -262,6 +270,58 @@
                 "dark": "Dark gradient",
                 "light": "Light gradient"
             },
+            "text_layout": {
+                "title": "Text position & effect",
+                "hint": "Set the text position separately for PC and phone. You can also drag the text in the preview on the right.",
+                "spot_label": "Text position",
+                "device_pc": "PC position",
+                "device_mobile": "Phone position",
+                "grid_label": "Quick text position",
+                "x": "Horizontal",
+                "y": "Vertical",
+                "spot": {
+                    "top_left": "Top left",
+                    "top_center": "Top center",
+                    "top_right": "Top right",
+                    "middle_left": "Middle left",
+                    "middle_center": "Center",
+                    "middle_right": "Middle right",
+                    "bottom_left": "Bottom left",
+                    "bottom_center": "Bottom center",
+                    "bottom_right": "Bottom right"
+                },
+                "width": "Text box width {{width}}%",
+                "width_hint": "Maximum width of the text box relative to the banner (the content width for full-width banners). Narrower boxes make shorter lines.",
+                "animation": "Entrance effect",
+                "animations": {
+                    "none": "None",
+                    "rise": "Rise from below",
+                    "fade": "Fade in",
+                    "left": "From the left",
+                    "right": "From the right",
+                    "zoom": "Zoom in",
+                    "blur": "Unblur",
+                    "letters": "Letter by letter"
+                },
+                "speed": "Speed",
+                "speeds": {
+                    "slow": "Slow",
+                    "normal": "Normal",
+                    "fast": "Fast"
+                },
+                "delay": "Start delay (s)",
+                "animation_hint": "Each time the banner appears, the eyebrow, title, description and button appear in turn, 0.2 seconds apart. \"Letter by letter\" applies to the eyebrow and title; the description and button fade in. Visitors who turned on reduced motion see the text without effects.",
+                "tone": "Banner background",
+                "tones": {
+                    "dark": "Dark (white menu text)",
+                    "light": "Light (black menu text)"
+                },
+                "tone_hint": "When \"Menu overlay\" is on in the position settings, the site menu text color changes while this banner is shown.",
+                "drag_role": "movable text",
+                "drag_label": "Text position {{x}}% horizontal, {{y}}% vertical — drag or use the arrow keys to move",
+                "drag_hint": "Drag the text in the preview, or select it and use the arrow keys (10% at a time with Shift).",
+                "replay": "Replay effect"
+            },
             "conflict_merge": {
                 "title": "Compare the latest version with my changes",
                 "hint": "Fields changed only by another admin use the latest value, and fields changed only by you keep your value. Choose a value for fields both of you changed, apply, then review and save again.",
@@ -290,17 +350,20 @@
                     "position": "Display position",
                     "is_active": "Active",
                     "period": "Display period",
+                    "eyebrow": "Eyebrow",
                     "title": "Title",
                     "description": "Description",
                     "button_text": "Button text",
                     "image_alt": "Image alt text",
+                    "eyebrow_style": "Eyebrow display",
                     "title_style": "Title visibility, color, alignment",
                     "description_style": "Description visibility, color, alignment",
                     "presentation": "Image focus and text background",
                     "link": "Link",
                     "pc_image": "PC image",
                     "mobile_image": "Mobile image"
-                }
+                },
+                "text_spot": "Text PC {{pc}} / phone {{mobile}} · width {{width}}%"
             },
             "button_needs_link": "Enter a link URL for the button to appear on the site. Without a URL, the button text is not shown.",
             "link_behavior": {

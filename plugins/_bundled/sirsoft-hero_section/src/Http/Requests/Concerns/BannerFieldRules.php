@@ -8,12 +8,15 @@ use App\Rules\TranslatableField;
 use Closure;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use Plugins\Sirsoft\HeroSection\Enums\AnimationSpeed;
 use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
 use Plugins\Sirsoft\HeroSection\Enums\BannerMediaType;
+use Plugins\Sirsoft\HeroSection\Enums\BannerTone;
 use Plugins\Sirsoft\HeroSection\Enums\DisplayPeriod;
 use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Enums\MediaKind;
 use Plugins\Sirsoft\HeroSection\Enums\TextAlign;
+use Plugins\Sirsoft\HeroSection\Enums\TextAnimation;
 use Plugins\Sirsoft\HeroSection\Enums\TextOverlay;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
@@ -35,7 +38,7 @@ trait BannerFieldRules
      *
      * @var array<int, string>
      */
-    private array $translatableFields = ['title', 'description', 'button_text', 'image_alt'];
+    private array $translatableFields = ['title', 'eyebrow', 'description', 'button_text', 'image_alt'];
 
     /**
      * 공통 검증 규칙을 반환합니다.
@@ -57,6 +60,10 @@ trait BannerFieldRules
             'starts_at' => ['exclude_unless:display_period,range', 'required', 'date'],
             'ends_at' => ['exclude_unless:display_period,range', 'required', 'date', 'after:starts_at'],
             'title' => ['required', 'array', new LocaleRequiredTranslatable(maxLength: 100, strictLocales: true)],
+            'eyebrow' => ['nullable', 'array', new TranslatableField(maxLength: 50, strictLocales: true)],
+            // 머리글 보이기·색은 이전 화면·API 호출이 보내지 않아도 저장한 값(처음이면 보임·흰색)을 지킨다
+            'eyebrow_visible' => ['sometimes', 'required', 'boolean'],
+            'eyebrow_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'description' => ['nullable', 'array', new TranslatableField(maxLength: 300, strictLocales: true)],
             'button_text' => ['nullable', 'array', new TranslatableField(maxLength: 30, strictLocales: true)],
             'image_alt' => ['nullable', 'array', new TranslatableField(maxLength: 200, strictLocales: true)],
@@ -68,12 +75,17 @@ trait BannerFieldRules
             'description_align' => ['required', Rule::enum(TextAlign::class)],
             'link_url' => ['nullable', 'string', 'max:2048', new SafeLinkUrl],
             'link_new_window' => ['required', 'boolean'],
-            'presentation' => ['nullable', 'array:pc_x,pc_y,mobile_x,mobile_y,overlay'],
-            'presentation.pc_x' => ['sometimes', 'required', 'integer', 'between:'.Banner::FOCUS_MIN.','.Banner::FOCUS_MAX],
-            'presentation.pc_y' => ['sometimes', 'required', 'integer', 'between:'.Banner::FOCUS_MIN.','.Banner::FOCUS_MAX],
-            'presentation.mobile_x' => ['sometimes', 'required', 'integer', 'between:'.Banner::FOCUS_MIN.','.Banner::FOCUS_MAX],
-            'presentation.mobile_y' => ['sometimes', 'required', 'integer', 'between:'.Banner::FOCUS_MIN.','.Banner::FOCUS_MAX],
+            'presentation' => ['nullable', 'array:'.implode(',', array_keys(Banner::DEFAULT_PRESENTATION))],
+            ...array_fill_keys(
+                array_map(fn (string $key) => 'presentation.'.$key, Banner::PERCENT_KEYS),
+                ['sometimes', 'required', 'integer', 'between:'.Banner::FOCUS_MIN.','.Banner::FOCUS_MAX],
+            ),
             'presentation.overlay' => ['sometimes', 'required', Rule::enum(TextOverlay::class)],
+            'presentation.text_width' => ['sometimes', 'required', 'integer', 'between:'.Banner::TEXT_WIDTH_MIN.','.Banner::TEXT_WIDTH_MAX],
+            'presentation.animation' => ['sometimes', 'required', Rule::enum(TextAnimation::class)],
+            'presentation.animation_speed' => ['sometimes', 'required', Rule::enum(AnimationSpeed::class)],
+            'presentation.animation_delay' => ['sometimes', 'required', 'numeric', 'between:0,'.Banner::ANIMATION_DELAY_MAX, 'multiple_of:0.1'],
+            'presentation.tone' => ['sometimes', 'required', Rule::enum(BannerTone::class)],
         ];
     }
 
@@ -125,10 +137,14 @@ trait BannerFieldRules
         }
         unset($data['youtube_url']);
 
-        foreach (['pc_x', 'pc_y', 'mobile_x', 'mobile_y'] as $coordinate) {
+        foreach ([...Banner::PERCENT_KEYS, 'text_width'] as $coordinate) {
             if (isset($data['presentation'][$coordinate])) {
                 $data['presentation'][$coordinate] = (int) $data['presentation'][$coordinate];
             }
+        }
+        if (isset($data['presentation']['animation_delay'])) {
+            // 0.1초 단위 — 문자열·부동소수 오차(0.30000000000000004)를 저장하지 않는다
+            $data['presentation']['animation_delay'] = round((float) $data['presentation']['animation_delay'], 1);
         }
         if (($data['display_period'] ?? null) === DisplayPeriod::Range->value) {
             $data['starts_at'] = TimezoneHelper::fromSiteDateTime($data['starts_at'] ?? null);

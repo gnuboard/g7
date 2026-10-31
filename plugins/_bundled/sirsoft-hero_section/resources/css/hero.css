@@ -250,9 +250,20 @@
   .hs__youtube-host { transition: none; }
 }
 
+/*
+ * 문구 띠 — 슬라이드 폭 전체, 높이는 문구만큼. 세로 위치(--hs-ty, 0 위 ~ 100 아래)로 띠를 올리고 내리며, 기준점과 띠 기준점이 같아
+ * 끝값에서도 배너 밖으로 넘치지 않는다. 기본값 100 은 종전의 「아래쪽 붙임」과 같다. 문구 배경 그라데이션도 이 띠에 깔고, 문구가
+ * 위쪽에 있으면 위로 짙어진다(--hs-shade). 띠는 누르기를 받지 않고 안의 문구 상자만 받는다 — 상자 밖은 전체 링크로 간다.
+ */
 .hs__text {
+  --hs-tx: var(--hs-tx-pc, 0);
+  --hs-ty: var(--hs-ty-pc, 100);
+  --hs-shade: var(--hs-shade-pc, to bottom);
   position: absolute;
-  inset: auto 0 0 0;
+  left: 0;
+  right: 0;
+  top: calc(var(--hs-ty) * 1%);
+  transform: translateY(calc(var(--hs-ty) * -1%));
   padding: clamp(16px, 5vw, 64px);
   display: flex;
   flex-direction: column;
@@ -260,9 +271,67 @@
   box-sizing: border-box;
   max-height: 100%;
   z-index: 2; /* 전체 링크(.hs__link) 위 — 문구 스크롤·탭 진입이 링크와 섞이지 않게 */
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .hs__text {
+    --hs-tx: var(--hs-tx-mobile, 0);
+    --hs-ty: var(--hs-ty-mobile, 100);
+    --hs-shade: var(--hs-shade-mobile, to bottom);
+  }
+}
+
+/*
+ * 문구 상자 — 띠 안 폭(--hs-tw %, 기본 100)과 가로 위치(--hs-tx, 0 왼쪽 ~ 100 오른쪽). 남는 폭 × 위치만큼 왼쪽을 띄운다.
+ * 화면 전체 폭이면 띠 안의 본문 상자(.hs__box) 기준이라 본문과 같은 줄 안에서 움직인다.
+ */
+.hs__textbox {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+  width: calc(var(--hs-tw, 100) * 1%);
+  max-width: 100%;
+  margin-left: calc((100% - var(--hs-tw, 100) * 1%) * var(--hs-tx) / 100);
+  pointer-events: auto;
 }
 
 .hs__text--linked { cursor: pointer; }
+
+/* 편집 미리보기 — 끌어 옮기는 문구 상자. 점선 테두리로 옮길 수 있음을 보이고, 끄는 동안 손가락 스크롤·글자 선택을 막는다 */
+.hs__textbox--editable {
+  cursor: move;
+  outline: 1px dashed rgba(255, 255, 255, 0.7);
+  outline-offset: 4px;
+  touch-action: none;
+  user-select: none;
+}
+
+.hs__textbox--editable:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 4px;
+}
+
+.hs__textbox--dragging { cursor: grabbing; }
+
+/* 메뉴 겹침 — 사이트 상단 메뉴가 배너 위에 있으므로 문구는 메뉴 높이(템플릿이 알려 준 값, 모르면 0)만큼 아래에서 시작한다 */
+.hs--header-overlay .hs__text {
+  padding-top: calc(clamp(16px, 5vw, 64px) + var(--g7-header-height, 0px));
+}
+
+/* 화면 읽기 프로그램에만 읽히는 원문(「글자 하나씩」 효과) */
+.hs__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.hs__word { display: inline-block; white-space: nowrap; }
+.hs__letter { display: inline-block; }
 
 .hs__scroll {
   display: flex;
@@ -270,10 +339,22 @@
   gap: 12px;
   min-height: 0;
   overflow-y: auto;
+  /* 옆에서 들어오는 등장 효과가 잠깐 가로 스크롤 막대를 만들지 않게 */
+  overflow-x: hidden;
   overscroll-behavior: contain;
   /* 버튼 초점 테두리(3px + 2px)가 스크롤 경계에 잘리지 않을 만큼 안쪽 여백을 두고 같은 만큼 되돌린다 */
   padding: 6px;
   margin: -6px;
+}
+
+.hs__eyebrow {
+  margin: 0;
+  font-size: clamp(0.8125rem, 1.4vw, 1.25rem);
+  font-weight: 600;
+  line-height: 1.4;
+  opacity: 0.9;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  overflow-wrap: anywhere;
 }
 
 .hs__title {
@@ -293,8 +374,40 @@
   overflow-wrap: anywhere;
 }
 
-.hs__text--dark { background: linear-gradient(transparent, rgba(0, 0, 0, .78)); }
-.hs__text--light { background: linear-gradient(transparent, rgba(255, 255, 255, .9)); }
+.hs__text--dark { background: linear-gradient(var(--hs-shade), transparent, rgba(0, 0, 0, .78)); }
+.hs__text--light { background: linear-gradient(var(--hs-shade), transparent, rgba(255, 255, 255, .9)); }
+
+/*
+ * 문구 등장 효과 — 활성 장(.hs__slide--active)이 될 때마다 줄마다 --hs-line-delay(시작 지연 + 순번 × 0.2초) 뒤 --hs-anim-duration
+ * 동안 재생한다. 장이 바뀌면 클래스가 빠졌다 붙으며 처음부터 다시 재생한다. 비활성 장은 효과 없이 그대로 보인다(나가는 장의 문구가
+ * 사라지지 않게). 「글자 하나씩」은 머리글·제목을 글자마다, 설명·버튼은 서서히 보인다. 움직임 줄이기면 모두 끈다.
+ */
+.hs__slide--active .hs__textbox--rise .hs__line { animation: hs-text-rise var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs__slide--active .hs__textbox--fade .hs__line { animation: hs-text-fade var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs__slide--active .hs__textbox--left .hs__line { animation: hs-text-left var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs__slide--active .hs__textbox--right .hs__line { animation: hs-text-right var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs__slide--active .hs__textbox--zoom .hs__line { animation: hs-text-zoom var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs__slide--active .hs__textbox--blur .hs__line { animation: hs-text-blur var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs__slide--active .hs__textbox--letters .hs__line:not(.hs__line--letters) { animation: hs-text-fade var(--hs-anim-duration, 0.6s) ease both; animation-delay: var(--hs-line-delay, 0s); }
+.hs__slide--active .hs__textbox--letters .hs__letter {
+  animation: hs-text-letter var(--hs-anim-duration, 0.6s) ease both;
+  animation-delay: calc(var(--hs-line-delay, 0s) + var(--hs-letter, 0) * var(--hs-letter-step, 0.05s));
+}
+
+@keyframes hs-text-rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@keyframes hs-text-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hs-text-left { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+@keyframes hs-text-right { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes hs-text-zoom { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: none; } }
+@keyframes hs-text-blur { from { opacity: 0; filter: blur(12px); } to { opacity: 1; filter: none; } }
+@keyframes hs-text-letter { from { opacity: 0; transform: translateY(0.4em); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hs__slide--active .hs__line,
+  .hs__slide--active .hs__letter {
+    animation: none !important;
+  }
+}
 .hs--controlled .hs__text { padding-bottom: max(76px, 5vw); }
 
 .hs-editor-preview { position: sticky; top: 84px; }
@@ -449,6 +562,25 @@
   text-align: center;
   font-size: 14px;
 }
+
+/* 관리자 편집 화면 — 문구 자리 고르기(HeroTextPositionPad). 9칸은 배너 모양의 작은 판, 고른 칸은 진하게 */
+.hs-pad { display: flex; flex-direction: column; gap: 12px; }
+.hs-pad__devices { display: flex; gap: 4px; }
+.hs-pad__device { padding: 4px 12px; font-size: 12px; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; color: #334155; cursor: pointer; }
+.hs-pad__device--on { background: #0f172a; border-color: #0f172a; color: #fff; }
+.dark .hs-pad__device { background: #1e293b; color: #e2e8f0; border-color: #475569; }
+.dark .hs-pad__device--on { background: #f1f5f9; border-color: #f1f5f9; color: #0f172a; }
+.hs-pad__body { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.hs-pad__grid { display: grid; grid-template-columns: repeat(3, 36px); grid-template-rows: repeat(3, 24px); gap: 4px; padding: 6px; border: 1px solid #94a3b8; border-radius: 8px; background: #f1f5f9; }
+.dark .hs-pad__grid { background: #0f172a; border-color: #475569; }
+.hs-pad__cell { display: flex; align-items: center; justify-content: center; padding: 0; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; }
+.hs-pad__cell:hover { background: rgba(100, 116, 139, 0.15); }
+.hs-pad__cell:focus-visible { outline: 2px solid #3b82f6; outline-offset: 1px; }
+.hs-pad__dot { width: 8px; height: 8px; border-radius: 9999px; background: #94a3b8; }
+.hs-pad__cell--on { border-color: #2563eb; background: rgba(37, 99, 235, 0.12); }
+.hs-pad__cell--on .hs-pad__dot { width: 12px; height: 12px; background: #2563eb; }
+.hs-pad__axes { display: flex; flex-wrap: wrap; gap: 12px; }
+.hs-pad__axis { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
 
 /* 관리자 편집 화면 — 동시 수정 충돌 뒤 비교·재적용(HeroConflictResolver). 테마와 무관하게 읽히도록 반투명 테두리만 쓴다. */
 .hs-conflict { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }

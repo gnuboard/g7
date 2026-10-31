@@ -11,8 +11,10 @@ import 'swiper/css/effect-flip';
 import 'swiper/css/effect-coverflow';
 import 'swiper/css/effect-creative';
 import { HeroVideoMedia, HeroYoutubeMedia, isYoutubeId, useMarketingConsent, type HeroVideo } from '../../support/media';
+import { LetterText, lineDelay, textMotion, textSpot, textVars, useHeaderOverlay, useTextDrag, type HeroTextPresentation, type TextSpot } from '../../support/text';
 
 export type { HeroVideo } from '../../support/media';
+export type { HeroTextPresentation, TextSpot } from '../../support/text';
 
 /** 공개 API(`GET /api/plugins/sirsoft-hero_section/hero`)의 이미지 한 장 */
 export interface HeroImage {
@@ -33,6 +35,15 @@ export interface HeroBanner {
 
   /** 제목 */
   title?: string;
+
+  /** 머리글 — 제목 위 짧은 한 줄 */
+  eyebrow?: string;
+
+  /** 머리글 표시 여부 */
+  eyebrow_visible?: boolean;
+
+  /** 머리글 색 (#RRGGBB) */
+  eyebrow_color?: string;
 
   /** 설명 */
   description?: string;
@@ -79,8 +90,10 @@ export interface HeroBanner {
   /** PC·모바일 영상 파일 (미디어 종류가 영상 파일일 때, 모바일이 없으면 PC 영상) */
   videos?: { pc?: HeroVideo | null; mobile?: HeroVideo | null } | null;
 
-  /** 기기별 이미지 초점(%)과 선택적 문구 배경 */
-  presentation?: { pc_x?: number; pc_y?: number; mobile_x?: number; mobile_y?: number; overlay?: 'none' | 'dark' | 'light' } | null;
+  /**
+   * 기기별 이미지 초점(%)·선택적 문구 배경과 문구 자리(기기별 가로·세로 %, 폭 %)·등장 효과(효과·속도·시작 지연)·바탕 밝기(메뉴 글자색)
+   */
+  presentation?: ({ pc_x?: number; pc_y?: number; mobile_x?: number; mobile_y?: number; overlay?: 'none' | 'dark' | 'light' } & HeroTextPresentation) | null;
 }
 
 /** 전환 효과 — Swiper 효과 이름과 같고, none 은 0ms 슬라이드 */
@@ -99,6 +112,12 @@ export interface HeroSliderSettings {
 
   /** 표시 폭 — 본문 폭(content, 기본)이면 `contentClass` 상자 안에, 화면 전체(full)면 끝까지 그리고 문구·컨트롤만 그 상자에 맞춘다 */
   width?: 'content' | 'full';
+
+  /**
+   * 메뉴 겹치기 — 화면 전체 폭일 때만 쓴다. 켜면 문서 뿌리에 `data-header-overlay="dark|light"`(지금 장의 바탕 밝기)를 달아 사이트 상단
+   * 메뉴가 배너 위에 투명하게 겹치게 하고, 문구는 템플릿이 알려 준 메뉴 높이(`--g7-header-height`)만큼 아래에서 시작한다.
+   */
+  header_overlay?: boolean;
 }
 
 export interface HeroSliderProps {
@@ -134,6 +153,21 @@ export interface HeroSliderProps {
    * 를 넘긴다. 없으면 브라우저에 남긴 직전 모양, 그것도 없으면 본문 폭.
    */
   skeletonWidth?: 'content' | 'full' | '';
+
+  /**
+   * 받는 동안 메뉴를 겹칠지 — 확장점 조각이 플러그인 설정 힌트(`slot_overlays`)를 넘긴다. 켜져 있으면 스켈레톤도 메뉴 밑으로 들어가
+   * 배너가 와도 화면이 위아래로 밀리지 않는다. 없으면 브라우저에 남긴 직전 모양.
+   */
+  skeletonOverlay?: boolean;
+
+  /**
+   * 편집 미리보기 전용 — 주면 문구 상자를 끌거나 화살표 키로 옮길 수 있고, 놓을 때 고정 기기(`forceDevice`)의 새 자리를 알린다.
+   * 사이트 화면에서는 넘기지 않는다.
+   */
+  onTextMove?: (spot: TextSpot, device: 'pc' | 'mobile') => void;
+
+  /** 편집 미리보기 전용 — 값이 바뀌면 문구 등장 효과를 처음부터 다시 재생한다 */
+  replay?: number;
 
   /** DOM id */
   id?: string;
@@ -257,6 +291,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   contentClass = '',
   loading = false,
   skeletonWidth = '',
+  skeletonOverlay,
+  onTextMove,
+  replay = 0,
   className = '',
   id,
   editorAttrs,
@@ -265,12 +302,14 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   // 직전 방문의 그 위치 모양(배너 유무·표시 폭) — 받는 동안의 스켈레톤을 실제와 같은 폭으로, 0건 위치는 아예 그리지 않게
   const remembered = useMemo(() => readMemory(position), [position]);
   const width = settings.width;
+  const overlaySetting = settings.header_overlay === true;
+  const firstTone = toneOf(banners[0]);
   useEffect(() => {
     // 응답이 온 때만 기억한다(공개 API 는 늘 표시 폭을 함께 준다) — 받기에 실패한 방문을 「0건」으로 기억하면 다음 방문에 스켈레톤 없이 배너가 끼어든다
     if (!loading && width !== undefined) {
-      writeMemory(position, { banners: count, width: width === 'full' ? 'full' : 'content' });
+      writeMemory(position, { banners: count, width: width === 'full' ? 'full' : 'content', overlay: overlaySetting && width === 'full', tone: firstTone });
     }
-  }, [loading, position, count, width]);
+  }, [loading, position, count, width, overlaySetting, firstTone]);
   const full = settings.width === 'full';
   const box = contentClass.trim();
   // 화면 전체 폭이면 문구·넘김 단추를 본문 상자에 맞춘다 — 넓은 화면에서 글이 화면 끝에 붙지 않고 본문과 같은 줄에 선다
@@ -304,6 +343,14 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   }, [key]);
 
   const activeBanner = banners[index];
+  // 메뉴 겹침 — 사이트 화면의 화면 전체 폭에서만(본문 폭이면 메뉴 양옆이 배너 밖이라 글자가 묻힌다). 편집 미리보기(기기 고정)는 신호를 내지 않는다.
+  // 받는 동안에는 힌트(없으면 직전 방문 모양)를 따르고, 바탕 밝기는 직전 첫 장(없으면 사이트 다크 모드면 어두움)으로 둔다
+  const skeletonFull = (skeletonWidth || remembered?.width) === 'full';
+  const waiting = count === 0 && loading && remembered?.banners !== 0;
+  const overlayOn = !forceDevice && (waiting
+    ? skeletonFull && (skeletonOverlay ?? remembered?.overlay === true)
+    : full && overlaySetting && count > 0);
+  useHeaderOverlay(overlayOn ? (waiting ? (remembered?.tone ?? siteTone()) : toneOf(activeBanner)) : null);
   const youtubeAllowed = (banner: HeroBanner) => consent || allowedYoutube.has(banner.id);
   /** 이 배너의 영상이 지금 재생 차례를 맡는지 — 재생할 수 없거나(동의 전 유튜브 포함) 이번 차례에 끝났으면 이미지처럼 간격으로 넘긴다 */
   const mediaRuns = (banner?: HeroBanner) => {
@@ -379,10 +426,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     }
 
     // 받는 중 — 슬라이더와 같은 비율·폭(본문 폭이면 본문 상자, 화면 전체면 끝까지)의 자리를 먼저 잡는다. 장식이라 읽지 않는다
-    const skeletonFull = (skeletonWidth || remembered?.width) === 'full';
     const skeleton = (
       <section
-        className={`hs hs--skeleton hs--${skeletonFull ? 'full' : 'content'} ${className}`.trim()}
+        className={`hs hs--skeleton hs--${skeletonFull ? 'full' : 'content'}${overlayOn ? ' hs--header-overlay' : ''} ${className}`.trim()}
         style={style}
         aria-hidden="true"
         data-position={position}
@@ -435,7 +481,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       id={id}
       {...editorAttrs}
       ref={regionRef}
-      className={`hs hs--${effect} hs--${full ? 'full' : 'content'}${count > 1 ? ' hs--controlled' : ''} ${className}`.trim()}
+      className={`hs hs--${effect} hs--${full ? 'full' : 'content'}${count > 1 ? ' hs--controlled' : ''}${overlayOn ? ' hs--header-overlay' : ''} ${className}`.trim()}
       style={style}
       role="region"
       aria-roledescription="carousel"
@@ -483,6 +529,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
               }}
               onMediaEnded={() => onMediaEnded(banner)}
               onMediaFailed={() => onMediaFailed(banner)}
+              reduced={reduced}
+              replay={replay}
+              onTextMove={onTextMove && forceDevice ? (spot) => onTextMove(spot, forceDevice) : undefined}
             />
           </SwiperSlide>
         ))}
@@ -547,6 +596,15 @@ interface HeroSlideProps {
 
   /** 영상을 재생할 수 없다 */
   onMediaFailed?: () => void;
+
+  /** 움직임 줄이기 — 문구 등장 효과를 끈다 */
+  reduced?: boolean;
+
+  /** 값이 바뀌면 문구 등장 효과를 다시 재생한다(편집 미리보기) */
+  replay?: number;
+
+  /** 문구 상자를 옮겼다(편집 미리보기 — 고정 기기의 새 자리) */
+  onTextMove?: (spot: TextSpot) => void;
 }
 
 /** 아무것도 하지 않는 콜백 */
@@ -559,6 +617,12 @@ interface SlotMemory {
 
   /** 직전 표시 폭 */
   width: 'content' | 'full';
+
+  /** 직전에 메뉴를 겹쳤는지 */
+  overlay?: boolean;
+
+  /** 직전 첫 장의 바탕 밝기 */
+  tone?: 'dark' | 'light';
 }
 
 /** 저장 키 접두 — 플러그인 식별자로 다른 확장과 섞이지 않게 */
@@ -576,7 +640,9 @@ function readMemory(position?: string): SlotMemory | null {
   }
   try {
     const value = JSON.parse(window.localStorage.getItem(MEMORY_KEY + position) ?? 'null');
-    return value && typeof value.banners === 'number' ? { banners: value.banners, width: value.width === 'full' ? 'full' : 'content' } : null;
+    return value && typeof value.banners === 'number'
+      ? { banners: value.banners, width: value.width === 'full' ? 'full' : 'content', overlay: value.overlay === true, tone: value.tone === 'light' ? 'light' : 'dark' }
+      : null;
   } catch {
     return null;
   }
@@ -600,6 +666,25 @@ function writeMemory(position: string | undefined, memory: SlotMemory): void {
 }
 
 /**
+ * 배너의 바탕 밝기를 꺼냅니다(기본 어두움 — 흰 메뉴 글자).
+ *
+ * @param banner 배너
+ * @returns 바탕 밝기
+ */
+function toneOf(banner?: HeroBanner): 'dark' | 'light' {
+  return banner?.presentation?.tone === 'light' ? 'light' : 'dark';
+}
+
+/**
+ * 배너를 받기 전의 바탕 밝기 — 스켈레톤 색이 사이트 다크 모드를 따르므로 그에 맞춘다(다크면 어두움, 아니면 밝음).
+ *
+ * @returns 바탕 밝기
+ */
+function siteTone(): 'dark' | 'light' {
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+}
+
+/**
  * 화면 전체 폭에서 문구를 본문 상자로 감쌉니다 — 상자가 없으면 그대로 둔다.
  *
  * @param box 본문 상자 클래스
@@ -619,6 +704,7 @@ function wrapBox(box: string, node: React.ReactNode): React.ReactNode {
 const HeroSlide: React.FC<HeroSlideProps> = ({
   banner, index, count, active, eager, forceDevice, textBox = '',
   playing = false, loop = false, youtubeAllowed = false, onAllowYoutube = noop, onMediaEnded = noop, onMediaFailed = noop,
+  reduced = false, replay = 0, onTextMove,
 }) => {
   const pc = banner.images?.pc ?? null;
   const mobile = banner.images?.mobile ?? null;
@@ -648,7 +734,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
     observer.observe(element);
     Array.from(element.children).forEach((child) => observer.observe(child));
     return () => observer.disconnect();
-  }, [banner.title, banner.description, banner.button_text, banner.title_visible, banner.description_visible]);
+  }, [banner.title, banner.eyebrow, banner.description, banner.button_text, banner.title_visible, banner.eyebrow_visible, banner.description_visible, banner.presentation?.text_width]);
   const scrollable = overflowing
     ? { tabIndex: active ? 0 : -1, role: 'region', 'aria-label': banner.title || alt || t('sirsoft-hero_section.slider.label', '메인 배너') }
     : {};
@@ -677,26 +763,69 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
     </picture>
   ) : null;
 
+  // 문구 줄 — 머리글 → 제목 → 설명 → 버튼. 등장 효과는 그려지는 줄만 세어 0.2초씩 늦춘다(빈 줄 때문에 틈이 생기지 않게)
+  const motion = textMotion(focus, reduced);
+  const device = forceDevice ?? 'pc';
+  const drag = useTextDrag(textSpot(focus, device), onTextMove);
+  const lines: React.ReactNode[] = [];
+  const line = (render: (props: { className: string; style: React.CSSProperties }) => React.ReactNode, extra = '') => {
+    lines.push(render({ className: `hs__line${extra}`, style: lineDelay(motion, lines.length) }));
+  };
+  const letters = motion.name === 'letters';
+  if (banner.eyebrow_visible !== false && banner.eyebrow) {
+    line(({ className, style }) => (
+      <p key="eyebrow" className={`hs__eyebrow ${className}`} style={{ ...style, color: banner.eyebrow_color, textAlign: banner.title_align }}>
+        {letters ? <LetterText text={banner.eyebrow!} /> : banner.eyebrow}
+      </p>
+    ), letters ? ' hs__line--letters' : '');
+  }
+  if (banner.title_visible !== false && banner.title) {
+    line(({ className, style }) => (
+      <h2 key="title" className={`hs__title ${className}`} style={{ ...style, color: banner.title_color, textAlign: banner.title_align }}>
+        {letters ? <LetterText text={banner.title!} /> : banner.title}
+      </h2>
+    ), letters ? ' hs__line--letters' : '');
+  }
+  if (banner.description_visible !== false && banner.description) {
+    line(({ className, style }) => (
+      <p key="description" className={`hs__description ${className}`} style={{ ...style, color: banner.description_color, textAlign: banner.description_align }}>{banner.description}</p>
+    ));
+  }
+  if (hasButton) {
+    line(({ className, style }) => (
+      <div key="actions" className={`hs__actions ${className}`} style={{ ...style, textAlign: banner.title_align }}>
+        <a className="hs__button" {...link!} tabIndex={active ? undefined : -1}>{banner.button_text}</a>
+      </div>
+    ));
+  }
+  const editable = !!onTextMove;
+  const shown = drag.dragging ?? textSpot(focus, device);
+
   const text = (
     <div
-      className={`hs__text hs__text--${banner.presentation?.overlay ?? 'none'}${wholeLink ? ' hs__text--linked' : ''}${textBox ? ' hs__text--boxed' : ''}`}
-      // 문구를 눌러도 링크로 간다(마우스·손가락). 키보드는 앞의 링크로 간다. 손가락 스크롤·넘기기는 click 을 만들지 않는다
-      onClick={wholeLink ? () => linkRef.current?.click() : undefined}
+      className={`hs__text hs__text--${banner.presentation?.overlay ?? 'none'}${textBox ? ' hs__text--boxed' : ''}`}
+      style={textVars(focus, forceDevice, drag.dragging)}
     >
-      {/* 긴 문구는 이 안에서만 스크롤한다 — 바깥 여백(넘김 컨트롤 자리)에는 글자가 지나가지 않는다 */}
-      {wrapBox(textBox, <div className="hs__scroll" ref={scrollRef} {...scrollable}>
-      {banner.title_visible !== false && banner.title && (
-        <h2 className="hs__title" style={{ color: banner.title_color, textAlign: banner.title_align }}>{banner.title}</h2>
-      )}
-      {banner.description_visible !== false && banner.description && (
-        <p className="hs__description" style={{ color: banner.description_color, textAlign: banner.description_align }}>{banner.description}</p>
-      )}
-      {hasButton && (
-        <div className="hs__actions" style={{ textAlign: banner.title_align }}>
-          <a className="hs__button" {...link!} tabIndex={active ? undefined : -1}>{banner.button_text}</a>
+      {wrapBox(textBox, (
+        <div
+          key={`motion-${replay}`}
+          ref={drag.boxRef}
+          className={`hs__textbox hs__textbox--${motion.name}${wholeLink ? ' hs__text--linked' : ''}${editable ? ' hs__textbox--editable' : ''}${drag.dragging ? ' hs__textbox--dragging' : ''}`}
+          style={{ '--hs-anim-duration': `${motion.duration}s` } as React.CSSProperties}
+          // 문구를 눌러도 링크로 간다(마우스·손가락). 키보드는 앞의 링크로 간다. 손가락 스크롤·넘기기는 click 을 만들지 않는다
+          onClick={wholeLink && !editable ? () => linkRef.current?.click() : undefined}
+          {...(editable ? {
+            tabIndex: 0,
+            role: 'group',
+            'aria-roledescription': t('sirsoft-hero_section.admin.form.text_layout.drag_role', '옮길 수 있는 문구'),
+            'aria-label': t('sirsoft-hero_section.admin.form.text_layout.drag_label', '문구 위치 가로 {{x}}%, 세로 {{y}}% — 끌거나 화살표 키로 옮깁니다', { x: String(shown.x), y: String(shown.y) }),
+            ...drag.handlers,
+          } : {})}
+        >
+          {/* 긴 문구는 이 안에서만 스크롤한다 — 바깥 여백(넘김 컨트롤 자리)에는 글자가 지나가지 않는다 */}
+          <div className="hs__scroll" ref={scrollRef} {...(editable ? {} : scrollable)}>{lines}</div>
         </div>
-      )}
-      </div>)}
+      ))}
     </div>
   );
 

@@ -7,12 +7,14 @@
         "max_upload_mb": 5,
         "max_video_upload_mb": 30,
         "public_cache_minutes": 10,
-        "slot_widths": { "home_hero": "content", "shop_hero": "content" }
+        "slot_widths": { "home_hero": "content", "shop_hero": "content" },
+        "slot_overlays": { "home_hero": false, "shop_hero": false }
     },
     "frontend_schema": {
         "max_upload_mb": { "expose": false },
         "max_video_upload_mb": { "expose": false },
         "public_cache_minutes": { "expose": false },
-        "slot_widths": { "expose": true }
+        "slot_widths": { "expose": true },
+        "slot_overlays": { "expose": true }
     }
 }

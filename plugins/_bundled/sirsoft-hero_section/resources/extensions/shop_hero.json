@@ -39,6 +39,7 @@
                 "banners": "{{heroSectionShop?.data?.banners ?? []}}",
                 "loading": "{{heroSectionShop == null}}",
                 "skeletonWidth": "{{_global.plugins?.['sirsoft-hero_section']?.slot_widths?.shop_hero ?? ''}}",
+                "skeletonOverlay": "{{_global.plugins?.['sirsoft-hero_section']?.slot_overlays?.shop_hero}}",
                 "settings": "{{heroSectionShop?.data?.settings}}",
                 "position": "shop_hero",
                 "contentClass": "{{extensionPointProps?.contentClass ?? ''}}"

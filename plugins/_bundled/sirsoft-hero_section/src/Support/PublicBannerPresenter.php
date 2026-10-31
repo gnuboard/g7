@@ -31,6 +31,9 @@ class PublicBannerPresenter
             'id' => $banner->id,
             'presentation' => array_replace(Banner::DEFAULT_PRESENTATION, $banner->presentation ?? []),
             'title' => $title,
+            'eyebrow' => self::pick($banner->eyebrow, $locale),
+            'eyebrow_visible' => $banner->eyebrow_visible ?? true,
+            'eyebrow_color' => $banner->eyebrow_color ?? '#FFFFFF',
             'description' => self::pick($banner->description, $locale),
             'button_text' => self::pick($banner->button_text, $locale),
             // alt → 제목 순으로 대체 — 링크 배너라 이름이 필요하다

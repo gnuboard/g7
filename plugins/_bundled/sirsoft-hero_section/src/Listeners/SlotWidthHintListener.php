@@ -10,8 +10,9 @@ use Plugins\Sirsoft\HeroSection\Services\PositionSettingService;
 use Throwable;
 
 /**
- * 위치별 표시 폭 힌트(`slot_widths`)를 플러그인 설정에 맞춰 둔다 — 사용자 화면은 첫 로드 때 플러그인 설정(`_global.plugins`)을 받으므로,
- * 배너 응답이 오기 전 스켈레톤을 실제와 같은 폭(본문 폭·화면 전체)으로 그릴 수 있다.
+ * 위치별 표시 폭·메뉴 겹침 힌트(`slot_widths`·`slot_overlays`)를 플러그인 설정에 맞춰 둔다 — 사용자 화면은 첫 로드 때 플러그인
+ * 설정(`_global.plugins`)을 받으므로, 배너 응답이 오기 전 스켈레톤을 실제와 같은 폭(본문 폭·화면 전체)과 같은 자리(메뉴 밑으로
+ * 겹침)로 그릴 수 있다.
  *
  * 원본은 위치 설정 테이블 하나다. 플러그인 설정 저장 직전 필터에서 그 값으로 매번 다시 채우므로, 환경설정 화면이 옛 값을 되돌려
  * 보내도 덮이지 않는다. 표시 폭이 바뀌거나 설정을 초기화했거나 플러그인을 켜고 올렸을 때 다시 저장해 맞춘다.
@@ -68,12 +69,13 @@ class SlotWidthHintListener implements HookListenerInterface
         }
 
         $settings['slot_widths'] = $this->positions->slotWidths();
+        $settings['slot_overlays'] = $this->positions->slotOverlays();
 
         return $settings;
     }
 
     /**
-     * 표시 폭이 바뀐 저장이면 힌트를 다시 맞춥니다(다른 값만 바뀌었으면 플러그인 설정을 건드리지 않는다).
+     * 표시 폭·메뉴 겹치기가 바뀐 저장이면 힌트를 다시 맞춥니다(다른 값만 바뀌었으면 플러그인 설정을 건드리지 않는다).
      *
      * @param  PositionSetting  $setting  저장된 설정 행
      * @param  array<string, mixed>  $snapshot  저장 전 값
@@ -81,8 +83,10 @@ class SlotWidthHintListener implements HookListenerInterface
      */
     public function onPositionSetting(PositionSetting $setting, array $snapshot = []): void
     {
-        $before = $snapshot['width'] ?? PositionSetting::DEFAULTS['width'];
-        if ($before !== $setting->toSettings()['width']) {
+        $after = $setting->toSettings();
+        $width = $snapshot['width'] ?? PositionSetting::DEFAULTS['width'];
+        $overlay = (bool) ($snapshot['header_overlay'] ?? PositionSetting::DEFAULTS['header_overlay']);
+        if ($width !== $after['width'] || $overlay !== $after['header_overlay']) {
             $this->sync();
         }
     }
@@ -111,7 +115,7 @@ class SlotWidthHintListener implements HookListenerInterface
         try {
             app(PluginSettingsService::class)->save(self::PLUGIN, []);
         } catch (Throwable $e) {
-            Log::error('히어로섹션 표시 폭 힌트 저장 실패', ['error' => $e->getMessage()]);
+            Log::error('히어로섹션 표시 폭·메뉴 겹침 힌트 저장 실패', ['error' => $e->getMessage()]);
         }
     }
 }

@@ -199,6 +199,26 @@ describe('히어로섹션 목록 화면', () => {
     expect(button.props.disabled).toContain('_computed.currentSettings.effect');
   });
 
+  // @scenario surface=admin_header_overlay_setting
+  // @effects position_setting_overlay_persisted
+  it('메뉴 겹치기는 작업본에 담겨 저장 본문에 실리고, 바뀐 것이 없으면 저장이 잠기며, 본문 폭이면 「화면 전체 폭일 때만」 안내가 보인다', () => {
+    const toggle = collect(list, (n) => n.props?.id === 'hero_slider_header_overlay')[0];
+    expect(toggle.props.checked).toContain('.header_overlay === true');
+    expect(json(actionsOf(toggle, 'setState'))).toContain('header_overlay: $event.target.checked');
+    const button = findById(list, 'slider_save_button')!;
+    expect(json(actionsOf(button, 'apiCall')[0])).toContain('"header_overlay":"{{_local.sliderForm.header_overlay === true}}"');
+    expect(button.props.disabled).toContain('(_local.sliderForm.header_overlay === true) === (_computed.currentSettings.header_overlay === true)');
+    const expr = findById(list, 'header_overlay_needs_full')!.if.slice(2, -2);
+    const shown = (sliderForm: any) => Function('_local', '_computed', `return (${expr})`)({ sliderForm: { position: 'home_hero', ...sliderForm } }, { currentPosition: 'home_hero', currentSettings: {} });
+    expect(shown({ header_overlay: true, width: 'content' })).toBe(true);
+    expect(shown({ header_overlay: true })).toBe(true);
+    expect(shown({ header_overlay: true, width: 'full' })).toBe(false);
+    expect(shown({ header_overlay: false, width: 'content' })).toBe(false);
+    for (const lang of [ko, en] as any[]) {
+      for (const key of ['header_overlay', 'header_overlay_hint', 'header_overlay_needs_full']) expect(lang.admin.slider[key]).toBeTruthy();
+    }
+  });
+
   // @scenario surface=admin_width_setting
   // @effects preview_follows_width_before_save, width_saved_and_restored
   it('표시 폭(본문 폭·화면 전체)을 고르면 작업본에 담겨 미리보기가 저장 전에 따라가고, 저장 본문에 실리며 바뀐 것이 없으면 잠긴다', () => {

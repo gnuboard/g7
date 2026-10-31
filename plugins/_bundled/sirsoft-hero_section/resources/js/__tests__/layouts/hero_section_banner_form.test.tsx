@@ -63,14 +63,14 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_multilingual_tabs_active_locales
-  it('제목·설명·버튼 문구·대체 텍스트는 언어 탭 입력이고(사이트 활성 언어), 제목만 필수다', () => {
+  it('머리글·제목·설명·버튼 문구·대체 텍스트는 언어 탭 입력이고(사이트 활성 언어), 제목만 필수다', () => {
     const inputs = collect(form, (n) => n.name === 'MultilingualInput');
-    expect(inputs.map((n) => n.props.name)).toEqual(['title', 'description', 'button_text', 'image_alt']);
+    expect(inputs.map((n) => n.props.name)).toEqual(['eyebrow', 'title', 'description', 'button_text', 'image_alt']);
     expect(inputs.every((n) => n.props.layout === 'tabs')).toBe(true);
     // 언어 목록을 화면에서 고정하지 않는다 — 컴포넌트가 사이트 활성 언어를 쓴다
     expect(inputs.every((n) => n.props.availableLocales === undefined)).toBe(true);
     expect(inputs.filter((n) => n.props.required === true).map((n) => n.props.name)).toEqual(['title']);
-    expect(inputs.map((n) => n.props.maxLength)).toEqual([100, 300, 30, 200]);
+    expect(inputs.map((n) => n.props.maxLength)).toEqual([50, 100, 300, 30, 200]);
   });
 
   // @scenario surface=form_images_apply_on_save
@@ -233,9 +233,9 @@ describe('배너 등록·수정 화면', () => {
   });
 
   // @scenario surface=form_section_order_image_first
-  it('입력 순서는 기본 정보 → 미디어 → 이미지 → 이미지 표시 → 문구 → 링크 → 기간이다 — 미디어 종류를 고르고 사진·영상을 먼저 올려 미리보기를 보며 문구를 쓴다', () => {
+  it('입력 순서는 기본 정보 → 미디어 → 이미지 → 이미지 표시 → 문구 → 문구 위치·효과 → 링크 → 기간이다 — 미디어 종류를 고르고 사진·영상을 먼저 올려 미리보기를 보며 문구를 쓴다', () => {
     const sections = asArray<any>(findById(form, 'form_sections')!.children).map((n) => n.id).filter((id) => String(id).endsWith('_card'));
-    expect(sections).toEqual(['basic_card', 'media_card', 'image_card', 'presentation_card', 'text_card', 'link_card', 'period_card']);
+    expect(sections).toEqual(['basic_card', 'media_card', 'image_card', 'presentation_card', 'text_card', 'text_layout_card', 'link_card', 'period_card']);
   });
 
   // @scenario surface=form_preview_first_on_mobile
@@ -297,6 +297,47 @@ describe('배너 등록·수정 화면', () => {
     expect(findById(form, 'field_pc_image')!.props.id).toBe('hero_field_pc_image');
     // 이유 문구는 한 곳에만 — 예전의 폼 아래 「올리는 중」 안내는 없다
     expect(collect(form, (n) => json(n.text ?? '').includes('admin.form.upload_pending'))).toHaveLength(1);
+  });
+
+  // @scenario surface=form_text_layout_card
+  // @effects editor_position_persisted, eyebrow_persisted
+  it('문구 위치·효과 — 9칸 고르기와 미리보기 끌기는 지금 기기 키를 표현값에 합치고 「고친 것 있음」을 켠다. 기기는 미리보기와 같은 값이다', () => {
+    const pad = findById(form, 'text_position_pad')!;
+    expect(pad.name).toBe('sirsoft-hero_section.HeroTextPositionPad');
+    expect(pad.props.presentation).toBe('{{_local.form?.presentation}}');
+    expect(pad.props.device).toBe('{{_local.previewDevice}}');
+    const merge = 'form.presentation":"{{({...(_local.form?.presentation ?? {}), ...$args[0]})}}"';
+    expect(json(pad.actions)).toContain(merge);
+    expect(json(pad.actions)).toContain('"hasChanges":true');
+    expect(json(pad.actions)).toContain('"previewDevice":"{{$args[0]}}"');
+    const preview = findById(form, 'form_preview')!;
+    const move = asArray<any>(preview.actions).find((a) => a.event === 'onTextPositionChange');
+    expect(json(move)).toContain(merge);
+    expect(json(move)).toContain('"hasChanges":true');
+    // 효과·속도·지연·바탕은 이름 바인딩 — 선택지는 서버 Enum 과 같다
+    const animation = collect(form, (n) => n.props?.id === 'hero_text_animation')[0];
+    expect(animation.props.name).toBe('presentation.animation');
+    expect(json(animation)).toMatch(/none.*rise.*fade.*left.*right.*zoom.*blur.*letters/);
+    expect(collect(form, (n) => n.props?.id === 'hero_text_animation_speed')[0].props.name).toBe('presentation.animation_speed');
+    expect(collect(form, (n) => n.props?.id === 'hero_text_animation_delay')[0].props.name).toBe('presentation.animation_delay');
+    // 입력 범위는 서버가 내려준 저장 규칙 값(위치 설정 응답 editor.*_limits)
+    expect(collect(form, (n) => n.props?.id === 'hero_text_width')[0].props).toMatchObject({ name: 'presentation.text_width', min: '{{position_settings?.data?.editor?.text_width_limits?.min ?? 30}}', max: '{{position_settings?.data?.editor?.text_width_limits?.max ?? 100}}' });
+    expect(collect(form, (n) => n.props?.id === 'hero_text_animation_delay')[0].props.max).toBe('{{position_settings?.data?.editor?.animation_delay_limits?.max ?? 2}}');
+    expect(collect(form, (n) => n.props?.name === 'presentation.tone')).toHaveLength(1);
+  });
+
+  // @scenario surface=form_text_layout_card
+  // @effects eyebrow_persisted
+  it('등록 기본 표현값은 서버 기본값과 같고(왼쪽 아래·전폭·효과 없음·어두움), 저장은 머리글·보이기·색을 보낸다', () => {
+    const init = json(asArray<any>(layout.init_actions));
+    for (const pair of ['"text_pc_x":0', '"text_pc_y":100', '"text_mobile_x":0', '"text_mobile_y":100', '"text_width":100', '"animation":"none"', '"animation_speed":"normal"', '"animation_delay":0', '"tone":"dark"', '"eyebrow_visible":true', '"eyebrow_color":"#FFFFFF"']) {
+      expect(init, pair).toContain(pair);
+    }
+    const body = json(saveCall());
+    expect(body).toContain('eyebrow: _local.form?.eyebrow ?? []');
+    expect(body).toContain("eyebrow_visible: _local.form?.eyebrow_visible !== false");
+    expect(body).toContain("eyebrow_color: _local.form?.eyebrow_color ?? '#FFFFFF'");
+    expect(body).toContain('presentation: _local.form?.presentation ?? null');
   });
 
   // @scenario surface=form_button_needs_link_warning

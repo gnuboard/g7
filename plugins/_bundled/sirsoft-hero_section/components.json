@@ -63,6 +63,11 @@
                         "type": "string",
                         "required": false,
                         "description": "틀에서 고를 위치 키(`home_hero`·`shop_hero`)"
+                    },
+                    "onTextPositionChange": {
+                        "type": "function",
+                        "required": false,
+                        "description": "편집 화면 전용 — 미리보기의 문구 상자를 끌거나 화살표 키로 옮기면 지금 기기의 새 자리를 표현값 조각으로 알린다 (`{ text_pc_x, text_pc_y }` 또는 `{ text_mobile_x, text_mobile_y }`). 주지 않으면 문구는 옮길 수 없다(목록 미리보기)."
                     }
                 }
             },
@@ -200,6 +205,21 @@
                         "required": false,
                         "description": "받는 동안 스켈레톤의 표시 폭 — 확장점 조각이 첫 로드 때 받은 플러그인 설정 힌트(`_global.plugins['sirsoft-hero_section'].slot_widths`) 를 넘긴다. 없으면 브라우저에 남긴 직전 모양, 그것도 없으면 본문 폭."
                     },
+                    "skeletonOverlay": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "받는 동안 메뉴를 겹칠지 — 확장점 조각이 플러그인 설정 힌트(`slot_overlays`)를 넘긴다. 켜져 있으면 스켈레톤도 메뉴 밑으로 들어가 배너가 와도 화면이 위아래로 밀리지 않는다. 없으면 브라우저에 남긴 직전 모양."
+                    },
+                    "onTextMove": {
+                        "type": "function",
+                        "required": false,
+                        "description": "편집 미리보기 전용 — 주면 문구 상자를 끌거나 화살표 키로 옮길 수 있고, 놓을 때 고정 기기(`forceDevice`)의 새 자리를 알린다. 사이트 화면에서는 넘기지 않는다."
+                    },
+                    "replay": {
+                        "type": "number",
+                        "required": false,
+                        "description": "편집 미리보기 전용 — 값이 바뀌면 문구 등장 효과를 처음부터 다시 재생한다"
+                    },
                     "id": {
                         "type": "string",
                         "required": false,
@@ -209,6 +229,38 @@
                         "type": "object",
                         "required": false,
                         "description": "레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)"
+                    }
+                }
+            },
+            {
+                "name": "HeroTextPositionPad",
+                "type": "composite",
+                "path": "plugins/_bundled/sirsoft-hero_section/resources/js/components/composite/HeroTextPositionPad.tsx",
+                "props": {
+                    "presentation": {
+                        "type": "HeroTextPresentation | null",
+                        "required": false,
+                        "description": "저장 전 표현값(`_local.form.presentation`)"
+                    },
+                    "device": {
+                        "type": "HeroDevice",
+                        "required": false,
+                        "description": "위치를 정할 기기 — 편집 미리보기의 기기와 같게 둔다"
+                    },
+                    "disabled": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "잠금(저장 중)"
+                    },
+                    "onChange": {
+                        "type": "function",
+                        "required": false,
+                        "description": "고른 자리를 표현값 조각으로 알린다(`{ text_pc_x, text_pc_y }` 등)"
+                    },
+                    "onDeviceChange": {
+                        "type": "function",
+                        "required": false,
+                        "description": "기기를 바꿨다"
                     }
                 }
             }

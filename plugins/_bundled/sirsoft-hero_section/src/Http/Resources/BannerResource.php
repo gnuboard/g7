@@ -31,6 +31,9 @@ class BannerResource extends BaseApiResource
     {
         return [
             ...$this->baseFields(),
+            'eyebrow' => $this->eyebrow,
+            'eyebrow_visible' => $this->eyebrow_visible ?? true,
+            'eyebrow_color' => $this->eyebrow_color ?? '#FFFFFF',
             'description' => $this->description,
             'presentation' => array_replace(Banner::DEFAULT_PRESENTATION, $this->presentation ?? []),
             'revision' => (int) $this->lock_version,

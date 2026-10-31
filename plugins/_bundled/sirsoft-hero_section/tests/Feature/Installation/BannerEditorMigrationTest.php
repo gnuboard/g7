@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Installation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Repositories\Contracts\PositionSettingRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /** 신규 설치·기설치 컬럼 보강과 실제 Repository의 결합을 확인합니다. */
@@ -95,6 +96,55 @@ class BannerEditorMigrationTest extends PluginTestCase
             }
             DB::setDefaultConnection($original);
             DB::purge('hero_media_smoke');
+        }
+    }
+
+    /**
+     * 머리글·메뉴 겹치기 마이그레이션의 up→down→up 에서 기존 배너는 머리글 없음(보임·흰색), 기존 위치는 메뉴 겹치기 꺼짐으로 채워지고
+     * 위치 설정을 읽는 Repository 가 그대로 돈다.
+     *
+     * @scenario case=text_layout_migration_roundtrip
+     *
+     * @return void 반환값 없음
+     */
+    public function test_eyebrow_overlay_migration_roundtrip_keeps_existing_rows(): void
+    {
+        $original = DB::getDefaultConnection();
+        config(['database.connections.hero_text_smoke' => array_replace(config('database.connections.'.$original), [
+            'prefix' => 'h7_'.bin2hex(random_bytes(3)).'_', 'prefix_indexes' => true,
+        ])]);
+        DB::setDefaultConnection('hero_text_smoke');
+        try {
+            foreach (glob(dirname(__DIR__, 3).'/database/migrations/*.php') as $file) {
+                (require $file)->up();
+            }
+            $migration = require dirname(__DIR__, 3).'/database/migrations/2026_10_31_000007_add_eyebrow_and_header_overlay_to_hero_section.php';
+            $migration->down();
+            foreach (['eyebrow', 'eyebrow_visible', 'eyebrow_color'] as $column) {
+                $this->assertFalse(Schema::hasColumn('hero_section_banners', $column));
+            }
+            $this->assertFalse(Schema::hasColumn('hero_section_position_settings', 'header_overlay'));
+
+            // 머리글·겹치기 컬럼이 없던 때의 행
+            $bannerId = DB::table('hero_section_banners')->insertGetId(['position' => 'home_hero', 'title' => '{"ko":"기존"}', 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('hero_section_position_settings')->insert(['position' => 'home_hero', 'autoplay' => 1, 'interval_seconds' => 5, 'effect' => 'slide', 'width' => 'full', 'created_at' => now(), 'updated_at' => now()]);
+
+            $migration->up();
+            $migration->up();
+            $row = DB::table('hero_section_banners')->where('id', $bannerId)->first();
+            $this->assertNull($row->eyebrow);
+            $this->assertSame(1, (int) $row->eyebrow_visible);
+            $this->assertSame('#FFFFFF', $row->eyebrow_color);
+
+            $setting = app(PositionSettingRepositoryInterface::class)->findByPosition('home_hero');
+            $this->assertFalse($setting->toSettings()['header_overlay']);
+            $this->assertSame('full', $setting->toSettings()['width']);
+        } finally {
+            foreach (['hero_section_banner_images', 'hero_section_position_settings', 'hero_section_banners'] as $table) {
+                Schema::dropIfExists($table);
+            }
+            DB::setDefaultConnection($original);
+            DB::purge('hero_text_smoke');
         }
     }
 }

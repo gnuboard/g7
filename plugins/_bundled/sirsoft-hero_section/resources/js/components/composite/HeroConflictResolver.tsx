@@ -30,10 +30,12 @@ const GROUPS: Group[] = [
   { field: 'position', keys: ['position'], kind: 'enum' },
   { field: 'is_active', keys: ['is_active'], kind: 'bool' },
   { field: 'period', keys: ['display_period', 'starts_at_local', 'ends_at_local'], kind: 'period' },
+  { field: 'eyebrow', keys: ['eyebrow'], kind: 'ml' },
   { field: 'title', keys: ['title'], kind: 'ml' },
   { field: 'description', keys: ['description'], kind: 'ml' },
   { field: 'button_text', keys: ['button_text'], kind: 'ml' },
   { field: 'image_alt', keys: ['image_alt'], kind: 'ml' },
+  { field: 'eyebrow_style', keys: ['eyebrow_visible', 'eyebrow_color'], kind: 'style' },
   { field: 'title_style', keys: ['title_visible', 'title_color', 'title_align'], kind: 'style' },
   { field: 'description_style', keys: ['description_visible', 'description_color', 'description_align'], kind: 'style' },
   { field: 'presentation', keys: ['presentation'], kind: 'presentation' },
@@ -42,7 +44,12 @@ const GROUPS: Group[] = [
   { field: 'mobile_image', keys: [], kind: 'image', device: 'mobile' },
 ];
 
-const PRESENTATION_DEFAULT = { pc_x: 50, pc_y: 50, mobile_x: 50, mobile_y: 50, overlay: 'none' };
+/** 서버 `Banner::DEFAULT_PRESENTATION` 과 같다 — 이미지 초점·문구 배경과 문구 자리·등장 효과·바탕 밝기 */
+const PRESENTATION_DEFAULT = {
+  pc_x: 50, pc_y: 50, mobile_x: 50, mobile_y: 50, overlay: 'none',
+  text_pc_x: 0, text_pc_y: 100, text_mobile_x: 0, text_mobile_y: 100, text_width: 100,
+  animation: 'none', animation_speed: 'normal', animation_delay: 0, tone: 'dark',
+};
 
 /** 저장 의미가 같으면 같은 값이 되도록 정규화합니다(빈 언어 칸·null 표시 설정·대소문자 색). */
 function normalize(group: Group, value: Detail | null | undefined): unknown {
@@ -62,12 +69,18 @@ function normalize(group: Group, value: Detail | null | undefined): unknown {
         ? { range: true, start: String(v.starts_at_local ?? '').slice(0, 16), end: String(v.ends_at_local ?? '').slice(0, 16) }
         : { range: false };
     case 'style': {
+      // 머리글은 정렬을 제목과 함께 쓰므로 보이기·색만 비교한다
       const [visible, color, align] = group.keys;
-      return { visible: v[visible] !== false, color: String(v[color] ?? '').toUpperCase(), align: v[align] ?? 'left' };
+      return { visible: v[visible] !== false, color: String(v[color] ?? '').toUpperCase(), ...(align ? { align: v[align] ?? 'left' } : {}) };
     }
     case 'presentation': {
       const p = { ...PRESENTATION_DEFAULT, ...(v.presentation ?? {}) };
-      return { pc_x: Number(p.pc_x), pc_y: Number(p.pc_y), mobile_x: Number(p.mobile_x), mobile_y: Number(p.mobile_y), overlay: p.overlay ?? 'none' };
+      return {
+        pc_x: Number(p.pc_x), pc_y: Number(p.pc_y), mobile_x: Number(p.mobile_x), mobile_y: Number(p.mobile_y), overlay: p.overlay ?? 'none',
+        text_pc_x: Number(p.text_pc_x), text_pc_y: Number(p.text_pc_y), text_mobile_x: Number(p.text_mobile_x), text_mobile_y: Number(p.text_mobile_y),
+        text_width: Number(p.text_width), animation: p.animation ?? 'none', animation_speed: p.animation_speed ?? 'normal',
+        animation_delay: Number(p.animation_delay), tone: p.tone ?? 'dark',
+      };
     }
     case 'link':
       return { url: v.link_url || null, newWindow: v.link_new_window === true };
@@ -94,9 +107,12 @@ function display(group: Group, value: Detail | null | undefined, locales: string
     case 'period':
       return n.range ? `${n.start || '—'} ~ ${n.end || '—'}` : translate('admin.form.period.always');
     case 'style':
-      return `${n.visible ? t('shown') : t('hidden')} · ${n.color} · ${translate(`admin.form.align.${n.align}`)}`;
+      return `${n.visible ? t('shown') : t('hidden')} · ${n.color}${n.align ? ` · ${translate(`admin.form.align.${n.align}`)}` : ''}`;
     case 'presentation':
-      return `PC ${n.pc_x}%·${n.pc_y}% / ${translate('admin.preview.mobile')} ${n.mobile_x}%·${n.mobile_y}% · ${translate(`admin.form.presentation.${n.overlay}`)}`;
+      return `PC ${n.pc_x}%·${n.pc_y}% / ${translate('admin.preview.mobile')} ${n.mobile_x}%·${n.mobile_y}% · ${translate(`admin.form.presentation.${n.overlay}`)}`
+        + ` · ${t('text_spot', { pc: `${n.text_pc_x}%·${n.text_pc_y}%`, mobile: `${n.text_mobile_x}%·${n.text_mobile_y}%`, width: n.text_width })}`
+        + ` · ${translate(`admin.form.text_layout.animations.${n.animation}`)}${n.animation !== 'none' ? ` (${translate(`admin.form.text_layout.speeds.${n.animation_speed}`)}, ${n.animation_delay}s)` : ''}`
+        + ` · ${translate(`admin.form.text_layout.tones.${n.tone}`)}`;
     case 'link':
       return `${n.url ?? t('empty')}${n.newWindow ? ` · ${t('new_window')}` : ''}`;
     case 'image': {

@@ -88,6 +88,7 @@
             "starts_at_local": "",
             "ends_at_local": "",
             "title": [],
+            "eyebrow": [],
             "description": [],
             "button_text": [],
             "image_alt": [],
@@ -97,7 +98,24 @@
             "description_visible": true,
             "description_color": "#E5E7EB",
             "description_align": "left",
-            "presentation": null,
+            "eyebrow_visible": true,
+            "eyebrow_color": "#FFFFFF",
+            "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none",
+                "text_pc_x": 0,
+                "text_pc_y": 100,
+                "text_mobile_x": 0,
+                "text_mobile_y": 100,
+                "text_width": 100,
+                "animation": "none",
+                "animation_speed": "normal",
+                "animation_delay": 0,
+                "tone": "dark"
+            },
             "link_url": "",
             "link_new_window": false,
             "images": {
@@ -181,6 +199,7 @@
                     "starts_at_local": "",
                     "ends_at_local": "",
                     "title": [],
+                    "eyebrow": [],
                     "description": [],
                     "button_text": [],
                     "image_alt": [],
@@ -190,7 +209,24 @@
                     "description_visible": true,
                     "description_color": "#E5E7EB",
                     "description_align": "left",
-                    "presentation": null,
+                    "eyebrow_visible": true,
+                    "eyebrow_color": "#FFFFFF",
+                    "presentation": {
+                        "pc_x": 50,
+                        "pc_y": 50,
+                        "mobile_x": 50,
+                        "mobile_y": 50,
+                        "overlay": "none",
+                        "text_pc_x": 0,
+                        "text_pc_y": 100,
+                        "text_mobile_x": 0,
+                        "text_mobile_y": 100,
+                        "text_width": 100,
+                        "animation": "none",
+                        "animation_speed": "normal",
+                        "animation_delay": 0,
+                        "tone": "dark"
+                    },
                     "link_url": "",
                     "link_new_window": false,
                     "images": {
@@ -1301,6 +1337,100 @@
                                                 },
                                                 "children": [
                                                     {
+                                                        "comment": "머리글 — 제목 위 짧은 한 줄(선택). 정렬은 제목을 따른다",
+                                                        "id": "field_eyebrow",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.eyebrow"
+                                                            },
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "MultilingualInput",
+                                                                "props": {
+                                                                    "name": "eyebrow",
+                                                                    "layout": "tabs",
+                                                                    "maxLength": 50,
+                                                                    "placeholder": "$t:sirsoft-hero_section.admin.form.eyebrow_placeholder",
+                                                                    "error": "{{_local.errors?.eyebrow?.[0] ?? ''}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "id": "eyebrow_style",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "props": {
+                                                                    "className": "flex flex-wrap items-center gap-4 mt-2"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "composite",
+                                                                        "name": "Toggle",
+                                                                        "props": {
+                                                                            "label": "$t:sirsoft-hero_section.admin.form.visible",
+                                                                            "name": "eyebrow_visible"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Div",
+                                                                        "props": {
+                                                                            "className": "flex items-center gap-2"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Input",
+                                                                                "props": {
+                                                                                    "type": "color",
+                                                                                    "name": "eyebrow_color",
+                                                                                    "aria-label": "$t:sirsoft-hero_section.admin.form.eyebrow_color",
+                                                                                    "className": "w-10 h-9 p-1 rounded cursor-pointer"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Input",
+                                                                                "props": {
+                                                                                    "type": "text",
+                                                                                    "name": "eyebrow_color",
+                                                                                    "aria-label": "$t:sirsoft-hero_section.admin.form.eyebrow_color_code",
+                                                                                    "maxLength": 7,
+                                                                                    "placeholder": "#FFFFFF",
+                                                                                    "className": "input w-28"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.eyebrow_color}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.eyebrow_color?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!_local.errors?.eyebrow_color}}",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.eyebrow_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
                                                         "id": "field_title",
                                                         "type": "basic",
                                                         "name": "Div",
@@ -1609,6 +1739,372 @@
                                                                     "className": "form-hint"
                                                                 },
                                                                 "text": "$t:sirsoft-hero_section.admin.form.image_alt_hint"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "문구 위치·효과 — 자리는 PC·휴대폰 따로(9칸 빠른 선택·가로/세로 %·미리보기에서 끌기), 폭과 등장 효과·바탕 밝기는 두 기기 공통.\n            기기 단추는 오른쪽 미리보기의 기기와 같은 값이라 고른 기기의 미리보기에서 바로 확인하고 끌 수 있다",
+                                        "id": "text_layout_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "card-title"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "form-hint mb-4"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.hint"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_text_spot",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "form-label"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.spot_label"
+                                                            },
+                                                            {
+                                                                "id": "text_position_pad",
+                                                                "type": "composite",
+                                                                "name": "sirsoft-hero_section.HeroTextPositionPad",
+                                                                "actions": [
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onChange",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.presentation": "{{({...(_local.form?.presentation ?? {}), ...$args[0]})}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "type": "change",
+                                                                        "event": "onDeviceChange",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "previewDevice": "{{$args[0]}}"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "presentation": "{{_local.form?.presentation}}",
+                                                                    "device": "{{_local.previewDevice}}",
+                                                                    "disabled": "{{_local.isSaving}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_text_width",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label",
+                                                                    "htmlFor": "hero_text_width"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.width|width={{_local.form?.presentation?.text_width ?? 100}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "range",
+                                                                    "id": "hero_text_width",
+                                                                    "name": "presentation.text_width",
+                                                                    "min": "{{position_settings?.data?.editor?.text_width_limits?.min ?? 30}}",
+                                                                    "max": "{{position_settings?.data?.editor?.text_width_limits?.max ?? 100}}",
+                                                                    "step": 5,
+                                                                    "className": "w-full"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.width_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_animation",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "grid grid-cols-1 sm:grid-cols-3 gap-4"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "flex flex-col gap-1",
+                                                                    "htmlFor": "hero_text_animation"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "form-label"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.text_layout.animation"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Select",
+                                                                        "props": {
+                                                                            "id": "hero_text_animation",
+                                                                            "name": "presentation.animation",
+                                                                            "className": "input"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "none"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.animations.none"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "rise"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.animations.rise"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "fade"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.animations.fade"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "left"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.animations.left"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "right"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.animations.right"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "zoom"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.animations.zoom"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "blur"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.animations.blur"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "letters"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.animations.letters"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "flex flex-col gap-1",
+                                                                    "htmlFor": "hero_text_animation_speed"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "form-label"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.text_layout.speed"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Select",
+                                                                        "props": {
+                                                                            "id": "hero_text_animation_speed",
+                                                                            "name": "presentation.animation_speed",
+                                                                            "className": "input",
+                                                                            "disabled": "{{(_local.form?.presentation?.animation ?? 'none') === 'none'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "slow"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.speeds.slow"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "normal"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.speeds.normal"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Option",
+                                                                                "props": {
+                                                                                    "value": "fast"
+                                                                                },
+                                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.speeds.fast"
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "flex flex-col gap-1",
+                                                                    "htmlFor": "hero_text_animation_delay"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "form-label"
+                                                                        },
+                                                                        "text": "$t:sirsoft-hero_section.admin.form.text_layout.delay"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Input",
+                                                                        "props": {
+                                                                            "type": "number",
+                                                                            "id": "hero_text_animation_delay",
+                                                                            "name": "presentation.animation_delay",
+                                                                            "min": "{{position_settings?.data?.editor?.animation_delay_limits?.min ?? 0}}",
+                                                                            "max": "{{position_settings?.data?.editor?.animation_delay_limits?.max ?? 2}}",
+                                                                            "step": 0.1,
+                                                                            "className": "input",
+                                                                            "disabled": "{{(_local.form?.presentation?.animation ?? 'none') === 'none'}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.errors?.['presentation.animation_delay']}}",
+                                                        "props": {
+                                                            "className": "form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.['presentation.animation_delay']?.[0] ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-hero_section.admin.form.text_layout.animation_hint"
+                                                    },
+                                                    {
+                                                        "id": "field_tone",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "RadioGroup",
+                                                                "responsive": {
+                                                                    "portable": {
+                                                                        "props": {
+                                                                            "inline": false
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "props": {
+                                                                    "name": "presentation.tone",
+                                                                    "inline": true,
+                                                                    "label": "$t:sirsoft-hero_section.admin.form.text_layout.tone",
+                                                                    "options": [
+                                                                        {
+                                                                            "label": "$t:sirsoft-hero_section.admin.form.text_layout.tones.dark",
+                                                                            "value": "dark"
+                                                                        },
+                                                                        {
+                                                                            "label": "$t:sirsoft-hero_section.admin.form.text_layout.tones.light",
+                                                                            "value": "light"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-hero_section.admin.form.text_layout.tone_hint"
                                                             }
                                                         ]
                                                     }
@@ -2212,7 +2708,7 @@
                                                                         "auth_required": true,
                                                                         "params": {
                                                                             "method": "{{route.id ? 'PUT' : 'POST'}}",
-                                                                            "body": "{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, youtube_url: _computed.mediaType === 'youtube' ? (_local.form?.youtube_url ?? '').trim() : undefined, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}"
+                                                                            "body": "{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], eyebrow: _local.form?.eyebrow ?? [], eyebrow_visible: _local.form?.eyebrow_visible !== false, eyebrow_color: _local.form?.eyebrow_color ?? '#FFFFFF', description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, youtube_url: _computed.mediaType === 'youtube' ? (_local.form?.youtube_url ?? '').trim() : undefined, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}"
                                                                         },
                                                                         "onSuccess": [
                                                                             {
@@ -2426,6 +2922,16 @@
                                                 "params": {
                                                     "target": "local",
                                                     "previewLocale": "{{$args[0]}}"
+                                                }
+                                            },
+                                            {
+                                                "type": "change",
+                                                "event": "onTextPositionChange",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "form.presentation": "{{({...(_local.form?.presentation ?? {}), ...$args[0]})}}",
+                                                    "hasChanges": true
                                                 }
                                             }
                                         ],

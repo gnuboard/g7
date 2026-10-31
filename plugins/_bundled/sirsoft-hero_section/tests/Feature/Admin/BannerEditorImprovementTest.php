@@ -106,8 +106,10 @@ class BannerEditorImprovementTest extends PluginTestCase
         $admin = $this->fullAdmin();
         $presentation = ['pc_x' => 15, 'pc_y' => 75, 'mobile_x' => 90, 'mobile_y' => 20, 'overlay' => 'dark'];
         $created = $this->createBannerViaApi($admin, ['presentation' => $presentation])->assertCreated();
-        $created->assertJsonPath('data.presentation', $presentation);
-        $this->getJson($this->api('/hero?position=home_hero'))->assertOk()->assertJsonPath('data.banners.0.presentation', $presentation);
+        // 보내지 않은 문구 자리·효과 키는 기본값(종전 화면)으로 채워 응답한다
+        $expected = array_replace(Banner::DEFAULT_PRESENTATION, $presentation);
+        $created->assertJsonPath('data.presentation', $expected);
+        $this->getJson($this->api('/hero?position=home_hero'))->assertOk()->assertJsonPath('data.banners.0.presentation', $expected);
         $id = $created->json('data.id');
         foreach ([['mobile_x' => -1], ['pc_y' => 101], ['overlay' => 'unsafe'], ['unexpected' => 1]] as $bad) {
             $this->putJson($this->api('/admin/banners/'.$id), $this->bannerPayload(['presentation' => $bad]))->assertUnprocessable();

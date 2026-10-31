@@ -36,6 +36,8 @@ class UpdatePositionSettingRequest extends FormRequest
             'effect' => ['required', Rule::enum(SlideEffect::class)],
             // 생략하면 지금 값을 유지한다(처음 저장이면 기본값 content) — 표시 폭을 모르는 이전 호출도 그대로 통과
             'width' => ['sometimes', 'required', Rule::enum(SlideWidth::class)],
+            // 메뉴 겹치기 — 생략하면 지금 값 유지(처음 저장이면 꺼짐). 화면 전체 폭일 때만 사이트에 적용되지만 본문 폭에서도 저장은 받는다
+            'header_overlay' => ['sometimes', 'required', 'boolean'],
         ];
     }
 
@@ -51,6 +53,7 @@ class UpdatePositionSettingRequest extends FormRequest
             'interval_seconds' => __('sirsoft-hero_section::validation.attributes.interval_seconds'),
             'effect' => __('sirsoft-hero_section::validation.attributes.effect'),
             'width' => __('sirsoft-hero_section::validation.attributes.width'),
+            'header_overlay' => __('sirsoft-hero_section::validation.attributes.header_overlay'),
         ];
     }
 }

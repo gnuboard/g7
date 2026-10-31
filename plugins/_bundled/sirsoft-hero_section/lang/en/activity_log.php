@@ -40,10 +40,12 @@ return [
         'starts_at' => 'Starts at',
         'ends_at' => 'Ends at',
         'title' => 'Title',
+        'eyebrow' => 'Eyebrow',
         'link_url' => 'Link URL',
         'autoplay' => 'Autoplay',
         'interval_seconds' => 'Interval (seconds)',
         'effect' => 'Effect',
         'width' => 'Width',
+        'header_overlay' => 'Menu overlay',
     ],
 ];

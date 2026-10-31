@@ -1147,4 +1147,8 @@ _단건 응답: 고친 배너 상세(조회 응답과 같은 모양)._
 
 등록·수정 본문에 선택적 `presentation` 객체를 보낼 수 있습니다. `pc_x`, `pc_y`, `mobile_x`, `mobile_y`는 0~100 정수 초점 좌표이며, `overlay`는 `none`, `dark`, `light`입니다. 등록 시 생략하거나 null이면 중앙 초점과 배경 없음을 사용합니다. 수정 시 생략하면 기존 설정을 유지하고 null이면 기본값으로 되돌립니다. 상세 및 공개 hero 응답에 같은 표시 설정을 돌려줍니다.
 
+`presentation` 에는 문구 값도 들어갑니다 — `text_pc_x`·`text_pc_y`·`text_mobile_x`·`text_mobile_y`(문구 자리, 0~100 정수: 0 왼쪽·위, 100 오른쪽·아래), `text_width`(문구 상자 폭 30~100%), `animation`(`none`·`rise`·`fade`·`left`·`right`·`zoom`·`blur`·`letters`), `animation_speed`(`slow`·`normal`·`fast`), `animation_delay`(첫 줄 시작 지연 0~2초, 0.1초 단위), `tone`(배너 바탕 밝기 `dark`·`light` — 메뉴 겹치기 때 메뉴 글자색). 보내지 않은 키는 기본값(왼쪽 아래·전폭·효과 없음·보통·0·어두움 = 종전 화면)으로 응답하고, 모르는 키는 422 입니다. 문자열 숫자는 정수(지연은 소수 한 자리)로 바꿔 저장합니다.
+
+머리글은 `eyebrow`(제목 위 짧은 한 줄, 언어별 최대 50자, 선택)·`eyebrow_visible`(boolean)·`eyebrow_color`(#RRGGBB)로 받습니다. 보이기·색은 생략하면 저장된 값(처음이면 보임·`#FFFFFF`)을 지킵니다. 정렬은 제목(`title_align`)을 따릅니다.
+
 수정 화면은 상세 응답의 정수 `revision`을 PUT 본문에 그대로 보냅니다. 서버는 트랜잭션 안에서 최신 부모 행을 잠그고 비교해, 다른 수정이나 일괄 상태 변경이 먼저 저장되었으면 409를 반환합니다. 충돌 응답은 기존 배너·이미지를 바꾸지 않습니다. 기존 API 호출의 revision 생략은 호환되지만, 사용자 편집 화면에서는 항상 보내야 합니다. 이미지 검증 전에 확인 가능한 오래된 세대도 먼저 409로 안내합니다.

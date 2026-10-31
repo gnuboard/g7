@@ -7,9 +7,9 @@
 <!-- @generated:models START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
-| `Banner` | `hero_section_banners` | 23 | images→BannerImage | - |
+| `Banner` | `hero_section_banners` | 26 | images→BannerImage | - |
 | `BannerImage` | `hero_section_banner_images` | 13 | banner→Banner | - |
-| `PositionSetting` | `hero_section_position_settings` | 6 | - | - |
+| `PositionSetting` | `hero_section_position_settings` | 7 | - | - |
 <!-- @generated:models END -->
 
 <!-- @intent START -->
@@ -35,7 +35,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 6개.
+마이그레이션 7개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -45,6 +45,7 @@
 | `2026_10_27_000004_add_presentation_and_lock_version_to_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
 | `2026_10_30_000005_add_width_to_hero_section_position_settings.php` | - | `hero_section_position_settings` | ✅ |
 | `2026_10_30_000006_add_media_to_hero_section_banners.php` | - | `hero_section_banners`, `hero_section_banner_images` | ✅ |
+| `2026_10_31_000007_add_eyebrow_and_header_overlay_to_hero_section.php` | - | `hero_section_banners`, `hero_section_position_settings` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -56,15 +57,18 @@
 <!-- @generated:enums START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | Enum | backing | case 수 | case |
 |---|---|---|---|
+| `AnimationSpeed` | `string` | 3 | `slow`, `normal`, `fast` |
 | `BannerDevice` | `string` | 2 | `pc`, `mobile` |
 | `BannerMediaType` | `string` | 3 | `image`, `youtube`, `video` |
 | `BannerStatus` | `string` | 4 | `active`, `scheduled`, `ended`, `inactive` |
+| `BannerTone` | `string` | 2 | `dark`, `light` |
 | `DisplayPeriod` | `string` | 2 | `always`, `range` |
 | `HeroPosition` | `string` | 2 | `home_hero`, `shop_hero` |
 | `MediaKind` | `string` | 2 | `image`, `video` |
 | `SlideEffect` | `string` | 7 | `slide`, `fade`, `cube`, `flip`, `coverflow`, `creative`, `none` |
 | `SlideWidth` | `string` | 2 | `content`, `full` |
 | `TextAlign` | `string` | 3 | `left`, `center`, `right` |
+| `TextAnimation` | `string` | 8 | `none`, `rise`, `fade`, `left`, `right`, `zoom`, `blur`, `letters` |
 | `TextOverlay` | `string` | 3 | `none`, `dark`, `light` |
 <!-- @generated:enums END -->
 
@@ -91,4 +95,4 @@
 
 ## 편집 표시 설정과 동시 수정
 
-추가 마이그레이션은 `hero_section_banners.presentation`(nullable JSON)과 `lock_version`(unsigned integer, 기본 0)을 더합니다. 기존 배너는 중앙 초점·배경 없음으로 해석합니다. 모델은 presentation을 배열로, 세대를 정수로 캐스팅하며 클라이언트의 lock_version 직접 대입을 허용하지 않습니다. 일반 수정·일괄 사용 여부 변경은 세대를 증가시킵니다. 수정·단건 및 일괄 삭제는 부모 행 잠금 순서를 공유합니다.
+추가 마이그레이션은 `hero_section_banners.presentation`(nullable JSON)과 `lock_version`(unsigned integer, 기본 0)을 더합니다. 기존 배너는 중앙 초점·배경 없음으로 해석합니다. `presentation` 에는 문구 자리·폭·등장 효과·바탕 밝기도 들어가며(컬럼을 늘리지 않는다), 없는 키는 `Banner::DEFAULT_PRESENTATION`(왼쪽 아래·전폭·효과 없음·어두움)으로 응답합니다. `000007` 은 머리글 `eyebrow`(다국어 JSON text, nullable)·`eyebrow_visible`(기본 true)·`eyebrow_color`(기본 `#FFFFFF`)와 위치 설정 `header_overlay`(boolean, 기본 false)를 더합니다 — 기존 배너는 머리글이 비어 있고 기존 위치는 겹치기가 꺼져 있어 화면이 그대로라 업그레이드 스텝이 없습니다. 모델은 presentation을 배열로, 세대를 정수로 캐스팅하며 클라이언트의 lock_version 직접 대입을 허용하지 않습니다. 일반 수정·일괄 사용 여부 변경은 세대를 증가시킵니다. 수정·단건 및 일괄 삭제는 부모 행 잠금 순서를 공유합니다.

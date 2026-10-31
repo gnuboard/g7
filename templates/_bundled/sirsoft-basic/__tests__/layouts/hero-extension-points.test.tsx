@@ -50,7 +50,23 @@ describe('히어로 확장점', () => {
     const top = area.indexOf('"slot":"page_top"');
     expect(top).toBeGreaterThan(-1);
     expect(top).toBeLessThan(area.indexOf('"slot":"content"'));
-    expect(area).toMatch(/"id":"page_top","type":"layout","name":"Container","slot":"page_top","props":\{"className":"w-full"\}/);
+    // g7-page-top — 맨 위 배너가 메뉴 겹침을 알리면 헤더 높이만큼 위로 당겨지는 자리(main.css)
+    expect(area).toMatch(/"id":"page_top","type":"layout","name":"Container","slot":"page_top","props":\{"className":"g7-page-top w-full"\}/);
+  });
+
+  // @scenario surface=header_overlay_contract
+  // @effects header_overlays_banner
+  it('메뉴 겹침 — 데스크톱 헤더·모바일 툴바는 g7-site-header 로 표시되고, CSS 는 신호가 있을 때만 자리를 당기고 맨 위에서만 투명하게 한다', () => {
+    const base = JSON.stringify(load('_user_base.json'));
+    expect(base).toMatch(/"id":"mobile_header"[^]*?"className":"g7-site-header flex items-center justify-between h-14/);
+    const header = fs.readFileSync(path.resolve(__dirname, '../../src/components/composite/Header.tsx'), 'utf8');
+    expect(header).toContain('useHeaderOverlayController();');
+    expect(header).toContain('className={`g7-site-header sticky top-0');
+    const css = fs.readFileSync(path.resolve(__dirname, '../../src/styles/main.css'), 'utf8');
+    expect(css).toContain('html[data-header-overlay] .g7-page-top {\n  margin-top: calc(-1 * var(--g7-header-height, 0px));');
+    expect(css).toContain('html[data-header-overlay-active] .g7-site-header,');
+    expect(css).toMatch(/html\[data-header-overlay-active="dark"\] \.g7-site-header \{\n  --g7-header-ink: #ffffff;/);
+    expect(css).toMatch(/html\[data-header-overlay-active="light"\] \.g7-site-header \{\n  --g7-header-ink: #111827;/);
   });
 
   // @scenario surface=home_layout_has_home_hero_slot

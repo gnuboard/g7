@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Services;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
+use Plugins\Sirsoft\HeroSection\Enums\SlideWidth;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\PositionSettingRepositoryInterface;
@@ -53,6 +54,9 @@ class PositionSettingService
                 'default_locale' => config('app.site_locale', config('app.locale')),
                 'locales' => array_values(config('app.supported_locales', [])),
                 'focus_limits' => ['min' => Banner::FOCUS_MIN, 'max' => Banner::FOCUS_MAX],
+                // 문구 상자 폭·등장 지연 입력 범위 — 저장 규칙(BannerFieldRules)과 같은 상수라 화면이 허용한 값이 저장에서 422 가 되지 않는다
+                'text_width_limits' => ['min' => Banner::TEXT_WIDTH_MIN, 'max' => Banner::TEXT_WIDTH_MAX],
+                'animation_delay_limits' => ['min' => 0, 'max' => Banner::ANIMATION_DELAY_MAX],
                 'preview_frame' => $this->frames->resolve(),
             ],
         ];
@@ -75,10 +79,28 @@ class PositionSettingService
     }
 
     /**
+     * 위치별로 사이트 상단 메뉴를 배너 위에 겹치는지 반환합니다 — 메뉴 겹치기를 켰고 화면 전체 폭일 때만 true. 사용자 화면이
+     * 첫 로드 때 받는 플러그인 설정 힌트(`slot_overlays`)의 원본이다(받는 동안의 스켈레톤도 메뉴 밑으로 들어가 배너가 와도 밀리지 않게).
+     *
+     * @return array<string, bool> 위치 키 => 겹침 여부
+     */
+    public function slotOverlays(): array
+    {
+        $saved = $this->settings->allKeyed();
+        $overlays = [];
+        foreach (HeroPosition::cases() as $position) {
+            $settings = isset($saved[$position->value]) ? $saved[$position->value]->toSettings() : PositionSetting::DEFAULTS;
+            $overlays[$position->value] = $settings['header_overlay'] && $settings['width'] === SlideWidth::Full->value;
+        }
+
+        return $overlays;
+    }
+
+    /**
      * 한 위치의 설정 값을 반환합니다(행이 없으면 기본값).
      *
      * @param  HeroPosition  $position  위치
-     * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string} 설정 값
+     * @return array{autoplay: bool, interval_seconds: int, effect: string, width: string, header_overlay: bool} 설정 값
      */
     public function settingsFor(HeroPosition $position): array
     {
@@ -89,7 +111,7 @@ class PositionSettingService
      * 위치 설정을 저장합니다.
      *
      * @param  HeroPosition  $position  위치
-     * @param  array{autoplay: bool, interval_seconds: int, effect: string, width?: string}  $data  검증된 설정 값 (width 를 빼면 지금 값 유지)
+     * @param  array{autoplay: bool, interval_seconds: int, effect: string, width?: string, header_overlay?: bool}  $data  검증된 설정 값 (width·header_overlay 를 빼면 지금 값 유지)
      * @param  int|null  $actorId  바꾼 회원 ID
      * @return PositionSetting 저장된 설정 행
      */

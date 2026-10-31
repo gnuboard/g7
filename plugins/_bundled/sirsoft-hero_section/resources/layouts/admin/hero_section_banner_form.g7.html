@@ -45,6 +45,7 @@
       <field name="starts_at_local" value=""/>
       <field name="ends_at_local" value=""/>
       <field name="title" :value="[]"/>
+      <field name="eyebrow" :value="[]"/>
       <field name="description" :value="[]"/>
       <field name="button_text" :value="[]"/>
       <field name="image_alt" :value="[]"/>
@@ -54,7 +55,24 @@
       <field name="description_visible" :value="true"/>
       <field name="description_color" value="#E5E7EB"/>
       <field name="description_align" value="left"/>
-      <field name="presentation" :value="null"/>
+      <field name="eyebrow_visible" :value="true"/>
+      <field name="eyebrow_color" value="#FFFFFF"/>
+      <field name="presentation">
+        <field name="pc_x" :value="50"/>
+        <field name="pc_y" :value="50"/>
+        <field name="mobile_x" :value="50"/>
+        <field name="mobile_y" :value="50"/>
+        <field name="overlay" value="none"/>
+        <field name="text_pc_x" :value="0"/>
+        <field name="text_pc_y" :value="100"/>
+        <field name="text_mobile_x" :value="0"/>
+        <field name="text_mobile_y" :value="100"/>
+        <field name="text_width" :value="100"/>
+        <field name="animation" value="none"/>
+        <field name="animation_speed" value="normal"/>
+        <field name="animation_delay" :value="0"/>
+        <field name="tone" value="dark"/>
+      </field>
       <field name="link_url" value=""/>
       <field name="link_new_window" :value="false"/>
       <field name="images">
@@ -107,6 +125,7 @@
         <field name="starts_at_local" value=""/>
         <field name="ends_at_local" value=""/>
         <field name="title" :value="[]"/>
+        <field name="eyebrow" :value="[]"/>
         <field name="description" :value="[]"/>
         <field name="button_text" :value="[]"/>
         <field name="image_alt" :value="[]"/>
@@ -116,7 +135,24 @@
         <field name="description_visible" :value="true"/>
         <field name="description_color" value="#E5E7EB"/>
         <field name="description_align" value="left"/>
-        <field name="presentation" :value="null"/>
+        <field name="eyebrow_visible" :value="true"/>
+        <field name="eyebrow_color" value="#FFFFFF"/>
+        <field name="presentation">
+          <field name="pc_x" :value="50"/>
+          <field name="pc_y" :value="50"/>
+          <field name="mobile_x" :value="50"/>
+          <field name="mobile_y" :value="50"/>
+          <field name="overlay" value="none"/>
+          <field name="text_pc_x" :value="0"/>
+          <field name="text_pc_y" :value="100"/>
+          <field name="text_mobile_x" :value="0"/>
+          <field name="text_mobile_y" :value="100"/>
+          <field name="text_width" :value="100"/>
+          <field name="animation" value="none"/>
+          <field name="animation_speed" value="normal"/>
+          <field name="animation_delay" :value="0"/>
+          <field name="tone" value="dark"/>
+        </field>
         <field name="link_url" value=""/>
         <field name="link_new_window" :value="false"/>
         <field name="images">
@@ -347,6 +383,20 @@
             <h2 class="card-title">$t:sirsoft-hero_section.admin.form.section.text</h2>
             <p class="form-hint mb-4">$t:sirsoft-hero_section.admin.form.locale_hint</p>
             <div class="row-stack">
+              <!-- 머리글 — 제목 위 짧은 한 줄(선택). 정렬은 제목을 따른다 -->
+              <div data-ref="field_eyebrow">
+                <label class="form-label">$t:sirsoft-hero_section.admin.form.eyebrow</label>
+                <multilingual-input data-type="composite" name="eyebrow" layout="tabs" :maxLength="50" placeholder="$t:sirsoft-hero_section.admin.form.eyebrow_placeholder" error="{{_local.errors?.eyebrow?.[0] ?? ''}}"/>
+                <div data-ref="eyebrow_style" class="flex flex-wrap items-center gap-4 mt-2">
+                  <toggle data-type="composite" label="$t:sirsoft-hero_section.admin.form.visible" name="eyebrow_visible"/>
+                  <div class="flex items-center gap-2">
+                    <input type="color" name="eyebrow_color" aria-label="$t:sirsoft-hero_section.admin.form.eyebrow_color" class="w-10 h-9 p-1 rounded cursor-pointer"/>
+                    <input type="text" name="eyebrow_color" aria-label="$t:sirsoft-hero_section.admin.form.eyebrow_color_code" :maxLength="7" placeholder="#FFFFFF" class="input w-28"/>
+                  </div>
+                </div>
+                <p data-if="{{_local.errors?.eyebrow_color}}" class="form-error">{{_local.errors?.eyebrow_color?.[0] ?? ''}}</p>
+                <p data-if="{{!_local.errors?.eyebrow_color}}" class="form-hint">$t:sirsoft-hero_section.admin.form.eyebrow_hint</p>
+              </div>
               <div data-ref="field_title">
                 <label class="form-label">
                   <span>$t:sirsoft-hero_section.admin.form.title</span>
@@ -399,6 +449,69 @@
                 <label class="form-label">$t:sirsoft-hero_section.admin.form.image_alt</label>
                 <multilingual-input data-type="composite" name="image_alt" layout="tabs" :maxLength="200" error="{{_local.errors?.image_alt?.[0] ?? ''}}"/>
                 <p class="form-hint">$t:sirsoft-hero_section.admin.form.image_alt_hint</p>
+              </div>
+            </div>
+          </section>
+          <!-- 문구 위치·효과 — 자리는 PC·휴대폰 따로(9칸 빠른 선택·가로/세로 %·미리보기에서 끌기), 폭과 등장 효과·바탕 밝기는 두 기기 공통.
+            기기 단추는 오른쪽 미리보기의 기기와 같은 값이라 고른 기기의 미리보기에서 바로 확인하고 끌 수 있다 -->
+          <section data-ref="text_layout_card" class="admin-card">
+            <h2 class="card-title">$t:sirsoft-hero_section.admin.form.text_layout.title</h2>
+            <p class="form-hint mb-4">$t:sirsoft-hero_section.admin.form.text_layout.hint</p>
+            <div class="row-stack">
+              <div data-ref="field_text_spot">
+                <span class="form-label">$t:sirsoft-hero_section.admin.form.text_layout.spot_label</span>
+                <sirsoft-hero_section.hero-text-position-pad data-type="composite" data-ref="text_position_pad" presentation="{{_local.form?.presentation}}" device="{{_local.previewDevice}}" disabled="{{_local.isSaving}}">
+                  <on type="change" event="onChange">
+                    <set-state target="local" form.presentation="{{({...(_local.form?.presentation ?? {}), ...$args[0]})}}" :hasChanges="true"/>
+                  </on>
+                  <on type="change" event="onDeviceChange">
+                    <set-state target="local" previewDevice="{{$args[0]}}"/>
+                  </on>
+                </sirsoft-hero_section.hero-text-position-pad>
+              </div>
+              <div data-ref="field_text_width">
+                <label class="form-label" htmlFor="hero_text_width">$t:sirsoft-hero_section.admin.form.text_layout.width|width={{_local.form?.presentation?.text_width ?? 100}}</label>
+                <input type="range" id="hero_text_width" name="presentation.text_width" min="{{position_settings?.data?.editor?.text_width_limits?.min ?? 30}}" max="{{position_settings?.data?.editor?.text_width_limits?.max ?? 100}}" :step="5" class="w-full"/>
+                <p class="form-hint">$t:sirsoft-hero_section.admin.form.text_layout.width_hint</p>
+              </div>
+              <div data-ref="field_animation" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <label class="flex flex-col gap-1" htmlFor="hero_text_animation">
+                  <span class="form-label">$t:sirsoft-hero_section.admin.form.text_layout.animation</span>
+                  <select id="hero_text_animation" name="presentation.animation" class="input">
+                    <option value="none">$t:sirsoft-hero_section.admin.form.text_layout.animations.none</option>
+                    <option value="rise">$t:sirsoft-hero_section.admin.form.text_layout.animations.rise</option>
+                    <option value="fade">$t:sirsoft-hero_section.admin.form.text_layout.animations.fade</option>
+                    <option value="left">$t:sirsoft-hero_section.admin.form.text_layout.animations.left</option>
+                    <option value="right">$t:sirsoft-hero_section.admin.form.text_layout.animations.right</option>
+                    <option value="zoom">$t:sirsoft-hero_section.admin.form.text_layout.animations.zoom</option>
+                    <option value="blur">$t:sirsoft-hero_section.admin.form.text_layout.animations.blur</option>
+                    <option value="letters">$t:sirsoft-hero_section.admin.form.text_layout.animations.letters</option>
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1" htmlFor="hero_text_animation_speed">
+                  <span class="form-label">$t:sirsoft-hero_section.admin.form.text_layout.speed</span>
+                  <select id="hero_text_animation_speed" name="presentation.animation_speed" class="input" disabled="{{(_local.form?.presentation?.animation ?? 'none') === 'none'}}">
+                    <option value="slow">$t:sirsoft-hero_section.admin.form.text_layout.speeds.slow</option>
+                    <option value="normal">$t:sirsoft-hero_section.admin.form.text_layout.speeds.normal</option>
+                    <option value="fast">$t:sirsoft-hero_section.admin.form.text_layout.speeds.fast</option>
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1" htmlFor="hero_text_animation_delay">
+                  <span class="form-label">$t:sirsoft-hero_section.admin.form.text_layout.delay</span>
+                  <input type="number" id="hero_text_animation_delay" name="presentation.animation_delay" min="{{position_settings?.data?.editor?.animation_delay_limits?.min ?? 0}}" max="{{position_settings?.data?.editor?.animation_delay_limits?.max ?? 2}}" :step="0.1" class="input" disabled="{{(_local.form?.presentation?.animation ?? 'none') === 'none'}}"/>
+                </label>
+              </div>
+              <p data-if="{{_local.errors?.['presentation.animation_delay']}}" class="form-error">{{_local.errors?.['presentation.animation_delay']?.[0] ?? ''}}</p>
+              <p class="form-hint">$t:sirsoft-hero_section.admin.form.text_layout.animation_hint</p>
+              <div data-ref="field_tone">
+                <radio-group data-type="composite" name="presentation.tone" :inline="true" label="$t:sirsoft-hero_section.admin.form.text_layout.tone">
+                  <responsive on="portable" :inline="false"/>
+                  <prop name="options">
+                    <item label="$t:sirsoft-hero_section.admin.form.text_layout.tones.dark" value="dark"/>
+                    <item label="$t:sirsoft-hero_section.admin.form.text_layout.tones.light" value="light"/>
+                  </prop>
+                </radio-group>
+                <p class="form-hint">$t:sirsoft-hero_section.admin.form.text_layout.tone_hint</p>
               </div>
             </div>
           </section>
@@ -523,7 +636,7 @@
                 <!-- 저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간 입력값은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다 -->
                 <sequence>
                   <set-state target="local" :isSaving="true" :errors="null"/>
-                  <api-call :auth_required="true" target="{{route.id ? '/api/plugins/sirsoft-hero_section/admin/banners/' + route.id : '/api/plugins/sirsoft-hero_section/admin/banners'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, youtube_url: _computed.mediaType === 'youtube' ? (_local.form?.youtube_url ?? '').trim() : undefined, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}">
+                  <api-call :auth_required="true" target="{{route.id ? '/api/plugins/sirsoft-hero_section/admin/banners/' + route.id : '/api/plugins/sirsoft-hero_section/admin/banners'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], eyebrow: _local.form?.eyebrow ?? [], eyebrow_visible: _local.form?.eyebrow_visible !== false, eyebrow_color: _local.form?.eyebrow_color ?? '#FFFFFF', description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null, media_type: _computed.mediaType, youtube_url: _computed.mediaType === 'youtube' ? (_local.form?.youtube_url ?? '').trim() : undefined, pc_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.pc?.id ?? null) : null, mobile_video_id: _computed.mediaType === 'video' ? (_local.form?.videos?.mobile?.id ?? null) : null })}}">
                     <success>
                       <set-state target="local" :isSaving="false" :hasChanges="false"/>
                       <toast type="success" message="{{response.message}}"/>
@@ -572,6 +685,7 @@
           </sirsoft-hero_section.hero-preview-language>
           <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="form_preview" draft="{{_local.form}}" locale="{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}" defaultLocale="{{position_settings?.data?.editor?.default_locale}}" settings="{{({ autoplay: false, interval_seconds: 5, effect: 'none', width: (position_settings?.data?.positions ?? []).find(p =&gt; p.key === (_local.form?.position ?? 'home_hero'))?.settings?.width ?? 'content' })}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_local.form?.position ?? 'home_hero'}}" emptyText="$t:sirsoft-hero_section.admin.form.preview.empty">
             <on type="change" event="onContentLocaleChange"><set-state target="local" previewLocale="{{$args[0]}}"/></on>
+            <on type="change" event="onTextPositionChange"><set-state target="local" form.presentation="{{({...(_local.form?.presentation ?? {}), ...$args[0]})}}" :hasChanges="true"/></on>
           </sirsoft-hero_section.hero-banner-preview>
         </section>
       </div>

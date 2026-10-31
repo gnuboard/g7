@@ -466,7 +466,7 @@ describe('HeroSlider', () => {
     const boxes = [...container.querySelectorAll('.hs__text.hs__text--boxed > .hs__box')];
     expect(boxes).toHaveLength(2);
     expect(boxes[0].className).toBe('hs__box max-w-7xl mx-auto px-8');
-    expect(boxes[0].querySelector(':scope > .hs__scroll .hs__title')?.textContent).toBe('제목 1');
+    expect(boxes[0].querySelector(':scope > .hs__textbox > .hs__scroll .hs__title')?.textContent).toBe('제목 1');
     const controlsBox = container.querySelector('.hs__controls-layer > .hs__controls-box') as HTMLElement;
     expect(controlsBox.className).toBe('hs__controls-box max-w-7xl mx-auto px-8');
     expect(controlsBox.querySelector(':scope > .hs__controls.hs__controls--boxed .hs__toggle')).not.toBeNull();
@@ -551,14 +551,14 @@ describe('HeroSlider', () => {
     it('직전 방문의 모양을 기억해, 0건이던 위치는 스켈레톤을 그리지 않고 화면 전체였던 위치는 끝까지 그린다', () => {
       const first = render(<HeroSlider banners={[]} loading={false} settings={{ width: 'content' }} position="shop_hero" />);
       first.unmount();
-      expect(JSON.parse(window.localStorage.getItem('sirsoft-hero_section:slot:shop_hero')!)).toEqual({ banners: 0, width: 'content' });
+      expect(JSON.parse(window.localStorage.getItem('sirsoft-hero_section:slot:shop_hero')!)).toEqual({ banners: 0, width: 'content', overlay: false, tone: 'dark' });
       const again = render(<HeroSlider banners={[]} loading position="shop_hero" />);
       expect(again.container.innerHTML).toBe('');
       again.unmount();
 
       const full = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ width: 'full' }} position="home_hero" contentClass="px-8" />);
       full.unmount();
-      expect(JSON.parse(window.localStorage.getItem('sirsoft-hero_section:slot:home_hero')!)).toEqual({ banners: 2, width: 'full' });
+      expect(JSON.parse(window.localStorage.getItem('sirsoft-hero_section:slot:home_hero')!)).toEqual({ banners: 2, width: 'full', overlay: false, tone: 'dark' });
       const next = render(<HeroSlider banners={[]} loading position="home_hero" contentClass="px-8" />);
       const skeleton = next.container.querySelector('section.hs--skeleton') as HTMLElement;
       expect(skeleton.className).toContain('hs--full');

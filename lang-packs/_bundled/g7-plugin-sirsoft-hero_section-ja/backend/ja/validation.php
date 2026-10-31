@@ -63,6 +63,10 @@ return [
         'pc_video' => 'PC 動画',
         'mobile_video' => 'モバイル動画',
         'kind' => 'ファイルの種類',
+        'eyebrow' => 'ヘッダー',
+        'eyebrow_visible' => 'ヘッダー表示',
+        'eyebrow_color' => 'ヘッダー色',
+        'header_overlay' => 'メニュー重なり',
     ],
     'pc_video' => [
         'required' => '動画ファイル(PC)をアップロードしてください。モバイル用動画がない場合はPC動画を使用します。',

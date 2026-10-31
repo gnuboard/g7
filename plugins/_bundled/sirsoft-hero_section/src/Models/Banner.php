@@ -23,8 +23,28 @@ class Banner extends Model
 {
     use HasFactory;
 
-    /** 기기별 중앙 초점·배경 없음이 기존 배너의 기본 표시입니다. */
-    public const DEFAULT_PRESENTATION = ['pc_x' => 50, 'pc_y' => 50, 'mobile_x' => 50, 'mobile_y' => 50, 'overlay' => 'none'];
+    /**
+     * 표시 기본값 — 기존 배너가 그대로 보이는 값이다.
+     *
+     * 이미지 초점(`pc_x`·`pc_y`·`mobile_x`·`mobile_y`, 가운데)과 문구 위치(`text_*`, 0/100 = 왼쪽 아래 · 폭 100% = 종전의 아래쪽 전폭 문구)는
+     * 이름을 나눠 섞이지 않게 한다. 등장 효과는 없음, 바탕 밝기는 어두움(흰 메뉴 글자)이다.
+     */
+    public const DEFAULT_PRESENTATION = [
+        'pc_x' => 50, 'pc_y' => 50, 'mobile_x' => 50, 'mobile_y' => 50, 'overlay' => 'none',
+        'text_pc_x' => 0, 'text_pc_y' => 100, 'text_mobile_x' => 0, 'text_mobile_y' => 100, 'text_width' => 100,
+        'animation' => 'none', 'animation_speed' => 'normal', 'animation_delay' => 0, 'tone' => 'dark',
+    ];
+
+    /** 표현값 중 정수 백분율(0~100) 키 — 이미지 초점과 문구 위치 */
+    public const PERCENT_KEYS = ['pc_x', 'pc_y', 'mobile_x', 'mobile_y', 'text_pc_x', 'text_pc_y', 'text_mobile_x', 'text_mobile_y'];
+
+    /** 문구 상자 폭(%) 범위 — 너무 좁으면 한 줄에 몇 글자만 들어간다 */
+    public const TEXT_WIDTH_MIN = 30;
+
+    public const TEXT_WIDTH_MAX = 100;
+
+    /** 첫 줄 등장 전 지연(초) 상한 — 0.1초 단위 */
+    public const ANIMATION_DELAY_MAX = 2;
 
     /** 이미지 내부 초점의 백분율 범위입니다. */
     public const FOCUS_MIN = 0;
@@ -45,7 +65,8 @@ class Banner extends Model
      */
     protected $fillable = [
         'position', 'media_type', 'youtube_id', 'is_active', 'sort_order', 'display_period', 'starts_at', 'ends_at',
-        'title', 'description', 'button_text', 'image_alt',
+        'title', 'eyebrow', 'description', 'button_text', 'image_alt',
+        'eyebrow_visible', 'eyebrow_color',
         'title_visible', 'title_color', 'title_align',
         'description_visible', 'description_color', 'description_align',
         'link_url', 'link_new_window', 'presentation', 'created_by', 'updated_by',
@@ -65,6 +86,7 @@ class Banner extends Model
         'starts_at' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.starts_at', 'type' => 'datetime'],
         'ends_at' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.ends_at', 'type' => 'datetime'],
         'title' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.title', 'type' => 'text'],
+        'eyebrow' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.eyebrow', 'type' => 'text'],
         'link_url' => ['label_key' => 'sirsoft-hero_section::activity_log.fields.link_url', 'type' => 'text'],
     ];
 
@@ -81,9 +103,11 @@ class Banner extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'title' => 'array',
+            'eyebrow' => 'array',
             'description' => 'array',
             'button_text' => 'array',
             'image_alt' => 'array',
+            'eyebrow_visible' => 'boolean',
             'title_visible' => 'boolean',
             'description_visible' => 'boolean',
             'link_new_window' => 'boolean',
