@@ -314,7 +314,7 @@
           <refetch-data-source dataSourceId="sitemap_status"/>
         </actions>
       </start-interval>
-      <stop-interval if="{{['completed','failed'].includes(response?.data?.data?.progress?.status ?? '')}}" id="sitemap_progress_poll"/>
+      <stop-interval if="{{!['queued','running','writing'].includes(response?.data?.data?.progress?.status ?? '')}}" id="sitemap_progress_poll"/>
     </success>
   </data-source>
   <!-- 사이트맵 생성 진행률. 생성은 오래 걸려 응답을 기다릴 수 없으므로 웹소켓으로 진행 상황을 받아 위 상태 소스에 흘려 넣는다 -->

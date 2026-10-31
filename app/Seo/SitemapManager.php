@@ -8,6 +8,7 @@ use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Contracts\Repositories\SitemapUrlRepositoryInterface;
 use App\Enums\SitemapGenerationMode;
 use App\Extension\HookManager;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -231,6 +232,9 @@ class SitemapManager
     /**
      * settings 의 seo 카테고리에 sitemap_last_updated_at 을 기록합니다.
      *
+     * 부팅 때 읽어 둔 같은 요청의 설정 값도 함께 맞춥니다 — 즉시 실행(sync) 큐에서는 생성이 관리자 요청 안에서 끝나고
+     * 같은 요청이 getStatus() 로 마지막 생성 시각을 응답하므로, 파일만 고치면 직전 시각이 나간다(#155).
+     *
      * @param  string  $iso8601  ISO8601 형식 타임스탬프
      * @return void 반환값 없음
      */
@@ -240,6 +244,7 @@ class SitemapManager
             $current = $this->configRepository->getCategory('seo');
             $current['sitemap_last_updated_at'] = $iso8601;
             $this->configRepository->saveCategory('seo', $current);
+            Config::set('g7_settings.core.seo.sitemap_last_updated_at', $iso8601);
         } catch (\Throwable $e) {
             Log::warning('Sitemap last_updated_at 갱신 실패', ['error' => $e->getMessage()]);
         }

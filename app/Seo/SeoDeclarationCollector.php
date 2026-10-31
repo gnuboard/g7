@@ -9,7 +9,6 @@ use App\Extension\HookManager;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
 use App\Support\LayoutEmptyObjects;
-use Illuminate\Support\Facades\Log;
 
 /**
  * SEO 선언 수집기
@@ -115,11 +114,9 @@ class SeoDeclarationCollector
                     'seo' => $seo,
                     'routePath' => $route['path'] ?? null,
                 ];
-            } catch (\Exception $e) {
-                Log::warning('[SEO] 레이아웃 로드 실패 (SeoDeclarationCollector)', [
-                    'layout' => $layoutName,
-                    'error' => $e->getMessage(),
-                ]);
+            } catch (\Throwable $e) {
+                // 오류로 보고하고 그 라우트만 건너뛴다 — 사이트맵·봇 화면의 나머지 선언 수집은 계속한다(#155)
+                report(new \RuntimeException('[SEO] SeoDeclarationCollector layout load failed: '.$layoutName, 0, $e));
             }
         }
 

@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { actionsOf, asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const layout = require('../../layouts/admin_settings.json');
 const seoTab = require('../../layouts/partials/admin_settings/_tab_seo.json');
@@ -79,17 +80,23 @@ describe('admin_settings — sitemap 진행상황 데이터소스', () => {
   });
 
   // @scenario trigger=admin, regen_mode=full, realtime=reverb_off
-  // @effects polling_stops_on_completed
-  it('sitemap_status onSuccess: 완료/실패 전이면 stopInterval', () => {
+  // @effects polling_stops_on_completed, polling_stops_when_progress_missing
+  it('sitemap_status onSuccess: 진행 중(queued/running/writing)이 아니면 stopInterval', () => {
     const s = byId('sitemap_status')!;
     const stop = (s.onSuccess as AnyJson[]).find(a => a.handler === 'stopInterval');
     expect(stop).toBeTruthy();
-    expect(stop!.if).toContain('completed');
-    expect(stop!.if).toContain('failed');
     // startInterval 과 동일하게 신선한 response(double .data) 로 게이트 (stale 명명 소스 금지)
     expect(stop!.if).toContain('response?.data?.data?.progress?.status');
     expect(stop!.if).not.toContain('sitemap_status?.data?.progress?.status');
     expect(stop!.params.id).toBe('sitemap_progress_poll');
+
+    // 조건식을 실제로 평가한다 — 완료·실패뿐 아니라 상태 캐시가 만료돼 진행상황이 비어도(null) 멈춰야 한다(#155).
+    // 「completed/failed 일 때만 멈춤」이면 null 에서 3초 폴링이 화면을 떠날 때까지 계속된다.
+    const expr = String(stop!.if).replace(/^\{\{|\}\}$/g, '');
+    const shouldStop = (status: string | null) =>
+      new Function('response', `return (${expr});`)({ data: { data: { progress: status === null ? null : { status } } } });
+    ['completed', 'failed', null, 'idle'].forEach(st => expect(shouldStop(st)).toBe(true));
+    ['queued', 'running', 'writing'].forEach(st => expect(shouldStop(st)).toBe(false));
   });
 
   // @scenario trigger=admin, regen_mode=full, realtime=reverb_on
@@ -158,13 +165,62 @@ describe('_tab_seo — sitemap 진행상황 표시 UI', () => {
       && typeof n?.props?.disabled === 'string'
       && n.props.disabled.includes('progress?.status'))[0];
     expect(btn).toBeTruthy();
-    expect(String(btn.text)).toContain('sitemap_regenerating');
+    const label = (btn.children as AnyJson[]).find(c => c.name === 'Span');
+    expect(String(label?.text)).toContain('sitemap_regenerating');
 
-    const apiCall = (btn.actions as AnyJson[]).find(a => a.handler === 'apiCall');
+    const apiCall = collectNodes(btn.actions, n => n.handler === 'apiCall')[0];
     expect(apiCall).toBeTruthy();
     expect(apiCall!.target).toBe('/api/admin/seo/sitemap/regenerate');
     const refetch = (apiCall!.onSuccess as AnyJson[]).find(a => a.handler === 'refetchDataSource');
     expect(refetch).toBeTruthy();
     expect(refetch!.params.dataSourceId).toBe('sitemap_status');
+  });
+
+  // @scenario trigger=admin, regen_mode=full, realtime=reverb_off
+  // @effects regenerate_toast_uses_server_message
+  it('재생성 성공 토스트는 서버 메시지(즉시 실행 큐면 「완료」)를 쓰고, 없을 때만 기본 문구로 대체한다', () => {
+    const btn = collectNodes(seoTab, n => n.name === 'Button'
+      && typeof n?.props?.disabled === 'string'
+      && n.props.disabled.includes('progress?.status'))[0];
+    const apiCall = collectNodes(btn.actions, n => n.handler === 'apiCall')[0];
+    const toast = (apiCall.onSuccess as AnyJson[]).find(a => a.handler === 'toast');
+    expect(toast).toBeTruthy();
+    expect(toast!.params.type).toBe('success');
+    expect(toast!.params.message).toContain('response?.message');
+    expect(toast!.params.message).toContain("$t('admin.settings.seo.sitemap_update_success')");
+
+    // 409(진행 중·잠금 남음) 문구는 실패 토스트가 서버 메시지 그대로 보여 준다
+    const failToast = ([] as AnyJson[]).concat(apiCall.onError).find(a => a.handler === 'toast');
+    expect(failToast!.params.message).toContain('error.message');
+  });
+
+  // @scenario trigger=admin, regen_mode=full, realtime=reverb_off
+  // @effects regenerate_button_shows_spinner_while_requesting
+  it('「지금 생성」은 요청 중 스피너를 보이고 잠기며, 성공·실패 양쪽에서 진행 표시를 끈다', () => {
+    const btn = collectNodes(seoTab, n => n.name === 'Button'
+      && typeof n?.props?.disabled === 'string'
+      && n.props.disabled.includes('progress?.status'))[0];
+
+    // 클릭 → 진행 표시 켬 → 요청 (즉시 실행 큐는 응답까지 생성 시간만큼 걸린다)
+    const sequence = actionsOf(btn).find(a => a.handler === 'sequence');
+    expect(sequence).toBeTruthy();
+    const steps = asArray(sequence!.actions as AnyJson | AnyJson[]);
+    expect(steps[0]).toMatchObject({ handler: 'setState', params: { target: 'local', isRegeneratingSitemap: true } });
+    expect(steps[1].handler).toBe('apiCall');
+
+    // 켠 진행 표시는 onSuccess·onError 양쪽에서 끈다 (한쪽만 끄면 실패 뒤 버튼이 영구히 잠긴다)
+    const apiCall = steps[1];
+    for (const key of ['onSuccess', 'onError']) {
+      const off = callbacksOf(apiCall, key).find(a => a.handler === 'setState');
+      expect(off?.params).toMatchObject({ target: 'local', isRegeneratingSitemap: false });
+    }
+
+    // 요청 중에는 잠기고, 스피너 아이콘과 「생성 중」 문구가 보인다
+    expect(btn.props.disabled).toContain('_local.isRegeneratingSitemap');
+    const spinner = (btn.children as AnyJson[]).find(c => c.name === 'Icon');
+    expect(spinner?.props.name).toBe('spinner');
+    expect(spinner?.if).toContain('_local.isRegeneratingSitemap');
+    const label = (btn.children as AnyJson[]).find(c => c.name === 'Span');
+    expect(label?.text).toContain('_local.isRegeneratingSitemap');
   });
 });

@@ -1,0 +1,74 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축마다 표면이 다르다(정적 화면 판정은 생성기·번들 실물, 재생성 API 는 큐·잠금 상태, 구조 검사는 소스 전역). 한 매니페스트의 축 곱으로 묶으면 실재하지 않는 조합(잠금 × 레이아웃 토글 등)이 생겨, 축은 각 테스트의 @scenario 로 표면별로 표시하고 이 매니페스트는 effects 로 전수 검증한다.
+feature: 사이트맵 정적 화면 포함 기준·중복 제거·생성 오류 보고와 「지금 생성」 잠금 교정 (#155)
+
+description: |
+  사이트맵 생성기가 인스턴스 메서드 TemplateManager::getActiveTemplate() 를 정적으로 불러 PHP 8 에서 Error 가 났고,
+  catch 가 경고 한 줄로 삼켜 모든 사이트의 sitemap.xml 에서 홈(/)을 포함한 정적 화면이 통째로 빠졌다(공개 #155).
+
+    - 정적 화면은 봇 화면과 같은 기준으로 싣는다 — SEO 선언 수집기(병합 레이아웃 meta.seo.enabled)와 토글 판정기
+      (meta.seo.toggle_setting, SeoRenderer 와 공용 SeoToggleEvaluator)를 통과하고 경로에 `:`·`{{` 가 없는 화면만.
+      priority·changefreq 는 레이아웃 값, 범위 밖·비표준이면 0.5·weekly.
+    - 같은 주소는 정적 화면이 먼저 적히고 기여자·저장소 항목은 건너뛴다(홈은 끝 슬래시·스킴 대소문자 무관).
+    - 사이트맵 생성 경로의 예외는 경고 대신 report() 로 올리고 나머지 생성은 계속한다.
+    - 「지금 생성」은 유니크 잠금을 먼저 잡고, 진행 상태를 발행 전에 기록한다. 잠금이 없으면 409(진행 중/잠금 남음)이고
+      상태를 덮어쓰지 않는다. 즉시 실행(sync) 큐면 완료 응답을 돌려준다.
+    - 재발 방지: 코어·번들 확장의 `X::m()` 정적 호출 대상이 static 인지 구조 검사한다.
+
+axes:
+  static: [declared_home, dynamic_path, toggle_off, invalid_priority, duplicate_contributor, duplicate_home_slash, duplicate_writer_paths, bounded_dedupe, collector_failure, contributor_failure]
+  case: [core_only, board_active, search_toggle, module_route, invariant]
+  toggle: [undeclared, module_implicit, module_explicit, module_missing, plugin, core, parse_key]
+  queue: [sync]
+  lock: [free, held]
+  surface: [core_and_bundled_source, fixture]
+
+effects:
+  # ── 정적 화면 판정 (SitemapGeneratorTest) ──
+  - static_route_uses_layout_priority_and_changefreq
+  - static_route_skips_dynamic_and_expression_paths
+  - static_route_follows_toggle_setting
+  - static_route_falls_back_to_default_priority_and_changefreq
+  - static_route_dedupes_contributor_same_loc
+  - static_route_dedupes_home_without_trailing_slash
+  - static_route_dedupes_on_every_generation_path
+  - static_dedupe_keeps_streaming_memory_bounded
+  - sitemap_failures_are_reported_and_generation_continues
+  # ── 번들 실물 (SitemapStaticRoutesTest) ──
+  - bundled_home_in_sitemap
+  - seo_disabled_layouts_excluded
+  - board_routes_follow_module_and_dedupe
+  - search_route_follows_toggle
+  - module_route_follows_merged_layout_seo
+  - static_inclusion_equals_bot_render_criteria
+  # ── 토글 판정 공용화 (SeoToggleEvaluatorTest) ──
+  - toggle_undeclared_is_enabled
+  - toggle_module_implicit_reads_route_module
+  - toggle_module_explicit_reads_named_module
+  - toggle_missing_setting_defaults_enabled
+  - toggle_plugin_reads_plugin_settings
+  - toggle_core_reads_core_settings
+  - extension_settings_key_parsing
+  # ── 재생성 API (SeoCacheControllerTest) ──
+  - sync_regenerate_reports_completed
+  - regenerate_rejects_when_unique_lock_held
+  - regenerate_rejects_while_generation_in_progress
+  - sync_job_failure_releases_lock_and_marks_failed
+  # ── 재발 방지 구조 검사 (StaticCallTargetsStaticMethodTest) ──
+  - static_calls_target_static_methods
+  - static_call_scanner_catches_only_real_violation
+
+# scale: 중복 판정 집합은 정적 화면 loc 만 담는다 — 저장소 스트림 크기와 무관하게 메모리가 유계여야 한다.
+scale:
+  - { n: 150000, dataset: sitemap_urls_stream, assert: [bounded_peak_memory, static_routes_written_first] }
+
+test_files:
+  - tests/Unit/Seo/SitemapGeneratorTest.php
+  - tests/Feature/Seo/SitemapStaticRoutesTest.php
+  - tests/Unit/Seo/SeoToggleEvaluatorTest.php
+  - tests/Unit/Seo/SeoDeclarationCollectorTest.php
+  - tests/Feature/Api/Admin/SeoCacheControllerTest.php
+  - tests/Unit/Architecture/StaticCallTargetsStaticMethodTest.php
+
+notes: |
+  관리자 화면(SEO 탭 「지금 생성」 토스트·폴링 멈춤 조건)은 레이아웃 표현식 2곳 변경이라 sirsoft-admin_basic 의
+  sitemap 진행상황 레이아웃 테스트와 브라우저 실측(Chrome MCP 매트릭스)으로 확인한다.
