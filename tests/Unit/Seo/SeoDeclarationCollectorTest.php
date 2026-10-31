@@ -90,7 +90,6 @@ class SeoDeclarationCollectorTest extends TestCase
      *
      * @param  array  $routes  라우트 배열
      * @param  string  $templateIdentifier  템플릿 식별자
-     *
      * @return void 반환값 없음
      */
     private function setupActiveTemplateWithRoutes(array $routes, string $templateIdentifier = 'sirsoft-basic'): void
@@ -117,7 +116,6 @@ class SeoDeclarationCollectorTest extends TestCase
      * @param  string  $layoutName  레이아웃 이름
      * @param  array  $layoutData  레이아웃 데이터
      * @param  string  $templateIdentifier  템플릿 식별자
-     *
      * @return void 반환값 없음
      */
     private function mockLayout(string $layoutName, array $layoutData, string $templateIdentifier = 'sirsoft-basic'): void
