@@ -68,6 +68,13 @@ class SeoMetaResolver
             $keywords = $coreKeywords;
         }
 
+        // 모든 제목 단계가 비었고 접미사도 비어 제목 전체가 빈 값이면 사이트 이름을 제목으로 쓴다.
+        // 위의 「사이트 이름뿐인 제목 비우기」는 접미사가 사이트 이름을 붙여 준다는 전제인데, 기본 설치는
+        // 접미사가 빈 값이라 봇 홈이 `<title></title>` 로 나갔다 (공개#154). 접미사가 있으면 종전과 같다.
+        if ($title === '' && self::composeTitleSuffix('', (string) $coreTitleSuffix) === '') {
+            $title = trim($this->resolveLocalizedValue(g7_core_settings('general.site_name', '')));
+        }
+
         // 코어 title suffix 항상 추가
         $titleSuffix = $coreTitleSuffix !== '' ? $coreTitleSuffix : '';
 
@@ -294,9 +301,10 @@ class SeoMetaResolver
         }
 
         $settingKey = "seo.meta_{$pageType}_{$type}";
-        $template = g7_module_settings($moduleIdentifier, $settingKey);
+        // 다국어 배열로 저장한 틀도 받는다 — 반환형 string 에 배열이 들어가면 TypeError → SPA 폴백 (공개#154)
+        $template = $this->resolveLocalizedValue(g7_module_settings($moduleIdentifier, $settingKey));
 
-        if (empty($template)) {
+        if ($template === '') {
             return '';
         }
 
@@ -331,9 +339,10 @@ class SeoMetaResolver
         }
 
         $settingKey = "seo.meta_{$pageType}_{$type}";
-        $template = g7_plugin_settings($pluginIdentifier, $settingKey);
+        // 다국어 배열로 저장한 틀도 현재 로케일 문자열로 받는다 (공개#154)
+        $template = $this->resolveLocalizedValue(g7_plugin_settings($pluginIdentifier, $settingKey));
 
-        if (empty($template)) {
+        if ($template === '') {
             return '';
         }
 

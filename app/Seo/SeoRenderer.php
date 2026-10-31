@@ -80,19 +80,28 @@ class SeoRenderer implements SeoRendererInterface
 
         $templateIdentifier = $routeInfo['templateIdentifier'];
         $layoutName = $routeInfo['layoutName'];
+        // DB·편집기·봇 캐시가 쓰는 전체 이름 — 확장 레이아웃은 `{확장식별자}.{레이아웃}` (공개#154)
+        $storedLayoutName = $routeInfo['storedLayoutName'] ?? $layoutName;
         $routeParams = $routeInfo['routeParams'];
         $moduleIdentifier = $routeInfo['moduleIdentifier'];
         $pluginIdentifier = $routeInfo['pluginIdentifier'] ?? null;
         // 사이트 첫 화면은 사이트 이름 자체가 제목이다 — 라우트 제목(「홈」)을 붙이지 않는다
         $routeTitle = $url === '/' ? null : ($routeInfo['routeMeta']['title'] ?? null);
 
-        // 2. 병합된 레이아웃 JSON 로드
+        // 2. 병합된 레이아웃 JSON 로드 — 반드시 전체 이름으로 찾는다. 뗀 이름으로 찾으면 모듈 화면은
+        //    없고(SPA 폴백), 뗀 이름이 템플릿 레이아웃과 같으면 템플릿 화면을 집는다 (공개#154)
         try {
             // 화면 응답용으로 보존한 빈 객체를 배열로 되돌린다 — SEO 평가기는 배열만 다룬다
-            $mergedLayout = LayoutEmptyObjects::toArrays($this->layoutService->getLayout($templateIdentifier, $layoutName));
+            $mergedLayout = LayoutEmptyObjects::toArrays($this->layoutService->getLayout($templateIdentifier, $storedLayoutName));
         } catch (\Throwable $e) {
-            Log::warning('[SEO] Layout load failed', [
-                'layout' => $layoutName,
+            // 봇에 SPA 껍데기가 나가는 운영 결함이다 — LOG_LEVEL=error 사이트에도 남도록 error 로 기록한다
+            Log::error('[SEO] Layout load failed', [
+                'url' => $url,
+                'template' => $templateIdentifier,
+                'layout' => $storedLayoutName,
+                'route_layout_name' => $layoutName,
+                'module' => $moduleIdentifier,
+                'plugin' => $pluginIdentifier,
                 'error' => $e->getMessage(),
             ]);
 
@@ -193,6 +202,7 @@ class SeoRenderer implements SeoRendererInterface
         // 유즈케이스: 리뷰 플러그인이 reviews_aggregate 주입, 쿠폰 플러그인이 priceValidUntil 보강
         $context = HookManager::applyFilters('core.seo.filter_context', $context, [
             'layoutName' => $layoutName,
+            'storedLayoutName' => $storedLayoutName,
             'moduleIdentifier' => $moduleIdentifier,
             'pluginIdentifier' => $pluginIdentifier,
             'routeParams' => $routeParams,
@@ -209,8 +219,10 @@ class SeoRenderer implements SeoRendererInterface
             $context['$computed'] = $computed;
         }
 
-        // 6.5. 레이아웃명을 request attribute로 저장 (SeoMiddleware에서 putWithLayout에 사용)
-        $request->attributes->set('seo_layout_name', $layoutName);
+        // 6.5. 레이아웃명·모듈 식별자를 request attribute로 저장 (SeoMiddleware 의 putWithLayout·통계에 사용)
+        //      캐시 항목 이름은 편집기에 보이는 전체 이름이다 — `seo:clear --layout=` 과 레이아웃 저장 시 삭제가 이 이름으로 찾는다
+        $request->attributes->set('seo_layout_name', $storedLayoutName);
+        $request->attributes->set('seo_module_identifier', $moduleIdentifier);
 
         // SeoMiddleware가 setLocale() 전에 저장한 기본 로케일 사용
         // (setLocale()이 config('app.locale')을 변경하므로 request attribute로 전달)
@@ -230,6 +242,7 @@ class SeoRenderer implements SeoRendererInterface
             $defaultLocale,
             false,
             $routeTitle,
+            $storedLayoutName,
         );
     }
 
@@ -253,6 +266,7 @@ class SeoRenderer implements SeoRendererInterface
      * @param  string|null  $defaultLocale  canonical 기본 로케일 (null 이면 config('app.locale'))
      * @param  bool  $seoOnly  true 면 SEO 메타 HTML 만 렌더(bodyHtml 생략 — 편집기 미리보기용)
      * @param  mixed  $routeTitle  라우트 meta.title — 다른 제목 단계가 모두 빌 때 쓰는 마지막 대체(null 이면 쓰지 않음)
+     * @param  string|null  $storedLayoutName  DB·편집기 전체 레이아웃 이름 — 훅 컨텍스트 `storedLayoutName` (null 이면 $layoutName)
      * @return string|null 렌더링된 HTML
      */
     public function renderFromResolved(
@@ -268,7 +282,9 @@ class SeoRenderer implements SeoRendererInterface
         ?string $defaultLocale = null,
         bool $seoOnly = false,
         mixed $routeTitle = null,
+        ?string $storedLayoutName = null,
     ): ?string {
+        $storedLayoutName ??= $layoutName;
         $moduleIdentifier = $moduleId;
         $pluginIdentifier = $pluginId;
         $seoConfig = $mergedLayout['meta']['seo'] ?? [];
@@ -434,6 +450,7 @@ class SeoRenderer implements SeoRendererInterface
 
         $hookCtx = [
             'layoutName' => $layoutName,
+            'storedLayoutName' => $storedLayoutName,
             'moduleIdentifier' => $moduleIdentifier,
             'pluginIdentifier' => $pluginIdentifier,
             'context' => $context,
@@ -549,6 +566,7 @@ class SeoRenderer implements SeoRendererInterface
         // 유즈케이스: Analytics 플러그인이 extraHeadTags에 추적 스크립트, PWA 플러그인이 manifest 링크 주입
         $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
             'layoutName' => $layoutName,
+            'storedLayoutName' => $storedLayoutName,
             'moduleIdentifier' => $moduleIdentifier,
             'pluginIdentifier' => $pluginIdentifier,
         ]);

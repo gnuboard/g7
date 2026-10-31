@@ -962,6 +962,27 @@ public function seoVariables(): array
 
 > 상세: [seo-system.md](../backend/seo-system.md) "SEO 변수 시스템" 참조
 
+## 모듈 소유 화면의 SEO
+
+모듈이 `resources/layouts/user/` 에 사용자 레이아웃을 두면 그 화면은 **모듈 소유 화면**이 됩니다. 라우트·DB·레이아웃 편집기는
+이 레이아웃을 `{모듈식별자}.{레이아웃}` 전체 이름으로 다루고, 검색봇 렌더도 같은 이름으로 찾습니다(코어 7.1.4+).
+
+- 템플릿의 공통 레이아웃(`_user_base` 등)이 SEO 를 꺼 두었으면, 화면 레이아웃의 `<meta>` 안에서 `<seo :enabled="true">` 로 덮습니다.
+- 봇 본문에 데이터를 싣으려면 `<seo>` 안 `<data-sources><item>소스ID</item></data-sources>` 로 봇 렌더 때 호출할 데이터 소스를 고릅니다.
+- 봇 캐시를 지울 때는 전체 이름을 씁니다: `php artisan seo:clear --layout={모듈식별자}.{레이아웃}`. 레이아웃 편집기에서 저장·복원하면 그 화면의 봇 캐시는 자동으로 지워집니다.
+- 예시: 번들 Hello 모듈의 메모 목록(`/memos`, `user_memo_list`).
+
+```html
+<meta title="$t:gnuboard7-hello_module.user.memos.index.title">
+  <seo :enabled="true">
+    <og type="website" description="$t:gnuboard7-hello_module.user.memos.index.seo_description"/>
+    <data-sources><item>memos</item></data-sources>
+  </seo>
+</meta>
+```
+
+> 상세: [seo-system.md](../backend/seo-system.md) "확장 레이아웃 이름 규약" 참조
+
 ---
 
 ## 관련 문서

@@ -94146,6 +94146,7 @@ HTTP/1.1 200
 | locale | body | string | 아니오 | — | 로케일 코드 (표시 언어/지역) |
 | module_id | body | string | 아니오 | — | module 식별자 |
 | plugin_id | body | string | 아니오 | — | plugin 식별자 |
+| layout_name | body | string | 아니오 | 최대 255자 | 편집 중인 라우트의 레이아웃 전체 이름 (예: `gnuboard7-hello_module.user_memo_list`). `module_id`·`plugin_id` 가 둘 다 없으면 이 이름의 확장 접두사로 모듈·플러그인 식별자를 채워 운영 검색봇 렌더와 같은 기준으로 렌더한다. 명시한 `module_id`·`plugin_id` 가 우선. 이 이름을 쓰는 라우트의 `meta.title` 은 운영과 같이 다른 제목 단계가 모두 빌 때의 제목 대체로 쓴다(사이트 첫 화면 `/` 제외) |
 | seed_context | body | array | 아니오 | — | 렌더 컨텍스트 시드 데이터 (편집기 샘플 데이터 — 데이터소스/전역/로컬 값 대체) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.seo_bot_preview.show_validation_rules`).
@@ -94170,6 +94171,7 @@ Content-Type: application/json
     "locale": "ko",
     "module_id": "예시값",
     "plugin_id": "예시값",
+    "layout_name": "gnuboard7-hello_module.user_memo_list",
     "seed_context": [
         "예시값"
     ]

@@ -42,7 +42,7 @@ class TemplateRouteResolver
      * URL을 템플릿 레이아웃으로 매핑합니다.
      *
      * @param  string  $url  요청 URL 경로
-     * @return array|null { templateIdentifier, layoutName, routeParams, moduleIdentifier? } 또는 null
+     * @return array|null { templateIdentifier, layoutName, storedLayoutName, routeParams, moduleIdentifier, pluginIdentifier, routeMeta } 또는 null
      */
     public function resolve(string $url): ?array
     {
@@ -72,32 +72,85 @@ class TemplateRouteResolver
 
             $params = $this->matchRoute($routePath, $url);
             if ($params !== null) {
-                $layoutName = $route['layout'] ?? '';
-
-                // 확장 식별자 추출 (레이아웃명에 '.' 포함 시)
-                $moduleIdentifier = null;
-                $pluginIdentifier = null;
-                if (str_contains($layoutName, '.')) {
-                    [$extensionId, $layoutName] = explode('.', $layoutName, 2);
-
-                    // 모듈/플러그인 판별
-                    if ($this->moduleManager->getModule($extensionId) !== null) {
-                        $moduleIdentifier = $extensionId;
-                    } elseif ($this->pluginManager->getPlugin($extensionId) !== null) {
-                        $pluginIdentifier = $extensionId;
-                    } else {
-                        // fallback: 기존 동작 유지 (모듈로 간주)
-                        $moduleIdentifier = $extensionId;
-                    }
-                }
+                $described = $this->describeRouteLayout($route['layout'] ?? '');
 
                 return [
                     'templateIdentifier' => $templateIdentifier,
-                    'layoutName' => $layoutName,
+                    'layoutName' => $described['layoutName'],
+                    'storedLayoutName' => $described['storedLayoutName'],
                     'routeParams' => $params,
-                    'moduleIdentifier' => $moduleIdentifier,
-                    'pluginIdentifier' => $pluginIdentifier,
+                    'moduleIdentifier' => $described['moduleIdentifier'],
+                    'pluginIdentifier' => $described['pluginIdentifier'],
                     'routeMeta' => $route['meta'] ?? [],
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 라우트의 `layout` 값을 저장 이름·뗀 이름·소속 확장으로 풀어 냅니다.
+     *
+     * 확장 레이아웃은 라우트·DB(`template_layouts.name`)·편집기에서 `{확장식별자}.{레이아웃}` 전체
+     * 이름으로 다룬다. 레이아웃을 조회하거나 캐시 항목에 이름을 남길 때는 반드시 전체 이름
+     * (`storedLayoutName`)을 써야 한다 — 뗀 이름으로 찾으면 없거나(SPA 폴백), 같은 이름의 템플릿
+     * 레이아웃을 집는다(공개#154). 뗀 이름(`layoutName`)은 공개 훅 컨텍스트 호환용이다.
+     *
+     * 판별 순서: 모듈 → 플러그인 → 둘 다 아니면 모듈로 간주(기존 동작).
+     *
+     * @param  string  $routeLayout  라우트의 layout 값 (예: `gnuboard7-hello_module.user_memo_list`, `home`)
+     * @return array{layoutName: string, storedLayoutName: string, moduleIdentifier: string|null, pluginIdentifier: string|null}
+     */
+    public function describeRouteLayout(string $routeLayout): array
+    {
+        $described = [
+            'layoutName' => $routeLayout,
+            'storedLayoutName' => $routeLayout,
+            'moduleIdentifier' => null,
+            'pluginIdentifier' => null,
+        ];
+
+        if (! str_contains($routeLayout, '.')) {
+            return $described;
+        }
+
+        [$extensionId, $described['layoutName']] = explode('.', $routeLayout, 2);
+
+        if ($this->moduleManager->getModule($extensionId) !== null) {
+            $described['moduleIdentifier'] = $extensionId;
+        } elseif ($this->pluginManager->getPlugin($extensionId) !== null) {
+            $described['pluginIdentifier'] = $extensionId;
+        } else {
+            // fallback: 기존 동작 유지 (모듈로 간주)
+            $described['moduleIdentifier'] = $extensionId;
+        }
+
+        return $described;
+    }
+
+    /**
+     * 레이아웃 전체 이름을 쓰는 활성 사용자 템플릿의 라우트를 찾습니다.
+     *
+     * 편집기 봇 미리보기는 URL 매핑을 거치지 않으므로, 운영 봇 렌더가 쓰는 라우트 `meta.title`
+     * 대체를 같게 하려면 편집 중인 레이아웃의 라우트를 이름으로 찾아야 한다 (공개#154).
+     * 이름은 라우트의 `layout` 값 그대로(확장 레이아웃은 전체 이름) 비교한다.
+     *
+     * @param  string  $storedLayoutName  레이아웃 전체 이름 (예: `gnuboard7-hello_module.user_memo_list`)
+     * @return array{path: string, meta: array}|null 해석된 경로와 라우트 meta, 없으면 null
+     */
+    public function findRouteByLayout(string $storedLayoutName): ?array
+    {
+        $loaded = $this->loadActiveRoutes('user');
+        if ($loaded === null) {
+            return null;
+        }
+
+        foreach ($loaded[1] as $route) {
+            if (($route['layout'] ?? '') === $storedLayoutName) {
+                return [
+                    'path' => RequestPath::normalize($this->resolveRoutePath($route['path'] ?? '')),
+                    'meta' => $route['meta'] ?? [],
                 ];
             }
         }
