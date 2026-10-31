@@ -749,4 +749,152 @@ class TemplateRouteResolverTest extends TestCase
         $this->assertNotNull($resolver->resolve('/about'));
         $this->assertSame($resolver->resolve('/about'), $resolver->resolve('/about/'));
     }
+
+    // ─── describeRouteLayout(): 라우트 레이아웃 이름 해석 (공개#154) ───────────
+
+    /**
+     * 점이 없는 템플릿 레이아웃은 저장 이름과 뗀 이름이 같고 식별자가 없습니다.
+     *
+     * @scenario surface=route_template_layout
+     *
+     * @effects route_layout_described_with_stored_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_describe_route_layout_for_template_layout(): void
+    {
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-basic']);
+
+        $this->assertSame([
+            'layoutName' => 'home',
+            'storedLayoutName' => 'home',
+            'moduleIdentifier' => null,
+            'pluginIdentifier' => null,
+        ], $resolver->describeRouteLayout('home'));
+    }
+
+    /**
+     * 모듈 레이아웃은 뗀 이름과 함께 DB·편집기가 쓰는 전체 이름을 돌려줍니다.
+     *
+     * @scenario surface=route_module_layout
+     *
+     * @effects route_layout_described_with_stored_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_describe_route_layout_for_module_layout(): void
+    {
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-basic'], [], true, ['gnuboard7-hello_module']);
+
+        $this->assertSame([
+            'layoutName' => 'user_memo_list',
+            'storedLayoutName' => 'gnuboard7-hello_module.user_memo_list',
+            'moduleIdentifier' => 'gnuboard7-hello_module',
+            'pluginIdentifier' => null,
+        ], $resolver->describeRouteLayout('gnuboard7-hello_module.user_memo_list'));
+    }
+
+    /**
+     * 플러그인 레이아웃은 플러그인 식별자로 판별됩니다.
+     *
+     * @scenario surface=route_plugin_layout
+     *
+     * @effects route_layout_described_with_stored_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_describe_route_layout_for_plugin_layout(): void
+    {
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-basic'], [], true, [], ['sirsoft-reviews']);
+
+        $this->assertSame([
+            'layoutName' => 'review_list',
+            'storedLayoutName' => 'sirsoft-reviews.review_list',
+            'moduleIdentifier' => null,
+            'pluginIdentifier' => 'sirsoft-reviews',
+        ], $resolver->describeRouteLayout('sirsoft-reviews.review_list'));
+    }
+
+    /**
+     * 설치되지 않은 확장 접두사는 기존 동작대로 모듈로 간주합니다.
+     *
+     * @scenario surface=route_unknown_extension
+     *
+     * @effects route_layout_described_with_stored_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_describe_route_layout_treats_unknown_extension_as_module(): void
+    {
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-basic']);
+
+        $described = $resolver->describeRouteLayout('vendor-unknown.page');
+
+        $this->assertSame('vendor-unknown.page', $described['storedLayoutName']);
+        $this->assertSame('page', $described['layoutName']);
+        $this->assertSame('vendor-unknown', $described['moduleIdentifier']);
+        $this->assertNull($described['pluginIdentifier']);
+    }
+
+    /**
+     * resolve() 는 기존 키를 그대로 두고 저장 이름(storedLayoutName)을 더합니다.
+     *
+     * @scenario surface=route_module_layout
+     *
+     * @effects route_resolve_adds_stored_layout_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_resolve_adds_stored_layout_name_and_keeps_stripped_name(): void
+    {
+        $resolver = $this->createResolver(
+            ['identifier' => 'sirsoft-basic'],
+            [
+                ['path' => '/', 'layout' => 'home'],
+                ['path' => '/memos', 'layout' => 'gnuboard7-hello_module.user_memo_list'],
+            ],
+            true,
+            ['gnuboard7-hello_module'],
+        );
+
+        $module = $resolver->resolve('/memos');
+        $this->assertSame('user_memo_list', $module['layoutName']);
+        $this->assertSame('gnuboard7-hello_module.user_memo_list', $module['storedLayoutName']);
+        $this->assertSame('gnuboard7-hello_module', $module['moduleIdentifier']);
+
+        $home = $resolver->resolve('/');
+        $this->assertSame('home', $home['layoutName']);
+        $this->assertSame('home', $home['storedLayoutName']);
+    }
+
+    /**
+     * 레이아웃 전체 이름으로 그 레이아웃을 쓰는 공개 라우트(경로·meta)를 찾습니다 — 편집기 봇 미리보기의 라우트 제목 대체용.
+     * 없는 이름이면 null 입니다 (공개#154).
+     *
+     * @scenario surface=preview_route_title
+     *
+     * @effects bot_preview_uses_route_meta_title_like_production
+     *
+     * @return void 반환값 없음
+     */
+    public function test_find_route_by_layout_returns_route_using_that_layout(): void
+    {
+        $resolver = $this->createResolver(
+            ['identifier' => 'sirsoft-basic'],
+            [
+                ['path' => '/', 'layout' => 'home', 'meta' => ['title' => '홈']],
+                ['path' => '/memos', 'layout' => 'gnuboard7-hello_module.user_memo_list', 'meta' => ['title' => '$t:gnuboard7-hello_module.user.memos.index.title']],
+            ],
+            true,
+            ['gnuboard7-hello_module'],
+        );
+
+        $route = $resolver->findRouteByLayout('gnuboard7-hello_module.user_memo_list');
+
+        $this->assertSame('/memos', $route['path']);
+        $this->assertSame('$t:gnuboard7-hello_module.user.memos.index.title', $route['meta']['title']);
+        $this->assertSame('/', $resolver->findRouteByLayout('home')['path']);
+        $this->assertNull($resolver->findRouteByLayout('user_memo_list'), '뗀 이름으로는 찾지 않는다');
+        $this->assertNull($resolver->findRouteByLayout('vendor-x.nothing'));
+    }
 }

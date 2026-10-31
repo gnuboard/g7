@@ -591,6 +591,7 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
   <a href="https://github.com/jordy-bitree" title="jordy-bitree"><img src="https://github.com/jordy-bitree.png" width="48" alt="jordy-bitree"></a>
   <a href="https://github.com/laelbe" title="laelbe"><img src="https://github.com/laelbe.png" width="48" alt="laelbe"></a>
   <a href="https://github.com/bigmsg" title="bigmsg"><img src="https://github.com/bigmsg.png" width="48" alt="bigmsg"></a>
+  <a href="https://github.com/eondcom" title="eondcom"><img src="https://github.com/eondcom.png" width="48" alt="eondcom"></a>
   <a href="https://github.com/abc101" title="abc101"><img src="https://github.com/abc101.png" width="48" alt="abc101"></a>
   <a href="https://github.com/hwaryeon1234" title="hwaryeon1234"><img src="https://github.com/hwaryeon1234.png" width="48" alt="hwaryeon1234"></a>
   <a href="https://github.com/koojunho" title="koojunho"><img src="https://github.com/koojunho.png" width="48" alt="koojunho"></a>
@@ -601,7 +602,6 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
   <a href="https://github.com/ChoDongHyeon" title="ChoDongHyeon"><img src="https://github.com/ChoDongHyeon.png" width="48" alt="ChoDongHyeon"></a>
   <a href="https://github.com/comtylove-netizen" title="comtylove-netizen"><img src="https://github.com/comtylove-netizen.png" width="48" alt="comtylove-netizen"></a>
   <a href="https://github.com/devrhee16" title="devrhee16"><img src="https://github.com/devrhee16.png" width="48" alt="devrhee16"></a>
-  <a href="https://github.com/eondcom" title="eondcom"><img src="https://github.com/eondcom.png" width="48" alt="eondcom"></a>
   <a href="https://github.com/GyusoonKim" title="GyusoonKim"><img src="https://github.com/GyusoonKim.png" width="48" alt="GyusoonKim"></a>
   <a href="https://github.com/Lastorder-DC" title="Lastorder-DC"><img src="https://github.com/Lastorder-DC.png" width="48" alt="Lastorder-DC"></a>
   <a href="https://github.com/miles44229" title="miles44229"><img src="https://github.com/miles44229.png" width="48" alt="miles44229"></a>

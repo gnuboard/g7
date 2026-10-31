@@ -114,7 +114,26 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 - 동시에 진행하는 미스 렌더는 사이트 전체 상한(`max_concurrent_renders`) 안에서만 — 초과분도 SPA + `BYPASS`
 - 기본 로케일을 `?locale=` 로 명시한 요청의 301 `Location` 은 요청 Host 가 아니라 APP_URL 기준
 - 저장 상한: 경로·언어당 쿼리 변종 수 · 캐시 인덱스 전체 항목 수
-- 캐시 HIT/MISS 를 통계에 기록 (IP 당 분당 상한). HIT 의 레이아웃명은 캐시 항목에 함께 저장된 값으로 귀속한다
+- 캐시 HIT/MISS 를 통계에 기록 (IP 당 분당 상한). HIT 의 레이아웃명은 캐시 항목에 함께 저장된 값으로 귀속한다. 모듈 화면이면 모듈 식별자도 함께 기록한다(MISS 는 렌더러가 남긴 값, HIT 는 캐시 항목의 레이아웃 이름에서 되살린 값)
+
+## 확장 레이아웃 이름 규약
+
+모듈·플러그인이 제공하는 레이아웃은 라우트(`routes.json` 의 `layout`)·DB(`template_layouts.name`)·레이아웃 편집기에서
+`{확장식별자}.{레이아웃}` **전체 이름**으로 다룹니다(예: `gnuboard7-hello_module.user_memo_list`). 봇 렌더도 이 이름을 씁니다.
+
+| 쓰임 | 이름 |
+|------|------|
+| 레이아웃 조회(봇 렌더) | 전체 이름 |
+| 봇 캐시 항목·캐시 통계의 레이아웃 이름 | 전체 이름 — `seo:clear --layout=`·관리자 캐시 비우기도 이 이름으로 지운다 |
+| 훅 컨텍스트 `layoutName` | 확장 식별자를 뗀 이름(기존 값 유지) |
+| 훅 컨텍스트 `storedLayoutName` | 전체 이름 |
+| 템플릿 레이아웃(점 없는 이름) | 두 이름이 같다 |
+
+- 뗀 이름으로 레이아웃을 찾으면 모듈 화면은 「레이아웃 없음」이 되고, 뗀 이름이 템플릿 레이아웃과 같으면(모듈 `vendor-x.home` → `home`) 템플릿 화면이 그 주소로 렌더됩니다. 그래서 조회와 캐시 이름은 전체 이름입니다.
+- 소속 판별 순서: 설치된 모듈 → 설치된 플러그인 → 둘 다 아니면 모듈로 간주.
+- 봇 렌더가 레이아웃을 찾지 못하면 `[SEO] Layout load failed` 를 **error** 로 남기고 SPA 로 응답합니다. 로그에는 `url`·`template`·`layout`(전체 이름)·`route_layout_name`(뗀 이름)·`module`·`plugin`·`error` 가 실립니다.
+- 플러그인 라우트는 **관리자 템플릿에만 병합**됩니다. 그래서 플러그인이 소유한 사용자 화면은 지금 구조로는 없고, 플러그인 레이아웃의 봇 렌더는 템플릿 `routes.json` 이 점 붙은 플러그인 레이아웃을 직접 지정할 때만 일어납니다(이름 규약은 모듈과 같습니다).
+- 모듈 화면 SEO 예시: 번들 Hello 모듈의 `/memos`(`user_memo_list`)가 `meta.seo` 를 선언해 템플릿 `_user_base` 의 기본값(SEO 끔)을 덮습니다.
 
 ## 봇 감지 구조
 
@@ -311,8 +330,10 @@ seo-config 의 `fields` 모드 항목은 `"if": "{prop}"` 로 props 값이 거�
 위 단계가 모두 비면 title 은 레이아웃 `meta.seo.og.title` → 라우트 `meta.title`(routes.json) 순으로 대신합니다. 그래서 SEO 제목 선언이 없는 화면(회원 프로필 등)도 「화면 제목 | 사이트 이름」 으로 나갑니다.
 
 - **사이트 이름만 되풀이하는 제목은 버립니다.** 확장 제목 틀이 사이트 이름만 낸 경우(게시판 목록 기본값 `{site_name}` 등) 코어 접미사가 사이트 이름을 또 붙여 「사이트 이름 \| 사이트 이름」 이 되므로, 코어 사이트 이름(`general.site_name`)이나 접미사에서 구분자를 뗀 이름과 같은 제목은 화면 정보가 없는 것으로 보고 다음 단계로 넘깁니다. 대신할 제목이 없으면 사이트 이름만 한 번 나갑니다.
+- **제목 접미사(`seo.meta_title_suffix`)가 비면 사이트 이름이 제목이 됩니다.** 위 단계가 모두 비고 접미사도 비어 제목 전체가 빈 값이 되면, 지역화한 사이트 이름(`general.site_name`)을 제목으로 씁니다(og:title 도 따라갑니다). 접미사가 있는 사이트는 위 규칙대로 제목을 비우고 접미사만 남깁니다.
+- **확장 설정 제목·설명 틀은 다국어 값이어도 됩니다.** 모듈·플러그인 설정 `seo.meta_{page_type}_{title|description}` 을 `{ko, en, …}` 배열로 저장하면 현재 로케일 → 사이트 기본 언어 → 영어 순으로 고른 문자열을 씁니다.
 - **사이트 첫 화면(`/`)은 라우트 제목을 쓰지 않습니다.** 첫 화면은 사이트 이름 자체가 제목이라 「홈 \| 사이트 이름」 대신 사이트 이름만 나갑니다.
-- 편집기 봇 미리보기(`renderFromResolved` 직접 호출)는 라우트를 거치지 않으므로 라우트 제목 대체가 없습니다.
+- 편집기 봇 미리보기(`renderFromResolved` 직접 호출)는 URL 매핑을 거치지 않습니다. 대신 편집기가 보낸 레이아웃 전체 이름(`layout_name`)으로 그 레이아웃을 쓰는 라우트를 찾아 같은 라우트 제목 대체를 적용합니다(사이트 첫 화면 제외). 레이아웃 이름이 없는 편집(베이스·모달)은 라우트 제목 대체가 없습니다.
 
 ## 레이아웃 meta.seo 선언적 설정
 
@@ -442,7 +463,8 @@ SEO 엔진은 특정 모듈/템플릿 지식을 갖지 않습니다. 모든 SEO 
 
 ```php
 $context = HookManager::applyFilters('core.seo.filter_context', $context, [
-    'layoutName' => $layoutName,
+    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
+    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
     'routeParams' => $routeParams,
@@ -460,7 +482,8 @@ $context = HookManager::applyFilters('core.seo.filter_context', $context, [
 
 ```php
 $meta = HookManager::applyFilters('core.seo.filter_meta', $meta, [
-    'layoutName' => $layoutName,
+    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
+    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
     'context' => $context,
@@ -478,7 +501,8 @@ $meta = HookManager::applyFilters('core.seo.filter_meta', $meta, [
 
 ```php
 $meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], [
-    'layoutName' => $layoutName,
+    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
+    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
     'context' => $context,
@@ -531,7 +555,8 @@ HookManager::addFilter('core.seo.filter_og_data', function (array $og, array $ct
 
 ```php
 $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
-    'layoutName' => $layoutName,
+    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
+    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
 ]);
@@ -692,13 +717,24 @@ if (app()->bound(\App\Seo\SitemapGenerator::class)) {
 
 캐시 무효화 시 `app(CacheInterface::class)->forget('seo.sitemap')` + `SeoConfigMerger::clearCache()` 도 함께 호출 (드라이버가 `g7:core:` 접두사 자동 적용)
 
+#### 레이아웃 변경 리스너 (코어)
+
+| 훅 | 무효화 대상 | 사유 |
+|----|-----------|------|
+| `core.layout.after_cache_clear` | 그 레이아웃 이름의 봇 캐시(`invalidateByLayout`) | 레이아웃 저장·버전 복원·파일 생성/이름 변경/삭제·레이아웃 확장(오버레이) 변경 |
+
+- 위 작업은 모두 레이아웃 캐시 정리(`LayoutService::clearDependentLayoutsCache()`)를 거치고, 그 정리는 자기 자신과 `extends` 로 물려받는 자식 레이아웃마다 이 훅을 발화합니다. 그래서 공통 레이아웃(`_user_base`)을 고치면 그것을 물려받는 화면의 봇 캐시도 함께 지워집니다.
+- **활성 사용자 템플릿**의 레이아웃만 지웁니다. 관리자 템플릿·꺼진 사용자 템플릿의 레이아웃은 검색봇이 받는 화면이 아닙니다.
+- 실패는 경고로 남기고 저장 흐름을 막지 않습니다. 구독은 `sync` 입니다(`SeoLayoutCacheListener`).
+
 ## Artisan 커맨드
 
 ```bash
 php artisan seo:warmup              # SEO 캐시 워밍업
 php artisan seo:warmup --layout=shop/show  # 특정 레이아웃만
 php artisan seo:clear               # 전체 SEO 캐시 삭제
-php artisan seo:clear --layout=home # 특정 레이아웃만
+php artisan seo:clear --layout=home # 특정 레이아웃만 (템플릿 화면)
+php artisan seo:clear --layout=gnuboard7-hello_module.user_memo_list  # 모듈 화면 — 편집기에 보이는 전체 이름
 php artisan seo:stats               # 캐시 통계 출력 (미들웨어가 HIT/MISS 를 기록 — IP 당 분당 상한)
 php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치, mode=auto)
 php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성

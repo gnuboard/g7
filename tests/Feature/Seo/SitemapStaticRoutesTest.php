@@ -172,12 +172,12 @@ class SitemapStaticRoutesTest extends TestCase
             app(LayoutVersionRepositoryInterface::class)
         );
 
+        // 수집기의 레이아웃 이름 해석은 봇 렌더와 같은 해석기를 쓴다 — 활성 확장 목(Mock)을 그대로 물려 둔다
         $collector = new SeoDeclarationCollector(
             $templateService,
             app(LayoutService::class),
             $templateManager,
-            $moduleManager,
-            $pluginManager,
+            new TemplateRouteResolver($templateService, $templateManager, $moduleManager, $pluginManager),
         );
 
         return new SitemapGenerator(app(TemplateRouteResolver::class), $templateService, $collector, new SeoToggleEvaluator);

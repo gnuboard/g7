@@ -902,4 +902,82 @@ class SeoMiddlewareTest extends TestCase
         $this->assertSame(['/products/1', '/products/1', '/products/1'], $gets);
         $this->assertSame(['/products/1', '/products/1', '/products/1'], $puts);
     }
+
+    /**
+     * 모듈 소유 화면의 캐시 미스는 렌더러가 남긴 전체 레이아웃 이름과 모듈 식별자를 통계에 기록한다 (공개#154).
+     * 종전에는 모듈 식별자 자리에 null 을 넘겨 `seo:stats` 의 모듈별 묶음이 늘 비었다.
+     *
+     * @scenario surface=stats_miss
+     *
+     * @effects module_screen_stats_carry_module_identifier
+     *
+     * @return void 반환값 없음
+     */
+    public function test_module_screen_miss_records_stored_layout_name_and_module(): void
+    {
+        config(['g7_settings.core.seo.bot_detection_enabled' => true]);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+        $this->cacheManager->method('get')->willReturn(null);
+        $this->renderer->method('render')->willReturnCallback(function (Request $request) {
+            $request->attributes->set('seo_layout_name', 'gnuboard7-hello_module.user_memo_list');
+            $request->attributes->set('seo_module_identifier', 'gnuboard7-hello_module');
+
+            return '<html>memos</html>';
+        });
+
+        $this->cacheManager->expects($this->once())
+            ->method('putWithLayout')
+            ->with('/memos', config('app.locale'), '<html>memos</html>', 'gnuboard7-hello_module.user_memo_list');
+        $this->statsService->expects($this->once())
+            ->method('recordMiss')
+            ->with(
+                '/memos',
+                config('app.locale'),
+                'gnuboard7-hello_module.user_memo_list',
+                'gnuboard7-hello_module',
+                $this->greaterThanOrEqual(0)
+            );
+
+        $this->middleware->handle($this->createRequest('/memos', 'Googlebot/2.1'), $this->spaNext());
+    }
+
+    /**
+     * 모듈 소유 화면의 캐시 적중은 캐시 항목의 전체 레이아웃 이름에서 모듈 식별자를 얻어 통계에 기록한다 (공개#154).
+     * 템플릿 화면(점 없는 이름)은 모듈 식별자가 없다.
+     *
+     * @scenario surface=stats_hit
+     *
+     * @effects module_screen_stats_carry_module_identifier
+     *
+     * @return void 반환값 없음
+     */
+    public function test_module_screen_hit_records_module_identifier_from_cache_entry(): void
+    {
+        config(['g7_settings.core.seo.bot_detection_enabled' => true]);
+
+        $cacheManager = $this->createMock(SeoCacheManager::class);
+        $cacheManager->method('getEntry')->willReturnCallback(fn (string $url) => [
+            'html' => '<html>cached</html>',
+            'layout' => $url === '/memos' ? 'gnuboard7-hello_module.user_memo_list' : 'home',
+        ]);
+
+        $middleware = new SeoMiddleware($this->botDetector, $cacheManager, $this->renderer, $this->statsService);
+
+        $this->botDetector->method('isBot')->willReturn(true);
+
+        $calls = [];
+        $this->statsService->expects($this->exactly(2))
+            ->method('recordHit')
+            ->willReturnCallback(function (...$args) use (&$calls) {
+                $calls[] = $args;
+            });
+
+        $middleware->handle($this->createRequest('/memos', 'Googlebot/2.1'), $this->spaNext());
+        $middleware->handle($this->createRequest('/', 'Googlebot/2.1'), $this->spaNext());
+
+        $this->assertSame(['/memos', config('app.locale'), 'gnuboard7-hello_module.user_memo_list', 'gnuboard7-hello_module'], $calls[0]);
+        $this->assertSame('home', $calls[1][2]);
+        $this->assertNull($calls[1][3] ?? null);
+    }
 }

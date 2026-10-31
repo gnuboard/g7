@@ -552,6 +552,7 @@ core.seo.filter_twitter_data    # Twitter 카드 분기별 hook ($twitter 배열
 core.seo.filter_structured_data # JSON-LD 분기별 hook ($structuredData 배열)
 core.seo.filter_meta            # 통합 hook (모든 분기 결합 후 $meta 전체)
 core.seo.filter_view_data       # View 직전 ($viewData) — extraHeadTags / extraBodyEnd
+#   두 번째 인자(메타)의 layoutName 은 확장 식별자를 뗀 이름, storedLayoutName 은 전체 이름(`{확장}.{레이아웃}` — 7.1.4+)
 
 # SEO 봇 감지 훅 (Filter) — null 반환 시 라이브러리 평가로 fallthrough
 core.seo.resolve_is_bot

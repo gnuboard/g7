@@ -41,7 +41,8 @@
         "memos": {
             "index": {
                 "title": "Memo List",
-                "empty": "There are no memos yet."
+                "empty": "There are no memos yet.",
+                "seo_description": "Public memo list of the Hello module example."
             }
         }
     }

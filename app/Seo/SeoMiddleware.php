@@ -20,12 +20,14 @@ class SeoMiddleware
      * @param  SeoCacheManagerInterface  $cacheManager  SEO 캐시 관리자
      * @param  SeoRendererInterface  $renderer  SEO HTML 렌더러
      * @param  SeoCacheStatsService  $statsService  캐시 적중 통계 기록기
+     * @param  TemplateRouteResolver|null  $routeResolver  캐시 항목 레이아웃 이름의 소속 모듈 해석기 (null 이면 컨테이너에서 얻음)
      */
     public function __construct(
         private readonly BotDetector $botDetector,
         private readonly SeoCacheManagerInterface $cacheManager,
         private readonly SeoRendererInterface $renderer,
         private readonly SeoCacheStatsService $statsService,
+        private readonly ?TemplateRouteResolver $routeResolver = null,
     ) {}
 
     /**
@@ -96,7 +98,8 @@ class SeoMiddleware
             $this->recordStat($ip, fn () => $this->statsService->recordHit(
                 $cacheUrl,
                 $locale,
-                $entry['layout'] ?: null
+                $entry['layout'] ?: null,
+                $this->moduleOfLayout($entry['layout'] ?? null)
             ));
 
             return response($entry['html'], 200, [
@@ -174,7 +177,7 @@ class SeoMiddleware
             $cacheUrl,
             $locale,
             $layoutName ?: null,
-            null,
+            $request->attributes->get('seo_module_identifier'),
             (int) round((microtime(true) - $startedAt) * 1000)
         ));
 
@@ -205,6 +208,27 @@ class SeoMiddleware
         $html = $this->cacheManager->get($cacheUrl, $locale);
 
         return $html === null ? null : ['html' => $html, 'layout' => null];
+    }
+
+    /**
+     * 캐시 항목의 레이아웃 이름에서 소속 모듈 식별자를 얻습니다.
+     *
+     * 적중 경로는 렌더러를 거치지 않아 요청 속성에 모듈 식별자가 없다. 캐시 항목 이름은 전체 이름
+     * (`{모듈식별자}.{레이아웃}`)이라 봇 렌더와 같은 해석기로 소속을 되살린다 — 없으면 `seo:stats`
+     * 의 모듈별 묶음이 늘 빈다 (공개#154).
+     *
+     * @param  string|null  $layoutName  캐시 항목의 레이아웃 이름
+     * @return string|null 모듈 식별자 (템플릿 화면·플러그인 화면·이름 미상이면 null)
+     */
+    private function moduleOfLayout(?string $layoutName): ?string
+    {
+        if ($layoutName === null || ! str_contains($layoutName, '.')) {
+            return null;
+        }
+
+        $resolver = $this->routeResolver ?? app(TemplateRouteResolver::class);
+
+        return $resolver->describeRouteLayout($layoutName)['moduleIdentifier'];
     }
 
     /**

@@ -85,6 +85,27 @@ exclusions:
   - { chip_expand_op: fx_to_expression_tree, chip_expand_value_shape: plain, reason: "fx(표현식 진입)는 표현식 가능 형태 전용 — 순수 평문은 검색/표현식 어포던스만" }
   - { chip_expand_op: search_pick_data_chip, chip_expand_value_shape: settings_ref, reason: "설정참조는 직접 타이핑 — 데이터 검색 칩과 직교(대표 1형태에서 검증)" }
 effects:
+  # [검색엔진] 탭 호스트·봇 미리보기 패널 (SeoForm·SeoBotPreviewPanel RTL)
+  - seo_bot_preview_panel_expanded_by_default_with_sample_note
+  - seo_bot_preview_renders_response_html_as_code
+  - seo_bot_preview_shows_code_only_without_render_toggle
+  - seo_bot_preview_disabled_layout_shows_not_indexed_notice
+  - seo_bot_preview_manual_refresh_refetches_immediately
+  - seo_bot_preview_debounces_settings_signature_changes
+  - seo_bot_preview_sends_route_layout_name_only_when_present
+  - seo_form_disabled_seo_keeps_body_visible_greyed
+  - seo_form_enabled_toggle_patches_seo_enabled
+  - seo_form_missing_extension_or_page_type_shows_defaults_banner
+  - seo_form_page_type_candidates_select_or_free_text
+  - seo_form_extensions_chip_patches_seo_extensions
+  - seo_form_toggle_setting_dropdown_patches_ref
+  - seo_form_data_sources_multiselect_patches_and_labels
+  - seo_form_priority_and_changefreq_patch
+  - seo_form_search_title_patches_seo_title
+  - seo_form_has_no_canonical_or_robots_controls
+  - seo_form_og_or_twitter_change_recomputes_preview
+  - seo_form_vars_candidates_fetch_carries_page_type_and_extensions
+  - seo_form_forwards_route_layout_name_to_bot_preview
   # 셸 라우팅/배지
   - shell_routes_eight_tabs_meta_seo_init_overlay_computed_state_error_data
   - shell_tab_click_switches_active_panel
@@ -176,6 +197,8 @@ effects:
   - seo_vars_editor_uses_data_chip_value_input_value_only_no_keyification
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/PageSettingsModal.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/SeoForm.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/SeoBotPreviewPanel.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/PageTitleBanner.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/computed-inheritance.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ComputedForm.test.tsx

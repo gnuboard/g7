@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.3] - 2026-10-31
+
+### Added
+
+- Hello 모듈 0.2.2 의 사용자 메모 목록 SEO 설명 문구의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 검색봇이 받는 설명이 키 그대로 나갑니다.
+
 ## [1.0.2] - 2026-10-21
 
 ### Added
