@@ -14,6 +14,7 @@ use App\Services\SettingsService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
 use App\Support\LayoutEmptyObjects;
+use App\Support\RequestPath;
 use App\Support\Utf8;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -63,7 +64,8 @@ class SeoRenderer implements SeoRendererInterface
      */
     public function render(Request $request): ?string
     {
-        $url = $request->getPathInfo();
+        // 끝·연속 슬래시는 정규형으로 — 루트 판정과 route.path 노출도 같은 값을 쓴다 (공개#156)
+        $url = RequestPath::normalize($request->getPathInfo());
 
         // SeoMiddleware가 ?locale= 파라미터 기반으로 이미 설정한 로케일 사용
         $locale = app()->getLocale();

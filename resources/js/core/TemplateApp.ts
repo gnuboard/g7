@@ -8,6 +8,7 @@ import { flushSync } from 'react-dom';
 import { createRoot as createReactRoot } from 'react-dom/client';
 import { Router } from './routing/Router';
 import type { Route } from './routing/Router';
+import { normalizePathname } from './routing/normalizePathname';
 import { LayoutLoader, LayoutLoaderError } from './template-engine/LayoutLoader';
 import type { InitActionDefinition, LayoutScript, ComputedSwitchDefinition } from './template-engine/LayoutLoader';
 import { DataBindingEngine } from './template-engine/DataBindingEngine';
@@ -1070,7 +1071,9 @@ export class TemplateApp {
             // 첫 화면도 라우터가 `navigateToCurrentPath()` 로 routeChange 를 한 번 낸다. 아래에서
             // 직접 알린 그 한 번을 거르지 않으면 모든 첫 로드가 페이지뷰 2건이 되고, 한 쪽만
             // 보고 떠난 방문이 이탈로 잡히지 않는다. 그 뒤의 이동은 전부 그대로 센다.
-            const initialPath = window.location.pathname;
+            // 라우터는 첫 화면에서 끝·연속 슬래시 주소를 정규형으로 바꾼 뒤 그 경로로 routeChange 를 낸다 —
+            // 원본 주소로 비교하면 `/x/` 진입이 걸러지지 않아 페이지뷰 2건이 된다 (engine-v1.84.0)
+            const initialPath = normalizePathname(window.location.pathname);
             let initialRouteChangeSeen = false;
 
             // 라우트 구독은 동기로 반환한다 — 라우터가 핸들러를 기다리기 때문이다.
@@ -3937,7 +3940,9 @@ export class TemplateApp {
             // 대기 중인 디바운스 쓰기(CKEditor 본문 등)를 먼저 실행해 스냅샷에 담는다 — 엔진을 내린 뒤 옛 디스패처의
             // 타이머가 늦게 실행되면 재진입의 `_local` 교체와 어긋난다
             getState().actionDispatcher?.flushPendingDebounceTimers?.();
-            this.pendingLocaleSwitch = { path: window.location.pathname, local: this.snapshotLocalForLocaleSwitch() };
+            // 재진입 `route.path` 는 라우터가 정규화한 경로다 — 주소만 바꾸는 이동이 끝 슬래시 주소를 써 둔 채 전환해도
+            // 같은 화면으로 인계되게 정규형으로 담는다 (engine-v1.84.0)
+            this.pendingLocaleSwitch = { path: normalizePathname(window.location.pathname), local: this.snapshotLocalForLocaleSwitch() };
             const loadedManualSourceIds = this.collectLoadedManualDataSourceIds();
             beginLocaleSwitchHandoff();
             this.localeSwitchConsumed = false;

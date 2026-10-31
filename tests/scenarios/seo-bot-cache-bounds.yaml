@@ -47,6 +47,12 @@ effects:
   - store_counts_path_variants_per_locale
   - null_render_refunds_render_budget
   - stats_url_column_fits_normalized_cache_url
+  - bot_receives_seo_html_on_miss
+  - non_bot_or_disabled_detection_receives_spa
+  - cache_hit_served_with_hit_header
+  - render_failure_falls_back_to_spa
+  - locale_param_selects_render_locale_and_cache_key
+  - invalidation_pattern_treats_only_asterisk_as_wildcard
 
 sub_flows:
   - id: cache_manager_basics

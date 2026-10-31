@@ -215,4 +215,28 @@ class UrlNormalizerTest extends TestCase
             '표기만 다른 같은 페이지는 같은 사전 항목이어야 한다',
         );
     }
+
+    /**
+     * 끝·연속 슬래시 주소는 정규형과 같은 이름으로 센다 — 루트 이름은 바뀌지 않는다 (공개#156 D6).
+     *
+     * 화면 주소는 서버(301)·클라이언트(replaceState)가 정규형으로 모으지만, 그 앞에서 쌓인 비콘이나
+     * 다른 경로로 들어온 주소도 같은 페이지로 묶이도록 통계 쪽에도 방어를 둔다.
+     *
+     * @scenario url=absolute|relative, path_shape=trailing_slash|double_slash
+     *
+     * @effects url_normalization_collapses_scheme_www_and_tracking_params
+     *
+     * @return void 없음
+     */
+    public function test_trailing_and_double_slash_share_page_name(): void
+    {
+        $this->assertSame('example.com/board/free', UrlNormalizer::normalize('https://example.com/board/free/')['name']);
+        $this->assertSame('example.com/board/free', UrlNormalizer::normalize('https://example.com/board//free')['name']);
+        $this->assertSame('/board/free?a=1', UrlNormalizer::normalize('/board/free/?a=1')['name']);
+
+        // 루트 이름은 수정 전과 같다 (수정 전 실측: `example.com/`, `/`)
+        $this->assertSame('example.com/', UrlNormalizer::normalize('https://example.com/')['name']);
+        $this->assertSame('example.com/', UrlNormalizer::normalize('https://example.com')['name']);
+        $this->assertSame('/', UrlNormalizer::normalize('/')['name']);
+    }
 }

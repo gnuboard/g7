@@ -10,12 +10,16 @@ description: |
     - catch-all `/{any?}` 가 모든 미매칭을 무조건 200 view 로 반환 → 봇이 미존재 페이지 색인.
     - TemplateRouteResolver::routeExists() 신규 — resolve()와 달리 auth_required/guest_only
       라우트도 "존재"로 인정 (SEO 비대상 ≠ 미등록). 미설치/로드 실패 시 true(404 억제 안전측).
+    - 공개#156: 끝·연속 슬래시 주소(`/admin/`, `/board//free`)가 routes.json 판정에서 404 였다(nginx).
+      `canonical.path` 가 정규형으로 301 하고, resolver·SEO 렌더·SEO 캐시 키는 `RequestPath::normalize()`
+      로 방어한다. 템플릿에 없는 주소도 먼저 301 한 뒤 이동한 곳에서 404 를 판정한다.
 
 axes:
   template_type: [user, admin]
   route_registration: [registered_static, registered_dynamic, registered_auth_required, registered_guest_only, unregistered, excess_segment]
   bot: [bot, non_bot]
   template_state: [installed, missing]
+  path_shape: [plain, trailing_slash, double_slash, query_with_trailing_slash]
 
 exclusions:
   - { template_state: missing, route_registration: registered_static, reason: "미설치 시 routeExists=true 폴백 — 모든 경로 200" }
@@ -33,10 +37,27 @@ effects:
   - missing_template_suppresses_404_returns_200_safe_fallback
   - not_found_response_keeps_spa_shell_body
   - static_asset_extension_path_bypasses_catchall
+  - request_path_normalizer_collapses_slashes
+  - trailing_slash_path_redirects_301_to_canonical
+  - double_slash_path_redirects_301_collapsed
+  - canonical_path_redirect_skipped_when_not_applicable
+  - canonical_path_middleware_ordered_before_analytics_and_seo
+  - resolver_normalizes_trailing_slash
+  - seo_render_and_cache_key_use_canonical_path
+  - resolver_maps_url_to_layout_for_seo
+  - resolver_identifies_extension_of_layout
+  - resolver_skips_auth_and_guest_routes_for_seo
+  - resolver_returns_null_when_routes_unavailable
+  - resolver_resolves_route_path_expressions
 
 test_files:
   - tests/Unit/Seo/TemplateRouteResolverTest.php
   - tests/Feature/CatchAllNotFoundTest.php
+  - tests/Unit/Support/RequestPathTest.php
+  - tests/Feature/Http/RedirectToCanonicalPathTest.php
+  - tests/Unit/Seo/SeoRendererTest.php
+  - tests/Feature/Seo/SeoMiddlewareTest.php
+  - tests/Playwright/specs/trailing-slash-normalization.spec.ts
 
 rules_layer_coverage:
   - rule: routing

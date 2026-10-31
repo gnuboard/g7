@@ -377,6 +377,28 @@ class SeoRendererTest extends TestCase
     }
 
     /**
+     * 끝 슬래시 요청 경로는 정규형으로 레이아웃을 찾는다 (공개#156).
+     *
+     * @scenario path_shape=trailing_slash, bot=bot
+     *
+     * @effects seo_render_and_cache_key_use_canonical_path
+     *
+     * @return void 반환값 없음
+     */
+    public function test_render_resolves_normalized_path_for_trailing_slash(): void
+    {
+        $request = Request::create('/products/123/');
+
+        $this->routeResolver
+            ->shouldReceive('resolve')
+            ->with('/products/123')
+            ->once()
+            ->andReturn(null);
+
+        $this->assertNull($this->renderer->render($request));
+    }
+
+    /**
      * structured_data가 있으면 JSON-LD가 포함됩니다.
      *
      * @effects renderer_render_includes_json_ld_when_structured_data_present

@@ -417,7 +417,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
     /**
      * 게시판 수정 시 해당 게시판 SEO 캐시 전체가 무효화되는지 단언합니다. (#413-17)
      *
-     * 무효화 대상: /board/{slug} · /boards URL + home·search/index 레이아웃 + seo.sitemap 캐시.
+     * 무효화 대상: /board/{slug}(쪽 변종·글 상세 포함) · /boards URL + home·search/index 레이아웃 + seo.sitemap 캐시.
      *
      * @param  string  $slug  대상 게시판 슬러그
      * @return void 반환값 없음
@@ -457,6 +457,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
         $this->assertContains("/board/{$slug}?*", $invokedUrls);
         $this->assertContains('/boards', $invokedUrls);
         $this->assertContains('/boards?*', $invokedUrls);
+        $this->assertContains("/board/{$slug}/*", $invokedUrls, '글 상세도 게시판 이름을 렌더한다');
 
         // 전역 레이아웃 무효화 (게시판명이 목록/검색에 노출될 수 있음)
         $this->assertContains('home', $invokedLayouts);
@@ -466,7 +467,7 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
     /**
      * 게시판별 캐시 무효화 기대값을 설정합니다.
      *
-     * URL 기반 무효화: 해당 게시글 상세 + 해당 게시판 목록
+     * URL 기반 무효화: 해당 게시글 상세 + 해당 게시판 목록(쪽 변종 포함)
      * 레이아웃 기반 무효화: home, search/index (전역)
      *
      * @param  object  $post  게시글 객체
@@ -480,10 +481,13 @@ class SeoBoardCacheListenerTest extends ModuleTestCase
             ->once()
             ->with("/board/{$slug}/{$post->id}");
 
-        // 해당 게시판 목록 URL만 무효화
+        // 해당 게시판 목록 URL만 무효화 (쪽 변종 포함)
         $this->cacheMock->shouldReceive('invalidateByUrl')
             ->once()
             ->with("/board/{$slug}");
+        $this->cacheMock->shouldReceive('invalidateByUrl')
+            ->once()
+            ->with("/board/{$slug}?*");
 
         // 전역 레이아웃 무효화
         $this->cacheMock->shouldReceive('invalidateByLayout')

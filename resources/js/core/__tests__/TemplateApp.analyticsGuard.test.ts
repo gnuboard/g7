@@ -70,7 +70,10 @@ vi.mock('../routing/Router', () => ({
         });
         this.match = vi.fn((path: string) => ({ route: { path, layout: 'home', meta: {} }, params: {} }));
         this.navigateToCurrentPath = vi.fn(async () => {
-            const path = window.location.pathname;
+            // 실제 라우터처럼 끝·연속 슬래시 주소를 정규형으로 바꾼 뒤 그 경로로 routeChange 를 낸다 (engine-v1.84.0)
+            const raw = window.location.pathname;
+            const path = raw.replace(/\/{2,}/g, '/').replace(/(.)\/$/, '$1');
+            if (path !== raw) window.history.replaceState(window.history.state, '', path + window.location.search);
             await Promise.all((routerBus.handlers.get('routeChange') ?? []).map((handler) => handler({ path, layout: 'home', meta: {}, params: {}, query: {} })));
         });
         this.getRoutes = vi.fn().mockReturnValue([]);
@@ -188,6 +191,24 @@ describe('TemplateApp 방문자 통계 가드', () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
 
         expect(collectCalls()).toBe(2);
+    });
+
+    // @scenario visitor=guest, source=beacon, visit_state=new
+    // @effects first_screen_sends_exactly_one_pageview
+    it('끝 슬래시 주소로 첫 진입해도 비콘은 한 번만 보낸다 — 라우터가 주소를 정규형으로 바꾼 뒤에도 첫 routeChange 를 거른다', async () => {
+        const before = window.location.pathname;
+        window.history.replaceState(null, '', '/board/free/');
+        try {
+            const app = new TemplateApp(makeConfig('user'));
+            await app.init();
+            await vi.waitFor(() => expect(collectCalls()).toBeGreaterThan(0));
+            await new Promise((resolve) => setTimeout(resolve, 0));
+
+            expect(window.location.pathname).toBe('/board/free');
+            expect(collectCalls()).toBe(1);
+        } finally {
+            window.history.replaceState(null, '', before);
+        }
     });
 
     // @scenario visitor=guest, source=beacon, visit_state=open
