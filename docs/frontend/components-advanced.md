@@ -35,7 +35,7 @@
 |--------|------|--------|
 | `on(eventName, callback)` | 이벤트 구독 | 구독 해제 함수 |
 | `emit(eventName, data?)` | 이벤트 발생 | `Promise<any[]>` |
-| `off(eventName, callback)` | 그 콜백의 구독만 해제 (engine-v1.86.0) | `void` |
+| `off(eventName, callback)` | 그 콜백의 구독만 해제 (engine-v1.87.0) | `void` |
 | `off(eventName)` | 그 이벤트의 구독 전부 제거 — 폐지 예정, 구독이 있으면 경고 | `void` |
 | `clear()` | 모든 구독 제거 — 폐지 예정, 구독이 있으면 경고 | `void` |
 

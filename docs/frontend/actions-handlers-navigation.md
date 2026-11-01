@@ -38,7 +38,7 @@
 }
 ```
 
-> 목적지가 `G7Config.customRoutes` 패턴(서버 `routes/custom.php` 의 GET 주소 — 개발자 화면, engine-v1.84.0+)과 맞으면 SPA 로 그리지 않고 `location.assign` 으로 전체 페이지 이동한다. 뒤로 가기로 그 주소에 오면 새로 불러온다. 패턴의 `{정규식}` 구간은 서버 라우트의 경로 제약이다. [개발자 화면 가이드](../custom-development.md#12-운영-주의)
+> 목적지가 `G7Config.customRoutes` 패턴(서버 `routes/custom.php` 의 GET 주소 — 개발자 화면, engine-v1.85.0+)과 맞으면 SPA 로 그리지 않고 `location.assign` 으로 전체 페이지 이동한다. 뒤로 가기로 그 주소에 오면 새로 불러온다. 패턴의 `{정규식}` 구간은 서버 라우트의 경로 제약이다. [개발자 화면 가이드](../custom-development.md#12-운영-주의)
 
 ### navigate params 구조
 
@@ -377,6 +377,17 @@ const toInternal = (href: string): string | null =>
 ```
 
 > 대체 훅을 고를 때 `nav?.useLocationSearch ?? …` 는 모듈 평가 때 한 번만 정한다 — 렌더마다 다른 훅을 부르면 훅 순서가 바뀐다.
+
+### 끝·연속 슬래시 주소는 정규형으로 바뀐다 (engine-v1.84.0)
+
+라우터는 화면을 고르기 전에 주소를 정규형으로 맞춘다. 끝 `/`(루트 제외)를 떼고 연속 `/` 를 하나로 줄인다 —
+`/admin/settings/` → `/admin/settings`, `/board//free` → `/board/free`. 첫 진입·`navigate`·뒤로/앞으로가 모두 같다.
+
+- 주소창은 `history.replaceState` 로 바꾼다. 히스토리 항목 수는 늘지 않고, 쿼리와 해시는 그대로 남는다.
+- `navigate` 에 `"/admin/users/"` 를 넘겨도 히스토리는 한 항목만 늘고 최종 주소는 `/admin/users` 다.
+- 그래서 `{{route.path}}`·로그인 복귀 주소(`redirect`)·화면 동일성 판정은 **늘 정규형**이다. 레이아웃에서 `route.path`
+  를 비교하거나 링크 주소를 조립할 때 끝 슬래시 변종을 따로 고려하지 않아도 된다.
+- 서버도 같은 규칙으로 301 한다([끝·연속 슬래시는 301 로 정규형에 모은다](../backend/routing.md)).
 
 ### mergeQuery 옵션
 

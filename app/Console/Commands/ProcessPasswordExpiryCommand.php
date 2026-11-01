@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Privacy\ManualRun\PasswordExpiryStageRunner;
 use App\Services\PasswordExpiryService;
 use Illuminate\Console\Command;
@@ -31,6 +32,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcessPasswordExpiryCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 이름 및 시그니처
      *
@@ -39,13 +42,6 @@ class ProcessPasswordExpiryCommand extends Command
     protected $signature = 'auth:process-password-expiry
                             {--dry-run : 실제 처리 없이 단계별 대상 건수만 확인}
                             {--scheduled : 스케줄러 호출 표시 (기록용) — 꺼짐 판정은 이 플래그와 무관하게 항상 선행한다}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '비밀번호 만료 예정 회원에게 사전 안내를 보내고, 만료된 회원에게 만료 알림을 보내며 설정에 따라 로그인을 해제합니다.';
 
     /**
      * @param  PasswordExpiryService  $service  비밀번호 만료 정책 서비스

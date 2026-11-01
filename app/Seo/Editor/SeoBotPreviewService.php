@@ -22,6 +22,11 @@ use App\Seo\Contracts\SeoRendererInterface;
  */
 class SeoBotPreviewService
 {
+    /**
+     * 운영과 같은 렌더 파이프라인을 주입받습니다.
+     *
+     * @param  SeoRendererInterface  $renderer  SEO 렌더러 (`renderFromResolved` 공통 파이프라인)
+     */
     public function __construct(
         private readonly SeoRendererInterface $renderer,
     ) {}
@@ -37,6 +42,8 @@ class SeoBotPreviewService
      * @param  string|null  $moduleId  소속 모듈 식별자
      * @param  string|null  $pluginId  소속 플러그인 식별자
      * @param  array  $seedContext  편집기 샘플 컨텍스트(sampleData/sampleGlobal._local 등)
+     * @param  mixed  $routeTitle  편집 중인 라우트의 meta.title — 운영처럼 다른 제목 단계가 모두 빌 때 쓴다(null 이면 쓰지 않음)
+     * @param  string|null  $storedLayoutName  레이아웃 전체 이름 — 훅 컨텍스트 `storedLayoutName` (null 이면 레이아웃의 이름)
      * @return string|null 완성 HTML, SEO 비활성 시 null
      */
     public function render(
@@ -48,6 +55,8 @@ class SeoBotPreviewService
         ?string $moduleId,
         ?string $pluginId,
         array $seedContext,
+        mixed $routeTitle = null,
+        ?string $storedLayoutName = null,
     ): ?string {
         $layoutName = $layout['layout_name'] ?? ($layout['name'] ?? '');
 
@@ -70,6 +79,10 @@ class SeoBotPreviewService
             $context,
             null,
             true,
+            // 아래 둘은 코어 구현(SeoRenderer)의 선택 인자다. 공개 인터페이스에 더하면 다른 구현체가
+            // 호환되지 않게 되므로 인터페이스는 그대로 두고, 이 인자를 모르는 구현체는 무시한다.
+            $routeTitle,
+            $storedLayoutName,
         );
     }
 

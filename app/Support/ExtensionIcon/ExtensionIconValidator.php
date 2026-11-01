@@ -237,11 +237,12 @@ final class ExtensionIconValidator
             return self::failure('svg', $size, $errors);
         }
 
+        // php-ext-guard: libxml 은 필수 dom·xml 이 그 위에 빌드돼 있어 필수 확장이 있으면 항상 있다
         $previous = libxml_use_internal_errors(true);
         $document = new \DOMDocument;
         $loaded = $document->loadXML($bytes, LIBXML_NONET | LIBXML_NOBLANKS);
-        libxml_clear_errors();
-        libxml_use_internal_errors($previous);
+        libxml_clear_errors(); // php-ext-guard: libxml 은 필수 dom·xml 의 토대
+        libxml_use_internal_errors($previous); // php-ext-guard: libxml 은 필수 dom·xml 의 토대
 
         if ($loaded === false || $document->documentElement === null) {
             return self::failure('svg', $size, ['svg_not_well_formed']);

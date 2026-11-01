@@ -5,7 +5,7 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
-## [engine-v1.86.0] - 2026-10-27
+## [engine-v1.87.0] - 2026-11-01
 
 ### Added
 
@@ -33,7 +33,7 @@
 - 화면 전환 직후 WebSocket 데이터소스 구독을 준비하는 사이(모듈 import 대기) 새 화면 전환이 시작되면, 옛 화면 구독이 해제 목록 밖에 남아 계속 수신하던 문제를 고쳤습니다. 같은 `channel:event` 다중 구독이 각각 수신되는 지금은 새 화면 구독과 겹쳐 같은 이벤트를 두 번 받을 수 있었습니다. 구독을 마친 시점에 화면 전환이 바뀌었으면 그 구독을 바로 해제하고 목록에 싣지 않습니다 (TemplateApp.ts `handleRouteChange` WebSocket 구독부)
 - DevTools 의 엔진 기본 핸들러 목록이 13종만 보이던 문제를 고쳤습니다(`scrollIntoView`·`reloadExtensions`·`reloadModuleHandlers`·`reloadPluginHandlers`·`suppress` 누락). 기본 등록과 DevTools 목록이 한 목록(`ENGINE_MAP_HANDLER_META`)에서 나옵니다 (ActionDispatcher.ts `registerBuiltInHandlerMetadata`)
 
-## [engine-v1.85.0] - 2026-10-27
+## [engine-v1.86.0] - 2026-11-01
 
 ### Added
 
@@ -49,13 +49,42 @@
 - DataGrid 셀(`cellChildren`·`subRowChildren`)과 확장 행(`expandChildren`) 안의 `{{_computed.x}}` 가 늘 undefined 이던 문제(engine-v1.19.1 부모 문맥 병합 때부터). `G7Core.renderItemChildren` 이 셀 문맥에 빈 `_computed` 를 먼저 넣어 셀 렌더 함수의 부모 문맥 병합(없는 키만)이 막혔고, `renderExpandContent` 는 expandContext 평가에만 최신 계산값을 쓰고 자식 문맥에는 빈 객체를 넣었습니다. 셀 문맥의 `_computed` 기본값을 부모 컴포넌트의 최신 계산값(`componentContext.computedRef.current`, 없으면 `parentDataContext._computed`)으로 둡니다. 셀 문맥이 `_computed` 를 직접 주면 그 값이 이기고, 부모 문맥이 없는 호출(CardGrid)은 종전처럼 빈 객체입니다. 영향 화면: 통계 리포트 표(`_computed.reportName`), 이커머스 상품 목록 통화 열(`_computed.currencyDisplayColumns`) (G7CoreGlobals.ts. 잠금: `__tests__/G7CoreGlobals.itemChildrenComputed.test.ts` — 수정 전 3 red · 대조군 2)
 - 동작의 `confirm` 식이 빈 문구로 풀려도 빈 확인창이 뜨던 문제. 식 원문의 유무로 판정해 `confirm="{{hasToken ? '$t:…' : ''}}"` 가 묻지 않을 때도 `confirm('')` 을 불렀습니다. 이벤트 핸들러 경로와 `dispatchAction` 경로 모두 문구를 풀고 번역한 뒤 비었으면(빈 문자열·공백) 확인창 없이 실행합니다. 묻지 않으려면 식이 `''` 를 돌려줍니다(`false` 는 보간이 문자열 "false" 로 푼다) (ActionDispatcher.ts `resolveConfirmMessage`. 잠금: `__tests__/ActionDispatcher.emptyConfirm.test.ts` — 수정 전 8 red · 대조군 4)
 
-## [engine-v1.84.0] - 2026-10-23
+## [engine-v1.85.0] - 2026-11-01
 
 ### Added
 
 - 로그인 인계 코드를 교환해 로그인하는 `loginHandoff` 액션과 `AuthManager.loginWithHandoff()` 를 추가했습니다. 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 코어가 발급한 일회용 코드(`/login?login_handoff=…`)를 로그인 화면이 `POST /api/auth/login/handoff` 로 바꾸면, 서버가 잠금·회원 상태·2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리합니다. 반환 모양은 `login` 액션과 키 단위로 같아(`login`·`loginHandoff` 가 같은 변환 `toLoginResponse` 를 공유) 로그인 화면의 2단계 인증 블록·비밀번호 변경 블록·휴면 해제 안내 분기를 그대로 씁니다. `/api/auth/*` globalHeaders(장바구니 키 등)도 같이 실립니다. 사용자 인증 타입만 지원하며(`AuthConfig.handoffEndpoint`), 관리자 타입은 요청 없이 오류입니다. 레이아웃 편집기 액션 목록에도 「로그인 인계 코드로 로그인」 이 추가됐습니다 (auth/AuthManager.ts `loginWithHandoff`, ActionDispatcher.ts `handleLoginHandoff`·`toLoginResponse`, layout-editor/spec/coreActionRecipes.ts, 회귀: `auth/__tests__/AuthManager.handoff.test.ts`·`__tests__/actions/loginHandoff.test.ts`)
 - 엔진 화면 안에서 서버의 개발자 화면(코어 7.2.0 의 `routes/custom.php`) 주소로 이동하면 엔진이 그 주소를 직접 그리지 않고 전체 페이지 이동(`location.assign`)으로 서버에 넘깁니다. 뒤로·앞으로 가기로 그 주소에 돌아오면 페이지를 다시 적재(`location.reload`)해 서버가 그리게 합니다. 판정은 셸이 싣는 `G7Config.customRoutes = { user: [...], admin: [...] }`(라라벨 라우트 URI 의 `{param}` 구간을 `*` 로 바꾼 GET 패턴, `*` = 한 구간)로 하고, `/admin` 으로 시작하면 관리자 목록과 비교합니다. 쿼리·해시·끝 슬래시를 떼고 퍼센트 인코딩(한글)을 풀어 비교하며, 다른 출처 주소는 대상이 아닙니다. 패턴이 없으면(개발자 라우트 없음) 종전과 완전히 같습니다. 종전에는 템플릿 라우트에도 같은 주소(예: `/board/:slug`)가 있으면 엔진이 `pushState` 로 그려 개발자 화면이 보이지 않았고, 템플릿 라우트에 없는 주소만 navigate 대체 동작(`location.assign`)으로 우연히 서버에 갔습니다 (routing/CustomRouteMatcher.ts 신설, routing/Router.ts `executeNavigation`·`handlePopState`, 회귀: `routing/__tests__/CustomRouteNavigation.test.ts`)
 - 개발자 화면 주소 판정은 서버 라우트의 경로 제약을 따릅니다. 패턴의 `*` 는 제약 없는 한 구간, `{정규식}` 은 그 구간 전체가 정규식과 맞아야 하는 구간이며(예: `/board/{slug}/{id}` 에 `whereNumber('id')` 면 `/board/*/{[0-9]+}`), 구간 수가 같아야 합니다. 제약을 잃으면 `/board/free/write` 처럼 서버가 그리지 않는 엔진 주소까지 전체 이동으로 넘어갑니다 (CustomRouteMatcher.ts, 회귀: `CustomRouteNavigation.test.ts` route_constraints_respected)
+
+## [engine-v1.84.1] - 2026-10-31
+
+### Fixed
+
+- 사이트에 `Content-Security-Policy: script-src 'self'`(unsafe-inline 없음)를 걸면 엔진 공통 오류 화면의 「새로고침」 버튼이 눌러도 반응하지 않던 문제(공개#158) — 버튼 템플릿의 `onclick`·`onmouseover`·`onmouseout` 인라인 속성은 그 정책에서 실행되지 않는다. 버튼에 `data-g7-error-reload` 표식만 두고 그리기 직후 `click`·`mouseenter`·`mouseleave` 리스너로 묶는다. 같은 모양인 레이아웃 로드 실패 화면(`LayoutLoader.renderErrorState`)도 함께 고쳤다. 발생: `ErrorDisplay` 버튼은 처음 생길 때부터(2025-12), `renderErrorState` 는 LayoutLoader 도입 때부터(2025-11) 인라인 속성이었다 (ErrorDisplay.ts `render`, LayoutLoader.ts `renderErrorState`)
+
+회귀 잠금: `__tests__/ErrorDisplay.noInlineHandler.test.ts`(2 — 수정 전 2 red) · `__tests__/LayoutLoader.noInlineHandler.test.ts`(1 — 수정 전 red) · `__tests__/LayoutLoader.test.ts` 「새로고침 버튼을 포함한다」(인라인 onclick 단언 → 표식 단언)
+
+## [engine-v1.84.0] - 2026-10-27
+
+### Added
+
+- 전역 상태 `_global.activeModules`·`_global.activePlugins` — 활성 모듈·플러그인 식별자 배열. 서버가 싣던 `G7Config.activeModules`·`activePlugins`(메타 객체 배열)에서 `identifier` 만 뽑는다. `_global.modules` 는 공개 설정이 있는 활성 모듈만 담아 「모듈이 켜져 있나」를 판정할 수 없었다. 레이아웃은 `{{_global.activeModules?.includes('id') ?? true}}` 한 모양으로 가린다 — 키가 없는 옛 서버에서는 `?? true` 로 「켜짐」. 원본 `G7Config` 배열은 그대로 둔다(편집기·핸들러 대기가 읽음). 전역 상태 계약(`G7Core.stateContracts`) 코어 예약 이름에 두 키 추가 (TemplateApp.ts `loadG7Config`·`loadActiveExtensionIdentifiers`)
+- `Route` 타입에 선택 필드 `requires?: {modules?, plugins?}` — 서버가 routes 응답을 만들 때 적힌 확장이 모두 활성인 라우트만 싣는다. 클라이언트는 읽지 않는다(타입 정합) (routing/Router.ts)
+
+### Fixed
+
+- 오류 화면(404·403·500)이 레이아웃 데이터 소스의 `if` 를 평가하지 않고 모두 불러, 꺼진 모듈의 공통 데이터 소스(예: `_user_base` 의 장바구니 수)를 오류 화면에서만 호출하던 문제 — 일반 화면과 같은 `filterByCondition` 으로 거른다 (`ErrorPageHandler.renderError`, 잠금 `__tests__/ErrorPageHandler.test.ts` 「데이터 소스 if 조건」)
+- (검색봇 화면 — 표현식 동형) 봇 화면 평가기가 옵셔널 체이닝 메서드 호출 `list?.includes('x')` 를 풀지 못해 null 이 되고, `?? true` 와 묶이면 목록에 없어도 참이던 문제 (app/Seo/ExpressionEvaluator.php `parseCallExpression`)
+- 봇 화면 props 평가(`evaluateRaw`)에서 `a.includes(x) ?? true` 처럼 메서드 호출 뒤에 연산자가 오면 ` ?? true` 를 프로퍼티 이름으로 읽어 null 이 되던 문제 — 켜진 모듈에서도 거짓이 됐다 (app/Seo/ExpressionEvaluator.php `resolveToValue`)
+- (검색봇 화면 — 표현식 동형) 봇 화면 평가기가 `+` 를 풀지 못해 `'/' + (route_path ?? 'shop')` 같은 경로 조립이 빈 값이 되던 문제 — 상점 경로를 바꾼 사이트의 봇 화면 「쇼핑」 링크가 `/shop/products` 로 남았다. JS `+` 와 같게 한쪽이 문자열이면 잇고 둘 다 수면 더한다. 함께: 값 자리(`evaluateRaw`)의 삼항·`??` 를 메서드 호출 판정보다 먼저 봐서 `c ? '' : '/'.concat(x)` 가 c 참일 때 x 를 돌려주던 문제, `??` 가 빈 문자열을 없는 값으로 보던 문제(루트 배치 `''` 가 `'/shop'` 으로 바뀜), `'/' + 'shop'` 을 리터럴 하나로 읽던 문제, 문자열 경로의 `??` 도 빈 문자열을 값으로 둔다(두 경로 같은 답), 값 자리에서 `||`·`&&`·비교·앞 `!`·경로끼리 산술(`n * m`)을 JS 우선순위로 푼다, `filter(Boolean)`, `Math.min/max` 인자 하나·수 아닌 인자. 평가기가 모르는 문법(즉시 실행 함수 등)이 `+` 피연산자면 잇지 않고 빈 값. 번들 `+` 식 827개 × 문맥 2 를 브라우저 엔진과 대조해 수정 전보다 나빠진 결과 0 (app/Seo/ExpressionEvaluator.php `splitTopLevelPlus`·`addOperands`·`evaluateOperatorsRaw`·`evaluateArithmeticRaw`·`resolveToValue`)
+- seo-config `fields` 모드의 `attrs` 가 `{x}` 하나짜리 패턴만 치환해 `"{shopBase}/products"` 가 중괄호째 href 로 나가던 문제 — `item_attrs` 와 같이 섞인 패턴을 치환한다 (app/Seo/ComponentHtmlMapper.php `renderFieldWithAttrs`)
+- 방문자 통계 트래커가 화면 크기를 알려 주지 않는 환경(앱 안 웹뷰·헤드리스 브라우저)에서 해상도를 `0x0` 으로 실어, 서버가 형식 오류로 그 방문을 버리던 문제 — 가로·세로 중 하나라도 0 이하이면 `res` 를 싣지 않는다(서버도 `0x0` 류는 비운 값으로 받는다) (analytics/Tracker.ts `screenResolution`, 잠금 `analytics/__tests__/Tracker.test.ts` 「화면 크기를 알 수 없으면(0x0)」)
+- 끝·연속 슬래시 주소(`/admin/settings/`, `/board//free`)로 들어오면 라우터가 매칭에만 정규형을 쓰고 `routeChange.path`·로그인 복귀 주소(`redirect`)·확정 주소에는 원본 `/x/` 를 남겨, 화면 동일성 판정이 `/x` 와 다른 화면으로 보던 문제(공개#156) — `Router.navigateToCurrentPath()` 가 진입 즉시 주소창을 정규형으로 `replaceState` 하고(히스토리 항목 수 그대로, 쿼리·해시 보존) 이후 전부 정규형을 쓴다. `normalizePathname()` 은 중간 연속 슬래시도 줄인다(서버 `RequestPath::normalize()` 와 같은 규칙). 발생: engine-v1.54.1 `normalizePathname` 도입 때부터 매칭 전용이었다. 같은 규칙을 `routing/normalizePathname.ts` 로 빼서, 라우터보다 먼저 주소를 읽는 두 자리도 정규형으로 비교한다 — 첫 화면 페이지뷰 거르기(`initialPath`, 원본이면 `/x/` 첫 진입이 비콘 2건)와 언어 전환 인계(`pendingLocaleSwitch.path`, 원본이면 주소만 바꾼 끝 슬래시 주소에서 전환할 때 저장 전 입력이 사라짐). 잠금: `routing/__tests__/Router.test.ts`(주소 정규화 6건 + 연속 슬래시 매칭 1건 — 수정 전 7 red) · `__tests__/TemplateApp.analyticsGuard.test.ts`(끝 슬래시 첫 진입 1건 — 수정 전 red, 비콘 2) · `__tests__/TemplateApp.localeSwitch.test.ts`(끝 슬래시 주소 언어 전환 1건 — 수정 전 red)
+
+- 레이아웃 편집기 [검색엔진] 탭의 봇 미리보기가 모듈 소유 화면(라우트 layout 이 `{모듈}.{레이아웃}`)을 미리 볼 때 모듈 식별자를 보내지 않아, 모듈 설정 기반 제목 틀·토글이 빠진 채 운영 봇 응답과 다른 결과를 보이던 문제(공개#154) — 편집 중인 라우트의 레이아웃 전체 이름을 요청 본문 `layout_name` 으로 보내고, 서버가 운영 봇 렌더와 같은 해석기로 모듈·플러그인 식별자를 채우고(명시 `module_id`·`plugin_id` 가 우선), 그 레이아웃을 쓰는 라우트의 `meta.title` 을 운영과 같은 제목 대체로 넘긴다(사이트 첫 화면 제외). 레이아웃 이름이 없는 편집(베이스·모달)은 키를 생략해 종전과 같다. 발생: engine-v1.50.0 미리보기 도입 때부터. 저장소 A/B·렌더 사이클·모달 스택 무접점(편집기 크롬 props 전달만) (layout-editor `PageSettingsModal`·`SeoForm` prop `routeLayoutName`·`SeoBotPreviewPanel` prop `layoutName`, 잠금 `layout-editor/__tests__/components/page-settings/SeoBotPreviewPanel.test.tsx` ⑧⑨·`SeoForm.test.tsx` 「봇 미리보기 레이아웃 이름 전달」 — 수정 전 2 red)
+
+회귀 잠금: `__tests__/TemplateApp.activeExtensions.test.ts`(7 — 수정 전 4 red, 대조군 3) · `tests/Unit/Seo/SeoGlobalActiveExtensionsTest.php`(가드 식 3종 × 문맥 4종 브라우저 동형·props·fields `if`·데이터소스 `if`·`_global` 주입) · `tests/Feature/Template/RoutesRequiresFilterTest.php`(routes `requires`)
 
 ## [engine-v1.83.0] - 2026-10-23
 

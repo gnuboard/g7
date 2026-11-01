@@ -1,4 +1,4 @@
-feature: 정보 수정 재확인 관문 — 서버가 고르는 수단과 외부 재확인 복귀 (sirsoft-basic 1.3.0, 코어 7.2.0 B6)
+feature: 정보 수정 재확인 관문 — 서버가 고르는 수단과 외부 재확인 복귀 (sirsoft-basic 1.4.0, 코어 7.2.0 B6)
 
 description: |
   비밀번호 없는 회원의 정보 수정 관문(`partials/mypage/profile/_password_verify_section`)은 재확인 요청

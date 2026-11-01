@@ -7,7 +7,7 @@
  * 보인다. 서버가 잠긴 칸 변경을 422 `user.field_locked`(칸별 `errors.{field}`)로 거절하면 그 칸 아래에 오류를 싣는다.
  *
  * @vitest-environment jsdom
- * @since 1.3.0
+ * @since 1.4.0
  */
 
 import React from 'react';

@@ -116,6 +116,67 @@ class RefundSpecConformanceTest extends PluginTestCase
     }
 
     /**
+     * 영세 금액은 승인 때처럼 비과세로 나눈다 — 과세 30,000 중 영세 10,000·부가세 1,818 을 15,000 부분취소하면
+     * 비과세 5,000 · 과세 공급가 9,091 · 부가세 909 (이커머스 1.3.3, #612).
+     *
+     * @scenario method=card
+     *
+     * @effects tg03_partial_cancel_sends_tax_split
+     *
+     * @return void 반환값 없음
+     */
+    public function test_tg03_partial_cancel_treats_zero_rated_as_free(): void
+    {
+        $order = $this->paidOrder([], ['total_tax_amount' => 30000, 'total_zero_rated_amount' => 10000, 'total_vat_amount' => 1818, 'total_tax_free_amount' => 0]);
+        $api = $this->createMock(NhnKcpApiService::class);
+        $api->expects($this->once())->method('cancelPayment')
+            ->with($this->anything(), $this->anything(), 15000, $this->anything(), true, 30000, null, [
+                'tax_flag' => 'TG03',
+                'mod_tax_mny' => '9091',
+                'mod_vat_mny' => '909',
+                'mod_free_mny' => '5000',
+            ])
+            ->willReturn(['res_cd' => '0000', 'tno' => $order->payment->transaction_id]);
+        $this->app->instance(NhnKcpApiService::class, $api);
+
+        $result = app(PaymentRefundListener::class)->processRefund(['success' => false], $order, $order->payment, 15000.0, '부분');
+
+        $this->assertTrue($result['success']);
+    }
+
+    /**
+     * 영세만 든 주문(과세 30,000 전부 영세·부가세 0)을 15,000 부분취소하면 전부 비과세로 보낸다 —
+     * 공급가 0 · 부가세 0 · 비과세 15,000 (이커머스 1.3.3, #612).
+     *
+     * 승인 때 전액을 비과세로 넘겼으므로(TG03) 취소도 같은 분류여야 한다. 영세를 과세로 보면 비과세 몫이 0 이라
+     * 과세 분리를 싣지 않아, KCP 가 15,000 을 과세 취소로 받아 승인 비과세 잔액과 어긋난다.
+     *
+     * @scenario method=card
+     *
+     * @effects tg03_partial_cancel_sends_tax_split
+     *
+     * @return void 반환값 없음
+     */
+    public function test_tg03_partial_cancel_of_zero_rated_only_order_is_all_free(): void
+    {
+        $order = $this->paidOrder([], ['total_tax_amount' => 30000, 'total_zero_rated_amount' => 30000, 'total_vat_amount' => 0, 'total_tax_free_amount' => 0]);
+        $api = $this->createMock(NhnKcpApiService::class);
+        $api->expects($this->once())->method('cancelPayment')
+            ->with($this->anything(), $this->anything(), 15000, $this->anything(), true, 30000, null, [
+                'tax_flag' => 'TG03',
+                'mod_tax_mny' => '0',
+                'mod_vat_mny' => '0',
+                'mod_free_mny' => '15000',
+            ])
+            ->willReturn(['res_cd' => '0000', 'tno' => $order->payment->transaction_id]);
+        $this->app->instance(NhnKcpApiService::class, $api);
+
+        $result = app(PaymentRefundListener::class)->processRefund(['success' => false], $order, $order->payment, 15000.0, '부분');
+
+        $this->assertTrue($result['success']);
+    }
+
+    /**
      * 과세만 있는 주문의 부분취소, 복합과세 주문의 전액취소에는 과세 분리를 싣지 않는다.
      *
      * @scenario method=card

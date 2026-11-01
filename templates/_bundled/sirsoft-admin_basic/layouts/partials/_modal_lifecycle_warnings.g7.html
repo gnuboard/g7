@@ -3,7 +3,9 @@
   각 목록 화면의 성공 갈래가 그 목록을 _global.lifecycleWarnings 에 담고 이 창을 연다 — 경고가 없으면 열지 않는다.
   목록은 접혀 있고 「자세히」를 눌러 펼친다(_global.lifecycleWarningsOpen). 여는 쪽이 접힘으로 되돌린다.
   항목마다 level 이 있다 — warning(반영되지 않은 실패)·notice(실패는 아닌 안내, 예: 압축 경로 정규화). 실패가 하나도 없으면
-  「실패」 제목·문구 대신 안내 제목·문구를 쓴다. -->
+  「실패」 제목·문구 대신 안내 제목·문구를 쓴다.
+  대상 칸은 식별자·경로를 보이되, 서버가 target_name(사람이 읽는 이름)을 실은 항목은 그 이름을 보인다(코어 7.1.4 — 지금은 dependents 단계만).
+  단계 이름은 admin.extensions.lifecycle_warnings.steps.{step} 번역이 있으면 그 이름으로 보인다. 지금 언어에 없으면(옛 언어팩) 대체 언어의 이름을, 어느 언어에도 없으면(새 단계) 서버가 보낸 원문을 보인다. -->
 <partial description="확장 작업 경고 결과 모달" editor_label="$t:admin.modal_label.lifecycle_warnings_modal">
   <modal data-type="composite" data-ref="lifecycle_warnings_modal" title="{{(_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice') ? $t('admin.extensions.lifecycle_warnings.title') : $t('admin.extensions.lifecycle_warnings.notice_title')}}" size="md">
     <div class="py-2">
@@ -29,8 +31,9 @@
       <div data-ref="lifecycle_warnings_list" data-if="{{_global.lifecycleWarningsOpen === true}}" class="mt-2 max-h-[50vh] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-100 dark:divide-gray-700">
         <div data-each="warning, $idx in {{_global.lifecycleWarnings ?? []}}" class="p-3">
           <div class="flex flex-wrap items-center gap-2">
-            <span class="{{warning?.level === 'notice' ? 'px-2 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' : 'px-2 py-0.5 text-xs font-medium rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'}}">{{warning.step}}</span>
-            <span class="text-sm font-mono break-all text-gray-800 dark:text-gray-200">{{warning.target}}</span>
+            <span class="{{warning?.level === 'notice' ? 'px-2 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' : 'px-2 py-0.5 text-xs font-medium rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'}}">{{$t('admin.extensions.lifecycle_warnings.steps.' + warning.step) !== 'admin.extensions.lifecycle_warnings.steps.' + warning.step ? $t('admin.extensions.lifecycle_warnings.steps.' + warning.step) : warning.step}}</span>
+            <!-- 서버가 대상 이름(target_name)을 실어 보낸 항목(의존하는 확장 안내)만 식별자 대신 이름을 보인다. 나머지는 식별자·경로를 고정폭 글꼴로 -->
+            <span class="{{warning?.target_name ? 'text-sm break-all text-gray-800 dark:text-gray-200' : 'text-sm font-mono break-all text-gray-800 dark:text-gray-200'}}">{{warning?.target_name ?? warning.target}}</span>
           </div>
           <p class="mt-1 text-sm break-all text-gray-600 dark:text-gray-400">{{warning.message}}</p>
         </div>

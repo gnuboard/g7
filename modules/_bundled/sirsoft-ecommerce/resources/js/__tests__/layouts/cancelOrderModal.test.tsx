@@ -4,12 +4,14 @@
  *
  * @description
  * - _modal_cancel_order.json 파셜의 구조적 정합성 검증
- * - 취소 사유 Select 드롭다운 7개 옵션 렌더링 확인
+ * - 취소 사유 Select 드롭다운(목록형, refundReasons 데이터소스) 선택지 확인
  * - 기타 선택 시 Textarea 표시 조건 확인
  * - 환불 우선순위 라디오 조건부 렌더링 확인
  * - 환불 예정금액 섹션 구조 확인
  * - 복원 쿠폰 iteration 구조 확인
  * - 배송비 상세 iteration 구조 확인
+ *
+ * @scenario-manifest tests/scenarios/admin-cancel-order-modal-layout.yaml
  *
  * @vitest-environment node
  */
@@ -54,17 +56,23 @@ function findNode(node: any, predicate: (n: any) => boolean): any | undefined {
 // ========== 테스트 ==========
 
 describe('관리자 취소 모달 — 기본 구조', () => {
+    // @scenario section=structure
+    // @effects cancel_modal_structure_contract
     it('모달이 올바른 id, type, name을 가져야 함', () => {
         expect(modalCancelOrder.id).toBe('modal_cancel_order');
         expect(modalCancelOrder.type).toBe('composite');
         expect(modalCancelOrder.name).toBe('Modal');
     });
 
+    // @scenario section=structure
+    // @effects cancel_modal_structure_contract
     it('모달 제목이 다국어 키를 사용해야 함', () => {
         expect(modalCancelOrder.props.title).toContain('$t:');
         expect(modalCancelOrder.props.title).toContain('cancel.title');
     });
 
+    // @scenario section=structure
+    // @effects cancel_modal_structure_contract
     it('상태 초기화 + 환불 예상은 모달 partial 의 onMount 가 아닌 부모 핸들러가 담당한다', () => {
         // 모달이 isolated scope partial 로 분리되어 onMount 패턴이 더 이상 동작하지
         // 않음 → 모달 열기 직전 buildOrderDetailBulkConfirmData 핸들러에서
@@ -75,6 +83,8 @@ describe('관리자 취소 모달 — 기본 구조', () => {
 });
 
 describe('관리자 취소 모달 — 취소사유 Select 동적 옵션 (refundReasons 데이터소스)', () => {
+    // @scenario section=reason_select
+    // @effects cancel_modal_reason_select_contract
     it('취소 사유 Select가 존재해야 함', () => {
         const select = findNode(modalCancelOrder, (n) =>
             n.name === 'Select' && n.props?.value?.includes('cancelReason'),
@@ -82,28 +92,28 @@ describe('관리자 취소 모달 — 취소사유 Select 동적 옵션 (refundR
         expect(select).toBeDefined();
     });
 
-    it('Select 의 옵션이 refundReasons 데이터소스 iteration 으로 동적 렌더링된다', () => {
+    // @scenario section=reason_select
+    // @effects cancel_modal_reason_select_contract
+    it('Select 의 옵션이 refundReasons 데이터소스를 펼친 목록형 선택지(props.options)로 동적 렌더링된다', () => {
         // 7종 hardcoded enum (order_mistake, changed_mind, ... etc) → refundReasons
-        // 데이터소스 + reason.code/localized_name iteration 으로 변경됨
+        // 데이터소스 + reason.code/localized_name 으로 변경됨. 선택지는 `<option>` 반복 자식(브라우저 기본 선택상자)이
+        // 아니라 options 식으로 주어 관리자 템플릿의 목록형 드롭다운으로 그린다.
         const select = findNode(modalCancelOrder, (n) =>
             n.name === 'Select' && n.props?.value?.includes('cancelReason'),
         );
-        const iterationOption = findNode(select, (n: any) =>
-            n.name === 'Option' && typeof n.iteration?.source === 'string'
-                && n.iteration.source.includes('refundReasons'),
-        );
-        expect(iterationOption).toBeDefined();
-        expect(iterationOption.iteration.item_var).toBe('reason');
-        expect(iterationOption.props?.value).toContain('reason.code');
-        expect(iterationOption.text).toContain('reason.localized_name');
+        expect(findNode({ children: select.children ?? [] }, (n: any) => n.name === 'Option')).toBeUndefined();
+        const options = String(select.props?.options ?? '');
+        expect(options).toMatch(/^\{\{[\s\S]*\}\}$/);
+        expect(options).toContain('refundReasons');
+        expect(options).toContain('reason.code');
+        expect(options).toContain('reason.localized_name');
 
-        // placeholder 옵션은 정적으로 유지됨
-        const placeholderOption = findNode(select, (n: any) =>
-            n.name === 'Option' && n.props?.value === '',
-        );
-        expect(placeholderOption).toBeDefined();
+        // placeholder 선택지(빈 값)는 맨 앞에 고정으로 유지됨
+        expect(options).toContain("{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder') }");
     });
 
+    // @scenario section=reason_select
+    // @effects cancel_modal_reason_select_contract
     it('Select의 change 액션이 setState로 cancelReason을 업데이트해야 함', () => {
         const select = findNode(modalCancelOrder, (n) =>
             n.name === 'Select' && n.props?.value?.includes('cancelReason'),
@@ -117,6 +127,8 @@ describe('관리자 취소 모달 — 취소사유 Select 동적 옵션 (refundR
 });
 
 describe('관리자 취소 모달 — 기타 선택 시 Textarea 표시', () => {
+    // @scenario section=etc_textarea
+    // @effects cancel_modal_etc_textarea_contract
     it('Textarea가 존재하고 if 조건이 cancelReason === "etc"이어야 함', () => {
         const textarea = findNode(modalCancelOrder, (n) => n.name === 'Textarea');
         expect(textarea).toBeDefined();
@@ -124,6 +136,8 @@ describe('관리자 취소 모달 — 기타 선택 시 Textarea 표시', () => 
         expect(textarea.if).toContain("'etc'");
     });
 
+    // @scenario section=etc_textarea
+    // @effects cancel_modal_etc_textarea_contract
     it('Textarea의 input 액션이 cancelReasonDetail을 업데이트해야 함', () => {
         const textarea = findNode(modalCancelOrder, (n) => n.name === 'Textarea');
         const inputAction = textarea.actions?.find((a: any) => a.type === 'input');
@@ -133,6 +147,8 @@ describe('관리자 취소 모달 — 기타 선택 시 Textarea 표시', () => 
         expect(inputAction.params.cancelReasonDetail).toContain('$event.target.value');
     });
 
+    // @scenario section=etc_textarea
+    // @effects cancel_modal_etc_textarea_contract
     it('Textarea에 placeholder 다국어 키가 있어야 함', () => {
         const textarea = findNode(modalCancelOrder, (n) => n.name === 'Textarea');
         expect(textarea.props.placeholder).toContain('$t:');
@@ -141,12 +157,16 @@ describe('관리자 취소 모달 — 기타 선택 시 Textarea 표시', () => 
 });
 
 describe('관리자 취소 모달 — 환불우선순위 라디오 렌더링', () => {
+    // @scenario section=refund_priority
+    // @effects cancel_modal_refund_priority_contract
     it('환불 우선순위 섹션이 refund_priority_label 다국어 키와 함께 정의되어 있다', () => {
         // 표시 조건이 refund_points_amount > 0 → 항상 표시 + 우선순위 핸들러 분기로 변경됨
         const json = JSON.stringify(modalCancelOrder);
         expect(json).toContain('refund_priority_label');
     });
 
+    // @scenario section=refund_priority
+    // @effects cancel_modal_refund_priority_contract
     it('pg_first 라디오가 존재해야 함', () => {
         const pgFirstRadio = findNode(modalCancelOrder, (n) =>
             n.name === 'Input' && n.props?.type === 'radio' && n.props?.name === 'refundPriority' && n.props?.value === 'pg_first',
@@ -154,6 +174,8 @@ describe('관리자 취소 모달 — 환불우선순위 라디오 렌더링', (
         expect(pgFirstRadio).toBeDefined();
     });
 
+    // @scenario section=refund_priority
+    // @effects cancel_modal_refund_priority_contract
     it('points_first 라디오가 존재해야 함', () => {
         const pointsFirstRadio = findNode(modalCancelOrder, (n) =>
             n.name === 'Input' && n.props?.type === 'radio' && n.props?.name === 'refundPriority' && n.props?.value === 'points_first',
@@ -161,6 +183,8 @@ describe('관리자 취소 모달 — 환불우선순위 라디오 렌더링', (
         expect(pointsFirstRadio).toBeDefined();
     });
 
+    // @scenario section=refund_priority
+    // @effects cancel_modal_refund_priority_contract
     it('환불 우선순위 라디오의 change 핸들러가 changeRefundPriority를 호출해야 함', () => {
         const priorityRadios = findAllNodes(modalCancelOrder, (n) =>
             n.name === 'Input' && n.props?.type === 'radio' && n.props?.name === 'refundPriority',
@@ -175,6 +199,8 @@ describe('관리자 취소 모달 — 환불우선순위 라디오 렌더링', (
         }
     });
 
+    // @scenario section=refund_priority
+    // @effects cancel_modal_refund_priority_contract
     it('환불 우선순위 라벨에 다국어 키가 사용되어야 함', () => {
         const json = JSON.stringify(modalCancelOrder);
         expect(json).toContain('refund_priority_label');
@@ -184,12 +210,16 @@ describe('관리자 취소 모달 — 환불우선순위 라디오 렌더링', (
 });
 
 describe('관리자 취소 모달 — 환불예정금액 섹션 렌더링', () => {
+    // @scenario section=refund_estimate
+    // @effects cancel_modal_refund_estimate_contract
     it('환불 비교표 제목이 comparison_title 다국어 키를 사용해야 함', () => {
         // refund_estimate_title 단일 표 → 전/후 비교표 (comparison_title)
         const json = JSON.stringify(modalCancelOrder);
         expect(json).toContain('cancel.comparison_title');
     });
 
+    // @scenario section=refund_estimate
+    // @effects cancel_modal_refund_estimate_contract
     it('로딩 상태 영역이 refundLoading 조건으로 표시되어야 함', () => {
         const loadingDiv = findNode(modalCancelOrder, (n) =>
             n.if === '{{_local.refundLoading}}' && n.name === 'Div',
@@ -202,6 +232,8 @@ describe('관리자 취소 모달 — 환불예정금액 섹션 렌더링', () =
         expect(spinner.props.className).toContain('animate-spin');
     });
 
+    // @scenario section=refund_estimate
+    // @effects cancel_modal_refund_estimate_contract
     it('환불 상세 영역이 refundEstimate 존재 && !refundLoading 조건으로 표시되어야 함', () => {
         const detailDiv = findNode(modalCancelOrder, (n) =>
             n.if && n.if.includes('_local.refundEstimate') && n.if.includes('!_local.refundLoading'),
@@ -209,6 +241,8 @@ describe('관리자 취소 모달 — 환불예정금액 섹션 렌더링', () =
         expect(detailDiv).toBeDefined();
     });
 
+    // @scenario section=refund_estimate
+    // @effects cancel_modal_refund_estimate_contract
     it('상품 환불액(subtotal_amount) + 최종 환불 예정액(refund_total) 라벨 키가 존재해야 함', () => {
         // refund_product_amount → subtotal_amount 로 라벨 정규화 (mypageOrders 와 동일)
         const json = JSON.stringify(modalCancelOrder);
@@ -216,6 +250,8 @@ describe('관리자 취소 모달 — 환불예정금액 섹션 렌더링', () =
         expect(json).toContain('cancel.refund_total');
     });
 
+    // @scenario section=refund_estimate
+    // @effects cancel_modal_refund_estimate_contract
     it('배송비가 base_shipping/extra_shipping 항목으로 분리 표시된다', () => {
         // shipping_difference 단일 행 → base_shipping/extra_shipping 분리
         const json = JSON.stringify(modalCancelOrder);
@@ -223,6 +259,8 @@ describe('관리자 취소 모달 — 환불예정금액 섹션 렌더링', () =
         expect(json).toContain('cancel.extra_shipping');
     });
 
+    // @scenario section=refund_estimate
+    // @effects cancel_modal_refund_estimate_contract
     it('할인 항목이 product/order/code 쿠폰별로 분리 표시된다', () => {
         // discount_difference 단일 행 → 상품/주문/코드 쿠폰 별도 라인
         const json = JSON.stringify(modalCancelOrder);
@@ -231,6 +269,8 @@ describe('관리자 취소 모달 — 환불예정금액 섹션 렌더링', () =
         expect(json).toContain('cancel.code_discount');
     });
 
+    // @scenario section=refund_estimate
+    // @effects cancel_modal_refund_estimate_contract
     it('마일리지 사용액 라벨(points_used)이 비교표 항목으로 존재한다', () => {
         // 단독 환불 행 → 비교표의 points_used 라벨 (전/후 사용액 표시)
         const json = JSON.stringify(modalCancelOrder);
@@ -239,6 +279,8 @@ describe('관리자 취소 모달 — 환불예정금액 섹션 렌더링', () =
 });
 
 describe('관리자 취소 모달 — 복원쿠폰 섹션 렌더링', () => {
+    // @scenario section=restored_coupons
+    // @effects cancel_modal_restored_coupons_contract
     it('복원 쿠폰 섹션이 restored_coupons.length > 0 조건으로 표시되어야 함', () => {
         const couponSection = findNode(modalCancelOrder, (n) =>
             n.if && n.if.includes('restored_coupons') && n.if.includes('length > 0'),
@@ -246,6 +288,8 @@ describe('관리자 취소 모달 — 복원쿠폰 섹션 렌더링', () => {
         expect(couponSection).toBeDefined();
     });
 
+    // @scenario section=restored_coupons
+    // @effects cancel_modal_restored_coupons_contract
     it('복원 쿠폰 iteration이 올바른 source와 item_var를 가져야 함', () => {
         const couponIteration = findNode(modalCancelOrder, (n) =>
             n.iteration?.source?.includes('restored_coupons'),
@@ -255,6 +299,8 @@ describe('관리자 취소 모달 — 복원쿠폰 섹션 렌더링', () => {
         expect(couponIteration.iteration.index_var).toBe('couponIdx');
     });
 
+    // @scenario section=restored_coupons
+    // @effects cancel_modal_restored_coupons_contract
     it('복원 쿠폰 항목에 쿠폰명과 할인금액 바인딩이 있어야 함', () => {
         const couponIteration = findNode(modalCancelOrder, (n) =>
             n.iteration?.source?.includes('restored_coupons'),
@@ -264,6 +310,8 @@ describe('관리자 취소 모달 — 복원쿠폰 섹션 렌더링', () => {
         expect(json).toContain('coupon.discount_amount');
     });
 
+    // @scenario section=restored_coupons
+    // @effects cancel_modal_restored_coupons_contract
     it('복원 쿠폰 라벨과 안내 문구에 다국어 키가 사용되어야 함', () => {
         const json = JSON.stringify(modalCancelOrder);
         expect(json).toContain('restored_coupons_label');
@@ -274,6 +322,8 @@ describe('관리자 취소 모달 — 복원쿠폰 섹션 렌더링', () => {
 describe('관리자 취소 모달 — 배송비 표시 (전/후 비교표 통합)', () => {
     // shipping_details iteration 섹션이 별도 카드 → 전/후 비교표의 base_shipping
     // / extra_shipping 라벨로 통합됨
+    // @scenario section=shipping_display
+    // @effects cancel_modal_shipping_display_contract
     it('배송비 상세 iteration 섹션이 더 이상 존재하지 않는다 (비교표로 통합)', () => {
         const shippingIteration = findNode(modalCancelOrder, (n) =>
             n.iteration?.source?.includes('shipping_details'),
@@ -281,6 +331,8 @@ describe('관리자 취소 모달 — 배송비 표시 (전/후 비교표 통합
         expect(shippingIteration).toBeUndefined();
     });
 
+    // @scenario section=shipping_display
+    // @effects cancel_modal_shipping_display_contract
     it('배송비 라벨이 비교표 안에 base_shipping/extra_shipping 으로 표시된다', () => {
         const json = JSON.stringify(modalCancelOrder);
         expect(json).toContain('cancel.base_shipping');
@@ -289,6 +341,8 @@ describe('관리자 취소 모달 — 배송비 표시 (전/후 비교표 통합
 });
 
 describe('관리자 취소 모달 — validation 에러 UI', () => {
+    // @scenario section=validation_errors
+    // @effects cancel_modal_validation_errors_contract
     it('cancelValidationErrors 는 부모 핸들러(buildOrderDetailBulkConfirmData)에서 초기화된다', () => {
         // 모달 partial 의 lifecycle.onMount → 부모의 buildOrderDetailBulkConfirmData
         // 핸들러로 이전됨. 본 partial 자체에는 onMount 가 없음
@@ -296,6 +350,8 @@ describe('관리자 취소 모달 — validation 에러 UI', () => {
         expect(contentDiv.lifecycle?.onMount).toBeUndefined();
     });
 
+    // @scenario section=validation_errors
+    // @effects cancel_modal_validation_errors_contract
     it('validation 에러 요약 블록이 cancelValidationErrors 조건으로 표시되어야 함', () => {
         const errorSummary = findNode(modalCancelOrder, (n) =>
             n.comment === 'Validation 에러 요약' && n.if?.includes('cancelValidationErrors'),
@@ -303,6 +359,8 @@ describe('관리자 취소 모달 — validation 에러 UI', () => {
         expect(errorSummary).toBeDefined();
     });
 
+    // @scenario section=validation_errors
+    // @effects cancel_modal_validation_errors_contract
     it('validation 에러 요약에 triangle-exclamation 아이콘과 다국어 제목이 있어야 함', () => {
         const errorSummary = findNode(modalCancelOrder, (n) =>
             n.comment === 'Validation 에러 요약',
@@ -314,6 +372,8 @@ describe('관리자 취소 모달 — validation 에러 UI', () => {
         expect(json).toContain('validation_error_title');
     });
 
+    // @scenario section=validation_errors
+    // @effects cancel_modal_validation_errors_contract
     it('validation 에러 목록이 flatMap iteration으로 렌더링되어야 함', () => {
         const errorSummary = findNode(modalCancelOrder, (n) =>
             n.comment === 'Validation 에러 요약',
@@ -324,6 +384,8 @@ describe('관리자 취소 모달 — validation 에러 UI', () => {
         expect(li.iteration.item_var).toBe('errMsg');
     });
 
+    // @scenario section=validation_errors
+    // @effects cancel_modal_validation_errors_contract
     it('취소 사유 Select에 cancelValidationErrors?.reason 기반 적색 테두리가 적용되어야 함', () => {
         const select = findNode(modalCancelOrder, (n) =>
             n.name === 'Select' && n.props?.value?.includes('cancelReason'),
@@ -332,6 +394,8 @@ describe('관리자 취소 모달 — validation 에러 UI', () => {
         expect(select.props.className).toContain('border-red-500');
     });
 
+    // @scenario section=validation_errors
+    // @effects cancel_modal_validation_errors_contract
     it('취소 사유 필드 에러 Span이 reason 에러 조건으로 표시되어야 함', () => {
         const reasonError = findNode(modalCancelOrder, (n) =>
             n.comment === '취소 사유 필드 에러' && n.if?.includes('cancelValidationErrors?.reason'),
@@ -341,12 +405,16 @@ describe('관리자 취소 모달 — validation 에러 UI', () => {
         expect(reasonError.props.className).toContain('form-error-xs');
     });
 
+    // @scenario section=validation_errors
+    // @effects cancel_modal_validation_errors_contract
     it('Textarea에 cancelValidationErrors?.reason_detail 기반 적색 테두리가 적용되어야 함', () => {
         const textarea = findNode(modalCancelOrder, (n) => n.name === 'Textarea');
         expect(textarea.props.className).toContain('cancelValidationErrors?.reason_detail');
         expect(textarea.props.className).toContain('border-red-500');
     });
 
+    // @scenario section=validation_errors
+    // @effects cancel_modal_validation_errors_contract
     it('상세 사유 필드 에러 Span이 reason_detail 에러 조건으로 표시되어야 함', () => {
         const detailError = findNode(modalCancelOrder, (n) =>
             n.comment === '상세 사유 필드 에러' && n.if?.includes('cancelValidationErrors?.reason_detail'),
@@ -356,6 +424,8 @@ describe('관리자 취소 모달 — validation 에러 UI', () => {
         expect(detailError.props.className).toContain('form-error-xs');
     });
 
+    // @scenario section=validation_errors
+    // @effects cancel_modal_validation_errors_contract
     it('Select change 시 cancelValidationErrors가 null로 초기화되어야 함', () => {
         const select = findNode(modalCancelOrder, (n) =>
             n.name === 'Select' && n.props?.value?.includes('cancelReason'),
@@ -365,6 +435,8 @@ describe('관리자 취소 모달 — validation 에러 UI', () => {
         expect(changeAction.params.cancelValidationErrors).toBeNull();
     });
 
+    // @scenario section=validation_errors
+    // @effects cancel_modal_validation_errors_contract
     it('Textarea input 시 cancelValidationErrors가 null로 초기화되어야 함', () => {
         const textarea = findNode(modalCancelOrder, (n) => n.name === 'Textarea');
         const inputAction = textarea.actions?.find((a: any) => a.type === 'input');
@@ -374,6 +446,8 @@ describe('관리자 취소 모달 — validation 에러 UI', () => {
 });
 
 describe('관리자 취소 모달 — 액션 버튼', () => {
+    // @scenario section=action_buttons
+    // @effects cancel_modal_action_buttons_contract
     it('닫기 버튼이 sequence(상태 정리 + closeModal) 패턴을 사용해야 함', () => {
         // closeModal 단독 → sequence(setState 정리 + closeModal) 로 변경
         // (모달 partial 분리 후 부모 _local 정리가 필요함)
@@ -388,6 +462,8 @@ describe('관리자 취소 모달 — 액션 버튼', () => {
         expect(closeAction).toBeDefined();
     });
 
+    // @scenario section=action_buttons
+    // @effects cancel_modal_action_buttons_contract
     it('취소 실행 버튼이 executeCancelOrder 핸들러를 호출해야 함', () => {
         const footerDiv = modalCancelOrder.children[1];
         const cancelBtn = footerDiv.children[1];
@@ -404,6 +480,8 @@ describe('관리자 취소 모달 — 액션 버튼', () => {
         expect(clickAction.params).toHaveProperty('refundPriority');
     });
 
+    // @scenario section=action_buttons
+    // @effects cancel_modal_action_buttons_contract
     it('취소 실행 버튼이 isCancelling 또는 refundLoading 중 비활성화되어야 함', () => {
         const footerDiv = modalCancelOrder.children[1];
         const cancelBtn = footerDiv.children[1];
@@ -411,6 +489,8 @@ describe('관리자 취소 모달 — 액션 버튼', () => {
         expect(cancelBtn.props.disabled).toContain('refundLoading');
     });
 
+    // @scenario section=action_buttons
+    // @effects cancel_modal_action_buttons_contract
     it('취소 실행 버튼에 로딩 스피너가 있어야 함', () => {
         const footerDiv = modalCancelOrder.children[1];
         const cancelBtn = footerDiv.children[1];
@@ -431,6 +511,8 @@ describe('관리자 취소 모달 — 다통화 표기(기본통화 고정 + 결
     });
     const joined = allTexts.join('\n');
 
+    // @scenario section=multi_currency
+    // @effects cancel_modal_multi_currency_contract
     it('주문금액 비교 primary 금액은 하드코딩 "원"이 아니라 base 통화 포맷(formatted)을 사용한다', () => {
         // 회귀: "{{...total_paid_amount ?? 0).toLocaleString()}}원" 같은 하드코딩 원 금지
         expect(joined).not.toMatch(/refundEstimate\?\.original_snapshot\?\.total_paid_amount \?\? 0\)\.toLocaleString\(\)\}\}원/);
@@ -439,6 +521,8 @@ describe('관리자 취소 모달 — 다통화 표기(기본통화 고정 + 결
         expect(joined).toContain('recalculated_snapshot?.formatted?.subtotal_amount');
     });
 
+    // @scenario section=multi_currency
+    // @effects cancel_modal_multi_currency_contract
     it('보조 통화 iteration은 preferredCurrency 가 아닌 주문 base_currency 를 제외한다', () => {
         // 회귀: 표시통화(preferredCurrency)만 제외하면 base 통화가 보조로 섞여 중복 표기됨
         expect(joined).toContain('base_currency ?? _global.preferredCurrency');
@@ -447,6 +531,8 @@ describe('관리자 취소 모달 — 다통화 표기(기본통화 고정 + 결
         expect(filterCount).toBeGreaterThanOrEqual(1);
     });
 
+    // @scenario section=multi_currency
+    // @effects cancel_modal_multi_currency_contract
     it('환불 예정액은 base 포맷 primary + 결제통화 환산(refund_formatted.mc) 병기를 가진다', () => {
         expect(joined).toContain('refund_formatted?.base?.refund_total');
         expect(joined).toContain('refund_formatted?.mc?.refund_total');

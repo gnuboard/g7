@@ -482,7 +482,7 @@ function resolveResponsiveDisplay(className: string, width: number): { visible: 
     const otherClasses: string[] = [];
 
     for (const token of tokens) {
-        // 확장 접두 빌드 클래스(`ecommerce:md:hidden`)는 앞글자를 떼고 같은 뜻으로 읽는다(engine-v1.86.0)
+        // 확장 접두 빌드 클래스(`ecommerce:md:hidden`)는 앞글자를 떼고 같은 뜻으로 읽는다(engine-v1.87.0)
         const split = (window as any).G7Core?.style?.splitExtensionClassPrefix?.(token) ?? { prefix: '', rest: token };
         const extPrefix: string = split.prefix;
         const bare: string = split.rest;

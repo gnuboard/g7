@@ -81,6 +81,8 @@ flowchart LR
 |---|---|
 | 그누보드7 코어 | `>=7.2.0` |
 | PHP | `^8.2` |
+| PHP 확장(필수) | `openssl`, `dom`, `zlib` |
+| PHP 확장(권장) | `ldap` — LDAP/Active Directory 로그인과 재직 조회에 필요합니다. 없으면 LDAP 드라이버만 사용할 수 없습니다. |
 <!-- @generated:requirements END -->
 
 ## 설치

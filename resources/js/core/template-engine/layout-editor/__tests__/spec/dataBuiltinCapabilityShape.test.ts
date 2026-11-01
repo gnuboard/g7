@@ -75,13 +75,13 @@ describe('데이터 정의 빌트인 capability 정합', () => {
       expect((cap.dataProps ?? []).some((d) => d.propKey === 'items')).toBe(true);
     });
 
-    // SocialLoginButtons(basic)는 sirsoft-basic 1.3.0 에서 제거됐다 — 소셜 로그인 버튼은 플러그인이 로그인·가입 화면
+    // SocialLoginButtons(basic)는 sirsoft-basic 1.4.0 에서 제거됐다 — 소셜 로그인 버튼은 플러그인이 로그인·가입 화면
     // 확장점에 주입한다. 원시 string[] 배열(newItem 이 원시 문자열) 모양은 그 컴포넌트만 썼으므로 이 묶음에서 빠진다.
     /**
      * @scenario aspect=capability_attach
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates
      */
-    it('SocialLoginButtons — basic capability 에서 제거됨(1.3.0)', () => {
+    it('SocialLoginButtons — basic capability 에서 제거됨(1.4.0)', () => {
       expect(basic.SocialLoginButtons).toBeUndefined();
     });
   });

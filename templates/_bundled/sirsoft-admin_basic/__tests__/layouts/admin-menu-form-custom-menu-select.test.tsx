@@ -9,6 +9,7 @@
  * 사본이 아니라 액션 실행 시점의 최신 전역(ActionDispatcher evaluateExpression 의 `G7Core.state.get()`)으로 평가되기 때문이다 —
  * 전역 다시 그리기가 미뤄져도 슬러그를 친 직후(렌더 전) 고르면 방금 친 슬러그가 남는다. 이 시험은 그 실물 동작을 실 TemplateApp 으로
  * 잠근다. 주소 칸 채움 자체는 엔진 engine-v1.81.1 의 자동바인딩 칸 이벤트 사본(`selectedOptions` 보존) 수정으로 풀렸다.
+ * 7.1.4 부터 칸이 목록형 드롭다운(props.options)이 되어 주소는 `selectedOptions` 가 아니라 고른 키로 응답에서 찾는다.
  *
  * @scenario-manifest tests/scenarios/admin-menu-form-custom-menu-select.yaml
  *
@@ -67,9 +68,13 @@ const registryEntries = (): Record<string, { component: any; metadata: any }> =>
     const c = (component: any, metadata: any = {}) => ({ component, metadata });
     const base: Record<string, { component: any; metadata: any }> = {
         Input: c(({ name, value, onChange }: any) => CoreReact().createElement('input', { name, value: value ?? '', onChange: onChange ?? (() => {}) })),
-        Select: c(({ name, value, onChange, children }: any) => CoreReact().createElement('select', { name, value: value ?? '', onChange: onChange ?? (() => {}) }, children)),
-        Option: c(({ value, children, text, ...rest }: any) => CoreReact().createElement('option', { value, 'data-url': rest['data-url'] }, children ?? text)),
-        Optgroup: c(({ label, children }: any) => CoreReact().createElement('optgroup', { label }, children)),
+        // 칸은 목록형(props.options) 이다 — 대역은 그 선택지를 기본 선택상자 항목으로 펼쳐 change 만 흉내 낸다.
+        // 실물 목록형 단추·항목 설명(모듈 이름)은 형제 시험 admin-menu-form-select-dropdown.test.tsx 가 잰다.
+        Select: c(({ name, value, onChange, options }: any) => CoreReact().createElement(
+            'select',
+            { name, value: value ?? '', onChange: onChange ?? (() => {}) },
+            (Array.isArray(options) ? options : []).map((o: any) => CoreReact().createElement('option', { key: String(o.value), value: o.value }, o.label)),
+        )),
         Icon: c(() => null, { autoBinding: false }),
         Toggle: c(() => null, { autoBinding: false }),
         MultilingualInput: c(() => null, { autoBinding: false }),

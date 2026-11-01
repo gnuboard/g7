@@ -12,6 +12,9 @@
     "require": {
         "php": "^8.2"
     },
+    "suggest": {
+        "ext-soap": "모바일 결제(SmartPhone Pay) 승인키 발급에 필요"
+    },
     "autoload": {
         "psr-4": {
             "Plugins\\Sirsoft\\PayNhnkcp\\": ["src/", "./"]

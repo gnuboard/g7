@@ -1,0 +1,30 @@
+feature: layout_loader_core
+
+description: |
+  LayoutLoader — 레이아웃 JSON 로드·검증·간이 렌더·오류 화면·캐시 버전·인증 헤더·401 재시도.
+
+  핵심 동작:
+    - 응답 형태(version·layout_name·components 배열) 검증 실패는 LayoutLoaderError
+    - 캐시 버전은 요청 URL `?v=` 와 메모리 캐시 키를 함께 바꾼다
+    - 토큰이 있을 때만 Bearer 헤더, 401 이면 토큰을 지우고 한 번만 무토큰 재시도
+    - 오류 화면의 새로고침 버튼은 인라인 on* 없이 리스너(#158 strict CSP)
+
+axes:
+  phase: [load, render, error, utility, cache, auth, unauthorized]
+
+effects:
+  - layout_loader_fetch_validates_shape
+  - layout_loader_renders_component_tree
+  - layout_loader_error_state_without_inline_handler
+  - layout_loader_current_layout_and_clear
+  - layout_loader_cache_version_scopes_url_and_cache
+  - layout_loader_sends_bearer_only_with_token
+  - layout_loader_401_retries_without_token_once
+
+test_files:
+  - resources/js/core/template-engine/__tests__/LayoutLoader.test.ts
+
+notes: |
+  #158 에서 「새로고침 버튼을 포함한다」 단언을 인라인 onclick 에서 표식(`data-g7-error-reload`)으로
+  바꾸면서 매니페스트가 없던 이 시험 파일에 소유 매니페스트를 붙였다. 오류 화면 리스너 동작
+  (click → reload)은 strict-csp-compat 의 `LayoutLoader.noInlineHandler.test.ts` 가 잠근다.

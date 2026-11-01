@@ -22,9 +22,27 @@
  */
 import { test, expect } from '../../fixtures/auth';
 import { issueToken, authenticatePage } from '../../fixtures/auth';
+import type { Locator, Page } from '@playwright/test';
 
 const BOARD_SLUG = process.env.PLAYWRIGHT_BOARD_SLUG ?? 'gallery';
 const REPORT_POST_ID = process.env.PLAYWRIGHT_REPORT_POST_ID ?? '';
+
+/**
+ * 신고 창에서 첫 번째 사유를 고릅니다.
+ *
+ * 사유 칸은 기본 선택상자가 아니라 단추 + 목록(목록형 드롭다운)이라 `selectOption()` 이 닿지 않는다.
+ * 목록은 body 에 붙으므로(포털) 창 밖에서 listbox 로 찾는다. 0번은 「사유를 선택하세요」 빈 값이다.
+ *
+ * @param page Playwright 페이지
+ * @param dialog 신고 창
+ * @returns 완료 Promise
+ */
+async function pickFirstReason(page: Page, dialog: Locator): Promise<void> {
+  await dialog.locator('button[aria-haspopup="listbox"]').first().click();
+  const choices = page.getByRole('listbox').getByRole('option');
+  await expect(choices.nth(1)).toBeVisible({ timeout: 15_000 });
+  await choices.nth(1).click();
+}
 
 test.describe('@smoke 신고 제출 후 피드백·상태 반영 (이슈 #413-60)', () => {
   test.skip(
@@ -32,6 +50,10 @@ test.describe('@smoke 신고 제출 후 피드백·상태 반영 (이슈 #413-60
     'PLAYWRIGHT_REPORT_POST_ID(타인 글, 신고 사용 게시판) 미지정 — 신고 대상 데이터 없이 검증 불가'
   );
 
+  /**
+   * @scenario actor=member, target=post, board=use_report
+   * @effects report_success_button_switches_to_reported_without_reload
+   */
   test('신고 성공 시 새로고침 없이 "신고됨"으로 전환되어야 한다 (증상2)', async ({ page }) => {
     const token = issueToken(`sirsoft-board.${BOARD_SLUG}.posts.read`);
     await authenticatePage(page, token);
@@ -46,7 +68,7 @@ test.describe('@smoke 신고 제출 후 피드백·상태 반영 (이슈 #413-60
     // 모달에서 사유 선택 + 상세 입력 후 제출
     const dialog = page.getByRole('dialog', { name: /신고/ });
     await expect(dialog).toBeVisible();
-    await dialog.getByRole('combobox').selectOption({ index: 1 });
+    await pickFirstReason(page, dialog);
     await dialog.getByRole('textbox').fill('E2E 신고 검증');
     await dialog.getByRole('button', { name: '신고하기' }).click();
 
@@ -55,6 +77,10 @@ test.describe('@smoke 신고 제출 후 피드백·상태 반영 (이슈 #413-60
     await expect(page.getByRole('button', { name: /신고됨/ })).toBeVisible({ timeout: 30_000 });
   });
 
+  /**
+   * @scenario actor=member, target=post, board=use_report
+   * @effects report_duplicate_closes_modal_and_shows_error_toast
+   */
   test('이미 신고한 글 재신고(409) 시 창이 닫히고 에러 토스트가 노출되어야 한다 (증상1)', async ({ page }) => {
     const token = issueToken(`sirsoft-board.${BOARD_SLUG}.posts.read`);
     await authenticatePage(page, token);
@@ -73,7 +99,7 @@ test.describe('@smoke 신고 제출 후 피드백·상태 반영 (이슈 #413-60
     await reportBtn.click();
 
     const dialog = page.getByRole('dialog', { name: /신고/ });
-    await dialog.getByRole('combobox').selectOption({ index: 1 });
+    await pickFirstReason(page, dialog);
     await dialog.getByRole('textbox').fill('E2E 중복 신고 검증');
     await dialog.getByRole('button', { name: '신고하기' }).click();
     // 1차 신고 성공으로 모달이 닫힘
@@ -84,7 +110,7 @@ test.describe('@smoke 신고 제출 후 피드백·상태 반영 (이슈 #413-60
     // 따라서 재신고 진입이 가능한 경우에만 409 → 창 닫힘+토스트를 검증한다.
     if (await reportBtn.isVisible().catch(() => false)) {
       await reportBtn.click();
-      await dialog.getByRole('combobox').selectOption({ index: 1 });
+      await pickFirstReason(page, dialog);
       await dialog.getByRole('textbox').fill('E2E 중복 재신고');
       await dialog.getByRole('button', { name: '신고하기' }).click();
       // 409 → onError: closeModal + error toast

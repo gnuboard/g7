@@ -12,6 +12,7 @@ use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
 use App\Support\ConfigCacheHelper;
+use App\Support\ExtensionDependencyOrder;
 use App\Support\RouteCacheHelper;
 use App\Support\UpdateChildEnv;
 use Illuminate\Console\Command;
@@ -515,37 +516,36 @@ trait BundledExtensionUpdatePrompt
         $failed = 0;
         $failedItems = [];
 
-        foreach ($updates['modules'] as $m) {
-            $id = $m['identifier'];
-            $strategy = $strategies["modules:{$id}"] ?? 'overwrite';
-            $this->line(__('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy]));
-            try {
-                $result = $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
-                $this->lineLayoutSyncSummary($result);
-                $this->renderDependencyWarnings($result, '  ');
-                $success++;
-            } catch (\Throwable $e) {
-                $failed++;
-                $failedItems[] = ['type' => 'module', 'identifier' => $id, 'strategy' => $strategy, 'reason' => $e->getMessage()];
-                $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
-                Log::error('번들 일괄 업데이트 실패', ['type' => 'module', 'id' => $id, 'error' => $e->getMessage()]);
-            }
+        // 모듈·플러그인은 한 목록으로 서로의 의존 순서를 따른다 — 프로세스 분리 경로(core:execute-bundled-updates)와 같은 정렬.
+        // 목록은 DB 조회 순서라 같은 종류 안의 의존 순서도 여기서 맞춘다.
+        $extensionOrder = ExtensionDependencyOrder::orderModulesAndPlugins(
+            $updates['modules'] ?? [],
+            $updates['plugins'] ?? [],
+            [ExecuteBundledUpdatesCommand::class, 'bundledDependencyKeys']
+        );
+        foreach ($extensionOrder['cycles'] as $cycle) {
+            $this->warn(__('extensions.commands.bundled_update.dependency_cycle', ['cycle' => implode(' → ', $cycle)]));
         }
 
-        foreach ($updates['plugins'] as $p) {
-            $id = $p['identifier'];
-            $strategy = $strategies["plugins:{$id}"] ?? 'overwrite';
-            $this->line(__('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
+        foreach ($extensionOrder['ordered'] as $node) {
+            $id = (string) $node['entry']['identifier'];
+            $type = $node['type'];
+            $strategy = $strategies[($type === 'module' ? 'modules' : 'plugins').":{$id}"] ?? 'overwrite';
+            $this->line($type === 'module'
+                ? __('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy])
+                : __('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $result = $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $result = $type === 'module'
+                    ? $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled')
+                    : $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
                 $this->lineLayoutSyncSummary($result);
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (\Throwable $e) {
                 $failed++;
-                $failedItems[] = ['type' => 'plugin', 'identifier' => $id, 'strategy' => $strategy, 'reason' => $e->getMessage()];
+                $failedItems[] = ['type' => $type, 'identifier' => $id, 'strategy' => $strategy, 'reason' => $e->getMessage()];
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
-                Log::error('번들 일괄 업데이트 실패', ['type' => 'plugin', 'id' => $id, 'error' => $e->getMessage()]);
+                Log::error('번들 일괄 업데이트 실패', ['type' => $type, 'id' => $id, 'error' => $e->getMessage()]);
             }
         }
 

@@ -1,0 +1,22 @@
+feature: 게시판 관리자 선택칸 — 브라우저 기본 선택상자 대신 관리자 템플릿의 목록형 드롭다운
+
+description: |
+  관리자 템플릿 Select 는 props.options 가 있으면 단추(aria-haspopup=listbox) + 목록 상자로, 없으면 브라우저 기본
+  <select> 로 그린다. 반복(data-each)으로 만든 <option> 자식을 적어 기본 선택상자로 그려진 칸(글 상세 신고 사유·
+  글 작성 분류·반응 관리 게시판/유형 필터·스크랩 관리 게시판 필터)을 응답을 펼치는 options="{{…}}" 식으로 바꿨다.
+
+  조용히 깨지는 지점:
+    - 목록형은 고른 값을 스스로 들지 않는다 — 값 바인딩이 없던 신고 사유 칸은 골라도 단추가 그대로다.
+    - 기본 선택상자는 고른 값을 문자열로 넘겼다 — 게시판·유형 번호는 String() 으로 같은 모양을 지킨다.
+    - 폼 자동 바인딩(name)은 사건의 target.value 를 읽는다 — 목록형도 같은 모양의 사건을 넘겨야 분류가 담긴다.
+  축 screen 은 바꾼 화면(칸)이다.
+
+axes:
+  screen: [post_report_reason, post_form_category, reaction_filters, scrap_filters]
+
+effects:
+  - select_renders_listbox_dropdown
+  - select_choice_reaches_change_action
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-select-dropdown-mode.test.tsx

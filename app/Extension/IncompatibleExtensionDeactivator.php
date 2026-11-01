@@ -32,6 +32,10 @@ use Throwable;
  *     `BootDeferredLog` 로 등록이 끝난 뒤 남겨 사이트 언어(ja 등) 문구가 되게 한다. 「못 끔」 기록의 맥락 `reason` 은
  *     매니저가 부팅 중 이미 만든 문장(폴백 문구)이라, 매니저가 쓰는 번역 키로 되짚어 기록 시점에 다시 번역한다.
  *
+ *   - 막힌 후보 재시도(#153): 끄기는 의존하는 쪽부터여야 하는데 부팅은 모듈 → 플러그인 → 템플릿 순으로 돈다. 이커머스와
+ *     결제 플러그인이 함께 비호환이면 이커머스는 아직 켜진 결제 플러그인 때문에 막힌다. 종류별 처리 뒤 `retryBlocked()` 가
+ *     막혔던 후보를 진척이 없을 때까지 다시 끄고, 끈 것은 같은 알림 묶음에 넣는다(부팅 순서는 바꾸지 않는다).
+ *
  * 자동 재활성화는 하지 않는다(#302) — 재호환 감지는 `CoreServiceProvider::detectRecoveredExtensions()` 가 알림만 남긴다.
  */
 class IncompatibleExtensionDeactivator
@@ -40,6 +44,20 @@ class IncompatibleExtensionDeactivator
      * 이 프로세스에서 안전망 경고·config 캐시 비우기를 이미 했는지 여부 (모듈·플러그인·템플릿 세 번 중복 방지).
      */
     private bool $staleHandled = false;
+
+    /**
+     * 이번 부팅에서 막힌 후보 — 종류별 처리 뒤 `retryBlocked()` 가 다시 끈다.
+     *
+     * @var array<int, array{type: string, cacheKey: string, identifier: string, required: string, deactivate: callable}>
+     */
+    private array $blockedCandidates = [];
+
+    /**
+     * 이번 부팅에서 끈 확장 — 종류별 알림 묶음에 재시도로 끈 것까지 함께 담는다.
+     *
+     * @var array<string, array<int, array{identifier: string, required: string}>>
+     */
+    private array $deactivatedByType = [];
 
     /**
      * @param  CacheInterface  $cache  판정·알림 캐시
@@ -154,15 +172,111 @@ class IncompatibleExtensionDeactivator
         );
 
         if ($deactivated !== []) {
-            $this->storeDeactivatedExtensionsAlert($type, $deactivated);
+            $this->deactivatedByType[$type] = [...($this->deactivatedByType[$type] ?? []), ...$deactivated];
+            $this->storeDeactivatedExtensionsAlert($type, $this->deactivatedByType[$type]);
         }
 
-        // 끄지 못한 확장이 있으면 다음 부팅이 다시 시도하도록 판정 캐시를 남기지 않는다.
+        // 끄지 못한 확장이 있으면 다음 부팅이 다시 시도하도록 판정 캐시를 남기지 않는다(재시도로 다 끄면 그때 저장).
         if ($blocked === []) {
             $this->cache->put($cacheKey, true, CoreVersionChecker::getCacheTtl());
         }
 
+        foreach ($blocked as $entry) {
+            $this->blockedCandidates[] = [
+                'type' => $type,
+                'cacheKey' => $cacheKey,
+                'identifier' => $entry['identifier'],
+                'required' => $entry['required'],
+                'deactivate' => $deactivate,
+            ];
+        }
+
         return $this->result($deactivated, $blocked);
+    }
+
+    /**
+     * 종류별 처리에서 막혔던 후보를 같은 부팅에서 다시 끕니다 — 의존하는 확장이 뒤 단계에서 꺼졌으면 이제 끌 수 있다.
+     *
+     * 한 바퀴에 하나라도 꺼지면 다시 돈다(상한 = 후보 수). 끈 것은 그 종류의 알림 묶음에 더하고, 막힌 후보가 0이 된 종류는
+     * 판정 캐시를 저장한다. 끝내 막힌 후보는 종전과 같이 캐시를 남기지 않아 다음 부팅이 다시 시도한다.
+     *
+     * @return array{deactivated: array<int, array{identifier: string, required: string}>, blocked: array<int, array<string, mixed>>, skipped_stale: bool} 재시도로 끈 것과 끝내 막힌 것
+     */
+    public function retryBlocked(): array
+    {
+        if ($this->blockedCandidates === []) {
+            return $this->result();
+        }
+
+        [$retried, $remaining] = ConfigCacheHelper::deferRebuilds(
+            fn () => RouteCacheHelper::deferRebuilds(fn () => $this->retryBlockedCandidates())
+        );
+
+        $retriedTypes = [];
+        foreach ($retried as $candidate) {
+            $this->deactivatedByType[$candidate['type']][] = ['identifier' => $candidate['identifier'], 'required' => $candidate['required']];
+            $retriedTypes[$candidate['type']] = $candidate['cacheKey'];
+        }
+        foreach (array_keys($retriedTypes) as $type) {
+            $this->storeDeactivatedExtensionsAlert($type, $this->deactivatedByType[$type]);
+        }
+
+        $stillBlockedTypes = array_flip(array_column($remaining, 'type'));
+        foreach ($retriedTypes as $type => $cacheKey) {
+            if (! isset($stillBlockedTypes[$type])) {
+                $this->cache->put($cacheKey, true, CoreVersionChecker::getCacheTtl());
+            }
+        }
+
+        $this->blockedCandidates = $remaining;
+
+        return $this->result(
+            array_map(fn (array $c): array => ['identifier' => $c['identifier'], 'required' => $c['required']], $retried),
+            array_map(fn (array $c): array => ['identifier' => $c['identifier'], 'required' => $c['required']], $remaining),
+        );
+    }
+
+    /**
+     * 막힌 후보를 진척이 없을 때까지 다시 끕니다.
+     *
+     * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>} [재시도로 끈 후보, 끝내 막힌 후보]
+     */
+    private function retryBlockedCandidates(): array
+    {
+        $remaining = $this->blockedCandidates;
+        $retried = [];
+        $coreVersion = CoreVersionChecker::getCoreVersion();
+
+        for ($round = 0, $limit = count($remaining); $round < $limit && $remaining !== []; $round++) {
+            $progress = false;
+            foreach ($remaining as $index => $candidate) {
+                try {
+                    $outcome = ($candidate['deactivate'])($candidate['identifier'], $candidate['required']);
+                } catch (Throwable) {
+                    continue;
+                }
+                if (! ($outcome['ok'] ?? false)) {
+                    continue;
+                }
+
+                $retried[] = $candidate;
+                unset($remaining[$index]);
+                $progress = true;
+
+                BootDeferredLog::warning('extensions.warnings.auto_deactivated', ['type' => $candidate['type'], 'identifier' => $candidate['identifier']], [
+                    'type' => $candidate['type'],
+                    'identifier' => $candidate['identifier'],
+                    'required_version' => $candidate['required'],
+                    'core_version' => $coreVersion,
+                    'retried_after_dependents' => true,
+                ]);
+            }
+            if (! $progress) {
+                break;
+            }
+        }
+
+        return [$retried, array_values($remaining)];
     }
 
     /**

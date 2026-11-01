@@ -1,0 +1,200 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 입력 채널 × 설치 상태 × 실행 계정 × OS × vendor 방식 × 재설치 옵션의 곱은 수백 조합이고 OS·실행 계정 축은 PHPUnit 한 프로세스에서 만들 수 없다. 축별 대표값은 test_files 의 effects 로, OS·root·도커 조합은 manual_verification(CLI 실측 매트릭스)으로 덮는다.
+feature: 터미널(CLI) 설치 명령 — 웹 설치 마법사와 같은 공유 함수 + 마법사 결함 6건 정리
+
+description: |
+  웹 설치 마법사(/install)의 단계 0~5 를 터미널에서 같은 규칙으로 재현하는 `php g7-install`
+  (vendor 가 있으면 `php artisan core:install` 별칭)과, 그 과정에서 함께 고친 웹 마법사 결함의
+  시나리오 매트릭스.
+
+  「같은 규칙」은 같은 코드로 보장한다. 웹 엔드포인트에 박혀 있던 검증·계획·확정 본문을 공유 함수로
+  옮겨 웹(HTTP 껍데기)과 터미널이 같은 함수를 부른다:
+    - config-validation.php  installer_validate_config()        — Step 3 입력 검증
+    - requirements.php       installer_collect_requirements()   — Step 2 요구사항 (+ PHP·Composer 검사)
+    - db-check.php           installer_test_database()          — DB 연결·권한·기존 테이블
+    - extension-selection.php installer_resolve_extension_selection() — Step 4 확장 선택 (JS 사본과 등가 잠금)
+    - install-plan.php       installer_begin_installation()     — 설치 계획 확정
+    - env-finalize.php       installer_finalize_env()           — .env 확정
+
+  함께 고친 웹 마법사 결함:
+    ① 사이트 언어가 세션에 의존 — SSE 워커가 만든 설정은 ko, finalize 의 .env 는 en 으로 어긋남
+    ② 리눅스·맥에서 자동 롤백 명령(`cd /d`)이 실행조차 안 됨
+    ③ 작업 중 PHP Error 가 state 를 running 으로 고착
+    ④ 브라우저에서만 하던 검사(Step 2 차단·사이트/관리자 이름·접두사 형식·vendor 방식·확장 존재·의존·단일 선택)
+    ⑤ 하위 폴더 설치에서 .env 확정 요청 404, running 재진입 분기의 미정의 식별자
+
+axes:
+  input_channel: [interactive_tty, flags, env_vars, config_file]
+  install_state: [fresh, web_owned, cli_interrupted, completed]
+  account: [regular_user, root_with_web_user, root_without_web_user]
+  os: [windows, linux, docker]
+  vendor_mode: [auto, composer, bundled]
+  reinstall_options: [none, delete_extensions, delete_settings, delete_uploads, delete_vendor]
+
+effects:
+  # 결함 ① — 사이트 언어
+  - env_locale_follows_state_language_without_session
+  - site_language_input_overrides_ui_language
+  - site_language_falls_back_to_ko
+  - settings_general_language_follows_state_language
+
+  # 결함 ② — 롤백 명령 이식성
+  - rollback_command_has_no_windows_only_prefix
+  - rollback_runs_from_project_root
+  - installer_has_no_windows_only_cd
+
+  # 결함 ③ — Error 계열 포착
+  - task_error_marks_state_failed
+
+  # 결함 ④ — 서버 검증
+  - server_rejects_empty_site_and_admin_name
+  - server_rejects_invalid_db_prefix
+  - server_rejects_unavailable_vendor_mode
+  - server_rechecks_requirements_on_step2
+  - save_extensions_rejects_unknown_identifier
+  - save_extensions_rejects_multiple_admin_templates
+  - save_extensions_adds_missing_dependency
+  - save_extensions_requires_admin_template
+  - step3_post_rejects_env_line_breaks_before_save
+  - step3_post_rejects_url_without_http_scheme
+  - step3_post_accepts_normal_env_values
+  - step3_empty_app_url_reports_required_not_url_shape
+
+  # 결함 ⑥ — .env 확정 뒤 설정 캐시 재생성
+  - finalize_rebuilds_config_cache_after_env_merge
+  - finalize_skips_rebuild_without_config_cache
+  # 완료 요약 .env 권한 안내 — 웹 완료 화면과 같은 두 선택지(--web-user 설치는 640)
+  - cli_env_hardening_hint_matches_web_completion
+  # 결함 ⑥ 의 폴링 경로 — 완료 표식 뒤 마무리 작업(설정·라우트 캐시·정적 게시)이 끝나야 완료 처리
+  - task_runner_marks_final_tasks_pending_then_finished
+  - state_api_exposes_tasks_finished
+  - installer_reentry_waits_for_final_tasks
+  - polling_monitor_waits_for_final_tasks_after_complete_flag
+  - polling_monitor_completes_when_final_tasks_stall
+  - polling_monitor_completes_without_tasks_finished_field
+  # 같은 구간의 새로고침 — 설치 화면(index.php)은 소유 세션의 GET 에만 Step 5 를 다시 열고, 그 화면이 마무리 작업 뒤 .env 를 확정
+  - installer_index_reopens_step5_for_owner_in_finalize_window
+  - installer_index_stays_gone_outside_owner_finalize_window
+  - installer_reload_in_finalize_window_finalizes_once_after_final_tasks
+
+  # 확장 선택 해석기 — PHP·JS 공용 픽스처 등가
+  - resolver_php_matches_shared_fixture
+  - resolver_version_constraint_matches_shared_fixture
+  - resolver_on_bundled_manifests_adds_ecommerce_for_payment_plugin
+  - resolver_error_owner_name_follows_installer_locale
+  - resolver_js_matches_shared_fixture
+  - resolver_js_version_constraint_matches_shared_fixture
+
+  # artisan 별칭 · 예약 작업 차단
+  - core_install_forwards_arguments_and_exit_code
+  - core_install_fails_without_script
+  - core_install_is_registered
+  - schedule_shell_rejects_g7_install_script
+  - schedule_artisan_rejects_installer_and_ops_commands
+
+  # 결함 ⑤ — 설치 화면 스크립트 경로
+  - installer_js_api_paths_follow_base_url
+  - installer_js_finalize_uses_base_url
+  - installer_js_running_branch_has_no_undefined_identifier
+
+  # 터미널 설치 본체 — 인자·입력 우선순위
+  - cli_input_precedence_cli_env_config_default
+  - cli_unknown_option_exits_invalid
+  - cli_rejects_unsupported_locale
+  - cli_rejects_unsupported_enum_values
+  - cli_install_doc_lists_every_environment_variable
+  - cli_rejects_secret_on_command_line
+  - cli_config_file_rejects_secret_keys
+  - cli_secret_file_strips_single_trailing_newline
+  - cli_option_value_shape_errors
+  # 웹·터미널 검증 동등
+  - installer_cli_and_web_reject_same_fields
+  - installer_cli_parity_cases_cover_validated_fields
+  - installer_cli_detects_php_and_composer_like_web
+  # 종료 코드 0~7
+  - cli_exit_0_help_and_skip_if_installed
+  - cli_exit_1_installation_failed
+  - cli_exit_2_invalid_input
+  - cli_exit_3_already_installed
+  - cli_exit_4_requirements_not_met
+  - cli_exit_5_another_cli_running
+  - cli_exit_6_aborted_marks_state
+  - cli_exit_7_root_refused_without_web_user
+  # 소유권·동시성
+  - cli_claim_marks_owner_kind_cli
+  - cli_refuses_web_owned_installation
+  - cli_takeover_refused_while_web_worker_active
+  - cli_reset_state_respects_web_ownership
+  - cli_reset_state_refused_while_web_worker_active
+  - cli_reset_state_clears_cli_owned_installation
+  - cli_takeover_log_line_survives_log_reset
+  - cli_takeover_discards_web_runtime_and_drop_confirm
+  - cli_interrupted_cli_install_requires_resume
+  - reclaim_refused_for_cli_owned_installation
+  # 터미널 소유 설치의 웹 잠금 화면 — 이어서 설치 명령은 멈춘 경우에만 안내
+  - cli_owned_notice_hides_resume_while_running
+  - cli_owned_notice_shows_resume_when_stopped
+  # root·--web-user
+  - cli_web_user_targets_are_writable_dirs_env_runtime
+  - cli_web_user_manual_command_shape
+  - cli_web_user_unknown_account_is_null
+  - cli_web_user_platform_rules
+  # 송출기
+  - cli_json_emitter_matches_sse_event_fields
+  - cli_emitter_suppresses_heartbeat
+  - cli_emitter_abort_flag_maps_to_connection_aborted
+  # 재설치 (5.4)
+  - reinstall_all_options_delete_exact_targets
+  - reinstall_without_options_keeps_data_and_app_key
+  - reinstall_clears_application_file_cache
+  - cli_exit_2_hidden_input_unavailable_for_any_secret
+  - cli_exit_2_hidden_input_unavailable_on_resume
+  - reinstall_uploads_keep_extension_settings
+  - reinstall_guards_exit_2
+  - reinstall_failure_keeps_installed_marker
+  - reinstall_deletes_nothing_when_input_invalid
+  # 설치기 문구 자리표시자
+  - installer_lang_uses_colon_placeholders_only
+  # vendor 방식 자동 — Composer 를 실행할 수 없으면 번들로(확인·설치 단계 같은 판정)
+  - installer_auto_vendor_falls_back_to_bundle_without_composer
+  - installer_auto_vendor_keeps_composer_when_runnable
+
+test_files:
+  - tests/Unit/Installer/InstallerSiteLanguageTest.php
+  - tests/Unit/Installer/RollbackCommandPortabilityTest.php
+  - tests/Unit/Installer/InstallerThrowableCatchTest.php
+  - tests/Unit/Installer/InstallerServerSideValidationTest.php
+  - tests/Unit/Installer/InstallerStep3EnvValueGuardTest.php
+  - tests/Unit/Installer/InstallerJsApiPathTest.php
+  - tests/Unit/Installer/ExtensionSelectionResolverTest.php
+  - tests/Unit/Installer/InstallerFinalizeConfigCacheTest.php
+  - tests/Unit/Installer/InstallerFinalTasksSignalTest.php
+  - tests/Unit/Installer/InstallerFinalizeWindowGuardTest.php
+  - resources/js/tests/installer/installer-step5-finalize-after-reload.test.ts
+  - tests/Unit/Installer/InstallerCliOwnedNoticeTest.php
+  - resources/js/tests/installer/installation-monitor-polling.test.ts
+  - tests/Feature/Console/InstallCoreCommandTest.php
+  - tests/Unit/Support/ScheduleSecurityDeniesInstallerTest.php
+  - resources/js/tests/installer/installer-extension-resolver.test.ts
+  - tests/Unit/Installer/InstallerCliArgumentParsingTest.php
+  - tests/Unit/Installer/InstallerCliValidationParityTest.php
+  - tests/Unit/Installer/InstallerCliExitCodeTest.php
+  - tests/Unit/Installer/InstallerCliOwnershipTest.php
+  - tests/Unit/Installer/InstallerCliWebUserTest.php
+  - tests/Unit/Installer/InstallerCliEmitterTest.php
+  - tests/Unit/Installer/InstallerReinstallTest.php
+  - tests/Unit/Installer/InstallerLangPlaceholderTest.php
+  - tests/Unit/Installer/InstallerAutoVendorFallbackTest.php
+
+manual_verification:
+  - description: "CLI 실측 매트릭스 (계획서 9.3) — Windows·WSL·도커에서 종료 코드·파일·DB 로 증거"
+    steps:
+      - "C1~C10: Windows 사본에서 비대화형·대화형·재실행·검증 오류·기존 테이블·중단/재개·웹 소유·동시 실행·JSON 출력·artisan 별칭"
+      - "L1~L4: WSL 에서 root(--web-user 유무)·일반 계정·롤백 성공"
+      - "D1~D2: WSL 도커 compose 첫 기동·재기동·웹 요청 200"
+      - "INSTALL.md 방법 5 예시 그대로(계획서 9.4): 비대화형 예시(일반 계정·vendor 자동·Composer 없는 서버) · sudo 대화형 root 예시(--web-user=www-data)"
+  - description: "결함 ①·⑥ 수정 전·후 대조 — 영어 UI·SSE 설치 뒤 general.json language · .env APP_LOCALE · config 캐시"
+    steps:
+      - "웹 마법사를 영어로 SSE 모드 설치"
+      - "storage/app/settings/general.json 의 language 와 .env APP_LOCALE 이 같은지"
+      - "bootstrap/cache/config.php 의 app.url·app.installer_completed 가 .env 와 같은지"
+      - "같은 대조를 호환 모드(폴링) 설치로 — routes-v7.php 생성·로그에 lock lost 없음까지"

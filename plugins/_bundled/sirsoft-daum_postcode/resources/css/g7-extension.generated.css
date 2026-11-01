@@ -637,6 +637,6 @@
 }
 
 /* 아이콘(<icon>)에 단 글자 크기 유틸리티 — 템플릿 아이콘 글꼴 CSS 의 line-height:1 이 이기던 것을 보존한다 */
-i:is(.daumpostcode\:text-xl) {
+i:is(.daumpostcode\:leading-none, .daumpostcode\:text-xl) {
   line-height: 1;
 }

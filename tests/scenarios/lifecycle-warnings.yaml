@@ -23,6 +23,7 @@ effects:
   - failed_command_with_warnings_has_no_completion_marker
   - every_lifecycle_command_reports_warnings
   - storage_cleanup_left_behind_becomes_warning
+  - target_name_carried_only_when_given   # 대상 표시 이름은 넘겼을 때만(식별자와 다를 때만) 항목에 싣는다 (7.1.4)
 
 test_files:
   - tests/Unit/Extension/LifecycleWarningsTest.php

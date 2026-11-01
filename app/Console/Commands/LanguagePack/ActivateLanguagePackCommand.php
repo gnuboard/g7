@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\LanguagePack;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
@@ -15,6 +16,7 @@ use Throwable;
  */
 class ActivateLanguagePackCommand extends Command
 {
+    use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
     /**
@@ -23,11 +25,6 @@ class ActivateLanguagePackCommand extends Command
     protected $signature = 'language-pack:activate
         {identifier : 언어팩 식별자}
         {--force : 의존성/검증 경고를 무시하고 강제 활성화}';
-
-    /**
-     * @var string
-     */
-    protected $description = '언어팩을 활성화합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service

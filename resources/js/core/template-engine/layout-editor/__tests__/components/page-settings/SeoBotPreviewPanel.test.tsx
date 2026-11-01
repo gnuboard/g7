@@ -14,8 +14,7 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
 import { SeoBotPreviewPanel } from '../../../components/page-settings/SeoBotPreviewPanel';
 
@@ -43,6 +42,7 @@ const baseProps = {
 };
 
 describe('SeoBotPreviewPanel', () => {
+  /** @effects seo_bot_preview_panel_expanded_by_default_with_sample_note */
   it('① 기본 펼침 상태로 열린다(샘플 안내 노출)', async () => {
     const fetchImpl = makeFetch({ enabled: true, html: '<html><head><title>X</title></head></html>' });
     render(<SeoBotPreviewPanel {...baseProps} settingsSignature="s1" debounceMs={0} fetchImpl={fetchImpl} />);
@@ -52,6 +52,7 @@ describe('SeoBotPreviewPanel', () => {
     await waitFor(() => expect(screen.getByTestId('g7le-seo-bot-preview-body')).toBeInTheDocument());
   });
 
+  /** @effects seo_bot_preview_renders_response_html_as_code */
   it('③ 응답 HTML 을 코드 보기로 렌더한다', async () => {
     const fetchImpl = makeFetch({ enabled: true, html: '<html><head><title>봇</title><meta property="og:title" content="봇"></head></html>' });
     render(<SeoBotPreviewPanel {...baseProps} settingsSignature="s1" debounceMs={0} fetchImpl={fetchImpl} />);
@@ -59,6 +60,7 @@ describe('SeoBotPreviewPanel', () => {
     expect(screen.getByTestId('g7le-seo-bot-preview-code').textContent).toContain('og:title');
   });
 
+  /** @effects seo_bot_preview_shows_code_only_without_render_toggle */
   it('② 렌더(iframe) 토글 제거 — HTML 코드만 표시', async () => {
     const fetchImpl = makeFetch({ enabled: true, html: '<html><body>본문</body></html>' });
     render(<SeoBotPreviewPanel {...baseProps} settingsSignature="s1" debounceMs={0} fetchImpl={fetchImpl} />);
@@ -69,6 +71,7 @@ describe('SeoBotPreviewPanel', () => {
     expect(screen.queryByTestId('g7le-seo-bot-preview-render')).not.toBeInTheDocument();
   });
 
+  /** @effects seo_bot_preview_disabled_layout_shows_not_indexed_notice */
   it('⑥ enabled=false → "노출 안 됨" 안내(미리보기 본문 부재)', async () => {
     const fetchImpl = makeFetch({ enabled: false, html: null });
     render(<SeoBotPreviewPanel {...baseProps} settingsSignature="s1" debounceMs={0} fetchImpl={fetchImpl} />);
@@ -76,6 +79,7 @@ describe('SeoBotPreviewPanel', () => {
     expect(screen.queryByTestId('g7le-seo-bot-preview-body')).not.toBeInTheDocument();
   });
 
+  /** @effects seo_bot_preview_manual_refresh_refetches_immediately */
   it('⑤ 수동 새로고침 → 즉시 재호출', async () => {
     const fetchImpl = makeFetch({ enabled: true, html: '<html></html>' });
     render(<SeoBotPreviewPanel {...baseProps} settingsSignature="s1" debounceMs={0} fetchImpl={fetchImpl} />);
@@ -84,6 +88,7 @@ describe('SeoBotPreviewPanel', () => {
     await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(2));
   });
 
+  /** @effects seo_bot_preview_debounces_settings_signature_changes */
   it('④ settingsSignature 연속 변경 → 디바운스로 1회만 호출(과다 호출 방지)', async () => {
     vi.useFakeTimers();
     const fetchImpl = makeFetch({ enabled: true, html: '<html></html>' });
@@ -99,5 +104,32 @@ describe('SeoBotPreviewPanel', () => {
     });
     // 마지막 시그니처 1회만.
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+  /** @effects seo_bot_preview_sends_route_layout_name_only_when_present */
+  it('⑧ layoutName 이 있으면 요청 본문에 layout_name 을 싣는다(모듈 화면 식별자 해석용, 공개#154)', async () => {
+    const fetchImpl = makeFetch({ enabled: true, html: '<html></html>' });
+    render(
+      <SeoBotPreviewPanel
+        {...baseProps}
+        layoutName="gnuboard7-hello_module.user_memo_list"
+        settingsSignature="s1"
+        debounceMs={0}
+        fetchImpl={fetchImpl}
+      />,
+    );
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
+    const init = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit;
+    const body = JSON.parse(String(init.body));
+    expect(body.layout_name).toBe('gnuboard7-hello_module.user_memo_list');
+  });
+
+  /** @effects seo_bot_preview_sends_route_layout_name_only_when_present */
+  it('⑨ layoutName 이 없으면 layout_name 키를 싣지 않는다', async () => {
+    const fetchImpl = makeFetch({ enabled: true, html: '<html></html>' });
+    render(<SeoBotPreviewPanel {...baseProps} settingsSignature="s1" debounceMs={0} fetchImpl={fetchImpl} />);
+    await waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
+    const init = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1] as RequestInit;
+    const body = JSON.parse(String(init.body));
+    expect('layout_name' in body).toBe(false);
   });
 });

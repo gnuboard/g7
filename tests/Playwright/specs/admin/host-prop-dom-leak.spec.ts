@@ -89,7 +89,7 @@ test('@smoke engine-v1.55.1 - 본문 표시 영역 호스트에 원시값 페이
   // 그리고 본문은 그대로 그려져야 한다(페이로드 소비 경로 보존).
   await expect(host).not.toBeEmpty();
 
-  // 호스트 className 의 `{{…}}` 는 평가된 값으로 붙는다 — 식 원문·조각(`===`·`'html'`)이 클래스가 되면 안 된다 (engine-v1.86.0).
+  // 호스트 className 의 `{{…}}` 는 평가된 값으로 붙는다 — 식 원문·조각(`===`·`'html'`)이 클래스가 되면 안 된다 (engine-v1.87.0).
   const hostClass = (await host.getAttribute('class')) ?? '';
   expect(hostClass).not.toMatch(/\{\{|\}\}|===/);
   expect(hostClass).toContain('board:max-w-none');

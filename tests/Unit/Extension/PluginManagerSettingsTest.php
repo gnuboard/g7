@@ -23,6 +23,11 @@ class PluginManagerSettingsTest extends TestCase
 
     private string $testDefaultsDir;
 
+    /**
+     * 테스트용 설정·기본값 디렉터리를 비운 상태로 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,6 +45,11 @@ class PluginManagerSettingsTest extends TestCase
         }
     }
 
+    /**
+     * 테스트가 만든 설정·기본값 디렉터리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 테스트 후 정리
@@ -62,6 +72,10 @@ class PluginManagerSettingsTest extends TestCase
 
     /**
      * defaults.json이 있으면 defaults 섹션으로 setting.json 초기화
+     *
+     * @effects plugin_settings_init_prefers_defaults_json
+     *
+     * @return void 반환값 없음
      */
     public function test_initialize_plugin_settings_uses_defaults_json_when_available(): void
     {
@@ -103,7 +117,13 @@ class PluginManagerSettingsTest extends TestCase
     }
 
     /**
-     * defaults.json이 없으면 getConfigValues()로 폴백 (하위 호환성)
+     * defaults.json이 없으면 getConfigValues()로 폴백 (하위 호환성) — 설정 스키마에 있는 키만 쓴다(7.1.3).
+     *
+     * 스키마 밖 키(고정 기본값·계산값)는 파일에 굳히지 않는다 — 읽기는 늘 getConfigValues() 위에 파일을 병합한다.
+     *
+     * @effects plugin_settings_init_falls_back_to_schema_keys_only
+     *
+     * @return void 반환값 없음
      */
     public function test_initialize_plugin_settings_falls_back_to_get_config_values(): void
     {
@@ -112,6 +132,11 @@ class PluginManagerSettingsTest extends TestCase
             'configValues' => [
                 'api_key' => 'default-key',
                 'enabled' => true,
+                'internal_constant' => 'not-in-schema',
+            ],
+            'settingsSchema' => [
+                'api_key' => ['type' => 'string'],
+                'enabled' => ['type' => 'boolean'],
             ],
             'settingsDefaultsPath' => null,
         ]);
@@ -129,10 +154,15 @@ class PluginManagerSettingsTest extends TestCase
         $savedSettings = json_decode(File::get($settingsPath), true);
         $this->assertSame('default-key', $savedSettings['api_key']);
         $this->assertTrue($savedSettings['enabled']);
+        $this->assertArrayNotHasKey('internal_constant', $savedSettings, '스키마 밖 키는 설치 때 파일에 굳히지 않는다');
     }
 
     /**
      * 이미 setting.json이 존재하면 덮어쓰기 방지 (재설치 시 기존 설정 유지)
+     *
+     * @effects plugin_settings_init_keeps_existing_file
+     *
+     * @return void 반환값 없음
      */
     public function test_initialize_plugin_settings_skips_when_settings_file_exists(): void
     {

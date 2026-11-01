@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\Traits\ComputesLayoutContentHash;
@@ -53,12 +54,11 @@ use Illuminate\Support\Facades\File;
 class PlaywrightSeedLayout extends Command
 {
     use ComputesLayoutContentHash, InvalidatesLayoutCache;
+    use LocalizesDescription;
 
     protected $signature = 'playwright:seed-layout
         {--template=* : 대상을 이 식별자의 활성 템플릿으로 한정 (생략 시 활성 템플릿 전체)}
         {--remove : 시드 레이아웃/라우트를 제거한다}';
-
-    protected $description = 'Playwright E2E 전용 시드 레이아웃 설치/제거 (CLI + G7_PLAYWRIGHT_BYPASS 가드)';
 
     /** 시드 레이아웃 이름 — 파일명·DB name·라우트 layout 이 모두 이 값을 공유한다. */
     private const LAYOUT_NAME = 'e2e_sandbox';

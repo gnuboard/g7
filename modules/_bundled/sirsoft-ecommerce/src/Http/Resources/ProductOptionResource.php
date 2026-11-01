@@ -66,6 +66,10 @@ class ProductOptionResource extends BaseApiResource
             'weight' => $this->weight !== null ? (float) $this->weight : null,
             'volume' => $this->volume !== null ? (float) $this->volume : null,
 
+            // 과세 종류 (#612) — null 은 상품 기본값을 따른다. 라벨은 지정한 옵션만(따름은 화면이 상품 값으로 그린다)
+            'tax_status' => $this->tax_status?->value,
+            'tax_status_label' => $this->tax_status?->label(),
+
             // 상태
             'is_default' => $this->is_default,
             'is_active' => $this->is_active,

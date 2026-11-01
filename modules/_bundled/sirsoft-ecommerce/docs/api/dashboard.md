@@ -114,6 +114,7 @@ _단건 응답: `data` 객체의 필드._
 | items | array | `[{"id":60,"product_id":1732,"inquirable_id":284,"product_…` | 미답변 상품문의 목록 (최신순, PendingInquiryResource — 문의 id/상품/작성자/게시판 글 id 등) |
 | total | integer | `22` | 전체 개수 (집계) |
 | board_slug | string | `inquiry` | 문의가 저장된 연동 게시판의 slug (관리자 문의 상세 링크용, 미연동 시 null) |
+| board_active | boolean | `true` | 게시판 모듈(선택 연동)이 활성인지. `false` 면 items 는 빈 배열·total 0·board_slug null 이다 (1.3.3+) |
 
 **응답 예시**
 
@@ -169,7 +170,8 @@ HTTP/1.1 200
             }
         ],
         "total": 22,
-        "board_slug": "inquiry"
+        "board_slug": "inquiry",
+        "board_active": true
     }
 }
 ```
@@ -184,7 +186,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 전체 상품에 달린 미답변 상품문의 목록과 총 건수를 조회합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.dashboard.view` 권한이 필요하며, `EcommerceDashboardService::getPendingInquiries()`가 답변 대기 문의를 최신순으로 조회해 `items`(문의 목록)·`total`(전체 미답변 건수)·`board_slug`(연동 게시판 slug, 미연동 시 null)를 반환합니다. `limit` 쿼리로 표시 건수를 1~50 사이에서 조정할 수 있고, 미지정 시 모듈 설정 `dashboard.recent_limit`(기본 5) 값이 적용됩니다.
+**설명** 전체 상품에 달린 미답변 상품문의 목록과 총 건수를 조회합니다. `auth:sanctum` + admin + `sirsoft-ecommerce.dashboard.view` 권한이 필요하며, `EcommerceDashboardService::getPendingInquiries()`가 답변 대기 문의를 최신순으로 조회해 `items`(문의 목록)·`total`(전체 미답변 건수)·`board_slug`(연동 게시판 slug, 미연동 시 null)·`board_active`(게시판 모듈 활성 여부)를 반환합니다. 상품 문의는 게시판 모듈의 글이므로 게시판 모듈이 꺼져 있거나 설치되지 않았으면 항목을 내지 않습니다(`board_active=false`, 빈 목록). `limit` 쿼리로 표시 건수를 1~50 사이에서 조정할 수 있고, 미지정 시 모듈 설정 `dashboard.recent_limit`(기본 5) 값이 적용됩니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/dashboard/recent-reviews

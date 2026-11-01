@@ -213,8 +213,9 @@ class SeoBoardCacheListener implements HookListenerInterface
      *
      * 게시판 이름/설명 변경은 게시판 목록(/board/{slug})과 인덱스(/boards)의
      * title/description 메타에 노출되므로, 수정 후 이전 메타가 봇에게 계속
-     * 반환되지 않도록 관련 캐시를 무효화합니다. 게시글 상세(/board/{slug}/{id})는
-     * 게시판명을 메타에 노출하지 않으므로 광역 무효화 대상에서 제외합니다.
+     * 반환되지 않도록 관련 캐시를 무효화합니다. 게시글 상세(/board/{slug}/{id})도
+     * 화면에 게시판 이름을 렌더하므로(상단 제목·이동 영역) 그 게시판의 글 상세까지 비웁니다.
+     * 다른 게시판 화면은 이 게시판 정보를 렌더하지 않으므로 비우지 않습니다.
      *
      * @param  mixed  ...$args  훅 인자 (첫 번째: Board 모델, 두 번째: 변경 데이터, 세 번째: 스냅샷)
      * @return void
@@ -239,6 +240,9 @@ class SeoBoardCacheListener implements HookListenerInterface
                 $listPath = BoardScreenUrl::defaultPath(BoardScreenUrl::LIST, ['slug' => $slug]);
                 $cache->invalidateByUrl($listPath);
                 $cache->invalidateByUrl($listPath.'?*');
+
+                // 그 게시판의 글 상세 (게시판 이름을 렌더한다)
+                $cache->invalidateByUrl($listPath.'/*');
 
                 // 게시판 인덱스 페이지 (게시판명 목록 노출 가능)
                 $cache->invalidateByUrl(BoardScreenUrl::INDEX);
@@ -477,9 +481,11 @@ class SeoBoardCacheListener implements HookListenerInterface
                 $cache->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::POST, ['slug' => $slug, 'id' => $post->id]));
             }
 
-            // 해당 게시판의 목록 페이지만 무효화 (다른 게시판은 유지)
+            // 해당 게시판의 목록 페이지만 무효화 (다른 게시판은 유지) — 쪽 변종(`?page=2`)까지
             if ($slug) {
-                $cache->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::LIST, ['slug' => $slug]));
+                $listPath = BoardScreenUrl::defaultPath(BoardScreenUrl::LIST, ['slug' => $slug]);
+                $cache->invalidateByUrl($listPath);
+                $cache->invalidateByUrl($listPath.'?*');
             }
 
             // 홈 페이지 캐시 무효화 (최근 게시글 등이 표시될 수 있음)

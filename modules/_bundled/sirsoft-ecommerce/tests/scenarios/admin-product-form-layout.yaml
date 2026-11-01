@@ -11,6 +11,7 @@ description: >-
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productFormLayouts.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminCardClassOnControls.test.ts
 
 coverage_strategy: pairwise
 
@@ -25,6 +26,7 @@ axes:
     - common_info          # 공통정보 데이터소스(활성 항목만)
     - master_detail        # 마스터-디테일 화면 비율·스크롤 컨테이너
     - seo                  # SEO 제목·설명 다국어 입력
+    - card_class_on_controls # 단추·작은 요소에 카드 상자 클래스(admin-card) 금지 — 브랜드 해제 단추·언어 추가 창 단추
 
 exclusions:
   - { section: label_modal, reason: "제외 없음 — 구획마다 독립 단언" }
@@ -43,6 +45,7 @@ effects:
   - master_detail_layouts_keep_grid_ratio   # 마스터-디테일 화면들의 목록·상세 비율
   - master_detail_content_uses_page_scroll   # 마스터-디테일 콘텐츠는 페이지 스크롤 컨테이너를 쓴다
   - seo_inputs_multilingual_autobind   # SEO 제목·설명은 MultilingualInput 자동바인딩·$localized 카운터·동기화 미러
+  - controls_not_styled_as_card_container   # 단추·작은 요소는 admin-card(카드 컨테이너: 여백·테두리·mb-6)로 그리지 않는다(선택 카드 제외)
 
 validation:
   note: |

@@ -64,33 +64,24 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "ecommerce-admin-card"
+                        "className": "ecommerce-flex-center ecommerce:flex-col ecommerce:justify-center ecommerce:py-4 ecommerce:px-6 ecommerce:rounded-lg ecommerce-btn-secondary"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "ecommerce-row-stack"
+                                "className": "ecommerce:text-base ecommerce:font-medium"
                             },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "ecommerce:text-base ecommerce:font-medium"
-                                    },
-                                    "text": "English"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
-                                    },
-                                    "text": "EN"
-                                }
-                            ]
+                            "text": "English"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
+                            },
+                            "text": "EN"
                         }
                     ]
                 },
@@ -106,33 +97,24 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "ecommerce-admin-card"
+                        "className": "ecommerce-flex-center ecommerce:flex-col ecommerce:justify-center ecommerce:py-4 ecommerce:px-6 ecommerce:rounded-lg ecommerce-btn-secondary"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "ecommerce-row-stack"
+                                "className": "ecommerce:text-base ecommerce:font-medium"
                             },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "ecommerce:text-base ecommerce:font-medium"
-                                    },
-                                    "text": "日本語"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
-                                    },
-                                    "text": "JP"
-                                }
-                            ]
+                            "text": "日本語"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
+                            },
+                            "text": "JP"
                         }
                     ]
                 },
@@ -148,33 +130,24 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "ecommerce-admin-card"
+                        "className": "ecommerce-flex-center ecommerce:flex-col ecommerce:justify-center ecommerce:py-4 ecommerce:px-6 ecommerce:rounded-lg ecommerce-btn-secondary"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "ecommerce-row-stack"
+                                "className": "ecommerce:text-base ecommerce:font-medium"
                             },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "ecommerce:text-base ecommerce:font-medium"
-                                    },
-                                    "text": "中文(简体)"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
-                                    },
-                                    "text": "CN"
-                                }
-                            ]
+                            "text": "中文(简体)"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
+                            },
+                            "text": "CN"
                         }
                     ]
                 },
@@ -190,33 +163,24 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "ecommerce-admin-card"
+                        "className": "ecommerce-flex-center ecommerce:flex-col ecommerce:justify-center ecommerce:py-4 ecommerce:px-6 ecommerce:rounded-lg ecommerce-btn-secondary"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "ecommerce-row-stack"
+                                "className": "ecommerce:text-base ecommerce:font-medium"
                             },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "ecommerce:text-base ecommerce:font-medium"
-                                    },
-                                    "text": "中文(繁體)"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
-                                    },
-                                    "text": "TW"
-                                }
-                            ]
+                            "text": "中文(繁體)"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
+                            },
+                            "text": "TW"
                         }
                     ]
                 }

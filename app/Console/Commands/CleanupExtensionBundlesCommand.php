@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\ExtensionBundleService;
 use Illuminate\Console\Command;
 
@@ -15,15 +16,12 @@ use Illuminate\Console\Command;
  */
 class CleanupExtensionBundlesCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'ext-bundles:cleanup';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '오래된 확장 프론트엔드 병합 번들 파일(구 version)을 삭제합니다';
 
     /**
      * Execute the console command.

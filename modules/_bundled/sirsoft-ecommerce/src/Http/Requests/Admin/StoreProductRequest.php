@@ -145,6 +145,8 @@ class StoreProductRequest extends FormRequest
             'options.*.volume' => ['nullable', 'numeric', 'min:0'],
             'options.*.mileage_value' => ['nullable', 'numeric', 'min:0'],
             'options.*.mileage_type' => ['nullable', 'string', 'in:fixed,percent'],
+            // 옵션별 과세 종류 — 비우면(null) 상품 기본값을 따른다 (#612)
+            'options.*.tax_status' => ['nullable', Rule::enum(ProductTaxStatus::class)],
             'options.*.is_default' => ['nullable', 'boolean'],
             'options.*.is_active' => ['nullable', 'boolean'],
 
@@ -238,6 +240,7 @@ class StoreProductRequest extends FormRequest
             'options.*.list_price.required_with' => __('sirsoft-ecommerce::validation.product.options.list_price.required_with'),
             'options.*.selling_price.required_with' => __('sirsoft-ecommerce::validation.product.options.selling_price.required_with'),
             'options.*.stock_quantity.required_with' => __('sirsoft-ecommerce::validation.product.options.stock_quantity.required_with'),
+            'options.*.tax_status.enum' => __('sirsoft-ecommerce::validation.product.options.tax_status.in'),
 
             // 추가옵션 (선택지 누락/그룹명/추가금 — 영문 키 노출 방지)
             'additional_options.max' => __('sirsoft-ecommerce::validation.product.additional_options.max'),
@@ -335,6 +338,7 @@ class StoreProductRequest extends FormRequest
             'options.*.selling_price' => __('sirsoft-ecommerce::validation.product.attributes.option_selling_price'),
             'options.*.price_adjustment' => __('sirsoft-ecommerce::validation.product.attributes.option_price_adjustment'),
             'options.*.stock_quantity' => __('sirsoft-ecommerce::validation.product.attributes.option_stock_quantity'),
+            'options.*.tax_status' => __('sirsoft-ecommerce::validation.product.attributes.option_tax_status'),
             'options.*.option_name' => __('sirsoft-ecommerce::validation.product.attributes.option_name'),
             'options.*.option_code' => __('sirsoft-ecommerce::validation.product.attributes.option_code'),
             'option_groups.*.name' => __('sirsoft-ecommerce::validation.product.attributes.option_group_name'),

@@ -41,7 +41,14 @@
     },
     "503": {
       "title": "しばらくご利用ができません",
-      "description": "サービスをメンテナンス中です。しばらく後にもう一度お試しください。"
+      "description": "サービスをメンテナンス中です。しばらく後にもう一度お試しください。",
+      "unmet_dependencies": "必要な拡張機能が条件を満たしていません。",
+      "required_modules": "必要なモジュール",
+      "required_plugins": "必要なプラグイン",
+      "contact_admin": "管理者に問い合わせて、必要な拡張機能をインストール・有効化するか、更新してください。",
+      "reason_not_installed": "未インストール",
+      "reason_inactive": "無効",
+      "reason_version_mismatch": "バージョン不足 {{installed}} → {{required}}"
     },
     "back_to_home": "ホームに戻る",
     "maintenance": {

@@ -10,13 +10,14 @@ $isInstalled = file_exists($installedFlagPath) || (
     preg_match('/^INSTALLER_COMPLETED=true$/m', file_get_contents($envPath))
 );
 
-// 미설치 시 /install로 리다이렉트
+// 미설치 시 /install로 리다이렉트 — 스크립트 없이 HTTP 302 로 보낸다. 종전의 alert + location 인라인
+// 스크립트는 웹서버가 `Content-Security-Policy: script-src 'self'` 를 걸면 실행되지 않아 설치 화면으로
+// 넘어가지 못한 흰 화면이 됐다(#158).
+// Windows 에서는 루트 설치의 dirname('/index.php') 가 '\' 다 — JS 문자열에서는 '\/' 가 '/' 였지만 Location
+// 헤더의 '\/install' 은 브라우저가 '//install'(다른 호스트)로 읽는다. 역슬래시를 슬래시로 바꾼 뒤 자른다.
 if (! $isInstalled) {
-    $installUrl = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/').'/install';
-    echo '<script>
-        alert("G7 최초 사용을 위해 설치 절차가 필요합니다. 설치 화면으로 이동합니다.");
-        window.location.href="'.htmlspecialchars($installUrl).'";
-    </script>';
+    $installUrl = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/').'/install';
+    header('Location: '.$installUrl, true, 302);
     exit;
 }
 

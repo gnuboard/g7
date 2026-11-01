@@ -18,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
+use Plugins\Sirsoft\PayKginicis\Support\BridgeScript;
 use Plugins\Sirsoft\PayKginicis\Support\EscrowConfirmNonce;
 
 /**
@@ -136,10 +137,8 @@ class UserEscrowConfirmController extends Controller
             ]);
         }
 
-        // 팝업 닫기 + 부모 창 새로고침
-        return $this->htmlResponse(
-            '<script>try{window.opener&&window.opener.location.reload();}catch(e){}window.close();</script>'
-        );
+        // 팝업 닫기 + 부모 창 새로고침 — 정적 브리지 파일(인라인 <script> 는 strict CSP 에서 실행되지 않는다, #158)
+        return $this->htmlResponse(BridgeScript::tag('escrow-confirm.js', ['data-mode' => 'pc-return']));
     }
 
     /**
@@ -149,7 +148,7 @@ class UserEscrowConfirmController extends Controller
      */
     public function close(): Response
     {
-        return $this->htmlResponse('<script>window.close();</script>');
+        return $this->htmlResponse(BridgeScript::tag('escrow-confirm.js', ['data-mode' => 'close']));
     }
 
     /**
@@ -244,6 +243,8 @@ class UserEscrowConfirmController extends Controller
         $lang = e(app()->getLocale());
         $title = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_page_title'));
         $preparing = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_preparing'));
+        // 문서가 다 뜨면 구매결정 창을 띄운다 — 이니시스 스크립트 다음에 싣는다(#158 strict CSP)
+        $bridgeScript = BridgeScript::tag('escrow-confirm.js', ['data-mode' => 'pc-open', 'data-form' => 'escrow_confirm_form']);
 
         $html = <<<HTML
         <!DOCTYPE html>
@@ -253,7 +254,7 @@ class UserEscrowConfirmController extends Controller
             <meta name="viewport" content="width=device-width,initial-scale=1.0">
             <title>{$title}</title>
             <script src="{$jsUrl}" charset="UTF-8"></script>
-            <script>window.onload = function() { INIStdPay.pay('escrow_confirm_form'); };</script>
+            {$bridgeScript}
             <style>
                 body { font-family: sans-serif; display: flex; align-items: center;
                        justify-content: center; height: 100vh; margin: 0; background: #f5f5f5; }
@@ -296,6 +297,8 @@ class UserEscrowConfirmController extends Controller
         $lang = e(app()->getLocale());
         $title = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_page_title'));
         $redirecting = e(__('sirsoft-pay_kginicis::messages.escrow.confirm_redirecting'));
+        // 폼 자동 제출 — 정적 브리지 파일(인라인 <script> 는 strict CSP 에서 실행되지 않는다, #158)
+        $bridgeScript = BridgeScript::tag('escrow-confirm.js', ['data-mode' => 'mobile-submit', 'data-form' => 'mobile_confirm_form']);
 
         $html = <<<HTML
         <!DOCTYPE html>
@@ -320,7 +323,7 @@ class UserEscrowConfirmController extends Controller
                 <input type="hidden" name="P_NEXT_URL"    value="{$nextUrl}">
                 <input type="hidden" name="P_RESERVED"    value="">
             </form>
-            <script>document.getElementById('mobile_confirm_form').submit();</script>
+            {$bridgeScript}
         </body>
         </html>
         HTML;

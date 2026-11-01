@@ -78,6 +78,7 @@ class DeclarativeSurfaceCollector
         'getCacheStore' => '캐시 스토어',
         // 메타
         'getDependencies' => '의존 확장',
+        'getIntegrations' => '연동 확장(선택)',
         'getRequiredCoreVersion' => '코어 최소 버전',
         'getLicense' => '라이선스',
         'getGithubUrl' => 'GitHub URL',

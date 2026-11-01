@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\StorageLeftoverPruneService;
 use Illuminate\Console\Command;
@@ -16,6 +17,7 @@ use Illuminate\Console\Command;
  */
 class PruneStorageLeftoversCommand extends Command
 {
+    use LocalizesDescription;
     use ParsesDaysOption;
 
     /**
@@ -25,11 +27,6 @@ class PruneStorageLeftoversCommand extends Command
                             {--days=3 : 임시 산출물 보존일 (mtime 기준, 경과분 삭제)}
                             {--backup-days=30 : 백업 보존일 (identifier 별 최신 1개는 나이와 무관하게 보존)}
                             {--dry-run : 실제 삭제 없이 대상 목록만 확인}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '중단된 업데이트·설치가 남긴 임시 산출물과 오래된 백업본을 정리합니다';
 
     /**
      * 대상군 키 → 출력 라벨.

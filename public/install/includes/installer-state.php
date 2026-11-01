@@ -89,7 +89,7 @@ function getInstallationState(): array
  */
 function installerOwnershipStateKeys(): array
 {
-    return ['owner_hash', 'recovery_hash', 'generation', 'drop_confirm', 'install_plan_sig', 'existing_db_action'];
+    return ['owner_hash', 'owner_kind', 'recovery_hash', 'generation', 'drop_confirm', 'install_plan_sig', 'existing_db_action'];
 }
 
 /**
@@ -154,6 +154,7 @@ function installerWithStateLock(callable $callback): bool
  *
  * @param  string  $name  락 이름 (state | log)
  * @param  resource  $handle  flock 을 쥔 파일 핸들
+ * @return void 반환값 없음
  */
 function installerTrackHeldLock(string $name, $handle): void
 {
@@ -164,6 +165,7 @@ function installerTrackHeldLock(string $name, $handle): void
  * 락 기록을 지운다 (정상 해제 직전 호출).
  *
  * @param  string  $name  락 이름
+ * @return void 반환값 없음
  */
 function installerUntrackHeldLock(string $name): void
 {
@@ -403,6 +405,33 @@ if (! function_exists('redactInstallationStateSecrets')) {
     }
 }
 
+if (! function_exists('installer_site_language')) {
+    /**
+     * 설치되는 사이트의 기본 언어를 state 에서 정한다.
+     *
+     * `.env APP_LOCALE`·`APP_FAKER_LOCALE` 과 설정 `general.language` 가 모두 이 값을 쓴다.
+     * 세션(UI 언어)을 읽지 않는다 — SSE 워커·터미널 설치처럼 세션이 없는 실행 경로가 있어,
+     * 세션을 읽으면 실행 경로마다 결과가 달라진다(설정은 ko, .env 는 en 으로 어긋나던 결함).
+     *
+     * 우선순위: config.site_language(Step 3 숨김 필드·`--site-language`) → g7_locale(설치 UI 언어) → ko.
+     *
+     * @param  array<string, mixed>  $state  인스톨러 state
+     * @return string 지원 언어 코드
+     */
+    function installer_site_language(array $state): string
+    {
+        $supported = defined('SUPPORTED_LANGUAGES') ? array_keys(SUPPORTED_LANGUAGES) : ['ko', 'en'];
+
+        foreach ([$state['config']['site_language'] ?? null, $state['g7_locale'] ?? null] as $candidate) {
+            if (is_string($candidate) && in_array($candidate, $supported, true)) {
+                return $candidate;
+            }
+        }
+
+        return 'ko';
+    }
+}
+
 /**
  * 설치 완료 여부 확인
  *
@@ -519,24 +548,36 @@ function removeTaskCompleted(string $task): bool
  */
 function acquireWorkerLock(int $staleSeconds = 15): array
 {
-    $state = getInstallationState();
-    $now = time();
+    $result = ['acquired' => false, 'worker_id' => null, 'reason' => 'busy'];
 
-    $activeId = $state['active_worker_id'] ?? null;
-    $lastHeartbeat = $state['last_heartbeat'] ?? 0;
+    // 읽기·확인·쓰기를 state 쓰기 락 안에서 한 번에 한다 — 따로 하면 두 워커(웹 SSE·폴링·터미널)가
+    // 같은 순간 둘 다 "비어 있음" 을 읽고 둘 다 잠금을 얻는다. 락 안이므로 쓰기는 installerWriteStateFile 로 직접.
+    installerWithStateLock(static function () use (&$result, $staleSeconds): bool {
+        $state = installerReadStateFile() ?? getInstallationState();
+        $now = time();
 
-    if ($activeId !== null && ($now - $lastHeartbeat) < $staleSeconds) {
-        return ['acquired' => false, 'worker_id' => null, 'reason' => 'busy'];
-    }
+        $activeId = $state['active_worker_id'] ?? null;
+        $lastHeartbeat = $state['last_heartbeat'] ?? 0;
 
-    $reason = $activeId !== null ? 'takeover_stale' : 'available';
-    $newWorkerId = bin2hex(random_bytes(8));
+        if ($activeId !== null && ($now - $lastHeartbeat) < $staleSeconds) {
+            return false;
+        }
 
-    $state['active_worker_id'] = $newWorkerId;
-    $state['last_heartbeat'] = $now;
-    saveInstallationState($state);
+        $reason = $activeId !== null ? 'takeover_stale' : 'available';
+        $newWorkerId = bin2hex(random_bytes(8));
 
-    return ['acquired' => true, 'worker_id' => $newWorkerId, 'reason' => $reason];
+        $state['active_worker_id'] = $newWorkerId;
+        $state['last_heartbeat'] = $now;
+
+        // 종전 동작과 같이 기록 실패가 실행을 막지는 않는다 — 실패는 installerWriteStateFile 이 로그로 남긴다.
+        installerWriteStateFile($state);
+
+        $result = ['acquired' => true, 'worker_id' => $newWorkerId, 'reason' => $reason];
+
+        return true;
+    });
+
+    return $result;
 }
 
 /**
@@ -628,6 +669,62 @@ function installerWaitForWorkerRelease(int $maxSeconds, int $intervalMs = 200): 
 
         usleep(max(10, $intervalMs) * 1000);
     }
+}
+
+/**
+ * 데이터베이스를 건드리기 전에 도는 설치 작업 목록.
+ *
+ * 작업 순서는 고정이다(runInstallationTasks) — 이 다섯 작업 뒤의 db_cleanup 부터 DB 를 바꾼다.
+ *
+ * @return list<string> 작업 ID 목록
+ */
+function installerPreDatabaseTaskIds(): array
+{
+    return ['composer_check', 'composer_install', 'env_update', 'key_generate', 'dependency_precheck'];
+}
+
+/**
+ * 상태 초기화(reset) 때 「DB 는 자동으로 초기화되지 않는다」 안내가 필요한지.
+ *
+ * 이번 설치 시도에서 DB 작업(db_cleanup 이후)이 끝났거나, DB 작업에서 멈췄거나(실패·중단),
+ * 그 작업을 알 수 없으면 true. 의존성 사전 검증 실패처럼 DB 를 건드리기 전에 멈춘 설치는 false.
+ *
+ * @param  array<string, mixed>  $state  초기화 직전 인스톨러 state
+ * @return bool 안내가 필요하면 true
+ */
+function installerResetNeedsDbNotice(array $state): bool
+{
+    $preDatabase = installerPreDatabaseTaskIds();
+    $isPreDatabase = static function ($taskKey) use ($preDatabase): bool {
+        if (! is_string($taskKey) || $taskKey === '') {
+            return false;
+        }
+        $taskId = explode(':', $taskKey, 2)[0];
+
+        return in_array($taskId, $preDatabase, true);
+    };
+
+    foreach ((array) ($state['completed_tasks'] ?? []) as $task) {
+        if (! $isPreDatabase($task)) {
+            return true;
+        }
+    }
+
+    $stoppedAt = $state['failed_task'] ?? null;
+    if (! is_string($stoppedAt) || $stoppedAt === '') {
+        $stoppedAt = $state['current_task'] ?? null;
+    }
+    if (is_string($stoppedAt) && $stoppedAt !== '' && ! $isPreDatabase($stoppedAt)) {
+        return true;
+    }
+
+    // 실패·중단인데 멈춘 작업을 모르고 DB 전 작업이 모두 끝나 있었다면, 다음 작업(db_cleanup)부터는 DB 를 바꾼다
+    $status = $state['installation_status'] ?? null;
+    if (in_array($status, ['failed', 'aborted', 'running'], true) && (! is_string($stoppedAt) || $stoppedAt === '')) {
+        return array_diff($preDatabase, (array) ($state['completed_tasks'] ?? [])) === [];
+    }
+
+    return false;
 }
 
 /**

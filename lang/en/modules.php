@@ -3,7 +3,8 @@
 return [
     // Common messages
     'not_found' => 'Module ":module" not found.',
-    'dependency_not_active' => 'Dependency module ":dependency" is not installed or inactive.',
+    'dependency_not_active' => 'Dependency :type ":dependency" is not installed or inactive.',
+    'dependency_version_unmet' => 'The installed version (:installed) of dependency ":dependency" does not satisfy the required version (:required). Update the dependency first.',
 
     'status' => [
         'active' => 'Active',
@@ -66,6 +67,7 @@ return [
             'missing_status' => [
                 'not_installed' => 'not installed',
                 'inactive' => 'inactive',
+                'version_mismatch' => 'version too low :installed → :required',
             ],
             'force_hint' => 'Use the --force option to activate anyway.',
         ],

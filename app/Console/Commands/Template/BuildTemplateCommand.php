@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Template;
 
 use App\Console\Commands\Concerns\PrunesBuildOutput;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use Illuminate\Console\Command;
@@ -12,6 +13,7 @@ use Symfony\Component\Process\Process;
 class BuildTemplateCommand extends Command
 {
     use ClearsTemplateCaches;
+    use LocalizesDescription;
     use PrunesBuildOutput;
 
     /**
@@ -23,11 +25,6 @@ class BuildTemplateCommand extends Command
                             {--watch : 파일 변경 감시 모드}
                             {--production : 프로덕션 빌드}
                             {--active : 활성 디렉토리에서 빌드}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '템플릿의 프론트엔드 에셋을 빌드합니다 (기본: _bundled 디렉토리)';
 
     /**
      * 커맨드를 생성합니다.

@@ -61,7 +61,8 @@
     "tax_status_options": {
       "all": "전체",
       "taxable": "과세",
-      "tax_free": "비과세"
+      "tax_free": "면세",
+      "zero_rated": "영세"
     },
     "price": "가격",
     "price_type_select": "가격 기준",
@@ -287,8 +288,10 @@
       "tax_status": "과세 여부",
       "tax_status_options": {
         "taxable": "과세",
-        "tax_free": "면세"
+        "tax_free": "면세",
+        "zero_rated": "영세"
       },
+      "tax_status_help": "옵션마다 다르게 하려면 상품옵션 표의 「과세 종류」에서 바꿉니다. 영세는 세율 0%(수출 등)로, 결제사에는 면세로 전달됩니다.",
       "sales_status": "판매 상태",
       "sales_status_options": {
         "on_sale": "판매중",
@@ -859,6 +862,7 @@
       "category": "분류",
       "list_price": "정가",
       "selling_price": "판매가",
+      "tax_status": "과세 종류",
       "price": "가격",
       "price_type": "가격유형",
       "sku": "SKU",
@@ -897,7 +901,8 @@
       "additional_value_min_1": "그룹당 선택지는 최소 1개가 필요합니다."
     },
     "option_group_name_n": "{{n}}번째 옵션그룹명",
-    "option_group_values_n": "{{n}}번째 옵션그룹 옵션값"
+    "option_group_values_n": "{{n}}번째 옵션그룹 옵션값",
+    "tax_status_inherit": "기본값 따름 ({{status}})"
   },
   "notice": {
     "tab_existing_template": "템플릿 선택",
@@ -1139,7 +1144,8 @@
   },
   "tax": {
     "taxable": "과세",
-    "tax_free": "비과세"
+    "tax_free": "면세",
+    "zero_rated": "영세"
   },
   "labels": {
     "title": "라벨",

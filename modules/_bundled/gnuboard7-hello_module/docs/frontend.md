@@ -27,7 +27,7 @@
 |---|---|---|
 | `admin_memo_list` · `admin_memo_form` | `admin` | 관리자 목록·작성 화면의 최소 형태 (`_admin_base` 상속) |
 | `admin_markup_demo` | `admin` | 마크업 형식(`.g7.html`) 한 장이 화면이 되는 최소 예시 (베이스 상속 없음) |
-| `user_memo_list` | `user` | **모듈도 사용자 레이아웃을 가질 수 있다** (`_user_base` 상속). 메모 한 건은 이 모듈이 제공하는 `MemoCard` 로 그린다 |
+| `user_memo_list` | `user` | **모듈도 사용자 레이아웃을 가질 수 있다** (`_user_base` 상속) · **모듈 화면 SEO 선언 예시** (`meta.seo`). 메모 한 건은 이 모듈이 제공하는 `MemoCard` 로 그린다 |
 
 실제 도메인 모듈(게시판·이커머스)은 방문자 화면을 소유하지 않고 템플릿에 맡깁니다 — 템플릿마다
 디자인이 달라야 하기 때문입니다. 이 샘플의 `user_memo_list` 는 그 규칙의 예외가 아니라, 구조상
@@ -35,6 +35,13 @@
 
 모듈 레이아웃은 위치에 따라 등록 대상이 갈립니다 — `admin/` 하위는 Admin 템플릿에,
 `user/` 하위는 User 템플릿에 등록됩니다.
+
+`user_memo_list` 는 **모듈 소유 화면의 SEO 선언**도 보입니다. 템플릿 `_user_base` 의 기본값(SEO 끔)을
+이 화면의 `<meta>` 안 `<seo :enabled="true">` 가 덮어, 검색봇이 `/memos` 를 요청하면 제목·설명·og 태그와
+본문(메모 제목)이 담긴 HTML 을 받습니다. `<data-sources><item>memos</item></data-sources>` 로 고른 데이터 소스만
+봇 렌더 때 호출합니다. 라우트의 레이아웃 이름은 모듈 식별자가 붙은 전체 이름
+(`gnuboard7-hello_module.user_memo_list`)이고, 봇 캐시를 지울 때도 이 이름을 씁니다
+(`php artisan seo:clear --layout=gnuboard7-hello_module.user_memo_list`). 코어 7.1.4 이상에서 동작합니다.
 
 레이아웃의 클래스는 모두 이 모듈 CSS 의 `hellomodule-*` 입니다([스타일](#스타일--모듈-자기-css)). 템플릿 CSS 나
 Tailwind 유틸리티를 쓰지 않으므로, 클래스를 새로 쓰면 `resources/css/main.css` 에 정의를 더하고 빌드합니다.

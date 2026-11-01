@@ -54,6 +54,16 @@ interface TemplateManagerInterface
     public function getTemplate(string $identifier): ?array;
 
     /**
+     * 템플릿이 선택 연동(`integrations`)으로 선언한 확장을 「식별자 => 버전 제약」 맵으로 반환합니다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return array{modules: array<string, string>, plugins: array<string, string>, templates: array<string, string>} 유형별 식별자 => 버전 제약
+     *
+     * @since 7.1.4
+     */
+    public function getIntegrationConstraints(string $identifier): array;
+
+    /**
      * 지정된 템플릿을 시스템에 설치합니다.
      *
      * @param  string  $identifier  설치할 템플릿 식별자

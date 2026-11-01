@@ -1,8 +1,5 @@
 <?php
 
-use App\Support\OpcacheStatus;
-use App\Support\PrivilegedDatabaseAccounts;
-
 /**
  * G7 인스톨러 - 검증 통합 API
  *
@@ -19,6 +16,9 @@ require_once __DIR__.'/../includes/utf8.php';
 require_once __DIR__.'/../includes/binary-path-policy.php';
 // 설치 소유권·CSRF·DB 연결 지문 헬퍼 (의존성 없는 순수 함수)
 require_once __DIR__.'/../includes/installer-ownership.php';
+// 요구사항·바이너리·DB 검사 본문 — 웹·터미널 공유 함수 (함수 정의만, 로드 시 실행 없음)
+require_once __DIR__.'/../includes/requirements.php';
+require_once __DIR__.'/../includes/db-check.php';
 
 /**
  * 검증 API 클래스
@@ -69,29 +69,8 @@ class ValidationApi
      */
     private function checkRequirements(): void
     {
-        // 요구사항 검증 결과 배열
-        $requirements = [
-            'php_version' => $this->checkPhpVersion(),
-            'php_extensions' => $this->checkPhpExtensions(),
-            'disabled_functions' => $this->checkDisabledFunctions(),
-            'php_cli_version' => $this->checkPhpCliVersion(),
-            'disk_space' => $this->checkDiskSpace(),
-            'directories' => $this->checkDirectoryPermissions(),
-            'required_files' => $this->checkRequiredFiles(),
-            'https' => $this->checkHttps(),
-            'opcache' => $this->checkOpcache(),
-            'vendor_dev_packages' => $this->checkVendorDevPackages(),
-            'asset_url_mode' => $this->checkAssetUrlMode(),
-        ];
-
-        // 모든 필수 요구사항 통과 여부
-        $requirements['all_required_passed'] = $this->isAllRequiredPassed($requirements);
-
-        // OS 정보 (프론트엔드에서 명령어 분기용)
-        $requirements['is_windows'] = isWindows();
-
-        // JSON 응답 반환
-        echo installer_json_encode($requirements, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        // 판정 본문은 공유 함수 — Step 2 다음 단계 POST 의 서버 재검사·터미널 설치와 같은 결과를 낸다.
+        echo installer_json_encode(installer_collect_requirements(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -116,666 +95,97 @@ class ValidationApi
         // DB 테스트는 세션에 "검사 통과" 지문과 기존 테이블 삭제 확인 토큰을 남기는 상태변경이다.
         installer_require_csrf();
 
-        try {
-            // POST 데이터 파싱
-            $input = installer_request_json_body();
+        $input = installer_request_json_body();
 
-            if (! $input || ! is_array($input)) {
-                throw new Exception(lang('api_invalid_request'));
-            }
-
-            // DB 타입 확인 ('write' 또는 'read')
-            $type = $input['type'] ?? 'write';
-            $isReadDb = ($type === 'read');
-
-            // DB 연결 정보 구성
-            $config = [];
-
-            if ($isReadDb) {
-                $config['db_read_host'] = $input['host'] ?? 'localhost';
-                $config['db_read_port'] = $input['port'] ?? '3306';
-                $config['db_read_database'] = $input['database'] ?? '';
-                $config['db_read_username'] = $input['username'] ?? '';
-                $config['db_read_password'] = $input['password'] ?? '';
-            } else {
-                $config['db_write_host'] = $input['host'] ?? 'localhost';
-                $config['db_write_port'] = $input['port'] ?? '3306';
-                $config['db_write_database'] = $input['database'] ?? '';
-                $config['db_write_username'] = $input['username'] ?? '';
-                $config['db_write_password'] = $input['password'] ?? '';
-            }
-
-            // 필수 필드 검증
-            $database = $isReadDb ? $config['db_read_database'] : $config['db_write_database'];
-            $username = $isReadDb ? $config['db_read_username'] : $config['db_write_username'];
-
-            if (empty($database) || empty($username)) {
-                throw new Exception(lang('error_db_credentials_required'));
-            }
-
-            // DB 최고권한 계정 차단 (Write/Read 공통).
-            // 최고권한 계정 자격증명이 유출되면 데이터베이스 전체가 위험해지므로
-            // 연결 시도 전에 막는다. 판정은 App\Support\PrivilegedDatabaseAccounts 가 SSoT.
-            if (PrivilegedDatabaseAccounts::isBlocked($username)) {
-                throw new Exception(
-                    lang('error_db_username_privileged', ['username' => $username])
-                );
-            }
-
-            // DB 테이블 접두사 길이 검증 (Write DB 입력에만 적용)
-            // 접두사가 길면 자동 생성 인덱스명이 MySQL identifier 한도(64자)를 초과해
-            // 일부 확장 설치 시 마이그레이션이 실패하므로 연결 시도 전에 차단한다.
-            if (! $isReadDb) {
-                $tablePrefix = (string) ($input['db_prefix'] ?? '');
-                if (strlen($tablePrefix) > MAX_DB_PREFIX_LENGTH) {
-                    throw new Exception(
-                        lang('error_db_prefix_too_long', [
-                            'max' => MAX_DB_PREFIX_LENGTH,
-                            'current' => strlen($tablePrefix),
-                        ])
-                    );
-                }
-            }
-
-            // 데이터베이스 연결 시도
-            $pdo = getDatabaseConnection($config, $isReadDb);
-
-            // 권한 검증
-            $privileges = checkDatabasePrivileges($pdo, $database, $isReadDb);
-
-            // 권한 부족 확인
-            if (! $privileges['has_all'] && ! empty($privileges['missing'])) {
-                $missingPrivs = implode(', ', $privileges['missing']);
-                $dbTypeLabel = $isReadDb ? 'Read' : 'Write';
-
-                throw new Exception(
-                    lang('error_db_privileges_insufficient_detail', ['type' => $dbTypeLabel, 'missing' => $missingPrivs])
-                );
-            }
-
-            // 연결 및 권한 검증 성공 플래그 (Write/Read 구분) + 검사한 연결설정 지문.
-            // Step 3 제출 시 같은 지문을 다시 계산해 "검사한 설정 = 제출한 설정" 을 확인한다.
-            $tested = [
-                'host' => $input['host'] ?? 'localhost',
-                'port' => $input['port'] ?? '3306',
-                'database' => $database,
-                'username' => $username,
-                'password' => $input['password'] ?? '',
-            ];
-            if ($isReadDb) {
-                $_SESSION['db_read_tested'] = true;
-                $_SESSION['db_read_fp'] = installer_db_fingerprint($tested, installer_owner_token());
-                $message = lang('success_db_read_connected');
-            } else {
-                $tested['prefix'] = $input['db_prefix'] ?? '';
-                $_SESSION['db_write_tested'] = true;
-                $_SESSION['db_write_fp'] = installer_db_fingerprint($tested, installer_owner_token());
-                $message = lang('success_db_write_connected');
-            }
-
-            // 기존 테이블 감지 (Write DB만 수행)
-            // 사용자가 입력한 db_prefix를 g7 시그니처에 적용하여 정확히 비교
-            $existingTables = null;
-            $dropConfirmToken = null;
-            if (! $isReadDb) {
-                $detectPrefix = ($input['db_prefix'] ?? '') !== '' ? (string) $input['db_prefix'] : 'g7_';
-                $existingTables = checkExistingTables($pdo, $database, $detectPrefix);
-
-                // 기존 테이블이 있으면 삭제 확인 토큰을 발급한다 — drop_tables 는 이 토큰과
-                // 탐지 테이블 불변이 확인될 때만 실행된다 (요청 본문의 액션 값만으로는 삭제 불가).
-                unset($_SESSION['drop_confirm']);
-                if (! empty($existingTables['has_tables'])) {
-                    $issued = installer_issue_drop_confirm(
-                        $detectPrefix,
-                        filterTablesByPrefix($existingTables['all_tables'] ?? [], $detectPrefix)
-                    );
-                    $_SESSION['drop_confirm'] = $issued['record'];
-                    $dropConfirmToken = $issued['token'];
-                }
-            }
-
-            // 성공 응답
+        if (! $input || ! is_array($input)) {
             echo installer_json_encode([
-                'success' => true,
-                'message' => $message,
-                'type' => $type,
-                'privileges' => [
-                    'has_all' => $privileges['has_all'],
-                    'found' => $privileges['found'],
-                    'required' => $privileges['required'],
-                ],
-                'existing_tables' => $existingTables,
-                'drop_confirm' => $dropConfirmToken,
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        } catch (PDOException $e) {
-            // 연결 실패 플래그
-            $isReadDb = isset($type) && $type === 'read';
+                'success' => false,
+                'message' => lang('api_invalid_request'),
+                'type' => 'write',
+            ], JSON_UNESCAPED_UNICODE);
 
+            return;
+        }
+
+        // DB 타입 확인 ('write' 또는 'read')
+        $type = ($input['type'] ?? 'write') === 'read' ? 'read' : 'write';
+        $isReadDb = ($type === 'read');
+
+        // 연결·권한·기존 테이블 검사 본문은 공유 함수 — 터미널 설치와 같은 판정.
+        $result = installer_test_database([
+            'host' => $input['host'] ?? 'localhost',
+            'port' => $input['port'] ?? '3306',
+            'database' => $input['database'] ?? '',
+            'username' => $input['username'] ?? '',
+            'password' => $input['password'] ?? '',
+            'db_prefix' => $input['db_prefix'] ?? '',
+        ], $type, getCurrentLanguage());
+
+        if (! $result['success']) {
             // 실패는 "검사 안 됨" 과 같다 — false 를 저장하면 isset 계열 검사가 통과시킨다.
             installer_forget_db_test($isReadDb);
 
-            // 에러 로깅
-            logInstallationError(lang('error_db_connection_failed', ['error' => $e->getMessage()]), $e);
-
-            // 에러 응답 (200 OK + success: false)
             echo installer_json_encode([
                 'success' => false,
-                'message' => lang('error_db_connection_failed_detail', ['type' => ($isReadDb ? 'Read' : 'Write'), 'error' => $e->getMessage()]),
-                'type' => $type ?? 'write',
+                'message' => $result['message'],
+                'type' => $type,
             ], JSON_UNESCAPED_UNICODE);
-        } catch (Exception $e) {
-            // 권한 검증 실패 또는 기타 에러
-            $isReadDb = isset($type) && $type === 'read';
 
-            if (isset($type)) {
-                installer_forget_db_test($isReadDb);
-            }
-
-            // 에러 로깅
-            logInstallationError(lang('error_db_test_failed'), $e);
-
-            // 에러 응답 (200 OK + success: false)
-            echo installer_json_encode([
-                'success' => false,
-                'message' => $e->getMessage(),
-                'type' => $type ?? 'write',
-            ], JSON_UNESCAPED_UNICODE);
-        }
-    }
-
-    // ========================================
-    // 서버 요구사항 검증 헬퍼 메서드
-    // ========================================
-
-    /**
-     * PHP 버전 검증
-     */
-    private function checkPhpVersion(): array
-    {
-        $currentVersion = PHP_VERSION;
-        $minVersion = MIN_PHP_VERSION;
-        $passed = version_compare($currentVersion, $minVersion, '>=');
-
-        return [
-            'required' => true,
-            'min_version' => $minVersion,
-            'current_version' => $currentVersion,
-            'passed' => $passed,
-            'message' => $passed
-                ? lang('success_php_version_detail', ['current' => $currentVersion, 'min' => $minVersion])
-                : lang('error_php_version_insufficient_detail', ['current' => $currentVersion, 'min' => $minVersion]),
-        ];
-    }
-
-    /**
-     * PHP 확장 모듈 검증
-     *
-     * 필수 및 선택적 확장 모듈을 검증합니다.
-     * 선택적 모듈은 설치 여부만 표시하며 전체 검증 통과에 영향을 주지 않습니다.
-     */
-    private function checkPhpExtensions(): array
-    {
-        $requiredExtensions = REQUIRED_EXTENSIONS;
-        $optionalExtensions = defined('OPTIONAL_EXTENSIONS') ? OPTIONAL_EXTENSIONS : [];
-
-        $installed = [];
-        $allRequiredPassed = true;
-
-        // 필수 확장 검증
-        foreach ($requiredExtensions as $extension) {
-            $isLoaded = extension_loaded($extension);
-            $installed[$extension] = [
-                'required' => true,
-                'installed' => $isLoaded,
-            ];
-
-            if (! $isLoaded) {
-                $allRequiredPassed = false;
-            }
+            return;
         }
 
-        // 선택적 확장 검증 (설치 여부만 표시)
-        $optionalInstalled = [];
-        foreach ($optionalExtensions as $extension) {
-            $optionalInstalled[$extension] = [
-                'required' => false,
-                'installed' => extension_loaded($extension),
-            ];
-        }
-
-        return [
-            'required' => $requiredExtensions,
-            'optional' => $optionalExtensions,
-            'installed' => $installed,
-            'optional_installed' => $optionalInstalled,
-            'all_required_passed' => $allRequiredPassed,
-            'message' => $allRequiredPassed
-                ? lang('success_php_extensions')
-                : lang('error_php_extensions_missing'),
+        // 검사 통과 기록 + 검사한 연결설정 지문 — Step 3 제출 때 같은 지문을 다시 계산해 "검사한 설정 = 제출한 설정" 을 확인한다.
+        $tested = [
+            'host' => $input['host'] ?? 'localhost',
+            'port' => $input['port'] ?? '3306',
+            'database' => $input['database'] ?? '',
+            'username' => $input['username'] ?? '',
+            'password' => $input['password'] ?? '',
         ];
-    }
-
-    /**
-     * 디스크 공간 검증
-     */
-    private function checkDiskSpace(): array
-    {
-        $minSpaceMb = MIN_DISK_SPACE_MB;
-        $freeSpaceBytes = @disk_free_space(BASE_PATH);
-
-        // disk_free_space() 실패 시
-        if ($freeSpaceBytes === false) {
-            return [
-                'required' => true,
-                'min_mb' => $minSpaceMb,
-                'current_mb' => 0,
-                'passed' => false,
-                'message' => lang('error_disk_space_unknown'),
-            ];
-        }
-
-        $freeSpaceMb = round($freeSpaceBytes / 1024 / 1024, 2);
-        $passed = $freeSpaceMb >= $minSpaceMb;
-
-        return [
-            'required' => true,
-            'min_mb' => $minSpaceMb,
-            'current_mb' => $freeSpaceMb,
-            'passed' => $passed,
-            'message' => $passed
-                ? lang('success_disk_space_detail', ['current' => $freeSpaceMb, 'min' => $minSpaceMb])
-                : lang('error_disk_space_insufficient_detail', ['current' => $freeSpaceMb, 'min' => $minSpaceMb]),
-        ];
-    }
-
-    /**
-     * 디렉토리 권한 검증
-     *
-     * functions.php의 공통 함수를 사용하여 권한을 체크합니다.
-     */
-    private function checkDirectoryPermissions(): array
-    {
-        // 공통 함수 호출
-        $check = checkDirectoryPermissions(REQUIRED_DIRECTORIES);
-
-        // API 응답 형식에 맞게 변환
-        $results = [];
-        foreach ($check['results'] as $dir => $result) {
-            $results[$dir] = [
-                'path' => $dir,
-                'full_path' => BASE_PATH.'/'.$dir,
-                'relative_path' => './'.$dir,
-                'exists' => $result['exists'],
-                'writable' => $result['writable'],
-                'readable' => $result['readable'],
-                'permissions' => $result['permissions'],
-                'owner' => $result['owner'],
-                'group' => $result['group'],
-                'passed' => $result['passed'],
-                'error_type' => $result['error_type'],
-                'has_subdirectory_issues' => $result['has_subdirectory_issues'],
-                'failed_subdirectories' => $result['failed_subdirectories'],
-            ];
-        }
-
-        return [
-            'required' => true,
-            'paths' => array_keys(REQUIRED_DIRECTORIES),
-            'results' => $results,
-            'required_permissions' => REQUIRED_DIRECTORY_PERMISSIONS_DISPLAY,
-            'web_server_group' => getWebServerGroup() ?? getWebServerUser() ?? 'www-data',
-            'web_server_user' => getWebServerUser(),
-            'all_passed' => $check['all_passed'],
-            'message' => $check['all_passed']
-                ? lang('success_directories_writable')
-                : lang('error_directory_not_writable_detail', ['permissions' => REQUIRED_DIRECTORY_PERMISSIONS_DISPLAY]),
-        ];
-    }
-
-    /**
-     * 필수 파일 존재 여부 검증
-     *
-     * .env 파일이 프로젝트 루트에 존재하는지 확인합니다.
-     */
-    private function checkRequiredFiles(): array
-    {
-        $basePath = BASE_PATH;
-
-        $filePaths = [
-            '.env' => $basePath.'/.env',
-        ];
-
-        $createCommands = [
-            '.env' => getEnvCopyCommand($basePath),
-        ];
-
-        $webServerUser = getWebServerUser();
-        $files = [];
-        $allPassed = true;
-        $hasNotWritable = false;
-
-        foreach ($filePaths as $name => $fullPath) {
-            $exists = file_exists($fullPath);
-            $writable = $exists && is_writable($fullPath);
-
-            // 통과 조건: 존재 + 쓰기 가능
-            $passed = $exists && $writable;
-            if (! $passed) {
-                $allPassed = false;
-            }
-
-            // 권한 비트/소유자 정보 수집 (ownership_mismatch 판별용)
-            $permissions = 'N/A';
-            $permsOctal = 0;
-            $owner = null;
-            if ($exists) {
-                $perms = fileperms($fullPath);
-                $permissions = substr(sprintf('%o', $perms), -3);
-                $permsOctal = octdec($permissions);
-                $owner = getFileOwnerName($fullPath);
-            }
-
-            // 에러 타입 결정
-            // ownership_mismatch: 파일이 존재하고 권한이 0644 이상인데도 쓰기 불가
-            //                     → 소유자와 웹서버 실행 사용자 불일치
-            $errorType = null;
-            if (! $exists) {
-                $errorType = 'not_exists';
-            } elseif (! $writable) {
-                if ($permsOctal >= 0644 && $webServerUser && $owner && $owner !== $webServerUser) {
-                    $errorType = 'ownership_mismatch';
-                } else {
-                    $errorType = 'not_writable';
-                }
-                $hasNotWritable = true;
-            }
-
-            $files[$name] = [
-                'exists' => $exists,
-                'writable' => $writable,
-                'passed' => $passed,
-                'error_type' => $errorType,
-                'permissions' => $permissions,
-                'owner' => $owner,
-                'web_server_user' => $webServerUser,
-                'command' => $createCommands[$name],
-            ];
-        }
-
-        // base_path 소유자 정보 — .env 파일 생성 시 chgrp 포함 여부 판단용
-        // 프로젝트 루트 소유자가 웹서버 실행 사용자와 다른 경우, 생성 직후 ownership_mismatch가
-        // 재현되므로 복사 명령 자체에 chgrp + chmod 664를 미리 포함시키기 위함
-        $basePathOwner = function_exists('posix_getpwuid') && is_dir($basePath)
-            ? (posix_getpwuid(fileowner($basePath))['name'] ?? null)
-            : null;
-        $basePathOwnerMatchesWebUser = $basePathOwner && $webServerUser && $basePathOwner === $webServerUser;
-
-        return [
-            'required' => true,
-            'files' => $files,
-            'all_passed' => $allPassed,
-            'has_not_writable' => $hasNotWritable,
-            'web_server_group' => getWebServerGroup() ?? $webServerUser ?? 'www-data',
-            'web_server_user' => $webServerUser,
-            'base_path' => $basePath,
-            'base_path_owner' => $basePathOwner,
-            'base_path_owner_matches_web_user' => $basePathOwnerMatchesWebUser,
-            'relative_base_path' => '.',
-            'message' => $allPassed
-                ? lang('success_required_files')
-                : lang('error_required_files_missing'),
-        ];
-    }
-
-    /**
-     * HTTPS 사용 여부 확인
-     *
-     * 이 검사는 저장소에서 유일하게 X-Forwarded-Proto 를 실제로 읽는 지점이었다. 그래서
-     * 설치 마법사는 "HTTPS 정상" 이라고 보고하는데 그 직후 앱은 http:// 절대 URL 을 만드는
-     * 비대칭이 있었다 — 운영자 입장에서 원인 추적이 사실상 불가능한 조합이다 (#124).
-     *
-     * 프록시 헤더가 감지되면 신뢰 프록시 설정이 필요하다는 안내를 결과에 덧붙인다.
-     * 설치를 차단하지는 않는다 (HTTPS 항목이 `required = false` 인 기존 정책과 동일).
-     */
-    private function checkHttps(): array
-    {
-        $isHttps = isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) === 'on';
-
-        // HTTP_X_FORWARDED_PROTO 헤더도 확인 (프록시 환경)
-        if (! $isHttps && isset($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
-            $isHttps = strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https';
-        }
-
-        $forwardedHeaders = $this->detectForwardedHeaders();
-        $behindProxy = $forwardedHeaders !== [];
-
-        $message = $isHttps
-            ? lang('https_enabled')
-            : lang('https_disabled');
-
-        // HTTP 전용 사이트가 프록시 뒤에 있는 구성도 대상이다 — 화면은 정상 렌더되지만
-        // 방문자 IP·결제 통보 수신은 그대로 어긋난다. HTTPS 여부로 가르지 않는다.
-        if ($behindProxy) {
-            $message .= ' '.lang('https_behind_proxy');
-        }
-
-        return [
-            'required' => false, // HTTPS는 선택 사항
-            'enabled' => $isHttps,
-            'behind_proxy' => $behindProxy,
-            'forwarded_headers' => $forwardedHeaders,
-            'message' => $message,
-        ];
-    }
-
-    /**
-     * 수신 중인 X-Forwarded-* 계열 헤더 이름 목록을 반환합니다 (#124).
-     *
-     * 설치 마법사는 순수 PHP 영역이라 Laravel 헬퍼를 쓸 수 없다. 목록은
-     * App\Support\TrustedProxyDiagnostic::FORWARDED_HEADERS 와 같은 집합을 유지한다.
-     *
-     * @return array<int, string> 수신 중인 헤더 이름 목록
-     */
-    private function detectForwardedHeaders(): array
-    {
-        $headers = [
-            'X-Forwarded-For' => 'HTTP_X_FORWARDED_FOR',
-            'X-Forwarded-Proto' => 'HTTP_X_FORWARDED_PROTO',
-            'X-Forwarded-Host' => 'HTTP_X_FORWARDED_HOST',
-            'X-Forwarded-Port' => 'HTTP_X_FORWARDED_PORT',
-            'X-Forwarded-Prefix' => 'HTTP_X_FORWARDED_PREFIX',
-            'X-Forwarded-Aws-Elb' => 'HTTP_X_FORWARDED_AWS_ELB',
-            'Forwarded' => 'HTTP_FORWARDED',
-        ];
-
-        $present = [];
-
-        foreach ($headers as $name => $serverKey) {
-            if (isset($_SERVER[$serverKey])) {
-                $present[] = $name;
-            }
-        }
-
-        return $present;
-    }
-
-    /**
-     * OPcache 활성화 여부 검증 (권장 사항 — 설치를 차단하지 않음)
-     *
-     * 확장 로드 여부만으로는 부족하다. `Zend OPcache` 가 로드돼 있어도
-     * `opcache.enable=0` 이면 실제로는 동작하지 않으므로 지시자까지 확인한다.
-     * 판정은 App\Support\OpcacheStatus 가 SSoT 이며, 코어 관리자 화면과 같은 답을 낸다.
-     *
-     * `enabled` 가 null 이면 "확인 불가"(ini_get 차단 환경)로, 경고도 차단도 하지 않는다.
-     */
-    private function checkOpcache(): array
-    {
-        $status = OpcacheStatus::probe();
-
-        if ($status['enabled'] === null) {
-            $message = lang('opcache_unknown');
+        if ($isReadDb) {
+            $_SESSION['db_read_tested'] = true;
+            $_SESSION['db_read_fp'] = installer_db_fingerprint($tested, installer_owner_token());
         } else {
-            $message = $status['enabled']
-                ? lang('opcache_enabled')
-                : lang('opcache_disabled_warning');
+            $tested['prefix'] = $input['db_prefix'] ?? '';
+            $_SESSION['db_write_tested'] = true;
+            $_SESSION['db_write_fp'] = installer_db_fingerprint($tested, installer_owner_token());
         }
 
-        return [
-            'required' => false, // OPcache는 선택 사항 (성능 권장)
-            'loaded' => $status['loaded'],
-            'enabled' => $status['enabled'],
-            'message' => $message,
-        ];
+        // 기존 테이블이 있으면 삭제 확인 토큰을 발급한다 — drop_tables 는 이 토큰과 탐지 테이블 불변이
+        // 확인될 때만 실행된다 (요청 본문의 액션 값만으로는 삭제 불가).
+        $dropConfirmToken = null;
+        if (! $isReadDb) {
+            unset($_SESSION['drop_confirm']);
+            if (! empty($result['existing_tables']['has_tables'])) {
+                $issued = installer_issue_drop_confirm((string) $result['detect_prefix'], $result['prefix_tables']);
+                $_SESSION['drop_confirm'] = $issued['record'];
+                $dropConfirmToken = $issued['token'];
+            }
+        }
+
+        echo installer_json_encode([
+            'success' => true,
+            'message' => $result['message'],
+            'type' => $type,
+            'privileges' => $result['privileges'],
+            'existing_tables' => $result['existing_tables'],
+            'drop_confirm' => $dropConfirmToken,
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
+    // ========================================
+    // 서버 요구사항·바이너리 검사 — 본문은 웹·터미널 공유 함수(includes/requirements.php)가 소유한다.
+    // 아래 메서드는 하위 호환 위임이다. 규칙을 바꿀 때는 공유 함수에서 바꾼다.
+    // ========================================
+
     /**
-     * 기존 vendor 의 개발용(require-dev) 패키지 포함 여부 (선택 항목 — 경고만, 설치 차단 없음)
-     *
-     * 인스톨러는 vendor 가 이미 있으면 그대로 재사용한다. 그 vendor 가 `composer install`
-     * (옵션 없음)의 결과면 개발용 패키지가 섞여 있고, 그 목록이 패키지 매니페스트에 등재된다.
-     * 이후 코어 업데이트가 vendor 를 `--no-dev` 로 교체하면 매니페스트에만 남은 provider 를
-     * 찾다 부팅이 깨지므로, 설치 시점에 미리 알린다.
-     *
-     * `dev` 가 null 이면 판정 불가(installed.json 부재·형식 불명)로, 경고도 차단도 하지 않는다.
+     * 기존 vendor 의 개발용 패키지 포함 여부 (공유 함수 위임)
      *
      * @return array{required: bool, vendor_exists: bool, dev: bool|null, packages: array<int, string>, message: string}
      */
     private function checkVendorDevPackages(): array
     {
-        $vendorExists = is_dir(BASE_PATH.'/vendor') && file_exists(BASE_PATH.'/vendor/autoload.php');
-
-        if (! $vendorExists) {
-            return [
-                'required' => false,
-                'vendor_exists' => false,
-                'dev' => null,
-                'packages' => [],
-                'message' => lang('vendor_dev_packages_no_vendor'),
-            ];
-        }
-
-        require_once __DIR__.'/../includes/vendor-bundle-installer.php';
-        $info = detectDevVendorInstall(BASE_PATH);
-
-        if ($info['dev'] === true) {
-            $message = lang('vendor_dev_packages_detected_warning', ['count' => count($info['packages'])]);
-        } elseif ($info['dev'] === false) {
-            $message = lang('vendor_dev_packages_none');
-        } else {
-            $message = lang('vendor_dev_packages_unknown');
-        }
-
-        return [
-            'required' => false, // 개발용 패키지 감지는 선택 항목 (권장 사항)
-            'vendor_exists' => true,
-            'dev' => $info['dev'],
-            'packages' => $info['packages'],
-            'message' => $message,
-        ];
-    }
-
-    /**
-     * 자산 URL 방식 항목 정의 (권장 사항 — 설치를 차단하지 않음)
-     *
-     * 판정 자체는 **서버가 할 수 없다.** 서버에서 자기 APP_URL 로 curl 하면 loopback 이
-     * nginx vhost·SSL·프록시 체인을 우회하거나 다른 vhost 를 타서, 실제 방문자가 겪는
-     * 것과 다른 답을 낸다. 그래서 여기서는 프로브 경로만 내려주고 실제 판정은
-     * 브라우저가 수행한다 (`installer.js::probeAssetUrlMode`).
-     *
-     * `detected` 가 항상 null 인 것은 미구현이 아니라 위 이유에 따른 설계다.
-     * 프론트가 이 값을 받아 카드를 "확인 중" 상태로 먼저 그리고, 프로브가 끝나면 갱신한다.
-     */
-    private function checkAssetUrlMode(): array
-    {
-        return [
-            'required' => false, // 어느 방식이든 정상 — 통과/실패 게이트가 아니다
-            'detected' => null,  // 브라우저 프로브가 채운다 (서버 판정 불가)
-            'probe_extension' => '/api/system/asset-probe.js',
-            'probe_extensionless' => '/api/system/asset-probe',
-        ];
-    }
-
-    /**
-     * 필수 PHP 함수(exec, proc_open) 비활성화 여부 검증
-     */
-    private function checkDisabledFunctions(): array
-    {
-        $requiredFunctions = ['exec', 'proc_open', 'shell_exec'];
-        $disabledStr = ini_get('disable_functions');
-        $disabledList = array_map('trim', explode(',', $disabledStr));
-
-        $disabled = [];
-        foreach ($requiredFunctions as $func) {
-            if (in_array($func, $disabledList, true)) {
-                $disabled[] = $func;
-            }
-        }
-
-        $passed = empty($disabled);
-
-        return [
-            'required' => true,
-            'checked_functions' => $requiredFunctions,
-            'disabled' => $disabled,
-            'passed' => $passed,
-            'message' => $passed
-                ? lang('success_required_functions')
-                : lang('error_disabled_functions', ['functions' => implode(', ', $disabled)]),
-        ];
-    }
-
-    /**
-     * PHP CLI 버전과 웹 PHP 버전 일치 여부 확인
-     */
-    private function checkPhpCliVersion(): array
-    {
-        $webVersion = PHP_VERSION;
-        $cliVersion = null;
-        $cliPath = 'php';
-
-        // exec 사용 가능 여부 먼저 확인
-        $disabledStr = ini_get('disable_functions');
-        $disabledList = array_map('trim', explode(',', $disabledStr));
-
-        if (in_array('exec', $disabledList, true)) {
-            return [
-                'required' => false,
-                'web_version' => $webVersion,
-                'cli_version' => null,
-                'cli_path' => null,
-                'matched' => null,
-                'message' => lang('php_cli_version_check_skipped'),
-            ];
-        }
-
-        $output = [];
-        $returnCode = -1;
-        exec('php --version 2>&1', $output, $returnCode);
-
-        if ($returnCode === 0 && ! empty($output)) {
-            $outputStr = implode("\n", $output);
-            if (preg_match('/PHP\s+(\d+\.\d+\.\d+)/', $outputStr, $matches)) {
-                $cliVersion = $matches[1];
-            }
-        }
-
-        // 메이저.마이너 버전 비교 (패치 차이는 무시)
-        $webMajorMinor = implode('.', array_slice(explode('.', $webVersion), 0, 2));
-        $cliMajorMinor = $cliVersion ? implode('.', array_slice(explode('.', $cliVersion), 0, 2)) : null;
-        $matched = $cliMajorMinor !== null && $webMajorMinor === $cliMajorMinor;
-
-        return [
-            'required' => false,
-            'web_version' => $webVersion,
-            'cli_version' => $cliVersion,
-            'cli_path' => $cliPath,
-            'matched' => $matched,
-            'message' => $cliVersion === null
-                ? lang('php_cli_version_unknown')
-                : ($matched
-                    ? lang('php_cli_version_matched', ['web' => $webVersion, 'cli' => $cliVersion])
-                    : lang('php_cli_version_mismatch', ['web' => $webVersion, 'cli' => $cliVersion])),
-        ];
+        return installer_requirement_vendor_dev_packages();
     }
 
     /**
@@ -784,109 +194,7 @@ class ValidationApi
      */
     private function detectPhpBinaries(): void
     {
-        $commonPaths = [
-            '/usr/local/php84/bin/php',
-            '/usr/local/php83/bin/php',
-            '/usr/local/php82/bin/php',
-            '/usr/bin/php8.4',
-            '/usr/bin/php8.3',
-            '/usr/bin/php8.2',
-            '/usr/local/bin/php',
-            '/usr/bin/php',
-        ];
-
-        $found = [];
-        $checkedPaths = [];
-        $minVersion = MIN_PHP_VERSION;
-
-        // PHP_BINARY 상수
-        if (defined('PHP_BINARY') && PHP_BINARY !== '' && ! in_array(PHP_BINARY, $checkedPaths, true)) {
-            $checkedPaths[] = PHP_BINARY;
-            $result = $this->validatePhpPath(PHP_BINARY);
-            if ($result['valid']) {
-                $found[] = ['path' => PHP_BINARY, 'version' => $result['version']];
-            }
-        }
-
-        // 공통 경로 스캔
-        foreach ($commonPaths as $path) {
-            if (in_array($path, $checkedPaths, true)) {
-                continue;
-            }
-            $checkedPaths[] = $path;
-            if (! file_exists($path)) {
-                continue;
-            }
-            $result = $this->validatePhpPath($path);
-            if ($result['valid']) {
-                $found[] = ['path' => $path, 'version' => $result['version']];
-            }
-        }
-
-        // 시스템 PATH의 'php'
-        $defaultPhpAvailable = false;
-        if (! in_array('php', $checkedPaths, true)) {
-            $result = $this->validatePhpPath('php');
-            if ($result['valid']) {
-                $found[] = ['path' => 'php', 'version' => $result['version']];
-                $defaultPhpAvailable = true;
-            }
-        } else {
-            // 이미 체크된 경우 found 배열에서 확인
-            foreach ($found as $bin) {
-                if ($bin['path'] === 'php') {
-                    $defaultPhpAvailable = true;
-                    break;
-                }
-            }
-        }
-
-        // Composer 자동 감지 (감지된 PHP 중 첫 번째로 검증)
-        $phpForComposer = ! empty($found) ? $found[0]['path'] : 'php';
-        $composerResult = $this->detectComposerBinary($phpForComposer);
-
-        echo installer_json_encode([
-            'success' => ! empty($found),
-            'binaries' => $found,
-            'default_php_available' => $defaultPhpAvailable,
-            'composer' => $composerResult,
-            'message' => empty($found) ? lang('no_php_detected') : lang('php_detected_count', ['count' => count($found)]),
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    }
-
-    /**
-     * Composer 바이너리 자동 감지
-     *
-     * @param  string  $phpPath  .phar 실행 시 사용할 PHP 경로
-     * @return array{found: bool, path: string|null, version: string|null}
-     */
-    private function detectComposerBinary(string $phpPath = 'php'): array
-    {
-        // 1. 시스템 PATH의 composer
-        $result = $this->validateComposerPath('composer', $phpPath);
-        if ($result['valid']) {
-            return ['found' => true, 'path' => 'composer', 'version' => $result['version']];
-        }
-
-        // 2. 프로젝트 루트의 composer.phar
-        $pharPath = realpath(__DIR__.'/../../..').'/composer.phar';
-        if (file_exists($pharPath)) {
-            $result = $this->validateComposerPath($pharPath, $phpPath);
-            if ($result['valid']) {
-                return ['found' => true, 'path' => $pharPath, 'version' => $result['version']];
-            }
-        }
-
-        // 3. 현재 디렉토리(public/install/api)의 composer.phar
-        $localPhar = realpath(__DIR__).'/composer.phar';
-        if (file_exists($localPhar)) {
-            $result = $this->validateComposerPath($localPhar, $phpPath);
-            if ($result['valid']) {
-                return ['found' => true, 'path' => $localPhar, 'version' => $result['version']];
-            }
-        }
-
-        return ['found' => false, 'path' => null, 'version' => null];
+        echo installer_json_encode(installer_detect_php_binaries(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -940,63 +248,11 @@ class ValidationApi
      */
     private function checkCorePendingPath(): void
     {
-        $path = $_GET['path'] ?? '';
-        if (empty($path)) {
-            echo installer_json_encode(['success' => false, 'message' => lang('error_path_required')], JSON_UNESCAPED_UNICODE);
-
-            return;
-        }
-
-        // 경로 traversal 및 NUL 바이트 거부.
-        // 정상 사용자는 BASE_PATH 하위의 _pending 또는 자기 디스크의 절대경로만 입력하므로
-        // 상대경로 부모 추적이 필요한 시나리오가 없다.
-        $hasParentSegment = preg_match('#(^|[/\\\\])\.\.([/\\\\]|$)#', $path) === 1;
-        if ($hasParentSegment || str_contains($path, "\0")) {
-            echo installer_json_encode([
-                'success' => false,
-                'message' => lang('error_core_pending_path_invalid'),
-            ], JSON_UNESCAPED_UNICODE);
-
-            return;
-        }
-
-        $candidatePath = (str_starts_with($path, '/') || preg_match('#^[A-Za-z]:[/\\\\]#', $path) === 1)
-            ? $path
-            : BASE_PATH.DIRECTORY_SEPARATOR.$path;
-
-        $resolved = @realpath($candidatePath);
-
-        if ($resolved === false || ! is_dir($resolved)) {
-            // 존재 여부/타입 차이를 응답으로 분기하지 않고 단일 메시지로 통일하여
-            // 임의 경로 enumeration 신호 차단.
-            echo installer_json_encode([
-                'success' => false,
-                'message' => lang('error_core_pending_path_invalid'),
-            ], JSON_UNESCAPED_UNICODE);
-
-            return;
-        }
-
-        $writable = is_writable($resolved);
-        echo installer_json_encode([
-            'success' => $writable,
-            'message' => $writable
-                ? lang('success_core_pending_path')
-                : lang('error_core_pending_not_writable'),
-        ], JSON_UNESCAPED_UNICODE);
+        echo installer_json_encode(installer_check_core_pending_path((string) ($_GET['path'] ?? '')), JSON_UNESCAPED_UNICODE);
     }
 
     /**
-     * 셸 인자로 전달하기 안전한 단일 토큰인지 검증.
-     *
-     * 셸 메타문자(공백·따옴표·리다이렉션·세미콜론·백틱·$()·| 등) 와 제어문자(NUL/CR/LF 등)
-     * 가 없어야 함. 백슬래시(`\`) 는 Windows 경로 구분자이므로 차단 대상이 아니다 —
-     * 셸 인젝션 차단은 호출자의 escapeshellarg 가 담당 (Windows 는 큰따옴표 wrapping,
-     * Unix 는 작은따옴표 wrapping).
-     *
-     * 파일 시스템 stat 은 호출하지 않는다 — open_basedir 등 PHP 런타임 제약
-     * 환경에서 정상 절대경로가 false negative 로 거부되는 회귀를 피하기 위함.
-     * 실제 실행 가능 여부는 exec/proc_open 결과로 최종 판정.
+     * 셸 인자로 전달하기 안전한 단일 토큰인지 검증 (공용 정책 위임).
      */
     private function isInstallerSafePathArg(string $path): bool
     {
@@ -1004,11 +260,7 @@ class ValidationApi
     }
 
     /**
-     * 공백 분리 입력을 두 토큰(PHP 인터프리터 + Composer 바이너리) 으로 분해.
-     *
-     * 멀티 PHP 버전 환경(시놀로지 DSM Web Station, cPanel/Plesk multi-PHP) 에서
-     * `composer` 를 특정 PHP 로 실행하려는 운영 의도를 지원한다.
-     * 두 토큰 모두 isInstallerSafePathArg 통과해야 정상 입력으로 인정.
+     * 공백 분리 입력을 두 토큰(PHP 인터프리터 + Composer 바이너리) 으로 분해 (공용 정책 위임).
      *
      * @return array{php: string, composer: string}|null 분해 실패 시 null
      */
@@ -1018,57 +270,18 @@ class ValidationApi
     }
 
     /**
-     * PHP 바이너리 경로 유효성 검증 헬퍼
+     * PHP 바이너리 경로 유효성 검증 (공유 함수 위임)
      *
      * @param  string  $path  PHP 바이너리 경로
      * @return array{valid: bool, version: string|null, message: string}
      */
     private function validatePhpPath(string $path): array
     {
-        if (empty($path)) {
-            return ['valid' => false, 'version' => null, 'message' => lang('error_php_path_empty')];
-        }
-
-        // 'php' 기본값이 아니면 실행 경로 형태 규칙을 적용한다(이름은 제한하지 않는다 —
-        // 이 자리는 인자가 `--version` 으로 고정되어 있고 설치 환경마다 이름이 다르다).
-        // 파일 존재/실행 가능 검사는 open_basedir 같은 PHP 런타임 제약 환경의
-        // false negative 를 피하기 위해 생략하고, exec 결과로 최종 판정한다.
-        if ($path !== 'php' && ! installer_binary_path_shape_ok($path)) {
-            return ['valid' => false, 'version' => null, 'message' => lang('error_php_binary_path_not_allowed', ['path' => $path])];
-        }
-
-        $command = escapeshellarg($path).' --version 2>&1';
-        $output = [];
-        $returnCode = -1;
-        exec($command, $output, $returnCode);
-
-        if ($returnCode !== 0) {
-            return ['valid' => false, 'version' => null, 'message' => lang('error_php_exec_failed', ['path' => $path])];
-        }
-
-        $outputStr = implode("\n", $output);
-        if (preg_match('/PHP\s+(\d+\.\d+\.\d+)/', $outputStr, $matches)) {
-            $version = $matches[1];
-            if (version_compare($version, MIN_PHP_VERSION, '>=')) {
-                return [
-                    'valid' => true,
-                    'version' => $version,
-                    'message' => lang('success_php_binary_version', ['path' => $path, 'version' => $version]),
-                ];
-            }
-
-            return [
-                'valid' => false,
-                'version' => $version,
-                'message' => lang('error_php_version_too_low', ['path' => $path, 'version' => $version, 'min' => MIN_PHP_VERSION]),
-            ];
-        }
-
-        return ['valid' => false, 'version' => null, 'message' => lang('error_php_version_parse_failed')];
+        return installer_verify_php_binary($path);
     }
 
     /**
-     * Composer 바이너리 경로 유효성 검증 헬퍼
+     * Composer 바이너리 경로 유효성 검증 (공유 함수 위임)
      *
      * @param  string  $composerPath  Composer 바이너리 경로 (빈 문자열이면 시스템 'composer')
      * @param  string  $phpPath  PHP 바이너리 경로 (.phar 실행 시 사용)
@@ -1076,137 +289,7 @@ class ValidationApi
      */
     private function validateComposerPath(string $composerPath, string $phpPath = 'php'): array
     {
-        // 빈 문자열이면 시스템 기본 composer 사용
-        $effectivePath = $composerPath ?: 'composer';
-
-        // 공백 분리 입력은 "PHP 절대경로 + Composer 절대경로" 의 멀티 PHP 운영 패턴.
-        // 두 토큰으로 분해 후 각 토큰별 메타문자 차단 + 각각 escapeshellarg 적용한다.
-        // 옛 raw shell 전달(escape 없는 분기) 은 복원하지 않음.
-        if ($effectivePath !== 'composer' && str_contains($effectivePath, ' ')) {
-            // 자리별 규칙(PHP 자리=형태만, Composer 자리=이름 형태까지)은 공용 정책이 담당한다.
-            $tokens = $this->splitPhpComposerTokens($effectivePath);
-            if ($tokens === null) {
-                return [
-                    'valid' => false,
-                    'version' => null,
-                    'message' => lang('error_composer_binary_path_not_allowed', ['path' => $effectivePath]),
-                ];
-            }
-
-            $command = escapeshellarg($tokens['php']).' '.escapeshellarg($tokens['composer']).' --version 2>&1';
-
-            $output = [];
-            $returnCode = -1;
-            applyInstallerComposerEnvVars();
-            exec($command, $output, $returnCode);
-
-            if ($returnCode !== 0) {
-                return ['valid' => false, 'version' => null, 'message' => lang('error_composer_exec_failed', ['path' => $effectivePath])];
-            }
-
-            $outputStr = implode("\n", $output);
-            if (preg_match('/Composer\s+(?:version\s+)?(\d+\.\d+\.\d+)/', $outputStr, $matches)) {
-                $version = $matches[1];
-
-                return [
-                    'valid' => true,
-                    'version' => $version,
-                    'message' => lang('success_composer_version', ['path' => $effectivePath, 'version' => $version]),
-                ];
-            }
-
-            return ['valid' => false, 'version' => null, 'message' => lang('error_composer_version_parse_failed')];
-        }
-
-        // 단일 토큰 — 시스템 기본('composer') 가 아니면 Composer 자리 규칙을 적용한다.
-        // 파일 존재/실행 가능 검사는 open_basedir 환경의 false negative 회피를 위해 생략.
-        if ($effectivePath !== 'composer' && ! installer_is_composer_binary_path($effectivePath)) {
-            return [
-                'valid' => false,
-                'version' => null,
-                'message' => lang('error_composer_binary_path_not_allowed', ['path' => $effectivePath]),
-            ];
-        }
-
-        // .phar 파일이면 PHP 바이너리와 결합
-        if (str_ends_with(strtolower($effectivePath), '.phar')) {
-            // phpPath 는 실행 파일 자리 — 이름은 제한하지 않고 형태 규칙만 적용한다.
-            if ($phpPath !== 'php' && ! installer_binary_path_shape_ok($phpPath)) {
-                return [
-                    'valid' => false,
-                    'version' => null,
-                    'message' => lang('error_php_binary_path_not_allowed', ['path' => $phpPath]),
-                ];
-            }
-            $command = escapeshellarg($phpPath).' '.escapeshellarg($effectivePath).' --version 2>&1';
-        } else {
-            $command = escapeshellarg($effectivePath).' --version 2>&1';
-        }
-
-        $output = [];
-        $returnCode = -1;
-        // root/super user 환경 + 비대화형 컨텍스트에서 composer interactive 경고로 인한
-        // 비정상 종료를 차단 (Synology DSM 등 PHP-FPM root 실행 환경 대응)
-        applyInstallerComposerEnvVars();
-        exec($command, $output, $returnCode);
-
-        if ($returnCode !== 0) {
-            return ['valid' => false, 'version' => null, 'message' => lang('error_composer_exec_failed', ['path' => $effectivePath])];
-        }
-
-        $outputStr = implode("\n", $output);
-        if (preg_match('/Composer\s+(?:version\s+)?(\d+\.\d+\.\d+)/', $outputStr, $matches)) {
-            $version = $matches[1];
-
-            return [
-                'valid' => true,
-                'version' => $version,
-                'message' => lang('success_composer_version', ['path' => $effectivePath, 'version' => $version]),
-            ];
-        }
-
-        return ['valid' => false, 'version' => null, 'message' => lang('error_composer_version_parse_failed')];
-    }
-
-    /**
-     * 모든 필수 요구사항 통과 여부 확인
-     */
-    private function isAllRequiredPassed(array $requirements): bool
-    {
-        // PHP 버전 확인
-        if (! $requirements['php_version']['passed']) {
-            return false;
-        }
-
-        // PHP 확장 확인
-        if (! $requirements['php_extensions']['all_required_passed']) {
-            return false;
-        }
-
-        // 필수 함수 비활성화 확인
-        if (isset($requirements['disabled_functions']) && ! $requirements['disabled_functions']['passed']) {
-            return false;
-        }
-
-        // 디스크 공간 확인
-        if (! $requirements['disk_space']['passed']) {
-            return false;
-        }
-
-        // 디렉토리 권한 확인
-        if (! $requirements['directories']['all_passed']) {
-            return false;
-        }
-
-        // 필수 파일 확인
-        if (! $requirements['required_files']['all_passed']) {
-            return false;
-        }
-
-        // HTTPS / OPcache / Composer 의존성 구성은 선택 사항이므로 검증하지 않음
-        // (경고만 표시하고 설치는 진행)
-
-        return true;
+        return installer_verify_composer($composerPath, $phpPath);
     }
 
     // ========================================

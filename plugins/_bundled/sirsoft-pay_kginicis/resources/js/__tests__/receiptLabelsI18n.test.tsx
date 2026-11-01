@@ -112,7 +112,8 @@ describe('영수증 표시 글자 번역 — 확인서 팝업과 버튼', () => 
         (window as any).G7Core = { t: (key: string) => (key === 'sirsoft-pay_kginicis.user.receipt_print' ? 'Print' : key) };
         document.documentElement.lang = 'en';
         let html = '';
-        const popup = { document: { open: vi.fn(), write: (s: string) => { html += s; }, close: vi.fn() } };
+        // 인쇄 버튼은 쓰기 뒤 리스너로 묶이므로(#158 strict CSP) 문서 대역에 querySelector 도 둔다
+        const popup = { document: { open: vi.fn(), write: (s: string) => { html += s; }, close: vi.fn(), querySelector: vi.fn(() => null) } };
         vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
 
         expect(openReceiptHandler({

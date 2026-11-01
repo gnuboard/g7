@@ -39,7 +39,10 @@
       </div>
       <div data-if="{{$parent._local.selectedLog?.body}}">
         <label class="text-tertiary block font-medium mb-1">$t:admin.notification_log.detail_body</label>
-        <div class="text-body bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-64 overflow-y-auto" dangerouslySetInnerHTML="{{$parent._local.selectedLog?.body ?? ''}}"/>
+        <!-- 본문은 목록 행 펼침과 같은 HtmlContent 로 그린다 — DOMPurify 정화가 붙는다. 종전 Div 의
+             dangerouslySetInnerHTML 문자열은 React 가 받지 않는 모양({__html} 아님)이라 본문이 보이지 않거나
+             오류가 났고, 정화도 없었다(#158 부수 결함). -->
+        <html-content data-type="composite" content="{{$parent._local.selectedLog?.body ?? ''}}" :isHtml="true" class="text-body bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-64 overflow-y-auto"/>
       </div>
       <div data-if="{{$parent._local.selectedLog?.error_message}}">
         <label class="form-error-xs block font-medium mb-1">$t:admin.notification_log.detail_error</label>

@@ -387,6 +387,9 @@ class OrderProcessingServiceTest extends ModuleTestCase
     /**
      * 기본 계산 결과 DTO를 생성합니다.
      *
+     * 실제 계산기처럼 부가세를 함께 싣는다(기본: 과세표준의 10% 내재분). 주문 생성은 계산된 부가세를 그대로
+     * 기록하므로 — 부가세 없이 과세표준만 주면 0 이 기록된다(#612: 0 을 과세표준/11 로 다시 채우던 폴백 제거).
+     *
      * @param  int  $finalAmount  최종 금액
      * @param  array  $overrides  오버라이드 옵션
      * @return OrderCalculationResult 계산 결과 DTO
@@ -401,6 +404,7 @@ class OrderProcessingServiceTest extends ModuleTestCase
             totalShipping: $overrides['total_shipping'] ?? 3000,
             taxableAmount: $overrides['taxable_amount'] ?? 93636,
             taxFreeAmount: $overrides['tax_free_amount'] ?? 0,
+            vatAmount: $overrides['vat_amount'] ?? (int) round(($overrides['taxable_amount'] ?? 93636) / 11),
             pointsUsed: $overrides['points_used'] ?? 0,
             pointsEarning: $overrides['points_earning'] ?? 0,
             paymentAmount: $overrides['payment_amount'] ?? $finalAmount,

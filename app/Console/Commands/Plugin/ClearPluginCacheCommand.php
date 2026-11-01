@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Extension\ExtensionMiddlewareRegistry;
@@ -16,17 +17,13 @@ class ClearPluginCacheCommand extends Command
 {
     use ClearsTemplateCaches;
     use InvalidatesLayoutCache;
+    use LocalizesDescription;
 
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'plugin:cache-clear
         {identifier? : 특정 플러그인의 캐시만 삭제 (생략 시 모든 플러그인)}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '플러그인 캐시를 삭제합니다';
 
     /**
      * 플러그인 관리자 및 리포지토리

@@ -4,7 +4,7 @@
  * 외부 인증(소셜 로그인 등)이 발급한 일회용 인계 코드를 교환하면 서버는 비밀번호 로그인과 같은 세 형태의 200
  * (인증 완료 · 2단계 인증 · 비밀번호 변경)을 돌려준다. 결과 해석도 `login()` 과 같아야 로그인 화면이 같은 분기를 쓴다.
  *
- * @since engine-v1.84.0
+ * @since engine-v1.85.0
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -111,7 +111,7 @@ describe('AuthManager.loginWithHandoff', () => {
   });
 
   /**
-   * 관리자 인계는 관리자 경로로 교환하고 관리자 세션을 연다 (engine-v1.85.0 — 종전에는 인계 엔드포인트가 없어 던졌다).
+   * 관리자 인계는 관리자 경로로 교환하고 관리자 세션을 연다 (engine-v1.86.0 — 종전에는 인계 엔드포인트가 없어 던졌다).
    *
    * @scenario auth_type=admin, response=authenticated
    * @effects handoff_admin_exchanges_on_admin_endpoint

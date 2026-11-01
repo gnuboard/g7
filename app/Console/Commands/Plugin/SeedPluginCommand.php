@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\ExtensionManager;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 
 class SeedPluginCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
@@ -20,11 +23,6 @@ class SeedPluginCommand extends Command
                             {--count=* : 시더에 전달할 카운트 옵션 (형식: key=value, 예: --count=products=1000)}
                             {--sample : 샘플 데이터 시더도 함께 실행}
                             {--force : 프로덕션 환경에서도 강제 실행}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '플러그인의 데이터베이스 시더를 실행합니다';
 
     /**
      * 플러그인 관리자 및 리포지토리

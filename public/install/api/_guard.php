@@ -97,6 +97,88 @@ if (! function_exists('installer_guard_or_410')) {
     }
 }
 
+if (! function_exists('installer_finalize_window_open')) {
+    /**
+     * 완료 표식 뒤 마무리 구간에 설치 소유 세션이 설치 화면(Step 5)을 다시 열 수 있는지 판정한다.
+     *
+     * complete_flag 작업이 `g7_installed` 를 만든 뒤에도 설정·라우트 캐시 굽기·정적 게시가 이어지고,
+     * 그 뒤 설치 화면이 finalize-env 로 `.env` 를 확정한다. 이 구간에 새로고침한 소유 세션까지
+     * 410 으로 막으면 `.env` 확정이 영영 실행되지 않으므로, 아래를 모두 만족할 때만 연다.
+     *
+     *   - GET 요청 (화면 렌더만 — 어떤 POST 처리도 열지 않는다)
+     *   - `g7_installed` 있음 + `.env` 완료 플래그 없음
+     *   - 상태 파일 있음 + installation_status=completed
+     *   - 요청 세션이 그 설치의 소유 세션 (터미널 소유 설치는 브라우저 세션이 소유자일 수 없다)
+     *
+     * 소유권 판정 함수가 로드되지 않은 진입점에서는 항상 false(닫힘)다.
+     *
+     * @return bool 설치 화면을 다시 열어도 되면 true
+     */
+    function installer_finalize_window_open(): bool
+    {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
+            return false;
+        }
+
+        $basePath = installer_resolve_base_path();
+
+        if (! is_file($basePath.'/storage/app/g7_installed')) {
+            return false;
+        }
+
+        if (installer_env_completed_flag($basePath.'/.env')) {
+            return false;
+        }
+
+        if (! function_exists('installer_session_is_owner')) {
+            return false;
+        }
+
+        $stateFile = $basePath.'/storage/installer-state.json';
+        clearstatcache(true, $stateFile);
+        if (! is_file($stateFile)) {
+            return false;
+        }
+
+        $state = json_decode((string) @file_get_contents($stateFile), true);
+        if (! is_array($state) || ($state['installation_status'] ?? null) !== 'completed') {
+            return false;
+        }
+
+        if (($state['owner_kind'] ?? 'web') === 'cli') {
+            return false;
+        }
+
+        return installer_session_is_owner($state);
+    }
+}
+
+if (! function_exists('installer_guard_index_or_410')) {
+    /**
+     * 설치 화면(index.php) 전용 진입 가드.
+     *
+     * 설치가 끝났으면 일반 가드처럼 410 으로 끝내되, 완료 표식 뒤 마무리 구간에 설치 소유 세션이
+     * 다시 연 GET 요청만 통과시킨다(installer_finalize_window_open). 통과하면 호출자는 Step 5 화면만
+     * 렌더해야 한다 — 그 화면이 마무리 작업을 기다렸다가 finalize-env 로 `.env` 를 확정한다.
+     *
+     * @return bool 마무리 구간으로 통과했으면 true, 설치 전이라 통과했으면 false (완료면 410 으로 종료)
+     */
+    function installer_guard_index_or_410(): bool
+    {
+        if (! installer_is_completed()) {
+            return false;
+        }
+
+        if (installer_finalize_window_open()) {
+            return true;
+        }
+
+        installer_guard_or_410();
+
+        return false;
+    }
+}
+
 if (! function_exists('installer_finalize_is_completed')) {
     /**
      * finalize-env.php 전용 멱등 차단 신호.

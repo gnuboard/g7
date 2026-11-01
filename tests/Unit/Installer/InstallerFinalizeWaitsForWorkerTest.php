@@ -487,8 +487,11 @@ PHP;
             ."ini_set('display_errors', 'stderr');\n"
             ."define('G7_ROOT', '{$this->projectRoot}');\n"
             ."define('BASE_PATH', '{$this->tempBase}');\n"
+            // config.php 가 BASE_PATH/app/Support 에서 require 하는 클래스는 원본 경로에서 먼저 불러 둔다
+            // (PhpExtensionRequirements 는 자기 옆의 목록 파일을 읽으므로 원본 경로여야 한다)
             ."require_once G7_ROOT.'/app/Support/PrivilegedDatabaseAccounts.php';\n"
-            ."require_once G7_ROOT.'/app/Support/OpcacheStatus.php';\n";
+            ."require_once G7_ROOT.'/app/Support/OpcacheStatus.php';\n"
+            ."require_once G7_ROOT.'/app/Support/PhpExtensionRequirements.php';\n";
         file_put_contents($script, $prelude.$body."\n");
 
         $out = $this->tempBase.'/scenario-'.$tag.'.out';

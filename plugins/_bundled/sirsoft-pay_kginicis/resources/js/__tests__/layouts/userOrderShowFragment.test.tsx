@@ -200,6 +200,29 @@ describe('주문 상세 KG이니시스 결제 블록 조각', () => {
         expect(handlerMap).toHaveProperty('openReceipt');
     });
 
+    // @scenario case=zero_rated_only
+    // @effects zero_rated_row_in_tax_breakdown
+    it('영세만 든 주문도 부가세 내역을 그리고 「영세금액」 줄을 보이며 면세 줄은 숨긴다 (#612)', async () => {
+        await mount({
+            order: {
+                data: {
+                    order_number: ORDER_NUMBER,
+                    total_vat_amount: 0,
+                    total_tax_free_amount: 0,
+                    total_zero_rated_amount: 13000,
+                    total_zero_rated_amount_formatted: '13,000원',
+                    total_taxable_supply_amount_formatted: '0원',
+                    total_vat_amount_formatted: '0원',
+                    payment: { pg_provider: 'kginicis', transaction_id: 'StdpayCARDINIpayTest0612', currency: 'KRW', payment_status: 'paid', paid_at: 'x' },
+                },
+            },
+        }, { receipt: { receipt_type: 'inicis_receipt', receipt_url: 'https://receipt.example/r' } });
+
+        const label = await screen.findByText('영세금액');
+        expect((label.parentElement as HTMLElement).textContent).toContain('13,000원');
+        expect(screen.queryByText('면세금액')).toBeNull();
+    });
+
     // @scenario case=no_script_injection
     // @effects no_route_or_dom_scanning
     it('조각은 확장 슬롯에 붙고 화면 주소·제목 글자에 기대지 않는다', () => {

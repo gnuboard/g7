@@ -6,7 +6,9 @@
  * dirty(저장 전) 설정 + 샘플 데이터 기준이며 SEO 캐시를 우회한다(엔드포인트).
  *
  *  - POST `/api/admin/templates/{id}/editor/seo-bot-preview` (Bearer)
- *    body { layout, url, locale, seed_context, route_params } → { data:{ identifier, enabled, html } }
+ *    body { layout, url, locale, seed_context, route_params, layout_name? } → { data:{ identifier, enabled, html } }
+ *  - `layout_name` 은 편집 중인 라우트의 레이아웃 전체 이름(`{확장식별자}.{레이아웃}`). 서버가 이 이름으로
+ *    모듈·플러그인 식별자를 채워 운영 봇 응답과 같은 기준으로 렌더한다(engine-v1.84.0, 공개#154).
  *  - enabled=false 또는 toggle off → html=null → "이 화면은 검색엔진에 노출 안 됨" 안내.
  *  - `settingsSignature` 가 바뀌면 디바운스(기본 400ms) 후 재호출(과다 호출 방지). 수동 새로고침 즉시.
  *
@@ -38,6 +40,8 @@ export interface SeoBotPreviewPanelProps {
   seedContext?: Record<string, unknown>;
   /** 샘플 route params */
   routeParams?: Record<string, unknown>;
+  /** 편집 중인 라우트의 레이아웃 전체 이름 — 있으면 body.layout_name(서버가 소속 확장 해석) */
+  layoutName?: string | null;
   /**
    * 설정 시그니처 — ①~④ 입력(enabled/page_type/extensions/og/structured/vars/toggle)을
    * 직렬화한 문자열. 바뀌면 디바운스 후 재호출(과다 호출 방지).
@@ -68,6 +72,7 @@ export function SeoBotPreviewPanel({
   locale,
   seedContext,
   routeParams,
+  layoutName,
   settingsSignature,
   t,
   debounceMs = 400,
@@ -81,13 +86,13 @@ export function SeoBotPreviewPanel({
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 항상 최신 입력을 디바운스 콜백이 읽도록 ref 로 보관(stale closure 회피).
-  const inputRef = useRef({ templateIdentifier, layout, url, locale, seedContext, routeParams });
-  inputRef.current = { templateIdentifier, layout, url, locale, seedContext, routeParams };
+  const inputRef = useRef({ templateIdentifier, layout, url, locale, seedContext, routeParams, layoutName });
+  inputRef.current = { templateIdentifier, layout, url, locale, seedContext, routeParams, layoutName };
 
   const runFetch = useCallback(async (): Promise<void> => {
     const f = fetchImpl ?? (typeof fetch !== 'undefined' ? fetch : undefined);
     if (!f) return;
-    const { templateIdentifier: id, layout: lo, url: u, locale: lc, seedContext: sc, routeParams: rp } = inputRef.current;
+    const { templateIdentifier: id, layout: lo, url: u, locale: lc, seedContext: sc, routeParams: rp, layoutName: ln } = inputRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -96,7 +101,15 @@ export function SeoBotPreviewPanel({
         method: 'POST',
         credentials: 'same-origin',
         headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ layout: lo, url: u, locale: lc, seed_context: sc ?? {}, route_params: rp ?? {} }),
+        // 레이아웃 이름이 없으면(베이스·모달 편집 등) 키를 생략한다 — 서버는 종전처럼 식별자 없이 렌더.
+        body: JSON.stringify({
+          layout: lo,
+          url: u,
+          locale: lc,
+          seed_context: sc ?? {},
+          route_params: rp ?? {},
+          ...(ln ? { layout_name: ln } : {}),
+        }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) {

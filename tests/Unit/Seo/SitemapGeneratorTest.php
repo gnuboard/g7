@@ -4,11 +4,14 @@ namespace Tests\Unit\Seo;
 
 use App\Seo\AbstractSitemapContributor;
 use App\Seo\Contracts\SitemapContributorInterface;
+use App\Seo\SeoDeclarationCollector;
+use App\Seo\SeoToggleEvaluator;
 use App\Seo\SitemapGenerator;
 use App\Seo\SitemapWriter;
 use App\Seo\TemplateRouteResolver;
 use App\Services\TemplateService;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
@@ -18,9 +21,9 @@ use Tests\TestCase;
  *
  * 정적 라우트 수집, 기여자 등록/URL 변환, XML 생성 기능을 테스트합니다.
  *
- * 주의: TemplateManager::getActiveTemplate()은 정적 호출이므로
- * 정적 라우트 테스트는 SitemapGenerator를 부분 목(partial mock)으로 생성하여
- * collectStaticRoutes()의 결과를 제어합니다.
+ * 정적 화면은 SEO 선언 수집기(SeoDeclarationCollector)와 토글 판정기(SeoToggleEvaluator)를 목으로 넣고
+ * 실제 generate()/generateToWriter() 로 검증한다. 예전에는 운영 로직을 테스트 안에 복사해 우회했기 때문에
+ * 정적 호출 오류로 정적 화면이 통째로 빠지는 결함(#155)을 잡지 못했다.
  */
 class SitemapGeneratorTest extends TestCase
 {
@@ -30,8 +33,14 @@ class SitemapGeneratorTest extends TestCase
 
     private TemplateService|Mockery\MockInterface $templateService;
 
+    private SeoDeclarationCollector|Mockery\MockInterface $collector;
+
+    private SeoToggleEvaluator|Mockery\MockInterface $toggleEvaluator;
+
     /**
      * 테스트 초기화 - SitemapGenerator 인스턴스와 의존성 목(Mock)을 준비합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -50,15 +59,25 @@ class SitemapGeneratorTest extends TestCase
 
         $this->routeResolver = Mockery::mock(TemplateRouteResolver::class);
         $this->templateService = Mockery::mock(TemplateService::class);
+        $this->collector = Mockery::mock(SeoDeclarationCollector::class);
+        $this->toggleEvaluator = Mockery::mock(SeoToggleEvaluator::class);
+
+        // 정적 화면이 없다는 가정에 기대는 기여자 테스트를 위해 기본은 「선언 없음」·「토글 켜짐」
+        $this->collector->shouldReceive('collect')->andReturn([])->byDefault();
+        $this->toggleEvaluator->shouldReceive('isEnabled')->andReturn(true)->byDefault();
 
         $this->generator = new SitemapGenerator(
             $this->routeResolver,
             $this->templateService,
+            $this->collector,
+            $this->toggleEvaluator,
         );
     }
 
     /**
      * 테스트 종료 - Mockery 리소스를 정리합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -66,26 +85,14 @@ class SitemapGeneratorTest extends TestCase
         parent::tearDown();
     }
 
-    /**
-     * collectStaticRoutes() 결과를 제어할 수 있도록 리플렉션을 통해
-     * 정적 라우트를 주입하는 헬퍼입니다.
-     *
-     * @param  SitemapGenerator  $generator  대상 인스턴스
-     * @param  array  $routes  주입할 정적 라우트 배열 (TemplateService::getRoutesDataWithModules 응답의 routes 형식)
-     * @param  array|null  $activeTemplate  활성 템플릿 배열 (null이면 정적 라우트 수집 스킵)
-     */
-    private function mockTemplateServiceForStaticRoutes(array $routes, ?array $activeTemplate = null): void
-    {
-        // TemplateManager가 이미 로드된 상태이므로 alias mock 불가
-        // 대신 TemplateManager::getActiveTemplate 정적 호출을 우회하기 위해
-        // 실제 TemplateManager를 사용하되, 반환값이 없어 [] 반환되도록 함
-        // 정적 라우트 테스트에서는 별도 접근법 사용
-    }
-
     // ─── 기여자 등록 ──────────────────────────────────────
 
     /**
      * 기여자를 등록하면 getContributors()에 포함되는지 확인합니다.
+     *
+     * @scenario generator=register_contributor_adds_to_list
+     *
+     * @return void 반환값 없음
      */
     public function test_register_contributor_adds_to_list(): void
     {
@@ -103,6 +110,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 동일 식별자로 기여자를 중복 등록하면 마지막 것만 유지되는지 확인합니다.
+     *
+     * @scenario generator=register_contributor_overwrites_same_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_register_contributor_overwrites_same_identifier(): void
     {
@@ -125,6 +136,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * generate()가 기여자 URL을 포함한 유효한 sitemap XML을 반환하는지 확인합니다.
+     *
+     * @scenario generator=generate_returns_valid_xml
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_returns_valid_xml(): void
     {
@@ -155,120 +170,313 @@ class SitemapGeneratorTest extends TestCase
         $this->assertStringContainsString('<priority>0.8</priority>', $xml);
     }
 
-    // ─── generate() - 정적 라우트 수집 ───────────────────────
+    // ─── 정적 화면 (SEO 선언 기반, #155) ─────────────────────
 
     /**
-     * generate()가 정적 라우트를 올바르게 수집하는지 확인합니다.
+     * 선언된 정적 화면이 레이아웃의 priority·changefreq 로 실제 generate() 결과에 실린다.
      *
-     * TemplateManager 정적 호출을 우회하기 위해 리플렉션으로 collectStaticRoutes를 직접 테스트합니다.
+     * 수정 전에는 활성 템플릿을 정적 호출로 조회하다 Error 가 나 정적 화면이 0건이었다.
+     *
+     * @scenario static=declared_home
+     *
+     * @effects static_route_uses_layout_priority_and_changefreq
+     *
+     * @return void 반환값 없음
      */
-    public function test_generate_includes_static_routes(): void
+    public function test_generate_includes_declared_static_route_with_layout_priority(): void
     {
-        $this->templateService->shouldReceive('getRoutesDataWithModules')
-            ->with('sirsoft-user_basic')
-            ->andReturn([
-                'success' => true,
-                'data' => [
-                    'routes' => [
-                        ['path' => '/about', 'auth_required' => false, 'guest_only' => false],
-                        ['path' => '/contact', 'auth_required' => false, 'guest_only' => false],
-                    ],
-                ],
-            ]);
+        $this->collector->shouldReceive('collect')->andReturn([
+            $this->declaration('/', ['enabled' => true, 'priority' => 1, 'changefreq' => 'daily']),
+        ]);
 
-        // 리플렉션으로 collectStaticRoutes를 호출하되, TemplateManager 정적 호출을 우회
-        $result = $this->invokeCollectStaticRoutes(['identifier' => 'sirsoft-user_basic']);
+        $entries = $this->entriesOf($this->generator->generate());
 
-        $this->assertCount(2, $result);
-        $this->assertStringContainsString('/about', $result[0]['loc']);
-        $this->assertStringContainsString('/contact', $result[1]['loc']);
-        $this->assertEquals('weekly', $result[0]['changefreq']);
-        $this->assertEquals(0.5, $result[0]['priority']);
+        $this->assertCount(1, $entries);
+        $this->assertSame(url('/'), $entries[0]['loc']);
+        $this->assertSame('1.0', $entries[0]['priority']);
+        $this->assertSame('daily', $entries[0]['changefreq']);
     }
 
     /**
-     * auth_required 라우트가 제외되는지 확인합니다.
+     * 동적 파라미터(`:`)·템플릿 표현식(`{{`)·경로 없는 선언은 싣지 않고, `*` 접두는 떼어 낸다.
+     *
+     * @scenario static=dynamic_path
+     *
+     * @effects static_route_skips_dynamic_and_expression_paths
+     *
+     * @return void 반환값 없음
      */
-    public function test_generate_excludes_auth_required_routes(): void
+    public function test_generate_excludes_dynamic_and_expression_paths(): void
     {
-        $this->templateService->shouldReceive('getRoutesDataWithModules')
-            ->with('sirsoft-user_basic')
-            ->andReturn([
-                'success' => true,
-                'data' => [
-                    'routes' => [
-                        ['path' => '/public-page', 'auth_required' => false, 'guest_only' => false],
-                        ['path' => '/my-account', 'auth_required' => true, 'guest_only' => false],
-                        ['path' => '/dashboard', 'auth_required' => true, 'guest_only' => false],
-                    ],
-                ],
-            ]);
+        $this->collector->shouldReceive('collect')->andReturn([
+            $this->declaration('*/about'),
+            $this->declaration('/products/:id'),
+            $this->declaration("/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop'}}/products"),
+            $this->declaration(null),
+        ]);
 
-        $result = $this->invokeCollectStaticRoutes(['identifier' => 'sirsoft-user_basic']);
+        $locs = array_column($this->entriesOf($this->generator->generate()), 'loc');
 
-        $this->assertCount(1, $result);
-        $this->assertStringContainsString('/public-page', $result[0]['loc']);
+        $this->assertSame([url('/about')], $locs);
     }
 
     /**
-     * 동적 파라미터(:)가 포함된 라우트가 제외되는지 확인합니다.
+     * 끝·연속 슬래시가 붙은 라우트 경로는 301 이동 대상인 정규형 주소로 싣고, 정규형이 같으면 한 번만 싣는다.
+     *
+     * @scenario static=noncanonical_slash
+     *
+     * @effects static_route_uses_canonical_path
+     *
+     * @return void 반환값 없음
      */
-    public function test_generate_excludes_dynamic_routes(): void
+    public function test_generate_writes_canonical_path_for_slash_variants(): void
     {
-        $this->templateService->shouldReceive('getRoutesDataWithModules')
-            ->with('sirsoft-user_basic')
-            ->andReturn([
-                'success' => true,
-                'data' => [
-                    'routes' => [
-                        ['path' => '/products', 'auth_required' => false, 'guest_only' => false],
-                        ['path' => '/products/:id', 'auth_required' => false, 'guest_only' => false],
-                        ['path' => '/categories/:slug/items', 'auth_required' => false, 'guest_only' => false],
-                    ],
-                ],
-            ]);
+        $this->collector->shouldReceive('collect')->andReturn([
+            $this->declaration('*/about/'),
+            $this->declaration('*/board//free'),
+            $this->declaration('*/board/free'),
+            $this->declaration('*/about'),
+            $this->declaration('*/'),
+        ]);
 
-        $result = $this->invokeCollectStaticRoutes(['identifier' => 'sirsoft-user_basic']);
+        $locs = array_column($this->entriesOf($this->generator->generate()), 'loc');
 
-        $this->assertCount(1, $result);
-        $this->assertStringContainsString('/products', $result[0]['loc']);
-        // 동적 라우트가 포함되지 않았는지 확인
-        foreach ($result as $entry) {
-            $this->assertStringNotContainsString(':id', $entry['loc']);
-            $this->assertStringNotContainsString(':slug', $entry['loc']);
-        }
+        $this->assertSame([url('/about'), url('/board/free'), url('/')], $locs);
     }
 
     /**
-     * 템플릿 표현식({{}})이 포함된 라우트가 제외되는지 확인합니다.
+     * 레이아웃 toggle_setting 이 꺼진 화면은 싣지 않는다 (봇 화면 기준과 동일, D2).
+     *
+     * @scenario static=toggle_off
+     *
+     * @effects static_route_follows_toggle_setting
+     *
+     * @return void 반환값 없음
      */
-    public function test_generate_excludes_template_expression_routes(): void
+    public function test_generate_excludes_route_whose_toggle_is_off(): void
     {
-        $this->templateService->shouldReceive('getRoutesDataWithModules')
-            ->with('sirsoft-user_basic')
-            ->andReturn([
-                'success' => true,
-                'data' => [
-                    'routes' => [
-                        ['path' => '/home', 'auth_required' => false, 'guest_only' => false],
-                        ['path' => '/items/{{category}}', 'auth_required' => false, 'guest_only' => false],
-                    ],
-                ],
-            ]);
+        $search = $this->declaration('/search', ['enabled' => true, 'toggle_setting' => '$module_settings:sirsoft-ecommerce:seo.seo_search_result']);
+        $home = $this->declaration('/');
 
-        $result = $this->invokeCollectStaticRoutes(['identifier' => 'sirsoft-user_basic']);
+        $this->collector->shouldReceive('collect')->andReturn([$home, $search]);
+        $this->toggleEvaluator->shouldReceive('isEnabled')->with(null, null, $search['seo'])->andReturn(false);
+        $this->toggleEvaluator->shouldReceive('isEnabled')->with(null, null, $home['seo'])->andReturn(true);
 
-        $this->assertCount(1, $result);
-        $this->assertStringContainsString('/home', $result[0]['loc']);
+        $locs = array_column($this->entriesOf($this->generator->generate()), 'loc');
+
+        $this->assertSame([url('/')], $locs);
+    }
+
+    /**
+     * priority 가 0~1 밖이거나 숫자가 아니고 changefreq 가 비표준이면 0.5·weekly 로 둔다.
+     *
+     * @scenario static=invalid_priority
+     *
+     * @effects static_route_falls_back_to_default_priority_and_changefreq
+     *
+     * @return void 반환값 없음
+     */
+    public function test_generate_falls_back_when_priority_or_changefreq_invalid(): void
+    {
+        $this->collector->shouldReceive('collect')->andReturn([
+            $this->declaration('/a', ['enabled' => true, 'priority' => 1.5, 'changefreq' => 'sometimes']),
+            $this->declaration('/b', ['enabled' => true, 'priority' => 'high']),
+            $this->declaration('/c', ['enabled' => true, 'priority' => 0, 'changefreq' => ' Monthly ']),
+        ]);
+
+        $entries = $this->entriesOf($this->generator->generate());
+
+        $this->assertSame(['0.5', 'weekly'], [$entries[0]['priority'], $entries[0]['changefreq']]);
+        $this->assertSame(['0.5', 'weekly'], [$entries[1]['priority'], $entries[1]['changefreq']]);
+        $this->assertSame(['0.0', 'monthly'], [$entries[2]['priority'], $entries[2]['changefreq']]);
+    }
+
+    /**
+     * 같은 주소를 정적 화면과 기여자가 함께 내면 정적 화면 1건만 남는다 (D6).
+     *
+     * @scenario static=duplicate_contributor
+     *
+     * @effects static_route_dedupes_contributor_same_loc
+     *
+     * @return void 반환값 없음
+     */
+    public function test_generate_writes_same_loc_once_when_contributor_repeats_static_route(): void
+    {
+        $this->collector->shouldReceive('collect')->andReturn([
+            $this->declaration('/boards', ['enabled' => true, 'priority' => 0.6, 'changefreq' => 'daily']),
+        ]);
+
+        $contributor = Mockery::mock(SitemapContributorInterface::class);
+        $contributor->shouldReceive('getIdentifier')->andReturn('sirsoft-board');
+        $contributor->shouldReceive('getUrls')->andReturn([
+            ['url' => '/boards', 'changefreq' => 'hourly', 'priority' => 0.9],
+            ['url' => '/board/free'],
+        ]);
+        $this->generator->registerContributor($contributor);
+
+        $entries = $this->entriesOf($this->generator->generate());
+        $boards = array_values(array_filter($entries, fn (array $e): bool => $e['loc'] === url('/boards')));
+
+        $this->assertCount(1, $boards);
+        // 정적 화면이 먼저 적히므로 레이아웃 값이 남는다
+        $this->assertSame(['0.6', 'daily'], [$boards[0]['priority'], $boards[0]['changefreq']]);
+        $this->assertContains(url('/board/free'), array_column($entries, 'loc'));
+    }
+
+    /**
+     * 기여자가 끝 슬래시 없는 홈(`https://사이트`)·끝 슬래시 홈·대문자 스킴 홈을 내도 정적 홈과 1건으로 합친다.
+     *
+     * 제보자의 임시 우회 기여자가 SiteUrl::absolute('') · url('/') 로 홈을 내는 경우다. 다른 경로의 끝 슬래시는
+     * 다른 주소로 남긴다.
+     *
+     * @scenario static=duplicate_home_slash
+     *
+     * @effects static_route_dedupes_home_without_trailing_slash
+     *
+     * @return void 반환값 없음
+     */
+    public function test_generate_dedupes_home_regardless_of_trailing_slash(): void
+    {
+        $this->collector->shouldReceive('collect')->andReturn([
+            $this->declaration('/', ['enabled' => true, 'priority' => 1, 'changefreq' => 'daily']),
+            $this->declaration('/boards'),
+        ]);
+
+        $home = rtrim(url('/'), '/');
+        $upperScheme = preg_replace_callback('#^[a-z]+#', fn (array $m): string => strtoupper($m[0]), $home);
+        $contributor = Mockery::mock(SitemapContributorInterface::class);
+        $contributor->shouldReceive('getIdentifier')->andReturn('custom-home');
+        $contributor->shouldReceive('getUrls')->andReturn([
+            ['loc' => $home],
+            ['loc' => $home.'/'],
+            ['loc' => $upperScheme.'/'],
+            ['loc' => url('/boards').'/'],
+        ]);
+        $this->generator->registerContributor($contributor);
+
+        $locs = array_column($this->entriesOf($this->generator->generate()), 'loc');
+
+        $homeLocs = array_filter($locs, fn (string $loc): bool => strtolower(rtrim($loc, '/')) === strtolower($home));
+        $this->assertCount(1, $homeLocs, '홈은 정적 화면 1건만 남아야 합니다: '.implode(', ', $locs));
+        // `/boards/` 는 `/boards` 와 다른 주소로 남는다
+        $this->assertContains(url('/boards').'/', $locs);
+        $this->assertContains(url('/boards'), $locs);
+    }
+
+    /**
+     * generateToWriter·generateToWriterFromEntries 도 정적 화면을 먼저 쓰고 같은 주소를 건너뛴다.
+     *
+     * @scenario static=duplicate_writer_paths
+     *
+     * @effects static_route_dedupes_on_every_generation_path
+     *
+     * @return void 반환값 없음
+     */
+    public function test_writer_paths_write_static_routes_first_and_dedupe(): void
+    {
+        $this->collector->shouldReceive('collect')->andReturn([$this->declaration('/')]);
+
+        $contributor = Mockery::mock(SitemapContributorInterface::class);
+        $contributor->shouldReceive('getIdentifier')->andReturn('custom-home');
+        // 기여자·저장소가 홈을 뒤에 내도 정적 홈이 맨 앞에 한 번만 적힌다
+        $contributor->shouldReceive('getUrls')->andReturn([['url' => '/about'], ['url' => '/']]);
+        $this->generator->registerContributor($contributor);
+
+        $writer = new SpySitemapWriter;
+        $this->generator->generateToWriter($writer);
+        $this->assertSame([url('/'), url('/about')], array_column($writer->entries, 'loc'));
+
+        $fromEntries = new SpySitemapWriter;
+        $this->generator->generateToWriterFromEntries($fromEntries, [
+            ['loc' => url('/about')],
+            ['loc' => url('/'), 'resource_type' => 'home'],
+        ]);
+        $this->assertSame([url('/'), url('/about')], array_column($fromEntries->entries, 'loc'));
+    }
+
+    /**
+     * 대용량 저장소 스트림(150,000건)을 흘려도 중복 판정 집합이 정적 화면 수에 머물러 메모리가 유계다.
+     *
+     * 중복 판정 집합에 모든 loc 를 담는 구현(회귀)이면 URL 수에 비례해 수십 MB 가 늘어난다.
+     *
+     * @scenario static=bounded_dedupe
+     *
+     * @effects static_dedupe_keeps_streaming_memory_bounded
+     *
+     * @scale n=150000 asserts=bounded_peak_memory, static_routes_written_first
+     *
+     * @return void 반환값 없음
+     */
+    public function test_dedupe_keeps_streaming_memory_bounded_for_large_entry_stream(): void
+    {
+        $this->collector->shouldReceive('collect')->andReturn([$this->declaration('/'), $this->declaration('/boards')]);
+
+        $writer = new CountingSitemapWriter;
+        $entries = (function (): \Generator {
+            yield ['loc' => url('/')];
+            for ($i = 1; $i <= 150000; $i++) {
+                yield ['loc' => url("/p/{$i}")];
+            }
+        })();
+
+        memory_reset_peak_usage();
+        $before = memory_get_peak_usage(true);
+
+        $this->generator->generateToWriterFromEntries($writer, $entries);
+
+        $growth = memory_get_peak_usage(true) - $before;
+
+        // 정적 2건 + 저장소 150,000건(정적 홈과 겹치는 1건 제외)
+        $this->assertSame([url('/'), url('/boards')], $writer->first);
+        $this->assertSame(150002, $writer->count);
+        // 150,000개 loc 를 집합에 담으면 20MB 이상 는다 — 정적 화면만 담으면 거의 늘지 않는다
+        $this->assertLessThan(8 * 1024 * 1024, $growth, '중복 판정 집합이 스트림 크기에 비례해 커졌습니다: '.$growth.' bytes');
+    }
+
+    /**
+     * 선언 수집이 예외를 던지면 오류로 보고하고, 기여자 URL 은 그대로 싣는다 (D3).
+     *
+     * @scenario static=collector_failure
+     *
+     * @effects sitemap_failures_are_reported_and_generation_continues
+     *
+     * @return void 반환값 없음
+     */
+    public function test_static_collection_failure_is_reported_and_contributors_remain(): void
+    {
+        Exceptions::fake();
+
+        $this->collector->shouldReceive('collect')->andThrow(new \LogicException('layout broken'));
+
+        $contributor = Mockery::mock(SitemapContributorInterface::class);
+        $contributor->shouldReceive('getIdentifier')->andReturn('working-module');
+        $contributor->shouldReceive('getUrls')->andReturn([['url' => '/ok']]);
+        $this->generator->registerContributor($contributor);
+
+        $locs = array_column($this->entriesOf($this->generator->generate()), 'loc');
+
+        $this->assertSame([url('/ok')], $locs);
+        Exceptions::assertReported(fn (\RuntimeException $e): bool => $e->getPrevious() instanceof \LogicException
+            && $e->getPrevious()->getMessage() === 'layout broken');
     }
 
     // ─── generate() - 기여자 예외 처리 ──────────────────────
 
     /**
-     * 기여자에서 예외 발생 시 다른 기여자의 URL이 정상 수집되고 로그가 기록되는지 확인합니다.
+     * 기여자에서 예외 발생 시 다른 기여자의 URL이 정상 수집되고, 실패가 오류로 보고되는지 확인합니다.
+     *
+     * 경고 한 줄로 삼키면 운영 로그 수준(error)에서 보이지 않는다(#155) — report() 로 올리고 계속 진행한다.
+     *
+     * @scenario static=contributor_failure
+     *
+     * @effects sitemap_failures_are_reported_and_generation_continues
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_handles_contributor_exception_gracefully(): void
     {
+        Exceptions::fake();
+
         // 예외를 던지는 기여자
         $failingContributor = Mockery::mock(SitemapContributorInterface::class);
         $failingContributor->shouldReceive('getIdentifier')->andReturn('failing-module');
@@ -281,22 +489,6 @@ class SitemapGeneratorTest extends TestCase
             ['url' => '/working-page', 'changefreq' => 'monthly', 'priority' => 0.6],
         ]);
 
-        // 기여자 실패 로그 검증
-        Log::shouldReceive('warning')
-            ->once()
-            ->withArgs(function (string $message, array $context) {
-                return str_contains($message, 'Sitemap contributor failed')
-                    && $context['contributor'] === 'failing-module'
-                    && str_contains($context['error'], 'DB connection failed');
-            });
-
-        // 정적 라우트 수집에서 발생할 수 있는 로그 허용
-        Log::shouldReceive('warning')
-            ->zeroOrMoreTimes()
-            ->withArgs(function (string $message) {
-                return str_contains($message, 'Static route collection failed');
-            });
-
         $this->generator->registerContributor($failingContributor);
         $this->generator->registerContributor($workingContributor);
 
@@ -305,12 +497,20 @@ class SitemapGeneratorTest extends TestCase
         // 정상 기여자의 URL은 포함되어야 함
         $this->assertStringContainsString(url('/working-page'), $xml);
         $this->assertStringContainsString('<changefreq>monthly</changefreq>', $xml);
+
+        // 실패한 기여자 식별자와 원인 예외가 함께 보고된다
+        Exceptions::assertReported(fn (\RuntimeException $e): bool => str_contains($e->getMessage(), 'failing-module')
+            && $e->getPrevious()?->getMessage() === 'DB connection failed');
     }
 
     // ─── generate() - URL 변환 ──────────────────────────────
 
     /**
      * 기여자의 url 키가 절대 경로 loc으로 변환되는지 확인합니다.
+     *
+     * @scenario generator=generate_converts_contributor_url_to_absolute_loc
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_converts_contributor_url_to_absolute_loc(): void
     {
@@ -345,6 +545,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 기여자와 정적 라우트가 모두 없을 때 빈 urlset XML을 반환하는지 확인합니다.
+     *
+     * @scenario generator=generate_with_no_contributors_returns_empty_urlset
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_with_no_contributors_returns_empty_urlset(): void
     {
@@ -366,6 +570,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 다국어 지원 시 xmlns:xhtml 네임스페이스가 포함되는지 확인합니다.
+     *
+     * @scenario generator=multilingual_xml_includes_xhtml_namespace
+     *
+     * @return void 반환값 없음
      */
     public function test_multilingual_xml_includes_xhtml_namespace(): void
     {
@@ -387,6 +595,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 다국어 지원 시 각 로케일별 <url> 항목이 생성되는지 확인합니다.
+     *
+     * @scenario generator=multilingual_xml_generates_url_per_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_multilingual_xml_generates_url_per_locale(): void
     {
@@ -416,6 +628,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 다국어 지원 시 xhtml:link hreflang alternate 태그가 포함되는지 확인합니다.
+     *
+     * @scenario generator=multilingual_xml_includes_hreflang_alternates
+     *
+     * @return void 반환값 없음
      */
     public function test_multilingual_xml_includes_hreflang_alternates(): void
     {
@@ -455,6 +671,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 단일 로케일 시 기존 형식(xhtml 네임스페이스 없음)을 유지하는지 확인합니다.
+     *
+     * @scenario generator=single_locale_uses_standard_xml_format
+     *
+     * @return void 반환값 없음
      */
     public function test_single_locale_uses_standard_xml_format(): void
     {
@@ -486,6 +706,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * renderUrlBlock()이 단일 언어 <url> 블록을 생성하는지 확인합니다.
+     *
+     * @scenario generator=render_url_block_single_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_render_url_block_single_locale(): void
     {
@@ -504,6 +728,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * renderUrlBlock()이 다국어에서 로케일별 블록과 hreflang을 생성하는지 확인합니다.
+     *
+     * @scenario generator=render_url_block_multilingual
+     *
+     * @return void 반환값 없음
      */
     public function test_render_url_block_multilingual(): void
     {
@@ -519,6 +747,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * XML 특수문자가 이스케이프되는지 확인합니다.
+     *
+     * @scenario generator=render_url_block_escapes_xml_special_characters
+     *
+     * @return void 반환값 없음
      */
     public function test_render_url_block_escapes_xml_special_characters(): void
     {
@@ -531,6 +763,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * urlset 헤더/푸터가 로케일 수에 따라 분기되는지 확인합니다.
+     *
+     * @scenario generator=urlset_header_switches_on_multilingual
+     *
+     * @return void 반환값 없음
      */
     public function test_urlset_header_switches_on_multilingual(): void
     {
@@ -547,6 +783,10 @@ class SitemapGeneratorTest extends TestCase
     /**
      * generateToWriter()가 기여자 URL을 writer 에 한 건씩 전달하고
      * 상대 url 을 절대 loc 으로 변환하는지 확인합니다.
+     *
+     * @scenario generator=generate_to_writer_streams_entries_without_cross_merge
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_to_writer_streams_entries_without_cross_merge(): void
     {
@@ -593,6 +833,10 @@ class SitemapGeneratorTest extends TestCase
      *
      * 모든 기여자의 URL 을 배열로 모은 뒤 한 번에 쓰는 구현이라면, 두 번째 기여자의
      * getUrls() 가 호출되는 시점에 writer 는 아직 비어 있다. 이 테스트는 그 구현을 걸러낸다.
+     *
+     * @scenario generator=generate_to_writer_drains_each_contributor_before_calling_the_next
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_to_writer_drains_each_contributor_before_calling_the_next(): void
     {
@@ -630,6 +874,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * 한 기여자가 실패해도 다른 기여자의 URL 이 계속 기록되는지 확인합니다.
+     *
+     * @scenario generator=generate_to_writer_isolates_contributor_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_to_writer_isolates_contributor_failure(): void
     {
@@ -641,11 +889,7 @@ class SitemapGeneratorTest extends TestCase
         $working->shouldReceive('getIdentifier')->andReturn('working-module');
         $working->shouldReceive('getUrls')->andReturn([['url' => '/ok']]);
 
-        Log::shouldReceive('warning')
-            ->once()
-            ->withArgs(fn (string $message, array $context) => str_contains($message, 'Sitemap contributor failed')
-                && $context['contributor'] === 'failing-module');
-        Log::shouldReceive('warning')->zeroOrMoreTimes();
+        Exceptions::fake();
 
         $this->generator->registerContributor($failing);
         $this->generator->registerContributor($working);
@@ -654,6 +898,8 @@ class SitemapGeneratorTest extends TestCase
         $this->generator->generateToWriter($writer);
 
         $this->assertContains(url('/ok'), array_column($writer->entries, 'loc'));
+        Exceptions::assertReported(fn (\RuntimeException $e): bool => str_contains($e->getMessage(), 'failing-module')
+            && $e->getPrevious()?->getMessage() === 'DB connection failed');
     }
 
     // ─── drain capability 감지 (지연 스트리밍) ─────────────
@@ -663,6 +909,10 @@ class SitemapGeneratorTest extends TestCase
      *
      * getUrls() 를 호출하면 예외를 던지는 기여자를 사용해, generateToWriter 가
      * 지연 경로(getUrlsLazy)만 탄다는 것을 증명한다.
+     *
+     * @scenario generator=generate_to_writer_uses_lazy_path_for_capable_contributor
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_to_writer_uses_lazy_path_for_capable_contributor(): void
     {
@@ -670,16 +920,31 @@ class SitemapGeneratorTest extends TestCase
 
         $contributor = new class extends AbstractSitemapContributor
         {
+            /**
+             * 기여자 식별자를 돌려줍니다.
+             *
+             * @return string 식별자
+             */
             public function getIdentifier(): string
             {
                 return 'lazy-capable';
             }
 
+            /**
+             * 지연 경로에서는 호출되면 안 되는 배열 경로입니다.
+             *
+             * @return array<int, array<string, mixed>> 호출되면 예외
+             */
             public function getUrls(): array
             {
                 throw new \LogicException('getUrls() 는 지연 경로에서 호출되면 안 됩니다.');
             }
 
+            /**
+             * URL 을 한 건씩 내보냅니다.
+             *
+             * @return iterable<array<string, mixed>> URL 항목
+             */
             public function getUrlsLazy(): iterable
             {
                 yield ['url' => '/lazy/1'];
@@ -699,6 +964,10 @@ class SitemapGeneratorTest extends TestCase
 
     /**
      * getUrlsLazy 가 없는 raw 기여자는 기존 getUrls() 경로로 소진된다 (하위호환).
+     *
+     * @scenario generator=generate_to_writer_uses_get_urls_for_raw_contributor
+     *
+     * @return void 반환값 없음
      */
     public function test_generate_to_writer_uses_get_urls_for_raw_contributor(): void
     {
@@ -719,68 +988,45 @@ class SitemapGeneratorTest extends TestCase
     // ─── 헬퍼 메서드 ──────────────────────────────────────
 
     /**
-     * TemplateManager 정적 호출을 우회하여 collectStaticRoutes를 테스트합니다.
+     * SeoDeclarationCollector::collect() 가 돌려주는 선언 한 건을 만듭니다.
      *
-     * 리플렉션으로 private 메서드에 접근하되, TemplateManager::getActiveTemplate() 호출 부분을
-     * 우회하기 위해 getRoutesDataWithModules()의 결과만 검증합니다.
-     *
-     * @param  array|null  $activeTemplate  활성 템플릿 데이터
-     * @return array 수집된 정적 라우트 배열
+     * @param  string|null  $routePath  라우트 경로
+     * @param  array<string, mixed>  $seo  병합 레이아웃 meta.seo
+     * @return array<string, mixed> 선언
      */
-    private function invokeCollectStaticRoutes(?array $activeTemplate): array
+    private function declaration(?string $routePath, array $seo = ['enabled' => true]): array
     {
-        // TemplateManager::getActiveTemplate을 우회하기 위해
-        // collectStaticRoutes 내부 로직을 시뮬레이션합니다.
-        // (private 메서드를 직접 테스트하는 대신, generate()를 통해 간접 테스트하되
-        //  정적 라우트 부분만 격리)
+        return [
+            'layoutName' => 'sample',
+            'templateIdentifier' => 'sirsoft-basic',
+            'moduleIdentifier' => null,
+            'pluginIdentifier' => null,
+            'seo' => $seo,
+            'routePath' => $routePath,
+        ];
+    }
 
-        if (! $activeTemplate) {
-            return [];
-        }
+    /**
+     * sitemap XML 의 <url> 항목을 loc·priority·changefreq 로 풀어냅니다.
+     *
+     * @param  string  $xml  사이트맵 XML 본문
+     * @return array<int, array<string, string|null>> 항목 목록(loc·priority·changefreq)
+     */
+    private function entriesOf(string $xml): array
+    {
+        $document = simplexml_load_string($xml);
+        $this->assertNotFalse($document, 'sitemap XML 을 해석할 수 없습니다');
 
-        $templateIdentifier = $activeTemplate['identifier'] ?? null;
-        if (! $templateIdentifier) {
-            return [];
-        }
-
-        $routesResult = $this->templateService->getRoutesDataWithModules($templateIdentifier);
-        if (! ($routesResult['success'] ?? false) || empty($routesResult['data']['routes'])) {
-            return [];
-        }
-
-        $urls = [];
-        foreach ($routesResult['data']['routes'] as $route) {
-            if ($route['auth_required'] ?? false) {
-                continue;
-            }
-
-            if ($route['guest_only'] ?? false) {
-                continue;
-            }
-
-            $routePath = $route['path'] ?? '';
-
-            if (str_contains($routePath, ':')) {
-                continue;
-            }
-
-            if (str_contains($routePath, '{{')) {
-                continue;
-            }
-
-            $routePath = ltrim($routePath, '*/');
-            if (! str_starts_with($routePath, '/')) {
-                $routePath = '/'.$routePath;
-            }
-
-            $urls[] = [
-                'loc' => url($routePath),
-                'changefreq' => 'weekly',
-                'priority' => 0.5,
+        $entries = [];
+        foreach ($document->url as $url) {
+            $entries[] = [
+                'loc' => (string) $url->loc,
+                'priority' => isset($url->priority) ? (string) $url->priority : null,
+                'changefreq' => isset($url->changefreq) ? (string) $url->changefreq : null,
             ];
         }
 
-        return $urls;
+        return $entries;
     }
 }
 
@@ -822,6 +1068,8 @@ class SpySitemapWriter extends SitemapWriter
 
     /**
      * {@inheritDoc}
+     *
+     * @return void 반환값 없음
      */
     public function open(): void
     {
@@ -830,6 +1078,8 @@ class SpySitemapWriter extends SitemapWriter
 
     /**
      * {@inheritDoc}
+     *
+     * @return void 반환값 없음
      */
     public function addUrl(array $entry): void
     {
@@ -854,5 +1104,62 @@ class SpySitemapWriter extends SitemapWriter
         $this->committed = true;
 
         return ['committed' => true];
+    }
+}
+
+/**
+ * URL 수와 앞부분 몇 건만 기억하는 SitemapWriter 테스트 더블.
+ *
+ * 대용량 스트림 시험에서 기록 항목을 모두 담으면 더블 자체가 메모리를 키우므로 개수만 셉니다.
+ */
+class CountingSitemapWriter extends SitemapWriter
+{
+    /**
+     * addUrl() 로 전달된 URL 수
+     */
+    public int $count = 0;
+
+    /**
+     * 앞부분 두 건의 loc
+     *
+     * @var array<int, string>
+     */
+    public array $first = [];
+
+    /**
+     * CountingSitemapWriter 생성자 (의존성 없이 생성).
+     */
+    public function __construct() {}
+
+    /**
+     * {@inheritDoc}
+     */
+    public function open(): void {}
+
+    /**
+     * {@inheritDoc}
+     */
+    public function addUrl(array $entry): void
+    {
+        $this->count++;
+        if (count($this->first) < 2) {
+            $this->first[] = $entry['loc'];
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function close(): array
+    {
+        return [];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function commit(): array
+    {
+        return [];
     }
 }

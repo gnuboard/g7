@@ -1,4 +1,4 @@
-// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다).
+// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다). 면세 금액 상한(#820)은 Vitest 단언으로 잠근다 — 마일리지를 과세분보다 많이 쓴 면세 혼합 결제는 실계약 상점에서만 재현된다.
 /**
  * 토스페이먼츠 결제창 호출 핸들러
  *
@@ -270,11 +270,12 @@ function resolveEscrowFlag(useEscrow?: string): boolean | undefined {
 /**
  * 가상계좌 SDK 페이로드를 구성합니다.
  *
+ * 에스크로 상품은 `attachEscrowProducts` 가 SDK 페이로드 최상위에 따로 붙인다 — 이 함수는 결제 데이터를 쓰지 않는다.
+ *
  * @param config 클라이언트 설정 (vbank / use_escrow 포함)
- * @param pgPaymentData PG 결제 데이터 (escrow_products 포함)
  * @returns virtualAccount 페이로드
  */
-function buildVirtualAccountPayload(config: ClientConfig, pgPaymentData: PgPaymentData): any {
+function buildVirtualAccountPayload(config: ClientConfig): any {
     const vbank: any = {
         validHours: config.vbank?.valid_hours ?? 24,
     };
@@ -395,8 +396,10 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         // 복합 과세 상점은 **승인 요청에도** 면세 금액을 실어야 한다 (S1-D12). 승인에서 빼면
         // PG 가 그 결제를 전액 과세로 등록해 두고, 나중에 면세분이 실린 취소를
         // 「취소 할 수 없는 금액 입니다」 로 거절한다 — 면세 상품이 섞인 주문의 부분환불이 막힌다.
+        // 면세 금액은 결제 금액 안에 있어야 한다(totalAmount = taxFreeAmount + suppliedAmount + vat). 이커머스 1.3.2 이하는
+        // 마일리지 차감 전 면세 합계를 그대로 실어, 마일리지를 과세분보다 많이 쓰면 결제 금액을 넘었다 — 결제 금액으로 자른다.
         if (typeof pgPaymentData.tax_free_amount === 'number' && pgPaymentData.tax_free_amount > 0) {
-            requestPayload.taxFreeAmount = pgPaymentData.tax_free_amount;
+            requestPayload.taxFreeAmount = Math.min(pgPaymentData.tax_free_amount, Number(pgPaymentData.amount));
         }
 
         if (method === 'CARD') {
@@ -414,7 +417,7 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             }
         } else if (method === 'VIRTUAL_ACCOUNT') {
             // 가상계좌 — 에스크로 적용 대상 (escrowProducts 는 에스크로 사용 시 필수)
-            requestPayload.virtualAccount = buildVirtualAccountPayload(config, pgPaymentData);
+            requestPayload.virtualAccount = buildVirtualAccountPayload(config);
             attachEscrowProducts(requestPayload, config, pgPaymentData);
         } else if (method === 'TRANSFER') {
             // 계좌이체 — 에스크로만 적용 대상

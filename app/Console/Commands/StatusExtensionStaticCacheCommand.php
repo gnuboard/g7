@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Services\ExtensionStaticCacheService;
 use Illuminate\Console\Command;
@@ -25,15 +26,12 @@ use Illuminate\Support\Facades\File;
  */
 class StatusExtensionStaticCacheCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'ext-static:status';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '부트스트랩 리소스 정적 게시 상태를 점검합니다 (이상 발견 시 비-0 종료)';
 
     /**
      * Execute the console command.

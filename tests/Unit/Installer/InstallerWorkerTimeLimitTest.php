@@ -287,6 +287,54 @@ PHP);
     }
 
     /**
+     * 실행 시간 제한이 없는 실행(터미널 설치는 진입 때 set_time_limit(0))은 작업마다 다시 걸 때도 제한 없음을 유지한다.
+     *
+     * 같은 작업 루프(runInstallationTasks)를 웹 워커와 터미널 설치가 함께 쓴다. 작업마다 600초를 새로 걸면
+     * 종전에 제한이 없던 터미널 설치가 느린 망의 의존성 설치 같은 긴 작업에서 새로 끊긴다.
+     *
+     * @scenario situation=unlimited_cli_run
+     *
+     * @effects unlimited_time_limit_kept_for_cli_run
+     *
+     * @return void 반환값 없음
+     */
+    public function test_task_time_limit_reset_keeps_unlimited_run_unlimited(): void
+    {
+        $result = $this->runScenario(<<<'PHP'
+require_once G7_ROOT.'/public/install/includes/config.php';
+require_once G7_ROOT.'/public/install/includes/functions.php';
+require_once G7_ROOT.'/public/install/includes/installer-state.php';
+require_once G7_ROOT.'/public/install/includes/progress-emitter.php';
+require_once G7_ROOT.'/public/install/includes/task-runner.php';
+
+set_time_limit(0);
+installerResetTaskTimeLimit();
+echo 'UNLIMITED:'.ini_get('max_execution_time')."\n";
+
+set_time_limit(5);
+installerResetTaskTimeLimit();
+echo 'LIMITED:'.ini_get('max_execution_time')."\n";
+PHP);
+
+        $this->assertFalse($result['timed_out']);
+        $this->assertStringContainsString('UNLIMITED:0', $result['stdout'], "제한 없는 실행에 작업당 제한이 새로 걸렸다:\n".$result['output']);
+        $this->assertStringContainsString('LIMITED:'.self::taskTimeLimit(), $result['stdout'], "제한이 있는 실행은 작업당 제한으로 다시 걸려야 한다:\n".$result['output']);
+    }
+
+    /**
+     * 설치기 설정의 작업당 실행 시간 제한(초).
+     *
+     * @return int 제한(초)
+     */
+    private static function taskTimeLimit(): int
+    {
+        $config = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/config.php');
+        preg_match("/define\\('INSTALLER_TASK_TIME_LIMIT', (\\d+)\\)/", $config, $m);
+
+        return (int) ($m[1] ?? 0);
+    }
+
+    /**
      * 두 진입점이 워커 shutdown 처리기를 등록하고, 그 시점에 처리기가 정의돼 있어야 한다.
      *
      * @effects both_entrypoints_register_worker_shutdown_handler_after_definition
@@ -417,10 +465,12 @@ PHP;
             ."ini_set('display_errors', 'stderr');\n"
             ."define('G7_ROOT', '{$this->projectRoot}');\n"
             ."define('BASE_PATH', '{$this->tempBase}');\n"
-            // config.php 는 BASE_PATH/app/Support 의 두 클래스를 require 한다 — 임시 BASE_PATH 에는
+            // config.php 는 BASE_PATH/app/Support 의 세 클래스를 require 한다 — 임시 BASE_PATH 에는
             // 없으므로 프로젝트 원본을 먼저 불러 둔다(config.php 의 class_exists 가드가 건너뛴다).
+            // PhpExtensionRequirements 는 자기 옆의 목록 파일을 읽으므로 원본 경로에서 불러야 한다.
             ."require_once G7_ROOT.'/app/Support/PrivilegedDatabaseAccounts.php';\n"
-            ."require_once G7_ROOT.'/app/Support/OpcacheStatus.php';\n";
+            ."require_once G7_ROOT.'/app/Support/OpcacheStatus.php';\n"
+            ."require_once G7_ROOT.'/app/Support/PhpExtensionRequirements.php';\n";
         file_put_contents($script, $prelude.$body."\n");
 
         // 출력은 파일로 받는다 — Windows 에서는 proc_open 파이프의 non-blocking 읽기가 동작하지 않아,

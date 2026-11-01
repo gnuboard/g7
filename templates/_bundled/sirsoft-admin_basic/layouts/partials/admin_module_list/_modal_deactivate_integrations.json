@@ -1,0 +1,324 @@
+{
+    "comment": "끄려는 모듈을 **다른 활성 확장이 연동으로 쓰고 있을 때**의 확인 창(코어 7.1.4 · #822).\n  연동(integrations)은 의존과 달리 끄는 것을 막지 않는다 — 그 확장에서 이 모듈을 쓰던 메뉴·화면이 사라진다는 것만\n  알리고 진행한다. 연동 중인 확장 목록은 목록 행의 `integrated_by` 를 읽는다(스위치가 `selectedModule` 에 담아 연다).\n  비활성 호출은 목록 스위치와 같다 — 의존하는 쪽이 있어 서버가 409 로 거절하면 이 창을 닫고 강제 비활성 창으로 넘긴다.\n  스위치는 여는 쪽이 이미 서버 값으로 되돌려 두었으므로 취소는 창만 닫는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "모듈 비활성화 연동 안내 모달",
+        "editor_label": "$t:admin.modal_label.admin_module_list.module_deactivate_integrations_modal"
+    },
+    "id": "module_deactivate_integrations_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.extension_integrations.deactivate_notice_title",
+        "size": "sm"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "py-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-warning"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "exclamation-triangle",
+                                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-warning-soft"
+                            },
+                            "text": "$t:admin.extension_integrations.deactivate_notice_body|name={{_global.selectedModule?.name ?? _global.selectedModule?.identifier ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "mt-3 text-body font-medium"
+                    },
+                    "text": "$t:admin.extension_integrations.integrated_by_label"
+                },
+                {
+                    "id": "module_integrated_by_list",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mt-2 row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "_global.selectedModule?.integrated_by ?? []",
+                                "item_var": "item"
+                            },
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{item.type === 'module'}}",
+                                    "props": {
+                                        "name": "cube",
+                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{item.type === 'plugin'}}",
+                                    "props": {
+                                        "name": "puzzle-piece",
+                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{item.type === 'template'}}",
+                                    "props": {
+                                        "name": "palette",
+                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body break-words"
+                                    },
+                                    "text": "{{item.name || item.identifier}} ({{item.identifier}})"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "취소 — 스위치는 여는 쪽이 이미 서버 값으로 되돌려 두었으므로 창만 닫는다.",
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isModuleIntegrationDeactivating}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "비활성 실행 — 목록 스위치의 비활성 갈래와 같은 호출이다. 성공하면 목록·사이드바 메뉴·확장 번들을 갱신하고,\n               의존하는 쪽이 있어 409 로 거절되면 이 창을 닫고 강제 비활성 창을 연다(그 창이 의존 목록을 보이고 강제 여부를 묻는다).",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isModuleIntegrationDeactivating": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/modules/deactivate",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "module_name": "{{_global.selectedModule.identifier}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isModuleIntegrationDeactivating": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "parallel",
+                                            "actions": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.modules.deactivate_success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "modules"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "admin_menu"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "auto_deactivated_banner"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "reloadExtensions",
+                                                    "params": {
+                                                        "moduleInfo": "{{result.data?.module ?? result}}",
+                                                        "action": "remove"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
+                                                "lifecycleWarningsOpen": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "lifecycle_warnings_modal",
+                                            "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isModuleIntegrationDeactivating": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "modules"
+                                            }
+                                        }
+                                    ],
+                                    "errorHandling": {
+                                        "409": {
+                                            "comment": "409(이 모듈에 의존하는 쪽이 있음)는 fail 을 거치지 않는다 — 이 창을 닫고 의존 목록을 담아 강제 비활성 창으로 넘긴다.",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isModuleIntegrationDeactivating": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "modules"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "deactivateWarningData": "{{error.errors ?? null}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "module_force_deactivate_modal"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isModuleIntegrationDeactivating}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isModuleIntegrationDeactivating}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isModuleIntegrationDeactivating ? '$t:admin.modules.deactivating' : '$t:admin.extension_integrations.deactivate_confirm'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

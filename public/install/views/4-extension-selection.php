@@ -16,6 +16,12 @@
 
     <?php require __DIR__.'/partials/recovery-token-notice.php'; ?>
 
+    <!-- 선택 연동 안내 — 「연동」 배지 뜻 (필수 의존성과 달리 해제해도 설치 가능) -->
+    <p class="integration-selection-notice">
+        <i class="fas fa-puzzle-piece"></i>
+        <?= htmlspecialchars(lang('integration_selection_notice')) ?>
+    </p>
+
     <!-- 로딩 표시 -->
     <div id="extensions-loading" class="extension-loading">
         <div class="spinner"></div>
@@ -25,7 +31,7 @@
     <!-- 에러 표시 -->
     <div id="extensions-error" class="alert alert-error hidden">
         <p id="extensions-error-message"></p>
-        <button type="button" onclick="loadExtensions()" class="btn btn-sm btn-secondary">
+        <button type="button" data-action="loadExtensions" class="btn btn-sm btn-secondary">
             <?= htmlspecialchars(lang('retry')) ?>
         </button>
     </div>
@@ -195,14 +201,14 @@
             </h4>
             <p><?= htmlspecialchars(lang('dependency_warning_description')) ?></p>
             <ul id="dependency-warning-list" class="dependency-warning-list"></ul>
-            <button type="button" onclick="autoSelectMissingDependencies()" class="btn btn-sm btn-primary">
+            <button type="button" data-action="autoSelectMissingDependencies" class="btn btn-sm btn-primary">
                 <?= htmlspecialchars(lang('dependency_auto_select')) ?>
             </button>
         </div>
 
         <!-- 네비게이션 -->
         <div class="btn-group btn-group-spread">
-            <button type="button" onclick="goToStep(3)" class="btn btn-secondary">
+            <button type="button" data-action="goToStep" data-arg="3" class="btn btn-secondary">
                 <?= htmlspecialchars(lang('previous')) ?>
             </button>
 
@@ -213,26 +219,34 @@
     </form>
 </div>
 
-<script>
-// Step 4 번역 키 전달
-window.EXTENSION_LABELS = {
-    version: <?= installer_json_encode(lang('version')) ?>,
-    select: <?= installer_json_encode(lang('select')) ?>,
-    selected: <?= installer_json_encode(lang('selected')) ?>,
-    dependencies: <?= installer_json_encode(lang('dependencies')) ?>,
-    admin_template_required: <?= installer_json_encode(lang('admin_template_required')) ?>,
-    saving: <?= installer_json_encode(lang('saving')) ?>,
-    save_failed: <?= installer_json_encode(lang('save_failed')) ?>,
-    next: <?= installer_json_encode(lang('next')) ?>,
-    extension_load_failed: <?= installer_json_encode(lang('extension_load_failed')) ?>,
-    dep_auto_badge_label: <?= installer_json_encode(lang('dep_auto_badge_label')) ?>,
-    dep_lock_message: <?= installer_json_encode(lang('dep_lock_message')) ?>,
-    dep_version_required: <?= installer_json_encode(lang('dep_version_required')) ?>,
-    dep_version_available: <?= installer_json_encode(lang('dep_version_available')) ?>,
-    language_pack_disabled_by_extension: <?= installer_json_encode(lang('language_pack_disabled_by_extension')) ?>,
-    language_pack_scope_core: <?= installer_json_encode(lang('language_pack_scope_core')) ?>,
-    language_pack_scope_module: <?= installer_json_encode(lang('language_pack_scope_module')) ?>,
-    language_pack_scope_plugin: <?= installer_json_encode(lang('language_pack_scope_plugin')) ?>,
-    language_pack_scope_template: <?= installer_json_encode(lang('language_pack_scope_template')) ?>
-};
-</script>
+<script type="application/json" id="installer-step-data"><?= installer_json_encode([
+    // 「Step 4 로 돌아가기」·「설정으로 돌아가기」로 돌아오면 이전 선택을 다시 체크한다 — 상태 초기화는 selected_extensions 를
+    // 보존하고 installer.js restoreSelectionState() 가 이 값을 읽는다(종전에는 Step 5 에서만 넘겨 복원이 동작하지 않았다, #153 D7).
+    'selected_extensions' => (object) ($state['selected_extensions'] ?? []),
+    // Step 4 번역 키 전달
+    'extension_labels' => [
+        'version' => lang('version'),
+        'select' => lang('select'),
+        'selected' => lang('selected'),
+        'dependencies' => lang('dependencies'),
+        'admin_template_required' => lang('admin_template_required'),
+        'saving' => lang('saving'),
+        'save_failed' => lang('save_failed'),
+        'next' => lang('next'),
+        'extension_load_failed' => lang('extension_load_failed'),
+        'dep_auto_badge_label' => lang('dep_auto_badge_label'),
+        'dep_lock_message' => lang('dep_lock_message'),
+        'dep_version_required' => lang('dep_version_required'),
+        'dep_version_available' => lang('dep_version_available'),
+        'integrations' => lang('integrations'),
+        'integration_auto_badge_label' => lang('integration_auto_badge_label'),
+        'integration_version_mismatch' => lang('integration_version_mismatch'),
+        'integration_template_hint' => lang('integration_template_hint'),
+        'language_pack_disabled_by_extension' => lang('language_pack_disabled_by_extension'),
+        'language_pack_scope_core' => lang('language_pack_scope_core'),
+        'language_pack_scope_module' => lang('language_pack_scope_module'),
+        'language_pack_scope_plugin' => lang('language_pack_scope_plugin'),
+        'language_pack_scope_template' => lang('language_pack_scope_template'),
+    ],
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<script src="<?= INSTALLER_BASE_URL ?>/assets/js/step-4-extension-selection.js?v=<?= time() ?>"></script>

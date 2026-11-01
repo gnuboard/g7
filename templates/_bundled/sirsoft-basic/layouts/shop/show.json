@@ -145,6 +145,7 @@
             "auto_fetch": true,
             "auth_mode": "optional",
             "loading_strategy": "progressive",
+            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
             "params": {
                 "page": "{{_local.qnaPage ?? 1}}",
                 "per_page": 10,
@@ -172,7 +173,7 @@
                     "last_page": 1
                 }
             },
-            "comment": "상품 문의 탭. 응답의 `meta` 가 이 상품의 문의 게시판 설정(비밀글 허용·첨부 한도·글자수 제한)을\n       함께 실어 오고, 문의 작성 창의 검증이 그 값을 그대로 쓴다 — 그래서 목록과 설정이 한 소스다"
+            "comment": "상품 문의 탭. 응답의 `meta` 가 이 상품의 문의 게시판 설정(비밀글 허용·첨부 한도·글자수 제한)을\n       함께 실어 오고, 문의 작성 창의 검증이 그 값을 그대로 쓴다 — 그래서 목록과 설정이 한 소스다.\n       문의는 게시판 글로 저장되므로 게시판 모듈이 꺼져 있으면 부르지 않는다(탭도 숨는다)"
         },
         {
             "id": "productDownloadableCoupons",
@@ -518,7 +519,7 @@
                         ],
                         "props": {
                             "tabHrefMergeQuery": true,
-                            "hiddenTabIds": "{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['qna']}}",
+                            "hiddenTabIds": "{{(_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug && (_global.activeModules?.includes('sirsoft-board') ?? true)) ? [] : ['qna']}}",
                             "activeTabId": "{{_local.activeTab ?? 'info'}}",
                             "variant": "underline",
                             "tabs": [

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\UserStatus;
 use App\Models\IdentityVerificationLog;
@@ -41,6 +42,8 @@ use Illuminate\Support\Facades\Hash;
  */
 class PlaywrightSeedTwoFactor extends Command
 {
+    use LocalizesDescription;
+
     protected $signature = 'playwright:seed-two-factor
         {--ensure-user= : 이 접미사로 Active 테스트 사용자를 생성/갱신하고 이메일을 출력한다}
         {--password= : --ensure-user 가 설정할 비밀번호 (기본값 Passw0rd!2fa)}
@@ -51,8 +54,6 @@ class PlaywrightSeedTwoFactor extends Command
         {--gc-hours=6 : 이 시간(시)보다 오래된 playwright 2FA 테스트 계정을 정리. 0 이면 정리 안 함}
         {--purge-users : 나이와 무관하게 playwright 2FA 테스트 계정을 전부 제거 (실측 종료 직후 호출)}
         {--purge-prefix= : --purge-users 대상을 이 접미사로 시작하는 계정으로 한정 (스펙별 정리)}';
-
-    protected $description = 'Playwright E2E 용 2단계 인증 픽스처 (테스트 계정 준비 / 인증 코드 심기)';
 
     /** 테스트 전용 계정 이메일 접두사 */
     private const TEST_EMAIL_PREFIX = 'playwright_2fa_';

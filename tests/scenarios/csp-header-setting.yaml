@@ -1,0 +1,55 @@
+feature: csp_header_setting
+
+description: |
+  코어 CSP 헤더 설정 (#158) — 관리자 환경설정 > 보안 > 「콘텐츠 보안 정책」.
+
+  핵심 동작:
+    - 모드 끔(기본)·점검만(Content-Security-Policy-Report-Only)·강제(Content-Security-Policy)
+    - 정책은 스크립트 계열만: script-src 'self' <자동 합산 + 운영자 추가> · worker-src 'self' blob: ·
+      object-src 'none' · base-uri 'self' · report-uri /api/csp-report
+    - 자동 합산 = 활성 확장 trusted_script_hosts(+필터 훅) ∪ 활성 템플릿 externals 외부 script 호스트
+    - web 그룹 HTML 응답에만 붙고 /dev·봇 SEO 응답·자체 CSP 응답·비 HTML 은 제외
+    - .env G7_CSP_MODE(config core.csp.mode_override)가 저장값보다 우선(탈출구)
+    - 위반 보고는 204(형식 오류도 기록만 생략)·16KB 초과 413·분당 60, 로그 채널 csp 에 쿼리 없이 기록
+
+axes:
+  case:
+    - source_extension_declared
+    - source_none
+    - mode_off
+    - mode_enforce
+    - format_report_uri
+    - format_reporting_api
+    - format_malformed
+    - format_oversized
+    - input_valid_host
+    - input_invalid_host
+
+effects:
+  - csp_hosts_merged_deduped_sorted
+  - csp_policy_fixed_directives
+  - csp_invalid_hosts_dropped
+  - csp_inactive_extension_hosts_excluded
+  - csp_mode_override_precedence
+  - csp_header_name_follows_mode
+  - csp_header_skipped_for_excluded_responses
+  - csp_report_logged_without_query
+  - csp_report_malformed_returns_204_without_log
+  - csp_report_oversized_returns_413
+  - csp_report_throttled
+  - csp_host_rule_accepts_host_sources
+  - csp_host_rule_rejects_injection
+  - csp_settings_persisted_normalized
+  - csp_settings_rejects_invalid_input
+  - csp_meta_reflects_saved_policy
+
+test_files:
+  - tests/Unit/Support/Csp/CspPolicyBuilderTest.php
+  - tests/Feature/Http/ContentSecurityPolicyMiddlewareTest.php
+  - tests/Feature/Api/Public/CspReportControllerTest.php
+  - tests/Feature/Settings/SaveSettingsCspTest.php
+
+notes: |
+  비활성 확장의 호스트가 빠지는 것은 TrustedScriptHosts 가 활성 목록만 읽는 데서 오며
+  CspPolicyBuilderTest 가 활성·전체 목록을 함께 내주는 모의로 잠근다(csp_inactive_extension_hosts_excluded).
+  관리자 화면(보안 탭 카드)의 표시·저장·잠금 상태는 브라우저 실측(이력 문서 §8 T2~T6)이 덮는다.

@@ -131,6 +131,7 @@
         "supply_amount": "공급가액",
         "vat_amount": "부가세",
         "tax_free_amount": "면세금액",
+        "zero_rated_amount": "영세금액",
         "vbank_deposit_info": "가상계좌 입금 안내",
         "vbank_bank": "은행",
         "vbank_account": "계좌번호",

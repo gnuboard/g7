@@ -1,0 +1,66 @@
+feature: strict_csp_compat
+
+description: |
+  Strict CSP 지원 (#158) — 인라인 실행 코드 0 + 코어 CSP 헤더 설정.
+
+  운영자가 웹서버에 `Content-Security-Policy: script-src 'self'`(unsafe-inline·unsafe-eval 없음)를
+  걸면 인라인 `<script>`·on* 속성은 실행되지 않는다. 종전에는 셸의 G7Config 대입·자산 복구·
+  부트스트랩·번들 `<script onload>` 가 인라인이라 관리자·사용자 화면 전체가 백지였다.
+
+  핵심 동작:
+    - 서버 값은 비실행 `<script type="application/json">` 데이터 블록, 실행 코드는 정적 셸 JS
+      (`public/assets/core/js/g7-shell-head.js`·`g7-shell-boot.js`, 손작성 ES5)
+    - on* 대체는 document 캡처 리스너(번들 load/error · 템플릿 CSS error · externals error)
+    - 셸 JS 자체 미도착은 CSS 지연 안내문(`#g7-shell-stall`, 스크립트 없음)
+    - 엔진 오류 화면·설치기·결제/인증 브리지도 같은 원칙(인라인 0)
+    - 관리자 환경설정 > 보안에 CSP 헤더 옵션(끔/점검만/강제), 위반은 `report-uri` → 로그 채널 `csp`
+
+axes:
+  surface: [admin_shell, user_shell, installer, plugin_bridge, error_screen, bootstrap_fallback]
+  csp: [none, report_only, enforce, webserver_strict]
+  failure: [none, components_bundle_fail, shell_js_fail, routes_500]
+
+exclusions:
+  - { surface: plugin_bridge, reason: "결제·본인인증 브리지 표면은 플러그인별 매니페스트(sirsoft-pay_kginicis·sirsoft-verification_kginicis·sirsoft-verification_nhnkcp strict-csp-bridge.yaml, sirsoft-pay_nhnkcp strict-csp-kcp-frame.yaml)가 소유한다" }
+  - { csp: [report_only, enforce], reason: "코어 설정 모드의 헤더 부착·제외는 csp-header-setting.yaml 이 소유한다. 두 모드의 정책은 webserver_strict('self' 만)에 허용 호스트·worker-src blob: 을 더한 상위집합이라 렌더·위반 0 의 하한은 webserver_strict 케이스가 판정한다" }
+  - { failure: components_bundle_fail, surface: [admin_shell, user_shell, installer, error_screen], reason: "컴포넌트 번들 실패는 부트스트랩 폴백 화면으로만 드러난다" }
+  - { failure: routes_500, surface: [admin_shell, user_shell, installer, bootstrap_fallback], reason: "routes 응답 실패는 엔진 초기화 오류 화면으로만 드러난다" }
+  - { failure: shell_js_fail, surface: [admin_shell, installer, error_screen, bootstrap_fallback], reason: "셸 JS 미도착 안내(shell-stall-notice)는 관리자·사용자 공용 파샬이라 사용자 셸이 대표하고, 오류·폴백 화면은 셸 JS 가 그리므로 나타나지 않으며, 설치기는 셸 JS 를 쓰지 않는다" }
+  - { failure: none, surface: [error_screen, bootstrap_fallback], reason: "실패가 없으면 나타나지 않는 화면이다" }
+  - { surface: admin_shell, csp: none, reason: "관리자·사용자 셸은 같은 boot JS(bootstrap-scripts 파샬 공용)라 무CSP 동작은 user_shell 케이스(shellBoot.test.ts)가 대표한다" }
+  - { csp: none, failure: shell_js_fail, reason: "지연 안내문은 CSS 만으로 동작해 정책과 무관하다 — webserver_strict 케이스가 대표한다" }
+  - { surface: error_screen, csp: webserver_strict, reason: "오류 화면 버튼의 무인라인 계약은 jsdom 시험(csp=none)이 잠그고, strict 정책 아래 routes 500 화면의 새로고침·hover 는 브라우저 실측(구현 이력 §8 T10)으로 확인했다" }
+
+effects:
+  - shell_html_has_no_inline_executable
+  - shell_config_keys_unchanged
+  - shell_script_order_preserved
+  - shell_stall_notice_rendered
+  - shell_assigns_config_from_data_block
+  - shell_asset_url_mode_precedence
+  - shell_init_on_captured_load
+  - shell_ignores_unmarked_scripts
+  - shell_retry_backoff_then_fallback
+  - shell_corrupt_bundle_fallback
+  - shell_observes_bundle_syntax_error
+  - shell_js_is_es5_only
+  - bootstrap_partial_emits_no_inline_executable
+  - error_screen_reload_without_inline_handler
+  - installer_has_no_inline_executable
+  - installer_delegation_calls_only_mapped_actions
+  - installer_boot_restores_globals
+
+test_files:
+  - tests/Feature/View/ShellNoInlineScriptTest.php
+  - tests/Feature/View/BootstrapFallbackDiagnosisTest.php
+  - resources/js/core/__tests__/shellBoot.test.ts
+  - tests/Playwright/specs/smoke/strict-csp.spec.ts
+  - resources/js/core/template-engine/__tests__/ErrorDisplay.noInlineHandler.test.ts
+  - resources/js/core/template-engine/__tests__/LayoutLoader.noInlineHandler.test.ts
+  - tests/installer/installer-no-inline.test.cjs
+  - tests/installer/installer-delegation.test.cjs
+
+notes: |
+  CSP 정책 축과 실패 축은 표면마다 의미가 달라 해당 없는 조합을 exclusions 에 사유와 함께 둔다.
+  셸 표면은 webserver_strict(가장 엄격, 허용 호스트·worker-src 없음)에서 렌더·위반 0 을 단언하면
+  report_only/enforce 는 그보다 느슨하다. 플러그인 브리지와 CSP 설정 모드는 각 소유 매니페스트가 덮는다.

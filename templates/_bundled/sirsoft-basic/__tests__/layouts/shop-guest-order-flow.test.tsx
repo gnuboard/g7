@@ -405,7 +405,7 @@ describe('_login_form.json — 로그인 성공 시 비회원 토큰 정리', ()
     );
     expect(loginCall).toBeDefined();
 
-    // 1.3.0 부터 로그인 응답 분기는 로그인 화면의 명명 액션 `applyLoginResult` 하나다 — 비밀번호 로그인(login)과
+    // 1.4.0 부터 로그인 응답 분기는 로그인 화면의 명명 액션 `applyLoginResult` 하나다 — 비밀번호 로그인(login)과
     // 로그인 인계(loginHandoff)가 같은 분기를 쓴다. onSuccess 가 그 명명 액션을 부르면 그 안을 본다.
     const onSuccessActions = asArray(loginCall?.onSuccess).flatMap((a: any) =>
       a?.actionRef ? asArray((loginJson as any).named_actions?.[a.actionRef]?.actions) : [a],

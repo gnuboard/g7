@@ -191,6 +191,8 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
 | shipping_discount_formatted | string | `0원` | 배송비 할인 포맷 |
 | taxable_amount | integer | `10000` | 과세 금액 합계 |
 | tax_free_amount | integer | `0` | 면세 금액 합계 |
+| zero_rated_amount | integer | `0` | 영세 금액 합계 — 과세 금액(`taxable_amount`)에 포함된 세율 0% 몫 (1.3.3) |
+| zero_rated_amount_formatted | string | `0원` | 영세 금액 포맷 |
 | points_earning | integer | `0` | 적립 예정 마일리지 합계 |
 | total_mileage | integer | `0` | 적립 예정 마일리지 (별칭 키) |
 | mileage_formatted | string | `0P` | 적립 예정 마일리지 포맷 |

@@ -1,11 +1,12 @@
 {
-    "comment": "상품 결과 묶음(전체 탭) — 다섯 건까지만 보이고 나머지는 상품 탭으로 넘긴다.",
+    "comment": "상품 결과 묶음(전체 탭) — 다섯 건까지만 보이고 나머지는 상품 탭으로 넘긴다. 쇼핑몰 모듈이 꺼져 있으면 묶음째 숨긴다.",
     "meta": {
         "is_partial": true,
         "description": "전체 탭 - 상품 섹션 (최대 5개 + 전체보기)"
     },
     "type": "basic",
     "name": "Div",
+    "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
     "props": {
         "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
     },

@@ -16,7 +16,7 @@ description: |
   (createLayoutTest)에 태워 렌더 결과와 요청을 단언한다.
 
 axes:
-  case: [easy_pay, guest, other_pg, vbank_waiting, vbank_admin, cvs_waiting, cbt_confirmation, no_script_injection]
+  case: [easy_pay, guest, other_pg, vbank_waiting, vbank_admin, cvs_waiting, cbt_confirmation, no_script_injection, zero_rated_only]
 
 effects:
   - receipt_fetched_once_on_mount
@@ -29,6 +29,7 @@ effects:
   - cvs_panel_reads_fields_by_key
   - cbt_confirmation_opens_via_handler
   - no_route_or_dom_scanning
+  - zero_rated_row_in_tax_breakdown        # #612 — 영세만 든 주문도 부가세 내역 블록을 그리고 「영세금액」 줄을 보인다
 
 test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/layouts/userOrderShowFragment.test.tsx

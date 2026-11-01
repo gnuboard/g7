@@ -52,11 +52,15 @@ class UserScreenUrlRedirectTest extends PluginTestCase
         $controller = app(InicisPopupBridgeController::class);
         $render = new \ReflectionMethod($controller, 'renderBridgeHtml');
 
-        $this->assertStringContainsString('var HOME_URL = "\/" || ', $render->invoke($controller, '{}'));
+        $this->assertStringContainsString('"homeUrl":"\/"', $render->invoke($controller, '{}'));
 
         HookManager::addFilter(ScreenUrl::FILTER, fn (string $path, string $key) => $key === 'home' ? 'https://front.example.test/' : $path);
         $html = $render->invoke($controller, '{}');
-        $this->assertStringContainsString('var HOME_URL = "https:\/\/front.example.test\/" || ', $html);
-        $this->assertStringContainsString('toSafeReturnPath(stash.return_url)) || HOME_URL;', $html);
+        $this->assertStringContainsString('"homeUrl":"https:\/\/front.example.test\/"', $html);
+
+        // 동작은 정적 브리지 파일이 한다(strict CSP) — 데이터 블록의 homeUrl 을 복귀 주소가 없을 때의 목적지로 쓴다.
+        $bridge = (string) file_get_contents(dirname(__DIR__, 2).'/assets/bridge/popup-bridge.js');
+        $this->assertStringContainsString("var HOME_URL = data.homeUrl || '/';", $bridge);
+        $this->assertStringContainsString('toSafeReturnPath(stash.return_url)) || HOME_URL;', $bridge);
     }
 }

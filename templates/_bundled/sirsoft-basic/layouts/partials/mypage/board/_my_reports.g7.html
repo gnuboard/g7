@@ -10,18 +10,16 @@
     <!-- 필터 영역 -->
     <div class="flex flex-col sm:flex-row gap-3 mb-4">
       <!-- 게시판 필터 -->
-      <select aria-label="$t:mypage.board_activities.reactions.table.board" value="{{_global.myReportsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:mypage.board_activities.reactions.table.board" value="{{_global.myReportsBoard ?? ''}}" class="w-full min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" options="{{[{ value: '', label: '$t:mypage.board_activities.filter.all_boards' }].concat((boards?.data ?? []).map(board => ({ value: String(board?.slug ?? ''), label: board?.name })))}}">
         <on type="change">
           <sequence>
             <set-state target="global" myReportsBoard="{{$event.target.value}}" :myReportsPage="1"/>
             <refetch-data-source dataSourceId="myReports"/>
           </sequence>
         </on>
-        <option value="">$t:mypage.board_activities.filter.all_boards</option>
-        <option data-each="board in {{boards?.data ?? []}}" value="{{board.slug}}">{{board.name}}</option>
       </select>
       <!-- 처리 상태 필터 -->
-      <select data-testid="my-reports-status-filter" aria-label="$t:mypage.board_activities.reports.filter.status_label" value="{{_global.myReportsStatus ?? ''}}" class="min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select data-testid="my-reports-status-filter" aria-label="$t:mypage.board_activities.reports.filter.status_label" value="{{_global.myReportsStatus ?? ''}}" class="w-full min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <options>
           <option value="">$t:mypage.board_activities.reports.filter.all_statuses</option>
           <option value="pending">$t:mypage.board_activities.reports.status.pending</option>
@@ -37,7 +35,7 @@
         </on>
       </select>
       <!-- 대상 필터 -->
-      <select data-testid="my-reports-target-filter" aria-label="$t:mypage.board_activities.reactions.table.target" value="{{_global.myReportsTargetType ?? ''}}" class="min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select data-testid="my-reports-target-filter" aria-label="$t:mypage.board_activities.reactions.table.target" value="{{_global.myReportsTargetType ?? ''}}" class="w-full min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <options>
           <option value="">$t:mypage.board_activities.reports.filter.all_targets</option>
           <option value="post">$t:mypage.board_activities.target.post</option>
@@ -51,15 +49,17 @@
         </on>
       </select>
       <!-- 정렬 필터 -->
-      <select aria-label="$t:common.sort_order" value="{{_global.myReportsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:common.sort_order" value="{{_global.myReportsSort ?? 'latest'}}" class="w-full min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <options>
+          <option value="latest">$t:mypage.board_activities.sort.latest</option>
+          <option value="oldest">$t:mypage.board_activities.sort.oldest</option>
+        </options>
         <on type="change">
           <sequence>
             <set-state target="global" myReportsSort="{{$event.target.value}}" :myReportsPage="1"/>
             <refetch-data-source dataSourceId="myReports"/>
           </sequence>
         </on>
-        <option value="latest">$t:mypage.board_activities.sort.latest</option>
-        <option value="oldest">$t:mypage.board_activities.sort.oldest</option>
       </select>
       <!-- 검색 영역 -->
       <div class="flex-1 flex gap-2">

@@ -108,6 +108,26 @@ interface ModuleInterface extends CacheableExtensionInterface
     public function getDependencies(): array;
 
     /**
+     * 함께 쓰면 연동되는(선택) 확장 식별자를 유형별로 반환합니다.
+     *
+     * @return array{modules: array<int, string>, plugins: array<int, string>, templates: array<int, string>} 유형별 확장 식별자
+     *
+     * @since 7.1.4
+     */
+    public function getIntegrations(): array;
+
+    /**
+     * 함께 쓰면 연동되는(선택) 확장을 「식별자 => 버전 제약」 맵으로 반환합니다.
+     *
+     * 목록형·버전식이 아닌 값은 `'*'`(버전 무관)입니다. 버전이 모자라도 설치·활성화를 막지 않습니다.
+     *
+     * @return array{modules: array<string, string>, plugins: array<string, string>, templates: array<string, string>} 유형별 식별자 => 버전 제약
+     *
+     * @since 7.1.4
+     */
+    public function getIntegrationConstraints(): array;
+
+    /**
      * 모듈이 사용하는 권한 목록을 반환합니다.
      *
      * @return array 권한 목록 배열

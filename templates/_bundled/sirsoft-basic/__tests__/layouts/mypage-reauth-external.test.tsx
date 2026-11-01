@@ -11,7 +11,7 @@
  * 비밀번호 확인 API(`/api/me/verify-password`)에 실어 재확인을 마치고(`_local.isPasswordVerified=true`) 주소에서 토큰을 지운다.
  *
  * @vitest-environment jsdom
- * @since 1.3.0
+ * @since 1.4.0
  */
 
 import React from 'react';

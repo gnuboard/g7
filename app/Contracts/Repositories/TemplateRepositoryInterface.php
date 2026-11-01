@@ -128,6 +128,17 @@ interface TemplateRepositoryInterface
     public function findActiveByPluginDependency(string $pluginIdentifier): Collection;
 
     /**
+     * 지정한 확장을 선택 연동(`integrations`)으로 선언한 활성 템플릿을 조회합니다.
+     *
+     * @param  string  $type  연동 대상 유형 (module|plugin|template)
+     * @param  string  $identifier  연동 대상 식별자
+     * @return Collection 그 확장을 연동으로 선언한 활성 템플릿 컬렉션
+     *
+     * @since 7.1.4
+     */
+    public function findActiveByIntegration(string $type, string $identifier): Collection;
+
+    /**
      * 코어 버전 비호환으로 자동 비활성화된 템플릿을 조회합니다.
      *
      * `deactivated_reason = 'incompatible_core'` 인 레코드만 반환합니다.

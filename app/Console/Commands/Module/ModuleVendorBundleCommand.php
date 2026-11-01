@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Vendor\Concerns\RunsVendorBundleAction;
 use App\Extension\Vendor\VendorBundler;
 use Illuminate\Console\Command;
@@ -13,6 +14,7 @@ use Illuminate\Console\Command;
  */
 class ModuleVendorBundleCommand extends Command
 {
+    use LocalizesDescription;
     use RunsVendorBundleAction;
 
     protected $signature = 'module:vendor-bundle
@@ -20,8 +22,6 @@ class ModuleVendorBundleCommand extends Command
                             {--all : 모든 _bundled 모듈 빌드}
                             {--force : 해시 체크 무시, 강제 재빌드}
                             {--check : 실제 빌드 없이 stale 여부만 확인}';
-
-    protected $description = '모듈 vendor/ 디렉토리를 vendor-bundle.zip 으로 빌드합니다 (공유 호스팅용)';
 
     /**
      * 지정 모듈 또는 모든 _bundled 모듈의 vendor 번들을 빌드하거나 stale 여부를 확인합니다.

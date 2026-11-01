@@ -20,6 +20,7 @@
             <span class="text-body">{{module.name || module.identifier}}</span>
             <span data-if="{{module.status === 'inactive'}}" class="text-body text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.modules.status.inactive</span>
             <span data-if="{{module.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded">$t:admin.modules.status.not_installed</span>
+            <span data-if="{{module.status === 'version_mismatch'}}" class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded">$t:admin.modules.status.version_mismatch ({{module.installed_version}} → {{module.required_version}})</span>
           </div>
         </div>
       </div>
@@ -31,6 +32,7 @@
             <span class="text-body">{{plugin.name || plugin.identifier}}</span>
             <span data-if="{{plugin.status === 'inactive'}}" class="text-body text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.plugins.status.inactive</span>
             <span data-if="{{plugin.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 rounded">$t:admin.plugins.status.not_installed</span>
+            <span data-if="{{plugin.status === 'version_mismatch'}}" class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded">$t:admin.plugins.status.version_mismatch ({{plugin.installed_version}} → {{plugin.required_version}})</span>
           </div>
         </div>
       </div>
@@ -64,6 +66,8 @@
                   <reload-extensions pluginInfo="{{result.data?.plugin ?? result}}" action="add"/>
                 </parallel>
                 <toast type="success" message="$t:admin.plugins.activate_success"/>
+                <!-- 함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 막지 않는 안내라 창을 열지 않는다. -->
+                <toast if="{{(response?.data?.integration_notices ?? []).length !== 0}}" type="info" message="$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + ')').join(', ')}}"/>
                 <!-- 토글과 같은 활성화 API 다 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록했으면 몇 건인지 경고로 알린다. -->
                 <toast if="{{(response?.data?.layout_warnings?.length ?? 0) &gt; 0}}" type="warning" message="$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"/>
                 <close-modal/>

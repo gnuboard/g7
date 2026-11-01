@@ -1,0 +1,19 @@
+feature: 게시글 신고 제출 후 피드백·상태 반영
+
+description: |
+  회원이 신고를 쓰는 게시판의 남의 글을 신고하면, 성공 시 새로고침 없이 신고 단추가 「신고됨」으로 바뀌고,
+  이미 신고한 글을 다시 신고(409)하면 신고 창이 닫히고 오류 토스트가 보인다. 신고 사유 고르개는 목록형 드롭다운이다.
+
+axes:
+  actor: [member]
+  target: [post]
+  board: [use_report]
+
+exclusions: []
+
+effects:
+  - report_success_button_switches_to_reported_without_reload
+  - report_duplicate_closes_modal_and_shows_error_toast
+
+test_files:
+  - tests/Playwright/specs/smoke/board-report-submit-feedback.spec.ts

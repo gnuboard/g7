@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Extension;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Extension\ExtensionManager;
 use App\Extension\HookCacheManager;
@@ -11,6 +12,7 @@ use Illuminate\Console\Command;
 
 class UpdateAutoloadCommand extends Command
 {
+    use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
     /**
@@ -19,13 +21,6 @@ class UpdateAutoloadCommand extends Command
      * @var string
      */
     protected $signature = 'extension:update-autoload';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = '모듈과 플러그인의 오토로드 캐시 파일을 생성합니다 (bootstrap/cache/autoload-extensions.php)';
 
     /**
      * 확장 오토로드 캐시와 정적 훅 매핑 캐시를 다시 생성합니다.

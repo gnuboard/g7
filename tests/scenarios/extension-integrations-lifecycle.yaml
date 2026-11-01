@@ -1,0 +1,54 @@
+feature: 선택 연동(integrations) 버전 제약·생명주기 안내·설치 창 연동 목록 (#822, 코어 7.1.4)
+
+description: |
+  7.1.4 부터 `integrations` 는 모듈·플러그인·템플릿 공통 스펙으로 `dependencies` 와 같은 수준이다. 객체형
+  `{"modules": {"sirsoft-board": ">=1.2.1"}}` 으로 버전 제약을 선언하고, 목록형·설명형 값은 「버전 무관(*)」이다.
+  연동은 막지 않는다 — 설치·활성화·업데이트 결과에 미설치·비활성·버전 미달을 `integration_notices` 로, 비활성화·제거
+  결과에 이 확장을 연동으로 선언한 활성 확장을 `integrated_by` 로 알리고, HTTP 상태·종료 코드는 그대로다.
+  관리자 설치 창은 연동 대상을 `integrations[]` 로 받아 미설치·비활성 항목을 기본 체크하고, 고른 항목은 의존 다음·본체
+  이전에 설치·활성화한다(실패해도 본체 계속). 번들 정리는 활성 확장의 연동 대상을 보존한다.
+  같은 결함군(D6): dependencies 목록형을 키로 읽던 곳을 ExtensionDependencies 정규화기로 통일했다.
+
+axes:
+  case: [integration_list_and_version_object, integration_descriptive_value, integration_malformed, integration_idempotent, dependency_list_shape, dependency_malformed, notice_states, integrated_by, api_response, update_notices, artisan_table, install_preview, cascade_best_effort, cascade_failure_notice, install_request, install_api_permission, install_api_order, bundled_prune, bundled_prune_inactive_declarer, active_meta_unknown_on_failure, response_keeps_empty_objects, integrated_by_query_count, update_with_info, update_without_info, install_from_file, install_from_github]
+
+effects:
+  - integration_constraints_are_normalized
+  - descriptive_integration_value_is_any_version_with_warning
+  - malformed_integration_constraints_are_ignored
+  - integration_constraints_are_idempotent
+  - list_dependencies_resolve_to_identifiers
+  - malformed_dependencies_are_ignored
+  - unmet_integrations_become_notices
+  - met_integrations_yield_no_notice
+  - integrated_by_lists_active_declarers
+  - lifecycle_response_carries_integration_notices_without_blocking
+  - update_reports_integration_notices
+  - artisan_prints_integration_table_without_exit_code_change
+  - install_preview_lists_integrations_preselected
+  - selected_integrations_installed_best_effort
+  - integration_failure_reported_as_notice
+  - integration_failure_reason_exposed_for_screen   # 실패 사유를 failure_reason 으로 따로 싣고(화면 토스트용), 요약 한 줄에 마침표가 겹치지 않는다
+  - install_request_validates_integrations
+  - integration_selection_requires_cascade_permission
+  - integration_installed_before_main_and_never_blocks
+  - prune_keeps_integration_targets_of_active_extensions
+  - active_extension_meta_failure_is_unknown
+  - integration_response_keeps_empty_objects
+  - integrated_by_built_once_per_request
+  - update_response_carries_integration_notices
+  - install_paths_carry_integration_notices
+
+notes:
+  - 관리자 화면(상세 배지·설치 창 체크목록·끄기/삭제 확인 창)은 admin_basic 레이아웃 시험과 Chrome MCP 매트릭스가 덮는다.
+  - 웹 설치 마법사의 연동 자동 체크는 tests/Unit/Installer·tests/installer 가 덮는다.
+
+test_files:
+  - tests/Unit/Support/ExtensionIntegrationsConstraintsTest.php
+  - tests/Unit/Support/ExtensionDependenciesConstraintsTest.php
+  - tests/Feature/Extension/IntegrationLifecycleNoticesTest.php
+  - tests/Feature/Extension/IntegrationInstallPreviewTest.php
+  - tests/Feature/Extension/BundledPruneKeepsIntegrationTargetsTest.php
+  - tests/Feature/Extension/ActiveExtensionMetaUnknownOnFailureTest.php
+  - tests/Feature/Extension/IntegrationResponseShapeAndQueryCountTest.php
+  - tests/Feature/Api/Admin/IntegrationNoticeResponsePathsTest.php

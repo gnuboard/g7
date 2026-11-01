@@ -33,6 +33,7 @@ import {
   useLocationSearch,
 } from '../../navigationLinks';
 import { evaluateComputedDefinitions } from '../../helpers/ComputedEvaluator';
+import { splitExtensionClassPrefix } from '../../helpers/StyleHelpers';
 // 데이터소스 initLocal·initGlobal·initIsolated 를 실제 앱과 같은 규칙으로 적용하려고 TemplateApp 의 처리 함수를 그대로 쓴다(7.1.3 WP11)
 import { TemplateApp } from '../../../TemplateApp';
 
@@ -675,6 +676,11 @@ export function createLayoutTest(
         open: (id: string) => openModalById(id),
         close: () => closeTopModal(),
         getStack: () => [...(state._global.modalStack ?? [])],
+      },
+      // 확장 접두 클래스 해석 — 실제 앱 G7Core.style 과 같은 함수(engine-v1.87.0). 템플릿 컴포넌트(Select 등)가
+      // 확장 자체 CSS 클래스(`ecommerce:bg-white`)의 앞글자를 떼고 읽는다. 접두 목록은 G7Config.extensionClassPrefixes 다.
+      style: {
+        splitExtensionClassPrefix,
       },
       // 링크 API — 실제 앱 G7Core.navigation 과 같은 함수(engine-v1.83.0). 템플릿 링크 컴포넌트는 코어 훅을 부르므로
       // 엔진 렌더러와 같은 React 로 그려진다(템플릿 시험 폴더의 React 사본과 섞이지 않는다)

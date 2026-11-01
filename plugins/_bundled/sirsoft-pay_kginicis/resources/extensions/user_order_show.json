@@ -7,7 +7,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{order.data.payment?.pg_provider === 'kginicis' && (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}",
+            "if": "{{order.data.payment?.pg_provider === 'kginicis' && (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0 || order.data.total_zero_rated_amount > 0)}}",
             "props": {
                 "className": "paykginicis:pt-4 paykginicis:mt-2 paykginicis:border-t paykginicis:border-gray-200 paykginicis:dark:border-gray-700 paykginicis:space-y-1.5"
             },
@@ -93,6 +93,32 @@
                                 "className": "paykginicis:text-gray-900 paykginicis:dark:text-white paykginicis:font-medium"
                             },
                             "text": "{{order.data.total_tax_free_amount_formatted}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{order.data.total_zero_rated_amount > 0}}",
+                    "props": {
+                        "className": "pay-kginicis-flex-between paykginicis:text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "paykginicis:text-gray-500 paykginicis:dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-pay_kginicis.user.zero_rated_amount"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "paykginicis:text-gray-900 paykginicis:dark:text-white paykginicis:font-medium"
+                            },
+                            "text": "{{order.data.total_zero_rated_amount_formatted}}"
                         }
                     ]
                 }

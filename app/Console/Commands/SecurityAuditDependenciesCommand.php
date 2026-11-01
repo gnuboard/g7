@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use Illuminate\Console\Command;
 use Symfony\Component\Process\Process;
 
@@ -21,6 +22,8 @@ use Symfony\Component\Process\Process;
  */
 class SecurityAuditDependenciesCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
@@ -28,11 +31,6 @@ class SecurityAuditDependenciesCommand extends Command
                             {--json : 결과를 JSON 으로 출력합니다}
                             {--npm-only : npm 잠금파일만 점검합니다}
                             {--composer-only : composer 잠금파일만 점검합니다}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '저장소의 모든 잠금파일(npm·composer) 운영 의존성 취약점을 점검합니다 (취약점 발견 시 비-0 종료)';
 
     /** 잠금파일 탐색에서 제외할 경로 조각 */
     private const EXCLUDED_SEGMENTS = ['node_modules', 'vendor', '_pending', 'storage'];

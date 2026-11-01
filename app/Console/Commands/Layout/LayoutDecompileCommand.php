@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Layout;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\LayoutMarkupService;
 use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\CompileError;
@@ -44,6 +45,8 @@ use Illuminate\Support\Facades\File;
  */
 class LayoutDecompileCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string
      */
@@ -53,11 +56,6 @@ class LayoutDecompileCommand extends Command
                             {--sync : 컴파일 산출을 짝 .json 에 기록 (짝이 없으면 생성)}
                             {--check : 짝 .json 이 컴파일 산출과 일치하는지 대조만 (불일치 시 non-zero)}
                             {--out= : 산출 JSON 덤프 경로 (단일 파일 진단·검수용, 미지정 시 검증만)}';
-
-    /**
-     * @var string
-     */
-    protected $description = '.g7.html 소스 파일을 JSON 레이아웃으로 역변환하고 강검증·lint·굽기(--sync/--check) 합니다';
 
     /**
      * 굽기 집계 — `--sync` 는 생성·갱신·무변경, `--check` 는 불일치 파일 목록을 모은다.

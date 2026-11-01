@@ -62,8 +62,8 @@
                     "tag": "nav",
                     "children": [
                         { "tag": "a", "attrs": { "href": "/" }, "content": "$t:nav.home" },
-                        { "tag": "a", "attrs": { "href": "/boards/popular" }, "content": "$t:nav.popular" },
-                        { "tag": "a", "attrs": { "href": "/shop/products" }, "content": "$t:nav.shop" }
+                        { "tag": "a", "attrs": { "href": "/boards/popular" }, "content": "$t:nav.popular", "if": "{boardEnabled|maxVisibleBoards}" },
+                        { "tag": "a", "attrs": { "href": "{shopProductsHref}" }, "content": "$t:nav.shop", "if": "{shopEnabled|maxVisibleBoards}" }
                     ]
                 },
                 {
@@ -94,6 +94,7 @@
                     "children": [
                         {
                             "tag": "div",
+                            "if": "{boardEnabled|copyrightText}",
                             "children": [
                                 { "tag": "h4", "content": "$t:footer.community" },
                                 { "tag": "a", "attrs": { "href": "/" }, "content": "$t:nav.home" },
@@ -103,6 +104,7 @@
                         },
                         {
                             "tag": "div",
+                            "if": "{pageEnabled|copyrightText}",
                             "children": [
                                 { "tag": "h4", "content": "$t:footer.info" },
                                 { "tag": "a", "attrs": { "href": "/page/about" }, "content": "$t:footer.about" },
@@ -112,6 +114,7 @@
                         },
                         {
                             "tag": "div",
+                            "if": "{pageEnabled|copyrightText}",
                             "children": [
                                 { "tag": "h4", "content": "$t:footer.policy" },
                                 { "tag": "a", "attrs": { "href": "/page/terms" }, "content": "$t:footer.terms" },

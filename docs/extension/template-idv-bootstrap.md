@@ -28,7 +28,7 @@ export function initTemplate(): void {
     const actionDispatcher = (window as any).G7Core?.getActionDispatcher?.();
     if (actionDispatcher) {
       Object.entries(handlerMap).forEach(([name, handler]) => {
-        // 등록자를 템플릿 식별자로 밝힌다 (engine-v1.86.0 소유권 경고)
+        // 등록자를 템플릿 식별자로 밝힌다 (engine-v1.87.0 소유권 경고)
         actionDispatcher.registerHandler(name, handler, { category: 'custom', source: 'my-template' });
       });
 

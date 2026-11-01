@@ -40,6 +40,8 @@ axes:
     - all_taxable         # 전액 과세
     - all_tax_free        # 전액 면세
     - mixed               # 복합 (과세 + 면세)
+    - zero_rated_only     # 영세만 (#612 — 과세표준에 들지만 부가세 0, PG·현금영수증엔 면세로)
+    - mixed_with_zero     # 과세 + 영세 + 면세 (#612)
 
   payment_method:
     - dbank               # 무통장 → 현금성 = 실입금액 전액
@@ -115,6 +117,9 @@ effects:
   - shipping_fully_taxable_under_taxable       # 전액과세 정책
   - shipping_follows_dominant_item             # 주된재화 정책 (동률 시 과세)
   - option_tax_amount_excludes_shipping        # 옵션별 과세액에는 배송비 미포함
+  - shipping_split_three_ways_with_zero_rated  # #612 — 안분·주된재화는 과세·영세·면세 세 갈래(과세 먼저 반올림, 잔차 면세)
+  - cash_receipt_tax_free_includes_zero_rated  # #612 — 발급 면세액 = 면세 + 영세 (P2)
+  - cash_receipt_payload_carries_vat           # #612 ② — 발급 페이로드에 주문 부가세 비율로 나눈 vat_amount
 
   # 검증 규칙
   - business_number_checksum_validated         # 사업자번호 체크섬 (000 접두 배제 포함)
@@ -133,6 +138,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ShippingFeeTaxPolicyTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ShippingFeeTaxIntegrationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashReceiptZeroRatedTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/CashEquivalentAmountTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/CashReceiptIdentifierTypeTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/NormalizeCashReceiptTypeTest.php

@@ -240,6 +240,7 @@ return [
             'option_selling_price' => 'オプション販売価格',
             'option_price_adjustment' => 'オプション価格調整額',
             'option_stock_quantity' => 'オプション在庫数量',
+            'option_tax_status' => 'オプション課税区分',
             'option_name' => 'オプション名',
             'option_code' => 'オプションコード',
             'option_group_name' => 'オプショングループ名',
@@ -308,6 +309,9 @@ return [
             ],
             'stock_quantity' => [
                 'required_with' => 'オプション在庫数量は必須です。',
+            ],
+            'tax_status' => [
+                'in' => 'オプションの課税区分は課税・非課税・ゼロ税率から選ぶか、空欄にしてください。',
             ],
         ],
         'label_assignments' => [

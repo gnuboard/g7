@@ -10,7 +10,7 @@
  * 조각은 실제 JSON 을 그 자리에 끼워 그린다(서버가 조각을 푸는 것과 같은 모양). 그 밖의 조각은 표지 칸으로 바꾼다.
  *
  * @vitest-environment jsdom
- * @since 1.3.0
+ * @since 1.4.0
  */
 
 import React from 'react';

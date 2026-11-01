@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\HookManager;
 use App\Services\DashboardService;
 use Illuminate\Console\Command;
@@ -13,19 +14,14 @@ use Illuminate\Console\Command;
  */
 class BroadcastDashboardResources extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 콘솔 명령어 시그니처
      *
      * @var string
      */
     protected $signature = 'dashboard:broadcast-resources';
-
-    /**
-     * 콘솔 명령어 설명
-     *
-     * @var string
-     */
-    protected $description = '시스템 리소스 정보를 브로드캐스트합니다';
 
     /**
      * 커맨드를 실행합니다.

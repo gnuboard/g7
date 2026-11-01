@@ -1,0 +1,45 @@
+feature: sirsoft-basic 모듈별 단독 사용 — 선택 연동과 공통 화면 가드 (#822)
+
+description: |
+  sirsoft-basic 이 게시판·쇼핑몰·페이지 모듈과 우편번호 플러그인을 필수 의존으로 선언해, 하나라도 꺼진 사이트는
+  템플릿 설치가 막히고 이미 켠 사이트의 방문자 화면 전체가 503 이었다. 넷을 선택 연동(integrations)으로 바꾸고,
+  모듈 화면은 라우트 requires 로, 공통 화면(상속원·홈·검색·가입·로그인·마이페이지 탭·회원 프로필)의 데이터소스·
+  노드·액션은 `{{_global.activeModules?.includes('<id>') ?? true}}` 한 모양의 if 로(데이터소스는 404 삼킴 동반),
+  머리글·꼬리말 링크는 모듈 활성 props 로 가린다. 키가 없는 옛 코어에서는 모두 켜짐으로 본다.
+  우편번호 플러그인이 꺼지면 주소칸을 직접 입력한다. 쇼핑몰이 켜지면 홈에 인기 상품·신상품 줄이 생긴다.
+  조합별(게시판만·쇼핑몰만·쇼핑몰만+주소 직접 입력·페이지 끔·코어만) 브라우저 측정은 모듈 활성 상태를 바꿔야 해서
+  Playwright 단독 실행이 아니라 조합을 만든 사이트에서 같은 선택자(헤더 data-testid nav-popular·nav-shop·header-cart·
+  header-search, 서랍·홈의 data-ref id)로 잰다.
+
+coverage_strategy: full
+
+axes:
+  surface: [manifest, install, middleware, user_base, user_base_drawer, user_base_header, home, search, register, login, mypage_tabs, user_profile, product_qna, routes, all_layouts, profile_edit, address_modals, checkout_shipping, auth_boundary, header_footer_component]
+
+effects:
+  - integrations_not_dependencies
+  - board_only_site_installs_template
+  - board_only_site_serves_user_routes
+  - shared_module_source_guarded
+  - module_action_guarded
+  - shared_module_link_guarded
+  - header_footer_module_props
+  - search_source_if_condition
+  - terms_view_hidden_checkbox_kept
+  - mypage_tabs_follow_active_modules
+  - legacy_core_shows_all
+  - product_qna_needs_board
+  - routes_require_their_module
+  - core_routes_have_no_requires
+  - home_shop_sections
+  - address_input_editable_without_postcode
+  - login_skips_cart_key_when_ecommerce_off
+
+test_files:
+  - tests/Feature/Extension/TemplateStandaloneModulesTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/standalone-module-guards.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/routes-requires.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/home-shop-sections.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/address-readonly-postcode.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/components/HeaderFooterModuleFlags.test.tsx
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/authBoundaryStorage.test.ts

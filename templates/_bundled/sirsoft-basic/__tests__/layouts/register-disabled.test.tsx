@@ -10,7 +10,7 @@
  * 값이 없거나 참이면 지금처럼 가입을 받는다(`!== false` — 설정이 아직 안 내려온 화면이 가입을 막지 않게).
  *
  * @vitest-environment jsdom
- * @since 1.3.0
+ * @since 1.4.0
  */
 
 import React from 'react';

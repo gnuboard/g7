@@ -1,0 +1,23 @@
+feature: 꺼진 확장의 사이트맵 기여자 제외 (#822)
+
+description: |
+  모듈·플러그인의 서비스 프로바이더는 비활성 상태여도 등록되므로, 꺼진 쇼핑몰·페이지 모듈의 사이트맵 기여자도
+  등록돼 URL 을 낸다. 사이트맵에는 켜진 확장의 URL 만 실려야 한다 — 전체 재생성의 저장소 재적재(기여자 드레인)와,
+  이미 쌓인 저장소 행을 파일로 내보내는 단계 둘 다. 확장 상태를 읽지 못하면 종전처럼 모두 싣는다(fail-open).
+
+axes:
+  case:
+    - active_contributors
+    - full_rebuild
+    - unknown_status
+
+effects:
+  - active_contributors_exclude_inactive_extension
+  - full_rebuild_skips_inactive_extension
+  - stored_rows_of_inactive_extension_not_written
+  - unknown_status_keeps_all_contributors
+
+test_files:
+  - tests/Feature/Seo/SitemapInactiveExtensionContributorTest.php
+
+# E2E axis 없음: 라이브 사이트맵 건수는 Chrome MCP 매트릭스(#822 계획서 §11 T6)에서 잰다.

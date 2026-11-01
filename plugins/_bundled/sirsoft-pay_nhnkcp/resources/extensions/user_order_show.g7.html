@@ -36,7 +36,7 @@
       </div>
       <p data-if="{{!order.data.payment?.paid_at}}" class="paynhnkcp:text-xs paynhnkcp:text-amber-700 paynhnkcp:dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
     </div>
-    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}" class="paynhnkcp:pt-4 paynhnkcp:mt-2 paynhnkcp:border-t paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700 paynhnkcp:space-y-1.5">
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0 || order.data.total_zero_rated_amount > 0)}}" class="paynhnkcp:pt-4 paynhnkcp:mt-2 paynhnkcp:border-t paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700 paynhnkcp:space-y-1.5">
       <p class="paynhnkcp:text-sm paynhnkcp:font-semibold paynhnkcp:text-gray-800 paynhnkcp:dark:text-gray-200 paynhnkcp:mb-1">$t:sirsoft-pay_nhnkcp.user.tax_breakdown_title</p>
       <div class="pay-nhnkcp-flex-between paynhnkcp:text-sm">
         <span class="paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.supply_amount</span>
@@ -49,6 +49,10 @@
       <div data-if="{{order.data.total_tax_free_amount > 0}}" class="pay-nhnkcp-flex-between paynhnkcp:text-sm">
         <span class="paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.tax_free_amount</span>
         <span class="paynhnkcp:text-gray-900 paynhnkcp:dark:text-white paynhnkcp:font-medium">{{order.data.total_tax_free_amount_formatted}}</span>
+      </div>
+      <div data-if="{{order.data.total_zero_rated_amount > 0}}" class="pay-nhnkcp-flex-between paynhnkcp:text-sm">
+        <span class="paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.zero_rated_amount</span>
+        <span class="paynhnkcp:text-gray-900 paynhnkcp:dark:text-white paynhnkcp:font-medium">{{order.data.total_zero_rated_amount_formatted}}</span>
       </div>
     </div>
     <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.transaction_id &amp;&amp; order.data.payment?.paid_at}}" id="kcp-mp-receipt-row" class="paynhnkcp:pt-4 paynhnkcp:mt-2 paynhnkcp:border-t paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">

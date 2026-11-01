@@ -50,7 +50,7 @@ return [
     'pending_not_found' => 'インストール待機リストにプラグイン ":plugin" が見つかりません。',
     'already_exists' => 'プラグイン ":plugin" は既に存在します。',
     'move_failed' => 'プラグイン ":plugin" の移動に失敗しました: :error',
-    'dependency_not_active' => '依存 ":dependency" はインストールされていないか、無効化されています。',
+    'dependency_not_active' => '依存する:type ":dependency" がインストールされていないか無効です。',
     'installation_failed' => 'プラグインのインストールに失敗しました: :error',
     'activation_failed' => 'プラグインの有効化に失敗しました: :error',
     'deactivation_failed' => 'プラグインの無効化に失敗しました: :error',
@@ -180,12 +180,12 @@ return [
             'not_installed' => 'プラグイン ":plugin" はインストールされていません。',
             'already_active' => 'プラグイン ":plugin" は既に有効化されています。',
             'layouts_registered' => ':count 個のレイアウトが登録されました',
-            // `plugin:activate` 依存関係未充足の案内
             'required_modules' => '必要なモジュール:',
             'required_plugins' => '必要なプラグイン:',
             'missing_status' => [
                 'not_installed' => '未インストール',
                 'inactive' => '無効',
+                'version_mismatch' => 'バージョン不足 :installed → :required',
             ],
             'force_hint' => '強制的に有効化するには --force オプションを使用してください。',
         ],
@@ -195,7 +195,6 @@ return [
             'not_active' => 'プラグイン ":plugin" は有効化されていません。',
             'warning' => 'プラグインのルートと機能が無効化されました。',
             'layouts_deleted' => ':count 個のレイアウトが削除されました',
-            // `plugin:deactivate` 依存拡張の案内
             'dependent_templates' => '依存しているテンプレート一覧:',
             'dependent_modules' => '依存しているモジュール一覧:',
             'dependent_plugins' => '依存しているプラグイン一覧:',
@@ -217,7 +216,6 @@ return [
             'aborted' => 'プラグイン削除がキャンセルされました。',
             'not_installed' => 'プラグイン ":plugin" はインストールされていません。',
             'custom_preserved' => '運営者ファイル(:directory)を:archiveに保管しました。',
-            // `plugin:uninstall` --delete-data 警告
             'delete_data_warning' => '--delete-data: マイグレーションのロールバックと環境設定ファイルの削除も行われます。',
         ],
         'cache_clear' => [
@@ -258,7 +256,6 @@ return [
             'modified_layouts_warning' => '管理者が修正したレイアウト・拡張フラグメント :count 個が上書きされます:',
             'modified_layout_item' => '  - :name (修正日: :date)',
         ],
-        // `plugin:build`・`plugin:seed`・`plugin:composer-install`・`plugin:vendor-bundle`・`plugin:vendor-verify` コマンド出力
         'build' => [
             'missing_identifier' => 'プラグイン識別子を指定するか、--all オプションを使用してください。',
             'usage' => '使用方法:',
@@ -331,4 +328,5 @@ return [
         'update_failed' => 'プラグイン設定のアップデートに失敗しました: :error',
         'updated' => 'プラグイン設定が正常にアップデートされました。',
     ],
+    'dependency_version_unmet' => '依存する「:dependency」のインストール済みバージョン(:installed)が要求バージョン(:required)を満たしていません。先に依存する拡張を更新してください。',
 ];

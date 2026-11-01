@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Extension\ModuleSettingsInterface;
+use Modules\Sirsoft\Board\Http\Requests\Admin\StoreBoardSettingsRequest;
 use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
 use App\Exceptions\PermissionEscalationException;
 use App\Services\NotificationDefinitionService;
@@ -58,6 +59,17 @@ class BoardSettingsService implements ModuleSettingsInterface
         $path = $this->getModulePath().'/config/settings/defaults.json';
 
         return file_exists($path) ? $path : null;
+    }
+
+    /**
+     * 관리자 화면 설정 저장에 쓰는 FormRequest 클래스 — 코어 터미널 명령(`settings:set --module=sirsoft-board`)이
+     * 같은 규칙으로 검증한 뒤 이 서비스의 saveSettings() 로 저장한다(코어 7.1.4 선택 계약, 옛 코어는 부르지 않는다).
+     *
+     * @return class-string<StoreBoardSettingsRequest> FormRequest 클래스명
+     */
+    public function settingsSaveRequestClass(): string
+    {
+        return StoreBoardSettingsRequest::class;
     }
 
     /**

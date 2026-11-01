@@ -1,11 +1,12 @@
 {
-    "comment": "최근 글 카드 — 게시판을 가리지 않고 새로 올라온 순서 다섯 건이다.",
+    "comment": "최근 글 카드 — 게시판을 가리지 않고 새로 올라온 순서 다섯 건이다. 게시판 모듈이 꺼져 있으면 카드째 숨긴다.",
     "meta": {
         "is_partial": true,
         "description": "최근 게시글 카드"
     },
     "type": "basic",
     "name": "Div",
+    "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
     "props": {
         "className": "bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col"
     },

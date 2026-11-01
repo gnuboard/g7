@@ -1,0 +1,16 @@
+feature: gd 확장 없는 서버의 상품 샘플 시더 (#151 W8)
+
+description: |
+  gd 는 코어 기준 「선택」 확장이다. ProductSeeder::applyColorFilter() 가 imagecreatefromstring() 을 @ 로만 감싸
+  gd 없는 서버에서 --sample 시더가 미정의 함수 오류로 중단됐다. 이제 gdAvailable() 가드로 원본 이미지를 그대로 쓰고
+  경고는 한 번만 낸다.
+
+axes:
+  gd: [absent]
+  seeder: [product_image]
+
+effects:
+  - product_seeder_keeps_original_images_without_gd
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Database/Seeders/ProductSeederWithoutGdTest.php

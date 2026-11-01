@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Extension\ExtensionManager;
@@ -14,6 +15,7 @@ use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
 use App\Support\ConfigCacheHelper;
+use App\Support\ExtensionDependencyOrder;
 use App\Support\RouteCacheHelper;
 use App\Support\UpdateChildEnv;
 use Illuminate\Console\Command;
@@ -58,6 +60,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ExecuteBundledUpdatesCommand extends Command
 {
+    use LocalizesDescription;
     use RendersLayoutSyncResult;
     use ReportsLifecycleWarnings;
 
@@ -76,8 +79,6 @@ class ExecuteBundledUpdatesCommand extends Command
         {--force : 강제 업데이트 플래그 (확장 매니저 update 호출에 전달)}
         {--rebuild-search-index : 일괄 업데이트 후 검색 인덱스 재생성 (매니페스트의 선택보다 우선)}
         {--item-process : 내부용 — 항목 하나만 처리하는 새 프로세스로 실행 (머리줄·합계·검색 인덱스·격리 디렉토리 청소 생략)}';
-
-    protected $description = '번들 확장 일괄 업데이트를 실행합니다 (CoreUpdateCommand 내부용 — fresh PHP 프로세스에서 호출)';
 
     /**
      * 부분 실패 경고는 표로만 보이고 종료코드는 바꾸지 않습니다 — 부모는 종료코드와 결과 페이로드로 성공·실패를 판정한다.
@@ -128,17 +129,15 @@ class ExecuteBundledUpdatesCommand extends Command
         // 부모(core:update)가 운영자 선택을 매니페스트에 실어 보낸다 — 자식이 임의로 정하지 않는다
         $rebuildSearchIndex = (bool) $this->option('rebuild-search-index') || (bool) ($manifest['rebuild_search_index'] ?? false);
 
-        // 종류 순서(모듈 → 플러그인 → 템플릿 → 언어팩)는 아래 반복문 순서가 지킨다. 같은 종류 안에서도 의존하는 쪽이
-        // 뒤에 오도록 번들 manifest 의 같은 종류 의존 선언으로 정렬한다 — 부모(이전 버전 core:update)가 만든 목록의 순서를
-        // 믿지 않는다.
-        $modules = self::orderByDependencies(
-            $manifest['modules'] ?? [],
-            fn (string $id) => self::bundledSameTypeDependencies('modules', $id, 'module.json')
-        );
-        $plugins = self::orderByDependencies(
-            $manifest['plugins'] ?? [],
-            fn (string $id) => self::bundledSameTypeDependencies('plugins', $id, 'plugin.json')
-        );
+        // 모듈·플러그인은 한 목록으로 서로의 의존 순서를 따른다(기본 순서 모듈 → 플러그인, 의존만 앞당김 — 모듈이 플러그인에
+        // 의존하면 플러그인이 먼저). 의존은 새 배포본(_bundled) manifest 의 선언을 읽는다 — 부모(이전 버전 core:update)가
+        // 만든 목록의 순서를 믿지 않는다. 템플릿 → 언어팩 단계는 그 뒤에 그대로 돈다.
+        $modules = $manifest['modules'] ?? [];
+        $plugins = $manifest['plugins'] ?? [];
+        $extensionOrder = self::orderedModulesAndPlugins($modules, $plugins);
+        foreach ($extensionOrder['cycles'] as $cycle) {
+            $this->warn(__('extensions.commands.bundled_update.dependency_cycle', ['cycle' => implode(' → ', $cycle)]));
+        }
         $templates = $manifest['templates'] ?? [];
         $langPacks = $manifest['lang_packs'] ?? [];
 
@@ -242,10 +241,28 @@ class ExecuteBundledUpdatesCommand extends Command
     }
 
     /**
-     * 매니페스트 목록을 처리 순서(모듈 → 플러그인 → 템플릿 → 언어팩)의 항목 목록으로 폅니다. 식별자가 빈 항목은 뺀다.
+     * 매니페스트의 모듈·플러그인 항목을 한 목록으로 의존 순서에 맞춰 정렬합니다(기본 순서 모듈 → 플러그인, 의존만 앞당김).
      *
-     * @param  array<int, mixed>  $modules  모듈 항목 (의존 순서로 정렬된 것)
-     * @param  array<int, mixed>  $plugins  플러그인 항목 (의존 순서로 정렬된 것)
+     * 의존은 새 배포본(_bundled) manifest 선언({@see bundledDependencyKeys()})을 읽는다. 식별자가 빈 항목은 뺀다.
+     *
+     * @param  array<int, mixed>  $modules  모듈 항목
+     * @param  array<int, mixed>  $plugins  플러그인 항목
+     * @return array{ordered: array<int, array{key: string, type: string, entry: array<string, mixed>}>, cycles: array<int, array<int, string>>} 정렬 결과
+     */
+    private static function orderedModulesAndPlugins(array $modules, array $plugins): array
+    {
+        $keep = fn (array $entries): array => array_values(array_filter($entries, 'is_array'));
+
+        return ExtensionDependencyOrder::orderModulesAndPlugins($keep($modules), $keep($plugins), [self::class, 'bundledDependencyKeys']);
+    }
+
+    /**
+     * 매니페스트 목록을 처리 순서(모듈·플러그인 의존 순서 → 템플릿 → 언어팩)의 항목 목록으로 폅니다. 식별자가 빈 항목은 뺀다.
+     *
+     * 모듈·플러그인은 {@see orderedModulesAndPlugins()} 의 순서를 따른다 — 항목 프로세스도 이 순서로 띄운다.
+     *
+     * @param  array<int, mixed>  $modules  모듈 항목
+     * @param  array<int, mixed>  $plugins  플러그인 항목
      * @param  array<int, mixed>  $templates  템플릿 항목
      * @param  array<int, mixed>  $langPacks  언어팩 항목
      * @return array<int, array{type: string, identifier: string, strategy: string|null}> 항목 목록
@@ -253,7 +270,14 @@ class ExecuteBundledUpdatesCommand extends Command
     public static function flattenItems(array $modules, array $plugins, array $templates, array $langPacks): array
     {
         $items = [];
-        foreach (['modules' => $modules, 'plugins' => $plugins, 'templates' => $templates, 'lang_packs' => $langPacks] as $key => $entries) {
+        foreach (self::orderedModulesAndPlugins($modules, $plugins)['ordered'] as $node) {
+            $items[] = [
+                'type' => $node['type'],
+                'identifier' => (string) $node['entry']['identifier'],
+                'strategy' => (string) ($node['entry']['strategy'] ?? 'overwrite'),
+            ];
+        }
+        foreach (['templates' => $templates, 'lang_packs' => $langPacks] as $key => $entries) {
             foreach ($entries as $entry) {
                 $id = is_array($entry) ? (string) ($entry['identifier'] ?? '') : '';
                 if ($id === '') {
@@ -433,38 +457,24 @@ class ExecuteBundledUpdatesCommand extends Command
             Log::error('번들 일괄 업데이트 실패 (spawn)', ['type' => $type, 'id' => $id, 'error' => $e->getMessage()]);
         };
 
-        foreach ($modules as $entry) {
+        // 모듈·플러그인은 한 목록으로 서로의 의존 순서를 따른다(순환 경고는 handle() 이 한 번 낸다)
+        foreach (self::orderedModulesAndPlugins($modules, $plugins)['ordered'] as $node) {
+            $entry = $node['entry'];
             $id = (string) ($entry['identifier'] ?? '');
             $strategy = (string) ($entry['strategy'] ?? 'overwrite');
-            if ($id === '') {
-                continue;
-            }
-            $this->line(__('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy]));
+            $type = $node['type'];
+            $this->line($type === 'module'
+                ? __('extensions.commands.bundled_update.running_items.module', ['identifier' => $id, 'strategy' => $strategy])
+                : __('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
             try {
-                $result = $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
+                $result = $type === 'module'
+                    ? $moduleManager->updateModule($id, true, null, VendorMode::Auto, $strategy, null, 'bundled')
+                    : $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
                 $this->lineLayoutSyncSummary($result);
                 $this->renderDependencyWarnings($result, '  ');
                 $success++;
             } catch (\Throwable $e) {
-                $fail('module', $id, $strategy, $e);
-            }
-            gc_collect_cycles();
-        }
-
-        foreach ($plugins as $entry) {
-            $id = (string) ($entry['identifier'] ?? '');
-            $strategy = (string) ($entry['strategy'] ?? 'overwrite');
-            if ($id === '') {
-                continue;
-            }
-            $this->line(__('extensions.commands.bundled_update.running_items.plugin', ['identifier' => $id, 'strategy' => $strategy]));
-            try {
-                $result = $pluginManager->updatePlugin($id, true, null, VendorMode::Auto, $strategy, null, 'bundled');
-                $this->lineLayoutSyncSummary($result);
-                $this->renderDependencyWarnings($result, '  ');
-                $success++;
-            } catch (\Throwable $e) {
-                $fail('plugin', $id, $strategy, $e);
+                $fail($type, $id, $strategy, $e);
             }
             gc_collect_cycles();
         }
@@ -637,65 +647,49 @@ class ExecuteBundledUpdatesCommand extends Command
     }
 
     /**
-     * 같은 종류 항목을 의존 대상이 먼저 오도록 정렬합니다(안정 정렬 — 의존이 없으면 원래 순서).
+     * 항목을 의존 대상이 먼저 오도록 정렬합니다(안정 정렬 — 의존이 없으면 원래 순서). {@see ExtensionDependencyOrder} 에 위임.
      *
-     * 목록에 없는 의존은 무시하고, 순환 의존은 원래 순서로 둔다. 어떤 경우에도 항목을 잃거나 내용을 바꾸지 않는다.
+     * 목록에 없는 의존은 무시하고, 순환 구간은 원래 순서로 둔다. 어떤 경우에도 항목을 잃거나 내용을 바꾸지 않는다.
      *
      * @param  array<int, array<string, mixed>>  $entries  매니페스트 항목 (`identifier`·`strategy`)
-     * @param  callable(string): array<int, string>  $dependenciesOf  식별자 → 같은 종류 의존 식별자 목록
+     * @param  callable(string): array<int, string>  $dependenciesOf  식별자 → 의존 식별자 목록
      * @return array<int, array<string, mixed>> 정렬된 항목
      */
     public static function orderByDependencies(array $entries, callable $dependenciesOf): array
     {
-        $byId = [];
-        foreach ($entries as $index => $entry) {
+        $nodes = [];
+        foreach (array_values($entries) as $index => $entry) {
             $id = (string) ($entry['identifier'] ?? '');
-            $byId[$id !== '' ? $id : "#{$index}"] = $entry;
+            $nodes[] = ['key' => $id !== '' ? $id : "#{$index}", 'entry' => $entry];
         }
 
-        $sorted = [];
-        $state = []; // 1 = 방문 중, 2 = 완료
-
-        $visit = function (string $id) use (&$visit, &$sorted, &$state, $byId, $dependenciesOf): void {
-            if (($state[$id] ?? 0) !== 0) {
-                return; // 완료됐거나 순환 — 순환은 끊고 원래 순서에 맡긴다
-            }
-            $state[$id] = 1;
-            foreach ($dependenciesOf($id) as $dependency) {
-                if (isset($byId[$dependency])) {
-                    $visit($dependency);
-                }
-            }
-            $state[$id] = 2;
-            $sorted[] = $byId[$id];
-        };
-
-        foreach (array_keys($byId) as $id) {
-            $visit((string) $id);
-        }
-
-        return $sorted;
+        return array_column(ExtensionDependencyOrder::order($nodes, $dependenciesOf)['ordered'], 'entry');
     }
 
     /**
-     * 번들 manifest 가 선언한 같은 종류 의존 식별자를 읽습니다(모듈 → 모듈, 플러그인 → 플러그인).
+     * 번들(`{type}/_bundled/{id}`) manifest 가 선언한 모듈·플러그인 의존을 노드 키(`module:…`·`plugin:…`)로 읽습니다.
      *
-     * @param  string  $type  `modules`·`plugins`
-     * @param  string  $identifier  확장 식별자
-     * @param  string  $manifestFile  manifest 파일 이름
-     * @return array<int, string> 의존 식별자 목록 (읽지 못하면 빈 배열)
+     * 일괄 업데이트는 새 배포본의 선언을 따라야 한다(활성본은 아직 옛 판). 같은 프로세스 경로(BundledExtensionUpdatePrompt)도 쓴다.
+     *
+     * @param  string  $key  노드 키 (`module:…`·`plugin:…`)
+     * @return array<int, string> 의존 키 목록 (읽지 못하면 빈 배열)
      */
-    private static function bundledSameTypeDependencies(string $type, string $identifier, string $manifestFile): array
+    public static function bundledDependencyKeys(string $key): array
     {
-        $path = base_path("{$type}/_bundled/{$identifier}/{$manifestFile}");
+        [$kind, $identifier] = array_pad(explode(':', $key, 2), 2, '');
+        $path = match ($kind) {
+            'module' => base_path("modules/_bundled/{$identifier}/module.json"),
+            'plugin' => base_path("plugins/_bundled/{$identifier}/plugin.json"),
+            default => null,
+        };
 
-        if (! File::isFile($path)) {
+        if ($path === null || $identifier === '' || ! File::isFile($path)) {
             return [];
         }
 
         $manifest = json_decode((string) File::get($path), true);
-        $dependencies = is_array($manifest) ? ($manifest['dependencies'][$type] ?? []) : [];
 
-        return is_array($dependencies) ? array_map('strval', array_keys($dependencies)) : [];
+        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 읽으면 식별자 자리에 0·1 이 들어간다(#822 D6)
+        return is_array($manifest) ? ExtensionDependencyOrder::dependencyKeys($manifest['dependencies'] ?? []) : [];
     }
 }

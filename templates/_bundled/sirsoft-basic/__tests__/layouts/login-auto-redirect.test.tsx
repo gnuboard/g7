@@ -11,7 +11,7 @@
  * 하네스의 `triggerAction` 문맥에는 `query` 가 없다.
  *
  * @vitest-environment jsdom
- * @since 1.3.0
+ * @since 1.4.0
  */
 
 import React from 'react';

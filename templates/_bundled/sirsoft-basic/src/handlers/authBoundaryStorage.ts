@@ -19,6 +19,8 @@
  *   `authStateChange`(비인증 → 인증)를 로그인으로 보면 회원이 새로고침할 때마다 카트키를 다시 받는다 — 그래서 재발급은
  *   `authStateChange` 가 아니라 `login` 에만 건다.
  * - 같은 (인증 여부, 회원 uuid) 의 재발행(`checkAuth` 등)은 무시한다.
+ * - 쇼핑몰 모듈이 꺼진 사이트(`_global.activeModules` 에 `sirsoft-ecommerce` 가 없음)에서는 카트키를 다시 발급하지 않는다 —
+ *   발급 API 가 없어 로그인마다 실패 요청만 남는다(#822). 활성 목록이 없는 옛 코어에서는 지금처럼 발급한다.
  *
  * 로케일 재초기화로 템플릿 초기화가 다시 돌아도 구독은 하나다 — 이전 구독을 먼저 해제한다.
  */
@@ -85,9 +87,25 @@ function clearGuestStorage(): void {
 }
 
 /**
- * 로그인 — 카트키를 새로 발급해 저장합니다.
+ * 쇼핑몰 모듈이 켜져 있는지 — 레이아웃 가드 `{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}` 와 같은 판정.
+ *
+ * 전역 상태는 공개 API(`G7Core.state.get()`)로 읽는다. 활성 목록이 없으면(옛 코어) 켜져 있다고 본다.
+ *
+ * @returns 켜져 있으면 true
+ */
+function isEcommerceActive(): boolean {
+    const activeModules = (window as any).G7Core?.state?.get?.()?.activeModules;
+    return Array.isArray(activeModules) ? activeModules.includes('sirsoft-ecommerce') : true;
+}
+
+/**
+ * 로그인 — 카트키를 새로 발급해 저장합니다(쇼핑몰 모듈이 꺼져 있으면 건너뜀).
  */
 async function reissueCartKey(): Promise<void> {
+    if (!isEcommerceActive()) {
+        return;
+    }
+
     const cartKey = await issueCartKeyFromApi();
     if (!cartKey) {
         return;

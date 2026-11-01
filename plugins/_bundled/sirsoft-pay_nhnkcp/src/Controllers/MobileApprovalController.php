@@ -323,7 +323,8 @@ class MobileApprovalController
      */
     private function buildTaxFields(Order $order, int $paymentAmount): array
     {
-        $taxFreeAmt = (int) round((float) ($order->total_tax_free_amount ?? 0));
+        // 면세 = 면세 + 영세, 과세 합계 = 영세를 뺀 과세 합계(이커머스 1.3.3, #612) — 영세는 부가세가 없어 KCP 에는 비과세로 넘긴다
+        $taxFreeAmt = (int) round($this->pgTaxFreeOf($order));
         if ($taxFreeAmt <= 0) {
             return [];
         }
@@ -331,7 +332,7 @@ class MobileApprovalController
         $paymentAmount = max(0, $paymentAmount);
         $taxFreeAmt = min($taxFreeAmt, $paymentAmount);
         $taxablePaymentAmt = max(0, $paymentAmount - $taxFreeAmt);
-        $taxTotalAmt = (int) round((float) ($order->total_tax_amount ?? 0));
+        $taxTotalAmt = (int) round($this->pgTaxableOf($order));
         $vatAmt = (int) round((float) ($order->total_vat_amount ?? 0));
         if ($taxablePaymentAmt > 0 && $taxTotalAmt > 0 && $vatAmt > 0) {
             $vatAmt = min($taxablePaymentAmt, (int) round($taxablePaymentAmt * ($vatAmt / $taxTotalAmt)));
@@ -388,5 +389,34 @@ class MobileApprovalController
         $normalized = strtoupper(trim((string) $currency));
 
         return $normalized !== '' ? $normalized : 'KRW';
+    }
+
+    /**
+     * 결제사에 면세로 넘길 주문 금액(면세 + 영세)을 읽습니다.
+     *
+     * 이커머스 1.3.3 의 `Order::pgTaxFreeAmount()` 를 쓰고, 그 메서드가 없는 구버전(영세 없음)은 면세 합계로 떨어진다 —
+     * 플러그인 갱신은 이커머스 의존 버전을 다시 검사하지 않아 구버전과 함께 돌 수 있다.
+     *
+     * @param  Order  $order  주문
+     * @return float 면세 + 영세
+     */
+    private function pgTaxFreeOf(Order $order): float
+    {
+        return method_exists($order, 'pgTaxFreeAmount')
+            ? $order->pgTaxFreeAmount()
+            : (float) ($order->total_tax_free_amount ?? 0);
+    }
+
+    /**
+     * 결제사에 과세로 넘길 주문 금액(영세를 뺀 과세 합계, 부가세 포함)을 읽습니다.
+     *
+     * @param  Order  $order  주문
+     * @return float 과세 합계(영세 제외)
+     */
+    private function pgTaxableOf(Order $order): float
+    {
+        return method_exists($order, 'pgTaxableAmount')
+            ? $order->pgTaxableAmount()
+            : (float) ($order->total_tax_amount ?? 0);
     }
 }

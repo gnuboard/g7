@@ -89,6 +89,7 @@
         "total_tax_amount": 70000.0,
         "total_tax_free_amount": 0.0,
         "total_vat_amount": 0.0,
+        "total_zero_rated_amount": 0.0,
         "total_earned_points_amount": 700.0,
         "item_count": 5,
         "base_currency": "KRW",
@@ -111,6 +112,7 @@
             "total_tax_amount": "70,000원",
             "total_tax_free_amount": "0원",
             "total_vat_amount": "0원",
+            "total_zero_rated_amount": "0원",
             "total_earned_points_amount": "700원",
             "item_count": "5원"
         },
@@ -134,6 +136,7 @@
         "total_tax_amount": 43000.0,
         "total_tax_free_amount": 0.0,
         "total_vat_amount": 3909.0,
+        "total_zero_rated_amount": 0.0,
         "total_earned_points_amount": 0.0,
         "item_count": 2,
         "total_list_price_amount": 50000.0,
@@ -156,6 +159,7 @@
             "total_tax_amount": "43,000원",
             "total_tax_free_amount": "0원",
             "total_vat_amount": "3,909원",
+            "total_zero_rated_amount": "0원",
             "total_earned_points_amount": "0원",
             "item_count": "2원",
             "total_list_price_amount": "50,000원"

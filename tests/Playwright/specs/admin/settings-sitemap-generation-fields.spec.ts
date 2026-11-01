@@ -2,7 +2,7 @@
  * E2E: 환경설정 > SEO/고급 — Sitemap 생성 설정 칸 (#481)
  *
  * @scenario admin_settings_sitemap_generation_fields
- * @effects fields_mounted, fields_persisted, regenerate_is_async
+ * @effects fields_mounted, fields_persisted, regenerate_is_async, regenerate_button_shows_spinner_while_requesting
  *
  * 배경: 대용량 사이트에서 sitemap 을 여러 파일로 나눠 생성하도록 분할 기준/압축 설정을
  * 추가하고, 관리자 "지금 생성" 버튼을 즉시 실행에서 큐 예약으로 바꿨다. 설정 칸이 실제로
@@ -13,6 +13,7 @@
  *  2. 분할 기준을 바꿔 저장하면 422 없이 성공하고 재진입 시 유지된다
  *  3. 고급 탭에 Sitemap 캐시 기준값 칸이 마운트되고 기본값(86400)이 저장된다
  *  4. "지금 생성" 클릭이 즉시 응답을 받는다 (동기 생성이면 대용량에서 타임아웃)
+ *  5. "지금 생성" 은 요청 중 스피너·「생성 중…」·disabled 를 보이고, 성공·실패 응답 뒤 되돌아온다
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
@@ -33,6 +34,23 @@ async function gotoSeoTab(page: import('@playwright/test').Page): Promise<void> 
   await page.goto('/admin/settings?tab=seo');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   await expect(page.locator(URLS_PER_FILE)).toBeAttached({ timeout: 20_000 });
+}
+
+/**
+ * "지금 생성" 버튼을 누를 수 있는 상태인지 판정한다.
+ *
+ * 버튼은 권한(`settingsAbilities`)이 실리기 전까지 읽기 전용으로 잠겨 있으므로, 붙은 즉시 한 번
+ * 재면 화면 로딩 중에 잠긴 것으로 오판한다. 활성화를 잠시 기다리고, 그래도 잠겨 있으면
+ * 이전 재생성이 진행 상태로 남은 환경으로 본다.
+ *
+ * @param button "지금 생성" 버튼 로케이터
+ * @returns 누를 수 있으면 true
+ */
+async function isRegenerateClickable(button: import('@playwright/test').Locator): Promise<boolean> {
+  return expect(button)
+    .toBeEnabled({ timeout: 15_000 })
+    .then(() => true)
+    .catch(() => false);
 }
 
 /** 관리자 환경설정 고급 탭 진입 */
@@ -214,29 +232,28 @@ test('#481 - "지금 생성" 클릭이 큐에 예약되고 진행상황이 화�
 
   await gotoSeoTab(page);
 
+  // 재생성 버튼은 진행 중(queued/running/writing)이면 disabled 다.
+  // 재생성은 큐로 위임되므로 **큐 워커가 돌지 않는 환경**에서는 상태가 `queued` 로 멈춰
+  // 버튼이 영원히 disabled 다(진행상황 캐시 TTL 1시간). 코드 결함이 아니라 실행 환경
+  // 전제이므로, 그런 환경에서는 이 테스트를 건너뛴다.
+  const regenerateButton = page.locator('#sitemap_last_updated_block button').first();
+  const clickable = await isRegenerateClickable(regenerateButton);
+  test.skip(!clickable, '이전 sitemap 재생성이 queued 로 남아 있다 — 큐 워커 미가동 환경');
   const regenerate = page.waitForResponse(
     (r) => r.url().includes('/api/admin/seo/sitemap/regenerate'),
     { timeout: 20_000 }
   );
 
   const startedAt = Date.now();
-  // 재생성 버튼은 진행 중(queued/running/writing)이면 disabled 다.
-  // 재생성은 큐로 위임되므로 **큐 워커가 돌지 않는 환경**에서는 상태가 `queued` 로 멈춰
-  // 버튼이 영원히 disabled 다(진행상황 캐시 TTL 1시간). 코드 결함이 아니라 실행 환경
-  // 전제이므로, 그런 환경에서는 이 테스트를 건너뛴다.
-  const regenerateButton = page.locator('#sitemap_last_updated_block button').first();
-  const clickable = await regenerateButton
-    .waitFor({ state: 'attached', timeout: 10_000 })
-    .then(() => regenerateButton.isEnabled())
-    .catch(() => false);
-  test.skip(!clickable, '이전 sitemap 재생성이 queued 로 남아 있다 — 큐 워커 미가동 환경');
   await regenerateButton.click();
   const response = await regenerate;
   const elapsed = Date.now() - startedAt;
 
   expect(response.status()).toBe(200);
-  // 예약 즉시 진행상황이 'queued' 로 실려 온다 (동기 생성이 아니라 큐 예약)
-  expect((await response.json())?.data?.progress?.status).toBe('queued');
+  // 큐 워커 환경이면 예약 즉시 'queued' 로, 큐를 즉시 실행(sync)으로 쓰면 요청 안에서 끝나
+  // 'completed' 로 실려 온다. 어느 쪽이든 'queued' 로 덮어써 한 시간 잠기면 안 된다.
+  const status = (await response.json())?.data?.progress?.status;
+  expect(['queued', 'running', 'writing', 'completed']).toContain(status);
 
   // 동기 생성으로 되돌아가면 응답 시간이 데이터 규모에 비례해 늘어난다.
   // 절대 하한 대신 "예약 응답이라면 당연히 만족하는" 상한으로 회귀만 잡는다.
@@ -300,15 +317,14 @@ test('#481 - 재생성 후 실시간/폴링 모드에 맞게 진행상황이 갱
   // 버튼이 영원히 disabled 다(진행상황 캐시 TTL 1시간). 코드 결함이 아니라 실행 환경
   // 전제이므로, 그런 환경에서는 이 테스트를 건너뛴다.
   const regenerateButton = page.locator('#sitemap_last_updated_block button').first();
-  const clickable = await regenerateButton
-    .waitFor({ state: 'attached', timeout: 10_000 })
-    .then(() => regenerateButton.isEnabled())
-    .catch(() => false);
+  const clickable = await isRegenerateClickable(regenerateButton);
   test.skip(!clickable, '이전 sitemap 재생성이 queued 로 남아 있다 — 큐 워커 미가동 환경');
+  const regenerated = page.waitForResponse((r) => r.url().includes('/api/admin/seo/sitemap/regenerate'), { timeout: 20_000 });
   await regenerateButton.click();
-  await page.waitForResponse((r) => r.url().includes('/api/admin/seo/sitemap/regenerate'), { timeout: 20_000 });
+  const regenStatus = (await (await regenerated).json())?.data?.progress?.status;
 
-  const pollingMode = realtimeEnabled === false;
+  // 큐를 즉시 실행(sync)으로 쓰면 요청 안에서 생성이 끝나('completed') 폴링할 진행 상태가 없다
+  const pollingMode = realtimeEnabled === false && regenStatus !== 'completed';
 
   // 8초 관찰
   await page.waitForTimeout(8_000);
@@ -438,4 +454,115 @@ test('#481 - SEO 탭 콘텐츠 노출 시점에 sitemap 상태가 이미 채워�
   const text = (await statusBlock.innerText()).trim();
   expect(text).not.toContain('$t:');
   expect(text.length).toBeGreaterThan(0);
+});
+
+/**
+ * "지금 생성" 버튼과 그 안의 스피너 아이콘을 찾는다.
+ *
+ * @param page Playwright 페이지
+ * @returns 버튼·스피너 로케이터
+ */
+function regenerateControls(page: import('@playwright/test').Page) {
+  const button = page.locator('#sitemap_last_updated_block button').first();
+
+  return { button, spinner: button.locator('.fa-spinner') };
+}
+
+/**
+ * 재생성 요청을 붙잡아 두는 관문을 건다. 반환된 release 를 부르면 그때 응답이 나간다.
+ *
+ * @param page Playwright 페이지
+ * @param respond 붙잡은 요청을 놓아줄 때 수행할 처리 (실서버 continue 또는 스텁 fulfill)
+ * @returns 요청 도착 대기 프라미스와 놓아주기 함수
+ */
+async function holdRegenerate(
+  page: import('@playwright/test').Page,
+  respond: (route: import('@playwright/test').Route) => Promise<void>,
+): Promise<{ arrived: Promise<void>; release: () => void }> {
+  let release!: () => void;
+  let markArrived!: () => void;
+  const gate = new Promise<void>((r) => (release = r));
+  const arrived = new Promise<void>((r) => (markArrived = r));
+  await page.route('**/api/admin/seo/sitemap/regenerate', async (route) => {
+    markArrived();
+    await gate;
+    await respond(route);
+  });
+
+  return { arrived, release };
+}
+
+// @scenario trigger=admin, regen_mode=full, realtime=reverb_off
+// @effects regenerate_button_shows_spinner_while_requesting
+test('「지금 생성」은 요청 중 스피너·「생성 중…」으로 잠기고, 성공 응답 뒤 진행 상태대로 되돌아온다', async ({ page }) => {
+  const token = issueToken('core.settings.read', 'core.settings.update');
+  await authenticatePage(page, token);
+
+  await gotoSeoTab(page);
+  const { button, spinner } = regenerateControls(page);
+  const clickable = await isRegenerateClickable(button);
+  test.skip(!clickable, '이전 sitemap 재생성이 queued 로 남아 있다 — 큐 워커 미가동 환경');
+
+  await expect(button).toHaveText('지금 생성');
+  await expect(spinner).toHaveCount(0);
+
+  // 응답을 붙잡아 두고 진행 중 상태를 잰다 — 놓아주면 실서버로 그대로 보낸다
+  const { arrived, release } = await holdRegenerate(page, (route) => route.continue());
+  const response = page.waitForResponse((r) => r.url().includes('/api/admin/seo/sitemap/regenerate'), { timeout: 30_000 });
+  await button.click();
+  await arrived;
+
+  await expect(button).toBeDisabled();
+  await expect(button).toHaveText('생성 중…');
+  await expect(spinner).toHaveCount(1);
+
+  release();
+  const status = (await (await response).json())?.data?.progress?.status;
+
+  if (status === 'completed') {
+    // 즉시 실행 큐: 요청 안에서 끝났으므로 버튼이 바로 풀린다
+    await expect(button).toBeEnabled({ timeout: 15_000 });
+    await expect(button).toHaveText('지금 생성');
+    await expect(spinner).toHaveCount(0);
+  } else {
+    // 큐 워커 환경: 요청 플래그는 내려가도 진행 상태(queued·running·writing)가 버튼을 잡고 있다
+    expect(['queued', 'running', 'writing']).toContain(status);
+    await expect(button).toBeDisabled();
+    await expect(spinner).toHaveCount(1);
+  }
+});
+
+// @scenario trigger=admin, regen_mode=full, realtime=reverb_off
+// @effects regenerate_button_shows_spinner_while_requesting, regenerate_toast_uses_server_message
+test('「지금 생성」이 409 로 거절되면 스피너가 내려가고 서버 문구를 토스트로 보여 준다', async ({ page }) => {
+  const token = issueToken('core.settings.read', 'core.settings.update');
+  await authenticatePage(page, token);
+
+  await gotoSeoTab(page);
+  const { button, spinner } = regenerateControls(page);
+  const clickable = await isRegenerateClickable(button);
+  test.skip(!clickable, '이전 sitemap 재생성이 queued 로 남아 있다 — 큐 워커 미가동 환경');
+
+  // 잠금이 남은 상황은 실서버에서 안전하게 만들 수 없어 거절 응답만 스텁한다
+  const message = '다른 Sitemap 생성 작업이 대기 중이거나 이전 작업의 잠금이 남아 있습니다.';
+  const { arrived, release } = await holdRegenerate(page, (route) =>
+    route.fulfill({
+      status: 409,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: false, message }),
+    }),
+  );
+  await button.click();
+  await arrived;
+
+  await expect(button).toBeDisabled();
+  await expect(spinner).toHaveCount(1);
+
+  release();
+
+  // 실패 쪽에서도 플래그가 내려가야 다시 누를 수 있다
+  await expect(button).toBeEnabled({ timeout: 15_000 });
+  await expect(button).toHaveText('지금 생성');
+  await expect(spinner).toHaveCount(0);
+  await expect(page.getByText(message).first()).toBeVisible({ timeout: 10_000 });
 });

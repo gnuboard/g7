@@ -56,7 +56,8 @@
   },
   "tax_status": {
     "taxable": "과세",
-    "tax_free": "면세"
+    "tax_free": "면세",
+    "zero_rated": "영세"
   },
   "target_screen": {
     "products": "상품",

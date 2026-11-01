@@ -91,6 +91,7 @@ class Order extends Model
         'total_amount',
         'total_tax_amount',
         'total_vat_amount',
+        'total_zero_rated_amount',
         'total_tax_free_amount',
         'total_points_used_amount',
         'is_mileage_deducted',
@@ -132,6 +133,7 @@ class Order extends Model
         'mc_total_deposit_used_amount',
         'mc_total_tax_amount',
         'mc_total_tax_free_amount',
+        'mc_total_zero_rated_amount',
         'mc_total_amount',
         'mc_total_paid_amount',
         'mc_total_cash_equivalent_amount',
@@ -162,6 +164,7 @@ class Order extends Model
         'total_amount' => 'decimal:2',
         'total_tax_amount' => 'decimal:2',
         'total_vat_amount' => 'decimal:2',
+        'total_zero_rated_amount' => 'decimal:2',
         'total_tax_free_amount' => 'decimal:2',
         'total_points_used_amount' => 'decimal:2',
         'is_mileage_deducted' => 'boolean',
@@ -204,10 +207,38 @@ class Order extends Model
         'mc_total_deposit_used_amount' => 'array',
         'mc_total_tax_amount' => 'array',
         'mc_total_tax_free_amount' => 'array',
+        'mc_total_zero_rated_amount' => 'array',
         'mc_total_amount' => 'array',
         'mc_total_paid_amount' => 'array',
         'mc_total_cash_equivalent_amount' => 'array',
     ];
+
+    /**
+     * 결제사(PG)·현금영수증에 「면세 금액」으로 넘길 기준 통화 금액을 반환합니다.
+     *
+     * 영세(세율 0%)는 쇼핑몰 장부에서는 과세표준에 들지만, 결제사에는 부가세가 없는 금액으로
+     * 넘겨야 결제사가 부가세를 매기지 않는다 — 면세와 합산해 넘긴다.
+     * 결제 플러그인은 장부 컬럼을 직접 조합하지 말고 이 메서드를 쓴다.
+     *
+     * @return float 면세 금액 + 영세 금액
+     */
+    public function pgTaxFreeAmount(): float
+    {
+        return (float) ($this->total_tax_free_amount ?? 0) + (float) ($this->total_zero_rated_amount ?? 0);
+    }
+
+    /**
+     * 결제사(PG)·현금영수증에 「과세 금액(부가세 포함)」으로 넘길 기준 통화 금액을 반환합니다.
+     *
+     * 과세표준(`total_tax_amount`)에서 영세 몫을 뺀 값이다 — 부가세(`total_vat_amount`)는
+     * 이 금액에만 들어 있다. `pgTaxFreeAmount() + pgTaxableAmount()` 는 마일리지 차감 전 합계와 같다.
+     *
+     * @return float 과세 금액(영세 제외, 부가세 포함)
+     */
+    public function pgTaxableAmount(): float
+    {
+        return max(0.0, (float) ($this->total_tax_amount ?? 0) - (float) ($this->total_zero_rated_amount ?? 0));
+    }
 
     /**
      * 회원 관계

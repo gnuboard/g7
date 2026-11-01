@@ -6,6 +6,8 @@ use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
@@ -21,6 +23,7 @@ use App\Extension\Traits\ResolvesLanguageFragments;
 use App\Models\Template;
 use App\Services\Extension\ExtensionIconResolver;
 use App\Support\CustomAssets;
+use App\Support\ExtensionDependencies;
 use App\Support\Filesystem\PathGuard;
 use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LocaleTag;
@@ -44,6 +47,13 @@ class TemplateService
     private bool $routeMergeDegraded = false;
 
     /**
+     * 라우트 병합 한 번 안의 확장 상태 조회 결과 (`{type}:{identifier}` → 상태 값)
+     *
+     * @var array<string, string|null>
+     */
+    private array $transitionStatusCache = [];
+
+    /**
      * 템플릿 서비스를 생성합니다.
      *
      * @param  TemplateRepositoryInterface  $templateRepository  템플릿 저장소
@@ -51,13 +61,17 @@ class TemplateService
      * @param  ModuleManagerInterface  $moduleManager  모듈 매니저 (의존성 판정용)
      * @param  PluginManagerInterface  $pluginManager  플러그인 매니저 (의존성 판정용)
      * @param  LayoutVersionRepositoryInterface  $layoutVersionRepository  레이아웃 버전 저장소
+     * @param  ModuleRepositoryInterface|null  $moduleRepository  모듈 저장소 (routes `requires` 의 진행 중 상태 판정 — 없으면 컨테이너)
+     * @param  PluginRepositoryInterface|null  $pluginRepository  플러그인 저장소 (같은 용도)
      */
     public function __construct(
         private TemplateRepositoryInterface $templateRepository,
         private TemplateManagerInterface $templateManager,
         private ModuleManagerInterface $moduleManager,
         private PluginManagerInterface $pluginManager,
-        private LayoutVersionRepositoryInterface $layoutVersionRepository
+        private LayoutVersionRepositoryInterface $layoutVersionRepository,
+        private ?ModuleRepositoryInterface $moduleRepository = null,
+        private ?PluginRepositoryInterface $pluginRepository = null,
     ) {
         // TemplateManager 초기화 — 아직 로드되지 않았을 때만 스캔한다.
         // 무조건 loadTemplates() 를 부르면 공유 싱글톤의 템플릿 맵을 리셋한 뒤 디렉토리를
@@ -1177,9 +1191,12 @@ class TemplateService
      * @param  string  $identifier  템플릿 식별자
      * @param  bool  $preserveEmptyMaps  routes JSON 의 빈 맵 `{}` 를 보존할지 — 그대로 응답하는 경로만 true (#758).
      *                                   SEO·사이트맵처럼 값을 배열로 읽는 PHP 소비자는 기본값(false)을 쓴다
+     * @param  bool  $applyRequires  라우트의 `requires`(필요한 활성 모듈·플러그인)가 채워지지 않은 라우트를 뺄지.
+     *                               공개 응답·SEO·사이트맵·정적 사본은 기본값(true), 레이아웃 존재 점검처럼
+     *                               선언 전체를 봐야 하는 경로만 false
      * @return array{success: bool, data: array|null, error: string|null}
      */
-    public function getRoutesDataWithModules(string $identifier, bool $preserveEmptyMaps = false): array
+    public function getRoutesDataWithModules(string $identifier, bool $preserveEmptyMaps = false, bool $applyRequires = true): array
     {
         $this->routeMergeDegraded = false;
 
@@ -1258,6 +1275,12 @@ class TemplateService
             $pluginRoutes
         );
 
+        // 9.5. `requires` — 필요한 모듈·플러그인이 모두 켜져 있지 않은 라우트는 내지 않는다.
+        //      공개 응답·SEO·사이트맵·정적 사본이 같은 답을 쓰도록 여기 한 곳에서 거른다.
+        if ($applyRequires) {
+            $mergedRoutes = $this->filterRoutesByRequires($mergedRoutes, $identifier);
+        }
+
         // 10. 시스템 라우트 주입 필터 — 코어/모듈/플러그인이 전역 라우트를 주입할 수 있는 확장점
         $mergedRoutes = HookManager::applyFilters(
             'core.routes.filter_merged',
@@ -1289,6 +1312,186 @@ class TemplateService
             'error' => null,
             'degraded' => $this->routeMergeDegraded,
         ];
+    }
+
+    /**
+     * 라우트 `requires` 를 채우지 못한 라우트를 뺍니다.
+     *
+     * `requires` 는 `{"modules": ["id", …], "plugins": ["id", …]}` 이고, 적힌 확장이 **모두** 활성일 때만
+     * 라우트를 남긴다. 활성 판정은 모듈 라우트 병합과 같은 출처(ModuleManager::getActiveModules /
+     * PluginManager::getActivePlugins)다.
+     *
+     * 모르는 유형·형식 오류는 그 조건을 「채워짐」으로 보고 라우트를 남긴 뒤 경고를 남긴다(fail-open) —
+     * 오타 하나로 라우트가 조용히 사라지면 원인을 찾기 어렵다. `layout:check-installed` 가 같은 판정
+     * ({@see describeRouteRequiresProblems()})으로 표를 낸다.
+     *
+     * @param  array<int|string, mixed>  $routes  병합된 라우트 목록
+     * @param  string  $templateIdentifier  템플릿 식별자 (경고 로그용)
+     * @return array<int, mixed> 걸러낸 라우트 목록 (순서 유지)
+     */
+    private function filterRoutesByRequires(array $routes, string $templateIdentifier): array
+    {
+        $active = null;
+        $this->transitionStatusCache = [];
+
+        $kept = [];
+        foreach ($routes as $route) {
+            if (! is_array($route) || ! array_key_exists('requires', $route)) {
+                $kept[] = $route;
+
+                continue;
+            }
+
+            $active ??= [
+                'modules' => array_map(fn ($module) => $module->getIdentifier(), array_values($this->moduleManager->getActiveModules())),
+                'plugins' => array_map(fn ($plugin) => $plugin->getIdentifier(), array_values($this->pluginManager->getActivePlugins())),
+            ];
+
+            if ($this->routeRequiresMet($route, $active, $templateIdentifier)) {
+                $kept[] = $route;
+            }
+        }
+
+        return $kept;
+    }
+
+    /**
+     * 라우트 하나의 `requires` 형식 오류를 돌려줍니다 (없으면 빈 배열).
+     *
+     * 판정 규칙은 공개 라우트 필터와 같다 — 오류인 조건은 필터가 「채워짐」으로 본다.
+     *
+     * @param  array<string, mixed>  $route  라우트 정의
+     * @return array<int, array{code: string, type: string|null}> 오류 목록 — code: `not_object`(객체가 아님)·
+     *                                                            `unknown_type`(modules·plugins 외 유형)·`not_list`(식별자 배열이 아님)·
+     *                                                            `non_string_id`(문자열이 아닌 식별자)
+     */
+    public function describeRouteRequiresProblems(array $route): array
+    {
+        return $this->parseRouteRequires($route['requires'] ?? null)['problems'];
+    }
+
+    /**
+     * `requires` 값을 유효한 요구 조건과 형식 오류로 나눕니다.
+     *
+     * @param  mixed  $requires  라우트의 `requires` 값
+     * @return array{requirements: array<string, array<int, string>>, problems: array<int, array{code: string, type: string|null}>}
+     *                                                                                                                              유형별 식별자와 오류 목록
+     */
+    private function parseRouteRequires(mixed $requires): array
+    {
+        $requirements = [];
+        $problems = [];
+
+        // 빈 맵 `{}`(preserveEmptyMaps 표식)·null·빈 배열은 조건 없음
+        if ($requires === null || EmptyMap::is($requires) || $requires === []) {
+            return ['requirements' => [], 'problems' => []];
+        }
+
+        if (! is_array($requires) || array_is_list($requires)) {
+            return ['requirements' => [], 'problems' => [['code' => 'not_object', 'type' => null]]];
+        }
+
+        foreach ($requires as $type => $identifiers) {
+            $type = (string) $type;
+
+            if (! in_array($type, ['modules', 'plugins'], true)) {
+                $problems[] = ['code' => 'unknown_type', 'type' => $type];
+
+                continue;
+            }
+
+            if (EmptyMap::is($identifiers) || $identifiers === []) {
+                continue;
+            }
+
+            if (! is_array($identifiers) || ! array_is_list($identifiers)) {
+                $problems[] = ['code' => 'not_list', 'type' => $type];
+
+                continue;
+            }
+
+            foreach ($identifiers as $identifier) {
+                if (! is_string($identifier) || $identifier === '') {
+                    $problems[] = ['code' => 'non_string_id', 'type' => $type];
+
+                    continue;
+                }
+
+                $requirements[$type][] = $identifier;
+            }
+        }
+
+        return ['requirements' => $requirements, 'problems' => $problems];
+    }
+
+    /**
+     * 라우트 하나의 `requires` 가 채워졌는지 판정합니다.
+     *
+     * @param  array<string, mixed>  $route  라우트 정의 (`requires` 키 포함)
+     * @param  array{modules: array<int, string>, plugins: array<int, string>}  $active  활성 식별자
+     * @param  string  $templateIdentifier  템플릿 식별자 (경고 로그용)
+     * @return bool 남길 라우트면 true
+     */
+    private function routeRequiresMet(array $route, array $active, string $templateIdentifier): bool
+    {
+        ['requirements' => $requirements, 'problems' => $problems] = $this->parseRouteRequires($route['requires']);
+
+        foreach ($problems as $problem) {
+            Log::warning('routes.json requires 형식 오류 — 조건을 무시하고 라우트를 남깁니다', [
+                'template' => $templateIdentifier,
+                'path' => $route['path'] ?? null,
+                'source' => $route['source'] ?? null,
+                'reason' => $problem['code'],
+                'type' => $problem['type'],
+            ]);
+        }
+
+        foreach ($requirements as $type => $identifiers) {
+            foreach ($identifiers as $identifier) {
+                if (! in_array($identifier, $active[$type], true)) {
+                    // 업데이트·설치 도중(활성도 비활성도 아닌 상태)이라 빠진 것이면 이 결과는 잠깐의 열화다 —
+                    // 호출자가 캐시하지 않게 표시한다. 표시 없이 캐시되면 업데이트가 실패로 끝나 캐시 버전이
+                    // 오르지 않은 경우 그 라우트가 캐시 수명 동안 404 로 남는다.
+                    if ($this->isExtensionInTransition($type, $identifier)) {
+                        $this->routeMergeDegraded = true;
+                    }
+
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 확장이 설치·업데이트·제거 도중인지 판정합니다 (한 번의 라우트 병합 안에서 확장마다 한 번만 조회).
+     *
+     * @param  string  $type  `modules` | `plugins`
+     * @param  string  $identifier  확장 식별자
+     * @return bool 진행 중이면 true
+     */
+    private function isExtensionInTransition(string $type, string $identifier): bool
+    {
+        $key = $type.':'.$identifier;
+
+        if (! array_key_exists($key, $this->transitionStatusCache)) {
+            try {
+                $repository = $type === 'modules'
+                    ? ($this->moduleRepository ?? app(ModuleRepositoryInterface::class))
+                    : ($this->pluginRepository ?? app(PluginRepositoryInterface::class));
+                $status = $repository->findByIdentifier($identifier)?->status;
+                $this->transitionStatusCache[$key] = $status instanceof ExtensionStatus ? $status->value : $status;
+            } catch (\Throwable) {
+                $this->transitionStatusCache[$key] = null;
+            }
+        }
+
+        return in_array($this->transitionStatusCache[$key], [
+            ExtensionStatus::Installing->value,
+            ExtensionStatus::Updating->value,
+            ExtensionStatus::Uninstalling->value,
+        ], true);
     }
 
     /**
@@ -1724,7 +1927,8 @@ class TemplateService
      */
     public function getLayoutRoutePathMap(string $identifier): array
     {
-        $routesData = $this->getRoutesDataWithModules($identifier);
+        // 편집기용 — 꺼진 모듈이 요구하는 라우트(`requires`)의 화면도 편집할 수 있어야 하므로 거르지 않는다
+        $routesData = $this->getRoutesDataWithModules($identifier, applyRequires: false);
         $routes = $routesData['data']['routes'] ?? [];
 
         $map = [];
@@ -2339,20 +2543,18 @@ class TemplateService
         $installedTemplates = $this->templateManager->getInstalledTemplatesWithDetails();
 
         foreach ($installedTemplates as $template) {
-            $dependencies = $template['dependencies'] ?? [];
+            // 모듈 의존성 확인 — 목록형(`["id"]`)도 받는다(제약 '*'). 키로 바로 읽으면 목록형의 키가 0·1 이라 못 찾았다
+            $required = ExtensionDependencies::constraints($template['dependencies'] ?? [])['modules'];
 
-            // 모듈 의존성 확인
-            if (isset($dependencies['modules']) && is_array($dependencies['modules'])) {
-                if (array_key_exists($moduleIdentifier, $dependencies['modules'])) {
-                    $dependentTemplates[] = [
-                        'identifier' => $template['identifier'],
-                        'name' => $template['name'],
-                        'version' => $template['version'],
-                        'type' => $template['type'],
-                        'status' => $template['status'],
-                        'required_version' => $dependencies['modules'][$moduleIdentifier],
-                    ];
-                }
+            if (array_key_exists($moduleIdentifier, $required)) {
+                $dependentTemplates[] = [
+                    'identifier' => $template['identifier'],
+                    'name' => $template['name'],
+                    'version' => $template['version'],
+                    'type' => $template['type'],
+                    'status' => $template['status'],
+                    'required_version' => $required[$moduleIdentifier],
+                ];
             }
         }
 
@@ -2375,20 +2577,18 @@ class TemplateService
         $installedTemplates = $this->templateManager->getInstalledTemplatesWithDetails();
 
         foreach ($installedTemplates as $template) {
-            $dependencies = $template['dependencies'] ?? [];
+            // 플러그인 의존성 확인 — 목록형(`["id"]`)도 받는다(제약 '*'). 키로 바로 읽으면 목록형의 키가 0·1 이라 못 찾았다
+            $required = ExtensionDependencies::constraints($template['dependencies'] ?? [])['plugins'];
 
-            // 플러그인 의존성 확인
-            if (isset($dependencies['plugins']) && is_array($dependencies['plugins'])) {
-                if (array_key_exists($pluginIdentifier, $dependencies['plugins'])) {
-                    $dependentTemplates[] = [
-                        'identifier' => $template['identifier'],
-                        'name' => $template['name'],
-                        'version' => $template['version'],
-                        'type' => $template['type'],
-                        'status' => $template['status'],
-                        'required_version' => $dependencies['plugins'][$pluginIdentifier],
-                    ];
-                }
+            if (array_key_exists($pluginIdentifier, $required)) {
+                $dependentTemplates[] = [
+                    'identifier' => $template['identifier'],
+                    'name' => $template['name'],
+                    'version' => $template['version'],
+                    'type' => $template['type'],
+                    'status' => $template['status'],
+                    'required_version' => $required[$pluginIdentifier],
+                ];
             }
         }
 

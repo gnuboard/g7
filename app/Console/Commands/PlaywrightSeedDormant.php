@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -36,6 +37,8 @@ use Illuminate\Support\Str;
  */
 class PlaywrightSeedDormant extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 이름 및 시그니처
      *
@@ -46,13 +49,6 @@ class PlaywrightSeedDormant extends Command
         {--password= : 생성 계정의 비밀번호 (기본값 Passw0rd!dorm)}
         {--count=1 : 같은 단계 계정을 몇 개 만들지 (대상 목록 창의 무한 스크롤 실측용, 최대 200)}
         {--purge-users : 이 커맨드가 만든 테스트 계정을 전부 제거 (실측 종료 직후 호출)}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = 'Playwright·Chrome MCP 실측용 휴면 계정 픽스처를 만듭니다.';
 
     /** 테스트 전용 계정 이메일 접두사 — 정리 대상 판정에도 쓴다 */
     private const TEST_EMAIL_PREFIX = 'playwright_dormant_';

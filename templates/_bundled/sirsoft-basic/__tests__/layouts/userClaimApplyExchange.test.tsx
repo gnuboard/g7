@@ -336,16 +336,18 @@ describe('_apply_items.json — 신청 상품 (D29)', () => {
 describe('_apply_reason.json — 사유', () => {
   /** @effects claim_apply_reason_catalog_is_type_scoped */
   it('사유 목록은 유형별 카탈로그에서 온다', () => {
-    const option = flatten(reason).find((n) => n.name === 'Option' && n.iteration);
-    expect(option.iteration.source).toBe(
-      '{{((_local.claimableSnapshot ?? claimable?.data)?.reasons ?? {})[_local.claimType] ?? []}}'
+    // 목록형 드롭다운 — 사유는 Option 자식이 아니라 options 식으로 온다
+    const select = flatten(reason).find((n) => n.name === 'Select');
+    expect(String(select.props.options)).toContain(
+      '(((_local.claimableSnapshot ?? claimable?.data)?.reasons ?? {})[_local.claimType] ?? [])'
     );
   });
 
   /** @effects claim_apply_reason_label_uses_localized_name */
   it('사유 라벨은 localized_name 이다 (name 은 다국어 맵이라 객체가 찍힌다)', () => {
-    const option = flatten(reason).find((n) => n.name === 'Option' && n.iteration);
-    expect(option.text).toBe('{{claimReason.localized_name}}');
+    const select = flatten(reason).find((n) => n.name === 'Select');
+    expect(String(select.props.options)).toContain('label: reason?.localized_name');
+    expect(String(select.props.options)).not.toMatch(/label: reason\?\.name\b/);
   });
 
   /** @effects claim_image_limits_come_from_operator_settings */

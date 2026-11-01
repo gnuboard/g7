@@ -303,74 +303,42 @@
                     "props": {
                         "aria-label": "$t:mypage.orders.status_filter_label",
                         "value": "{{_local.ordersStatus || ''}}",
-                        "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": ""
+                        "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                        "options": [
+                            {
+                                "value": "",
+                                "label": "$t:mypage.orders.filter.all"
                             },
-                            "text": "$t:mypage.orders.filter.all"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "pending_payment"
+                            {
+                                "value": "pending_payment",
+                                "label": "$t:mypage.orders.filter.pending"
                             },
-                            "text": "$t:mypage.orders.filter.pending"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "payment_complete"
+                            {
+                                "value": "payment_complete",
+                                "label": "$t:mypage.orders.filter.paid"
                             },
-                            "text": "$t:mypage.orders.filter.paid"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "preparing"
+                            {
+                                "value": "preparing",
+                                "label": "$t:mypage.orders.filter.preparing"
                             },
-                            "text": "$t:mypage.orders.filter.preparing"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "shipping"
+                            {
+                                "value": "shipping",
+                                "label": "$t:mypage.orders.filter.shipped"
                             },
-                            "text": "$t:mypage.orders.filter.shipped"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "delivered"
+                            {
+                                "value": "delivered",
+                                "label": "$t:mypage.orders.filter.delivered"
                             },
-                            "text": "$t:mypage.orders.filter.delivered"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "confirmed"
+                            {
+                                "value": "confirmed",
+                                "label": "$t:mypage.orders.filter.confirmed"
                             },
-                            "text": "$t:mypage.orders.filter.confirmed"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "cancelled"
-                            },
-                            "text": "$t:mypage.orders.filter.cancelled"
-                        }
-                    ]
+                            {
+                                "value": "cancelled",
+                                "label": "$t:mypage.orders.filter.cancelled"
+                            }
+                        ]
+                    }
                 }
             ]
         },

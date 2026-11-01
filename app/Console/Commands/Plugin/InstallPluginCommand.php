@@ -2,9 +2,12 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Concerns\RunsCascadeInstall;
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RebuildsSearchIndex;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
@@ -19,8 +22,11 @@ use Illuminate\Support\Facades\Validator;
 class InstallPluginCommand extends Command
 {
     use HasProgressBar;
+    use LocalizesDescription;
     use RebuildsSearchIndex;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
+    use RunsCascadeInstall;
     use SelectsLayoutInstallSource;
 
     /**
@@ -31,12 +37,9 @@ class InstallPluginCommand extends Command
         {--vendor-mode=auto : Vendor 설치 모드 (auto|composer|bundled)}
         {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}
         {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}
-        {--rebuild-search-index : 완료 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '플러그인을 설치합니다';
+        {--rebuild-search-index : 완료 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}
+        {--with-dependencies : 필요한 의존 확장(의존의 의존 포함)을 같은 vendor 방식으로 함께 설치·활성화}
+        {--with-language-packs=none : 함께 설치할 번들 언어팩 (none|all|식별자,…) — 관리자 설치 창의 후보와 같음}';
 
     /**
      * 플러그인 관리자 및 리포지토리
@@ -97,6 +100,12 @@ class InstallPluginCommand extends Command
 
             // 플러그인 설치
             $vendorMode = VendorMode::fromStringOrAuto((string) $this->option('vendor-mode'));
+
+            // 의존 확장 확인 — --with-dependencies 면 같은 vendor 방식으로 함께 설치·활성화 (관리자 설치 창과 같은 서비스)
+            if (! $this->runCascadeDependencies('plugin', $identifier, $vendorMode)) {
+                return Command::FAILURE;
+            }
+
             $onProgress = $this->createProgressCallback(PluginManager::INSTALL_STEPS);
             try {
                 $result = $this->pluginManager->installPlugin($identifier, $onProgress, $vendorMode, $force);
@@ -122,6 +131,7 @@ class InstallPluginCommand extends Command
 
                 // 성공 메시지
                 $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.install.success', ['plugin' => $identifier]));
+                $this->reportIntegrationNotices('plugin', $identifier);
                 $this->info('   - '.__('plugins.commands.install.vendor', ['vendor' => $plugin->vendor]));
                 $this->info('   - '.__('plugins.commands.install.version', ['version' => $plugin->version]));
                 $this->info('   - '.trans_choice('plugins.commands.install.roles_created', $rolesCount));
@@ -129,15 +139,21 @@ class InstallPluginCommand extends Command
 
                 Log::info(__('plugins.commands.install.success', ['plugin' => $identifier]));
 
+                // 동반 번들 언어팩 (--with-language-packs) — 하나가 실패해도 나머지는 계속 설치하고, 실패가 있으면 종료 코드로 알린다(본 확장 설치는 유지)
+                $languagePacksInstalled = $this->runCascadeLanguagePacks();
+
                 // 검색 인덱스 재생성은 운영자가 선택했을 때만 수행한다 (인덱스 잠금·재색인 비용)
                 $this->handleSearchIndexRebuild();
 
-                return Command::SUCCESS;
+                return $languagePacksInstalled ? Command::SUCCESS : Command::FAILURE;
             }
+
+            $this->reportKeptCascadeDependencies();
 
             return Command::FAILURE;
         } catch (\Exception $e) {
             $this->error('❌ '.$e->getMessage());
+            $this->reportKeptCascadeDependencies();
             Log::error('플러그인 설치 실패', [
                 'plugin' => $identifier,
                 'error' => $e->getMessage(),

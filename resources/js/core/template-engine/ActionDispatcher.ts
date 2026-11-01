@@ -1,4 +1,4 @@
-// e2e:allow 엔진 변경(engine-v1.85.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
+// e2e:allow 엔진 변경(engine-v1.86.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
 /**
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
@@ -204,7 +204,7 @@ const PREVIEW_SUPPRESSED_LAYOUT_FEATURES: ReadonlySet<string> = new Set([
 ]);
 
 // ============================================================================
-// 엔진 핸들러 이름 — 소유권 경고의 기준 (engine-v1.86.0)
+// 엔진 핸들러 이름 — 소유권 경고의 기준 (engine-v1.87.0)
 // ============================================================================
 
 /**
@@ -214,7 +214,7 @@ const PREVIEW_SUPPRESSED_LAYOUT_FEATURES: ReadonlySet<string> = new Set([
  */
 export const ENGINE_HANDLER_SOURCE = 'engine';
 
-/** `registerDefaultHandlers` 의 모든 등록에 넘기는 옵션 — 등록자를 엔진으로 표시한다 (engine-v1.86.0) */
+/** `registerDefaultHandlers` 의 모든 등록에 넘기는 옵션 — 등록자를 엔진으로 표시한다 (engine-v1.87.0) */
 const ENGINE_DEFAULT_HANDLER_OPTIONS = { category: 'built-in', source: ENGINE_HANDLER_SOURCE } as const;
 
 /**
@@ -349,7 +349,7 @@ export type ActionType =
   | 'loginTwoFactorResend' // 2단계 인증 코드 재발송
   | 'loginPasswordChange' // 로그인 비밀번호 변경 단계 완료 (engine-v1.77.0)
   | 'loginPasswordChangePostpone' // 로그인 비밀번호 변경 단계 연기 (engine-v1.77.0)
-  | 'loginHandoff' // 로그인 인계 코드 교환 — 외부 인증 로그인 (engine-v1.84.0)
+  | 'loginHandoff' // 로그인 인계 코드 교환 — 외부 인증 로그인 (engine-v1.85.0)
   | 'logout' // 로그아웃
   | 'setState' // 상태 변경
   | 'setError' // 에러 상태 설정
@@ -847,13 +847,13 @@ export class ActionDispatcher {
   private customHandlers: Map<string, ActionHandler> = new Map();
 
   /**
-   * 핸들러 이름 → 등록자(`registerHandler` 의 `source`, 없으면 `'unknown'`) (engine-v1.86.0)
+   * 핸들러 이름 → 등록자(`registerHandler` 의 `source`, 없으면 `'unknown'`) (engine-v1.87.0)
    *
    * 다른 주인의 이름을 덮는 등록을 경고하는 기준이다.
    */
   private handlerSources: Map<string, string> = new Map();
 
-  /** 이미 낸 소유권 경고의 (이름, 등록자) 키 — 같은 쌍은 1회만 경고한다 (engine-v1.86.0) */
+  /** 이미 낸 소유권 경고의 (이름, 등록자) 키 — 같은 쌍은 1회만 경고한다 (engine-v1.87.0) */
   private warnedHandlerPairs: Set<string> = new Set();
 
   /** 기본 컨텍스트 */
@@ -2410,7 +2410,7 @@ export class ActionDispatcher {
     const devTools = getDevTools();
     if (!devTools?.isEnabled()) return;
 
-    // 기본 등록과 같은 한 목록(ENGINE_MAP_HANDLER_META)에서 읽는다 — 종전 손 목록은 5종이 빠져 있었다 (engine-v1.86.0)
+    // 기본 등록과 같은 한 목록(ENGINE_MAP_HANDLER_META)에서 읽는다 — 종전 손 목록은 5종이 빠져 있었다 (engine-v1.87.0)
     for (const handler of ENGINE_MAP_HANDLER_META) {
       devTools.trackHandlerRegistration(handler.name, 'built-in', handler.description, ENGINE_HANDLER_SOURCE);
     }
@@ -2552,7 +2552,7 @@ export class ActionDispatcher {
           linkHref,
         };
 
-        // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.85.0, resolveConfirmMessage)
+        // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.86.0, resolveConfirmMessage)
         if (action.confirm) {
           const message = this.resolveConfirmMessage(action.confirm, context.data);
 
@@ -4660,7 +4660,7 @@ export class ActionDispatcher {
    * 서버가 2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리하므로, 반환 모양도 `login` 액션과
    * 같다 — 로그인 화면은 같은 `onSuccess` 분기(2단계 인증 블록·비밀번호 변경 블록·휴면 해제 안내)를 그대로 쓴다.
    *
-   * @param target 인증 타입 (admin 또는 user — admin 은 관리자 인계 경로로 교환한다, engine-v1.85.0)
+   * @param target 인증 타입 (admin 또는 user — admin 은 관리자 인계 경로로 교환한다, engine-v1.86.0)
    * @param params 요청 파라미터 (body에 code 포함)
    * @param context 액션 컨텍스트
    * @since engine-v1.83.0
@@ -4680,7 +4680,7 @@ export class ActionDispatcher {
 
     const authType = this.resolveAuthType(target);
     // ApiClient 는 baseURL 이 '/api' 이므로 globalHeaders 패턴 매칭용 경로에 '/api' 를 붙인다 — `login` 과 같은
-    // `/api/auth/*` 패턴의 헤더(장바구니 키 등)가 그대로 실린다. 관리자 인계는 관리자 경로로 교환한다(engine-v1.85.0).
+    // `/api/auth/*` 패턴의 헤더(장바구니 키 등)가 그대로 실린다. 관리자 인계는 관리자 경로로 교환한다(engine-v1.86.0).
     const endpoint = authType === 'admin'
       ? '/api/auth/admin/login/handoff'
       : '/api/auth/login/handoff';
@@ -8620,7 +8620,7 @@ export class ActionDispatcher {
       },
     };
 
-    // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.85.0, resolveConfirmMessage)
+    // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.86.0, resolveConfirmMessage)
     if (action.confirm) {
       const message = this.resolveConfirmMessage(action.confirm, mergedContext.data);
 
@@ -8663,7 +8663,7 @@ export class ActionDispatcher {
   }
 
   /**
-   * 동작의 `confirm` 문구를 풀어 번역한 결과를 반환합니다 (engine-v1.85.0).
+   * 동작의 `confirm` 문구를 풀어 번역한 결과를 반환합니다 (engine-v1.86.0).
    *
    * 풀린 문구가 비었으면(빈 문자열·공백 — 문자열 보간이 null·undefined 를 빈 문자열로 푼다) null 을 돌려 확인창을 띄우지
    * 않는다 — 조건에 따라 묻는 식(`{{hasToken ? '$t:…' : ''}}`)이 묻지 않을 때 빈 확인창이 떴다(종전에는 식 원문의 유무로 판정).
@@ -8686,7 +8686,7 @@ export class ActionDispatcher {
    * 커스텀 액션 핸들러를 등록합니다.
    *
    * 같은 이름이면 마지막 등록이 이긴다(종전 동작 그대로). 다만 다른 주인의 이름을 덮는 경우는
-   * `[G7]` 접두 `console.warn` 으로 드러낸다 — 디버그 모드와 무관하게, (이름, 등록자) 쌍마다 1회 (engine-v1.86.0, D3·D4):
+   * `[G7]` 접두 `console.warn` 으로 드러낸다 — 디버그 모드와 무관하게, (이름, 등록자) 쌍마다 1회 (engine-v1.87.0, D3·D4):
    *
    * - switch 가 직접 처리하는 이름(`ENGINE_SWITCH_HANDLERS`) — 등록해도 호출되지 않는다
    * - 엔진 기본 핸들러(`ENGINE_MAP_HANDLERS`)를 엔진이 아닌 쪽이 덮음
@@ -8729,7 +8729,7 @@ export class ActionDispatcher {
   /**
    * 커스텀 액션 핸들러를 제거합니다.
    *
-   * 엔진 기본 핸들러를 엔진이 아닌 쪽이 지우면 `[G7]` 경고를 낸다. 해제 동작 자체는 그대로다 (engine-v1.86.0).
+   * 엔진 기본 핸들러를 엔진이 아닌 쪽이 지우면 `[G7]` 경고를 낸다. 해제 동작 자체는 그대로다 (engine-v1.87.0).
    * switch 가 처리하는 이름은 Map 을 지워도 엔진 동작이 바뀌지 않으므로 경고 대상이 아니다.
    *
    * @param name 핸들러 이름
@@ -8768,7 +8768,7 @@ export class ActionDispatcher {
   }
 
   /**
-   * 핸들러 이름 소유권 경고를 판정해 냅니다 (engine-v1.86.0).
+   * 핸들러 이름 소유권 경고를 판정해 냅니다 (engine-v1.87.0).
    *
    * 여러 사유가 겹치면 한 건으로 묶는다 — (이름, 등록자) 쌍마다 1회.
    *

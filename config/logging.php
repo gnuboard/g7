@@ -160,6 +160,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // 코어 CSP 위반 보고(#158) — 관리자 환경설정 > 보안의 CSP 모드가 '점검만'·'강제'일 때
+        // 브라우저가 `report-uri /api/csp-report` 로 보낸 위반을 한 줄씩 남긴다(IP 미기록, 쿼리스트링 제거).
+        'csp' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/csp.log'),
+            'level' => 'info',
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
         'activity' => [
             'driver' => 'custom',
             'via' => ActivityLogChannel::class,

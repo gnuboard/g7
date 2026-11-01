@@ -8,6 +8,8 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
+// @ts-ignore - DOMPurify 타입 정의 없음
+import DOMPurify from 'dompurify';
 import { Div } from '../basic/Div';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
@@ -116,9 +118,12 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   // 에디터 초기화 (실제 구현 시 TipTap/Quill 초기화)
   useEffect(() => {
-    // 초기값 설정 (dangerouslySetInnerHTML 대신 직접 설정)
+    // 초기값 설정 (dangerouslySetInnerHTML 대신 직접 설정). 정화 없이 넣으면 초기값의 <script>·on* 이
+    // 편집 영역에서 살아나는 XSS 싱크가 된다(#158 부수 결함) — HtmlContent 와 같은 DOMPurify 로 거른다.
     if (editorRef.current && !editorRef.current.innerHTML) {
-      editorRef.current.innerHTML = initialValue;
+      editorRef.current.innerHTML = DOMPurify.sanitize(initialValue ?? '', {
+        FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
+      });
     }
   }, [initialValue]);
 

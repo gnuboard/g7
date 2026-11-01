@@ -1,4 +1,4 @@
-feature: 로그인 화면 자동 이동 · 비상 진입로 (sirsoft-basic 1.3.0, 코어 7.2.0 B1⑤⑥)
+feature: 로그인 화면 자동 이동 · 비상 진입로 (sirsoft-basic 1.4.0, 코어 7.2.0 B1⑤⑥)
 
 description: |
   사이트가 회사 계정 로그인으로 바로 보내도록 정했으면(`_global.appConfig.auth.auto_redirect.user`) `auth/login` `<init>` 이
