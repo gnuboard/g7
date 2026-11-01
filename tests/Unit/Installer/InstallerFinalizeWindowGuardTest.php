@@ -123,9 +123,11 @@ class InstallerFinalizeWindowGuardTest extends TestCase
         $this->assertStringNotContainsString('Installer is disabled', $result['raw']);
         // Step 5 화면(완료 섹션 포함) + 화면 스크립트가 실린다 — waitForFinalTasks → finalize-env 경로
         $this->assertStringContainsString('id="completion-section"', $result['raw']);
-        $this->assertStringContainsString('window.CURRENT_STEP = 5;', $result['raw']);
+        // 단계·소유 잠금 값은 비실행 JSON 데이터 블록(#installer-data)으로 싣는다(#158 strict CSP) — installer-boot.js 가 전역에 옮긴다
+        $this->assertStringContainsString('"current_step":5,', $result['raw']);
+        $this->assertStringContainsString('/assets/js/installer-boot.js', $result['raw']);
         $this->assertStringContainsString('/assets/js/installer.js', $result['raw']);
-        $this->assertStringContainsString('window.INSTALLER_OWNERSHIP_LOCKED = false;', $result['raw']);
+        $this->assertStringContainsString('"ownership_locked":false,', $result['raw']);
         // 완료 뒤 재진입 경로와 같이 세션에 남은 설치 설정(비밀값 포함)은 정리한다
         $this->assertArrayNotHasKey('install_config', $result['session']);
         $this->assertStringNotContainsString('secret-pass', $result['raw']);

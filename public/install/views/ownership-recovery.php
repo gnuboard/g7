@@ -32,7 +32,7 @@ if (($lockedState['owner_kind'] ?? null) === 'cli') {
 
     <div id="recovery-result" class="alert hidden" role="alert"></div>
 
-    <form id="recovery-form" class="installer-form" onsubmit="return submitRecoveryToken(event)">
+    <form id="recovery-form" class="installer-form" data-action="submitRecoveryToken" data-event="submit">
         <div class="form-group form-group-full">
             <label class="form-label" for="recovery-token-input"><?= htmlspecialchars(lang('recovery_token_label')) ?></label>
             <input

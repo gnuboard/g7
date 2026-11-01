@@ -10,6 +10,15 @@ class TemplateExternalsTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 지원 타입·속성이 정규화된다.
+     *
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects template_external_attributes_normalized
+     *
+     * @return void 반환값 없음
+     */
     public function test_normalizes_supported_externals_and_attributes(): void
     {
         $externals = TemplateExternals::normalize([
@@ -58,6 +67,15 @@ class TemplateExternalsTest extends TestCase
         $this->assertTrue($scriptAttributes['defer']);
     }
 
+    /**
+     * 잘못된·구형 선언은 걸러진다.
+     *
+     * @scenario asset_class=vendored, outcome=failed
+     *
+     * @effects template_external_invalid_declarations_filtered
+     *
+     * @return void 반환값 없음
+     */
     public function test_filters_invalid_and_legacy_external_declarations(): void
     {
         $externals = TemplateExternals::normalize([
@@ -78,6 +96,15 @@ class TemplateExternalsTest extends TestCase
         ], $externals);
     }
 
+    /**
+     * 리소스 힌트는 타입·origin 단위로 중복 제거된다.
+     *
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects template_external_hints_deduplicated
+     *
+     * @return void 반환값 없음
+     */
     public function test_resource_hints_are_deduplicated_by_type_and_origin(): void
     {
         $externals = TemplateExternals::normalize([
@@ -112,6 +139,8 @@ class TemplateExternalsTest extends TestCase
      * @scenario asset_class=vendored, outcome=loaded
      *
      * @effects template_external_asset_field_resolves_to_asset_url, runtime_asset_served_same_origin
+     *
+     * @return void 반환값 없음
      */
     public function test_asset_field_resolves_to_same_origin_asset_url(): void
     {
@@ -132,6 +161,8 @@ class TemplateExternalsTest extends TestCase
      *
      *
      * @effects template_external_same_origin_ignores_preconnect_and_crossorigin
+     *
+     * @return void 반환값 없음
      */
     public function test_same_origin_item_drops_external_only_keys(): void
     {
@@ -155,6 +186,8 @@ class TemplateExternalsTest extends TestCase
      *
      *
      * @effects template_external_asset_field_resolves_to_asset_url
+     *
+     * @return void 반환값 없음
      */
     public function test_same_origin_path_url_is_accepted(): void
     {
@@ -174,6 +207,8 @@ class TemplateExternalsTest extends TestCase
      * @scenario asset_class=vendored, outcome=failed
      *
      * @effects template_external_invalid_url_is_logged_not_silently_dropped
+     *
+     * @return void 반환값 없음
      */
     public function test_authority_bypass_shapes_are_rejected(): void
     {
@@ -189,8 +224,9 @@ class TemplateExternalsTest extends TestCase
     /**
      * asset 경로가 확장 디렉토리를 벗어나면 거부한다.
      *
-     *
      * @effects template_external_invalid_url_is_logged_not_silently_dropped
+     *
+     * @return void 반환값 없음
      */
     public function test_asset_path_escape_is_rejected(): void
     {
@@ -208,7 +244,16 @@ class TemplateExternalsTest extends TestCase
      * 이 태그들은 서버가 HTML 에 직접 심으므로, 브라우저가 자산에 도달하지 못해도
      * 자바스크립트에는 아무 신호가 오지 않는다. 실패는 "아이콘이 0×0 으로 사라진 화면"
      * 으로만 나타나고 자체 서버 로그에도 흔적이 남지 않아 운영자가 원인을 특정할 수 없다.
-     * `onerror` 가 그 유일한 통로다.
+     * 태그의 error 이벤트가 그 유일한 통로다.
+     *
+     * strict CSP(`script-src 'self'`)에서도 신호가 살아 있도록 인라인 `onerror` 가 아니라
+     * 표식 속성(`data-g7-external`·`data-g7-external-label`)을 내고, 셸 캡처 리스너가 받는다(#158).
+     *
+     * @scenario asset_class=vendored, outcome=failed
+     *
+     * @effects template_external_failure_marker_not_inline
+     *
+     * @return void 반환값 없음
      */
     public function test_runtime_assets_carry_a_failure_signal(): void
     {
@@ -225,9 +270,9 @@ class TemplateExternalsTest extends TestCase
                 ? TemplateExternals::scriptAttributes($item)
                 : TemplateExternals::linkAttributes($item);
 
-            $this->assertArrayHasKey('onerror', $attributes, $item['id'].' 에 실패 신호가 있어야 한다');
-            $this->assertStringContainsString('__g7ExternalAssetFailed', $attributes['onerror']);
-            $this->assertStringContainsString("'".$item['id']."'", $attributes['onerror']);
+            $this->assertArrayNotHasKey('onerror', $attributes, $item['id'].' 에 인라인 핸들러가 남아 있다 — strict CSP 에서 실행되지 않는다');
+            $this->assertSame('1', $attributes['data-g7-external'] ?? null, $item['id'].' 에 실패 신호 표식이 있어야 한다');
+            $this->assertSame($item['id'], $attributes['data-g7-external-label'] ?? null);
         }
     }
 
@@ -236,6 +281,12 @@ class TemplateExternalsTest extends TestCase
      *
      * 힌트는 실패해도 화면 기능이 사라지지 않는다. 여기에까지 배너를 띄우면 안내가
      * 잡음이 되어 정작 조작 불능을 만드는 실패가 묻힌다.
+     *
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects template_external_failure_marker_not_inline
+     *
+     * @return void 반환값 없음
      */
     public function test_resource_hints_do_not_carry_a_failure_signal(): void
     {
@@ -244,11 +295,19 @@ class TemplateExternalsTest extends TestCase
         ], 'sirsoft-basic', 1);
 
         $this->assertCount(1, $normalized);
-        $this->assertArrayNotHasKey('onerror', TemplateExternals::linkAttributes($normalized[0]));
+        $attributes = TemplateExternals::linkAttributes($normalized[0]);
+        $this->assertArrayNotHasKey('onerror', $attributes);
+        $this->assertArrayNotHasKey('data-g7-external', $attributes);
     }
 
     /**
      * 실패 신호 라벨은 id 가 없으면 파일명으로 떨어진다 (운영자가 대상을 알아볼 수 있어야 한다).
+     *
+     * @scenario asset_class=vendored, outcome=failed
+     *
+     * @effects template_external_failure_marker_not_inline
+     *
+     * @return void 반환값 없음
      */
     public function test_failure_signal_label_falls_back_to_file_name(): void
     {
@@ -257,6 +316,6 @@ class TemplateExternalsTest extends TestCase
         ], 'sirsoft-basic', 1);
 
         $this->assertCount(1, $normalized);
-        $this->assertStringContainsString("'all.inlined.css'", TemplateExternals::linkAttributes($normalized[0])['onerror']);
+        $this->assertSame('all.inlined.css', TemplateExternals::linkAttributes($normalized[0])['data-g7-external-label'] ?? null);
     }
 }

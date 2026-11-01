@@ -191,7 +191,10 @@ class InstallerTaskListOrderTest extends TestCase
     {
         $root = dirname(__DIR__, 3);
         $view = (string) file_get_contents($root.'/public/install/views/4-extension-selection.php');
-        $this->assertStringContainsString("window.INSTALLER_SELECTED_EXTENSIONS = <?= installer_json_encode((object) (\$state['selected_extensions'] ?? [])) ?>;", $view);
+        // 선택 상태는 비실행 JSON 데이터 블록으로 넘기고 단계 스크립트가 같은 전역에 옮긴다(#158 strict CSP)
+        $this->assertStringContainsString("'selected_extensions' => (object) (\$state['selected_extensions'] ?? []),", $view);
+        $stepScript = (string) file_get_contents($root.'/public/install/assets/js/step-4-extension-selection.js');
+        $this->assertStringContainsString('window.INSTALLER_SELECTED_EXTENSIONS = data.selected_extensions || {};', $stepScript);
 
         $reset = (string) file_get_contents($root.'/public/install/api/state-management.php');
         $body = substr($reset, (int) strpos($reset, 'private function resetState(): void'));

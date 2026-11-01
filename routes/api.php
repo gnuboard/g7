@@ -65,6 +65,7 @@ use App\Http\Controllers\Api\Public\AnalyticsCollectController;
 use App\Http\Controllers\Api\Public\AnalyticsSummaryController;
 use App\Http\Controllers\Api\Public\AssetProbeController;
 use App\Http\Controllers\Api\Public\ConsentController;
+use App\Http\Controllers\Api\Public\CspReportController;
 use App\Http\Controllers\Api\Public\LayoutPreviewController;
 use App\Http\Controllers\Api\Public\LocaleController as PublicLocaleController;
 use App\Http\Controllers\Api\Public\PublicAttachmentController;
@@ -109,6 +110,12 @@ Route::group([], function () use ($publicDataThrottle) {
     Route::post('analytics/collect', [AnalyticsCollectController::class, 'store'])
         ->middleware(['throttle:120,1,analytics_collect', 'optional.sanctum'])
         ->name('api.public.analytics.collect');
+
+    // 코어 CSP 위반 보고 (#158) — 관리자 환경설정 > 보안의 CSP 모드가 '점검만'·'강제'일 때 정책의
+    // `report-uri` 가 이 경로를 가리킨다. 비콘과 같이 잘못된 본문도 204(기록만 생략), 16KB 초과 413.
+    Route::post('csp-report', [CspReportController::class, 'store'])
+        ->middleware('throttle:60,1,csp_report')
+        ->name('api.public.csp_report');
 
     // 방문자 동의 스냅샷 — 코어 동의 런타임이 `_global.consent` 를 채운다. 운영자가 고른 동의 제공자에게
     // 묻으므로 브라우저는 동의를 관리하는 확장의 경로를 몰라도 된다. 회원 동의는 회원 번호로 찾으므로 optional.sanctum.

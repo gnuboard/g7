@@ -496,14 +496,22 @@ describe('SDK URL 신뢰 호스트 게이트', () => {
 
     // @scenario area=sdk_host
     // @effects sdk_host_allowlisted
-    it('manifest trusted_script_hosts 와 KNOWN_SDK_HOSTS 가 일치한다', () => {
+    it('KNOWN_SDK_HOSTS 는 manifest trusted_script_hosts 에 모두 선언되고, 선언 호스트마다 사유가 있다', () => {
         const manifest = JSON.parse(
             readFileSync(resolve(__dirname, '../../../../plugin.json'), 'utf-8')
         );
+        const hosts: string[] = manifest.trusted_script_hosts ?? [];
+        const reasons: Record<string, string> = manifest.trusted_script_hosts_reason ?? {};
 
-        expect([...(manifest.trusted_script_hosts ?? [])].sort()).toEqual(
-            [...KNOWN_SDK_HOSTS].sort()
-        );
+        // manifest 는 SDK 가 이어서 싣는 연동 스크립트 호스트(npay·spay 계열)까지 선언하므로
+        // 주입 게이트(KNOWN_SDK_HOSTS)보다 넓다 — 게이트 호스트가 빠지는 것만 막는다(#158).
+        expect(KNOWN_SDK_HOSTS.length).toBeGreaterThan(0);
+        for (const host of KNOWN_SDK_HOSTS) {
+            expect(hosts).toContain(host);
+        }
+        for (const host of hosts) {
+            expect(reasons[host], `${host} 사유`).toBeTruthy();
+        }
     });
 
     // @scenario area=sdk_host

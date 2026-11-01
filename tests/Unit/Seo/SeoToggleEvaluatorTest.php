@@ -12,7 +12,7 @@ use Tests\TestCase;
  * 레이아웃 `meta.seo.toggle_setting` 판정은 봇 화면(SeoRenderer)과 사이트맵 정적 화면(SitemapGenerator)이
  * 같은 답을 내야 한다. SeoRenderer 의 private 판정을 공용 클래스로 옮기면서 동작이 바뀌지 않았는지 잠근다.
  *
- * @scenario sitemap-static-routes
+ * 시나리오 매니페스트: tests/scenarios/sitemap-static-routes.yaml
  */
 class SeoToggleEvaluatorTest extends TestCase
 {

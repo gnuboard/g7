@@ -142,11 +142,13 @@ class KcpCallbackControllerTest extends PluginTestCase
         $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
 
         $html = $response->getContent();
-        $this->assertStringContainsString('identity_result', (string) $html);
         $this->assertStringContainsString('tok-123', (string) $html);
-        // 부모창 전달은 사이트 origin 으로 제한되어야 한다(브리지 자신의 주소가 아니라 사이트 주소).
-        $this->assertStringContainsString('}, SITE_ORIGIN);', (string) $html);
         $this->assertStringNotContainsString('window.location.origin', (string) $html);
+        // 전달 동작은 정적 브리지 파일이 한다(#158 strict CSP). 부모창 전달은 사이트 origin 으로 제한되어야 한다.
+        $bridge = (string) file_get_contents(dirname(__DIR__, 3).'/assets/bridge/kcp-bridge.js');
+        $this->assertStringContainsString('identity_result', $bridge);
+        $this->assertStringContainsString('}, SITE_ORIGIN);', $bridge);
+        $this->assertStringNotContainsString('window.location.origin', $bridge);
     }
 
     /**
@@ -191,7 +193,7 @@ class KcpCallbackControllerTest extends PluginTestCase
         $response->assertHeader('Content-Type', 'text/html; charset=UTF-8');
 
         $html = (string) $response->getContent();
-        $this->assertStringContainsString('identity_result', $html);
+        $this->assertStringContainsString('identity_error_message: payload.identity_error_message', (string) file_get_contents(dirname(__DIR__, 3).'/assets/bridge/kcp-bridge.js'));
         $this->assertStringContainsString('"identity_error":"9999"', $html);
         $this->assertStringContainsString('사용자취소', $html);
         $this->assertStringContainsString('"challenge_id":"chal-456"', $html);

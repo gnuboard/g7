@@ -179,6 +179,26 @@ PC 표준결제창에서 사용자가 결제를 완료하지 않고 창을 닫�
 
 ---
 
+## GET /plugins/sirsoft-pay_nhnkcp/payment/kcp-frame
+
+- **라우트명**: `web.plugins.sirsoft-pay_nhnkcp.payment.kcp-frame`
+- **컨트롤러**: `Plugins\Sirsoft\PayNhnkcp\Controllers\KcpFrameController@show`
+- **인증/권한**: 공개 (비회원 결제도 같은 프레임을 연다) · web 그룹 (코어 CSP 헤더가 켜져 있으면 함께 붙는다)
+
+**요청 파라미터** (쿼리스트링)
+
+| 이름 | 타입 | 필수 | 용도 |
+| --- | --- | --- | --- |
+| sdk | string | 예 | KCP 결제창 SDK 주소. `https://testpay.kcp.co.kr/plugin/payplus_web.jsp` · `https://pay.kcp.co.kr/plugin/payplus_web.jsp` 둘 중 하나와 **정확히** 같아야 한다 — 프레임이 이 주소를 그대로 `<script src>` 로 싣는다 |
+
+**응답**
+
+JSON 이 아니라 **HTML** 이다(`Cache-Control: no-store`). SDK `<script src>` → 빈 `order_info` 폼 → 브리지 `<script src>`(`/api/plugins/assets/sirsoft-pay_nhnkcp/assets/bridge/kcp-frame.js`) 세 요소뿐이고 인라인 실행 코드는 없다. `sdk` 가 허용 주소가 아니면 **빈 400** 이다(iframe 안이라 오류 화면을 그리지 않는다 — 주문 화면은 15초 뒤 시간 초과로 결제를 실패 처리한다).
+
+**설명**
+
+PC 표준결제(`requestPayment` 핸들러)가 투명 iframe 으로 여는 결제창 프레임이다(1.1.2, #158). 종전에는 주문 화면이 빈 iframe 에 `document.write` 로 SDK 와 인라인 스크립트를 써 넣었는데, 사이트가 `Content-Security-Policy: script-src 'self'` 를 걸면 그 인라인 코드가 실행되지 않아 결제가 시간 초과로 끝났다. 이제 브리지가 같은 출처 부모 창의 `window.__g7KcpFrame` 에서 주문 값(`fields`)을 받아 폼을 채우고 `KCP_Pay_Execute` 를 부르며, KCP 가 돌려주는 결과 폼(`m_Completepayment`)을 부모의 `complete` 로 넘긴다. 부모 객체가 없으면(다른 출처·주소 직접 열기) 아무 것도 하지 않는다.
+
 ## POST /plugins/sirsoft-pay_nhnkcp/payment/callback
 
 - **라우트명**: `web.plugins.sirsoft-pay_nhnkcp.payment.callback`

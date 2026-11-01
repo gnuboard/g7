@@ -13,6 +13,7 @@ use App\Http\Middleware\Analytics\TrackBotHit;
 use App\Http\Middleware\Analytics\TrackServerVisit;
 use App\Http\Middleware\CheckTemplateDependencies;
 use App\Http\Middleware\CheckUserStatus;
+use App\Http\Middleware\ContentSecurityPolicy;
 use App\Http\Middleware\DatabaseCredentialGuard;
 use App\Http\Middleware\EnforceIdentityPolicy;
 use App\Http\Middleware\EnsureDebugMode;
@@ -118,6 +119,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ];
         $middleware->appendToGroup('web', $localeTimezoneMiddleware);
         $middleware->appendToGroup('api', $localeTimezoneMiddleware);
+
+        // 코어 CSP 헤더 (#158) — 관리자 환경설정 > 보안의 모드가 끔이 아니면 web HTML 응답에 붙인다.
+        // web 그룹이라 플러그인 웹 라우트(결제·본인인증 브리지)도 함께 덮는다. 제외 조건은 미들웨어 주석 참조.
+        $middleware->appendToGroup('web', ContentSecurityPolicy::class);
 
         // IP 접근 제한 (인증 불필요, 전역) — 관리자 셸·코어 API·확장 API 전 표면을 한 판정으로 덮는다.
         // prepend 가 아니라 append 인 이유: 신뢰 프록시는 기본 전역 스택의 TrustProxies 가 적용하므로

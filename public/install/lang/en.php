@@ -500,6 +500,9 @@ return [
     // Installation Already Completed Messages
     'installation_already_completed' => 'Installation Complete',
     'installation_already_completed_message' => 'Gnuboard7 is already installed. Redirecting to homepage...',
+    // 메시지 후 이동 페이지(#158 — 스크립트 없이 meta refresh 로 이동)
+    'redirect_auto_notice' => 'You will be redirected shortly.',
+    'redirect_go_now' => 'Go now',
 
     // URL Parameter Access Messages
     'url_parameter_not_supported' => 'URL Parameter Not Supported',

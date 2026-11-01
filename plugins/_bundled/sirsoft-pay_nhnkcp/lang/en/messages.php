@@ -84,4 +84,8 @@ return [
     'settings' => [
         'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, /, http:// or https:// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
     ],
+    'kcp_frame' => [
+        // Field label for the PC payment frame request (#158) — validation failures return an empty 400.
+        'sdk' => 'payment window SDK URL',
+    ],
 ];

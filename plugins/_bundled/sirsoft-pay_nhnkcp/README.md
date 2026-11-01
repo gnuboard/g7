@@ -87,7 +87,7 @@ PC 결제 승인은 `NhnKcpApiService`가 OS 를 판별해 `pp_cli`/`pp_cli_x64`
 | PHP | `^8.2` |
 | PHP 확장(권장) | `soap` — 모바일 결제(SmartPhone Pay) 승인키 발급에 필요 |
 | 의존 모듈 | `sirsoft-ecommerce` `>=1.3.3` |
-| 외부 스크립트 호스트 | `testpay.kcp.co.kr`, `pay.kcp.co.kr` |
+| 외부 스크립트 호스트 | `testpay.kcp.co.kr`, `pay.kcp.co.kr`, `testnpay.kcp.co.kr`, `npay.kcp.co.kr`, `testspay.kcp.co.kr`, `spay.kcp.co.kr` |
 <!-- @generated:requirements END -->
 
 <!-- @intent START -->

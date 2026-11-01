@@ -500,6 +500,9 @@ return [
     // 설치 완료 후 재접근 메시지
     'installation_already_completed' => '설치 완료',
     'installation_already_completed_message' => '그누보드7이 이미 설치되었습니다. 홈페이지로 이동합니다.',
+    // 메시지 후 이동 페이지(#158 — 스크립트 없이 meta refresh 로 이동)
+    'redirect_auto_notice' => '잠시 후 자동으로 이동합니다.',
+    'redirect_go_now' => '지금 이동',
 
     // URL 파라미터 접근 메시지
     'url_parameter_not_supported' => 'URL 파라미터 사용 불가',

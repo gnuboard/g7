@@ -56,7 +56,7 @@
     <div class="error-container">
         <h1>403 Forbidden</h1>
         <p><?= htmlspecialchars($message) ?></p>
-        <a href="javascript:history.back()" class="back-button">
+        <a href="/" class="back-button">
             <?= $lang === 'ko' ? '뒤로 가기' : 'Go Back' ?>
         </a>
     </div>

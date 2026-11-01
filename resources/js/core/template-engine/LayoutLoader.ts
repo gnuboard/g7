@@ -1055,7 +1055,8 @@ export class LayoutLoader {
         ">오류 코드: ${errorCode}</p>
 
         <button
-          onclick="window.location.reload()"
+          type="button"
+          data-g7-error-reload="1"
           style="
             margin-top: 1.5rem;
             padding: 0.75rem 1.5rem;
@@ -1069,6 +1070,11 @@ export class LayoutLoader {
         >페이지 새로고침</button>
       </div>
     `;
+
+    // 인라인 onclick 대신 리스너 — strict CSP 에서 인라인 핸들러는 실행되지 않는다(#158).
+    container
+      .querySelector('[data-g7-error-reload]')
+      ?.addEventListener('click', () => window.location.reload());
 
     logger.error('Error state rendered:', errorCode, errorMessage);
   }

@@ -18,6 +18,11 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class SyncBoostWithDebugMode
 {
+    /**
+     * 디버그 모드 판정에 쓸 설정 저장소를 받습니다.
+     *
+     * @param  ConfigRepositoryInterface  $configRepository  코어 설정 저장소
+     */
     public function __construct(
         private ConfigRepositoryInterface $configRepository
     ) {}
@@ -70,6 +75,7 @@ class SyncBoostWithDebugMode
     private function removeBrowserLoggerScript(string $content): string
     {
         // <script id="browser-logger-active" ...>...</script> 패턴 제거
+        // audit:allow no-inline-script-in-html-output reason: 아래는 인라인 스크립트를 「지우는」 정규식 문자열이다(출력 아님). 대상 Boost 로거는 debug 전용.
         $pattern = '/<script[^>]*id=["\']browser-logger-active["\'][^>]*>[\s\S]*?<\/script>\s*/i';
 
         return preg_replace($pattern, '', $content);

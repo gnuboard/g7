@@ -27,19 +27,19 @@ $config = $state['config'] ?? $_SESSION['install_config'] ?? [];
             <p><?= htmlspecialchars(lang('file_setup_guide')) ?></p>
             <div class="code-box">
                 <pre id="file-setup-command"></pre>
-                <button class="btn-copy" onclick="copySetupCommand()"><?= htmlspecialchars(lang('copy_command')) ?></button>
+                <button class="btn-copy" data-action="copySetupCommand"><?= htmlspecialchars(lang('copy_command')) ?></button>
             </div>
 
             <!-- 상대경로 명령어 -->
             <p class="fix-guide-hint" id="file-setup-relative-hint" style="display:none;"><?= htmlspecialchars(lang('or_relative_path')) ?></p>
             <div class="code-box" id="file-setup-relative-box" style="display:none;">
                 <pre id="file-setup-command-relative"></pre>
-                <button class="btn-copy" onclick="copySetupCommandRelative()"><?= htmlspecialchars(lang('copy_command')) ?></button>
+                <button class="btn-copy" data-action="copySetupCommandRelative"><?= htmlspecialchars(lang('copy_command')) ?></button>
             </div>
 
             <!-- 확인 버튼 -->
             <div class="env-check-actions">
-                <button id="env-recheck-btn" class="btn btn-primary" onclick="recheckFiles()"><?= htmlspecialchars(lang('file_check_button')) ?></button>
+                <button id="env-recheck-btn" class="btn btn-primary" data-action="recheckFiles"><?= htmlspecialchars(lang('file_check_button')) ?></button>
                 <span id="env-check-status" class="hidden"></span>
             </div>
         </div>
@@ -49,7 +49,7 @@ $config = $state['config'] ?? $_SESSION['install_config'] ?? [];
 <div class="installer-container installer-container-wide">
     <div class="installer-header-with-abort">
         <h1 id="installer-title" class="installer-title"><?= htmlspecialchars(lang('installation_title')) ?></h1>
-        <button id="abort-installation-btn" class="btn-abort" onclick="abortInstallation()" style="display: none;">
+        <button id="abort-installation-btn" class="btn-abort" data-action="abortInstallation" style="display: none;">
             <svg class="abort-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -132,8 +132,8 @@ echo renderInstallResultSection('completion', 'success', 'installation_completed
 
     <!-- 중단 섹션 -->
     <?php
-$abortedButtons = '<button onclick="resumeInstallationFromAborted()" class="btn btn-primary">'.htmlspecialchars(lang('resume_continue')).'</button>
-                <button onclick="goToSettingsWithConfirm()" class="btn btn-secondary">'.htmlspecialchars(lang('back_to_settings')).'</button>';
+$abortedButtons = '<button data-action="resumeInstallationFromAborted" class="btn btn-primary">'.htmlspecialchars(lang('resume_continue')).'</button>
+                <button data-action="goToSettingsWithConfirm" class="btn btn-secondary">'.htmlspecialchars(lang('back_to_settings')).'</button>';
 echo renderInstallResultSection('aborted', 'warning', 'installation_aborted', 'installation_aborted_message', $abortedButtons);
 ?>
 
@@ -142,9 +142,9 @@ echo renderInstallResultSection('aborted', 'warning', 'installation_aborted', 'i
 // 「Step 4 로 돌아가기」는 의존성 사전 검증 실패(순환·누락)일 때만 installer.js showError() 가 드러낸다 —
 // 재시도로 풀리지 않는 실패라 주 버튼으로 앞세우고 재시도는 보조로 바꾼다(#153). 이동은 기존 초기화 경로(항상 Step 4)이고,
 // DB 를 건드리기 전 실패라 확인 창에 DB 수동 정리 안내를 넣지 않는다(goBackToExtensionSelection).
-$failureButtons = '<button id="back-to-extensions-btn" onclick="goBackToExtensionSelection()" class="btn btn-primary hidden">'.htmlspecialchars(lang('back_to_extension_selection')).'</button>
-                <button id="retry-installation-btn" onclick="retryInstallation()" class="btn btn-primary">'.htmlspecialchars(lang('retry_installation')).'</button>
-                <button onclick="goToSettingsWithConfirm()" class="btn btn-secondary">'.htmlspecialchars(lang('back_to_settings')).'</button>';
+$failureButtons = '<button id="back-to-extensions-btn" data-action="goBackToExtensionSelection" class="btn btn-primary hidden">'.htmlspecialchars(lang('back_to_extension_selection')).'</button>
+                <button id="retry-installation-btn" data-action="retryInstallation" class="btn btn-primary">'.htmlspecialchars(lang('retry_installation')).'</button>
+                <button data-action="goToSettingsWithConfirm" class="btn btn-secondary">'.htmlspecialchars(lang('back_to_settings')).'</button>';
 echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $failureButtons);
 ?>
 
@@ -175,7 +175,7 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
 
     <!-- 설치 시작 버튼 (초기 상태, 설치 시작 후 숨김) -->
     <div id="installation-start-section" class="installation-start-section" style="display: none;">
-        <button id="start-installation-btn" class="btn btn-primary btn-lg" type="button" onclick="onStartInstallationClick()">
+        <button id="start-installation-btn" class="btn btn-primary btn-lg" type="button" data-action="onStartInstallationClick">
             <?= htmlspecialchars(lang('start_installation_button')) ?>
         </button>
     </div>
@@ -186,7 +186,7 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
 
     <!-- 설치 진행 상황 카드 -->
     <div class="requirement-card" id="installation-progress-card" style="display: none;">
-        <div class="requirement-card-header" id="installation-card-header" onclick="toggleInstallationCard()">
+        <div class="requirement-card-header" id="installation-card-header" data-action="toggleInstallationCard">
             <h3 class="requirement-card-title">
                 <?= htmlspecialchars(lang('progress_status')) ?>
                 <span id="install-toggle-icon" class="toggle-icon-inline hidden">▼</span>
@@ -233,105 +233,18 @@ $plugins = $selectedExtensions['plugins'] ?? [];
 $languagePacks = $selectedExtensions['language_packs'] ?? [];
 ?>
 
-<script>
-// Step 5 전용 데이터 전달 (INSTALLER_BASE_URL과 INSTALLER_LANG는 footer.php에서 처리)
-window.INSTALLER_CONFIG = <?= installer_json_encode($config) ?>;
-window.INSTALLER_SELECTED_EXTENSIONS = <?= installer_json_encode($selectedExtensions) ?>;
-window.INSTALLER_EXTENSION_NAMES = <?= installer_json_encode($state['extension_names'] ?? []) ?>;
-// 의존 때문에 종류 경계를 넘어 앞당겨 설치하는 항목 → 요구한 확장 (작업 행의 「…에 필요」 표시, #153)
-window.INSTALLER_PULLED_BY = <?= installer_json_encode((object) ($state['install_pulled_by'] ?? [])) ?>;
-
-// 작업 그룹 정의
-window.INSTALLER_TASK_GROUPS = [
-    {
-        id: 'environment',
-        labelKey: 'task_group_environment',
-        tasks: [
-            { id: 'composer_check' },
-            { id: 'composer_install' },
-            { id: 'env_update' },
-            { id: 'key_generate' }
-        ]
-    },
-    {
-        id: 'database',
-        labelKey: 'task_group_database',
-        tasks: [
-            { id: 'db_migrate' },
-            { id: 'db_seed' }
-        ]
-    },
-    {
-        id: 'admin_templates',
-        labelKey: 'task_group_admin_templates',
-        tasks: <?= installer_json_encode(array_map(function ($tpl) {
-            return [
-                ['id' => 'template_install', 'target' => $tpl],
-                ['id' => 'template_activate', 'target' => $tpl],
-            ];
-        }, $adminTemplates)) ?>
-    },
-    {
-        id: 'modules',
-        labelKey: 'task_group_modules',
-        tasks: <?= installer_json_encode(array_map(function ($mod) {
-            return [
-                ['id' => 'module_install', 'target' => $mod],
-                ['id' => 'module_activate', 'target' => $mod],
-            ];
-        }, $modules)) ?>
-    },
-    {
-        id: 'plugins',
-        labelKey: 'task_group_plugins',
-        tasks: <?= installer_json_encode(array_map(function ($plg) {
-            return [
-                ['id' => 'plugin_install', 'target' => $plg],
-                ['id' => 'plugin_activate', 'target' => $plg],
-            ];
-        }, $plugins)) ?>
-    },
-    {
-        id: 'user_templates',
-        labelKey: 'task_group_user_templates',
-        tasks: <?= installer_json_encode(array_map(function ($tpl) {
-            return [
-                ['id' => 'user_template_install', 'target' => $tpl],
-                ['id' => 'user_template_activate', 'target' => $tpl],
-            ];
-        }, $userTemplates)) ?>
-    },
-    {
-        id: 'language_packs',
-        labelKey: 'task_group_language_packs',
-        tasks: <?= installer_json_encode(array_map(function ($pack) {
-            return ['id' => 'language_pack_install', 'target' => $pack];
-        }, $languagePacks)) ?>
-    },
-    {
-        id: 'finalize',
-        labelKey: 'task_group_finalize',
-        tasks: [
-            { id: 'create_settings_json' },
-            { id: 'cache_clear' },
-            { id: 'complete_flag' }
-        ]
-    }
-];
-
-// 평탄화된 작업 목록 생성 (하위 호환성 유지)
-window.INSTALLER_TASKS = (function() {
-    const tasks = [];
-    INSTALLER_TASK_GROUPS.forEach(group => {
-        if (!group.tasks || group.tasks.length === 0) return;
-        group.tasks.forEach(taskOrArray => {
-            if (Array.isArray(taskOrArray)) {
-                taskOrArray.forEach(t => tasks.push({ ...t, group: group.id }));
-            } else {
-                tasks.push({ ...taskOrArray, group: group.id });
-            }
-        });
-    });
-    return tasks;
-})();
-</script>
+<script type="application/json" id="installer-step-data"><?= installer_json_encode([
+    // Step 5 전용 데이터 전달 (INSTALLER_BASE_URL 과 INSTALLER_LANG 은 <head> 의 installer-boot.js 가 채운다)
+    'config' => $config,
+    'selected_extensions' => $selectedExtensions,
+    'extension_names' => $state['extension_names'] ?? [],
+    // 의존 때문에 종류 경계를 넘어 앞당겨 설치하는 항목 → 요구한 확장 (작업 행의 「…에 필요」 표시, #153)
+    'pulled_by' => (object) ($state['install_pulled_by'] ?? []),
+    // 확장 종류별 작업 — 작업 그룹 정의(step-5-installation.js)가 이 목록으로 채운다
+    'admin_templates' => array_values($adminTemplates),
+    'modules' => array_values($modules),
+    'plugins' => array_values($plugins),
+    'user_templates' => array_values($userTemplates),
+    'language_packs' => array_values($languagePacks),
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<script src="<?= INSTALLER_BASE_URL ?>/assets/js/step-5-installation.js?v=<?= time() ?>"></script>

@@ -255,7 +255,10 @@ class ExtensionSelectionResolverTest extends TestCase
         $cli = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/cli/install-flow.php');
         $this->assertStringContainsString("\$state['install_pulled_by'] = \$selection['pulled_by'];", $cli);
         $view = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/views/5-installation.php');
-        $this->assertStringContainsString("window.INSTALLER_PULLED_BY = <?= installer_json_encode((object) (\$state['install_pulled_by'] ?? [])) ?>;", $view);
+        // 서버 값은 비실행 JSON 데이터 블록으로, 전역 대입은 단계 스크립트가 한다(#158 strict CSP)
+        $this->assertStringContainsString("'pulled_by' => (object) (\$state['install_pulled_by'] ?? []),", $view);
+        $stepScript = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/assets/js/step-5-installation.js');
+        $this->assertStringContainsString('window.INSTALLER_PULLED_BY = data.pulled_by || {};', $stepScript);
     }
 
     /**

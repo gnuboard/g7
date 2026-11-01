@@ -1938,6 +1938,24 @@
         "days_suffix": "일",
         "days_hint": "{{min}}~{{max}}일. 법정 최소 기간보다 짧게 정할 수 없습니다.",
         "legal_notice": "법정 최소: 접속기록 1년(회원 5만 명 이상이거나 고유식별·민감정보를 처리하면 2년) · 권한·역할 변경 기록은 이 값과 관계없이 최소 3년 보관합니다."
+      },
+      "csp": {
+        "title": "콘텐츠 보안 정책 (CSP)",
+        "desc": "사이트 화면 응답에 스크립트 출처 정책 헤더를 붙여, 허용하지 않은 곳의 스크립트·인라인 스크립트가 실행되지 않게 합니다. 웹서버에서 직접 헤더를 거는 경우에는 끔으로 두세요.",
+        "mode": "적용 모드",
+        "mode_off": "끔",
+        "mode_report_only": "점검만 (위반만 기록)",
+        "mode_enforce": "강제 (위반 차단)",
+        "mode_desc": "점검만은 차단하지 않고 위반을 서버 로그(storage/logs/csp-*.log)에 남깁니다. 강제는 위반 스크립트를 실행하지 않습니다.",
+        "enforce_warning": "먼저 '점검만'으로 storage/logs/csp-*.log 에 위반이 없는지 확인한 뒤 강제로 바꾸세요. 위반이 남은 채로 강제하면 그 기능이 동작하지 않습니다.",
+        "override_notice": ".env 의 G7_CSP_MODE={{mode}} 가 이 설정보다 우선합니다. 바꾸려면 .env 를 고친 뒤 php artisan config:clear 를 실행하세요.",
+        "extra_hosts": "추가 스크립트 허용 호스트 (입력 후 Enter)",
+        "extra_hosts_placeholder": "cdn.example.com",
+        "extra_hosts_hint": "아래 자동 포함 호스트 밖에서 스크립트를 불러오는 경우에만 더하세요. 호스트만 입력합니다(예: cdn.example.com, *.example.com, https://cdn.example.com).",
+        "auto_hosts": "자동으로 포함되는 호스트 (활성 확장 선언)",
+        "auto_hosts_empty": "활성 확장이 선언한 외부 스크립트 호스트가 없습니다.",
+        "preview": "적용될 정책 미리보기",
+        "preview_hint": "저장된 값 기준입니다. 모드나 호스트를 바꿨다면 저장한 뒤 다시 확인하세요."
       }
     },
     "identity": {

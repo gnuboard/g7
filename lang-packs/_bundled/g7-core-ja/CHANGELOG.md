@@ -8,6 +8,7 @@
 
 ### Added
 
+- 코어 7.1.4 의 환경설정 > 보안 「콘텐츠 보안 정책(CSP)」 저장 검증 문구(`validation.settings.csp_source_host_invalid`·`csp_mode_in`·`csp_extra_script_hosts_array`·`csp_extra_script_hosts_max`)와 항목명(`validation.attributes.csp_mode`·`csp_extra_script_hosts`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면의 저장 오류에서 이 문구가 키 그대로 보입니다.
 - 코어 7.1.4 의 의존 확장 미충족 사유 문구(미설치·무효·버전 미달 설치 → 요구), 호환성 복구 실패 안내, 의존 대상이 내려가거나 꺼졌을 때 의존 확장에 알리는 안내, `template:activate`·`module:activate`·`plugin:activate` 의 「버전 미달」 라벨과 템플릿 강제 활성화 시 503 안내의 일본어 번역을 추가했습니다.
 - 코어 7.1.4 의 선택 연동(`integrations`) 안내 문구의 일본어 번역을 추가했습니다. 확장을 설치·활성화·업데이트했을 때 함께 쓰면 연동되는 확장이 미설치·비활성·버전 미달이라는 안내, 함께 설치하다 실패한 연동 확장 안내, 확장을 끄거나 지울 때 그 확장과 연동 중인 확장을 알리는 명령 출력(표 제목·열 이름·상태 이름)입니다. 없으면 일본어 화면과 명령 출력에서 이 문구가 키 그대로 보입니다.
 - 코어 7.1.4 의 `core:bundled-sources prune` 이 켜져 있는 확장의 연동 대상이라 번들을 남길 때 출력하는 안내 문구의 일본어 번역을 추가했습니다.

@@ -1966,6 +1966,24 @@
         "days_suffix": "days",
         "days_hint": "{{min}}–{{max}} days. It cannot be shorter than the legal minimum.",
         "legal_notice": "Legal minimum: access records 1 year (2 years with 50,000+ members or when processing unique identifiers or sensitive data) · Permission and role change records are kept at least 3 years regardless of this value."
+      },
+      "csp": {
+        "title": "Content Security Policy (CSP)",
+        "desc": "Adds a script-source policy header to site page responses so scripts from untrusted origins and inline scripts do not run. Leave this off if your web server already sends the header.",
+        "mode": "Mode",
+        "mode_off": "Off",
+        "mode_report_only": "Report only (log violations)",
+        "mode_enforce": "Enforce (block violations)",
+        "mode_desc": "Report only does not block anything and writes violations to the server log (storage/logs/csp-*.log). Enforce does not run violating scripts.",
+        "enforce_warning": "Check storage/logs/csp-*.log with 'Report only' first and switch to Enforce only when there are no violations. Features with remaining violations stop working when enforced.",
+        "override_notice": "G7_CSP_MODE={{mode}} in .env takes precedence over this setting. To change it, edit .env and run php artisan config:clear.",
+        "extra_hosts": "Additional allowed script hosts (press Enter after each)",
+        "extra_hosts_placeholder": "cdn.example.com",
+        "extra_hosts_hint": "Add hosts only when scripts load from somewhere other than the automatically included hosts below. Enter a host only (e.g. cdn.example.com, *.example.com, https://cdn.example.com).",
+        "auto_hosts": "Automatically included hosts (declared by active extensions)",
+        "auto_hosts_empty": "No active extension declares an external script host.",
+        "preview": "Policy preview",
+        "preview_hint": "Based on saved values. Save first if you changed the mode or hosts."
       }
     },
     "identity": {
