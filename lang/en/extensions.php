@@ -13,6 +13,13 @@ return [
         'language_pack' => 'language pack',
     ],
 
+    // 의존 확장 종류 이름 — 의존 미충족 문구의 :type (#153)
+    'dependency_types' => [
+        'module' => 'module',
+        'plugin' => 'plugin',
+        'template' => 'template',
+    ],
+
     // 멈춘 업데이트 정리 안내 (7.1.1)
     'stuck_update_recovered' => 'Cleaned up a stuck update (restored state: :status): :name — the update ended midway and left it in "updating".',
     'stuck_update_activate_hint' => 'The cleaned-up extension is now inactive. To turn it back on: :command',
@@ -22,6 +29,7 @@ return [
     'errors' => [
         'state_contract_conflict' => "The ':name' state contract is owned by :owner. :extension cannot declare the same name.",
         'core_version_mismatch' => ':extension (:type) requires Gnuboard7 core version :required or higher. (Current: :installed)',
+        'php_extension_missing' => 'The :name extension requires the PHP extension(s) :extensions on the server. Install them and try again.',
         'version_check_failed' => 'Version check failed.',
         'operation_in_progress' => 'Cannot process the request because ":name" has an operation in progress (:status).',
         'operation_stuck' => '":name" has been stuck in "updating" for more than :minutes minutes. If the update ended midway, update again with --force to clean it up and finish the update, or activate it to only clean it up and turn it on (you will be told to run an unfinished update again).',
@@ -32,9 +40,18 @@ return [
         'zip_missing_version' => 'Manifest :file inside ZIP has no version field.',
         'not_found' => 'Extension (:identifier) not found.',
         'cascade_dependency_failed' => 'Failed to install cascade dependency :type (:identifier): :message',
+        'unknown_error' => 'An unknown error occurred.',
+        'cascade_dependency_activation_failed' => 'Failed to activate dependency :identifier: :reason',
+        'cascade_dependencies_kept' => 'Dependencies installed or activated along the way were kept, not rolled back: :list',
+        'cascade_dependency_unmet_list' => 'Required dependencies are not met — :list',
+        'cascade_dependency_cycle' => 'Dependencies form a cycle: :cycle',
+        'cascade_dependency_not_found' => 'Dependency :identifier required by :required_by was not found.',
+        'cascade_dependency_version' => ':identifier :version does not satisfy the version (:required) required by :required_by.',
         'cascade_permission_denied' => 'You do not have permission to install or activate the :type (:identifier) selected for installation together.',
         'invalid_type' => 'Invalid extension type.',
         'not_auto_deactivated' => 'This extension was not automatically deactivated due to core version incompatibility.',
+        'recover_dependencies_unmet' => 'Could not recover — required extensions do not meet the requirements: :list',
+        'recover_failed' => 'Could not recover — :reason',
         'hidden_extension' => 'Hidden (internal-only) extensions are not exposed to user actions.',
         'internal_error' => 'An internal server error occurred. Check the server log for details.',
         'seeder_failed' => 'Installation was cancelled because seeding default data (:seeder) failed: :message',
@@ -53,6 +70,8 @@ return [
         'dependency_not_installed' => ':identifier :required is required, but it is not installed',
         'dependency_inactive' => 'Extension :identifier is turned off (requires :required)',
         'dependency_summary' => 'However, some dependencies do not meet the requirements — :list. Update or turn on those extensions as well.',
+        'dependent_unmet' => ':dependent_type ":dependent" requires ":identifier" :required, which is no longer met (now :state).',
+        'dependent_template_503' => 'Screens using this template will show the 503 notice.',
         'archive_backslash_normalized' => 'Extracted after normalizing :count backslash (\\) paths to /',
         'seeder_class_name_mismatch' => 'Skipped seeder file :file because the inferred class :class was not found',
         'storage_cleanup_incomplete' => 'Could not delete the whole extension storage folder — check the server file permissions and delete the remaining files manually',
@@ -62,6 +81,51 @@ return [
         'column_target' => 'Target',
         'column_message' => 'Reason',
         'composer_install_failed' => 'Installing Composer dependencies failed — run composer install manually in the extension directory',
+        'php_extension_missing' => 'The server is missing the PHP extension(s) :extensions required by this extension — related features may not work until they are installed',
+    ],
+
+    // Unmet required dependency (dependencies) reasons — shared by recovery failure, cascade install failure and CLI (7.1.4)
+    'dependency_status' => [
+        'label' => ':name (:identifier)',
+        'not_installed' => 'not installed',
+        'inactive' => 'disabled',
+        'version_mismatch' => 'version too low :installed → :required',
+    ],
+
+    // Optional integration (integrations) notices — informational only, never blocking (7.1.4)
+    'integrations' => [
+        'notice_not_installed' => ':name not installed',
+        'notice_inactive' => ':name turned off',
+        'notice_version_mismatch' => ':name requires :required (installed :installed)',
+        'notice_summary' => 'Some optional integrations are not working — :list. Install, turn on or update them to enable the integration.',
+        'cascade_failed' => 'Skipped :name because it could not be installed or turned on together: :message',
+        'requires_no_permission' => 'You do not have permission to install or turn on :identifier, which this integration requires',
+        'states' => [
+            'not_installed' => 'Not installed',
+            'inactive' => 'Inactive',
+            'version_mismatch' => 'Version too low',
+        ],
+        'console' => [
+            'notices_title' => 'Optional integrations — this extension works without them; install, turn on or update them to enable the integration',
+            'integrated_by_title' => 'Extensions integrating with this extension — their menus and screens that used this extension will disappear',
+            'column_type' => 'Type',
+            'column_extension' => 'Extension',
+            'column_state' => 'State',
+            'column_required' => 'Required version',
+            'column_installed' => 'Installed version',
+        ],
+    ],
+
+    // Validation field names for items installed together (7.1.4)
+    'install_fields' => [
+        'dependencies' => 'dependencies to install together',
+        'dependency_type' => 'dependency type',
+        'dependency_identifier' => 'dependency identifier',
+        'integrations' => 'integrations to install together',
+        'integration_type' => 'integration type',
+        'integration_identifier' => 'integration identifier',
+        'language_packs' => 'language packs to install together',
+        'language_pack' => 'language pack identifier',
     ],
 
     'alerts' => [
@@ -105,6 +169,20 @@ return [
     ],
 
     'commands' => [
+        // Cascade options of the install commands (--with-dependencies · --with-language-packs)
+        'cascade' => [
+            'dependency_unmet' => 'Dependency not met: :identifier (requires :required, currently :state)',
+            'use_with_dependencies' => 'Use --with-dependencies to install and activate it together.',
+            'state_install_activate' => 'not installed',
+            'state_activate' => 'inactive',
+            'dependency_step' => 'Dependency :identifier is :action — handling it together (required by :required_by)',
+            'dependencies_done' => 'Dependencies done — :installed installed, :activated activated',
+            'language_pack_failed' => 'Language pack :identifier failed to install: :reason',
+            'language_pack_skipped' => 'Skipped language pack :identifier: :reason',
+            'language_pack_awaiting' => 'Language pack :identifier will turn on when its target extension is activated.',
+            'language_packs_done' => ':count language packs installed',
+            'language_pack_not_candidate' => 'Not a language pack that can be installed with it: :list',
+        ],
         'clear_cache_success' => 'Extension version check cache has been cleared.',
 
         // Shared option validation and ZIP notices for module:update / plugin:update / template:update
@@ -135,6 +213,7 @@ return [
             ],
             'confirm_proceed' => 'Do you want to proceed with the bulk update?',
             'skipped' => 'Skipping the bulk update.',
+            'dependency_cycle' => 'Dependencies form a cycle — these are updated in their original order: :cycle',
             'strategy_question' => 'Select the global layout strategy',
             'strategy_options' => [
                 'overwrite' => 'Overwrite all layouts with the bundle',

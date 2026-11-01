@@ -47,6 +47,7 @@
       "price_details": {
         "taxable": "Taxable",
         "vat": "VAT",
+        "zero_rated": "Zero-rated",
         "mileage": "Mileage",
         "deposit": "Deposit"
       },
@@ -292,6 +293,7 @@
         "points_used": "Points Used",
         "taxable_amount": "Taxable Amount",
         "vat_amount": "VAT",
+        "zero_rated_amount": "Zero-rated Amount",
         "total_paid": "Paid Amount",
         "earned_points": "Expected Points",
         "product_subtotal": "Subtotal",
@@ -372,6 +374,9 @@
       "final_amount": "Final Amount",
       "taxable_amount": "Taxable Amount",
       "vat": "VAT",
+      "tax_free_amount": "Tax-Free Amount",
+      "zero_rated_amount": "Zero-rated Amount",
+      "cancelled_vat": "Cancelled VAT",
       "expected_points": "Expected Points",
       "method": {
         "credit_card": "Credit Card",

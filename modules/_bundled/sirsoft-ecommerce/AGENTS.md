@@ -327,6 +327,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 | 마일리지 잔액 캐시를 서비스에서 직접 증감 | 원장에 기록한 뒤 같은 트랜잭션 마지막에 캐시 재계산 | 두 곳을 각각 갱신하면 원장 합계와 캐시가 어긋나고, 정합 교정 스케줄(`reconcile-mileage-balance`)이 매번 되돌린다 |
 | 과거 주문 표시에 현재 통화 설정(`getDecimalPlaces($code)`)을 조회 | 주문의 `currency_snapshot` 을 함께 넘긴다 | 운영자가 그 통화를 삭제하면 폴백(2자리)이 적용되어 `¥14,835` 가 `¥14,835.00` 이 된다. 금액 계산은 스냅샷을 쓰는데 표기만 현재 설정을 따르면 같은 화면 안에서 근거가 갈린다 |
 | 다국어 문구에 `:amount원` / `:amount円` 처럼 통화 기호를 박기 | 문구는 `:amount` 로 중립, 호출부가 `ecommerce_format_price($amount, $currency)` 로 포맷 | UI 언어가 통화를 결정하게 되어 기본 통화가 다른 상점에서 단위만 틀린 금액이 나간다 |
+| 금액 비교에 `bccomp()` 등 bcmath 함수 사용 | `Support\DecimalComparator::compare($a, $b)` (소수 4자리) | bcmath 는 코어 「선택」 확장이고 이 모듈은 `ext-bcmath` 를 선언하지 않는다 — 없는 서버에서 주문 상세·취소가 500 이 된다(#151). `NoBcmathUsageTest` 가 0건을 잠근다 |
 | 쿠폰·마일리지 복원 훅을 기본 설정(큐)으로 구독 | `'sync' => true` | 커밋 뒤 실행이라 예외를 던져도 롤백되지 않는다 — 오류 응답만 나가고 차감된 쿠폰은 그대로 남는다 |
 | 특정 PG 이름을 이 모듈 코드에 분기로 넣기 (`if ($pg === 'tosspayments')`) | 결제수단 카탈로그 선언(`needs_pg`/`pg_locked`/`pg_provider`/`auto_approve_refund`)과 `payment.*` 훅 | PG 가 늘 때마다 이 모듈이 커지고, 플러그인만 설치하면 되는 구조가 깨진다 |
 | 주문번호·상품코드를 `max(id)+1` 이나 타임스탬프 조합으로 직접 생성 | `SequenceService::generateCode()` | 채번은 DB UNIQUE 제약과 함께 원자적으로 수행된다 — 직접 생성은 동시 주문에서 중복을 만든다 |
@@ -374,10 +375,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 705개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 290개 | `vitest.config.ts` |
-| Playwright | 80개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 399개 | `tests/scenarios` |
+| PHPUnit | 717개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 293개 | `vitest.config.ts` |
+| Playwright | 81개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 406개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

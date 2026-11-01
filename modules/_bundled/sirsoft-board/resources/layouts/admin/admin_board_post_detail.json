@@ -540,31 +540,11 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Option",
-                                            "props": {
-                                                "value": ""
-                                            },
-                                            "text": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_placeholder"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Option",
-                                            "iteration": {
-                                                "source": "post?.data?.board?.report_types ?? []",
-                                                "item_var": "type",
-                                                "index_var": "idx"
-                                            },
-                                            "props": {
-                                                "value": "{{type.value}}"
-                                            },
-                                            "text": "{{type.label}}"
-                                        }
-                                    ]
+                                        "aria-label": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_label",
+                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800",
+                                        "value": "{{_local.report_reason_type ?? ''}}",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-board.admin.posts.detail.report_modal.reason_type_placeholder') }].concat((post?.data?.board?.report_types ?? []).map(type => ({ value: type.value, label: type.label })))}}"
+                                    }
                                 }
                             ]
                         },

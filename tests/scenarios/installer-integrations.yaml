@@ -1,0 +1,69 @@
+feature: 웹 설치 마법사 — 선택 연동(integrations) 자동 체크와 같은 유형 설치 순서
+
+description: |
+  설치 마법사 Step 4 는 사용자가 고른 확장이 manifest `integrations` 로 선언한 모듈·플러그인을
+  한 번 자동 체크한다. 연동은 「있으면 연동되고 없어도 동작한다」라서 필수 의존성(dependencies)과
+  달리 해제를 막지 않고 「다음」도 막지 않는다(#822 P9·D8).
+
+  ## 왜 축이 이렇게 갈리는가
+
+  `surface` 가 축인 이유는 같은 선언을 **세 경로가 서로 다른 방식으로** 다루기 때문이다 —
+  카드 데이터를 만드는 스캔(Laravel 없이 순수 PHP, 정규식 버전식 판정), 저장 API 의 설치 순서
+  위상 정렬(D7 — 웹·터미널 설치가 함께 쓰는 확장 선택 해석기 `installer_install_order()`, #153 부터 종류를 넘는 의존까지 —
+  종류 횡단 축은 extension-cross-type-order.yaml),
+  브라우저 Step 4 의 선택 상태(installer.js).
+
+  `owner_type` 이 축인 이유는 연동을 선언한 쪽이 템플릿이면 단일 선택(템플릿 교체 시 이전 템플릿의
+  자동 체크를 정리)이고, 모듈·플러그인이면 다중 선택(해제 시 그 owner 의 자동 체크만 정리)이라
+  해제 경로가 다르기 때문이다. 대상이 템플릿인 연동은 자동 체크하지 않고 안내만 한다(D8).
+
+  선언 모양(목록형·버전 제약 객체형·설명형·형식 오류·선언 없음)은 스캔 경로 안의 분기라
+  effects 로 나눠 잠근다.
+
+axes:
+  surface: [installer_scan, save_extensions, step4_selection]
+  owner_type: [template, module, plugin]
+
+exclusions:
+  - { surface: save_extensions, owner_type: template, reason: "템플릿 배열은 단일 선택이고 dependencies 에 같은 유형(templates) 키가 없어 설치 순서 정렬 대상이 아니다" }
+
+effects:
+  # 스캔 — 카드 데이터
+  - installer_scan_integrations_list_form_is_any_version
+  - installer_scan_integrations_version_constraint_kept
+  - installer_scan_integrations_descriptive_value_is_any_version
+  - installer_scan_integrations_invalid_entries_dropped
+  - installer_scan_rows_always_carry_integrations_key
+  - installer_scan_list_form_dependencies_yield_identifiers
+  - installer_scan_dependency_identifiers_backward_compatible
+  - installer_version_constraint_detection
+  # 저장 — 같은 유형 설치 순서 (D7)
+  - install_order_dependency_first
+  - install_order_stable_for_unrelated
+  - install_order_cycle_keeps_scan_order_and_reports
+  - resolver_on_bundled_manifests_adds_ecommerce_for_payment_plugin
+  - save_extensions_sorts_before_storing
+  - install_order_cross_type_cycle_reported_with_path   # #153 — 종류를 넘는 순환도 저장을 막는다(종류 횡단 축은 extension-cross-type-order.yaml)
+  # Step 4 — 선택 상태 (P9·D8)
+  - step4_integration_autoselect_on_user_pick
+  - step4_template_targets_are_notice_only
+  - step4_integration_never_blocks_next_or_deselect
+  - step4_user_deselect_is_remembered
+  - step4_owner_deselect_releases_only_unbased
+  - step4_one_level_only
+  - step4_template_switch_moves_integrations
+  - step4_dependency_lock_unchanged
+  - step4_integration_line_shows_version_mismatch
+
+test_files:
+  - tests/Unit/Installer/ScanExtensionsIntegrationsTest.php
+  - tests/Unit/Installer/ExtensionSelectionResolverTest.php
+  # Step 4 브라우저 로직은 installer.js 함수 단위 추출 + 가짜 DOM 으로 node 에서 잰다
+  # (실행: node --test tests/installer/installer-integrations-autoselect.test.cjs).
+  - tests/installer/installer-integrations-autoselect.test.cjs
+
+manual_verification: |
+  설치 마법사 실측(계획서 §11.4): 빈 DB 로 /install 에 들어가 Step 4 에서 sirsoft-basic 을 고르면
+  게시판·쇼핑몰·페이지·우편번호 카드가 `.selected.integration-auto-selected` 이고 `#dependency-warning`
+  이 숨겨져 있는지, 쇼핑몰을 해제한 뒤 템플릿을 껐다 켜도 쇼핑몰이 다시 체크되지 않는지, 비즈뿌리오를
+  고르면 게시판이 자동 체크되는지, 쇼핑몰을 뺀 채 설치를 끝내면 설치 로그 실패가 0 인지 측정한다.

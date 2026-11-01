@@ -17,6 +17,7 @@ return [
         'wsdl_missing' => 'KCP WSDL ファイルがありません: :file',
         'approval_key_error' => 'KCP 承認キーエラー [:code]: :message',
         'soap_error' => 'KCP SOAP 連携エラー: :message',
+        'mobile_payment_unavailable' => '現在モバイル決済をご利用いただけません。別の決済手段を選択するか、ショップにお問い合わせください。',
         'cli_binary_missing' => 'KCP CLIバイナリ不足: :path',
         'cli_binary_not_executable' => 'KCP CLIバイナリ実行権限不足 — 管理者の対応が必要です (sudo chmod 755 :path)',
     ],
@@ -79,5 +80,8 @@ return [
     ],
     'settings' => [
         'redirect_url_format' => '決済後の移動先アドレスは {shopBase}、/ または http(s):// で始まり、空白を含めることはできません。他サイトへ送る //アドレス と javascript: は使用できません。',
+    ],
+    'kcp_frame' => [
+        'sdk' => '決済ウィンドウ SDK の URL',
     ],
 ];

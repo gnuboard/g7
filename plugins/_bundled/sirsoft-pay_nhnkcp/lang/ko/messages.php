@@ -27,6 +27,7 @@ return [
         'wsdl_missing' => 'KCP WSDL 파일이 없습니다: :file',
         'approval_key_error' => 'KCP 승인키 오류 [:code]: :message',
         'soap_error' => 'KCP SOAP 연동 오류: :message',
+        'mobile_payment_unavailable' => '현재 모바일 결제를 이용할 수 없습니다. 다른 결제수단을 선택하거나 쇼핑몰에 문의해 주세요.',
         'cli_binary_missing' => 'KCP CLI 바이너리 누락: :path',
         'cli_binary_not_executable' => 'KCP CLI 바이너리 실행 권한 부족 — 운영자 조치 필요 (sudo chmod 755 :path)',
     ],
@@ -82,5 +83,9 @@ return [
     ],
     'settings' => [
         'redirect_url_format' => '결제 후 이동 주소는 {shopBase}, / 또는 http(s):// 로 시작해야 하며 공백을 넣을 수 없습니다. 다른 사이트로 보내는 //주소 와 javascript: 는 쓸 수 없습니다.',
+    ],
+    'kcp_frame' => [
+        // PC 결제창 프레임 요청 항목명(#158) — 검증 실패는 빈 400 이라 화면에 나가지 않지만 항목명은 둔다.
+        'sdk' => '결제창 SDK 주소',
     ],
 ];

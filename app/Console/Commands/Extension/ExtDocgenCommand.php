@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Extension;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Support\ExtensionDoc\ExtensionDocContext;
 use App\Support\ExtensionDoc\ExtensionDocScaffolder;
 use App\Support\ExtensionDoc\ExtensionInventory;
@@ -20,6 +21,8 @@ use InvalidArgumentException;
  */
 class ExtDocgenCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string 커맨드 시그니처
      */
@@ -29,11 +32,6 @@ class ExtDocgenCommand extends Command
         {--check : 생성하지 않고 누락·드리프트만 리포트}
         {--json : 기계 판독 출력}
         {--dry-run : 대상과 실측 집계만 출력}';
-
-    /**
-     * @var string 커맨드 설명
-     */
-    protected $description = '번들 확장의 개발자 문서(AGENTS.md/README.md/docs)를 실측 기반으로 생성·갱신합니다';
 
     /**
      * @var array<int, array{type: string, id: string, manifest: string, reason: string}> manifest 를 읽지 못해 대상에서 빠진 디렉토리

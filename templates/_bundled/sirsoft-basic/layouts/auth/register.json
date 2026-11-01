@@ -16,7 +16,13 @@
             "method": "GET",
             "auto_fetch": false,
             "auth_mode": "optional",
-            "comment": "이용약관 본문 — 약관 모달을 열 때만 부른다(auto_fetch 꺼짐). 가입 전이라 비로그인으로도 읽혀야 한다."
+            "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
+            "errorHandling": {
+                "404": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "이용약관 본문 — 약관 모달을 열 때만 부른다(auto_fetch 꺼짐). 가입 전이라 비로그인으로도 읽혀야 한다.\n       페이지 모듈 문서라 그 모듈이 꺼져 있으면 데이터소스를 두지 않는다(보기 단추도 폼 조각에서 숨긴다). 옛 코어에서 꺼진 모듈로 나간 요청의 404 는 삼킨다."
         },
         {
             "id": "privacyContent",
@@ -26,7 +32,13 @@
             "method": "GET",
             "auto_fetch": false,
             "auth_mode": "optional",
-            "comment": "개인정보처리방침 본문 — 방침 모달을 열 때만 부른다."
+            "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
+            "errorHandling": {
+                "404": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "개인정보처리방침 본문 — 방침 모달을 열 때만 부른다. 약관과 같은 페이지 모듈 가드·404 삼킴."
         }
     ],
     "init_actions": [

@@ -41,7 +41,8 @@
         "memos": {
             "index": {
                 "title": "메모 목록",
-                "empty": "아직 메모가 없습니다."
+                "empty": "아직 메모가 없습니다.",
+                "seo_description": "Hello 모듈 예제의 공개 메모 목록입니다."
             }
         }
     }

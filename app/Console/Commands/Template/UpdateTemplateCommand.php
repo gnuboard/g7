@@ -5,7 +5,9 @@ namespace App\Console\Commands\Template;
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
@@ -18,7 +20,9 @@ class UpdateTemplateCommand extends Command
 {
     use HasProgressBar;
     use HasUnifiedConfirm;
+    use LocalizesDescription;
     use RendersLayoutSyncResult;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
     use ReportsStuckUpdateRecovery;
     use SelectsLayoutInstallSource;
@@ -33,11 +37,6 @@ class UpdateTemplateCommand extends Command
         {--source=auto : 업데이트 소스 (auto|bundled|github) — bundled 는 _bundled 만 사용(GitHub 우회)}
         {--zip= : 외부 ZIP 파일 경로 (지정 시 GitHub/번들 우회 + 버전은 template.json 기준)}
         {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
-
-    /**
-     * 커맨드 설명
-     */
-    protected $description = '템플릿을 최신 버전으로 업데이트합니다';
 
     /**
      * 템플릿 관리자 및 리포지토리
@@ -189,6 +188,7 @@ class UpdateTemplateCommand extends Command
                 $this->renderLayoutSyncResult($updateResult['layout_sync'] ?? null);
                 $this->renderLayoutIncludeWarnings($updateResult['layout_warnings'] ?? []);
                 $this->renderDependencyWarnings($updateResult);
+                $this->renderIntegrationNotices($updateResult['integration_notices'] ?? []);
 
                 Log::info('템플릿 업데이트 완료', [
                     'template' => $identifier,

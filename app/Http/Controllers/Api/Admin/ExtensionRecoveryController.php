@@ -10,6 +10,7 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Extension\CoreVersionChecker;
+use App\Extension\Helpers\DependencyEnricher;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -130,11 +131,32 @@ class ExtensionRecoveryController extends AdminBaseController
 
         // 활성화 호출 (force=false — 검증 이미 통과했으므로 재검증 의도)
         $manager = $this->resolveManager($type);
-        match ($type) {
+        $result = match ($type) {
             'plugin' => $manager->activatePlugin($identifier),
             'module' => $manager->activateModule($identifier),
             'template' => $manager->activateTemplate($identifier),
         };
+
+        // 의존 확장이 조건에 맞지 않으면 매니저가 켜지 않고 경고를 돌려준다 — 종전에는 이 결과를 버려 켜지지 않았는데도
+        // 「복구되었습니다」(200)를 냈다(#152). 실패는 실패로 알린다(7.1.1 업그레이드 복구 스텝과 같은 success 확인).
+        if (($result['success'] ?? false) !== true) {
+            $missingModules = $result['missing_modules'] ?? [];
+            $missingPlugins = $result['missing_plugins'] ?? [];
+
+            // 의존과 무관한 실패(확장 스스로 활성화를 거부·파일 없음)는 매니저가 남긴 사유를 그대로 싣는다 — 의존 문구에 빈 목록을 붙이지 않는다
+            if ($missingModules === [] && $missingPlugins === []) {
+                return ResponseHelper::error('extensions.errors.recover_failed', 409, [], [
+                    'reason' => $result['reason'] ?? $result['message'] ?? __('extensions.errors.unknown_error'),
+                ]);
+            }
+
+            return ResponseHelper::error('extensions.errors.recover_dependencies_unmet', 409, [
+                'missing_modules' => $missingModules,
+                'missing_plugins' => $missingPlugins,
+            ], [
+                'list' => DependencyEnricher::describeUnmet([...$missingModules, ...$missingPlugins]),
+            ]);
+        }
 
         // 공용 성공 응답을 거쳐야 재활성화 중 일부 항목 실패(레이아웃 등록 등)가 data.warnings 로 실린다 (7.1.3)
         return $this->success('extensions.alerts.recovered_success', [

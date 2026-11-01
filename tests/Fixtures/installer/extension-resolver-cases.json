@@ -1,0 +1,332 @@
+{
+  "_comment": "설치 확장 선택 해석기 공용 픽스처 — PHP(includes/extension-selection.php)와 JS(assets/js/installer-extension-resolver.js)가 같은 입력에 같은 결과를 내는지 잠근다. 한쪽 규칙을 바꾸면 이 기대값과 다른 쪽 구현을 함께 바꾼다.",
+  "scan": {
+    "admin_templates": [
+      { "identifier": "sirsoft-admin_basic", "version": "1.1.4", "dependencies_detailed": [] },
+      { "identifier": "other-admin", "version": "1.0.0", "dependencies_detailed": [] },
+      { "identifier": "x-admin", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "modules", "identifier": "sirsoft-board", "version": ">=1.0.0" }
+      ] }
+    ],
+    "user_templates": [
+      { "identifier": "sirsoft-basic", "version": "1.2.4", "dependencies_detailed": [
+        { "type": "modules", "identifier": "sirsoft-board", "version": ">=1.2.1" },
+        { "type": "modules", "identifier": "sirsoft-ecommerce", "version": ">=1.3.0" },
+        { "type": "modules", "identifier": "sirsoft-page", "version": ">=1.2.0" },
+        { "type": "plugins", "identifier": "sirsoft-daum_postcode", "version": ">=1.0.0" }
+      ] },
+      { "identifier": "needs-hidden", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "modules", "identifier": "hidden-module", "version": ">=0.2.0" }
+      ] }
+    ],
+    "modules": [
+      { "identifier": "sirsoft-board", "version": "1.2.1", "dependencies_detailed": [] },
+      { "identifier": "sirsoft-ecommerce", "version": "1.3.3", "dependencies_detailed": [] },
+      { "identifier": "sirsoft-page", "version": "1.2.1", "dependencies_detailed": [] },
+      { "identifier": "mod-late", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "modules", "identifier": "mod-base", "version": "^1.0.0" }
+      ] },
+      { "identifier": "mod-base", "version": "1.4.0", "dependencies_detailed": [] },
+      { "identifier": "cycle-a", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "modules", "identifier": "cycle-b", "version": "*" }
+      ] },
+      { "identifier": "cycle-b", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "modules", "identifier": "cycle-a", "version": "*" }
+      ] },
+      { "identifier": "self-dep", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "modules", "identifier": "self-dep", "version": "*" }
+      ] },
+      { "identifier": "x-learning", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "plugins", "identifier": "sirsoft-ckeditor5", "version": ">=1.0.0" }
+      ] },
+      { "identifier": "x-chain_m", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "plugins", "identifier": "sirsoft-marketing", "version": ">=1.0.0" }
+      ] },
+      { "identifier": "x-cyc_m", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "plugins", "identifier": "x-cyc_p", "version": "*" }
+      ] },
+      { "identifier": "x-dup", "version": "2.0.0", "dependencies_detailed": [] }
+    ],
+    "plugins": [
+      { "identifier": "sirsoft-tosspayments", "version": "1.1.2", "dependencies_detailed": [
+        { "type": "modules", "identifier": "sirsoft-ecommerce", "version": ">=1.3.0" }
+      ] },
+      { "identifier": "sirsoft-daum_postcode", "version": "1.1.1", "dependencies_detailed": [] },
+      { "identifier": "needs-new-shop", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "modules", "identifier": "sirsoft-ecommerce", "version": ">=2.0.0" }
+      ] },
+      { "identifier": "sirsoft-ckeditor5", "version": "1.1.1", "dependencies_detailed": [] },
+      { "identifier": "sirsoft-marketing", "version": "1.1.2", "dependencies_detailed": [] },
+      { "identifier": "x-chain_p", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "modules", "identifier": "x-chain_m", "version": "*" }
+      ] },
+      { "identifier": "x-cyc_p", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "modules", "identifier": "x-cyc_m", "version": "*" }
+      ] },
+      { "identifier": "x-dup", "version": "1.0.0", "dependencies_detailed": [] },
+      { "identifier": "x-dup_user", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "plugins", "identifier": "x-dup", "version": ">=1.5.0" }
+      ] }
+    ],
+    "language_packs": [
+      { "identifier": "acme-board-ja", "scope": "module", "target_identifier": "sirsoft-board", "version": "1.0.0" },
+      { "identifier": "g7-core-ja", "scope": "core", "target_identifier": null, "version": "7.1.3" },
+      { "identifier": "g7-module-sirsoft-board-ja", "scope": "module", "target_identifier": "sirsoft-board", "version": "1.2.1" },
+      { "identifier": "g7-plugin-sirsoft-tosspayments-ja", "scope": "plugin", "target_identifier": "sirsoft-tosspayments", "version": "1.1.2" },
+      { "identifier": "g7-template-sirsoft-admin_basic-ja", "scope": "template", "target_identifier": "sirsoft-admin_basic", "version": "1.1.4" }
+    ]
+  },
+  "cases": [
+    {
+      "name": "관리자 템플릿만",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": [], "plugins": [], "user_templates": [], "language_packs": [] },
+        "auto_added": [],
+        "excluded_language_packs": [],
+        "error_keys": [],
+        "install_order": ["admin_templates:sirsoft-admin_basic"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "결제 플러그인 → 이커머스 자동 포함",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "plugins": ["sirsoft-tosspayments"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["sirsoft-ecommerce"], "plugins": ["sirsoft-tosspayments"], "user_templates": [], "language_packs": [] },
+        "auto_added": [{ "category": "modules", "identifier": "sirsoft-ecommerce", "required_by": "sirsoft-tosspayments" }],
+        "excluded_language_packs": [],
+        "error_keys": [],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "modules:sirsoft-ecommerce", "plugins:sirsoft-tosspayments"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "사용자 템플릿 sirsoft-basic → 모듈 3·플러그인 1 자동 포함",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "user_templates": ["sirsoft-basic"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["sirsoft-board", "sirsoft-ecommerce", "sirsoft-page"], "plugins": ["sirsoft-daum_postcode"], "user_templates": ["sirsoft-basic"], "language_packs": [] },
+        "auto_added": [
+          { "category": "modules", "identifier": "sirsoft-board", "required_by": "sirsoft-basic" },
+          { "category": "modules", "identifier": "sirsoft-ecommerce", "required_by": "sirsoft-basic" },
+          { "category": "modules", "identifier": "sirsoft-page", "required_by": "sirsoft-basic" },
+          { "category": "plugins", "identifier": "sirsoft-daum_postcode", "required_by": "sirsoft-basic" }
+        ],
+        "excluded_language_packs": [],
+        "error_keys": [],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "modules:sirsoft-board", "modules:sirsoft-ecommerce", "modules:sirsoft-page", "plugins:sirsoft-daum_postcode", "user_templates:sirsoft-basic"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "언어팩 — 대상 미선택은 제외, core·선택 대상은 유지",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "language_packs": ["g7-core-ja", "g7-module-sirsoft-board-ja", "g7-plugin-sirsoft-tosspayments-ja", "g7-template-sirsoft-admin_basic-ja"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": [], "plugins": [], "user_templates": [], "language_packs": ["g7-core-ja", "g7-template-sirsoft-admin_basic-ja"] },
+        "auto_added": [],
+        "excluded_language_packs": ["g7-module-sirsoft-board-ja", "g7-plugin-sirsoft-tosspayments-ja"],
+        "error_keys": [],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "language_packs:g7-core-ja", "language_packs:g7-template-sirsoft-admin_basic-ja"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "같은 종류 의존 — 스캔 순서가 뒤인 의존 확장을 먼저 설치",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["mod-late", "mod-base"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["mod-base", "mod-late"], "plugins": [], "user_templates": [], "language_packs": [] },
+        "auto_added": [],
+        "excluded_language_packs": [],
+        "error_keys": [],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "modules:mod-base", "modules:mod-late"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "없는 식별자",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["no-such"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": [], "plugins": [], "user_templates": [], "language_packs": [] },
+        "auto_added": [],
+        "excluded_language_packs": [],
+        "error_keys": ["error_extension_not_found"],
+        "install_order": ["admin_templates:sirsoft-admin_basic"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "관리자 템플릿 0개·2개",
+      "requested": { "admin_templates": ["sirsoft-admin_basic", "other-admin"], "user_templates": [] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic", "other-admin"], "modules": [], "plugins": [], "user_templates": [], "language_packs": [] },
+        "auto_added": [],
+        "excluded_language_packs": [],
+        "error_keys": ["error_admin_template_single"],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "admin_templates:other-admin"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "관리자 템플릿 없음",
+      "requested": { "modules": ["sirsoft-board"] },
+      "expected": {
+        "selection": { "admin_templates": [], "modules": ["sirsoft-board"], "plugins": [], "user_templates": [], "language_packs": [] },
+        "auto_added": [],
+        "excluded_language_packs": [],
+        "error_keys": ["error_admin_template_required"],
+        "install_order": ["modules:sirsoft-board"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "의존 버전 미달",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "plugins": ["needs-new-shop"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["sirsoft-ecommerce"], "plugins": ["needs-new-shop"], "user_templates": [], "language_packs": [] },
+        "auto_added": [{ "category": "modules", "identifier": "sirsoft-ecommerce", "required_by": "needs-new-shop" }],
+        "excluded_language_packs": [],
+        "error_keys": ["error_extension_dependency_version"],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "modules:sirsoft-ecommerce", "plugins:needs-new-shop"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "설치 목록에 없는 의존",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "user_templates": ["needs-hidden"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": [], "plugins": [], "user_templates": ["needs-hidden"], "language_packs": [] },
+        "auto_added": [],
+        "excluded_language_packs": [],
+        "error_keys": ["error_extension_dependency_unavailable"],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "user_templates:needs-hidden"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "같은 종류 순환",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["cycle-a"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["cycle-a", "cycle-b"], "plugins": [], "user_templates": [], "language_packs": [] },
+        "auto_added": [{ "category": "modules", "identifier": "cycle-b", "required_by": "cycle-a" }],
+        "excluded_language_packs": [],
+        "error_keys": ["error_extension_dependency_cycle"],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "modules:cycle-a", "modules:cycle-b"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "자기 자신 의존 — 순환으로 보지 않고 무시",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["self-dep", "mod-base"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["mod-base", "self-dep"], "plugins": [], "user_templates": [], "language_packs": [] },
+        "auto_added": [],
+        "excluded_language_packs": [],
+        "error_keys": [],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "modules:mod-base", "modules:self-dep"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "종류 횡단 — 모듈이 의존하는 플러그인을 먼저 설치",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["x-learning"], "plugins": ["sirsoft-ckeditor5"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["x-learning"], "plugins": ["sirsoft-ckeditor5"], "user_templates": [], "language_packs": [] },
+        "auto_added": [],
+        "excluded_language_packs": [],
+        "error_keys": [],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "plugins:sirsoft-ckeditor5", "modules:x-learning"],
+        "pulled_by": { "plugins:sirsoft-ckeditor5": ["modules:x-learning"] }
+      }
+    },
+    {
+      "name": "종류 횡단 — 관리자 템플릿이 의존하는 모듈을 먼저 설치",
+      "requested": { "admin_templates": ["x-admin"] },
+      "expected": {
+        "selection": { "admin_templates": ["x-admin"], "modules": ["sirsoft-board"], "plugins": [], "user_templates": [], "language_packs": [] },
+        "auto_added": [{ "category": "modules", "identifier": "sirsoft-board", "required_by": "x-admin" }],
+        "excluded_language_packs": [],
+        "error_keys": [],
+        "install_order": ["modules:sirsoft-board", "admin_templates:x-admin"],
+        "pulled_by": { "modules:sirsoft-board": ["admin_templates:x-admin"] }
+      }
+    },
+    {
+      "name": "종류 횡단 3단 사슬 — 플러그인 → 모듈 → 플러그인",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "plugins": ["x-chain_p"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["x-chain_m"], "plugins": ["sirsoft-marketing", "x-chain_p"], "user_templates": [], "language_packs": [] },
+        "auto_added": [{ "category": "modules", "identifier": "x-chain_m", "required_by": "x-chain_p" }, { "category": "plugins", "identifier": "sirsoft-marketing", "required_by": "x-chain_m" }],
+        "excluded_language_packs": [],
+        "error_keys": [],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "plugins:sirsoft-marketing", "modules:x-chain_m", "plugins:x-chain_p"],
+        "pulled_by": { "plugins:sirsoft-marketing": ["modules:x-chain_m"] }
+      }
+    },
+    {
+      "name": "종류 횡단 — 모듈만 요청해 자동 포함된 플러그인도 먼저 설치",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["x-learning"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["x-learning"], "plugins": ["sirsoft-ckeditor5"], "user_templates": [], "language_packs": [] },
+        "auto_added": [{ "category": "plugins", "identifier": "sirsoft-ckeditor5", "required_by": "x-learning" }],
+        "excluded_language_packs": [],
+        "error_keys": [],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "plugins:sirsoft-ckeditor5", "modules:x-learning"],
+        "pulled_by": { "plugins:sirsoft-ckeditor5": ["modules:x-learning"] }
+      }
+    },
+    {
+      "name": "종류 횡단 순환 — 오류를 남기고 기본 순서 유지",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["x-cyc_m"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["x-cyc_m"], "plugins": ["x-cyc_p"], "user_templates": [], "language_packs": [] },
+        "auto_added": [{ "category": "plugins", "identifier": "x-cyc_p", "required_by": "x-cyc_m" }],
+        "excluded_language_packs": [],
+        "error_keys": ["error_extension_dependency_cycle"],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "modules:x-cyc_m", "plugins:x-cyc_p"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "같은 식별자가 모듈·플러그인에 함께 있으면 의존 종류로 버전을 판정",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "plugins": ["x-dup_user"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": [], "plugins": ["x-dup", "x-dup_user"], "user_templates": [], "language_packs": [] },
+        "auto_added": [{ "category": "plugins", "identifier": "x-dup", "required_by": "x-dup_user" }],
+        "excluded_language_packs": [],
+        "error_keys": ["error_extension_dependency_version"],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "plugins:x-dup", "plugins:x-dup_user"],
+        "pulled_by": {}
+      }
+    },
+    {
+      "name": "언어팩 — 코어 범위 팩을 이름 순서와 관계없이 먼저",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["sirsoft-board"], "language_packs": ["acme-board-ja", "g7-core-ja"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["sirsoft-board"], "plugins": [], "user_templates": [], "language_packs": ["g7-core-ja", "acme-board-ja"] },
+        "auto_added": [],
+        "excluded_language_packs": [],
+        "error_keys": [],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "modules:sirsoft-board", "language_packs:g7-core-ja", "language_packs:acme-board-ja"],
+        "pulled_by": {}
+      }
+    }
+  ],
+  "version_cases": [
+    ["1.3.3", ">=1.3.0", true],
+    ["1.2.9", ">=1.3.0", false],
+    ["1.3.0", ">1.3.0", false],
+    ["1.3.0", "<=1.3.0", true],
+    ["1.2.0", "<1.3.0", true],
+    ["1.3.0", "=1.3.0", true],
+    ["1.3.0", "==1.3.1", false],
+    ["1.3.0", "!=1.3.0", false],
+    ["1.9.0", "^1.2.0", true],
+    ["2.0.0", "^1.2.0", false],
+    ["1.2.9", "~1.2.0", true],
+    ["1.3.0", "~1.2.0", false],
+    ["1.0.0", "*", true],
+    ["1.0.0", "", true],
+    ["1.5.0", "1.4.0", true],
+    ["v1.4.0", ">=1.4", true]
+  ]
+}

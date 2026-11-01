@@ -192,6 +192,7 @@ return [
         'auth_register' => '회원가입',
         'auth_forgot_password' => '비밀번호 찾기 요청',
         'auth_reset_password' => '비밀번호 재설정',
+        'auth_reset_password_by_console' => '시스템(CLI)이 회원 비밀번호를 재설정 (ID: :user_id)',
         'auth_record_consents' => '이용약관 동의 기록',
         'auth_login_failed' => '로그인 실패 (:email)',
         'auth_account_locked' => '계정 잠금 (:attempts회 실패, :minutes분 차단)',

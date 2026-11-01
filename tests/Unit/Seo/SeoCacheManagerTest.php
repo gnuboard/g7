@@ -240,6 +240,36 @@ class SeoCacheManagerTest extends TestCase
     }
 
     /**
+     * 무효화 패턴의 와일드카드는 `*` 하나뿐이고 `?`·`.` 은 글자 그대로 비교한다 (공개#156 D5).
+     *
+     * `?` 를 정규식 수량자로 해석하면 `/board/free?*` 가 `/board/fre` 로 시작하는 모든 키를,
+     * `/boards?*` 가 모든 `/board*` 키를 지웠다.
+     *
+     * @effects invalidation_pattern_treats_only_asterisk_as_wildcard
+     *
+     * @return void 반환값 없음
+     */
+    public function test_invalidate_by_url_treats_question_mark_and_dot_literally(): void
+    {
+        foreach (['/board/free', '/board/free?page=2', '/board/free/123', '/board/freedom', '/page/axb', '/page/a.b'] as $url) {
+            $this->cacheManager->put($url, 'ko', '<html>'.$url.'</html>');
+        }
+
+        $this->assertSame(1, $this->cacheManager->invalidateByUrl('/board/free?*'));
+        $this->assertNull($this->cacheManager->get('/board/free?page=2', 'ko'));
+        $this->assertNotNull($this->cacheManager->get('/board/free/123', 'ko'), '다른 경로의 글 상세는 남는다');
+        $this->assertNotNull($this->cacheManager->get('/board/freedom', 'ko'), '이름이 같은 접두의 다른 게시판은 남는다');
+        $this->assertNotNull($this->cacheManager->get('/board/free', 'ko'), '쿼리 없는 목록은 `?*` 대상이 아니다');
+
+        $this->assertSame(0, $this->cacheManager->invalidateByUrl('/boards?*'));
+        $this->assertNotNull($this->cacheManager->get('/board/free', 'ko'), '`/boards?*` 가 `/board*` 를 지우면 안 된다');
+
+        $this->assertSame(1, $this->cacheManager->invalidateByUrl('*/page/a.b'));
+        $this->assertNotNull($this->cacheManager->get('/page/axb', 'ko'), '`.` 은 아무 글자와 일치하지 않는다');
+        $this->assertNull($this->cacheManager->get('/page/a.b', 'ko'));
+    }
+
+    /**
      * cache_enabled=false일 때 putWithLayout도 무시됩니다.
      *
      * @effects disabled_cache_is_noop

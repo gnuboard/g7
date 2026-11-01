@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\LanguagePack;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
@@ -16,6 +17,7 @@ use Throwable;
  */
 class InstallLanguagePackCommand extends Command
 {
+    use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
     /**
@@ -25,11 +27,6 @@ class InstallLanguagePackCommand extends Command
         {identifier : 번들 식별자 또는 소스에 따른 식별자/URL}
         {--source=bundled : 설치 소스 (bundled|github|url)}
         {--no-activate : 설치 후 자동 활성화하지 않음}';
-
-    /**
-     * @var string
-     */
-    protected $description = '번들/GitHub/URL 소스에서 언어팩을 설치합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service

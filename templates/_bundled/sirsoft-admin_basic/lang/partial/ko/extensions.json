@@ -24,6 +24,15 @@
     "incompatible_tooltip": "코어 {{required}} 이상 필요 (현재: {{installed}})",
     "incompatible_sr": "{{name}} 업데이트에는 코어 {{required}} 이상이 필요해 업데이트할 수 없습니다. (현재 코어: {{installed}})"
   },
+  "php_extensions": {
+    "title": "필요한 PHP 확장",
+    "level_require": "필수",
+    "level_suggest": "권장",
+    "installed": "설치됨",
+    "not_installed": "미설치",
+    "badge_required_missing": "PHP 확장 필요: {{extensions}}(미설치)",
+    "badge_suggested_missing": "권장 PHP 확장: {{extensions}}(미설치)"
+  },
   "banner": {
     "title": "코어 호환성 문제로 자동 비활성화된 확장이 있습니다",
     "item_required": "필요 버전: {{required}}",

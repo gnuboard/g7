@@ -2,12 +2,16 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Concerns\RunsCascadeInstall;
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
+use App\Extension\Vendor\VendorMode;
 use App\Rules\ValidExtensionIdentifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -16,8 +20,11 @@ use Illuminate\Support\Facades\Validator;
 class InstallTemplateCommand extends Command
 {
     use HasProgressBar;
+    use LocalizesDescription;
     use RendersLayoutSyncResult;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
+    use RunsCascadeInstall;
     use SelectsLayoutInstallSource;
 
     /**
@@ -26,12 +33,9 @@ class InstallTemplateCommand extends Command
     protected $signature = 'template:install
         {identifier : 템플릿 식별자 (디렉토리명)}
         {--force : 이미 설치된 경우에도 _bundled/_pending 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)}
-        {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '템플릿을 설치합니다';
+        {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}
+        {--with-dependencies : 필요한 의존 확장(의존의 의존 포함)을 같은 vendor 방식으로 함께 설치·활성화}
+        {--with-language-packs=none : 함께 설치할 번들 언어팩 (none|all|식별자,…) — 관리자 설치 창의 후보와 같음}';
 
     /**
      * 템플릿 관리자 및 리포지토리
@@ -84,6 +88,11 @@ class InstallTemplateCommand extends Command
                 $this->warn('⚠️  '.__('templates.commands.install.force_reinstall', ['template' => $identifier]));
             }
 
+            // 의존 확장 확인 — --with-dependencies 면 함께 설치·활성화 (템플릿은 vendor 없음 → auto)
+            if (! $this->runCascadeDependencies('template', $identifier, VendorMode::Auto)) {
+                return Command::FAILURE;
+            }
+
             // 템플릿 설치
             $onProgress = $this->createProgressCallback(TemplateManager::INSTALL_STEPS);
             try {
@@ -100,6 +109,7 @@ class InstallTemplateCommand extends Command
 
                 // 성공 메시지
                 $this->info($this->lifecycleDoneIcon().' '.__('templates.commands.install.success', ['template' => $identifier]));
+                $this->reportIntegrationNotices('template', $identifier);
                 $this->info('   - '.__('templates.commands.install.type', ['type' => __('templates.types.'.$template->type)]));
                 $this->info('   - '.__('templates.commands.install.version', ['version' => $template->version]));
                 $this->info('   - '.trans_choice('templates.commands.install.layouts_created', $template->layouts()->count()));
@@ -107,12 +117,18 @@ class InstallTemplateCommand extends Command
 
                 Log::info(__('templates.commands.install.success', ['template' => $identifier]));
 
-                return Command::SUCCESS;
+                // 동반 번들 언어팩 (--with-language-packs) — 하나가 실패해도 나머지는 계속 설치하고, 실패가 있으면 종료 코드로 알린다(본 확장 설치는 유지)
+                $languagePacksInstalled = $this->runCascadeLanguagePacks();
+
+                return $languagePacksInstalled ? Command::SUCCESS : Command::FAILURE;
             }
+
+            $this->reportKeptCascadeDependencies();
 
             return Command::FAILURE;
         } catch (\Exception $e) {
             $this->error('❌ '.$e->getMessage());
+            $this->reportKeptCascadeDependencies();
             Log::error('템플릿 설치 실패', [
                 'template' => $identifier,
                 'error' => $e->getMessage(),

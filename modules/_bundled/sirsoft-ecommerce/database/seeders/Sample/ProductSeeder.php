@@ -72,6 +72,11 @@ class ProductSeeder extends Seeder
     private array $usedHashes = [];
 
     /**
+     * gd 부재 경고를 이미 냈는지 여부 (상품마다 반복하지 않는다)
+     */
+    private bool $gdWarningShown = false;
+
+    /**
      * 상품 템플릿 데이터 정의 (이 데이터를 기반으로 100개 생성)
      *
      * 가격 분포: 50000원 이하 80%, 최대 200000원, 1000원 단위
@@ -235,6 +240,28 @@ class ProductSeeder extends Seeder
             'description' => ['ko' => '<p>당도 높은 국산 사과 3kg 박스입니다.</p>', 'en' => '<p>A 3kg box of sweet Korean apples.</p>'],
             'has_options' => false,
             'option_groups' => null,
+            'category_slug' => 'fruits',
+            'brand_slug' => null,
+        ],
+        // 옵션별 과세 종류 시연 (#612) — 상품 기본값은 과세, 「수출용」 옵션만 영세(세율 0%)
+        [
+            'name' => ['ko' => '배 1박스 (5kg)', 'en' => 'Pear Box (5kg)'],
+            'product_code' => 'FR-003',
+            'sku' => 'FR-003-5KG',
+            'list_price' => 35000,
+            'selling_price' => 30000,
+            'stock_quantity' => 40,
+            'safe_stock_quantity' => 5,
+            'sales_status' => 'on_sale',
+            'display_status' => 'visible',
+            'tax_status' => 'taxable',
+            'description' => ['ko' => '<p>국산 배 5kg 박스입니다. 수출용 옵션은 영세율(0%)로 판매됩니다.</p>', 'en' => '<p>A 5kg box of Korean pears. The export option is sold zero-rated (0%).</p>'],
+            'has_options' => true,
+            'option_groups' => [
+                ['name' => ['ko' => '구분', 'en' => 'Type'], 'values' => [['ko' => '국내용', 'en' => 'Domestic'], ['ko' => '수출용', 'en' => 'Export']]],
+            ],
+            // 옵션 조합 순서대로의 과세 종류 (null = 상품 기본값 따름)
+            'option_tax_statuses' => [null, 'zero_rated'],
             'category_slug' => 'fruits',
             'brand_slug' => null,
         ],
@@ -740,7 +767,7 @@ class ProductSeeder extends Seeder
             $this->attachCategory($product, $category->slug);
 
             // 옵션 생성 (모든 상품에 필수) — 무게(g)·부피(cm³)는 무게·부피 배송정책 시연에 쓰인다
-            $this->createOptions($product, $optionGroups, $sku, rand(1, 30) * 100, rand(1, 40) * 500);
+            $this->createOptions($product, $optionGroups, $sku, rand(1, 30) * 100, rand(1, 40) * 500, $template['option_tax_statuses'] ?? []);
 
             // 추가옵션 그룹·선택지 생성 (40% 확률) — 추가옵션 시스템 데모 데이터
             if (rand(1, 100) <= 40) {
@@ -1046,9 +1073,10 @@ class ProductSeeder extends Seeder
      * @param  string  $productSku  상품 SKU (옵션 SKU 생성 기준)
      * @param  int  $weightGram  옵션 무게 (g)
      * @param  int  $volumeCubicCm  옵션 부피 (cm³)
+     * @param  array<int, string|null>  $optionTaxStatuses  조합 순서대로의 옵션 과세 종류 (없거나 null = 상품 따름, #612)
      * @return void 반환값 없음
      */
-    private function createOptions(Product $product, array $optionGroups, string $productSku, int $weightGram = 500, int $volumeCubicCm = 1000): void
+    private function createOptions(Product $product, array $optionGroups, string $productSku, int $weightGram = 500, int $volumeCubicCm = 1000, array $optionTaxStatuses = []): void
     {
         // 옵션 조합 생성
         $combinations = $this->generateOptionCombinations($optionGroups);
@@ -1082,6 +1110,7 @@ class ProductSeeder extends Seeder
                 'volume' => $volumeCubicCm,
                 'is_default' => $sortOrder === 0,
                 'is_active' => true,
+                'tax_status' => isset($optionTaxStatuses[$sortOrder]) ? ProductTaxStatus::from($optionTaxStatuses[$sortOrder]) : null,
                 'sort_order' => $sortOrder++,
             ]);
         }
@@ -1377,6 +1406,16 @@ class ProductSeeder extends Seeder
     }
 
     /**
+     * PHP gd 확장(이미지 함수)을 쓸 수 있는지 반환합니다. (테스트가 부재를 흉내 내도록 protected)
+     *
+     * @return bool imagecreatefromstring 이 있으면 true
+     */
+    protected function gdAvailable(): bool
+    {
+        return function_exists('imagecreatefromstring');
+    }
+
+    /**
      * GD 색상 필터를 적용하여 이미지를 변형합니다.
      *
      * 5가지 필터 중 랜덤 적용: 색상 시프트, 따뜻한 톤, 차가운 톤, 밝기/대비, 세피아
@@ -1386,6 +1425,16 @@ class ProductSeeder extends Seeder
      */
     public function applyColorFilter(string $imageContent): string
     {
+        // gd 는 코어 기준 「선택」 확장이다 — 없으면 필터 없이 원본을 쓴다(#151). 경고는 한 번만 낸다.
+        if (! $this->gdAvailable()) {
+            if (! $this->gdWarningShown) {
+                $this->gdWarningShown = true;
+                $this->command?->warn('  - '.__('sirsoft-ecommerce::messages.seeders.product.color_filter_skipped_no_gd'));
+            }
+
+            return $imageContent;
+        }
+
         $image = @imagecreatefromstring($imageContent);
         if ($image === false) {
             return $imageContent;

@@ -1,4 +1,4 @@
-// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다).
+// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다). 복합과세 분할(#820)은 Vitest 금액 단언으로 잠근다 — 복합과세 협의 사이트코드가 없어 KCP 매출 구분은 실측 불가.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
@@ -27,10 +27,13 @@ interface PgPaymentData {
     customer_name?: string;
     customer_email?: string;
     customer_phone?: string;
-    /** 복합과세 분할용 */
-    tax_amount?: number;
-    vat_amount?: number;
-    tax_free_amount?: number;
+    /**
+     * 복합과세 분할용 — 서버는 면세분이 있을 때만 싣는다(없으면 null). `tax_amount` 는 부가세 포함 과세 합계.
+     * 구버전 서버는 `tax_free_amount` 만 실었다 — 그때는 기본 세율로 부가세를 나눈다.
+     */
+    tax_amount?: number | null;
+    vat_amount?: number | null;
+    tax_free_amount?: number | null;
     /**
      * 클레임 추가결제일 때만 서버가 싣는 「결제창을 닫으면 돌아갈 신청서 상세」 주소
      * (`ClaimPaymentRedirect::cancelled`). 있으면 이 결제는 주문이 아니라 클레임 결제다 —
@@ -106,14 +109,15 @@ export function isSupportedKcpCurrency(currency?: string): boolean {
 }
 
 /**
- * SDK 스크립트를 로드할 수 있는 호스트 (plugin.json `trusted_script_hosts` 미러).
+ * SDK 스크립트를 로드할 수 있는 호스트 (plugin.json `trusted_script_hosts` 의 부분집합 —
+ * manifest 는 SDK 가 이어서 싣는 npay·spay 계열 호스트까지 선언한다, #158).
  *
  * NHN KCP 결제창은 라이브러리가 아니라 그 회사 서버와 통신하는 서비스 SDK 라
  * 자체 호스팅할 수 없다. 대신 **주입 직전에** 호스트를 확인해, 설정·응답이 어떤
  * 경로로든 다른 주소를 지시하면 결제를 진행하지 않는다(fail-closed).
  *
  * PG사가 SDK 호스트를 바꾸면 이 상수와 plugin.json 을 **함께** 갱신한다 —
- * 둘이 어긋나면 테스트가 실패한다.
+ * 이 상수의 호스트가 manifest 에 없으면 테스트가 실패한다.
  */
 export const KNOWN_SDK_HOSTS: readonly string[] = ['testpay.kcp.co.kr', 'pay.kcp.co.kr'];
 
@@ -156,6 +160,9 @@ function unsupportedCurrencyMessage(currency?: string): string {
     return t('payment.error.krw_only', 'NHN KCP는 KRW 결제만 지원합니다. ({{currency}})', { currency: normalized ?? '' });
 }
 
+/** 과세 합계를 받지 못했을 때의 부가세율(%) — 이커머스 `VatCalculator::DEFAULT_RATE` 와 같다. */
+const DEFAULT_VAT_RATE = 10;
+
 export function buildKcpTaxFields(pgPaymentData: PgPaymentData): Record<string, string> {
     const paymentAmount = Math.max(0, Math.round(Number(pgPaymentData.amount ?? 0)));
     const taxFreeAmt = Math.min(
@@ -167,11 +174,17 @@ export function buildKcpTaxFields(pgPaymentData: PgPaymentData): Record<string, 
         return {};
     }
 
+    const taxablePaymentAmt = Math.max(0, paymentAmount - taxFreeAmt);
+    // 과세 합계를 받지 못하면(구버전 서버) 기본 세율로 나눈다 — 종전에는 이때 부가세가 0 으로 가
+    // 과세분 전액이 공급가액(comm_tax_mny)으로 등록됐다(#820).
+    const hasOrderTax = pgPaymentData.tax_amount !== undefined && pgPaymentData.tax_amount !== null;
     const taxTotalAmt = Math.max(0, Math.round(Number(pgPaymentData.tax_amount ?? 0)));
     const originalVatAmt = Math.max(0, Math.round(Number(pgPaymentData.vat_amount ?? 0)));
-    const taxablePaymentAmt = Math.max(0, paymentAmount - taxFreeAmt);
-    const vatAmt = taxablePaymentAmt > 0 && taxTotalAmt > 0 && originalVatAmt > 0
-        ? Math.min(taxablePaymentAmt, Math.round(taxablePaymentAmt * (originalVatAmt / taxTotalAmt)))
+    const vatRatio = hasOrderTax
+        ? (taxTotalAmt > 0 ? originalVatAmt / taxTotalAmt : 0)
+        : DEFAULT_VAT_RATE / (100 + DEFAULT_VAT_RATE);
+    const vatAmt = taxablePaymentAmt > 0
+        ? Math.min(taxablePaymentAmt, Math.round(taxablePaymentAmt * vatRatio))
         : 0;
     const supplyAmt = taxablePaymentAmt - vatAmt;
 
@@ -559,8 +572,8 @@ async function handleMobilePayment(
 /**
  * PC 결제 흐름
  *
- * Chrome 비동기 document.write() 차단을 우회하기 위해 iframe 내에서
- * document.open/write/close 로 SDK를 동기 로드한 뒤 KCP_Pay_Execute() 호출.
+ * 같은 출처 프레임 페이지(payment.kcp-frame)가 SDK 를 정적 <script src> 로 동기 로드한 뒤
+ * 브리지(assets/bridge/kcp-frame.js)가 KCP_Pay_Execute() 를 호출한다(#158 — 인라인 스크립트 0).
  */
 async function handlePcPayment(
     config: ClientConfig,
@@ -618,13 +631,8 @@ async function handlePcPayment(
         }
     }
 
-    const hiddenInputs = Object.entries(fields)
-        .map(([n, v]) => `<input type="hidden" name="${n}" value="${v.replace(/"/g, '&quot;')}">`)
-        .join('');
-
-    // SDK 주입 직전 출처 확인 — 아래 iframe `document.write` 는 코어 로더를 쓸 수 없으므로
-    // (동기 실행 순서가 KCP_Pay_Execute 호출 계약이다) 검증만 선행한다. 실패 시 결제를
-    // 진행하지 않는다(fail-closed).
+    // SDK 출처 확인 — 프레임 페이지가 이 주소를 그대로 싣는다(서버도 허용 주소 두 개와 정확히 대조한다).
+    // 실패 시 결제를 진행하지 않는다(fail-closed).
     assertTrustedSdkUrl(config.sdk_url);
 
     await new Promise<void>((_resolve, reject) => {
@@ -638,14 +646,14 @@ async function handlePcPayment(
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99998;';
         document.body.appendChild(overlay);
 
-        // 투명 iframe - KCP 결제창이 내부에 렌더링됨
+        // 투명 iframe - KCP 결제창이 내부에 렌더링됨. 같은 출처 프레임 페이지를 연다(#158) —
+        // 종전에는 빈 iframe 에 document.write 로 SDK 와 인라인 스크립트를 써 넣었는데, 사이트가
+        // script-src 'self' 를 걸면 그 인라인 코드가 실행되지 않아 15초 뒤 시간 초과로 끝났다.
         const iframe = document.createElement('iframe');
         iframe.id = 'kcp-sdk-iframe';
         iframe.setAttribute('allowtransparency', 'true');
         iframe.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:0;z-index:99999;background:transparent;';
-        document.body.appendChild(iframe);
 
-        const iframeWin = iframe.contentWindow as any;
         let settled = false;
         let sdkLoadTimer: number | undefined;
         let stopCloseWatcher: (() => void) | undefined;
@@ -657,6 +665,7 @@ async function handlePcPayment(
                 clearTimeout(sdkLoadTimer);
                 sdkLoadTimer = undefined;
             }
+            delete (window as any)[KCP_FRAME_BRIDGE];
             iframe.remove();
             overlay.remove();
         };
@@ -681,12 +690,8 @@ async function handlePcPayment(
             }
         };
 
-        stopCloseWatcher = watchKcpPaymentFrameClosure(iframe, () => {
-            rejectOnce(new KcpCancelledError('kcp-payment-frame-closed'));
-        });
-
-        // 결제 완료 콜백 - KCP가 결제 후 호출
-        iframeWin.m_Completepayment = function (form: HTMLFormElement) {
+        // 결제 완료 콜백 - KCP 가 프레임 안에서 m_Completepayment(form) 을 부르면 브리지가 이리로 넘긴다
+        const completePayment = (form: HTMLFormElement, frameWin: Window) => {
             const resCode = (form.elements as any)['res_cd']?.value ?? '';
             const resMsg  = (form.elements as any)['res_msg']?.value ?? '';
 
@@ -697,7 +702,8 @@ async function handlePcPayment(
                 // KakaoPay 등 direct 결제에서 KCP가 ordr_idxx 없는 새 폼을 전달하므로
                 // form을 그대로 제출하면 서버 검증 실패(invalid_params).
                 // order_info(우리 주문 필드 포함)를 기준으로 병합해야 한다.
-                const orderForm = iframeWin.document.forms.namedItem('order_info') as HTMLFormElement | null;
+                const frameDoc = frameWin.document;
+                const orderForm = frameDoc.forms.namedItem('order_info') as HTMLFormElement | null;
                 const targetForm = (orderForm && orderForm !== form) ? orderForm : form;
 
                 if (orderForm && orderForm !== form) {
@@ -706,7 +712,7 @@ async function handlePcPayment(
                         if (!el.name) continue;
                         let dest = orderForm.elements.namedItem(el.name) as HTMLInputElement | null;
                         if (!dest) {
-                            dest = iframeWin.document.createElement('input') as HTMLInputElement;
+                            dest = frameDoc.createElement('input') as HTMLInputElement;
                             dest.type = 'hidden';
                             dest.name = el.name;
                             orderForm.appendChild(dest);
@@ -718,7 +724,7 @@ async function handlePcPayment(
                 targetForm.action = callbackUrl;
                 targetForm.method = 'POST';
                 targetForm.target = '_top';
-                iframeWin.document.body.appendChild(targetForm);
+                frameDoc.body.appendChild(targetForm);
                 targetForm.submit();
             } else {
                 // 취소 또는 오류
@@ -727,44 +733,57 @@ async function handlePcPayment(
             }
         };
 
-        iframeWin.__kcpFail = (err: Error) => {
-            rejectOnce(err);
+        // 프레임 브리지(assets/bridge/kcp-frame.js)가 같은 출처 부모의 이 객체를 읽는다.
+        (window as any)[KCP_FRAME_BRIDGE] = {
+            fields,
+            complete: completePayment,
+            // 결제창이 열리면 SDK 로드 타임아웃을 해제한다
+            ready: () => {
+                if (sdkLoadTimer !== undefined) {
+                    clearTimeout(sdkLoadTimer);
+                    sdkLoadTimer = undefined;
+                }
+            },
+            fail: (message: string) => {
+                rejectOnce(new Error(message));
+            },
         };
 
-        // SDK 동기 로드 + KCP_Pay_Execute 호출
-        const iframeDoc = (iframe.contentDocument || iframeWin.document) as Document;
-        iframeDoc.open();
-        iframeDoc.write(`<!DOCTYPE html><html><head>
-<script src="${config.sdk_url}"><\/script>
-</head><body style="margin:0;padding:0;background:transparent;">
-<form name="order_info">${hiddenInputs}</form>
-<script>
-try {
-  if (typeof KCP_Pay_Execute === 'function') {
-    KCP_Pay_Execute(document.forms['order_info']);
-    window.__kcpReady && window.__kcpReady();
-  } else {
-    window.__kcpFail && window.__kcpFail(new Error('KCP_Pay_Execute not defined'));
-  }
-} catch(e) {
-  window.__kcpFail && window.__kcpFail(e);
-}
-<\/script>
-</body></html>`);
-        iframeDoc.close();
+        iframe.src = buildKcpFrameUrl(config.sdk_url);
+        document.body.appendChild(iframe);
 
-        // SDK 로드 실패 대비 타임아웃 — 결제창이 열리면(__kcpReady) 즉시 해제됨
+        stopCloseWatcher = watchKcpPaymentFrameClosure(iframe, () => {
+            rejectOnce(new KcpCancelledError('kcp-payment-frame-closed'));
+        });
+
+        // SDK 로드 실패 대비 타임아웃 — 결제창이 열리면(ready) 즉시 해제됨
         sdkLoadTimer = window.setTimeout(() => {
             rejectOnce(new Error('KCP SDK load timeout'));
         }, 15000);
-
-        iframeWin.__kcpReady = () => {
-            if (sdkLoadTimer !== undefined) {
-                clearTimeout(sdkLoadTimer);
-                sdkLoadTimer = undefined;
-            }
-        };
     });
+}
+
+/**
+ * PC 결제창 프레임 브리지가 부모에서 찾는 전역 이름 (assets/bridge/kcp-frame.js 와 짝).
+ */
+export const KCP_FRAME_BRIDGE = '__g7KcpFrame';
+
+/**
+ * PC 결제창 프레임 페이지 경로 (플러그인 web 라우트 `payment.kcp-frame`).
+ *
+ * 사이트 주소(SiteUrl)가 아니라 같은 출처 상대 경로다 — 부모와 프레임이 같은 출처여야 주문 값·결과를
+ * 주고받을 수 있는데, 별칭 주소로 접속한 사용자에게 사이트 주소는 다른 출처가 된다.
+ */
+export const KCP_FRAME_PATH = '/plugins/sirsoft-pay_nhnkcp/payment/kcp-frame';
+
+/**
+ * 결제창 프레임 주소를 만듭니다.
+ *
+ * @param sdkUrl 신뢰 호스트 확인을 거친 KCP SDK 주소
+ * @returns 같은 출처 프레임 주소
+ */
+export function buildKcpFrameUrl(sdkUrl: string): string {
+    return `${KCP_FRAME_PATH}?sdk=${encodeURIComponent(sdkUrl)}`;
 }
 
 /**

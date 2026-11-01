@@ -3,11 +3,15 @@
 namespace App\Http\Resources;
 
 use App\Extension\CoreVersionChecker;
+use App\Http\Resources\Traits\ExposesIntegratedBy;
+use App\Http\Resources\Traits\ExposesPhpExtensionRequirements;
 use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
 use Illuminate\Http\Request;
 
 class PluginResource extends BaseApiResource
 {
+    use ExposesIntegratedBy;
+    use ExposesPhpExtensionRequirements;
     use ExposesUpdateCoreCompatibility;
 
     /**
@@ -27,6 +31,8 @@ class PluginResource extends BaseApiResource
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
+            // 이 플러그인을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
+            'integrated_by' => $this->integratedBy('plugin'),
             'permissions' => $this->getValue('permissions', []),
             'roles' => $this->getValue('roles', []),
             'config' => $this->getValue('config', []),
@@ -62,6 +68,8 @@ class PluginResource extends BaseApiResource
             ),
             // 업데이트 대상 버전의 코어 호환(업데이트가 있을 때만) — 업데이트 창의 경고·강제 업데이트 체크가 읽는다.
             ...$this->updateCoreCompatibilityFields(),
+            // composer.json require/suggest ext-* 와 서버 로드 상태 — 목록 카드의 PHP 확장 배지(#151)
+            ...$this->phpExtensionRequirementFields('plugin'),
 
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
@@ -120,6 +128,8 @@ class PluginResource extends BaseApiResource
             'requires_core' => $this->getValue('requires_core'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
+            // 이 플러그인을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
+            'integrated_by' => $this->integratedBy('plugin'),
             'status' => $this->getValue('status', 'uninstalled'),
             'is_installed' => $this->getValue('is_installed', false),
             'has_settings' => $this->getValue('has_settings', false),
@@ -148,6 +158,8 @@ class PluginResource extends BaseApiResource
             'deactivated_reason' => $this->getDeactivatedReasonValue(),
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
+            // composer.json require/suggest ext-* 와 서버 로드 상태 — 상세 창의 PHP 확장 배지(#151)
+            ...$this->phpExtensionRequirementFields('plugin'),
             // 타임스탬프
             'created_at' => $this->getValue('created_at'),
             'updated_at' => $this->getValue('updated_at'),

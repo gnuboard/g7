@@ -1,0 +1,28 @@
+# audit:allow test-scenario-coverage reason: 축은 라우터 입력 변수 목록(SSoT)이고 조합은 독립적이다 — 각 시험은 한 축의 값만 바꿔 효과를 잠근다. 주소 정규화는 path_shape × entry 조합을 시험이 명시적으로 덮는다(진입·navigate·popstate·로그인 복귀).
+
+feature: 클라이언트 라우터의 라우트 매칭·인증 가드·주소 정규화
+
+description: |
+  템플릿 엔진 라우터(`resources/js/core/routing/Router.ts`)가 routes 를 받아 현재 주소에 맞는 레이아웃을 고르고,
+  리다이렉트·인증 가드·쿼리 파싱을 거쳐 `routeChange` 를 내는 흐름.
+
+  공개#156(engine-v1.84.0): 끝·연속 슬래시 주소(`/admin/settings/`, `/board//free`)로 들어오면 매칭에만 정규형을
+  쓰고 `routeChange.path`·로그인 복귀 주소에는 원본을 남겼다. 이제 진입 즉시 주소창을 정규형으로 replaceState
+  하고(히스토리 항목 수 그대로, 쿼리·해시 보존) 이후 전부 정규형을 쓴다. 서버 `canonical.path`(301)와 같은 규칙이다.
+
+axes:
+  path_shape: [plain, trailing_slash, double_slash, root]
+  entry: [initial, navigate, popstate]
+  auth: [public, auth_required_guest, auth_required_member]
+
+effects:
+  - routes_loaded_from_api_with_cache_version   # routes API 응답을 받아 라우트 목록을 채운다(?v= 캐시 버전)
+  - route_pattern_matches_and_extracts_params   # 정확·동적 파라미터·언어 prefix 패턴 매칭
+  - redirect_route_navigates_to_target          # redirect 라우트는 대상 경로로 이동한다
+  - auth_required_route_redirects_guest_to_login  # 미인증이면 로그인 주소로, 인증이면 routeChange
+  - array_query_params_parsed_into_route_query  # key[]·반복 키를 배열로 파싱한다
+  - client_router_normalizes_address_with_replace_state  # 끝·연속 슬래시 주소를 정규형으로 replaceState (공개#156)
+
+test_files:
+  - resources/js/core/routing/__tests__/Router.test.ts
+  - tests/Playwright/specs/trailing-slash-normalization.spec.ts

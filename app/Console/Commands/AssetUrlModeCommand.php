@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Services\SettingsService;
 use App\Support\AssetUrl;
@@ -21,16 +22,13 @@ use Illuminate\Console\Command;
  */
 class AssetUrlModeCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string 커맨드 시그니처
      */
     protected $signature = 'g7:asset-url-mode
         {mode? : 전환할 모드 (extension | extensionless). 생략 시 현재 모드만 출력}';
-
-    /**
-     * @var string 커맨드 설명
-     */
-    protected $description = '자산 URL 모드를 조회하거나 전환합니다 (정적 최적화 서버 대응)';
 
     /**
      * 커맨드를 실행합니다.
@@ -87,6 +85,7 @@ class AssetUrlModeCommand extends Command
      * 현재 모드와 진단 안내를 출력합니다.
      *
      * @param  string  $current  현재 모드
+     * @return void 반환값 없음
      */
     private function showStatus(string $current): void
     {

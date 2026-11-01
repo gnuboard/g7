@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\ScheduleService;
 use Illuminate\Console\Command;
@@ -13,17 +14,13 @@ use Illuminate\Console\Command;
  */
 class PruneScheduleHistoryCommand extends Command
 {
+    use LocalizesDescription;
     use ParsesDaysOption;
 
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'schedules:prune-history {--days=90 : 보관 기간(일)}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '보관 기간이 지난 스케줄 실행 이력을 삭제합니다';
 
     /**
      * Execute the console command.

@@ -263,6 +263,36 @@ describe('requestPaymentHandler', () => {
         ).toBe(19000);
     });
 
+    /**
+     * 구버전 이커머스는 면세 합계만 싣고 과세 합계·부가세를 싣지 않았다 — 그때 부가세가 0 으로 가
+     * 과세분 전액이 공급가액으로 등록됐다(#820). 과세 합계를 받지 못하면 기본 세율(10%)로 나눈다.
+     */
+    // @scenario area=tax_split
+    // @effects tax_split_falls_back_to_default_vat_rate
+    it('과세 합계를 받지 못하면 기본 세율로 부가세를 나눈다', () => {
+        const fields = buildKcpTaxFields({
+            ...PG_PAYMENT,
+            amount: 21000,
+            tax_free_amount: 10000,
+        });
+
+        expect(fields).toEqual({
+            tax_flag: 'TG03',
+            comm_tax_mny: '10000',
+            comm_vat_mny: '1000',
+            comm_free_mny: '10000',
+        });
+    });
+
+    // @scenario area=tax_split
+    // @effects tax_fields_rebalanced
+    it('서버가 과세 합계·부가세를 null 로 실어도 기본 세율로 나누고, 과세 합계 0 이면 부가세 0', () => {
+        expect(buildKcpTaxFields({ ...PG_PAYMENT, amount: 21000, tax_free_amount: 10000, tax_amount: null, vat_amount: null }))
+            .toMatchObject({ comm_tax_mny: '10000', comm_vat_mny: '1000' });
+        expect(buildKcpTaxFields({ ...PG_PAYMENT, amount: 21000, tax_free_amount: 10000, tax_amount: 0, vat_amount: 0 }))
+            .toMatchObject({ comm_tax_mny: '11000', comm_vat_mny: '0' });
+    });
+
     // @scenario area=currency
     // @effects non_krw_blocked
     it('KCP 통화 가드는 빈 값과 KRW만 허용', () => {
@@ -395,6 +425,8 @@ describe('클레임 추가결제', () => {
         vi.restoreAllMocks();
     });
 
+    // @scenario area=claim_window
+    // @effects claim_payment_skips_order_retry_prep
     it('클레임 결제는 주문 전용 재시도 준비(/payment/retry)를 부르지 않는다', async () => {
         await requestPaymentHandler({ params: { pgPaymentData: CLAIM_PAYMENT } });
 
@@ -402,6 +434,8 @@ describe('클레임 추가결제', () => {
         expect(urls.some((u) => u.includes('/payment/retry'))).toBe(false);
     });
 
+    // @scenario area=claim_window
+    // @effects order_payment_runs_retry_prep
     it('주문 결제는 종전대로 재시도 준비를 부른다', async () => {
         await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT } });
 
@@ -409,6 +443,8 @@ describe('클레임 추가결제', () => {
         expect(urls.some((u) => u.includes('/payment/retry'))).toBe(true);
     });
 
+    // @scenario area=claim_window
+    // @effects claim_window_cancel_returns_to_claim_detail
     it('클레임 결제창 취소는 닫힘 보고 없이 claim_cancel_return_url 로 이동한다', async () => {
         await finishCancelledPayment(CLAIM_PAYMENT, {
             closeReportUrl: 'https://shop.example.test/api/plugins/sirsoft-pay_nhnkcp/payment/close-report',
@@ -420,6 +456,8 @@ describe('클레임 추가결제', () => {
         expect(apiPost).not.toHaveBeenCalled();
     });
 
+    // @scenario area=claim_window
+    // @effects order_window_cancel_reports_close
     it('주문 결제창 취소는 닫힘을 보고하고 이동하지 않는다', async () => {
         await finishCancelledPayment(PG_PAYMENT, {
             closeReportUrl: 'https://shop.example.test/api/plugins/sirsoft-pay_nhnkcp/payment/close-report',
@@ -458,14 +496,22 @@ describe('SDK URL 신뢰 호스트 게이트', () => {
 
     // @scenario area=sdk_host
     // @effects sdk_host_allowlisted
-    it('manifest trusted_script_hosts 와 KNOWN_SDK_HOSTS 가 일치한다', () => {
+    it('KNOWN_SDK_HOSTS 는 manifest trusted_script_hosts 에 모두 선언되고, 선언 호스트마다 사유가 있다', () => {
         const manifest = JSON.parse(
             readFileSync(resolve(__dirname, '../../../../plugin.json'), 'utf-8')
         );
+        const hosts: string[] = manifest.trusted_script_hosts ?? [];
+        const reasons: Record<string, string> = manifest.trusted_script_hosts_reason ?? {};
 
-        expect([...(manifest.trusted_script_hosts ?? [])].sort()).toEqual(
-            [...KNOWN_SDK_HOSTS].sort()
-        );
+        // manifest 는 SDK 가 이어서 싣는 연동 스크립트 호스트(npay·spay 계열)까지 선언하므로
+        // 주입 게이트(KNOWN_SDK_HOSTS)보다 넓다 — 게이트 호스트가 빠지는 것만 막는다(#158).
+        expect(KNOWN_SDK_HOSTS.length).toBeGreaterThan(0);
+        for (const host of KNOWN_SDK_HOSTS) {
+            expect(hosts).toContain(host);
+        }
+        for (const host of hosts) {
+            expect(reasons[host], `${host} 사유`).toBeTruthy();
+        }
     });
 
     // @scenario area=sdk_host

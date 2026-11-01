@@ -58,6 +58,9 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | version | string | `1.0.3` | 모듈 버전 |
 | description | string | `게시판 관리를 위한 모듈` | 모듈 설명 (다국어 JSON) |
 | dependencies | array | `[]` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
+| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | status | string | `active` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
 | assets | object | `{"js":"\/api\/modules\/assets\/sirsoft-ecommerce?file=dis…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
 | icon_url | string\|null | `/api/extensions/module/sirsoft-board/icon?v=1.2.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
@@ -237,6 +240,7 @@ _단건 응답: `data` 객체의 필드 (`data.module` 은 목록과 동일한 `
 | pending_language_packs | array | `[]` | 이전 비활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록 (재활성화 안내 모달용). 각 항목: `id`, `identifier`, `locale`, `locale_native_name`. 없으면 빈 배열 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 | warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
+| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
 
 **응답 예시**
 
@@ -288,7 +292,7 @@ _단건 응답: `data` 객체의 필드 (`data.module` 은 목록과 동일한 `
 
 <!-- @generated:end -->
 
-**설명** 설치된 모듈을 활성화합니다. `core.modules.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다. 레이아웃 파일 검사(데이터 소스 id 중복·`layouts/` 밖 조각 참조·`.g7.html` 컴파일 오류 등)에 실패하면 상태·레이아웃을 바꾸지 않고 오류를 반환한다. 7.0 JSON 레이아웃의 깨진 조각 참조(파일 부재·조각 JSON 오류·순환)는 실패로 보지 않고 빈 자리로 등록한 뒤 `layout_warnings` 로 알린다.
+**설명** 설치된 모듈을 활성화합니다. `core.modules.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다. 레이아웃 파일 검사(데이터 소스 id 중복·`layouts/` 밖 조각 참조·`.g7.html` 컴파일 오류 등)에 실패하면 상태·레이아웃을 바꾸지 않고 오류를 반환한다. 7.0 JSON 레이아웃의 깨진 조각 참조(파일 부재·조각 JSON 오류·순환)는 실패로 보지 않고 빈 자리로 등록한 뒤 `layout_warnings` 로 알린다. 미충족 항목의 `status` 는 `not_installed`·`inactive`·`version_mismatch`(활성이지만 설치 버전이 요구 버전 제약 미달, 7.1.4) 이며, 각 항목에 `required_version`·`installed_version` 이 함께 온다.
 
 
 ### POST /api/admin/modules/check-updates
@@ -399,6 +403,9 @@ _단건 응답: `data` 는 비활성화된 모듈의 `ModuleResource` 객체 (�
 | version | string | `1.0.0` | 모듈 버전 |
 | description | string | `게시판 관리를 위한 모듈` | 모듈 설명 (현재 로케일로 해석) |
 | dependencies | array | `[]` | 의존 확장 목록 (manifest 파생) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
+| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | status | string | `inactive` | 비활성화 후 상태 |
 | assets | object\|null | `null` | 프론트엔드 에셋 매니페스트 (js/css/priority) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
@@ -477,6 +484,7 @@ _단건 응답: `data` 는 비활성화된 모듈의 `ModuleResource` 객체 (�
 | module_name | body | string | 예 | max 255 | module 이름 (식별자) |
 | vendor_mode | body | string | 아니오 | `auto`, `composer`, `bundled` | 벤더 설치 모드 (auto/composer/bundled) |
 | dependencies | body | array | 아니오 | — | 함께 설치할 의존 확장 목록 (cascade 1단계). 각 원소는 `type`(module\|plugin)·`identifier` 로 구성하며, install-preview 응답에서 사용자가 선택한 항목 |
+| integrations | body | array | 아니오 | — | 함께 설치할 선택 연동 확장 목록 (7.1.4). 각 원소 `type`(module\|plugin — 템플릿은 고를 수 없다)·`identifier`. install-preview 응답 `integrations[]` 에서 사용자가 고른 항목. 의존 확장 다음·본체 이전에 설치·활성화하며, 실패해도 본체 설치는 계속되고 실패 사유는 응답 `integration_notices` 로 알린다. 권한 판정은 `dependencies` 와 같다 |
 | language_packs | body | array | 아니오 | — | 함께 설치할 번들 언어팩 식별자 목록 (cascade 2단계, best-effort). 원소는 언어팩 식별자 문자열 |
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
@@ -515,6 +523,9 @@ _단건 응답: `data` 는 설치된 모듈의 `ModuleResource` 필드 + `langua
 | version | string | `1.0.0` | 설치된 버전 |
 | description | string | `게시판 관리를 위한 모듈` | 모듈 설명 |
 | dependencies | array | `[]` | 의존 확장 목록 (enriched — identifier/name/type/required_version/is_met 등) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
+| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | status | string | `inactive` | 설치 직후 상태 (설치만으로 활성화되지 않음) |
 | assets | object\|null | `null` | 프론트엔드 에셋 매니페스트 (js/css/priority) |
 | update_available | boolean | `false` | 업데이트 가능 여부 (설치 직후 기본 false) |
@@ -532,6 +543,7 @@ _단건 응답: `data` 는 설치된 모듈의 `ModuleResource` 필드 + `langua
 | language_pack_failures | array | `[]` | cascade 2단계(번들 언어팩 best-effort 설치)에서 실패한 항목. 각 항목: `identifier`, `reason`. 실패 없으면 빈 배열 |
 | language_packs_awaiting_host | array | `[]` | 함께 고른 언어팩 중 이 확장이 아직 꺼져 있어 **꺼진 채 설치**된 것의 식별자 목록(실패 아님). 이 확장을 켤 때 함께 켜진다. 없으면 빈 배열 |
 | warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
+| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
 
 **응답 예시**
 
@@ -584,9 +596,11 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** `_pending`·`_bundled` 대기소에 있는 모듈을 활성 디렉토리로 설치합니다. `core.modules.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 성공 시 201 상태로 반환하고, 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담깁니다. 설치 직후 모듈은 비활성이라 그 모듈 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 에 담기고, 모듈을 켤 때 함께 켜집니다.
+**설명** `_pending`·`_bundled` 대기소에 있는 모듈을 활성 디렉토리로 설치합니다. `core.modules.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 성공 시 201 상태로 반환하고, 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담깁니다. 설치 직후 모듈은 비활성이라 그 모듈 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 에 담기고, 모듈을 켤 때 함께 켜집니다. 의존 확장은 의존 관계 순서(의존의 의존 먼저)로 설치하고 본 확장과 같은 `vendor_mode` 를 쓴다(7.1.4). 의존 확장 활성화가 실패하면 그 확장 이름과 실제 사유(`extensions.errors.cascade_dependency_activation_failed`)로 중단한다 — 앞서 설치한 의존 확장은 되돌리지 않는다 — 이때와 본 확장 설치가 실패했을 때, 실패 사유 끝에(400·500 응답은 `error`, 의존 버전 미달 같은 검증 실패 422 응답은 `message`) 남겨 둔 의존 확장 목록(`extensions.errors.cascade_dependencies_kept`, 예: 「함께 설치·활성화한 의존 확장은 되돌리지 않고 남겨 두었습니다: sirsoft-ecommerce」)을 붙인다(7.1.4).
 
 **동반 설치 권한(7.1.0)** 함께 고른 의존 모듈·플러그인(`dependencies[]`)은 설치·활성화까지, 번들 언어팩(`language_packs[]`)은 설치·자동 활성화까지 수행되므로 항목마다 그 종류의 권한을 먼저 확인한다 — 미설치 의존 확장 = `core.{type}s.install` + `core.{type}s.activate`, 설치됐지만 꺼진 의존 확장 = `core.{type}s.activate`, 언어팩 = `core.language_packs.install` + `core.language_packs.manage`. 하나라도 없으면 아무것도 설치하지 않고 403(`extensions.errors.cascade_permission_denied`, 항목 종류·식별자 포함)을 낸다. 설치 창은 `install-preview` 응답의 항목별 `can_select` 로 같은 판정을 미리 보여 체크박스를 잠근다.
+
+**선택 연동 함께 설치(7.1.4)** 요청 본문 `integrations[]` 로 고른 연동 모듈·플러그인은 의존 확장 다음·본체 이전에 설치·활성화한다(템플릿을 켤 때 연동 모듈의 레이아웃·확장 조각이 함께 등록되도록). 의존과 달리 실패해도 본체 설치는 계속되며, 응답 `integration_notices` 에 그 항목과 실패 사유가 실린다. 권한은 `dependencies[]` 와 같이 먼저 확인해 없으면 403 이다. 설치 뒤에도 연동 대상 중 미설치·비활성·버전 미달이 남으면 `integration_notices` 와 응답 `message` 끝 한 줄로 알린다(막지 않음).
 
 ### POST /api/admin/modules/install-from-file
 <!-- @generated:start:api.admin.modules.install-from-file -->
@@ -631,6 +645,10 @@ _단건 응답: `data` 는 설치된 모듈의 `ModuleResource` 객체 (HTTP 201
 | version | string | `1.0.0` | 설치된 버전 |
 | description | string | `게시판 관리를 위한 모듈` | 모듈 설명 |
 | dependencies | array | `[]` | 의존 확장 목록 (enriched) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
+| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | status | string | `inactive` | 설치 직후 상태 |
 | assets | object\|null | `null` | 프론트엔드 에셋 매니페스트 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
@@ -740,6 +758,10 @@ _단건 응답: `data` 는 설치된 모듈의 `ModuleResource` 객체 (HTTP 201
 | version | string | `1.0.0` | 설치된 버전 |
 | description | string | `게시판 관리를 위한 모듈` | 모듈 설명 |
 | dependencies | array | `[]` | 의존 확장 목록 (enriched) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
+| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | status | string | `inactive` | 설치 직후 상태 |
 | assets | object\|null | `null` | 프론트엔드 에셋 매니페스트 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
@@ -840,6 +862,9 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | version | string | `0.1.1` | 모듈 버전 |
 | description | string | `학습용 최소 샘플 모듈 (Memo CRUD)` | 모듈 설명 (다국어 JSON) |
 | dependencies | array | `[]` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
+| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | status | string | `active` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
 | assets | object | `{"js":"\/api\/modules\/assets\/sirsoft-ecommerce?file=dis…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
 | icon_url | string\|null | `/api/extensions/module/sirsoft-board/icon?v=1.2.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
@@ -1073,6 +1098,9 @@ _단건 응답: `data` 는 갱신된 모듈의 `ModuleResource` 객체 (목록 �
 | version | string | `1.0.0` | 모듈 버전 |
 | description | string | `게시판 관리를 위한 모듈` | 모듈 설명 |
 | dependencies | array | `[]` | 의존 확장 목록 (enriched) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
+| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | status | string | `active` | 모듈 상태 (레이아웃 갱신은 활성 모듈만 가능) |
 | assets | object\|null | `null` | 프론트엔드 에셋 매니페스트 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
@@ -1170,6 +1198,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | preserved_backups | array | `[{"directory":"custom","archive":"…/extension-custom-backups/…"}]` | 삭제 전에 보관한 운영자 소유 디렉토리의 사본 목록. 보관 대상이 없으면 빈 배열 |
 | preserved_backups[].directory | string | `custom` | 보관된 디렉토리 이름 |
 | preserved_backups[].archive | string | `storage/app/extension-custom-backups/{identifier}-{Ymd_His}/custom` | 사본이 놓인 절대 경로 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 켜진 확장 목록 (7.1.4, 안내만 — 차단 없음). 각 원소 `type`·`identifier`·`name`(현재 로케일 문자열). 그 확장에서 이 확장을 쓰던 메뉴·화면이 사라진다 |
 
 > 운영자가 `custom/` 에 넣은 파일은 확장 삭제와 함께 사라지지만, 삭제 직전에 사본이
 > 보관됩니다. 이 필드가 그 경로를 알리는 유일한 통로이므로 화면에 노출해야 합니다.
@@ -1236,6 +1265,9 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | version | string | `0.1.0` | 모듈 버전 |
 | description | string | `학습용 최소 샘플 모듈 (Memo CRUD)` | 모듈 설명 (다국어 JSON) |
 | dependencies | array | `[]` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
+| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | status | string | `uninstalled` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
 | assets | null | `null` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
@@ -1518,6 +1550,9 @@ _단건 응답: `data` 객체의 필드 (`ModuleResource::toDetailArray()` + 주
 | github_url | string\|null | `https://github.com/gnuboard/g7-module-sirsoft-board` | GitHub 저장소 URL |
 | requires_core | string\|null | `7.0.0` | 요구하는 코어 최소 버전 (manifest `g7_version`) |
 | dependencies | array | `[]` | 의존 확장 목록 (enriched — identifier/name/type/required_version/installed_version/is_active/is_met) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
+| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | status | string | `active` | 상태 (`active` \| `inactive` \| `installing` \| `uninstalling` \| `updating` \| `uninstalled`) |
 | is_installed | boolean | `true` | 활성 디렉토리에 설치되어 DB 레코드가 있는지 여부 |
 | permissions | array | `[]` | manifest 가 선언한 권한 카테고리 목록 |
@@ -1713,6 +1748,23 @@ _단건 응답: `data` 객체의 필드 (`target` + `dependencies[]` + `language
 | dependencies[].is_met | boolean | `false` | 의존 조건 충족 여부 |
 | dependencies[].available | boolean | `true` | cascade 후보로 선택 가능한지 (미충족 의존성만 true) |
 | dependencies[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 (미충족 + 미설치 시 true) |
+| dependencies[].required_by | string | `sirsoft-ecommerce` | 2단계 이상 의존 행만 — 이 확장을 필요로 하는 의존 확장 식별자 (7.1.4, 직접 의존 행에는 없음) |
+| integrations | array | `[{"type":"module", ...}]` | 함께 쓰면 연동되는 확장(선택) 체크목록 (7.1.4, 아래 하위 필드). 고른 항목은 install API 의 `integrations[]` 로 보낸다 |
+| integrations[].type | string | `module` | 연동 대상 유형 (`module` \| `plugin` \| `template`) |
+| integrations[].identifier | string | `sirsoft-board` | 연동 대상 식별자 |
+| integrations[].name | string\|null | `게시판` | 연동 대상 이름 (현재 로케일, 미설치면 식별자) |
+| integrations[].status | string | `not_installed` | `not_installed` \| `inactive` \| `active` |
+| integrations[].required_version | string | `>=1.2.1` | 요구 버전 제약 (제약 없음은 `*`) |
+| integrations[].installed_version | string\|null | `null` | 설치 버전 (미설치면 null) |
+| integrations[].is_installed | boolean | `false` | 설치 여부 |
+| integrations[].is_active | boolean | `false` | 활성 여부 |
+| integrations[].is_met | boolean | `false` | 설치됨 && 버전 제약 충족 |
+| integrations[].can_select | boolean | `true` | 함께 설치·활성화할 수 있는지 — 권한(의존 확장과 같은 판정)이 있고 대상이 템플릿이 아니며, 연동 대상의 필수 의존(`requires`)을 모두 세울 수 있고 설치할 권한이 있을 때 true |
+| integrations[].default_selected | boolean | `true` | 기본 체크 여부 = `status !== 'active' && can_select` |
+| integrations[].requires | array | `[{"type":"module","identifier":"sirsoft-page","name":"페이지","action":"install_activate"}]` | 이 연동을 고르면 먼저 함께 설치·활성화되는 연동 대상 자신의 필수 의존(의존의 의존까지, 먼저 올 순서). 이미 활성인 의존은 빠진다. 연동 대상이 활성이면 빈 배열 |
+| integrations[].requires[].action | string | `install_activate` | `install_activate`(미설치) \| `activate`(설치됨·비활성) |
+| integrations[].blocked_reason | string\|null | `null` | 필수 의존 계획을 세울 수 없는 사유(없음·버전 미달·순환) — 있으면 `can_select=false` |
+| integrations[].blocked_by_permission | boolean | `false` | 필수 의존 중 현재 사용자가 설치·활성화할 권한이 없는 것이 있으면 true — 이때도 `can_select=false` |
 | language_packs | array | `[{"bundled_identifier":"g7-module-sirsoft-ecommerce-ja", ...}]` | 함께 설치 가능한 미설치 번들 언어팩 목록 (아래 하위 필드) |
 | language_packs[].bundled_identifier | string | `g7-module-sirsoft-ecommerce-ja` | 번들 언어팩 식별자 (install API 의 `language_packs[]` 값) |
 | language_packs[].locale | string | `ja` | 언어 코드 |
@@ -1721,8 +1773,11 @@ _단건 응답: `data` 객체의 필드 (`target` + `dependencies[]` + `language
 | language_packs[].version | string | `1.0.0` | 언어팩 버전 |
 | language_packs[].depends_on_extension | string\|null | `null` | 이 언어팩이 귀속된 의존 확장 식별자 (본 확장용이면 null). 이미 설치·활성화되어 충족된 의존 확장의 언어팩도 null — 그 의존 확장은 함께 고를 항목이 아니므로 언어팩을 따로 고를 수 있다 |
 | language_packs[].target_identifier | string | `sirsoft-board` | 이 언어팩이 번역하는 확장 식별자(본 확장·의존 확장 모두) — 창의 「종속: …」 배지가 쓴다 |
-| language_packs[].available | boolean | `true` | 선택 가능 여부 (항상 true — 미설치 항목만 수집) |
-| language_packs[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 |
+| language_packs[].scope | string | `module` | 이 언어팩이 번역하는 확장의 종류(module\|plugin\|template) — 사유 문장(「대상 :scope (:target) …」)에 쓴다 (7.1.4) |
+| language_packs[].required_target_version | string\|null | `null` | 언어팩이 요구하는 대상 확장 버전(manifest `requires.target_version`, 선언하지 않았으면 null) — `target_version_too_old` 사유 문장에 쓴다 (7.1.4) |
+| language_packs[].available | boolean | `true` | 지금 설치할 수 있는지. 같은 언어의 코어 언어팩이 켜져 있지 않거나, 이미 설치된 대상 확장의 버전이 언어팩 요구(`requires.target_version`)보다 낮으면 `false` |
+| language_packs[].blocked_reason | string\|null | `null` | 설치할 수 없는 사유 키 — `core_locale_missing`(같은 언어의 코어 언어팩이 꺼져 있음)·`target_version_too_old`(이미 설치된 대상 확장의 버전이 요구보다 낮음 — 함께 설치는 설치된 확장을 업데이트하지 않는다) 중 하나. 대상 확장이 아직 설치되지 않은 것은 이 설치로 풀리므로 사유가 아니다 |
+| language_packs[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 (`available` 이고 함께 설치할 권한이 있을 때 true) |
 
 **응답 예시**
 
@@ -1922,6 +1977,10 @@ _단건 응답: `data` 는 업데이트된 모듈의 `ModuleResource` 객체 (�
 | version | string | `1.0.1` | 업데이트 후 버전 |
 | description | string | `게시판 관리를 위한 모듈` | 모듈 설명 |
 | dependencies | array | `[]` | 의존 확장 목록 (enriched) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
+| php_extensions | object | `{"required":[],"suggested":{"soap":"모바일 결제…"},"missing_required":[],"missing_suggested":["soap"]}` | 확장 composer.json 이 선언한 PHP 확장과 서버 로드 상태 (7.1.4) — `required`(require.ext-*, 없으면 설치·활성화 422 `php_extension_missing`)·`suggested`(suggest.ext-* → 사유)·`missing_required`·`missing_suggested`(서버에 없는 것). 활성 디렉토리 → `_pending` → `_bundled` 순으로 읽는다. 목록 카드·상세 창의 PHP 확장 배지가 읽는다 |
 | status | string | `active` | 업데이트 후 복원된 상태 |
 | assets | object\|null | `null` | 프론트엔드 에셋 매니페스트 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |

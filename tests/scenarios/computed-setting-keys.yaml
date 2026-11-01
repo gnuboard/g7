@@ -17,6 +17,10 @@ effects:
   - computed_key_read_is_always_live
   - computed_key_never_written_on_save
   - install_seed_writes_schema_keys_only
+  - plugin_settings_init_prefers_defaults_json
+  - plugin_settings_init_falls_back_to_schema_keys_only
+  - plugin_settings_init_keeps_existing_file
 
 test_files:
   - tests/Unit/Services/PluginSettingsComputedKeysTest.php
+  - tests/Unit/Extension/PluginManagerSettingsTest.php

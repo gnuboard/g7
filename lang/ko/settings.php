@@ -25,6 +25,9 @@ return [
     'backup_path_required' => '백업 경로를 입력해주세요.',
     'restore_success' => '설정이 성공적으로 복원되었습니다.',
     'restore_failed' => '설정 복원에 실패했습니다.',
+    'errors' => [
+        'zip_extension_required' => '설정 백업·복원에는 서버의 PHP :extension 확장이 필요합니다. 서버 관리자에게 설치를 요청하세요.',
+    ],
     'restore_error' => '설정 복원 중 오류가 발생했습니다.',
     'save_individual_failed' => '설정 저장에 실패했습니다: :error',
     'static_cache_status_loaded' => '초기 화면 정적 파일 상태를 불러왔습니다.',
@@ -196,7 +199,7 @@ return [
 
         // 시스템 요구사항
         'system_requirements_failed' => '시스템 요구사항이 충족되지 않습니다:',
-        'no_extract_method_available' => '압축을 풀 수 없습니다. PHP zip 확장(ZipArchive)이 필요합니다. 또는 --source 옵션으로 수동 업데이트할 수 있습니다.',
+        'no_extract_method_available' => '압축을 풀 수 없습니다. PHP zip 확장(ZipArchive)이 필요합니다. 서버에 zip 확장을 설치한 뒤 다시 시도하세요.',
         'manual_update_guide' => '수동 업데이트: GitHub에서 릴리스 ZIP을 다운로드하여 압축 해제 후, php artisan core:update --source=/압축해제/경로 명령어를 실행하세요.',
 
         // 추출 폴백 체인
@@ -222,6 +225,8 @@ return [
             'target_version_pending' => '업데이트 버전: (ZIP 추출 후 판별)',
             'target_version' => '업데이트 버전: :version',
             'confirm_update' => '코어를 업데이트하시겠습니까?',
+            'php_extension_core_missing' => '새 코어에 필요한 PHP 확장 :extensions 이(가) 서버에 없어 업데이트를 중단했습니다. 확장을 설치한 뒤 다시 실행하세요. (사이트는 바뀌지 않았습니다)',
+            'php_extension_extension_warning' => '함께 갱신될 확장 :extension 이(가) 요구하는 PHP 확장 :extensions 이(가) 서버에 없습니다 — 업데이트는 진행하지만 해당 기능이 동작하지 않을 수 있습니다',
             'pending_invalid' => '_pending 디렉토리 문제:',
             'pending_path' => '경로: :path',
             'pending_owner' => '소유자: :owner, 그룹: :group, 퍼미션: :permissions',
@@ -367,6 +372,7 @@ return [
         'prune_extra_only_kept' => '배포본에 없는 파일만 다름, 보존: :label (배포본에 없는 파일 :count개)',
         'prune_extra_only_hint' => '배포본에 없는 파일만 다른 폴더는 이전 판에서 남은 파일일 수 있습니다(기본 업데이트는 새 판에서 지워진 파일을 지우지 않습니다). 확인한 뒤 지우려면 --include-modified 를 함께 지정하세요.',
         'prune_protected_dependency' => '의존 대상이라 보존: :label (:required_by)',
+        'prune_protected_integration' => '켜져 있는 확장의 연동 대상이라 보존: :label (:integrated_by)',
         'prune_no_release_for_modified' => '배포본이 없어 수정 여부를 확인할 수 없습니다 — 수정 여부와 무관하게 지우려면 --include-modified 를 지정하세요.',
         'prune_summary' => ':count개를 삭제했습니다.',
         'unknown_action' => '알 수 없는 동작입니다: :action (list|place|prune)',
@@ -398,7 +404,34 @@ return [
     ],
     // `settings:*` 명령 출력
     'console' => [
+        'cli' => [
+            'scope_conflict' => '--plugin 과 --module 은 함께 쓸 수 없습니다.',
+            'unknown_key' => '알 수 없는 설정 키입니다: :key',
+            'key_format' => '설정 키는 「범주.항목」 형식입니다 (예: mail.host): :key',
+            'computed_key' => ':key 는 다른 값에서 계산되는 값이라 지정할 수 없습니다.',
+            'env_locked' => ':key 는 .env 가 값을 정하고 있어 여기서 바꿀 수 없습니다. .env 의 :env 를 고치세요.',
+            'sensitive_positional' => ':key 는 민감한 값이라 명령줄 인자로 받지 않습니다 — 환경변수 G7_SETTING_VALUE, --value-file, 숨김 입력 중 하나를 쓰세요.',
+            'value_missing' => '값을 주세요 — 위치 인자, --value-file, 환경변수 G7_SETTING_VALUE 중 하나.',
+            'value_file_unreadable' => '값 파일을 읽을 수 없습니다: :path',
+            'invalid_json' => '--json-value 의 값이 올바른 JSON 이 아닙니다: :error',
+            'ask_secret' => ':key 값 (입력한 글자는 보이지 않습니다)',
+            'array_replaced' => '배열 값은 통째로 바뀝니다 (기존 항목과 합치지 않습니다).',
+            'validation_failed' => '검증을 통과하지 못해 저장하지 않았습니다:',
+            'save_failed' => '저장하지 못했습니다: :reason',
+            'saved' => '저장했습니다: :key',
+            'changed' => '   :before → :after',
+            'cache_rebuilt' => '설정 캐시를 다시 만들었습니다.',
+            'plugin_not_found' => '설치된 플러그인이 아닙니다: :id',
+            'plugin_unknown_key' => ':id 플러그인 설정에 없는 키입니다: :key',
+            'module_unsupported' => '이 모듈은 터미널 설정 지정을 지원하지 않습니다: :id',
+            'admin_screen_only' => ':key 는 관리자 화면에서만 바꿀 수 있습니다.',
+            'secrets_shown' => '민감한 값을 그대로 보여 줍니다 — 화면 기록·공유에 주의하세요.',
+            'computed_marker' => '(계산값)',
+            'env_locked_marker' => '(.env 고정)',
+            'no_settings' => '표시할 설정이 없습니다.',
+        ],
         'install' => [
+            'cache_refresh_failed' => '설정은 설치했지만 캐시를 다시 만들지 못했습니다(관리자 화면 저장 또는 php artisan config:cache 로 다시 만드세요): :error',
             'defaults_not_found' => '기본 설정 파일을 찾을 수 없습니다: :path',
             'defaults_check_hint' => ':path 파일이 존재하는지 확인하세요.',
             'defaults_parse_failed' => '기본 설정 파일 JSON 파싱 실패: :error',
@@ -428,5 +461,13 @@ return [
             'done' => '마이그레이션이 완료되었습니다!',
             'location' => '설정 파일 위치: :path',
         ],
+    ],
+    // 환경설정 > 고급 > GeoIP [갱신] 결과
+    'geoip' => [
+        'update_success' => 'GeoIP 데이터베이스를 갱신했습니다.',
+        'license_key_missing' => 'MaxMind 라이선스 키가 설정되지 않았습니다.',
+        'license_key_invalid' => 'MaxMind 라이선스 키가 올바르지 않습니다.',
+        'connection_failed' => 'MaxMind 서버에 연결하지 못했습니다.',
+        'update_failed' => 'GeoIP 데이터베이스를 갱신하지 못했습니다.',
     ],
 ];

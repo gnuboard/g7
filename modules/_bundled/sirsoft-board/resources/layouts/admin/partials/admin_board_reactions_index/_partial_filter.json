@@ -184,31 +184,11 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:sirsoft-board.admin.reactions.filters.board_label",
                                 "className": "select-composite w-64",
-                                "value": "{{_global.reactionBoardFilter !== undefined ? _global.reactionBoardFilter : (query.board_id || '')}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": ""
-                                    },
-                                    "text": "$t:sirsoft-board.admin.reactions.filters.board_all"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "iteration": {
-                                        "source": "{{reactions?.data?.boards ?? []}}",
-                                        "item_var": "b"
-                                    },
-                                    "props": {
-                                        "value": "{{b.id}}"
-                                    },
-                                    "text": "{{b.name}}"
-                                }
-                            ]
+                                "value": "{{_global.reactionBoardFilter !== undefined ? _global.reactionBoardFilter : (query.board_id || '')}}",
+                                "options": "{{[{ value: '', label: $t('sirsoft-board.admin.reactions.filters.board_all') }].concat((reactions?.data?.boards ?? []).map(b => ({ value: String(b.id), label: b.name })))}}"
+                            }
                         }
                     ]
                 },
@@ -254,30 +234,9 @@
                                         "data-testid": "admin-reaction-type-filter",
                                         "aria-label": "$t:sirsoft-board.admin.reactions.filters.type_label",
                                         "className": "select-composite w-40 shrink-0",
-                                        "value": "{{_global.reactionTypeFilter !== undefined ? _global.reactionTypeFilter : (query.reaction_type_id || '')}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Option",
-                                            "props": {
-                                                "value": ""
-                                            },
-                                            "text": "$t:sirsoft-board.admin.reactions.filters.type_all"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Option",
-                                            "iteration": {
-                                                "source": "{{reactions?.data?.reaction_types ?? []}}",
-                                                "item_var": "t"
-                                            },
-                                            "props": {
-                                                "value": "{{t.id}}"
-                                            },
-                                            "text": "{{t.is_active === false ? t.name + ' ' + $t('sirsoft-board.admin.reactions.filters.type_inactive_suffix') : t.name}}"
-                                        }
-                                    ]
+                                        "value": "{{_global.reactionTypeFilter !== undefined ? _global.reactionTypeFilter : (query.reaction_type_id || '')}}",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-board.admin.reactions.filters.type_all') }].concat((reactions?.data?.reaction_types ?? []).map(t => ({ value: String(t.id), label: t.is_active === false ? t.name + ' ' + $t('sirsoft-board.admin.reactions.filters.type_inactive_suffix') : t.name })))}}"
+                                    }
                                 },
                                 {
                                     "id": "target_filter_select",

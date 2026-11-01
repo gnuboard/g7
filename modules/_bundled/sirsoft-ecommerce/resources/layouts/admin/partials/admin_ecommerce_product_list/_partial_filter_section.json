@@ -1242,6 +1242,41 @@
                                             "text": "$t:sirsoft-ecommerce.enums.tax_status.tax_free"
                                         }
                                     ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 cursor-pointer text-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "영세(세율 0%). 상품 기본값이 영세이거나 옵션 중 하나라도 영세로 지정한 상품을 찾는다 (#612)",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "filter.taxStatus": "zero_rated"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "tax_status",
+                                                "className": "radio",
+                                                "checked": "{{_local.filter.taxStatus === 'zero_rated'}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-ecommerce.enums.tax_status.zero_rated"
+                                        }
+                                    ]
                                 }
                             ]
                         }

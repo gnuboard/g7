@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Traits\LocalizesDescription;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
@@ -11,17 +13,14 @@ use Illuminate\Support\Facades\Log;
 
 class DeactivateTemplateCommand extends Command
 {
+    use LocalizesDescription;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
 
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'template:deactivate {identifier : 템플릿 식별자}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '템플릿을 비활성화합니다';
 
     /**
      * 템플릿 관리자 및 리포지토리를 주입합니다.
@@ -72,6 +71,7 @@ class DeactivateTemplateCommand extends Command
             if ($result) {
                 // 성공 메시지
                 $this->info($this->lifecycleDoneIcon().' '.__('templates.commands.deactivate.success', ['template' => $identifier]));
+                $this->reportIntegratedBy('template', $identifier);
 
                 // 경고 메시지
                 $this->warn('⚠️  '.__('templates.commands.deactivate.no_active_warning', [

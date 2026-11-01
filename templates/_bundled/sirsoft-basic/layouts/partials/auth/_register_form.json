@@ -565,8 +565,11 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "약관 이름 단추 — 약관 문서는 페이지 모듈이 서빙하므로 그 모듈이 꺼져 있으면 단추 대신 같은 글을 일반 글자로 둔다(동의 체크박스는 그대로).",
+                                            "id": "register_terms_view_button",
                                             "type": "basic",
                                             "name": "Button",
+                                            "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
                                             "actions": [
                                                 {
                                                     "comment": "약관 전문 보기 — 모달을 열기 전에 본문을 받아 온다(가입 화면 진입 때는 부르지 않는 데이터소스라 여기서 처음 채워진다).",
@@ -590,6 +593,13 @@
                                                 "type": "button",
                                                 "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                             },
+                                            "text": "$t:auth.terms"
+                                        },
+                                        {
+                                            "id": "register_terms_label",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!(_global.activeModules?.includes('sirsoft-page') ?? true)}}",
                                             "text": "$t:auth.terms"
                                         },
                                         {
@@ -655,8 +665,11 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "방침 이름 단추 — 약관과 같이 페이지 모듈이 꺼져 있으면 일반 글자로 둔다.",
+                                            "id": "register_privacy_view_button",
                                             "type": "basic",
                                             "name": "Button",
+                                            "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
                                             "actions": [
                                                 {
                                                     "comment": "방침 전문 보기 — 약관 쪽과 같은 흐름이고 받아오는 문서만 다르다.",
@@ -680,6 +693,13 @@
                                                 "type": "button",
                                                 "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                             },
+                                            "text": "$t:auth.privacy"
+                                        },
+                                        {
+                                            "id": "register_privacy_label",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!(_global.activeModules?.includes('sirsoft-page') ?? true)}}",
                                             "text": "$t:auth.privacy"
                                         },
                                         {

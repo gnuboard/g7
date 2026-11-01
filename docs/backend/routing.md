@@ -196,6 +196,35 @@ catch-all 은 그 뒤에 등록된 라우트를 **가린다**. Laravel 은 등�
 예약 프리픽스를 추가하는 확장·기능은 이 목록에 자기 프리픽스를 함께 넣는다. 스코프가 좁은 catch-all
 (`admin/` 하위만 받는 admin catch-all 등)은 애초에 다른 프리픽스를 삼키지 않으므로 대상이 아니다.
 
+### 끝·연속 슬래시는 301 로 정규형에 모은다
+
+Laravel 라우터는 `path()` 로 매칭하므로 `/admin/`·`/board//free` 도 catch-all 에 걸린다. 그러나 그 뒤의
+템플릿 라우트 판정·SEO 렌더·SEO 캐시 키·방문 통계는 요청 경로 문자열을 쓰는데, `getPathInfo()`·`getRequestUri()`
+는 끝 `/` 와 `//` 를 그대로 남긴다. 그대로 두면 같은 화면이 두 갈래가 된다(웹 서버에 따라 `/admin/` 이 404).
+
+그래서 화면 셸 라우트 두 묶음(admin catch-all · user catch-all)에 `canonical.path` 미들웨어를 붙인다.
+
+- **GET·HEAD 만** 이동한다. 다른 메서드는 통과한다.
+- 끝 `/` 를 떼고(루트 제외) 연속 `/` 를 하나로 줄인 주소로 **301** 한다. 쿼리스트링은 원문 그대로 붙인다(순서 보존).
+- 템플릿에 없는 주소도 먼저 이동하고, 이동한 곳에서 404 를 판정한다.
+- `public/` 아래 실제 디렉터리 경로는 건너뛴다(이동 루프 방지 — Apache `RewriteCond !-d` 와 같음).
+- 이동 주소는 사이트 주소 안에서만 만든다 — `//evil.com/` 같은 경로도 `https://<사이트>/evil.com` 으로 간다.
+- `/api/*`·확장 라우트·사이트맵은 대상이 아니다.
+
+**순서가 계약이다.** `canonical.path` 는 `canonical.host` 바로 뒤, 봇 기록(`analytics.bots`)·SEO(`seo`)·서버 통계
+(`analytics.fallback`)보다 **앞**에 둔다. 그래야 끝·연속 슬래시 주소가 그쪽에 닿지 않는다.
+
+```php
+Route::middleware(['canonical.host', 'canonical.path', 'template.dependencies:user', 'analytics.bots', 'seo', 'analytics.fallback'])
+```
+
+요청 경로를 문자열 비교·캐시 키로 쓸 때는 `getPathInfo()` 를 직접 쓰지 말고 `App\Support\RequestPath::normalize()`
+를 거친다. 미들웨어를 거치지 않는 경로(직접 호출·다른 라우트)에서도 같은 정규형을 쓰기 위해서다. 클라이언트 라우터도
+같은 규칙으로 주소창을 정규형으로 바꾼다([라우터 주소 정규화](../frontend/actions-handlers-navigation.md)).
+
+이 미들웨어로 Apache 와 nginx 의 동작이 같아졌다. Apache 는 `public/.htaccess` 의 끝 슬래시 301 규칙이 먼저
+처리하고, nginx 는 이 미들웨어가 처리한다. 연속 슬래시는 두 서버 모두 이 미들웨어가 처리한다.
+
 ### 디버그·개발 라우트는 그룹 단위로 게이트한다
 
 디버그 도구처럼 "특정 조건에서만 열려야 하는" 라우트군은 판정을 **핸들러 안이 아니라 그룹

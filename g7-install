@@ -1,0 +1,22 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * 그누보드7 터미널(CLI) 설치 명령
+ *
+ * 웹 설치 마법사(/install)와 같은 규칙으로 터미널에서 설치한다. vendor 없이 동작한다.
+ *
+ *   php g7-install --help
+ *
+ * 웹 서버가 이 파일을 실행하는 일은 없어야 한다 — 확장자가 없어 PHP 로 처리되지 않으며, 그래도 CLI 가 아닌
+ * 환경에서 불리면 아무것도 하지 않고 끝난다.
+ */
+if (PHP_SAPI !== 'cli') {
+    exit(1);
+}
+
+define('BASE_PATH', __DIR__);
+
+require __DIR__.'/public/install/includes/cli/app.php';
+
+exit(g7_install_cli_main($argv));

@@ -104,6 +104,20 @@ return [
             'layout' => '화면',
         ],
         'unrouted_hint' => '고객이 이 화면에 들어가려면 플러그인이 `core.routes.filter_merged` 필터로 사용자 라우트를 주입해야 합니다. 모달·부분 화면으로만 쓰면 무시해도 됩니다.',
+        'requires_header' => '=== routes.json requires 형식 오류 (조건을 무시하고 라우트를 남김) ===',
+        'requires_headers' => [
+            'template' => '템플릿',
+            'path' => '경로',
+            'source' => '선언',
+            'reason' => '문제',
+        ],
+        'requires_reasons' => [
+            'not_object' => 'requires 는 {"modules": [...], "plugins": [...]} 객체여야 합니다',
+            'unknown_type' => '모르는 유형 :type (modules·plugins 만 지원)',
+            'not_list' => ':type 는 식별자 배열이어야 합니다',
+            'non_string_id' => ':type 에 문자열이 아닌 식별자가 있습니다',
+        ],
+        'requires_hint' => '이 조건은 공개 라우트·검색봇·사이트맵에서 무시되고 라우트는 그대로 나갑니다. 고치지 않으면 확장이 꺼져도 화면이 숨지 않습니다.',
         // `layout:audit-expressions`·`layout-versions:recalculate-diffs`·`layout-previews:cleanup` 명령 출력
         'audit_expressions' => [
             'invalid_source' => '--source 는 db|files|all 중 하나여야 합니다.',

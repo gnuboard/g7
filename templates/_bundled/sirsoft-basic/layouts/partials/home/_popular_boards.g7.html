@@ -1,6 +1,6 @@
-<!-- 활발한 게시판 카드 — 게시판 자체의 순위를 보여 준다. 옆의 최근 글 카드와 높이를 맞추려 세로로 늘어나게 두었다. -->
+<!-- 활발한 게시판 카드 — 게시판 자체의 순위를 보여 준다. 옆의 최근 글 카드와 높이를 맞추려 세로로 늘어나게 두었다. 게시판 모듈이 꺼져 있으면 카드째 숨긴다. -->
 <partial description="인기 게시판 카드">
-  <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col">
+  <div data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
       <icon name="flame" class="text-xl text-orange-600"/>
       <span>$t:home.popular_boards</span>

@@ -75,6 +75,7 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -117,7 +118,8 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
 
         $amount = (int) ($payload['amount'] ?? 0);
         $taxFree = (int) ($payload['tax_free_amount'] ?? 0);
-        [$supplyPrice, $tax] = $this->splitSupplyAndTax($amount, $taxFree);
+        $vat = isset($payload['vat_amount']) ? (int) $payload['vat_amount'] : null;
+        [$supplyPrice, $tax] = $this->splitSupplyAndTax($amount, $taxFree, $vat);
 
         try {
             $response = app(KgInicisApiService::class)->issueCashReceipt([
@@ -252,19 +254,24 @@ class RegisterCashReceiptProviderListener implements HookListenerInterface
     /**
      * 발급 금액을 공급가액과 부가세로 나눕니다.
      *
-     * 면세분은 부가세 계산에서 제외하고 공급가액에 포함시킨다. 반올림 잔차는
-     * 공급가액에 귀속시켜 총액(price = supplyPrice + tax)을 보존한다.
+     * 면세분(면세 + 영세)은 부가세 계산에서 제외하고 공급가액에 포함시킨다. 부가세는 이커머스가 주문 부가세를
+     * 과세 몫 비율로 나눠 실은 값(`vat_amount`, 이커머스 1.3.3 #612)을 그대로 쓴다 — 5% 세율 상품이나 영세가 섞인
+     * 주문에서 과세 몫/11 은 부가세를 과다 신고한다. 값이 없으면(구버전 이커머스) 종전대로 과세 몫/11.
+     * 반올림 잔차는 공급가액에 귀속시켜 총액(price = supplyPrice + tax)을 보존한다.
      *
      * @param  int  $amount  발급 총액
-     * @param  int  $taxFreeAmount  면세 금액
+     * @param  int  $taxFreeAmount  면세 금액 (영세 포함)
+     * @param  int|null  $vatAmount  이커머스가 계산한 부가세 (없으면 null)
      * @return array{0: int, 1: int} [공급가액, 부가세]
      */
-    private function splitSupplyAndTax(int $amount, int $taxFreeAmount): array
+    private function splitSupplyAndTax(int $amount, int $taxFreeAmount, ?int $vatAmount = null): array
     {
         $taxFree = max(0, min($taxFreeAmount, $amount));
         $taxable = $amount - $taxFree;
 
-        $tax = (int) round($taxable / 11);
+        $tax = $vatAmount !== null
+            ? max(0, min($vatAmount, $taxable))
+            : (int) round($taxable / 11);
         $supplyPrice = $amount - $tax;
 
         return [$supplyPrice, $tax];

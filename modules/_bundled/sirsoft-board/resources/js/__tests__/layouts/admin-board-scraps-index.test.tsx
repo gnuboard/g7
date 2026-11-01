@@ -89,15 +89,10 @@ describe('관리자 스크랩 관리 — 레이아웃 계약 (#524 WP-A)', () =>
             // 모집단을 레이아웃에서 파생한다(넓은 화면 판 + 좁은 화면 판). 한쪽만 고치면
             // 다른 쪽이 조용히 빈 셀렉트로 남는다.
             // <options> 로 감싸면 컴파일러가 정적 props.options 로 평탄화하면서 data-each 를
-            // 버려, 화면에는 풀리지 않은 «빈 항목» 하나만 뜬다(2026-09-15 브라우저 실측).
+            // 버려, 화면에는 풀리지 않은 «빈 항목» 하나만 뜬다(2026-09-15 브라우저 실측). 그래서 선택지는
+            // 응답을 펼치는 식(`options="{{…}}"`)으로 준다 — 관리자 템플릿의 목록형 드롭다운으로 그려진다.
             const boardSelects = flattenNodes(filterPartial).filter(
-                (n: any) =>
-                    asArray(n?.children).some(
-                        (c: any) => c?.text === '$t:sirsoft-board.admin.scraps.filters.board_all'
-                    ) ||
-                    asArray(n?.props?.options).some(
-                        (o: any) => o?.label === '$t:sirsoft-board.admin.scraps.filters.board_all'
-                    )
+                (n: any) => n?.name === 'Select' && String(n?.props?.options ?? '').includes('scraps.filters.board_all')
             );
 
             // 넓은 화면·좁은 화면을 `responsive` 한 벌로 덮으므로 셀렉트는 하나다(종전에는 두 벌이었다).
@@ -105,13 +100,12 @@ describe('관리자 스크랩 관리 — 레이아웃 계약 (#524 WP-A)', () =>
             expect(boardSelects.length).toBeGreaterThanOrEqual(1);
 
             for (const select of boardSelects) {
-                expect(asArray(select?.props?.options)).toHaveLength(0);
-
-                const iterated = asArray(select?.children).find((c: any) => c?.iteration);
-
-                expect(iterated?.iteration?.source).toContain('scraps?.data?.boards');
-                expect(iterated?.iteration?.item_var).toBeTruthy();
-                expect(iterated?.props?.value).toContain(iterated.iteration.item_var);
+                // 정적 배열로 구워지지 않았고(식 문자열) 응답 메타를 펼쳐 항목 값을 게시판 번호로 둔다
+                expect(typeof select?.props?.options).toBe('string');
+                expect(select.props.options).toMatch(/^\{\{[\s\S]*\}\}$/);
+                expect(select.props.options).toContain('scraps?.data?.boards');
+                expect(select.props.options).toContain('b.id');
+                expect(asArray(select?.children).filter((c: any) => c?.name === 'Option')).toHaveLength(0);
             }
         });
 

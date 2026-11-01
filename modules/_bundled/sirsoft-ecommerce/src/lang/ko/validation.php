@@ -268,6 +268,7 @@ return [
             'option_selling_price' => '옵션 판매가',
             'option_price_adjustment' => '옵션 가격 조정액',
             'option_stock_quantity' => '옵션 재고 수량',
+            'option_tax_status' => '옵션 과세 종류',
             'option_name' => '옵션명',
             'option_code' => '옵션코드',
             // 다국어 필수 칸 이름 (옵션그룹·추가옵션·상품정보제공고시)
@@ -340,6 +341,9 @@ return [
             ],
             'stock_quantity' => [
                 'required_with' => '옵션 재고 수량은 필수입니다.',
+            ],
+            'tax_status' => [
+                'in' => '옵션 과세 종류는 과세·면세·영세 중에서 고르거나 비워 두어야 합니다.',
             ],
         ],
         'additional_options' => [

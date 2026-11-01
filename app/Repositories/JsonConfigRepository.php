@@ -3,6 +3,8 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Exceptions\PhpExtensionUnavailableException;
+use App\Support\PhpExtensionProbe;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -356,12 +358,29 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     }
 
     /**
+     * 백업·복원이 쓰는 zip 확장이 있는지 확인합니다. (#151 — 없으면 `ZipArchive` 미정의로 500 이 났다)
+     *
+     * 이 저장소는 컨테이너 바인딩 이전에 `new` 로 만들어지므로 조회기는 호출 시점에 컨테이너에서 받는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @throws PhpExtensionUnavailableException zip 확장이 없을 때
+     */
+    private function assertZipAvailable(): void
+    {
+        if (! app(PhpExtensionProbe::class)->loaded('zip')) {
+            throw new PhpExtensionUnavailableException('zip', 'settings.errors.zip_extension_required');
+        }
+    }
+
+    /**
      * 설정을 백업합니다.
      *
      * @return string 백업 파일 경로
      */
     public function backup(): string
     {
+        $this->assertZipAvailable();
         $this->ensureBackupDirectoryExists();
 
         $timestamp = now()->format('Y-m-d_His');
@@ -411,6 +430,8 @@ class JsonConfigRepository implements ConfigRepositoryInterface
         if (! file_exists($fullBackupPath)) {
             return false;
         }
+
+        $this->assertZipAvailable();
 
         $zip = new \ZipArchive;
 
@@ -475,6 +496,8 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 기본 설정 파일을 로드합니다.
+     *
+     * @return void 반환값 없음
      */
     private function loadDefaultsFile(): void
     {
@@ -510,7 +533,8 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     /**
      * 특정 카테고리의 기본값을 반환합니다.
      *
-     * @return array<string, mixed>
+     * @param  string  $category  설정 카테고리
+     * @return array<string, mixed> 카테고리 기본값
      */
     private function getDefaultsForCategory(string $category): array
     {
@@ -521,6 +545,9 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 카테고리 파일 경로를 반환합니다.
+     *
+     * @param  string  $category  설정 카테고리
+     * @return string 설정 디스크 기준 카테고리 파일 경로
      */
     private function getCategoryPath(string $category): string
     {
@@ -529,6 +556,8 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 설정 디렉토리가 존재하는지 확인하고 없으면 생성합니다.
+     *
+     * @return void 반환값 없음
      */
     private function ensureDirectoryExists(): void
     {
@@ -544,6 +573,8 @@ class JsonConfigRepository implements ConfigRepositoryInterface
 
     /**
      * 백업 디렉토리가 존재하는지 확인하고 없으면 생성합니다.
+     *
+     * @return void 반환값 없음
      */
     private function ensureBackupDirectoryExists(): void
     {

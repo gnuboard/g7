@@ -26,18 +26,23 @@
                 <span>$t:shop.checkout.subtotal</span>
                 <icon name="{{_local.showTaxDetails ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
               </span>
-              <span class="font-medium text-gray-900 dark:text-white">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.subtotal_formatted ?? checkoutData.data.calculation?.summary?.subtotal_formatted ?? '-'}}</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.subtotal_formatted ?? checkoutData.data.calculation?.summary?.subtotal_formatted ?? '-'}}</span>
             </button>
           </div>
           <!-- 세금 상세 (접이식) -->
           <div data-if="{{_local.showTaxDetails}}" class="ml-4 mt-2 space-y-1">
             <div data-if="{{(checkoutData.data.calculation?.summary?.taxable_amount ?? 0) > 0}}" class="flex justify-between text-xs">
               <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.taxable_amount</span>
-              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.taxable_amount_formatted ?? '-'}}</span>
+              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.taxable_amount_formatted ?? '-'}}</span>
             </div>
             <div data-if="{{(checkoutData.data.calculation?.summary?.tax_free_amount ?? 0) > 0}}" class="flex justify-between text-xs">
               <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.tax_free_amount</span>
-              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.tax_free_amount_formatted ?? '-'}}</span>
+              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.tax_free_amount_formatted ?? '-'}}</span>
+            </div>
+            <!-- 영세 금액 — 과세 금액에 포함된 세율 0% 몫(부가세 없음), 있을 때만 (#612) -->
+            <div data-if="{{(checkoutData.data.calculation?.summary?.zero_rated_amount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.zero_rated_amount</span>
+              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.zero_rated_amount_formatted ?? '-'}}</span>
             </div>
           </div>
         </div>
@@ -53,14 +58,14 @@
                 <span>$t:shop.cart.discount_total</span>
                 <icon name="{{_local.showDiscountDetails ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
               </span>
-              <span class="font-medium text-red-600 dark:text-red-300">-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_discount_formatted ?? checkoutData.data.calculation?.summary?.total_discount_formatted}}</span>
+              <span class="font-medium text-red-600 dark:text-red-300">-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.total_discount_formatted ?? checkoutData.data.calculation?.summary?.total_discount_formatted}}</span>
             </button>
           </div>
           <!-- 할인 상세 (접이식) -->
           <div data-if="{{_local.showDiscountDetails}}" class="ml-4 mt-2 space-y-1">
             <div data-if="{{(checkoutData.data.calculation?.summary?.product_coupon_discount ?? 0) > 0}}" class="flex justify-between text-xs">
               <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.coupon_discount</span>
-              <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.product_coupon_discount_formatted ?? '-'}}</span>
+              <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.product_coupon_discount_formatted ?? '-'}}</span>
             </div>
             <!-- 적용된 상품 쿠폰 상세 리스트 -->
             <div data-if="{{(checkoutData.data.calculation?.promotions?.product_promotions?.coupons ?? []).length > 0}}" class="ml-4 mt-1 space-y-0.5">
@@ -71,11 +76,11 @@
             </div>
             <div data-if="{{(checkoutData.data.calculation?.summary?.code_discount ?? 0) > 0}}" class="flex justify-between text-xs">
               <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.code_discount</span>
-              <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? '-'}}</span>
+              <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? '-'}}</span>
             </div>
             <div data-if="{{(checkoutData.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}" class="flex justify-between text-xs">
               <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.order_discount</span>
-              <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? '-'}}</span>
+              <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? '-'}}</span>
             </div>
             <!-- 적용된 주문 쿠폰 상세 -->
             <div data-if="{{(checkoutData.data.calculation?.promotions?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}" class="ml-4 mt-1 space-y-0.5">
@@ -90,21 +95,21 @@
         <div>
           <div class="flex justify-between text-sm">
             <span class="text-gray-600 dark:text-gray-400">$t:shop.checkout.shipping_fee_label</span>
-            <span class="font-medium {{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-white'}}">{{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.checkout.free' : (checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_shipping_formatted ?? checkoutData.data.calculation?.summary?.total_shipping_formatted)}}</span>
+            <span class="font-medium {{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-white'}}">{{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.checkout.free' : (checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.total_shipping_formatted ?? checkoutData.data.calculation?.summary?.total_shipping_formatted)}}</span>
           </div>
           <!-- 배송비 상세 (배송비가 있을 때만) -->
           <div data-if="{{(checkoutData.data.calculation?.summary?.total_shipping ?? 0) > 0 || (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="ml-4 mt-1 space-y-1">
             <div data-if="{{(checkoutData.data.calculation?.summary?.base_shipping_total ?? 0) > 0}}" class="flex justify-between text-xs">
               <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.base_shipping</span>
-              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.base_shipping_total_formatted ?? '-'}}</span>
+              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.base_shipping_total_formatted ?? '-'}}</span>
             </div>
             <div data-if="{{(checkoutData.data.calculation?.summary?.extra_shipping_total ?? 0) > 0}}" class="flex justify-between text-xs">
               <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.extra_shipping</span>
-              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.extra_shipping_total_formatted ?? '-'}}</span>
+              <span class="text-gray-600 dark:text-gray-400">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.extra_shipping_total_formatted ?? '-'}}</span>
             </div>
             <div data-if="{{(checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="flex justify-between text-xs">
               <span class="text-gray-500 dark:text-gray-400">$t:shop.cart.shipping_discount</span>
-              <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? '-'}}</span>
+              <span class="text-red-600 dark:text-red-400">-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? '-'}}</span>
             </div>
             <!-- 적용된 배송비 쿠폰 상세 -->
             <div data-if="{{(checkoutData.data.calculation?.promotions?.order_promotions?.coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}" class="ml-4 mt-1 space-y-0.5">
@@ -121,7 +126,7 @@
              순서·라벨 키·points_used 조건은 __tests__/layouts/order-mileage-display.test.tsx 가 고정하고, ko/en/ja·모바일 실측은 후속C 이력의 브라우저 매트릭스에 있다. -->
         <div data-if="{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}" class="flex justify-between text-sm pt-2">
           <span class="text-gray-600 dark:text-gray-400">$t:shop.checkout.amount_before_points</span>
-          <span class="font-medium text-gray-900 dark:text-white">{{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? checkoutData.data.calculation?.summary?.payment_amount_formatted ?? '-'}}</span>
+          <span class="font-medium text-gray-900 dark:text-white">{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? checkoutData.data.calculation?.summary?.payment_amount_formatted ?? '-'}}</span>
         </div>
         <!-- 사용 포인트 (마일리지 사용 시) -->
         <div data-if="{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}" class="flex justify-between text-sm">
@@ -144,7 +149,7 @@
           </span>
           <span class="text-xl font-bold text-gray-900 dark:text-white">
             <responsive on="portable" class="text-lg font-bold text-gray-900 dark:text-white"/>
-            {{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}}
+            {{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}}
           </span>
         </div>
         <!-- 보조 통화들 -->
@@ -234,7 +239,7 @@
             </api-call>
           </sequence>
         </on>
-        {{checkoutData.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button
+        {{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? checkoutData.data.calculation?.summary?.final_amount_formatted ?? '-'}} $t:shop.checkout.pay_button
       </button>
       <!-- 결제 동의 문구 -->
       <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">

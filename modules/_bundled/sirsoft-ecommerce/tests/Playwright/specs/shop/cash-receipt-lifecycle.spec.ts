@@ -424,10 +424,13 @@ test.describe('현금영수증 전주기 (신청 → 입금확인 → 자동발�
     await qty.fill('1');
 
     // 사유는 환불 사유 설정에서 오는 목록이다 — 이름을 박지 않고 첫 선택지를 고른다.
-    const reasonSelect = cancelModal.locator('select').first();
-    const reasonValue = await reasonSelect.locator('option').nth(1).getAttribute('value');
-    expect(reasonValue, '취소 사유 선택지가 없다 — 환불 사유 설정이 비었다').toBeTruthy();
-    await reasonSelect.selectOption(reasonValue as string);
+    // 사유 칸은 관리자 템플릿의 목록형 드롭다운(단추 aria-haspopup=listbox)이고, 창 안 첫 드롭다운이다.
+    const reasonButton = cancelModal.getByRole('button', { name: '취소 사유' });
+    await expect(reasonButton).toHaveAttribute('aria-haspopup', 'listbox');
+    await reasonButton.click();
+    const reasonOption = page.getByRole('listbox').getByRole('option').nth(1);
+    await expect(reasonOption, '취소 사유 선택지가 없다 — 환불 사유 설정이 비었다').toBeVisible();
+    await reasonOption.click();
 
     // 무통장은 사람이 송금하는 수단이라 돌려줄 돈이 있으면 환불계좌가 필수다(P9).
     // 은행 선택은 커스텀 컨트롤이라 이 spec 의 검증 대상이 아닌 입력으로 보고, 앱 핸들러가 읽는

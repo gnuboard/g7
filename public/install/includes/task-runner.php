@@ -298,6 +298,33 @@ if (! function_exists('vendorModeOptionFromState')) {
     }
 }
 
+if (! function_exists('probeComposerForInstall')) {
+    /**
+     * Composer 를 실제로 실행해 쓸 수 있는지 확인합니다 (`composer --version`).
+     *
+     * 「패키지 관리자 확인」과 「필수 패키지 설치」의 vendor_mode=auto 분기가 같은 판정을 쓰도록 한 곳에 둔다 —
+     * 설치 단계가 proc_open 가용성만 보고 없는 Composer 를 실행하던 회귀를 막는다.
+     *
+     * @return array{ok: bool, output: array<int, string>} 실행 가능 여부와 출력
+     */
+    function probeComposerForInstall(): array
+    {
+        $composerHome = BASE_PATH.'/storage/composer';
+        if (! is_dir($composerHome)) {
+            @mkdir($composerHome, 0755, true);
+        }
+        putenv('COMPOSER_HOME='.$composerHome);
+        putenv('HOME='.$composerHome);
+        applyInstallerComposerEnvVars();
+
+        $output = [];
+        $returnCode = 0;
+        exec(getComposerCommand().' --version 2>&1', $output, $returnCode);
+
+        return ['ok' => $returnCode === 0, 'output' => $output];
+    }
+}
+
 if (! function_exists('checkComposerSSE')) {
     /**
      * Composer 가용성 확인.
@@ -333,20 +360,10 @@ if (! function_exists('checkComposerSSE')) {
 
         sendSSEEvent('log', ['message' => lang('log_task_in_progress', ['task' => $taskName])]);
 
-        $composerHome = BASE_PATH.'/storage/composer';
-        if (! is_dir($composerHome)) {
-            @mkdir($composerHome, 0755, true);
-        }
-        putenv('COMPOSER_HOME='.$composerHome);
-        putenv('HOME='.$composerHome);
-        applyInstallerComposerEnvVars();
+        $probe = probeComposerForInstall();
+        $output = $probe['output'];
 
-        $output = [];
-        $returnCode = 0;
-        $composerCmd = getComposerCommand();
-        exec($composerCmd.' --version 2>&1', $output, $returnCode);
-
-        if ($returnCode !== 0) {
+        if (! $probe['ok']) {
             $errorMessage = implode("\n", $output);
 
             // auto 모드: composer 미설치 시 번들 폴백 가능하면 비치명적 처리
@@ -467,7 +484,7 @@ if (! function_exists('installComposerDependenciesSSE')) {
             $composerBinary = $state['config']['composer_binary'] ?? '';
             $phpBinary = $state['config']['php_binary'] ?? 'php';
 
-            if (! canExecuteComposerForInstall($composerBinary, $phpBinary)) {
+            if (! canExecuteComposerForInstall($composerBinary, $phpBinary) || ! probeComposerForInstall()['ok']) {
                 // composer 사용 불가 → 번들 zip 존재 여부 확인 후 폴백
                 if (file_exists(BASE_PATH.'/vendor-bundle.zip')) {
                     sendSSEEvent('log', ['message' => 'Composer 실행 불가 환경 감지 → 번들 vendor 모드로 자동 전환']);
@@ -815,87 +832,14 @@ if (! function_exists('dependencyPrecheckSSE')) {
         sendSSEEvent('task_start', ['task' => 'dependency_precheck', 'name' => $taskName]);
         sendSSEEvent('log', ['message' => lang('log_task_in_progress', ['task' => $taskName])]);
 
-        $selected = getSelectedExtensions();
-        $selectedIds = array_merge(
-            $selected['admin_templates'] ?? [],
-            $selected['user_templates'] ?? [],
-            $selected['modules'] ?? [],
-            $selected['plugins'] ?? []
-        );
-        $selectedIdSet = array_flip($selectedIds);
+        // 화면·확장 저장 API·터미널 설치와 같은 공유 해석기로 다시 검사한다 — 선택 집합의 폐쇄뿐 아니라
+        // 존재·버전 제약·단일 선택까지 본다(종전에는 의존 식별자가 선택에 있는지만 확인했다).
+        require_once __DIR__.'/extension-selection.php';
+        $resolution = installer_resolve_extension_selection(installer_scan_extensions(), getSelectedExtensions());
 
-        $missing = [];
-
-        // 확장 매니페스트 읽기 (모듈/플러그인 — 템플릿은 dependencies 사용 빈도 낮음)
-        $scanTargets = [
-            'modules' => BASE_PATH.'/modules/_bundled',
-            'plugins' => BASE_PATH.'/plugins/_bundled',
-            'templates' => BASE_PATH.'/templates/_bundled',
-        ];
-
-        foreach ($scanTargets as $type => $baseDir) {
-            if (! is_dir($baseDir)) {
-                continue;
-            }
-            $dirs = scandir($baseDir) ?: [];
-            foreach ($dirs as $dir) {
-                if ($dir === '.' || $dir === '..') {
-                    continue;
-                }
-                $manifestFile = null;
-                if ($type === 'modules' && file_exists("{$baseDir}/{$dir}/module.json")) {
-                    $manifestFile = "{$baseDir}/{$dir}/module.json";
-                } elseif ($type === 'plugins' && file_exists("{$baseDir}/{$dir}/plugin.json")) {
-                    $manifestFile = "{$baseDir}/{$dir}/plugin.json";
-                } elseif ($type === 'templates' && file_exists("{$baseDir}/{$dir}/template.json")) {
-                    $manifestFile = "{$baseDir}/{$dir}/template.json";
-                }
-                if (! $manifestFile) {
-                    continue;
-                }
-
-                $data = json_decode((string) @file_get_contents($manifestFile), true);
-                if (! is_array($data)) {
-                    continue;
-                }
-                $identifier = $data['identifier'] ?? $dir;
-
-                // 선택된 확장만 검증 대상
-                if (! isset($selectedIdSet[$identifier])) {
-                    continue;
-                }
-
-                $deps = $data['dependencies'] ?? [];
-                if (! is_array($deps)) {
-                    continue;
-                }
-
-                // 객체형 (modules/plugins 키) 또는 배열형 처리
-                $check = [];
-                if (isset($deps['modules']) && is_array($deps['modules'])) {
-                    foreach ($deps['modules'] as $depId => $_) {
-                        $check[] = is_int($depId) ? $_ : $depId;
-                    }
-                }
-                if (isset($deps['plugins']) && is_array($deps['plugins'])) {
-                    foreach ($deps['plugins'] as $depId => $_) {
-                        $check[] = is_int($depId) ? $_ : $depId;
-                    }
-                }
-                if (! isset($deps['modules']) && ! isset($deps['plugins'])) {
-                    foreach ($deps as $depId) {
-                        if (is_string($depId)) {
-                            $check[] = $depId;
-                        }
-                    }
-                }
-
-                foreach ($check as $depId) {
-                    if (! isset($selectedIdSet[$depId])) {
-                        $missing[] = "{$identifier} → {$depId}";
-                    }
-                }
-            }
+        $missing = installer_extension_error_messages($resolution['errors']);
+        foreach ($resolution['auto_added'] as $added) {
+            $missing[] = "{$added['required_by']} → {$added['identifier']}";
         }
 
         if (! empty($missing)) {
@@ -910,6 +854,9 @@ if (! function_exists('dependencyPrecheckSSE')) {
                 'message' => $errorMessage,
                 'message_key' => 'dependency_precheck_failed',
                 'detail' => implode("\n", $missing),
+                // 사전 검증은 아무것도 바꾸지 않는다(DB 작업 전) — 되돌릴 것이 없으므로 롤백을 시도해
+                // 「롤백 실패 — DB 수동 정리」 안내가 붙지 않게 한다(#153 D7, 순환 실측에서 확인).
+                'rollback_done' => true,
             ];
         }
 
@@ -1760,7 +1707,8 @@ if (! function_exists('createSettingsJsonSSE')) {
                 $defaults['core_update']['github_token'] = $config['core_update_github_token'];
             }
 
-            $defaults['general']['language'] = getCurrentLanguage();
+            // 세션이 없는 SSE 워커·터미널 설치도 같은 값을 내도록 state 에서 정한다(.env APP_LOCALE 과 동일).
+            $defaults['general']['language'] = installer_site_language($state);
 
             // 자산 URL 방식 (이슈 #486) — 설치 화면이 브라우저에서 프로브를 던져 판정한 결과.
             // 정적 최적화 블록(`location ~* \.(js|css|json)$`)이 있는 서버는 확장자 붙은
@@ -1867,6 +1815,9 @@ if (! function_exists('setInstallationCompleteSSE')) {
             $state['step_status']['5'] = 'completed';
             $state['installation_status'] = 'completed';
             $state['installation_completed_at'] = date('Y-m-d\TH:i:s\Z');
+            // 마무리 작업(설정·라우트 캐시 굽기·정적 게시)이 아직 남았다 — 작업 루프 끝에서 true 로 바꾼다.
+            // 폴링 화면은 이 값이 true 가 될 때까지 완료 처리(finalize-env → 상태 파일 삭제)를 미룬다.
+            $state['tasks_finished'] = false;
             // 완료 시점 이중 방어 (이슈 #465) — Phase 1/2 가 정상 동작하면 no-op.
             // 레거시 state 로 시작된 설치가 이 코드로 완료되는 경우를 커버한다.
             $state = redactInstallationStateSecrets($state);
@@ -1902,6 +1853,150 @@ if (! function_exists('setInstallationCompleteSSE')) {
 // 메인 실행 로직
 // ============================================================================
 
+if (! function_exists('installerResetTaskTimeLimit')) {
+    /**
+     * 설치 작업 하나를 시작하기 전에 PHP 실행 시간 카운터를 다시 건다.
+     *
+     * set_time_limit() 은 호출 시점부터 다시 센다. 워커 진입 시 한 번만 걸면 전체 설치 시간이
+     * 제한이 되어, 확장을 많이 고른 설치가 중간 작업에서 "Maximum execution time" 으로 죽는다
+     * (Windows 의 PHP 는 명령 대기·파일 복사 시간까지 경과 시간으로 잰다).
+     *
+     * 제한이 없는 실행(터미널 설치는 진입 때 set_time_limit(0))은 그대로 둔다 — 같은 작업 루프를 쓰는
+     * 터미널 설치에 작업당 제한을 새로 걸면 종전에 끝까지 돌던 긴 작업이 끊긴다.
+     *
+     * @return bool 제한을 다시 걸었거나 제한 없음을 유지했으면 true (disable_functions 등으로 막히면 false)
+     */
+    function installerResetTaskTimeLimit(): bool
+    {
+        if ((int) ini_get('max_execution_time') === 0) {
+            return true;
+        }
+
+        return @set_time_limit((int) INSTALLER_TASK_TIME_LIMIT);
+    }
+}
+
+if (! function_exists('installerMarkWorkerTerminated')) {
+    /**
+     * 비정상 종료된 워커의 설치를 실패로 기록한다.
+     *
+     * 이미 끝난 작업(completed_tasks)은 그대로 두어 재시도가 끊긴 작업부터 이어지게 한다.
+     * 진행 중이던 작업은 되돌리지 않는다 — shutdown 단계에서 artisan 롤백을 돌리면 또 끊길 수 있고,
+     * 재시도가 같은 작업을 처음부터 다시 실행한다.
+     *
+     * @param  string  $workerId  이 워커의 ID — 다른 워커가 이어받았으면 기록하지 않는다
+     * @param  string  $errorMessage  PHP 오류 메시지 (예: Maximum execution time of 600 seconds exceeded)
+     * @return array{task: string|null, target: string|null, message_key: string, error: string}|null 기록했으면 실패 정보, 아니면 null
+     */
+    function installerMarkWorkerTerminated(string $workerId, string $errorMessage): ?array
+    {
+        $state = getInstallationState();
+
+        if (($state['installation_status'] ?? null) !== 'running') {
+            return null;
+        }
+        if (($state['active_worker_id'] ?? null) !== $workerId) {
+            return null;
+        }
+
+        // 작업 루프가 남긴 실행 중 작업(대상 포함)을 우선 쓰고, 없으면 state 의 current_task.
+        $running = $GLOBALS['g7_installer_running_task'] ?? null;
+        if (is_array($running) && ! empty($running['id'])) {
+            $task = (string) $running['id'];
+            $target = isset($running['target']) && $running['target'] !== '' ? (string) $running['target'] : null;
+        } else {
+            $current = $state['current_task'] ?? null;
+            $task = is_string($current) && $current !== '' ? $current : null;
+            $target = null;
+            if ($task !== null && str_contains($task, ':')) {
+                [$task, $target] = explode(':', $task, 2);
+            }
+        }
+        $failedKey = $task === null ? null : ($target !== null ? "{$task}:{$target}" : $task);
+
+        $state['installation_status'] = 'failed';
+        $state['failed_task'] = $failedKey;
+        $state['failed_task_target'] = $target;
+        $state['error_message_key'] = 'error_worker_terminated';
+        $state['error_detail'] = $errorMessage;
+        $state['rollback_failure'] = null;
+        $state['manual_commands'] = [];
+
+        saveInstallationState($state);
+
+        addLog('=== Install Worker terminated: '.$errorMessage.' (task: '.($failedKey ?? '-').') ===');
+
+        return [
+            'task' => $task,
+            'target' => $target,
+            'message_key' => 'error_worker_terminated',
+            'error' => $errorMessage,
+        ];
+    }
+}
+
+if (! function_exists('installerHandleWorkerShutdown')) {
+    /**
+     * 설치 워커 shutdown 처리 — 두 진입점(install-worker.php, install-process.php 폴링)이 등록한다.
+     *
+     * 1. fatal 로 끊긴 락 구간이 남긴 파일 락을 푼다 (풀지 않으면 아래 상태 쓰기가 자기 락을 기다린다).
+     * 2. fatal(실행 시간 초과 등)이면 설치를 failed 로 기록하고, SSE 모드면 error 이벤트를 보낸다 —
+     *    화면이 「진행 중」에 멈추지 않고 실패 안내와 재시도(이어서 설치)를 보인다.
+     * 3. fatal 없이 연결이 끊겨 끝났으면(SSE 워커는 ignore_user_abort(false) 라, 끊긴 연결을 다음 출력에서
+     *    감지한 PHP 가 스크립트를 오류 없이 끝낸다) 상태는 running 으로 두고 그 사실만 설치 로그에 남긴다 —
+     *    화면이 lock 이 빈 running 상태를 보고 새 워커로 다시 연결해 남은 작업을 이어 받는다.
+     * 4. 워커 lock 을 해제한다.
+     *
+     * @param  string  $workerId  이 워커의 ID
+     * @param  string  $mode  sse | polling
+     * @param  int|null  $connectionStatus  연결 상태(CONNECTION_* 비트). null 이면 connection_status()
+     * @return void 반환값 없음
+     */
+    function installerHandleWorkerShutdown(string $workerId, string $mode, ?int $connectionStatus = null): void
+    {
+        // shutdown 처리에 쓸 시간을 따로 확보한다 (fatal 직후에는 남은 시간이 없다).
+        @set_time_limit(30);
+
+        installerReleaseInterruptedLocks();
+
+        $error = error_get_last();
+        $fatalTypes = [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_PARSE];
+
+        if (is_array($error) && in_array($error['type'] ?? 0, $fatalTypes, true)) {
+            $failure = installerMarkWorkerTerminated($workerId, (string) ($error['message'] ?? ''));
+
+            if ($failure !== null && $mode === 'sse') {
+                // SseEmitter::emit() 은 heartbeat 갱신·연결 확인 뒤 exit 할 수 있어 직접 쓴다.
+                echo "event: error\n";
+                echo 'data: '.installer_json_encode([
+                    'message' => lang('error_worker_terminated'),
+                    'message_key' => $failure['message_key'],
+                    'error' => $failure['error'],
+                    'task' => $failure['task'],
+                    'target' => $failure['target'],
+                    'manual_commands' => [],
+                ])."\n\n";
+                if (ob_get_level()) {
+                    @ob_flush();
+                }
+                @flush();
+            }
+        } elseif ($mode === 'sse' && ((($connectionStatus ?? connection_status()) & CONNECTION_ABORTED) !== 0)) {
+            $running = $GLOBALS['g7_installer_running_task'] ?? null;
+            $taskKey = '-';
+            if (is_array($running) && ! empty($running['id'])) {
+                $taskKey = (string) $running['id'];
+                if (isset($running['target']) && $running['target'] !== '') {
+                    $taskKey .= ':'.$running['target'];
+                }
+            }
+            addLog('=== SSE Worker ended: connection closed (task: '.$taskKey.') — the installer page reconnects to continue ===');
+        }
+
+        releaseWorkerLock($workerId);
+    }
+}
+
 if (! function_exists('runInstallationTasks')) {
     /**
      * 설치 작업 전체 실행.
@@ -1918,6 +2013,14 @@ if (! function_exists('runInstallationTasks')) {
             $state = getInstallationState();
             $completedTasks = $state['completed_tasks'] ?? [];
             $selectedExtensions = getSelectedExtensions();
+
+            // 종류를 넘는 의존까지 반영한 설치 순서(해석기 install_order)로 확장 작업을 만든다 — 해석에 실패하면
+            // 종전 종류 순서로 두고 dependency_precheck 가 사유와 함께 설치를 멈춘다.
+            require_once __DIR__.'/extension-selection.php';
+            $ordered = installer_resolve_extension_selection(installer_scan_extensions(), $selectedExtensions);
+            $installOrder = empty($ordered['errors']) && empty($ordered['auto_added'])
+                ? $ordered['install_order']
+                : installer_category_install_order($selectedExtensions);
 
             $tasks = [];
 
@@ -1937,41 +2040,10 @@ if (! function_exists('runInstallationTasks')) {
             $tasks[] = ['id' => 'db_migrate', 'function' => 'runDatabaseMigrationSSE'];
             $tasks[] = ['id' => 'db_seed', 'function' => 'runDatabaseSeedingSSE'];
 
-            // 3. 관리자 템플릿
-            foreach ($selectedExtensions['admin_templates'] ?? [] as $templateId) {
-                $tasks[] = ['id' => 'template_install', 'target' => $templateId, 'function' => 'installAdminTemplateSSE', 'args' => [$templateId]];
-                $tasks[] = ['id' => 'template_activate', 'target' => $templateId, 'function' => 'activateAdminTemplateSSE', 'args' => [$templateId]];
-            }
-
-            // 4. 모듈
-            foreach ($selectedExtensions['modules'] ?? [] as $moduleId) {
-                $tasks[] = ['id' => 'module_install', 'target' => $moduleId, 'function' => 'installModuleSSE', 'args' => [$moduleId]];
-                $tasks[] = ['id' => 'module_activate', 'target' => $moduleId, 'function' => 'activateModuleSSE', 'args' => [$moduleId]];
-            }
-
-            // 5. 플러그인
-            foreach ($selectedExtensions['plugins'] ?? [] as $pluginId) {
-                $tasks[] = ['id' => 'plugin_install', 'target' => $pluginId, 'function' => 'installPluginSSE', 'args' => [$pluginId]];
-                $tasks[] = ['id' => 'plugin_activate', 'target' => $pluginId, 'function' => 'activatePluginSSE', 'args' => [$pluginId]];
-            }
-
-            // 6. 사용자 템플릿
-            foreach ($selectedExtensions['user_templates'] ?? [] as $templateId) {
-                $tasks[] = ['id' => 'user_template_install', 'target' => $templateId, 'function' => 'installUserTemplateSSE', 'args' => [$templateId]];
-                $tasks[] = ['id' => 'user_template_activate', 'target' => $templateId, 'function' => 'activateUserTemplateSSE', 'args' => [$templateId]];
-            }
-
-            // 7. 번들 언어팩 (best-effort — 1건 실패는 전체 중단하지 않음)
-            //    코어/모듈/플러그인/템플릿 install·activate 가 모두 끝난 뒤 실행해야
-            //    target_identifier 매칭 + DB 마이그레이션·시드가 완료된 상태에서 활성화 가능.
-            foreach ($selectedExtensions['language_packs'] ?? [] as $packId) {
-                $tasks[] = [
-                    'id' => 'language_pack_install',
-                    'target' => $packId,
-                    'function' => 'installLanguagePackSSE',
-                    'args' => [$packId],
-                    'best_effort' => true,
-                ];
+            // 5. 확장 — 관리자 템플릿·모듈·플러그인·사용자 템플릿은 의존 순서, 번들 언어팩(best-effort)은 그 뒤.
+            //    언어팩은 확장 install·activate 와 DB 마이그레이션·시드가 끝난 뒤여야 target_identifier 매칭 + 활성화가 된다.
+            foreach (installer_extension_install_tasks($installOrder) as $extensionTask) {
+                $tasks[] = $extensionTask;
             }
 
             // 8. 마무리
@@ -2024,6 +2096,12 @@ if (! function_exists('runInstallationTasks')) {
 
                     continue;
                 }
+
+                // 작업마다 실행 시간 카운터를 다시 건다 — 전체 설치가 아니라 작업 하나가
+                // INSTALLER_TASK_TIME_LIMIT 를 넘을 때만 끊긴다.
+                installerResetTaskTimeLimit();
+                // 워커가 fatal 로 끊기면 shutdown 처리기가 어느 작업(대상 포함)에서 끊겼는지 기록한다.
+                $GLOBALS['g7_installer_running_task'] = ['id' => $taskId, 'target' => $target];
 
                 $result = empty($args) ? $functionName() : $functionName(...$args);
 
@@ -2145,13 +2223,19 @@ if (! function_exists('runInstallationTasks')) {
             if (isset($_SESSION)) {
                 $_SESSION['installer_current_step'] = 5;
             }
+            // 마무리 작업까지 끝났음을 기록 — 폴링 화면이 이 값을 보고 완료 처리한다(SSE 는 아래 completed 이벤트).
+            $state = getInstallationState();
+            $state['tasks_finished'] = true;
+            saveInstallationState($state);
             sendSSEEvent('completed', [
                 'message' => lang('log_installation_completed'),
                 'redirect' => '/install/',
             ]);
 
             addLog(lang('log_all_tasks_completed'));
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
+            // Error 계열(TypeError 등)도 잡는다 — 놓치면 워커가 fatal 로 죽고 state 가 running 으로 고착돼
+            // 웹은 「멈춤」만 보이고 재시도할 수 없다.
             logInstallationError(lang('error_worker_exception'), $e);
 
             $state = getInstallationState();

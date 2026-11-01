@@ -232,6 +232,16 @@
             </div>
           </div>
         </div>
+        <div data-ref="requested_php_extensions" data-if="{{Object.keys(systemInfo?.data?.php_extensions?.requested_by ?? {}).length > 0}}">
+          <p class="text-body font-medium mb-3">$t:admin.settings.info.requested_modules</p>
+          <div class="flex flex-col gap-2">
+            <div data-each="req in Object.entries(systemInfo?.data?.php_extensions?.requested_by ?? {})" class="flex-center gap-1.5 flex-wrap">
+              <icon name="{{(systemInfo?.data?.php_extensions?.required?.[req[0]] ?? systemInfo?.data?.php_extensions?.optional?.[req[0]] ?? systemInfo?.data?.php_extensions?.requested?.[req[0]]) ? 'check' : 'x'}}" class="{{(systemInfo?.data?.php_extensions?.required?.[req[0]] ?? systemInfo?.data?.php_extensions?.optional?.[req[0]] ?? systemInfo?.data?.php_extensions?.requested?.[req[0]]) ? 'text-base text-green-600 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"/>
+              <span class="text-body">{{req[0]}}</span>
+              <span class="text-label-subtle">$t:admin.settings.info.requested_by_line|names={{(req[1] ?? []).map(function(r) { return r.name + ' (' + (r.level === 'suggest' ? $t('admin.settings.info.level_suggest') : $t('admin.settings.info.level_require')) + ')'; }).join(', ')}}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

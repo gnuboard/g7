@@ -131,6 +131,8 @@ class StateManagementApi
             'log_total' => $logTotal,
             'error' => $state['error'] ?? null,
             'last_updated' => $state['last_updated'] ?? null,
+            // completed 뒤 마무리 작업(설정·라우트 캐시·정적 게시)이 끝났는지 — 필드가 없는 이전 상태 파일은 끝난 것으로 본다
+            'tasks_finished' => (bool) ($state['tasks_finished'] ?? true),
 
             // 실패 정보 (새로고침 후에도 표시용)
             'failed_task' => $state['failed_task'] ?? null,
@@ -141,6 +143,9 @@ class StateManagementApi
 
             // SSE/폴링 듀얼 모드 지원
             'installation_mode' => $state['installation_mode'] ?? 'sse',
+
+            // 워커 lock 보유 여부 — SSE 스트림이 끊긴 뒤 화면이 새 워커로 이어 받을지 정한다(워커 ID 는 내보내지 않는다)
+            'worker_active' => installerHasActiveWorker($state),
         ];
 
         // JSON 응답 반환
@@ -168,7 +173,7 @@ class StateManagementApi
      * 설치 상태 초기화 및 적절한 Step으로 이동
      *
      * 설치 상태를 초기화하여 설정 페이지로 돌아갈 수 있도록 합니다.
-     * DB 롤백은 수행하지 않습니다 (사용자가 수동으로 DB 정리 필요).
+     * DB 롤백은 수행하지 않습니다 (DB 작업이 시작된 설치면 사용자가 수동으로 DB 정리 필요 — 그때만 로그로 안내).
      * (마이그레이션 실패 시 자동 롤백은 install-worker.php에서 처리)
      */
     private function resetState(): void
@@ -193,7 +198,10 @@ class StateManagementApi
         $targetStep = 4;
 
         addLog(lang('state_reset_requested'));
-        addLog(lang('state_reset_db_notice'));
+        // DB 를 건드리기 전에 멈춘 설치(의존성 사전 검증 실패 등)에는 DB 수동 정리 안내가 맞지 않는다
+        if (installerResetNeedsDbNotice($state)) {
+            addLog(lang('state_reset_db_notice'));
+        }
 
         // 상태 초기화 (DB 롤백 없이)
         $state['current_step'] = $targetStep;
@@ -371,6 +379,11 @@ class StateManagementApi
 
         if (! installer_state_is_claimed($state) || isInstallationCompleted()) {
             installer_json_error(400, 'recovery_unavailable', lang('error_recovery_unavailable'));
+        }
+
+        // 터미널 설치는 복구 토큰을 발급하지 않는다 — 브라우저가 넘겨받는 경로를 두지 않는다.
+        if (($state['owner_kind'] ?? null) === 'cli') {
+            installer_json_error(403, 'recovery_cli_owned', lang('error_recovery_cli_owned'));
         }
 
         if (! installer_session_is_owner($state)) {

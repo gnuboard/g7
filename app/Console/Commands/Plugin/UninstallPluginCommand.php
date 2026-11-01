@@ -4,6 +4,8 @@ namespace App\Console\Commands\Plugin;
 
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
@@ -16,6 +18,8 @@ class UninstallPluginCommand extends Command
 {
     use HasProgressBar;
     use HasUnifiedConfirm;
+    use LocalizesDescription;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
 
     /**
@@ -25,11 +29,6 @@ class UninstallPluginCommand extends Command
         {identifier : 제거할 플러그인 식별자}
         {--force : 확인 없이 삭제}
         {--delete-data : 플러그인 데이터(테이블, 환경설정) 함께 삭제}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '플러그인을 제거합니다';
 
     /**
      * 플러그인 관리자 및 리포지토리
@@ -114,6 +113,7 @@ class UninstallPluginCommand extends Command
 
             if ($result) {
                 $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.uninstall.success', ['plugin' => $identifier]));
+                $this->reportIntegratedBy('plugin', $identifier);
                 $this->info('   - '.trans_choice('plugins.commands.uninstall.roles_deleted', $rolesCount));
                 $this->info('   - '.trans_choice('plugins.commands.uninstall.permissions_deleted', $permissionsCount));
                 $this->info('   - '.trans_choice('plugins.commands.uninstall.layouts_deleted', $layoutsCount));

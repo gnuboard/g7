@@ -2,6 +2,7 @@
 
 namespace App\Support\ExtensionDoc;
 
+use App\Support\ExtensionDependencies;
 use App\Support\ExtensionIntegrations;
 
 /**
@@ -33,7 +34,7 @@ class DependencyGraphCollector
      * 확장의 의존 관계를 수집합니다.
      *
      * @param  array<string, mixed>  $record  ExtensionInventory 레코드
-     * @return array{requires: array<int, array{type: string, id: string, constraint: string, bundled: bool}>, requiredBy: array<int, array{type: string, id: string, constraint: string}>, integrates: array<int, array{type: string, id: string, bundled: bool}>, integratedBy: array<int, array{type: string, id: string}>, coreVersion: string|null}
+     * @return array{requires: array<int, array{type: string, id: string, constraint: string, bundled: bool}>, requiredBy: array<int, array{type: string, id: string, constraint: string}>, integrates: array<int, array{type: string, id: string, constraint: string, bundled: bool}>, integratedBy: array<int, array{type: string, id: string, constraint: string}>, coreVersion: string|null}
      */
     public function collect(array $record): array
     {
@@ -50,14 +51,15 @@ class DependencyGraphCollector
      * 이 확장이 선택 연동으로 선언한 확장 목록을 반환합니다.
      *
      * @param  array<string, mixed>  $record  확장 레코드
-     * @return array<int, array{type: string, id: string, bundled: bool}> 연동 대상
+     * @return array<int, array{type: string, id: string, constraint: string, bundled: bool}> 연동 대상 (버전 제약 없으면 `*`, 7.1.4)
      */
     private function integrates(array $record): array
     {
         $out = [];
-        foreach (ExtensionIntegrations::normalize($record['manifest']['integrations'] ?? []) as $type => $ids) {
-            foreach ($ids as $id) {
-                $out[] = ['type' => $type, 'id' => $id, 'bundled' => $this->isBundled($type, $id)];
+        foreach (ExtensionIntegrations::constraints($record['manifest']['integrations'] ?? []) as $type => $entries) {
+            foreach ($entries as $id => $constraint) {
+                $id = (string) $id;
+                $out[] = ['type' => $type, 'id' => $id, 'constraint' => $constraint, 'bundled' => $this->isBundled($type, $id)];
             }
         }
 
@@ -70,7 +72,7 @@ class DependencyGraphCollector
      * 이 확장을 선택 연동으로 선언한 확장 목록을 반환합니다 (번들 전수 교차 스캔).
      *
      * @param  array<string, mixed>  $record  확장 레코드
-     * @return array<int, array{type: string, id: string}> 연동해 오는 확장
+     * @return array<int, array{type: string, id: string, constraint: string}> 연동해 오는 확장 (그 확장이 요구한 버전 제약 포함, 7.1.4)
      */
     private function integratedBy(array $record): array
     {
@@ -83,9 +85,9 @@ class DependencyGraphCollector
                 continue;
             }
 
-            $declared = ExtensionIntegrations::normalize($other['manifest']['integrations'] ?? []);
-            if (in_array($selfId, $declared[$selfType] ?? [], true)) {
-                $out[] = ['type' => (string) $other['type'], 'id' => (string) $other['id']];
+            $declared = ExtensionIntegrations::constraints($other['manifest']['integrations'] ?? []);
+            if (isset($declared[$selfType][$selfId])) {
+                $out[] = ['type' => (string) $other['type'], 'id' => (string) $other['id'], 'constraint' => $declared[$selfType][$selfId]];
             }
         }
 
@@ -177,29 +179,10 @@ class DependencyGraphCollector
      */
     private function declaredDependencies(array $record): array
     {
-        $declared = $record['manifest']['dependencies'] ?? [];
         // templates 도 정규화한다 — pluralize() 가 'templates' 를 만드는데 여기에 그 키가
         // 없으면 템플릿의 역방향 의존(`requiredBy`)이 구조적으로 항상 빈 배열이 된다.
-        $normalized = ['modules' => [], 'plugins' => [], 'templates' => []];
-
-        if (! is_array($declared)) {
-            return $normalized;
-        }
-
-        foreach (['modules', 'plugins', 'templates'] as $key) {
-            $entries = $declared[$key] ?? [];
-            if (! is_array($entries)) {
-                continue;
-            }
-
-            foreach ($entries as $id => $constraint) {
-                if (is_string($constraint)) {
-                    $normalized[$key][(string) $id] = $constraint;
-                }
-            }
-        }
-
-        return $normalized;
+        // 목록형(`["sirsoft-board"]`)은 「버전 무관(*)」으로 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6).
+        return ExtensionDependencies::constraints($record['manifest']['dependencies'] ?? []);
     }
 
     /**

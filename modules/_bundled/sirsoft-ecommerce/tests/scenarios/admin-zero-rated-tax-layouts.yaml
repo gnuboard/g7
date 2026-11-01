@@ -1,0 +1,21 @@
+feature: 관리자 화면 — 영세율·옵션별 과세 종류 입력과 표시 (#612)
+
+description: |
+  상품 폼(판매정보 과세 여부 「영세」·옵션 표 「과세 종류」), 상품 목록 과세 필터(「영세」), 주문상세(품목 배지·
+  품목별 과세/부가세/영세 줄·합계 영세 줄·결제정보 면세/영세/취소 부가세·취소 모달 영세금액)를 레이아웃 산출물에서 잠근다.
+  라이브 동작(저장 왕복·배지 렌더·로케일)은 Chrome MCP 실측 매트릭스(T1~T10)가 잰다.
+
+axes:
+  surface: [admin_product_form, admin_product_list, admin_order_detail]
+
+effects:
+  - admin_product_form_offers_zero_rated
+  - admin_option_tax_status_select
+  - admin_option_table_scrolls_horizontally
+  - admin_option_name_editable_on_both_layouts
+  - admin_tax_filter_offers_zero_rated
+  - admin_order_row_tax_badge_and_lines
+  - admin_payment_info_zero_rated_rows
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/zeroRatedTaxLayouts.test.ts

@@ -56,7 +56,8 @@
   },
   "tax_status": {
     "taxable": "Taxable",
-    "tax_free": "Tax Free"
+    "tax_free": "Tax Free",
+    "zero_rated": "Zero-rated"
   },
   "target_screen": {
     "products": "Products",

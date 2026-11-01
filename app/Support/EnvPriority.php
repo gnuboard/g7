@@ -138,6 +138,8 @@ final class EnvPriority
         'debug.outbound_proxy' => 'env 대응 없음 (g7.outbound_proxy 는 설정 전용)',
         'debug.outbound_proxy_bypass' => 'env 대응 없음 (g7.outbound_proxy 는 설정 전용)',
         'drivers.public_asset_disk' => 'env 대응 없음 (core.storage.public_asset_disk 는 설정 전용)',
+        'drivers.queue_connections' => 'env 대응 없음 (QueueWorkerRegistry 가 읽는 큐 워커 등록 연결 목록 — 설정 전용 값)',
+        'drivers.queue_names' => 'env 대응 없음 (QueueWorkerRegistry 가 읽는 연결별 큐 이름 목록 — 설정 전용 값)',
         'drivers.websocket_host' => '브라우저 클라이언트 endpoint (g7.websocket.client.host) — REVERB_HOST 는 서버 endpoint 축이라 대응이 아니다',
         'drivers.websocket_port' => '브라우저 클라이언트 endpoint (g7.websocket.client.port)',
         'drivers.websocket_scheme' => '브라우저 클라이언트 endpoint (g7.websocket.client.scheme)',

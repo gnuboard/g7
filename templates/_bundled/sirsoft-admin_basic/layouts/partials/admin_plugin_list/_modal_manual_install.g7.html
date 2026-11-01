@@ -99,6 +99,8 @@
               <success>
                 <set-state target="global" :isPluginManualInstalling="false" :pluginUploadFile="null" :pluginUploadFileName="null" :pluginGithubUrl="null" :pluginInstallError="null" :pluginInstallErrors="null" pluginInstallTab="file_upload"/>
                 <toast type="success" message="$t:admin.plugins.install_success"/>
+                <!-- 함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 함께 설치하다 실패한 항목은 상태 뒤에 사유(failure_reason)를 붙인다. 막지 않는 안내라 창을 열지 않는다. -->
+                <toast if="{{(response?.data?.integration_notices ?? []).length !== 0}}" type="info" message="$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + (n.failure_reason ? ': ' + n.failure_reason : '') + ')').join(', ')}}"/>
                 <refetch-data-source dataSourceId="plugins"/>
                 <reload-extensions/>
                 <close-modal/>

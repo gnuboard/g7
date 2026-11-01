@@ -17,6 +17,11 @@ effects:
   - system_roles_survive_module_uninstall
   - permission_definitions_declare_roles
   - only_leaf_permissions_are_assigned_to_roles
+  - permission_category_type_follows_user_children
+  - permission_category_type_stays_admin_for_admin_children
+  - user_category_leaf_points_to_category_parent
+  - eval_fresh_module_reloads_module_declaration
 
 test_files:
   - tests/Feature/Module/ModuleRolePermissionTest.php
+  - tests/Unit/Extension/ModuleManagerPermissionCategoryTypeTest.php

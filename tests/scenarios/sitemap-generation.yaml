@@ -52,7 +52,17 @@ effects:
   - progress_cached_when_reverb_off
   - polling_starts_only_when_reverb_off_and_running
   - polling_stops_on_completed
+  - polling_stops_when_progress_missing
+  - regenerate_toast_uses_server_message
+  - regenerate_button_shows_spinner_while_requesting
   - job_failure_marks_progress_failed
+  # ── 관리자 SEO 탭 E2E (설정 칸·재생성·상태 API·전환 오버레이) ──
+  - fields_mounted
+  - fields_persisted
+  - regenerate_is_async
+  - progress_visible
+  - status_endpoint
+  - sitemap_status_awaited_before_reveal
   # ── 콘솔 커맨드 seo:generate-sitemap (큐 분기·모드 옵션) ──
   - sitemap_command_dispatches_async_unless_queue_is_sync
   - sitemap_command_runs_sync_when_queue_is_sync_or_forced

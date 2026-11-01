@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Support\ApiDoc\ParameterDescriber;
 use Illuminate\Console\Command;
 use Symfony\Component\Finder\Finder;
@@ -18,16 +19,13 @@ use Symfony\Component\Finder\Finder;
  */
 class ApiDocBackfillParamsCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string 커맨드 시그니처
      */
     protected $signature = 'api:docgen-backfill-params
         {--dry-run : 치환하지 않고 채울 건수만 리포트}';
-
-    /**
-     * @var string 커맨드 설명
-     */
-    protected $description = '기존 API 문서의 파라미터 용도 TODO 를 공통 파라미터 설명으로 소급 채웁니다';
 
     /**
      * @var string 파라미터 표를 식별하는 고유 헤더

@@ -28,6 +28,8 @@ class TemplateRouteResolverTest extends TestCase
      * @param  array|null  $activeTemplate  활성 템플릿 데이터
      * @param  array  $routes  라우트 목록
      * @param  bool  $routesSuccess  라우트 조회 성공 여부
+     * @param  array  $knownModules  설치된 것으로 볼 모듈 식별자 목록
+     * @param  array  $knownPlugins  설치된 것으로 볼 플러그인 식별자 목록
      * @return TemplateRouteResolver 설정된 resolver
      */
     private function createResolver(?array $activeTemplate, array $routes = [], bool $routesSuccess = true, array $knownModules = [], array $knownPlugins = []): TemplateRouteResolver
@@ -109,6 +111,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 루트 URL(/)이 home 레이아웃으로 매핑됩니다.
+     *
+     * @effects resolver_maps_url_to_layout_for_seo
+     *
+     * @return void 반환값 없음
      */
     public function test_root_url_resolves_to_home_layout(): void
     {
@@ -130,6 +136,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 모듈 레이아웃 경로가 moduleIdentifier와 layoutName으로 분리됩니다.
+     *
+     * @effects resolver_identifies_extension_of_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_shop_products_resolves_with_module_identifier(): void
     {
@@ -149,6 +159,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 동적 라우트 파라미터(:id)가 routeParams로 추출됩니다.
+     *
+     * @effects resolver_maps_url_to_layout_for_seo
+     *
+     * @return void 반환값 없음
      */
     public function test_dynamic_route_params_extracted(): void
     {
@@ -168,6 +182,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * auth_required 라우트는 null을 반환합니다.
+     *
+     * @effects resolver_skips_auth_and_guest_routes_for_seo
+     *
+     * @return void 반환값 없음
      */
     public function test_auth_required_route_returns_null(): void
     {
@@ -193,6 +211,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * guest_only 라우트는 null을 반환합니다.
+     *
+     * @effects resolver_skips_auth_and_guest_routes_for_seo
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_only_route_returns_null(): void
     {
@@ -218,6 +240,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 활성 템플릿이 없으면 null을 반환합니다.
+     *
+     * @effects resolver_returns_null_when_routes_unavailable
+     *
+     * @return void 반환값 없음
      */
     public function test_no_active_template_returns_null(): void
     {
@@ -230,6 +256,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 동적 route_path 표현식이 모듈 설정값으로 해석됩니다.
+     *
+     * @effects resolver_resolves_route_path_expressions
+     *
+     * @return void 반환값 없음
      */
     public function test_dynamic_route_path_expression_resolved(): void
     {
@@ -263,6 +293,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 존재하지 않는 URL은 null을 반환합니다.
+     *
+     * @effects resolver_maps_url_to_layout_for_seo
+     *
+     * @return void 반환값 없음
      */
     public function test_non_existent_url_returns_null(): void
     {
@@ -279,6 +313,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 라우트 데이터 조회 실패 시 null을 반환합니다.
+     *
+     * @effects resolver_returns_null_when_routes_unavailable
+     *
+     * @return void 반환값 없음
      */
     public function test_routes_data_failure_returns_null(): void
     {
@@ -295,6 +333,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * routeMeta가 결과에 포함됩니다.
+     *
+     * @effects resolver_maps_url_to_layout_for_seo
+     *
+     * @return void 반환값 없음
      */
     public function test_route_meta_included_in_result(): void
     {
@@ -321,6 +363,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 삼항 연산자 표현식이 포함된 라우트 경로를 정상 해석합니다.
+     *
+     * @effects resolver_resolves_route_path_expressions
+     *
+     * @return void 반환값 없음
      */
     public function test_ternary_expression_route_path_resolved(): void
     {
@@ -352,6 +398,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * no_route=true일 때 삼항 연산자 표현식이 빈 문자열을 반환합니다.
+     *
+     * @effects resolver_resolves_route_path_expressions
+     *
+     * @return void 반환값 없음
      */
     public function test_ternary_expression_returns_empty_when_no_route_true(): void
     {
@@ -382,6 +432,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 동적 표현식에서 모듈 설정이 없으면 기본값(fallback)을 사용합니다.
+     *
+     * @effects resolver_resolves_route_path_expressions
+     *
+     * @return void 반환값 없음
      */
     public function test_dynamic_expression_uses_fallback_when_module_setting_missing(): void
     {
@@ -416,6 +470,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 플러그인 dot notation에서 pluginIdentifier가 반환되고 moduleIdentifier는 null입니다.
+     *
+     * @effects resolver_identifies_extension_of_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_returns_plugin_identifier_for_plugin_layout(): void
     {
@@ -445,6 +503,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 모듈 dot notation에서 moduleIdentifier가 반환되고 pluginIdentifier는 null입니다.
+     *
+     * @effects resolver_identifies_extension_of_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_returns_module_identifier_for_module_layout(): void
     {
@@ -473,6 +535,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * dot notation 없는 코어 레이아웃은 moduleIdentifier, pluginIdentifier 모두 null입니다.
+     *
+     * @effects resolver_identifies_extension_of_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_resolve_returns_null_identifiers_for_core_layout(): void
     {
@@ -534,6 +600,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 등록된 정적/동적/auth_required/guest_only 라우트는 모두 routeExists=true 입니다.
+     *
+     * @effects registered_static_path_returns_200
+     *
+     * @return void 반환값 없음
      */
     public function test_route_exists_true_for_registered_routes(): void
     {
@@ -553,6 +623,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 미등록 경로 / 초과 세그먼트는 routeExists=false 입니다.
+     *
+     * @effects excess_segment_path_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_route_exists_false_for_unregistered_routes(): void
     {
@@ -564,6 +638,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * resolve()는 auth 라우트에서 null 이지만 routeExists()는 true — 차이 명시 검증.
+     *
+     * @effects registered_auth_required_path_returns_200_via_route_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_route_exists_differs_from_resolve_for_auth_routes(): void
     {
@@ -579,6 +657,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * 활성 템플릿 미설치 / routes 로드 실패 시 routeExists=true (404 억제, 안전측 폴백).
+     *
+     * @effects missing_template_suppresses_404_returns_200_safe_fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_route_exists_true_fallback_when_template_missing(): void
     {
@@ -591,6 +673,10 @@ class TemplateRouteResolverTest extends TestCase
 
     /**
      * admin 타입 라우트도 routeExists 로 판별됩니다 (admin 와일드카드 prefix → /admin/... 정규화).
+     *
+     * @effects unregistered_admin_path_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_route_exists_for_admin_type(): void
     {
@@ -602,5 +688,213 @@ class TemplateRouteResolverTest extends TestCase
 
         $this->assertTrue($resolver->routeExists('/admin/users', 'admin'), '*/admin/users → /admin/users 정규화 매칭');
         $this->assertFalse($resolver->routeExists('/admin/nonexistent', 'admin'));
+    }
+
+    /**
+     * 끝·연속 슬래시 경로도 정규형과 같은 판정을 받는다 (공개#156).
+     *
+     * @scenario template_type=user, path_shape=trailing_slash
+     *
+     * @effects resolver_normalizes_trailing_slash
+     *
+     * @return void 반환값 없음
+     */
+    public function test_route_exists_normalizes_trailing_and_double_slash(): void
+    {
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-user_basic'], $this->getDefaultRoutes());
+
+        $this->assertTrue($resolver->routeExists('/about/', 'user'), '정적 경로 끝 슬래시');
+        $this->assertTrue($resolver->routeExists('/shop/products/123/', 'user'), '동적 경로 끝 슬래시');
+        $this->assertTrue($resolver->routeExists('/shop//products/123', 'user'), '연속 슬래시');
+        $this->assertFalse($resolver->routeExists('/this/does/not/exist/', 'user'), '미등록은 끝 슬래시여도 미등록');
+        $this->assertTrue($resolver->routeExists('/', 'user'), '루트 유지');
+    }
+
+    /**
+     * admin 타입도 끝 슬래시 경로를 정규형으로 판정한다 (공개#156 제보 경로 `/admin/`).
+     *
+     * @scenario template_type=admin, path_shape=trailing_slash
+     *
+     * @effects resolver_normalizes_trailing_slash
+     *
+     * @return void 반환값 없음
+     */
+    public function test_route_exists_normalizes_trailing_slash_for_admin(): void
+    {
+        $routes = [
+            ['path' => '*/admin', 'layout' => 'admin_dashboard', 'auth_required' => true, 'guest_only' => false, 'meta' => []],
+            ['path' => '*/admin/users', 'layout' => 'admin_user_list', 'auth_required' => true, 'guest_only' => false, 'meta' => []],
+        ];
+
+        $resolver = $this->createResolverForType('admin', ['identifier' => 'sirsoft-admin_basic'], $routes);
+
+        $this->assertTrue($resolver->routeExists('/admin/users/', 'admin'));
+        $this->assertTrue($resolver->routeExists('/admin/', 'admin'));
+        $this->assertFalse($resolver->routeExists('/admin/nonexistent/', 'admin'));
+    }
+
+    /**
+     * resolve() 도 끝 슬래시 경로를 정규형과 같은 레이아웃으로 매핑한다 (봇 SEO 렌더 경로).
+     *
+     * @scenario template_type=user, path_shape=trailing_slash, bot=bot
+     *
+     * @effects resolver_normalizes_trailing_slash
+     *
+     * @return void 반환값 없음
+     */
+    public function test_resolve_normalizes_trailing_slash(): void
+    {
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-user_basic'], $this->getDefaultRoutes());
+
+        $this->assertNotNull($resolver->resolve('/about'));
+        $this->assertSame($resolver->resolve('/about'), $resolver->resolve('/about/'));
+    }
+
+    // ─── describeRouteLayout(): 라우트 레이아웃 이름 해석 (공개#154) ───────────
+
+    /**
+     * 점이 없는 템플릿 레이아웃은 저장 이름과 뗀 이름이 같고 식별자가 없습니다.
+     *
+     * @scenario surface=route_template_layout
+     *
+     * @effects route_layout_described_with_stored_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_describe_route_layout_for_template_layout(): void
+    {
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-basic']);
+
+        $this->assertSame([
+            'layoutName' => 'home',
+            'storedLayoutName' => 'home',
+            'moduleIdentifier' => null,
+            'pluginIdentifier' => null,
+        ], $resolver->describeRouteLayout('home'));
+    }
+
+    /**
+     * 모듈 레이아웃은 뗀 이름과 함께 DB·편집기가 쓰는 전체 이름을 돌려줍니다.
+     *
+     * @scenario surface=route_module_layout
+     *
+     * @effects route_layout_described_with_stored_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_describe_route_layout_for_module_layout(): void
+    {
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-basic'], [], true, ['gnuboard7-hello_module']);
+
+        $this->assertSame([
+            'layoutName' => 'user_memo_list',
+            'storedLayoutName' => 'gnuboard7-hello_module.user_memo_list',
+            'moduleIdentifier' => 'gnuboard7-hello_module',
+            'pluginIdentifier' => null,
+        ], $resolver->describeRouteLayout('gnuboard7-hello_module.user_memo_list'));
+    }
+
+    /**
+     * 플러그인 레이아웃은 플러그인 식별자로 판별됩니다.
+     *
+     * @scenario surface=route_plugin_layout
+     *
+     * @effects route_layout_described_with_stored_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_describe_route_layout_for_plugin_layout(): void
+    {
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-basic'], [], true, [], ['sirsoft-reviews']);
+
+        $this->assertSame([
+            'layoutName' => 'review_list',
+            'storedLayoutName' => 'sirsoft-reviews.review_list',
+            'moduleIdentifier' => null,
+            'pluginIdentifier' => 'sirsoft-reviews',
+        ], $resolver->describeRouteLayout('sirsoft-reviews.review_list'));
+    }
+
+    /**
+     * 설치되지 않은 확장 접두사는 기존 동작대로 모듈로 간주합니다.
+     *
+     * @scenario surface=route_unknown_extension
+     *
+     * @effects route_layout_described_with_stored_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_describe_route_layout_treats_unknown_extension_as_module(): void
+    {
+        $resolver = $this->createResolver(['identifier' => 'sirsoft-basic']);
+
+        $described = $resolver->describeRouteLayout('vendor-unknown.page');
+
+        $this->assertSame('vendor-unknown.page', $described['storedLayoutName']);
+        $this->assertSame('page', $described['layoutName']);
+        $this->assertSame('vendor-unknown', $described['moduleIdentifier']);
+        $this->assertNull($described['pluginIdentifier']);
+    }
+
+    /**
+     * resolve() 는 기존 키를 그대로 두고 저장 이름(storedLayoutName)을 더합니다.
+     *
+     * @scenario surface=route_module_layout
+     *
+     * @effects route_resolve_adds_stored_layout_name
+     *
+     * @return void 반환값 없음
+     */
+    public function test_resolve_adds_stored_layout_name_and_keeps_stripped_name(): void
+    {
+        $resolver = $this->createResolver(
+            ['identifier' => 'sirsoft-basic'],
+            [
+                ['path' => '/', 'layout' => 'home'],
+                ['path' => '/memos', 'layout' => 'gnuboard7-hello_module.user_memo_list'],
+            ],
+            true,
+            ['gnuboard7-hello_module'],
+        );
+
+        $module = $resolver->resolve('/memos');
+        $this->assertSame('user_memo_list', $module['layoutName']);
+        $this->assertSame('gnuboard7-hello_module.user_memo_list', $module['storedLayoutName']);
+        $this->assertSame('gnuboard7-hello_module', $module['moduleIdentifier']);
+
+        $home = $resolver->resolve('/');
+        $this->assertSame('home', $home['layoutName']);
+        $this->assertSame('home', $home['storedLayoutName']);
+    }
+
+    /**
+     * 레이아웃 전체 이름으로 그 레이아웃을 쓰는 공개 라우트(경로·meta)를 찾습니다 — 편집기 봇 미리보기의 라우트 제목 대체용.
+     * 없는 이름이면 null 입니다 (공개#154).
+     *
+     * @scenario surface=preview_route_title
+     *
+     * @effects bot_preview_uses_route_meta_title_like_production
+     *
+     * @return void 반환값 없음
+     */
+    public function test_find_route_by_layout_returns_route_using_that_layout(): void
+    {
+        $resolver = $this->createResolver(
+            ['identifier' => 'sirsoft-basic'],
+            [
+                ['path' => '/', 'layout' => 'home', 'meta' => ['title' => '홈']],
+                ['path' => '/memos', 'layout' => 'gnuboard7-hello_module.user_memo_list', 'meta' => ['title' => '$t:gnuboard7-hello_module.user.memos.index.title']],
+            ],
+            true,
+            ['gnuboard7-hello_module'],
+        );
+
+        $route = $resolver->findRouteByLayout('gnuboard7-hello_module.user_memo_list');
+
+        $this->assertSame('/memos', $route['path']);
+        $this->assertSame('$t:gnuboard7-hello_module.user.memos.index.title', $route['meta']['title']);
+        $this->assertSame('/', $resolver->findRouteByLayout('home')['path']);
+        $this->assertNull($resolver->findRouteByLayout('user_memo_list'), '뗀 이름으로는 찾지 않는다');
+        $this->assertNull($resolver->findRouteByLayout('vendor-x.nothing'));
     }
 }

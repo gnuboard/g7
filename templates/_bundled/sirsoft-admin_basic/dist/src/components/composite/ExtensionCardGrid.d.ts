@@ -8,6 +8,10 @@ export type ExtensionViewMode = 'gallery' | 'list';
 export interface ExtensionDependency {
     type?: string;
     name?: string;
+    /** 지금 상태로 이 의존을 충족하지 못함(미설치·꺼짐·버전 미달) — 빨간 글자·경고 아이콘으로 그린다 */
+    unmet?: boolean;
+    /** 미충족 사유 문구 — 툴팁(`title`)과 보조기기 이름에 쓴다 (예: 「버전 미달 0.1.0 → >=9.9.9」) */
+    reason?: string;
 }
 /** 확장 배지 한 건 — 상태·호환성처럼 이름 옆에 붙는 표식. */
 export interface ExtensionBadgeSpec {

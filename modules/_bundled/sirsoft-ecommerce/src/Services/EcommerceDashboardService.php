@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Services;
 
+use App\Extension\ModuleManager;
 use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -30,6 +31,11 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInte
  */
 class EcommerceDashboardService
 {
+    /**
+     * 상품 문의를 글로 저장하는 게시판 모듈 식별자 (manifest `integrations.modules` 에 선언한 선택 연동).
+     */
+    private const BOARD_MODULE = 'sirsoft-board';
+
     /**
      * 「오늘」 배지 키 → 그 배지 링크가 여는 주문 목록의 상태 조건 (`admin_dashboard_commerce.g7.html` 의 navigate 경로와 같다).
      *
@@ -206,17 +212,33 @@ class EcommerceDashboardService
     /**
      * 전체 상품의 미답변 문의 목록과 총 건수를 조회합니다.
      *
+     * 상품 문의는 게시판 모듈의 글로 저장되고, 항목·「전체 보기」는 게시판 관리자 화면으로 간다.
+     * 게시판 모듈(선택 연동)이 꺼져 있거나 설치되지 않았으면 그 화면이 없으므로 항목을 내지 않는다
+     * (`board_active=false`, 빈 목록·0건·slug null). 대시보드 카드도 이 값으로 숨는다.
+     *
      * @param  int  $limit  조회 건수
-     * @return array{items: Collection, total: int, board_slug: string|null} 미답변 문의
+     * @return array{items: Collection, total: int, board_slug: string|null, board_active: bool} 미답변 문의
      */
     public function getPendingInquiries(int $limit): array
     {
+        $boardActive = in_array(self::BOARD_MODULE, ModuleManager::getActiveModuleIdentifiers(), true);
+
+        if (! $boardActive) {
+            return [
+                'items' => new Collection,
+                'total' => 0,
+                'board_slug' => null,
+                'board_active' => false,
+            ];
+        }
+
         return [
             'items' => $this->inquiryRepository->getPendingRecent($limit),
             'total' => $this->inquiryRepository->countPending(),
             // 상품 문의는 게시판 모듈 Post 로 저장된다. 관리자 상세는 지정된 문의 게시판의
             // 글 상세(/admin/board/{slug}/post/{inquirable_id})에서 본다 (미지정 시 null).
             'board_slug' => g7_module_settings('sirsoft-ecommerce', 'inquiry.board_slug'),
+            'board_active' => true,
         ];
     }
 

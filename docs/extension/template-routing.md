@@ -58,6 +58,39 @@
 | `layout_name` | `template_layouts` 테이블의 레이아웃명 |
 | `permissions` | 필요한 권한 배열 (빈 배열 시 인증만 필요) |
 | `meta` | 메타 정보 (제목, 아이콘 등). `title` 은 번역 키(`$t:키`)로 적는다 — 화면 편집기의 라우트 목록과 방문 통계의 페이지 제목에 그대로 보이므로 한국어를 박으면 다른 언어 사이트에서도 한국어로 나온다 |
+| `requires` | (선택) 이 라우트에 필요한 활성 모듈·플러그인. 아래 [requires — 모듈이 꺼지면 라우트 숨기기](#requires--모듈이-꺼지면-라우트-숨기기) |
+
+### requires — 모듈이 꺼지면 라우트 숨기기
+
+> 코어 7.1.4 이상
+
+게시판·쇼핑몰처럼 **선택해서 쓰는 모듈**의 화면을 템플릿 routes.json 이 선언할 때, 그 모듈이 꺼진 사이트에서는 라우트를 내지 않게 한다.
+
+```json
+{
+  "routes": [
+    { "path": "*/boards", "layout": "board/boards", "requires": { "modules": ["sirsoft-board"] } },
+    { "path": "*/mypage/inquiries", "layout": "mypage/inquiries", "requires": { "modules": ["sirsoft-ecommerce", "sirsoft-board"] } },
+    { "path": "*/address", "layout": "address", "requires": { "plugins": ["sirsoft-daum_postcode"] } }
+  ]
+}
+```
+
+| 규칙 | 설명 |
+|------|------|
+| 형식 | `{"modules": [식별자, …], "plugins": [식별자, …]}` — 둘 다 선택 |
+| 판정 | 적힌 확장이 **모두** 활성일 때만 라우트를 낸다. 하나라도 꺼져 있으면 그 라우트는 없는 것처럼 404 가 된다 |
+| 적용 범위 | 공개 routes 응답(`/api/templates/{id}/routes.json`) · 검색봇 화면(SEO) · 사이트맵 · 정적 사본이 같은 결과를 쓴다. 모듈이 선언한 routes(모듈의 `resources/routes/` 아래 user.json·admin.json)에도 같은 키를 쓸 수 있다 |
+| 적용 안 함 | 레이아웃 편집기(꺼진 모듈의 화면도 편집할 수 있다) · `php artisan layout:check-installed` 의 라우트 대조 |
+| 형식 오류 | 모르는 유형(`templates`·`module` 등)·배열이 아닌 값·문자열이 아닌 식별자는 그 조건을 무시하고 라우트를 **남긴 뒤** 서버 로그에 경고를 남긴다. `php artisan layout:check-installed` 는 이런 라우트를 「routes.json requires 형식 오류」 표로 알린다. 오타 하나로 라우트가 조용히 사라지지 않게 하기 위해서다. 식별자 철자가 틀린 경우(`sirsoft-bord`)는 형식이 맞으므로 「꺼진 모듈」로 판정돼 라우트가 빠진다 |
+| 갱신 시점 | 모듈·플러그인을 켜고 끌 때 routes 캐시가 함께 갱신된다 |
+| 옛 코어 | 7.1.3 이하 코어는 이 키를 모르므로 모든 라우트를 낸다. 화면 안의 링크·데이터 호출은 레이아웃에서 `_global.activeModules` 로 따로 가린다 ([전역 상태 — 시스템 주입 속성](../frontend/state-management.md#시스템-주입-속성)) |
+
+`requires` 는 라우트만 숨긴다. 그 모듈을 가리키는 메뉴·링크·데이터소스는 레이아웃에서 같은 판정으로 가린다:
+
+```json
+{ "id": "boards", "endpoint": "/api/modules/sirsoft-board/boards", "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}" }
+```
 
 ---
 

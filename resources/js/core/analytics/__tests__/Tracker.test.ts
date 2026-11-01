@@ -12,7 +12,8 @@
  *   tracker_swallows_transport_failures, tracker_skips_excluded_requests_before_sending,
  *   download_and_outlink_actions_store_target_in_dictionary,
  *   tracker_uses_keepalive_so_unloading_pages_still_deliver, tracker_fits_payload_to_server_field_limits,
- *   prerendered_page_counts_its_landing_pageview_when_activated
+ *   prerendered_page_counts_its_landing_pageview_when_activated,
+ *   unknown_screen_size_is_not_recorded_as_a_resolution
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -240,6 +241,35 @@ describe('AnalyticsTracker', () => {
     const second = flush();
 
     expect(second?.init).toBe(false);
+  });
+
+  // @scenario source=beacon, visit_state=new
+  // @effects unknown_screen_size_is_not_recorded_as_a_resolution
+  it('화면 크기를 알 수 없으면(0x0) 해상도를 싣지 않는다', () => {
+    // 앱 내 웹뷰·헤드리스 브라우저는 화면 크기를 0 으로 준다 — 「0x0」 은 해상도가 아니라 「모름」이다.
+    vi.stubGlobal('screen', { width: 0, height: 0 });
+    const tracker = new AnalyticsTracker({ settings: SETTINGS });
+
+    tracker.trackPageview({ path: '/' });
+    const body = flush();
+
+    expect(body?.t).toBe('pageview');
+    expect(body).not.toHaveProperty('res');
+  });
+
+  // @scenario source=beacon, visit_state=new
+  // @effects unknown_screen_size_is_not_recorded_as_a_resolution
+  it('한 변만 0 이어도 해상도를 싣지 않고, 정상 화면은 가로x세로로 싣는다', () => {
+    vi.stubGlobal('screen', { width: 1920, height: 0 });
+    const tracker = new AnalyticsTracker({ settings: SETTINGS });
+
+    tracker.trackPageview({ path: '/' });
+    expect(flush()).not.toHaveProperty('res');
+
+    vi.stubGlobal('screen', { width: 1536, height: 864 });
+    vi.advanceTimersByTime(1500);
+    tracker.trackPageview({ path: '/board' });
+    expect(flush()?.res).toBe('1536x864');
   });
 
   // @scenario source=beacon, visit_state=open

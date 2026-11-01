@@ -19,6 +19,7 @@ interface SeoCacheManagerInterface
      * @param  string  $url  요청 URL
      * @param  string  $locale  로케일
      * @param  string  $html  렌더링된 HTML
+     * @return void 반환값 없음
      */
     public function put(string $url, string $locale, string $html): void;
 
@@ -31,13 +32,17 @@ interface SeoCacheManagerInterface
      * @param  string  $locale  로케일
      * @param  string  $html  렌더링된 HTML
      * @param  string  $layoutName  레이아웃명 (빈 문자열 허용)
+     * @return void 반환값 없음
      */
     public function putWithLayout(string $url, string $locale, string $html, string $layoutName): void;
 
     /**
      * 특정 URL 패턴의 SEO 캐시를 무효화합니다.
      *
-     * @param  string  $urlPattern  URL 패턴 (와일드카드 지원)
+     * 패턴은 캐시 URL 전체와 일치해야 한다. 와일드카드는 `*`(0자 이상) 하나뿐이고 `?`·`.` 등은
+     * 글자 그대로다 — 쿼리 변종은 `/board/free?*`, 하위 경로는 `/board/free/*` 처럼 따로 적는다.
+     *
+     * @param  string  $urlPattern  URL 패턴 (`*` 만 와일드카드)
      * @return int 무효화된 캐시 수
      */
     public function invalidateByUrl(string $urlPattern): int;
@@ -52,6 +57,8 @@ interface SeoCacheManagerInterface
 
     /**
      * 전체 SEO 캐시를 삭제합니다.
+     *
+     * @return void 반환값 없음
      */
     public function clearAll(): void;
 

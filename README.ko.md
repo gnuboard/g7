@@ -6,7 +6,7 @@
 엔터프라이즈급 기반을, 최소한의 토큰으로
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.1.3-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.1.4-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
@@ -408,7 +408,7 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 
 ### 시스템 요구사항
 
-- PHP 8.2+ (필수 확장 16개 포함 — `ctype`, `curl`, `dom`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, `zip` 등. `gd`/`imagick`, `intl`, `redis`, `bcmath` 등은 해당 기능을 쓸 때만 필요하며 전체 목록은 [docs/requirements.md](docs/requirements.md) 참조)
+- PHP 8.2+ (필수 확장 16개 포함 — `ctype`, `curl`, `dom`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, `zip` 등. `gd`/`imagick`, `intl`, `redis`, `bcmath` 등은 해당 기능을 쓸 때만 필요하며 전체 목록은 [docs/requirements.md](docs/requirements.md) 참조. 모듈·플러그인은 자기 `composer.json` 의 `require`/`suggest` `ext-*` 로 추가 PHP 확장을 선언하며, 설치할 때 검사하고 관리자 화면에 표시한다)
 - MySQL 8.0+ 또는 MariaDB 10.3+ (utf8mb4)
 - Composer 2.x
 - Node.js 20+ (프론트엔드 에셋을 직접 빌드할 때만 필요)
@@ -429,6 +429,13 @@ cp .env.example .env
 ```
 
 > Composer 의존성은 설치 마법사가 운영용 구성(`--no-dev`)으로 자동 설치합니다. 직접 설치하려면 `composer install --no-dev --optimize-autoloader` 를 사용하세요.
+
+브라우저 없이 서버 터미널에서도 같은 설치를 진행할 수 있습니다(대화형, 또는 옵션·환경변수만으로 끝나는 비대화형).
+
+```bash
+php g7-install                       # 대화형
+php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
+```
 
 > 상세 설치 가이드는 [INSTALL.md](INSTALL.md)를 참조하세요.
 
@@ -576,14 +583,15 @@ cp .env.example .env
 
 <!-- community-contributors:start -->
 <p>
-  <a href="https://github.com/jiwonpapa" title="jiwonpapa"><img src="https://github.com/jiwonpapa.png" width="48" alt="jiwonpapa"></a>
   <a href="https://github.com/glitter-gim" title="glitter-gim"><img src="https://github.com/glitter-gim.png" width="48" alt="glitter-gim"></a>
+  <a href="https://github.com/jiwonpapa" title="jiwonpapa"><img src="https://github.com/jiwonpapa.png" width="48" alt="jiwonpapa"></a>
   <a href="https://github.com/Tuwasduliebst" title="Tuwasduliebst"><img src="https://github.com/Tuwasduliebst.png" width="48" alt="Tuwasduliebst"></a>
-  <a href="https://github.com/digitalnomadxxx" title="digitalnomadxxx"><img src="https://github.com/digitalnomadxxx.png" width="48" alt="digitalnomadxxx"></a>
   <a href="https://github.com/lyg-kaban" title="lyg-kaban"><img src="https://github.com/lyg-kaban.png" width="48" alt="lyg-kaban"></a>
+  <a href="https://github.com/digitalnomadxxx" title="digitalnomadxxx"><img src="https://github.com/digitalnomadxxx.png" width="48" alt="digitalnomadxxx"></a>
   <a href="https://github.com/jordy-bitree" title="jordy-bitree"><img src="https://github.com/jordy-bitree.png" width="48" alt="jordy-bitree"></a>
   <a href="https://github.com/laelbe" title="laelbe"><img src="https://github.com/laelbe.png" width="48" alt="laelbe"></a>
   <a href="https://github.com/bigmsg" title="bigmsg"><img src="https://github.com/bigmsg.png" width="48" alt="bigmsg"></a>
+  <a href="https://github.com/eondcom" title="eondcom"><img src="https://github.com/eondcom.png" width="48" alt="eondcom"></a>
   <a href="https://github.com/abc101" title="abc101"><img src="https://github.com/abc101.png" width="48" alt="abc101"></a>
   <a href="https://github.com/hwaryeon1234" title="hwaryeon1234"><img src="https://github.com/hwaryeon1234.png" width="48" alt="hwaryeon1234"></a>
   <a href="https://github.com/koojunho" title="koojunho"><img src="https://github.com/koojunho.png" width="48" alt="koojunho"></a>

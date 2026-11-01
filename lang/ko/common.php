@@ -35,6 +35,7 @@ return [
         'github_download_failed' => 'GitHub에서 다운로드에 실패했습니다.',
         'github_archive_download_failed' => '아카이브 다운로드에 실패했습니다. (:url)',
         'zip_file_not_found' => 'ZIP 파일을 찾을 수 없습니다.',
+        'archive_php_extension_missing' => '압축을 풀려면 서버에 PHP 확장 :extensions 이(가) 필요합니다. 서버 관리자에게 설치를 요청하세요.',
         'zip_open_failed' => 'ZIP 파일을 열 수 없습니다.',
     ],
 
@@ -60,6 +61,11 @@ return [
             'seo_cache_stats' => 'SEO 캐시 통계 :count건을 삭제했습니다. (보관 :days일)',
             'identity_logs' => '본인인증 이력 :count건을 파기했습니다. (보관 :days일)',
             'activity_logs' => '활동 로그 :count건을 삭제했습니다. (보관 :days일)',
+        ],
+        // `core:install` (터미널 설치 별칭) 출력
+        'core_install' => [
+            'script_missing' => '터미널 설치 스크립트를 찾을 수 없습니다: :path',
+            'process_failed' => '터미널 설치 스크립트를 실행하지 못했습니다.',
         ],
         // 콘솔 yes/no 확인 프롬프트(HasUnifiedConfirm·ConsoleConfirm) 공통 출력
         'console_confirm' => [

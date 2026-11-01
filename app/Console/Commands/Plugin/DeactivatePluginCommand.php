@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Traits\LocalizesDescription;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\DeactivationReason;
@@ -12,17 +14,14 @@ use Illuminate\Support\Facades\Log;
 
 class DeactivatePluginCommand extends Command
 {
+    use LocalizesDescription;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
 
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'plugin:deactivate {identifier : 비활성화할 플러그인 식별자} {--force : 의존 확장이 있어도 강제 비활성화}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '플러그인을 비활성화합니다';
 
     /**
      * 플러그인 관리자 및 리포지토리
@@ -107,6 +106,7 @@ class DeactivatePluginCommand extends Command
 
             if ($result['success']) {
                 $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.deactivate.success', ['plugin' => $identifier]));
+                $this->reportIntegratedBy('plugin', $identifier);
                 $this->info('   - '.trans_choice('plugins.commands.deactivate.layouts_deleted', (int) ($result['layouts_deleted'] ?? 0)));
                 $this->warn('⚠️  '.__('plugins.commands.deactivate.warning'));
                 Log::info(__('plugins.commands.deactivate.success', ['plugin' => $identifier]));

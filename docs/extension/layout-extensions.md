@@ -89,7 +89,11 @@ injection 또는 modals/data_sources/scripts/init_actions 보유, EP: 병합할 
 `integrations`(있으면 연동, 없어도 동작) 또는 `dependencies`(없으면 동작 불가)에 선언합니다 — 선언이 없으면 운영자와 상대 확장 개발자가 그
 결합을 알 수 없고, 상대가 화면 이름을 바꾸면 조각이 조용히 사라집니다. 정적 검사 `extension-undeclared-extension-reference` 가 조각의
 `target_layout` 을 소유 확장으로 되돌려 확인합니다. 템플릿의 화면(`admin_settings` 등 코어 화면 계약)은 어느 템플릿이든 같은 이름이라
-선언 대상이 아닙니다. 선언 형식은 [플러그인 개발 — 의존성](plugin-development.md#2-의존성-dependency)에 있습니다.
+선언 대상이 아닙니다. 선언 형식은 [플러그인 개발 — 의존성](plugin-development.md#2-의존성-dependency)과 [선택 연동](plugin-development.md#선택-연동-integrations)에 있습니다.
+
+`integrations` 로 선언한 확장의 API 를 조각이 부른다면(예: 회원가입 화면에 끼운 동의 조각의 약관 「보기」 단추가 페이지 모듈을 호출)
+그 단추·데이터소스에 `{{_global.activeModules?.includes('{식별자}') ?? true}}` 를 함께 걸어, 대상 확장이 꺼진 사이트에서 빈 창·404 알림이
+남지 않게 합니다(코어 7.1.4+, 옛 코어에서는 늘 참) — [전역 상태 — 시스템 주입 속성](../frontend/state-management.md#시스템-주입-속성).
 
 ### 조각의 전역 상태 키 접두 규칙
 

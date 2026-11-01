@@ -135,9 +135,20 @@
 
 `module.json` 의 `state_contracts` 는 다른 확장이 읽으라고 내놓는 전역 상태(`_global.{이름}`)의 이름·모양·쓰기 허용 주체이고,
 `integrations` 는 「있으면 연동되고 없어도 동작하는」 확장 목록입니다(`dependencies` 와 달리 설치를 막지 않음). 각각
-`getStateContracts()`·`getIntegrations()` 로 자동 파싱됩니다. 형식과 규칙은
+`getStateContracts()`·`getIntegrations()` 로 자동 파싱되고, 연동 대상별 버전 제약은 `getIntegrationConstraints()`
+(`{modules: {식별자: 제약}, plugins: …, templates: …}`, 목록형·설명형은 `'*'`)로 읽습니다(코어 7.1.4+). 형식과 규칙은
 [전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts)과
-[선택 연동](plugin-development.md#2-의존성-dependency)을 따릅니다.
+[선택 연동](plugin-development.md#선택-연동-integrations)을 따릅니다.
+
+```json
+"integrations": {
+    "modules": { "sirsoft-board": ">=1.2.1" },
+    "plugins": []
+}
+```
+
+연동 대상이 꺼진 사이트에서 이 모듈의 화면·응답이 그 대상으로 가는 링크·데이터를 내지 않게 하는 것은 이 모듈의 몫입니다 —
+서버는 활성 여부를 확인하고, 레이아웃은 `_global.activeModules` 로 가립니다([선택 연동](plugin-development.md#선택-연동-integrations)).
 
 ### 자동 추론 메서드 (final - 오버라이드 불가)
 
@@ -536,7 +547,8 @@ modules/{identifier}/vendor/ 디렉토리에 독립 설치
 수동 설치: php artisan module:composer-install [identifier]
 ```
 
-- `php`와 `ext-*` 패키지는 외부 의존성으로 간주되지 않음 (composer install 트리거 안 함)
+- `php`와 `ext-*` 패키지는 composer install 판단에서는 외부 의존성으로 간주되지 않음 (composer install 트리거 안 함)
+- 단 `ext-*` 는 **PHP 확장 요구로 검사**된다 — `require.ext-*` 는 필수(서버에 없으면 설치·활성화 차단, 업데이트는 경고만), `suggest.ext-*` 는 권장(값은 사유, 관리자 배지로만 알림). 코어 「선택」 확장(`bcmath`·`gd`·`zlib` 등)이나 목록 밖 확장(`soap` 등)을 쓰면 선언하거나 `function_exists`·`class_exists` 로 가드한다. 상세: [requirements.md §1.8](../requirements.md#18-확장모듈플러그인이-요구하는-php-확장)
 - 설치된 패키지는 `vendor_autoloads`를 통해 런타임에 자동 로드됨
 - 상세: [extension-manager.md](extension-manager.md) "Composer 의존성 관리" 참조
 
@@ -949,6 +961,27 @@ public function seoVariables(): array
 - 설치 시 `ValidatesSeoVariables` 트레이트가 변수명 고유성 검증
 
 > 상세: [seo-system.md](../backend/seo-system.md) "SEO 변수 시스템" 참조
+
+## 모듈 소유 화면의 SEO
+
+모듈이 `resources/layouts/user/` 에 사용자 레이아웃을 두면 그 화면은 **모듈 소유 화면**이 됩니다. 라우트·DB·레이아웃 편집기는
+이 레이아웃을 `{모듈식별자}.{레이아웃}` 전체 이름으로 다루고, 검색봇 렌더도 같은 이름으로 찾습니다(코어 7.1.4+).
+
+- 템플릿의 공통 레이아웃(`_user_base` 등)이 SEO 를 꺼 두었으면, 화면 레이아웃의 `<meta>` 안에서 `<seo :enabled="true">` 로 덮습니다.
+- 봇 본문에 데이터를 싣으려면 `<seo>` 안 `<data-sources><item>소스ID</item></data-sources>` 로 봇 렌더 때 호출할 데이터 소스를 고릅니다.
+- 봇 캐시를 지울 때는 전체 이름을 씁니다: `php artisan seo:clear --layout={모듈식별자}.{레이아웃}`. 레이아웃 편집기에서 저장·복원하면 그 화면의 봇 캐시는 자동으로 지워집니다.
+- 예시: 번들 Hello 모듈의 메모 목록(`/memos`, `user_memo_list`).
+
+```html
+<meta title="$t:gnuboard7-hello_module.user.memos.index.title">
+  <seo :enabled="true">
+    <og type="website" description="$t:gnuboard7-hello_module.user.memos.index.seo_description"/>
+    <data-sources><item>memos</item></data-sources>
+  </seo>
+</meta>
+```
+
+> 상세: [seo-system.md](../backend/seo-system.md) "확장 레이아웃 이름 규약" 참조
 
 ---
 

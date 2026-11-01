@@ -561,14 +561,12 @@ return [
             'in' => 'status は active または inactive である必要があります。',
         ],
     ],
-    // 会員検索(会員選択ウィンドウ)の項目表示名
     'user_search' => [
         'attributes' => [
             'uuid' => '会員',
         ],
     ],
     'menu' => [
-        // 多言語フィールドの表示名 — 必須言語メッセージの項目名として使う
         'attributes' => [
             'name' => 'メニュー名',
         ],
@@ -656,7 +654,6 @@ return [
         ],
     ],
     'permission' => [
-        // 多言語フィールドの表示名 — 必須言語メッセージの項目名として使う
         'attributes' => [
             'name' => '権限名',
             'description' => '権限の説明',
@@ -669,7 +666,6 @@ return [
         ],
     ],
     'role' => [
-        // 多言語フィールドの表示名 — 必須言語メッセージの項目名として使う
         'attributes' => [
             'name' => 'ロール名',
             'description' => 'ロールの説明',
@@ -799,6 +795,7 @@ return [
             'max' => '設定値は :max 文字を超えることはできません。',
             'array_max' => '設定値のサイズは :max 文字を超えることはできません。',
             'server_only' => 'この設定はサーバーが記録する値のため、直接保存できません。',
+            'env_locked' => 'この設定は .env が値を決めているため、ここでは変更できません。.env の :env を修正してください。',
         ],
     ],
     'password_policy' => [
@@ -898,6 +895,7 @@ return [
         'sitemap_urls_per_file_min' => 'Sitemap ファイルあたりURL数は最小1000件以上である必要があります。',
         'sitemap_urls_per_file_max' => 'Sitemap ファイルあたりURL数は最大50000件を超えることはできません。',
         'sitemap_gzip_boolean' => 'Sitemap 圧縮設定はtrue又はfalse値である必要があります。',
+        'sitemap_gzip_requires_zlib' => 'サイトマップ圧縮(gzip)を有効にするには、サーバーに PHP zlib 拡張が必要です。拡張をインストールするか、圧縮をオフにしてください。',
         'sitemap_serve_stale_on_miss_boolean' => '前Sitemap 提供設定はtrue又はfalse値である必要があります。',
         'sitemap_max_urls_per_contributor_integer' => 'クローラーあたり最大URL数は整数である必要があります。',
         'sitemap_max_urls_per_contributor_min' => 'クローラーあたり最大URL数は0以上である必要があります。',
@@ -1065,6 +1063,10 @@ return [
         'orphan_retention_days_max' => '孤立した添付ファイルの保持期間は3650日を超えることはできません。',
         'ip_restriction_enabled_boolean' => 'IP アクセス制限の使用は true または false 値である必要があります。',
         'ip_or_cidr_invalid' => '":value" は IP アドレスまたは CIDR 形式(例: 203.0.113.0/24)ではありません。',
+        'csp_source_host_invalid' => '":value" は許可されていない形式です。ホスト (例: cdn.example.com, *.example.com, https://cdn.example.com) のみ入力してください — 引用符・セミコロン・空白・unsafe-inline などのキーワード・data:・*・http:// は使用できません。',
+        'csp_mode_in' => 'コンテンツセキュリティポリシーのモードは、オフ・検査のみ・強制のいずれかである必要があります。',
+        'csp_extra_script_hosts_array' => '追加スクリプト許可ホストはリストである必要があります。',
+        'csp_extra_script_hosts_max' => '追加スクリプト許可ホストは最大 :max 件まで入力できます。',
         'admin_allowed_ips_array' => '管理者エリア許可 IP はリストである必要があります。',
         'admin_allowed_ips_max' => '管理者エリア許可 IP は :max個まで登録できます。',
         'ip_restriction_rules_array' => 'ルート別規則はリストである必要があります。',
@@ -1326,6 +1328,8 @@ return [
         'two_factor_scope' => '2段階認証の適用範囲',
         'ip_restriction_enabled' => 'IP アクセス制限の使用',
         'admin_allowed_ips' => '管理者エリア許可 IP',
+        'csp_mode' => 'コンテンツセキュリティポリシーのモード',
+        'csp_extra_script_hosts' => '追加スクリプト許可ホスト',
         'ip_restriction_rules' => 'ルート別アクセス規則',
         'ip_restriction_rule_pattern' => '規則 URI パターン',
         'ip_restriction_rule_ips' => '規則許可 IP',

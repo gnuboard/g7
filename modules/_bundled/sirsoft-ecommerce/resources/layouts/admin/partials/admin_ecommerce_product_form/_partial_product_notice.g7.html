@@ -24,13 +24,11 @@
               <span>$t:sirsoft-ecommerce.admin.product.buttons.manage_notice_template</span>
             </a>
           </div>
-          <select class="select w-full" value="{{_global.pendingNoticeTemplateId ?? _local.ui.selectedNoticeTemplateId ?? ''}}" disabled="{{_computed.isReadOnly}}">
+          <select class="w-full" aria-label="$t:sirsoft-ecommerce.admin.product.fields.notice_template" value="{{_global.pendingNoticeTemplateId ?? _local.ui.selectedNoticeTemplateId ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.product.placeholders.notice_template') }].concat((notice_templates?.data?.data ?? []).map(template => ({ value: template.id, label: $localized(template.name) })))}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 템플릿을 고르면 곧바로 채우지 않고 확인 창을 거친다 — 이미 넣어 둔 고시 내용이 통째로 갈리기 때문이다. 고른 값은 확정될 때까지 전역에 대기한다 -->
               <action handler="sirsoft-ecommerce.confirmSelectNoticeTemplate" templateId="{{parseInt($event.target.value) || null}}"/>
             </on>
-            <option value="">$t:sirsoft-ecommerce.admin.product.placeholders.notice_template</option>
-            <option data-each="template, tplIdx in {{notice_templates?.data?.data ?? []}}" value="{{template.id}}">{{$localized(template.name)}}</option>
           </select>
           <!-- 고시 템플릿 조회 권한이 없어 선택지가 비었을 때의 안내 — 고시 항목은 아래에서 직접 채울 수 있다 -->
           <div data-ref="notice_template_forbidden_notice" data-if="{{notice_templates?.data?.unavailable === true}}" class="flex items-center gap-2 mt-2 text-sm text-amber-700 dark:text-amber-300">

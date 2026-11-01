@@ -1105,22 +1105,21 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
-     * 문자열 연결 연산자(+)가 포함된 복합 표현식은 빈 문자열을 반환합니다.
+     * 문자열 연결 연산자(+)는 브라우저(JS `+`)와 같게 잇는다 (engine-v1.84.0 — 종전에는 미지원이라 빈 문자열).
      *
      * @scenario entry_point=evaluate, expression_form=single_binding
      *
-     * @effects unsupported_expression_renders_empty_without_orphan_operator
+     * @effects string_concat_follows_js_plus
      *
      * @return void 없음
      */
-    public function test_string_concat_operator_returns_empty(): void
+    public function test_string_concat_operator_follows_js_plus(): void
     {
         $context = ['product' => ['data' => ['selling_price' => 64000]]];
 
-        // + 연산자(문자열 연결)는 미지원 → 빈 문자열
         $result = $this->evaluator->evaluate("{{(product.data?.selling_price).toLocaleString() + '원'}}", $context);
 
-        $this->assertSame('', $result);
+        $this->assertSame('64,000원', $result);
     }
 
     /**
@@ -2921,7 +2920,7 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
-     * 산술 연산에서 좌측이 비숫자일 때 산술이 무시됩니다.
+     * 산술 연산에서 좌측이 비숫자일 때 산술이 무시됩니다. `+` 는 JS 와 같이 문자열로 잇는다(engine-v1.84.0).
      *
      * @scenario entry_point=evaluate, expression_form=single_binding
      *
@@ -2933,10 +2932,12 @@ class ExpressionEvaluatorTest extends TestCase
     {
         $context = ['name' => '텍스트'];
 
-        $result = $this->evaluator->evaluate('{{name + 1}}', $context);
+        // 비숫자이므로 산술 연산 무시, 빈 문자열 반환 (JS 는 NaN — 봇 화면은 빈 값)
+        $this->assertSame('', $this->evaluator->evaluate('{{name - 1}}', $context));
+        $this->assertSame('', $this->evaluator->evaluate('{{name * 2}}', $context));
 
-        // 비숫자이므로 산술 연산 무시, 빈 문자열 반환
-        $this->assertSame('', $result);
+        // `+` 는 산술이 아니라 문자열 잇기 — 브라우저와 같은 '텍스트1'
+        $this->assertSame('텍스트1', $this->evaluator->evaluate('{{name + 1}}', $context));
     }
 
     /**

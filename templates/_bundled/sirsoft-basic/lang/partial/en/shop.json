@@ -279,6 +279,7 @@
     "product_amount": "Product Amount",
     "taxable_amount": "Taxable Amount",
     "tax_free_amount": "Tax-free Amount",
+    "zero_rated_amount": "Zero-rated Amount",
     "discount_total": "Discount",
     "coupon_discount": "Coupon Discount",
     "code_discount": "Code Discount",

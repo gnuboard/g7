@@ -217,6 +217,17 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
   // 최신 인덱스를 ref로 추적 (클로저 문제 방지)
   const currentIndexRef = useRef(startIndex);
 
+  // 닫힌 채 마운트된 뒤 openGallery 로 열리면 startIndex 만 바뀐다(useState 초기값은 재평가되지 않음).
+  // Lightbox 는 열리는 렌더의 index 만 읽으므로 effect 가 아니라 열림 전환 렌더 중에 맞춘다(#821).
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    if (isOpen) {
+      currentIndexRef.current = startIndex;
+      setCurrentIndex(startIndex);
+    }
+  }
+
   // 이미지를 라이트박스 슬라이드 형식으로 변환 (썸네일 포함)
   const slides: Slide[] = images.map((image) => ({
     src: image.src,

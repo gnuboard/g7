@@ -89,6 +89,20 @@ return [
             'layout' => '画面',
         ],
         'unrouted_hint' => 'お客様がこの画面に入るには、プラグインが `core.routes.filter_merged` フィルターでユーザールートを注入する必要があります。モーダル・部分画面としてのみ使う場合は無視して構いません。',
+        'requires_header' => '=== routes.json requires の形式エラー (条件を無視してルートを残す) ===',
+        'requires_headers' => [
+            'template' => 'テンプレート',
+            'path' => 'パス',
+            'source' => '宣言元',
+            'reason' => '問題',
+        ],
+        'requires_reasons' => [
+            'not_object' => 'requires は {"modules": [...], "plugins": [...]} のオブジェクトである必要があります',
+            'unknown_type' => '不明な種類 :type (modules・plugins のみ対応)',
+            'not_list' => ':type は識別子の配列である必要があります',
+            'non_string_id' => ':type に文字列ではない識別子があります',
+        ],
+        'requires_hint' => 'これらの条件は公開ルート・検索ボット・サイトマップで無視され、ルートはそのまま公開されます。直さないと、拡張を無効にしても画面が隠れません。',
         // `layout:audit-expressions`・`layout-versions:recalculate-diffs`・`layout-previews:cleanup` コマンド出力
         'audit_expressions' => [
             'invalid_source' => '--source は db|files|all のいずれかで指定してください。',

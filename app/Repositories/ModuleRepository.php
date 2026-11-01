@@ -7,6 +7,8 @@ use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Models\Module;
+use App\Support\ExtensionDependencies;
+use App\Support\ExtensionIntegrations;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Schema;
 
@@ -285,9 +287,7 @@ class ModuleRepository implements ModuleRepositoryInterface
 
             // 매니페스트 dependencies.modules 는 「식별자 => 버전 제약」 맵이다(목록 모양도 받는다). 종전 판정은
             // 매니페스트 전체에 in_array 를 쓰거나 존재하지 않는 메서드를 찾아 한 번도 의존을 찾지 못했다(#138 실측 ①).
-            $declared = $moduleInstance->getDependencies()['modules'] ?? [];
-
-            return is_array($declared) && (array_key_exists($moduleIdentifier, $declared) || in_array($moduleIdentifier, $declared, true));
+            return array_key_exists($moduleIdentifier, ExtensionDependencies::constraints($moduleInstance->getDependencies())['modules']);
         })->values();
     }
 
@@ -321,9 +321,38 @@ class ModuleRepository implements ModuleRepositoryInterface
 
             // 매니페스트 dependencies.plugins 는 「식별자 => 버전 제약」 맵이다(목록 모양도 받는다). 종전 판정은
             // 매니페스트 전체에 in_array 를 쓰거나 존재하지 않는 메서드를 찾아 한 번도 의존을 찾지 못했다(#138 실측 ①).
-            $declared = $moduleInstance->getDependencies()['plugins'] ?? [];
+            return array_key_exists($pluginIdentifier, ExtensionDependencies::constraints($moduleInstance->getDependencies())['plugins']);
+        })->values();
+    }
 
-            return is_array($declared) && (array_key_exists($pluginIdentifier, $declared) || in_array($pluginIdentifier, $declared, true));
+    /**
+     * 지정한 확장을 선택 연동(`integrations`)으로 선언한 활성 모듈을 조회합니다 (7.1.4).
+     *
+     * 연동은 필수 의존과 달리 대상이 꺼져도 동작하지만, 대상을 끄거나 지울 때 「연동 중인 확장」으로 안내합니다.
+     *
+     * @param  string  $type  연동 대상 유형 (module|plugin|template, 복수형도 받음)
+     * @param  string  $identifier  연동 대상 식별자
+     * @return Collection 그 확장을 연동으로 선언한 활성 모듈 컬렉션
+     */
+    public function findActiveByIntegration(string $type, string $identifier): Collection
+    {
+        $pluralType = ExtensionIntegrations::pluralType($type);
+        if ($pluralType === null) {
+            return new Collection;
+        }
+
+        $active = Module::where('status', ExtensionStatus::Active->value)->get();
+        if ($active->isEmpty()) {
+            return new Collection;
+        }
+
+        $manager = app(ModuleManagerInterface::class);
+
+        return $active->filter(function (Module $module) use ($manager, $pluralType, $identifier) {
+            $instance = $manager->getModule($module->identifier);
+
+            return $instance !== null
+                && in_array($identifier, $instance->getIntegrations()[$pluralType] ?? [], true);
         })->values();
     }
 

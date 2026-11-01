@@ -78,6 +78,16 @@ class StateContracts
             'schema' => ['type' => 'object'],
             'writers' => [],
         ],
+        'activeModules' => [
+            'description' => ['ko' => '활성 모듈 식별자 목록 (옛 코어에는 없음 — `?? true` 로 읽는다)', 'en' => 'Identifiers of active modules (absent on older cores — read with `?? true`)'],
+            'schema' => ['type' => 'array', 'items' => ['type' => 'string']],
+            'writers' => [],
+        ],
+        'activePlugins' => [
+            'description' => ['ko' => '활성 플러그인 식별자 목록 (옛 코어에는 없음 — `?? true` 로 읽는다)', 'en' => 'Identifiers of active plugins (absent on older cores — read with `?? true`)'],
+            'schema' => ['type' => 'array', 'items' => ['type' => 'string']],
+            'writers' => [],
+        ],
     ];
 
     /**

@@ -61,7 +61,8 @@
     "tax_status_options": {
       "all": "All",
       "taxable": "Taxable",
-      "tax_free": "Tax Free"
+      "tax_free": "Tax Free",
+      "zero_rated": "Zero-rated"
     },
     "price": "Price",
     "price_type_select": "Price basis",
@@ -289,8 +290,10 @@
       "tax_status": "Tax Status",
       "tax_status_options": {
         "taxable": "Taxable",
-        "tax_free": "Tax Free"
+        "tax_free": "Tax Free",
+        "zero_rated": "Zero-rated"
       },
+      "tax_status_help": "To set it per option, change \"Tax Type\" in the option table. Zero-rated means a 0% rate (e.g. exports) and is sent to the payment provider as tax-free.",
       "sales_status": "Sales Status",
       "sales_status_options": {
         "on_sale": "On Sale",
@@ -866,6 +869,7 @@
       "category": "Category",
       "list_price": "List Price",
       "selling_price": "Selling Price",
+      "tax_status": "Tax Type",
       "price": "Price",
       "price_type": "Price Type",
       "sku": "SKU",
@@ -906,7 +910,8 @@
       "additional_value_min_1": "At least one choice is required per group."
     },
     "option_group_name_n": "Option group {{n}} name",
-    "option_group_values_n": "Option group {{n}} values"
+    "option_group_values_n": "Option group {{n}} values",
+    "tax_status_inherit": "Use default ({{status}})"
   },
   "notice": {
     "tab_existing_template": "Select Template",
@@ -1151,7 +1156,8 @@
   },
   "tax": {
     "taxable": "Taxable",
-    "tax_free": "Tax Free"
+    "tax_free": "Tax Free",
+    "zero_rated": "Zero-rated"
   },
   "labels": {
     "title": "Labels",

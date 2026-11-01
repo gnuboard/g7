@@ -1,5 +1,5 @@
 {
-    "comment": "의존 확장이 갖춰지지 않아 화면을 띄울 수 없을 때의 에러 화면. 에러 6종 중 **유일하게 내용이 있다** —\n  `_global.errorData` 의 `modules`/`plugins` 에 담긴 미충족 의존 목록을 필요 버전과 함께 보여 준다.\n  그 블록은 두 배열이 모두 비면 통째로 숨는다(의존 정보 없이 503 만 온 경우 빈 상자가 남지 않게).\n  값을 채우는 쪽은 이 레이아웃이 아니라 에러를 띄운 코어 가드다.",
+    "comment": "의존 확장이 갖춰지지 않아 화면을 띄울 수 없을 때의 에러 화면. 에러 6종 중 **유일하게 내용이 있다** —\n  `_global.errorData` 의 `modules`/`plugins` 에 담긴 미충족 의존 목록을 필요 버전과 함께 보여 준다.\n  그 블록은 두 배열이 모두 비면 통째로 숨는다(의존 정보 없이 503 만 온 경우 빈 상자가 남지 않게).\n  항목마다 사유(미설치·꺼짐·버전 미달 설치→요구)를 status 로 골라 보인다 — 버전 미달인데 「활성화되지 않았다」고 읽히지 않게.\n  값을 채우는 쪽은 이 레이아웃이 아니라 에러를 띄운 코어 가드다.",
     "version": "1.0.0",
     "layout_name": "errors/503",
     "extends": "_admin_base",
@@ -103,7 +103,7 @@
                                                     "item_var": "mod"
                                                 },
                                                 "props": {
-                                                    "className": "text-danger-soft inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded"
+                                                    "className": "text-danger-soft inline-flex items-center flex-wrap gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded"
                                                 },
                                                 "children": [
                                                     {
@@ -118,6 +118,33 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "text": "{{mod.name || mod.identifier}} ({{mod.required_version}})"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{mod.status === 'version_mismatch'}}",
+                                                        "props": {
+                                                            "className": "basis-full pl-4 font-medium"
+                                                        },
+                                                        "text": "$t:errors.503.reason_version_mismatch|installed={{mod.installed_version}}|required={{mod.required_version}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{mod.status === 'inactive'}}",
+                                                        "props": {
+                                                            "className": "basis-full pl-4 font-medium"
+                                                        },
+                                                        "text": "$t:errors.503.reason_inactive"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{mod.status === 'not_installed'}}",
+                                                        "props": {
+                                                            "className": "basis-full pl-4 font-medium"
+                                                        },
+                                                        "text": "$t:errors.503.reason_not_installed"
                                                     }
                                                 ]
                                             }
@@ -154,7 +181,7 @@
                                                     "item_var": "plug"
                                                 },
                                                 "props": {
-                                                    "className": "text-danger-soft inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded"
+                                                    "className": "text-danger-soft inline-flex items-center flex-wrap gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded"
                                                 },
                                                 "children": [
                                                     {
@@ -169,6 +196,33 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "text": "{{plug.name || plug.identifier}} ({{plug.required_version}})"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{plug.status === 'version_mismatch'}}",
+                                                        "props": {
+                                                            "className": "basis-full pl-4 font-medium"
+                                                        },
+                                                        "text": "$t:errors.503.reason_version_mismatch|installed={{plug.installed_version}}|required={{plug.required_version}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{plug.status === 'inactive'}}",
+                                                        "props": {
+                                                            "className": "basis-full pl-4 font-medium"
+                                                        },
+                                                        "text": "$t:errors.503.reason_inactive"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{plug.status === 'not_installed'}}",
+                                                        "props": {
+                                                            "className": "basis-full pl-4 font-medium"
+                                                        },
+                                                        "text": "$t:errors.503.reason_not_installed"
                                                     }
                                                 ]
                                             }

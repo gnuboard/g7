@@ -24,6 +24,15 @@
     "incompatible_tooltip": "コア {{required}} 以上が必要です (現在: {{installed}})",
     "incompatible_sr": "{{name}} はコア {{required}} 以上が必要ですが、現在 {{installed}} がインストールされているため更新できません。"
   },
+  "php_extensions": {
+    "title": "必要な PHP 拡張",
+    "level_require": "必須",
+    "level_suggest": "推奨",
+    "installed": "インストール済み",
+    "not_installed": "未インストール",
+    "badge_required_missing": "PHP 拡張が必要: {{extensions}}(未インストール)",
+    "badge_suggested_missing": "推奨 PHP 拡張: {{extensions}}(未インストール)"
+  },
   "banner": {
     "title": "コアの互換性問題により自動的に無効化された拡張があります",
     "item_required": "必要なバージョン: {{required}}",

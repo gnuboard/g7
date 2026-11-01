@@ -1,6 +1,8 @@
-<!-- 쇼핑 안내 카드 — 이커머스가 설치돼 있을 때만 뜻이 있어 부르는 쪽이 조건으로 감싼다. 이동 경로 앞머리는 전역 shopBase 를 쓴다. -->
+<!-- 쇼핑 안내 카드 — 쇼핑몰 모듈이 켜져 있을 때만 뜻이 있어 카드 뿌리에 쇼핑몰 가드를 단다. 이동 경로 앞머리는 전역 shopBase 를 쓴다.
+     게시판이 꺼진 첫 화면에서는 환영 카드 높이만큼 늘어나므로 내용을 세로 가운데에 둔다.
+     e2e:allow 뿌리 표시 클래스(block → flex flex-col justify-center)만 바꿨다. 대체 검증: 브라우저 실측(늘어난 카드 justify-content center, 2행에서는 높이 92px 그대로). 이 카드를 늘리는 배치는 모듈을 끄고 켜는 전역 배타 상태가 필요해 공용 Playwright E2E 로 두지 않는다. -->
 <partial description="쇼핑몰 홍보 카드">
-  <a href="{{_global.shopBase}}/products" class="block w-full text-left bg-gradient-to-br from-emerald-700 to-teal-700 rounded-xl p-5 text-white hover:shadow-lg transition-shadow cursor-pointer">
+  <a href="{{_global.shopBase}}/products" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="flex flex-col justify-center w-full text-left bg-gradient-to-br from-emerald-700 to-teal-700 rounded-xl p-5 text-white hover:shadow-lg transition-shadow cursor-pointer">
     <on type="click">
       <navigate/>
     </on>

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\HookCacheManager;
 use Illuminate\Console\Command;
 
@@ -13,15 +14,12 @@ use Illuminate\Console\Command;
  */
 class HooksClearCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string 커맨드 시그니처
      */
     protected $signature = 'hooks:clear';
-
-    /**
-     * @var string 커맨드 설명
-     */
-    protected $description = '정적 훅 매핑 캐시 삭제 (bootstrap/cache/hooks.php)';
 
     /**
      * 커맨드를 실행합니다.

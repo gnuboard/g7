@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Schema;
  */
 class ConvertJsonUnicodeEscapes extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 콘솔 커맨드 시그니처
      *
@@ -34,13 +37,6 @@ class ConvertJsonUnicodeEscapes extends Command
                             {--dry-run : 실제 변환 없이 대상 건수만 표시}
                             {--table= : 특정 테이블만 변환 (프리픽스 제외 이름, 예: boards)}
                             {--chunk=500 : 청크 크기}';
-
-    /**
-     * 콘솔 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = 'JSON 컬럼의 \\uXXXX 유니코드 이스케이프를 실제 UTF-8 문자로 변환합니다.';
 
     /**
      * 커맨드를 실행합니다.

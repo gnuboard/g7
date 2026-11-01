@@ -528,6 +528,7 @@ PSFOOTER;
      * 시도하면서 무한 대기를 유발합니다. PATH 검색 결과에서 이런 경로를 제외합니다.
      *
      * @param  string  $command  명령어 파일명 (예: 'handle.exe')
+     * @return bool 실행 가능한 명령이 PATH 에 있으면 true
      */
     private static function isCommandAvailable(string $command): bool
     {
@@ -752,6 +753,7 @@ PSFOOTER;
                 if (PHP_OS_FAMILY === 'Windows') {
                     @exec('taskkill /F /T /PID '.$status['pid'].' 2>NUL');
                 } else {
+                    // php-ext-guard: 이 분기는 비 Windows 에서만 오며 posix 가 없으면 아래 proc_terminate 가 같은 일을 한다(@ 는 경고만 막는다)
                     @posix_kill($status['pid'], 9);
                 }
             }

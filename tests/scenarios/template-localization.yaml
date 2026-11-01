@@ -1,0 +1,26 @@
+feature: 템플릿 관리 문구의 다국어 키·내용·치환
+
+description: |
+  TemplateManager·템플릿 관리 화면이 쓰는 백엔드 문구(lang/{ko,en}/templates.php)가 두 기본 로케일에 모두 있고,
+  대표 문장이 의도한 내용이며, 자리표시자(:template·:dependency·:type 등)가 치환되는지 잠근다.
+  의존 미충족 문구의 :type 은 영어 원문이 아니라 현지화한 종류 이름(extensions.dependency_types)이다(#153).
+
+  `locale` 이 축인 이유는 같은 키라도 로케일 파일이 따로 있어 한쪽만 빠질 수 있기 때문이다.
+  `check` 는 존재(키)·내용(대표 문장)·치환(자리표시자)·레이블(상태·종류)의 검사 종류다.
+
+axes:
+  locale: [ko, en]
+  check: [keys, content, params, labels]
+
+exclusions:
+  - { locale: en, check: params, reason: "자리표시자 치환은 로케일과 무관한 같은 번역기 동작이다 — ko 문장(종류 이름 현지화 포함)으로 대표 검증하고, en 종류 이름은 DependencyMessageTypeTest 가 잠근다" }
+
+effects:
+  - template_lang_keys_exist_in_base_locales
+  - template_lang_representative_content
+  - template_lang_params_replaced_with_localized_type
+  - template_manager_used_keys_exist
+  - template_status_and_type_labels
+
+test_files:
+  - tests/Unit/TemplateLocalizationTest.php

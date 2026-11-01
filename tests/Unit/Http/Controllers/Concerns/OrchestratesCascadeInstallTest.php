@@ -27,6 +27,11 @@ class OrchestratesCascadeInstallTest extends TestCase
 
     private object $harness;
 
+    /**
+     * 테스트 준비.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,16 +40,29 @@ class OrchestratesCascadeInstallTest extends TestCase
         $this->harness = new class {
             use OrchestratesCascadeInstall {
                 installSelectedDependencies as public;
+                withKeptDependencies as public;
             }
         };
     }
 
+    /**
+     * 테스트 정리.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
         parent::tearDown();
     }
 
+    /**
+     * 설치됐지만 꺼진 의존 모듈은 다시 설치하지 않고 활성화만 한다.
+     *
+     * @effects cascade_activates_inactive_dependency_without_reinstall
+     *
+     * @return void 반환값 없음
+     */
     public function test_inactive_installed_module_only_activates_no_reinstall(): void
     {
         $moduleService = Mockery::mock(ModuleService::class);
@@ -57,7 +75,7 @@ class OrchestratesCascadeInstallTest extends TestCase
         $moduleService->shouldNotReceive('installModule');
         $moduleService->shouldReceive('activateModule')
             ->once()
-            ->with('foo-module');
+            ->with('foo-module')->andReturn(['success' => true]);
         $this->app->instance(ModuleService::class, $moduleService);
 
         $this->harness->installSelectedDependencies([
@@ -65,6 +83,13 @@ class OrchestratesCascadeInstallTest extends TestCase
         ]);
     }
 
+    /**
+     * 미설치 의존 모듈은 설치한 뒤 활성화한다.
+     *
+     * @effects cascade_installs_then_activates_missing_dependency
+     *
+     * @return void 반환값 없음
+     */
     public function test_uninstalled_module_installs_then_activates(): void
     {
         $moduleService = Mockery::mock(ModuleService::class);
@@ -74,8 +99,8 @@ class OrchestratesCascadeInstallTest extends TestCase
                 'is_installed' => false,
                 'status' => 'uninstalled',
             ]);
-        $moduleService->shouldReceive('installModule')->once()->with('bar-module', \Mockery::any());
-        $moduleService->shouldReceive('activateModule')->once()->with('bar-module');
+        $moduleService->shouldReceive('installModule')->once()->with('bar-module', \Mockery::any())->andReturn(['identifier' => 'bar-module']);
+        $moduleService->shouldReceive('activateModule')->once()->with('bar-module')->andReturn(['success' => true]);
         $this->app->instance(ModuleService::class, $moduleService);
 
         $this->harness->installSelectedDependencies([
@@ -83,6 +108,13 @@ class OrchestratesCascadeInstallTest extends TestCase
         ]);
     }
 
+    /**
+     * 이미 활성인 의존 모듈은 건너뛴다.
+     *
+     * @effects cascade_skips_active_dependency
+     *
+     * @return void 반환값 없음
+     */
     public function test_active_module_is_skipped(): void
     {
         $moduleService = Mockery::mock(ModuleService::class);
@@ -101,6 +133,13 @@ class OrchestratesCascadeInstallTest extends TestCase
         ]);
     }
 
+    /**
+     * 설치됐지만 꺼진 의존 플러그인은 활성화만 한다.
+     *
+     * @effects cascade_activates_inactive_dependency_without_reinstall
+     *
+     * @return void 반환값 없음
+     */
     public function test_inactive_installed_plugin_only_activates(): void
     {
         $pluginService = Mockery::mock(PluginService::class);
@@ -111,11 +150,37 @@ class OrchestratesCascadeInstallTest extends TestCase
                 'status' => ExtensionStatus::Inactive->value,
             ]);
         $pluginService->shouldNotReceive('installPlugin');
-        $pluginService->shouldReceive('activatePlugin')->once()->with('foo-plugin');
+        $pluginService->shouldReceive('activatePlugin')->once()->with('foo-plugin')->andReturn(['success' => true]);
         $this->app->instance(PluginService::class, $pluginService);
 
         $this->harness->installSelectedDependencies([
             ['type' => 'plugin', 'identifier' => 'foo-plugin'],
         ]);
+    }
+
+    /**
+     * 본 확장 설치가 실패했을 때 실패 사유에 앞서 남긴 의존 확장 목록을 덧붙인다(웹 실패 응답 — D14).
+     *
+     * @effects cascade_web_failure_reason_lists_kept_dependencies
+     *
+     * @return void 반환값 없음
+     */
+    public function test_failure_reason_appends_kept_dependencies(): void
+    {
+        $moduleService = Mockery::mock(ModuleService::class);
+        $moduleService->shouldReceive('getModuleInfo')->with('bar-module')->andReturn(['is_installed' => false, 'status' => 'uninstalled']);
+        $moduleService->shouldReceive('installModule')->once()->andReturn(['identifier' => 'bar-module']);
+        $moduleService->shouldReceive('activateModule')->once()->with('bar-module')->andReturn(['success' => true]);
+        $this->app->instance(ModuleService::class, $moduleService);
+
+        $this->assertSame('사유', $this->harness->withKeptDependencies('사유'), '의존 설치 전에는 사유 그대로');
+
+        $result = $this->harness->installSelectedDependencies([['type' => 'module', 'identifier' => 'bar-module']]);
+
+        $this->assertSame(['bar-module'], $result['activated']);
+        $this->assertSame(
+            '사유 '.__('extensions.errors.cascade_dependencies_kept', ['list' => 'bar-module']),
+            $this->harness->withKeptDependencies('사유')
+        );
     }
 }

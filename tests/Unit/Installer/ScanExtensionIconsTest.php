@@ -357,6 +357,18 @@ class ScanExtensionIconsTest extends TestCase
         copy(dirname(__DIR__, 3).'/public/install/api/scan-extensions.php', $apiDir.'/scan-extensions.php');
         $this->assertFileDoesNotExist($tree.'/app/Support/ExtensionIcon/ExtensionIconValidator.php');
 
+        // 스캔이 늘 함께 적재하는 PHP 확장 요구 판정(#151)은 배포본에 항상 있으므로 같은 상대 위치로 옮긴다.
+        foreach ([
+            'public/install/includes/php-extension-requirements.php',
+            'app/Support/PhpExtensionRequirements.php',
+            'app/Support/Requirements/php-extensions.json',
+        ] as $relative) {
+            if (! is_dir(dirname($tree.'/'.$relative))) {
+                mkdir(dirname($tree.'/'.$relative), 0o755, true);
+            }
+            copy(dirname(__DIR__, 3).'/'.$relative, $tree.'/'.$relative);
+        }
+
         $base = $tree.'/scan-target';
         mkdir($base.'/plugins/_bundled/test-icon-novalidator/assets', 0o755, true);
         file_put_contents(

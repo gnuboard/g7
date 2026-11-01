@@ -295,6 +295,63 @@ describe('MultilingualInput 컴포넌트', () => {
       expect(secondCall.target.value.en).toBe('수정EN');
     });
   });
+  // 표 칸처럼 좁은 자리에서 compact 배치가 언어 단추와 입력칸을 한 줄에 두면 입력칸이 몇 글자만 남는다.
+  // stacked 를 주면 언어 단추 줄 아래에 입력칸이 칸 너비 그대로 놓인다.
+  describe('compact 배치 stacked', () => {
+    /**
+     * @scenario aspect=compact_stacked
+     * @effects compact_locale_buttons_above_input
+     */
+    it('stacked 면 언어 단추 줄과 입력칸이 위아래 두 줄로 놓이고 입력칸이 칸 너비를 다 쓴다', () => {
+      const { container } = render(
+        <MultilingualInput
+          value={{ ko: '네이비/M', en: 'Navy/M' }}
+          layout="compact"
+          stacked
+          name="option_name"
+          availableLocales={DEFAULT_LOCALES}
+          defaultLocale="ko"
+        />
+      );
+
+      const input = screen.getByDisplayValue('네이비/M');
+      const koButton = screen.getByRole('button', { name: /KO/ });
+      const buttonRow = koButton.parentElement as HTMLElement;
+      const inputBox = input.parentElement as HTMLElement;
+      const wrapper = buttonRow.parentElement as HTMLElement;
+
+      expect(wrapper).toBe(inputBox.parentElement);
+      expect(wrapper.className).toContain('flex-col');
+      expect(wrapper.className).not.toContain('items-center');
+      expect(buttonRow.className).toContain('self-start');
+      expect(inputBox.className).toContain('w-full');
+      expect(inputBox.className).not.toContain('flex-1');
+      expect(container.querySelectorAll('input[type=text]')).toHaveLength(1);
+    });
+
+    /**
+     * @scenario aspect=compact_stacked
+     * @effects compact_locale_buttons_above_input
+     */
+    it('stacked 를 주지 않으면 종전처럼 언어 단추와 입력칸이 한 줄이다', () => {
+      render(
+        <MultilingualInput
+          value={{ ko: '네이비/M' }}
+          layout="compact"
+          name="option_name"
+          availableLocales={DEFAULT_LOCALES}
+          defaultLocale="ko"
+        />
+      );
+
+      const input = screen.getByDisplayValue('네이비/M');
+      const wrapper = (input.parentElement as HTMLElement).parentElement as HTMLElement;
+      expect(wrapper.className).toContain('items-center');
+      expect(wrapper.className).not.toContain('flex-col');
+      expect((input.parentElement as HTMLElement).className).toContain('flex-1');
+    });
+  });
+
   // 저장값에 기본 언어 키가 없을 때 (예: 꺼진 언어팩의 번역만 남은 설정값)
   // 기본 언어 칸과 그 옆의 「언어 추가」 버튼이 함께 사라져 운영자가 기본 언어를 다시 입력할 수 없었다.
   describe('기본 언어 키가 없는 값', () => {

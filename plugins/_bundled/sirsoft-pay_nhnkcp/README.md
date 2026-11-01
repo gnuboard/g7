@@ -5,7 +5,7 @@ NHN KCP Standard Pay 결제를 sirsoft-ecommerce 에 연결하는 결제 플러�
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.1-0066FF?style=flat-square" alt="version 1.1.1">
+  <img src="https://img.shields.io/badge/version-1.1.2-0066FF?style=flat-square" alt="version 1.1.2">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
   <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
@@ -85,8 +85,9 @@ PC 결제 승인은 `NhnKcpApiService`가 OS 를 판별해 `pp_cli`/`pp_cli_x64`
 |---|---|
 | 그누보드7 코어 | `>=7.1.1` |
 | PHP | `^8.2` |
-| 의존 모듈 | `sirsoft-ecommerce` `>=1.3.0` |
-| 외부 스크립트 호스트 | `testpay.kcp.co.kr`, `pay.kcp.co.kr` |
+| PHP 확장(권장) | `soap` — 모바일 결제(SmartPhone Pay) 승인키 발급에 필요 |
+| 의존 모듈 | `sirsoft-ecommerce` `>=1.3.3` |
+| 외부 스크립트 호스트 | `testpay.kcp.co.kr`, `pay.kcp.co.kr`, `testnpay.kcp.co.kr`, `npay.kcp.co.kr`, `testspay.kcp.co.kr`, `spay.kcp.co.kr` |
 <!-- @generated:requirements END -->
 
 <!-- @intent START -->
@@ -236,7 +237,7 @@ php artisan plugin:update sirsoft-pay_nhnkcp --force
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.3.3` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 

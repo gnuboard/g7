@@ -59,7 +59,8 @@ return [
     'move_failed' => '플러그인 ":plugin" 이동에 실패했습니다: :error',
 
     // 의존성 관련 메시지
-    'dependency_not_active' => '의존하는 ":dependency" 확장이 설치되지 않았거나 비활성 상태입니다.',
+    'dependency_not_active' => '의존하는 :type ":dependency"이(가) 설치되지 않았거나 비활성 상태입니다.',
+    'dependency_version_unmet' => '의존하는 ":dependency" 의 설치 버전(:installed)이 요구 버전(:required)을 충족하지 않습니다. 의존 확장을 먼저 업데이트하세요.',
 
     // 플러그인 서비스 오류 메시지
     'installation_failed' => '플러그인 설치에 실패했습니다: :error',
@@ -185,6 +186,7 @@ return [
             'missing_status' => [
                 'not_installed' => '미설치',
                 'inactive' => '비활성',
+                'version_mismatch' => '버전 미달 :installed → :required',
             ],
             'force_hint' => '강제로 활성화하려면 --force 옵션을 사용하세요.',
         ],

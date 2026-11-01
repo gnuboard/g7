@@ -274,7 +274,7 @@
       "shipping_fee_tax_proportional": "안분 (기본)",
       "shipping_fee_tax_taxable": "전액 과세",
       "shipping_fee_tax_follow_main_item": "주된 재화 기준",
-      "shipping_fee_tax_help": "안분은 과세·면세 상품 금액 비율로 배송비를 나눕니다.",
+      "shipping_fee_tax_help": "안분은 과세·영세·면세 상품 금액 비율로 배송비를 나눕니다. 주된 재화는 가장 큰 쪽(같으면 과세 > 영세 > 면세)을 따릅니다.",
       "self_issue_label": "자진발급 사용",
       "self_issue_help": "구매자가 신청하지 않은 무통장 입금 건도 자동으로 발급합니다 (소득공제용 전용).",
       "self_issue_mandatory_help": "현금영수증 의무발행 업종은 구매자가 신청하지 않아도 발급 의무가 있습니다. 해당 업종이면 켜세요.",

@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 186개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 189개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 138개 |
+| `partials` | 141개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -107,6 +107,7 @@
 | `_panel_menu_list` | `partials` | partial | - |
 | `_panel_view` | `partials` | partial | - |
 | `_drawer_manifest_preview` | `partials` | partial | - |
+| `_modal_deactivate_integrations` | `partials` | partial | - |
 | `_modal_deactivate_warning` | `partials` | partial | - |
 | `_modal_detail` | `partials` | partial | - |
 | `_modal_extension_license` | `partials` | partial | - |
@@ -122,6 +123,7 @@
 | `_partial_datagrid` | `partials` | partial | - |
 | `_partial_filter` | `partials` | partial | - |
 | `_drawer_manifest_preview` | `partials` | partial | - |
+| `_modal_deactivate_integrations` | `partials` | partial | - |
 | `_modal_detail` | `partials` | partial | - |
 | `_modal_extension_license` | `partials` | partial | - |
 | `_modal_force_activate` | `partials` | partial | - |
@@ -173,6 +175,7 @@
 | `_tab_privacy` | `partials` | partial | - |
 | `_tab_security` | `partials` | partial | - |
 | `_tab_security_activity_log` | `partials` | partial | - |
+| `_tab_security_csp` | `partials` | partial | - |
 | `_tab_security_ip_restriction` | `partials` | partial | - |
 | `_tab_security_password_policy` | `partials` | partial | - |
 | `_tab_seo` | `partials` | partial | - |
@@ -587,6 +590,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_security_password_policy.g7.html (보안 > 비밀번호 정책 카드 — 작성 규칙·재사용 금지·만료)
 │           ├── _modal_password_expiry_run.g7.html (보안 — 비밀번호 만료 지금 실행 확인 창)
 │           ├── _tab_security_activity_log.g7.html (보안 > 활동 로그(접속기록) 보관 카드)
+│           ├── _tab_security_csp.g7.html (보안 > 콘텐츠 보안 정책(CSP) 카드 — 모드·추가 호스트·자동 포함 호스트·정책 미리보기)
 │           ├── _tab_privacy.g7.html (개인정보 — 보유기간 파기·휴면 계정, 조치 대상은 대상마다 한 행: 건수 · 대상 보기 · 지금 실행 · 결과 줄)
 │           ├── _modal_privacy_targets.g7.html (개인정보 — 조치 대상 명단 창, 무한 스크롤 · 0건이면 빈 명단 안내)
 │           ├── _modal_privacy_run.g7.html (개인정보 — 직권 실행 확인 창, 건수 재조회 · 휴면 전환·탈퇴의 대기기간 생략)
@@ -594,7 +598,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_drivers.g7.html (드라이버)
 │           ├── _tab_seo.g7.html (SEO)
 │           ├── _tab_advanced.g7.html (고급)
-│           ├── _tab_info.g7.html (시스템 정보)
+│           ├── _tab_info.g7.html (시스템 정보 — PHP 확장 카드: 필수·선택(코어 SSoT)과 「확장이 요구하는 모듈」(`php_extensions.requested_by`))
 │           ├── _modal_ip_restriction_rule_form.g7.html (IP 접근 제한 규칙 추가·수정)
 │           ├── _modal_cache_delete.g7.html
 │           ├── _modal_core_changelog.g7.html
@@ -622,11 +626,12 @@ _admin_base.g7.html (베이스 레이아웃)
 │   └── admin_module_list.g7.html
 │       └── partials/admin_module_list/
 │           ├── _modal_detail.g7.html
-│           ├── _modal_install.g7.html
+│           ├── _modal_install.g7.html (설치 확인 — 의존 확장·「함께 쓰면 연동되는 확장(선택)」·언어팩 체크 목록. 설치 뒤 연동 안내 토스트는 함께 설치하다 실패한 연동의 사유(`failure_reason`)를 「이름 (상태: 사유)」로 보인다. 연동 항목 아래 「함께 설치」 줄은 그 연동이 필수로 요구하는 확장(미리보기 `integrations[].requires`), 고를 수 없으면 사유 배지)
 │           ├── _modal_manual_install.g7.html
 │           ├── _modal_uninstall.g7.html
 │           ├── _modal_update.g7.html
 │           ├── _modal_deactivate_warning.g7.html
+│           ├── _modal_deactivate_integrations.g7.html (끄려는 모듈을 다른 활성 확장이 연동으로 쓸 때의 안내 창 — 막지 않고 알리고 진행)
 │           ├── _modal_force_activate.g7.html
 │           ├── _modal_force_deactivate.g7.html
 │           ├── _modal_extension_license.g7.html
@@ -635,7 +640,8 @@ _admin_base.g7.html (베이스 레이아웃)
 ├── 플러그인 관리
 │   └── admin_plugin_list.g7.html
 │       └── partials/admin_plugin_list/
-│           ├── (모듈과 동일 구조 — 10개 모달)
+│           ├── (모듈과 동일 구조 — 모달 구성은 모듈 쪽 목록 참고)
+│           ├── _modal_deactivate_integrations.g7.html (플러그인판 연동 안내 창)
 │           └── ...
 │
 ├── 템플릿 관리
@@ -711,6 +717,7 @@ _admin_base.g7.html (베이스 레이아웃)
 ├── 공통 Partial
 │   ├── partials/_modal_changelog.g7.html
 │   ├── partials/_modal_license.g7.html
+│   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트·레이아웃 갱신이 일부 항목 실패·안내를 남긴 결과 창. 단계 이름은 번역이 있으면 그 이름, 지금 언어에 없으면 대체 언어 이름, 어느 언어에도 없으면 원문 키 — 모듈·플러그인·템플릿·언어팩 목록·대시보드·환경설정이 연다)
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html
 │
@@ -880,6 +887,13 @@ slots.content:
 `<variant when="값">클래스</variant>` 로 적는다. 굽기 결과는 노드 최상위 `classMap` 이고 엔진은 그 자리만 읽는다 — 컴포넌트 속성으로
 `classMap` 을 넘기면 색이 적용되지 않고 DOM 에 `classmap="[object Object]"` 로 샌다(#703 에서 두 배지를 이렇게 바로잡음).
 
+**사이트맵 진행 폴링·「지금 생성」**: 실시간 연결이 없으면 `sitemap_status` 데이터 소스가 진행 중(`queued`·`running`·`writing`)일 때만
+3초 폴링을 켜고, **그 밖의 모든 값**(완료·실패·진행상황 없음 `null`)에서 끈다. 「완료/실패일 때만 끔」으로 두면 상태 캐시가 만료돼
+진행상황이 비었을 때 화면을 떠날 때까지 폴링이 계속된다. 「지금 생성」은 다른 요청 버튼처럼 클릭 시 `_local.isRegeneratingSitemap`
+을 켜서 스피너·「생성 중…」·잠김을 보이고, 성공·실패 양쪽에서 끈다(즉시 실행 큐는 응답까지 생성 시간만큼 걸린다). 성공 토스트는 서버 메시지(`response?.message`)를 먼저 쓴다 —
+즉시 실행 큐면 서버가 생성을 끝내고 「완료」를 돌려주고, 비동기 큐면 「시작했습니다」를 돌려준다. 진행 중·잠금 남음(409)은 실패 토스트가
+`error.message` 를 그대로 보여 준다.
+
 **언어팩 탭의 빌려 온 창**: 언어팩 탭은 언어팩 관리 화면의 목록 조각(`admin_language_pack_list/_content`)을 그대로 쓰므로,
 그 조각이 여는 창도 `admin_settings.g7.html` 이 같은 조각 파일(`partials/admin_language_pack_list/_modal_*`)을 `<modal>` 로
 선언해야 동작이 이어진다(사본을 두지 않는다). 같은 로케일 자리를 두 언어팩이 다툴 때 스위치의 409 갈래가 여는
@@ -904,7 +918,7 @@ slots.content:
       └── ExtensionBadge (모듈 식별)
 modals:
   ├── _modal_detail.g7.html (상세 정보)
-  ├── _modal_install.g7.html (설치 확인)
+  ├── _modal_install.g7.html (설치 확인 — 의존·연동·언어팩 함께 설치, 연동의 필수 의존 「함께 설치」 줄)
   ├── _modal_uninstall.g7.html (삭제 확인)
   ├── _modal_update.g7.html (업데이트)
   └── _modal_force_activate.g7.html 등
@@ -950,6 +964,11 @@ modals:
   다시 받는다. 템플릿은 확인 창을 여는 시점에 올려, 창이 답을 받을 때까지 스위치를 서버 값에 둔다.
 - 버튼 잠금은 서버가 422 로 거절하는 상태와 맞춘다: 코어 요구 버전 미충족(`core_compatible === false`)이면 설치와
   켜기를, `installing`·`uninstalling`·`updating` 진행 중이면 스위치·삭제·업데이트를 잠근다.
+- PHP 확장 배지(코어 7.1.4+): 행의 `php_extensions.missing_required` 가 있으면 「PHP 확장 필요: 이름(미설치)」(danger),
+  `missing_suggested` 가 있으면 「권장 PHP 확장: 이름(미설치)」(warning, title 에 composer.json 의 사유)를 단다. 상세 창은
+  `php_extensions_section` 에 선언된 확장마다 필수/권장과 설치 여부를 보인다(선언이 없으면 절을 그리지 않는다). 필수 미충족이면
+  서버가 설치·활성화를 422 `php_extension_missing` 으로 거절한다 — 배지는 그 이유를 미리 보이는 표시다. 옛 코어는 필드를 싣지
+  않으므로 `?.`·`?? []` 로 읽어 아무것도 그리지 않는다.
 - 모듈·플러그인·템플릿을 다시 켜면 서버가 함께 꺼졌던 언어팩(`pending_language_packs`)을 한 번만 실어 주므로, 활성
   성공 갈래(모듈·플러그인은 스위치 요청, 템플릿은 `_modal_activate`·`_modal_force_activate`)가 `_global.reactivateLanguagePacksData` 에 담고 언어팩 관리 권한(`core.language_packs.manage`)이 있을
   때만 `_modal_reactivate_language_packs` 를 연다. 각 목록 레이아웃이 이 창을 `<modal>` 로 선언해 둔다.

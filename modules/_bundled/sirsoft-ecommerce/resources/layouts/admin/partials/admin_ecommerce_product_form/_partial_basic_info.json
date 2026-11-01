@@ -1105,7 +1105,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "admin-card",
+                                        "className": "btn btn-outline hover:text-red-600 dark:hover:text-red-400",
                                         "aria-label": "$t:sirsoft-ecommerce.common.remove"
                                     },
                                     "children": [

@@ -1,4 +1,6 @@
-<!-- 사용자 503 화면 — 일시적으로 처리할 수 없는 상태 -->
+<!-- 사용자 503 화면 — 일시적으로 처리할 수 없는 상태.
+  활성 템플릿이 요구하는 모듈·플러그인이 없거나 꺼져 있거나 버전이 모자라면 서버가 errorData.modules/plugins 로 미충족 목록을 넘긴다
+  (항목: name·identifier·required_version·installed_version·status). 템플릿을 만들 때 이 블록을 남겨 두면 방문자·운영자가 원인을 본다. -->
 <layout name="errors/503" version="1.0.0" extends="_user_base">
   <meta title="$t:error.503.title" description="$t:error.503.description"/>
   <slot name="content">
@@ -7,6 +9,28 @@
         <div class="text-6xl font-bold text-gray-500 dark:text-gray-500 mb-4">503</div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:error.503.title</h1>
         <span class="block text-gray-600 dark:text-gray-300 mb-6">$t:error.503.description</span>
+        <div data-ref="dependency_info" data-if="{{(_global.errorData?.modules?.length ?? 0) > 0 || (_global.errorData?.plugins?.length ?? 0) > 0}}" class="text-left border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6">
+          <span class="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">$t:error.503.unmet_dependencies</span>
+          <div data-ref="modules_list" data-if="{{(_global.errorData?.modules?.length ?? 0) > 0}}" class="mb-3">
+            <span class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">$t:error.503.required_modules</span>
+            <div data-each="mod in _global.errorData?.modules ?? []" class="text-sm text-gray-700 dark:text-gray-300">
+              <span class="block">{{mod.name || mod.identifier}} ({{mod.required_version}})</span>
+              <span data-if="{{mod.status === 'version_mismatch'}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:error.503.reason_version_mismatch|installed={{mod.installed_version}}|required={{mod.required_version}}</span>
+              <span data-if="{{mod.status === 'inactive'}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:error.503.reason_inactive</span>
+              <span data-if="{{mod.status === 'not_installed'}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:error.503.reason_not_installed</span>
+            </div>
+          </div>
+          <div data-ref="plugins_list" data-if="{{(_global.errorData?.plugins?.length ?? 0) > 0}}">
+            <span class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">$t:error.503.required_plugins</span>
+            <div data-each="plug in _global.errorData?.plugins ?? []" class="text-sm text-gray-700 dark:text-gray-300">
+              <span class="block">{{plug.name || plug.identifier}} ({{plug.required_version}})</span>
+              <span data-if="{{plug.status === 'version_mismatch'}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:error.503.reason_version_mismatch|installed={{plug.installed_version}}|required={{plug.required_version}}</span>
+              <span data-if="{{plug.status === 'inactive'}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:error.503.reason_inactive</span>
+              <span data-if="{{plug.status === 'not_installed'}}" class="block text-xs text-gray-500 dark:text-gray-400">$t:error.503.reason_not_installed</span>
+            </div>
+          </div>
+        </div>
+        <span data-if="{{(_global.errorData?.modules?.length ?? 0) > 0 || (_global.errorData?.plugins?.length ?? 0) > 0}}" class="block text-sm text-gray-500 dark:text-gray-400">$t:error.503.contact_admin</span>
       </div>
     </div>
   </slot>

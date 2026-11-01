@@ -14,7 +14,7 @@
         {
             "type": "basic",
             "name": "Select",
-            "if": "{{query?.type === 'posts'}}",
+            "if": "{{query?.type === 'posts' && (_global.activeModules?.includes('sirsoft-board') ?? true)}}",
             "actions": [
                 {
                     "comment": "같은 검색 안에서 범위만 좁히는 이동이라 mergeQuery 로 검색어·탭·정렬을 승계한다. 결과 집합이 달라지므로 페이지·커서는 빈 값으로 지운다 — '전체 게시판'(빈 값)을 고르면 board_slug 키 자체가 주소에서 사라진다",
@@ -35,30 +35,9 @@
                 "name": "boardFilter",
                 "aria-label": "$t:nav.boards",
                 "className": "w-40 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer",
-                "value": "{{query?.board_slug ?? ''}}"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Option",
-                    "props": {
-                        "value": ""
-                    },
-                    "text": "$t:search.filter.all_boards"
-                },
-                {
-                    "type": "basic",
-                    "name": "Option",
-                    "iteration": {
-                        "source": "{{searchResults?.data?.posts?.available_boards ?? []}}",
-                        "item_var": "board"
-                    },
-                    "props": {
-                        "value": "{{board?.slug}}"
-                    },
-                    "text": "{{board?.name}}"
-                }
-            ]
+                "value": "{{query?.board_slug ?? ''}}",
+                "options": "{{[{ value: '', label: '$t:search.filter.all_boards' }].concat((searchResults?.data?.posts?.available_boards ?? []).map(board => ({ value: String(board?.slug ?? ''), label: board?.name })))}}"
+            }
         },
         {
             "type": "basic",
@@ -104,7 +83,7 @@
         {
             "type": "basic",
             "name": "Select",
-            "if": "{{query?.type === 'products'}}",
+            "if": "{{query?.type === 'products' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
             "actions": [
                 {
                     "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",

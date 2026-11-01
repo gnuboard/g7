@@ -32,6 +32,8 @@ require_once dirname(__DIR__).'/includes/config.php';
 require_once dirname(__DIR__).'/includes/installer-state.php';
 require_once dirname(__DIR__).'/includes/functions.php';
 require_once dirname(__DIR__).'/includes/installer-ownership.php';
+require_once dirname(__DIR__).'/includes/extension-selection.php';
+require_once dirname(__DIR__).'/includes/php-extension-requirements.php';
 require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
@@ -134,14 +136,43 @@ foreach ($identifierGroups as $groupKey => $ids) {
 }
 
 try {
-    // selected_extensions 업데이트
-    $state['selected_extensions'] = [
-        'admin_templates' => $adminTemplates,
-        'user_templates' => $userTemplates,
-        'modules' => $modules,
-        'plugins' => $plugins,
-        'language_packs' => $languagePacks,
-    ];
+    // 서버 검증 — 화면(JS)과 같은 규칙의 공유 해석기로 존재·의존 자동 포함·버전·단일 선택·언어팩 대상을 확인한다.
+    // 종전에는 형식만 보고 저장해, 없는 확장·의존 누락이 설치 단계에서 늦게 실패했다(터미널 설치와 같은 함수).
+    $resolution = installer_resolve_extension_selection(installer_scan_extensions(), $identifierGroups);
+
+    if (! empty($resolution['errors'])) {
+        $messages = installer_extension_error_messages($resolution['errors']);
+        http_response_code(422);
+        echo installer_json_encode([
+            'success' => false,
+            'error' => $messages[0],
+            'message' => $messages[0],
+            'message_key' => $resolution['errors'][0]['key'],
+            'errors' => $messages,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // 필수 PHP 확장(composer.json require.ext-*)이 서버에 없는 확장은 설치 대상에서 뺀다 — 선택 화면이 체크를 끄지만
+    // 요청을 직접 만들면 우회되므로 서버에서 다시 거른다. 설치 단계의 코어 게이트에 걸려 설치 전체가 멈추지 않게 한다(#151).
+    $phpExclusion = installer_exclude_selection_missing_php($resolution, BASE_PATH);
+    $resolution = $phpExclusion['resolution'];
+    foreach ($phpExclusion['skipped'] as $skippedIdentifier => $missingPhpExtensions) {
+        addLog(lang('log_extension_skipped_php_extension_missing', [
+            'identifier' => $skippedIdentifier,
+            'extensions' => implode(', ', $missingPhpExtensions),
+        ]));
+    }
+
+    // selected_extensions 업데이트 — 해석 결과(의존 확장 포함·설치 순서 정렬)를 저장한다.
+    $state['selected_extensions'] = $resolution['selection'];
+    // 종류 경계를 넘어 앞당겨 설치할 항목 → 요구한 확장 (Step 5 작업 목록의 「…에 필요」 표시)
+    $state['install_pulled_by'] = $resolution['pulled_by'];
+    $adminTemplates = $resolution['selection']['admin_templates'];
+    $userTemplates = $resolution['selection']['user_templates'];
+    $modules = $resolution['selection']['modules'];
+    $plugins = $resolution['selection']['plugins'];
+    $languagePacks = $resolution['selection']['language_packs'];
 
     // 확장 이름 매핑 저장 (설치 시 표시용)
     $state['extension_names'] = $extensionNames;
@@ -175,6 +206,9 @@ try {
         'message' => lang('log_extensions_saved'),
         'data' => [
             'selected_extensions' => $state['selected_extensions'],
+            'auto_added' => $resolution['auto_added'],
+            'install_order' => $resolution['install_order'],
+            'pulled_by' => $resolution['pulled_by'],
             'next_step' => 5,
         ],
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);

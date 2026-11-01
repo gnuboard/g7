@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\SeoBotPreviewRequest;
 use App\Seo\Editor\SeoBotPreviewService;
+use App\Seo\TemplateRouteResolver;
+use App\Support\Utf8;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -16,8 +18,15 @@ use Illuminate\Http\JsonResponse;
  */
 class SeoBotPreviewController extends AdminBaseController
 {
+    /**
+     * SEO 봇 미리보기 서비스와 라우트 레이아웃 해석기를 주입받습니다.
+     *
+     * @param  SeoBotPreviewService  $previewService  미리보기 렌더 서비스
+     * @param  TemplateRouteResolver  $routeResolver  레이아웃 전체 이름 → 소속 모듈·플러그인 해석기
+     */
     public function __construct(
         private readonly SeoBotPreviewService $previewService,
+        private readonly TemplateRouteResolver $routeResolver,
     ) {
         parent::__construct();
     }
@@ -33,23 +42,45 @@ class SeoBotPreviewController extends AdminBaseController
     {
         $validated = $request->validated();
 
+        // 편집기는 라우트의 레이아웃 전체 이름을 보낸다 — 명시 식별자가 없으면 운영 봇 렌더와 같은
+        // 해석기로 소속 확장을 채워, 모듈 화면 미리보기가 운영 응답과 같은 기준으로 렌더되게 한다 (공개#154)
+        $moduleId = $validated['module_id'] ?? null;
+        $pluginId = $validated['plugin_id'] ?? null;
+        $layoutName = $validated['layout_name'] ?? null;
+        if ($moduleId === null && $pluginId === null && ! empty($layoutName)) {
+            $described = $this->routeResolver->describeRouteLayout($layoutName);
+            $moduleId = $described['moduleIdentifier'];
+            $pluginId = $described['pluginIdentifier'];
+        }
+
+        // 운영 봇 렌더는 다른 제목 단계가 모두 비면 라우트 meta.title 을 쓴다 — 미리보기도 같은 라우트의 제목을
+        // 넘긴다. 사이트 첫 화면은 운영과 같이 라우트 제목(「홈」)을 붙이지 않는다.
+        $routeTitle = null;
+        if (! empty($layoutName)) {
+            $route = $this->routeResolver->findRouteByLayout($layoutName);
+            if ($route !== null && $route['path'] !== '/') {
+                $routeTitle = $route['meta']['title'] ?? null;
+            }
+        }
+
         $html = $this->previewService->render(
             $validated['layout'],
             $validated['route_params'] ?? [],
             $validated['url'] ?? '/',
             $validated['locale'] ?? app()->getLocale(),
             $identifier,
-            $validated['module_id'] ?? null,
-            $validated['plugin_id'] ?? null,
+            $moduleId,
+            $pluginId,
             $validated['seed_context'] ?? [],
+            $routeTitle,
+            $layoutName,
         );
 
         // JSON 직렬화 경계 — 미리보기 HTML 에 유효하지 않은 UTF-8 바이트가 있으면 JsonResponse 가
         // "Malformed UTF-8" 로 500 을 던진다(샘플 데이터/표현식 평가 잔여로 잘린 멀티바이트 가능).
         // 응답 직전 한 번 정화해 직렬화를 보장한다(산출물 내용 불변 — 깨진 바이트만 제거).
         if (is_string($html)) {
-            $clean = @iconv('UTF-8', 'UTF-8//IGNORE', $html);
-            $html = $clean === false ? mb_convert_encoding($html, 'UTF-8', 'UTF-8') : $clean;
+            $html = Utf8::scrub($html);
         }
 
         return $this->success('common.success', [

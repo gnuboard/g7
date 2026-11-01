@@ -115,6 +115,15 @@
                                                 "className": "text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded"
                                             },
                                             "text": "$t:admin.modules.status.not_installed"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{module.status === 'version_mismatch'}}",
+                                            "props": {
+                                                "className": "text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded"
+                                            },
+                                            "text": "$t:admin.modules.status.version_mismatch ({{module.installed_version}} → {{module.required_version}})"
                                         }
                                     ]
                                 }
@@ -186,6 +195,15 @@
                                                 "className": "text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 rounded"
                                             },
                                             "text": "$t:admin.plugins.status.not_installed"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{plugin.status === 'version_mismatch'}}",
+                                            "props": {
+                                                "className": "text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded"
+                                            },
+                                            "text": "$t:admin.plugins.status.version_mismatch ({{plugin.installed_version}} → {{plugin.required_version}})"
                                         }
                                     ]
                                 }
@@ -323,6 +341,15 @@
                                             "params": {
                                                 "type": "success",
                                                 "message": "$t:admin.modules.activate_success"
+                                            }
+                                        },
+                                        {
+                                            "comment": "함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 막지 않는 안내라 창을 열지 않는다.",
+                                            "handler": "toast",
+                                            "if": "{{(response?.data?.integration_notices ?? []).length !== 0}}",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + ')').join(', ')}}"
                                             }
                                         },
                                         {

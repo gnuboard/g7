@@ -127,4 +127,33 @@ class UserMemoListMarkupTest extends ModuleTestCase
 
         $this->assertSame([], array_values(array_diff($names, $minimal)));
     }
+
+    /**
+     * 모듈 화면 SEO 예시를 선언한다 — 템플릿 기본값(SEO 끔)을 이 화면이 덮어 검색봇에 서버 렌더되고,
+     * 메모 데이터 소스를 봇 렌더 때 받아 본문에 메모 제목이 나간다. og 설명 문구 키는 ko·en 언어 파일에 있다 (공개#154).
+     *
+     * @scenario part=seo
+     *
+     * @effects user_memo_list_declares_module_screen_seo_example
+     *
+     * @return void 반환값 없음
+     */
+    public function test_declares_module_screen_seo_example(): void
+    {
+        $seo = $this->layout()['meta']['seo'] ?? null;
+
+        $this->assertIsArray($seo, 'meta.seo 선언이 없다');
+        $this->assertTrue($seo['enabled'] ?? false);
+        $this->assertSame('website', $seo['og']['type'] ?? null);
+        $this->assertSame('$t:gnuboard7-hello_module.user.memos.index.seo_description', $seo['og']['description'] ?? null);
+        $this->assertSame(['memos'], $seo['data_sources'] ?? null);
+
+        $declaredSources = array_column($this->layout()['data_sources'] ?? [], 'id');
+        $this->assertContains('memos', $declaredSources, 'SEO 데이터 소스가 레이아웃에 선언돼 있지 않다');
+
+        foreach (['ko', 'en'] as $locale) {
+            $lang = json_decode((string) file_get_contents(dirname(__DIR__, 3)."/resources/lang/{$locale}.json"), true);
+            $this->assertNotEmpty($lang['user']['memos']['index']['seo_description'] ?? null, "{$locale} 설명 문구 누락");
+        }
+    }
 }

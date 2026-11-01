@@ -2,14 +2,15 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\CoreUpdateService;
 use Illuminate\Console\Command;
 
 class CheckCoreUpdatesCommand extends Command
 {
-    protected $signature = 'core:check-updates';
+    use LocalizesDescription;
 
-    protected $description = '그누보드7 코어의 최신 업데이트를 확인합니다';
+    protected $signature = 'core:check-updates';
 
     /**
      * 커맨드를 실행합니다.

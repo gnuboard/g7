@@ -17,7 +17,7 @@
           </checkbox>
           <span>$t:sirsoft-marketing.agree_marketing_consent</span>
         </label>
-        <button data-if="{{marketing_settings?.data?.marketing_consent_terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+        <button data-if="{{marketing_settings?.data?.marketing_consent_terms_slug_set === true &amp;&amp; (_global.activeModules?.includes('sirsoft-page') ?? true)}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
           <on type="click">
             <!-- 약관 본문 보기 — 어떤 약관인지 전역에 심고 창을 먼저 띄운 뒤 본문을 받아 채운다(빈 창이라도 즉시 반응하게) -->
             <sequence>
@@ -46,7 +46,7 @@
           </checkbox>
           <span>{{$localized(channel.label_i18n) || channel.label}}</span>
         </label>
-        <button data-if="{{channel.terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+        <button data-if="{{channel.terms_slug_set === true &amp;&amp; (_global.activeModules?.includes('sirsoft-page') ?? true)}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
           <on type="click">
             <!-- 약관 본문 보기 — 채널별 수신 동의 약관도 같은 흐름을 탄다 -->
             <sequence>
@@ -75,7 +75,7 @@
           </checkbox>
           <span>$t:sirsoft-marketing.agree_third_party_consent</span>
         </label>
-        <button data-if="{{marketing_settings?.data?.third_party_consent_terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+        <button data-if="{{marketing_settings?.data?.third_party_consent_terms_slug_set === true &amp;&amp; (_global.activeModules?.includes('sirsoft-page') ?? true)}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
           <on type="click">
             <!-- 약관 본문 보기 — 제3자 제공 동의 약관 -->
             <sequence>
@@ -105,7 +105,7 @@
             </checkbox>
             <span>$t:sirsoft-marketing.agree_info_disclosure</span>
           </label>
-          <button data-if="{{marketing_settings?.data?.info_disclosure_terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+          <button data-if="{{marketing_settings?.data?.info_disclosure_terms_slug_set === true &amp;&amp; (_global.activeModules?.includes('sirsoft-page') ?? true)}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
             <on type="click">
               <!-- 약관 본문 보기 — 정보 공개 동의 약관 -->
               <sequence>

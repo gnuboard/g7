@@ -4,6 +4,29 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.3] - 2026-11-01
+
+### Added
+
+- 코어 7.1.4 의 환경설정 > 보안 「콘텐츠 보안 정책(CSP)」 저장 검증 문구(`validation.settings.csp_source_host_invalid`·`csp_mode_in`·`csp_extra_script_hosts_array`·`csp_extra_script_hosts_max`)와 항목명(`validation.attributes.csp_mode`·`csp_extra_script_hosts`)의 일본어 번역을 추가했습니다. 없으면 일본어 화면의 저장 오류에서 이 문구가 키 그대로 보입니다.
+- 코어 7.1.4 의 의존 확장 미충족 사유 문구(미설치·무효·버전 미달 설치 → 요구), 호환성 복구 실패 안내, 의존 대상이 내려가거나 꺼졌을 때 의존 확장에 알리는 안내, `template:activate`·`module:activate`·`plugin:activate` 의 「버전 미달」 라벨과 템플릿 강제 활성화 시 503 안내의 일본어 번역을 추가했습니다.
+- 코어 7.1.4 의 선택 연동(`integrations`) 안내 문구의 일본어 번역을 추가했습니다. 확장을 설치·활성화·업데이트했을 때 함께 쓰면 연동되는 확장이 미설치·비활성·버전 미달이라는 안내, 함께 설치하다 실패한 연동 확장 안내, 확장을 끄거나 지울 때 그 확장과 연동 중인 확장을 알리는 명령 출력(표 제목·열 이름·상태 이름)입니다. 없으면 일본어 화면과 명령 출력에서 이 문구가 키 그대로 보입니다.
+- 코어 7.1.4 의 `core:bundled-sources prune` 이 켜져 있는 확장의 연동 대상이라 번들을 남길 때 출력하는 안내 문구의 일본어 번역을 추가했습니다.
+- 코어 7.1.4 의 확장 설치 요청에서 함께 설치할 의존 확장·연동 확장·언어팩 항목의 검증 오류에 쓰는 필드 이름 일본어 번역을 추가했습니다.
+- 코어 7.1.4 의 `layout:check-installed` 가 routes.json 라우트의 `requires` 형식 오류를 알릴 때 쓰는 문구(절 제목·열 이름·문제 설명·안내)의 일본어 번역을 추가했습니다.
+- 코어 7.1.4 에서 추가된 터미널 운영 명령(비밀번호 재설정·설정 값 조회·지정·확장 의존 연쇄 설치·`core:install`)의 출력과 오류 문구, 의존 확장 버전 미달 안내, 시스템(CLI) 비밀번호 재설정 활동 로그, `.env` 고정 설정의 단건 저장 거부 문구의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 문구가 키 그대로 보입니다.
+- `php artisan list`·`--help` 에 보이는 코어 artisan 명령 설명 129개와, 확장을 함께 설치한 뒤 본 확장 설치가 실패했을 때 남겨 둔 의존 확장 안내의 일본어 번역을 추가했습니다.
+- 코어 7.1.4 의 PHP 확장 요구 안내의 일본어 번역을 추가했습니다 — 확장 설치·활성화가 필요한 PHP 확장이 없어 막힐 때의 안내(`extensions.errors.php_extension_missing`)와 업데이트 경고(`extensions.warnings.php_extension_missing`), 코어 업데이트 사전점검 안내(`settings.core_update.console.php_extension_core_missing`·`php_extension_extension_warning`), 설정 백업·복원의 zip 안내(`settings.errors.zip_extension_required`), 사이트맵 gzip 저장 검증(`validation.settings.sitemap_gzip_requires_zlib`), 압축 해제의 zlib·phar 안내(`common.errors.archive_php_extension_missing`)입니다.
+- 코어 7.1.4 의 의존 확장 종류 이름(`extensions.dependency_types` — モジュール・プラグイン・テンプレート), 번들 일괄 업데이트의 종류를 넘는 순환 경고(`extensions.commands.bundled_update.dependency_cycle`), 설치 창의 연동 확장 필수 의존 권한 안내(`extensions.integrations.requires_no_permission`) 일본어 번역을 추가했습니다.
+- 코어 7.1.4 의 환경설정 > 고급 > GeoIP [갱신] 결과 문구(`settings.geoip.*` — 갱신 완료·라이선스 키 없음·라이선스 키 오류·연결 실패·갱신 실패)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 안내가 키 그대로 보입니다.
+- 코어 7.1.4 의 사이트맵 「지금 생성」 거절 문구(`seo.sitemap_regenerate_in_progress` — 이미 생성 중, `seo.sitemap_regenerate_locked` — 다른 생성 대기 중이거나 이전 작업의 잠금이 남음)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 안내가 키 그대로 보입니다.
+- 코어 7.1.4 의 `module:install`·`plugin:install`·`template:install` `--with-language-packs=all` 이 같은 언어의 코어 언어팩이 꺼져 있어 설치할 수 없는 언어팩을 건너뛸 때 출력하는 안내(`extensions.commands.cascade.language_pack_skipped`)의 일본어 번역을 추가했습니다.
+
+### Changed
+
+- 압축을 풀 수 없을 때의 안내(`settings.core_update.no_extract_method_available`) 번역을 코어 7.1.4 문구에 맞춰 「--source 로 수동 업데이트할 수 있다」에서 「서버에 zip 확장을 설치한 뒤 다시 시도」로 바꿨습니다.
+- 의존 확장 미충족 문구(`modules.dependency_not_active`·`plugins.dependency_not_active`)가 의존 대상의 실제 종류를 부르도록 바꿨습니다 — 「依存する:type ":dependency" がインストールされていないか無効です。」(종전에는 플러그인도 「モジュール」로 표기).
+
 ## [1.1.2] - 2026-10-23
 
 ### Added

@@ -102,16 +102,23 @@ test.describe('관리자 반응 관리 (#525 WP-C)', () => {
 
     // 그 메타가 실제로 셀렉트까지 닿는지 본다(화면 계약). 상세검색 패널은 접혀 있고 셀렉트는
     // 메타가 도착한 뒤에 채워지므로, 펼친 상태에서 옵션이 붙을 때까지 기다린다.
+    // 유형 셀렉트는 관리자 템플릿의 목록형 드롭다운이다 — data-testid 는 바깥 상자에 붙고, 항목은 단추를 눌러야
+    // 문서 끝의 목록 상자(role=listbox)에 role=option 으로 그려진다(브라우저 기본 선택상자의 option 요소가 없다).
     const typeFilter = page.locator('[data-testid="admin-reaction-type-filter"]').first();
+    const typeTrigger = typeFilter.locator('button[aria-haspopup="listbox"]');
     await expect(async () => {
       if (!(await typeFilter.isVisible())) {
         await page.locator('[data-testid="admin-reaction-advanced-toggle"]').first().click();
       }
+      if ((await typeTrigger.getAttribute('aria-expanded')) !== 'true') {
+        await typeTrigger.click({ timeout: 3_000 });
+      }
       // 이미 비활성으로 돌린 유형도 남아야 그 유형으로 쌓인 과거 반응을 찾을 수 있다.
-      await expect(typeFilter.locator('option').filter({ hasText: '(비활성)' })).toHaveCount(1, {
+      await expect(page.getByRole('listbox').getByRole('option').filter({ hasText: '(비활성)' })).toHaveCount(1, {
         timeout: 3_000,
       });
     }).toPass({ timeout: 30_000 });
+    await page.keyboard.press('Escape');
   });
 
   // @scenario case=screen_binds_all_filters_from_query

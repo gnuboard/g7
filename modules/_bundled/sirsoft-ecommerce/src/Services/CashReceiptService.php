@@ -126,7 +126,11 @@ class CashReceiptService
             'identifier' => $identifier,
             'identifier_type' => ($identifierType ?? $this->inferIdentifierType($identifier))?->value,
             'amount' => $target['amount'],
+            // 면세 금액 = 면세 + 영세(#612 P2) — 영세는 부가세가 없으므로 PG 에는 면세로 넘긴다
             'tax_free_amount' => $target['tax_free_amount'],
+            // 과세 몫에 든 부가세 — 공급가액·부가세를 나눠 받는 프로바이더(KG이니시스)가 쓴다.
+            // 받지 않는 프로바이더(토스)는 무시한다. 세율이 섞이거나 영세가 든 주문에서 /11 고정 분할이 틀린다(#612 ②).
+            'vat_amount' => $this->calculateIssuableVatAmount($order, $target, strict: true),
             'order_name' => $this->buildOrderName($order),
             'order_number' => $order->order_number,
             // 이번 발급의 회차 (1부터). 프로바이더가 발급 요청 식별자를 회차로 구분할 때 사용한다.
@@ -405,6 +409,9 @@ class CashReceiptService
      * total_amount / total_tax_free_amount 를 잔여분 기준으로 갱신하므로, 본 메서드는
      * "지금 이 주문이 얼마짜리인가"만 읽으면 된다.
      *
+     * 면세액은 결제사·국세청에 「부가세 없는 금액」으로 넘길 몫이라 영세(세율 0%)를 포함한다
+     * (`Order::pgTaxFreeAmount()`, #612). 이력 행의 `tax_free_amount` 도 이 의미다.
+     *
      * 현금성 금액(total_cash_equivalent_amount)은 무통장 주문의 실입금액이며,
      * 마일리지 사용분은 현금이 아니므로 제외되어 있다.
      *
@@ -422,8 +429,8 @@ class CashReceiptService
             return ['amount' => 0, 'tax_free_amount' => 0];
         }
 
-        $taxFree = $this->toPaymentCurrencyAmount($order, (float) $order->total_tax_free_amount, $strict);
-        $taxable = $this->toPaymentCurrencyAmount($order, (float) $order->total_tax_amount, $strict);
+        $taxFree = $this->toPaymentCurrencyAmount($order, $order->pgTaxFreeAmount(), $strict);
+        $taxable = $this->toPaymentCurrencyAmount($order, $order->pgTaxableAmount(), $strict);
         $classified = $taxFree + $taxable;
 
         // 과세/면세 분류 합이 현금성 금액과 다르면(마일리지 사용, 할인 등) 면세 비율로 안분한다.
@@ -442,6 +449,33 @@ class CashReceiptService
             'amount' => $cashEquivalent,
             'tax_free_amount' => $taxFreeShare,
         ];
+    }
+
+    /**
+     * 발급액의 과세 몫에 든 부가세를 계산합니다.
+     *
+     * 과세 몫(발급액 − 면세 몫)을 주문의 「과세 금액(영세 제외) 대비 부가세」 비율로 나눈다 — 옵션별 세율로
+     * 합산한 주문 부가세를 쓰므로 5% 세율 상품·영세 상품이 섞여도 맞는다. 과세 몫을 넘지 않는다.
+     *
+     * @param  Order  $order  주문 모델
+     * @param  array{amount: int, tax_free_amount: int}  $target  calculateIssuableAmount() 결과
+     * @param  bool  $strict  환산 실패 시 예외를 던질지
+     * @return int 부가세 (결제 통화)
+     *
+     * @throws CashReceiptConversionException $strict 이고 결제 통화로 환산할 수 없을 때
+     */
+    public function calculateIssuableVatAmount(Order $order, array $target, bool $strict = false): int
+    {
+        $taxableShare = max(0, (int) $target['amount'] - (int) $target['tax_free_amount']);
+        $pgTaxable = $this->toPaymentCurrencyAmount($order, $order->pgTaxableAmount(), $strict);
+
+        if ($taxableShare <= 0 || $pgTaxable <= 0) {
+            return 0;
+        }
+
+        $vat = $this->toPaymentCurrencyAmount($order, (float) $order->total_vat_amount, $strict);
+
+        return min($taxableShare, (int) round($taxableShare * $vat / $pgTaxable));
     }
 
     /**

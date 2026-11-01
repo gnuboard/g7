@@ -45,6 +45,16 @@ PC 가상계좌 발급도 같다 — 발급 응답의 `amount` 가 청구액과 
 
 정당한 결제창 닫힘은 주문 소유자(회원 본인 로그인 / 비회원 조회 토큰)가 보낸 close-report 요청으로만 기록된다. 주문자 이메일·전화번호는 제3자도 알 수 있어 소유 증명이 아니다 (KVE-2026-2434).
 
+### 모바일 승인키 발급은 PHP soap 확장이 필요하다 (1.1.2+)
+
+모바일 결제창은 서버가 SOAP 으로 받은 승인키(`POST /api/plugins/sirsoft-pay_nhnkcp/mobile/approval-key`)로 연다. 이 플러그인은 `composer.json`
+`suggest.ext-soap` 로 soap 을 **권장** 확장으로 선언한다(PC 결제만 쓰는 서버의 설치를 막지 않는다). soap 이 없는 서버에서 승인키를
+요청하면 500 대신 다음으로 응답한다.
+
+| 상태 | 본문 | 비고 |
+| --- | --- | --- |
+| 422 | `{"success": false, "error": "현재 모바일 결제를 이용할 수 없습니다. 다른 결제수단을 선택하거나 쇼핑몰에 문의해 주세요."}` | 고객에게는 서버 구성 정보를 보이지 않는다. 원인(soap 미설치)은 서버 오류 로그에 남는다 |
+
 > 형제 플러그인도 같은 규약이다 — `sirsoft-pay_kginicis` · `sirsoft-tosspayments` 의 `docs/api/payment.md` 를 참조.
 
 ---
@@ -168,6 +178,26 @@ PC 표준결제창에서 사용자가 결제를 완료하지 않고 창을 닫�
 결제에 실패했거나 결제창을 닫아 취소된 주문을 **같은 주문번호로** 다시 결제할 수 있는 상태로 되돌린다. close-report 와 동일한 확인(주문 소유자·금액·레이트리밋)을 거치므로, 남의 주문번호나 주문자 연락처만으로 상태를 되돌릴 수 없다 (KVE-2026-2434).
 
 ---
+
+## GET /plugins/sirsoft-pay_nhnkcp/payment/kcp-frame
+
+- **라우트명**: `web.plugins.sirsoft-pay_nhnkcp.payment.kcp-frame`
+- **컨트롤러**: `Plugins\Sirsoft\PayNhnkcp\Controllers\KcpFrameController@show`
+- **인증/권한**: 공개 (비회원 결제도 같은 프레임을 연다) · web 그룹 (코어 CSP 헤더가 켜져 있으면 함께 붙는다)
+
+**요청 파라미터** (쿼리스트링)
+
+| 이름 | 타입 | 필수 | 용도 |
+| --- | --- | --- | --- |
+| sdk | string | 예 | KCP 결제창 SDK 주소. `https://testpay.kcp.co.kr/plugin/payplus_web.jsp` · `https://pay.kcp.co.kr/plugin/payplus_web.jsp` 둘 중 하나와 **정확히** 같아야 한다 — 프레임이 이 주소를 그대로 `<script src>` 로 싣는다 |
+
+**응답**
+
+JSON 이 아니라 **HTML** 이다(`Cache-Control: no-store`). SDK `<script src>` → 빈 `order_info` 폼 → 브리지 `<script src>`(`/api/plugins/assets/sirsoft-pay_nhnkcp/assets/bridge/kcp-frame.js`) 세 요소뿐이고 인라인 실행 코드는 없다. `sdk` 가 허용 주소가 아니면 **빈 400** 이다(iframe 안이라 오류 화면을 그리지 않는다 — 주문 화면은 15초 뒤 시간 초과로 결제를 실패 처리한다).
+
+**설명**
+
+PC 표준결제(`requestPayment` 핸들러)가 투명 iframe 으로 여는 결제창 프레임이다(1.1.2, #158). 종전에는 주문 화면이 빈 iframe 에 `document.write` 로 SDK 와 인라인 스크립트를 써 넣었는데, 사이트가 `Content-Security-Policy: script-src 'self'` 를 걸면 그 인라인 코드가 실행되지 않아 결제가 시간 초과로 끝났다. 이제 브리지가 같은 출처 부모 창의 `window.__g7KcpFrame` 에서 주문 값(`fields`)을 받아 폼을 채우고 `KCP_Pay_Execute` 를 부르며, KCP 가 돌려주는 결과 폼(`m_Completepayment`)을 부모의 `complete` 로 넘긴다. 부모 객체가 없으면(다른 출처·주소 직접 열기) 아무 것도 하지 않는다.
 
 ## POST /plugins/sirsoft-pay_nhnkcp/payment/callback
 

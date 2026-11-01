@@ -1,0 +1,26 @@
+feature: 바뀌지 않은 동의 항목은 저장해도 철회·동의로 기록하지 않는다
+
+description: |
+  회원 화면은 저장할 때 모든 동의 칸을 함께 보낸다. 기록이 없는 항목에 false 가 오면 이미 「동의 안 함」 상태라
+  동의 행·이력·철회 시각·철회 훅(sirsoft-marketing.user.unsubscribed)이 생기면 안 된다. 예전에는 「이미 같은 상태면
+  건너뜀」 조건이 기록이 있을 때만 맞아, 동의한 적 없는 회원이 닉네임만 바꿔 저장해도 항목마다 철회 이력이 남았다.
+  또 전체 동의 철회가 채널뿐 아니라 법적 동의(제3자 제공·정보 공개)까지 철회해, 같은 저장이 다시 동의로 기록하며
+  「철회 → 동의」 쌍과 바뀐 동의 시각이 남았다. 전체 동의 철회는 채널(사용중지한 채널 포함)만 함께 철회한다.
+  동의했다가 끈 경우는 종전대로 동의·철회 이력이 한 번씩 남는다.
+
+axis_notes:
+  case: |
+    profile_update 는 본인 정보 수정(PUT /api/me), admin_update 는 관리자 회원 수정, admin_create 는 관리자 회원 추가,
+    register 는 가입 완료 훅(core.auth.after_register 의 registration_data) 경로다. 네 경로 모두 같은 서비스를 탄다.
+    service_direct 는 서비스를 직접 불러 사용중지한 채널의 남은 동의가 연쇄 철회되는지 본다(화면은 사용중지 채널을 보내지 않음).
+
+axes:
+  case: [profile_update, admin_update, admin_create, register, service_direct]
+
+effects:
+  - unconsented_false_writes_nothing   # 기록 없음 + false 이면 동의 행·이력·철회 훅이 없다
+  - master_revoke_keeps_legal_consents # 전체 동의 철회는 채널만 철회하고 법적 동의의 이력·횟수·동의 시각은 그대로다
+  - real_revoke_still_recorded         # 동의 → 철회는 동의·철회 이력과 철회 시각이 남고, 재저장은 이력을 더하지 않는다
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/tests/Feature/MarketingConsentNoPhantomRevokeTest.php

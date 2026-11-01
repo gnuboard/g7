@@ -30,6 +30,9 @@ enum PasswordChangeSource: string
     /** 관리자 회원 등록 */
     case AdminCreate = 'admin_create';
 
+    /** 서버 터미널의 비밀번호 재설정 (`php artisan user:reset-password`, 7.1.4) — 행위 회원이 없다 */
+    case Console = 'console';
+
     /**
      * 모든 값을 문자열 배열로 반환합니다.
      *

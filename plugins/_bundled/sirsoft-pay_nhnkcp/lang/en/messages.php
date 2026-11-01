@@ -27,6 +27,7 @@ return [
         'wsdl_missing' => 'KCP WSDL file not found: :file',
         'approval_key_error' => 'KCP approval key error [:code]: :message',
         'soap_error' => 'KCP SOAP integration error: :message',
+        'mobile_payment_unavailable' => 'Mobile payment is currently unavailable. Please choose another payment method or contact the store.',
         'cli_binary_missing' => 'KCP CLI binary missing: :path',
         'cli_binary_not_executable' => 'KCP CLI binary is not executable. Operator action required (sudo chmod 755 :path)',
     ],
@@ -82,5 +83,9 @@ return [
     ],
     'settings' => [
         'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, /, http:// or https:// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
+    ],
+    'kcp_frame' => [
+        // Field label for the PC payment frame request (#158) — validation failures return an empty 400.
+        'sdk' => 'payment window SDK URL',
     ],
 ];

@@ -51,6 +51,10 @@ effects:
   - isInstallerExecutablePath_rejects_metachars
   - isInstallerExecutablePath_rejects_nonexistent
 
+  # 실행 경로 정책 파일 공유 — 검증·실행 진입점(웹 API·설치 워커·웹/터미널 공유 검증 함수)이 같은 파일을 로드
+  - binary_path_policy_file_is_shared_by_all_entrypoints
+  - pair_resolver_rejects_unc_and_arbitrary_phar
+
   # Critical-2: save-extensions ID 화이트리스트
   - save_extensions_accepts_normal_identifiers
   - save_extensions_rejects_id_with_space

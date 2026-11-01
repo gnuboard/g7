@@ -195,9 +195,13 @@ class OrderResource extends BaseApiResource
             'total_tax_amount_formatted' => $this->formatOrderCurrency($this->total_tax_amount, $orderCurrency),
             'total_vat_amount' => $this->roundToOrderCurrency($this->total_vat_amount, $orderCurrency),
             'total_vat_amount_formatted' => $this->formatOrderCurrency($this->total_vat_amount, $orderCurrency),
-            // 과세 공급가액(과세금액 − 부가세) — 영수증의 "과세금액" 표시 SSoT (PG 영수증 레이아웃 인라인 계산 대체)
-            'total_taxable_supply_amount' => $this->roundToOrderCurrency((float) $this->total_tax_amount - (float) $this->total_vat_amount, $orderCurrency),
-            'total_taxable_supply_amount_formatted' => $this->formatOrderCurrency((float) $this->total_tax_amount - (float) $this->total_vat_amount, $orderCurrency),
+            // 과세 공급가액(과세금액 − 영세 − 부가세) — 영수증의 "과세금액" 표시 SSoT (PG 영수증 레이아웃 인라인 계산 대체).
+            // 영세는 결제사에 면세로 넘기므로(#612 P2) 영수증 블록에서는 「영세 금액」 줄로 따로 보이고 공급가액에 섞지 않는다.
+            'total_taxable_supply_amount' => $this->roundToOrderCurrency($this->taxableSupplyAmount(), $orderCurrency),
+            'total_taxable_supply_amount_formatted' => $this->formatOrderCurrency($this->taxableSupplyAmount(), $orderCurrency),
+            // 영세 금액(과세금액에 포함, 부가세 0) (#612)
+            'total_zero_rated_amount' => $this->roundToOrderCurrency((float) ($this->total_zero_rated_amount ?? 0), $orderCurrency),
+            'total_zero_rated_amount_formatted' => $this->formatOrderCurrency((float) ($this->total_zero_rated_amount ?? 0), $orderCurrency),
             'total_tax_free_amount' => $this->roundToOrderCurrency($this->total_tax_free_amount, $orderCurrency),
             'total_tax_free_amount_formatted' => $this->formatOrderCurrency($this->total_tax_free_amount, $orderCurrency),
 
@@ -382,5 +386,15 @@ class OrderResource extends BaseApiResource
         return (float) $this->resource->accountableOptions()->sum(
             fn ($option) => ($option->getSnapshotListPrice() ?? $option->unit_price) * $option->quantity
         );
+    }
+
+    /**
+     * 과세 공급가액(영세 제외 과세금액 − 부가세)을 구합니다 (#612).
+     *
+     * @return float 공급가액
+     */
+    private function taxableSupplyAmount(): float
+    {
+        return (float) $this->total_tax_amount - (float) ($this->total_zero_rated_amount ?? 0) - (float) $this->total_vat_amount;
     }
 }

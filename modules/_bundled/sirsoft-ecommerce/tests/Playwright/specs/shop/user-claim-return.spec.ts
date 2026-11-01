@@ -62,13 +62,14 @@ async function openReturnApply(page: Page): Promise<void> {
   await expect(page.locator('#claim_apply_items')).toBeVisible({ timeout: 30_000 });
   await page.locator('#claim_apply_items input[type="checkbox"]').last().check();
 
-  const reason = page.locator('#claim_apply_reason select').first();
+  // 사유 칸은 목록형 드롭다운(단추 + 목록)이라 `selectOption()` 이 닿지 않는다 — 열고 첫 사유를 누른다.
+  // 목록은 body 에 붙는다(포털). 0번은 「사유를 선택하세요」 빈 값이다.
+  const reason = page.locator('#claim_apply_reason button[aria-haspopup="listbox"]').first();
   await expect(reason).toBeVisible({ timeout: 15_000 });
-  const values = await reason.locator('option').evaluateAll((nodes) =>
-    nodes.map((node) => (node as HTMLOptionElement).value).filter((value) => value !== ''),
-  );
-  expect(values.length, '반품 사유 카탈로그가 비어 미리보기를 유발할 수 없다').toBeGreaterThan(0);
-  await reason.selectOption(values[0]);
+  await reason.click();
+  const reasonChoices = page.getByRole('listbox').getByRole('option');
+  await expect(reasonChoices.nth(1), '반품 사유 카탈로그가 비어 미리보기를 유발할 수 없다').toBeVisible({ timeout: 15_000 });
+  await reasonChoices.nth(1).click();
 }
 
 /** 요약 카드의 글자 (공백을 줄여 비교하기 쉽게 만든다) */
@@ -195,11 +196,14 @@ test.describe('구매자 클레임 신청서 작성 — 반품', () => {
     await page.waitForTimeout(1_000);
     expect(calls, '사유 없이 미리보기가 나갔다').toHaveLength(0);
 
-    const reason = page.locator('#claim_apply_reason select').first();
-    const values = await reason.locator('option').evaluateAll((nodes) =>
-      nodes.map((node) => (node as HTMLOptionElement).value).filter((value) => value !== ''),
-    );
-    await reason.selectOption(values[0]);
+    // 사유 칸은 목록형 드롭다운(단추 + 목록)이라 `selectOption()` 이 닿지 않는다 — 열고 첫 사유를 누른다.
+    // 목록은 body 에 붙는다(포털). 0번은 「사유를 선택하세요」 빈 값이다.
+    const reason = page.locator('#claim_apply_reason button[aria-haspopup="listbox"]').first();
+    await expect(reason).toBeVisible({ timeout: 15_000 });
+    await reason.click();
+    const reasonChoices = page.getByRole('listbox').getByRole('option');
+    await expect(reasonChoices.nth(1), '사유 카탈로그가 비었다').toBeVisible({ timeout: 15_000 });
+    await reasonChoices.nth(1).click();
 
     await expect.poll(() => calls.length, { timeout: 15_000 }).toBeGreaterThan(0);
     expect(calls, '토글마다 요청이 나갔다 (debounce 미동작)').toHaveLength(1);

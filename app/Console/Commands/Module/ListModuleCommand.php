@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\ModuleManager;
@@ -9,17 +10,14 @@ use Illuminate\Console\Command;
 
 class ListModuleCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'module:list
         {--status= : 상태로 필터 (installed, uninstalled, active, inactive)}
         {--hidden : 숨김(hidden=true) 모듈도 함께 출력}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '모듈 목록을 조회합니다';
 
     /**
      * 모듈 관리자 및 리포지토리

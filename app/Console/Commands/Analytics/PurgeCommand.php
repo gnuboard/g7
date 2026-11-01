@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\Analytics\PurgeService;
 use Illuminate\Console\Command;
 
@@ -17,6 +18,7 @@ use Illuminate\Console\Command;
 class PurgeCommand extends Command
 {
     use HasUnifiedConfirm;
+    use LocalizesDescription;
 
     /**
      * 커맨드 이름 및 시그니처
@@ -24,13 +26,6 @@ class PurgeCommand extends Command
      * @var string
      */
     protected $signature = 'analytics:purge {--confirm : 되돌릴 수 없음을 확인}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '방문자 통계 기록과 집계를 모두 삭제합니다 (되돌릴 수 없음).';
 
     /**
      * 커맨드 실행

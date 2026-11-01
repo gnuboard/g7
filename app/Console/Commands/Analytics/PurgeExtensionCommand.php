@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Enums\ExtensionStatus;
@@ -21,6 +22,7 @@ use Illuminate\Console\Command;
 class PurgeExtensionCommand extends Command
 {
     use HasUnifiedConfirm;
+    use LocalizesDescription;
 
     /**
      * 커맨드 이름 및 시그니처
@@ -32,13 +34,6 @@ class PurgeExtensionCommand extends Command
         {identifier : 확장 식별자}
         {--confirm : 되돌릴 수 없음을 확인}
         {--force : 켜져 있는 확장의 통계도 지운다}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '확장 하나가 남긴 방문자 통계 전환·분류 기준 집계를 삭제합니다 (되돌릴 수 없음).';
 
     /**
      * 커맨드 실행

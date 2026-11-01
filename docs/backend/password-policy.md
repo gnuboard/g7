@@ -97,8 +97,11 @@
 | 메일 재설정 | `reset` | 없음(전부 폐기) | 해제 |
 | 관리자가 다른 회원 지정 | `admin` | 없음(그 회원 전부) | **설정** |
 | 로그인 변경 단계 | `login_required` | 없음 → 새 토큰 1개 | 해제 |
+| 터미널 재설정(`user:reset-password`, 7.1.4) | `console` | 없음(전부 폐기) | `--require-change`·`--generate` 일 때만 설정 |
 
-기존 `core.auth.after_password_changed($user)` 는 인자를 바꾸지 않고 그대로 발행한다(알림 `password_changed` 가 구독). 활동 로그는 경로를 아는 `password_change_recorded` 에서 남긴다 — 재설정은 `auth.reset_password`, 그 밖은 `auth.password_change`.
+기존 `core.auth.after_password_changed($user)` 는 인자를 바꾸지 않고 그대로 발행한다(알림 `password_changed` 가 구독). 활동 로그는 경로를 아는 `password_change_recorded` 에서 남긴다 — 재설정은 `auth.reset_password`, 그 밖은 `auth.password_change`. 터미널 재설정은 행위자 없는 시스템 기록(`activity_log.description.auth_reset_password_by_console`)이다.
+
+메일 재설정과 터미널 재설정은 실행 본문 `PasswordResetService::resetByOperator()` 를 같이 쓴다(잠금 해제·변경 기록·모든 기기 로그아웃·완료 훅). 차이는 둘이다 — 재설정 직전 훅 `core.auth.before_reset_password`(본인인증 정책·인증 대기 회원 거부가 걸린 웹 가드)는 메일 재설정에서만 발화하고, 터미널 재설정은 결과 출력에 확장 안내를 덧붙이는 filter `core.auth.console_password_reset_notices`(인자: 안내 문구 배열, 회원)를 발행한다(예: 인증 앱 플러그인의 `totp:reset` 안내).
 
 정보수정 API(`PUT /api/me`·`PUT /api/user/profile`)로 비밀번호를 함께 바꾸면 전용 경로와 같은 본인인증 정책(`core.profile.password_change`)을 `IdentityPolicyService::enforceForRequest()` 로 건다 — 라우트 미들웨어와 같은 판정 한 곳이다. 비밀번호 3종(새 값·확인·현재 값)은 서버 로그와 수정 완료 훅 인자(큐 작업 표)에 남기지 않는다.
 

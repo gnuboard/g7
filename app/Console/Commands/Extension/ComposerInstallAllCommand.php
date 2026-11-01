@@ -2,20 +2,18 @@
 
 namespace App\Console\Commands\Extension;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use Illuminate\Console\Command;
 
 class ComposerInstallAllCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'extension:composer-install
                             {--no-dev : dev 의존성 제외}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '모든 모듈과 플러그인의 Composer 의존성을 설치합니다';
 
     /**
      * 커맨드를 실행합니다.

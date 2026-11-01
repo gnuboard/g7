@@ -70,19 +70,12 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
-            "params": {
-                "per_page": "5"
-            },
             "fallback": {
                 "data": {
-                    "data": [],
-                    "current_page": 1,
-                    "last_page": 1,
-                    "per_page": 5,
-                    "total": 0
+                    "data": []
                 }
             },
-            "comment": "모듈 요약 5건. 모듈 목록 화면과 **같은 API** 를 쓰되 5건으로 잘라 받는다(요약 전용 API 를 따로\n       두지 않는다). 전체는 모듈 관리 화면으로 넘긴다."
+            "comment": "설치된 모듈. 모듈 목록 화면과 **같은 API** 를 쓴다(요약 전용 API 를 따로 두지 않는다).\n       이 API 는 페이지를 나누지 않고 설치분 전량을 주므로(`per_page` 를 보내도 무시된다) 6건 자르기는\n       아래 갤러리의 반복식이 하고, 넘친 개수도 받은 전량에서 센다. 전체는 모듈 관리 화면으로 넘긴다."
         },
         {
             "id": "dashboard_plugins",
@@ -93,19 +86,12 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
-            "params": {
-                "per_page": "5"
-            },
             "fallback": {
                 "data": {
-                    "data": [],
-                    "current_page": 1,
-                    "last_page": 1,
-                    "per_page": 5,
-                    "total": 0
+                    "data": []
                 }
             },
-            "comment": "플러그인 요약 5건 — 위 모듈과 같은 형태다."
+            "comment": "설치된 플러그인 — 위 모듈과 같은 API 형태라 자르기도 같다."
         },
         {
             "id": "dashboard_templates",
@@ -117,18 +103,20 @@
             "auth_required": true,
             "loading_strategy": "progressive",
             "params": {
-                "per_page": "5"
+                "per_page": "6"
             },
             "fallback": {
                 "data": {
                     "data": [],
-                    "current_page": 1,
-                    "last_page": 1,
-                    "per_page": 5,
-                    "total": 0
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 6,
+                        "total": 0
+                    }
                 }
             },
-            "comment": "템플릿 요약 5건 — 위 둘과 같은 형태다."
+            "comment": "템플릿 요약 6건. 이 API 는 페이지를 나누므로 6건만 받고, 넘친 개수는 `pagination.total` 로 센다."
         },
         {
             "id": "dashboard_alerts",
@@ -1285,7 +1273,7 @@
                                     "data_sources": "dashboard_modules"
                                 },
                                 "props": {
-                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
                                 },
                                 "children": [
                                     {
@@ -1350,60 +1338,131 @@
                                         ]
                                     },
                                     {
+                                        "comment": "갤러리 — 아이콘 왼쪽 작은 카드를 받은 순서 그대로 최대 6장 깐다(활성·비활성으로 다시 줄 세우지 않는다).\n               아이콘은 기본 글리프를 늘 깔고 이미지가 그 위를 덮는다 — 이미지가 없거나 깨지면 글리프가 드러난다.\n               깨짐은 칸 종류를 붙인 식별자 목록으로 든다(불리언 하나면 한 장이 깨질 때 전부 글리프로 바뀐다).\n               열 수는 화면 폭이 아니라 칸 폭(`@container`)으로 정한다 — 사이드바가 있는 1,100px 대 화면에서 바깥이 3칸이면\n               칸 하나가 245px 남짓이라, 화면 폭 기준 2열은 카드가 100px 로 줄어 이름이 「H..」가 되고 배지가 카드 밖으로 넘쳤다.",
                                         "id": "module_list",
                                         "type": "basic",
                                         "name": "Div",
+                                        "props": {
+                                            "className": "grid grid-cols-1 @xs:grid-cols-2 gap-2"
+                                        },
                                         "children": [
                                             {
                                                 "id": "module_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "iteration": {
-                                                    "source": "dashboard_modules?.data?.data",
+                                                    "source": "{{(dashboard_modules?.data?.data ?? []).slice(0, 6)}}",
                                                     "item_var": "module",
                                                     "index_var": "$idx"
                                                 },
                                                 "props": {
-                                                    "className": "flex-between py-2"
+                                                    "className": "flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700"
                                                 },
                                                 "children": [
+                                                    {
+                                                        "id": "module_icon_{{$idx}}",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "cube",
+                                                                    "className": "text-slate-500 dark:text-slate-300",
+                                                                    "aria-hidden": "true"
+                                                                }
+                                                            },
+                                                            {
+                                                                "comment": "모듈 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
+                                                                "id": "module_icon_img_{{$idx}}",
+                                                                "type": "basic",
+                                                                "name": "Img",
+                                                                "if": "{{module.icon_url && !(_local.dashboardIconBroken ?? []).includes('module:' + module.identifier)}}",
+                                                                "actions": [
+                                                                    {
+                                                                        "event": "onError",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "dashboardIconBroken": "{{[...(_local.dashboardIconBroken ?? []), 'module:' + module.identifier]}}"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "src": "{{module.icon_url}}",
+                                                                    "alt": "",
+                                                                    "loading": "lazy",
+                                                                    "decoding": "async",
+                                                                    "className": "absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
                                                     {
                                                         "id": "module_info_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "props": {
+                                                            "className": "min-w-0 flex-1"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "id": "module_name_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-heading"
+                                                                    "className": "text-heading truncate",
+                                                                    "title": "{{module.name}}"
                                                                 },
                                                                 "text": "{{module.name}}"
                                                             },
                                                             {
-                                                                "id": "module_version_{{$idx}}",
+                                                                "id": "module_meta_{{$idx}}",
                                                                 "type": "basic",
-                                                                "name": "P",
+                                                                "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-tertiary"
+                                                                    "className": "flex flex-wrap items-center gap-x-2 gap-y-1 mt-1"
                                                                 },
-                                                                "text": "v{{module.version}}"
+                                                                "children": [
+                                                                    {
+                                                                        "id": "module_version_{{$idx}}",
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-tertiary"
+                                                                        },
+                                                                        "text": "v{{module.version}}"
+                                                                    },
+                                                                    {
+                                                                        "id": "module_badge_{{$idx}}",
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "{{module.status === 'active' ? 'badge badge-green whitespace-nowrap' : 'badge badge-gray whitespace-nowrap'}}"
+                                                                        },
+                                                                        "text": "{{module.status === 'active' ? '$t:admin.dashboard.module_status.active' : '$t:admin.dashboard.module_status.inactive'}}"
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
-                                                    },
-                                                    {
-                                                        "id": "module_badge_{{$idx}}",
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "props": {
-                                                            "className": "{{module.status === 'active' ? 'badge badge-green' : 'badge badge-gray'}}"
-                                                        },
-                                                        "text": "{{module.status === 'active' ? '$t:admin.dashboard.module_status.active' : '$t:admin.dashboard.module_status.inactive'}}"
                                                     }
                                                 ]
                                             }
                                         ]
+                                    },
+                                    {
+                                        "id": "module_more_count",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{(dashboard_modules?.data?.data ?? []).length > 6}}",
+                                        "props": {
+                                            "className": "mt-3 text-center text-label-subtle"
+                                        },
+                                        "text": "$t:admin.dashboard.extension_status.more_count|count={{(dashboard_modules?.data?.data ?? []).length - 6}}"
                                     }
                                 ],
                                 "permissions": [
@@ -1419,7 +1478,7 @@
                                     "data_sources": "dashboard_plugins"
                                 },
                                 "props": {
-                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
                                 },
                                 "children": [
                                     {
@@ -1484,60 +1543,131 @@
                                         ]
                                     },
                                     {
+                                        "comment": "갤러리 — 모듈 칸과 같은 모양·같은 6장 자르기다.",
                                         "id": "plugin_list",
                                         "type": "basic",
                                         "name": "Div",
+                                        "props": {
+                                            "className": "grid grid-cols-1 @xs:grid-cols-2 gap-2"
+                                        },
                                         "children": [
                                             {
                                                 "id": "plugin_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "iteration": {
-                                                    "source": "dashboard_plugins?.data?.data",
+                                                    "source": "{{(dashboard_plugins?.data?.data ?? []).slice(0, 6)}}",
                                                     "item_var": "plugin",
                                                     "index_var": "$idx"
                                                 },
                                                 "props": {
-                                                    "className": "flex-between py-2"
+                                                    "className": "flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700"
                                                 },
                                                 "children": [
+                                                    {
+                                                        "id": "plugin_icon_{{$idx}}",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "puzzle-piece",
+                                                                    "className": "text-slate-500 dark:text-slate-300",
+                                                                    "aria-hidden": "true"
+                                                                }
+                                                            },
+                                                            {
+                                                                "comment": "플러그인 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
+                                                                "id": "plugin_icon_img_{{$idx}}",
+                                                                "type": "basic",
+                                                                "name": "Img",
+                                                                "if": "{{plugin.icon_url && !(_local.dashboardIconBroken ?? []).includes('plugin:' + plugin.identifier)}}",
+                                                                "actions": [
+                                                                    {
+                                                                        "event": "onError",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "dashboardIconBroken": "{{[...(_local.dashboardIconBroken ?? []), 'plugin:' + plugin.identifier]}}"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "src": "{{plugin.icon_url}}",
+                                                                    "alt": "",
+                                                                    "loading": "lazy",
+                                                                    "decoding": "async",
+                                                                    "className": "absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
                                                     {
                                                         "id": "plugin_info_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "props": {
+                                                            "className": "min-w-0 flex-1"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "id": "plugin_name_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-heading"
+                                                                    "className": "text-heading truncate",
+                                                                    "title": "{{plugin.name}}"
                                                                 },
                                                                 "text": "{{plugin.name}}"
                                                             },
                                                             {
-                                                                "id": "plugin_version_{{$idx}}",
+                                                                "id": "plugin_meta_{{$idx}}",
                                                                 "type": "basic",
-                                                                "name": "P",
+                                                                "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-tertiary"
+                                                                    "className": "flex flex-wrap items-center gap-x-2 gap-y-1 mt-1"
                                                                 },
-                                                                "text": "v{{plugin.version}}"
+                                                                "children": [
+                                                                    {
+                                                                        "id": "plugin_version_{{$idx}}",
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-tertiary"
+                                                                        },
+                                                                        "text": "v{{plugin.version}}"
+                                                                    },
+                                                                    {
+                                                                        "id": "plugin_badge_{{$idx}}",
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "{{plugin.status === 'active' ? 'badge badge-green whitespace-nowrap' : 'badge badge-gray whitespace-nowrap'}}"
+                                                                        },
+                                                                        "text": "{{plugin.status === 'active' ? '$t:admin.dashboard.plugin_status.active' : '$t:admin.dashboard.plugin_status.inactive'}}"
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
-                                                    },
-                                                    {
-                                                        "id": "plugin_badge_{{$idx}}",
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "props": {
-                                                            "className": "{{plugin.status === 'active' ? 'badge badge-green' : 'badge badge-gray'}}"
-                                                        },
-                                                        "text": "{{plugin.status === 'active' ? '$t:admin.dashboard.plugin_status.active' : '$t:admin.dashboard.plugin_status.inactive'}}"
                                                     }
                                                 ]
                                             }
                                         ]
+                                    },
+                                    {
+                                        "id": "plugin_more_count",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{(dashboard_plugins?.data?.data ?? []).length > 6}}",
+                                        "props": {
+                                            "className": "mt-3 text-center text-label-subtle"
+                                        },
+                                        "text": "$t:admin.dashboard.extension_status.more_count|count={{(dashboard_plugins?.data?.data ?? []).length - 6}}"
                                     }
                                 ],
                                 "permissions": [
@@ -1553,7 +1683,7 @@
                                     "data_sources": "dashboard_templates"
                                 },
                                 "props": {
-                                    "className": "bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
+                                    "className": "@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6"
                                 },
                                 "children": [
                                     {
@@ -1618,60 +1748,131 @@
                                         ]
                                     },
                                     {
+                                        "comment": "갤러리 — 모듈 칸과 같은 모양이다. 서버가 이미 6건으로 잘라 주지만 반복식도 6장으로 묶어 둔다\n               (API 기본 쪽수가 바뀌어도 칸이 늘지 않게). 넘친 개수는 받은 건수가 아니라 `pagination.total` 로 센다.",
                                         "id": "template_list",
                                         "type": "basic",
                                         "name": "Div",
+                                        "props": {
+                                            "className": "grid grid-cols-1 @xs:grid-cols-2 gap-2"
+                                        },
                                         "children": [
                                             {
                                                 "id": "template_item_{{$idx}}",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "iteration": {
-                                                    "source": "dashboard_templates?.data?.data",
+                                                    "source": "{{(dashboard_templates?.data?.data ?? []).slice(0, 6)}}",
                                                     "item_var": "template",
                                                     "index_var": "$idx"
                                                 },
                                                 "props": {
-                                                    "className": "flex-between py-2"
+                                                    "className": "flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700"
                                                 },
                                                 "children": [
+                                                    {
+                                                        "id": "template_icon_{{$idx}}",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Icon",
+                                                                "props": {
+                                                                    "name": "palette",
+                                                                    "className": "text-slate-500 dark:text-slate-300",
+                                                                    "aria-hidden": "true"
+                                                                }
+                                                            },
+                                                            {
+                                                                "comment": "템플릿 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다",
+                                                                "id": "template_icon_img_{{$idx}}",
+                                                                "type": "basic",
+                                                                "name": "Img",
+                                                                "if": "{{template.icon_url && !(_local.dashboardIconBroken ?? []).includes('template:' + template.identifier)}}",
+                                                                "actions": [
+                                                                    {
+                                                                        "event": "onError",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "dashboardIconBroken": "{{[...(_local.dashboardIconBroken ?? []), 'template:' + template.identifier]}}"
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "props": {
+                                                                    "src": "{{template.icon_url}}",
+                                                                    "alt": "",
+                                                                    "loading": "lazy",
+                                                                    "decoding": "async",
+                                                                    "className": "absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600"
+                                                                }
+                                                            }
+                                                        ]
+                                                    },
                                                     {
                                                         "id": "template_info_{{$idx}}",
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "props": {
+                                                            "className": "min-w-0 flex-1"
+                                                        },
                                                         "children": [
                                                             {
                                                                 "id": "template_name_{{$idx}}",
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-heading"
+                                                                    "className": "text-heading truncate",
+                                                                    "title": "{{template.name}}"
                                                                 },
                                                                 "text": "{{template.name}}"
                                                             },
                                                             {
-                                                                "id": "template_version_{{$idx}}",
+                                                                "id": "template_meta_{{$idx}}",
                                                                 "type": "basic",
-                                                                "name": "P",
+                                                                "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-tertiary"
+                                                                    "className": "flex flex-wrap items-center gap-x-2 gap-y-1 mt-1"
                                                                 },
-                                                                "text": "v{{template.version}}"
+                                                                "children": [
+                                                                    {
+                                                                        "id": "template_version_{{$idx}}",
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "text-tertiary"
+                                                                        },
+                                                                        "text": "v{{template.version}}"
+                                                                    },
+                                                                    {
+                                                                        "id": "template_badge_{{$idx}}",
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "{{template.status === 'active' ? 'badge badge-green whitespace-nowrap' : 'badge badge-gray whitespace-nowrap'}}"
+                                                                        },
+                                                                        "text": "{{template.status === 'active' ? '$t:admin.dashboard.template_status.active' : '$t:admin.dashboard.template_status.inactive'}}"
+                                                                    }
+                                                                ]
                                                             }
                                                         ]
-                                                    },
-                                                    {
-                                                        "id": "template_badge_{{$idx}}",
-                                                        "type": "basic",
-                                                        "name": "Span",
-                                                        "props": {
-                                                            "className": "{{template.status === 'active' ? 'badge badge-green' : 'badge badge-gray'}}"
-                                                        },
-                                                        "text": "{{template.status === 'active' ? '$t:admin.dashboard.template_status.active' : '$t:admin.dashboard.template_status.inactive'}}"
                                                     }
                                                 ]
                                             }
                                         ]
+                                    },
+                                    {
+                                        "id": "template_more_count",
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{(dashboard_templates?.data?.pagination?.total ?? 0) > 6}}",
+                                        "props": {
+                                            "className": "mt-3 text-center text-label-subtle"
+                                        },
+                                        "text": "$t:admin.dashboard.extension_status.more_count|count={{(dashboard_templates?.data?.pagination?.total ?? 0) - 6}}"
                                     }
                                 ],
                                 "permissions": [

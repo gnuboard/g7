@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Analytics\AnalyticsConfig;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\Analytics\VolumeCheckService;
 use Illuminate\Console\Command;
 
@@ -16,19 +17,14 @@ use Illuminate\Console\Command;
  */
 class CheckVolumeCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 이름 및 시그니처
      *
      * @var string
      */
     protected $signature = 'analytics:check-volume';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '방문자 통계 원장이 경고 한계를 넘었는지 확인하고 알립니다.';
 
     /**
      * 커맨드 실행

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\LanguagePack;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Models\LanguagePack;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
@@ -15,15 +16,12 @@ use Illuminate\Console\Command;
  */
 class ListLanguagePackCommand extends Command
 {
-    /**
-     * @var string
-     */
-    protected $signature = 'language-pack:list {--scope= : 특정 스코프만 (core/module/plugin/template)}';
+    use LocalizesDescription;
 
     /**
      * @var string
      */
-    protected $description = '언어팩 목록을 출력합니다 (미설치 번들 및 드리프트 상태 포함).';
+    protected $signature = 'language-pack:list {--scope= : 특정 스코프만 (core/module/plugin/template)}';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service

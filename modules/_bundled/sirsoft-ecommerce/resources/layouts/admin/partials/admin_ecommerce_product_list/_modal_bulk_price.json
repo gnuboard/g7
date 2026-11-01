@@ -45,34 +45,24 @@
                                 }
                             ],
                             "props": {
-                                "className": "select w-full"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "increase"
+                                "className": "w-full",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method",
+                                "value": "{{_local.bulkPriceMethod || 'increase'}}",
+                                "options": [
+                                    {
+                                        "value": "increase",
+                                        "label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_increase"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_increase"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "decrease"
+                                    {
+                                        "value": "decrease",
+                                        "label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_decrease"
                                     },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_decrease"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "fixed"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_fixed"
-                                }
-                            ]
+                                    {
+                                        "value": "fixed",
+                                        "label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_fixed"
+                                    }
+                                ]
+                            }
                         }
                     ]
                 },
@@ -131,27 +121,20 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "select w-24",
-                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Option",
-                                            "props": {
-                                                "value": "won"
+                                        "className": "w-24",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit",
+                                        "value": "{{_local.bulkPriceUnit || 'won'}}",
+                                        "options": [
+                                            {
+                                                "value": "won",
+                                                "label": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}"
                                             },
-                                            "text": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Option",
-                                            "props": {
-                                                "value": "percent"
-                                            },
-                                            "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit_percent"
-                                        }
-                                    ]
+                                            {
+                                                "value": "percent",
+                                                "label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit_percent"
+                                            }
+                                        ]
+                                    }
                                 }
                             ]
                         }

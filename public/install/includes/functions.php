@@ -505,10 +505,10 @@ function showInstallationCompletedAlert(): void
 }
 
 /**
- * 알럿을 표시하고 지정된 URL로 리다이렉트합니다.
+ * 안내 문구를 보여 주고 잠시 뒤 지정된 URL로 이동합니다 (스크립트 없음 — meta refresh).
  *
  * @param  string  $title  페이지 제목
- * @param  string  $message  알럿 메시지
+ * @param  string  $message  안내 문구
  * @param  string  $redirectUrl  리다이렉트 URL
  */
 function showAlertAndRedirect(string $title, string $message, string $redirectUrl): void
@@ -530,12 +530,17 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
     echo '<meta charset="UTF-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
     echo '<title>'.$title.'</title>';
+    // 스크립트 없이 안내 + 3초 뒤 meta refresh 이동 — 종전 alert + location 인라인 스크립트는 웹서버가
+    // `Content-Security-Policy: script-src 'self'` 를 걸면 실행되지 않아 흰 화면에 머물렀다(#158).
+    echo '<meta http-equiv="refresh" content="3;url='.$redirectUrl.'">';
+    echo '<style>body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f8fafc;color:#111827}main{max-width:480px;padding:32px;text-align:center}p{line-height:1.6}.hint{color:#6b7280;font-size:14px}a{color:#2563eb;font-weight:600}</style>';
     echo '</head>';
     echo '<body>';
-    echo '<script>';
-    echo 'alert("'.$message.'");';
-    echo 'window.location.href = "'.$redirectUrl.'";';
-    echo '</script>';
+    echo '<main role="alert">';
+    echo '<p>'.$message.'</p>';
+    echo '<p class="hint">'.htmlspecialchars(lang('redirect_auto_notice')).'</p>';
+    echo '<p><a href="'.$redirectUrl.'">'.htmlspecialchars(lang('redirect_go_now')).'</a></p>';
+    echo '</main>';
     echo '</body>';
     echo '</html>';
     exit;
@@ -1139,10 +1144,10 @@ function generateEnvContent(): ?string
     $replacements['APP_ENV=production'] = 'APP_ENV='.serializeEnvValue((string) ($config['app_env'] ?? 'production'));
     $replacements['APP_URL=http://localhost'] = 'APP_URL='.serializeEnvValue((string) ($config['app_url'] ?? 'http://localhost'));
 
-    // 언어 설정
-    $currentLang = getCurrentLanguage();
-    $replacements['APP_LOCALE=ko'] = 'APP_LOCALE='.$currentLang;
-    $replacements['APP_FAKER_LOCALE=ko_KR'] = 'APP_FAKER_LOCALE='.($currentLang === 'ko' ? 'ko_KR' : 'en_US');
+    // 언어 설정 — 세션이 아니라 state 에서 정한다(설정 general.language 와 같은 값).
+    $siteLang = installer_site_language($state);
+    $replacements['APP_LOCALE=ko'] = 'APP_LOCALE='.$siteLang;
+    $replacements['APP_FAKER_LOCALE=ko_KR'] = 'APP_FAKER_LOCALE='.($siteLang === 'ko' ? 'ko_KR' : 'en_US');
 
     if (isset($config['app_env']) && $config['app_env'] !== 'production') {
         $replacements['APP_DEBUG=false'] = 'APP_DEBUG=true';
