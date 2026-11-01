@@ -272,8 +272,9 @@ class MarketingConsentService
     /**
      * 동의 상태를 업데이트합니다.
      *
-     * marketing_consent 철회 시 모든 채널을 자동 철회합니다.
+     * marketing_consent 철회 시 모든 채널을 자동 철회합니다(법적 동의는 그대로).
      * 채널 동의 시 marketing_consent를 자동 활성화합니다.
+     * 상태가 그대로면(기록 없음 = 동의 안 함) 행·이력·훅 없이 건너뜁니다.
      *
      * @param  int  $userId  사용자 ID
      * @param  string  $consentKey  동의 항목 키
@@ -285,8 +286,9 @@ class MarketingConsentService
     {
         $existing = $this->repository->findByUserAndKey($userId, $consentKey);
 
-        // 이미 같은 상태면 중복 처리 방지 (이력 중복 기록 방지)
-        if ($existing && (bool) $existing->is_consented === $value) {
+        // 상태가 바뀌지 않으면 아무것도 쓰지 않는다(이력 중복 방지). 기록이 없는 항목은 「동의 안 함」이다 —
+        // 동의 칸을 끈 채 저장해 기록 없이 false 가 오면 철회할 동의가 없으므로 행·이력·훅을 모두 건너뛴다.
+        if ((bool) ($existing?->is_consented ?? false) === $value) {
             return;
         }
 
@@ -308,11 +310,15 @@ class MarketingConsentService
         // 이력 기록
         $this->recordHistory($userId, $consentKey, $value ? 'granted' : 'revoked', $source);
 
-        // 정합성 규칙: marketing_consent 철회 시 실제 동의 레코드 기준으로 모든 채널 자동 철회
+        // 정합성 규칙: marketing_consent 철회 시 실제 동의 레코드 기준으로 모든 채널 자동 철회.
+        // 사용중지한 채널의 남은 동의도 철회한다. 법적 동의(LEGAL_KEYS)는 채널이 아니라 전체 동의와 따로 받으므로
+        // 대상이 아니다 — 함께 철회하면 같은 저장이 다시 동의로 기록해 일어나지 않은 「철회 → 동의」가 남는다.
         if ($consentKey === MarketingConsent::MASTER_KEY && ! $value) {
             $userConsents = $this->repository->getAllByUserId($userId);
             foreach ($userConsents as $userConsent) {
-                if ($userConsent->consent_key !== MarketingConsent::MASTER_KEY && $userConsent->is_consented) {
+                if ($userConsent->consent_key !== MarketingConsent::MASTER_KEY
+                    && ! in_array($userConsent->consent_key, MarketingConsent::LEGAL_KEYS, true)
+                    && $userConsent->is_consented) {
                     $this->updateConsent($userId, $userConsent->consent_key, false, $source);
                 }
             }

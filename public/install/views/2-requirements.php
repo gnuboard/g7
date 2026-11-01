@@ -18,12 +18,12 @@
     </div>
 
     <div id="navigation-buttons" class="btn-group btn-group-spread hidden">
-        <button type="button" onclick="goToStep(1)" class="btn btn-secondary">
+        <button type="button" data-action="goToStep" data-arg="1" class="btn btn-secondary">
             <?= htmlspecialchars(lang('previous')) ?>
         </button>
 
         <div class="btn-group-right">
-            <button onclick="recheckRequirements()" id="recheck-btn" class="btn btn-danger hidden">
+            <button data-action="recheckRequirements" id="recheck-btn" class="btn btn-danger hidden">
                 <?= htmlspecialchars(lang('recheck')) ?>
             </button>
 

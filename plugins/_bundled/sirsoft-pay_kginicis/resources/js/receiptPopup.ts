@@ -203,11 +203,15 @@ function openCbtConfirmation(info: KginicisReceiptInfo): void {
         <h1>${escapeHtml(title)}</h1>
         ${notice ? `<p class="notice">${escapeHtml(notice)}</p>` : ''}
         <dl>${rows}</dl>
-        <div class="actions"><button type="button" onclick="window.print()">${escapeHtml(printLabel)}</button></div>
+        <div class="actions"><button type="button" data-print="1">${escapeHtml(printLabel)}</button></div>
     </main>
 </body>
 </html>`);
     popup.document.close();
+
+    // 인쇄 버튼은 인라인 onclick 없이 리스너로 묶는다 — 빈 팝업은 여는 문서의 CSP 를 물려받아
+    // strict CSP(`script-src 'self'`) 사이트에서는 인라인 핸들러가 실행되지 않는다(#158).
+    popup.document.querySelector('[data-print]')?.addEventListener('click', () => popup.print());
 }
 
 function escapeHtml(value: string): string {

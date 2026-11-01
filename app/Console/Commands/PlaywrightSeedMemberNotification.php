@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Notifications\DatabaseNotification;
@@ -40,6 +41,8 @@ use Illuminate\Support\Str;
  */
 class PlaywrightSeedMemberNotification extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 고정 회원 이메일 — 재실행 시 같은 계정을 지우고 다시 만든다.
      */
@@ -72,13 +75,6 @@ class PlaywrightSeedMemberNotification extends Command
         {--user= : 새 회원 대신 이 회원(uuid 또는 이메일)에게 알림을 심는다}
         {--url= : 알림 이동 주소(data.click_url). 기본 /mypage/notifications}
         {--json : 결과를 JSON 으로 출력}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = 'Playwright E2E · 실측용 회원 알림함 시드 (CLI + G7_PLAYWRIGHT_BYPASS 가드)';
 
     /**
      * 커맨드를 실행합니다.

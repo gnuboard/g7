@@ -1,0 +1,25 @@
+feature: 관리자 주문 상세 › 주문 취소 창 — 레이아웃 구조 계약
+
+description: |
+  주문 취소 창 조각(_modal_cancel_order)의 구획별 구조를 레이아웃 JSON 판독으로 잠근다 — 기본 구조, 취소 사유
+  선택칸(환불 사유 설정을 펼친 목록형 드롭다운), 기타 사유 입력, 환불 우선순위, 환불 예정 금액 비교표, 복원 쿠폰,
+  배송비 표시, 검증 오류 표시, 실행 단추, 다통화 표기.
+  축 section 은 창의 구획이다. 효과는 그 구획의 구조 계약이 지켜지는 것 하나씩이다.
+
+axes:
+  section: [structure, reason_select, etc_textarea, refund_priority, refund_estimate, restored_coupons, shipping_display, validation_errors, action_buttons, multi_currency]
+
+effects:
+  - cancel_modal_structure_contract
+  - cancel_modal_reason_select_contract
+  - cancel_modal_etc_textarea_contract
+  - cancel_modal_refund_priority_contract
+  - cancel_modal_refund_estimate_contract
+  - cancel_modal_restored_coupons_contract
+  - cancel_modal_shipping_display_contract
+  - cancel_modal_validation_errors_contract
+  - cancel_modal_action_buttons_contract
+  - cancel_modal_multi_currency_contract
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/cancelOrderModal.test.tsx

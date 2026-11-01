@@ -75,8 +75,9 @@ while (ob_get_level() > 0) {
     ob_end_clean();
 }
 
-// 타임아웃 설정 (10분)
-set_time_limit(600);
+// 타임아웃 설정 — 작업 루프(runInstallationTasks)가 작업마다 같은 값으로 다시 건다.
+// 여기서는 첫 작업 전 준비 구간만 덮는다. 전체 설치 시간에는 제한이 없다.
+set_time_limit((int) INSTALLER_TASK_TIME_LIMIT);
 
 // 클라이언트 연결 끊김 시 즉시 워커 종료 (이슈 #319 부수 발견)
 // 폴링 풀백과 SSE 워커 동시 실행으로 인한 race condition 차단.
@@ -124,8 +125,8 @@ if (! $lockResult['acquired']) {
 $workerId = $lockResult['worker_id'];
 addLog('Worker lock acquired: '.$workerId.' (reason: '.$lockResult['reason'].')');
 
-// 워커 종료 시 lock 자동 해제
-register_shutdown_function('releaseWorkerLock', $workerId);
+// 워커 종료 처리 — lock 해제 + fatal(실행 시간 초과 등)이면 설치를 failed 로 기록하고 error 이벤트 송출
+register_shutdown_function('installerHandleWorkerShutdown', $workerId, 'sse');
 
 // SSE emitter 등록 후 task runner 실행
 setProgressEmitter(new SseEmitter($workerId));

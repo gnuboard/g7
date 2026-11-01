@@ -15,6 +15,7 @@ use App\Helpers\TimezoneHelper;
 use App\Models\ActivityLog;
 use App\Models\NotificationLog;
 use App\Models\User;
+use App\Support\SiteUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -629,8 +630,14 @@ class DashboardService
             return false;
         }
 
+        // 판정용 요청은 사이트 주소의 origin 으로 만든다. 컴파일된 라우트 표(라우트 캐시)는 매칭할 때
+        // 요청 Host 를 읽는데, Host 없이 만들면 `localhost` 가 허용 도메인(TrustHosts) 밖이라 매칭이
+        // 예외로 끝나 권한 있는 운영자에게도 늘 잠긴다. 사이트 주소의 host 는 허용 도메인에 항상 들어
+        // 있고, 방문자가 보낸 Host 에 기대지 않는다(사이트 주소가 없으면 허용 도메인도 제한하지 않는다).
+        $target = str_starts_with($endpoint, '/') ? SiteUrl::origin().$endpoint : $endpoint;
+
         try {
-            $route = app('router')->getRoutes()->match(Request::create($endpoint, 'POST'));
+            $route = app('router')->getRoutes()->match(Request::create($target, 'POST'));
         } catch (\Throwable) {
             return false;
         }

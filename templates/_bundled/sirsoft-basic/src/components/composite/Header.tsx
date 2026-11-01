@@ -91,6 +91,21 @@ interface HeaderProps {
   currentLocale?: string;
   /** 쇼핑몰 기본 경로 (예: "/shop", "/") */
   shopBase?: string;
+  /**
+   * 게시판 모듈이 켜져 있는가 — false 면 「인기글」 탭과 게시판 탭·더보기를 그리지 않는다.
+   * 기본값 true: 레이아웃이 `_global.activeModules` 로 판정해 넘긴다. 값이 오지 않는 경우(루트 레이아웃을 keep 으로
+   * 업데이트해 새 바인딩이 없는 사이트)에는 지금처럼 보인다(#822).
+   */
+  boardEnabled?: boolean;
+  /** 쇼핑몰 모듈이 켜져 있는가 — false 면 장바구니 단추·「쇼핑」 탭·회원 메뉴의 주문내역·위시리스트·비회원 「주문조회」를 그리지 않는다. 기본값 true(위와 같은 이유) */
+  shopEnabled?: boolean;
+  /** 검색칸을 그리는가 — 레이아웃은 게시판·쇼핑몰·페이지 중 하나라도 켜져 있으면 true 를 넘긴다(검색 공급자가 없으면 숨김). 기본값 true */
+  searchEnabled?: boolean;
+  /**
+   * 봇 화면(seo-config header_nav)의 「쇼핑」 링크 주소(예: "/shop/products") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다).
+   * 옛 코어(7.1.3 이하)의 봇 렌더가 `{shopBase}/products` 같은 섞인 attrs 패턴을 치환하지 못해 레이아웃이 완성된 주소를 넘긴다.
+   */
+  shopProductsHref?: string;
   /** 추가 CSS 클래스 */
   className?: string;
   /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */
@@ -172,6 +187,9 @@ const Header: React.FC<HeaderProps> = ({
   availableLocales = [],
   currentLocale = 'ko',
   shopBase = '/shop',
+  boardEnabled = true,
+  shopEnabled = true,
+  searchEnabled = true,
   className = '',
   editorAttrs,
   // 알림센터
@@ -281,8 +299,10 @@ const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const visibleBoards = boards.slice(0, maxVisibleBoards);
-  const hiddenBoards = boards.slice(maxVisibleBoards);
+  // 게시판 모듈이 꺼져 있으면 게시판 탭·더보기를 비운다(목록이 남아 있어도 — 옛 응답이 캐시에 남은 경우)
+  const navBoards = boardEnabled ? boards : [];
+  const visibleBoards = navBoards.slice(0, maxVisibleBoards);
+  const hiddenBoards = navBoards.slice(maxVisibleBoards);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -399,9 +419,9 @@ const Header: React.FC<HeaderProps> = ({
             )}
           </LinkButton>
 
-          {/* 검색바 (데스크톱 전용) */}
-          {!isMobile && (
-            <Form onSubmit={handleSearch} className="flex basis-lg min-w-48 max-w-lg mx-8">
+          {/* 검색바 (데스크톱 전용) — 검색 공급자가 하나도 없으면(searchEnabled=false) 숨긴다 */}
+          {!isMobile && searchEnabled && (
+            <Form onSubmit={handleSearch} data-testid="header-search" className="flex basis-lg min-w-48 max-w-lg mx-8">
               <Div className="relative w-full">
                 <Input
                   type="text"
@@ -454,15 +474,17 @@ const Header: React.FC<HeaderProps> = ({
               />
             )}
 
-            {/* 장바구니 */}
-            <LinkButton href={`${shopBase}/cart`} onNavigate={() => navigate(`${shopBase}/cart`)} aria-label={t('nav.cart_with_count', { count: cartCount })} className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
-              <Icon name="shopping-cart" className="w-5 h-5" />
-              {cartCount > 0 && (
-                <Span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center text-xs bg-blue-600 dark:bg-blue-600 text-white rounded-full">
-                  {cartCount > 99 ? '99+' : cartCount}
-                </Span>
-              )}
-            </LinkButton>
+            {/* 장바구니 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다 */}
+            {shopEnabled && (
+              <LinkButton href={`${shopBase}/cart`} onNavigate={() => navigate(`${shopBase}/cart`)} data-testid="header-cart" aria-label={t('nav.cart_with_count', { count: cartCount })} className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+                <Icon name="shopping-cart" className="w-5 h-5" />
+                {cartCount > 0 && (
+                  <Span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center text-xs bg-blue-600 dark:bg-blue-600 text-white rounded-full">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </Span>
+                )}
+              </LinkButton>
+            )}
 
             {/* 언어 선택 — 헤더 독립 버튼(코어 기능, 비회원 포함 전체 노출). 공간 절약 위해 아이콘+로케일 코드만.
                 언어는 항상 존재(이커머스 무관) → 템플릿 헤더 내장. */}
@@ -579,14 +601,19 @@ const Header: React.FC<HeaderProps> = ({
                         <Icon name="user" className="inline w-4 h-4 mr-2" />
                         {t('common.mypage')}
                       </LinkButton>
-                      <LinkButton href="/mypage/orders" onNavigate={() => { navigate('/mypage/orders'); setShowUserMenu(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                        <Icon name="shopping-bag" className="inline w-4 h-4 mr-2" />
-                        {t('mypage.tabs.orders')}
-                      </LinkButton>
-                      <LinkButton href="/mypage/wishlist" onNavigate={() => { navigate('/mypage/wishlist'); setShowUserMenu(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                        <Icon name="heart" className="inline w-4 h-4 mr-2" />
-                        {t('mypage.tabs.wishlist')}
-                      </LinkButton>
+                      {/* 주문내역·위시리스트 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다 */}
+                      {shopEnabled && (
+                        <>
+                          <LinkButton href="/mypage/orders" onNavigate={() => { navigate('/mypage/orders'); setShowUserMenu(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                            <Icon name="shopping-bag" className="inline w-4 h-4 mr-2" />
+                            {t('mypage.tabs.orders')}
+                          </LinkButton>
+                          <LinkButton href="/mypage/wishlist" onNavigate={() => { navigate('/mypage/wishlist'); setShowUserMenu(false); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                            <Icon name="heart" className="inline w-4 h-4 mr-2" />
+                            {t('mypage.tabs.wishlist')}
+                          </LinkButton>
+                        </>
+                      )}
                     </Div>
 
                     {/* 언어 선택은 헤더 독립 버튼으로 일원화(드롭다운에서 제거) — 비회원도 헤더에서 전환 가능 */}
@@ -604,14 +631,16 @@ const Header: React.FC<HeaderProps> = ({
               </Div>
             ) : (
               <Div className="flex items-center gap-1.5 whitespace-nowrap">
-                {/* 주문조회 — 로그인 페이지로 진입. 회원은 로그인 후 redirect 파라미터로 마이페이지 주문 내역으로 이동, 비회원은 로그인 페이지의 '비회원 주문 조회' 링크로 폼 진입. 로그아웃된 회원이 비회원 페이지에서 막다른 길에 빠지는 케이스를 차단한다. */}
-                <LinkButton
-                  href="/login?redirect=/mypage/orders"
-                  onNavigate={() => navigate('/login?redirect=/mypage/orders')}
-                  className="px-2.5 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white cursor-pointer"
-                >
-                  {t('shop.guest_order_form.nav_link')}
-                </LinkButton>
+                {/* 주문조회(쇼핑몰 모듈이 켜져 있을 때만) — 로그인 페이지로 진입. 회원은 로그인 후 redirect 파라미터로 마이페이지 주문 내역으로 이동, 비회원은 로그인 페이지의 '비회원 주문 조회' 링크로 폼 진입. 로그아웃된 회원이 비회원 페이지에서 막다른 길에 빠지는 케이스를 차단한다. */}
+                {shopEnabled && (
+                  <LinkButton
+                    href="/login?redirect=/mypage/orders"
+                    onNavigate={() => navigate('/login?redirect=/mypage/orders')}
+                    className="px-2.5 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white cursor-pointer"
+                  >
+                    {t('shop.guest_order_form.nav_link')}
+                  </LinkButton>
+                )}
                 <LinkButton
                   href="/login"
                   onNavigate={() => navigate('/login')}
@@ -651,14 +680,20 @@ const Header: React.FC<HeaderProps> = ({
             <LinkButton href="/" onNavigate={() => navigate('/')} className={getNavButtonClass(isActiveRoute('/', true))} data-testid="nav-home" aria-current={isActiveRoute('/', true) ? 'page' : undefined}>
               {t('nav.home')}
             </LinkButton>
-            <LinkButton href="/boards/popular" onNavigate={() => navigate('/boards/popular')} className={`flex items-center gap-1 ${getNavButtonClass(isActiveRoute('/boards/popular'))}`} data-testid="nav-popular" aria-current={isActiveRoute('/boards/popular') ? 'page' : undefined}>
-              <Span className="text-orange-500">🔥</Span>
-              {t('nav.popular')}
-            </LinkButton>
-            <LinkButton href={`${shopBase === '/' ? '' : shopBase}/products`} onNavigate={() => navigate(`${shopBase === '/' ? '' : shopBase}/products`)} className={`flex items-center gap-1 ${getNavButtonClass(isShopActive())}`} data-testid="nav-shop" aria-current={isShopActive() ? 'page' : undefined}>
-              <Span>🛒</Span>
-              {t('nav.shop')}
-            </LinkButton>
+            {/* 인기글 — 게시판 모듈이 꺼져 있으면 숨긴다 */}
+            {boardEnabled && (
+              <LinkButton href="/boards/popular" onNavigate={() => navigate('/boards/popular')} className={`flex items-center gap-1 ${getNavButtonClass(isActiveRoute('/boards/popular'))}`} data-testid="nav-popular" aria-current={isActiveRoute('/boards/popular') ? 'page' : undefined}>
+                <Span className="text-orange-500">🔥</Span>
+                {t('nav.popular')}
+              </LinkButton>
+            )}
+            {/* 쇼핑 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다 */}
+            {shopEnabled && (
+              <LinkButton href={`${shopBase === '/' ? '' : shopBase}/products`} onNavigate={() => navigate(`${shopBase === '/' ? '' : shopBase}/products`)} className={`flex items-center gap-1 ${getNavButtonClass(isShopActive())}`} data-testid="nav-shop" aria-current={isShopActive() ? 'page' : undefined}>
+                <Span>🛒</Span>
+                {t('nav.shop')}
+              </LinkButton>
+            )}
 
             {/* 게시판 링크 */}
             {/* 게시판 탭은 최대 20rem 에서 이름을 한 줄 … 로 자른다 — 긴 이름 탭 하나가 줄 전체(768px)를 차지했다(#143). */}

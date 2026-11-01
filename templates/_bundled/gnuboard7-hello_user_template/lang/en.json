@@ -42,7 +42,14 @@
         },
         "503": {
             "title": "Temporarily unavailable",
-            "description": "We're updating the service. Please try again soon."
+            "description": "We're updating the service. Please try again soon.",
+            "unmet_dependencies": "Required extensions do not meet the requirements.",
+            "required_modules": "Required modules",
+            "required_plugins": "Required plugins",
+            "contact_admin": "Please contact the administrator to install, activate or update the required extensions.",
+            "reason_not_installed": "Not installed",
+            "reason_inactive": "Disabled",
+            "reason_version_mismatch": "Version too low {{installed}} → {{required}}"
         },
         "maintenance": {
             "title": "Under maintenance",

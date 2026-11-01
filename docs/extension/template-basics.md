@@ -275,8 +275,38 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 템플릿도 다른 확장이 읽으라고 내놓는 전역 값을 `state_contracts` 로 선언하고(예: 기본 템플릿의 `shopBase` — 쇼핑몰 경로),
 있으면 연동되는 확장을 `integrations` 로 선언합니다. 형식과 규칙은 플러그인과 같습니다 —
 [전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts),
-[선택 연동](plugin-development.md#2-의존성-dependency). 템플릿은 같은 유형(admin·user)끼리 하나만 활성이므로, 템플릿을 바꿔 끼울 때는
+[선택 연동](plugin-development.md#선택-연동-integrations). 템플릿은 같은 유형(admin·user)끼리 하나만 활성이므로, 템플릿을 바꿔 끼울 때는
 교체될 템플릿의 선언이 충돌 검사에서 빠집니다.
+
+#### 사용자 템플릿이 모듈 화면을 품을 때 (코어 7.1.4+)
+
+게시판·쇼핑몰처럼 사이트가 골라 쓰는 모듈의 화면을 사용자 템플릿이 함께 제공한다면, 그 모듈을 `dependencies` 가 아니라
+`integrations` 에 버전 제약으로 선언합니다. `dependencies` 에 두면 그 모듈을 켜지 않은 사이트는 템플릿을 설치할 수 없고, 이미 쓰던
+사이트는 모듈 하나만 꺼도 사용자 화면 전체가 「서비스 이용 불가」(503)가 됩니다.
+
+```json
+"dependencies": { "modules": {}, "plugins": {} },
+"integrations": {
+    "modules": { "sirsoft-board": ">=1.2.1", "sirsoft-ecommerce": ">=1.3.0", "sirsoft-page": ">=1.2.0" },
+    "plugins": { "sirsoft-daum_postcode": ">=1.0.0" }
+}
+```
+
+선택 연동으로 선언했으면 그 모듈이 꺼진 사이트에서 화면이 깨지지 않게 세 곳을 함께 가립니다.
+
+| 대상 | 방법 |
+| --- | --- |
+| 모듈 화면 라우트 | `routes.json` 라우트에 `"requires": {"modules": ["sirsoft-board"]}` — 모듈이 꺼지면 라우트·사이트맵·검색봇 화면에서 빠진다 ([템플릿 라우팅 — requires](template-routing.md)) |
+| 공통 화면의 데이터소스 | `"if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}"` + `"errorHandling": {"404": {"handler": "suppress"}}` — 헤더·홈·마이페이지처럼 어느 라우트에서든 쓰이는 레이아웃이 대상이다 |
+| 메뉴·링크·단추·컴포넌트 속성 | 같은 식을 노드 `if` 나 컴포넌트 속성(예: 헤더의 게시판 탭 표시 여부)에 쓴다. 플러그인은 `_global.activePlugins` |
+
+식은 한 모양만 씁니다 — `?? true` 를 빼면 이 값이 없는 옛 코어(7.1.3 이하)에서 화면이 사라집니다. 식의 규칙은
+[전역 상태 — 시스템 주입 속성](../frontend/state-management.md#시스템-주입-속성)에 있습니다. 정적 검사는 템플릿 레이아웃의 데이터소스가
+선택 연동 모듈의 API 를 이 가드 없이 부르면 오류로 봅니다 — 그 레이아웃을 쓰는 라우트가 모두 `requires` 로 그 모듈을 거는 경우만 예외입니다.
+
+옛 코어(7.1.3 이하)는 `requires` 와 `_global.activeModules` 를 모르므로 모든 화면을 「모두 켜짐」으로 그립니다. 그래서
+`g7_version` 을 올리지 않아도 기존 사이트의 화면은 그대로이고, 모듈을 골라 쓰는 단독 사용은 코어 7.1.4 이상에서 동작한다고
+CHANGELOG 에 적습니다.
 
 ### 필수 브라우저 저장 키 (necessary_storage) — 7.1.3+
 

@@ -3,7 +3,24 @@
     "title": "一緒に使うと連携する拡張機能",
     "hint": "以下の拡張機能がインストールされていると、機能が相互に連携します。なくてもこの拡張機能はそのまま動作します。",
     "not_installed": "未インストール",
-    "inactive": "無効"
+    "inactive": "無効",
+    "required_version": "要求 {{version}}",
+    "installed_version": "インストール済み {{version}}",
+    "version_mismatch": "バージョン不足",
+    "active": "使用中",
+    "install_title": "一緒に使うと連携する拡張機能(任意)",
+    "install_hint": "チェックした拡張機能をこの拡張機能より先にインストール・有効化します。チェックを外してもこの拡張機能はそのままインストールされます。",
+    "cannot_select": "ここではインストールできません",
+    "requires_label": "同時にインストール:",
+    "requires_hint": "— この連携に必要なため先にインストールします",
+    "requires_hint_unselected": "— この連携をチェックすると一緒にインストールされます",
+    "requires_no_permission": "必要な拡張をインストールする権限がありません",
+    "integrated_by_label": "連携中の拡張機能",
+    "deactivate_notice_title": "連携中の拡張機能の確認",
+    "deactivate_notice_body": "{{name}}を無効にすると、以下の拡張機能でこの拡張機能を使っていたメニュー・画面が消えます。以下の拡張機能は引き続き動作します。",
+    "deactivate_confirm": "無効化",
+    "uninstall_notice": "以下の拡張機能がこの拡張機能と連携しています — 削除するとこの拡張機能を使っていたメニュー・画面が消えます。",
+    "notice_toast": "一緒に使うと連携する拡張機能のお知らせ: {{items}}"
   },
   "sidebar": {
     "no_accessible_menus": "アクセス可能なメニューがありません",
@@ -95,7 +112,8 @@
     },
     "refreshed": "ダッシュボードが更新されました。",
     "extension_status": {
-      "more": "もっと見る"
+      "more": "もっと見る",
+      "more_count": "他 {{count}} 件"
     },
     "module_status": {
       "title": "モジュール状態",
@@ -745,7 +763,8 @@
       "uninstalling": "削除中",
       "updating": "アップデート中",
       "stuck_update": "更新停止",
-      "active_label": "有効化"
+      "active_label": "有効化",
+      "version_mismatch": "バージョン不足"
     },
     "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
     "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したモジュールは無効状態のため、スイッチで再度有効にしてください。",
@@ -795,7 +814,7 @@
       "dependency_installed_version": "インストール: {{version}}",
       "dependency_not_installed": "未インストール",
       "dependency_met": "満たされています",
-      "dependency_unmet_version": "バージョン不一致",
+      "dependency_unmet_version": "バージョン不足",
       "dependency_inactive": "無効化",
       "permissions": "権限",
       "permissions_count": "{{count}}個の権限が登録されます。",
@@ -936,6 +955,11 @@
     "dependencies": "依存関係: {{deps}}",
     "dependencies_label": "依存関係:",
     "no_dependencies": "依存関係: なし",
+    "dependency_unmet": {
+      "not_installed": "未インストール",
+      "inactive": "無効",
+      "version_mismatch": "バージョン不足 {{installed}} → {{required}}"
+    },
     "no_plugins": "インストール済みプラグインがありません。",
     "pagination_info": "全 {{total}} 件中 {{from}}-{{to}} 件表示",
     "update_available": "アップデート必要",
@@ -962,7 +986,8 @@
       "installing": "インストール中",
       "uninstalling": "削除中",
       "updating": "アップデート中",
-      "stuck_update": "更新停止"
+      "stuck_update": "更新停止",
+      "version_mismatch": "バージョン不足"
     },
     "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
     "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したプラグインは無効状態のため、スイッチで再度有効にしてください。",
@@ -1018,7 +1043,7 @@
       "dependency_installed_version": "インストール：{{version}}",
       "dependency_not_installed": "未インストール",
       "dependency_met": "満たしている",
-      "dependency_unmet_version": "バージョン不一致",
+      "dependency_unmet_version": "バージョン不足",
       "dependency_inactive": "無効化",
       "permissions": "権限",
       "permissions_description": "このプラグインで登録される権限の一覧です。",
@@ -1913,6 +1938,24 @@
         "days_suffix": "日",
         "days_hint": "{{min}}〜{{max}}日。法定の最低期間より短くはできません。",
         "legal_notice": "法定最低: アクセス記録は1年(会員5万人以上、または固有識別情報・センシティブ情報を扱う場合は2年) · 権限・ロールの変更記録はこの値に関係なく最低3年保管します。"
+      },
+      "csp": {
+        "title": "コンテンツセキュリティポリシー (CSP)",
+        "desc": "サイト画面の応答にスクリプト出所ポリシーヘッダーを付け、許可していない場所のスクリプトやインラインスクリプトが実行されないようにします。Web サーバーで直接ヘッダーを設定している場合はオフのままにしてください。",
+        "mode": "適用モード",
+        "mode_off": "オフ",
+        "mode_report_only": "検査のみ (違反を記録)",
+        "mode_enforce": "強制 (違反をブロック)",
+        "mode_desc": "検査のみはブロックせず、違反をサーバーログ (storage/logs/csp-*.log) に記録します。強制は違反するスクリプトを実行しません。",
+        "enforce_warning": "まず「検査のみ」で storage/logs/csp-*.log に違反がないことを確認してから強制に切り替えてください。違反が残ったまま強制すると、その機能は動作しません。",
+        "override_notice": ".env の G7_CSP_MODE={{mode}} がこの設定より優先されます。変更するには .env を修正してから php artisan config:clear を実行してください。",
+        "extra_hosts": "追加スクリプト許可ホスト (入力後 Enter)",
+        "extra_hosts_placeholder": "cdn.example.com",
+        "extra_hosts_hint": "下の自動で含まれるホスト以外からスクリプトを読み込む場合にのみ追加してください。ホストのみ入力します (例: cdn.example.com, *.example.com, https://cdn.example.com)。",
+        "auto_hosts": "自動で含まれるホスト (有効な拡張機能の宣言)",
+        "auto_hosts_empty": "有効な拡張機能が宣言した外部スクリプトホストはありません。",
+        "preview": "適用されるポリシーのプレビュー",
+        "preview_hint": "保存済みの値に基づきます。モードやホストを変更した場合は保存してから確認してください。"
       }
     },
     "identity": {
@@ -2420,6 +2463,10 @@
       "php_extensions_desc": "インストールされたPHP拡張モジュールの状態です。",
       "required_modules": "必須モジュール",
       "optional_modules": "選択モジュール",
+      "requested_modules": "拡張(モジュール・プラグイン)が要求するモジュール",
+      "requested_by_line": "要求: {{names}}",
+      "level_require": "必須",
+      "level_suggest": "推奨",
       "check_update": "アップデート確認",
       "update_check_failed": "アップデート確認に失敗しました。",
       "update_result_title": "アップデート確認結果",
@@ -2436,8 +2483,8 @@
       "update_guide_warning": "コアアップデートはターミナルからのみ実行できます。アップデート前に必ずデータベースをバックアップしてください。",
       "update_guide_desc": "サーバーターミナルに接続して、グヌボード7インストールディレクトリで以下のコマンドを実行してください。",
       "update_guide_note": "アップデート中は自動的にメンテナンスモードが有効化されます。アップデート完了後は自動的に解除されます。",
-      "manual_update_title": "手動アップデート (ZIP拡張未インストール環境)",
-      "manual_update_desc": "サーバーにPHP zip拡張 (ZipArchive) がない場合、GitHubからリリースZIPを直接ダウンロードしてアップデートできます。",
+      "manual_update_title": "手動アップデート (GitHub から取得できない環境)",
+      "manual_update_desc": "GitHub に接続できない場合や特定のバージョンに上げる場合、リリース ZIP を直接ダウンロードし、解凍したフォルダからアップデートできます。この方法でも PHP zip 拡張などの必須拡張がサーバーに必要です。",
       "manual_update_step1": "# 1. GitHubリリースページからZIPをダウンロードし、サーバーで解凍",
       "manual_update_step2": "# 2. 解凍されたパスを指定してアップデートを実行",
       "update_guide_cmd_comment": "# 管理者権限での実行を推奨 (Linux/macOS)",
@@ -2587,6 +2634,10 @@
     "dependencies": "依存関係: {{deps}}",
     "dependencies_label": "依存関係:",
     "no_dependencies": "依存関係: なし",
+    "force_activate": {
+      "warning_user_503": "強制的に有効にすると、条件を満たすまでユーザー画面が「サービス一時停止(503)」の案内に切り替わります。",
+      "warning_admin_503": "強制的に有効にすると管理画面が503の案内に切り替わり、この画面から元に戻せません。復旧: php artisan template:activate {{identifier}}"
+    },
     "available": "利用可能",
     "no_templates": "インストールされたテンプレートはありません。",
     "pagination_info": "合計 {{total}}個中 {{from}}-{{to}}個を表示",
@@ -2757,7 +2808,7 @@
       "dependency_required_version": "要件：{{version}}",
       "dependency_installed_version": "インストール：{{version}}",
       "dependency_not_installed": "未インストール",
-      "dependency_unmet_version": "バージョン不一致",
+      "dependency_unmet_version": "バージョン不足",
       "dependency_inactive": "無効",
       "required_modules": "必須モジュール",
       "required_plugins": "必須プラグイン",
@@ -3430,6 +3481,7 @@
       "extension_license_modal": "拡張ライセンス全文",
       "module_force_activate_modal": "モジュール強制有効化",
       "module_force_deactivate_modal": "モジュール強制無効化",
+      "module_deactivate_integrations_modal": "モジュール無効化の連携案内",
       "module_install_modal": "モジュールインストール",
       "module_manual_install_modal": "モジュール手動インストール",
       "module_reactivate_language_packs_modal": "言語パック一括有効化",
@@ -3450,6 +3502,7 @@
       "plugin_extension_license_modal": "プラグインライセンス全文",
       "plugin_force_activate_modal": "プラグイン強制有効化",
       "plugin_force_deactivate_modal": "プラグイン強制無効化",
+      "plugin_deactivate_integrations_modal": "プラグイン無効化の連携案内",
       "plugin_install_modal": "プラグインインストール確認",
       "plugin_manifest_preview_drawer": "プラグイン マニフェスト プレビュー"
     },
@@ -4352,7 +4405,34 @@
       "toggle": "詳細を表示",
       "notice_title": "確認すべきお知らせがあります",
       "notice_summary": "完了しました — 確認すべきお知らせ {{count}} 件",
-      "notice_description": "すべて反映されました。以下のお知らせを確認してください。"
+      "notice_description": "すべて反映されました。以下のお知らせを確認してください。",
+      "steps": {
+        "dependents": "依存する拡張機能",
+        "extract": "展開",
+        "php_extension_missing": "PHP拡張",
+        "autoload": "オートロード",
+        "cleanup": "後片付け",
+        "composer_install": "Composerパッケージのインストール",
+        "core_resync": "コアの再同期",
+        "hook_cache": "フックキャッシュ",
+        "language_pack": "言語パック",
+        "language_pack_check_updates": "言語パックの更新確認",
+        "language_pack_provision": "言語パックの準備",
+        "language_pack_seed": "言語パックの初期データ",
+        "layout_register": "レイアウト登録",
+        "layout_refresh": "レイアウト更新",
+        "layout_override_register": "レイアウト上書き登録",
+        "layout_extension_register": "レイアウト拡張の登録",
+        "layout_extension_override_register": "レイアウト拡張の上書き登録",
+        "layout_extension_reregister": "レイアウト拡張の再登録",
+        "layout_extension_restore": "レイアウト拡張の復元",
+        "layout_extension_unregister": "レイアウト拡張の解除",
+        "menu_role": "メニュー権限",
+        "necessary_storage": "必須ブラウザ保存項目",
+        "operation_lock": "作業ロック",
+        "reseed": "初期データの再投入",
+        "seeder": "初期データ作成"
+      }
     }
   }
 }

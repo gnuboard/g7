@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Console\Commands;
 
+use App\Contracts\Extension\ModuleInterface;
+use App\Contracts\Extension\PluginInterface;
 use App\Enums\LanguagePackDeactivationReason;
 use App\Enums\LanguagePackSourceType;
 use App\Enums\LanguagePackStatus;
@@ -71,6 +73,9 @@ class ActivateRestoresLanguagePacksTest extends TestCase
         Module::factory()->create(['identifier' => $identifier, 'status' => 'inactive']);
         $manager = Mockery::mock(ModuleManager::class);
         $manager->shouldReceive('loadModules');
+        // 언어팩을 켜면 리스너가 그 모듈 시더를 다시 돌린다(module:seed → getModule). 시더 폴더가 없는 대역 모듈을 돌려줘
+        // 시더 재실행이 「시더 없음」으로 끝나게 한다 — 대역이 없으면 시더 실패가 생명주기 경고가 되어 종료 코드가 1 이 된다(7.1.3)
+        $manager->shouldReceive('getModule')->andReturn(Mockery::mock(ModuleInterface::class));
         $manager->shouldReceive('activateModule')->andReturnUsing(function () use ($identifier) {
             Module::where('identifier', $identifier)->update(['status' => 'active']);
 
@@ -145,6 +150,8 @@ class ActivateRestoresLanguagePacksTest extends TestCase
         Plugin::factory()->create(['identifier' => 'test-cli-plugin', 'status' => 'inactive']);
         $manager = Mockery::mock(PluginManager::class);
         $manager->shouldReceive('loadPlugins');
+        // 언어팩 활성화 리스너의 시더 재실행(plugin:seed → getPlugin)이 「시더 없음」으로 끝나게 하는 대역 (모듈 경우와 같음)
+        $manager->shouldReceive('getPlugin')->andReturn(Mockery::mock(PluginInterface::class));
         $manager->shouldReceive('activatePlugin')->andReturnUsing(function () {
             Plugin::where('identifier', 'test-cli-plugin')->update(['status' => 'active']);
 

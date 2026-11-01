@@ -11,6 +11,9 @@ use App\Seo\SeoCacheStatsService;
 use App\Seo\SitemapManager;
 use App\Seo\SitemapProgress;
 use Carbon\Carbon;
+use Illuminate\Bus\UniqueLock;
+use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -21,6 +24,14 @@ use Illuminate\Support\Facades\Auth;
  */
 class SeoCacheController extends AdminBaseController
 {
+    /**
+     * SEO 캐시·사이트맵 관리에 쓰는 서비스를 주입합니다.
+     *
+     * @param  SeoCacheStatsService  $statsService  SEO 캐시 통계 서비스
+     * @param  SeoCacheManagerInterface  $cacheManager  SEO 캐시 관리자
+     * @param  SitemapManager  $sitemapManager  사이트맵 관리자
+     * @param  SitemapProgress  $sitemapProgress  사이트맵 진행 상태 기록기
+     */
     public function __construct(
         private SeoCacheStatsService $statsService,
         private SeoCacheManagerInterface $cacheManager,
@@ -107,7 +118,14 @@ class SeoCacheController extends AdminBaseController
      * 대용량(수백만 URL) 사이트에서 요청 스레드 동기 생성은 메모리/타임아웃 붕괴를 일으키므로
      * 큐 잡으로 위임합니다. 응답은 예약 시점의 상태이며, 실제 완료 시각은 이후 갱신됩니다.
      *
-     * @return JsonResponse 예약 결과 JSON 응답
+     * 순서가 중요합니다(#155). 즉시 실행(sync) 큐는 발행 안에서 생성을 끝내므로, 「대기」 기록을 발행 뒤에 두면
+     * 완료 상태를 「대기」로 덮어써 버튼이 상태 캐시 TTL 동안 잠깁니다. 그래서
+     *   1. 잡의 유니크 잠금을 먼저 잡고 — 못 잡으면 다른 생성이 돌거나 남은 잠금이 있으므로 상태를 덮어쓰지 않고 409
+     *   2. 「대기」를 기록한 뒤
+     *   3. 잠금을 다시 잡지 않는 디스패처로 발행합니다(PendingDispatch 는 잠금을 한 번 더 잡으려다 조용히 건너뜀).
+     * 잠금은 잡이 끝날 때 라라벨이 풀고, 발행이 실패하면 여기서 풉니다.
+     *
+     * @return JsonResponse 예약(비동기) 또는 완료(sync) 결과, 진행 중·잠금이면 409 JSON 응답
      */
     public function regenerateSitemap(): JsonResponse
     {
@@ -117,12 +135,37 @@ class SeoCacheController extends AdminBaseController
 
         // 관리자 수동 재생성은 항상 전체(Full) — 현 생성 상태와 무관하게 전량 재생성 (D7)
         // 실행한 관리자 ID 를 함께 실어, 완료/실패 시 그 관리자에게만 알림이 발송되게 한다.
-        GenerateSitemapJob::dispatch(SitemapGenerationMode::Full, Auth::id());
+        $job = new GenerateSitemapJob(SitemapGenerationMode::Full, Auth::id());
+        $lock = new UniqueLock(app(Cache::class));
 
-        // 큐 대기 중에도 UI 가 'queued' 를 표시하도록 즉시 기록
+        if (! $lock->acquire($job)) {
+            $status = $this->sitemapProgress->get()['status'] ?? null;
+
+            return $this->error(
+                in_array($status, ['queued', 'running', 'writing'], true)
+                    ? 'seo.sitemap_regenerate_in_progress'
+                    : 'seo.sitemap_regenerate_locked',
+                409,
+            );
+        }
+
+        // 큐 대기 중에도 UI 가 'queued' 를 표시하도록 발행 전에 기록
         $this->sitemapProgress->start(SitemapGenerationMode::Full->value);
 
-        return $this->success('seo.sitemap_regenerate_dispatched', $this->sitemapManager->getStatus());
+        try {
+            app(Dispatcher::class)->dispatch($job);
+        } catch (\Throwable $e) {
+            report($e);
+            $lock->release($job);
+            $this->sitemapProgress->fail($e->getMessage());
+
+            return $this->error('seo.sitemap_regenerate_failed', 500);
+        }
+
+        $status = $this->sitemapManager->getStatus();
+        $completed = ($status['progress']['status'] ?? null) === 'completed';
+
+        return $this->success($completed ? 'seo.sitemap_regenerated' : 'seo.sitemap_regenerate_dispatched', $status);
     }
 
     /**

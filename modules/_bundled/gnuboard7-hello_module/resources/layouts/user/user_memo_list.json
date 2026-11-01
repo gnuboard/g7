@@ -4,7 +4,17 @@
     "layout_name": "user_memo_list",
     "extends": "_user_base",
     "meta": {
-        "title": "$t:gnuboard7-hello_module.user.memos.index.title"
+        "title": "$t:gnuboard7-hello_module.user.memos.index.title",
+        "seo": {
+            "enabled": true,
+            "og": {
+                "type": "website",
+                "description": "$t:gnuboard7-hello_module.user.memos.index.seo_description"
+            },
+            "data_sources": [
+                "memos"
+            ]
+        }
     },
     "data_sources": [
         {

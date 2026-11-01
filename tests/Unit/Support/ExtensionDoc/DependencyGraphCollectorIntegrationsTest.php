@@ -30,17 +30,19 @@ class DependencyGraphCollectorIntegrationsTest extends TestCase
         $collector = new DependencyGraphCollector($inventory);
 
         $bizppurio = $collector->collect($inventory->find(ExtensionInventory::TYPE_PLUGIN, 'sirsoft-message_bizppurio'));
+        // 목록형 선언은 버전 무관(`*`)으로 싣는다 (7.1.4 — 연동 표의 버전 열)
         $this->assertSame(
-            [['type' => 'modules', 'id' => 'sirsoft-board', 'bundled' => true], ['type' => 'modules', 'id' => 'sirsoft-ecommerce', 'bundled' => true]],
+            [['type' => 'modules', 'id' => 'sirsoft-board', 'constraint' => '*', 'bundled' => true], ['type' => 'modules', 'id' => 'sirsoft-ecommerce', 'constraint' => '*', 'bundled' => true]],
             $bizppurio['integrates'],
         );
         $this->assertSame([], $bizppurio['requires'], '연동은 의존이 아니다');
 
         $board = $collector->collect($inventory->find(ExtensionInventory::TYPE_MODULE, 'sirsoft-board'));
-        $this->assertSame(
-            [['type' => 'module', 'id' => 'sirsoft-ecommerce'], ['type' => 'plugin', 'id' => 'sirsoft-message_bizppurio']],
-            $board['integratedBy'],
-        );
-        $this->assertSame([], $board['integrates']);
+        // 번들 manifest 가 바뀌어도(템플릿·다른 모듈이 게시판을 연동으로 선언) 깨지지 않게 알려진 두 확장이 실리는지만 본다
+        $integratedBy = collect($board['integratedBy'])->keyBy(fn (array $row) => $row['type'].':'.$row['id']);
+        $this->assertArrayHasKey('module:sirsoft-ecommerce', $integratedBy->all());
+        $this->assertIsString($integratedBy['module:sirsoft-ecommerce']['constraint'], '역방향에도 선언한 쪽의 버전 제약을 싣는다');
+        $this->assertArrayHasKey('plugin:sirsoft-message_bizppurio', $integratedBy->all());
+        $this->assertNotContains('sirsoft-board', array_column($board['integrates'], 'id'), '자기 자신을 연동하지 않는다');
     }
 }

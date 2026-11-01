@@ -25,7 +25,6 @@ return [
     'permissions' => [
         'credentials_delete' => '会員認証アプリ登録解除',
     ],
-    // コンソールコマンド出力
     'console' => [
         'seed_totp' => [
             'cli_only' => 'CLI専用のコマンドです。(現在のSAPI: :sapi)',
@@ -39,5 +38,6 @@ return [
             'done' => '認証アプリの登録を解除しました: :email',
             'next_login_notice' => '次回のログインから、この会員には認証アプリのコードが求められません(メールフォールバックが有効な場合はメールで受け取ります)。',
         ],
+        'password_reset_notice' => 'この会員は認証アプリを登録しています — 認証アプリを紛失した場合はリセットしてください: php artisan totp:reset :email',
     ],
 ];

@@ -88,7 +88,7 @@ class TemplateStylesheetLinkTest extends TestCase
     }
 
     /**
-     * CSS 를 선언하고 산출물이 있으면 선언한 파일을 링크한다(자가 복구 onerror 포함).
+     * CSS 를 선언하고 산출물이 있으면 선언한 파일을 링크한다(자가 복구 표식 `data-g7-template-css` 포함, 인라인 onerror 없음 — #158).
      *
      * @scenario template_type=user, css_declaration=declared_and_built
      *
@@ -103,9 +103,10 @@ class TemplateStylesheetLinkTest extends TestCase
         $html = $this->get('/')->assertStatus(200)->getContent();
 
         $this->assertMatchesRegularExpression(
-            '#<link rel="stylesheet"\s+href="/api/templates/assets/test-stylesheet_link/css/components\.css\?v=[^"]+"\s+onerror="window\.__g7AssetUrl#',
+            '#<link rel="stylesheet"\s+href="/api/templates/assets/test-stylesheet_link/css/components\.css\?v=[^"]+"\s+data-g7-template-css>#',
             $html
         );
+        $this->assertStringNotContainsString('onerror=', $html);
     }
 
     /**

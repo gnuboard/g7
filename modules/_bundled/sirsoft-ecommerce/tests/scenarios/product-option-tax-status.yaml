@@ -1,0 +1,37 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축 셋(상품 기본값 × 옵션 지정 × 표면)의 전 교차곱은 한 시험이 재현하지 않는다. 실효 과세 종류 판정
+#   (옵션 ?? 상품) 4×3 은 단위(ProductTaxStatusTest)가, 금액 갈래는 order-vat-amount 매니페스트가 잠근다.
+#   이 매니페스트는 저장·검증·조회·복사·필터 표면이 그 값을 잃지 않는지만 본다.
+feature: 상품 옵션별 과세 종류(과세·면세·영세) — 저장·조회 표면 (#612)
+
+description: |
+  상품 기본값(products.tax_status)에 영세를 더하고, 옵션마다 과세 종류를 덮어쓴다(product_options.tax_status,
+  null = 상품 따름). 실효 과세 종류 = 옵션 지정 ?? 상품 기본값.
+
+  조용히 깨지는 지점:
+    - 빈 값('')을 그대로 저장하면 null(따름)과 다른 값이 되어 계산이 실패하거나 과세로 떨어진다 → null 로 저장.
+    - 복사 화면이 판매 정보를 복사하지 않을 때 옵션 지정이 남으면 「과세」로 초기화한 상품에 영세 옵션이 숨는다.
+    - 목록 과세 필터가 상품 기본값만 보면 옵션만 영세인 상품이 「영세」 필터에서 빠진다.
+
+axes:
+  product_default: [taxable, tax_free, zero_rated]
+  option_override: [inherit, taxable, tax_free, zero_rated, invalid]
+  surface: [store, admin_detail, copy, list_filter, public_detail]
+  e2e_browser: [chromium]     # 관리자 저장→새로고침 왕복 · 장바구니 영세 금액 줄
+
+effects:
+  - option_tax_status_persisted_with_null_as_inherit
+  - product_tax_status_accepts_zero_rated
+  - option_tax_status_rejects_unknown_value
+  - option_tax_status_exposed_on_product_detail
+  - option_tax_status_follows_copy_sales_info
+  - tax_filter_matches_option_level_status
+  - public_product_exposes_tax_status
+  - effective_status_option_overrides_product
+  - option_tax_status_persists_after_reload
+  - cart_summary_shows_zero_rated_amount
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductOptionTaxStatusTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ProductTaxStatusTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/product-option-tax-status.spec.ts

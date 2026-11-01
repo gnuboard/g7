@@ -23,6 +23,10 @@ export type ExtensionViewMode = 'gallery' | 'list';
 export interface ExtensionDependency {
   type?: string;
   name?: string;
+  /** 지금 상태로 이 의존을 충족하지 못함(미설치·꺼짐·버전 미달) — 빨간 글자·경고 아이콘으로 그린다 */
+  unmet?: boolean;
+  /** 미충족 사유 문구 — 툴팁(`title`)과 보조기기 이름에 쓴다 (예: 「버전 미달 0.1.0 → >=9.9.9」) */
+  reason?: string;
 }
 
 /** 확장 배지 한 건 — 상태·호환성처럼 이름 옆에 붙는 표식. */
@@ -326,15 +330,30 @@ const MetaBlock: React.FC<{ item: ExtensionCardItem; stacked: boolean }> = ({ it
         ) : (
           <Span className="flex items-center gap-1.5 flex-wrap min-w-0">
             <Span className="shrink-0">{t('admin.plugins.dependencies_label')}</Span>
-            {deps.map((dep, i) => (
-              <Span key={`${dep.name}-${i}`} className="inline-flex items-center gap-1 min-w-0">
-                <Icon
-                  name={dep.type === 'module' ? 'cube' : 'puzzle-piece'}
-                  className="text-xs text-gray-500 dark:text-gray-500 shrink-0"
-                />
-                <Span className="truncate">{dep.name}</Span>
-              </Span>
-            ))}
+            {deps.map((dep, i) =>
+              dep.unmet ? (
+                // 미충족 의존 — 켜면 막히거나(활성화 409) 화면이 503 이 되는 원인이라 목록에서 바로 보이게 한다.
+                // 툴팁은 새 컴포넌트 없이 title 로(카드 높이·레이아웃 불변), 보조기기에는 이름과 사유를 함께 읽힌다.
+                <Span
+                  key={`${dep.name}-${i}`}
+                  className="inline-flex items-center gap-1 min-w-0 text-red-600 dark:text-red-400"
+                  title={dep.reason}
+                  aria-label={dep.reason ? `${dep.name} — ${dep.reason}` : dep.name}
+                  data-unmet="true"
+                >
+                  <Icon name="exclamation-triangle" className="text-xs text-red-600 dark:text-red-400 shrink-0" />
+                  <Span className="truncate">{dep.name}</Span>
+                </Span>
+              ) : (
+                <Span key={`${dep.name}-${i}`} className="inline-flex items-center gap-1 min-w-0">
+                  <Icon
+                    name={dep.type === 'module' ? 'cube' : 'puzzle-piece'}
+                    className="text-xs text-gray-500 dark:text-gray-500 shrink-0"
+                  />
+                  <Span className="truncate">{dep.name}</Span>
+                </Span>
+              )
+            )}
           </Span>
         )}
       </Span>

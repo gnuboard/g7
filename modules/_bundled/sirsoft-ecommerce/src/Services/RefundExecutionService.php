@@ -21,6 +21,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
+use Modules\Sirsoft\Ecommerce\Support\DecimalComparator;
 
 /**
  * 환불 실행 서비스
@@ -66,9 +67,11 @@ class RefundExecutionService
         'total_tax_amount',
         'total_tax_free_amount',
         'total_vat_amount',
+        'total_zero_rated_amount',
         'total_cash_equivalent_amount',
         'mc_total_tax_amount',
         'mc_total_tax_free_amount',
+        'mc_total_zero_rated_amount',
     ];
 
     /**
@@ -202,7 +205,7 @@ class RefundExecutionService
         // (P14, `determineRefundMethod`). ② 는 **정상 취소**라 장부에 남아야 한다.
         // 호출부만이 자기 경로가 어느 쪽인지 안다.
         $paymentUpdates = $recordPaymentLedger && $order->payment !== null
-            ? $this->buildCancelledAmountUpdates($order->payment, $result)
+            ? $this->buildCancelledAmountUpdates($order->payment, $result, $order)
             : [];
 
         if ($paymentUpdates !== []) {
@@ -390,7 +393,7 @@ class RefundExecutionService
      * 결제행 수납액도 함께 본다 — 수동 결제완료로 헤더가 0 인 채 결제된 주문을 0원으로 오판하지 않게 한다.
      * 단 결제가 실제로 끝난 결제행(`paid`·`partial_cancelled`)만 본다(00 ⑭): 결제행은 생성 때부터
      * `paid_amount_base` 에 결제예정금액이 들어 있어, 상태를 보지 않으면 결제금액 기록을 끈 수동 결제완료
-     * 주문을 「현금 있음」으로 읽는다. 비교는 decimal 문자열 `bccomp`(소수 4자리) — 0.1 + 0.2 같은 부동소수
+     * 주문을 「현금 있음」으로 읽는다. 비교는 `DecimalComparator`(소수 4자리) — 0.1 + 0.2 같은 부동소수
      * 오차가 「돌려줄 돈 있음」이 되지 않게 한다(`CancelOrderRequest::hasMoneyToReturn` 과 같은 이유).
      *
      * 결제 전 주문은 받은 돈이 없다 — 단 입금이 결제행에 기록된 주문은 예외다(`hasRecordedDepositBeforePayment`, S3-D7).
@@ -405,7 +408,7 @@ class RefundExecutionService
             return false;
         }
 
-        if (bccomp($this->decimal($order->total_paid_amount), $this->decimal($order->total_refunded_amount), 4) > 0) {
+        if (DecimalComparator::compare($order->total_paid_amount, $order->total_refunded_amount) > 0) {
             return true;
         }
 
@@ -417,7 +420,7 @@ class RefundExecutionService
             return false;
         }
 
-        return bccomp($this->decimal($payment->paid_amount_base), $this->decimal($payment->cancelled_amount), 4) > 0;
+        return DecimalComparator::compare($payment->paid_amount_base, $payment->cancelled_amount) > 0;
     }
 
     /**
@@ -460,18 +463,7 @@ class RefundExecutionService
     {
         return $order->user_id !== null
             && ! $this->hasCashToReturn($order)
-            && bccomp($this->decimal($order->total_points_used_amount), $this->decimal($order->total_refunded_points_amount), 4) > 0;
-    }
-
-    /**
-     * 금액을 bccomp 용 decimal 문자열로 바꿉니다. (null 은 0)
-     *
-     * @param  mixed  $value  금액
-     * @return string 소수 4자리 문자열
-     */
-    private function decimal(mixed $value): string
-    {
-        return number_format((float) ($value ?? 0), 4, '.', '');
+            && DecimalComparator::compare($order->total_points_used_amount, $order->total_refunded_points_amount) > 0;
     }
 
     /**
@@ -581,21 +573,39 @@ class RefundExecutionService
      * base 통화 누적(cancelled_amount)과 결제 통화 누적(mc_cancelled_amount)은 별개다.
      * base ≠ 결제 통화일 때 PG 실환불·누적은 결제 통화로 정합되어야 한다.
      *
+     * 취소 부가세(cancelled_vat_amount)도 같은 자리에서 누적한다(#612 ④) — 이 취소·환불로 주문 부가세가
+     * 줄어든 만큼(재계산 전 − 후)이다. 종전에는 쓰는 곳이 없어 부분환불 뒤에도 결제행 부가세 내역이
+     * 승인 당시 값 그대로였다. 승인 부가세(`vat_amount`)는 증빙 기준이라 바꾸지 않고, 누적은 그 값을 넘지 않는다.
+     *
+     * 환불신청서 실행 경로는 계산 결과에 재계산 전 스냅샷을 싣지 않는다(세금 컬럼 갱신값만 싣는다). 그때 재계산
+     * 전 부가세는 아직 갱신 전인 주문 헤더 값이다 — `prepareLedger()` 가 헤더를 고치기 전에 여기를 부른다.
+     *
      * @param  OrderPayment  $payment  결제행
      * @param  AdjustmentResult  $result  계산 결과
-     * @return array<string, mixed> 갱신값 (cancelled_amount / mc_cancelled_amount)
+     * @param  Order|null  $order  갱신 전 주문 (계산 결과에 재계산 전 스냅샷이 없을 때 부가세를 읽는다)
+     * @return array<string, mixed> 갱신값 (cancelled_amount / mc_cancelled_amount / cancelled_vat_amount)
      */
-    public function buildCancelledAmountUpdates(OrderPayment $payment, AdjustmentResult $result): array
+    public function buildCancelledAmountUpdates(OrderPayment $payment, AdjustmentResult $result, ?Order $order = null): array
     {
         $mcCancelled = $payment->mc_cancelled_amount ?? [];
         foreach ($result->mcRefundAmount ?? [] as $code => $amount) {
             $mcCancelled[$code] = (float) ($mcCancelled[$code] ?? 0) + (float) $amount;
         }
 
-        return [
+        $updates = [
             'cancelled_amount' => (float) $payment->cancelled_amount + $result->refundAmount,
             'mc_cancelled_amount' => $mcCancelled,
         ];
+
+        $vatBefore = $result->originalSnapshot['total_vat_amount'] ?? $order?->total_vat_amount;
+        $vatAfter = $result->orderUpdates['total_vat_amount'] ?? $result->recalculatedSnapshot['total_vat_amount'] ?? null;
+
+        if ($vatBefore !== null && $vatAfter !== null) {
+            $cancelledVat = (float) ($payment->cancelled_vat_amount ?? 0) + max(0.0, (float) $vatBefore - (float) $vatAfter);
+            $updates['cancelled_vat_amount'] = min($cancelledVat, (float) ($payment->vat_amount ?? 0));
+        }
+
+        return $updates;
     }
 
     /**

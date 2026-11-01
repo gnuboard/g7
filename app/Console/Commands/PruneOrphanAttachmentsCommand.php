@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\AttachmentService;
 use Illuminate\Console\Command;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Log;
  */
 class PruneOrphanAttachmentsCommand extends Command
 {
+    use LocalizesDescription;
     use ParsesDaysOption;
 
     /**
@@ -33,13 +35,6 @@ class PruneOrphanAttachmentsCommand extends Command
                             {--limit=500 : 한 번에 처리할 최대 건수}
                             {--days= : 보존기간(일) 재정의 — 미지정 시 환경설정값}
                             {--scheduled : 스케줄러 호출 표시 — 자동 정리 토글이 꺼져 있으면 조기 종료}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '소유자 없이 방치된 고아 첨부파일을 정리합니다.';
 
     /**
      * @param  AttachmentService  $attachmentService  첨부파일 서비스

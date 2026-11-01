@@ -324,6 +324,32 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
         expect(click.params?.path).toBeUndefined();
     });
 
+    // @scenario module_state=active, board_module_state=inactive, user_role=admin_with_dashboard_permission, data_state=has_inquiries
+    // @effects pending_inquiries_card_hidden_when_board_module_inactive
+    it('게시판 모듈이 꺼지면 미답변 문의를 부르지 않고 카드도 숨긴다 (#822)', () => {
+        // 상품 문의는 게시판 글이다 — 게시판(선택 연동)이 꺼진 사이트에는 갈 화면이 없다.
+        const guard = "_global.activeModules?.includes('sirsoft-board') ?? true";
+        const ds = commerceExt.data_sources.find((d: any) => d.id === 'commerce_pending_inquiries') as any;
+        expect(ds.if).toBe(`{{${guard}}}`);
+
+        const card = findById(commerceExt as any, 'pending_inquiries_card');
+        // 활성 목록이 없는 옛 코어에서는 서버가 내려 준 board_active 로 가른다
+        expect(card.if).toBe(`{{(${guard}) && commerce_pending_inquiries?.data?.board_active !== false}}`);
+
+        const visible = (scope: Record<string, unknown>) => {
+            const body = card.if.slice(2, -2);
+            // eslint-disable-next-line no-new-func
+            return new Function('_global', 'commerce_pending_inquiries', `return (${body});`)(
+                scope._global,
+                scope.commerce_pending_inquiries,
+            );
+        };
+        expect(visible({ _global: { activeModules: ['sirsoft-board'] }, commerce_pending_inquiries: undefined })).toBe(true);
+        expect(visible({ _global: { activeModules: ['sirsoft-ecommerce'] }, commerce_pending_inquiries: undefined })).toBe(false);
+        expect(visible({ _global: {}, commerce_pending_inquiries: { data: { board_active: true } } })).toBe(true);
+        expect(visible({ _global: {}, commerce_pending_inquiries: { data: { board_active: false } } })).toBe(false);
+    });
+
     // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders
     // @effects sales_graph_chart_plots_amount_on_secondary_axis
     it('판매 차트는 매출액 데이터셋을 보조 Y축(y1)으로 지정해 수량과 분리 표시한다', () => {

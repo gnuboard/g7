@@ -5,6 +5,7 @@ use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\CoreVersionMismatchException;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Exceptions\PermissionEscalationException;
+use App\Exceptions\PhpExtensionRequirementException;
 use App\Helpers\ResponseHelper;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\Analytics\EnsureArchiveFresh;
@@ -12,6 +13,7 @@ use App\Http\Middleware\Analytics\TrackBotHit;
 use App\Http\Middleware\Analytics\TrackServerVisit;
 use App\Http\Middleware\CheckTemplateDependencies;
 use App\Http\Middleware\CheckUserStatus;
+use App\Http\Middleware\ContentSecurityPolicy;
 use App\Http\Middleware\DatabaseCredentialGuard;
 use App\Http\Middleware\EnforceIdentityPolicy;
 use App\Http\Middleware\EnsureDebugMode;
@@ -21,6 +23,7 @@ use App\Http\Middleware\MaintenanceModePage;
 use App\Http\Middleware\OptionalSanctumMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RedirectToCanonicalHost;
+use App\Http\Middleware\RedirectToCanonicalPath;
 use App\Http\Middleware\RefreshTokenExpiration;
 use App\Http\Middleware\RestrictIpAccess;
 use App\Http\Middleware\RoleMiddleware;
@@ -117,6 +120,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', $localeTimezoneMiddleware);
         $middleware->appendToGroup('api', $localeTimezoneMiddleware);
 
+        // 코어 CSP 헤더 (#158) — 관리자 환경설정 > 보안의 모드가 끔이 아니면 web HTML 응답에 붙인다.
+        // web 그룹이라 플러그인 웹 라우트(결제·본인인증 브리지)도 함께 덮는다. 제외 조건은 미들웨어 주석 참조.
+        $middleware->appendToGroup('web', ContentSecurityPolicy::class);
+
         // IP 접근 제한 (인증 불필요, 전역) — 관리자 셸·코어 API·확장 API 전 표면을 한 판정으로 덮는다.
         // prepend 가 아니라 append 인 이유: 신뢰 프록시는 기본 전역 스택의 TrustProxies 가 적용하므로
         // 그보다 앞에서 돌면 프록시 뒤에서 $request->ip() 가 프록시 주소가 된다. append 도 그룹·라우트
@@ -199,6 +206,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'seo' => SeoMiddleware::class,
             // 사이트 주소가 아닌 Host 의 화면 요청 → 사이트 주소로 301 (화면 셸 라우트에만 붙인다)
             'canonical.host' => RedirectToCanonicalHost::class,
+            // 끝·연속 슬래시 화면 요청 → 정규형 경로로 301 (canonical.host 바로 뒤, 화면 셸 라우트에만 붙인다)
+            'canonical.path' => RedirectToCanonicalPath::class,
             'identity.policy' => EnforceIdentityPolicy::class,
             'extension.middleware' => ExtensionMiddlewareGate::class,
             'debug.gate' => EnsureDebugMode::class,
@@ -253,6 +262,19 @@ $app = Application::configure(basePath: dirname(__DIR__))
                     'success' => false,
                     'message' => $e->getMessage(),
                     'error_code' => 'core_version_mismatch',
+                    'data' => $e->getPayload(),
+                ], 422);
+            }
+        });
+
+        // 확장이 요구하는 PHP 확장(composer.json require.ext-*) 미충족 → HTTP 422 + error_code: 'php_extension_missing'
+        // (확장 install/activate 진입 지점에서 throw — update 는 경고만)
+        $exceptions->render(function (PhpExtensionRequirementException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'error_code' => 'php_extension_missing',
                     'data' => $e->getPayload(),
                 ], 422);
             }

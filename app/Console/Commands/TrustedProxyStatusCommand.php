@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Console\Command;
 
@@ -22,15 +23,12 @@ use Illuminate\Console\Command;
  */
 class TrustedProxyStatusCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'trusted-proxy:status';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '리버스 프록시 신뢰 설정(TRUSTED_PROXIES) 상태를 점검합니다';
 
     /**
      * Execute the console command.

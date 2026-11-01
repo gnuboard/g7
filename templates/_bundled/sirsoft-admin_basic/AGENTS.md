@@ -79,7 +79,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 제공 컴포넌트 | 134개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 186개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 레이아웃 | 189개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 23개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
@@ -116,7 +116,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] 로그인 화면의 2단계 인증·비밀번호 변경 단계를 고쳤다면 세 단계 `if` 의 상보성과 `login`/`loginTwoFactor`/`loginPasswordChange` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호·변경 단계에서 Enter 가 새 challenge 를 발급한다
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_role_form`·`admin_user_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고 `state.form` 기본값을 다시 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비우므로 수정 → 등록 SPA 이동에서 직전 값이 등록 폼에 남는다. 새 폼 레이아웃을 같은 구조로 만들면 같은 액션을 둔다(트러블슈팅 state-global 사례 7)
 - [ ] 사이트·회원·게시판 이름처럼 입력값을 그리는 글은 넘침을 막는다 — 모바일 상단 좌측 칸은 `min-w-0 flex-1`(이름 `truncate`, 우측 `flex-shrink-0`), 블록 제목·설명은 `break-words`, 이름·이메일 같은 좁은 칸은 `truncate` + 폭 상한. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 우측 묶음 clip 이나 `#right_content_area` 초과분으로 잰다 (#143)
-- [ ] 확장·언어팩 작업(설치·활성화·업데이트·레이아웃 갱신) 성공 갈래를 새로 만들면 응답 `data.warnings` 를 `_global.lifecycleWarnings` 에 담고(`lifecycleWarningsOpen` 은 false) 경고가 있을 때만 `lifecycle_warnings_modal` 을 연다 — 그 화면에 `partials/_modal_lifecycle_warnings.g7.html` 을 포함한다. 항목 `level` 이 `notice`(실패 아닌 안내)뿐이면 창이 안내 제목·파란 상자로 바뀐다(코어 7.1.3). `admin-extension-lifecycle-warnings-modal.test.tsx` 가 성공 갈래 전수를 잠근다
+- [ ] 확장·언어팩 작업(설치·활성화·업데이트·레이아웃 갱신) 성공 갈래를 새로 만들면 응답 `data.warnings` 를 `_global.lifecycleWarnings` 에 담고(`lifecycleWarningsOpen` 은 false) 경고가 있을 때만 `lifecycle_warnings_modal` 을 연다 — 그 화면에 `layouts/partials/_modal_lifecycle_warnings.g7.html` 을 포함한다. 항목 `level` 이 `notice`(실패 아닌 안내)뿐이면 창이 안내 제목·파란 상자로 바뀐다(코어 7.1.3). `admin-extension-lifecycle-warnings-modal.test.tsx` 가 성공 갈래 전수를 잠근다
 - [ ] `_admin_base` 자식 레이아웃에 progressive 데이터소스를 추가하면 `transition_overlay.wait_for` 에도 같은 ID 를 넣는다 — 레이아웃 테스트(`admin-base-transition-overlay`)가 누락을 잡는다
 
 ## 6. 금지 패턴
@@ -190,9 +190,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 441개 | `vitest.config.ts` |
-| Playwright | 28개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 114개 | `tests/scenarios` |
+| Vitest | 450개 | `vitest.config.ts` |
+| Playwright | 30개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 122개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

@@ -362,6 +362,12 @@
 합니다. 수정 모드의 폼은 서버가 준 기존 값(`is_notice` 포함)을 통째로 되돌려 보내며, 서버는
 값이 바뀔 때만 공지 권한을 판정합니다.
 
+모듈 화면 라우트(게시판 9개·상점 12개·쇼핑 마이페이지 9개·문의 1개·`/page/:slug`)에는
+`"requires": {"modules": [...]}` 가 붙어 있습니다(1.3.0). 코어 7.1.4 이상은 나열한 모듈이 **모두** 활성일 때만
+그 라우트를 공개 라우트 목록·사이트맵·검색봇 렌더·정적 사본에 싣고, 아니면 그 주소는 404 레이아웃이 됩니다.
+옛 코어는 이 키를 무시합니다. 새 모듈 화면을 추가하면 `requires` 를 함께 단다 — 빠뜨리면 모듈이 꺼진 사이트에
+빈 화면 주소가 남습니다(`__tests__/layouts/routes-requires.test.ts`).
+
 라우트를 바꾸면 `php artisan template:update sirsoft-basic --force` 로 반영합니다. 빌드는
 필요 없습니다.
 <!-- @intent END -->
@@ -403,6 +409,40 @@ id 가 사라지면 오류 없이 그 안내들만 빠진다. 같은 조각의 �
 지우거나 바꾸지 않는다. KG이니시스 엔화 결제수단 제한이 이미 그려진 버튼을 숨길 때 이것으로만 찾는다 — 사라지면 오류 없이
 화면 보정만 빠진다(응답을 거르는 앞단 제한은 그대로 동작). 약속 원문: `modules/_bundled/sirsoft-ecommerce/docs/extension-points.md`
 「PG 플러그인이 주문서 결제수단 칸을 볼 때의 약속」.
+
+### 모듈 결합 가드 (1.3.0)
+
+게시판·이커머스·페이지 모듈과 주소 검색 플러그인은 선택 연동(`template.json` 의 `integrations`)이라, 공통 화면은 꺼진 모듈의
+API 를 부르지도, 갈 곳 없는 링크를 그리지도 않는다. 판정은 코어가 싣는 `_global.activeModules`·`_global.activePlugins`
+(식별자 배열, 코어 7.1.4+)이고 식은 **한 모양만** 쓴다.
+
+| 쓰임 | 식 |
+| --- | --- |
+| 켜져 있을 때 | `{{_global.activeModules?.includes('sirsoft-board') ?? true}}` (플러그인은 `activePlugins`) |
+| 꺼져 있을 때 | `{{!(_global.activeModules?.includes('sirsoft-page') ?? true)}}` |
+| 다른 조건과 함께 | 위 식을 괄호로 감싸 잇는다 — `{{… && (_global.activeModules?.includes('sirsoft-board') ?? true)}}` |
+
+`?? true` 덕에 키가 없는 옛 코어에서는 지금처럼 모두 보인다. 공통 화면에서 `/api/modules/<id>/` 를 부르는 데이터소스에는
+`if` 와 함께 404 삼킴을 단다(옛 코어에서는 가드가 늘 참이라 꺼진 모듈로 요청이 나간다).
+
+| 화면(`layouts/` 기준) | 가드한 자리 |
+| --- | --- |
+| `_user_base` | 데이터소스 `boards`(게시판)·`cart`(쇼핑몰) + 404 삼킴 · `current_user` 성공 뒤 통화·배송국가 재해석 액션과 첫 진입 `initCartKey`·통화·배송국가 init(쇼핑몰) · 모바일 장바구니 단추(`mobile_cart_btn`) · 서랍의 주문 내역·위시리스트·비회원 주문 조회·쇼핑 섹션(쇼핑몰), 인기글·게시판 섹션(게시판), 정보·정책 묶음(페이지), 검색칸(셋 중 하나라도) · `Header`·`Footer` 의 모듈 props |
+| `home` | 게시판 데이터소스 4개 + 404 삼킴 · 통계 카드 줄·최근 글·인기 게시판·커뮤니티 안내·게시판 요약(게시판) · 쇼핑 안내 카드와 「인기 상품」「신상품」 섹션(쇼핑몰, 데이터소스는 401·403·404 삼킴) · 환영 카드 「자세히」(페이지) |
+| `search/index` + `partials/search/*` | 글·상품·문서 탭과 전체 탭 섹션, 게시판 필터·상품 정렬. 검색 결과 데이터소스는 엔진이 읽는 `if="{{query?.q}}"` 로 검색어 유무를 가른다(종전 `condition` 키는 엔진이 읽지 않았다) |
+| `auth/register` + `partials/auth/_register_form` | 약관·방침 본문 데이터소스와 「보기」 단추(페이지) — 꺼지면 같은 글을 일반 글자로 보이고 동의 체크박스는 그대로 |
+| `auth/login` | 비회원 결제·비회원 주문 조회 안내(쇼핑몰) |
+| `partials/mypage/_tab_navigation` | 게시글·스크랩(게시판), 주문·클레임·위시리스트·배송지·적립금(쇼핑몰), 문의(둘 다) |
+| `users/show` | 글 통계·최근 글 데이터소스 + 404 삼킴과 그 블록(게시판) |
+| `shop/show` + `partials/shop/detail/_tab_qna` | 문의 탭·문의 데이터소스는 문의 게시판 설정과 함께 게시판 활성도 본다 |
+| 주소칸 4곳(`partials/mypage/profile/_edit` · `partials/mypage/addresses/_modal_address` · `partials/mypage/orders/_modal_change_address` · `partials/shop/_modal_address_manage`) | 우편번호·주소 칸 `readOnly="{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}"` — 플러그인이 꺼지면 직접 입력. 상태 경로로 옮기는 change 액션을 함께 둔다(프로필은 폼 자동 바인딩) |
+
+`seo-config.json` 의 머리글·꼬리말 링크 조건은 늘 값이 있는 prop 을 대체로 붙인다 — 머리글 `"if": "{boardEnabled|maxVisibleBoards}"`,
+꼬리말 `"if": "{pageEnabled|copyrightText}"`. props 가 `false` 면 빈 값이라 숨고, keep 으로 남은 옛 `_user_base` 처럼 props 가 없으면
+대체 prop 으로 넘어가 보인다(사이트명은 빈 값일 수 있어 대체로 쓰지 않는다). 상점 링크 `href` 는 `"{shopProductsHref}"` — Header 노드가
+`shopProductsHref="{{_global.shopBase ?? '/shop'}}/products"` 로 완성된 주소를 넘긴다. 옛 코어(7.1.3 이하)의 봇 렌더는
+`{shopBase}/products` 같은 섞인 attrs 패턴을 치환하지 못해 중괄호째 내보내기 때문이다. keep 된 옛 `_user_base` 에는 이 prop 이 없어
+봇 화면의 「쇼핑」 링크가 주소 없이 글자만 남는다(사람 화면은 영향 없음).
 
 ### 게시판 확장 자리 (1.2.1+)
 
@@ -1153,21 +1193,28 @@ slots.content:
 
 ```text
 extends: _user_base
-data_sources: [stats, recent_posts, popular_boards]
+data_sources: [stats, recent_posts, popular_boards, home_boards (게시판 가드), popularProducts, newProducts (쇼핑몰 가드), visitor_summary]
 meta.seo: { structured_data: WebSite }
 slots.content:
   └── Container
-      ├── _welcome_card.g7.html (환영 배너)
-      ├── Grid (통계 카드 4개)
-      │   ├── _stat_card_users.g7.html
-      │   ├── _stat_card_posts.g7.html
-      │   ├── _stat_card_comments.g7.html
-      │   └── _stat_card_boards.g7.html
-      ├── _recent_posts.g7.html (최근 게시글)
-      ├── _popular_boards.g7.html (인기 게시판)
-      ├── _board_summary.g7.html (게시판 요약)
-      ├── _community_guide.g7.html (가이드)
-      └── _shop_promo.g7.html (쇼핑 프로모션)
+      ├── Grid home_top_row (게시판이 꺼지면 쇼핑몰 켜짐: 환영 2칸 + 쇼핑 홍보 1칸 / 둘 다 꺼짐: 1열)
+      │   ├── _welcome_card.g7.html (환영 배너 — 「자세히」는 페이지 가드)
+      │   ├── home_top_shop_promo → _shop_promo.g7.html (게시판 꺼짐 + 쇼핑몰 켜짐일 때만)
+      │   └── home_stat_cards (게시판 가드)
+      │       ├── _stat_card_users.g7.html
+      │       ├── _stat_card_posts.g7.html
+      │       ├── _stat_card_comments.g7.html
+      │       └── _stat_card_boards.g7.html
+      ├── Grid home_feature_row (게시판 가드)
+      │   ├── _recent_posts.g7.html (최근 게시글 — 게시판 가드)
+      │   ├── _popular_boards.g7.html (인기 게시판 — 게시판 가드)
+      │   ├── _shop_promo.g7.html (쇼핑 프로모션 — 쇼핑몰 가드)
+      │   └── _community_guide.g7.html (가이드 — 게시판 가드)
+      ├── home_board_summaries → _board_summary.g7.html (게시판 요약 — 게시판 가드)
+      ├── home_shop_sections (쇼핑몰 가드, 1.3.0)
+      │   ├── partials/shop/list/_popular_products.g7.html (인기 상품 8개)
+      │   └── partials/shop/list/_new_products.g7.html (신상품 8개)
+      └── _visitor_counter.g7.html (방문자 수 — 설정으로 켬)
 ```
 
 ---

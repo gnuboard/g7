@@ -3,21 +3,12 @@
 namespace Tests\Unit\Extension;
 
 use App\Contracts\Extension\ModuleInterface;
-use App\Contracts\Repositories\LayoutRepositoryInterface;
-use App\Contracts\Repositories\MenuRepositoryInterface;
-use App\Contracts\Repositories\ModuleRepositoryInterface;
-use App\Contracts\Repositories\PermissionRepositoryInterface;
-use App\Contracts\Repositories\PluginRepositoryInterface;
-use App\Contracts\Repositories\RoleRepositoryInterface;
-use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
-use App\Extension\ExtensionManager;
 use App\Extension\ModuleManager;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
-use App\Services\LayoutExtensionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use ReflectionMethod;
@@ -34,6 +25,12 @@ class ModuleManagerPermissionCategoryTypeTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 이커머스를 실제로 설치하므로 격리 allowlist 에 넣는다 — 빠지면 설치 중 프로바이더가
+     * 등록되지 않아 시더가 저장소 인터페이스를 해석하지 못한다(ExtensionProviderRegistrar 규칙).
+     */
+    protected array $requiredExtensions = ['modules/sirsoft-ecommerce'];
+
     private ModuleManager $moduleManager;
 
     private string $modulesPath;
@@ -41,6 +38,11 @@ class ModuleManagerPermissionCategoryTypeTest extends TestCase
     /** @var bool 활성 디렉토리가 테스트 전에 이미 존재했는지 */
     private bool $ecommerceExistedBefore = false;
 
+    /**
+     * 이커머스 활성 폴더 잔여물을 정리하고 모듈 매니저·기본 역할·회원을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -78,6 +80,11 @@ class ModuleManagerPermissionCategoryTypeTest extends TestCase
         User::factory()->create(['email' => 'admin@test.com']);
     }
 
+    /**
+     * 테스트 전에 없던 이커머스 활성 폴더를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (! $this->ecommerceExistedBefore) {
@@ -92,6 +99,10 @@ class ModuleManagerPermissionCategoryTypeTest extends TestCase
 
     /**
      * protected 메서드를 호출하는 헬퍼
+     *
+     * @param  string  $methodName  호출할 ModuleManager 메서드 이름
+     * @param  array<int, mixed>  $args  메서드 인자
+     * @return mixed 메서드 반환값
      */
     private function callProtectedMethod(string $methodName, array $args = []): mixed
     {
@@ -102,6 +113,12 @@ class ModuleManagerPermissionCategoryTypeTest extends TestCase
 
     /**
      * 하위 권한이 모두 user type이면 카테고리도 user type이 되는지 테스트
+     *
+     * @scenario lifecycle=install
+     *
+     * @effects permission_category_type_follows_user_children
+     *
+     * @return void 반환값 없음
      */
     public function test_category_type_follows_user_children(): void
     {
@@ -134,6 +151,12 @@ class ModuleManagerPermissionCategoryTypeTest extends TestCase
 
     /**
      * 하위 권한이 모두 admin type이면 카테고리도 admin type인지 테스트
+     *
+     * @scenario lifecycle=install
+     *
+     * @effects permission_category_type_stays_admin_for_admin_children
+     *
+     * @return void 반환값 없음
      */
     public function test_category_type_stays_admin_for_admin_children(): void
     {
@@ -154,6 +177,12 @@ class ModuleManagerPermissionCategoryTypeTest extends TestCase
 
     /**
      * user type 카테고리의 리프 권한에 올바른 parent_id가 설정되는지 테스트
+     *
+     * @scenario lifecycle=install
+     *
+     * @effects user_category_leaf_points_to_category_parent
+     *
+     * @return void 반환값 없음
      */
     public function test_user_category_children_have_correct_parent(): void
     {
@@ -174,6 +203,12 @@ class ModuleManagerPermissionCategoryTypeTest extends TestCase
 
     /**
      * evalFreshModule이 ModuleInterface 인스턴스를 반환하는지 테스트
+     *
+     * @scenario lifecycle=declaration
+     *
+     * @effects eval_fresh_module_reloads_module_declaration
+     *
+     * @return void 반환값 없음
      */
     public function test_eval_fresh_module_returns_valid_instance(): void
     {
@@ -195,6 +230,12 @@ class ModuleManagerPermissionCategoryTypeTest extends TestCase
 
     /**
      * evalFreshModule이 올바른 식별자를 반환하는지 테스트
+     *
+     * @scenario lifecycle=declaration
+     *
+     * @effects eval_fresh_module_reloads_module_declaration
+     *
+     * @return void 반환값 없음
      */
     public function test_eval_fresh_module_returns_correct_identifier(): void
     {
@@ -217,6 +258,12 @@ class ModuleManagerPermissionCategoryTypeTest extends TestCase
 
     /**
      * evalFreshModule이 getPermissions()를 정상 반환하는지 테스트
+     *
+     * @scenario lifecycle=declaration
+     *
+     * @effects eval_fresh_module_reloads_module_declaration
+     *
+     * @return void 반환값 없음
      */
     public function test_eval_fresh_module_returns_permissions(): void
     {

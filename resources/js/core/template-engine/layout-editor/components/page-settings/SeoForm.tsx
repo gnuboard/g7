@@ -99,6 +99,8 @@ export interface SeoFormProps {
   previewUrl?: string;
   previewLocale?: string;
   seedContext?: Record<string, unknown>;
+  /** 편집 중인 라우트의 레이아웃 전체 이름 — 봇 미리보기가 모듈·플러그인 화면을 운영과 같은 기준으로 렌더 */
+  routeLayoutName?: string | null;
   /** 후보 fetch 주입(테스트). 미전달 시 내부 Bearer fetch */
   candidatesFetcher?: (pageType: string, extensions: SeoExtensionRef[]) => Promise<SeoCandidatesResponse | null>;
   /** og 미리보기 fetch 주입(테스트) */
@@ -126,6 +128,7 @@ export function SeoForm({
   previewUrl = '/',
   previewLocale = 'ko',
   seedContext,
+  routeLayoutName,
   candidatesFetcher,
   ogPreviewFetcher,
   botFetchImpl,
@@ -606,6 +609,7 @@ export function SeoForm({
             url={previewUrl}
             locale={previewLocale}
             seedContext={seedContext}
+            layoutName={routeLayoutName}
             settingsSignature={botSignature}
             t={t}
             fetchImpl={botFetchImpl}

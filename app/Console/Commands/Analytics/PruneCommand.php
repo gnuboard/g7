@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Analytics\AnalyticsConfig;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\Analytics\PruneService;
 use Illuminate\Console\Command;
@@ -20,6 +21,7 @@ use Illuminate\Console\Command;
  */
 class PruneCommand extends Command
 {
+    use LocalizesDescription;
     use ParsesDaysOption;
 
     /**
@@ -30,13 +32,6 @@ class PruneCommand extends Command
     protected $signature = 'analytics:prune
                             {--days= : 보존기간(일) 재정의 — 미지정 시 환경설정값}
                             {--dry-run : 삭제 없이 대상 건수만 확인}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '보존 기간이 지난 방문자 통계 원장을 정리합니다.';
 
     /**
      * 커맨드 실행

@@ -25,6 +25,9 @@ return [
     'backup_path_required' => 'Please enter a backup path.',
     'restore_success' => 'Settings restored successfully.',
     'restore_failed' => 'Failed to restore settings.',
+    'errors' => [
+        'zip_extension_required' => 'Settings backup and restore require the PHP :extension extension on the server. Ask your server administrator to install it.',
+    ],
     'restore_error' => 'An error occurred while restoring settings.',
     'save_individual_failed' => 'Settings save failed: :error',
     'static_cache_status_loaded' => 'Startup file status loaded.',
@@ -196,7 +199,7 @@ return [
 
         // System requirements
         'system_requirements_failed' => 'System requirements are not met:',
-        'no_extract_method_available' => 'Cannot extract the archive. The PHP zip extension (ZipArchive) is required. You can also use the --source option for manual update.',
+        'no_extract_method_available' => 'Cannot extract the archive. The PHP zip extension (ZipArchive) is required. Install the zip extension on the server and try again.',
         'manual_update_guide' => 'Manual update: Download the release ZIP from GitHub, extract it, then run: php artisan core:update --source=/path/to/extracted',
 
         // Extraction fallback chain
@@ -222,6 +225,8 @@ return [
             'target_version_pending' => 'Update version: (determined after ZIP extraction)',
             'target_version' => 'Update version: :version',
             'confirm_update' => 'Do you want to update the core?',
+            'php_extension_core_missing' => 'Update aborted: the new core requires the PHP extension(s) :extensions, which are missing on this server. Install them and run the update again. (The site was not changed.)',
+            'php_extension_extension_warning' => 'The extension :extension being updated requires the PHP extension(s) :extensions, which are missing on this server — the update continues, but related features may not work',
             'pending_invalid' => '_pending directory problem:',
             'pending_path' => 'Path: :path',
             'pending_owner' => 'Owner: :owner, group: :group, permissions: :permissions',
@@ -367,6 +372,7 @@ return [
         'prune_extra_only_kept' => 'Only files missing from the release differ, kept: :label (files not in the release: :count)',
         'prune_extra_only_hint' => 'Folders that differ only by files missing from the release may hold files left over from an earlier version (a default update does not delete files removed in the new version). After checking, add --include-modified to remove them.',
         'prune_protected_dependency' => 'Kept as a dependency: :label (:required_by)',
+        'prune_protected_integration' => 'Kept as an integration of an active extension: :label (:integrated_by)',
         'prune_no_release_for_modified' => 'No release is available to check for modifications — add --include-modified to delete regardless of modifications.',
         'prune_summary' => 'Deleted :count bundles.',
         'unknown_action' => 'Unknown action: :action (list|place|prune)',
@@ -398,7 +404,34 @@ return [
     ],
     // `settings:*` command output
     'console' => [
+        'cli' => [
+            'scope_conflict' => '--plugin and --module cannot be used together.',
+            'unknown_key' => 'Unknown setting key: :key',
+            'key_format' => 'Setting keys use the "category.item" form (e.g. mail.host): :key',
+            'computed_key' => ':key is calculated from other values and cannot be set.',
+            'env_locked' => ':key is set by .env and cannot be changed here. Edit :env in .env instead.',
+            'sensitive_positional' => ':key is a sensitive value and is not accepted as a command-line argument — use the G7_SETTING_VALUE environment variable, --value-file, or hidden input.',
+            'value_missing' => 'Give a value — a positional argument, --value-file, or the G7_SETTING_VALUE environment variable.',
+            'value_file_unreadable' => 'Cannot read the value file: :path',
+            'invalid_json' => 'The --json-value value is not valid JSON: :error',
+            'ask_secret' => 'Value for :key (input is hidden)',
+            'array_replaced' => 'Array values are replaced as a whole (not merged with existing items).',
+            'validation_failed' => 'Not saved because validation failed:',
+            'save_failed' => 'Could not save: :reason',
+            'saved' => 'Saved: :key',
+            'changed' => '   :before → :after',
+            'cache_rebuilt' => 'The settings cache has been rebuilt.',
+            'plugin_not_found' => 'Not an installed plugin: :id',
+            'plugin_unknown_key' => 'The :id plugin has no such setting: :key',
+            'module_unsupported' => 'This module does not support setting values from the terminal: :id',
+            'admin_screen_only' => ':key can only be changed on the admin screen.',
+            'secrets_shown' => 'Showing sensitive values as is — be careful with screen recordings and sharing.',
+            'computed_marker' => '(calculated)',
+            'env_locked_marker' => '(set by .env)',
+            'no_settings' => 'No settings to show.',
+        ],
         'install' => [
+            'cache_refresh_failed' => 'Settings were installed but the cache could not be rebuilt (save once on the admin screen or run php artisan config:cache): :error',
             'defaults_not_found' => 'Default settings file not found: :path',
             'defaults_check_hint' => 'Check that the :path file exists.',
             'defaults_parse_failed' => 'Failed to parse the default settings JSON: :error',
@@ -428,5 +461,13 @@ return [
             'done' => 'Migration complete!',
             'location' => 'Settings file location: :path',
         ],
+    ],
+    // 환경설정 > 고급 > GeoIP [갱신] 결과
+    'geoip' => [
+        'update_success' => 'The GeoIP database has been updated.',
+        'license_key_missing' => 'The MaxMind license key is not set.',
+        'license_key_invalid' => 'The MaxMind license key is invalid.',
+        'connection_failed' => 'Could not connect to the MaxMind server.',
+        'update_failed' => 'Failed to update the GeoIP database.',
     ],
 ];

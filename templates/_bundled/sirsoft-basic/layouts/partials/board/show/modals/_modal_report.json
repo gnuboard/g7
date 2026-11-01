@@ -134,7 +134,7 @@
                     ]
                 },
                 {
-                    "comment": "신고 사유 선택 (Label + native Select + Option)",
+                    "comment": "신고 사유 선택 (Label + 목록형 Select)",
                     "type": "basic",
                     "name": "Div",
                     "props": {
@@ -150,6 +150,7 @@
                             "text": "$t:board.post.report_reason"
                         },
                         {
+                            "comment": "사유 목록은 게시판 설정(report_types)에서 온다. 맨 앞 빈 값은 「사유 선택」 안내다. 값은 문자열로 맞춘다 — 종전 기본 선택상자가 늘 문자열을 넘겼다",
                             "type": "basic",
                             "name": "Select",
                             "actions": [
@@ -168,33 +169,9 @@
                             "props": {
                                 "aria-label": "$t:board.post.report_reason",
                                 "value": "{{_global.reportForm?.reason_type ?? ''}}",
-                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "",
-                                        "selected": true
-                                    },
-                                    "text": "$t:board.post.select_reason"
-                                },
-                                {
-                                    "comment": "API에서 받은 report_types 배열을 iteration으로 Option 생성",
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "iteration": {
-                                        "source": "{{post?.data?.board?.report_types ?? []}}",
-                                        "item_var": "type",
-                                        "index_var": "idx"
-                                    },
-                                    "props": {
-                                        "value": "{{type.value}}"
-                                    },
-                                    "text": "{{type.label}}"
-                                }
-                            ]
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500",
+                                "options": "{{[{ value: '', label: '$t:board.post.select_reason' }].concat((post?.data?.board?.report_types ?? []).map(type => ({ value: String(type?.value ?? ''), label: type?.label })))}}"
+                            }
                         },
                         {
                             "comment": "서버 검증 오류(422) — 창을 닫지 않으므로 무엇을 고칠지 칸 아래에 보인다(7.1.1)",

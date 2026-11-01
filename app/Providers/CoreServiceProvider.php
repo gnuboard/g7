@@ -76,6 +76,7 @@ use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Storage\CoreStorageDriver;
+use App\Extension\Support\IntegrationReverseIndex;
 use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
 use App\Listeners\ExtensionCompatibilityAlertListener;
@@ -391,6 +392,9 @@ class CoreServiceProvider extends ServiceProvider
         // 생명주기 부분 실패 경고 수집기 — 요청·명령 단위로 하나 (결과 warnings·CLI 종료코드 1·관리자 결과 창)
         $this->app->scoped(LifecycleWarnings::class);
 
+        // 선택 연동 역맵 — 목록 행마다 「연동 중인 확장」을 실을 때 켜진 확장 조회를 요청·작업당 한 번으로 줄인다(7.1.4)
+        $this->app->scoped(IntegrationReverseIndex::class);
+
         // 확장 매니저 등록 (모듈/플러그인 공통 기능)
         $this->app->singleton(ExtensionManager::class, function ($app) {
             return new ExtensionManager(
@@ -526,6 +530,10 @@ class CoreServiceProvider extends ServiceProvider
             $this->detectRecoveredExtensions('templates');
         }
 
+        // 종류별 처리에서 의존 확장 때문에 막혔던 비호환 확장을 같은 부팅에서 다시 끈다(#153 — 예: 이커머스와 결제 플러그인이
+        // 함께 비호환이면 이커머스는 플러그인을 끈 뒤에야 끌 수 있다). 부팅 순서는 그대로 둔다.
+        $this->retryBlockedIncompatibleExtensions();
+
         // 동적 훅 리스너 일괄 실행 (registerDynamicHooks 메서드를 가진 리스너)
         $this->registerDeferredDynamicHooks();
 
@@ -648,6 +656,20 @@ class CoreServiceProvider extends ServiceProvider
         }
 
         $this->incompatibleExtensionDeactivator()->deactivateIncompatibleExtensions($manager, $type);
+    }
+
+    /**
+     * 의존 확장 때문에 막혔던 비호환 확장을 같은 부팅에서 다시 끕니다 — 업데이트 진행 중에는 건너뛴다(판정과 같은 정책).
+     *
+     * @return void 반환값 없음
+     */
+    protected function retryBlockedIncompatibleExtensions(): void
+    {
+        if (self::isCoreUpdateInProgress()) {
+            return;
+        }
+
+        $this->incompatibleExtensionDeactivator()->retryBlocked();
     }
 
     /**

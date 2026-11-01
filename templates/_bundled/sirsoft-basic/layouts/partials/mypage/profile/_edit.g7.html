@@ -238,9 +238,9 @@
             <!-- 주소 -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.address</label>
-              <!-- 우편번호 + 주소 검색 버튼 -->
+              <!-- 우편번호 + 주소 검색 버튼 — 우편번호 검색 플러그인이 꺼져 있으면 직접 입력한다(readOnly 가 풀린다). 칸은 폼 자동 바인딩(profileEditForm)이라 친 값이 그대로 저장에 실린다. -->
               <div class="flex gap-2">
-                <input type="text" name="zipcode" aria-label="$t:mypage.profile.zipcode" value="{{user.data?.zipcode ?? ''}}" placeholder="$t:mypage.profile.zipcode_placeholder" class="{{_local.profileErrors?.zipcode ? 'w-28 px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="true"/>
+                <input type="text" name="zipcode" aria-label="$t:mypage.profile.zipcode" value="{{user.data?.zipcode ?? ''}}" placeholder="$t:mypage.profile.zipcode_placeholder" class="{{_local.profileErrors?.zipcode ? 'w-28 px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" readOnly="{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}"/>
                 <extension-point name="address_search_slot" data-ref="profile_address_search_slot">
                   <prop name="readOnlyFields">
                     <item>zipcode</item>
@@ -255,7 +255,7 @@
                 </extension-point>
               </div>
               <!-- 기본 주소 -->
-              <input type="text" name="address" aria-label="$t:mypage.profile.address" value="{{user.data?.address ?? ''}}" placeholder="$t:mypage.profile.address_placeholder" class="{{_local.profileErrors?.address ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="true"/>
+              <input type="text" name="address" aria-label="$t:mypage.profile.address" value="{{user.data?.address ?? ''}}" placeholder="$t:mypage.profile.address_placeholder" class="{{_local.profileErrors?.address ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" readOnly="{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}"/>
               <!-- 상세 주소 -->
               <input type="text" name="address_detail" aria-label="$t:mypage.profile.address_detail" value="{{user.data?.address_detail ?? ''}}" placeholder="$t:mypage.profile.address_detail_placeholder" class="{{_local.profileErrors?.address_detail ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
               <p data-if="{{_local.profileErrors?.zipcode || _local.profileErrors?.address || _local.profileErrors?.address_detail}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.zipcode?.[0] ?? _local.profileErrors?.address?.[0] ?? _local.profileErrors?.address_detail?.[0] ?? ''}}</p>

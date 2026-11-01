@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Installer;
 
+use Dotenv\Dotenv;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -24,6 +25,11 @@ use PHPUnit\Framework\TestCase;
  */
 class EnvValueSerializationTest extends TestCase
 {
+    /**
+     * 정책 파일만 단독으로 로드한다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         require_once dirname(__DIR__, 3).'/public/install/includes/env-value.php';
@@ -31,6 +37,12 @@ class EnvValueSerializationTest extends TestCase
 
     /**
      * 정상 값은 큰따옴표로 감싸 반환된다.
+     *
+     * @scenario case=normal_value
+     *
+     * @effects value_quoted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_quotes_a_normal_value(): void
@@ -41,6 +53,12 @@ class EnvValueSerializationTest extends TestCase
 
     /**
      * 빈 값은 빈 따옴표로 반환된다 (기존 동작 보존).
+     *
+     * @scenario case=empty_value
+     *
+     * @effects value_quoted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_returns_empty_quotes_for_an_empty_value(): void
@@ -50,6 +68,12 @@ class EnvValueSerializationTest extends TestCase
 
     /**
      * 큰따옴표와 백슬래시는 이스케이프된다 (기존 동작 보존).
+     *
+     * @scenario case=quote_backslash
+     *
+     * @effects value_quoted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_escapes_quotes_and_backslashes(): void
@@ -63,6 +87,12 @@ class EnvValueSerializationTest extends TestCase
      *
      * @param  string  $value  주입 시도 값
      * @param  string  $reason  거부 사유 (실패 메시지용)
+     *
+     * @scenario case=line_break
+     *
+     * @effects value_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('lineBreakInjectionProvider')]
@@ -76,7 +106,7 @@ class EnvValueSerializationTest extends TestCase
     /**
      * 개행 주입 벡터.
      *
-     * @return array<string, array{0: string, 1: string}>
+     * @return array<string, array{0: string, 1: string}> 사례명 → [주입 시도 값, 거부 사유]
      */
     public static function lineBreakInjectionProvider(): array
     {
@@ -91,6 +121,12 @@ class EnvValueSerializationTest extends TestCase
 
     /**
      * 개행 검사는 값 전체를 본다 — 따옴표 안에 숨겨도 거부된다.
+     *
+     * @scenario case=line_break_in_quotes
+     *
+     * @effects value_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_rejects_line_breaks_even_inside_quotes(): void
@@ -110,6 +146,12 @@ class EnvValueSerializationTest extends TestCase
      * 함수를 실행해 대조하지 않고 소스를 검사하는 이유: 두 정의는 BASE_PATH 상수를
      * 요구하는 파일에 있고, 그 상수를 여기서 박으면 인접 Installer 테스트의 안전 가드가
      * 걸려 그 테스트들이 조용히 skip 된다(초록인데 검사는 멈춘 상태가 된다).
+     *
+     * @scenario case=legacy_alias
+     *
+     * @effects alias_delegates_to_gate
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function both_legacy_alias_definitions_delegate_to_the_single_gate(): void
@@ -139,7 +181,59 @@ class EnvValueSerializationTest extends TestCase
     }
 
     /**
+     * 직렬화한 값은 런타임 파서(vlucas/phpdotenv)가 원래 값으로 되읽는다.
+     *
+     * phpdotenv 5.8.0 부터 닫는 따옴표가 없는 값은 그 줄 뒤를 버리지 않고 예외를 던져
+     * 부팅이 멈춘다. 직렬화기가 만드는 값이 늘 닫힌 따옴표인지를 실제 파서로 고정한다.
+     *
+     * @param  string  $value  운영자가 설치 창에 입력할 수 있는 값
+     *
+     * @scenario case=runtime_round_trip
+     *
+     * @effects runtime_parser_reads_original
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    #[DataProvider('roundTripProvider')]
+    public function serialized_values_round_trip_through_the_runtime_parser(string $value): void
+    {
+        $content = 'BEFORE="x"'."\n".'VALUE='.serializeEnvValue($value)."\n".'AFTER="y"'."\n";
+
+        $parsed = Dotenv::parse($content);
+
+        $this->assertSame($value, $parsed['VALUE']);
+        $this->assertSame('y', $parsed['AFTER'], '다음 줄의 변수가 사라지면 따옴표가 닫히지 않은 것이다');
+    }
+
+    /**
+     * 되읽기 대상 값.
+     *
+     * @return array<string, array{0: string}> 사례명 → [설치 창 입력 값]
+     */
+    public static function roundTripProvider(): array
+    {
+        return [
+            '일반 값' => ['g7'],
+            '빈 값' => [''],
+            '공백 포함' => ['그누보드 7 사이트'],
+            '샵 기호' => ['pass#word'],
+            '큰따옴표' => ['say "hi"'],
+            '끝 백슬래시' => ['C:\\path\\'],
+            '이스케이프된 따옴표 모양' => ['a\\"b'],
+            '작은따옴표' => ["it's"],
+            '등호와 쿼리' => ['https://example.com/?a=1&b=2'],
+        ];
+    }
+
+    /**
      * 개행이 없는 값은 검사기가 통과시킨다.
+     *
+     * @scenario case=single_line_check
+     *
+     * @effects value_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_line_break_checker_accepts_clean_values(): void

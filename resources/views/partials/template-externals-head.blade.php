@@ -4,70 +4,14 @@
     $headLinks = \App\Support\TemplateExternals::headLinks($templateExternals);
     $headScripts = \App\Support\TemplateExternals::scriptsForPosition($templateExternals, 'head');
 @endphp
-{{-- 자산 실패 신호 부트스트랩.
+{{-- 셸 <head> 스크립트 (자산 실패 신호 + 자산 URL 자가 복구) — 아래 externals <link> 와
+     템플릿 CSS <link> 보다 먼저 실행되어야 한다(그 태그들의 error 를 캡처 리스너로 받는다).
 
-     아래 externals 는 서버가 HTML 에 직접 심으므로 브라우저가 자산에 도달하지 못해도
-     자바스크립트에는 아무 신호가 오지 않는다. 실패는 "아이콘이 안 보인다" 로만 나타나고
-     자체 서버 로그에도 흔적이 남지 않는다. 각 태그의 onerror 가 여기로 들어온다.
-
-     엔진 번들보다 먼저 실행되므로 대기열에 쌓아 두고, 엔진이 뜨면 배너로 흘려보낸다. --}}
-        <script>
-            (function () {
-                var queue = window.__g7ExternalAssetFailures = window.__g7ExternalAssetFailures || [];
-
-                window.__g7RetryExternalAsset = function (el, url) {
-                    return new Promise(function (resolve, reject) {
-                        var fresh = document.createElement(el.tagName);
-                        var bust = url + (url.indexOf('?') === -1 ? '?' : '&') + '_g7retry=' + Date.now();
-
-                        if (el.tagName === 'LINK') {
-                            fresh.rel = el.rel || 'stylesheet';
-                            if (el.media) { fresh.media = el.media; }
-                            if (el.crossOrigin) { fresh.crossOrigin = el.crossOrigin; }
-                            fresh.href = bust;
-                        } else {
-                            if (el.crossOrigin) { fresh.crossOrigin = el.crossOrigin; }
-                            fresh.src = bust;
-                        }
-
-                        fresh.onload = function () {
-                            if (el.parentNode) { el.parentNode.removeChild(el); }
-                            resolve();
-                        };
-                        fresh.onerror = function () {
-                            if (fresh.parentNode) { fresh.parentNode.removeChild(fresh); }
-                            reject(new Error('external asset retry failed'));
-                        };
-
-                        (el.parentNode || document.head).appendChild(fresh);
-                    });
-                };
-
-                window.__g7ExternalAssetFailed = function (el, label) {
-                    if (!el) { return; }
-
-                    var url = el.tagName === 'LINK' ? el.href : el.src;
-                    var id = 'template-external:' + url;
-
-                    for (var i = 0; i < queue.length; i++) {
-                        if (queue[i].id === id) { return; }
-                    }
-
-                    var entry = {
-                        id: id,
-                        label: label || url,
-                        url: url,
-                        retry: function () { return window.__g7RetryExternalAsset(el, url); }
-                    };
-
-                    queue.push(entry);
-
-                    if (typeof window.__g7ExternalAssetSink === 'function') {
-                        window.__g7ExternalAssetSink(entry);
-                    }
-                };
-            })();
-        </script>
+     strict CSP(`script-src 'self'`)에서도 동작하도록 실행 코드는 정적 파일
+     `public/assets/core/js/g7-shell-head.js` 에 두고, 서버 값은 비실행 JSON 데이터 블록으로만
+     넘긴다(#158). 인라인 `<script>`·on* 속성을 다시 넣지 않는다. --}}
+        <script type="application/json" id="g7-shell-head-data">@json(['cacheVersion' => (int) ($extensionCacheVersion ?? 0)])</script>
+        <script src="{{ asset('assets/core/js/g7-shell-head.js') }}?v={{ file_exists(public_path('assets/core/js/g7-shell-head.js')) ? filemtime(public_path('assets/core/js/g7-shell-head.js')) : 0 }}"></script>
 @foreach($resourceHints as $external)
         <link{!! \App\Support\TemplateExternals::renderAttributes(\App\Support\TemplateExternals::linkAttributes($external)) !!}>
 @endforeach

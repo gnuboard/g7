@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Services\SettingsService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
@@ -14,6 +16,8 @@ use Illuminate\Support\Facades\File;
  */
 class InstallSettingsCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      *
@@ -22,13 +26,6 @@ class InstallSettingsCommand extends Command
     protected $signature = 'settings:install
                             {--force : 기존 설정 파일을 덮어씁니다}
                             {--merge : 기존 설정과 병합합니다 (새 키만 추가)}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = '환경설정 기본값을 설치합니다 (config/settings/defaults.json → storage/app/settings/)';
 
     /**
      * 커맨드를 생성합니다.
@@ -129,6 +126,16 @@ class InstallSettingsCommand extends Command
                 $installedCount++;
             } else {
                 $this->error("  [{$category}] ".__('settings.console.install.install_failed'));
+            }
+        }
+
+        // 저장소에 직접 썼으므로 화면 저장과 같은 후처리(캐시·설정 미러·설정 버전)를 탄다 — 빠지면 실행 뒤에도
+        // 캐시가 옛 설정을 돌려준다(7.1.4 F32). 설치 초기처럼 캐시 저장소가 아직 준비되지 않았으면 경고만 남긴다.
+        if ($installedCount + $mergedCount > 0) {
+            try {
+                app(SettingsService::class)->invalidateSettingsCache();
+            } catch (\Throwable $e) {
+                $this->warn(__('settings.console.install.cache_refresh_failed', ['error' => $e->getMessage()]));
             }
         }
 

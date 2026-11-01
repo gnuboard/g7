@@ -96,6 +96,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | --- | --- |
 | `step` | 실패한 단계 (예: `layout_register`, `seeder`, `cleanup`, `hook_cache`) |
 | `target` | 실패한 대상 (파일명·확장 식별자·시더 클래스 등) |
+| `target_name` | (선택, 7.1.4+) 대상의 사람이 읽는 이름(현재 로케일). 지금은 `dependents` 단계(강제 비활성화·강제 재설치 등으로 의존 조건이 깨진 의존 확장 안내)만 싣는다 — `target` 은 그대로 식별자다. 이름을 찾지 못해 식별자와 같으면 키가 없다. 관리자 결과 창은 이 값이 있으면 대상 칸에 식별자 대신 이름을 보인다 |
 | `message` | 실패 사유 (현재 로케일). DB 예외면 접속 정보·SQL 문장을 뗀 사유만 담는다(원문은 서버 로그) |
 | `level` | `warning`(반영되지 않은 실패) 또는 `notice`(실패는 아닌 안내 — 예: 압축 경로 정규화). 안내만 있으면 관리자 결과 창은 「실패」 대신 안내 제목을 쓰고, artisan 명령은 종료코드·표지를 바꾸지 않는다 |
 
@@ -278,7 +279,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 ## 코어 API 레퍼런스
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 39 · **엔드포인트 수**: 357
+- **문서 수**: 40 · **엔드포인트 수**: 358
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -292,6 +293,7 @@ CSS 가 아닌 자산은 바이트 그대로 서빙됩니다. 정적 게시본(`
 | [changelog.md](changelog.md) | `changelog` | 1 |
 | [consent.md](consent.md) | `consent` | 1 |
 | [core-update.md](core-update.md) | `core-update` | 2 |
+| [csp-report.md](csp-report.md) | `csp-report` | 1 |
 | [dashboard.md](dashboard.md) | `dashboard` | 5 |
 | [extensions.md](extensions.md) | `extensions` | 8 |
 | [identity.md](identity.md) | `identity` | 27 |

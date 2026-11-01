@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.2] - 2026-11-01
+
+### Fixed
+
+- CKEditor 5 환경설정 「툴바」 칸이 브라우저 기본 선택상자 대신 같은 화면의 「공개 파일 저장소」 칸과 같은 목록형 드롭다운으로 열립니다.
+
 ## [1.1.1] - 2026-10-21
 
 ### Changed

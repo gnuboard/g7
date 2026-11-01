@@ -1,5 +1,5 @@
 {
-    "comment": "검색 종류 탭 — 옆 숫자는 결과 응답이 종류별로 함께 준 개수라 탭을 옮기지 않고도 어디에 몇 건이 있는지 보인다. 탭을 바꾸면 쪽 번호를 되돌리고 그 종류로 다시 받는다.",
+    "comment": "검색 종류 탭 — 옆 숫자는 결과 응답이 종류별로 함께 준 개수라 탭을 옮기지 않고도 어디에 몇 건이 있는지 보인다. 탭을 바꾸면 쪽 번호를 되돌리고 그 종류로 다시 받는다.\n     글·상품·문서 탭은 각각 게시판·쇼핑몰·페이지 모듈이 꺼져 있으면 숨긴다(전체 탭은 늘 남는다).",
     "meta": {
         "is_partial": true,
         "description": "검색 타입 탭"
@@ -63,6 +63,7 @@
         {
             "type": "basic",
             "name": "A",
+            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
             "actions": [
                 {
                     "comment": "같은 검색어 안에서 보는 대상만 바꾸는 이동이라 mergeQuery 로 q 를 승계한다. 탭마다 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
@@ -112,6 +113,7 @@
         {
             "type": "basic",
             "name": "A",
+            "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
             "actions": [
                 {
                     "comment": "같은 검색어 안에서 보는 대상만 바꾸는 이동이라 mergeQuery 로 q 를 승계한다. 탭마다 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
@@ -161,6 +163,7 @@
         {
             "type": "basic",
             "name": "A",
+            "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
             "actions": [
                 {
                     "comment": "같은 검색어 안에서 보는 대상만 바꾸는 이동이라 mergeQuery 로 q 를 승계한다. 탭마다 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",

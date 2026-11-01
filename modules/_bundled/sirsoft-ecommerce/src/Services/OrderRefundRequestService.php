@@ -2123,7 +2123,7 @@ class OrderRefundRequestService
     /**
      * 이 환불이 끝난 뒤의 **세금 분류 컬럼**을 재계산합니다. (S3-D17)
      *
-     * `total_tax_amount`·`total_tax_free_amount`·`total_vat_amount` 세 개만 낸다 —
+     * `total_tax_amount`·`total_tax_free_amount`·`total_vat_amount`·`total_zero_rated_amount`(+짝 `mc_*`)만 낸다 —
      * 금액 컬럼을 함께 실으면 클레임 환불이 `total_paid_amount` 를 깎아 잔여 한도
      * (`total_paid_amount - total_refunded_amount`)가 같은 금액을 두 번 차감한다
      * (`RefundExecutionService::execute()` 독블록).

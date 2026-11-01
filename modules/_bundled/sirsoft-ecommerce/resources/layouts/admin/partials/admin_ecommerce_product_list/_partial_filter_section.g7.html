@@ -319,6 +319,15 @@
             </input>
             <span>$t:sirsoft-ecommerce.enums.tax_status.tax_free</span>
           </label>
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="radio" name="tax_status" class="radio" checked="{{_local.filter.taxStatus === 'zero_rated'}}">
+              <on type="change">
+                <!-- 영세(세율 0%). 상품 기본값이 영세이거나 옵션 중 하나라도 영세로 지정한 상품을 찾는다 (#612) -->
+                <set-state target="_local" filter.taxStatus="zero_rated"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.tax_status.zero_rated</span>
+          </label>
         </div>
       </div>
       <div data-ref="price_filter_row" data-slot="{{(_local.visibleFilters || []).includes('price') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">

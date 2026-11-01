@@ -1,0 +1,40 @@
+# 시나리오 매니페스트 — 의존 확장 미충족 사유를 관리자 화면이 그린다 (코어 7.1.4)
+# 서버 쪽 판정·응답은 tests/scenarios/template-dependency-version.yaml
+
+feature: admin_template_dependency_version_screens
+
+description: >-
+  템플릿 활성화가 의존 모듈·플러그인의 버전 제약까지 보게 되면서 409 항목에 status(not_installed·inactive·version_mismatch)와
+  설치·요구 버전, template_type 이 온다. 템플릿 강제 활성화 창은 버전 미달 배지와 타입별 503 경고(관리자면 복구 명령)를,
+  설치 창 3종은 설치됐지만 판이 모자란 의존에 「버전 불일치 (설치 → 요구)」 배지를, 목록 카드 3종은 미충족 의존을 빨간 글자·경고
+  아이콘·툴팁으로, 관리자 503 화면은 항목마다 사유를 보인다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/template-dependency-version-screens.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/components/ExtensionCardGrid.dependency-unmet.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-extension-dependency-unmet.spec.ts
+
+axes:
+  surface:
+    - force_modal_badge        # 템플릿 강제 활성화 창 — 버전 미달 배지
+    - force_modal_warning      # 템플릿 강제 활성화 창 — 사용자/관리자 503 경고
+    - install_modal_badge      # 설치 창 3종 — 버전 불일치 배지
+    - card_mapping             # 목록 카드 4곳 — unmet·reason 매핑
+    - card_component_unmet     # 카드 컴포넌트 — 미충족 표시
+    - card_component_met       # 카드 컴포넌트 — 충족 항목 회귀
+    - card_browser             # 실제 화면(빌드 CSS 포함) — 미충족만 빨간 글자·툴팁
+    - admin_503                # 관리자 503 화면 — 항목별 사유
+    - lang_keys                # 번역 키 ko·en
+
+effects:
+  - force_modal_shows_version_mismatch
+  - force_modal_type_specific_503_warning
+  - install_modal_shows_version_mismatch
+  - card_mapping_passes_unmet_reason
+  - card_marks_unmet_dependency
+  - card_met_dependency_unchanged
+  - error_503_shows_reason_per_item
+  - screen_keys_translated
+
+validation:
+  audit_rule: frontend-change-requires-e2e

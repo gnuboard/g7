@@ -289,6 +289,55 @@ class PaymentRefundListenerTest extends PluginTestCase
     }
 
     /**
+     * R2: 영세 금액은 면세와 합산해 취소 면세분으로 안분하는지 확인 (이커머스 1.3.3, #612)
+     *
+     * 결제 때 영세를 면세로 넘겼으므로(P2) 취소도 같은 분류여야 한다 — 과세 10,000 중 영세 4,000 이면
+     * 면세 몫은 4,000(영세) 이고, 5,000 환불의 면세분은 2,000 이다.
+     *
+     * @effects refund_sends_apportioned_tax_free_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_r2_zero_rated_amount_is_apportioned_as_tax_free(): void
+    {
+        $this->fakeCancelApi();
+        $order = $this->createTossOrder(['paid_amount_local' => 10000]);
+        $order->update(['total_tax_free_amount' => 0, 'total_tax_amount' => 10000, 'total_zero_rated_amount' => 4000]);
+        $order = $order->fresh(['payment']);
+
+        app(PaymentRefundListener::class)->processRefund(
+            ['success' => false], $order, $order->payment, 5000.0, null, $this->createRefund($order, 5000)
+        );
+
+        Http::assertSent(fn ($request) => ($request->data()['taxFreeAmount'] ?? null) === 2000);
+    }
+
+    /**
+     * R2: 영세만 든 주문의 부분환불은 환불액 전부를 면세분으로 보내는지 확인 (이커머스 1.3.3, #612)
+     *
+     * 과세표준 10,000 이 전부 영세(부가세 0)면 결제 때 전액을 면세로 넘겼다(P2) — 5,000 부분환불의
+     * 면세분은 5,000 이고 과세분은 0 이다. 영세를 과세로 보면 면세 몫이 0 이 되어 키가 빠지고,
+     * 토스는 그 5,000 을 과세 취소로 처리해 승인 때 등록한 면세액과 어긋난다.
+     *
+     * @effects refund_sends_apportioned_tax_free_amount
+     *
+     * @return void 반환값 없음
+     */
+    public function test_r2_zero_rated_only_order_refunds_entirely_as_tax_free(): void
+    {
+        $this->fakeCancelApi();
+        $order = $this->createTossOrder(['paid_amount_local' => 10000]);
+        $order->update(['total_tax_free_amount' => 0, 'total_tax_amount' => 10000, 'total_zero_rated_amount' => 10000, 'total_vat_amount' => 0]);
+        $order = $order->fresh(['payment']);
+
+        app(PaymentRefundListener::class)->processRefund(
+            ['success' => false], $order, $order->payment, 5000.0, null, $this->createRefund($order, 5000)
+        );
+
+        Http::assertSent(fn ($request) => ($request->data()['taxFreeAmount'] ?? null) === 5000);
+    }
+
+    /**
      * R2: 면세 금액이 없으면(전액 과세) taxFreeAmount 를 전달하지 않는지 확인
      *
      * 안분 대상이 0 인 경계 — 0 을 보내는 것과 키 자체를 빼는 것은 다르다.

@@ -1,4 +1,4 @@
-// e2e:allow 가상계좌 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기)
+// e2e:allow 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기), 과세 필드(#820)는 Vitest 합계·필드명 단언(복합과세 협의 MID 가 없어 나이스 매출 구분은 실측 불가)
 import { buildGuestOrderTokenHeaders } from '../guestOrderToken';
 import { reportPaymentWindowClosed } from '../paymentCloseReport';
 import { translateNicepay as t } from '../translate';
@@ -54,6 +54,81 @@ interface PgPaymentData {
      * 없으면 나이스 기본 기한으로 계좌가 열린다.
      */
     vbank_due_at?: string;
+    /**
+     * 결제 금액 중 면세분(최소 화폐단위 정수). 서버가 주문 면세 합계를 청구액과 같은 규칙으로 환산해 싣고,
+     * 면세분이 없으면 null 이다. 키가 없으면 그 전 서버다.
+     */
+    tax_free_amount?: number | null;
+    /**
+     * 면세분이 있을 때만 서버가 같은 규칙으로 싣는 과세 합계(부가세 포함)·부가세 — 부가세 비율 산출용.
+     * 이커머스 1.3.2 이하는 싣지 않았다 — 그때는 주문을 다시 조회해 비율을 얻는다.
+     */
+    tax_amount?: number | null;
+    vat_amount?: number | null;
+}
+
+/**
+ * 결제창 과세 구분을 나누는 데 쓰는 주문 합계(주문 조회 응답).
+ *
+ * `total_tax_amount` 는 부가세 **포함** 과세 금액이다.
+ */
+interface OrderTaxTotals {
+    total_tax_amount?: unknown;
+    total_vat_amount?: unknown;
+    total_tax_free_amount?: unknown;
+}
+
+/** 주문 합계를 읽지 못했을 때의 부가세율(%) — 이커머스 `VatCalculator::DEFAULT_RATE` 와 같다. */
+const DEFAULT_VAT_RATE = 10;
+
+/**
+ * 나이스 결제창의 과세·면세 지정 필드(`SupplyAmt`·`GoodsVat`·`ServiceAmt`·`TaxFreeAmt`)를 만듭니다.
+ *
+ * 나이스 결제창 사양: 네 필드의 합이 `Amt` 와 같아야 하고, MID 에 복합과세 설정을 협의한 상점만 쓴다
+ * (협의 없이 보내면 결제·취소가 실패할 수 있다). 그래서 면세분이 있는 결제에만 싣고, 전부 과세면 보내지 않는다.
+ * 종전에는 사양에 없는 `TaxAmt`·`VatAmt` 에 마일리지·쿠폰 차감 전 주문 합계를 그대로 넣어, 나이스가 과세 구분을
+ * 받지 못했고 합도 결제 금액과 맞지 않았다(#820).
+ *
+ * 금액은 실제 결제액(`Amt`) 기준이다 — 면세분은 결제액 안으로 자르고, 나머지 과세분을 주문의 부가세 비율로
+ * 공급가액·부가세로 나눈다(NHN KCP 플러그인 `buildKcpTaxFields` 와 같은 방식). 주문 합계가 없으면 기본 세율로 나눈다.
+ *
+ * @param amount 결제 금액(`Amt`)
+ * @param taxFreeAmount 결제 금액 중 면세분
+ * @param orderTotals 주문 과세 합계(부가세 비율 산출용, 없으면 기본 세율)
+ * @returns 폼 필드, 면세분이 없으면 빈 객체
+ */
+export function buildNicepayTaxFields(
+    amount: unknown,
+    taxFreeAmount: unknown,
+    orderTotals?: OrderTaxTotals | null,
+): Record<string, string> {
+    const toAmount = (value: unknown): number => {
+        const n = Math.round(Number(value ?? 0));
+        return Number.isFinite(n) && n > 0 ? n : 0;
+    };
+
+    const paymentAmt = toAmount(amount);
+    const taxFreeAmt = Math.min(toAmount(taxFreeAmount), paymentAmt);
+
+    if (taxFreeAmt <= 0) {
+        return {};
+    }
+
+    const taxableAmt = paymentAmt - taxFreeAmt;
+    const hasOrderTax = orderTotals?.total_tax_amount !== undefined && orderTotals?.total_tax_amount !== null;
+    const orderTaxAmt = toAmount(orderTotals?.total_tax_amount);
+    const orderVatAmt = toAmount(orderTotals?.total_vat_amount);
+    const vatRatio = hasOrderTax
+        ? (orderTaxAmt > 0 ? orderVatAmt / orderTaxAmt : 0)
+        : DEFAULT_VAT_RATE / (100 + DEFAULT_VAT_RATE);
+    const goodsVat = Math.min(taxableAmt, Math.round(taxableAmt * vatRatio));
+
+    return {
+        SupplyAmt: String(taxableAmt - goodsVat),
+        GoodsVat: String(goodsVat),
+        ServiceAmt: '0',
+        TaxFreeAmt: String(taxFreeAmt),
+    };
 }
 
 /**
@@ -455,29 +530,36 @@ export async function requestPaymentHandler(action: PaymentAction, _context?: un
             }
         }
 
-        // 4-2. 과세/비과세 금액 조회 (optional — 실패해도 결제 진행)
-        try {
-            // 비회원 주문은 X-Guest-Order-Token 이 없으면 서버가 주문을 찾지 못한다.
-            // 헤더를 빼면 과세/비과세 금액이 조회되지 않아 결제사에 세금 구분이 빠진 채 전달된다.
-            const guestHeaders = buildGuestOrderTokenHeaders();
-            const orderRes = await G7Core.api.get(
-                `/modules/sirsoft-ecommerce/user/orders/${pgPaymentData.order_number}`,
-                Object.keys(guestHeaders).length > 0 ? { headers: guestHeaders } : undefined,
-            );
-            const od = orderRes?.data as Record<string, unknown> | null | undefined;
-            if (od) {
-                const taxAmt = Number(od['total_tax_amount'] ?? 0);
-                const vatAmt = Number(od['total_vat_amount'] ?? 0);
-                const taxFreeAmt = Number(od['total_tax_free_amount'] ?? 0);
-                if (taxAmt > 0 || vatAmt > 0 || taxFreeAmt > 0) {
-                    formFields.TaxAmt = String(taxAmt);
-                    formFields.VatAmt = String(vatAmt);
-                    formFields.TaxFreeAmt = String(taxFreeAmt);
-                }
+        // 4-2. 과세/면세 구분 — 서버가 결제 데이터에 실은 합계를 쓴다(NHN KCP 플러그인과 같은 출처).
+        //      면세분이 있는데 과세 합계가 없거나(이커머스 1.3.2 이하) 면세 키 자체가 없으면(그 전 서버)
+        //      주문을 다시 조회해 채운다 (조회 실패해도 결제 진행).
+        const hasServerTaxFree = pgPaymentData.tax_free_amount !== undefined;
+        const hasServerTaxTotals = pgPaymentData.tax_amount !== undefined && pgPaymentData.tax_amount !== null;
+        const needsOrderLookup = !hasServerTaxFree || (Number(pgPaymentData.tax_free_amount ?? 0) > 0 && !hasServerTaxTotals);
+        let orderTotals: OrderTaxTotals | null = hasServerTaxTotals
+            ? { total_tax_amount: pgPaymentData.tax_amount, total_vat_amount: pgPaymentData.vat_amount }
+            : null;
+        if (needsOrderLookup) {
+            try {
+                // 비회원 주문은 X-Guest-Order-Token 이 없으면 서버가 주문을 찾지 못한다.
+                // 헤더를 빼면 과세/비과세 금액이 조회되지 않아 결제사에 세금 구분이 빠진 채 전달된다.
+                const guestHeaders = buildGuestOrderTokenHeaders();
+                const orderRes = await G7Core.api.get(
+                    `/modules/sirsoft-ecommerce/user/orders/${pgPaymentData.order_number}`,
+                    Object.keys(guestHeaders).length > 0 ? { headers: guestHeaders } : undefined,
+                );
+                orderTotals = (orderRes?.data as OrderTaxTotals | null | undefined) ?? null;
+            } catch {
+                // 주문 합계 없이도 면세분은 서버 결제 데이터로 나눈다 — 부가세는 기본 세율로 계산
             }
-        } catch {
-            // 과세 필드는 선택 사항 — 조회 실패 시 미포함 상태로 진행
         }
+
+        // 면세분은 서버가 청구액과 같은 규칙으로 환산한 값을 우선한다(구버전 서버면 주문 합계).
+        Object.assign(formFields, buildNicepayTaxFields(
+            pgPaymentData.amount,
+            pgPaymentData.tax_free_amount ?? orderTotals?.total_tax_free_amount,
+            orderTotals,
+        ));
 
         const form = createPaymentForm(callbackUrl, formFields);
 

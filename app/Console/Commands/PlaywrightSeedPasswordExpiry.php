@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
@@ -44,6 +45,8 @@ use Illuminate\Support\Str;
  */
 class PlaywrightSeedPasswordExpiry extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 이름 및 시그니처
      *
@@ -61,13 +64,6 @@ class PlaywrightSeedPasswordExpiry extends Command
         {--issue-token : 시드 계정마다 "다른 기기" 로그인 토큰을 하나씩 발급해 출력한다}
         {--restore-settings : 스냅샷으로 보안 설정을 되돌리고 스냅샷을 지운다}
         {--purge-users : 이 커맨드가 만든 테스트 계정을 전부 제거한다}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = 'Playwright·Chrome MCP 실측용 비밀번호 만료 픽스처를 만들고 보안 설정을 스냅샷·복원합니다.';
 
     /** 만들 수 있는 상태 */
     public const STAGES = ['fresh', 'notice', 'expired', 'postponed', 'admin_assigned'];

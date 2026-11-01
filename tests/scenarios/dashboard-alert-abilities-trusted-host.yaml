@@ -1,0 +1,24 @@
+feature: 허용 도메인이 켜진 환경에서 대시보드 경고 [복구]·[닫기] 판정
+
+description: |
+  대시보드 경고의 abilities 는 버튼이 부르는 엔드포인트를 라우트 표에서 찾아 그 permission
+  미들웨어로 판정한다. 운영 환경은 컴파일된 라우트 표(라우트 캐시)를 쓰고, 컴파일된 표는 매칭할
+  때 요청 Host 를 읽는다. 판정용 요청을 Host 없이(localhost) 만들면 허용 도메인(TrustHosts) 밖이라
+  매칭이 예외로 끝나 판정이 잠금으로 떨어졌다 — 최고관리자에게도 [복구]·[닫기]가 잠겼다.
+
+  조치: 판정용 요청을 사이트 주소(APP_URL) origin 으로 만든다. 사이트 주소의 host 는 허용 도메인에
+  항상 들어 있고 요청 Host 에 기대지 않는다. 라우트가 없거나 권한이 없으면 종전처럼 잠근다.
+
+axes:
+  trusted_hosts: [enabled]
+  route_table: [compiled]
+  permission: [granted, missing]
+
+exclusions: []
+
+effects:
+  - dashboard_alert_actions_open_under_trusted_hosts
+  - dashboard_alert_actions_stay_locked_without_permission_or_route
+
+test_files:
+  - tests/Feature/Dashboard/DashboardAlertAbilitiesTrustedHostTest.php

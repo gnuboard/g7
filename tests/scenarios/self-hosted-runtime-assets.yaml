@@ -40,6 +40,11 @@ effects:
   - template_external_asset_field_resolves_to_asset_url
   - template_external_same_origin_ignores_preconnect_and_crossorigin
   - template_external_invalid_url_is_logged_not_silently_dropped
+  - template_external_attributes_normalized
+  - template_external_invalid_declarations_filtered
+  - template_external_hints_deduplicated
+  # #158 — 실패 신호는 인라인 onerror 가 아니라 표식 속성(셸 캡처 리스너가 받는다)
+  - template_external_failure_marker_not_inline
   - bot_render_path_uses_same_origin_asset
   - layout_script_retries_before_failing
   - layout_script_url_converted_to_current_mode

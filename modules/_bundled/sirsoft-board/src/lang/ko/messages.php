@@ -612,6 +612,7 @@ return [
             'counts_syncing' => '비정규화 카운트 컬럼 동기화 중...',
             'counts_synced' => '게시글·댓글·게시판 카운트 컬럼 갱신 완료',
             'images_creating' => '샘플 이미지 파일 생성 중...',
+            'images_skipped_no_gd' => 'PHP gd 확장이 없어 샘플 이미지·첨부 없이 진행합니다.',
             'image_created' => '샘플 이미지 #:index: :path',
             'posts_exist_skip' => ':slug 게시판에 이미 게시글 :count개가 있습니다. 스킵합니다.',
             'board_summary' => ':slug: 게시글 :posts개, 답변글 :replies개, 댓글 :comments개 생성',

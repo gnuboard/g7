@@ -309,6 +309,24 @@ class Plugin implements PluginInterface
 - `"src/"`: src 디렉토리 내 클래스 로딩
 - `"./"`: 루트의 plugin.php 로딩
 
+### PHP 확장 요구 선언
+
+코어 기준 「선택」 PHP 확장(`bcmath`·`gd`·`zlib` 등)이나 코어 목록 밖 확장(`soap` 등)을 쓰면 composer.json 에 선언한다.
+`composer install` 판단에서는 `ext-*` 를 무시하지만, 코어가 설치·활성화·업데이트 때 이 선언을 검사하고 관리자 화면·README 에 표시한다.
+
+```json
+{
+    "require": { "php": "^8.2", "ext-openssl": "*" },
+    "suggest": { "ext-soap": "모바일 결제(SmartPhone Pay) 승인키 발급에 필요" }
+}
+```
+
+- `require.ext-*`: 필수 — 서버에 없으면 설치·활성화를 막는다(업데이트는 경고만).
+- `suggest.ext-*`: 권장 — 일부 기능에만 필요할 때. 막지 않고 「권장 PHP 확장: 이름(미설치)」 배지만 표시한다. 값은 사유 문장이다.
+- `suggest` 로 선언한 확장을 쓰는 코드는 `class_exists`·`function_exists` 로 가드하고, 없을 때 고객에게는 일반 문구를, 로그에는 원인을 남긴다.
+
+상세: [requirements.md §1.8](../requirements.md#18-확장모듈플러그인이-요구하는-php-확장)
+
 ---
 
 ## 화면 컴포넌트 제공
@@ -1153,24 +1171,58 @@ class ReportSyncListener implements HookListenerInterface
 
 선언하지 않고 협력만 하려면 이름 대신 훅 키만 씁니다 — 상대가 없는 사이트에서는 구독한 훅이 발화하지 않을 뿐입니다.
 
-**선택 연동 (`integrations`)** — 상대 확장이 없어도 동작하지만 있으면 기능이 이어지는 경우(예: 쇼핑몰·게시판이 있으면 그 알림 설정 화면에
-탭을 끼우는 알림 플러그인)는 `integrations` 에 선언합니다. 설치를 막지 않고, 관리자 확장 상세의 「함께 쓰면 연동되는 확장」과 확장 문서의
-의존 관계 절에 드러나 결합이 추적됩니다. 레이아웃 조각(`resources/extensions/*`)이 다른 확장의 화면을 `target_layout` 으로 지목하는 것도
-이름 참조이므로 둘 중 하나에 선언해야 합니다 — 대상 화면이 없는 설치에서 코어는 그 조각을 건너뛸 뿐 오류를 내지 않으므로, 선언이 없으면
-결합을 아무도 모릅니다.
+##### 선택 연동 (`integrations`)
+
+상대 확장이 없어도 동작하지만 있으면 기능이 이어지는 경우(예: 쇼핑몰·게시판이 있으면 그 알림 설정 화면에 탭을 끼우는 알림 플러그인,
+게시판·쇼핑몰을 골라 쓰는 사용자 템플릿)는 `integrations` 에 선언합니다. 모듈(`module.json`)·플러그인(`plugin.json`)·템플릿(`template.json`)
+공통 스펙이고, `dependencies` 와 같은 자리에 같은 모양으로 적습니다(코어 7.1.4 부터 설치기·생명주기가 `dependencies` 와 같은 수준으로
+읽습니다 — 그 전 코어는 관리자 확장 상세와 확장 문서에 표시만 합니다).
+
+레이아웃 조각(`resources/extensions/*`)이 다른 확장의 화면을 `target_layout` 으로 지목하는 것도 이름 참조이므로 둘 중 하나에 선언해야
+합니다 — 대상 화면이 없는 설치에서 코어는 그 조각을 건너뛸 뿐 오류를 내지 않으므로, 선언이 없으면 결합을 아무도 모릅니다.
 
 ```json
 {
+    "dependencies": { "modules": {}, "plugins": {} },
     "integrations": {
-        "modules": ["vendor-sample_shop", "vendor-sample_board"],
-        "plugins": [],
+        "modules": { "vendor-sample_shop": ">=1.2.0", "vendor-sample_board": ">=1.0.0" },
+        "plugins": ["vendor-sample_postcode"],
         "templates": []
     }
 }
 ```
 
-객체 형식(`{"vendor-sample_shop": "주문 알림 탭"}`)도 받으며 키를 식별자로 씁니다. 정적 검사 `extension-undeclared-extension-reference` 는
-`dependencies` 에도 `integrations` 에도 없는 확장 참조를 오류로 봅니다.
+| 형식 | 뜻 |
+| --- | --- |
+| 객체형 `{"식별자": "버전 제약"}` | 값은 `dependencies` 와 같은 버전 제약(`>=1.2.0` — 표기 규칙은 [Changelog 규칙 — 코어 버전 제약 정책](changelog-rules.md#8-코어-버전-제약-정책)). 새로 선언할 때 권장 |
+| 목록형 `["식별자"]` | 버전 무관 |
+| 객체형인데 값이 버전 제약이 아닌 문자열(7.1.3 이전의 설명형 `{"vendor-sample_shop": "주문 알림 탭"}`) | 버전 무관으로 받고 서버 로그에 경고를 남깁니다. 버전 제약이나 목록형으로 바꾸세요 |
+
+**`dependencies` 와 무엇이 다른가** — 같은 자리에서 읽되, 연동은 **막지 않고 안내만** 합니다.
+
+| 시점 | `dependencies` (필수) | `integrations` (선택 연동) |
+| --- | --- | --- |
+| 설치·활성화 | 대상이 없거나 꺼졌거나 버전이 모자라면 막는다 | 진행한다. 미설치·비활성·「연동 버전 미달」 대상을 결과 메시지로 안내한다 |
+| 업데이트 | 의존 확장의 버전 제약 경고 | 같은 방식으로 연동 확장의 버전 미달을 안내한다 |
+| 웹 설치 마법사 | 고르면 함께 선택되고 해제하면 「다음」이 막힌다 | 고른 순간 한 번 함께 체크되고 「연동」 표시가 붙는다. 해제할 수 있고, 해제한 것은 다시 체크하지 않으며 「다음」도 막지 않는다. 사용자가 직접 고른 확장의 연동만 따라간다(연동의 연동은 따라가지 않는다). 대상이 템플릿이면 안내만 한다 |
+| 관리자 설치 창 | 함께 설치(권한 확인) | 「함께 쓰면 연동되는 확장(선택)」 체크 목록 — 미설치·비활성 항목이 기본 체크되고, 해제해도 본체 설치는 진행한다. 고른 연동 확장은 본체보다 먼저 설치·활성화되며, 그 설치가 실패해도 본체 설치는 계속하고 안내만 남긴다. 대상이 템플릿이면 표시만 한다 |
+| 관리자 확장 상세 | 의존 목록 | 「함께 쓰면 연동되는 확장」 — 요구 버전과 「연동 버전 미달」 표시 |
+| 대상을 끄거나 지울 때 | 이 확장이 의존하면 경고하거나 막는다 | 막지 않는다. 확인 창에 「연동 중인 확장」 목록을 보여 주고 진행하며, Artisan 명령도 같은 목록을 출력한다(종료 코드는 그대로) |
+| 코어 업데이트의 번들 정리 | 보존 | 활성 확장이 연동으로 선언한 번들도 보존한다 |
+
+**연동 대상이 꺼진 사이트에서의 동작은 선언한 확장이 책임집니다.** 코어는 설치를 막지 않으므로, 상대가 없을 때 죽은 메뉴·404 알림·빈 화면이
+남지 않게 각 경로에서 가립니다.
+
+- 서버(PHP): 상대 확장의 훅은 발화하지 않을 뿐이라 따로 할 일이 없습니다. 상대 화면으로 가는 링크·데이터를 응답에 싣는다면
+  활성 여부(`ModuleManager::getActiveModuleIdentifiers()` 등)를 확인하고 꺼져 있으면 싣지 않습니다.
+- 레이아웃: 상대 API 를 부르는 데이터소스와 링크·단추는 `_global.activeModules`/`activePlugins` 로 가립니다 —
+  `{{_global.activeModules?.includes('vendor-sample_shop') ?? true}}`. 식의 모양과 규칙은
+  [전역 상태 — 시스템 주입 속성](../frontend/state-management.md#시스템-주입-속성)에 있습니다.
+- 사용자 템플릿의 라우트: 상대 모듈 화면을 선언한 라우트에는 `requires` 를 달아 모듈이 꺼지면 라우트를 내지 않게 합니다
+  ([템플릿 라우팅 — requires](template-routing.md)).
+
+정적 검사는 `dependencies` 에도 `integrations` 에도 없는 확장 참조를 오류로 보고, 템플릿 레이아웃의 데이터소스가 선택 연동 확장의 API 를
+가드 없이 부르는 것도 오류로 봅니다(그 레이아웃을 쓰는 라우트가 모두 `requires` 로 그 확장을 거는 경우는 제외).
 
 #### 3. 훅 계약 (Hook Contract)
 
@@ -1309,7 +1361,7 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 |--------|------|
 | `php artisan plugin:list` | 플러그인 목록 조회 |
 | `php artisan plugin:install [identifier]` | 플러그인 설치 (Composer 의존성 자동 설치 포함) |
-| `php artisan plugin:activate [identifier]` | 플러그인 활성화 (끌 때 함께 꺼진 언어팩도 함께 켬, `--without-language-packs` 로 생략) |
+| `php artisan plugin:activate [identifier]` | 플러그인 활성화 (끌 때 함께 꺼진 언어팩도 함께 켬, `--without-language-packs` 로 생략). 필요한 의존 확장이 없거나 꺼져 있거나 버전이 모자라면 사유(미설치·비활성·버전 미달 설치 → 요구)를 출력하고 멈춘다 — `--force` 로 강제 활성화 |
 | `php artisan plugin:deactivate [identifier]` | 플러그인 비활성화 |
 | `php artisan plugin:uninstall [identifier]` | 플러그인 삭제 (--delete-data 시 vendor/ 삭제 포함) |
 | `php artisan plugin:composer-install [identifier]` | 플러그인 Composer 의존성 설치 |

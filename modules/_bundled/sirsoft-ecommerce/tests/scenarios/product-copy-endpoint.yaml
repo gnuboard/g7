@@ -5,9 +5,10 @@ description: |
   권한·없는 상품·잘못된 플래그를 막으며, 가격은 기준 통화 자릿수로 돌려준다.
 
   수정 이력: 이커머스 전수 실측 S5 (2026-10-07) — 기준 통화 자릿수 시험을 보탰다.
+  #612 (2026-10-26) — 세율 복사·판매 정보 미복사 시 과세 기본값 시험을 보탰다.
 
 axes:
-  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15]
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17]
   # c01: test_show_for_copy_returns_product_data
   # c02: test_show_for_copy_filters_seo_when_disabled
   # c03: test_show_for_copy_includes_seo_when_enabled
@@ -23,6 +24,8 @@ axes:
   # c13: test_show_for_copy_returns_403_without_permission
   # c14: test_show_for_copy_excludes_date_fields
   # c15: test_show_for_copy_rejects_non_boolean_flag
+  # c16: test_show_for_copy_keeps_tax_rate_when_sales_info_copied
+  # c17: test_show_for_copy_resets_tax_fields_when_sales_info_disabled
 
 effects:
   - product_copy_data_filtered_by_options

@@ -36,7 +36,7 @@
       </div>
       <p data-if="{{!order.data.payment?.paid_at}}" class="text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
     </div>
-    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
+    <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0 || order.data.total_zero_rated_amount > 0)}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
       <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">$t:sirsoft-pay_nhnkcp.user.tax_breakdown_title</p>
       <div class="flex-between text-sm">
         <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.supply_amount</span>
@@ -49,6 +49,10 @@
       <div data-if="{{order.data.total_tax_free_amount > 0}}" class="flex-between text-sm">
         <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.tax_free_amount</span>
         <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_tax_free_amount_formatted}}</span>
+      </div>
+      <div data-if="{{order.data.total_zero_rated_amount > 0}}" class="flex-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.zero_rated_amount</span>
+        <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_zero_rated_amount_formatted}}</span>
       </div>
     </div>
     <div data-if="{{order.data.payment?.pg_provider === 'nhnkcp' &amp;&amp; order.data.payment?.transaction_id &amp;&amp; order.data.payment?.paid_at}}" id="kcp-mp-receipt-row" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">

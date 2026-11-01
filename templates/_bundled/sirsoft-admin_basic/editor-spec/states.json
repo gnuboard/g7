@@ -1974,6 +1974,37 @@
       ]
     },
     {
+      "comment": "모달 본문이 읽는 전역 상태(isModuleIntegrationDeactivating, selectedModule) — 목록 스위치가 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "module_deactivate_integrations_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedModule": {
+                "identifier": "sirsoft-board",
+                "name": "게시판",
+                "status": "active",
+                "integrated_by": [
+                  {
+                    "type": "template",
+                    "identifier": "sirsoft-basic",
+                    "name": "기본 사용자 템플릿"
+                  }
+                ]
+              },
+              "isModuleIntegrationDeactivating": false
+            }
+          }
+        }
+      ]
+    },
+    {
       "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isModuleInstalling, moduleInstallVendorMode, moduleLayoutSource, moduleLayoutSourceOpen, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
@@ -1986,6 +2017,7 @@
           "default": true,
           "initialState": {
             "global": {
+              "installSelectedIntegrations": null,
               "moduleLayoutSource": "auto",
               "moduleLayoutSourceOpen": true,
               "selectedModule": {
@@ -1996,6 +2028,47 @@
               },
               "moduleInstallVendorMode": "auto",
               "installPreview": {
+                "integrations": [
+                  {
+                    "type": "module",
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "status": "not_installed",
+                    "required_version": ">=1.2.1",
+                    "installed_version": null,
+                    "is_installed": false,
+                    "is_active": false,
+                    "is_met": false,
+                    "can_select": true,
+                    "default_selected": true
+                  },
+                  {
+                    "type": "plugin",
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "status": "inactive",
+                    "required_version": "*",
+                    "installed_version": "1.0.0",
+                    "is_installed": true,
+                    "is_active": false,
+                    "is_met": true,
+                    "can_select": true,
+                    "default_selected": true
+                  },
+                  {
+                    "type": "module",
+                    "identifier": "sirsoft-page",
+                    "name": "페이지",
+                    "status": "active",
+                    "required_version": "*",
+                    "installed_version": "1.0.0",
+                    "is_installed": true,
+                    "is_active": true,
+                    "is_met": true,
+                    "can_select": true,
+                    "default_selected": false
+                  }
+                ],
                 "dependencies": [
                   {
                     "identifier": "sirsoft-board",
@@ -2175,6 +2248,13 @@
           "initialState": {
             "global": {
               "selectedModule": {
+                "integrated_by": [
+                  {
+                    "type": "template",
+                    "identifier": "sirsoft-basic",
+                    "name": "기본 사용자 템플릿"
+                  }
+                ],
                 "identifier": "sirsoft-ecommerce",
                 "name": "이커머스",
                 "status": "inactive",
@@ -2572,6 +2652,37 @@
       ]
     },
     {
+      "comment": "모달 본문이 읽는 전역 상태(isPluginIntegrationDeactivating, selectedPlugin) — 목록 스위치가 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "plugin_deactivate_integrations_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedPlugin": {
+                "identifier": "sirsoft-daum_postcode",
+                "name": "다음 우편번호",
+                "status": "active",
+                "integrated_by": [
+                  {
+                    "type": "template",
+                    "identifier": "sirsoft-basic",
+                    "name": "기본 사용자 템플릿"
+                  }
+                ]
+              },
+              "isPluginIntegrationDeactivating": false
+            }
+          }
+        }
+      ]
+    },
+    {
       "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isPluginInstalling, pluginInstallVendorMode, pluginLayoutSource, pluginLayoutSourceOpen, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
@@ -2584,9 +2695,51 @@
           "default": true,
           "initialState": {
             "global": {
+              "installSelectedIntegrations": null,
               "pluginLayoutSource": "auto",
               "pluginLayoutSourceOpen": true,
               "installPreview": {
+                "integrations": [
+                  {
+                    "type": "module",
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "status": "not_installed",
+                    "required_version": ">=1.2.1",
+                    "installed_version": null,
+                    "is_installed": false,
+                    "is_active": false,
+                    "is_met": false,
+                    "can_select": true,
+                    "default_selected": true
+                  },
+                  {
+                    "type": "plugin",
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "status": "inactive",
+                    "required_version": "*",
+                    "installed_version": "1.0.0",
+                    "is_installed": true,
+                    "is_active": false,
+                    "is_met": true,
+                    "can_select": true,
+                    "default_selected": true
+                  },
+                  {
+                    "type": "module",
+                    "identifier": "sirsoft-page",
+                    "name": "페이지",
+                    "status": "active",
+                    "required_version": "*",
+                    "installed_version": "1.0.0",
+                    "is_installed": true,
+                    "is_active": true,
+                    "is_met": true,
+                    "can_select": true,
+                    "default_selected": false
+                  }
+                ],
                 "dependencies": [
                   {
                     "identifier": "sirsoft-board",
@@ -2804,6 +2957,13 @@
           "initialState": {
             "global": {
               "selectedPlugin": {
+                "integrated_by": [
+                  {
+                    "type": "template",
+                    "identifier": "sirsoft-basic",
+                    "name": "기본 사용자 템플릿"
+                  }
+                ],
                 "identifier": "sirsoft-gdpr",
                 "name": "GDPR (일반 데이터 보호 규정)",
                 "status": "inactive",
@@ -3213,6 +3373,13 @@
           "initialState": {
             "global": {
               "selectedTemplate": {
+                "integrated_by": [
+                  {
+                    "type": "module",
+                    "identifier": "sirsoft-sample",
+                    "name": "예시 모듈"
+                  }
+                ],
                 "identifier": "sirsoft-basic",
                 "name": "Basic",
                 "status": "active"
@@ -3411,9 +3578,51 @@
           "default": true,
           "initialState": {
             "global": {
+              "installSelectedIntegrations": null,
               "templateLayoutSource": "auto",
               "templateLayoutSourceOpen": true,
               "installPreview": {
+                "integrations": [
+                  {
+                    "type": "module",
+                    "identifier": "sirsoft-board",
+                    "name": "게시판",
+                    "status": "not_installed",
+                    "required_version": ">=1.2.1",
+                    "installed_version": null,
+                    "is_installed": false,
+                    "is_active": false,
+                    "is_met": false,
+                    "can_select": true,
+                    "default_selected": true
+                  },
+                  {
+                    "type": "plugin",
+                    "identifier": "sirsoft-daum_postcode",
+                    "name": "다음 우편번호",
+                    "status": "inactive",
+                    "required_version": "*",
+                    "installed_version": "1.0.0",
+                    "is_installed": true,
+                    "is_active": false,
+                    "is_met": true,
+                    "can_select": true,
+                    "default_selected": true
+                  },
+                  {
+                    "type": "module",
+                    "identifier": "sirsoft-page",
+                    "name": "페이지",
+                    "status": "active",
+                    "required_version": "*",
+                    "installed_version": "1.0.0",
+                    "is_installed": true,
+                    "is_active": true,
+                    "is_met": true,
+                    "can_select": true,
+                    "default_selected": false
+                  }
+                ],
                 "dependencies": [
                   {
                     "identifier": "sirsoft-board",
@@ -3601,6 +3810,13 @@
           "initialState": {
             "global": {
               "selectedTemplate": {
+                "integrated_by": [
+                  {
+                    "type": "template",
+                    "identifier": "sirsoft-basic",
+                    "name": "기본 사용자 템플릿"
+                  }
+                ],
                 "identifier": "sirsoft-basic",
                 "name": "Basic",
                 "type": "user",

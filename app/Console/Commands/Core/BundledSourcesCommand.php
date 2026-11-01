@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Services\Core\BundledInventory;
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\File;
  */
 class BundledSourcesCommand extends Command
 {
+    use LocalizesDescription;
+
     protected $signature = 'core:bundled-sources
         {action : list|place|prune}
         {identifiers?* : 대상 번들 식별자 (type:id 허용)}
@@ -30,8 +33,6 @@ class BundledSourcesCommand extends Command
         {--zip= : 배포본 ZIP 파일 경로 (현재 코어와 같은 버전)}
         {--force : prune 미리보기 대신 실제로 삭제}
         {--include-modified : prune 이 배포본과 다른 파일이 있는 폴더도 삭제}';
-
-    protected $description = '설치하지 않은 공식 번들 소스를 보고·배치·정리합니다';
 
     /**
      * 이번 실행이 만든 격리 디렉토리(zip 추출·GitHub 다운로드) — 종료 시 정리.
@@ -357,6 +358,9 @@ class BundledSourcesCommand extends Command
         }
         foreach ($result['protected'] as $key => $requiredBy) {
             $this->line(__('settings.bundled_sources.prune_protected_dependency', ['label' => $key, 'required_by' => implode(', ', $requiredBy)]));
+        }
+        foreach ($result['protected_integrations'] ?? [] as $key => $integratedBy) {
+            $this->line(__('settings.bundled_sources.prune_protected_integration', ['label' => $key, 'integrated_by' => implode(', ', $integratedBy)]));
         }
         // 배포본에 없는 파일만 다른 폴더는 따로 알린다 — 기본 업데이트가 남긴 이전 판 파일일 수 있다(7.1.1 출시 전).
         // 보존 동작은 같다(--include-modified 일 때만 지운다).

@@ -96,6 +96,24 @@ G7이 자동으로 주입하는 `_global` 속성입니다. 레이아웃에서 �
 |------|------|------|
 | `_global.settings` | 관리자 환경설정 (defaults.json 기반 영속 설정) | `G7Config.settings` → `TemplateApp.loadG7Config()` |
 | `_global.appConfig` | 시스템 설정 (config/frontend.php 기반 정적 config 값) | `G7Config.appConfig` → `TemplateApp.loadG7Config()` |
+| `_global.activeModules` | 활성 모듈 식별자 배열 (예: `['sirsoft-board', 'sirsoft-page']`). 켜진 모듈이 없으면 `[]`. 서버가 목록을 구하지 못하면 키가 없다(가드는 「켜짐」으로 읽는다). **코어 7.1.4+** (engine-v1.84.0) — 옛 코어에는 키가 없다 | `G7Config.activeModules`(메타 객체 배열)의 `identifier` → `TemplateApp.loadG7Config()` |
+| `_global.activePlugins` | 활성 플러그인 식별자 배열. 나머지는 `activeModules` 와 같다 | `G7Config.activePlugins` 의 `identifier` → `TemplateApp.loadG7Config()` |
+
+#### 모듈이 켜져 있는지 판정하기 (`activeModules` / `activePlugins`)
+
+게시판·쇼핑몰처럼 사이트가 고를 수 있는 모듈의 링크·메뉴·데이터소스는 아래 **한 모양**으로 가린다. 검색봇 화면(SEO)도 같은 식을 같은 답으로 평가한다.
+
+```json
+{ "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}" }
+{ "if": "{{!(_global.activeModules?.includes('sirsoft-board') ?? true)}}" }
+{ "readOnly": "{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}" }
+```
+
+- `?? true` 는 빼지 않는다 — 이 키가 없는 옛 코어(7.1.3 이하)에서 「켜짐」으로 읽어 지금처럼 보이게 한다.
+- `_global.modules` 는 공개 설정이 있는 활성 모듈만 담으므로 「켜져 있나」 판정에 쓰지 않는다.
+- 값은 페이지를 처음 열 때 정해진다. 관리자에서 모듈을 켜고 끈 결과는 새로 고침한 뒤 반영된다.
+- 모듈 API 를 부르는 데이터소스는 가드와 함께 `"errorHandling": {"404": {"handler": "suppress"}}` 를 단다 — 옛 코어에서 가드가 늘 참이어도 꺼진 모듈의 404 알림이 뜨지 않게.
+- 꺼진 모듈의 라우트 자체는 routes.json 의 `requires` 로 숨긴다 ([template-routing.md](../extension/template-routing.md#requires--모듈이-꺼지면-라우트-숨기기)).
 
 ```html
 <!-- appConfig 활용 예시 - 동적 Select 옵션 (타임존) --><div options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true">본문</div>

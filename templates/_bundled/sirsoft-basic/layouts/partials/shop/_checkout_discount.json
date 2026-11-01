@@ -261,31 +261,9 @@
                         "name": "order_coupon_issue_id",
                         "aria-label": "$t:shop.checkout.order_coupon_select",
                         "value": "{{_local.checkout?.order_coupon_issue_id ?? ''}}",
-                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": ""
-                            },
-                            "text": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0 ? '$t:shop.checkout.order_coupon_placeholder' : '$t:shop.checkout.order_coupon_no_available'}}"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "iteration": {
-                                "source": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount')}}",
-                                "item_var": "coupon",
-                                "index_var": "couponIdx"
-                            },
-                            "props": {
-                                "value": "{{coupon.id}}"
-                            },
-                            "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}"
-                        }
-                    ]
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
+                        "options": "{{[{ value: '', label: (checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0 ? '$t:shop.checkout.order_coupon_placeholder' : '$t:shop.checkout.order_coupon_no_available' }].concat((checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'order_amount').map(coupon => ({ value: String(coupon.id), label: '[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')' })))}}"
+                    }
                 },
                 {
                     "comment": "적용된 주문 쿠폰 정보",
@@ -414,31 +392,9 @@
                         "name": "shipping_coupon_issue_id",
                         "aria-label": "$t:shop.checkout.shipping_coupon_select",
                         "value": "{{_local.checkout?.shipping_coupon_issue_id ?? ''}}",
-                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": ""
-                            },
-                            "text": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0 ? '$t:shop.checkout.shipping_coupon_placeholder' : '$t:shop.checkout.shipping_coupon_no_available'}}"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "iteration": {
-                                "source": "{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}",
-                                "item_var": "coupon",
-                                "index_var": "couponIdx"
-                            },
-                            "props": {
-                                "value": "{{coupon.id}}"
-                            },
-                            "text": "{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}"
-                        }
-                    ]
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
+                        "options": "{{[{ value: '', label: (checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0 ? '$t:shop.checkout.shipping_coupon_placeholder' : '$t:shop.checkout.shipping_coupon_no_available' }].concat((checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').map(coupon => ({ value: String(coupon.id), label: '[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')' })))}}"
+                    }
                 },
                 {
                     "comment": "적용된 배송비 쿠폰 정보",

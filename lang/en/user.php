@@ -38,6 +38,7 @@ return [
         'install' => 'Installation',
         'register' => 'Registration',
         'admin_create' => 'Created by an administrator',
+        'console' => 'Server terminal reset',
     ],
 
     // Password expiry target list (admin settings > security)
@@ -233,5 +234,24 @@ return [
         'filter_operator' => 'search operator',
         'sort_by' => 'sort field',
         'sort_order' => 'sort order',
+    ],
+
+    // `user:reset-password` (server terminal password reset) output
+    'commands' => [
+        'reset_password' => [
+            'not_found' => 'Member not found: :email',
+            'no_source' => 'No new password. Use the G7_RESET_PASSWORD environment variable, --password-file or --generate, or run it in a terminal.',
+            'file_unreadable' => 'Cannot read the password file: :path',
+            'ask' => 'New password',
+            'ask_confirm' => 'Confirm new password',
+            'mismatch' => 'The two passwords do not match.',
+            'done' => 'Reset the password of :email.',
+            'unlocked' => 'Cleared failed sign-in attempts and the lock.',
+            'sessions_revoked' => 'Signed out of every device.',
+            'notified' => 'Sent the password change notification (per notification settings).',
+            'change_required' => 'The member must change the password at the next sign-in.',
+            'generated_once' => 'The password below will not be shown again — move it somewhere safe now.',
+            'failed' => 'Could not reset the password (nothing was changed): :reason',
+        ],
     ],
 ];

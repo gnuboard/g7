@@ -21,8 +21,11 @@ effects:
   - shared_cache_invalidated_without_worker   # 워커 없이 저장 직후 SEO 캐시가 비워진다
   - invalidation_deferred_until_commit        # 트랜잭션 안 발화는 커밋 뒤에 비운다
   - heavy_work_stays_queued                   # 상세 재렌더·재활성 재색인은 새 큐 리스너로 push 된다
+  - board_update_invalidates_only_own_board_screens  # 게시판 수정은 그 게시판 목록·쪽 변종·글 상세만 비운다(공개#156)
+  - post_change_invalidates_list_page_variants       # 글 변경은 목록 쪽 변종(?page=2)도 비운다
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/Seo/BoardSeoCacheQueuedTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Seo/BoardSeoCacheInvalidationScopeTest.php
   - modules/_bundled/sirsoft-board/tests/Unit/Listeners/SeoBoardRegenerateListenerTest.php
   - modules/_bundled/sirsoft-board/tests/Unit/Listeners/SeoBoardCacheListenerTest.php

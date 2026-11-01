@@ -114,10 +114,11 @@
                                 ]
                             },
                             {
-                                "comment": "비회원 주문 진입 영역 — redirect 가 checkout 일 때만 노출. Form 바깥에 두어야 type=button 명시에도 불구하고 폼 submit 으로 가로채지지 않음. 임시주문은 cartKey(localStorage)로 이미 생성됨 → redirect 경로로 그대로 이동",
+                                "comment": "비회원 주문 진입 영역 — redirect 가 checkout 일 때만 노출(쇼핑몰 모듈이 꺼져 있으면 숨김). Form 바깥에 두어야 type=button 명시에도 불구하고 폼 submit 으로 가로채지지 않음. 임시주문은 cartKey(localStorage)로 이미 생성됨 → redirect 경로로 그대로 이동",
+                                "id": "login_guest_checkout",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{query.redirect && query.redirect.includes('checkout')}}",
+                                "if": "{{query.redirect && query.redirect.includes('checkout') && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
                                 "props": {
                                     "className": "mt-6"
                                 },
@@ -192,10 +193,11 @@
                                 ]
                             },
                             {
-                                "comment": "비회원 주문 조회 진입 — redirect=checkout 일 때는 비노출 (결제 진입 흐름이라 조회 안내가 무관). 일반 로그인 화면에서만 노출해 재방문 조회 사용자 동선 제공. 안내문구와 링크를 한 줄(inline)로 표시.",
+                                "comment": "비회원 주문 조회 진입 — redirect=checkout 일 때는 비노출 (결제 진입 흐름이라 조회 안내가 무관). 일반 로그인 화면에서만 노출해 재방문 조회 사용자 동선 제공. 안내문구와 링크를 한 줄(inline)로 표시. 쇼핑몰 모듈이 꺼져 있으면 숨긴다.",
+                                "id": "login_guest_order_lookup",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{!query.redirect || !query.redirect.includes('checkout')}}",
+                                "if": "{{(!query.redirect || !query.redirect.includes('checkout')) && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
                                 "props": {
                                     "className": "mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-xs"
                                 },

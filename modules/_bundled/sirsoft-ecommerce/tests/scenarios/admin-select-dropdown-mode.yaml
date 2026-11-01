@@ -1,0 +1,23 @@
+feature: 이커머스 관리자 선택칸 — 브라우저 기본 선택상자 대신 관리자 템플릿의 목록형 드롭다운
+
+description: |
+  관리자 템플릿 Select 는 props.options 가 있으면 단추(aria-haspopup=listbox) + 목록 상자로, 없으면 브라우저 기본
+  <select> 로 그린다. 레이아웃이 <select> 바로 아래 <option> 을 적어 기본 선택상자로 그려진 칸을, 정적 목록은 <options>
+  래퍼로, 응답을 펼치는 목록은 options="{{…}}" 식으로 바꿨다.
+
+  조용히 깨지는 지점:
+    - 목록형은 고른 값을 스스로 들지 않는다 — 값 바인딩(value)이 없던 칸(주문 찾기 창·일괄 가격/재고 창)은 골라도 단추가 그대로다.
+    - 기본 단추의 border-0 이 components 층의 input-error 를 이겨 오류 테두리가 사라진다 — 오류 갈래는 테두리를 단추 글자에 직접 싣는다.
+    - change 동작은 $event.target.value 로 고른 값을 받는다 — 목록형도 같은 모양의 사건을 넘겨야 한다.
+  축 screen 은 바꾼 화면(칸)이다.
+
+axes:
+  screen: [product_option_tax_status, product_option_mileage_type, product_notice_template, order_cancel_reason, personal_payment_order_search, bulk_price, bulk_stock]
+
+effects:
+  - select_renders_listbox_dropdown
+  - select_choice_reaches_change_action
+  - select_error_border_on_trigger
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminSelectDropdownMode.test.tsx

@@ -1310,48 +1310,91 @@
                                             }
                                         },
                                         {
-                                            "comment": "사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다",
+                                            "comment": "사이트맵 생성 요청. 대기·진행·기록 중인 동안에는 잠겨 있어 같은 작업이 겹쳐 돌지 않는다.\n                 즉시 실행(sync) 큐는 요청 안에서 생성을 끝내므로 응답까지 몇 초~수십 초가 걸린다 — 요청 중에도 잠그고 스피너를 보인다",
                                             "type": "basic",
                                             "name": "Button",
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "apiCall",
-                                                    "target": "/api/admin/seo/sitemap/regenerate",
-                                                    "auth_required": true,
-                                                    "params": {
-                                                        "method": "POST"
-                                                    },
-                                                    "onSuccess": [
+                                                    "handler": "sequence",
+                                                    "actions": [
                                                         {
-                                                            "handler": "refetchDataSource",
+                                                            "handler": "setState",
                                                             "params": {
-                                                                "dataSourceId": "sitemap_status"
+                                                                "target": "local",
+                                                                "isRegeneratingSitemap": true
                                                             }
                                                         },
                                                         {
-                                                            "handler": "toast",
+                                                            "handler": "apiCall",
+                                                            "target": "/api/admin/seo/sitemap/regenerate",
+                                                            "auth_required": true,
                                                             "params": {
-                                                                "type": "success",
-                                                                "message": "{{$t('admin.settings.seo.sitemap_update_success')}}"
-                                                            }
+                                                                "method": "POST"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "isRegeneratingSitemap": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "sitemap_status"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "{{response?.message ?? $t('admin.settings.seo.sitemap_update_success')}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "isRegeneratingSitemap": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"
+                                                                    }
+                                                                }
+                                                            ]
                                                         }
-                                                    ],
-                                                    "onError": {
-                                                        "handler": "toast",
-                                                        "params": {
-                                                            "type": "error",
-                                                            "message": "{{error.message ?? $t('admin.settings.seo.sitemap_update_failed')}}"
-                                                        }
-                                                    }
+                                                    ]
                                                 }
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "disabled": "{{_computed.isReadOnly || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
-                                                "className": "w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                                                "disabled": "{{_computed.isReadOnly || !!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
+                                                "className": "w-full md:w-auto px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-center justify-center gap-2"
                                             },
-                                            "text": "{{['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '') ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "if": "{{!!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')}}",
+                                                    "props": {
+                                                        "name": "spinner",
+                                                        "className": "spinner-sm"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "{{(!!_local.isRegeneratingSitemap || ['queued','running','writing'].includes(sitemap_status?.data?.progress?.status ?? '')) ? $t('admin.settings.seo.sitemap_regenerating') : $t('admin.settings.seo.sitemap_manual_update')}}"
+                                                }
+                                            ]
                                         }
                                     ]
                                 }

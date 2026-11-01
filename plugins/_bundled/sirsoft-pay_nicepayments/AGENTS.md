@@ -68,8 +68,10 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 `AuthResultCode == '0000'` 확인(아니면 §1 "의도적으로 하지 않는 것"의 silent redirect) →
 `sirsoft-pay_nicepayments.payment.before_authorize` 훅 → 서버가 `NextAppURL`로 승인 API
 호출 → `sirsoft-pay_nicepayments.payment.after_authorize` 훅 → 이커머스 주문 결제 완료
-처리. 결제 요청 시점에 주문의 `total_tax_amount`/`total_vat_amount`/`total_tax_free_amount`
-가 모두 0이 아니면 과세 필드를 폼에 포함합니다(§4 "과세 처리").
+처리. 결제 요청 시점에 면세분(`pg_payment_data.tax_free_amount`)이 있으면 나이스 사양의
+과세·면세 지정 필드(`SupplyAmt`·`GoodsVat`·`ServiceAmt`·`TaxFreeAmt`, 네 필드 합 = `Amt`)를
+결제액 기준으로 나눠 폼에 포함하고, 전부 과세면 보내지 않습니다(복합과세는 MID 협의 옵션 —
+`buildNicepayTaxFields`). 승인 취소 API 에는 과세 구분 필드가 없습니다.
 
 **결제 취소(환불)**: 관리자가 주문 취소 → 코어가 **환불신청서**를 만들고(자동 전이를 켜면 승인·환불완료까지 한 번에) 환불이 집행될 때
 `sirsoft-ecommerce.payment.refund` 필터 발화 → `PaymentRefundListener`(우선순위 10)가 먼저
@@ -149,9 +151,9 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 36개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
-| Vitest | 29개 | `vitest.config.ts` |
+| Vitest | 30개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 41개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 43개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

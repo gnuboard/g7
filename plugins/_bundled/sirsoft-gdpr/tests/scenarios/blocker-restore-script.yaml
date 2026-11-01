@@ -1,0 +1,18 @@
+feature: blocker_restore_script
+
+description: |
+  동의 후 복원하는 <script> 를 실행 가능한 새 요소로 다시 만든다 (#158 부수 결함 B2).
+
+  innerHTML 로 되살린 <script> 는 문서에 붙여도 실행되지 않아, 동의를 받아도 MutationObserver 경로로 막혔던
+  추적 스크립트가 돌지 않았다. 새 script 요소에 허용 속성(src·type·async·defer·crossorigin·integrity·
+  referrerpolicy·nomodule·data-*)만 옮기고 본문 텍스트(인라인 코드)는 옮기지 않는다. src 없는 script 는 되살리지 않는다.
+
+axes:
+  restore: [script_with_src, inline_script, non_script]
+
+effects:
+  - blocker_restores_script_as_fresh_element
+  - blocker_never_restores_inline_script_body
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/blocker.restoreScript.test.ts

@@ -8,7 +8,7 @@ description: |
   rewrite 전에 직접 서빙한다. 병합 입력이 바뀌는 수명주기 이벤트마다
   `incrementExtensionCacheVersion()` 단일 지점의 terminating 예약으로 재게시되고,
   누락 시 blade 렌더의 자가 치유가 보충한다. 미게시/부분게시/GC 직후에는 프론트
-  fetch 계층(fetchStaticFirst)과 태그 계층(asset-url-recovery 파샬)이 종전 API 로
+  fetch 계층(fetchStaticFirst)과 태그 계층(셸 head 스크립트 g7-shell-head.js — 종전 asset-url-recovery 파샬)이 종전 API 로
   폴백한다.
 
   핵심 동작:
@@ -141,6 +141,15 @@ effects:
   - status_command_consumes_service_report
   # #148 — 언어팩 설치 규칙(BCP 47)의 세 글자·문자 표기 로케일(fil·zh-Hant)도 lang 게시 대상이다
   - published_lang_covers_bcp47_pack_locales
+  # #158 — 태그 계층 복구기가 셸 head 스크립트(public/assets/core/js/g7-shell-head.js)로 옮겨진 뒤에도
+  # 자산 URL 모드 불변식·변환 규칙 동등성이 유지된다
+  - asset_url_mode_switch_one_way
+  - asset_url_mode_client_never_writes_settings
+  - asset_url_mode_cache_key_versioned
+  - shell_head_converter_matches_ts_builder
+  - installer_probe_checks_mime_and_token
+  - engine_layer_never_probes_asset_mode
+  - convert_to_current_mode_shapes
 
 test_files:
   - tests/Feature/Services/ExtensionStaticCacheServiceTest.php

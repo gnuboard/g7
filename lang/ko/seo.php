@@ -14,6 +14,8 @@ return [
     'sitemap_regenerated' => 'Sitemap 재생성이 완료되었습니다.',
     'sitemap_regenerate_dispatched' => 'Sitemap 재생성을 시작했습니다. 완료까지 시간이 걸릴 수 있습니다.',
     'sitemap_regenerate_failed' => 'Sitemap 재생성에 실패했습니다.',
+    'sitemap_regenerate_in_progress' => 'Sitemap 을 이미 생성하고 있습니다. 끝난 뒤 다시 시도해 주세요.',
+    'sitemap_regenerate_locked' => '다른 Sitemap 생성 작업이 대기 중이거나 이전 작업의 잠금이 남아 있습니다. 잠시 뒤 다시 시도하거나, 서버에서 `php artisan cache:clear` 를 실행한 뒤 다시 시도해 주세요.',
     'sitemap_disabled' => 'Sitemap 생성이 비활성화되어 있습니다.',
 
     // Sitemap 생성/서빙

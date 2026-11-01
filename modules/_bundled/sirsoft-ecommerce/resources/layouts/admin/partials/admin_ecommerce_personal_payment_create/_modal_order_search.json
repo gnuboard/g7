@@ -1,5 +1,5 @@
 {
-    "comment": "개인결제를 이어 붙일 기존 주문을 찾는 창. 검색 대상(주문번호·회원명·상품명)과 기간을 고른다.\n  **아직 시안이다** — 두 선택칸과 검색어가 어디에도 매이지 않았고, 결과 건수(\"7개의 주문이…\")와\n  목록은 마크업에 박힌 예시다. 행을 눌러도 고른 주문이 폼으로 전달되지 않는다.\n  옆의 회원 검색 창과 짝이고 상태도 같다.",
+    "comment": "개인결제를 이어 붙일 기존 주문을 찾는 창. 검색 대상(주문번호·회원명·상품명)과 기간을 고른다.\n  **아직 시안이다** — 두 선택칸은 고른 값을 화면 상태에 담아 단추에 보이기만 하고 검색어와 함께 검색에는\n  쓰이지 않는다. 결과 건수(\"7개의 주문이…\")와\n  목록은 마크업에 박힌 예시다. 행을 눌러도 고른 주문이 폼으로 전달되지 않는다.\n  옆의 회원 검색 창과 짝이고 상태도 같다.",
     "meta": {
         "is_partial": true,
         "description": "Personal Payment Create - Order Search Modal"
@@ -31,44 +31,40 @@
                         {
                             "type": "basic",
                             "name": "Select",
-                            "props": {
-                                "className": "select w-32 flex-shrink-0",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field"
-                            },
-                            "children": [
+                            "actions": [
                                 {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": ""
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_all"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "order_number"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_order_number"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "member_name"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_member_name"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "product_name"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_product_name"
+                                    "comment": "검색 대상 — 시안 단계라 아직 검색에 쓰이지 않는다. 목록형 선택칸은 값을 스스로 들고 있지 않으므로 고른 값을 담아 둬야 단추에 남는다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "orderSearchField": "{{$event.target.value}}"
+                                    }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "className": "w-32 flex-shrink-0",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field",
+                                "value": "{{_local.orderSearchField ?? ''}}",
+                                "options": [
+                                    {
+                                        "value": "",
+                                        "label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_all"
+                                    },
+                                    {
+                                        "value": "order_number",
+                                        "label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_order_number"
+                                    },
+                                    {
+                                        "value": "member_name",
+                                        "label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_member_name"
+                                    },
+                                    {
+                                        "value": "product_name",
+                                        "label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_product_name"
+                                    }
+                                ]
+                            }
                         },
                         {
                             "type": "basic",
@@ -89,44 +85,40 @@
                         {
                             "type": "basic",
                             "name": "Select",
-                            "props": {
-                                "className": "select w-full",
-                                "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date"
-                            },
-                            "children": [
+                            "actions": [
                                 {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": ""
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_all"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "7"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_last_7_days"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "30"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_last_30_days"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": "90"
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_last_90_days"
+                                    "comment": "주문 기간 — 검색 대상과 같이 아직 검색에 쓰이지 않고, 고른 값을 담아 단추에 남긴다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "orderSearchPeriod": "{{$event.target.value}}"
+                                    }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "className": "w-full",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date",
+                                "value": "{{_local.orderSearchPeriod ?? ''}}",
+                                "options": [
+                                    {
+                                        "value": "",
+                                        "label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_all"
+                                    },
+                                    {
+                                        "value": "7",
+                                        "label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_last_7_days"
+                                    },
+                                    {
+                                        "value": "30",
+                                        "label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_last_30_days"
+                                    },
+                                    {
+                                        "value": "90",
+                                        "label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_last_90_days"
+                                    }
+                                ]
+                            }
                         }
                     ]
                 }

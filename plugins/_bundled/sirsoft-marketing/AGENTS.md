@@ -143,7 +143,7 @@
 - [ ] 동의 상태를 바꾸는 경로를 추가했다면 이력 적재(`user_marketing_consent_histories`)가 같은 트랜잭션에 있는지 확인
 - [ ] 코어 회원·가입 훅 11종 중 하나라도 이름·페이로드가 바뀌면 이 플러그인이 조용히 끊기므로, 코어 회원 흐름 변경 시 함께 확인
 - [ ] 레이아웃 조각 5개는 대상 화면의 슬롯이 사라지면 오류 없이 빠진다 — 템플릿·코어 회원 화면 업그레이드 후 노출 확인
-- [ ] 약관 페이지 slug 설정은 `sirsoft-page` 모듈의 페이지를 가리킨다 (manifest 의존 `>=1.0.0`)
+- [ ] 약관 페이지 slug 설정은 `sirsoft-page` 모듈의 페이지를 가리킨다 (선택 연동 `integrations` `>=1.0.0`). 페이지 모듈 API(`/api/modules/sirsoft-page/…`)를 부르는 단추·데이터소스를 새로 두면 `if` 에 `(_global.activeModules?.includes('sirsoft-page') ?? true)` 를 함께 단다 — 잠금: `resources/js/__tests__/layouts/marketing-terms-page-guard.test.ts`
 - [ ] 동의 항목을 늘릴 때는 설정만 바꾼다 — 마이그레이션이 필요해졌다면 EAV 구조를 벗어난 설계라는 신호
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan plugin:update sirsoft-marketing --force`
 
@@ -166,10 +166,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 9개 | `plugins/_bundled/sirsoft-marketing/tests` |
-| Vitest | 15개 | `vitest.config.ts` |
+| PHPUnit | 11개 | `plugins/_bundled/sirsoft-marketing/tests` |
+| Vitest | 16개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 18개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 21개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

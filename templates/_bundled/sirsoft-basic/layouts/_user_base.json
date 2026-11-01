@@ -29,10 +29,16 @@
             "auto_fetch": true,
             "auth_mode": "optional",
             "loading_strategy": "progressive",
+            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
             "fallback": {
                 "data": []
             },
-            "comment": "헤더 상단 메뉴와 모바일 드로어의 게시판 목록 — 게시판 모듈이 없거나 응답이 실패하면 fallback 빈 배열이라 메뉴만 비고 화면은 선다.\n    메뉴는 보는 사람이 열람할 수 있는 게시판만 돌려주므로 로그인했으면 토큰을 함께 보낸다(auth_mode optional — 빠지면 회원에게도 비회원 메뉴가 나온다)."
+            "errorHandling": {
+                "404": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "헤더 상단 메뉴와 모바일 드로어의 게시판 목록 — 게시판 모듈이 꺼져 있으면 부르지 않고(if), 응답이 실패하면 fallback 빈 배열이라 메뉴만 비고 화면은 선다.\n    활성 목록이 없는 옛 코어에서는 가드가 늘 참이라 꺼진 모듈에도 요청이 나가므로 404 는 삼킨다(토스트 없음).\n    메뉴는 보는 사람이 열람할 수 있는 게시판만 돌려주므로 로그인했으면 토큰을 함께 보낸다(auth_mode optional — 빠지면 회원에게도 비회원 메뉴가 나온다)."
         },
         {
             "id": "current_user",
@@ -51,6 +57,7 @@
                 {
                     "comment": "로그인 유저 로드 후 선호 통화 재해석 (D-LOGIN-CUR). current_user 는 비동기 data_source 라 init_actions 의 통화 초기화 시점엔 currentUser 가 비어 localStorage 세션값으로 폴백된다. 로드 완료 후 갓 받은 응답값(accountCurrency)을 직접 넘겨 재실행하면 계정 영속 통화(ecommerce_preferred_currency)가 1순위로 덮어쓴다(로그인/새로고침 모두). 핸들러는 이커머스 모듈 소유.",
                     "handler": "sirsoft-ecommerce.initPreferredCurrency",
+                    "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
                     "params": {
                         "accountCurrency": "{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}",
                         "defaultCurrency": "{{_global.defaultCurrency}}"
@@ -59,6 +66,7 @@
                 {
                     "comment": "로그인 유저 로드 후 선호 배송국가 재해석 (MP08 후속). 계정 영속 배송국가(ecommerce_preferred_shipping_country)를 1순위로 덮어쓴다.",
                     "handler": "sirsoft-ecommerce.initPreferredShippingCountry",
+                    "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
                     "params": {
                         "accountCountry": "{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}",
                         "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
@@ -82,6 +90,7 @@
             "auto_fetch": true,
             "auth_mode": "optional",
             "loading_strategy": "progressive",
+            "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
             "headers": {
                 "X-Cart-Key": "{{_global.cartKey}}"
             },
@@ -94,7 +103,12 @@
                     "count": 0
                 }
             },
-            "comment": "헤더 장바구니 배지 수량 — 비회원도 세야 하므로 인증 대신 카트 키 헤더로 식별한다(auth_mode=optional). 담기/빼기 화면이 refetch 로 다시 부른다."
+            "errorHandling": {
+                "404": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "헤더 장바구니 배지 수량 — 비회원도 세야 하므로 인증 대신 카트 키 헤더로 식별한다(auth_mode=optional). 담기/빼기 화면이 refetch 로 다시 부른다.\n    쇼핑몰 모듈이 꺼져 있으면 부르지 않는다(if). 옛 코어에서 꺼진 모듈로 나간 요청의 404 는 삼킨다."
         },
         {
             "id": "notification_unread_count",
@@ -228,7 +242,9 @@
             "handler": "initTheme"
         },
         {
-            "handler": "initCartKey"
+            "comment": "장바구니 키 발급 — 쇼핑몰 모듈이 꺼져 있으면 발급 API 를 부르지 않는다.",
+            "handler": "initCartKey",
+            "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}"
         },
         {
             "comment": "기본 통화(default_currency)를 코어 _global.modules 노출값에서 _global 에 주입 (A1-③). loadFromLocalStorage 의 fallback 기준값.",
@@ -241,6 +257,7 @@
         {
             "comment": "선호(표시) 통화를 _global 에 동기 주입. 우선순위 = 로그인 유저 계정 영속 통화(currentUser.ecommerce_preferred_currency, D-LOGIN-CUR) > localStorage 세션값(g7_preferred_currency, ISO형식) > 게스트 사이트 언어(g7_locale) 기반 통화 추정(currencies[].locales 매핑, 회원가입 통화 부여와 동일 입력·우선순위) > default_currency > KRW. 핸들러는 이커머스 모듈 소유(sirsoft-ecommerce.initPreferredCurrency) — 통화=커머스 책임. 모듈 미설치 시 미등록 핸들러로 무동작(통화 globals 자체가 빈 값).",
             "handler": "sirsoft-ecommerce.initPreferredCurrency",
+            "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
             "params": {
                 "defaultCurrency": "{{_global.defaultCurrency}}"
             }
@@ -256,6 +273,7 @@
         {
             "comment": "선호 배송국가를 _global 에 동기 주입 (MP08 후속). 우선순위 = 계정 영속(currentUser.ecommerce_preferred_shipping_country) > localStorage(g7_preferred_shipping_country) > default_country > KR. 핸들러는 이커머스 모듈 소유 — 배송국가=커머스 책임. 모듈 미설치 시 무동작.",
             "handler": "sirsoft-ecommerce.initPreferredShippingCountry",
+            "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
             "params": {
                 "defaultCountry": "{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"
             }
@@ -718,10 +736,11 @@
                                     }
                                 },
                                 {
-                                    "comment": "장바구니 — PC와 동일 순서 (알림 → 장바구니)",
+                                    "comment": "장바구니 — PC와 동일 순서 (알림 → 장바구니). 쇼핑몰 모듈이 꺼져 있으면 그리지 않는다.",
                                     "id": "mobile_cart_btn",
                                     "type": "basic",
                                     "name": "A",
+                                    "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -883,9 +902,11 @@
                             ]
                         },
                         {
-                            "comment": "검색바",
+                            "comment": "검색바 — 검색 공급자(게시판·쇼핑몰·페이지)가 모두 꺼졌을 때만 숨긴다(데스크톱 머리글 검색칸과 같은 기준).",
+                            "id": "mobile_drawer_search",
                             "type": "basic",
                             "name": "Div",
+                            "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}",
                             "props": {
                                 "className": "p-4"
                             },
@@ -1252,9 +1273,11 @@
                                                     ]
                                                 },
                                                 {
-                                                    "comment": "주문 내역",
+                                                    "comment": "주문 내역 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다.",
+                                                    "id": "mobile_drawer_orders_link",
                                                     "type": "basic",
                                                     "name": "A",
+                                                    "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1298,9 +1321,11 @@
                                                     ]
                                                 },
                                                 {
-                                                    "comment": "위시리스트",
+                                                    "comment": "위시리스트 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다.",
+                                                    "id": "mobile_drawer_wishlist_link",
                                                     "type": "basic",
                                                     "name": "A",
+                                                    "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1468,9 +1493,11 @@
                                     ]
                                 },
                                 {
-                                    "comment": "비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav)",
+                                    "comment": "비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav). 쇼핑몰 모듈이 꺼져 있으면 숨긴다.",
+                                    "id": "mobile_drawer_guest_order_link",
                                     "type": "basic",
                                     "name": "A",
+                                    "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -1555,8 +1582,10 @@
                                     ]
                                 },
                                 {
+                                    "id": "mobile_drawer_popular_link",
                                     "type": "basic",
                                     "name": "A",
+                                    "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
                                     "actions": [
                                         {
                                             "comment": "인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다.",
@@ -1603,9 +1632,11 @@
                             ]
                         },
                         {
-                            "comment": "메뉴 섹션 - 게시판",
+                            "comment": "메뉴 섹션 - 게시판 (제목 + 목록). 게시판 모듈이 꺼져 있으면 제목까지 통째로 숨긴다.",
+                            "id": "mobile_drawer_boards_section",
                             "type": "basic",
                             "name": "Div",
+                            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
                             "props": {
                                 "className": "px-4 pb-4"
                             },
@@ -1680,9 +1711,11 @@
                             ]
                         },
                         {
-                            "comment": "메뉴 섹션 - 쇼핑",
+                            "comment": "메뉴 섹션 - 쇼핑. 쇼핑몰 모듈이 꺼져 있으면 숨긴다.",
+                            "id": "mobile_drawer_shop_section",
                             "type": "basic",
                             "name": "Div",
+                            "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
                             "props": {
                                 "className": "px-4 pb-4 border-b border-gray-200 dark:border-gray-700"
                             },
@@ -1806,9 +1839,11 @@
                             ]
                         },
                         {
-                            "comment": "메뉴 섹션 - 정보/정책",
+                            "comment": "메뉴 섹션 - 정보/정책. 여섯 링크 모두 페이지 모듈 문서라 페이지 모듈이 꺼져 있으면 묶음째 숨긴다.",
+                            "id": "mobile_drawer_info_section",
                             "type": "basic",
                             "name": "Div",
+                            "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
                             "props": {
                                 "className": "px-4 py-4 border-b border-gray-200 dark:border-gray-700"
                             },
@@ -2041,7 +2076,7 @@
                     ]
                 },
                 {
-                    "comment": "=== 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 ===",
+                    "comment": "=== 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 ===\n         shopProductsHref 는 봇 화면(seo-config header_nav)의 「쇼핑」 링크 전용이다 — 값과 글자가 섞인 attrs 패턴({shopBase}/products)을\n         옛 코어(7.1.3 이하)의 봇 렌더가 치환하지 못해 완성된 주소 하나를 prop 으로 넘긴다. 컴포넌트는 이 prop 을 읽지 않는다.",
                     "id": "desktop_header",
                     "type": "composite",
                     "name": "Header",
@@ -2334,8 +2369,12 @@
                         "cartCount": "{{_global.cartCount ?? 0}}",
                         "notificationCount": "{{_global.notificationCount ?? 0}}",
                         "shopBase": "{{_global.shopBase ?? '/shop'}}",
+                        "shopProductsHref": "{{_global.shopBase ?? '/shop'}}/products",
                         "boards": "{{boards.data ?? []}}",
                         "maxVisibleBoards": 5,
+                        "boardEnabled": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+                        "shopEnabled": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
+                        "searchEnabled": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}",
                         "availableLocales": "{{$locales}}",
                         "currentLocale": "{{$locale}}",
                         "availableCurrencies": "{{_global.availableCurrencies ?? []}}",
@@ -2382,6 +2421,8 @@
                     "type": "composite",
                     "name": "Footer",
                     "props": {
+                        "boardEnabled": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
+                        "pageEnabled": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
                         "siteName": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",
                         "siteDescription": "{{_global.settings?.general?.site_description ?? ''}}",
                         "copyrightText": "$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",

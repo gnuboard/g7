@@ -190,6 +190,7 @@ return [
         'auth_register' => 'User registered',
         'auth_forgot_password' => 'Password reset requested',
         'auth_reset_password' => 'Password reset',
+        'auth_reset_password_by_console' => 'The system (CLI) reset a member password (ID: :user_id)',
         'auth_record_consents' => 'Consent recorded',
         'auth_login_failed' => 'Login failed (:email)',
         'auth_account_locked' => 'Account locked (:attempts attempt, :minutes min lockout)|Account locked (:attempts attempts, :minutes min lockout)',

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -39,11 +40,11 @@ use Laravel\Sanctum\PersonalAccessToken;
  */
 class PlaywrightCleanup extends Command
 {
+    use LocalizesDescription;
+
     protected $signature = 'playwright:cleanup
         {--keep-hours=0 : 최근 N시간 안에 만들어진 발급분은 남긴다 (진행 중인 실행 보호)}
         {--dry-run : 삭제하지 않고 대상만 센다}';
-
-    protected $description = 'Playwright E2E 가 남긴 격리 역할·계정·권한 행 회수 (CLI + G7_PLAYWRIGHT_BYPASS 가드)';
 
     /** 발급 커맨드가 붙이는 역할 식별자 접두어 */
     private const ROLE_PREFIX = 'playwright_test_';

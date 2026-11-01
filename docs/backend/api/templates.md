@@ -59,8 +59,10 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | type | string | `admin` | 템플릿 타입 (admin: 관리자용, user: 사용자용) |
 | status | string | `active` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
 | description | string | `그누보드7 기본 관리자 템플릿` | 템플릿 설명 (다국어 JSON) |
-| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자 |
-| dependencies_met | boolean | `true` | 의존하는 모듈/플러그인이 모두 설치·활성 상태로 충족되었는지 여부 (activate 선행 검사 파생) |
+| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type, is_met, status, required_version, installed_version}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자. `status` 는 `met`·`not_installed`·`inactive`·`version_mismatch` 중 하나(7.1.4), `required_version` 은 제약이 없으면(빈 값·목록형) `*`, `installed_version` 은 미설치면 null. 목록 카드가 미충족 의존을 사유와 함께 표시할 때 쓴다 |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
+| dependencies_met | boolean | `true` | 의존하는 모듈/플러그인이 모두 설치·활성이고 버전 제약까지 충족하는지 여부 — 활성화(activate)가 막는 조건, 사이트가 503 이 되는 조건과 같은 판정 |
 | icon_url | string\|null | `/api/extensions/template/sirsoft-admin_basic/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
@@ -258,6 +260,7 @@ _단건 응답: `data` 객체의 필드._
 | template | object | `{"identifier":"sirsoft-admin_basic","status":"active", …}` | 활성화된 템플릿 리소스 (TemplateResource 목록 필드 전체 — identifier/vendor/name/version/type/status/description/dependencies/dependencies_met/update_available/update_source/latest_version/file_version/github_url/github_changelog_url/is_pending/is_bundled/deactivated_reason/deactivated_at/incompatible_required_version/abilities). 업데이트의 판 전환이 끝나지 않은 확장이면 `version` 은 기록 판, `file_version` 은 파일 판이고 `update_available` 이 `true` 다 |
 | pending_language_packs | array | `[]` | 이 템플릿 재활성화로 함께 되살아날 수 있는 비활성 번들 언어팩 목록 (각 항목: id, identifier, locale, locale_native_name) |
 | warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
+| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
 
 **응답 예시**
 
@@ -308,13 +311,13 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.activate`)이 없는 경우 |
-| 409 | Conflict | 필요한 의존 모듈/플러그인이 충족되지 않은 경우 (`errors` 에 `warning`, `missing_modules`, `missing_plugins`, `message`) — `force=true` 로 우회 가능 |
+| 409 | Conflict | 필요한 의존 모듈/플러그인이 충족되지 않은 경우 (`errors` 에 `warning`, `missing_modules`, `missing_plugins`, `template_type`, `current_active_identifier`, `message`) — 각 항목은 `{identifier, name, type, status, required_version, installed_version}` 이고 `status` 는 `not_installed`·`inactive`·`version_mismatch`(7.1.4 부터) 중 하나다. `template_type` 은 켜려던 템플릿의 타입(user\|admin), `current_active_identifier` 는 지금 켜져 있는 같은 타입 템플릿(없으면 null). `force=true` 로 우회 가능 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 활성화 처리 실패 (이미 활성 상태·미설치·코어 버전 비호환 등) |
 
 <!-- @generated:end -->
 
-**설명** 설치된 템플릿을 활성화합니다. 필요한 의존 모듈/플러그인이 충족되지 않으면 409(warning)로 누락 목록을 반환하며, `force=true`로 강제 활성화할 수 있습니다. 활성화 성공 시 재활성화로 되살아나는 번들 언어팩 목록(`pending_language_packs`)을 함께 반환합니다. `core.templates.activate` 권한이 필요합니다.
+**설명** 설치된 템플릿을 활성화합니다. 필요한 의존 모듈/플러그인이 없거나 꺼져 있거나 요구 버전에 못 미치면 409(warning)로 누락 목록을 반환하며, `force=true`로 강제 활성화할 수 있습니다. 강제로 켠 템플릿은 조건을 맞출 때까지 그 템플릿의 화면(사용자 템플릿이면 사용자 화면, 관리자 템플릿이면 관리자 화면)이 503 안내가 됩니다 — 관리자 템플릿은 `php artisan template:activate <이전 관리자 템플릿>` 으로 되돌립니다. 활성화 성공 시 재활성화로 되살아나는 번들 언어팩 목록(`pending_language_packs`)을 함께 반환합니다. `core.templates.activate` 권한이 필요합니다.
 
 
 ### POST /api/admin/templates/check-updates
@@ -425,6 +428,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | status | string | `inactive` | 상태 (비활성화 직후 `inactive`) |
 | description | string | `그누보드7 기본 관리자 템플릿` | 템플릿 설명 (현재 로케일 값) |
 | dependencies | object | `{"modules":[],"plugins":[]}` | 의존 확장 요약 ({modules, plugins} — 각 항목 identifier/name/type) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
 | dependencies_met | boolean | `true` | 의존 확장이 모두 활성·버전 충족인지 여부 |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 (`github` \| `bundled` \| null) |
@@ -505,6 +510,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | --- | --- | --- | --- | --- | --- |
 | template_name | body | string | 예 | max 255 | template 이름 (식별자) |
 | dependencies | body | array | 아니오 | — | 함께 설치할 의존 확장 목록 (install-preview 응답 기반 사용자 선택분, 각 원소 type: module\|plugin, identifier) |
+| integrations | body | array | 아니오 | — | 함께 설치할 선택 연동 확장 목록 (7.1.4). 각 원소 `type`(module\|plugin — 템플릿은 고를 수 없다)·`identifier`. install-preview 응답 `integrations[]` 에서 사용자가 고른 항목. 의존 확장 다음·본체 이전에 설치·활성화하며, 실패해도 본체 설치는 계속되고 실패 사유는 응답 `integration_notices` 로 알린다. 권한 판정은 `dependencies` 와 같다 |
 | language_packs | body | array | 아니오 | — | 함께 설치할 동반 번들 언어팩 식별자 배열 (설치 성공 후 best-effort 설치) |
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
@@ -544,6 +550,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | status | string | `inactive` | 설치 직후 상태 (설치만 수행 — 활성화는 별도 API) |
 | description | string | `그누보드7 기본 사용자 템플릿` | 템플릿 설명 (현재 로케일 값) |
 | dependencies | object | `{"modules":[],"plugins":[]}` | 의존 확장 요약 ({modules, plugins}) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
 | dependencies_met | boolean | `true` | 의존 확장이 모두 활성·버전 충족인지 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
@@ -561,6 +569,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | language_packs_awaiting_host | array | `[]` | 함께 고른 언어팩 중 이 확장이 아직 꺼져 있어 **꺼진 채 설치**된 것의 식별자 목록(실패 아님). 이 확장을 켤 때 함께 켜진다. 없으면 빈 배열 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 설치·레이아웃 갱신 응답에 실린다. 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 | warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
+| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
 
 **응답 예시**
 
@@ -614,9 +623,11 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 
 <!-- @generated:end -->
 
-**설명** `_bundled`/`_pending` 대기소의 템플릿을 활성 디렉토리로 설치합니다. 요청 시 함께 선택한 의존 확장을 먼저 설치(cascade 1단계)하고, 실패 시 중단합니다. 설치 성공 후 동반 번들 언어팩을 best-effort로 설치하며 실패 목록을 `language_pack_failures`로 반환합니다(cascade 2단계). 설치 직후 템플릿은 비활성이라 그 템플릿 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 로 반환되고, 템플릿을 켤 때 함께 켜집니다. `core.templates.install` 권한이 필요합니다.
+**설명** `_bundled`/`_pending` 대기소의 템플릿을 활성 디렉토리로 설치합니다. 요청 시 함께 선택한 의존 확장을 먼저 설치(cascade 1단계)하고, 실패 시 중단합니다. 설치 성공 후 동반 번들 언어팩을 best-effort로 설치하며 실패 목록을 `language_pack_failures`로 반환합니다(cascade 2단계). 설치 직후 템플릿은 비활성이라 그 템플릿 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 로 반환되고, 템플릿을 켤 때 함께 켜집니다. `core.templates.install` 권한이 필요합니다. 의존 확장은 의존 관계 순서(의존의 의존 먼저)로 설치하고 본 확장과 같은 `vendor_mode` 를 쓴다(7.1.4). 의존 확장 활성화가 실패하면 그 확장 이름과 실제 사유(`extensions.errors.cascade_dependency_activation_failed`)로 중단한다 — 앞서 설치한 의존 확장은 되돌리지 않는다 — 이때와 본 확장 설치가 실패했을 때, 실패 사유 끝에(400·500 응답은 `error`, 의존 버전 미달 같은 검증 실패 422 응답은 `message`) 남겨 둔 의존 확장 목록(`extensions.errors.cascade_dependencies_kept`, 예: 「함께 설치·활성화한 의존 확장은 되돌리지 않고 남겨 두었습니다: sirsoft-ecommerce」)을 붙인다(7.1.4).
 
 **동반 설치 권한(7.1.0)** 함께 고른 의존 모듈·플러그인(`dependencies[]`)은 설치·활성화까지, 번들 언어팩(`language_packs[]`)은 설치·자동 활성화까지 수행되므로 항목마다 그 종류의 권한을 먼저 확인한다 — 미설치 의존 확장 = `core.{type}s.install` + `core.{type}s.activate`, 설치됐지만 꺼진 의존 확장 = `core.{type}s.activate`, 언어팩 = `core.language_packs.install` + `core.language_packs.manage`. 하나라도 없으면 아무것도 설치하지 않고 403(`extensions.errors.cascade_permission_denied`, 항목 종류·식별자 포함)을 낸다. 설치 창은 `install-preview` 응답의 항목별 `can_select` 로 같은 판정을 미리 보여 체크박스를 잠근다.
+
+**선택 연동 함께 설치(7.1.4)** 요청 본문 `integrations[]` 로 고른 연동 모듈·플러그인은 의존 확장 다음·본체 이전에 설치·활성화한다(템플릿을 켤 때 연동 모듈의 레이아웃·확장 조각이 함께 등록되도록). 의존과 달리 실패해도 본체 설치는 계속되며, 응답 `integration_notices` 에 그 항목과 실패 사유가 실린다. 권한은 `dependencies[]` 와 같이 먼저 확인해 없으면 403 이다. 설치 뒤에도 연동 대상 중 미설치·비활성·버전 미달이 남으면 `integration_notices` 와 응답 `message` 끝 한 줄로 알린다(막지 않음).
 
 ### POST /api/admin/templates/install-from-file
 <!-- @generated:start:api.admin.templates.install-from-file -->
@@ -663,6 +674,9 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | status | string | `inactive` | 설치 직후 상태 |
 | description | string | `그누보드7 기본 사용자 템플릿` | 템플릿 설명 |
 | dependencies | object | `{"modules":[],"plugins":[]}` | 의존 확장 요약 |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
@@ -775,6 +789,9 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | status | string | `inactive` | 설치 직후 상태 |
 | description | string | `그누보드7 기본 사용자 템플릿` | 템플릿 설명 |
 | dependencies | object | `{"modules":[],"plugins":[]}` | 의존 확장 요약 |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
@@ -1018,6 +1035,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 갱신 후 템플�
 | status | string | `active` | 템플릿 상태 |
 | description | string | `그누보드7 기본 관리자 템플릿` | 템플릿 설명 |
 | dependencies | object | `{"modules":[],"plugins":[]}` | 의존 확장 요약 |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 |
 | update_source | string\|null | `null` | 업데이트 감지 출처 |
@@ -1119,6 +1138,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | preserved_backups | array | `[{"directory":"custom","archive":"…/extension-custom-backups/…"}]` | 삭제 전에 보관한 운영자 소유 디렉토리의 사본 목록. 보관 대상이 없으면 빈 배열 |
 | preserved_backups[].directory | string | `custom` | 보관된 디렉토리 이름 |
 | preserved_backups[].archive | string | `storage/app/extension-custom-backups/{identifier}-{Ymd_His}/custom` | 사본이 놓인 절대 경로 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 켜진 확장 목록 (7.1.4, 안내만 — 차단 없음). 각 원소 `type`·`identifier`·`name`(현재 로케일 문자열). 그 확장에서 이 확장을 쓰던 메뉴·화면이 사라진다 |
 
 > 운영자가 `custom/` 에 넣은 파일은 확장 삭제와 함께 사라지지만, 삭제 직전에 사본이
 > 보관됩니다. 이 필드가 그 경로를 알리는 유일한 통로이므로 화면에 노출해야 합니다.
@@ -94126,6 +94146,7 @@ HTTP/1.1 200
 | locale | body | string | 아니오 | — | 로케일 코드 (표시 언어/지역) |
 | module_id | body | string | 아니오 | — | module 식별자 |
 | plugin_id | body | string | 아니오 | — | plugin 식별자 |
+| layout_name | body | string | 아니오 | 최대 255자 | 편집 중인 라우트의 레이아웃 전체 이름 (예: `gnuboard7-hello_module.user_memo_list`). `module_id`·`plugin_id` 가 둘 다 없으면 이 이름의 확장 접두사로 모듈·플러그인 식별자를 채워 운영 검색봇 렌더와 같은 기준으로 렌더한다. 명시한 `module_id`·`plugin_id` 가 우선. 이 이름을 쓰는 라우트의 `meta.title` 은 운영과 같이 다른 제목 단계가 모두 빌 때의 제목 대체로 쓴다(사이트 첫 화면 `/` 제외) |
 | seed_context | body | array | 아니오 | — | 렌더 컨텍스트 시드 데이터 (편집기 샘플 데이터 — 데이터소스/전역/로컬 값 대체) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.seo_bot_preview.show_validation_rules`).
@@ -94150,6 +94171,7 @@ Content-Type: application/json
     "locale": "ko",
     "module_id": "예시값",
     "plugin_id": "예시값",
+    "layout_name": "gnuboard7-hello_module.user_memo_list",
     "seed_context": [
         "예시값"
     ]
@@ -94920,6 +94942,8 @@ _단건 응답: `data` 객체의 필드 (TemplateResource::toDetailArray + `lang
 | metadata | object | `{}` | manifest 부가 메타데이터 |
 | externals | object | `{}` | 외부 리소스 선언 (template.json `externals` 정규화 결과) |
 | dependencies | object | `{"modules":[…],"plugins":[…]}` | 의존 확장 상세 (각 항목: identifier, name, required_version, installed_version, is_active, is_met) |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
 | created_at | string\|null | `2026-07-14 09:00:00` | 설치(레코드 생성) 일시 |
 | updated_at | string\|null | `2026-07-14 10:00:00` | 최종 갱신 일시 |
 | language_packs | array | `[]` | 이 템플릿을 대상으로 하는 언어팩 목록 (LanguagePackResource — id, identifier, locale, version, status, is_protected 등) |
@@ -95464,6 +95488,23 @@ _단건 응답: `data` 객체의 필드._
 | dependencies[].is_met | boolean | `false` | 의존성 충족 여부 (활성 + 버전 제약 만족) |
 | dependencies[].available | boolean | `true` | cascade 설치 후보로 선택 가능한지 여부 (미충족 항목만 true) |
 | dependencies[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 (미충족 + 미설치면 true) |
+| dependencies[].required_by | string | `sirsoft-ecommerce` | 2단계 이상 의존 행만 — 이 확장을 필요로 하는 의존 확장 식별자 (7.1.4, 직접 의존 행에는 없음) |
+| integrations | array | `[{"type":"module", ...}]` | 함께 쓰면 연동되는 확장(선택) 체크목록 (7.1.4, 아래 하위 필드). 고른 항목은 install API 의 `integrations[]` 로 보낸다 |
+| integrations[].type | string | `module` | 연동 대상 유형 (`module` \| `plugin` \| `template`) |
+| integrations[].identifier | string | `sirsoft-board` | 연동 대상 식별자 |
+| integrations[].name | string\|null | `게시판` | 연동 대상 이름 (현재 로케일, 미설치면 식별자) |
+| integrations[].status | string | `not_installed` | `not_installed` \| `inactive` \| `active` |
+| integrations[].required_version | string | `>=1.2.1` | 요구 버전 제약 (제약 없음은 `*`) |
+| integrations[].installed_version | string\|null | `null` | 설치 버전 (미설치면 null) |
+| integrations[].is_installed | boolean | `false` | 설치 여부 |
+| integrations[].is_active | boolean | `false` | 활성 여부 |
+| integrations[].is_met | boolean | `false` | 설치됨 && 버전 제약 충족 |
+| integrations[].can_select | boolean | `true` | 함께 설치·활성화할 수 있는지 — 권한(의존 확장과 같은 판정)이 있고 대상이 템플릿이 아니며, 연동 대상의 필수 의존(`requires`)을 모두 세울 수 있고 설치할 권한이 있을 때 true |
+| integrations[].default_selected | boolean | `true` | 기본 체크 여부 = `status !== 'active' && can_select` |
+| integrations[].requires | array | `[{"type":"module","identifier":"sirsoft-page","name":"페이지","action":"install_activate"}]` | 이 연동을 고르면 먼저 함께 설치·활성화되는 연동 대상 자신의 필수 의존(의존의 의존까지, 먼저 올 순서). 이미 활성인 의존은 빠진다. 연동 대상이 활성이면 빈 배열 |
+| integrations[].requires[].action | string | `install_activate` | `install_activate`(미설치) \| `activate`(설치됨·비활성) |
+| integrations[].blocked_reason | string\|null | `null` | 필수 의존 계획을 세울 수 없는 사유(없음·버전 미달·순환) — 있으면 `can_select=false` |
+| integrations[].blocked_by_permission | boolean | `false` | 필수 의존 중 현재 사용자가 설치·활성화할 권한이 없는 것이 있으면 true — 이때도 `can_select=false` |
 | language_packs | array | `[{"bundled_identifier":"g7-template-basic-ja", …}]` | 함께 설치 가능한 미설치 번들 언어팩 후보 (본 템플릿용 우선, 이어서 의존 확장용) |
 | language_packs[].bundled_identifier | string | `g7-template-basic-ja` | 번들 언어팩 식별자 |
 | language_packs[].locale | string | `ja` | 언어팩 로케일 코드 |
@@ -95472,8 +95513,11 @@ _단건 응답: `data` 객체의 필드._
 | language_packs[].version | string | `1.0.0` | 언어팩 버전 |
 | language_packs[].depends_on_extension | string\|null | `null` | 이 언어팩이 귀속된 의존 확장 식별자 (본 템플릿용이면 null). 이미 설치·활성화되어 충족된 의존 확장의 언어팩도 null — 그 의존 확장은 함께 고를 항목이 아니므로 언어팩을 따로 고를 수 있다 |
 | language_packs[].target_identifier | string | `sirsoft-board` | 이 언어팩이 번역하는 확장 식별자(본 확장·의존 확장 모두) — 창의 「종속: …」 배지가 쓴다 |
-| language_packs[].available | boolean | `true` | 설치 후보 선택 가능 여부 |
-| language_packs[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 |
+| language_packs[].scope | string | `module` | 이 언어팩이 번역하는 확장의 종류(module\|plugin\|template) — 사유 문장(「대상 :scope (:target) …」)에 쓴다 (7.1.4) |
+| language_packs[].required_target_version | string\|null | `null` | 언어팩이 요구하는 대상 확장 버전(manifest `requires.target_version`, 선언하지 않았으면 null) — `target_version_too_old` 사유 문장에 쓴다 (7.1.4) |
+| language_packs[].available | boolean | `true` | 지금 설치할 수 있는지. 같은 언어의 코어 언어팩이 켜져 있지 않거나, 이미 설치된 대상 확장의 버전이 언어팩 요구(`requires.target_version`)보다 낮으면 `false` |
+| language_packs[].blocked_reason | string\|null | `null` | 설치할 수 없는 사유 키 — `core_locale_missing`(같은 언어의 코어 언어팩이 꺼져 있음)·`target_version_too_old`(이미 설치된 대상 확장의 버전이 요구보다 낮음 — 함께 설치는 설치된 확장을 업데이트하지 않는다) 중 하나. 대상 확장이 아직 설치되지 않은 것은 이 설치로 풀리므로 사유가 아니다 |
+| language_packs[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 (`available` 이고 함께 설치할 권한이 있을 때 true) |
 
 **응답 예시**
 
@@ -97399,6 +97443,9 @@ _단건 응답: `data` 객체의 필드 (업데이트 후 TemplateResource)._
 | status | string | `active` | 업데이트 후 상태 (업데이트 전 상태로 복원됨) |
 | description | string | `그누보드7 기본 사용자 템플릿` | 템플릿 설명 |
 | dependencies | object | `{"modules":[],"plugins":[]}` | 의존 확장 요약 |
+| integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
+| integration_notices | array | `[]` | 함께 쓰면 연동되는 확장 중 연동이 꺼져 있는 것 (7.1.4, 막지 않음) — 각 원소 `type`·`identifier`·`name`·`state`(`not_installed`\|`inactive`\|`version_mismatch` 셋 중 하나)·`required_version`·`installed_version`·`message`(현재 로케일 문구, 함께 설치하다 실패한 항목은 실패 사유)·`failure_reason`(함께 설치하다 실패한 항목의 사유 원문, 실패가 아니면 null — 7.1.4). 1건 이상이면 응답 `message` 끝에 한 줄 안내가 붙는다. HTTP 상태는 그대로 |
+| integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
 | dependencies_met | boolean | `true` | 의존 확장 충족 여부 |
 | update_available | boolean | `false` | 업데이트 가능 여부 (업데이트 직후 false) |
 | update_source | string\|null | `github` | 업데이트를 가져온 출처 (`github` \| `bundled`) |
@@ -97742,7 +97789,7 @@ _단건 응답: `data` 객체의 필드._
 | author | object | `{"name":"sirsoft","email":"contact@sirsoft.com","url":"ht…` | 작성자 사용자 객체 (uuid/name — author 관계 파생) |
 | release_date | string | `2026-10-10` | 배포일 |
 | g7_version | string | `>=7.0.0` | 요구하는 코어 최소 버전 (manifest requires.g7_version) |
-| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자 |
+| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type, is_met, status, required_version, installed_version}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자. `status` 는 `met`·`not_installed`·`inactive`·`version_mismatch` 중 하나(7.1.4), `required_version` 은 제약이 없으면(빈 값·목록형) `*`, `installed_version` 은 미설치면 null. 목록 카드가 미충족 의존을 사유와 함께 표시할 때 쓴다 |
 | assets | object | `{"css":["assets\/css\/main.css","assets\/css\/ui-system.c…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
 | components | object | `{"basic":["a","button","checkbox","div","form","h1","h2",…` | 컴포넌트 트리 (레이아웃이 렌더할 컴포넌트 정의) |
 | preview | object | `{"thumbnail":"preview\/thumbnail.png","screenshots":["pre…` | 미리보기 정보 객체 |

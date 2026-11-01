@@ -11,9 +11,12 @@ use Tests\TestCase;
  * 정반대다. 전자에 "네트워크가 불안정하다 / 새로고침하라" 를 띄우면 새로고침해도
  * 낫지 않으므로 사용자는 자기 회선을 탓하게 된다.
  *
- * 인라인 부트스트랩은 코어 번들이 없어도 동작해야 하므로 ES5 로만 작성한다 —
- * 화살표 함수·const·템플릿 리터럴·옵셔널 체이닝이 섞이면 이 계층까지 구형
- * 브라우저에서 죽어 안내조차 뜨지 않는다.
+ * 부트스트랩 셸(`public/assets/core/js/g7-shell-boot.js`·`g7-shell-head.js`)은 코어 번들이
+ * 없어도 동작해야 하므로 ES5 로만 작성한다 — 화살표 함수·const·템플릿 리터럴·옵셔널 체이닝이
+ * 섞이면 이 계층까지 구형 브라우저에서 죽어 안내조차 뜨지 않는다.
+ *
+ * 종전 인라인 `<script>` 였던 부트스트랩은 strict CSP 대응으로 정적 파일로 옮겼다(#158).
+ * 분기 로직 검사는 그 파일을, 서버가 넘기는 값(문구·URL)은 파샬의 JSON 데이터 블록을 본다.
  *
  * @scenario entrypoint=user, failure_mode=parse_error
  *
@@ -37,10 +40,57 @@ class BootstrapFallbackDiagnosisTest extends TestCase
         ])->render();
     }
 
+    /**
+     * 부트스트랩 셸 JS 소스를 읽습니다.
+     *
+     * @param  string  $name  'boot' 또는 'head'
+     * @return string 파일 내용
+     */
+    private function shellSource(string $name = 'boot'): string
+    {
+        $path = public_path("assets/core/js/g7-shell-{$name}.js");
+        $this->assertFileExists($path, "셸 JS g7-shell-{$name}.js 가 없다");
+
+        return (string) file_get_contents($path);
+    }
+
+    /**
+     * 파샬이 내는 `#g7-boot-data` JSON 블록을 파싱합니다.
+     *
+     * @param  string  $html  렌더된 HTML
+     * @return array<string, mixed> 파싱 결과
+     */
+    private function bootData(string $html): array
+    {
+        $this->assertMatchesRegularExpression(
+            '#<script type="application/json" id="g7-boot-data">(.*?)</script>#s',
+            $html,
+            '부트스트랩 데이터 블록이 없다'
+        );
+        preg_match('#<script type="application/json" id="g7-boot-data">(.*?)</script>#s', $html, $m);
+
+        $data = json_decode($m[1], true);
+        $this->assertIsArray($data, '부트스트랩 데이터 블록이 JSON 으로 파싱되지 않는다');
+
+        return $data;
+    }
+
+    /**
+     * 두 진입점의 데이터 블록 라벨과 셸의 사유별 분기 방출.
+     *
+     * @scenario entrypoint=user, failure_mode=parse_error
+     *
+     * @effects bootstrap_partial_emits_reason_branch
+     *
+     * @return void 반환값 없음
+     */
     public function test_두_진입점_모두_사유별_분기를_렌더한다(): void
     {
+        $html = $this->shellSource();
+
         foreach (['user', 'admin'] as $templateType) {
-            $html = $this->render($templateType);
+            $data = $this->bootData($this->render($templateType));
+            $this->assertSame($templateType === 'admin' ? '[Admin]' : '[User]', $data['label']);
 
             $this->assertStringContainsString(
                 "? 'incompatible' : 'corrupt'",
@@ -67,11 +117,14 @@ class BootstrapFallbackDiagnosisTest extends TestCase
      * 버튼은 두 겹의 거짓 안내가 된다.
      *
      * @effects blocked_branch_is_emitted_with_https_http_judgment
+     *
+     * @return void 반환값 없음
      */
     public function test_혼합_콘텐츠_차단을_별도_사유로_가른다(): void
     {
+        $html = $this->shellSource();
+
         foreach (['user', 'admin'] as $templateType) {
-            $html = $this->render($templateType);
 
             $this->assertStringContainsString(
                 "location.protocol === 'https:'",
@@ -103,10 +156,12 @@ class BootstrapFallbackDiagnosisTest extends TestCase
      * 원인을 통째로 감추면 운영자가 도달할 통로가 사라진다.
      *
      * @effects blocked_notice_splits_visitor_screen_and_operator_console
+     *
+     * @return void 반환값 없음
      */
     public function test_차단_안내는_화면과_콘솔로_대상을_나눈다(): void
     {
-        $html = $this->render();
+        $html = $this->shellSource();
 
         // 콘솔에는 운영자 기준 원인·조치가 영문으로 남는다 (기존 로그와 같은 계열).
         $this->assertStringContainsString('Blocked as mixed content', $html);
@@ -150,9 +205,18 @@ class BootstrapFallbackDiagnosisTest extends TestCase
         }
     }
 
+    /**
+     * 셸이 window error 로 번들 SyntaxError 를 관측한다.
+     *
+     * @scenario surface=user_shell, csp=none, failure=none
+     *
+     * @effects shell_observes_bundle_syntax_error
+     *
+     * @return void 반환값 없음
+     */
     public function test_파싱_오류_관측_리스너가_설치된다(): void
     {
-        $html = $this->render();
+        $html = $this->shellSource();
 
         // 파싱 실패는 <script> 의 error 가 아니라 load 를 발생시키므로 element
         // 이벤트로는 구분할 수 없다. window 의 error 이벤트로만 관측된다.
@@ -161,6 +225,15 @@ class BootstrapFallbackDiagnosisTest extends TestCase
         $this->assertStringContainsString('syntaxError', $html);
     }
 
+    /**
+     * 비호환 문구가 로케일마다 있고 데이터 블록으로 7키가 넘어간다.
+     *
+     * @scenario entrypoint=user, failure_mode=parse_error
+     *
+     * @effects incompatible_strings_defined_per_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_비호환_안내_문구가_지원_로케일마다_정의된다(): void
     {
         $original = app()->getLocale();
@@ -186,12 +259,27 @@ class BootstrapFallbackDiagnosisTest extends TestCase
                     __('errors.bootstrap.incompatible_message'),
                     "[{$locale}] 비호환 문구가 네트워크 문구와 동일하다"
                 );
+
+                // 셸이 화면에 그리는 문구는 데이터 블록으로 넘어간다 — 7키 전부, 현재 로케일 값으로.
+                $i18n = $this->bootData($this->render())['i18n'] ?? [];
+                foreach (['title', 'message', 'reload', 'incompatible_title', 'incompatible_message', 'blocked_title', 'blocked_message'] as $key) {
+                    $this->assertSame(__("errors.bootstrap.{$key}"), $i18n[$key] ?? null, "[{$locale}] 데이터 블록에 errors.bootstrap.{$key} 가 없다");
+                }
             }
         } finally {
             app()->setLocale($original);
         }
     }
 
+    /**
+     * 번들 ja 언어팩에도 비호환·차단 문구가 있다.
+     *
+     * @scenario entrypoint=user, failure_mode=parse_error
+     *
+     * @effects incompatible_strings_defined_per_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_번들_일본어_언어팩에도_비호환_문구가_있다(): void
     {
         $path = base_path('lang-packs/_bundled/g7-core-ja/backend/ja/errors.php');
@@ -219,33 +307,78 @@ class BootstrapFallbackDiagnosisTest extends TestCase
         );
     }
 
+    /**
+     * 셸 JS 두 개는 ES5 문법만 쓴다 (엔진 번들을 못 읽는 브라우저에서도 안내가 떠야 한다).
+     *
+     * @scenario surface=user_shell, csp=none, failure=none
+     *
+     * @effects shell_js_is_es5_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_인라인_부트스트랩은_구형_브라우저_문법만_사용한다(): void
     {
-        $html = $this->render();
+        foreach (['head', 'boot'] as $name) {
+            // 주석 안의 백틱·화살표는 문법이 아니다 — 블록 주석과 줄 주석을 먼저 걷어낸다.
+            // 콜론 뒤의 `//` 는 URL 스킴이므로 주석으로 보지 않는다.
+            $js = preg_replace('#/\*.*?\*/#s', '', $this->shellSource($name));
+            $js = preg_replace('#(^|[^:])//[^\n]*#', '$1', $js);
 
-        preg_match('/<script>(.*?)<\/script>/s', $html, $m);
-        $this->assertNotEmpty($m, '인라인 부트스트랩 스크립트를 찾지 못했다');
+            // 코어 번들이 없어도 이 계층은 살아 있어야 한다 — ES2015+ 문법 금지.
+            $forbidden = [
+                '화살표 함수' => '/\)\s*=>/',
+                'const 선언' => '/(^|[^\w$])const\s+[A-Za-z_$]/m',
+                'let 선언' => '/(^|[^\w$])let\s+[A-Za-z_$]/m',
+                '템플릿 리터럴' => '/`/',
+                '옵셔널 체이닝' => '/\?\./',
+            ];
 
-        // 주석 안의 백틱·화살표는 문법이 아니다 — 블록 주석과 줄 주석을 먼저 걷어낸다.
-        // 콜론 뒤의 `//` 는 URL 스킴이므로 주석으로 보지 않는다.
-        $js = preg_replace('#/\*.*?\*/#s', '', $m[1]);
-        $js = preg_replace('#(^|[^:])//[^\n]*#', '$1', $js);
+            foreach ($forbidden as $label => $pattern) {
+                $this->assertSame(
+                    0,
+                    preg_match($pattern, $js),
+                    "g7-shell-{$name}.js 에 {$label} 사용 — 구형 브라우저에서 안내 화면조차 뜨지 않는다"
+                );
+            }
+        }
+    }
 
-        // 코어 번들이 없어도 이 계층은 살아 있어야 한다 — ES2015+ 문법 금지.
-        $forbidden = [
-            '화살표 함수' => '/\)\s*=>/',
-            'const 선언' => '/(^|[^\w$])const\s+[A-Za-z_$]/m',
-            'let 선언' => '/(^|[^\w$])let\s+[A-Za-z_$]/m',
-            '템플릿 리터럴' => '/`/',
-            '옵셔널 체이닝' => '/\?\./',
-        ];
+    /**
+     * 부트스트랩 파샬은 실행형 인라인 코드를 내지 않는다 (#158).
+     *
+     * strict CSP(`script-src 'self'`)에서 인라인 `<script>` 와 on* 속성은 실행되지 않는다.
+     * 엔진 초기화 신호가 그것에 묶이면 전 화면이 백지가 되고 폴백 안내조차 뜨지 않는다.
+     *
+     * @scenario surface=admin_shell, csp=webserver_strict, failure=none
+     *
+     * @effects bootstrap_partial_emits_no_inline_executable
+     *
+     * @return void 반환값 없음
+     */
+    public function test_부트스트랩_파샬은_인라인_실행_코드를_내지_않는다(): void
+    {
+        foreach (['user', 'admin'] as $templateType) {
+            $html = $this->render($templateType);
 
-        foreach ($forbidden as $label => $pattern) {
-            $this->assertSame(
-                0,
-                preg_match($pattern, $js),
-                "인라인 부트스트랩에 {$label} 사용 — 구형 브라우저에서 안내 화면조차 뜨지 않는다"
-            );
+            $this->assertSame(0, preg_match('/\son[a-z]+\s*=/i', $html), "[{$templateType}] on* 인라인 핸들러가 남아 있다");
+
+            preg_match_all('#<script\b([^>]*)>(.*?)</script>#s', $html, $scripts, PREG_SET_ORDER);
+            foreach ($scripts as $script) {
+                if (str_contains($script[1], 'type="application/json"')) {
+                    continue;
+                }
+                $this->assertSame('', trim($script[2]), "[{$templateType}] 실행형 인라인 <script> 본문이 남아 있다");
+            }
+
+            // 번들 태그는 표식으로 셸 캡처 리스너에 연결된다 — 셸이 번들 태그보다 먼저 온다.
+            $shell = strpos($html, 'g7-shell-boot.js');
+            $core = strpos($html, 'data-g7-boot-bundle="core"');
+            $components = strpos($html, 'data-g7-boot-bundle="components"');
+            $this->assertNotFalse($shell);
+            $this->assertNotFalse($core);
+            $this->assertNotFalse($components);
+            $this->assertLessThan($core, $shell, "[{$templateType}] 셸이 코어 번들보다 뒤에 있다 — load 를 놓친다");
+            $this->assertLessThan($components, $core, "[{$templateType}] 코어 → 컴포넌트 순서가 깨졌다");
         }
     }
 }

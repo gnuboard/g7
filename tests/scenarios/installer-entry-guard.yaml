@@ -27,6 +27,7 @@ exclusions:
   - { entry_point: sse_probe, composer_path_input: "*", reason: "sse-probe 는 사이드이펙트 없는 streaming 핑" }
   - { entry_point: state_management, composer_path_input: "*", reason: "state-management 는 composer 경로 입력을 받지 않음 (상태 조회/초기화/중단 전용)" }
   - { entry_point: state_management, php_path_input: "*", reason: "state-management 는 php 경로 입력을 받지 않음" }
+  - { entry_point: index_php, installation_state: completed_lock_only, reason: "락 파일만 있고 .env 확정 전인 마무리 구간에 설치 소유 세션의 GET 만 Step 5 를 다시 연다(.env 확정 경로). 소유자 아님·터미널 소유·상태 파일 없음·진행 중 상태·POST 는 410 — installer-cli.yaml 의 installer_index_* 효과로 별도 검증" }
   - { entry_point: state_management, installation_state: completed_lock_only, reason: "락 파일만 존재하는 폴링 구간(complete_flag~finalize)은 finalize 계열 가드가 통과시켜야 함 — 차단 시 정상 설치 고착. 효과는 state_management_polling_passes_with_lock_only 로 별도 검증" }
 
 effects:

@@ -570,6 +570,29 @@
             "default": "그누보드7",
             "description": "사이트 이름"
           },
+          "boardEnabled": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "게시판 모듈 활성 여부 — false 면 인기글 탭·게시판 탭을 숨긴다. 레이아웃이 _global.activeModules 로 판정해 넘긴다"
+          },
+          "shopEnabled": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "쇼핑몰 모듈 활성 여부 — false 면 쇼핑 탭·장바구니·회원 메뉴의 주문내역·위시리스트·비회원 주문조회를 숨긴다"
+          },
+          "searchEnabled": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "검색칸 표시 여부 — 레이아웃은 게시판·쇼핑몰·페이지 중 하나라도 켜져 있으면 true 를 넘긴다"
+          },
+          "shopProductsHref": {
+            "type": "string",
+            "required": false,
+            "description": "봇 화면(seo-config header_nav)의 「쇼핑」 링크 주소 — 컴포넌트는 읽지 않는다. 옛 코어의 봇 렌더가 값과 글자가 섞인 attrs 패턴을 치환하지 못해 완성된 주소를 넘긴다"
+          },
           "className": {
             "type": "string",
             "required": false,
@@ -588,6 +611,18 @@
             "required": false,
             "default": "그누보드7",
             "description": "사이트 이름"
+          },
+          "boardEnabled": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "게시판 모듈 활성 여부 — false 면 기본 링크 그룹에서 커뮤니티 묶음을 뺀다(linkGroups 를 직접 넘기면 무관)"
+          },
+          "pageEnabled": {
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "페이지 모듈 활성 여부 — false 면 기본 링크 그룹에서 정보·정책 묶음을 뺀다(linkGroups 를 직접 넘기면 무관)"
           },
           "className": {
             "type": "string",

@@ -87,7 +87,7 @@
 | display_status | query | string | 아니오 | — | 전시상태 필터 (visible 전시 / hidden 숨김) |
 | brand_id | query | integer | 아니오 | — | brand 식별자 |
 | no_brand | query | boolean | 아니오 | — | 브랜드 미지정 상품만 필터 (true 시 브랜드가 없는 상품 조회) |
-| tax_status | query | string | 아니오 | — | 과세여부 필터 (taxable 과세 / tax_free 면세) |
+| tax_status | query | string | 아니오 | — | 과세여부 필터 (taxable 과세 / tax_free 면세 / zero_rated 영세) — 상품 기본값이 그 값이거나 옵션 중 하나라도 그 값으로 지정한 상품 (1.3.3) |
 | price_type | query | string | 아니오 | — | 가격 범위 필터의 기준 가격 종류 (selling_price 판매가 / supply_price 공급가 / list_price 정가) |
 | min_price | query | integer | 아니오 | min 0 | 가격 범위 필터 하한 (price_type 기준 이 값 이상) |
 | max_price | query | integer | 아니오 | min 0 | 가격 범위 필터 상한 (price_type 기준 이 값 이하) |
@@ -262,7 +262,7 @@ HTTP/1.1 200
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 예 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |
 | display_status | body | string | 예 | — | 전시상태 (visible 전시 / hidden 숨김) |
-| tax_status | body | string | 예 | — | 과세여부 (taxable 과세 / tax_free 면세) |
+| tax_status | body | string | 예 | — | 과세여부 (taxable 과세 / tax_free 면세 / zero_rated 영세 — 세율 0%, 1.3.3) |
 | tax_rate | body | number | 아니오 | min 0, max 100 | 세율(%) (과세 상품의 부가세 계산 비율) |
 | shipping_policy_id | body | integer | 아니오 | — | shipping policy 식별자 |
 | common_info_id | body | integer | 아니오 | — | common info 식별자 |
@@ -279,7 +279,7 @@ HTTP/1.1 200
 | use_main_image_for_og | body | boolean | 아니오 | — | 대표 이미지를 OG(소셜 공유) 이미지로 사용할지 여부 |
 | has_options | body | boolean | 아니오 | — | options 여부 |
 | option_groups | body | array | 아니오 | — | 옵션 그룹 정의 (예: 색상/사이즈 등 옵션 축과 각 축의 선택값 목록) |
-| options | body | array | 예 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등, 최소 1건 필수) |
+| options | body | array | 예 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등, 최소 1건 필수). 항목별 `tax_status`(선택, 1.3.3): 비우면(null) 상품 기본값을 따르고 `taxable`·`tax_free`·`zero_rated` 중 하나면 그 옵션만 그 과세 종류 — 다른 값은 `options.N.tax_status` 422 |
 | additional_options | body | array | 아니오 | max 5 | 추가옵션 그룹 배열 (각 그룹당 선택지 1~20개, 필수 여부·추가금·직접입력 허용 등 설정) |
 | notice_items | body | array | 아니오 | max 50 | 상품정보제공고시 항목 배열 (각 항목: 항목명·내용 다국어) |
 | label_assignments | body | array | 아니오 | — | 라벨 할당 배열 (label_id + 노출 시작/종료일로 상품에 라벨 부착) |
@@ -397,7 +397,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource`). 성공 시 HTTP 201
 | sales_status_label | string | `판매중` | `sales_status` 의 현지화 라벨 |
 | display_status | string | `visible` | 전시상태 (visible / hidden) |
 | display_status_label | string | `전시` | `display_status` 의 현지화 라벨 |
-| tax_status | string | `taxable` | 과세여부 (taxable / tax_free) |
+| tax_status | string | `taxable` | 과세여부 (taxable / tax_free / zero_rated) — 상품 기본값. 옵션별 지정은 `options[].tax_status` |
 | tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
 | tax_rate | string | `10.00` | 세율(%) |
 | shipping_policy_id | integer | `null` | 배송정책 식별자 |
@@ -933,7 +933,7 @@ HTTP/1.1 200
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 아니오 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |
 | display_status | body | string | 아니오 | — | 전시상태 (visible 전시 / hidden 숨김) |
-| tax_status | body | string | 아니오 | — | 과세여부 (taxable 과세 / tax_free 면세) |
+| tax_status | body | string | 아니오 | — | 과세여부 (taxable 과세 / tax_free 면세 / zero_rated 영세 — 세율 0%, 1.3.3) |
 | tax_rate | body | number | 아니오 | min 0, max 100 | 세율(%) (과세 상품의 부가세 계산 비율) |
 | shipping_policy_id | body | integer | 아니오 | — | shipping policy 식별자 |
 | common_info_id | body | integer | 아니오 | — | common info 식별자 |
@@ -950,7 +950,7 @@ HTTP/1.1 200
 | use_main_image_for_og | body | boolean | 아니오 | — | 대표 이미지를 OG(소셜 공유) 이미지로 사용할지 여부 |
 | has_options | body | boolean | 아니오 | — | options 여부 |
 | option_groups | body | array | 아니오 | — | 옵션 그룹 정의 (예: 색상/사이즈 등 옵션 축과 각 축의 선택값 목록) |
-| options | body | array | 아니오 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등) |
+| options | body | array | 아니오 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등). 항목별 `tax_status`(선택, 1.3.3): null = 상품 기본값 따름, `taxable`·`tax_free`·`zero_rated` |
 | additional_options | body | array | 아니오 | max 5 | 추가옵션 그룹 배열 (각 그룹당 선택지 1~20개, 필수 여부·추가금·직접입력 허용 등 설정) |
 | notice_items | body | array | 아니오 | max 50 | 상품정보제공고시 항목 배열 (각 항목: 항목명·내용 다국어) |
 | label_assignments | body | array | 아니오 | — | 라벨 할당 배열 (label_id + 노출 시작/종료일로 상품에 라벨 부착) |
@@ -1068,7 +1068,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | sales_status_label | string | `판매중` | `sales_status` 의 현지화 라벨 |
 | display_status | string | `visible` | 전시상태 (visible / hidden) |
 | display_status_label | string | `전시` | `display_status` 의 현지화 라벨 |
-| tax_status | string | `taxable` | 과세여부 (taxable / tax_free) |
+| tax_status | string | `taxable` | 과세여부 (taxable / tax_free / zero_rated) — 상품 기본값. 옵션별 지정은 `options[].tax_status` |
 | tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
 | tax_rate | string | `10.00` | 세율(%) |
 | shipping_policy_id | integer | `null` | 배송정책 식별자 |
@@ -1866,7 +1866,7 @@ HTTP/1.1 200
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 아니오 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |
 | display_status | body | string | 아니오 | — | 전시상태 (visible 전시 / hidden 숨김) |
-| tax_status | body | string | 아니오 | — | 과세여부 (taxable 과세 / tax_free 면세) |
+| tax_status | body | string | 아니오 | — | 과세여부 (taxable 과세 / tax_free 면세 / zero_rated 영세 — 세율 0%, 1.3.3) |
 | tax_rate | body | number | 아니오 | min 0, max 100 | 세율(%) (과세 상품의 부가세 계산 비율) |
 | shipping_policy_id | body | integer | 아니오 | — | shipping policy 식별자 |
 | common_info_id | body | integer | 아니오 | — | common info 식별자 |
@@ -1883,7 +1883,7 @@ HTTP/1.1 200
 | use_main_image_for_og | body | boolean | 아니오 | — | 대표 이미지를 OG(소셜 공유) 이미지로 사용할지 여부 |
 | has_options | body | boolean | 아니오 | — | options 여부 |
 | option_groups | body | array | 아니오 | — | 옵션 그룹 정의 (예: 색상/사이즈 등 옵션 축과 각 축의 선택값 목록) |
-| options | body | array | 아니오 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등) |
+| options | body | array | 아니오 | min 1 | 옵션(SKU) 목록 (각 항목: 옵션코드·옵션명·옵션값·정가·판매가·재고 등). 항목별 `tax_status`(선택, 1.3.3): null = 상품 기본값 따름, `taxable`·`tax_free`·`zero_rated` |
 | additional_options | body | array | 아니오 | max 5 | 추가옵션 그룹 배열 (각 그룹당 선택지 1~20개, 필수 여부·추가금·직접입력 허용 등 설정) |
 | notice_items | body | array | 아니오 | max 50 | 상품정보제공고시 항목 배열 (각 항목: 항목명·내용 다국어) |
 | label_assignments | body | array | 아니오 | — | 라벨 할당 배열 (label_id + 노출 시작/종료일로 상품에 라벨 부착) |
@@ -2001,7 +2001,7 @@ _단건 응답: `data` 객체의 필드 (`ProductResource` — 수정 후 상품
 | sales_status_label | string | `판매중` | `sales_status` 의 현지화 라벨 |
 | display_status | string | `visible` | 전시상태 (visible / hidden) |
 | display_status_label | string | `전시` | `display_status` 의 현지화 라벨 |
-| tax_status | string | `taxable` | 과세여부 (taxable / tax_free) |
+| tax_status | string | `taxable` | 과세여부 (taxable / tax_free / zero_rated) — 상품 기본값. 옵션별 지정은 `options[].tax_status` |
 | tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
 | tax_rate | string | `10.00` | 세율(%) |
 | shipping_policy_id | integer | `null` | 배송정책 식별자 |
@@ -3174,6 +3174,8 @@ _단건 응답: `data` 객체의 필드._
 | selling_price | integer | `3000` | 판매가 (기본통화 기준) |
 | selling_price_formatted | string | `3,000원` | `selling_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | discount_rate | integer | `40` | 할인율(%) (정가 대비 판매가 할인 비율, (1 - 판매가/정가) × 100) |
+| tax_status | string | `taxable` | 상품 기본 과세 종류 (taxable / tax_free / zero_rated, 1.3.3) — 상품 상세의 면세·영세 표시용 |
+| tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
 | multi_currency_list_price | object | `{"KRW":{"price":5000,"formatted":"5,000원","is_default":tr…` | 통화별 정가 맵 (통화코드 → {price, formatted, is_default, editable}, 설정된 모든 통화의 환산 정가) |
 | multi_currency_selling_price | object | `{"KRW":{"price":3000,"formatted":"3,000원","is_default":tr…` | 통화별 판매가 맵 (통화코드 → {price, formatted, is_default, editable}, 설정된 모든 통화의 환산 판매가) |
 | stock_quantity | integer | `26` | 재고 수량 (옵션 있으면 옵션 합계) |

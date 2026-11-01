@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\LanguagePack;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -14,15 +15,12 @@ use Throwable;
  */
 class CacheClearLanguagePackCommand extends Command
 {
-    /**
-     * @var string
-     */
-    protected $signature = 'language-pack:cache-clear';
+    use LocalizesDescription;
 
     /**
      * @var string
      */
-    protected $description = '언어팩 캐시(registry/translator/template/version)를 정리합니다.';
+    protected $signature = 'language-pack:cache-clear';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service

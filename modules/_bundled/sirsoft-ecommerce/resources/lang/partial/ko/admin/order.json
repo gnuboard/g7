@@ -47,6 +47,7 @@
       "price_details": {
         "taxable": "과세",
         "vat": "부가세",
+        "zero_rated": "영세",
         "mileage": "마일리지",
         "deposit": "예치금"
       },
@@ -209,6 +210,9 @@
       "final_amount": "최종 결제금액",
       "taxable_amount": "과세 금액",
       "vat": "부가세 (VAT)",
+      "tax_free_amount": "면세금액",
+      "zero_rated_amount": "영세금액",
+      "cancelled_vat": "취소 부가세",
       "expected_points": "적립예정 포인트",
       "method": {
         "credit_card": "신용카드",
@@ -389,6 +393,7 @@
         "points_used": "포인트 사용",
         "taxable_amount": "과세금액",
         "vat_amount": "부가세",
+        "zero_rated_amount": "영세금액",
         "total_paid": "실결제금액",
         "earned_points": "적립예정포인트",
         "product_subtotal": "소계",

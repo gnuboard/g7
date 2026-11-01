@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\LayoutPreviewService;
 use Illuminate\Console\Command;
 
@@ -10,15 +11,12 @@ use Illuminate\Console\Command;
  */
 class CleanupLayoutPreviewsCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'layout-previews:cleanup';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '만료된 레이아웃 미리보기 데이터를 삭제합니다';
 
     /**
      * Execute the console command.

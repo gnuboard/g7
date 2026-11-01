@@ -83,6 +83,30 @@ class LifecycleWarningsTest extends TestCase
     }
 
     /**
+     * 대상 표시 이름(target_name)은 넘겼을 때만 싣는다 — 넘기지 않거나 식별자와 같으면 키가 없어 기존 항목 모양이 그대로다.
+     *
+     * @scenario surface=collector
+     *
+     * @effects target_name_carried_only_when_given
+     *
+     * @return void 반환값 없음
+     */
+    public function test_target_name_is_carried_only_when_given(): void
+    {
+        $warnings = LifecycleWarnings::current();
+        $warnings->clear();
+
+        $warnings->notice('dependents', 'acme-hello', '안내', 'Hello 플러그인');
+        $warnings->notice('dependents', 'acme-noname', '안내', 'acme-noname');
+        $warnings->add('seeder', 'X', 'fail');
+
+        $items = $warnings->all();
+        $this->assertSame(['step' => 'dependents', 'target' => 'acme-hello', 'target_name' => 'Hello 플러그인', 'message' => '안내', 'level' => 'notice'], $items[0]);
+        $this->assertArrayNotHasKey('target_name', $items[1], '이름을 못 찾아 식별자로 대체됐으면 싣지 않는다');
+        $this->assertSame(['step' => 'seeder', 'target' => 'X', 'message' => 'fail', 'level' => 'warning'], $items[2]);
+    }
+
+    /**
      * 깨진 오버라이드 레이아웃 하나는 나머지 등록을 막지 않고 경고 1건으로 남는다.
      *
      * @scenario surface=manager

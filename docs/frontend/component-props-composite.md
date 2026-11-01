@@ -404,6 +404,7 @@
 | `error` | string | - | 에러 메시지 |
 | `name` | string | - | 폼 필드 이름 |
 | `showCodeOnMobile` | boolean | `false` | 모바일에서 언어 코드로 표시 |
+| `stacked` | boolean | `false` | `compact` 배치에서 언어 단추 줄 아래에 입력칸을 놓는다 — 표 칸처럼 좁은 자리에서 입력칸이 칸 너비를 다 쓴다 |
 | `className` | string | - | 추가 CSS 클래스 |
 | `ariaLabel` | string | - | 입력칸 접근 가능한 이름(`aria-label` 로 줘도 같다). 켜진 언어가 둘 이상이면 각 언어 칸이 「{이름} ({언어명})」, 하나면 「{이름}」으로 읽힌다. 없으면 컴포넌트 바깥 곁의 라벨(`form-label` 등)을 잇는다 — 표 안처럼 곁 라벨이 없는 자리에서는 반드시 준다 |
 

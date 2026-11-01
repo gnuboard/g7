@@ -1798,6 +1798,7 @@ return [
             'purged_inquiries' => '기존 상품 문의 :count건과 그 게시판 문의 글·답변을 삭제했습니다.',
             'purged' => '기존 상품 관련 데이터 :count건을 삭제했습니다.',
             'images_dir_deleted' => '스토리지에서 상품 이미지 폴더를 삭제했습니다.',
+            'color_filter_skipped_no_gd' => 'PHP gd 확장이 없어 상품 이미지 색상 변형 없이 원본 이미지를 씁니다.',
             'no_categories' => '카테고리가 없습니다. CategorySeeder를 먼저 실행해주세요.',
             'no_brands' => '브랜드가 없습니다. BrandSeeder를 먼저 실행하는 것을 권장합니다.',
             'no_shipping_policies' => '배송정책이 없습니다. ShippingPolicySeeder를 먼저 실행하는 것을 권장합니다.',

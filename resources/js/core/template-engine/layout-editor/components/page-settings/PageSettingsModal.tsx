@@ -396,6 +396,9 @@ export function PageSettingsModal({
             // seoOgDefaults/seoStructuredData($pageType, $context=[]) 가 샘플 상품 없이 빈 결과를
             // 돌려줬다(구조화 자동 미리보기 "데이터 없음" 결함). buildPageSampleContext 가 상품 샘플을 채운다.
             seedContext={sampleContext}
+            // 라우트의 레이아웃 전체 이름(useRouteTree 가 route.layout 그대로 담음) — 봇 미리보기가
+            // 모듈 화면의 소속 확장을 서버에서 해석해 운영 봇 응답과 같은 기준으로 렌더한다 (공개#154).
+            routeLayoutName={state.selectedRoute?.layoutName ?? null}
           />
         );
       case 'init':

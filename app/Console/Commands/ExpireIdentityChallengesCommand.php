@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\IdentityLogService;
 use Illuminate\Console\Command;
 
@@ -12,15 +13,12 @@ use Illuminate\Console\Command;
  */
 class ExpireIdentityChallengesCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'identity:expire-challenges';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '만료 시각이 지난 본인인증 challenge 를 만료 처리합니다';
 
     /**
      * Execute the console command.

@@ -23,6 +23,15 @@ use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 class CbtPaymentControllerTest extends PluginTestCase
 {
+    /**
+     * CBT 승인 콜백이 매뉴얼의 성공 코드를 받아 결제를 완료하는지 확인합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=callback
+     *
+     * @effects cbt_callback_completes_payment
+     */
     public function test_cbt_callback_accepts_manual_ok_result_code_and_completes_payment(): void
     {
         $order = $this->makePendingJpyOrder('JP-ORDER-001', 100);
@@ -76,6 +85,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $response->assertRedirect('http://localhost/shop/orders/JP-ORDER-001/complete');
     }
 
+    /**
+     * 편의점 결제 승인 콜백은 결제를 입금 대기로 둡니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=callback
+     *
+     * @effects cbt_cvs_callback_waits_for_deposit
+     */
     public function test_cbt_callback_for_cvs_marks_payment_waiting_deposit(): void
     {
         $order = $this->createPersistedPendingJpyOrder('JP-ORDER-CVS-001', 100);
@@ -127,6 +145,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame('999999999999999999', $payment->vbank_number);
     }
 
+    /**
+     * 사용자가 CBT 결제창을 취소하면 오류 쿼리 없이 주문서로 돌아갑니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=callback
+     *
+     * @effects cbt_user_cancel_returns_quietly
+     */
     public function test_cbt_callback_user_cancel_returns_to_checkout_without_error_query(): void
     {
         $orderService = Mockery::mock(OrderProcessingService::class);
@@ -157,6 +184,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertStringNotContainsString('ユーザーキャンセル', $location, '사용자 취소 문구를 체크아웃 URL에 노출하지 않음');
     }
 
+    /**
+     * PayPay 처리 실패 시 결제사 원문 메시지를 주문서에 노출하지 않습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=callback
+     *
+     * @effects cbt_failure_hides_upstream_message
+     */
     public function test_cbt_callback_paypay_processing_failure_hides_upstream_message_from_checkout(): void
     {
         $order = $this->createPersistedPendingJpyOrder('JP-ORDER-PAYPAY-FAIL-001', 100);
@@ -201,6 +237,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertArrayNotHasKey('result_code', $paymentMeta);
     }
 
+    /**
+     * 편의점 입금 통보가 입금 대기 결제를 완료합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_notify
+     *
+     * @effects cbt_cvs_notify_completes_payment
+     */
     public function test_cbt_cvs_notify_completes_waiting_deposit_payment(): void
     {
         $order = $this->createPersistedPendingJpyOrder('JP-ORDER-CVS-002', 100);
@@ -252,6 +297,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame('deposit_confirmed', $payment->payment_meta['cvs_notify_history'][0]['reason'] ?? null);
     }
 
+    /**
+     * 같은 입금 통보가 다시 와도 OK 를 돌려주고 두 번 완료하지 않습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_notify
+     *
+     * @effects cbt_cvs_notify_is_idempotent
+     */
     public function test_cbt_cvs_notify_replay_returns_ok_without_double_completion(): void
     {
         $order = $this->createPersistedPendingJpyOrder('JP-ORDER-CVS-REPLAY-001', 100);
@@ -307,6 +361,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame('deposit_confirmed', $history[1]['reason'] ?? null);
     }
 
+    /**
+     * 금액이 다른 입금 통보를 거절합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_notify
+     *
+     * @effects cbt_cvs_notify_rejects_mismatch
+     */
     public function test_cbt_cvs_notify_rejects_amount_mismatch(): void
     {
         $order = $this->createPersistedPendingJpyOrder('JP-ORDER-CVS-AMOUNT-001', 100);
@@ -356,6 +419,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame('amount_mismatch', $payment->payment_meta['cvs_notify_history'][0]['reason'] ?? null);
     }
 
+    /**
+     * 상점 ID 가 다른 입금 통보를 거절합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_notify
+     *
+     * @effects cbt_cvs_notify_rejects_mismatch
+     */
     public function test_cbt_cvs_notify_rejects_sid_mismatch(): void
     {
         $order = $this->createPersistedPendingJpyOrder('JP-ORDER-CVS-SID-001', 100);
@@ -394,6 +466,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertEquals(PaymentStatusEnum::WAITING_DEPOSIT, $payment->payment_status);
     }
 
+    /**
+     * 거래번호가 다른 입금 통보를 거절합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_notify
+     *
+     * @effects cbt_cvs_notify_rejects_mismatch
+     */
     public function test_cbt_cvs_notify_rejects_tid_mismatch(): void
     {
         $order = $this->createPersistedPendingCbtCvsOrder('JP-ORDER-CVS-TID-001', 100);
@@ -429,6 +510,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame('tid_mismatch', $payment->payment_meta['cvs_last_notify_reason'] ?? null);
     }
 
+    /**
+     * 엔화가 아닌 입금 통보를 거절합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_notify
+     *
+     * @effects cbt_cvs_notify_rejects_mismatch
+     */
     public function test_cbt_cvs_notify_rejects_non_jpy_currency(): void
     {
         $order = $this->createPersistedPendingJpyOrder('JP-ORDER-CVS-CURRENCY-001', 100);
@@ -467,6 +557,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertEquals(PaymentStatusEnum::WAITING_DEPOSIT, $payment->payment_status);
     }
 
+    /**
+     * 관리자가 편의점 결제 운영 요약을 조회합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_admin
+     *
+     * @effects cbt_cvs_admin_operations
+     */
     public function test_admin_can_view_cbt_cvs_operations_summary(): void
     {
         $this->createPersistedPendingCbtCvsOrder('JP-ORDER-CVS-ADMIN-001', 100);
@@ -489,6 +588,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         );
     }
 
+    /**
+     * 관리자가 테스트 모드에서 입금 통보를 모의 실행합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_admin
+     *
+     * @effects cbt_cvs_admin_operations
+     */
     public function test_admin_can_simulate_test_cvs_notify(): void
     {
         $order = $this->createPersistedPendingCbtCvsOrder('JP-ORDER-CVS-SIM-001', 100);
@@ -510,6 +618,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame('admin_simulation', $payment->payment_meta['cvs_notify_history'][0]['source'] ?? null);
     }
 
+    /**
+     * 운영 모드에서는 입금 통보 모의 실행을 막습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_admin
+     *
+     * @effects cbt_cvs_admin_operations
+     */
     public function test_admin_cannot_simulate_live_cvs_notify(): void
     {
         $this->createPersistedPendingCbtCvsOrder('JP-ORDER-CVS-LIVE-001', 100, [
@@ -529,6 +646,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertEquals(PaymentStatusEnum::WAITING_DEPOSIT, $payment->payment_status);
     }
 
+    /**
+     * 관리자가 기한 지난 편의점 결제를 만료 처리합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_admin
+     *
+     * @effects cbt_cvs_admin_operations
+     */
     public function test_admin_can_mark_overdue_cvs_payment_expired(): void
     {
         $this->createPersistedPendingCbtCvsOrder('JP-ORDER-CVS-EXP-001', 100, [
@@ -553,6 +679,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame('expired', $payment->payment_meta['cvs_status'] ?? null);
     }
 
+    /**
+     * 만료 처리 전 잠근 결제 상태를 다시 확인합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_admin
+     *
+     * @effects cbt_cvs_admin_operations
+     */
     public function test_cbt_cvs_expire_rechecks_locked_payment_status_before_marking_expired(): void
     {
         $order = $this->createPersistedPendingCbtCvsOrder('JP-ORDER-CVS-RACE-001', 100, [
@@ -599,11 +734,21 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame('paid', $payment->payment_meta['cvs_status'] ?? null);
     }
 
+    /**
+     * 관리자가 편의점 결제의 로컬 상태를 재확인합니다(주문 수정 권한).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=cvs_admin
+     *
+     * @effects cbt_cvs_admin_operations
+     */
     public function test_admin_can_recheck_cbt_cvs_local_status(): void
     {
         $this->createPersistedPendingCbtCvsOrder('JP-ORDER-CVS-RECHECK-001', 100);
 
-        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.read']);
+        // 재확인은 상태를 바꾸는 조작이라 경로가 orders.update 를 요구한다(#764 서버 권한 정리)
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
         $this->actingAs($admin);
 
         $response = $this->postJson('/api/plugins/sirsoft-pay_kginicis/admin/orders/JP-ORDER-CVS-RECHECK-001/cbt-cvs/recheck');
@@ -618,6 +763,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame('local_status_checked', $payment->payment_meta['cvs_last_recheck_result'] ?? null);
     }
 
+    /**
+     * 승인 뒤 로컬 완료 처리가 실패하면 승인을 자동 환불합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=auto_refund
+     *
+     * @effects cbt_approved_payment_is_auto_refunded_on_mismatch
+     */
     public function test_cbt_callback_auto_refunds_approved_payment_when_local_completion_fails(): void
     {
         $order = $this->makePendingJpyOrder('JP-ORDER-003', 100);
@@ -664,6 +818,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $response->assertRedirect('http://localhost/shop/checkout?error=cbt_failed&orderId=JP-ORDER-003');
     }
 
+    /**
+     * 예외 전에 로컬 결제가 이미 완료됐으면 자동 환불하지 않습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=auto_refund
+     *
+     * @effects cbt_approved_payment_is_auto_refunded_on_mismatch
+     */
     public function test_cbt_callback_skips_auto_refund_when_local_payment_was_already_completed_before_exception(): void
     {
         $order = $this->createPersistedPendingJpyOrder('JP-ORDER-CBT-POST-COMMIT', 100);
@@ -730,6 +893,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame('CBT_TID_POST_COMMIT', $payment->transaction_id);
     }
 
+    /**
+     * 승인 금액이 주문과 다르면 자동 환불합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=auto_refund
+     *
+     * @effects cbt_approved_payment_is_auto_refunded_on_mismatch
+     */
     public function test_cbt_callback_auto_refunds_when_approved_amount_mismatches_order(): void
     {
         $order = $this->makePendingJpyOrder('JP-ORDER-004', 100);
@@ -774,6 +946,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $response->assertRedirect('http://localhost/shop/checkout?error=cbt_failed&orderId=JP-ORDER-004');
     }
 
+    /**
+     * 승인 주문번호가 주문과 다르면 자동 환불합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=auto_refund
+     *
+     * @effects cbt_approved_payment_is_auto_refunded_on_mismatch
+     */
     public function test_cbt_callback_auto_refunds_when_approved_order_id_mismatches_order(): void
     {
         $order = $this->makePendingJpyOrder('JP-ORDER-012', 100);
@@ -823,6 +1004,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $response->assertRedirect('http://localhost/shop/checkout?error=cbt_failed&orderId=JP-ORDER-012');
     }
 
+    /**
+     * 결제사 응답에 금액 필드가 없으면 주문 금액으로 완료합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=callback
+     *
+     * @effects cbt_callback_completes_payment
+     */
     public function test_cbt_callback_completes_with_order_amount_when_pg_amount_field_absent(): void
     {
         // KG 이니시스 일본 CBT 승인 응답에는 금액 필드가 없다(매뉴얼상 미사용).
@@ -875,6 +1065,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $response->assertRedirect('http://localhost/shop/orders/JP-ORDER-013/complete');
     }
 
+    /**
+     * PayPay 응답의 금액 필드가 비어 있어도 완료합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=callback
+     *
+     * @effects cbt_callback_completes_payment
+     */
     public function test_cbt_callback_completes_paypay_when_boku_amount_fields_are_blank(): void
     {
         // 실제 일본 PayPay(BOKU) 승인 응답 재현: bokuApplPrice/bokuLocalApplPrice 가
@@ -936,6 +1135,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $response->assertRedirect('http://localhost/shop/orders/JP-ORDER-PAYPAY-OK/complete');
     }
 
+    /**
+     * 결제창 해시 발급이 금액 불일치를 거절합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=hash_data
+     *
+     * @effects cbt_hash_data_is_gated_by_order_context
+     */
     public function test_cbt_hash_data_rejects_amount_mismatch(): void
     {
         $order = $this->makePendingJpyOrder('JP-ORDER-002', 100);
@@ -965,6 +1173,15 @@ class CbtPaymentControllerTest extends PluginTestCase
             ->assertJsonPath('message', 'Payment amount does not match the order amount.');
     }
 
+    /**
+     * 결제창 해시 발급이 구매자 불일치를 거절합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=hash_data
+     *
+     * @effects cbt_hash_data_is_gated_by_order_context
+     */
     public function test_cbt_hash_data_rejects_order_buyer_mismatch(): void
     {
         $order = $this->makePendingJpyOrder('JP-ORDER-005', 100);
@@ -1002,6 +1219,15 @@ class CbtPaymentControllerTest extends PluginTestCase
             ->assertJsonPath('message', 'Order buyer verification failed.');
     }
 
+    /**
+     * 주문·구매자 맥락이 맞으면 결제창 해시를 발급합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=hash_data
+     *
+     * @effects cbt_hash_data_is_gated_by_order_context
+     */
     public function test_cbt_hash_data_accepts_matching_order_buyer_context(): void
     {
         $order = $this->makePendingJpyOrder('JP-ORDER-006', 100);
@@ -1047,6 +1273,15 @@ class CbtPaymentControllerTest extends PluginTestCase
             ->assertJsonPath('data.hash_data', 'hash-ok');
     }
 
+    /**
+     * 잘못된 체크아웃 토큰의 해시 발급을 거절합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=hash_data
+     *
+     * @effects cbt_hash_data_is_gated_by_order_context
+     */
     public function test_cbt_hash_data_rejects_invalid_checkout_token(): void
     {
         $order = $this->makePendingJpyOrder('JP-ORDER-007', 100);
@@ -1081,6 +1316,15 @@ class CbtPaymentControllerTest extends PluginTestCase
             ->assertJsonPath('message', 'CBT checkout token verification failed.');
     }
 
+    /**
+     * 주문 맥락이 맞으면 체크아웃 토큰을 발급합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=checkout_token
+     *
+     * @effects cbt_checkout_token_is_bound_to_order
+     */
     public function test_cbt_checkout_token_endpoint_issues_token_for_matching_order_context(): void
     {
         $order = $this->makePendingJpyOrder('JP-ORDER-008', 100);
@@ -1117,6 +1361,12 @@ class CbtPaymentControllerTest extends PluginTestCase
     /**
      * OID 상한(40자) 초과는 CbtCheckoutTokenRequest 가 표준 422 로 차단해야 한다
      * (국내 SignatureRequest 와 동일 강도 — 종전 CBT 경로만 raw 입력이던 드리프트 해소).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=checkout_token
+     *
+     * @effects cbt_checkout_token_is_bound_to_order
      */
     public function test_cbt_checkout_token_rejects_overlong_oid(): void
     {
@@ -1137,6 +1387,12 @@ class CbtPaymentControllerTest extends PluginTestCase
      * checkout_token 누락은 표준 422 로 차단해야 한다.
      * (계약 변경: 종전에는 빈 토큰이 토큰 검증 단계까지 흘러가 403 이었으나,
      * CbtHashDataRequest 의 required 승격으로 422 가 된다 — 클라이언트는 `.ok` 만 검사)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=hash_data
+     *
+     * @effects cbt_hash_data_is_gated_by_order_context
      */
     public function test_cbt_hash_data_rejects_missing_checkout_token(): void
     {
@@ -1156,6 +1412,12 @@ class CbtPaymentControllerTest extends PluginTestCase
 
     /**
      * 배열 주입(`oid[]=x`)은 string 규칙이 표준 422 로 차단해야 한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=hash_data
+     *
+     * @effects cbt_hash_data_is_gated_by_order_context
      */
     public function test_cbt_hash_data_rejects_array_injection(): void
     {
@@ -1174,6 +1436,15 @@ class CbtPaymentControllerTest extends PluginTestCase
             ->assertJsonValidationErrors(['oid']);
     }
 
+    /**
+     * 승인 콜백은 정제한 결제사 응답만 저장합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=callback
+     *
+     * @effects cbt_callback_stores_sanitized_response
+     */
     public function test_cbt_callback_stores_sanitized_pg_response_only(): void
     {
         $order = $this->makePendingJpyOrder('JP-ORDER-009', 100);
@@ -1227,6 +1498,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $response->assertRedirect('http://localhost/shop/orders/JP-ORDER-009/complete');
     }
 
+    /**
+     * 자동 환불이 실패하면 수동 대사 대상으로 기록합니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=reconciliation
+     *
+     * @effects cbt_failed_auto_refund_goes_to_manual_reconciliation
+     */
     public function test_cbt_callback_records_manual_reconciliation_when_auto_refund_fails(): void
     {
         $this->insertOrderRow('JP-ORDER-010', 100);
@@ -1273,6 +1553,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertSame('refund timeout', $record['refund_error'] ?? null);
     }
 
+    /**
+     * 관리자가 수동 대사 건의 자동 환불을 재시도합니다(환불 실행 권한).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=reconciliation
+     *
+     * @effects cbt_failed_auto_refund_goes_to_manual_reconciliation
+     */
     public function test_admin_can_retry_cbt_manual_refund(): void
     {
         $this->insertOrderRow('JP-ORDER-011', 100, [
@@ -1289,7 +1578,8 @@ class CbtPaymentControllerTest extends PluginTestCase
             ],
         ]);
 
-        $admin = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
+        // 자동환불 재시도는 환불 실행이라 경로가 claims.execute-refund 를 요구한다(#764 서버 권한 정리)
+        $admin = $this->createAdminUser(['sirsoft-ecommerce.claims.execute-refund']);
         $this->actingAs($admin);
 
         $apiService = Mockery::mock(KgInicisApiService::class);
@@ -1317,6 +1607,15 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertNull($record['refund_error'] ?? null);
     }
 
+    /**
+     * 대사 재시도 점유는 한 번만 쓸 수 있습니다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario flow=reconciliation
+     *
+     * @effects cbt_failed_auto_refund_goes_to_manual_reconciliation
+     */
     public function test_cbt_reconciliation_retry_claim_is_single_use(): void
     {
         $this->insertOrderRow('JP-ORDER-CLAIM-001', 100, [
@@ -1344,6 +1643,13 @@ class CbtPaymentControllerTest extends PluginTestCase
         $this->assertNull($secondClaim);
     }
 
+    /**
+     * 엔화 결제 대기 주문 모델을 저장하지 않고 만듭니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @param  int  $amount  결제 금액(엔)
+     * @return Order 결제 대기 주문
+     */
     private function makePendingJpyOrder(string $orderNumber, int $amount): Order
     {
         $order = new Order;
@@ -1356,6 +1662,13 @@ class CbtPaymentControllerTest extends PluginTestCase
         return $order;
     }
 
+    /**
+     * 엔화 결제 대기 주문을 저장해 만듭니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @param  int  $amount  결제 금액(엔)
+     * @return Order 저장한 주문
+     */
     private function createPersistedPendingJpyOrder(string $orderNumber, int $amount): Order
     {
         $order = OrderFactory::new()->create([
@@ -1403,6 +1716,14 @@ class CbtPaymentControllerTest extends PluginTestCase
         return $order->fresh();
     }
 
+    /**
+     * 편의점 결제 대기 CBT 주문을 저장해 만듭니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @param  int  $amount  결제 금액(엔)
+     * @param  array  $metaOverrides  결제 메타 덮어쓰기
+     * @return Order 저장한 주문
+     */
     private function createPersistedPendingCbtCvsOrder(string $orderNumber, int $amount, array $metaOverrides = []): Order
     {
         $order = $this->createPersistedPendingJpyOrder($orderNumber, $amount);
@@ -1431,6 +1752,14 @@ class CbtPaymentControllerTest extends PluginTestCase
         return $order->fresh();
     }
 
+    /**
+     * 주문 행을 직접 넣습니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @param  int  $amount  결제 금액(엔)
+     * @param  array  $orderMeta  주문 메타
+     * @return void 반환값 없음
+     */
     private function insertOrderRow(string $orderNumber, int $amount, array $orderMeta = []): void
     {
         DB::table('ecommerce_orders')->insert([
@@ -1452,6 +1781,12 @@ class CbtPaymentControllerTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * 시험용 주문 메타를 만듭니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @return array 주문 메타
+     */
     private function orderMeta(string $orderNumber): array
     {
         $raw = DB::table('ecommerce_orders')

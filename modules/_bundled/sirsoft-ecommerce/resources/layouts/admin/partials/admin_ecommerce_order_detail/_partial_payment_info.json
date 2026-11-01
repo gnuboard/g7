@@ -857,6 +857,88 @@
                                             ]
                                         },
                                         {
+                                            "comment": "면세·영세 금액과 취소 부가세 — 값이 있을 때만. 영세는 과세 금액에 포함된 세율 0% 몫이다 (#612)",
+                                            "id": "payment_tax_free_row_{{payIdx}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{order.data?.total_tax_free_amount > 0}}",
+                                            "props": {
+                                                "className": "flex justify-between text-sm"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.tax_free_amount"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "{{order.data?.total_tax_free_amount_formatted}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "payment_zero_rated_row_{{payIdx}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{order.data?.total_zero_rated_amount > 0}}",
+                                            "props": {
+                                                "className": "flex justify-between text-sm"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.zero_rated_amount"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "{{order.data?.total_zero_rated_amount_formatted}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "payment_cancelled_vat_row_{{payIdx}}",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{payment?.cancelled_vat_amount > 0}}",
+                                            "props": {
+                                                "className": "flex justify-between text-sm"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.cancelled_vat"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-red-600 dark:text-red-400"
+                                                    },
+                                                    "text": "-{{payment?.cancelled_vat_amount_formatted}}"
+                                                }
+                                            ]
+                                        },
+                                        {
                                             "type": "basic",
                                             "name": "Div",
                                             "if": "{{order.data?.total_earned_points_amount > 0 && order.data?.order_status !== 'cancelled' && !order.data?.is_partially_cancelled}}",

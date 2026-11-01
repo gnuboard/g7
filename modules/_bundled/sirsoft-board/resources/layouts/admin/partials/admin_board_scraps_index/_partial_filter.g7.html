@@ -49,10 +49,8 @@
     <div data-ref="filter_grid" class="filter-grid">
       <div data-ref="board_filter_row" class="filter-row">
         <span class="filter-label w-24">$t:sirsoft-board.admin.scraps.filters.board_label</span>
-        <select data-ref="board_filter_select" class="select-composite w-64" value="{{_global.scrapBoardFilter !== undefined ? _global.scrapBoardFilter : (query.board_id || '')}}">
+        <select data-ref="board_filter_select" aria-label="$t:sirsoft-board.admin.scraps.filters.board_label" class="select-composite w-64" value="{{_global.scrapBoardFilter !== undefined ? _global.scrapBoardFilter : (query.board_id || '')}}" options="{{[{ value: '', label: $t('sirsoft-board.admin.scraps.filters.board_all') }].concat((scraps?.data?.boards ?? []).map(b => ({ value: String(b.id), label: b.name })))}}">
           <responsive on="portable" class="select-composite w-full"/>
-          <option value="">$t:sirsoft-board.admin.scraps.filters.board_all</option>
-          <option data-each="b in {{scraps?.data?.boards ?? []}}" value="{{b.id}}">{{b.name}}</option>
           <on type="change">
             <!-- 담아만 두고 실제 조회는 검색 버튼이 한 번에 한다 -->
             <set-state target="global" scrapBoardFilter="{{$event.target.value}}"/>

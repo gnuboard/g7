@@ -5,11 +5,10 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.1-0066FF?style=flat-square" alt="version 1.1.1">
+  <img src="https://img.shields.io/badge/version-1.1.2-0066FF?style=flat-square" alt="version 1.1.2">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
   <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
-  <img src="https://img.shields.io/badge/requires-sirsoft--page-BF8700?style=flat-square" alt="requires sirsoft-page">
 </p>
 <!-- @generated:badges END -->
 
@@ -80,7 +79,6 @@ flowchart LR
 |---|---|
 | 그누보드7 코어 | `>=7.1.1` |
 | PHP | `^8.2` |
-| 의존 모듈 | `sirsoft-page` `>=1.0.0` |
 <!-- @generated:requirements END -->
 
 ## 설치
@@ -128,7 +126,8 @@ php artisan plugin:update sirsoft-marketing --force
 | 정보 공개 동의 사용 / 약관 페이지 | 회원 정보를 공개 영역에 노출할 때 | 해당 동의 항목의 노출 여부와 약관 링크 |
 
 약관 페이지는 **페이지 모듈에서 만든 문서**를 가리킵니다. 슬러그만 지정하면 되고, 문서가
-없으면 링크가 열리지 않으므로 약관을 먼저 작성합니다.
+없으면 링크가 열리지 않으므로 약관을 먼저 작성합니다. 페이지 모듈은 선택 연동이라 없어도
+설치·동의는 동작하지만, 그때는 약관 「보기」 단추가 보이지 않습니다(코어 7.1.4 이상).
 
 채널을 **사용중지**로 바꾸면 새 가입자에게는 보이지 않지만, 이미 동의한 회원의 기록은
 남습니다 — 나중에 다시 켰을 때 그 회원이 다시 동의할 필요가 없도록 하기 위해서입니다.
@@ -154,13 +153,17 @@ php artisan plugin:update sirsoft-marketing --force
 <!-- @generated:integrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 **이 확장이 의존하는 확장**
 
-| 확장 | 유형 | 버전 제약 | 번들 |
-|---|---|---|---|
-| `sirsoft-page` | 모듈 | `>=1.0.0` | ✅ |
+없음 — 코어만으로 동작합니다.
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
 없음.
+
+**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
+
+| 확장 | 유형 | 버전 제약 | 번들 |
+|---|---|---|---|
+| `sirsoft-page` | 모듈 | `>=1.0.0` | ✅ |
 <!-- @generated:integrations END -->
 
 ## 문서
@@ -186,6 +189,7 @@ php artisan plugin:update sirsoft-marketing --force
 |---|---|---|
 | 가입 폼에 동의 항목이 보이지 않음 | 해당 동의 항목이 꺼져 있거나 채널이 하나도 없음 | 설정에서 사용 여부를 확인하고 채널을 하나 이상 추가합니다 |
 | 동의 항목의 "내용 보기" 를 눌러도 약관이 열리지 않음 | 지정한 슬러그의 페이지가 없거나 미발행 | 페이지 모듈에서 그 슬러그의 문서를 만들고 발행합니다 |
+| 동의 항목 옆 "내용 보기" 단추가 보이지 않음 | 페이지 모듈이 설치되지 않았거나 꺼져 있음 | 페이지 모듈을 설치·활성화하고 약관 문서를 만듭니다. 페이지 모듈 없이 운영한다면 약관을 다른 경로로 안내합니다 |
 | 템플릿을 바꾸거나 업데이트한 뒤 동의 항목이 사라짐 | 새 화면에 항목이 들어갈 자리가 없음 | 해당 템플릿이 회원 화면의 확장 자리를 제공하는지 확인합니다 |
 | 채널을 지웠는데 이미 동의한 회원 기록이 남아 있음 | 기록은 의도적으로 보존됨 | 정상 동작입니다. 채널을 다시 켜면 그 회원은 다시 동의할 필요가 없습니다 |
 | 동의했는데 마케팅 메일이 오지 않음 | 이 플러그인은 동의만 관리하고 발송은 하지 않음 | 발송을 담당하는 확장의 설정과 발송 대상 조건을 확인합니다 |

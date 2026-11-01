@@ -547,6 +547,23 @@ class CoreActivityLogListener implements HookListenerInterface
         $source = (string) ($context['source'] ?? '');
         $actorId = $context['actor_id'] ?? $user->id;
 
+        // 서버 터미널의 재설정(`user:reset-password`) — 행위 회원이 없다. 「회원 본인 변경」으로 남기지 않는다.
+        if ($source === 'console') {
+            $this->logActivity('auth.reset_password', [
+                'loggable' => $user,
+                'log_type' => ActivityLogType::System,
+                'description_key' => 'activity_log.description.auth_reset_password_by_console',
+                'description_params' => ['user_id' => $user->uuid],
+                'properties' => [
+                    'source' => $source,
+                    'sessions_revoked' => (int) ($context['sessions_revoked'] ?? 0),
+                ],
+                'user_id' => null,
+            ]);
+
+            return;
+        }
+
         if ($source === 'reset') {
             $this->logActivity('auth.reset_password', [
                 'loggable' => $user,

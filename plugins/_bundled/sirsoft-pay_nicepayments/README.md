@@ -5,7 +5,7 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.1-0066FF?style=flat-square" alt="version 1.1.1">
+  <img src="https://img.shields.io/badge/version-1.1.2-0066FF?style=flat-square" alt="version 1.1.2">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
   <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
@@ -46,7 +46,7 @@ API 와 어떻게 주고받는가"만 책임집니다. 그래서 이 플러그�
 | 결제 취소 | 전액/부분취소, PG 취소 확인 시점 별도 활동 로그(PG 응답 시각·취소 TID), 실패 시 `refund_failed` 훅 |
 | 영수증 | 주문 완료/마이페이지 영수증 버튼 |
 | 관리자 확장 | 주문 상세 거래 조회, 에스크로 배송 등록 UI |
-| 과세 처리 | 주문의 세금/부가세/면세 금액 자동 반영 |
+| 과세 처리 | 면세 상품이 섞인 주문은 결제 금액 기준으로 공급가액·부가세·면세를 나눠 결제창에 전달 (나이스와 복합과세 사용 협의 필요) |
 <!-- @intent END -->
 
 ## 동작 방식
@@ -78,7 +78,7 @@ URL로 결과를 POST 하면 결제 완료 처리됩니다.
 |---|---|
 | 그누보드7 코어 | `>=7.1.1` |
 | PHP | `^8.2` |
-| 의존 모듈 | `sirsoft-ecommerce` `>=1.3.0` |
+| 의존 모듈 | `sirsoft-ecommerce` `>=1.3.3` |
 | 외부 스크립트 호스트 | `web.nicepay.co.kr` |
 <!-- @generated:requirements END -->
 
@@ -194,7 +194,7 @@ https://your-domain.com/plugins/sirsoft-pay_nicepayments/payment/vbank-notify
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.3.3` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 

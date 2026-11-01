@@ -10,11 +10,12 @@ description: |
   모듈·플러그인 카드는 대체 자체가 없었다. 서버와 화면 두 겹에서 빈 이름을 식별자로 대체한다.
 
 axes:
-  case: [empty, missing_type_keys, not_installed, installed_active, installed_inactive, version_unmet, type_order, localized_name, blank_name]
+  case: [empty, missing_type_keys, not_installed, installed_active, installed_inactive, version_unmet, type_order, localized_name, blank_name, bundled_manifest_name]
 
 effects:
   - dependency_status_reported
   - blank_dependency_name_falls_back_to_identifier
+  - uninstalled_dependency_name_from_bundled_manifest   # 설치 기록이 없으면 확장 폴더(활성 → 대기 → 번들) manifest 의 현재 언어 이름, 그것도 없으면 식별자
 
 notes:
   - 화면 쪽 대체(카드·정보 창·확인 창)는 admin-extension-dependency-name-fallback 이 맡는다.

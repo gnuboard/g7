@@ -99,10 +99,13 @@ modules/_bundled/<id>/
   "description": { "ko": "[모듈 설명]", "en": "[Module description]" },
   "g7_version": ">=7.0.0-alpha.1",
   "dependencies": { "modules": {}, "plugins": {} },
+  "integrations": { "modules": {}, "plugins": {} },
   "github_url": null,
   "github_changelog_url": null
 }
 ```
+
+없어도 되는 상대는 `integrations`.
 
 #### module.php
 
@@ -365,6 +368,7 @@ plugins/_bundled/<id>/
   "description": { "ko": "[플러그인 설명]", "en": "[Plugin description]" },
   "g7_version": ">=7.0.0-alpha.1",
   "dependencies": { "modules": {}, "plugins": {} },
+  "integrations": { "modules": {}, "plugins": {} },
   "github_url": null,
   "github_changelog_url": null,
   "assets": {
@@ -374,6 +378,8 @@ plugins/_bundled/<id>/
   "loading": { "strategy": "global", "priority": 100 }
 }
 ```
+
+없어도 되는 상대는 `integrations`.
 
 #### plugin.php (루트)
 
@@ -628,7 +634,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - `plugin.json` 이 메타데이터 SSoT — identifier·version 을 코드에 하드코딩하지 않는다.
 - `plugin.php` 는 루트에 두고 `AbstractPlugin` 을 상속한다. `composer.json` autoload 에 `"./"` 를 포함한다.
-- 다른 확장과는 훅(코어 계약 훅·상대 확장이 문서화한 훅 키)으로 협력하고, 이름으로 참조(식별자·네임스페이스·API 경로·번역 키)하는 확장은 `plugin.json` `dependencies` 에 선언한다 — 책임 경계.
+- 다른 확장과는 훅(코어 계약 훅·상대 확장이 문서화한 훅 키)으로 협력하고, 이름으로 참조(식별자·네임스페이스·API 경로·번역 키)하는 확장은 `plugin.json` `dependencies`·`integrations` 에 선언한다 — 책임 경계.
 - 완전한 레이아웃은 등록하지 않는다 — `layout_extensions` 만 사용(예외: `plugin_settings`).
 - 설정 UI 와 훅 리스너는 골격의 필수 산출물이다 — 빈 `getHookListeners()` 와 설정 화면 없는 플러그인을 완료로 보고하지 않는다.
 - 설정 UI 소스 SSoT 는 `plugin_settings.g7.html` 이다. `AbstractPlugin::getSettingsLayout()` 은 `.g7.html` → 짝 `.json` 순으로 실재하는 첫 파일을 읽지만(`layoutSourceCandidates`), 편집기·검증 소비처는 짝 `.json` 을 읽으므로 굽기(`layout:decompile --sync`)를 생략하지 않는다.
@@ -698,6 +704,7 @@ templates/_bundled/<id>/
   "release_date": "YYYY-MM-DD",
   "g7_version": ">=7.0.0-alpha.1",
   "dependencies": { "modules": {}, "plugins": {} },
+  "integrations": { "modules": {}, "plugins": {} },
   "assets": { "css": ["assets/css/main.css"], "js": ["dist/js/components.iife.js"], "fonts": [], "images": [] },
   "components": {
     "basic": ["a", "button", "checkbox", "div", "form", "h1", "h2", "h3", "icon", "img", "input", "label", "li", "nav", "p", "section", "select", "span", "table", "tbody", "td", "textarea", "th", "thead", "tr", "ul"],
@@ -715,6 +722,10 @@ templates/_bundled/<id>/
   "github_changelog_url": null
 }
 ```
+
+없어도 되는 상대는 `integrations`.
+
+모듈 화면 가드: 템플릿 기초.
 
 `externals` 는 최초 HTML 문서에 정적으로 필요한 스타일·웹폰트·스크립트 선언이다. `components.basic` 에 `icon` 을 등록하면 Font Awesome `style` 항목이 있어야 아이콘이 표시된다(Icon 을 안 쓰면 `[]` 또는 생략). 웹폰트는 `"type": "webfont"`. `asset` 은 템플릿 `dist/` 이하 상대 경로이며 라이브러리는 `dist/vendor/{lib}/{version}/` 에 `LICENSE` 와 함께 동봉한다 — 제3자 CDN `url` 은 폐쇄망·광고차단기에서 아이콘이 사라지므로 쓰지 않는다. 자체 제공이 불가능한 서비스 SDK 만 예외이고 `trusted_script_hosts`·`trusted_script_hosts_reason` 을 manifest 에 함께 둔다. 상세: docs/extension/template-basics.md "외부 리소스 (externals)".
 

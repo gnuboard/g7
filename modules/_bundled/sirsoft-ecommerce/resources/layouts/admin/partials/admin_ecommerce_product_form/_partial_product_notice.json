@@ -146,33 +146,12 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "select w-full",
+                                        "className": "w-full",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.fields.notice_template",
                                         "value": "{{_global.pendingNoticeTemplateId ?? _local.ui.selectedNoticeTemplateId ?? ''}}",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.product.placeholders.notice_template') }].concat((notice_templates?.data?.data ?? []).map(template => ({ value: template.id, label: $localized(template.name) })))}}",
                                         "disabled": "{{_computed.isReadOnly}}"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Option",
-                                            "props": {
-                                                "value": ""
-                                            },
-                                            "text": "$t:sirsoft-ecommerce.admin.product.placeholders.notice_template"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Option",
-                                            "iteration": {
-                                                "source": "{{notice_templates?.data?.data ?? []}}",
-                                                "item_var": "template",
-                                                "index_var": "tplIdx"
-                                            },
-                                            "props": {
-                                                "value": "{{template.id}}"
-                                            },
-                                            "text": "{{$localized(template.name)}}"
-                                        }
-                                    ]
+                                    }
                                 },
                                 {
                                     "comment": "고시 템플릿 조회 권한이 없어 선택지가 비었을 때의 안내 — 고시 항목은 아래에서 직접 채울 수 있다",

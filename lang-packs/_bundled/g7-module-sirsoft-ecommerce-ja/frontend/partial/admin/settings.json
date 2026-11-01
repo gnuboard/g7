@@ -264,7 +264,7 @@
       "shipping_fee_tax_proportional": "按分 (デフォルト)",
       "shipping_fee_tax_taxable": "全額課税",
       "shipping_fee_tax_follow_main_item": "主要な財貨基準",
-      "shipping_fee_tax_help": "按分は、課税·非課税商品の金額比率で配送料を分割します。",
+      "shipping_fee_tax_help": "按分は、課税·ゼロ税率·非課税商品の金額比率で配送料を分割します。主たる商品は最も大きい区分（同額なら課税 > ゼロ税率 > 非課税）に従います。",
       "self_issue_label": "自進発行の使用",
       "self_issue_help": "購入者が申請していない無通帳入金建も自動で発行します (所得控除用専用)。",
       "self_issue_mandatory_help": "現金領収証の義務発行業種は、購入者が申請しなくても発行義務があります。該当業種であればオンにしてください。",

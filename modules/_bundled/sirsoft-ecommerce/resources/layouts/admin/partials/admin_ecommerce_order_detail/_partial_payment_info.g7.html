@@ -152,6 +152,19 @@
               <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.vat</span>
               <span class="text-gray-700 dark:text-gray-300">{{order.data?.total_vat_amount_formatted}}</span>
             </div>
+            <!-- 면세·영세 금액과 취소 부가세 — 값이 있을 때만. 영세는 과세 금액에 포함된 세율 0% 몫이다 (#612) -->
+            <div data-ref="payment_tax_free_row_{{payIdx}}" data-if="{{order.data?.total_tax_free_amount > 0}}" class="flex justify-between text-sm">
+              <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.tax_free_amount</span>
+              <span class="text-gray-700 dark:text-gray-300">{{order.data?.total_tax_free_amount_formatted}}</span>
+            </div>
+            <div data-ref="payment_zero_rated_row_{{payIdx}}" data-if="{{order.data?.total_zero_rated_amount > 0}}" class="flex justify-between text-sm">
+              <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.zero_rated_amount</span>
+              <span class="text-gray-700 dark:text-gray-300">{{order.data?.total_zero_rated_amount_formatted}}</span>
+            </div>
+            <div data-ref="payment_cancelled_vat_row_{{payIdx}}" data-if="{{payment?.cancelled_vat_amount > 0}}" class="flex justify-between text-sm">
+              <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.cancelled_vat</span>
+              <span class="text-red-600 dark:text-red-400">-{{payment?.cancelled_vat_amount_formatted}}</span>
+            </div>
             <div data-if="{{order.data?.total_earned_points_amount > 0 &amp;&amp; order.data?.order_status !== 'cancelled' &amp;&amp; !order.data?.is_partially_cancelled}}" class="flex justify-between text-sm">
               <span class="text-blue-600 dark:text-blue-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.expected_points</span>
               <span class="text-blue-600 dark:text-blue-400">{{order.data?.total_earned_points_amount | number}}P</span>

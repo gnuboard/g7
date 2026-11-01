@@ -74,7 +74,8 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 | SeoMetaResolver | 3계층 캐스케이드 메타 해석 |
 | SeoMiddleware | 미들웨어 (봇 감지 → 렌더링) |
 | SeoServiceProvider | DI 바인딩 |
-| SitemapGenerator | Sitemap 수집기 (contributor 드레인 → writer 스트리밍) |
+| SitemapGenerator | Sitemap 수집기 (정적 화면 → contributor 드레인 → writer 스트리밍, 같은 주소 1회) |
+| SeoToggleEvaluator | 레이아웃 `meta.seo.toggle_setting` 판정 — 봇 화면(SeoRenderer)과 사이트맵 정적 화면이 공용 |
 | SitemapManager | Sitemap 재생성 오케스트레이션 (모드 분기 + 진행상황 + 훅) |
 | SitemapWriter | 자식파일당 in-memory 버퍼 flush + 분할 + atomic commit |
 | SitemapFileStore | 디스크 세트 읽기/서빙 (manifest·index·child 응답) |
@@ -113,7 +114,26 @@ Request → web.php catch-all → SeoMiddleware (봇 감지)
 - 동시에 진행하는 미스 렌더는 사이트 전체 상한(`max_concurrent_renders`) 안에서만 — 초과분도 SPA + `BYPASS`
 - 기본 로케일을 `?locale=` 로 명시한 요청의 301 `Location` 은 요청 Host 가 아니라 APP_URL 기준
 - 저장 상한: 경로·언어당 쿼리 변종 수 · 캐시 인덱스 전체 항목 수
-- 캐시 HIT/MISS 를 통계에 기록 (IP 당 분당 상한). HIT 의 레이아웃명은 캐시 항목에 함께 저장된 값으로 귀속한다
+- 캐시 HIT/MISS 를 통계에 기록 (IP 당 분당 상한). HIT 의 레이아웃명은 캐시 항목에 함께 저장된 값으로 귀속한다. 모듈 화면이면 모듈 식별자도 함께 기록한다(MISS 는 렌더러가 남긴 값, HIT 는 캐시 항목의 레이아웃 이름에서 되살린 값)
+
+## 확장 레이아웃 이름 규약
+
+모듈·플러그인이 제공하는 레이아웃은 라우트(`routes.json` 의 `layout`)·DB(`template_layouts.name`)·레이아웃 편집기에서
+`{확장식별자}.{레이아웃}` **전체 이름**으로 다룹니다(예: `gnuboard7-hello_module.user_memo_list`). 봇 렌더도 이 이름을 씁니다.
+
+| 쓰임 | 이름 |
+|------|------|
+| 레이아웃 조회(봇 렌더) | 전체 이름 |
+| 봇 캐시 항목·캐시 통계의 레이아웃 이름 | 전체 이름 — `seo:clear --layout=`·관리자 캐시 비우기도 이 이름으로 지운다 |
+| 훅 컨텍스트 `layoutName` | 확장 식별자를 뗀 이름(기존 값 유지) |
+| 훅 컨텍스트 `storedLayoutName` | 전체 이름 |
+| 템플릿 레이아웃(점 없는 이름) | 두 이름이 같다 |
+
+- 뗀 이름으로 레이아웃을 찾으면 모듈 화면은 「레이아웃 없음」이 되고, 뗀 이름이 템플릿 레이아웃과 같으면(모듈 `vendor-x.home` → `home`) 템플릿 화면이 그 주소로 렌더됩니다. 그래서 조회와 캐시 이름은 전체 이름입니다.
+- 소속 판별 순서: 설치된 모듈 → 설치된 플러그인 → 둘 다 아니면 모듈로 간주.
+- 봇 렌더가 레이아웃을 찾지 못하면 `[SEO] Layout load failed` 를 **error** 로 남기고 SPA 로 응답합니다. 로그에는 `url`·`template`·`layout`(전체 이름)·`route_layout_name`(뗀 이름)·`module`·`plugin`·`error` 가 실립니다.
+- 플러그인 라우트는 **관리자 템플릿에만 병합**됩니다. 그래서 플러그인이 소유한 사용자 화면은 지금 구조로는 없고, 플러그인 레이아웃의 봇 렌더는 템플릿 `routes.json` 이 점 붙은 플러그인 레이아웃을 직접 지정할 때만 일어납니다(이름 규약은 모듈과 같습니다).
+- 모듈 화면 SEO 예시: 번들 Hello 모듈의 `/memos`(`user_memo_list`)가 `meta.seo` 를 선언해 템플릿 `_user_base` 의 기본값(SEO 끔)을 덮습니다.
 
 ## 봇 감지 구조
 
@@ -184,6 +204,14 @@ SEO 렌더링 시 `_global` 컨텍스트에 프론트엔드 설정 데이터를 
 | `_global.pluginSettings` | `PluginSettingsService` | 플러그인 설정 데이터 |
 | `_global.site_name` | `general.site_name` | 사이트 이름. `resolveLocalizedValue` 통과 (다국어 array 안전) |
 | `_global.site_url` | `general.site_url` | 사이트 URL |
+| `_global.activeModules` | `ModuleManager::getActiveModules()` | 활성 모듈 식별자 배열 — 사용자 화면의 같은 키와 같은 출처 (코어 7.1.4+). 목록을 못 구하면 키를 싣지 않는다 |
+| `_global.activePlugins` | `PluginManager::getActivePlugins()` | 활성 플러그인 식별자 배열 (코어 7.1.4+) |
+
+레이아웃 가드 `{{_global.activeModules?.includes('id') ?? true}}`(부정 `{{!(… ?? true)}}`)는 봇 화면에서도 브라우저와 같은 값(켜짐 true · 꺼짐 false · 키 없음 true)이 나온다. 이 `_global` 은 데이터소스 `if` 평가에도 쓰여, 꺼진 모듈의 API 는 봇 렌더에서 부르지 않는다. 라우트 자체는 routes.json `requires` 로 거른 결과(공개 routes 응답과 같은 필터)를 쓴다 — [template-routing.md](../extension/template-routing.md#requires--모듈이-꺼지면-라우트-숨기기).
+
+봇 화면 평가기는 `+` 를 JS 와 같게 처리한다 — 한쪽이 문자열이면 잇고 둘 다 수면 더한다(`'/' + (route_path ?? 'shop')` → `/shop`). 값 자리의 `??` 는 null(없는 값)일 때만 오른쪽으로 넘어간다(빈 문자열은 값). 코어 7.1.4+.
+
+seo-config 의 `fields` 모드 항목은 `"if": "{prop}"` 로 props 값이 거짓(`false`·빈 값·`0`)이면 빠지고, `attrs` 는 `"{shopBase}/products"` 처럼 값과 글자를 섞어 쓸 수 있다(코어 7.1.4+).
 
 ### site_name SSoT 체인 (다국어 일관성)
 
@@ -237,8 +265,8 @@ SEO 렌더링 시 `_global` 컨텍스트에 프론트엔드 설정 데이터를 
 | seo.page_type | string | X | 모듈 설정 템플릿 키 결정 (예: `"product"` → `seo.meta_product_title`) |
 | seo.toggle_setting | string | X | SEO 활성화 토글 설정 경로 (예: `"$module_settings:seo.seo_product_detail"`) |
 | seo.vars | object | X | SEO 변수 선언 — 모듈 설정 title/description 템플릿의 `{key}` 치환용 |
-| seo.priority | number | X | sitemap priority (0.0~1.0) |
-| seo.changefreq | string | X | sitemap changefreq (daily/weekly 등) |
+| seo.priority | number | X | sitemap priority (0.0~1.0). 정적 화면 사이트맵 항목에 쓰임 — 범위 밖·숫자가 아니면 0.5 |
+| seo.changefreq | string | X | sitemap changefreq (daily/weekly 등). 정적 화면 사이트맵 항목에 쓰임 — 비표준 값이면 weekly |
 | seo.og | object | X | Open Graph 메타태그 |
 | seo.structured_data | object | X | JSON-LD 구조화 데이터 |
 
@@ -302,8 +330,10 @@ SEO 렌더링 시 `_global` 컨텍스트에 프론트엔드 설정 데이터를 
 위 단계가 모두 비면 title 은 레이아웃 `meta.seo.og.title` → 라우트 `meta.title`(routes.json) 순으로 대신합니다. 그래서 SEO 제목 선언이 없는 화면(회원 프로필 등)도 「화면 제목 | 사이트 이름」 으로 나갑니다.
 
 - **사이트 이름만 되풀이하는 제목은 버립니다.** 확장 제목 틀이 사이트 이름만 낸 경우(게시판 목록 기본값 `{site_name}` 등) 코어 접미사가 사이트 이름을 또 붙여 「사이트 이름 \| 사이트 이름」 이 되므로, 코어 사이트 이름(`general.site_name`)이나 접미사에서 구분자를 뗀 이름과 같은 제목은 화면 정보가 없는 것으로 보고 다음 단계로 넘깁니다. 대신할 제목이 없으면 사이트 이름만 한 번 나갑니다.
+- **제목 접미사(`seo.meta_title_suffix`)가 비면 사이트 이름이 제목이 됩니다.** 위 단계가 모두 비고 접미사도 비어 제목 전체가 빈 값이 되면, 지역화한 사이트 이름(`general.site_name`)을 제목으로 씁니다(og:title 도 따라갑니다). 접미사가 있는 사이트는 위 규칙대로 제목을 비우고 접미사만 남깁니다.
+- **확장 설정 제목·설명 틀은 다국어 값이어도 됩니다.** 모듈·플러그인 설정 `seo.meta_{page_type}_{title|description}` 을 `{ko, en, …}` 배열로 저장하면 현재 로케일 → 사이트 기본 언어 → 영어 순으로 고른 문자열을 씁니다.
 - **사이트 첫 화면(`/`)은 라우트 제목을 쓰지 않습니다.** 첫 화면은 사이트 이름 자체가 제목이라 「홈 \| 사이트 이름」 대신 사이트 이름만 나갑니다.
-- 편집기 봇 미리보기(`renderFromResolved` 직접 호출)는 라우트를 거치지 않으므로 라우트 제목 대체가 없습니다.
+- 편집기 봇 미리보기(`renderFromResolved` 직접 호출)는 URL 매핑을 거치지 않습니다. 대신 편집기가 보낸 레이아웃 전체 이름(`layout_name`)으로 그 레이아웃을 쓰는 라우트를 찾아 같은 라우트 제목 대체를 적용합니다(사이트 첫 화면 제외). 레이아웃 이름이 없는 편집(베이스·모달)은 라우트 제목 대체가 없습니다.
 
 ## 레이아웃 meta.seo 선언적 설정
 
@@ -433,7 +463,8 @@ SEO 엔진은 특정 모듈/템플릿 지식을 갖지 않습니다. 모든 SEO 
 
 ```php
 $context = HookManager::applyFilters('core.seo.filter_context', $context, [
-    'layoutName' => $layoutName,
+    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
+    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
     'routeParams' => $routeParams,
@@ -451,7 +482,8 @@ $context = HookManager::applyFilters('core.seo.filter_context', $context, [
 
 ```php
 $meta = HookManager::applyFilters('core.seo.filter_meta', $meta, [
-    'layoutName' => $layoutName,
+    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
+    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
     'context' => $context,
@@ -469,7 +501,8 @@ $meta = HookManager::applyFilters('core.seo.filter_meta', $meta, [
 
 ```php
 $meta['og'] = HookManager::applyFilters('core.seo.filter_og_data', $meta['og'], [
-    'layoutName' => $layoutName,
+    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
+    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
     'context' => $context,
@@ -522,7 +555,8 @@ HookManager::addFilter('core.seo.filter_og_data', function (array $og, array $ct
 
 ```php
 $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
-    'layoutName' => $layoutName,
+    'layoutName' => $layoutName,             // 확장 식별자를 뗀 이름 (기존 값)
+    'storedLayoutName' => $storedLayoutName, // 전체 이름 (DB·편집기·봇 캐시)
     'moduleIdentifier' => $moduleIdentifier,
     'pluginIdentifier' => $pluginIdentifier,
 ]);
@@ -657,8 +691,14 @@ if (app()->bound(\App\Seo\SitemapGenerator::class)) {
 | 훅 | 무효화 대상 |
 |----|-----------|
 | `[module].product.after_create/update/delete` | 해당 URL + 목록/카테고리 |
-| `[module].post.after_create/update/delete` | 게시글 + 게시판 |
+| `[module].post.after_create/update/delete` | 게시글 상세 + 그 게시판 목록과 쪽 변종(`/board/{slug}?*`) |
+| `[module].board.after_update` | 그 게시판 목록·쪽 변종·글 상세(`/board/{slug}/*` — 게시판 이름을 렌더) + 게시판 인덱스·홈·검색. 다른 게시판은 유지 |
 | `[module].page.after_create/update/delete` | 페이지 + 홈 |
+
+`invalidateByUrl()` 패턴은 캐시 URL 전체와 일치해야 한다. **와일드카드는 `*` 하나뿐이고 `?`·`.` 은 글자 그대로**다 —
+쿼리 변종은 `/board/free?*`, 하위 경로는 `/board/free/*` 처럼 따로 적는다(정규식으로 해석하던 동안 `/boards?*` 가
+모든 `/board*` 캐시를 지웠다). 캐시 키의 경로는 끝·연속 슬래시를 정리한 정규형이므로(`/x` 와 `/x/` 는 같은 키)
+패턴도 정규형으로 적는다.
 
 #### 확장 라이프사이클 리스너 (코어)
 
@@ -677,13 +717,24 @@ if (app()->bound(\App\Seo\SitemapGenerator::class)) {
 
 캐시 무효화 시 `app(CacheInterface::class)->forget('seo.sitemap')` + `SeoConfigMerger::clearCache()` 도 함께 호출 (드라이버가 `g7:core:` 접두사 자동 적용)
 
+#### 레이아웃 변경 리스너 (코어)
+
+| 훅 | 무효화 대상 | 사유 |
+|----|-----------|------|
+| `core.layout.after_cache_clear` | 그 레이아웃 이름의 봇 캐시(`invalidateByLayout`) | 레이아웃 저장·버전 복원·파일 생성/이름 변경/삭제·레이아웃 확장(오버레이) 변경 |
+
+- 위 작업은 모두 레이아웃 캐시 정리(`LayoutService::clearDependentLayoutsCache()`)를 거치고, 그 정리는 자기 자신과 `extends` 로 물려받는 자식 레이아웃마다 이 훅을 발화합니다. 그래서 공통 레이아웃(`_user_base`)을 고치면 그것을 물려받는 화면의 봇 캐시도 함께 지워집니다.
+- **활성 사용자 템플릿**의 레이아웃만 지웁니다. 관리자 템플릿·꺼진 사용자 템플릿의 레이아웃은 검색봇이 받는 화면이 아닙니다.
+- 실패는 경고로 남기고 저장 흐름을 막지 않습니다. 구독은 `sync` 입니다(`SeoLayoutCacheListener`).
+
 ## Artisan 커맨드
 
 ```bash
 php artisan seo:warmup              # SEO 캐시 워밍업
 php artisan seo:warmup --layout=shop/show  # 특정 레이아웃만
 php artisan seo:clear               # 전체 SEO 캐시 삭제
-php artisan seo:clear --layout=home # 특정 레이아웃만
+php artisan seo:clear --layout=home # 특정 레이아웃만 (템플릿 화면)
+php artisan seo:clear --layout=gnuboard7-hello_module.user_memo_list  # 모듈 화면 — 편집기에 보이는 전체 이름
 php artisan seo:stats               # 캐시 통계 출력 (미들웨어가 HIT/MISS 를 기록 — IP 당 분당 상한)
 php artisan seo:generate-sitemap    # Sitemap 생성 (큐 디스패치, mode=auto)
 php artisan seo:generate-sitemap --sync  # Sitemap 동기 생성
@@ -730,7 +781,19 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 
 **분할 기준**: `sitemap_urls_per_file`(기본 50000) 또는 파일 크기 임계(`SitemapWriter::MAX_FILE_BYTES`, 45MB) 중 먼저 도달하는 쪽. 둘 다 sitemaps.org 프로토콜 제한(50,000 URL / 50MB)을 지키기 위한 것입니다.
 
-**관리자 수동 재생성**: `POST /api/admin/seo/sitemap/regenerate` 는 큐에 `mode=full` 로 예약만 하고 즉시 진행상황(`getStatus()`)을 응답합니다. 완료 여부는 진행상황(아래) 또는 `sitemap_last_updated_at` 갱신으로 확인합니다.
+**관리자 수동 재생성**: `POST /api/admin/seo/sitemap/regenerate` 는 큐에 `mode=full` 로 예약만 하고 즉시 진행상황(`getStatus()`)을 응답합니다. 완료 여부는 진행상황(아래) 또는 `sitemap_last_updated_at` 갱신으로 확인합니다. 잡의 유니크 잠금을 먼저 잡은 뒤 **발행 전에** `queued` 를 기록하므로, 다른 생성이 진행 중이거나 이전 작업의 잠금이 남아 있으면 진행 상태를 덮어쓰지 않고 409 로 거부합니다. 큐 연결이 즉시 실행(`sync`)이면 요청 안에서 생성이 끝나 `completed` 와 「완료」 메시지를 돌려줍니다 — 이때 관리자 요청 안에서 전체 생성이 돌므로 대용량 사이트는 비동기 큐를 권장합니다(상세: [api/seo.md](api/seo.md)).
+
+**정적 화면 포함 조건**: 사용자 템플릿 라우트 중 아래를 모두 만족하는 화면만 사이트맵에 정적 항목으로 싣습니다. 봇 화면(SEO HTML)을 내는 기준과 같습니다.
+
+- 로그인 필요(`auth_required`)·비로그인 전용(`guest_only`) 화면이 아니고 레이아웃이 지정돼 있다.
+- 경로에 동적 파라미터(`:id`)나 템플릿 표현식(`{{...}}`)이 없다. 앞의 `*/`(언어 접두사 자리)는 떼고, 끝·연속 슬래시는 정리한 정규형(`*/board//free/` → `/board/free`)으로 싣는다 — 끝·연속 슬래시 주소는 정규형으로 301 이동하기 때문이다.
+- 병합 레이아웃(부모 `extends` 반영)의 `meta.seo.enabled` 가 `true` 다. SEO 블록이 없는 화면(오류 화면·본인인증 화면처럼 `_user_base` 의 기본값을 그대로 쓰는 화면 포함)은 싣지 않는다.
+- `meta.seo.toggle_setting` 이 켜져 있다(예: 쇼핑몰 「검색 결과 SEO」를 끄면 `/search` 가 빠진다).
+- `priority`·`changefreq` 는 레이아웃 `meta.seo` 값을 쓴다(위 스키마 표).
+
+같은 주소는 한 번만 적습니다 — 정적 화면이 먼저 적히고, 기여자나 사이트맵 저장소가 같은 loc 를 내면 건너뜁니다. 비교할 때만 스킴·호스트를 소문자로, 빈 경로를 `/` 로 보므로 `https://사이트` 와 `https://사이트/` 는 같은 홈이고, 다른 경로의 끝 `/` 와 쿼리는 그대로 다른 주소로 남습니다. 비교 집합에는 정적 화면 주소만 담으므로 대용량 스트리밍의 메모리 상한은 그대로입니다.
+
+사이트맵 생성 경로(기여자 실패·확장 상태 조회 실패·정적 화면 수집 실패·레이아웃 로드 실패)의 예외는 경고 대신 `report()` 로 오류 로그에 올리고, 나머지 URL 생성은 계속합니다.
 
 ## 증분 저장소 (sitemap_urls)
 
@@ -761,7 +824,7 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 - **방송**: `SitemapProgress` 가 `core.admin.seo.sitemap` 채널로 `sitemap.progress.updated` 를 방송합니다(payload 는 상태 API `data` 와 동형). Reverb OFF 면 `HookManager::broadcast` 가 자동 skip 하고 캐시만 기록되어 폴링 폴백이 성립합니다. 방송은 N URL(5000) 간격으로 스로틀합니다.
 - **채널 인증**: `routes/channels.php` 에 `core.admin.seo.sitemap` → `core.settings.read`(docs/backend/broadcasting.md).
 - **잡 실패**: `GenerateSitemapJob::failed()` 가 `SitemapProgress::fail()` 을 호출해 무한 running 을 방지합니다(TTL 만료 시 idle 복귀).
-- **프론트**: SEO 탭이 상태 API 초기 로드 후 `realtime_enabled` 로 분기합니다 — true 면 websocket 데이터소스(`target_source`)로 갱신, false 면 `startInterval`/`stopInterval` 로 3초 폴링(완료/실패 전이 시 중단).
+- **프론트**: SEO 탭이 상태 API 초기 로드 후 `realtime_enabled` 로 분기합니다 — true 면 websocket 데이터소스(`target_source`)로 갱신, false 면 `startInterval`/`stopInterval` 로 3초 폴링(진행 중 `queued`/`running`/`writing` 이 아니게 되면 중단 — 상태 캐시가 만료돼 진행상황이 비어도 멈춘다).
 
 ## 설정값 (코어 seo.*)
 
@@ -1647,7 +1710,7 @@ SeoRenderer.render()
   └─ htmlMapper.setGlobalResolver(closure)  ← _global 표현식 해석
   └─ resolveSeoVars(seoConfig.vars) → $core_settings:, $module_settings:, $plugin_settings: 해석
   └─ htmlMapper.setSeoVars(resolvedVars)  ← format 모드 변수 주입
-  └─ isExtensionSeoEnabled(seoConfig.toggle_setting) → false면 null 반환
+  └─ toggleEvaluator.isEnabled(seoConfig.toggle_setting) → false면 null 반환 (SeoToggleEvaluator — 사이트맵 정적 화면과 공용)
   └─ metaResolver.resolve(seoConfig, context, moduleId, pluginId, routeParams) → vars 치환
   └─ View::make('seo', [..., 'stylesheets' => config.stylesheets])
 ```

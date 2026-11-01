@@ -1045,6 +1045,21 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     }
 
     /**
+     * 함께 쓰면 연동되는(선택) 확장을 「식별자 => 버전 제약」 맵으로 반환합니다.
+     *
+     * module.json 의 `integrations` 에서 읽습니다. 목록형·버전식이 아닌 값은 `'*'`(버전 무관)입니다. 버전이 모자라도
+     * 설치·활성화를 막지 않고 안내만 합니다 ({@see ExtensionIntegrations::constraints()}).
+     *
+     * @return array{modules: array<string, string>, plugins: array<string, string>, templates: array<string, string>} 유형별 식별자 => 버전 제약
+     *
+     * @since 7.1.4
+     */
+    public function getIntegrationConstraints(): array
+    {
+        return ExtensionIntegrations::constraints($this->loadManifest()['integrations'] ?? []);
+    }
+
+    /**
      * 신뢰하는 외부 스크립트 호스트 목록을 반환합니다.
      *
      * module.json 의 `trusted_script_hosts` 배열에서 읽습니다. 이 모듈이 레이아웃

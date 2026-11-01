@@ -47,7 +47,9 @@
             "allow_internal_outbound_urls": false,
             "ip_restriction_enabled": false,
             "admin_allowed_ips": [],
-            "ip_restriction_rules": []
+            "ip_restriction_rules": [],
+            "csp_mode": "off",
+            "csp_extra_script_hosts": []
         },
         "mail": {
             "mailer": "smtp",

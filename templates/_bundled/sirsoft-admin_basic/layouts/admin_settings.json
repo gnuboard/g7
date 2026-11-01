@@ -614,7 +614,7 @@
                 },
                 {
                     "handler": "stopInterval",
-                    "if": "{{['completed','failed'].includes(response?.data?.data?.progress?.status ?? '')}}",
+                    "if": "{{!['queued','running','writing'].includes(response?.data?.data?.progress?.status ?? '')}}",
                     "params": {
                         "id": "sitemap_progress_poll"
                     }

@@ -51,6 +51,7 @@ class PasswordChangeService
      * @param  User|null  $actor  행위자 (없으면 회원 본인으로 본다)
      * @param  int|null  $keepTokenId  폐기하지 않을 토큰 ID (본인 변경 시 현재 기기)
      * @param  array<string, mixed>  $extra  훅 문맥에 덧붙일 값 (로그인 단계 변경의 reason 등)
+     * @param  bool  $requireChange  다음 로그인 때 바꾸도록 강제 (관리자 지정은 항상 강제)
      * @return int 폐기한 토큰 수
      */
     public function recordChange(
@@ -60,6 +61,7 @@ class PasswordChangeService
         ?User $actor = null,
         ?int $keepTokenId = null,
         array $extra = [],
+        bool $requireChange = false,
     ): int {
         $userId = (int) $user->getKey();
 
@@ -70,7 +72,8 @@ class PasswordChangeService
 
         $this->userRepository->update($user, [
             'password_changed_at' => now(),
-            'password_change_required' => $source === PasswordChangeSource::Admin,
+            // 관리자가 정해 준 비밀번호는 다음 로그인 때 바꿔야 한다. 터미널 재설정은 운영자가 고른다(--require-change).
+            'password_change_required' => $source === PasswordChangeSource::Admin || $requireChange,
             'password_expiry_notified_at' => null,
             'password_expired_processed_at' => null,
             'password_change_postponed_until' => null,

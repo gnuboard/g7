@@ -2,12 +2,15 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
 use Illuminate\Console\Command;
 
 class ListTemplateCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
@@ -15,11 +18,6 @@ class ListTemplateCommand extends Command
         {--type= : 템플릿 타입으로 필터 (admin, user)}
         {--status= : 상태로 필터 (installed, uninstalled, active, inactive)}
         {--hidden : 숨김(hidden=true) 템플릿도 함께 출력}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '설치된 템플릿 목록을 조회합니다';
 
     /**
      * 템플릿 관리자 및 리포지토리

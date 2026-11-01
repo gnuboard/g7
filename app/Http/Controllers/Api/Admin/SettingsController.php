@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Contracts\Extension\ConsentProviderInterface;
+use App\Exceptions\PhpExtensionUnavailableException;
 use App\Extension\Consent\ConsentManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Settings\PasswordExpiryPreviewRequest;
@@ -24,6 +25,7 @@ use App\Services\OutboundProxyTester;
 use App\Services\PasswordExpiryService;
 use App\Services\Queue\QueueWorkerRegistry;
 use App\Services\SettingsService;
+use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
 use App\Support\TrustedProxyDiagnostic;
 use Illuminate\Http\JsonResponse;
@@ -76,6 +78,7 @@ class SettingsController extends AdminBaseController
      * - `consent_providers`: 등록된 동의 관리 제공자 `[{id, label}]` (개인정보 탭의 선택 목록, 수집을 꺼 둔 제공자 포함)
      * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
      * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, #139)
+     * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts}` (#158)
      *
      * @return array<string, mixed> 응답 메타 배열
      */
@@ -97,6 +100,27 @@ class SettingsController extends AdminBaseController
             )),
             'consent_selection' => $consent->selection()->toArray(),
             'queue_connection_options' => $this->queueWorkerRegistry->registrableConnections(),
+            'csp' => $this->buildCspMeta(),
+        ];
+    }
+
+    /**
+     * 보안 탭 「콘텐츠 보안 정책」 섹션이 읽는 메타를 만듭니다 (#158).
+     *
+     * - `override`: `.env G7_CSP_MODE` 탈출구 값 (없으면 null) — 있으면 화면의 모드 선택을 잠근다
+     * - `preview`: 지금 저장값으로 붙을 정책 문자열 (모드가 끔이어도 미리 보여 준다)
+     * - `auto_hosts`: 활성 확장 선언에서 자동 합산된 호스트
+     *
+     * @return array{override: string|null, preview: string, auto_hosts: array<int, string>} CSP 메타
+     */
+    private function buildCspMeta(): array
+    {
+        $builder = app(CspPolicyBuilder::class);
+
+        return [
+            'override' => $builder->modeOverride(),
+            'preview' => $builder->build(),
+            'auto_hosts' => $builder->autoHosts(),
         ];
     }
 
@@ -461,6 +485,9 @@ class SettingsController extends AdminBaseController
             return $this->success('settings.backup_success', [
                 'backup_path' => $backupPath,
             ]);
+        } catch (PhpExtensionUnavailableException $e) {
+            // 선택 확장(zip) 부재는 서버 장애가 아니라 환경 조건이다 — 원인을 알리는 422 (#151)
+            return $this->error($e->messageKey, 422, null, ['extension' => $e->extension]);
         } catch (\Exception $e) {
             return $this->error('settings.backup_failed', 500, $e->getMessage());
         }
@@ -484,6 +511,8 @@ class SettingsController extends AdminBaseController
             }
 
             return $this->error('settings.restore_failed');
+        } catch (PhpExtensionUnavailableException $e) {
+            return $this->error($e->messageKey, 422, null, ['extension' => $e->extension]);
         } catch (\Exception $e) {
             return $this->error('settings.restore_error', 500, $e->getMessage());
         }

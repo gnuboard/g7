@@ -166,6 +166,23 @@ describe('[case:state-global-locale-switch-reentry] TemplateApp 언어 전환 �
   });
 
   /**
+   * 주소만 바꾸는 이동(replaceUrl·navigate replace)이 끝 슬래시 주소를 써 둔 채 언어를 바꿔도, 라우터 재진입은
+   * 정규형 경로로 오므로 인계 상태를 정규형 경로로 비교해야 한다 (engine-v1.84.0, 공개#156).
+   *
+   * @scenario case=unsaved_title_kept
+   * @effects unsaved_local_kept, init_local_not_applied
+   */
+  it('끝 슬래시 주소에서 언어를 바꿔도 정규형 경로 재진입이 전환 직전 _local 을 이어받는다', async () => {
+    window.history.replaceState(null, '', ROUTE.path + '/');
+
+    await app.changeLocale('en');
+
+    const ctx = lastRenderContext();
+    expect(ctx._local?.form?.title).toEqual({ ko: '저장 전 제목' });
+    expect(ctx._localInit).toBeUndefined();
+  });
+
+  /**
    * @scenario case=manual_source_refetched
    * @effects manual_source_refetched_in_new_locale, manual_refetch_does_not_touch_local
    */

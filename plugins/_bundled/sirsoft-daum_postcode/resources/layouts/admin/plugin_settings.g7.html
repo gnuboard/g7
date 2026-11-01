@@ -54,9 +54,11 @@ e2e:allow 표시 방식 선택지 번역·의미 클래스 위치 교정 — 구
               <p class="form-hint">$t:sirsoft-daum_postcode.settings.fields.display_mode.hint</p>
             </div>
             <div class="lg:col-span-2">
-              <select name="display_mode" class="focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}">
-                <option value="popup">$t:sirsoft-daum_postcode.settings.fields.display_mode.popup</option>
-                <option value="layer">$t:sirsoft-daum_postcode.settings.fields.display_mode.layer</option>
+              <select name="display_mode" aria-label="$t:sirsoft-daum_postcode.settings.fields.display_mode.label" class="w-full" disabled="{{_computed.isPluginReadOnly}}">
+                <options>
+                  <option value="popup">$t:sirsoft-daum_postcode.settings.fields.display_mode.popup</option>
+                  <option value="layer">$t:sirsoft-daum_postcode.settings.fields.display_mode.layer</option>
+                </options>
               </select>
               <!-- 저장 오류는 상단 상자와 함께 그 칸 아래에도 보인다(어느 칸을 고쳐야 하는지, 7.1.0 실측 M1-O11) -->
               <span data-if="{{_local.errors?.display_mode}}" class="form-error">{{_local.errors?.display_mode?.[0]}}</span>

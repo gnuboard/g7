@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.2] - 2026-11-01
+
+### Added
+
+- 이커머스 1.3.3 의 영세(ゼロ税率)·옵션별 과세 종류(課税区分)·결제정보 면세/영세/취소 부가세·취소 창 영세 금액·배송비 과세 안내 갱신 문구의 일본어 번역을 추가했습니다.
+- 쇼핑몰 1.3.3 의 상품 샘플 데이터 생성에서 PHP gd 확장이 없을 때의 안내(`seeders.product.color_filter_skipped_no_gd` 「PHP gd 拡張がないため、…」)의 일본어 번역을 추가했습니다.
+
 ## [1.2.1] - 2026-10-21
 
 ### Added

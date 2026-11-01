@@ -78,24 +78,26 @@
         </div>
         <div class="flex items-center gap-2">
           <label class="text-xs text-gray-500 dark:text-gray-400 w-20 flex-shrink-0">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_label</label>
-          <select class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" disabled="{{order?.data?.abilities?.can_update !== true}}">
+          <select aria-label="$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_label" class="flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" value="{{_local._ked_deli_corp ?? ''}}" disabled="{{order?.data?.abilities?.can_update !== true}}">
             <on type="change">
               <!-- 택배사 — KCP 가 정한 코드값으로 보낸다(표시 이름과 코드가 다르다) -->
               <set-state target="local" _ked_deli_corp="{{$event.target.value}}"/>
             </on>
-            <option value="">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_placeholder</option>
-            <option value="04">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.cj</option>
-            <option value="05">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.hanjin</option>
-            <option value="06">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.logen</option>
-            <option value="08">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.lotte_parcel</option>
-            <option value="09">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.epost</option>
-            <option value="11">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.kyungdong</option>
-            <option value="13">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.ilyang</option>
-            <option value="14">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.hapdong</option>
-            <option value="20">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.dream</option>
-            <option value="23">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.chunil</option>
-            <option value="26">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.kunyoung</option>
-            <option value="40">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_etc</option>
+            <options>
+              <option value="">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_placeholder</option>
+              <option value="04">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.cj</option>
+              <option value="05">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.hanjin</option>
+              <option value="06">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.logen</option>
+              <option value="08">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.lotte_parcel</option>
+              <option value="09">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.epost</option>
+              <option value="11">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.kyungdong</option>
+              <option value="13">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.ilyang</option>
+              <option value="14">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.hapdong</option>
+              <option value="20">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.dream</option>
+              <option value="23">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.chunil</option>
+              <option value="26">$t:sirsoft-pay_nhnkcp.admin.escrow_couriers.kunyoung</option>
+              <option value="40">$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_etc</option>
+            </options>
           </select>
         </div>
         <div class="flex justify-end">

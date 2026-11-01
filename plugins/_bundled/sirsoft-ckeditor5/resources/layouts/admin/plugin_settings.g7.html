@@ -57,10 +57,12 @@ e2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제�
               <p class="form-hint">$t:sirsoft-ckeditor5.settings.fields.toolbar.hint</p>
             </div>
             <div class="lg:col-span-2">
-              <select name="toolbar" class="focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}">
-                <option value="minimal">$t:sirsoft-ckeditor5.settings.fields.toolbar.minimal</option>
-                <option value="standard">$t:sirsoft-ckeditor5.settings.fields.toolbar.standard</option>
-                <option value="full">$t:sirsoft-ckeditor5.settings.fields.toolbar.full</option>
+              <select name="toolbar" aria-label="$t:sirsoft-ckeditor5.settings.fields.toolbar.label" class="w-full" disabled="{{_computed.isPluginReadOnly}}">
+                <options>
+                  <option value="minimal">$t:sirsoft-ckeditor5.settings.fields.toolbar.minimal</option>
+                  <option value="standard">$t:sirsoft-ckeditor5.settings.fields.toolbar.standard</option>
+                  <option value="full">$t:sirsoft-ckeditor5.settings.fields.toolbar.full</option>
+                </options>
               </select>
             </div>
           </div>

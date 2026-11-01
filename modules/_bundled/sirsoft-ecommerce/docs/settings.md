@@ -167,6 +167,16 @@ _`getSettingsSchema()` 선언이 없습니다._
 `sirsoft-ecommerce.notification.channels` 필터를 **발송 경로와 같은 순서로** 거치므로, 화면 표시와
 실제 발송 채널이 갈라지지 않습니다. 이 모듈 필터만 직접 부르면 코어에 등록된 채널이 카드에서 빠집니다.
 
+### 터미널에서 설정 지정 (`settings:set --module=sirsoft-ecommerce`, 1.3.3 · 코어 7.1.4)
+
+코어 `php artisan settings:set --module=sirsoft-ecommerce {범주.항목} {값}` 은 이 모듈 설정 서비스의 선택 메서드
+`EcommerceSettingsService::settingsSaveRequestClass()` 가 돌려주는 `StoreEcommerceSettingsRequest` 로 위 「설정 저장
+요청의 계약」과 같은 규칙(교차 검증 포함)을 검증한 뒤 `saveSettings()` 로 그 범주만 저장하고, 코어 훅
+`core.module_settings.after_save` 를 발화합니다. 키는 `config/settings/defaults.json` 에 선언된 항목만 받습니다 —
+배송사·배송유형·클레임 사유(DB 카탈로그)처럼 `EcommerceSettingsAdminService` 가 따로 동기화하는 항목은
+「관리자 화면 전용」으로 거부되고, 저장 본문에서도 기본값 파일에 없는 키는 빠집니다. 터미널 경로는 관리자 화면의
+`sirsoft-ecommerce.settings.after_save` 훅을 발화하지 않습니다(그 훅은 「관리자가 화면에서 저장했다」는 뜻).
+
 ### 개인정보 보유기간 (`privacy_retention`, 이슈 #636)
 
 「개인정보 보유기간」 탭이 저장하는 카테고리입니다. 종결 주문의 개인정보를 보유기간이 지나면
@@ -386,23 +396,24 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
 | `sirsoft-koreaexim` | 플러그인 | `>=1.3.0` |
-| `sirsoft-pay_kginicis` | 플러그인 | `>=1.3.0` |
-| `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.3.0` |
-| `sirsoft-pay_nicepayments` | 플러그인 | `>=1.3.0` |
-| `sirsoft-tosspayments` | 플러그인 | `>=1.3.0` |
-| `sirsoft-basic` | 템플릿 | `>=1.3.0` |
+| `sirsoft-pay_kginicis` | 플러그인 | `>=1.3.3` |
+| `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.3.3` |
+| `sirsoft-pay_nicepayments` | 플러그인 | `>=1.3.3` |
+| `sirsoft-tosspayments` | 플러그인 | `>=1.3.3` |
 
 **함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
 
-| 확장 | 유형 | 번들 |
-|---|---|---|
-| `sirsoft-board` | 모듈 | ✅ |
+| 확장 | 유형 | 버전 제약 | 번들 |
+|---|---|---|---|
+| `sirsoft-board` | 모듈 | `*` | ✅ |
 
 **이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
 
-| 확장 | 유형 |
-|---|---|
-| `sirsoft-message_bizppurio` | 플러그인 |
+| 확장 | 유형 | 요구 버전 |
+|---|---|---|
+| `sirsoft-board` | 모듈 | `*` |
+| `sirsoft-message_bizppurio` | 플러그인 | `*` |
+| `sirsoft-basic` | 템플릿 | `>=1.3.0` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

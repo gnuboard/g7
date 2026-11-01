@@ -286,35 +286,24 @@
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "toolbar",
-                                                            "className": "focus:border-transparent",
-                                                            "disabled": "{{_computed.isPluginReadOnly}}"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Option",
-                                                                "props": {
-                                                                    "value": "minimal"
+                                                            "aria-label": "$t:sirsoft-ckeditor5.settings.fields.toolbar.label",
+                                                            "className": "w-full",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}",
+                                                            "options": [
+                                                                {
+                                                                    "value": "minimal",
+                                                                    "label": "$t:sirsoft-ckeditor5.settings.fields.toolbar.minimal"
                                                                 },
-                                                                "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.minimal"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Option",
-                                                                "props": {
-                                                                    "value": "standard"
+                                                                {
+                                                                    "value": "standard",
+                                                                    "label": "$t:sirsoft-ckeditor5.settings.fields.toolbar.standard"
                                                                 },
-                                                                "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.standard"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Option",
-                                                                "props": {
-                                                                    "value": "full"
-                                                                },
-                                                                "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.full"
-                                                            }
-                                                        ]
+                                                                {
+                                                                    "value": "full",
+                                                                    "label": "$t:sirsoft-ckeditor5.settings.fields.toolbar.full"
+                                                                }
+                                                            ]
+                                                        }
                                                     }
                                                 ]
                                             }

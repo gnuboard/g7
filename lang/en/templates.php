@@ -270,8 +270,11 @@ return [
             'missing_status' => [
                 'not_installed' => 'not installed',
                 'inactive' => 'inactive',
+                'version_mismatch' => 'version too low :installed → :required',
             ],
             'force_hint' => 'Use the --force option to activate anyway.',
+            'force_503_hint_user' => 'If you force it, the user site shows the "Service temporarily unavailable (503)" notice until the requirements are met.',
+            'force_503_hint_admin' => 'If you force it, the admin screens show the 503 notice and cannot be used to undo this. To recover: php artisan template:activate :identifier',
         ],
         'deactivate' => [
             'success' => 'Template ":template" deactivated successfully',

@@ -1339,6 +1339,34 @@ hr {
   line-height: var(--line-height-normal);
 }
 
+/* 의존 때문에 앞당겨 설치하는 항목의 「{이름}에 필요」 배지 (#153) — 색은 테마 변수라 다크 테마에서도 따라 바뀐다 */
+.task-required-by {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background-color: var(--bg-gray);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 1px var(--spacing-sm);
+}
+
+/* 모바일 폭에서는 이름 아래 줄로 내린다 */
+@media (max-width: 480px) {
+  .task-item:has(.task-required-by) {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .task-required-by {
+    margin-left: calc(18px + var(--spacing-md));
+  }
+
+  .task-item:has(.task-required-by) .task-name {
+    flex-basis: calc(100% - 18px - var(--spacing-md));
+  }
+}
+
 .task-pending {
   color: var(--text-muted);
   background-color: var(--bg-color);
@@ -4126,6 +4154,176 @@ body {
 
 [data-theme="dark"] .dep-lock-toast {
   background-color: #334155;
+}
+
+/* Step 4 선택 연동(integrations) — 필수 의존성(주황)과 구분되는 청록 */
+.integration-selection-notice {
+  margin: 0 0 var(--spacing-md) 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: #115e59;
+  background-color: rgba(13, 148, 136, 0.08);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  border-radius: 6px;
+}
+
+.integration-selection-notice i {
+  margin-right: 6px;
+  color: #0d9488;
+}
+
+.extension-card.integration-auto-selected.selected {
+  border-color: #0d9488;
+  background-color: rgba(13, 148, 136, 0.08);
+}
+
+.extension-card.integration-auto-selected.selected .extension-card-icon {
+  background-color: #0d9488;
+  color: white;
+}
+
+.extension-card.integration-auto-selected.selected .extension-card-select {
+  color: #0d9488;
+}
+
+.integration-auto-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #115e59;
+  background-color: rgba(13, 148, 136, 0.12);
+  border: 1px solid rgba(13, 148, 136, 0.3);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+.integration-auto-badge i {
+  font-size: 0.6rem;
+}
+
+.integration-auto-badge-owner {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.extension-card-integrations {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.extension-card-dependencies + .extension-card-integrations {
+  margin-top: 6px;
+}
+
+.integration-label {
+  font-size: 0.7rem;
+  color: #0f766e;
+  margin-right: 2px;
+}
+
+.integration-tag {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px 8px;
+  background-color: rgba(13, 148, 136, 0.08);
+  border: 1px dashed rgba(13, 148, 136, 0.4);
+  border-radius: 12px;
+  font-size: 0.7rem;
+  color: #115e59;
+}
+
+.integration-tag i {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+.integration-template-hint {
+  opacity: 0.75;
+}
+
+.integration-tag.integration-version-mismatch {
+  border-style: solid;
+  border-color: rgba(220, 38, 38, 0.45);
+}
+
+.integration-version-warning {
+  color: var(--color-danger, #dc2626);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .integration-selection-notice {
+  color: #99f6e4;
+  background-color: rgba(45, 212, 191, 0.1);
+  border-color: rgba(45, 212, 191, 0.3);
+}
+
+[data-theme="dark"] .integration-selection-notice i {
+  color: #2dd4bf;
+}
+
+[data-theme="dark"] .extension-card.integration-auto-selected.selected {
+  border-color: #2dd4bf;
+  background-color: rgba(45, 212, 191, 0.12);
+}
+
+[data-theme="dark"] .extension-card.integration-auto-selected.selected .extension-card-icon {
+  background-color: #14b8a6;
+}
+
+[data-theme="dark"] .extension-card.integration-auto-selected.selected .extension-card-select {
+  color: #2dd4bf;
+}
+
+[data-theme="dark"] .integration-auto-badge {
+  color: #99f6e4;
+  background-color: rgba(45, 212, 191, 0.15);
+  border-color: rgba(45, 212, 191, 0.35);
+}
+
+[data-theme="dark"] .integration-label {
+  color: #5eead4;
+}
+
+[data-theme="dark"] .integration-tag {
+  color: #99f6e4;
+  background-color: rgba(45, 212, 191, 0.1);
+  border-color: rgba(45, 212, 191, 0.4);
+}
+
+[data-theme="dark"] .integration-tag.integration-version-mismatch {
+  border-color: rgba(248, 113, 113, 0.6);
+}
+
+.extension-card-php-notice {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: #b45309;
+}
+
+.extension-card-php-notice.extension-card-php-blocked {
+  color: var(--color-danger, #dc2626);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .extension-card-php-notice {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .extension-card-php-notice.extension-card-php-blocked {
+  color: #f87171;
+}
+
+[data-theme="dark"] .integration-version-warning {
+  color: #f87171;
 }
 
 /* ========================================================================

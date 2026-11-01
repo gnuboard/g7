@@ -266,27 +266,20 @@
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "display_mode",
-                                                            "className": "focus:border-transparent",
-                                                            "disabled": "{{_computed.isPluginReadOnly}}"
-                                                        },
-                                                        "children": [
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Option",
-                                                                "props": {
-                                                                    "value": "popup"
+                                                            "aria-label": "$t:sirsoft-daum_postcode.settings.fields.display_mode.label",
+                                                            "className": "w-full",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}",
+                                                            "options": [
+                                                                {
+                                                                    "value": "popup",
+                                                                    "label": "$t:sirsoft-daum_postcode.settings.fields.display_mode.popup"
                                                                 },
-                                                                "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.popup"
-                                                            },
-                                                            {
-                                                                "type": "basic",
-                                                                "name": "Option",
-                                                                "props": {
-                                                                    "value": "layer"
-                                                                },
-                                                                "text": "$t:sirsoft-daum_postcode.settings.fields.display_mode.layer"
-                                                            }
-                                                        ]
+                                                                {
+                                                                    "value": "layer",
+                                                                    "label": "$t:sirsoft-daum_postcode.settings.fields.display_mode.layer"
+                                                                }
+                                                            ]
+                                                        }
                                                     },
                                                     {
                                                         "comment": "저장 오류는 상단 상자와 함께 그 칸 아래에도 보인다(어느 칸을 고쳐야 하는지, 7.1.0 실측 M1-O11)",

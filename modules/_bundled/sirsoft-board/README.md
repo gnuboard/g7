@@ -5,7 +5,7 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.1-0066FF?style=flat-square" alt="version 1.2.1">
+  <img src="https://img.shields.io/badge/version-1.2.2-0066FF?style=flat-square" alt="version 1.2.2">
   <img src="https://img.shields.io/badge/type-%EB%AA%A8%EB%93%88-555555?style=flat-square" alt="type 모듈">
   <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
@@ -149,16 +149,21 @@ _별도의 관리자 설정 항목이 없습니다._
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
-| 확장 | 유형 | 요구 버전 |
-|---|---|---|
-| `sirsoft-basic` | 템플릿 | `>=1.2.1` |
+없음.
+
+**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
+
+| 확장 | 유형 | 버전 제약 | 번들 |
+|---|---|---|---|
+| `sirsoft-ecommerce` | 모듈 | `*` | ✅ |
 
 **이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
 
-| 확장 | 유형 |
-|---|---|
-| `sirsoft-ecommerce` | 모듈 |
-| `sirsoft-message_bizppurio` | 플러그인 |
+| 확장 | 유형 | 요구 버전 |
+|---|---|---|
+| `sirsoft-ecommerce` | 모듈 | `*` |
+| `sirsoft-message_bizppurio` | 플러그인 | `*` |
+| `sirsoft-basic` | 템플릿 | `>=1.2.1` |
 <!-- @generated:integrations END -->
 
 ## 문서

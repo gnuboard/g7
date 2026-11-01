@@ -10,14 +10,16 @@
     <div data-ref="bulk_price_form">
       <div data-ref="price_method_field">
         <label class="form-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method</label>
-        <select class="select w-full">
+        <select class="w-full" aria-label="$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method" value="{{_local.bulkPriceMethod || 'increase'}}">
           <on type="change">
             <!-- 방식이 정액(`fixed`)이면 아래 값이 "얼마만큼" 이 아니라 "얼마로" 가 된다 — 미리보기 문구 세 개가 이 값 하나로 갈린다. -->
             <set-state target="local" bulkPriceMethod="{{$event.target.value}}"/>
           </on>
-          <option value="increase">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_increase</option>
-          <option value="decrease">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_decrease</option>
-          <option value="fixed">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_fixed</option>
+          <options>
+            <option value="increase">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_increase</option>
+            <option value="decrease">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_decrease</option>
+            <option value="fixed">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_fixed</option>
+          </options>
         </select>
       </div>
       <div data-ref="price_value_field">
@@ -29,13 +31,15 @@
               <set-state target="local" bulkPriceValue="{{$event.target.value}}"/>
             </on>
           </input>
-          <select class="select w-24" aria-label="$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit">
+          <select class="w-24" aria-label="$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit" value="{{_local.bulkPriceUnit || 'won'}}">
             <on type="change">
               <!-- 단위가 `percent` 면 값이 비율이고 `won` 이면 금액이다 — 표시 기호는 쇼핑몰 기본 통화에서 오므로 원화가 아닌 몰에서도 맞는다. -->
               <set-state target="local" bulkPriceUnit="{{$event.target.value}}"/>
             </on>
-            <option value="won">{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</option>
-            <option value="percent">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit_percent</option>
+            <options>
+              <option value="won">{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</option>
+              <option value="percent">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit_percent</option>
+            </options>
           </select>
         </div>
       </div>

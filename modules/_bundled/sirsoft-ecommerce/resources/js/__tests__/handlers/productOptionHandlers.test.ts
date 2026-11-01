@@ -904,3 +904,53 @@ describe('productOptionHandlers - A22 양방향 동기화', () => {
         });
     });
 });
+
+describe('productOptionHandlers - 옵션 과세 종류 (#612)', () => {
+    beforeEach(() => {
+        (window as any).G7Core = {
+            ...mockG7Core,
+            locale: { current: () => 'ko', supported: () => ['ko', 'en'] },
+        };
+        vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+        delete (window as any).G7Core;
+    });
+
+    /**
+     * @scenario case=c33
+     * @effects product_option_handlers_behavior
+     */
+    it('새 옵션 행의 과세 종류는 「기본값 따름」(null)이다', () => {
+        mockLocalState = { form: { options: [], option_groups: [{ name: { ko: '구성', en: 'Set' }, values: [] }] } };
+
+        addOptionRowHandler({ handler: 'addOptionRow' }, mockContext);
+
+        expect(mockLocalState.form.options[0].tax_status).toBeNull();
+    });
+
+    /**
+     * @scenario case=c34
+     * @effects product_option_handlers_behavior
+     */
+    it('과세 종류를 바꾸면 그 행만 바뀌고, 「기본값 따름」(빈 값)은 null 로 저장된다', () => {
+        mockLocalState = {
+            form: {
+                options: [
+                    createMockOption({ option_code: 'A', tax_status: null }),
+                    createMockOption({ option_code: 'B', tax_status: null }),
+                    createMockOption({ option_code: 'C', tax_status: null }),
+                ],
+            },
+        };
+
+        updateFormOptionFieldHandler({ handler: 'x', params: { index: 2, field: 'tax_status', value: 'zero_rated' } }, mockContext);
+        expect(mockLocalState.form.options.map((o: any) => o.tax_status)).toEqual([null, null, 'zero_rated']);
+        expect(mockLocalState.hasChanges).toBe(true);
+
+        updateFormOptionFieldHandler({ handler: 'x', params: { index: 1, field: 'tax_status', value: 'tax_free' } }, mockContext);
+        updateFormOptionFieldHandler({ handler: 'x', params: { index: 2, field: 'tax_status', value: '' } }, mockContext);
+        expect(mockLocalState.form.options.map((o: any) => o.tax_status)).toEqual([null, 'tax_free', null]);
+    });
+});

@@ -5,6 +5,9 @@ namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 // ModuleTestCase를 수동으로 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Enums\ExtensionStatus;
+use App\Extension\ModuleManager;
+use App\Models\Module as ModuleRegistration;
 use Carbon\CarbonImmutable;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\EcommerceStat;
@@ -501,6 +504,8 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
     #[Test]
     public function test_get_pending_inquiries_returns_unanswered_items_and_total(): void
     {
+        $this->activateBoardModule();
+
         $product = Product::factory()->create();
         ProductInquiry::factory()->create(['is_answered' => false, 'product_id' => $product->id]);
         ProductInquiry::factory()->create(['is_answered' => false, 'product_id' => $product->id]);
@@ -512,5 +517,24 @@ class EcommerceDashboardServiceTest extends ModuleTestCase
         $this->assertCount(2, $result['items']);
         // 상품 문의는 게시판 Post 로 관리되므로 대시보드 네비게이션용 board_slug 키를 포함한다.
         $this->assertArrayHasKey('board_slug', $result);
+    }
+
+    /**
+     * 게시판 모듈을 활성으로 등록합니다 — 미답변 문의는 게시판 모듈(선택 연동)이 켜져 있을 때만 나온다(#822).
+     *
+     * @return void 반환값 없음
+     */
+    private function activateBoardModule(): void
+    {
+        ModuleRegistration::updateOrCreate(
+            ['identifier' => 'sirsoft-board'],
+            [
+                'vendor' => 'sirsoft',
+                'name' => ['ko' => '게시판', 'en' => 'Board'],
+                'status' => ExtensionStatus::Active->value,
+                'version' => '1.2.2',
+            ]
+        );
+        ModuleManager::invalidateModuleStatusCache();
     }
 }

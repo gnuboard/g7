@@ -39,7 +39,7 @@ $isLicenseAgreed = isset($_SESSION['license_agreed']) && $_SESSION['license_agre
             </label>
 
             <div id="navigation-buttons" class="btn-group btn-group-spread">
-                <button type="button" onclick="goToStep(0)" class="btn btn-secondary">
+                <button type="button" data-action="goToStep" data-arg="0" class="btn btn-secondary">
                     <?= htmlspecialchars(lang('previous')) ?>
                 </button>
 

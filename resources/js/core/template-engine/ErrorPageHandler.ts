@@ -208,7 +208,11 @@ export class ErrorPageHandler {
 
             // 4. data_sources fetch (레이아웃에 정의된 API 데이터 로드)
             let fetchedData: Record<string, unknown> = {};
-            const dataSources: DataSource[] = layoutData.data_sources || [];
+            // 일반 화면과 같이 if 조건으로 거른다 — 꺼진 모듈의 공통 데이터 소스를 오류 화면에서 부르지 않게 (@since engine-v1.84.0)
+            const dataSources: DataSource[] = this.dataSourceManager.filterByCondition(
+                layoutData.data_sources || [],
+                { route: routeContext.route as Record<string, string>, query: routeContext.query as Record<string, string>, _global: globalState }
+            );
 
             if (dataSources.length > 0) {
                 if (this.debug) {

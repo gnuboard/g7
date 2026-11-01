@@ -22,14 +22,14 @@
 | `HasDirectAssetUrl` | (규약) | - | - | - |
 | `MileageBalance` | `ecommerce_mileage_balances` | 9 | user→User | - |
 | `MileageTransaction` | `ecommerce_mileage_transactions` | 18 | user→User, order→Order, claimPayment→ClaimPayment, orderOption→OrderOption, grantedByUser→User, sourceTransaction→self | - |
-| `Order` | `ecommerce_orders` | 65 | user→User, options→OrderOption, firstOption→OrderOption, addresses→OrderAddress, shippingAddress→OrderAddress, billingAddress→OrderAddress, 외 11개 | SoftDeletes |
+| `Order` | `ecommerce_orders` | 67 | user→User, options→OrderOption, firstOption→OrderOption, addresses→OrderAddress, shippingAddress→OrderAddress, billingAddress→OrderAddress, 외 11개 | SoftDeletes |
 | `OrderAddress` | `ecommerce_order_addresses` | 23 | order→Order | - |
 | `OrderCancel` | `ecommerce_order_cancels` | 12 | order→Order, cancelOptions→OrderCancelOption, refund→OrderRefund, cancelledByUser→User | - |
 | `OrderCancelOption` | `ecommerce_order_cancel_options` | 11 | orderCancel→OrderCancel, order→Order, orderOption→OrderOption, processedByUser→User | - |
 | `OrderCashReceipt` | `ecommerce_order_cash_receipts` | 16 | order→Order, payment→OrderPayment | - |
 | `OrderExchange` | `ecommerce_order_exchanges` | 45 | order→Order, exchangeOptions→OrderExchangeOption, refunds→OrderRefund, images→ClaimImage, claimPayments→ClaimPayment, requestedByUser→User, 외 4개 | - |
 | `OrderExchangeOption` | `ecommerce_order_exchange_options` | 30 | orderExchange→OrderExchange, order→Order, orderOption→OrderOption, newProductOption→ProductOption, newOrderOption→OrderOption, collectionCarrier→ShippingCarrier, 외 2개 | - |
-| `OrderOption` | `ecommerce_order_options` | 57 | order→Order, parentOption→self, childOptions→self, splitOptions→self, product→Product, productOption→ProductOption, 외 4개 | - |
+| `OrderOption` | `ecommerce_order_options` | 58 | order→Order, parentOption→self, childOptions→self, splitOptions→self, product→Product, productOption→ProductOption, 외 4개 | - |
 | `OrderPayment` | `ecommerce_order_payments` | 58 | order→Order, taxInvoices→OrderTaxInvoice, cashReceipts→OrderCashReceipt | - |
 | `OrderRefund` | `ecommerce_order_refunds` | 41 | order→Order, orderCancel→OrderCancel, images→ClaimImage, requestedByUser→User, refundOptions→OrderRefundOption, processedByUser→User | - |
 | `OrderRefundOption` | `ecommerce_order_refund_options` | 13 | orderRefund→OrderRefund, order→Order, orderOption→OrderOption, processedByUser→User | - |
@@ -47,7 +47,7 @@
 | `ProductLabelAssignment` | `ecommerce_product_label_assignments` | 4 | product→Product, label→ProductLabel | - |
 | `ProductNotice` | `ecommerce_product_notices` | 2 | product→Product | - |
 | `ProductNoticeTemplate` | `ecommerce_product_notice_templates` | 5 | - | - |
-| `ProductOption` | `ecommerce_product_options` | 18 | product→Product | - |
+| `ProductOption` | `ecommerce_product_options` | 19 | product→Product | - |
 | `ProductReview` | `ecommerce_product_reviews` | 13 | product→Product, orderOption→OrderOption, user→User, replyAdmin→User, images→ProductReviewImage | SoftDeletes |
 | `ProductReviewImage` | `ecommerce_product_review_images` | 15 | review→ProductReview, creator→User | SoftDeletes |
 | `ProductWishlist` | `ecommerce_product_wishlists` | 2 | user→User, product→Product | - |
@@ -134,6 +134,24 @@
 
 **검색 색인 대상**은 `Product` · `Category` · `Brand` · `Coupon` · `ProductCommonInfo` 다섯이며,
 색인 갱신은 서비스가 아니라 `SearchProductsListener` 가 훅으로 받아 처리합니다.
+
+### 과세 종류와 세금 장부 (1.3.3)
+
+과세 종류(`ProductTaxStatus`)는 과세·면세·영세 셋입니다. 상품 기본값은 `products.tax_status`, 옵션별 지정은
+`product_options.tax_status` 이고 옵션 값 `null` 은 「상품 따름」입니다. 주문 시점에 실제로 적용한 값(옵션 ?? 상품)은
+`order_options.tax_status` 에 남고, 클레임 재계산은 그 값을 옵션 스냅샷에 덮어 같은 갈래로 다시 나눕니다.
+
+| 주문 컬럼 | 뜻 |
+|---|---|
+| `total_tax_amount` | 과세표준 — 과세 + **영세** (부가세 포함) |
+| `total_vat_amount` | 부가세 — 과세분에서만 (영세분 0) |
+| `total_zero_rated_amount` | 그중 영세 몫 |
+| `total_tax_free_amount` | 면세 |
+
+영세는 세무상 과세 대상이라 과세표준에 들지만 부가세가 없으므로, 결제사·현금영수증에는 면세에 합산해 넘깁니다
+(`Order::pgTaxFreeAmount()` = 면세 + 영세, `Order::pgTaxableAmount()` = 과세표준 − 영세). 그래서 결제사 매출 내역에는
+영세가 면세로 보이며, 세무 신고의 영세 매출은 쇼핑몰의 `total_zero_rated_amount` 를 기준으로 합니다. 영세를 파는 상점은
+결제사와 복합과세(또는 영세율) 계약이 필요합니다 — 면세 상품을 파는 조건과 같습니다.
 <!-- @intent END -->
 
 ## 소유 테이블
@@ -241,7 +259,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 126개.
+마이그레이션 129개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -371,6 +389,9 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `2026_10_05_000002_add_exchange_difference_refunds_to_ecommerce_order_refunds_table.php` | - | `ecommerce_order_refunds` | ✅ |
 | `2026_10_05_000003_add_refund_method_overridden_to_ecommerce_order_refunds_table.php` | - | `ecommerce_order_refunds` | ✅ |
 | `2026_10_05_000010_add_reactivation_columns_to_ecommerce_order_cancels_table.php` | - | `ecommerce_order_cancels`, `ecommerce_order_cancel_options` | ✅ |
+| `2026_10_26_000001_add_tax_status_to_ecommerce_product_options_table.php` | - | `ecommerce_product_options` | ✅ |
+| `2026_10_26_000002_add_tax_status_to_ecommerce_order_options_table.php` | - | `ecommerce_order_options` | ✅ |
+| `2026_10_26_000003_add_total_zero_rated_amount_to_ecommerce_orders_table.php` | - | `ecommerce_orders` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -450,7 +471,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `ProductImageCollection` | `string` | 3 | `main`, `detail`, `additional` |
 | `ProductPriceType` | `string` | 3 | `selling_price`, `supply_price`, `list_price` |
 | `ProductSalesStatus` | `string` | 4 | `on_sale`, `suspended`, `sold_out`, `coming_soon` |
-| `ProductTaxStatus` | `string` | 2 | `taxable`, `tax_free` |
+| `ProductTaxStatus` | `string` | 3 | `taxable`, `tax_free`, `zero_rated` |
 | `RefundMethodEnum` | `string` | 3 | `pg`, `bank`, `points` |
 | `RefundPriorityEnum` | `string` | 2 | `pg_first`, `points_first` |
 | `RefundSourceTypeEnum` | `string` | 5 | `cancel`, `return`, `exchange`, `direct`, `admin` |

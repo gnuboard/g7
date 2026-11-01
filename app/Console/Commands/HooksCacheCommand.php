@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Extension\HookCacheManager;
 use App\Extension\ModuleManager;
@@ -18,17 +19,13 @@ use Illuminate\Console\Command;
  */
 class HooksCacheCommand extends Command
 {
+    use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
     /**
      * @var string 커맨드 시그니처
      */
     protected $signature = 'hooks:cache';
-
-    /**
-     * @var string 커맨드 설명
-     */
-    protected $description = '정적 훅 매핑 캐시 생성 (bootstrap/cache/hooks.php)';
 
     /**
      * 커맨드를 실행합니다.

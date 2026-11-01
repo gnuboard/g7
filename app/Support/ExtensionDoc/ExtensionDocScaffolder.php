@@ -2,6 +2,7 @@
 
 namespace App\Support\ExtensionDoc;
 
+use App\Extension\ExtensionManager;
 use App\Extension\Traits\CollectsFragmentSources;
 use Illuminate\Support\Facades\File;
 
@@ -712,6 +713,15 @@ class ExtensionDocScaffolder
         $rows[] = ['그누보드7 코어', $this->code($ctx['deps']['coreVersion'] ?? '(제약 없음)')];
         $rows[] = ['PHP', $this->code($this->composerPhp($ctx) ?? '^8.2')];
 
+        // composer.json require/suggest ext-* — 필수는 설치·활성화를 막고, 권장은 경고만 한다(#151)
+        $phpExtensions = app(ExtensionManager::class)->getPhpExtensionRequirementsAt($ctx['record']['path']);
+        if ($phpExtensions['required'] !== []) {
+            $rows[] = ['PHP 확장(필수)', implode(', ', array_map(fn ($e) => $this->code($e), $phpExtensions['required']))];
+        }
+        foreach ($phpExtensions['suggested'] as $extension => $reason) {
+            $rows[] = ['PHP 확장(권장)', $this->code($extension).($reason !== '' ? ' — '.$reason : '')];
+        }
+
         foreach ($ctx['deps']['requires'] as $dep) {
             $label = ExtensionInventory::typeLabel(rtrim($dep['type'], 's'));
             $rows[] = ["의존 {$label}", $this->code($dep['id']).' '.$this->code($dep['constraint'])];
@@ -805,10 +815,11 @@ class ExtensionDocScaffolder
             $sections[] = '**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)';
             $sections[] = '';
             $sections[] = $this->table(
-                ['확장', '유형', '번들'],
+                ['확장', '유형', '버전 제약', '번들'],
                 array_map(fn (array $d): array => [
                     $this->code($d['id']),
                     ExtensionInventory::typeLabel(rtrim($d['type'], 's')),
+                    $this->code($d['constraint'] ?? '*'),
                     $d['bundled'] ? '✅' : '—',
                 ], $integrates),
             );
@@ -820,10 +831,11 @@ class ExtensionDocScaffolder
             $sections[] = '**이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)';
             $sections[] = '';
             $sections[] = $this->table(
-                ['확장', '유형'],
+                ['확장', '유형', '요구 버전'],
                 array_map(fn (array $d): array => [
                     $this->code($d['id']),
                     ExtensionInventory::typeLabel($d['type']),
+                    $this->code($d['constraint'] ?? '*'),
                 ], $integratedBy),
             );
         }

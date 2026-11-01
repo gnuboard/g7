@@ -99,6 +99,8 @@ export interface MultilingualInputProps {
   name?: string;
   /** 모바일에서 언어 코드로 표시 (기본값: false) */
   showCodeOnMobile?: boolean;
+  /** compact 배치에서 언어 단추 줄 아래에 입력칸을 놓는다 — 표 칸처럼 좁은 자리용 (기본값: false) */
+  stacked?: boolean;
   /** 에러 메시지 (입력 필드에 적색 테두리 표시) */
   error?: string;
   /**
@@ -138,6 +140,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   className = '',
   name = 'multilingual_input',
   showCodeOnMobile = false,
+  stacked = false,
   error,
   id,
   editorAttrs,
@@ -623,9 +626,10 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
 
     return (
       <Div className={className}>
-        <Div className="flex items-center gap-1">
+        {/* stacked: 언어 단추 줄과 입력칸을 위아래로 — 좁은 칸에서도 입력칸이 칸 너비를 다 쓴다 */}
+        <Div className={stacked ? 'flex flex-col gap-1' : 'flex items-center gap-1'}>
           {/* 언어 선택 버튼들 - 컴팩트 스타일 */}
-          <Div className="flex items-center shrink-0">
+          <Div className={stacked ? 'flex items-center shrink-0 self-start' : 'flex items-center shrink-0'}>
             {activeLocales.map(localeCode => (
               <Button
                 key={localeCode}
@@ -648,8 +652,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             ))}
           </Div>
 
-          {/* 입력 필드 - flex-1로 나머지 공간 차지 */}
-          <Div className="flex-1 min-w-0">
+          {/* 입력 필드 - 한 줄이면 flex-1로 나머지 공간, stacked 면 칸 너비 전체 */}
+          <Div className={stacked ? 'w-full min-w-0' : 'flex-1 min-w-0'}>
             {inputType === 'textarea' ? (
               <Textarea
                 name={`${name}[${currentLocale}]`}

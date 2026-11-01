@@ -120,7 +120,9 @@
           </a>
         </div>
       </div>
-      <div data-ref="pending_inquiries_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col">
+      <!-- 미답변 문의 카드 — 상품 문의는 게시판 글이라 게시판 모듈(선택 연동)이 꺼지면 카드째 숨긴다. 활성 목록이 없는 옛 코어는
+        서버 응답의 board_active 로 가른다(꺼져 있으면 서버가 항목을 내지 않는다). -->
+      <div data-ref="pending_inquiries_card" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) &amp;&amp; commerce_pending_inquiries?.data?.board_active !== false}}" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col">
         <blur-until-loaded sources="commerce_pending_inquiries"/>
         <div data-ref="pending_inquiries_header" class="flex-between mb-4">
           <h3 data-ref="pending_inquiries_title_wrapper" class="flex items-center text-base font-semibold text-slate-900 dark:text-white gap-1">
@@ -193,8 +195,9 @@
     제목 옆 괄호 숫자는 목록 길이가 아니라 `total` 이다.
     상품 문의는 게시판 모듈의 글로 저장되므로 상세로 가려면 **어느 게시판인지**가 필요하다. 그
     설정(`inquiry.board_slug`)이 비어 있으면 서버가 `board_slug` 를 `null` 로 주고, 그때는
-    "문의 관리로" 링크가 사라진다 — 목록은 그대로 나오지만 눌러도 갈 곳이 없어지는 것을 막는다. -->
-  <data-source id="commerce_pending_inquiries" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/dashboard/pending-inquiries" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    "문의 관리로" 링크가 사라진다 — 목록은 그대로 나오지만 눌러도 갈 곳이 없어지는 것을 막는다.
+    게시판 모듈이 꺼져 있으면 부르지 않는다(카드도 숨는다). -->
+  <data-source id="commerce_pending_inquiries" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/dashboard/pending-inquiries" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}">
     <fallback>
       <field name="data">
         <field name="items" :value="[]"/>

@@ -19,6 +19,11 @@ use Tests\TestCase;
  */
 class ProvisionLanguagePackCommandTest extends TestCase
 {
+    /**
+     * Mockery 기대값을 검증하고 정리한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -110,9 +115,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     // ─── 미설치 → 신규 프로비저닝 ──────────────────────────────────────
 
     /**
+     * supported_locales 에 선언된 비-base 로케일의 미설치 코어 팩만 설치한다.
+     *
      * @scenario target_locale_source=supported_locales_default, locale_membership=non_base_declared, pack_state=uninstalled, scope=core
      *
      * @effects provisions_only_supported_non_base_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_provisions_only_supported_non_base_locales(): void
     {
@@ -133,9 +142,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * 확장 범위 미설치 번들 팩도 같은 규칙으로 설치한다.
+     *
      * @scenario target_locale_source=supported_locales_default, locale_membership=non_base_declared, pack_state=uninstalled, scope=extension
      *
      * @effects provisions_only_supported_non_base_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_provisions_extension_scoped_bundled_pack(): void
     {
@@ -154,9 +167,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * --locale 을 주면 supported_locales 대신 그 로케일만 대상으로 삼는다.
+     *
      * @scenario target_locale_source=explicit_locale_option, locale_membership=non_base_declared, pack_state=uninstalled, scope=core
      *
      * @effects explicit_locale_option_overrides_supported_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_explicit_locale_option_overrides_supported_locales(): void
     {
@@ -176,9 +193,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * --scope 로 대상 스코프를 좁히면 다른 스코프 팩은 설치하지 않는다.
+     *
      * @scenario target_locale_source=explicit_locale_option, locale_membership=non_base_declared, pack_state=uninstalled, scope=extension
      *
      * @effects explicit_locale_option_overrides_supported_locales, scope_filter_limits_provision_targets
+     *
+     * @return void 반환값 없음
      */
     public function test_scope_option_limits_explicit_locale_targets(): void
     {
@@ -203,9 +224,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     // ─── 이미 설치됨 → 멱등 ────────────────────────────────────────────
 
     /**
+     * 미설치·드리프트 후보가 없으면 설치 0 건으로 끝난다(멱등).
+     *
      * @scenario target_locale_source=supported_locales_default, locale_membership=non_base_declared, pack_state=installed_active, scope=core
      *
      * @effects is_idempotent_when_no_uninstalled_candidates
+     *
+     * @return void 반환값 없음
      */
     public function test_is_idempotent_when_no_uninstalled_candidates(): void
     {
@@ -219,9 +244,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * 확장 팩이 이미 설치돼 있으면 다시 설치하지 않는다(멱등).
+     *
      * @scenario target_locale_source=supported_locales_default, locale_membership=non_base_declared, pack_state=installed_active, scope=extension
      *
      * @effects is_idempotent_when_no_uninstalled_candidates
+     *
+     * @return void 반환값 없음
      */
     public function test_is_idempotent_for_installed_extension_packs(): void
     {
@@ -234,9 +263,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * --locale 지정에서도 설치된 코어 팩은 다시 설치하지 않는다.
+     *
      * @scenario target_locale_source=explicit_locale_option, locale_membership=non_base_declared, pack_state=installed_active, scope=core
      *
      * @effects is_idempotent_when_no_uninstalled_candidates
+     *
+     * @return void 반환값 없음
      */
     public function test_explicit_locale_is_idempotent_for_installed_core_pack(): void
     {
@@ -249,9 +282,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * --locale 지정에서도 설치된 확장 팩은 다시 설치하지 않는다.
+     *
      * @scenario target_locale_source=explicit_locale_option, locale_membership=non_base_declared, pack_state=installed_active, scope=extension
      *
      * @effects is_idempotent_when_no_uninstalled_candidates
+     *
+     * @return void 반환값 없음
      */
     public function test_explicit_locale_is_idempotent_for_installed_extension_pack(): void
     {
@@ -267,9 +304,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     // ─── 설치 차단 → best-effort skip ──────────────────────────────────
 
     /**
+     * 설치 차단 사유가 있는 팩은 설치를 시도하지 않고 건너뛴다.
+     *
      * @scenario target_locale_source=supported_locales_default, locale_membership=non_base_declared, pack_state=install_blocked, scope=extension
      *
      * @effects skips_install_blocked_packs
+     *
+     * @return void 반환값 없음
      */
     public function test_skips_blocked_packs(): void
     {
@@ -285,9 +326,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * --locale 지정에서도 설치 차단 사유가 있는 팩은 건너뛴다.
+     *
      * @scenario target_locale_source=explicit_locale_option, locale_membership=non_base_declared, pack_state=install_blocked, scope=extension
      *
      * @effects skips_install_blocked_packs
+     *
+     * @return void 반환값 없음
      */
     public function test_skips_blocked_packs_with_explicit_locale(): void
     {
@@ -304,9 +349,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     // ─── 드리프트 → 복구 ───────────────────────────────────────────────
 
     /**
+     * 설치본 파일이 사라진 코어 팩(드리프트)을 번들에서 다시 설치해 복구한다.
+     *
      * @scenario target_locale_source=supported_locales_default, locale_membership=non_base_declared, pack_state=drifted_missing_files, scope=core
      *
      * @effects drifted_pack_repaired_by_provision
+     *
+     * @return void 반환값 없음
      */
     public function test_repairs_drifted_core_pack(): void
     {
@@ -326,9 +375,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * 설치본 파일이 사라진 확장 팩(드리프트)을 번들에서 다시 설치해 복구한다.
+     *
      * @scenario target_locale_source=supported_locales_default, locale_membership=non_base_declared, pack_state=drifted_missing_files, scope=extension
      *
      * @effects drifted_pack_repaired_by_provision
+     *
+     * @return void 반환값 없음
      */
     public function test_repairs_drifted_extension_pack(): void
     {
@@ -347,9 +400,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * --locale 지정에서도 드리프트 코어 팩을 복구한다.
+     *
      * @scenario target_locale_source=explicit_locale_option, locale_membership=non_base_declared, pack_state=drifted_missing_files, scope=core
      *
      * @effects drifted_pack_repaired_by_provision, explicit_locale_option_overrides_supported_locales
+     *
+     * @return void 반환값 없음
      */
     public function test_repairs_drifted_core_pack_with_explicit_locale(): void
     {
@@ -368,9 +425,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * --scope 범위 안의 드리프트 확장 팩만 복구한다.
+     *
      * @scenario target_locale_source=explicit_locale_option, locale_membership=non_base_declared, pack_state=drifted_missing_files, scope=extension
      *
      * @effects drifted_pack_repaired_by_provision, scope_filter_limits_provision_targets
+     *
+     * @return void 반환값 없음
      */
     public function test_repairs_drifted_extension_pack_within_scope_filter(): void
     {
@@ -394,9 +455,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     // ─── base locale 만 선언 → 대상 없음 ───────────────────────────────
 
     /**
+     * base 로케일(ko/en)만 선언하면 후보 조회조차 하지 않는다.
+     *
      * @scenario target_locale_source=supported_locales_default, locale_membership=base_only, pack_state=uninstalled, scope=core
      *
      * @effects does_nothing_when_no_non_base_locale_declared
+     *
+     * @return void 반환값 없음
      */
     public function test_does_nothing_when_no_non_base_locale_declared(): void
     {
@@ -413,9 +478,13 @@ class ProvisionLanguagePackCommandTest extends TestCase
     }
 
     /**
+     * base 로케일만 선언하면 확장 스코프를 지정해도 아무것도 하지 않는다.
+     *
      * @scenario target_locale_source=supported_locales_default, locale_membership=base_only, pack_state=uninstalled, scope=extension
      *
      * @effects does_nothing_when_no_non_base_locale_declared
+     *
+     * @return void 반환값 없음
      */
     public function test_does_nothing_for_extension_scope_when_base_only(): void
     {
@@ -428,5 +497,39 @@ class ProvisionLanguagePackCommandTest extends TestCase
         $this->app->instance(LanguagePackService::class, $service);
 
         $this->artisan('language-pack:provision', ['--scope' => ['module']])->assertExitCode(0);
+    }
+
+    /**
+     * 코어 범위 팩을 이름·조회 순서와 관계없이 먼저 설치하고, 그 뒤 확장 팩의 `core_locale_missing` 을 다시 판정해
+     * 한 번 실행으로 함께 설치한다(#153). 대상 확장 미설치처럼 다시 판정해도 막히는 팩은 건너뛴다.
+     *
+     * @scenario target_locale_source=explicit_locale_option, locale_membership=non_base_declared, pack_state=uninstalled, scope=extension
+     *
+     * @effects core_scope_pack_first_then_extension_packs_rechecked_in_one_run
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_pack_first_then_extension_pack_rechecked_in_same_run(): void
+    {
+        config(['app.supported_locales' => ['ko', 'en']]);
+
+        // 조회 순서상 확장 팩이 먼저 온다(디렉터리 이름순 g7-core-… 보다 앞선 acme-…)
+        $service = $this->mockService([
+            $this->bundledPack('acme-board-ja', 'ja', 'module', 'core_locale_missing'),
+            $this->bundledPack('acme-gone-ja', 'ja', 'module', 'core_locale_missing'),
+            $this->bundledPack('g7-core-ja', 'ja'),
+        ]);
+        $installed = [];
+        $service->shouldReceive('installFromBundled')->andReturnUsing(function (string $id) use (&$installed): LanguagePack {
+            $installed[] = $id;
+
+            return $this->installedResult($id, 'ja');
+        });
+        $service->shouldReceive('bundledInstallBlockedReason')->with('acme-board-ja')->once()->andReturnNull();
+        $service->shouldReceive('bundledInstallBlockedReason')->with('acme-gone-ja')->once()->andReturn('target_not_installed');
+
+        $this->artisan('language-pack:provision', ['--locale' => ['ja']])->assertExitCode(0);
+
+        $this->assertSame(['g7-core-ja', 'acme-board-ja'], $installed);
     }
 }

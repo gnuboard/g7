@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\PluginManager;
@@ -9,17 +10,14 @@ use Illuminate\Console\Command;
 
 class ListPluginCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'plugin:list
         {--status= : 상태로 필터 (installed, uninstalled, active, inactive)}
         {--hidden : 숨김(hidden=true) 플러그인도 함께 출력}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '플러그인 목록을 조회합니다';
 
     /**
      * 플러그인 관리자 및 리포지토리

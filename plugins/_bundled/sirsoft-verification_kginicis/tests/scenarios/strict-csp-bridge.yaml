@@ -1,0 +1,17 @@
+feature: strict_csp_identity_bridge
+
+description: |
+  본인인증 결과 전달 브리지의 인라인 실행 코드 제거 (#158 strict CSP).
+
+  종전에는 브리지 페이지 인라인 `<script>` 가 부모창 postMessage·창 닫기·모바일 복귀를 했다. 사이트가
+  `script-src 'self'` 를 걸면 실행되지 않아 인증 결과가 전달되지 않고 팝업도 닫히지 않았다. 서버 값은
+  `#bridge-data` JSON 블록({siteOrigin, payload})으로, 동작은 `assets/bridge/*.js` 가 한다.
+
+axes:
+  page: [identity_bridge]
+
+effects:
+  - identity_bridge_has_no_inline_executable
+
+test_files:
+  - plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Controllers/BridgeNoInlineScriptTest.php

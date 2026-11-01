@@ -98,6 +98,20 @@ return [
             'layout' => 'Screen',
         ],
         'unrouted_hint' => 'For customers to reach these screens, the plugin must inject user routes with the `core.routes.filter_merged` filter. Ignore this if they are only used as modals or partial screens.',
+        'requires_header' => '=== routes.json requires format errors (condition ignored, route kept) ===',
+        'requires_headers' => [
+            'template' => 'Template',
+            'path' => 'Path',
+            'source' => 'Declared by',
+            'reason' => 'Problem',
+        ],
+        'requires_reasons' => [
+            'not_object' => 'requires must be an object like {"modules": [...], "plugins": [...]}',
+            'unknown_type' => 'Unknown type :type (only modules and plugins are supported)',
+            'not_list' => ':type must be an array of identifiers',
+            'non_string_id' => ':type contains an identifier that is not a string',
+        ],
+        'requires_hint' => 'These conditions are ignored for public routes, search bots and the sitemap, and the routes are served as is. Unless fixed, the screens stay visible even when the extension is turned off.',
         // `layout:audit-expressions`, `layout-versions:recalculate-diffs`, `layout-previews:cleanup` command output
         'audit_expressions' => [
             'invalid_source' => '--source must be one of db|files|all.',

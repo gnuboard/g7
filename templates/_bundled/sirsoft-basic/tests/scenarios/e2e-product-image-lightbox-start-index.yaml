@@ -1,0 +1,23 @@
+feature: 상품 상세 확대 창 — 고른 썸네일의 사진에서 열림 브라우저 회귀 (#821)
+
+description: |
+  비회원 사용자 상품 상세(공개 API GET 으로 찾은 이미지 3장 이상인 실제 상품)에서 썸네일을 고르고 큰 사진을 눌러
+  확대 창(yet-another-react-lightbox)을 연다. 카운터가 고른 썸네일 번호 / 전체이고, 현재 슬라이드 그림이 고른 썸네일과 같아야 한다.
+  수정 전에는 매번 「1 / N」 으로 열렸다. GET·HEAD 가 아닌 `/api/` 요청은 모두 가로챈다(서버 불변).
+
+axes:
+  case: [third_thumbnail, navigate_then_reopen, mobile_width]
+  # third_thumbnail: 1280 폭, 3번째 썸네일 → 큰 사진 → 「3 / N」 · 현재 슬라이드 그림 = 3번째 썸네일 · 콘솔 error 0
+  # navigate_then_reopen: 3번째로 열기 → ← → 「2 / N」 → Esc → 1번째로 다시 열기 → 「1 / N」
+  # mobile_width: 390 폭, 2번째 썸네일 → 「2 / N」
+
+effects:
+  - lightbox_opens_at_selected_image   # 확대 창이 고른 썸네일 번호에서 열린다
+  - lightbox_navigation_from_start     # 연 뒤 넘기기가 그 번호를 기준으로 움직인다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/product-image-lightbox-start-index.spec.ts
+
+notes: |
+  계정 불필요(비회원). 이미지 3장 이상인 상품이 공개 목록에 없으면 사유와 함께 건너뛴다. `G7_E2E_PRODUCT` 로 상품 코드를 고정할 수 있다.
+  짝 Vitest: tests/scenarios/product-image-viewer-lightbox-start-index.yaml (실제 ImageGallery 렌더 시험).

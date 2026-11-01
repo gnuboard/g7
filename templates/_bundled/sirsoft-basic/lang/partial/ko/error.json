@@ -27,10 +27,13 @@
   "503": {
     "title": "서비스 일시 중단",
     "description": "현재 서비스를 이용할 수 없습니다.",
-    "unmet_dependencies": "필요한 확장 기능이 활성화되지 않았습니다.",
+    "unmet_dependencies": "필요한 확장 기능의 조건이 맞지 않습니다.",
     "required_modules": "필요한 모듈",
     "required_plugins": "필요한 플러그인",
-    "contact_admin": "관리자에게 문의하여 필요한 확장 기능을 활성화해 주세요.",
-    "back_to_home": "홈으로 돌아가기"
+    "contact_admin": "관리자에게 문의하여 필요한 확장 기능을 설치·활성화하거나 업데이트해 주세요.",
+    "back_to_home": "홈으로 돌아가기",
+    "reason_not_installed": "미설치",
+    "reason_inactive": "꺼짐",
+    "reason_version_mismatch": "버전 미달 {{installed}} → {{required}}"
   }
 }

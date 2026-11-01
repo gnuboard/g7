@@ -14,6 +14,8 @@ use App\Services\SettingsService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
 use App\Support\LayoutEmptyObjects;
+use App\Support\RequestPath;
+use App\Support\Utf8;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -38,6 +40,7 @@ class SeoRenderer implements SeoRendererInterface
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
      * @param  ModuleManagerInterface  $moduleManager  모듈 관리자
      * @param  PluginManagerInterface  $pluginManager  플러그인 관리자
+     * @param  SeoToggleEvaluator  $toggleEvaluator  레이아웃 SEO 토글 판정기 (사이트맵 정적 화면과 공용)
      */
     public function __construct(
         private readonly TemplateRouteResolver $routeResolver,
@@ -52,6 +55,7 @@ class SeoRenderer implements SeoRendererInterface
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly ModuleManagerInterface $moduleManager,
         private readonly PluginManagerInterface $pluginManager,
+        private readonly SeoToggleEvaluator $toggleEvaluator = new SeoToggleEvaluator,
     ) {}
 
     /**
@@ -62,7 +66,8 @@ class SeoRenderer implements SeoRendererInterface
      */
     public function render(Request $request): ?string
     {
-        $url = $request->getPathInfo();
+        // 끝·연속 슬래시는 정규형으로 — 루트 판정과 route.path 노출도 같은 값을 쓴다 (공개#156)
+        $url = RequestPath::normalize($request->getPathInfo());
 
         // SeoMiddleware가 ?locale= 파라미터 기반으로 이미 설정한 로케일 사용
         $locale = app()->getLocale();
@@ -75,19 +80,28 @@ class SeoRenderer implements SeoRendererInterface
 
         $templateIdentifier = $routeInfo['templateIdentifier'];
         $layoutName = $routeInfo['layoutName'];
+        // DB·편집기·봇 캐시가 쓰는 전체 이름 — 확장 레이아웃은 `{확장식별자}.{레이아웃}` (공개#154)
+        $storedLayoutName = $routeInfo['storedLayoutName'] ?? $layoutName;
         $routeParams = $routeInfo['routeParams'];
         $moduleIdentifier = $routeInfo['moduleIdentifier'];
         $pluginIdentifier = $routeInfo['pluginIdentifier'] ?? null;
         // 사이트 첫 화면은 사이트 이름 자체가 제목이다 — 라우트 제목(「홈」)을 붙이지 않는다
         $routeTitle = $url === '/' ? null : ($routeInfo['routeMeta']['title'] ?? null);
 
-        // 2. 병합된 레이아웃 JSON 로드
+        // 2. 병합된 레이아웃 JSON 로드 — 반드시 전체 이름으로 찾는다. 뗀 이름으로 찾으면 모듈 화면은
+        //    없고(SPA 폴백), 뗀 이름이 템플릿 레이아웃과 같으면 템플릿 화면을 집는다 (공개#154)
         try {
             // 화면 응답용으로 보존한 빈 객체를 배열로 되돌린다 — SEO 평가기는 배열만 다룬다
-            $mergedLayout = LayoutEmptyObjects::toArrays($this->layoutService->getLayout($templateIdentifier, $layoutName));
+            $mergedLayout = LayoutEmptyObjects::toArrays($this->layoutService->getLayout($templateIdentifier, $storedLayoutName));
         } catch (\Throwable $e) {
-            Log::warning('[SEO] Layout load failed', [
-                'layout' => $layoutName,
+            // 봇에 SPA 껍데기가 나가는 운영 결함이다 — LOG_LEVEL=error 사이트에도 남도록 error 로 기록한다
+            Log::error('[SEO] Layout load failed', [
+                'url' => $url,
+                'template' => $templateIdentifier,
+                'layout' => $storedLayoutName,
+                'route_layout_name' => $layoutName,
+                'module' => $moduleIdentifier,
+                'plugin' => $pluginIdentifier,
                 'error' => $e->getMessage(),
             ]);
 
@@ -105,7 +119,7 @@ class SeoRenderer implements SeoRendererInterface
         }
 
         // 4. 확장(모듈/플러그인) 페이지별 SEO 활성화 확인 (레이아웃 toggle_setting 기반)
-        if (! $this->isExtensionSeoEnabled($moduleIdentifier, $pluginIdentifier, $seoConfig)) {
+        if (! $this->toggleEvaluator->isEnabled($moduleIdentifier, $pluginIdentifier, $seoConfig)) {
             return null;
         }
 
@@ -188,6 +202,7 @@ class SeoRenderer implements SeoRendererInterface
         // 유즈케이스: 리뷰 플러그인이 reviews_aggregate 주입, 쿠폰 플러그인이 priceValidUntil 보강
         $context = HookManager::applyFilters('core.seo.filter_context', $context, [
             'layoutName' => $layoutName,
+            'storedLayoutName' => $storedLayoutName,
             'moduleIdentifier' => $moduleIdentifier,
             'pluginIdentifier' => $pluginIdentifier,
             'routeParams' => $routeParams,
@@ -204,8 +219,10 @@ class SeoRenderer implements SeoRendererInterface
             $context['$computed'] = $computed;
         }
 
-        // 6.5. 레이아웃명을 request attribute로 저장 (SeoMiddleware에서 putWithLayout에 사용)
-        $request->attributes->set('seo_layout_name', $layoutName);
+        // 6.5. 레이아웃명·모듈 식별자를 request attribute로 저장 (SeoMiddleware 의 putWithLayout·통계에 사용)
+        //      캐시 항목 이름은 편집기에 보이는 전체 이름이다 — `seo:clear --layout=` 과 레이아웃 저장 시 삭제가 이 이름으로 찾는다
+        $request->attributes->set('seo_layout_name', $storedLayoutName);
+        $request->attributes->set('seo_module_identifier', $moduleIdentifier);
 
         // SeoMiddleware가 setLocale() 전에 저장한 기본 로케일 사용
         // (setLocale()이 config('app.locale')을 변경하므로 request attribute로 전달)
@@ -225,6 +242,7 @@ class SeoRenderer implements SeoRendererInterface
             $defaultLocale,
             false,
             $routeTitle,
+            $storedLayoutName,
         );
     }
 
@@ -248,6 +266,7 @@ class SeoRenderer implements SeoRendererInterface
      * @param  string|null  $defaultLocale  canonical 기본 로케일 (null 이면 config('app.locale'))
      * @param  bool  $seoOnly  true 면 SEO 메타 HTML 만 렌더(bodyHtml 생략 — 편집기 미리보기용)
      * @param  mixed  $routeTitle  라우트 meta.title — 다른 제목 단계가 모두 빌 때 쓰는 마지막 대체(null 이면 쓰지 않음)
+     * @param  string|null  $storedLayoutName  DB·편집기 전체 레이아웃 이름 — 훅 컨텍스트 `storedLayoutName` (null 이면 $layoutName)
      * @return string|null 렌더링된 HTML
      */
     public function renderFromResolved(
@@ -263,7 +282,9 @@ class SeoRenderer implements SeoRendererInterface
         ?string $defaultLocale = null,
         bool $seoOnly = false,
         mixed $routeTitle = null,
+        ?string $storedLayoutName = null,
     ): ?string {
+        $storedLayoutName ??= $layoutName;
         $moduleIdentifier = $moduleId;
         $pluginIdentifier = $pluginId;
         $seoConfig = $mergedLayout['meta']['seo'] ?? [];
@@ -429,6 +450,7 @@ class SeoRenderer implements SeoRendererInterface
 
         $hookCtx = [
             'layoutName' => $layoutName,
+            'storedLayoutName' => $storedLayoutName,
             'moduleIdentifier' => $moduleIdentifier,
             'pluginIdentifier' => $pluginIdentifier,
             'context' => $context,
@@ -544,6 +566,7 @@ class SeoRenderer implements SeoRendererInterface
         // 유즈케이스: Analytics 플러그인이 extraHeadTags에 추적 스크립트, PWA 플러그인이 manifest 링크 주입
         $viewData = HookManager::applyFilters('core.seo.filter_view_data', $viewData, [
             'layoutName' => $layoutName,
+            'storedLayoutName' => $storedLayoutName,
             'moduleIdentifier' => $moduleIdentifier,
             'pluginIdentifier' => $pluginIdentifier,
         ]);
@@ -572,12 +595,7 @@ class SeoRenderer implements SeoRendererInterface
     private function tidyPreviewHtml(string $html): string
     {
         // 유효 UTF-8 보장 — 깨진 바이트 제거(JSON 직렬화 안전). 산출물 내용은 그대로 둔다.
-        $clean = @iconv('UTF-8', 'UTF-8//IGNORE', $html);
-        if ($clean === false || ! is_string($clean)) {
-            $clean = mb_convert_encoding($html, 'UTF-8', 'UTF-8');
-        }
-
-        return $clean;
+        return Utf8::scrub($html);
     }
 
     /**
@@ -603,7 +621,7 @@ class SeoRenderer implements SeoRendererInterface
             // 설정값이 다국어 JSON 배열일 수 있으므로 resolveLocalizedValue 헬퍼 통과
             if (str_starts_with($expr, '$module_settings:')) {
                 $rest = substr($expr, strlen('$module_settings:'));
-                [$effectiveModuleId, $key] = $this->parseExtensionSettingsKey($rest, $moduleIdentifier);
+                [$effectiveModuleId, $key] = $this->toggleEvaluator->parseExtensionSettingsKey($rest, $moduleIdentifier);
                 if ($effectiveModuleId) {
                     $resolved[$name] = $this->resolveLocalizedValue(g7_module_settings($effectiveModuleId, $key, ''));
                 } else {
@@ -611,7 +629,7 @@ class SeoRenderer implements SeoRendererInterface
                 }
             } elseif (str_starts_with($expr, '$plugin_settings:')) {
                 $rest = substr($expr, strlen('$plugin_settings:'));
-                [$effectivePluginId, $key] = $this->parseExtensionSettingsKey($rest, $pluginIdentifier);
+                [$effectivePluginId, $key] = $this->toggleEvaluator->parseExtensionSettingsKey($rest, $pluginIdentifier);
                 if ($effectivePluginId) {
                     $resolved[$name] = $this->resolveLocalizedValue(g7_plugin_settings($effectivePluginId, $key, ''));
                 } else {
@@ -629,81 +647,6 @@ class SeoRenderer implements SeoRendererInterface
         }
 
         return $resolved;
-    }
-
-    /**
-     * 확장(모듈/플러그인) SEO가 활성화되어 있는지 확인합니다.
-     *
-     * 레이아웃 meta.seo.toggle_setting 선언 기반으로 판단합니다.
-     * $module_settings:MODULE_ID:key 형식으로 명시적 모듈 지정도 지원합니다.
-     * toggle_setting 미선언 시 무조건 활성화됩니다.
-     *
-     * @param  string|null  $moduleIdentifier  모듈 식별자
-     * @param  string|null  $pluginIdentifier  플러그인 식별자
-     * @param  array  $seoConfig  레이아웃 meta.seo 설정
-     * @return bool 활성화 여부
-     */
-    private function isExtensionSeoEnabled(?string $moduleIdentifier, ?string $pluginIdentifier, array $seoConfig): bool
-    {
-        $toggleSetting = $seoConfig['toggle_setting'] ?? null;
-        if (! $toggleSetting) {
-            return true;
-        }
-
-        // $module_settings:key 또는 $module_settings:module-id:key 접두사 해석
-        if (str_starts_with($toggleSetting, '$module_settings:')) {
-            $rest = substr($toggleSetting, strlen('$module_settings:'));
-            [$effectiveModuleId, $key] = $this->parseExtensionSettingsKey($rest, $moduleIdentifier);
-            if ($effectiveModuleId) {
-                return (bool) g7_module_settings($effectiveModuleId, $key, true);
-            }
-
-            return true;
-        }
-
-        // $plugin_settings:key 또는 $plugin_settings:plugin-id:key 접두사 해석
-        if (str_starts_with($toggleSetting, '$plugin_settings:')) {
-            $rest = substr($toggleSetting, strlen('$plugin_settings:'));
-            [$effectivePluginId, $key] = $this->parseExtensionSettingsKey($rest, $pluginIdentifier);
-            if ($effectivePluginId) {
-                return (bool) g7_plugin_settings($effectivePluginId, $key, true);
-            }
-
-            return true;
-        }
-
-        // $core_settings:key 접두사 해석
-        if (str_starts_with($toggleSetting, '$core_settings:')) {
-            $key = substr($toggleSetting, strlen('$core_settings:'));
-
-            return (bool) g7_core_settings($key, true);
-        }
-
-        return true;
-    }
-
-    /**
-     * 확장 설정 키를 파싱합니다.
-     *
-     * 'key.path' 형식이면 컨텍스트 식별자를 사용하고,
-     * 'extension-id:key.path' 형식이면 명시된 확장 식별자를 사용합니다.
-     * 템플릿 레벨 레이아웃에서 모듈/플러그인 설정을 참조할 때 명시적 ID가 필요합니다.
-     *
-     * @param  string  $rest  접두사 제거 후 나머지 문자열
-     * @param  string|null  $contextIdentifier  라우트 컨텍스트에서 추출한 식별자
-     * @return array{0: string|null, 1: string} [식별자, 설정 키]
-     */
-    private function parseExtensionSettingsKey(string $rest, ?string $contextIdentifier): array
-    {
-        // 'extension-id:key.path' 형식 — 명시적 확장 ID 포함
-        if (str_contains($rest, ':')) {
-            [$explicitId, $key] = explode(':', $rest, 2);
-
-            return [$explicitId, $key];
-        }
-
-        // 'key.path' 형식 — 컨텍스트 식별자 사용
-        return [$contextIdentifier, $rest];
     }
 
     /**
@@ -905,7 +848,40 @@ class SeoRenderer implements SeoRendererInterface
             $global['plugins'] = [];
         }
 
+        // activeModules / activePlugins: 활성 확장 식별자 목록 — 사용자 화면의 G7Config.activeModules·activePlugins
+        // 와 같은 출처(ModuleManager::getActiveModules / PluginManager::getActivePlugins)다. 레이아웃 가드
+        // `{{_global.activeModules?.includes('id') ?? true}}` 가 봇 화면에서도 같은 답을 내야 꺼진 모듈의 링크·
+        // 데이터소스 호출이 빠진다. 목록을 못 구하면 키를 싣지 않는다 — 가드는 「켜짐」으로 본다(engine-v1.84.0).
+        foreach ([
+            'activeModules' => fn () => $this->moduleManager->getActiveModules(),
+            'activePlugins' => fn () => $this->pluginManager->getActivePlugins(),
+        ] as $key => $resolver) {
+            try {
+                $global[$key] = $this->extensionIdentifiers($resolver());
+            } catch (\Throwable $e) {
+                Log::warning('[SEO] Failed to load active extension identifiers', ['key' => $key, 'error' => $e->getMessage()]);
+            }
+        }
+
         return $global;
+    }
+
+    /**
+     * 확장 인스턴스 목록에서 식별자만 순서대로 뽑습니다.
+     *
+     * @param  array<mixed>  $extensions  ModuleManager::getActiveModules() / PluginManager::getActivePlugins() 결과
+     * @return array<int, string> 식별자 목록
+     */
+    private function extensionIdentifiers(array $extensions): array
+    {
+        $identifiers = [];
+        foreach ($extensions as $extension) {
+            if (is_object($extension) && method_exists($extension, 'getIdentifier')) {
+                $identifiers[] = (string) $extension->getIdentifier();
+            }
+        }
+
+        return array_values(array_unique($identifiers));
     }
 
     /**

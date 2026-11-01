@@ -13,6 +13,13 @@ return [
         'language_pack' => '언어팩',
     ],
 
+    // 의존 확장 종류 이름 — 의존 미충족 문구의 :type (#153)
+    'dependency_types' => [
+        'module' => '모듈',
+        'plugin' => '플러그인',
+        'template' => '템플릿',
+    ],
+
     // 멈춘 업데이트 정리 안내 (7.1.1)
     'stuck_update_recovered' => '멈춘 업데이트를 정리했습니다(되돌린 상태: :status): :name — 업데이트가 도중에 끝나 「업데이트 중」에 남아 있던 상태를 되돌렸습니다.',
     'stuck_update_activate_hint' => '정리한 확장은 비활성 상태입니다. 다시 켜려면: :command',
@@ -22,6 +29,7 @@ return [
     'errors' => [
         'state_contract_conflict' => "':name' 상태 계약은 이미 :owner 확장이 소유하고 있어 :extension 확장에서 같은 이름을 선언할 수 없습니다.",
         'core_version_mismatch' => ':extension (:type)에는 그누보드7 코어 버전 :required 이상이 필요합니다. (현재: :installed)',
+        'php_extension_missing' => ':name 확장을 쓰려면 서버에 PHP 확장 :extensions 이(가) 필요합니다. 설치 후 다시 시도하세요.',
         'version_check_failed' => '버전 검증에 실패했습니다.',
         'operation_in_progress' => '":name"에 대해 진행 중인 작업(:status)이 있어 요청을 처리할 수 없습니다.',
         'operation_stuck' => '":name" 이(가) :minutes분 넘게 「업데이트 중」에 멈춰 있습니다. 업데이트가 도중에 끝난 경우라면 --force 로 다시 업데이트하면 정리한 뒤 업데이트를 마저 끝내고, 활성화하면 정리만 하고 켭니다(끝나지 않은 업데이트는 다시 실행하라고 안내합니다).',
@@ -32,9 +40,18 @@ return [
         'zip_missing_version' => 'ZIP 내부의 :file 매니페스트에 version 필드가 없습니다.',
         'not_found' => '확장(:identifier) 을 찾을 수 없습니다.',
         'cascade_dependency_failed' => '동반 설치할 :type (:identifier) 의 설치에 실패했습니다: :message',
+        'unknown_error' => '알 수 없는 오류가 발생했습니다.',
+        'cascade_dependency_activation_failed' => '의존 확장 :identifier 활성화에 실패했습니다: :reason',
+        'cascade_dependencies_kept' => '함께 설치·활성화한 의존 확장은 되돌리지 않고 남겨 두었습니다: :list',
+        'cascade_dependency_unmet_list' => '필요한 의존 확장이 충족되지 않았습니다 — :list',
+        'cascade_dependency_cycle' => '의존 관계가 순환합니다: :cycle',
+        'cascade_dependency_not_found' => ':required_by 에 필요한 의존 확장 :identifier 을(를) 찾을 수 없습니다.',
+        'cascade_dependency_version' => ':required_by 에 필요한 :identifier 의 버전(:required)을 :version 이(가) 충족하지 않습니다.',
         'cascade_permission_denied' => '함께 설치할 :type (:identifier) 을(를) 설치하거나 활성화할 권한이 없습니다.',
         'invalid_type' => '유효하지 않은 확장 타입입니다.',
         'not_auto_deactivated' => '이 확장은 코어 버전 호환성 문제로 자동 비활성화된 상태가 아닙니다.',
+        'recover_dependencies_unmet' => '복구하지 못했습니다 — 필요한 확장이 조건에 맞지 않습니다: :list',
+        'recover_failed' => '복구하지 못했습니다 — :reason',
         'hidden_extension' => '내부용(hidden) 확장은 사용자 노출 대상이 아닙니다.',
         'internal_error' => '서버 내부 오류가 발생했습니다. 자세한 내용은 서버 로그를 확인하세요.',
         'seeder_failed' => '기본 데이터 생성(:seeder)에 실패해 설치를 취소했습니다: :message',
@@ -53,6 +70,8 @@ return [
         'dependency_not_installed' => ':identifier :required 버전이 필요한데 설치되어 있지 않습니다',
         'dependency_inactive' => ':identifier 확장이 꺼져 있습니다(필요 버전 :required)',
         'dependency_summary' => '단, 의존 확장이 요구 조건에 못 미칩니다 — :list. 해당 확장도 업데이트하거나 켜세요.',
+        'dependent_unmet' => ':dependent_type ":dependent" 이(가) 요구하는 ":identifier" :required 를 이제 충족하지 못합니다(현재 :state).',
+        'dependent_template_503' => '이 템플릿을 쓰는 화면이 503 안내로 바뀝니다.',
         'archive_backslash_normalized' => '역슬래시(\\) 경로 :count개를 / 로 정규화해 풀었습니다',
         'seeder_class_name_mismatch' => '시더 파일 :file 은 있지만 추론한 클래스 :class 를 찾을 수 없어 건너뛰었습니다',
         'storage_cleanup_incomplete' => '확장 저장 폴더를 모두 지우지 못했습니다 — 서버 파일 권한을 확인한 뒤 남은 파일을 직접 지우세요',
@@ -62,6 +81,51 @@ return [
         'column_target' => '대상',
         'column_message' => '사유',
         'composer_install_failed' => 'Composer 의존성 설치에 실패했습니다 — 확장 폴더에서 composer install 을 수동으로 실행하세요',
+        'php_extension_missing' => '서버에 이 확장이 필요로 하는 PHP 확장 :extensions 이(가) 없습니다 — 해당 기능이 동작하지 않을 수 있으니 설치하세요',
+    ],
+
+    // 필수 의존(dependencies) 미충족 사유 — 복구 실패·연쇄 설치 실패·CLI 가 같은 문장을 쓴다 (7.1.4)
+    'dependency_status' => [
+        'label' => ':name(:identifier)',
+        'not_installed' => '미설치',
+        'inactive' => '꺼짐',
+        'version_mismatch' => '버전 미달 :installed → :required',
+    ],
+
+    // 선택 연동(integrations) 안내 — 막지 않고 알리기만 한다 (7.1.4)
+    'integrations' => [
+        'notice_not_installed' => ':name 미설치',
+        'notice_inactive' => ':name 꺼짐',
+        'notice_version_mismatch' => ':name :required 버전 필요(지금 :installed)',
+        'notice_summary' => '함께 쓰면 연동되는 확장 중 연동이 꺼진 것이 있습니다 — :list. 설치·활성화·업데이트하면 연동됩니다.',
+        'cascade_failed' => ':name 을(를) 함께 설치·활성화하지 못해 건너뛰었습니다: :message',
+        'requires_no_permission' => '이 연동에 필요한 :identifier 을(를) 설치하거나 활성화할 권한이 없습니다',
+        'states' => [
+            'not_installed' => '미설치',
+            'inactive' => '비활성',
+            'version_mismatch' => '버전 미달',
+        ],
+        'console' => [
+            'notices_title' => '함께 쓰면 연동되는 확장 안내 — 없어도 이 확장은 동작하고, 설치·활성화·업데이트하면 연동됩니다',
+            'integrated_by_title' => '이 확장과 연동 중인 확장 — 그 확장에서 이 확장을 쓰던 메뉴·화면이 사라집니다',
+            'column_type' => '유형',
+            'column_extension' => '확장',
+            'column_state' => '상태',
+            'column_required' => '요구 버전',
+            'column_installed' => '설치 버전',
+        ],
+    ],
+
+    // 설치 요청 동반 항목의 검증 필드 이름 (7.1.4)
+    'install_fields' => [
+        'dependencies' => '함께 설치할 의존 확장',
+        'dependency_type' => '의존 확장 종류',
+        'dependency_identifier' => '의존 확장 식별자',
+        'integrations' => '함께 설치할 연동 확장',
+        'integration_type' => '연동 확장 종류',
+        'integration_identifier' => '연동 확장 식별자',
+        'language_packs' => '함께 설치할 언어팩',
+        'language_pack' => '언어팩 식별자',
     ],
 
     'alerts' => [
@@ -105,6 +169,20 @@ return [
     ],
 
     'commands' => [
+        // 설치 명령의 연쇄 설치 옵션 (--with-dependencies · --with-language-packs)
+        'cascade' => [
+            'dependency_unmet' => '의존 확장 미충족: :identifier (필요 :required, 현재 :state)',
+            'use_with_dependencies' => '--with-dependencies 로 함께 설치·활성화할 수 있습니다.',
+            'state_install_activate' => '미설치',
+            'state_activate' => '비활성',
+            'dependency_step' => '의존 확장 :identifier — :action 상태라 함께 처리합니다 (필요: :required_by)',
+            'dependencies_done' => '의존 확장 처리 완료 — 설치 :installed건, 활성화 :activated건',
+            'language_pack_failed' => '언어팩 :identifier 설치 실패: :reason',
+            'language_pack_skipped' => '언어팩 :identifier 은(는) 건너뜁니다: :reason',
+            'language_pack_awaiting' => '언어팩 :identifier 은(는) 대상 확장을 활성화할 때 함께 켜집니다.',
+            'language_packs_done' => '언어팩 :count건 설치',
+            'language_pack_not_candidate' => '함께 설치할 수 있는 언어팩이 아닙니다: :list',
+        ],
         'clear_cache_success' => '확장 버전 검증 캐시가 삭제되었습니다.',
 
         // module:update · plugin:update · template:update 공통 옵션 검증·ZIP 안내
@@ -135,6 +213,7 @@ return [
             ],
             'confirm_proceed' => '일괄 업데이트를 진행하시겠습니까?',
             'skipped' => '일괄 업데이트를 건너뜁니다.',
+            'dependency_cycle' => '의존 관계가 순환합니다 — 이 구간은 원래 순서로 업데이트합니다: :cycle',
             'strategy_question' => '전역 레이아웃 전략을 선택하세요',
             'strategy_options' => [
                 'overwrite' => '모든 레이아웃을 번들로 덮어쓰기',

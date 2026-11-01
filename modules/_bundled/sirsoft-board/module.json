@@ -5,7 +5,7 @@
         "ko": "게시판",
         "en": "Board"
     },
-    "version": "1.2.1",
+    "version": "1.2.2",
     "license": "MIT",
     "description": {
         "ko": "게시판 관리를 위한 모듈",
@@ -15,6 +15,9 @@
     "dependencies": {
         "modules": {},
         "plugins": {}
+    },
+    "integrations": {
+        "modules": ["sirsoft-ecommerce"]
     },
     "github_url": "https://github.com/gnuboard/g7-module-sirsoft-board",
     "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-board/blob/main/CHANGELOG.md",

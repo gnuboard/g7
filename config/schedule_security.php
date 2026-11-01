@@ -40,7 +40,8 @@ return [
 
         // 인터프리터 뒤 스크립트 자리에 올 수 없는 basename — 코어 Artisan 축 우회 방지.
         // `php artisan ...` 는 Artisan 타입으로 유도한다.
-        'denied_script_names' => ['artisan'],
+        // `g7-install` 은 터미널 설치·재설치 명령이다 — 예약 작업이 설치된 사이트를 다시 설치하는 경로를 막는다.
+        'denied_script_names' => ['artisan', 'g7-install'],
     ],
 
     'artisan' => [

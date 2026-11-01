@@ -1,0 +1,81 @@
+feature: 모듈 소유 화면의 봇 렌더 레이아웃 이름과 같은 계열 결함 (공개#154)
+
+description: |
+  라우트 병합과 DB(`template_layouts.name`)는 확장 레이아웃을 `{확장식별자}.{레이아웃}` 전체 이름으로 다루는데,
+  봇 렌더가 접두사를 뗀 이름으로 레이아웃을 찾아 모듈 소유 화면이 SPA 껍데기로 나갔다. 뗀 이름이 템플릿
+  레이아웃과 같으면 템플릿 화면이 그 주소로 렌더됐다. 같은 계열로 캐시·통계의 레이아웃 이름과 모듈 식별자,
+  모듈 설정 제목 틀 다국어, 편집기 봇 미리보기의 모듈 식별자, 레이아웃 저장·복원 뒤 봇 캐시 잔존, 접미사가
+  빈 사이트의 봇 홈 제목 빈 값을 함께 다룬다.
+
+  이름 규약: DB·편집기·봇 캐시·통계는 전체 이름(storedLayoutName), 공개 훅 컨텍스트의 기존 `layoutName` 은
+  뗀 이름 그대로 두고 `storedLayoutName` 을 더한다.
+
+axes:
+  # 확인 표면 하나로 나열한다 — 각 테스트는 서로 다른 계층(해석기·수집기·렌더러·미들웨어·메타·리스너·편집기 미리보기)의
+  # 한 경우를 보므로 계층 사이 곱(cross product)은 실재하지 않는다.
+  surface:
+    - route_template_layout
+    - route_module_layout
+    - route_plugin_layout
+    - route_unknown_extension
+    - declaration
+    - render_module_route
+    - stats_miss
+    - stats_hit
+    - title_template_module
+    - title_template_plugin
+    - title_suffix_empty
+    - title_suffix_present
+    - listener_contract
+    - layout_active_user
+    - layout_inactive_user
+    - layout_admin
+    - layout_update_parent
+    - layout_restore_version
+    - preview_from_layout_name
+    - preview_explicit_wins
+    - preview_template_layout
+    - preview_route_title
+    - bot_e2e
+
+effects:
+  - route_layout_described_with_stored_name
+  - route_resolve_adds_stored_layout_name
+  - declaration_carries_stored_layout_name
+  - renderer_module_layout_loaded_by_stored_name_not_template_namesake
+  - renderer_sets_stored_layout_name_and_module_attributes
+  - renderer_layout_load_failure_logs_error_with_stored_name
+  - renderer_hook_contexts_carry_stored_layout_name
+  - module_screen_stats_carry_module_identifier
+  - localized_extension_title_template_resolved
+  - empty_suffix_site_name_becomes_title
+  - suffix_present_site_name_title_stays_empty
+  - layout_change_listener_subscribes_cache_clear_hook_sync
+  - layout_change_invalidates_bot_cache_of_that_layout
+  - layout_change_skips_non_user_template
+  - layout_change_cache_failure_does_not_break_save
+  - bot_preview_fills_extension_from_layout_name
+  - bot_preview_uses_route_meta_title_like_production
+  - declaration_collects_only_seo_enabled_public_layouts
+  - declaration_empty_without_active_template_or_routes
+  - declaration_skips_layout_that_fails_to_load
+  - declaration_grouped_by_owning_extension
+  - module_screen_served_to_bot_with_cache_hit
+
+test_files:
+  - tests/Unit/Seo/TemplateRouteResolverTest.php
+  - tests/Unit/Seo/SeoDeclarationCollectorTest.php
+  - tests/Unit/Seo/SeoRendererTest.php
+  - tests/Unit/Seo/SeoMetaResolverLocalizedTemplateTest.php
+  - tests/Feature/Seo/SeoMiddlewareTest.php
+  - tests/Unit/Seo/Listeners/SeoLayoutCacheListenerTest.php
+  - tests/Feature/Seo/SeoLayoutUpdateInvalidatesCacheTest.php
+  - tests/Feature/Api/Admin/SeoBotPreviewControllerTest.php
+  - tests/Unit/Seo/SeoBotPreviewRouteTitleTest.php
+  - tests/Playwright/specs/seo-bot-rendering.spec.ts
+
+notes: |
+  편집기 봇 미리보기의 요청 본문(`layout_name`)은 레이아웃 편집기 Vitest(SeoBotPreviewPanel·SeoForm)가
+  확인하고 그 소유 매니페스트는 `page-settings.yaml` 이다. 모듈 화면 SEO 예시 선언은 hello 모듈 시나리오
+  `user-memo-list-markup.yaml` 이 소유한다. 실제 봇 응답(제목·본문·캐시 적중)은 Playwright
+  `seo-bot-rendering.spec.ts` 와 브라우저 정밀 점검 매트릭스로 확인한다.

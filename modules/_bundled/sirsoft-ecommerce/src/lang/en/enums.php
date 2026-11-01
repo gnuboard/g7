@@ -38,6 +38,7 @@ return [
     'tax_status' => [
         'taxable' => 'Taxable',
         'tax_free' => 'Tax Free',
+        'zero_rated' => 'Zero-rated',
     ],
     'image_collection' => [
         'main' => 'Main Image',

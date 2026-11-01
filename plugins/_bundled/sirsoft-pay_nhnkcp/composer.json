@@ -1,7 +1,7 @@
 {
     "name": "plugins/sirsoft-pay_nhnkcp",
     "description": "NHN KCP PG Plugin for G7 platform",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "type": "library",
     "authors": [
         {
@@ -11,6 +11,9 @@
     ],
     "require": {
         "php": "^8.2"
+    },
+    "suggest": {
+        "ext-soap": "모바일 결제(SmartPhone Pay) 승인키 발급에 필요"
     },
     "autoload": {
         "psr-4": {

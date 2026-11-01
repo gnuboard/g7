@@ -916,11 +916,14 @@ class OrderCalculationService
     }
 
     /**
-     * 단계 2-b: 과세/면세 금액을 분류합니다.
+     * 단계 2-b: 과세/면세/영세 금액을 분류합니다.
+     *
+     * 실제 과세 종류 = 옵션 지정값 ?? 상품 기본값(#612). 스냅샷 모드는 주문 시점 옵션·상품 스냅샷 값을 쓴다.
+     * 영세는 과세표준(taxable_amount)에 들고 그중 영세 몫을 zero_rated_amount 로 따로 싣는다 — 세율 0%.
      *
      * @param  array  $preparedItems  준비된 아이템 배열
      * @param  array  $discountedItems  할인 후 아이템 배열
-     * @return array 옵션별 과세/면세 분류 [product_option_id => [taxable, tax_free]]
+     * @return array 옵션별 분류 [product_option_id => {taxable_amount, zero_rated_amount, tax_free_amount, tax_rate, vat_amount, tax_status}]
      */
     protected function classifyTaxStatus(array $preparedItems, array $discountedItems): array
     {
@@ -933,24 +936,63 @@ class OrderCalculationService
                 ?? $discountedItems[$optionId]['subtotal']
                 ?? 0;
 
-            $isTaxable = $product->tax_status === ProductTaxStatus::TAXABLE;
+            $taxStatus = ProductTaxStatus::resolveEffective(
+                $this->optionTaxStatus($item['product_option'] ?? null),
+                $product->tax_status instanceof ProductTaxStatus ? $product->tax_status : null,
+            );
 
             // 세율은 상품별로 다를 수 있다. 스냅샷 모드에서는 주문 시점 세율이 그대로 쓰여
             // 관리자가 이후 상품 세율을 바꿔도 기존 주문의 부가세가 소급 변경되지 않는다.
-            $taxRate = $isTaxable
-                ? (float) ($product->tax_rate ?? VatCalculator::DEFAULT_RATE)
-                : null;
-            $taxableAmount = $isTaxable ? $amount : 0;
+            // 영세는 상품 세율과 무관하게 0% 다(상품의 tax_rate 저장값은 건드리지 않는다).
+            $taxRate = match ($taxStatus) {
+                ProductTaxStatus::TAXABLE => $this->taxableRateOf($product),
+                ProductTaxStatus::ZERO_RATED => 0.0,
+                ProductTaxStatus::TAX_FREE => null,
+            };
+            $taxableAmount = $taxStatus->isInTaxBase() ? $amount : 0;
 
             $classification[$optionId] = [
                 'taxable_amount' => $taxableAmount,
-                'tax_free_amount' => $isTaxable ? 0 : $amount,
+                'zero_rated_amount' => $taxStatus === ProductTaxStatus::ZERO_RATED ? $amount : 0,
+                'tax_free_amount' => $taxStatus->isInTaxBase() ? 0 : $amount,
                 'tax_rate' => $taxRate,
-                'vat_amount' => VatCalculator::fromTaxableAmount((int) $taxableAmount, $taxRate),
+                'vat_amount' => $taxStatus === ProductTaxStatus::TAXABLE
+                    ? VatCalculator::fromTaxableAmount((int) $taxableAmount, $taxRate)
+                    : 0,
+                'tax_status' => $taxStatus->value,
             ];
         }
 
         return $classification;
+    }
+
+    /**
+     * 과세로 분류된 옵션에 적용할 세율을 정합니다. (규칙은 VatCalculator::taxableRate)
+     *
+     * @param  mixed  $product  Product 또는 SnapshotProduct
+     * @return float 세율(%)
+     */
+    private function taxableRateOf(mixed $product): float
+    {
+        $productStatus = $product->tax_status instanceof ProductTaxStatus ? $product->tax_status : ProductTaxStatus::TAXABLE;
+
+        return VatCalculator::taxableRate(
+            $productStatus === ProductTaxStatus::TAXABLE,
+            isset($product->tax_rate) ? (float) $product->tax_rate : null,
+        );
+    }
+
+    /**
+     * 옵션(모델 또는 스냅샷)에 지정된 과세 종류를 읽습니다.
+     *
+     * @param  mixed  $option  ProductOption 또는 SnapshotProductOption
+     * @return ProductTaxStatus|null 지정값 (null = 상품 따름)
+     */
+    private function optionTaxStatus(mixed $option): ?ProductTaxStatus
+    {
+        $value = is_object($option) ? ($option->tax_status ?? null) : null;
+
+        return $value instanceof ProductTaxStatus ? $value : null;
     }
 
     /**
@@ -968,70 +1010,83 @@ class OrderCalculationService
     }
 
     /**
-     * 단계 2-c: 배송비를 과세/면세로 분류합니다.
+     * 단계 2-c: 배송비를 과세/영세/면세로 분류합니다.
      *
      * 부가가치세법 제14조는 주된 재화에 부수되는 용역이 주된 재화의 과세/면세를 따른다고 정할 뿐,
      * 과세·면세 상품이 혼합된 장바구니의 배송비 안분에 관한 명문 규정은 없다.
-     * 상점의 세무 판단에 따라 3가지 정책 중 선택한다.
+     * 상점의 세무 판단에 따라 3가지 정책 중 선택한다. 영세 재화에 부수되는 운송은 영세 성격이라,
+     * 안분·주된 재화 정책은 과세(영세 제외)·영세·면세 세 갈래로 나눈다(#612).
      *
      * 상품 분류(classifyTaxStatus)와 달리 이 메서드는 배송비 할인이 확정된 뒤에 호출되어야 한다.
      *
      * @param  int  $netShippingFee  할인 후 배송비
-     * @param  int  $productTaxable  상품 과세금액 합계
+     * @param  int  $productTaxable  상품 과세금액 합계 (영세 제외)
      * @param  int  $productTaxFree  상품 면세금액 합계
-     * @return array{taxable_amount: int, tax_free_amount: int} 배송비 과세/면세 분류
+     * @param  int  $productZeroRated  상품 영세금액 합계
+     * @return array{taxable_amount: int, zero_rated_amount: int, tax_free_amount: int} 배송비 분류 (taxable 은 영세 제외)
      */
     protected function classifyShippingFeeTaxStatus(
         int $netShippingFee,
         int $productTaxable,
         int $productTaxFree,
+        int $productZeroRated = 0,
     ): array {
+        $buckets = fn (int $taxable, int $zero, int $free): array => [
+            'taxable_amount' => $taxable,
+            'zero_rated_amount' => $zero,
+            'tax_free_amount' => $free,
+        ];
+
         if ($netShippingFee <= 0) {
-            return ['taxable_amount' => 0, 'tax_free_amount' => 0];
+            return $buckets(0, 0, 0);
         }
 
         $policy = $this->resolveShippingFeeTaxPolicy();
-        $productTotal = $productTaxable + $productTaxFree;
+        $productTotal = $productTaxable + $productZeroRated + $productTaxFree;
 
         // 상품 금액이 전부 0 이면 안분 기준이 없다 — 전액 과세로 처리한다.
         if ($productTotal <= 0) {
-            return ['taxable_amount' => $netShippingFee, 'tax_free_amount' => 0];
+            return $buckets($netShippingFee, 0, 0);
         }
 
         return match ($policy) {
-            ShippingFeeTaxPolicy::TAXABLE => [
-                'taxable_amount' => $netShippingFee,
-                'tax_free_amount' => 0,
-            ],
-            ShippingFeeTaxPolicy::FOLLOW_MAIN_ITEM => $productTaxable >= $productTaxFree
-                ? ['taxable_amount' => $netShippingFee, 'tax_free_amount' => 0]
-                : ['taxable_amount' => 0, 'tax_free_amount' => $netShippingFee],
+            ShippingFeeTaxPolicy::TAXABLE => $buckets($netShippingFee, 0, 0),
+            // 가장 큰 갈래를 따른다 — 동률이면 과세 > 영세 > 면세
+            ShippingFeeTaxPolicy::FOLLOW_MAIN_ITEM => match (true) {
+                $productTaxable >= $productZeroRated && $productTaxable >= $productTaxFree => $buckets($netShippingFee, 0, 0),
+                $productZeroRated >= $productTaxFree => $buckets(0, $netShippingFee, 0),
+                default => $buckets(0, 0, $netShippingFee),
+            },
             ShippingFeeTaxPolicy::PROPORTIONAL => $this->apportionShippingFeeTax(
                 $netShippingFee,
                 $productTaxable,
+                $productZeroRated,
                 $productTotal,
             ),
         };
     }
 
     /**
-     * 배송비를 과세상품 비율만큼 안분합니다.
+     * 배송비를 상품 갈래(과세·영세·면세) 비율로 안분합니다.
      *
-     * 면세분을 반올림해 산출한 뒤 잔차를 과세 쪽에 귀속시켜 합계를 보존한다.
+     * 과세분을 먼저 반올림하고(종전 두 갈래 안분과 같은 순서 — 기존 주문을 재계산해도 생성 시점과 같은 값이 나온다),
+     * 영세분을 반올림한 뒤 잔차를 면세 쪽에 귀속시켜 합계를 보존한다. 영세가 없으면 종전 결과와 같다.
      *
      * @param  int  $netShippingFee  할인 후 배송비
-     * @param  int  $productTaxable  상품 과세금액 합계
-     * @param  int  $productTotal  상품 총액 (과세 + 면세)
-     * @return array{taxable_amount: int, tax_free_amount: int} 안분 결과
+     * @param  int  $productTaxable  상품 과세금액 합계 (영세 제외)
+     * @param  int  $productZeroRated  상품 영세금액 합계
+     * @param  int  $productTotal  상품 총액 (과세 + 영세 + 면세)
+     * @return array{taxable_amount: int, zero_rated_amount: int, tax_free_amount: int} 안분 결과 (taxable 은 영세 제외)
      */
-    protected function apportionShippingFeeTax(int $netShippingFee, int $productTaxable, int $productTotal): array
+    protected function apportionShippingFeeTax(int $netShippingFee, int $productTaxable, int $productZeroRated, int $productTotal): array
     {
-        $taxableShipping = (int) round($netShippingFee * $productTaxable / $productTotal);
-        $taxableShipping = max(0, min($taxableShipping, $netShippingFee));
+        $taxableShipping = max(0, min((int) round($netShippingFee * $productTaxable / $productTotal), $netShippingFee));
+        $zeroRatedShipping = max(0, min((int) round($netShippingFee * $productZeroRated / $productTotal), $netShippingFee - $taxableShipping));
 
         return [
             'taxable_amount' => $taxableShipping,
-            'tax_free_amount' => $netShippingFee - $taxableShipping,
+            'zero_rated_amount' => $zeroRatedShipping,
+            'tax_free_amount' => $netShippingFee - $taxableShipping - $zeroRatedShipping,
         ];
     }
 
@@ -1564,6 +1619,8 @@ class OrderCalculationService
                 pointsEarning: $pointsPerItem[$optionId] ?? 0,
                 taxableAmount: $taxClassification[$optionId]['taxable_amount'] ?? 0,
                 taxFreeAmount: $taxClassification[$optionId]['tax_free_amount'] ?? 0,
+                zeroRatedAmount: $taxClassification[$optionId]['zero_rated_amount'] ?? 0,
+                taxStatus: $taxClassification[$optionId]['tax_status'] ?? null,
                 finalAmount: $this->calculateItemFinalAmount($optionId, $itemsAfterOrderDiscount, $pointsUsageResult),
                 appliedShippingPolicy: $shippingResult['shipping_by_option'][$optionId] ?? null,
                 appliedPromotions: $promotionsByOption[$optionId] ?? null,
@@ -1575,11 +1632,13 @@ class OrderCalculationService
             $items[] = $itemCalc;
         }
 
-        // Summary 계산
+        // Summary 계산 — 과세표준(taxable)은 영세를 포함한다
         $totalTaxable = 0;
+        $totalZeroRated = 0;
         $totalTaxFree = 0;
         foreach ($taxClassification as $tax) {
             $totalTaxable += $tax['taxable_amount'];
+            $totalZeroRated += $tax['zero_rated_amount'] ?? 0;
             $totalTaxFree += $tax['tax_free_amount'];
         }
 
@@ -1589,16 +1648,19 @@ class OrderCalculationService
 
         // 배송비 과세 분류 — 상품 분류(단계 2-b)와 달리 할인 후 최종 배송비가 확정된 이 시점에서만
         // 계산할 수 있다. 옵션별 taxable_amount 는 상품분만 담으므로 배송비는 Summary 에만 합산한다.
+        // 안분 기준의 과세 갈래는 영세를 뺀 값이다(영세는 따로 한 갈래).
         $shippingTax = $this->classifyShippingFeeTaxStatus(
             $this->resolveNetShippingFee($paymentCalculation),
-            $totalTaxable,
+            $totalTaxable - $totalZeroRated,
             $totalTaxFree,
+            $totalZeroRated,
         );
-        $totalTaxable += $shippingTax['taxable_amount'];
+        $totalTaxable += $shippingTax['taxable_amount'] + $shippingTax['zero_rated_amount'];
+        $totalZeroRated += $shippingTax['zero_rated_amount'];
         $totalTaxFree += $shippingTax['tax_free_amount'];
 
         // 배송비 과세분에 내재된 부가세도 합산 — 배송비는 옵션별 세율이 없으므로 기본 세율을 적용한다
-        // (과세표준(taxableAmount)에 배송비가 포함되므로 부가세도 같은 기준을 따라야 정합)
+        // (과세표준(taxableAmount)에 배송비가 포함되므로 부가세도 같은 기준을 따라야 정합). 영세분은 0%.
         $totalVat += VatCalculator::fromTaxableAmount($shippingTax['taxable_amount']);
 
         $summary = new Summary(
@@ -1614,6 +1676,7 @@ class OrderCalculationService
             taxableAmount: $totalTaxable,
             taxFreeAmount: $totalTaxFree,
             vatAmount: $totalVat,
+            zeroRatedAmount: $totalZeroRated,
             pointsEarning: $totalPointsEarning,
             pointsUsed: $pointsUsageResult['actual_points'],
             paymentAmount: $paymentCalculation['payment_amount'],
@@ -1714,6 +1777,7 @@ class OrderCalculationService
             'points_used_share' => $item->pointsUsedShare,
             'taxable_amount' => $item->taxableAmount,
             'tax_free_amount' => $item->taxFreeAmount,
+            'zero_rated_amount' => $item->zeroRatedAmount,
             'final_amount' => $item->finalAmount,
         ];
 
@@ -1742,6 +1806,7 @@ class OrderCalculationService
             'shipping_discount' => $summary->shippingDiscount,
             'taxable_amount' => $summary->taxableAmount,
             'tax_free_amount' => $summary->taxFreeAmount,
+            'zero_rated_amount' => $summary->zeroRatedAmount,
             'payment_amount' => $summary->paymentAmount,
             'final_amount' => $summary->finalAmount,
         ];

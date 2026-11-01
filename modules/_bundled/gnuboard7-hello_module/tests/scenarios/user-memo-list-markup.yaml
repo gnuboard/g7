@@ -5,15 +5,17 @@ description: |
   사용자 템플릿에서 정의가 없어 쪽 제목 16px, 메모 제목 굵기 400 으로 나왔고, 반복(data-each)이 space-y-3 묶음 쪽에
   붙어 카드 사이 간격이 0px 이었다(7.1.0 전수 실측). 사용자 화면은 템플릿과 무관한 유틸리티 클래스를 쓰고
   반복은 카드에 둔다. Hello 사용자 템플릿에서는 메모 본문 P 가 없는 컴포넌트라 빠졌다 — 가장 작은 사용자 템플릿에도 있는
-  기본 컴포넌트만 쓴다. 축 part 는 확인 부분(제목 서식, 반복 위치, 컴포넌트)이다.
+  기본 컴포넌트만 쓴다. 모듈 화면 SEO 예시(meta.seo — 템플릿 기본값 「SEO 끔」을 덮고 메모 데이터 소스로 본문을 채움)도
+  이 화면이 맡는다(공개#154). 축 part 는 확인 부분(제목 서식, 반복 위치, 컴포넌트, SEO 선언)이다.
 
 axes:
-  part: [headings, iteration, components]
+  part: [headings, iteration, components, seo]
 
 effects:
   - user_layout_uses_template_neutral_heading_classes
   - memo_cards_repeat_inside_single_spaced_list
   - user_layout_uses_components_every_user_template_provides
+  - user_memo_list_declares_module_screen_seo_example
 
 test_files:
   - modules/_bundled/gnuboard7-hello_module/tests/Unit/Layouts/UserMemoListMarkupTest.php

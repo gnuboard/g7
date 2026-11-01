@@ -240,8 +240,11 @@ return [
             'missing_status' => [
                 'not_installed' => '未インストール',
                 'inactive' => '無効',
+                'version_mismatch' => 'バージョン不足 :installed → :required',
             ],
             'force_hint' => '強制的に有効化するには --force オプションを使用してください。',
+            'force_503_hint_user' => '強制的に有効にすると、条件を満たすまでユーザー画面が「サービス一時停止(503)」の案内に切り替わります。',
+            'force_503_hint_admin' => '強制的に有効にすると管理画面が503の案内に切り替わり、管理画面から元に戻せません。復旧: php artisan template:activate :identifier',
         ],
         'deactivate' => [
             'success' => 'テンプレート「:template」の無効化完了',

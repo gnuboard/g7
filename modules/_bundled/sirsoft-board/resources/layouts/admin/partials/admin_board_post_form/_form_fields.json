@@ -310,32 +310,12 @@
                             "name": "Select",
                             "props": {
                                 "name": "category",
+                                "aria-label": "$t:sirsoft-board.admin.posts.form.category",
                                 "value": "{{_local.form?.category ?? ''}}",
+                                "options": "{{[{ value: '', label: $t('sirsoft-board.admin.posts.form.select_category') }].concat((form_meta?.data?.board?.categories ?? []).map(category => ({ value: category, label: category })))}}",
                                 "disabled": "{{_computed.isReadOnly || !!_local.form?.parent_id}}",
                                 "className": "text-primary block w-full board-category-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": ""
-                                    },
-                                    "text": "$t:sirsoft-board.admin.posts.form.select_category"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "iteration": {
-                                        "source": "form_meta?.data?.board?.categories ?? []",
-                                        "item_var": "category"
-                                    },
-                                    "props": {
-                                        "value": "{{category}}"
-                                    },
-                                    "text": "{{category}}"
-                                }
-                            ]
+                            }
                         }
                     ]
                 },

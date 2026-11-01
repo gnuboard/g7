@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
  * `ZipArchive::extractTo()` 는 항목 이름을 그대로 써서 두 가지 문제가 있다.
  * - Windows PowerShell 5.1 이 만든 zip 의 `dir\file.php` 항목이 리눅스에서는 역슬래시가 든
  *   파일 하나가 된다(폴더가 생기지 않음).
- * - `../../public/x.php` 같은 항목이 압축을 푸는 폴더 밖에 써질 수 있다(Zip Slip).
+ * - "../../public/x.php" 같은 항목이 압축을 푸는 폴더 밖에 써질 수 있다(Zip Slip).
  *
  * 이 도우미는 항목 이름의 `\` 를 `/` 로 바꿔 정규화한 뒤, 압축 밖을 가리키는 항목이
  * 하나라도 있으면 아무것도 풀지 않고 전체를 거부한다. 통과한 항목은 정규화한 경로에
@@ -156,10 +156,16 @@ class SafeArchiveExtractor
      * @return array<int, string> 풀어 쓴 파일의 정규화된 상대 경로 목록
      *
      * @throws UnsafeArchiveException 허용되지 않는 항목이 하나라도 있을 때 (아무것도 풀지 않음)
-     * @throws \RuntimeException 아카이브를 열 수 없거나 항목을 쓰지 못했을 때
+     * @throws \RuntimeException 아카이브를 열 수 없거나 항목을 쓰지 못했을 때, 필요한 PHP 확장(zlib·phar)이 없을 때
      */
     public static function extractTarGz(string $path, string $destination): array
     {
+        // zlib(gzopen)·phar(PharData)는 코어 기준 「선택」 확장이다 — 없으면 「Call to undefined function…」이
+        // 원인 모를 실패 메시지로 화면에 나갔다(#151). 무엇이 없는지 알리는 메시지로 먼저 멈춘다.
+        if (! function_exists('gzopen') || ! class_exists(\PharData::class)) {
+            throw new \RuntimeException(__('common.errors.archive_php_extension_missing', ['extensions' => 'zlib, phar']));
+        }
+
         if (! is_file($path)) {
             throw new \RuntimeException(__('common.errors.zip_file_not_found'));
         }
@@ -270,6 +276,7 @@ class SafeArchiveExtractor
      */
     private static function findTarLinkEntry(string $path): ?string
     {
+        // php-ext-guard: extractTarGz() 진입이 gzopen·PharData 를 먼저 확인한다
         $fp = @gzopen($path, 'rb');
         if ($fp === false) {
             throw new \RuntimeException(__('common.errors.zip_open_failed'));

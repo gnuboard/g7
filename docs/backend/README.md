@@ -40,6 +40,7 @@
 | [benchmark.md](benchmark.md) | 성능 계측 시스템 (Benchmark) | `g7:bench` 가 4축(list/screen/write/batch)을 잰다 — ... |
 | [broadcasting.md](broadcasting.md) | Broadcasting (실시간 이벤트) | Laravel Reverb 사용 (WebSocket) |
 | [console-confirm.md](console-confirm.md) | 콘솔 yes/no 프롬프트 (ConsoleConfirm) | 콘솔 커맨드의 yes/no 프롬프트는 $this->unifiedConfirm() 사용... |
+| [content-security-policy.md](content-security-policy.md) | 콘텐츠 보안 정책 (Content Security Policy) | 환경설정 > 보안 > 「콘텐츠 보안 정책(CSP)」 — 끔(기본) / 점검만 / 강제 |
 | [controllers.md](controllers.md) | 컨트롤러 계층 구조 | AdminBaseController / AuthBaseController / Publ... |
 | [core-config.md](core-config.md) | 코어 설정 (config/core.php) | config/core.php = 코어 권한/역할/메뉴/메일템플릿의 SSoT (Sing... |
 | [core-update-system.md](core-update-system.md) | 코어 업데이트 시스템 (Core Update System) | 코어 업그레이드 스텝: upgrades/ 디렉토리 (프로젝트 루트), 네임스페이스 A... |
@@ -51,6 +52,7 @@
 | [identity-messages.md](identity-messages.md) | 본인인증 알림 (Identity Notifications) | 본인인증 메일 문구 = 알림 정의(notification_definitions) 중 ... |
 | [identity-policies.md](identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) | - |
 | [identity-providers.md](identity-providers.md) | IDV Provider 작성 가이드 (Identity Verification Providers) | VerificationProviderInterface 구현 + IdentityProv... |
+| [installer-cli.md](installer-cli.md) | 터미널 설치·운영 명령 (installer CLI) | php g7-install(루트 스크립트) = php artisan core:inst... |
 | [language-pack-service.md](language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) | LanguagePackService 가 install/activate/deactiva... |
 | [middleware.md](middleware.md) | 미들웨어 등록 규칙 | 인증 필요 미들웨어 → 전역 등록 금지! |
 | [notification-system.md](notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스... |

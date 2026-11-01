@@ -153,6 +153,8 @@ private function logActivity(string $action, array $context): void
 
 리스너 코드는 변경 불필요 — `Log::channel('activity')->info()` 호출만으로 동작합니다.
 
+터미널 운영 명령(`user:reset-password`·`settings:set`·`--with-dependencies` 연쇄 설치, 7.1.4)은 웹과 같은 서비스·같은 훅을 타므로 같은 활동 로그를 남기되, 진입점이 `cli` 이고 인증 사용자가 없어 행위자 없는 「시스템」 기록이 됩니다. 비밀번호 재설정은 출처 `console` 로 구분해 전용 설명 키(`auth_reset_password_by_console`)를 씁니다 — 「회원 본인 변경」으로 남지 않습니다.
+
 > 자세한 큐 컨텍스트 동작은 [extension/hooks.md "사용자 컨텍스트 자동 복원"](../extension/hooks.md) 참조
 
 ### Context 배열 구조

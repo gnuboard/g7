@@ -6,7 +6,7 @@
 Enterprise-grade foundation. Minimal tokens.
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.1.3-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.1.4-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
@@ -414,7 +414,7 @@ Personal data whose retention period has ended is destroyed or anonymized per do
 
 ### System requirements
 
-- PHP 8.2+ with the required extensions (16 in total), including `ctype`, `curl`, `dom`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, and `zip`. Additional extensions (`gd`/`imagick`, `intl`, `redis`, `bcmath`, and others) are optional and only needed for the features that use them — see [docs/requirements.md](docs/requirements.md)
+- PHP 8.2+ with the required extensions (16 in total), including `ctype`, `curl`, `dom`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo_mysql`, `tokenizer`, `xml`, and `zip`. Additional extensions (`gd`/`imagick`, `intl`, `redis`, `bcmath`, and others) are optional and only needed for the features that use them — see [docs/requirements.md](docs/requirements.md). Modules and plugins may declare extra PHP extensions in their `composer.json` (`require`/`suggest` `ext-*`), which are checked on install and shown in the admin screens
 - MySQL 8.0+ or MariaDB 10.3+ (utf8mb4)
 - Composer 2.x
 - Node.js 20+ (only needed when building frontend assets)
@@ -442,6 +442,13 @@ cp .env.example .env
 ```
 
 The setup wizard creates the application key, configures the database connection, runs the migrations, and lets you choose which modules, plugins, templates, and language packs to install. Once setup completes, the installer endpoints are blocked automatically (HTTP 410).
+
+You can run the same installation from a server terminal without a browser — interactively, or non-interactively with options and environment variables only:
+
+```bash
+php g7-install                       # interactive
+php g7-install --no-interaction ...  # automation — see "방법 5" in INSTALL.md
+```
 
 > Detailed installation guide (Korean): [INSTALL.md](INSTALL.md)
 
@@ -591,14 +598,15 @@ Thanks to everyone who reported an issue or suggested a feature that shipped —
 
 <!-- community-contributors:start -->
 <p>
-  <a href="https://github.com/jiwonpapa" title="jiwonpapa"><img src="https://github.com/jiwonpapa.png" width="48" alt="jiwonpapa"></a>
   <a href="https://github.com/glitter-gim" title="glitter-gim"><img src="https://github.com/glitter-gim.png" width="48" alt="glitter-gim"></a>
+  <a href="https://github.com/jiwonpapa" title="jiwonpapa"><img src="https://github.com/jiwonpapa.png" width="48" alt="jiwonpapa"></a>
   <a href="https://github.com/Tuwasduliebst" title="Tuwasduliebst"><img src="https://github.com/Tuwasduliebst.png" width="48" alt="Tuwasduliebst"></a>
-  <a href="https://github.com/digitalnomadxxx" title="digitalnomadxxx"><img src="https://github.com/digitalnomadxxx.png" width="48" alt="digitalnomadxxx"></a>
   <a href="https://github.com/lyg-kaban" title="lyg-kaban"><img src="https://github.com/lyg-kaban.png" width="48" alt="lyg-kaban"></a>
+  <a href="https://github.com/digitalnomadxxx" title="digitalnomadxxx"><img src="https://github.com/digitalnomadxxx.png" width="48" alt="digitalnomadxxx"></a>
   <a href="https://github.com/jordy-bitree" title="jordy-bitree"><img src="https://github.com/jordy-bitree.png" width="48" alt="jordy-bitree"></a>
   <a href="https://github.com/laelbe" title="laelbe"><img src="https://github.com/laelbe.png" width="48" alt="laelbe"></a>
   <a href="https://github.com/bigmsg" title="bigmsg"><img src="https://github.com/bigmsg.png" width="48" alt="bigmsg"></a>
+  <a href="https://github.com/eondcom" title="eondcom"><img src="https://github.com/eondcom.png" width="48" alt="eondcom"></a>
   <a href="https://github.com/abc101" title="abc101"><img src="https://github.com/abc101.png" width="48" alt="abc101"></a>
   <a href="https://github.com/hwaryeon1234" title="hwaryeon1234"><img src="https://github.com/hwaryeon1234.png" width="48" alt="hwaryeon1234"></a>
   <a href="https://github.com/koojunho" title="koojunho"><img src="https://github.com/koojunho.png" width="48" alt="koojunho"></a>

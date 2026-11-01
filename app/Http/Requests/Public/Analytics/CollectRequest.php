@@ -37,6 +37,21 @@ class CollectRequest extends FormRequest
     }
 
     /**
+     * 검증 전에 화면 크기를 모른다는 해상도 표기를 비웁니다.
+     *
+     * 화면 크기를 알려 주지 않는 환경은 `0x0` 처럼 한 변이 0 인 값을 보냅니다(이미 배포된 이전
+     * 트래커 포함). 해상도는 선택 항목이므로 그 값만 비우고 페이지뷰는 그대로 받습니다.
+     *
+     * @return void 없음
+     */
+    protected function prepareForValidation(): void
+    {
+        if (TrackingRequestFactory::isUnknownResolution($this->input('res'))) {
+            $this->merge(['res' => null]);
+        }
+    }
+
+    /**
      * 검증 규칙을 반환합니다.
      *
      * @return array<string, mixed> 검증 규칙

@@ -571,36 +571,16 @@
                                                     "text": "$t:admin.menus.form.parent"
                                                 },
                                                 {
+                                                    "comment": "상위 메뉴 — 맨 위(최상위)와 메뉴 목록. 수정 중에는 자기 자신을 후보에서 뺀다(자기 아래로 옮길 수 없다). 값은 종전 브라우저 기본 선택상자처럼 문자열 번호다",
                                                     "id": "form_parent_select",
                                                     "type": "basic",
                                                     "name": "Select",
                                                     "props": {
                                                         "name": "parent_id",
-                                                        "className": "select"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "id": "form_parent_option_top",
-                                                            "type": "basic",
-                                                            "name": "Option",
-                                                            "props": {
-                                                                "value": ""
-                                                            },
-                                                            "text": "$t:admin.menus.form.parent_top_level"
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Option",
-                                                            "iteration": {
-                                                                "source": "(menus?.data?.data ?? []).filter(m => _global.panelMode === 'create' || m.id !== _global.selectedMenuId)",
-                                                                "item_var": "parentMenu"
-                                                            },
-                                                            "props": {
-                                                                "value": "{{parentMenu.id}}"
-                                                            },
-                                                            "text": "{{$localized(parentMenu.name)}}"
-                                                        }
-                                                    ]
+                                                        "aria-label": "$t:admin.menus.form.parent",
+                                                        "className": "w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none",
+                                                        "options": "{{[{ value: '', label: $t('admin.menus.form.parent_top_level') }].concat((menus?.data?.data ?? []).filter(m => _global.panelMode === 'create' || m.id !== _global.selectedMenuId).map(parentMenu => ({ value: String(parentMenu.id), label: $localized(parentMenu.name) })))}}"
+                                                    }
                                                 },
                                                 {
                                                     "type": "basic",
@@ -644,62 +624,27 @@
                                             "text": "$t:admin.menus.form.custom_menu"
                                         },
                                         {
+                                            "comment": "사용자 정의 메뉴 — 확장(모듈)이 내건 화면 목록. 항목 아래 작은 글자로 그 화면을 낸 모듈 이름을 보인다",
                                             "id": "form_custom_menu_select",
                                             "type": "basic",
                                             "name": "Select",
                                             "actions": [
                                                 {
-                                                    "comment": "확장이 내건 화면을 고르면 **주소 칸도 함께 채워 준다** — 고른 항목에 붙어 온 주소를 쓰고, 없으면 적어 둔 것을 그대로 둔다. 새 메뉴를 만들 때만 나오는 칸이다.",
+                                                    "comment": "확장이 내건 화면을 고르면 **주소 칸도 함께 채워 준다** — 고른 키로 응답에서 그 화면의 주소를 찾아 쓰고, 없으면 적어 둔 것을 그대로 둔다. 새 메뉴를 만들 때만 나오는 칸이다.",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
-                                                        "formData": "{{Object.assign({}, _global.formData, {custom_menu_key: $event.target.value || null, url: $event.target.selectedOptions[0]?.dataset?.url || _global.formData.url})}}"
+                                                        "formData": "{{Object.assign({}, _global.formData, {custom_menu_key: $event.target.value || null, url: Object.values(modules?.data?.custom_menus ?? {}).flatMap(val => val.menus ?? []).find(customMenu => customMenu.key === $event.target.value)?.url || _global.formData.url})}}"
                                                     }
                                                 }
                                             ],
                                             "props": {
                                                 "name": "custom_menu_key",
-                                                "className": "select"
-                                            },
-                                            "children": [
-                                                {
-                                                    "id": "form_custom_menu_option_none",
-                                                    "type": "basic",
-                                                    "name": "Option",
-                                                    "props": {
-                                                        "value": ""
-                                                    },
-                                                    "text": "$t:admin.menus.form.custom_menu_none"
-                                                },
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Optgroup",
-                                                    "iteration": {
-                                                        "source": "Object.entries(modules?.data?.custom_menus ?? {}).map(([id, val]) => ({ id, name: val.module_name, custom_menus: val.menus ?? [] })).filter(m => m.custom_menus.length > 0)",
-                                                        "item_var": "moduleItem"
-                                                    },
-                                                    "props": {
-                                                        "label": "{{moduleItem.name}}"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Option",
-                                                            "iteration": {
-                                                                "source": "{{moduleItem.custom_menus ?? []}}",
-                                                                "item_var": "customMenu"
-                                                            },
-                                                            "props": {
-                                                                "value": "{{customMenu.key}}",
-                                                                "data-module-id": "{{moduleItem.id}}",
-                                                                "data-url": "{{customMenu.url}}"
-                                                            },
-                                                            "text": "{{customMenu.name}}"
-                                                        }
-                                                    ]
-                                                }
-                                            ]
+                                                "aria-label": "$t:admin.menus.form.custom_menu",
+                                                "className": "w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none",
+                                                "options": "{{[{ value: '', label: $t('admin.menus.form.custom_menu_none') }].concat(Object.values(modules?.data?.custom_menus ?? {}).flatMap(val => (val.menus ?? []).map(customMenu => ({ value: customMenu.key, label: customMenu.name, description: val.module_name }))))}}"
+                                            }
                                         }
                                     ]
                                 }

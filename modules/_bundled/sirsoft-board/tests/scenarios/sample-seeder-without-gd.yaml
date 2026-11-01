@@ -1,0 +1,15 @@
+feature: gd 확장 없는 서버의 게시판 샘플 시더 (#151 W8)
+
+description: |
+  gd 는 코어 기준 「선택」 확장이다. PostSampleSeeder 가 imagecreatetruecolor() 를 가드 없이 불러 gd 없는 서버에서
+  --sample 시더가 중단됐다. 이제 gdAvailable() 가드로 경고 한 줄을 남기고 샘플 이미지·첨부 없이 진행한다.
+
+axes:
+  gd: [absent]
+  seeder: [board_post]
+
+effects:
+  - board_seeder_skips_images_without_gd
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Database/Seeders/PostSampleSeederWithoutGdTest.php

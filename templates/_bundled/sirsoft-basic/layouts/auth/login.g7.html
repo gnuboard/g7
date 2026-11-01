@@ -33,8 +33,8 @@
             $t:auth.register_link
           </a>
         </div>
-        <!-- 비회원 주문 진입 영역 — redirect 가 checkout 일 때만 노출. Form 바깥에 두어야 type=button 명시에도 불구하고 폼 submit 으로 가로채지지 않음. 임시주문은 cartKey(localStorage)로 이미 생성됨 → redirect 경로로 그대로 이동 -->
-        <div data-if="{{query.redirect &amp;&amp; query.redirect.includes('checkout')}}" class="mt-6">
+        <!-- 비회원 주문 진입 영역 — redirect 가 checkout 일 때만 노출(쇼핑몰 모듈이 꺼져 있으면 숨김). Form 바깥에 두어야 type=button 명시에도 불구하고 폼 submit 으로 가로채지지 않음. 임시주문은 cartKey(localStorage)로 이미 생성됨 → redirect 경로로 그대로 이동 -->
+        <div data-ref="login_guest_checkout" data-if="{{query.redirect &amp;&amp; query.redirect.includes('checkout') &amp;&amp; (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" class="mt-6">
           <!-- 구분선 -->
           <div class="relative my-4">
             <div class="absolute inset-0 flex items-center">
@@ -52,8 +52,8 @@
           </a>
           <p class="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">$t:auth.guest_checkout.hint</p>
         </div>
-        <!-- 비회원 주문 조회 진입 — redirect=checkout 일 때는 비노출 (결제 진입 흐름이라 조회 안내가 무관). 일반 로그인 화면에서만 노출해 재방문 조회 사용자 동선 제공. 안내문구와 링크를 한 줄(inline)로 표시. -->
-        <div data-if="{{!query.redirect || !query.redirect.includes('checkout')}}" class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-xs">
+        <!-- 비회원 주문 조회 진입 — redirect=checkout 일 때는 비노출 (결제 진입 흐름이라 조회 안내가 무관). 일반 로그인 화면에서만 노출해 재방문 조회 사용자 동선 제공. 안내문구와 링크를 한 줄(inline)로 표시. 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
+        <div data-ref="login_guest_order_lookup" data-if="{{(!query.redirect || !query.redirect.includes('checkout')) &amp;&amp; (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}" class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-xs">
           <span class="text-gray-500 dark:text-gray-400 mr-1">$t:shop.guest_order_form.login_screen_hint</span>
           <a href="{{_global.shopBase}}/guest/orders" class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">$t:shop.guest_order_form.login_screen_link</a>
         </div>

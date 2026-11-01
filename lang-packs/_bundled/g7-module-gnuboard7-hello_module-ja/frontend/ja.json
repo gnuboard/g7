@@ -41,7 +41,8 @@
         "memos": {
             "index": {
                 "title": "メモ一覧",
-                "empty": "まだメモがありません。"
+                "empty": "まだメモがありません。",
+                "seo_description": "Hello モジュールのサンプルの公開メモ一覧です。"
             }
         }
     }

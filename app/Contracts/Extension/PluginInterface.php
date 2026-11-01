@@ -2,15 +2,21 @@
 
 namespace App\Contracts\Extension;
 
+use Illuminate\Database\Seeder;
+
 interface PluginInterface extends CacheableExtensionInterface
 {
     /**
      * 플러그인의 고유 식별자를 반환합니다 (vendor-plugin 형식).
+     *
+     * @return string 플러그인 식별자
      */
     public function getIdentifier(): string;
 
     /**
      * 플러그인의 벤더/개발자명을 반환합니다.
+     *
+     * @return string 벤더명
      */
     public function getVendor(): string;
 
@@ -37,6 +43,8 @@ interface PluginInterface extends CacheableExtensionInterface
 
     /**
      * 플러그인의 GitHub 저장소 URL을 반환합니다.
+     *
+     * @return string|null GitHub 저장소 URL (없으면 null)
      */
     public function getGithubUrl(): ?string;
 
@@ -112,7 +120,7 @@ interface PluginInterface extends CacheableExtensionInterface
      * 반환 형식: ['1.1.0' => callable|UpgradeStepInterface, ...]
      * 시스템이 fromVersion 초과 ~ toVersion 이하의 스텝을 자동 필터링 후 순차 실행합니다.
      *
-     * @return array<string, callable|\App\Contracts\Extension\UpgradeStepInterface> 버전 => 스텝 매핑
+     * @return array<string, callable|UpgradeStepInterface> 버전 => 스텝 매핑
      */
     public function upgrades(): array;
 
@@ -143,6 +151,26 @@ interface PluginInterface extends CacheableExtensionInterface
      * @return array 의존성 목록 배열
      */
     public function getDependencies(): array;
+
+    /**
+     * 함께 쓰면 연동되는(선택) 확장 식별자를 유형별로 반환합니다.
+     *
+     * @return array{modules: array<int, string>, plugins: array<int, string>, templates: array<int, string>} 유형별 확장 식별자
+     *
+     * @since 7.1.4
+     */
+    public function getIntegrations(): array;
+
+    /**
+     * 함께 쓰면 연동되는(선택) 확장을 「식별자 => 버전 제약」 맵으로 반환합니다.
+     *
+     * 목록형·버전식이 아닌 값은 `'*'`(버전 무관)입니다. 버전이 모자라도 설치·활성화를 막지 않습니다.
+     *
+     * @return array{modules: array<string, string>, plugins: array<string, string>, templates: array<string, string>} 유형별 식별자 => 버전 제약
+     *
+     * @since 7.1.4
+     */
+    public function getIntegrationConstraints(): array;
 
     /**
      * 플러그인이 사용하는 권한 목록을 반환합니다.
@@ -191,7 +219,7 @@ interface PluginInterface extends CacheableExtensionInterface
      * 배열 순서대로 실행됩니다.
      * 빈 배열 반환 시 database/seeders/ 디렉토리의 모든 시더를 자동 검색합니다. (역호환)
      *
-     * @return array<class-string<\Illuminate\Database\Seeder>> 시더 클래스명 배열 (FQCN)
+     * @return array<class-string<Seeder>> 시더 클래스명 배열 (FQCN)
      */
     public function getSeeders(): array;
 

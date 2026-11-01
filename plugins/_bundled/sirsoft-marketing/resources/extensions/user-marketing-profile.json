@@ -251,7 +251,7 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "if": "{{_local.profileEditForm?.marketing_consent_terms_slug_set === true}}",
+                                                    "if": "{{_local.profileEditForm?.marketing_consent_terms_slug_set === true && (_global.activeModules?.includes('sirsoft-page') ?? true)}}",
                                                     "actions": [
                                                         {
                                                             "comment": "약관 본문 보기 — 어떤 약관인지 전역에 심고 창을 먼저 띄운 뒤 본문을 받아 채운다",
@@ -373,7 +373,7 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "if": "{{channel.terms_slug_set === true}}",
+                                                    "if": "{{channel.terms_slug_set === true && (_global.activeModules?.includes('sirsoft-page') ?? true)}}",
                                                     "actions": [
                                                         {
                                                             "comment": "약관 본문 보기 — 채널별 수신 동의 약관",
@@ -508,7 +508,7 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Button",
-                                                    "if": "{{_local.profileEditForm?.third_party_consent_terms_slug_set === true}}",
+                                                    "if": "{{_local.profileEditForm?.third_party_consent_terms_slug_set === true && (_global.activeModules?.includes('sirsoft-page') ?? true)}}",
                                                     "actions": [
                                                         {
                                                             "comment": "약관 본문 보기 — 제3자 제공 동의 약관",
@@ -641,7 +641,7 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Button",
-                                                            "if": "{{_local.profileEditForm?.info_disclosure_terms_slug_set === true}}",
+                                                            "if": "{{_local.profileEditForm?.info_disclosure_terms_slug_set === true && (_global.activeModules?.includes('sirsoft-page') ?? true)}}",
                                                             "actions": [
                                                                 {
                                                                     "comment": "약관 본문 보기 — 정보 공개 동의 약관",

@@ -222,7 +222,7 @@
               <div data-if="{{(brands?.data?.data ?? brands?.data ?? []).find(b => b.id === _local.form.brand_id)?.description}}" class="text-tertiary">{{$localized((brands?.data?.data ?? brands?.data ?? []).find(b => b.id === _local.form.brand_id)?.description)}}</div>
             </div>
           </div>
-          <button data-if="{{!_computed.isReadOnly}}" type="button" class="admin-card" aria-label="$t:sirsoft-ecommerce.common.remove">
+          <button data-if="{{!_computed.isReadOnly}}" type="button" class="btn btn-outline hover:text-red-600 dark:hover:text-red-400" aria-label="$t:sirsoft-ecommerce.common.remove">
             <on type="click">
               <!-- 브랜드 비우기 — 비우면 아래 고르개가 다시 선다 -->
               <set-state target="local" :form.brand_id="null"/>

@@ -108,7 +108,7 @@ test.describe('봇 렌더링 본문 노출', () => {
     const listHtml = await fetchBotHtml(request, '/board/notice');
     const paths = [...bodyOf(listHtml).matchAll(/href="(\/board\/notice\/\d+)"/g)].map((m) => m[1]);
 
-    expect(paths.length, '공지 게시판 목록에서 게시글 링크를 찾지 못했습니다').toBeGreaterThan(0);
+    test.skip(paths.length === 0, '공지 게시판에 게시글이 없어 건너뜁니다(환경 데이터)');
 
     // 가려진 글/비밀글은 본문이 없는 것이 정상이므로, description 이 채워진 글을 고른다.
     let checked = false;
@@ -150,7 +150,7 @@ test.describe('봇 렌더링 본문 노출', () => {
     const listHtml = await fetchBotHtml(request, '/board/qna');
     const paths = [...bodyOf(listHtml).matchAll(/href="(\/board\/qna\/\d+)"/g)].map((m) => m[1]);
 
-    expect(paths.length, 'Q&A 게시판 목록에서 게시글 링크를 찾지 못했습니다').toBeGreaterThan(0);
+    test.skip(paths.length === 0, 'Q&A 게시판에 게시글이 없어 건너뜁니다(환경 데이터)');
 
     let checked = false;
     for (const path of paths.slice(0, 8)) {
@@ -317,11 +317,25 @@ test.describe('봇 렌더링 본문 노출', () => {
     // 덧붙인다 — 봇 화면(캐시 대상) 산출물이 아니므로 스크립트 블록을 빼고 본다.
     const withoutScripts = (html: string): string => html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
 
-    const forged = await fetchBotResponse(request, path, { Host: `${site.hostname}:6666` });
-    expect(withoutScripts(forged.html), '위조 Host 가 봇 화면 주소에 반영됐습니다').not.toContain(':6666');
+    // 7.1.0 부터 사이트 주소가 아닌 Host 의 화면 요청은 같은 경로의 사이트 주소로 301 이동한다
+    // (CANONICAL_HOST_REDIRECT). 이동을 따라가면 같은 위조 Host 헤더로 다시 요청해 무한 이동이 되므로
+    // 따라가지 않고, 이동이면 대상이 사이트 주소인지·그 요청이 렌더(캐시)되지 않았는지를 본다.
+    const forgedResponse = await request.get(path, {
+      headers: { 'User-Agent': BOT_USER_AGENT, Host: `${site.hostname}:6666` },
+      maxRedirects: 0,
+    });
+    const redirected = forgedResponse.status() === 301;
+    if (redirected) {
+      const location = forgedResponse.headers()['location'] ?? '';
+      expect(new URL(location).host, '위조 Host 요청이 사이트 주소가 아닌 곳으로 이동했습니다').toBe(site.host);
+    } else {
+      expect(forgedResponse.status(), `${path} 봇 렌더링 응답 코드`).toBe(200);
+      expect(withoutScripts(await forgedResponse.text()), '위조 Host 가 봇 화면 주소에 반영됐습니다').not.toContain(':6666');
+    }
 
     const genuine = await fetchBotResponse(request, path);
-    expect(genuine.cache, '같은 주소 두 번째 요청이 캐시에 적중하지 않았습니다').toBe('HIT');
+    // 이동했으면 위조 요청은 렌더되지 않았으므로 정상 요청이 첫 렌더(MISS)다
+    expect(genuine.cache, '같은 주소의 캐시 상태가 위조 요청 처리와 맞지 않습니다').toBe(redirected ? 'MISS' : 'HIT');
     expect(withoutScripts(genuine.html), '정상 요청이 위조 Host 가 박힌 캐시를 받았습니다').not.toContain(':6666');
 
     const canonical = genuine.html.match(/<link rel="canonical" href="([^"]+)"/);
@@ -408,5 +422,50 @@ test.describe('봇 렌더링 본문 노출', () => {
 
     // 목록이 통째로 사라지면 게시판/게시글 링크가 하나도 없다
     expect(body, '작성글 목록에 게시글 링크가 없습니다').toMatch(/href="\/board\/[^"]+\/\d+"/);
+  });
+});
+
+/**
+ * 모듈이 소유한 사용자 화면(라우트 layout 이 `{모듈}.{레이아웃}`)과 봇 홈 제목 (#154).
+ *
+ * 봇 렌더가 모듈 레이아웃을 접두사를 뗀 이름으로 찾아 SPA 껍데기가 나갔고, 제목 접미사가 빈 기본 설치는
+ * 봇 홈 제목이 비어 나갔다. hello 모듈 `/memos` 가 모듈 화면 SEO 예시다.
+ */
+test.describe('모듈 소유 화면 봇 렌더 (#154)', () => {
+  /**
+   * @scenario surface=bot_e2e
+   * @effects module_screen_served_to_bot_with_cache_hit
+   */
+  test('모듈 소유 화면(/memos)이 봇에 서버 렌더되고 두 번째 요청은 캐시에 적중한다', async ({ request }) => {
+    const memos = await request.get('/api/modules/gnuboard7-hello_module/memos?per_page=5');
+    test.skip(memos.status() !== 200, 'hello 모듈이 설치·활성화되지 않아 건너뜁니다');
+    const firstTitle = ((await memos.json())?.data?.data ?? [])
+      .map((memo: { title?: string }) => memo?.title)
+      .find((value: string | undefined) => typeof value === 'string' && value.length > 0);
+
+    const first = await fetchBotResponse(request, '/memos');
+    const second = await fetchBotResponse(request, '/memos');
+
+    expect(first.cache, '/memos 가 봇 렌더러를 거치지 않았습니다(SPA 폴백)').toBeDefined();
+    expect(first.html).toMatch(/<title>[^<]*메모 목록[^<]*<\/title>/);
+    expect(first.html).toContain('property="og:description"');
+    expect(bodyOf(first.html)).not.toContain('$t:');
+    if (firstTitle !== undefined) {
+      expect(bodyOf(first.html), '봇 본문에 메모 제목이 없습니다').toContain(firstTitle);
+    }
+
+    expect(second.cache, '두 번째 요청이 캐시에 적중하지 않았습니다').toBe('HIT');
+    expect(bodyOf(second.html)).toBe(bodyOf(first.html));
+  });
+
+  /**
+   * @scenario surface=bot_e2e
+   * @effects empty_suffix_site_name_becomes_title
+   */
+  test('봇 홈 화면 제목이 비지 않는다', async ({ request }) => {
+    const html = await fetchBotHtml(request, '/');
+    const title = html.match(/<title>([^<]*)<\/title>/)?.[1] ?? '';
+
+    expect(title.trim(), '봇 홈 <title> 이 비어 있습니다').not.toBe('');
   });
 });

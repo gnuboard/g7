@@ -188,10 +188,16 @@ class KcpHostTrustTest extends PluginTestCase
         $response->assertHeader('Referrer-Policy', 'no-referrer');
         $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
 
+        // 서버 값은 비실행 데이터 블록으로, 동작은 정적 브리지 파일로 나뉜다(#158 strict CSP).
         $html = (string) $response->getContent();
-        $this->assertStringContainsString('var SITE_ORIGIN = "https:\/\/shop.example.test" || \'/\';', $html);
-        $this->assertStringContainsString('}, SITE_ORIGIN);', $html);
+        $this->assertStringContainsString('<script type="application/json" id="bridge-data">{"siteOrigin":"https:\/\/shop.example.test",', $html);
+        $this->assertStringContainsString('assets/bridge/kcp-bridge.js', $html);
         $this->assertStringNotContainsString('window.location.origin', $html);
+
+        $bridge = (string) file_get_contents(dirname(__DIR__, 3).'/assets/bridge/kcp-bridge.js');
+        $this->assertStringContainsString('}, SITE_ORIGIN);', $bridge);
+        $this->assertStringContainsString("var SITE_ORIGIN = data.siteOrigin || '/';", $bridge);
+        $this->assertStringNotContainsString('window.location.origin', $bridge);
     }
 
     /**
@@ -206,9 +212,11 @@ class KcpHostTrustTest extends PluginTestCase
     public function test_bridge_mobile_return_guard_is_present(): void
     {
         $html = (string) $this->get(self::SITE.self::BRIDGE_PATH.'?identity_error=9999')->getContent();
+        $this->assertStringContainsString('assets/bridge/kcp-bridge.js', $html);
 
-        $this->assertStringContainsString('function toSafeReturnPath(', $html);
-        $this->assertStringContainsString("var dest = (stash && toSafeReturnPath(stash.return_url)) || '/';", $html);
+        $bridge = (string) file_get_contents(dirname(__DIR__, 3).'/assets/bridge/kcp-bridge.js');
+        $this->assertStringContainsString('function toSafeReturnPath(', $bridge);
+        $this->assertStringContainsString("var dest = (stash && toSafeReturnPath(stash.return_url)) || '/';", $bridge);
     }
 
     /**

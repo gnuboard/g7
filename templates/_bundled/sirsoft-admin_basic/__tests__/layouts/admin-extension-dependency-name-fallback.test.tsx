@@ -41,7 +41,8 @@ function strings(tree: unknown): string[] {
 function cardDependencyNames(layout: unknown, dependencies: unknown): string[] {
   const source = strings(layout).find((s) => s.includes('p.dependencies'));
   expect(source, '카드 데이터에 의존성 매핑 식이 있어야 합니다').toBeDefined();
-  const pattern = /\(p\.dependencies \?\? \[\]\)\.map\(d => \(\{[^}]*\}\)\)|\.\.\.\(\(p\.dependencies\?\.(modules|plugins) \?\? \[\]\)\.map\(d => \(\{[^}]*\}\)\)\)/g;
+  // 항목 객체 안에 한 겹 중괄호(미충족 사유 번역 인자 `{installed, required}`, #152)가 들어가도 끝까지 잡는다
+  const pattern = /\(p\.dependencies \?\? \[\]\)\.map\(d => \(\{(?:[^{}]|\{[^{}]*\})*\}\)\)|\.\.\.\(\(p\.dependencies\?\.(modules|plugins) \?\? \[\]\)\.map\(d => \(\{(?:[^{}]|\{[^{}]*\})*\}\)\)\)/g;
   const exprs = source!.match(pattern) ?? [];
   expect(exprs.length).toBeGreaterThan(0);
   const body = exprs.length === 1 && !exprs[0].startsWith('...') ? exprs[0] : `[${exprs.join(', ')}]`;

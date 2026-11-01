@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\LanguagePack;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
@@ -19,6 +20,7 @@ use Throwable;
  */
 class UpdateLanguagePackCommand extends Command
 {
+    use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
     /**
@@ -28,11 +30,6 @@ class UpdateLanguagePackCommand extends Command
         {identifier : 언어팩 식별자}
         {--force : 버전 변경이 없어도 강제 재적용 (_bundled 우선)}
         {--source=auto : 업데이트 소스 (auto|bundled|github)}';
-
-    /**
-     * @var string
-     */
-    protected $description = '언어팩을 GitHub 또는 _bundled 신버전으로 업데이트합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service

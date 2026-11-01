@@ -184,18 +184,39 @@ class TrackingRequestFactory
     /**
      * 화면 해상도 표기를 검사합니다.
      *
+     * 한 변이 0 이하인 값(`0x0` 등)은 화면 크기를 모른다는 뜻이라 해상도로 남기지 않습니다.
+     *
      * @param  mixed  $value  원본 값
-     * @return string|null 해상도 (형식이 아니면 null)
+     * @return string|null 해상도 (형식이 아니거나 크기를 알 수 없으면 null)
      */
     private static function resolution(mixed $value): ?string
     {
-        if (! is_scalar($value)) {
+        if (! is_scalar($value) || self::isUnknownResolution($value)) {
             return null;
         }
 
         $value = (string) $value;
 
         return preg_match('/^\d{2,5}x\d{2,5}$/', $value) === 1 ? $value : null;
+    }
+
+    /**
+     * 화면 크기를 알 수 없다는 해상도 표기인지 판정합니다.
+     *
+     * 화면 크기를 알려 주지 않는 환경(앱 내 웹뷰·헤드리스 브라우저·일부 봇)은 `0x0` 처럼 한 변이
+     * 0 인 값을 보냅니다. 해상도가 아니라 「모름」이므로 값 없음으로 다뤄야 합니다 — 해상도로 남기면
+     * 해상도 통계에 `0x0` 항목이 생기고, 형식 오류로 거절하면 그 페이지뷰가 통째로 빠집니다.
+     *
+     * @param  mixed  $value  원본 값
+     * @return bool 가로x세로 모양이면서 한 변이라도 0 이하이면 true
+     */
+    public static function isUnknownResolution(mixed $value): bool
+    {
+        if (! is_scalar($value) || preg_match('/^(-?\d+)x(-?\d+)$/', (string) $value, $matches) !== 1) {
+            return false;
+        }
+
+        return (int) $matches[1] <= 0 || (int) $matches[2] <= 0;
     }
 
     /**

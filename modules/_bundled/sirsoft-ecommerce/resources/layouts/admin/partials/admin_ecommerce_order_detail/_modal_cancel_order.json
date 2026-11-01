@@ -487,31 +487,10 @@
                             ],
                             "props": {
                                 "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_type_label",
-                                "className": "{{_local.cancelValidationErrors?.reason ? 'select w-full text-sm border-2 border-red-500 dark:border-red-500' : 'select w-full text-sm'}}",
-                                "value": "{{_local.cancelReason ?? ''}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": ""
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "iteration": {
-                                        "source": "refundReasons?.data?.data ?? refundReasons?.data ?? []",
-                                        "item_var": "reason"
-                                    },
-                                    "props": {
-                                        "value": "{{reason.code}}"
-                                    },
-                                    "text": "{{reason.localized_name}}"
-                                }
-                            ]
+                                "className": "{{_local.cancelValidationErrors?.reason ? 'w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-2 border-red-500 dark:border-red-500 rounded-xl text-sm font-medium focus:ring-2 focus:ring-red-500 focus:outline-none' : 'w-full text-sm'}}",
+                                "value": "{{_local.cancelReason ?? ''}}",
+                                "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder') }].concat((refundReasons?.data?.data ?? refundReasons?.data ?? []).map(reason => ({ value: reason.code, label: reason.localized_name })))}}"
+                            }
                         },
                         {
                             "comment": "취소 사유 필드 에러",
@@ -1751,6 +1730,41 @@
                                                 "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
                                             },
                                             "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_vat_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0).toLocaleString()}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "영세금액 — 과세금액에 포함된 세율 0% 몫. 취소 전·후 어느 쪽이든 있을 때만 (#612)",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0) > 0 || (_local.refundEstimate?.recalculated_snapshot?.total_zero_rated_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.zero_rated_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-right text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_zero_rated_amount ?? (_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0).toLocaleString()}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_zero_rated_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                                            },
+                                            "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_zero_rated_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_zero_rated_amount ?? 0).toLocaleString()}}"
                                         }
                                     ]
                                 },

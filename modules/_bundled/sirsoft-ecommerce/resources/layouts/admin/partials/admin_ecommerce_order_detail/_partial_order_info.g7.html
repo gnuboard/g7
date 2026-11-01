@@ -104,6 +104,8 @@
                   <a href="{{'/admin/ecommerce/products/' + (row.product_snapshot?.product_code ?? row.product_id) + '/edit'}}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400 block">{{row.product_name}}</a>
                   <span class="text-tertiary block">{{row.sku}}</span>
                   <span data-if="{{row.option_name}}" class="text-sm text-gray-600 dark:text-gray-300 block">{{row.option_name}}</span>
+                  <!-- 품목 과세 종류 — 주문 시점에 확정한 값(옵션 지정 ?? 상품 기본값). 과세 회색·면세 파랑·영세 초록 (#612) -->
+                  <badge data-type="composite" data-if="{{row.tax_status}}" size="sm" color="{{row.tax_status === 'zero_rated' ? 'green' : (row.tax_status === 'tax_free' ? 'blue' : 'gray')}}" class="mt-1">{{row.tax_status_label}}</badge>
                   <!-- 선택된 추가옵션 (스냅샷 — 옵션명 아래 별행, D14) -->
                   <div data-if="{{row.additional_options?.length > 0}}" data-each="addOpt in {{row.additional_options ?? []}}" class="mt-0.5">
                     <span class="text-xs text-gray-500 dark:text-gray-400 block">{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) !== 0 ? ' (' + (addOpt.price_adjustment_formatted ?? '') + ')' : ''}}</span>
@@ -169,8 +171,10 @@
             <cell>
               <div class="text-right whitespace-nowrap">
                 <span class="text-sm font-semibold text-gray-900 dark:text-gray-100 block">{{row.final_amount_formatted}}</span>
-                <span data-if="{{row.subtotal_tax_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.taxable: {{row.subtotal_tax_amount_formatted}}</span>
+                <!-- 품목별 과세 구분 — 과세 행은 과세 금액·부가세, 영세 행은 영세 금액(부가세 0)을 보인다 (#612 S7: 종전엔 리소스 미노출로 늘 숨었다) -->
+                <span data-if="{{row.tax_status === 'taxable' &amp;&amp; row.subtotal_tax_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.taxable: {{row.subtotal_tax_amount_formatted}}</span>
                 <span data-if="{{row.subtotal_vat_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.vat: {{row.subtotal_vat_amount_formatted}}</span>
+                <span data-if="{{row.subtotal_zero_rated_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.zero_rated: {{row.subtotal_zero_rated_amount_formatted}}</span>
                 <span data-if="{{row.subtotal_points_used_amount > 0}}" class="text-xs text-red-700 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.mileage: -{{row.subtotal_points_used_amount_formatted}}</span>
                 <span data-if="{{row.subtotal_deposit_used_amount > 0}}" class="text-xs text-red-700 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.deposit: -{{row.subtotal_deposit_used_amount_formatted}}</span>
               </div>
@@ -248,6 +252,8 @@
               <span class="text-sm font-bold text-gray-900 dark:text-gray-100 block">{{order.data?.total_amount_formatted}}</span>
               <span data-if="{{order.data?.total_tax_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.taxable: {{order.data?.total_tax_amount_formatted}}</span>
               <span data-if="{{order.data?.total_vat_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.vat: {{order.data?.total_vat_amount_formatted}}</span>
+              <!-- 합계 줄 영세 금액 — 과세 금액에 포함된 몫(부가세 0) (#612) -->
+              <span data-if="{{order.data?.total_zero_rated_amount > 0}}" class="text-tertiary block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.zero_rated: {{order.data?.total_zero_rated_amount_formatted}}</span>
               <span data-if="{{order.data?.total_points_used_amount > 0}}" class="text-xs text-red-600 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.mileage: -{{order.data?.total_points_used_amount_formatted}}</span>
               <span data-if="{{order.data?.total_deposit_used_amount > 0}}" class="text-xs text-red-600 dark:text-red-400 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.deposit: -{{order.data?.total_deposit_used_amount_formatted}}</span>
             </div>

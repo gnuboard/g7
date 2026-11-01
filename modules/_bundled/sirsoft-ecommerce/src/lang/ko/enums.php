@@ -38,6 +38,7 @@ return [
     'tax_status' => [
         'taxable' => '과세',
         'tax_free' => '면세',
+        'zero_rated' => '영세',
     ],
     'image_collection' => [
         'main' => '대표 이미지',

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.2] - 2026-11-01
+
+### Added
+
+- 게시판 1.2.2 의 샘플 데이터 생성에서 PHP gd 확장이 없을 때의 안내(`seeders.post_sample.images_skipped_no_gd` 「PHP gd 拡張がないため、…」)의 일본어 번역을 추가했습니다.
+
 ## [1.1.1] - 2026-10-21
 
 ### Added

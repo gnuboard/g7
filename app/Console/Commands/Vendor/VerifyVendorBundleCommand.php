@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Vendor;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Vendor\Concerns\RunsVendorBundleAction;
 use App\Extension\Vendor\VendorIntegrityChecker;
 use Illuminate\Console\Command;
@@ -18,12 +19,17 @@ use Illuminate\Console\Command;
  */
 class VerifyVendorBundleCommand extends Command
 {
+    use LocalizesDescription;
     use RunsVendorBundleAction;
 
     protected $signature = 'vendor-bundle:verify-all';
 
-    protected $description = '코어 + 모든 _bundled 모듈/플러그인의 vendor 번들 무결성을 일괄 검증합니다';
-
+    /**
+     * 코어와 모든 _bundled 모듈·플러그인의 vendor 번들을 차례로 검증한다.
+     *
+     * @param  VendorIntegrityChecker  $checker  번들 무결성 검사기
+     * @return int 종료 코드 (모두 통과 0, 하나라도 실패하면 1)
+     */
     public function handle(VendorIntegrityChecker $checker): int
     {
         $targets = [['type' => 'core', 'identifier' => null]];

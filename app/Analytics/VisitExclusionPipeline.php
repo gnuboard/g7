@@ -229,8 +229,8 @@ class VisitExclusionPipeline
                 continue;
             }
 
-            // 정확 일치는 끝 슬래시를 따지지 않는다 — 서버 폴백은 요청 주소의 끝 슬래시를 떼고(`fullUrl()`)
-            // 비콘은 브라우저 주소를 그대로 보내, 같은 화면이 한 경로에서만 제외되는 일이 생긴다.
+            // 정확 일치는 끝 슬래시를 따지지 않는다 — 끝·연속 슬래시 주소는 `canonical.path` 가 301 로 보내므로
+            // 정규형만 도달하지만, 운영자가 적은 제외 패턴(`/admin/`)이나 외부에서 온 비콘 주소는 끝 슬래시를 가질 수 있다.
             if (self::withoutTrailingSlash($path) === self::withoutTrailingSlash($pattern)) {
                 return true;
             }
