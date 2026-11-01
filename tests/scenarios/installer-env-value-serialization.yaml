@@ -1,0 +1,21 @@
+feature: installer_env_value_serialization
+
+description: |
+  인스톨러가 .env 에 쓰는 값은 serializeEnvValue() 한 관문을 지난다. 정상 값은 큰따옴표로 감싸고 큰따옴표·백슬래시를
+  이스케이프하며, 개행·NUL 이 섞인 값은 조용히 지우지 않고 예외로 거부한다(KVE-2026-2042). 하위호환 별칭 escapeEnvValue 의
+  두 정의는 이 관문에 위임한다. 직렬화한 값은 런타임 파서(vlucas/phpdotenv)가 원래 값으로 되읽어야 한다 — 5.8.0 부터 닫히지 않은
+  따옴표는 부팅을 멈추는 예외라서, 다음 줄 변수가 살아 있는지까지 확인한다.
+
+coverage_strategy: full
+
+axes:
+  case: [normal_value, empty_value, quote_backslash, line_break, line_break_in_quotes, legacy_alias, runtime_round_trip, single_line_check]
+
+effects:
+  - value_quoted
+  - value_rejected
+  - alias_delegates_to_gate
+  - runtime_parser_reads_original
+
+test_files:
+  - tests/Unit/Installer/EnvValueSerializationTest.php

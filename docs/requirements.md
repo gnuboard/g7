@@ -349,7 +349,8 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 
 | 패키지 | 현재 | 보류 사유 | 최소 보안 버전 |
 |---|---|---|---|
-| `guzzlehttp/guzzle` | 7.15.x | 8.x 는 `aws/aws-sdk-php` · `laravel/framework` · `pusher/pusher-php-server` 의 제약이 막는다. 상위 패키지가 8.x 를 지원하기 전에는 올릴 수 없다 | **7.15.2** |
+| `guzzlehttp/guzzle` | 7.16.x | 8.x 는 `aws/aws-sdk-php` · `laravel/framework` · `pusher/pusher-php-server` 의 제약이 막는다. 상위 패키지가 8.x 를 지원하기 전에는 올릴 수 없다 | **7.15.2** |
+| `maxmind-db/reader` | 1.13.x | 1.14.0 부터 PHP `maxminddb` 확장 1.14 미만과 충돌을 선언해, 그 확장 1.13.x 가 켜진 서버에서 코어 업데이트의 Composer 설치가 거부된다. 루트 `composer.json` 의 `conflict` 로 1.14 미만에 고정한다. 서버 배포판의 확장이 1.14 이상으로 올라온 뒤 푼다 | 보안 권고 없음 |
 | `ckeditor5` | 43.3.1 | 다섯 개 메이저를 건너뛰는 상향이라 초기화 설정·툴바 재구성과 글쓰기/이미지 업로드 전 경로 재검수를 수반한다. 별도 작업으로 분리한다. CDN 의존은 이미 자체 서빙으로 해소되어 있다 | 상향 작업에서 확정 |
 | `monaco-editor` 내장 `dompurify` | 3.4.8 | monaco 가 자기 배포 번들에 정화기를 인라인하므로 소비자가 버전을 고를 수 없다. 배포된 최신본(0.56.0)이 담은 것이 3.4.8 이다. 상류가 새 정화기를 담은 판을 내면 함께 올린다 | **3.4.13** (상류 대기) |
 | `vite` (확장 빌드 툴체인) | 5.4.x | 8.x 는 메이저 상향이며 확장 스물넷의 빌드 설정을 동시에 옮겨야 한다. 빌드 도구라 배포 산출물에 실리지 않아 최종 사용자 노출면이 없다 | **8.2.2** |
