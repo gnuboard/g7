@@ -81,4 +81,7 @@ return [
     'settings' => [
         'redirect_url_format' => '決済後の移動先アドレスは {shopBase}、/ または http(s):// で始まり、空白を含めることはできません。他サイトへ送る //アドレス と javascript: は使用できません。',
     ],
+    'kcp_frame' => [
+        'sdk' => '決済ウィンドウ SDK の URL',
+    ],
 ];

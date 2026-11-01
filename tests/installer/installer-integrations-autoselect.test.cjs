@@ -571,8 +571,9 @@ test('설치기 언어 파일(ko·en)과 Step 4 라벨에 연동 키가 있다',
         for (const key of keys) assert.match(src, new RegExp("'" + key + "' => '"), locale + ':' + key);
     }
     const view = fs.readFileSync(path.join(ROOT, 'public/install/views/4-extension-selection.php'), 'utf8');
+    // 라벨은 비실행 JSON 데이터 블록으로 넘긴다(#158 strict CSP — 인라인 window.EXTENSION_LABELS 대입이 아니다)
     for (const key of ['integrations', 'integration_auto_badge_label', 'integration_version_mismatch', 'integration_template_hint']) {
-        assert.match(view, new RegExp(key + ": <\\?= installer_json_encode\\(lang\\('" + key + "'\\)\\) \\?>"), key);
+        assert.match(view, new RegExp("'" + key + "' => lang\\('" + key + "'\\)"), key);
     }
     assert.match(view, /lang\('integration_selection_notice'\)/);
 });

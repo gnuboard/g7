@@ -133,8 +133,11 @@ class TemplateExternals
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $externals
-     * @return array<int, array<string, mixed>>
+     * 지정 위치(head|before-core|before-template|body-end)의 script 항목만 고릅니다.
+     *
+     * @param  array<int, array<string, mixed>>  $externals  정규화된 externals
+     * @param  string  $position  출력 위치
+     * @return array<int, array<string, mixed>> 해당 위치의 script 항목
      */
     public static function scriptsForPosition(array $externals, string $position): array
     {
@@ -160,7 +163,7 @@ class TemplateExternals
 
         if (in_array($external['type'], ['style', 'webfont'], true)) {
             self::appendIfString($attributes, 'media', $external['media'] ?? null);
-            $attributes['onerror'] = self::failureHandlerScript($external);
+            self::appendFailureMarker($attributes, $external);
         }
 
         if ($external['type'] === 'preload') {
@@ -195,30 +198,31 @@ class TemplateExternals
             $attributes['defer'] = true;
         }
 
-        $attributes['onerror'] = self::failureHandlerScript($external);
+        self::appendFailureMarker($attributes, $external);
 
         return $attributes;
     }
 
     /**
-     * 자산 로드 실패를 알리는 인라인 핸들러를 만듭니다.
+     * 자산 로드 실패 신호용 표식 속성을 붙입니다.
      *
      * 이 태그들은 서버가 HTML 에 직접 심으므로, 브라우저가 자산에 도달하지 못해도
      * 자바스크립트 쪽에는 아무 신호가 오지 않는다. 실패는 "아이콘이 안 보인다" ·
      * "글꼴이 다르다" 로만 나타나고 자체 서버 로그에도 흔적이 남지 않아 운영자가
-     * 원인을 특정할 수 없다. `onerror` 가 그 유일한 신호다.
+     * 원인을 특정할 수 없다. 태그의 error 이벤트가 그 유일한 신호다.
      *
-     * 부팅 초기에는 엔진이 아직 없을 수 있으므로 핸들러는 `template-externals-head`
-     * 가 먼저 심어 두는 부트스트랩(대기열)을 부른다.
+     * 종전에는 인라인 `onerror` 속성을 냈으나 strict CSP(`script-src 'self'`)에서 실행되지
+     * 않아(#158) 표식만 남긴다. 실패 처리는 셸 `<head>` 스크립트(`g7-shell-head.js`)가
+     * document 캡처 리스너로 받아 대기열(`__g7ExternalAssetFailed`)에 넣는다.
      *
+     * @param  array<string, string|bool>  $attributes  태그 속성 (참조로 갱신)
      * @param  array<string, mixed>  $external  정규화된 externals 항목
-     * @return string onerror 속성값
+     * @return void 반환값 없음
      */
-    private static function failureHandlerScript(array $external): string
+    private static function appendFailureMarker(array &$attributes, array $external): void
     {
-        $label = self::failureLabel($external);
-
-        return "window.__g7ExternalAssetFailed&&window.__g7ExternalAssetFailed(this,'".$label."')";
+        $attributes['data-g7-external'] = '1';
+        $attributes['data-g7-external-label'] = self::failureLabel($external);
     }
 
     /**
@@ -228,7 +232,7 @@ class TemplateExternals
      * 실패했는지 알아볼 수 있어야 한다.
      *
      * @param  array<string, mixed>  $external  정규화된 externals 항목
-     * @return string 항목명 (작은따옴표 안전)
+     * @return string 항목명 (영숫자·`._-` 만 — 속성값 이스케이프는 renderAttributes 가 한다)
      */
     private static function failureLabel(array $external): string
     {
@@ -249,7 +253,10 @@ class TemplateExternals
     }
 
     /**
-     * @param  array<string, string|bool>  $attributes
+     * 속성 배열을 HTML 속성 문자열로 렌더합니다 (이름·값 모두 이스케이프).
+     *
+     * @param  array<string, string|bool>  $attributes  태그 속성 (true 는 불리언 속성)
+     * @return string 앞에 공백이 붙은 속성 문자열
      */
     public static function renderAttributes(array $attributes): string
     {
@@ -491,8 +498,14 @@ class TemplateExternals
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $hints
-     * @param  array<string, bool>  $seen
+     * 리소스 힌트를 type·URL 단위로 중복 없이 추가합니다.
+     *
+     * @param  array<int, array<string, mixed>>  $hints  누적 힌트 (참조로 갱신)
+     * @param  array<string, bool>  $seen  이미 추가한 키 (참조로 갱신)
+     * @param  string  $type  힌트 타입 (preconnect|dns-prefetch)
+     * @param  string  $url  대상 origin URL
+     * @param  mixed  $crossorigin  crossorigin 선언값
+     * @return void 반환값 없음
      */
     private static function appendHint(array &$hints, array &$seen, string $type, string $url, mixed $crossorigin): void
     {
@@ -513,6 +526,12 @@ class TemplateExternals
         $hints[] = $hint;
     }
 
+    /**
+     * externals 타입에 맞는 `<link rel>` 값을 돌려줍니다.
+     *
+     * @param  string  $type  externals 타입
+     * @return string rel 속성값
+     */
     private static function linkRel(string $type): string
     {
         return match ($type) {
@@ -524,6 +543,43 @@ class TemplateExternals
         };
     }
 
+    /**
+     * 정규화된 externals 중 외부(https) script 항목의 호스트를 모읍니다.
+     *
+     * CSP `script-src` 자동 합산용(#158) — 같은 출처 자산(`asset`·`/` 경로)은 `'self'` 가 덮으므로 뺀다.
+     *
+     * @param  array<int, array<string, mixed>>  $externals  정규화된 externals
+     * @return array<int, string> 호스트 목록 (소문자, 중복 제거, 포트 포함)
+     */
+    public static function externalScriptHosts(array $externals): array
+    {
+        $hosts = [];
+
+        foreach ($externals as $external) {
+            if (($external['type'] ?? null) !== 'script' || ! self::isHttpsUrl($external['url'] ?? null)) {
+                continue;
+            }
+
+            $host = parse_url((string) $external['url'], PHP_URL_HOST);
+            $port = parse_url((string) $external['url'], PHP_URL_PORT);
+
+            if (! is_string($host) || $host === '') {
+                continue;
+            }
+
+            $hosts[] = strtolower($host).($port ? ':'.$port : '');
+        }
+
+        return array_values(array_unique($hosts));
+    }
+
+    /**
+     * link·script 공통 속성(id·crossorigin·integrity·referrerpolicy)을 붙입니다.
+     *
+     * @param  array<string, string|bool>  $attributes  태그 속성 (참조로 갱신)
+     * @param  array<string, mixed>  $external  정규화된 externals 항목
+     * @return void 반환값 없음
+     */
     private static function appendCommonAttributes(array &$attributes, array $external): void
     {
         self::appendIfString($attributes, 'id', $external['id'] ?? null);
@@ -532,6 +588,13 @@ class TemplateExternals
         self::appendIfString($attributes, 'referrerpolicy', $external['referrerpolicy'] ?? null);
     }
 
+    /**
+     * 안전한 형식의 id 만 정규화 항목에 옮깁니다.
+     *
+     * @param  array<string, mixed>  $item  정규화 항목 (참조로 갱신)
+     * @param  mixed  $value  선언된 id
+     * @return void 반환값 없음
+     */
     private static function appendId(array &$item, mixed $value): void
     {
         if (is_string($value) && preg_match('/^[A-Za-z0-9_-]+$/', $value) === 1) {
@@ -539,6 +602,13 @@ class TemplateExternals
         }
     }
 
+    /**
+     * crossorigin 선언을 허용값(anonymous|use-credentials)으로 정규화해 옮깁니다.
+     *
+     * @param  array<string, mixed>  $item  정규화 항목 (참조로 갱신)
+     * @param  mixed  $value  선언값 (true 는 anonymous)
+     * @return void 반환값 없음
+     */
     private static function appendCrossorigin(array &$item, mixed $value): void
     {
         if ($value === true) {
@@ -552,6 +622,16 @@ class TemplateExternals
         }
     }
 
+    /**
+     * 허용된 타입일 때만 문자열 값을 옮깁니다.
+     *
+     * @param  array<string, mixed>  $item  정규화 항목 (참조로 갱신)
+     * @param  string  $key  키
+     * @param  mixed  $value  선언값
+     * @param  array<int, string>  $allowedTypes  이 키를 허용하는 타입 목록
+     * @param  string  $type  항목 타입
+     * @return void 반환값 없음
+     */
     private static function appendIfAllowed(array &$item, string $key, mixed $value, array $allowedTypes, string $type): void
     {
         if (is_string($value) && in_array($type, $allowedTypes, true)) {
@@ -559,6 +639,14 @@ class TemplateExternals
         }
     }
 
+    /**
+     * 비어 있지 않은 문자열일 때만 속성을 붙입니다.
+     *
+     * @param  array<string, string|bool>  $attributes  태그 속성 (참조로 갱신)
+     * @param  string  $key  속성명
+     * @param  mixed  $value  속성값
+     * @return void 반환값 없음
+     */
     private static function appendIfString(array &$attributes, string $key, mixed $value): void
     {
         if (is_string($value) && $value !== '') {
@@ -566,6 +654,12 @@ class TemplateExternals
         }
     }
 
+    /**
+     * `https://` 로 시작하는 문자열인지 판정합니다.
+     *
+     * @param  mixed  $value  검사 값
+     * @return bool https URL 이면 true
+     */
     private static function isHttpsUrl(mixed $value): bool
     {
         return is_string($value) && str_starts_with($value, 'https://');

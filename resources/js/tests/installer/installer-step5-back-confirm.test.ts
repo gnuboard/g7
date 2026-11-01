@@ -119,14 +119,15 @@ async function bootFailureScreen(state: Record<string, unknown>) {
 /**
  * 실패 화면 버튼을 누르고 확인 창 문구를 돌려준다.
  *
- * 테스트 환경의 인라인 onclick 은 installer.js 가 노출한 전역을 보지 못한다 — 뷰 마크업의 onclick 이 부르는
- * 함수 이름을 읽어 같은 전역 함수를 직접 부른다(버튼 ↔ 함수 연결도 함께 확인된다).
+ * 버튼은 인라인 onclick 이 아니라 `data-action` 이름으로 위임 리스너(installer-boot.js)에 묶인다(#158 strict CSP) —
+ * 뷰 마크업의 data-action 이 가리키는 함수 이름을 읽어 같은 전역 함수를 직접 부른다(버튼 ↔ 함수 연결도 함께 확인된다).
  */
 async function clickAndCaptureConfirm(button: HTMLElement, accept: boolean) {
     const confirmSpy = vi.fn(() => accept);
     (window as any).confirm = confirmSpy;
-    const handler = /^(\w+)\(\)$/.exec(button.getAttribute('onclick') ?? '');
-    expect(handler, `버튼 onclick 이 인자 없는 전역 함수 호출이 아니다: ${button.getAttribute('onclick')}`).not.toBeNull();
+    expect(button.getAttribute('onclick'), '인라인 onclick 이 남아 있다').toBeNull();
+    const handler = /^(\w+)$/.exec(button.getAttribute('data-action') ?? '');
+    expect(handler, `버튼 data-action 이 함수 이름이 아니다: ${button.getAttribute('data-action')}`).not.toBeNull();
     const fn = (window as any)[handler![1]];
     expect(typeof fn, `${handler![1]} 가 전역에 노출되지 않았다`).toBe('function');
     await fn();

@@ -191,7 +191,8 @@ class EscrowConfirmReturnBindingTest extends PluginTestCase
     {
         $close = $this->get(self::BASE.'/close');
         $close->assertOk();
-        $this->assertStringContainsString('window.close()', (string) $close->getContent());
+        // 창 닫기는 정적 브리지 파일이 한다(#158 strict CSP — 인라인 window.close() 가 아니다)
+        $this->assertStringContainsString('data-mode="close"', (string) $close->getContent());
 
         $this->get(self::BASE.'/ORD-ESC-1')->assertStatus(401);
 

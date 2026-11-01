@@ -102,6 +102,9 @@ class SeoMiddleware
                 $this->moduleOfLayout($entry['layout'] ?? null)
             ));
 
+            // 봇 SEO HTML 표식 — 코어 CSP 미들웨어가 이 응답에는 헤더를 붙이지 않는다(#158).
+            $request->attributes->set('g7.seo_bot_response', true);
+
             return response($entry['html'], 200, [
                 'Content-Type' => 'text/html; charset=utf-8',
                 'X-SEO-Cache' => 'HIT',
@@ -180,6 +183,8 @@ class SeoMiddleware
             $request->attributes->get('seo_module_identifier'),
             (int) round((microtime(true) - $startedAt) * 1000)
         ));
+
+        $request->attributes->set('g7.seo_bot_response', true);
 
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=utf-8',

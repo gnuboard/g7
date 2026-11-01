@@ -8,6 +8,7 @@
 
 ### Added
 
+- NHN KCP 1.1.2 의 PC 결제창 프레임 요청 항목명(`messages.kcp_frame.sdk` 「決済ウィンドウ SDK の URL」)의 일본어 번역을 추가했습니다.
 - 결제 정보 부가세 내역의 「영세금액」(ゼロ税率金額) 일본어 번역을 추가했습니다.
 - KCP 1.1.2 의 모바일 결제를 쓸 수 없을 때 고객에게 보이는 안내(`messages.errors.mobile_payment_unavailable` 「現在モバイル決済をご利用いただけません。…」)의 일본어 번역을 추가했습니다.
 

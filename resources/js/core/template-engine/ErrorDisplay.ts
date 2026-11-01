@@ -258,10 +258,9 @@ export class ErrorDisplay {
                             ? `
                         <div style="${styles.buttonContainer}">
                             <button
-                                onclick="window.location.reload()"
+                                type="button"
+                                data-g7-error-reload="1"
                                 style="${styles.button}"
-                                onmouseover="this.style.backgroundColor='#1d4ed8'"
-                                onmouseout="this.style.backgroundColor='#2563eb'"
                             >
                                 <i class="fa-solid fa-rotate-right" style="margin-right: 0.5rem;" aria-hidden="true"></i>
                                 ${this.escapeHtml(this.text('core.errors.reload'))}
@@ -273,6 +272,19 @@ export class ErrorDisplay {
                 </div>
             </div>
         `;
+
+        // 새로고침 버튼은 인라인 on* 속성 없이 리스너로 묶는다 — strict CSP(`script-src 'self'`)
+        // 에서는 인라인 핸들러가 실행되지 않아 오류 화면의 유일한 탈출구가 무반응이 된다(#158).
+        const reloadButton = container.querySelector<HTMLButtonElement>('[data-g7-error-reload]');
+        if (reloadButton) {
+            reloadButton.addEventListener('click', () => window.location.reload());
+            reloadButton.addEventListener('mouseenter', () => {
+                reloadButton.style.backgroundColor = '#1d4ed8';
+            });
+            reloadButton.addEventListener('mouseleave', () => {
+                reloadButton.style.backgroundColor = '#2563eb';
+            });
+        }
     }
 
     /**

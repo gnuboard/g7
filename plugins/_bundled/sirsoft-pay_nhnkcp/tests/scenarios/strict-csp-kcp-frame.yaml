@@ -1,0 +1,30 @@
+feature: strict_csp_kcp_frame
+
+description: |
+  PC 결제창 프레임의 인라인 실행 코드 제거 (#158 strict CSP).
+
+  종전에는 주문 화면이 빈 iframe 에 document.write 로 KCP SDK 와 인라인 `<script>` 를 써 넣었다.
+  사이트가 `script-src 'self'` 를 걸면 그 인라인 코드가 실행되지 않아 PC 결제가 15초 뒤 시간 초과로 끝났다.
+
+  핵심 동작:
+    - iframe 은 같은 출처 라우트 payment.kcp-frame?sdk=… 를 연다(web 그룹 — 코어 CSP 헤더 동반)
+    - 프레임은 SDK <script src>(허용 주소 두 개와 정확히 일치할 때만) → order_info 폼 → 브리지 <script src>
+    - 브리지(assets/bridge/kcp-frame.js)는 부모의 window.__g7KcpFrame 으로 값(fields)·결과(complete)·ready·fail 을 주고받는다
+
+axes:
+  page: [kcp_frame]
+
+effects:
+  - kcp_frame_loads_sdk_then_bridge_without_inline
+  - kcp_frame_rejects_untrusted_sdk
+  - kcp_pc_frame_without_inline_script
+  - kcp_pc_frame_bridge_relays_fields_and_result
+  - kcp_sdk_secondary_hosts_declared_for_csp
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/BridgeNoInlineScriptTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/handlers/requestPayment.kcpFrame.test.ts
+
+notes: |
+  브라우저 시험은 표면 축(`surface=kcp_pc_frame`)으로 표시한다. 실제 KCP 결제창 열림·SDK 자체의 인라인/eval
+  사용 여부는 코어 이력 문서의 브라우저 실측(T8 PG 행)이 판정한다.

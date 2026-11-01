@@ -134,19 +134,6 @@ $stepFile = $ownershipLocked
 ?>
 <!DOCTYPE html>
 <html lang="<?= $currentLang ?>">
-<script>
-// 다크모드 즉시 적용 - 렌더링 전 실행 (FOUC 깜빡임 방지)
-(function(){
-    try {
-        const theme = localStorage.getItem('g7_color_scheme')
-            || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        document.documentElement.setAttribute('data-theme', theme);
-    } catch(e) {
-        // localStorage 접근 실패 시 기본값(light) 사용
-        document.documentElement.setAttribute('data-theme', 'light');
-    }
-})();
-</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -157,6 +144,24 @@ $stepFile = $ownershipLocked
     <!-- 아이콘: 설치 마법사는 SPA 부팅 전이라 자산 URL 헬퍼를 쓸 수 없으므로 상대 경로로 자체 제공한다 -->
     <link rel="stylesheet" href="<?= INSTALLER_BASE_URL ?>/assets/vendor/font-awesome/6.5.1/css/all.inlined.css">
     <link rel="stylesheet" href="<?= INSTALLER_BASE_URL ?>/assets/css/installer.css?v=<?= time() ?>">
+
+    <!-- 서버 값 — 비실행 JSON 데이터 블록. 인라인 실행 코드는 두지 않는다(#158 — 웹서버가
+         `Content-Security-Policy: script-src 'self'` 를 걸면 인라인 스크립트·on* 이 실행되지 않는다).
+         installer-boot.js 가 이 값을 종전과 같은 이름의 window.INSTALLER_* 전역으로 옮기고,
+         다크 모드를 즉시 적용(FOUC 방지)하며, data-action 위임 리스너를 건다. -->
+    <script type="application/json" id="installer-data"><?= installer_json_encode([
+        'base_url' => INSTALLER_BASE_URL,
+        'current_step' => (int) $currentStep,
+        // 상태변경 API 요청 검증 토큰 (세션 CSRF) — 소유 토큰 원문은 페이지에 싣지 않는다
+        'csrf' => installer_csrf_token(),
+        'ownership_locked' => (bool) $ownershipLocked,
+        'lang' => $translations ?? [],
+        'state_locale' => $state['g7_locale'] ?? null,
+        // DB 최고권한 계정 목록 — 서버 상수를 그대로 내려보내 JS 에 목록을 중복 정의하지 않는다.
+        // 클라이언트 검증은 즉시 피드백용이며, 실제 차단은 서버 3개 경로가 담당한다.
+        'blocked_db_accounts' => PrivilegedDatabaseAccounts::BLOCKED,
+    ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+    <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installer-boot.js?v=<?= time() ?>"></script>
 </head>
 <body>
     <?php if ($currentStep > 0 && ! $ownershipLocked) { ?>
@@ -198,19 +203,7 @@ $stepFile = $ownershipLocked
         <p>&copy; <?= APP_RELEASE_YEAR ?> Gnuboard7. All rights reserved.</p>
     </footer>
 
-    <!-- JavaScript -->
-    <script>
-        window.INSTALLER_BASE_URL = '<?= INSTALLER_BASE_URL ?>';
-        window.CURRENT_STEP = <?= $currentStep ?>;
-        // 상태변경 API 요청 검증 토큰 (세션 CSRF) — 소유 토큰 원문은 페이지에 싣지 않는다
-        window.INSTALLER_CSRF = <?= installer_json_encode(installer_csrf_token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-        window.INSTALLER_OWNERSHIP_LOCKED = <?= $ownershipLocked ? 'true' : 'false' ?>;
-        window.INSTALLER_LANG = <?= installer_json_encode($translations ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
-        window.INSTALLER_STATE_LOCALE = <?= installer_json_encode($state['g7_locale'] ?? null) ?>;
-        // DB 최고권한 계정 목록 — 서버 상수를 그대로 내려보내 JS 에 목록을 중복 정의하지 않는다.
-        // 클라이언트 검증은 즉시 피드백용이며, 실제 차단은 서버 3개 경로가 담당한다.
-        window.INSTALLER_BLOCKED_DB_ACCOUNTS = <?= installer_json_encode(PrivilegedDatabaseAccounts::BLOCKED) ?>;
-    </script>
+    <!-- JavaScript (전역 INSTALLER_* 는 <head> 의 installer-boot.js 가 이미 채웠다) -->
     <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installation-monitor.js?v=<?= time() ?>"></script>
     <!-- 확장 선택 해석기 — 서버(확장 저장·사전 검증·터미널 설치)와 같은 규칙. installer.js 보다 먼저 로드 -->
     <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installer-extension-resolver.js?v=<?= time() ?>"></script>

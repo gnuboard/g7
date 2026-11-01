@@ -5,6 +5,14 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.84.1] - 2026-10-31
+
+### Fixed
+
+- 사이트에 `Content-Security-Policy: script-src 'self'`(unsafe-inline 없음)를 걸면 엔진 공통 오류 화면의 「새로고침」 버튼이 눌러도 반응하지 않던 문제(공개#158) — 버튼 템플릿의 `onclick`·`onmouseover`·`onmouseout` 인라인 속성은 그 정책에서 실행되지 않는다. 버튼에 `data-g7-error-reload` 표식만 두고 그리기 직후 `click`·`mouseenter`·`mouseleave` 리스너로 묶는다. 같은 모양인 레이아웃 로드 실패 화면(`LayoutLoader.renderErrorState`)도 함께 고쳤다. 발생: `ErrorDisplay` 버튼은 처음 생길 때부터(2025-12), `renderErrorState` 는 LayoutLoader 도입 때부터(2025-11) 인라인 속성이었다 (ErrorDisplay.ts `render`, LayoutLoader.ts `renderErrorState`)
+
+회귀 잠금: `__tests__/ErrorDisplay.noInlineHandler.test.ts`(2 — 수정 전 2 red) · `__tests__/LayoutLoader.noInlineHandler.test.ts`(1 — 수정 전 red) · `__tests__/LayoutLoader.test.ts` 「새로고침 버튼을 포함한다」(인라인 onclick 단언 → 표식 단언)
+
 ## [engine-v1.84.0] - 2026-10-27
 
 ### Added

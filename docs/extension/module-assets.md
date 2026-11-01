@@ -181,7 +181,7 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 - 결제 플러그인의 PG SDK 도 같은 부류입니다(그 회사 서버와 통신하므로 자체 호스팅 불가).
   선언 사례: KG 이니시스 `stgstdpay.inicis.com`·`stdpay.inicis.com` / 토스페이먼츠
   `js.tosspayments.com` / 나이스페이먼츠 `web.nicepay.co.kr` / NHN KCP `testpay.kcp.co.kr`·
-  `pay.kcp.co.kr`. 이 플러그인들은 **코드에도 같은 호스트 목록을 두고 주입 직전에 확인**하며,
+  `pay.kcp.co.kr`(+ SDK 가 이어서 싣는 `npay`·`spay` 계열 — 아래 「콘텐츠 보안 정책」). 이 플러그인들은 **코드에도 같은 호스트 목록을 두고 주입 직전에 확인**하며,
   확인에 실패하면 결제를 진행하지 않습니다(fail-closed). SDK URL 이 확장자로 끝나지 않는
   경우(예: `/v2/standard`)에는 그 런타임 확인이 유일한 게이트입니다. PG사가 호스트를 바꾸면
   manifest 와 코드 상수를 **함께** 갱신해야 하며, 두 목록의 일치는 각 플러그인 테스트가
@@ -189,6 +189,27 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 - 이 기능은 코어 7.0.7 에서 도입되었습니다. 선언하는 확장은 `g7_version` 을 `>=7.0.7` 로 두는
   것이 계약상 정확합니다(하위 코어에서는 필드가 무시되어 무해).
 - 관련 보안 정책 상세: [frontend/security.md](../frontend/security.md).
+
+##### 콘텐츠 보안 정책(CSP)과의 관계 (코어 7.1.4)
+
+운영자가 환경설정 > 보안에서 CSP 를 켜면 코어는 **켜진 확장의 `trusted_script_hosts` 를 모아**
+`script-src` 에 넣습니다([backend/content-security-policy.md](../backend/content-security-policy.md)).
+그래서 이 선언은 레이아웃 로더 허용목록이면서 동시에 운영 사이트의 브라우저 정책이 됩니다.
+
+- **SDK 가 이어서 불러오는 호스트까지 선언합니다.** 서비스 SDK 는 자기 호스트 밖의 스크립트를 더
+  싣는 경우가 있습니다. 예: KCP `payplus_web.jsp` 는 `npay.kcp.co.kr`(결제 연동)·`spay.kcp.co.kr`
+  (간편결제)과 그 테스트 호스트(`testnpay`·`testspay`)에서 스크립트를 싣습니다. 빠지면 강제 모드에서
+  결제창이 열리지 않는데, 레이아웃 로더는 SDK 가 스스로 붙이는 스크립트를 보지 않으므로 다른 검사로는
+  드러나지 않습니다.
+- **확인 방법** — 개발 사이트에서 CSP 를 「점검만」으로 켜고 그 기능을 끝까지 실행(결제창 열기·간편결제
+  선택 등)한 뒤 `storage/logs/csp-*.log` 의 `blocked_uri` 를 확인합니다. 찍힌 호스트를 선언하고 사유를
+  적습니다. 결제사가 SDK 내부 호스트를 바꾸면 다시 확인합니다.
+- **확장이 직접 내는 HTML 에 인라인 실행 코드를 쓰지 않습니다.** 결제 닫기·본인인증 결과·팝업 브리지처럼
+  컨트롤러가 HTML 을 돌려주는 화면은 `<script>…</script>` 본문·`onclick=` 속성·`href="javascript:…"` 대신
+  서버 값을 `<script type="application/json" id="…">` 데이터 블록으로 싣고, 동작은 확장이 동봉한 정적 JS
+  (`assets/bridge/*.js`, 손작성 ES5)를 `<script src>` 로 싣습니다. 빈 iframe 에 `document.write` 로 인라인
+  스크립트를 써 넣는 방식도 부모 문서의 정책을 이어받아 막힙니다 — 같은 출처 라우트를 여는 방식으로 바꿉니다.
+  번들 확장의 이 규칙은 감사 룰 `no-inline-script-in-html-output` 이 검사합니다.
 
 플러그인(`plugin.json`)·템플릿(`template.json`)도 동일 필드를 지원합니다.
 

@@ -1,0 +1,14 @@
+feature: rich_text_editor_sanitize
+
+description: |
+  RichTextEditor 초기값을 DOMPurify 로 정화한다 (#158 부수 결함 B3).
+  초기화 useEffect 가 정화 없이 innerHTML 에 넣어 초기값의 <script>·on* 이 편집 영역에서 살아나는 XSS 싱크였다.
+
+axes:
+  initial_value: [malicious_html]
+
+effects:
+  - rich_text_editor_sanitizes_initial_value
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/RichTextEditor.sanitize.test.tsx

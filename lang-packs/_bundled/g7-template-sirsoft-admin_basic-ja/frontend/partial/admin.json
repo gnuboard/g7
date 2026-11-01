@@ -1938,6 +1938,24 @@
         "days_suffix": "日",
         "days_hint": "{{min}}〜{{max}}日。法定の最低期間より短くはできません。",
         "legal_notice": "法定最低: アクセス記録は1年(会員5万人以上、または固有識別情報・センシティブ情報を扱う場合は2年) · 権限・ロールの変更記録はこの値に関係なく最低3年保管します。"
+      },
+      "csp": {
+        "title": "コンテンツセキュリティポリシー (CSP)",
+        "desc": "サイト画面の応答にスクリプト出所ポリシーヘッダーを付け、許可していない場所のスクリプトやインラインスクリプトが実行されないようにします。Web サーバーで直接ヘッダーを設定している場合はオフのままにしてください。",
+        "mode": "適用モード",
+        "mode_off": "オフ",
+        "mode_report_only": "検査のみ (違反を記録)",
+        "mode_enforce": "強制 (違反をブロック)",
+        "mode_desc": "検査のみはブロックせず、違反をサーバーログ (storage/logs/csp-*.log) に記録します。強制は違反するスクリプトを実行しません。",
+        "enforce_warning": "まず「検査のみ」で storage/logs/csp-*.log に違反がないことを確認してから強制に切り替えてください。違反が残ったまま強制すると、その機能は動作しません。",
+        "override_notice": ".env の G7_CSP_MODE={{mode}} がこの設定より優先されます。変更するには .env を修正してから php artisan config:clear を実行してください。",
+        "extra_hosts": "追加スクリプト許可ホスト (入力後 Enter)",
+        "extra_hosts_placeholder": "cdn.example.com",
+        "extra_hosts_hint": "下の自動で含まれるホスト以外からスクリプトを読み込む場合にのみ追加してください。ホストのみ入力します (例: cdn.example.com, *.example.com, https://cdn.example.com)。",
+        "auto_hosts": "自動で含まれるホスト (有効な拡張機能の宣言)",
+        "auto_hosts_empty": "有効な拡張機能が宣言した外部スクリプトホストはありません。",
+        "preview": "適用されるポリシーのプレビュー",
+        "preview_hint": "保存済みの値に基づきます。モードやホストを変更した場合は保存してから確認してください。"
       }
     },
     "identity": {

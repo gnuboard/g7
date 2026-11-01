@@ -595,7 +595,7 @@
                     const mkdirCommand = `mkdir -p ${notExistsPaths.join(' ')}`;
                     html += `<pre class="fix-command">${escapeHtml(mkdirCommand)}</pre>`;
                 }
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                 html += '<div class="code-box">';
@@ -606,7 +606,7 @@
                     const relMkdirCommand = `mkdir -p ${notExistsRelPaths.join(' ')}`;
                     html += `<pre class="fix-command">${escapeHtml(relMkdirCommand)}</pre>`;
                 }
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += '</div>';
             }
@@ -633,19 +633,19 @@
                 html += `<p class="fix-guide-label">${lang('ownership_mismatch_option_group')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(groupCommand)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_chown')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`sudo chown -R ${webUser}:${webUser} ${mismatchPaths}`)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_777')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`chmod -R 777 ${mismatchPaths}`)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 const hintText = lang('ownership_mismatch_hint')
@@ -671,7 +671,7 @@
                         html += `<p class="fix-guide-label">${lang('permission_readonly_fix_guide')}</p>`;
                         html += '<div class="code-box">';
                         html += `<pre class="fix-command">${escapeHtml(winRoCommands.join('\n'))}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                         html += '</div>';
                         html += `<p class="fix-guide-hint">${lang('permission_readonly_hint')}</p>`;
                     }
@@ -679,14 +679,14 @@
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winDirCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     const winDirRelPaths = failedDirRelPaths.map(p => p.replace(/\//g, '\\'));
                     const winDirRelCommands = winDirRelPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winDirRelCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
                 } else {
@@ -695,12 +695,12 @@
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod -R 755 ${dirPathList}`)}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod -R 755 ${dirRelPathList}`)}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                 }
                 html += '</div>';
@@ -739,12 +739,12 @@
                 html += `<p class="fix-guide-label">${isWindows ? lang('required_files_fix_guide') : lang('required_files_fix_guide_combined')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(fileFixCommand)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(fileFixRelCommand)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += '</div>';
             }
@@ -762,14 +762,14 @@
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winFileCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     const winRelFilePaths = notWritableRelPaths.map(p => p.replace(/\//g, '\\'));
                     const winRelFileCommands = winRelFilePaths.map(p => `icacls "${p}" /grant Everyone:F`);
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winRelFileCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
                 } else {
@@ -778,12 +778,12 @@
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod 644 ${filePathList}`)}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod 644 ${relFilePathList}`)}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                 }
                 html += '</div>';
@@ -809,19 +809,19 @@
                 html += `<p class="fix-guide-label">${lang('ownership_mismatch_option_group')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(fileGroupCommand)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_chown')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`sudo chown ${fileWebUser}:${fileWebUser} ${mismatchFilePaths}`)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_666')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`chmod 666 ${mismatchFilePaths}`)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 const fileHintText = lang('ownership_mismatch_hint')
@@ -1168,10 +1168,10 @@
                             <p class="db-existing-backup-label"><strong>${escapeHtml(lang('db_backup_guide'))}</strong></p>
                             <div class="code-box">
                                 <pre>${escapeHtml(backupCmd)}</pre>
-                                <button type="button" class="btn-copy" onclick="copyPermissionCommand(this)">${escapeHtml(lang('copy_command'))}</button>
+                                <button type="button" class="btn-copy" data-action="copyPermissionCommand">${escapeHtml(lang('copy_command'))}</button>
                             </div>
                             <label class="db-backup-confirm-checkbox">
-                                <input type="checkbox" id="db-backup-confirmed" onchange="onDbBackupConsentChange(this)" ${alreadyConsented ? 'checked' : ''}>
+                                <input type="checkbox" id="db-backup-confirmed" data-action="onDbBackupConsentChange" data-event="change" ${alreadyConsented ? 'checked' : ''}>
                                 ${escapeHtml(lang('db_backup_confirmed'))}
                             </label>
                         </div>
@@ -3738,7 +3738,7 @@
         const backupCmd = `mysqldump -h ${dbHost} -u ${dbUser} -p --databases ${dbName} > backup_$(date +%Y%m%d_%H%M%S).sql`;
 
         const html = `
-            <div class="modal-backdrop" onclick="closeExistingTablesModal()"></div>
+            <div class="modal-backdrop" data-action="closeExistingTablesModal"></div>
             <div class="modal-content">
                 <h3 class="modal-title">⚠ ${escapeHtml(lang(titleKey))}</h3>
                 <div class="modal-body">
@@ -3755,10 +3755,10 @@
                     </label>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeExistingTablesModal()">
+                    <button type="button" class="btn btn-secondary" data-action="closeExistingTablesModal">
                         ${escapeHtml(lang('cancel'))}
                     </button>
-                    <button type="button" class="btn btn-danger" id="db-force-proceed-btn" disabled onclick="confirmDropTables()">
+                    <button type="button" class="btn btn-danger" id="db-force-proceed-btn" disabled data-action="confirmDropTables">
                         ${escapeHtml(lang('db_force_proceed_drop'))}
                     </button>
                 </div>
@@ -4350,7 +4350,7 @@
 
             return `
                 <div class="task-group" data-group-id="${group.id}">
-                    <div class="task-group-header" onclick="toggleTaskGroup('${group.id}')">
+                    <div class="task-group-header" data-action="toggleTaskGroup" data-arg="${group.id}">
                         <span class="task-group-toggle">▼</span>
                         <span class="task-group-label">${escapeHtml(groupLabel)}</span>
                         <span class="task-group-status status-pending">${lang('status_pending')}</span>
@@ -4626,7 +4626,7 @@
                                 type="button"
                                 aria-expanded="${expanded ? 'true' : 'false'}"
                                 aria-controls="${accordionId}"
-                                onclick="toggleErrorDetail(this, '${accordionId}')"
+                                data-action="toggleErrorDetail" data-arg="${accordionId}"
                             >
                                 <span class="error-detail-toggle-icon">▶</span>
                                 <strong>${lang('view_error_details')}</strong>

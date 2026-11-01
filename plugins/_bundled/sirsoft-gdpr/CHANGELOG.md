@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.3] - 2026-11-01
+
+### Fixed
+
+- 쿠키 동의 전 막아 둔 추적 스크립트(`data-gdpr-category` 를 붙인 `<script src>`)가 방문자가 동의한 뒤에도 실행되지 않던 문제를 고쳤습니다. 이제 동의하면 바로 불러옵니다. 되살릴 때는 주소·`async` 같은 허용 속성만 옮기고, 본문에 적힌 인라인 코드는 되살리지 않습니다. (#158 @glitter-gim 님께서 제보해주셨습니다.)
+
 ## [1.1.2] - 2026-10-23
 
 ### Added
