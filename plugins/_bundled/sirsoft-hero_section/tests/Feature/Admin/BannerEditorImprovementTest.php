@@ -36,7 +36,7 @@ class BannerEditorImprovementTest extends PluginTestCase
     }
 
     /**
-     * 일괄 조회 뒤 위치가 바뀌어도 최신 부모 행의 위치로 변경을 통지합니다.
+     * 일괄 요청이 들어온 뒤 잠그기 직전에 위치가 바뀌어도, 잠근 행의 최신 위치로 변경을 통지합니다.
      *
      * @scenario case=locked_mutation_snapshot
      *
@@ -50,11 +50,11 @@ class BannerEditorImprovementTest extends PluginTestCase
         foreach (['bulkDelete', 'bulkSetActive'] as $method) {
             $banner = Banner::factory()->withImages()->create(['position' => 'home_hero']);
             $repository = Mockery::mock(BannerRepository::class)->makePartial();
-            $repository->shouldReceive('findMany')->atLeast()->once()->andReturnUsing(function ($ids) use ($banner) {
-                $rows = Banner::query()->whereIn('id', $ids)->get();
+            // 다른 운영자의 변경이 잠금 직전에 커밋된 상황 — 스냅숏은 요청 시점 값이 아니라 잠근 행에서 읽어야 한다
+            $repository->shouldReceive('findManyForUpdate')->once()->andReturnUsing(function ($ids) use ($banner) {
                 Banner::query()->whereKey($banner->id)->update(['position' => 'shop_hero']);
 
-                return $rows;
+                return Banner::query()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get();
             });
             $this->app->instance(BannerRepositoryInterface::class, $repository);
             $snapshots = [];

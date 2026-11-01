@@ -865,7 +865,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
         <HeroVideoMedia
           sources={banner.videos ?? {}}
           forceDevice={forceDevice}
-          poster={main?.url}
+          posters={forceDevice ? { pc: main?.url, mobile: main?.url } : { pc: pc?.url, mobile: mobile?.url }}
           playing={playing}
           active={active}
           loop={loop}
@@ -885,6 +885,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
           playLabel={t('sirsoft-hero_section.slider.youtube_play', '유튜브 영상 재생')}
           notice={t('sirsoft-hero_section.slider.youtube_notice', '재생하면 YouTube 에서 영상을 불러옵니다.')}
           active={active}
+          preload={eager}
           onEnded={onMediaEnded}
           onFailed={onMediaFailed}
         />

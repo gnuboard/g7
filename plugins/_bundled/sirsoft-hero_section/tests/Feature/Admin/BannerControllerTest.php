@@ -5,10 +5,12 @@ namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Admin;
 use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
+use Plugins\Sirsoft\HeroSection\Services\BannerService;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
 /**
@@ -453,6 +455,48 @@ class BannerControllerTest extends PluginTestCase
         $this->assertFalse($a->fresh()->is_active);
         $this->assertFalse($b->fresh()->is_active);
         $this->assertTrue($c->fresh()->is_active);
+    }
+
+    /**
+     * 일괄 켜고 끄기·삭제는 고른 건수가 늘어도 잠근 채 읽는 조회 수가 늘지 않는다 — 배너마다 잠그고 이미지·영상을 따로 읽지 않는다.
+     *
+     * @scenario surface=bulk_mutations_constant_queries
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bulk_mutations_do_not_query_per_banner(): void
+    {
+        $this->fakeImageDisks();
+        $banners = (new Banner)->getTable();
+        $count = function (callable $run): array {
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+            $run();
+            $queries = array_column(DB::getQueryLog(), 'query');
+            DB::disableQueryLog();
+
+            return $queries;
+        };
+        $selects = fn (array $queries) => count(array_filter($queries, fn ($q) => str_starts_with(strtolower(ltrim($q)), 'select')));
+        $service = app(BannerService::class);
+
+        $small = Banner::factory()->count(2)->withImages()->create()->pluck('id')->all();
+        $large = Banner::factory()->count(8)->withImages()->create()->pluck('id')->all();
+
+        // 첫 호출에만 도는 일회성 스키마 확인이 비교를 흐리지 않게 한 번 먼저 부른다
+        $service->bulkSetActive($small, true, null);
+        $this->assertSame(
+            $selects($count(fn () => $service->bulkSetActive($small, false, null))),
+            $selects($count(fn () => $service->bulkSetActive($large, false, null))),
+        );
+
+        $smallDelete = $count(fn () => $service->bulkDelete($small));
+
+        $largeDelete = $count(fn () => $service->bulkDelete($large));
+        $this->assertSame($selects($smallDelete), $selects($largeDelete));
+        $deletes = fn (array $queries) => count(array_filter($queries, fn ($q) => preg_match('/^delete from [`"]?\\w*'.$banners.'[`"]?\\s/i', ltrim($q)) === 1));
+        $this->assertSame(1, $deletes($largeDelete));
+        $this->assertSame(0, Banner::query()->whereIn('id', [...$small, ...$large])->count());
     }
 
     /**

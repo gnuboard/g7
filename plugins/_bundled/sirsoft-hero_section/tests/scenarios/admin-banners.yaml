@@ -49,6 +49,7 @@ axes:
     - bulk_status_updates_each
     - bulk_delete_removes_each_with_files
     - bulk_ids_validation
+    - bulk_mutations_constant_queries
     - reorder_accepts_complete_set
     - reorder_rejects_partial_set
     - reorder_rejects_other_position_id

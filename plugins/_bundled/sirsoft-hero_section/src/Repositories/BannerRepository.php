@@ -161,6 +161,20 @@ class BannerRepository implements BannerRepositoryInterface
     /**
      * {@inheritDoc}
      *
+     * 한 문장으로 id 순 잠금을 잡아(단건 편집과 같은 순서라 교착이 없다) 건수와 무관하게 조회 수가 일정하다.
+     *
+     * @param  array<int, int>  $ids  배너 ID 목록
+     * @return Collection<int, Banner> 잠근 배너 목록 (id 순)
+     */
+    public function findManyForUpdate(array $ids): Collection
+    {
+        return Banner::query()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()
+            ->load(['pcImage', 'mobileImage', 'pcVideo', 'mobileVideo']);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * @param  Banner  $banner  대상 배너
      * @param  array<string, mixed>  $data  바꿀 값
      * @return Banner 고친 배너
@@ -181,6 +195,17 @@ class BannerRepository implements BannerRepositoryInterface
     public function delete(Banner $banner): bool
     {
         return (bool) $banner->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  array<int, int>  $ids  배너 ID 목록
+     * @return int 지운 건수
+     */
+    public function deleteMany(array $ids): int
+    {
+        return $ids === [] ? 0 : Banner::query()->whereIn('id', $ids)->delete();
     }
 
     /**

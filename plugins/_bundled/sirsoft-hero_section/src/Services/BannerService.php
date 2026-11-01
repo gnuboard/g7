@@ -218,8 +218,7 @@ class BannerService
         HookManager::doAction('sirsoft-hero_section.banner.before_bulk_status', $ids, $isActive);
 
         [$count, $snapshots] = DB::transaction(function () use ($ids, $isActive, $actorId) {
-            $banners = $this->banners->findMany($ids)->sortBy('id')
-                ->map(fn (Banner $banner) => $this->banners->findForUpdate($banner->id));
+            $banners = $this->banners->findManyForUpdate($ids);
             $snapshots = $banners->map(fn (Banner $banner) => $banner->toArray())->keyBy('id')->all();
 
             return [$this->banners->bulkSetActive($ids, $isActive, $actorId), $snapshots];
@@ -240,18 +239,13 @@ class BannerService
     {
         HookManager::doAction('sirsoft-hero_section.banner.before_bulk_delete', $ids);
 
-        $banners = $this->banners->findMany($ids);
-
-        [$count, $released, $snapshots] = DB::transaction(function () use ($banners) {
-            $banners = $banners->sortBy('id')->map(fn (Banner $banner) => $this->banners->findForUpdate($banner->id));
+        [$count, $released, $snapshots] = DB::transaction(function () use ($ids) {
+            $banners = $this->banners->findManyForUpdate($ids);
             $snapshots = $banners->map(fn (Banner $banner) => $banner->toArray())->keyBy('id')->all();
-            $released = $this->imageService->releaseForBanners($banners->pluck('id')->all());
-            $deleted = 0;
-            foreach ($banners as $banner) {
-                $deleted += $this->banners->delete($banner) ? 1 : 0;
-            }
+            $lockedIds = $banners->pluck('id')->all();
+            $released = $this->imageService->releaseForBanners($lockedIds);
 
-            return [$deleted, $released, $snapshots];
+            return [$this->banners->deleteMany($lockedIds), $released, $snapshots];
         });
         $this->deleteReleasedImages($released);
 

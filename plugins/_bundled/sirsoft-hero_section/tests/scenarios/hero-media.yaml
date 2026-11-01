@@ -32,6 +32,8 @@ axes:
     - pause_stops_video
     - pause_keeps_video_position
     - video_play_abort_is_not_failure
+    - video_poster_matches_device
+    - youtube_loads_only_near_active
     - reduced_motion_starts_paused
     - video_error_falls_back_to_interval
     - video_only_when_media_type_video

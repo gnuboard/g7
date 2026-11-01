@@ -144,8 +144,8 @@ interface HeroVideoMediaProps extends MediaCallbacks {
   /** 미리보기 기기 고정 */
   forceDevice?: 'pc' | 'mobile';
 
-  /** 대표 이미지 주소 — 첫 프레임을 받기 전에 보인다 */
-  poster?: string;
+  /** 기기별 대표 이미지 주소 — 첫 프레임을 받기 전에 보인다. 아래 그림 요소와 같은 기기 것을 써서 이미지를 따로 더 받지 않는다 */
+  posters?: { pc?: string; mobile?: string };
 
   /** 지금 재생할지 (활성 장이고 일시정지가 아님) */
   playing: boolean;
@@ -167,11 +167,13 @@ interface HeroVideoMediaProps extends MediaCallbacks {
  * @param props 영상 속성
  * @returns 영상 요소
  */
-export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDevice, poster, playing, active, loop, eager, onEnded, onFailed }) => {
+export const HeroVideoMedia: React.FC<HeroVideoMediaProps> = ({ sources, forceDevice, posters, playing, active, loop, eager, onEnded, onFailed }) => {
   const ref = useRef<HTMLVideoElement>(null);
   const narrow = useNarrowScreen();
   const mobile = forceDevice ? forceDevice === 'mobile' : narrow;
   const source = (mobile ? sources.mobile ?? sources.pc : sources.pc) ?? null;
+  // 대표 이미지는 지금·다음 장만 단다 — poster 는 lazy 그림과 달리 바로 받으므로 먼 장의 이미지까지 첫 화면에 받게 된다
+  const poster = eager || active ? (mobile ? posters?.mobile ?? posters?.pc : posters?.pc) : undefined;
 
   useEffect(() => {
     const video = ref.current;
@@ -248,6 +250,9 @@ interface HeroYoutubeMediaProps extends MediaCallbacks {
 
   /** 활성 장인지 (재생 단추 탭 순서) */
   active: boolean;
+
+  /** 다음 차례라 미리 불러 둘지 — 동의했어도 플레이어는 지금 장·다음 장만 만들어 첫 화면을 무겁게 하지 않는다 */
+  preload?: boolean;
 }
 
 /**
@@ -258,17 +263,24 @@ interface HeroYoutubeMediaProps extends MediaCallbacks {
  * @param props 유튜브 속성
  * @returns 유튜브 자리
  */
-export const HeroYoutubeMedia: React.FC<HeroYoutubeMediaProps> = ({ videoId, title, playing, loop, allowed, onAllow, playLabel, notice, active, onEnded, onFailed }) => {
+export const HeroYoutubeMedia: React.FC<HeroYoutubeMediaProps> = ({ videoId, title, playing, loop, allowed, onAllow, playLabel, notice, active, preload = false, onEnded, onFailed }) => {
   const hostRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const [ready, setReady] = useState(false);
+  // 지금 장이거나 다음 차례가 되면 불러오고, 한 번 불러온 플레이어는 지나가도 그대로 둔다(다시 받지 않게)
+  const [wanted, setWanted] = useState(active || preload);
+  useEffect(() => {
+    if (active || preload) {
+      setWanted(true);
+    }
+  }, [active, preload]);
   const callbacks = useRef({ onEnded, onFailed, playing });
   callbacks.current = { onEnded, onFailed, playing };
 
   // 허락되면 iframe 을 만들고, 메시지 구독을 붙인다
   useEffect(() => {
     const host = hostRef.current;
-    if (!allowed || !host || !isYoutubeId(videoId)) {
+    if (!allowed || !wanted || !host || !isYoutubeId(videoId)) {
       return;
     }
     // 관리자 미리보기는 슬라이더를 iframe 문서에 그린다 — 플레이어 메시지는 그 문서의 창으로 온다
@@ -329,12 +341,12 @@ export const HeroYoutubeMedia: React.FC<HeroYoutubeMediaProps> = ({ videoId, tit
       frame.remove();
       frameRef.current = null;
     };
-  }, [allowed, videoId, loop]);
+  }, [allowed, wanted, videoId, loop]);
 
   // 재생·멈춤 — 일시정지는 그 자리에 멈추고, 활성 장이 아니게 되면 처음으로 돌려 다음 차례에 처음부터 본다. 재생 신호가 오지 않으면 간격 넘김으로 돌린다
   useEffect(() => {
     const frame = frameRef.current;
-    if (!allowed || !frame) {
+    if (!allowed || !wanted || !frame) {
       return;
     }
     const post = (func: string, args: unknown[] = []) => {
@@ -353,7 +365,7 @@ export const HeroYoutubeMedia: React.FC<HeroYoutubeMediaProps> = ({ videoId, tit
     }
     const timer = setTimeout(() => callbacks.current.onFailed(), YOUTUBE_START_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [allowed, playing, active, ready]);
+  }, [allowed, wanted, playing, active, ready]);
 
   return (
     <div className={`hs__youtube${ready ? ' hs__youtube--ready' : ''}`}>

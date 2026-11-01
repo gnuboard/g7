@@ -9,17 +9,17 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-hero_section.banner.after_bulk_delete` | action | 일괄 삭제 직후. 인자: (array $ids, array $snapshots) | `src/Services/BannerService.php:258` |
-| `sirsoft-hero_section.banner.after_bulk_status` | action | 일괄 노출·비노출 직후. 인자: (array $ids, bool $isActive, array $snapshots) | `src/Services/BannerService.php:228` |
+| `sirsoft-hero_section.banner.after_bulk_delete` | action | 일괄 삭제 직후. 인자: (array $ids, array $snapshots) | `src/Services/BannerService.php:252` |
+| `sirsoft-hero_section.banner.after_bulk_status` | action | 일괄 노출·비노출 직후. 인자: (array $ids, bool $isActive, array $snapshots) | `src/Services/BannerService.php:227` |
 | `sirsoft-hero_section.banner.after_create` | action | 배너 등록 직후. 인자: (Banner $banner) | `src/Services/BannerService.php:132` |
 | `sirsoft-hero_section.banner.after_delete` | action | 배너 영구 삭제 직후. 인자: (int $bannerId, array $snapshot) | `src/Services/BannerService.php:205` |
-| `sirsoft-hero_section.banner.after_reorder` | action | 순서 변경 직후. 인자: (string $position, array $ids) | `src/Services/BannerService.php:276` |
+| `sirsoft-hero_section.banner.after_reorder` | action | 순서 변경 직후. 인자: (string $position, array $ids) | `src/Services/BannerService.php:270` |
 | `sirsoft-hero_section.banner.after_update` | action | 배너 수정 직후. 인자: (Banner $banner, array $snapshot, string $previousPosition) | `src/Services/BannerService.php:176` |
-| `sirsoft-hero_section.banner.before_bulk_delete` | action | 일괄 삭제 직전. 인자: (array $ids) | `src/Services/BannerService.php:241` |
+| `sirsoft-hero_section.banner.before_bulk_delete` | action | 일괄 삭제 직전. 인자: (array $ids) | `src/Services/BannerService.php:240` |
 | `sirsoft-hero_section.banner.before_bulk_status` | action | 일괄 노출·비노출 직전. 인자: (array $ids, bool $isActive) | `src/Services/BannerService.php:218` |
 | `sirsoft-hero_section.banner.before_create` | action | 배너 등록 직전. 인자: (array $data) | `src/Services/BannerService.php:107` |
 | `sirsoft-hero_section.banner.before_delete` | action | 배너 영구 삭제 직전. 인자: (Banner $banner) | `src/Services/BannerService.php:191` |
-| `sirsoft-hero_section.banner.before_reorder` | action | 순서 변경 직전. 인자: (string $position, array $ids) | `src/Services/BannerService.php:272` |
+| `sirsoft-hero_section.banner.before_reorder` | action | 순서 변경 직전. 인자: (string $position, array $ids) | `src/Services/BannerService.php:266` |
 | `sirsoft-hero_section.banner.before_update` | action | 배너 수정 직전. 인자: (Banner $banner, array $data) | `src/Services/BannerService.php:158` |
 | `sirsoft-hero_section.banner.filter_create_data` | filter | 등록 값 가공. 인자: (array $data) | `src/Services/BannerService.php:108` |
 | `sirsoft-hero_section.banner.filter_list_params` | filter | 관리자 목록 조건 가공. 인자: (array $filters) | `src/Services/BannerService.php:44` |

@@ -115,6 +115,21 @@ describe('HeroSlider 영상 배너', () => {
     expect(container.querySelector('[data-banner-id="2"] video')?.getAttribute('src')).toBe('/vid/pc-2.mp4');
   });
 
+  // @scenario surface=video_poster_matches_device
+  it('휴대폰 폭이면 영상 대표 이미지도 모바일 이미지로 두고, 먼 장의 대표 이미지는 차례가 다가올 때 받는다', () => {
+    mockMedia({ narrow: true });
+    const withMobile = { ...videoBanner(1), images: { pc: { url: '/img/pc-1.jpg', width: 1920, height: 640 }, mobile: { url: '/img/m-1.jpg', width: 750, height: 1000 } } };
+    const { container } = render(<HeroSlider banners={[withMobile, videoBanner(2), videoBanner(3)]} />);
+    const poster = (id: number) => container.querySelector(`[data-banner-id="${id}"] video`)?.getAttribute('poster');
+    expect(poster(1)).toBe('/img/m-1.jpg');
+    // 모바일 이미지가 없으면 PC 이미지(그림 요소도 같은 것을 받는다)
+    expect(poster(2)).toBe('/img/pc-2.jpg');
+    // 먼 장은 차례가 다가올 때까지 대표 이미지를 받지 않는다(그림 요소처럼 늦게)
+    expect(poster(3)).toBeNull();
+    fireEvent.click(container.querySelector('.hs__next')!);
+    expect(poster(3)).toBe('/img/pc-3.jpg');
+  });
+
   // @scenario surface=video_ends_then_next
   it('활성 장이 영상이면 간격 넘김을 멈추고, 영상이 끝나면 다음 장으로 넘긴다', () => {
     const { container } = render(<HeroSlider banners={[videoBanner(1), banner(2)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
@@ -302,6 +317,24 @@ describe('HeroSlider 영상 배너', () => {
         window.dispatchEvent(new MessageEvent('message', { data: ended, origin: 'https://www.youtube-nocookie.com', source: frame.contentWindow }));
       });
       expect(swiperState.instance!.slideNext).toHaveBeenCalledTimes(1);
+    });
+
+    // @scenario surface=youtube_loads_only_near_active
+    it('마케팅에 동의했어도 유튜브 플레이어는 지금 장과 다음 장만 불러오고, 그 차례가 다가오면 불러온다', () => {
+      mockConsent(ready(true));
+      const { container } = render(<HeroSlider banners={[banner(1), youtubeBanner(2), banner(3), youtubeBanner(4)]} settings={{ autoplay: false }} />);
+      const frame = (id: number) => container.querySelector(`[data-banner-id="${id}"] iframe`);
+      expect(frame(2)).not.toBeNull();
+      expect(frame(4)).toBeNull();
+
+      fireEvent.click(container.querySelector('.hs__next')!);
+      expect(frame(4)).toBeNull();
+      fireEvent.click(container.querySelector('.hs__next')!);
+      expect(frame(4)).not.toBeNull();
+      // 한 번 불러온 플레이어는 지나가도 다시 만들지 않는다
+      fireEvent.click(container.querySelector('.hs__next')!);
+      fireEvent.click(container.querySelector('.hs__next')!);
+      expect(frame(2)).not.toBeNull();
     });
 
     // @scenario surface=pause_keeps_video_position

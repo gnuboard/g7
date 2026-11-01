@@ -52,6 +52,14 @@ interface BannerRepositoryInterface
     public function findForUpdate(int $id): Banner;
 
     /**
+     * 트랜잭션 안에서 여러 배너 행을 id 순으로 한 번에 잠그고 이미지·영상을 함께 읽습니다(없는 id 는 빠진다).
+     *
+     * @param  array<int, int>  $ids  배너 ID 목록
+     * @return Collection<int, Banner> 잠근 배너 목록 (id 순)
+     */
+    public function findManyForUpdate(array $ids): Collection;
+
+    /**
      * 여러 id 의 배너를 찾습니다(이미지 포함).
      *
      * @param  array<int, int>  $ids  배너 ID 목록
@@ -91,6 +99,14 @@ interface BannerRepositoryInterface
      * @return bool 삭제 여부
      */
     public function delete(Banner $banner): bool;
+
+    /**
+     * 여러 배너 행을 한 번에 지웁니다(이미지는 서비스가 먼저 떼어 낸다).
+     *
+     * @param  array<int, int>  $ids  배너 ID 목록
+     * @return int 지운 건수
+     */
+    public function deleteMany(array $ids): int;
 
     /**
      * 위치의 맨 뒤 순서 값을 반환합니다.

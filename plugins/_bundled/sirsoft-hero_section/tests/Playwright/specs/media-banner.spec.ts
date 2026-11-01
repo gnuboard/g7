@@ -166,6 +166,26 @@ test('영상을 받는 중(재생 시작 전)에 다른 배너로 넘겼다 돌�
   expect(await page.evaluate(() => (window as any).__playRejections)).toContain('AbortError');
 });
 
+// @scenario surface=video_poster_matches_device
+test('휴대폰에서는 영상 대표 이미지로 모바일 이미지만 받고 PC 이미지는 받지 않는다', async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.mobile);
+  await serveVideo(page);
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  const requested: string[] = [];
+  await page.route('**/e2e-hero-media/*.png', (route) => {
+    requested.push(new URL(route.request().url()).pathname);
+    return route.fulfill({ status: 200, contentType: 'image/png', body: png });
+  });
+  const images = { pc: { url: '/e2e-hero-media/pc.png', width: 1920, height: 640 }, mobile: { url: '/e2e-hero-media/m.png', width: 750, height: 1000 } };
+  await injectBanners(page, () => [{ ...videoBanner(null), images }], { autoplay: false, effect: 'slide' });
+  await page.reload();
+
+  await expect(page.locator('.hs__slide--active video.hs__video')).toHaveAttribute('poster', '/e2e-hero-media/m.png', { timeout: 20_000 });
+  await expect.poll(() => requested).toContain('/e2e-hero-media/m.png');
+  await page.waitForTimeout(1_000);
+  expect(requested).not.toContain('/e2e-hero-media/pc.png');
+});
+
 // @scenario surface=reduced_motion_starts_paused
 test('움직임 줄이기에서는 영상이 멈춘 채 시작하고, 「배너 다시 재생」 단추로 재생한다', async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
