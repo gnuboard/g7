@@ -118,7 +118,7 @@ Tailwind 빌드로, 템플릿에서 가져온 의미 클래스는 `pay-nhnkcp-*`
 
 **깨뜨리면 안 되는 것**: `window.fetch`·`history.pushState`·`history.replaceState` 를 덮어쓰지 않는다 · 로그인 토큰을
 저장소에서 읽어 Bearer 를 붙이지 않는다(`G7Core.api` 가 싣고 401 도 처리한다) · 화면을 주소 정규식이나 제목 글자,
-클래스 모양으로 찾지 않는다. 정적 검사 `extension-private-core-internals` 가 앞의 둘을 막는다.
+클래스 모양으로 찾지 않는다. 정적 검사가 앞의 둘을 막는다.
 <!-- @intent END -->
 
 가상계좌 입금 안내의 **입금 금액**은 레이아웃 확장(`user_order_show`)이 결제예정금액(`total_due_amount_formatted`, 마일리지 차감 뒤)을 먼저 읽고, 그 값이 없는 비회원 응답에서는 주문금액(`total_amount_formatted`)으로 대신한다. 입금 대기 중에는 주문금액과 결제예정금액이 같은 값(둘 다 마일리지 차감 뒤)이고, 입금이 들어오면 결제예정금액이 줄어든다 — 입금할 금액의 기준 필드는 결제예정금액이다.

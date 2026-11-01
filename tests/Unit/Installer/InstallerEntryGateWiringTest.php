@@ -83,7 +83,7 @@ class InstallerEntryGateWiringTest extends TestCase
 
         // 목록의 **반대 방향**도 잰다.
         //
-        // 위 다섯은 손으로 적혀 있었고, 그 사이 `api/run-task.php` 가 같은 가드를
+        // 위 다섯은 손으로 적혀 있었고, 그 사이 `public/install/api/run-task.php` 가 같은 가드를
         // 부르게 됐는데 목록에 들어오지 않았다 — 그래서 그 파일의 출처 확인은
         // **어느 검사도 보지 않는 상태**였다(그 줄을 지워도 전부 초록). 손 목록은
         // 파일이 늘어도 스스로 자라지 않는다 (10차 G3 라운드 C10-9).
@@ -93,8 +93,8 @@ class InstallerEntryGateWiringTest extends TestCase
         //
         // 모집단은 `api/` 한 겹이 아니라 **인스톨러 전수**다. 종전에는 `glob('api/*.php')`
         // 로 고정돼 있어, 그 밖의 POST 진입점은 구조적으로 보이지 않았다 — `index.php` 의
-        // POST 처리(`includes/request-handler.php` 위임)가 정확히 그 자리다 (14차 C11-9).
-        // 모집단을 넓히면 **판정을 선언하는 파일**(`includes/execution-mode.php`)도 그 글자를
+        // POST 처리(`public/install/includes/request-handler.php` 위임)가 정확히 그 자리다.
+        // 모집단을 넓히면 **판정을 선언하는 파일**(`public/install/includes/execution-mode.php`)도 그 글자를
         // 갖는다. 선언은 호출이 아니므로 토큰 판정으로 가른다.
         $callers = [];
 

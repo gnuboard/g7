@@ -21,12 +21,17 @@ use PHPUnit\Framework\Attributes\Test;
  *
  * @scenario reason_type=exchange
  *
- * @effects settings_claim_reason_catalog_reads_and_writes_own_type
+ * 효과 요약(마커 아님 — 평문): settings_claim_reason_catalog_reads_and_writes_own_type
  */
 class ClaimReasonRepositoryTypeContractTest extends ModuleTestCase
 {
     protected ClaimReasonRepository $repository;
 
+    /**
+     * 각 테스트 전에 대상 저장소를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -56,6 +61,12 @@ class ClaimReasonRepositoryTypeContractTest extends ModuleTestCase
 
     /**
      * `type` 없이 조회하면 계약 위반으로 예외가 난다.
+     *
+     * @scenario reason_type=exchange
+     *
+     * @effects settings_claim_reason_catalog_reads_and_writes_own_type
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_rejects_a_query_without_a_type_filter(): void
@@ -68,6 +79,12 @@ class ClaimReasonRepositoryTypeContractTest extends ModuleTestCase
 
     /**
      * `type` 을 주면 그 유형만 돌려준다.
+     *
+     * @scenario reason_type=exchange
+     *
+     * @effects settings_claim_reason_catalog_reads_and_writes_own_type
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_returns_only_the_requested_type(): void

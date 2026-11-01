@@ -35,7 +35,7 @@ const items: NotificationItem[] = [
 ];
 
 describe('사용자 템플릿 컴포넌트 계약', () => {
-  // @scenario component=HtmlEditor,disabled=true
+  // @scenario component=HtmlEditor,state=disabled
   // @effects html_editor_disabled_blocks_editing
   it('HtmlEditor 는 disabled 를 readOnly 와 같이 다룬다', () => {
     const { container } = render(<HtmlEditor content="본문" disabled />);

@@ -44,7 +44,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- |
 | managed_codes | array | `["USD","JPY","CNY","EUR"]` | 활성 제공자가 관리하는 통화 코드 목록 |
 | unsupported_codes | array | `[]` | 응답에 없거나 유효한 환율을 계산할 수 없는 통화 코드 목록 |
-| notice_key | null | `null` | 자동 관리 비활성 사유 번역 키; 정상 관리 시 null |
+| notice_key | string | `auth_key_required` | 자동 관리 비활성 사유 번역 키; 정상 관리 시 null |
 | last_updated_at | string | `2026-09-14T14:02:15+09:00` | last updated 일시 |
 | last_updated_at_formatted | string | `2026-09-14 14:02:15` | `last_updated_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | auto_manage | boolean | `true` | 자동 관리 설정 활성 여부 |

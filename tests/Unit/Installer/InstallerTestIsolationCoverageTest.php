@@ -14,7 +14,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 나머지는 안전가드에 걸려 조용히 통째로 skip 된다. 종료 코드는 그대로 0 이므로 **초록으로
  * 보이는 채 커버리지만 사라진다.**
  *
- * 실제로 그 사각 안에 GitHub 토큰 유출 회귀 테스트가 들어 있었다(6차 라운드 #4) — 어떤 공정이
+ * 실제로 그 사각 안에 GitHub 토큰 유출 회귀 테스트가 들어 있었다 — 어떤 공정이
  * `--filter` 로 일부만 돌리면 그 보안 게이트가 평가되지 않은 채 초록을 본다.
  *
  * 그래서 초록이 클래스 이름의 알파벳 순서에 기대지 않도록, `BASE_PATH` 를 정의하는 클래스는
@@ -43,7 +43,7 @@ class InstallerTestIsolationCoverageTest extends TestCase
      * 19차 G#11 — 종전에는 이 목록이 **수기 4개**였다. 이 클래스의 docblock 은 「파일을
      * 열거하지 않고 디렉토리를 스캔하므로 새로 추가되는 클래스도 모집단이다」라고 클래스
      * 모집단의 도출성을 말하는데, 판정의 **다른 축**인 전이 정의자는 손으로 적혀 있었다.
-     * 실측 결과 `api/save-extensions.php`·`api/scan-extensions.php` 두 개가 직접
+     * 실측 결과 `public/install/api/save-extensions.php`·`public/install/api/scan-extensions.php` 두 개가 직접
      * `define('BASE_PATH'` 를 하면서 목록에 없었고, 그 둘을 require 하는 새 테스트는
      * 상수를 실 저장소 루트로 박고도 이 게이트를 통과한다 — 6차가 닫은 「조용한 skip」이
      * 그 자리에서 다시 열린다.
@@ -95,7 +95,7 @@ class InstallerTestIsolationCoverageTest extends TestCase
         //    `basename($definer)` 였는데, 파일명뿐인 needle 로는 `loadsFile()` 이 동적
         //    require 의 디렉토리 리터럴(`__DIR__."/../lang/{$lang}.php"`)을 배제 근거로 쓸
         //    수 없다 — 같은 라운드가 그 자리의 `false` 접힘(fail-open)을 `null` 로 고치자
-        //    `functions.php`·`validation.php`(번역 파일만 동적 require)가 `api/save-extensions.php`
+        //    `functions.php`·`validation.php`(번역 파일만 동적 require)가 `public/install/api/save-extensions.php`
         //    의 전이 정의자로 실측됐고, 그것을 require 하는 테스트 셋에 거짓 격리 의무가
         //    생겼다. 이 소비처는 정의자의 디렉토리를 **알고 있으므로** 버리지 않는다 — 같은
         //    디렉토리 형제 형태(`__DIR__.'/config.php'`)는 `loadsFile()` 이 그대로 받는다.

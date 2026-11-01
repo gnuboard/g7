@@ -117,7 +117,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | has_consented | boolean | `false` | consented 여부 |
-| consents | array | `[]` | 현재 방문자의 활성 쿠키 동의 목록(카테고리별 현재 선택 상태). 배너가 기존 동의를 반영해 토글 초기값을 그릴 때 사용합니다 |
+| consents | object | `{"analytics":true,"functional":true,"marketing":true}` | 현재 방문자의 활성 쿠키 동의 목록(카테고리별 현재 선택 상태). 배너가 기존 동의를 반영해 토글 초기값을 그릴 때 사용합니다 |
 | needs_renewal | boolean | `false` | 과거 동의 이력은 있으나 현재 정책 버전으로는 미동의인 상태(정책 갱신 후 재확인 필요). 동의 이력이 전혀 없는 신규 게스트는 `false`입니다 |
 | current_policy_version | string | `10` | 현재 발행된 최신 정책 버전 문자열(정책 버전 서비스 기준). 방문자 동의 버전과 비교해 배너 재노출 여부를 판단합니다 |
 | is_member | boolean | `true` | member 여부 |

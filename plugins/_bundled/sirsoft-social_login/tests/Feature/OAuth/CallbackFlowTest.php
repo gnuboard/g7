@@ -250,7 +250,7 @@ class CallbackFlowTest extends PluginTestCase
     /**
      * 같은 state 로 콜백을 두 번 열면(인가 코드 재사용) 두 번째는 실패한다.
      *
-     * @scenario intent=test, replay=state
+     * @scenario intent=test, state=replayed
      *
      * @effects state_replay_rejected
      *

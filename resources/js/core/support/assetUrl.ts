@@ -631,7 +631,7 @@ function hasBasePrefix(path: string, prefix: string): boolean {
  * 둘(스크립트 src 판정 · 브라우저 이동 판정)이므로 이 파일이 그 SSoT 다 — 사본을
  * 만들면 한쪽만 강화됐을 때 다른 쪽이 조용한 우회로가 된다.
  *
- * @since engine-v1.61.3
+ * @since engine-v1.86.0
  * @param value 원본 주소 문자열
  * @returns 정규화된 주소
  */
@@ -656,7 +656,7 @@ export function normalizeForOriginCheck(value: string): string {
  * 앞뒤 공백은 판정 전에 걷어낸다 — `withBasePrefix()` 가 같은 자리에서 같은 이유로
  * trim 하므로(`' /images/a.png'`), 두 함수가 보는 값이 갈리면 안 된다.
  *
- * @since engine-v1.61.3
+ * @since engine-v1.86.0
  * @param value 판정할 주소 문자열
  * @returns 같은 오리진의 경로면 true
  */

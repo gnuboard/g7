@@ -25,7 +25,7 @@ use Tests\TestCase;
  *
  * 소유 시나리오: `extension-icons` (축 매핑은 각 테스트 메서드에 있다)
  *
- * @effects icon_fields_exposed_on_list_and_detail, language_pack_icon_source_derivation
+ * 효과 요약(마커 아님 — 평문): icon_fields_exposed_on_list_and_detail, language_pack_icon_source_derivation
  */
 class ExtensionIconExposureTest extends TestCase
 {

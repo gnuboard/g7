@@ -290,7 +290,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| scope | query | string | 아니오 | — | 조회 범위 한정 키 |
+| scope | query | string | 아니오 | — | 적용 시점 필터 (route / hook / custom, IdentityPolicyScope) |
 | purpose | query | string | 아니오 | max 64 | 인증 목적 필터 (해당 목적을 요구하는 정책만 조회) |
 | source_type | query | string | 아니오 | — | 정책 출처 필터 (core/module/plugin/admin — 선언형 vs 운영자 정책 구분, IdentityPolicySourceType) |
 | source_identifier | query | string | 아니오 | max 100 | 출처 식별자 |
@@ -323,7 +323,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | provider_id | string | `nhnkcp` | provider 식별자 (연관 리소스 참조) |
 | grace_minutes | integer | `0` | 재인증 유예 시간(분) — 최근 N분 이내 동일 목적 인증 성공 시 재인증 생략 (0=매번 요구) |
 | enabled | boolean | `false` | 정책 사용 여부 (false 시 인증 미강제) |
-| priority | integer | `100` | 정책 우선순위 (같은 대상에 여러 정책 매칭 시 작을수록 우선) |
+| priority | integer | `100` | 정책 우선순위 (같은 대상에 활성 정책이 여럿이면 값이 큰 정책부터 검사) |
 | conditions | array | `[]` | 추가 매칭 조건 (역할/HTTP 메서드/파라미터 매칭 조건 JSON, 없으면 빈 배열) |
 | source_type | string | `core` | 정책 출처 (core/module/plugin: 선언형 / admin: 운영자 직접 등록, IdentityPolicySourceType) |
 | source_identifier | string | `core` | 출처 식별자 (선언형 정책의 소유 확장 identifier) |
@@ -435,13 +435,13 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | key | body | string | 예 | max 120 | 정책 식별자 (고유, 예: core.profile.password_change) |
-| scope | body | string | 예 | — | 조회 범위 한정 키 |
+| scope | body | string | 예 | — | 적용 시점 (route: 경로 / hook: 서비스 훅 / custom: 확장이 직접 검사하는 키, IdentityPolicyScope) |
 | target | body | string | 예 | max 255 | 매칭 대상 (scope 에 따라 라우트명/URI 패턴, 훅 이름, 또는 custom key) |
 | purpose | body | string | 예 | max 64 | 이 정책이 요구하는 인증 목적 |
 | provider_id | body | string | 아니오 | max 64 | provider 식별자 |
 | grace_minutes | body | integer | 예 | min 0, max 43200 | 재인증 유예 시간(분) — 최근 N분 이내 동일 목적 인증 성공 시 재인증 생략 (0=매번 요구) |
 | enabled | body | boolean | 아니오 | — | 사용 여부 |
-| priority | body | integer | 아니오 | min 0, max 65535 | 우선순위 (작을수록 우선) |
+| priority | body | integer | 아니오 | min 0, max 65535 | 우선순위 (같은 대상에 활성 정책이 여럿이면 값이 큰 정책부터 검사, 같은 대상의 활성 정책과 같은 값이면 422) |
 | conditions | body | array | 아니오 | — | 추가 매칭 조건 (역할/HTTP 메서드/파라미터 매칭 조건 JSON) |
 | applies_to | body | string | 예 | — | 적용 대상 사용자 (self: 일반 사용자 / admin: 관리자 / both: 모두, IdentityPolicyAppliesTo) |
 | fail_mode | body | string | 예 | — | 실패 시 동작 (block: HTTP 428 차단 / log_only: 감사 로그만 남기고 통과, IdentityPolicyFailMode) |
@@ -490,7 +490,7 @@ _단건 응답: `data` 객체의 필드 (생성된 정책을 `PolicyResource` �
 | provider_id | null | `null` | 강제할 프로바이더 ID (미지정 시 null → 목적 기본 프로바이더 사용) |
 | grace_minutes | integer | `30` | 재인증 유예 시간(분) — 0=매번 요구 |
 | enabled | boolean | `true` | 정책 사용 여부 |
-| priority | integer | `100` | 정책 우선순위 (작을수록 우선) |
+| priority | integer | `100` | 정책 우선순위 (값이 클수록 먼저 검사) |
 | conditions | object | `{"changed_fields":["email"]}` | 추가 매칭 조건 JSON (미지정 시 null) |
 | source_type | string | `admin` | 정책 출처 — 이 엔드포인트로 생성한 정책은 항상 `admin` |
 | source_identifier | string | `null` | 출처 식별자 (요청에서 전달한 값, 미전달 시 null) |
@@ -625,10 +625,10 @@ HTTP/1.1 200
 | provider_id | body | string | 아니오 | max 64 | provider 식별자 |
 | fail_mode | body | string | 아니오 | — | 실패 시 동작 (block: HTTP 428 차단 / log_only: 감사 로그만 남기고 통과, IdentityPolicyFailMode) |
 | key | body | string | 아니오 | max 120 | 정책 식별자 (admin 정책만 변경 가능, 선언형 정책은 확장 지점 식별자라 변경 차단) |
-| scope | body | string | 아니오 | — | 조회 범위 한정 키 |
+| scope | body | string | 아니오 | — | 적용 시점 (admin 정책만 변경 가능, 선언형 정책은 변경 차단, IdentityPolicyScope) |
 | target | body | string | 아니오 | max 255 | 매칭 대상 (admin 정책만 변경 가능, 선언형 정책은 변경 차단) |
 | purpose | body | string | 아니오 | max 64 | 이 정책이 요구하는 인증 목적 |
-| priority | body | integer | 아니오 | min 0, max 65535 | 우선순위 (작을수록 우선) |
+| priority | body | integer | 아니오 | min 0, max 65535 | 우선순위 (같은 대상에 활성 정책이 여럿이면 값이 큰 정책부터 검사, 같은 대상의 활성 정책과 같은 값이면 422) |
 | conditions | body | array | 아니오 | — | 추가 매칭 조건 (역할/HTTP 메서드/파라미터 매칭 조건 JSON) |
 | applies_to | body | string | 아니오 | — | 적용 대상 사용자 (self: 일반 사용자 / admin: 관리자 / both: 모두, IdentityPolicyAppliesTo) |
 
@@ -1465,7 +1465,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| scope | query | string | 예 | max 32 | 조회 범위 한정 키 |
+| scope | query | string | 예 | max 32 | 적용 시점 (route / hook / custom) |
 | target | query | string | 예 | max 255 | 정책 매칭 대상 (scope 와 함께 해석 — 라우트명/URI 패턴, 훅 이름, 또는 custom key) |
 
 **요청 예시**

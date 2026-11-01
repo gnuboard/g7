@@ -66,7 +66,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | user_id | string | `a231747f-e82e-4cf2-9ae1-a261849dce40` | user 식별자 (연관 리소스 참조) |
 | user | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 작성자 정보 (uuid·name·email, `user` 관계 로드 시) |
 | product | object | `{"id":320,"name":"API 문서 샘플 상품","thumbnail_url":null}` | 리뷰 대상 상품 정보 (id·현지화 상품명·썸네일 URL) |
-| option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
+| option_snapshot | object | `{"id":1161,"option_code":"B5QOEZ6GZA0W3DWP-002","option_v…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Molestiae repellendus accusantium omn…` | 리뷰 내용 |
@@ -88,6 +88,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | reply_updated_at | string | `2026-07-07 19:08:45` | reply updated 일시 |
 | created_at | string | `2026-07-07 14:47:31` | 생성 일시 |
 | updated_at | string | `2026-07-07 14:47:31` | 최종 수정 일시 |
+| is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -147,7 +148,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.reviews.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -247,7 +248,7 @@ _단건 응답: `data` 객체의 필드. `action` 값에 따라 반환 키가 �
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| review | path | string | 예 | — | 대상 review의 식별자 |
+| review | path | integer | 예 | — | 대상 review의 식별자 |
 
 **요청 예시**
 
@@ -260,7 +261,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_단건 응답: 삭제 성공 플래그만 반환한다 (Resource 로 감싸지 않는다)._
+_단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
@@ -308,7 +309,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| review | path | string | 예 | — | 대상 review의 식별자 |
+| review | path | integer | 예 | — | 대상 review의 식별자 |
 
 **요청 예시**
 
@@ -331,7 +332,7 @@ _단건 응답: `data` 객체의 필드._
 | user_id | string | `a231747f-e82e-4cf2-9ae1-a261849dce40` | 작성자 ID |
 | user | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 작성자 정보 (uuid·name·email, `user` 관계 로드 시) |
 | product | object | `{"id":320,"name":"API 문서 샘플 상품","thumbnail_url":null}` | 리뷰 대상 상품 정보 (id·현지화 상품명·썸네일 URL) |
-| option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
+| option_snapshot | object | `{"id":1244,"option_code":"O0AJ9M3LVXOI7XVJ-007","option_v…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Molestiae repellendus accusantium omn…` | 리뷰 내용 |
@@ -353,6 +354,7 @@ _단건 응답: `data` 객체의 필드._
 | reply_updated_at | null | `null` | reply updated 일시 |
 | created_at | string | `2026-07-07 14:47:31` | 생성 일시 |
 | updated_at | string | `2026-07-07 14:47:31` | 최종 수정 일시 |
+| is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -440,7 +442,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| review | path | string | 예 | — | 대상 review의 식별자 |
+| review | path | integer | 예 | — | 대상 review의 식별자 |
 
 **요청 예시**
 
@@ -462,7 +464,7 @@ _단건 응답: `data` 객체의 필드._
 | order_option_id | integer | `1` | order option 식별자 (연관 리소스 참조) |
 | user_id | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | user 식별자 (연관 리소스 참조) |
 | user | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"AP…` | 대상 사용자 정보 객체 (uuid/name/email 등 — user 관계 파생) |
-| option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
+| option_snapshot | object | `{"id":1244,"option_code":"O0AJ9M3LVXOI7XVJ-007","option_v…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Alias quas iusto dolorem eum eveniet …` | 본문 내용 |
@@ -479,6 +481,7 @@ _단건 응답: `data` 객체의 필드._
 | reply_updated_at | null | `null` | reply updated 일시 |
 | created_at | string | `2026-07-08 10:44:49` | 생성 일시 |
 | updated_at | string | `2026-07-08 10:44:49` | 최종 수정 일시 |
+| is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -552,7 +555,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| review | path | string | 예 | — | 대상 review의 식별자 |
+| review | path | integer | 예 | — | 대상 review의 식별자 |
 | reply_content | body | string | 예 | min 1, max 2000 | 판매자 답변 내용 (1~2000자) |
 | reply_content_mode | body | string | 아니오 | `text`, `html` | 답변 콘텐츠 모드 (평문/HTML, 미지정 시 text) |
 
@@ -584,7 +587,7 @@ _단건 응답: `data` 객체의 필드._
 | order_option_id | integer | `1` | order option 식별자 (연관 리소스 참조) |
 | user_id | string | `a234c2b1-cde8-437f-b28b-23323be2b98d` | user 식별자 (연관 리소스 참조) |
 | user | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"AP…` | 대상 사용자 정보 객체 (uuid/name/email 등 — user 관계 파생) |
-| option_snapshot | string | `{"id":104,"option_code":"FWACBAVCBKCD…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
+| option_snapshot | object | `{"id":1244,"option_code":"O0AJ9M3LVXOI7XVJ-007","option_v…` | 주문 시점 옵션 스냅샷 (옵션명 보존용) |
 | option_snapshot_label | string | `` | `option_snapshot` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | rating | integer | `5` | 별점 (1~5) |
 | content | string | `Alias quas iusto dolorem eum eveniet …` | 본문 내용 |
@@ -601,6 +604,7 @@ _단건 응답: `data` 객체의 필드._
 | reply_updated_at | null | `null` | reply updated 일시 |
 | created_at | string | `2026-07-08 10:44:49` | 생성 일시 |
 | updated_at | string | `2026-07-08 15:00:32` | 최종 수정 일시 |
+| is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -675,7 +679,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| review | path | string | 예 | — | 대상 review의 식별자 |
+| review | path | integer | 예 | — | 대상 review의 식별자 |
 | status | body | string | 예 | — | 변경할 리뷰 전시 상태 (visible=전시중 / hidden=숨김) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.review.update_status_validation_rules`, `sirsoft-ecommerce.review.update_status_validation_messages`).
@@ -913,7 +917,7 @@ HTTP/1.1 201
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| orderOptionId | path | string | 예 | — | 대상 order option의 식별자 |
+| orderOptionId | path | integer | 예 | — | 대상 order option의 식별자 |
 
 **요청 예시**
 
@@ -982,6 +986,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 500 | Internal Server Error | 판정 중 예외 발생 (`messages.reviews.can_write_check_failed`) |
 
 <!-- @generated:end -->
@@ -999,7 +1004,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| review | path | string | 예 | — | 대상 review의 식별자 |
+| review | path | integer | 예 | — | 대상 review의 식별자 |
 
 **요청 예시**
 
@@ -1060,7 +1065,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| review | path | string | 예 | — | 대상 review의 식별자 |
+| review | path | integer | 예 | — | 대상 review의 식별자 |
 | image | body | file | 예 | max 10240 | 첨부할 이미지 파일 (최대 용량은 리뷰 설정 `review_settings.max_image_size_mb` 기반, 폴백 10MB) |
 
 **요청 예시**
@@ -1157,8 +1162,8 @@ HTTP/1.1 201
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| review | path | string | 예 | — | 대상 review의 식별자 |
-| image | path | string | 예 | — | 대상 image의 식별자 |
+| review | path | integer | 예 | — | 대상 review의 식별자 |
+| image | path | integer | 예 | — | 대상 image의 식별자 |
 
 **요청 예시**
 

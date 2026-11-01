@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축 6개의 full cross product 는 실제로 성립하지 않는 조합(등록 수명주기 × 주입 위치 등)을 대량 포함한다. 회귀 가드는 effects 전수 매핑으로 유지한다 — effects 축은 면제하지 않는다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 축 6개의 full cross product 는 실제로 성립하지 않는 조합(등록 수명주기 × 주입 위치 등)을 대량 포함한다. 회귀 가드는 effects 전수 매핑으로 유지한다 — effects 축은 면제하지 않는다.
 
 feature: 레이아웃 확장 주입 엔진 — applyExtensions 병합 규칙과 확장 등록 수명주기
 

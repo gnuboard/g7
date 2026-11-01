@@ -33,7 +33,7 @@ async function collectObjectLeaks(page: import('@playwright/test').Page): Promis
   });
 }
 
-// @scenario screen=ecommerce_settings, leak_axis=extension_point
+// @scenario screen=ecommerce_settings, leak_path=extension_point_host
 // @effects extension_point_host_clean
 test('@smoke engine-v1.55.1 - 확장 삽입 영역 호스트에 객체 props 가 남지 않는다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -52,7 +52,7 @@ test('@smoke engine-v1.55.1 - 확장 삽입 영역 호스트에 객체 props 가
   expect(await collectObjectLeaks(page)).toEqual([]);
 });
 
-// @scenario screen=ecommerce_settings, leak_axis=extension_point
+// @scenario screen=ecommerce_settings, leak_path=extension_point_host
 // @effects address_search_still_works
 test('engine-v1.55.1 - 호스트 정리 후에도 주소 검색은 그대로 열린다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -70,7 +70,7 @@ test('engine-v1.55.1 - 호스트 정리 후에도 주소 검색은 그대로 열
   await expect(page.locator('#daum-postcode-layer')).toBeAttached({ timeout: 20_000 });
 });
 
-// @scenario screen=board_post_detail, leak_axis=extension_point
+// @scenario screen=board_post_detail, leak_path=extension_point_host
 // @effects html_content_host_clean, extension_point_host_class_expression_evaluated
 test('@smoke engine-v1.55.1 - 본문 표시 영역 호스트에 원시값 페이로드가 남지 않는다', async ({ page }) => {
   const token = issueToken('sirsoft-board.archive.admin.posts.read');
@@ -97,7 +97,7 @@ test('@smoke engine-v1.55.1 - 본문 표시 영역 호스트에 원시값 페이
   expect(await collectObjectLeaks(page)).toEqual([]);
 });
 
-// @scenario screen=board_post_form, leak_axis=extension_point
+// @scenario screen=board_post_form, leak_path=extension_point_host
 // @effects html_editor_host_clean
 test('engine-v1.55.1 - 글 편집기 영역을 정리해도 편집기는 그대로 뜨고 입력이 반영된다', async ({ page }) => {
   const token = issueToken('sirsoft-board.archive.admin.posts.read', 'sirsoft-board.archive.admin.posts.write');
@@ -123,7 +123,7 @@ test('engine-v1.55.1 - 글 편집기 영역을 정리해도 편집기는 그대�
   expect(await collectObjectLeaks(page)).toEqual([]);
 });
 
-// @scenario screen=ecommerce_product_form, leak_axis=form_autobinding
+// @scenario screen=ecommerce_product_form, leak_path=form_auto_binding
 // @effects icon_not_autobound
 test('@smoke engine-v1.55.1 - 아이콘 이름이 폼 필드와 겹쳐도 값이 주입되지 않는다', async ({ page }) => {
   const token = issueToken(

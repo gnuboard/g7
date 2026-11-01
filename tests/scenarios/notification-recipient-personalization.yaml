@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   이 기능의 축(수신자 종류 × 채널 × 구독자 유무)은 조합마다 별도 테스트를 두는 형태가
 #   아니라 **정의 전수를 순회하는 계약 테스트**로 커버한다(1층 계약 + 수신자 해석 단위).
 #   effects 축은 면제하지 않는다 — 선언한 부수효과는 전부 테스트 마킹으로 덮여야 한다.

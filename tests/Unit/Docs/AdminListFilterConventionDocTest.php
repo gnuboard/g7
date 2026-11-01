@@ -145,7 +145,7 @@ final class AdminListFilterConventionDocTest extends TestCase
             }
 
             $rel = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
-            preg_match_all('/```[a-z]*\R(.*?)```/s', (string) file_get_contents($file->getPathname()), $m);
+            preg_match_all('/```[a-z]*(?:\r\n|\r|\n)(.*?)```/s', (string) file_get_contents($file->getPathname()), $m);
 
             foreach ($m[1] as $i => $block) {
                 if (str_contains($block, '<extension extension-point=')) {

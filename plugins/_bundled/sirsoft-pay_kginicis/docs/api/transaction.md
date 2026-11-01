@@ -97,6 +97,7 @@ _단건 응답: `data` 객체의 필드._
 | \_escrow_confirm | string \| null | `2026-06-21 09:00:00` | 에스크로 구매확정 일시 |
 | \_inquiry_at | string | `2026-06-19 14:02:31` | 이 조회를 수행한 서버 시각 |
 | \_cbt_cvs | object \| null | `null` | 일본 편의점결제(CVS) 거래일 때의 상세 상태. `status` / `last_notify_at` / `last_notify_result` / `last_notify_reason` / `last_recheck_at` / `last_recheck_result` / `expired_at` / `expiry_reason` / `notify_history`(최대 10건). CBT 응답에만 포함 |
+| errorDetails | array | `[{"field":"tid","contents":"길이는 40자여야 합니다."}]` | KG 이니시스 조회 API 가 요청 값을 거절했을 때 원본 응답에 담아 보내는 오류 상세 배열 (원본 응답, 플러그인은 가공하지 않고 그대로 전달). 각 항목은 `field`(거절된 요청 필드) / `contents`(거절 사유). 조회 API 가 HTTP 오류 없이 이 본문을 돌려주면 502 가 아니라 200 응답의 `data` 에 그대로 실린다 |
 
 **응답 예시**
 

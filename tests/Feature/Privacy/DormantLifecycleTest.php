@@ -41,9 +41,9 @@ use Tests\TestCase;
  * 2. 활동 기준은 로그인 시각만이 아니라 토큰 사용 시각까지 본다 (설계 확정) — 앱·토큰으로만
  *    쓰는 활동 중인 회원이 자동 탈퇴로 사라지는 것을 막는다.
  *
- * @scenario target=privacy_dormant_accounts, row_age=within_retention, row_age=beyond_retention
+ * 축 요약(마커 아님 — 평문): target=privacy_dormant_accounts, row_age=within_retention, row_age=beyond_retention
  *
- * @effects dormancy_requires_advance_notice_before_conversion, dormant_account_is_restored_on_login, dormant_activity_basis_includes_token_last_used_at
+ * 효과 요약(마커 아님 — 평문): dormancy_requires_advance_notice_before_conversion, dormant_account_is_restored_on_login, dormant_activity_basis_includes_token_last_used_at
  */
 class DormantLifecycleTest extends TestCase
 {
@@ -467,7 +467,7 @@ class DormantLifecycleTest extends TestCase
      *
      * @return void 반환값 없음
      *
-     * @scenario stage=withdraw, toggle=on, run_mode=dry_run
+     * @scenario stage=withdraw, toggle=on
      *
      * @effects dry_run_command_counts_match_the_preview_badge_source
      */

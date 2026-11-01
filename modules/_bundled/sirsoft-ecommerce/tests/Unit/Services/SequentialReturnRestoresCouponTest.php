@@ -40,7 +40,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * @scenario return_round=sequential
  *
- * @effects sequential_return_restores_coupons_at_the_final_round
+ * 효과 요약(마커 아님 — 평문): sequential_return_restores_coupons_at_the_final_round
  */
 class SequentialReturnRestoresCouponTest extends ModuleTestCase
 {

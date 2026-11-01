@@ -497,7 +497,7 @@ class InstallerIncludeOrderTest extends TestCase
      * 형제 검사(`test_functions_shared_with_runtime_are_all_guarded`)는 두 파일
      * (`functions.php` ↔ `installer-runtime.php`)만 본다. 그런데 8차가 가드 **블록 내용**
      * 축의 모집단을 `public/install/**` 전수로 넓히면서, 그 옆의 「가드가 아예 없는
-     * 중복 선언」 축은 두 파일 고정으로 남았다 — `api/_guard.php` 처럼 나중에 생긴
+     * 중복 선언」 축은 두 파일 고정으로 남았다 — `public/install/api/_guard.php` 처럼 나중에 생긴
      * 파일에 중복 선언이 들어와도 아무것도 울지 않는다(변이 실측: 가드 래퍼를
      * 통째로 지워도 초록) (10차 G3 라운드 B10-5).
      *
@@ -602,7 +602,7 @@ class InstallerIncludeOrderTest extends TestCase
      *
      * 모집단은 **도출한다** — 파일 목록을 손으로 적으면 새 include 가 그대로 사각이 된다.
      * 그 도출은 `includes/` 한 겹이 아니라 `public/install/` **전체**를 재귀로 훑는다.
-     * 같은 형태의 선언 가드는 `api/_guard.php`(8개)·`api/*.php`·`views/*.php` 에도 있고,
+     * 같은 형태의 선언 가드는 `public/install/api/_guard.php`(8개)·`api/*.php`·`views/*.php` 에도 있고,
      * 종전 모집단(`includes/*.php`)은 그것들을 통째로 밖에 두고 있었다 — 그 자리에 형제를
      * 중첩시켜도 이 검사가 초록이었다(실측).
      *
@@ -661,7 +661,7 @@ class InstallerIncludeOrderTest extends TestCase
      *
      * 선언 가드(`if (! function_exists('X')) { function X() {…} }`)와 **사용 여부 검사**
      * (`if (… && function_exists('X')) { X(…); }`)는 이름이 같다. 실물이 둘 다 있다 —
-     * `includes/functions.php` 와 `includes/artisan-executor.php`. 수집을 이름 키로 하면
+     * `public/install/includes/functions.php` 와 `public/install/includes/artisan-executor.php`. 수집을 이름 키로 하면
      * 뒤엣것이 앞엣것을 덮어, 선언 가드가 **빈 집합으로 측정**되고 그 안에 중첩된 형제가
      * 검사에서 사라진다. 실 소스가 준수 상태라 이 사실은 red 로 드러나지 않으므로
      * 합성 입력으로 고정한다.

@@ -8,11 +8,11 @@
 
 ```text
 1. 로그인 왕복과 제공자 웹훅은 웹 주소다(아래 「웹 엔드포인트」). JSON API 는 그 앞뒤 화면(버튼 목록, 가입 모달, 마이페이지 연결 관리, 관리자 설정 진단 통계, 관리자 회원 탭)이 부른다
-6. 관리자 응답은 제공자 비밀값을 마스크(`••••••••`)로만 싣는다 — 마스크를 그대로 돌려보내면 유지, `null`(빈 문자열)은 삭제
 2. 가입 모달 API 는 게스트가 부른다 — 콜백이 발급한 48자 가입 대기 토큰(pending_token)이 곧 권한이고, 유효 시간이 지나면 404 `expired`
 3. 로그인 토큰은 이 플러그인이 만들지 않는다 — 가입·연결이 끝나면 코어 로그인 인계 주소(handoff_url)를 돌려주고, 화면이 그 주소로 가서 코어가 로그인시킨다. 인계 코드는 발급한 브라우저에 묶이므로(코어 7.2.0) `handoff_url` 을 주는 응답은 묶음 쿠키 `g7_login_bind`(HttpOnly, SameSite=Lax, Path `/api/auth`, 120초)를 `Set-Cookie` 로 함께 보낸다 — 같은 브라우저에서만 교환된다
 4. 실패 응답은 `errors.code` 에 플러그인 코드를 싣는다(아래 「실패 코드」). 화면은 이 코드로 분기한다
 5. 요청 제한은 라우트마다 따로 센다(throttle 세 번째 인자 = 버킷 이름) — 화면마다 부르는 제공자 목록이 인증번호 요청 한도를 깎지 않는다
+6. 관리자 응답은 제공자 비밀값을 마스크(`••••••••`)로만 싣는다 — 마스크를 그대로 돌려보내면 유지, `null`(빈 문자열)은 삭제
 ```
 
 ---
@@ -33,13 +33,13 @@
 | 상태 | 조건 |
 | --- | --- |
 | 401 | 비로그인 요청 (`auth:sanctum` 라우트) |
-| 403 | 권한 없음, 관리자 계정 소셜 로그인 차단(`admin_blocked`), 재확인 대상 아님(`reauth_not_available`) |
+| 403 | 권한 없음, 관리자 계정 소셜 로그인 차단(`admin_blocked`), 재확인 대상 아님(`reauth_not_available`), 사이트 회원가입 닫힘(`registration_closed`, 가입 완료만) |
 | 404 | 가입 대기 토큰 만료(`expired`), 꺼진 제공자(`provider_disabled`), 연결 없음(`not_linked`), 수령 코드 무효(`reauth_claim_invalid`), 실패 횟수 초과(`too_many_attempts`) |
 | 409 | 다른 회원에 연결된 계정(`already_linked_other_user`), 이미 연결된 제공자(`provider_already_linked`), 마지막 로그인 수단(`last_method`) 등 |
 | 422 | 입력 검증 실패(`errors` 는 필드별 메시지), 흐름 실패(`invalid_code`, `email_taken` 등) |
 | 428 | 코어 본인인증 정책 `core.auth.signup_before_submit` 이 켜졌는데 확인 토큰이 없음(가입 완료만) |
-| 503 | 이메일 인증번호를 보내지 못함(`mail_failed` — 사이트 메일 설정 문제, 시도 기록에 남는다) |
 | 429 | 라우트별 요청 제한 초과 |
+| 503 | 이메일 인증번호를 보내지 못함(`mail_failed` — 사이트 메일 설정 문제, 시도 기록에 남는다) |
 
 ### 실패 코드
 
@@ -48,6 +48,7 @@
 | `expired` | 404 | 가입 대기 토큰이 없거나 만료됐다 — 처음부터 다시 로그인한다 |
 | `provider_disabled` | 404 | 제공자가 꺼졌거나 없다 |
 | `admin_blocked` | 403 | 관리자 계정은 소셜 로그인이 꺼져 있다(`allow_admin_social_login`) |
+| `registration_closed` | 403 | 가입 대기를 만든 뒤 사이트가 일반 회원가입을 닫았다(코어 7.2.0). 가입 완료(`signup/complete`)에서 막히며, 기존 계정 대신 새 계정을 고른 경우도 같다. 기존 계정 연결과 연결된 회원의 로그인은 그대로 된다 |
 | `email_taken` | 422 | 입력한 이메일을 다른 회원이 쓴다 |
 | `email_locked` | 422 | 제공자가 확인한 이메일로 고정된 가입에서 다른 이메일을 보냈다 |
 | `email_not_verified` | 422 | 이메일 인증번호 확인 전에 가입을 완료하려 했다 |
@@ -74,7 +75,7 @@
 | `provider_has_links` | 409 | 연결된 회원이 남은 제공자는 지울 수 없다 |
 | `discovery_failed` · `discovery_incomplete` | 422 | discovery 문서를 받지 못했거나 필수 항목이 없다 |
 
-제공자·드라이버가 정한 코드(일반 OIDC 의 `discovery_failed` 등)는 `errors.code` 에 그대로 담고, `message` 는 「제공자에 연결하지 못했습니다」 공통 문구입니다.
+제공자·드라이버가 정한 코드(일반 OIDC 의 `discovery_failed` 등)는 `errors.code` 에 그대로 담고, `message` 는 「제공자에 연결하지 못했습니다」 공통 문구입니다. 관리자 `POST admin/providers/discover` 의 `discovery_failed` 와 `discovery_incomplete` 만은 관리자 화면 전용 문구(`exceptions.admin.*`)로 답합니다.
 
 ---
 
@@ -166,12 +167,14 @@
 **응답 200**
 
 ```json
-{ "success": true, "message": "...", "data": { "handoff_url": "/login?login_handoff=…&redirect=%2F" } }
+{ "success": true, "message": "...", "data": { "handoff_url": "/login?login_handoff=…" } }
 ```
 
-응답 헤더에 인계 코드의 묶음 쿠키 `Set-Cookie: g7_login_bind=…; path=/api/auth; httponly; samesite=lax` 가 실립니다(본문에는 없음).
+`handoff_url` 은 같은 출처 상대 경로이고, 로그인 뒤 돌아갈 주소가 `/` 가 아니면 `&redirect={경로}` 가 붙습니다. 응답 헤더에 인계 코드의 묶음 쿠키 `Set-Cookie: g7_login_bind=…; path=/api/auth; httponly; samesite=lax` 가 실립니다(본문에는 없음).
 
 코어 가입 이메일 인증이 켜진 사이트는 `data.redirect_url` 이 `/login?social_notice=pending_verification` 이고 로그인하지 않습니다.
+
+가입 대기를 만든 뒤 사이트가 일반 회원가입을 닫았으면 403 `registration_closed` 입니다. 아직 기존 계정 연결 단계(`step: existing`)면 409 `existing_account_pending` 이 먼저입니다.
 
 ### POST /api/plugins/sirsoft-social_login/signup/link-existing/request
 
@@ -231,7 +234,7 @@
 
 ### POST /api/plugins/sirsoft-social_login/me/accounts/{provider}/link-start
 
-연결 왕복을 시작하고 제공자 인가 주소를 돌려줍니다. 화면은 이 주소로 이동하고, 콜백은 연결을 만든 뒤 `/mypage/profile?social=linked` 로 돌아옵니다(실패는 `?social_error={코드}&provider={키}`).
+연결 왕복을 시작하고 제공자 인가 주소를 돌려줍니다. 화면은 이 주소로 이동하고, 콜백은 연결을 만든 뒤 `/mypage/profile?social=linked&provider={키}` 로 돌아옵니다(실패는 `?social_error={코드}&provider={키}`).
 
 - **라우트명**: `api.plugins.sirsoft-social_login.me.accounts.link-start`
 
@@ -387,7 +390,7 @@ discovery 문서를 캐시 없이 읽어 주소 칸 값을 돌려줍니다. 저�
 제공자 연결 테스트 왕복을 시작하고 제공자 인가 주소를 돌려줍니다. 관리자 화면은 이 주소를 새 창으로 엽니다.
 
 - **라우트명**: `api.plugins.sirsoft-social_login.admin.providers.test-login`
-- **미들웨어**: `auth:sanctum`, `permission:admin,sirsoft-social_login.settings.update`, `throttle:20,1,sirsoft-social_login.test-login`
+- **미들웨어**: `auth:sanctum`, `admin`, `permission:admin,sirsoft-social_login.settings.update`, `throttle:20,1,sirsoft-social_login.test-login`
 - **경로 파라미터**: `provider` — 제공자 키(`^[a-z][a-z0-9_]{1,49}$`). 꺼진 제공자도 된다(켜기 전 확인용).
 
 **응답 200**
@@ -487,16 +490,19 @@ discovery 문서를 캐시 없이 읽어 주소 칸 값을 돌려줍니다. 저�
 
 | 경로 | 동작 |
 | --- | --- |
-| `GET oauth/{provider}/start?redirect=/경로` | 로그인 왕복 시작. `reconsent=1` 이면 제공자에 동의 화면을 다시 띄워 달라고 요청한다(로그인 화면의 [이메일 제공 다시 동의하기] 단추, 다른 값은 무시). 켜진 제공자면 인가 화면으로 302, 아니면 `/login?social_error={코드}&provider={키}` (`provider_disabled`, `provider_unknown`). 이미 로그인한 세션이면 복귀 주소로. `throttle:30,1,sirsoft-social_login.oauth-start` |
+| `GET oauth/{provider}/start?redirect=/경로` | 로그인 왕복 시작. `reconsent=1` 이면 제공자에 동의 화면을 다시 띄워 달라고 요청한다(로그인 화면의 [이메일 제공 다시 동의하기] 단추, 다른 값은 무시). 켜진 제공자면 인가 화면으로 302, 아니면 `/login?social_error={코드}` (`provider_disabled`, `provider_unknown`. 복귀 주소가 `/` 가 아니면 `&redirect={경로}` 가 붙고, `provider` 는 싣지 않는다). 이미 로그인한 세션이면 복귀 주소로. `throttle:30,1,sirsoft-social_login.oauth-start` |
 | `GET\|POST oauth/{provider}/callback` | 제공자 콜백. state 는 꺼내자마자 지운다(재사용 시 `state_invalid`). 시작한 의도에 따라 갈린다 — 관리자 테스트는 결과 화면, 로그인은 연결된 회원이면 코어 로그인 인계 주소(`/login?login_handoff=…`)·없으면 가입 모달(`/register?social_pending=…`), 연결은 마이페이지, 재확인은 돌아갈 주소. CSRF 면제, `throttle:60,1,sirsoft-social_login.oauth-callback` |
 | `GET test-result/{code}` | 연결 테스트 결과(일회용, `Cache-Control: no-store`). 두 번째 요청은 404 |
 | `GET\|POST mock/authorize` · `GET\|POST mock/token` · `GET mock/userinfo` · `GET mock/.well-known/openid-configuration` · `GET mock/jwks` | 모의 제공자. `php artisan sirsoft-social_login:mock --enable` 로 켰을 때만 응답하고, 꺼져 있으면 404. `throttle:120,1,sirsoft-social_login.mock` |
+| `POST\|DELETE mock/revoke` | 모의 제공자의 권한 회수. 연결 해제 때 드라이버가 보내는 회수 요청(카카오 어드민 키 POST, 네이버와 구글 폼 POST, 페이스북 DELETE)을 모두 200 `{ "success": true, "result": "success" }` 로 답한다. 위 모의 제공자와 같은 게이트(꺼져 있으면 404)와 요청 제한 |
 | `GET\|POST webhooks/kakao` | 카카오 연결 끊기 알림. `Authorization: KakaoAK {어드민 키}` 대조, 허용 IP 대역(제공자 설정 `webhook_ip_allowlist_enabled`, 기본 켜짐), 앱 ID. 언제나 빈 본문 200 |
 | `POST webhooks/naver` | 네이버 연동 해제 알림. `clientId` 대조, `signature`(HMAC-SHA256) 검증, 암호화된 고유 ID 복호화. 언제나 204 |
 | `POST webhooks/facebook/deauthorize` | 페이스북 앱 권한 해제. `signed_request` 서명 검증. 200 `{ "success": true }`, 검증 실패 400 `{ "error": "…" }` |
 | `POST webhooks/facebook/data-deletion` | 페이스북 데이터 삭제 요청. 200 `{ "url": "…/data-deletion/{확인 코드}", "confirmation_code": "…" }`(제공자 규약이라 응답 봉투를 쓰지 않는다), 검증 실패 400 |
 | `GET data-deletion/{code}` | 데이터 삭제 진행 상태 HTML(확인 코드 20자). 없는 코드는 404 |
 
-웹훅 라우트는 CSRF 면제, `throttle:120,1`. 받은 알림은 `event_key` 로 중복을 걸러 기록하고(검증 실패는 `ignored`), 연결 해제와 정책별 탈퇴(`webhook_unlink_policy`)는 큐 작업(`ProcessWebhookEventJob`)이 커밋 뒤에 처리합니다. 웹훅 해제는 제공자 권한 회수를 하지 않습니다(제공자가 이미 끊었다).
+웹훅 라우트는 CSRF 면제, `throttle:120,1,sirsoft-social_login.webhooks`. 받은 알림은 `event_key` 로 중복을 걸러 기록하고(검증 실패는 `ignored`), 연결 해제와 정책별 탈퇴(`webhook_unlink_policy`)는 큐 작업(`ProcessWebhookEventJob`)이 커밋 뒤에 처리합니다. 웹훅 해제는 제공자 권한 회수를 하지 않습니다(제공자가 이미 끊었다).
 
 로그인 실패 코드는 제공자 오류 코드(`access_denied`, `KOE320`, `024`, `facebook_190` 등) 또는 플러그인 코드(`state_invalid`, `code_missing`, `token_exchange_failed`, `profile_fetch_failed`, `profile_missing_id`, `id_token_*`, `discovery_*`, `jwks_fetch_failed`, `credentials_unreadable`(앱 키가 바뀌어 저장된 비밀값을 풀 수 없음), `admin_blocked`, 제공자 오류가 아닌 예외를 감싼 `unexpected_error`)다. `unexpected_error` 의 원인은 서버 로그에만 남고 시도 기록에는 예외 종류만 적힌다.
+
+콜백이 가입 흐름에서 거절하면 로그인 화면 주소에 `&provider={키}` 가 함께 붙는다(`/login?social_error={코드}&provider={키}`). 코드는 `signup_disabled`(제공자 설정 `signup_allowed` 꺼짐), `registration_closed`(사이트 회원가입 닫힘), `email_required`(제공자가 이메일을 주지 않았고 제공자 설정 `email_missing_policy` 가 `deny`)이며, 로그인 화면은 `email_required` 와 이 키로 그 제공자의 재동의 단추(`reconsent=1`)를 띄운다. 이 세 경우 말고는 로그인 화면 오류 주소에 `provider` 가 붙지 않는다.

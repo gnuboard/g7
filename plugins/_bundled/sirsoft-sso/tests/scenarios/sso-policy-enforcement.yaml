@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 강제 꺼짐 + 비상 계정 2단계 요구)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 강제 꺼짐 + 비상 계정 2단계 요구)이 대부분이라 명목상이다.
 feature: sso_policy_enforcement
 description: |
   SSO 강제와 비상 계정 — 비밀번호 인증 정책(강제 단위 4 × 1차/2차 × 비상 계정 × purpose 6), 진입 판정, 자동 이동, 셀프 가입 닫기, 2단계 인증 생략, 강제 해제 명령, 정책 저장 검증(W5, 최고관리자 전용 칸), 강제 전환 시 비밀번호 토큰 회수(W34), LDAP 도메인 판정 순서(W27), LDAP 회원의 로그인 폼 안내(버튼 없는 IdP).

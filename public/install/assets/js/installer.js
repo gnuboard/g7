@@ -6675,7 +6675,7 @@
                     //
                     // 단계별 실행은 상태 변경(run-task·abort·reset·skip_task)에 전부 토큰을
                     // 요구하고, 그 토큰은 설치를 시작한 세션에만 화면으로 나간다
-                    // (`views/5-installation.php` 의 installerSessionOwnsStepwiseInstall).
+                    // (`public/install/views/5-installation.php` 의 installerSessionOwnsStepwiseInstall).
                     // 세션이 만료됐거나 다른 창·기기로 들어오면 이 abort 는 403 이다.
                     // `fetch` 는 403 에 reject 하지 않으므로 종전에는 그대로 아래로 흘러,
                     // **서버에서는 계속 돌고 있는** 설치 위에 「설치가 중단되었습니다」를
@@ -7867,7 +7867,7 @@
             // **영구히 열린 채** 남는다 — 실패도 경고도 없다.
             //
             // 다만 여기가 **유일한** 지점은 아니다(종전 문언 정정, 8차 G3 라운드): 같은 술어의
-            // 서버 사본이 `api/install-process.php` 에 있다. 아래 `catch` 가 통과로 떨어지는 것은
+            // 서버 사본이 `public/install/api/install-process.php` 에 있다. 아래 `catch` 가 통과로 떨어지는 것은
             // 그 사본이 받아 주기 때문이고, 그 사본의 독블록이 「화면만이 유일한 지점이면
             // fetch 예외가 곧 우회로가 된다」로 그 관계를 적고 있다. 이 문단을 「유일」로 두면
             // 다음 사람이 fail-open 을 결함으로 읽고 화면 쪽만 fail-closed 로 바꾼다 —
@@ -7880,7 +7880,7 @@
 
             return true;
         } catch (error) {
-            // 체크 API 실패 시 설치 진행 허용 — 서버 사본(`api/install-process.php` 의
+            // 체크 API 실패 시 설치 진행 허용 — 서버 사본(`public/install/api/install-process.php` 의
             // `.env` 쓰기 가능 재검사)이 같은 술어로 다시 막는다.
             return true;
         }

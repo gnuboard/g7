@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#17 |
 #   덮어쓰기 해석은 「파일 상태(없음·정상·형식 오류)」 하나가 결과를 가르고, 대상 목록(허용·거부·접두사·Job)은 서로 독립인
 #   합집합 규칙이다. 각 테스트는 자기가 바꾸는 축만 @scenario 로 고정한다 — 전 축 곱은 같은 합집합 판정을 반복할 뿐이다.
 #   effects·test_files 는 그대로 검사한다.

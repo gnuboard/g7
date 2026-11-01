@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\MessageBizppurio\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\SiteUrl;
 use Plugins\Sirsoft\MessageBizppurio\Enums\DispatchChannel;
 
 /**
@@ -46,6 +47,7 @@ class BalanceLowNotificationDataListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 필터 메서드로 처리).
      *
      * @param  mixed  ...$args
+     * @return void
      */
     public function handle(...$args): void {}
 
@@ -78,8 +80,8 @@ class BalanceLowNotificationDataListener implements HookListenerInterface
                 'app_name' => (string) config('app.name', ''),
                 'result_code' => $resultCode,
                 'channel_label' => $this->channelLabel($channel),
-                'settings_url' => rtrim((string) config('app.url', ''), '/').self::SETTINGS_PATH,
-                'site_url' => (string) config('app.url', ''),
+                'settings_url' => SiteUrl::absolute(self::SETTINGS_PATH),
+                'site_url' => SiteUrl::base(),
             ],
         );
 

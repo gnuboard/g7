@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#747 |
 #   진입 경로(관리자·구매자·만료 자동취소) × 취소 범위(전체·부분) × 입금 기록 여부 중 의미 있는 조합만 시험한다 —
 #   세 경로는 같은 접수 지점(OrderRefundRequestService::request)을 지나므로 부분취소·실행 정합은 관리자 경로에서
 #   한 번 잰다. 구매자·자동취소는 접수 결과(환불신청서 생성·출처)만 잰다.

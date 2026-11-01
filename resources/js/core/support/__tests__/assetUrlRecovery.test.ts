@@ -183,7 +183,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
         // @effects public_storage_asset_url_conversion_matches_the_route_form
         it('공개 스토리지는 접미사 제거가 아니라 ?file= 로 변환된다 (규칙 순서)', () => {
             // 두 구현이 **같이** 틀리면 위의 드리프트 대조는 초록이다. 그래서 결과값 자체를
-            // 잠근다 — 접미사 제거 규칙이 먼저 걸리면 `.../custom.css` 가 `.../custom` 이 되고,
+            // 잠근다 — 접미사 제거 규칙이 먼저 걸리면 `/api/system/public-storage/theme/custom.css` 가 `/api/system/public-storage/theme/custom` 이 되고,
             // 그 주소에는 파일이 없어 404 가 된다(그 라우트의 무확장자 형태는 `?file=` 이다).
             const inline = loadInlineConverter();
             (globalThis as any).__g7AssetUrlMode = MODE_EXTENSIONLESS;

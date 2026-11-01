@@ -232,7 +232,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -505,7 +505,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.create`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -582,7 +582,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -657,7 +657,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -732,7 +732,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -756,7 +756,7 @@ HTTP/1.1 200
 | items | body | array | 아니오 | — | 처리 대상 항목 배열 (각 항목: id + 개별 수정할 상품 필드 — name/list_price/selling_price/sales_status/display_status. bulk_changes 로 지정된 필드는 제외됨) |
 | option_bulk_changes | body | array | 아니오 | — | 옵션 조건 기반 일괄 변경값 (price_adjustment/stock_quantity 를 method+value 로 일괄 조정) |
 | option_bulk_changes.price_adjustment | body | array | 아니오 | — | 대상 상품들의 모든 옵션에 적용할 옵션 추가금 일괄 변경 블록 (method + value 쌍) |
-| option_bulk_changes.price_adjustment.method | body | string | 아니오 | `set`, `add`, `percent` | 옵션 추가금 변경 방식 (set 지정값으로 설정 / add 기존값에 가산 / percent 옵션 판매가(상품 판매가 + 추가금)에 비율을 적용한 뒤 추가금으로 저장 — 판매가 하한 0) |
+| option_bulk_changes.price_adjustment.method | body | string | 아니오 | `set`, `add`, `subtract`, `percent` | 옵션 추가금 변경 방식 (set 지정값으로 설정 / add 기존값에 가산 / percent 옵션 판매가(상품 판매가 + 추가금)에 비율을 적용한 뒤 추가금으로 저장 — 판매가 하한 0) |
 | option_bulk_changes.price_adjustment.value | body | number | 아니오 | — | 옵션 추가금 변경 값 (method 에 따라 설정값·가산값·비율로 해석) |
 | option_bulk_changes.stock_quantity | body | array | 아니오 | — | 대상 상품들의 모든 옵션에 적용할 옵션 재고 일괄 변경 블록 (method + value 쌍) |
 | option_bulk_changes.stock_quantity.method | body | string | 아니오 | `set`, `add`, `subtract` | 옵션 재고 변경 방식 (set 지정값으로 설정 / add 증가 / subtract 감소) |
@@ -839,7 +839,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1173,7 +1173,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1346,7 +1346,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 400 | Bad Request | 파일 저장 등 업로드 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.create\|sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 상품 이미지 개수 상한 초과 (`ProductImageUploadLimitException`) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
@@ -1410,7 +1410,7 @@ HTTP/1.1 200
 | 400 | Bad Request | 순서 갱신 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 이미지가 속한 상품(하나라도)이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
@@ -1428,7 +1428,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -1537,7 +1537,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1625,7 +1625,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| productId | path | string | 예 | — | 대상 product의 식별자 |
+| productId | path | integer | 예 | — | 대상 product의 식별자 |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
 | temp_key | body | string | 아니오 | UUID | 임시 업로드 세션 키 (같은 상품의 여러 이미지를 한 세션으로 묶음, 생략 시 서버가 UUID 자동 발급) |
 | collection | body | string | 아니오 | — | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
@@ -1743,8 +1743,8 @@ HTTP/1.1 201
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| productId | path | string | 예 | — | 대상 product의 식별자 |
-| imageId | path | string | 예 | — | 대상 image의 식별자 |
+| productId | path | integer | 예 | — | 대상 product의 식별자 |
+| imageId | path | integer | 예 | — | 대상 image의 식별자 |
 
 **요청 예시**
 
@@ -2106,7 +2106,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -2231,8 +2231,8 @@ _단건 응답: `data` 객체의 필드._
 | brand_id | integer | `7` | 브랜드 ID |
 | category_ids | array | `[29,30,32]` | category 식별자 배열 (연관 리소스 참조) |
 | primary_category_id | integer | `32` | primary category 식별자 (연관 리소스 참조) |
-| list_price | string | `5000.00` | 정가 (기본통화 기준) |
-| selling_price | string | `3000.00` | 판매가 (기본통화 기준) |
+| list_price | integer | `4000` | 정가 (기본통화 기준) |
+| selling_price | integer | `2000` | 판매가 (기본통화 기준) |
 | stock_quantity | integer | `26` | 재고 수량 (옵션 있으면 옵션 합계) |
 | safe_stock_quantity | integer | `5` | 안전재고 수량 |
 | tax_status | string | `taxable` | 과세여부: taxable(과세), tax_free(면세) |
@@ -2293,7 +2293,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -2446,7 +2446,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | action_label | string | `추가` | `action` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | localized_description | string | `위시리스트 추가 (면 손수건 3매입 #1)` | `description` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
 | description_key | string | `sirsoft-ecommerce::activity_log.descr…` | 설명 번역 키 (localized_description 을 생성하는 다국어 키) |
-| properties | null | `null` | 로그 부가 속성 (액션에 첨부된 임의 메타데이터, 없으면 null) |
+| properties | object | `{"option_id":1158,"product_id":415,"extension_origin":"si…` | 로그 부가 속성 (액션에 첨부된 임의 메타데이터, 없으면 null) |
 | changes | array | `[{"field":"selling_price","label_key":"sirsoft-ecommerce:…` | 단일 수정 변경 내역 (각 항목: field·label·old·new, 일괄 수정 로그면 null) |
 | bulk_changes | null | `null` | 일괄 수정 변경 내역 (각 항목: model_id·changes 배열, 단일 수정 로그면 null) |
 | has_changes | boolean | `false` | changes 여부 |
@@ -2597,7 +2597,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -2738,7 +2738,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -2885,7 +2885,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -3032,7 +3032,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -3129,7 +3129,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -3528,7 +3528,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -3752,7 +3752,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-products.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 

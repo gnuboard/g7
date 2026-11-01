@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변종이다. 메서드(hasSettings, getSettingsLayout, getSettingsSchema)마다 쓰는 축이 달라 layout 과 schema 를 곱한 조합은 실재하지 않는다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변종이다. 메서드(hasSettings, getSettingsLayout, getSettingsSchema)마다 쓰는 축이 달라 layout 과 schema 를 곱한 조합은 실재하지 않는다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
 feature: 플러그인 설정 계약 (AbstractPlugin hasSettings, getSettingsLayout, getSettingsSchema)
 
 description: |

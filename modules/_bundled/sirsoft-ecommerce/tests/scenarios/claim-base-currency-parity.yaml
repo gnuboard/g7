@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#747 |
 #   두 사본(리소스 트레이트 · 서비스 위임 헬퍼)의 판정을 축 조합마다 한 메서드로 고정한다 — 조합 수가
 #   셋뿐이라 메서드가 곧 조합이다.
 feature: 주문 기준 통화 판정 두 사본의 일치 (클레임 신청 화면 base_currency)

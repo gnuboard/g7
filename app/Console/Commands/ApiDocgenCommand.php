@@ -136,9 +136,24 @@ class ApiDocgenCommand extends Command
         // 대상(코어/확장)별 README 목차 항목 누적: readmeKey => ['label' => ..., 'entries' => [...]]
         $readmeIndex = [];
 
+        // 라우트의 도메인이 바뀌면 그 절은 다른 문서로 옮겨 간다. 원래 문서는 이번 회차에 먼저 다시
+        // 쓰일 수 있으므로, 쓰기 전에 대상 디렉터리의 문서를 모두 읽어 두고 옮겨 간 절의 사람 값과
+        // 블록 뒤 서술을 거기서 가져온다.
+        $docSnapshot = [];
+        if (! $this->option('check') && ! $examplesOnly) {
+            foreach (array_unique(array_map('dirname', array_keys($grouped))) as $dir) {
+                foreach (File::glob($dir.DIRECTORY_SEPARATOR.'*.md') ?: [] as $doc) {
+                    if (basename($doc) !== 'README.md') {
+                        $docSnapshot[$dir][basename($doc)] = File::get($doc);
+                    }
+                }
+            }
+        }
+
         foreach ($grouped as $file => $items) {
             $sections = [];
             $sectionKeys = [];
+            $sectionMeta = [];
             $exampleBlocks = [];
 
             // `Route::match(['get','post'], ...)->name('x')` 는 하나의 라우트명으로 두 엔드포인트를
@@ -203,6 +218,16 @@ class ApiDocgenCommand extends Command
                 $commentMap = $this->columnComments($route, $commentResolver, $sampleMap);
                 $sections[] = $scaffolder->endpointSection($route, $request, $schema, $probeMeta, $commentMap, $methodScopedKey);
                 $sectionKeys[] = $key;
+                // 「요청 파라미터 없음」이 사실인지(규칙을 읽어 냄) 모름인지를 병합에 알린다.
+                $sectionMeta[$key] = [
+                    'params_known' => ($request['rules_resolved'] ?? false) === true,
+                    'referenced_names' => $request['referenced_names'] ?? [],
+                    // 규칙에 타입이 없어 생성기가 기본값 string 을 적은 파라미터 — 사람이 적은 타입을 둔다.
+                    'untyped_params' => array_values(array_map(
+                        static fn (array $p): string => (string) $p['name'],
+                        array_filter($request['params'] ?? [], static fn (array $p): bool => ($p['type_known'] ?? true) === false)
+                    )),
+                ];
                 $stats['endpoints']++;
             }
 
@@ -253,7 +278,24 @@ class ApiDocgenCommand extends Command
                 $existing = $this->migrateDuplicateBlockKeys($existing, $items, $duplicatedNames, $scaffolder);
             }
 
-            $content = $scaffolder->mergeDocument($existing, $header, $sections, $sectionKeys);
+            // 이 문서에 블록이 없는 키는 같은 디렉터리의 다른 문서(쓰기 전 원문)에서 찾는다.
+            $foreignDocs = [];
+            foreach ($sectionKeys as $sectionKey) {
+                $marker = '<!-- @generated:start:'.$sectionKey.' -->';
+
+                if ($existing !== null && str_contains($existing, $marker)) {
+                    continue;
+                }
+
+                foreach ($docSnapshot[dirname($file)] ?? [] as $name => $doc) {
+                    if ($name !== basename($file) && str_contains($doc, $marker)) {
+                        $foreignDocs[$sectionKey] = $doc;
+                        break;
+                    }
+                }
+            }
+
+            $content = $scaffolder->mergeDocument($existing, $header, $sections, $sectionKeys, $foreignDocs, $sectionMeta);
 
             File::ensureDirectoryExists(dirname($file));
             File::put($file, $content);

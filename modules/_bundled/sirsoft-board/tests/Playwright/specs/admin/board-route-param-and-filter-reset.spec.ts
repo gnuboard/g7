@@ -135,7 +135,7 @@ test.describe('게시판 관리 화면 — 라우트 파라미터 · 필터 초�
     await expect(slugInput).toBeEnabled();
   });
 
-  // @scenario filter=status, page_origin=later
+  // @scenario filter=status
   // @effects narrowing_filter_resets_page_when_merging_query
   test('뒷페이지에서 상태 필터를 좁히면 1페이지로 돌아온다', async ({
     page,
@@ -157,7 +157,7 @@ test.describe('게시판 관리 화면 — 라우트 파라미터 · 필터 초�
     expect(new URL(page.url()).searchParams.get('status')).toBe('blinded');
   });
 
-  // @scenario filter=enter_search, page_origin=later
+  // @scenario filter=enter_search
   // @effects narrowing_filter_resets_page_when_merging_query
   test('뒷페이지에서 엔터로 검색해도 1페이지로 돌아온다', async ({
     page,
@@ -179,7 +179,7 @@ test.describe('게시판 관리 화면 — 라우트 파라미터 · 필터 초�
     expect(new URL(page.url()).searchParams.get('page') ?? '1').toBe('1');
   });
 
-  // @scenario filter=category, page_origin=later
+  // @scenario filter=category
   // @effects pager_navigation_keeps_its_own_page
   test('페이지 이동 자신은 고른 페이지로 간다 (초기화 규칙의 예외)', async ({
     page,

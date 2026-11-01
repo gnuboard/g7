@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: extension_type × location × declaration × validity × surface 의 전개(4×3×5×5×5)는 대부분 같은 판정을 반복한다. 회귀 핵심은 test_files 의 단위·Feature 테스트가 축별 대표 변종으로 덮는다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#677 extension_type × location × declaration × validity × surface 의 전개(4×3×5×5×5)는 대부분 같은 판정을 반복한다. 회귀 핵심은 test_files 의 단위·Feature 테스트가 축별 대표 변종으로 덮는다.
 feature: 확장 아이콘 — 규격·해석·서빙·노출
 
 description: |

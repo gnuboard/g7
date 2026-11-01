@@ -656,6 +656,9 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_seo.g7.html (SEO)
 │           ├── _tab_advanced.g7.html (고급)
 │           ├── _tab_info.g7.html (시스템 정보)
+│           ├── _tab_system.g7.html (시스템 — 긴 작업의 실행 방식(별도 프로세스 또는 요청 안)과 웹 크론 예약 작업 호출 주소)
+│           ├── _modal_cron_token_rotate.g7.html (시스템 — 웹 크론 호출 주소 재발급 확인 창, 성공하면 부모 화면의 주소칸을 새 주소로 바꿈)
+│           ├── _tab_update.g7.html (업데이트 — 명령줄 없이 화면에서 코어 업데이트, 대기 → 진행 중 → 완료 또는 실패의 4상태, 코어 업데이트 권한이 있을 때만 보임)
 │           ├── _modal_ip_restriction_rule_form.g7.html (IP 접근 제한 규칙 추가·수정)
 │           ├── _modal_cache_delete.g7.html
 │           ├── _modal_core_changelog.g7.html

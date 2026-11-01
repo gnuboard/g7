@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: IdP-initiated 와 SP 발 로그아웃)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: IdP-initiated 와 SP 발 로그아웃)이 대부분이라 명목상이다.
 feature: sso_saml_protocol
 description: |
   SAML 2.0 SP 드라이버와 모의 SAML IdP — 응답 변종 카탈로그(부록 C-2) 전수, 서명 감싸기·주석 주입·재전송, 암호화 어설션과 SP 키 교체, SP-initiated 왕복(ACS, state, 묶음 쿠키 SameSite=None), IdP-initiated(허용·1회·복귀 경로), 단일 로그아웃(SP 발, IdP 발 서명 필수), SP 메타데이터와 IdP 메타데이터 갱신·인증서 만료 훅, 라이브러리 사용 규율.

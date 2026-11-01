@@ -34,7 +34,7 @@ trait SecuresExtensionAssetPath
      * 무력해졌을 때 남는 마지막 방어선인데, 그 두 축은 1차층에만 있었다. 서비스는
      * 확장에 열려 있어 「현재 호출부가 FormRequest 를 거친다」는 방어가 되지 못한다:
      *  - 널바이트: `file_exists()` 가 PHP 8 에서 `ValueError` 를 던져 무인증 표면이 500
-     *  - 숨김 세그먼트: `dist/../../../.secrets.json` 이 정제 후 `dist/.secrets.json` 이
+     *  - 숨김 세그먼트: "dist/../../../.secrets.json" 이 정제 후 "dist/.secrets.json" 이
      *    되어 확장 트리 안의 점 파일이 확장자 화이트리스트(`json`)를 통과한다
      *
      * 형제 통로 `PublicStorageService` 는 같은 두 축을 이미 **서비스 계층**에 갖고

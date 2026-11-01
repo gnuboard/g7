@@ -32,7 +32,7 @@ use PHPUnit\Framework\Attributes\Group;
  * - PATCH  /api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-blind
  * - PATCH  /api/modules/sirsoft-board/admin/board/{slug}/posts/bulk-restore
  *
- * @scenario surface=admin_post_list,action=bulk_delete,actor=admin
+ * @scenario bulk_action=delete, permission=manage
  *
  * @effects admin_post_bulk_requires_manage_permission, admin_post_bulk_fires_hook_once
  */

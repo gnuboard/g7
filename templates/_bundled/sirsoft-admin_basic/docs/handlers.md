@@ -292,6 +292,14 @@ ApiClient 경유로 토큰을 자동 첨부해야 다운로드 행위가 관리�
 새 버전 있음 · 진행 중 · 실패)를 고르므로, 진행 중 다른 곳에서 부분 갱신이 끼어들 여지가
 없다. 진행 중 여부는 `_global.coreUpdateBusy` 로 알린다.
 
+```html
+<on type="click">
+  <action handler="startCoreUpdate" update_bundled_extensions="{{_local.coreUpdateBundled !== false}}" rebuild_search_index="{{_local.coreUpdateRebuildIndex === true}}" layout_strategy="{{_local.coreUpdateLayoutStrategy ?? 'overwrite'}}" zip_file="{{_local.coreUpdateZipFile ?? ''}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "click",

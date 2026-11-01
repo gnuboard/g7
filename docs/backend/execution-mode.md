@@ -125,7 +125,7 @@ $run = installerRunArtisan('module:install', ['sirsoft-board', '--vendor-mode' =
 | subprocess | 종전 `executeArtisanCommandSSE` 의 스폰 본문을 그대로 옮긴 것 — `php -d memory_limit=512M artisan …` 을 `exec()` 로 돌리고 출력을 파일로 받는다. Step 3 의 `php_binary` 입력을 쓴다 |
 | inprocess | `vendor/autoload.php` + `bootstrap/app.php` 로 Laravel 을 부팅(요청당 1회, 콘솔 커널)한 뒤 코어 `InProcessCommandRunner` 로 `Artisan::call` |
 
-실행 모드는 `public/install/includes/execution-mode.php` 가 정한다 — Step 3 선택 `execution_mode`(auto|subprocess|inprocess, 기본 auto) > 감지(`ExecutionEnvironment::detect`). 설치 시작(`install-process.php`) 시 한 번 판정해 `state.execution_mode_resolved` 에 박고 그 설치 동안 바꾸지 않는다. inprocess 가 유효하면 Vendor 설치 방식은 bundled 로 고정되고 진행 모드는 **stepwise** (요청 1개 = 태스크 1개, `api/run-task.php`)로 강제된다 — 한 요청 안에서 `Artisan::call` 을 연속 호출하면 직전 설치가 바꾼 오토로드·서비스 프로바이더가 반영되지 않은 컨테이너로 다음 태스크가 돈다.
+실행 모드는 `public/install/includes/execution-mode.php` 가 정한다 — Step 3 선택 `execution_mode`(auto|subprocess|inprocess, 기본 auto) > 감지(`ExecutionEnvironment::detect`). 설치 시작(`install-process.php`) 시 한 번 판정해 `state.execution_mode_resolved` 에 박고 그 설치 동안 바꾸지 않는다. inprocess 가 유효하면 Vendor 설치 방식은 bundled 로 고정되고 진행 모드는 **stepwise** (요청 1개 = 태스크 1개, `public/install/api/run-task.php`)로 강제된다 — 한 요청 안에서 `Artisan::call` 을 연속 호출하면 직전 설치가 바꾼 오토로드·서비스 프로바이더가 반영되지 않은 컨테이너로 다음 태스크가 돈다.
 
 subprocess 전략의 PHP 바이너리는 **운영자 명시(Step 3 `php_binary`) > 설치 시작 시 자동 탐색된 경로(`state.php_binary_resolved`, D35) > `php`** 순이다. 자동 감지는 PATH 의 `php` 가 없거나 버전 미달이면 공통 경로를 탐색해 다른 바이너리를 고르는데, 그 경로를 실행이 쓰지 않으면 판정(subprocess 가능)과 실행(`php` 스폰 실패)이 어긋난다 — 코어 러너(`CommandRunnerResolver`)와 인스톨러(`getPhpBinary()`)가 같은 우선순위를 쓴다.
 
@@ -172,7 +172,7 @@ best-effort 태스크(번들 언어팩 설치·`config:cache`)의 실패는 `sta
 
 서버 `lang()` 은 평면 조회이고 화면 스크립트는 점 경로를 따라 내려간다 — 두 층의 규칙이 다르므로 **점 경로 키는 화면 스크립트에서만** 부른다. PHP 에서 부르면 번역 대신 키 문자열이 그대로 출력된다. 자리표시자 치환도 한 지점(`lang(key, replace)`)을 지난다 — 문구를 받아 온 뒤 문자열 치환으로 채우면 같은 자리표시자가 두 번 나오는 문구에서 한쪽만 채워진다.
 
-로케일을 늘릴 때는 `lang/<code>.php` 파일과 `includes/config.php` 의 `SUPPORTED_LANGUAGES` 를 **함께** 갱신한다. 한쪽만 바꾸면 번역 배열이 비어 화면 전체가 키 문자열이 되거나, 파일이 있어도 아무도 그 언어를 고를 수 없다.
+로케일을 늘릴 때는 `lang/<code>.php` 파일과 `public/install/includes/config.php` 의 `SUPPORTED_LANGUAGES` 를 **함께** 갱신한다. 한쪽만 바꾸면 번역 배열이 비어 화면 전체가 키 문자열이 되거나, 파일이 있어도 아무도 그 언어를 고를 수 없다.
 
 실행 모드가 관여하는 지점(`vendor_mode`·`execution_mode` 를 읽는 파일)은 손으로 열거하지 않고 `InstallerExecutionModeTouchpointCoverageTest` 가 소스 스캔으로 도출한다 — 새 지점이 보정 함수(`installerCoerceVendorModeForExecution`·`vendorModeFromState`·`installerNormalizeExecutionMode` 계열)를 거치지 않으면 red 가 된다. Step 3 의 "bundled 를 골랐는데 Step 5 가 composer 를 검사해 설치가 멈춘" 과거 사고가 그 형태였다.
 

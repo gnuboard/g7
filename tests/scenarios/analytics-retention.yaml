@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#682 |
 #   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지
 #   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit Feature 테스트가 커버하고
 #   green 이다.

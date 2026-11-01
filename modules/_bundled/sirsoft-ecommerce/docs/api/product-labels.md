@@ -31,7 +31,7 @@
 | active_only | query | boolean | 아니오 | — | 활성 라벨만 필터 (true 시 내부적으로 `is_active=true` 로 변환 — 기존 호환용) |
 | search | query | string | 아니오 | max 100 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
 | sort | query | string | 아니오 | `name_asc`, `name_desc`, `created_asc`, `created_desc` | 정렬 기준 (필드명, `-` 접두 시 내림차순) |
-| locale | query | string | 아니오 | `ko`, `en` | 로케일 코드 (표시 언어/지역) |
+| locale | query | string | 아니오 | `ko`, `en`, `ja` | 로케일 코드 (표시 언어/지역) |
 
 **요청 예시**
 
@@ -123,7 +123,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-labels.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -217,7 +217,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-labels.create`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -234,7 +234,7 @@ HTTP/1.1 201
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -295,7 +295,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -364,7 +364,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 | name | body | array | 예 | — | 대상의 이름/명칭 |
 | color | body | string | 예 | max 20 | 라벨 색상 코드 (필수, `#RRGGBB` 6자리 HEX 형식만 허용) |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
@@ -443,7 +443,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.product-labels.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
@@ -461,7 +461,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 관리자·2단계 인증·회원 상태·비밀번호·이메일 축은 코어 관문(loginVerifiedUser)이 각자 판정한다 — 코어 시험(LoginVerifiedUserTest)이 축별로 덮고, 여기서는 인계 교환까지 이어지는 대표 조합만 잰다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 관리자·2단계 인증·회원 상태·비밀번호·이메일 축은 코어 관문(loginVerifiedUser)이 각자 판정한다 — 코어 시험(LoginVerifiedUserTest)이 축별로 덮고, 여기서는 인계 교환까지 이어지는 대표 조합만 잰다.
 feature: social_login_login_policy
 description: |
   연결된 회원의 소셜 로그인. 플러그인은 관리자 차단 판정과 로그인 인계 코드 발급까지만 하고, 잠금·회원 상태·2단계 인증·

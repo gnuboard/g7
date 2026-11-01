@@ -8,7 +8,7 @@ import userEvent from '@testing-library/user-event';
 import { ActionMenu, ActionMenuItem } from '../ActionMenu';
 
 describe('ActionMenu disabledReason', () => {
-  // @scenario item_state=disabled,reason=present
+  // @scenario state=disabled,reason=present
   // @effects action_menu_disabled_item_shows_reason
   it('잠긴 항목은 안내 문구를 함께 보이고 title 로 싣는다', async () => {
     const user = userEvent.setup();
@@ -24,7 +24,7 @@ describe('ActionMenu disabledReason', () => {
     expect(item).toHaveTextContent('본인 계정은 삭제할 수 없습니다');
   });
 
-  // @scenario item_state=enabled,reason=present
+  // @scenario state=enabled,reason=present
   // @effects action_menu_enabled_item_hides_reason
   it('잠기지 않은 항목은 안내 문구를 보이지 않는다', async () => {
     const user = userEvent.setup();

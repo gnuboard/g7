@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#747 |
 #   축(진입 경로 × 이전 상태 × 세 체크 × 잔액 × 재고 × 회원 × 복원 × 취소 경로 × 쿠폰 × 스냅샷)의 전 조합은
 #   수천 개다. 판정은 한 메서드(planManualPaidTransitionEffects)가 하므로 축마다 대표 조합과 실패·가드
 #   경로를 메서드 하나씩 못박는다(세 체크의 8조합은 dataProvider 로 전수). effects 축은 면제하지 않는다.

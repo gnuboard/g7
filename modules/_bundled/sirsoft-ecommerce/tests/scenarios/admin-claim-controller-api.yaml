@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   이 매니페스트의 커버리지 단위는 «유형 × 무엇» 의 조합이 아니라 **엔드포인트 계약 1건**이다.
 #   유형별 매트릭스(상태 어휘·귀책·청구 축)는 admin-claim-list-filter-section 과 각 유형의
 #   lifecycle 매니페스트가 이미 소유하고 있어, 여기서 조합마다 @scenario 를 또 달면 같은 축을
@@ -41,8 +41,11 @@ description: |
 # axis 의미:
 #   유형 하나만 축으로 둔다 — 소유 모델·상태 Enum·금액 컬럼이 전부 여기서 갈린다.
 #   («어느 엔드포인트인가» 는 축이 아니라 effects 항목 자체다. 위 cross_product 면제 사유 참조.)
+#   requester 는 목록의 신청자 필터가 읽는 주체다 — 운영자가 대신 접수한 건과 비회원 건이 주문
+#   주인으로 걸려야 한다(ClaimControllerTest 의 신청자 필터 시험이 이 어휘로 조합을 적는다).
 axes:
   claim_type: [exchange, return, refund, cancel]
+  requester: [admin_on_behalf, guest]
 
 effects:
   # ① 목록 — 행 형태 · 기본 서브탭 · 검색 · 게이트

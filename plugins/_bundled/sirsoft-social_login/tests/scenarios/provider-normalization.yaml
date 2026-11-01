@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 제공자마다 응답 모양과 오류 형식이 달라 제공자 × 변종을 곱하면 대부분이 존재하지 않는 조합이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 제공자마다 응답 모양과 오류 형식이 달라 제공자 × 변종을 곱하면 대부분이 존재하지 않는 조합이다.
 # 변종은 계획 부록 B 행(카카오 6, 네이버 5, 구글 4, 페이스북 3, OIDC 4)을 그대로 데이터 제공자로 둔다.
 feature: social_login_provider_normalization
 description: |
@@ -14,6 +14,14 @@ axes:
   profile: [normalize_helpers, email_trust]
   reconsent: ['on', 'off', population]
   scopes: [configured]
+  # 제공자 오류 응답 (제공자마다 형식이 다르다)
+  error: [KOE320, KOE006, '-401', invalid_request, http_401_resultcode, http_403_error_code, http_500_empty, invalid_grant, '190']
+  # id_token 클레임 검사 갈래
+  id_token: [sub_mismatch, nonce_mismatch, issuer_without_scheme, issuer_other]
+  # OIDC discovery 문서 상태
+  discovery: [incomplete]
+  # 서명 검증기의 JWKS 처리 갈래
+  verifier: [jwks_cache, kid_rotation, kid_unknown, jwks_unreachable]
 effects:
   - authorize_url_has_pkce_and_state
   - authorize_url_without_pkce

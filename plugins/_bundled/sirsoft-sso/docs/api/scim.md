@@ -132,6 +132,8 @@ Content-Type: application/scim+json
 | 400 | Bad Request | `invalidFilter`(형식 오류 또는 받지 않는 속성), `invalidValue`(파라미터 검증 실패) |
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
+| 404 | Not Found | 이 주소에는 찾을 자원이 없어 404 를 내지 않는다. 없는 IdP 키는 401(`ScimBearerAuth`). `idp` 가 `^[a-z][a-z0-9_]{1,49}$` 에 맞지 않을 때만 라우트 제약으로 404 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 위 400 `invalidValue`(SCIM 오류 본문) |
 
 <!-- @generated:end -->
 
@@ -221,7 +223,9 @@ Location: https://www.example.com/api/plugins/sirsoft-sso/scim/v2/…/Groups/…
 | 400 | Bad Request | `invalidValue` — 검증 실패 또는 `displayName` 이 비었음 |
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
+| 404 | Not Found | 이 주소에는 찾을 자원이 없어 404 를 내지 않는다. 없는 IdP 키는 401(`ScimBearerAuth`). `idp` 가 `^[a-z][a-z0-9_]{1,49}$` 에 맞지 않을 때만 라우트 제약으로 404 |
 | 409 | Conflict | `uniqueness` — 같은 이름의 그룹이 이 IdP 에 있음 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 위 400 `invalidValue`(SCIM 오류 본문) |
 
 <!-- @generated:end -->
 
@@ -243,6 +247,10 @@ Location: https://www.example.com/api/plugins/sirsoft-sso/scim/v2/…/Groups/…
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
 | id | path | string | 예 | 숫자 1~19자리 | 그룹 ID |
+| filter | query | string | 아니오 | max 500 | 이 주소에서는 쓰지 않는다. 문자열이 아니거나 500자를 넘으면 400 `invalidValue` |
+| startIndex | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| count | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| excludedAttributes | query | string | 아니오 | max 200 | 이 주소에서는 쓰지 않는다 |
 
 **요청 예시**
 
@@ -270,6 +278,7 @@ HTTP/1.1 204
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
 | 404 | Not Found | 이 IdP 에 그 그룹이 없음 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 400 `invalidValue`(SCIM 오류 본문, 공통 사항 오류 표) |
 
 <!-- @generated:end -->
 
@@ -291,6 +300,9 @@ HTTP/1.1 204
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
 | id | path | string | 예 | 숫자 1~19자리 | 그룹 ID |
+| filter | query | string | 아니오 | max 500 | 이 주소에서는 쓰지 않는다. 문자열이 아니거나 500자를 넘으면 400 `invalidValue` |
+| startIndex | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| count | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
 | excludedAttributes | query | string | 아니오 | 200자 | `members` 가 들어 있으면 소속을 뺀다 |
 
 **요청 예시**
@@ -337,6 +349,7 @@ Content-Type: application/scim+json
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
 | 404 | Not Found | 이 IdP 에 그 그룹이 없음 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 400 `invalidValue`(SCIM 오류 본문, 공통 사항 오류 표) |
 
 <!-- @generated:end -->
 
@@ -419,6 +432,7 @@ Content-Type: application/scim+json
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
 | 404 | Not Found | 이 IdP 에 그 그룹이 없음 |
 | 409 | Conflict | `uniqueness` — 바꾸려는 이름을 다른 그룹이 씀 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 위 400 `invalidSyntax`(SCIM 오류 본문) |
 
 <!-- @generated:end -->
 
@@ -496,6 +510,7 @@ Content-Type: application/scim+json
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
 | 404 | Not Found | 이 IdP 에 그 그룹이 없음 |
 | 409 | Conflict | `uniqueness` — 바꾸려는 이름을 다른 그룹이 씀 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 위 400 `invalidValue`(SCIM 오류 본문) |
 
 <!-- @generated:end -->
 
@@ -516,6 +531,10 @@ PUT 은 그룹 전체 교체다. 소속을 바꾸지 않으려면 `members` 를 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
+| filter | query | string | 아니오 | max 500 | 이 주소에서는 쓰지 않는다. 문자열이 아니거나 500자를 넘으면 400 `invalidValue` |
+| startIndex | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| count | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| excludedAttributes | query | string | 아니오 | max 200 | 이 주소에서는 쓰지 않는다 |
 
 **요청 예시**
 
@@ -570,6 +589,8 @@ Content-Type: application/scim+json
 | --- | --- | --- |
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
+| 404 | Not Found | 이 주소에는 찾을 자원이 없어 404 를 내지 않는다. 없는 IdP 키는 401(`ScimBearerAuth`). `idp` 가 `^[a-z][a-z0-9_]{1,49}$` 에 맞지 않을 때만 라우트 제약으로 404 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 400 `invalidValue`(SCIM 오류 본문, 공통 사항 오류 표) |
 
 <!-- @generated:end -->
 
@@ -591,6 +612,10 @@ Content-Type: application/scim+json
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
 | id | path | string | 예 | `User`, `Group` | 자원 종류 |
+| filter | query | string | 아니오 | max 500 | 이 주소에서는 쓰지 않는다. 문자열이 아니거나 500자를 넘으면 400 `invalidValue` |
+| startIndex | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| count | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| excludedAttributes | query | string | 아니오 | max 200 | 이 주소에서는 쓰지 않는다 |
 
 **요청 예시**
 
@@ -636,6 +661,7 @@ Content-Type: application/scim+json
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
 | 404 | Not Found | `User`, `Group` 이 아닌 값(라우트 제약) |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 400 `invalidValue`(SCIM 오류 본문, 공통 사항 오류 표) |
 
 <!-- @generated:end -->
 
@@ -656,6 +682,10 @@ Content-Type: application/scim+json
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
+| filter | query | string | 아니오 | max 500 | 이 주소에서는 쓰지 않는다. 문자열이 아니거나 500자를 넘으면 400 `invalidValue` |
+| startIndex | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| count | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| excludedAttributes | query | string | 아니오 | max 200 | 이 주소에서는 쓰지 않는다 |
 
 **요청 예시**
 
@@ -706,6 +736,8 @@ Content-Type: application/scim+json
 | --- | --- | --- |
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
+| 404 | Not Found | 이 주소에는 찾을 자원이 없어 404 를 내지 않는다. 없는 IdP 키는 401(`ScimBearerAuth`). `idp` 가 `^[a-z][a-z0-9_]{1,49}$` 에 맞지 않을 때만 라우트 제약으로 404 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 400 `invalidValue`(SCIM 오류 본문, 공통 사항 오류 표) |
 
 <!-- @generated:end -->
 
@@ -727,6 +759,10 @@ Content-Type: application/scim+json
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
 | id | path | string | 예 | `[A-Za-z0-9:._-]{1,120}` | 스키마 URN(`urn:ietf:params:scim:schemas:core:2.0:User`, `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`, `urn:ietf:params:scim:schemas:core:2.0:Group`) |
+| filter | query | string | 아니오 | max 500 | 이 주소에서는 쓰지 않는다. 문자열이 아니거나 500자를 넘으면 400 `invalidValue` |
+| startIndex | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| count | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| excludedAttributes | query | string | 아니오 | max 200 | 이 주소에서는 쓰지 않는다 |
 
 **요청 예시**
 
@@ -773,6 +809,7 @@ Content-Type: application/scim+json
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
 | 404 | Not Found | 위 세 URN 이 아님 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 400 `invalidValue`(SCIM 오류 본문, 공통 사항 오류 표) |
 
 <!-- @generated:end -->
 
@@ -793,6 +830,10 @@ Content-Type: application/scim+json
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
+| filter | query | string | 아니오 | max 500 | 이 주소에서는 쓰지 않는다. 문자열이 아니거나 500자를 넘으면 400 `invalidValue` |
+| startIndex | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| count | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| excludedAttributes | query | string | 아니오 | max 200 | 이 주소에서는 쓰지 않는다 |
 
 **요청 예시**
 
@@ -845,6 +886,8 @@ Content-Type: application/scim+json
 | --- | --- | --- |
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
+| 404 | Not Found | 이 주소에는 찾을 자원이 없어 404 를 내지 않는다. 없는 IdP 키는 401(`ScimBearerAuth`). `idp` 가 `^[a-z][a-z0-9_]{1,49}$` 에 맞지 않을 때만 라우트 제약으로 404 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 400 `invalidValue`(SCIM 오류 본문, 공통 사항 오류 표) |
 
 <!-- @generated:end -->
 
@@ -924,6 +967,8 @@ Content-Type: application/scim+json
 | 400 | Bad Request | `invalidFilter`(형식 오류 또는 받지 않는 속성), `invalidValue`(파라미터 검증 실패) |
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
+| 404 | Not Found | 이 주소에는 찾을 자원이 없어 404 를 내지 않는다. 없는 IdP 키는 401(`ScimBearerAuth`). `idp` 가 `^[a-z][a-z0-9_]{1,49}$` 에 맞지 않을 때만 라우트 제약으로 404 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 위 400 `invalidValue`(SCIM 오류 본문) |
 
 <!-- @generated:end -->
 
@@ -966,6 +1011,9 @@ Content-Type: application/scim+json
 | externalId | body | string\|null | 조건부 | 191자 | 대조 키가 `externalId` 면 필수(고유 식별자) |
 | displayName | body | string\|null | 아니오 | 255자 | 표시 이름 |
 | name | body | object\|null | 아니오 | `formatted`, `givenName`, `familyName` 각 255자 | 이름. 회원 이름은 `name.formatted`, `displayName`, `givenName familyName` 순으로 고른다(50자) |
+| name.formatted | body | string | 아니오 | max 255 | 전체 이름. 회원 이름의 첫째 후보 |
+| name.givenName | body | string | 아니오 | max 255 | 이름. `name.formatted`, `displayName` 이 없으면 `givenName familyName` 으로 이어 회원 이름이 된다 |
+| name.familyName | body | string | 아니오 | max 255 | 성. `givenName` 뒤에 이어 붙인다 |
 | title | body | string\|null | 아니오 | 255자 | 직함(추가 속성) |
 | active | body | boolean\|string | 아니오 | `true`, `false`, `"True"`, `"False"` | false 면 만든 뒤 바로 퇴사 처리 |
 | emails | body | array\|null | 아니오 | 20개, `value` 255자 | 이메일. `primary`, `type: work`, 첫째 순으로 하나를 고른다 |
@@ -1029,7 +1077,9 @@ Location: https://www.example.com/api/plugins/sirsoft-sso/scim/v2/…/Users/…
 | 400 | Bad Request | `invalidValue` — 검증 실패, 또는 대조 키 값이 없거나 191자 초과 |
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
+| 404 | Not Found | 이 주소에는 찾을 자원이 없어 404 를 내지 않는다. 없는 IdP 키는 401(`ScimBearerAuth`). `idp` 가 `^[a-z][a-z0-9_]{1,49}$` 에 맞지 않을 때만 라우트 제약으로 404 |
 | 409 | Conflict | `uniqueness` — 같은 대조 키의 연결이 이 IdP 에 있음, 같은 이메일 회원이 있는데 연결할 수 없음(소유 도메인 자동 연결이 꺼졌거나 소유 도메인이 아니거나 그 회원이 이 IdP 에 이미 연결됨), 그 회원이 관리자 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 위 400 `invalidValue`(SCIM 오류 본문) |
 
 <!-- @generated:end -->
 
@@ -1051,6 +1101,10 @@ Location: https://www.example.com/api/plugins/sirsoft-sso/scim/v2/…/Users/…
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
 | id | path | string | 예 | 숫자 1~19자리 | User 자원 ID(연결 ID) |
+| filter | query | string | 아니오 | max 500 | 이 주소에서는 쓰지 않는다. 문자열이 아니거나 500자를 넘으면 400 `invalidValue` |
+| startIndex | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| count | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| excludedAttributes | query | string | 아니오 | max 200 | 이 주소에서는 쓰지 않는다 |
 
 **요청 예시**
 
@@ -1078,6 +1132,7 @@ HTTP/1.1 204
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
 | 404 | Not Found | 이 IdP 에 그 연결이 없음 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 400 `invalidValue`(SCIM 오류 본문, 공통 사항 오류 표) |
 
 <!-- @generated:end -->
 
@@ -1101,6 +1156,10 @@ HTTP/1.1 204
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
 | id | path | string | 예 | 숫자 1~19자리 | User 자원 ID(연결 ID) |
+| filter | query | string | 아니오 | max 500 | 이 주소에서는 쓰지 않는다. 문자열이 아니거나 500자를 넘으면 400 `invalidValue` |
+| startIndex | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| count | query | integer | 아니오 | — | 이 주소에서는 쓰지 않는다. 정수가 아니면 400 `invalidValue` |
+| excludedAttributes | query | string | 아니오 | max 200 | 이 주소에서는 쓰지 않는다 |
 
 **요청 예시**
 
@@ -1150,6 +1209,7 @@ Content-Type: application/scim+json
 | 401 | Unauthorized | SCIM 토큰이 없거나 틀림, 없는 IdP 키 |
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
 | 404 | Not Found | 이 IdP 에 그 연결이 없거나 연결된 회원이 없음 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 400 `invalidValue`(SCIM 오류 본문, 공통 사항 오류 표) |
 
 <!-- @generated:end -->
 
@@ -1236,6 +1296,7 @@ Content-Type: application/scim+json
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
 | 404 | Not Found | 이 IdP 에 그 연결이 없음 |
 | 409 | Conflict | `uniqueness` — 바꾸려는 대조 키를 다른 연결이 씀 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 위 400 `invalidSyntax`(SCIM 오류 본문) |
 
 <!-- @generated:end -->
 
@@ -1264,10 +1325,14 @@ IdP 마다 PATCH 모양이 달라(경로 있는 연산, 경로 없이 객체 값
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
 | id | path | string | 예 | 숫자 1~19자리 | User 자원 ID(연결 ID) |
+| schemas | body | array | 아니오 | — | 읽지 않는다 |
 | userName | body | string\|null | 아니오 | 191자 | 사용자 이름 |
 | externalId | body | string\|null | 아니오 | 191자 | IdP 쪽 ID |
 | displayName | body | string\|null | 아니오 | 255자 | 표시 이름 |
 | name | body | object\|null | 아니오 | — | 이름 |
+| name.formatted | body | string | 아니오 | max 255 | 전체 이름. 회원 이름의 첫째 후보 |
+| name.givenName | body | string | 아니오 | max 255 | 이름. `name.formatted`, `displayName` 이 없으면 `givenName familyName` 으로 이어 회원 이름이 된다 |
+| name.familyName | body | string | 아니오 | max 255 | 성. `givenName` 뒤에 이어 붙인다 |
 | title | body | string\|null | 아니오 | 255자 | 직함 |
 | active | body | boolean\|string | 아니오 | — | 활성 여부 |
 | emails | body | array\|null | 아니오 | 20개 | 이메일 |
@@ -1328,6 +1393,7 @@ Content-Type: application/scim+json
 | 403 | Forbidden | IdP 꺼짐 또는 SCIM 사용 꺼짐 |
 | 404 | Not Found | 이 IdP 에 그 연결이 없음 |
 | 409 | Conflict | `uniqueness` — 바꾸려는 대조 키를 다른 연결이 씀 |
+| 422 | Unprocessable Entity | SCIM 엔드포인트는 422 를 돌려주지 않는다. 검증 실패는 위 400 `invalidValue`(SCIM 오류 본문) |
 
 <!-- @generated:end -->
 

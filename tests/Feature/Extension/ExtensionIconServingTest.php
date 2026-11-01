@@ -16,7 +16,7 @@ use Tests\TestCase;
  *
  * 소유 시나리오: `extension-icons` (축 매핑은 각 테스트 메서드에 있다)
  *
- * @effects public_icon_route_needs_no_auth, uninstalled_bundled_icon_resolves_from_bundled_dir, invalid_icon_is_not_served_and_row_falls_back
+ * 효과 요약(마커 아님 — 평문): public_icon_route_needs_no_auth, uninstalled_bundled_icon_resolves_from_bundled_dir, invalid_icon_is_not_served_and_row_falls_back
  */
 class ExtensionIconServingTest extends TestCase
 {

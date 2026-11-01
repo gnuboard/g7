@@ -120,6 +120,7 @@ class ApiRouteInventory
                 'middleware' => $middleware,
                 'permission' => $this->resolvePermission($middleware),
                 'path_params' => $this->pathParams($uri),
+                'path_types' => $this->pathTypes($route),
                 'path_bindings' => $this->pathBindings($route),
                 'domain_group' => $this->domainGroup($name, $uri, $owner),
             ];
@@ -328,6 +329,42 @@ class ApiRouteInventory
     }
 
     /**
+     * 경로 파라미터의 타입을 라우트 제약과 컨트롤러 서명에서 읽습니다.
+     *
+     * 숫자만 받는 제약(`whereNumber`, `[0-9]+`, `\d+`)이 걸렸거나 컨트롤러 메서드가 같은 이름의 인자를 `int` 로
+     * 받으면 `integer`, 그 밖에는 `string` 이다.
+     *
+     * @param  Route  $route  라우트 인스턴스
+     * @return array<string, string> 파라미터명 => 타입
+     */
+    private function pathTypes(Route $route): array
+    {
+        $types = [];
+        $signature = [];
+
+        $controller = $this->controllerClass($route);
+        $method = $this->controllerMethod($route);
+
+        if ($controller !== null && $method !== null && method_exists($controller, $method)) {
+            foreach ((new \ReflectionMethod($controller, $method))->getParameters() as $parameter) {
+                $type = $parameter->getType();
+                if ($type instanceof \ReflectionNamedType && $type->getName() === 'int') {
+                    $signature[$parameter->getName()] = true;
+                }
+            }
+        }
+
+        foreach ($this->pathParams($route->uri()) as $param) {
+            $pattern = (string) ($route->wheres[$param] ?? '');
+            $numeric = in_array($pattern, ['[0-9]+', '\d+', '[0-9]*', '\d*'], true);
+
+            $types[$param] = $numeric || isset($signature[$param]) ? 'integer' : 'string';
+        }
+
+        return $types;
+    }
+
+    /**
      * 컨트롤러 클래스명을 반환합니다.
      *
      * @param  Route  $route  라우트 인스턴스
@@ -341,7 +378,9 @@ class ApiRouteInventory
             return null;
         }
 
-        return Str::before($action, '@');
+        // 라우트 등록기(`Route::middleware(...)->get(...)`)는 배열 액션의 클래스명 앞에 `\` 를 붙인다 —
+        // 등록 방식과 무관하게 같은 FQCN 으로 적는다.
+        return ltrim(Str::before($action, '@'), '\\');
     }
 
     /**

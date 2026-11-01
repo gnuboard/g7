@@ -52,6 +52,15 @@ class ApiDocScaffolder
      */
     private const TOKEN_PLACEHOLDER = '{YOUR_TOKEN}';
 
+    /**
+     * @var list<string> 예전 생성기가 낸 에러 표 행 (사람 행이 아니라 생성기 몫 — 재생성 때 이번 생성 문구로 바꾼다)
+     *
+     * 422 행은 필드별 메시지가 `error.errors` 에 실린다고 안내했지만 응답 봉투의 키는 `errors` 다.
+     */
+    private const LEGACY_GENERATED_ERROR_ROWS = [
+        '| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |',
+    ];
+
     /** @var string 머리말의 TL;DR 헤딩 (사람 절의 앞뒤 위치 판정 기준) */
     private const TLDR_HEADING = '## TL;DR (5초 요약)';
 
@@ -231,20 +240,30 @@ class ApiDocScaffolder
 
         $genKey = self::GEN_KEY_INDEX;
         $lines = [];
-        $lines[] = '# API 레퍼런스 문서 목차';
-        $lines[] = '';
-        $lines[] = "> **소유**: {$ownerLabel} · **생성**: `php artisan api:docgen` (실측 기반).";
-        $lines[] = '> 아래 표는 자동 생성됩니다. 각 문서를 열면 엔드포인트별 파라미터·응답·예시를 볼 수 있습니다.';
-        $lines[] = '';
+        $existingStart = $existing === null ? false : strpos($existing, self::GEN_START.$genKey.' -->');
 
-        // 헤더와 목차 표 사이의 사람 개요(공통 규약 등)를 보존/삽입한다.
-        $overview = $existing !== null ? $this->extractReadmeOverview($existing, $genKey) : null;
-        if ($overview !== null && $overview !== '') {
-            $lines[] = $overview;
+        if ($existingStart !== false) {
+            // 목차 블록 앞(머리말 인용문, 사람 개요)은 사람이 고쳐 쓸 수 있는 자리다 — 원문 바이트 그대로 둔다.
+            $lines[] = substr($existing, 0, $existingStart).self::GEN_START.$genKey.' -->';
+        } elseif ($existing !== null && trim($existing) !== '') {
+            // 목차 블록이 없던 손 작성 README 는 원문 전체를 그대로 두고 목차 블록을 뒤에 붙인다.
+            $lines[] = rtrim($existing, "\n")."\n\n".self::GEN_START.$genKey.' -->';
+        } else {
+            $lines[] = '# API 레퍼런스 문서 목차';
             $lines[] = '';
-        }
+            $lines[] = "> **소유**: {$ownerLabel} · **생성**: `php artisan api:docgen` (실측 기반).";
+            $lines[] = '> 아래 표는 자동 생성됩니다. 각 문서를 열면 엔드포인트별 파라미터·응답·예시를 볼 수 있습니다.';
+            $lines[] = '';
 
-        $lines[] = self::GEN_START.$genKey.' -->';
+            // 헤더와 목차 표 사이의 사람 개요(공통 규약 등)를 보존/삽입한다.
+            $overview = $existing !== null ? $this->extractReadmeOverview($existing, $genKey) : null;
+            if ($overview !== null && $overview !== '') {
+                $lines[] = $overview;
+                $lines[] = '';
+            }
+
+            $lines[] = self::GEN_START.$genKey.' -->';
+        }
         $lines[] = '- **문서 수**: '.count($entries)." · **엔드포인트 수**: {$total}";
         $lines[] = '';
         $lines[] = implode("\n", $rows);
@@ -256,9 +275,12 @@ class ApiDocScaffolder
 
         // 목차 블록 밖 사람 서술(주의사항 등)이 있으면 보존한다.
         // 확장 목차(`## 확장 API 레퍼런스`) 이후는 별도 블록이므로 삼키지 않는다.
+        // 서술 앞뒤의 빈 줄 수도 원문을 따른다 — 고정 간격으로 다시 붙이면 목차만 바뀐 재생성에서도
+        // 블록 밖에 빈 줄 diff 가 난다.
         $prose = $existing !== null ? $this->extractReadmeTrailingProse($existing, $genKey) : null;
         if ($prose !== null && $prose !== '') {
-            $generated .= "\n".$prose."\n";
+            $raw = $this->readmeTrailingRaw($existing, $genKey);
+            $generated = rtrim($generated, "\n").$raw.(str_ends_with($raw, "\n") ? '' : "\n");
         }
 
         $extensionBlock = $extensions !== null
@@ -406,9 +428,11 @@ class ApiDocScaffolder
         $pathParams = $route['path_params'];
 
         foreach ($pathParams as $pathParam) {
-            $desc = $this->paramDescriber->describe($pathParam, 'path', 'string');
+            // 라우트 제약(`whereNumber`)이나 컨트롤러 서명(`int $id`)에서 읽은 타입 — 모르면 string.
+            $pathType = $route['path_types'][$pathParam] ?? 'string';
+            $desc = $this->paramDescriber->describe($pathParam, 'path', $pathType);
             $descCell = $desc !== null ? $this->escapeCell($desc) : '<!-- TODO: 용도 -->';
-            $rows[] = "| {$pathParam} | path | string | 예 | — | {$descCell} |";
+            $rows[] = "| {$pathParam} | path | {$pathType} | 예 | — | {$descCell} |";
         }
 
         $location = in_array($route['method'], ['GET', 'DELETE'], true) ? 'query' : 'body';
@@ -471,7 +495,8 @@ class ApiDocScaffolder
         }
 
         if ($schema['fields'] === []) {
-            return $note."\n\n<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->";
+            // 안내 문구가 없는 형태(`data` 가 null 등)는 빈 줄로 시작하지 않는다 — 되살린 표 앞에 빈 줄이 남는다.
+            return ($note !== '' ? $note."\n\n" : '').'<!-- 실측 응답에 필드 없음(빈 목록 등) — 데이터가 있는 상태로 재실측하거나 사람이 작성. -->';
         }
 
         $rows = [];
@@ -532,7 +557,7 @@ class ApiDocScaffolder
         // 422: FormRequest 검증 규칙 존재 → 검증 실패. (훅 주입 규칙 포함 가능)
         $hasValidation = ! empty($request['params']) || ! empty($request['hook_filters']);
         if ($hasValidation) {
-            $rows[] = '| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |';
+            $rows[] = '| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |';
         }
 
         // 404: path 파라미터 존재 → 대상 리소스 미발견.
@@ -1069,15 +1094,23 @@ class ApiDocScaffolder
     /**
      * 기존 문서에 새 생성 블록을 병합합니다. 사람 서술은 보존합니다.
      *
+     * 절 순서는 기존 문서의 순서를 따른다. 기존 문서에 없던 절은 라우트 순서상 바로 앞 절 뒤에 둔다.
+     * 라우트의 도메인이 바뀌어 이 문서로 옮겨 온 절은 `$foreignDocs` 의 원래 문서에서 블록 안 사람
+     * 값과 블록 뒤 서술을 가져온다.
+     *
      * @param  string|null  $existing  기존 문서 내용 (null=신규)
      * @param  string  $header  문서 헤더 (제목 + TL;DR 등)
      * @param  array<int, string>  $sections  엔드포인트 섹션 목록 (라우트명 순)
      * @param  array<int, string>  $sectionKeys  각 섹션의 라우트명 키
+     * @param  array<string, string>  $foreignDocs  이 문서에 없는 키 => 그 키의 블록을 가진 같은 디렉터리의 다른 문서 원문
+     * @param  array<string, array{params_known?: bool}>  $sectionMeta  키 => 생성 근거 (`params_known`: 요청 규칙을 읽어 냈는가)
      * @return string 병합된 문서 내용
      */
-    public function mergeDocument(?string $existing, string $header, array $sections, array $sectionKeys): string
+    public function mergeDocument(?string $existing, string $header, array $sections, array $sectionKeys, array $foreignDocs = [], array $sectionMeta = []): string
     {
-        if ($existing === null) {
+        $foreignDocs = array_intersect_key($foreignDocs, array_flip($sectionKeys));
+
+        if ($existing === null && $foreignDocs === []) {
             return $header."\n".implode("\n", $sections);
         }
 
@@ -1085,37 +1118,73 @@ class ApiDocScaffolder
         // 전부 `explode("\n")` + 줄 끝 매칭(`str_ends_with($line, ' |')`) 기반이라, 줄 끝에
         // \r 이 남아 있으면 표 행이 하나도 파싱되지 않아 사람이 채운 셀이 통째로 유실된다.
         // 파싱 전에 줄 끝을 LF 로 정규화한다 (문서는 .gitattributes 가 eol=lf 로 저장한다).
-        $existing = $this->normalizeEol($existing);
+        $existing = $this->normalizeEol($existing ?? '');
 
-        // 머리말은 고정 서식이라 통째로 갈아 끼운다 — 그 앞자리에 놓인 사람 절은
-        // 되돌린다 (엔드포인트 하나에 속하지 않는 문서 전체 서술의 자리다).
-        $merged = $this->preserveHeadProse($header, $existing)."\n";
-
+        // 생성 블록이 아직 없는 사람 작성 절은 이번에 만들 절과 헤딩이 같을 때만 엔드포인트 절로 본다.
+        $headings = [];
+        $legacyHeadings = [];
         foreach ($sections as $i => $section) {
+            $firstLine = strstr($section, "\n", true);
+            $headings[$i] = $firstLine === false ? $section : $firstLine;
+
+            if (! str_contains($existing, self::GEN_START.$sectionKeys[$i].' -->')) {
+                $legacyHeadings[] = $headings[$i];
+            }
+        }
+        $boundaries = $this->endpointBoundaries($existing, $legacyHeadings);
+
+        // 첫 엔드포인트 절 앞(제목, 인용문, TL;DR, 문서 전체 규약 절)은 사람이 소유한다 — 원문
+        // 바이트 그대로 둔다. 엔드포인트 절을 하나도 알아볼 수 없는 손 작성 문서(엔드포인트를 `## `
+        // 제목으로만 적은 문서 등)는 원문 전체를 그대로 두고 생성 절을 그 뒤에 붙인다. 원문이 비었을
+        // 때만(다른 문서에서 절이 옮겨 와 새로 만드는 문서) 새 머리말을 쓴다.
+        if ($boundaries !== []) {
+            $merged = substr($existing, 0, $boundaries[0]);
+        } elseif (trim($existing) !== '') {
+            $merged = str_ends_with($existing, "\n\n") ? $existing : rtrim($existing, "\n")."\n\n\n";
+        } else {
+            $merged = $this->preserveHeadProse($header, $existing)."\n";
+        }
+
+        $order = $this->documentOrder($existing, $sectionKeys, $headings);
+        $lastPosition = count($order) - 1;
+
+        foreach ($order as $position => $i) {
+            $section = $sections[$i];
             $key = $sectionKeys[$i];
+
+            // 다른 문서에서 옮겨 온 절은 그 문서를 대조 원본으로 쓴다.
+            $source = $existing;
+            $sourceBoundaries = $boundaries;
+            if (! str_contains($existing, self::GEN_START.$key.' -->') && isset($foreignDocs[$key])) {
+                $source = $this->normalizeEol($foreignDocs[$key]);
+                $sourceBoundaries = $this->endpointBoundaries($source, []);
+            }
+
             // 아직 생성 블록이 없던(사람이 직접 쓴) 섹션은 헤딩으로 찾는다. 키로만 찾으면
             // 최초 생성 회차에 그 섹션의 서술·표 설명이 통째로 사라진다.
-            $legacy = $this->extractLegacySection($existing, $section, $key);
+            $legacy = $this->extractLegacySection($source, $section, $key);
 
-            $preserved = $this->extractHumanProse($existing, $key)
+            $preserved = $this->extractHumanProse($source, $key)
                 ?? ($legacy === null ? null : $this->extractLegacyProse($legacy));
             $withProse = $this->applyPreservedProse($section, $preserved);
             // 순서 주의: 표 자체를 되살린 뒤에 셀 설명을 맞춘다.
-            $withFields = $this->restoreEmptyProbeTable($withProse, $existing, $key, $legacy);
-            $withTables = $this->restoreTableDescriptions($withFields, $existing, $key, $legacy);
+            $withFields = $this->restoreEmptyProbeTable($withProse, $source, $key, $legacy);
+            $withTables = $this->restoreTableDescriptions($withFields, $source, $key, $legacy, $sectionMeta[$key]['untyped_params'] ?? []);
             // 이번 실측에 나타나지 않은 기존 행을 되살린다 — 조건부 필드가 표본 하나로
             // 사라지는 것을 막는다 (에러 표가 이미 같은 방침이다).
             $withTables = $this->restoreMissingTableRows(
                 $withTables,
-                $this->extractGeneratedBlockBody($existing, $key) ?? $legacy
+                $this->extractGeneratedBlockBody($source, $key) ?? $legacy,
+                $sectionMeta[$key]['params_known'] ?? null,
+                $sectionMeta[$key]['referenced_names'] ?? null
             );
             // 실측 불가 마커 자리·응답 예시를 사람이 채운 경우 되살린다
             // (@probed 출처 마커 부재 = 사람 작성분, 위치 기반이므로 블록 본문으로만 대조).
             $withBodies = $this->applyPreservedResponseBodies(
                 $withTables,
-                $this->extractGeneratedBlockBody($existing, $key) ?? $legacy
+                $this->extractGeneratedBlockBody($source, $key) ?? $legacy
             );
-            $withErrors = $this->restoreErrorSection($withBodies, $existing, $key, $legacy);
+            $withErrors = $this->restoreErrorSection($withBodies, $source, $key, $legacy);
             // 에러 표는 상태코드 행 단위로도 병합한다 — restoreErrorSection 은 새 표가 통째로
             // 스텁일 때의 복원만 다루므로, 자동 추론이 초안을 만들어 낸 경우 사람이 보강한
             // 행(409 충돌·429 제한 등 도메인 특이 에러)이 덮여 사라진다. 행 병합을 겹쳐
@@ -1126,19 +1195,930 @@ class ApiDocScaffolder
             // 종료 마커를 표의 끝 경계로 삼는데, 전자는 그 마커를 잘라내고 돌려준다.
             $withErrorTable = $this->applyPreservedErrorTable(
                 $withErrors,
-                $this->exactGeneratedBlock($existing, $key),
+                $this->exactGeneratedBlock($source, $key),
                 $section
             );
+            // 사람이 고친 인증 줄과 손으로 쓴 요청 예시는 라우트의 인증 사실이 그대로면 유지한다.
+            $withRequest = $this->restoreAuthAndRequestExample(
+                $withErrorTable,
+                $this->extractGeneratedBlockBody($source, $key),
+                $headings[$i],
+                $sectionMeta[$key]['params_known'] ?? null
+            );
+
+            // 기존 생성 블록 뒤(다음 엔드포인트 절 앞까지)는 사람 서술 자리다. 서술 안의 `### `
+            // 소제목, 그 뒤의 `## ` 절, 빈 줄 수까지 원문 그대로 이어 붙인다. 블록이 없던 사람
+            // 작성 절은 그 본문을 설명 자리에 원문 그대로 옮긴다.
+            $blockTail = $this->existingBlockTail($source, $key, $sourceBoundaries);
+            $legacyTail = $blockTail === null && $legacy !== null
+                ? $this->legacySectionTail($source, $headings[$i], $sourceBoundaries)
+                : null;
+            $tail = $blockTail ?? $legacyTail;
 
             // 소제목 사이에 사람이 끼워 넣은 서술은 마지막에 되돌린다 — 앞선 복원들이
-            // 표·예시를 다 세운 뒤라야 구간 경계가 최종 위치에 선다.
-            $merged .= $this->applyInterstitialProse(
-                $withErrorTable,
-                $this->extractInterstitialProse($this->extractGeneratedBlockBody($existing, $key) ?? $legacy)
-            )."\n";
+            // 표와 예시를 다 세운 뒤라야 구간 경계가 최종 위치에 선다. 사람 작성 절의 본문을 통째로
+            // 설명 자리에 옮긴 경우에는 그 본문에서 다시 걷어 오지 않는다(블록 안팎에 겹친다).
+            $final = $this->applyInterstitialProse(
+                $withRequest,
+                $this->extractInterstitialProse(
+                    $this->extractGeneratedBlockBody($source, $key) ?? ($legacyTail === null ? $legacy : null)
+                )
+            );
+
+            $final = $this->restoreHumanChunks(
+                $final,
+                $this->extractGeneratedBlockBody($source, $key),
+                $sectionMeta[$key]['params_known'] ?? null
+            );
+
+            // 사람이 표준 소제목 대신 고유한 소제목으로 다시 쓴 블록은 사람 소유로 보고 통째로 둔다.
+            // 구간별 복원은 표준 소제목을 경계로 삼으므로, 그런 블록의 표와 서술은 제자리를 찾지 못한다.
+            $previousBlock = $this->exactGeneratedBlock($source, $key);
+            if ($previousBlock !== null && $this->isRewrittenBlock($previousBlock)) {
+                $final = $headings[$i]."\n".$previousBlock;
+            }
+
+            if ($tail === null) {
+                $merged .= $final."\n";
+
+                continue;
+            }
+
+            // 문서 끝이던 절이 순서가 바뀌어 다음 절 앞에 놓이면 절 사이 빈 줄을 맞춘다.
+            if ($position < $lastPosition && ! str_ends_with($tail, "\n\n")) {
+                $tail = rtrim($tail, "\n")."\n\n\n";
+            }
+
+            $merged .= $this->withExistingHeadingGap($this->splitAtBlockEnd($final)[0], $source, $key).$tail;
         }
 
         return $merged;
+    }
+
+    /**
+     * 기존 문서에서 헤딩과 생성 블록 시작 마커 사이에 둔 빈 줄을 새 섹션에도 그대로 둡니다.
+     *
+     * @param  string  $block  새 섹션 (헤딩 줄로 시작, 종료 마커까지)
+     * @param  string  $source  기존 문서 (LF 정규화)
+     * @param  string  $key  생성 블록 키
+     * @return string 헤딩 뒤 간격이 원문을 따른 섹션
+     */
+    private function withExistingHeadingGap(string $block, string $source, string $key): string
+    {
+        $startPos = strpos($source, self::GEN_START.$key.' -->');
+        $headingEnd = strpos($block, "\n");
+
+        if ($startPos === false || $headingEnd === false) {
+            return $block;
+        }
+
+        $before = substr($source, 0, $startPos);
+        $gapStart = strlen(rtrim($before, "\n"));
+        $gap = substr($before, $gapStart);
+
+        if ($gap !== "\n" && $gap !== '') {
+            $block = substr($block, 0, $headingEnd).$gap.substr($block, $headingEnd + 1);
+        }
+
+        // 시작 마커 줄 뒤에 둔 빈 줄도 원문을 따른다.
+        $marker = self::GEN_START.$key.' -->';
+        $afterMarker = $startPos + strlen($marker);
+        $oldGap = substr($source, $afterMarker, strspn($source, "\n", $afterMarker));
+        $newAt = strpos($block, $marker);
+
+        if ($newAt !== false && strlen($oldGap) > 1) {
+            $newAfter = $newAt + strlen($marker);
+            $newGap = substr($block, $newAfter, strspn($block, "\n", $newAfter));
+            $block = substr($block, 0, $newAfter).$oldGap.substr($block, $newAfter + strlen($newGap));
+        }
+
+        return $block;
+    }
+
+    /**
+     * 소제목 구간 단위로 사람이 바꿔 쓴 몫을 되돌립니다.
+     *
+     * 판별 규칙:
+     *   - 소제목 꼬리표: 기존 소제목 줄이 같은 소제목으로 시작하지만 꼬리표가 다르면(`**요청 파라미터** (Body)`,
+     *     `**응답 필드** (JWK Set — 봉투 없음)`) 기존 줄을 쓴다.
+     *   - 「요청 파라미터 없음」: 생성기가 이 초안을 냈는데 기존 구간이 다르면(사람이 표나 보강 문구를 적어 둠),
+     *     요청 규칙을 읽어 낸 경우(`$paramsKnown === true`)에만 사실로 보고 새 초안을 쓴다. 규칙을 읽지 못했으면
+     *     (FormRequest 없이 컨트롤러가 직접 읽음, 규칙 호출 실패, 알 수 없음) 기존 구간을 둔다.
+     *   - 표 머리 줄이 다른 표(사람이 고유한 열로 다시 그림): 열 이름으로 열의 역할을 맞춰 사실 열(타입, 필수,
+     *     허용값)만 갱신하고 사람 열(설명, 예시)은 둔다. 요청 파라미터 표에는 새 파라미터를 그 표 형식으로
+     *     덧붙인다. 응답 필드 표에는 덧붙이지 않는다 — 실측 필드 이름이 데이터의 키(주문번호 등)일 수 있다.
+     *
+     * @param  string  $section  복원 중인 섹션
+     * @param  string|null  $previous  기존 문서의 같은 생성 블록 본문 (없으면 null)
+     * @param  bool|null  $paramsKnown  요청 규칙을 읽어 냈는가 (null=알 수 없음)
+     * @return string 구간이 복원된 섹션
+     */
+    private function restoreHumanChunks(string $section, ?string $previous, ?bool $paramsKnown = null): string
+    {
+        if ($previous === null) {
+            return $section;
+        }
+
+        $oldChunks = $this->splitByAnchors($this->normalizeEol($previous));
+        [$body, $tail] = $this->splitAtBlockEnd($this->normalizeEol($section));
+        $newChunks = $this->splitByAnchors($body);
+
+        if ($oldChunks === [] || $newChunks === []) {
+            return $section;
+        }
+
+        $changed = false;
+        $rebuilt = '';
+
+        foreach ($newChunks as $anchor => $chunk) {
+            $old = $oldChunks[$anchor] ?? null;
+
+            if ($anchor !== '' && $old !== null) {
+                $isLast = str_contains($chunk, self::GEN_END);
+                $replacement = $this->humanChunkReplacement($anchor, $chunk, $old, $isLast, $paramsKnown);
+
+                if ($replacement !== null) {
+                    $chunk = $replacement;
+                    $changed = true;
+                }
+            }
+
+            $rebuilt .= rtrim($chunk, "\n")."\n\n";
+        }
+
+        return $changed ? rtrim($rebuilt, "\n").$tail : $section;
+    }
+
+    /**
+     * 한 소제목 구간에서 기존 구간(또는 기존 소제목 줄)을 써야 하면 그 구간을 돌려줍니다.
+     *
+     * @param  string  $anchor  소제목
+     * @param  string  $chunk  새 구간 (소제목 줄부터)
+     * @param  string  $old  기존 구간 (소제목 줄부터)
+     * @param  bool  $isLast  새 구간이 종료 마커를 담은 마지막 구간인가
+     * @param  bool|null  $paramsKnown  요청 규칙을 읽어 냈는가 (null=알 수 없음)
+     * @return string|null 바꿀 구간 (그대로 두면 null)
+     */
+    private function humanChunkReplacement(string $anchor, string $chunk, string $old, bool $isLast, ?bool $paramsKnown = null): ?string
+    {
+        $newLabel = strstr($chunk, "\n", true) ?: $chunk;
+        $oldLabel = strstr($old, "\n", true) ?: $old;
+        $newContent = trim(substr($chunk, strlen($newLabel)));
+        $oldContent = trim(substr($old, strlen($oldLabel)));
+
+        if ($isLast) {
+            $newContent = trim(Str::before($newContent, self::GEN_END));
+        }
+
+        $content = $newContent;
+
+        if (in_array($anchor, ['**요청 파라미터**', '**응답 필드**'], true) && $oldContent !== '' && $oldContent !== $newContent) {
+            $newHeader = $this->firstTableHeader($newContent);
+            $oldHeader = $this->firstTableHeader($oldContent);
+
+            if (str_starts_with($newContent, '_요청 파라미터 없음')) {
+                $content = $paramsKnown === true ? $newContent : $oldContent;
+            } elseif ($newHeader !== null && $oldHeader !== null && $newHeader !== $oldHeader) {
+                $content = $this->mergeHumanFormatTable($oldContent, $newContent, $anchor === '**요청 파라미터**');
+            }
+        }
+
+        if ($content === $newContent && $newLabel === $oldLabel) {
+            return null;
+        }
+
+        $label = $oldLabel !== $newLabel && str_starts_with($oldLabel, $anchor) ? $oldLabel : $newLabel;
+        $result = $label."\n\n".$content;
+
+        return $isLast ? $result."\n\n".self::GEN_END : $result;
+    }
+
+    /**
+     * 사람이 고유한 열로 그린 표에 생성 표의 사실 열을 반영합니다.
+     *
+     * 열 이름으로 역할(이름, 위치, 타입, 필수, 허용값, 예시, 설명)을 정하고, 이름이 같은 행끼리 타입, 필수,
+     * 허용값 열만 갱신한다. 판별은 표준 표의 셀 규칙과 같다 — 사람이 다듬은 셀(생성값으로 시작하는 타입,
+     * `예`/`아니오` 가 아닌 필수 문구, 생성값의 항목을 모두 담은 허용값)은 둔다. 기존 표에만 있는 행은 둔다.
+     *
+     * @param  string  $oldContent  기존 구간 본문 (소제목 줄 제외)
+     * @param  string  $newContent  새 구간 본문 (소제목 줄 제외)
+     * @param  bool  $appendNew  새 표에만 있는 행을 사람 표 형식으로 덧붙이는가
+     * @return string 사실이 반영된 기존 구간 본문 (바뀐 것이 없으면 원문 그대로)
+     */
+    private function mergeHumanFormatTable(string $oldContent, string $newContent, bool $appendNew): string
+    {
+        $oldLines = explode("\n", $oldContent);
+        $oldTable = $this->locateTable($oldLines);
+        $newLines = explode("\n", $newContent);
+        $newTable = $this->locateTable($newLines);
+
+        if ($oldTable === null || $newTable === null) {
+            return $oldContent;
+        }
+
+        [$oldHeaderAt, $oldEnd] = $oldTable;
+        $roles = array_map(fn (string $c): ?string => $this->columnRole($c), $this->tableCells($oldLines[$oldHeaderAt]));
+        $nameAt = array_search('name', $roles, true);
+
+        if ($nameAt === false) {
+            return $oldContent;
+        }
+
+        [$newHeaderAt, $newEnd] = $newTable;
+        $newRoles = array_map(fn (string $c): ?string => $this->columnRole($c), $this->tableCells($newLines[$newHeaderAt]));
+        $newNameAt = array_search('name', $newRoles, true);
+
+        if ($newNameAt === false) {
+            return $oldContent;
+        }
+
+        $newRows = [];
+        for ($i = $newHeaderAt + 2; $i <= $newEnd; $i++) {
+            $cells = $this->tableCells($newLines[$i]);
+            $name = trim($cells[$newNameAt] ?? '', '` ');
+
+            if ($name !== '' && ! isset($newRows[$name])) {
+                $newRows[$name] = [];
+                foreach ($newRoles as $n => $role) {
+                    if ($role !== null) {
+                        $newRows[$name][$role] = $cells[$n] ?? '';
+                    }
+                }
+            }
+        }
+
+        $changed = false;
+        $present = [];
+
+        for ($i = $oldHeaderAt + 2; $i <= $oldEnd; $i++) {
+            $cells = $this->tableCells($oldLines[$i]);
+            $name = trim($cells[$nameAt] ?? '', '` ');
+
+            if (! isset($newRows[$name])) {
+                continue;
+            }
+
+            $present[$name] = true;
+            $rowChanged = false;
+
+            foreach ($roles as $n => $role) {
+                if (! in_array($role, ['type', 'required', 'allowed'], true) || ! isset($newRows[$name][$role], $cells[$n])) {
+                    continue;
+                }
+
+                $updated = $this->refreshedFactCell($role, $cells[$n], $newRows[$name][$role]);
+
+                if ($updated !== $cells[$n]) {
+                    $cells[$n] = $updated;
+                    $rowChanged = true;
+                }
+            }
+
+            if ($rowChanged) {
+                $oldLines[$i] = '| '.implode(' | ', $cells).' |';
+                $changed = true;
+            }
+        }
+
+        if ($appendNew) {
+            $append = [];
+
+            foreach ($newRows as $name => $values) {
+                if (isset($present[$name])) {
+                    continue;
+                }
+
+                $append[] = '| '.implode(' | ', array_map(
+                    static fn (?string $role): string => $role === 'name' ? $name : ($role !== null && ($values[$role] ?? '') !== '' ? $values[$role] : '—'),
+                    $roles
+                )).' |';
+            }
+
+            if ($append !== []) {
+                array_splice($oldLines, $oldEnd + 1, 0, $append);
+                $changed = true;
+            }
+        }
+
+        return $changed ? implode("\n", $oldLines) : $oldContent;
+    }
+
+    /**
+     * 줄 목록에서 첫 표의 [머리 줄 위치, 마지막 행 위치] 를 찾습니다 (머리 줄 다음 줄이 구분선이어야 한다).
+     *
+     * @param  array<int, string>  $lines  줄 목록
+     * @return array{0: int, 1: int}|null 표 위치 (없으면 null)
+     */
+    private function locateTable(array $lines): ?array
+    {
+        foreach ($lines as $i => $line) {
+            if (! str_starts_with(trim($line), '|')) {
+                continue;
+            }
+
+            if (! str_starts_with(trim($lines[$i + 1] ?? ''), '| ---')) {
+                return null;
+            }
+
+            $end = $i + 1;
+            while (isset($lines[$end + 1]) && str_starts_with(trim($lines[$end + 1]), '|')) {
+                $end++;
+            }
+
+            return [$i, $end];
+        }
+
+        return null;
+    }
+
+    /**
+     * 표 한 줄을 셀 문자열 목록으로 나눕니다 (앞뒤 공백 제거).
+     *
+     * @param  string  $line  표 줄
+     * @return array<int, string> 셀 목록
+     */
+    private function tableCells(string $line): array
+    {
+        return array_map('trim', $this->splitRowCells(trim($line)));
+    }
+
+    /**
+     * 표 머리 줄의 열 이름으로 열의 역할을 정합니다.
+     *
+     * @param  string  $column  열 이름
+     * @return string|null 역할 (name, location, type, required, allowed, example, desc — 모르면 null)
+     */
+    private function columnRole(string $column): ?string
+    {
+        return match (trim($column)) {
+            '이름', '파라미터', '필드', '키', '필드명', '파라미터명' => 'name',
+            '위치' => 'location',
+            '타입' => 'type',
+            '필수' => 'required',
+            '허용값', '규칙' => 'allowed',
+            '예시', '예시값', '실측 예시값', '값' => 'example',
+            '용도', '설명', '용도/설명', '비고' => 'desc',
+            default => null,
+        };
+    }
+
+    /**
+     * 사람 표의 사실 셀 하나를 새 생성값과 대조해 돌려줍니다 (표준 표의 셀 규칙과 같다).
+     *
+     * @param  string  $role  열 역할 (type, required, allowed)
+     * @param  string  $old  기존 셀
+     * @param  string  $new  새 생성값
+     * @return string 쓸 셀
+     */
+    private function refreshedFactCell(string $role, string $old, string $new): string
+    {
+        if ($new === '' || $old === $new) {
+            return $old;
+        }
+
+        $cols = ['', '', $new, $new, $new, ''];
+        $previous = ['', '', $old, $old, $old, ''];
+        $kept = $this->keepRefinedParamCells($cols, $previous);
+
+        return match ($role) {
+            'type' => (in_array($old, ['integer', 'number'], true) && in_array($new, ['integer', 'number'], true)) || $new === 'null' ? $old : $kept[2],
+            'required' => $kept[3],
+            default => $kept[4],
+        };
+    }
+
+    /**
+     * 텍스트의 첫 표 머리 줄을 돌려줍니다.
+     *
+     * @param  string  $text  대상 텍스트
+     * @return string|null 머리 줄 (표가 없으면 null)
+     */
+    private function firstTableHeader(string $text): ?string
+    {
+        foreach (explode("\n", $text) as $line) {
+            if (str_starts_with(trim($line), '|')) {
+                return trim($line);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 생성 블록을 사람이 표준 소제목 대신 고유한 소제목으로 다시 썼는지 판별합니다.
+     *
+     * 표준 소제목(요청 파라미터, 요청 예시, 응답 필드, 응답 예시, 에러 응답) 가운데 하나라도 없고,
+     * 그 대신 표준이 아닌 굵은 소제목 줄(`**본문 파라미터**`, `**응답 예시 (200)**`)이 있으면 다시 쓴
+     * 블록이다. 표준 소제목이 일부 없을 뿐인 블록(예전 생성기가 만든 블록)은 다시 쓴 블록이 아니다.
+     *
+     * @param  string  $block  기존 생성 블록 (시작 마커 ~ 종료 마커)
+     * @return bool 다시 쓴 블록이면 true
+     */
+    private function isRewrittenBlock(string $block): bool
+    {
+        $lines = explode("\n", $block);
+        $found = [];
+        $custom = false;
+        $fence = false;
+
+        foreach ($lines as $line) {
+            if (str_starts_with(ltrim($line), '```')) {
+                $fence = ! $fence;
+
+                continue;
+            }
+
+            if ($fence || ! preg_match('/^\*\*[^*]+\*\*/u', $line)) {
+                continue;
+            }
+
+            $anchor = $this->anchorOf($line);
+
+            if ($anchor !== null) {
+                $found[$anchor] = true;
+            } elseif (! str_starts_with($line, '**설명**')) {
+                $custom = true;
+            }
+        }
+
+        return $custom && count($found) < count(self::SECTION_ANCHORS);
+    }
+
+    /**
+     * 병합 결과에 절을 놓을 순서를 정합니다.
+     *
+     * 기존 문서에 있는 절(생성 블록 키 또는 같은 헤딩)은 기존 문서의 등장 순서를 따른다. 사람이 정한
+     * 절 순서를 라우트 등록 순서로 다시 정렬하면 내용은 그대로인데 절이 통째로 자리를 옮긴다.
+     * 기존 문서에 없던 절은 라우트 순서상 바로 앞 절 뒤에 두고, 앞 절이 없으면 맨 앞에 둔다.
+     *
+     * @param  string  $existing  기존 문서 (LF 정규화)
+     * @param  array<int, string>  $sectionKeys  각 섹션의 생성 블록 키 (라우트 순)
+     * @param  array<int, string>  $headings  각 섹션의 헤딩 줄
+     * @return array<int, int> 섹션 인덱스의 출력 순서
+     */
+    private function documentOrder(string $existing, array $sectionKeys, array $headings): array
+    {
+        $positions = [];
+
+        foreach ($sectionKeys as $i => $key) {
+            $pos = strpos($existing, self::GEN_START.$key.' -->');
+
+            if ($pos === false) {
+                $found = strpos("\n".$existing, "\n".$headings[$i]."\n");
+                $pos = $found === false ? null : $found;
+            }
+
+            $positions[$i] = $pos;
+        }
+
+        $known = array_filter($positions, static fn (?int $pos): bool => $pos !== null);
+        asort($known);
+        $order = array_keys($known);
+
+        foreach ($positions as $i => $pos) {
+            if ($pos !== null) {
+                continue;
+            }
+
+            $at = 0;
+            for ($j = $i - 1; $j >= 0; $j--) {
+                $placed = array_search($j, $order, true);
+
+                if ($placed !== false) {
+                    $at = $placed + 1;
+                    break;
+                }
+            }
+
+            array_splice($order, $at, 0, [$i]);
+        }
+
+        return $order;
+    }
+
+    /**
+     * 생성 블록이 없던 사람 작성 절의 본문을 변환된 절의 설명 자리로 옮길 원문으로 돌려줍니다.
+     *
+     * 헤딩 다음 줄부터 다음 엔드포인트 절 앞까지를 원문 그대로 쓴다. 표지가 없는 손 작성 절(인증, 요청,
+     * 응답을 문단으로 적은 절)은 앞에 `**설명**` 표지를 달고, 표지가 있는 절은 표지 앞의 손 작성 표와
+     * 예시까지 그대로 옮긴다. 일부만 옮기면 처음 변환하는 회차에 나머지가 통째로 사라진다.
+     *
+     * @param  string  $existing  기존 문서 (LF 정규화)
+     * @param  string  $heading  절 헤딩 줄
+     * @param  array<int, int>  $boundaries  엔드포인트 절 시작 오프셋
+     * @return string|null 설명 자리 원문 (본문이 비었으면 null)
+     */
+    private function legacySectionTail(string $existing, string $heading, array $boundaries): ?string
+    {
+        $found = strpos("\n".$existing, "\n".$heading."\n");
+
+        if ($found === false) {
+            return null;
+        }
+
+        $from = $found + strlen($heading) + 1;
+        $to = strlen($existing);
+
+        foreach ($boundaries as $boundary) {
+            if ($boundary >= $from) {
+                $to = $boundary;
+                break;
+            }
+        }
+
+        $body = substr($existing, $from, $to - $from);
+
+        if (trim($body) === '') {
+            return null;
+        }
+
+        if (str_contains($body, '**설명**')) {
+            return "\n\n".ltrim($body, "\n");
+        }
+
+        return "\n\n**설명**\n".(str_starts_with($body, "\n") ? '' : "\n").$body;
+    }
+
+    /**
+     * 기존 블록에서 사람이 고친 인증 줄과 손으로 쓴 요청 예시를 새 섹션에 되돌립니다.
+     *
+     * 판별 규칙 (사실이 바뀌었으면 새 생성값을 쓴다):
+     *   - 인증 줄: 새 생성값이 말하는 인증 종류(`optional.sanctum` / `auth:sanctum` / 공개)와
+     *     요구 권한 식별자를 기존 줄이 그대로 담고 있고, 그와 다른 인증 종류나 권한 식별자를 담고
+     *     있지 않으면 기존 줄을 유지한다. 기존 줄의 `permission:admin,` 접두와 `,false` 같은 미들웨어
+     *     인자 꼬리는 같은 식별자로 본다. 관리자 게이트(`admin`)는 판별에 쓰지 않는다.
+     *   - 요청 예시: 인증 줄이 위 규칙으로 유지될 때만, 그리고 기존 예시의 요청 줄이 라우트의 메서드와
+     *     경로(경로 파라미터 자리는 아무 값이나 허용, 쿼리는 무시)에 맞을 때만 기존 예시를 유지한다.
+     *     인증 사실이 바뀌면 인증 헤더가 달라지므로 새 예시를 쓴다. 파라미터의 사실은 요청 파라미터
+     *     표가 맡으므로 예시 본문의 필드 구성은 판별에 쓰지 않는다.
+     *
+     * @param  string  $section  복원 중인 섹션
+     * @param  string|null  $previous  기존 문서의 같은 생성 블록 본문 (없으면 null)
+     * @param  string  $heading  섹션 헤딩 줄 (`### METHOD URI`)
+     * @param  bool|null  $paramsKnown  요청 규칙을 읽어 냈는가 (null=알 수 없음)
+     * @return string 인증 줄과 요청 예시가 복원된 섹션
+     */
+    private function restoreAuthAndRequestExample(string $section, ?string $previous, string $heading, ?bool $paramsKnown = null): string
+    {
+        if ($previous === null) {
+            return $section;
+        }
+
+        $prefix = '- **인증/권한**: ';
+        $newAuth = $this->lineStartingWith($section, $prefix);
+        $oldAuth = $this->lineStartingWith($previous, $prefix);
+
+        if ($newAuth === null || $oldAuth === null
+            || ! $this->authFactsMatch(substr($oldAuth, strlen($prefix)), substr($newAuth, strlen($prefix)))
+        ) {
+            return $section;
+        }
+
+        if ($oldAuth !== $newAuth) {
+            $pos = strpos($section, $newAuth);
+            $section = substr_replace($section, $oldAuth, $pos, strlen($newAuth));
+        }
+
+        $label = '**요청 예시**';
+        $terminators = ['**응답 필드**', '**응답 예시**', '**에러 응답**'];
+        $oldBody = $this->extractSubsectionBody($previous, $label, $terminators);
+        $bounds = $this->locateSubsectionBody($section, $label, $terminators);
+
+        if ($oldBody === null || $bounds === null) {
+            return $section;
+        }
+
+        [$start, $end] = $bounds;
+        $newBody = substr($section, $start, $end - $start);
+
+        if (trim($oldBody) === trim($newBody)
+            || ! $this->requestLineMatchesRoute($oldBody, $heading)
+        ) {
+            return $section;
+        }
+
+        // 생성기가 파라미터를 하나도 내지 못했는데 규칙을 읽어 낸 것도 아니면 「없다」가 아니라 「모른다」다 —
+        // 예시의 필드를 건드리지 않는다.
+        $synced = $this->requestParamNames($section) === [] && $paramsKnown !== true
+            ? $oldBody
+            : $this->syncRequestExampleFields($oldBody, $newBody, $previous, $section);
+
+        return substr_replace($section, $synced, $start, $end - $start);
+    }
+
+    /**
+     * 유지하는 요청 예시에 파라미터의 사실 변화(새로 생김, 없어짐)만 반영합니다.
+     *
+     * 판별은 기존 블록의 요청 파라미터 표를 기준으로 한다. 기존 표에 없던 파라미터는 새로 생긴 것이라 새 예시의
+     * 값으로 더하고, 기존 표에 있었는데 새 표에 없는 키는 없어진 것이라 뺀다. 기존 표에 있었는데 사람이 예시에서
+     * 뺀 파라미터는 뺀 채 두고, 사람이 고친 값은 그대로 둔다. JSON 본문과 쿼리스트링을 다룬다.
+     *
+     * @param  string  $oldBody  기존 요청 예시 구간
+     * @param  string  $newBody  새 요청 예시 구간
+     * @param  string  $previous  기존 생성 블록 본문
+     * @param  string  $section  새 섹션
+     * @return string 사실이 반영된 기존 요청 예시 구간 (바뀐 것이 없으면 원문 그대로)
+     */
+    private function syncRequestExampleFields(string $oldBody, string $newBody, string $previous, string $section): string
+    {
+        $before = $this->requestParamNames($previous);
+        $after = $this->requestParamNames($section);
+        $added = array_values(array_diff($after, $before));
+        $removed = array_values(array_diff($before, $after));
+
+        if ($added === [] && $removed === []) {
+            return $oldBody;
+        }
+
+        $result = $oldBody;
+
+        // JSON 본문
+        $oldJson = $this->requestJsonBody($oldBody);
+        $newJson = $this->requestJsonBody($newBody);
+
+        if ($oldJson !== null) {
+            [$text, $decoded] = $oldJson;
+            $changed = false;
+
+            foreach ($removed as $name) {
+                if (array_key_exists($name, $decoded)) {
+                    unset($decoded[$name]);
+                    $changed = true;
+                }
+            }
+
+            foreach ($added as $name) {
+                if (! array_key_exists($name, $decoded) && $newJson !== null && array_key_exists($name, $newJson[1])) {
+                    $decoded[$name] = $newJson[1][$name];
+                    $changed = true;
+                }
+            }
+
+            if ($changed) {
+                $encoded = (string) json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $pos = strpos($result, $text);
+                $result = substr_replace($result, $encoded, $pos, strlen($text));
+            }
+        }
+
+        // 쿼리스트링
+        if (preg_match('/^([A-Z]+ )(\S+)( HTTP\/[^\n]*)$/m', $result, $line) && str_contains($line[2], '?')) {
+            $path = Str::before($line[2], '?');
+            parse_str(Str::after($line[2], '?'), $query);
+            $changed = false;
+
+            foreach ($removed as $name) {
+                if (array_key_exists($name, $query)) {
+                    unset($query[$name]);
+                    $changed = true;
+                }
+            }
+
+            if (preg_match('/^[A-Z]+ \S+\?(\S+) HTTP\//m', $newBody, $newLine)) {
+                parse_str($newLine[1], $newQuery);
+
+                foreach ($added as $name) {
+                    if (! array_key_exists($name, $query) && array_key_exists($name, $newQuery)) {
+                        $query[$name] = $newQuery[$name];
+                        $changed = true;
+                    }
+                }
+            }
+
+            if ($changed) {
+                $rebuilt = $path.($query === [] ? '' : '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986));
+                $result = str_replace($line[0], $line[1].$rebuilt.$line[3], $result);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * 블록의 요청 파라미터 표에서 본문과 쿼리 파라미터의 최상위 이름을 모읍니다 (경로와 헤더 위치 제외).
+     *
+     * @param  string  $block  생성 블록 또는 섹션
+     * @return array<int, string> 최상위 파라미터 이름 (정렬)
+     */
+    private function requestParamNames(string $block): array
+    {
+        $body = $this->extractSubsectionBody($block, '**요청 파라미터**', ['**요청 예시**', '**응답 필드**', '**응답 예시**', '**에러 응답**']);
+
+        if ($body === null) {
+            return [];
+        }
+
+        $lines = explode("\n", $body);
+        $table = $this->locateTable($lines);
+
+        if ($table === null) {
+            return [];
+        }
+
+        [$headerAt, $end] = $table;
+        $roles = array_map(fn (string $c): ?string => $this->columnRole($c), $this->tableCells($lines[$headerAt]));
+        $nameAt = array_search('name', $roles, true);
+        $locationAt = array_search('location', $roles, true);
+        $names = [];
+
+        for ($i = $headerAt + 2; $i <= $end; $i++) {
+            $cells = $this->tableCells($lines[$i]);
+            $name = trim($cells[$nameAt === false ? 0 : $nameAt] ?? '', '` ');
+
+            if ($name === '' || ($locationAt !== false && in_array($cells[$locationAt] ?? '', ['path', 'header'], true))) {
+                continue;
+            }
+
+            $names[] = Str::before($name, '.');
+        }
+
+        $names = array_values(array_unique($names));
+        sort($names);
+
+        return $names;
+    }
+
+    /**
+     * 요청 예시 구간에서 JSON 본문의 원문과 풀린 객체를 꺼냅니다.
+     *
+     * @param  string  $body  요청 예시 구간
+     * @return array{0: string, 1: array<string, mixed>}|null [원문, 풀린 객체] (JSON 객체 본문이 없으면 null)
+     */
+    private function requestJsonBody(string $body): ?array
+    {
+        if (! preg_match('/```http\n(.*?)\n```/s', $body, $fence)) {
+            return null;
+        }
+
+        $parts = explode("\n\n", $fence[1], 2);
+
+        if (count($parts) < 2) {
+            return null;
+        }
+
+        $decoded = json_decode(trim($parts[1]), true);
+
+        if (! is_array($decoded) || ($decoded !== [] && array_is_list($decoded))) {
+            return null;
+        }
+
+        return [trim($parts[1]), $decoded];
+    }
+
+    /**
+     * 텍스트에서 주어진 접두로 시작하는 첫 줄을 돌려줍니다.
+     *
+     * @param  string  $text  대상 텍스트
+     * @param  string  $prefix  줄 접두
+     * @return string|null 그 줄 (없으면 null)
+     */
+    private function lineStartingWith(string $text, string $prefix): ?string
+    {
+        foreach (explode("\n", $text) as $line) {
+            if (str_starts_with($line, $prefix)) {
+                return $line;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 기존 인증 줄이 새 생성 인증 줄과 같은 인증 사실을 말하는지 판별합니다.
+     *
+     * @param  string  $old  기존 인증 줄 값 (접두 제외)
+     * @param  string  $new  새로 생성된 인증 줄 값 (접두 제외)
+     * @return bool 같은 사실이면 true
+     */
+    private function authFactsMatch(string $old, string $new): bool
+    {
+        $old = str_replace('permission:admin,', 'permission:', $old);
+
+        $kind = match (true) {
+            str_contains($new, '`optional.sanctum`') => 'optional.sanctum',
+            str_contains($new, '`auth:sanctum`') => 'auth:sanctum',
+            default => null,
+        };
+
+        foreach (['optional.sanctum', 'auth:sanctum'] as $candidate) {
+            if (($candidate === $kind) !== str_contains($old, $candidate)) {
+                return false;
+            }
+        }
+
+        $permission = preg_match('/`permission:([^`]+)`/', $new, $m) ? $m[1] : null;
+        // 식별자에는 경로 파라미터 자리(`{slug}`)와 OR 구분(`|`)이 들어간다. 미들웨어 인자(`,false`)와
+        // 백틱, 공백, 괄호에서 끊는다.
+        preg_match_all('/permission:([^\s`,()]+)/', $old, $found);
+        $oldPermissions = array_values(array_unique($found[1]));
+
+        return $permission === null ? $oldPermissions === [] : $oldPermissions === [$permission];
+    }
+
+    /**
+     * 요청 예시의 요청 줄이 라우트의 메서드와 경로에 맞는지 확인합니다.
+     *
+     * @param  string  $body  요청 예시 본문
+     * @param  string  $heading  섹션 헤딩 줄 (`### METHOD URI`)
+     * @return bool 맞으면 true
+     */
+    private function requestLineMatchesRoute(string $body, string $heading): bool
+    {
+        if (! preg_match('/^### (\S+) (\S+)/', $heading, $route)
+            || ! preg_match('/^([A-Z]+) (\S+) HTTP\//m', $body, $request)
+        ) {
+            return false;
+        }
+
+        if ($request[1] !== $route[1]) {
+            return false;
+        }
+
+        $routeSegments = explode('/', trim($route[2], '/'));
+        $requestSegments = explode('/', trim(Str::before($request[2], '?'), '/'));
+
+        if (count($routeSegments) !== count($requestSegments)) {
+            return false;
+        }
+
+        foreach ($routeSegments as $n => $segment) {
+            $isParam = str_starts_with($segment, '{') && str_ends_with($segment, '}');
+
+            if (! $isParam && $segment !== $requestSegments[$n]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 기존 문서에서 엔드포인트 절이 시작하는 헤딩 줄의 위치를 모읍니다.
+     *
+     * 엔드포인트 절의 시작은 다음 줄이 생성 블록 시작 마커인 `### ` 헤딩이다. 생성 블록이
+     * 아직 없는 사람 작성 절은 이번에 생성할 절과 헤딩 줄이 같을 때만 시작으로 본다. 그 밖의
+     * `### ` 헤딩(머리 영역이나 엔드포인트 서술 안의 사람 소제목)은 경계가 아니다.
+     *
+     * @param  string  $existing  기존 문서 (LF 정규화)
+     * @param  array<int, string>  $legacyHeadings  생성 블록이 없는 절의 헤딩 줄
+     * @return array<int, int> 헤딩 줄의 시작 오프셋 (오름차순)
+     */
+    private function endpointBoundaries(string $existing, array $legacyHeadings): array
+    {
+        $lines = explode("\n", $existing);
+        $offsets = [];
+        $offset = 0;
+
+        foreach ($lines as $i => $line) {
+            if (str_starts_with($line, '### ')) {
+                // 헤딩과 시작 마커 사이에 빈 줄을 둔 문서도 있다 — 다음 비지 않은 줄을 본다.
+                $next = $i + 1;
+                while (isset($lines[$next]) && trim($lines[$next]) === '') {
+                    $next++;
+                }
+
+                if (str_starts_with($lines[$next] ?? '', self::GEN_START) || in_array($line, $legacyHeadings, true)) {
+                    $offsets[] = $offset;
+                }
+            }
+
+            $offset += strlen($line) + 1;
+        }
+
+        return $offsets;
+    }
+
+    /**
+     * 기존 문서에서 생성 블록 종료 마커 뒤 ~ 다음 엔드포인트 절 앞(없으면 문서 끝)을 원문 그대로 잘라냅니다.
+     *
+     * @param  string  $existing  기존 문서 (LF 정규화)
+     * @param  string  $key  생성 블록 키
+     * @param  array<int, int>  $boundaries  엔드포인트 절 시작 오프셋
+     * @return string|null 블록 뒤 원문 (기존 블록이 없으면 null)
+     */
+    private function existingBlockTail(string $existing, string $key, array $boundaries): ?string
+    {
+        $startPos = strpos($existing, self::GEN_START.$key.' -->');
+        if ($startPos === false) {
+            return null;
+        }
+
+        $endPos = strpos($existing, self::GEN_END, $startPos);
+        if ($endPos === false) {
+            return null;
+        }
+
+        $from = $endPos + strlen(self::GEN_END);
+        $to = strlen($existing);
+
+        foreach ($boundaries as $boundary) {
+            if ($boundary >= $from) {
+                $to = $boundary;
+                break;
+            }
+        }
+
+        return substr($existing, $from, $to - $from);
     }
 
     /**
@@ -1164,9 +2144,10 @@ class ApiDocScaffolder
      * @param  string  $existing  기존 문서 전체
      * @param  string  $key  라우트명(생성 블록 키)
      * @param  string|null  $legacy  생성 블록이 없던 사람 작성 섹션 원문 (헤딩 매칭 폴백)
+     * @param  array<int, string>  $untypedParams  규칙에 타입이 없어 생성기가 기본값 `string` 을 적은 파라미터 이름
      * @return string 설명이 복원된 섹션
      */
-    private function restoreTableDescriptions(string $section, string $existing, string $key, ?string $legacy = null): string
+    private function restoreTableDescriptions(string $section, string $existing, string $key, ?string $legacy = null, array $untypedParams = []): string
     {
         $oldBlock = $this->extractGeneratedBlockBody($existing, $key) ?? $legacy;
         if ($oldBlock === null) {
@@ -1184,13 +2165,14 @@ class ApiDocScaffolder
         [$body, $tail] = $this->splitAtBlockEnd($section);
 
         $lines = explode("\n", $body);
+        $seen = [];
         foreach ($lines as $index => $line) {
             $parsed = $this->parseTableRow($line);
             if ($parsed === null) {
                 continue;
             }
 
-            $previousRow = $previousCells[$parsed['key']] ?? null;
+            $previousRow = $previousCells[$this->occurrenceKey($parsed['key'], $seen)] ?? null;
 
             // 기존 문서에 없던 행(= 신규 필드/파라미터)은 새로 생성된 값을 그대로 채택한다.
             if ($previousRow === null) {
@@ -1208,16 +2190,45 @@ class ApiDocScaffolder
             // (`loggable_type` 이 string ↔ null). null 관측은 "타입이 바뀌었다"가 아니라
             // "이번 표본에는 값이 없었다" 는 뜻이므로, 기존에 실제 값을 관측해 둔 행은 유지한다.
             if (count($cols) === 4 && count($previousRow['cols']) === 4) {
+                // 사람이 접두를 붙여 적은 이름(`data[].id`)은 그대로 둔다.
+                $cols[0] = $previousRow['cols'][0];
                 $previousType = $previousRow['cols'][1];
                 $previousExample = $previousRow['cols'][2];
                 $observedNothing = $cols[1] === 'null';
 
+                // 사람이 생성 타입을 다듬은 셀(`object` → `object\|null`)도 같은 타입으로 본다.
+                // 실측 환경 탓인 차이도 타입이 바뀐 것이 아니다 — 같은 수치형이 값에 따라 number 와
+                // integer 로 갈린 것, 데이터가 없어 빈 표본(`[]`, `{}`, null)이 온 것, 민감 키 이름 때문에
+                // 값이 `{MASKED}` 로 가려진 것. 기존 표본이 비어 있었으면 새 표본을 들인다.
+                $numeric = ['integer', 'number'];
+                $emptySample = static fn (string $cell): bool => in_array(trim($cell, '`'), ['', '[]', '{}', 'null'], true);
+                $environmental = ! $emptySample($previousExample)
+                    && ($emptySample($cols[2]) || str_contains($cols[2], '{MASKED}'));
+
                 $keepPrevious = $previousExample !== ''
-                    && ($previousType === $cols[1] || ($observedNothing && $previousType !== 'null'));
+                    && ($previousType === $cols[1]
+                        || ($cols[1] !== '' && str_starts_with($previousType, $cols[1].'\\|'))
+                        || ($observedNothing && $previousType !== 'null')
+                        || (in_array($previousType, $numeric, true) && in_array($cols[1], $numeric, true))
+                        || $environmental);
 
                 if ($keepPrevious) {
                     $cols[1] = $previousType;
                     $cols[2] = $previousExample;
+                }
+            }
+
+            // 파라미터 표(6열)의 타입, 필수, 허용값 열은 규칙에서 파생된 사실이지만, 사람은 그것을
+            // 더 구체적으로 다듬는다(`array\<integer\>`, `` `apply_all=false` 일 때 예 ``, `min 1, 존재하는
+            // 게시판 ID`). 생성값이 기존 셀의 일부로 남아 있으면 다듬은 셀을 이어받고, 그렇지 않으면
+            // 사실이 바뀐 것으로 보고 갱신한다.
+            if (count($cols) === 6 && count($previousRow['cols']) === 6) {
+                $cols = $this->keepRefinedParamCells($cols, $previousRow['cols']);
+
+                // 규칙에 타입이 없는 파라미터의 `string` 은 모름이다 — 사람이 적은 타입을 둔다.
+                $plainName = (string) preg_replace('/\\\\([_*`])/', '$1', $cols[0]);
+                if (in_array($plainName, $untypedParams, true) && $previousRow['cols'][2] !== '') {
+                    $cols[2] = $previousRow['cols'][2];
                 }
             }
 
@@ -1237,6 +2248,91 @@ class ApiDocScaffolder
     }
 
     /**
+     * 파라미터 표 행에서 사람이 다듬은 타입, 필수, 허용값 셀을 이어받습니다.
+     *
+     * 판별 규칙 (셀마다 따로):
+     *   - 타입: 기존 셀이 생성값으로 시작하면(`array` → `array\<integer\>`) 기존 셀.
+     *   - 필수: 기존 셀이 `예` / `아니오` 가 아닌 사람 문구(`조건부`, `` `x=y` 일 때 예 ``)면 기존 셀.
+     *     기존 셀이 `예` / `아니오` 인데 생성값과 다르면 사실이 바뀐 것이므로 생성값.
+     *   - 허용값: 생성값이 `—`(규칙에서 읽어 내지 못함)이면 기존 셀. 그 밖에는 생성값을 쉼표로 나눈
+     *     항목이 모두 기존 셀에 들어 있을 때만 기존 셀(`min 1` → `min 1, 존재하는 게시판 ID`). 수치가 든
+     *     항목은 그 수치가 기존 셀에 있으면 들어 있는 것으로 본다(`max 255` → `최대 255자`). 기존 셀이 같은 규칙
+     *     종류를 말로 다루되 그 말에 수치를 붙이지 않았으면(`max 10240` → `첨부 최대 용량 설정(기본 10MB)`, 수치가
+     *     설정에서 옴) 들어 있는 것으로 본다.
+     *
+     * @param  array<int, string>  $cols  새로 생성된 행의 셀
+     * @param  array<int, string>  $previous  기존 행의 셀
+     * @return array<int, string> 셀이 반영된 행
+     */
+    private function keepRefinedParamCells(array $cols, array $previous): array
+    {
+        // 사람이 이스케이프해 적은 이름(`\_token`)은 그대로 둔다(대조는 이스케이프를 푼 이름으로 한다).
+        $cols[0] = $previous[0] !== '' ? $previous[0] : $cols[0];
+
+        // 경로 파라미터의 `string` 은 생성기가 타입을 모를 때 쓰는 기본값이다 — 사람이 적은 타입을 둔다.
+        $pathDefault = $cols[1] === 'path' && $cols[2] === 'string';
+        // 규칙의 `array` 는 JSON 객체도 받는다 — 사람이 적은 `object` 는 더 구체적인 타입이다.
+        $objectRefined = $cols[2] === 'array' && str_starts_with($previous[2], 'object');
+
+        if ($previous[2] !== '' && ($pathDefault || $objectRefined || str_starts_with($previous[2], $cols[2]))) {
+            $cols[2] = $previous[2];
+        }
+
+        if (! in_array($previous[3], ['', '예', '아니오'], true)) {
+            $cols[3] = $previous[3];
+        }
+
+        if (! in_array($previous[4], ['', '—'], true)) {
+            $tokens = array_filter(array_map('trim', explode(',', $cols[4])), static fn (string $t): bool => $t !== '');
+            // 수치가 든 항목(`max 255`, `min 0`)은 같은 수치가 기존 셀에 있으면 같은 사실로 본다 — 사람은
+            // 그것을 `최대 255자`, `0~10080` 처럼 다른 말로 적는다. 수치가 없는 항목(열거값)은 글자 그대로 본다.
+            // 셀에 수치가 하나도 없고 규칙 종류(최대, 최소)를 말로 다루면 수치를 설정에 맡긴 서술로 본다
+            // (`첨부 최대 용량 설정`). 수치를 적은 셀은 같은 수치여야 한다.
+            // 수치가 그 규칙 종류의 말에 붙어 있으면(`최대 255자`, `max:255`) 같은 수치여야 한다. 셀 안의 다른
+            // 수치(`기본 10MB` 같은 기본값 안내)는 그 규칙의 수치가 아니다.
+            $kindWords = ['max' => ['max', '최대', '이하', '상한'], 'min' => ['min', '최소', '이상', '하한'], 'between' => ['between', '사이', '범위']];
+            $covered = array_filter($tokens, static function (string $t) use ($previous, $kindWords): bool {
+                $kind = strtolower((string) strtok($t, ' '));
+
+                if (isset($kindWords[$kind])) {
+                    $mentioned = false;
+                    $attachedNumber = false;
+
+                    foreach ($kindWords[$kind] as $word) {
+                        if (str_contains($previous[4], $word)) {
+                            $mentioned = true;
+                            $attachedNumber = $attachedNumber || preg_match('/'.preg_quote($word, '/').'\s*:?\s*\d/u', $previous[4]) === 1;
+                        }
+                    }
+
+                    if ($mentioned && ! $attachedNumber) {
+                        return true;
+                    }
+                }
+
+                if (preg_match_all('/\d+(?:\.\d+)?/', $t, $numbers) > 0) {
+                    foreach ($numbers[0] as $number) {
+                        // 수치 뒤의 마침표는 문장 부호일 수 있다(`max 2.`) — 소수점(마침표 뒤 숫자)만 다른 수치로 본다.
+                        if (! preg_match('/(?<![\d.])'.preg_quote($number, '/').'(?!\d|\.\d)/', $previous[4])) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+                return str_contains($previous[4], $t);
+            });
+
+            if ($cols[4] === '—' || ($tokens !== [] && count($covered) === count($tokens))) {
+                $cols[4] = $previous[4];
+            }
+        }
+
+        return $cols;
+    }
+
+    /**
      * 사람이 보강한 에러 응답 표를 보존합니다.
      *
      * 에러 표는 라우트 메타(미들웨어·FormRequest 유무)에서 대표 상태코드만 추론하는 초안이라,
@@ -1246,7 +2342,7 @@ class ApiDocScaffolder
      *
      * 행 키(상태코드) 단위로 병합한다. 자동 추론이 만든 행은 그대로 두되(라우트 메타가 바뀌면
      * 그 결과가 정본이다), 기존 문서에만 있는 행 — 사람이 추가한 도메인 특이 에러 — 은
-     * 상태코드 오름차순 자리에 되살린다. 같은 상태코드가 양쪽에 있으면 사람이 쓴 발생 조건이
+     * 기존 표의 자리에 되살린다. 같은 상태코드가 양쪽에 있으면 사람이 쓴 발생 조건이
      * 자동 문구보다 구체적이므로 기존 행을 우선한다.
      *
      * @param  string  $section  표 셀 보존이 끝난 섹션
@@ -1271,23 +2367,47 @@ class ApiDocScaffolder
             return $preserved;
         }
 
-        if (! preg_match('/`([^`]+)`/', $preserved, $old)) {
+        // 갱신 대상은 「요구 권한(…)」 괄호 안의 식별자뿐이다. 그 앞뒤의 백틱 값(오류 문구 원문
+        // `비밀번호가 일치하지 않습니다.`, 오류 코드 `auth.scope_denied`)은 사람 서술이다.
+        $marker = '요구 권한(';
+        $segmentStart = strpos($preserved, $marker);
+
+        if ($segmentStart === false) {
             return $preserved;
         }
 
-        if ($old[1] === $new[1]) {
+        $inside = $segmentStart + strlen($marker);
+        $segmentEnd = strpos($preserved, ')', $inside);
+
+        if ($segmentEnd === false) {
             return $preserved;
         }
 
-        $needle = '`'.$old[1].'`';
-        $pos = strpos($preserved, $needle);
+        $segment = substr($preserved, $inside, $segmentEnd - $inside);
 
-        if ($pos === false) {
+        if (! preg_match_all('/`([^`]+)`/', $segment, $all) || $all[1] === []) {
             return $preserved;
         }
 
+        // OR 권한(`a|b`)을 사람이 `` `a` 또는 `b` `` 로 나눠 적었으면 식별자 모음이 같은지로 판별한다.
+        // 표 셀 안의 파이프는 `\|` 로 이스케이프돼 있다.
+        $split = static fn (string $id): array => explode('|', str_replace('\\|', '|', $id));
+        $required = array_unique($split($new[1]));
+        $written = array_unique(array_merge(...array_map($split, $all[1])));
+        sort($required);
+        sort($written);
+
+        if ($required === $written) {
+            return $preserved;
+        }
+
+        // 괄호 안이 식별자 하나면 그것만, 여럿이면 괄호 안 전체를 새 식별자로 바꾼다.
         // preg_replace 는 대체 문자열의 `$`·`\` 를 역참조로 해석하므로 쓰지 않는다.
-        return substr_replace($preserved, '`'.$new[1].'`', $pos, strlen($needle));
+        $replacement = count($all[1]) === 1
+            ? str_replace('`'.$all[1][0].'`', '`'.$new[1].'`', $segment)
+            : '`'.$new[1].'`';
+
+        return substr_replace($preserved, $replacement, $inside, $segmentEnd - $inside);
     }
 
     /**
@@ -1332,10 +2452,29 @@ class ApiDocScaffolder
             return $section;
         }
 
-        // 상태코드 키로 병합. `+` 는 왼쪽 우선이므로 기존 행을 먼저 둬서, 같은 상태코드면
-        // 사람이 쓴 구체적 조건이 자동 문구를 이긴다. 자동 추론에만 있는 상태코드는 새로 편입된다.
+        // 상태코드 키로 병합. 같은 상태코드면 사람이 쓴 구체적 조건이 자동 문구를 이긴다.
+        // 사람은 한 상태코드에 행을 여럿 둘 수 있다(403 의 「권한 없음」과 「권한 범위 밖」) — 상태코드마다
+        // 기존 행을 모두 남긴다. 행 순서도 기존 표를 따르고, 자동 추론에만 있는 상태코드는 기존 표에서
+        // 그보다 큰 첫 상태코드 앞에 끼운다(없으면 끝).
         $currentRows = $this->errorTableRows($section);
-        $merged = $previousRows + $currentRows;
+        $merged = $this->errorTableRowGroups($previous);
+
+        foreach ($currentRows as $code => $row) {
+            if (isset($merged[$code])) {
+                continue;
+            }
+
+            $codes = array_keys($merged);
+            $at = count($codes);
+            foreach ($codes as $n => $existingCode) {
+                if ((int) $existingCode > (int) $code) {
+                    $at = $n;
+                    break;
+                }
+            }
+
+            $merged = array_slice($merged, 0, $at, true) + [$code => [$row]] + array_slice($merged, $at, null, true);
+        }
 
         if ($merged === []) {
             return $section;
@@ -1352,15 +2491,69 @@ class ApiDocScaffolder
         // 걸린다), 그것을 기준으로 삼으면 갱신이 언제나 no-op 이 된다.
         $generatedRows = $generated === null ? $currentRows : $this->errorTableRows($generated);
 
-        if (isset($merged['403'], $generatedRows['403'])) {
-            $merged['403'] = $this->refreshPermissionIdentifier($merged['403'], $generatedRows['403']);
+        // 예전 생성기가 낸 문구 그대로인 행은 사람 행이 아니라 생성기 몫이다 — 이번 생성 문구로 바꾼다.
+        foreach ($merged as $code => $rows) {
+            foreach ($rows as $n => $row) {
+                if (in_array($row, self::LEGACY_GENERATED_ERROR_ROWS, true) && isset($generatedRows[$code])) {
+                    $merged[$code][$n] = $generatedRows[$code];
+                }
+            }
         }
 
-        ksort($merged, SORT_NUMERIC);
+        // 갱신은 생성기가 내는 「요구 권한(`식별자`)」 문구를 가진 행에만 건다. 사람이 덧붙인 다른 403 행의
+        // 첫 백틱 값은 권한 식별자가 아니다(오류 코드 `auth.scope_denied`, 오류 메시지 원문 등).
+        if (isset($merged['403'], $generatedRows['403'])) {
+            foreach ($merged['403'] as $n => $row) {
+                if (str_contains($row, '요구 권한(`')) {
+                    $merged['403'][$n] = $this->refreshPermissionIdentifier($row, $generatedRows['403']);
+                }
+            }
+        }
 
-        $table = "| 상태코드 | 의미 | 발생 조건 |\n| --- | --- | --- |\n".implode("\n", $merged);
+        // 사람이 3열 머리 줄의 이름을 고쳐 썼으면(`| 상태 | 조건 | 비고 |`) 그 줄을 쓴다.
+        $previousHeader = $this->firstTableHeader((string) $this->extractErrorTable($previous));
+        $header = $previousHeader !== null && count($this->splitRowCells($previousHeader)) === 3
+            ? $previousHeader
+            : '| 상태코드 | 의미 | 발생 조건 |';
+
+        $table = $header."\n| --- | --- | --- |\n".implode("\n", array_merge(...array_values($merged)));
 
         return str_replace($currentBody, $table, $section);
+    }
+
+    /**
+     * 에러 응답 표에서 [상태코드 => 그 상태코드의 행 목록(등장 순)] 을 수집합니다.
+     *
+     * @param  string  $section  엔드포인트 섹션 (또는 생성 블록)
+     * @return array<string, array<int, string>> 상태코드 => 표 행 원문 목록
+     */
+    private function errorTableRowGroups(string $section): array
+    {
+        $body = $this->extractErrorTable($section);
+
+        if ($body === null) {
+            return [];
+        }
+
+        $groups = [];
+        $lines = explode("\n", $body);
+        $table = $this->locateTable($lines);
+
+        if ($table === null) {
+            return [];
+        }
+
+        // 데이터 행은 모두 남긴다. 상태코드 하나로 시작하면 그 코드가 키이고, 사람이 여러 코드를 묶어 적은
+        // 행(`200, 400, 401`)은 첫 칸 전체가 키다.
+        for ($i = $table[0] + 2; $i <= $table[1]; $i++) {
+            if (! preg_match('/^\|\s*([^|]+?)\s*\|/', $lines[$i], $m)) {
+                continue;
+            }
+
+            $groups[$m[1]][] = rtrim($lines[$i]);
+        }
+
+        return $groups;
     }
 
     /**
@@ -1388,6 +2581,93 @@ class ApiDocScaffolder
         }
 
         return $rows;
+    }
+
+    /**
+     * 기존 실측 응답 예시와 새 실측 응답 예시가 같은 응답 구조인지 판별합니다.
+     *
+     * 판별 규칙: 최상위, `data`, 그 아래 필드, 목록 항목(또는 중첩 객체)까지 세 단계의 키 집합이 같으면
+     * 같은 구조다. 한쪽이 null 이나 빈 값(`[]`, `""`)이면 그 자리는 어느 구조와도 맞는 것으로 본다 — 실측
+     * 환경에 데이터가 없거나 기능이 꺼져 있어 생긴 차이다. 그보다 깊은 키(다국어 맵의 언어 키 등)는 데이터에
+     * 따라 달라지므로 보지 않는다. 같은 자리에서 스칼라와 객체(또는 목록)가 갈리면 구조가 바뀐 것이다.
+     *
+     * @param  string  $previous  기존 응답 예시 본문
+     * @param  string  $current  새 응답 예시 본문
+     * @return bool 같은 구조면 true (기존 예시를 유지)
+     */
+    private function exampleShapesCompatible(string $previous, string $current): bool
+    {
+        $old = $this->exampleJson($previous);
+        $new = $this->exampleJson($current);
+
+        if ($old === null || $new === null) {
+            return $this->exampleKeyShape($previous) === $this->exampleKeyShape($current);
+        }
+
+        return $this->shapeCompatible($old, $new, 0);
+    }
+
+    /**
+     * 응답 예시 본문의 JSON 을 배열로 풉니다.
+     *
+     * @param  string  $body  응답 예시 본문 (```json 블록 포함)
+     * @return array<mixed>|null 풀린 값 (JSON 블록이 없거나 파싱 실패 시 null)
+     */
+    private function exampleJson(string $body): ?array
+    {
+        if (! preg_match('/```json\n(.*?)\n```/s', $body, $m)) {
+            return null;
+        }
+
+        $decoded = json_decode($m[1], true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /**
+     * 두 값이 같은 응답 구조인지 재귀로 판별합니다 ({@see self::exampleShapesCompatible()} 규칙).
+     *
+     * @param  mixed  $old  기존 값
+     * @param  mixed  $new  새 값
+     * @param  int  $depth  현재 깊이 (최상위 0)
+     * @return bool 같은 구조면 true
+     */
+    private function shapeCompatible(mixed $old, mixed $new, int $depth): bool
+    {
+        $isEmpty = static fn (mixed $v): bool => $v === null || $v === [] || $v === '';
+
+        if ($depth > 3 || $isEmpty($old) || $isEmpty($new)) {
+            return true;
+        }
+
+        if (! is_array($old) || ! is_array($new)) {
+            return ! is_array($old) && ! is_array($new);
+        }
+
+        if (array_is_list($old) !== array_is_list($new)) {
+            return false;
+        }
+
+        if (array_is_list($old)) {
+            return $this->shapeCompatible($old[0], $new[0], $depth + 1);
+        }
+
+        $oldKeys = array_keys($old);
+        $newKeys = array_keys($new);
+        sort($oldKeys);
+        sort($newKeys);
+
+        if ($oldKeys !== $newKeys) {
+            return false;
+        }
+
+        foreach ($old as $key => $value) {
+            if (! $this->shapeCompatible($value, $new[$key], $depth + 1)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1792,7 +3072,7 @@ class ApiDocScaffolder
             // 않도록, 필드 집합이 달라졌을 때(= 스펙 변경)만 새 실측값으로 갱신한다.
             if ($previousWasProbed
                 && str_contains($newBody, self::PROBED_BODY_MARKER)
-                && $this->exampleKeyShape($previousBody) === $this->exampleKeyShape($newBody)
+                && $this->exampleShapesCompatible($previousBody, $newBody)
             ) {
                 $section = substr_replace($section, $previousBody, $start, $end - $start);
 
@@ -1913,6 +3193,7 @@ class ApiDocScaffolder
     private function collectTableCells(string $block): array
     {
         $cells = [];
+        $seen = [];
 
         foreach (explode("\n", $block) as $line) {
             $parsed = $this->parseTableRow($line);
@@ -1921,14 +3202,31 @@ class ApiDocScaffolder
                 continue;
             }
 
+            // 같은 이름의 행(바깥 레코드의 `id` 와 안쪽 객체의 `id`)은 등장 순번으로 구분한다.
+            $key = $this->occurrenceKey($parsed['key'], $seen);
+
             // 마지막 열(사람 서술)이 TODO 스텁이어도 예시값 열은 보존 대상이므로 행 자체는 수집한다.
-            $cells[$parsed['key']] = [
+            $cells[$key] = [
                 'value' => $this->isTodoCell($parsed['value']) ? null : $parsed['value'],
                 'cols' => $parsed['cols'],
             ];
         }
 
         return $cells;
+    }
+
+    /**
+     * 같은 키가 거듭 나오면 두 번째부터 순번을 붙인 키를 돌려줍니다.
+     *
+     * @param  string  $key  행 키
+     * @param  array<string, int>  $seen  지금까지 나온 키별 횟수 (갱신된다)
+     * @return string 순번이 붙은 키 (첫 등장은 그대로)
+     */
+    private function occurrenceKey(string $key, array &$seen): string
+    {
+        $seen[$key] = ($seen[$key] ?? 0) + 1;
+
+        return $seen[$key] === 1 ? $key : $key.'#'.$seen[$key];
     }
 
     /**
@@ -1958,10 +3256,21 @@ class ApiDocScaffolder
         // splitRowCells 로 분해한다.
         $cols = array_map('trim', $this->splitRowCells($line));
 
+        // 사람이 이스케이프 없이 적은 유니언 타입(`string|null`)은 셀이 하나 늘어난 5칸으로 읽힌다 — 응답 필드 표의
+        // 타입 셀로 합친다. 이대로 두면 표 행으로 읽히지 않아 재생성 때 그 행이 사라진다.
+        if (count($cols) === 5 && $cols[2] === 'null') {
+            $cols = [$cols[0], $cols[1].'|null', $cols[3], $cols[4]];
+        }
+
         // 파라미터 표 6열(이름+위치가 키) / 응답 필드 표 4열(필드가 키) / 에러 응답 표 3열(상태코드가 키)
+        // 응답 필드 표(4열)의 이름은 목록 접두를 떼고 대조한다 — 사람은 목록 항목 필드를 `data[].id`,
+        // `data.data[].id` 로 적고 생성기는 `id` 로 적는다. 같은 필드가 다른 행으로 읽히면 생성 행이 TODO
+        // 설명을 달고 끼어든다.
+        // 이름의 마크다운 이스케이프(`\_is_test_mode`)는 풀어서 대조한다 — 생성기는 `_is_test_mode` 로 적는다.
+        $name = (string) preg_replace('/\\\\([_*`])/', '$1', $cols[0]);
         $key = match (count($cols)) {
-            6 => $cols[0].'|'.$cols[1],
-            4 => $cols[0],
+            6 => $name.'|'.$cols[1],
+            4 => (string) preg_replace('/^(?:data\.data\[\]\.|data\[\]\.|data\.)/', '', trim($name, '`')),
             3 => $cols[0],
             default => null,
         };
@@ -2051,6 +3360,30 @@ class ApiDocScaffolder
         $prose = trim($cut !== false ? substr($afterGen, 0, $cut) : $afterGen);
 
         return $prose === '' ? null : $prose;
+    }
+
+    /**
+     * README 목차 블록 종료 마커 뒤 ~ 확장 목차 헤딩 앞(없으면 문서 끝)을 원문 그대로 돌려줍니다.
+     *
+     * {@see self::extractReadmeTrailingProse()} 와 같은 구간이되 앞뒤 줄바꿈을 깎지 않는다.
+     *
+     * @param  string  $existing  기존 README
+     * @param  string  $key  목차 생성 블록 키
+     * @return string 블록 뒤 원문 (블록을 찾지 못하면 빈 문자열)
+     */
+    private function readmeTrailingRaw(string $existing, string $key): string
+    {
+        $startPos = strpos($existing, self::GEN_START.$key.' -->');
+        $endPos = $startPos === false ? false : strpos($existing, self::GEN_END, $startPos);
+
+        if ($endPos === false) {
+            return '';
+        }
+
+        $afterGen = substr($existing, $endPos + strlen(self::GEN_END));
+        $cut = strpos($afterGen, "\n".self::EXTENSION_INDEX_HEADING);
+
+        return $cut !== false ? substr($afterGen, 0, $cut + 1) : $afterGen;
     }
 
     /**
@@ -2319,10 +3652,15 @@ class ApiDocScaffolder
      * 표의 행이 응답 필드 표로 옮겨 붙는다.
      *
      * @param  string  $section  새로 생성된 섹션
+     *                           요청 파라미터 표는 예외가 있다. 요청 규칙을 읽어 냈으면(`$paramsKnown === true`) 규칙이 사실이므로, 기존 표에만
+     *                           있는 본문, 쿼리 위치 행은 없어진 파라미터로 보고 되살리지 않는다. 단 요청 클래스 소스에 그 이름이 적혀 있으면
+     *                           (`$referencedNames`, 규칙 밖에서 직접 읽는 파라미터) 되살린다. 그 밖의 위치(사람이 더한 헤더 등)는 되살린다.
      * @param  string|null  $oldBlock  기존 생성 블록 본문
+     * @param  bool|null  $paramsKnown  요청 규칙을 읽어 냈는가 (null=알 수 없음)
+     * @param  array<int, string>|null  $referencedNames  요청 클래스 소스에 적힌 이름 (null=알 수 없음)
      * @return string 누락 행이 되살아난 섹션
      */
-    private function restoreMissingTableRows(string $section, ?string $oldBlock): string
+    private function restoreMissingTableRows(string $section, ?string $oldBlock, ?bool $paramsKnown = null, ?array $referencedNames = null): string
     {
         if ($oldBlock === null) {
             return $section;
@@ -2341,7 +3679,7 @@ class ApiDocScaffolder
 
         foreach ($newChunks as $anchor => $chunk) {
             if (isset($oldChunks[$anchor])) {
-                $chunk = $this->mergeMissingRows($chunk, $oldChunks[$anchor]);
+                $chunk = $this->mergeMissingRows($chunk, $oldChunks[$anchor], $anchor === '**요청 파라미터**' && $paramsKnown === true, $referencedNames ?? []);
             }
 
             $rebuilt .= rtrim($chunk, "\n")."\n\n";
@@ -2355,14 +3693,26 @@ class ApiDocScaffolder
      *
      * @param  string  $chunk  새 구간
      * @param  string  $oldChunk  기존 구간
+     * @param  bool  $skipRemovedParams  기존 표에만 있는 본문, 쿼리 위치 파라미터 행을 되살리지 않는가
+     * @param  array<int, string>  $referencedNames  요청 클래스 소스에 적힌 이름 (이 이름의 행은 되살린다)
      * @return string 병합된 구간
      */
-    private function mergeMissingRows(string $chunk, string $oldChunk): string
+    private function mergeMissingRows(string $chunk, string $oldChunk, bool $skipRemovedParams = false, array $referencedNames = []): string
     {
+        // 기존 구간에서 되살릴 행은 생성 산출물 자리(첫 표)의 행뿐이다. 그 뒤에 사람이 둔 표는 사람 서술로
+        // 통째로 되돌아가므로(applyInterstitialProse), 여기서 생성 표에 끼우면 같은 행이 두 번 실린다.
+        $oldLines = explode("\n", $oldChunk);
+        $oldRegion = $this->machineRegion($oldLines);
+        if ($oldRegion !== null) {
+            $oldChunk = implode("\n", array_slice($oldLines, 0, $oldRegion[1] + 1));
+        }
+
         $lines = explode("\n", $chunk);
-        $tableEnd = null;
+        $firstRow = null;
         $present = [];
+        $presentNames = [];
         $columns = null;
+        $seen = [];
 
         foreach ($lines as $i => $line) {
             $parsed = $this->parseTableRow($line);
@@ -2371,22 +3721,69 @@ class ApiDocScaffolder
                 continue;
             }
 
-            $present[$parsed['key']] = true;
+            // 같은 이름이 거듭 나오는 행(접두를 떼면 같은 이름)은 등장 순번으로 구분한다.
+            $present[$this->occurrenceKey($parsed['key'], $seen)] = true;
+            $presentNames[$this->topLevelName($parsed['cols'][0])] = true;
             $columns ??= count($parsed['cols']);
-            $tableEnd = $i;
+            $firstRow ??= $i;
         }
 
         // 새 구간에 표가 없으면 되살릴 자리가 없다 — 표 자체의 복원은 형제 메서드가 맡는다.
-        if ($tableEnd === null) {
+        if ($firstRow === null) {
             return $chunk;
         }
 
-        $missing = [];
+        $lines = $this->rowsInPreviousOrder($lines, $oldChunk);
+        $chunk = implode("\n", $lines);
+
+        // 되살린 행은 기존 표에서 바로 앞에 있던 행 뒤에 둔다 — 표 끝에 덧붙이면 사람이 맨 위에
+        // 둔 행(헤더 파라미터 등)이 재생성마다 맨 아래로 밀린다. 앞에 행이 없었으면 표 첫 행 자리다.
+        $rowIndex = function (string $key) use (&$lines): ?int {
+            $seen = [];
+            foreach ($lines as $i => $line) {
+                $parsed = $this->parseTableRow($line);
+                if ($parsed !== null && $this->occurrenceKey($parsed['key'], $seen) === $key) {
+                    return $i;
+                }
+            }
+
+            return null;
+        };
+
+        $inserted = false;
+        $previousKey = null;
+        $oldSeen = [];
 
         foreach (explode("\n", $oldChunk) as $line) {
             $parsed = $this->parseTableRow($line);
 
-            if ($parsed === null || isset($present[$parsed['key']])) {
+            if ($parsed === null) {
+                continue;
+            }
+
+            $key = $this->occurrenceKey($parsed['key'], $oldSeen);
+
+            if (isset($present[$key])) {
+                $previousKey = $key;
+
+                continue;
+            }
+
+            // 규칙을 읽어 낸 요청 파라미터 표에서 본문, 쿼리 위치 행이 빠졌으면 없어진 파라미터다. 다음 행은
+            // 빠진 것이 아니다 — 생성기가 만들지 않는 배열 요소 행(`ids.*`, `Operations[].op`), 지금도 생성되는
+            // 파라미터의 하위 행, 요청 클래스나 컨트롤러 소스에 적힌 이름(규칙 밖에서 직접 읽음), 검증 규칙 없이
+            // 페이지네이터가 직접 읽는 `page`.
+            $name = (string) preg_replace('/\\\\([_*`])/', '$1', $parsed['cols'][0]);
+            // 없어졌다고 볼 수 있는 것은 규칙 키 꼴의 이름(`a`, `a.b`)뿐이다 — 여러 파라미터를 묶은 사람 행
+            // (`key / scope / target`)이나 URN 이름(`urn:...:User`)은 규칙 키가 아니다.
+            if ($skipRemovedParams && count($parsed['cols']) === 6 && in_array($parsed['cols'][1], ['body', 'query'], true)
+                && preg_match('/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*$/', $name) === 1
+                && ! isset($presentNames[$this->topLevelName($name)])
+                && ! in_array($name, $referencedNames, true)
+                && ! in_array($this->topLevelName($name), $referencedNames, true)
+                && $name !== 'page'
+                && $this->isGeneratedParamDescription($name, $parsed['cols'][1], $parsed['cols'][2], $parsed['value'])
+            ) {
                 continue;
             }
 
@@ -2395,16 +3792,102 @@ class ApiDocScaffolder
                 continue;
             }
 
-            $missing[] = rtrim($line);
+            $after = $previousKey === null ? null : $rowIndex($previousKey);
+            array_splice($lines, $after === null ? $firstRow : $after + 1, 0, [rtrim($line)]);
+
+            $present[$key] = true;
+            $previousKey = $key;
+            $inserted = true;
         }
 
-        if ($missing === []) {
-            return $chunk;
+        return $inserted ? implode("\n", $lines) : $chunk;
+    }
+
+    /**
+     * 파라미터 행의 설명이 생성기가 낸 것(TODO 스텁이나 공통 파라미터 설명)인지 확인합니다.
+     *
+     * 규칙에서 빠진 파라미터라도 사람이 설명을 적어 둔 행은 지우지 않는다 — 요청 클래스가 규칙 밖에서 읽는
+     * 파라미터일 수 있고, 그 판단은 사람 몫이다. 생성기가 낸 설명뿐인 행만 사실로 지운다.
+     *
+     * @param  string  $name  파라미터 이름
+     * @param  string  $location  위치
+     * @param  string  $type  타입
+     * @param  string  $description  설명 셀
+     * @return bool 생성기가 낸 설명이면 true
+     */
+    private function isGeneratedParamDescription(string $name, string $location, string $type, string $description): bool
+    {
+        if ($this->isTodoCell($description)) {
+            return true;
         }
 
-        array_splice($lines, $tableEnd + 1, 0, $missing);
+        $generated = $this->paramDescriber->describe($name, $location, $type);
 
-        return implode("\n", $lines);
+        return $generated !== null && $this->escapeCell($generated) === $description;
+    }
+
+    /**
+     * 파라미터 이름의 최상위 이름을 돌려줍니다 (`a.b`, `a[].b`, `a.*.b` → `a`, 이스케이프는 푼다).
+     *
+     * @param  string  $name  파라미터 이름 셀
+     * @return string 최상위 이름
+     */
+    private function topLevelName(string $name): string
+    {
+        $name = trim((string) preg_replace('/\\\\([_*`])/', '$1', $name), '` ');
+
+        return (string) preg_split('/[.\[]/', $name)[0];
+    }
+
+    /**
+     * 표의 행을 기존 표의 순서대로 놓습니다.
+     *
+     * 실측 표본이나 규칙 배열의 순서가 바뀌어도 사람이 읽던 행 순서는 그대로 둔다. 기존 표에도 있던 행은
+     * 기존 순서로 그 행들의 자리를 채우고, 새로 생긴 행은 제자리에 둔다. 표 행이 이어져 있지 않으면 건드리지
+     * 않는다.
+     *
+     * @param  array<int, string>  $lines  새 구간의 줄
+     * @param  string  $oldChunk  기존 구간
+     * @return array<int, string> 행 순서가 맞춰진 줄
+     */
+    private function rowsInPreviousOrder(array $lines, string $oldChunk): array
+    {
+        $oldOrder = [];
+        $seen = [];
+        foreach (explode("\n", $oldChunk) as $line) {
+            $parsed = $this->parseTableRow($line);
+            if ($parsed !== null) {
+                $oldOrder[$this->occurrenceKey($parsed['key'], $seen)] = count($oldOrder);
+            }
+        }
+
+        $rows = [];
+        $seen = [];
+        foreach ($lines as $i => $line) {
+            $parsed = $this->parseTableRow($line);
+            if ($parsed !== null) {
+                $rows[$i] = $this->occurrenceKey($parsed['key'], $seen);
+            }
+        }
+
+        $indexes = array_keys($rows);
+        if (count($indexes) < 2 || end($indexes) - $indexes[0] + 1 !== count($indexes)) {
+            return $lines;
+        }
+
+        $known = array_filter($rows, static fn (string $key): bool => isset($oldOrder[$key]));
+        $sorted = $known;
+        uasort($sorted, static fn (string $a, string $b): int => $oldOrder[$a] <=> $oldOrder[$b]);
+
+        $slots = array_keys($known);
+        $ordered = array_map(static fn (int $i): string => $lines[$i], array_keys($sorted));
+
+        $result = $lines;
+        foreach ($slots as $n => $slot) {
+            $result[$slot] = $ordered[$n];
+        }
+
+        return $result;
     }
 
     /**
@@ -2433,6 +3916,17 @@ class ApiDocScaffolder
         $prose = [];
 
         foreach ($this->splitByAnchors($this->normalizeEol($oldBlock)) as $anchor => $chunk) {
+            // 첫 소제목 앞 구간은 생성 메타 줄(시작 마커, `- **...**` 목록) 뒤의 나머지 전체가 사람 몫이다.
+            if ($anchor === '') {
+                $head = $this->headChunkProse($chunk);
+
+                if ($head !== null) {
+                    $prose[self::LEAD_PREFIX] = $head;
+                }
+
+                continue;
+            }
+
             $trailing = $this->trailingProseOf($chunk);
 
             if ($trailing !== null) {
@@ -2478,14 +3972,40 @@ class ApiDocScaffolder
             // 이미 그 서술이 들어 있으면 다시 붙이지 않는다 (재생성 멱등).
             $lead = $prose[self::LEAD_PREFIX.$anchor] ?? null;
 
+            // 첫 소제목 앞 구간은 헤딩과 시작 마커, 생성 메타 줄 뒤에 둔다.
+            if ($anchor === '') {
+                if ($lead !== null && ! str_contains($text, ltrim($lead, "\n"))) {
+                    $lines = explode("\n", $text);
+                    $at = $this->headChunkMetaEnd($lines);
+                    array_splice($lines, $at, 0, explode("\n", $lead));
+                    $text = implode("\n", $lines);
+                }
+
+                $rebuilt .= $text."\n\n";
+
+                continue;
+            }
+
             if ($lead !== null && ! str_contains($text, $lead)) {
                 $lines = explode("\n", $text);
-                array_splice($lines, 1, 0, ['', $lead]);
+                // 생성 안내 문구가 있으면 그 뒤에 둔다(원문에서 서술은 안내 문구 아래에 있었다).
+                $at = 1;
+                for ($n = 1; isset($lines[$n]) && (trim($lines[$n]) === '' || $this->isGeneratedNote($lines[$n])); $n++) {
+                    if ($this->isGeneratedNote($lines[$n])) {
+                        $at = $n + 1;
+                    }
+                }
+                array_splice($lines, $at, 0, ['', $lead]);
                 $text = implode("\n", $lines);
             }
 
             if (isset($prose[$anchor]) && ! str_contains($text, $prose[$anchor])) {
-                $text .= "\n\n".$prose[$anchor];
+                // 마지막 구간(에러 응답)에는 종료 마커가 들어 있다 — 서술은 마커 앞, 블록 안에 둔다.
+                if (str_contains($text, self::GEN_END)) {
+                    $text = rtrim(Str::beforeLast($text, self::GEN_END))."\n\n".$prose[$anchor]."\n\n".self::GEN_END.Str::afterLast($text, self::GEN_END);
+                } else {
+                    $text .= "\n\n".$prose[$anchor];
+                }
             }
 
             $rebuilt .= $text."\n\n";
@@ -2541,7 +4061,11 @@ class ApiDocScaffolder
 
             if ($anchor !== null) {
                 $chunks[$current] = implode("\n", $buffer);
+                // 같은 소제목이 한 블록에 두 번 나오면 뒤 구간이 앞 구간을 덮지 않도록 순번을 붙인다.
                 $current = $anchor;
+                for ($n = 2; array_key_exists($current, $chunks); $n++) {
+                    $current = $anchor.'#'.$n;
+                }
                 $buffer = [$line];
 
                 continue;
@@ -2576,6 +4100,49 @@ class ApiDocScaffolder
     }
 
     /**
+     * 첫 소제목 앞 구간에서 생성 메타 줄이 끝나는 줄 위치를 돌려줍니다.
+     *
+     * 헤딩(`### `)과 시작 마커, 그 뒤에 이어지는 생성 메타 목록(`- **라우트명**`, `- **컨트롤러**`,
+     * `- **인증/권한**`)까지가 생성기 몫이다. 사람이 그 뒤에 더한 `- **요청 제한**` 같은 줄은 사람 몫이다.
+     *
+     * @param  array<int, string>  $lines  구간의 줄
+     * @return int 메타 줄 다음 위치
+     */
+    private function headChunkMetaEnd(array $lines): int
+    {
+        $at = 0;
+
+        foreach ($lines as $i => $line) {
+            if (str_starts_with($line, '### ') || str_starts_with($line, self::GEN_START) || preg_match('/^- \*\*(라우트명|컨트롤러|인증\/권한)\*\*: /u', $line)) {
+                $at = $i + 1;
+
+                continue;
+            }
+
+            if (trim($line) !== '') {
+                break;
+            }
+        }
+
+        return $at;
+    }
+
+    /**
+     * 첫 소제목 앞 구간에서 생성 메타 줄 뒤에 사람이 둔 내용 전체를 돌려줍니다.
+     *
+     * @param  string  $chunk  첫 소제목 앞 구간 (시작 마커 줄 포함)
+     * @return string|null 사람 내용 (없으면 null)
+     */
+    private function headChunkProse(string $chunk): ?string
+    {
+        $lines = explode("\n", $chunk);
+        // 메타 줄 바로 뒤에 붙였는지 빈 줄을 두었는지까지 원문을 따르도록 앞쪽 줄바꿈은 남긴다.
+        $rest = rtrim(implode("\n", array_slice($lines, $this->headChunkMetaEnd($lines))));
+
+        return trim($rest) === '' ? null : $rest;
+    }
+
+    /**
      * 구간의 소제목과 기계 산출물 **사이**에 놓인 사람 서술을 반환합니다.
      *
      * 표를 읽는 방법은 표 아래에 적기도 하고 위에 적기도 한다(대시보드 문서의 「이 목록은
@@ -2607,9 +4174,25 @@ class ApiDocScaffolder
             return null;
         }
 
-        $lead = trim(implode("\n", array_slice($lines, 1, $firstMachine - 1)));
+        // 생성기가 표 위에 내는 안내 문구(`_단건 응답: ..._`)는 사람 서술이 아니다 — 새 구간에도 생기므로 걷지 않는다.
+        $human = array_filter(
+            array_slice($lines, 1, $firstMachine - 1),
+            fn (string $line): bool => ! $this->isGeneratedNote($line)
+        );
+        $lead = trim(implode("\n", $human));
 
         return $lead === '' ? null : $lead;
+    }
+
+    /**
+     * 줄이 생성기가 응답 필드 표 위에 내는 안내 문구인지 확인합니다.
+     *
+     * @param  string  $line  한 줄
+     * @return bool 안내 문구면 true
+     */
+    private function isGeneratedNote(string $line): bool
+    {
+        return preg_match('/^_(?:단건 응답|목록 응답)[^\n]*\._$/u', trim($line)) === 1;
     }
 
     /**
@@ -2621,32 +4204,88 @@ class ApiDocScaffolder
     private function trailingProseOf(string $chunk): ?string
     {
         $lines = explode("\n", $chunk);
-        $lastMachine = null;
-        $inFence = false;
+        $region = $this->machineRegion($lines);
 
+        // 기계 산출물이 없는 구간은 판정하지 않는다 (위 주석의 겹침 방지).
+        if ($region === null) {
+            return null;
+        }
+
+        $tail = trim(implode("\n", array_slice($lines, $region[1] + 1)));
+
+        return $tail === '' ? null : $tail;
+    }
+
+    /**
+     * 구간에서 생성기가 낸 산출물(첫 표 또는 첫 코드 블록 묶음)의 [시작 줄, 끝 줄] 을 찾습니다.
+     *
+     * 생성기는 소제목마다 표 하나나 코드 블록 묶음(응답 예시의 상태줄 블록과 JSON 블록) 하나만 낸다. 그 묶음은
+     * 빈 줄을 사이에 두고 이어질 수 있다. 묶음이 끝난 뒤에 오는 것(사람이 덧붙인 예시 블록, 인용, 소절, 두 번째
+     * 표)은 생성 산출물이 아니다 — 마지막 표나 코드 블록까지를 산출물로 보면 그것들이 재생성마다 사라진다.
+     *
+     * @param  array<int, string>  $lines  구간의 줄 (첫 줄은 소제목)
+     * @return array{0: int, 1: int}|null [시작, 끝] (산출물이 없으면 null)
+     */
+    private function machineRegion(array $lines): ?array
+    {
+        $isMachineStart = static fn (string $line): bool => str_starts_with(trim($line), '```') || str_starts_with(trim($line), '|');
+
+        $start = null;
         foreach ($lines as $i => $line) {
-            $trimmed = trim($line);
+            if ($i > 0 && $isMachineStart($line)) {
+                $start = $i;
+                break;
+            }
+        }
+
+        if ($start === null) {
+            return null;
+        }
+
+        $end = $start;
+        $i = $start;
+        $count = count($lines);
+
+        while ($i < $count) {
+            $trimmed = trim($lines[$i]);
 
             if (str_starts_with($trimmed, '```')) {
-                $inFence = ! $inFence;
-                $lastMachine = $i;
+                // 코드 블록은 닫는 줄까지 통째로 산출물이다.
+                $j = $i + 1;
+                while ($j < $count && ! str_starts_with(trim($lines[$j]), '```')) {
+                    $j++;
+                }
+                $end = min($j, $count - 1);
+                $i = $end + 1;
 
                 continue;
             }
 
-            if ($inFence || str_starts_with($trimmed, '|')) {
-                $lastMachine = $i;
+            if (str_starts_with($trimmed, '|')) {
+                $end = $i;
+                $i++;
+
+                continue;
             }
+
+            // 빈 줄 뒤에 다시 코드 블록이 오면(응답 예시의 두 블록) 같은 묶음이다. 표는 빈 줄을 넘지 않는다.
+            if ($trimmed === '') {
+                $k = $i;
+                while ($k < $count && trim($lines[$k]) === '') {
+                    $k++;
+                }
+
+                if ($k < $count && str_starts_with(trim($lines[$k]), '```') && str_starts_with(trim($lines[$end]), '```')) {
+                    $i = $k;
+
+                    continue;
+                }
+            }
+
+            break;
         }
 
-        // 기계 산출물이 없는 구간은 판정하지 않는다 (위 주석의 겹침 방지).
-        if ($lastMachine === null) {
-            return null;
-        }
-
-        $tail = trim(implode("\n", array_slice($lines, $lastMachine + 1)));
-
-        return $tail === '' ? null : $tail;
+        return [$start, $end];
     }
 
     /**

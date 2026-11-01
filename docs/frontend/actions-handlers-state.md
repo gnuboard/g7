@@ -273,6 +273,28 @@ API를 호출합니다. **주의: `api`가 아닌 `apiCall`을 사용해야 합�
 
 진행 플래그 하나를 두고 **셋을 함께** 겁니다.
 
+```html
+<button type="button" disabled="{{_local.rotating}}">
+  <on type="click">
+    <sequence>
+      <set-state target="local" :rotating="true"/>
+      <api-call :auth_required="true" target="/api/admin/token/rotate" method="POST">
+        <success>
+          <set-state target="local" :rotating="false"/>
+        </success>
+        <fail>
+          <set-state target="local" :rotating="false"/>
+        </fail>
+      </api-call>
+    </sequence>
+  </on>
+  <icon data-if="{{_local.rotating}}" name="spinner" class="spinner-sm"/>
+  <span>$t:admin.token.rotate</span>
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "type": "basic",

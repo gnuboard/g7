@@ -13,6 +13,8 @@ axes:
   secrecy: [normal, secret_unauthorized]
   # 마킹은 있는데 선언이 없던 축 (값은 실제 마킹에서 도출) — 머리말 표식이 교차곱 유예를 소유한다.
   backfill: [idempotent, legacy_row, text_mode]    # 업그레이드 백필의 입력 상태
+  # 목록 형 (E2E 는 썸네일이 서는 카드형 목록에서 잰다)
+  board_type: [card]
 
 exclusions:
   - { image_source: attachment_only, secrecy: secret_unauthorized, reason: "비밀글 게이트는 image_source 와 무관하게 최상단에서 null — 대표 1조합(content_internal_only)으로 게이트를 검증하고 첨부 축은 기존 PostResourceThumbnailUrlTest 비밀글 케이스가 커버" }

@@ -23,11 +23,8 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  *
  * @scenario path=vbank_issue, check=callback_amount
  *
- * @effects tampered_callback_amount_is_rejected_before_confirm,
- *          legacy_deposit_is_verified_by_payment_lookup,
- *          vbank_issue_stores_the_verified_amount,
- *          deposit_webhook_completes_with_the_issuance_verified_amount,
- *          deposit_webhook_rejects_a_zero_stored_amount_without_lookup
+ * 효과 요약(마커 아님 — 평문): 과소금액 콜백 거절, 이전 입금행의 결제 조회 대조, 저장 예정액 0 거절,
+ *   정상 금액 발급과 입금 완료. 각 효과는 그 효과를 재는 메서드 docblock 에 마킹한다.
  */
 class Kve20262135VirtualAccountUnderpaymentTest extends PluginTestCase
 {

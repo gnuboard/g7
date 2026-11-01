@@ -35,7 +35,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * @scenario return_round=refund_request_delta
  *
- * @effects sequential_return_refund_request_carries_only_its_own_share
+ * 효과 요약(마커 아님 — 평문): sequential_return_refund_request_carries_only_its_own_share
  */
 class SequentialReturnRefundShareTest extends ModuleTestCase
 {

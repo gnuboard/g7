@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 잠금 대상 칸은 서버 UserLockedFieldsService::LOCKABLE 을 읽어 칸마다 돈다
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 잠금 대상 칸은 서버 UserLockedFieldsService::LOCKABLE 을 읽어 칸마다 돈다
 # (it.each). mode × locked × locale 의 곱 대신 칸 × 상태로 단언하며 locale 은 lang 키 검사에만 의미가 있다.
 # 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
 

@@ -10,7 +10,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
 /**
  * 서버 태스크 목록 ↔ 진행 화면 목록 정합성 (12차 #B22 · #B23 · #B24).
  *
- * `buildInstallationTaskList()` 이 설치 단계의 SSoT 다. 화면(`views/5-installation.php`)이 그
+ * `buildInstallationTaskList()` 이 설치 단계의 SSoT 다. 화면(`public/install/views/5-installation.php`)이 그
  * 목록을 손으로 다시 적으면 두 사본이 갈라지는데, 갈라진 결과는 **오류로 나타나지 않는다**:
  *
  *  - 진행률 분모가 화면 항목 수라 「10 / 10 · 100%」 를 지나서도 서버가 계속 돈다 (#B23)

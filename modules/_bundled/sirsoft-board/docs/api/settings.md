@@ -46,9 +46,10 @@ _단건 응답: `data` 객체의 필드._
 | report_policy | object | `{"auto_hide_threshold":5,"auto_hide_target":"both","daily…` | 신고 정책 카테고리. 자동 숨김 임계치(auto_hide_threshold)와 대상(auto_hide_target: post/comment/both), 사용자별 일일 신고 한도, 신고 거부 누적 제한(횟수/기간), 관리자·작성자 신고 알림 발송 여부와 채널을 포함합니다. |
 | spam_security | object | `{"post_cooldown_seconds":0,"comment_cooldown_seconds":0,"…` | 스팸·보안 카테고리. 글·댓글·신고 작성 사이의 도배 방지 쿨다운 시간(초)과 조회수 캐시 TTL을 포함합니다. |
 | display | object | `{"date_display_format":"standard"}` | 표시 설정 카테고리. 날짜 표시 형식(date_display_format: standard 절대 표기 / relative 상대 표기)을 포함합니다. |
-| privacy_retention | object | `{"enabled":false,"ip_retention_days":365,"guest_retention_days":0,"guest_mode":"anonymize"}` | 개인정보 보유기간 카테고리(이슈 #636). 자동 파기 사용 여부(enabled, 기본 false), 작성 IP 보유기간(ip_retention_days, 일), 비회원 작성자 정보 보유기간(guest_retention_days, 일 — 0 은 미적용), 비회원 글 처리 방식(guest_mode: anonymize/delete)을 포함합니다. |
 | seo | object | `{"meta_boards_title":"{site_name}","meta_boards_descripti…` | SEO 메타 태그 설정 카테고리. 게시판 목록/개별 게시판/글 상세 페이지의 메타 제목·설명 템플릿과 각 페이지의 SEO 생성 활성화 여부(seo_boards, seo_board, seo_post_detail)를 포함합니다. |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":0…` | 알림 채널 설정 카테고리. 각 채널(mail, database 등)의 식별자, 활성화 여부(is_active), 정렬 순서(sort_order)를 담은 channels 배열을 포함합니다. |
+| attachment_settings | object | `{"purge_enabled":false,"purge_retention_days":30}` | 첨부 정리 정책 카테고리. 삭제 첨부 영구 정리 사용 여부(`purge_enabled`, 기본 false)와 삭제 첨부 보존기간(`purge_retention_days`, 일, 기본 30) |
+| privacy_retention | object | `{"enabled":false,"ip_retention_days":365,"guest_retention_days":0,"guest_mode":"anonymize"}` | 개인정보 보유기간 카테고리. 자동 파기 사용 여부(enabled, 기본 false), 작성 IP 보유기간(ip_retention_days, 일), 비회원 작성자 정보 보유기간(guest_retention_days, 일 — 0 은 미적용), 비회원 글 처리 방식(guest_mode: anonymize/delete)을 포함합니다. |
 | report_permissions | object | `{"view_roles":["admin","manager"],"manage_roles":["admin"]}` | 신고 관리 권한 역할. 신고 내역을 조회할 수 있는 역할(view_roles)과 신고를 처리·관리할 수 있는 역할(manage_roles)의 식별자 배열이며, 설정값이 아닌 DB 권한 데이터로 관리됩니다. |
 | abilities | object | `{"can_update":true,"can_bulk_apply":true,"can_manage_board_types":true,"can_clear_seo_cache":true}` | 현재 사용자가 할 수 있는 작업 — `can_update`(settings.update), `can_bulk_apply`(settings.update + boards.update, 일괄 적용 라우트와 같은 두 권한), `can_manage_board_types`(boards.create, 게시판 유형 쓰기 라우트), `can_clear_seo_cache`(core.settings.update, 코어 SEO 캐시 초기화) |
 | _meta | object | `{"limits":{"per_page_min":5,"per_page_max":100,"min_title…` | 편집 UI 보조 메타데이터. `limits`에 `config('sirsoft-board.limits')` 기반 입력 제한값(페이지당 글 수·답글/댓글 깊이의 최소·최대 등)이 담겨 프론트 입력 검증 범위로 사용됩니다. |
@@ -364,10 +365,43 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | _tab | body | string | 아니오 | `basic_defaults`, `report_policy`, `spam_security`, `general`, `seo`, `notifications`, `notification_definitions`, `privacy_retention` | 현재 편집 중인 탭을 나타내는 메타 값. 탭 단위 부분 저장의 컨텍스트를 식별하는 용도이며 설정값으로는 저장되지 않습니다. |
 | notifications | body | array | 아니오 | — | 알림 채널 설정. `channels` 배열의 각 항목에 채널 식별자(id), 활성화 여부(is_active), 정렬 순서(sort_order)를 담아 저장합니다. |
+| notifications.channels | body | array | 아니오 | — | 알림 채널 목록. 항목마다 `id`(50자 이하), `is_active`(불리언)가 필수이고 `sort_order`(0 이상 정수)는 선택입니다 |
 | basic_defaults | body | array | 아니오 | — | 기본 설정 카테고리 값. 게시판 타입·페이지당 글 수·정렬·댓글/답글·길이 제한·파일 업로드·기본 권한 등 basic_defaults 하위 키를 저장합니다. `basic_defaults.allowed_extensions` 는 `basic_defaults.use_file_upload` 가 `true` 일 때만 최소 1개가 필수이며, `false`/`null` 이면 검증에서 제외되어 빈 배열도 허용됩니다. `min_title_length`·`min_comment_length`·`new_display_hours` 의 하한은 `config('sirsoft-board.limits')` 선언을 따르며 `0` 을 허용합니다. |
+| basic_defaults.type | body | string | 아니오 | max 50 | 게시판 생성 시 적용될 기본값: 게시판 타입 슬러그 (등록된 게시판 유형 중 하나). 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.per_page | body | integer | 아니오 | min 5, max 100 | 페이지당 항목 수 |
+| basic_defaults.per_page_mobile | body | integer | 아니오 | min 5, max 100 | 게시판 생성 시 적용될 기본값: 모바일 화면에서 페이지당 표시할 게시글 수. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.order_by | body | string | 아니오 | `created_at`, `view_count`, `title`, `author` | 정렬 기준 필드명 |
+| basic_defaults.order_direction | body | string | 아니오 | `ASC`, `DESC` | 게시판 생성 시 적용될 기본값: 게시글 목록 정렬 방향 (ASC 오름차순 / DESC 내림차순). 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.secret_mode | body | string | 아니오 | `disabled`, `enabled`, `always` | 게시판 생성 시 적용될 기본값: 비밀글 설정 (disabled 사용 안 함 / enabled 작성자 선택 가능 / always 전 글 비밀글 강제). 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.use_comment | body | boolean | 아니오 | — | 게시판 생성 시 적용될 기본값: 댓글 기능 사용 여부. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.use_reply | body | boolean | 아니오 | — | 게시판 생성 시 적용될 기본값: 게시글 답변(원글에 대한 답글) 기능 사용 여부. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.max_reply_depth | body | integer | 아니오 | min 1, max 10 | 게시판 생성 시 적용될 기본값: 답변글 최대 중첩 깊이. 새 게시판의 초기값으로 들어갑니다 |
 | basic_defaults.reply_delete_policy | body | string | 아니오 | `block`, `cascade` | 게시판 생성 시 적용될 답글 삭제 정책 기본값 (block 답글이 살아 있으면 원글 삭제 차단 / cascade 원글 삭제 시 답글도 함께 소프트 삭제). 허용값 밖이면 422 |
 | basic_defaults.secret_reply_visibility | body | string | 아니오 | `thread_path`, `descendants_only`, `per_post` | 게시판 생성 시 적용될 비밀 답변 열람 범위 기본값 (thread_path 원글을 볼 수 있는 사람은 하위 답변을, 답변 작성자는 자기 답변의 원글까지 / descendants_only 하위만 / per_post 답변마다 따로). 미지정 시 thread_path, 허용값 밖이면 422 (1.2.1+) |
-| basic_defaults | body | array | 아니오 | — | 기본 설정 카테고리 값. 게시판 타입·페이지당 글 수·정렬·댓글/답글·길이 제한·파일 업로드·기본 권한 등 basic_defaults 하위 키를 저장합니다. 반응 기능 기본값으로 `basic_defaults.use_reaction`(boolean), `basic_defaults.use_comment_reaction`(boolean, `use_reaction` 의 하위 토글) 과 `basic_defaults.active_reaction_types`(반응 유형 code 문자열 배열)를 포함하며, 새 게시판 생성 시 이 값이 개별 게시판의 초기값으로 시드됩니다. `basic_defaults.allowed_extensions` 는 `basic_defaults.use_file_upload` 가 `true` 일 때만 최소 1개가 필수이며, `false`/`null` 이면 검증에서 제외되어 빈 배열도 허용됩니다. `min_title_length`·`min_comment_length`·`new_display_hours` 의 하한은 `config('sirsoft-board.limits')` 선언을 따르며 `0` 을 허용합니다. |
+| basic_defaults.max_comment_depth | body | integer | 아니오 | min 0, max 10 | 게시판 생성 시 적용될 기본값: 대댓글 최대 중첩 깊이. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.comment_order | body | string | 아니오 | `ASC`, `DESC` | 게시판 생성 시 적용될 기본값: 댓글 정렬 순서 (ASC 오름차순 / DESC 내림차순). 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.show_view_count | body | boolean | 아니오 | — | 게시판 생성 시 적용될 기본값: 게시글 목록과 상세에 조회수를 노출할지 여부. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.use_report | body | boolean | 아니오 | — | 게시판 생성 시 적용될 기본값: 게시글과 댓글 신고 기능 사용 여부. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.use_scrap | body | boolean | 아니오 | — | 게시판 생성 시 적용될 기본값: 게시글 스크랩(북마크) 기능 사용 여부. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.use_reaction | body | boolean | 아니오 | — | 게시판 생성 시 적용될 기본값: 게시글 반응(추천/비추천) 기능 사용 여부. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.use_comment_reaction | body | boolean | 아니오 | — | 게시판 생성 시 적용될 기본값: 댓글 반응 사용 여부. `use_reaction` 의 하위 토글입니다. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.active_reaction_types | body | array | 아니오 | — | 게시판 생성 시 적용될 기본값: 켤 반응 유형 code 목록 (문자열 배열, 각 50자 이하, 예: `["like","dislike"]`). 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.reaction_types | body | array | 아니오 | max 50 | 반응 유형 편집 행 배열 (최대 50행, 항목은 `id`, `code`, `name`, `icon_attachment_id`, `display_order`, `is_active`). 배열 순서가 곧 `display_order` 이고, 설정 JSON 에는 저장하지 않고 반응 유형 테이블에 반영합니다. 동기화 규칙은 [reaction-types.md](reaction-types.md) 에 있습니다 |
+| basic_defaults.min_title_length | body | integer | 아니오 | min 0, max 200 | 게시판 생성 시 적용될 기본값: 게시글 제목 최소 글자 수. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.max_title_length | body | integer | 아니오 | min 1, max 1000 | 게시판 생성 시 적용될 기본값: 게시글 제목 최대 글자 수. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.min_content_length | body | integer | 아니오 | min 0, max 10000 | 게시판 생성 시 적용될 기본값: 게시글 본문 최소 글자 수. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.max_content_length | body | integer | 아니오 | min 1, max 100000 | 게시판 생성 시 적용될 기본값: 게시글 본문 최대 글자 수. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.min_comment_length | body | integer | 아니오 | min 0, max 1000 | 게시판 생성 시 적용될 기본값: 댓글 최소 글자 수. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.max_comment_length | body | integer | 아니오 | min 1, max 10000 | 게시판 생성 시 적용될 기본값: 댓글 최대 글자 수. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.use_file_upload | body | boolean | 아니오 | — | 게시판 생성 시 적용될 기본값: 파일 첨부 기능 사용 여부 (true 이면 `allowed_extensions` 최소 1개 필수). 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.max_file_size | body | integer | 아니오 | min 1, max 200 | 업로드 허용 최대 파일 크기 |
+| basic_defaults.max_file_count | body | integer | 아니오 | min 1, max 20 | 업로드 허용 최대 파일 개수 |
+| basic_defaults.blocked_keywords | body | array | 아니오 | — | 게시판 생성 시 적용될 기본값: 게시글과 댓글 작성 시 차단할 금지어 목록 (각 항목 100자 이하). 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.allowed_extensions | body | array | 예 | min 1 | 업로드 허용 확장자 목록 |
+| basic_defaults.notify_admin_on_post | body | boolean | 아니오 | — | 게시판 생성 시 적용될 기본값: 게시글 등록 시 관리자에게 알림을 보낼지 여부. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.notify_author | body | boolean | 아니오 | — | 게시판 생성 시 적용될 기본값: 댓글, 대댓글, 답변글, 관리자 처리가 생겼을 때 작성자에게 알림을 보낼지 여부. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.new_display_hours | body | integer | 아니오 | min 0, max 720 | 게시판 생성 시 적용될 기본값: 신규(NEW) 표시를 유지할 시간 (시간 단위, 최대 720). `0` 이면 NEW 배지를 붙이지 않습니다. 새 게시판의 초기값으로 들어갑니다 |
+| basic_defaults.default_board_permissions | body | array | 아니오 | — | 게시판 생성 시 적용될 기본 권한 맵. 권한 키를 그대로 키로 쓰는 평면 구조(예: `{"posts.read": ["admin","user"], "manager": ["admin"]}`)라 하위 키는 개별 검증하지 않습니다 |
 | report_policy | body | array | 아니오 | — | 신고 정책 카테고리 값. 자동 숨김 임계치/대상, 일일 신고 한도, 거부 누적 제한, 관리자·작성자 신고 알림 설정을 저장합니다. |
 | report_policy.auto_hide_threshold | body | integer | 아니오 | min 0, max 100 | 자동 숨김 신고 수 (이 횟수 이상 신고되면 자동 숨김 처리) |
 | report_policy.auto_hide_target | body | string | 아니오 | `post`, `comment`, `both` | 자동 숨김 대상 (게시글 / 댓글 / 둘 다) |
@@ -402,7 +436,7 @@ HTTP/1.1 200
 | attachment_settings | body | array | 아니오 | — | 첨부 정리 정책 카테고리 값. 삭제된 첨부의 물리 파일을 언제 파기할지 정합니다. |
 | attachment_settings.purge_enabled | body | boolean | 아니오 | — | 삭제 첨부 영구 정리 활성화 여부. **기본 false** — 사용자 파일을 실제로 파기하므로 운영자가 직접 켜야 동작합니다. 예약 작업(`sirsoft-board:prune-attachments --scheduled`)이 이 값을 false 폴백으로 재확인합니다. |
 | attachment_settings.purge_retention_days | body | integer | 아니오 | min 1, max 3650 | 삭제 첨부 보존기간(일, 기본 30). 게시글을 휴지통에서 복원하면 이 기간 안의 첨부는 함께 복원되므로, 휴지통 복원 가능 기간과 같게 유지해야 합니다. 하한·상한은 `config('sirsoft-board.limits')` 가 정하며 화면 입력도 같은 값을 읽습니다. |
-| privacy_retention | body | array | 아니오 | — | 개인정보 보유기간 카테고리 값(이슈 #636). 「개인정보 보유기간」 탭 저장이 `_tab=privacy_retention` 과 함께 보냅니다. 코어 보유기간 커맨드(`privacy:process-retention`)가 게시판 핸들러 두 개(`sirsoft-board.ip`·`sirsoft-board.guest`)를 통해 이 값을 읽어 실행합니다. |
+| privacy_retention | body | array | 아니오 | — | 개인정보 보유기간 카테고리 값. 「개인정보 보유기간」 탭 저장이 `_tab=privacy_retention` 과 함께 보냅니다. 코어 보유기간 커맨드(`privacy:process-retention`)가 게시판 핸들러 두 개(`sirsoft-board.ip`·`sirsoft-board.guest`)를 통해 이 값을 읽어 실행합니다. |
 | privacy_retention.enabled | body | boolean | 아니오 | — | 보유기간 자동 파기 사용 여부. **기본 false** — 되돌릴 수 없는 파기라 운영자가 직접 켜야 동작하고, 각 핸들러가 실행 시점에 이 값을 false 폴백으로 다시 읽습니다. |
 | privacy_retention.ip_retention_days | body | integer | 아니오 | min 1, max 3650 | 작성 IP 보유기간(일, 기본 365). 회원 글을 포함한 모든 게시글·댓글(휴지통 포함)의 `ip_address` 를 작성 후 이 기간이 지나면 NULL 로 지웁니다. 판독부 바닥값도 1일입니다. |
 | privacy_retention.guest_retention_days | body | integer | 아니오 | min 0, max 3650 | 비회원 작성자 정보 보유기간(일, 기본 0). 0 이면 비회원 축을 쓰지 않으며 `enabled` 가 켜져 있어도 그 축은 「꺼짐」으로 보고됩니다. |
@@ -528,6 +562,8 @@ _단건 응답: `data` 객체의 필드._
 | display | object | `{"date_display_format":"standard"}` | 저장 후 갱신된 표시 설정 카테고리. 날짜 표시 형식(date_display_format: standard 절대 표기 / relative 상대 표기)을 포함합니다. |
 | seo | object | `{"meta_boards_title":"{site_name}","meta_boards_descripti…` | 저장 후 갱신된 SEO 메타 태그 설정 카테고리. 게시판 목록/개별 게시판/글 상세 페이지의 메타 제목·설명 템플릿과 각 페이지의 SEO 생성 활성화 여부(seo_boards, seo_board, seo_post_detail)를 포함합니다. |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":0…` | 저장 후 갱신된 알림 채널 설정 카테고리. 각 채널(mail, database 등)의 식별자, 활성화 여부(is_active), 정렬 순서(sort_order)를 담은 channels 배열을 포함합니다. |
+| attachment_settings | object | `{"purge_enabled":false,"purge_retention_days":30}` | 저장 후 갱신된 첨부 정리 정책 카테고리. 삭제 첨부 영구 정리 사용 여부(`purge_enabled`, 기본 false)와 삭제 첨부 보존기간(`purge_retention_days`, 일, 기본 30) |
+| privacy_retention | object | `{"enabled":false,"ip_retention_days":365,"guest_retention…` | 저장 후 갱신된 개인정보 보유기간 카테고리. 자동 파기 사용 여부(`enabled`, 기본 false), 작성 IP 보유기간(`ip_retention_days`, 일, 기본 365), 비회원 작성자 정보 보유기간(`guest_retention_days`, 일, 기본 0), 비회원 글 처리 방식(`guest_mode`, 기본 `anonymize`) |
 | report_permissions | object | `{"view_roles":[],"manage_roles":[]}` | 저장 후 동기화된 신고 관리 권한 역할. 신고 내역을 조회할 수 있는 역할(view_roles)과 신고를 처리·관리할 수 있는 역할(manage_roles)의 식별자 배열이며, 요청에 포함된 경우 DB 권한 역할로 동기화되어 반환됩니다. |
 
 **응답 예시**
@@ -788,7 +824,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.settings.update`)이 없는 경우 |
 | 403 | Forbidden | 권한 부여 상한 위반 (`본인이 보유하지 않았거나 더 넓은 범위의 권한은 부여할 수 없습니다.`) — `report_permissions` 로 역할이 바뀌는 신고 관리 권한(`sirsoft-board.reports.view`·`reports.manage`)을 요청자가 전체 범위로 갖지 않았거나, `basic_defaults.default_board_permissions` 에서 역할이 바뀌는 권한 키를 요청자가 기존 모든 게시판에서 전체 범위로 갖지 않은 경우(게시판이 하나도 없으면 최고관리자만 변경 가능). 설정 파일을 쓰기 전에 거부하므로 다른 설정도 저장되지 않는다 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -813,8 +849,21 @@ HTTP/1.1 200
 | apply_all | body | boolean | 예 | — | 전체 게시판 적용 여부. true면 모든 게시판에 적용하고, false면 `board_ids`로 지정한 게시판에만 적용합니다(false 시 board_ids 필수). |
 | board_ids | body | array | 아니오 | — | board 식별자 배열 |
 | override_values | body | array | 아니오 | — | 환경설정 기본값 대신 사용할 재정의 값 맵. 지정한 필드에 대해 기본값이 아닌 임의의 값으로 일괄 적용할 때 사용합니다. 각 키는 게시판 생성/수정과 동일한 제한값으로 검증됩니다 (범위 밖 값은 422). |
+| override_values.per_page | body | integer | 아니오 | min 5, max 100 | 페이지당 항목 수 |
+| override_values.per_page_mobile | body | integer | 아니오 | min 5, max 100 | 일괄 적용할 재정의 값: 모바일 화면에서 페이지당 표시할 게시글 수. `fields` 에 `per_page_mobile` 를 포함해 함께 사용합니다 |
+| override_values.max_reply_depth | body | integer | 아니오 | min 1, max 10 | 일괄 적용할 재정의 값: 답변글 최대 중첩 깊이. `fields` 에 `max_reply_depth` 를 포함해 함께 사용합니다 |
 | override_values.reply_delete_policy | body | string | 아니오 | `block`, `cascade` | 답글 삭제 정책을 일괄 적용할 때의 재정의 값 (block 답글이 살아 있으면 원글 삭제 차단 / cascade 원글 삭제 시 답글도 함께 소프트 삭제). `fields` 에 `reply_delete_policy` 를 포함해 함께 사용하며, 허용값 밖이면 422 |
 | override_values.secret_reply_visibility | body | string | 아니오 | `thread_path`, `descendants_only`, `per_post` | 비밀 답변 열람 범위를 일괄 적용할 때의 재정의 값. `fields` 에 `secret_reply_visibility` 를 포함해 함께 사용하며, 허용값 밖이면 422 (1.2.1+) |
+| override_values.max_comment_depth | body | integer | 아니오 | min 0, max 10 | 일괄 적용할 재정의 값: 대댓글 최대 중첩 깊이. `fields` 에 `max_comment_depth` 를 포함해 함께 사용합니다 |
+| override_values.min_title_length | body | integer | 아니오 | min 0, max 200 | 일괄 적용할 재정의 값: 게시글 제목 최소 글자 수. `fields` 에 `min_title_length` 를 포함해 함께 사용합니다 |
+| override_values.max_title_length | body | integer | 아니오 | min 1, max 1000 | 일괄 적용할 재정의 값: 게시글 제목 최대 글자 수. `fields` 에 `max_title_length` 를 포함해 함께 사용합니다 |
+| override_values.min_content_length | body | integer | 아니오 | min 0, max 10000 | 일괄 적용할 재정의 값: 게시글 본문 최소 글자 수. `fields` 에 `min_content_length` 를 포함해 함께 사용합니다 |
+| override_values.max_content_length | body | integer | 아니오 | min 1, max 100000 | 일괄 적용할 재정의 값: 게시글 본문 최대 글자 수. `fields` 에 `max_content_length` 를 포함해 함께 사용합니다 |
+| override_values.min_comment_length | body | integer | 아니오 | min 0, max 1000 | 일괄 적용할 재정의 값: 댓글 최소 글자 수. `fields` 에 `min_comment_length` 를 포함해 함께 사용합니다 |
+| override_values.max_comment_length | body | integer | 아니오 | min 1, max 10000 | 일괄 적용할 재정의 값: 댓글 최대 글자 수. `fields` 에 `max_comment_length` 를 포함해 함께 사용합니다 |
+| override_values.max_file_size | body | integer | 아니오 | min 1, max 200 | 업로드 허용 최대 파일 크기 |
+| override_values.max_file_count | body | integer | 아니오 | min 1, max 20 | 업로드 허용 최대 파일 개수 |
+| override_values.new_display_hours | body | integer | 아니오 | min 0, max 720 | 일괄 적용할 재정의 값: 신규(NEW) 표시를 유지할 시간 (시간 단위, 최대 720). `0` 이면 NEW 배지를 붙이지 않습니다. `fields` 에 `new_display_hours` 를 포함해 함께 사용합니다 |
 
 **요청 예시**
 
@@ -942,8 +991,8 @@ _단건 응답: `data` 객체의 필드._
 | guest | integer | `12` | 비회원 작성자 정보 축의 처리 대상 건수(게시글 + 댓글). 꺼져 있어도 세며, 비회원 보유기간이 0(미적용)이면 `0` |
 | ip_enabled | boolean | `false` | 작성 IP 축이 켜져 있는지 |
 | guest_enabled | boolean | `false` | 비회원 축이 켜져 있는지(기능 켜짐 + 보유기간 1일 이상) |
-| can_view_targets | boolean | `true` | 요청 관리자가 「더보기」 명단을 볼 권한(`sirsoft-board.settings.read` + `sirsoft-board.boards.read`)이 있는지. 명단은 코어 `GET /api/admin/privacy/retention-targets/sirsoft-board.ip`·`sirsoft-board.guest` |
 | guest_mode | string | `anonymize` | 저장된 비회원 글 처리 방식(`anonymize`/`delete`). 알 수 없는 값은 `anonymize` 로 떨어집니다 |
+| can_view_targets | boolean | `true` | 요청 관리자가 「더보기」 명단을 볼 권한(`sirsoft-board.settings.read` + `sirsoft-board.boards.read`)이 있는지. 명단은 코어 `GET /api/admin/privacy/retention-targets/sirsoft-board.ip`·`sirsoft-board.guest` |
 
 **응답 예시**
 
@@ -972,7 +1021,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 개인정보 보유기간 처리 대상 건수를 미리 조회합니다(이슈 #636). 「개인정보 보유기간」 탭 대상 행의 건수 뱃지가 쓰는 값이며, 코어 보유기간 커맨드의 `--dry-run` 과 **같은 조건식**(각 핸들러의 `preview()`)을 지나므로 화면 숫자와 실제 처리 건수가 같습니다. **저장된 설정 기준**이라 화면에서 값을 바꾼 뒤 저장하기 전에는 이전 설정의 건수입니다. **꺼진 축도 건수를 셉니다** — 켜기 전에 규모를 확인하는 자리입니다. 「꺼짐」과 「대상 0건」은 `ip_enabled`·`guest_enabled` 로 구분합니다. 명단은 코어의 공통 대상 목록 API 가 두 핸들러(`sirsoft-board.ip`·`sirsoft-board.guest`)를 식별자로 찾아 내려주며, 게시판 관리 읽기 권한이 없으면 403 입니다.
+**설명** 개인정보 보유기간 처리 대상 건수를 미리 조회합니다. 「개인정보 보유기간」 탭 대상 행의 건수 뱃지가 쓰는 값이며, 코어 보유기간 커맨드의 `--dry-run` 과 **같은 조건식**(각 핸들러의 `preview()`)을 지나므로 화면 숫자와 실제 처리 건수가 같습니다. **저장된 설정 기준**이라 화면에서 값을 바꾼 뒤 저장하기 전에는 이전 설정의 건수입니다. **꺼진 축도 건수를 셉니다** — 켜기 전에 규모를 확인하는 자리입니다. 「꺼짐」과 「대상 0건」은 `ip_enabled`·`guest_enabled` 로 구분합니다. 명단은 코어의 공통 대상 목록 API 가 두 핸들러(`sirsoft-board.ip`·`sirsoft-board.guest`)를 식별자로 찾아 내려주며, 게시판 관리 읽기 권한이 없으면 403 입니다.
 
 
 ### POST /api/modules/sirsoft-board/admin/settings/clear-cache

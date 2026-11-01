@@ -81,6 +81,8 @@ php artisan module:seed sirsoft-ecommerce --sample --force
 | `inquiry_rate` | 3 | 상품당 문의 최대 건수 |
 | `review_rate` | 60 | 배송완료·구매확정 상품 중 리뷰 작성 비율 (%) |
 
+샘플 알림 발송 이력의 본문 링크(주문, 클레임, 문의, 마일리지 화면)는 실제 알림과 같은 회원 화면 주소 규칙으로 만듭니다. 하위 폴더에 설치한 사이트에서도 설치 경로가 붙은 주소가 들어갑니다.
+
 ```bash
 php artisan module:seed sirsoft-ecommerce --sample --count=products=20 --count=orders=50
 ```

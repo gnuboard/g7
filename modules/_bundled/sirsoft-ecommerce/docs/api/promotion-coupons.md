@@ -108,10 +108,10 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | is_issuable | boolean | `false` | issuable 여부 |
 | created_at | string | `2026-07-30 23:36:17` | 생성 일시 |
 | updated_at | string | `2026-07-31 07:42:40` | 최종 수정 일시 |
-| created_by | null | `null` | 등록자(생성한 관리자) UUID (creator 관계 로드 시) |
+| created_by | string | `a26f0fb0-8b47-4bb9-835a-685b76efc963` | 등록자(생성한 관리자) UUID (creator 관계 로드 시) |
 | created_by_name | string | `-` | 등록자 이름 (creator 미로드/미설정 시 `-`) |
-| created_by_email | null | `null` | 등록자 이메일 (creator 관계 파생) |
-| creator | null | `null` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
+| created_by_email | string | `user@example.com` | 등록자 이메일 (creator 관계 파생) |
+| creator | object | `{"uuid":"a26f0fb0-8b47-4bb9-835a-685b76efc963","name":"관리자"}` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
 | issues_count | integer | `0` | issues 개수 (집계) |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -180,7 +180,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -418,7 +418,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.create`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -485,7 +485,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -502,7 +502,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -559,7 +559,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -626,7 +626,7 @@ _예시는 대표 필드만 발췌한 축약본입니다. 전체 필드는 생�
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 | name | body | array | 예 | — | 대상의 이름/명칭 |
 | description | body | array | 아니오 | — | 설명 |
 | target_type | body | string | 예 | `product_amount`, `order_amount`, `shipping_fee` | 적용대상(할인 기준): 상품금액/주문금액/배송비 |
@@ -850,7 +850,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
@@ -868,7 +868,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 | user_uuids | body | array | 예 | min 1 | 쿠폰을 직접 발급할 대상 회원 UUID 배열 (내부 회원 ID 로 해석 후 발급). 탈퇴 회원이 하나라도 있으면 요청 전체가 422(`user_uuids.{n}`: 「탈퇴한 회원에게는 쿠폰을 발급할 수 없습니다.」) |
 
 **요청 예시**
@@ -930,7 +930,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
@@ -948,7 +948,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 | user_id | query | uuid | 아니오 | — | user 식별자 |
 | status | query | string | 아니오 | `available`, `used`, `expired`, `cancelled` | 상태 필터 (해당 상태의 항목만 조회) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
@@ -1044,7 +1044,8 @@ HTTP/1.1 200
 | 400 | Bad Request | `{id}` 에 해당하는 쿠폰이 없는 경우 (`sirsoft-ecommerce::exceptions.coupon_not_found`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.promotion-coupon.read`)이 없거나, 대상 쿠폰이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
@@ -1062,8 +1063,8 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
-| issueId | path | string | 예 | — | 대상 issue의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
+| issueId | path | integer | 예 | — | 대상 issue의 식별자 |
 
 **요청 예시**
 

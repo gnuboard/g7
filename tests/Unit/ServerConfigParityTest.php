@@ -1546,7 +1546,7 @@ class ServerConfigParityTest extends TestCase
      *
      * 조각의 주석은 「(7) 의 `root` 가 `public/` 이라 프로젝트 루트의 `.env` 는 조회 대상에
      * 없다」고 적는데, 그것은 **프로젝트 루트 축**만이다. `public/` 안에도 점 파일이 있다
-     * (`public/.htaccess` · `public/build/.vite/manifest.json`) — `@g7_hidden` 의 `respond` 가
+     * (어느 설치본에나 있는 `public/.htaccess`, 설치 상태에 따라 생기는 `public/storage/.gitignore` 등) — `@g7_hidden` 의 `respond` 가
      * 지시어 고정 순서에서 (7) 의 `handle` 뒤로 밀리면 `file_server` 가 그 파일을 그대로
      * 낸다. 형제 Apache 는 `RedirectMatch` 가 경로 전 구간을 보고, nginx 는 `location ~ /\.`
      * 이 먼저 잡아 같은 요청을 막는다. 규칙은 프로젝트 선례(미실측 서버는 문서만 넓힌다)에 따라
@@ -1580,15 +1580,27 @@ class ServerConfigParityTest extends TestCase
             self::CADDY_FRAGMENT.' 이 `file_server { hide .* }` 조치를 고지하지 않는다'
         );
 
-        // 확인 목록에도 그 두 주소가 있어야 한다 — 첫 배포에서 직접 잴 항목이다.
+        // 확인 목록에도 그 주소가 있어야 한다 — 첫 배포에서 직접 잴 항목이다. 잴 주소는
+        // **어느 설치본에나 실재하는** 점 파일이어야 한다. 없는 파일을 재면 막혔든 안
+        // 막혔든 404 라 판별이 되지 않는다 — 종전 목록의 `/build/.vite/manifest.json` 이
+        // 그랬다(laravel-vite-plugin 은 manifest 를 `public/build/manifest.json` 에 쓴다).
         $checklist = $this->verificationChecklistSection($body);
-        foreach (['/.htaccess', '/build/.vite/manifest.json'] as $needle) {
+        foreach (['/.htaccess' => 'public/.htaccess'] as $needle => $source) {
             $this->assertStringContainsString(
                 $needle,
                 $checklist,
                 self::CADDY_FRAGMENT.' 확인 목록에 `'.$needle.'` 이 없다 — 한계를 적고도 잴 항목을 주지 않는다'
             );
+            $this->assertFileExists(
+                base_path($source),
+                '확인 목록의 `'.$needle.'` 은 배포물에 실재하는 `'.$source.'` 을 가리켜야 한다 — 없는 파일은 차단 판별에 쓸 수 없다'
+            );
         }
+        $this->assertStringNotContainsString(
+            '/.vite/',
+            $checklist,
+            self::CADDY_FRAGMENT.' 확인 목록이 빌드 산출물에 없는 `.vite/` 경로를 잰다 — 항상 404 라 차단 판별이 되지 않는다'
+        );
     }
 
     /**

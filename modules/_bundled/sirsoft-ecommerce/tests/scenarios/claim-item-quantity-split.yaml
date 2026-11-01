@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   축(유형 × 관심사)의 조합마다 테스트를 두지 않는다 — 분할 자체는 세 유형이 **한 협력자**를
 #   공유하므로 커버리지 단위는 "그 유형의 안분 대상 컬럼이 전부 보존되는가" 이고, 전이·복귀·
 #   헤더 동기화는 유형마다 계약이 다르다(환불에는 복귀가 없고, 교환·반품에는 처리중이 없다).

@@ -26,9 +26,9 @@ use Tests\TestCase;
  * 꺼져 있어도 보이는지, 명단을 볼 권한(설정 읽기 + 도메인 읽기)을 요청 시점에 검사하는지,
  * 확장 핸들러가 등록만으로 코어 API 에 붙는지를 고정합니다.
  *
- * @scenario target=privacy_withdrawn_users, row_age=beyond_retention
+ * 축 요약(마커 아님 — 평문): target=privacy_withdrawn_users, row_age=beyond_retention
  *
- * @effects disabled_handler_is_reported_separately_from_zero_targets, target_list_matches_the_preview_population, target_list_requires_domain_read_permission, extension_handler_targets_are_served_by_the_core_api, target_list_pages_until_has_more_pages_is_false
+ * 효과 요약(마커 아님 — 평문): disabled_handler_is_reported_separately_from_zero_targets, target_list_matches_the_preview_population, target_list_requires_domain_read_permission, extension_handler_targets_are_served_by_the_core_api, target_list_pages_until_has_more_pages_is_false
  */
 class PrivacyTargetApiTest extends TestCase
 {

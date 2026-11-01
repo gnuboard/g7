@@ -55,6 +55,7 @@ Location: https://example.com/shop/checkout?error=PAY_PROCESS_CANCELED&orderId=2
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 302 | Found (검증 실패) | 파라미터 형식이 맞지 않는 경우(예: 배열 주입) — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -90,8 +91,8 @@ Location: https://example.com/shop/checkout?error=PAY_PROCESS_CANCELED&orderId=2
 | X-Guest-Order-Token | header | string | 비회원 주문이면 예 | `{만료ts}|{HMAC-SHA256}` | 주문 생성 응답(`guest_order_token`)으로 받은 비회원 조회 토큰. 이 주문의 것이고 만료 전이어야 한다. 회원은 싣지 않고 로그인(Bearer)으로 증명한다. |
 | orderId | body | string | 예 | max 40 | 결제창을 닫거나 결제가 거절된 대상 주문의 주문번호. 서버가 이 값으로 주문을 조회해 결제 실패/취소 이력을 기록한다. |
 | amount | body | integer | 예 | min 1 | 결제 금액. 저장된 주문 청구액과 일치하는지 검증한다. |
-| code | body | string | 아니오 | max 60 | 토스 실패 코드. 값이 있으면 결제 거절로, 없으면 결제창 닫힘으로 기록한다. |
 | reason | body | string | 아니오 | max 160 | 사람이 읽을 실패 사유. 취소 이력에 남는다. |
+| code | body | string | 아니오 | max 60 | 토스 실패 코드. 값이 있으면 결제 거절로, 없으면 결제창 닫힘으로 기록한다. |
 
 **요청 예시**
 
@@ -194,7 +195,7 @@ Location: https://example.com/shop/orders/20260711-1418336207/complete
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 

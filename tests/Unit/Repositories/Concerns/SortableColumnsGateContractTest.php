@@ -19,9 +19,9 @@ use PHPUnit\Framework\TestCase;
  * 검증**한다 (test_every_call_site_is_mapped). 새 resolveSortSpec 호출처를 추가하고 매핑을
  * 등록하지 않으면 이 테스트가 실패한다.
  *
- * @scenario case=sortable_columns_gate_contract
+ * 축 요약(마커 아님 — 평문): case=sortable_columns_gate_contract
  *
- * @effects repo_whitelist_covers_gate, every_call_site_mapped
+ * 효과 요약(마커 아님 — 평문): repo_whitelist_covers_gate, every_call_site_mapped
  */
 class SortableColumnsGateContractTest extends TestCase
 {

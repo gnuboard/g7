@@ -55,6 +55,8 @@ effects:
   - custom_asset_removal_prunes_emptied_folders
   # 아래는 테스트가 이미 재고 있으나 선언이 빠져 있던 이름이다 (원장 축소).
   - custom_asset_signature_is_scoped_per_render
+  # 브라우저 편집기에서 Tab 키가 포커스 이동이 아니라 들여쓰기로 들어간다 (Playwright spec 이 잰다)
+  - custom_asset_editor_indents_with_tab_in_browser
 
 test_files:
   - tests/Feature/Api/Admin/AdminExtensionCustomAssetControllerTest.php

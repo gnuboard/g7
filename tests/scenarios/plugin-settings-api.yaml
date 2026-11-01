@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 기존 API 의 계약을 사후 등재한 매니페스트. 축 조합 전수가 아니라 이미 통과 중인 회귀 테스트 14건의 소유권을 명시하는 것이 목적이다.
+# audit:allow test-scenario-coverage reason: issue:#525 기존 API 의 계약을 사후 등재한 매니페스트. 축 조합 전수가 아니라 이미 통과 중인 회귀 테스트 14건의 소유권을 명시하는 것이 목적이다.
 
 feature: 플러그인 설정 API (조회 · 저장 · 레이아웃)
 

@@ -88,13 +88,13 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.read\|core.plugins.update`)이 없는 경우 |
 
 <!-- @generated:end -->
 
 **설명** 7.1.0 부터 플러그인 설정 화면의 버튼이라 플러그인 설정 수정 권한으로도 쓸 수 있습니다.
 
-일본 CBT(테스트 모드, DEVCBT) 결제를 위한 호스트 연결 상태를 관리자 설정 페이지에서 셀프 진단하는 엔드포인트입니다. 서버의 egress IP(외부 통신에 쓰이는 IP, KG 이니시스 IP 화이트리스트 등록 대상)와 서버 내부 IP 를 조회하고, `devcbt.inicis.com` 에 대한 DNS 해석 및 TCP 443 도달성(3초 timeout)을 점검하며, 결제 콜백 URL 이 HTTPS·공인 호스트인지 등 콜백 진단 정보도 함께 반환합니다. 운영계(`cbt.inicis.com`)는 IP 화이트리스트 제약이 없어 진단 대상에서 제외됩니다. 관리자 인증(`auth:sanctum`)과 `sirsoft-ecommerce.settings.read` 권한이 필요하며, 토큰 누락·만료는 401, 권한 부족은 403, 진단 중 예외 발생 시 500 으로 응답합니다.
+일본 CBT(테스트 모드, DEVCBT) 결제를 위한 호스트 연결 상태를 관리자 설정 페이지에서 셀프 진단하는 엔드포인트입니다. 서버의 egress IP(외부 통신에 쓰이는 IP, KG 이니시스 IP 화이트리스트 등록 대상)와 서버 내부 IP 를 조회하고, `devcbt.inicis.com` 에 대한 DNS 해석 및 TCP 443 도달성(3초 timeout)을 점검하며, 결제 콜백 URL 이 HTTPS·공인 호스트인지 등 콜백 진단 정보도 함께 반환합니다. 콜백 진단의 `app_url` 은 사이트 주소(`APP_URL`, 하위 폴더 설치면 설치 경로 포함)이고, `callback_url` 은 일부러 이 요청의 스킴과 Host 로 만듭니다 — 둘을 비교해야 프록시나 도메인 설정이 어긋난 상태(`host_matches_app_url=false`)를 보여 줄 수 있기 때문입니다. 운영계(`cbt.inicis.com`)는 IP 화이트리스트 제약이 없어 진단 대상에서 제외됩니다. 관리자 인증(`auth:sanctum`)과 `sirsoft-ecommerce.settings.read` 권한이 필요하며, 토큰 누락·만료는 401, 권한 부족은 403, 진단 중 예외 발생 시 500 으로 응답합니다.
 
 
 ### POST /api/plugins/sirsoft-pay_kginicis/admin/cbt-test-product

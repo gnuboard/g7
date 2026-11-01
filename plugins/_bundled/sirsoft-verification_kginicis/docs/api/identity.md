@@ -20,7 +20,7 @@
 ### GET /api/plugins/sirsoft-verification_kginicis/me/identity/inicis
 <!-- @generated:start:api.plugins.sirsoft-verification_kginicis.me.identity.inicis.show -->
 - **라우트명**: `api.plugins.sirsoft-verification_kginicis.me.identity.inicis.show`
-- **컨트롤러**: `\Plugins\Sirsoft\VerificationKginicis\Http\Controllers\MyInicisIdentityShowController@show`
+- **컨트롤러**: `Plugins\Sirsoft\VerificationKginicis\Http\Controllers\MyInicisIdentityShowController@show`
 - **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**

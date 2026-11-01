@@ -21,7 +21,7 @@
 <!-- @generated:start:api.plugins.sirsoft-pay_nhnkcp.admin.health -->
 - **라우트명**: `api.plugins.sirsoft-pay_nhnkcp.admin.health`
 - **컨트롤러**: `Plugins\Sirsoft\PayNhnkcp\Controllers\HealthCheckController@check`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.settings.read`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.settings.read|core.plugins.update`
 
 **요청 파라미터**
 
@@ -56,6 +56,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
+    "message": "시스템 점검을 마쳤습니다.",
     "data": {
         "summary": {
             "pc_payment_ready": true,
@@ -65,9 +66,9 @@ HTTP/1.1 200
             "warning_count": 0,
             "fixed_count": 0,
             "cancel_server_ip": {
-                "address": "127.0.0.1",
-                "source": "server_variable",
-                "source_label": "서버 IP 후보"
+                "address": "203.0.113.10",
+                "source": "public_outbound",
+                "source_label": "공인 송신 IP"
             }
         },
         "checks": [
@@ -123,7 +124,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.read\|core.plugins.update`)이 없는 경우 |
 
 <!-- @generated:end -->
 

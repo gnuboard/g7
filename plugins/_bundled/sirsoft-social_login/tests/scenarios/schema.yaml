@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 표 4개는 한 시험이 information_schema 를 함께 읽어 같은 단언으로 잰다 — 표마다 따로 돌릴 조합이 없다. 회귀 가드는 effects.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 표 4개는 한 시험이 information_schema 를 함께 읽어 같은 단언으로 잰다 — 표마다 따로 돌릴 조합이 없다. 회귀 가드는 effects.
 feature: social_login_schema
 description: 플러그인 테이블 4종의 구조(한국어 comment, 대소문자 구분 collation, UNIQUE, CASCADE 없는 외래키)를 시험 DB 의 information_schema 로 잰다.
 axes:

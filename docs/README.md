@@ -327,21 +327,21 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | 확장 | 유형 | API 문서 목차 | 문서/엔드포인트 |
 |------|------|--------------|----------------|
 | `gnuboard7-hello_module` | 모듈 | [docs/api/](../modules/_bundled/gnuboard7-hello_module/docs/api/README.md) | 1 / 7 |
-| `sirsoft-board` | 모듈 | [docs/api/](../modules/_bundled/sirsoft-board/docs/api/README.md) | 12 / 94 |
-| `sirsoft-ecommerce` | 모듈 | [docs/api/](../modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 37 / 260 |
-| `sirsoft-page` | 모듈 | [docs/api/](../modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 17 |
+| `sirsoft-board` | 모듈 | [docs/api/](../modules/_bundled/sirsoft-board/docs/api/README.md) | 14 / 111 |
+| `sirsoft-ecommerce` | 모듈 | [docs/api/](../modules/_bundled/sirsoft-ecommerce/docs/api/README.md) | 41 / 326 |
+| `sirsoft-page` | 모듈 | [docs/api/](../modules/_bundled/sirsoft-page/docs/api/README.md) | 2 / 18 |
 | `sirsoft-ckeditor5` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-ckeditor5/docs/api/README.md) | 3 / 5 |
-| `sirsoft-gdpr` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 6 / 17 |
+| `sirsoft-gdpr` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-gdpr/docs/api/README.md) | 6 / 19 |
 | `sirsoft-koreaexim` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-koreaexim/docs/api/README.md) | 2 / 4 |
 | `sirsoft-marketing` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-marketing/docs/api/README.md) | 2 / 2 |
 | `sirsoft-message_bizppurio` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-message_bizppurio/docs/api/README.md) | 6 / 21 |
 | `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 6 / 37 |
-| `sirsoft-pay_nhnkcp` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-pay_nhnkcp/docs/api/README.md) | 6 / 16 |
-| `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 0 / 0 |
-| `sirsoft-social_login` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-social_login/docs/api/README.md) | 1 / 14 |
+| `sirsoft-pay_nhnkcp` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-pay_nhnkcp/docs/api/README.md) | 6 / 15 |
+| `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 6 / 14 |
+| `sirsoft-social_login` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-social_login/docs/api/README.md) | 15 / 49 |
 | `sirsoft-sso` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-sso/docs/api/README.md) | 14 / 66 |
-| `sirsoft-tosspayments` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 2 / 4 |
-| `sirsoft-totp` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-totp/docs/api/README.md) | 1 / 6 |
+| `sirsoft-tosspayments` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 3 / 6 |
+| `sirsoft-totp` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-totp/docs/api/README.md) | 3 / 6 |
 | `sirsoft-verification_kginicis` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-verification_kginicis/docs/api/README.md) | 2 / 3 |
 | `sirsoft-verification_nhnkcp` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-verification_nhnkcp/docs/api/README.md) | 2 / 3 |
 
@@ -374,7 +374,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](../templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](../templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
 | `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](../templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](../templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
-| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 45 · 모델 0 · 레이아웃 197 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 45 · 모델 0 · 레이아웃 200 |
 | `sirsoft-basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 49 · 모델 0 · 레이아웃 194 |
 
 

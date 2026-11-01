@@ -104,7 +104,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
     }
 
     /**
-     * 판정 SSoT(`includes/execution-mode.php`)가 소유한 **결정** 헬퍼 이름 — 도출한다.
+     * 판정 SSoT(`public/install/includes/execution-mode.php`)가 소유한 **결정** 헬퍼 이름 — 도출한다.
      *
      * 이름이 결정을 담는 것만 고른다: 거부(`*Rejection`/`*Rejected`)·수용(`*Accepted`)·
      * 차단(`*BlockedBy*`)·확정(`installerResolve*`)·요구(`installerRequires*`).
@@ -117,9 +117,9 @@ class InstallerEndpointGuardCoverageTest extends TestCase
     {
         // 모집단은 **인스톨러 전수**다.
         //
-        // 종전에는 `includes/execution-mode.php` 한 파일만 읽었다. 그런데 같은 이름
+        // 종전에는 `public/install/includes/execution-mode.php` 한 파일만 읽었다. 그런데 같은 이름
         // 규칙에 걸리는 결정 헬퍼가 형제 파일에도 있다(`installerRecordBusyRejection`
-        // — `includes/installer-state.php`). 그러면 그 헬퍼를 부르는 엔드포인트는
+        // — `public/install/includes/installer-state.php`). 그러면 그 헬퍼를 부르는 엔드포인트는
         // 배선 표 대조에서 통째로 빠지고, 새 파일이 생겨도 아무것도 울지 않는다
         // (10차 G3 라운드 C10-10).
         $names = [];
@@ -499,7 +499,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
             // 종전에는 「이 **파일**이 표에 있는가」만 물었다. 그래서 한 파일이 결정
             // 헬퍼를 셋 부르는데 표에 한 행만 있어도 통과했고, 나머지 둘은 지워도
             // 아무 검사도 red 가 되지 않았다 — 실물이 그 상태였다
-            // (`api/run-task.php` 의 교차 출처 가드) (10차 G3 라운드 C10-9).
+            // (`public/install/api/run-task.php` 의 교차 출처 가드).
             foreach ($called as $helper) {
                 $this->assertContains(
                     $file.'::'.$helper,

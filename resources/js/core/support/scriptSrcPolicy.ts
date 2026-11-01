@@ -44,7 +44,7 @@ export function normalizeScriptSrcForOriginCheck(src: string): string {
     // 둘(이 스크립트 src 판정 · 브라우저 이동 판정 `isSameOriginSitePath`)이라, 사본을
     // 두면 한쪽만 강화됐을 때 다른 쪽이 조용한 우회로가 된다. 이 모듈은 「스크립트 주입
     // 허용 판정」의 SSoT 로 남고, 그 판정이 쓰는 「URL 정규화」 프리미티브만 위임한다.
-    // @since engine-v1.64.1 (본체 이관)
+    // @since engine-v1.86.0 (본체 이관)
     return normalizeForOriginCheck(src);
 }
 

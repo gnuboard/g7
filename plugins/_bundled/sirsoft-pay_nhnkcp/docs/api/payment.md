@@ -87,7 +87,7 @@ X-Guest-Order-Token: 1759999999|6f1c9a…(64자 HEX)
 | 필드 | 타입 | 값 | 용도/설명 |
 | --- | --- | --- | --- |
 | status | string | `recorded` \| `ignored` | 닫힘 보고 처리 결과. `recorded` = 주문을 `USER_CANCEL` 로 실패 처리하고 취소 이력을 남김. `ignored` = 결제 성공 콜백과의 경쟁 등으로 처리하지 않고 무시. |
-| reason | string | `order_not_payable` \| `payment_already_paid` \| `callback_in_progress` | `status: ignored` 일 때만 포함되는 무시 사유. 주문이 이미 결제 가능 상태가 아님 / 결제가 이미 완료됨 / 같은 주문의 승인 콜백이 락을 쥐고 처리 중임. |
+| reason | string | `order_not_payable` \| `payment_already_paid` \| `payment_not_ready` \| `callback_in_progress` | `status: ignored` 일 때만 포함되는 무시 사유. 주문이 이미 결제 가능 상태가 아님 / 결제가 이미 완료됨 / 결제 레코드가 결제 대기를 벗어남(가상계좌가 발급돼 입금 대기인 경우 등 — 뒤늦은 닫힘 보고가 그 주문을 실패로 덮지 않게 기록하지 않는다) / 같은 주문의 승인 콜백이 락을 쥐고 처리 중임. |
 
 **응답 예시**
 
@@ -213,7 +213,7 @@ KCP 표준결제창이 인증을 마치고 브라우저를 통해 가맹점으�
 <!-- @generated:start:api.plugins.sirsoft-pay_nhnkcp.payment.close-report -->
 - **라우트명**: `api.plugins.sirsoft-pay_nhnkcp.payment.close-report`
 - **컨트롤러**: `Plugins\Sirsoft\PayNhnkcp\Controllers\PaymentCloseReportController@store`
-- **인증/권한**: 공개 (인증 불필요)
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근)
 
 **요청 파라미터**
 
@@ -231,6 +231,7 @@ KCP 표준결제창이 인증을 마치고 브라우저를 통해 가맹점으�
 POST /api/plugins/sirsoft-pay_nhnkcp/payment/close-report HTTP/1.1
 Host: api.example.com
 Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
 Content-Type: application/json
 
 {
@@ -246,7 +247,7 @@ Content-Type: application/json
 | 필드 | 타입 | 값 | 용도/설명 |
 | --- | --- | --- | --- |
 | status | string | `recorded` · `ignored` | `recorded` 는 결제 실패·취소 이력을 남겼다는 뜻이고, `ignored` 는 남기지 않았다는 뜻이다. 둘 다 HTTP 200 이다 — 닫힘 보고는 화면이 뒤로 물러난 뒤에 보내는 통보라 「기록할 상태가 아니었다」를 오류로 돌려주지 않는다. |
-| reason | string | `order_not_payable` · `payment_already_paid` · `callback_in_progress` | `ignored` 일 때만 실린다. 차례로 「주문이 이미 결제 전 단계를 지났다」, 「결제가 이미 완료됐다」, 「같은 주문의 승인 콜백이 처리 중이라 잠금을 얻지 못했다」이다. |
+| reason | string | `order_not_payable`, `payment_already_paid`, `payment_not_ready`, `callback_in_progress` | `ignored` 일 때만 실린다. 차례로 「주문이 이미 결제 전 단계를 지났다」, 「결제가 이미 완료됐다」, 「주문은 아직 결제 전이지만 결제 레코드가 결제 대기(`READY`)를 벗어났다(가상계좌가 발급돼 입금 대기인 경우 등). 뒤늦게 도착한 닫힘 보고가 발급된 계좌의 주문을 실패로 덮지 않도록 기록하지 않는다」, 「같은 주문의 승인 콜백이 처리 중이라 잠금을 얻지 못했다」이다. |
 
 **응답 예시**
 
@@ -277,12 +278,14 @@ PC 결제창을 구매자가 닫았을 때 그 사실을 서버에 남기는 지
 
 주문번호만 아는 제3자가 남의 주문을 실패로 만들 수 없도록 **주문 소유자**(회원 본인 로그인 / 비회원 조회 토큰)를 확인하고 **금액**을 주문 청구액과 대조하며, 어긋나면 각각 403·422 다. 주문자 이메일·전화번호는 제3자도 알 수 있어 소유 증명으로 쓰지 않는다 (KVE-2026-2434). 승인 콜백과 경쟁할 수 있어 같은 주문 잠금을 공유하고, 이미 결제가 완료된 주문은 건드리지 않는다. 같은 요청자·주문 조합은 1분에 20회로 제한된다.
 
+`oid` 가 클레임 추가결제 결제번호(`CP` 채번)이면 기록할 주문 결제 이력이 없으므로 주문을 조회하지 않고 보고를 무시한다. 응답은 HTTP 200 이고 `data` 는 위 표의 `status` 대신 `{"recorded": false, "reason": "claim_payment"}` 다. 요청 횟수 제한은 주문과 똑같이 먼저 적용되지만 소유자 확인, 금액 대조, 주문 잠금은 거치지 않는다. 클레임 결제 건은 결제 대기로 남아 신청서 상세에서 다시 결제한다.
+
 
 ### POST /api/plugins/sirsoft-pay_nhnkcp/payment/retry
 <!-- @generated:start:api.plugins.sirsoft-pay_nhnkcp.payment.retry -->
 - **라우트명**: `api.plugins.sirsoft-pay_nhnkcp.payment.retry`
 - **컨트롤러**: `Plugins\Sirsoft\PayNhnkcp\Controllers\PaymentRetryController@store`
-- **인증/권한**: 공개 (인증 불필요)
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근)
 
 **요청 파라미터**
 
@@ -299,6 +302,7 @@ PC 결제창을 구매자가 닫았을 때 그 사실을 서버에 남기는 지
 POST /api/plugins/sirsoft-pay_nhnkcp/payment/retry HTTP/1.1
 Host: api.example.com
 Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
 Content-Type: application/json
 
 {
@@ -419,7 +423,7 @@ Location: https://example.com/shop/order/complete/20260902-0557051431
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -428,6 +432,8 @@ Location: https://example.com/shop/order/complete/20260902-0557051431
 결제창이 끝난 뒤 **브라우저가** 결과를 실어 보내는 지점이다. 이 값만으로는 결제가 성립하지 않는다 — 서버가 `enc_data`·`enc_info` 로 KCP 에 승인을 다시 확인한 뒤에야 주문 상태를 바꾼다. 승인 전에 판정되는 실패(금액 불일치·인증 결과코드 비정상)에서는 주문을 건드리지 않고 결제 화면으로 되돌려 보내기만 한다. 브라우저가 오는 경로라 응답은 화면 이동(302)이다.
 
 모바일 가상계좌는 서버-서버 승인이 없어 계좌 정보의 유일한 출처가 브라우저 평문이다. 그래서 평문을 읽기 **전에** `param_opt_2` 를 주문에 저장된 확인값과 대조하고, 어긋나면 주문을 전혀 바꾸지 않는다.
+
+주문번호 자리(`ordr_idxx`)에 클레임 추가결제 결제번호(`CP` 채번)가 실려 오면 주문이 아니라 클레임 결제 건으로 처리한다. 인증 결과코드가 `0000` 이 아니면 체크아웃이 아니라 신청서 상세로 되돌리며, 구매자가 결제창을 닫은 코드(`3001`, `3000`, `7777`, 빈 값)는 `?claim_payment=cancelled` 로 조용히 복귀하고 그 밖의 코드는 `?claim_payment=failed&error={결과코드}` 로 돌려보낸다. 인증이 성공했으면 승인은 쇼핑몰 모듈의 `claim_payment.approve` 필터로 위임되고(이 플러그인의 승인 리스너가 KCP 승인을 수행한다), 완료 후 주문 완료 페이지가 아니라 신청서 상세(`?claim_payment=success|failed` + `claim_number`)로 리다이렉트한다. 승인 리스너는 KCP 에 승인을 요청하기 **전에** 결제창 금액(`good_mny`)을 결제 건의 현재 청구액과 대조해 다르면 `error=AMOUNT_MISMATCH` 로 거절하고, 결제 건에 저장된 결제수단이나 콜백의 `use_pay_method` 가 가상계좌이면 `error=CLAIM_DEPOSIT_METHOD_NOT_SUPPORTED` 로 거절한다(클레임 결제에는 입금 대기 상태가 없다). KCP 가 승인을 거절하면 그 결과코드가 `error=` 로 실리고, 응답을 받지 못한 통신 실패는 `PG_API_ERROR` 다. 승인 뒤 KCP 응답 금액이 청구액과 다르면 승인분을 취소하고 `AMOUNT_MISMATCH` 로 거절하며, 승인이 확정된 뒤 모듈이 거절하면 모듈의 `claim_payment.void_approval` 필터를 통해 KCP 취소로 보상한다. 같은 결제번호의 콜백은 결제번호 단위 잠금으로 직렬화하고, 잠금을 얻지 못하면 결제 건 상태만 읽어 이미 결제가 확정됐으면 성공으로, 아니면 `error=callback_locked` 로 돌려보낸다. 인증 성공 콜백에서 그 결제번호의 클레임 결제 건을 찾지 못하면 `error=claim_payment_not_found` 로 실패 URL 에 되돌리고, 인증 실패 콜백에서 찾지 못하면 주문 경로처럼 실패 URL 로 되돌리되 KCP 원문 메시지(`message`)는 싣지 않는다.
 
 
 ### POST /plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify
@@ -490,7 +496,7 @@ OK
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -563,7 +569,7 @@ OK
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 

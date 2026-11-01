@@ -413,7 +413,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -716,7 +716,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.execute-refund`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable | 재시도 선점 실패 — 조정 레코드가 없거나 `can_retry` 가 아닌 경우 (`messages.cbt_reconciliation.not_retryable` — "재시도 가능한 CBT 환불 대기 건이 아닙니다.") |
 | 502 | Bad Gateway | 환불 API 호출이 예외로 실패한 경우 (`messages.cbt_reconciliation.retry_failed` — "CBT 환불 재시도에 실패했습니다."). 레코드는 `manual_refund_required` 로 되돌아가고 오류가 기록된다. |

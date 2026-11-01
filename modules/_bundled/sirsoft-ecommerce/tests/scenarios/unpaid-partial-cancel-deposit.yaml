@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#747 |
 #   결제수단(무통장·가상계좌) × 취소 범위(부분·전체) × 이후 행동(입금확인·내역만·원금액·두 번 취소) 중 의미 있는
 #   조합은 결제수단마다 정해진다 — 가상계좌 부분취소는 접수 단계에서 막히므로 이후 행동 축이 없다.
 # e2e:allow 취소 창 안내 문구의 노출 조건은 레이아웃 구조 테스트가, 실제 화면은 07 문서 Chrome MCP 실측이 잰다.

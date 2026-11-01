@@ -803,7 +803,7 @@ trait ScansPhpSourceFunctions
      * 이 PHP 소스가 지목한 파일을 **실제로 로드**하는가 — 판정 불가는 `null`.
      *
      * 판정은 토큰으로 한다. 문자열 대조로는 두 형태를 가를 수 없다:
-     *  ① 주석 속 경로 — `// … (`includes/request-handler.php` 위임)`. 정규식에 단어
+     *  ① 주석 속 경로 — `// … (`public/install/includes/request-handler.php` 위임)`. 정규식에 단어
      *     경계가 없으면 `include` 가 **`includes`** 의 앞 일곱 글자에 매치된다.
      *  ② 픽스처로 **써 넣는** 코드 문자열 — `"<?php\n\nrequire __DIR__.'/public/index.php';"`
      *     는 그 파일에 쓰이는 데이터이지 이 클래스가 그것을 로드한다는 뜻이 아니다.
@@ -824,12 +824,12 @@ trait ScansPhpSourceFunctions
      *
      * @param  string  $src  PHP 소스
      *                       needle 의 **디렉토리**가 배제의 근거다 — `require $x.'/lang/'.$f` 는 needle 이
-     *                       `includes/config.php` 이면 「다른 디렉토리」로 배제되지만, `config.php` 처럼 파일명뿐이면
+     *                       `'includes/config.php'` 이면 「다른 디렉토리」로 배제되지만, `config.php` 처럼 파일명뿐이면
      *                       어느 디렉토리의 그 이름인지 알 수 없어 판정 불가(`null`)다. 종전에는 이 경우도 `false`
      *                       로 접었다(fail-open) (G3 회차 14 W4-7). 스캔 트리의 **루트에 있는** 파일은 상대 경로에
      *                       디렉토리가 없으므로, 호출부가 `./index.php` 처럼 `./` 를 붙여 「트리 루트 기준」임을
      *                       선언한다 — 그러면 디렉토리 `./` 가 배제 근거가 된다.
-     * @param  string  $needle  찾을 경로 조각 (`api/x.php` 같은 상대 경로, `./index.php` 같은 루트 기준 경로, 또는 파일명)
+     * @param  string  $needle  찾을 경로 조각 (`'api/x.php'` 같은 상대 경로, `'./index.php'` 같은 루트 기준 경로, 또는 파일명)
      * @return bool|null 로드하면 true, 아니면 false, 판정 불가면 null
      */
     private function loadsFile(string $src, string $needle): ?bool

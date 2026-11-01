@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 관리자 화면 계약 시험은 화면(surface)마다 따로 재는 축(탭·방향·변경·기간·값)을 가진다 — 화면 축과 곱하면 그 화면에 없는 조합만 늘어난다. 회귀 가드는 effects.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 관리자 화면 계약 시험은 화면(surface)마다 따로 재는 축(탭·방향·변경·기간·값)을 가진다 — 화면 축과 곱하면 그 화면에 없는 조합만 늘어난다. 회귀 가드는 effects.
 feature: social_login_admin_screens
 coverage_strategy: pairwise
 description: |
@@ -18,6 +18,10 @@ axes:
   response: [https, http_external, error]
   role: [settings_view_only]
   route_id: [uuid, non_uuid, missing_uuid]
+  # 제공자별 안내 문구를 따로 재는 제공자
+  provider: [kakao]
+  # 편집기에서 비밀값 안내를 띄우는 입력칸
+  field: [client_secret, admin_key]
 effects:
   - provider_notes_translated_and_complete
   - kakao_notes_current_console_path_and_reconsent_limit

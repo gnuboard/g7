@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#524 |
 #   cross product 면제는 `cross_product` 축 하나로 한정한다 — effects 커버리지는 계속 강제된다.
 #   이 매니페스트의 축은 화면이 받는 «입력 공간의 서술» 이고, 조합마다 서로 다른 동작이
 #   갈리는 분기가 아니다. 예컨대 표 컬럼 구성을 재는 테스트에 검색 대상·읽음 상태·회원
@@ -24,8 +24,10 @@ description: |
 
 # 입력 axis
 #  product_state: 찜한 상품의 현재 상태
+#  surface: 그 상태가 걸리는 화면 (회원 찜 목록)
 axes:
   product_state: [visible, hidden, suspended, hidden_then_visible]
+  surface: [user_wishlist]
 
 effects:
   - wishlist_excludes_hidden_products

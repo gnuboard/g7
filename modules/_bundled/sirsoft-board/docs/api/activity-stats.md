@@ -45,6 +45,8 @@ _단건 응답: `data` 객체의 필드._
 | total_posts | integer | `1` | 회원 본인이 작성한 게시글 총수입니다. 비활성 게시판의 글은 제외하며 소프트 삭제된 글도 집계에서 빠집니다. |
 | total_comments | integer | `0` | 회원 본인이 작성한 게시글들의 댓글 수 합계(SUM of comments_count)입니다. 비활성 게시판 글은 제외됩니다. |
 | total_views | integer | `42` | 회원 본인이 작성한 게시글들의 누적 조회수 합계(SUM of view_count)입니다. 비활성 게시판 글은 제외됩니다. |
+| total_reactions | integer | `2` | 회원 본인이 남긴 반응(게시글 반응과 댓글 반응) 수입니다. 대상 글이나 게시판이 지워져도 남은 반응 행은 셉니다. |
+| total_reports | integer | `28` | 회원 본인이 남긴 신고 로그 수입니다 (마이페이지 「내 신고」 목록과 같은 모집단). |
 
 **응답 예시**
 

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 이메일 정책(미제공 3 × 신뢰 3)은 데이터 제공자 6행으로 대표 조합을 덮고, 기존 회원 정책 3 × 확인 방법 2 는 정책별 시험으로 나눴다 — 곱하면 대부분 같은 분기를 다시 밟는다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 이메일 정책(미제공 3 × 신뢰 3)은 데이터 제공자 6행으로 대표 조합을 덮고, 기존 회원 정책 3 × 확인 방법 2 는 정책별 시험으로 나눴다 — 곱하면 대부분 같은 분기를 다시 밟는다.
 feature: social_login_signup_flow
 description: |
   연결된 회원이 없는 소셜 계정의 가입. 콜백에서 가입 허용·이메일 정책·「이미 가입된 이메일」을 판정해 가입 대기를 만들고,

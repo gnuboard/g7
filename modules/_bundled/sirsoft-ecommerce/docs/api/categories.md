@@ -163,7 +163,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.categories.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -291,7 +291,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.categories.create`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -405,7 +405,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 400 | Bad Request | 파일 저장 중 도메인 규칙 위반 (대상 카테고리 부재 등 — `exceptions.category_not_found` 같은 예외별 구체 키로 응답) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.categories.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.categories.create\|sirsoft-ecommerce.categories.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `file` 은 필수이며 `jpeg,png,jpg,gif,svg,webp` 이미지만 허용, 최대 10MB |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
@@ -488,7 +488,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -722,7 +722,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| categoryId | path | string | 예 | — | 대상 category의 식별자 |
+| categoryId | path | integer | 예 | — | 대상 category의 식별자 |
 | file | body | file | 예 | max 10240 | 업로드 파일 |
 | temp_key | body | string | 아니오 | UUID | 사전 업로드한 임시 이미지를 이 카테고리에 연결하기 위한 FileUploader temp_key |
 | collection | body | string | 아니오 | max 100 | 첨부 컬렉션 그룹명 (첨부를 용도별로 묶는 키, 미지정 시 default) |
@@ -839,7 +839,7 @@ HTTP/1.1 201
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| category | path | string | 예 | — | 분류 필터 (해당 분류의 항목만 조회) |
+| category | path | integer | 예 | — | 분류 필터 (해당 분류의 항목만 조회) |
 
 **요청 예시**
 
@@ -899,7 +899,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| category | path | string | 예 | — | 분류 필터 (해당 분류의 항목만 조회) |
+| category | path | integer | 예 | — | 분류 필터 (해당 분류의 항목만 조회) |
 | name | body | array | 예 | — | 대상의 이름/명칭 |
 | description | body | array | 아니오 | — | 설명 |
 | parent_id | body | string | 아니오 | — | parent 식별자 |
@@ -1013,7 +1013,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.categories.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
@@ -1031,7 +1031,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -1111,7 +1111,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 

@@ -43,6 +43,10 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | settings | object | `{"privacy_policy_url":"/page/privacy","legal_entity_name":"","…` | GDPR 플러그인의 관리자 설정 전체 객체. 정책 메타데이터(처리방침 주소/법인명/저장 위치), 배너 설정, 쿠키 카테고리 카탈로그, 차단 도메인을 담으며 `cookie_categories` 등 JSON 필드는 디코드되어 객체/배열로 노출됩니다 |
+| annual_notice_limits | object | `{"min":1,"max":1000}` | 연간 통지 1회 발송 상한(`annual_notice.batch_size`)의 허용 범위 (`min`, `max`). 저장 검증과 같은 상수(`Plugin::ANNUAL_NOTICE_MIN`, `ANNUAL_NOTICE_MAX`)에서 나오며, 설정 화면의 숫자 입력칸이 이 값을 최솟값과 최댓값으로 쓴다 |
+| default_blocked_domains_preview | object | `{"functional":["*.crisp.chat","client.crisp.chat","*.inte…` | 출하 기본 차단 도메인 카탈로그 (카테고리 키별 도메인 배열, `Plugin::DEFAULT_BLOCKED_DOMAINS_CATALOG`). 저장값이 아니라 관리자 화면 TagInput 의 자동완성 추천 출처다 |
+| default_necessary_allowlist_preview | object | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_…` | 출하 기본 필수 저장 허용목록 카탈로그 (저장소 구분별 키 배열, `Plugin::DEFAULT_NECESSARY_ALLOWLIST_CATALOG`). 위와 같이 추천 출처이며 잠금 항목은 담기지 않는다 |
+| abilities | object | `{"can_update":true}` | 현재 사용자 권한 플래그. `can_update` 는 개인정보 설정 변경 권한(`sirsoft-gdpr.privacy.update`) 보유 여부이며 설정 화면 읽기 전용의 근거다 |
 
 **응답 예시**
 
@@ -146,8 +150,6 @@ HTTP/1.1 200
 | settings.necessary_storage_allowlist | object | `{"localStorage":["g7_locale","g7_filters_*"],"sessionStorage":[],"cookie":["laravel_maintenance"]}` | 기능 쿠키 미동의 상태에서도 저장이 허용되는 항목(운영자 편집 대상). 저장소 구분(`localStorage`/`sessionStorage`/`cookie`)별 문자열 배열이며, 끝의 `*` 는 앞부분 매칭입니다 |
 | settings.necessary_storage_locked | object | `{"localStorage":["auth_token"],"sessionStorage":[],"cookie":["XSRF-TOKEN","laravel_session","gdpr_session"]}` | 지울 수 없는 잠금 항목. 설정이 아니라 코드가 정하므로 저장 요청에 담아 보내도 반영되지 않으며, 판정에는 언제나 운영자 목록과 합쳐 적용됩니다. 세션 쿠키 이름은 `session.cookie` 설정에서 런타임 해석됩니다 |
 | settings.necessary_storage_provided | object | `{"localStorage":["g7_cart_key"],"sessionStorage":["g7:sirsoft-pay_nhnkcp:pendingClose"],"cookie":[]}` | 활성 확장이 필터 훅 `sirsoft-gdpr.necessary_storage.filter_provided_keys` 로 제공한 필수 저장 항목. 요청마다 모은 계산값이라 저장 요청에 담아 보내도 반영되지 않으며, 판정에는 운영자 목록·잠금 항목과 합쳐 적용됩니다. 확장을 비활성화하면 다음 조회부터 빠집니다 (예시 값은 설치된 확장에 따라 다릅니다) |
-| default_blocked_domains_preview | object | `{"functional":["*.crisp.chat"],"analytics":["google-analytics.com"],"marketing":[]}` | 출하 기본 차단 도메인 카탈로그. 관리자 화면 TagInput 의 자동완성 추천 출처입니다 |
-| default_necessary_allowlist_preview | object | `{"localStorage":["g7_locale","g7_color_scheme"],"sessionStorage":[],"cookie":["laravel_maintenance"]}` | 출하 기본 허용목록 카탈로그. 위와 같이 추천 출처이며 잠금 항목은 담기지 않습니다 |
 
 두 `*_preview` 는 `settings` 바깥, `data` 최상위에 실립니다.
 
@@ -162,6 +164,11 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
+| annual_notice | body | array | 아니오 | 키는 `enabled`, `channels`, `batch_size`, `introduction` 만 | 개인정보 연간 통지 설정 묶음. 보내면 `enabled` 가 필수다 |
+| annual_notice.enabled | body | boolean | `annual_notice` 있으면 필수 | — | 연간 통지 자동 발송 사용 여부. 켜면 `channels`, `batch_size` 가 필수가 된다 |
+| annual_notice.channels | body | array | 켜면 필수 | 켜면 min 1, max 2. 항목은 `mail`, `database` 중 중복 없이 | 통지 발송 채널. 끈 상태에서 비워 보내면 서버가 저장된 값(없으면 `mail`, `database`)으로 채운다 |
+| annual_notice.batch_size | body | integer | 켜면 필수 | min 1, max 1000 | 한 번 실행에 보내는 최대 회원 수 (기본 500). 끈 상태에서 비워 보내면 서버가 저장된 값으로 채운다 |
+| annual_notice.introduction | body | array | 아니오 | 언어별 max 2000 | 통지 본문 머리말의 언어 맵 (`{"ko": "...", "en": "..."}`). 지원 목록 밖 언어 키도 거절하지 않고 보존한다 |
 | privacy_policy_url | body | string | 아니오 | max 2048, `/` 로 시작하는 사이트 경로 또는 `https://` 주소 | 개인정보처리방침 주소. 운영자가 직접 입력하며 배너 정책 링크와 연간 통지 링크의 대상이 됩니다. 다른 스킴(`javascript:` 등)·`http://`·프로토콜 상대 주소(`//host`)·백슬래시·공백이 든 값은 422 로 거부합니다. 비우면 처리방침 링크를 숨깁니다. 1.0.x 의 `privacy_policy_slug` 는 더 이상 받지 않습니다(보내도 저장되지 않음) |
 | legal_entity_name | body | string | 아니오 | max 200 | 법인명 / 운영 주체. 쿠키 배너와 마이페이지에 표시되는 사이트 운영 주체 이름입니다 (예: `(주)회사명`) |
 | data_storage_location | body | string | 아니오 | max 200 | 데이터 저장 위치 표기(GDPR Art.13(1)(f)/PIPA 국가 단위 안내용). IP/CIDR·클라우드 리전 코드 등 보안 민감 식별자는 검증에서 차단됩니다 |
@@ -169,6 +176,7 @@ HTTP/1.1 200
 | banner_position | body | string | 아니오 | `bottom_bar`, `bottom_left_popup`, `bottom_right_popup`, `centered_modal` | 쿠키 배너 노출 위치(하단 바/좌하단 팝업/우하단 팝업/중앙 모달) |
 | cookie_categories | body | string | 아니오 | — | 쿠키 카테고리 카탈로그(JSON 문자열 또는 배열). 각 항목의 `key`는 necessary/functional/analytics/marketing 중 하나이며 `label.ko`/`label.en`이 필수입니다 |
 | blocked_domains | body | array | 아니오 | — | 카테고리별 차단 도메인 패턴 배열(necessary 제외). FQDN 및 `*.` 와일드카드 prefix만 허용되며 textarea 줄바꿈 입력도 배열로 정규화됩니다 |
+| necessary_storage_allowlist | body | array | 아니오 | 키는 `localStorage`, `sessionStorage`, `cookie` 만. 항목은 max 128, 영문자, 숫자, `_.:@+-` 와 끝의 `*` | 기능 쿠키 미동의 상태에서도 저장을 허용할 항목(운영자 편집 대상). 저장소 구분별 배열이며 줄바꿈 문자열도 배열로 정규화한다. 키를 아예 보내지 않으면 기존 저장값을 그대로 둔다. 잠금 항목(`necessary_storage_locked`)은 규칙에 없어 보내도 반영되지 않는다 |
 
 **요청 예시**
 
@@ -268,7 +276,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-gdpr.privacy.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 

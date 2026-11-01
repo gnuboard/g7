@@ -1,6 +1,6 @@
 # 시나리오 매니페스트 — 클레임 before·filter 훅 신설 (#599 validate 01-#6)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   축(동작 × 훅 종류)의 조합마다 테스트를 두지 않는다 — 필터가 없는 동작(철회·상품 단위 전이·헤더
 #   동기화·환불 완료)은 설계상 filter 축이 비어 있고, 유형(교환·반품·환불)은 같은 공용 규칙
 #   (`GuardsClaimFilterResults`)을 쓰므로 유형마다 같은 계약을 세 번 적지 않는다. effects 축은 면제하지 않는다.

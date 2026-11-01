@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#747 |
 #   이 매니페스트의 축(결제 구성 × 경로 × 환불수단 × 회원 × 실패 지점)의 전 조합은
 #   「돈의 도착」 매트릭스(claim-money-arrival-matrix.yaml · ClaimMoneyArrivalMatrixTest)가 잰다.
 #   여기 적은 테스트는 축마다 대표 조합과 실패·가드 경로를 메서드 하나씩 못박고, effects 축은

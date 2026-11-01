@@ -30,7 +30,7 @@ class SamlLibraryUsageTest extends PluginTestCase
         $hits = [];
 
         foreach ((new Finder)->files()->in(dirname(__DIR__, 3).'/src')->name('*.php')->exclude('Mock') as $file) {
-            foreach (preg_split('/\R/', $file->getContents()) ?: [] as $no => $line) {
+            foreach (preg_split('/\r\n|\r|\n/', $file->getContents()) ?: [] as $no => $line) {
                 if (preg_match($pattern, $line) === 1 && ! str_contains($line, 'stay')) {
                     $hits[] = $file->getRelativePathname().':'.($no + 1);
                 }

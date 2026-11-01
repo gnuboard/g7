@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: CLI·게이트·리다이렉트는 각각 독립 단언이고 제공자×변종은 데이터 제공자(8행)로 덮는다 — 축 곱은 실재하지 않는 조합이다. 회귀 가드는 effects.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 CLI·게이트·리다이렉트는 각각 독립 단언이고 제공자×변종은 데이터 제공자(8행)로 덮는다 — 축 곱은 실재하지 않는 조합이다. 회귀 가드는 effects.
 feature: social_login_mock_provider
 description: |
   모의 제공자는 CLI 로만 켜고(최대 240분), 꺼져 있으면 모의 주소가 모두 404 다. 켜지면 모의 제공자 5종이 실제 드라이버에
@@ -11,6 +11,8 @@ axes:
   redirect: [foreign]
   cache_store: [redis]
   locale: [ko, en, ja]
+  # 모의 제공자에 거는 조작
+  action: [revoke]
 effects:
   - reenabled_gate_rotates_kid
   - mock_cli_on_off_status

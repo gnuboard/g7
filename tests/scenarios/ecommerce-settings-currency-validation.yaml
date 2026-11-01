@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변종이다. input 값은 각각 한 규칙(통화 코드 중복, 통화명 필수, 검증 생략)에만 속하므로 rule 과 input 을 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변종이다. input 값은 각각 한 규칙(통화 코드 중복, 통화명 필수, 검증 생략)에만 속하므로 rule 과 input 을 곱한 조합 대부분이 명목상이다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
 feature: 이커머스 환경설정 통화 커스텀 검증 (StoreEcommerceSettingsRequest withValidator)
 
 description: |

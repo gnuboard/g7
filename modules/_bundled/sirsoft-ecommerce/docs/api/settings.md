@@ -54,6 +54,8 @@ _단건 응답: `data` 객체의 필드._
 | privacy_retention | object | `{"enabled":false,"retention_years":5,"mode":"anonymize"}` | 종결 주문 개인정보 보유기간 설정(이슈 #636) — 사용 여부(기본 false)·보유기간(년, 최소 5)·처리 방식(`anonymize`/`delete`) |
 | claim | object | `{"exchange_reasons":[…],"return_reasons":[…],"refund_reaso…` | 클레임 설정. **정책 스칼라**(신청 가능 상태 4축·신청 기간·허용 청구 방식/결제수단·자동 승인 3종·첨부 상한·완료 처리 기본값)와 **DB 관리 대상인 사유 카탈로그 3종**(`exchange_reasons`·`return_reasons`·`refund_reasons` — 각 항목은 코드·다국어명·귀책 유형·노출/활성 여부) |
 | available_pg_providers | array | `[{"id":"kginicis","name_key":"sirsoft-pay_kginicis::provi…` | 설치된 PG 플러그인이 훅으로 등록한 PG 제공자 목록 (id·name_key·지원 결제수단) |
+| available_rate_providers | array | `[{"id":"koreaexim","name_key":"sirsoft-koreaexim::provide…` | 환율 제공자 플러그인이 훅(`sirsoft-ecommerce.currency.registered_rate_providers`)으로 등록한 제공자 목록 (`id`, `name_key`, `name`, `settings_url` 과 관리 통화 정보 등 — 항목 키는 제공자가 정한다). 등록만으로 자동 선택하지 않는다 |
+| active_rate_provider | null | `null` | `language_currency.rate_provider` 로 선택된 제공자가 지금 등록돼 있으면 그 항목(객체), 선택이 없거나 선택한 제공자가 등록돼 있지 않으면 `null` |
 | available_cash_receipt_providers | array | `[]` | 설치된 플러그인이 훅으로 등록한 현금영수증 발급 제공자 목록 (id·name_key — 미등록 시 빈 배열이며 신청 폼이 노출되지 않음) |
 | available_public_asset_disks | array | `[{"id":"none","label":{"ko":"사용 안 함 (스트리밍)","en":"Disabl…` | 공개 자산 직접 URL 서빙 디스크 선택지 (코어 DriverRegistryService 카탈로그 — none/public/s3 + 플러그인 훅 등록분). 기본정보 탭의 공개 자산 디스크 Select 옵션 소스 |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
@@ -541,10 +543,12 @@ HTTP/1.1 200
 | basic_info.mail_order_number | body | string | 아니오 | max 100 | 통신판매업 신고번호 |
 | basic_info.telecom_number | body | string | 아니오 | max 100 | 부가통신 사업자번호 |
 | basic_info.public_asset_disk | body | string | 아니오 | max 100 | 공개 자산 디스크 오버라이드 (빈값=코어 설정 따름, none=강제 스트리밍, 그 외=카탈로그 디스크 id — 존재하지 않는 디스크는 스트리밍으로 안전 폴백) |
+| basic_info.export_retention_days | body | integer | 아니오 | min 1, max 30 | 내보내기 파일 보관 기간(일). 환경설정 기본정보의 「내보내기 파일 보관 기간」. 값이 없거나 1 미만이면 기본 7일로 본다 (범위는 `limits.export_retention_days_min`, `limits.export_retention_days_max`) |
 | language_currency | body | array | 아니오 | — | 통화 설정 섹션 (기본 통화·통화 목록: 코드·다국어명·환율·반올림 규칙·통화별 로케일) |
 | language_currency.default_currency | body | string | 아니오 | max 10 | 쇼핑몰 기본(base) 통화 코드. 상품/주문이 1건이라도 생성된 뒤에는 변경 불가 |
 | language_currency.currencies | body | array | 아니오 | — | 등록 통화 목록. 항목별 `code`(ISO 4217 3자리 대문자, 필수)·`name`(다국어 배열, 필수)·`symbol`·`exchange_rate`·`base_unit`·`rounding_unit`·`rounding_method`(`floor`\|`round`\|`ceil`)·`decimal_places`·`is_default`·`locales` |
 | language_currency.removed_default_currencies | body | array | — | — | 서버 관리 필드. 요청에 실어 보내도 무시되며, 제출된 `currencies` 와 기본 제공 통화 목록의 차집합으로 서버가 재계산한다. `currencies` 를 보내지 않은 저장은 기존 값을 그대로 이월한다 |
+| language_currency.rate_provider | body | string | 아니오 | max 50 | 사용할 환율 제공자 ID (`available_rate_providers[].id`). `null` 이면 선택 없음. 새로 고른 값이 등록되지 않은 제공자면 422(`exchange_rate_provider_unavailable`), 이미 저장된 값을 그대로 보내면 그 제공자가 비활성이어도 보존한다 |
 | seo | body | array | 아니오 | — | SEO 메타 설정 섹션 (페이지 유형별 메타 타이틀/설명·SEO 활성 토글) |
 | seo.meta_category_title | body | string | 아니오 | max 500 | 카테고리 페이지 메타 Title (`{commerce_name}`·`{category_name}` 등 변수 사용 가능) |
 | seo.meta_category_description | body | string | 아니오 | max 1000 | 카테고리 페이지 메타 Description |
@@ -566,30 +570,11 @@ HTTP/1.1 200
 | order_settings.cash_receipt_self_issue | body | boolean | 아니오 | — | 현금영수증 자진발급 사용 (구매자가 신청하지 않은 무통장 입금 건도 자동 발급) |
 | order_settings.shipping_fee_tax_policy | body | string | 아니오 | `proportional`, `taxable`, `follow_main_item` | 현금영수증의 배송비 과세 방식 (안분 / 전액 과세 / 주된 재화 기준) |
 | order_settings.payment_methods | body | array | 아니오 | — | 결제수단 목록. 항목별 `id`(필수)·`pg_provider`·`sort_order`(min 1)·`is_active`·`min_order_amount`(min 0)·`stock_deduction_timing`(`order_placed`\|`payment_complete`\|`none`)·`mileage_deduction_timing`(`order_placed`\|`payment_complete`). 최소 1개는 활성이어야 하며, PG 가 필요한 결제수단을 활성화하려면 PG사 지정 필수 |
-
-#### 고객이 고를 수 없는 결제수단 (`customer_selectable: false`)
-
-`point`(마일리지) · `deposit`(예치금) · `free`(무료)는 **코어에 결제 실행 경로가 없다**. 응답의
-결제수단 항목은 `customer_selectable: false` 로 그 사실을 싣고, 관리자 설정 화면은 그 값을 읽어
-활성 토글을 잠근다.
-
-켜 두면 고객 주문서에는 뜨는데 주문 생성이 `422` 로 거절되고(`CreateOrderRequest`), 통과하더라도
-결제를 완료할 방법이 없어 주문이 `pending_order` 에 영구 정박한다 — 오류 없이 주문만 쌓인다.
-
-- **예치금으로 결제받으려면 예치금 플러그인이 필요하다.** 코어는 예치금 **차감** 구현 자체가
-  없어 `total_deposit_used_amount` 가 항상 0 이고, 따라서 환불 분해·복원·한도 축도 없다.
-  그 축은 차감을 소유한 플러그인이 함께 갖는다.
-- **마일리지는 주문의 일부 금액을 상쇄하는 용도로만 쓴다** — 결제수단으로 고르는 것이 아니라
-  주문서에서 사용액을 입력하는 축이다.
-- `free` 는 **0원 주문에서 시스템이 자동으로 고르는 경로**만 남는다.
-
-확장이 `customer_selectable` 을 선언하면 그 값이 우선한다 — 결제 실행을 제공하는 플러그인은
-자기 수단을 선택 가능으로 열 수 있다.
 | order_settings.banks | body | array | 아니오 | — | 무통장입금용 은행 목록. 항목별 `code`(max 10, 필수)·`name`(다국어 배열 — 사이트 기본 언어(`app.site_locale`) 이름 필수, 요청 언어와 무관. 은행 행에는 `id` 가 없어 클레임 사유·배송사 같은 '기존 행 면제' 가 **없다**: 사이트 기본 언어 이름이 빈 은행이 있으면 그 이름을 채워야 저장된다) |
 | order_settings.bank_accounts | body | array | 아니오 | — | 무통장 입금 계좌 목록. 항목별 `bank_code`·`account_number`·`account_holder`(모두 필수)·`is_active`·`is_default`. 계좌가 있으면 최소 1건은 사용+기본 상태여야 함 |
 | order_settings.auto_cancel_expired | body | boolean | 아니오 | — | 입금대기 상태 주문의 자동취소 사용 여부 |
-| order_settings.auto_cancel_days | body | integer | 아니오 | min 0, max 30 | 자동취소 기한(일). 주문일 포함 이 일수 경과 시 입금대기 주문을 자동 취소 |
-| order_settings.pending_order_expire_minutes | body | integer | 아니오 | min 0, max 20160 | 결제 미완료 주문 만료 기준(분). 결제창까지 갔으나 결제가 성립하지 않은 주문을 이 시간 경과 후 자동 취소. `0` 이면 그 부류를 정리하지 않음 |
+| order_settings.auto_cancel_days | body | integer | 예 | min 1, max 30 | 자동취소 기한(일). 주문일 포함 이 일수 경과 시 입금대기 주문을 자동 취소 |
+| order_settings.pending_order_expire_minutes | body | integer | 예 | min 0, max 20160 | 결제 미완료 주문 만료 기준(분). 결제창까지 갔으나 결제가 성립하지 않은 주문을 이 시간 경과 후 자동 취소. `0` 이면 그 부류를 정리하지 않음 |
 | order_settings.cart_expiry_days | body | integer | 아니오 | min 1, max 365 | 장바구니 보관기간(일). 경과 시 담긴 상품 자동 삭제 |
 | order_settings.stock_restore_on_cancel | body | boolean | 아니오 | — | 주문 취소 시 차감된 재고 자동 복구 여부 (반품/교환에도 적용) |
 | order_settings.cancellable_statuses | body | array | 아니오 | — | 자동 전이 대상 주문옵션(상품) 상태 목록 — `claim.instant_cancel_statuses` 와 같은 값의 별칭. 허용 `pending_order`·`pending_payment`·`payment_complete`·`shipping_hold`·`preparing`·`shipping_ready`·`shipping`·`delivered`·`confirmed` (기본 `pending_order`, `pending_payment`, `payment_complete`). 빈 배열은 자동 전이 비활성화, `null`은 422. 회원·비회원 주문 취소와 클레임 신청 자격이 같은 값을 사용하며, 주문 설정 탭과 클레임 정책 탭 어느 쪽에서 저장해도 두 키가 함께 갱신 |
@@ -605,23 +590,30 @@ HTTP/1.1 200
 | claim.auto_approve_after_payment | body | boolean | 아니오 | — | 추가결제 완료 시 승인 전이를 자동 수행할지 여부 |
 | claim.auto_approve_refund_request | body | boolean | 아니오 | — | 접수된 환불신청서를 자동 승인할지 여부 (환불 실행은 별도) |
 | claim.auto_approve_refund_statuses | body | array | 아니오 | — | 자동 승인이 켜졌을 때 **어느 상품 상태**를 승인할지. 허용 `payment_complete`·`shipping_hold`·`preparing`·`shipping_ready`·`shipping` (기본 `payment_complete`, `preparing`). 신청서의 상품이 하나라도 목록 밖이면 전건을 운영자가 승인한다 — 섞인 신청서를 부분 승인할 수단이 없으므로, "하나라도 대상이면 승인" 은 대상 밖 상품까지 함께 승인해 버린다. 키를 보내면 값이 있어야 한다(`null` 은 422) |
-| claim.max_images | body | integer | 아니오 | min 1, max 20 | 신청서 1건당 첨부 가능한 이미지 수 (1~20). 키를 보내면 값이 있어야 한다(`null` 은 422) |
-| claim.image_max_size_kb | body | integer | 아니오 | min 128, max 20480 | 첨부 이미지 1개의 최대 용량(KB, 128~20480). 키를 보내면 값이 있어야 한다(`null` 은 422) |
-| claim.request_period_days | body | integer | 아니오 | min 1, max 365 | 배송완료(또는 구매확정) 후 교환·반품을 신청할 수 있는 기간(일, 1~365). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.auto_approve_refund_payment_methods | body | array | 아니오 | — | 환불 자동 승인을 허용할 결제수단 ID 목록 (원소는 등록된 결제수단 ID — `PaymentMethodResolver::allValidIds()`, 플러그인 수단 포함). 목록 밖 수단(무통장, 가상계좌처럼 사람이 송금해야 끝나는 수단)은 결제완료 상품이라도 환불신청서가 `requested` 에서 멈춘다. 기본 `["card","point","free"]` |
+| claim.auto_approve_refund_payment_methods_decided | body | string | 아니오 | — | 서버 전용 운영자 결정 이력이라 요청에 실으면 422(`prohibited`). `claim.auto_approve_refund_payment_methods` 를 저장할 때 서버가 직전 이력에 지금 자동 승인을 선언한 결제수단 ID 를 더해 채우며, 관리자 조회 응답에는 실리지 않는다 |
+| claim.max_images | body | integer | 예 | min 1, max 20 | 신청서 1건당 첨부 가능한 이미지 수 (1~20). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.image_max_size_kb | body | integer | 예 | min 128, max 20480 | 첨부 이미지 1개의 최대 용량(KB, 128~20480). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.request_period_days | body | integer | 예 | min 1, max 365 | 배송완료(또는 구매확정) 후 교환·반품을 신청할 수 있는 기간(일, 1~365). 키를 보내면 값이 있어야 한다(`null` 은 422) |
+| claim.advance_exchange_enabled | body | boolean | 아니오 | — | 선교환(새 상품을 먼저 보내고 헌 상품은 기한 안에 회수) 기능 사용 여부 (기본 `false`). 끄면 신청서마다 선교환을 새로 켤 수 없지만, 이미 선교환인 건은 일반 교환으로 되돌릴 수 있다 |
+| claim.advance_exchange_collection_due_days | body | integer | 예 | min 1, max 90 | 선교환의 헌 상품 반송 기한(일, 기본 14). 키를 보내면 값이 있어야 한다(`null` 은 422). 진행 방식 전환 확인 창의 안내 일수도 이 값을 읽는다 |
 | claim.complete_defaults | body | array | 아니오 | — | 완료 처리 모달의 초기 선택값 묶음 (실제 실행값은 모달에서 건별로 확정된다). **맵을 보내면 `create_refund_request`·`restore_stock` 두 키가 모두 있어야 한다** — 빈 맵 `{}` 과 부분 맵은 422 (키가 빠지면 저장본에서 사라져 모달이 '켜짐' 기본값으로 돌아간다) |
 | claim.complete_defaults.create_refund_request | body | boolean | 아니오 | — | 완료 처리 모달의 "환불신청서 지금 접수" 초기 선택값. `complete_defaults` 를 보내면 **필수**(`null` 도 422) |
 | claim.complete_defaults.restore_stock | body | boolean | 아니오 | — | 완료 처리 모달의 건별 재고 복구 체크 초기 선택값. `complete_defaults` 를 보내면 **필수**(`null` 도 422) |
 | claim.exchange_reasons | body | array | 아니오 | — | 교환 사유 목록. 항목별 `id`·`code`(소문자·언더스코어, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`fault_type`(`customer`\|`seller`\|`carrier`, 필수)·`is_user_selectable`·`is_active`(행을 보내면 두 플래그 모두 **필수** — 키가 빠지면 422. 빠진 키가 `true` 로 채워져 내려 둔 사유가 되살아나는 것을 막는다)·`sort_order`. 코드 중복 불가. `code` 형식은 [claim-reasons.md](claim-reasons.md) 의 "코드 형식 규칙" 과 같고 이미 저장된 코드는 면제된다. DB 동기화 대상이라 JSON 설정에는 저장되지 않으며, 목록에서 빠진 사유는 삭제된다 — 그 유형에서 사용 중인 사유는 삭제도 `code` 변경도 400 으로 거절된다(사유명·귀책·노출 여부는 계속 수정 가능). `id` 는 **그 유형에 실재하는 행**이어야 한다(없는 id·다른 유형의 id 는 422 — 기존 행 면제의 유일한 근거이므로). 기존 행끼리 `code` 를 맞바꾸는 저장은 422 (`code_swap`) — 한쪽을 먼저 다른 코드로 저장한 뒤 바꾼다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용. |
+| claim.exchange_reasons_deleted | body | array | 아니오 | — | 삭제할 교환 사유 ID 목록 (원소는 정수). 사유 삭제는 이 목록으로만 일어난다 — `claim.exchange_reasons` 에 빠진 행을 삭제로 보지 않는다. 서버는 그 유형에 실재하는 ID 만 지우므로 이미 지워진 ID 가 섞여도 오류가 나지 않는다 |
 | claim.return_reasons | body | array | 아니오 | — | 반품 사유 목록. 항목별 `id`·`code`(소문자·언더스코어, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`fault_type`(`customer`\|`seller`\|`carrier`, 필수)·`is_user_selectable`·`is_active`(행을 보내면 두 플래그 모두 **필수** — 키가 빠지면 422. 빠진 키가 `true` 로 채워져 내려 둔 사유가 되살아나는 것을 막는다)·`sort_order`. 코드 중복 불가. `code` 형식은 [claim-reasons.md](claim-reasons.md) 의 "코드 형식 규칙" 과 같고 이미 저장된 코드는 면제된다. DB 동기화 대상이라 JSON 설정에는 저장되지 않으며, 목록에서 빠진 사유는 삭제된다 — 그 유형에서 사용 중인 사유는 삭제도 `code` 변경도 400 으로 거절된다(사유명·귀책·노출 여부는 계속 수정 가능). `id` 는 **그 유형에 실재하는 행**이어야 한다(없는 id·다른 유형의 id 는 422 — 기존 행 면제의 유일한 근거이므로). 기존 행끼리 `code` 를 맞바꾸는 저장은 422 (`code_swap`) — 한쪽을 먼저 다른 코드로 저장한 뒤 바꾼다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용. |
+| claim.return_reasons_deleted | body | array | 아니오 | — | 삭제할 반품 사유 ID 목록 (원소는 정수). 사유 삭제는 이 목록으로만 일어난다 — `claim.return_reasons` 에 빠진 행을 삭제로 보지 않는다. 서버는 그 유형에 실재하는 ID 만 지우므로 이미 지워진 ID 가 섞여도 오류가 나지 않는다 |
 | claim.refund_reasons | body | array | 아니오 | — | 환불(취소) 사유 목록. 항목별 `id`·`code`(소문자·언더스코어, 필수)·`name`(다국어 배열 — **신규 행**은 현재 로케일 필수, `id` 가 있는 기존 행은 길이·형식만 검사한다: 다른 로케일에서 만든 행 때문에 탭 전체가 막히지 않게 하기 위함)·`fault_type`(`customer`\|`seller`\|`carrier`, 필수)·`is_user_selectable`·`is_active`(행을 보내면 두 플래그 모두 **필수** — 키가 빠지면 422. 빠진 키가 `true` 로 채워져 내려 둔 사유가 되살아나는 것을 막는다)·`sort_order`. 코드 중복 불가. `code` 형식은 [claim-reasons.md](claim-reasons.md) 의 "코드 형식 규칙" 과 같고 이미 저장된 코드는 면제된다. DB 동기화 대상이라 JSON 설정에는 저장되지 않으며, 목록에서 빠진 사유는 삭제된다 — 그 유형에서 사용 중인 사유는 삭제도 `code` 변경도 400 으로 거절된다(사유명·귀책·노출 여부는 계속 수정 가능). `id` 는 **그 유형에 실재하는 행**이어야 한다(없는 id·다른 유형의 id 는 422 — 기존 행 면제의 유일한 근거이므로). 기존 행끼리 `code` 를 맞바꾸는 저장은 422 (`code_swap`) — 한쪽을 먼저 다른 코드로 저장한 뒤 바꾼다. 같은 저장에서 지워지는 행의 코드를 물려받는 것은 허용. |
+| claim.refund_reasons_deleted | body | array | 아니오 | — | 삭제할 환불(취소) 사유 ID 목록 (원소는 정수). 사유 삭제는 이 목록으로만 일어난다 — `claim.refund_reasons` 에 빠진 행을 삭제로 보지 않는다. 서버는 그 유형에 실재하는 ID 만 지우므로 이미 지워진 ID 가 섞여도 오류가 나지 않는다 |
 | review_settings | body | array | 아니오 | — | 리뷰 정책 섹션 (작성 기한일·이미지 최대 개수·이미지 최대 용량 MB) |
 | review_settings.write_deadline_days | body | integer | 아니오 | min 1, max 365 | 구매 확정 후 리뷰를 작성할 수 있는 기간(일) |
 | review_settings.max_images | body | integer | 아니오 | min 0, max 20 | 리뷰 1건당 첨부 가능한 이미지 수 (0 = 이미지 첨부 불가) |
 | review_settings.max_image_size_mb | body | integer | 아니오 | min 1, max 50 | 리뷰 이미지 파일 1개의 최대 용량(MB) |
 | privacy_retention | body | array | 아니오 | — | 종결 주문 개인정보 보유기간 섹션(이슈 #636). 「개인정보 보유기간」 탭 저장이 `_tab: privacy_retention` 과 함께 보낸다. 코어 보유기간 커맨드(`privacy:process-retention`)가 핸들러 `sirsoft-ecommerce.order` 를 통해 이 값을 읽어 매일 실행한다 |
 | privacy_retention.enabled | body | boolean | 아니오 | — | 보유기간 처리 사용 여부. **기본 false** — 되돌릴 수 없는 처리라 운영자가 직접 켜야 하며, 핸들러가 실행 시점에 false 폴백으로 다시 읽는다 |
-| privacy_retention.retention_years | body | integer | 아니오 | min 5, max 20 | 주문 종결(구매확정·취소, 진행 중 환불·교환·반품 없음) 후 보유기간(년, 기본 5). 하한 5년은 전자상거래법 §6 보존기간이라 서버가 강제하고, 판독부도 5년 바닥값을 둔다. 한계값은 `config('sirsoft-ecommerce.limits')` |
-| privacy_retention.mode | body | string | 아니오 | `anonymize`, `delete` | 처리 방식(기본 `anonymize`). `anonymize` 는 주문자·수령인 이름·연락처·주소(NOT NULL 칸은 `***`, nullable 칸은 NULL)·구매자·입금·환불 계좌 명의·IP·관리자 메모와 교환·반품·환불 신청서의 환불 계좌·상세 사유·관리자 메모·교환 재배송지를 지우고 주문번호·금액·상태는 남긴다. `delete` 는 주문과 결제·배송·취소·환불·현금영수증·세금계산서·옵션·주소와 교환·반품·클레임 결제·클레임 첨부(파일 포함)를 명시 삭제하고 그 주문의 상품 리뷰를 이미지째 지우며, 쿠폰 발급·마일리지 거래는 주문·클레임 결제·환불 연결만 끊는다 |
+| privacy_retention.retention_years | body | integer | 예 | min 5, max 20 | 주문 종결(구매확정·취소, 진행 중 환불·교환·반품 없음) 후 보유기간(년, 기본 5). 하한 5년은 전자상거래법 §6 보존기간이라 서버가 강제하고, 판독부도 5년 바닥값을 둔다. 한계값은 `config('sirsoft-ecommerce.limits')` |
+| privacy_retention.mode | body | string | 예 | `anonymize`, `delete` | 처리 방식(기본 `anonymize`). `anonymize` 는 주문자·수령인 이름·연락처·주소(NOT NULL 칸은 `***`, nullable 칸은 NULL)·구매자·입금·환불 계좌 명의·IP·관리자 메모와 교환·반품·환불 신청서의 환불 계좌·상세 사유·관리자 메모·교환 재배송지를 지우고 주문번호·금액·상태는 남긴다. `delete` 는 주문과 결제·배송·취소·환불·현금영수증·세금계산서·옵션·주소와 교환·반품·클레임 결제·클레임 첨부(파일 포함)를 명시 삭제하고 그 주문의 상품 리뷰를 이미지째 지우며, 쿠폰 발급·마일리지 거래는 주문·클레임 결제·환불 연결만 끊는다 |
 | mileage | body | array | 아니오 | — | 마일리지 설정 섹션 (사용 여부·기본 적립률·적립 트리거·통화별 규칙·소멸/소멸 알림) |
 | mileage.enabled | body | boolean | 아니오 | — | 마일리지 적립·사용 기능 사용 여부 (`mileage` 전달 시 필수) |
 | mileage.default_earn_rate | body | number | 아니오 | min 0, max 100 | 기본 적립률(%). 상품 등록 시 기본값으로 사용되며, `enabled: true` 인 경우 0 초과여야 함 |
@@ -829,6 +821,9 @@ Content-Type: application/json
     ],
     "shipping.types": [
         "예시값"
+    ],
+    "privacy_retention": [
+        "예시값"
     ]
 }
 ```
@@ -851,6 +846,8 @@ _단건 응답: `data` 객체의 필드._
 | privacy_retention | object | `{"enabled":false,"retention_years":5,"mode":"anonymize"}` | 종결 주문 개인정보 보유기간 설정(이슈 #636) — 사용 여부(기본 false)·보유기간(년, 최소 5)·처리 방식(`anonymize`/`delete`) |
 | claim | object | `{"exchange_reasons":[…],"return_reasons":[…],"refund_reaso…` | 클레임 설정. **정책 스칼라**(신청 가능 상태 4축·신청 기간·허용 청구 방식/결제수단·자동 승인 3종·첨부 상한·완료 처리 기본값)와 **DB 관리 대상인 사유 카탈로그 3종**(`exchange_reasons`·`return_reasons`·`refund_reasons` — 각 항목은 코드·다국어명·귀책 유형·노출/활성 여부) |
 | available_pg_providers | array | `[{"id":"kginicis","name_key":"sirsoft-pay_kginicis::provi…` | 설치된 PG 플러그인이 훅으로 등록한 PG 제공자 목록 (id·name_key·지원 결제수단) |
+| available_rate_providers | array | `[{"id":"koreaexim","name_key":"sirsoft-koreaexim::provide…` | 환율 제공자 플러그인이 훅(`sirsoft-ecommerce.currency.registered_rate_providers`)으로 등록한 제공자 목록 (`id`, `name_key`, `name`, `settings_url` 과 관리 통화 정보 등 — 항목 키는 제공자가 정한다). 등록만으로 자동 선택하지 않는다 |
+| active_rate_provider | null | `null` | `language_currency.rate_provider` 로 선택된 제공자가 지금 등록돼 있으면 그 항목(객체), 선택이 없거나 선택한 제공자가 등록돼 있지 않으면 `null` |
 | available_cash_receipt_providers | array | `[]` | 설치된 플러그인이 훅으로 등록한 현금영수증 발급 제공자 목록 (id·name_key — 미등록 시 빈 배열이며 신청 폼이 노출되지 않음) |
 | available_public_asset_disks | array | `[{"id":"none","label":{"ko":"사용 안 함 (스트리밍)","en":"Disabl…` | 공개 자산 직접 URL 서빙 디스크 선택지 (코어 DriverRegistryService 카탈로그 — none/public/s3 + 플러그인 훅 등록분). 기본정보 탭의 공개 자산 디스크 Select 옵션 소스 |
 
@@ -1275,7 +1272,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
@@ -1371,6 +1368,7 @@ _단건 응답: `data` 객체의 필드._
 | basic_info | object | `{"shop_name":"","route_path":"shop","no_route":false,"com…` | 쇼핑몰 기본 정보 (쇼핑몰명·라우트 경로·상호·사업자번호·주소·연락처·이메일 등) |
 | language_currency | object | `{"default_currency":"KRW","currencies":[{"code":"KRW","na…` | 통화 설정 (기본 통화 + 등록 통화 목록: 코드·다국어명·환율·기호·국기·반올림 규칙). `removed_default_currencies` 는 관리자가 삭제한 기본 제공 통화 코드 목록으로, 서버가 저장 시점에 도출해 기록한다 (관리자 응답 전용 — 공개 설정에는 노출되지 않음) |
 | order_settings | object | `{"default_pg_provider":null,"cash_receipt_provider":"toss…` | 주문/결제 설정 (기본 PG·병합된 결제수단·은행/무통장 계좌·자동취소·장바구니 만료·현금영수증 발급 제공자·자진발급·배송비 과세 방식 등) |
+| claim | object | `{"exchange_requestable_statuses":["delivered","confirmed"…` | 클레임 정책 설정 (신청 가능 상태, 허용 청구 방식과 결제수단, 자동 승인, 첨부 상한, 신청 기간, 선교환, 완료 처리 기본값). 원시 설정(`getAllSettings()`)이라 DB 관리 사유 카탈로그(`*_reasons`)는 싣지 않고, `instant_cancel_statuses` 는 `order_settings.cancellable_statuses` 의 별칭이다 |
 | shipping | object | `{"default_country":"KR","available_countries":[{"code":"K…` | 배송 설정 (기본 국가·배송 가능 국가·무료배송·DB 관리 배송사(carriers)·배송유형(types)·계산 API 후보 필드 포함) |
 | seo | object | `{"meta_category_title":"{commerce_name} - {category_name}…` | SEO 메타 설정 (카테고리·검색·상품·쇼핑몰 인덱스별 메타 타이틀/설명 및 SEO 활성 토글) |
 | review_settings | object | `{"write_deadline_days":90,"max_images":5,"max_image_size_…` | 리뷰 정책 (작성 기한일·이미지 최대 개수·이미지 최대 용량 MB) |
@@ -1602,7 +1600,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 

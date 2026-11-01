@@ -21,7 +21,7 @@
 <!-- @generated:start:api.plugins.sirsoft-marketing.admin.channels.update -->
 - **라우트명**: `api.plugins.sirsoft-marketing.admin.channels.update`
 - **컨트롤러**: `Plugins\Sirsoft\Marketing\Http\Controllers\MarketingAdminController@updateChannels`
-- **인증/권한**: `auth:sanctum`
+- **인증/권한**: `auth:sanctum` + `permission:core.plugins.update`
 
 **요청 파라미터**
 

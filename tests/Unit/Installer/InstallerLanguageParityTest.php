@@ -611,7 +611,7 @@ class InstallerLanguageParityTest extends TestCase
      * 런타임 지원 언어 목록과 실제 배포되는 lang 파일이 일치하는가 (12차 #C6).
      *
      * 지원 언어는 두 곳에 선언돼 있는데 대조 장치가 없었다 — 런타임은
-     * `includes/config.php` 의 `SUPPORTED_LANGUAGES` 상수를, 이 게이트는 `lang/*.php`
+     * `public/install/includes/config.php` 의 `SUPPORTED_LANGUAGES` 상수를, 이 게이트는 `lang/*.php`
      * 글롭을 본다. 상수에만 로케일을 더하면 `loadTranslations()` 이 빈 배열을 돌려주고
      * 화면 전체가 키 문자열이 된다. 반대로 파일만 두면 아무도 그 로케일을 고를 수 없다.
      * 둘 다 예외도 로그도 남기지 않는다.
@@ -932,7 +932,7 @@ class InstallerLanguageParityTest extends TestCase
      * 인라인 `<script>` 안에 심는 문구는 이스케이프 헬퍼를 지나는가 (11차 #D4).
      *
      * 9차 #L36 이 `installerJsString()` 을 만들었지만 호출 31곳이 전부 한 파일
-     * (`views/3-configuration.php`)이고, 그 함수에 테스트 참조가 **0** 이었다 — 본문을
+     * (`public/install/views/3-configuration.php`)이고, 그 함수에 테스트 참조가 **0** 이었다 — 본문을
      * `return "'".$value."'";` 로 바꿔도 전 스위트가 초록이다. 나머지 인라인 스크립트 두
      * 곳은 서로 다른 규칙(지역 상수·맨 json_encode)을 쓰고 있었고 그 사실도 무검사였다.
      *

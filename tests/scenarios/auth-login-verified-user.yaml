@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 상태 × 2단계 인증 × 비밀번호 × 경로를 곱하면 관문이 앞에서 끊는 조합(잠김·차단이면
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 상태 × 2단계 인증 × 비밀번호 × 경로를 곱하면 관문이 앞에서 끊는 조합(잠김·차단이면
 # 2단계 인증 축에 도달하지 않음 등)이 대부분이라 명목상이다. 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
 
 feature: 외부 인증 로그인 공개 API (AuthService::loginVerifiedUser) · 관리자 로그인 관문 순서
@@ -22,6 +22,8 @@ axes:
   method: [password, social, missing]
   step: [password_change_complete, password_change_postpone]
   resend: [none, once]
+  # 아래 축은 시험별 입력 변종이다 — test_files 의 @scenario 가 쓰는 축이며 조합 곱 대상이 아니다
+  path: [two_factor_complete, two_factor_resend]
 
 effects:
   - token_issued

@@ -1,7 +1,7 @@
 /**
  * SSE `heartbeat` 소비 회귀 테스트 (12차 #B27 · #B35).
  *
- * 서버는 번들 추출 구간(`includes/task-runner.php`)에서 **`heartbeat` 만** 내보낸다. 그 구간은
+ * 서버는 번들 추출 구간(`public/install/includes/task-runner.php`)에서 **`heartbeat` 만** 내보낸다. 그 구간은
  * 10~15초 이상 걸리는 최장 태스크인데, 화면의 침묵 감지(기본 90초)는 살아 있음의 증거로 세는
  * 이벤트 목록에서 `heartbeat` 를 빠뜨리고 있었다. `EventSource` 는 이름 있는 이벤트를 `message`
  * 리스너로 보내지 않으므로 캡처 단계도 이를 잡지 못한다 — 추출이 90초를 넘기면 서버가 정상

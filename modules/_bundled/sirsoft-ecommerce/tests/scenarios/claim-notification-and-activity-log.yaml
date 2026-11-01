@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: |
+# audit:allow test-scenario-coverage[cross_product,effects] reason: issue:#599 |
 #   [cross_product] 이 기능의 커버리지 단위는 384 셀 곱이 아니라 **알림 정의 29종과 그 훅**이다.
 #   축은 정의를 낳는 재료(유형 x 이벤트 x 신청자 x 채널)이고, 한 셀이 곧 한 정의가 아니다 — 철회는
 #   유형 3종이 관리자 알림 1건으로 수렴하고 환불 processing 은 아무것도 발화하지 않는다. 그래서

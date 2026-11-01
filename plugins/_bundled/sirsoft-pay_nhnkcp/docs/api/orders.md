@@ -17,67 +17,6 @@
 ---
 
 
-### GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/easy-pay-display-map
-<!-- @generated:start:api.plugins.sirsoft-pay_nhnkcp.admin.orders.easy-pay-display-map -->
-- **라우트명**: `api.plugins.sirsoft-pay_nhnkcp.admin.orders.easy-pay-display-map`
-- **컨트롤러**: `Plugins\Sirsoft\PayNhnkcp\Controllers\AdminOrderListController@easyPayDisplayMap`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.read`
-
-**요청 파라미터**
-
-_요청 파라미터 없음._
-
-**요청 예시**
-
-```http
-GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/easy-pay-display-map HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-```
-
-**응답 필드** (`data` 내부)
-
-
-
-`data` 는 **주문번호를 키로 하는 객체**다. 최근 6개월 안의 NHN KCP 결제 중 **간편결제로 승인된 주문만** 실리므로, 그런 주문이 없으면 빈 객체가 온다.
-
-| 필드 | 타입 | 용도/설명 |
-| --- | --- | --- |
-| (키) | string | 주문번호. |
-| payment_method_label | string · null | 결제수단의 기본 이름(예: 신용카드). |
-| payment_method_display_label | string · null | 화면에 띄울 이름. 간편결제는 기본 이름 대신 그 서비스 이름으로 보인다. |
-| embedded_pg_provider | string · null | 간편결제 안에서 실제 승인을 처리한 결제사 식별자. |
-| embedded_pg_provider_label | string · null | 위 결제사의 표시 이름. 이 값이 없는 주문은 목록에서 제외된다. |
-
-**응답 예시**
-
-<!-- @probed -->
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "성공적으로 처리되었습니다.",
-    "data": []
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.read`)이 없는 경우 |
-
-<!-- @generated:end -->
-
-**설명** <!-- TODO: 이 엔드포인트의 용도·주의사항·예시 시나리오를 작성하세요 -->
-
-
 ### GET /api/plugins/sirsoft-pay_nhnkcp/admin/orders/test-mode-map
 <!-- @generated:start:api.plugins.sirsoft-pay_nhnkcp.admin.orders.test-mode-map -->
 - **라우트명**: `api.plugins.sirsoft-pay_nhnkcp.admin.orders.test-mode-map`
@@ -98,8 +37,6 @@ Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
-
-
 
 `data` 는 **주문번호를 키로 하고 값이 언제나 `true`** 인 객체다. 최근 6개월 안의 NHN KCP 결제 중 **테스트 모드로 결제된 주문만** 실리므로, 그런 주문이 없으면 빈 객체가 온다. 목록에 있는 주문번호만 테스트 결제로 간주하면 된다.
 
@@ -253,8 +190,8 @@ Content-Type: application/json
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 

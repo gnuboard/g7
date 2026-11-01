@@ -28,10 +28,10 @@
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | idp | path | string | 예 | `^[a-z][a-z0-9_]{1,49}$` | IdP 키 |
-| intent | query | string | 아니오 | `login` | 쿼리로는 `login` 만 받는다. 다른 값을 티켓 없이 보내면 `ticket_required` |
+| intent | query | string | 아니오 | max 10, 쿼리로는 `login` | 쿼리로는 `login` 만 받는다. 다른 값을 티켓 없이 보내면 `ticket_required` |
 | guard | query | string | 아니오 | `user`, `admin` | 로그인 화면 구분(기본 `user`) |
 | redirect | query | string | 아니오 | 최대 2000자 | 로그인 뒤 돌아갈 같은 출처 경로. 사이트 주소로 시작하는 절대 주소는 경로로 바꾸고, 외부 주소나 `//` 로 시작하거나 `\` 가 든 주소는 `/` 로 본다 |
-| ticket | query | string | 아니오 | 영숫자 48자 | 1회용 시작 티켓(60초). `POST me/links/start`(연결), `POST admin/idps/{id}/test` 의 `browser: true`(관리자 테스트), 코어 본인인증 요청(재확인)이 발급한다 |
+| ticket | query | string | 아니오 | max 64 (발급값은 영숫자 48자) | 1회용 시작 티켓(60초). `POST me/links/start`(연결), `POST admin/idps/{id}/test` 의 `browser: true`(관리자 테스트), 코어 본인인증 요청(재확인)이 발급한다 |
 
 형식이 틀린 값(검증 실패)은 422 로 답하지 않고 그 값만 버린 채 진행한다.
 
@@ -67,6 +67,7 @@ Set-Cookie: g7_sso_bind={MASKED}; path=/; httponly; samesite=lax
 | --- | --- | --- |
 | 302 | Found (실패 이동) | `sso_error` 코드 — `ticket_invalid`(티켓이 없거나 썼거나 다른 브라우저 것이거나 IdP 가 다름), `ticket_required`(로그인 외 의도를 티켓 없이), `idp_disabled`(꺼졌거나 없는 IdP, 모의 게이트가 꺼진 모의 IdP), `driver_unavailable`(드라이버를 쓸 수 없거나 리디렉션 로그인이 없는 LDAP), `token_error`(OIDC discovery 실패), `saml_invalid`(SAML 요청을 만들지 못함) |
 | 404 | Not Found | `idp` 가 키 형식이 아닌 경우(라우트 제약) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 429 | Too Many Requests | 분당 30회를 넘은 경우 |
 
 <!-- @generated:end -->

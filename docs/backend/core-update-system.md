@@ -321,7 +321,7 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 >
 > **원장의 의미는 「코어가 마지막으로 제시한 판본」이다** — 「코어가 쓴 것」이 아니다. 보존한 조각도 새 판본의 해시를 기록하기 때문에, 운영자가 안내대로 `.dist` 를 합쳐 파일이 새 판본과 같아지면 다음 업데이트에서 디스크 == 원장이라 정상 갱신으로 탈출한다. 합치지 않으면 디스크 ≠ 원장이라 보존이 유지된다. 기록하지 않으면 원장이 없던 사이트는 합친 뒤에도 **매 업데이트마다** 「판정 불가 → `.dist`」 가 반복된다(오류 없음).
 >
-> **원장이 없는 설치본은 씨앗한다.** 설치 완료 시점(인스톨러)과 7.1.0 업그레이드 스텝(`upgrades/data/7.1.0/migrations/02_SeedDeployFragmentLedger.php`)이 `CoreUpdateService::seedDeployFragmentLedger($projectRoot)` 와 같은 로직으로 현재 디스크의 해시를 원장에 쓴다 — 그 시점의 디스크는 **사이드카(`.dist`·`.dist.new`)가 없는 조각에 한해** 릴리즈 판본과 같다. 사이드카가 있는 조각은 씨앗하지 않는다(씨앗하면 운영자 수정본이 「코어가 쓴 그대로」로 읽혀 다음 업데이트가 덮어쓴다). 원장이 이미 있으면 손대지 않는다. 스텝은 업그레이드 경로 규율(기존 클래스의 신규 메서드 호출 금지)로 로컬 로직을 갖고, 서비스 씨앗기와의 결과 일치는 `tests/Unit/Upgrades/SeedDeployFragmentLedgerTest` 가 대조한다.
+> **원장이 없는 설치본은 씨앗한다.** 설치 완료 시점(인스톨러)과 7.2.0 업그레이드 스텝(`upgrades/data/7.2.0/migrations/05_SeedDeployFragmentLedger.php`)이 `CoreUpdateService::seedDeployFragmentLedger($projectRoot)` 와 같은 로직으로 현재 디스크의 해시를 원장에 쓴다 — 그 시점의 디스크는 **사이드카(`.dist`·`.dist.new`)가 없는 조각에 한해** 릴리즈 판본과 같다. 사이드카가 있는 조각은 씨앗하지 않는다(씨앗하면 운영자 수정본이 「코어가 쓴 그대로」로 읽혀 다음 업데이트가 덮어쓴다). 원장이 이미 있으면 손대지 않는다. 스텝은 업그레이드 경로 규율(기존 클래스의 신규 메서드 호출 금지)로 로컬 로직을 갖고, 서비스 씨앗기와의 결과 일치는 `tests/Unit/Upgrades/SeedDeployFragmentLedgerTest` 가 대조한다.
 >
 > **원장 쓰기 실패는 통보 통로에 실린다** (`deploy_fragment_ledger_write_failed`) — 원장은 다음 업데이트의 판정 근거라, 쓰지 못한 채 넘기면 그 사이트는 다음 업데이트에서 전 조각이 「판정 불가」로 떨어지고 운영자는 이유를 알 수 없다. 보존·충돌·쓰기 실패는 전부 업그레이드 로그 채널(`upgrade`)에도 함께 남는다.
 >

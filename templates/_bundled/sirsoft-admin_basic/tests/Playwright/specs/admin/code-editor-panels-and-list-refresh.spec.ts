@@ -14,8 +14,8 @@
  * 저장은 응답을 고정해 실제 파일을 건드리지 않는다. 검사 대상은 **브라우저가 실제로
  * 만든 요청 순서** 다 — 목록 재조회가 저장 뒤에 오지 않으면 화면은 낡은 행을 그린다.
  *
- * @scenario surface=code_editor,entry=direct
- * @effects code_editor_editor_panel_wider_than_file_list, code_editor_list_refetched_after_save
+ * 축 요약(마커 아님 — 평문): surface=code_editor, entry=direct
+ * 효과 요약(마커 아님 — 평문): code_editor_editor_panel_wider_than_file_list, code_editor_list_refetched_after_save
  *
  * 실행: `code-editor-*.spec.ts` 는 `--workers=1` 로 돌린다 — 사유는
  * `code-editor-file-crud.spec.ts` 헤더 참조(같은 시드 화면을 공유해 병렬에서 서로를 밟는다).

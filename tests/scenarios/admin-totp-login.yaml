@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: 축은 조건부다 — code 는 challenge 가 발급된
+# audit:allow test-scenario-coverage[cross_product,effects] reason: issue:#636 축은 조건부다 — code 는 challenge 가 발급된
 # 뒤에만, enrolled 는 mail_fallback 판정에만, cross_use 는 actor 와 짝지을 때만 의미가 있다. 명목상 조합을
 # 곱하면 실체 없는 칸이 생기므로 개별 docblock 을 매핑할 대상이 없다. 실제 회귀 가드는 effects 13건이며
 # 전부 test_files 의 테스트에 @effects 로 귀속되어 있다(미검증 0건).
@@ -40,6 +40,30 @@ axes:
   cross_use: [none, user_challenge_to_admin]
   actor: [admin, non_admin]
   locked: [false, true]
+  # 아래 축은 시험별 입력 변종이다 — test_files 의 @scenario 가 쓰는 축이며 조합 곱 대상이 아니다
+  two_factor: [on, off]
+  controller: [admin]
+  scope: [absent(legacy), all, admin]
+  subject: [member, admin, unenrolled, other_user]
+  rfc6238: [appendix_b]
+  algorithm: [sha1]
+  base32: [roundtrip, known_vector, lenient_input, invalid_alphabet]
+  totp: [verify, otpauth_uri, secret_entropy]
+  window: [1]
+  drift: [2, past]
+  replay: [blocked]
+  input: [malformed]
+  contract: [identity]
+  user_scope: [confirmed]
+  challenge: [request]
+  verify: [valid, replay, backup_code, invalid, max_attempts, expired, wrong_provider, not_found, cancelled]
+  enrollment: [start, confirm, show, disable, unauthenticated]
+  storage: [encrypted]
+  state: [already_confirmed, pending]
+  backup_codes: [regenerate, single_use]
+  listener: [withdraw, delete, hook_registration, admin_reset]
+  hook: [core.user.after_withdraw, core.user.before_delete, sirsoft-totp.credential.admin_reset]
+  payload: [invalid]
 
 exclusions:
   - { provider: mail_fallback, enrolled: true, reason: "등록을 마친 사용자는 폴백 대상이 아니다" }

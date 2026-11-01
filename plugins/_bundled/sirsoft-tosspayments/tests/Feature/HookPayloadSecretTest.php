@@ -24,8 +24,8 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  *
  * @scenario hook=after_confirm
  *
- * @effects after_confirm_payload_excludes_webhook_secret, after_cancel_payload_excludes_webhook_secret,
- *          hook_payload_keeps_other_response_fields, webhook_secret_is_still_stored_for_deposit_verification
+ * 효과 요약(마커 아님 — 평문): 승인 훅과 취소 훅 인자에서 웹훅 검증값 제외, 나머지 응답 필드 유지,
+ *   입금 대조용 검증값 저장 유지. 각 효과는 그 효과를 재는 메서드 docblock 에 마킹한다.
  */
 class HookPayloadSecretTest extends PluginTestCase
 {

@@ -145,7 +145,7 @@ class InstallerWebExposureServerGateTest extends TestCase
     /**
      * 숨은 필드의 초기값 `pending` 도 닫힌 집합의 일원이다 (16차 G3 D-6).
      *
-     * 화면은 판정 전 `pending` 을 싣고 태어난다(`views/2-requirements.php`). 프로브가 끝나기
+     * 화면은 판정 전 `pending` 을 싣고 태어난다(`public/install/views/2-requirements.php`). 프로브가 끝나기
      * 전에 POST 가 오면 서버는 그 값을 받는데, 집합 밖으로 접으면 로그에 「보고되지 않음」
      * — 배선 파손 신호 — 이 남는다. 그 둘은 운영자가 할 일이 다르므로 구분해 남긴다.
      *

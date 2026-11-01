@@ -59,10 +59,14 @@
 #   · `/.well-known/acme-challenge/<임의 파일>` → 403 이 아니어야 한다. 403 이면 인증서
 #     자동 갱신이 조용히 실패하고, 만료 전까지 아무 증상이 없다
 #   · `/favicon.ico` · `/robots.txt` → 200
-#   · `/.htaccess` · `/build/.vite/manifest.json` → 내용이 보이지 않아야 한다. 이 둘은
-#     **`public/` 안의** 점 파일이라 「root 가 public/ 이라 새지 않는다」는 논거 밖이다 —
-#     보이면 (g7_delegate) 의 `file_server` 에 `hide .*` 를 넣는다 (아래 (2) 의
-#     `G7-KNOWN-LIMIT: PUBLIC_DOTFILES`)
+#   · `/.htaccess` → 내용이 보이지 않아야 한다. 이것은 **`public/` 안의** 점 파일이라
+#     「root 가 public/ 이라 새지 않는다」는 논거 밖이다 — 보이면 (g7_delegate) 의
+#     `file_server` 에 `hide .*` 를 넣는다 (아래 (2) 의 `G7-KNOWN-LIMIT: PUBLIC_DOTFILES`).
+#     `public/` 안에서 **어느 설치본에나 있는** 점 파일은 이것 하나라 잴 항목도 하나다.
+#     더 깊은 구간의 점 이름은 설치 상태에 따라 있거나 없어(아래 (2) 참조) 없는 설치본에서
+#     재면 막혔든 안 막혔든 404 라 판별이 되지 않는다. 규칙 쪽은 구간을 가리지 않으므로
+#     (`(^|/)\.` 는 모든 구간의 첫 글자를, `hide .*` 는 경로의 각 구성 요소를 본다)
+#     최상위 하나로 충분하다
 #   · `/public/favicon.ico` → `/favicon.ico` 로 301
 #   · `/public//evil.example/p` · `/public/\evil.example/p` → `Location` 이
 #     `//evil.example/p` · `/\evil.example/p` 로 나가면 안 된다. 브라우저는 특수 스킴에서
@@ -184,17 +188,19 @@ example.com {
 	#     뿐 노출은 일어나지 않는다.**
 	#
 	#   · G7-KNOWN-LIMIT: PUBLIC_DOTFILES — 위 서술은 **프로젝트 루트 축만** 말한다.
-	#     `public/` **안에도** 점 파일이 있다 (`public/.htaccess` · `public/build/.vite/
-	#     manifest.json`). 이 한계는 **조건부**다: 이 `respond` 가 (7) 보다 먼저 도달하는
-	#     순서라면 `.*` 매처가 그 두 요청도 막아 한계가 없고, (7) 뒤로 밀리는 순서라면
+	#     `public/` **안에도** 점 파일이 있다. 어느 설치본에나 있는 것은 `public/.htaccess`
+	#     이고, 설치 상태에 따라 `public/storage/.gitignore`(`public/storage` 링크가 있을 때)와
+	#     `public/build/ext/<버전>/.htaccess`(정적 캐시 게시본이 있을 때)도 있다. 이 한계는
+	#     **조건부**다: 이 `respond` 가 (7) 보다 먼저 도달하는
+	#     순서라면 `.*` 매처가 그 요청들도 막아 한계가 없고, (7) 뒤로 밀리는 순서라면
 	#     `file_server` 가 그 파일을 그대로 낸다 — 형제 Apache 는 `RedirectMatch` 가 경로 전 구간을 보고,
 	#     nginx 는 숨김 파일 location 이 먼저 잡아 같은 요청을 막는다. 조치는 (g7_delegate)
 	#     의 `file_server` 를 `file_server { hide .* }` 로 바꾸는 것이다(경로 어느 구간의
 	#     점 이름이든 404). 이 조각은 실측하지 않는 서버라(프로젝트 결정 2026-08-27, 미실측
 	#     서버는 규칙을 바꾸지 않고 문서만 넓힌다) 규칙은 그대로 두고, 첫 배포 시 아래
-	#     「확인 목록」의 `/.htaccess` · `/build/.vite/manifest.json` 항목으로 판별한다 —
-	#     내용이 보이면 그 조치를 넣는다. 그 두 파일은 비밀이 아니지만(규칙 원문·빌드
-	#     해시 목록) 정적 서빙 형제 셋과 보호 폭이 갈리는 지점이다 (13차 G3 라운드 W4-4).
+	#     「확인 목록」의 `/.htaccess` 항목으로 판별한다(항상 있는 파일이라 내용이 안 보이면 곧 차단이다) —
+	#     내용이 보이면 그 조치를 넣는다. 위 파일들은 비밀이 아니지만(서버 규칙 원문, 무시
+	#     목록) 정적 서빙 형제 셋과 보호 폭이 갈리는 지점이다.
 	#
 	# 종전 판본들의 주석은 이 순서를 한 번은 「`respond` 가 앞」, 한 번은 「`handle` 이 앞」
 	# 으로 단정하고 그 위에 서술을 세웠다. 어느 쪽도 측정에서 나온 것이 아니었다. 단정을

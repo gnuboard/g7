@@ -42,6 +42,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | url | string | `https://api.example.com/api/plugins/sirsoft-message_bizppurio/webhook` | 비즈뿌리오 콘솔에 등록할 발송 결과 리포트 수신 URL (현재 사이트 기준 절대 URL) |
+| abilities | object | `{"can_manage_messaging":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
 
@@ -71,7 +72,7 @@ HTTP/1.1 200
 
 비즈뿌리오 발송 결과(리포트)를 수신할 콜백 URL을 관리자 설정 페이지에 표시하기 위해 반환하는 엔드포인트입니다. 관리자 환경설정 화면(`admin/plugin_settings.g7.html`)의 `report_url` data_source 가 이 값을 조회해 "리포트 수신 설정" 카드에 readonly 로 표시하고, 운영자가 그대로 복사해 비즈뿌리오 사업팀(또는 관리 콘솔의 리포트 수신 설정)에 URL PUSH 수신 주소로 등록합니다.
 
-URL 은 `url()` 헬퍼가 아니라 `config('app.url')` 을 기준으로 조합합니다 — 리버스 프록시 뒤 PHP-FPM 환경에서 요청 host 가 `localhost` 로 떨어질 수 있어, 운영자가 관리하는 설정값을 신뢰 소스로 삼아 항상 정식 도메인을 노출합니다.
+URL 은 `url()` 헬퍼가 아니라 사이트 주소(`APP_URL`)를 기준으로 `SiteUrl::absolute()` 로 조합합니다 — 리버스 프록시 뒤 PHP-FPM 환경에서 요청 host 가 `localhost` 로 떨어질 수 있어, 운영자가 관리하는 설정값을 신뢰 소스로 삼아 항상 정식 도메인을 노출합니다. 하위 폴더에 설치한 사이트는 설치 경로 접두사가 함께 붙습니다. 사이트 주소가 설정되지 않은 상태에서는 상대 경로(`/api/plugins/sirsoft-message_bizppurio/webhook`)를 돌려줍니다.
 
 관리자 인증(`auth:sanctum`)과 `core.plugins.read` 권한이 필요하며, 토큰 누락·만료는 401, 권한 부족은 403 으로 응답합니다.
 

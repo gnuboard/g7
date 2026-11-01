@@ -149,7 +149,7 @@
         }
 
         // 접미사 제거 규칙보다 **먼저** 본다 — 이 라우트의 무확장자 형태는 접미사를 떼는
-        // 형태가 아니라 `?file=` 이라, 순서가 뒤바뀌면 `.../theme.css` 가 `.../theme` 이
+        // 형태가 아니라 `?file=` 이라, 순서가 뒤바뀌면 `/api/system/public-storage/theme.css` 가 `/api/system/public-storage/theme` 이
         // 되어 404 가 된다. `resources/js/core/support/assetUrl.ts` 와 같은 순서다.
         var publicStorage = path.match(/^\/api\/system\/public-storage\/(.+)$/);
         if (publicStorage) {

@@ -58,7 +58,7 @@ class PlaywrightSeedMemberNotificationCommandTest extends TestCase
     {
         $code = Artisan::call('playwright:seed-member-notification', $options + ['--json' => true]);
         $lines = array_values(array_filter(
-            preg_split('/\R/', trim(Artisan::output())) ?: [],
+            preg_split('/\r\n|\r|\n/', trim(Artisan::output())) ?: [],
             fn (string $l) => str_starts_with(trim($l), '{')
         ));
 

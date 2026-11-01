@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 화면마다 따로 고른 입력 변수다 — 서로 곱하면 한 화면에 함께 있지 않은 조합(예: 로그인 버튼 + CSV 단계)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 화면마다 따로 고른 입력 변수다 — 서로 곱하면 한 화면에 함께 있지 않은 조합(예: 로그인 버튼 + CSV 단계)이 대부분이라 명목상이다.
 feature: sso_admin_ui
 description: |
   SSO 관리자 화면과 주입 조각의 구운 레이아웃 계약 — 설정(IdP 목록·편집 8하위탭·정책·보존), 회원 연결(추가·사전 등록·CSV·해제), 이력, 로그인 버튼, 마이페이지 카드, 회원 상세 탭, 회원 목록 필터·열, 관리자 핸들러(복사·CSV 읽기·결과 CSV).

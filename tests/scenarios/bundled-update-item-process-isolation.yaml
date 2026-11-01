@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 항목 결과 축은 집계 함수(itemOutcome) 단위 시험이 전부 다루고, 실제 새 프로세스를 띄우는 시험은 spawn 축 두 값 × 항목 여럿으로 충분하다(항목 하나는 분리하지 않는 판정 시험)
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#835 항목 결과 축은 집계 함수(itemOutcome) 단위 시험이 전부 다루고, 실제 새 프로세스를 띄우는 시험은 spawn 축 두 값 × 항목 여럿으로 충분하다(항목 하나는 분리하지 않는 판정 시험)
 feature: bundled_update_item_process_isolation
 
 description: |

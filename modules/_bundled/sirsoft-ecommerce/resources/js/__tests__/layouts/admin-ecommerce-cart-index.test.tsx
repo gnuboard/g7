@@ -167,7 +167,7 @@ describe('관리자 장바구니 관리 목록 (#524 WP-E)', () => {
         expect(modals['modal_carts_error']).toBeTruthy();
     });
 
-    // @scenario list=cart, owner=set
+    // @scenario list=cart, extra_filter=owner
     // @effects ecommerce_admin_list_owner_filter_reaches_server
     it('owner 전용 필터가 서버까지 닿는다', () => {
         expect(dataSource.params).toHaveProperty('owner');

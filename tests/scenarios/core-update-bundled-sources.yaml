@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축 곱(도메인 4 × 설치 2 × 디스크 2 × 의존 4 × 선택 7 × 적용 모드 3 × 소스 5 …)은 수천 조합이라 개별 docblock 으로 전개하지 않는다. 각 축은 데이터 프로바이더(적용 모드 3종, 선택 4종, 잘못된 선택 3종, zip 접두사 2종, 옵션 3종)와 축별 대표 케이스로 검증하고, 후속 효과(effects)는 전부 테스트 docblock 에 매핑한다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#771 축 곱(도메인 4 × 설치 2 × 디스크 2 × 의존 4 × 선택 7 × 적용 모드 3 × 소스 5 …)은 수천 조합이라 개별 docblock 으로 전개하지 않는다. 각 축은 데이터 프로바이더(적용 모드 3종, 선택 4종, 잘못된 선택 3종, zip 접두사 2종, 옵션 3종)와 축별 대표 케이스로 검증하고, 후속 효과(effects)는 전부 테스트 docblock 에 매핑한다.
 
 feature: core_update_bundled_sources
 

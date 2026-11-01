@@ -12,7 +12,7 @@ use ZipArchive;
  *
  * 부트스트랩은 압축을 풀 대상 디렉토리를 `__DIR__` 로 잡고, 응답을 `exit` 로 끝낸다. 그래서
  * 테스트 프로세스 안에서 그대로 부를 수 없다 — 임시 디렉토리에 사본을 두고 하네스
- * (`stubs/zip_bootstrap_probe.php`)로 띄운다. 이 방식은 「대상 디렉토리 = 파일이 놓인
+ * (`tests/Unit/Installer/stubs/zip_bootstrap_probe.php`)로 띄운다. 이 방식은 「대상 디렉토리 = 파일이 놓인
  * 디렉토리」라는 계약 자체를 함께 재는 이점이 있다.
  *
  * ## 무엇이 걸려 있는가

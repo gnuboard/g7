@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 강제 꺼짐 + 비상 계정 2단계 요구)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 강제 꺼짐 + 비상 계정 2단계 요구)이 대부분이라 명목상이다.
 feature: sso_definitions
 description: |
   SSO 선언 — 알림 정의 7종(모양, 훅, 본문 자리, 치환 값), 활동 로그 문구와 기록, 권한 6종과 라우트 권한, 발행 훅 설명 3로케일.

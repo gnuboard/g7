@@ -112,7 +112,7 @@ if (! $ownershipLocked && $currentStep === 3) {
     // **영구 저장**되고, 오리진 축은 설정이 요청보다 권위이므로(`AssetUrl::absolute()`)
     // https 페이지에 `http://` 이미지가 실려 브라우저가 혼합 콘텐츠로 조용히 차단한다.
     // 그 실패는 그 독블록이 이름을 붙여 막으려던 바로 그것이다. 형제 둘(`session.php`
-    // ·`api/check-configuration.php`)이 이미 이 판정을 쓴다 — 값을 영구화하는 여기만
+    // ·`public/install/api/check-configuration.php`)이 이미 이 판정을 쓴다 — 값을 영구화하는 여기만
     // 안 쓰고 있었다 (12차 G3 라운드 A12-3).
     // 호스트는 `Host` 헤더가 없으면(HTTP/1.0 클라이언트·일부 프록시) `SERVER_NAME` 으로 떨어진다
     // — 가드 없이 읽으면 경고와 함께 빈 호스트가 `APP_URL=http://` 로 `.env` 에 영구 저장된다 (16차 G3 D-8).

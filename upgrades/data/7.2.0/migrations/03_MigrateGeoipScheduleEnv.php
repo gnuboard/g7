@@ -123,7 +123,7 @@ final class MigrateGeoipScheduleEnv implements DataMigration
             return null;
         }
 
-        foreach (preg_split('/\R/', (string) File::get($path)) ?: [] as $line) {
+        foreach (preg_split('/\r\n|\r|\n/', (string) File::get($path)) ?: [] as $line) {
             if (preg_match('/^\s*(?:export\s+)?'.preg_quote($name, '/').'\s*=\s*(.*)$/', $line, $m)) {
                 $raw = trim(preg_replace('/\s+#.*$/', '', $m[1]) ?? '');
                 $raw = trim($raw, "\"'");

@@ -376,7 +376,7 @@ class InstallerViewAccessibilityContractTest extends TestCase
     /**
      * 라이브 리전은 **한 층만** 둔다.
      *
-     * 화면(`views/*.php` · `includes/functions.php`)이 결과 영역을 `role="status"
+     * 화면(`views/*.php` · `public/install/includes/functions.php`)이 결과 영역을 `role="status"
      * aria-live="polite"` 로 선언하고, JS 가 그 안을 갈아 끼운다. 그 안쪽 조각이 다시
      * 리전을 선언하면 중첩이고, 화면 판독기 구현에 따라 **중복 낭독** 또는 **안쪽 역할
      * 무시**로 갈린다 — 어느 쪽이든 의도한 안내가 아니다.

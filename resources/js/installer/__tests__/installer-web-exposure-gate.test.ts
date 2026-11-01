@@ -1442,7 +1442,7 @@ describe('소스 계약 — 게이트가 조용히 열리는 형태를 금지한
    * 최종 상태로 읽힌다. 해제(`aria-busy = false`)는 판정부가 하므로 이 축은 렌더 쪽에만 있다.
    *
    * 그리고 이 자리는 **자기 라이브 리전을 선언하지 않는다.** 조각이 들어가는 바깥 영역
-   * (`views/2-requirements.php` 의 `#requirements-result`)이 이미 `role="status"
+   * (`public/install/views/2-requirements.php` 의 `#requirements-result`)이 이미 `role="status"
    * aria-live="polite"` 이고, `aria-atomic` 기본값이 false 라 그 영역이 **변경된 subtree 만**
    * 낭독한다 — 즉 이 카드의 비동기 갱신도 바깥이 읽는다. 안쪽에 한 번 더 선언하면
    * polite 안의 polite 가 되어 화면 판독기 구현에 따라 중복 낭독 또는 안쪽 무시로 갈린다.

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: IdP-initiated 와 SP 발 로그아웃)이 대부분이라 명목상이다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: IdP-initiated 와 SP 발 로그아웃)이 대부분이라 명목상이다.
 feature: sso_oidc_subject_claim
 description: |
   OIDC subject 클레임 선택(W31) — sub 기본, oid, 지정 클레임, 고른 클레임이 없으면 거절.

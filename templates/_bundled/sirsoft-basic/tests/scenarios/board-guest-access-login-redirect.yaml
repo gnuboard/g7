@@ -20,6 +20,9 @@ description: |
 #   redirect_preserves_query_string effect 로 핸들러 단위테스트가 with/without 양쪽을 실측한다.
 axes:
   entry_point: [board_list_401, board_show_401, secret_post_login_button]   # 진입 지점 3종
+  # 원경로 query 유무. 핸들러 단위테스트가 진입 지점마다 with/without 양쪽을 재는 교차 묶음
+  # (redirectToLoginWithReturn.test.ts 의 「진입 지점 × query 유무」)을 두고 있어 축으로 올린다.
+  has_query: [without_query, with_query]
 
 effects:
   - redirect_preserves_pathname            # /login?redirect=<pathname>

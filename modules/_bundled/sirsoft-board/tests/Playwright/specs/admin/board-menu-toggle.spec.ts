@@ -74,7 +74,7 @@ test.describe.skip('게시판 생성/수정 — 관리자 메뉴 표시 토글 (
     ).toHaveCount(0, { timeout: 10_000 });
   });
 
-  // @scenario mode=update, toggle=off, preexisting=yes
+  // @scenario mode=update, toggle=off
   // @effects update_on_to_off_removes_menu, form_data_returns_current_menu_state_as_toggle_initial
   test('메뉴 등록 게시판을 수정 폼에서 토글 끄고 저장하면 메뉴에서 제거된다', async ({
     page,

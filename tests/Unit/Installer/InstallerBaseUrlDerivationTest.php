@@ -844,7 +844,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * 이름을 붙여 막으려던 바로 그것이다.
      *
      * 같은 저장소에 프록시를 아는 `installerRequestIsHttps()` 가 이미 있고 형제 둘
-     * (`session.php` · `api/check-configuration.php`)이 쓴다. 값을 영구화하는 이 지점만
+     * (`session.php` · `public/install/api/check-configuration.php`)이 쓴다. 값을 영구화하는 이 지점만
      * 안 쓰고 있었다 — 판정이 갈리면 같은 요청을 두 곳이 다르게 읽는다 (12차 G3 라운드
      * A12-3, 제품 결정 「같은 저장소의 공용 판정으로 통일」).
      *

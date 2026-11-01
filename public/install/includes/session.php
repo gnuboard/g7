@@ -106,7 +106,7 @@ if (session_status() === PHP_SESSION_NONE) {
  * 실제 방어는 `installerCrossOriginRejection()` 의 Origin/Referer 검사이며, 상태 변경
  * 엔드포인트가 그 한 판정을 공유한다. **그 엔드포인트 목록은 여기에 적지 않는다** —
  * 계약 검사(`InstallerEntryGateWiringTest`)가 목록과 역방향 도출을 함께 소유하고, 여기
- * 열거는 파일이 늘어도 따라오지 않아 이미 한 차례 낡아 있었다(`api/run-task.php` 가 그
+ * 열거는 파일이 늘어도 따라오지 않아 이미 한 차례 낡아 있었다(`public/install/api/run-task.php` 가 그
  * 판정을 부르게 된 뒤에도 다섯으로 남아 있었다). 죽은 헬퍼를 남겨 두면 다음 라운드가
  * 다시 「방어가 있다」고 읽는다.
  */

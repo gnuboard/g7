@@ -1177,7 +1177,7 @@ class ReportSyncListener implements HookListenerInterface
 }
 ```
 
-객체 형식(`{"vendor-sample_shop": "주문 알림 탭"}`)도 받으며 키를 식별자로 씁니다. 정적 검사 `extension-undeclared-extension-reference` 는
+객체 형식(`{"vendor-sample_shop": "주문 알림 탭"}`)도 받으며 키를 식별자로 씁니다. 정적 검사는
 `dependencies` 에도 `integrations` 에도 없는 확장 참조를 오류로 봅니다.
 
 #### 3. 훅 계약 (Hook Contract)
@@ -1287,7 +1287,7 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 - 브라우저에서는 `G7Core.stateContracts.get(name)` · `list()` · `ownerOf(name)` 로 읽습니다(읽기 전용).
 - 코어의 `plugins`·`modules` 저장소에는 **자기 식별자 하위만** 씁니다(`plugins.{내 식별자}`). 통째로 다시 쓰면 그 사이 다른 확장이 바꾼
   값을 되돌립니다.
-- 정적 검사 `state-contract-write-ownership` 이 남의 계약 키에 허용 없이 쓰는 레이아웃을 막습니다. 남의 화면에 끼우는 조각의 전역 키
+- 정적 검사가 남의 계약 키에 허용 없이 쓰는 레이아웃을 막습니다. 남의 화면에 끼우는 조각의 전역 키
   규칙은 [레이아웃 확장 — 조각의 전역 상태 키 접두 규칙](layout-extensions.md#조각의-전역-상태-키-접두-규칙)입니다.
 
 ### 코어 비공개 내부를 쓰지 않는다
@@ -1303,7 +1303,7 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 | `history.pushState = …` 로 화면 이동 엿보기 | 레이아웃 조각, `G7Core.state.subscribe()` |
 | 주소 문자열 정규식(`/^\/shop\/…/`)으로 화면 판정 | 상태 계약(예: 기본 템플릿 `_global.shopBase`) |
 
-정적 검사 `extension-private-core-internals` 가 번들 확장의 `resources/js` 와 템플릿 `src` 에서 위 패턴을 막습니다. 템플릿 자기
+정적 검사가 번들 확장의 `resources/js` 와 템플릿 `src` 에서 위 패턴을 막습니다. 템플릿 자기
 컴포넌트가 원본을 호출하는 래퍼처럼 정당한 예외는 같은 줄 또는 바로 위 주석 줄에
 `audit:allow extension-private-core-internals reason: <사유>` 를 남깁니다.
 

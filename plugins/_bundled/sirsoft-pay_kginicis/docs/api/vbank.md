@@ -43,6 +43,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- |
 | url | string | `https://example.com/plugins/sirsoft-pay_kg…` | PC 웹용 가상계좌 입금통보(NOTI) 수신 콜백 URL(`/plugins/sirsoft-pay_kginicis/payment/vbank-notify`)의 절대 주소. 사이트 주소(`APP_URL`) 기준이며 관리자가 접속한 주소와 무관하다. 운영자가 이 값을 KG 이니시스 가맹점 설정에 입금통보 URL로 등록하면, 구매자가 가상계좌에 실제 입금했을 때 KG 이니시스가 이 주소로 통보한다. |
 | mobile_url | string | `https://example.com/plugins/sirsoft-pay_kg…` | 모바일용 가상계좌 입금통보 수신 콜백 URL(`/plugins/sirsoft-pay_kginicis/payment/mobile/vbank-notify`)의 절대 주소. `url` 과 같이 사이트 주소(`APP_URL`) 기준이다. |
+| abilities | object | `{"can_create_cbt_test_product":true}` | 현재 관리자가 설정 화면에서 할 수 있는 작업의 불리언 맵. `can_create_cbt_test_product` 는 상품 등록 권한(`sirsoft-ecommerce.products.create`) 보유 여부이며, [CBT 테스트 상품 만들기] 버튼을 잠그는 근거다. 그 버튼이 부르는 `POST /admin/cbt-test-product` 와 같은 권한으로 판정한다. |
 
 **응답 예시**
 

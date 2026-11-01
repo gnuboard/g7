@@ -4,7 +4,7 @@
  * 저장(보안 탭 몫만)·교차 검증 422(만료 기간 30 · 사전 안내 30)·대상 건수 배지·「대상 보기」 명단 창·「지금 실행」 확인 창과
  * 접수(202)를 실제 브라우저로 지난다. 사이트 보안 설정을 바꾸므로 fixture 가 스냅샷을 떠 두고 afterAll 에서 되돌린다(serial).
  *
- * // @scenario surface=security_tab,run_modal | expiry=on,off | stage=notice
+ * // 축 요약(마커 아님 — 평문): surface=security_tab, run_modal / expiry=on, off / stage=notice
  * // @effects policy_checkboxes_are_explicitly_bound, conditional_fields_follow_their_toggle, target_rows_visible_when_off_with_permission_gated_view, run_modal_shows_total_and_this_run
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

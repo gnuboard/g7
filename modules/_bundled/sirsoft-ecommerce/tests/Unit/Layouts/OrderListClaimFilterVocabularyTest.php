@@ -26,7 +26,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * @scenario claim_axis=type_status
  *
- * @effects order_list_claim_filter_vocabulary_matches_server_gate
+ * 효과 요약(마커 아님 — 평문): order_list_claim_filter_vocabulary_matches_server_gate
  */
 class OrderListClaimFilterVocabularyTest extends ModuleTestCase
 {
@@ -36,7 +36,11 @@ class OrderListClaimFilterVocabularyTest extends ModuleTestCase
     /**
      * 유형별 칩 어휘가 서버 Enum 과 정확히 일치합니다. (부분집합도 초과집합도 아님)
      *
-     * @return void
+     * @scenario claim_axis=type_status
+     *
+     * @effects order_list_claim_filter_vocabulary_matches_server_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_filter_chip_vocabulary_matches_server_enums(): void
     {
@@ -73,7 +77,11 @@ class OrderListClaimFilterVocabularyTest extends ModuleTestCase
      * 도달 불가" 가 이 축에서 그대로 재현된다. 그래서 `OrderListRequest` 의 규칙을 파싱해
      * 그것을 단일 출처로 쓴다.
      *
-     * @return void
+     * @scenario claim_axis=presence
+     *
+     * @effects order_list_claim_filter_vocabulary_matches_server_gate
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_presence_chip_vocabulary_matches_request_rule(): void
     {

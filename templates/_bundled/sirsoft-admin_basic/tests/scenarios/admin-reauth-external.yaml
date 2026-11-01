@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축마다 붙는 화면이 다르다 — return(with_token·without_token)·mode 는 자기 정보 수정,
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축마다 붙는 화면이 다르다 — return(with_token·without_token)·mode 는 자기 정보 수정,
 # return(with_token_app_key·token_only·reauth_only)·token·close 는 설정 화면 init 과 앱 키 창, redirect_url 은 외부 수단 응답에만 있다.
 # 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
 

@@ -87,7 +87,7 @@ const G7_SETUP_STREAM_CHUNK = 262144;
  * 맨 마지막에 쓰는 루트 파일 — 이 파일 자신을 브라우저에서 사라지게 만드는 것들.
  *
  * 루트 `.htaccess` 는 모든 요청을 `public/` 으로 위임하고, 루트 `index.php` 는 그 위임의
- * 도착점이다. 둘 중 하나라도 먼저 놓이면 `/g7-setup.php` 가 `public/g7-setup.php` 로
+ * 도착점이다. 둘 중 하나라도 먼저 놓이면 `/g7-setup.php` 가 `public/` 아래의 `g7-setup.php` 로
  * 해석되어 404 가 되고 재개 호출이 통째로 끊긴다.
  */
 const G7_SETUP_DEFERRED_ENTRIES = ['.htaccess', 'index.php', 'web.config'];

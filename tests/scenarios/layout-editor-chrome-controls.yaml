@@ -85,6 +85,15 @@ effects:
   - overlay_affordances_outside_when_box_lt_44_no_overlap
   - insertion_affordances_cross_layout_when_box_lt_44_no_overlap_no_clip
   - palette_card_shows_react_component_tag_badge
+  # 속성 모달 끌기, 크기 입력, 이미지 관리, 초기화, 리사이즈, 미저장 편집분 보존 (브라우저)
+  - modal_draggable
+  - dimension_free_input
+  - image_modal_open
+  - reset_reverts
+  - tree_dirty_dot
+  - resize_px_change
+  - edit_preserved_on_route_switch
+  - unload_warning
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useDevicePreview.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/utils/overlayGeometry.affordancePlacement.test.ts
@@ -96,6 +105,7 @@ test_files:
   - tests/Feature/Api/Admin/LayoutControllerTest.php
   - tests/Playwright/specs/layout-editor/chrome-controls.spec.ts
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-route-sync.spec.ts
+  - tests/Playwright/specs/layout-editor/s6-2-followup.spec.ts
 notes:
   - Footer.responsive.test.tsx 는 편집 가능 템플릿의 G7 표준 responsive 의무(viewport 미디어쿼리 금지) 회귀 가드 — preview_device 축의 디바이스 전환이 CSS 미디어쿼리가 아닌 useResponsive 로 반영됨을 컴포넌트 레벨에서 검증.
   - overlayGeometry.affordancePlacement.test.ts 가 selected_box_size × affordance_kind cross 의 핵심 판정(resolveAffordancePlacement)을 단위로 커버. affordance_kind=insertion_cross 는 resolveInsertionCrossOffsets(박스 중심 십자 배치) 단위 + 2×2 극단 대각 비겹침을 검증.

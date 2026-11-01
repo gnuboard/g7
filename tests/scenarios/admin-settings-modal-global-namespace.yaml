@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   축(모달 × 상태 접점)의 조합마다 테스트를 두지 않는다 — 두 모달은 같은 규율("상태는 한
 #   네임스페이스에 통째로")을 지키는지가 커버리지 단위이고, 접점마다 한 테스트가 그것을 본다.
 #   effects 축은 면제하지 않는다.
@@ -50,6 +50,7 @@ effects:
   - notification_template_subject_and_body_set_whole_objects
   - notification_template_recipients_replace_the_whole_array
   - notification_template_preview_reads_the_namespace
+  - notification_template_preview_follows_the_channel_editor
   - notification_template_save_refetches_and_clears_the_namespace
   - notification_template_role_dropdown_seeds_selected_values
   - notification_template_users_dropdown_seeds_selected_values

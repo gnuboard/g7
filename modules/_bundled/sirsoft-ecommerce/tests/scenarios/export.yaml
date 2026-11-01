@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#787 |
 #   축은 서로 독립인 판정 축(유형·범위·행 단위·권한·관리 동작)이라 곱집합 전부가 의미 있는 조합이 아니다.
 #   각 테스트가 자기 축 값을 @scenario 로 적고, effects ↔ 테스트가 1:1 로 대응한다.
 #   화면(내보내기 창·내보내기 관리)은 Vitest(핸들러)와 Playwright 사양이 같은 매니페스트의 화면 effects 를 맡는다.

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 코드 상태 × 응답 형태 × 경로를 곱하면 코드가 무효인 조합은 응답 형태 축에 도달하지
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 코드 상태 × 응답 형태 × 경로를 곱하면 코드가 무효인 조합은 응답 형태 축에 도달하지
 # 않아 명목상이다. 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
 
 feature: 로그인 인계 (외부 인증 → 로그인 화면)
@@ -18,6 +18,8 @@ axes:
   status: [active, blocked]
   header: [none, x_cart_key, global_headers]
   auth_type: [user, admin]
+  # 아래 축은 시험별 입력 변종이다 — test_files 의 @scenario 가 쓰는 축이며 조합 곱 대상이 아니다
+  action: [login, loginHandoff]
 
 effects:
   - handoff_issues_token

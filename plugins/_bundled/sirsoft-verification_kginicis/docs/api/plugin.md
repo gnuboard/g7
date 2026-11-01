@@ -96,7 +96,11 @@ Location: https://api.example.com/plugins/sirsoft-verification_kginicis/plugin/i
 
 **요청 파라미터**
 
-_요청 파라미터 없음._
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| verification_token | query | string | 아니오 | — | 본인인증 성공 토큰. callback 이 성공 시에만 붙여 보내며(`InicisCallbackOutcome::toBridgeQuery()`), 데스크톱은 부모창 postMessage 로, 모바일은 복귀 주소의 query 로 그대로 전달합니다. 없으면 payload 에 빈 문자열(`""`) |
+| challenge_id | query | string | 아니오 | — | challenge 식별자 |
+| identity_error | query | string | 아니오 | — | 본인인증 실패 코드. callback 이 실패 시에만 붙여 보내며 값은 callback 절의 에러 응답 표와 같습니다. `verification_token` 이 없을 때만 모바일 복귀 주소의 query 로 전달합니다. 없으면 payload 에 빈 문자열(`""`) |
 
 **요청 예시**
 

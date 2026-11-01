@@ -237,5 +237,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 `balance_low_notify_cooldown` 이 정합니다(설정 화면에는 노출되지 않습니다).
 
 알림 본문의 변수는 `BalanceLowNotificationDataListener` 가 자기 훅
-(`sirsoft-message_bizppurio.notification.extract_data`)으로 채웁니다.
+(`sirsoft-message_bizppurio.notification.extract_data`)으로 채웁니다. 설정 화면 링크(`settings_url`)와
+사이트 주소(`site_url`)는 사이트 주소(`APP_URL`) 기준으로 만들어 하위 폴더 설치에서도 설치 경로가 붙고,
+`site_url` 은 끝 슬래시 없이 나갑니다.
 <!-- @intent END -->

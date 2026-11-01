@@ -201,6 +201,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- |
 | status | string | `recorded` \| `ignored` | 닫힘 보고 처리 결과. `recorded` = 주문을 `USER_CANCEL` 로 실패 처리하고 취소 이력을 남김. `ignored` = 결제 성공 콜백과의 경쟁 등으로 처리하지 않고 무시. |
 | reason | string | `order_not_payable` \| `payment_already_paid` | `status: ignored` 일 때만 포함되는 무시 사유. 주문이 이미 결제 가능 상태가 아니거나(`order_not_payable`), 결제가 이미 완료됨(`payment_already_paid`). |
+| recorded | boolean | `false` | 클레임 추가결제 결제번호(`CP` 채번)로 보고가 들어왔을 때만 포함되며 값은 항상 `false`. 기록할 주문 결제 이력이 없어 보고를 무시했다는 뜻이다. 이 응답에는 `status` 가 없고 `reason` 은 `claim_payment` 다. |
 
 **응답 예시**
 
@@ -459,6 +460,7 @@ Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=202607
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -538,6 +540,7 @@ Location: https://example.com/shop/checkout?error=mid_mismatch&orderId=20260714-
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -630,6 +633,7 @@ Location: https://example.com/shop/checkout?error=cbt_failed&orderId=20260714-12
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -726,7 +730,7 @@ OK
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | KG 이니시스 공식 발송 IP 화이트리스트에 없는 IP 에서 요청한 경우 (로컬·테스트 환경 제외) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1179,6 +1183,7 @@ Location: https://example.com/shop/checkout?error=req_url_invalid&orderId=202607
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1263,6 +1268,7 @@ Location: https://example.com/shop/checkout?error=amount_mismatch&orderId=202607
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 302 | Found (검증 실패) | 요청 파라미터가 검증 규칙을 위반한 경우 — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 (`Accept: application/json` 요청도 같다) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1367,7 +1373,7 @@ OK
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | KG 이니시스 공식 발송 IP 화이트리스트에 없는 IP 에서 요청한 경우 (로컬·테스트 환경 제외) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -1486,7 +1492,7 @@ OK
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | KG 이니시스 공식 발송 IP 화이트리스트에 없는 IP 에서 요청한 경우 (로컬·테스트 환경 제외) |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 

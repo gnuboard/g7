@@ -7,11 +7,11 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 이 문서는 Templates 엔드포인트 레퍼런스입니다 (readiness 1건은 실측 @generated, 라이프사이클 13건은 코드 사양 기반 수기 작성)
+1. 이 문서는 Templates 엔드포인트 레퍼런스입니다 (readiness 1건과 라이프사이클 13건 모두 @generated 블록. 라이프사이클 항목의 설명과 예시는 코드 사양 기반으로 사람이 채움)
 2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시 + 응답 필드 표 + 응답 예시(envelope)
 3. 알림 템플릿 라이프사이클: 등록(draft) → 검수 신청(requested) → 승인(approved) 후 발송 활성화 — 발송 판정은 DB 가 유일한 근거
 4. kapi(카카오 관리 API) 실패는 422 + errors.bizppurio_message(사유 원문)·errors.result_code / 서버 연결 실패는 연결 실패 안내 422 / 상태 전이 위반도 422
-5. 갱신: 코드 변경 후 이 문서를 수기 동기화 (라이프사이클 항목은 kapi 자격증명 없이 실측 불가)
+5. 갱신: 코드 변경 후 php artisan api:docgen 재실행. 사람이 채운 칸은 보존되며, 라이프사이클 항목은 kapi 자격증명 없이 실측 불가라 사실이 바뀌면 그 칸을 직접 고친다
 ```
 
 ---
@@ -80,8 +80,8 @@ HTTP/1.1 200
 
 ## 알림 템플릿 라이프사이클
 
-> 아래 13개 엔드포인트는 kapi(카카오 관리 API) 자격증명 없이는 실측할 수 없어 `api:docgen` 실측 블록 대신
-> 코드 사양(컨트롤러 직렬화·FormRequest 검증·서비스 상태 전이) 기반으로 수기 작성했다. 응답 예시값은 합리적 예시다.
+> 아래 13개 엔드포인트도 `api:docgen` 생성 블록 안에 있다. kapi(카카오 관리 API) 자격증명 없이는 실측할 수 없어 표의 설명과
+> 요청 예시, 응답 예시를 코드 사양(컨트롤러 직렬화, FormRequest 검증, 서비스 상태 전이) 기반으로 사람이 채웠고, 재생성은 그 값을 보존한다. 응답 예시값은 합리적 예시다.
 
 시스템 등록(**draft**) → 검수 신청(**requested**) → 승인(**approved**) 후 알림톡 발송이 활성화된다.
 발송 판정은 DB(`bizppurio_templates`)가 유일한 근거이며(실시간 조회 폐지), 카카오와의 상태 정합은
@@ -121,7 +121,7 @@ kapi 실패 422 응답 예시:
 
 
 ### GET /api/plugins/sirsoft-message_bizppurio/admin/templates
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.index -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.index`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@index`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.view`
@@ -144,35 +144,35 @@ Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
 ```
 
-**응답 필드** (`data.templates[]` — 목록 행. 대형 JSON(content 등)은 제외되고 존재 여부(has_content)만 실림)
+**응답 필드** (`data` 내부)
 
-| 필드 | 타입 | 용도/설명 |
-| --- | --- | --- |
-| id | integer | 템플릿 PK |
-| notification_type | string | 코어 알림 정의 type (`notification_definitions.type`) |
-| definition_name | object\|null | 조인된 알림 정의 다국어 이름 (예: `{"ko": "...", "en": "..."}`) |
-| definition_variables | array | 알림 정의가 제공하는 치환 변수 목록 |
-| definition_extension_type | string\|null | 알림 정의 소유 확장 유형 (`core`/`module`/`plugin`) |
-| definition_extension_identifier | string\|null | 알림 정의 소유 확장 식별자 |
-| alimtalk_enabled | boolean | 알림톡 사용 여부 |
-| template_code | string\|null | 자체 채번된 카카오 템플릿 코드 (검수 신청 전이면 null) |
-| status | string | 상태 (status 어휘 참조) |
-| has_content | boolean | 알림톡 content(카카오 등록 페이로드) 작성 여부 |
-| requested_at | string\|null | 검수 신청 시각 (ISO 8601) |
-| approved_at | string\|null | 승인 시각 (ISO 8601) |
-| last_synced_at | string\|null | 마지막 카카오 동기화 시각 (ISO 8601) |
-| fallback_sms_enabled | boolean | 알림톡 실패 시 SMS 대체발송 여부 |
-| sms_only | boolean | SMS 단독 발송 여부 (알림톡 미사용) |
-| is_active | boolean | 발송 활성 여부 |
+_단건 응답: `data` 객체의 필드._
 
-**응답 필드** (`data.pagination`)
-
-| 필드 | 타입 | 용도/설명 |
-| --- | --- | --- |
-| total | integer | 총 건수 |
-| last_page | integer | 마지막 페이지 번호 |
-| current_page | integer | 현재 페이지 번호 |
-| per_page | integer | 페이지 크기 |
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| templates | array | `[{"id":12,"notification_type":"welcome","definition_name"…` | 템플릿 목록 행 배열. 대형 JSON(`content` 등)은 제외되고 존재 여부(`has_content`)만 실린다 |
+| pagination | object | `{"total":8,"last_page":1,"has_more_pages":false,"current_…` | 페이지 메타 |
+| templates[].id | integer | `3` | 템플릿 PK |
+| templates[].notification_type | string | `order_completed` | 코어 알림 정의 type (`notification_definitions.type`) |
+| templates[].definition_name | object\|null | `{"ko":"주문 완료","en":"Order completed"}` | 조인된 알림 정의 다국어 이름 (예: `{"ko": "...", "en": "..."}`) |
+| templates[].definition_variables | array | `["user_name","order_id"]` | 알림 정의가 제공하는 치환 변수 목록 |
+| templates[].definition_extension_type | string\|null | `module` | 알림 정의 소유 확장 유형 (`core`/`module`/`plugin`) |
+| templates[].definition_extension_identifier | string\|null | `sirsoft-ecommerce` | 알림 정의 소유 확장 식별자 |
+| templates[].alimtalk_enabled | boolean | `true` | 알림톡 사용 여부 |
+| templates[].template_code | string\|null | `g7_1a2b3c4d_1` | 자체 채번된 카카오 템플릿 코드 (검수 신청 전이면 null) |
+| templates[].status | string | `approved` | 상태 (status 어휘 참조) |
+| templates[].has_content | boolean | `true` | 알림톡 content(카카오 등록 페이로드) 작성 여부 |
+| templates[].requested_at | string\|null | `2026-08-10T09:12:00+09:00` | 검수 신청 시각 (ISO 8601) |
+| templates[].approved_at | string\|null | `2026-08-12T14:30:00+09:00` | 승인 시각 (ISO 8601) |
+| templates[].last_synced_at | string\|null | `2026-08-19T03:00:00+09:00` | 마지막 카카오 동기화 시각 (ISO 8601) |
+| templates[].fallback_sms_enabled | boolean | `true` | 알림톡 실패 시 SMS 대체발송 여부 |
+| templates[].sms_only | boolean | `false` | SMS 단독 발송 여부 (알림톡 미사용) |
+| templates[].is_active | boolean | `true` | 발송 활성 여부 |
+| pagination.total | integer | `1` | 총 건수 |
+| pagination.last_page | integer | `1` | 마지막 페이지 번호 |
+| pagination.has_more_pages | boolean | `false` | 다음 페이지가 있는지 |
+| pagination.current_page | integer | `1` | 현재 페이지 번호 |
+| pagination.per_page | integer | `20` | 페이지 크기 |
 
 **응답 예시**
 
@@ -204,6 +204,7 @@ Authorization: Bearer {YOUR_TOKEN}
         "pagination": {
             "total": 1,
             "last_page": 1,
+            "has_more_pages": false,
             "current_page": 1,
             "per_page": 20
         }
@@ -219,6 +220,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 403 | Forbidden | 요구 권한(`sirsoft-message_bizppurio.messaging.view`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 |
 
+<!-- @generated:end -->
+
 **설명**
 
 템플릿 관리 화면의 DB 목록 조회다. 알림 정의(`notification_definitions`)를 조인해 라벨(definition_name)과
@@ -227,7 +230,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 
 ### GET /api/plugins/sirsoft-message_bizppurio/admin/templates/map
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.map -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.map`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@map`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.view`
@@ -245,24 +248,31 @@ Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
 ```
 
-**응답 필드** (`data.templates` — 키는 `notification_type`, 값은 요약 객체)
+**응답 필드** (`data` 내부)
 
-| 필드 | 타입 | 용도/설명 |
-| --- | --- | --- |
-| id | integer | 템플릿 PK |
-| notification_type | string | 코어 알림 정의 type |
-| alimtalk_enabled | boolean | 알림톡 사용 여부 |
-| template_code | string\|null | 카카오 템플릿 코드 (검수 신청 전이면 null) |
-| status | string | 상태 (status 어휘 참조) |
-| has_content | boolean | 알림톡 content 작성 여부 |
-| requested_at | string\|null | 검수 신청 시각 (ISO 8601) |
-| approved_at | string\|null | 승인 시각 (ISO 8601) |
-| last_synced_at | string\|null | 마지막 동기화 시각 (ISO 8601) |
-| inspection_detail | array\|null | 반려 사유(comments) 등 검수 상세 |
-| fallback_sms_enabled | boolean | SMS 대체발송 여부 |
-| sms_body | object\|null | 대체/단독 SMS 본문의 로케일 맵 (`{"ko": "...", "en": "..."}`) |
-| sms_only | boolean | SMS 단독 발송 여부 |
-| is_active | boolean | 발송 활성 여부 |
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| templates | object | `{"annual_privacy_notice":{"id":30,"notification_type":"an…` | `notification_type` 을 키로, 요약 객체를 값으로 하는 맵 |
+| templates.{notification_type}.id | integer | `3` | 템플릿 PK |
+| templates.{notification_type}.notification_type | string | `order_completed` | 코어 알림 정의 type |
+| templates.{notification_type}.alimtalk_enabled | boolean | `true` | 알림톡 사용 여부 |
+| templates.{notification_type}.template_code | string\|null | `g7_1a2b3c4d_1` | 카카오 템플릿 코드 (검수 신청 전이면 null) |
+| templates.{notification_type}.status | string | `approved` | 상태 (status 어휘 참조) |
+| templates.{notification_type}.has_content | boolean | `true` | 알림톡 content 작성 여부 |
+| templates.{notification_type}.requested_at | string\|null | `2026-08-10T09:12:00+09:00` | 검수 신청 시각 (ISO 8601) |
+| templates.{notification_type}.approved_at | string\|null | `2026-08-12T14:30:00+09:00` | 승인 시각 (ISO 8601) |
+| templates.{notification_type}.last_synced_at | string\|null | `2026-08-19T03:00:00+09:00` | 마지막 동기화 시각 (ISO 8601) |
+| templates.{notification_type}.inspection_detail | array\|null | `null` | 반려 사유(comments) 등 검수 상세 |
+| templates.{notification_type}.fallback_sms_enabled | boolean | `true` | SMS 대체발송 여부 |
+| templates.{notification_type}.sms_body | object\|null | `{"ko":"#{user_name}님, 주문이 완료되었습니다.","en":"#{user_name}, your…` | 대체/단독 SMS 본문의 로케일 맵 (`{"ko": "...", "en": "..."}`) |
+| templates.{notification_type}.has_sms_body | boolean | `true` | 어느 로케일이든 SMS 본문이 채워져 있는지 (공백만 있으면 없음). 발송 게이트와 같은 판정이라 화면은 이 값을 쓴다 |
+| templates.{notification_type}.sms_body_preview | string | `#{user_name}님, 주문이 완료되었습니다.` | 요청 언어의 SMS 본문. 비어 있으면 사이트 기본 언어, `en` 순으로 고르고, 모두 없으면 빈 문자열 |
+| templates.{notification_type}.sms_only | boolean | `false` | SMS 단독 발송 여부 |
+| templates.{notification_type}.is_active | boolean | `true` | 발송 활성 여부 |
+| abilities | object | `{"can_manage_messaging":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
+| abilities.can_manage_messaging | boolean | `true` | `sirsoft-message_bizppurio.messaging.manage` 권한 보유 여부. 알림 템플릿 편집 창의 비즈뿌리오 섹션 잠금 근거입니다(7.1.0) |
 
 **응답 예시**
 
@@ -285,9 +295,14 @@ Authorization: Bearer {YOUR_TOKEN}
                 "inspection_detail": null,
                 "fallback_sms_enabled": true,
                 "sms_body": {"ko": "#{user_name}님, 주문이 완료되었습니다.", "en": "#{user_name}, your order is complete."},
+                "has_sms_body": true,
+                "sms_body_preview": "#{user_name}님, 주문이 완료되었습니다.",
                 "sms_only": false,
                 "is_active": true
             }
+        },
+        "abilities": {
+            "can_manage_messaging": true
         }
     }
 }
@@ -300,14 +315,16 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-message_bizppurio.messaging.view`)이 없는 경우 |
 
-**설명** 응답 `data.abilities.can_manage_messaging` 은 알림 템플릿 편집 창의 비즈뿌리오 섹션 잠금 근거입니다(7.1.0).
+<!-- @generated:end -->
+
+**설명**
 
 알림 설정 3면(코어/게시판/이커머스)의 행 하단 UI 가 소비하는 `notification_type` 키 요약 맵이다.
 행 수는 알림 정의 수에 묶인 설정성 데이터라 페이지네이션 없이 전량 내려준다.
 
 
 ### GET /api/plugins/sirsoft-message_bizppurio/admin/templates/{id}
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.show -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.show`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@show`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.view`
@@ -327,27 +344,28 @@ Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
 ```
 
-**응답 필드** (`data.template` — 상세 객체. 변경 계열 엔드포인트들도 동일 형태를 반환한다)
+**응답 필드** (`data` 내부)
 
-| 필드 | 타입 | 용도/설명 |
-| --- | --- | --- |
-| id | integer | 템플릿 PK |
-| notification_type | string | 코어 알림 정의 type |
-| alimtalk_enabled | boolean | 알림톡 사용 여부 |
-| template_code | string\|null | 자체 채번된 카카오 템플릿 코드 |
-| sender_key | string\|null | 검수 신청 시점의 발신프로필 키 스냅샷 |
-| content | object\|null | 카카오 등록 페이로드 (작성중 내용 — kapi add/update 에 그대로 사용) |
-| approved_content | object\|null | 승인 시점에 동결된 content 스냅샷 (발송 SSoT) |
-| status | string | 상태 (status 어휘 참조) |
-| is_approved | boolean | `status === approved` 편의 플래그 |
-| inspection_detail | array\|null | 반려 사유(comments) 등 검수 상세 |
-| requested_at | string\|null | 검수 신청 시각 (ISO 8601) |
-| approved_at | string\|null | 승인 시각 (ISO 8601) |
-| last_synced_at | string\|null | 마지막 동기화 시각 (ISO 8601) |
-| fallback_sms_enabled | boolean | SMS 대체발송 여부 |
-| sms_body | object\|null | 대체/단독 SMS 본문의 로케일 맵 (`{"ko": "...", "en": "..."}`) |
-| sms_only | boolean | SMS 단독 발송 여부 |
-| is_active | boolean | 발송 활성 여부 |
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| template | object | `{"id":3,"notification_type":"order_completed","alimtalk_enab…` | 상세 객체. 변경 계열 엔드포인트들도 같은 형태를 반환한다 |
+| template.id | integer | `3` | 템플릿 PK |
+| template.notification_type | string | `order_completed` | 코어 알림 정의 type |
+| template.alimtalk_enabled | boolean | `true` | 알림톡 사용 여부 |
+| template.template_code | string\|null | `g7_1a2b3c4d_1` | 자체 채번된 카카오 템플릿 코드 |
+| template.sender_key | string\|null | `b4c9...{MASKED}` | 검수 신청 시점의 발신프로필 키 스냅샷 |
+| template.content | object\|null | `{"templateName":"주문 완료 안내","templateMessageType":"BA","templ…` | 카카오 등록 페이로드 (작성중 내용 — kapi add/update 에 그대로 사용) |
+| template.approved_content | object\|null | `{"templateName":"주문 완료 안내","templateMessageType":"BA","templ…` | 승인 시점에 동결된 content 스냅샷 (발송 SSoT) |
+| template.status | string | `approved` | 상태 (status 어휘 참조) |
+| template.is_approved | boolean | `true` | `status === approved` 편의 플래그 |
+| template.inspection_detail | array\|null | `null` | 반려 사유(comments) 등 검수 상세 |
+| template.requested_at | string\|null | `2026-08-10T09:12:00+09:00` | 검수 신청 시각 (ISO 8601) |
+| template.approved_at | string\|null | `2026-08-12T14:30:00+09:00` | 승인 시각 (ISO 8601) |
+| template.last_synced_at | string\|null | `2026-08-19T03:00:00+09:00` | 마지막 동기화 시각 (ISO 8601) |
+| template.fallback_sms_enabled | boolean | `true` | SMS 대체발송 여부 |
+| template.sms_body | object\|null | `{"ko":"#{user_name}님, 주문이 완료되었습니다.","en":"#{user_name}, your…` | 대체/단독 SMS 본문의 로케일 맵 (`{"ko": "...", "en": "..."}`) |
+| template.sms_only | boolean | `false` | SMS 단독 발송 여부 |
+| template.is_active | boolean | `true` | 발송 활성 여부 |
 
 **응답 예시**
 
@@ -405,6 +423,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 403 | Forbidden | 요구 권한(`sirsoft-message_bizppurio.messaging.view`)이 없는 경우 |
 | 404 | Not Found | `{id}` 에 해당하는 템플릿이 없는 경우 |
 
+<!-- @generated:end -->
+
 **설명**
 
 작성 모달·상세 패널이 소비하는 단건 상세다. `content`(작성중)와 `approved_content`(승인 동결 스냅샷)가
@@ -412,7 +432,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 
 ### POST /api/plugins/sirsoft-message_bizppurio/admin/templates
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.store -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.store`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@store`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.manage`
@@ -424,34 +444,40 @@ Authorization: Bearer {YOUR_TOKEN}
 | notification_type | body | string | 예 | max 100 · 알림 정의 존재(exists) · 미등록(unique) | 대상 코어 알림 정의 type (알림 1건당 1행) |
 | alimtalk_enabled | body | boolean | 아니오 | — | 알림톡 사용 여부 |
 | fallback_sms_enabled | body | boolean | 아니오 | — | SMS 대체발송 여부 |
-| sms_body | body | object | 아니오 | nullable · 로케일별 max 2000 | 대체/단독 SMS 본문의 로케일 맵. 키는 시스템 지원 로케일(`app.translatable_locales`), 값은 각 언어 본문 |
 | sms_only | body | boolean | 아니오 | — | SMS 단독 발송 여부 |
 | is_active | body | boolean | 아니오 | — | 발송 활성 여부 |
-| content | body | object | 아니오 | nullable | 카카오 등록 페이로드 (아래 매트릭스). SMS 단독 알림은 content 없이 생성 가능 — 검수 신청 시점에 존재를 재검한다 |
-| draft | body | boolean | 아니오 | — | `true` 면 임시 저장 — 아래 매트릭스의 **필수 조건(필수·조건부 필수·아이템 최소 개수·링크 종류별 필수 칸)만 걷어 내고** 형식·길이 제약은 그대로 건다. 걷어 낸 필수값은 검수 신청(`POST /{id}/request`)이 저장된 content 에 전체 매트릭스를 걸어 422 로 알린다(본문에 draft 를 실어도 완화되지 않는다) |
-
-**content 검증 매트릭스** (`content` 를 보냈을 때만 적용. 서버가 선택 유형과 무관한 필드·빈 값을 검증 전에 제거(prune)하므로 화면은 폼 상태 전체를 그대로 보내도 된다)
-
-| 필드 | 타입 | 필수 | 제약 |
-| --- | --- | --- | --- |
-| content.templateName | string | content 있으면 필수 | max 200 |
-| content.templateMessageType | string | content 있으면 필수 | `BA`(기본형)/`EX`(부가정보형)/`AD`(채널추가형)/`MI`(복합형) |
-| content.templateEmphasizeType | string | content 있으면 필수 | `NONE`/`TEXT`(강조표기)/`IMAGE`(이미지형)/`ITEM_LIST`(아이템리스트) |
-| content.templateContent | string | content 있으면 필수 | max 1000 |
-| content.templatePreviewMessage | string | 아니오 | max 40 |
-| content.categoryCode | string | content 있으면 필수 | max 20 (`GET /admin/alimtalk-templates/categories` 의 코드) |
-| content.securityFlag | boolean | 아니오 | — |
-| content.templateExtra | string | messageType `EX`/`MI` 이면 필수 | 부가정보 |
-| content.templateTitle / templateSubtitle | string | emphasizeType `TEXT` 이면 필수쌍 | 길이 수치 미기재 항목은 kapi 가 최종 게이트 |
-| content.templateHeader | string | 아니오 | max 16 |
-| content.templateImageName / templateImageUrl | string | emphasizeType `IMAGE` 이면 필수쌍 | url max 500 — 업로드 프록시(`POST /admin/templates/image`) 응답값만 기입 |
-| content.templateItem | object | emphasizeType `ITEM_LIST` 이면 필수 | `list` 2~10개 필수 · 각 `title` max 6 · `description` max 23 / `summary.title` max 6 · `summary.description` max 14 |
-| content.templateItemHighlight | object | 아니오 | 썸네일(imageUrl) 없으면 title ≤30·description ≤19, 있으면 ≤21·≤13 / imageUrl max 500 |
-| content.templateRepresentLink | object | 아니오 | linkMo/linkPc/linkAnd/linkIos 각 max 500 |
-| content.buttons | array | 아니오 | max 5 · 각 `name` 필수 max 14 · `linkType` in `WL,AL,DS,BK,MD,AC,BC,BT,P1,P2,P3,TN,MP` |
-| content.quickReplies | array | 아니오 | max 10 · 각 `name` 필수 · `linkType` in `WL,AL,BK,MD,BC,BT` |
-
-버튼·바로연결 항목별 조건부 필수: `WL` → `linkMo` / `AL` → `linkAnd`+`linkIos` 둘 다 / `TN` → `telNumber` / `P1`~`P3` → `pluginId`.
+| sms_body | body | array | 아니오 | nullable · 로케일별 max 2000 | 대체/단독 SMS 본문의 로케일 맵. 키는 시스템 지원 로케일(`app.translatable_locales`), 값은 각 언어 본문 |
+| content | body | array | 아니오 | nullable | 카카오 등록 페이로드 (아래 `content.*` 행). SMS 단독 알림은 content 없이 생성 가능 — 검수 신청 시점에 존재를 재검한다 |
+| draft | body | boolean | 아니오 | — | `true` 면 임시 저장 — 아래 `content.*` 행의 **필수 조건(필수·조건부 필수·아이템 최소 개수·링크 종류별 필수 칸)만 걷어 내고** 형식·길이 제약은 그대로 건다. 걷어 낸 필수값은 검수 신청(`POST /{id}/request`)이 저장된 content 에 전체 규칙을 걸어 422 로 알린다(본문에 draft 를 실어도 완화되지 않는다) |
+| content.templateName | body | string | `content` 있으면 필수 | max 200 | 템플릿명 |
+| content.templateMessageType | body | string | `content` 있으면 필수 | `BA`(기본형), `EX`(부가정보형), `AD`(채널추가형), `MI`(복합형) | 메시지 유형 |
+| content.templateEmphasizeType | body | string | `content` 있으면 필수 | `NONE`, `TEXT`(강조표기), `IMAGE`(이미지형), `ITEM_LIST`(아이템리스트) | 강조 유형 |
+| content.templateContent | body | string | `content` 있으면 필수 | max 1000 | 알림톡 본문 |
+| content.templatePreviewMessage | body | string | 아니오 | max 40 | 미리보기 문구 |
+| content.categoryCode | body | string | `content` 있으면 필수 | max 20 | 카테고리 코드 (`GET /admin/alimtalk-templates/categories` 의 코드) |
+| content.securityFlag | body | boolean | 아니오 | — | 보안 템플릿 여부 |
+| content.templateExtra | body | string | messageType `EX`/`MI` 이면 필수 | — | 부가정보. 메시지 유형이 `EX`, `MI` 가 아니면 서버가 검증 전에 제거한다 |
+| content.templateTitle | body | string | emphasizeType `TEXT` 이면 필수 | — | 강조 타이틀. `templateSubtitle` 과 필수쌍이며, 길이 수치는 미기재 항목이라 kapi 가 최종 게이트다 |
+| content.templateSubtitle | body | string | emphasizeType `TEXT` 이면 필수 | — | 강조 서브타이틀. `templateTitle` 과 필수쌍 |
+| content.templateHeader | body | string | 아니오 | max 16 | 헤더 |
+| content.templateImageName | body | string | emphasizeType `IMAGE` 이면 필수 | — | 이미지 파일명. `templateImageUrl` 과 필수쌍 |
+| content.templateImageUrl | body | string | emphasizeType `IMAGE` 이면 필수 | max 500 | 이미지 URL. 업로드 프록시(`POST /admin/templates/image`) 응답값만 기입한다 |
+| content.templateItem | body | array | emphasizeType `ITEM_LIST` 이면 필수 | — | 아이템 리스트 (`list`, `summary`) |
+| content.templateItem.list | body | array | `templateItem` 있으면 필수 | min 2, max 10 | 아이템 목록. 각 항목의 `title`(필수, max 6), `description`(필수, max 23) |
+| content.templateItem.summary | body | array | 아니오 | — | 요약 (`title`, `description`) |
+| content.templateItem.summary.title | body | string | 아니오 | max 6 | 요약 제목 |
+| content.templateItem.summary.description | body | string | 아니오 | max 14 | 요약 설명 |
+| content.templateItemHighlight | body | array | 아니오 | — | 하이라이트 (`title`, `description`, `imageUrl`). 길이 상한은 썸네일 유무로 갈린다 |
+| content.templateItemHighlight.title | body | string | 아니오 | 썸네일 없으면 max 30, 있으면 max 21 | 하이라이트 타이틀 |
+| content.templateItemHighlight.description | body | string | 아니오 | 썸네일 없으면 max 19, 있으면 max 13 | 하이라이트 설명 |
+| content.templateItemHighlight.imageUrl | body | string | 아니오 | max 500 | 하이라이트 썸네일 이미지 URL |
+| content.templateRepresentLink | body | array | 아니오 | — | 대표 링크 (`linkMo`, `linkPc`, `linkAnd`, `linkIos`) |
+| content.templateRepresentLink.linkMo | body | string | 아니오 | max 500 | 모바일 링크 |
+| content.templateRepresentLink.linkPc | body | string | 아니오 | max 500 | PC 링크 |
+| content.templateRepresentLink.linkAnd | body | string | 아니오 | max 500 | Android 스킴 |
+| content.templateRepresentLink.linkIos | body | string | 아니오 | max 500 | iOS 스킴 |
+| content.buttons | body | array | 아니오 | max 5 | 버튼 목록. 각 항목의 `name`(필수, max 14), `linkType`(필수, `WL`, `AL`, `DS`, `BK`, `MD`, `AC`, `BC`, `BT`, `P1`, `P2`, `P3`, `TN`, `MP`), 링크 칸(`linkMo`, `linkPc`, `linkAnd`, `linkIos` 각 max 500), `telNumber`(max 20), `pluginId`(max 100) |
+| content.quickReplies | body | array | 아니오 | max 10 | 바로연결 목록. 각 항목의 `name`(필수), `linkType`(필수, `WL`, `AL`, `BK`, `MD`, `BC`, `BT`), 링크 칸(`linkMo`, `linkPc`, `linkAnd`, `linkIos` 각 max 500) |
 
 **요청 예시**
 
@@ -480,7 +506,11 @@ Content-Type: application/json
 }
 ```
 
-**응답 필드** (`data.template` — 상세 객체, `GET /admin/templates/{id}` 와 동일)
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| template | object | `{"id":4,"notification_type":"order_completed","alimtalk_enab…` | 상세 객체. 필드 구성은 `GET /admin/templates/{id}` 응답의 `template.*` 행과 같다 |
 
 **응답 예시**
 
@@ -522,16 +552,22 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-message_bizppurio.messaging.manage`)이 없는 경우 |
-| 422 | Unprocessable Entity | 검증 실패 (알림 정의 부재·이미 등록된 notification_type·content 매트릭스 위반 등) |
+| 422 | Unprocessable Entity | 검증 실패 (알림 정의 부재·이미 등록된 notification_type·`content.*` 규칙 위반 등) |
+
+<!-- @generated:end -->
 
 **설명**
 
 템플릿 행을 `status=draft` 로 생성한다. 이 시점에는 kapi 를 호출하지 않는다 — 카카오 등록은
 검수 신청(`POST /admin/templates/{id}/request`) 시점에 수행된다.
 
+`content.*` 행의 규칙은 `content` 를 보냈을 때만 적용된다. 서버가 선택 유형과 무관한 필드·빈 값을 검증 전에 제거(prune)하므로 화면은 폼 상태 전체를 그대로 보내도 된다.
+
+버튼·바로연결 항목별 조건부 필수: `WL` → `linkMo` / `AL` → `linkAnd`+`linkIos` 둘 다 / `TN` → `telNumber` / `P1`~`P3` → `pluginId`.
+
 
 ### PUT /api/plugins/sirsoft-message_bizppurio/admin/templates/{id}
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.update -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.update`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@update`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.manage`
@@ -543,12 +579,39 @@ HTTP/1.1 201
 | id | path | integer | 예 | 숫자만 | 템플릿 PK |
 | alimtalk_enabled | body | boolean | 아니오 | — | 알림톡 사용 여부 |
 | fallback_sms_enabled | body | boolean | 아니오 | — | SMS 대체발송 여부 |
-| sms_body | body | object | 아니오 | nullable · 로케일별 max 2000 | 대체/단독 SMS 본문의 로케일 맵. 키는 시스템 지원 로케일(`app.translatable_locales`), 값은 각 언어 본문 |
 | sms_only | body | boolean | 아니오 | — | SMS 단독 발송 여부 |
 | is_active | body | boolean | 아니오 | — | 발송 활성 여부 |
-| content | body | object | 아니오 | nullable · Store 와 동일 매트릭스 | 카카오 등록 페이로드 |
-
-`notification_type` 은 행 정체성이라 수정 대상이 아니다 — 전달돼도 무시된다.
+| sms_body | body | array | 아니오 | nullable · 로케일별 max 2000 | 대체/단독 SMS 본문의 로케일 맵. 키는 시스템 지원 로케일(`app.translatable_locales`), 값은 각 언어 본문 |
+| content | body | array | 아니오 | nullable, 등록(`POST /admin/templates`)과 같은 `content.*` 규칙 | 카카오 등록 페이로드 |
+| content.templateName | body | string | `content` 있으면 필수 | max 200 | 템플릿명 |
+| content.templateMessageType | body | string | `content` 있으면 필수 | `BA`(기본형), `EX`(부가정보형), `AD`(채널추가형), `MI`(복합형) | 메시지 유형 |
+| content.templateEmphasizeType | body | string | `content` 있으면 필수 | `NONE`, `TEXT`(강조표기), `IMAGE`(이미지형), `ITEM_LIST`(아이템리스트) | 강조 유형 |
+| content.templateContent | body | string | `content` 있으면 필수 | max 1000 | 알림톡 본문 |
+| content.templatePreviewMessage | body | string | 아니오 | max 40 | 미리보기 문구 |
+| content.categoryCode | body | string | `content` 있으면 필수 | max 20 | 카테고리 코드 (`GET /admin/alimtalk-templates/categories` 의 코드) |
+| content.securityFlag | body | boolean | 아니오 | — | 보안 템플릿 여부 |
+| content.templateExtra | body | string | messageType `EX`/`MI` 이면 필수 | — | 부가정보. 메시지 유형이 `EX`, `MI` 가 아니면 서버가 검증 전에 제거한다 |
+| content.templateTitle | body | string | emphasizeType `TEXT` 이면 필수 | — | 강조 타이틀. `templateSubtitle` 과 필수쌍이며, 길이 수치는 미기재 항목이라 kapi 가 최종 게이트다 |
+| content.templateSubtitle | body | string | emphasizeType `TEXT` 이면 필수 | — | 강조 서브타이틀. `templateTitle` 과 필수쌍 |
+| content.templateHeader | body | string | 아니오 | max 16 | 헤더 |
+| content.templateImageName | body | string | emphasizeType `IMAGE` 이면 필수 | — | 이미지 파일명. `templateImageUrl` 과 필수쌍 |
+| content.templateImageUrl | body | string | emphasizeType `IMAGE` 이면 필수 | max 500 | 이미지 URL. 업로드 프록시(`POST /admin/templates/image`) 응답값만 기입한다 |
+| content.templateItem | body | array | emphasizeType `ITEM_LIST` 이면 필수 | — | 아이템 리스트 (`list`, `summary`) |
+| content.templateItem.list | body | array | `templateItem` 있으면 필수 | min 2, max 10 | 아이템 목록. 각 항목의 `title`(필수, max 6), `description`(필수, max 23) |
+| content.templateItem.summary | body | array | 아니오 | — | 요약 (`title`, `description`) |
+| content.templateItem.summary.title | body | string | 아니오 | max 6 | 요약 제목 |
+| content.templateItem.summary.description | body | string | 아니오 | max 14 | 요약 설명 |
+| content.templateItemHighlight | body | array | 아니오 | — | 하이라이트 (`title`, `description`, `imageUrl`). 길이 상한은 썸네일 유무로 갈린다 |
+| content.templateItemHighlight.title | body | string | 아니오 | 썸네일 없으면 max 30, 있으면 max 21 | 하이라이트 타이틀 |
+| content.templateItemHighlight.description | body | string | 아니오 | 썸네일 없으면 max 19, 있으면 max 13 | 하이라이트 설명 |
+| content.templateItemHighlight.imageUrl | body | string | 아니오 | max 500 | 하이라이트 썸네일 이미지 URL |
+| content.templateRepresentLink | body | array | 아니오 | — | 대표 링크 (`linkMo`, `linkPc`, `linkAnd`, `linkIos`) |
+| content.templateRepresentLink.linkMo | body | string | 아니오 | max 500 | 모바일 링크 |
+| content.templateRepresentLink.linkPc | body | string | 아니오 | max 500 | PC 링크 |
+| content.templateRepresentLink.linkAnd | body | string | 아니오 | max 500 | Android 스킴 |
+| content.templateRepresentLink.linkIos | body | string | 아니오 | max 500 | iOS 스킴 |
+| content.buttons | body | array | 아니오 | max 5 | 버튼 목록. 각 항목의 `name`(필수, max 14), `linkType`(필수, `WL`, `AL`, `DS`, `BK`, `MD`, `AC`, `BC`, `BT`, `P1`, `P2`, `P3`, `TN`, `MP`), 링크 칸(`linkMo`, `linkPc`, `linkAnd`, `linkIos` 각 max 500), `telNumber`(max 20), `pluginId`(max 100) |
+| content.quickReplies | body | array | 아니오 | max 10 | 바로연결 목록. 각 항목의 `name`(필수), `linkType`(필수, `WL`, `AL`, `BK`, `MD`, `BC`, `BT`), 링크 칸(`linkMo`, `linkPc`, `linkAnd`, `linkIos` 각 max 500) |
 
 **요청 예시**
 
@@ -570,7 +633,11 @@ Content-Type: application/json
 }
 ```
 
-**응답 필드** (`data.template` — 상세 객체, `GET /admin/templates/{id}` 와 동일)
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| template | object | `{"id":4,"status":"draft","...":"상세 객체 필드 동일"}` | 상세 객체. 필드 구성은 `GET /admin/templates/{id}` 응답의 `template.*` 행과 같다 |
 
 **응답 예시**
 
@@ -593,6 +660,8 @@ Content-Type: application/json
 | 404 | Not Found | `{id}` 에 해당하는 템플릿이 없는 경우 |
 | 422 | Unprocessable Entity | 검증 실패, 또는 content 변경 불가 상태 ("현재 상태(:status)에서는 알림톡 내용을 수정할 수 없습니다. …") |
 
+<!-- @generated:end -->
+
 **설명**
 
 `content` 필드를 **포함한 요청**은 `draft`/`rejected` 상태에서만 허용된다 —
@@ -601,9 +670,13 @@ Content-Type: application/json
 발송 설정 필드(alimtalk_enabled/fallback_sms_enabled/sms_body/sms_only/is_active)는 라이프사이클과
 무관하므로 상태와 관계없이 수정할 수 있다 — 단 그 경우 요청 본문에 `content` 를 싣지 않아야 한다.
 
+`notification_type` 은 행 정체성이라 수정 대상이 아니다 — 전달돼도 무시된다.
+
+본문에 `draft: true` 를 함께 실으면 등록(`POST /admin/templates`)과 같이 `content.*` 의 필수 조건만 걷어 내고 검증한다.
+
 
 ### PUT /api/plugins/sirsoft-message_bizppurio/admin/templates/delivery/{notificationType}
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.delivery -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.delivery`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@upsertDelivery`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.manage`
@@ -613,11 +686,12 @@ Content-Type: application/json
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | notificationType | path | string | 예 | max 100 · 알림 정의 존재(exists) | 코어 알림 정의 type |
+| notification_type | body | string | 서버가 채움 | max 100, 알림 정의 존재(exists) | 클라이언트가 보내지 않습니다. 서버가 경로의 `notificationType` 으로 이 값을 채워 검증합니다 |
 | alimtalk_enabled | body | boolean | 아니오 | — | 알림톡 사용 여부 |
 | fallback_sms_enabled | body | boolean | 아니오 | — | SMS 대체발송 여부 |
-| sms_body | body | object | 아니오 | nullable · 로케일별 max 2000 | 대체/단독 SMS 본문의 로케일 맵. 키는 시스템 지원 로케일(`app.translatable_locales`), 값은 각 언어 본문 |
 | sms_only | body | boolean | 아니오 | — | SMS 단독 발송 여부 |
 | is_active | body | boolean | 아니오 | — | 발송 활성 여부 |
+| sms_body | body | array | 아니오 | nullable · 로케일별 max 2000 | 대체/단독 SMS 본문의 로케일 맵. 키는 시스템 지원 로케일(`app.translatable_locales`), 값은 각 언어 본문 |
 
 **요청 예시**
 
@@ -634,7 +708,11 @@ Content-Type: application/json
 }
 ```
 
-**응답 필드** (`data.template` — 상세 객체, `GET /admin/templates/{id}` 와 동일)
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| template | object | `{"id":4,"notification_type":"order_completed","status":"draf…` | 상세 객체. 필드 구성은 `GET /admin/templates/{id}` 응답의 `template.*` 행과 같다 |
 
 **응답 예시**
 
@@ -655,6 +733,9 @@ Content-Type: application/json
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-message_bizppurio.messaging.manage`)이 없는 경우 |
 | 422 | Unprocessable Entity | `notificationType` 에 해당하는 알림 정의가 없는 경우 등 검증 실패 |
+| 404 | Not Found | 이 경로는 404 를 반환하지 않는다. 알림 정의가 없는 `notificationType` 은 422 로 끝나고, 아직 행이 없는 알림 유형은 `draft` 로 새로 만든다 |
+
+<!-- @generated:end -->
 
 **설명**
 
@@ -664,7 +745,7 @@ Content-Type: application/json
 
 
 ### POST /api/plugins/sirsoft-message_bizppurio/admin/templates/{id}/request
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.request -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.request`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@requestInspection`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.manage`
@@ -675,6 +756,36 @@ Content-Type: application/json
 | --- | --- | --- | --- | --- | --- |
 | id | path | integer | 예 | 숫자만 | 템플릿 PK |
 | comment | body | string | 아니오 | 500자 이내 (앞뒤 공백 제거, 비어 있으면 미전달) | 검수자 전달 의견 — kapi `template/request` 의 comment 로 그대로 실린다. 행에는 저장하지 않는다 |
+| content | body | array | 서버가 채움 | — | 클라이언트가 보내지 않습니다. 서버가 저장된 템플릿의 `content` 로 이 값을 채워(비어 있으면 `null`) 아래 `content.*` 규칙 전체로 검증하며, 임시 저장 완화는 없습니다 |
+| content.templateName | body | string | `content` 있으면 필수 | max 200 | 템플릿명 |
+| content.templateMessageType | body | string | `content` 있으면 필수 | `BA`(기본형), `EX`(부가정보형), `AD`(채널추가형), `MI`(복합형) | 메시지 유형 |
+| content.templateEmphasizeType | body | string | `content` 있으면 필수 | `NONE`, `TEXT`(강조표기), `IMAGE`(이미지형), `ITEM_LIST`(아이템리스트) | 강조 유형 |
+| content.templateContent | body | string | `content` 있으면 필수 | max 1000 | 알림톡 본문 |
+| content.templatePreviewMessage | body | string | 아니오 | max 40 | 미리보기 문구 |
+| content.categoryCode | body | string | `content` 있으면 필수 | max 20 | 카테고리 코드 (`GET /admin/alimtalk-templates/categories` 의 코드) |
+| content.securityFlag | body | boolean | 아니오 | — | 보안 템플릿 여부 |
+| content.templateExtra | body | string | messageType `EX`/`MI` 이면 필수 | — | 부가정보. 메시지 유형이 `EX`, `MI` 가 아니면 서버가 검증 전에 제거한다 |
+| content.templateTitle | body | string | emphasizeType `TEXT` 이면 필수 | — | 강조 타이틀. `templateSubtitle` 과 필수쌍이며, 길이 수치는 미기재 항목이라 kapi 가 최종 게이트다 |
+| content.templateSubtitle | body | string | emphasizeType `TEXT` 이면 필수 | — | 강조 서브타이틀. `templateTitle` 과 필수쌍 |
+| content.templateHeader | body | string | 아니오 | max 16 | 헤더 |
+| content.templateImageName | body | string | emphasizeType `IMAGE` 이면 필수 | — | 이미지 파일명. `templateImageUrl` 과 필수쌍 |
+| content.templateImageUrl | body | string | emphasizeType `IMAGE` 이면 필수 | max 500 | 이미지 URL. 업로드 프록시(`POST /admin/templates/image`) 응답값만 기입한다 |
+| content.templateItem | body | array | emphasizeType `ITEM_LIST` 이면 필수 | — | 아이템 리스트 (`list`, `summary`) |
+| content.templateItem.list | body | array | `templateItem` 있으면 필수 | min 2, max 10 | 아이템 목록. 각 항목의 `title`(필수, max 6), `description`(필수, max 23) |
+| content.templateItem.summary | body | array | 아니오 | — | 요약 (`title`, `description`) |
+| content.templateItem.summary.title | body | string | 아니오 | max 6 | 요약 제목 |
+| content.templateItem.summary.description | body | string | 아니오 | max 14 | 요약 설명 |
+| content.templateItemHighlight | body | array | 아니오 | — | 하이라이트 (`title`, `description`, `imageUrl`). 길이 상한은 썸네일 유무로 갈린다 |
+| content.templateItemHighlight.title | body | string | 아니오 | 썸네일 없으면 max 30, 있으면 max 21 | 하이라이트 타이틀 |
+| content.templateItemHighlight.description | body | string | 아니오 | 썸네일 없으면 max 19, 있으면 max 13 | 하이라이트 설명 |
+| content.templateItemHighlight.imageUrl | body | string | 아니오 | max 500 | 하이라이트 썸네일 이미지 URL |
+| content.templateRepresentLink | body | array | 아니오 | — | 대표 링크 (`linkMo`, `linkPc`, `linkAnd`, `linkIos`) |
+| content.templateRepresentLink.linkMo | body | string | 아니오 | max 500 | 모바일 링크 |
+| content.templateRepresentLink.linkPc | body | string | 아니오 | max 500 | PC 링크 |
+| content.templateRepresentLink.linkAnd | body | string | 아니오 | max 500 | Android 스킴 |
+| content.templateRepresentLink.linkIos | body | string | 아니오 | max 500 | iOS 스킴 |
+| content.buttons | body | array | 아니오 | max 5 | 버튼 목록. 각 항목의 `name`(필수, max 14), `linkType`(필수, `WL`, `AL`, `DS`, `BK`, `MD`, `AC`, `BC`, `BT`, `P1`, `P2`, `P3`, `TN`, `MP`), 링크 칸(`linkMo`, `linkPc`, `linkAnd`, `linkIos` 각 max 500), `telNumber`(max 20), `pluginId`(max 100) |
+| content.quickReplies | body | array | 아니오 | max 10 | 바로연결 목록. 각 항목의 `name`(필수), `linkType`(필수, `WL`, `AL`, `BK`, `MD`, `BC`, `BT`), 링크 칸(`linkMo`, `linkPc`, `linkAnd`, `linkIos` 각 max 500) |
 
 **요청 예시**
 
@@ -690,7 +801,11 @@ Authorization: Bearer {YOUR_TOKEN}
 }
 ```
 
-**응답 필드** (`data.template` — 상세 객체, `GET /admin/templates/{id}` 와 동일)
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| template | object | `{"id":4,"template_code":"g7_1a2b3c4d_1","status":"requested"…` | 상세 객체. 필드 구성은 `GET /admin/templates/{id}` 응답의 `template.*` 행과 같다 |
 
 **응답 예시**
 
@@ -720,6 +835,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 404 | Not Found | `{id}` 에 해당하는 템플릿이 없는 경우 |
 | 422 | Unprocessable Entity | comment 500자 초과 / content 미작성 / 신청 불가 상태(draft·rejected 외) / kapi 실패(`errors.bizppurio_message`·`errors.result_code`) / 발신프로필 키(sender_key) 미설정 / 템플릿 코드 채번 실패 |
 
+<!-- @generated:end -->
+
 **설명**
 
 검수 신청의 전체 시퀀스: ① `template_code` 가 없으면(최초) 자체 채번 — `g7_{md5(notification_type) 앞 8자}_{세대}`
@@ -734,7 +851,7 @@ content 미작성이면 422 를 반환한다. 성공 시 `inspection_detail` 은
 
 
 ### POST /api/plugins/sirsoft-message_bizppurio/admin/templates/{id}/cancel-request
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.cancel-request -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.cancel-request`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@cancelRequest`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.manage`
@@ -754,7 +871,11 @@ Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
 ```
 
-**응답 필드** (`data.template` — 상세 객체, `GET /admin/templates/{id}` 와 동일)
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| template | object | `{"id":4,"status":"draft","...":"상세 객체 필드 동일"}` | 상세 객체. 필드 구성은 `GET /admin/templates/{id}` 응답의 `template.*` 행과 같다 |
 
 **응답 예시**
 
@@ -777,6 +898,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 404 | Not Found | `{id}` 에 해당하는 템플릿이 없는 경우 |
 | 422 | Unprocessable Entity | `requested` 상태가 아닌 경우 / kapi 실패 |
 
+<!-- @generated:end -->
+
 **설명**
 
 kapi 검수 취소(카카오측 REQ→REG)를 호출한 뒤 우리 상태를 `draft` 로 되돌린다.
@@ -784,7 +907,7 @@ kapi 검수 취소(카카오측 REQ→REG)를 호출한 뒤 우리 상태를 `dr
 
 
 ### POST /api/plugins/sirsoft-message_bizppurio/admin/templates/{id}/cancel-approval
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.cancel-approval -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.cancel-approval`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@cancelApproval`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.manage`
@@ -804,7 +927,11 @@ Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
 ```
 
-**응답 필드** (`data.template` — 상세 객체, `GET /admin/templates/{id}` 와 동일)
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| template | object | `{"id":3,"status":"draft","approved_content":{"...":"스냅샷 유지"}…` | 상세 객체. 필드 구성은 `GET /admin/templates/{id}` 응답의 `template.*` 행과 같다 |
 
 **응답 예시**
 
@@ -827,6 +954,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 404 | Not Found | `{id}` 에 해당하는 템플릿이 없는 경우 |
 | 422 | Unprocessable Entity | `approved` 상태가 아닌 경우 / kapi 실패 |
 
+<!-- @generated:end -->
+
 **설명**
 
 kapi 승인 취소(카카오측 승인→등록 복귀)를 호출한 뒤 우리 상태를 `draft` 로 되돌린다.
@@ -835,7 +964,7 @@ kapi 승인 취소(카카오측 승인→등록 복귀)를 호출한 뒤 우리 
 
 
 ### POST /api/plugins/sirsoft-message_bizppurio/admin/templates/{id}/release
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.release -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.release`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@release`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.manage`
@@ -855,7 +984,11 @@ Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
 ```
 
-**응답 필드** (`data.template` — 상세 객체, `GET /admin/templates/{id}` 와 동일)
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| template | object | `{"id":3,"status":"approved","last_synced_at":"2026-08-19T10:…` | 상세 객체. 필드 구성은 `GET /admin/templates/{id}` 응답의 `template.*` 행과 같다 |
 
 **응답 예시**
 
@@ -878,6 +1011,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 404 | Not Found | `{id}` 에 해당하는 템플릿이 없는 경우 |
 | 422 | Unprocessable Entity | `dormant` 상태가 아닌 경우 / kapi 실패 |
 
+<!-- @generated:end -->
+
 **설명**
 
 kapi 휴면 해제를 호출한 뒤, 카카오측 실제 상태를 되받아 재동기화(sync)해 반영한다 —
@@ -885,7 +1020,7 @@ kapi 휴면 해제를 호출한 뒤, 카카오측 실제 상태를 되받아 재
 
 
 ### POST /api/plugins/sirsoft-message_bizppurio/admin/templates/{id}/sync
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.sync -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.sync`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@sync`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.manage`
@@ -905,7 +1040,11 @@ Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
 ```
 
-**응답 필드** (`data.template` — 상세 객체, `GET /admin/templates/{id}` 와 동일)
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| template | object | `{"id":4,"status":"approved","approved_content":{"...":"승인 전이…` | 상세 객체. 필드 구성은 `GET /admin/templates/{id}` 응답의 `template.*` 행과 같다 |
 
 **응답 예시**
 
@@ -935,6 +1074,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 404 | Not Found | `{id}` 에 해당하는 템플릿이 없는 경우 |
 | 422 | Unprocessable Entity | kapi 실패 |
 
+<!-- @generated:end -->
+
 **설명**
 
 관리 화면 [새로고침] 버튼의 수동 상태 동기화다. kapi 상세를 조회해 카카오측 serviceStatus 를 우리
@@ -946,7 +1087,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 
 ### POST /api/plugins/sirsoft-message_bizppurio/admin/templates/image
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.image -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.image`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@uploadImage`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.manage`
@@ -955,13 +1096,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| image | body (multipart) | file | 예 | jpg/jpeg/png · ≤500KB · 가로 ≥500px · 가로:세로 = 2:1 | 이미지형(IMAGE) 템플릿용 이미지 파일 |
-
-상한 500KB·가로 500px 은 **kapi 고정 제약**이며 운영자 설정으로 바뀌지 않습니다 — 설정 축을
-열면 "설정을 올리면 더 큰 파일이 된다" 는 거짓 여지가 생깁니다. 두 값은
-`BizppurioTemplateImageRequest::MAX_KILOBYTES` · `MIN_WIDTH` 공개 상수 하나에서 나오고, 화면
-두 곳(플러그인 설정 · 알림 템플릿 폼 슬롯)의 안내 문구가 같은 값을 인용합니다. 드리프트
-테스트가 세 자리(서버 상수 · 두 화면)를 함께 잠급니다.
+| image | body | file | 예 | jpg, jpeg, png, max 500 (KB), 가로 500px 이상, 가로:세로 = 2:1 | 이미지형(IMAGE) 템플릿용 이미지 파일 (multipart/form-data) |
 
 **요청 예시**
 
@@ -982,9 +1117,9 @@ Content-Type: image/png
 
 **응답 필드** (`data` 내부)
 
-| 필드 | 타입 | 용도/설명 |
-| --- | --- | --- |
-| url | string | 카카오가 반환한 이미지 URL — `content.templateImageUrl` 에 그대로 기입한다 |
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| url | string | `https://mud-kage.kakao.com/dn/example/img_1234567890.png` | 카카오가 반환한 이미지 URL — `content.templateImageUrl` 에 그대로 기입한다 |
 
 **응답 예시**
 
@@ -1006,6 +1141,8 @@ Content-Type: image/png
 | 403 | Forbidden | 요구 권한(`sirsoft-message_bizppurio.messaging.manage`)이 없는 경우 |
 | 422 | Unprocessable Entity | 파일 형식/크기/치수/비율 위반 (프록시 단계 사전 검증) / kapi 업로드 실패 |
 
+<!-- @generated:end -->
+
 **설명**
 
 이미지형(`templateEmphasizeType=IMAGE`) 템플릿용 이미지의 kapi 업로드 프록시다. kapi 제약
@@ -1013,9 +1150,15 @@ Content-Type: image/png
 즉시 인라인 오류를 돌려준다. 성공 시 `data.url` 이 카카오 이미지 URL 이며, 화면은 이 값만
 `content.templateImageUrl` 에 기입한다(임의 URL 기입 금지).
 
+상한 500KB·가로 500px 은 **kapi 고정 제약**이며 운영자 설정으로 바뀌지 않습니다 — 설정 축을
+열면 "설정을 올리면 더 큰 파일이 된다" 는 거짓 여지가 생깁니다. 두 값은
+`BizppurioTemplateImageRequest::MAX_KILOBYTES` · `MIN_WIDTH` 공개 상수 하나에서 나오고, 화면
+두 곳(플러그인 설정 · 알림 템플릿 폼 슬롯)의 안내 문구가 같은 값을 인용합니다. 드리프트
+테스트가 세 자리(서버 상수 · 두 화면)를 함께 잠급니다.
+
 
 ### DELETE /api/plugins/sirsoft-message_bizppurio/admin/templates/{id}
-
+<!-- @generated:start:api.plugins.sirsoft-message_bizppurio.admin.templates.destroy -->
 - **라우트명**: `api.plugins.sirsoft-message_bizppurio.admin.templates.destroy`
 - **컨트롤러**: `Plugins\Sirsoft\MessageBizppurio\Controllers\Admin\BizppurioTemplateController@destroy`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-message_bizppurio.messaging.manage`
@@ -1037,10 +1180,10 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-| 필드 | 타입 | 용도/설명 |
-| --- | --- | --- |
-| kakao_deleted | boolean | 카카오측 템플릿도 함께 삭제했는지 여부 |
-| kakao_skip_reason | string\|null | 카카오측 미삭제 사유: `not_registered`(카카오 등록 전) / `state_not_deletable`(삭제 가능 상태 아님) / kapi 삭제 실패 시 카카오 사유 원문 / 서버에 닿지 못했으면 연결 실패 안내 문장(`messages.error.connection_failed` 의 번역). 삭제했으면 null |
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| kakao_deleted | boolean | `false` | 카카오측 템플릿도 함께 삭제했는지 여부 |
+| kakao_skip_reason | string\|null | `state_not_deletable` | 카카오측 미삭제 사유: `not_registered`(카카오 등록 전) / `state_not_deletable`(삭제 가능 상태 아님) / kapi 삭제 실패 시 카카오 사유 원문 / 서버에 닿지 못했으면 연결 실패 안내 문장(`messages.error.connection_failed` 의 번역). 삭제했으면 null |
 
 **응답 예시**
 
@@ -1062,6 +1205,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-message_bizppurio.messaging.manage`)이 없는 경우 |
 | 404 | Not Found | `{id}` 에 해당하는 템플릿이 없는 경우 |
+
+<!-- @generated:end -->
 
 **설명**
 
