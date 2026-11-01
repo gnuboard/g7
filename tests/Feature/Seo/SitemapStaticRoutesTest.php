@@ -35,7 +35,7 @@ use Tests\TestCase;
  *
  * 트러블슈팅 `[case:backend-61]` 의 회귀 그물이다.
  *
- * @scenario sitemap-static-routes
+ * 시나리오 매니페스트: tests/scenarios/sitemap-static-routes.yaml
  */
 class SitemapStaticRoutesTest extends TestCase
 {
