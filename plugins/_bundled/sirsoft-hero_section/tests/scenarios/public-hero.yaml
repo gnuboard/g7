@@ -38,6 +38,7 @@ axes:
     - cache_ttl_capped_at_next_end
     - cache_read_refilters_by_period
     - cache_disabled_when_zero_minutes
+    - cache_version_expiry_never_serves_stale
     - cache_cleared_on_save
     - cache_cleared_on_delete
     - cache_cleared_on_bulk_change
@@ -52,6 +53,7 @@ effects:
   - public_payload_localized
   - cache_key_per_position_locale
   - cache_never_outlives_period_boundary
+  - cache_edit_never_reverts_to_stale
   - inline_media_policy_applied
 
 test_files:

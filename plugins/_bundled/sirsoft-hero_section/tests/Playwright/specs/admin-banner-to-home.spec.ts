@@ -49,6 +49,34 @@ async function homeTitles(page: Page, viewport: keyof typeof VIEWPORTS, position
   return slideTitles(page);
 }
 
+// @scenario flow=double_click_save_creates_one, viewport=desktop
+// @effects test_data_cleaned_up
+test('등록 화면에서 저장을 빠르게 두 번 눌러도 배너는 한 번만 등록된다', async ({ page, managerToken, created }) => {
+  const title = uniqueTitle('연타');
+  await authenticatePage(page, managerToken);
+  await page.setViewportSize(VIEWPORTS.desktop);
+  await page.goto(`${ADMIN_LIST}/create?position=home_hero`);
+  await expect(page.locator('#footer_save_button')).toBeVisible({ timeout: 30_000 });
+  await page.locator('input[name="title[ko]"]').fill(title);
+  const uploaded = page.waitForResponse((r) => r.url().includes(`${API}/admin/banner-images`) && r.request().method() === 'POST');
+  await page.locator('#pc_image_uploader input[type="file"]').setInputFiles({ name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 });
+  expect((await uploaded).status()).toBe(201);
+  await expect(page.locator('#footer_save_button')).toBeEnabled();
+
+  const posts: number[] = [];
+  page.on('response', async (r) => {
+    if (r.url().endsWith(`${API}/admin/banners`) && r.request().method() === 'POST') {
+      posts.push(r.status());
+      if (r.status() === 201) created.push((await r.json()).data.id);
+    }
+  });
+  // 같은 틱에 두 번 — 잠금(isSaving)이 화면에 반영되기 전이다
+  await page.locator('#footer_save_button').evaluate((button: HTMLButtonElement) => { button.click(); button.click(); });
+  await expect(page).toHaveURL(/\/admin\/plugins\/sirsoft-hero_section\/banners\?.*position=home_hero/, { timeout: 30_000 });
+  await page.waitForTimeout(1_000);
+  expect(posts).toEqual([201]);
+});
+
 for (const viewport of ['desktop', 'mobile'] as const) {
   test.describe(`관리자 → 사이트 홈 (${viewport})`, () => {
     // @scenario flow=create_banner_appears_on_home, viewport=desktop

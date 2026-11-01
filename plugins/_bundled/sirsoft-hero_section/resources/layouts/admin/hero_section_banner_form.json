@@ -2690,7 +2690,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
-                                                                "comment": "저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간 입력값은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다",
+                                                                "comment": "저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간 입력값은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다.\n                  버튼 잠금(isSaving)만으로는 화면에 반영되기 전 같은 틱의 두 번째 클릭을 막지 못해 진입점 debounce 로 한 번만 보낸다",
                                                                 "type": "click",
                                                                 "handler": "sequence",
                                                                 "actions": [
@@ -2770,7 +2770,8 @@
                                                                             }
                                                                         ]
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "debounce": 300
                                                             }
                                                         ],
                                                         "props": {

@@ -115,6 +115,15 @@ describe('배너 등록·수정 화면', () => {
     expect(findById(form, 'footer_save_button')!.props.disabled).toContain('!_local.form?.images?.pc');
   });
 
+  // @scenario surface=form_save_double_click_sends_once
+  it('저장을 빠르게 두 번 눌러도 한 번만 보낸다 — 잠금(isSaving)이 화면에 반영되기 전 같은 틱의 두 번째 클릭은 진입점 debounce 가 합친다', () => {
+    const click = asArray<any>(findById(form, 'footer_save_button')!.actions).find((a) => a.type === 'click');
+    expect(click.handler).toBe('sequence');
+    expect(click.debounce).toBe(300);
+    // 잠금은 그 한 번의 실행 맨 앞에서 건다
+    expect(click.actions[0]).toMatchObject({ handler: 'setState', params: { isSaving: true } });
+  });
+
   describe('[case:components-misc-basic-component-missing-in-template] 템플릿에 없는 기본 컴포넌트', () => {
     // @scenario surface=form_preview_renders_admin_component
     it('미리보기 칸은 관리자 템플릿에 있는 기본 컴포넌트(Section)로 그린다 — 없는 이름(Aside)은 화면에서 조용히 빠진다', () => {

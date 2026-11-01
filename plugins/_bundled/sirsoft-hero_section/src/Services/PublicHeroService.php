@@ -29,6 +29,11 @@ class PublicHeroService
     private const PLUGIN = 'sirsoft-hero_section';
 
     /**
+     * 위치 캐시 버전 표지의 수명(초) — 배너 캐시 최대 수명(60분)보다 길게 둔다. 그래도 먼저 사라지면 새 표지를 만든다.
+     */
+    private const VERSION_TTL = 86400;
+
+    /**
      * PublicHeroService 생성자
      *
      * @param  BannerRepositoryInterface  $banners  배너 Repository
@@ -81,7 +86,7 @@ class PublicHeroService
         $targets = $position === null ? HeroPosition::values() : [$position];
 
         foreach ($targets as $key) {
-            $this->cache->put($this->versionKey($key), $this->version($key) + 1);
+            $this->cache->put($this->versionKey($key), $this->newVersion(), self::VERSION_TTL);
         }
     }
 
@@ -182,14 +187,35 @@ class PublicHeroService
     }
 
     /**
-     * 위치 캐시 버전을 반환합니다.
+     * 위치 캐시 버전 표지를 반환합니다.
+     *
+     * 표지는 다시 쓰지 않는 임의 값이다 — 순번(없으면 0)이면 표지가 배너 캐시보다 먼저 만료될 때(사이트 공통 캐시 시간이 더 짧을 때)
+     * 처음 순번으로 돌아가, 아직 살아 있는 고치기 전 캐시와 같은 키를 만들어 옛 화면을 다시 낸다. 사라졌으면 새 표지를 만든다.
      *
      * @param  string  $position  위치 키
-     * @return int 버전
+     * @return string 버전 표지
      */
-    private function version(string $position): int
+    private function version(string $position): string
     {
-        return (int) ($this->cache->get($this->versionKey($position)) ?? 0);
+        $version = $this->cache->get($this->versionKey($position));
+        if (is_string($version) && $version !== '') {
+            return $version;
+        }
+
+        $version = $this->newVersion();
+        $this->cache->put($this->versionKey($position), $version, self::VERSION_TTL);
+
+        return $version;
+    }
+
+    /**
+     * 새 위치 캐시 버전 표지를 만듭니다.
+     *
+     * @return string 버전 표지
+     */
+    private function newVersion(): string
+    {
+        return bin2hex(random_bytes(6));
     }
 
     /**

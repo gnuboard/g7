@@ -304,6 +304,10 @@ class BannerImageSaveTest extends PluginTestCase
                 $this->fail('먼저 저장된 배너의 이미지를 가져가면 안 된다');
             } catch (ValidationException $e) {
                 $this->assertArrayHasKey(isset($data['pc_image_id']) ? 'pc_image_id' : 'temp_key', $e->errors());
+                if (isset($data['pc_image_id'])) {
+                    // 「이미지를 다시 올려 저장」 안내는 같은 배너를 하나 더 만들게 한다 — 먼저 저장됐다고 알린다
+                    $this->assertSame([__('sirsoft-hero_section::validation.image_selection.taken')], $e->errors()['pc_image_id']);
+                }
             }
         }
 

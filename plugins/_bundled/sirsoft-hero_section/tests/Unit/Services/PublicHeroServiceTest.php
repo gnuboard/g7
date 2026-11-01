@@ -109,6 +109,32 @@ class PublicHeroServiceTest extends PluginTestCase
     }
 
     /**
+     * [case:backend-62] 캐시 버전 번호가 먼저 만료돼도(사이트 공통 캐시 시간이 배너 캐시보다 짧은 경우) 고치기 전 화면이 다시 나오지 않는다 —
+     * 버전이 처음 값으로 돌아가 아직 살아 있는 옛 캐시와 같은 키를 만들면 안 된다.
+     *
+     * @scenario surface=cache_version_expiry_never_serves_stale
+     *
+     * @effects cache_edit_never_reverts_to_stale
+     *
+     * @return void 반환값 없음
+     */
+    public function test_version_expiry_never_serves_stale_payload(): void
+    {
+        $banner = Banner::factory()->withImages()->create(['title' => ['ko' => '고치기 전']]);
+        $service = $this->service();
+        $cache = $this->cacheOf($service);
+        $this->assertSame(['고치기 전'], array_column($service->forPosition(HeroPosition::HomeHero, 'ko')['banners'], 'title'));
+
+        // 운영자가 고쳐 버전이 올라간 뒤, 버전 번호만 먼저 만료된다(배너 캐시는 아직 살아 있다)
+        DB::table('hero_section_banners')->where('id', $banner->id)->update(['title' => json_encode(['ko' => '고친 뒤'])]);
+        $service->invalidate('home_hero');
+        $this->assertSame(['고친 뒤'], array_column($service->forPosition(HeroPosition::HomeHero, 'ko')['banners'], 'title'));
+        $cache->forget('hero:version:home_hero');
+
+        $this->assertSame(['고친 뒤'], array_column($service->forPosition(HeroPosition::HomeHero, 'ko')['banners'], 'title'));
+    }
+
+    /**
      * 캐시 시간이 0 이면 매번 DB 에서 읽는다.
      *
      * @scenario surface=cache_disabled_when_zero_minutes
@@ -155,7 +181,7 @@ class PublicHeroServiceTest extends PluginTestCase
      */
     private function cacheKey(CacheInterface $cache): string
     {
-        $version = (int) ($cache->get('hero:version:home_hero') ?? 0);
+        $version = (string) $cache->get('hero:version:home_hero');
 
         return 'hero:home_hero:v'.$version.':ko';
     }

@@ -204,9 +204,15 @@ class BannerImageService
             }
 
             $next = $imageId !== null ? $this->images->findForUpdate($imageId) : null;
-            if ($imageId !== null && ($next === null || ($next->banner_id !== null && $next->banner_id !== $banner->id))) {
+            if ($imageId !== null && $next === null) {
                 throw ValidationException::withMessages([
                     self::selectionField($slot) => __('sirsoft-hero_section::validation.image_selection.invalid'),
+                ]);
+            }
+            // 다른 배너에 붙었다 — 대개 저장 연타로 앞 요청이 먼저 등록한 것이라 「다시 올려 저장」 대신 이미 저장됐음을 알린다
+            if ($next !== null && $next->banner_id !== null && $next->banner_id !== $banner->id) {
+                throw ValidationException::withMessages([
+                    self::selectionField($slot) => __('sirsoft-hero_section::validation.image_selection.taken'),
                 ]);
             }
 

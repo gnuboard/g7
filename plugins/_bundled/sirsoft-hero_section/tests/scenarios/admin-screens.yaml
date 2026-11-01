@@ -32,6 +32,7 @@ axes:
     - form_validation_errors_render
     - plugin_settings_save_with_onerror
     - plugin_settings_shows_server_upload_limit
+    - form_save_double_click_sends_once
 
 effects:
   - accessible_names_present

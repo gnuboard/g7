@@ -18,6 +18,7 @@ return [
     ],
     'image_selection' => [
         'invalid' => 'The selected image could not be found. Upload the image again and save.',
+        'taken' => 'The selected image was just saved to another banner. If you pressed save twice, the banner is already registered — check the list.',
     ],
     'file' => [
         'server_limit' => 'The file exceeds the server upload limit (:mbMB). Upload a smaller file or ask your server administrator to raise the PHP upload limit.',

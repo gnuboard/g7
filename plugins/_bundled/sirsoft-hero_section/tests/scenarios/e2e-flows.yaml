@@ -10,6 +10,7 @@ description: |
 axes:
   flow:
     - create_banner_appears_on_home
+    - double_click_save_creates_one
     - scheduled_banner_hidden_until_start
     - reorder_reflected_on_shop_main
     - bulk_hide_removes_from_home
@@ -27,6 +28,7 @@ exclusions:
   - { flow: plugin_deactivate_hides_section, viewport: mobile, reason: "비활성화 반영은 폭과 무관" }
   - { flow: read_only_admin_sees_no_edit_buttons, viewport: mobile, reason: "권한 판정은 폭과 무관(카드 보기 단추는 레이아웃 테스트가 본다)" }
   - { flow: slider_autoplay_advances, viewport: mobile, reason: "자동 재생 시각은 폭과 무관(Swiper 같은 설정)" }
+  - { flow: double_click_save_creates_one, viewport: mobile, reason: "관리자 조작은 데스크톱 폭에서만 한다(저장 단추 동작은 폭과 무관)" }
   - { flow: slider_touch_swipe, viewport: desktop, reason: "손가락 넘기기는 터치 기기 동작 — 데스크톱 마우스 끌기는 꺼 두었다" }
 
 effects:
