@@ -481,6 +481,11 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_profile_edit_reauth.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_reauth_methods.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_social_accounts_card.g7.html',
+        // 알림 탭(#835) — 알림 정의·템플릿 편집·미리보기·초기화 창
+        'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_definition_reset.g7.html',
+        'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.g7.html',
+        'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_preview.g7.html',
+        'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_notifications_tab.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_policy_tab.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_provider_add.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_provider_editor.g7.html',

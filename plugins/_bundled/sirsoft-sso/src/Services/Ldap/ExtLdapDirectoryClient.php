@@ -76,6 +76,7 @@ class ExtLdapDirectoryClient implements DirectoryClientInterface
      */
     public function bind(?string $dn, ?string $password): bool
     {
+        // php-ext-guard: connection() 은 connect() 가 function_exists('ldap_connect') 로 확인하고 연 연결만 돌려준다
         $connection = $this->connection();
         if (@ldap_bind($connection, $dn, $password)) {
             return true;
@@ -102,6 +103,7 @@ class ExtLdapDirectoryClient implements DirectoryClientInterface
      */
     public function search(string $baseDn, string $filter, array $attributes, int $sizeLimit = 0): array
     {
+        // php-ext-guard: connection() 은 connect() 가 function_exists('ldap_connect') 로 확인하고 연 연결만 돌려준다
         $connection = $this->connection();
         $result = @ldap_search($connection, $baseDn, $filter, $attributes, 0, $sizeLimit);
         if ($result === false) {
