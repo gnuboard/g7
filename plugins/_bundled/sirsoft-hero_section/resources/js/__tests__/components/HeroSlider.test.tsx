@@ -510,6 +510,48 @@ describe('HeroSlider', () => {
     }
   });
 
+  // @scenario surface=preview_static_without_swiper
+  it('[case:components-misc-swiper-not-mounted-in-iframe-preview] 관리자 미리보기처럼 iframe 문서에 그리면 Swiper 를 부르지 않고(자동 넘김 없음) 화살표·점이 장 번호만 바꿔 그 장을 보인다', () => {
+    const frame = document.createElement('iframe');
+    document.body.appendChild(frame);
+    try {
+      const body = frame.contentDocument!.body;
+      const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: true, interval_seconds: 3 }} />, { container: body });
+      const instance = swiperState.instance!;
+      const section = container.querySelector('section') as HTMLElement;
+      expect(section.className).toContain('hs--static');
+      expect(section.className).not.toContain('hs--autoplaying');
+      expect(instance.autoplay.start).not.toHaveBeenCalled();
+      expect(section.style.getPropertyValue('--hs-index')).toBe('0');
+
+      fireEvent.click(container.querySelector('.hs__next') as HTMLElement);
+      expect(instance.slideNext).not.toHaveBeenCalled();
+      expect(activeId(container)).toBe('2');
+      expect(section.style.getPropertyValue('--hs-index')).toBe('1');
+      fireEvent.click(container.querySelector('.hs__prev') as HTMLElement);
+      fireEvent.click(container.querySelector('.hs__prev') as HTMLElement);
+      expect(instance.slidePrev).not.toHaveBeenCalled();
+      // 첫 장에서 이전이면 마지막 장으로 돈다
+      expect(activeId(container)).toBe('3');
+      fireEvent.click(container.querySelectorAll('.hs__pagination button')[0]);
+      expect(instance.slideToLoop).not.toHaveBeenCalled();
+      expect(activeId(container)).toBe('1');
+    } finally {
+      cleanup();
+      frame.remove();
+    }
+  });
+
+  // @scenario surface=preview_static_without_swiper
+  it('[case:components-misc-swiper-not-mounted-in-iframe-preview] 요소에 붙지 못한(초기화 안 된) Swiper 인스턴스에는 넘김을 부르지 않는다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false }} />);
+    swiperState.instance!.initialized = false;
+    fireEvent.click(container.querySelector('.hs__next') as HTMLElement);
+    fireEvent.click(container.querySelectorAll('.hs__pagination button')[1]);
+    expect(swiperState.instance!.slideNext).not.toHaveBeenCalled();
+    expect(swiperState.instance!.slideToLoop).not.toHaveBeenCalled();
+  });
+
   // @scenario surface=slider_pagination_dots_default
   it('페이징 모양이 없거나 모르는 값이면 종전 점이다', () => {
     for (const pagination of [undefined, 'bullets']) {

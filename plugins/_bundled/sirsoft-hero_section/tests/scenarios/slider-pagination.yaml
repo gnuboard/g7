@@ -14,6 +14,7 @@ axes:
     - slider_pagination_fraction
     - admin_pagination_setting
     - site_pagination_variants
+    - admin_preview_without_swiper_errors
 
 effects:
   - pagination_follows_position_setting

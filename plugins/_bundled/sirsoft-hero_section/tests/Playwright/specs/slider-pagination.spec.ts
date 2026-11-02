@@ -165,3 +165,36 @@ test('관리자 목록 — 페이징 모양을 고르면 저장 전에 미리보
     await request.put(`${API}/admin/position-settings/home_hero`, { headers: auth(managerToken), data: original });
   }
 });
+
+// @scenario surface=admin_preview_without_swiper_errors
+// @effects pagination_follows_position_setting
+test('관리자 미리보기 — 자동 넘김 설정이어도 오류 없이 첫 장에 머물고, 미리보기 안 다음 단추·탭으로 장을 옮긴다 (desktop)', async ({ page, managerToken }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.setViewportSize(VIEWPORTS.desktop);
+  await authenticatePage(page, managerToken);
+  await page.goto(`${ADMIN_LIST}?position=home_hero`);
+  await expect(page.locator('#hero_slider_pagination')).toBeVisible({ timeout: 30_000 });
+  const frame = page.frameLocator('#hero_preview iframe, .hs-preview iframe').first();
+  const section = frame.locator('section.hs');
+  await expect(section).toHaveClass(/hs--static/, { timeout: 30_000 });
+  const active = () => section.locator('.hs__slide--active').getAttribute('data-index');
+  // 자동 넘김 간격(5초)을 두 번 넘겨 기다려도 오류가 없고 장이 그대로다
+  await page.waitForTimeout(11_000);
+  expect(errors).toEqual([]);
+  expect(await active()).toBe('0');
+
+  await section.locator('.hs__next').click();
+  await expect.poll(active).toBe('1');
+  // 저장 전 탭 모양으로 바꿔 탭으로도 옮긴다
+  await page.locator('#hero_slider_pagination button').first().click();
+  await page.getByRole('option', { name: '배너 이름 탭', exact: true }).click();
+  await expect(section.locator('.hs__tabs > button.hs__tab')).not.toHaveCount(0);
+  await section.locator('.hs__tabs > button.hs__tab').nth(2).click();
+  await expect.poll(active).toBe('2');
+  // 보이는 장이 실제로 옮겨졌다(줄이 장 번호만큼 왼쪽으로)
+  const shift = await section.locator('.swiper-wrapper').evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
+  const width = await section.locator('.swiper').evaluate((el) => el.getBoundingClientRect().width);
+  expect(Math.round(-shift / width)).toBe(2);
+  expect(errors).toEqual([]);
+});

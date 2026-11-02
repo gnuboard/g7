@@ -37,6 +37,7 @@ axes:
     - pagination_bullet_target_24px
     - carousel_labels_follow_locale
     - motion_does_not_make_text_scroll
+    - preview_static_without_swiper
     - index_resets_when_banners_change
     - first_image_eager_rest_lazy
     - next_slide_preloaded_before_transition

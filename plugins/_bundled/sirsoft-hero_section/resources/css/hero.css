@@ -677,6 +677,11 @@
   font-weight: 700;
 }
 
+/* 관리자 미리보기(iframe)는 Swiper 가 붙지 않아 장 번호(--hs-index)만큼 줄을 옮겨 그 장을 보인다 — 전환 효과 없음 */
+.hs--static .swiper-wrapper {
+  transform: translateX(calc(var(--hs-index, 0) * -100%));
+}
+
 /* Swiper navigation CSS(.swiper-button-prev{display:flex})가 번들에서 뒤에 오므로 두 클래스로 이긴다 */
 @media (max-width: 1023px) {
   .hs .hs__arrow { display: none; }

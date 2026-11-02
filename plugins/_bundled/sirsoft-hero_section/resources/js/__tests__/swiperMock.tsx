@@ -12,6 +12,7 @@ import { vi } from 'vitest';
 /** 대역 인스턴스 — HeroSlider 가 쓰는 표면만 흉내 낸다 */
 export interface FakeSwiper {
   destroyed: boolean;
+  initialized: boolean;
   realIndex: number;
   autoplay: { running: boolean; start: ReturnType<typeof vi.fn>; stop: ReturnType<typeof vi.fn> };
   slideNext: ReturnType<typeof vi.fn>;
@@ -35,6 +36,7 @@ export const Swiper: React.FC<Record<string, any>> = (props) => {
   if (!ref.current) {
     const instance: FakeSwiper = {
       destroyed: false,
+      initialized: true,
       realIndex: 0,
       autoplay: {
         running: !!props.autoplay,

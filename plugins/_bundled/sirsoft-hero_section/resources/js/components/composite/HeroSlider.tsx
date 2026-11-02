@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, EffectFade, EffectCube, EffectFlip, EffectCoverflow, EffectCreative } from 'swiper/modules';
 import type { Swiper as SwiperInstance, SwiperOptions } from 'swiper';
@@ -415,10 +415,21 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     }
   }, [activeBanner?.id]);
 
+  // 관리자 미리보기(iframe 문서)에서는 Swiper 가 붙지 않는다 — Swiper 14 의 mount 가 요소를 바깥 창의 HTMLElement 로만 확인해
+  // iframe 요소면 조용히 초기화를 건너뛴다. 그 인스턴스로 넘기면(자동 넘김 타이머 포함) 요소가 없어 TypeError 가 난다.
+  // 그래서 바깥 문서가 아니면 Swiper 를 부르지 않고 장 번호만 바꿔 CSS(hs--static, --hs-index)로 그 장을 보인다(전환 효과·자동 넘김 없음)
+  const [framed, setFramed] = useState(false);
+  useLayoutEffect(() => {
+    const doc = regionRef.current?.ownerDocument;
+    setFramed(!!doc && doc !== document);
+  }, [count > 0]);
+  /** Swiper 를 불러도 되는지 — 파기되지 않았고 요소에 실제로 붙었을 때만 */
+  const swiperReady = (instance: SwiperInstance | null): instance is SwiperInstance => !!instance && !instance.destroyed && instance.initialized !== false;
+
   // 자동 재생은 Swiper 가 돌리고, 멈춤 조건(일시정지 단추·마우스·포커스·활성 장 영상 재생 중)은 여기서 건다
-  const autoplaying = canAutoplay && !paused && !hovered && !focusWithin && !activeMediaRuns;
+  const autoplaying = canAutoplay && !framed && !paused && !hovered && !focusWithin && !activeMediaRuns;
   useEffect(() => {
-    if (!swiper || swiper.destroyed || !swiper.autoplay) {
+    if (framed || !swiperReady(swiper) || !swiper.autoplay) {
       return;
     }
     if (autoplaying) {
@@ -426,7 +437,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     } else {
       swiper.autoplay.stop();
     }
-  }, [swiper, autoplaying]);
+  }, [swiper, autoplaying, framed]);
 
   // 장 번호 알림 — 방문자가 넘긴 때만(자동으로 넘어가는 동안은 읽지 않는다) 잠깐 채운다. 장 번호는 슬라이드 이름에 늘 있으므로
   // 알림 칸을 비워 두지 않으면 훑어 읽기에서 같은 번호를 두 번 듣는다
@@ -448,13 +459,19 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   }, [index]);
 
   const goTo = useCallback((target: number) => {
-    if (swiper && !swiper.destroyed) {
+    if (framed) {
+      setIndex(target);
+    } else if (swiperReady(swiper)) {
       swiper.slideToLoop(target);
     }
-  }, [swiper]);
+  }, [swiper, framed]);
 
   const go = useCallback((direction: -1 | 1) => {
-    if (!swiper || swiper.destroyed) {
+    if (framed) {
+      setIndex((current) => (current + direction + count) % count);
+      return;
+    }
+    if (!swiperReady(swiper)) {
       return;
     }
     if (direction < 0) {
@@ -462,7 +479,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     } else {
       swiper.slideNext();
     }
-  }, [swiper]);
+  }, [swiper, framed, count]);
 
   /** 영상이 끝났다 — 자동 넘김이 막히지 않았으면 바로 다음 장, 막혔으면 표시만 해 두고 간격 넘김에 맡긴다 */
   const onMediaEnded = (banner: HeroBanner) => {
@@ -484,6 +501,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const style = {
     '--hs-ratio-pc': forceDevice === 'mobile' ? mobileRatio : pcRatio,
     '--hs-ratio-mobile': forceDevice === 'pc' ? pcRatio : mobileRatio,
+    ...(framed ? { '--hs-index': index } : {}),
   } as React.CSSProperties;
 
   if (count === 0) {
@@ -547,7 +565,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       id={id}
       {...editorAttrs}
       ref={regionRef}
-      className={`hs hs--${effect} hs--${full ? 'full' : 'content'} hs--pagination-${pagination}${count > 1 ? ' hs--controlled' : ''}${autoplaying ? ' hs--autoplaying' : ''}${overlayOn ? ' hs--header-overlay' : ''} ${className}`.trim()}
+      className={`hs hs--${effect} hs--${full ? 'full' : 'content'} hs--pagination-${pagination}${framed ? ' hs--static' : ''}${count > 1 ? ' hs--controlled' : ''}${autoplaying ? ' hs--autoplaying' : ''}${overlayOn ? ' hs--header-overlay' : ''} ${className}`.trim()}
       style={style}
       role="region"
       aria-roledescription={t('sirsoft-hero_section.slider.carousel_role', '캐러셀')}
