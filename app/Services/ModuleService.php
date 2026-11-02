@@ -100,6 +100,21 @@ class ModuleService
     }
 
     /**
+     * 설치·의존 판정용 모듈 정보를 조회합니다 — 미설치 모듈은 진입 파일을 실행하지 않고 manifest 만 읽습니다.
+     *
+     * 같은 프로세스에서 이어서 설치할 때 쓴다(명령줄·연쇄 설치, 설치 미리보기). 상세 화면은 {@see getModuleInfo()}.
+     *
+     * @param  string  $moduleName  모듈명
+     * @return array<string, mixed>|null 모듈 정보 또는 null
+     */
+    public function getModuleManifestInfo(string $moduleName): ?array
+    {
+        $this->moduleManager->loadModules();
+
+        return $this->moduleManager->getModuleManifestInfo($moduleName);
+    }
+
+    /**
      * 모듈 삭제 시 삭제될 데이터 정보를 조회합니다.
      *
      * @param  string  $moduleName  모듈명
@@ -908,7 +923,8 @@ class ModuleService
     private function ensureModuleNotInstalled(string $identifier): void
     {
         $this->moduleManager->loadModules();
-        $existingModule = $this->moduleManager->getModuleInfo($identifier);
+        // 같은 요청에서 곧 설치하므로 `_bundled`·`_pending` 사본의 진입 파일을 실행하지 않는다 (#159)
+        $existingModule = $this->moduleManager->getModuleManifestInfo($identifier);
 
         if ($existingModule && $existingModule['is_installed']) {
             throw new ModuleOperationException('modules.errors.already_installed');

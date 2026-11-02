@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow api-doc-coverage reason: 요청/응답 계약 불변 — 설치 판정 조회만 manifest 전용(get*ManifestInfo)으로 바꿈, 읽는 필드(status·is_installed·name·version·dependencies) 동일 (#159)
+
 namespace App\Http\Controllers\Concerns;
 
 use App\Enums\ExtensionStatus;
@@ -60,8 +62,8 @@ trait OrchestratesCascadeInstall
             }
 
             $info = match ($type) {
-                'module' => app(ModuleService::class)->getModuleInfo($identifier),
-                'plugin' => app(PluginService::class)->getPluginInfo($identifier),
+                'module' => app(ModuleService::class)->getModuleManifestInfo($identifier),
+                'plugin' => app(PluginService::class)->getPluginManifestInfo($identifier),
                 default => null,
             };
 
@@ -208,7 +210,7 @@ trait OrchestratesCascadeInstall
                     $doneSteps[$stepKey] = true;
                 }
 
-                $info = $type === 'module' ? $moduleService->getModuleInfo($identifier) : $pluginService->getPluginInfo($identifier);
+                $info = $type === 'module' ? $moduleService->getModuleManifestInfo($identifier) : $pluginService->getPluginManifestInfo($identifier);
                 if ($info === null) {
                     throw new RuntimeException(__('extensions.errors.not_found', ['identifier' => $identifier]));
                 }

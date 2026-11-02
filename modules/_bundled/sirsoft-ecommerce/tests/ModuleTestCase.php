@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Tests;
 
 use App\Enums\ExtensionStatus;
 use App\Enums\PermissionType;
+use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
 use App\Helpers\ResponseHelper;
@@ -417,8 +418,18 @@ abstract class ModuleTestCase extends TestCase
         $modulesProp = $reflection->getProperty('modules');
         $modulesProp->setAccessible(true);
         $current = $modulesProp->getValue($manager);
-        $current['sirsoft-ecommerce'] = new $moduleClass;
+        $module = new $moduleClass;
+        $current['sirsoft-ecommerce'] = $module;
         $modulesProp->setValue($manager, $current);
+
+        // 훅 리스너 등록 — 앱 부팅은 DB 에서 「활성」인 모듈의 리스너만 등록한다. 부팅 시점에 이 모듈의
+        // 등록 행이 없던 DB(빈 DB 로 단독 실행하거나, 같은 프로세스에서 코어 테스트가 먼저 스키마를 만든 경우)면
+        // 리스너가 하나도 붙지 않아 마일리지 환원·쿠폰 복원처럼 훅으로 도는 부수효과가 통째로 빠진다
+        // (단독 실행 실패 / 함께 실행 통과 — 앞선 테스트가 남긴 활성 행에 따라 갈린다). 게시판 시험 기반
+        // 클래스와 같은 처리다. 부팅이 이미 등록했으면 같은 출처(모듈 식별자)라 다시 붙지 않는다.
+        foreach ($module->getHookListeners() as $listenerClass) {
+            HookListenerRegistrar::register($listenerClass, 'sirsoft-ecommerce');
+        }
     }
 
     /**

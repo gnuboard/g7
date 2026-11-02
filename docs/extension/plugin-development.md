@@ -309,6 +309,12 @@ class Plugin implements PluginInterface
 - `"src/"`: src 디렉토리 내 클래스 로딩
 - `"./"`: 루트의 plugin.php 로딩
 
+### 진입 클래스와 자체 vendor (7.1.5~)
+
+- **진입 클래스가 자기 소스 클래스를 상속해도 됩니다.** `plugin.php` 의 `Plugin` 이 `AbstractPlugin` 을 직접 상속하지 않고 자기 PSR-4 네임스페이스의 클래스를 상속·구현하는 구조(예: `final class Plugin extends \Acme\Foo\Plugin`)도 설치 마법사·명령줄·관리자 화면 설치에서 지원합니다. 코어는 설치 전 확인에서 `plugin.json` 만 읽고 `plugin.php` 를 실행하지 않습니다.
+- **`plugin.php` 에서 자체 `vendor/autoload.php` 를 직접 불러오지 마세요.** 코어가 `bootstrap/cache/autoload-extensions.php` 의 `vendor_autoloads` 로 불러옵니다. 직접 부르던 플러그인도 7.1.5 부터는 「Cannot declare class ComposerAutoloaderInit…」 오류가 나지 않지만 불필요합니다.
+- 설치가 중간에 끊겨 반쯤 설치된 상태(목록에는 보이지만 동작하지 않음)로 남았으면 `php artisan plugin:install {식별자} --force` 로 다시 설치합니다.
+
 ### PHP 확장 요구 선언
 
 코어 기준 「선택」 PHP 확장(`bcmath`·`gd`·`zlib` 등)이나 코어 목록 밖 확장(`soap` 등)을 쓰면 composer.json 에 선언한다.

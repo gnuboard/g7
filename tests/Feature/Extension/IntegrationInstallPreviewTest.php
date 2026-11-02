@@ -132,9 +132,9 @@ class IntegrationInstallPreviewTest extends TestCase
     public function test_selected_integrations_are_installed_best_effort(): void
     {
         $moduleService = Mockery::mock(ModuleService::class);
-        $moduleService->shouldReceive('getModuleInfo')->with('acme-shop')->andReturn(['is_installed' => false, 'status' => 'uninstalled']);
-        $moduleService->shouldReceive('getModuleInfo')->with('acme-page')->andReturn(['is_installed' => true, 'status' => ExtensionStatus::Active->value]);
-        $moduleService->shouldReceive('getModuleInfo')->with('acme-broken')->andReturn(['is_installed' => true, 'status' => ExtensionStatus::Inactive->value]);
+        $moduleService->shouldReceive('getModuleManifestInfo')->with('acme-shop')->andReturn(['is_installed' => false, 'status' => 'uninstalled']);
+        $moduleService->shouldReceive('getModuleManifestInfo')->with('acme-page')->andReturn(['is_installed' => true, 'status' => ExtensionStatus::Active->value]);
+        $moduleService->shouldReceive('getModuleManifestInfo')->with('acme-broken')->andReturn(['is_installed' => true, 'status' => ExtensionStatus::Inactive->value]);
         $moduleService->shouldReceive('installModule')->once()->with('acme-shop', Mockery::any(), false, Mockery::any())->andReturn(['identifier' => 'acme-shop']);
         $moduleService->shouldReceive('activateModule')->once()->with('acme-shop')->andReturn(['success' => true]);
         $moduleService->shouldReceive('activateModule')->once()->with('acme-broken')->andReturn(['success' => false, 'warning' => true, 'message' => '필수 의존이 꺼져 있습니다']);
@@ -142,7 +142,7 @@ class IntegrationInstallPreviewTest extends TestCase
         $this->app->instance(ModuleService::class, $moduleService);
 
         $pluginService = Mockery::mock(PluginService::class);
-        $pluginService->shouldReceive('getPluginInfo')->with('acme-sms')->andReturn(['is_installed' => true, 'status' => ExtensionStatus::Inactive->value]);
+        $pluginService->shouldReceive('getPluginManifestInfo')->with('acme-sms')->andReturn(['is_installed' => true, 'status' => ExtensionStatus::Inactive->value]);
         $pluginService->shouldReceive('activatePlugin')->once()->with('acme-sms')->andThrow(new RuntimeException('플러그인 오류'));
         $this->app->instance(PluginService::class, $pluginService);
 
@@ -255,7 +255,7 @@ class IntegrationInstallPreviewTest extends TestCase
     public function test_install_api_rejects_integration_without_permission(): void
     {
         $pluginService = Mockery::mock(PluginService::class)->makePartial();
-        $pluginService->shouldReceive('getPluginInfo')->with('acme-sms')->andReturn(['is_installed' => false, 'status' => 'uninstalled']);
+        $pluginService->shouldReceive('getPluginManifestInfo')->with('acme-sms')->andReturn(['is_installed' => false, 'status' => 'uninstalled']);
         $pluginService->shouldNotReceive('installPlugin');
         $this->app->instance(PluginService::class, $pluginService);
 
@@ -287,7 +287,7 @@ class IntegrationInstallPreviewTest extends TestCase
         $calls = [];
 
         $pluginService = Mockery::mock(PluginService::class)->makePartial();
-        $pluginService->shouldReceive('getPluginInfo')->andReturnUsing(fn (string $id) => ['is_installed' => true, 'status' => ExtensionStatus::Inactive->value]);
+        $pluginService->shouldReceive('getPluginManifestInfo')->andReturnUsing(fn (string $id) => ['is_installed' => true, 'status' => ExtensionStatus::Inactive->value]);
         $pluginService->shouldReceive('activatePlugin')->andReturnUsing(function (string $id) use (&$calls) {
             $calls[] = 'integration:'.$id;
             if ($id === 'acme-broken') {

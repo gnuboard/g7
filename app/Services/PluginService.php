@@ -107,6 +107,21 @@ class PluginService
     }
 
     /**
+     * 설치·의존 판정용 플러그인 정보를 조회합니다 — 미설치 플러그인은 진입 파일을 실행하지 않고 manifest 만 읽습니다.
+     *
+     * 같은 프로세스에서 이어서 설치할 때 쓴다(명령줄·연쇄 설치, 설치 미리보기). 상세 화면은 {@see getPluginInfo()}.
+     *
+     * @param  string  $pluginName  플러그인명
+     * @return array<string, mixed>|null 플러그인 정보 또는 null
+     */
+    public function getPluginManifestInfo(string $pluginName): ?array
+    {
+        $this->pluginManager->loadPlugins();
+
+        return $this->pluginManager->getPluginManifestInfo($pluginName);
+    }
+
+    /**
      * 플러그인 삭제 시 삭제될 데이터 정보를 조회합니다.
      *
      * @param  string  $pluginName  플러그인명
@@ -1022,7 +1037,8 @@ class PluginService
     private function ensurePluginNotInstalled(string $identifier): void
     {
         $this->pluginManager->loadPlugins();
-        $existingPlugin = $this->pluginManager->getPluginInfo($identifier);
+        // 같은 요청에서 곧 설치하므로 `_bundled`·`_pending` 사본의 진입 파일을 실행하지 않는다 (#159)
+        $existingPlugin = $this->pluginManager->getPluginManifestInfo($identifier);
 
         if ($existingPlugin && $existingPlugin['is_installed']) {
             throw new PluginOperationException('plugins.errors.already_installed', ['plugin' => $identifier]);

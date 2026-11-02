@@ -30,6 +30,7 @@ use App\Extension\Exceptions\ExtensionSeederFailedException;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\DependencyVersionWarnings;
 use App\Extension\Helpers\ExtensionBackupHelper;
+use App\Extension\Helpers\ExtensionEntrySource;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
@@ -227,6 +228,8 @@ class PluginManager implements PluginManagerInterface
                 // 클래스가 아직 로드되지 않은 경우에만 require
                 // (_bundled에서 이미 로드된 경우 중복 선언 방지)
                 if (! class_exists($pluginClass, false)) {
+                    // 오토로드 캐시에 없는 폴더(고아 사본)는 자기 PSR-4 를 먼저 등록한다 — 진입 클래스가 자기 소스를 상속하면 부팅이 죽는다 (#159)
+                    ExtensionManager::registerAutoloadIfMissing($directory, 'plugins:'.$pluginName);
                     require_once $pluginFile;
                     $this->rememberLoadedExtensionClassFile($pluginClass, $pluginFile);
                 }
@@ -1656,6 +1659,45 @@ class PluginManager implements PluginManagerInterface
         }
 
         // PHP 클래스 로드 실패 시 JSON 메타데이터 기반 폴백
+        return $this->buildPluginInfoFromManifest($pluginName, $metadata, $locale);
+    }
+
+    /**
+     * 설치·의존 판정용 플러그인 정보를 manifest(plugin.json)만으로 반환합니다.
+     *
+     * 활성 인스턴스가 있으면(부팅 때 PSR-4 가 등록된 설치본) 상세 조회와 같은 값을 돌려준다. 미설치(pending·bundled)
+     * 플러그인은 진입 파일(plugin.php)을 실행하지 않는다 — 진입 클래스가 자기 PSR-4 클래스를 상속하면 이 시점엔 부모를
+     * 못 찾고, Composer 가 그 실패를 음성 캐시(missingClasses)에 남겨 같은 프로세스의 이어지는 설치가 「Class not found」
+     * 로 죽는다(#159). 진입 파일이 자체 vendor 를 부르면 `_bundled` 경로 오토로더를 먼저 선언해 설치 마지막 단계가
+     * 「Cannot declare class」 로도 죽는다. 설치 판정이 읽는 이름·버전·의존·연동은 원래 manifest 가 SSoT 다.
+     *
+     * @param  string  $pluginName  플러그인 식별자
+     * @return array<string, mixed>|null 플러그인 정보, 활성·pending·bundled 어디에도 없으면 null
+     */
+    public function getPluginManifestInfo(string $pluginName): ?array
+    {
+        if ($this->getPlugin($pluginName)) {
+            return $this->getPluginInfo($pluginName);
+        }
+
+        $metadata = $this->pendingPlugins[$pluginName] ?? $this->bundledPlugins[$pluginName] ?? null;
+        if ($metadata === null) {
+            return null;
+        }
+
+        return $this->buildPluginInfoFromManifest($pluginName, $metadata, app()->getLocale());
+    }
+
+    /**
+     * 미설치 플러그인의 manifest 메타데이터로 정보 배열을 만듭니다.
+     *
+     * @param  string  $pluginName  플러그인 식별자
+     * @param  array<string, mixed>  $metadata  plugin.json 메타데이터
+     * @param  string  $locale  표시 로케일
+     * @return array<string, mixed> 플러그인 정보
+     */
+    protected function buildPluginInfoFromManifest(string $pluginName, array $metadata, string $locale): array
+    {
         return [
             'identifier' => $metadata['identifier'] ?? $pluginName,
             'vendor' => $metadata['vendor'] ?? '',
@@ -4252,18 +4294,14 @@ class PluginManager implements PluginManagerInterface
      */
     protected function evalFreshPlugin(string $pluginFile, string $pluginClass, string $pluginDir): ?PluginInterface
     {
-        $content = file_get_contents($pluginFile);
-        if ($content === false) {
+        $uid = '_fresh_'.uniqid();
+
+        // 클래스명만 변경 (namespace 유지 → use/extends 정상 작동), __DIR__·__FILE__ 은 진입 파일 위치로 (#159)
+        $content = ExtensionEntrySource::forEval($pluginFile, 'Plugin', 'Plugin'.$uid);
+        if ($content === null) {
             return null;
         }
 
-        $uid = '_fresh_'.uniqid();
-
-        // 클래스명만 변경 (namespace 유지 → use/extends 정상 작동)
-        $content = preg_replace('/\bclass\s+Plugin\b/', 'class Plugin'.$uid, $content);
-
-        // PHP 여는 태그 제거 후 메모리에서 실행
-        $content = preg_replace('/^<\?php\s*/', '', $content);
         eval($content);
 
         $namespace = substr($pluginClass, 0, strrpos($pluginClass, '\\'));

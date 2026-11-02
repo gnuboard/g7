@@ -691,7 +691,7 @@ Repository 로만 합니다 — 역할 사용자는 `RoleRepositoryInterface::ge
 > (`ChangeDetector::detect($model, $snapshot)`). `before_*` 훅 자체는 발행되며 그 목록은
 > 위 「발행 훅」 절에 있습니다.
 
-#### Board (7훅)
+#### Board (8훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
@@ -700,6 +700,7 @@ Repository 로만 합니다 — 역할 사용자는 `RoleRepositoryInterface::ge
 | `sirsoft-board.board.after_delete` | `handleBoardAfterDelete` | `board.delete` | Admin | Board |
 | `sirsoft-board.board.after_add_to_menu` | `handleBoardAfterAddToMenu` | `board.add_to_menu` | Admin | Board |
 | `sirsoft-board.board.after_remove_from_menu` | `handleBoardAfterRemoveFromMenu` | `board.remove_from_menu` | Admin | Board |
+| `sirsoft-board.board.after_reorder` | `handleBoardAfterReorder` | `board.reorder` | Admin | - |
 | `sirsoft-board.settings.after_bulk_apply` | `handleSettingsAfterBulkApply` | `board_settings.bulk_apply` | Admin | - |
 | `sirsoft-board.settings.after_bulk_apply_aborted` | `handleSettingsAfterBulkApplyAborted` | `board_settings.bulk_apply_aborted` | Admin | - |
 

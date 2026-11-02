@@ -68,13 +68,13 @@ class IntegrationRequiredDependenciesTest extends TestCase
         };
 
         $modules = Mockery::mock(ModuleService::class);
-        $modules->shouldReceive('getModuleInfo')->andReturnUsing(function (string $id) use (&$info): ?array {
+        $modules->shouldReceive('getModuleManifestInfo')->andReturnUsing(function (string $id) use (&$info): ?array {
             return $info[$id] ?? null;
         });
         $modules->shouldReceive('installModule')->andReturnUsing(fn (string $id) => $installed($id));
         $modules->shouldReceive('activateModule')->andReturnUsing(fn (string $id) => $activated($id));
         $plugins = Mockery::mock(PluginService::class);
-        $plugins->shouldReceive('getPluginInfo')->andReturnUsing(function (string $id) use (&$info): ?array {
+        $plugins->shouldReceive('getPluginManifestInfo')->andReturnUsing(function (string $id) use (&$info): ?array {
             return $info[$id] ?? null;
         });
         $plugins->shouldReceive('installPlugin')->andReturnUsing(fn (string $id) => $installed($id));

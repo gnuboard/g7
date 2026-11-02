@@ -43,10 +43,12 @@ class CascadeInstallOrchestratorTest extends TestCase
     {
         parent::setUp();
 
+        // 설치 판정은 manifest 만 읽는 조회를 쓴다 — 미설치 확장의 PHP 진입 파일을 실행하면 Composer 음성 캐시가 남아
+        // 이어지는 설치가 Class not found 로 죽는다 (#159). 진입 파일을 읽는 상세 조회는 스텁하지 않아 부르면 실패한다.
         $this->moduleService = Mockery::mock(ModuleService::class);
-        $this->moduleService->shouldReceive('getModuleInfo')->andReturnUsing(fn (string $id) => $this->modules[$id] ?? null);
+        $this->moduleService->shouldReceive('getModuleManifestInfo')->andReturnUsing(fn (string $id) => $this->modules[$id] ?? null);
         $this->pluginService = Mockery::mock(PluginService::class);
-        $this->pluginService->shouldReceive('getPluginInfo')->andReturnUsing(fn (string $id) => $this->plugins[$id] ?? null);
+        $this->pluginService->shouldReceive('getPluginManifestInfo')->andReturnUsing(fn (string $id) => $this->plugins[$id] ?? null);
     }
 
     /**
@@ -102,6 +104,26 @@ class CascadeInstallOrchestratorTest extends TestCase
         $this->assertSame(['base', 'shop'], array_column($plan['steps'], 'identifier'));
         $this->assertSame(['activate', 'install_activate'], array_column($plan['steps'], 'action'));
         $this->assertSame(['shop', 'pay'], array_column($plan['steps'], 'required_by'));
+    }
+
+    /**
+     * 의존 계획은 manifest 조회만 쓰고, 진입 파일을 실행하는 상세 조회는 부르지 않는다 (#159).
+     *
+     * @effects cascade_plan_reads_manifest_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_dependency_plan_uses_manifest_info_only(): void
+    {
+        $this->moduleService->shouldNotReceive('getModuleInfo');
+        $this->pluginService->shouldNotReceive('getPluginInfo');
+        $this->plugins['pay'] = $this->uninstalled('1.0.0', ['modules' => ['shop' => '*']]);
+        $this->modules['shop'] = $this->uninstalled('1.0.0');
+
+        $plan = $this->orchestrator()->resolveDependencyPlan('plugin', 'pay');
+
+        $this->assertSame([], $plan['errors']);
+        $this->assertSame(['shop'], array_column($plan['steps'], 'identifier'));
     }
 
     /**

@@ -589,6 +589,12 @@ composer.json 수정 후 반드시 autoload 갱신:
 php artisan extension:update-autoload
 ```
 
+### 진입 클래스와 자체 vendor (7.1.5~)
+
+- **진입 클래스가 자기 소스 클래스를 상속해도 됩니다.** `module.php` 의 `Module` 이 `AbstractModule` 을 직접 상속하지 않고 자기 PSR-4 네임스페이스의 클래스를 상속·구현하는 구조(예: `final class Module extends \Acme\Foo\Module`)도 설치 마법사·명령줄·관리자 화면 설치에서 지원합니다. 코어는 설치 전 확인에서 `module.json` 만 읽고 `module.php` 를 실행하지 않습니다.
+- **`module.php` 에서 자체 `vendor/autoload.php` 를 직접 불러오지 마세요.** 코어가 `bootstrap/cache/autoload-extensions.php` 의 `vendor_autoloads` 로 불러옵니다. 직접 부르던 모듈도 7.1.5 부터는 「Cannot declare class ComposerAutoloaderInit…」 오류가 나지 않지만 불필요합니다.
+- 설치가 중간에 끊겨 반쯤 설치된 상태(목록에는 보이지만 동작하지 않음)로 남았으면 `php artisan module:install {식별자} --force` 로 다시 설치합니다.
+
 ---
 
 ## 화면 컴포넌트 제공
