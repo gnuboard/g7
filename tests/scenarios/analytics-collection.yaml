@@ -90,6 +90,10 @@ effects:
   - second_request_within_window_joins_same_visit
   - request_after_timeout_starts_new_visit
   - open_visit_lookup_locks_the_row
+  # 같은 방문자의 동시 요청이 만든 교착(1213)은 재시도로 넘긴다 — 바깥 트랜잭션 안에서는 다시 하지 않는다
+  - deadlocked_store_is_retried_into_the_same_visit
+  - deadlock_retries_are_bounded_and_logged_once
+  - deadlock_inside_outer_transaction_is_not_retried
   - previous_pageview_dwell_time_is_confirmed_by_next_request
   - dwell_time_is_capped_at_configured_maximum
   - bounce_flag_releases_on_second_pageview
@@ -172,6 +176,8 @@ effects:
   - tracker_attaches_bearer_token_when_present
   - tracker_uses_keepalive_so_unloading_pages_still_deliver
   - tracker_fits_payload_to_server_field_limits
+  # 화면 크기를 모르는 환경(0x0)은 해상도를 비워 둔다 — 트래커가 빼고, 옛 트래커가 보낸 값은 서버가 비운다
+  - unknown_screen_size_is_not_recorded_as_a_resolution
   - tracker_clears_dimensions_on_navigation
   - prerendered_page_counts_its_landing_pageview_when_activated
   - tracker_defers_sending_so_navigation_is_not_delayed
@@ -201,8 +207,10 @@ test_files:
   - resources/js/core/analytics/__tests__/payloadContract.test.ts
   - tests/Unit/Analytics/CollectFailureReasonTest.php
   - tests/Feature/Analytics/VisitServiceTest.php
+  - tests/Feature/Analytics/VisitServiceDeadlockRetryTest.php
   - tests/Feature/Analytics/ActionNameRepositoryTest.php
   - tests/Feature/Analytics/CollectControllerTest.php
+  - tests/Feature/Analytics/CollectResolutionTest.php
   - tests/Feature/Analytics/TrackServerVisitMiddlewareTest.php
   - tests/Feature/Analytics/TrackBotHitMiddlewareTest.php
   - tests/Feature/Analytics/SiteSearchTrackingTest.php

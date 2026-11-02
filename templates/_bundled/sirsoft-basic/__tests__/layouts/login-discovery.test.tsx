@@ -13,7 +13,7 @@
  * 하네스의 `getState()` 는 DOM 이벤트로 바뀐 컴포넌트 지역 상태를 따라가지 않는다 — 판정 결과는 화면(DOM)으로 잰다.
  *
  * @vitest-environment jsdom
- * @since 1.3.0
+ * @since 1.4.0
  */
 
 import React from 'react';

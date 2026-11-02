@@ -1,0 +1,20 @@
+feature: 사용자 503 화면 — 미충족 의존 항목별 사유
+
+description: |
+  활성 템플릿이 요구하는 모듈·플러그인이 조건에 맞지 않으면 코어가 사용자 화면 전체를 503 으로 돌리고
+  errorData.modules/plugins 에 항목별 status(not_installed·inactive·version_mismatch)와 설치·요구 버전을 싣는다(코어 7.1.4).
+  종전 화면은 「필요한 확장 기능이 활성화되지 않았습니다」로 단정해 버전 미달(두 확장 모두 켜짐)과 맞지 않았다.
+  항목마다 사유를 보이고 제목·안내를 중립 문구로 바꾼다. 방문자·관리자에게 같은 화면이다.
+
+axes:
+  surface: [reason_nodes, lang_keys]
+
+effects:
+  - error_503_shows_reason_per_item
+  - error_503_neutral_title
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/error-503-dependency-reasons.test.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e

@@ -47,6 +47,7 @@
       "price_details": {
         "taxable": "課税",
         "vat": "付加価値税",
+        "zero_rated": "ゼロ税率",
         "mileage": "マイレージ",
         "deposit": "デポジット"
       },
@@ -209,6 +210,9 @@
       "final_amount": "最終決済金額",
       "taxable_amount": "課税金額",
       "vat": "付加価値税（VAT）",
+      "tax_free_amount": "非課税金額",
+      "zero_rated_amount": "ゼロ税率金額",
+      "cancelled_vat": "取消付加価値税",
       "expected_points": "積立予定ポイント",
       "method": {
         "credit_card": "クレジットカード",
@@ -358,6 +362,7 @@
         "points_used": "ポイント使用",
         "taxable_amount": "課税金額",
         "vat_amount": "消費税",
+        "zero_rated_amount": "ゼロ税率金額",
         "total_paid": "実際の決済金額",
         "earned_points": "ポイント積立予定",
         "product_subtotal": "小計",

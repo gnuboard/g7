@@ -5,7 +5,7 @@
  * `login` 액션과 **키 단위로 같아야** 로그인 화면이 같은 `onSuccess` 분기(2단계 인증 블록·비밀번호 변경 블록·휴면
  * 해제 안내)를 그대로 쓴다.
  *
- * @since engine-v1.84.0
+ * @since engine-v1.85.0
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -147,7 +147,7 @@ describe('ActionDispatcher - loginHandoff', () => {
   });
 
   /**
-   * 관리자 인계는 관리자 경로의 globalHeaders 패턴으로 요청한다 (engine-v1.85.0).
+   * 관리자 인계는 관리자 경로의 globalHeaders 패턴으로 요청한다 (engine-v1.86.0).
    *
    * @scenario auth_type=admin
    * @effects handoff_admin_dispatches_admin_type
@@ -167,7 +167,7 @@ describe('ActionDispatcher - loginHandoff', () => {
   /**
    * 로그인·인계 실패의 서버 `errors`(오류 코드 `errors.code`·이동 경로·수단 이름)·`data` 가 레이아웃 `onError` 의 `error` 로
    * 그대로 간다 — 회사 계정 로그인 안내(403)·추가 단계 이동(409) 분기가 이 값을 읽는다. 오류 문맥(`ErrorContext`)이 원본 응답의
-   * `errors`·`data` 를 싣는 기존 계약을 잠근다 (engine-v1.85.0 E3).
+   * `errors`·`data` 를 싣는 기존 계약을 잠근다 (engine-v1.86.0 E3).
    *
    * @scenario response=403_password_auth_disabled|409_external_step_required|423_locked, action=login|loginHandoff
    * @effects login_error_carries_server_data

@@ -1,7 +1,6 @@
 <?php
 
 use App\Support\ExecutionEnvironment;
-use App\Support\PrivilegedDatabaseAccounts;
 
 /**
  * 그누보드7 웹 인스톨러 요청 처리 핸들러
@@ -10,6 +9,7 @@ use App\Support\PrivilegedDatabaseAccounts;
  */
 
 require_once __DIR__.'/installer-ownership.php';
+require_once __DIR__.'/config-validation.php';
 
 /**
  * 설치 흐름 검증 및 리다이렉트
@@ -160,11 +160,18 @@ function installerNormalizeWebExposureVerdict($verdict): string
 /**
  * Step 2 POST 처리 (요구사항 검증)
  *
- * @param  string|null  &$error  에러 메시지 (참조) — 노출됨 판정이면 여기 실리고 단계는 넘어가지 않는다
+ * 화면은 차단 항목이 있으면 다음 버튼을 숨기지만, POST 를 직접 보내면 그대로 넘어갔다.
+ * 다음 단계로 가기 전에 서버가 요구사항을 다시 검사한다(터미널 설치와 같은 함수).
+ * 그 앞에서 웹 노출 점검 판정(화면 자기 신고, 웹 전용 게이트)을 먼저 본다 — 값 비교뿐이라
+ * 요구사항 전체 판정(CLI 버전 확인 등 외부 호출 포함)보다 싸고, 노출됨 차단 기록이 요구사항 결과에
+ * 가려지지 않는다. 판정 통과 기록은 두 게이트를 모두 지난 뒤 단계를 넘어가는 시점에 한 줄 남긴다.
+ *
+ * @param  string|null  &$error  화면에 표시할 오류 (참조) — 요구사항 미충족·노출됨 판정이면 여기 실리고 단계는 넘어가지 않는다
  */
 function handleStep2Post(?string &$error = null): void
 {
     if (isset($_POST['proceed'])) {
+        // 1) 웹 노출 점검 게이트 (웹 전용)
         $verdict = installerNormalizeWebExposureVerdict($_POST['web_exposure_verdict'] ?? null);
 
         // 노출 점검(B-4)의 판정은 브라우저가 내리고 [다음 단계] 버튼도 화면이 잠근다(4차 제품
@@ -177,6 +184,15 @@ function handleStep2Post(?string &$error = null): void
         if ($verdict === 'exposed') {
             addLog(lang('log_web_exposure_blocked'));
             $error = lang('error_web_exposure_blocked');
+
+            return;
+        }
+
+        // 2) 서버 요구사항 재검사 — 화면의 버튼 숨김을 건너뛴 직접 POST 를 막는다(터미널 설치와 같은 함수).
+        require_once __DIR__.'/requirements.php';
+
+        if (installer_collect_requirements()['blocking']) {
+            $error = lang('requirements_not_met');
 
             return;
         }
@@ -196,9 +212,8 @@ function handleStep2Post(?string &$error = null): void
 /**
  * DB 사용자명을 검증해 에러 배열에 결과를 기록합니다.
  *
- * 빈 값(설정 누락)과 DB 최고권한 계정을 모두 거부합니다. 최고권한 계정 자격증명이
- * 유출되면 데이터베이스 전체가 위험해지므로 설치 단계에서 차단합니다.
- * 판정은 App\Support\PrivilegedDatabaseAccounts 가 SSoT 입니다.
+ * 빈 값(설정 누락)과 DB 최고권한 계정을 모두 거부합니다. 판정 본문은 웹·터미널 공유 함수
+ * `installer_validate_db_username()` 이 소유합니다 — 이 이름은 하위 호환 별칭입니다.
  *
  * @param  string  $username  입력된 DB 사용자명
  * @param  string  $field  에러 배열에 사용할 필드명 (db_write_username 등)
@@ -206,17 +221,7 @@ function handleStep2Post(?string &$error = null): void
  */
 function validateDbUsername(string $username, string $field, array &$errors): void
 {
-    $username = trim($username);
-
-    if ($username === '') {
-        $errors[$field] = lang('error_db_username_required');
-
-        return;
-    }
-
-    if (PrivilegedDatabaseAccounts::isBlocked($username)) {
-        $errors[$field] = lang('error_db_username_privileged', ['username' => $username]);
-    }
+    installer_validate_db_username($username, $field, $errors);
 }
 
 /**
@@ -239,60 +244,38 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     }
 
     $formData = array_merge($formData, $_POST);
-    unset($formData['csrf_token']);
     $formData['use_read_db'] = isset($_POST['use_read_db']) ? true : false;
 
-    // Write DB 검증
-    if (empty($formData['db_write_host'])) {
-        $errors['db_write_host'] = lang('error_db_host_required');
+    // 입력 검증 본문은 웹·터미널 공유 함수가 소유한다 — 규칙을 바꿀 때는 config-validation.php 에서 바꾼다.
+    // 코어 업데이트 _pending 경로만은 아래에서 웹 껍데기가 판정한다: 공유 함수의 판정에는 `..`/NUL 거부와
+    // Windows 절대경로 인식, stat 진단 억제가 없어(21차 #21-4) 그대로 넘기면 open_basedir 밖 경로의
+    // warning 이 redirect 헤더보다 먼저 나간다. 그래서 공유 함수에는 빈 값으로 넘기고 원래 값을 되돌린다.
+    $hasPendingPathInput = array_key_exists('core_update_pending_path', $formData);
+    $pendingPathInput = $formData['core_update_pending_path'] ?? '';
+    $validationInput = $formData;
+    if ($hasPendingPathInput) {
+        $validationInput['core_update_pending_path'] = '';
     }
-    if (empty($formData['db_write_database'])) {
-        $errors['db_write_database'] = lang('error_db_name_required');
-    }
-    validateDbUsername($formData['db_write_username'] ?? '', 'db_write_username', $errors);
 
-    // Read DB 검증 (사용하는 경우)
-    if (! empty($formData['use_read_db'])) {
-        if (empty($formData['db_read_host'])) {
-            $errors['db_read_host'] = lang('error_db_host_required');
-        }
-        if (empty($formData['db_read_database'])) {
-            $errors['db_read_database'] = lang('error_db_name_required');
-        }
-        validateDbUsername($formData['db_read_username'] ?? '', 'db_read_username', $errors);
+    $validated = installer_validate_config($validationInput, $currentLang);
+    $formData = $validated['config'];
+    $errors = array_merge($errors, $validated['errors']);
+
+    if ($hasPendingPathInput) {
+        $formData['core_update_pending_path'] = $pendingPathInput;
     }
+
+    // 아래는 공유 함수가 정규화한 $formData 를 기준으로 이어 붙는 웹 전용 검증이다.
 
     // 사이트명 길이 — 이 값은 `.env` 의 APP_NAME 과 설정의 site_name 으로 그대로 흘러가
     // 설치 직후 관리자·사용자 화면의 입력이 된다. 화면의 maxlength 는 거들 수 있으므로
-    // 서버가 같은 상한을 다시 강제한다.
-    if (mb_strlen((string) ($formData['app_name'] ?? '')) > MAX_APP_NAME_LENGTH) {
+    // 서버가 같은 상한을 다시 강제한다. 필수·개행 오류가 이미 있으면 그 사유를 먼저 보인다.
+    if (! isset($errors['app_name']) && mb_strlen((string) ($formData['app_name'] ?? '')) > MAX_APP_NAME_LENGTH) {
         $errors['app_name'] = lang('error_app_name_too_long', ['max' => MAX_APP_NAME_LENGTH]);
     }
 
-    // 관리자 정보 검증
-    if (empty($formData['admin_email']) || ! filter_var($formData['admin_email'], FILTER_VALIDATE_EMAIL)) {
-        $errors['admin_email'] = lang('error_admin_email_invalid');
-    }
-    if (! array_key_exists($formData['admin_language'] ?? '', SUPPORTED_LANGUAGES)) {
-        $errors['admin_language'] = lang('error_admin_language_invalid');
-    }
-    if (empty($formData['admin_password']) || strlen($formData['admin_password']) < 8) {
-        $errors['admin_password'] = lang('error_admin_password_min');
-    }
-    if ($formData['admin_password'] !== $formData['admin_password_confirm']) {
-        $errors['admin_password_confirm'] = lang('error_password_mismatch');
-    }
-
-    // PHP CLI / Composer 경로 처리 — 저장 시점에 허용 형태를 강제한다.
-    // 이 값들은 설치 워커에서 실제 명령의 실행 바이너리가 되므로, 형태 위반 값이
-    // 애초에 .env / 설치 상태에 기록되지 않게 여기서 막는다.
-    require_once __DIR__.'/binary-path-policy.php';
-
-    $phpBinary = trim($formData['php_binary'] ?? 'php');
-    $phpBinary = $phpBinary !== '' ? $phpBinary : 'php';
-    if ($phpBinary !== 'php' && ! installer_binary_path_shape_ok($phpBinary)) {
-        $errors['php_binary'] = lang('error_php_binary_path_not_allowed', ['path' => $phpBinary]);
-    }
+    // 공유 함수가 빈 값을 'php' 로 바꾸고 trim 한 값이다.
+    $phpBinary = (string) $formData['php_binary'];
 
     // 운영자가 **직접 지정한** 경로가 CLI 가 아니면 저장하지 않는다 (13차 보안#7 ②).
     // `php-fpm --version` · `php-cgi --version` 은 CLI 와 똑같이 정상 종료하고 같은 형태로
@@ -315,31 +298,11 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         }
     }
 
-    $formData['php_binary'] = $phpBinary;
-
-    $composerBinary = trim($formData['composer_binary'] ?? '');
-    if ($composerBinary !== '' && $composerBinary !== 'composer') {
-        // 단일 토큰이면 Composer 자리 규칙, 공백 분리 입력이면 (PHP, Composer) 쌍 해석.
-        $allowed = str_contains($composerBinary, ' ')
-            ? installer_resolve_php_composer_pair($composerBinary) !== null
-            : installer_is_composer_binary_path($composerBinary);
-
-        if (! $allowed) {
-            $errors['composer_binary'] = lang('error_composer_binary_path_not_allowed', ['path' => $composerBinary]);
-        }
-    }
-    $formData['composer_binary'] = $composerBinary;
-
-    // Vendor 설치 모드 처리 (auto|composer|bundled)
-    $vendorMode = trim($formData['vendor_mode'] ?? 'auto');
-    if (! in_array($vendorMode, ['auto', 'composer', 'bundled'], true)) {
-        $vendorMode = 'auto';
-    }
-
     // 실행 모드 (auto|subprocess|inprocess, 기본 auto — D33). 저장되는 것은 "선택" 이고
     // auto 는 감지 결과를 박지 않는다 (A-0 ①). inprocess 가 유효하면 composer 는 성립하지
     // 않으므로 Vendor 설치 방식을 bundled 로 고정한다 (A-4) — 화면이 보내는 값만 믿지
     // 않고 저장 시점에 다시 판정한다 (R9: 모드가 관여하는 지점은 모드를 읽는다).
+    // vendor_mode 의 모르는 값과 쓸 수 없는 방식의 거부는 공유 함수가 이미 했다 — 여기서는 그 결과에 강제만 얹는다.
     require_once __DIR__.'/execution-mode.php';
 
     $formData['execution_mode'] = installerNormalizeExecutionMode($formData['execution_mode'] ?? 'auto');
@@ -363,45 +326,7 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         'execution_mode' => $formData['execution_mode'],
         'php_binary' => $phpBinary,
     ]);
-    $formData['vendor_mode'] = installerCoerceVendorModeForExecution($vendorMode, $executionResolution['mode']);
-
-    // 자산 URL 방식 (이슈 #486) — Step 3 의 브라우저 프로브가 채운 hidden 필드.
-    // 정적 최적화 블록이 있는 서버는 확장자 붙은 동적 응답이 PHP 에 도달하지 못하므로
-    // 설치 시점에 확장자 없는 형태로 확정해야 첫 화면부터 정상 동작한다.
-    // 판정 불가(프로브 실패·JS 미실행)면 키를 비워 defaults.json 기본값을 따르게 한다.
-    $assetUrlMode = trim($formData['asset_url_mode'] ?? '');
-    $formData['asset_url_mode'] = in_array($assetUrlMode, ['extension', 'extensionless'], true)
-        ? $assetUrlMode
-        : '';
-
-    // .env 로 기록되는 사용자 입력의 사전 거부 (KVE-2026-2042)
-    // 직렬화기가 최종 관문이지만, 그 단계의 실패는 설치 진행 중에 예외로 드러나 운영자가
-    // 어느 입력이 문제인지 알기 어렵다. 여기서 필드별로 거부해 화면에 사유를 표시한다.
-    require_once __DIR__.'/env-value.php';
-
-    foreach (['app_name', 'app_url', 'core_update_github_url'] as $envField) {
-        if (! installer_env_value_is_single_line((string) ($formData[$envField] ?? ''))) {
-            $errors[$envField] = lang('error_env_value_line_break');
-        }
-    }
-
-    // URL 필드는 형태까지 확인한다 — 개행이 없어도 스킴이 없는 값이 그대로 기록되면
-    // 배포 후 절대 URL 생성이 어긋난다.
-    foreach (['app_url', 'core_update_github_url'] as $urlField) {
-        $urlValue = trim((string) ($formData[$urlField] ?? ''));
-        if ($urlValue === '' || isset($errors[$urlField])) {
-            continue;
-        }
-
-        // FILTER_VALIDATE_URL 은 호스트명의 밑줄(예: my_site.test)을 거부하므로 쓰지 않는다 —
-        // 로컬 개발 도메인에 흔한 형태라 스킴·호스트 존재와 공백 부재만 확인한다.
-        $parts = parse_url($urlValue);
-        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        $host = (string) ($parts['host'] ?? '');
-        if (! in_array($scheme, ['http', 'https'], true) || $host === '' || preg_match('/\s/', $urlValue)) {
-            $errors[$urlField] = lang('error_env_value_invalid_url', ['value' => $urlValue]);
-        }
-    }
+    $formData['vendor_mode'] = installerCoerceVendorModeForExecution((string) $formData['vendor_mode'], $executionResolution['mode']);
 
     // 코어 업데이트 _pending 경로 검증 (입력된 경우만) — 검사 버튼(check-core-pending-path)과
     // **같은 규칙**이어야 한다 (21차 #21-4). 종전에는 저장 경로만 `..`/NUL 거부·Windows
@@ -409,7 +334,7 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     // 상대경로로 오인해 검사 버튼이 초록을 준 경로와 다른 경로를 검증했고, open_basedir
     // 환경에서는 무억제 stat 의 warning 이 redirect 헤더보다 먼저 나가 화면이 Step 3 에
     // 고착됐다(상태는 이미 Step 4 로 넘어간 뒤라 새로고침해야만 풀린다).
-    $corePendingPath = trim($formData['core_update_pending_path'] ?? '');
+    $corePendingPath = trim((string) $pendingPathInput);
     if ($corePendingPath !== '') {
         $hasParentSegment = preg_match('#(^|[/\\\\])\.\.([/\\\\]|$)#', $corePendingPath) === 1;
 

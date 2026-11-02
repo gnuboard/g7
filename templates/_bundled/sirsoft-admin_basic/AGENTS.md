@@ -79,7 +79,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 제공 컴포넌트 | 134개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 200개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 레이아웃 | 203개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 29개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
@@ -116,9 +116,8 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] 로그인 화면의 2단계 인증·비밀번호 변경 단계를 고쳤다면 세 단계 `if` 의 상보성과 `login`/`loginTwoFactor`/`loginPasswordChange` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호·변경 단계에서 Enter 가 새 challenge 를 발급한다
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_role_form`·`admin_user_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고 `state.form` 기본값을 다시 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비우므로 수정 → 등록 SPA 이동에서 직전 값이 등록 폼에 남는다. 새 폼 레이아웃을 같은 구조로 만들면 같은 액션을 둔다(트러블슈팅 state-global 사례 7)
 - [ ] 사이트·회원·게시판 이름처럼 입력값을 그리는 글은 넘침을 막는다 — 모바일 상단 좌측 칸은 `min-w-0 flex-1`(이름 `truncate`, 우측 `flex-shrink-0`), 블록 제목·설명은 `break-words`, 이름·이메일 같은 좁은 칸은 `truncate` + 폭 상한. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 우측 묶음 clip 이나 `#right_content_area` 초과분으로 잰다 (#143)
-- [ ] 확장·언어팩 작업(설치·활성화·업데이트·레이아웃 갱신) 성공 갈래를 새로 만들면 응답 `data.warnings` 를 `_global.lifecycleWarnings` 에 담고(`lifecycleWarningsOpen` 은 false) 경고가 있을 때만 `lifecycle_warnings_modal` 을 연다 — 그 화면에 `partials/_modal_lifecycle_warnings.g7.html` 을 포함한다. 항목 `level` 이 `notice`(실패 아닌 안내)뿐이면 창이 안내 제목·파란 상자로 바뀐다(코어 7.1.3). `admin-extension-lifecycle-warnings-modal.test.tsx` 가 성공 갈래 전수를 잠근다
+- [ ] 확장·언어팩 작업(설치·활성화·업데이트·레이아웃 갱신) 성공 갈래를 새로 만들면 응답 `data.warnings` 를 `_global.lifecycleWarnings` 에 담고(`lifecycleWarningsOpen` 은 false) 경고가 있을 때만 `lifecycle_warnings_modal` 을 연다 — 그 화면에 `layouts/partials/_modal_lifecycle_warnings.g7.html` 을 포함한다. 항목 `level` 이 `notice`(실패 아닌 안내)뿐이면 창이 안내 제목·파란 상자로 바뀐다(코어 7.1.3). `admin-extension-lifecycle-warnings-modal.test.tsx` 가 성공 갈래 전수를 잠근다
 - [ ] `_admin_base` 자식 레이아웃에 progressive 데이터소스를 추가하면 `transition_overlay.wait_for` 에도 같은 ID 를 넣는다 — 레이아웃 테스트(`admin-base-transition-overlay`)가 누락을 잡는다
-- [ ] 브라우저가 만드는 주소는 `src/support/apiUrl.ts` 의 `apiUrl()`, `sitePath()`, `routePath()` 만 쓴다 — 이동, 링크, 요청 주소는 `sitePath()`/`apiUrl()` 로 접두사를 붙이고, `location.pathname` 을 화면 판정에 쓸 때는 `routePath()` 로 벗긴다. 이 파일은 번들 확장 전체가 바이트 동일한 사본으로 갖는다. 어기면 하위 폴더 설치(`https://host/g7/`)에서만 오류 없이 메뉴와 프로필 링크를 새 탭으로 열 때, 엔진 없이 전체 이동할 때 사이트 밖으로 나가고, 업로더의 언어 전환 인계 키가 어긋난다
 
 ## 6. 금지 패턴
 
@@ -137,10 +136,6 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | `CodeEditor` 의 중복 심기 가드를 모듈 수준 변수로 선언 | `window.__g7MonacoPriming` 에 둔다 | 이 번들은 화면마다 따로 평가될 수 있어 모듈 변수로는 같은 판에서 두 번 도는 것을 못 막는다 (실측: 로더 스크립트 태그가 3개까지 늘었다) |
 | 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣거나, prop 으로 받은 주소로 곧장 `location.href` 이동 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣고 이동한다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보내거나 `javascript:` 를 실행시킬 수 있다(KVE-2026-2350) |
 | 메뉴·목록 단추에 `w-full`·`flex-1` 로 폭을 주면서 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다(`text-left` 만으로는 부족) | 기본 `Button` 의 `.button` 클래스가 `inline-flex items-center justify-center` 라, 넓어진 단추의 글·아이콘이 가운데로 간다 — 언어 선택·다국어 입력 목록이 이렇게 가운데로 갔다 |
-| 왕복(`apiCall`·네트워크를 타는 등록 핸들러)이 걸린 버튼을 진행 표시 없이 둠 | 진행 플래그 하나를 두고 **셋을 함께** 건다 — `props.disabled`, 첫 children 에 `Icon name="spinner"`(`if` = 그 플래그), 액션 체인의 `setState … true` → `onSuccess`/`onError` **양쪽**에서 `false` | 왕복 중 화면이 그대로면 운영자는 눌리지 않은 줄 알고 다시 누른다. 되돌릴 수 없는 조작에서는 그 연타가 곧 사고다(번호 재발급이 두 번 돌면 방금 등록한 주소가 그 자리에서 무효가 된다). 등록 핸들러도 `onSuccess`/`onError` 를 받으므로 플래그를 되돌릴 자리가 있다 |
-| 진행 중에 버튼을 `if` 로 **감춰서** 진행을 알림 | 자리를 지킨 채 비활성·스피너로 알린다 | 사라지는 것은 「눌렸다」가 아니라 「없어졌다」로 읽힌다 — 같은 자리에 다른 버튼이 있으면 그것을 잘못 누른다 |
-| 폼 안에서 값을 `setState` 로 직접 쓰는 라디오 묶음에 `props.name` 만 주고 `autoBinding` 을 켜 둠 | `name` 은 유지하고 `:autoBinding="false"` 를 함께 준다 — `checked` 는 표현식으로 통제한다 (프론트엔드 트러블슈팅 「컴포넌트·폼」 사례 4 — dataKey 자동 바인딩이 라디오·체크박스의 value 를 덮어쓰는 문제, engine-v1.17.6) | 자동바인딩이 켜져 있으면 그 키의 폼 값을 읽어 **형제 라디오의 `value` 까지 같은 값으로 덮는다.** `checked` 는 맞게 붙고 화면도 정상이라 눈으로 드러나지 않는다 (실측 2026-09-12: 신뢰 프록시 모드 `none/nearest/list` → 클릭 후 셋 다 `nearest`). `name` 을 빼는 우회는 native 라디오 그룹(방향키 이동·그룹 낭독)을 잃는다 |
-| 관리자 카드 안에 `Accordion` 컴포넌트를 넣어 접기 영역을 만듦 | `.admin-card-accordion` + `.card-header`(제목 + `chevron-down` 아이콘 `admin-card-accordion-icon`) + `if` 로 토글되는 `.row-stack` 본문 — 이커머스 상품 폼 13곳·환경설정 > 업데이트 「고급」이 선례 | `Accordion` 은 자기 테두리·배경을 그려 카드 안에 **상자가 한 번 더** 생기고, trigger 를 직접 넘기는 순간 컴포넌트가 꺾쇠를 그리지 않아 접힌다는 신호가 사라진다. 본문 여백도 호출처가 직접 줘야 한다 (실측 2026-09-13: 업데이트 탭 「고급」) |
 <!-- @intent END -->
 
 ### Monaco 편집기 확보 계약 (S3-D12)
@@ -195,9 +190,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 485개 | `vitest.config.ts` |
-| Playwright | 33개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 139개 | `tests/scenarios` |
+| Vitest | 493개 | `vitest.config.ts` |
+| Playwright | 35개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 146개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

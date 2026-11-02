@@ -26,7 +26,7 @@ export interface SubscriptionOptions {
 }
 
 /**
- * 한 `channel:event` 의 구독 엔트리 (engine-v1.86.0)
+ * 한 `channel:event` 의 구독 엔트리 (engine-v1.87.0)
  */
 interface SubscriptionEntry {
   /** Echo 채널 인스턴스 */
@@ -66,7 +66,7 @@ const logger = createLogger('WebSocketManager');
 class WebSocketManager {
   private echo: Echo<'reverb'> | null = null;
   /**
-   * `channel:event` → { Echo 채널, 구독 키별 콜백 } (engine-v1.86.0)
+   * `channel:event` → { Echo 채널, 구독 키별 콜백 } (engine-v1.87.0)
    *
    * 종전에는 `channel:event` → 채널 하나라 같은 키를 두 번째로 구독하면 콜백이 연결되지 않았고,
    * 두 주인이 같은 키를 들고 있어 한쪽 해제가 다른 쪽까지 끊었다. 이제 Echo `listen` 은 키당 1회만 걸고
@@ -202,7 +202,7 @@ class WebSocketManager {
    * 채널을 구독하고 이벤트를 리스닝합니다.
    *
    * 같은 `channel:event` 를 여러 주인이 구독해도 각자 수신한다. Echo `listen` 은 그 키에 1회만 걸고,
-   * 이벤트가 오면 등록된 콜백을 모두 부른다 (engine-v1.86.0).
+   * 이벤트가 오면 등록된 콜백을 모두 부른다 (engine-v1.87.0).
    *
    * @param channel 채널명 (예: 'admin.dashboard')
    * @param event 이벤트명 (예: 'dashboard.stats.updated')
@@ -279,7 +279,7 @@ class WebSocketManager {
    * 중복 누적된다.
    *
    * 레거시 키(`channel:event`, `#` 없음)로 부르면 그 키의 콜백을 전부 지우고 `[G7]` 경고를 낸다
-   * (engine-v1.86.0 — 다른 주인의 구독까지 끊기 때문).
+   * (engine-v1.87.0 — 다른 주인의 구독까지 끊기 때문).
    *
    * @param subscriptionKey `subscribe` 가 돌려준 구독 키 (형식: "channel:event#n")
    */
@@ -384,7 +384,7 @@ class WebSocketManager {
   /**
    * 현재 활성 구독 수를 반환합니다.
    *
-   * 구독(콜백) 단위로 센다 — 같은 `channel:event` 를 둘이 구독하면 2다 (engine-v1.86.0).
+   * 구독(콜백) 단위로 센다 — 같은 `channel:event` 를 둘이 구독하면 2다 (engine-v1.87.0).
    *
    * @returns 구독 수
    */

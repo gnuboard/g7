@@ -44,6 +44,7 @@ require_once __DIR__.'/../includes/exposure-check.php';
 // 설치 소유 세션 판정용 — session.php 는 installer-state.php 를 require 하므로 그 뒤에 둔다.
 require_once __DIR__.'/../includes/session.php';
 require_once __DIR__.'/../includes/installer-ownership.php';
+require_once __DIR__.'/../includes/env-finalize.php';
 require_once __DIR__.'/_guard.php';
 // finalize 전용 가드 — `.env` 의 INSTALLER_COMPLETED=true 단독으로만 차단한다.
 // 일반 인스톨러 엔드포인트의 `installer_guard_or_410()` 은 `g7_installed` 락 파일도
@@ -188,205 +189,16 @@ if ($finalizeLock !== false && ! @flock($finalizeLock, LOCK_EX)) {
 }
 
 try {
-    $runtime = readInstallerRuntime();
-
-    // 멱등성: runtime.php 부재 → 이미 finalize 된 상태
-    if ($runtime === null) {
+    // 멱등성: runtime.php 부재 → 이미 finalize 된 상태 (뒤에 온 동시 요청도 여기서 끝난다)
+    if (readInstallerRuntime() === null) {
         return;
     }
 
-    $envPath = BASE_PATH.'/.env';
-    $envBase = generateEnvContent();
-
-    if ($envBase === null) {
-        addLog(lang('log_finalize_env_generate_failed'));
-
-        return;
-    }
-
-    // 머지 로직은 mergeRuntimeIntoEnv() 헬퍼로 분리 — 단위 테스트 가능
-    $envContent = mergeRuntimeIntoEnv($envBase, $runtime);
-
-    // .env 단일 쓰기 — file_put_contents 는 close 시점에 mtime 1회만 갱신하므로
-    // ServeCommand 의 mtime watcher 가 다중 재시작을 일으키지 않는다.
-    // atomic rename 대신 file_put_contents 를 사용하여 부모 디렉토리(프로젝트 루트)
-    // 쓰기 권한 요구를 회피 — 기존 인스톨러 권한 안내 (chmod 664 .env + chgrp) 만으로 충분.
-    //
-    // 권한 정책 (#371): finalize-env.php 는 chmod 0600 시도를 수행하지 않는다.
-    // PHP-FPM(www-data) 가 .env 소유자(예: jjh) 와 다른 자체 구축 환경에서는 POSIX 상
-    // chmod 가 거부되며, 또한 인스톨러가 임의로 0600 으로 깎으면 운영자가 의도해서
-    // 설정한 0664/0640 권한이 손상된다. file_put_contents 는 기존 inode 의 권한을
-    // 변경하지 않으므로, 인스톨러 안내 단계의 권한 (chgrp www-data + chmod 664) 이
-    // 그대로 유지된다. 추가 보안 강화는 Step 6 완료 화면 안내 + INSTALL.md 운영
-    // 가이드에 위임.
-    // 쓰기 직전 원본 보존 (13차 #D8).
-    //
-    // `.env` 는 `.env.example` 템플릿에서 새로 만들어져 **통째로 대체**된다 — 운영자가 설치
-    // 전에 넣어 둔 값(메일·큐·레디스·서드파티 키)은 설치가 **성공해도** 사라지고 되돌릴 방법이
-    // 없다. 쓰기는 부모 디렉토리 쓰기 권한을 요구하지 않으려고 rename 이 아닌 제자리 쓰기라
-    // (바로 위 주석), 보존은 이 사본으로만 가능하다.
-    //
-    // 보존 실패는 설치 실패가 아니다 — 헬퍼가 null 을 돌려주면 기록만 남기고 그대로 진행한다.
-    $envBackupPath = backupExistingEnvFile();
-
-    if ($envBackupPath !== null) {
-        addLog(lang('log_finalize_env_backup_kept', ['path' => $envBackupPath]));
-    }
-
-    // 설치 워커가 병합 전 .env(와 runtime.php 주입 값)로 만든 설정 캐시를 쓰기 전에 지운다 — 쓰기 직후 이
-    // 프로세스가 끊겨도(php artisan serve 는 .env 변경을 보고 서버를 다시 띄운다) 병합 전 값의 캐시가
-    // 남지 않는다. 캐시는 아래 runtime.php 삭제 뒤 다시 만든다.
-    if (! installerClearConfigCache()) {
-        addLog(lang('log_finalize_env_config_cache_delete_failed', [
-            'path' => installerConfigCachePath(),
-            'error' => (error_get_last()['message'] ?? 'unknown'),
-        ]));
-    }
-
-    // 부분 쓰기(디스크 full·quota)는 `false` 가 아니라 **쓴 바이트 수**를 돌려준다. 그것을
-    // 성공으로 통과시키면 잘린 `.env` 가 「머지 완료」로 보고되고, 바로 아래에서 유일한
-    // 비밀 사본(`runtime.php`)이 삭제되어 `APP_KEY`·DB 자격증명을 되찾을 수 없다.
-    // 쓰기는 부모 디렉토리 권한을 요구하지 않으려고 rename 이 아닌 제자리 쓰기라
-    // 원본이 그 자리에서 잘린다. 형제 4지점(`exposure-check`·`installer-state`·
-    // `AbstractRootMarkerFileUpdater`·`CoreUpdateService`)이 이미 이 축을 막는다.
-    if (! installerWroteFully(@file_put_contents($envPath, $envContent, LOCK_EX), $envContent)) {
-        $lastError = error_get_last();
-        addLog(lang('log_finalize_env_write_failed', [
-            'path' => $envPath,
-            'error' => $lastError['message'] ?? 'unknown',
-        ]));
-
-        return;
-    }
-
-    // 머지 후 권한·소유자·그룹 상태를 명시 기록 — 운영자 사후 검증용
-    $envPermsAfter = fileperms($envPath) & 0777;
-    $envOwnerAfter = @fileowner($envPath);
-    $envGroupAfter = @filegroup($envPath);
-
-    $currentEuid = function_exists('posix_geteuid') ? posix_geteuid() : null;
-    $currentEuser = ($currentEuid !== null && function_exists('posix_getpwuid'))
-        ? (posix_getpwuid($currentEuid)['name'] ?? (string) $currentEuid)
-        : 'unknown';
-
-    addLog(lang('log_finalize_env_merged', [
-        'path' => $envPath,
-        'perms' => decoct($envPermsAfter),
-        'owner' => $envOwnerAfter === false ? 'unknown' : (string) $envOwnerAfter,
-        'group' => $envGroupAfter === false ? 'unknown' : (string) $envGroupAfter,
-        'euser' => $currentEuser,
-    ]));
-
-    // runtime.php 삭제 — Provider 가 다음 부팅부터 no-op
-    if (! deleteInstallerRuntime()) {
-        addLog(lang('log_finalize_env_runtime_delete_failed', [
-            'path' => INSTALLER_RUNTIME_PATH,
-            'error' => (error_get_last()['message'] ?? 'unknown'),
-        ]));
-    } else {
-        addLog(lang('log_finalize_env_runtime_removed'));
-    }
-
-    // 설정 캐시 무효화와 다시 만들기 — 제품 결정(13차 D7/E2) + 설치 워커와의 경합 차단.
-    //
-    // 마지막 태스크 `config_cache` 는 `.env` 머지 **이전**에 돈다. 그 시점의 config 는
-    // `InstallerRuntimeServiceProvider` 가 runtime.php 에서 주입한 값이고, Laravel 의
-    // `config:cache` 는 전체 부팅(ServiceProvider boot 포함)을 거친 config 를 그대로
-    // `var_export` 하므로 **DB 비밀번호가 평문으로 캐시 파일에 복제**된다. 덤으로 그
-    // 캐시에는 `app.installer_completed=false` 가 박혀 모듈·플러그인 라우트 프로바이더가
-    // 매 요청 조기 return 한다. 그런데 그 캐시를 갱신하는 지점이 어디에도 없었다.
-    //
-    // 선택은 「굽지 않는다」가 아니라 「끝날 때 지우고 병합된 값으로 다시 굽는다」다 — 태스크를
-    // 목록에서 빼면 진행 화면·매니페스트의 계약이 함께 바뀐다. 다시 굽는 것은 설치가 config 캐시
-    // 켜진 상태로 시작하게 하려는 것이고, 굽지 못하면(무CLI 환경처럼 `exec` 가 막혔거나 artisan
-    // 실패) 캐시를 지운 채 둔다 — `config:clear` 의 실질이 이 파일 삭제이므로 다음 요청이 머지된
-    // `.env` 로 부팅한다.
-    //
-    // 위치는 `.env` 쓰기 성공 **뒤**, runtime.php 를 지우는 이 정리 구간이다. 앞에 두면
-    // 그 뒤의 부팅이 다시 캐시를 만들 여지가 있다. 쓰기 직전에도 한 번 지운다(위) — 이 사이에
-    // 남이 다시 구웠을 수 있어(워커 대기 상한 초과 등) 여기서도 지운다.
-    //
-    // 삭제·다시 만들기 실패는 설치를 중단시키지 않는다 — 기록만 남긴다.
-    $configCachePath = installerConfigCachePath();
-
-    if (file_exists($configCachePath)) {
-        if (@unlink($configCachePath) === false) {
-            addLog(lang('log_finalize_env_config_cache_delete_failed', [
-                'path' => $configCachePath,
-                'error' => (error_get_last()['message'] ?? 'unknown'),
-            ]));
-        } else {
-            addLog(lang('log_finalize_env_config_cache_removed'));
-        }
-    }
-
-    // PHP 경로는 상태 파일에 있으므로 상태 삭제 전에 읽는다. 후보 순서는 워커의 getPhpBinary() 와
-    // 같다 — 운영자 명시(config.php_binary) > 설치 시작 시 자동 탐색된 경로(php_binary_resolved) > php.
-    $finalizePhpState = getInstallationState();
-    $finalizePhpBinary = installer_php_binary_from_state($finalizePhpState);
-    if ($finalizePhpBinary === 'php' && (string) ($finalizePhpState['php_binary_resolved'] ?? '') !== '') {
-        $finalizePhpBinary = installer_php_binary_from_state([
-            'config' => ['php_binary' => (string) $finalizePhpState['php_binary_resolved']],
-        ]);
-    }
-
-    $configCacheRebuild = installerRebuildConfigCache($finalizePhpBinary);
-    if ($configCacheRebuild['rebuilt']) {
-        addLog(lang('log_finalize_env_config_cache_rebuilt'));
-    } else {
-        addLog(lang('log_finalize_env_config_cache_rebuild_failed', [
-            'exit' => $configCacheRebuild['exit_code'] === null ? 'n/a' : (string) $configCacheRebuild['exit_code'],
-            // mbstring 이 없는 호스팅도 있다 — 없으면 바이트 단위로 자른다.
-            'output' => function_exists('mb_substr')
-                ? mb_substr($configCacheRebuild['output'], 0, 500)
-                : substr($configCacheRebuild['output'], 0, 500),
-        ]));
-    }
-
-    // state.json 삭제 — setInstallationCompleteSSE 가 본 단계로 위임함
-    // (finalize 가 generateEnvContent() 호출 시 state.config 가 필요했기 때문)
-    //
-    // 삭제 실패 또는 DELETE_INSTALLER_AFTER_COMPLETE=false 로 파일이 남는 모든 경로에서는
-    // 비밀 필드를 제거한 뒤 재저장한다 (이슈 #465). .env 머지가 이미 성공한 뒤이므로
-    // state.config 가 더 이상 필요하지 않아 순서상 안전하다.
-    // 경로 리터럴을 두 곳에 두면 STATE_PATH 를 먼저 정의하는 진입점(테스트 하네스)이나
-    // 배치가 달라졌을 때 finalize 만 조용히 다른 파일을 지운다 — session.php 가 10차에
-    // 같은 이유로 리터럴을 걷어냈다 (11차 #A11).
-    $stateFilePath = STATE_PATH;
-    $stateDeleted = false;
-
-    if (defined('DELETE_INSTALLER_AFTER_COMPLETE') && DELETE_INSTALLER_AFTER_COMPLETE) {
-        if (is_file($stateFilePath)) {
-            if (@unlink($stateFilePath) === false) {
-                addLog(lang('log_finalize_env_state_delete_failed', [
-                    'path' => $stateFilePath,
-                    'error' => (error_get_last()['message'] ?? 'unknown'),
-                ]));
-            } else {
-                $stateDeleted = true;
-                addLog(lang('log_finalize_env_state_removed'));
-            }
-            // 워커 lock 판정용 파일(installerWithStateLock 의 flock 대상) — 상태 파일과 함께 치운다.
-            // 이름은 생산자 상수다 — 리터럴이면 갈려도 아무것도 울리지 않는다 (15차 G3 W1-4).
-            if (is_file($stateFilePath.INSTALLER_STATE_LOCK_SUFFIX)) {
-                @unlink($stateFilePath.INSTALLER_STATE_LOCK_SUFFIX);
-            }
-        } else {
-            $stateDeleted = true;
-        }
-    }
-
-    if (! $stateDeleted && is_file($stateFilePath)) {
-        if (saveInstallationState(redactInstallationStateSecrets(getInstallationState()))) {
-            addLog(lang('log_finalize_env_state_redacted'));
-        } else {
-            addLog(lang('log_finalize_env_state_redact_failed', ['path' => $stateFilePath]));
-        }
-    }
-
-    // 설치 소유권 부속 파일 정리 — 복구 토큰 실패 집계. 상태 쓰기 직렬화 잠금 파일은 위 상태 파일
-    // 삭제 구간이 생산자 상수(INSTALLER_STATE_LOCK_SUFFIX)로 함께 치운다.
-    installer_reclaim_reset_throttle();
+    // 본문은 웹·터미널 공유 함수(includes/env-finalize.php) — 병합 전 설정 캐시 삭제, 병합, runtime.php 삭제,
+    // 병합된 .env 로 설정 캐시 다시 만들기(실패하면 캐시 없이 둔다)까지 한다. 결과 문구는 installation.log 에 남는다.
+    // 쓰기 직전 .env 보존, 부분 쓰기 판정, 상태 파일과 그 잠금 파일 정리도 그 함수가 맡는다.
+    // 번역 테이블은 위 다국어 로드가 실어 두었다 — 그 함수의 기록 문구는 다국어 키다.
+    installer_finalize_env();
 } catch (Throwable $e) {
     // 예외 시 runtime.php 보존 → Provider 가 계속 config 주입 → 앱 정상 동작.
     addLog(lang('log_finalize_env_unexpected_exception', [
@@ -399,8 +211,8 @@ try {
     // 가치는 없지만, 「지우려 했는데 못 지웠다」는 사실은 남긴다: 그 디렉토리가 쓰기 불가로
     // 바뀐 신호일 수 있고, 무기록이면 형제 정리(runtime.php)와 규율이 갈린다.
     //
-    // `finally` 인 이유: 이 블록의 성공 흐름 한복판에 두면 그 앞의 조기 `return` 세 곳
-    // (runtime 부재·`.env.example` 부재·`.env` 쓰기 실패)과 `catch` 가 전부 정리를 건너뛴다.
+    // `finally` 인 이유: 이 블록의 성공 흐름 한복판에 두면 그 앞의 조기 `return`(runtime 부재)과
+    // 공유 함수의 실패 반환(`.env.example` 부재·`.env` 쓰기 실패), `catch` 가 전부 정리를 건너뛴다.
     // 「전 경로에서 정리한다」는 규율은 그 형태로는 성립하지 않는다.
     $probeCleanup = installerCleanupExposureProbe();
     if (! $probeCleanup['swept']) {

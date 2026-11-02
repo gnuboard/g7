@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 use Plugins\Sirsoft\PayNhnkcp\Controllers\EscrowCommonNotifyController;
+use Plugins\Sirsoft\PayNhnkcp\Controllers\KcpFrameController;
 use Plugins\Sirsoft\PayNhnkcp\Controllers\PaymentCallbackController;
 
 /*
@@ -21,6 +22,11 @@ use Plugins\Sirsoft\PayNhnkcp\Controllers\PaymentCallbackController;
 |     (테스트 모드 시 우회. 그누보드5 settle_kcp_common.php 동일 패턴)
 |
 */
+
+// PC 결제창 프레임 (#158) — 주문 화면이 투명 iframe 으로 연다. 같은 출처여야 부모와 주문 값·결과를
+// 주고받을 수 있고, web 그룹이라 코어 CSP 헤더가 함께 붙는다. GET 이라 CSRF 무관.
+Route::get('/payment/kcp-frame', [KcpFrameController::class, 'show'])
+    ->name('payment.kcp-frame');
 
 Route::withoutMiddleware([ValidateCsrfToken::class])->group(function () {
     // 결제 승인 콜백 (KCP → 브라우저 POST)

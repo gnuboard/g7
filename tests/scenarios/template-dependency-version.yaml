@@ -1,0 +1,99 @@
+feature: 의존 확장 충족 판정식 통일 — 템플릿 활성화 버전 제약·화면 사유 표시·역방향 안내
+
+description: |
+  템플릿 활성화가 의존 모듈·플러그인의 설치·활성 여부만 보고 버전 제약을 버려, 요구 버전에 못 미치는 의존 위에서도
+  활성화가 200 으로 통과하고 직후 런타임 미들웨어가 같은 미달로 사이트 전체를 503 으로 내렸다(공개 #152).
+  같은 판정이 설치·활성화·런타임 503·목록 API·미리보기·모듈 trait 에 따로 구현돼 있었으므로 DependencyEnricher
+  한 곳으로 모으고(빈 제약·null = 제약 없음, 목록형 지원, updating 은 런타임에서만 활성), 각 경로가 같은 사유
+  (not_installed·inactive·version_mismatch)를 싣게 한다. CLI 라벨·호환성 복구 응답·설치 미리보기·연쇄 설치 사유도 같은
+  사유로 맞추고, 의존 대상의 판이 내려가거나 꺼지는 경로는 깨지는 의존자를 안내(notice)한다.
+  화면 쪽은 templates/_bundled/sirsoft-admin_basic/tests/scenarios/template-dependency-version-screens.yaml 이 잠근다.
+
+axes:
+  surface:
+    # 판정식 원천 (DependencyEnricher)
+    - normalize
+    - iterate
+    - status
+    - version
+    - enrich
+    - describe
+    # 템플릿 활성화·설치·런타임
+    - activate_version_mismatch
+    - activate_inactive_missing
+    - activate_force
+    - judgement_agree
+    - activate_admin_type
+    - runtime_version_mismatch
+    - runtime_updating
+    - runtime_met
+    # API 응답
+    - api_activate_409
+    - api_recover_409
+    - api_recover_409_other_reason
+    - resource_list_status
+    - resource_met_agree
+    # CLI
+    - cli_template
+    - cli_template_admin
+    - cli_module_plugin
+    # 역방향 안내
+    - dependents_template
+    - dependents_inactive_met
+    - dependents_module
+    - dependents_plugin
+    - dependents_exception
+    - dependents_notice
+    - dependents_stuck_recovery
+    - dependents_message
+    - dependents_wiring
+    # 설치 미리보기·연쇄 설치·설치 거부 문구
+    - preview_version_blocked
+    - cascade_failure_reason
+    - install_unmet_message
+
+effects:
+  - empty_constraint_means_any_version
+  - iterate_accepts_map_and_list
+  - status_order_not_installed_inactive_version_mismatch
+  - version_check_never_throws
+  - enrich_exposes_status_and_installed
+  - describe_unmet_human_readable
+  - activation_blocks_version_mismatch
+  - activation_reports_inactive_and_missing
+  - force_activation_bypasses_version_check
+  - install_activate_runtime_agree
+  - admin_template_warning_carries_type
+  - runtime_503_carries_reason_status
+  - runtime_treats_updating_as_active
+  - runtime_passes_when_met
+  - recover_reports_failure
+  - list_dependencies_carry_status
+  - resource_met_matches_activation
+  - cli_labels_version_mismatch
+  - cli_admin_template_recovery_hint
+  - dependents_reported_when_target_drops
+  - dependents_collection_never_throws
+  - dependents_notice_not_failure
+  - dependents_notice_carries_display_name   # 의존자 안내는 결과 창 대상 칸용 이름(target_name)을 싣고 target 은 식별자 유지 (7.1.4)
+  - stuck_recovery_reverting_version_notices_dependents
+  - update_message_separates_dependents
+  - dependents_notice_wired_into_lifecycle
+  - preview_blocks_version_mismatch
+  - cascade_reason_human_readable
+  - install_message_no_force_bypass
+
+test_files:
+  - tests/Unit/Extension/DependencyEnricherStatusTest.php
+  - tests/Feature/Extension/TemplateActivationDependencyVersionTest.php
+  - tests/Feature/Middleware/CheckTemplateDependenciesTest.php
+  - tests/Feature/Api/Admin/DependencyUnmetResponseTest.php
+  - tests/Unit/Resources/TemplateResourceDependencyStatusTest.php
+  - tests/Feature/Console/Commands/ActivateCommandDependencyLabelTest.php
+  - tests/Unit/Extension/DependencyVersionWarningsDependentsTest.php
+  - tests/Unit/Services/Extension/InstallPreviewVersionBlockedTest.php
+  - tests/Unit/Extension/DependentsNoticeWiringTest.php
+
+notes:
+  - 의존 대상의 판이 내려가거나 꺼지는 경로(역방향)는 막지 않고 안내(notice)만 한다 — 작업 차단은 범위 밖.
+  - 강제 비활성화·install --force 의 안내 연결은 실제로 돌리면 라우트·훅 캐시 재굽기가 따라와 시험 중 실행할 수 없다 — 판정·수준은 dependents_* 단위 시험, 연결은 dependents_wiring 소스 가드가 잠근다.

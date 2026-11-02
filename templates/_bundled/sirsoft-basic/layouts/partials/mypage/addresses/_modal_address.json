@@ -361,6 +361,17 @@
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "우편번호 검색 플러그인이 꺼져 있으면 직접 입력한다(readOnly 가 풀린다) — 그때 친 값이 상태로 가야 저장에 실린다(검색 결과는 아래 확장 자리 콜백이 넣는다).",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "editingAddress.zipcode": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
                                             "props": {
                                                 "aria-label": "$t:shop.checkout.zipcode",
                                                 "type": "text",
@@ -368,7 +379,7 @@
                                                 "value": "{{_global.editingAddress?.zipcode ?? ''}}",
                                                 "placeholder": "$t:shop.checkout.zipcode_placeholder",
                                                 "className": "{{_local.addressErrors?.zipcode ? 'w-28 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}",
-                                                "readOnly": true
+                                                "readOnly": "{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}"
                                             }
                                         },
                                         {
@@ -401,6 +412,17 @@
                                     "comment": "기본 주소",
                                     "type": "basic",
                                     "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "우편번호 검색 플러그인이 꺼져 있으면 직접 입력한다(readOnly 가 풀린다) — 그때 친 값이 상태로 가야 저장에 실린다(검색 결과는 아래 확장 자리 콜백이 넣는다).",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "editingAddress.address": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
                                     "props": {
                                         "aria-label": "$t:shop.checkout.address",
                                         "type": "text",
@@ -408,7 +430,7 @@
                                         "value": "{{_global.editingAddress?.address ?? ''}}",
                                         "placeholder": "$t:shop.checkout.address_placeholder",
                                         "className": "{{_local.addressErrors?.address ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}",
-                                        "readOnly": true
+                                        "readOnly": "{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}"
                                     }
                                 },
                                 {

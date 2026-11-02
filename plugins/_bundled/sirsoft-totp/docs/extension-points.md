@@ -40,6 +40,7 @@
 <!-- @generated:hooks-subscribed START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
+| `core.auth.console_password_reset_notices` | filter | `ConsolePasswordResetNoticeListener` | `appendResetNotice` | 20 |
 | `core.identity.purposes` | filter | `ExtendLoginPurposeChannels` | `extend` | 20 |
 | `core.identity.registered_providers` | filter | `RegisterTotpProviderListener` | `register` | 20 |
 | `core.user.after_withdraw` | action (미선언) | `CleanTotpCredentialOnUserWithdraw` | `handle` | 50 |
@@ -87,6 +88,7 @@
 |---|---|---|---|---|
 | `CleanTotpCredentialOnUserDelete` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanTotpCredentialOnUserDelete.php` |
 | `CleanTotpCredentialOnUserWithdraw` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanTotpCredentialOnUserWithdraw.php` |
+| `ConsolePasswordResetNoticeListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ConsolePasswordResetNoticeListener.php` |
 | `ExtendLoginPurposeChannels` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExtendLoginPurposeChannels.php` |
 | `RegisterTotpProviderListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterTotpProviderListener.php` |
 | `TotpAdminResetActivityLogListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/TotpAdminResetActivityLogListener.php` |

@@ -39,6 +39,8 @@ class SeoBotPreviewRequest extends FormRequest
             'locale' => ['nullable', 'string'],
             'module_id' => ['nullable', 'string'],
             'plugin_id' => ['nullable', 'string'],
+            // 편집 중인 라우트의 레이아웃 전체 이름 — module_id·plugin_id 가 없을 때 소속 확장을 해석한다
+            'layout_name' => ['nullable', 'string', 'max:255'],
             'seed_context' => ['nullable', 'array'],
         ];
 

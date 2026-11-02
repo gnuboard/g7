@@ -61,7 +61,8 @@
     "tax_status_options": {
       "all": "すべて",
       "taxable": "課税",
-      "tax_free": "非課税"
+      "tax_free": "非課税",
+      "zero_rated": "ゼロ税率"
     },
     "price": "価格",
     "price_type_select": "価格の基準",
@@ -287,8 +288,10 @@
       "tax_status": "課税対象",
       "tax_status_options": {
         "taxable": "課税",
-        "tax_free": "非課税"
+        "tax_free": "非課税",
+        "zero_rated": "ゼロ税率"
       },
+      "tax_status_help": "オプションごとに変える場合は、商品オプション表の「課税区分」で変更します。ゼロ税率は税率0%（輸出など）で、決済代行会社には非課税として送信されます。",
       "sales_status": "販売ステータス",
       "sales_status_options": {
         "on_sale": "販売中",
@@ -850,6 +853,7 @@
       "category": "分類",
       "list_price": "定価",
       "selling_price": "販売価格",
+      "tax_status": "課税区分",
       "price": "価格",
       "price_type": "価格タイプ",
       "sku": "SKU",
@@ -897,7 +901,8 @@
     "additional_value_active": "使用",
     "additional_value_allow_custom_text": "直接入力",
     "option_group_name_n": "オプショングループ{{n}}の名前",
-    "option_group_values_n": "オプショングループ{{n}}の値"
+    "option_group_values_n": "オプショングループ{{n}}の値",
+    "tax_status_inherit": "デフォルトに従う（{{status}}）"
   },
   "notice": {
     "tab_existing_template": "テンプレート選択",
@@ -1139,7 +1144,8 @@
   },
   "tax": {
     "taxable": "課税",
-    "tax_free": "非課税"
+    "tax_free": "非課税",
+    "zero_rated": "ゼロ税率"
   },
   "labels": {
     "title": "ラベル",

@@ -612,6 +612,7 @@ return [
             'counts_syncing' => 'Syncing denormalized count columns...',
             'counts_synced' => 'Post, comment, and board count columns updated',
             'images_creating' => 'Creating sample image files...',
+            'images_skipped_no_gd' => 'The PHP gd extension is not available — continuing without sample images and attachments.',
             'image_created' => 'Sample image #:index: :path',
             'posts_exist_skip' => 'Board :slug already has posts (:count). Skipping.',
             'board_summary' => ':slug: created (posts :posts, reply posts :replies, comments :comments)',

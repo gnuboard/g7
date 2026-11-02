@@ -5,6 +5,7 @@ namespace App\Extension\Traits;
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Support\IntegrationReverseIndex;
 use App\Models\Plugin;
 use App\Support\InstallerContext;
 use Illuminate\Support\Facades\DB;
@@ -121,6 +122,9 @@ trait CachesPluginStatus
         $cache = self::resolvePluginStatusCache();
         $cache->forget('ext.plugins.active_identifiers');
         $cache->forget('ext.plugins.installed_identifiers');
+
+        // 같은 요청에서 만든 선택 연동 역맵도 버린다 — 상태가 바뀐 뒤의 「연동 중인 확장」 응답이 옛 목록이 되지 않게(7.1.4)
+        IntegrationReverseIndex::flushCurrent();
     }
 
     /**

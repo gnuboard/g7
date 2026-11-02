@@ -135,7 +135,7 @@ class ModuleSettingsService
      * @param  string  $identifier  모듈 식별자 (예: sirsoft-ecommerce)
      * @return ModuleSettingsInterface|null 설정 서비스 인스턴스
      */
-    private function resolveModuleService(string $identifier): ?ModuleSettingsInterface
+    public function resolveModuleService(string $identifier): ?ModuleSettingsInterface
     {
         // 캐시 확인 (false = 검색 완료 + 미발견)
         if (array_key_exists($identifier, $this->moduleServiceCache)) {

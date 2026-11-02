@@ -23,6 +23,7 @@ use Modules\Sirsoft\Ecommerce\Enums\DeviceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Enums\ShippingStatusEnum;
@@ -676,6 +677,8 @@ class OrderProcessingService
             // 부가세는 주문 생성 시점에 기록한다. 기존에는 부분취소 재계산에서만 갱신되어
             // 부분취소를 겪은 주문만 값이 정상화되고 나머지는 영구 0 이었다.
             'total_vat_amount' => $this->resolveVatAmount($calculationResult),
+            // 영세 금액(과세표준에 포함, 부가세 0) — 결제사·현금영수증에 면세로 넘길 몫을 빼내는 근거 (#612)
+            'total_zero_rated_amount' => $summary->zeroRatedAmount ?? 0,
             'total_points_used_amount' => $summary->pointsUsed ?? 0,
             'total_deposit_used_amount' => 0,
             'total_paid_amount' => 0,
@@ -718,6 +721,7 @@ class OrderProcessingService
             'mc_total_deposit_used_amount' => $mcAmounts['mc_total_deposit_used_amount'],
             'mc_total_tax_amount' => $mcAmounts['mc_total_tax_amount'],
             'mc_total_tax_free_amount' => $mcAmounts['mc_total_tax_free_amount'],
+            'mc_total_zero_rated_amount' => $mcAmounts['mc_total_zero_rated_amount'],
             'mc_total_amount' => $mcAmounts['mc_total_amount'],
             'mc_total_paid_amount' => $mcAmounts['mc_total_paid_amount'],
             'mc_total_cash_equivalent_amount' => $this->buildAllCurrencyConverter($currencySnapshot)($cashEquivalent),
@@ -754,6 +758,7 @@ class OrderProcessingService
             'pointsUsed' => $summary->pointsUsed ?? 0,
             'taxableAmount' => $summary->taxableAmount ?? 0,
             'taxFreeAmount' => $summary->taxFreeAmount ?? 0,
+            'zeroRatedAmount' => $summary->zeroRatedAmount ?? 0,
             'finalAmount' => $summary->finalAmount ?? 0,
         ];
 
@@ -774,6 +779,7 @@ class OrderProcessingService
             'mc_total_deposit_used_amount' => $convertAmount(0),
             'mc_total_tax_amount' => $convertAmount($amounts['taxableAmount']),
             'mc_total_tax_free_amount' => $convertAmount($amounts['taxFreeAmount']),
+            'mc_total_zero_rated_amount' => $convertAmount($amounts['zeroRatedAmount']),
             'mc_total_amount' => $convertAmount($amounts['finalAmount']),
             'mc_total_paid_amount' => $convertAmount(0),
         ];
@@ -886,6 +892,11 @@ class OrderProcessingService
                 ),
                 'subtotal_tax_amount' => $item->taxableAmount ?? 0,
                 'subtotal_tax_free_amount' => $item->taxFreeAmount ?? 0,
+                // 계산이 확정한 과세 종류 — 금액 분류와 같은 근거여야 배지와 장부가 어긋나지 않는다.
+                // 영세 도입(#612) 전에 만든 임시주문은 값이 없어 지금 옵션·상품 설정으로 정한다.
+                'tax_status' => $item->taxStatus
+                    ?? $productOption?->getEffectiveTaxStatus()->value
+                    ?? ($product?->tax_status?->value ?? ProductTaxStatus::TAXABLE->value),
                 'subtotal_earned_points_amount' => $item->pointsEarning ?? 0,
                 'product_snapshot' => $productSnapshot,
                 'option_snapshot' => $optionSnapshot,
@@ -1542,11 +1553,13 @@ class OrderProcessingService
      * 주문/결제 레코드에 기록할 부가세를 결정합니다.
      *
      * 계산 단계에서 옵션별 세율로 산출한 합계를 그대로 사용합니다 — 여기서 다시 단일 세율로
-     * 계산하면 세율이 섞인 주문에서 주문과 결제 값이 어긋납니다.
+     * 계산하면 세율이 섞인 주문에서 주문과 결제 값이 어긋납니다. 계산 결과가 0 이면 0 이 맞다
+     * (영세·세율 0 상품만 든 주문). 예전에는 0 을 「값 없음」으로 보고 과세표준/11 을 다시 채워
+     * 그런 주문의 부가세가 10% 로 기록됐다(#612 S1).
      *
-     * 다만 부가세 합산 도입 이전에 만들어진 임시주문이 도입 이후에 결제되면 합계가 비어 있어
-     * 부가세가 0 으로 굳습니다. 이 경우에 한해 과세표준에 기본 세율을 적용해 채웁니다
-     * (기존 주문 백필과 동일한 기준).
+     * 부가세 합산 도입 이전에 만들어진 임시주문이 도입 이후에 결제되면 계산 결과에 부가세 키 자체가
+     * 없다(`Summary::$vatAmountKnown = false`). 이 경우에 한해 영세분을 뺀 과세표준에 기본 세율을
+     * 적용해 채웁니다(기존 주문 백필과 동일한 기준).
      *
      * @param  OrderCalculationResult  $calculationResult  주문 계산 결과
      * @return int 부가세 금액
@@ -1554,16 +1567,15 @@ class OrderProcessingService
     protected function resolveVatAmount(OrderCalculationResult $calculationResult): int
     {
         $summary = $calculationResult->summary;
-        $vatAmount = (int) ($summary->vatAmount ?? 0);
 
-        if ($vatAmount > 0) {
-            return $vatAmount;
+        if ($summary->vatAmountKnown) {
+            return (int) $summary->vatAmount;
         }
 
-        $taxableAmount = (int) ($summary->taxableAmount ?? 0);
+        $vatBase = (int) ($summary->taxableAmount ?? 0) - (int) ($summary->zeroRatedAmount ?? 0);
 
-        return $taxableAmount > 0
-            ? VatCalculator::fromTaxableAmount($taxableAmount, VatCalculator::DEFAULT_RATE)
+        return $vatBase > 0
+            ? VatCalculator::fromTaxableAmount($vatBase, VatCalculator::DEFAULT_RATE)
             : 0;
     }
 

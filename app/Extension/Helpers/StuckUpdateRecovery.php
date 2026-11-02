@@ -130,6 +130,12 @@ final class StuckUpdateRecovery
             'completed_steps' => $unfinished?->completedSteps() ?? [],
         ]);
 
+        // 판을 되돌렸으면 이 확장을 요구하던 활성 의존자가 그 판으로는 깨질 수 있다 — 막지 않고 안내로 남긴다(#152 D6).
+        // 상태(꺼짐)는 따지지 않는다: 정리 뒤 곧 활성화·재업데이트가 이어지는 흐름이 많아 일시적인 꺼짐을 알리면 오해를 낳는다.
+        if ($unfinished !== null) {
+            DependencyVersionWarnings::noticeDependents($type, $identifier, versionOnly: true);
+        }
+
         self::$recovered[] = [
             'type' => $type,
             'identifier' => $identifier,

@@ -298,6 +298,27 @@
   --dep-auto-card-bg: var(--dep-auto-soft);
   --dep-auto-badge-bg: var(--dep-auto-soft);
   --dep-auto-badge-border: var(--dep-auto-soft-strong);
+
+  /* 선택 연동(integrations) 배지·태그·안내 — 필수 의존성(주황)과 구분되는 청록 */
+  --integration-text: #115e59;
+  --integration-icon: #0d9488;
+  --integration-label-text: #0f766e;
+  --integration-notice-bg: rgba(13, 148, 136, 0.08);
+  --integration-notice-border: rgba(13, 148, 136, 0.25);
+  --integration-card-border: #0d9488;
+  --integration-card-bg: rgba(13, 148, 136, 0.08);
+  --integration-solid: #0d9488;
+  --integration-solid-text: #ffffff;
+  --integration-select: #0d9488;
+  --integration-badge-bg: rgba(13, 148, 136, 0.12);
+  --integration-badge-border: rgba(13, 148, 136, 0.3);
+  --integration-tag-bg: rgba(13, 148, 136, 0.08);
+  --integration-tag-border: rgba(13, 148, 136, 0.4);
+  --integration-mismatch-border: rgba(220, 38, 38, 0.45);
+  --integration-warning-text: var(--danger-color);
+  /* 확장 카드의 PHP 확장 미설치 안내 (필수 없음 → 설치 불가, 권장 없음 → 경고) */
+  --php-notice-text: #b45309;
+  --php-notice-blocked-text: var(--danger-color);
 }
 
 /* ========================================
@@ -507,6 +528,26 @@
   --dep-auto-card-bg: rgba(245, 158, 11, 0.12);
   --dep-auto-badge-bg: rgba(245, 158, 11, 0.15);
   --dep-auto-badge-border: rgba(245, 158, 11, 0.3);
+
+  /* 선택 연동(integrations) */
+  --integration-text: #99f6e4;
+  --integration-icon: #2dd4bf;
+  --integration-label-text: #5eead4;
+  --integration-notice-bg: rgba(45, 212, 191, 0.1);
+  --integration-notice-border: rgba(45, 212, 191, 0.3);
+  --integration-card-border: #2dd4bf;
+  --integration-card-bg: rgba(45, 212, 191, 0.12);
+  --integration-solid: #14b8a6;
+  --integration-select: #2dd4bf;
+  --integration-badge-bg: rgba(45, 212, 191, 0.15);
+  --integration-badge-border: rgba(45, 212, 191, 0.35);
+  --integration-tag-bg: rgba(45, 212, 191, 0.1);
+  --integration-tag-border: rgba(45, 212, 191, 0.4);
+  --integration-mismatch-border: rgba(248, 113, 113, 0.6);
+  --integration-warning-text: #f87171;
+  /* 확장 카드의 PHP 확장 미설치 안내 */
+  --php-notice-text: #fbbf24;
+  --php-notice-blocked-text: #f87171;
 }
 
 /* ========================================
@@ -1484,6 +1525,34 @@ hr {
 .task-name {
   flex: 1;
   line-height: var(--line-height-normal);
+}
+
+/* 의존 때문에 앞당겨 설치하는 항목의 「{이름}에 필요」 배지 (#153) — 색은 테마 변수라 다크 테마에서도 따라 바뀐다 */
+.task-required-by {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background-color: var(--bg-gray);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 1px var(--spacing-sm);
+}
+
+/* 모바일 폭에서는 이름 아래 줄로 내린다 */
+@media (max-width: 480px) {
+  .task-item:has(.task-required-by) {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .task-required-by {
+    margin-left: calc(18px + var(--spacing-md));
+  }
+
+  .task-item:has(.task-required-by) .task-name {
+    flex-basis: calc(100% - 18px - var(--spacing-md));
+  }
 }
 
 .task-pending {
@@ -4428,6 +4497,122 @@ body {
 .dep-lock-toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* Step 4 선택 연동(integrations) — 필수 의존성(주황)과 구분되는 청록.
+   색은 토큰(:root · [data-theme="dark"] 의 --integration-* · --php-notice-*)으로만 칠한다 — D16 */
+.integration-selection-notice {
+  margin: 0 0 var(--spacing-md) 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--integration-text);
+  background-color: var(--integration-notice-bg);
+  border: 1px solid var(--integration-notice-border);
+  border-radius: 6px;
+}
+
+.integration-selection-notice i {
+  margin-right: 6px;
+  color: var(--integration-icon);
+}
+
+.extension-card.integration-auto-selected.selected {
+  border-color: var(--integration-card-border);
+  background-color: var(--integration-card-bg);
+}
+
+.extension-card.integration-auto-selected.selected .extension-card-icon {
+  background-color: var(--integration-solid);
+  color: var(--integration-solid-text);
+}
+
+.extension-card.integration-auto-selected.selected .extension-card-select {
+  color: var(--integration-select);
+}
+
+.integration-auto-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--integration-text);
+  background-color: var(--integration-badge-bg);
+  border: 1px solid var(--integration-badge-border);
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+.integration-auto-badge i {
+  font-size: 0.6rem;
+}
+
+.integration-auto-badge-owner {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.extension-card-integrations {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.extension-card-dependencies + .extension-card-integrations {
+  margin-top: 6px;
+}
+
+.integration-label {
+  font-size: 0.7rem;
+  color: var(--integration-label-text);
+  margin-right: 2px;
+}
+
+.integration-tag {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px 8px;
+  background-color: var(--integration-tag-bg);
+  border: 1px dashed var(--integration-tag-border);
+  border-radius: 12px;
+  font-size: 0.7rem;
+  color: var(--integration-text);
+}
+
+.integration-tag i {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+.integration-template-hint {
+  opacity: 0.75;
+}
+
+.integration-tag.integration-version-mismatch {
+  border-style: solid;
+  border-color: var(--integration-mismatch-border);
+}
+
+.integration-version-warning {
+  color: var(--integration-warning-text);
+  font-weight: 600;
+}
+
+.extension-card-php-notice {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--php-notice-text);
+}
+
+.extension-card-php-notice.extension-card-php-blocked {
+  color: var(--php-notice-blocked-text);
+  font-weight: 600;
 }
 
 /* ========================================================================

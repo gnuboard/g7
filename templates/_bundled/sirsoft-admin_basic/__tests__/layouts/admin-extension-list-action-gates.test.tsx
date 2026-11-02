@@ -145,8 +145,8 @@ describe('확장 목록 — 의존 충돌(409) 후 스위치', () => {
     for (const [tree, source] of [[moduleList, 'modules'], [pluginList, 'plugins'], [languagePackList, 'language_packs']] as const) {
       expect(gridProp(tree, 'resyncKey'), `${source} 격자에 resyncKey 바인딩이 없습니다.`).toContain('_global.extensionToggleResync');
       expect(hasResyncBump(conflictActionsOf(tree)), `${source} 409 처리에 재동기 신호가 없습니다.`).toBe(true);
-      expect(hasResyncBump(toggleActionOf(tree).onError), `${source} 토글 실패 처리에 재동기 신호가 없습니다.`).toBe(true);
-      expect(hasResyncBump(toggleActionOf(tree).onSuccess), `${source} 성공 처리는 서버 값이 바뀌므로 신호가 필요 없습니다.`).toBe(false);
+      expect(hasResyncBump(toggleCallOf(tree).onError), `${source} 토글 실패 처리에 재동기 신호가 없습니다.`).toBe(true);
+      expect(hasResyncBump(toggleCallOf(tree).onSuccess), `${source} 성공 처리는 서버 값이 바뀌므로 신호가 필요 없습니다.`).toBe(false);
     }
   });
 
@@ -206,6 +206,23 @@ function toggleActionOf(tree: unknown): Json {
   walk(tree);
   expect(found, 'onToggle 액션이 없습니다.').toBeDefined();
   return found!;
+}
+
+/**
+ * 스위치가 곧바로 부르는 활성/비활성 apiCall 을 찾는다.
+ *
+ * 모듈·플러그인 스위치는 끄려는 확장을 다른 활성 확장이 연동으로 쓰고 있으면(`integrated_by`, 코어 7.1.4)
+ * 안내 창을 먼저 여는 `switch` 로 갈린다 — 곧바로 부르는 갈래는 `call` 이다. 갈래가 없는 화면(언어팩)은
+ * onToggle 액션 자체가 apiCall 이다.
+ */
+function toggleCallOf(tree: unknown): Json {
+  const action = toggleActionOf(tree);
+  if (action.handler !== 'switch') return action;
+  const call = action.cases?.call;
+  expect(call?.handler, '스위치의 곧바로 부르는 갈래(call)가 apiCall 이어야 합니다.').toBe('apiCall');
+  // 안내 창 갈래도 누르는 즉시 재동기 신호를 올린다(창을 닫으면 요청이 없어 스위치만 뒤집힌 채 남는다).
+  expect(hasResyncBump(action.cases?.confirm), '연동 안내 창 갈래에 재동기 신호가 없습니다.').toBe(true);
+  return call;
 }
 
 /** 액션 트리 안에 재동기 신호를 올리는 setState 가 있는지 본다. */

@@ -1287,58 +1287,34 @@
                         "name": "shipping_memo",
                         "aria-label": "$t:shop.checkout.shipping_memo",
                         "value": "{{_local.shippingMemo ?? ''}}",
-                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": ""
+                        "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
+                        "options": [
+                            {
+                                "value": "",
+                                "label": "$t:shop.checkout.memo_none"
                             },
-                            "text": "$t:shop.checkout.memo_none"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "door"
+                            {
+                                "value": "door",
+                                "label": "$t:shop.checkout.memo_door"
                             },
-                            "text": "$t:shop.checkout.memo_door"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "security"
+                            {
+                                "value": "security",
+                                "label": "$t:shop.checkout.memo_security"
                             },
-                            "text": "$t:shop.checkout.memo_security"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "parcel_box"
+                            {
+                                "value": "parcel_box",
+                                "label": "$t:shop.checkout.memo_parcel_box"
                             },
-                            "text": "$t:shop.checkout.memo_parcel_box"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "call"
+                            {
+                                "value": "call",
+                                "label": "$t:shop.checkout.memo_call"
                             },
-                            "text": "$t:shop.checkout.memo_call"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "custom"
-                            },
-                            "text": "$t:shop.checkout.memo_custom"
-                        }
-                    ]
+                            {
+                                "value": "custom",
+                                "label": "$t:shop.checkout.memo_custom"
+                            }
+                        ]
+                    }
                 }
             ]
         },

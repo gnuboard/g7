@@ -4,8 +4,10 @@ namespace App\Services\Auth;
 
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Enums\IdentityVerificationPurpose;
+use App\Exceptions\IdentityVerificationRequiredException;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -18,10 +20,19 @@ use Illuminate\Support\Facades\Hash;
  *
  * 관문은 모두 「확인과 실행을 한 요청에서」 하는 구조라 이 서비스도 별도 상태를 남기지 않는다.
  *
+ * 비밀번호 없는 회원을 모르는 옛 화면(7.1.x 템플릿)은 비밀번호 칸에 무엇이든 넣어 보낸다. 관문은 그 값을 버리고
+ * 코어 본인인증 요구(428, `challengeFor()`)로 답한다 — 엔진이 인증 창을 열고 확인이 끝나면 `verification_token` 을
+ * 붙여 원 요청을 다시 보내므로, 옛 화면도 같은 토큰 확인(본인·목적·1회)을 거쳐 통과한다.
+ *
  * @since 7.2.0
  */
 class ReauthenticationService
 {
+    /**
+     * 재확인 요구(428)에 싣는 정책 키 — 정책 표의 행이 아니다(화면이 challenge 요청에 되돌려 보내도 서버가 무시한다).
+     */
+    public const CHALLENGE_POLICY_KEY = 'core.reauthentication';
+
     /** 확인 통과 */
     public const PASSED = 'passed';
 
@@ -115,6 +126,27 @@ class ReauthenticationService
         if ($log !== null) {
             $this->logRepository->updateById($log->id, ['consumed_at' => now()]);
         }
+    }
+
+    /**
+     * 비밀번호 없는 회원에게 본인인증을 요구하는 428 예외를 만듭니다 (원 요청을 다시 보낼 주소 포함).
+     *
+     * 목적은 이 서비스가 토큰을 찾는 목적(`sensitive_action`)과 같다. 수단(`provider_id`)은 비워 두어 challenge 를
+     * 시작할 때 서버가 그 회원에게 쓸 수 있는 수단을 고르게 한다. 재요청 주소는 경로+쿼리만 싣는다(교차 출처 재요청 차단).
+     *
+     * @param  Request  $request  재확인을 요구할 원 요청
+     * @return IdentityVerificationRequiredException 호출자가 던질 예외
+     */
+    public function challengeFor(Request $request): IdentityVerificationRequiredException
+    {
+        return new IdentityVerificationRequiredException(
+            policyKey: self::CHALLENGE_POLICY_KEY,
+            purpose: IdentityVerificationPurpose::SensitiveAction->value,
+            returnRequest: [
+                'method' => $request->getMethod(),
+                'url' => $request->getRequestUri(),
+            ],
+        );
     }
 
     /**

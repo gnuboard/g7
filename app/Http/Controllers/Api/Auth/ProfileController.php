@@ -271,6 +271,8 @@ class ProfileController extends AuthBaseController
      *
      * @param  Request  $request  비밀번호 확인 요청 데이터
      * @return JsonResponse 확인 결과를 포함한 JSON 응답
+     *
+     * @throws \App\Exceptions\IdentityVerificationRequiredException 비밀번호 없는 회원이 비밀번호로 확인하려 할 때 (428)
      */
     public function verifyPassword(VerifyPasswordRequest $request): JsonResponse
     {
@@ -284,8 +286,13 @@ class ProfileController extends AuthBaseController
             // 비밀번호가 있는 회원은 비밀번호로, 없는 회원은 이메일 인증번호로 받은 토큰으로 확인한다.
             $result = $this->reauthenticationService->verify($user, $request->validated());
 
-            if ($result === ReauthenticationService::PASSWORD_NOT_SET) {
-                return $this->error('user.password_not_set', 422, ['password' => [__('user.password_not_set')]]);
+            // 비밀번호 없는 회원이 비밀번호 칸으로 왔다 = 그 회원을 모르는 옛 화면(7.1.x)이다. 보낸 값은 쓰지 않고 본인인증을
+            // 요구한다(428) — 엔진이 인증 창을 열고, 확인이 끝나면 토큰을 붙여 이 요청을 다시 보낸다(위 verify 가 소비).
+            // 예외는 \Error 계열이라 아래 catch(\Exception) 에 잡히지 않고 전역 렌더러가 428 로 답한다.
+            // 아무것도 없이 온 비밀번호 없는 회원(옛 화면에 코어 호환 심이 붙인 「본인 확인 계속하기」)도 같다.
+            if ($result === ReauthenticationService::PASSWORD_NOT_SET
+                || ($result === ReauthenticationService::MISSING && ! $user->hasPassword())) {
+                throw $this->reauthenticationService->challengeFor($request);
             }
 
             if ($result === ReauthenticationService::TOKEN_INVALID) {

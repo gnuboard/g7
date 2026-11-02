@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Models\SystemConfig;
 use App\Repositories\JsonConfigRepository;
 use Illuminate\Console\Command;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Schema;
 class MigrateSettingsToJsonCommand extends Command
 {
     use HasUnifiedConfirm;
+    use LocalizesDescription;
 
     /**
      * 커맨드 시그니처
@@ -22,13 +24,6 @@ class MigrateSettingsToJsonCommand extends Command
      */
     protected $signature = 'settings:migrate-to-json
                             {--force : 기존 JSON 파일이 있어도 덮어쓰기}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = 'DB의 system_configs 테이블 데이터를 JSON 파일로 마이그레이션합니다.';
 
     /**
      * 설정 키와 카테고리 매핑

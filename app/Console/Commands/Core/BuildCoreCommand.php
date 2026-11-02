@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\Traits\ClearsTemplateCaches;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -10,6 +11,7 @@ use Symfony\Component\Process\Process;
 class BuildCoreCommand extends Command
 {
     use ClearsTemplateCaches;
+    use LocalizesDescription;
 
     /**
      * The name and signature of the console command.
@@ -18,11 +20,6 @@ class BuildCoreCommand extends Command
                             {--watch : 파일 변경 감시 모드}
                             {--production : 프로덕션 빌드}
                             {--full : 전체 빌드 (npm run build)}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '그누보드7 코어 프론트엔드 에셋을 빌드합니다';
 
     /**
      * Execute the console command.

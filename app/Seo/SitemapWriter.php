@@ -3,6 +3,7 @@
 namespace App\Seo;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Support\PhpExtensionProbe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -78,25 +79,40 @@ class SitemapWriter
      */
     private readonly int $urlsPerFile;
 
+    /** 자식 파일 gzip 압축 여부 (zlib 이 없으면 false 로 내린 값) */
+    private readonly bool $gzip;
+
     /**
      * SitemapWriter 생성자
      *
      * @param  StorageInterface  $storage  비공개 디스크 스토리지 드라이버
      * @param  SitemapXmlRenderer  $renderer  XML 조각 렌더러 (SitemapGenerator 와 공유)
      * @param  int  $urlsPerFile  파일당 URL 수 (1 ~ HARD_URL_CAP 로 클램프)
-     * @param  bool  $gzip  자식 파일 gzip 압축 여부
+     * @param  bool  $gzip  자식 파일 gzip 압축 여부 (zlib 의 gzencode 가 없으면 압축 없이 기록)
      */
     public function __construct(
         private readonly StorageInterface $storage,
         private readonly SitemapXmlRenderer $renderer,
         int $urlsPerFile = self::HARD_URL_CAP,
-        private readonly bool $gzip = false,
+        bool $gzip = false,
     ) {
         $this->urlsPerFile = max(1, min($urlsPerFile, self::HARD_URL_CAP));
+
+        // zlib 은 코어 기준 「선택」 확장이다. 설정 저장은 zlib 없이 gzip 을 켜지 못하게 막지만(SaveSettingsRequest),
+        // 이미 켜진 설정에서 서버의 zlib 이 사라지면 생성이 매번 실패했다(#151) — 압축 없이 기록하고 알린다.
+        // 파일명·sitemap index 의 loc·manifest 의 gzip 이 모두 이 값을 따르므로 `.xml` 로 일관된다.
+        if ($gzip && ! app(PhpExtensionProbe::class)->functionAvailable('gzencode')) {
+            Log::warning('[SEO] 사이트맵 gzip 이 켜져 있지만 PHP zlib(gzencode)이 없어 압축 없이 기록합니다');
+            $gzip = false;
+        }
+
+        $this->gzip = $gzip;
     }
 
     /**
      * 기록을 시작합니다 (임시 디렉토리 초기화 + 상태 리셋).
+     *
+     * @return void 반환값 없음
      */
     public function open(): void
     {
@@ -118,6 +134,7 @@ class SitemapWriter
      * 임계(URL 수 또는 바이트) 도달 시 현재 자식 파일을 flush 합니다.
      *
      * @param  array{loc?: string, lastmod?: string, changefreq?: string, priority?: float}  $entry  URL 항목
+     * @return void 반환값 없음
      */
     public function addUrl(array $entry): void
     {
@@ -231,6 +248,8 @@ class SitemapWriter
      * 정리 실패는 치명적이지 않습니다 — 임시 파일은 이름 기준으로 덮어쓰이고,
      * 커밋은 children 목록에 있는 파일만 live 로 옮기므로 잔여 파일이 결과에 섞이지 않습니다.
      * 따라서 예외를 전파하지 않고 경고만 남겨 sitemap 생성 자체가 중단되지 않도록 합니다.
+     *
+     * @return void 반환값 없음
      */
     private function purgeTmpDirectory(): void
     {
@@ -246,6 +265,8 @@ class SitemapWriter
 
     /**
      * 다음 자식 파일을 엽니다 (버퍼에 urlset 헤더 기록).
+     *
+     * @return void 반환값 없음
      */
     private function openNextChild(): void
     {
@@ -259,10 +280,13 @@ class SitemapWriter
     /**
      * 현재 자식 파일 버퍼를 임시 디렉토리에 기록하고 버퍼를 비웁니다.
      *
+     * @return void 반환값 없음
+     *
      * @throws \RuntimeException 파일 기록 실패 시
      */
     private function flushChild(): void
     {
+        // php-ext-guard: 생성자가 gzencode 가 없으면 $this->gzip 을 false 로 내린다
         $this->buffer .= $this->renderer->urlsetFooter();
 
         $filename = SitemapFileStore::childFilename($this->childIndex, $this->gzip);
@@ -305,6 +329,7 @@ class SitemapWriter
      *
      * @param  array<int, string>  $staleFiles  커밋 전 live 파일명 목록
      * @param  array<int, string>  $newFiles  새 세트 파일명 목록
+     * @return void 반환값 없음
      */
     private function deleteStaleFiles(array $staleFiles, array $newFiles): void
     {
@@ -324,6 +349,7 @@ class SitemapWriter
      *
      * @param  string  $path  카테고리 하위 상대 경로
      * @param  string  $content  파일 내용
+     * @return void 반환값 없음
      *
      * @throws \RuntimeException 기록 실패 시
      */

@@ -12,10 +12,13 @@ use App\Models\User;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\SitemapManager;
 use App\Seo\SitemapProgress;
+use Illuminate\Bus\UniqueLock;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Tests\TestCase;
 
@@ -27,6 +30,8 @@ use Tests\TestCase;
  * - 캐시 삭제 (clearCache)
  * - 캐시 워밍업 (warmup)
  * - 캐시된 URL 목록 (cachedUrls)
+ *
+ * 사이트맵 재생성 잠금·진행 상태 순서는 트러블슈팅 `[case:backend-62]` 의 회귀 그물이다.
  */
 class SeoCacheControllerTest extends TestCase
 {
@@ -36,6 +41,11 @@ class SeoCacheControllerTest extends TestCase
 
     private string $token;
 
+    /**
+     * 테스트 초기화 - 관리자와 토큰을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -115,6 +125,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 인증 없이 SEO 캐시 통계 조회 시 401 반환
+     *
+     * @scenario endpoint=stats_returns_401_without_authentication
+     *
+     * @return void 반환값 없음
      */
     public function test_stats_returns_401_without_authentication(): void
     {
@@ -125,6 +139,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 권한 없이 SEO 캐시 통계 조회 시 403 반환
+     *
+     * @scenario endpoint=stats_returns_403_without_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_stats_returns_403_without_permission(): void
     {
@@ -155,6 +173,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * read 권한만 있는 관리자가 POST 엔드포인트 호출 시 403 반환
+     *
+     * @scenario endpoint=clear_cache_returns_403_without_update_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_cache_returns_403_without_update_permission(): void
     {
@@ -173,6 +195,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * SEO 캐시 통계 조회 성공
+     *
+     * @scenario endpoint=stats_returns_200_with_stats_data
+     *
+     * @return void 반환값 없음
      */
     public function test_stats_returns_200_with_stats_data(): void
     {
@@ -217,6 +243,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 통계 데이터가 없을 때도 정상 응답
+     *
+     * @scenario endpoint=stats_returns_200_with_empty_data
+     *
+     * @return void 반환값 없음
      */
     public function test_stats_returns_200_with_empty_data(): void
     {
@@ -244,6 +274,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 파라미터 없이 전체 캐시 삭제 성공
+     *
+     * @scenario endpoint=clear_cache_clears_all_without_params
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_cache_clears_all_without_params(): void
     {
@@ -264,6 +298,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * layout 파라미터 지정 시 해당 레이아웃 캐시만 삭제 성공
+     *
+     * @scenario endpoint=clear_cache_clears_specific_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_cache_clears_specific_layout(): void
     {
@@ -293,6 +331,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 캐시 워밍업 요청 시 dispatched 상태 반환
+     *
+     * @scenario endpoint=warmup_returns_dispatched_status
+     *
+     * @return void 반환값 없음
      */
     public function test_warmup_returns_dispatched_status(): void
     {
@@ -309,6 +351,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 인증 없이 워밍업 요청 시 401 반환
+     *
+     * @scenario endpoint=warmup_returns_401_without_authentication
+     *
+     * @return void 반환값 없음
      */
     public function test_warmup_returns_401_without_authentication(): void
     {
@@ -323,6 +369,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 캐시된 URL 목록 조회 성공
+     *
+     * @scenario endpoint=cached_urls_returns_url_list
+     *
+     * @return void 반환값 없음
      */
     public function test_cached_urls_returns_url_list(): void
     {
@@ -348,6 +398,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 캐시된 URL이 없을 때 빈 목록 반환
+     *
+     * @scenario endpoint=cached_urls_returns_empty_list
+     *
+     * @return void 반환값 없음
      */
     public function test_cached_urls_returns_empty_list(): void
     {
@@ -371,6 +425,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 인증 없이 캐시된 URL 목록 조회 시 401 반환
+     *
+     * @scenario endpoint=cached_urls_returns_401_without_authentication
+     *
+     * @return void 반환값 없음
      */
     public function test_cached_urls_returns_401_without_authentication(): void
     {
@@ -385,6 +443,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 인증 없이 sitemap 재생성 호출 시 401 반환
+     *
+     * @scenario endpoint=regenerate_sitemap_returns_401_without_authentication
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerate_sitemap_returns_401_without_authentication(): void
     {
@@ -395,6 +457,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 재생성 요청 시 200 + 진행상황(queued)과 직전 생성 시각을 반환
+     *
+     * @scenario endpoint=regenerate_sitemap_returns_200_with_queued_progress
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerate_sitemap_returns_200_with_queued_progress(): void
     {
@@ -419,6 +485,10 @@ class SeoCacheControllerTest extends TestCase
      * 재생성 요청이 큐 잡을 1건만, 항상 전체(Full) 모드로 디스패치하는지 확인
      *
      * 관리자 수동 재생성은 현 생성 상태와 무관하게 항상 전량 재생성입니다(D7).
+     *
+     * @scenario endpoint=regenerate_sitemap_dispatches_full_mode_job
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerate_sitemap_dispatches_full_mode_job(): void
     {
@@ -440,6 +510,10 @@ class SeoCacheControllerTest extends TestCase
      * 재생성 요청이 요청 스레드에서 동기 생성하지 않는지 확인
      *
      * 이 회귀가 무너지면 1.4M 규모에서 관리자 워커가 OOM 으로 죽습니다.
+     *
+     * @scenario endpoint=regenerate_sitemap_does_not_generate_inline
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerate_sitemap_does_not_generate_inline(): void
     {
@@ -458,6 +532,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * Sitemap 비활성 상태 시 400 반환 + 잡 미디스패치
+     *
+     * @scenario endpoint=regenerate_sitemap_returns_400_when_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerate_sitemap_returns_400_when_disabled(): void
     {
@@ -478,6 +556,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 인증 없이 sitemap 상태 조회 시 401 반환
+     *
+     * @scenario endpoint=sitemap_status_returns_401_without_authentication
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_status_returns_401_without_authentication(): void
     {
@@ -488,6 +570,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * read 권한만 있어도 sitemap 상태 조회 가능 (SEO 탭 읽기 권한)
+     *
+     * @scenario endpoint=sitemap_status_allows_read_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_status_allows_read_permission(): void
     {
@@ -501,6 +587,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 상태 조회 응답이 진행상황 + realtime_enabled 스키마를 포함
+     *
+     * @scenario endpoint=sitemap_status_returns_progress_and_realtime_flag
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_status_returns_progress_and_realtime_flag(): void
     {
@@ -526,6 +616,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 진행상황이 없으면 progress 는 null
+     *
+     * @scenario endpoint=sitemap_status_returns_null_progress_when_idle
+     *
+     * @return void 반환값 없음
      */
     public function test_sitemap_status_returns_null_progress_when_idle(): void
     {
@@ -537,6 +631,10 @@ class SeoCacheControllerTest extends TestCase
 
     /**
      * 재생성 요청이 진행상황을 'queued' 로 즉시 기록 (큐 대기 중에도 UI 표시)
+     *
+     * @scenario endpoint=regenerate_sitemap_records_queued_progress
+     *
+     * @return void 반환값 없음
      */
     public function test_regenerate_sitemap_records_queued_progress(): void
     {
@@ -553,6 +651,139 @@ class SeoCacheControllerTest extends TestCase
         $this->assertSame('full', $progress['mode']);
     }
 
+    // ========================================================================
+    // 즉시 실행(sync) 큐 — 「지금 생성」 잠김·중복 요청 (#155 D4·D8)
+    // ========================================================================
+
+    /**
+     * 즉시 실행 큐에서 재생성하면 응답이 completed 이고 「완료」 문구를 돌려주며, 상태 API 도 completed 다.
+     *
+     * 수정 전에는 발행(=즉시 생성·완료) 뒤에 'queued' 를 덮어써 상태 캐시 TTL(1시간) 동안 버튼이 「생성 중…」으로 잠겼다.
+     *
+     * @scenario queue=sync,lock=free
+     *
+     * @effects sync_regenerate_reports_completed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_sync_queue_regenerate_returns_completed_and_status_stays_completed(): void
+    {
+        $this->useSyncSitemapQueue();
+        Config::set('g7_settings.core.seo.sitemap_last_updated_at', '2000-01-01T00:00:00+00:00');
+
+        $response = $this->withToken($this->token)->postJson('/api/admin/seo/sitemap/regenerate');
+
+        $response->assertStatus(200);
+        $this->assertSame('completed', $response->json('data.progress.status'));
+        $this->assertSame(__('seo.sitemap_regenerated'), $response->json('message'));
+        $this->assertNotNull($response->json('data.last_updated_at'));
+
+        $status = $this->withToken($this->token)->getJson('/api/admin/seo/sitemap/status');
+        $this->assertSame('completed', $status->json('data.progress.status'));
+        // 완료 응답의 마지막 생성 시각은 방금 끝난 생성 시각이어야 한다(요청 안의 설정 캐시가 옛 값을 돌려주면 안 된다)
+        $this->assertSame($status->json('data.last_updated_at'), $response->json('data.last_updated_at'));
+        $this->assertNotSame('2000-01-01T00:00:00+00:00', $response->json('data.last_updated_at'));
+
+        // 잠금이 풀려 바로 다시 생성할 수 있다
+        $this->withToken($this->token)->postJson('/api/admin/seo/sitemap/regenerate')->assertStatus(200);
+    }
+
+    /**
+     * 다른 생성 작업의 유니크 잠금이 남아 있으면 409(locked) 이고 진행 상태를 덮어쓰지 않는다.
+     *
+     * 큐 작업자가 강제 종료돼 잠금만 남은 경우도 같다 — 「대기」를 기록하면 아무것도 돌지 않는데 버튼이 잠긴다.
+     *
+     * @scenario queue=sync,lock=held,progress=idle
+     *
+     * @effects regenerate_rejects_when_unique_lock_held
+     *
+     * @return void 반환값 없음
+     */
+    public function test_regenerate_returns_409_locked_and_keeps_progress_when_lock_is_held(): void
+    {
+        $this->useSyncSitemapQueue();
+        $this->assertTrue((new UniqueLock(app(Cache::class)))->acquire(new GenerateSitemapJob));
+
+        $response = $this->withToken($this->token)->postJson('/api/admin/seo/sitemap/regenerate');
+
+        $response->assertStatus(409);
+        $this->assertFalse($response->json('success'));
+        $this->assertSame(__('seo.sitemap_regenerate_locked'), $response->json('message'));
+        $this->assertNull(app(SitemapProgress::class)->get(), '거부한 요청이 진행 상태를 기록하면 안 됩니다');
+    }
+
+    /**
+     * 생성이 진행 중(running)이고 잠금이 잡혀 있으면 409(in_progress) 이고 진행 상태는 그대로다.
+     *
+     * @scenario queue=sync,lock=held,progress=running
+     *
+     * @effects regenerate_rejects_while_generation_in_progress
+     *
+     * @return void 반환값 없음
+     */
+    public function test_regenerate_returns_409_in_progress_while_running(): void
+    {
+        $this->useSyncSitemapQueue();
+        $progress = app(SitemapProgress::class);
+        $progress->start(SitemapGenerationMode::Full->value);
+        $progress->phase('sirsoft-board', 10);
+        $before = $progress->get();
+        $this->assertTrue((new UniqueLock(app(Cache::class)))->acquire(new GenerateSitemapJob));
+
+        $response = $this->withToken($this->token)->postJson('/api/admin/seo/sitemap/regenerate');
+
+        $response->assertStatus(409);
+        $this->assertSame(__('seo.sitemap_regenerate_in_progress'), $response->json('message'));
+        $this->assertSame($before, $progress->get());
+    }
+
+    /**
+     * 즉시 실행 중 잡이 실패하면 500·진행 failed 이고, 잠금이 풀려 다음 요청은 409 가 아니다.
+     *
+     * @scenario queue=sync,lock=free,job=fails
+     *
+     * @effects sync_job_failure_releases_lock_and_marks_failed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_sync_job_failure_returns_500_marks_failed_and_releases_lock(): void
+    {
+        $this->useSyncSitemapQueue();
+
+        $manager = Mockery::mock(SitemapManager::class);
+        $manager->shouldReceive('regenerate')->andReturn(['success' => false, 'status' => 'failed', 'message' => 'disk full']);
+        $manager->shouldReceive('getStatus')->andReturnUsing(fn (): array => ['last_updated_at' => null, 'progress' => app(SitemapProgress::class)->get(), 'realtime_enabled' => false]);
+        $this->app->instance(SitemapManager::class, $manager);
+
+        $response = $this->withToken($this->token)->postJson('/api/admin/seo/sitemap/regenerate');
+
+        $response->assertStatus(500);
+        $this->assertSame(__('seo.sitemap_regenerate_failed'), $response->json('message'));
+        $this->assertSame('failed', app(SitemapProgress::class)->get()['status']);
+
+        // 잠금이 남아 있으면 409 가 난다 — 다시 시도해도 같은 실패(500)로 실제 생성까지 간다
+        $this->withToken($this->token)->postJson('/api/admin/seo/sitemap/regenerate')->assertStatus(500);
+        $this->assertTrue((new UniqueLock(app(Cache::class)))->acquire(new GenerateSitemapJob), '실패 뒤 잠금이 풀려 있어야 합니다');
+    }
+
+    /**
+     * 즉시 실행 큐에서 실제 생성이 돌도록 준비합니다(파일은 가짜 디스크, 사이트맵 켬).
+     *
+     * @return void 반환값 없음
+     */
+    private function useSyncSitemapQueue(): void
+    {
+        Config::set('queue.default', 'sync');
+        Config::set('g7_settings.core.seo.sitemap_enabled', true);
+        Config::set('broadcasting.default', 'null');
+        Storage::fake('local');
+    }
+
+    /**
+     * 테스트 종료 - Mockery 리소스를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();

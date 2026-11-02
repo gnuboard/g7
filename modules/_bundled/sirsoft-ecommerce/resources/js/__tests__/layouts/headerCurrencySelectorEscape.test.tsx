@@ -146,7 +146,7 @@ describe.each([
         registry.register('basic', 'Icon', ({ className }: { className?: string }) => React.createElement('i', { className, 'aria-hidden': 'true' }));
         // 테스트 렌더는 모듈 핸들러를 싣지 않는다 — 운영처럼 `sirsoft-ecommerce.` 접두·등록자로 함께 등록한다.
         // 디스패처마다 첫 등록(생성자의 엔진 기본 핸들러 등록) 때 한 번 싣는다. 종전에는 테스트 유틸의 `toast` 등록을
-        // 신호로 삼았는데, 그 등록은 엔진이 직접 처리하는 이름이라 호출되지 않는 죽은 코드여서 engine-v1.86.0 에서 지워졌다.
+        // 신호로 삼았는데, 그 등록은 엔진이 직접 처리하는 이름이라 호출되지 않는 죽은 코드여서 engine-v1.87.0 에서 지워졌다.
         const original = ActionDispatcher.prototype.registerHandler;
         const loaded = new WeakSet<object>();
         vi.spyOn(ActionDispatcher.prototype, 'registerHandler').mockImplementation(function (this: any, handlerName: string, handler: any, options?: any) {

@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Plugin;
 
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Models\Plugin;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Log;
  */
 class RefreshPluginLayoutCommand extends Command
 {
+    use LocalizesDescription;
     use RendersLayoutSyncResult;
     use ReportsLifecycleWarnings;
     use SelectsLayoutInstallSource;
@@ -30,11 +32,6 @@ class RefreshPluginLayoutCommand extends Command
     protected $signature = 'plugin:refresh-layout
         {identifier? : 특정 플러그인의 식별자 (생략 시 모든 활성 플러그인)}
         {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}';
-
-    /**
-     * 커맨드 설명
-     */
-    protected $description = '플러그인 레이아웃을 갱신합니다 (빌드 없이 레이아웃만 DB에 동기화)';
 
     /**
      * 커맨드를 생성합니다.

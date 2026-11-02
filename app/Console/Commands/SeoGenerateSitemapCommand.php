@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\SitemapGenerationMode;
 use App\Jobs\GenerateSitemapJob;
 use Illuminate\Console\Command;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Config;
  */
 class SeoGenerateSitemapCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string 커맨드 시그니처
      */
@@ -22,11 +25,6 @@ class SeoGenerateSitemapCommand extends Command
         {--sync : 큐 드라이버를 무시하고 동기 실행}
         {--rebuild : 저장소 상태와 무관하게 전체 재생성 (--mode=full 과 동일)}
         {--mode=auto : 재생성 모드 (full|auto|incremental)}';
-
-    /**
-     * @var string 커맨드 설명
-     */
-    protected $description = 'Sitemap XML을 생성합니다';
 
     /**
      * 커맨드를 실행합니다.

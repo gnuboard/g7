@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\Resources\AttachmentResource;
@@ -17,6 +20,8 @@ use App\Support\EnvPriority;
 use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
+use App\Support\PhpExtensionProbe;
+use App\Support\PhpExtensionRequirements;
 use App\Support\ProcessOutputEncoding;
 use App\Support\SettingsVersion;
 use App\Support\TrustedProxyDiagnostic;
@@ -63,9 +68,12 @@ class SettingsService
      * 하면 config:cache 가 비워진 채 재생성되지 않아 이후 모든 요청이 config 파일을
      * 재파싱하는 성능 손실이 발생하기 때문이다.
      *
+     * 저장소에 직접 쓰는 경로(`settings:install`)도 쓰기를 마친 뒤 이 메서드를 부른다 — 부르지 않으면
+     * 캐시·미러·설정 버전이 옛 값에 머문다.
+     *
      * @return void 반환값 없음
      */
-    private function invalidateSettingsCache(): void
+    public function invalidateSettingsCache(): void
     {
         $this->cache->forget('settings.system');
         ConfigCacheHelper::rebuild();
@@ -1416,7 +1424,7 @@ class SettingsService
             'config_path' => storage_path('app/settings'),
             'log_path' => storage_path('logs'),
             'upload_path' => storage_path('app/public'),
-            'php_extensions' => $this->safeSystemProbe('php_extensions', fn () => $this->getPhpExtensions(), ['required' => [], 'optional' => []]),
+            'php_extensions' => $this->safeSystemProbe('php_extensions', fn () => $this->getPhpExtensions(), ['required' => [], 'optional' => [], 'requested' => [], 'requested_by' => []]),
             'database_config' => $this->safeSystemProbe('database_config', fn () => $this->getDatabaseConfig(), ['has_read_write_split' => false, 'write' => [], 'read' => []]),
             'timezone' => config('app.timezone'),
         ];
@@ -1534,6 +1542,8 @@ class SettingsService
      *
      * @param  array{password?: string|null, verification_token?: string|null}  $credentials  재확인 입력
      * @return array 결과 (success, app_key 또는 error·status)
+     *
+     * @throws \App\Exceptions\IdentityVerificationRequiredException 비밀번호 없는 관리자가 비밀번호로 확인하려 할 때 (428)
      */
     public function regenerateAppKey(array $credentials): array
     {
@@ -1542,8 +1552,10 @@ class SettingsService
             ? app(ReauthenticationService::class)->verify($admin, $credentials)
             : ReauthenticationService::MISSING;
 
+        // 비밀번호 없는 관리자가 비밀번호 칸으로 왔다 = 그 회원을 모르는 옛 화면(7.1.x)이다. 본인인증을 요구한다(428) —
+        // 엔진이 인증 창을 열고 확인이 끝나면 토큰을 붙여 이 요청을 다시 보낸다. \Error 계열이라 호출자 catch 를 지나친다.
         if ($check === ReauthenticationService::PASSWORD_NOT_SET) {
-            return ['success' => false, 'error' => __('user.password_not_set'), 'status' => 422];
+            throw app(ReauthenticationService::class)->challengeFor(request());
         }
 
         if ($check === ReauthenticationService::TOKEN_INVALID) {
@@ -1950,26 +1962,73 @@ class SettingsService
     /**
      * PHP 확장 모듈 상태를 조회합니다.
      *
-     * @return array PHP 확장 모듈 상태 배열
+     * 필수·선택 목록은 코어 SSoT(`App\Support\PhpExtensionRequirements`)에서 읽는다 — 인스톨러·코어 업데이트
+     * 사전점검·문서와 같은 목록이다. 설치된 모듈·플러그인이 composer.json 으로 요구한 확장은 `requested_by`
+     * (확장 → 요구한 확장 목록)로, 코어 목록 밖의 요구 확장(soap 등)의 로드 상태는 `requested` 로 싣는다.
+     *
+     * @return array{required: array<string, bool>, optional: array<string, bool>, requested: array<string, bool>, requested_by: array<string, list<array{type: string, identifier: string, name: string, level: string}>>} PHP 확장 모듈 상태
      */
     public function getPhpExtensions(): array
     {
-        $required = ['openssl', 'pdo', 'mbstring', 'tokenizer', 'xml', 'curl', 'json', 'zip', 'fileinfo', 'bcmath'];
-        $optional = ['gd', 'imagick', 'redis', 'memcached', 'sodium', 'exif', 'intl', 'ldap', 'zlib'];
+        $requirements = PhpExtensionRequirements::load();
+        $probe = app(PhpExtensionProbe::class);
 
         $extensions = [
             'required' => [],
             'optional' => [],
+            'requested' => [],
+            'requested_by' => $this->collectExtensionPhpRequirements(),
         ];
 
-        foreach ($required as $ext) {
-            $extensions['required'][$ext] = extension_loaded($ext);
+        foreach ($requirements['required'] as $ext) {
+            $extensions['required'][$ext] = $probe->loaded($ext);
         }
 
-        foreach ($optional as $ext) {
-            $extensions['optional'][$ext] = extension_loaded($ext);
+        foreach ($requirements['optional'] as $ext) {
+            $extensions['optional'][$ext] = $probe->loaded($ext);
+        }
+
+        foreach (array_keys($extensions['requested_by']) as $ext) {
+            if (! isset($extensions['required'][$ext]) && ! isset($extensions['optional'][$ext])) {
+                $extensions['requested'][$ext] = $probe->loaded($ext);
+            }
         }
 
         return $extensions;
+    }
+
+    /**
+     * 설치된 모듈·플러그인이 composer.json 으로 요구한 PHP 확장을 모읍니다.
+     *
+     * @return array<string, list<array{type: string, identifier: string, name: string, level: string}>> PHP 확장 이름 => 요구한 확장 목록 (level: require|suggest)
+     */
+    protected function collectExtensionPhpRequirements(): array
+    {
+        $extensionManager = app(ExtensionManager::class);
+        $requestedBy = [];
+
+        $sources = [
+            ['module', 'modules', app(ModuleRepositoryInterface::class)->getAll()],
+            ['plugin', 'plugins', app(PluginRepositoryInterface::class)->getAll()],
+        ];
+
+        foreach ($sources as [$type, $directory, $records]) {
+            foreach ($records as $record) {
+                $declared = $extensionManager->getPhpExtensionRequirements($directory, $record->identifier);
+                $requester = ['type' => $type, 'identifier' => $record->identifier, 'name' => $record->getLocalizedName()];
+
+                foreach ($declared['required'] as $ext) {
+                    $requestedBy[$ext][] = $requester + ['level' => 'require'];
+                }
+
+                foreach (array_keys($declared['suggested']) as $ext) {
+                    $requestedBy[$ext][] = $requester + ['level' => 'suggest'];
+                }
+            }
+        }
+
+        ksort($requestedBy);
+
+        return $requestedBy;
     }
 }

@@ -1557,7 +1557,7 @@
                     const mkdirCommand = `mkdir -p ${notExistsPaths.join(' ')}`;
                     html += `<pre class="fix-command">${escapeHtml(mkdirCommand)}</pre>`;
                 }
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                 html += '<div class="code-box">';
@@ -1568,7 +1568,7 @@
                     const relMkdirCommand = `mkdir -p ${notExistsRelPaths.join(' ')}`;
                     html += `<pre class="fix-command">${escapeHtml(relMkdirCommand)}</pre>`;
                 }
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += '</div>';
             }
@@ -1597,19 +1597,19 @@
                 html += `<p class="fix-guide-label">${lang('ownership_mismatch_option_group')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(groupCommand)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_chown')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`sudo chown -R ${webUser}:${webUser} ${mismatchPaths}`)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_777')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`chmod -R 777 ${mismatchPaths}`)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 const hintText = lang('ownership_mismatch_hint')
@@ -1638,7 +1638,7 @@
                         html += `<p class="fix-guide-label">${lang('permission_readonly_fix_guide')}</p>`;
                         html += '<div class="code-box">';
                         html += `<pre class="fix-command">${escapeHtml(winRoCommands.join('\n'))}</pre>`;
-                        html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                        html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                         html += '</div>';
                         html += `<p class="fix-guide-hint">${lang('permission_readonly_hint')}</p>`;
                     }
@@ -1646,14 +1646,14 @@
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winDirCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     const winDirRelPaths = failedDirRelPaths.map(p => p.replace(/\//g, '\\'));
                     const winDirRelCommands = winDirRelPaths.map(p => `icacls "${p}" /grant Everyone:(OI)(CI)F /T`);
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winDirRelCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
                 } else {
@@ -1662,12 +1662,12 @@
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod -R 755 ${dirPathList}`)}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod -R 755 ${dirRelPathList}`)}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                 }
                 html += '</details>';
@@ -1712,12 +1712,12 @@
                 html += `<p class="fix-guide-label">${isWindows ? lang('required_files_fix_guide') : lang('required_files_fix_guide_combined')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(fileFixCommand)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(fileFixRelCommand)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
                 html += '</details>';
                 html += '</div>';
@@ -1738,14 +1738,14 @@
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winFileCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     const winRelFilePaths = notWritableRelPaths.map(p => p.replace(/\//g, '\\'));
                     const winRelFileCommands = winRelFilePaths.map(p => `icacls "${p}" /grant Everyone:F`);
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(winRelFileCommands.join('\n'))}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('permission_windows_hint')}</p>`;
                 } else {
@@ -1754,12 +1754,12 @@
                     html += `<p class="fix-guide-label">${lang('permission_fix_guide')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod 644 ${filePathList}`)}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                     html += `<p class="fix-guide-hint">${lang('or_relative_path')}</p>`;
                     html += '<div class="code-box">';
                     html += `<pre class="fix-command">${escapeHtml(`chmod 644 ${relFilePathList}`)}</pre>`;
-                    html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                    html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                     html += '</div>';
                 }
                 html += '</details>';
@@ -1788,19 +1788,19 @@
                 html += `<p class="fix-guide-label">${lang('ownership_mismatch_option_group')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(fileGroupCommand)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_chown')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`sudo chown ${fileWebUser}:${fileWebUser} ${mismatchFilePaths}`)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 html += `<p class="fix-guide-label" style="margin-top: 1rem;">${lang('ownership_mismatch_option_666')}</p>`;
                 html += '<div class="code-box">';
                 html += `<pre class="fix-command">${escapeHtml(`chmod 666 ${mismatchFilePaths}`)}</pre>`;
-                html += `<button class="btn-copy" onclick="copyPermissionCommand(this)">${lang('copy_command')}</button>`;
+                html += `<button class="btn-copy" data-action="copyPermissionCommand">${lang('copy_command')}</button>`;
                 html += '</div>';
 
                 const fileHintText = lang('ownership_mismatch_hint')
@@ -1994,7 +1994,7 @@
      * 표준 배치에서는 문서 루트 밖이고, 문서 루트 고정 배치에서는 보호 규칙이 막는다.
      * 그래서 링크 대상은 공개 저장소의 같은 절이다.
      */
-    const EXECUTION_MODE_GUIDE_URL = 'https://github.com/gnuboard/g7/blob/main/INSTALL.md#%EB%B0%A9%EB%B2%95-5-cli-%EC%97%86%EB%8A%94-%ED%98%B8%EC%8A%A4%ED%8C%85';
+    const EXECUTION_MODE_GUIDE_URL = 'https://github.com/gnuboard/g7/blob/main/INSTALL.md#%EB%B0%A9%EB%B2%95-6-cli-%EC%97%86%EB%8A%94-%ED%98%B8%EC%8A%A4%ED%8C%85';
 
     /**
      * 실행 방식 정보(파랑) 카드 렌더링 (A-1 · W1)
@@ -2323,10 +2323,10 @@
                             <p class="db-existing-backup-label"><strong>${escapeHtml(lang('db_backup_guide'))}</strong></p>
                             <div class="code-box">
                                 <pre>${escapeHtml(backupCmd)}</pre>
-                                <button type="button" class="btn-copy" onclick="copyPermissionCommand(this)">${escapeHtml(lang('copy_command'))}</button>
+                                <button type="button" class="btn-copy" data-action="copyPermissionCommand">${escapeHtml(lang('copy_command'))}</button>
                             </div>
                             <label class="db-backup-confirm-checkbox">
-                                <input type="checkbox" id="db-backup-confirmed" onchange="onDbBackupConsentChange(this)" ${alreadyConsented ? 'checked' : ''}>
+                                <input type="checkbox" id="db-backup-confirmed" data-action="onDbBackupConsentChange" data-event="change" ${alreadyConsented ? 'checked' : ''}>
                                 ${escapeHtml(lang('db_backup_confirmed'))}
                             </label>
                         </div>
@@ -3310,6 +3310,20 @@
     /** 의존성에 의해 자동 선택된 확장 identifier 집합 */
     const autoSelectedSet = new Set();
 
+    /**
+     * 선택 연동(integrations)으로 자동 체크한 대상 — owner 식별자 → Set(대상 식별자).
+     *
+     * 연동은 「있으면 연동되고 없어도 동작한다」라서 의존성과 달리 해제를 막지 않고 「다음」도 막지 않는다.
+     * 사용자가 직접 고른 확장의 연동 대상만 한 단계 자동 체크한다(자동 체크된 확장의 연동은 따라가지 않는다).
+     */
+    const autoSelectedByIntegration = {};
+
+    /** 사용자가 직접 해제한 연동 자동 체크 대상 — 다시 자동 체크하지 않는다 */
+    const userDeselectedIntegrations = new Set();
+
+    /** 연동 자동 체크 대상 유형 — 템플릿은 단일 선택이라 안내만 한다 */
+    const INTEGRATION_SELECTABLE_TYPES = ['modules', 'plugins'];
+
     async function loadExtensions() {
         const form = document.getElementById('extension-form');
         const loadingEl = document.getElementById('extensions-loading');
@@ -3519,7 +3533,7 @@
         const author = item.author || '';
 
         // 의존성 표시 (identifier → name 변환, 모듈/플러그인 아이콘 추가)
-        let depsHtml = '';
+        let depsBlock = '';
         if (item.dependencies && item.dependencies.length > 0) {
             const depsText = item.dependencies.map(function(depId) {
                 const depInfo = findExtensionById(depId);
@@ -3527,8 +3541,23 @@
                 const depIcon = depInfo ? (depInfo.type === 'plugin' ? 'fa-plug' : 'fa-cube') : 'fa-cube';
                 return '<span class="dep-tag"><i class="fas ' + depIcon + '"></i> ' + escapeHtml(depName) + '</span>';
             }).join(' ');
-            depsHtml = '<div class="extension-card-footer"><div class="extension-card-dependencies">' +
-                '<span class="dep-label">' + (window.EXTENSION_LABELS?.dependencies || lang('dependencies')) + ':</span> ' + depsText + '</div></div>';
+            depsBlock = '<div class="extension-card-dependencies">' +
+                '<span class="dep-label">' + (window.EXTENSION_LABELS?.dependencies || lang('dependencies')) + ':</span> ' + depsText + '</div>';
+        }
+
+        // 선택 연동 표시 (「연동: 게시판 · 쇼핑몰 …」, 번들 버전 미달 경고 포함)
+        const integrationsBlock = buildIntegrationsLineHtml(item);
+
+        const depsHtml = (depsBlock || integrationsBlock)
+            ? '<div class="extension-card-footer">' + depsBlock + integrationsBlock + '</div>'
+            : '';
+
+        // 서버에 없는 PHP 확장(composer.json require/suggest ext-*) — 필수가 없으면 고를 수 없게 끈다(#151)
+        const phpBlock = buildPhpExtensionNoticeHtml(item);
+        const blockedByPhp = hasMissingRequiredPhpExtensions(item);
+        if (blockedByPhp) {
+            card.classList.add('disabled');
+            card.dataset.phpBlocked = '1';
         }
 
         // 선택 표시 아이콘 (단일 선택은 라디오, 다중 선택은 체크박스)
@@ -3546,9 +3575,10 @@
                 '<div class="extension-card-select">' + selectIcon + '</div>' +
             '</div>' +
             (description ? '<p class="extension-card-description">' + escapeHtml(description) + '</p>' : '') +
-            depsHtml;
+            depsHtml + phpBlock;
 
         card.addEventListener('click', function() {
+            if (blockedByPhp) return;
             toggleExtension(type, item.identifier, isSingleSelect);
         });
 
@@ -3594,6 +3624,111 @@
     function openShellPermissionGuide() {
         return '<details class="permission-guide">'
             + `<summary class="permission-guide-summary">${lang('permission_guide_shell_summary')}</summary>`;
+    }
+
+    /**
+     * 연동 대상 유형 키(scan-extensions 의 integrations_detailed.type)로 번들 항목을 찾습니다.
+     *
+     * @param {string} integrationType - modules | plugins | templates
+     * @param {string} identifier - 대상 식별자
+     * @returns {object|null} 번들 항목 또는 null
+     */
+    function findIntegrationTarget(integrationType, identifier) {
+        if (!extensionsData) return null;
+        const categories = integrationType === 'templates'
+            ? ['admin_templates', 'user_templates']
+            : [integrationType];
+        for (let i = 0; i < categories.length; i++) {
+            const found = (extensionsData[categories[i]] || []).find(function(e) { return e.identifier === identifier; });
+            if (found) return found;
+        }
+        return null;
+    }
+
+    /**
+     * 확장이 필수로 요구한 PHP 확장 중 서버에 없는 것이 있는지 판정합니다.
+     *
+     * @param {object} item - 확장 항목 (scan-extensions 의 missing_php_extensions 포함)
+     * @returns {boolean} 필수 PHP 확장이 하나라도 없으면 true
+     */
+    function hasMissingRequiredPhpExtensions(item) {
+        return !!(item && Array.isArray(item.missing_php_extensions) && item.missing_php_extensions.length > 0);
+    }
+
+    /**
+     * 카드의 PHP 확장 안내 HTML 을 만듭니다. (필수 없음 → 설치 불가, 권장 없음 → 경고만)
+     *
+     * @param {object} item - 확장 항목 (missing_php_extensions · suggested_missing 포함)
+     * @returns {string} HTML, 안내할 것이 없으면 빈 문자열
+     */
+    function buildPhpExtensionNoticeHtml(item) {
+        let html = '';
+
+        if (hasMissingRequiredPhpExtensions(item)) {
+            html += '<div class="extension-card-php-notice extension-card-php-blocked"><i class="fas fa-ban"></i> ' +
+                escapeHtml(lang('extension_php_missing_required').replace(':extensions', item.missing_php_extensions.join(', '))) +
+                '</div>';
+        }
+
+        const suggested = (item && item.suggested_missing && typeof item.suggested_missing === 'object') ? item.suggested_missing : {};
+        const suggestedNames = Object.keys(suggested);
+        if (suggestedNames.length > 0) {
+            const reasons = suggestedNames.map(function(n) { return suggested[n]; }).filter(Boolean).join(', ');
+            html += '<div class="extension-card-php-notice"><i class="fas fa-exclamation-triangle"></i> ' +
+                escapeHtml(lang('extension_php_missing_suggested')
+                    .replace(':extensions', suggestedNames.join(', '))
+                    .replace(':reason', reasons || suggestedNames.join(', '))) +
+                '</div>';
+        }
+
+        return html;
+    }
+
+    /**
+     * owner 카드의 「연동: …」 줄 HTML 을 만듭니다.
+     *
+     * - 템플릿 대상은 자동 체크하지 않으므로 「직접 선택」 안내를 붙인다.
+     * - 번들 버전이 선언한 제약에 못 미치면 「연동 버전 미달」을 붙인다(선택은 막지 않음).
+     *
+     * @param {object} item - 확장 항목 (integrations_detailed 포함)
+     * @returns {string} HTML, 연동 선언이 없으면 빈 문자열
+     */
+    function buildIntegrationsLineHtml(item) {
+        const list = (item && item.integrations_detailed) || [];
+        if (list.length === 0) return '';
+
+        const tags = list.map(function(it) {
+            if (!it || !it.id) return '';
+            const target = findIntegrationTarget(it.type, it.id);
+            const targetName = target ? (getLocalizedText(target.name) || it.id) : it.id;
+            const icon = it.type === 'plugins' ? 'fa-plug' : (it.type === 'templates' ? 'fa-palette' : 'fa-cube');
+            const isTemplate = it.type === 'templates';
+            const mismatch = !!(target && it.version && it.version !== '*' &&
+                !satisfiesVersionConstraint(target.version || '0.0.0', it.version));
+
+            let cls = 'integration-tag';
+            if (isTemplate) cls += ' integration-tag-template';
+            if (mismatch) cls += ' integration-version-mismatch';
+
+            let html = '<span class="' + cls + '" data-integration-type="' + escapeHtml(it.type) + '"' +
+                ' data-integration-id="' + escapeHtml(it.id) + '">' +
+                '<i class="fas ' + icon + '"></i> ' + escapeHtml(targetName);
+            if (isTemplate) {
+                html += ' <span class="integration-template-hint">(' + escapeHtml(lang('integration_template_hint')) + ')</span>';
+            }
+            if (mismatch) {
+                html += ' <span class="integration-version-warning">' +
+                    escapeHtml(lang('integration_version_mismatch')) + ' (' +
+                    escapeHtml(lang('dep_version_required')) + ': ' + escapeHtml(it.version) + ', ' +
+                    escapeHtml(lang('dep_version_available')) + ': ' + escapeHtml(target.version || '') + ')</span>';
+            }
+            html += '</span>';
+            return html;
+        }).join(' ');
+
+        return '<div class="extension-card-integrations">' +
+            '<span class="integration-label">' + escapeHtml(window.EXTENSION_LABELS?.integrations || lang('integrations')) + ':</span> ' +
+            tags + '</div>';
     }
 
     /**
@@ -3815,6 +3950,8 @@
                 );
                 if (card && card.classList.contains('disabled')) return;
             }
+            // 필수 PHP 확장이 없는 모듈·플러그인은 일괄 선택에서도 뺀다(#151)
+            if (hasMissingRequiredPhpExtensions(item)) return;
             ids.push(item.identifier);
         });
         return ids;
@@ -3933,6 +4070,8 @@
     window.toggleExtension = function(type, identifier, isSingleSelect, _isAutoSelect) {
         const card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
         if (!card) return;
+        // 필수 PHP 확장이 없는 확장은 직접 클릭·의존 자동 선택 어느 쪽으로도 고르지 않는다(#151)
+        if (card.dataset.phpBlocked === '1' && selectedExtensions[type].indexOf(identifier) === -1) return;
 
         const isCurrentlySelected = selectedExtensions[type].indexOf(identifier) !== -1;
         const isRequired = (type === 'admin_templates'); // 관리자 템플릿만 필수
@@ -3947,11 +4086,15 @@
             }
         }
 
+        // 이번 호출로 새로 선택되는가 — 사용자가 직접 고른 순간에만 연동 대상을 자동 체크한다
+        let becameSelected = false;
+
         if (isSingleSelect) {
             // 단일 선택 모드 — 이전 템플릿 해제 시 자동 선택 항목도 정리
             if (isCurrentlySelected && !isRequired) {
                 // 사용자 템플릿: 이미 선택된 항목 클릭 시 선택 해제
                 clearAutoSelectedByOwner(type, identifier);
+                clearIntegrationAutoSelectedByOwner(identifier);
                 selectedExtensions[type] = [];
                 card.classList.remove('selected');
                 const selectEl = card.querySelector('.extension-card-select');
@@ -3961,7 +4104,9 @@
                 const prevId = selectedExtensions[type][0];
                 if (prevId && prevId !== identifier) {
                     clearAutoSelectedByOwner(type, prevId);
+                    clearIntegrationAutoSelectedByOwner(prevId);
                 }
+                becameSelected = !isCurrentlySelected;
                 const allCards = document.querySelectorAll('.extension-card[data-type="' + type + '"]');
                 allCards.forEach(function(c) {
                     c.classList.remove('selected');
@@ -3982,7 +4127,14 @@
                 card.classList.add('selected');
                 const selectEl = card.querySelector('.extension-card-select');
                 if (selectEl) selectEl.innerHTML = '<i class="fas fa-check-square"></i>';
+                becameSelected = true;
             } else {
+                // 사용자가 연동 자동 체크 항목을 직접 해제했으면 기억해 다시 체크하지 않는다
+                if (!_isAutoSelect && isIntegrationAutoSelected(identifier)) {
+                    userDeselectedIntegrations.add(identifier);
+                }
+                forgetIntegrationAutoSelection(identifier);
+
                 // 해제 시 자동 선택 표시 제거
                 autoSelectedSet.delete(identifier);
                 removeAutoSelectedUI(identifier);
@@ -3990,7 +4142,15 @@
                 card.classList.remove('selected');
                 const selectEl = card.querySelector('.extension-card-select');
                 if (selectEl) selectEl.innerHTML = '<i class="far fa-square"></i>';
+
+                // 이 항목이 연동 owner 였다면 그 owner 가 자동 체크한 항목 중 다른 근거 없는 것을 해제
+                clearIntegrationAutoSelectedByOwner(identifier);
             }
+        }
+
+        // 사용자가 직접 고른 순간에만 연동 대상을 한 단계 자동 체크한다(D8 — 자동 선택은 연쇄하지 않음)
+        if (becameSelected && !_isAutoSelect) {
+            autoSelectIntegrations(type, identifier);
         }
 
         updateSelectionSummary();
@@ -4010,25 +4170,39 @@
         updateBulkToggleStates();
     };
 
+    /**
+     * 「Step 4 로 돌아가기」 등으로 다시 들어왔을 때 저장된 선택을 되살린다.
+     *
+     * Step 4 화면은 첫 방문에도 상태 파일 기본값(유형별 빈 배열)을 넘기므로, 하나라도 고른 항목이
+     * 있을 때만 복원으로 취급한다 — 빈 값으로 카드 렌더의 기본 선택(첫 관리자 템플릿)을 덮지 않는다.
+     * 지금 목록에 없는 식별자는 버리고, 관리자 템플릿이 비면 첫 항목으로 채운 뒤 카드 표시를 선택 상태에 맞춘다.
+     */
     function restoreSelectionState() {
-        if (window.INSTALLER_SELECTED_EXTENSIONS) {
-            var saved = window.INSTALLER_SELECTED_EXTENSIONS;
-            ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach(function(type) {
-                if (saved[type] && Array.isArray(saved[type])) {
-                    selectedExtensions[type] = saved[type].slice();
-                }
-            });
-            Object.keys(selectedExtensions).forEach(function(type) {
-                selectedExtensions[type].forEach(function(identifier) {
-                    var card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
-                    if (card && !card.classList.contains('required')) {
-                        card.classList.add('selected');
-                    }
+        var types = ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'];
+        var saved = window.INSTALLER_SELECTED_EXTENSIONS;
+        var hasSaved = !!saved && types.some(function(type) {
+            return Array.isArray(saved[type]) && saved[type].length > 0;
+        });
+
+        if (hasSaved) {
+            types.forEach(function(type) {
+                if (!Array.isArray(saved[type])) return;
+                var available = extensionsData
+                    ? (extensionsData[type] || []).map(function(item) { return item.identifier; })
+                    : null;
+                selectedExtensions[type] = saved[type].filter(function(identifier, idx, list) {
+                    return list.indexOf(identifier) === idx && (!available || available.indexOf(identifier) !== -1);
                 });
+            });
+            // 템플릿은 단일 선택이다
+            ['admin_templates', 'user_templates'].forEach(function(type) {
+                if (selectedExtensions[type].length > 1) {
+                    selectedExtensions[type] = selectedExtensions[type].slice(0, 1);
+                }
             });
         }
         if (extensionsData) {
-            ['admin_templates', 'user_templates', 'modules', 'plugins', 'language_packs'].forEach(function(type) {
+            types.forEach(function(type) {
                 var items = extensionsData[type] || [];
                 items.forEach(function(item) {
                     if (item.is_required && selectedExtensions[type].indexOf(item.identifier) === -1) {
@@ -4036,7 +4210,26 @@
                     }
                 });
             });
+            // 관리자 템플릿은 필수 — 비면 카드 렌더와 같은 기본(첫 항목)으로 채운다
+            var adminItems = extensionsData.admin_templates || [];
+            if (selectedExtensions.admin_templates.length === 0 && adminItems.length > 0) {
+                selectedExtensions.admin_templates = [adminItems[0].identifier];
+            }
         }
+        // 카드의 선택 표시(클래스·아이콘)를 선택 상태와 일치시킨다
+        types.forEach(function(type) {
+            var isSingleSelect = (type === 'admin_templates' || type === 'user_templates');
+            document.querySelectorAll('.extension-card[data-type="' + type + '"]').forEach(function(card) {
+                var isSelected = selectedExtensions[type].indexOf(card.dataset.identifier) !== -1;
+                card.classList.toggle('selected', isSelected);
+                var selectEl = card.querySelector('.extension-card-select');
+                if (selectEl) {
+                    selectEl.innerHTML = isSingleSelect
+                        ? (isSelected ? '<i class="fas fa-check-circle"></i>' : '<i class="far fa-circle"></i>')
+                        : (isSelected ? '<i class="fas fa-check-square"></i>' : '<i class="far fa-square"></i>');
+                }
+            });
+        });
         // 복원 후 언어팩 cascade 상태 동기화 (확장 선택 복원 결과 반영)
         applyLanguagePackCascadeState();
     }
@@ -4144,38 +4337,23 @@
             });
         });
 
-        // 고정점(fixed-point)까지 반복 — 추이적 의존성 자동 해결
-        let changed = true;
-        let iteration = 0;
-        while (changed && iteration < 10) {
-            changed = false;
-            iteration++;
-            const missing = computeMissingDependencies();
-            if (missing.length === 0) break;
+        // 추이적 의존성 자동 해결 — 서버와 같은 해석기(고정점 10회)가 정한 자동 포함 목록을 화면에 반영한다.
+        // 서버(확장 저장 API)도 같은 해석으로 의존 확장을 채우므로 화면과 저장 결과가 어긋나지 않는다.
+        const resolution = window.G7ExtensionResolver.resolveExtensionSelection(extensionsData, selectedExtensions);
+        resolution.auto_added.forEach((added) => {
+            const targetCat = added.category || idToCategory[added.identifier];
+            if (!targetCat || selectedExtensions[targetCat].includes(added.identifier)) return;
 
-            missing.forEach((m) => {
-                // 의존성 type을 카테고리로 매핑 (modules → modules, plugins → plugins)
-                // detailed에 타입이 없는 레거시인 경우 identifier 역인덱스에서 조회
-                let targetCat = null;
-                if (m.depType === 'modules') targetCat = 'modules';
-                else if (m.depType === 'plugins') targetCat = 'plugins';
-                else if (idToCategory[m.depIdentifier]) targetCat = idToCategory[m.depIdentifier];
+            autoSelectedSet.add(added.identifier);
 
-                if (targetCat && !selectedExtensions[targetCat].includes(m.depIdentifier)) {
-                    // 자동 선택 추적
-                    autoSelectedSet.add(m.depIdentifier);
+            // toggleExtension을 호출하여 selectedExtensions 배열 추가와 카드 UI
+            // (selected 클래스 + extension-card-select 아이콘)을 한 번에 동기화.
+            const isSingleSelect = (targetCat === 'admin_templates' || targetCat === 'user_templates');
+            window.toggleExtension(targetCat, added.identifier, isSingleSelect, true);
 
-                    // toggleExtension을 호출하여 selectedExtensions 배열 추가와 카드 UI
-                    // (selected 클래스 + extension-card-select 아이콘)을 한 번에 동기화.
-                    const isSingleSelect = (targetCat === 'admin_templates' || targetCat === 'user_templates');
-                    window.toggleExtension(targetCat, m.depIdentifier, isSingleSelect, true);
-
-                    // 자동 선택 시각적 표시 추가
-                    applyAutoSelectedUI(m.depIdentifier, m.ownerName);
-                    changed = true;
-                }
-            });
-        }
+            const owner = findExtensionById(added.required_by);
+            applyAutoSelectedUI(added.identifier, (owner && getLocalizedText(owner.name)) || added.required_by);
+        });
 
         updateSelectionSummary();
         validateExtensionSelection();
@@ -4350,6 +4528,233 @@
     }
 
     /**
+     * 식별자가 어떤 owner 의 연동으로 자동 체크된 상태인지 반환합니다.
+     *
+     * @param {string} identifier - 대상 식별자
+     * @returns {boolean}
+     */
+    function isIntegrationAutoSelected(identifier) {
+        return Object.keys(autoSelectedByIntegration).some(function(owner) {
+            return autoSelectedByIntegration[owner].has(identifier);
+        });
+    }
+
+    /**
+     * 대상을 모든 owner 의 연동 자동 체크 기록에서 지우고 「연동」 배지를 뗍니다.
+     *
+     * @param {string} identifier - 대상 식별자
+     */
+    function forgetIntegrationAutoSelection(identifier) {
+        Object.keys(autoSelectedByIntegration).forEach(function(owner) {
+            autoSelectedByIntegration[owner].delete(identifier);
+            if (autoSelectedByIntegration[owner].size === 0) delete autoSelectedByIntegration[owner];
+        });
+        removeIntegrationAutoUI(identifier);
+    }
+
+    /**
+     * 사용자가 고른 owner 의 연동 대상(모듈·플러그인)을 한 번 자동 체크합니다.
+     *
+     * - 대상 유형이 템플릿이면 자동 체크하지 않는다(단일 선택이라 사용자가 고른 템플릿이 바뀐다 — 카드에 안내만).
+     * - 번들 목록에 없거나, 이미 선택됐거나, 사용자가 전에 해제한 대상은 건드리지 않는다.
+     * - 자동 체크한 대상의 dependencies 는 뒤이은 autoSelectMissingDependencies() 가 채우고,
+     *   그 대상의 integrations 는 따라가지 않는다(toggleExtension 의 _isAutoSelect 경로).
+     * - 선택 검증·해제 잠금(validateExtensionSelection·computeDependents)에는 관여하지 않는다.
+     *
+     * @param {string} ownerType - owner 카테고리 (admin_templates·user_templates·modules·plugins)
+     * @param {string} ownerIdentifier - owner 식별자
+     * @returns {Array<string>} 이번에 자동 체크한 대상 식별자
+     */
+    function autoSelectIntegrations(ownerType, ownerIdentifier) {
+        if (!extensionsData) return [];
+        const owner = (extensionsData[ownerType] || []).find(function(e) { return e.identifier === ownerIdentifier; });
+        if (!owner) return [];
+
+        const ownerName = getLocalizedText(owner.name) || ownerIdentifier;
+        const picked = [];
+
+        (owner.integrations_detailed || []).forEach(function(it) {
+            if (!it || !it.id || it.id === ownerIdentifier) return;
+            if (INTEGRATION_SELECTABLE_TYPES.indexOf(it.type) === -1) return;
+
+            const targetCat = it.type;
+            const exists = (extensionsData[targetCat] || []).some(function(e) { return e.identifier === it.id; });
+            if (!exists) return;
+            if (selectedExtensions[targetCat].indexOf(it.id) !== -1) return;
+            if (userDeselectedIntegrations.has(it.id)) return;
+
+            window.toggleExtension(targetCat, it.id, false, true);
+            if (selectedExtensions[targetCat].indexOf(it.id) === -1) return; // 카드가 없어 선택되지 않음
+
+            if (!autoSelectedByIntegration[ownerIdentifier]) {
+                autoSelectedByIntegration[ownerIdentifier] = new Set();
+            }
+            autoSelectedByIntegration[ownerIdentifier].add(it.id);
+            applyIntegrationAutoUI(targetCat, it.id, ownerName);
+            picked.push(it.id);
+        });
+
+        return picked;
+    }
+
+    /**
+     * 대상이 계속 선택돼 있을 근거(제외 집합 밖의 선택된 확장이 연동·의존으로 가리킴)를 찾습니다.
+     *
+     * 우선순위: 의존 > 사용자가 직접 고른 확장의 연동 > 자동 체크된 확장의 연동.
+     *
+     * @param {string} identifier - 대상 식별자
+     * @param {Set<string>} excluded - 근거로 치지 않을 식별자 (해제되는 owner 등)
+     * @param {Set<string>} [alsoAuto] - 자동 체크된 것으로 볼 식별자 (기록을 옮기는 중인 후보)
+     * @returns {{kind: string, owner: object, ownerType: string}|null}
+     */
+    function findSelectionBasis(identifier, excluded, alsoAuto) {
+        const categories = ['admin_templates', 'user_templates', 'modules', 'plugins'];
+        let integrationBasis = null;
+        let autoIntegrationBasis = null;
+        for (let c = 0; c < categories.length; c++) {
+            const cat = categories[c];
+            const items = extensionsData[cat] || [];
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.identifier === identifier || excluded.has(item.identifier)) continue;
+                if (selectedExtensions[cat].indexOf(item.identifier) === -1) continue;
+
+                const depends = (item.dependencies_detailed || []).some(function(d) { return d && d.identifier === identifier; });
+                if (depends) return { kind: 'dependency', owner: item, ownerType: cat };
+
+                const integrates = (item.integrations_detailed || []).some(function(it) {
+                    return it && it.id === identifier && INTEGRATION_SELECTABLE_TYPES.indexOf(it.type) !== -1;
+                });
+                if (!integrates) continue;
+                const basis = { kind: 'integration', owner: item, ownerType: cat };
+                if (isIntegrationAutoSelected(item.identifier) || autoSelectedSet.has(item.identifier) ||
+                    (alsoAuto && alsoAuto.has(item.identifier))) {
+                    if (!autoIntegrationBasis) autoIntegrationBasis = basis;
+                } else if (!integrationBasis) {
+                    integrationBasis = basis;
+                }
+            }
+        }
+        return integrationBasis || autoIntegrationBasis;
+    }
+
+    /**
+     * owner 를 해제할 때 그 owner 가 연동으로 자동 체크한 항목 중 다른 선택 근거가 없는 것만 해제합니다.
+     *
+     * 다른 근거 = 여전히 선택된 다른 확장이 그 항목을 의존하거나 연동으로 선언함. 함께 해제되는 항목끼리는
+     * 서로의 근거가 되지 않도록 고정점까지 반복한다. 남는 항목은 근거가 된 owner 로 기록을 옮긴다.
+     * 해제한 항목이 의존성으로 자동 선택해 둔 확장도 clearAutoSelectedByOwner() 로 함께 정리한다.
+     *
+     * @param {string} ownerIdentifier - 해제되는 owner 식별자
+     * @returns {Array<string>} 해제한 대상 식별자
+     */
+    function clearIntegrationAutoSelectedByOwner(ownerIdentifier) {
+        if (!extensionsData || !autoSelectedByIntegration[ownerIdentifier]) return [];
+
+        const candidates = Array.from(autoSelectedByIntegration[ownerIdentifier]);
+        delete autoSelectedByIntegration[ownerIdentifier];
+
+        const isSelected = function(id) {
+            return INTEGRATION_SELECTABLE_TYPES.some(function(t) { return selectedExtensions[t].indexOf(id) !== -1; });
+        };
+
+        // 남길 후보를 고정점까지 넓힌다 — 근거는 「후보 밖 선택 확장」 또는 「이미 남기기로 한 후보」만 인정한다.
+        // (게시판↔쇼핑몰처럼 서로를 연동으로 선언한 후보끼리 서로를 붙잡아 둘 다 남는 것을 막는다)
+        const kept = new Set();
+        let changed = true;
+        while (changed) {
+            changed = false;
+            candidates.forEach(function(id) {
+                if (kept.has(id) || !isSelected(id)) return;
+                const excluded = new Set([ownerIdentifier]);
+                candidates.forEach(function(c) { if (!kept.has(c)) excluded.add(c); });
+                if (isIntegrationAutoSelected(id) || findSelectionBasis(id, excluded)) {
+                    kept.add(id);
+                    changed = true;
+                }
+            });
+        }
+
+        const released = candidates.filter(function(id) { return !kept.has(id) && isSelected(id); });
+        const candidateSet = new Set(candidates);
+        const removed = new Set([ownerIdentifier].concat(released));
+
+        released.forEach(function(id) {
+            removeIntegrationAutoUI(id);
+            ['modules', 'plugins'].forEach(function(cat) {
+                const idx = selectedExtensions[cat].indexOf(id);
+                if (idx === -1) return;
+                selectedExtensions[cat].splice(idx, 1);
+                const card = document.querySelector('.extension-card[data-type="' + cat + '"][data-identifier="' + id + '"]');
+                if (card) {
+                    card.classList.remove('selected');
+                    const selectEl = card.querySelector('.extension-card-select');
+                    if (selectEl) selectEl.innerHTML = '<i class="far fa-square"></i>';
+                }
+                clearAutoSelectedByOwner(cat, id);
+            });
+            // 풀린 항목이 다른 항목의 연동 근거로 기록돼 있었다면(근거 이전) 그것도 같은 규칙으로 정리
+            clearIntegrationAutoSelectedByOwner(id);
+        });
+
+        // 남은 후보 — 근거가 연동이면 그 owner 로 기록·배지를 옮기고, 의존이면 연동 표시만 뗀다
+        candidates.forEach(function(id) {
+            if (removed.has(id) || isIntegrationAutoSelected(id)) return;
+            const basis = findSelectionBasis(id, removed, candidateSet);
+            if (basis && basis.kind === 'integration') {
+                if (!autoSelectedByIntegration[basis.owner.identifier]) {
+                    autoSelectedByIntegration[basis.owner.identifier] = new Set();
+                }
+                autoSelectedByIntegration[basis.owner.identifier].add(id);
+                removeIntegrationAutoUI(id);
+                const cat = INTEGRATION_SELECTABLE_TYPES.find(function(t) { return selectedExtensions[t].indexOf(id) !== -1; });
+                if (cat) applyIntegrationAutoUI(cat, id, getLocalizedText(basis.owner.name) || basis.owner.identifier);
+            } else {
+                removeIntegrationAutoUI(id);
+            }
+        });
+
+        return released;
+    }
+
+    /**
+     * 연동으로 자동 체크된 카드에 「연동」 배지와 CSS 클래스를 붙입니다(필수 의존성 배지와 다른 색).
+     *
+     * @param {string} type - 카드 카테고리 (modules·plugins)
+     * @param {string} identifier - 대상 식별자
+     * @param {string} ownerName - 연동을 선언한 확장 이름
+     */
+    function applyIntegrationAutoUI(type, identifier, ownerName) {
+        const card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
+        if (!card) return;
+        card.classList.add('integration-auto-selected');
+
+        const existing = card.querySelector('.integration-auto-badge');
+        if (existing) existing.remove();
+
+        const badge = document.createElement('span');
+        badge.className = 'integration-auto-badge';
+        badge.innerHTML = '<i class="fas fa-puzzle-piece"></i> ' +
+            escapeHtml(window.EXTENSION_LABELS?.integration_auto_badge_label || lang('integration_auto_badge_label')) +
+            ' <span class="integration-auto-badge-owner">(' + escapeHtml(ownerName) + ')</span>';
+        const infoEl = card.querySelector('.extension-card-info');
+        if (infoEl) infoEl.appendChild(badge);
+    }
+
+    /**
+     * 「연동」 자동 체크 표시를 제거합니다.
+     *
+     * @param {string} identifier - 대상 식별자
+     */
+    function removeIntegrationAutoUI(identifier) {
+        document.querySelectorAll('.extension-card[data-identifier="' + identifier + '"]').forEach(function(card) {
+            card.classList.remove('integration-auto-selected');
+            const badge = card.querySelector('.integration-auto-badge');
+            if (badge) badge.remove();
+        });
+    }
+
+    /**
      * 의존성 잠금으로 인해 선택 해제가 차단될 때 토스트 메시지를 표시합니다.
      *
      * @param {string} identifier - 해제 시도된 확장 식별자
@@ -4388,53 +4793,8 @@
      * @returns {boolean} 제약 조건 충족 여부
      */
     function satisfiesVersionConstraint(available, constraint) {
-        if (!constraint || constraint === '*') return true;
-
-        // 버전 문자열을 숫자 배열로 파싱
-        function parseVersion(v) {
-            const clean = v.replace(/^[v=]/, '');
-            const parts = clean.split('.').map(Number);
-            return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
-        }
-
-        // 두 버전 비교: -1(a<b), 0(같음), 1(a>b)
-        function compareVersions(a, b) {
-            for (let i = 0; i < 3; i++) {
-                if (a[i] < b[i]) return -1;
-                if (a[i] > b[i]) return 1;
-            }
-            return 0;
-        }
-
-        const avail = parseVersion(available);
-
-        // 연산자 + 버전 분리
-        const match = constraint.match(/^([><=^~!]*)\s*(.+)$/);
-        if (!match) return true;
-
-        const op = match[1] || '>=';
-        const req = parseVersion(match[2]);
-        const cmp = compareVersions(avail, req);
-
-        switch (op) {
-            case '>=': return cmp >= 0;
-            case '>':  return cmp > 0;
-            case '<=': return cmp <= 0;
-            case '<':  return cmp < 0;
-            case '=':
-            case '==': return cmp === 0;
-            case '!=': return cmp !== 0;
-            case '^':
-                // ^1.2.3 → >=1.2.3, <2.0.0 (major 고정)
-                if (cmp < 0) return false;
-                return avail[0] === req[0];
-            case '~':
-                // ~1.2.3 → >=1.2.3, <1.3.0 (minor 고정)
-                if (cmp < 0) return false;
-                return avail[0] === req[0] && avail[1] === req[1];
-            default:
-                return cmp >= 0;
-        }
+        // 판정식은 서버와 공유하는 해석기(installer-extension-resolver.js)가 소유한다.
+        return window.G7ExtensionResolver.satisfiesVersionConstraint(available, constraint);
     }
 
     /**
@@ -4567,6 +4927,9 @@
             else sessionStorage.removeItem('g7_stepwise_token');
         } catch (e) { /* 저장 실패는 무시 — 페이지 주입값으로 복원된다 */ }
     }
+    // 마지막 실패가 데이터베이스 작업 전 단계(환경 설정·의존성 사전 검증)에서 멈췄는지 — showError() 가 정한다.
+    // 되돌아가기 확인 창이 이 값으로 DB 수동 정리 안내를 넣을지 정한다.
+    let lastFailureBeforeDatabase = false;
 
     /**
      * 저장된 확장 이름 가져오기 (state.json에서 로드된 데이터 사용)
@@ -5120,7 +5483,7 @@
                     const failedTaskId = data.task
                         ? (data.target ? `${data.task}:${data.target}` : data.task)
                         : null;
-                    showError(errorMessage, errorDetail, failedTaskId, !!data.skippable, data.manual_commands);
+                    showError(errorMessage, errorDetail, failedTaskId, !!data.skippable, data.manual_commands, data.message_key || null);
                 },
                 onConnectionTimeout: () => {
                     // SSE 모드에서 연결 timeout 시 — 사전 체크 통과 후의 예외 케이스라
@@ -5272,6 +5635,8 @@
             });
         }
 
+        // 새 설치 진행(시작·재시도·재개) — 이전 실패 판정은 더 쓰지 않는다
+        lastFailureBeforeDatabase = false;
         currentMonitor.start();
     }
 
@@ -5869,6 +6234,41 @@
     }
 
     /**
+     * 의존 때문에 앞당겨 설치하는 항목의 「{이름}에 필요」 표시 문구 (#153).
+     *
+     * 확장 저장 시 해석기가 기록한 `install_pulled_by`(종류 경계를 넘어 앞당겨진 `카테고리:식별자` → 요구한 확장)를
+     * 설치 작업(*_install) 행에만 붙인다. 그룹 id 가 카테고리와 같다(admin_templates·modules·plugins·user_templates).
+     *
+     * @param {string} groupId 작업 그룹 id
+     * @param {Object} task 작업 객체 ({id, target})
+     * @returns {string|null} 표시 문구 (해당 없으면 null)
+     */
+    function getTaskRequiredByLabel(groupId, task) {
+        if (!task.target || !/_install$/.test(task.id)) return null;
+        const owners = (window.INSTALLER_PULLED_BY || {})[groupId + ':' + task.target];
+        if (!Array.isArray(owners) || owners.length === 0) return null;
+        const names = owners.map((key) => {
+            const id = String(key).slice(String(key).indexOf(':') + 1);
+            return getStoredExtensionName(id) || id;
+        });
+        return lang('task_required_by').replace(':names', names.join(', '));
+    }
+
+    /**
+     * 작업 키(`id` 또는 `id:target`)를 작업 객체로 나눈다 — state 의 failed_task 는 target 을 붙여 저장한다.
+     *
+     * @param {string|null} taskKey 작업 키
+     * @returns {{id: string, target: (string|null)}|null} 작업 객체
+     */
+    function splitTaskKey(taskKey) {
+        if (!taskKey) return null;
+        const sep = String(taskKey).indexOf(':');
+        return sep === -1
+            ? { id: String(taskKey), target: null }
+            : { id: String(taskKey).slice(0, sep), target: String(taskKey).slice(sep + 1) };
+    }
+
+    /**
      * 작업 목록 렌더링 (그룹화된 아코디언 UI)
      */
     function renderTaskList() {
@@ -5913,10 +6313,12 @@
             const tasksHtml = tasks.map(task => {
                 const taskDomId = getTaskDomId(task);
                 const taskName = getTaskDisplayName(task);
+                const requiredBy = getTaskRequiredByLabel(group.id, task);
                 return `
                     <div id="${escapeHtml(taskDomId)}" class="task-item task-pending" data-task-id="${escapeHtml(task.id)}" data-target="${escapeHtml(task.target || '')}">
                         <span class="task-icon">${getIconSvg('pending')}<span class="sr-only">${escapeHtml(lang('status_pending'))}</span></span>
                         <span class="task-name">${escapeHtml(taskName)}</span>
+                        ${requiredBy ? `<span class="task-required-by">${escapeHtml(requiredBy)}</span>` : ''}
                     </div>
                 `;
             }).join('');
@@ -5925,8 +6327,7 @@
                 <div class="task-group" data-group-id="${escapeHtml(group.id)}">
                     <div class="task-group-header" role="button" tabindex="0"
                          aria-expanded="true" aria-controls="task-group-items-${escapeHtml(group.id)}"
-                         onclick="toggleTaskGroup('${group.id}')"
-                         onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleTaskGroup('${group.id}'); }">
+                         data-action="toggleTaskGroup" data-arg="${escapeHtml(group.id)}">
                         <span class="task-group-toggle" aria-hidden="true">▼</span>
                         <span class="task-group-label">${escapeHtml(groupLabel)}</span>
                         <span class="task-group-status status-pending">${lang('status_pending')}</span>
@@ -6154,9 +6555,12 @@
      *
      * @param {string} errorMessage 메인 오류 메시지
      * @param {string|null} errorDetail 상세 오류 메시지 (선택)
-     * @param {string|null} failedTaskId 실패한 작업 ID (선택)
+     * @param {string|null} failedTaskId 실패한 작업 ID (선택, `id` 또는 `id:target`)
+     * @param {boolean} skippable 실패 단계가 [건너뛰고 계속] 가능한 선택 확장 단계인지 (선택)
+     * @param {string[]|null} manualCommands 수동 복구 명령 목록 (선택 — 무CLI 환경에서는 서버가 만들지 않는다)
+     * @param {string|null} messageKey 실패 문구 키 (선택) — 사전 검증 실패면 「Step 4 로 돌아가기」를 앞세운다
      */
-    function showError(errorMessage, errorDetail = null, failedTaskId = null, skippable = false, manualCommands = null) {
+    function showError(errorMessage, errorDetail = null, failedTaskId = null, skippable = false, manualCommands = null, messageKey = null) {
         installationCompleted = true; // 완료 플래그 설정 (beforeunload 경고 비활성화)
         lastErrorSkippable = !!skippable;
         // 재개 계열 버튼 잠금 해제 — 이 화면이 그 버튼들의 다음 사용처다 (M15)
@@ -6218,8 +6622,9 @@
             });
         }
 
-        // Task ID를 번역된 이름으로 변환
-        const failedTaskName = failedTaskId ? getTaskName(failedTaskId) : null;
+        // Task ID를 번역된 이름으로 변환 — state 복원 경로는 `module_install:sirsoft-page` 처럼 target 을 붙여 온다
+        const failedTask = splitTaskKey(failedTaskId);
+        const failedTaskName = failedTask ? getTaskDisplayName(failedTask) : null;
 
         // 현재 진행 중인 작업(task-active)을 모두 실패로 표시
         const activeTasks = document.querySelectorAll('.task-item.task-active');
@@ -6233,6 +6638,22 @@
         const failureSection = document.getElementById('failure-section');
         const failureMessage = document.getElementById('failure-message');
         const failureTitle = failureSection?.querySelector('.result-title');
+
+        // 의존성 사전 검증 실패(순환·누락)는 재시도로 풀리지 않는다 — 「Step 4 로 돌아가기」를 주 버튼으로, 재시도는 보조로
+        const isPrecheckFailure = messageKey === 'dependency_precheck_failed';
+        // DB 작업(db_cleanup 부터) 전 단계에서 멈춘 실패 — 되돌아가기 확인 창에서 DB 수동 정리 안내를 뺀다.
+        // 목록은 서버 installerPreDatabaseTaskIds() 와 같다(작업 순서 고정).
+        const preDatabaseTasks = ['composer_check', 'composer_install', 'env_update', 'key_generate', 'dependency_precheck'];
+        lastFailureBeforeDatabase = isPrecheckFailure || (!!failedTask && preDatabaseTasks.includes(failedTask.id));
+        const backToExtensionsBtn = document.getElementById('back-to-extensions-btn');
+        const retryBtn = document.getElementById('retry-installation-btn');
+        if (backToExtensionsBtn) {
+            backToExtensionsBtn.classList.toggle('hidden', !isPrecheckFailure);
+        }
+        if (retryBtn) {
+            retryBtn.classList.toggle('btn-primary', !isPrecheckFailure);
+            retryBtn.classList.toggle('btn-secondary', isPrecheckFailure);
+        }
 
         if (failureSection) {
             // 타이틀에 실패 단계 추가
@@ -6252,22 +6673,23 @@
                     </div>
                 `;
 
-                // 상세 오류 (있을 경우만 - 아코디언 형식)
+                // 상세 오류 (있을 경우만 - 아코디언 형식). 사전 검증 실패는 사유가 곧 해결 방법이라 펼쳐 둔다.
                 if (errorDetail) {
                     const accordionId = 'error-detail-' + Date.now();
+                    const expanded = isPrecheckFailure;
                     messageHtml += `
                         <div class="failure-error-detail">
                             <button
                                 class="error-detail-toggle"
                                 type="button"
-                                aria-expanded="false"
+                                aria-expanded="${expanded ? 'true' : 'false'}"
                                 aria-controls="${accordionId}"
-                                onclick="toggleErrorDetail(this, '${accordionId}')"
+                                data-action="toggleErrorDetail" data-arg="${accordionId}"
                             >
                                 <span class="error-detail-toggle-icon" aria-hidden="true">▶</span>
                                 <strong>${lang('view_error_details')}</strong>
                             </button>
-                            <div id="${accordionId}" class="error-detail-content">
+                            <div id="${accordionId}" class="error-detail-content${expanded ? ' show' : ''}">
                                 <pre class="error-stack">${escapeHtml(errorDetail)}</pre>
                             </div>
                         </div>
@@ -6534,6 +6956,38 @@
     }
 
     /**
+     * 완료 표식 뒤 마무리 작업(설정·라우트 캐시 굽기·정적 게시)이 끝날 때까지 기다린다.
+     *
+     * 폴링 워커는 브라우저와 무관하게 계속 돌므로, 새로고침 직후 완료 화면을 열면 finalize-env 가 상태 파일을 지워
+     * 워커가 lock lost 로 끝난다. 상태 갱신이 30초 멈추거나 90초가 지나면(워커가 사라진 경우) 그대로 진행한다.
+     *
+     * @param {object} state 상태 조회 응답
+     * @returns {Promise<object>} 마지막으로 받은 상태
+     */
+    async function waitForFinalTasks(state) {
+        const deadline = Date.now() + 90000;
+        let current = state;
+        let lastUpdated = state.last_updated;
+        let lastChangedAt = Date.now();
+
+        while (current.status === 'completed' && current.tasks_finished === false && Date.now() < deadline) {
+            if (Date.now() - lastChangedAt >= 30000) break;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            try {
+                current = await fetchInstallationState();
+            } catch (e) {
+                break;
+            }
+            if (current.last_updated !== lastUpdated) {
+                lastUpdated = current.last_updated;
+                lastChangedAt = Date.now();
+            }
+        }
+
+        return current.status === 'completed' ? current : state;
+    }
+
+    /**
      * 재진입 감지 및 확인
      */
     /**
@@ -6571,7 +7025,7 @@
             const state = await fetchInstallationState();
 
 
-            // 설치가 이미 완료된 경우
+            // 설치가 이미 완료된 경우 — 마무리 작업이 도는 중이면 끝날 때까지 기다린 뒤 완료 화면(→ finalize-env)
             if (state.status === 'completed') {
                 // 서버는 `completed` 상태의 단계별 실행 요청을 일부러 허용한다 — 완료 표식을
                 // 세우는 `complete_flag` 뒤에 마지막 태스크(`config_cache`)가 한 번 더 남기
@@ -6579,6 +7033,11 @@
                 // 그 태스크가 **영원히 실행되지 않았고**, 서버의 허용 분기는 사실상 죽은
                 // 코드였다 (10차). 여기서 한 번만 이어받아 남은 태스크를 마저 돌린다.
                 await catchUpRemainingStepwiseTasks(state);
+
+                // 폴링 워커는 완료 표식 뒤에도 마무리 작업(설정·라우트 캐시 굽기·정적 게시)을 이어 간다 —
+                // 끝나기 전에 완료 화면을 열면 finalize-env 가 상태 파일을 지워 워커가 lock lost 로 끝난다.
+                // 끝날 때까지 기다린 상태로 목록·기록·완료 화면을 그린다(waitForFinalTasks).
+                const finalState = await waitForFinalTasks(state);
 
                 // 목록과 진행 기록을 먼저 그린다 (19차 S-8).
                 //
@@ -6591,12 +7050,12 @@
                 // 남았다.
                 renderTaskList();
                 {
-                    const lists = stateTaskLists(state);
+                    const lists = stateTaskLists(finalState);
                     displayCompletedTasks(lists.completed, lists.skipped, lists.authoritative);
                 }
-                displayLogs(state.logs || []);
+                displayLogs(finalState.logs || []);
 
-                showCompletionSection(state);
+                showCompletionSection(finalState);
                 return;
             }
 
@@ -6628,7 +7087,8 @@
 
                 // ✅ showError() 호출 전에 먼저 task를 failed로 마크
                 if (failedTaskId) {
-                    setTaskStatus(failedTaskId, 'failed');
+                    const failedTask = splitTaskKey(failedTaskId);
+                    setTaskStatus(failedTask.id, 'failed', failedTask.target);
                 }
 
                 // 롤백 실패 정보 복원 (state.json에서 새로고침 후에도 표시)
@@ -6643,7 +7103,7 @@
                 }
 
                 // ✅ failedTaskId를 명시적으로 전달 (함수 내부에서 번역됨)
-                showError(errorMessage, errorDetail, failedTaskId, !!state.failed_task_skippable, state.manual_commands);
+                showError(errorMessage, errorDetail, failedTaskId, !!state.failed_task_skippable, state.manual_commands, state.error_message_key || null);
 
                 return;
             }
@@ -6953,9 +7413,30 @@
 
     /**
      * 설정 페이지로 이동 (확인 후)
+     *
+     * DB 작업 전 단계에서 멈춘 실패(의존성 사전 검증 등)면 확인 창에 DB 수동 정리 안내를 넣지 않는다.
      */
     async function goToSettingsWithConfirm() {
-        const confirmed = confirm(lang('confirm_go_to_settings_simple'));
+        const confirmKey = lastFailureBeforeDatabase ? 'confirm_go_to_settings_before_db' : 'confirm_go_to_settings_simple';
+        await resetStateAndGoToExtensionSelection(confirmKey);
+    }
+
+    /**
+     * 확장 선택 단계(Step 4)로 돌아가기 (확인 후) — 의존성 사전 검증 실패 화면의 주 버튼.
+     *
+     * 데이터베이스를 건드리기 전에 멈춘 실패라 DB 수동 정리 안내 없이 확인하고, 고른 확장은 그대로 남는다.
+     */
+    async function goBackToExtensionSelection() {
+        await resetStateAndGoToExtensionSelection('confirm_back_to_extension_selection');
+    }
+
+    /**
+     * 확인 창을 띄운 뒤 설치 상태를 초기화하고 설치 마법사로 돌아간다(서버가 Step 4 로 보낸다).
+     *
+     * @param {string} confirmKey 확인 창 문구 키
+     */
+    async function resetStateAndGoToExtensionSelection(confirmKey) {
+        const confirmed = confirm(lang(confirmKey));
 
         if (confirmed) {
             try {
@@ -7562,6 +8043,23 @@
     };
 
     /**
+     * role="button" 인 div 트리거(작업 그룹 머리·설치 진행 카드 머리)의 키보드 조작 — Enter·Space 를 클릭으로 바꾼다.
+     *
+     * 종전에는 요소마다 인라인 onkeydown 이 맡았는데, strict CSP(`script-src 'self'`)에서는 on* 속성이
+     * 실행되지 않는다. 클릭은 installer-boot.js 의 data-action 위임이 받으므로 여기서는 같은 요소에
+     * click 을 한 번 내기만 한다 — 동작 경로를 클릭 하나로 둔다. 네이티브 button 은 브라우저가 이미 처리한다.
+     */
+    document.addEventListener('keydown', function(event) {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        const target = event.target;
+        if (!target || !target.closest) return;
+        const trigger = target.closest('[role="button"][data-action]');
+        if (!trigger || trigger !== target || trigger.tagName === 'BUTTON') return;
+        event.preventDefault();
+        trigger.click();
+    });
+
+    /**
      * 공통 아이콘 SVG 생성
      *
      * @param {string} type 아이콘 타입 (completed, failed, warning, spinner)
@@ -7678,6 +8176,7 @@
         window.resumeInstallationFromAborted = resumeInstallationFromAborted;
         window.goToSettingsWithConfirm = goToSettingsWithConfirm;
         window.skipFailedTaskAndContinue = skipFailedTaskAndContinue;
+        window.goBackToExtensionSelection = goBackToExtensionSelection;
 
         // Step 5: 파일 체크
         window.recheckFiles = recheckFiles;

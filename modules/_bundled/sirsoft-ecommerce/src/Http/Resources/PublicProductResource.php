@@ -61,6 +61,10 @@ class PublicProductResource extends BaseApiResource
             'selling_price_formatted' => $this->formatBaseCurrency($this->selling_price),
             'discount_rate' => $this->getDiscountRate(),
 
+            // 과세 종류 (#612) — 상품 상세의 면세·영세 표시용. 옵션별 지정은 options[].tax_status
+            'tax_status' => $this->tax_status?->value,
+            'tax_status_label' => $this->tax_status?->label(),
+
             // 다중 통화 가격
             'multi_currency_list_price' => $this->buildMultiCurrencyPrices($this->list_price),
             'multi_currency_selling_price' => $this->buildMultiCurrencyPrices($this->selling_price),

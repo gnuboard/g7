@@ -1,0 +1,60 @@
+feature: 활성 확장 판정(_global.activeModules·activePlugins)과 routes.json requires — 브라우저·검색봇 동형 (#822)
+
+description: |
+  사이트가 고르는 모듈(게시판·쇼핑몰·페이지)과 플러그인(우편번호)을 꺼도 사용자 템플릿이 동작하도록, 코어가
+  두 가지 판정 수단을 준다.
+
+  1. 전역 상태 `_global.activeModules`·`_global.activePlugins` — 활성 확장 식별자 배열. 브라우저는 G7Config 의
+     메타 배열에서, 검색봇 렌더러는 같은 출처(ModuleManager·PluginManager)에서 싣는다. 레이아웃 가드
+     `{{_global.activeModules?.includes('id') ?? true}}` 는 두 렌더러에서 같은 값이어야 한다(키 없는 옛 코어 = 켜짐).
+  2. routes.json 라우트 키 `requires` — 적힌 확장이 모두 활성일 때만 공개 routes 응답·SEO·사이트맵·정적 사본에
+     실린다. 형식 오류는 라우트를 남기고 경고(fail-open). 편집기·layout:check-installed 는 거르지 않는다.
+
+  같은 결함군: 템플릿 의존 역조회(getTemplatesDependingOn*)가 목록형 dependencies 를 읽지 못하던 문제.
+
+axes:
+  case:
+    - requires_met
+    - requires_unmet
+    - requires_malformed
+    - requires_empty
+    - extension_in_transition
+    - module_route_requires
+    - unfiltered_consumers
+    - public_api
+    - call_sites
+    - bot_global_context
+    - bot_guard_expression
+    - bot_compound_expression
+    - bot_props_raw
+    - bot_seo_config_fields
+    - bot_bundle_header_footer
+    - bot_shop_base
+    - bot_plus_operator
+    - bot_data_source_guard
+    - browser_global_state
+    - dependency_list_form
+
+effects:
+  - met_requires_routes_are_kept
+  - unmet_requires_routes_are_dropped
+  - malformed_requires_fail_open_with_warning
+  - in_transition_extension_marks_merge_degraded
+  - editor_and_layout_check_see_every_route
+  - public_routes_response_omits_unmet_routes
+  - serving_call_sites_apply_requires
+  - bot_global_carries_active_extensions
+  - bot_guard_expression_matches_browser
+  - bot_header_footer_follow_active_modules
+  - bot_shop_base_matches_browser
+  - bot_skips_disabled_module_api
+  - browser_global_carries_active_identifiers
+  - list_form_dependencies_found_in_reverse_lookup
+
+test_files:
+  - tests/Feature/Template/RoutesRequiresFilterTest.php
+  - tests/Unit/Seo/SeoGlobalActiveExtensionsTest.php
+  - resources/js/core/__tests__/TemplateApp.activeExtensions.test.ts
+  - tests/Feature/Template/TemplateDependingOnListFormTest.php
+
+# E2E axis 없음: 브라우저 표면(사용자 화면 링크·404·봇 HTML·사이트맵)은 Chrome MCP 매트릭스에서 잰다(#822 계획서 §11).

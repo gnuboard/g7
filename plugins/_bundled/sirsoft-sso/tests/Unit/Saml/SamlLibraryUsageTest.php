@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Sso\Tests\Unit\Saml;
 
 use App\Support\SiteUrl;
 use OneLogin\Saml2\Utils;
+use Plugins\Sirsoft\Sso\Drivers\Saml\SamlDriver;
 use Plugins\Sirsoft\Sso\Drivers\Saml\SamlEnvironment;
 use Plugins\Sirsoft\Sso\Tests\PluginTestCase;
 use Symfony\Component\Finder\Finder;
@@ -67,5 +68,30 @@ class SamlLibraryUsageTest extends PluginTestCase
             $_SERVER = $server;
             $_GET = $get;
         }
+    }
+
+    /**
+     * POST 바인딩 자동 제출 페이지는 인라인 실행 코드 없이 정적 파일로 폼을 제출한다 — strict CSP(script-src 'self')에서도
+     * IdP·SP 로 넘어간다(#158). 종전에는 `<body onload>` 라 CSP 를 건 사이트에서 이 페이지에 멈췄다.
+     *
+     * @scenario binding=post
+     *
+     * @effects post_binding_autosubmit_without_inline_handler
+     *
+     * @return void 반환값 없음
+     */
+    public function test_post_binding_autosubmit_has_no_inline_handler(): void
+    {
+        $html = SamlDriver::autoSubmitHtml('https://idp.example.test/sso', ['SAMLRequest' => 'abc', 'RelayState' => 'r1']);
+
+        $this->assertDoesNotMatchRegularExpression('/\son[a-z]+\s*=/i', $html);
+        $this->assertDoesNotMatchRegularExpression('#<script(?![^>]*\bsrc=)[^>]*>#i', $html);
+        $this->assertStringContainsString('assets/bridge/saml-autosubmit.js', $html);
+        $this->assertStringContainsString('<input type="hidden" name="SAMLRequest" value="abc">', $html);
+        $this->assertStringContainsString('<noscript><button type="submit">', $html);
+
+        $bridge = (string) file_get_contents(dirname(__DIR__, 3).'/assets/bridge/saml-autosubmit.js');
+        $this->assertStringContainsString('document.forms[0]', $bridge);
+        $this->assertStringContainsString('form.submit()', $bridge);
     }
 }

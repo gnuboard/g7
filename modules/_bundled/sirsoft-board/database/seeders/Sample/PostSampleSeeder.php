@@ -449,6 +449,13 @@ class PostSampleSeeder extends Seeder
     {
         $this->command->info('  - '.__('sirsoft-board::messages.seeders.post_sample.images_creating'));
 
+        // gd 는 코어 기준 「선택」 확장이다 — 없으면 이미지 없이 진행한다(#151, ClaimSeeder·PageSampleSeeder 와 같은 가드)
+        if (! $this->gdAvailable()) {
+            $this->command->warn('  - '.__('sirsoft-board::messages.seeders.post_sample.images_skipped_no_gd'));
+
+            return;
+        }
+
         $datePath = date('Y/m/d');
 
         // 모듈 스토리지 드라이버 경유 — 최종 경로는 {identifier}/attachments/{path} 로 종전과 동일
@@ -1527,6 +1534,11 @@ class PostSampleSeeder extends Seeder
      */
     private function createAttachmentsForPost(int $boardId, int $postId, ?int $userId, ?Carbon $createdAt = null): void
     {
+        // 샘플 이미지를 만들지 못했으면(gd 없음) 첨부 없이 진행
+        if ($this->sampleImages === []) {
+            return;
+        }
+
         $attachedAt = $createdAt ?? now();
 
         // 첨부파일 개수 랜덤 (1~3개)
@@ -1571,6 +1583,16 @@ class PostSampleSeeder extends Seeder
     }
 
     /**
+     * PHP gd 확장(이미지 함수)을 쓸 수 있는지 반환합니다. (테스트가 부재를 흉내 내도록 protected)
+     *
+     * @return bool imagecreatetruecolor 가 있으면 true
+     */
+    protected function gdAvailable(): bool
+    {
+        return function_exists('imagecreatetruecolor');
+    }
+
+    /**
      * 샘플 이미지 생성 (GD 라이브러리 사용)
      *
      * @param  int  $width  이미지 너비
@@ -1579,6 +1601,7 @@ class PostSampleSeeder extends Seeder
      */
     private function createSampleImage(int $width, int $height): string
     {
+        // php-ext-guard: createSampleImageFiles() 가 gdAvailable() 로 먼저 거른다
         // GD 라이브러리로 간단한 그라데이션 이미지 생성
         $image = imagecreatetruecolor($width, $height);
 

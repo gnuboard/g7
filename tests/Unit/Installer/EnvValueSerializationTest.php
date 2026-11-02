@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Installer;
 
+use Dotenv\Dotenv;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -28,7 +29,7 @@ class EnvValueSerializationTest extends TestCase
     use ScansPhpSourceFunctions;
 
     /**
-     * 의존성 없는 .env 값 직렬화 정책 파일만 한 번 로드한다. BASE_PATH 나 lang 스텁은 두지 않는다.
+     * 정책 파일만 단독으로 로드한다.
      *
      * @return void 반환값 없음
      */
@@ -40,9 +41,9 @@ class EnvValueSerializationTest extends TestCase
     /**
      * 정상 값은 큰따옴표로 감싸 반환된다.
      *
-     * @scenario vector=serializeEnvValue, payload_class=normal, expected_outcome=accept_normal
+     * @scenario case=normal_value
      *
-     * @effects serializeEnvValue_wraps_normal_value_in_quotes
+     * @effects value_quoted, serializeEnvValue_wraps_normal_value_in_quotes
      *
      * @return void 반환값 없음
      */
@@ -56,9 +57,9 @@ class EnvValueSerializationTest extends TestCase
     /**
      * 빈 값은 빈 따옴표로 반환된다 (기존 동작 보존).
      *
-     * @scenario vector=serializeEnvValue, payload_class=empty, expected_outcome=accept_normal
+     * @scenario case=empty_value
      *
-     * @effects serializeEnvValue_returns_empty_quotes_for_empty_value
+     * @effects value_quoted, serializeEnvValue_returns_empty_quotes_for_empty_value
      *
      * @return void 반환값 없음
      */
@@ -71,9 +72,9 @@ class EnvValueSerializationTest extends TestCase
     /**
      * 큰따옴표와 백슬래시는 이스케이프된다 (기존 동작 보존).
      *
-     * @scenario vector=serializeEnvValue, payload_class=quote_and_backslash, expected_outcome=accept_normal
+     * @scenario case=quote_backslash
      *
-     * @effects serializeEnvValue_escapes_quotes_and_backslashes
+     * @effects value_quoted, serializeEnvValue_escapes_quotes_and_backslashes
      *
      * @return void 반환값 없음
      */
@@ -90,9 +91,9 @@ class EnvValueSerializationTest extends TestCase
      * @param  string  $value  주입 시도 값
      * @param  string  $reason  거부 사유 (실패 메시지용)
      *
-     * @scenario vector=serializeEnvValue, payload_class=newline_lf, payload_class=newline_crlf, payload_class=null_byte, expected_outcome=throw_invalid_argument
+     * @scenario case=line_break
      *
-     * @effects serializeEnvValue_rejects_line_breaks_and_nul
+     * @effects value_rejected, serializeEnvValue_rejects_line_breaks_and_nul
      *
      * @return void 반환값 없음
      */
@@ -110,7 +111,7 @@ class EnvValueSerializationTest extends TestCase
      *
      * LF, CR, CRLF, NUL 바이트, 선두 개행으로 새 환경변수 줄을 끼워 넣으려는 값을 모은다.
      *
-     * @return array<string, array{0: string, 1: string}> 사례 이름을 키로 한 (주입 시도 값, 거부 사유) 목록
+     * @return array<string, array{0: string, 1: string}> 사례명 → [주입 시도 값, 거부 사유]
      */
     public static function lineBreakInjectionProvider(): array
     {
@@ -126,9 +127,9 @@ class EnvValueSerializationTest extends TestCase
     /**
      * 개행 검사는 값 전체를 본다 — 따옴표 안에 숨겨도 거부된다.
      *
-     * @scenario vector=serializeEnvValue, payload_class=newline_lf, expected_outcome=throw_invalid_argument
+     * @scenario case=line_break_in_quotes
      *
-     * @effects serializeEnvValue_rejects_line_break_hidden_inside_quotes
+     * @effects value_rejected, serializeEnvValue_rejects_line_break_hidden_inside_quotes
      *
      * @return void 반환값 없음
      */
@@ -151,9 +152,9 @@ class EnvValueSerializationTest extends TestCase
      * 요구하는 파일에 있고, 그 상수를 여기서 박으면 인접 Installer 테스트의 안전 가드가
      * 걸려 그 테스트들이 조용히 skip 된다(초록인데 검사는 멈춘 상태가 된다).
      *
-     * @scenario vector=escapeEnvValue, payload_class=newline_lf, payload_class=newline_crlf
+     * @scenario case=legacy_alias
      *
-     * @effects escapeEnvValue_aliases_delegate_to_serializeEnvValue
+     * @effects alias_delegates_to_gate, escapeEnvValue_aliases_delegate_to_serializeEnvValue
      *
      * @return void 반환값 없음
      */
@@ -185,13 +186,59 @@ class EnvValueSerializationTest extends TestCase
     }
 
     /**
+     * 직렬화한 값은 런타임 파서(vlucas/phpdotenv)가 원래 값으로 되읽는다.
+     *
+     * phpdotenv 5.8.0 부터 닫는 따옴표가 없는 값은 그 줄 뒤를 버리지 않고 예외를 던져
+     * 부팅이 멈춘다. 직렬화기가 만드는 값이 늘 닫힌 따옴표인지를 실제 파서로 고정한다.
+     *
+     * @param  string  $value  운영자가 설치 창에 입력할 수 있는 값
+     *
+     * @scenario case=runtime_round_trip
+     *
+     * @effects runtime_parser_reads_original
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    #[DataProvider('roundTripProvider')]
+    public function serialized_values_round_trip_through_the_runtime_parser(string $value): void
+    {
+        $content = 'BEFORE="x"'."\n".'VALUE='.serializeEnvValue($value)."\n".'AFTER="y"'."\n";
+
+        $parsed = Dotenv::parse($content);
+
+        $this->assertSame($value, $parsed['VALUE']);
+        $this->assertSame('y', $parsed['AFTER'], '다음 줄의 변수가 사라지면 따옴표가 닫히지 않은 것이다');
+    }
+
+    /**
+     * 되읽기 대상 값.
+     *
+     * @return array<string, array{0: string}> 사례명 → [설치 창 입력 값]
+     */
+    public static function roundTripProvider(): array
+    {
+        return [
+            '일반 값' => ['g7'],
+            '빈 값' => [''],
+            '공백 포함' => ['그누보드 7 사이트'],
+            '샵 기호' => ['pass#word'],
+            '큰따옴표' => ['say "hi"'],
+            '끝 백슬래시' => ['C:\\path\\'],
+            '이스케이프된 따옴표 모양' => ['a\\"b'],
+            '작은따옴표' => ["it's"],
+            '등호와 쿼리' => ['https://example.com/?a=1&b=2'],
+        ];
+    }
+
+    /**
      * 개행이 없는 값은 검사기가 통과시킨다.
      *
      * URL 과 빈 값은 한 줄로 판정하고, LF, CR, NUL 이 섞인 값은 한 줄이 아니라고 판정하는지 함께 확인한다.
      *
-     * @scenario vector=installer_env_value_is_single_line, payload_class=normal, payload_class=empty, payload_class=newline_lf, payload_class=null_byte
+     * @scenario case=single_line_check
      *
-     * @effects env_value_single_line_checker_flags_line_breaks_and_nul
+     * @effects value_rejected, env_value_single_line_checker_flags_line_breaks_and_nul
      *
      * @return void 반환값 없음
      */

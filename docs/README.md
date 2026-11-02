@@ -9,7 +9,7 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 43개 | 정상 |
+| [백엔드](backend/) | 45개 | 정상 |
 | [프론트엔드](frontend/) | 49개 | 정상 |
 | [확장 시스템](extension/) | 39개 | 정상 |
 | 공통 | 22개 | 정상 |
@@ -130,7 +130,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (43개)
+### 백엔드 (45개)
 
 | 문서 | 제목 |
 |------|------|
@@ -144,6 +144,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [benchmark.md](backend/benchmark.md) | 성능 계측 시스템 (Benchmark) |
 | [broadcasting.md](backend/broadcasting.md) | Broadcasting (실시간 이벤트) |
 | [console-confirm.md](backend/console-confirm.md) | 콘솔 yes/no 프롬프트 (ConsoleConfirm) |
+| [content-security-policy.md](backend/content-security-policy.md) | 콘텐츠 보안 정책 (Content Security Policy) |
 | [controllers.md](backend/controllers.md) | 컨트롤러 계층 구조 |
 | [core-config.md](backend/core-config.md) | 코어 설정 (config/core.php) |
 | [core-update-system.md](backend/core-update-system.md) | 코어 업데이트 시스템 (Core Update System) |
@@ -156,6 +157,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [identity-messages.md](backend/identity-messages.md) | 본인인증 알림 (Identity Notifications) |
 | [identity-policies.md](backend/identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) |
 | [identity-providers.md](backend/identity-providers.md) | IDV Provider 작성 가이드 (Identity Verification Providers) |
+| [installer-cli.md](backend/installer-cli.md) | 터미널 설치·운영 명령 (installer CLI) |
 | [language-pack-service.md](backend/language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) |
 | [middleware.md](backend/middleware.md) | 미들웨어 등록 규칙 |
 | [notification-system.md](backend/notification-system.md) | 알림 시스템 (Notification System) |
@@ -364,7 +366,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | `sirsoft-marketing` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-marketing/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-marketing/docs/README.md) | 훅 4 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `sirsoft-message_bizppurio` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-message_bizppurio/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-message_bizppurio/docs/README.md) | 훅 1 · 라우트 21 · 모델 2 · 레이아웃 1 |
 | `sirsoft-pay_kginicis` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-pay_kginicis/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-pay_kginicis/docs/README.md) | 훅 6 · 라우트 37 · 모델 0 · 레이아웃 1 |
-| `sirsoft-pay_nhnkcp` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-pay_nhnkcp/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-pay_nhnkcp/docs/README.md) | 훅 8 · 라우트 15 · 모델 0 · 레이아웃 1 |
+| `sirsoft-pay_nhnkcp` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-pay_nhnkcp/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-pay_nhnkcp/docs/README.md) | 훅 8 · 라우트 16 · 모델 0 · 레이아웃 1 |
 | `sirsoft-pay_nicepayments` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-pay_nicepayments/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-pay_nicepayments/docs/README.md) | 훅 5 · 라우트 14 · 모델 0 · 레이아웃 1 |
 | `sirsoft-social_login` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-social_login/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-social_login/docs/README.md) | 훅 17 · 라우트 49 · 모델 4 · 레이아웃 11 |
 | `sirsoft-sso` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-sso/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-sso/docs/README.md) | 훅 1 · 라우트 0 · 모델 9 · 레이아웃 7 |

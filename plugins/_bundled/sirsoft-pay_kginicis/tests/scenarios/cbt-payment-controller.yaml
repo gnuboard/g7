@@ -1,0 +1,30 @@
+feature: KG이니시스 CBT(일본 엔 결제) 승인 콜백·편의점 입금 통보·관리자 운영·자동 환불 대사
+
+description: |
+  CBT 결제(카드·PayPay·편의점)의 승인 콜백이 금액·주문번호·통화를 대조해 결제를 완료하거나 승인을 자동 환불하고,
+  편의점 입금 통보는 대조·재전송 멱등을 지키며, 결제창 해시·체크아웃 토큰은 주문 맥락에 묶인다.
+  관리자 운영(편의점 요약·모의 통보·만료·재확인)과 자동 환불 실패의 수동 대사 재시도는 경로별 권한(#764)을 따른다.
+
+  #820 에서 소유 매니페스트가 없던 기존 시험(CbtPaymentControllerTest)에 보충했다. 그때 #764 서버 권한 정리를
+  따라가지 못한 시험 2건(재확인 = orders.update, 자동환불 재시도 = claims.execute-refund)의 권한 픽스처도 맞췄다.
+
+axes:
+  flow: [callback, cvs_notify, cvs_admin, auto_refund, hash_data, checkout_token, reconciliation]
+
+effects:
+  - cbt_approved_payment_is_auto_refunded_on_mismatch
+  - cbt_callback_completes_payment
+  - cbt_callback_stores_sanitized_response
+  - cbt_checkout_token_is_bound_to_order
+  - cbt_cvs_admin_operations
+  - cbt_cvs_callback_waits_for_deposit
+  - cbt_cvs_notify_completes_payment
+  - cbt_cvs_notify_is_idempotent
+  - cbt_cvs_notify_rejects_mismatch
+  - cbt_failed_auto_refund_goes_to_manual_reconciliation
+  - cbt_failure_hides_upstream_message
+  - cbt_hash_data_is_gated_by_order_context
+  - cbt_user_cancel_returns_quietly
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/CbtPaymentControllerTest.php

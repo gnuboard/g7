@@ -3,6 +3,7 @@ import { createLogger } from '../utils/Logger';
 import { stripBasePrefix, suffixed, withBasePrefix } from '../support/assetUrl';
 import { isCustomRoutePath } from './CustomRouteMatcher';
 import { notifyLocationReplaced } from '../template-engine/navigationLinks';
+import { normalizePathname } from './normalizePathname';
 import {
   consumeArmedLeaveGuardBypass,
   endLeaveApproval,
@@ -72,6 +73,12 @@ export interface Route {
   auth_required?: boolean;
   auth_type?: AuthType;
   meta?: RouteMeta;
+  /**
+   * 이 라우트에 필요한 활성 모듈·플러그인 식별자. 서버가 routes 응답을 만들 때 모두 활성인 라우트만 싣는다.
+   * 클라이언트는 이 값을 읽지 않는다(타입 정합용).
+   * @since engine-v1.84.0
+   */
+  requires?: { modules?: string[]; plugins?: string[] };
 }
 
 /**
@@ -125,7 +132,7 @@ export class Router {
    * 확정 화면의 주소를 같은 자리에서 곧바로 다시 쌓는다(`pushState`). 화면은 다시 그리지 않는다 (engine-v1.82.0)
    *
    * 이탈을 허락한 뒤 그 주소가 서버의 개발자 화면(routes/custom.php) 주소면 엔진이 그리지 않고 페이지를 다시
-   * 적재해 서버가 그리게 한다 (#792 W6, engine-v1.84.0). `navigate` 와 같은 순서(이탈 가드 → custom 판정)다.
+   * 적재해 서버가 그리게 한다 (#792 W6, engine-v1.85.0). `navigate` 와 같은 순서(이탈 가드 → custom 판정)다.
    * 패턴이 없으면 종전과 같다.
    */
   private handlePopState = (): void => {
@@ -283,7 +290,7 @@ export class Router {
   }
 
   /**
-   * URL 경로의 끝 슬래시를 정규화합니다.
+   * URL 경로의 끝·연속 슬래시를 정규화합니다.
    *
    * 브라우저가 `/admin/` 처럼 끝 슬래시가 붙은 경로로 진입해도 끝 슬래시 없는
    * 라우트 패턴(언어 prefix 형태 포함)에 매칭되도록, 루트(`/`)를 제외한 나머지
@@ -291,16 +298,15 @@ export class Router {
    * (routes.json 규약), 미정규화 시 `/admin/` 이 어떤 라우트에도 매칭되지 않아
    * 404 로 떨어지고 — 미인증 진입 시 로그인 리다이렉트 대신 404 가 노출된다.
    *
+   * engine-v1.84.0 부터 중간의 연속 슬래시(`/board//free`)도 하나로 줄인다 — 규칙은
+   * {@link normalizePathname}(서버 `RequestPath::normalize()` 와 같음, 공개#156).
+   *
    * @param pathname 원본 URL 경로
-   * @returns 끝 슬래시가 정규화된 경로 (루트는 `/` 유지)
+   * @returns 끝·연속 슬래시가 정규화된 경로 (루트는 `/` 유지)
    * @since engine-v1.54.1
    */
   private normalizePathname(pathname: string): string {
-    if (pathname.length > 1 && pathname.endsWith('/')) {
-      return pathname.replace(/\/+$/, '') || '/';
-    }
-
-    return pathname;
+    return normalizePathname(pathname);
   }
 
   /**
@@ -383,12 +389,26 @@ export class Router {
 
   /**
    * 현재 URL 경로를 처리하여 매칭되는 라우트를 찾고 이벤트를 발생시킵니다.
+   *
+   * 첫 진입·뒤로/앞으로·`navigate()` 가 모두 지나가는 단일 지점이다. 끝·연속 슬래시 주소면 먼저 주소창을
+   * 정규형으로 바꾸고(`replaceState` — 히스토리 항목 수는 그대로, 쿼리·해시 보존) 이후 매칭·로그인 복귀 주소·
+   * `routeChange.path` 에 정규형만 쓴다. 원본(`/x/`)이 남으면 화면 동일성 판정이 `/x` 와 다른 화면으로 본다 (engine-v1.84.0, 공개#156)
    */
   async navigateToCurrentPath(): Promise<void> {
-    // 브라우저가 알려 주는 주소에서 사이트 마운트 접두사를 벗긴다. 라우트 패턴은
+    // 주소창 정규화는 접두사를 품은 전체 경로로 한다 — 주소창에 쓰는 값이므로 `/g7/x/` 는 `/g7/x` 가 된다.
+    const rawPathname = window.location.pathname;
+    const normalizedPathname = this.normalizePathname(rawPathname);
+    if (normalizedPathname !== rawPathname) {
+      // 정규형은 늘 `/` 하나로 시작하므로 교차 출처 주소(`//host`)가 될 수 없다
+      // base-path:allow 브라우저에서 읽은 접두사 포함 주소를 슬래시만 정규화해 그대로 되쓴다(접두사를 다시 붙이면 이중이 된다).
+      window.history.replaceState(window.history.state, '', normalizedPathname + window.location.search + window.location.hash);
+      notifyLocationReplaced();
+      this.committedUrl = currentUrl();
+    }
+    // 정규형에서 사이트 마운트 접두사를 벗긴다. 라우트 패턴은
     // 언제나 접두사 없이 등록되므로, 하위 폴더 배치(`/g7/board/free`)에서 벗기지
     // 않으면 어떤 패턴에도 맞지 않아 전 화면이 「없는 페이지」가 된다 (12차 G3).
-    const pathname = stripBasePrefix(window.location.pathname);
+    const pathname = stripBasePrefix(normalizedPathname);
     const search = window.location.search;
     const matchResult = this.match(pathname);
 
@@ -517,7 +537,7 @@ export class Router {
    */
   private async executeNavigation(path: string): Promise<void> {
     // 서버의 개발자 화면(routes/custom.php) 주소는 엔진이 그리지 않는다 — 전체 페이지 이동으로 서버에 넘긴다
-    // (#792 W6, engine-v1.84.0). `pushState` 하지 않으므로 히스토리·대기열·라우트 이벤트에 아무 흔적도 남기지 않는다.
+    // (#792 W6, engine-v1.85.0). `pushState` 하지 않으므로 히스토리·대기열·라우트 이벤트에 아무 흔적도 남기지 않는다.
     if (isCustomRoutePath(path)) {
       logger.log(`navigate to custom route — full page load: ${path}`);
       this.pendingNavigation = null;

@@ -83,7 +83,12 @@
         <div class="space-y-2">
           <!-- 우편번호 + 검색 버튼 -->
           <div class="flex gap-2">
-            <input aria-label="$t:shop.checkout.zipcode" type="text" name="zipcode" value="{{_global.editingAddress?.zipcode ?? ''}}" placeholder="$t:shop.checkout.zipcode_placeholder" class="{{_local.addressErrors?.zipcode ? 'w-28 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}" :readOnly="true"/>
+            <input aria-label="$t:shop.checkout.zipcode" type="text" name="zipcode" value="{{_global.editingAddress?.zipcode ?? ''}}" placeholder="$t:shop.checkout.zipcode_placeholder" class="{{_local.addressErrors?.zipcode ? 'w-28 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-28 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}" readOnly="{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}">
+              <on type="change">
+                <!-- 우편번호 검색 플러그인이 꺼져 있으면 직접 입력한다(readOnly 가 풀린다) — 그때 친 값이 상태로 가야 저장에 실린다(검색 결과는 아래 확장 자리 콜백이 넣는다). -->
+                <set-state target="global" editingAddress.zipcode="{{$event.target.value}}"/>
+              </on>
+            </input>
             <!-- 콜백은 callbacks 에 둔다 — props 는 평가되어 전달되고 주입 컴포넌트는 extensionPointCallbacks 를 읽는다 -->
             <extension-point name="address_search_slot" data-ref="modal_address_search_slot">
               <prop name="readOnlyFields">
@@ -96,7 +101,12 @@
             </extension-point>
           </div>
           <!-- 기본 주소 -->
-          <input aria-label="$t:shop.checkout.address" type="text" name="address" value="{{_global.editingAddress?.address ?? ''}}" placeholder="$t:shop.checkout.address_placeholder" class="{{_local.addressErrors?.address ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}" :readOnly="true"/>
+          <input aria-label="$t:shop.checkout.address" type="text" name="address" value="{{_global.editingAddress?.address ?? ''}}" placeholder="$t:shop.checkout.address_placeholder" class="{{_local.addressErrors?.address ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}" readOnly="{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}">
+            <on type="change">
+              <!-- 우편번호 검색 플러그인이 꺼져 있으면 직접 입력한다(readOnly 가 풀린다) — 그때 친 값이 상태로 가야 저장에 실린다(검색 결과는 아래 확장 자리 콜백이 넣는다). -->
+              <set-state target="global" editingAddress.address="{{$event.target.value}}"/>
+            </on>
+          </input>
           <span data-if="{{_local.addressErrors?.zipcode || _local.addressErrors?.address}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_local.addressErrors?.zipcode?.[0] ?? _local.addressErrors?.address?.[0] ?? ''}}</span>
         </div>
       </div>

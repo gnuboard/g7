@@ -11,6 +11,7 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderOptionFactory;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderOptionSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 
 /**
  * 주문 옵션 모델
@@ -80,6 +81,8 @@ class OrderOption extends Model
         'subtotal_cash_equivalent_amount',
         'subtotal_tax_amount',
         'subtotal_tax_free_amount',
+        // 주문 시점 확정 과세 종류 (#612)
+        'tax_status',
         'subtotal_earned_points_amount',
         'product_snapshot',
         'option_snapshot',
@@ -127,6 +130,7 @@ class OrderOption extends Model
         'subtotal_cash_equivalent_amount' => 'decimal:2',
         'subtotal_tax_amount' => 'decimal:2',
         'subtotal_tax_free_amount' => 'decimal:2',
+        'tax_status' => ProductTaxStatus::class,
         'subtotal_earned_points_amount' => 'decimal:2',
         'product_name' => 'array',
         'product_option_name' => 'array',
@@ -271,6 +275,26 @@ class OrderOption extends Model
     public function isExchanged(): bool
     {
         return $this->source_type === OrderOptionSourceTypeEnum::EXCHANGE && $this->source_option_id !== null;
+    }
+
+    /**
+     * 이 주문상품에 확정된 과세 종류를 반환합니다.
+     *
+     * 주문 시점에 기록한 값(`tax_status` 컬럼, #612)을 쓰고, 그 컬럼이 없던 시절의 행은 상품 스냅샷의
+     * 과세 종류로 떨어진다. 둘 다 읽을 수 없으면 과세로 본다(「없으면 과세」 규약).
+     *
+     * @return ProductTaxStatus 확정 과세 종류
+     */
+    public function getEffectiveTaxStatus(): ProductTaxStatus
+    {
+        if ($this->tax_status instanceof ProductTaxStatus) {
+            return $this->tax_status;
+        }
+
+        $snapshotValue = $this->product_snapshot['tax_status'] ?? null;
+
+        return (is_string($snapshotValue) ? ProductTaxStatus::tryFrom($snapshotValue) : null)
+            ?? ProductTaxStatus::TAXABLE;
     }
 
     /**

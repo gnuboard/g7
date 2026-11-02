@@ -25,6 +25,15 @@
     "incompatible_tooltip": "Requires core {{required}} or higher (current: {{installed}})",
     "incompatible_sr": "{{name}} requires core {{required}} or higher but currently {{installed}} is installed, so it cannot be updated."
   },
+  "php_extensions": {
+    "title": "Required PHP extensions",
+    "level_require": "Required",
+    "level_suggest": "Recommended",
+    "installed": "Installed",
+    "not_installed": "Not installed",
+    "badge_required_missing": "PHP extension required: {{extensions}} (not installed)",
+    "badge_suggested_missing": "Recommended PHP extension: {{extensions}} (not installed)"
+  },
   "banner": {
     "title": "Some extensions were automatically deactivated due to core compatibility issues",
     "item_required": "Required: {{required}}",

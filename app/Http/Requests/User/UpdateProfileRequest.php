@@ -50,7 +50,8 @@ class UpdateProfileRequest extends FormRequest
             'nickname' => ['nullable', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($userId)],
             'password' => ['nullable', 'confirmed', ...PasswordPolicy::rules($this->user()?->email)],
-            // 비밀번호가 없는 회원(외부 인증 전용)은 처음 정하는 것이라 확인할 현재 비밀번호가 없다.
+            // 비밀번호가 없는 회원(외부 인증 전용)은 처음 정하는 것이라 확인할 현재 비밀번호가 없다(보낸 값은
+            // prepareForValidation 이 버린다 — 이 규칙은 값이 남는 일이 없게 두는 방어선).
             'current_password' => $this->userHasPassword()
                 ? ['required_with:password', 'current_password']
                 : ['prohibited'],
@@ -162,6 +163,12 @@ class UpdateProfileRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // 비밀번호 없는 회원이 보낸 현재 비밀번호(옛 화면이 칸을 채워 보낸 값)는 대조할 대상이 없어 버린다 — 새 화면이
+        // 보내지 않은 것과 같은 상태가 된다. 비밀번호를 함께 바꾸면 본인 확인은 컨트롤러가 거는 본인인증 정책(428)이 맡는다.
+        if (! $this->userHasPassword()) {
+            $this->getInputSource()->remove('current_password');
+        }
+
         // 빈 password 필드 제거 (null로 변환하여 validation에서 무시되도록)
         if ($this->password === '') {
             $this->merge([

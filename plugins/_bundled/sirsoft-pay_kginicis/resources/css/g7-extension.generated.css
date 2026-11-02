@@ -2,6 +2,7 @@
  * 생성 파일 — 손으로 고치지 않는다.
  * scripts/extension-css/convert-layout-classes.mjs 가 템플릿 의미 클래스 정의를 복사해 만든다.
  * 템플릿이 같은 이름을 덮을 수 있도록 가장 낮은 칸(@layer g7-extension)에 둔다.
+ * 다만 템플릿에서 층 밖(@layer 미소속)이던 규칙은 유틸리티를 이기던 우선순위를 지키려고 층 밖에 둔다.
  */
 @layer g7-extension {
   @supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))) {
@@ -17,7 +18,12 @@
       --tw-inset-ring-shadow: 0 0 #0000;
       --tw-inset-shadow: 0 0 #0000;
       --tw-leading: initial;
+      --tw-outline-style: solid;
+      --tw-ring-color: initial;
+      --tw-ring-inset: initial;
+      --tw-ring-offset-color: #fff;
       --tw-ring-offset-shadow: 0 0 #0000;
+      --tw-ring-offset-width: 0px;
       --tw-ring-shadow: 0 0 #0000;
       --tw-shadow: 0 0 #0000;
       --tw-shadow-color: initial;
@@ -28,14 +34,6 @@
     to {
       transform: rotate(360deg);
     }
-  }
-
-  .pay-kginicis-text-primary {
-    color: oklch(21% .034 264.665);
-  }
-
-  .pay-kginicis-text-primary:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
-    color: #fff;
   }
 
   .pay-kginicis-text-secondary {
@@ -122,6 +120,27 @@
 
   .pay-kginicis-text-body:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
     color: oklch(87.2% .01 258.338);
+  }
+
+  .pay-kginicis-btn-info {
+    background-color: oklch(54.6% .245 262.881);
+    color: #fff;
+  }
+
+  @media (hover:hover) {
+    .pay-kginicis-btn-info:hover {
+      background-color: oklch(48.8% .243 264.376);
+    }
+  }
+
+  .pay-kginicis-btn-info:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: oklch(54.6% .245 262.881);
+  }
+
+  @media (hover:hover) {
+    .pay-kginicis-btn-info:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+      background-color: oklch(48.8% .243 264.376);
+    }
   }
 
   .pay-kginicis-btn-sm {
@@ -801,25 +820,52 @@
     word-break: break-all;
   }
 
-  @media (max-width:640px) {
-    .pay-kginicis-modal-footer,
-    .pay-kginicis-modal-footer-row {
-      flex-direction: column;
-      gap: .5rem;
-    }
-  }
-
-  @media (max-width:640px) {
-    .pay-kginicis-modal-footer .pay-kginicis-btn,
-    .pay-kginicis-modal-footer-row .pay-kginicis-btn {
-      width: 100%;
-    }
-  }
-
   .pay-kginicis-flex-between {
     justify-content: space-between;
     align-items: center;
     display: flex;
+  }
+
+  .pay-kginicis-user-btn {
+    border-radius: .5rem;
+    --tw-font-weight: 500;
+    font-weight: 500;
+    transition-property: color,background-color,border-color,outline-color,text-decoration-color,fill,stroke,--tw-gradient-from,--tw-gradient-via,--tw-gradient-to;
+    transition-timing-function: var(--tw-ease,cubic-bezier(.4,0,.2,1));
+    transition-duration: var(--tw-duration,.15s);
+    justify-content: center;
+    align-items: center;
+    display: inline-flex;
+  }
+
+  .pay-kginicis-user-btn:focus {
+    --tw-ring-shadow: var(--tw-ring-inset,)0 0 0 calc(2px + var(--tw-ring-offset-width))var(--tw-ring-color,currentcolor);
+    box-shadow: var(--tw-inset-shadow),var(--tw-inset-ring-shadow),var(--tw-ring-offset-shadow),var(--tw-ring-shadow),var(--tw-shadow);
+    --tw-ring-offset-width: 2px;
+    --tw-ring-offset-shadow: var(--tw-ring-inset,)0 0 0 var(--tw-ring-offset-width)var(--tw-ring-offset-color);
+    --tw-outline-style: none;
+    outline-style: none;
+  }
+
+  .pay-kginicis-user-btn:disabled {
+    cursor: not-allowed;
+    opacity: .5;
+  }
+}
+
+/* 템플릿에서 층 밖이던 의미 규칙 — 확장 유틸리티 뒤에서 이기도록 층 밖에 둔다 */
+@media (max-width:640px) {
+  .pay-kginicis-modal-footer,
+  .pay-kginicis-modal-footer-row {
+    flex-direction: column;
+    gap: .5rem;
+  }
+}
+
+@media (max-width:640px) {
+  .pay-kginicis-modal-footer .pay-kginicis-btn,
+  .pay-kginicis-modal-footer-row .pay-kginicis-btn {
+    width: 100%;
   }
 }
 
@@ -885,10 +931,38 @@
   inherits: false;
 }
 
+@property --tw-outline-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+
+@property --tw-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+
+@property --tw-ring-inset {
+  syntax: "*";
+  inherits: false;
+}
+
+@property --tw-ring-offset-color {
+  syntax: "*";
+  inherits: false;
+  initial-value: #fff;
+}
+
 @property --tw-ring-offset-shadow {
   syntax: "*";
   inherits: false;
   initial-value: 0 0 #0000;
+}
+
+@property --tw-ring-offset-width {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0;
 }
 
 @property --tw-ring-shadow {
@@ -906,4 +980,9 @@
 @property --tw-shadow-color {
   syntax: "*";
   inherits: false;
+}
+
+/* 아이콘(<icon>)에 단 글자 크기 유틸리티 — 템플릿 아이콘 글꼴 CSS 의 line-height:1 이 이기던 것을 보존한다 */
+i:is(.paykginicis\:leading-none, .paykginicis\:text-4xl, .paykginicis\:text-base, .paykginicis\:text-sm, .paykginicis\:text-xl, .paykginicis\:text-xs) {
+  line-height: 1;
 }

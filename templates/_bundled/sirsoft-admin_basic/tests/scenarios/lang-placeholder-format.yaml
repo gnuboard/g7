@@ -1,0 +1,15 @@
+feature: 프런트 다국어 치환자 형식 — `{{이름}}` 만 치환된다 (#151 정보 탭 회귀)
+
+description: |
+  이 템플릿의 화면 문구는 `{{이름}}` 치환자만 값으로 바뀐다. 백엔드식 `:이름` 을 쓰면 화면에 치환자가 그대로 나온다
+  (환경설정 > 정보 탭 「요구: :names」 실측). ko·en 전 문구를 파생 모집단으로 검사한다.
+
+axes:
+  surface: [frontend_lang]
+  locale: [ko]
+
+effects:
+  - frontend_lang_uses_brace_placeholders
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/langPlaceholderFormat.test.ts

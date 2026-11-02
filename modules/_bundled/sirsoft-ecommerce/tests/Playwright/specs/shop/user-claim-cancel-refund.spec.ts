@@ -206,12 +206,14 @@ test.describe('구매자 클레임 신청서 작성 — 취소·환불 분기', 
     await openRefundApply(page);
 
     await itemCheckbox(page, 0).check();
-    const reason = page.locator('#claim_apply_reason select').first();
+    // 사유 칸은 목록형 드롭다운(단추 + 목록)이라 `selectOption()` 이 닿지 않는다 — 열고 첫 사유를 누른다.
+    // 목록은 body 에 붙는다(포털). 0번은 「사유를 선택하세요」 빈 값이다.
+    const reason = page.locator('#claim_apply_reason button[aria-haspopup="listbox"]').first();
     await expect(reason).toBeVisible({ timeout: 15_000 });
-    const values = await reason.locator('option').evaluateAll((nodes) =>
-      nodes.map((node) => (node as HTMLOptionElement).value).filter((value) => value !== ''),
-    );
-    await reason.selectOption(values[0]);
+    await reason.click();
+    const reasonChoices = page.getByRole('listbox').getByRole('option');
+    await expect(reasonChoices.nth(1), '사유 카탈로그가 비었다').toBeVisible({ timeout: 15_000 });
+    await reasonChoices.nth(1).click();
     await expect.poll(() => calls.length, { timeout: 15_000 }).toBeGreaterThan(0);
 
     const blocked = page.locator('[data-testid="claim-comparison-blocked"]');
@@ -246,12 +248,14 @@ test.describe('구매자 클레임 신청서 작성 — 취소·환불 분기', 
     await openRefundApply(page);
 
     await itemCheckbox(page, 0).check();
-    const reason = page.locator('#claim_apply_reason select').first();
+    // 사유 칸은 목록형 드롭다운(단추 + 목록)이라 `selectOption()` 이 닿지 않는다 — 열고 첫 사유를 누른다.
+    // 목록은 body 에 붙는다(포털). 0번은 「사유를 선택하세요」 빈 값이다.
+    const reason = page.locator('#claim_apply_reason button[aria-haspopup="listbox"]').first();
     await expect(reason).toBeVisible({ timeout: 15_000 });
-    const values = await reason.locator('option').evaluateAll((nodes) =>
-      nodes.map((node) => (node as HTMLOptionElement).value).filter((value) => value !== ''),
-    );
-    await reason.selectOption(values[0]);
+    await reason.click();
+    const reasonChoices = page.getByRole('listbox').getByRole('option');
+    await expect(reasonChoices.nth(1), '사유 카탈로그가 비었다').toBeVisible({ timeout: 15_000 });
+    await reasonChoices.nth(1).click();
     await expect.poll(() => calls.length, { timeout: 15_000 }).toBe(1);
     expect(calls[0].refund_priority).toBe('pg_first');
 

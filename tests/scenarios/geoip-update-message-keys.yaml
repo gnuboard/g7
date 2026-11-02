@@ -1,0 +1,17 @@
+feature: 환경설정 > 고급 > GeoIP [갱신] 결과 안내 문구
+
+description: |
+  GeoIP [갱신] 응답의 message 는 서비스 상태(라이선스 키 없음·키 오류·연결 실패·그 밖의 실패)와 성공에 따라
+  `settings.geoip.*` 키로 정해지고, 관리자 화면 토스트는 이 message 를 그대로 보인다. 키에 번역이 없으면
+  토스트에 키 문자열이 노출된다. 코어 lang(ko·en)과 동봉 일본어 코어 언어팩 모두 컨트롤러가 쓰는 키를 갖는다.
+
+axes:
+  locale_source: [core_lang, bundled_language_pack]
+
+exclusions: []
+
+effects:
+  - geoip_update_messages_translated
+
+test_files:
+  - tests/Unit/Lang/GeoIpUpdateMessageKeysTest.php

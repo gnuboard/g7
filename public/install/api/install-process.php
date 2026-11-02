@@ -34,6 +34,7 @@ require_once __DIR__.'/../includes/installer-state.php';
 require_once __DIR__.'/../includes/functions.php';
 require_once __DIR__.'/../includes/installer-runtime.php';
 require_once __DIR__.'/../includes/installer-ownership.php';
+require_once __DIR__.'/../includes/install-plan.php';
 require_once __DIR__.'/_guard.php';
 installer_guard_finalize_or_410();
 // 설치가 실제로 끝났는데 `.env` 표식만 없는 상태에서는 재시작이 성립하지 않는다 (13차 보안#8).
@@ -93,7 +94,6 @@ try {
     $state = getInstallationState();
     installer_require_owner($state);
     installer_require_csrf();
-    $generation = (int) ($state['generation'] ?? 0);
 
     /**
      * 세션에서 설정 정보 로드
@@ -119,107 +119,12 @@ try {
         // state.json에서 로드한 config를 세션에도 저장 (이후 요청에서 사용)
         setSessionData('install_config', $config);
     }
-
     /**
-     * 필수 설정 항목 검증
-     */
-    $requiredFields = [
-        'db_write_host',
-        'db_write_database',
-        'db_write_username',
-        'app_name',
-        'app_url',
-        'admin_name',
-        'admin_email',
-    ];
-
-    $missingFields = [];
-    foreach ($requiredFields as $field) {
-        if (empty($config[$field])) {
-            $missingFields[] = $field;
-        }
-    }
-
-    /**
-     * admin_password 는 state.config 에 기록되지 않으므로(이슈 #465) 3중 출처로 판정한다.
+     * 설치 모드 (sse | polling | stepwise, 기본 sse) · 기존 DB 처리 액션 (skip | drop_tables, 기본 skip) · 삭제 확인 토큰
      *
-     *  1. 세션 config — 일반 경로 (Step 3 입력 직후)
-     *  2. runtime.php 의 admin 섹션 — 세션 유실 후 재시도/재개
-     *  3. db_seed 완료 마커 — 이미 관리자 계정이 생성되어 비밀번호가 더 이상 불필요
-     *
-     * runtime.php 는 소유 게이트를 통과한 이 엔드포인트만 쓰고, 최초 소유 주장 시 이전 시도의
-     * 잔존본은 폐기되므로 2번 출처는 언제나 같은 소유자의 값이다 (자격증명 혼합 차단).
-     *
-     * 셋 다 없으면 Step 3 재입력이 필요한 상태 (의도된 안전 실패).
-     */
-    $hasAdminPassword = ! empty($config['admin_password'])
-        || ! empty(readInstallerRuntime()['admin']['password'] ?? '')
-        || in_array('db_seed', $state['completed_tasks'] ?? [], true);
-
-    if (! $hasAdminPassword) {
-        $missingFields[] = 'admin_password';
-    }
-
-    if (! empty($missingFields)) {
-        http_response_code(400);
-        echo installer_json_encode([
-            'success' => false,
-            'message' => lang('error_required_fields_missing', ['fields' => implode(', ', $missingFields)]),
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    /**
-     * 필수 파일 존재 여부 사전 체크
-     */
-    $missingRequiredFiles = [];
-    if (! file_exists(BASE_PATH.'/.env')) {
-        $missingRequiredFiles[] = '.env';
-    }
-
-    if (! empty($missingRequiredFiles)) {
-        http_response_code(400);
-        echo installer_json_encode([
-            'success' => false,
-            'message' => lang('error_env_not_found'),
-            'env_required' => true,
-            'missing_files' => $missingRequiredFiles,
-            'base_path' => BASE_PATH,
-            'is_windows' => isWindows(),
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    /**
-     * `.env` 가 있으나 쓰기 불가면 시작을 거부한다 (22차 #22-1 의 서버 절반).
-     *
-     * 그 상태로 진행하면 14단계가 전부 성공하고도 finalize 의 `.env` 머지가 조용히 실패해
-     * INSTALLER_COMPLETED 미기록 → 인스톨러가 영구히 열린 채 남는다(평문 자격증명을 담은
-     * runtime.php 포함). 화면 게이트(19차 S-2 · 22차 #22-1)와 같은 술어의 서버 사본이다 —
-     * 화면만이 유일한 지점이면 fetch 예외·재검사 우회가 곧 우회로가 된다.
-     */
-    if (file_exists(BASE_PATH.'/.env') && ! @is_writable(BASE_PATH.'/.env')) {
-        http_response_code(400);
-        echo installer_json_encode([
-            'success' => false,
-            'message' => lang('error_env_not_writable_start'),
-            'env_required' => true,
-            // 화면이 「부재」 안내와 「쓰기 불가」 안내를 구분해 그리는 데 필요한 필드
-            // (23차 F-2) — 형제 갈래(.env 부재)와 같은 봉투 폭을 유지한다.
-            'env_not_writable' => true,
-            'base_path' => BASE_PATH,
-            'is_windows' => isWindows(),
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    /**
-     * 설치 모드 수신 (sse | polling | stepwise, 기본 sse)
-     *
-     * POST 본문(JSON 또는 form)에서 installation_mode 필드로 전달됩니다.
-     * - sse: 기존 방식 (install-worker.php GET + EventSource)
-     * - polling: install-process.php 응답 완료 후 인라인으로 runInstallationTasks() 실행,
-     *            프론트엔드는 state-management.php를 1초 간격으로 폴링
+     * POST 본문(JSON 또는 form)으로 전달된다.
+     * - sse: install-worker.php GET + EventSource
+     * - polling: 응답 완료 후 인라인으로 runInstallationTasks() 실행, 프론트는 state-management.php 폴링
      * - stepwise: 요청 1개 = 태스크 1개. 프론트엔드가 run-task.php 를 순차 호출한다 (A-2).
      *            유효 실행 모드가 inprocess 면 이 모드로 강제된다 — 한 요청 안에서
      *            Artisan::call 을 연속 호출하면 직전 설치의 변경이 반영되지 않은 컨테이너로
@@ -265,82 +170,13 @@ try {
     $downgradedFromStepwise = $installationDecision['downgraded'];
 
     /**
-     * 기존 DB 처리 액션 수신 (skip | drop_tables, 기본 skip)
-     *
-     * 이슈 #244: Step 3에서 기존 DB 감지 후 사용자가 "강제 진행" 선택 시 전달.
-     */
-    $existingDbAction = $requestBody['existing_db_action']
-        ?? $_POST['existing_db_action']
-        ?? 'skip';
-    if (! in_array($existingDbAction, ['skip', 'drop_tables'], true)) {
-        $existingDbAction = 'skip';
-    }
-
-    /**
-     * 기존 테이블 삭제 확인 (drop_tables 전용)
-     *
-     * 요청 본문의 액션 값만으로는 삭제하지 않는다. Step 3 DB 테스트가 발급해 설치 계획에 실린
-     * 확인 토큰을 제시하고, 그때 탐지한 테이블이 지금도 그대로여야 한다. 불충족이면 삭제 없이(skip)
-     * 진행하고 경고를 돌려준다. 이미 소비된 확인은 같은 소유자의 재시도로 보고 테이블 변동을 허용한다.
-     */
-    $dropConfirmRecord = is_array($state['drop_confirm'] ?? null) ? $state['drop_confirm'] : null;
-    $dropConfirmRejected = false;
-
-    if ($existingDbAction === 'drop_tables') {
-        $dbPrefix = (string) ($config['db_prefix'] ?? '');
-        $currentPrefixTables = null;
-
-        if ($dropConfirmRecord !== null && empty($dropConfirmRecord['consumed'])) {
-            try {
-                $pdo = getDatabaseConnection(hydrateDbSecretsFromRuntime($config), false);
-                $statement = $pdo->query('SHOW TABLES');
-                $currentPrefixTables = filterTablesByPrefix(
-                    $statement ? $statement->fetchAll(PDO::FETCH_COLUMN) : [],
-                    installer_normalize_db_prefix($dbPrefix)
-                );
-            } catch (Throwable $e) {
-                $currentPrefixTables = null;
-            }
-        }
-
-        $decision = installer_apply_drop_confirm(
-            $dropConfirmRecord,
-            (string) ($requestBody['drop_confirm'] ?? $_POST['drop_confirm'] ?? ''),
-            $dbPrefix,
-            $currentPrefixTables
-        );
-
-        $existingDbAction = $decision['action'];
-        $dropConfirmRecord = $decision['record'];
-        $dropConfirmRejected = $decision['rejected'];
-
-        if ($dropConfirmRejected) {
-            addLog(lang('log_drop_confirm_rejected', ['reason' => $decision['reason']]));
-        }
-    }
-
-    /**
-     * 상태 초기화
-     *
-     * 재시도/재개인 경우:
-     * - completed_tasks는 유지 (이미 완료된 작업은 건너뛰기)
-     * - error는 초기화
-     * - 나머지는 running 상태로 재설정
-     *
-     * 판정은 installerIsRetryRun 이 소유한다 (21차 #21-9 ②) — 상태 문자열만 보면
-     * Step 3 재저장 같은 바깥 경로가 그 필드를 'ready' 로 갈아치웠을 때 완료 마커·
-     * 롤백 기준선·실패 로그가 신규 설치 취급으로 소거된다. 진짜 근거는 이번 회전이
-     * 이미 한 일(완료 마커·기준선의 실재)이다.
-     */
-    $isRetry = installerIsRetryRun($state);
-
-    /**
      * 시작 요청 거부 판정 (11차 #A2·#A4)
      *
      * 상태를 덮어쓰기 **전에** 본다 — 종전에는 두 번째 탭이 먼저 상태를 통째로 갈아엎고
      * `started` 를 응답한 뒤에야 워커 lock 획득에 실패해, 아무 신호 없이 종료했다.
      * 그 순간 첫 탭은 진행 방식이 바뀌어 409 가 되고 두 번째 탭은 아무도 진행시키지 않는
-     * `running` 을 무한 폴링한다 — 두 탭이 함께 멈춘다.
+     * `running` 을 무한 폴링한다 — 두 탭이 함께 멈춘다. 설치 계획 확정(installer_begin_installation)
+     * 이 runtime·state 를 쓰므로 그 호출보다 앞에 둔다.
      *
      * 같은 판정이 진행 중인 stepwise 설치에 기존 토큰을 요구한다. 이 엔드포인트가
      * 무인증으로 새 토큰을 발급해 온 탓에, 10차가 [중단]·[초기화]·[건너뛰고 계속]에 건
@@ -376,30 +212,12 @@ try {
     }
 
     /**
-     * 비밀 채널 일원화 (이슈 #465)
-     *
-     * DB/관리자 비밀번호는 state.json(0664, 실패 시 무기한 잔존) 이 아니라
-     * storage/installer/runtime.php(0600, finalize 시 삭제) 로만 전달한다.
-     * SSE 워커는 세션에 접근할 수 없으므로 파일 경유가 불가피하며, 세션을 보유한
-     * 유일한 공통 시작점인 본 엔드포인트가 이송 지점이다 (SSE/폴링 공통, 재시도 포함).
-     *
-     * buildInstallerRuntimeFromState() 가 기존 runtime 의 비밀번호/APP_KEY 를 보존하므로
-     * 세션 유실 후 재개 시에도 자격증명이 유지된다.
-     */
-    $runtime = buildInstallerRuntimeFromState($config);
-    if (! empty($config['admin_password'])) {
-        $runtime['admin'] = ['password' => $config['admin_password']];
-    }
-    if (! empty($config['core_update_github_token'])) {
-        $runtime['core_update'] = ['github_token' => $config['core_update_github_token']];
-    }
-
-    /**
      * 단계별 실행 토큰 (R8) — run-task.php 는 세션이 아니라 이 토큰으로 호출자를 확인한다.
-     * 비밀 채널 규칙(R3)에 따라 runtime.php(0600) 에만 두고 state.json 에는 싣지 않는다.
-     * 시작할 때마다 새로 발급한다 (재시도 포함).
+     * 비밀 채널 규칙(R3)에 따라 runtime.php(0600) 에만 두고 state.json 에는 싣지 않는다
+     * (기록은 설치 계획 확정이 runtime_installer 로 받아 한다). 시작할 때마다 새로 발급한다 (재시도 포함).
      */
     $stepwiseToken = null;
+    $runtimeInstaller = null;
     if ($installationMode === 'stepwise') {
         $stepwiseToken = bin2hex(random_bytes(16));
 
@@ -411,89 +229,66 @@ try {
         $sessionOwner = bin2hex(random_bytes(16));
         setSessionData('installer_session_owner', $sessionOwner);
 
-        $runtime['installer'] = ['stepwise_token' => $stepwiseToken, 'session_owner' => $sessionOwner];
+        $runtimeInstaller = ['stepwise_token' => $stepwiseToken, 'session_owner' => $sessionOwner];
     } else {
-        unset($runtime['installer']);
         deleteSessionData('installer_session_owner');
     }
 
-    // 설치 계획 서명 키 — 세션이 없는 SSE 워커가 이 엔드포인트(소유 게이트 통과)가 확정한
-    // 계획인지 확인하는 데 쓴다. runtime.php(0600) 에만 두고 finalize 때 함께 삭제된다.
-    if (! is_string($runtime['plan_key'] ?? null) || $runtime['plan_key'] === '') {
-        $runtime['plan_key'] = bin2hex(random_bytes(32));
-    }
-    if (! writeInstallerRuntime($runtime)) {
-        throw new Exception(lang('state_save_failed'));
-    }
-
-    $state['current_step'] = 5;  // Step 5 = Installation (Step 4 = Extension Selection)
-    $state['installation_status'] = 'running';
-    $state['completed_tasks'] = $isRetry ? ($state['completed_tasks'] ?? []) : [];
-    $state['skipped_tasks'] = $isRetry ? ($state['skipped_tasks'] ?? []) : [];
-    // 마이그레이션 기준선은 `completed_tasks` 와 같은 수명을 갖는다 (19차 R2) — 재시도는
-    // 같은 실행의 연장이라 유지하고, 새 시작은 비운다. 비우지 않으면 이전 회전의 기준선으로
-    // 다음 회전의 롤백 범위가 계산되어, 이번 실행이 만들지도 않은 배치가 대상에 든다.
-    $state['db_migrate_batch_baseline'] = $isRetry ? ($state['db_migrate_batch_baseline'] ?? null) : null;
-    // 실패한 best-effort 작업은 재시도에서 다시 시도한다 — 목록을 비워 다음 run-task 가 다시 뽑게 한다
-    $state['best_effort_failed_tasks'] = [];
-    // 의존성 경고는 이번 실행에서 다시 판정된다 — 이월하면 재시도 로그에 중복해 찍힌다 (11차 #A8)
-    $state['dependency_skip_warnings'] = [];
-    $state['current_task'] = null;
-    $state['config'] = sanitizeConfigForState($config);
-    $state['error'] = null;
-    $state['failed_task'] = null;
-    $state['failed_task_target'] = null;
-    $state['failed_task_skippable'] = null;
-    $state['error_message_key'] = null;
-    $state['error_message_params'] = null;
-    $state['error_detail'] = null;
-    $state['rollback_failure'] = null;
-    $state['manual_commands'] = null;
-    $state['installation_mode'] = $installationMode;
-    $state['execution_mode_resolved'] = $executionMode;
-    // D35 — 자동 탐색된 PHP 경로를 실행(subprocess 러너)이 실제로 쓰도록 state 에 박는다
-    $state['php_binary_resolved'] = installerResolvedPhpBinary($config, $executionResolution);
-
-    // existing_db_action 변경 시 db_cleanup 재실행 보장 (이슈 #319 부수 발견)
-    // 이전 'skip' → 신규 'drop_tables' 케이스에서 cleanup 이 재호출되도록 마커 제거
-    $state = applyExistingDbActionStateGuard($state, $existingDbAction);
-    $state['existing_db_action'] = $existingDbAction;
-    $state['drop_confirm'] = $dropConfirmRecord;
-
-    // 커밋될 세대로 설치 계획에 서명한다 (saveInstallationStateCas 가 같은 값으로 올린다).
-    $state['generation'] = $generation + 1;
-    $state['install_plan_sig'] = installer_plan_signature($state, $runtime['plan_key']);
+    $existingDbAction = (string) ($requestBody['existing_db_action'] ?? $_POST['existing_db_action'] ?? 'skip');
 
     /**
-     * 로그 파일 초기화 (재시도가 아닌 경우에만)
-     *
-     * Step 4 -> Step 5로 새로 진입하는 경우 이전 로그를 초기화합니다.
-     * 재시도/재개인 경우에는 기존 로그를 유지합니다.
+     * 설치 계획 확정 — 필수값·관리자 비밀번호 출처·.env 존재·쓰기 가능·삭제 확인·runtime·상태 초기화·서명·CAS 저장.
+     * 본문은 웹·터미널 공유 함수(includes/install-plan.php)가 소유한다. 위에서 내린 웹 판정 중 상태에 함께
+     * 저장돼 계획 서명에 들어가야 하는 값은 state_extra 로, 단계별 실행 토큰은 runtime_installer 로 넘긴다.
      */
-    if (! $isRetry) {
-        $logFilePath = BASE_PATH.'/storage/logs/installation.log';
-        if (file_exists($logFilePath)) {
-            @unlink($logFilePath);
+    $plan = installer_begin_installation(
+        $state,
+        $config,
+        [],
+        $existingDbAction,
+        (string) ($requestBody['drop_confirm'] ?? $_POST['drop_confirm'] ?? ''),
+        [
+            'installation_mode' => $installationMode,
+            'state_extra' => [
+                'execution_mode_resolved' => $executionMode,
+                // D35 — 자동 탐색된 PHP 경로를 실행(subprocess 러너)이 실제로 쓰도록 state 에 박는다
+                'php_binary_resolved' => installerResolvedPhpBinary($config, $executionResolution),
+            ],
+            'runtime_installer' => $runtimeInstaller,
+        ]
+    );
+
+    if (! $plan['ok']) {
+        if ($plan['error_code'] === 'state_conflict') {
+            installer_json_error(409, 'state_conflict', $plan['message']);
         }
+
+        http_response_code($plan['status']);
+        $payload = ['success' => false, 'message' => $plan['message']];
+        if ($plan['env_required']) {
+            $payload['env_required'] = true;
+            if (! empty($plan['env_not_writable'])) {
+                // 화면이 「부재」 안내와 「쓰기 불가」 안내를 구분해 그리는 데 필요한 필드
+                // (23차 F-2) — 형제 갈래(.env 부재)와 같은 봉투 폭을 유지한다.
+                $payload['env_not_writable'] = true;
+            } else {
+                $payload['missing_files'] = ['.env'];
+            }
+            $payload += [
+                'base_path' => BASE_PATH,
+                'is_windows' => isWindows(),
+            ];
+        }
+        echo installer_json_encode($payload, JSON_UNESCAPED_UNICODE);
+        exit;
     }
 
-    // 강제 종료된 이전 요청이 남긴 명령 출력 임시 로그를 정리한다 (9차 #L9) —
-    // 재시도마다 새 파일명(uniqid)이 만들어지므로 청소하지 않으면 계속 쌓인다.
-    if (function_exists('installerCleanupCommandOutputFiles')) {
-        installerCleanupCommandOutputFiles();
-    }
+    $existingDbAction = $plan['existing_db_action'];
+    $dropConfirmRejected = $plan['drop_confirm_rejected'];
 
     /**
-     * 상태 저장 — 읽은 뒤 다른 상태변경이 먼저 커밋됐으면 덮어쓰지 않는다 (CAS).
+     * 실행 모드 로그 — 설치 계획 확정이 새 시작의 로그를 비운 뒤에 남긴다.
      */
-    if (! saveInstallationStateCas($state, $generation)) {
-        installer_json_error(409, 'state_conflict', lang('error_state_conflict'));
-    }
-
-    /**
-     * 로그 기록
-     */
-    addLog(lang('log_installation_config_saved'));
     addLog(lang('log_execution_mode_resolved', [
         'mode' => lang('execution_mode_label_'.$executionMode),
         'source' => lang('execution_mode_source_'.$executionResolution['source']),
@@ -519,7 +314,7 @@ try {
         'stepwise_token' => $stepwiseToken,
         'existing_db_action' => $existingDbAction,
         'drop_confirm_rejected' => $dropConfirmRejected,
-        'warning' => $dropConfirmRejected ? lang('drop_confirm_rejected') : null,
+        'warning' => $plan['warning'],
     ], JSON_UNESCAPED_UNICODE);
 
     /**
@@ -637,7 +432,7 @@ try {
         require_once __DIR__.'/../includes/progress-emitter.php';
         require_once __DIR__.'/../includes/task-runner.php';
 
-        // 워커 종료 처리 — lock 해제 + fatal(실행 시간 초과 등)이면 설치를 failed 로 기록
+        // 워커 종료 처리 — lock 해제 + fatal(실행 시간 초과 등)이면 설치를 failed 로 기록한다
         // (폴링 화면이 상태를 읽어 실패 안내와 재시도를 보인다). 처리기는 task-runner.php 에 있다.
         register_shutdown_function('installerHandleWorkerShutdown', $workerId, 'polling');
 

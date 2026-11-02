@@ -8,7 +8,7 @@
 
 ```text
 1. 확장의 관리자 화면은 템플릿 레이아웃이 아니라 «템플릿이 주는 부품» 위에 그려진다 — 부품이 없으면 그 부분만 조용히 빠진다
-2. 필수 계약 3종: 컴포넌트(68종) · 공용 문구 키(common.*·admin.* 137개) · 조각 앵커(확장점 13 + 앵커 id 7). 선택: 확장 CSS 덮기
+2. 필수 계약 3종: 컴포넌트(68종) · 공용 문구 키(common.*·admin.* 137개) · 조각 앵커(확장점 14 + 앵커 id 7). 선택: 확장 CSS 덮기
 3. 기준 구현은 sirsoft-admin_basic — 이 표의 모든 항목을 갖춘다
 4. 학습용 gnuboard7-hello_admin_template 은 이 계약을 채우지 않는다(알려진 제한) — 번들 확장 관리자 화면 운영용이 아니다
 5. 계약 밖에서 확장이 템플릿에 기대는 것을 새로 만들면 그 확장의 문서와 이 표를 함께 고친다
@@ -39,7 +39,7 @@
 | --- | --- | --- | --- |
 | 컴포넌트 | 68종 | `components.json`, `src/components/**` | 그 노드가 그려지지 않는다(자식까지 함께 사라짐) |
 | 공용 문구 키 | `common.*`·`admin.*` 137개 | `lang/{ko,en}.json` → `lang/partial/{ko,en}/{common,admin}.json` (+ 언어팩 `frontend/`) | 버튼·제목에 키 문자열이 그대로 보인다 |
-| 조각 앵커 | 확장점 13 · 앵커 id 7 | `layouts/**` | 그 자리에 붙는 확장 조각이 등록 단계에서 빠진다 |
+| 조각 앵커 | 확장점 14 · 앵커 id 7 | `layouts/**` | 그 자리에 붙는 확장 조각이 등록 단계에서 빠진다 |
 | 확장 CSS 덮기 **(선택)** | 확장별 CSS 파일 | `template.json` 의 `extension_css_overrides` | 빠져도 화면은 무너지지 않는다 — 확장 화면이 확장 원래 모양으로 그려진다 |
 
 **스타일 클래스는 계약에서 빠졌다(7.2.0).** 종전에는 확장 레이아웃이 템플릿의 `@layer components` 의미 클래스(`admin-card`·`btn`·`input` 등)로 배치를 정해, 새 관리자 템플릿이 그 클래스를 모두 정의해야 했다. 이제 확장 화면의 스타일은 확장이 자기 CSS 에 자기 앞글자 클래스로 싣는다 — 템플릿이 어떤 CSS 라이브러리를 쓰든, CSS 를 거의 두지 않든 확장 화면 모양은 같다. 규약: [module-assets.md 「확장 CSS 자기 공급 규약」](module-assets.md#확장-css-자기-공급-규약).
@@ -76,6 +76,7 @@
 | 확장점 | `notification_definition_row_footer`, `notification_template_form_sections`, `notification_template_form_footer_actions` | 알림 설정·알림 템플릿 편집 창 |
 | 확장점 | `html_editor` | 본문 편집기 자리(편집기 플러그인이 채움) |
 | 확장점 | `address_search_slot` | 주소 검색 자리(관리자·사용자 양쪽) |
+| 확장점 | `admin_login_extensions` (7.2.0+) | 관리자 로그인 폼 바로 뒤(SSO 단추). 7.1.x 화면으로 만든 템플릿은 코어 [호환 심](layout-extensions.md#옛-템플릿-호환-심-720)이 채운다 |
 | 앵커 id | `header_currency_inject_anchor` | `_admin_base` 머리글 |
 | 앵커 id | `user_detail_tabs`, `extension_tab_content` | 회원 상세 |
 | 앵커 id | `user_form_tabs`, `extension_form_content` | 회원 등록·수정 |

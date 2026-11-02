@@ -53,7 +53,7 @@
         <span data-if="{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}" class="ml-2 text-xs text-blue-600 dark:text-blue-400">({{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length}}$t:shop.checkout.coupon_count_suffix)</span>
       </label>
       <!-- 주문 쿠폰 드롭다운 -->
-      <select name="order_coupon_issue_id" aria-label="$t:shop.checkout.order_coupon_select" value="{{_local.checkout?.order_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+      <select name="order_coupon_issue_id" aria-label="$t:shop.checkout.order_coupon_select" value="{{_local.checkout?.order_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{[{ value: '', label: (checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0 ? '$t:shop.checkout.order_coupon_placeholder' : '$t:shop.checkout.order_coupon_no_available' }].concat((checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'order_amount').map(coupon => ({ value: String(coupon.id), label: '[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')' })))}}">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
         <on type="change">
           <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { order_coupon_issue_id: $event.target.value || null })}}"/>
@@ -67,8 +67,6 @@
             </fail>
           </api-call>
         </on>
-        <option value="">{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0 ? '$t:shop.checkout.order_coupon_placeholder' : '$t:shop.checkout.order_coupon_no_available'}}</option>
-        <option data-each="coupon, couponIdx in {{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount')}}" value="{{coupon.id}}">{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}</option>
       </select>
       <!-- 적용된 주문 쿠폰 정보 -->
       <div data-if="{{_local.checkout?.order_coupon_issue_id &amp;&amp; (checkoutData.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-700 dark:text-green-400 flex items-center gap-1">
@@ -84,7 +82,7 @@
         <span data-if="{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}" class="ml-2 text-xs text-blue-600 dark:text-blue-400">({{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length}}$t:shop.checkout.coupon_count_suffix)</span>
       </label>
       <!-- 배송비 쿠폰 드롭다운 -->
-      <select name="shipping_coupon_issue_id" aria-label="$t:shop.checkout.shipping_coupon_select" value="{{_local.checkout?.shipping_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+      <select name="shipping_coupon_issue_id" aria-label="$t:shop.checkout.shipping_coupon_select" value="{{_local.checkout?.shipping_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{[{ value: '', label: (checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0 ? '$t:shop.checkout.shipping_coupon_placeholder' : '$t:shop.checkout.shipping_coupon_no_available' }].concat((checkoutData?.data?.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').map(coupon => ({ value: String(coupon.id), label: '[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')' })))}}">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
         <on type="change">
           <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { shipping_coupon_issue_id: $event.target.value || null })}}"/>
@@ -98,8 +96,6 @@
             </fail>
           </api-call>
         </on>
-        <option value="">{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0 ? '$t:shop.checkout.shipping_coupon_placeholder' : '$t:shop.checkout.shipping_coupon_no_available'}}</option>
-        <option data-each="coupon, couponIdx in {{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}" value="{{coupon.id}}">{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}</option>
       </select>
       <!-- 적용된 배송비 쿠폰 정보 -->
       <div data-if="{{_local.checkout?.shipping_coupon_issue_id &amp;&amp; (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-700 dark:text-green-400 flex items-center gap-1">

@@ -23,7 +23,8 @@
         <span>$t:home.go_to_mypage</span>
         <icon name="arrow-right" class="text-base"/>
       </a>
-      <a href="/page/about" class="inline-flex items-center justify-center px-4 py-2 bg-black/20 text-white rounded-lg font-medium text-sm hover:bg-black/30 transition-colors cursor-pointer">
+      <!-- 소개 문서(/page/about)는 페이지 모듈 문서라 페이지 모듈이 꺼져 있으면 단추를 숨긴다. -->
+      <a href="/page/about" data-ref="welcome_learn_more" data-if="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" class="inline-flex items-center justify-center px-4 py-2 bg-black/20 text-white rounded-lg font-medium text-sm hover:bg-black/30 transition-colors cursor-pointer">
         <on type="click">
           <navigate/>
         </on>

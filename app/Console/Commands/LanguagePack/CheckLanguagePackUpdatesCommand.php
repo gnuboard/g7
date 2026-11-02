@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\LanguagePack;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Extension\Support\LifecycleWarnings;
 use App\Services\LanguagePackService;
@@ -16,17 +17,13 @@ use Throwable;
  */
 class CheckLanguagePackUpdatesCommand extends Command
 {
+    use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
     /**
      * @var string
      */
     protected $signature = 'language-pack:check-updates {--identifier= : 특정 언어팩만 확인 (선택)}';
-
-    /**
-     * @var string
-     */
-    protected $description = '설치된 언어팩의 GitHub 업데이트를 확인합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service (실제 로직 SSoT)

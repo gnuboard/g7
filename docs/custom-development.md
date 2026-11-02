@@ -69,7 +69,7 @@ Route::get('/mypage/summary', [MyController::class, 'summary'])->middleware('cus
 Route::get('/admin/report', [ReportController::class, 'index'])->middleware('custom.admin');
 ```
 
-- 자동으로 붙는 미들웨어: `web`(세션·CSRF·로케일)과 `custom.screen`(정식 주소 이동·방문 통계·봇 기록). 봇 판정은 그누보드7 화면과 같은 `BotDetector` 이고, 관리자 환경설정의 봇 감지를 끄면 두 화면 모두 봇 표식을 남기지 않는다.
+- 자동으로 붙는 미들웨어: `web`(세션·CSRF·로케일)과 `custom.screen`(정식 주소 이동·방문 통계·봇 기록). 정식 주소 이동은 그누보드7 화면과 같아서, `/hello/`·`//hello` 로 연 GET·HEAD 는 `/hello` 로 301 한다(POST 등 다른 메서드는 그대로 받는다). 봇 판정은 그누보드7 화면과 같은 `BotDetector` 이고, 관리자 환경설정의 봇 감지를 끄면 두 화면 모두 봇 표식을 남기지 않는다.
 - 등록하지 않는 주소: 첫 구간이 `api`·`plugins`·`modules`·`_boost`·`build`·`storage`·`install`·`dev`(개발 대시보드) 인 주소, 코어 사이트맵(`/sitemap.xml`·`/sitemap-{n}.xml`), 정적 파일 확장자로 끝나는 주소. 경고 로그를 남기고 등록하지 않는다(코어 응답이 그대로 나간다).
 - `/board/{slug}` 만 등록하면 `/board/{slug}/write` 같은 나머지 주소는 그누보드7 화면이 그린다. 필요한 주소만 가져간다.
 - 등록 상태 확인: `php artisan custom:check`. 라우트 캐시를 쓰는 사이트는 `routes/custom.php` 를 바꾼 뒤 `php artisan route:cache` 를 다시 실행한다.

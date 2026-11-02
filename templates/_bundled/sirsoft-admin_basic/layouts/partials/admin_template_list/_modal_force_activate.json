@@ -1,5 +1,5 @@
 {
-    "comment": "**이 템플릿이 요구하는 확장이 없는데도** 활성하겠다는 확인 창. 활성 창이 409 를 받았을 때 열린다.\n  무엇이 없는지는 전역 `activateWarningData` 에 담긴 서버 오류를 읽는다.\n  템플릿에는 강제 **비활성** 창이 없다 — 템플릿에 의존하는 확장이라는 방향이 없기 때문이다.",
+    "comment": "**이 템플릿이 요구하는 확장이 없거나 꺼져 있거나 버전이 모자란데도** 활성하겠다는 확인 창. 활성 창이 409 를 받았을 때 열린다.\n  무엇이 모자란지는 전역 `activateWarningData` 에 담긴 서버 오류(항목별 status·installed_version·required_version, template_type)를 읽는다.\n  강제로 켜면 조건을 맞출 때까지 그 템플릿의 화면이 503 안내가 되므로 타입별 경고를 늘 보인다 — 관리자 템플릿이면 이 화면으로 되돌릴 수 없어 복구 명령을 함께 적는다.\n  템플릿에는 강제 **비활성** 창이 없다 — 템플릿에 의존하는 확장이라는 방향이 없기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "템플릿 강제 활성화 확인 모달",
@@ -115,6 +115,15 @@
                                                 "className": "text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded"
                                             },
                                             "text": "$t:admin.modules.status.not_installed"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{module.status === 'version_mismatch'}}",
+                                            "props": {
+                                                "className": "text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded"
+                                            },
+                                            "text": "$t:admin.modules.status.version_mismatch ({{module.installed_version}} → {{module.required_version}})"
                                         }
                                     ]
                                 }
@@ -186,6 +195,15 @@
                                                 "className": "text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 rounded"
                                             },
                                             "text": "$t:admin.plugins.status.not_installed"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{plugin.status === 'version_mismatch'}}",
+                                            "props": {
+                                                "className": "text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded"
+                                            },
+                                            "text": "$t:admin.plugins.status.version_mismatch ({{plugin.installed_version}} → {{plugin.required_version}})"
                                         }
                                     ]
                                 }
@@ -200,6 +218,48 @@
                         "className": "mt-4 text-label"
                     },
                     "text": "$t:admin.templates.modals.force_activate_description"
+                },
+                {
+                    "id": "force_activate_503_warning",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-warning mt-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "warning",
+                                "className": "text-xl text-yellow-700 dark:text-yellow-500 flex-shrink-0 mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_global.activateWarningData?.template_type ?? _global.selectedTemplate?.type) !== 'admin'}}",
+                                    "props": {
+                                        "className": "text-warning-soft"
+                                    },
+                                    "text": "$t:admin.templates.force_activate.warning_user_503"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_global.activateWarningData?.template_type ?? _global.selectedTemplate?.type) === 'admin'}}",
+                                    "props": {
+                                        "className": "text-warning-soft"
+                                    },
+                                    "text": "$t:admin.templates.force_activate.warning_admin_503|identifier={{_global.activateWarningData?.current_active_identifier ?? 'sirsoft-admin_basic'}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         },
@@ -300,6 +360,15 @@
                                             "params": {
                                                 "type": "success",
                                                 "message": "$t:admin.templates.activate_success"
+                                            }
+                                        },
+                                        {
+                                            "comment": "함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 막지 않는 안내라 창을 열지 않는다.",
+                                            "handler": "toast",
+                                            "if": "{{(response?.data?.integration_notices ?? []).length !== 0}}",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + ')').join(', ')}}"
                                             }
                                         },
                                         {

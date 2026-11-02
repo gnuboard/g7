@@ -10,7 +10,7 @@
  * 안내 데이터는 오류 문맥의 `error.errors.*` 로만 읽는다 — `error.data` 는 레이아웃 바인딩 경로가 아니다(audit 금지).
  *
  * @vitest-environment jsdom
- * @since 1.3.0
+ * @since 1.4.0
  */
 
 import React from 'react';

@@ -776,7 +776,7 @@
                                     ]
                                 },
                                 {
-                                    "comment": "함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로\n            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.",
+                                    "comment": "함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로\n            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.\n            요구 버전(`required_version`, 무제약 `*` 은 감춘다)·설치 버전을 보이고, 설치됐는데 제약을 못 맞추면(`is_met === false`) 「버전 미달」 배지를 단다(#822).\n            옛 코어는 `is_met` 을 싣지 않으므로 `false` 일 때만 단다 — `!is_met` 이면 옛 코어에서 모든 항목에 배지가 붙는다.",
                                     "id": "integrations_section",
                                     "type": "basic",
                                     "name": "Div",
@@ -875,6 +875,24 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
+                                                            "if": "{{item.required_version && item.required_version !== '*'}}",
+                                                            "props": {
+                                                                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono"
+                                                            },
+                                                            "text": "$t:admin.extension_integrations.required_version|version={{item.required_version}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{item.installed_version}}",
+                                                            "props": {
+                                                                "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono"
+                                                            },
+                                                            "text": "$t:admin.extension_integrations.installed_version|version={{item.installed_version}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
                                                             "if": "{{!item.is_installed}}",
                                                             "props": {
                                                                 "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
@@ -889,6 +907,15 @@
                                                                 "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
                                                             },
                                                             "text": "$t:admin.extension_integrations.inactive"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{item.is_installed && item.is_met === false}}",
+                                                            "props": {
+                                                                "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
+                                                            },
+                                                            "text": "$t:admin.extension_integrations.version_mismatch"
                                                         }
                                                     ]
                                                 }

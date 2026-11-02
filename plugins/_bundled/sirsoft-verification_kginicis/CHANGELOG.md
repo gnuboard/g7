@@ -4,7 +4,7 @@ All notable changes to this plugin will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.1.2] - 2026-10-21
+## [1.1.3] - 2026-11-01
 
 ### Changed
 
@@ -17,6 +17,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - 환경설정의 중복 회원 판정 기준(DI/CI) 선택지가 화면 안에서 모두 지금 고른 값을 갖던 문제를 수정했습니다.
 - 로그인한 회원이 마이페이지 등에서 본인인증을 할 때 그 본인인증 정보(DI·CI)가 **다른 회원**에 이미 등록돼 있으면 인증을 실패 처리하고 기록을 만들지 않습니다(가입할 때와 같은 판정·같은 안내 문구, 「동일인 중복 차단」 설정을 끄면 종전대로 통과). 종전에는 가입할 때만 막아, 다른 정보로 가입한 뒤 남의 본인인증 결과를 자기 계정에 붙일 수 있었습니다.
+
+## [1.1.2] - 2026-11-01
+
+### Changed
+
+- Composer 잠금 파일을 확장 정보와 다시 맞췄습니다. 설치·업데이트 과정에서 잠금 파일이 오래되었다는 경고가 나오지 않습니다.
+
+### Fixed
+
+- 사이트에 콘텐츠 보안 정책(`script-src 'self'`)을 걸면 본인인증을 마쳐도 결과가 원래 화면에 전달되지 않고 인증 창이 닫히지 않던 문제를 고쳤습니다. 인증 결과를 받는 화면이 인라인 스크립트 없이 동작합니다. (#158 @glitter-gim 님께서 제보해주셨습니다.)
 
 ## [1.1.1] - 2026-10-21
 

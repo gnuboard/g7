@@ -78,14 +78,15 @@ class FrontendConfigApiTest extends TestCase
     }
 
     /**
-     * 셸 HTML 은 7.1 셸과 `customRoutes` 두 줄만 다르고 나머지는 바이트까지 같습니다 (계획 WP-C1·WP-K2 시험 잠금).
+     * 셸 HTML 은 7.1 셸과 G7Config 의 `customRoutes` 키만 다르고 나머지는 바이트까지 같습니다 (계획 WP-C1·WP-K2 시험 잠금).
      *
      * 설정 조립을 공용 서비스로 옮긴 뒤에도 같은 값이 같은 자리에 같은 모양으로 나가는지 — 7.1 셸 템플릿(픽스처)을
      * 같은 뷰 데이터로 그린 결과와 비교한다. 셸을 일부러 바꾸면 픽스처도 그 변경과 함께 고친다.
      *
      * 픽스처는 「설정을 공용 서비스로 옮기기 전의 조립 방식(`locale`·`websocket` 을 셸이 직접 계산)」만 7.1 그대로 두고,
      * 그 밖의 의도된 셸 변경(확장 CSS 층 선언, 다크 방식·확장 CSS 덮기·확장 접두 값)은 셸과 같은 줄로 따라간다.
-     * 셸과 픽스처의 차이는 늘 그 두 값의 조립과 `customRoutes` 두 줄뿐이어야 한다.
+     * 셸과 픽스처의 차이는 늘 그 두 값의 조립과 `customRoutes` 두 줄뿐이어야 한다. 7.1.4 부터 셸 설정은 비실행 JSON 블록
+     * (strict CSP)이라 픽스처도 그 셸을 따르고, 비교는 블록을 풀어 키 단위로 한다.
      *
      * @scenario case=shell_bytes
      *
@@ -112,10 +113,31 @@ class FrontendConfigApiTest extends TestCase
         $html = $shell->render();
         $legacy = Blade::render((string) file_get_contents(base_path('tests/Fixtures/Shell/'.$fixture)), $shell->getData());
 
-        $this->assertStringContainsString('customRoutes: ', $html);
+        // 셸 설정은 비실행 JSON 데이터 블록(#g7-config, strict CSP)이라 customRoutes 는 그 안의 키다 —
+        // 블록을 풀어 customRoutes 하나만 빼면 7.1 셸과 같은 값·같은 순서이고, 블록 밖 HTML 은 바이트까지 같다.
         $this->assertStringContainsString('"appKey":"lock-key"', $html);
-        $withoutCustomRoutes = (string) preg_replace('/\R[^\n]*routes\/custom\.php 로 등록된[^\n]*\R[^\n]*customRoutes: [^\n]*/u', '', $html);
-        $this->assertSame($legacy, $withoutCustomRoutes);
+        [$rest, $config] = $this->splitConfigBlock($html);
+        [$legacyRest, $legacyConfig] = $this->splitConfigBlock($legacy);
+        $this->assertArrayHasKey('customRoutes', $config);
+        unset($config['customRoutes']);
+        $this->assertSame($legacyConfig, $config);
+        $this->assertSame($legacyRest, $rest);
+    }
+
+    /**
+     * 셸 HTML 에서 G7Config 데이터 블록을 떼어 냅니다.
+     *
+     * @param  string  $html  셸 HTML
+     * @return array{0: string, 1: array<string, mixed>} 블록 자리를 표지로 바꾼 HTML 과 풀어 낸 설정
+     */
+    private function splitConfigBlock(string $html): array
+    {
+        $pattern = '#<script type="application/json" id="g7-config">(.*?)</script>#s';
+        $this->assertSame(1, preg_match($pattern, $html, $match), '#g7-config 블록이 없다');
+        $config = json_decode($match[1], true);
+        $this->assertIsArray($config, '#g7-config 블록이 JSON 으로 풀리지 않는다');
+
+        return [(string) preg_replace($pattern, '<!--g7-config-->', $html, 1), $config];
     }
 
     /**

@@ -1,0 +1,29 @@
+feature: 관리자 대시보드 확장 상태 갤러리와 칸당 6장 제한
+
+description: |
+  대시보드의 모듈·플러그인·템플릿 상태 칸은 아이콘 왼쪽 작은 카드를 2열 갤러리로 깔고, 칸마다 최대 6장만 보인다.
+  자를 때는 받은 순서 그대로 앞에서 자른다(활성·비활성으로 다시 줄 세우지 않는다). 넘친 개수는 칸 아래
+  「외 N개 더 있음」으로 적고, 6장 이하면 그 문구를 띄우지 않는다.
+
+  모듈·플러그인 설치 목록 API 는 페이지를 나누지 않고 전량을 주므로 반복식이 6장으로 자르고 넘친 개수도
+  받은 전량에서 센다. 템플릿 목록 API 는 페이지를 나누므로 6건만 받고 넘친 개수는 `pagination.total` 로 센다.
+  아이콘은 기본 글리프를 늘 깔고 이미지가 그 위를 덮는다 — 아이콘 주소가 없거나 깨지면 글리프가 드러난다.
+
+# axis 의미:
+#   kind     — 어느 칸인가. module·plugin 은 전량 응답을 화면이 자르고, template 은 서버가 쪽 단위로 자른다.
+#   overflow — 그 칸의 확장 수. at_most_six 는 6 이하, over_six 는 7 이상.
+axes:
+  kind: [module, plugin, template]
+  overflow: [at_most_six, over_six]
+
+effects:
+  - gallery_shows_at_most_six_in_server_order      # 칸마다 받은 순서 그대로 앞 6장만 깐다
+  - overflow_note_only_when_over_six               # 넘치면 「외 N개 더 있음」, 6 이하면 문구 없음
+  - template_overflow_counted_from_pagination_total # 템플릿은 받은 건수가 아니라 pagination.total 로 센다
+  - icon_image_or_fallback_glyph                   # icon_url 이 있으면 이미지, 없으면 기본 글리프만
+  - broken_icon_falls_back_to_glyph                # 아이콘 주소가 깨지면 이미지를 걷고 글리프를 드러낸다(브라우저)
+  - gallery_cards_stay_inside_column               # 작은 카드가 PC·모바일 모두 칸 밖으로 넘치지 않는다(브라우저)
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_dashboard.extension_gallery.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-dashboard-extension-gallery.spec.ts

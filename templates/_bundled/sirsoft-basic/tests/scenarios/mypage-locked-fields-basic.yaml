@@ -1,4 +1,4 @@
-feature: 마이페이지 정보 수정 — 회사 계정이 관리하는 칸 잠금 (sirsoft-basic 1.3.0, 코어 7.2.0 B4)
+feature: 마이페이지 정보 수정 — 회사 계정이 관리하는 칸 잠금 (sirsoft-basic 1.4.0, 코어 7.2.0 B4)
 
 description: |
   `user` 응답의 `locked_fields` 에 든 칸(이름·닉네임·휴대폰·전화·언어)은 정보 수정 폼(`partials/mypage/profile/_edit`)에서

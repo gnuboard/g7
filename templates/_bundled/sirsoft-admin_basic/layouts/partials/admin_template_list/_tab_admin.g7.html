@@ -105,8 +105,8 @@
         iconUrl: p.icon_url,
         fallbackIcon: 'cog',
         dependencies: [
-          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name || d.identifier || d }))),
-          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name || d.identifier || d })))
+          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name || d.identifier || d, unmet: d?.is_met === false, reason: d?.is_met === false ? (d.status === 'version_mismatch' ? $t('admin.plugins.dependency_unmet.version_mismatch', {installed: d.installed_version, required: d.required_version}) : (d.status === 'inactive' ? $t('admin.plugins.dependency_unmet.inactive') : $t('admin.plugins.dependency_unmet.not_installed'))) : undefined }))),
+          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name || d.identifier || d, unmet: d?.is_met === false, reason: d?.is_met === false ? (d.status === 'version_mismatch' ? $t('admin.plugins.dependency_unmet.version_mismatch', {installed: d.installed_version, required: d.required_version}) : (d.status === 'inactive' ? $t('admin.plugins.dependency_unmet.inactive') : $t('admin.plugins.dependency_unmet.not_installed'))) : undefined })))
         ],
         badges: [
           ...(p.status === 'active' ? [{ label: '$t:admin.templates.status.active', tone: 'success' }] : []),
@@ -206,7 +206,7 @@
           <switch on="{{$args[0].status === 'uninstalled' ? 'install' : 'edit'}}">
             <case when="install">
               <sequence>
-                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false"/>
+                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false" :installSelectedDeps="null" :installSelectedLPs="null" :installSelectedIntegrations="null"/>
                 <open-modal target="template_install_modal"/>
               </sequence>
             </case>

@@ -308,6 +308,7 @@ class GzipEncodeResponse
      */
     private function compressResponse(Response $response): Response
     {
+        // php-ext-guard: shouldCompress() 가 isGzipAvailable()(function_exists gzencode) 로 먼저 거른다
         // BinaryFileResponse 는 본문을 setContent() 로 교체할 수 없으므로
         // 파일 내용을 읽어 일반 Response 로 치환한 뒤 압축한다 (헤더는 승계).
         if ($response instanceof BinaryFileResponse) {
@@ -373,6 +374,7 @@ class GzipEncodeResponse
      */
     private function compressBinaryFileResponse(BinaryFileResponse $response): Response
     {
+        // php-ext-guard: shouldCompress() 가 isGzipAvailable()(function_exists gzencode) 로 먼저 거른다
         $file = $response->getFile();
 
         if ($file === null) {

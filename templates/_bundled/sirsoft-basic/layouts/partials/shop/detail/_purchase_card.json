@@ -261,11 +261,30 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Span",
+                                            "name": "Div",
                                             "props": {
-                                                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                "className": "flex items-center gap-2 min-w-0"
                                             },
-                                            "text": "{{item.options ? Object.values(item.options).join(' / ') : ''}}"
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{item.options ? Object.values(item.options).join(' / ') : ''}}"
+                                                },
+                                                {
+                                                    "comment": "옵션마다 과세 종류가 다를 때, 고른 옵션의 과세 종류(옵션 지정 ?? 상품 기본값)가 면세·영세면 표시한다. 모두 같으면 가격 옆에 보이므로 여기엔 붙이지 않는다 (#612)",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{['tax_free', 'zero_rated'].includes(((product.data?.options ?? []).find(o => o.id === item.optionId)?.tax_status ?? product.data?.tax_status)) && !(product.data?.options ?? []).every(o => (o.tax_status ?? product.data?.tax_status) === (product.data?.options?.[0]?.tax_status ?? product.data?.tax_status))}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{((product.data?.options ?? []).find(o => o.id === item.optionId)?.tax_status ?? product.data?.tax_status) === 'zero_rated' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}}"
+                                                    },
+                                                    "text": "{{(product.data?.options ?? []).find(o => o.id === item.optionId)?.tax_status_label ?? product.data?.tax_status_label}}"
+                                                }
+                                            ]
                                         },
                                         {
                                             "type": "basic",

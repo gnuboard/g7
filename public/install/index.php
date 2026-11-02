@@ -14,9 +14,21 @@ require_once __DIR__.'/includes/session.php';
 require_once __DIR__.'/includes/installer-state.php';
 require_once __DIR__.'/includes/request-handler.php';
 require_once __DIR__.'/api/_guard.php';
-installer_guard_finalize_or_410();
+// 설치가 끝났으면 410. 단, 완료 표식 뒤 마무리 구간(.env 확정 전)에 설치 소유 세션이 새로고침한 GET 만
+// 통과한다 — 그때는 Step 5 화면만 렌더해 마무리 작업 대기 → .env 확정(finalize-env)으로 잇는다.
+$finalizeWindow = installer_guard_index_or_410();
 
 $currentLang = getCurrentLanguage();
+
+if ($finalizeWindow) {
+    // 완료 뒤 재진입 경로와 같이 세션에 남은 설치 설정(비밀번호 포함)을 정리한다 — finalize 는 세션을 쓰지 않는다.
+    unset(
+        $_SESSION['install_config'],
+        $_SESSION['db_write_tested'],
+        $_SESSION['db_read_tested']
+    );
+    $_SESSION['installer_current_step'] = 5;
+}
 
 // 세션 기반 단계 관리 (URL 파라미터 무시)
 if (! isset($_SESSION['installer_current_step'])) {
@@ -135,7 +147,8 @@ if (! $ownershipLocked && $currentStep === 3) {
     $formData = array_merge($defaults, $savedConfig);
 }
 
-if (! $ownershipLocked) {
+// 마무리 구간은 Step 5 화면만 렌더한다 — 흐름 검증(완료 시 홈 이동)·POST 처리를 거치지 않는다.
+if (! $ownershipLocked && ! $finalizeWindow) {
     // 설치 흐름 검증
     validateInstallationFlow($currentStep, $state);
 
@@ -169,22 +182,6 @@ if (! headers_sent()) {
 <html lang="<?= htmlspecialchars($currentLang) ?>">
 <head>
     <meta charset="UTF-8">
-    <?php /* 다크모드 즉시 적용 — 렌더링 전 실행 (FOUC 깜빡임 방지).
-             `<html>` 과 `<head>` **사이**가 아니라 head 안에 둔다: 그 자리는 유효하지 않은
-             문서 구조이고(파서가 head 를 암묵적으로 열어 줘 동작만 할 뿐), charset 선언보다
-             앞서면 인코딩 판정도 늦어진다 (10차). */ ?>
-    <script>
-    (function(){
-        try {
-            const theme = localStorage.getItem('g7_color_scheme')
-                || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            document.documentElement.setAttribute('data-theme', theme);
-        } catch(e) {
-            // localStorage 접근 실패 시 기본값(light) 사용
-            document.documentElement.setAttribute('data-theme', 'light');
-        }
-    })();
-    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title><?= lang('welcome_title') ?> - <?= lang('brand_name') ?></title>
@@ -194,6 +191,28 @@ if (! headers_sent()) {
          기준 주소는 `dirname($_SERVER['SCRIPT_NAME'])` 에서 오는 요청 유래 값이라 그대로 두지 않고 이스케이프한다. -->
     <link rel="stylesheet" href="<?= e(INSTALLER_BASE_URL) ?>/assets/vendor/font-awesome/6.5.1/css/all.inlined.css">
     <link rel="stylesheet" href="<?= e(INSTALLER_BASE_URL) ?>/assets/css/installer.css?v=<?= time() ?>">
+
+    <!-- 서버 값 — 비실행 JSON 데이터 블록. 인라인 실행 코드는 두지 않는다(#158 — 웹서버가
+         `Content-Security-Policy: script-src 'self'` 를 걸면 인라인 스크립트·on* 이 실행되지 않는다).
+         installer-boot.js 가 이 값을 종전과 같은 이름의 window.INSTALLER_* 전역으로 옮기고,
+         다크 모드를 즉시 적용(FOUC 방지)하며, data-action 위임 리스너를 건다. -->
+    <script type="application/json" id="installer-data"><?= installer_json_encode([
+        'base_url' => INSTALLER_BASE_URL,
+        'current_step' => (int) $currentStep,
+        // 상태변경 API 요청 검증 토큰 (세션 CSRF) — 소유 토큰 원문은 페이지에 싣지 않는다
+        'csrf' => installer_csrf_token(),
+        'ownership_locked' => (bool) $ownershipLocked,
+        'lang' => $translations ?? [],
+        'state_locale' => $state['g7_locale'] ?? null,
+        // 화면이 **실제로 렌더된** 로케일 — 문구(lang)와 같은 출처다. 확장 이름처럼 화면 문구와 나란히
+        // 놓이는 값은 이것을 써야 한 화면에 두 언어가 섞이지 않는다(localStorage 는 이전 설치의 값이 남아
+        // 이길 수 있다) (10차). installer-boot.js 가 window.INSTALLER_LOCALE 로 옮긴다.
+        'locale' => $currentLang,
+        // DB 최고권한 계정 목록 — 서버 상수를 그대로 내려보내 JS 에 목록을 중복 정의하지 않는다.
+        // 클라이언트 검증은 즉시 피드백용이며, 실제 차단은 서버 3개 경로가 담당한다.
+        'blocked_db_accounts' => PrivilegedDatabaseAccounts::BLOCKED,
+    ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+    <script src="<?= e(INSTALLER_BASE_URL) ?>/assets/js/installer-boot.js?v=<?= time() ?>"></script>
 </head>
 <body>
     <?php /* 헤더 바는 첫 화면(환영)에도 나온다 — 테마 토글이 그 안에 있어, 종전처럼 1단계부터
@@ -241,30 +260,10 @@ if (! headers_sent()) {
         <p>&copy; <?= APP_RELEASE_YEAR ?> Gnuboard7. All rights reserved.</p>
     </footer>
 
-    <!-- JavaScript -->
-    <script>
-        <?php $jsonInlineFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT; ?>
-        // 인라인 script 에 실리는 값은 예외 없이 같은 HEX 플래그를 지난다 — 한 곳만 빠지면
-        // 그 값이 스크립트 탈출 통로가 된다. 기준 경로는 dirname($_SERVER['SCRIPT_NAME'])
-        // 에서 오므로 리터럴 상수가 아니다 (13차 보안#10).
-        // 인코딩은 installer_json_encode 를 지난다 — 그 자리가 인스톨러의 유일한 json_encode
-        // 이고, 계정명·경로의 invalid UTF-8 이 섞이면 빈 본문이 나가는 것을 막는다 (#62).
-        window.INSTALLER_BASE_URL = <?= installer_json_encode(INSTALLER_BASE_URL, $jsonInlineFlags) ?>;
-        window.CURRENT_STEP = <?= installer_json_encode($currentStep, $jsonInlineFlags) ?>;
-        // 상태변경 API 요청 검증 토큰 (세션 CSRF) — 소유 토큰 원문은 페이지에 싣지 않는다
-        window.INSTALLER_CSRF = <?= installer_json_encode(installer_csrf_token(), $jsonInlineFlags) ?>;
-        window.INSTALLER_OWNERSHIP_LOCKED = <?= $ownershipLocked ? 'true' : 'false' ?>;
-        window.INSTALLER_LANG = <?= installer_json_encode($translations ?? [], $jsonInlineFlags) ?>;
-        window.INSTALLER_STATE_LOCALE = <?= installer_json_encode($state['g7_locale'] ?? null, $jsonInlineFlags) ?>;
-        // 화면이 **실제로 렌더된** 로케일 — 문구(INSTALLER_LANG)와 같은 출처다.
-        // 확장 이름처럼 화면 문구와 나란히 놓이는 값은 이것을 써야 한 화면에 두 언어가
-        // 섞이지 않는다(localStorage 는 이전 설치의 값이 남아 이길 수 있다) (10차).
-        window.INSTALLER_LOCALE = <?= installer_json_encode($currentLang, $jsonInlineFlags) ?>;
-        // DB 최고권한 계정 목록 — 서버 상수를 그대로 내려보내 JS 에 목록을 중복 정의하지 않는다.
-        // 클라이언트 검증은 즉시 피드백용이며, 실제 차단은 서버 3개 경로가 담당한다.
-        window.INSTALLER_BLOCKED_DB_ACCOUNTS = <?= installer_json_encode(PrivilegedDatabaseAccounts::BLOCKED, $jsonInlineFlags) ?>;
-    </script>
+    <!-- JavaScript (전역 INSTALLER_* 는 <head> 의 installer-boot.js 가 이미 채웠다) -->
     <script src="<?= e(INSTALLER_BASE_URL) ?>/assets/js/installation-monitor.js?v=<?= time() ?>"></script>
+    <!-- 확장 선택 해석기 — 서버(확장 저장·사전 검증·터미널 설치)와 같은 규칙. installer.js 보다 먼저 로드 -->
+    <script src="<?= e(INSTALLER_BASE_URL) ?>/assets/js/installer-extension-resolver.js?v=<?= time() ?>"></script>
     <script src="<?= e(INSTALLER_BASE_URL) ?>/assets/js/installer.js?v=<?= time() ?>"></script>
 </body>
 </html>

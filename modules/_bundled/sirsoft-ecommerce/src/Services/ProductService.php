@@ -15,6 +15,9 @@ use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
+use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
+use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Enums\SequenceType;
 use Modules\Sirsoft\Ecommerce\Exceptions\OptionHasOrderHistoryException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ProductHasOrderHistoryException;
@@ -26,6 +29,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -1762,6 +1766,8 @@ class ProductService
             'stock_quantity' => $product->stock_quantity,
             'safe_stock_quantity' => $product->safe_stock_quantity,
             'tax_status' => $product->tax_status->value ?? $product->tax_status,
+            // 세율도 싣는다 — 빠지면 복사 화면이 세율 없이 등록 요청을 보내 복사한 상품이 기본 세율로 바뀐다(#612 ③)
+            'tax_rate' => $product->tax_rate,
             'sales_status' => $product->sales_status->value ?? $product->sales_status,
             'display_status' => $product->display_status->value ?? $product->display_status,
 
@@ -1772,6 +1778,8 @@ class ProductService
                 'option_values' => $opt->option_values,
                 'list_price' => $opt->list_price ?? $product->list_price,
                 'selling_price' => $opt->selling_price ?? $product->selling_price,
+                // 옵션별 과세 종류 — null 은 상품 기본값을 따른다 (#612)
+                'tax_status' => $opt->tax_status?->value,
                 'stock_quantity' => $opt->stock_quantity,
                 'safe_stock_quantity' => $opt->safe_stock_quantity,
                 'sku' => $opt->sku,
@@ -1920,9 +1928,16 @@ class ProductService
             $data['selling_price'] = 0;
             $data['stock_quantity'] = 0;
             $data['safe_stock_quantity'] = 0;
-            $data['tax_status'] = 'taxable';
-            $data['sales_status'] = 'active';
-            $data['display_status'] = 'visible';
+            // 판매 정보 미복사 = 새 상품의 기본값. 판매 상태 'active' 는 존재하지 않는 값이었다(#612 ③).
+            $data['tax_status'] = ProductTaxStatus::TAXABLE->value;
+            $data['tax_rate'] = VatCalculator::DEFAULT_RATE;
+            $data['sales_status'] = ProductSalesStatus::ON_SALE->value;
+            $data['display_status'] = ProductDisplayStatus::VISIBLE->value;
+            // 옵션 과세 종류도 판매 정보다 — 지정을 지우고 상품 기본값(과세)을 따르게 한다
+            foreach ($data['options'] as &$option) {
+                $option['tax_status'] = null;
+            }
+            unset($option);
         }
 
         // 상품 설명

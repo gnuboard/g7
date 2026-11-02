@@ -360,6 +360,40 @@ if (! function_exists('vendorModeOptionFromState')) {
     }
 }
 
+if (! function_exists('probeComposerForInstall')) {
+    /**
+     * Composer 를 실제로 실행해 쓸 수 있는지 확인합니다 (`composer --version`).
+     *
+     * 「패키지 관리자 확인」과 「필수 패키지 설치」의 vendor_mode=auto 분기가 같은 판정을 쓰도록 한 곳에 둔다 —
+     * 설치 단계가 proc_open 가용성만 보고 없는 Composer 를 실행하던 회귀를 막는다.
+     *
+     * @return array{ok: bool, output: array<int, string>} 실행 가능 여부와 출력
+     */
+    function probeComposerForInstall(): array
+    {
+        $composerHome = BASE_PATH.'/storage/composer';
+        if (! is_dir($composerHome)) {
+            @mkdir($composerHome, 0755, true);
+        }
+        // 무가드 putenv 는 disable_functions 환경에서 Error 다 (13차 환경#2) — 단일 지점 경유.
+        installerPutEnv('COMPOSER_HOME', $composerHome);
+        installerPutEnv('HOME', $composerHome);
+        applyInstallerComposerEnvVars();
+
+        // exec 가 막힌 환경에서는 composer 가용성 자체를 확인할 수 없다 — "미설치" 와 같은
+        // 분기로 보낸다 (auto 는 번들 폴백, composer 명시는 오류). 직접 호출하면 fatal 이다.
+        if (! ExecutionEnvironment::hasFunction('exec')) {
+            return ['ok' => false, 'output' => [lang('error_subprocess_unavailable')]];
+        }
+
+        $output = [];
+        $returnCode = 0;
+        exec(getComposerCommand().' --version 2>&1', $output, $returnCode);
+
+        return ['ok' => $returnCode === 0, 'output' => $output];
+    }
+}
+
 if (! function_exists('checkComposerSSE')) {
     /**
      * Composer 가용성 확인.
@@ -394,36 +428,17 @@ if (! function_exists('checkComposerSSE')) {
 
         sendSSEEvent('log', ['message' => lang('log_task_in_progress', ['task' => $taskName])]);
 
-        $composerHome = BASE_PATH.'/storage/composer';
-        if (! is_dir($composerHome)) {
-            @mkdir($composerHome, 0755, true);
-        }
-        // 무가드 putenv 는 disable_functions 환경에서 Error 다 (13차 환경#2) — 단일 지점 경유.
-        installerPutEnv('COMPOSER_HOME', $composerHome);
-        installerPutEnv('HOME', $composerHome);
-        applyInstallerComposerEnvVars();
-
-        $output = [];
-        $returnCode = 0;
-        $composerCmd = getComposerCommand();
-
-        // exec 가 막힌 환경에서는 composer 가용성 자체를 확인할 수 없다 — "미설치" 와 같은
-        // 분기로 보낸다 (auto 는 번들 폴백, composer 명시는 오류). 직접 호출하면 fatal 이다.
-        if (! ExecutionEnvironment::hasFunction('exec')) {
-            $returnCode = 1;
-            $output = [lang('error_subprocess_unavailable')];
-        } else {
-            exec($composerCmd.' --version 2>&1', $output, $returnCode);
-        }
+        $probe = probeComposerForInstall();
+        $output = $probe['output'];
 
         // 이 판정을 기록해 둔다 — 다음 태스크(composer_install)의 auto 분기가 같은 답을 써야
         // 한다. 각자 판정하면 "check 는 초록인데 install 은 composer 를 스폰" 같은 어긋남이
         // 생기고, 그 태스크는 재시도해도 같은 자리에서 막힌다.
         $composerState = getInstallationState();
-        $composerState['composer_available'] = ($returnCode === 0);
+        $composerState['composer_available'] = $probe['ok'];
         saveInstallationState($composerState);
 
-        if ($returnCode !== 0) {
+        if (! $probe['ok']) {
             $errorMessage = implode("\n", $output);
 
             // auto 모드: composer 미설치 시 번들 폴백 가능하면 비치명적 처리.
@@ -652,6 +667,9 @@ if (! function_exists('installComposerDependenciesSSE')) {
             $composerBinary = $state['config']['composer_binary'] ?? '';
             $phpBinary = $state['config']['php_binary'] ?? 'php';
 
+            // 판정은 canExecuteComposerForInstall() 이 소유한다 — proc_open 가용성에 더해 composer_check 가
+            // 기록한 composer_available(probeComposerForInstall 결과)을 읽고, 기록이 없으면 직접
+            // `composer --version` 을 실행해 본다. 두 단계가 같은 답을 쓰게 하는 지점이라 여기서 다시 재지 않는다.
             if (! canExecuteComposerForInstall($composerBinary, $phpBinary)) {
                 // composer 사용 불가 → 번들을 **쓸 수 있을 때만** 폴백 (13차 환경#4)
                 if (installerVendorBundleUsable()) {
@@ -1106,7 +1124,8 @@ if (! function_exists('installerDependentsOfSkippedTarget')) {
     /**
      * 건너뛴 확장에 의존하는 다른 선택 확장을 갈라 돌려준다.
      *
-     * 설치 순서는 모듈 전량 → 플러그인 전량이므로, 의존 대상이 뒤에 오는 조합에서는
+     * 의존 대상이 뒤에 오는 조합에서는(작업 목록은 해석기 install_order 로 의존 대상을 먼저 두지만,
+     * 이 판정은 그 순서에 기대지 않는다)
      * 의존하는 쪽이 **이미 설치된 뒤**에 그 대상이 실패한다. 그 경우는 되돌릴 수 없으므로
      * 운영자에게 알리고(already), 아직 실행되지 않은 것은 함께 지나간다(pending).
      *
@@ -1190,25 +1209,16 @@ if (! function_exists('dependencyPrecheckSSE')) {
         sendSSEEvent('task_start', ['task' => 'dependency_precheck', 'name' => $taskName]);
         sendSSEEvent('log', ['message' => lang('log_task_in_progress', ['task' => $taskName])]);
 
-        $selected = getSelectedExtensions();
-        $selectedIds = array_merge(
-            $selected['admin_templates'] ?? [],
-            $selected['user_templates'] ?? [],
-            $selected['modules'] ?? [],
-            $selected['plugins'] ?? []
-        );
-        $selectedIdSet = array_flip($selectedIds);
+        // 화면·확장 저장 API·터미널 설치와 같은 공유 해석기로 다시 검사한다 — 선택 집합의 폐쇄뿐 아니라
+        // 존재·버전 제약·단일 선택까지 본다(종전에는 의존 식별자가 선택에 있는지만 확인했다).
+        require_once __DIR__.'/extension-selection.php';
+        $resolution = installer_resolve_extension_selection(installer_scan_extensions(), getSelectedExtensions());
 
-        $missing = [];
-
-        // 그래프는 installerSelectedDependencyMap() 이 소유한다 — 건너뛰기 파급 판정과 같은
-        // 그래프를 봐야 「설치 전 한 번」의 판정이 그 뒤 조작으로 무효가 되는 것을 잡는다.
-        foreach (installerSelectedDependencyMap() as $identifier => $deps) {
-            foreach ($deps as $depId) {
-                if (! isset($selectedIdSet[$depId])) {
-                    $missing[] = "{$identifier} → {$depId}";
-                }
-            }
+        // 건너뛰기 파급 판정(installerDependentsOfSkippedTarget)은 installerSelectedDependencyMap() 그래프를 쓴다 —
+        // 둘 다 같은 번들 매니페스트를 읽으므로, 이 사전 검사가 통과한 선택에서는 두 판정의 의존 집합이 같다.
+        $missing = installer_extension_error_messages($resolution['errors']);
+        foreach ($resolution['auto_added'] as $added) {
+            $missing[] = "{$added['required_by']} → {$added['identifier']}";
         }
 
         if (! empty($missing)) {
@@ -1223,6 +1233,9 @@ if (! function_exists('dependencyPrecheckSSE')) {
                 'message' => $errorMessage,
                 'message_key' => 'dependency_precheck_failed',
                 'detail' => implode("\n", $missing),
+                // 사전 검증은 아무것도 바꾸지 않는다(DB 작업 전) — 되돌릴 것이 없으므로 롤백을 시도해
+                // 「롤백 실패 — DB 수동 정리」 안내가 붙지 않게 한다(#153 D7, 순환 실측에서 확인).
+                'rollback_done' => true,
             ];
         }
 
@@ -2261,12 +2274,14 @@ if (! function_exists('createSettingsJsonSSE')) {
             // SSE 워커(install-worker.php)는 session.php 를 require 하지 않으므로 getCurrentLanguage()
             // 가 언제나 'ko' 로 떨어진다. 폴링만 세션을 열어, 종전에는 같은 설치가 진행 모드에 따라
             // 다른 언어로 끝났다(오류 없이 값만 틀린다 — §7 R2 와 같은 성질).
+            // 판정은 installer_site_language() 가 소유한다 — 세션이 없는 SSE 워커·터미널 설치도 같은 값을
+            // 내도록 state 에서 정한다(.env APP_LOCALE 과 동일: config.site_language → state.g7_locale → ko).
             //
             // 관리자 **계정** 언어와는 의도적으로 별개 축이다 (22차 #22-6 주석 정정) — 그쪽은
             // Step 3 의 admin_language 선택(config)을 우선하고(INSTALLER_ADMIN_LANGUAGE 주입부),
-            // 사이트 기본 언어는 인스톨러 UI 언어(state.g7_locale)를 따른다. 운영자가 관리자
-            // 언어를 UI 와 다르게 골랐다면 둘이 갈리는 것이 맞다.
-            $defaults['general']['language'] = $state['g7_locale'] ?? 'ko';
+            // 사이트 기본 언어는 위 판정을 따른다. 운영자가 관리자 언어를 UI 와 다르게 골랐다면
+            // 둘이 갈리는 것이 맞다.
+            $defaults['general']['language'] = installer_site_language($state);
 
             // 실행 모드 (Step 3 선택값, 기본 auto) — 저장되는 것은 "선택" 이지 감지 결과가 아니다.
             // auto 면 운영 중 매 판정마다 감지하므로 호스팅 환경 변화를 따라간다 (A-0 ①).
@@ -2466,6 +2481,9 @@ if (! function_exists('setInstallationCompleteSSE')) {
             $state['step_status']['5'] = 'completed';
             $state['installation_status'] = 'completed';
             $state['installation_completed_at'] = date('Y-m-d\TH:i:s\Z');
+            // 마무리 작업(설정·라우트 캐시 굽기·정적 게시)이 아직 남았다 — 작업 루프 끝에서 true 로 바꾼다.
+            // 폴링 화면은 이 값이 true 가 될 때까지 완료 처리(finalize-env → 상태 파일 삭제)를 미룬다.
+            $state['tasks_finished'] = false;
             // 완료 시점 이중 방어 (이슈 #465) — Phase 1/2 가 정상 동작하면 no-op.
             // 레거시 state 로 시작된 설치가 이 코드로 완료되는 경우를 커버한다.
             $state = redactInstallationStateSecrets($state);
@@ -2505,6 +2523,27 @@ if (! function_exists('setInstallationCompleteSSE')) {
 // 메인 실행 로직
 // ============================================================================
 
+if (! function_exists('installerExtensionInstallOrder')) {
+    /**
+     * 선택 확장의 설치 순서(`카테고리:식별자` 목록)를 정한다.
+     *
+     * 종류를 넘는 의존까지 반영한 설치 순서(해석기 install_order)로 확장 작업을 만든다 — 해석에 실패하면
+     * 종전 종류 순서로 두고 dependency_precheck 가 사유와 함께 설치를 멈춘다.
+     *
+     * @param  array<string, mixed>  $selectedExtensions  카테고리별 선택 식별자 (getSelectedExtensions())
+     * @return array<int, string> `카테고리:식별자` 목록
+     */
+    function installerExtensionInstallOrder(array $selectedExtensions): array
+    {
+        require_once __DIR__.'/extension-selection.php';
+        $ordered = installer_resolve_extension_selection(installer_scan_extensions(), $selectedExtensions);
+
+        return empty($ordered['errors']) && empty($ordered['auto_added'])
+            ? $ordered['install_order']
+            : installer_category_install_order($selectedExtensions);
+    }
+}
+
 if (! function_exists('buildInstallationTaskList')) {
     /**
      * 설치 태스크 목록을 순서대로 만든다 (진행 모드 무관 — 한 목록이 세 모드의 SSoT).
@@ -2537,44 +2576,16 @@ if (! function_exists('buildInstallationTaskList')) {
         $tasks[] = ['id' => 'db_migrate', 'function' => 'runDatabaseMigrationSSE'];
         $tasks[] = ['id' => 'db_seed', 'function' => 'runDatabaseSeedingSSE'];
 
-        // 5. 관리자 템플릿 (필수 — 건너뛰기 불가)
-        foreach ($selectedExtensions['admin_templates'] ?? [] as $templateId) {
-            $tasks[] = ['id' => 'template_install', 'target' => $templateId, 'function' => 'installAdminTemplateSSE', 'args' => [$templateId]];
-            $tasks[] = ['id' => 'template_activate', 'target' => $templateId, 'function' => 'activateAdminTemplateSSE', 'args' => [$templateId]];
+        // 5. 확장 — 관리자 템플릿(필수 — 건너뛰기 불가)·모듈·플러그인·사용자 템플릿은 의존 순서, 번들 언어팩(best-effort)은 그 뒤.
+        //    언어팩은 확장 install·activate 와 DB 마이그레이션·시드가 끝난 뒤여야 target_identifier 매칭 + 활성화가 된다.
+        //    세 진행 모드(SSE·폴링·단계별)와 터미널 설치가 이 목록 하나를 쓰므로 순서도 여기서 정한다 — 모드마다
+        //    따로 정하면 단계별 실행의 「다음 태스크」와 화면의 작업 목록이 SSE 와 다른 순서를 말한다.
+        $installOrder = installerExtensionInstallOrder($selectedExtensions);
+        foreach (installer_extension_install_tasks($installOrder) as $extensionTask) {
+            $tasks[] = $extensionTask;
         }
 
-        // 6. 모듈
-        foreach ($selectedExtensions['modules'] ?? [] as $moduleId) {
-            $tasks[] = ['id' => 'module_install', 'target' => $moduleId, 'function' => 'installModuleSSE', 'args' => [$moduleId]];
-            $tasks[] = ['id' => 'module_activate', 'target' => $moduleId, 'function' => 'activateModuleSSE', 'args' => [$moduleId]];
-        }
-
-        // 7. 플러그인
-        foreach ($selectedExtensions['plugins'] ?? [] as $pluginId) {
-            $tasks[] = ['id' => 'plugin_install', 'target' => $pluginId, 'function' => 'installPluginSSE', 'args' => [$pluginId]];
-            $tasks[] = ['id' => 'plugin_activate', 'target' => $pluginId, 'function' => 'activatePluginSSE', 'args' => [$pluginId]];
-        }
-
-        // 8. 사용자 템플릿
-        foreach ($selectedExtensions['user_templates'] ?? [] as $templateId) {
-            $tasks[] = ['id' => 'user_template_install', 'target' => $templateId, 'function' => 'installUserTemplateSSE', 'args' => [$templateId]];
-            $tasks[] = ['id' => 'user_template_activate', 'target' => $templateId, 'function' => 'activateUserTemplateSSE', 'args' => [$templateId]];
-        }
-
-        // 9. 번들 언어팩 (best-effort — 1건 실패는 전체 중단하지 않음)
-        //    코어/모듈/플러그인/템플릿 install·activate 가 모두 끝난 뒤 실행해야
-        //    target_identifier 매칭 + DB 마이그레이션·시드가 완료된 상태에서 활성화 가능.
-        foreach ($selectedExtensions['language_packs'] ?? [] as $packId) {
-            $tasks[] = [
-                'id' => 'language_pack_install',
-                'target' => $packId,
-                'function' => 'installLanguagePackSSE',
-                'args' => [$packId],
-                'best_effort' => true,
-            ];
-        }
-
-        // 10. 마무리
+        // 6. 마무리
         $tasks[] = ['id' => 'create_settings_json', 'function' => 'createSettingsJsonSSE'];
         $tasks[] = ['id' => 'cache_clear', 'function' => 'clearCacheSSE'];
         $tasks[] = ['id' => 'complete_flag', 'function' => 'setInstallationCompleteSSE'];
@@ -2914,8 +2925,11 @@ if (! function_exists('finalizeInstallationRun')) {
         if (($state['installation_status'] ?? null) !== 'completed') {
             $state['installation_status'] = 'completed';
             $state['installation_completed_at'] = $state['installation_completed_at'] ?? date('Y-m-d\TH:i:s\Z');
-            saveInstallationState($state);
         }
+        // 마무리 작업까지 끝났음을 기록 — 폴링 화면이 이 값을 보고 완료 처리한다(SSE 는 아래 completed 이벤트,
+        // 단계별 실행은 outcome=completed 응답). complete_flag 가 false 로 둔 값을 여기서 true 로 바꾼다.
+        $state['tasks_finished'] = true;
+        saveInstallationState($state);
 
         sendSSEEvent('completed', [
             'message' => lang('log_installation_completed'),
@@ -3019,12 +3033,20 @@ if (! function_exists('installerResetTaskTimeLimit')) {
      *
      * 막힌 호스팅에서는 부르지 않는다 — `@` 는 차단 함수의 Error 를 삼키지 않는다 (13차 환경#1).
      *
-     * @return bool set_time_limit 성공 여부 (disable_functions 등으로 막히면 false)
+     * 제한이 없는 실행(터미널 설치는 진입 때 set_time_limit(0))은 그대로 둔다 — 같은 작업 루프를 쓰는
+     * 터미널 설치에 작업당 제한을 새로 걸면 종전에 끝까지 돌던 긴 작업이 끊긴다.
+     *
+     * @return bool 제한을 다시 걸었거나 제한 없음을 유지했으면 true (disable_functions 등으로 막히면 false)
      */
     function installerResetTaskTimeLimit(): bool
     {
         if (! installerHasFunction('set_time_limit')) {
             return false;
+        }
+
+        // ini_get 도 하드닝 프로필이 막는 함수다 — 막혔으면 제한 여부를 알 수 없으므로 웹 워커처럼 다시 건다.
+        if (installerHasFunction('ini_get') && (int) ini_get('max_execution_time') === 0) {
+            return true;
         }
 
         return @set_time_limit((int) INSTALLER_TASK_TIME_LIMIT);

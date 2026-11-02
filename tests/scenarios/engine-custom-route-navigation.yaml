@@ -1,4 +1,4 @@
-feature: 엔진 라우터의 custom 주소 전체 페이지 이동 (#792 W6, engine-v1.84.0)
+feature: 엔진 라우터의 custom 주소 전체 페이지 이동 (#792 W6, engine-v1.85.0)
 
 description: |
   서버 셸이 내리는 G7Config.customRoutes(routes/custom.php 의 GET 주소 패턴, user/admin 범위)와 맞는 주소로

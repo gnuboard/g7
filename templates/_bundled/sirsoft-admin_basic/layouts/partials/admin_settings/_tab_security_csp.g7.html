@@ -1,0 +1,38 @@
+<!-- 보안 탭의 **콘텐츠 보안 정책(CSP)** 카드(#158) — 켜면 코어가 사이트 HTML 응답에 스크립트 계열 정책
+  (script-src·worker-src·object-src·base-uri)을 붙인다. 「점검만」은 차단하지 않고 위반만 서버 로그(csp.log)에 남기고,
+  「강제」는 위반을 막는다. 허용 호스트는 활성 확장이 선언한 것을 서버가 자동으로 합치고, 운영자는 그 밖의 호스트만
+  더한다. 미리보기·자동 호스트는 **저장된 값** 기준이라(서버가 조립) 입력을 바꾼 뒤에는 저장해야 갱신된다.
+  .env 의 G7_CSP_MODE 가 있으면 그 값이 우선하므로 모드 선택을 잠그고 이유를 보여 준다(강제 모드로 잠긴 운영자의 탈출구).
+  다른 보안 카드와 같은 이유(반응형 프리셋 혼용 린트가 문서 단위)로 조각을 나눴다 — 이 조각은 프리셋을 쓰지 않는다. -->
+<partial description="환경설정 보안 탭 — 콘텐츠 보안 정책(CSP) 카드">
+  <div data-ref="card_csp" class="card-stack-item">
+    <h3 class="card-title">$t:admin.settings.security.csp.title</h3>
+    <div class="card-description">$t:admin.settings.security.csp.desc</div>
+    <div class="row-stack">
+      <div data-ref="field_csp_mode" class="">
+        <label class="form-label">$t:admin.settings.security.csp.mode</label>
+        <select name="security.csp_mode" disabled="{{_computed.isReadOnly || !!_local.form?._meta?.csp?.override}}" class="w-full sm:w-80" error="{{_local.errors?.['security.csp_mode']?.[0] ?? ''}}" options="{{[{value: 'off', label: $t('admin.settings.security.csp.mode_off')}, {value: 'report_only', label: $t('admin.settings.security.csp.mode_report_only')}, {value: 'enforce', label: $t('admin.settings.security.csp.mode_enforce')}]}}"/>
+        <p class="text-hint mt-1">$t:admin.settings.security.csp.mode_desc</p>
+        <!-- 강제는 위반 스크립트를 막는다 — 점검만으로 위반이 없는지 먼저 보게 한다. 잠김 상태에서는 잠금 문구가 대신한다. -->
+        <p data-ref="csp_enforce_warning" data-if="{{(_local.form?.security?.csp_mode ?? 'off') === 'enforce' &amp;&amp; !_local.form?._meta?.csp?.override}}" class="text-hint mt-1 text-yellow-700 dark:text-yellow-400">$t:admin.settings.security.csp.enforce_warning</p>
+        <p data-ref="csp_override_notice" data-if="{{!!_local.form?._meta?.csp?.override}}" class="text-hint mt-1 text-yellow-700 dark:text-yellow-400">$t:admin.settings.security.csp.override_notice|mode={{_local.form?._meta?.csp?.override ?? ''}}</p>
+      </div>
+      <div data-ref="field_csp_extra_script_hosts" class="">
+        <label class="form-label">$t:admin.settings.security.csp.extra_hosts</label>
+        <tag-input data-type="composite" data-ref="csp_extra_script_hosts" name="security.csp_extra_script_hosts" :creatable="true" placeholder="$t:admin.settings.security.csp.extra_hosts_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
+        <span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('security.csp_extra_script_hosts'))}}" class="form-error">{{Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('security.csp_extra_script_hosts'))?.[1]?.[0] ?? ''}}</span>
+        <p class="form-hint">$t:admin.settings.security.csp.extra_hosts_hint</p>
+      </div>
+      <div data-ref="field_csp_auto_hosts" class="">
+        <label class="form-label">$t:admin.settings.security.csp.auto_hosts</label>
+        <p data-ref="csp_auto_hosts" data-if="{{(_local.form?._meta?.csp?.auto_hosts ?? []).length > 0}}" class="text-sm font-mono text-gray-700 dark:text-gray-300 break-all">{{(_local.form?._meta?.csp?.auto_hosts ?? []).join(' · ')}}</p>
+        <p data-if="{{(_local.form?._meta?.csp?.auto_hosts ?? []).length === 0}}" class="text-hint">$t:admin.settings.security.csp.auto_hosts_empty</p>
+      </div>
+      <div data-ref="field_csp_preview" class="">
+        <label class="form-label">$t:admin.settings.security.csp.preview</label>
+        <pre data-ref="csp_preview" class="text-xs font-mono whitespace-pre-wrap break-all p-3 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">{{_local.form?._meta?.csp?.preview ?? ''}}</pre>
+        <p class="text-hint mt-1">$t:admin.settings.security.csp.preview_hint</p>
+      </div>
+    </div>
+  </div>
+</partial>

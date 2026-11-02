@@ -18,6 +18,15 @@ _`getSettingsSchema()` 선언이 없습니다._
 정의하는 상수(첨부 저장 디스크, 게시판별 동적 권한 정의 템플릿)이며, 이 값은 `.env` 로만
 바꿉니다.
 
+### 터미널에서 설정 지정 (`settings:set --module=sirsoft-board`, 1.2.2 · 코어 7.1.4)
+
+코어 `php artisan settings:set --module=sirsoft-board {범주.항목} {값}` 은 이 모듈 설정 서비스의 선택 메서드
+`BoardSettingsService::settingsSaveRequestClass()` 가 돌려주는 `StoreBoardSettingsRequest` 로 관리자 화면 저장과
+같은 규칙을 검증한 뒤 `saveSettings()` 로 저장하고, 화면 저장과 같은 코어 훅 `core.module_settings.after_save`
+(활동 로그)를 발화합니다. 키는 `config/settings/defaults.json` 에 선언된 항목만 받습니다 — 신고 관리 권한(역할
+동기화)·반응 유형 목록(DB 행)처럼 설정 파일에 두지 않는 항목은 「관리자 화면 전용」으로 거부됩니다.
+`settingsSaveRequestClass()` 를 지우거나 다른 FormRequest 로 바꾸면 터미널 경로의 검증도 함께 바뀝니다.
+
 ### 개인정보 보유기간 (`privacy_retention`, 이슈 #636)
 
 모듈 환경설정의 「개인정보 보유기간」 탭(`?tab=privacy_retention`, 저장 `_tab=privacy_retention`)이 저장하는
@@ -166,16 +175,21 @@ board 의 라우트가 20개 안팎으로 한 파일에서 관리 가능한 규�
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
-| 확장 | 유형 | 요구 버전 |
-|---|---|---|
-| `sirsoft-basic` | 템플릿 | `>=1.2.1` |
+없음.
+
+**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
+
+| 확장 | 유형 | 버전 제약 | 번들 |
+|---|---|---|---|
+| `sirsoft-ecommerce` | 모듈 | `*` | ✅ |
 
 **이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
 
-| 확장 | 유형 |
-|---|---|
-| `sirsoft-ecommerce` | 모듈 |
-| `sirsoft-message_bizppurio` | 플러그인 |
+| 확장 | 유형 | 요구 버전 |
+|---|---|---|
+| `sirsoft-ecommerce` | 모듈 | `*` |
+| `sirsoft-message_bizppurio` | 플러그인 | `*` |
+| `sirsoft-basic` | 템플릿 | `>=1.2.1` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

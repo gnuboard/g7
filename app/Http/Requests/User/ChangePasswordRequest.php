@@ -30,13 +30,29 @@ class ChangePasswordRequest extends FormRequest
     }
 
     /**
+     * 검증 전에 입력을 고릅니다.
+     *
+     * 비밀번호 없는 회원을 모르는 옛 화면(7.1.x)은 현재 비밀번호 칸이 필수라 무엇이든 넣어 보낸다. 대조할 비밀번호가 없으니
+     * 그 값은 버려 새 화면이 보내지 않은 것과 같은 상태로 만든다 — 본인 확인은 이 경로의 본인인증 정책(428)이 맡는다.
+     *
+     * @return void 입력을 제자리에서 고친다
+     */
+    protected function prepareForValidation(): void
+    {
+        if (! $this->userHasPassword()) {
+            $this->getInputSource()->remove('current_password');
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        // 비밀번호가 없는 회원(외부 인증 전용)은 확인할 현재 비밀번호가 없다 — 처음 정하는 것이므로 보내면 거절한다.
+        // 비밀번호가 없는 회원(외부 인증 전용)은 확인할 현재 비밀번호가 없다 — 처음 정하는 것이다. 보낸 값은
+        // prepareForValidation 이 버리므로 이 규칙은 값이 남는 일이 없게 두는 방어선이다.
         $currentPasswordRules = $this->userHasPassword()
             ? ['required', 'string', 'current_password:sanctum']
             : ['prohibited'];

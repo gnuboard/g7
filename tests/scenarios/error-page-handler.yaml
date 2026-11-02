@@ -1,0 +1,29 @@
+feature: 오류 화면 렌더 — 데이터 소스 로드·init 옵션·if 조건
+
+description: |
+  ErrorPageHandler 는 404·403·500 오류 레이아웃을 불러 데이터 소스를 가져오고 initGlobal·initLocal 을 처리한 뒤 그린다.
+  일반 화면과 같이 데이터 소스의 `if` 를 평가해 거짓인 것은 부르지 않는다(#822 — 꺼진 모듈의 공통 데이터 소스를
+  오류 화면에서만 호출하던 회귀). 활성 확장 목록이 없는 옛 코어 상태에서는 가드가 참이라 종전처럼 부른다.
+
+axes:
+  case:
+    - init_global
+    - init_local
+    - no_init_options
+    - fetch_failure
+    - global_state_reference
+    - data_source_if
+
+effects:
+  - init_global_maps_fetched_data
+  - init_local_maps_fetched_data
+  - layout_renders_without_init_options
+  - fetch_failure_does_not_block_render
+  - global_state_copy_receives_init_values
+  - false_if_data_source_not_fetched
+  - missing_active_list_keeps_guarded_source
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ErrorPageHandler.test.ts
+
+# E2E axis 없음: 꺼진 모듈 조합의 404 화면 요청은 Chrome MCP 매트릭스(#822 계획서 §11 T6)에서 잰다.

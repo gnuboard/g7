@@ -24,7 +24,7 @@ class BinaryPathPolicyTest extends TestCase
     use ScansPhpSourceFunctions;
 
     /**
-     * 의존성 없는 공용 바이너리 경로 정책 파일만 한 번 로드한다. 다른 스텁이 필요해지면 여기서 먼저 깨진다.
+     * 클래스 공통 준비 — 검사 대상 파일을 한 번 로드한다.
      *
      * @return void 반환값 없음
      */
@@ -193,7 +193,7 @@ class BinaryPathPolicyTest extends TestCase
      *
      * @scenario vector=validatePhpPath, vector=validateComposerPath, vector=getPhpBinary, vector=handleStep3Post
      *
-     * @effects binary_path_policy_is_loaded_by_validation_and_execution_entrypoints
+     * @effects binary_path_policy_file_is_shared_by_all_entrypoints, binary_path_policy_is_loaded_by_validation_and_execution_entrypoints
      *
      * @return void 반환값 없음
      */
@@ -205,7 +205,9 @@ class BinaryPathPolicyTest extends TestCase
         $entrypoints = [
             'api/check-configuration.php' => $projectRoot.'/public/install/api/check-configuration.php',
             'includes/task-runner.php' => $projectRoot.'/public/install/includes/task-runner.php',
-            'includes/request-handler.php' => $projectRoot.'/public/install/includes/request-handler.php',
+            // Step 3 저장·터미널 설치 공유 검증 / 요구사항·바이너리 검사 공유 함수
+            'includes/config-validation.php' => $projectRoot.'/public/install/includes/config-validation.php',
+            'includes/requirements.php' => $projectRoot.'/public/install/includes/requirements.php',
         ];
 
         foreach ($entrypoints as $label => $path) {

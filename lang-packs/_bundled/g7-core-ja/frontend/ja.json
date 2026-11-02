@@ -8,6 +8,9 @@
     },
     "navigation": {
       "leave_confirm": "保存されていない変更があります。このページを離れると入力した内容は失われます。移動しますか?"
+    },
+    "compat": {
+      "$partial": "partial/compat.json"
     }
   },
   "layout_editor": {

@@ -24,6 +24,9 @@ return [
     'backup_path_required' => 'バックアップパスを入力してください。',
     'restore_success' => '設定が正常に復元されました。',
     'restore_failed' => '設定の復元に失敗しました。',
+    'errors' => [
+        'zip_extension_required' => '設定のバックアップ・復元には、サーバーの PHP :extension 拡張が必要です。サーバー管理者にインストールを依頼してください。',
+    ],
     'restore_error' => '設定の復元中にエラーが発生しました。',
     'save_individual_failed' => '設定の保存に失敗しました: :error',
     'invalid_password' => 'パスワードが一致しません。',
@@ -259,7 +262,7 @@ return [
         'log_version_check_error' => 'コアアップデート: 最新バージョン確認時にエラーが発生',
         'unknown_error' => '不明なエラーが発生しました。',
         'system_requirements_failed' => 'システム要件が満たされていません:',
-        'no_extract_method_available' => 'アーカイブを解凍できません。PHP zip 拡張 (ZipArchive) が必要です。ホスティング事業者に PHP zip 拡張 (ZipArchive) の有効化をご依頼ください。',
+        'no_extract_method_available' => 'アーカイブを解凍できません。PHP zip 拡張 (ZipArchive) が必要です。サーバーに zip 拡張をインストールしてから再度お試しください。',
         'manual_update_guide' => '手動アップデート: GitHub からリリース ZIP をダウンロードして解凍後、php artisan core:update --source=/解凍/パス コマンドを実行してください。',
         'archive_url_not_found' => ':type アーカイブ URL が見つかりません。次の方法を試します。',
         'extracting_with' => ':method 方式で解凍中...',
@@ -310,7 +313,6 @@ return [
         'storage_link_backup_accumulated' => '破損した公開ストレージのバックアップが :count 件たまっています (:path)。内容を確認してから整理してください — データ損失を避けるためコアは自動削除しません。`php artisan storage:prune-leftovers` が保存期間を過ぎたものだけを、最新 1 件を残して回収します。',
         'storage_link_backup_inside_docroot' => '公開ファイルバックアップをドキュメントルート外に移動できませんでした(:path) — そのコピーは現在ウェブで開かれています。内容を確認した後に移動するか削除してください。',
         'storage_link_backup_needs_review' => '公開ファイルの完全な複製が :path に残りました — ドキュメントルートがプロジェクトルートである配置（インストール案内の「ドキュメントルートを変更できないホスティング」）では、ルート保護ファイルが正常な間だけ隠されます。内容を確認したうえで移動または削除してください。',
-        // `core:update` コマンドのコンソール出力
         'console' => [
             'source_zip_conflict' => '--source と --zip は同時に指定できません。どちらか一方を選択してください。',
             'local_source_conflict' => '--local は --source / --zip と同時に使用できません。',
@@ -324,6 +326,8 @@ return [
             'target_version_pending' => 'アップデートバージョン: (ZIP 展開後に判別)',
             'target_version' => 'アップデートバージョン: :version',
             'confirm_update' => 'コアをアップデートしますか?',
+            'php_extension_core_missing' => '新しいコアに必要な PHP 拡張 :extensions がサーバーにないため、アップデートを中止しました。拡張をインストールしてから再実行してください。(サイトは変更されていません)',
+            'php_extension_extension_warning' => '同時に更新される拡張 :extension に必要な PHP 拡張 :extensions がサーバーにありません — アップデートは続行しますが、関連機能が動作しない可能性があります',
             'pending_invalid' => '_pending ディレクトリの問題:',
             'pending_path' => 'パス: :path',
             'pending_owner' => '所有者: :owner、グループ: :group、パーミッション: :permissions',
@@ -457,6 +461,7 @@ return [
         'prune_extra_only_kept' => '配布物にないファイルのみ相違、保存: :label (配布物にないファイル :count 件)',
         'prune_extra_only_hint' => '配布物にないファイルのみ異なるフォルダは、以前のバージョンから残ったファイルの可能性があります(通常の更新は新バージョンで削除されたファイルを削除しません)。確認後に削除する場合は --include-modified を併せて指定してください。',
         'prune_protected_dependency' => '依存先のため保持: :label (:required_by)',
+        'prune_protected_integration' => '有効な拡張の連携先のため保持: :label (:integrated_by)',
         'prune_no_release_for_modified' => '配布物がないため変更の有無を確認できません — 変更の有無にかかわらず削除するには --include-modified を指定してください。',
         'prune_summary' => ':count 個を削除しました。',
         'unknown_action' => '不明な操作です: :action (list|place|prune)',
@@ -494,7 +499,6 @@ return [
     'trusted_proxy_probe_resolves' => 'この値を使用すると、訪問者のIPはプロキシの背後にある実際のアドレスとして解釈されます。',
     'trusted_proxy_probe_unchanged' => 'この値でも訪問者のIPはそのままです — ホワイトリストにフロントエンドプロキシのアドレスが不足している可能性があります。',
     'php_probe_ok_web_version_differs' => 'PHP :version を確認します(最小要件 :min_version)。ただし、サイトはPHP :web_version で動作しており、サーバーコマンドは異なるバージョンで実行されます。',
-    // `settings:*` コマンド出力
     'console' => [
         'install' => [
             'defaults_not_found' => 'デフォルト設定ファイルが見つかりません: :path',
@@ -513,6 +517,7 @@ return [
             'summary_installed' => 'インストール済み: :count 個',
             'summary_merged' => 'マージ済み: :count 個',
             'summary_skipped' => 'スキップ: :count 個',
+            'cache_refresh_failed' => '設定はインストールしましたが、キャッシュを再作成できませんでした(管理画面で保存するか php artisan config:cache で再作成してください): :error',
         ],
         'migrate_to_json' => [
             'start' => '設定のマイグレーションを開始します...',
@@ -526,6 +531,40 @@ return [
             'done' => 'マイグレーションが完了しました!',
             'location' => '設定ファイルの場所: :path',
         ],
+        'cli' => [
+            'scope_conflict' => '--plugin と --module は同時に使えません。',
+            'unknown_key' => '不明な設定キーです: :key',
+            'key_format' => '設定キーは「カテゴリ.項目」の形式です (例: mail.host): :key',
+            'computed_key' => ':key は他の値から計算される値のため指定できません。',
+            'env_locked' => ':key は .env が値を決めているため、ここでは変更できません。.env の :env を修正してください。',
+            'sensitive_positional' => ':key は機密値のためコマンドライン引数では受け付けません — 環境変数 G7_SETTING_VALUE、--value-file、非表示入力のいずれかを使ってください。',
+            'value_missing' => '値を指定してください — 位置引数、--value-file、環境変数 G7_SETTING_VALUE のいずれか。',
+            'value_file_unreadable' => '値ファイルを読み込めません: :path',
+            'invalid_json' => '--json-value の値が正しい JSON ではありません: :error',
+            'ask_secret' => ':key の値 (入力した文字は表示されません)',
+            'array_replaced' => '配列の値は丸ごと置き換わります (既存の項目とは統合しません)。',
+            'validation_failed' => '検証を通過しなかったため保存しませんでした:',
+            'save_failed' => '保存できませんでした: :reason',
+            'saved' => '保存しました: :key',
+            'changed' => '   :before → :after',
+            'cache_rebuilt' => '設定キャッシュを再作成しました。',
+            'plugin_not_found' => 'インストールされているプラグインではありません: :id',
+            'plugin_unknown_key' => ':id プラグインの設定にないキーです: :key',
+            'module_unsupported' => 'このモジュールはターミナルからの設定指定に対応していません: :id',
+            'admin_screen_only' => ':key は管理画面でのみ変更できます。',
+            'secrets_shown' => '機密値をそのまま表示します — 画面の記録・共有に注意してください。',
+            'computed_marker' => '(計算値)',
+            'env_locked_marker' => '(.env で固定)',
+            'no_settings' => '表示する設定がありません。',
+        ],
+    ],
+    // 환경설정 > 고급 > GeoIP [갱신] 결과
+    'geoip' => [
+        'update_success' => 'GeoIP データベースを更新しました。',
+        'license_key_missing' => 'MaxMind ライセンスキーが設定されていません。',
+        'license_key_invalid' => 'MaxMind ライセンスキーが正しくありません。',
+        'connection_failed' => 'MaxMind サーバーに接続できませんでした。',
+        'update_failed' => 'GeoIP データベースを更新できませんでした。',
     ],
 
     // custom 予約領域(#792) — custom:check・custom:vendor-* コマンドとコアアップデートの出力

@@ -38,6 +38,11 @@ class KcpSoapService
 
     private string $binDir;
 
+    /**
+     * 플러그인 설정으로 테스트·운영 site_cd 와 바이너리 경로를 정합니다.
+     *
+     * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
+     */
     public function __construct(PluginSettingsService $pluginSettingsService)
     {
         $settings = $pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
@@ -46,7 +51,7 @@ class KcpSoapService
         $liveSuffix = $settings['live_site_cd'] ?? '';
         $liveSiteCd = str_starts_with($liveSuffix, self::LIVE_SITE_CD_PREFIX)
             ? $liveSuffix
-            : self::LIVE_SITE_CD_PREFIX . $liveSuffix;
+            : self::LIVE_SITE_CD_PREFIX.$liveSuffix;
 
         $this->siteCd = $this->isTest
             ? ($settings['test_site_cd'] ?? 'T0000')
@@ -62,19 +67,19 @@ class KcpSoapService
         $easyPayTestSiteCd = $settings['easy_pay_test_site_cd'] ?? 'S6729';
         $this->easyPaySiteCd = $this->isTest ? $easyPayTestSiteCd : $liveSiteCd;
 
-        $this->binDir = dirname(__DIR__, 2) . '/bin';
+        $this->binDir = dirname(__DIR__, 2).'/bin';
     }
 
     /**
      * KCP 모바일 결제 승인키 획득 (SOAP)
      *
-     * @param  string  $orderNumber    주문번호
-     * @param  string  $goodName       상품명
-     * @param  int     $amount         결제 금액
-     * @param  string  $payMethod      결제수단 코드 (CARD/BANK/MOBX/VCNT)
-     * @param  string  $retUrl         결제 결과 콜백 URL
-     * @param  string  $payMethodKey   원본 결제수단 키 (nhnkcp_payco 등, site_cd 분기용)
-     * @param  bool    $escrow         에스크로 여부
+     * @param  string  $orderNumber  주문번호
+     * @param  string  $goodName  상품명
+     * @param  int  $amount  결제 금액
+     * @param  string  $payMethod  결제수단 코드 (CARD/BANK/MOBX/VCNT)
+     * @param  string  $retUrl  결제 결과 콜백 URL
+     * @param  string  $payMethodKey  원본 결제수단 키 (nhnkcp_payco 등, site_cd 분기용)
+     * @param  bool  $escrow  에스크로 여부
      * @return array{approval_key: string, pay_url: string}
      *
      * @throws NhnKcpApiException
@@ -88,7 +93,15 @@ class KcpSoapService
         string $payMethodKey = '',
         bool $escrow = false,
     ): array {
-        $wsdlFile = $this->binDir . DIRECTORY_SEPARATOR . ($this->isTest ? self::WSDL_TEST : self::WSDL_LIVE);
+        // soap 은 「권장」 확장(composer.json suggest)이다 — 없으면 `new SoapClient` 가 치명 오류가 되어
+        // 컨트롤러의 NhnKcpApiException 분기를 지나쳐 500 이 된다. 고객에게는 일반 문구만, 원인은 로그에 남긴다.
+        if (! $this->soapAvailable()) {
+            Log::error('[KCP] PHP soap 확장 미설치 — 모바일 승인키 발급 불가', ['order' => $orderNumber]);
+
+            throw new NhnKcpApiException(__('sirsoft-pay_nhnkcp::messages.errors.mobile_payment_unavailable'));
+        }
+
+        $wsdlFile = $this->binDir.DIRECTORY_SEPARATOR.($this->isTest ? self::WSDL_TEST : self::WSDL_LIVE);
 
         if (! file_exists($wsdlFile)) {
             throw new NhnKcpApiException(__('sirsoft-pay_nhnkcp::messages.errors.wsdl_missing', ['file' => $wsdlFile]));
@@ -104,7 +117,7 @@ class KcpSoapService
                 'encoding' => 'UTF-8',
             ]);
 
-            $req = new \stdClass();
+            $req = new \stdClass;
             $req->accessCredentialType = (object) [
                 'accessLicense' => '',
                 'signature' => '',
@@ -125,7 +138,7 @@ class KcpSoapService
             $req->returnUrl = $retUrl;
             $req->siteCode = $siteCd;
 
-            $param = new \stdClass();
+            $param = new \stdClass;
             $param->req = $req;
 
             $response = $soapClient->__soapCall('approve', [$param], [
@@ -134,7 +147,7 @@ class KcpSoapService
             ]);
 
             $resCode = $response->return->baseResponseType->error->code ?? '9999';
-            $resMsg  = (string) ($response->return->baseResponseType->error->message ?? '연동 오류');
+            $resMsg = (string) ($response->return->baseResponseType->error->message ?? '연동 오류');
 
             if ($resCode !== '0000') {
                 Log::warning('[nhnkcp] mobile SOAP approval error', [
@@ -184,6 +197,22 @@ class KcpSoapService
         return $this->escrowSiteCd;
     }
 
+    /**
+     * PHP soap 확장(SoapClient)을 쓸 수 있는지 반환합니다.
+     *
+     * @return bool soap 확장이 로드돼 있으면 true
+     */
+    protected function soapAvailable(): bool
+    {
+        return class_exists(SoapClient::class);
+    }
+
+    /**
+     * 결제수단 키에 맞는 site_cd 를 고릅니다. (PAYCO 만 간편결제 전용)
+     *
+     * @param  string  $payMethodKey  결제수단 키
+     * @return string KCP site_cd
+     */
     private function resolveSiteCd(string $payMethodKey): string
     {
         // PAYCO만 전용 간편결제 site_cd 사용 (레거시 settle_kcp.inc.php 동일)

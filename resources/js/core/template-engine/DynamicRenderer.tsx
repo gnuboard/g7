@@ -4723,7 +4723,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
          */
         // 규칙은 반복 컨텍스트(renderItemChildren)의 확장점과 공유한다 (engine-v1.73.0).
         // 평가·번역을 마친 props 로 만든다 — 반복 컨텍스트는 처음부터 평가한 props 를 넘겼는데 이 경로만 원본을 넘겨,
-        // className·data-*·aria-* 의 `{{…}}` 가 식 원문 그대로 붙었다(게시판 관리자 글 상세 본문 래퍼, engine-v1.86.0).
+        // className·data-*·aria-* 의 `{{…}}` 가 식 원문 그대로 붙었다(게시판 관리자 글 상세 본문 래퍼, engine-v1.87.0).
         const host = buildExtensionPointHostProps(stableResolvedProps);
 
         return (
@@ -5139,7 +5139,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       const innerClassList: string[] = [];
 
       for (const cls of classes) {
-        // 확장 접두 빌드 클래스(`ecommerce:col-span-2`)도 같은 뜻으로 판정한다 (engine-v1.86.0)
+        // 확장 접두 빌드 클래스(`ecommerce:col-span-2`)도 같은 뜻으로 판정한다 (engine-v1.87.0)
         const bare = splitExtensionClassPrefix(cls).rest;
         const isGridItemClass = gridItemPatterns.some(pattern => pattern.test(bare));
         if (isGridItemClass) {

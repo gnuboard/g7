@@ -22,6 +22,7 @@ use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\ResolvesEasyPaySelection;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
+use Plugins\Sirsoft\PayKginicis\Concerns\SplitsInicisTax;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\MobileCallbackRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
@@ -45,6 +46,7 @@ class MobileCallbackController
     use ResolvesEasyPaySelection;
     use SanitizesPgResponse;
     use SerializesPaymentCallbacks;
+    use SplitsInicisTax;
     use ValidatesCbtOrderContext;
 
     private const PLUGIN_IDENTIFIER = 'sirsoft-pay_kginicis';
@@ -375,7 +377,8 @@ class MobileCallbackController
                     'is_test_mode' => $this->apiService->isTestMode(),
                     'pg_response_sanitized' => true,
                     'pg_raw_response' => $this->sanitizePgResponse($result, self::MOBILE_APPROVE_RESPONSE_KEYS),
-                ], $this->buildEasyPayPaymentMeta($selectedEasyPayMethod)),
+                    // 결제창이 과세 구분(P_TAX·P_TAXFREE)을 실은 결제 — 부분취소가 같은 구분을 싣는 근거(#820)
+                ], $this->buildEasyPayPaymentMeta($selectedEasyPayMethod), $this->buildTaxSplitApprovalMeta($order, $totPrice)),
                 'payment_device' => 'mobile',
             ], $totPrice);
 

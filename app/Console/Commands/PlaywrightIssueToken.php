@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ScopeType;
 use App\Models\Permission;
@@ -38,12 +39,12 @@ use Illuminate\Support\Facades\Config;
  */
 class PlaywrightIssueToken extends Command
 {
+    use LocalizesDescription;
+
     protected $signature = 'playwright:issue-token
         {--permissions=* : 부여할 권한 식별자 (예: core.templates.layouts.edit). 다중 지정 가능. 뒤에 :self·:role 을 붙이면 그 범위로 부여 (예: core.users.read:self)}
         {--no-admin-role : admin 역할을 부여하지 않고 지정한 권한만 가진 계정을 만든다 (권한 분기 검증용)}
         {--gc-hours=6 : 이 시간(시)보다 오래된 playwright 테스트 유저/역할을 발급 전 정리. 0 이면 정리 안 함}';
-
-    protected $description = 'Playwright E2E 용 Sanctum 토큰 발급 (CLI + G7_PLAYWRIGHT_BYPASS 3중 가드)';
 
     /** 테스트 전용 역할 식별자 접두사 */
     private const TEST_ROLE_PREFIX = 'playwright_test_';

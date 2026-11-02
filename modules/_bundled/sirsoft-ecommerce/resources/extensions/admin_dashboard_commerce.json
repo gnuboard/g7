@@ -69,6 +69,7 @@
             "auto_fetch": true,
             "auth_required": true,
             "loading_strategy": "progressive",
+            "if": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
             "fallback": {
                 "data": {
                     "items": [],
@@ -76,7 +77,7 @@
                     "board_slug": null
                 }
             },
-            "comment": "미답변 상품 문의. `items` 는 화면에 보일 몇 건이고 `total` 은 전체 미답변 수라 둘이 다르다 —\n    제목 옆 괄호 숫자는 목록 길이가 아니라 `total` 이다.\n    상품 문의는 게시판 모듈의 글로 저장되므로 상세로 가려면 **어느 게시판인지**가 필요하다. 그\n    설정(`inquiry.board_slug`)이 비어 있으면 서버가 `board_slug` 를 `null` 로 주고, 그때는\n    \"문의 관리로\" 링크가 사라진다 — 목록은 그대로 나오지만 눌러도 갈 곳이 없어지는 것을 막는다."
+            "comment": "미답변 상품 문의. `items` 는 화면에 보일 몇 건이고 `total` 은 전체 미답변 수라 둘이 다르다 —\n    제목 옆 괄호 숫자는 목록 길이가 아니라 `total` 이다.\n    상품 문의는 게시판 모듈의 글로 저장되므로 상세로 가려면 **어느 게시판인지**가 필요하다. 그\n    설정(`inquiry.board_slug`)이 비어 있으면 서버가 `board_slug` 를 `null` 로 주고, 그때는\n    \"문의 관리로\" 링크가 사라진다 — 목록은 그대로 나오지만 눌러도 갈 곳이 없어지는 것을 막는다.\n    게시판 모듈이 꺼져 있으면 부르지 않는다(카드도 숨는다)."
         }
     ],
     "components": [
@@ -601,9 +602,11 @@
                             ]
                         },
                         {
+                            "comment": "미답변 문의 카드 — 상품 문의는 게시판 글이라 게시판 모듈(선택 연동)이 꺼지면 카드째 숨긴다. 활성 목록이 없는 옛 코어는\n        서버 응답의 board_active 로 가른다(꺼져 있으면 서버가 항목을 내지 않는다).",
                             "id": "pending_inquiries_card",
                             "type": "basic",
                             "name": "Div",
+                            "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && commerce_pending_inquiries?.data?.board_active !== false}}",
                             "blur_until_loaded": {
                                 "enabled": true,
                                 "data_sources": "commerce_pending_inquiries"

@@ -195,11 +195,13 @@
                             "text": "$t:admin.notification_log.detail_body"
                         },
                         {
-                            "type": "basic",
-                            "name": "Div",
+                            "comment": "본문은 목록 행 펼침과 같은 HtmlContent 로 그린다 — DOMPurify 정화가 붙는다. 종전 Div 의\n             dangerouslySetInnerHTML 문자열은 React 가 받지 않는 모양({__html} 아님)이라 본문이 보이지 않거나\n             오류가 났고, 정화도 없었다(#158 부수 결함).",
+                            "type": "composite",
+                            "name": "HtmlContent",
                             "props": {
-                                "className": "text-body bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-64 overflow-y-auto",
-                                "dangerouslySetInnerHTML": "{{$parent._local.selectedLog?.body ?? ''}}"
+                                "content": "{{$parent._local.selectedLog?.body ?? ''}}",
+                                "isHtml": true,
+                                "className": "text-body bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-64 overflow-y-auto"
                             }
                         }
                     ]

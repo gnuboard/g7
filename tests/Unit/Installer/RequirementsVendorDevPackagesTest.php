@@ -30,7 +30,7 @@ class RequirementsVendorDevPackagesTest extends TestCase
     private static string $skipReason = '';
 
     /**
-     * 시스템 임시 폴더 아래에 BASE_PATH 와 로그, 앱 저장소, 부트스트랩 캐시 폴더를 세우고, 요청 처리를 막는 라이브러리 모드로 설치 환경 확인 API 를 불러온다. BASE_PATH 가 임시 폴더 밖이면 건너뛸 사유만 남긴다.
+     * 클래스 공통 준비 — 검사 대상 파일을 한 번 로드한다.
      *
      * @return void 반환값 없음
      */
@@ -74,7 +74,7 @@ class RequirementsVendorDevPackagesTest extends TestCase
     }
 
     /**
-     * 클래스 준비 단계에서 건너뛸 사유가 정해졌으면 각 테스트를 건너뛴다.
+     * 테스트 준비.
      *
      * @return void 반환값 없음
      */
@@ -135,7 +135,7 @@ class RequirementsVendorDevPackagesTest extends TestCase
      *
      * @scenario vendor_state=present_no_dev, surface=env_check_card
      *
-     * @effects installer_reports_production_vendor_as_pass
+     * @effects installer_env_check_shows_dev_vendor_card_without_gating, installer_reports_production_vendor_as_pass
      *
      * @return void 반환값 없음
      */
@@ -167,9 +167,10 @@ class RequirementsVendorDevPackagesTest extends TestCase
     #[Test]
     public function 필수_통과_판정이_이_항목을_참조하지_않는다(): void
     {
-        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/api/check-configuration.php');
+        // 게이트 본문은 웹·터미널 공유 함수로 옮겨졌다 (includes/requirements.php).
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/requirements.php');
 
-        $start = strpos($source, 'private function isAllRequiredPassed(');
+        $start = strpos($source, 'function installer_requirements_all_passed(');
         $this->assertNotFalse($start, '전제: 게이트 메서드가 존재한다');
 
         $end = strpos($source, "\n    }", $start);
@@ -239,6 +240,7 @@ class RequirementsVendorDevPackagesTest extends TestCase
      * 임시 BASE_PATH 아래에 vendor 픽스처를 만듭니다.
      *
      * @param  array<string, mixed>  $installedJson  installed.json 내용
+     *
      * @return void 반환값 없음
      */
     private function writeVendor(array $installedJson): void

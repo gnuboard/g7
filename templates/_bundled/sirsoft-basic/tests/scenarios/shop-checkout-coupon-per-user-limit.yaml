@@ -1,0 +1,20 @@
+feature: 주문서 상품 쿠폰 1인 사용 한도 중복 비활성화와 안내
+
+description: |
+  주문서 품목별 상품 쿠폰 드롭다운은 다른 품목에서 이미 고른 1인 한도 쿠폰을 고를 수 없게 하고(서버가 내려준
+  item.disabled_coupon_ids), 그 항목에 「이미 적용됨」 안내를 붙인다. 쿠폰 선택 재계산(PUT) 응답에 validation_errors 가
+  있으면 안내 토스트를 띄운다. 쓰는 번역 키는 ko·en 에 모두 있다.
+
+axes:
+  surface: [checkout_items]
+
+exclusions: []
+
+effects:
+  - coupon_per_user_limit_duplicate_disabled
+  - coupon_already_used_label_shown
+  - coupon_validation_errors_toast
+  - coupon_limit_i18n_keys_defined
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-checkout-coupon-per-user-limit.test.tsx

@@ -19,6 +19,25 @@ class VatCalculator
     public const DEFAULT_RATE = 10.0;
 
     /**
+     * 과세로 분류된 옵션에 적용할 세율을 정합니다 (#612).
+     *
+     * 상품 자체가 과세이면 저장 세율을 그대로 쓴다(세율 0 과세도 운영자 지정으로 존중한다). 상품이 면세·영세이고
+     * 옵션만 과세로 지정했으면 저장 세율은 과세 세율이 아니므로(면세 상품은 0 으로 저장된다) 0 이하일 때 기본 세율을 쓴다.
+     *
+     * @param  bool  $productIsTaxable  상품 기본 과세 종류가 과세인지 (알 수 없으면 true)
+     * @param  float|null  $storedRate  상품 저장 세율 (%)
+     * @return float 적용 세율 (%)
+     */
+    public static function taxableRate(bool $productIsTaxable, ?float $storedRate): float
+    {
+        if ($productIsTaxable) {
+            return $storedRate ?? self::DEFAULT_RATE;
+        }
+
+        return $storedRate !== null && $storedRate > 0 ? $storedRate : self::DEFAULT_RATE;
+    }
+
+    /**
      * 과세표준에 내재된 부가세를 산출합니다.
      *
      * @param  int  $taxableAmount  과세표준 (부가세 포함 금액)

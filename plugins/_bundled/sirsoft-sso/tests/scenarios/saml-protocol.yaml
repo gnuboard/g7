@@ -85,6 +85,7 @@ effects:
   - login_start_saml_invalid
   - checks_reported
   - forbidden_pattern_count_zero
+  - post_binding_autosubmit_without_inline_handler
   - base_url_from_site_url
   - superglobals_restored
   - authn_request_sent

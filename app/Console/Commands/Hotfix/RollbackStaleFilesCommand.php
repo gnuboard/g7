@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Hotfix;
 
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\Helpers\CoreBackupHelper;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -34,12 +35,11 @@ use Illuminate\Support\Facades\Log;
 class RollbackStaleFilesCommand extends Command
 {
     use HasUnifiedConfirm;
+    use LocalizesDescription;
 
     protected $signature = 'hotfix:rollback-stale-files
         {--backup= : 특정 백업 디렉토리 경로 지정 (미지정 시 가장 최근 백업 자동 선택)}
         {--prune : 진단만이 아닌 실제 정리 수행 (확인 프롬프트 동반)}';
-
-    protected $description = '[hotfix/beta.6 신설] 코어 자동 롤백 후 활성 디렉토리에 잔존할 수 있는 신 버전 신규 파일을 진단/정리합니다.';
 
     /**
      * 백업 기준으로 잔존 파일 후보를 진단하고, `--prune` 이면 확인 후 정리합니다.

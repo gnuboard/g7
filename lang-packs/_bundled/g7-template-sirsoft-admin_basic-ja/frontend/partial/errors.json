@@ -18,10 +18,13 @@
   "503": {
     "title": "サービス一時停止",
     "message": "現在このサービスはご利用いただけません。",
-    "unmet_dependencies": "必要な拡張機能が有効化されていません。",
+    "unmet_dependencies": "必要な拡張機能が条件を満たしていません。",
     "required_modules": "必要なモジュール",
     "required_plugins": "必要なプラグイン",
-    "contact_admin": "必要な拡張機能を有効化してください。"
+    "contact_admin": "必要な拡張機能をインストール・有効化するか、更新してください。",
+    "reason_not_installed": "未インストール",
+    "reason_inactive": "無効",
+    "reason_version_mismatch": "バージョン不足 {{installed}} → {{required}}"
   },
   "maintenance": {
     "title": "システムメンテナンス中",

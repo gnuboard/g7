@@ -151,19 +151,19 @@ foreach ($taskGroupLabelKeys as $groupId => $labelKey) {
             <p><?= htmlspecialchars(lang('file_setup_guide')) ?></p>
             <div class="code-box">
                 <pre id="file-setup-command"></pre>
-                <button class="btn-copy" onclick="copySetupCommand()"><?= htmlspecialchars(lang('copy_command')) ?></button>
+                <button class="btn-copy" data-action="copySetupCommand"><?= htmlspecialchars(lang('copy_command')) ?></button>
             </div>
 
             <!-- 상대경로 명령어 -->
             <p class="fix-guide-hint" id="file-setup-relative-hint" style="display:none;"><?= htmlspecialchars(lang('or_relative_path')) ?></p>
             <div class="code-box" id="file-setup-relative-box" style="display:none;">
                 <pre id="file-setup-command-relative"></pre>
-                <button class="btn-copy" onclick="copySetupCommandRelative()"><?= htmlspecialchars(lang('copy_command')) ?></button>
+                <button class="btn-copy" data-action="copySetupCommandRelative"><?= htmlspecialchars(lang('copy_command')) ?></button>
             </div>
 
             <!-- 확인 버튼 -->
             <div class="env-check-actions">
-                <button id="env-recheck-btn" class="btn btn-primary" onclick="recheckFiles()"><?= htmlspecialchars(lang('file_check_button')) ?></button>
+                <button id="env-recheck-btn" class="btn btn-primary" data-action="recheckFiles"><?= htmlspecialchars(lang('file_check_button')) ?></button>
                 <span id="env-check-status" class="hidden"></span>
             </div>
         </div>
@@ -173,7 +173,7 @@ foreach ($taskGroupLabelKeys as $groupId => $labelKey) {
 <div class="installer-container installer-container-wide">
     <div class="installer-header-with-abort">
         <h1 id="installer-title" class="installer-title"><?= htmlspecialchars(lang('installation_title')) ?></h1>
-        <button id="abort-installation-btn" class="btn-abort" onclick="abortInstallation()" style="display: none;">
+        <button id="abort-installation-btn" class="btn-abort" data-action="abortInstallation" style="display: none;">
             <?php /* 뜻은 옆의 텍스트 라벨이 전한다 — 장식 아이콘은 보조기술에서 감춘다.
                      JS 가 이 버튼을 다시 그릴 때 쓰는 abortButtonMarkup() 과 같은 형태여야
                      첫 렌더와 이후 렌더의 접근성 표면이 어긋나지 않는다. */ ?>
@@ -263,17 +263,21 @@ echo renderInstallResultSection('completion', 'success', 'installation_completed
 
     <!-- 중단 섹션 -->
     <?php
-$abortedButtons = '<button id="resume-installation-btn" onclick="resumeInstallationFromAborted()" class="btn btn-primary">'.htmlspecialchars(lang('resume_continue')).'</button>
-                <button onclick="goToSettingsWithConfirm()" class="btn btn-secondary">'.htmlspecialchars(lang('back_to_settings')).'</button>';
+$abortedButtons = '<button id="resume-installation-btn" data-action="resumeInstallationFromAborted" class="btn btn-primary">'.htmlspecialchars(lang('resume_continue')).'</button>
+                <button data-action="goToSettingsWithConfirm" class="btn btn-secondary">'.htmlspecialchars(lang('back_to_settings')).'</button>';
 echo renderInstallResultSection('aborted', 'warning', 'installation_aborted', 'installation_aborted_message', $abortedButtons);
 ?>
 
     <!-- 실패 섹션 -->
     <?php
+// 「Step 4 로 돌아가기」는 의존성 사전 검증 실패(순환·누락)일 때만 installer.js showError() 가 드러낸다 —
+// 재시도로 풀리지 않는 실패라 주 버튼으로 앞세우고 재시도는 보조로 바꾼다(#153). 이동은 기존 초기화 경로(항상 Step 4)이고,
+// DB 를 건드리기 전 실패라 확인 창에 DB 수동 정리 안내를 넣지 않는다(goBackToExtensionSelection).
 // [건너뛰고 계속] 은 실패한 단계가 선택 확장일 때만 JS 가 노출한다 (W3 — 필수 단계에서는 숨김)
-$failureButtons = '<button id="retry-installation-btn" onclick="retryInstallation()" class="btn btn-primary">'.htmlspecialchars(lang('retry_installation')).'</button>
-                <button id="skip-task-btn" onclick="skipFailedTaskAndContinue()" class="btn btn-warning" style="display:none;">'.htmlspecialchars(lang('skip_and_continue')).'</button>
-                <button onclick="goToSettingsWithConfirm()" class="btn btn-secondary">'.htmlspecialchars(lang('failure_go_back')).'</button>';
+$failureButtons = '<button id="back-to-extensions-btn" data-action="goBackToExtensionSelection" class="btn btn-primary hidden">'.htmlspecialchars(lang('back_to_extension_selection')).'</button>
+                <button id="retry-installation-btn" data-action="retryInstallation" class="btn btn-primary">'.htmlspecialchars(lang('retry_installation')).'</button>
+                <button id="skip-task-btn" data-action="skipFailedTaskAndContinue" class="btn btn-warning" style="display:none;">'.htmlspecialchars(lang('skip_and_continue')).'</button>
+                <button data-action="goToSettingsWithConfirm" class="btn btn-secondary">'.htmlspecialchars(lang('failure_go_back')).'</button>';
 echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $failureButtons);
 ?>
 
@@ -327,7 +331,7 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
 
     <!-- 설치 시작 버튼 (초기 상태, 설치 시작 후 숨김) -->
     <div id="installation-start-section" class="installation-start-section" style="display: none;">
-        <button id="start-installation-btn" class="btn btn-primary btn-lg" type="button" onclick="onStartInstallationClick()">
+        <button id="start-installation-btn" class="btn btn-primary btn-lg" type="button" data-action="onStartInstallationClick">
             <?= htmlspecialchars(lang('start_installation_button')) ?>
         </button>
     </div>
@@ -343,11 +347,12 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
                  button + aria-expanded 로 되어 있어 그 형태에 맞춘다. */ ?>
         <?php /* 설치가 끝나기 전에는 핸들러가 첫 줄에서 되돌아간다 — 그동안 이 헤더는 Tab
                  순서에 남아 있으면서 눌러도 아무 일이 없는 「죽은 버튼」이었다. 비활성이라는
-                 사실을 처음부터 싣고, 완료·실패·중단 시 JS 가 해제한다 (12차 #B28). */ ?>
+                 사실을 처음부터 싣고, 완료·실패·중단 시 JS 가 해제한다 (12차 #B28).
+                 클릭은 data-action 위임(installer-boot.js)으로, Enter·Space 는 installer.js 의
+                 role="button" 키보드 위임으로 같은 클릭을 낸다 — 인라인 on* 은 strict CSP 에서 실행되지 않는다. */ ?>
         <div class="requirement-card-header" id="installation-card-header" role="button" tabindex="-1"
              aria-expanded="true" aria-disabled="true" aria-controls="installation-card-body"
-             onclick="toggleInstallationCard()"
-             onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleInstallationCard(); }">
+             data-action="toggleInstallationCard">
             <h3 class="requirement-card-title">
                 <?= htmlspecialchars(lang('progress_status')) ?>
                 <span id="install-toggle-icon" class="toggle-icon-inline hidden" aria-hidden="true">▼</span>
@@ -403,7 +408,7 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
                     type="button"
                     aria-expanded="false"
                     aria-controls="command-output-content"
-                    onclick="toggleErrorDetail(this, 'command-output-content')"
+                    data-action="toggleErrorDetail" data-arg="command-output-content"
                 >
                     <span class="command-output-toggle-icon" aria-hidden="true">▶</span>
                     <strong><?= htmlspecialchars(lang('view_command_output')) ?></strong>
@@ -420,45 +425,39 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
 <?php
 // 선택된 확장 기능 가져오기
 $selectedExtensions = $state['selected_extensions'] ?? [];
+$adminTemplates = $selectedExtensions['admin_templates'] ?? [];
+$userTemplates = $selectedExtensions['user_templates'] ?? [];
+$modules = $selectedExtensions['modules'] ?? [];
+$plugins = $selectedExtensions['plugins'] ?? [];
+$languagePacks = $selectedExtensions['language_packs'] ?? [];
 ?>
 
-<script>
-// Step 5 전용 데이터 전달 (INSTALLER_BASE_URL과 INSTALLER_LANG는 footer.php에서 처리)
-// 인라인 <script> 에 실리는 값은 전부 같은 HEX 플래그로 — 한 곳만 빠지면 그 값이 스크립트 탈출 통로가 된다
-<?php $jsonInlineFlags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT; ?>
-window.INSTALLER_CONFIG = <?= installer_json_encode($config, $jsonInlineFlags) ?>;
-window.INSTALLER_SELECTED_EXTENSIONS = <?= installer_json_encode($selectedExtensions, $jsonInlineFlags) ?>;
-window.INSTALLER_EXTENSION_NAMES = <?= installer_json_encode($state['extension_names'] ?? [], $jsonInlineFlags) ?>;
-// 유효 실행 모드 (subprocess|inprocess). 화면 분기는 서버가 이미 마친 상태로 렌더하므로
-// JS 소비처는 없다 — 무CLI 환경 실측에서 콘솔로 확인하기 위한 진단용 노출이다.
-window.INSTALLER_EXECUTION_MODE = <?= installer_json_encode($effectiveExecutionMode, $jsonInlineFlags) ?>;
-// 진행 중인 단계별 실행을 새로고침 뒤 이어가기 위한 토큰 (없으면 null)
-window.INSTALLER_STEPWISE_TOKEN = <?= installer_json_encode($stepwiseToken, $jsonInlineFlags) ?>;
-
-// 서버가 서브프로세스 스폰 동안 스스로에게 주는 창(초 → ms). 그 구간에는 emit 이 0 이므로
-// 화면의 정지 감지는 이 값보다 커야 한다 — 숫자를 여기에 다시 적지 않고 서버 상수에서
-// 파생한다. 세 모니터가 같은 근거를 쓰지 않으면 SSE·폴링만 정상 설치를 정지로 뒤집는다
-// (13차 E1). 상수는 이 파일이 이미 require 한 task-runner.php 가 artisan-executor.php 를
-// 통해 정의한다.
-window.INSTALLER_SERVER_BLOCKING_WINDOW_MS = <?= installer_json_encode(INSTALLER_SUBPROCESS_TIME_LIMIT * 1000, $jsonInlineFlags) ?>;
-
-// 작업 그룹 정의 — 서버 태스크 목록(buildInstallationTaskList)에서 파생한다.
-// 이 파일 상단의 $installerTaskGroups 주석 참조 (12차 #B22).
-window.INSTALLER_TASK_GROUPS = <?= installer_json_encode($installerTaskGroups, $jsonInlineFlags) ?>;
-
-// 평탄화된 작업 목록 생성 (하위 호환성 유지)
-window.INSTALLER_TASKS = (function() {
-    const tasks = [];
-    INSTALLER_TASK_GROUPS.forEach(group => {
-        if (!group.tasks || group.tasks.length === 0) return;
-        group.tasks.forEach(taskOrArray => {
-            if (Array.isArray(taskOrArray)) {
-                taskOrArray.forEach(t => tasks.push({ ...t, group: group.id }));
-            } else {
-                tasks.push({ ...taskOrArray, group: group.id });
-            }
-        });
-    });
-    return tasks;
-})();
-</script>
+<script type="application/json" id="installer-step-data"><?= installer_json_encode([
+    // Step 5 전용 데이터 전달 (INSTALLER_BASE_URL 과 INSTALLER_LANG 은 <head> 의 installer-boot.js 가 채운다)
+    'config' => $config,
+    'selected_extensions' => $selectedExtensions,
+    'extension_names' => $state['extension_names'] ?? [],
+    // 의존 때문에 종류 경계를 넘어 앞당겨 설치하는 항목 → 요구한 확장 (작업 행의 「…에 필요」 표시, #153)
+    'pulled_by' => (object) ($state['install_pulled_by'] ?? []),
+    // 유효 실행 모드 (subprocess|inprocess). 화면 분기는 서버가 이미 마친 상태로 렌더하므로
+    // JS 소비처는 없다 — 무CLI 환경 실측에서 콘솔로 확인하기 위한 진단용 노출이다.
+    'execution_mode' => $effectiveExecutionMode,
+    // 진행 중인 단계별 실행을 새로고침 뒤 이어가기 위한 토큰 (없으면 null)
+    'stepwise_token' => $stepwiseToken,
+    // 서버가 서브프로세스 스폰 동안 스스로에게 주는 창(초 → ms). 그 구간에는 emit 이 0 이므로
+    // 화면의 정지 감지는 이 값보다 커야 한다 — 숫자를 여기에 다시 적지 않고 서버 상수에서
+    // 파생한다. 세 모니터가 같은 근거를 쓰지 않으면 SSE·폴링만 정상 설치를 정지로 뒤집는다
+    // (13차 E1). 상수는 이 파일이 이미 require 한 task-runner.php 가 artisan-executor.php 를
+    // 통해 정의한다.
+    'server_blocking_window_ms' => INSTALLER_SUBPROCESS_TIME_LIMIT * 1000,
+    // 작업 그룹 정의 — 서버 태스크 목록(buildInstallationTaskList)에서 파생한다.
+    // 이 파일 상단의 $installerTaskGroups 주석 참조 (12차 #B22).
+    'task_groups' => $installerTaskGroups,
+    // 확장 종류별 작업 — task_groups 가 없을 때(옛 캐시 화면) step-5-installation.js 의 기본 그룹 정의가 이 목록으로 채운다
+    'admin_templates' => array_values($adminTemplates),
+    'modules' => array_values($modules),
+    'plugins' => array_values($plugins),
+    'user_templates' => array_values($userTemplates),
+    'language_packs' => array_values($languagePacks),
+], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<script src="<?= e(INSTALLER_BASE_URL) ?>/assets/js/step-5-installation.js?v=<?= time() ?>"></script>

@@ -70,6 +70,18 @@ async function dismissCookieBanner(page: Page): Promise<void> {
 }
 
 /**
+ * 목록형 드롭다운 단추를 이름으로 찾습니다 — 단추는 「{이름} {현재 값}」으로 읽히므로(값은 화면·데이터마다 다르다)
+ * 「이름 + 공백」 또는 이름만으로 시작하는 단추를 찾는다.
+ *
+ * @param page 대상 페이지
+ * @param title 칸 이름
+ * @returns 첫 단추 로케이터
+ */
+function listboxButton(page: Page, title: string) {
+  return page.getByRole('button', { name: new RegExp(`^${title}( |$)`) }).first();
+}
+
+/**
  * 일반 회원으로 로그인해 경로를 엽니다(화면 언어 ko).
  *
  * @param page 대상 페이지
@@ -95,7 +107,7 @@ test.describe('#757 사용자 화면 입력칸 이름', () => {
   });
 
   /**
-   * 마이페이지 「내가 쓴 글」 필터 — 게시판·정렬은 기본 select(콤보 상자), 검색 대상은 목록형 단추(이름 + 값).
+   * 마이페이지 「내가 쓴 글」 필터 — 게시판·정렬·검색 대상 모두 목록형 단추(이름 + 값).
    *
    * @scenario surface=user_layout
    * @effects controls_have_accessible_name, listbox_reads_name_and_value
@@ -103,8 +115,11 @@ test.describe('#757 사용자 화면 입력칸 이름', () => {
   test('마이페이지 게시글 필터가 「게시판」「정렬 기준」「검색 대상 {값}」으로 읽힌다', async ({ page }) => {
     await openAsMember(page, '/mypage/board');
 
-    await expect(page.getByRole('combobox', { name: '게시판', exact: true }).first()).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByRole('combobox', { name: '정렬 기준', exact: true }).first()).toBeVisible();
+    for (const title of ['게시판', '정렬 기준']) {
+      const control = listboxButton(page, title);
+      await expect(control, `「${title}」 칸의 읽기 이름`).toBeVisible({ timeout: 30_000 });
+      await expect(control).toHaveAttribute('aria-haspopup', 'listbox');
+    }
     // 목록형 단추는 이름 뒤에 현재 값이 붙는다 — 기본값은 「제목+내용」
     await expect(page.getByRole('button', { name: '검색 대상 제목+내용', exact: true }).first()).toBeVisible();
   });
@@ -165,7 +180,7 @@ test.describe('#757 사용자 화면 입력칸 이름', () => {
   });
 
   /**
-   * 주문 내역 상태 필터 — 기본 select 에 「주문 상태」 이름.
+   * 주문 내역 상태 필터 — 목록형 단추가 「주문 상태 {값}」으로 읽힌다.
    *
    * @scenario surface=user_layout
    * @effects controls_have_accessible_name
@@ -173,12 +188,14 @@ test.describe('#757 사용자 화면 입력칸 이름', () => {
   test('주문 내역 상태 필터가 「주문 상태」로 읽힌다', async ({ page }) => {
     await openAsMember(page, '/mypage/orders');
 
-    await expect(page.getByRole('combobox', { name: '주문 상태', exact: true }).first()).toBeVisible({ timeout: 30_000 });
+    const status = listboxButton(page, '주문 상태');
+    await expect(status).toBeVisible({ timeout: 30_000 });
+    await expect(status).toHaveAttribute('aria-haspopup', 'listbox');
   });
 
   /**
    * 장바구니·주문서 — 시드 회원 장바구니에 상품 하나를 담아 실제 「주문하기」 흐름으로 주문서를 열고, 끝나면 장바구니를 비운다.
-   * 회원 주문서의 주문 쿠폰·배송비 쿠폰·배송 메모는 기본 select, 배송 국가(해외배송 켠 경우)는 목록형 단추다.
+   * 회원 주문서의 주문 쿠폰·배송비 쿠폰·배송 메모·배송 국가(해외배송 켠 경우)는 모두 목록형 단추다.
    *
    * @scenario surface=user_layout
    * @effects controls_have_accessible_name
@@ -228,9 +245,12 @@ test.describe('#757 사용자 화면 입력칸 이름', () => {
       await page.waitForURL(/\/checkout/, { timeout: 30_000 });
       await dismissCookieBanner(page);
 
-      await expect(page.getByRole('combobox', { name: '배송 메모', exact: true }).first()).toBeVisible({ timeout: 30_000 });
-      await expect(page.getByRole('combobox', { name: '주문 쿠폰', exact: true }).first()).toBeVisible();
-      await expect(page.getByRole('combobox', { name: '배송비 쿠폰', exact: true }).first()).toBeVisible();
+      await expect(listboxButton(page, '배송 메모')).toBeVisible({ timeout: 30_000 });
+      for (const title of ['배송 메모', '주문 쿠폰', '배송비 쿠폰']) {
+        const control = listboxButton(page, title);
+        await expect(control, `「${title}」 칸의 읽기 이름`).toBeVisible();
+        await expect(control).toHaveAttribute('aria-haspopup', 'listbox');
+      }
       // placeholder 로만 읽히던 주문자·수령인 칸이 보이는 제목으로 읽힌다
       await expect(page.getByRole('textbox', { name: '주문자명', exact: true }).first()).toBeVisible();
 
@@ -242,7 +262,7 @@ test.describe('#757 사용자 화면 입력칸 이름', () => {
       const refundBank = page.getByRole('button', { name: '은행', exact: true }).first();
       await expect(refundBank).toBeVisible({ timeout: 15_000 });
       await refundBank.click();
-      // 펼친 은행 목록 안에서만 고른다 — 주문서의 기본 select(쿠폰 등)도 option 을 품어 페이지 전체로 찾으면 숨은 그쪽 option 이 잡힌다
+      // 펼친 은행 목록 안에서만 고른다 — 페이지 전체로 찾으면 다른 칸의 option 이 잡힐 수 있다
       const bankList = page.locator('[role="listbox"]:visible').first();
       await expect(bankList).toBeVisible();
       await bankList.getByRole('option').nth(1).click();

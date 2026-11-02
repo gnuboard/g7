@@ -4,18 +4,29 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.3.0] - 2026-10-22
+## [1.3.0] - 2026-11-01
 
 ### Added
 
 - 비밀번호 없는 회원(소셜 로그인으로만 가입)의 마이페이지 문구 일본어 번역을 추가했습니다 — 비밀번호 처음 설정 안내(`mypage.profile.change_password_first_time_notice`), 정보 수정 전 이메일 인증번호 확인(`mypage.profile.reauth_*`).
 - 메일을 받을 수 없는 회원(대체 이메일)의 본인 확인·비밀번호 첫 설정 안내 일본어 번역을 추가했습니다(`mypage.profile.reauth_unavailable`·`mypage.profile.change_password_reauth_unavailable`).
 - 비밀번호 없는 회원의 정보 수정 확인 칸 제목과 안내 일본어 번역을 추가했습니다(`mypage.profile.verify_identity_title`·`mypage.profile.verify_identity_message`).
-- 템플릿 1.3.0 에 맞춰 버전을 올렸습니다.
+- 템플릿 1.4.0 에 맞춰 버전을 올렸습니다.
 - 외부 인증(회사 계정 로그인)과 회원가입 받기 설정 문구의 일본어 번역을 추가했습니다 — 로그인 화면의 이메일 먼저 입력·「{수단}(으)로 계속」·「다른 방법으로 로그인」(`auth.external.*`), 회원가입이 닫혔을 때의 안내(`auth.register.closed_notice`), 회사 계정이 관리하는 항목 안내(`mypage.profile.locked_by_company`), 외부 수단 본인 확인 화면으로 이동하지 못했을 때의 안내(`mypage.profile.reauth_external_failed`).
 - 메일을 받을 수 없는 회원이 회사 계정 등 다른 수단으로 본인 확인을 이어 가는 버튼과 안내의 일본어 번역을 추가하고, 그 회원의 안내 문구를 고쳤습니다(`mypage.profile.reauth_continue`·`mypage.profile.reauth_code_sent_generic`·`mypage.profile.reauth_unavailable`).
 - 로그인 화면의 회사 계정 이메일 판정 안내와 비상 계정 로그인(`?local=1`) 안내 일본어 번역을 추가했습니다(`auth.external.discovered_notice`·`auth.external.discovered_notice_company`·`auth.external.local_notice`).
 - 메일을 받을 수 없지만 회사 계정 다시 로그인 등 다른 방법으로 본인 확인을 할 수 있는 회원의 비밀번호 변경 화면 안내 일본어 번역을 추가했습니다(`mypage.profile.change_password_reauth_other`).
+
+## [1.2.2] - 2026-11-01
+
+### Added
+
+- sirsoft-basic 1.2.4 의 주문서·장바구니 세금 상세 「영세 금액」(ゼロ税率金額) 일본어 번역을 추가했습니다.
+- sirsoft-basic 1.3.0 의 503 안내 화면 항목별 사유(미설치·무효·버전 미달 설치 → 요구) 일본어 번역을 추가했습니다.
+
+### Changed
+
+- 503 안내 화면의 제목·안내 일본어 문구를 「필요한 확장 기능의 조건이 맞지 않습니다」·「설치·활성화하거나 업데이트해 주세요」 뜻으로 바꿨습니다(종전 「활성화되지 않았습니다」).
 
 ## [1.2.1] - 2026-10-21
 

@@ -487,31 +487,10 @@
                             ],
                             "props": {
                                 "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_type_label",
-                                "className": "{{_local.cancelValidationErrors?.reason ? 'ecommerce-select ecommerce:w-full ecommerce:text-sm ecommerce:border-2 ecommerce:border-red-500 ecommerce:dark:border-red-500' : 'ecommerce-select ecommerce:w-full ecommerce:text-sm'}}",
-                                "value": "{{_local.cancelReason ?? ''}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": ""
-                                    },
-                                    "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "iteration": {
-                                        "source": "refundReasons?.data?.data ?? refundReasons?.data ?? []",
-                                        "item_var": "reason"
-                                    },
-                                    "props": {
-                                        "value": "{{reason.code}}"
-                                    },
-                                    "text": "{{reason.localized_name}}"
-                                }
-                            ]
+                                "className": "{{_local.cancelValidationErrors?.reason ? 'ecommerce:w-full ecommerce:px-4 ecommerce:py-2.5 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:border-2 ecommerce:border-red-500 ecommerce:dark:border-red-500 ecommerce:rounded-xl ecommerce:text-sm ecommerce:font-medium ecommerce:focus:ring-2 ecommerce:focus:ring-red-500 ecommerce:focus:outline-none' : 'ecommerce:w-full ecommerce:text-sm'}}",
+                                "value": "{{_local.cancelReason ?? ''}}",
+                                "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.reason_placeholder') }].concat((refundReasons?.data?.data ?? refundReasons?.data ?? []).map(reason => ({ value: reason.code, label: reason.localized_name })))}}"
+                            }
                         },
                         {
                             "comment": "취소 사유 필드 에러",
@@ -1751,6 +1730,41 @@
                                                 "className": "ecommerce:text-right {{(_local.refundEstimate?.original_snapshot?.total_vat_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0) ? 'ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-semibold' : 'ecommerce:text-gray-900 ecommerce:dark:text-gray-100'}}"
                                             },
                                             "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_vat_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_vat_amount ?? 0).toLocaleString()}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "영세금액 — 과세금액에 포함된 세율 0% 몫. 취소 전·후 어느 쪽이든 있을 때만 (#612)",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0) > 0 || (_local.refundEstimate?.recalculated_snapshot?.total_zero_rated_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "ecommerce:grid ecommerce:grid-cols-3 ecommerce:gap-2 ecommerce:py-1.5 ecommerce:text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "ecommerce-text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.zero_rated_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "ecommerce:text-right ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
+                                            },
+                                            "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_zero_rated_amount ?? (_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0).toLocaleString()}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "ecommerce:text-right {{(_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_zero_rated_amount ?? 0) ? 'ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-semibold' : 'ecommerce:text-gray-900 ecommerce:dark:text-gray-100'}}"
+                                            },
+                                            "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_zero_rated_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_zero_rated_amount ?? 0).toLocaleString()}}"
                                         }
                                     ]
                                 },

@@ -587,4 +587,41 @@ describe('generateOptionsHandler - 가격 자동입력', () => {
             expect(mockLocalState.form.options.length).toBeGreaterThan(0);
         });
     });
+
+    describe('옵션 과세 종류 (#612)', () => {
+        /**
+         * @scenario case=c22
+         * @effects option_generate_combinations
+         */
+        it('재생성해도 같은 조합의 과세 종류는 유지되고 새 조합은 「기본값 따름」(null)이다', () => {
+            mockLocalState.form.options = [
+                {
+                    id: 1,
+                    option_code: 'OPT-001',
+                    option_name: { ko: '빨강', en: 'Red' },
+                    option_values: [],
+                    list_price: 66000,
+                    selling_price: 53000,
+                    price_adjustment: 0,
+                    stock_quantity: 10,
+                    safe_stock_quantity: 2,
+                    is_default: true,
+                    is_active: true,
+                    sku: 'SKU-001',
+                    tax_status: 'zero_rated',
+                },
+            ];
+
+            generateOptionsHandler(
+                { handler: 'sirsoft-ecommerce.generateOptions', params: { skipConfirm: true } },
+                mockContext
+            );
+
+            const byName = Object.fromEntries(
+                mockLocalState.form.options.map((o: any) => [o.option_name.ko, o.tax_status])
+            );
+            expect(byName['빨강']).toBe('zero_rated');
+            expect(byName['파랑']).toBeNull();
+        });
+    });
 });

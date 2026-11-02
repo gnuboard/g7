@@ -268,6 +268,7 @@ return [
             'option_selling_price' => 'option selling price',
             'option_price_adjustment' => 'option price adjustment',
             'option_stock_quantity' => 'option stock quantity',
+            'option_tax_status' => 'option tax type',
             'option_name' => 'option name',
             'option_code' => 'option code',
             // Multilingual required field names (option groups, additional options, product notice)
@@ -340,6 +341,9 @@ return [
             ],
             'stock_quantity' => [
                 'required_with' => 'Option stock quantity is required.',
+            ],
+            'tax_status' => [
+                'in' => 'The option tax type must be taxable, tax-free or zero-rated, or left empty.',
             ],
         ],
         'additional_options' => [

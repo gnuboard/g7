@@ -1,0 +1,22 @@
+feature: 마이페이지 주문 상세 › 나이스페이먼츠 세금 상세 블록의 영세금액 줄 (#612)
+
+description: |
+  결제 정보 카드 슬롯에 붙는 조각(user_mypage_order_receipt)이 세금 상세 블록(공급가액·부가세·면세금액·영세금액)을 그린다.
+
+  영세(세율 0%)는 과세표준에 들지만 부가세가 없고 결제사에는 면세로 넘긴다(이커머스 1.3.3, #612 P2).
+  영세만 든 주문은 부가세 0 · 면세 0 이라, 블록 조건이 부가세·면세만 보면 블록이 통째로 사라진다 — 조건에
+  영세 금액을 넣고, 영세 몫은 공급가액(과세 − 영세 − 부가세, 서버 계산값)에 섞지 않고 「영세금액」 줄로 따로 보인다.
+
+  E2E 는 두지 않는다 — 로컬·CI 에 나이스페이먼츠 결제 완료 주문 픽스처가 없다. 설치되는 조각 JSON 을 엔진
+  (createLayoutTest)에 태워 렌더 결과를 단언한다(KG이니시스 user-order-payment-fragment.yaml 의 zero_rated_only 와 같은 케이스).
+
+axes:
+  order_tax_mix: [zero_rated_only, taxable_with_zero_rated, taxable_only]
+
+effects:
+  - zero_rated_only_order_shows_tax_breakdown   # 영세만(부가세 0·면세 0) 주문도 블록을 그리고 영세금액 줄을 보이며 면세 줄은 숨긴다
+  - zero_rated_row_separate_from_supply         # 과세·영세 혼합 주문은 공급가액·부가세 줄과 별도로 영세금액 줄
+  - zero_rated_row_hidden_without_zero_rated    # 영세가 없는 과세 주문은 영세금액 줄을 그리지 않는다
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/layouts/mypageTaxBreakdown.test.tsx

@@ -14,7 +14,7 @@ if (is_string($recoveryToken) && $recoveryToken !== '' && installer_session_is_o
         <p><?= htmlspecialchars(lang('recovery_token_notice_desc')) ?></p>
         <div class="code-box">
             <pre id="recovery-token-value"><?= htmlspecialchars(installer_format_recovery_token($recoveryToken)) ?></pre>
-            <button type="button" class="btn-copy" onclick="copyPermissionCommand(this)"><?= htmlspecialchars(lang('recovery_token_copy')) ?></button>
+            <button type="button" class="btn-copy" data-action="copyPermissionCommand"><?= htmlspecialchars(lang('recovery_token_copy')) ?></button>
         </div>
     </div>
 <?php }

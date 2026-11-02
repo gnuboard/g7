@@ -2,7 +2,7 @@ feature: 전역 상태 공개 계약 (state_contracts) — 선언·집계·충�
 
 description: |
   다른 확장이 읽는 전역 상태(`_global.{이름}`)만 소유자가 manifest `state_contracts` 로 선언한다(화면 전용 임시 값은
-  선언하지 않는다). 코어 예약 계약(consent·identityChallenge·currentUser·settings·plugins·modules·appConfig)과 활성
+  선언하지 않는다). 코어 예약 계약(consent·identityChallenge·currentUser·settings·plugins·modules·appConfig·activeModules·activePlugins)과 활성
   확장 선언을 모아 프론트(`G7Core.stateContracts`)와 설치·활성화 충돌 검사가 함께 쓴다.
 
   정적 룰 두 가지(남의 계약 키에 허락 없이 쓰기 금지 `state-contract-write-ownership`, 남의 화면 조각의 무접두 키

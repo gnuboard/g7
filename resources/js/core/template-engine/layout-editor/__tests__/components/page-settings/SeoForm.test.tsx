@@ -27,7 +27,9 @@ vi.mock('../../../components/property-controls/I18nTextField', () => ({
 }));
 // 봇 미리보기 패널은 자체 테스트 — fetch 발화 회피용 경량 stub.
 vi.mock('../../../components/page-settings/SeoBotPreviewPanel', () => ({
-  SeoBotPreviewPanel: () => <div data-testid="g7le-seo-bot-preview-stub" />,
+  SeoBotPreviewPanel: ({ layoutName }: { layoutName?: string }) => (
+    <div data-testid="g7le-seo-bot-preview-stub" data-layout-name={layoutName ?? ''} />
+  ),
 }));
 
 import { SeoForm, type SeoCandidatesResponse, type SeoOgPreviewResponse, type SeoFormProps } from '../../../components/page-settings/SeoForm';
@@ -67,6 +69,7 @@ beforeEach(() => cleanup());
 afterEach(() => cleanup());
 
 describe('SeoForm — 기본 노출', () => {
+  /** @effects seo_form_disabled_seo_keeps_body_visible_greyed */
   it('① enabled OFF → 본문 숨기지 않고 회색 비활성으로 항상 표시(D-M)', async () => {
     const store = makeStore({ seo: { enabled: false } });
     await renderForm(<SeoForm getValue={store.getValue} patch={store.patch} {...baseProps} />);
@@ -78,6 +81,7 @@ describe('SeoForm — 기본 노출', () => {
     expect(screen.getByTestId('g7le-seo-priority')).toBeInTheDocument();
   });
 
+  /** @effects seo_form_enabled_toggle_patches_seo_enabled */
   it('① enabled 토글 → seo.enabled 패치', async () => {
     const store = makeStore({ seo: { enabled: false } });
     await renderForm(<SeoForm getValue={store.getValue} patch={store.patch} {...baseProps} />);
@@ -85,6 +89,7 @@ describe('SeoForm — 기본 노출', () => {
     expect(store.patch).toHaveBeenLastCalledWith('meta', { seo: { enabled: true } });
   });
 
+  /** @effects seo_form_missing_extension_or_page_type_shows_defaults_banner */
   it('⑧ 확장 미선택∨page_type 미설정 → 기본값 전제 배너 + missing 표시', async () => {
     const store = makeStore({ seo: { enabled: true } });
     await renderForm(<SeoForm getValue={store.getValue} patch={store.patch} {...baseProps} />);
@@ -92,6 +97,7 @@ describe('SeoForm — 기본 노출', () => {
     expect(screen.getByTestId('g7le-seo-defaults-missing')).toBeInTheDocument();
   });
 
+  /** @effects seo_form_page_type_candidates_select_or_free_text */
   it('② page_type 후보 0 → 자유 텍스트 폴백', async () => {
     const store = makeStore({ seo: { enabled: true } });
     await renderForm(<SeoForm getValue={store.getValue} patch={store.patch} {...baseProps} />);
@@ -100,6 +106,7 @@ describe('SeoForm — 기본 노출', () => {
     expect(store.patch).toHaveBeenLastCalledWith('meta', { seo: { enabled: true, page_type: 'recipe' } });
   });
 
+  /** @effects seo_form_page_type_candidates_select_or_free_text */
   it('② page_type 후보 있으면 select + 라벨에 확장명', async () => {
     const store = makeStore({ seo: { enabled: true } });
     const candidatesFetcher = vi.fn(async (): Promise<SeoCandidatesResponse> => ({
@@ -112,6 +119,7 @@ describe('SeoForm — 기본 노출', () => {
     expect(screen.getByText('상품 (이커머스)')).toBeInTheDocument();
   });
 
+  /** @effects seo_form_extensions_chip_patches_seo_extensions */
   it('③ extensions 칩 추가 → seo.extensions 패치', async () => {
     const store = makeStore({ seo: { enabled: true } });
     const availableExtensions = [{ type: 'module' as const, id: 'sirsoft-ecommerce', name: '이커머스' }];
@@ -123,6 +131,7 @@ describe('SeoForm — 기본 노출', () => {
     });
   });
 
+  /** @effects seo_form_toggle_setting_dropdown_patches_ref */
   it('④ toggle_setting 검색 드롭다운 → 선택 시 ref 패치', async () => {
     const store = makeStore({ seo: { enabled: true } });
     const candidatesFetcher = vi.fn(async (): Promise<SeoCandidatesResponse> => ({
@@ -139,6 +148,7 @@ describe('SeoForm — 기본 노출', () => {
     });
   });
 
+  /** @effects seo_form_data_sources_multiselect_patches_and_labels */
   it('⑤ data_sources 멀티선택 → seo.data_sources 패치', async () => {
     const store = makeStore({ seo: { enabled: true } });
     await renderForm(
@@ -156,6 +166,7 @@ describe('SeoForm — 기본 노출', () => {
     expect(store.patch).toHaveBeenLastCalledWith('meta', { seo: { enabled: true, data_sources: ['product'] } });
   });
 
+  /** @effects seo_form_data_sources_multiselect_patches_and_labels */
   it('⑤-b data_sources 칩이 친화명·보조 id·확장 출처 배지를 노출', async () => {
     const store = makeStore({ seo: { enabled: true } });
     await renderForm(
@@ -180,6 +191,7 @@ describe('SeoForm — 기본 노출', () => {
     expect(screen.queryByTestId('g7le-seo-data-source-product-source')).not.toBeInTheDocument();
   });
 
+  /** @effects seo_form_priority_and_changefreq_patch */
   it('⑥ priority 슬라이더 + changefreq select 패치', async () => {
     const store = makeStore({ seo: { enabled: true } });
     await renderForm(<SeoForm getValue={store.getValue} patch={store.patch} {...baseProps} />);
@@ -189,6 +201,7 @@ describe('SeoForm — 기본 노출', () => {
     expect(store.patch).toHaveBeenLastCalledWith('meta', expect.objectContaining({ seo: expect.objectContaining({ changefreq: 'daily' }) }));
   });
 
+  /** @effects seo_form_search_title_patches_seo_title */
   it('⑦ 검색 제목 I18nTextField → seo.title 패치', async () => {
     const store = makeStore({ seo: { enabled: true } });
     await renderForm(<SeoForm getValue={store.getValue} patch={store.patch} {...baseProps} />);
@@ -196,6 +209,7 @@ describe('SeoForm — 기본 노출', () => {
     expect(store.patch).toHaveBeenLastCalledWith('meta', { seo: { enabled: true, title: '추천 상품' } });
   });
 
+  /** @effects seo_form_has_no_canonical_or_robots_controls */
   it('⑩ canonical/robots 컨트롤 부재', async () => {
     const store = makeStore({ seo: { enabled: true } });
     await renderForm(<SeoForm getValue={store.getValue} patch={store.patch} {...baseProps} />);
@@ -208,6 +222,7 @@ describe('SeoForm — 기본 노출', () => {
   // seo-og-preview 가 재호출되지 않아 "어느 출처로 돌아가는지"(코어/모듈/상속)가 stale.
   // patch 가 실제 재렌더를 일으켜야 seoVals 가 갱신되므로(운영 usePageSettings 정합)
   // stateful 호스트로 감싼다(plain mutation store 는 재렌더 미발생).
+  /** @effects seo_form_og_or_twitter_change_recomputes_preview */
   it('SEO-A: og 값 변경(type) → 미리보기 재계산(ogPreviewFetcher 재호출)', async () => {
     const ogPreviewFetcher = vi.fn(async (): Promise<SeoOgPreviewResponse> => ({
       defaultsAvailable: true,
@@ -237,6 +252,7 @@ describe('SeoForm — 기본 노출', () => {
   //  vars 근본원인 A — candidates fetch 가 extensions 를 query 로 전송해야 백엔드가
   // vars 후보를 게이팅 통과시킨다. 종전엔 ?page_type= 만 보내 declaredExtensions=[] →
   // vars:[] → 자동/data 그룹이 통째로 사라지고 레이아웃 vars 가 직접추가로 강등됐다.
+  /** @effects seo_form_vars_candidates_fetch_carries_page_type_and_extensions */
   it(' vars-A: 내부 candidates fetch URL 에 page_type + extensions 둘 다 포함', async () => {
     const calls: string[] = [];
     const realFetch = globalThis.fetch;
@@ -266,6 +282,7 @@ describe('SeoForm — 기본 노출', () => {
     }
   });
 
+  /** @effects seo_form_og_or_twitter_change_recomputes_preview */
   it('SEO-A: twitter 값 변경(card) → 미리보기 재계산', async () => {
     const ogPreviewFetcher = vi.fn(async (): Promise<SeoOgPreviewResponse> => ({
       defaultsAvailable: true,
@@ -286,6 +303,31 @@ describe('SeoForm — 기본 노출', () => {
       await new Promise((r) => setTimeout(r, 250));
     });
     expect(ogPreviewFetcher.mock.calls.length).toBeGreaterThan(initialCalls);
+  });
+});
+
+describe('SeoForm — 봇 미리보기 레이아웃 이름 전달 (공개#154)', () => {
+  /** @effects seo_form_forwards_route_layout_name_to_bot_preview */
+  it('routeLayoutName 을 봇 미리보기 패널의 layoutName 으로 넘긴다', async () => {
+    const store = makeStore({ seo: { enabled: true } });
+    await renderForm(
+      <SeoForm
+        {...baseProps}
+        getValue={store.getValue}
+        patch={store.patch}
+        routeLayoutName="gnuboard7-hello_module.user_memo_list"
+      />,
+    );
+    expect(screen.getByTestId('g7le-seo-bot-preview-stub').getAttribute('data-layout-name')).toBe(
+      'gnuboard7-hello_module.user_memo_list',
+    );
+  });
+
+  /** @effects seo_form_forwards_route_layout_name_to_bot_preview */
+  it('routeLayoutName 이 없으면 layoutName 도 비어 있다', async () => {
+    const store = makeStore({ seo: { enabled: true } });
+    await renderForm(<SeoForm {...baseProps} getValue={store.getValue} patch={store.patch} />);
+    expect(screen.getByTestId('g7le-seo-bot-preview-stub').getAttribute('data-layout-name')).toBe('');
   });
 });
 

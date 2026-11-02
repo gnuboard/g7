@@ -14,6 +14,8 @@ return [
     'sitemap_regenerated' => 'Sitemap regeneration completed.',
     'sitemap_regenerate_dispatched' => 'Sitemap regeneration has started. It may take a while to finish.',
     'sitemap_regenerate_failed' => 'Sitemap regeneration failed.',
+    'sitemap_regenerate_in_progress' => 'The Sitemap is already being generated. Please try again after it finishes.',
+    'sitemap_regenerate_locked' => 'Another Sitemap generation job is waiting in the queue, or a lock from a previous job remains. Please try again shortly, or run `php artisan cache:clear` on the server and try again.',
     'sitemap_disabled' => 'Sitemap generation is disabled.',
 
     // Sitemap generation/serving

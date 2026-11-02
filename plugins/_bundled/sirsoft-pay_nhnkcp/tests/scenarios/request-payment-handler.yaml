@@ -6,8 +6,11 @@ description: |
   pg_payment_data 에 실은 payment_method 이고, 옛 pay_method 키나 화면 상태는 보지 않는다 (#639). PC 결제창 수단·
   복합과세 분할·간편결제 반환 필드·결제창 닫힘 감지·SDK 호스트 게이트를 함께 잠근다.
 
+  수정 이력 (#820): 서버가 면세 합계만 싣고 과세 합계·부가세를 싣지 않아 comm_vat_mny 가 늘 0 이었다. 이커머스가 면세분이
+  있을 때 tax_amount·vat_amount 를 함께 싣고, 받지 못하면(구버전 서버) 기본 세율로 나눈다.
+
 axes:
-  area: [entry_guard, currency, client_config, payment_method_source, frame_close, tax_split, easy_pay_fields, pc_pay_method, sdk_host]
+  area: [entry_guard, currency, client_config, payment_method_source, frame_close, tax_split, easy_pay_fields, pc_pay_method, sdk_host, claim_window]
 
 effects:
   - early_return_without_payment_data
@@ -17,9 +20,14 @@ effects:
   - payment_method_from_action_args
   - frame_close_detected_once
   - tax_fields_rebalanced
+  - tax_split_falls_back_to_default_vat_rate   # 과세 합계 미수신(구버전 서버): 기본 세율 10% 로 부가세 분할(#820)
   - easy_pay_method_returned
   - pc_window_method_from_server
   - sdk_host_allowlisted
+  - claim_payment_skips_order_retry_prep         # 클레임 결제(CP)는 주문 전용 /payment/retry 를 부르지 않음
+  - order_payment_runs_retry_prep                # 주문 결제는 재시도 준비를 부름
+  - claim_window_cancel_returns_to_claim_detail  # 클레임 결제창 취소 → 닫힘 보고 없이 claim_cancel_return_url
+  - order_window_cancel_reports_close            # 주문 결제창 취소 → 닫힘 보고, 이동 없음
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/handlers/requestPayment.test.ts

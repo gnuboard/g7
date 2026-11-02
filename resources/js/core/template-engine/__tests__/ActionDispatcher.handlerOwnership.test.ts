@@ -1,7 +1,7 @@
 /**
  * ActionDispatcher.handlerOwnership.test.ts
  *
- * 핸들러 이름의 소유자 간 간섭을 실행 중 경고로 드러내는 계약을 잠근다 (engine-v1.86.0, #816 S1).
+ * 핸들러 이름의 소유자 간 간섭을 실행 중 경고로 드러내는 계약을 잠근다 (engine-v1.87.0, #816 S1).
  *
  * ## 무엇이 깨져 있었나
  *
@@ -32,7 +32,7 @@ function g7Warnings(spy: ReturnType<typeof vi.spyOn>): string[] {
     .filter((msg: string) => msg.startsWith('[G7]'));
 }
 
-describe('ActionDispatcher 핸들러 소유권 경고 (engine-v1.86.0)', () => {
+describe('ActionDispatcher 핸들러 소유권 경고 (engine-v1.87.0)', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
   let dispatcher: ActionDispatcher;
 

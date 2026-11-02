@@ -30,7 +30,7 @@
         <p data-if="{{!order.data.payment?.paid_at}}" class="paynicepayments:text-xs paynicepayments:text-blue-700 paynicepayments:dark:text-blue-300 paynicepayments:mt-3">$t:sirsoft-pay_nicepayments.user.vbank_notice</p>
       </div>
     </div>
-    <div data-if="{{order.data.payment?.pg_provider === 'nicepayments' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}" class="paynicepayments:pt-4 paynicepayments:mt-2 paynicepayments:border-t paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700 paynicepayments:space-y-1.5">
+    <div data-if="{{order.data.payment?.pg_provider === 'nicepayments' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0 || order.data.total_zero_rated_amount > 0)}}" class="paynicepayments:pt-4 paynicepayments:mt-2 paynicepayments:border-t paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700 paynicepayments:space-y-1.5">
       <p class="paynicepayments:text-sm paynicepayments:font-semibold paynicepayments:text-gray-800 paynicepayments:dark:text-gray-200 paynicepayments:mb-1">$t:sirsoft-pay_nicepayments.user.tax_breakdown_title</p>
       <div class="pay-nicepayments-flex-between paynicepayments:text-sm">
         <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.supply_amount</span>
@@ -43,6 +43,10 @@
       <div data-if="{{order.data.total_tax_free_amount > 0}}" class="pay-nicepayments-flex-between paynicepayments:text-sm">
         <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.tax_free_amount</span>
         <span class="paynicepayments:text-gray-900 paynicepayments:dark:text-white paynicepayments:font-medium">{{order.data.total_tax_free_amount_formatted}}</span>
+      </div>
+      <div data-if="{{order.data.total_zero_rated_amount > 0}}" class="pay-nicepayments-flex-between paynicepayments:text-sm">
+        <span class="paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400">$t:sirsoft-pay_nicepayments.user.zero_rated_amount</span>
+        <span class="paynicepayments:text-gray-900 paynicepayments:dark:text-white paynicepayments:font-medium">{{order.data.total_zero_rated_amount_formatted}}</span>
       </div>
     </div>
     <div data-if="{{order.data.payment?.pg_provider === 'nicepayments' &amp;&amp; order.data.payment?.transaction_id &amp;&amp; order.data.payment?.paid_at}}" class="paynicepayments:pt-4 paynicepayments:mt-2 paynicepayments:border-t paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700">

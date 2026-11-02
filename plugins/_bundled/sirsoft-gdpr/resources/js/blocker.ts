@@ -288,11 +288,47 @@ function restoreElement(placeholder: HTMLElement): void {
     const tmp = document.createElement('div');
     tmp.innerHTML = original;
     const restored = tmp.firstElementChild;
-    if (restored !== null) {
-        placeholder.replaceWith(restored);
-    } else {
+    if (restored === null) {
         placeholder.remove();
+        return;
     }
+
+    // innerHTML 로 만든 <script> 는 문서에 붙여도 실행되지 않는다 — 동의 후에도 막혔던 추적 스크립트가
+    // 돌지 않았다(#158 부수 결함). 새 script 요소를 만들어 허용 속성만 옮긴다. 본문 텍스트는 옮기지 않는다
+    // (인라인 실행 금지 — strict CSP 에서도 막히고, 보존 문자열에서 코드를 되살리지 않는다).
+    if (restored instanceof HTMLScriptElement) {
+        const src = restored.getAttribute('src');
+        if (!src) {
+            placeholder.remove();
+            return;
+        }
+
+        placeholder.replaceWith(rebuildScript(restored));
+        return;
+    }
+
+    placeholder.replaceWith(restored);
+}
+
+/** 복원하는 <script> 에 옮기는 속성 (그 밖에는 `data-*` 만) */
+const RESTORABLE_SCRIPT_ATTRS = ['src', 'type', 'async', 'defer', 'crossorigin', 'integrity', 'referrerpolicy', 'nomodule'];
+
+/**
+ * 보존된 <script> 를 실행 가능한 새 요소로 다시 만든다 (허용 속성·data-* 만 복사, 본문 제외).
+ *
+ * @param source innerHTML 로 파싱한 원본 script
+ * @return 새 script 요소
+ */
+function rebuildScript(source: HTMLScriptElement): HTMLScriptElement {
+    const script = document.createElement('script');
+    for (const attr of Array.from(source.attributes)) {
+        const name = attr.name.toLowerCase();
+        if (RESTORABLE_SCRIPT_ATTRS.includes(name) || name.startsWith('data-')) {
+            script.setAttribute(attr.name, attr.value);
+        }
+    }
+
+    return script;
 }
 
 /**

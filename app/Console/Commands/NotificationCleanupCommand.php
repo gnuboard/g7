@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\NotificationService;
 use Illuminate\Console\Command;
 
@@ -10,15 +11,12 @@ use Illuminate\Console\Command;
  */
 class NotificationCleanupCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'notification:cleanup';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '보관 기간이 지난 사이트내 알림을 삭제합니다';
 
     /**
      * Execute the console command.

@@ -30,6 +30,7 @@ use Plugins\Sirsoft\Sso\Models\SsoSession;
 use Plugins\Sirsoft\Sso\Repositories\Contracts\SsoAccountRepositoryInterface;
 use Plugins\Sirsoft\Sso\Services\SafeRedirect;
 use Plugins\Sirsoft\Sso\Services\StateStore;
+use Plugins\Sirsoft\Sso\Support\BridgeScript;
 use RobRichards\XMLSecLibs\XMLSecurityKey;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -1087,10 +1088,11 @@ class SamlDriver implements ProtocolDriverInterface
             .'<title>'.e(__('sirsoft-sso::saml.autosubmit.title')).'</title>'
             .'<style>body{font-family:system-ui,sans-serif;max-width:28rem;margin:3rem auto;padding:0 1rem;text-align:center}'
             .'button{margin-top:1rem;padding:.6rem 1.2rem}</style></head>'
-            .'<body onload="document.forms[0].submit()"><p>'.e(__('sirsoft-sso::saml.autosubmit.message')).'</p>'
+            .'<body><p>'.e(__('sirsoft-sso::saml.autosubmit.message')).'</p>'
             .'<form method="post" action="'.e($action).'">'.$inputs
             .'<noscript><button type="submit">'.e(__('sirsoft-sso::saml.autosubmit.continue')).'</button></noscript>'
-            .'</form></body></html>';
+            // 자동 제출은 정적 파일이 한다 — 인라인 onload 는 strict CSP(script-src 'self')에서 실행되지 않는다(#158)
+            .'</form>'.BridgeScript::tag('saml-autosubmit.js').'</body></html>';
     }
 
     /**

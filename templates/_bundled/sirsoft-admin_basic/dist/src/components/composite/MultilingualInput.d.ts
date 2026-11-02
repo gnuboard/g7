@@ -39,6 +39,8 @@ export interface MultilingualInputProps {
     name?: string;
     /** 모바일에서 언어 코드로 표시 (기본값: false) */
     showCodeOnMobile?: boolean;
+    /** compact 배치에서 언어 단추 줄 아래에 입력칸을 놓는다 — 표 칸처럼 좁은 자리용 (기본값: false) */
+    stacked?: boolean;
     /** 에러 메시지 (입력 필드에 적색 테두리 표시) */
     error?: string;
     /**

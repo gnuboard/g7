@@ -130,8 +130,6 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 - [ ] 새 결제수단·통화를 추가하면 그 결제수단의 콜백 URL을 관리자 설정 안내(README "콜백 및 통보 URL")에도 반영
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan plugin:update sirsoft-pay_nhnkcp --force`
 - [ ] NHN KCP 가 SDK 호스트를 바꾸면 `plugin.json` 의 `trusted_script_hosts`(+`trusted_script_hosts_reason`)와 `resources/js/handlers/requestPayment.ts` 의 `KNOWN_SDK_HOSTS` 를 **함께** 갱신 — 두 목록이 어긋나면 테스트가 실패하며, 코드 상수에 없는 호스트는 주입 직전 확인에서 거부되어 결제가 진행되지 않는다(fail-closed). 변경 후 `php artisan ext:docgen --scope=plugin:sirsoft-pay_nhnkcp` 재실행
-- [ ] 브라우저가 만드는 주소는 `resources/js/apiUrl.ts` 의 `apiUrl()`, `sitePath()`, `routePath()` 만 쓴다 — 이동, 링크, 요청 주소는 `sitePath()`/`apiUrl()` 로 접두사를 붙이고, `location.pathname` 을 화면 판정에 쓸 때는 `routePath()` 로 벗긴다. 이 파일은 번들 확장 전체가 바이트 동일한 사본으로 갖는다. 어기면 하위 폴더 설치(`https://host/g7/`)에서만 오류 없이 결제 복귀와 신청서 복귀가 사이트 밖을 가리킨다
-- [ ] 서버가 주는 앱 내 복귀 경로(`claim_cancel_return_url` 등, 접두사 없음)로 전체 이동할 때도 `sitePath()` 를 거친다 — 그대로 `location.href` 에 넣으면 하위 폴더 설치에서 교환/반품 신청서로 돌아오지 못하고 사이트 밖으로 나간다
 
 ## 6. 금지 패턴
 
@@ -162,10 +160,10 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 50개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
-| Vitest | 29개 | `vitest.config.ts` |
+| PHPUnit | 52개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
+| Vitest | 32개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 45개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 49개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

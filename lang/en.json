@@ -8,6 +8,9 @@
     },
     "navigation": {
       "leave_confirm": "You have unsaved changes. If you leave this page, what you entered will be lost. Leave anyway?"
+    },
+    "compat": {
+      "$partial": "partial/en/compat.json"
     }
   },
   "layout_editor": {

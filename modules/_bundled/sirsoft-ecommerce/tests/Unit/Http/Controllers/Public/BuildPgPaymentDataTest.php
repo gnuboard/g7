@@ -466,7 +466,7 @@ class BuildPgPaymentDataTest extends ModuleTestCase
      *
      * @return void 반환값 없음
      *
-     * @scenario payment_method=vbank
+     * @scenario payment_method=vbank, tax=taxable_only
      *
      * @effects pg_payment_data_carries_the_order_vbank_due_in_kst
      */
@@ -493,7 +493,7 @@ class BuildPgPaymentDataTest extends ModuleTestCase
      *
      * @return void 반환값 없음
      *
-     * @scenario payment_method=card
+     * @scenario payment_method=card, tax=taxable_only
      *
      * @effects non_vbank_order_omits_the_vbank_due
      */
@@ -512,5 +512,173 @@ class BuildPgPaymentDataTest extends ModuleTestCase
         $result = $this->callBuildPgPaymentData($order->fresh());
 
         $this->assertArrayNotHasKey('vbank_due_at', $result);
+    }
+
+    // ──────────────────────────────────────────────
+    // 과세·면세 구분 — 공급가액·부가세를 나눠 받는 PG(NHN KCP·나이스페이먼츠)용
+    // ──────────────────────────────────────────────
+
+    /**
+     * 면세분이 있는 주문(과세 22,000·부가세 2,000·면세 5,000)을 결제수단과 함께 만듭니다.
+     *
+     * @param  PaymentMethodEnum  $method  결제수단
+     * @param  float  $taxFree  면세 합계
+     * @return Order 새로 읽은 주문
+     */
+    private function makeTaxSplitOrder(PaymentMethodEnum $method, float $taxFree): Order
+    {
+        $order = Order::factory()->forUser($this->createUser())->create([
+            'total_due_amount' => 24000,
+            'total_tax_amount' => 22000,
+            'total_vat_amount' => 2000,
+            'total_tax_free_amount' => $taxFree,
+            'currency_snapshot' => ['order_currency' => 'KRW'],
+        ]);
+        OrderOption::factory()->forOrder($order)->create(['product_name' => ['ko' => '상품 A']]);
+        OrderPayment::factory()->create(['order_id' => $order->id, 'payment_method' => $method]);
+
+        return $order->fresh();
+    }
+
+    /**
+     * 면세분이 있는 주문은 면세 합계와 함께 과세 합계(부가세 포함)·부가세를 싣는다.
+     *
+     * 공급가액·부가세를 나눠 받는 PG 는 결제액을 `vat_amount / tax_amount` 비율로 나눈다. 종전에는 면세 합계만
+     * 실어, NHN KCP 결제창의 부가세(`comm_vat_mny`)가 늘 0 이 되고 과세분 전액이 공급가액으로 갔다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario payment_method=card, tax=mixed
+     *
+     * @effects pg_payment_data_carries_tax_and_vat_with_tax_free
+     */
+    public function test_면세분이_있으면_과세_합계와_부가세를_함께_싣는다(): void
+    {
+        $result = $this->callBuildPgPaymentData($this->makeTaxSplitOrder(PaymentMethodEnum::CARD, 5000));
+
+        $this->assertSame(5000, $result['tax_free_amount']);
+        $this->assertSame(22000, $result['tax_amount']);
+        $this->assertSame(2000, $result['vat_amount']);
+    }
+
+    /**
+     * 가상계좌 주문도 같은 과세 구분을 싣는다 — 결제수단과 무관하게 결제창이 같은 비율로 나눈다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario payment_method=vbank, tax=mixed
+     *
+     * @effects pg_payment_data_carries_tax_and_vat_with_tax_free
+     */
+    public function test_가상계좌_면세_주문도_과세_합계와_부가세를_싣는다(): void
+    {
+        $result = $this->callBuildPgPaymentData($this->makeTaxSplitOrder(PaymentMethodEnum::VBANK, 5000));
+
+        $this->assertSame(5000, $result['tax_free_amount']);
+        $this->assertSame(22000, $result['tax_amount']);
+        $this->assertSame(2000, $result['vat_amount']);
+    }
+
+    /**
+     * 마일리지를 과세분보다 많이 써 청구액이 면세 합계보다 작아지면 면세 금액을 청구액으로 자른다.
+     *
+     * 면세 합계는 쿠폰 할인 뒤·마일리지 차감 전 값이다. PG 는 면세 금액이 결제 금액 안에 있어야 받는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario payment_method=card, tax=mixed
+     *
+     * @effects tax_free_amount_is_capped_by_the_charge
+     */
+    public function test_면세_합계가_청구액보다_크면_청구액으로_자른다(): void
+    {
+        $order = $this->makeTaxSplitOrder(PaymentMethodEnum::CARD, 30000);
+
+        $result = $this->callBuildPgPaymentData($order);
+
+        $this->assertSame(24000, $result['amount']);
+        $this->assertSame(24000, $result['tax_free_amount']);
+    }
+
+    /**
+     * 면세분이 없는 주문은 과세 구분 키를 모두 null 로 둔다 — 과세 전용 상점에 불필요한 복합과세 분기를 태우지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario payment_method=card, tax=taxable_only
+     *
+     * @effects taxable_only_order_carries_no_tax_split
+     */
+    public function test_면세분이_없으면_과세_구분_키가_모두_null(): void
+    {
+        $result = $this->callBuildPgPaymentData($this->makeTaxSplitOrder(PaymentMethodEnum::CARD, 0));
+
+        $this->assertNull($result['tax_free_amount']);
+        $this->assertNull($result['tax_amount']);
+        $this->assertNull($result['vat_amount']);
+    }
+
+    /**
+     * 영세 금액은 결제사에 면세로 넘기고, 과세 합계에서는 뺀다(#612 P2).
+     *
+     * 주문: 과세표준 31,000(과세 21,000 + 영세 10,000)·부가세 1,909·면세 5,000. 결제사는 「면세 + 영세」를
+     * 부가세 없는 금액으로 받아야 영세분에 부가세를 매기지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario payment_method=card, tax=mixed_with_zero_rated
+     *
+     * @effects zero_rated_amount_is_sent_as_tax_free
+     */
+    public function test_영세_금액은_면세에_합산하고_과세_합계에서_뺀다(): void
+    {
+        $order = Order::factory()->forUser($this->createUser())->create([
+            'total_due_amount' => 36000,
+            'total_tax_amount' => 31000,
+            'total_zero_rated_amount' => 10000,
+            'total_vat_amount' => 1909,
+            'total_tax_free_amount' => 5000,
+            'currency_snapshot' => ['order_currency' => 'KRW'],
+        ]);
+        OrderOption::factory()->forOrder($order)->create(['product_name' => ['ko' => '상품 A']]);
+        OrderPayment::factory()->create(['order_id' => $order->id, 'payment_method' => PaymentMethodEnum::CARD]);
+
+        $result = $this->callBuildPgPaymentData($order->fresh());
+
+        $this->assertSame(15000, $result['tax_free_amount']);
+        $this->assertSame(21000, $result['tax_amount']);
+        $this->assertSame(1909, $result['vat_amount']);
+        $this->assertSame($result['amount'], $result['tax_free_amount'] + $result['tax_amount']);
+    }
+
+    /**
+     * 영세만 든 주문도 면세분이 있는 주문으로 다뤄 과세 구분 키를 싣는다 — 과세 0·부가세 0.
+     *
+     * 영세 도입 전에는 이런 주문이 면세분 없음으로 분류돼 결제사가 전액에 부가세를 매겼다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario payment_method=card, tax=zero_rated_only
+     *
+     * @effects zero_rated_amount_is_sent_as_tax_free
+     */
+    public function test_영세만_든_주문은_전액을_면세로_싣는다(): void
+    {
+        $order = Order::factory()->forUser($this->createUser())->create([
+            'total_due_amount' => 13000,
+            'total_tax_amount' => 13000,
+            'total_zero_rated_amount' => 13000,
+            'total_vat_amount' => 0,
+            'total_tax_free_amount' => 0,
+            'currency_snapshot' => ['order_currency' => 'KRW'],
+        ]);
+        OrderOption::factory()->forOrder($order)->create(['product_name' => ['ko' => '상품 A']]);
+        OrderPayment::factory()->create(['order_id' => $order->id, 'payment_method' => PaymentMethodEnum::CARD]);
+
+        $result = $this->callBuildPgPaymentData($order->fresh());
+
+        $this->assertSame(13000, $result['tax_free_amount']);
+        $this->assertSame(0, $result['tax_amount']);
+        $this->assertSame(0, $result['vat_amount']);
     }
 }

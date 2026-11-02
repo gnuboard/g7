@@ -15,7 +15,7 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { assertTrustedSdkUrl, KNOWN_SDK_HOSTS, requestPaymentHandler } from '../../handlers/requestPayment';
+import { assertTrustedSdkUrl, buildNicepayTaxFields, KNOWN_SDK_HOSTS, requestPaymentHandler } from '../../handlers/requestPayment';
 
 /** 서버(buildPgPaymentData)가 내려주는 모양 — 결제수단 ID 를 함께 싣는다 */
 const PG_PAYMENT = {
@@ -455,6 +455,157 @@ describe('requestPaymentHandler', () => {
             const form = submitSpy.mock.instances[0] as HTMLFormElement;
             expect(form.acceptCharset).toBe('euc-kr');
         });
+
+        /**
+         * 결제창 과세 필드는 나이스 사양 이름(SupplyAmt·GoodsVat·ServiceAmt·TaxFreeAmt)으로, 네 필드 합 = Amt 로 싣는다.
+         * 종전에는 사양에 없는 TaxAmt·VatAmt 에 마일리지 차감 전 주문 합계를 넣어 합이 결제액보다 컸다(#820).
+         *
+         * @scenario tax=mixed
+         * @effects tax_fields_use_spec_names_and_sum_to_amt
+         */
+        it('면세가 섞인 주문은 결제액 기준으로 나눈 사양 필드를 싣고 옛 TaxAmt·VatAmt 는 싣지 않는다', async () => {
+            // 과세 22,000(부가세 2,000) + 면세 5,000 주문에서 마일리지 3,000 을 써 결제액 24,000
+            apiGet.mockImplementation((url: string) => {
+                if (url.includes('client-config/nicepayments')) {
+                    return Promise.resolve({
+                        data: {
+                            mid: 'SRpaytestm',
+                            sdk_url: 'https://example/sdk.js',
+                            sign_data_url: SIGN_DATA_URL,
+                            callback_url: 'https://shop.example.test/plugins/sirsoft-pay_nicepayments/payment/callback',
+                        },
+                    });
+                }
+                if (url.includes('/user/orders/')) {
+                    return Promise.resolve({
+                        data: { total_tax_amount: 22000, total_vat_amount: 2000, total_tax_free_amount: 5000 },
+                    });
+                }
+                return Promise.resolve({});
+            });
+
+            await requestPaymentHandler({
+                params: { pgPaymentData: { ...PG_PAYMENT, amount: 24000, tax_free_amount: 5000 }, paymentMethod: 'card' },
+            });
+
+            const supply = Number(getSubmittedField('SupplyAmt'));
+            const vat = Number(getSubmittedField('GoodsVat'));
+            const service = Number(getSubmittedField('ServiceAmt'));
+            const taxFree = Number(getSubmittedField('TaxFreeAmt'));
+            expect({ supply, vat, service, taxFree }).toEqual({ supply: 17273, vat: 1727, service: 0, taxFree: 5000 });
+            expect(supply + vat + service + taxFree).toBe(Number(getSubmittedField('Amt')));
+            expect(getSubmittedField('TaxAmt')).toBeNull();
+            expect(getSubmittedField('VatAmt')).toBeNull();
+        });
+
+        /**
+         * 서버(이커머스 1.3.3+)가 면세분과 함께 과세 합계·부가세를 실으면 그 값으로 나누고 주문을 다시 조회하지 않는다.
+         *
+         * @scenario tax=mixed
+         * @effects tax_fields_use_spec_names_and_sum_to_amt
+         */
+        it('서버가 실은 과세 합계·부가세로 나누고 주문 재조회를 하지 않는다', async () => {
+            await requestPaymentHandler({
+                params: {
+                    pgPaymentData: { ...PG_PAYMENT, amount: 24000, tax_free_amount: 5000, tax_amount: 22000, vat_amount: 2000 },
+                    paymentMethod: 'card',
+                },
+            });
+
+            expect(getSubmittedField('SupplyAmt')).toBe('17273');
+            expect(getSubmittedField('GoodsVat')).toBe('1727');
+            expect(getSubmittedField('TaxFreeAmt')).toBe('5000');
+            expect(apiGet.mock.calls.some(([url]) => String(url).includes('/user/orders/'))).toBe(false);
+        });
+
+        /**
+         * 전부 과세인 주문은 과세 필드를 보내지 않는다 — 나이스 사양상 복합과세 협의가 없는 MID 에 보내면 결제·취소가 실패할 수 있다.
+         *
+         * @scenario tax=taxable_only
+         * @effects taxable_only_sends_no_tax_fields
+         */
+        it('면세분이 없으면 과세 필드를 하나도 싣지 않는다', async () => {
+            apiGet.mockImplementation((url: string) => {
+                if (url.includes('client-config/nicepayments')) {
+                    return Promise.resolve({
+                        data: {
+                            mid: 'SRpaytestm',
+                            sdk_url: 'https://example/sdk.js',
+                            sign_data_url: SIGN_DATA_URL,
+                            callback_url: 'https://shop.example.test/plugins/sirsoft-pay_nicepayments/payment/callback',
+                        },
+                    });
+                }
+                if (url.includes('/user/orders/')) {
+                    return Promise.resolve({
+                        data: { total_tax_amount: 10000, total_vat_amount: 909, total_tax_free_amount: 0 },
+                    });
+                }
+                return Promise.resolve({});
+            });
+
+            await requestPaymentHandler({
+                params: { pgPaymentData: PG_PAYMENT, paymentMethod: 'card' },
+            });
+
+            for (const name of ['SupplyAmt', 'GoodsVat', 'ServiceAmt', 'TaxFreeAmt', 'TaxAmt', 'VatAmt']) {
+                expect(getSubmittedField(name)).toBeNull();
+            }
+        });
+    });
+});
+
+describe('buildNicepayTaxFields — 나이스 결제창 과세·면세 지정 필드', () => {
+    const sum = (f: Record<string, string>) =>
+        Number(f.SupplyAmt) + Number(f.GoodsVat) + Number(f.ServiceAmt) + Number(f.TaxFreeAmt);
+
+    // @scenario tax=mixed
+    // @effects tax_fields_use_spec_names_and_sum_to_amt
+    it('과세분을 주문 부가세 비율로 공급가액·부가세로 나누고 네 필드 합이 결제액과 같다', () => {
+        const fields = buildNicepayTaxFields(15000, 4000, { total_tax_amount: 11000, total_vat_amount: 1000 });
+
+        expect(fields).toEqual({ SupplyAmt: '10000', GoodsVat: '1000', ServiceAmt: '0', TaxFreeAmt: '4000' });
+        expect(sum(fields)).toBe(15000);
+    });
+
+    // @scenario tax=tax_free_only
+    // @effects tax_fields_use_spec_names_and_sum_to_amt
+    it('면세 상품만 있으면 공급가액·부가세 0, 면세 = 결제액', () => {
+        expect(buildNicepayTaxFields(8000, 8000, { total_tax_amount: 0, total_vat_amount: 0 }))
+            .toEqual({ SupplyAmt: '0', GoodsVat: '0', ServiceAmt: '0', TaxFreeAmt: '8000' });
+    });
+
+    // @scenario tax=discount_exceeds_taxable
+    // @effects tax_fields_use_spec_names_and_sum_to_amt
+    it('마일리지·쿠폰 차감으로 결제액이 면세 합계보다 작으면 면세를 결제액으로 자른다', () => {
+        const fields = buildNicepayTaxFields(3000, 5000, { total_tax_amount: 11000, total_vat_amount: 1000 });
+
+        expect(fields).toEqual({ SupplyAmt: '0', GoodsVat: '0', ServiceAmt: '0', TaxFreeAmt: '3000' });
+        expect(sum(fields)).toBe(3000);
+    });
+
+    // @scenario tax=mixed
+    // @effects tax_fields_use_spec_names_and_sum_to_amt
+    it('주문 합계를 읽지 못하면 기본 세율(10%)로 부가세를 나눈다', () => {
+        const fields = buildNicepayTaxFields(16000, 5000, null);
+
+        expect(fields).toEqual({ SupplyAmt: '10000', GoodsVat: '1000', ServiceAmt: '0', TaxFreeAmt: '5000' });
+        expect(buildNicepayTaxFields(16000, 5000, { total_tax_amount: null })).toEqual(fields);
+    });
+
+    // @scenario tax=mixed
+    // @effects tax_fields_use_spec_names_and_sum_to_amt
+    it('주문 과세 합계가 0 이면 남은 과세분의 부가세도 0 (KCP 와 같은 규칙)', () => {
+        expect(buildNicepayTaxFields(16000, 5000, { total_tax_amount: 0, total_vat_amount: 0 }))
+            .toEqual({ SupplyAmt: '11000', GoodsVat: '0', ServiceAmt: '0', TaxFreeAmt: '5000' });
+    });
+
+    // @scenario tax=taxable_only
+    // @effects taxable_only_sends_no_tax_fields
+    it('면세분이 없거나 숫자가 아니면 빈 객체', () => {
+        expect(buildNicepayTaxFields(10000, 0, { total_tax_amount: 10000, total_vat_amount: 909 })).toEqual({});
+        expect(buildNicepayTaxFields(10000, undefined)).toEqual({});
+        expect(buildNicepayTaxFields(10000, 'abc')).toEqual({});
     });
 });
 
@@ -528,6 +679,8 @@ describe('클레임 추가결제 창 닫힘 → 신청서 상세 복귀', () => 
         vi.restoreAllMocks();
     });
 
+    // @scenario concern=window_close_return
+    // @effects nice_claim_window_close_returns_to_the_claim_detail
     it('클레임 결제창을 닫으면 claim_cancel_return_url 로 이동한다', async () => {
         await requestPaymentHandler({ params: { pgPaymentData: { ...PG_PAYMENT, order_number: 'CP20261006-0001', claim_cancel_return_url: CLAIM_RETURN } } });
 
@@ -538,6 +691,8 @@ describe('클레임 추가결제 창 닫힘 → 신청서 상세 복귀', () => 
         expect(hrefSet).toEqual([CLAIM_RETURN]);
     });
 
+    // @scenario concern=window_close_return
+    // @effects nice_order_window_close_stays_on_the_page
     it('주문 결제창 닫힘은 종전대로 이동하지 않는다 (claim_cancel_return_url 없음)', async () => {
         await requestPaymentHandler({ params: { pgPaymentData: PG_PAYMENT } });
 

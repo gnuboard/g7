@@ -11,7 +11,7 @@ use Tests\TestCase;
  * 확장 CSS 서빙은 의미 클래스 층(`g7-extension`)과 Tailwind 폴백 층(`properties`)만 남기고 나머지
  * 층 래퍼·순서 선언을 걷어낸다. 남기지 않은 층의 규칙이 층 없이 템플릿 뒤에 실려야 확장 유틸리티가
  * 템플릿 CSS 라이브러리와 무관하게 이긴다. 층을 잘못 남기거나 잘못 벗기면 화면 전체 우선순위가 바뀐다.
- * 주석·문자열·이스케이프 안의 `@layer` 를 층으로 읽던 결함의 회귀 그물이다 — 트러블슈팅 `[case:backend-60]`.
+ * 주석·문자열·이스케이프 안의 `@layer` 를 층으로 읽던 결함의 회귀 그물이다 — 트러블슈팅 `[case:backend-65]`.
  */
 class CssLayerFlattenerTest extends TestCase
 {

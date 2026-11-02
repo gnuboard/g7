@@ -144,32 +144,19 @@ if (strcasecmp(substr($g7ScriptDir, -7), '/public') === 0) {
 }
 // endregion:delegation-normalization
 
-// 미설치 시 /install로 리다이렉트
+// 미설치 시 /install로 리다이렉트 — 스크립트 없이 HTTP 302 로 보낸다. 종전의 alert + location 인라인
+// 스크립트는 웹서버가 `Content-Security-Policy: script-src 'self'` 를 걸면 실행되지 않아 설치 화면으로
+// 넘어가지 못한 흰 화면이 됐다(#158).
+// Windows 에서는 루트 설치의 dirname('/index.php') 가 '\' 다 — JS 문자열에서는 '\/' 가 '/' 였지만 Location
+// 헤더의 '\/install' 은 브라우저가 '//install'(다른 호스트)로 읽는다. 역슬래시를 슬래시로 바꾼 뒤 자른다.
+//
+// 마운트 접두사는 위 정규화 구간이 이미 `SCRIPT_NAME` 에 되돌려 놓았다(위임 흔적 `/public` 제거,
+// `Alias` 마운트의 접두사 복원). 그래서 여기서 `SCRIPT_NAME` 을 읽으면 하위 폴더 설치에서도 목적지가
+// 사이트 안(`/g7sub/install`)에 머문다. 그 정규화는 요청 경로에서 잘라 온 값을 쓸 수 있으므로 앞의
+// 슬래시를 하나로 접는다 — `//host/install` 은 브라우저가 다른 호스트로 읽는다.
 if (! $isInstalled) {
-    $installUrl = $g7ScriptDir.'/install';
-
-    // 싱크에 맞는 인코더를 쓴다.
-    //
-    // 이 값은 JS **문자열 리터럴** 자리에 들어가는데 종전에는 HTML 이스케이프
-    // (`htmlspecialchars`)로 막고 있었다. `<script>` 안은 HTML 파서가 실체 참조를
-    // 해석하지 않는 raw text 라, 그 함수는 이 자리에서 **보호도 못 하고 값도 바꾼다**
-    // (실측):
-    //   · `/a"b`      → `href="/a&quot;b/install"` — 주소에 `&quot;` 가 그대로 들어간다
-    //   · `/g7\i…`    → JS 가 `\i` 를 `i` 로 읽어 **경로가 조용히 `/g7i…` 가 된다**
-    //   · `/xA…` → JS 가 `A` 로 읽어 다른 경로가 된다
-    // 셋 다 오류가 나지 않고 **다른 주소로 이동**하는 형태다. 출처가 요청 경로에서
-    // 잘라 온 값(`$g7ScriptDir`)이라 요청자 영향을 받는다 (10차 G3 라운드 D10-8).
-    //
-    // `JSON_HEX_*` 는 `</script>` 조기 종료와 HTML 문맥 탈출도 함께 막는다.
-    $installUrlJs = json_encode(
-        $installUrl,
-        JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-    );
-
-    echo '<script>
-        alert("G7 최초 사용을 위해 설치 절차가 필요합니다. 설치 화면으로 이동합니다.");
-        window.location.href='.($installUrlJs === false ? '"/install"' : $installUrlJs).';
-    </script>';
+    $installUrl = '/'.ltrim(rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'))), '/').'/install', '/');
+    header('Location: '.$installUrl, true, 302);
     exit;
 }
 

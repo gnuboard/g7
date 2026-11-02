@@ -114,6 +114,8 @@ posix 확장 없이 Windows 를 포함해 동작하므로 이 판정의 근거�
 
 `HasUnifiedConfirm` 은 Symfony QuestionHelper 를 거치므로 Laravel Command 외부 (예: upgrade step, 단순 PHP CLI 스크립트) 에서는 사용할 수 없다. 그런 경우 `ConsoleConfirm::ask()` 를 직접 호출한다.
 
+터미널 설치(`php g7-install`, 7.1.4)의 예/아니오 질문(`g7_cli_confirm()`)도 이 헬퍼를 쓴다 — 설치기는 vendor 없이 도는 순수 PHP 라 파일을 경로로 직접 `require_once` 한다(오토로더 없음). 설치기에 별도 예/아니오 해석을 두지 않는다.
+
 ### 사용법
 
 ```php

@@ -7,6 +7,11 @@ description: |
   서버가 비활성 대상에 언어팩을 거절하는 정책 자체(설치 직후 확장은 비활성)는 별도 결정 대상으로 남긴다.
   또 이미 설치·활성화되어 충족된 의존 확장의 언어팩이 「의존 확장을 함께 설치하도록 골랐을 때만」 조건에 묶여
   체크박스가 늘 꺼진 채 잠겨 있었다 — 미리보기가 충족된 의존 확장의 언어팩에는 depends_on_extension 을 싣지 않는다.
+  같은 로케일의 코어 언어팩이 켜져 있지 않은 확장 언어팩은 설치가 반드시 실패하므로 미리보기가 available=false·
+  blocked_reason=core_locale_missing 으로 싣고 기본 선택에서 뺀다(터미널 --with-language-packs=all 도 같은 후보를 쓴다).
+  이미 설치된 대상 확장의 버전이 언어팩 요구보다 낮은 경우(target_version_too_old)도 함께 설치로 풀리지 않으므로 같은
+  방식으로 싣는다(행에 scope·required_target_version 을 더해 사유 문장을 채운다). 대상 확장 미설치(target_not_installed)는
+  이 설치로 풀리므로 막지 않는다. 설치 창은 available=false 인 언어팩을 잠그고 사유 문장을 보인다.
 
 axes:
   case:
@@ -14,11 +19,20 @@ axes:
     - met_dependency_language_pack_unbound
     - unmet_dependency_language_pack_bound
     - met_dependency_badge_shown
+    - core_locale_inactive_language_pack_unavailable
+    - core_locale_active_language_pack_available
+    - target_version_too_old_language_pack_unavailable
+    - target_not_installed_language_pack_available
+    - unavailable_language_pack_locked_with_reason
 
 effects:
   - install_language_pack_failures_surfaced
   - met_dependency_language_pack_selectable
+  - install_preview_marks_core_locale_missing_language_pack_unavailable
+  - install_preview_marks_target_version_too_old_language_pack_unavailable
+  - install_modal_unavailable_language_pack_locked_with_reason
 
 test_files:
   - tests/Unit/Services/Extension/InstallPreviewMetDependencyLanguagePackTest.php
+  - tests/Unit/Services/Extension/InstallPreviewCoreLocaleLanguagePackTest.php
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-install-language-pack-failures.test.tsx

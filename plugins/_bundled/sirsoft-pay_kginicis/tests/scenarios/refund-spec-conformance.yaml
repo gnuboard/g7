@@ -6,12 +6,17 @@ description: |
   에스크로·달이 바뀐 휴대폰 결제는 부분취소를 접수 단계에서 막고, 부분취소에 과세 고정값을 싣지 않으며,
   입금된 가상계좌 환불은 /vacct 경로와 암호화한 환불계좌번호로 보내고, 부분취소 거래 ID 는 prtcTid 로 남긴다.
 
+  #820: 결제창이 면세분 있는 결제에 tax·taxfree 를 싣게 되면서, 승인 때 payment_meta.tax_split 에 승인 면세액을 남기고
+  그 표식이 있는 결제의 부분취소에만 tax·taxFree 를 주문 비율로 나눠 싣는다(승인 면세액 − 소진액 상한, 소진액 기록).
+
 axes:
   method: [card, escrow, vbank]
 
 effects:
   - partial_cancel_support_follows_kg_constraints
   - partial_refund_omits_fixed_tax_fields
+  - split_approval_records_tax_free_amount            # 면세분 있는 승인: payment_meta.tax_split 에 승인 면세액(#820)
+  - partial_refund_carries_tax_split_of_split_approval # 표식 있는 결제의 부분취소만 tax·taxFree(잔여 예산 상한), /vacct 제외(#820)
   - vbank_refund_uses_vacct_endpoint_with_encrypted_account
   - unpaid_vbank_close_keeps_plain_refund_endpoint
   - partial_refund_transaction_id_is_prtc_tid

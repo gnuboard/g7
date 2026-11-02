@@ -1,4 +1,4 @@
-feature: 일반 회원가입 받지 않음 — 가입 화면 안내 카드와 가입 링크 숨김 (sirsoft-basic 1.3.0, 코어 7.2.0 B1⑦·B2)
+feature: 일반 회원가입 받지 않음 — 가입 화면 안내 카드와 가입 링크 숨김 (sirsoft-basic 1.4.0, 코어 7.2.0 B1⑦·B2)
 
 description: |
   환경설정 `security.registration_enabled` 가 거짓이면(`_global.settings.security.registration_enabled === false`)

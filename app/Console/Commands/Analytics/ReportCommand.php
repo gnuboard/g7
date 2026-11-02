@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Analytics\AnalyticsConfig;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\Analytics\ReportMailService;
 use Illuminate\Console\Command;
 
@@ -18,19 +19,14 @@ use Illuminate\Console\Command;
  */
 class ReportCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 이름 및 시그니처
      *
      * @var string
      */
     protected $signature = 'analytics:report {--period=weekly : 기간 (weekly, monthly)}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '방문자 통계 정기 리포트를 만들어 알림으로 보냅니다.';
 
     /**
      * 커맨드 실행

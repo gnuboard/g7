@@ -2,7 +2,10 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Traits\LabelsMissingDependencies;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Console\Commands\Traits\RestoresHostLanguagePacks;
@@ -14,7 +17,10 @@ use Illuminate\Support\Facades\Log;
 
 class ActivatePluginCommand extends Command
 {
+    use LabelsMissingDependencies;
+    use LocalizesDescription;
     use RendersLayoutSyncResult;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
     use ReportsStuckUpdateRecovery;
     use RestoresHostLanguagePacks;
@@ -23,11 +29,6 @@ class ActivatePluginCommand extends Command
      * The name and signature of the console command.
      */
     protected $signature = 'plugin:activate {identifier : 활성화할 플러그인 식별자} {--force : 의존성 미충족 시 강제 활성화}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '플러그인을 활성화합니다';
 
     /**
      * 플러그인 관리자 및 리포지토리
@@ -85,9 +86,7 @@ class ActivatePluginCommand extends Command
                 if (! empty($result['missing_modules'])) {
                     $this->info(__('plugins.commands.activate.required_modules'));
                     foreach ($result['missing_modules'] as $module) {
-                        $statusLabel = $module['status'] === 'not_installed'
-                            ? __('plugins.commands.activate.missing_status.not_installed')
-                            : __('plugins.commands.activate.missing_status.inactive');
+                        $statusLabel = $this->missingDependencyStatusLabel('plugins', $module);
                         $this->line("   - {$module['identifier']} ({$module['name']}) [{$statusLabel}]");
                     }
                 }
@@ -95,9 +94,7 @@ class ActivatePluginCommand extends Command
                 if (! empty($result['missing_plugins'])) {
                     $this->info(__('plugins.commands.activate.required_plugins'));
                     foreach ($result['missing_plugins'] as $plugin) {
-                        $statusLabel = $plugin['status'] === 'not_installed'
-                            ? __('plugins.commands.activate.missing_status.not_installed')
-                            : __('plugins.commands.activate.missing_status.inactive');
+                        $statusLabel = $this->missingDependencyStatusLabel('plugins', $plugin);
                         $this->line("   - {$plugin['identifier']} ({$plugin['name']}) [{$statusLabel}]");
                     }
                 }
@@ -110,6 +107,7 @@ class ActivatePluginCommand extends Command
 
             if ($result['success']) {
                 $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.activate.success', ['plugin' => $identifier]));
+                $this->reportIntegrationNotices('plugin', $identifier);
                 $this->info('   - '.trans_choice('plugins.commands.activate.layouts_registered', (int) ($result['layouts_registered'] ?? 0)));
                 $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
                 $this->restoreHostLanguagePacks('plugin', $identifier, 'plugins');

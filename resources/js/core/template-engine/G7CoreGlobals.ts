@@ -1,4 +1,4 @@
-// e2e:allow 엔진 변경(engine-v1.85.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
+// e2e:allow 엔진 변경(engine-v1.86.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
 /**
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
@@ -851,7 +851,7 @@ function initComponentEventSystem(G7Core: any): void {
      *
      * - `off(eventName, callback)`: 그 콜백만 지운다 — 같은 이벤트의 다른 구독자는 그대로 받는다.
      * - `off(eventName)`: 그 이벤트의 구독을 **전부** 지운다. 다른 컴포넌트·확장의 구독까지 끊기므로
-     *   구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.86.0).
+     *   구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.87.0).
      *
      * @deprecated 콜백 없는 `off(eventName)` 은 폐지 예정이다. `on()` 이 돌려준 해제 함수나
      *   `off(eventName, callback)` 을 쓴다. 콜백 있는 형태는 폐지 대상이 아니다.
@@ -886,7 +886,7 @@ function initComponentEventSystem(G7Core: any): void {
     /**
      * 모든 이벤트 리스너를 제거합니다.
      *
-     * 다른 컴포넌트·확장의 구독까지 끊으므로 구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.86.0).
+     * 다른 컴포넌트·확장의 구독까지 끊으므로 구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.87.0).
      */
     clear: () => {
       let removed = 0;
@@ -1258,7 +1258,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
     // 전역 상태를 컨텍스트에 자동 병합 (cellChildren에서 _global 접근 가능)
     // itemContext에 이미 해당 키가 있으면 itemContext 값 우선 (명시적 전달 존중)
     // _local 은 itemContext에서 전달받거나 비어있음(셀 렌더 함수가 componentContext.state 를 병합한다)
-    // _computed 는 부모 컴포넌트의 최신 계산값이 기본값이다 (@since engine-v1.85.0) — 종전에는 `{}` 를 먼저 넣어
+    // _computed 는 부모 컴포넌트의 최신 계산값이 기본값이다 (@since engine-v1.86.0) — 종전에는 `{}` 를 먼저 넣어
     // getEffectiveContext 의 부모 문맥 병합(없는 키만)이 막혀 셀 안 `{{_computed.x}}` 가 늘 undefined 였다
     const parentComputed = options?.componentContext?.computedRef?.current
       ?? options?.componentContext?.parentDataContext?._computed;
@@ -1564,7 +1564,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       _local: mergedLocal,
       // 위 cellChildren 과 같은 이유로 `._global` 을 떼었다 — `state.get()` 이 이미 `_global` 이다.
       _global: globalState,
-      // expandContext 평가와 같은 최신 계산값 (@since engine-v1.85.0) — 종전 `globalState._computed || {}` 는 늘 빈 객체라
+      // expandContext 평가와 같은 최신 계산값 (@since engine-v1.86.0) — 종전 `globalState._computed || {}` 는 늘 빈 객체라
       // 확장 행 children 이 `{{_computed.x}}` 를 직접 읽으면 undefined 였다(셀 렌더 함수의 부모 문맥 병합도 이 자리에 막혔다)
       _computed: latestComputed,
       ...resolvedExpandContext,

@@ -200,7 +200,13 @@ class InstallerDropConfirmTest extends TestCase
      */
     public function test_install_process_applies_confirmation_through_helper(): void
     {
-        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/api/install-process.php');
+        // 설치 계획 확정 본문은 웹·터미널 공유 함수(includes/install-plan.php)로 옮겨졌다 —
+        // 웹 엔드포인트는 그 함수만 부른다. 두 소스 모두 주석을 걷어 낸 코드만 센다.
+        $endpoint = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/api/install-process.php');
+        $this->assertStringContainsString('installer_begin_installation(', $endpoint);
+        $this->assertStringNotContainsString('installer_verify_drop_confirm(', $endpoint);
+
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/install-plan.php');
 
         $this->assertSame(1, substr_count($source, 'installer_apply_drop_confirm('));
         $this->assertStringNotContainsString('installer_verify_drop_confirm(', $source);

@@ -34,14 +34,14 @@ if (! isset($error)) {
     </div>
 
     <div id="navigation-buttons" class="btn-group btn-group-spread hidden">
-        <button type="button" onclick="goToStep(1)" class="btn btn-secondary">
+        <button type="button" data-action="goToStep" data-arg="1" class="btn btn-secondary">
             <?= htmlspecialchars(lang('previous')) ?>
         </button>
 
         <div class="btn-group-right">
             <?php /* [다시 검사] 는 중립 재시도다 — 빨강 솔리드(btn-danger)는 삭제·중단과 같은
                      시각 언어라 요구사항 화면에서 「무언가를 지운다」로 오독된다 (9차 #L30, §12 W1) */ ?>
-            <button onclick="recheckRequirements()" id="recheck-btn" class="btn btn-secondary hidden">
+            <button data-action="recheckRequirements" id="recheck-btn" class="btn btn-secondary hidden">
                 <?= htmlspecialchars(lang('recheck')) ?>
             </button>
 

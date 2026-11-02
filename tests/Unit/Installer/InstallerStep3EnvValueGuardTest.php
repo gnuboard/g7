@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
 class InstallerStep3EnvValueGuardTest extends TestCase
 {
     /**
-     * 다국어 스텁과 상수를 세우고 Step 3 처리기와 그 의존 인스톨러 파일을 적재한다.
+     * 클래스 공통 준비 — 검사 대상 파일을 한 번 로드한다.
      *
      * @return void 반환값 없음
      */
@@ -54,7 +54,7 @@ class InstallerStep3EnvValueGuardTest extends TestCase
     }
 
     /**
-     * 테스트가 채운 POST 전역을 비워 다음 테스트에 남지 않게 한다.
+     * 테스트 정리.
      *
      * @return void 반환값 없음
      */
@@ -116,7 +116,7 @@ class InstallerStep3EnvValueGuardTest extends TestCase
     /**
      * 개행 주입 벡터 (필드 × CR/LF).
      *
-     * @return array<string, array{0: string, 1: string}> 사례 이름별 [필드명, 주입 시도 값]
+     * @return array<string, array{0: string, 1: string}> 테스트 데이터 세트
      */
     public static function lineBreakFieldProvider(): array
     {
@@ -175,7 +175,7 @@ class InstallerStep3EnvValueGuardTest extends TestCase
      *
      * @scenario vector=handleStep3Post, payload_class=empty, expected_outcome=accept_normal
      *
-     * @effects step3_post_skips_url_shape_check_for_empty_values
+     * @effects step3_post_skips_url_shape_check_for_empty_values, step3_empty_app_url_reports_required_not_url_shape
      *
      * @return void 반환값 없음
      */
@@ -187,7 +187,8 @@ class InstallerStep3EnvValueGuardTest extends TestCase
             'core_update_github_url' => '',
         ]);
 
-        $this->assertArrayNotHasKey('app_url', $errors);
+        // 사이트 URL 은 필수 항목이다(서버 검증) — 빈 값은 「필수」 오류이지 URL 형태 오류가 아니다.
+        $this->assertSame(lang('error_app_url_required'), $errors['app_url'] ?? null);
         $this->assertArrayNotHasKey('core_update_github_url', $errors);
     }
 }

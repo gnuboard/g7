@@ -4,7 +4,7 @@
  *
  * 자가 복구는 "실패했으니 다시 시도한다" 는 구조라 루프 위험이 내재한다.
  * 계획서 §12 는 이를 구현 불변식으로 못박았고, 각각에 대응 테스트를 요구한다.
- * 여기서는 브라우저 없이 검증 가능한 불변식(L1·L5·L7)과, blade 인라인 복구기와
+ * 여기서는 브라우저 없이 검증 가능한 불변식(L1·L5·L7)과, 셸 head 복구기와
  * TS 빌더의 **규칙 드리프트**를 다룬다. 요청 횟수·리로드·폴백 UI(L2·L3·L4·L8)는
  * 브라우저 계층이므로 Playwright spec 이 담당한다.
  *
@@ -26,30 +26,30 @@ import {
 } from '../assetUrl';
 
 /**
- * blade 파샬의 인라인 `toExtensionless` 를 추출해 실행 가능한 함수로 만든다.
+ * 셸 head 스크립트(public/assets/core/js/g7-shell-head.js — 종전 blade 인라인, #158)의 `toExtensionless` 를 추출해 실행 가능한 함수로 만든다.
  *
  * 부트스트랩은 코어 번들 로드 전에 동작해야 해서 import 를 쓸 수 없고, 그래서 변환 규칙이
- * blade 인라인 JS 에 한 벌 더 존재한다. 두 구현이 갈라지면 서버가 만든 URL 과
- * 클라이언트가 만든 URL 이 어긋나 그 자산만 404 가 되므로, 실제 blade 소스에서
+ * 셸 head 스크립트에 한 벌 더 존재한다. 두 구현이 갈라지면 서버가 만든 URL 과
+ * 클라이언트가 만든 URL 이 어긋나 그 자산만 404 가 되므로, 실제 셸 소스에서
  * 함수를 뽑아 TS 구현과 대조한다.
  */
 function loadInlineConverter(basePath = ''): (url: string) => string | null {
-    const bladePath = resolve(__dirname, '../../../../views/partials/asset-url-recovery.blade.php');
-    const source = readFileSync(bladePath, 'utf-8');
+    const shellPath = resolve(__dirname, '../../../../../public/assets/core/js/g7-shell-head.js');
+    const source = readFileSync(shellPath, 'utf-8');
 
     /**
-     * blade 파샬에서 함수 하나를 균형 중괄호로 잘라낸다.
+     * 셸 head 스크립트에서 함수 하나를 균형 중괄호로 잘라낸다.
      *
-     * 변환기가 파샬 안의 다른 함수를 부르면 그것도 함께 주입해야 blade 스코프가 재현된다.
+     * 변환기가 스크립트 안의 다른 함수를 부르면 그것도 함께 주입해야 셸 스코프가 재현된다.
      * 이름을 열거하는 대신 이 헬퍼로 뽑아 이어 붙인다 — 하나만 잘라 오면 그 호출이
-     * `is not defined` 로 죽고, 그것은 「blade 구현이 틀렸다」와 구분되지 않는다.
+     * `is not defined` 로 죽고, 그것은 「셸 구현이 틀렸다」와 구분되지 않는다.
      *
      * @param signature 함수 시그니처 시작 문자열
      * @returns 함수 소스
      */
     function sliceFunction(signature: string): string {
         const start = source.indexOf(signature);
-        expect(start, `blade 파샬에서 ${signature} 를 찾지 못했다`).toBeGreaterThan(-1);
+        expect(start, `셸 head 스크립트에서 ${signature} 를 찾지 못했다`).toBeGreaterThan(-1);
 
         let depth = 0;
         let end = start;
@@ -73,7 +73,7 @@ function loadInlineConverter(basePath = ''): (url: string) => string | null {
         sliceFunction('function toExtensionless(url) {'),
     ].join('\n');
 
-    // 함수가 참조하는 파샬 상단 상수를 함께 주입한다 (blade 스코프 재현)
+    // 함수가 참조하는 파샬 상단 상수를 함께 주입한다 (셸 스코프 재현)
     // eslint-disable-next-line no-new-func
     return new Function(
         'basePath',
@@ -98,6 +98,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
     describe('L1 — 전환은 단방향 1회', () => {
         // @scenario asset_url_mode=extensionless
         // @effects frontend_asset_url_mode_switch_is_one_way_and_once
+        /** @effects asset_url_mode_switch_one_way */
         it('extension → extensionless 는 1회만 성공한다', () => {
             expect(setAssetUrlMode(MODE_EXTENSIONLESS)).toBe(true);
             expect(setAssetUrlMode(MODE_EXTENSIONLESS)).toBe(false);
@@ -105,6 +106,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extensionless
         // @effects frontend_asset_url_mode_switch_is_one_way_and_once
+        /** @effects asset_url_mode_switch_one_way */
         it('역방향 전환 경로가 존재하지 않는다', () => {
             setAssetUrlMode(MODE_EXTENSIONLESS);
 
@@ -114,6 +116,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extensionless
         // @effects frontend_asset_url_mode_switch_is_one_way_and_once
+        /** @effects asset_url_mode_switch_one_way */
         it('G7Config 가 재대입되어도 전환 결과가 유지된다', () => {
             setAssetUrlMode(MODE_EXTENSIONLESS);
 
@@ -127,6 +130,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
     describe('L5 — 클라이언트는 서버 설정을 쓰지 않는다', () => {
         // @scenario asset_url_mode=extensionless
         // @effects asset_url_mode_switch_leaves_server_settings_untouched
+        /** @effects asset_url_mode_client_never_writes_settings */
         it('전환이 settings 원본을 변경하지 않는다', () => {
             (globalThis as any).G7Config = {
                 cache_version: 7,
@@ -142,6 +146,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
     describe('L7 — 캐시는 cache_version 을 포함하고 TTL 을 둔다', () => {
         // @scenario asset_url_mode=extensionless
         // @effects frontend_asset_url_mode_cache_is_scoped_by_cache_version_and_ttl
+        /** @effects asset_url_mode_cache_key_versioned */
         it('캐시 키에 cache_version 이 포함된다', () => {
             setAssetUrlMode(MODE_EXTENSIONLESS);
 
@@ -149,7 +154,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
         });
     });
 
-    describe('변환 규칙 — blade 인라인 복구기와 TS 빌더 동등성', () => {
+    describe('변환 규칙 — 셸 head 복구기와 TS 빌더 동등성', () => {
         const cases = [
             '/api/templates/assets/sirsoft-basic/js/components.iife.js?v=7',
             '/api/templates/assets/sirsoft-basic/css/components.css?v=7',
@@ -169,12 +174,13 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extensionless, base_path=root
         // @effects blade_inline_recovery_converter_matches_ts_builder
+        /** @effects shell_head_converter_matches_ts_builder */
         it('모든 대표 URL 에서 두 구현의 결과가 동일하다', () => {
             const inline = loadInlineConverter();
             (globalThis as any).__g7AssetUrlMode = MODE_EXTENSIONLESS;
 
             for (const url of cases) {
-                expect(inline(url), `blade 인라인 변환기가 ${url} 을 변환하지 못했다`).not.toBeNull();
+                expect(inline(url), `셸 head 변환기가 ${url} 을 변환하지 못했다`).not.toBeNull();
                 expect(inline(url), `변환 규칙 드리프트: ${url}`).toBe(convertToCurrentMode(url));
             }
         });
@@ -216,7 +222,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
             for (const url of raw) {
                 expect(() => convertToCurrentMode(url), `TS 구현이 ${url} 에서 던진다`).not.toThrow();
-                expect(() => inline(url), `blade 구현이 ${url} 에서 던진다`).not.toThrow();
+                expect(() => inline(url), `셸 head 구현이 ${url} 에서 던진다`).not.toThrow();
                 expect(inline(url), `변환 규칙 드리프트: ${url}`).toBe(convertToCurrentMode(url));
             }
 
@@ -253,7 +259,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
             for (const [input, expected] of pairs) {
                 expect(convertToCurrentMode(input), `TS: ${input}`).toBe(expected);
-                expect(inline(input), `blade 드리프트: ${input}`).toBe(expected);
+                expect(inline(input), `셸 head 드리프트: ${input}`).toBe(expected);
             }
 
             // 접두사 밖 주소는 대상이 아니다 — 다른 사이트를 가리키는 URL 을 건드리지 않는다.
@@ -265,7 +271,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
          * 접두사 값이 **정규형이 아닐 때**도 두 구현이 같은 규칙을 쓴다.
          *
          * 종전 대조는 양쪽에 이미 정규화된 같은 값(`'/g7'`)을 주입해서 이 축을 원리상 볼
-         * 수 없었다 — TS 판본만 `normalizeBasePath` 를 거치고 blade 판본은 주입값을 그대로
+         * 수 없었다 — TS 판본만 `normalizeBasePath` 를 거치고 셸 판본은 주입값을 그대로
          * 이어 붙이는 비대칭이 그대로 남아 있었다. 루트 설치의 `'/'` 가 특히 나쁘다:
          * 정규화 없이 이어 붙이면 `//api/…` 가 되어 **프로토콜 상대 URL**(다른 호스트)이 된다.
          *
@@ -280,7 +286,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
                 expect(convertToCurrentMode('/g7/api/modules/bundle.js'), `TS: ${raw}`)
                     .toBe('/g7/api/modules/bundle/js');
-                expect(inline('/g7/api/modules/bundle.js'), `blade 드리프트: ${raw}`)
+                expect(inline('/g7/api/modules/bundle.js'), `셸 head 드리프트: ${raw}`)
                     .toBe('/g7/api/modules/bundle/js');
             }
 
@@ -295,6 +301,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extensionless, base_path=root
         // @effects core_engine_bundle_is_never_converted_by_recovery
+        /** @effects shell_head_converter_matches_ts_builder */
         it('코어 엔진 번들은 두 구현 모두 변환하지 않는다', () => {
             const inline = loadInlineConverter();
             (globalThis as any).__g7AssetUrlMode = MODE_EXTENSIONLESS;
@@ -308,6 +315,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extension, base_path=root
         // @effects extension_mode_recovery_conversion_is_identity
+        /** @effects shell_head_converter_matches_ts_builder */
         it('확장자 모드에서는 TS 빌더가 원본을 그대로 돌려준다', () => {
             (globalThis as any).__g7AssetUrlMode = undefined;
             (globalThis as any).G7Config = { cache_version: 7, assetUrlMode: MODE_EXTENSION };
@@ -318,20 +326,20 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
         });
     });
 
-    describe('정적 게시 역변환 — blade 인라인 복구기와 TS 구현 동등성 (#122 F15)', () => {
+    describe('정적 게시 역변환 — 셸 head 복구기와 TS 구현 동등성 (#122 F15)', () => {
         /**
-         * blade 파샬의 인라인 `staticToLegacy` 를 추출해 TS `staticToLegacy` 와 대조한다.
+         * 셸 head 스크립트(public/assets/core/js/g7-shell-head.js — 종전 blade 인라인, #158)의 `staticToLegacy` 를 추출해 TS `staticToLegacy` 와 대조한다.
          * 역변환 규칙은 서버측 `AssetUrl` 의 정적 게시 트리 규약과 1:1 이어야 하며,
          * 두 사본이 갈라지면 태그 계층의 서빙 시점 404 복구가 그 자산만 조용히 죽는다.
          *
          * @effects static_asset_tag_recovers_to_api_url
          */
         function loadInlineStaticToLegacy(): (url: string) => string | null {
-            const bladePath = resolve(__dirname, '../../../../views/partials/asset-url-recovery.blade.php');
-            const source = readFileSync(bladePath, 'utf-8');
+            const shellPath = resolve(__dirname, '../../../../../public/assets/core/js/g7-shell-head.js');
+            const source = readFileSync(shellPath, 'utf-8');
 
             const start = source.indexOf('function staticToLegacy(url) {');
-            expect(start, 'blade 파샬에서 staticToLegacy 를 찾지 못했다').toBeGreaterThan(-1);
+            expect(start, '셸 head 스크립트에서 staticToLegacy 를 찾지 못했다').toBeGreaterThan(-1);
 
             let depth = 0;
             let end = start;
@@ -369,17 +377,19 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario publish_state=partial, environment=production
         // @effects static_asset_tag_recovers_to_api_url
+        /** @effects static_asset_tag_recovers_to_api_url */
         it('모든 정적 게시 URL 에서 두 구현의 결과가 동일하다', () => {
             const inline = loadInlineStaticToLegacy();
 
             for (const url of staticCases) {
-                expect(inline(url), `blade 인라인 역변환기가 ${url} 을 변환하지 못했다`).not.toBeNull();
+                expect(inline(url), `셸 head 역변환기가 ${url} 을 변환하지 못했다`).not.toBeNull();
                 expect(inline(url), `역변환 규칙 드리프트: ${url}`).toBe(staticToLegacy(url));
             }
         });
 
         // @scenario publish_state=partial, environment=production
         // @effects static_asset_tag_recovers_to_api_url
+        /** @effects static_asset_tag_recovers_to_api_url */
         it('정적 게시 경로가 아닌 URL 은 두 구현 모두 변환하지 않는다', () => {
             const inline = loadInlineStaticToLegacy();
 
@@ -401,26 +411,11 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
          * @effects static_asset_tag_recovers_to_api_url
          */
         function loadPartialApi(): any {
-            const bladePath = resolve(__dirname, '../../../../views/partials/asset-url-recovery.blade.php');
-            const source = readFileSync(bladePath, 'utf-8');
-
-            // 파샬 상단 blade 주석이 태그 리터럴을 본문에 담고 있어, 맨 앞부터 찾으면
-            // 주석 속 리터럴을 먼저 잡는다. 주석 종료(`--}}`) 뒤에서 실제 태그를 찾는다.
-            const afterComment = source.indexOf('--}}');
-            const open = source.indexOf('<script>', afterComment === -1 ? 0 : afterComment);
-            const close = source.indexOf('</script>', open);
-            expect(open, 'blade 파샬에서 스크립트 태그를 찾지 못했다').toBeGreaterThan(-1);
-            expect(close, 'blade 파샬에서 스크립트 종료 태그를 찾지 못했다').toBeGreaterThan(open);
-
-            // blade 문법은 JS 가 아니므로 리터럴로 치환한다. 두 형태를 모두 다뤄야 한다 —
-            // echo(`{{ ... }}`)와 지시자(`@json(...)`). 앞의 것만 치환하면 파샬에 `@json`
-            // 이 들어온 순간 `new Function` 이 SyntaxError 로 죽고, 그것은 「복구기 구현이
-            // 틀렸다」와 구분되지 않는다. 마운트 접두사는 빈 문자열(루트 배치)로 둔다 —
-            // 아래 케이스들의 URL 이 모두 접두사 없는 형태라 그 전제와 맞춰야 한다.
-            const js = source
-                .slice(open + '<script>'.length, close)
-                .replace(/=\s*@json\([\s\S]*?\);/g, "= '';")
-                .replace(/{{[^}]*}}/g, '1234');
+            // 셸 head 스크립트(종전 blade 인라인 — #158)를 그대로 실행한다. 서버 값
+            // (`#g7-shell-head-data`)이 없으면 cacheVersion 0, 마운트 접두사는 빈 문자열(루트 배치)로
+            // 동작한다 — 아래 케이스들의 URL 이 모두 접두사 없는 형태라 그 전제와 맞는다.
+            const shellPath = resolve(__dirname, '../../../../../public/assets/core/js/g7-shell-head.js');
+            const js = readFileSync(shellPath, 'utf-8');
 
             // eslint-disable-next-line no-new-func
             new Function(js)();
@@ -437,6 +432,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extension, publish_state=partial, environment=production
         // @effects static_asset_tag_recovers_to_api_url
+        /** @effects static_asset_tag_recovers_to_api_url */
         it('확장자 모드에서는 확장자 형태 API URL 로 교체한다', () => {
             const api = loadPartialApi();
 
@@ -451,6 +447,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extensionless, publish_state=partial, environment=production
         // @effects static_asset_tag_recovers_to_api_url
+        /** @effects static_asset_tag_recovers_to_api_url */
         it('extensionless 모드에서는 확장자 없는 형태까지 도달한다', () => {
             (globalThis as any).window.__g7AssetUrlMode = MODE_EXTENSIONLESS;
             const api = loadPartialApi();
@@ -467,6 +464,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extension, publish_state=partial, environment=production
         // @effects static_asset_tag_recovers_to_api_url
+        /** @effects static_asset_tag_recovers_to_api_url */
         it('교체는 링크당 1회로 유지된다 (L1)', () => {
             const api = loadPartialApi();
 
@@ -493,6 +491,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
          */
         // @scenario asset_url_mode=extensionless
         // @effects installer_asset_url_probe_checks_body_token_and_content_type
+        /** @effects installer_probe_checks_mime_and_token */
         it('인스톨러 프로브가 두 검사를 모두 수행한다', () => {
             const installerPath = resolve(
                 __dirname,
@@ -537,6 +536,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
          */
         // @scenario asset_url_mode=extensionless
         // @effects engine_layers_never_call_the_asset_url_probe
+        /** @effects engine_layer_never_probes_asset_mode */
         it('엔진 소스에 프로브 엔드포인트 호출이 없다', () => {
             const engineRoot = resolve(__dirname, '../../');
             const repoRoot = resolve(__dirname, '../../../../../');
@@ -606,6 +606,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extensionless, base_path=root
         // @effects frontend_extensionless_mode_urls_carry_no_static_extension
+        /** @effects convert_to_current_mode_shapes */
         it('자산은 file 쿼리로, 번들은 세그먼트로, 접미사는 제거로', () => {
             expect(convertToCurrentMode('/api/templates/assets/t/js/a.js?v=7')).toBe(
                 '/api/templates/assets/t?file=js%2Fa.js&v=7',
@@ -616,6 +617,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extensionless, base_path=root
         // @effects frontend_extensionless_mode_urls_carry_no_static_extension
+        /** @effects convert_to_current_mode_shapes */
         it('변환 결과 경로에 정적 확장자가 남지 않는다', () => {
             for (const url of [
                 '/api/templates/assets/t/js/a.js?v=7',
@@ -630,6 +632,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extensionless
         // @effects recovery_conversion_leaves_external_origin_urls_untouched
+        /** @effects convert_to_current_mode_shapes */
         it('외부 origin URL 은 건드리지 않는다', () => {
             const external = 'https://cdn.example.com/lib.js';
 
@@ -641,6 +644,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
         // 자가 복구가 통째로 죽는다 — 외형은 "3회 재시도 후 폴백 UI" 라 원인이 안 보인다.
         // @scenario asset_url_mode=extensionless
         // @effects recovery_conversion_handles_same_origin_absolute_urls
+        /** @effects convert_to_current_mode_shapes */
         it('same-origin 절대 URL 도 변환한다 (DOM 프로퍼티 형태)', () => {
             const origin = globalThis.location.origin;
 
@@ -654,7 +658,8 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extensionless
         // @effects recovery_conversion_handles_same_origin_absolute_urls
-        it('blade 인라인 복구기도 same-origin 절대 URL 을 변환한다', () => {
+        /** @effects shell_head_converter_matches_ts_builder */
+        it('셸 head 복구기도 same-origin 절대 URL 을 변환한다', () => {
             const inline = loadInlineConverter();
             const origin = globalThis.location.origin;
 

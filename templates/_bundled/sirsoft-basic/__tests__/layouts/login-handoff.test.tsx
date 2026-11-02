@@ -9,7 +9,7 @@
  * 로그인·가입 화면에는 다른 로그인 수단을 확장이 붙이는 확장점(`auth_login_extensions`·`auth_register_extensions`)이 있다.
  *
  * @vitest-environment jsdom
- * @since 1.3.0
+ * @since 1.4.0
  */
 
 import React from 'react';

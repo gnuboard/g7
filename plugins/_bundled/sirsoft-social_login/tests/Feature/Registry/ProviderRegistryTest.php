@@ -18,7 +18,7 @@ use Plugins\Sirsoft\SocialLogin\Tests\PluginTestCase;
 
 /**
  * 제공자 레지스트리 시험 — 시딩, 확장 등록, 내장 덮어쓰기 무시, 커스텀 한도, 모의 게이트.
- * 시딩 두 진입점(설치, 언어팩 재시딩) 시험은 트러블슈팅 `[case:backend-58]` 의 회귀 그물이다.
+ * 시딩 두 진입점(설치, 언어팩 재시딩) 시험은 트러블슈팅 `[case:backend-63]` 의 회귀 그물이다.
  *
  * @since 1.0.0
  */

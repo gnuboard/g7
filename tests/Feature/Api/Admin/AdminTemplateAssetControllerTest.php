@@ -615,7 +615,7 @@ class AdminTemplateAssetControllerTest extends TestCase
      * 프리뷰 CSS 의 층 블록은 프리뷰 층(`g7-preview`)으로 모이고, 층 밖 규칙·`@property` 는 층 밖에 남으며 순서 선언은
      * 지워진다. 관리자 화면 머리는 템플릿 CSS 뒤에 `@layer g7-preview, g7-extension;` 을 선언해, 프리뷰 템플릿
      * 초기화(`*{border:0 solid}`)가 확장 의미 칸을 이기지 않게 한다(issue816 실측: 프리뷰 메모 카드 테두리 1px→0,
-     * 제목 24px→13px). 트러블슈팅 `[case:backend-61]` 의 회귀 그물이다.
+     * 제목 24px→13px). 트러블슈팅 `[case:backend-66]` 의 회귀 그물이다.
      *
      * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
      *

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Vendor\Concerns\RunsVendorBundleAction;
 use App\Extension\Vendor\VendorIntegrityChecker;
 use Illuminate\Console\Command;
@@ -11,13 +12,12 @@ use Illuminate\Console\Command;
  */
 class ModuleVendorVerifyCommand extends Command
 {
+    use LocalizesDescription;
     use RunsVendorBundleAction;
 
     protected $signature = 'module:vendor-verify
                             {identifier? : 검증할 모듈 식별자 (생략 시 --all 필요)}
                             {--all : 모든 _bundled 모듈 검증}';
-
-    protected $description = '모듈 vendor-bundle.zip 의 SHA256 무결성을 검증합니다';
 
     /**
      * 지정 모듈 또는 모든 _bundled 모듈의 vendor-bundle.zip 무결성을 검증합니다.

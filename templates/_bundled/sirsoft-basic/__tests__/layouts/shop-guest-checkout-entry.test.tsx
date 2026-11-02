@@ -132,7 +132,8 @@ describe('로그인 화면 - 비회원 주문하기 버튼 (Issue #55)', () => {
     // if 식 전체가 {{}} 로 감싸져야 ConditionEvaluator 가 식으로 평가
     expect(guestBlock.if.startsWith('{{')).toBe(true);
     expect(guestBlock.if.endsWith('}}')).toBe(true);
-    expect(guestBlock.if).toBe("{{query.redirect && query.redirect.includes('checkout')}}");
+    // 1.3.0(#822): 쇼핑몰 모듈이 꺼진 사이트에서는 숨긴다
+    expect(guestBlock.if).toBe("{{query.redirect && query.redirect.includes('checkout') && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}");
   });
 
   // @scenario actor=guest

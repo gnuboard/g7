@@ -299,7 +299,7 @@ export class ModuleAssetLoader {
      * 실패해도 throw 하지 않는다 — 덮기 파일이 없으면 확장 원본 모양이 그대로 남을 뿐이다.
      *
      * @return Promise<void>
-     * @since engine-v1.86.0
+     * @since engine-v1.87.0
      */
     async loadExtensionCssOverrides(): Promise<void> {
         const overrides = parseExtensionCssOverridesFromConfig();
@@ -711,7 +711,7 @@ export function parseCustomAssetsFromConfig(): CustomAsset[] {
  *
  * 서버(`App\Support\Template\ExtensionCssOverrideResolver`)가 호환 판정을 끝낸 항목이다.
  *
- * @since engine-v1.86.0
+ * @since engine-v1.87.0
  */
 export interface ExtensionCssOverride {
     /** 덮는 대상 확장 식별자 */
@@ -724,7 +724,7 @@ export interface ExtensionCssOverride {
  * `window.G7Config.extensionCssOverrides` 를 파싱합니다.
  *
  * @return ExtensionCssOverride[] 서술자 목록 (없으면 빈 배열)
- * @since engine-v1.86.0
+ * @since engine-v1.87.0
  */
 export function parseExtensionCssOverridesFromConfig(): ExtensionCssOverride[] {
     const raw = (window as any)?.G7Config?.extensionCssOverrides;

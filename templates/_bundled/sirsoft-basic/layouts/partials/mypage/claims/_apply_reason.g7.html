@@ -15,14 +15,11 @@
           <span>$t:claim.apply.reason_label</span>
           <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
         </label>
-        <!-- 사유를 바꾸면 귀책이 다시 정해져 배송비 부담 주체가 달라지므로 미리보기를 다시 부르고, 지난 제출이 남긴 오류 표시도 걷는다. 사유가 비어 있는 동안에는 미리보기가 돌지 않아 요약 금액도 서지 않는다. -->
-        <select aria-label="$t:claim.apply.reason_label" class="{{_local.claimValidationErrors?.reason_code ? 'w-full px-3 py-2 text-sm border-2 border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}" value="{{_local.claimReason ?? ''}}">
+        <!-- 사유를 바꾸면 귀책이 다시 정해져 배송비 부담 주체가 달라지므로 미리보기를 다시 부르고, 지난 제출이 남긴 오류 표시도 걷는다. 사유가 비어 있는 동안에는 미리보기가 돌지 않아 요약 금액도 서지 않는다. 사유 카탈로그는 진입 시 핸들러가 박아 둔 `_local.claimableSnapshot` 을 1순위로 읽고 데이터소스 store 는 폴백이다 — 핸들러(`claimableData`)와 같은 우선순위다. store 만 읽으면 `?order_id` 없이 들어온 진입(주소 직접 입력·북마크)에서 비어 있다: 그 경로는 첫 호출이 404 로 끝나고 체인이 다시 부르는데, 그 재조회 결과는 응답 컨텍스트로 핸들러에만 닿고 store 에는 나타나지 않는다. 상품 줄은 스냅샷에서 나와 그려지므로 화면은 정상으로 보이는데 사유만 비어, 사유가 필수인 신청서의 제출이 영영 막힌다(2026-08-31 3차 검증 실측). -->
+        <select aria-label="$t:claim.apply.reason_label" class="{{_local.claimValidationErrors?.reason_code ? 'w-full px-3 py-2 text-sm border-2 border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}" value="{{_local.claimReason ?? ''}}" options="{{[{ value: '', label: '$t:claim.apply.reason_placeholder' }].concat((((_local.claimableSnapshot ?? claimable?.data)?.reasons ?? {})[_local.claimType] ?? []).map(reason => ({ value: String(reason?.code ?? ''), label: reason?.localized_name })))}}">
           <on type="change">
             <action handler="sirsoft-ecommerce.setClaimReason" value="{{$event.target.value}}" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
           </on>
-          <option value="">$t:claim.apply.reason_placeholder</option>
-          <!-- 사유 카탈로그는 진입 시 핸들러가 박아 둔 `_local.claimableSnapshot` 을 1순위로 읽고 데이터소스 store 는 폴백이다 — 핸들러(`claimableData`)와 같은 우선순위다. store 만 읽으면 `?order_id` 없이 들어온 진입(주소 직접 입력·북마크)에서 비어 있다: 그 경로는 첫 호출이 404 로 끝나고 체인이 다시 부르는데, 그 재조회 결과는 응답 컨텍스트로 핸들러에만 닿고 store 에는 나타나지 않는다. 상품 줄은 스냅샷에서 나와 그려지므로 화면은 정상으로 보이는데 사유만 비어, 사유가 필수인 신청서의 제출이 영영 막힌다(2026-08-31 3차 검증 실측). -->
-          <option data-each="claimReason in {{((_local.claimableSnapshot ?? claimable?.data)?.reasons ?? {})[_local.claimType] ?? []}}" value="{{claimReason.code}}">{{claimReason.localized_name}}</option>
         </select>
         <span data-if="{{_local.claimValidationErrors?.reason_code}}" class="text-xs text-red-600 dark:text-red-400 mt-1 block">{{Array.isArray(_local.claimValidationErrors?.reason_code) ? _local.claimValidationErrors.reason_code[0] : _local.claimValidationErrors?.reason_code}}</span>
         <!-- 귀책 구분 — 회수·왕복 배송비의 부담 주체를 정하는 축이라, 사유를 고른 순간 무엇이 달라지는지 밝힌다. 라벨은 모듈 Enum 단일 출처를 쓴다. -->

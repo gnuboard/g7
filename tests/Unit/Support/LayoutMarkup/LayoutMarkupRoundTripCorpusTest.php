@@ -481,7 +481,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_profile_edit_reauth.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_reauth_methods.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/extensions/mypage_social_accounts_card.g7.html',
-        // 7.2.0 소셜 로그인 알림 탭(0111923eba)이 만들고 명단에 올리지 않은 4개 — 609 병합 뒤 등재
+        // 알림 탭(#835) — 알림 정의·템플릿 편집·미리보기·초기화 창
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_definition_reset.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.g7.html',
         'plugins/_bundled/sirsoft-social_login/resources/layouts/admin/partials/plugin_settings/_modal_notification_template_preview.g7.html',
@@ -602,6 +602,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_menu_list.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_menu_list/_panel_view.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_drawer_manifest_preview.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_deactivate_integrations.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_detail.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_extension_license.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_force_activate.g7.html',
@@ -616,6 +617,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_notification_log_list/_partial_datagrid.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_notification_log_list/_partial_filter.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_drawer_manifest_preview.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_deactivate_integrations.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_detail.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_extension_license.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_force_activate.g7.html',
@@ -676,6 +678,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_privacy.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security_activity_log.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security_csp.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security_ip_restriction.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_security_password_policy.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_seo.g7.html',

@@ -102,7 +102,7 @@ class PurgePhantomConsentRevocationsTest extends PluginTestCase
      *
      * @param  int  $userId  회원 ID
      * @param  string  $key  동의 항목 키
-     * @param  string  $action  동작 (granted 부여 / revoked 철회)
+     * @param  string  $action  동작(granted 또는 revoked)
      * @return void 반환값 없음
      */
     private function history(int $userId, string $key, string $action): void

@@ -16,7 +16,7 @@ use Tests\TestCase;
  * 비밀번호 없는 회원의 비밀번호 처음 설정 테스트 (#40 K5③④)
  *
  * 비밀번호가 없는 회원(외부 인증 전용)은 확인할 현재 비밀번호가 없으므로 마이페이지에서 현재 비밀번호 없이 새 비밀번호를
- * 정한다. 현재 비밀번호를 보내면 거절하고, 비밀번호가 있는 회원의 규칙(현재 비밀번호 필수)은 그대로다.
+ * 정한다. 옛 화면이 현재 비밀번호를 채워 보내면 그 값은 버리고, 비밀번호가 있는 회원의 규칙(현재 비밀번호 필수)은 그대로다.
  */
 class ChangePasswordWithoutCurrentTest extends TestCase
 {
@@ -97,16 +97,16 @@ class ChangePasswordWithoutCurrentTest extends TestCase
     }
 
     /**
-     * 비밀번호 없는 회원이 현재 비밀번호를 보내면 거절한다.
+     * 비밀번호 없는 회원이 현재 비밀번호를 보내면(옛 화면) 그 값은 버리고 보내지 않은 것과 같이 처리한다.
      *
      * @scenario password=none, current_password=present
      *
-     * @effects current_password_prohibited_for_passwordless
+     * @effects current_password_dropped_for_passwordless
      *
      * @return void 반환값 없음
      */
     #[Test]
-    public function 비밀번호_없는_회원이_현재_비밀번호를_보내면_거절한다(): void
+    public function 비밀번호_없는_회원이_보낸_현재_비밀번호는_버린다(): void
     {
         $user = $this->passwordlessMember();
 
@@ -114,9 +114,9 @@ class ChangePasswordWithoutCurrentTest extends TestCase
             'current_password' => 'anything',
             'password' => 'First!Pass123',
             'password_confirmation' => 'First!Pass123',
-        ])->assertStatus(422)->assertJsonValidationErrors(['current_password']);
+        ])->assertOk();
 
-        $this->assertFalse($user->fresh()->hasPassword());
+        $this->assertTrue($user->fresh()->hasPassword());
     }
 
     /**
@@ -171,21 +171,22 @@ class ChangePasswordWithoutCurrentTest extends TestCase
     }
 
     /**
-     * 비밀번호 없는 회원이 정보 수정 진입 관문에 비밀번호를 보내면 「비밀번호 미설정」 422 로 안내한다.
+     * 비밀번호 없는 회원이 정보 수정 진입 관문에 비밀번호를 보내면(옛 화면) 본인인증을 요구한다(428).
      *
      * @scenario password=none, gate=verify_password, method=password
      *
-     * @effects verify_password_reports_not_set
+     * @effects verify_password_challenges_passwordless
      *
      * @return void 반환값 없음
      */
     #[Test]
-    public function 비밀번호_없는_회원의_비밀번호_확인은_미설정으로_안내한다(): void
+    public function 비밀번호_없는_회원의_비밀번호_확인은_본인인증을_요구한다(): void
     {
         $user = $this->passwordlessMember();
 
         $this->as($user, 'POST', '/api/me/verify-password', ['password' => 'anything'])
-            ->assertStatus(422)
-            ->assertJsonPath('message', __('user.password_not_set'));
+            ->assertStatus(428)
+            ->assertJsonPath('error_code', 'identity_verification_required')
+            ->assertJsonPath('verification.purpose', 'sensitive_action');
     }
 }

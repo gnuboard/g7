@@ -8,6 +8,7 @@ import { flushSync } from 'react-dom';
 import { createRoot as createReactRoot } from 'react-dom/client';
 import { Router } from './routing/Router';
 import type { Route } from './routing/Router';
+import { normalizePathname } from './routing/normalizePathname';
 import { LayoutLoader, LayoutLoaderError } from './template-engine/LayoutLoader';
 import type { InitActionDefinition, LayoutScript, ComputedSwitchDefinition } from './template-engine/LayoutLoader';
 import { DataBindingEngine } from './template-engine/DataBindingEngine';
@@ -530,7 +531,35 @@ export class TemplateApp {
                 this.globalState.appConfig = g7Config.appConfig;
                 logger.log('Loaded appConfig from G7Config:', Object.keys(g7Config.appConfig));
             }
+
+            // 활성 모듈·플러그인 식별자 목록 (engine-v1.84.0)
+            // `_global.modules` 는 공개 설정이 있는 활성 모듈만 담아 「켜져 있나」를 판정할 수 없다. 레이아웃은
+            // `{{_global.activeModules?.includes('id') ?? true}}` 로 판정한다 — 이 키가 없는 옛 코어에서는 `?? true` 로
+            // 「켜짐」이 된다. 원본 G7Config.activeModules(메타 객체 배열)는 편집기·핸들러 대기가 읽으므로 그대로 둔다.
+            this.loadActiveExtensionIdentifiers(g7Config, 'activeModules');
+            this.loadActiveExtensionIdentifiers(g7Config, 'activePlugins');
         }
+    }
+
+    /**
+     * G7Config 의 활성 확장 메타 배열에서 식별자만 뽑아 같은 이름의 전역 상태로 싣는다.
+     *
+     * 배열이 아니면(옛 서버·키 없음) 전역 상태를 만들지 않는다 — 가드 식의 `?? true` 가 「켜짐」으로 읽게.
+     * 빈 배열은 「켜진 확장 없음」이므로 빈 배열로 싣는다.
+     *
+     * @param g7Config window.G7Config
+     * @param key activeModules | activePlugins
+     * @since engine-v1.84.0
+     */
+    private loadActiveExtensionIdentifiers(g7Config: any, key: 'activeModules' | 'activePlugins'): void {
+        const list = g7Config?.[key];
+        if (!Array.isArray(list)) {
+            return;
+        }
+
+        this.globalState[key] = list
+            .map((meta: any) => (typeof meta === 'string' ? meta : meta?.identifier))
+            .filter((identifier: unknown): identifier is string => typeof identifier === 'string' && identifier !== '');
     }
 
     /**
@@ -611,7 +640,7 @@ export class TemplateApp {
             installUnloadGuard();
 
             // 색상 테마 중립 표식 — 확장 CSS 가 템플릿 다크 방식과 무관하게 `<html data-g7-color-scheme>` 만
-            // 보도록, 확장 자산을 싣기 전에 관찰을 시작한다 (@since engine-v1.86.0)
+            // 보도록, 확장 자산을 싣기 전에 관찰을 시작한다 (@since engine-v1.87.0)
             this.startColorSchemeSignal();
 
             // 1. 템플릿 엔진 초기화, ComponentRegistry, routes.json, 사용자 정보를 병렬 로딩
@@ -980,7 +1009,7 @@ export class TemplateApp {
             await moduleAssetLoader.loadBundle('plugin', bundleUrls.pluginJs, bundleUrls.pluginCss);
 
             // 템플릿의 확장 CSS 덮기 파일은 확장 번들 뒤에 붙인다 — 같은 특이도의 확장 규칙을
-            // 나중에 와서 덮는다(engine-v1.86.0). 운영자 자산보다는 앞이다.
+            // 나중에 와서 덮는다(engine-v1.87.0). 운영자 자산보다는 앞이다.
             await moduleAssetLoader.loadExtensionCssOverrides();
 
             // 운영자가 덧붙인 자산은 **마지막**에 붙인다 — CSS 는 나중에 온 규칙이 이기므로,
@@ -1001,7 +1030,7 @@ export class TemplateApp {
      * 넣어 준다. 실패해도 부팅을 막지 않는다 — 표식이 없으면 확장 CSS 는 라이트 모양으로 남을 뿐이다.
      *
      * @returns 없음
-     * @since engine-v1.86.0
+     * @since engine-v1.87.0
      */
     private startColorSchemeSignal(): void {
         try {
@@ -1086,9 +1115,10 @@ export class TemplateApp {
             // 첫 화면도 라우터가 `navigateToCurrentPath()` 로 routeChange 를 한 번 낸다. 아래에서
             // 직접 알린 그 한 번을 거르지 않으면 모든 첫 로드가 페이지뷰 2건이 되고, 한 쪽만
             // 보고 떠난 방문이 이탈로 잡히지 않는다. 그 뒤의 이동은 전부 그대로 센다.
-            // 라우터가 알리는 `route.path` 는 접두사를 벗긴 앱 기준 경로다 — 같은 기준으로 맞춘다. 맞추지 않으면 하위
-            // 폴더 배치에서 첫 알림을 거르지 못해 첫 화면 페이지뷰가 2건이 된다.
-            const initialPath = stripBasePrefix(window.location.pathname);
+            // 라우터가 알리는 `route.path` 는 끝·연속 슬래시를 정규형으로 바꾸고 접두사를 벗긴 앱 기준 경로다 — 같은
+            // 기준으로 맞춘다. 원본 주소로 비교하면 `/x/` 진입이나 하위 폴더 배치에서 첫 알림을 거르지 못해 첫 화면
+            // 페이지뷰가 2건이 된다 (engine-v1.84.0)
+            const initialPath = stripBasePrefix(normalizePathname(window.location.pathname));
             let initialRouteChangeSeen = false;
 
             // 라우트 구독은 동기로 반환한다 — 라우터가 핸들러를 기다리기 때문이다.
@@ -2071,7 +2101,7 @@ export class TemplateApp {
                 );
 
                 // 구독을 준비하는 사이(모듈 import 대기) 새 화면 전환이 시작됐으면, 새 전환은 이미 해제 목록을 비운
-                // 뒤라 이 구독은 아무도 해제하지 않는다. 같은 channel:event 다중 구독이 각각 수신되는 지금은(engine-v1.86.0)
+                // 뒤라 이 구독은 아무도 해제하지 않는다. 같은 channel:event 다중 구독이 각각 수신되는 지금은(engine-v1.87.0)
                 // 그대로 두면 새 화면 구독과 겹쳐 같은 이벤트를 두 번 받는다 — 바로 해제하고 목록에 싣지 않는다.
                 if (routeChangeId !== this.currentRouteChangeId) {
                     logger.log('Route changed while subscribing WebSocket sources — releasing stale subscriptions:', webSocketSubscriptions);
@@ -3971,8 +4001,10 @@ export class TemplateApp {
             // 대기 중인 디바운스 쓰기(CKEditor 본문 등)를 먼저 실행해 스냅샷에 담는다 — 엔진을 내린 뒤 옛 디스패처의
             // 타이머가 늦게 실행되면 재진입의 `_local` 교체와 어긋난다
             getState().actionDispatcher?.flushPendingDebounceTimers?.();
-            // 재진입 대조(`consumeLocaleSwitchState(route.path)`)의 상대는 접두사를 벗긴 앱 기준 경로다 — 같은 기준으로 남긴다.
-            this.pendingLocaleSwitch = { path: stripBasePrefix(window.location.pathname), local: this.snapshotLocalForLocaleSwitch() };
+            // 재진입 대조(`consumeLocaleSwitchState(route.path)`)의 상대는 라우터가 정규화하고 접두사를 벗긴 앱 기준
+            // 경로다 — 주소만 바꾸는 이동이 끝 슬래시 주소를 써 둔 채 전환해도, 하위 폴더 배치여도 같은 화면으로
+            // 인계되게 같은 기준으로 남긴다 (engine-v1.84.0)
+            this.pendingLocaleSwitch = { path: stripBasePrefix(normalizePathname(window.location.pathname)), local: this.snapshotLocalForLocaleSwitch() };
             const loadedManualSourceIds = this.collectLoadedManualDataSourceIds();
             beginLocaleSwitchHandoff();
             this.localeSwitchConsumed = false;
@@ -4039,7 +4071,7 @@ export class TemplateApp {
 
             // 핸들러 재등록 — ActionDispatcher 가 새로 생성되었으므로 모두 다시 등록해야 한다.
             // 순서는 부트와 같게 모듈 → 플러그인 → 템플릿이다(부트: loadExtensionAssets → reinitializeTemplateHandlers).
-            // 종전에는 모듈 → 템플릿 → 플러그인이라 같은 이름이면 전환 전에는 템플릿, 전환 뒤에는 플러그인이 이겼다 (engine-v1.86.0)
+            // 종전에는 모듈 → 템플릿 → 플러그인이라 같은 이름이면 전환 전에는 템플릿, 전환 뒤에는 플러그인이 이겼다 (engine-v1.87.0)
             this.reinitializeModuleHandlers();
             logger.log('Module handlers re-initialized');
 
@@ -4408,7 +4440,7 @@ export class TemplateApp {
             return;
         }
 
-        // 등록자를 활성 템플릿 식별자로 표시한다 — 다른 주인의 이름을 덮으면 엔진이 경고로 드러낸다 (engine-v1.86.0)
+        // 등록자를 활성 템플릿 식별자로 표시한다 — 다른 주인의 이름을 덮으면 엔진이 경고로 드러낸다 (engine-v1.87.0)
         const source = this.config.templateId
             || document.getElementById('app')?.getAttribute('data-template-id')
             || 'unknown';

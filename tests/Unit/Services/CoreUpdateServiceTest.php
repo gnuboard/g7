@@ -1396,6 +1396,8 @@ MD;
             // 빌드 보조 스크립트 폴더와 개발 대시보드 빌드 설정 — 배포본에 실리는데 대상에서 빠지면 업데이트 뒤에도 옛 것이 남는다.
             'scripts',
             'vite.config.devdashboard.js',
+            // 터미널 설치·운영 명령 스크립트(7.1.4) — 빠지면 업데이트한 사이트에 처음 받은 판이 남는다.
+            'g7-install',
         ];
 
         foreach ($coreAdditional as $item) {

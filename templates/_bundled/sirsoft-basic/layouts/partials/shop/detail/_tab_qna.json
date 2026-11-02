@@ -6,7 +6,7 @@
     },
     "type": "basic",
     "name": "Div",
-    "if": "{{(_local.activeTab ?? 'info') === 'qna' && !!_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug}}",
+    "if": "{{(_local.activeTab ?? 'info') === 'qna' && !!_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug && (_global.activeModules?.includes('sirsoft-board') ?? true)}}",
     "props": {
         "className": "py-6"
     },

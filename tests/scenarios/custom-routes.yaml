@@ -15,6 +15,7 @@ test_files:
 axes:
   case:
     - custom_wins_over_catch_all
+    - canonical_path
     - unregistered_falls_back_to_shell
     - forbidden_rejected
     - forbidden_rules
@@ -35,6 +36,7 @@ effects:
   - custom_route_wins_user
   - custom_route_wins_admin
   - custom_screen_middleware_applied
+  - custom_screen_trailing_slash_redirects
   - unregistered_address_is_shell
   - forbidden_route_not_registered
   - forbidden_route_logged

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\LayoutVersionRepositoryInterface;
 use Illuminate\Console\Command;
 
@@ -14,15 +15,12 @@ use Illuminate\Console\Command;
  */
 class RecalculateLayoutVersionDiffsCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'layout-versions:recalculate-diffs';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '레이아웃 버전의 변경 요약을 현재 라인 단위 알고리즘으로 재계산합니다';
 
     /**
      * Execute the console command.

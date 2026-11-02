@@ -31,6 +31,111 @@
             ]
         },
         {
+            "comment": "이 템플릿을 다른 활성 확장이 연동으로 쓰고 있으면(`integrated_by`, 코어 7.1.4 · #822) 그 목록을 함께 보인다 — 막지 않는 안내다.\n         템플릿은 끄기 전에 이미 이 확인 창을 거치므로 모듈·플러그인처럼 연동 안내 창을 따로 두지 않고 여기에 싣는다(창 두 번 방지).",
+            "id": "deactivate_integrated_by",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_global.selectedTemplate?.integrated_by ?? []).length > 0}}",
+            "props": {
+                "className": "mt-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-warning"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "exclamation-triangle",
+                                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-warning-soft"
+                            },
+                            "text": "$t:admin.extension_integrations.deactivate_notice_body|name={{_global.selectedTemplate?.name ?? _global.selectedTemplate?.identifier ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "mt-3 text-body font-medium"
+                    },
+                    "text": "$t:admin.extension_integrations.integrated_by_label"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mt-2 row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "_global.selectedTemplate?.integrated_by ?? []",
+                                "item_var": "item"
+                            },
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{item.type === 'module'}}",
+                                    "props": {
+                                        "name": "cube",
+                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{item.type === 'plugin'}}",
+                                    "props": {
+                                        "name": "puzzle-piece",
+                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{item.type === 'template'}}",
+                                    "props": {
+                                        "name": "palette",
+                                        "className": "text-base text-gray-500 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body break-words"
+                                    },
+                                    "text": "{{item.name || item.identifier}} ({{item.identifier}})"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "type": "basic",
             "name": "Div",
             "props": {

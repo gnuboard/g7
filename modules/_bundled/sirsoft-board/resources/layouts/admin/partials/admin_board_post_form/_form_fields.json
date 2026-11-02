@@ -310,32 +310,12 @@
                             "name": "Select",
                             "props": {
                                 "name": "category",
+                                "aria-label": "$t:sirsoft-board.admin.posts.form.category",
                                 "value": "{{_local.form?.category ?? ''}}",
+                                "options": "{{[{ value: '', label: $t('sirsoft-board.admin.posts.form.select_category') }].concat((form_meta?.data?.board?.categories ?? []).map(category => ({ value: category, label: category })))}}",
                                 "disabled": "{{_computed.isReadOnly || !!_local.form?.parent_id}}",
                                 "className": "board:block board:w-full board-category-select board:rounded-lg board:border board:border-gray-300 board:dark:border-gray-600 board:bg-white board:dark:bg-gray-800 board:px-3 board:py-2 board:focus:border-blue-500 board:focus:outline-none board:focus:ring-1 board:focus:ring-blue-500 board:dark:focus:ring-blue-400 board:disabled:opacity-50 board:disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "props": {
-                                        "value": ""
-                                    },
-                                    "text": "$t:sirsoft-board.admin.posts.form.select_category"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Option",
-                                    "iteration": {
-                                        "source": "form_meta?.data?.board?.categories ?? []",
-                                        "item_var": "category"
-                                    },
-                                    "props": {
-                                        "value": "{{category}}"
-                                    },
-                                    "text": "{{category}}"
-                                }
-                            ]
+                            }
                         }
                     ]
                 },
