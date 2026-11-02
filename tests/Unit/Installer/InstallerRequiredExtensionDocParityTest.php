@@ -19,6 +19,8 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 이 검사는 소스를 **텍스트로** 읽는다 — `config.php` 를 require 하면 그것만으로
  * `BASE_PATH` 가 실 저장소 루트로 박혀 격리 속성이 필요해지기 때문이다 (§16.13.7 규약).
+ * 목록 원본은 코어 `app/Support/Requirements/php-extensions.json` 이고 설치기 `config.php` 는
+ * 그것을 읽어 `REQUIRED_EXTENSIONS` 를 정의한다(터미널 설치 도입과 함께 옮겨졌다).
  *
  * 커버 축: extension_list source·doc / doc_section inline·summary
  */
@@ -37,30 +39,47 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
     }
 
     /**
-     * `config.php` 의 REQUIRED_EXTENSIONS 리터럴을 텍스트에서 뽑는다.
+     * 설치기가 검사하는 필수 확장 목록을 그 원본에서 뽑는다.
+     *
+     * 설치기 `config.php` 는 목록을 직접 적지 않고 코어 원본
+     * (`app/Support/Requirements/php-extensions.json`)을 `PhpExtensionRequirements::load()` 로 읽어
+     * `REQUIRED_EXTENSIONS` 를 정의한다 — 관리자 정보 탭·코어 업데이트 사전점검과 같은 목록이다.
+     * 그래서 「설치기가 그 원본을 읽는다」는 배선을 텍스트로 확인한 뒤 원본 JSON 에서 이름을 취한다.
      *
      * @return array<int, string> 확장 이름 목록 (선언 순서)
      */
     private function sourceExtensions(): array
     {
-        $source = $this->sourceWithoutComments($this->repoRoot().'/public/install/includes/config.php');
+        $config = $this->sourceWithoutComments($this->repoRoot().'/public/install/includes/config.php');
 
         $this->assertSame(
             1,
-            preg_match("/define\('REQUIRED_EXTENSIONS',\s*\[(.*?)\]\s*\);/s", $source, $m),
-            'REQUIRED_EXTENSIONS 선언을 찾지 못했다 — 선언 형태가 바뀌면 이 검사가 사문이 된다',
+            preg_match('/\$(\w+)\s*=\s*PhpExtensionRequirements::load\(\);/', $config, $load),
+            '설치기 config.php 가 필수 확장 원본(PhpExtensionRequirements::load)을 읽지 않는다 — 선언 형태가 바뀌면 이 검사가 사문이 된다',
+        );
+        $this->assertMatchesRegularExpression(
+            "/define\\('REQUIRED_EXTENSIONS',\\s*\\\$".preg_quote($load[1], '/')."\\['required'\\]\\s*\\);/",
+            $config,
+            'REQUIRED_EXTENSIONS 가 원본의 required 목록에서 오지 않는다 — 설치기와 문서·코어가 다른 목록을 본다',
         );
 
-        // 주석은 읽을 때 이미 걷었다 — 따옴표 안의 이름만 취한다.
-        preg_match_all("/'([a-z0-9_]+)'/i", (string) $m[1], $names);
+        $json = json_decode(
+            (string) file_get_contents($this->repoRoot().'/app/Support/Requirements/php-extensions.json'),
+            true,
+        );
 
-        return $names[1];
+        $this->assertIsArray($json['required'] ?? null, 'php-extensions.json 의 required 목록을 읽지 못했다');
+
+        return array_values($json['required']);
     }
 
     /**
-     * 문서 §1.4 의 「자동 검사 N개(...)」 문단에서 개수와 이름을 뽑는다.
+     * 문서 §1.4 의 「필수 N개」 표기와 분류표의 「필수」 행 이름을 뽑는다.
      *
-     * @return array{count: int, names: array<int, string>} 문서가 말하는 개수와 문단에 적힌 확장 이름 목록
+     * 자동 검사 문단은 이름을 다시 나열하지 않고 「위 필수 확장 N개를 … 모두 자동 검사」로 분류표를
+     * 가리킨다. 그래서 개수는 §1.4 머리와 자동 검사 문단에서, 이름은 분류표의 「필수」 행에서 취한다.
+     *
+     * @return array{count: int, names: array<int, string>} 문서가 말하는 개수와 「필수」로 분류된 확장 이름 목록
      */
     private function documentedExtensions(): array
     {
@@ -68,17 +87,27 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
 
         $this->assertSame(
             1,
-            preg_match('/필수 확장 중 (\d+)개\(([^)]*)\)/su', $doc, $m),
-            '§1.4 의 「필수 확장 중 N개(...)」 문단을 찾지 못했다',
+            preg_match('/^### 1\.4 PHP 확장 모듈\s+필수 (\d+)개/mu', $doc, $head),
+            '§1.4 머리의 「필수 N개」 표기를 찾지 못했다',
+        );
+        $this->assertSame(
+            1,
+            preg_match('/위 필수 확장 (\d+)개를 설치 단계에서 모두 자동 검사/u', $doc, $auto),
+            '§1.4 의 「위 필수 확장 N개를 설치 단계에서 모두 자동 검사」 문단을 찾지 못했다',
+        );
+        $this->assertSame(
+            $head[1],
+            $auto[1],
+            '§1.4 머리의 개수와 자동 검사 문단의 개수가 어긋난다',
         );
 
-        preg_match_all('/`([a-z0-9_]+)`/i', (string) $m[2], $names);
+        preg_match_all('/^\|\s*필수\s*\|\s*`([a-z0-9_]+)`\s*\|/mu', $doc, $names);
 
-        return ['count' => (int) $m[1], 'names' => $names[1]];
+        return ['count' => (int) $head[1], 'names' => $names[1]];
     }
 
     /**
-     * 설치기 설정의 필수 확장 목록과 공개 문서 §1.4 자동 검사 문단의 이름 목록이 순서와 무관하게 같은지 확인한다.
+     * 설치기가 검사하는 필수 확장 목록과 공개 문서 §1.4 분류표의 「필수」 이름 목록이 순서와 무관하게 같은지 확인한다.
      *
      * @effects required_extension_list_matches_public_doc
      *
@@ -98,7 +127,7 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
     }
 
     /**
-     * 공개 문서 §1.4 문단의 개수와 §9 요약 표의 개수가 실제 필수 확장 수와 같은지 확인한다.
+     * 공개 문서 §1.4 의 개수 표기와 §9 요약 표의 개수가 실제 필수 확장 수와 같은지 확인한다.
      *
      * @effects required_extension_count_matches_public_doc
      *
@@ -118,7 +147,7 @@ class InstallerRequiredExtensionDocParityTest extends TestCase
         // §9 요약 표도 같은 수를 말해야 한다 — 한쪽만 고치면 문서 안에서 서로 어긋난다.
         $doc = (string) file_get_contents($this->repoRoot().'/docs/requirements.md');
         $this->assertMatchesRegularExpression(
-            '/\| PHP 확장 \| §1\.4 필수 확장 중 '.count($source).'개/u',
+            '/\| PHP 확장 \| §1\.4 필수 확장 '.count($source).'개/u',
             $doc,
             '§9 요약 표의 개수가 §1.4 와 어긋난다',
         );

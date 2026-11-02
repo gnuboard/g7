@@ -189,6 +189,7 @@
 - 관리자 템플릿 교체 계약에서 「스타일 클래스」 항목을 뺐습니다. 확장 관리자 화면이 템플릿의 의미 클래스를 쓰지 않으므로 새 관리자 템플릿은 그 클래스를 갖출 필요가 없고, 대신 선택 계약으로 「확장 CSS 덮기」를 둘 수 있습니다.
 - 템플릿을 불러올 때 `template.json` 의 `features.color_scheme`(방식이 세 값 밖이거나 `ancestor-class` 에 `selector` 없음)과 `extension_css_overrides`(배열 아님, `target`·`dist/` 아래 `path` 없음, 해석할 수 없는 `targetVersion`, 같은 `target` 중복) 형식을 검사합니다. 틀리면 필수 필드가 빠진 것과 같이 그 템플릿을 불러오지 않고 오류 로그를 남깁니다.
 - 확장 개발자용: vendor 묶음 명령(`core:`, `module:`, `plugin:` 의 `vendor-bundle`, `vendor-verify` 와 일괄 명령 `vendor-bundle:build-all`, `vendor-bundle:verify-all`)의 머리말, 결과 줄, 요약이 영어 고정 대신 사이트 언어(ko, en, ja)로 나옵니다. en 사이트의 문구는 종전과 같고, 크기는 묶음에 맞게 B, KB, MB 로 표기합니다.
+- 이번 판에 새로 들어온 코어 명령(`custom:check`, `custom:example`, `custom:vendor-bundle`, `custom:vendor-verify`, `queue:prune-records`, `g7:schedule-run`, `core:deploy-ledger-seed` 등)의 설명도 `php artisan list` 와 `--help` 에서 사이트 언어(ko, en, ja)로 나옵니다. 종전에는 이 명령들만 언어와 상관없이 한국어로 고정돼 있었습니다.
 - 관리자 메뉴 정의의 `permission` 키가 이제 동작에 쓰입니다. 확장이 선언한 역할이 그 권한을 가지면 메뉴가 그 역할에 붙습니다. `permission` 이 없는 단독 메뉴는 선언 역할에 붙지 않습니다.
 
 #### 외부 인증 로그인(소셜 로그인 등)

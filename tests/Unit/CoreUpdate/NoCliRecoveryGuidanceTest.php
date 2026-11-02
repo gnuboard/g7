@@ -83,6 +83,9 @@ class NoCliRecoveryGuidanceTest extends TestCase
         // 인스톨러 **로그** 문구다(화면 안내가 아니다). 이미 비-CLI 대안을 앞에 병기한다 —
         // 「이 파일을 직접 지우거나 …」. 리터럴 FTP 가 없을 뿐이다.
         'log_finalize_env_config_cache_delete_failed' => '인스톨러 로그 문구 — 파일 직접 삭제라는 비-CLI 대안을 이미 병기한다',
+        // 터미널 운영 명령(설정 설치 명령)의 콘솔 출력이다 — 이 문구를 읽는 운영자는 이미 명령줄에
+        // 있다. 그리고 「관리자 화면에서 한 번 저장」이라는 비-CLI 대안을 앞에 병기한다. 리터럴 FTP 가 없을 뿐이다.
+        'console.install.cache_refresh_failed' => '터미널 명령의 콘솔 출력 — 관리자 화면 저장이라는 비-CLI 대안을 이미 병기한다',
     ];
 
     /**

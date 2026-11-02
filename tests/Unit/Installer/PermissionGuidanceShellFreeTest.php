@@ -325,7 +325,9 @@ class PermissionGuidanceShellFreeTest extends TestCase
      */
     public function test_서버가_내보내는_절차_키를_화면이_전부_소비한다(): void
     {
-        $api = $this->sourceWithoutComments($this->repoRoot().'/public/install/api/check-configuration.php');
+        // Step 2 요구사항 판정 본문은 웹(api/check-configuration.php)과 터미널 설치가 함께 쓰는
+        // includes/requirements.php 로 옮겨졌다 — 절차 키를 만드는 자리도 그 공유 본문이다.
+        $api = $this->sourceWithoutComments($this->repoRoot().'/public/install/includes/requirements.php');
         $js = $this->sourceWithoutComments($this->repoRoot().'/public/install/assets/js/installer.js');
 
         $this->assertSame(
@@ -373,7 +375,8 @@ class PermissionGuidanceShellFreeTest extends TestCase
     public function test_두_검사_지점이_검사_전에_직접_권한_부여를_시도한다(): void
     {
         $welcome = $this->sourceWithoutComments($this->repoRoot().'/public/install/views/0-welcome.php');
-        $api = $this->sourceWithoutComments($this->repoRoot().'/public/install/api/check-configuration.php');
+        // Step 2 의 두 검사 지점은 웹·터미널 공유 본문(includes/requirements.php)으로 옮겨졌다.
+        $api = $this->sourceWithoutComments($this->repoRoot().'/public/install/includes/requirements.php');
 
         $repairPos = strpos($welcome, 'installerRepairPermissions(');
         $checkPos = strpos($welcome, 'checkDirectoryPermissions(');

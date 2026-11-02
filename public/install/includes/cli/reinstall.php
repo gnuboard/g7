@@ -76,10 +76,31 @@ if (! function_exists('installer_cli_reinstall_targets')) {
     function installer_cli_reinstall_targets(array $opts): array
     {
         $base = BASE_PATH;
-        $glob = static fn (string $pattern): array => glob($pattern, GLOB_NOSORT) ?: [];
-        $activeExtensionDirs = static function (string $root) use ($glob): array {
+        // 디렉터리 바로 아래 항목(`<dir>/*` 와 같은 범위 — 점으로 시작하는 이름 제외). `glob` 은 하드닝 프로필이 막을 수
+        // 있고 막히면 호출 자체가 Error 다. 그때는 scandir 로 같은 목록을 만든다 — 대상을 조용히 빠뜨리면 「지웠다」고
+        // 보고한 재설치가 옛 확장·설정을 남긴다.
+        $children = static function (string $dir): array {
+            if (installerHasFunction('glob')) {
+                return glob($dir.'/*', GLOB_NOSORT) ?: [];
+            }
+
+            $entries = [];
+            foreach ((is_dir($dir) ? @scandir($dir) : false) ?: [] as $entry) {
+                if ($entry !== '' && $entry[0] !== '.') {
+                    $entries[] = $dir.'/'.$entry;
+                }
+            }
+
+            return $entries;
+        };
+        // `<dir>/*/<name>` — 하위 디렉터리마다 그 이름이 있는 것만.
+        $childrenNamed = static fn (string $dir, string $name): array => array_values(array_filter(
+            array_map(static fn (string $child): string => $child.'/'.$name, $children($dir)),
+            'file_exists'
+        ));
+        $activeExtensionDirs = static function (string $root) use ($children): array {
             return array_values(array_filter(
-                $glob($root.'/*'),
+                $children($root),
                 static fn (string $p): bool => is_dir($p) && ! in_array(basename($p), ['_bundled', '_pending'], true)
             ));
         };
@@ -118,16 +139,16 @@ if (! function_exists('installer_cli_reinstall_targets')) {
         if (! empty($opts['delete_settings'])) {
             $targets['settings'] = ['paths' => [
                 $base.'/storage/app/settings',
-                ...$glob($base.'/storage/app/modules/*/settings'),
-                ...$glob($base.'/storage/app/plugins/*/settings'),
+                ...$childrenNamed($base.'/storage/app/modules', 'settings'),
+                ...$childrenNamed($base.'/storage/app/plugins', 'settings'),
             ], 'keep_self' => true];
         }
 
         if (! empty($opts['delete_uploads'])) {
             $uploads = [$base.'/storage/app/attachments', $base.'/storage/app/public'];
             foreach (['modules', 'plugins'] as $kind) {
-                foreach ($glob($base.'/storage/app/'.$kind.'/*') as $extensionStorage) {
-                    foreach ($glob($extensionStorage.'/*') as $entry) {
+                foreach ($children($base.'/storage/app/'.$kind) as $extensionStorage) {
+                    foreach ($children($extensionStorage) as $entry) {
                         if (basename($entry) !== 'settings') {
                             $uploads[] = $entry;
                         }
@@ -202,8 +223,11 @@ if (! function_exists('installer_cli_reinstall')) {
         $env = @file_get_contents($envPath);
         $envRow = ['group' => 'env_completed_flag', 'removed' => 0, 'failed' => []];
         if (is_string($env) && preg_match('/^[ \t]*INSTALLER_COMPLETED[ \t]*=.*$/m', $env)) {
-            $stripped = (string) preg_replace('/^[ \t]*INSTALLER_COMPLETED[ \t]*=.*\R?/m', '', $env);
-            if (@file_put_contents($envPath, $stripped, LOCK_EX) !== false) {
+            // 줄 종결자는 실제 개행만 본다 — `u` 없는 `\R` 은 0x85 단일 바이트도 개행으로 읽어 그 바이트로 끝나는 한글 값을
+            // 글자 중간에서 자른다(`.` 이 CR 을 먹으므로 CRLF 줄은 LF 가 마저 끝낸다).
+            $stripped = (string) preg_replace('/^[ \t]*INSTALLER_COMPLETED[ \t]*=.*(?:\r\n|\r|\n)?/m', '', $env);
+            // 부분 쓰기(디스크 가득 등)는 `false` 가 아니라 짧은 바이트 수로 돌아온다 — 길이까지 대조한다.
+            if (installerWroteFully(@file_put_contents($envPath, $stripped, LOCK_EX), $stripped)) {
                 $envRow['removed'] = 1;
             } else {
                 $envRow['failed'][] = $envPath;

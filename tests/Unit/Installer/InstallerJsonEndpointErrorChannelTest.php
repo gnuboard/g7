@@ -52,6 +52,16 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
     }
 
     /**
+     * 요구사항·바이너리 판정 공유 본문(웹과 터미널 설치가 함께 쓴다)의 주석 제거 소스.
+     *
+     * @return string 주석을 지운 includes/requirements.php 소스
+     */
+    private function sharedRequirementsSource(): string
+    {
+        return $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/requirements.php');
+    }
+
+    /**
      * 진입점 모집단 — 디렉토리 스캔 + 구조 판정으로 도출한다 (이름 목록 금지).
      *
      * 「진입점」의 기준은 **자기 손으로 HTTP 응답을 방출하는가**다 — `header()` 를 세우거나
@@ -289,7 +299,10 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
      */
     public function test_detect_php_candidate_stat_suppresses_diagnostics(): void
     {
-        $source = $this->strippedSource('check-configuration.php');
+        // detect-php 본문은 웹·터미널 설치 공유 파일(includes/requirements.php)로 옮겨졌다.
+        // 엔드포인트(api/check-configuration.php)는 그 결과를 JSON 으로 내보내므로 진단이
+        // 새면 같은 응답 본문이 오염된다.
+        $source = $this->sharedRequirementsSource();
 
         $this->assertMatchesRegularExpression(
             '/if \(! @file_exists\(\$path\)\)/',
@@ -309,7 +322,8 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
      */
     public function test_pending_path_probe_stat_suppresses_diagnostics(): void
     {
-        $source = $this->strippedSource('check-configuration.php');
+        // check-core-pending-path 본문도 공유 파일(includes/requirements.php)로 옮겨졌다.
+        $source = $this->sharedRequirementsSource();
 
         $this->assertStringContainsString('! @is_dir($resolved)', $source, 'is_dir 진단 억제 부재 (#9)');
         $this->assertStringContainsString('@is_writable($resolved)', $source, 'is_writable 진단 억제 부재 (#9)');

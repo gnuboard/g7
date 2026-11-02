@@ -182,6 +182,7 @@ class InstallerFinalizeConfigCacheTest extends TestCase
     {
         $path = $this->root.'/storage/logs/installation.log';
 
+        // meta:allow raw-source-read — 설치 진행 기록(로그) 파일이다, 소스가 아니다
         return is_file($path) ? (string) file_get_contents($path) : '';
     }
 

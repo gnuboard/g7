@@ -355,7 +355,7 @@ PHP);
 
         $this->assertFalse($result['timed_out']);
         $this->assertStringContainsString('UNLIMITED:0', $result['stdout'], "제한 없는 실행에 작업당 제한이 새로 걸렸다:\n".$result['output']);
-        $this->assertStringContainsString('LIMITED:'.self::taskTimeLimit(), $result['stdout'], "제한이 있는 실행은 작업당 제한으로 다시 걸려야 한다:\n".$result['output']);
+        $this->assertStringContainsString('LIMITED:'.$this->taskTimeLimit(), $result['stdout'], "제한이 있는 실행은 작업당 제한으로 다시 걸려야 한다:\n".$result['output']);
     }
 
     /**
@@ -363,9 +363,9 @@ PHP);
      *
      * @return int 제한(초)
      */
-    private static function taskTimeLimit(): int
+    private function taskTimeLimit(): int
     {
-        $config = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/config.php');
+        $config = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/config.php');
         preg_match("/define\\('INSTALLER_TASK_TIME_LIMIT', (\\d+)\\)/", $config, $m);
 
         return (int) ($m[1] ?? 0);

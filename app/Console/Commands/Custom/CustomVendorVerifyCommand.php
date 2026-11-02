@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Custom;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Vendor\Concerns\RunsVendorBundleAction;
 use App\Extension\Vendor\VendorIntegrityChecker;
 use Illuminate\Console\Command;
@@ -13,17 +14,13 @@ use Illuminate\Console\Command;
  */
 class CustomVendorVerifyCommand extends Command
 {
+    use LocalizesDescription;
     use RunsVendorBundleAction;
 
     /**
      * @var string
      */
     protected $signature = 'custom:vendor-verify';
-
-    /**
-     * @var string
-     */
-    protected $description = '개발자 전용 composer 묶음(custom/vendor-bundle.zip)의 SHA256 무결성을 검증합니다';
 
     /**
      * 명령을 실행합니다.

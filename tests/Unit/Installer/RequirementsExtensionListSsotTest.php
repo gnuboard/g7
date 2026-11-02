@@ -4,6 +4,7 @@ namespace Tests\Unit\Installer;
 
 use App\Support\PhpExtensionRequirements;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
 
 /**
@@ -17,6 +18,7 @@ use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
  */
 class RequirementsExtensionListSsotTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
     use RunsInstallerSubprocess;
 
     /**
@@ -173,7 +175,7 @@ class RequirementsExtensionListSsotTest extends TestCase
             'public/install/api/save-extensions.php' => "\$state['selected_extensions'] = \$resolution['selection'];",
             'public/install/includes/cli/install-flow.php' => "return ['selection' => \$resolution['selection'], 'names' => \$names, 'pulled_by' => \$resolution['pulled_by']];",
         ] as $path => $storeLine) {
-            $source = (string) file_get_contents($root.'/'.$path);
+            $source = $this->sourceWithoutComments($root.'/'.$path);
             $resolvePos = strpos($source, 'installer_resolve_extension_selection(');
             $excludePos = strpos($source, 'installer_exclude_selection_missing_php($resolution, BASE_PATH)');
             $this->assertNotFalse($excludePos, $path.': 필수 PHP 확장 재검증 배선 누락');
@@ -194,10 +196,10 @@ class RequirementsExtensionListSsotTest extends TestCase
     public function test_scan_and_card_wiring(): void
     {
         $root = dirname(__DIR__, 3).'/public/install';
-        $scan = (string) file_get_contents($root.'/api/scan-extensions.php');
+        $scan = $this->sourceWithoutComments($root.'/api/scan-extensions.php');
         $this->assertSame(2, substr_count($scan, '...installer_extension_php_requirements('), '모듈·플러그인 스캔 둘 다 판정 필드를 실어야 한다');
 
-        $js = (string) file_get_contents($root.'/assets/js/installer.js');
+        $js = $this->sourceWithoutComments($root.'/assets/js/installer.js');
         $this->assertStringContainsString('if (blockedByPhp) return;', $js, '필수 미충족 카드 클릭 차단 누락');
         $this->assertStringContainsString('if (hasMissingRequiredPhpExtensions(item)) return;', $js, '일괄 선택 제외 누락');
         $this->assertStringContainsString("card.dataset.phpBlocked === '1'", $js, '의존 자동 선택 차단 누락');

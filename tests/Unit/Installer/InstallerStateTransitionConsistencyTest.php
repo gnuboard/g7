@@ -53,8 +53,14 @@ class InstallerStateTransitionConsistencyTest extends TestCase
     public function test_env_readiness_judged_identically_at_all_three_gates(): void
     {
         $js = $this->src('public/install/assets/js/installer.js');
-        $server = $this->src('public/install/api/install-process.php');
+        // 설치 시작 판정 본문은 웹(api/install-process.php)과 터미널 설치가 함께 쓰는
+        // includes/install-plan.php 의 installer_begin_installation() 으로 옮겨졌다.
+        // 엔드포인트가 그 함수를 지나는지와, 그 함수가 쓰기 가능성을 보는지를 함께 잰다.
+        $endpoint = $this->src('public/install/api/install-process.php');
+        $server = $this->src('public/install/includes/install-plan.php');
         $ko = $this->src('public/install/lang/ko.php');
+
+        $this->assertStringContainsString('installer_begin_installation(', $endpoint, '설치 시작 엔드포인트가 공유 시작 판정을 지나지 않는다 — 서버 게이트가 우회된다 (#22-1)');
 
         // 사전 점검(거부형 `=== false`)과 재검사(허용형 `!== false`) 모두 env_writable 을
         // 소비해야 한다 — 재검사가 존재만 보면 그 버튼이 게이트의 우회로다.
@@ -187,7 +193,8 @@ class InstallerStateTransitionConsistencyTest extends TestCase
      */
     public function test_disk_headroom_warning_leaves_value_slot(): void
     {
-        $api = $this->src('public/install/api/check-configuration.php');
+        // 요구사항 판정 본문은 웹·터미널 공유 파일(includes/requirements.php)로 옮겨졌다.
+        $api = $this->src('public/install/includes/requirements.php');
         $js = $this->src('public/install/assets/js/installer.js');
 
         $this->assertStringContainsString("'headroom_message'", $api, '경고 문구가 message 에 합성되면 카드 값 슬롯(짧은 라벨 계약)에 문단이 들어간다 (N-5)');

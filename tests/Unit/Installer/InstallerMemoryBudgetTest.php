@@ -69,7 +69,8 @@ class InstallerMemoryBudgetTest extends TestCase
      */
     public function test_memory_declarations_agree_across_screen_and_both_strategies(): void
     {
-        $api = $this->sourceWithoutComments($this->projectRoot.'/public/install/api/check-configuration.php');
+        // Step 2 요구사항 판정 본문은 웹·터미널 설치 공유 파일(includes/requirements.php)로 옮겨졌다.
+        $api = $this->sourceWithoutComments($this->projectRoot.'/public/install/includes/requirements.php');
         $executor = $this->sourceWithoutComments($this->projectRoot.'/public/install/includes/artisan-executor.php');
 
         $this->assertSame(1, preg_match('/\$recommendedMemoryMb = (\d+);/', $api, $screen), 'Step 2 권장치 선언을 찾지 못함');

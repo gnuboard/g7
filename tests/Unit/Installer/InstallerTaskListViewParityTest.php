@@ -57,11 +57,13 @@ class InstallerTaskListViewParityTest extends TestCase
     }
 
     /**
-     * 진행 화면을 렌더해 `window.INSTALLER_TASK_GROUPS` 가 담은 완료 마커 키를 순서대로 꺼낸다.
+     * 진행 화면을 렌더해 화면 데이터 블록의 `task_groups`(화면이 `window.INSTALLER_TASK_GROUPS` 로 쓰는 값)가
+     * 담은 완료 마커 키를 순서대로 꺼낸다.
      *
-     * JSON(파생) 형태와 손으로 적은 JS 리터럴 형태를 모두 읽는다. 형태만 보고 실패하면
-     * 「목록을 다시 손으로 적었다」는 것만 알 뿐, **무엇이 빠졌는지**는 드러나지 않는다 —
-     * 이 검사가 잡아야 하는 것은 후자다.
+     * strict CSP 에서 인라인 스크립트가 실행되지 않으므로 Step 5 는 그룹 정의를 `#installer-step-data`
+     * JSON 블록의 `task_groups` 키로 싣고, step-5-installation.js 가 그 값을 전역으로 옮긴다. 그 키가
+     * 비면 단계 스크립트는 손으로 적은 옛 그룹 사본으로 떨어진다 — 이 검사는 서버가 파생한 목록이
+     * 실제로 실리는지와 **무엇이 빠졌는지**를 함께 드러낸다.
      *
      * @return array<int, string> 완료 마커 키 ("id" 또는 "id:target")
      */
@@ -79,35 +81,41 @@ class InstallerTaskListViewParityTest extends TestCase
         require $installRoot.'/views/5-installation.php';
         $html = (string) ob_get_clean();
 
-        $matched = preg_match('/window\.INSTALLER_TASK_GROUPS\s*=\s*(\[.*?\]);/s', $html, $m);
+        $matched = preg_match('/<script\b[^>]*\bid="installer-step-data"[^>]*>(.*?)<\/script>/s', $html, $m);
         $this->assertSame(
             1,
             $matched,
-            'views/5-installation.php 가 window.INSTALLER_TASK_GROUPS 를 내보내지 않는다 — 진행 목록이 통째로 비었다는 뜻이다',
+            'views/5-installation.php 가 화면 데이터 블록(#installer-step-data)을 내보내지 않는다 — 진행 목록이 통째로 비었다는 뜻이다',
         );
 
-        // `{ id: 'x' }` (JS 리터럴) 와 `{"id":"x","target":"y"}` (JSON) 를 함께 읽는다.
-        preg_match_all(
-            '/["\']?id["\']?\s*:\s*["\']([a-z0-9_]+)["\']\s*(?:,\s*["\']?target["\']?\s*:\s*["\']([^"\']+)["\'])?/',
-            $m[1],
-            $entries,
-            PREG_SET_ORDER,
-        );
+        $data = json_decode(trim($m[1]), true);
+        $this->assertIsArray($data, 'Step 5 화면 데이터 블록이 JSON 으로 해석되지 않는다');
+
+        $groups = $data['task_groups'] ?? null;
+        $this->assertIsArray($groups, 'views/5-installation.php 가 task_groups 를 내보내지 않는다 — 화면이 손으로 적은 옛 그룹 사본으로 떨어진다');
+        $this->assertNotEmpty($groups, 'views/5-installation.php 의 task_groups 가 비었다 — 화면이 손으로 적은 옛 그룹 사본으로 떨어진다');
 
         $keys = [];
-        foreach ($entries as $entry) {
-            // 그룹 자신의 `id: 'environment'` 는 태스크가 아니다 — labelKey 가 뒤따르면 그룹이다.
-            if (isset($this->groupIds[$entry[1]])) {
-                continue;
+        foreach ($groups as $group) {
+            $this->assertIsArray($group);
+            $this->assertArrayHasKey(
+                (string) ($group['id'] ?? ''),
+                $this->groupIds,
+                '화면이 알려지지 않은 그룹을 내보낸다: '.json_encode($group['id'] ?? null),
+            );
+
+            foreach ((array) ($group['tasks'] ?? []) as $task) {
+                $id = (string) ($task['id'] ?? '');
+                $target = (string) ($task['target'] ?? '');
+                $keys[] = $target !== '' ? $id.':'.$target : $id;
             }
-            $keys[] = ($entry[2] ?? '') !== '' ? $entry[1].':'.$entry[2] : $entry[1];
         }
 
         return $keys;
     }
 
     /**
-     * 그룹 ID 집합 — 평탄화 시 그룹 헤더의 `id` 를 태스크로 오인하지 않기 위한 제외 목록.
+     * 그룹 ID 집합 — 화면이 내보내는 그룹이 진행 화면이 아는 묶음인지 대조하는 기준.
      *
      * @var array<string, true>
      */

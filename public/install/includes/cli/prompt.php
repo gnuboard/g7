@@ -119,15 +119,23 @@ if (! function_exists('g7_cli_hidden_input_supported')) {
     /**
      * 숨김 입력을 쓸 수 있는지 — 유닉스는 stty, Windows 는 hiddeninput.exe(vendor 에 있을 때).
      *
+     * 두 방식 모두 shell_exec 로 돈다. 가용성은 판정 SSoT(installerHasFunction — function_exists 와
+     * disable_functions 를 함께 본다)로 묻는다. Windows 도 같다 — 파일만 보고 참을 내면 shell_exec 가 막힌
+     * php.ini 에서 g7_cli_hidden() 이 Error 로 죽는다. 불가면 호출자가 환경변수·파일 입력을 안내하고 거부한다.
+     *
      * @return bool 사용 가능 여부
      */
     function g7_cli_hidden_input_supported(): bool
     {
+        if (! installerHasFunction('shell_exec')) {
+            return false;
+        }
+
         if (DIRECTORY_SEPARATOR === '\\') {
             return is_file(BASE_PATH.'/vendor/symfony/console/Resources/bin/hiddeninput.exe');
         }
 
-        return function_exists('shell_exec') && trim((string) @shell_exec('stty -g 2>/dev/null')) !== '';
+        return trim((string) @shell_exec('stty -g 2>/dev/null')) !== '';
     }
 }
 

@@ -132,9 +132,14 @@ class InstallerRetryLifecycleTest extends TestCase
      */
     public function test_install_start_routes_through_retry_judgment(): void
     {
-        $source = $this->sourceWithoutCommentsAndStrings(dirname(__DIR__, 3).'/public/install/api/install-process.php');
+        // 설치 계획 확정 본문은 웹(api/install-process.php)과 터미널 설치가 함께 쓰는
+        // includes/install-plan.php 의 installer_begin_installation() 으로 옮겨졌다.
+        // 엔드포인트 → 공유 시작 함수 → 재시도 판정의 두 고리를 함께 잰다.
+        $endpoint = $this->sourceWithoutCommentsAndStrings(dirname(__DIR__, 3).'/public/install/api/install-process.php');
+        $plan = $this->sourceWithoutCommentsAndStrings(dirname(__DIR__, 3).'/public/install/includes/install-plan.php');
 
-        $this->assertStringContainsString('installerIsRetryRun(', $source, '시작 엔드포인트가 재시도 판정 SSoT 를 경유하지 않는다 (#21-9)');
+        $this->assertStringContainsString('installer_begin_installation(', $endpoint, '시작 엔드포인트가 공유 설치 계획 확정을 지나지 않는다 — 재시도 판정이 시작 경로 밖에 있다 (#21-9)');
+        $this->assertStringContainsString('installerIsRetryRun(', $this->functionBody($plan, 'installer_begin_installation'), '시작 엔드포인트가 재시도 판정 SSoT 를 경유하지 않는다 (#21-9)');
     }
 
     /**
@@ -287,7 +292,12 @@ class InstallerRetryLifecycleTest extends TestCase
      */
     public function test_step3_pending_path_validation_matches_check_button(): void
     {
-        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
+        // 규칙은 Step 3 저장과 터미널 설치가 함께 쓰는 검증(config-validation.php)이 소유한다 —
+        // 저장 지점(request-handler.php)이 그 검증을 지나는지도 함께 잰다.
+        $handler = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
+        $this->assertStringContainsString('installer_validate_config(', $handler, 'Step 3 저장이 공유 검증을 지나지 않는다 — 아래 규칙이 저장 시점에 돌지 않는다');
+
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/config-validation.php');
 
         $this->assertStringContainsString('\.\.([', $source, '상위 경로 세그먼트(..) 거부 정규식이 없다 (#21-4)');
         $this->assertStringContainsString('"\0"', $source, 'NUL 거부가 없다 (#21-4)');

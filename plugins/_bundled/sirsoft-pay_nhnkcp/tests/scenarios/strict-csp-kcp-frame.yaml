@@ -12,7 +12,8 @@ description: |
     - 브리지(assets/bridge/kcp-frame.js)는 부모의 window.__g7KcpFrame 으로 값(fields)·결과(complete)·ready·fail 을 주고받는다
 
 axes:
-  page: [kcp_frame]
+  # 서버 프레임 라우트(kcp_frame)와 주문 화면 핸들러·브리지(kcp_pc_frame)는 같은 축의 서로 다른 값이다
+  page: [kcp_frame, kcp_pc_frame]
 
 effects:
   - kcp_frame_loads_sdk_then_bridge_without_inline
@@ -26,5 +27,5 @@ test_files:
   - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/handlers/requestPayment.kcpFrame.test.ts
 
 notes: |
-  브라우저 시험은 표면 축(`surface=kcp_pc_frame`)으로 표시한다. 실제 KCP 결제창 열림·SDK 자체의 인라인/eval
+  브라우저 시험은 page 축의 별도 값(`page=kcp_pc_frame`)으로 표시한다. 실제 KCP 결제창 열림·SDK 자체의 인라인/eval
   사용 여부는 코어 이력 문서의 브라우저 실측(T8 PG 행)이 판정한다.

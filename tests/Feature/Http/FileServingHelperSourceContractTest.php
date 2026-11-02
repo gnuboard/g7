@@ -77,7 +77,9 @@ class FileServingHelperSourceContractTest extends TestCase
      */
     // 28 → 44: develop-7.2.0 병합으로 방문자 통계 내보내기(코어 8)·이커머스 내보내기와 클레임 이미지·
     // SSO 로그인 페이지와 메타데이터 등 서빙 메서드가 모집단에 들어왔다(병합 결과 실측).
-    private const MIN_FILE_SERVING_METHODS = 44;
+    // 44 → 45: develop-7.2.0 3차 병합으로 NHN KCP PC 결제창 프레임 문서(`KcpFrameController::show()`)가
+    // 들어왔다 — 생성 문서라 `file-serving:allow` 로 처분하되 모집단에는 남는다(병합 결과 실측).
+    private const MIN_FILE_SERVING_METHODS = 45;
 
     /**
      * 컨트롤러 소스 파일 전수 (코어 + 번들 확장).

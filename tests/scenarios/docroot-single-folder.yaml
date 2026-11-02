@@ -206,7 +206,7 @@ effects:
   - every_leftover_producer_prefix_is_registered_in_gitignore
   - every_server_rule_is_accounted_for_in_its_correspondence_table
   - unverified_axes_are_declared_not_narrated
-  - install_redirect_destination_uses_a_javascript_encoder
+  - install_redirect_destination_is_encoded_for_its_output_context
   # 8차 라운드 등재 — 테스트 docblock 에 마커는 달렸으나 어느 매니페스트에도 없어
   # effects 대조를 한 번도 받지 않던 축(넓은 면제 뒤에 가려져 있었다).
   - root_htaccess_declares_its_residual_risk

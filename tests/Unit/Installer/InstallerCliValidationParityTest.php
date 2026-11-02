@@ -4,6 +4,7 @@ namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 use Tests\Unit\Installer\Concerns\RunsInstallerCli;
 
 /**
@@ -16,6 +17,7 @@ use Tests\Unit\Installer\Concerns\RunsInstallerCli;
  */
 class InstallerCliValidationParityTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
     use RunsInstallerCli;
 
     /** 정상 값 묶음 */
@@ -73,8 +75,12 @@ class InstallerCliValidationParityTest extends TestCase
      *
      * 관리자 비밀번호 확인은 웹 폼의 두 번째 칸이다. 터미널은 대화형에서만 두 번 묻고(일치 확인은 prompt 단계),
      * 비대화형은 환경변수·파일 하나로 받으므로 같은 값 묶음을 만들 수 없다.
+     *
+     * 실행 방식(execution_mode)은 웹 Step 3 의 선택란에만 있다. 터미널은 그 값을 받는 옵션·환경변수·설정 파일 키가
+     * 없어 언제나 기본값 auto(감지)로 검증된다. 그 항목의 거부 판정이 공유 함수에 있다는 것은
+     * test_shared_validation_gates_explicit_execution_mode 가 함수를 직접 불러 확인한다.
      */
-    private const NOT_COMPARABLE = ['admin_password_confirm'];
+    private const NOT_COMPARABLE = ['admin_password_confirm', 'execution_mode'];
 
     /**
      * 정상·경계·위반 값 묶음 — [바꿀 값, 정상이어야 하는가].
@@ -91,6 +97,8 @@ class InstallerCliValidationParityTest extends TestCase
         return [
             'all valid' => [[], true],
             'empty app name' => [['app_name' => ''], false],
+            'app name 100 chars (boundary)' => [['app_name' => str_repeat('가', 100)], true],
+            'app name 101 chars (boundary)' => [['app_name' => str_repeat('가', 101)], false],
             'bad app url' => [['app_url' => 'not-a-url'], false],
             'underscore host app url (boundary)' => [['app_url' => 'https://g7_cli.dev'], true],
             'bad admin email' => [['admin_email' => 'nope'], false],
@@ -115,6 +123,9 @@ class InstallerCliValidationParityTest extends TestCase
             'php path not allowed' => [['php_binary' => 'evil;php'], false],
             'composer path not allowed' => [['composer_binary' => 'evil.sh'], false],
             'core pending path is a file' => [['core_update_pending_path' => '.env'], false],
+            'core pending path climbs out' => [['core_update_pending_path' => '../outside'], false],
+            'core pending path climbs out midway' => [['core_update_pending_path' => 'storage/../../etc'], false],
+            'core pending path dots inside a name (boundary)' => [['core_update_pending_path' => 'storage/app/core..pending'], true],
             'bad github url' => [['core_update_github_url' => 'ftp://example.com/g7'], false],
             'bad vendor mode' => [['vendor_mode' => 'weird'], false],
             'bad admin language' => [['admin_language' => 'xx'], false],
@@ -134,7 +145,7 @@ class InstallerCliValidationParityTest extends TestCase
      */
     public function test_cases_cover_every_validated_field(): void
     {
-        $src = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/config-validation.php');
+        $src = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/config-validation.php');
         preg_match_all('/\$errors\[\'([a-z_]+)\'\]\s*=/', $src, $direct);
         preg_match_all('/installer_validate_db_username\([^;]*?,\s*\'([a-z_]+)\',/', $src, $accounts);
         preg_match_all('/foreach \(\[([^\]]+)\] as \$(?:envField|urlField)\)/', $src, $lists);
@@ -163,6 +174,51 @@ class InstallerCliValidationParityTest extends TestCase
 
         $missing = array_values(array_diff($population, $covered, self::NOT_COMPARABLE));
         $this->assertSame([], $missing, '위반 사례가 없는 검증 항목');
+    }
+
+    /**
+     * 실행 방식의 명시 선택 검사·정규화와 vendor 방식 보정은 공유 검증 함수가 한다 — 웹 껍데기에 남겨 두면 같은 함수를
+     * 부르는 터미널 설치가 그 규칙을 거치지 않는다.
+     *
+     * 감지 결과는 프로세스 안에서 캐시되므로 사례마다 프로세스를 따로 띄운다.
+     *
+     * @effects installer_shared_validation_gates_explicit_execution_mode
+     *
+     * @return void 반환값 없음
+     */
+    public function test_shared_validation_gates_explicit_execution_mode(): void
+    {
+        $validate = function (array $override): array {
+            $input = array_replace(self::VALID, ['admin_password_confirm' => self::VALID['admin_password']], $override);
+            $run = $this->runCliCode(
+                '$r = installer_validate_config('.var_export($input, true).', "en");'
+                .'echo "__RESULT__=".json_encode(["errors" => array_keys($r["errors"]), "execution_mode" => $r["config"]["execution_mode"], "vendor_mode" => $r["config"]["vendor_mode"]]);'
+            );
+            $this->assertIsArray($run['result'], $run['raw']);
+
+            return $run['result'];
+        };
+
+        // 동봉 묶음이 없으면 「CLI 없이 설치」는 성립하지 않는다 — 저장 시점에 거부하고, vendor 방식은 그 모드에 맞춰 bundled.
+        $unavailable = $validate(['execution_mode' => 'inprocess']);
+        $this->assertSame(['execution_mode'], $unavailable['errors']);
+        $this->assertSame('inprocess', $unavailable['execution_mode']);
+        $this->assertSame('bundled', $unavailable['vendor_mode']);
+
+        // 모르는 값은 거부가 아니라 auto 로 정규화한다 (어휘 SSoT: 코어 ExecutionMode).
+        $unknown = $validate(['execution_mode' => 'turbo']);
+        $this->assertSame([], $unknown['errors']);
+        $this->assertSame('auto', $unknown['execution_mode']);
+
+        if (! class_exists('ZipArchive')) {
+            $this->markTestSkipped('zip 확장이 없어 동봉 묶음을 쓸 수 있는 사례를 만들 수 없다');
+        }
+
+        // 묶음을 쓸 수 있으면 선택이 성립하고, 고른 vendor 방식(auto)은 bundled 로 보정된다.
+        $this->putBaseFile('vendor-bundle.zip', '');
+        $available = $validate(['execution_mode' => 'inprocess', 'vendor_mode' => 'auto']);
+        $this->assertSame([], $available['errors']);
+        $this->assertSame('bundled', $available['vendor_mode']);
     }
 
     /**

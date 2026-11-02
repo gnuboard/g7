@@ -427,7 +427,12 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
         $this->assertStringContainsString("'privilege_warning'", $api, '게이트가 권한 경고를 응답에 실어야 한다');
         $this->assertStringContainsString("'db_server_notice'", $api, '게이트가 서버 버전 안내를 응답에 실어야 한다');
-        $this->assertStringContainsString('indeterminate', $api, '게이트가 확인 불가를 차단과 구분해야 한다 (제품 결정)');
+        // 판정 본문은 웹과 터미널 설치가 함께 쓰는 includes/db-check.php 로 옮겨졌다(터미널 설치 도입).
+        // 껍데기(check-configuration.php)는 그 결과를 응답에 옮겨 싣고, 확인 불가 구분은 공유 본문이 한다.
+        $gate = $this->sourceWithoutComments($projectRoot.'/public/install/includes/db-check.php');
+        $this->assertStringContainsString("'privilege_warning'", $gate, '공유 판정이 권한 경고를 만들어야 한다');
+        $this->assertStringContainsString("'db_server_notice'", $gate, '공유 판정이 서버 버전 안내를 만들어야 한다');
+        $this->assertStringContainsString("'indeterminate'", $gate, '게이트가 확인 불가를 차단과 구분해야 한다 (제품 결정)');
         $this->assertStringContainsString('result.privilege_warning', $js, '화면이 권한 경고를 그려야 한다');
         $this->assertStringContainsString('result.db_server_notice', $js, '화면이 서버 버전 안내를 그려야 한다');
     }

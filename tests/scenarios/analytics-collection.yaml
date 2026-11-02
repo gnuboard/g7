@@ -70,7 +70,9 @@ axes:
   strip: [fragment, utm, fbclid, gclid]
   query: [preserved_for_campaign, reordered]
   display: [strip_site_host, decode_for_display]
-  url: [relative]
+  url: [absolute, relative]
+  # 끝·연속 슬래시 주소의 정규형 판정 (#848) — 같은 화면이 두 행으로 갈리지 않는다
+  path_shape: [trailing_slash, double_slash]
   hash: [stable, type_separated]
   cidr: [v4_inside, v4_outside, v6_inside, v6_outside, exact, all, non_byte_boundary, cross_family]
   input: [invalid]

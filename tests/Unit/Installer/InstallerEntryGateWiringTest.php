@@ -317,11 +317,13 @@ class InstallerEntryGateWiringTest extends TestCase
      */
     public function test_blocked_function_call_sites_are_guarded(): void
     {
-        $checkConfiguration = $this->source('api/check-configuration.php');
+        // 요구사항 판정 본문은 웹(api/check-configuration.php)과 터미널 설치가 함께 쓰는
+        // includes/requirements.php 로 옮겨졌다. 디스크 조회는 그 공유 본문에서 일어난다.
+        $requirements = $this->source('includes/requirements.php');
 
         $this->assertStringContainsString(
             "installerHasFunction('disk_free_space')",
-            $checkConfiguration,
+            $requirements,
             'disk_free_space 가드가 없으면 그 호스팅에서 요구사항 목록이 통째로 뜨지 않는다'
         );
 
@@ -414,7 +416,10 @@ class InstallerEntryGateWiringTest extends TestCase
         // 「CLI 없이 설치 진행」 파랑으로 통과시키고 Step 3 가 bundled 를 고를 수 있게 열어
         // 둔 뒤, 실제 추출이 그 자리에서 멈추는 것이 종전 상태였다.
         $consumers = [
-            'api/check-configuration.php' => '요구사항 화면이 ZipArchive 없는 환경을 통과시킨다',
+            // 요구사항 판정 본문은 웹·터미널 공유 파일로 옮겨졌다 — 화면(check-configuration.php)은 그 결과를 싣는다.
+            'includes/requirements.php' => '요구사항 화면이 ZipArchive 없는 환경을 통과시킨다',
+            // Step 3 저장과 터미널 설치가 함께 쓰는 입력 검증 — vendor 방식 가용성 판정이 사본이면 풀 수 없는 번들을 받아들인다.
+            'includes/config-validation.php' => '입력 검증이 풀 수 없는 번들(bundled) 선택을 받아들여 설치가 추출 단계에서 멈춘다',
             'includes/execution-mode.php' => '실행 모드 감지가 inprocess 를 선택 가능으로 본다',
             'views/3-configuration.php' => 'Step 3 가 고를 수 없는 Vendor 방식(bundled)을 열어 둔다',
             'includes/task-runner.php' => 'auto 폴백이 풀 수 없는 번들로 내려가 그 자리에서 멈춘다',
@@ -478,8 +483,6 @@ class InstallerEntryGateWiringTest extends TestCase
      */
     public function test_probe_endpoints_are_rate_limited(): void
     {
-        $src = $this->source('api/check-configuration.php');
-
         $this->assertStringContainsString(
             'installerProbeRateLimitExceeded(',
             $this->sourceWithoutCommentsAndStrings($this->installRoot().'/api/check-configuration.php'),
@@ -489,6 +492,18 @@ class InstallerEntryGateWiringTest extends TestCase
         // 연결 실패 응답에서 드라이버 원문을 걷었는가 (보안#6). 판정 범위는 PDO 예외 분기로
         // 좁힌다 — 형제 분기(`catch (Exception)`)가 돌려주는 것은 이 파일이 스스로 던진
         // **이미 번역된** 검증 문구라서 같은 규칙의 대상이 아니다.
+        //
+        // DB 연결 시험 본문은 웹과 터미널 설치가 함께 쓰는 includes/db-check.php 로 옮겨졌다.
+        // 엔드포인트(check-configuration.php)는 그 결과를 응답에 옮겨 싣기만 한다 — 그래서
+        // 원문을 걷는 자리도, 그 결과를 그대로 싣는 껍데기도 함께 본다.
+        $src = $this->source('includes/db-check.php');
+
+        $this->assertStringContainsString(
+            'installer_test_database(',
+            $this->sourceWithoutCommentsAndStrings($this->installRoot().'/api/check-configuration.php'),
+            'DB 연결 시험 엔드포인트가 공유 판정을 지나지 않는다 — 원문을 걷는 분기가 응답 경로 밖에 있다'
+        );
+
         $pdoCatchAt = strpos($src, 'catch (PDOException $e)');
         $nextCatchAt = strpos($src, 'catch (Exception $e)', $pdoCatchAt === false ? 0 : $pdoCatchAt);
 
@@ -498,7 +513,7 @@ class InstallerEntryGateWiringTest extends TestCase
         $pdoBranch = substr($src, $pdoCatchAt, $nextCatchAt - $pdoCatchAt);
 
         $this->assertStringContainsString(
-            'classifyDbConnectionFailure(',
+            'installer_classify_db_connection_failure(',
             $pdoBranch,
             '연결 실패 사유를 분류하지 않는다'
         );
@@ -555,15 +570,27 @@ class InstallerEntryGateWiringTest extends TestCase
             $this->source('includes/session.php'),
             '세션 쿠키의 secure 판정이 요구사항 화면과 갈려 있다'
         );
+        // 요구사항 판정 본문은 웹·터미널 공유 파일(includes/requirements.php)로 옮겨졌다.
         $this->assertStringContainsString(
             'installerRequestIsHttps(',
-            $this->source('api/check-configuration.php'),
+            $this->source('includes/requirements.php'),
             '요구사항 화면의 HTTPS 판정이 공용 함수를 쓰지 않는다'
         );
 
+        // 필수 확장 목록은 코어 원본(app/Support/Requirements/php-extensions.json)에서 만든다 —
+        // 설치기 config.php 는 그 원본을 읽어 REQUIRED_EXTENSIONS 를 정의한다.
         $this->assertStringContainsString(
-            "'pdo_mysql'",
+            'PhpExtensionRequirements::load()',
             $this->source('includes/config.php'),
+            '설치기 필수 확장 목록이 코어 원본을 읽지 않는다 — 두 목록이 갈린다'
+        );
+        $extensionSource = json_decode(
+            (string) file_get_contents(dirname(__DIR__, 3).'/app/Support/Requirements/php-extensions.json'),
+            true
+        );
+        $this->assertContains(
+            'pdo_mysql',
+            $extensionSource['required'] ?? [],
             'pdo 만 검사하면 드라이버 없는 환경이 요구사항을 통과한 뒤 DB 연결에서야 막힌다'
         );
 
@@ -602,9 +629,15 @@ class InstallerEntryGateWiringTest extends TestCase
      */
     public function test_non_cli_binary_is_rejected_at_save_time(): void
     {
+        // 거부 규칙은 Step 3 저장과 터미널 설치가 함께 쓰는 검증(config-validation.php)이 소유한다.
+        $this->assertStringContainsString(
+            'installer_validate_config(',
+            $this->source('includes/request-handler.php'),
+            'Step 3 저장이 공유 검증을 지나지 않는다 — 아래 거부가 저장 시점에 돌지 않는다'
+        );
         $this->assertStringContainsString(
             'error_php_binary_not_cli_rejected',
-            $this->source('includes/request-handler.php'),
+            $this->source('includes/config-validation.php'),
             '비-CLI 경로가 경고만 받고 state 에 그대로 박힌다 — 그 바이너리는 artisan 을 받지 못해 전 태스크가 실패한다'
         );
     }

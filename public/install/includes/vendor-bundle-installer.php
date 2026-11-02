@@ -643,19 +643,16 @@ function canExecuteComposerForInstall(?string $composerBinary, ?string $phpBinar
         return (bool) $recorded;
     }
 
-    if (! ExecutionEnvironment::hasFunction('exec')) {
+    // 직접 확인도 composer_check 와 **같은 함수**(probeComposerForInstall, task-runner.php)로 한다. 그 함수가
+    // COMPOSER_HOME·HOME 을 storage/composer 로 주입하고 exec 차단을 미설치와 같은 분기로 보낸다 — 여기서
+    // 따로 exec 하면 웹 서버 계정의 HOME 이 없거나 쓸 수 없는 호스팅에서 같은 composer 가 한쪽에서만 실패해
+    // 두 판정이 갈린다. 판정 함수가 실리지 않은 진입에서는 실행 가능을 증명할 수 없으므로 미설치로 본다
+    // (auto 는 번들 폴백, composer 명시는 오류 — probeComposerForInstall 의 exec 차단 분기와 같은 결론).
+    if (! function_exists('probeComposerForInstall')) {
         return false;
     }
 
-    // 실행 문자열 조립은 getComposerCommand() 가 소유한다 — 이미 escape 된 형태를 돌려주므로
-    // 여기서 다시 escape 하지 않는다(하면 `php composer.phar` 같은 2토큰 입력이 깨진다).
-    $command = function_exists('getComposerCommand') ? getComposerCommand() : 'composer';
-
-    $output = [];
-    $returnCode = 1;
-    exec($command.' --version 2>&1', $output, $returnCode);
-
-    return $returnCode === 0;
+    return probeComposerForInstall()['ok'];
 }
 
 /**

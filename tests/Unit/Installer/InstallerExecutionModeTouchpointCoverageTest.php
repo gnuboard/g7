@@ -128,7 +128,7 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
         $this->assertNotEmpty($readers, 'vendor_mode 를 읽는 지점이 하나도 없을 수 없다 — 스캔 패턴을 의심할 것');
         $this->assertArrayHasKey('includes/task-runner.php', $readers, '확장 설치 커맨드에 --vendor-mode 를 전파하는 지점');
         $this->assertArrayHasKey('api/install-process.php', $readers, '설치 시작 시 확정 지점');
-        $this->assertArrayHasKey('includes/request-handler.php', $readers, 'Step 3 저장 지점');
+        $this->assertArrayHasKey('includes/config-validation.php', $readers, 'Step 3 저장과 터미널 설치가 함께 쓰는 검증 지점');
 
         $missing = $this->readsWithoutHelper($readers, 'vendor_mode', ['installerCoerceVendorModeForExecution', 'vendorModeFromState']);
 

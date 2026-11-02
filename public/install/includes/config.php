@@ -336,8 +336,15 @@ if (! defined('MIN_PHP_VERSION')) {
 // 필수·선택 PHP 모듈 — 코어 SSoT(app/Support/Requirements/php-extensions.json)에서 만든다.
 // 관리자 환경설정 > 정보, 코어 업데이트 사전점검, 문서(docs/requirements.md §1.4)가 같은 목록을 쓴다.
 // 테스트가 상수를 먼저 정의해 주입할 수 있도록 defined 가드는 유지한다.
+// 판정 클래스는 이 인스톨러와 같은 코드 트리에 있으므로 BASE_PATH(설치 대상 루트, 테스트에서는 temp)가
+// 아니라 이 파일 위치에서 찾고, 트리 밖에 복제된 경우만 BASE_PATH 로 폴백한다(아래 공유 클래스 로더와 같은 규칙).
 if (! class_exists('App\\Support\\PhpExtensionRequirements')) {
-    require_once BASE_PATH.'/app/Support/PhpExtensionRequirements.php';
+    $g7PhpExtensionRequirementsFile = dirname(__DIR__, 3).'/app/Support/PhpExtensionRequirements.php';
+    if (! is_file($g7PhpExtensionRequirementsFile)) {
+        $g7PhpExtensionRequirementsFile = BASE_PATH.'/app/Support/PhpExtensionRequirements.php';
+    }
+    require_once $g7PhpExtensionRequirementsFile;
+    unset($g7PhpExtensionRequirementsFile);
 }
 $installerPhpExtensionRequirements = PhpExtensionRequirements::load();
 if (! defined('REQUIRED_EXTENSIONS')) {

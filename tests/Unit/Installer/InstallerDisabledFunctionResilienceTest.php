@@ -361,8 +361,10 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      */
     public function test_disk_probe_failure_branch_matches_blocked_branch(): void
     {
+        // 디스크 판정 본문은 웹과 터미널 설치가 함께 쓰는 includes/requirements.php 의
+        // installer_requirement_disk_space() 로 옮겨졌다 — 요구사항 화면은 그 결과를 그대로 싣는다.
         $source = $this->sourceWithoutComments(
-            dirname(__DIR__, 3).'/public/install/api/check-configuration.php'
+            dirname(__DIR__, 3).'/public/install/includes/requirements.php'
         );
 
         $branchStart = strpos($source, 'if ($freeSpaceBytes === false)');

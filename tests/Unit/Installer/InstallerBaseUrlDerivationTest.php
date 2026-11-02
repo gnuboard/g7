@@ -671,35 +671,48 @@ class InstallerBaseUrlDerivationTest extends TestCase
     }
 
     /**
-     * `showAlertAndRedirect()` 의 JS 문맥 값은 `installerJsString`(JSON_HEX_*)으로 인코딩한다 (17차 A-6).
+     * `showAlertAndRedirect()` 의 안내 문구와 이동 주소는 **실리는 문맥(HTML 텍스트·속성)에 맞는 인코딩**을 지난다 (17차 A-6).
      *
-     * `$message`·`$redirectUrl` 은 인라인 `<script>` 의 JS 문자열 문맥에 실린다 — `htmlspecialchars`
-     * 는 `</script>`·역슬래시·개행을 이스케이프하지 않아 스크립트 탈출 통로가 된다. index.php:232
-     * 규약(인라인 script 값은 예외 없이 JSON_HEX 를 지난다)과 통일한다.
+     * 이동 안내는 인라인 `<script>`(alert + location) 대신 문구, 「바로 이동」 링크, meta refresh 로
+     * 바뀌었다 — strict CSP(`script-src 'self'`)에서 인라인 스크립트가 실행되지 않아 흰 화면에 머물렀기
+     * 때문이다. 그래서 두 값의 출력 문맥은 JS 문자열이 아니라 HTML 이다: `$message` 는 본문 텍스트,
+     * `$redirectUrl` 은 meta refresh 의 `content` 속성과 `<a href>` 속성(둘 다 큰따옴표). 그 문맥의 탈출
+     * 통로는 `<`·`&`·따옴표이므로 `htmlspecialchars(…, ENT_QUOTES)` 가 맞는 인코더이고, 17차 A-6 의 취지
+     * (출력 문맥과 인코더를 맞춘다)는 그대로다. 인라인 스크립트가 되살아나면 JS 문맥 인코딩이 다시
+     * 필요하므로 그것도 함께 막는다.
      *
      * @scenario redirect_context=install_root, redirect_context=subpath
      *
-     * @effects install_redirect_destination_uses_a_javascript_encoder
+     * @effects install_redirect_destination_is_encoded_for_its_output_context
      *
      * @return void 반환값 없음
      */
-    public function test_alert_redirect_encodes_js_context_with_json_hex_not_htmlspecialchars(): void
+    public function test_alert_redirect_encodes_html_context_values_with_entity_quotes(): void
     {
         $functions = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/functions.php');
         $body = $this->functionBody($functions, 'showAlertAndRedirect');
+        $this->assertNotSame('', $body, 'showAlertAndRedirect 정의를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
 
-        $this->assertStringContainsString('installerJsString($message)', $body, 'alert 메시지가 JS 인코딩(installerJsString)을 지나지 않는다');
-        $this->assertStringContainsString('installerJsString($redirectUrl)', $body, 'redirect URL 이 JS 인코딩(installerJsString)을 지나지 않는다');
         $this->assertStringNotContainsString(
-            'htmlspecialchars($message',
+            '<script',
             $body,
-            'JS 문맥의 message 를 htmlspecialchars 로 이스케이프한다 — `</script>`·역슬래시·개행을 놓친다'
+            '이동 안내가 인라인 스크립트를 다시 낸다 — strict CSP 에서 실행되지 않고, 값이 JS 문맥에 실려 HTML 인코딩으로는 막히지 않는다'
         );
-        $this->assertStringNotContainsString(
-            'htmlspecialchars($redirectUrl',
-            $body,
-            'JS 문맥의 redirectUrl 을 htmlspecialchars 로 이스케이프한다'
-        );
+
+        foreach (['message', 'redirectUrl'] as $name) {
+            $encode = '$'.$name.' = htmlspecialchars($'.$name.', ENT_QUOTES);';
+            $encodedAt = strpos($body, $encode);
+            $this->assertNotFalse($encodedAt, "\${$name} 이 따옴표까지 닫는 HTML 인코딩(ENT_QUOTES)을 지나지 않는다 — 속성 자리에서 탈출 통로가 된다");
+
+            // 인코딩은 그 값이 처음 출력되기 **전**이어야 한다.
+            $firstEcho = strpos($body, "'.\$".$name.".'");
+            $this->assertNotFalse($firstEcho, "\${$name} 의 출력 지점을 찾지 못했다 — 이 검사가 아무것도 재지 않는다");
+            $this->assertLessThan($firstEcho, $encodedAt, "\${$name} 이 인코딩 전에 출력된다");
+        }
+
+        // 이동 주소가 실리는 두 속성 자리 — 둘 다 큰따옴표라 ENT_QUOTES 가 닫는다.
+        $this->assertStringContainsString('content="3;url=\'.$redirectUrl.\'"', $body);
+        $this->assertStringContainsString('<a href="\'.$redirectUrl.\'"', $body);
     }
 
     /**

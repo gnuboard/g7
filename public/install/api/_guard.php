@@ -162,7 +162,9 @@ if (! function_exists('installer_finalize_window_open')) {
             return false;
         }
 
-        if (installer_env_completed_flag($basePath.'/.env')) {
+        // `.env` 완료 플래그 단독 판정은 installer_finalize_is_completed() 가 소유한다
+        // (손으로 편집해 파서가 깨진 .env 도 줄 앵커 폴백으로 읽는다 — 22차 N-3).
+        if (installer_finalize_is_completed()) {
             return false;
         }
 
@@ -354,16 +356,18 @@ if (! function_exists('installer_guard_finalize_or_410')) {
      * 존재는 차단 사유가 아니다 — complete_flag task 가 락 파일을 먼저 만든 직후에도
      * `.env` 머지(finalize-env)와 남은 태스크(run-task 의 config_cache)가 돌아야 한다.
      *
-     * 소비자 6곳: `finalize-env.php` · `state-management.php` · `run-task.php` +
-     * **복구 진입점 3곳** `install-process.php`(재시작·[다시 시도]) · `install-worker.php`(SSE
-     * 재연결) · `index.php`(새로고침). 앞의 셋만 완화하면 그 창에서 무언가 어긋났을 때
-     * 운영자가 실패 화면에서 나갈 수 없다 — 재시도·재연결·새로고침이 전부 410 이고, 정작
-     * 설치는 끝나지 않은 상태(`.env` 미머지)로 남는다. 인스톨러 흐름의 완료 표식은
-     * `.env` 의 `INSTALLER_COMPLETED` 이며 이 가드가 보는 것이 정확히 그것이다.
+     * 소비자 5곳: `finalize-env.php` · `state-management.php` · `run-task.php` +
+     * **복구 진입점 2곳** `install-process.php`(재시작·[다시 시도]) · `install-worker.php`(SSE
+     * 재연결). 세 번째 복구 진입점인 `index.php`(새로고침)는 같은 창을 더 좁게 여는
+     * `installer_guard_index_or_410()`(GET + 소유 세션 + state completed 일 때만 Step 5)을 쓴다.
+     * 앞의 셋만 완화하면 그 창에서 무언가 어긋났을 때 운영자가 실패 화면에서 나갈 수 없다 —
+     * 재시도·재연결·새로고침이 전부 410 이고, 정작 설치는 끝나지 않은 상태(`.env` 미머지)로
+     * 남는다. 인스톨러 흐름의 완료 표식은 `.env` 의 `INSTALLER_COMPLETED` 이며 이 가드가 보는
+     * 것이 정확히 그것이다.
      * 이 중 `run-task.php` 는 Artisan 커맨드를 실행하는 **인스톨러에서 공격 표면이 가장
      * 큰 엔드포인트**다 — 이 가드만으로 지키지 않고 발급 토큰(`X-Installer-Token`,
      * runtime.php 0600 전용)을 함께 요구한다. 이 가드의 통과 폭을 넓히면 그 엔드포인트의
-     * 진입 조건도 함께 넓어지므로, 조건을 바꿀 때는 여섯 소비자를 모두 보고 판단한다.
+     * 진입 조건도 함께 넓어지므로, 조건을 바꿀 때는 다섯 소비자와 index.php 가드를 모두 보고 판단한다.
      *
      * 락 파일 생성 전에 끝나는 일반 인스톨러 엔드포인트는 계속 `installer_guard_or_410()`
      * 을 쓴다.

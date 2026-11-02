@@ -96,7 +96,7 @@ effects:
   - bundled_source_install_routes_vendor_through_resolver
   - raw_composer_fallback_is_gated_by_vendor_resolution_flag
   - module_and_plugin_managers_have_symmetric_vendor_paths
-  # W1 정보 카드의 [자세히 보기] — 링크가 사라지는 축과 목적지(INSTALL.md 방법 5 제목)가
+  # W1 정보 카드의 [자세히 보기] — 링크가 사라지는 축과 목적지(INSTALL.md 방법 6 제목)가
   # 사라지는 축이 다르다. 뒤쪽은 404 가 아니라 문서 맨 위가 열려 오류로 드러나지 않는다 (D32)
   - installer_execution_mode_card_links_to_install_guide
   # 같은 계약의 모집단은 그 화면 하나가 아니다 — 관리자 코어 업데이트 안내 모달에도 같은

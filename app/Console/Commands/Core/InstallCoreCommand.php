@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Traits\LocalizesDescription;
+use App\Support\ExecutionEnvironment;
 use Illuminate\Console\Command;
 
 /**
@@ -43,6 +44,14 @@ class InstallCoreCommand extends Command
         $script = $this->scriptPath();
         if (! is_file($script)) {
             $this->error(__('common.console.core_install.script_missing', ['path' => $script]));
+
+            return self::FAILURE;
+        }
+
+        // proc_open 이 막힌 PHP 에서는 호출 자체가 Error 다 — 실행하지 못했다고 알리고 끝낸다
+        // (본체 `php g7-install` 는 별칭 없이 직접 부를 수 있다).
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
+            $this->error(__('common.console.core_install.process_failed'));
 
             return self::FAILURE;
         }

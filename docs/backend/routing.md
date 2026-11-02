@@ -307,7 +307,7 @@ Route::delete('clear', function () {
 확장 프론트엔드는 코어와 별도 번들이라 코어 함수를 `import` 할 수 없다 — `G7Core.url` 이 그 공식 수단이고,
 번들 확장은 같은 규칙의 헬퍼 사본(`apiUrl.ts`)을 바이트 동일하게 갖는다. 상세: [G7Core 전역 API "주소 조립
 (G7Core.url)"](../frontend/g7core-api.md#주소-조립-g7coreurl), 배치별 설치 절차와 하위 주소 설치:
-[INSTALL.md "방법 6: 문서 루트 고정 · 심볼릭 링크 불가 호스팅"](../../INSTALL.md#방법-6-문서-루트-고정--심볼릭-링크-불가-호스팅).
+[INSTALL.md "방법 7: 문서 루트 고정 · 심볼릭 링크 불가 호스팅"](../../INSTALL.md#방법-7-문서-루트-고정--심볼릭-링크-불가-호스팅).
 
 ---
 
@@ -692,7 +692,7 @@ FQCN 정적 호출도 안전하다. 문제가 되는 것은 오토로드 경로�
 - [미들웨어 등록 규칙](./middleware.md) - 미들웨어 실행 순서
 - [검증 로직 구현](./validation.md) - FormRequest 사용 규칙
 - [G7Core 전역 API "주소 조립 (G7Core.url)"](../frontend/g7core-api.md#주소-조립-g7coreurl) - 브라우저 쪽 마운트 접두사 처리
-- [INSTALL.md "방법 6"](../../INSTALL.md#방법-6-문서-루트-고정--심볼릭-링크-불가-호스팅) - 문서 루트 고정 배치·하위 주소 설치
+- [INSTALL.md "방법 7"](../../INSTALL.md#방법-7-문서-루트-고정--심볼릭-링크-불가-호스팅) - 문서 루트 고정 배치·하위 주소 설치
 
 ### SEO 라우트
 

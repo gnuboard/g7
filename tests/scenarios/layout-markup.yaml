@@ -1108,6 +1108,12 @@ effects:
   - public_layout_serving_returns_404_for_missing_or_inactive_sources   # 없는 템플릿, 없는 레이아웃, 비활성 템플릿 요청은 404 다
   - public_layout_serving_merges_the_inherited_base_layout   # 자식 레이아웃 서빙이 부모(extends)를 병합하고 extends, slots 를 걷어낸다
   - public_layout_serving_emits_unescaped_utf8   # 한글이 \uXXXX 이스케이프 없이 raw UTF-8 로 직렬화된다
+  # 같은 `LayoutServingTest` 의 압축 응답 메서드가 쓰는 효과. 조합 축(encoding)과 압축 계약 전량은
+  # `docroot-single-folder.yaml` 이 소유하고, 이 파일이 게이트에서 돌므로 여기에도 둔다.
+  - gzip_compresses_compressible_responses_for_accepting_clients   # gzip 을 받는 클라이언트에게 레이아웃 응답이 압축되어 나간다
+  - gzip_marks_encoded_representation_with_distinct_etag   # 압축본의 ETag 에 표현 접미사가 붙고 재검증이 304 로 끝난다
+  - gzip_leaves_responses_uncompressed_without_gzip_acceptance   # gzip 을 받지 않는 클라이언트에게는 압축하지 않는다
+  - gzip_skips_responses_below_the_size_threshold   # 1KB 미만 응답은 압축하지 않는다
 
 # S18.5 축 B — 설치/업데이트/삭제 × 소스 매트릭스.
 #

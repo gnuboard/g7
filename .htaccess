@@ -207,9 +207,9 @@
         </IfModule>
     </FilesMatch>
 
-    # 확장자가 없는 최상위 파일 — 확장자 규칙으로는 걸리지 않는다. `artisan` 은 PHP 소스이고
-    # rewrite 가 없으면 PHP 로 실행되지도 않아 평문으로 나간다.
-    <FilesMatch "^(artisan|LICENSE)$">
+    # 확장자가 없는 최상위 파일 — 확장자 규칙으로는 걸리지 않는다. `artisan`·`g7-install`(터미널 설치)은
+    # PHP 소스이고 rewrite 가 없으면 PHP 로 실행되지도 않아 평문으로 나간다.
+    <FilesMatch "^(artisan|g7-install|LICENSE)$">
         <IfModule mod_access_compat.c>
             Order allow,deny
             Deny from all

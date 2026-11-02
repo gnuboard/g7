@@ -41,6 +41,7 @@ class InstallerCssCascadeContractTest extends TestCase
         '.btn-danger:disabled' => '비활성 컨트롤',
         '.bulk-toggle-checkbox:disabled' => '비활성 컨트롤',
         '.dep-tag i' => '장식 아이콘 — 뜻은 옆 텍스트가 전한다',
+        '.integration-tag i' => '종류 아이콘 — 확장 이름은 옆 텍스트가 전한다 (의존 태그 .dep-tag i 와 같은 마크업·규칙)',
         '.db-existing-tables-badge:hover' => 'hover 피드백 (기본 상태는 흐리지 않다)',
         '.vendor-mode-card.disabled .vendor-mode-card-icon' => '장식 아이콘만 — 글자는 흐리지 않는다 (10차 결정)',
         '.vendor-mode-card.disabled .vendor-mode-card-check' => '같음',

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Scheduling\ScheduleRunner;
 use App\Scheduling\ScheduleRunState;
 use Carbon\CarbonImmutable;
@@ -25,19 +26,14 @@ use Illuminate\Console\Command;
  */
 class ScheduleRunInProcessCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 시그니처
      *
      * @var string
      */
     protected $signature = 'g7:schedule-run';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '밀린 예약 작업을 같은 프로세스에서 실행합니다 (웹 크론과 동일한 러너)';
 
     /**
      * 커맨드를 실행합니다.

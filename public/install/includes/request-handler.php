@@ -1,7 +1,5 @@
 <?php
 
-use App\Support\ExecutionEnvironment;
-
 /**
  * 그누보드7 웹 인스톨러 요청 처리 핸들러
  *
@@ -246,112 +244,13 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     $formData = array_merge($formData, $_POST);
     $formData['use_read_db'] = isset($_POST['use_read_db']) ? true : false;
 
-    // 입력 검증 본문은 웹·터미널 공유 함수가 소유한다 — 규칙을 바꿀 때는 config-validation.php 에서 바꾼다.
-    // 코어 업데이트 _pending 경로만은 아래에서 웹 껍데기가 판정한다: 공유 함수의 판정에는 `..`/NUL 거부와
-    // Windows 절대경로 인식, stat 진단 억제가 없어(21차 #21-4) 그대로 넘기면 open_basedir 밖 경로의
-    // warning 이 redirect 헤더보다 먼저 나간다. 그래서 공유 함수에는 빈 값으로 넘기고 원래 값을 되돌린다.
-    $hasPendingPathInput = array_key_exists('core_update_pending_path', $formData);
-    $pendingPathInput = $formData['core_update_pending_path'] ?? '';
-    $validationInput = $formData;
-    if ($hasPendingPathInput) {
-        $validationInput['core_update_pending_path'] = '';
-    }
-
-    $validated = installer_validate_config($validationInput, $currentLang);
+    // 입력 검증은 웹·터미널 공유 함수가 소유한다 — 규칙을 바꿀 때는 config-validation.php 에서 바꾼다.
+    // 사이트명 길이, 직접 지정한 PHP 경로의 비-CLI 거부, 실행 방식 정규화·성립 검사와 vendor 방식 보정,
+    // 코어 업데이트 _pending 경로의 검사 버튼 동형 규칙(`..`/NUL 거부·Windows 절대경로·stat 진단 억제)도
+    // 그 함수 안에 있다. 터미널 설치가 같은 규칙을 거치도록 껍데기의 사본은 두지 않는다.
+    $validated = installer_validate_config($formData, $currentLang);
     $formData = $validated['config'];
     $errors = array_merge($errors, $validated['errors']);
-
-    if ($hasPendingPathInput) {
-        $formData['core_update_pending_path'] = $pendingPathInput;
-    }
-
-    // 아래는 공유 함수가 정규화한 $formData 를 기준으로 이어 붙는 웹 전용 검증이다.
-
-    // 사이트명 길이 — 이 값은 `.env` 의 APP_NAME 과 설정의 site_name 으로 그대로 흘러가
-    // 설치 직후 관리자·사용자 화면의 입력이 된다. 화면의 maxlength 는 거들 수 있으므로
-    // 서버가 같은 상한을 다시 강제한다. 필수·개행 오류가 이미 있으면 그 사유를 먼저 보인다.
-    if (! isset($errors['app_name']) && mb_strlen((string) ($formData['app_name'] ?? '')) > MAX_APP_NAME_LENGTH) {
-        $errors['app_name'] = lang('error_app_name_too_long', ['max' => MAX_APP_NAME_LENGTH]);
-    }
-
-    // 공유 함수가 빈 값을 'php' 로 바꾸고 trim 한 값이다.
-    $phpBinary = (string) $formData['php_binary'];
-
-    // 운영자가 **직접 지정한** 경로가 CLI 가 아니면 저장하지 않는다 (13차 보안#7 ②).
-    // `php-fpm --version` · `php-cgi --version` 은 CLI 와 똑같이 정상 종료하고 같은 형태로
-    // 버전을 찍으므로 형태·버전 검사로는 구분되지 않는다 — 그런데 그 바이너리는 artisan 을
-    // 받지 못해 설치 태스크가 전부 실패한다. 종전에는 화면에 경고만 띄우고 그 값을 그대로
-    // state 에 박았다. 자동 탐색 경로(입력을 비워 둔 경우)는 코어 판정이 CLI 후보를 먼저
-    // 고르므로 이 검사의 대상이 아니다 — php-cgi 로만 동작하던 환경을 새로 막지 않는다.
-    if (! isset($errors['php_binary']) && $phpBinary !== 'php') {
-        require_once __DIR__.'/execution-mode.php';
-        installerEnsureExecutionEnvironmentLoaded();
-
-        $probe = ExecutionEnvironment::probePhpBinary($phpBinary);
-        $probedSapi = $probe['sapi'] ?? null;
-
-        if (($probe['status'] ?? '') === 'valid' && is_string($probedSapi) && $probedSapi !== 'cli') {
-            $errors['php_binary'] = lang('error_php_binary_not_cli_rejected', [
-                'path' => $phpBinary,
-                'sapi' => $probedSapi,
-            ]);
-        }
-    }
-
-    // 실행 모드 (auto|subprocess|inprocess, 기본 auto — D33). 저장되는 것은 "선택" 이고
-    // auto 는 감지 결과를 박지 않는다 (A-0 ①). inprocess 가 유효하면 composer 는 성립하지
-    // 않으므로 Vendor 설치 방식을 bundled 로 고정한다 (A-4) — 화면이 보내는 값만 믿지
-    // 않고 저장 시점에 다시 판정한다 (R9: 모드가 관여하는 지점은 모드를 읽는다).
-    // vendor_mode 의 모르는 값과 쓸 수 없는 방식의 거부는 공유 함수가 이미 했다 — 여기서는 그 결과에 강제만 얹는다.
-    require_once __DIR__.'/execution-mode.php';
-
-    $formData['execution_mode'] = installerNormalizeExecutionMode($formData['execution_mode'] ?? 'auto');
-
-    // 명시 선택은 성립 여부를 저장 시점에 검사한다 (A-4 대칭). 화면이 고를 수 없게 막는 것만으로는
-    // 부족하다 — 재감지 요청이 조용히 실패한 뒤·Step 3 저장과 설치 시작 사이에 환경이 바뀐 뒤·
-    // 개발자 도구로 disabled 를 지운 뒤에는 서버가 유일한 판정자다. 여기서 막지 않으면 실패가
-    // 설치 중반(태스크 실행)에야 드러나고, 그때의 복구는 롤백/재시도다.
-    if ($formData['execution_mode'] !== 'auto') {
-        $executionRejection = installerExecutionModeRejection(
-            $formData['execution_mode'],
-            installerDetectExecutionMode($phpBinary !== '' ? $phpBinary : 'php'),
-        );
-
-        if ($executionRejection !== null) {
-            $errors['execution_mode'] = lang($executionRejection);
-        }
-    }
-
-    $executionResolution = installerResolveExecutionMode([
-        'execution_mode' => $formData['execution_mode'],
-        'php_binary' => $phpBinary,
-    ]);
-    $formData['vendor_mode'] = installerCoerceVendorModeForExecution((string) $formData['vendor_mode'], $executionResolution['mode']);
-
-    // 코어 업데이트 _pending 경로 검증 (입력된 경우만) — 검사 버튼(check-core-pending-path)과
-    // **같은 규칙**이어야 한다 (21차 #21-4). 종전에는 저장 경로만 `..`/NUL 거부·Windows
-    // 절대경로 인식·stat 진단 억제가 전부 빠져 있었다: Windows 절대경로(`D:\pending`)를
-    // 상대경로로 오인해 검사 버튼이 초록을 준 경로와 다른 경로를 검증했고, open_basedir
-    // 환경에서는 무억제 stat 의 warning 이 redirect 헤더보다 먼저 나가 화면이 Step 3 에
-    // 고착됐다(상태는 이미 Step 4 로 넘어간 뒤라 새로고침해야만 풀린다).
-    $corePendingPath = trim((string) $pendingPathInput);
-    if ($corePendingPath !== '') {
-        $hasParentSegment = preg_match('#(^|[/\\\\])\.\.([/\\\\]|$)#', $corePendingPath) === 1;
-
-        if ($hasParentSegment || str_contains($corePendingPath, "\0")) {
-            $errors['core_update_pending_path'] = lang('error_core_pending_path_invalid');
-        } else {
-            // 절대 경로 변환 — 검사 버튼과 같은 판정 (POSIX `/` + Windows 드라이브 문자)
-            $absolutePath = (str_starts_with($corePendingPath, '/') || preg_match('#^[A-Za-z]:[/\\\\]#', $corePendingPath) === 1)
-                ? $corePendingPath
-                : BASE_PATH.'/'.$corePendingPath;
-
-            // 운영자 임의 경로라 open_basedir 밖이 정상 시나리오 — 판정은 옳고 진단만 억제 (20차 #9 규칙)
-            if (@file_exists($absolutePath) && ! @is_dir($absolutePath)) {
-                $errors['core_update_pending_path'] = lang('error_core_pending_not_directory');
-            }
-        }
-    }
 
     // DB 테스트 완료 확인 — 통과 기록(`=== true`)과 함께, 이 세션이 검사한 연결설정과
     // 지금 제출한 연결설정이 같은지 지문으로 대조한다. 실패 기록·미검사·검사 후 설정 변경은 모두 거부.

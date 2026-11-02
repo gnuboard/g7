@@ -64,6 +64,11 @@ class InstallerWindowsCommandsTest extends TestCase
             define('INSTALLER_BASE_URL', '/install');
         }
 
+        // 함수 가용성 판정 SSoT(installerHasFunction) — 실제 진입점은 functions.php 보다 먼저 싣는다.
+        // 싣지 않으면 hasWindowsReadOnlyAttribute() 의 attrib 폴백이 「판정기 미적재 = 확인 불가」로
+        // 떨어져, 같은 프로세스에서 앞서 돈 다른 시험이 이 파일을 실었는지에 따라 결과가 갈린다.
+        require_once $this->installerRoot().'/public/install/includes/execution-mode.php';
+
         // functions.php 로드 (한 번만) — 누수된 BASE_PATH 와 무관하게 프로젝트 루트 절대경로 사용
         require_once $this->installerRoot().'/public/install/includes/functions.php';
     }

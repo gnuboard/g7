@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Services\Auth\LoginHandoffService;
 use App\Support\SiteUrl;
@@ -19,12 +20,12 @@ use Illuminate\Console\Command;
  */
 class AuthHandoffIssue extends Command
 {
+    use LocalizesDescription;
+
     protected $signature = 'auth:handoff-issue
         {email : 인계할 회원 이메일}
         {--guard=user : 로그인 경로 (user | admin)}
         {--login-method=cli:handoff : 로그인 수단 이름 (로그인 완료 훅에 실린다)}';
-
-    protected $description = '브라우저에 묶지 않은 로그인 인계 코드를 발급합니다 (실측·시험 전용, 운영 환경 거절)';
 
     /**
      * 명령을 실행합니다.

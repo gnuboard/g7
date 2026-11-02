@@ -3666,7 +3666,7 @@
 
         if (hasMissingRequiredPhpExtensions(item)) {
             html += '<div class="extension-card-php-notice extension-card-php-blocked"><i class="fas fa-ban"></i> ' +
-                escapeHtml(lang('extension_php_missing_required').replace(':extensions', item.missing_php_extensions.join(', '))) +
+                escapeHtml(lang('extension_php_missing_required', { extensions: item.missing_php_extensions.join(', ') })) +
                 '</div>';
         }
 
@@ -3675,9 +3675,10 @@
         if (suggestedNames.length > 0) {
             const reasons = suggestedNames.map(function(n) { return suggested[n]; }).filter(Boolean).join(', ');
             html += '<div class="extension-card-php-notice"><i class="fas fa-exclamation-triangle"></i> ' +
-                escapeHtml(lang('extension_php_missing_suggested')
-                    .replace(':extensions', suggestedNames.join(', '))
-                    .replace(':reason', reasons || suggestedNames.join(', '))) +
+                escapeHtml(lang('extension_php_missing_suggested', {
+                    extensions: suggestedNames.join(', '),
+                    reason: reasons || suggestedNames.join(', '),
+                })) +
                 '</div>';
         }
 
@@ -6251,7 +6252,7 @@
             const id = String(key).slice(String(key).indexOf(':') + 1);
             return getStoredExtensionName(id) || id;
         });
-        return lang('task_required_by').replace(':names', names.join(', '));
+        return lang('task_required_by', { names: names.join(', ') });
     }
 
     /**
@@ -6491,9 +6492,10 @@
         // keepalive: 탭 닫힘에도 요청 유지. catch: 워커 재시작으로 인한
         // connection abort 를 에러로 표시하지 않는다 (의도된 동작).
         try {
-            // 인스톨러 기준 경로를 쓴다 — 문서 루트가 프로젝트 루트로 고정된 서버(축 B)에서는
-            // 인스톨러가 /public/install/ 아래에 있어 절대 경로 /install/... 은 404 가 된다
-            fetch(`${window.INSTALLER_BASE_URL}/api/finalize-env.php`, {
+            // 하위 폴더 설치(/g7/install 등)에서도 맞도록 다른 API 호출처럼 INSTALLER_BASE_URL 기준으로 만든다.
+            // 문서 루트가 프로젝트 루트로 고정된 서버(축 B)에서는 인스톨러가 /public/install/ 아래에 있어
+            // 절대 경로 /install/... 은 404 가 된다 — INSTALLER_BASE_URL 이 그 접두사를 이미 싣는다.
+            fetch(`${window.location.origin}${window.INSTALLER_BASE_URL}/api/finalize-env.php`, {
                 method: 'POST',
                 keepalive: true,
                 // 상태 변경 요청과 같은 헤더를 쓴다 — finalize 는 단계별 실행에서 토큰을
@@ -6711,7 +6713,7 @@
                                 type="button"
                                 aria-expanded="false"
                                 aria-controls="${commandsId}"
-                                onclick="toggleErrorDetail(this, '${commandsId}')"
+                                data-action="toggleErrorDetail" data-arg="${commandsId}"
                             >
                                 <span class="error-detail-toggle-icon" aria-hidden="true">▶</span>
                                 <strong>${escapeHtml(lang('manual_commands_guide'))}</strong>

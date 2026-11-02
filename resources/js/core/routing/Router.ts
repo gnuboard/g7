@@ -1,6 +1,6 @@
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
-import { stripBasePrefix, suffixed, withBasePrefix } from '../support/assetUrl';
+import { basePrefix, stripBasePrefix, suffixed, withBasePrefix } from '../support/assetUrl';
 import { isCustomRoutePath } from './CustomRouteMatcher';
 import { notifyLocationReplaced } from '../template-engine/navigationLinks';
 import { normalizePathname } from './normalizePathname';
@@ -396,8 +396,16 @@ export class Router {
    */
   async navigateToCurrentPath(): Promise<void> {
     // 주소창 정규화는 접두사를 품은 전체 경로로 한다 — 주소창에 쓰는 값이므로 `/g7/x/` 는 `/g7/x` 가 된다.
+    // base-path:allow 주소창 정규화용 원본이다 — 라우트 대조용 접두사는 아래에서 정규형에 대해 벗긴다.
     const rawPathname = window.location.pathname;
-    const normalizedPathname = this.normalizePathname(rawPathname);
+    let normalizedPathname = this.normalizePathname(rawPathname);
+    // 하위 폴더 마운트 루트는 끝 슬래시 형태(`/g7/`)가 서버 정본이다 — 웹서버가 폴더 주소를
+    // `/g7` → `/g7/` 로 돌려보낸다(Apache DirectorySlash). 여기서 `/g7` 로 접어 쓰면 새로고침·
+    // 북마크·공유 때마다 301 이 한 번 더 난다. 그 밖의 경로는 끝 슬래시 없는 형태가 정본이다.
+    const mountRoot = basePrefix();
+    if (mountRoot !== '' && normalizedPathname === mountRoot) {
+      normalizedPathname = mountRoot + '/';
+    }
     if (normalizedPathname !== rawPathname) {
       // 정규형은 늘 `/` 하나로 시작하므로 교차 출처 주소(`//host`)가 될 수 없다
       // base-path:allow 브라우저에서 읽은 접두사 포함 주소를 슬래시만 정규화해 그대로 되쓴다(접두사를 다시 붙이면 이중이 된다).

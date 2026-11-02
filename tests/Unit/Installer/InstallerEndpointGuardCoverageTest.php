@@ -39,9 +39,13 @@ class InstallerEndpointGuardCoverageTest extends TestCase
 
     /**
      * 화면 진입(index.php)도 같은 복구 창을 갖는다 — api/ 밖이라 위 모집단에 없다.
+     *
+     * 화면은 API 와 달리 화면 전용 가드(`installer_guard_index_or_410`)를 쓴다. 완료 표식 뒤
+     * `.env` 확정 전 창에서 **설치 소유 세션의 GET** 만 Step 5 로 들이고(그 화면이 마무리를 기다렸다가
+     * finalize-env 로 `.env` 를 확정한다), 그 밖은 일반 가드처럼 410 으로 끝낸다.
      */
     private const FINALIZE_GUARD_ALLOWED_OUTSIDE_API = [
-        'index.php' => 'complete_flag 이후 새로고침 — 완료 화면에 도달하려면 열려 있어야 한다',
+        'index.php' => 'complete_flag 이후 새로고침 — 완료 화면에 도달하려면 소유 세션에게 열려 있어야 한다',
     ];
 
     /**
@@ -251,8 +255,12 @@ class InstallerEndpointGuardCoverageTest extends TestCase
             $this->assertFileExists($path);
 
             $src = $this->stripComments((string) file_get_contents($path));
+            // 화면 진입은 화면 전용 완화 가드를 쓴다 — 창 안의 소유 세션 GET 만 Step 5 로 들인다.
+            $relaxedGuard = array_key_exists($relative, self::FINALIZE_GUARD_ALLOWED_OUTSIDE_API)
+                ? 'installer_guard_index_or_410'
+                : 'installer_guard_finalize_or_410';
             $this->assertMatchesRegularExpression(
-                '/installer_guard_finalize_or_410\s*\(\s*\)/',
+                '/'.$relaxedGuard.'\s*\(\s*\)/',
                 $src,
                 "{$relative} 이 완화 가드를 쓰지 않는다 — complete_flag 이후 창에서 410 이 된다",
             );
@@ -262,6 +270,20 @@ class InstallerEndpointGuardCoverageTest extends TestCase
                 "{$relative} 이 엄격 가드를 함께 호출한다 — 완화가 무효가 된다",
             );
         }
+
+        // 화면 전용 가드가 실제로 창을 연다 — 창 판정이 엄격 가드보다 먼저 와야 하고, 창은
+        // GET·설치 소유 세션으로 좁혀져야 한다(그 밖의 요청이 창을 통로로 쓰지 못하게).
+        $guard = $this->stripComments((string) file_get_contents($this->apiDir().'/_guard.php'));
+        $indexGuard = $this->functionBody($guard, 'installer_guard_index_or_410');
+        $windowAt = strpos($indexGuard, 'installer_finalize_window_open(');
+        $strictAt = strpos($indexGuard, 'installer_guard_or_410(');
+        $this->assertNotFalse($windowAt, '화면 전용 가드가 마무리 창을 판정하지 않는다 — complete_flag 이후 새로고침이 410 이 된다');
+        $this->assertNotFalse($strictAt, '화면 전용 가드가 창 밖 요청을 410 으로 끝내지 않는다');
+        $this->assertLessThan($strictAt, $windowAt, '창 판정이 엄격 가드 뒤에 있다 — 완화가 무효가 된다');
+
+        $window = $this->functionBody($guard, 'installer_finalize_window_open');
+        $this->assertStringContainsString("'GET'", $window, '마무리 창이 GET 으로 좁혀지지 않았다 — POST 처리가 창을 통로로 쓴다');
+        $this->assertStringContainsString('installer_session_is_owner(', $window, '마무리 창이 설치 소유 세션으로 좁혀지지 않았다');
     }
 
     /**
@@ -363,7 +385,10 @@ class InstallerEndpointGuardCoverageTest extends TestCase
             ['api/install-process.php', 'installerCurrentWorkerId(', '오래 도는 태스크가 stale 로 판정돼 겹쳐 돈다', null],
             ['api/state-management.php', 'installerApplyAbortedState(', '중단 후 죽은 워커의 점유가 남아 [계속 진행]이 거짓 busy 로 막힌다', null],
             ['includes/artisan-executor.php', 'extendWorkerStaleWindow(', 'exec() 블로킹 구간에 heartbeat 가 멈춰 살아 있는 요청을 다른 요청이 탈취한다', 'installerRunArtisanSubprocess'],
-            ['api/check-configuration.php', 'orderPhpBinaryCandidates(', '감지 결과가 CLI 우선으로 정렬되지 않아 웹 SAPI 바이너리가 입력란에 자동으로 채워진다', 'detectPhpBinaries'],
+            // 감지 본문은 웹·터미널 공유 파일(includes/requirements.php)로 옮겨졌다 — 엔드포인트가 그
+            // 공유 감지를 부르는 줄과, 공유 감지가 CLI 우선 정렬을 부르는 줄을 함께 본다.
+            ['api/check-configuration.php', 'installer_detect_php_binaries(', '감지 결과가 CLI 우선으로 정렬되지 않아 웹 SAPI 바이너리가 입력란에 자동으로 채워진다', 'detectPhpBinaries'],
+            ['includes/requirements.php', 'PhpBinaryResolver::sortCliFirst(', '감지 결과가 CLI 우선으로 정렬되지 않아 웹 SAPI 바이너리가 입력란에 자동으로 채워진다', 'installer_detect_php_binaries'],
             ['includes/installer-state.php', 'installerActiveWorkerIsAlive(', '살아 있는 워커의 완료 마커를 지워 방금 만든 테이블을 다시 DROP 한다', 'applyExistingDbActionStateGuard'],
             ['includes/task-runner.php', 'installerTaskIsBestEffort(', '태스크 밖으로 나온 예외가 best_effort 계약을 건너뛰어 완료를 실패로 덮는다', 'recordInstallationRunException'],
             // 요약의 형태·값은 execution-mode.php 가 소유하고 행위 테스트가 덮는다
@@ -623,9 +648,24 @@ class InstallerEndpointGuardCoverageTest extends TestCase
     public function test_install_process_keeps_stepwise_token_out_of_state(): void
     {
         $src = $this->stripComments((string) file_get_contents($this->apiDir().'/install-process.php'));
+        // 설치 계획 확정(runtime.php·state 기록)은 웹·터미널 공유 함수(includes/install-plan.php)로
+        // 옮겨졌다. 엔드포인트는 토큰을 runtime_installer 로 넘기고, 공유 함수가 그것을 runtime 에만 싣는다.
+        $plan = $this->stripComments((string) file_get_contents(dirname($this->apiDir()).'/includes/install-plan.php'));
 
-        $this->assertMatchesRegularExpression('/\$runtime\[\'installer\'\]\s*=\s*\[\'stepwise_token\'/', $src);
-        $this->assertDoesNotMatchRegularExpression('/\$state\[[^\]]*token[^\]]*\]/i', $src, '토큰이 state 배열에 대입되면 안 된다 (R3)');
+        $this->assertMatchesRegularExpression('/\$runtimeInstaller\s*=\s*\[\'stepwise_token\'/', $src);
+        $this->assertMatchesRegularExpression('/\'runtime_installer\'\s*=>\s*\$runtimeInstaller/', $src, '토큰이 설치 계획 확정의 runtime 채널로 넘어가지 않는다 (R3)');
+        $this->assertMatchesRegularExpression('/\$runtime\[\'installer\'\]\s*=\s*\$opts\[\'runtime_installer\'\]/', $plan, '설치 계획 확정이 토큰을 runtime.php 에 싣지 않는다 (R3)');
+
+        foreach (['api/install-process.php' => $src, 'includes/install-plan.php' => $plan] as $relative => $source) {
+            $this->assertDoesNotMatchRegularExpression('/\$state\[[^\]]*token[^\]]*\]/i', $source, "{$relative}: 토큰이 state 배열에 대입되면 안 된다 (R3)");
+        }
+
+        // state 로 함께 서명되는 웹 판정(state_extra)에 토큰이 섞이면 같은 결과가 된다.
+        $extraAt = strpos($src, "'state_extra' =>");
+        $this->assertNotFalse($extraAt, 'state_extra 전달을 찾지 못했다 — 이 검사의 기준점이 사라졌다');
+        $extraEnd = strpos($src, '],', $extraAt);
+        $this->assertNotFalse($extraEnd);
+        $this->assertStringNotContainsStringIgnoringCase('token', substr($src, $extraAt, $extraEnd - $extraAt), '토큰이 state_extra 로 state 에 실리면 안 된다 (R3)');
     }
 
     /**

@@ -6,8 +6,9 @@
  * 웹 설치 워커가 쓰는 `ProgressEmitter`(SseEmitter·NullEmitter)와 같은 인터페이스다. 설치 작업 실행 코어
  * `runInstallationTasks()` 는 송출기만 바꿔 끼우면 웹과 같은 순서·같은 이벤트로 돈다.
  *
- * - CliEmitter: 사람이 읽는 출력 (터미널일 때만 색)
+ * - CliEmitter: 사람이 읽는 출력 (터미널일 때만 색). 하위 명령 원문(`[cmd] ` 표식 log)은 표식을 떼고 진행 줄과 구분해 찍는다.
  * - JsonLinesEmitter: 한 줄에 JSON 하나(NDJSON). 이벤트 이름·필드는 웹 SSE 이벤트와 같고 CLI 전용 step·summary 가 더해진다.
+ *   명령 원문 log 도 웹 SSE 와 같은 `message`(표식 포함)로 낸다 — 소비자는 웹 화면처럼 표식으로 가른다.
  *
  * 두 송출기 모두 log 이벤트를 installation.log 에 남기고(웹과 같음), 워커 잠금 심장박동을 갱신한다.
  * 중단 신호(Ctrl+C·SIGTERM)는 `isConnectionAborted()` 로 알려 기존 중단·롤백 경로를 탄다.
@@ -136,8 +137,47 @@ if (! class_exists('CliEmitter')) {
         protected function write(string $event, array $data): void
         {
             $message = (string) ($data['message'] ?? '');
+            $commandOutput = $event === 'log' ? $this->commandOutputBody($message) : null;
 
-            $line = match ($event) {
+            $line = match (true) {
+                // 하위 명령(artisan·composer) 원문 — 웹 진행 화면은 이 줄을 진행 기록이 아니라 「명령 상세」 접기 영역으로
+                // 보낸다. 터미널에는 접기가 없으므로 표식을 떼고 한 단계 더 들여 흐리게 찍어 진행 줄과 구분한다.
+                $commandOutput !== null => '      '.$this->paint('2', '│ '.$commandOutput),
+                default => $this->lineFor($event, $message, $data),
+            };
+
+            if ($line !== null) {
+                fwrite(in_array($event, ['error', 'rollback_failed'], true) ? STDERR : STDOUT, $line."\n");
+            }
+        }
+
+        /**
+         * 로그 한 줄이 하위 명령 원문인지 판정하고, 맞으면 표식을 뗀 본문을 돌려준다.
+         *
+         * 표식은 서버 상수 `INSTALLER_COMMAND_OUTPUT_PREFIX`(sendCommandOutputSSE 가 붙인다)이고 웹 화면의
+         * `COMMAND_OUTPUT_PREFIX` 와 같은 리터럴이다.
+         *
+         * @param  string  $message  로그 줄
+         * @return string|null 명령 원문이면 표식을 뗀 본문, 아니면 null
+         */
+        private function commandOutputBody(string $message): ?string
+        {
+            $prefix = defined('INSTALLER_COMMAND_OUTPUT_PREFIX') ? (string) INSTALLER_COMMAND_OUTPUT_PREFIX : '[cmd] ';
+
+            return str_starts_with($message, $prefix) ? substr($message, strlen($prefix)) : null;
+        }
+
+        /**
+         * 명령 원문이 아닌 이벤트의 출력 줄.
+         *
+         * @param  string  $event  이벤트 이름
+         * @param  string  $message  이벤트 메시지
+         * @param  array<string, mixed>  $data  이벤트 데이터
+         * @return string|null 출력 줄 (출력하지 않으면 null)
+         */
+        private function lineFor(string $event, string $message, array $data): ?string
+        {
+            return match ($event) {
                 'task_start' => $this->paint('36', '▶ ').(string) ($data['name'] ?? $data['task'] ?? ''),
                 'task_complete' => $this->paint('32', '  ✔ ').$message,
                 'log' => '    '.$message,
@@ -151,10 +191,6 @@ if (! class_exists('CliEmitter')) {
                 'summary', 'connected' => null,
                 default => $message !== '' ? '  '.$message : null,
             };
-
-            if ($line !== null) {
-                fwrite(in_array($event, ['error', 'rollback_failed'], true) ? STDERR : STDOUT, $line."\n");
-            }
         }
 
         /**

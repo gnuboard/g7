@@ -521,9 +521,12 @@ class InstallerMonitorContractTest extends TestCase
     /**
      * 두 채널에 복제된 `setInputDisabled` 가 서로 어긋나지 않는가 (11차 #D14).
      *
-     * installer.js 는 닫힌 IIFE 라 그 안의 함수가 뷰의 인라인 스크립트에서 보이지 않는다 —
+     * installer.js 는 닫힌 IIFE 라 그 안의 함수가 Step 3 화면 스크립트에서 보이지 않는다 —
      * 사본이 존재하는 것 자체는 구조상 불가피하다. 문제는 그 사실을 **아무도 지키지 않았다**는
      * 것이다: 3·4·8차가 세 라운드에 걸쳐 고친 aria 동기화를 한쪽에서만 지워도 초록이었다.
+     *
+     * Step 3 사본은 strict CSP 로 뷰의 인라인 스크립트에서 단계 스크립트(step-3-configuration.js)로
+     * 옮겨졌다. 대조 대상도 그 파일이다.
      *
      * @scenario installation_mode=stepwise, a11y_axis=live_region
      *
@@ -538,7 +541,7 @@ class InstallerMonitorContractTest extends TestCase
 
         foreach ([
             'assets/js/installer.js',
-            'views/3-configuration.php',
+            'assets/js/step-3-configuration.js',
         ] as $relative) {
             // 주석을 지운 뒤 대조한다 — 원문에는 주석 처리된 배선도 글자로 남아, 원문 대조는 「그 배선이 살아 있다」를 증명하지 못한다 (12차 메타 검사 ①).
             // (여기서는 두 사본을 그대로 비교하므로 양쪽에 같은 처리를 적용해야 의미가 보존된다)

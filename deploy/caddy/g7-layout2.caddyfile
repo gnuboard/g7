@@ -298,7 +298,7 @@ example.com {
 
 	# (6) 확장자가 없는 최상위 파일. `artisan` 은 PHP 소스이고, `public/` 에 같은 이름이
 	#     없으므로 애플리케이션으로 넘어가 404 가 된다.
-	@g7_names path_regexp g7names ^/(artisan|LICENSE)$
+	@g7_names path_regexp g7names ^/(artisan|g7-install|LICENSE)$
 	handle @g7_names {
 		import g7_delegate
 	}

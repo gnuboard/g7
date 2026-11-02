@@ -2046,52 +2046,71 @@ class RootEntrypointContractTest extends TestCase
     }
 
     /**
-     * 미설치 안내의 목적지는 **JS 문자열 인코더**로 실린다.
+     * 미설치 안내는 **스크립트 없는 302** 로 보내고, 그 목적지는 사이트 안의 같은 호스트 경로로만 조립된다.
      *
-     * `<script>` 안은 HTML 파서가 실체 참조를 해석하지 않는 raw text 라, 그 자리에
-     * `htmlspecialchars()` 를 쓰면 보호도 되지 않고 값도 바뀐다 — 주소에 `&quot;` 가
-     * 그대로 들어가거나, JS 가 `\i`·`A` 을 해석해 **경로가 조용히 다른 값**이
-     * 된다(실측). 오류가 나지 않고 다른 주소로 이동하는 형태다.
+     * 종전에는 alert + `window.location.href` 인라인 스크립트로 보냈고, 그 자리의 인코더(JSON_HEX_*)를
+     * 이 검사가 쟀다(10차 G3 라운드 D10-8 — `<script>` 안에서 `htmlspecialchars()` 는 보호도 되지 않고
+     * 값만 바꾼다). 지금은 strict CSP(`script-src 'self'`)에서 인라인 스크립트가 실행되지 않아 흰 화면이
+     * 되므로 `Location` 헤더로 보낸다. 출력 문맥이 JS 문자열에서 HTTP 헤더로 바뀌었으니 재는 것도
+     * 그 문맥의 탈출 통로다:
+     *  - 인라인 스크립트가 되살아나지 않는다(되살아나면 JS 문맥 인코딩이 다시 필요하다)
+     *  - 목적지는 302 `Location` 헤더 하나로만 나간다
+     *  - 목적지의 출처(`SCRIPT_NAME`)는 요청 경로에서 잘라 온 값일 수 있어 요청자 영향을 받는다 — 앞의
+     *    슬래시가 둘이면 브라우저가 다른 호스트(`//host/install`)로 읽고, Windows 의 `\` 는 브라우저가 `/` 로
+     *    읽는다. 그래서 실제 조립식을 여러 입력으로 돌려 언제나 `/` 하나로 시작하는 같은 호스트 경로인지 본다.
      *
-     * 목적지의 출처가 요청 경로에서 잘라 온 값이라 요청자 영향을 받는다
-     * (10차 G3 라운드 D10-8).
-     *
-     * @effects install_redirect_destination_uses_a_javascript_encoder
+     * @effects install_redirect_destination_is_encoded_for_its_output_context
      *
      * @return void 반환값 없음
      */
-    public function test_install_redirect_uses_a_javascript_string_encoder(): void
+    public function test_install_redirect_is_a_scriptless_same_host_302(): void
     {
         $source = (string) file_get_contents(base_path('public/index.php'));
 
-        // 주석을 걷어낸다 — 위 설명이 그 함수 이름을 언급하므로 자기충족을 피한다.
+        // 주석을 걷어낸다 — 위 설명이 조립식·함수 이름을 언급하므로 자기충족을 피한다.
         $code = (string) preg_replace(['#/\*.*?\*/#s', '#//[^
 ]*#'], '', $source);
 
-        $this->assertMatchesRegularExpression(
-            '/window\.location\.href=/',
-            $code,
-            '미설치 안내의 이동 지점을 찾지 못했다 — 이 검사가 아무것도 재지 않는다'
-        );
-
         $this->assertDoesNotMatchRegularExpression(
-            '/window\.location\.href="\s*\.\s*htmlspecialchars/',
+            '/<script|window\.location/i',
             $code,
-            'JS 문자열 자리에 HTML 이스케이프를 쓴다 — `<script>` 안에서는 해석되지 않아 주소가 조용히 달라진다'
+            '미설치 안내가 인라인 스크립트로 돌아왔다 — strict CSP 에서 실행되지 않아 흰 화면이 된다'
         );
 
         $this->assertMatchesRegularExpression(
-            '/json_encode\(\s*\$installUrl/',
+            '/if\s*\(\s*!\s*\$isInstalled\s*\)\s*\{\s*\$installUrl\s*=[^;]+;\s*header\(\s*\'Location: \'\s*\.\s*\$installUrl\s*,\s*true\s*,\s*302\s*\)\s*;\s*exit\s*;/',
             $code,
-            '목적지가 JS 문자열 인코더(json_encode)를 거치지 않는다'
+            '미설치 안내의 이동 지점(302 Location + exit)을 찾지 못했다 — 이 검사가 아무것도 재지 않는다'
         );
 
-        foreach (['JSON_HEX_TAG', 'JSON_HEX_QUOT', 'JSON_UNESCAPED_SLASHES'] as $flag) {
-            $this->assertStringContainsString(
-                $flag,
-                $code,
-                "미설치 안내 인코딩에 {$flag} 가 없다 — `</script>` 조기 종료·따옴표 탈출을 막지 못한다"
-            );
+        $this->assertSame(1, preg_match('/\$installUrl\s*=\s*([^;]+);/', $code, $assignment), '목적지 조립식을 찾지 못했다');
+        $build = eval('return static function (): string { return '.$assignment[1].'; };');
+
+        $saved = $_SERVER['SCRIPT_NAME'] ?? null;
+        try {
+            // 루트 설치(`/index.php`)는 Windows 에서 dirname 이 `\` 를 돌려주는 바로 그 입력이다 — 이 시험이
+            // Windows 에서 돌면 역슬래시 정규화를, 리눅스에서 돌면 일반 경로를 잰다.
+            $cases = [
+                '/index.php' => '/install',
+                '/g7sub/index.php' => '/g7sub/install',
+                '/g7sub/sub2/index.php' => '/g7sub/sub2/install',
+                '//evil.example/index.php' => '/evil.example/install',
+                '///evil.example/index.php' => '/evil.example/install',
+            ];
+            foreach ($cases as $scriptName => $expected) {
+                $_SERVER['SCRIPT_NAME'] = $scriptName;
+                $destination = $build();
+
+                $this->assertSame($expected, $destination, 'SCRIPT_NAME='.$scriptName.' 의 설치 화면 주소가 다르다');
+                $this->assertStringStartsNotWith('//', $destination, 'SCRIPT_NAME='.$scriptName.' 이 다른 호스트로 보낸다');
+                $this->assertStringNotContainsString('\\', $destination, 'SCRIPT_NAME='.$scriptName.' 의 역슬래시가 남았다 — 브라우저가 `/` 로 읽는다');
+            }
+        } finally {
+            if ($saved === null) {
+                unset($_SERVER['SCRIPT_NAME']);
+            } else {
+                $_SERVER['SCRIPT_NAME'] = $saved;
+            }
         }
     }
 }

@@ -120,8 +120,11 @@ effects:
   - step3_post_skips_url_shape_check_for_empty_values
 
   # 609 docblock 정리 (BinaryPathPolicyTest, EnvValueSerializationTest) — 메서드별 마킹이 쓰는 효과 중 이 원장에 없던 것.
-  # EnvValueSerializationTest 는 소유 매니페스트가 없어 test_files 끝에 등재했다. 직렬화기(serializeEnvValue)와
-  # 한 줄 검사기(installer_env_value_is_single_line)를 직접 재므로 vector 축에 두 값을, 따옴표와 백슬래시, UNC, 임의 phar 를 payload_class 축에 덧붙였다.
+  # EnvValueSerializationTest 의 소유 매니페스트는 installer-env-value-serialization.yaml(case 축, 전개 검사 대상)이다.
+  # 이 매니페스트는 그 시험 메서드가 함께 싣는 serializeEnvValue_* 효과를 재려고 test_files 끝에 같이 등재한다. 조합 마킹은
+  # 소유 매니페스트의 case 축을 따르므로(한 docblock 의 @scenario 는 한 지문이다), vector 축의 serializeEnvValue·
+  # installer_env_value_is_single_line 과 payload_class 축의 quote_and_backslash 는 그 시험에서 마킹되지 않는다
+  # (이 매니페스트는 조합 전개를 면제받는다). UNC·임의 phar 값은 BinaryPathPolicyTest 가 쓴다.
   - binary_path_policy_is_loaded_by_validation_and_execution_entrypoints
   - pair_resolver_rejects_unc_and_arbitrary_phar
   - serializeEnvValue_wraps_normal_value_in_quotes

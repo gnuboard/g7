@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\CoreUpdateService;
 use Illuminate\Console\Command;
 
@@ -30,9 +31,9 @@ use Illuminate\Console\Command;
  */
 class CoreDeployLedgerSeedCommand extends Command
 {
-    protected $signature = 'core:deploy-ledger-seed';
+    use LocalizesDescription;
 
-    protected $description = 'deploy/** 서버 설정 조각의 해시 원장을 현재 디스크 내용으로 씨앗합니다 (이미 있으면 유지)';
+    protected $signature = 'core:deploy-ledger-seed';
 
     /**
      * 원장을 씨앗하고 결과를 출력합니다.

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Custom;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
@@ -16,16 +17,13 @@ use Illuminate\Support\Facades\File;
  */
 class CustomExampleCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string
      */
     protected $signature = 'custom:example
         {sample : 만들 견본 이름 (board)}';
-
-    /**
-     * @var string
-     */
-    protected $description = 'custom 예약 자리에 견본 화면 파일을 만듭니다 (기존 파일이 있으면 중단)';
 
     /**
      * 명령을 실행합니다.

@@ -376,6 +376,11 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
      * 함수를 실행하려면 인스톨러 런타임을 부팅해야 하므로 본문을 파싱한다 — 목록을 손으로
      * 적으면 그 사본이 곧 드리프트의 출처가 된다.
      *
+     * 확장 작업(템플릿·모듈·플러그인·사용자 템플릿·언어팩)은 종류를 넘는 의존 순서로 만들기 위해
+     * `installer_extension_install_tasks()`(includes/extension-selection.php)가 만든다. 목록이 그 함수를
+     * 부르면 그 함수의 종류별 작업 표(`[작업 id, 실행 함수]` 쌍)도 모집단에 넣는다 — 빼면 확장 작업이
+     * 축 대조에서 통째로 사라진다.
+     *
      * @return array<int, string> 태스크 id (정렬됨)
      */
     private function taskIdsFromSource(): array
@@ -386,7 +391,19 @@ class InstallerScenarioMarkerCoverageTest extends TestCase
         $this->assertNotSame('', $body, 'buildInstallationTaskList() 을 찾지 못했다 — SSoT 이름이 바뀌었다');
 
         preg_match_all("/'id'\s*=>\s*'([a-z0-9_]+)'/", $body, $m);
-        $ids = array_values(array_unique($m[1]));
+        $ids = $m[1];
+
+        if (str_contains($body, 'installer_extension_install_tasks(')) {
+            $selection = $this->sourceWithoutComments(self::root().'/public/install/includes/extension-selection.php');
+            $extensionBody = $this->functionBody($selection, 'installer_extension_install_tasks');
+            $this->assertNotSame('', $extensionBody, 'installer_extension_install_tasks() 를 찾지 못했다 — 확장 작업 모집단의 기준점이 사라졌다');
+
+            preg_match_all("/\[\s*'([a-z0-9_]+)'\s*,\s*'[A-Za-z0-9_]+SSE'\s*\]/", $extensionBody, $pairs);
+            $this->assertNotEmpty($pairs[1], '확장 작업 표([작업 id, 실행 함수] 쌍)를 읽지 못했다 — 표 형태가 바뀌었다');
+            $ids = array_merge($ids, $pairs[1]);
+        }
+
+        $ids = array_values(array_unique($ids));
         sort($ids);
 
         return $ids;

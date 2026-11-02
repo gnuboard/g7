@@ -4549,9 +4549,9 @@ body {
   font-size: 0.6rem;
 }
 
+/* 본문 텍스트라 불투명도로 흐리지 않는다 — 배지(600)보다 낮은 굵기로 강조만 낮춘다 */
 .integration-auto-badge-owner {
   font-weight: 400;
-  opacity: 0.8;
 }
 
 .extension-card-integrations {
@@ -4590,8 +4590,9 @@ body {
   opacity: 0.7;
 }
 
+/* 본문 텍스트라 불투명도로 흐리지 않는다 — 연동 계열의 보조 텍스트 토큰으로 강조를 낮춘다 */
 .integration-template-hint {
-  opacity: 0.75;
+  color: var(--integration-label-text);
 }
 
 .integration-tag.integration-version-mismatch {

@@ -57,7 +57,7 @@ class InstallerDbTestGateTest extends TestCase
         // 검사 본문(공유 함수)은 PDOException·Exception 두 경로를 모두 실패 결과로 돌려주고,
         // 웹 껍데기는 실패 결과 하나의 분기에서 기록을 지운다.
         $this->assertMatchesRegularExpression('/if \(! \$result\[\'success\'\]\) \{\s*\n(?:\s*\/\/[^\n]*\n)*\s*installer_forget_db_test\(\$isReadDb\);/', $source, '실패 결과면 기록을 지운다');
-        $shared = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/db-check.php');
+        $shared = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/db-check.php');
         $this->assertStringContainsString('} catch (PDOException $e) {', $shared);
         $this->assertStringContainsString('} catch (Exception $e) {', $shared);
         $this->assertStringNotContainsString('$_SESSION', $shared, '공유 검사 함수는 세션을 쓰지 않는다');

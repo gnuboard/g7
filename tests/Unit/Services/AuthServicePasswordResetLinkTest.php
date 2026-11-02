@@ -14,6 +14,7 @@ use App\Services\IdentityPolicyService;
 use App\Services\PasswordChangeChallengeService;
 use App\Services\PasswordChangeService;
 use App\Services\PasswordExpiryService;
+use App\Services\PasswordResetService;
 use App\Support\AssetUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
@@ -87,6 +88,7 @@ class AuthServicePasswordResetLinkTest extends TestCase
             Mockery::mock(PasswordChangeService::class),
             Mockery::mock(PasswordExpiryService::class),
             Mockery::mock(PasswordChangeChallengeService::class),
+            Mockery::mock(PasswordResetService::class),
         );
 
         $captured = [];

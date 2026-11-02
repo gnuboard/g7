@@ -132,6 +132,11 @@ class InstallerClientContractDriftTest extends TestCase
     /**
      * 설치 진행 화면이 정지 감지 창을 서버의 하위 프로세스 시간 상한에서 파생해 주입하고, 화면 스크립트가 그 값을 읽는지 확인한다.
      *
+     * strict CSP 에서 인라인 스크립트가 실행되지 않으므로 주입 통로는 `#installer-step-data` JSON
+     * 블록의 `server_blocking_window_ms` 키이고, 단계 스크립트(step-5-installation.js)가 그 키를
+     * 화면 스크립트가 읽는 전역으로 옮긴다. 세 마디(서버 상수 → JSON 키 → 전역 → 소비) 중 하나만
+     * 끊겨도 정지 감지는 기본값으로 떨어진다.
+     *
      * @scenario task_duration=long_no_feedback
      *
      * @effects monitors_share_time_based_stall_detection
@@ -143,10 +148,17 @@ class InstallerClientContractDriftTest extends TestCase
         $view = $this->sourceWithoutComments($this->installRoot().'/views/5-installation.php');
 
         $this->assertMatchesRegularExpression(
-            '/window\.INSTALLER_SERVER_BLOCKING_WINDOW_MS\s*=.*INSTALLER_SUBPROCESS_TIME_LIMIT/s',
+            "/'server_blocking_window_ms'\s*=>\s*[^,\n]*INSTALLER_SUBPROCESS_TIME_LIMIT/",
             $view,
             '정지 감지 창의 근거가 서버 상수(INSTALLER_SUBPROCESS_TIME_LIMIT)에서 파생되지 않는다 — '
             .'숫자를 화면에 다시 적으면 서버가 창을 바꿔도 화면이 따라오지 않는다.',
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/window\.INSTALLER_SERVER_BLOCKING_WINDOW_MS\s*=\s*data\.server_blocking_window_ms\b/',
+            $this->sourceWithoutComments($this->installRoot().'/assets/js/step-5-installation.js'),
+            '단계 스크립트가 데이터 블록의 정지 감지 창을 화면 스크립트가 읽는 전역으로 옮기지 않는다 — '
+            .'서버가 값을 실어도 화면은 기본값으로 판정한다.',
         );
 
         $this->assertStringContainsString(
@@ -261,27 +273,15 @@ class InstallerClientContractDriftTest extends TestCase
      */
     public function test_서버가_확인_불가로_표시하는_항목은_화면도_그_갈래를_읽는다(): void
     {
-        $server = $this->sourceWithoutComments($this->installRoot().'/api/check-configuration.php');
-
-        $start = strpos($server, '$requirements = [');
-        $this->assertNotFalse($start, '요구사항 목록 정의를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
-        $end = strpos($server, '];', $start);
-        $this->assertNotFalse($end);
-
-        // key => 그 값을 만드는 메서드 이름
-        preg_match_all(
-            "/'([a-z0-9_]+)'\s*=>\s*\\\$this->([A-Za-z0-9_]+)\(/",
-            substr($server, $start, $end - $start),
-            $m,
-            PREG_SET_ORDER
-        );
-        $this->assertNotEmpty($m, '요구사항 항목과 그 판정 메서드의 대응을 하나도 읽지 못했다');
+        // key => 그 값을 만드는 판정 함수(공유 본문) 또는 메서드(웹 껍데기)
+        $entries = $this->requirementEntries();
+        $this->assertNotEmpty($entries, '요구사항 항목과 그 판정 함수의 대응을 하나도 읽지 못했다');
 
         $js = $this->installerJs();
         $missing = [];
 
-        foreach ($m as [, $key, $method]) {
-            $body = $this->methodBody($server, $method);
+        foreach ($entries as [$key, $method, $source]) {
+            $body = $this->methodBody($source, $method);
             if ($body === null || ! str_contains($body, "'unknown' => true")) {
                 continue;
             }
@@ -297,6 +297,60 @@ class InstallerClientContractDriftTest extends TestCase
             "서버가 「확인 불가」로 내보내는데 화면이 그 갈래를 읽지 않는다\n"
             .'— 값을 재지 못한 항목이 0 으로 그려지면, 그 검사는 존재하지 않는 것보다 나쁘다.',
         );
+    }
+
+    /**
+     * 요구사항 응답에 실리는 항목과 그 값을 만드는 판정 함수의 대응을 읽는다.
+     *
+     * 판정 본문은 웹 Step 2 와 터미널 설치가 함께 쓰는 공유 함수(`includes/requirements.php` 의
+     * `installer_collect_requirements()`)가 소유하고, 웹 전용 항목(web_exposure)만 웹 껍데기
+     * (`api/check-configuration.php` 의 checkRequirements)가 그 결과에 덧붙인다. 두 출처를 모두
+     * 읽어야 응답 전체가 모집단이 된다 — 한쪽만 읽으면 다른 쪽에 새 항목이 생겨도 이 검사가 모른다.
+     *
+     * @return list<array{0: string, 1: string, 2: string}> [항목 키, 판정 함수 또는 메서드 이름, 그 본문을 찾을 주석 제거 소스]
+     */
+    private function requirementEntries(): array
+    {
+        $shared = $this->sourceWithoutComments($this->installRoot().'/includes/requirements.php');
+        $shell = $this->sourceWithoutComments($this->installRoot().'/api/check-configuration.php');
+
+        $collect = $this->methodBody($shared, 'installer_collect_requirements');
+        $this->assertNotNull($collect, '요구사항 공유 판정 함수를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
+
+        $start = strpos($collect, '$requirements = [');
+        $this->assertNotFalse($start, '요구사항 목록 정의를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
+        $end = strpos($collect, '];', $start);
+        $this->assertNotFalse($end);
+
+        preg_match_all(
+            "/'([a-z0-9_]+)'\s*=>\s*([A-Za-z0-9_]+)\(/",
+            substr($collect, $start, $end - $start),
+            $sharedItems,
+            PREG_SET_ORDER
+        );
+        $this->assertNotEmpty($sharedItems, '공유 판정 함수에서 요구사항 항목을 하나도 읽지 못했다');
+
+        $entries = [];
+        foreach ($sharedItems as [, $key, $function]) {
+            $entries[] = [$key, $function, $shared];
+        }
+
+        $check = $this->methodBody($shell, 'checkRequirements');
+        $this->assertNotNull($check, '웹 껍데기의 요구사항 응답 메서드를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
+
+        // 웹 전용 항목: `$requirements['web_exposure'] = $this->checkWebExposure();`
+        preg_match_all(
+            "/\\\$requirements\['([a-z0-9_]+)'\]\s*=\s*\\\$this->([A-Za-z0-9_]+)\(/",
+            $check,
+            $shellItems,
+            PREG_SET_ORDER
+        );
+        $this->assertNotEmpty($shellItems, '웹 껍데기가 덧붙이는 웹 전용 항목(web_exposure)을 읽지 못했다');
+        foreach ($shellItems as [, $key, $method]) {
+            $entries[] = [$key, $method, $shell];
+        }
+
+        return $entries;
     }
 
     /**
@@ -376,16 +430,7 @@ class InstallerClientContractDriftTest extends TestCase
      */
     public function test_요구사항_응답의_모든_항목이_화면에_그려진다(): void
     {
-        $server = $this->sourceWithoutComments($this->installRoot().'/api/check-configuration.php');
-
-        $start = strpos($server, '$requirements = [');
-        $this->assertNotFalse($start, '요구사항 목록 정의를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
-
-        $end = strpos($server, '];', $start);
-        $this->assertNotFalse($end);
-
-        preg_match_all("/'([a-z0-9_]+)'\s*=>/", substr($server, $start, $end - $start), $m);
-        $keys = array_values(array_unique($m[1]));
+        $keys = array_values(array_unique(array_column($this->requirementEntries(), 0)));
 
         $this->assertNotEmpty($keys, '요구사항 항목 이름을 하나도 읽지 못했다');
 

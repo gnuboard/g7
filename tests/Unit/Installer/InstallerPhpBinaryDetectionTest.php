@@ -3,10 +3,12 @@
 namespace Tests\Unit\Installer;
 
 use App\Support\ExecutionEnvironment;
+use App\Support\PhpBinaryResolver;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Tests\Concerns\ScansPhpSourceFunctions;
 use ValidationApi;
 
 /**
@@ -24,6 +26,11 @@ use ValidationApi;
  *  - 감지 결과는 CLI 후보가 앞에 온다 (화면 자동 대입이 그 첫 후보를 쓴다)
  *  - 요구사항 화면의 CLI 버전 비교도 같은 probe 를 쓰고 SAPI 를 응답에 남긴다
  *
+ * 감지·CLI 버전 판정 본문은 웹(check-configuration.php)과 터미널 설치가 함께 쓰는
+ * `includes/requirements.php` 의 공유 함수(`installer_detect_php_binaries`,
+ * `installer_requirement_php_cli_version`)로 옮겨졌다. 그래서 그 두 계약은 공유 함수를
+ * 직접 부르거나 그 본문을 읽어 고정한다.
+ *
  * 커버 축: php_binary_sapi cli·non_cli·unknown / php_binary_source detected_autodetect
  *
  * 효과 요약(마커 아님 — 평문): 검증 결과의 SAPI 보고, CLI 후보 우선 정렬, CLI 버전 검사의 SAPI 보고. 표식은 각 테스트 메서드에 있다.
@@ -32,6 +39,8 @@ use ValidationApi;
 #[PreserveGlobalState(false)]
 class InstallerPhpBinaryDetectionTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private static bool $loaded = false;
 
     /**
@@ -127,9 +136,23 @@ class InstallerPhpBinaryDetectionTest extends TestCase
             ['path' => '/usr/bin/php', 'version' => '8.3.26', 'sapi' => 'cli'],
         ];
 
-        $ordered = $this->invoke('orderPhpBinaryCandidates', [$found]);
+        // 감지 함수가 정렬에 쓰는 규칙 그 자체에 비-CLI 가 섞인 목록을 주입한다.
+        $ordered = PhpBinaryResolver::sortCliFirst($found);
 
         $this->assertSame('/usr/bin/php', $ordered[0]['path'], '화면은 첫 후보를 입력란에 자동으로 채운다 — 웹 SAPI 바이너리가 첫 후보가 되면 전 태스크가 실패한다');
+
+        // 그 규칙이 감지 결과에 실제로 걸리는가 — 정렬 줄이 사라지면 함수는 멀쩡한 채로
+        // 감지 결과만 탐색 순서(PHP_BINARY 먼저)로 돌아간다. 정렬은 Composer 짝 PHP 를
+        // 고르기(첫 후보) **전**이어야 한다.
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/requirements.php');
+        $body = $this->functionBody($source, 'installer_detect_php_binaries');
+        $this->assertNotSame('', $body, 'installer_detect_php_binaries() 를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
+
+        $sortAt = strpos($body, 'PhpBinaryResolver::sortCliFirst($found)');
+        $firstPickAt = strpos($body, "\$found[0]['path']");
+        $this->assertNotFalse($sortAt, '감지 결과가 CLI 우선으로 정렬되지 않는다 — 웹 SAPI 바이너리가 입력란에 자동으로 채워진다');
+        $this->assertNotFalse($firstPickAt, 'Composer 짝 PHP 선택(첫 후보)을 찾지 못했다 — 이 검사의 기준점이 사라졌다');
+        $this->assertLessThan($firstPickAt, $sortAt, '정렬이 첫 후보 선택보다 뒤에 있다 — Composer 가 웹 SAPI 바이너리와 짝지어진다');
     }
 
     /**
@@ -143,7 +166,12 @@ class InstallerPhpBinaryDetectionTest extends TestCase
      */
     public function test_cli_version_check_reports_sapi(): void
     {
-        $result = $this->invoke('checkPhpCliVersion');
+        if (! ExecutionEnvironment::hasFunction('exec')) {
+            $this->markTestSkipped('exec 차단 환경 — CLI 버전 조회는 건너뜀 응답만 낸다');
+        }
+
+        // 요구사항 화면(check-configuration.php)과 터미널 설치가 함께 부르는 공유 판정이다.
+        $result = installer_requirement_php_cli_version();
 
         $this->assertArrayHasKey('cli_sapi', $result, '버전만 맞고 SAPI 가 다른 경우를 응답만 보고 구분할 수 있어야 한다');
         $this->assertSame('php', $result['cli_path'], '경로 기본값은 실행 모드 헬퍼가 SSoT 다');

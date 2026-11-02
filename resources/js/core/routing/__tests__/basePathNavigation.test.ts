@@ -160,13 +160,13 @@ describe('하위 폴더 마운트의 화면 이동', () => {
 
         // @scenario base_path=subpath, navigation_direction=navigation
         // @effects login_redirect_stays_inside_the_site
-        it('접두사를 벗긴 결과가 `//host` 형태여도 어떤 라우트에도 매치되지 않는다 (사이트 밖 이동 차단)', async () => {
+        it('접두사를 벗긴 결과가 `//host` 형태여도 사이트 안 경로로 접혀 사이트 밖으로 나가지 않는다', async () => {
             // `stripBasePrefix('/g7//evil.com')` 은 `//evil.com` 이다 — 벗기는 쪽은 접두사 뒤
-            // 나머지를 그대로 돌려주므로 결과가 `/` 하나로 시작한다는 보장이 없다. 그 값이
-            // 로그인 복귀(`redirectToLoginWithReturn`)로 `navigate` 에 실려도 사이트 밖으로 나가지
-            // 않는 이유는 여기에 있다: 라우트 패턴은 전부 `^\/…` 단일 슬래시라 `//evil.com` 은
-            // 어떤 패턴에도 맞지 않고, 와일드카드(`*/`) 언어 접두 패턴도 세그먼트에 `/` 를
-            // 허용하지 않는다. 그 사실을 고정한다 (15차 G3 라운드 W4-5).
+            // 나머지를 그대로 돌려주므로 결과가 `/` 하나로 시작한다는 보장이 없다 (15차 G3 라운드 W4-5).
+            // 그 값이 사이트 밖으로 나가지 않는 근거는 라우터의 슬래시 정규화다: 대조 전에 연속 슬래시를
+            // 하나로 접으므로(`normalizePathname`, 서버 `RequestPath::normalize()` 와 같음 — engine-v1.84.0)
+            // `//evil.com` 은 사이트 안 `/evil.com` 이 되고, 주소창도 `/` 하나로 시작하는 정규형으로 되쓴다.
+            // 정규형은 교차 출처 주소(`//host`)가 될 수 없다.
             expect(stripBasePrefix('/g7//evil.com')).toBe('//evil.com');
 
             const router = new Router('sirsoft-basic');
@@ -178,20 +178,86 @@ describe('하위 폴더 마운트의 화면 이동', () => {
                 { path: '*/board/:slug', layout: 'board-i18n' },
             ];
 
-            expect(router.match('//evil.com')).toBeNull();
-            expect(router.match('//evil.com/board/free')).toBeNull();
+            expect(router.match('//evil.com')?.route.path).toBe('/:slug');
+            expect(router.match('//evil.com')?.params.slug).toBe('evil.com');
+            // 언어 접두 패턴(`*/board/:slug`)의 선택 세그먼트로 읽혀도 사이트 안 `/evil.com/board/free` 다.
+            expect(router.match('//evil.com/board/free')?.route.path).toBe('*/board/:slug');
             expect(router.match('/board/free')).not.toBeNull();
 
             setLocation('/g7//evil.com');
-            const notFound = vi.fn();
+            const replaceState = vi.spyOn(window.history, 'replaceState');
             const changed = vi.fn();
-            router.on('routeNotFound', notFound);
             router.on('routeChange', changed);
 
             await router.navigateToCurrentPath();
 
-            expect(changed).not.toHaveBeenCalled();
-            expect(notFound).toHaveBeenCalledTimes(1);
+            expect(replaceState).toHaveBeenCalled();
+            const rewritten = String(replaceState.mock.calls[0][2]);
+            expect(rewritten.startsWith('/g7/evil.com')).toBe(true);
+            expect(rewritten.startsWith('//')).toBe(false);
+            expect(changed).toHaveBeenCalledTimes(1);
+            expect(changed.mock.calls[0][0].path).toBe('/evil.com');
+        });
+
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects route_matching_strips_the_site_base_path
+        it('하위 폴더 주소의 끝·연속 슬래시는 접두사를 품은 채 접히고, 대조는 접두사를 벗긴 정규형으로 한다', async () => {
+            // 병합 합성(engine-v1.84.0 슬래시 정규화 × 12차 G3 접두사 벗기기)의 순서를 잠근다 —
+            // 접두사 포함 전체 경로를 먼저 접어 주소창에 쓰고, 그 정규형에서 접두사를 벗겨 대조한다.
+            const cases: Array<[string, string, string]> = [
+                ['/g7/board/free/', '/g7/board/free', '/board/free'],
+                ['/g7//board/free', '/g7/board/free', '/board/free'],
+                ['/g7/board//free/', '/g7/board/free', '/board/free'],
+            ];
+
+            for (const [entry, rewritten, routed] of cases) {
+                setMount(MOUNT);
+                const router = new Router('sirsoft-basic');
+                (router as any).routes = [
+                    { path: '/', layout: 'home' },
+                    { path: '/board/:slug', layout: 'board' },
+                ];
+
+                setLocation(entry);
+                (window.location as any).hash = '';
+                const replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+                const changed = vi.fn();
+                router.on('routeChange', changed);
+
+                await router.navigateToCurrentPath();
+
+                expect(String(replaceState.mock.calls[0][2])).toBe(rewritten);
+                expect(changed).toHaveBeenCalledTimes(1);
+                expect(changed.mock.calls[0][0].path).toBe(routed);
+                replaceState.mockRestore();
+            }
+        });
+
+        // @scenario base_path=subpath, navigation_direction=navigation
+        // @effects route_matching_strips_the_site_base_path
+        it('마운트 루트 `/g7/` 는 끝 슬래시 형태를 유지한다 (서버 정본과 같아 새로고침마다 301 이 나지 않는다)', async () => {
+            setMount(MOUNT);
+            const router = new Router('sirsoft-basic');
+            (router as any).routes = [{ path: '/', layout: 'home' }];
+
+            setLocation('/g7/');
+            (window.location as any).hash = '';
+            const replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+            const changed = vi.fn();
+            router.on('routeChange', changed);
+
+            await router.navigateToCurrentPath();
+
+            expect(replaceState).not.toHaveBeenCalled();
+            expect(changed).toHaveBeenCalledTimes(1);
+            expect(changed.mock.calls[0][0].path).toBe('/');
+
+            // 끝 슬래시 없이 들어온 마운트 루트도 서버 정본 형태로 맞춘다.
+            setLocation('/g7');
+            (window.location as any).hash = '';
+            await router.navigateToCurrentPath();
+            expect(String(replaceState.mock.calls[0][2])).toBe('/g7/');
+            replaceState.mockRestore();
         });
     });
 

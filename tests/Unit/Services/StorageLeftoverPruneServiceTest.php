@@ -1627,6 +1627,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
     /**
      * 잠금 파일 이름 규칙이 생산자·finalize·프루너 세 곳에서 **같은 상수**다.
      *
+     * finalize 본문(상태 파일과 그 잠금 파일 정리)은 웹·터미널 설치가 함께 쓰는
+     * `includes/env-finalize.php` 에 있고, 웹 엔드포인트 `api/finalize-env.php` 는 그것을 싣는다.
+     * 그래서 상수 사용은 공유 본문에서, 위임 사실은 엔드포인트에서 본다.
+     *
      * @effects prune_name_rules_come_from_producer_constants
      *
      * @return void 반환값 없음
@@ -1634,7 +1638,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
     public function test_state_lock_name_rule_is_shared_by_producer_finalize_and_pruner(): void
     {
         $producer = (string) file_get_contents(base_path('public/install/includes/installer-state.php'));
-        $finalize = (string) file_get_contents(base_path('public/install/api/finalize-env.php'));
+        $endpoint = (string) file_get_contents(base_path('public/install/api/finalize-env.php'));
+        $finalize = (string) file_get_contents(base_path('public/install/includes/env-finalize.php'));
+        $this->assertStringContainsString("require_once __DIR__.'/../includes/env-finalize.php'", $endpoint, 'finalize 엔드포인트가 공유 본문을 싣지 않는다');
+        $this->assertStringNotContainsString("'.lock'", $endpoint);
         $reflection = new \ReflectionClass(StorageLeftoverPruneService::class);
 
         $this->assertSame(

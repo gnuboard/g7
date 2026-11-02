@@ -9,6 +9,7 @@ use App\Extension\HookManager;
 use App\Rules\PasswordNotReused;
 use App\Rules\PasswordPolicy;
 use App\Services\PasswordResetService;
+use App\Support\ExecutionEnvironment;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
@@ -112,7 +113,10 @@ class ResetPasswordCommand extends Command
      */
     private function resolvePassword(string $email, bool $generate): ?string
     {
-        $fromEnv = getenv('G7_RESET_PASSWORD');
+        // getenv 가 막힌 PHP 에서는 호출 자체가 Error 다 — CLI 가 $_SERVER 에 심어 둔 환경변수로 대신 읽는다.
+        $fromEnv = ExecutionEnvironment::hasFunction('getenv')
+            ? getenv('G7_RESET_PASSWORD')
+            : ($_SERVER['G7_RESET_PASSWORD'] ?? false);
         if (is_string($fromEnv) && $fromEnv !== '') {
             return $fromEnv;
         }

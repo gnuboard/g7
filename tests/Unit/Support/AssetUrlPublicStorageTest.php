@@ -306,6 +306,10 @@ class AssetUrlPublicStorageTest extends TestCase
      * vitest 하네스는 그 값을 인자로 주입하므로 blade 의 실제 배선을 보지 않는다 —
      * `@json(AssetUrl::basePrefix())` 를 `''` 로 바꿔도 프론트 테스트가 전부 초록이다.
      *
+     * 자가 복구 실행 코드는 strict CSP 대응으로 정적 파일(`g7-shell-head.js`)로 옮겨졌고,
+     * 서버 값은 `partials/template-externals-head` 의 비실행 JSON 데이터 블록으로 넘긴다.
+     * 그래서 세 번째 배선 지점은 그 파샬이고, 정적 파일이 그 블록의 `basePath` 를 읽는지도 함께 본다.
+     *
      * @effects blade_entrypoints_wire_the_server_base_prefix
      *
      * @return void 반환값 없음
@@ -315,7 +319,7 @@ class AssetUrlPublicStorageTest extends TestCase
         foreach ([
             'resources/views/admin.blade.php',
             'resources/views/app.blade.php',
-            'resources/views/partials/asset-url-recovery.blade.php',
+            'resources/views/partials/template-externals-head.blade.php',
         ] as $relative) {
             $this->assertStringContainsString(
                 'AssetUrl::basePrefix()',
@@ -323,5 +327,16 @@ class AssetUrlPublicStorageTest extends TestCase
                 $relative.' 가 서버 접두사를 호출로 얻지 않는다 — 하위 폴더 배치에서 프론트가 접두사를 모른다'
             );
         }
+
+        $this->assertStringContainsString(
+            "'basePath' => \\App\\Support\\AssetUrl::basePrefix()",
+            (string) file_get_contents(base_path('resources/views/partials/template-externals-head.blade.php')),
+            'template-externals-head 의 셸 헤드 데이터 블록이 basePath 를 싣지 않는다'
+        );
+        $this->assertMatchesRegularExpression(
+            '/BASE_PATH\s*=\s*headData\.basePath/',
+            (string) file_get_contents(base_path('public/assets/core/js/g7-shell-head.js')),
+            'g7-shell-head.js 가 데이터 블록의 basePath 를 읽지 않는다 — 자가 복구가 하위 폴더 접두사를 모른다'
+        );
     }
 }

@@ -118,17 +118,31 @@ class InstallerStepwiseTokenExposureTest extends TestCase
     /**
      * 렌더 결과에서 화면에 실린 토큰 값을 꺼낸다 (없으면 null).
      *
+     * strict CSP 에서 인라인 스크립트가 실행되지 않으므로 Step 5 는 토큰을 `#installer-step-data`
+     * JSON 블록의 `stepwise_token` 키로 싣고, step-5-installation.js 가 그 값을 전역으로 옮긴다.
+     * 그래서 화면에 실린 토큰은 그 블록을 JSON 으로 해석해 읽는다.
+     *
      * @param  string  $html  Step 5 렌더 결과 HTML
      * @return string|null 화면에 실린 토큰 값, 실리지 않았으면 null
      */
     private function renderedToken(string $html): ?string
     {
-        $matched = preg_match('/window\.INSTALLER_STEPWISE_TOKEN\s*=\s*(.+?);/', $html, $m);
-        $this->assertSame(1, $matched, 'Step 5 가 토큰 전달 줄을 내보내지 않는다 — 이 검사의 기준점이 사라졌다');
+        $matched = preg_match(
+            '/<script\b[^>]*\bid="installer-step-data"[^>]*>(.*?)<\/script>/s',
+            $html,
+            $m
+        );
+        $this->assertSame(1, $matched, 'Step 5 가 화면 데이터 블록(#installer-step-data)을 내보내지 않는다 — 이 검사의 기준점이 사라졌다');
 
-        $decoded = json_decode(trim($m[1]), true);
+        $data = json_decode(trim($m[1]), true);
+        $this->assertIsArray($data, 'Step 5 화면 데이터 블록이 JSON 으로 해석되지 않는다');
+        $this->assertArrayHasKey(
+            'stepwise_token',
+            $data,
+            'Step 5 가 토큰 전달 키(stepwise_token)를 내보내지 않는다 — 이 검사의 기준점이 사라졌다'
+        );
 
-        return is_string($decoded) ? $decoded : null;
+        return is_string($data['stepwise_token']) ? $data['stepwise_token'] : null;
     }
 
     /**
