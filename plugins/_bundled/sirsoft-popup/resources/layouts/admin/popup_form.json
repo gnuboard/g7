@@ -345,6 +345,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "미리보기를 PC 화면으로 — 화면 상태일 뿐 팝업 값에는 들어가지 않는다",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -366,6 +367,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "미리보기를 모바일 화면으로 — 화면 상태일 뿐 팝업 값에는 들어가지 않는다",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -404,6 +406,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "미리보기 언어 — 고른 언어의 내용으로 미리보기만 다시 그린다(폼 값은 그대로)",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -687,6 +690,7 @@
                                                                 "name": "FileUploader",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "PC 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다",
                                                                         "type": "change",
                                                                         "event": "onFilesChange",
                                                                         "handler": "sequence",
@@ -709,6 +713,7 @@
                                                                         ]
                                                                     },
                                                                     {
+                                                                        "comment": "PC 업로드가 끝나면 그 임시 이미지를 PC 이미지로 담고 수정됨으로 둔다",
                                                                         "type": "change",
                                                                         "event": "onUploadComplete",
                                                                         "handler": "setState",
@@ -719,6 +724,7 @@
                                                                         }
                                                                     },
                                                                     {
+                                                                        "comment": "PC 업로드 실패 사유를 알린다",
                                                                         "type": "change",
                                                                         "event": "onUploadError",
                                                                         "handler": "toast",
@@ -729,6 +735,7 @@
                                                                         }
                                                                     },
                                                                     {
+                                                                        "comment": "PC 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다)",
                                                                         "type": "change",
                                                                         "event": "onRemove",
                                                                         "handler": "setState",
@@ -819,6 +826,7 @@
                                                                 "name": "FileUploader",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "모바일 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다",
                                                                         "type": "change",
                                                                         "event": "onFilesChange",
                                                                         "handler": "sequence",
@@ -841,6 +849,7 @@
                                                                         ]
                                                                     },
                                                                     {
+                                                                        "comment": "모바일 업로드가 끝나면 그 임시 이미지를 모바일 이미지로 담고 수정됨으로 둔다",
                                                                         "type": "change",
                                                                         "event": "onUploadComplete",
                                                                         "handler": "setState",
@@ -851,6 +860,7 @@
                                                                         }
                                                                     },
                                                                     {
+                                                                        "comment": "모바일 업로드 실패 사유를 알린다",
                                                                         "type": "change",
                                                                         "event": "onUploadError",
                                                                         "handler": "toast",
@@ -861,6 +871,7 @@
                                                                         }
                                                                     },
                                                                     {
+                                                                        "comment": "모바일 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다)",
                                                                         "type": "change",
                                                                         "event": "onRemove",
                                                                         "handler": "setState",
@@ -933,6 +944,7 @@
                                                                 "name": "sirsoft-popup.PopupOverlayEditor",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "편집기가 돌려준 글 상자 전체로 바꾸고 수정됨으로 둔다",
                                                                         "type": "change",
                                                                         "event": "onChange",
                                                                         "handler": "setState",
@@ -1285,6 +1297,7 @@
                                                                                         "name": "Button",
                                                                                         "actions": [
                                                                                             {
+                                                                                                "comment": "이 경로를 노출 경로 목록에서 뺀다",
                                                                                                 "type": "click",
                                                                                                 "handler": "setState",
                                                                                                 "params": {
@@ -1340,6 +1353,7 @@
                                                                                         "name": "Input",
                                                                                         "actions": [
                                                                                             {
+                                                                                                "comment": "입력 중인 경로를 담아 둔다 — 목록에는 Enter 나 「추가」 때 넣는다",
                                                                                                 "type": "change",
                                                                                                 "handler": "setState",
                                                                                                 "params": {
@@ -1348,6 +1362,7 @@
                                                                                                 }
                                                                                             },
                                                                                             {
+                                                                                                "comment": "Enter 로 경로 추가 — 비었거나 형식 오류면 넣지 않고, 끝의 / 를 떼어 목록에 붙인 뒤 입력칸을 비운다",
                                                                                                 "type": "keydown",
                                                                                                 "key": "Enter",
                                                                                                 "handler": "setState",
@@ -1378,6 +1393,7 @@
                                                                                 "name": "Button",
                                                                                 "actions": [
                                                                                     {
+                                                                                        "comment": "경로 추가 — 끝의 / 를 떼어 목록에 붙이고 입력칸을 비운다(비었거나 형식 오류면 버튼이 잠겨 있다)",
                                                                                         "type": "click",
                                                                                         "handler": "setState",
                                                                                         "params": {
@@ -1710,6 +1726,7 @@
                                                                 "name": "Button",
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "최신본 받기 — 받는 동안 버튼을 잠그고, 받으면 항목별 비교를 열며, 실패하면 다시 받기를 보인다",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -1801,6 +1818,7 @@
                                                         "if": "{{!!_local.conflictLatest}}",
                                                         "actions": [
                                                             {
+                                                                "comment": "비교에서 고른 결과를 폼으로 삼고 충돌 표시를 닫는다 — 다음 비교의 기준은 방금 받은 최신본이다",
                                                                 "type": "change",
                                                                 "event": "onApply",
                                                                 "handler": "setState",

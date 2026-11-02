@@ -138,12 +138,14 @@
             <div role="group" aria-label="$t:sirsoft-popup.admin.preview.device_label" class="gpp:flex gpp:gap-1">
               <button type="button" data-ref="preview_device_pc" aria-pressed="{{_local.previewDevice === 'pc'}}" class="gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'pc' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}">
                 <on type="click">
+                  <!-- 미리보기를 PC 화면으로 — 화면 상태일 뿐 팝업 값에는 들어가지 않는다 -->
                   <set-state target="local" previewDevice="pc"/>
                 </on>
                 $t:sirsoft-popup.admin.preview.pc
               </button>
               <button type="button" data-ref="preview_device_mobile" aria-pressed="{{_local.previewDevice === 'mobile'}}" class="gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'mobile' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}">
                 <on type="click">
+                  <!-- 미리보기를 모바일 화면으로 — 화면 상태일 뿐 팝업 값에는 들어가지 않는다 -->
                   <set-state target="local" previewDevice="mobile"/>
                 </on>
                 $t:sirsoft-popup.admin.preview.mobile
@@ -154,6 +156,7 @@
             <span>$t:sirsoft-popup.admin.preview.locale</span>
             <select id="popup_preview_locale" class="gpp:px-2 gpp:py-1 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded gpp:text-xs" value="{{_local.previewLocale || display_settings?.data?.editor?.default_locale || $locale}}" options="{{(display_settings?.data?.editor?.locales ?? []).map(l =&gt; ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}">
               <on type="change">
+                <!-- 미리보기 언어 — 고른 언어의 내용으로 미리보기만 다시 그린다(폼 값은 그대로) -->
                 <set-state target="local" previewLocale="{{$event.target.value}}"/>
               </on>
             </select>
@@ -213,16 +216,22 @@
                     <field name="delete" value=""/>
                   </prop>
                   <on type="change" event="onFilesChange">
-                    <set-state target="local" pcUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
-                    <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
+                    <!-- PC 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다 -->
+                    <sequence>
+                      <set-state target="local" pcUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                      <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
+                    </sequence>
                   </on>
                   <on type="change" event="onUploadComplete">
+                    <!-- PC 업로드가 끝나면 그 임시 이미지를 PC 이미지로 담고 수정됨으로 둔다 -->
                     <set-state target="local" form.images.pc="{{$args[0]?.[0] ?? null}}" :hasChanges="true"/>
                   </on>
                   <on type="change" event="onUploadError">
+                    <!-- PC 업로드 실패 사유를 알린다 -->
                     <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
                   </on>
                   <on type="change" event="onRemove">
+                    <!-- PC 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다) -->
                     <set-state target="local" :form.images.pc="null" :hasChanges="true"/>
                   </on>
                 </file-uploader>
@@ -243,16 +252,22 @@
                     <field name="delete" value=""/>
                   </prop>
                   <on type="change" event="onFilesChange">
-                    <set-state target="local" mobileUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
-                    <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
+                    <!-- 모바일 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다 -->
+                    <sequence>
+                      <set-state target="local" mobileUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                      <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
+                    </sequence>
                   </on>
                   <on type="change" event="onUploadComplete">
+                    <!-- 모바일 업로드가 끝나면 그 임시 이미지를 모바일 이미지로 담고 수정됨으로 둔다 -->
                     <set-state target="local" form.images.mobile="{{$args[0]?.[0] ?? null}}" :hasChanges="true"/>
                   </on>
                   <on type="change" event="onUploadError">
+                    <!-- 모바일 업로드 실패 사유를 알린다 -->
                     <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
                   </on>
                   <on type="change" event="onRemove">
+                    <!-- 모바일 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다) -->
                     <set-state target="local" :form.images.mobile="null" :hasChanges="true"/>
                   </on>
                 </file-uploader>
@@ -266,6 +281,7 @@
                 <p class="g7pp-form-hint gpp:mb-2">$t:sirsoft-popup.admin.form.overlay.alt_hint</p>
                 <sirsoft-popup.popup-overlay-editor data-type="composite" data-ref="overlay_editor" value="{{_local.form?.overlays ?? null}}" images="{{_local.form?.images ?? null}}" locales="{{display_settings?.data?.editor?.locales ?? []}}" defaultLocale="{{display_settings?.data?.editor?.default_locale ?? $locale}}" localeNames="{{_global.appConfig?.localeNames ?? null}}" errors="{{_local.errors ?? null}}" disabled="{{_local.isSaving}}">
                   <on type="change" event="onChange">
+                    <!-- 편집기가 돌려준 글 상자 전체로 바꾸고 수정됨으로 둔다 -->
                     <set-state target="local" form.overlays="{{$args[0]}}" :hasChanges="true"/>
                   </on>
                 </sirsoft-popup.popup-overlay-editor>
@@ -334,6 +350,7 @@
                       <code class="gpp:text-xs gpp:text-gray-800 gpp:dark:text-gray-100">{{route}}</code>
                       <button type="button" aria-label="{{$t('sirsoft-popup.admin.form.route_remove', { route: route })}}" class="g7pp-flex-center gpp:w-8 gpp:h-8 gpp:rounded-full gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100">
                         <on type="click">
+                          <!-- 이 경로를 노출 경로 목록에서 뺀다 -->
                           <set-state target="local" form.routes="{{(_local.form?.routes ?? []).filter((r, i) =&gt; i !== rIdx)}}" :hasChanges="true"/>
                         </on>
                         <icon name="xmark" class="gpp:text-xs"/>
@@ -345,15 +362,18 @@
                       <span>$t:sirsoft-popup.admin.form.route_add_label</span>
                       <input type="text" id="popup_route_input" data-ref="route_input" class="g7pp-input" placeholder="/board" value="{{_local.routeInput}}" aria-invalid="{{_computed.routeInputError !== ''}}" aria-describedby="popup_route_hint">
                         <on type="change">
+                          <!-- 입력 중인 경로를 담아 둔다 — 목록에는 Enter 나 「추가」 때 넣는다 -->
                           <set-state target="local" routeInput="{{$event.target.value}}"/>
                         </on>
                         <on type="keydown" key="Enter">
+                          <!-- Enter 로 경로 추가 — 비었거나 형식 오류면 넣지 않고, 끝의 / 를 떼어 목록에 붙인 뒤 입력칸을 비운다 -->
                           <set-state if="{{_computed.routeDraft !== '' &amp;&amp; _computed.routeInputError === ''}}" target="local" form.routes="{{[...(_local.form?.routes ?? []), _computed.routeDraft.length &gt; 1 &amp;&amp; _computed.routeDraft.endsWith('/') ? _computed.routeDraft.slice(0, -1) : _computed.routeDraft]}}" routeInput="" :hasChanges="true"/>
                         </on>
                       </input>
                     </label>
                     <button type="button" data-ref="route_add_button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_computed.routeDraft === '' || _computed.routeInputError !== ''}}">
                       <on type="click">
+                        <!-- 경로 추가 — 끝의 / 를 떼어 목록에 붙이고 입력칸을 비운다(비었거나 형식 오류면 버튼이 잠겨 있다) -->
                         <set-state target="local" form.routes="{{[...(_local.form?.routes ?? []), _computed.routeDraft.length &gt; 1 &amp;&amp; _computed.routeDraft.endsWith('/') ? _computed.routeDraft.slice(0, -1) : _computed.routeDraft]}}" routeInput="" :hasChanges="true"/>
                       </on>
                       $t:sirsoft-popup.admin.form.route_add
@@ -422,6 +442,7 @@
               <div class="gpp:flex gpp:flex-wrap gpp:items-center gpp:gap-3">
                 <button type="button" data-ref="conflict_load_button" class="g7pp-btn g7pp-btn-secondary g7pp-flex-center gpp:gap-1.5" disabled="{{_local.conflictLoading}}">
                   <on type="click">
+                    <!-- 최신본 받기 — 받는 동안 버튼을 잠그고, 받으면 항목별 비교를 열며, 실패하면 다시 받기를 보인다 -->
                     <sequence>
                       <set-state target="local" :conflictLoading="true" :conflictLoadError="false"/>
                       <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/{{route.id}}" method="GET">
@@ -442,6 +463,7 @@
               <p data-ref="conflict_load_error" data-if="{{_local.conflictLoadError}}" role="status" class="g7pp-form-error">$t:sirsoft-popup.admin.form.conflict_merge.load_failed</p>
               <sirsoft-popup.popup-conflict-resolver data-type="composite" data-ref="conflict_resolver" data-if="{{!!_local.conflictLatest}}" base="{{_local.conflictBase ?? popup?.data ?? null}}" mine="{{_local.form}}" latest="{{_local.conflictLatest}}" locales="{{display_settings?.data?.editor?.locales ?? []}}">
                 <on type="change" event="onApply">
+                  <!-- 비교에서 고른 결과를 폼으로 삼고 충돌 표시를 닫는다 — 다음 비교의 기준은 방금 받은 최신본이다 -->
                   <set-state target="local" form="{{$args[0]}}" conflictBase="{{_local.conflictLatest}}" :conflictLatest="null" :conflict="false" :errors="null" :hasChanges="true"/>
                 </on>
               </sirsoft-popup.popup-conflict-resolver>

@@ -547,6 +547,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "상태 필터 — 조건을 담고 선택을 푼 뒤 첫 쪽부터 다시 찾는다",
                                                 "type": "change",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -611,6 +612,7 @@
                                         "name": "Select",
                                         "actions": [
                                             {
+                                                "comment": "기기 필터 — 조건을 담고 선택을 푼 뒤 첫 쪽부터 다시 찾는다",
                                                 "type": "change",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -667,6 +669,7 @@
                                         "name": "Input",
                                         "actions": [
                                             {
+                                                "comment": "검색어를 담아 둔다 — 찾기는 Enter 나 「검색」 버튼 때 한다",
                                                 "type": "change",
                                                 "handler": "setState",
                                                 "params": {
@@ -839,6 +842,7 @@
                                 "if": "{{popups?.data?.abilities?.can_update === true}}",
                                 "actions": [
                                     {
+                                        "comment": "선택한 팝업 일괄 노출 — 성공하면 선택을 풀고 목록·요약을 다시 받는다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -914,6 +918,7 @@
                                 "if": "{{popups?.data?.abilities?.can_update === true}}",
                                 "actions": [
                                     {
+                                        "comment": "선택한 팝업 일괄 비노출 — 성공하면 선택을 풀고 목록·요약을 다시 받는다",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -1109,6 +1114,7 @@
                         },
                         "actions": [
                             {
+                                "comment": "체크한 행 id 를 일괄 작업 줄이 쓰도록 담는다",
                                 "type": "change",
                                 "event": "onSelectionChange",
                                 "handler": "setState",
@@ -1118,6 +1124,7 @@
                                 }
                             },
                             {
+                                "comment": "쪽 넘김 — 선택을 풀고 주소의 쪽만 바꾼다(다른 조건은 그대로, 기록은 덮어쓴다)",
                                 "type": "change",
                                 "event": "onPageChange",
                                 "handler": "sequence",
@@ -1144,6 +1151,7 @@
                                 ]
                             },
                             {
+                                "comment": "행 메뉴 — 수정은 보던 조건을 이고 수정 화면으로, 노출 전환은 바로 저장, 복사·삭제는 확인 창을 연다",
                                 "type": "action",
                                 "event": "onRowAction",
                                 "handler": "switch",
@@ -1568,6 +1576,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "한 건 삭제 — 지우는 동안 버튼을 잠그고, 성공하면 창을 닫고 선택을 풀어 목록·요약을 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1735,6 +1744,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "선택한 여러 건 삭제 — 지우는 동안 버튼을 잠그고, 성공하면 선택을 풀고 창을 닫아 목록·요약을 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -1871,6 +1881,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "선택한 팝업 복사 — 일부만 실패하면 경고로 알리고, 끝나면 선택을 풀고 창을 닫아 목록·요약을 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -2096,6 +2107,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "한 칸 위로 — 바로 위 항목과 자리를 바꾸고 직전 오류를 지운다(저장 전)",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -2128,6 +2140,7 @@
                                                 "name": "Button",
                                                 "actions": [
                                                     {
+                                                        "comment": "한 칸 아래로 — 바로 아래 항목과 자리를 바꾸고 직전 오류를 지운다(저장 전)",
                                                         "type": "click",
                                                         "handler": "setState",
                                                         "params": {
@@ -2159,6 +2172,7 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "끌어 놓기가 끝나면 그 순서를 담고 직전 오류를 지운다(저장 전)",
                                             "event": "onSortEnd",
                                             "handler": "setState",
                                             "params": {
@@ -2197,6 +2211,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "취소 — 바꾼 순서를 버리고 창을 닫는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

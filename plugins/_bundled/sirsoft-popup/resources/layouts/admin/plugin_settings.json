@@ -528,6 +528,7 @@
                                                                         "name": "Select",
                                                                         "actions": [
                                                                             {
+                                                                                "comment": "자동 넘김 간격 — 고른 초를 숫자로 담고 저장 버튼을 연다",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
@@ -849,6 +850,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "미리보기를 PC 화면으로 — 화면 상태일 뿐 설정 값에는 들어가지 않는다",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -870,6 +872,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "미리보기를 모바일 화면으로 — 화면 상태일 뿐 설정 값에는 들어가지 않는다",
                                                                 "type": "click",
                                                                 "handler": "setState",
                                                                 "params": {

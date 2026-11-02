@@ -162,6 +162,7 @@
               <option value="inactive">$t:sirsoft-popup.admin.status.inactive</option>
             </options>
             <on type="change">
+              <!-- 상태 필터 — 조건을 담고 선택을 푼 뒤 첫 쪽부터 다시 찾는다 -->
               <sequence>
                 <set-state target="local" filter.status="{{$event.target.value}}"/>
                 <action-ref name="searchPopups"/>
@@ -178,6 +179,7 @@
               <option value="mobile">$t:sirsoft-popup.admin.device.shown_on_mobile</option>
             </options>
             <on type="change">
+              <!-- 기기 필터 — 조건을 담고 선택을 푼 뒤 첫 쪽부터 다시 찾는다 -->
               <sequence>
                 <set-state target="local" filter.device="{{$event.target.value}}"/>
                 <action-ref name="searchPopups"/>
@@ -189,6 +191,7 @@
           <span>$t:sirsoft-popup.admin.list.search</span>
           <input type="search" id="popup_filter_search" class="gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:text-sm" value="{{_local.filter.search}}" placeholder="$t:sirsoft-popup.admin.list.search_placeholder">
             <on type="change">
+              <!-- 검색어를 담아 둔다 — 찾기는 Enter 나 「검색」 버튼 때 한다 -->
               <set-state target="local" filter.search="{{$event.target.value}}"/>
             </on>
             <on type="keydown" key="Enter">
@@ -231,6 +234,7 @@
         <div class="gpp:flex-1"/>
         <button type="button" data-ref="bulk_show_button" data-if="{{popups?.data?.abilities?.can_update === true}}" class="gpp:px-3 gpp:py-1.5 gpp:text-sm gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:bg-white gpp:dark:bg-gray-800 gpp:text-gray-700 gpp:dark:text-gray-300 gpp:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
+            <!-- 선택한 팝업 일괄 노출 — 성공하면 선택을 풀고 목록·요약을 다시 받는다 -->
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/bulk-status" method="PATCH">
@@ -251,6 +255,7 @@
         </button>
         <button type="button" data-ref="bulk_hide_button" data-if="{{popups?.data?.abilities?.can_update === true}}" class="gpp:px-3 gpp:py-1.5 gpp:text-sm gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:bg-white gpp:dark:bg-gray-800 gpp:text-gray-700 gpp:dark:text-gray-300 gpp:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
+            <!-- 선택한 팝업 일괄 비노출 — 성공하면 선택을 풀고 목록·요약을 다시 받는다 -->
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/bulk-status" method="PATCH">
@@ -362,9 +367,11 @@
           <item id="delete" label="$t:sirsoft-popup.admin.list.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>
         </prop>
         <on type="change" event="onSelectionChange">
+          <!-- 체크한 행 id 를 일괄 작업 줄이 쓰도록 담는다 -->
           <set-state target="global" bulkSelectedIds="{{$args[0]}}"/>
         </on>
         <on type="change" event="onPageChange">
+          <!-- 쪽 넘김 — 선택을 풀고 주소의 쪽만 바꾼다(다른 조건은 그대로, 기록은 덮어쓴다) -->
           <sequence>
             <set-state target="global" :bulkSelectedIds="[]"/>
             <navigate path="/admin/plugins/sirsoft-popup/popups" :replace="true" :mergeQuery="true" transition_overlay_target="popup_datagrid__body">
@@ -373,6 +380,7 @@
           </sequence>
         </on>
         <on type="action" event="onRowAction">
+          <!-- 행 메뉴 — 수정은 보던 조건을 이고 수정 화면으로, 노출 전환은 바로 저장, 복사·삭제는 확인 창을 연다 -->
           <switch>
             <case when="edit">
               <navigate path="/admin/plugins/sirsoft-popup/popups/{{$args[1].id}}/edit" :mergeQuery="true">
@@ -429,6 +437,7 @@
         </button>
         <button type="button" class="g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:bg-red-600 gpp:dark:bg-red-600 gpp:text-white gpp:rounded-lg gpp:hover:bg-red-700 gpp:dark:hover:bg-red-700 gpp:disabled:opacity-50" disabled="{{_global.isDeleting}}">
           <on type="click">
+            <!-- 한 건 삭제 — 지우는 동안 버튼을 잠그고, 성공하면 창을 닫고 선택을 풀어 목록·요약을 다시 받는다 -->
             <sequence>
               <set-state target="global" :isDeleting="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/{{_global.targetPopup?.id}}" method="DELETE">
@@ -470,6 +479,7 @@
         </button>
         <button type="button" class="g7pp-flex-center gpp:gap-2 gpp:px-4 gpp:py-2 gpp:bg-red-600 gpp:dark:bg-red-600 gpp:text-white gpp:rounded-lg gpp:hover:bg-red-700 gpp:dark:hover:bg-red-700 gpp:disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
+            <!-- 선택한 여러 건 삭제 — 지우는 동안 버튼을 잠그고, 성공하면 선택을 풀고 창을 닫아 목록·요약을 다시 받는다 -->
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/bulk" method="DELETE">
@@ -506,6 +516,7 @@
         </button>
         <button type="button" data-ref="bulk_copy_confirm" class="g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-2" disabled="{{_global.isBulkWorking}}">
           <on type="click">
+            <!-- 선택한 팝업 복사 — 일부만 실패하면 경고로 알리고, 끝나면 선택을 풀고 창을 닫아 목록·요약을 다시 받는다 -->
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/bulk-copy" method="POST">
@@ -554,12 +565,14 @@
                 <status-badge data-type="composite" status="{{row.status === 'active' ? 'success' : (row.status === 'scheduled' ? 'info' : (row.status === 'ended' ? 'default' : 'danger'))}}" label="{{$t('sirsoft-popup.admin.status.' + row.status)}}" :showIcon="false"/>
                 <button data-testid="popup-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_up', { name: row.title })}}" class="g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
                   <on type="click">
+                    <!-- 한 칸 위로 — 바로 위 항목과 자리를 바꾸고 직전 오류를 지운다(저장 전) -->
                     <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx - 1 ? a[row._idx] : (i === row._idx ? a[row._idx - 1] : r))}}" :reorderError="null"/>
                   </on>
                   <icon name="fa-solid fa-chevron-up" class="gpp:text-xs"/>
                 </button>
                 <button data-testid="popup-reorder-down-{{row.id}}" type="button" aria-label="{{$t('sirsoft-popup.admin.reorder.move_down', { name: row.title })}}" class="g7pp-flex-center gpp:w-10 gpp:h-10 gpp:shrink-0 gpp:text-gray-500 gpp:hover:text-gray-800 gpp:dark:text-gray-400 gpp:dark:hover:text-gray-100 gpp:rounded gpp:hover:bg-gray-100 gpp:dark:hover:bg-gray-700 gpp:disabled:opacity-40 gpp:disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
                   <on type="click">
+                    <!-- 한 칸 아래로 — 바로 아래 항목과 자리를 바꾸고 직전 오류를 지운다(저장 전) -->
                     <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx ? a[row._idx + 1] : (i === row._idx + 1 ? a[row._idx] : r))}}" :reorderError="null"/>
                   </on>
                   <icon name="fa-solid fa-chevron-down" class="gpp:text-xs"/>
@@ -567,6 +580,7 @@
               </div>
             </item-template>
             <on event="onSortEnd">
+              <!-- 끌어 놓기가 끝나면 그 순서를 담고 직전 오류를 지운다(저장 전) -->
               <set-state target="global" reorderItems="{{$sortedItems.map(r =&gt; ({id: r.id, title: r.title, status: r.status, thumbnail: r.thumbnail}))}}" :reorderError="null"/>
             </on>
           </div>
@@ -575,6 +589,7 @@
         <div class="g7pp-modal-footer-buttons">
           <button type="button" class="g7pp-btn g7pp-btn-secondary" disabled="{{_global.reorderSaving}}">
             <on type="click">
+              <!-- 취소 — 바꾼 순서를 버리고 창을 닫는다 -->
               <sequence>
                 <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
                 <close-modal target="popup_reorder_modal"/>

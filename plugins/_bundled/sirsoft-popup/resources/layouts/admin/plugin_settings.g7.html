@@ -115,6 +115,7 @@
                       <option value="8">$t:sirsoft-popup.settings.behavior.seconds|n=8</option>
                     </options>
                     <on type="change">
+                      <!-- 자동 넘김 간격 — 고른 초를 숫자로 담고 저장 버튼을 연다 -->
                       <set-state target="local" form.autoplay_interval="{{Number($event.target.value)}}" :hasChanges="true"/>
                     </on>
                   </select>
@@ -169,12 +170,14 @@
             <div role="group" aria-label="$t:sirsoft-popup.admin.preview.device_label" class="gpp:flex gpp:gap-1">
               <button type="button" data-ref="preview_device_pc" aria-pressed="{{_local.previewDevice === 'pc'}}" class="gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'pc' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}">
                 <on type="click">
+                  <!-- 미리보기를 PC 화면으로 — 화면 상태일 뿐 설정 값에는 들어가지 않는다 -->
                   <set-state target="local" previewDevice="pc"/>
                 </on>
                 $t:sirsoft-popup.admin.preview.pc
               </button>
               <button type="button" data-ref="preview_device_mobile" aria-pressed="{{_local.previewDevice === 'mobile'}}" class="gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'mobile' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}">
                 <on type="click">
+                  <!-- 미리보기를 모바일 화면으로 — 화면 상태일 뿐 설정 값에는 들어가지 않는다 -->
                   <set-state target="local" previewDevice="mobile"/>
                 </on>
                 $t:sirsoft-popup.admin.preview.mobile
