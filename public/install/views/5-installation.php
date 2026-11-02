@@ -72,13 +72,18 @@ if ($savedInstallationMode === 'stepwise'
 //
 // 파생하면 서버에 단계가 늘어도 화면이 저절로 따라온다. 그룹 소속만 화면이 정한다 —
 // 목록에 없는 새 태스크는 마무리 그룹으로 떨어져 **적어도 보이기는 한다**.
+//
+// 순서도 서버 목록 그대로다 (PO 2026-11-02). 확장 작업은 종류를 넘는 의존 순서로 실행되므로
+// (installerExtensionInstallOrder — 플러그인이 모듈보다, 모듈이 관리자 템플릿보다 먼저 올 수 있다)
+// 종류별 묶음에 나눠 담으면 진행 표시가 아래 묶음부터 채워진다. 그래서 관리자 템플릿·모듈·
+// 플러그인·사용자 템플릿 작업은 한 묶음(extensions)에 실행 순서로 담고, 종류는 항목마다 kind 로
+// 싣는다(「…에 필요」 배지가 `{kind}:{target}` 으로 찾는다). 그룹은 서버 목록을 앞에서부터 걸으며
+// 소속이 바뀔 때마다 새로 연다 — 같은 소속이 떨어져 다시 나타나면 `{id}-2` 로 따로 연다. 그래서
+// 화면 그룹을 펼친 순서는 어떤 경우에도 서버 실행 순서와 같다.
 $taskGroupLabelKeys = [
     'environment' => 'task_group_environment',
     'database' => 'task_group_database',
-    'admin_templates' => 'task_group_admin_templates',
-    'modules' => 'task_group_modules',
-    'plugins' => 'task_group_plugins',
-    'user_templates' => 'task_group_user_templates',
+    'extensions' => 'task_group_extensions',
     'language_packs' => 'task_group_language_packs',
     'finalize' => 'task_group_finalize',
 ];
@@ -93,14 +98,14 @@ $taskGroupByTaskId = [
     'db_cleanup' => 'database',
     'db_migrate' => 'database',
     'db_seed' => 'database',
-    'template_install' => 'admin_templates',
-    'template_activate' => 'admin_templates',
-    'module_install' => 'modules',
-    'module_activate' => 'modules',
-    'plugin_install' => 'plugins',
-    'plugin_activate' => 'plugins',
-    'user_template_install' => 'user_templates',
-    'user_template_activate' => 'user_templates',
+    'template_install' => 'extensions',
+    'template_activate' => 'extensions',
+    'module_install' => 'extensions',
+    'module_activate' => 'extensions',
+    'plugin_install' => 'extensions',
+    'plugin_activate' => 'extensions',
+    'user_template_install' => 'extensions',
+    'user_template_activate' => 'extensions',
     'language_pack_install' => 'language_packs',
     'create_settings_json' => 'finalize',
     'cache_clear' => 'finalize',
@@ -111,23 +116,43 @@ $taskGroupByTaskId = [
 ];
 $taskGroupFallback = 'finalize';
 
-$groupedInstallerTasks = array_fill_keys(array_keys($taskGroupLabelKeys), []);
+/** 확장 태스크 ID → 확장 종류 (설치 순서·pulled_by 의 `카테고리` 와 같은 값). */
+$taskKindByTaskId = [
+    'template_install' => 'admin_templates',
+    'template_activate' => 'admin_templates',
+    'module_install' => 'modules',
+    'module_activate' => 'modules',
+    'plugin_install' => 'plugins',
+    'plugin_activate' => 'plugins',
+    'user_template_install' => 'user_templates',
+    'user_template_activate' => 'user_templates',
+    'language_pack_install' => 'language_packs',
+];
+
+$installerTaskGroups = [];
+$taskGroupOpenCount = [];
+$currentTaskGroup = null;
 foreach (buildInstallationTaskList() as $installerTask) {
     $groupId = $taskGroupByTaskId[$installerTask['id']] ?? $taskGroupFallback;
     $entry = ['id' => $installerTask['id']];
     if (($installerTask['target'] ?? null) !== null) {
         $entry['target'] = $installerTask['target'];
     }
-    $groupedInstallerTasks[$groupId][] = $entry;
-}
+    if (isset($taskKindByTaskId[$installerTask['id']])) {
+        $entry['kind'] = $taskKindByTaskId[$installerTask['id']];
+    }
 
-$installerTaskGroups = [];
-foreach ($taskGroupLabelKeys as $groupId => $labelKey) {
-    $installerTaskGroups[] = [
-        'id' => $groupId,
-        'labelKey' => $labelKey,
-        'tasks' => $groupedInstallerTasks[$groupId],
-    ];
+    if ($currentTaskGroup !== $groupId) {
+        $currentTaskGroup = $groupId;
+        $taskGroupOpenCount[$groupId] = ($taskGroupOpenCount[$groupId] ?? 0) + 1;
+        $installerTaskGroups[] = [
+            // 그룹 id 는 DOM id(task-group-items-{id})·접기 대상이라 겹치면 안 된다
+            'id' => $taskGroupOpenCount[$groupId] === 1 ? $groupId : $groupId.'-'.$taskGroupOpenCount[$groupId],
+            'labelKey' => $taskGroupLabelKeys[$groupId],
+            'tasks' => [],
+        ];
+    }
+    $installerTaskGroups[count($installerTaskGroups) - 1]['tasks'][] = $entry;
 }
 ?>
 

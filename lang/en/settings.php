@@ -384,7 +384,7 @@ return [
 
         // System requirements
         'system_requirements_failed' => 'System requirements are not met:',
-        'no_extract_method_available' => 'Cannot extract the archive. The PHP zip extension (ZipArchive) is required. Install the zip extension on the server and try again.',
+        'no_extract_method_available' => 'Cannot extract the archive. The PHP zip extension (ZipArchive) is required. Install the zip extension on the server, or on shared hosting ask your hosting provider to enable it, then try again.',
         'manual_update_guide' => 'Manual update: Download the release ZIP from GitHub, extract it, then run: php artisan core:update --source=/path/to/extracted',
 
         // Extraction fallback chain

@@ -57,17 +57,16 @@ class InstallerTaskListViewParityTest extends TestCase
     }
 
     /**
-     * 진행 화면을 렌더해 화면 데이터 블록의 `task_groups`(화면이 `window.INSTALLER_TASK_GROUPS` 로 쓰는 값)가
-     * 담은 완료 마커 키를 순서대로 꺼낸다.
+     * 진행 화면을 렌더해 화면 데이터 블록의 `task_groups`(화면이 `window.INSTALLER_TASK_GROUPS` 로 쓰는 값)를 꺼낸다.
      *
      * strict CSP 에서 인라인 스크립트가 실행되지 않으므로 Step 5 는 그룹 정의를 `#installer-step-data`
      * JSON 블록의 `task_groups` 키로 싣고, step-5-installation.js 가 그 값을 전역으로 옮긴다. 그 키가
      * 비면 단계 스크립트는 손으로 적은 옛 그룹 사본으로 떨어진다 — 이 검사는 서버가 파생한 목록이
      * 실제로 실리는지와 **무엇이 빠졌는지**를 함께 드러낸다.
      *
-     * @return array<int, string> 완료 마커 키 ("id" 또는 "id:target")
+     * @return array<int, array<string, mixed>> 화면 그룹 목록 (표시 순서)
      */
-    private function renderTaskKeys(): array
+    private function renderTaskGroups(): array
     {
         self::bootInstaller();
 
@@ -95,15 +94,34 @@ class InstallerTaskListViewParityTest extends TestCase
         $this->assertIsArray($groups, 'views/5-installation.php 가 task_groups 를 내보내지 않는다 — 화면이 손으로 적은 옛 그룹 사본으로 떨어진다');
         $this->assertNotEmpty($groups, 'views/5-installation.php 의 task_groups 가 비었다 — 화면이 손으로 적은 옛 그룹 사본으로 떨어진다');
 
-        $keys = [];
+        $seen = [];
         foreach ($groups as $group) {
             $this->assertIsArray($group);
+            $groupId = (string) ($group['id'] ?? '');
+            // 같은 묶음이 실행 순서상 다시 나타나면 화면은 새 그룹을 연다(`{id}-2`) — 묶음 이름은 접미사 앞이다.
             $this->assertArrayHasKey(
-                (string) ($group['id'] ?? ''),
+                (string) preg_replace('/-\d+$/', '', $groupId),
                 $this->groupIds,
                 '화면이 알려지지 않은 그룹을 내보낸다: '.json_encode($group['id'] ?? null),
             );
+            // 그룹 id 는 DOM id(task-group-items-{id})·접기 대상이라 겹치면 다른 그룹이 접힌다.
+            $this->assertArrayNotHasKey($groupId, $seen, '화면 그룹 id 가 겹친다: '.$groupId);
+            $seen[$groupId] = true;
+        }
 
+        return $groups;
+    }
+
+    /**
+     * 화면 그룹을 펼쳐 완료 마커 키를 표시 순서대로 꺼낸다.
+     *
+     * @param  array<int, array<string, mixed>>  $groups  화면 그룹 목록
+     * @return array<int, string> 완료 마커 키 ("id" 또는 "id:target")
+     */
+    private static function flattenTaskKeys(array $groups): array
+    {
+        $keys = [];
+        foreach ($groups as $group) {
             foreach ((array) ($group['tasks'] ?? []) as $task) {
                 $id = (string) ($task['id'] ?? '');
                 $target = (string) ($task['target'] ?? '');
@@ -115,6 +133,16 @@ class InstallerTaskListViewParityTest extends TestCase
     }
 
     /**
+     * 진행 화면을 렌더해 완료 마커 키를 표시 순서대로 꺼낸다.
+     *
+     * @return array<int, string> 완료 마커 키 ("id" 또는 "id:target")
+     */
+    private function renderTaskKeys(): array
+    {
+        return self::flattenTaskKeys($this->renderTaskGroups());
+    }
+
+    /**
      * 그룹 ID 집합 — 화면이 내보내는 그룹이 진행 화면이 아는 묶음인지 대조하는 기준.
      *
      * @var array<string, true>
@@ -122,10 +150,7 @@ class InstallerTaskListViewParityTest extends TestCase
     private array $groupIds = [
         'environment' => true,
         'database' => true,
-        'admin_templates' => true,
-        'modules' => true,
-        'plugins' => true,
-        'user_templates' => true,
+        'extensions' => true,
         'language_packs' => true,
         'finalize' => true,
     ];
@@ -167,6 +192,77 @@ class InstallerTaskListViewParityTest extends TestCase
 
         // 순서까지 같아야 한다 — 다르면 운영자가 보는 순서와 실제 실행 순서가 어긋난다.
         $this->assertSame($serverKeys, $viewKeys, '화면 목록의 순서가 서버 실행 순서와 다르다');
+    }
+
+    /**
+     * 확장 작업이 종류를 넘는 의존 순서로 실행될 때 화면이 그 순서 그대로 그린다 (PO 2026-11-02).
+     *
+     * 종전 화면은 확장 작업을 종류별 묶음(관리자 템플릿 → 모듈 → 플러그인 → 사용자 템플릿)에 나눠 담아,
+     * 플러그인이 모듈보다 먼저 실행되는 구성에서 진행 표시가 아래 묶음부터 채워졌다. 렌더 상태에는
+     * 확장 선택이 없을 수 있어 위 전수 검사는 이 경우를 보지 못한다 — 여기서는 설치 순서 함수를
+     * 공용 픽스처 스캔으로 대신해 실제 해석기 순서를 만든다.
+     *
+     * @scenario surface=installer, edge=module_to_plugin, edge=admin_template_to_module
+     *
+     * @effects installer_view_task_list_follows_execution_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_확장_작업이_종류를_넘는_실행_순서대로_화면에_그려진다(): void
+    {
+        require_once dirname(__DIR__, 2).'/Fixtures/installer/stub-extension-install-order.php';
+        $GLOBALS['installer_test_selection'] = [
+            'admin_templates' => ['x-admin'],
+            'user_templates' => ['sirsoft-basic'],
+            'modules' => ['sirsoft-board', 'sirsoft-ecommerce', 'sirsoft-page', 'x-learning'],
+            'plugins' => ['sirsoft-ckeditor5', 'sirsoft-daum_postcode', 'sirsoft-tosspayments'],
+            'language_packs' => ['g7-core-ja'],
+        ];
+
+        $groups = $this->renderTaskGroups();
+        $viewKeys = self::flattenTaskKeys($groups);
+        $serverKeys = array_map(
+            static fn (array $task): string => (string) $task['key'],
+            buildInstallationTaskList(),
+        );
+
+        // 전제 — 서버 순서가 실제로 종류를 넘는다(모듈이 관리자 템플릿보다, 플러그인이 모듈보다 먼저 오는 자리가 있다).
+        // 이 전제가 깨지면 아래 검사는 종류별 묶음 화면도 통과시킨다.
+        $position = array_flip($serverKeys);
+        $this->assertLessThan($position['template_install:x-admin'], $position['module_install:sirsoft-board']);
+        $this->assertLessThan($position['module_install:x-learning'], $position['plugin_install:sirsoft-ckeditor5']);
+        $this->assertLessThan($position['plugin_install:sirsoft-tosspayments'], $position['module_install:x-learning']);
+
+        $this->assertSame($serverKeys, $viewKeys, '화면 목록의 순서가 서버 실행 순서와 다르다 — 진행 표시가 위에서 아래로 차례로 채워지지 않는다');
+
+        // 확장 작업은 한 묶음 안에서 실행 순서로 — 종류는 항목마다 kind 로 싣는다(「…에 필요」 배지가 이 값으로 찾는다).
+        $this->assertSame(
+            ['environment', 'database', 'extensions', 'language_packs', 'finalize'],
+            array_column($groups, 'id'),
+        );
+        // 그룹 머리 이름 — 키가 없으면 화면은 키 문자열을 그대로 그린다.
+        foreach (['ko', 'en'] as $locale) {
+            $translations = require dirname(__DIR__, 3)."/public/install/lang/{$locale}.php";
+            foreach (array_column($groups, 'labelKey') as $labelKey) {
+                $this->assertArrayHasKey($labelKey, $translations, "{$locale} 에 그룹 이름 키가 없다: {$labelKey}");
+            }
+        }
+        $kindByTaskId = [
+            'template_install' => 'admin_templates', 'template_activate' => 'admin_templates',
+            'module_install' => 'modules', 'module_activate' => 'modules',
+            'plugin_install' => 'plugins', 'plugin_activate' => 'plugins',
+            'user_template_install' => 'user_templates', 'user_template_activate' => 'user_templates',
+            'language_pack_install' => 'language_packs',
+        ];
+        foreach ($groups as $group) {
+            foreach ($group['tasks'] as $task) {
+                if (isset($kindByTaskId[$task['id']])) {
+                    $this->assertSame($kindByTaskId[$task['id']], $task['kind'] ?? null, '확장 작업 항목에 종류(kind)가 없다: '.json_encode($task));
+                } else {
+                    $this->assertArrayNotHasKey('kind', $task, '확장이 아닌 작업에 종류가 붙었다: '.json_encode($task));
+                }
+            }
+        }
     }
 
     /**

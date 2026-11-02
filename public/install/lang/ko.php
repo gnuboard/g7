@@ -316,10 +316,7 @@ return [
     // 작업 그룹명
     'task_group_environment' => '환경 설정',
     'task_group_database' => '데이터베이스',
-    'task_group_admin_templates' => '관리자 템플릿',
-    'task_group_modules' => '모듈',
-    'task_group_plugins' => '플러그인',
-    'task_group_user_templates' => '사용자 템플릿',
+    'task_group_extensions' => '확장 기능',
     'task_group_language_packs' => '언어팩',
     'task_group_finalize' => '마무리',
 

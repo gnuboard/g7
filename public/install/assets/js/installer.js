@@ -6238,15 +6238,18 @@
      * 의존 때문에 앞당겨 설치하는 항목의 「{이름}에 필요」 표시 문구 (#153).
      *
      * 확장 저장 시 해석기가 기록한 `install_pulled_by`(종류 경계를 넘어 앞당겨진 `카테고리:식별자` → 요구한 확장)를
-     * 설치 작업(*_install) 행에만 붙인다. 그룹 id 가 카테고리와 같다(admin_templates·modules·plugins·user_templates).
+     * 설치 작업(*_install) 행에만 붙인다. 카테고리는 항목의 kind 다 — 화면은 확장 작업을 실행 순서대로 한 묶음
+     * (extensions)에 담으므로 그룹 id 가 카테고리가 아니다(PO 2026-11-02). kind 가 없는 옛 그룹 정의(종류별 묶음)만
+     * 그룹 id 로 찾는다.
      *
      * @param {string} groupId 작업 그룹 id
-     * @param {Object} task 작업 객체 ({id, target})
+     * @param {Object} task 작업 객체 ({id, target, kind})
      * @returns {string|null} 표시 문구 (해당 없으면 null)
      */
     function getTaskRequiredByLabel(groupId, task) {
         if (!task.target || !/_install$/.test(task.id)) return null;
-        const owners = (window.INSTALLER_PULLED_BY || {})[groupId + ':' + task.target];
+        const kind = task.kind || groupId;
+        const owners = (window.INSTALLER_PULLED_BY || {})[kind + ':' + task.target];
         if (!Array.isArray(owners) || owners.length === 0) return null;
         const names = owners.map((key) => {
             const id = String(key).slice(String(key).indexOf(':') + 1);

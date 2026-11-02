@@ -58,6 +58,7 @@
 - 루트 보호 규칙 파일 쓰기 실패 안내를 「임시 파일은 대상 파일의 디렉토리에 만들며, 심볼릭 링크면 링크 대상의 권한」으로 원인 범위를 넓힌 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_write_failed`).
 - 코어 업데이트가 루트 보호 파일의 관리 블록 마커를 찾지 못했을 때의 안내를 「마커를 찾지 못했다(지워졌거나 형태가 바뀌었다)」로 정정한 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_preserved`).
 - 코어 업데이트의 압축 해제 실패 안내에서 명령줄 옵션 언급을 걷어낸 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.all_extract_methods_failed`) — 이 안내는 관리자 화면에도 그대로 나가므로 명령줄을 쓸 수 없는 호스팅에서는 따를 수 없는 지시였습니다.
+- 코어 업데이트의 zip 확장 없음 안내(`settings.core_update.no_extract_method_available`) 일본어 문구에 공유 호스팅(호스팅 업체에 활성화 요청) 안내를 더했습니다.
 
 ### Removed
 

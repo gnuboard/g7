@@ -384,7 +384,7 @@ return [
 
         // 시스템 요구사항
         'system_requirements_failed' => '시스템 요구사항이 충족되지 않습니다:',
-        'no_extract_method_available' => '압축을 풀 수 없습니다. PHP zip 확장(ZipArchive)이 필요합니다. 서버에 zip 확장을 설치한 뒤 다시 시도하세요.',
+        'no_extract_method_available' => '압축을 풀 수 없습니다. PHP zip 확장(ZipArchive)이 필요합니다. 서버에 zip 확장을 설치하거나, 공유 호스팅이면 호스팅 업체에 활성화를 요청한 뒤 다시 시도하세요.',
         'manual_update_guide' => '수동 업데이트: GitHub에서 릴리스 ZIP을 다운로드하여 압축 해제 후, php artisan core:update --source=/압축해제/경로 명령어를 실행하세요.',
 
         // 추출 폴백 체인

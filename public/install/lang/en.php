@@ -316,10 +316,7 @@ return [
     // Task Group Names
     'task_group_environment' => 'Environment Setup',
     'task_group_database' => 'Database',
-    'task_group_admin_templates' => 'Admin Templates',
-    'task_group_modules' => 'Modules',
-    'task_group_plugins' => 'Plugins',
-    'task_group_user_templates' => 'User Templates',
+    'task_group_extensions' => 'Extensions',
     'task_group_language_packs' => 'Language Packs',
     'task_group_finalize' => 'Finalize',
 

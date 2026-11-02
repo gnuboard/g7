@@ -12,11 +12,11 @@
 
     var data = installerStepData();
 
-    function pairs(list, installId, activateId) {
+    function pairs(list, installId, activateId, kind) {
         return (list || []).map(function (target) {
             return [
-                { id: installId, target: target },
-                { id: activateId, target: target }
+                { id: installId, target: target, kind: kind },
+                { id: activateId, target: target, kind: kind }
             ];
         });
     }
@@ -39,6 +39,8 @@
     // 작업 그룹 정의 — 서버 태스크 목록(buildInstallationTaskList)에서 파생한 값이 있으면 그것을 쓴다.
     // 손으로 적은 아래 사본은 dependency_precheck · db_cleanup · config_cache 등을 빠뜨려 진행률 분모가 어긋나고
     // 그 단계의 실패가 빨강이 되지 않았다(12차 #B22~#B24). 사본은 task_groups 가 없는 옛 캐시 화면의 폴백이다.
+    // 서버 화면은 확장 작업을 실행 순서(종류를 넘는 의존 순서)로 한 묶음에 담는다(PO 2026-11-02). 폴백은 그 순서를
+    // 알 수 없어 서버의 해석 실패 폴백(installer_category_install_order)과 같은 종류 순서로 같은 한 묶음에 담는다.
     window.INSTALLER_TASK_GROUPS = (Array.isArray(data.task_groups) && data.task_groups.length > 0) ? data.task_groups : [
         {
             id: 'environment',
@@ -59,30 +61,20 @@
             ]
         },
         {
-            id: 'admin_templates',
-            labelKey: 'task_group_admin_templates',
-            tasks: pairs(data.admin_templates, 'template_install', 'template_activate')
-        },
-        {
-            id: 'modules',
-            labelKey: 'task_group_modules',
-            tasks: pairs(data.modules, 'module_install', 'module_activate')
-        },
-        {
-            id: 'plugins',
-            labelKey: 'task_group_plugins',
-            tasks: pairs(data.plugins, 'plugin_install', 'plugin_activate')
-        },
-        {
-            id: 'user_templates',
-            labelKey: 'task_group_user_templates',
-            tasks: pairs(data.user_templates, 'user_template_install', 'user_template_activate')
+            id: 'extensions',
+            labelKey: 'task_group_extensions',
+            tasks: [].concat(
+                pairs(data.admin_templates, 'template_install', 'template_activate', 'admin_templates'),
+                pairs(data.modules, 'module_install', 'module_activate', 'modules'),
+                pairs(data.plugins, 'plugin_install', 'plugin_activate', 'plugins'),
+                pairs(data.user_templates, 'user_template_install', 'user_template_activate', 'user_templates')
+            )
         },
         {
             id: 'language_packs',
             labelKey: 'task_group_language_packs',
             tasks: (data.language_packs || []).map(function (pack) {
-                return { id: 'language_pack_install', target: pack };
+                return { id: 'language_pack_install', target: pack, kind: 'language_packs' };
             })
         },
         {

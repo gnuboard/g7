@@ -262,7 +262,7 @@ return [
         'log_version_check_error' => 'コアアップデート: 最新バージョン確認時にエラーが発生',
         'unknown_error' => '不明なエラーが発生しました。',
         'system_requirements_failed' => 'システム要件が満たされていません:',
-        'no_extract_method_available' => 'アーカイブを解凍できません。PHP zip 拡張 (ZipArchive) が必要です。サーバーに zip 拡張をインストールしてから再度お試しください。',
+        'no_extract_method_available' => 'アーカイブを解凍できません。PHP zip 拡張 (ZipArchive) が必要です。サーバーに zip 拡張をインストールするか、共有ホスティングの場合はホスティング会社に有効化を依頼してから再度お試しください。',
         'manual_update_guide' => '手動アップデート: GitHub からリリース ZIP をダウンロードして解凍後、php artisan core:update --source=/解凍/パス コマンドを実行してください。',
         'archive_url_not_found' => ':type アーカイブ URL が見つかりません。次の方法を試します。',
         'extracting_with' => ':method 方式で解凍中...',
