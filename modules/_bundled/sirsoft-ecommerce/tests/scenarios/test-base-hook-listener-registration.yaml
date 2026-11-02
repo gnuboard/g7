@@ -1,0 +1,24 @@
+feature: 시험 기반 클래스의 모듈 훅 리스너 등록
+
+description: |
+  앱 부팅은 DB 에서 「활성」인 모듈의 훅 리스너만 등록한다. 부팅 시점에 이 모듈의 등록 행이 없던 DB 로
+  시작하면(빈 DB 단독 실행, 같은 프로세스에서 코어 시험이 먼저 스키마를 만든 경우) 리스너가 하나도 붙지 않아,
+  주문취소 마일리지 환원처럼 훅으로 도는 부수효과를 단언하는 시험이 앞선 시험에 따라 통과하기도 하고 실패하기도
+  했다(운영은 모듈이 활성이라 영향 없음 — 실측). 시험 기반 클래스(ModuleTestCase)가 모듈의 리스너를 직접 붙이고,
+  부팅이 이미 붙였으면 같은 출처(모듈 식별자)라 다시 붙지 않는다.
+
+axis_notes:
+  boot_state: |
+    module_row_absent_at_boot = 부팅 때 등록 행이 없어 부팅이 리스너를 붙이지 않은 경우 — 기반 클래스가 붙여야 한다.
+    module_row_present_at_boot = 부팅이 이미 리스너를 붙인 경우 — 기반 클래스가 다시 붙여 훅이 두 번 발화하면 안 된다.
+    실제 상태는 프로세스의 시험 실행 순서가 정하므로, 각 시험은 두 상태 모두에서 성립해야 하는 불변식을 단언한다.
+
+axes:
+  boot_state: [module_row_absent_at_boot, module_row_present_at_boot]
+
+effects:
+  - module_hook_listeners_attached_by_test_base
+  - module_hook_listener_attached_once
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/ModuleTestCaseHookListenersTest.php

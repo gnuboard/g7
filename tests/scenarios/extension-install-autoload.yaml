@@ -1,0 +1,49 @@
+feature: 같은 프로세스에서 미설치 확장을 확인한 뒤 설치해도 오토로드가 깨지지 않는다 (#159)
+
+description: |
+  명령줄 설치(설치 마법사 포함)·연쇄 설치·웹 ZIP/GitHub 설치는 같은 프로세스에서 미설치 확장 사본을 확인한 뒤 설치한다.
+  진입 클래스가 자기 PSR-4 클래스를 상속하는 확장은 확인 단계에서 진입 파일을 실행하면 부모를 못 찾고, Composer 가 그 실패를
+  음성 캐시(missingClasses)에 남겨 이어지는 설치가 「Class not found」 로 죽었다. 진입 파일이 자체 vendor 를 부르면 설치 마지막
+  단계가 「Cannot declare class ComposerAutoloaderInit…」 로 죽었다(vendor 재선언 계약은 extension-entry-redeclare.yaml).
+
+  이 매니페스트가 고정하는 계약:
+    - 설치·의존 판정은 manifest 만 읽는다(get*ManifestInfo) — 진입 파일을 실행하지 않아 부모 클래스 조회가 일어나지 않는다.
+    - 설치 직전 그 확장의 소스 classmap 을 등록한다 — Composer 는 classMap 을 음성 캐시보다 먼저 보므로 어떤 경로로 음성
+      캐시가 생겼어도 설치가 성공한다(방어). 확장 vendor·node_modules 아래는 훑지 않는다.
+    - 부팅의 확장 로드는 오토로드 캐시에 없는 활성 폴더(고아 사본)만 그 확장의 PSR-4·소스 classmap 을 먼저 등록한다 —
+      등록하지 않으면 부팅이 죽어 사이트 전체가 500 이 되고 복구 명령도 돌지 않았다(실측 GET / 500).
+    - 런타임 재등록·자기 복구는 등록된 첫 로더(마지막에 불린 확장 vendor 로더)가 아니라 코어 로더에 등록한다.
+    - eval 재로드의 __DIR__·__FILE__ 은 진입 파일 위치다. 진입 파일 옆 vendor 오토로더가 이미 선언돼 있으면 바꾸지 않는다.
+    - 테스트 부트스트랩은 PSR-4 등록 뒤 진입 파일을 읽고, 진입점 미등록 부팅 폴백은 같은 등록 함수에 위임해 vendor 까지 싣는다.
+
+axes:
+  probe_mode: [manifest, php]
+  loader: [core, extension-vendor]
+
+exclusions:
+  - { probe_mode: manifest, loader: extension-vendor, reason: "manifest 전용 조회는 PHP 를 실행하지 않아 어떤 로더도 건드리지 않는다 — 로더 축이 의미 없다" }
+
+effects:
+  - install_probe_reads_manifest_only
+  - negative_cache_bypassed
+  - core_loader_selected
+  - eval_reload_keeps_entry_file_location
+  - vendor_autoloader_not_redeclared
+  - test_bootstrap_registers_psr4_before_entry_file
+  - fallback_boot_loads_extension_vendor
+
+test_files:
+  - tests/Unit/Extension/ManifestOnlyInstallProbeTest.php
+  - tests/Unit/Extension/InstallPathsUseManifestInfoTest.php
+  - tests/Unit/Extension/InstallClassmapBypassesNegativeCacheTest.php
+  - tests/Unit/Extension/OrphanActiveEntryBootLoadTest.php
+  - tests/Unit/Extension/CoreClassLoaderSelectionTest.php
+  - tests/Unit/Extension/EvalFreshEntryDirConstantTest.php
+  - tests/Unit/Installer/TestBootstrapEntryAfterPsr4Test.php
+  - tests/Unit/Providers/CoreServiceProviderFallbackDelegatesTest.php
+
+notes:
+  - 「진입 클래스 미선언」 만으로는 manifest 전용 조회를 판정하지 않는다 — 부모를 못 찾으면 수정 전에도 미선언이다. 앞쪽에 건 감시 오토로더의 요청 횟수와 코어 로더 missingClasses 로 본다.
+  - 시험 프로세스는 확장 vendor 를 vendorDir 없는 로더로 등록해 첫 로더가 늘 코어다 — 로더 선택은 vendorDir 를 가진 임시 로더를 맨 앞에 걸어 잰다.
+  - 실제 autoload-extensions.php 를 다시 만들지 않는다 — 확장 vendor 로더가 시험 프로세스에 prepend 되면 tests/bootstrap.php 의 base path 추론이 깨진다. 임시 파일로 autoloadFilePath 를 바꾼다.
+  - 치명 오류(Cannot declare class)는 프로세스를 끝내므로 eval 재로드의 vendor 예외는 RunInSeparateProcess 로 잰다.

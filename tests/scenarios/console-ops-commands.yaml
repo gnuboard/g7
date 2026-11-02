@@ -19,6 +19,7 @@ axes:
 effects:
   # 5.1 연쇄 설치 서비스
   - cascade_resolves_transitive_dependencies_in_install_order
+  - cascade_plan_reads_manifest_only   # 의존 계획은 manifest 조회만 — 진입 파일 실행 조회는 같은 프로세스 설치를 Class not found 로 죽였다 (#159)
   - cascade_reports_active_dependency_version_unmet
   - cascade_detects_dependency_cycle
   - cascade_surfaces_dependency_activation_failure

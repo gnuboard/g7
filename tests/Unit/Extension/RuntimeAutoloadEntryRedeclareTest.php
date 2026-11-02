@@ -4,6 +4,7 @@ namespace Tests\Unit\Extension;
 
 use App\Extension\ExtensionManager;
 use Illuminate\Support\Facades\File;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use ReflectionClass;
 use Tests\TestCase;
 
@@ -106,12 +107,37 @@ PHP);
     }
 
     /**
+     * 확장 자체 Composer vendor 사본 하나를 만든다 (autoload.php + autoload_real.php).
+     *
+     * 두 사본에 같은 `ComposerAutoloaderInit{suffix}` 를 쓰면 실제 `_bundled`·활성 사본과 같은 조건이 된다
+     * (같은 composer.json 으로 만든 vendor 는 접미어가 같다).
+     *
+     * @param  string  $copy  `active` 또는 `bundled`
+     * @param  string  $identifier  확장 디렉토리명
+     * @param  string  $suffix  오토로더 클래스 접미어
+     * @return string base_path 기준 autoload.php 상대 경로
+     */
+    private function writeVendor(string $copy, string $identifier, string $suffix): string
+    {
+        $dir = $copy === 'active'
+            ? "{$this->relativeRoot}/plugins/{$identifier}/vendor"
+            : "{$this->relativeRoot}/plugins/_bundled/{$identifier}/vendor";
+
+        File::ensureDirectoryExists(base_path($dir.'/composer'));
+        File::put(base_path($dir.'/composer/autoload_real.php'), "<?php\n\nclass ComposerAutoloaderInit{$suffix}\n{\n    public static function getLoader(): string\n    {\n        return '{$copy}';\n    }\n}\n");
+        File::put(base_path($dir.'/autoload.php'), "<?php\n\nrequire_once __DIR__.'/composer/autoload_real.php';\n\nreturn ComposerAutoloaderInit{$suffix}::getLoader();\n");
+
+        return $dir.'/autoload.php';
+    }
+
+    /**
      * 주어진 classmap 만 담은 오토로드 파일로 런타임 재등록을 수행한다.
      *
      * @param  array<int, string>  $classmap  base_path 기준 진입 파일 경로 목록
+     * @param  array<int, string>  $vendorAutoloads  base_path 기준 확장 vendor autoload.php 경로 목록
      * @return void 반환값 없음
      */
-    private function reregisterWith(array $classmap): void
+    private function reregisterWith(array $classmap, array $vendorAutoloads = []): void
     {
         $autoloadFile = base_path($this->relativeRoot.'/autoload-extensions.php');
         File::ensureDirectoryExists(dirname($autoloadFile));
@@ -120,7 +146,7 @@ PHP);
             'classmap' => $classmap,
             'src_classmap' => [],
             'files' => [],
-            'vendor_autoloads' => [],
+            'vendor_autoloads' => $vendorAutoloads,
         ], true).';');
 
         $manager = app(ExtensionManager::class);
@@ -240,5 +266,55 @@ PHP);
 
         $this->assertTrue($this->wasIncluded($active));
         $this->assertSame('active', (new $class)->origin());
+    }
+
+    /**
+     * 설치 전 조회가 번들 사본 vendor 오토로더를 선언한 뒤 재등록이 활성 사본 vendor 오토로더를 재선언하지 않는다 (#159).
+     *
+     * 진입 파일이 자체 `vendor/autoload.php` 를 부르는 확장을 명령줄로 설치하면, 설치 전 조회가 `_bundled` 경로의
+     * 오토로더 클래스를 선언하고 설치 마지막 단계(오토로드 갱신)가 활성 경로의 같은 클래스를 다시 선언해 치명 오류로
+     * 죽었다(Error 라 catch 불가, 롤백 미실행). 치명 오류는 프로세스를 끝내므로 별도 프로세스에서 잰다.
+     *
+     * @scenario ext_type=plugin, load_order=bundled_preview_then_runtime_autoload
+     *
+     * @effects vendor_autoloader_not_redeclared
+     *
+     * @return void 반환값 없음
+     */
+    #[RunInSeparateProcess]
+    public function test_runtime_autoload_does_not_redeclare_vendor_autoloader_from_other_copy(): void
+    {
+        $suffix = 'Zztest'.bin2hex(random_bytes(8));
+        $bundled = $this->writeVendor('bundled', 'g7guard-vendor_plugin', $suffix);
+        $active = $this->writeVendor('active', 'g7guard-vendor_plugin', $suffix);
+
+        // 설치 전 조회가 번들 사본 진입 파일을 실행하며 그 vendor 오토로더를 선언한 상태를 재현한다.
+        require_once base_path($bundled);
+        $this->assertTrue(class_exists('ComposerAutoloaderInit'.$suffix, false));
+
+        // 가드가 없으면 여기서 프로세스가 fatal 로 종료된다.
+        $this->reregisterWith([], [$active]);
+
+        $this->assertFalse($this->wasIncluded(dirname($active).'/composer/autoload_real.php'), '이미 선언된 vendor 오토로더의 활성 사본을 다시 읽었습니다.');
+        $this->assertSame('bundled', ('ComposerAutoloaderInit'.$suffix)::getLoader());
+    }
+
+    /**
+     * 아직 선언되지 않은 vendor 오토로더는 재등록이 그대로 읽는다 (가드가 전부를 건너뛰지 않는다).
+     *
+     * @scenario ext_type=plugin, load_order=runtime_autoload_fresh_entry
+     *
+     * @effects runtime_autoload_still_loads_undeclared_entry
+     *
+     * @return void 반환값 없음
+     */
+    public function test_runtime_autoload_loads_undeclared_vendor_autoloader(): void
+    {
+        $suffix = 'Zztest'.bin2hex(random_bytes(8));
+        $active = $this->writeVendor('active', 'g7guard-vendor_fresh_plugin', $suffix);
+
+        $this->reregisterWith([], [$active]);
+
+        $this->assertTrue($this->wasIncluded(dirname($active).'/composer/autoload_real.php'));
     }
 }

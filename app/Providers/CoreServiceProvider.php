@@ -202,7 +202,7 @@ class CoreServiceProvider extends ServiceProvider
      * Extension(모듈/플러그인) PSR-4 오토로드를 등록합니다.
      *
      * index.php 또는 artisan에서 이미 등록된 경우 스킵합니다.
-     * 진입점에서 등록되지 않은 경우(예: queue worker)에만 실행됩니다.
+     * 진입점에서 등록되지 않은 부팅(기본 진입점을 거치지 않는 실행 스크립트 등)에서만 실행됩니다.
      *
      * @return void 반환값 없음
      */
@@ -224,49 +224,9 @@ class CoreServiceProvider extends ServiceProvider
             return;
         }
 
-        $loader = require base_path('vendor/autoload.php');
-
-        // PSR-4 네임스페이스 등록
-        if (! empty($extensionAutoloads['psr4'])) {
-            foreach ($extensionAutoloads['psr4'] as $namespace => $paths) {
-                $paths = (array) $paths;
-                foreach ($paths as $path) {
-                    $absolutePath = base_path($path);
-                    if (is_dir($absolutePath)) {
-                        $loader->addPsr4($namespace, $absolutePath);
-                    }
-                }
-            }
-        }
-
-        // 확장 소스 classmap 등록 (FQCN → 절대경로) — findFile 파일시스템 스캔 제거 (lazy include).
-        if (! empty($extensionAutoloads['src_classmap'])) {
-            $absoluteClassmap = [];
-            foreach ($extensionAutoloads['src_classmap'] as $fqcn => $relPath) {
-                $absoluteClassmap[$fqcn] = base_path($relPath);
-            }
-            $loader->addClassMap($absoluteClassmap);
-        }
-
-        // Classmap 파일 로드 (module.php, plugin.php) — 다른 경로 사본에서 이미 선언된 진입 클래스는 건너뛴다.
-        if (! empty($extensionAutoloads['classmap'])) {
-            foreach ($extensionAutoloads['classmap'] as $file) {
-                $absolutePath = base_path($file);
-                if (file_exists($absolutePath) && ! ExtensionManager::isEntryClassDeclared($file)) {
-                    require_once $absolutePath;
-                }
-            }
-        }
-
-        // Files 로드 (헬퍼 함수 등)
-        if (! empty($extensionAutoloads['files'])) {
-            foreach ($extensionAutoloads['files'] as $file) {
-                $absolutePath = base_path($file);
-                if (file_exists($absolutePath)) {
-                    require_once $absolutePath;
-                }
-            }
-        }
+        // 진입점과 같은 등록 함수에 맡긴다 — PSR-4·소스 classmap·진입 파일·files 에 더해 확장 vendor(제3자 패키지)와
+        // 그 중복 선언 가드까지 같은 경로를 탄다. 직접 등록하던 사본은 vendor_autoloads 를 빠뜨렸다 (#159).
+        ExtensionManager::registerExtensionAutoload(require base_path('vendor/autoload.php'), $extensionAutoloadFile);
     }
 
     /**

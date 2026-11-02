@@ -141,10 +141,9 @@ class ExtensionManager
      * 로드되므로, 동일 프로세스 내부에서 PSR-4 네임스페이스가 추가·변경된 경우
      * 다음 부트스트랩 이전까지 신규 매핑이 반영되지 않는다.
      *
-     * 본 메서드는 `Composer\Autoload\ClassLoader::getRegisteredLoaders()` 로 현재
-     * 프로세스에 등록된 ClassLoader 를 조회하여 `addPsr4()` 를 다시 호출해 신규
-     * 매핑을 즉시 유효화한다. 기존 매핑에 경로가 추가되거나 새 네임스페이스가
-     * 등록되며, 동일 매핑은 중복 없이 merge 된다.
+     * 본 메서드는 코어 Composer ClassLoader({@see coreClassLoader()})에 `addPsr4()` 를
+     * 다시 호출해 신규 매핑을 즉시 유효화한다. 기존 매핑에 경로가 추가되거나 새
+     * 네임스페이스가 등록되며, 동일 매핑은 중복 없이 merge 된다.
      *
      * @return void 반환값 없음
      */
@@ -158,15 +157,39 @@ class ExtensionManager
             return;
         }
 
-        $loaders = ClassLoader::getRegisteredLoaders();
-        if (empty($loaders)) {
+        $loader = self::coreClassLoader();
+        if ($loader === null) {
             return;
         }
 
-        foreach ($loaders as $loader) {
-            self::registerExtensionAutoload($loader, $this->autoloadFilePath);
-            break;
+        self::registerExtensionAutoload($loader, $this->autoloadFilePath);
+    }
+
+    /**
+     * 코어(base_path('vendor')) Composer ClassLoader 를 돌려줍니다.
+     *
+     * `ClassLoader::getRegisteredLoaders()` 의 첫 항목은 코어 로더가 아니다 — Composer 오토로더는 자신을 맨 앞에 넣으므로
+     * 확장 자체 vendor 오토로더가 불린 뒤에는 마지막에 불린 확장 vendor 로더가 첫 항목이다(#159). 키(vendorDir)를 정규화해
+     * 코어 vendor 와 같은 로더를 고른다. 일치하는 키가 없을 때만 코어 autoload.php 의 싱글턴으로 폴백한다 — 제자리 vendor
+     * 교체 뒤 다시 부르면 새 접미어의 루트 로더가 하나 더 등록될 수 있어 1순위로 쓰지 않는다.
+     *
+     * @return ClassLoader|null 코어 로더 (찾지 못하면 null)
+     */
+    private static function coreClassLoader(): ?ClassLoader
+    {
+        $coreVendorDir = realpath(base_path('vendor'));
+
+        if ($coreVendorDir !== false) {
+            foreach (ClassLoader::getRegisteredLoaders() as $vendorDir => $loader) {
+                if (realpath($vendorDir) === $coreVendorDir) {
+                    return $loader;
+                }
+            }
         }
+
+        $loader = require base_path('vendor/autoload.php');
+
+        return $loader instanceof ClassLoader ? $loader : null;
     }
 
     /**
@@ -424,10 +447,7 @@ PHP;
 
         $removed = array_values(array_diff($oldKeys, self::$registeredAutoloadState['src_keys'] ?? []));
         if ($removed !== [] && class_exists(ClassLoader::class, false)) {
-            foreach (ClassLoader::getRegisteredLoaders() as $loader) {
-                $loader->addClassMap(array_fill_keys($removed, null));
-                break;
-            }
+            self::coreClassLoader()?->addClassMap(array_fill_keys($removed, null));
         }
 
         return true;
@@ -534,14 +554,85 @@ PHP;
         }
 
         // Vendor autoloads 로드 (모듈/플러그인의 composer 의존성)
+        // 오토로더 클래스가 이미 선언돼 있으면 건너뛴다 — 진입 파일이 자체 vendor 를 부르는 확장은 설치 전 확인이
+        // _bundled 경로 사본으로 같은 이름의 ComposerAutoloaderInit 를 먼저 선언할 수 있고, 경로가 달라 require_once 의
+        // 중복 제거가 통하지 않아 "Cannot declare class" 로 프로세스가 죽는다(#159).
         if (! empty($autoloads['vendor_autoloads'])) {
             foreach ($autoloads['vendor_autoloads'] as $vendorAutoload) {
                 $absolutePath = base_path($vendorAutoload);
-                if (file_exists($absolutePath)) {
-                    require_once $absolutePath;
+                if (! file_exists($absolutePath)) {
+                    continue;
                 }
+
+                $declared = self::declaredVendorAutoloaderClass($absolutePath);
+                if ($declared !== null) {
+                    if (! self::wasIncluded($absolutePath)) {
+                        Log::debug('다른 경로 사본에서 이미 선언된 확장 vendor 오토로더를 건너뜁니다', [
+                            'path' => $vendorAutoload,
+                            'class' => $declared,
+                        ]);
+                    }
+
+                    continue;
+                }
+
+                require_once $absolutePath;
             }
         }
+    }
+
+    /**
+     * 확장 vendor 의 Composer 오토로더 클래스(`ComposerAutoloaderInit…`)가 이미 선언돼 있는지 확인합니다.
+     *
+     * 같은 composer.json 으로 만든 vendor 는 `_bundled`·`_pending`·활성 사본이 같은 클래스명을 가진다. 한 사본이 선언된 뒤
+     * 다른 경로 사본을 require 하면 치명 오류로 죽으므로 require 전에 거른다. 접미어는 Composer `autoloader-suffix`
+     * 설정으로 임의 문자열일 수 있어 16진수로 한정하지 않는다.
+     *
+     * @param  string  $absoluteAutoloadPath  vendor/autoload.php 절대경로
+     * @return bool 이미 선언돼 있으면 true (파일 없음·클래스명 없음이면 false)
+     */
+    public static function isVendorAutoloaderDeclared(string $absoluteAutoloadPath): bool
+    {
+        return self::declaredVendorAutoloaderClass($absoluteAutoloadPath) !== null;
+    }
+
+    /**
+     * vendor/autoload.php 가 부르는 오토로더 클래스가 이미 선언돼 있으면 그 클래스명을 돌려줍니다.
+     *
+     * @param  string  $absoluteAutoloadPath  vendor/autoload.php 절대경로
+     * @return string|null 선언된 클래스명 (없으면 null)
+     */
+    private static function declaredVendorAutoloaderClass(string $absoluteAutoloadPath): ?string
+    {
+        if (! is_file($absoluteAutoloadPath)) {
+            return null;
+        }
+
+        $contents = @file_get_contents($absoluteAutoloadPath);
+        if ($contents === false || ! preg_match('/ComposerAutoloaderInit[A-Za-z0-9_]+/', $contents, $matches)) {
+            return null;
+        }
+
+        return class_exists($matches[0], false) ? $matches[0] : null;
+    }
+
+    /**
+     * 현재 프로세스가 이미 포함한 파일인지 확인합니다 (경로 구분자·대소문자 차이 무시).
+     *
+     * @param  string  $absolutePath  절대경로
+     * @return bool 포함 여부
+     */
+    private static function wasIncluded(string $absolutePath): bool
+    {
+        $target = strtolower(str_replace('\\', '/', realpath($absolutePath) ?: $absolutePath));
+
+        foreach (get_included_files() as $included) {
+            if (strtolower(str_replace('\\', '/', $included)) === $target) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -735,26 +826,52 @@ PHP;
      */
     protected function buildSourceClassmap(array $psr4): array
     {
+        $absolutePsr4 = [];
+        foreach ($psr4 as $namespace => $paths) {
+            $absolutePsr4[$namespace] = array_map(fn (string $relativePath) => base_path($relativePath), (array) $paths);
+        }
+
+        $classmap = [];
+        foreach (self::scanPsr4Classes($absolutePsr4) as $fqcn => $absolutePath) {
+            // base_path 상대경로로 정규화 (autoload-extensions.php 의 다른 경로와 일관)
+            $classmap[$fqcn] = str_replace('\\', '/', substr($absolutePath, strlen(base_path()) + 1));
+        }
+
+        ksort($classmap);
+
+        return $classmap;
+    }
+
+    /**
+     * PSR-4 디렉토리를 재귀 스캔해 FQCN → 절대경로 맵을 만듭니다.
+     *
+     * 확장 자체 `vendor/`·`node_modules/` 하위는 훑지 않는다 — 번들 플러그인은 PSR-4 가 확장 루트(`./`)도 가리켜
+     * 그 아래를 통째로 읽게 되는데, 그곳 파일은 아래 네임스페이스 접두 필터가 어차피 버린다(산출물 동일, 스캔 비용만 절감).
+     *
+     * @param  array<string, array<int, string>>  $psr4  네임스페이스 → 절대경로 목록
+     * @return array<string, string> FQCN → 절대경로 (.php 포함)
+     */
+    protected static function scanPsr4Classes(array $psr4): array
+    {
         $classmap = [];
 
         foreach ($psr4 as $namespace => $paths) {
-            foreach ((array) $paths as $relativePath) {
-                $absoluteDir = base_path($relativePath);
-
+            foreach ($paths as $absoluteDir) {
                 if (! is_dir($absoluteDir)) {
                     continue;
                 }
 
-                $iterator = new \RecursiveIteratorIterator(
-                    new \RecursiveDirectoryIterator($absoluteDir, \RecursiveDirectoryIterator::SKIP_DOTS)
-                );
+                $iterator = new \RecursiveIteratorIterator(new \RecursiveCallbackFilterIterator(
+                    new \RecursiveDirectoryIterator($absoluteDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                    fn (\SplFileInfo $entry) => ! ($entry->isDir() && in_array($entry->getFilename(), ['vendor', 'node_modules'], true))
+                ));
 
                 foreach ($iterator as $file) {
                     if ($file->getExtension() !== 'php') {
                         continue;
                     }
 
-                    $fqcn = $this->extractFqcnFromFile($file->getPathname());
+                    $fqcn = self::extractFqcnFromFile($file->getPathname());
                     if ($fqcn === null) {
                         continue;
                     }
@@ -765,14 +882,10 @@ PHP;
                         continue;
                     }
 
-                    // base_path 상대경로로 정규화 (autoload-extensions.php 의 다른 경로와 일관)
-                    $rel = str_replace('\\', '/', substr($file->getPathname(), strlen(base_path()) + 1));
-                    $classmap[$fqcn] = $rel;
+                    $classmap[$fqcn] = $file->getPathname();
                 }
             }
         }
-
-        ksort($classmap);
 
         return $classmap;
     }
@@ -785,7 +898,7 @@ PHP;
      * @param  string  $filePath  PHP 파일 절대경로
      * @return string|null FQCN 또는 null
      */
-    protected function extractFqcnFromFile(string $filePath): ?string
+    protected static function extractFqcnFromFile(string $filePath): ?string
     {
         $contents = @file_get_contents($filePath);
         if ($contents === false) {
@@ -1087,6 +1200,93 @@ PHP;
                     $loader->addPsr4($namespace, $absolutePath);
                 }
             }
+        }
+
+        // PSR-4 만으로는 같은 프로세스의 앞선 실패 조회(설치 전 확인·고아 폴더 부팅 등)가 남긴 음성 캐시를 풀지 못한다 (#159)
+        self::registerExtensionClassmapAt(base_path("{$type}/{$dirName}"), $loader);
+    }
+
+    /**
+     * 오토로드 캐시에 없는 활성 확장이면 진입 파일을 읽기 전에 그 확장 하나의 PSR-4·소스 classmap 을 등록합니다.
+     *
+     * 부팅의 확장 로드는 활성 디렉토리 진입 파일을 모두 읽는다. 설치된 확장은 진입점이 캐시로 먼저 등록하지만, 캐시에 없는
+     * 폴더(설치가 끊겨 DB 행만 지워진 사본·손으로 복사한 사본)는 등록되지 않아, 진입 클래스가 자기 PSR-4 클래스를 상속하면
+     * 부팅이 「Class not found」 로 죽고 복구 명령(`{type}:install {id} --force`)조차 실행되지 않았다(#159). 캐시 지문에
+     * 있거나 composer.json 의 PSR-4 접두가 모두 등록된 확장은 아무것도 하지 않는다(설치된 확장의 부팅 비용 없음).
+     *
+     * @param  string  $absoluteExtensionDir  확장 활성 디렉토리 절대경로
+     * @param  string  $fingerprintKey  오토로드 캐시 지문 키 (`plugins:{id}`·`modules:{id}`)
+     * @return void 반환값 없음
+     */
+    public static function registerAutoloadIfMissing(string $absoluteExtensionDir, string $fingerprintKey): void
+    {
+        if (isset(self::$registeredAutoloadState['fingerprint'][$fingerprintKey])) {
+            return;
+        }
+
+        $composerFile = $absoluteExtensionDir.'/composer.json';
+        if (! file_exists($composerFile)) {
+            return;
+        }
+
+        $psr4 = json_decode((string) file_get_contents($composerFile), true)['autoload']['psr-4'] ?? [];
+        if (! is_array($psr4) || $psr4 === []) {
+            return;
+        }
+
+        $loader = self::coreClassLoader();
+        if ($loader === null) {
+            return;
+        }
+
+        $registered = $loader->getPrefixesPsr4();
+        if (array_diff_key($psr4, $registered) === []) {
+            return;
+        }
+
+        foreach ($psr4 as $namespace => $paths) {
+            foreach ((array) $paths as $path) {
+                $absolutePath = $absoluteExtensionDir.'/'.$path;
+                if (is_dir($absolutePath)) {
+                    $loader->addPsr4($namespace, $absolutePath);
+                }
+            }
+        }
+
+        self::registerExtensionClassmapAt($absoluteExtensionDir, $loader);
+    }
+
+    /**
+     * 확장 하나의 소스 classmap(FQCN → 절대경로)을 Composer 로더에 등록합니다.
+     *
+     * Composer `ClassLoader::findFile()` 은 classMap → missingClasses(음성 캐시) → PSR-4 순으로 본다. 같은 프로세스에서
+     * 그 확장의 클래스를 먼저 못 찾은 적이 있으면 `addPsr4()` 를 해도 음성 캐시에 막혀 「Class not found」 가 나지만,
+     * classMap 은 음성 캐시보다 먼저 보므로 여기서 등록한 클래스는 찾는다. 클래스 로딩은 여전히 지연(lazy)이다.
+     *
+     * @param  string  $absoluteExtensionDir  확장 디렉토리 절대경로 (composer.json 이 있는 곳)
+     * @param  ClassLoader  $loader  등록할 Composer 로더
+     * @return void 반환값 없음
+     */
+    public static function registerExtensionClassmapAt(string $absoluteExtensionDir, ClassLoader $loader): void
+    {
+        $composerFile = $absoluteExtensionDir.'/composer.json';
+        if (! file_exists($composerFile)) {
+            return;
+        }
+
+        $psr4 = json_decode((string) file_get_contents($composerFile), true)['autoload']['psr-4'] ?? [];
+        if (! is_array($psr4) || $psr4 === []) {
+            return;
+        }
+
+        $absolutePsr4 = [];
+        foreach ($psr4 as $namespace => $paths) {
+            $absolutePsr4[$namespace] = array_map(fn (string $p) => $absoluteExtensionDir.'/'.$p, (array) $paths);
+        }
+
+        $classmap = self::scanPsr4Classes($absolutePsr4);
+        if ($classmap !== []) {
+            $loader->addClassMap($classmap);
         }
     }
 

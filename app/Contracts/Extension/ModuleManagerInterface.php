@@ -105,6 +105,16 @@ interface ModuleManagerInterface
     public function getModuleInfo(string $moduleName): ?array;
 
     /**
+     * 설치·의존 판정용 모듈 정보를 반환합니다 — 미설치 모듈은 진입 파일을 실행하지 않고 manifest 만 읽습니다.
+     *
+     * @param  string  $moduleName  모듈명
+     * @return array<string, mixed>|null 모듈 정보 배열 또는 null
+     *
+     * @since 7.1.5
+     */
+    public function getModuleManifestInfo(string $moduleName): ?array;
+
+    /**
      * 모듈의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  string  $moduleName  모듈명

@@ -292,8 +292,8 @@ class CascadeInstallOrchestrator
     private function info(string $type, string $identifier): ?array
     {
         return match ($type) {
-            'module' => $this->moduleService->getModuleInfo($identifier),
-            'plugin' => $this->pluginService->getPluginInfo($identifier),
+            'module' => $this->moduleService->getModuleManifestInfo($identifier),
+            'plugin' => $this->pluginService->getPluginManifestInfo($identifier),
             'template' => $this->templateService->getTemplateInfo($identifier),
             default => null,
         };

@@ -96,7 +96,7 @@ class CascadeInstallPermissionTest extends TestCase
     private function mockPluginInfo(bool $isInstalled): void
     {
         $pluginService = Mockery::mock(PluginService::class)->makePartial();
-        $pluginService->shouldReceive('getPluginInfo')
+        $pluginService->shouldReceive('getPluginManifestInfo')
             ->with('dep-plugin')
             ->andReturn([
                 'is_installed' => $isInstalled,
