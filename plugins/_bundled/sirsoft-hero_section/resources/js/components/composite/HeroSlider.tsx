@@ -223,6 +223,20 @@ function t(key: string, fallback: string, params?: Record<string, string>): stri
 }
 
 /**
+ * 장 번호 문구(「3개 중 1번째」)를 만듭니다 — 슬라이드 이름과 넘길 때 알림이 같은 문구를 쓴다.
+ *
+ * @param index 0부터 센 장 번호
+ * @param count 전체 장 수
+ * @returns 화면 읽기 프로그램이 읽을 장 번호
+ */
+function slideLabel(index: number, count: number): string {
+  return t('sirsoft-hero_section.slider.slide_label', '{{count}}개 중 {{n}}번째', { n: String(index + 1), count: String(count) });
+}
+
+/** 넘길 때 알린 장 번호를 지우기까지의 시간 — 알림은 바뀐 순간 읽히고, 남겨 두면 훑어 읽기에서 슬라이드 이름과 겹쳐 두 번 읽힌다 */
+const ANNOUNCE_CLEAR_MS = 3000;
+
+/**
  * 사용자가 움직임 줄이기를 켰는지 확인합니다.
  *
  * @returns 움직임 줄이기면 true
@@ -394,6 +408,25 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     }
   }, [swiper, autoplaying]);
 
+  // 장 번호 알림 — 방문자가 넘긴 때만(자동으로 넘어가는 동안은 읽지 않는다) 잠깐 채운다. 장 번호는 슬라이드 이름에 늘 있으므로
+  // 알림 칸을 비워 두지 않으면 훑어 읽기에서 같은 번호를 두 번 듣는다
+  const live = !(autoplaying || activeMediaRuns);
+  const [announcement, setAnnouncement] = useState('');
+  const announcedIndex = useRef(index);
+  useEffect(() => {
+    if (announcedIndex.current === index) {
+      return;
+    }
+    announcedIndex.current = index;
+    if (!live) {
+      setAnnouncement('');
+      return;
+    }
+    setAnnouncement(slideLabel(index, count));
+    const timer = window.setTimeout(() => setAnnouncement(''), ANNOUNCE_CLEAR_MS);
+    return () => window.clearTimeout(timer);
+  }, [index]);
+
   const goTo = useCallback((target: number) => {
     if (swiper && !swiper.destroyed) {
       swiper.slideToLoop(target);
@@ -473,8 +506,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
   const controls = (count > 1 || hasMedia) && (
         <div className={`hs__controls${textBox ? ' hs__controls--boxed' : ''}`}>
-          {/* 장 번호는 점 표시가 보여 주므로 화면에서는 감추고 화면 읽기 프로그램에만 알린다 */}
-          {count > 1 && <span className="hs__counter" aria-live={autoplaying || activeMediaRuns ? 'off' : 'polite'}>{`${index + 1} / ${count}`}</span>}
+          {/* 장 번호는 점 표시가 보여 주므로 화면에서는 감추고, 방문자가 넘긴 때만 화면 읽기 프로그램에 알린다 */}
+          {count > 1 && <span className="hs__counter" aria-live={live ? 'polite' : 'off'}>{announcement}</span>}
           {(canAutoplay || hasMedia) && (
             <button
               type="button"
@@ -497,7 +530,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       className={`hs hs--${effect} hs--${full ? 'full' : 'content'}${count > 1 ? ' hs--controlled' : ''}${overlayOn ? ' hs--header-overlay' : ''} ${className}`.trim()}
       style={style}
       role="region"
-      aria-roledescription="carousel"
+      aria-roledescription={t('sirsoft-hero_section.slider.carousel_role', '캐러셀')}
       aria-label={t('sirsoft-hero_section.slider.label', '메인 배너')}
       data-position={position}
       // 휴대폰 탭은 흉내 mouseenter 만 오고 mouseleave 가 오지 않아 hover 로 보지 않는다 — 마우스·펜 포인터만 센다
@@ -733,6 +766,12 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
   const wholeLink = !!link && !hasButton;
   const linkRef = useRef<HTMLAnchorElement>(null);
   const alt = banner.image_alt ?? banner.title ?? '';
+  const linkName = banner.title || alt;
+  // 제목은 한 번만 읽힌다 — 전체 링크면 링크 이름이 제목이라 보이는 제목 줄은 화면 읽기에서 감추고, 이미지 대체 문구가 제목·링크 이름과
+  // 같으면(대체 문구를 비우면 공개 응답이 제목으로 채운다) 장식 이미지로 둔다. 이전에는 링크·이미지·제목 줄로 세 번 읽혔다
+  const titleShown = banner.title_visible !== false && !!banner.title;
+  const titleSpokenByLink = wholeLink && titleShown && linkName === banner.title;
+  const imageAlt = alt !== '' && ((titleShown && alt === banner.title) || (wholeLink && alt === linkName)) ? '' : alt;
   const focus = banner.presentation;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [overflowing, setOverflowing] = useState(false);
@@ -754,7 +793,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
     return () => observer.disconnect();
   }, [banner.title, banner.eyebrow, banner.description, banner.button_text, banner.title_visible, banner.eyebrow_visible, banner.description_visible, banner.presentation?.text_width]);
   const scrollable = overflowing
-    ? { tabIndex: active ? 0 : -1, role: 'region', 'aria-label': banner.title || alt || t('sirsoft-hero_section.slider.label', '메인 배너') }
+    ? { tabIndex: active ? 0 : -1, role: 'region', 'aria-label': t('sirsoft-hero_section.slider.text_label', '배너 문구') }
     : {};
   const point = (device: 'pc' | 'mobile') => `${focus?.[`${device}_x`] ?? 50}% ${focus?.[`${device}_y`] ?? 50}%`;
   const imageStyle = { '--hs-focus-pc': point(forceDevice ?? 'pc'), '--hs-focus-mobile': point(forceDevice ?? 'mobile') } as React.CSSProperties;
@@ -770,7 +809,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
         className="hs__image"
         style={imageStyle}
         src={main.url}
-        alt={alt}
+        alt={imageAlt}
         width={main.width ?? undefined}
         height={main.height ?? undefined}
         loading={eager ? 'eager' : 'lazy'}
@@ -797,9 +836,9 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
       </p>
     ), letters ? ' hs__line--letters' : '');
   }
-  if (banner.title_visible !== false && banner.title) {
+  if (titleShown) {
     line(({ className, style }) => (
-      <h2 key="title" className={`hs__title ${className}`} style={{ ...style, color: banner.title_color, textAlign: banner.title_align }}>
+      <h2 key="title" className={`hs__title ${className}`} style={{ ...style, color: banner.title_color, textAlign: banner.title_align }} aria-hidden={titleSpokenByLink || undefined}>
         {letters ? <LetterText text={banner.title!} /> : banner.title}
       </h2>
     ), letters ? ' hs__line--letters' : '');
@@ -851,14 +890,14 @@ const HeroSlide: React.FC<HeroSlideProps> = ({
     <div
       className={`hs__slide${active ? ' hs__slide--active' : ''}${media ? ` hs__slide--${media}` : ''}`}
       role="group"
-      aria-roledescription="slide"
-      aria-label={`${index + 1} / ${count}`}
+      aria-roledescription={t('sirsoft-hero_section.slider.slide_role', '슬라이드')}
+      aria-label={slideLabel(index, count)}
       aria-hidden={active ? undefined : true}
       data-banner-id={banner.id}
       data-index={index}
     >
       {wholeLink && (
-        <a ref={linkRef} className="hs__link" {...link!} aria-label={banner.title || alt} tabIndex={active ? undefined : -1} />
+        <a ref={linkRef} className="hs__link" {...link!} aria-label={linkName} tabIndex={active ? undefined : -1} />
       )}
       {image}
       {media === 'video' && (

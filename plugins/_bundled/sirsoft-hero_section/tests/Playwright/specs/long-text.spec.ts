@@ -118,7 +118,7 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     created.push(await createBanner(request, managerToken, { title: { ko: shortTitle } }));
 
     await gotoUser(page, '/');
-    const hs = page.locator('section.hs[aria-roledescription="carousel"]');
+    const hs = page.locator('section.hs[role="region"]');
     await expect(hs.locator('.hs__title', { hasText: marker })).toBeAttached({ timeout: 30_000 });
     // 자동 넘김이 단언 사이에 장을 바꾸지 않게 멈춘다
     if (await hs.locator('.hs__toggle').count()) await hs.locator('.hs__toggle').tap();
@@ -133,7 +133,8 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     // 넘치는 보이는 장만 탭 순서에 들어오고 배너 제목으로 이름 붙는다. 넘치지 않는 짧은 문구 영역은 그대로다
     await expect(scroll).toHaveAttribute('tabindex', '0');
     await expect(scroll).toHaveAttribute('role', 'region');
-    await expect(scroll).toHaveAttribute('aria-label', fullTitle);
+    // 영역 이름은 제목과 겹쳐 읽히지 않게 「배너 문구」 — 제목은 안의 제목 줄이 읽는다
+    await expect(scroll).toHaveAttribute('aria-label', '배너 문구');
     const short = slideOf(shortTitle).locator('.hs__scroll');
     await expect(short).not.toHaveAttribute('tabindex', /.*/);
     await expect(short).not.toHaveAttribute('role', /.*/);
@@ -190,7 +191,7 @@ test.describe('긴 문구 영역 키보드·손가락 (mobile)', () => {
     created.push(await createBanner(request, managerToken, { title: { ko: fullTitle }, description: { ko: description }, link_url: '/shop/products' }));
 
     await gotoUser(page, '/');
-    const hs = page.locator('section.hs[aria-roledescription="carousel"]');
+    const hs = page.locator('section.hs[role="region"]');
     await expect(hs.locator('.hs__title', { hasText: marker })).toBeAttached({ timeout: 30_000 });
     if (await hs.locator('.hs__toggle').count()) await hs.locator('.hs__toggle').tap();
     const slide = hs.locator('.hs__slide', { has: page.locator('.hs__title', { hasText: marker }) });

@@ -191,7 +191,9 @@ describe('HeroSlider', () => {
     // Swiper 가 다음 장으로 넘기면(자동 재생·손가락) 번호와 활성 장이 따라온다
     act(() => { swiperState.instance?.slideNext(); });
     expect(activeId(container)).toBe('2');
-    expect(container.querySelector('.hs__counter')?.textContent).toBe('2 / 3');
+    expect(container.querySelector('.hs__slide--active')?.getAttribute('aria-label')).toBe('3개 중 2번째');
+    // 자동으로 넘어간 장은 알리지 않는다
+    expect(container.querySelector('.hs__counter')?.textContent).toBe('');
     unmount();
 
     render(<HeroSlider banners={[banner(1), banner(2)]} />);
@@ -368,21 +370,77 @@ describe('HeroSlider', () => {
 
   // @scenario surface=carousel_aria_roles_and_counter
   // @effects accessible_carousel_semantics
-  it('캐러셀·슬라이드 역할과 번호를 준다', () => {
+  it('캐러셀·슬라이드 역할과 번호를 사이트 언어로 준다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false }} />);
     const region = container.querySelector('section') as HTMLElement;
     expect(region.getAttribute('role')).toBe('region');
-    expect(region.getAttribute('aria-roledescription')).toBe('carousel');
+    expect(region.getAttribute('aria-roledescription')).toBe('캐러셀');
     expect(region.getAttribute('aria-label')).toBeTruthy();
 
-    const slides = container.querySelectorAll('[aria-roledescription="slide"]');
+    const slides = container.querySelectorAll('[aria-roledescription="슬라이드"]');
     expect(slides).toHaveLength(2);
-    expect(slides[0].getAttribute('aria-label')).toBe('1 / 2');
+    expect(slides[0].getAttribute('aria-label')).toBe('2개 중 1번째');
     // 무한 반복은 슬라이드 DOM 순서를 바꾸므로 논리 순서를 data-index 로 남긴다
     expect(Array.from(slides).map((el) => el.getAttribute('data-index'))).toEqual(['0', '1']);
     expect(slides[1].getAttribute('aria-hidden')).toBe('true');
-    expect(container.querySelector('.hs__counter')?.textContent).toBe('1 / 2');
+    // 장 번호는 슬라이드 이름에 있으므로 알림 칸은 처음에 비어 있다(훑어 읽기에서 두 번 읽지 않게)
+    expect(container.querySelector('.hs__counter')?.textContent).toBe('');
     expect(container.querySelector('.hs__prev')?.getAttribute('aria-label')).toBeTruthy();
+  });
+
+  // @scenario surface=counter_announced_only_on_visitor_change
+  // @effects accessible_carousel_semantics
+  it('방문자가 넘긴 때만 장 번호를 잠깐 알리고 비운다 — 자동으로 넘어간 장은 알리지 않는다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false }} />);
+    const counter = () => container.querySelector('.hs__counter')?.textContent;
+    expect(counter()).toBe('');
+    fireEvent.click(container.querySelector('.hs__next') as HTMLElement);
+    expect(counter()).toBe('3개 중 2번째');
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(counter()).toBe('');
+    cleanup();
+
+    const auto = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
+    act(() => { swiperState.instance?.slideNext(); });
+    expect(auto.container.querySelector('.hs__counter')?.textContent).toBe('');
+  });
+
+  // @scenario surface=title_read_once
+  // @effects accessible_carousel_semantics
+  it('화면 읽기 프로그램이 배너 제목을 한 번만 읽는다 — 전체 링크면 링크 이름만, 대체 문구가 제목과 같으면 이미지는 장식', () => {
+    // 대체 문구를 비우면 공개 응답이 제목으로 채운다 — 전체 링크: 링크 「제목 1」, 이미지 alt 비움, 제목 줄은 화면 읽기에서 감춤
+    const { container } = render(<HeroSlider banners={[banner(1, { image_alt: '제목 1' })]} />);
+    expect(container.querySelector('a.hs__link')?.getAttribute('aria-label')).toBe('제목 1');
+    expect(container.querySelector('img.hs__image')?.getAttribute('alt')).toBe('');
+    expect(container.querySelector('.hs__title')?.getAttribute('aria-hidden')).toBe('true');
+    // 제목 글자는 화면에 그대로 보인다
+    expect(container.querySelector('.hs__title')?.textContent).toBe('제목 1');
+    // 설명은 그대로 읽힌다
+    expect(container.querySelector('.hs__description')?.hasAttribute('aria-hidden')).toBe(false);
+    cleanup();
+
+    // 버튼 배너: 제목 줄이 읽고, 같은 대체 문구의 이미지는 장식
+    const button = render(<HeroSlider banners={[banner(2, { image_alt: '제목 2', button_text: '보기' })]} />);
+    expect(button.container.querySelector('img.hs__image')?.getAttribute('alt')).toBe('');
+    expect(button.container.querySelector('.hs__title')?.hasAttribute('aria-hidden')).toBe(false);
+    cleanup();
+
+    // 운영자가 따로 쓴 대체 문구는 그대로 읽는다
+    const own = render(<HeroSlider banners={[banner(3)]} />);
+    expect(own.container.querySelector('img.hs__image')?.getAttribute('alt')).toBe('대체 3');
+    cleanup();
+
+    // 제목 줄을 감춘 전체 링크 배너: 링크가 제목을 읽고, 같은 대체 문구의 이미지는 장식
+    const hidden = render(<HeroSlider banners={[banner(4, { image_alt: '제목 4', title_visible: false })]} />);
+    expect(hidden.container.querySelector('a.hs__link')?.getAttribute('aria-label')).toBe('제목 4');
+    expect(hidden.container.querySelector('img.hs__image')?.getAttribute('alt')).toBe('');
+    expect(hidden.container.querySelector('.hs__title')).toBeNull();
+    cleanup();
+
+    // 제목도 버튼도 없는 전체 링크: 링크 이름이 대체 문구라 이미지는 장식
+    const untitled = render(<HeroSlider banners={[banner(5, { title: '' })]} />);
+    expect(untitled.container.querySelector('a.hs__link')?.getAttribute('aria-label')).toBe('대체 5');
+    expect(untitled.container.querySelector('img.hs__image')?.getAttribute('alt')).toBe('');
   });
 
   // @scenario surface=long_text_scroll_keyboard_and_touch
@@ -405,9 +463,9 @@ describe('HeroSlider', () => {
       const scrolls = () => Array.from(container.querySelectorAll<HTMLElement>('.hs__scroll'));
 
       expect(scrolls().map((el) => [el.getAttribute('tabindex'), el.getAttribute('role'), el.getAttribute('aria-label')])).toEqual([
-        ['0', 'region', '제목 1'],
-        // 제목이 없으면 이미지 대체 텍스트로 이름 짓는다
-        ['-1', 'region', '대체 2'],
+        // 영역 이름은 제목과 겹치지 않는 「배너 문구」 — 제목은 안의 제목 줄이 읽는다
+        ['0', 'region', '배너 문구'],
+        ['-1', 'region', '배너 문구'],
       ]);
 
       // 화면 폭이 넓어져 더는 넘치지 않으면 속성을 모두 거둔다
@@ -540,8 +598,8 @@ describe('HeroSlider', () => {
     expect(swiperState.instance?.slideToLoop).toHaveBeenCalledWith(2);
     expect(activeId(container)).toBe('3');
     expect(bullets[2].getAttribute('aria-current')).toBe('true');
-    // 장 번호는 화면 읽기용으로 남는다
-    expect(container.querySelector('.hs__counter')?.textContent).toBe('3 / 3');
+    // 방문자가 넘긴 장은 화면 읽기 프로그램에 알린다
+    expect(container.querySelector('.hs__counter')?.textContent).toBe('3개 중 3번째');
   });
 
   // @scenario surface=swiper_pagination_and_arrows

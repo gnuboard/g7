@@ -56,7 +56,11 @@
         "youtube_title": "유튜브 영상: {{title}}",
         "youtube_notice": "재생하면 YouTube 에서 영상을 불러옵니다.",
         "media_play": "배너 다시 재생",
-        "media_pause": "배너 일시정지"
+        "media_pause": "배너 일시정지",
+        "carousel_role": "캐러셀",
+        "slide_role": "슬라이드",
+        "slide_label": "{{count}}개 중 {{n}}번째",
+        "text_label": "배너 문구"
     },
     "admin": {
         "title": "히어로섹션 관리",

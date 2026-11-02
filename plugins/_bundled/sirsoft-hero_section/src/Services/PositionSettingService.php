@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\HeroSection\Services;
 
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
+use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Enums\SlideWidth;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
@@ -117,10 +118,15 @@ class PositionSettingService
      */
     public function update(HeroPosition $position, array $data, ?int $actorId): PositionSetting
     {
-        $before = $this->settings->findByPosition($position->value);
-        $snapshot = $before?->toArray() ?? (PositionSetting::DEFAULTS + ['position' => $position->value]);
+        // 행을 먼저 보장하고 잠가 고친다 — 같은 위치를 동시에 처음 저장하면 둘 다 「행 없음」으로 보고 만들다가 유일 키 충돌(500)이 났다.
+        // 처음 저장의 「바뀌기 전」은 기본값 행이고, 겹친 저장은 앞 저장이 끝난 값을 「바뀌기 전」으로 본다
+        $this->settings->ensureExists($position->value);
+        [$setting, $snapshot] = DB::transaction(function () use ($position, $data, $actorId) {
+            $before = $this->settings->findForUpdate($position->value);
+            $snapshot = $before->toArray();
 
-        $setting = $this->settings->upsert($position->value, $data + ['updated_by' => $actorId]);
+            return [$this->settings->update($before, $data + ['updated_by' => $actorId]), $snapshot];
+        });
 
         HookManager::doAction('sirsoft-hero_section.position_setting.after_update', $setting, $snapshot);
 

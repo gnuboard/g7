@@ -9,6 +9,8 @@ description: |
   reduced-motion 에서 멈춘다. 관리자 미리보기(HeroBannerPreview)는 같은 렌더 함수를 쓴다.
   넘김은 Swiper(무한 반복·손가락 넘기기·PC 마우스 끌기, 효과 slide·fade·cube·flip·coverflow·creative·none)가 맡고, 좌우 화살표·점 표시는 Swiper 기본 모양의 이름 붙은 단추다 — 단위 시험은 Swiper 대역으로 옵션·호출·장 번호 동기만 보고,
   실제 넘김·자동 재생·쓸기는 e2e-flows.yaml 의 slider_* 흐름이 실브라우저에서 본다. 자동으로 넘어가는 동안 장 번호는 읽지 않는다.
+  장 번호(「3개 중 1번째」)와 캐러셀·슬라이드 역할 이름은 사이트 언어로 슬라이드 이름에만 두고, 방문자가 넘긴 때만 알림 칸에 3초 채운다.
+  제목은 한 번만 읽힌다(전체 링크면 링크 이름, 제목과 같은 대체 문구의 이미지는 장식). 점 표시는 10px 로 보이되 누를 자리는 24px(slider-a11y.spec.ts).
 
 axes:
   surface:
@@ -30,6 +32,10 @@ axes:
     - prev_next_buttons_and_keyboard
     - carousel_aria_roles_and_counter
     - counter_not_announced_while_autoplaying
+    - counter_announced_only_on_visitor_change
+    - title_read_once
+    - pagination_bullet_target_24px
+    - carousel_labels_follow_locale
     - index_resets_when_banners_change
     - first_image_eager_rest_lazy
     - next_slide_preloaded_before_transition
@@ -50,3 +56,4 @@ test_files:
   - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroBannerPreview.test.tsx
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/swiper-ui.spec.ts
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/loading-skeleton.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/slider-a11y.spec.ts

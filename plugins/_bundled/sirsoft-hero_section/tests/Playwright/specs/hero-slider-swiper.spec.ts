@@ -111,7 +111,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       // 장 수만큼 넘기면 다시 처음 장 — 끝에서 멈추지 않고 돈다
       expect(seen[seen.length - 1]).toBe(start);
       expect(new Set(seen).size).toBe(count);
-      await expect(page.locator('section.hs .hs__counter')).toHaveText(`${startIndex + 1} / ${count}`);
+      await expect(page.locator('section.hs .hs__slide--active')).toHaveAttribute('aria-label', `${count}개 중 ${startIndex + 1}번째`);
 
       if (viewport === 'desktop') await page.locator('section.hs .hs__prev').click();
       else await page.locator('section.hs .hs__pagination button').nth((startIndex - 1 + count) % count).click();

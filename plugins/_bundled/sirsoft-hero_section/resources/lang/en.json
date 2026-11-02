@@ -56,7 +56,11 @@
         "youtube_title": "YouTube video: {{title}}",
         "youtube_notice": "Playing loads the video from YouTube.",
         "media_play": "Resume banners",
-        "media_pause": "Pause banners"
+        "media_pause": "Pause banners",
+        "carousel_role": "carousel",
+        "slide_role": "slide",
+        "slide_label": "{{n}} of {{count}}",
+        "text_label": "Banner text"
     },
     "admin": {
         "title": "Hero Section",

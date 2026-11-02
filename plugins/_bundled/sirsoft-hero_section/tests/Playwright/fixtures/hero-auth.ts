@@ -116,7 +116,7 @@ export async function gotoUser(page: Page, path = '/'): Promise<void> {
 }
 
 /** 사용자 화면 슬라이더 영역 */
-export const slider = (page: Page) => page.locator('section.hs[aria-roledescription="carousel"]');
+export const slider = (page: Page) => page.locator('section.hs[role="region"]');
 
 /**
  * 슬라이더 안 슬라이드 제목들(배너 순서대로) — Swiper 무한 반복은 슬라이드 DOM 순서를 바꾸므로 논리 순서(`data-index`)로 정렬한다.

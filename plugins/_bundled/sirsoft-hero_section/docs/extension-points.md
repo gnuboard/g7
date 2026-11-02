@@ -31,7 +31,7 @@
 | `sirsoft-hero_section.banner_image.after_upload` | action | 배너 이미지 임시 업로드 직후(배너에는 저장 때 붙는다). 인자: (BannerImage $image) | `src/Services/BannerImageService.php:127` |
 | `sirsoft-hero_section.banner_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/BannerImageService.php:79` |
 | `sirsoft-hero_section.hero.filter_public_banners` | filter | 사용자 화면 노출 배너 목록 가공. 인자: (array $banners, string $position, string $locale) | `src/Services/PublicHeroService.php:69` |
-| `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:125` |
+| `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:131` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->

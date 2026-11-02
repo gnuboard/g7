@@ -56,7 +56,11 @@
     "youtube_title": "YouTube動画:{{title}}",
     "youtube_notice": "再生するとYouTubeから動画を読み込みます。",
     "media_play": "バナーを再度再生",
-    "media_pause": "バナーを一時停止"
+    "media_pause": "バナーを一時停止",
+    "carousel_role": "カルーセル",
+    "slide_role": "スライド",
+    "slide_label": "{{count}}個中{{n}}番目",
+    "text_label": "バナーテキスト"
   },
   "admin": {
     "title": "ヒーローセクション管理",

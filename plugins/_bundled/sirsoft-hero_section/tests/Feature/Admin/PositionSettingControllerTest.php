@@ -3,9 +3,11 @@
 namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Admin;
 
 use App\Enums\ExtensionStatus;
+use App\Extension\HookManager;
 use App\Models\Template;
 use App\Models\TemplateLayout;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Services\PreviewFrameResolver;
 use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
@@ -145,6 +147,39 @@ class PositionSettingControllerTest extends PluginTestCase
         $this->assertSame(1, PositionSetting::query()->where('position', 'shop_hero')->count());
         $this->assertSame(['autoplay' => true, 'interval_seconds' => 7, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
         $this->assertSame(0, PositionSetting::query()->where('position', 'home_hero')->count());
+    }
+
+    /**
+     * 같은 위치를 동시에 처음 저장해도 500 이 아니다 — 이 요청이 행을 만들려는 순간 다른 요청이 먼저 만들었으면(유일 키 충돌)
+     * 그 행을 잠가 고치고, 「바뀌기 전」은 앞 요청이 저장한 값이다.
+     *
+     * @scenario surface=position_settings_concurrent_first_save
+     *
+     * @return void 반환값 없음
+     */
+    public function test_concurrent_first_save_updates_row_made_by_other_request(): void
+    {
+        $other = ['autoplay' => false, 'interval_seconds' => 7, 'effect' => 'fade', 'width' => 'full', 'header_overlay' => false];
+        $raced = false;
+        // 이 요청이 위치 설정 행을 INSERT 하기 직전에 다른 요청의 INSERT 가 먼저 들어간 상황을 만든다
+        DB::beforeExecuting(function (string $query) use (&$raced, $other) {
+            if (! $raced && str_starts_with(strtolower($query), 'insert') && str_contains($query, 'hero_section_position_settings')) {
+                $raced = true;
+                DB::table('hero_section_position_settings')->insert(['position' => 'shop_hero'] + $other + ['created_at' => now(), 'updated_at' => now()]);
+            }
+        });
+        $snapshot = null;
+        HookManager::addAction('sirsoft-hero_section.position_setting.after_update', function ($setting, $before) use (&$snapshot) {
+            $snapshot = $before;
+        });
+
+        $this->actingAs($this->admin)->putJson($this->api('/admin/position-settings/shop_hero'), ['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content'])
+            ->assertOk()->assertJsonPath('data.settings', ['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false]);
+
+        $this->assertTrue($raced);
+        $this->assertSame(1, PositionSetting::query()->where('position', 'shop_hero')->count());
+        $this->assertSame(['autoplay' => true, 'interval_seconds' => 3, 'effect' => 'none', 'width' => 'content', 'header_overlay' => false], PositionSetting::query()->where('position', 'shop_hero')->first()->toSettings());
+        $this->assertSame([7, 'fade', 'full'], [$snapshot['interval_seconds'] ?? null, $snapshot['effect'] ?? null, $snapshot['width'] ?? null]);
     }
 
     /**

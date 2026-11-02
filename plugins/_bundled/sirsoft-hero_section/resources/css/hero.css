@@ -499,6 +499,8 @@
   --swiper-pagination-bullet-inactive-color: #ffffff;
   --swiper-pagination-bullet-inactive-opacity: 0.5;
   --swiper-pagination-bullet-size: 10px;
+  /* 점 사이 14px — 누를 자리(24px) 가운데끼리 24px 떨어져 이웃 점의 누를 자리와 겹치지 않는다 */
+  --swiper-pagination-bullet-horizontal-gap: 7px;
   --swiper-pagination-bottom: 24px;
 }
 
@@ -520,11 +522,20 @@
 }
 
 .hs__pagination .swiper-pagination-bullet {
+  position: relative;
   padding: 0;
   border: 0;
   pointer-events: auto;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
   cursor: pointer;
+}
+
+/* 점은 10px 로 보이되 누를 자리는 24px(WCAG 2.5.8) — 보이지 않는 테두리 층이 단추의 누를 자리를 넓힌다 */
+.hs__pagination .swiper-pagination-bullet::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 9999px;
 }
 
 /* Swiper navigation CSS(.swiper-button-prev{display:flex})가 번들에서 뒤에 오므로 두 클래스로 이긴다 */
