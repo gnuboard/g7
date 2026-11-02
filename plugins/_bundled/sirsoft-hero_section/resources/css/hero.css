@@ -199,8 +199,11 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: max(100cqw, 177.78cqh);
-  height: max(100cqh, 56.25cqw);
+  /* 배너를 덮는 16:9 크기 중 높이가 배너의 1.45배 이상이 되게 키운다 — 유튜브가 재생 시작 때 띄우는 위 제목·채널 띠와
+     아래 「동영상 더보기」·로고 띠(각각 플레이어 높이의 위·아래 약 15%)는 잘려 나가고 가운데 재생 표시만 잠깐 보인다.
+     가로로 긴 배너는 이미 위아래가 그만큼 잘려 크기가 그대로다 */
+  width: max(100cqw, 257.78cqh);
+  height: max(56.25cqw, 145cqh);
   border: 0;
   transform: translate(-50%, -50%);
 }

@@ -353,6 +353,19 @@ describe('HeroSlider 영상 배너', () => {
       expect(commands()).toContain('seekTo');
     });
 
+    // @scenario surface=youtube_reveal_after_player_overlay
+    it('[case:components-misc-youtube-start-overlay-cannot-be-disabled] 재생 시작 알림을 받으면 기다리지 않고 바로 드러낸다(가운데 재생 표시는 보여도 빨리 보이는 쪽을 택했다)', () => {
+      mockConsent(ready(true));
+      const { container } = render(<HeroSlider banners={[youtubeBanner(1), banner(2)]} settings={{ autoplay: true }} />);
+      const frame = container.querySelector('iframe') as HTMLIFrameElement;
+      const box = () => container.querySelector('[data-banner-id="1"] .hs__youtube')!;
+      expect(box().classList.contains('hs__youtube--ready')).toBe(false);
+      act(() => {
+        window.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ event: 'onStateChange', info: 1 }), origin: 'https://www.youtube-nocookie.com', source: frame.contentWindow }));
+      });
+      expect(box().classList.contains('hs__youtube--ready')).toBe(true);
+    });
+
     // @scenario surface=youtube_timeout_falls_back
     it('플레이어가 10초 안에 재생을 알리지 않으면 간격 넘김으로 돌린다', () => {
       mockConsent(ready(true));
